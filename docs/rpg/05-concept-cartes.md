@@ -210,10 +210,16 @@ note sur le camp concerné et les liquide au tour suivant (`rpgFinDeTour`) :
   (le plancher de 1 ne s'applique qu'aux auras de table) : on ne renforce pas
   trois tours pour rien.
 - **l'écho** (`effet.echo`, la carte `degats`) — *Nuage de cendres* inflige
-  d'abord ses 2 dégâts, puis promet les mêmes **au début du tour suivant** :
-  la promesse est consignée dans `camp.degatsEchos` de la victime et retombe
-  une seule fois, avant que son propriétaire n'agisse. Sur une table vide, la
-  promesse n'est même pas écrite — un nuage qui ne couvre personne se dissipe.
+  d'abord ses 2 dégâts, puis promet les mêmes **au début du prochain tour de
+  son lanceur** : la promesse est consignée dans `camp.degatsEchos` de la
+  victime (avec `coteSource`, le camp qui l'a lancée) et ne retombe que quand
+  son lanceur reprend la main — l'autre camp a donc son tour entier pour jouer
+  avant qu'elle ne tombe, et elle brûle alors ce qu'il a posé entre-temps. La
+  promesse est écrite **même sur une table vide** : un nuage suspendu au-dessus
+  d'une table déserte attend le tour adverse ; si rien ne s'y trouve à son
+  heure, l'écho se dissipe et le journal le dit. Sur plusieurs tours
+  (`echo.tours`), chaque reprise de main du lanceur retire un tour à la
+  promesse.
 
 ## 5. L’adversaire : un sorcier
 

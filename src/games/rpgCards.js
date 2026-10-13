@@ -1456,9 +1456,10 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['toutes'],
     // Le nuage ne se dissipe pas à la première bourrasque : `echo` est la
-    // seconde vague, qui tombe au début du tour suivant (voir `degatsEchos`).
+    // seconde vague, qui tombe au début du prochain tour du lanceur — après
+    // le tour adverse, sur ce qu'il y a alors à brûler (voir `degatsEchos`).
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', echo: { amount: 2, tours: 1 } },
-    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, puis 2 autres au début du tour suivant.',
+    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, puis 2 autres au début de votre tour suivant.',
     flavor: 'Le vent tourne ; la poussière devient un voile brûlant.',
   },
   {

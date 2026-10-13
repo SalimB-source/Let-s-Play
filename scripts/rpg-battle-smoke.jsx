@@ -275,8 +275,8 @@ export async function checkRpgBattle(assert) {
   assert.match(tempeteCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /3 dégâts à toutes les créatures adverses/u,
     'la Tempête de sable annonce ses trois dégâts');
   const nuageCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="nuage-de-cendres"]');
-  assert.match(nuageCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /puis 2 autres au début du tour suivant/u,
-    'le Nuage de cendres annonce sa seconde vague pour le tour suivant');
+  assert.match(nuageCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /puis 2 autres au début de votre tour suivant/u,
+    'le Nuage de cendres annonce sa seconde vague pour le tour suivant du lanceur');
   const filtresCatalogue = [...container.querySelectorAll('.rpg-card-catalogue__filters select')];
   const filtrerCatalogue = async (select, value) => act(async () => {
     select.value = value;
@@ -1622,4 +1622,70 @@ export async function checkRpgBattle(assert) {
     'le Ressac a quitté la main du joueur');
   await act(async () => { bounceRoot.unmount(); });
   bounceContainer.remove();
+
+  // ── Nuage de cendres : la seconde vague attend le tour suivant du lanceur ──
+  // Le cas signalé : la première vague vide la table, et plus aucune vague ne
+  // tombe. La promesse doit rester suspendue et brûler, au début de votre tour
+  // suivant, ce que le sorcier a posé pendant le sien — même s'il ne restait
+  // personne après la première bourrasque.
+  const nuageContainer = document.createElement('div');
+  document.body.appendChild(nuageContainer);
+  const nuageRoot = createRoot(nuageContainer);
+  await act(async () => {
+    nuageRoot.render(<RpgDuelPage
+      joueurDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'nuage-de-cendres', 'montagne', 'montagne', 'montagne', 'montagne']}
+      sorcierDeck={['desert', 'desert', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'desert', 'desert', 'desert', 'desert']}
+      rng={() => 0.999}
+    />);
+  });
+  await lancerDepuisMenu(nuageContainer);
+  const nuageHand = () => [...nuageContainer.querySelectorAll('button.rpg-hand__card')];
+  const ennemisEnJeu = () => [...nuageContainer.querySelectorAll('.rpg-card--ennemi')];
+  const journalNuage = () => nuageContainer.querySelector('.rpg-log')?.textContent ?? '';
+  const poserMontagne = async () => {
+    const montagne = nuageHand().find((card) => card.getAttribute('aria-label')?.includes('Montagne')
+      && estJouable(card));
+    assert.ok(montagne, 'une Montagne doit être jouable pour payer le Nuage');
+    await glisserSurTable(nuageContainer, montagne);
+  };
+  const finirTourNuage = async () => {
+    await act(async () => { nuageContainer.querySelector('.rpg-btn--endturn').click(); });
+    await act(async () => { await wait(1800); });
+    await passerAnnoncesSorcier(nuageContainer);
+    const resoudre = nuageContainer.querySelector('.rpg-btn--resolve-combat');
+    if (resoudre) await act(async () => { resoudre.click(); });
+    await act(async () => { await wait(700); });
+  };
+
+  // Trois tours de mana, puis le nuage : les deux Chiens 2/2 du sorcier en face.
+  for (let tour = 0; tour < 3; tour += 1) {
+    await poserMontagne();
+    await finirTourNuage();
+  }
+  assert.equal(ennemisEnJeu().length, 2, 'deux Chiens du guet attendent le nuage sur la table adverse');
+  await poserMontagne();
+  const nuageEnMain = nuageHand().find((card) => card.getAttribute('aria-label')?.includes('Nuage de cendres'));
+  assert.ok(nuageEnMain && estJouable(nuageEnMain), 'le Nuage se paie avec quatre Montagnes');
+  await act(async () => { nuageEnMain.click(); });
+  const confirmerNuage = nuageContainer.querySelector('.rpg-spell-confirm .rpg-btn--primary');
+  assert.ok(confirmerNuage, 'lancer le Nuage demande confirmation');
+  await act(async () => { confirmerNuage.click(); });
+  await act(async () => { await wait(900); });
+  assert.equal(ennemisEnJeu().length, 0, 'la première vague emporte les deux Chiens 2/2 et vide la table');
+  assert.match(journalNuage(), /Nuage de cendres diffère 2 dégâts : ils tomberont au début de votre prochain tour/u,
+    'le nuage reste suspendu même si la première vague a tout tué');
+
+  await finirTourNuage();
+  const journalApresVague = journalNuage();
+  assert.match(journalApresVague, /L’écho de Nuage de cendres retombe sur la table : 2 dégâts/u,
+    'la seconde vague tombe au début de votre tour suivant, après le tour du sorcier');
+  // Le moteur ne dit « retombe sur la table » que s’il y trouvait quelqu’un :
+  // la ligne prouve donc que le sorcier avait bien posé une créature, et que
+  // l’écho l’a brûlée au lieu de se dissiper.
+  assert.doesNotMatch(journalApresVague, /L’écho de Nuage de cendres se dissipe/u,
+    'la créature posée pendant le tour du sorcier était bien là, à brûler');
+  assert.equal(ennemisEnJeu().length, 0,
+    'elle brûle la créature que le sorcier avait posée pendant son tour');
+  await act(async () => { nuageRoot.unmount(); });
+  nuageContainer.remove();
 }
