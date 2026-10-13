@@ -4,7 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardRarityInfo } from '../src/games/rpgCards.js';
+import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardHasShinyFrame } from '../src/games/rpgCards.js';
 import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 import { RPG_PV_JOUEUR, rpgSorcierPv } from '../src/games/rpgDuel.js';
 import { passerMulligan } from './rpg-duel-start.js';
@@ -55,9 +55,8 @@ export async function checkRpgBattle(assert) {
       `${context} identifie sa couleur ${frame.key}`);
     assert.equal(element.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(carte),
       `${context} utilise la couleur de cadre ${cardFrameColor(carte)}`);
-    assert.equal(element.classList.contains('rpg-card--frame-brillant'),
-      frame.key.startsWith('hybride-') || cardRarityInfo(carte).key === 'mythique',
-      `${context} n'a un cadre brillant que si la carte est bicolore ou mythique`);
+    assert.equal(element.classList.contains('rpg-card--frame-brillant'), cardHasShinyFrame(carte),
+      `${context} ne brille que si le cadre est mythique mono-élément`);
   };
   const envoyerSouris = (target, type) => {
     target.dispatchEvent(new window.MouseEvent(type, { bubbles: true, relatedTarget: document.body }));
@@ -179,6 +178,12 @@ export async function checkRpgBattle(assert) {
     await act(async () => { envoyerSouris(carte, 'mouseover'); });
     const apercu = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
     verifierRegles(apercu?.querySelector('.rpg-hover-card-preview__rules'), `Aperçu : ${id}`);
+    if (id === 'petra') {
+      assert.ok(carte.querySelector('.rpg-card-catalogue__art.rpg-card--frame-hybride-braise-sable:not(.rpg-card--frame-brillant)'),
+        'le catalogue montre la diagonale fixe de Pétra');
+      assert.ok(apercu?.querySelector('.rpg-hover-card-preview__face.rpg-card--frame-hybride-braise-sable:not(.rpg-card--frame-brillant)'),
+        'son aperçu conserve les deux couleurs sans animation de cadre');
+    }
     assert.ok(apercu.getAttribute('aria-label').includes(cardById(id).text),
       `le libellé accessible de ${id} conserve le texte original`);
     await act(async () => { envoyerSouris(carte, 'mouseout'); });
@@ -197,6 +202,10 @@ export async function checkRpgBattle(assert) {
     /\/cards\/ifrit-al-ahmar\.jpg\?v=sourire-tempete-huile-v1$/,
     'le catalogue charge la nouvelle illustration de l’Ifrit contre le cache');
   const ferielCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="feriel"]');
+  assert.equal(ferielCatalogue?.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(cardById('feriel')),
+    'le catalogue garde la couleur Braise de Fériel, même si elle est mythique');
+  assert.ok(ferielCatalogue?.querySelector('.rpg-card-catalogue__art.rpg-card--frame-braise.rpg-card--frame-brillant.rpg-card--mythique'),
+    'le catalogue donne à Fériel le même cadre brillant que dans le duel');
   assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
     /\/cards\/feriel\.jpg\?v=lance-de-feu-photoreal-v1$/,
     'le catalogue charge la nouvelle illustration de Fériel avec une URL versionnée contre le cache');
@@ -1427,10 +1436,11 @@ export async function checkRpgBattle(assert) {
     const terrain = petraContainer.querySelector('.rpg-terrains--joueur .rpg-terrain[data-card-id="petra"]:not(.is-tapped)');
     assert.ok(terrain, 'la vraie carte Pétra rejoint le rail des terrains');
     assertElementFrame(terrain, 'petra', 'le terrain bicolore Pétra');
-    assert.ok(terrain.classList.contains('rpg-card--frame-hybride-braise-sable'),
-      'une carte Braise + Sable reçoit le cadre rouge-orange de sa combinaison');
+    assert.ok(terrain.classList.contains('rpg-card--frame-hybride-braise-sable')
+      && !terrain.classList.contains('rpg-card--frame-brillant'),
+    'Pétra partage son cadre en diagonale Braise / Sable, sans reflet brillant');
     assert.ok(!terrain.classList.contains('rpg-card--mythique'),
-      'Pétra est rare, pas mythique : elle ne prend pas le cadre violet');
+      'Pétra est rare, pas mythique : elle ne prend pas le zellige mythique');
     const disponiblesAvant = Number(terrain.dataset.availableCount);
     await act(async () => { terrain.click(); });
     const choix = petraContainer.querySelector('[role="dialog"][aria-label^="Choisir le mana produit par Pétra"]');
@@ -1491,12 +1501,14 @@ export async function checkRpgBattle(assert) {
   assert.ok(ferielEnMain && estJouable(ferielEnMain), 'Fériel devient payable après quatre terrains');
   assert.ok(ferielEnMain.classList.contains('rpg-card--mythique')
     && ferielEnMain.classList.contains('rpg-card--frame-brillant'),
-    'Fériel porte son cadre violet brillant dès la main');
+    'Fériel conserve son cadre Braise brillant dès la main');
+  assertElementFrame(ferielEnMain, 'feriel', 'Fériel en main');
   await glisserSurTable(ferielContainer, ferielEnMain);
   const ferielEnJeu = ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]');
   assert.ok(ferielEnJeu?.classList.contains('is-pret'), 'Rapidité la rend attaquante dès son tour de pose');
   assert.ok(ferielEnJeu.classList.contains('rpg-card--mythique'),
-    'Fériel, mythique, garde son cadre violet sur la table');
+    'Fériel, mythique, garde son zellige sur la table');
+  assertElementFrame(ferielEnJeu, 'feriel', 'Fériel en jeu');
   assert.equal(ferielContainer.querySelectorAll('.rpg-card__flames, .rpg-card__flames-tongue, .rpg-card__flames-halo').length, 0,
     'aucune flamme n’est rendue autour des cartes mythiques');
   await act(async () => { ferielEnJeu.click(); });

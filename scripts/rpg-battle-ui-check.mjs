@@ -232,8 +232,8 @@ assert.match(battlePage, /animerEntites\(renforcees, 'glow', 1100, statsAugmente
   'les gains d’attaque ou de défense transmettent leur indicateur à l’animation');
 assert.match(battlePage, /canTarget=\{Boolean\([\s\S]*?cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee/,
   'une créature protégée ne se présente pas comme cible légale contre sa couleur');
-assert.match(battlePage, /function cardFrameClass\(carte\)[\s\S]*?cardFrameInfo\(carte\)\.key/,
-  'les cartes convertissent leur élément en classe de cadre');
+assert.match(cardsSource, /export function cardFrameClass\(carte\)[\s\S]*?cardFrameInfo\(carte\)\.key/,
+  'les cartes convertissent leur élément en classe de cadre commune à toutes les vues');
 assert.match(battlePage, /function cardFrameStyle\(carte\)[\s\S]*?--rpg-frame-color/,
   'les cartes transmettent la couleur de leur élément à leur cadre');
 assert.doesNotMatch(battlePage, /rpg-card--rarity-/,
@@ -242,8 +242,10 @@ assert.match(cardsSource, /export const RPG_ELEMENTS = \['braise', 'eau', 'sable
   'les quatre éléments sont déclarés une seule fois, dans l’ordre canonique des couleurs');
 assert.match(cardsSource, /export const CARD_FRAME_COLORS = \{\s*braise:[\s\S]*?eau:[\s\S]*?sable:[\s\S]*?neige:[\s\S]*?'hybride-braise-eau':[\s\S]*?'hybride-braise-sable':[\s\S]*?'hybride-braise-neige':[\s\S]*?'hybride-eau-sable':[\s\S]*?'hybride-eau-neige':[\s\S]*?'hybride-sable-neige':[\s\S]*?'hybride-braise-eau-sable':/,
   'le catalogue déclare un cadre pour chaque couleur et chaque combinaison, y compris celles qui n’existent pas encore');
-assert.match(cardsSource, /export const MYTHIC_FRAME_COLOR = '#b06cf5';/,
-  'le cadre violet des cartes mythiques est déclaré à part de la couleur');
+assert.match(cardsSource, /export function cardFrameColor\(carte\)\s*\{\s*return cardFrameInfo\(carte\)\.color;\s*\}/,
+  'la couleur du cadre est celle de l’élément, y compris pour une mythique');
+assert.doesNotMatch(cardsSource, /MYTHIC_FRAME_COLOR/,
+  'aucune couleur violette ne supplante plus celle de l’élément');
 assert.match(cardsSource, /CARD_FRAME_COLOR_ORDER/,
   'la clé d’une carte bicolore ne dépend pas de l’ordre de ses couleurs');
 assert.doesNotMatch(battlePage, /rarete\.label|rpg-card-catalogue__rarity|rpg-card-preview__rarity/,
@@ -255,10 +257,14 @@ assert.match(battleCss, /\.rpg-card\.is-wounded \.rpg-card__pt,[^{]+\{[^}]*color
   'la défense blessée est affichée en rouge');
 assert.match(battleCss, /font:\s*900 11px\/1\.15 Georgia/,
   'les statistiques du champ ont une taille supérieure');
-assert.match(battlePage, /const resoudreAttaqueEnnemie = \(\) => \{[\s\S]*?if \(res\.resume\.paires\.length > 0\) jouerSfx\('choc_lames', 0\.015\);/,
-  'un blocage résolu contre le joueur fait retentir le choc des épées');
-assert.match(battlePage, /const resoudreAttaqueJoueur = \(combat = combatEntrant\) => \{[\s\S]*?if \(res\.resume\.paires\.length > 0\) jouerSfx\('choc_lames', 0\.015\);/,
-  'un blocage résolu par le sorcier fait retentir le même choc des épées');
+const attaqueEnnemie = battlePage.slice(battlePage.indexOf('const resoudreAttaqueEnnemie = () => {'),
+  battlePage.indexOf('const resoudreAttaqueJoueur ='));
+const attaqueJoueur = battlePage.slice(battlePage.indexOf('const resoudreAttaqueJoueur = (combat = combatEntrant) => {'),
+  battlePage.indexOf('const resoudreCombat ='));
+for (const [source, camp] of [[attaqueEnnemie, 'ennemi'], [attaqueJoueur, 'joueur']]) {
+  assert.match(source, /const sonAttaqueBraise = rpgCombatFireSound\(duel, attaquantsVivants, blocages\);[\s\S]*?if \(frappeCreature\) jouerSfx\(sonAttaqueBraise \?\? 'player_attack_hit', 0\.015\);/,
+    `un blocage résolu côté ${camp} conserve l’impact d’attaque, ou son équivalent Braise`);
+}
 assert.match(battlePage, /if \(res\.resume\.frappeSorcier > 0\) declencherImpactEcran\('dealt'\)/,
   'une attaque directe sur le sorcier déclenche la secousse après acceptation des blocages');
 assert.match(battlePage, /const frappeDirecte = res\.resume\.frappeSorcier > 0;[\s\S]*?if \(frappeDirecte \|\| touchePendantLaFinDuTour\) declencherImpactEcran\('received'\)/,
@@ -409,8 +415,8 @@ assert.doesNotMatch(battleCss, /--rpg-rarity-color/,
 assert.match(battleCss, /\.rpg-hand__card--img \.rpg-hand__rarity\s*\{[\s\S]*?color:\s*var\(--rarity-color/s,
   'le badge de rareté des cartes en main garde sa couleur propre');
 // Tout cadre est un anneau orné : bordure transparente, trois couches — le fond
-// de la face sur la padding-box, le motif puis la matière (couleur unie, ou
-// dégradé d'un cadre brillant) sur la border-box. Le motif commun est posé sur
+// de la face sur la padding-box, le motif puis la matière (couleur unie,
+// diagonale hybride ou dégradé brillant mythique) sur la border-box. Le motif commun est posé sur
 // `.rpg-battle`, donc hérité partout ; la mythique pose le sien.
 const ringRule = frameCss.slice(frameCss.indexOf('/* ── Cadres ornés'), frameCss.indexOf('/* ── Cadres brillants'));
 assert.match(ringRule, /\.rpg-battle\s*\{\s*--rpg-frame-motif:\s*url\("data:image\/svg\+xml,%3Csvg [^"]+"\);\s*--rpg-frame-motif-size:\s*8px 8px;\s*\}/,
@@ -427,7 +433,7 @@ for (const element of ['.rpg-card', '.rpg-hand__card', '.rpg-terrain', '.rpg-hov
   assert.ok(ringRule.includes(`${element}[class*="rpg-card--frame-"]`), `${element} porte l’anneau orné`);
 }
 assert.ok(ringRule.includes('.rpg-card-catalogue__art {') || ringRule.includes('.rpg-card-catalogue__art,'), 'le catalogue porte l’anneau orné');
-assert.match(ringRule, /border-color:\s*transparent;\s*background-image:\s*linear-gradient\(var\(--rpg-frame-fill, #0c0c0e\), var\(--rpg-frame-fill, #0c0c0e\)\),\s*var\(--rpg-frame-motif, none\),\s*var\(--rpg-frame-gradient, linear-gradient\(var\(--rpg-frame-color, #f1f3f5\), var\(--rpg-frame-color, #f1f3f5\)\)\);\s*background-origin:\s*padding-box, border-box, border-box;\s*background-clip:\s*padding-box, border-box, border-box;\s*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), 240% 100%;\s*background-repeat:\s*no-repeat, repeat, no-repeat;\s*background-position:\s*0 0, 0 0, 0% 0;/,
+assert.match(ringRule, /border-color:\s*transparent;\s*background-image:\s*linear-gradient\(var\(--rpg-frame-fill, #0c0c0e\), var\(--rpg-frame-fill, #0c0c0e\)\),\s*var\(--rpg-frame-motif, none\),\s*var\(--rpg-frame-gradient, linear-gradient\(var\(--rpg-frame-color, #f1f3f5\), var\(--rpg-frame-color, #f1f3f5\)\)\);\s*background-origin:\s*padding-box, border-box, border-box;\s*background-clip:\s*padding-box, border-box, border-box;\s*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);\s*background-repeat:\s*no-repeat, repeat, no-repeat;\s*background-position:\s*0 0, 0 0, 0% 0;/,
   'l’anneau orné empile fond de face, motif et matière, et sans dégradé déclaré la matière est la couleur unie de l’élément');
 assert.match(ringRule, /\.rpg-mulligan__card\[class\*="rpg-card--frame-"\]\s*\{\s*--rpg-frame-fill:\s*#0b0c10;\s*\}[\s\S]*?\.rpg-card-catalogue__art\s*\{\s*--rpg-frame-fill:\s*#171218;\s*\}/,
   'le mulligan et le catalogue gardent leur propre fond sous l’illustration');
@@ -435,13 +441,15 @@ assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*--rpg-frame-
   'au mulligan, la carte mise de côté repeint son anneau en or (la bordure étant transparente, `border-color` ne suffirait plus)');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*border-color:/s,
   'le liseré doré du mulligan ne passe plus par une `border-color` invisible');
-const shineRule = frameCss.slice(frameCss.indexOf('/* ── Cadres brillants'), frameCss.indexOf('/* Braise + Sable'));
-assert.match(shineRule, /\.rpg-card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-hand__card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-terrain\.rpg-card--frame-brillant,[\s\S]*?\.rpg-mulligan__card\.rpg-card--frame-brillant\s*\{\s*animation:\s*rpg-frame-shine-sweep/s,
-  'un cadre brillant n’ajoute que son reflet : la mécanique des couches est celle de tous les cadres, mulligan compris');
+const shineRule = frameCss.slice(frameCss.indexOf('/* ── Cadres brillants'), frameCss.indexOf('/* Hybrides : deux aplats francs'));
+assert.match(shineRule, /\.rpg-card--frame-brillant\s*\{\s*--rpg-frame-material-size:\s*240% 100%;\s*\}/,
+  'seuls les cadres mythiques mono utilisent une matière large pour leur reflet');
+assert.match(shineRule, /\.rpg-card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-hand__card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-terrain\.rpg-card--frame-brillant,[\s\S]*?\.rpg-mulligan__card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-card-catalogue__art\.rpg-card--frame-brillant\s*\{\s*animation:\s*rpg-frame-shine-sweep/s,
+  'un cadre brillant conserve son reflet dans le duel, le mulligan et le catalogue');
 assert.doesNotMatch(shineRule, /linear-gradient\(115deg|background-image/,
   'la mécanique du cadre brillant est partagée : chaque variante ne fournit que son dégradé');
 // Toute combinaison déclarée au catalogue doit exister en CSS : une future
-// carte bicolore obtient son cadre sans retouche du composant. Les couleurs
+// carte multicolore obtient son cadre sans retouche du composant. Les couleurs
 // seules, elles, peignent leur cadre via la variable --rpg-frame-color.
 const { CARD_FRAME_COLORS } = await import('../src/games/rpgCards.js');
 // Le Sable n'est plus blanc : son cadre est un beige de dune — chaud (rouge
@@ -450,27 +458,34 @@ const sableRvb = CARD_FRAME_COLORS.sable.color.match(/^#([0-9a-f]{2})([0-9a-f]{2
 assert.ok(sableRvb[0] > sableRvb[2] + 40 && Math.max(...sableRvb) < 0xe8 && Math.min(...sableRvb) > 0x80,
   `le cadre du Sable est un beige de dune, plus un blanc (reçu : ${CARD_FRAME_COLORS.sable.color})`);
 for (const cle of Object.keys(CARD_FRAME_COLORS).filter((key) => key.startsWith('hybride-'))) {
-  assert.match(battleCss, new RegExp(`\\.rpg-card--frame-${cle}\\s*\\{[^}]*--rpg-frame-gradient:`, 's'),
-    `la combinaison ${cle} a son propre dégradé de cadre`);
+  const colors = cle.replace('hybride-', '').split('-');
+  const stops = colors.map((element) => CARD_FRAME_COLORS[element].color);
+  const rule = frameCss.match(new RegExp(`\\.rpg-card--frame-${cle}\\s*\\{([^}]*)\\}`));
+  assert.ok(rule, `la combinaison ${cle} a son propre cadre`);
+  assert.match(rule[1], /--rpg-frame-gradient:\s*linear-gradient\(135deg,/,
+    `la combinaison ${cle} utilise une diagonale`);
+  assert.ok(stops.every((color) => rule[1].includes(color)),
+    `la combinaison ${cle} montre chaque couleur élémentaire sans les mélanger`);
+  assert.doesNotMatch(rule[1], /animation:|--rpg-frame-material-size:|background-color:/,
+    `la combinaison ${cle} n'ajoute ni balayage ni fond coloré artificiel`);
+  if (colors.length === 2) {
+    assert.match(rule[1], new RegExp(`linear-gradient\\(135deg, ${stops[0]} 50%, ${stops[1]} 50%\\)`),
+      `les deux moitiés de ${cle} se rejoignent sans transition à 50 %`);
+  }
 }
-const shinyVariants = {
-  'hybride-braise-sable': '#ff9a34',
-  'hybride-braise-eau': '#b06ad8',
-  'hybride-eau-sable': '#7fd8e8',
-  'hybride-braise-eau-sable': '#ffb44d',
-};
-for (const [variante, teinte] of Object.entries(shinyVariants)) {
-  assert.match(frameCss,
-    new RegExp(`\\.rpg-card--frame-${variante}\\s*\\{[^}]*--rpg-frame-gradient:\\s*linear-gradient\\(115deg,[^}]*${teinte}`, 's'),
-    `la combinaison ${variante} a son propre dégradé de cadre`);
+const mythicRule = frameCss.slice(frameCss.indexOf('.rpg-card--mythique {'), frameCss.indexOf('/* Les reflets des mythiques mono'));
+const mythicBase = mythicRule.slice(0, mythicRule.indexOf('}'));
+assert.doesNotMatch(mythicBase, /--rpg-frame-gradient|background-color/,
+  'le zellige mythique ne remplace pas la diagonale bicolore');
+for (const [element, teinte] of Object.entries({ braise: '#e0412a', eau: '#3f9fe8', sable: '#d8bc86', neige: '#a9e0f5' })) {
+  assert.match(mythicRule,
+    new RegExp(`\\.rpg-card--mythique\\.rpg-card--frame-${element}\\s*\\{[^}]*--rpg-frame-gradient:\\s*linear-gradient\\(115deg,[^}]*${teinte}`),
+    `la mythique ${element} garde un dégradé lumineux de son élément`);
 }
-const mythicRule = frameCss.slice(frameCss.indexOf('.rpg-card--mythique {'), frameCss.indexOf('/* Filet de sécurité'));
-assert.match(mythicRule, /--rpg-frame-gradient:\s*linear-gradient\(115deg, #2a0a45 0%, #7a2bd0 14%[\s\S]*?#f2e6ff 54%/,
-  'les cartes mythiques portent le cadre violet, quelle que soit leur couleur');
-assert.match(mythicRule, /background-color:\s*#2a0a45;/,
-  'la teinte de repli du cadre mythique suit son dégradé violet');
-assert.doesNotMatch(mythicRule, /#6d4a13|#7d5415|#e8b745/,
-  'l’or et le brun de l’ancien cadre mythique ont disparu');
+assert.doesNotMatch(mythicRule, /#2a0a45|#7a2bd0|#f2e6ff|#f0e2ff/,
+  'l’ancien cadre mythique violet, y compris son motif lilas, a disparu');
+assert.match(mythicRule, /\.rpg-mulligan__card\.is-selected\.rpg-card--mythique,\s*\.rpg-mulligan__card\.is-selected\[class\*="rpg-card--frame-hybride-"\]\s*\{\s*--rpg-frame-gradient:\s*linear-gradient\(#ffd619, #ffd619\);/,
+  'le liseré du mulligan reste jaune sur les mythiques comme sur les hybrides');
 // Le motif est une image encodée dans la feuille : une URI mal échappée ne
 // lèverait aucune erreur, elle ne peindrait simplement rien. On la décode et on
 // la fait relire par un analyseur XML avant d'y croire.
@@ -489,39 +504,81 @@ mythicMotifDom.window.close();
 assert.match(mythicRule, /--rpg-frame-motif-size:\s*12px 12px;/,
   'le motif du cadre mythique se répète tous les 12 px le long de l’anneau');
 assert.match(mythicRule, /--rpg-frame-shine-duration:\s*2\.8s;/,
-  'le reflet violet des mythiques est un peu plus rapide que celui des bicolores');
-assert.ok(frameCss.indexOf('.rpg-card--mythique {') > frameCss.indexOf('.rpg-card--frame-hybride-braise-sable {'),
-  'le cadre violet est déclaré après les combinaisons : une carte mythique ET bicolore garde le violet');
+  'le reflet des mythiques mono-élément garde sa cadence');
 assert.match(frameCss, /\.rpg-hover-card-preview\[class\*="rpg-card--frame-"\],\s*\.rpg-hover-card-preview__face\[class\*="rpg-card--frame-"\]\s*\{\s*background-color:\s*transparent;\s*\}/,
-  'l’aperçu rapide ne garde aucune teinte de repli, ni sur son encadré entier ni derrière l’illustration : le violet du cadre mythique n’y fait plus de fond');
+  'l’aperçu rapide ne garde aucune teinte de repli, ni sur son encadré entier ni derrière l’illustration');
+// Le vernis est réservé à la peinture mythique, indépendamment du cadre. Il
+// suit chaque face visible sans calque DOM ajouté au mulligan, et ne masque ni
+// les repères ni les états de jeu, même sur un appareil à mouvement réduit.
+const glossCss = frameCss.slice(frameCss.indexOf('/* Vernis des illustrations mythiques'), frameCss.indexOf('/* Coût, attaque et défense doivent'));
+for (const face of [
+  '.rpg-card--img.rpg-card--mythique::before',
+  '.rpg-hand__card--img.rpg-card--mythique::before',
+  '.rpg-mulligan__card.rpg-card--mythique::before',
+  '.rpg-hover-card-preview__face.rpg-card--mythique::before',
+  '.rpg-card-catalogue__art.rpg-card--mythique::before',
+  '.rpg-card-guide__example.rpg-card--mythique .rpg-card-guide__art::before',
+  '.rpg-atelier__carte:not(.is-locked) .rpg-atelier__carte-art.rpg-card--mythique::before',
+]) {
+  assert.ok(glossCss.includes(face), `${face} reçoit le reflet de l’illustration mythique`);
+}
+assert.match(glossCss, /content: "";[\s\S]*?z-index: 1;[\s\S]*?pointer-events: none;[\s\S]*?radial-gradient\([\s\S]*?linear-gradient\([\s\S]*?mix-blend-mode: screen;[\s\S]*?animation: rpg-mythic-art-gloss/,
+  'le reflet est peint sur l’image sans bloquer les gestes, et non sur le cadre');
+assert.match(glossCss, /\.rpg-card--mythique:is\(\.is-summoning-sick, \.is-attacked\)::before,[\s\S]*?opacity: \.2;\s*animation: none;/,
+  'le vernis s’atténue quand la créature est fatiguée ou la vignette au quota');
+assert.match(glossCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-card--mythique::before,[\s\S]*?animation: none !important;[\s\S]*?background-position: 0 0, 50% 0 !important;/,
+  'le vernis reste visible sans mouvement quand l’animation est réduite');
+const guideCss = readFileSync(new URL('../src/games/rpg-card-guide.css', import.meta.url), 'utf8');
+assert.match(guideCss, /\.rpg-card-guide__example:is\(\.rpg-card--mythique, \[class\*="rpg-card--frame-hybride-"\]\)\s*\{[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
+  'le guide peint aussi la diagonale bicolore sur les cartes non mythiques');
+assert.match(guideCss, /\.rpg-card-guide__example\.rpg-card--frame-brillant\s*\{\s*animation:\s*rpg-frame-shine-sweep/,
+  'le guide n’anime que les cadres mythiques mono-élément');
+assert.match(guideCss, /\.rpg-card-guide__cost\s*\{\s*position: absolute;\s*z-index: 2;/,
+  'le coût du guide reste au-dessus du reflet de l’illustration');
+{
+  const atelierCss = readFileSync(new URL('../src/games/rpg-deck-atelier.css', import.meta.url), 'utf8');
+  assert.match(atelierCss, /\.rpg-atelier__carte-art\s*\{[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
+    'l’atelier peint lui aussi la diagonale à la bonne taille');
+  const states = new JSDOM(`<!doctype html><style>${battleCss}\n${atelierCss}</style><div class="rpg-battle">
+    <button class="rpg-card rpg-card--img rpg-card--mythique"><img class="rpg-card__img" data-filter="prete"></button>
+    <button class="rpg-card rpg-card--img rpg-card--mythique is-summoning-sick"><img class="rpg-card__img" data-filter="fatiguee"></button>
+    <button class="rpg-card rpg-card--img rpg-card--mythique is-attacked"><img class="rpg-card__img" data-filter="engagee"></button>
+    <div class="rpg-atelier__carte"><div class="rpg-atelier__carte-art rpg-card--mythique"><img data-filter="libre"></div></div>
+    <div class="rpg-atelier__carte is-full"><div class="rpg-atelier__carte-art rpg-card--mythique"><img data-filter="pleine"></div></div>
+    <div class="rpg-atelier__carte is-locked"><div class="rpg-atelier__carte-art rpg-card--mythique"><img data-filter="verrouillee"></div></div>
+  </div>`);
+  const filtre = (etat) => states.window.getComputedStyle(states.window.document.querySelector(`[data-filter="${etat}"]`)).filter;
+  assert.equal(filtre('prete'), 'saturate(1.1) contrast(1.04)', 'la peinture mythique prête gagne un léger relief');
+  assert.match(filtre('fatiguee'), /grayscale\(1\)/, 'le mal d’invocation reste visible sur la mythique');
+  assert.match(filtre('engagee'), /grayscale\(\.5\)/, 'l’engagement reste visible sur la mythique');
+  assert.equal(filtre('libre'), 'saturate(1.1) contrast(1.04)', 'l’atelier vernit la carte mythique libre');
+  assert.match(filtre('pleine'), /brightness\(\.45\)/, 'l’atelier assombrit toujours la mythique au quota');
+  assert.match(filtre('verrouillee'), /grayscale\(\.85\)/, 'l’atelier ne vernit pas la mythique verrouillée');
+  states.window.close();
+}
 // La règle ne suffit pas : l'aperçu porte les classes de cadre sur sa racine ET
 // sur sa face, et chaque variante brillante peint une teinte de repli. On fait
-// donc calculer la cascade réelle de `rpg-battle.css` à jsdom sur la structure
-// que `cardFrameClass` produit pour une mythique (l'Anqa) et pour une bicolore :
-// l'encadré et la face doivent ressortir transparents, la carte en main garder
-// sa teinte. C'est exactement ce qui a laissé passer un encadré brun, puis violet.
+// calculer la cascade réelle de `rpg-battle.css` à jsdom sur une mythique mono,
+// une hybride ordinaire et la même hybride devenue mythique : aucun fond dans
+// l'aperçu, mais la bonne teinte de repli pour chacune en main.
 {
-  const { RPG_DUEL_CARDS: cartesDuel, cardFrameInfo, cardHasMythicFrame, cardHasShinyFrame } = await import('../src/games/rpgCards.js');
-  const classesDeCadre = (carte) => [
-    `rpg-card--frame-${cardFrameInfo(carte).key}`,
-    cardHasShinyFrame(carte) ? 'rpg-card--frame-brillant' : '',
-    cardHasMythicFrame(carte) ? 'rpg-card--mythique' : '',
-  ].filter(Boolean).join(' ');
+  const { RPG_DUEL_CARDS: cartesDuel, cardFrameClass, cardFrameInfo, cardHasMythicFrame } = await import('../src/games/rpgCards.js');
   const anqa = cartesDuel.find((carte) => carte.id === 'anqa-des-braises');
-  const bicolore = cartesDuel.find((carte) => cardFrameInfo(carte).key.startsWith('hybride-'));
+  const bicolore = cartesDuel.find((carte) => cardFrameInfo(carte).key.startsWith('hybride-') && carte.rarity !== 'mythique');
   assert.ok(anqa && cardHasMythicFrame(anqa), 'l’Anqa des braises est bien une mythique du duel');
-  assert.ok(bicolore, 'le duel compte au moins une carte bicolore');
+  assert.ok(bicolore, 'le duel compte au moins une carte bicolore non mythique');
+  const mythiqueHybride = { ...bicolore, rarity: 'mythique' };
   const apercu = (carte, suffixe) => `
-    <aside class="rpg-hover-card-preview rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-creature ${classesDeCadre(carte)}" data-test="racine-${suffixe}">
-      <div class="rpg-hover-card-preview__face ${classesDeCadre(carte)}" data-test="face-${suffixe}"><img alt=""></div>
+    <aside class="rpg-hover-card-preview rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-creature ${cardFrameClass(carte)}" data-test="racine-${suffixe}">
+      <div class="rpg-hover-card-preview__face ${cardFrameClass(carte)}" data-test="face-${suffixe}"><img alt=""></div>
       <div class="rpg-hover-card-preview__details"></div>
     </aside>
-    <div class="rpg-card-peek"><aside class="rpg-hover-card-preview ${classesDeCadre(carte)}" data-test="volet-${suffixe}"></aside></div>
-    <button class="rpg-hand__card rpg-hand__card--img ${classesDeCadre(carte)}" data-test="main-${suffixe}"></button>`;
-  const cascade = new JSDOM(`<!doctype html><html><head><style>${battleCss}</style></head><body>${apercu(anqa, 'mythique')}${apercu(bicolore, 'bicolore')}</body></html>`, { pretendToBeVisual: true });
+    <div class="rpg-card-peek"><aside class="rpg-hover-card-preview ${cardFrameClass(carte)}" data-test="volet-${suffixe}"></aside></div>
+    <button class="rpg-hand__card rpg-hand__card--img ${cardFrameClass(carte)}" data-test="main-${suffixe}"></button>`;
+  const cascade = new JSDOM(`<!doctype html><html><head><style>${battleCss}</style></head><body>${apercu(anqa, 'mythique')}${apercu(bicolore, 'bicolore')}${apercu(mythiqueHybride, 'mythique-hybride')}</body></html>`, { pretendToBeVisual: true });
   const fondDe = (test) => cascade.window.getComputedStyle(cascade.window.document.querySelector(`[data-test="${test}"]`)).backgroundColor;
   const transparent = /^(rgba\(0, 0, 0, 0\)|transparent)$/;
-  for (const suffixe of ['mythique', 'bicolore']) {
+  for (const suffixe of ['mythique', 'bicolore', 'mythique-hybride']) {
     assert.match(fondDe(`racine-${suffixe}`), transparent,
       `l’encadré entier de l’aperçu d’une carte ${suffixe} reste sans fond (reçu : ${fondDe(`racine-${suffixe}`)})`);
     assert.match(fondDe(`face-${suffixe}`), transparent,
@@ -531,8 +588,36 @@ assert.match(frameCss, /\.rpg-hover-card-preview\[class\*="rpg-card--frame-"\],\
     assert.doesNotMatch(fondDe(`main-${suffixe}`), transparent,
       `la carte ${suffixe} en main garde la teinte de repli de son cadre`);
   }
-  assert.equal(fondDe('main-mythique'), 'rgb(42, 10, 69)',
-    'la teinte de repli du cadre mythique en main est le violet profond, plus le brun');
+  assert.equal(fondDe('main-mythique'), 'rgb(98, 24, 13)',
+    'l’Anqa mythique Braise conserve une teinte de repli rouge profond');
+  assert.equal(fondDe('main-mythique-hybride'), fondDe('main-bicolore'),
+    'une mythique hybride conserve la teinte de repli de sa combinaison');
+  const degradeDe = (test) => cascade.window.getComputedStyle(cascade.window.document.querySelector(`[data-test="${test}"]`))
+    .getPropertyValue('--rpg-frame-gradient');
+  assert.match(degradeDe('main-mythique'), /#e0412a/,
+    'le reflet de l’Anqa mythique porte le rouge Braise, pas un violet de rareté');
+  assert.equal(degradeDe('main-mythique-hybride'), degradeDe('main-bicolore'),
+    'la mythique hybride garde exactement la diagonale de sa combinaison');
+  assert.match(degradeDe('main-bicolore'), /linear-gradient\(135deg,\s*#e0412a 50%,\s*#d8bc86 50%\)/,
+    'Braise + Sable montre rouge et beige à parts égales sans transition ni violet');
+  for (const suffixe of ['bicolore', 'mythique-hybride']) {
+    const main = cascade.window.document.querySelector(`[data-test="main-${suffixe}"]`);
+    assert.ok(!main.classList.contains('rpg-card--frame-brillant'),
+      `le cadre de ${suffixe} ne porte pas de reflet animé`);
+    assert.equal(cascade.window.getComputedStyle(main).backgroundSize,
+      '100% 100%, var(--rpg-frame-motif-size, 8px 8px), var(--rpg-frame-material-size, 100% 100%)',
+      'la diagonale remplit toute la surface du cadre à sa taille normale');
+  }
+  const mulliganHybride = cascade.window.document.createElement('button');
+  mulliganHybride.className = `rpg-mulligan__card is-selected ${cardFrameClass(bicolore)}`;
+  cascade.window.document.body.appendChild(mulliganHybride);
+  assert.match(cascade.window.getComputedStyle(mulliganHybride).getPropertyValue('--rpg-frame-gradient'), /#ffd619/,
+    'la sélection du mulligan recouvre la diagonale de l’hybride en jaune');
+  const mulliganChoisi = cascade.window.document.createElement('button');
+  mulliganChoisi.className = `rpg-mulligan__card is-selected ${cardFrameClass(anqa)}`;
+  cascade.window.document.body.appendChild(mulliganChoisi);
+  assert.match(cascade.window.getComputedStyle(mulliganChoisi).getPropertyValue('--rpg-frame-gradient'), /#ffd619/,
+    'une mythique sélectionnée au mulligan garde son cadre jaune de sélection');
   cascade.window.close();
 }
 assert.match(frameCss, /animation:\s*rpg-frame-shine-sweep[^;]*\binfinite alternate;/,
@@ -544,10 +629,12 @@ assert.ok(shinePositions.every((position) => position >= 0 && position <= 100),
   `le reflet reste entre 0 % et 100 % (reçu : ${shinePositions.join(', ')}) — hors de cette plage le dégradé non répété ne couvre plus l'anneau et le cadre redevient noir`);
 assert.match(frameCss, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card--frame-brillant\s*\{\s*animation:\s*none !important;/s,
   'les cadres brillants respectent la préférence de mouvement réduit');
-assert.match(battlePage, /function cardFrameClass\(carte\)[\s\S]*?cardHasShinyFrame\(carte\)[\s\S]*?rpg-card--frame-brillant[\s\S]*?cardHasMythicFrame\(carte\)[\s\S]*?rpg-card--mythique/,
-  'la même fabrique de classe ajoute le cadre brillant et le cadre violet des mythiques');
+assert.match(cardsSource, /export function cardFrameClass\(carte\)[\s\S]*?cardHasShinyFrame\(carte\)[\s\S]*?rpg-card--frame-brillant[\s\S]*?cardHasMythicFrame\(carte\)[\s\S]*?rpg-card--mythique/,
+  'la même fabrique de classe ajoute le reflet et le zellige aux mythiques sans changer leur couleur');
 assert.match(battlePage, /function cardFrameStyle\(carte\)[\s\S]*?cardFrameColor\(carte\)/,
-  'la couleur de cadre transmise tient compte du violet mythique');
+  'le duel utilise la couleur du cadre définie par le catalogue');
+assert.match(battlePage, /rpg-card-catalogue__art \$\{cardFrameClass\(carte\)\}/,
+  'les cadres du catalogue reprennent les dégradés et reflets des cartes du duel');
 assert.doesNotMatch(battleCss, /\.rpg-card__flames|rpg-mythic-flame/,
   'l’effet de flammes autour des cartes mythiques a été retiré');
 assert.doesNotMatch(battlePage, /rpg-card__flames|MYTHIC_FLAME_TONGUES|cardHasMythicFlames|rpg-card--mythic-braise/,
@@ -1055,7 +1142,7 @@ assert.doesNotMatch(mobileCss, /grid-template-columns: repeat\(var\(--hand-count
 
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
-  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, beige Sable, rouge Braise, violet mythique, dégradé bicolore), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
+  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, beige Sable, rouge Braise, bleu glacé Neige, mythiques mono brillantes de leurs couleurs, hybrides à deux aplats diagonaux sans reflet), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '

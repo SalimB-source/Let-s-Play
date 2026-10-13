@@ -139,17 +139,25 @@ Les raretés sont **celles de Magic** — commune, inhabituelle, rare, mythique
 (`CARD_UNIQUE_RARITIES`) ne se joue qu'en **un exemplaire** ; les autres cartes
 non-terrain restent limitées à trois, les terrains illimités (`cardCopyLimit`).
 Dans le set Neige, les quatre figures du Nord sont mythiques — comme tous les
-héros du jeu — et portent donc le cadre violet orné de zelliges ; les autres
-cartes du set sont rares ou moins, avec le cadre de leur couleur
-(`CARD_FRAME_COLORS` : rouge Braise, bleu Eau, beige de dune pour le Sable, bleu
-clair Neige). Tous les cadres sont des **anneaux ornés** (`rpg-battle.css`,
-« Cadres ornés ») : la couleur y est peinte sous une résille de losanges gravée,
-faite seulement d'ombre et de reflet pour se lire sur toute couleur ; les
-bicolores y font courir leur dégradé, la mythique y pose son zellige. Leur
+héros du jeu — et portent un cadre **bleu glacé brillant**, orné de zelliges.
+Chaque mythique conserve la couleur de sa carte (`CARD_FRAME_COLORS` : rouge
+Braise, bleu Eau, beige de dune pour le Sable, bleu clair Neige). Tous les cadres
+sont des **anneaux ornés** (`rpg-battle.css`, « Cadres ornés ») : la couleur y est
+peinte sous une résille de losanges gravée. Les **hybrides** ont deux moitiés
+d'aplats élémentaires séparées en diagonale (Braise rouge et Sable beige, par
+exemple), **sans fond brillant ni balayage animé**, sur la table, en main, dans
+le mulligan, le catalogue, le guide et l'atelier. Les combinaisons futures à
+trois ou quatre couleurs auront autant de bandes diagonales. Seules les
+**mythiques mono-élément** ajoutent au cadre leur zellige et un reflet animé ;
+une mythique hybride garde le zellige mais pas le balayage du cadre. Leur
 épaisseur suit la largeur de la carte, dans l'esprit d'une carte Magic (≈ 3,5 %,
-trois gabarits `--rpg-card-border*`). Ce cadre ne déborde jamais sur l'aperçu
-rapide : au survol comme à l'appui long, l'encadré reste sans fond,
-l'illustration flotte sur la table (voir `mobile-layout.md`).
+trois gabarits `--rpg-card-border*`). Les **illustrations mythiques** portent
+aussi un vernis léger : une lumière douce et un reflet mobile sur la peinture,
+sous les repères de jeu. Il reste fixe si le mouvement est réduit et s'atténue
+sur une créature fatiguée ; une carte verrouillée dans l'atelier reste grisée.
+Ce cadre ne déborde jamais sur l'aperçu rapide : au survol comme à l'appui long,
+l'encadré reste sans fond, l'illustration flotte sur la table (voir
+`mobile-layout.md`).
 
 ## Vérifications
 
