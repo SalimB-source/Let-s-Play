@@ -349,6 +349,42 @@ function mesurerDestinationVol(table, kind, from, carteId) {
   };
 }
 
+/* L'aperçu au survol se colle à la carte survolée. Plutôt que d'estimer la
+   taille du panneau (680 × 400, toujours fausse : le vrai panneau varie avec
+   la carte lue), on le laisse se rendre puis on le repose d'après sa **boîte
+   réelle**. La boîte inclut le rembourrage du panneau : on retire cette marge
+   intérieure, pour que ce soit la face — pas le bord du panneau — qui se
+   colle à la carte. Le panneau choisit le côté qui a la place, à droite
+   d'abord ; si son bord déborderait de la fenêtre, il bascule à gauche. En
+   hauteur, le haut de la face s'aligne sur celui de la carte, et le panneau
+   remonte si son bas déborde. */
+function placerApercuSurvol(rectangle, panneau) {
+  const largeurVue = Math.max(1, window.innerWidth || document.documentElement?.clientWidth || 1024);
+  const hauteurVue = Math.max(1, window.innerHeight || document.documentElement?.clientHeight || 768);
+  const marge = 10;
+  const espace = 12;
+  const boite = panneau?.getBoundingClientRect?.();
+  const largeur = boite?.width || panneau?.offsetWidth || Math.min(680, Math.max(180, largeurVue - 20));
+  const hauteur = boite?.height || panneau?.offsetHeight || Math.min(400, Math.max(150, hauteurVue - 20));
+  const stylePanneau = panneau && typeof window.getComputedStyle === 'function' ? window.getComputedStyle(panneau) : null;
+  const lireMargeInterieure = (propriete) => {
+    const valeur = Number.parseFloat(stylePanneau?.[propriete] ?? '');
+    return Number.isFinite(valeur) ? valeur : 0;
+  };
+  const margeGauche = lireMargeInterieure('paddingLeft');
+  const margeDroite = lireMargeInterieure('paddingRight');
+  const margeHaute = lireMargeInterieure('paddingTop');
+  let left = rectangle.right + espace - margeGauche;
+  if (left + largeur > largeurVue - marge) {
+    left = rectangle.left - largeur - espace + margeDroite;
+  }
+  left = Math.max(marge, Math.min(left, Math.max(marge, largeurVue - largeur - marge)));
+  let top = rectangle.top - margeHaute;
+  if (top + hauteur > hauteurVue - marge) top = hauteurVue - marge - hauteur;
+  top = Math.max(marge, Math.min(top, Math.max(marge, hauteurVue - hauteur - marge)));
+  return { left: `${left}px`, top: `${top}px` };
+}
+
 function ManaCost({ carte, compact = false, showElement = true }) {
   if (!carte || carte.kind === 'terrain') return null;
   const colors = cardColors(carte);
@@ -936,7 +972,7 @@ function BlockerArrows({ tableRef, assignments }) {
   );
 }
 
-function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null }) {
+function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
@@ -978,6 +1014,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   );
   return (
     <aside
+      ref={panelRef}
       className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
       aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
@@ -1096,7 +1133,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
 }
 
 function VoletMulligan({
-  main, etape, choix, nouveau, bilan, apercu, survol,
+  main, etape, choix, nouveau, bilan, apercu, survol, panelRef = null,
   onBasculer, onValider, onAnnulerSelection, onContinuer, onSurvol, onQuitterSurvol,
 }) {
   const nombre = choix.size;
@@ -1165,6 +1202,7 @@ function VoletMulligan({
         <HoverCardPreview
           carte={cardById(apercu.carteId)}
           style={apercu.style}
+          panelRef={panelRef}
           variante="mulligan"
         />
       )}
@@ -2479,6 +2517,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // que l'échange est validé (ou impossible) : la partie est à lui.
   const [mulligan, setMulligan] = useState(null);
   const [apercuSurvol, setApercuSurvol] = useState(null);
+  // Le panneau de l'aperçu au survol — celui du duel comme celui du
+  // mulligan : sa boîte réelle sert à le coller à la carte survolée, reposé
+  // avant peinture par `placerApercuSurvol`.
+  const panelRef = useRef(null);
   const [carteGlissee, setCarteGlissee] = useState(null);
   const [surZoneDepot, setSurZoneDepot] = useState(false);
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
@@ -2891,26 +2933,37 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const afficherApercuSurvol = (carte, event) => {
     if (!carte || !event?.currentTarget) return;
     const rectangle = event.currentTarget.getBoundingClientRect();
-    const largeurVue = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1024);
-    const hauteurVue = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 768);
-    const largeurApercu = Math.min(680, Math.max(180, largeurVue - 20));
-    const hauteurApercu = Math.min(400, Math.max(150, hauteurVue - 20));
-    const marge = 10;
-    const espace = 12;
-    let left = rectangle.right + espace;
-    if (left + largeurApercu > largeurVue - marge) left = rectangle.left - largeurApercu - espace;
-    left = Math.max(marge, Math.min(left, largeurVue - largeurApercu - marge));
-    let top = rectangle.top + rectangle.height > hauteurVue * .56
-      ? rectangle.top - hauteurApercu - espace
-      : rectangle.bottom + espace;
-    top = Math.max(marge, Math.min(top, hauteurVue - hauteurApercu - marge));
+    // Première pose, au bord de la carte : le panneau n'existe pas encore,
+    // sa taille est inconnue. L'effet de mise en page ci-dessous le repose
+    // d'après sa boîte réelle, avant la première peinture.
     setApercuSurvol({
       carteId: carte.id,
-      style: { left: `${left}px`, top: `${top}px` },
+      rectangle: {
+        left: rectangle.left,
+        right: rectangle.right,
+        top: rectangle.top,
+        bottom: rectangle.bottom,
+        width: rectangle.width,
+        height: rectangle.height,
+      },
+      style: { left: `${rectangle.right + 12}px`, top: `${rectangle.top}px` },
     });
     if (!viewport.mobile) jouerSfx('hover');
   };
   const masquerApercuSurvol = () => setApercuSurvol(null);
+
+  // Reposé avant peinture : dès que le panneau de l'aperçu est rendu, sa
+  // boîte réelle remplace la première pose et le colle à la carte survolée —
+  // le joueur ne voit jamais l'aperçu sauter d'une place à l'autre.
+  useLayoutEffect(() => {
+    if (!apercuSurvol?.rectangle || !panelRef.current) return;
+    const style = placerApercuSurvol(apercuSurvol.rectangle, panelRef.current);
+    setApercuSurvol((current) => {
+      if (!current?.rectangle) return current;
+      if (current.style?.left === style.left && current.style?.top === style.top) return current;
+      return { ...current, style };
+    });
+  }, [apercuSurvol]);
 
   // ── L'aperçu au doigt : appui long d'une seconde sur une carte ────────────
   const annulerAppuiLong = () => {
@@ -3140,6 +3193,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             style={apercuSurvol.style}
+            panelRef={panelRef}
           />
         )}
         {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
@@ -5224,6 +5278,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             style={apercuSurvol.style}
+            panelRef={panelRef}
           />
         )}
         {apercuMagie && (
@@ -5304,6 +5359,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           bilan={mulligan.bilan}
           apercu={apercuSurvol}
           survol={viewport.survol}
+          panelRef={panelRef}
           onBasculer={basculerCarteMulligan}
           onValider={validerMulligan}
           onAnnulerSelection={viderSelectionMulligan}

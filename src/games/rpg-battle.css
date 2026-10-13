@@ -28,23 +28,24 @@
 
 /* ── Cadres responsive : l'épaisseur suit la carte, dans l'esprit d'une carte
    Magic. Le bord d'une carte Magic fait ≈ 2,8 mm sur 63 mm de large (≈ 4,5 %) ;
-   les cadres du Sablier visent un peu moins, ≈ 3,5 % de la largeur, pour laisser
-   respirer l'illustration — et comme les cartes sont dimensionnées en `vw`, le
-   cadre l'est aussi pour les suivre. Trois gabarits, chacun calé sur la largeur
-   des cartes qu'il habille :
+   les cadres du Sablier visent ce poids, ≈ 4,5 % de la largeur — bien
+   présents pour porter la couleur de l'élément, sans manger l'illustration —
+   et comme les cartes sont dimensionnées en `vw`, le cadre l'est aussi pour
+   les suivre. Trois gabarits, chacun calé sur la largeur des cartes qu'il
+   habille :
    - normal : cartes en main (104–136 px) et sur la table (108–146 px), atelier ;
    - grand : face de l'aperçu rapide (190–232 px), catalogue et mulligan
      (≈ 180–270 px) — l'aperçu est une carte agrandie, son cadre grandit avec ;
    - petit : terrains (74–96 px), dessus des piles et vignette de magie jouée.
-   Au doigt, `rpg-mobile.css` garde son gabarit normal (`clamp(2.5px, 0.9vw,
-   4px)` : des cartes plus petites, au bord déjà proportionnellement plus
+   Au doigt, `rpg-mobile.css` garde son gabarit normal (`clamp(2.5px, 1.1vw,
+   5px)` : des cartes plus petites, au bord déjà proportionnellement plus
    épais) ; les deux autres suivent le `vw` et tombent d'eux-mêmes à leur
    plancher. */
 .rpg-battle {
-  --rpg-card-border: clamp(3.5px, 0.36vw, 5px);
-  --rpg-card-border-large: clamp(5px, 0.55vw, 6.5px);
-  --rpg-card-border-small: clamp(3px, 0.26vw, 3.5px);
-  --rpg-card-border-strong: clamp(4px, 0.45vw, 5.5px);
+  --rpg-card-border: clamp(4.5px, 0.48vw, 6px);
+  --rpg-card-border-large: clamp(6px, 0.68vw, 8px);
+  --rpg-card-border-small: clamp(4px, 0.34vw, 4.25px);
+  --rpg-card-border-strong: clamp(5px, 0.58vw, 6.5px);
   --rpg-card-radius: clamp(6px, 0.9vw, 12px);
   --rpg-card-radius-sm: clamp(5px, 0.7vw, 8px);
 }
@@ -3375,7 +3376,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__face {
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
-  --rpg-card-element-marker-size: clamp(16px, 18%, 23px);
+  /* La face de l'aperçu rapide est une grande face, comme au catalogue : sa
+     pastille de couleur suit la même échelle (28–38 px, glyphe 19 px, liseré
+     2 px) au lieu du petit repère des cartes en jeu. */
+  --rpg-card-element-marker-size: clamp(28px, 17%, 38px);
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
@@ -3387,6 +3391,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 3px 10px rgba(0, 0, 0, .25);
 }
 .rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.rpg-hover-card-preview__face .rpg-card-element-badge {
+  border-width: 2px;
+  font-size: 19px;
+}
+.rpg-hover-card-preview__face .rpg-card-element-badge__pip {
+  border-width: 2px;
+}
 .rpg-hover-card-preview__details {
   display: grid;
   align-content: center;
@@ -6064,12 +6075,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* À la souris, la table agrandie agrandit aussi les repères imprimés sur ses
    cartes — coût, attaque, défense et pastille d'élément. La main garde son
    échelle : ses cartes n'ont pas changé de taille. Les icônes d'arme et de
-   bouclier suivent la taille de la police (1em). */
+   bouclier suivent la taille de la police (1em). Le disque de mana des cartes
+   posées reste un disque : une boîte carrée de 30 px, jamais l'ellipse que
+   dessinaient `min-width: 36px` et `height: 25px`. */
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-mana-cost.is-compact {
-  min-width: 36px;
-  height: 25px;
-  padding: 3px 5px;
-  font-size: 13px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 15px;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card__stat--atk,
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card__pt {
@@ -6078,7 +6094,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font-size: 15.5px;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img {
-  --rpg-card-element-marker-size: clamp(18px, 18%, 30px);
+  --rpg-card-element-marker-size: 30px;
+}
+/* La pastille de couleur prend la taille du disque de mana : 30 px sur la
+   table, comme lui, avec son glyphe de 15 px et un liseré de 2 px — les deux
+   repères ronds de la face se lisent d'un même coup d'œil. Dans la main, le
+   disque fait 28 px : la pastille le suit, bornée à 30 % de la carte pour ne
+   pas couvrir les petites faces. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card-element-badge {
+  border-width: 2px;
+  font-size: 15px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card-element-badge__pip {
+  border-width: 2px;
+}
+.rpg-hand__card--img .rpg-card-element-badge {
+  --rpg-card-element-marker-size: min(28px, 30%);
+  border-width: 2px;
+  font-size: 15px;
+}
+.rpg-hand__card--img .rpg-card-element-badge__pip {
+  border-width: 2px;
 }
 
 /* Mobile / WebView : le mouvement horizontal parcourt les cartes, le
