@@ -1418,10 +1418,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       || (catalogueCouleur === 'hybride' ? colors.length > 1 : colors.includes(catalogueCouleur));
     return couleurCorrespond && (catalogueType === 'tous' || carte.kind === catalogueType);
   });
-  const imageForDeck = (deck) => {
-    const cardId = deck?.cardIds.find((id) => cardById(id)?.kind !== 'terrain') ?? deck?.cardIds[0];
-    return cardId ? cardArt(cardId) : '';
-  };
   // La tour ouverte dans le mode Histoire (page d'étages), ou null (galerie).
   const tourOuverte = tourOuverteId ? tourHistoireParId(tourOuverteId) : null;
   const resumeTourOuverte = tourOuverte ? resumeTourHistoire(tourOuverte.id, progressionHistoire) : null;
@@ -1551,7 +1547,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
 
         {screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
-            <section className="rpg-mode-menu__hero" style={{ '--rpg-menu-card-art': `url("${imageForDeck(playerDeck)}")` }}>
+            {/* Pas de fond : le titre et les boutons posent sur le décor de la page. */}
+            <section className="rpg-mode-menu__hero">
               {/* Effet visuel thématique : grains de sable qui tombent */}
               <div className="rpg-sand-fx" aria-hidden="true">
                 {Array.from({ length: 18 }).map((_, i) => (
@@ -1607,6 +1604,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 </div>
               </div>
               <div className="rpg-mode-menu__hero-mark" aria-hidden="true">باب</div>
+              {/* Le halo doré reste : simple lumière, pas un fond. */}
               <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
             </section>
           </main>
