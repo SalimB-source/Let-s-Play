@@ -1,3 +1,9 @@
+/* Les noms d'effets (Tenacité, Rapidité, Furie 3…) se détachent en gras. */
+.rpg-card-rules__effet {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 /* Les symboles de mana restent alignés et lisibles dans tous les textes de carte. */
 .rpg-card-rules__mana {
   display: inline-block;

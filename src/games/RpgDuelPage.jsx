@@ -1170,7 +1170,7 @@ function ConfirmationSort({ carte, onConfirmer, onAnnuler }) {
         <p className="rpg-spell-confirm__type">{cardFaceTypeLine(carte)}</p>
         <div className="rpg-spell-confirm__rules" aria-label="Effets">
           {effets.length
-            ? effets.map((ligne, index) => <span key={`${index}-${ligne}`}>{ligne}</span>)
+            ? effets.map((ligne, index) => <span key={`${index}-${ligne}`}><RpgCardRules carte={carte} text={ligne} /></span>)
             : <span>Aucune capacité.</span>}
         </div>
         <div className="rpg-spell-confirm__actions">
@@ -1200,7 +1200,7 @@ function SpellAnnouncement({ annonce }) {
       <div className="rpg-spell-played__details">
         <span className="rpg-spell-played__eyebrow">MAGIE JOUÉE</span>
         <strong>{carte.name}</strong>
-        <p>{carte.text}</p>
+        <p><RpgCardRules carte={carte} /></p>
         <div className="rpg-spell-played__target">
           {(annonce.cible.illustrationUrl || annonce.cible.illustrationId)
             ? <img src={annonce.cible.illustrationUrl ?? cardArt(annonce.cible.illustrationId)} alt="" />
