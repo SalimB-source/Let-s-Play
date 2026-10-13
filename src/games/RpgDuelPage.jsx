@@ -1956,8 +1956,8 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   useEffect(() => {
     if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive) {
       if (phaseDuelActive === 'combat') jouerSfx('phase');
-      else if (phaseDuelActive === 'reponse') jouerSfx('annonce');
-      else if (phaseDuelActive === 'principal' || phaseDuelActive === 'adverse') jouerSfx('tour');
+      else if (phaseDuelActive === 'reponse') jouerSfx('page_turn');
+      else if (phaseDuelActive === 'principal' || phaseDuelActive === 'adverse') jouerSfx('page_turn');
     }
     prevPhaseRef.current = phaseDuelActive;
   }, [phaseDuelActive]);
@@ -2580,7 +2580,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     carteGlisseeRef.current = null;
     clicApresGlisserRef.current = false;
     jouerSfx('apparition');
-    jouerSfx('tour', 0.35);
+    jouerSfx('page_turn', 0.35);
     force();
   };
 
@@ -2631,7 +2631,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     masquerApercuSurvol();
     // Le volet se ferme après le choix ; le duel reprend sur la table.
     setMulligan(null);
-    jouerSfx('tour', 0.25);
+    jouerSfx('page_turn', 0.25);
     force();
   };
 
@@ -4050,7 +4050,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const finDuTour = () => {
     if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
-    jouerSfx('tour');
+    jouerSfx('page_turn');
     invaliderAnnulation();
     setPhase(false);
     setAttaquants([]);
