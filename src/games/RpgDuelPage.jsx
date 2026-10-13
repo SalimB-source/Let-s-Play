@@ -1821,9 +1821,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <span className={openValidation.ok ? 'is-valid' : 'is-invalid'}><b>{openValidation.ok ? '✓' : '!'}</b><small>{openValidation.ok ? 'validé' : (openValidation.raisons ?? [openValidation.raison]).filter(Boolean).join(' · ')}</small></span>
                 </div>
                 <div className="rpg-deck-detail__list-heading"><h3>Liste des cartes</h3><span>{openCards.length} références · quantités incluses</span></div>
-                <ul className="rpg-deck-list">
+                <ul
+                  className="rpg-deck-list"
+                  // La liste défile : un aperçu ouvert sous une souris immobile
+                  // désignerait la mauvaise ligne à mesure que les cartes glissent.
+                  onScroll={onLeaveHoverCard}
+                >
                   {openCards.map(({ carte, count }) => (
-                    <li key={carte.id} data-card-id={carte.id}>
+                    <li key={carte.id} data-card-id={carte.id}
+                      onMouseEnter={(event) => onHoverCard?.(carte, event)}
+                      onMouseLeave={onLeaveHoverCard}>
                       <img src={cardArt(carte)} alt="" />
                       <span><strong>{carte.name}</strong><small>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
                       <b>×{count}</b>

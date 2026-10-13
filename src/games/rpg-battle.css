@@ -4234,8 +4234,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   backdrop-filter: blur(10px);
 }
 .rpg-mode-menu__switch button {
-  min-width: 92px;
-  padding: 10px 15px;
+  min-width: 76px;
+  padding: 10px 12px;
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
@@ -4729,9 +4729,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-deck-detail__list-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 16px 0 8px; }
 .rpg-deck-detail__list-heading h3 { margin: 0; color: #f3dfb4; font: 700 14px/1 Georgia, serif; }
 .rpg-deck-detail__list-heading span { color: rgba(244, 233, 214, .64); font: 8px/1.2 var(--mono, monospace); text-align: right; }
-.rpg-deck-list { max-height: min(29vh, 270px); overflow: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; margin: 0; padding: 0 5px 0 0; list-style: none; scrollbar-color: rgba(226, 187, 111, .45) rgba(15, 13, 16, .6); }
-.rpg-deck-list li { min-width: 0; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 4px 0; border-bottom: 1px solid rgba(240, 226, 204, .08); }
-.rpg-deck-list img { width: 30px; height: 40px; object-fit: cover; border: 1px solid rgba(220, 194, 144, .37); border-radius: 3px; }
+.rpg-deck-list { max-height: min(29vh, 270px); overflow: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; margin: 0; padding: 0; list-style: none; scrollbar-color: rgba(226, 187, 111, .45) rgba(15, 13, 16, .6); }
+.rpg-deck-list li { min-width: 0; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 4px 6px; border-bottom: 1px solid rgba(240, 226, 204, .08); border-radius: 4px; transition: background-color .14s ease, box-shadow .14s ease; }
+/* Survoler une ligne convoque l'aperçu grand format de la carte : la ligne
+   s'allume pour montrer qu'elle est la source de cet aperçu. */
+.rpg-deck-list li:hover { background: rgba(226, 187, 111, .1); box-shadow: inset 0 0 0 1px rgba(226, 187, 111, .22); }
+.rpg-deck-list li:hover strong { color: #ffe8b6; }
+.rpg-deck-list img { width: 30px; height: 40px; object-fit: cover; border: 1px solid rgba(220, 194, 144, .37); border-radius: 3px; transition: transform .14s ease, border-color .14s ease; }
+.rpg-deck-list li:hover img { transform: scale(1.06); border-color: rgba(233, 203, 143, .62); }
 .rpg-deck-list li > span { min-width: 0; display: grid; gap: 3px; }
 .rpg-deck-list li strong { overflow: hidden; color: rgba(248, 239, 222, .92); font: 700 9px/1.2 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
 .rpg-deck-list li small { overflow: hidden; color: rgba(237, 220, 190, .68); font: 7px/1.2 var(--mono, monospace); text-overflow: ellipsis; white-space: nowrap; }
