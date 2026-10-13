@@ -44,7 +44,6 @@ import RpgStoryJournal from './RpgStoryJournal.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante } from './rpgCollection.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
-import { RpgPlateauMusic } from './rpgPlateauMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
@@ -2134,20 +2133,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // restent disponibles dans tous les duels. Les deux lecteurs partagent le
   // même réglage et sont libérés au démontage.
   const musiqueRef = useRef(null);
-  const musiquePlateauRef = useRef(null);
   const sfxRef = useRef(null);
   const [sonActif, setSonActif] = useState(readRpgSoundPref);
   useEffect(() => { writeRpgSoundPref(sonActif); }, [sonActif]);
   useEffect(() => {
     musiqueRef.current = new RpgAmbientMusic();
-    musiquePlateauRef.current = new RpgPlateauMusic();
     sfxRef.current = new RpgAudioPlayer();
     sfxRef.current.setMuted(!sonActif);
     return () => {
       musiqueRef.current?.destroy();
       musiqueRef.current = null;
-      musiquePlateauRef.current?.destroy();
-      musiquePlateauRef.current = null;
       sfxRef.current?.destroy();
       sfxRef.current = null;
     };
@@ -2155,7 +2150,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     sfxRef.current?.setMuted(!sonActif);
     musiqueRef.current?.setMuted(!sonActif);
-    musiquePlateauRef.current?.setMuted(!sonActif);
   }, [sonActif]);
   // La tour de l'étage en cours commande la boucle (null : duel libre).
   const lectureHistoire = ecran === 'recit' || ecran === 'journal';
@@ -2169,27 +2163,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif) musique.start();
     else musique.stop();
   }, [ecran, lectureHistoire, tourHistoireId, sonActif]);
-  useEffect(() => {
-    const musique = musiquePlateauRef.current;
-    if (!musique) return;
-    musique.setPlateau(plateauId);
-    if (ecran === 'partie' && sonActif) musique.start();
-    else musique.stop();
-  }, [plateauId, ecran, sonActif]);
   // Un onglet mis de côté ne laisse pas la boucle tourner dans le vide ;
   // au retour, elle reprend où le duel en est.
   useEffect(() => {
     const surVisibilite = () => {
       const musique = musiqueRef.current;
-      if (musique) {
-        if (document.hidden) musique.pause();
-        else if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif) musique.resume();
-      }
-      const musiquePlateau = musiquePlateauRef.current;
-      if (musiquePlateau) {
-        if (document.hidden) musiquePlateau.pause();
-        else if (ecran === 'partie' && sonActif) musiquePlateau.resume();
-      }
+      if (!musique) return;
+      if (document.hidden) musique.pause();
+      else if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif) musique.resume();
     };
     document.addEventListener('visibilitychange', surVisibilite);
     return () => document.removeEventListener('visibilitychange', surVisibilite);
