@@ -1,8 +1,8 @@
 /**
  * Le Sablier — les objets posés sur la table, en vraie 3D.
  *
- * La lanterne, la gourde, la corde, les galets et le bol de cuivre ne sont
- * plus peints dans le plateau : la peinture « vide » (`plaque`) les a perdus
+ * La lanterne, la gourde, la corde, les galets, le bol de cuivre, les amas de
+ * cristaux ne sont plus peints dans le plateau : la peinture « vide » (`plaque`) les a perdus
  * et ce fichier les reconstruit en géométrie, avec leur ombre et leur reflet.
  * Pas de GLB ni de texture distante : tout est procédural, comme les tours du
  * mode Histoire, et se construit sous Node (aucun `document` ici).
@@ -212,12 +212,56 @@ function buildLantern(env) {
   return group;
 }
 
+/**
+ * Un amas de cristaux (améthyste, rubis) : des prismes hexagonaux à pointe
+ * facettée, rayonnant depuis un même pied et couchés vers l'extérieur comme dans
+ * la peinture. Le pied est à l'origine, le grand axe de l'amas suit +Y ;
+ * `extent` est la portée à plat du plus long cristal. Un léger éclat pulse
+ * (`updateTableObject`) : ces pierres brillent dans l'obscurité des galeries.
+ */
+function buildCrystalCluster(env, { kind, color, glow, seed }) {
+  const random = seededRandom(seed);
+  const group = new THREE.Group();
+  const gems = [];
+  // Azimut (degrés autour de l'axe de l'amas), portée à plat, rayon, élévation.
+  const fan = [
+    [-52, 0.58, 0.075, 18], [-31, 0.78, 0.09, 22], [-12, 0.94, 0.105, 27],
+    [6, 1, 0.115, 31], [24, 0.84, 0.095, 24], [43, 0.64, 0.08, 20], [60, 0.46, 0.065, 17],
+    [-2, 0.62, 0.075, 42],
+  ];
+  const material = new THREE.MeshPhysicalMaterial({
+    name: kind, color, emissive: glow, emissiveIntensity: 0.4, roughness: 0.22, metalness: 0,
+    clearcoat: 0.5, clearcoatRoughness: 0.12, envMap: env, envMapIntensity: 0.55, flatShading: true,
+  });
+  gems.push(material);
+  fan.forEach(([azimuth, reach, radius, elevation], index) => {
+    const rise = (elevation * Math.PI) / 180;
+    const length = reach / Math.cos(rise); // la portée à plat est `reach`
+    const body = length * (0.74 + random() * 0.08);
+    const fat = radius * 1.3; // des cristaux trapus, comme dans la peinture
+    const profile = [[0.001, 0], [fat * 0.82, 0], [fat, length * 0.05], [fat, body], [fat * 0.55, body + (length - body) * 0.45], [0.001, length]];
+    const geometry = lathe(profile, 6);
+    geometry.rotateY(random() * Math.PI); // les facettes ne sont pas toutes alignées
+    const crystal = mesh(geometry, material, 'cristal');
+    const pivot = new THREE.Group();
+    pivot.rotation.z = (-azimuth * Math.PI) / 180; // 0° = vers +Y ; positif = vers la droite
+    crystal.rotation.x = rise; // +Y bascule vers +Z : le cristal se lève
+    crystal.position.z = radius * 1.2 + index * 0.0005;
+    pivot.add(crystal);
+    group.add(pivot);
+  });
+  group.userData = { kind, extent: 1, gems, glowBase: 0.4 };
+  return group;
+}
+
 const BUILDERS = Object.freeze({
   bol: buildBowl,
   galets: buildPebbles,
   corde: buildRope,
   gourde: buildWaterskin,
   lanterne: buildLantern,
+  amethyste: (env) => buildCrystalCluster(env, { kind: 'amethyste', color: '#7f3fc4', glow: '#3a1470', seed: 417 }),
+  rubis: (env) => buildCrystalCluster(env, { kind: 'rubis', color: '#a6132c', glow: '#5a0612', seed: 913 }),
 });
 
 export const RPG_TABLE_OBJECT_KINDS = Object.freeze(Object.keys(BUILDERS));
@@ -228,9 +272,15 @@ export function createTableObject(kind, env = null) {
   return build ? build(env) : null;
 }
 
-/** L'animation d'un objet à l'instant `t` (secondes) : seule la lanterne vit. */
+/** L'animation d'un objet à l'instant `t` (secondes) : la lanterne vacille, les cristaux scintillent. */
 export function updateTableObject(group, t, phase = 0) {
-  const { flame, lamp } = group.userData;
+  const { flame, lamp, gems, glowBase } = group.userData;
+  // Les cristaux : un éclat lent, déphasé d'un amas à l'autre.
+  if (gems) {
+    const shimmer = 1 + Math.sin(t * 0.9 + phase) * 0.22 + Math.sin(t * 2.3 + phase * 2) * 0.08;
+    for (const material of gems) material.emissiveIntensity = glowBase * shimmer;
+    return;
+  }
   if (!flame || !lamp) return;
   const flicker = Math.sin(t * 8.3 + phase) * 0.5 + Math.sin(t * 13.9 + phase * 2) * 0.3 + Math.sin(t * 3.1 + phase * 3) * 0.2;
   lamp.intensity = 0.9 * (1 + flicker * 0.18);

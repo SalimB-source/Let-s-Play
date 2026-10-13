@@ -195,7 +195,7 @@ test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »'
     const size = jpegSize(file);
     assert.ok(size && Math.abs(size.width / size.height - 1.5) < 0.01, `${id} : plaque en 3:2 comme la peinture (${JSON.stringify(size)})`);
     assert.ok(size.width <= 2048, `${id} : plaque bornée à 2048 px (c'est la taille de texture maximale)`);
-    assert.ok(theme.objets.length <= 8, `${id} : au plus huit objets`);
+    assert.ok(theme.objets.length <= 10, `${id} : au plus dix objets`);
     for (const objet of theme.objets) {
       assert.ok(RPG_TABLE_OBJECT_KINDS.includes(objet.kind), `${id} : genre ${objet.kind} connu`);
       assert.ok(objet.u >= 0 && objet.u <= 1 && objet.v >= 0 && objet.v <= 1, `${id}/${objet.kind} : dans l'image`);
@@ -208,7 +208,7 @@ test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »'
 
 test('chaque objet se construit sous Node, posé au sol, borné et sans valeur invalide', () => {
   assert.equal(createTableObject('licorne'), null);
-  assert.deepEqual([...RPG_TABLE_OBJECT_KINDS].sort(), ['bol', 'corde', 'galets', 'gourde', 'lanterne']);
+  assert.deepEqual([...RPG_TABLE_OBJECT_KINDS].sort(), ['amethyste', 'bol', 'corde', 'galets', 'gourde', 'lanterne', 'rubis']);
   let triangles = 0;
   for (const kind of RPG_TABLE_OBJECT_KINDS) {
     const group = createTableObject(kind);
