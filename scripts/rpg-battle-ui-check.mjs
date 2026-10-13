@@ -311,7 +311,7 @@ assert.match(battleCss, /\.rpg-turn-rail \.rpg-btn\s*\{[^}]*pointer-events:\s*au
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \.rpg-btn:disabled\s*\{\s*pointer-events:\s*none;\s*\}/,
   'sur PC, un bouton de tour désactivé ne bloque pas les actions de combat sous le rail');
 assert.match(battleCss, /\.rpg-phase-track\s*\{[^}]*flex-direction:\s*column;/s,
-  'la disposition de base des phases reste verticale pour le tactile');
+  'la disposition de base des phases (hors rail du tour) reste verticale');
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \.rpg-phase-track\s*\{[^}]*flex-direction:\s*row;[^}]*background:\s*rgba\(8, 7, 9, \.62\);/s,
   'sur PC, les phases sont en ligne sur un fond sombre transparent');
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \.rpg-phase-step\s*\{[^}]*--rpg-phase-lit:\s*#f29a4a;[^}]*color:\s*#f29a4a;/s,
@@ -849,14 +849,28 @@ assert.match(cardStacks, /export function groupEntitesParCarte\(entites = \[\]\)
 assert.match(cardStacks, /pile\.indices\.push\(index\);/,
   'chaque pile garde les index réels de la main : le jeu vise toujours un exemplaire précis');
 
-assert.match(mobileCss, /grid-template-columns:\s*calc\(clamp\(116px, 16vw, 190px\) \+ var\(--terrain-inset\)\) minmax\(0, 1fr\) clamp\(200px, 27vw, 320px\);/,
+assert.match(mobileCss, /grid-template-columns:\s*calc\(clamp\(116px, 16vw, 190px\) \+ var\(--terrain-inset\)\) minmax\(0, 1fr\) var\(--rpg-touch-controls\);/,
   'la colonne centrale du duel tactile est élargie : les deux rails latéraux rendent de la place');
+assert.match(mobileCss, /--rpg-touch-controls:\s*clamp\(176px, 23vw, 280px\);/,
+  'la colonne des commandes tactiles est resserrée, et le rail du tour s’y aligne');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \{[^}]*width:\s*var\(--rpg-touch-controls\);/s,
+  'le rail du tour prend exactement la largeur de la colonne des commandes');
 assert.match(mobileCss, /--terrain-inset:\s*clamp\(44px, 8vw, 160px\);/,
   'la marge qui tient les terrains hors du cadre illustré est conservée telle quelle');
 assert.match(mobileCss, /--duel-card:\s*clamp\(48px, 17dvh, 100px\);/,
   'la taille des cartes ne bouge pas : des cartes plus grandes en montreraient moins');
-assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*padding:\s*4px max\(8px, calc\(var\(--duel-card\) \* \.12\)\); gap:\s*max\(8px, calc\(var\(--duel-card\) \* \.22\)\);/s,
+assert.match(mobileCss, /--rpg-field-gap:\s*max\(8px, calc\(var\(--duel-card\) \* \.22\)\);/,
   'les gouttières des lignes de jeu sont resserrées pour montrer plus de cartes');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*padding:\s*4px max\(8px, calc\(var\(--duel-card\) \* \.12\)\); gap:\s*var\(--rpg-field-gap\); overflow:\s*visible;/s,
+  'les champs de bataille tactiles ne recadrent plus leurs cartes : aucune zone de défilement');
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*overflow-x:\s*auto;/s,
+  'plus de masque ni de défilement horizontal autour des cartes posées');
+assert.match(mobileCss, /--rpg-field-card:\s*calc\(var\(--duel-card\) \* \.85\);/,
+  'les cartes posées sur la table sont un peu plus petites que celles de la main');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-row > :is\(\.rpg-card, \.rpg-card-stack\) \{[^}]*width:\s*clamp\(var\(--rpg-field-min\), calc\(\(100% - \(var\(--row-count\) - 1\) \* var\(--rpg-field-gap\)\) \/ var\(--row-count\)\), var\(--rpg-field-card\)\);/s,
+  'les cartes posées partagent la largeur de leur rangée : le groupe tient toujours sans défiler');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-row:has\(> :nth-child\(2\)\) \{ --row-count: 2; \}/,
+  'le nombre d’emplacements d’un champ est compté en CSS');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*--rpg-hand-gap:\s*6px;[^}]*--rpg-hand-min:\s*34px;[^}]*justify-content:\s*safe center;[^}]*gap:\s*var\(--rpg-hand-gap\);[^}]*overflow-x:\s*auto;/s,
   'la main tactile partage sa largeur entre ses cartes, se centre tant qu’elle tient, et défile au-delà');
 assert.match(battleCss, /\.rpg-terrains\s*\{[^}]*z-index:\s*41;/s,
@@ -876,8 +890,16 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \{[^}]*top:\s*calc\
   'au doigt, le rail du tour se centre entre la navigation et la main, à l’échelle du téléphone');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-table \{[^}]*--rpg-touch-nav:\s*38px;[^}]*--rpg-touch-hand:\s*clamp\(84px, 28dvh, 146px\);[^}]*grid-template-rows:\s*var\(--rpg-touch-nav\)[\s\S]*?var\(--rpg-touch-hand\);/s,
   'la grille tactile et le rail du tour partagent les mêmes repères de rangée');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-step__icon \{ width: 18px; height: 18px; \}/,
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-track \{[^}]*flex-direction:\s*row;[^}]*background:\s*rgba\(8, 7, 9, \.62\);/s,
+  'au doigt aussi, les phases forment la rangée d’icônes orange du PC, dans sa capsule sombre');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-step__icon \{[^}]*width:\s*26px;[^}]*height:\s*26px;/s,
   'les icônes de phase du rail tactile restent lisibles sans envahir la table');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-step__label \{[^}]*clip-path:\s*inset\(50%\);/s,
+  'comme sur PC, les noms de phase sont masqués à l’écran mais restent accessibles');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-btn \{[^}]*min-height:\s*32px;/s,
+  'les boutons du rail de droite sont compacts au doigt');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-actions__row \.rpg-btn \{[^}]*min-height:\s*32px;/s,
+  'les commandes de combat de droite sont compactes au doigt');
 assert.match(mobileCss, /\.card-row > \.rpg-card:first-child,\s*\.card-row > \.rpg-card-stack:first-child,\s*\.card-row > \.rpg-card-stack__toggle:first-child \{ margin-inline-start: auto; \}/,
   'les piles et leur puce ×N participent au centrage du groupe de cartes');
 
@@ -1029,7 +1051,7 @@ console.log(
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
-  + 'rail du tour remonté au milieu de la table — indicateur et « Fin du tour » doré en colonne à la verticale du centre; sur PC, cinq phases en icônes seules orange à l’horizontale sur fond foncé transparent, disposition verticale tactile préservée —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, fond foncé commun aux boutons Annuler, Attaquer avec tous, Confirmer et Annuler l’attaque sur PC, icônes de phase orange agrandies sur PC, sur PC, plaques sombres, compactes et arrondies : cadre doré pour le joueur, cuivré pour l’adversaire; portrait à gauche, nom du profil ou du sorcier au-dessus des PV, tactile préservé, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
+  + 'rail du tour remonté au milieu de la table — indicateur et « Fin du tour » doré en colonne à la verticale du centre; sur PC, cinq phases en icônes seules orange à l’horizontale sur fond foncé transparent, même rangée d’icônes au doigt, boutons de droite compacts —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, fond foncé commun aux boutons Annuler, Attaquer avec tous, Confirmer et Annuler l’attaque sur PC, icônes de phase orange agrandies sur PC, sur PC, plaques sombres, compactes et arrondies : cadre doré pour le joueur, cuivré pour l’adversaire; portrait à gauche, nom du profil ou du sorcier au-dessus des PV, tactile préservé, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
   + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, les Ruines de Tipaza, le Fjord des Neuf Hivers) attribués selon le deck — la Braise rejoint la Table des Heures après le retrait du plateau des Brûlés —; peintures visibles sans voile, capsules sombres pour la lisibilité; plaques PC compactes en capsule, cadre doré joueur et cuivré adversaire, nom du profil et d’Ifrit al-Ahmar affichés, nom d’étage conservé, tactile préservé, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '

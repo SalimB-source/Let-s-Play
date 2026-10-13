@@ -85,8 +85,8 @@
    identiques n'y occupent plus qu'un emplacement.
    `--terrain-inset` ne bouge pas : c'est la marge qui tient les terrains hors
    du cadre illustré, vérifiée par `check:rpg-mobile`. `--duel-card` non plus —
-   agrandir les cartes en réduirait le nombre. Les commandes gardent 200 px :
-   trois boutons tactiles de 44 px y tiennent côte à côte. */
+   agrandir les cartes en réduirait le nombre. Les commandes tiennent dans
+   `--rpg-touch-controls` (176 px au plus étroit) : boutons compacts de 32 px. */
 /* Cadres mobile/APK : bordures plus épaisses, safe-area respecté, touch 44px.
    La **taille des cartes**, elle, ne bouge pas : `--duel-card` reste à
    `clamp(48px, 17dvh, 100px)` (contrat `check:rpg-ui`). Le budget vertical de
@@ -110,8 +110,16 @@
   --rpg-touch-pad: 6px;
   --rpg-touch-nav: 38px;
   --rpg-touch-hand: clamp(84px, 28dvh, 146px);
+  /* La colonne des commandes, à droite : resserrée (176 px au plus étroit,
+     194 px sur un 844 × 390), le rail du tour s'y aligne. */
+  --rpg-touch-controls: clamp(176px, 23vw, 280px);
+  /* Les cartes posées sur la table sont un peu plus petites que celles de la
+     main (85 %), sans toucher à `--duel-card` qui règle la grille et la main. */
+  --rpg-field-card: calc(var(--duel-card) * .85);
+  --rpg-field-min: 40px;
+  --rpg-field-gap: max(8px, calc(var(--duel-card) * .22));
   display: grid;
-  grid-template-columns: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset)) minmax(0, 1fr) clamp(200px, 27vw, 320px);
+  grid-template-columns: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset)) minmax(0, 1fr) var(--rpg-touch-controls);
   grid-template-rows: var(--rpg-touch-nav) minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) var(--rpg-touch-hand);
   grid-template-areas: ". opponent nav" "enemy-mana enemy controls" "mana allies controls" "player hand controls";
   gap: 4px 8px;
@@ -193,14 +201,45 @@
 .rpg-battle--touch .rpg-terrain { flex: 0 0 40px; width: 40px; height: 50px; border-width: 1px; border-radius: var(--rpg-card-radius-sm, 8px); }
 .rpg-battle--touch .card-table > .card-row--ennemi { grid-area: enemy; border-bottom: 1px solid #cead7055; }
 .rpg-battle--touch .card-table > .card-row--equipe { grid-area: allies; }
-.rpg-battle--touch .card-table > .card-row { align-items: center; justify-content: flex-start; padding: 4px max(8px, calc(var(--duel-card) * .12)); gap: max(8px, calc(var(--duel-card) * .22)); overflow-x: auto; overflow-y: hidden; scroll-padding-inline: max(8px, calc(var(--duel-card) * .12)); }
-.rpg-battle--touch .card-row .rpg-card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius, 10px); touch-action: pan-x; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+/* Les champs de bataille ne sont plus des zones de défilement : aucun masque
+   (recadrage) autour des cartes posées, ni barre ni glissement horizontal.
+   Les halos, les cartes couchées en attaque et les ombres de pile débordent
+   librement. Pour que le groupe tienne toujours dans sa colonne, la largeur
+   d'une carte se partage entre les emplacements de la rangée (`--row-count`,
+   compté en CSS plus bas), jusqu'au plancher `--rpg-field-min` ; au-delà, les
+   cartes se chevauchent au lieu de déborder. */
+.rpg-battle--touch .card-table > .card-row { --row-count: 1; align-items: center; justify-content: center; padding: 4px max(8px, calc(var(--duel-card) * .12)); gap: var(--rpg-field-gap); overflow: visible; }
+.rpg-battle--touch .card-row:has(> :nth-child(2)) { --row-count: 2; }
+.rpg-battle--touch .card-row:has(> :nth-child(3)) { --row-count: 3; }
+.rpg-battle--touch .card-row:has(> :nth-child(4)) { --row-count: 4; }
+.rpg-battle--touch .card-row:has(> :nth-child(5)) { --row-count: 5; }
+.rpg-battle--touch .card-row:has(> :nth-child(6)) { --row-count: 6; }
+.rpg-battle--touch .card-row:has(> :nth-child(7)) { --row-count: 7; }
+.rpg-battle--touch .card-row:has(> :nth-child(8)) { --row-count: 8; }
+.rpg-battle--touch .card-row:has(> :nth-child(9)) { --row-count: 9; }
+.rpg-battle--touch .card-row:has(> :nth-child(10)) { --row-count: 10; }
+.rpg-battle--touch .card-row:has(> :nth-child(11)) { --row-count: 11; }
+.rpg-battle--touch .card-row:has(> :nth-child(12)) { --row-count: 12; }
+.rpg-battle--touch .card-row:has(> :nth-child(14)) { --row-count: 14; }
+.rpg-battle--touch .card-row:has(> :nth-child(16)) { --row-count: 16; }
+.rpg-battle--touch .card-row:has(> :nth-child(20)) { --row-count: 20; }
+.rpg-battle--touch .card-row > :is(.rpg-card, .rpg-card-stack) {
+  flex: 0 0 auto;
+  width: clamp(var(--rpg-field-min), calc((100% - (var(--row-count) - 1) * var(--rpg-field-gap)) / var(--row-count)), var(--rpg-field-card));
+}
+/* Sous le plancher, la marge devient négative : le groupe garde exactement la
+   largeur de la rangée. Tant que tout tient, elle vaut 0. */
+.rpg-battle--touch .card-row > * + * {
+  margin-inline-start: min(0px, calc((100% - var(--row-count) * var(--rpg-field-min)) / max(1, var(--row-count) - 1) - var(--rpg-field-gap)));
+}
+.rpg-battle--touch .card-row .rpg-card-stack > .rpg-card { width: 100%; }
+.rpg-battle--touch .card-row .rpg-card { min-width: 0; min-height: 0; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius, 10px); touch-action: pan-x; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
 .rpg-battle--touch .card-table > .rpg-bottombar { grid-area: controls; display: flex; flex-direction: column; justify-content: flex-end; align-self: stretch; gap: 6px; padding: 4px max(4px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) 4px; overflow-y: auto; z-index: 20; }
 .rpg-battle--touch .rpg-turn-indicator { min-height: 22px; padding: 3px 5px; background: #18120c66; box-shadow: none; }
 .rpg-battle--touch .rpg-turn-indicator strong { font-size: 9px; letter-spacing: .02em; }
 .rpg-battle--touch .rpg-bottombar .rpg-log { display: none; }
-.rpg-battle--touch .rpg-bottombar .rpg-actions { display: grid; gap: 7px; }
+.rpg-battle--touch .rpg-bottombar .rpg-actions { display: grid; gap: 5px; }
 /* Phases à droite, au-dessus des actions, hors des rangées de cartes. */
 .rpg-battle--touch .rpg-turn-rail {
   top: calc(var(--rpg-touch-pad) + var(--rpg-touch-nav));
@@ -211,28 +250,85 @@
   width: max-content;
   left: auto;
   right: max(6px, env(safe-area-inset-right, 0px));
-  width: clamp(200px, 27vw, 320px);
+  width: var(--rpg-touch-controls);
   max-width: none;
   transform: none;
 }
 .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator { min-height: 18px; gap: 4px; padding: 1px 6px; border-radius: 999px; }
 .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator__lamp { width: 6px; height: 6px; }
 .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator strong { font-size: 8px; letter-spacing: .02em; }
-.rpg-battle--touch .rpg-turn-rail .rpg-phase-track { align-self: flex-end; width: 132px; display: flex; flex-direction: column; gap: 1px; }
-.rpg-battle--touch .rpg-turn-rail .rpg-phase-step { min-width: 0; gap: 4px; padding: 0 6px 0 1px; }
-.rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon { width: 18px; height: 18px; }
-.rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon svg { width: 11px; height: 11px; }
-.rpg-battle--touch .rpg-turn-rail .rpg-phase-step__label { font-size: 6.5px; letter-spacing: 0; }
+/* Les phases, comme sur PC : une rangée compacte d'icônes orange dans une
+   capsule sombre translucide, la phase en cours allumée ; les noms restent
+   dans l'arbre d'accessibilité. Simplement à l'échelle du téléphone. */
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-track {
+  align-self: stretch;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 3px 6px;
+  border: 1px solid rgba(242, 154, 74, .24);
+  border-radius: 12px;
+  background: rgba(8, 7, 9, .62);
+  backdrop-filter: blur(6px);
+}
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-step {
+  --rpg-phase-lit: #f29a4a;
+  --rpg-phase-glow: rgba(242, 154, 74, .38);
+  position: relative;
+  display: grid;
+  flex: 1 1 0;
+  min-width: 0;
+  place-items: center;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #f29a4a;
+}
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-step.is-active {
+  border-color: transparent;
+  background: transparent;
+  color: #f29a4a;
+}
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon {
+  width: 26px;
+  height: 26px;
+  border-color: rgba(242, 154, 74, .28);
+  background: rgba(12, 9, 8, .38);
+  color: #f29a4a;
+}
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-step.is-active .rpg-phase-step__icon {
+  border-color: rgba(255, 171, 99, .78);
+  background: rgba(242, 132, 46, .16);
+  color: #f29a4a;
+}
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon svg { width: 15px; height: 15px; }
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-step__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .rpg-battle--touch .rpg-turn-rail .rpg-actions__turn { gap: 2px; }
+/* Boutons de droite plus compacts : 32 px de haut, texte resserré. */
 .rpg-battle--touch .rpg-turn-rail .rpg-btn {
   min-width: 0;
-  min-height: 44px;
-  padding: 5px 6px;
+  min-height: 32px;
+  padding: 3px 5px;
   font-size: 9px;
-  line-height: 1.2;
+  line-height: 1.15;
   text-align: center;
 }
-.rpg-battle--touch .rpg-turn-rail .rpg-btn--endturn { min-height: 44px; padding: 5px 7px; font-size: 10px; white-space: normal; }
+.rpg-battle--touch .rpg-turn-rail .rpg-btn--endturn { min-height: 32px; padding: 3px 6px; font-size: 9.5px; white-space: normal; }
 /* Les commandes contextuelles restent en bas de la colonne de droite. */
 .rpg-battle--touch .rpg-bottombar .rpg-actions__row {
   display: grid;
@@ -244,10 +340,10 @@
 .rpg-battle--touch .rpg-bottombar .rpg-actions__combat { display: contents; }
 .rpg-battle--touch .rpg-actions__row .rpg-btn {
   min-width: 0;
-  min-height: 44px;
-  padding: 6px 4px;
-  font-size: 10px;
-  line-height: 1.25;
+  min-height: 32px;
+  padding: 3px 4px;
+  font-size: 9px;
+  line-height: 1.15;
   white-space: normal;
   text-align: center;
   align-items: center;
@@ -447,10 +543,6 @@
     padding-left: max(6px, env(safe-area-inset-left, 0px));
     padding-right: max(6px, env(safe-area-inset-right, 0px));
   }
-  .rpg-battle--touch .card-row {
-    scroll-padding-left: max(8px, env(safe-area-inset-left, 0px));
-    scroll-padding-right: max(8px, env(safe-area-inset-right, 0px));
-  }
 }
 /* Très petit paysage (iPhone SE 667×375, APK 720p) et grand paysage (Pixel, S23,
    APK tablette) : plus aucun palier de taille. Le budget vertical est déjà
@@ -630,65 +722,6 @@
     width: 100%;
     min-width: 0;
     flex: 1 1 0;
-  }
-  .rpg-battle--touch .rpg-turn-rail .rpg-phase-track {
-    align-self: stretch;
-    width: 100%;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-around;
-    gap: 5px;
-    box-sizing: border-box;
-    padding: 4px 7px;
-    border: 1px solid rgba(242, 154, 74, .24);
-    border-radius: 12px;
-    background: rgba(8, 7, 9, .62);
-    backdrop-filter: blur(6px);
-  }
-  .rpg-battle--touch .rpg-turn-rail .rpg-phase-step {
-    --rpg-phase-lit: #f29a4a;
-    --rpg-phase-glow: rgba(242, 154, 74, .38);
-    position: relative;
-    display: grid;
-    flex: 1 1 0;
-    place-items: center;
-    gap: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: #f29a4a;
-  }
-  .rpg-battle--touch .rpg-turn-rail .rpg-phase-step.is-active {
-    border-color: transparent;
-    background: transparent;
-    color: #f29a4a;
-  }
-  .rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon {
-    width: 30px;
-    height: 30px;
-    border-color: rgba(242, 154, 74, .28);
-    background: rgba(12, 9, 8, .38);
-    color: #f29a4a;
-  }
-  .rpg-battle--touch .rpg-turn-rail .rpg-phase-step.is-active .rpg-phase-step__icon {
-    border-color: rgba(255, 171, 99, .78);
-    background: rgba(242, 132, 46, .16);
-    color: #f29a4a;
-  }
-  .rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon svg {
-    width: 18px;
-    height: 18px;
-  }
-  .rpg-battle--touch .rpg-turn-rail .rpg-phase-step__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
   .rpg-battle--touch .rpg-actions__turn .rpg-btn--undo,
   .rpg-battle--touch .rpg-actions__combat .rpg-btn--attaque-tous,
