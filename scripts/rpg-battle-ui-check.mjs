@@ -378,6 +378,8 @@ assert.match(battlePage, /demarrerVolCarte\(carteSource, handIndex, \(\) => fina
   'la carte réelle vole depuis la main après la sélection de la cible');
 assert.match(battleCss, /\.rpg-card-catalogue__art\s*\{[\s\S]*?aspect-ratio:\s*4\s*\/\s*5;[\s\S]*?border:\s*var\(--rpg-card-border-large, 6px\) solid var\(--rpg-frame-color/s,
   'les illustrations du catalogue sont moins étirées verticalement en 4:5 et gardent un cadre piloté par l’élément, au grand gabarit');
+assert.match(battleCss, /\.rpg-card-catalogue__cost\s*\{[^}]*top:\s*9px;[^}]*right:\s*9px;[^}]*bottom:\s*auto;/s,
+  'le coût des cartes du catalogue est affiché en haut à droite de l’illustration');
 assert.match(battlePage, /⚔<\/span> Jouer\s*<\/button>/,
   'le menu comporte un mode Jouer');
 assert.match(battlePage, /cardFrameClass\(carte\)/,

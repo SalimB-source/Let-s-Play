@@ -4914,8 +4914,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-catalogue__cost {
   position: absolute;
   z-index: 3;
+  top: 9px;
   right: 9px;
-  bottom: 9px;
+  bottom: auto;
   display: grid;
   width: 33px;
   aspect-ratio: 1;
