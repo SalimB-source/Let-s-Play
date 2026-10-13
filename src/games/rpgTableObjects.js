@@ -788,6 +788,101 @@ function buildCoin(env) {
   return group;
 }
 
+/**
+ * Une raie manta, vue du dessus : deux ailes en pointe, un corps lisse, une
+ * queue fine. Les ailes sont deux plaques articulées sur l'axe du corps, elles
+ * battent lentement (voir `updateTableObject`). Envergure 1 le long de X ;
+ * la queue pointe vers +Y, la tête vers −Y.
+ */
+function buildManta(env) {
+  const group = new THREE.Group();
+  const navy = new THREE.Color('#10283d'), teal = new THREE.Color('#3f7a93'), tint = new THREE.Color();
+  // Un demi-contour (aile droite), de la tête à la queue ; l'aile gauche en est le miroir.
+  const half = [[0, -0.16], [0.07, -0.215], [0.105, -0.19], [0.1, -0.15], [0.24, -0.08], [0.5, 0.13], [0.43, 0.115], [0.33, 0.1], [0.2, 0.13], [0.09, 0.2], [0.03, 0.27], [0, 0.27]];
+  const wing = (side) => {
+    // Le miroir inverse le sens du contour : on le rétablit, sinon la normale pointe vers le bas.
+    const outline = half.map(([x, y]) => new THREE.Vector2(x * side, y));
+    const shape = new THREE.Shape(side < 0 ? outline.reverse() : outline);
+    const geometry = new THREE.ShapeGeometry(shape, 8);
+    const position = geometry.attributes.position, colors = [];
+    for (let i = 0; i < position.count; i += 1) {
+      const reach = Math.min(1, Math.abs(position.getX(i)) / 0.5);
+      tint.copy(navy).lerp(teal, Math.pow(reach, 1.6) * 0.4);
+      colors.push(tint.r, tint.g, tint.b);
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    const part = mesh(geometry, new THREE.MeshStandardMaterial({ name: 'aile', vertexColors: true, roughness: 0.62, metalness: 0, side: THREE.DoubleSide, envMap: env, envMapIntensity: 0.08 }), 'aile');
+    const pivot = new THREE.Group(); // l'axe de battement : le corps, +Y
+    pivot.add(part);
+    return pivot;
+  };
+  const right = wing(1), left = wing(-1);
+  group.add(right, left);
+  const back = mesh(new THREE.SphereGeometry(0.5, 20, 12), new THREE.MeshStandardMaterial({ name: 'dos', color: '#16344d', roughness: 0.7, metalness: 0, envMap: env, envMapIntensity: 0.08 }), 'dos');
+  back.scale.set(0.12, 0.3, 0.035);
+  back.position.set(0, -0.01, 0.0175);
+  group.add(back);
+  // La queue : un fouet fin, un peu relevé au bout.
+  const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.22, 0.02), new THREE.Vector3(0.01, 0.4, 0.025), new THREE.Vector3(0.03, 0.62, 0.04)]);
+  group.add(mesh(new THREE.TubeGeometry(curve, 12, 0.011, 6), new THREE.MeshStandardMaterial({ name: 'queue', color: '#10283d', roughness: 0.55, metalness: 0 }), 'queue'));
+  group.userData = { kind: 'manta', extent: 1, wings: [right, left] };
+  return group;
+}
+
+/**
+ * L'anneau de coquillages du centre : cinquante-huit coquilles posées en cercle
+ * (porcelaines mouchetées, cônes, galets tachetés), chacune tournée au hasard le
+ * long du cercle. Rayon 0,5 : le diamètre de l'anneau est 1.
+ */
+function buildShellRing(env) {
+  const random = seededRandom(2027);
+  const group = new THREE.Group();
+  const lowPoly = (rx, ry, rz) => {
+    const geometry = new THREE.SphereGeometry(1, 12, 8);
+    geometry.scale(rx, ry, rz);
+    return geometry;
+  };
+  const paint = (geometry, light, dark, slit) => {
+    const position = geometry.attributes.position, colors = [], tint = new THREE.Color();
+    let top = 0;
+    for (let i = 0; i < position.count; i += 1) top = Math.max(top, position.getZ(i));
+    for (let i = 0; i < position.count; i += 1) {
+      const x = position.getX(i), y = position.getY(i), z = position.getZ(i);
+      const spots = 0.5 + 0.5 * Math.sin(x * 140 + y * 90) * Math.sin(y * 170 - x * 60);
+      const dorsal = Math.max(0, z / top);
+      tint.copy(light).lerp(dark, Math.min(1, spots * 0.7 * (0.4 + dorsal)));
+      if (slit) tint.lerp(new THREE.Color('#efe3cc'), Math.max(0, 1 - Math.abs(x) / 0.0035) * dorsal * 0.9);
+      colors.push(tint.r, tint.g, tint.b);
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+  const kinds = [
+    // [géométrie, matériau] : une porcelaine, un cône allongé, un coquillage rond tacheté.
+    [paint(lowPoly(0.0125, 0.0215, 0.0125), new THREE.Color('#d8b48a'), new THREE.Color('#6a3f24'), true), 0.5],
+    [paint(lowPoly(0.01, 0.0235, 0.0105), new THREE.Color('#bf9367'), new THREE.Color('#4d2c18'), false), 0.2],
+    [paint(lowPoly(0.0165, 0.0165, 0.012), new THREE.Color('#a77e5b'), new THREE.Color('#3c2514'), false), 0.3],
+  ];
+  const materials = kinds.map(() => new THREE.MeshStandardMaterial({ name: 'coquille', vertexColors: true, roughness: 0.34, metalness: 0, envMap: env, envMapIntensity: 0.4 }));
+  const count = 58;
+  for (let i = 0; i < count; i += 1) {
+    const roll = random();
+    const index = roll < kinds[0][1] ? 0 : roll < kinds[0][1] + kinds[1][1] ? 1 : 2;
+    const angle = (i / count) * Math.PI * 2 + (random() - 0.5) * 0.03;
+    const radius = 0.5 + (random() - 0.5) * 0.012;
+    const shell = mesh(kinds[index][0], materials[index], 'coquille');
+    const scale = 1.25 + random() * 0.45;
+    shell.scale.setScalar(scale);
+    shell.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0.0125 * scale * 0.9);
+    // Le grand axe suit la tangente, avec du jeu.
+    shell.rotation.z = angle + (random() - 0.5) * 1.1;
+    group.add(shell);
+  }
+  group.userData = { kind: 'anneau-coquillages', extent: 1 };
+  return group;
+}
+
 const BUILDERS = Object.freeze({
   bol: buildBowl,
   galets: buildPebbles,
@@ -811,6 +906,8 @@ const BUILDERS = Object.freeze({
   sapin: buildPine,
   rocher: buildRock,
   escargot: buildSnail,
+  manta: buildManta,
+  'anneau-coquillages': buildShellRing,
   piece: buildCoin,
   rubis: (env) => buildCrystalCluster(env, { kind: 'rubis', color: '#a6132c', glow: '#5a0612', seed: 913 }),
 });
@@ -825,7 +922,14 @@ export function createTableObject(kind, env = null) {
 
 /** L'animation d'un objet à l'instant `t` (secondes) : la lanterne vacille, les cristaux scintillent. */
 export function updateTableObject(group, t, phase = 0) {
-  const { flame, lamp, gems, glowBase } = group.userData;
+  const { flame, lamp, gems, glowBase, wings } = group.userData;
+  // La manta : un battement lent des ailes, relevées au repos.
+  if (wings) {
+    const flap = 0.1 + Math.sin(t * 1.15 + phase) * 0.13;
+    wings[0].rotation.y = -flap;
+    wings[1].rotation.y = flap;
+    return;
+  }
   // Les cristaux : un éclat lent, déphasé d'un amas à l'autre.
   if (gems) {
     const shimmer = 1 + Math.sin(t * 0.9 + phase) * 0.22 + Math.sin(t * 2.3 + phase * 2) * 0.08;

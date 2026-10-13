@@ -210,6 +210,13 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
   // Sous la mer : caustiques qui dansent, bulles qui montent.
   'abysses-phosphorescentes': theme({
     ambient: '#e6fff8', key: '#dffff5', keyIntensity: 0.46, relief: 1.5, roughness: 0.55,
+    // La manta et l'anneau de coquillages du centre, reconstruits. `angle` : où
+    // pointe la queue de la manta ; l'anneau est de révolution.
+    plaque: 'plateau-abysses-phosphorescentes-vide.jpg',
+    objets: [
+      { kind: 'manta', u: 0.9407, v: 0.2248, size: 0.168, angle: 48 },
+      { kind: 'anneau-coquillages', u: 0.4994, v: 0.5002, size: 0.325, angle: 0 },
+    ],
     lights: [
       light({ color: '#74fff0', intensity: 2.2, x: 0, y: 0, orbit: 0.65, orbitHz: 0.04, pulse: 0.25 }),
     ],
