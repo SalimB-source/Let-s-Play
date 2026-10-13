@@ -4497,16 +4497,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__hero-copy .rpg-mode-menu__eyebrow {
   text-shadow: 0 2px 10px rgba(0, 0, 0, .8);
 }
-.rpg-mode-menu__hero-mark {
-  position: absolute;
-  top: 6%;
-  right: 5%;
-  color: rgba(242, 213, 151, .18);
-  font: 700 clamp(70px, 12vw, 148px)/1 Georgia, serif;
-  user-select: none;
-  pointer-events: none;
-  text-shadow: 0 6px 30px rgba(0, 0, 0, .35);
-}
 .rpg-mode-menu__loadout {
   min-width: 0;
   display: flex;
@@ -5026,7 +5016,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu__hero-copy { width: 100%; padding: 22px 19px; }
   .rpg-mode-menu__hero-copy h2 { font-size: clamp(28px, 9vw, 39px); }
   .rpg-mode-menu__hero-copy p { font-size: 12px; }
-  .rpg-mode-menu__hero-mark { top: 5%; right: 4%; font-size: 78px; }
   .rpg-mode-menu__secondary-actions { grid-template-columns: 1fr; }
   .rpg-quick-tip { margin-top: 14px; padding: 8px 10px; }
   .rpg-quick-tip p { font-size: 10px; }

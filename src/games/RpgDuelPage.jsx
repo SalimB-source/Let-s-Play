@@ -1603,7 +1603,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <p>Astuce : vous pouvez annuler votre dernière action avec le bouton ↶ pendant votre tour. <kbd>F</kbd> pour le plein écran, <kbd>M</kbd> pour le son. Rendez-vous dans l'onglet <b>Tours</b> pour des parties par étages.</p>
                 </div>
               </div>
-              <div className="rpg-mode-menu__hero-mark" aria-hidden="true">باب</div>
               {/* Le halo doré reste : simple lumière, pas un fond. */}
               <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
             </section>
