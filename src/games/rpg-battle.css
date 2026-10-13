@@ -4706,11 +4706,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    largeur. La liste des cartes s'y déploie en trois colonnes de grandes
    vignettes — assez larges pour lire le nom sans le couper. */
 .rpg-deck-catalog--open { grid-template-columns: minmax(0, 1fr); }
+.rpg-deck-catalog--open .rpg-deck-list-panel { max-height: min(56vh, 560px); gap: 16px; }
 .rpg-deck-catalog--open .rpg-deck-list {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px 14px;
-  max-height: min(56vh, 560px);
 }
+.rpg-deck-catalog--open .rpg-deck-list-family__heading strong { font-size: 11px; }
+.rpg-deck-catalog--open .rpg-deck-list-family__heading em { font-size: 11px; }
+.rpg-deck-catalog--open .rpg-deck-list-family__heading small { font-size: 9px; }
 .rpg-deck-catalog--open .rpg-deck-list li { grid-template-columns: 50px minmax(0, 1fr) auto; gap: 11px; padding: 7px 10px; }
 .rpg-deck-catalog--open .rpg-deck-list img { width: 50px; height: 68px; }
 .rpg-deck-catalog--open .rpg-deck-list li > span { gap: 4px; }
@@ -4744,7 +4747,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-deck-detail__list-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 16px 0 8px; }
 .rpg-deck-detail__list-heading h3 { margin: 0; color: #f3dfb4; font: 700 14px/1 Georgia, serif; }
 .rpg-deck-detail__list-heading span { color: rgba(244, 233, 214, .64); font: 8px/1.2 var(--mono, monospace); text-align: right; }
-.rpg-deck-list { max-height: min(29vh, 270px); overflow: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; margin: 0; padding: 0; list-style: none; scrollbar-color: rgba(226, 187, 111, .45) rgba(15, 13, 16, .6); }
+/* Le volet défile d'un seul tenant : les trois familles se suivent dans un
+   unique ascenseur, chacune avec son titre et ses propres colonnes. */
+.rpg-deck-list-panel { max-height: min(29vh, 270px); overflow: auto; display: grid; align-content: start; gap: 13px; padding-right: 4px; scrollbar-color: rgba(226, 187, 111, .45) rgba(15, 13, 16, .6); }
+.rpg-deck-list-family__heading { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 10px; margin: 0 0 7px; padding-bottom: 5px; border-bottom: 1px solid rgba(236, 214, 172, .2); }
+.rpg-deck-list-family__heading strong { color: #f3dfb4; font: 800 10px/1 var(--mono, monospace); letter-spacing: .16em; text-transform: uppercase; }
+.rpg-deck-list-family__heading em { overflow: hidden; color: rgba(244, 233, 214, .5); font: italic 10px/1.25 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
+.rpg-deck-list-family__heading small { color: #e8c576; font: 700 8px/1.2 var(--mono, monospace); letter-spacing: .06em; white-space: nowrap; }
+.rpg-deck-list-family[data-famille='sorts'] .rpg-deck-list-family__heading strong { color: #cbb9f2; }
+.rpg-deck-list-family[data-famille='terrains'] .rpg-deck-list-family__heading strong { color: #a8d8c0; }
+.rpg-deck-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; margin: 0; padding: 0; list-style: none; }
 .rpg-deck-list li { min-width: 0; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 4px 6px; border-bottom: 1px solid rgba(240, 226, 204, .08); border-radius: 4px; transition: background-color .14s ease, box-shadow .14s ease; }
 /* Survoler une ligne convoque l'aperçu grand format de la carte : la ligne
    s'allume pour montrer qu'elle est la source de cet aperçu. */
@@ -4915,9 +4927,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-deck-detail__stats > span { min-height: 50px; }
   .rpg-deck-detail__stats b { font-size: 14px; }
   .rpg-deck-detail__stats small { font-size: 7px; }
-  .rpg-deck-list { grid-template-columns: minmax(0, 1fr); max-height: 250px; }
+  .rpg-deck-list-panel { max-height: 250px; }
+  .rpg-deck-list { grid-template-columns: minmax(0, 1fr); }
   /* Une colonne au téléphone, mais les vignettes gardent leur nouvelle taille. */
-  .rpg-deck-catalog--open .rpg-deck-list { grid-template-columns: minmax(0, 1fr); max-height: 320px; }
+  .rpg-deck-catalog--open .rpg-deck-list-panel { max-height: 360px; }
+  .rpg-deck-catalog--open .rpg-deck-list { grid-template-columns: minmax(0, 1fr); }
+  .rpg-deck-list-family__heading em { display: none; }
   .rpg-deck-detail__list-heading h3 { font-size: 13px; }
   .rpg-deck-detail__list-heading span { font-size: 7px; }
   .rpg-duel-nav { top: 7px; right: 7px; gap: 3px; padding: 3px; }

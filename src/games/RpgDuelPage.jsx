@@ -529,6 +529,21 @@ function deckCardList(deck) {
   return [...counts.entries()].map(([id, count]) => ({ carte: cardById(id), count })).filter((entry) => entry.carte);
 }
 
+/** Les trois familles de la fiche d'un deck : créatures, sorts, terrains.
+ * Les héros comptent parmi les créatures — c'est déjà le découpage de
+ * `deckStats`, donc la liste et les statistiques ne peuvent pas se contredire. */
+function familleDeCarte(carte) {
+  if (carte?.kind === 'terrain') return 'terrains';
+  if (carte?.kind === 'magie') return 'sorts';
+  return 'creatures';
+}
+
+const RPG_DECK_FAMILLES = [
+  { id: 'creatures', nom: 'Créatures', note: 'Les créatures et héros invoqués en jeu' },
+  { id: 'sorts', nom: 'Sorts', note: 'Les magies, lancées depuis la main' },
+  { id: 'terrains', nom: 'Terrains', note: 'Les sources de mana du deck' },
+];
+
 function targetMode(carte) {
   if (carte?.arrivee?.type === 'combat' && carte.arrivee.cible === 'creature') return 'ennemi';
   if (carte?.arrivee?.type === 'retour-main') return carte.arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
@@ -1345,6 +1360,17 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const openJouable = openDeck ? deckSeJoue(openDeck, collection) : false;
   const openStats = openDeck ? deckStats(openDeck) : { terrains: 0, creatures: 0, magies: 0 };
   const openCards = openDeck ? deckCardList(openDeck) : [];
+  // La liste se lit par familles : créatures, puis sorts, puis terrains. Une
+  // famille sans carte ne s'affiche pas, et les totaux additionnent les
+  // exemplaires (« ×4 » compte pour quatre cartes dans le deck).
+  const openFamilles = openDeck
+    ? RPG_DECK_FAMILLES
+      .map((famille) => {
+        const cartes = openCards.filter(({ carte }) => familleDeCarte(carte) === famille.id);
+        return { ...famille, cartes, total: cartes.reduce((somme, { count }) => somme + count, 0) };
+      })
+      .filter((famille) => famille.cartes.length > 0)
+    : [];
   const openValidation = openDeck
     ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection) : rpgValiderDeck(openDeck.cardIds))
     : { ok: false, raisons: ['Aucun deck ouvert.'] };
@@ -1830,22 +1856,37 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <span className={openValidation.ok ? 'is-valid' : 'is-invalid'}><b>{openValidation.ok ? '✓' : '!'}</b><small>{openValidation.ok ? 'validé' : (openValidation.raisons ?? [openValidation.raison]).filter(Boolean).join(' · ')}</small></span>
                 </div>
                 <div className="rpg-deck-detail__list-heading"><h3>Liste des cartes</h3><span>{openCards.length} références · quantités incluses</span></div>
-                <ul
-                  className="rpg-deck-list"
-                  // La liste défile : un aperçu ouvert sous une souris immobile
+                <div
+                  className="rpg-deck-list-panel"
+                  // Le volet défile : un aperçu ouvert sous une souris immobile
                   // désignerait la mauvaise ligne à mesure que les cartes glissent.
                   onScroll={onLeaveHoverCard}
                 >
-                  {openCards.map(({ carte, count }) => (
-                    <li key={carte.id} data-card-id={carte.id}
-                      onMouseEnter={(event) => onHoverCard?.(carte, event)}
-                      onMouseLeave={onLeaveHoverCard}>
-                      <img src={cardArt(carte)} alt="" />
-                      <span><strong>{carte.name}</strong><small>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
-                      <b>×{count}</b>
-                    </li>
+                  {openFamilles.map((famille) => (
+                    <section key={famille.id} className="rpg-deck-list-family" data-famille={famille.id}>
+                      <h4 className="rpg-deck-list-family__heading">
+                        <strong>{famille.nom}</strong>
+                        <em>{famille.note}</em>
+                        <small>
+                          {famille.cartes.length} référence{famille.cartes.length > 1 ? 's' : ''}
+                          {' · '}
+                          {famille.total} carte{famille.total > 1 ? 's' : ''}
+                        </small>
+                      </h4>
+                      <ul className="rpg-deck-list">
+                        {famille.cartes.map(({ carte, count }) => (
+                          <li key={carte.id} data-card-id={carte.id}
+                            onMouseEnter={(event) => onHoverCard?.(carte, event)}
+                            onMouseLeave={onLeaveHoverCard}>
+                            <img src={cardArt(carte)} alt="" />
+                            <span><strong>{carte.name}</strong><small>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
+                            <b>×{count}</b>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
                   ))}
-                </ul>
+                </div>
                 <div className="rpg-deck-detail__actions">
                   {openDeck.maison ? (
                     <>
