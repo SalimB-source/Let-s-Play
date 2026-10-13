@@ -372,23 +372,16 @@ export async function checkRpgDecks(assert) {
   assert.equal(stocke(), JSON.stringify({ deckId: 'cour-des-djinns' }), '« Jouer avec ce deck » mémorise la Cour des Djinns');
   await cour.demonter();
 
-  // « Lancer le duel » (écran Jouer) joue avec le deck mémorisé d'un lancement précédent.
+  // Le bouton principal de l'écran Jouer est « Mode histoire » : il ouvre le
+  // récit, quel que soit le deck mémorisé (le duel rapide passe par l'onglet Deck).
   window.localStorage.setItem(RPG_DECK_STORAGE_KEY, JSON.stringify({ deckId: 'sentiers-de-cendre' }));
   const lancement = await monter(assert, { vraisDecks: true });
-  const lancer = lancement.container.querySelector('.rpg-mode-menu__hero-copy .rpg-menu-button--primary');
-  await lancement.click(lancer, 'Lancer le duel');
-  assert.ok(lancement.container.querySelector('.card-table'), 'le duel démarre depuis l’écran Jouer');
-  assert.match(texte(lancement.container.querySelector('.rpg-wizard-plate--joueur')), new RegExp(SENTIERS), '« Lancer le duel » utilise le deck mémorisé');
-  assert.match(lancement.plaque('ennemi'), /Cour des Djinns · Braise/, 'le sorcier joue la Cour des Djinns');
+  const modeHistoire = lancement.container.querySelector('.rpg-mode-menu__hero-copy .rpg-menu-button--primary');
+  assert.match(texte(modeHistoire), /Mode histoire/, 'le bouton principal de Jouer est « Mode histoire »');
+  await lancement.click(modeHistoire, 'Mode histoire');
+  assert.ok(lancement.container.querySelector('.rpg-narrative'), 'le mode histoire ouvre le récit');
+  assert.ok(!lancement.container.querySelector('.card-table'), 'le mode histoire ne démarre pas un duel');
   await lancement.demonter();
-
-  // Même chose avec la Cour des Djinns mémorisée : le sorcier prend les Veilleurs.
-  window.localStorage.setItem(RPG_DECK_STORAGE_KEY, JSON.stringify({ deckId: 'cour-des-djinns' }));
-  const lancementCour = await monter(assert, { vraisDecks: true });
-  await lancementCour.click(lancementCour.container.querySelector('.rpg-mode-menu__hero-copy .rpg-menu-button--primary'), 'Lancer le duel (Cour mémorisée)');
-  assert.match(lancementCour.plaque('joueur'), new RegExp(COUR), '« Lancer le duel » joue la Cour des Djinns mémorisée');
-  assert.match(lancementCour.plaque('ennemi'), /Veilleurs du Désert · Sable/, 'et le sorcier joue les Veilleurs du Désert');
-  await lancementCour.demonter();
   window.localStorage.clear();
 
 

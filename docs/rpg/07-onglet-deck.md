@@ -33,7 +33,7 @@ Ouvrir un boîtier et le choisir sont deux gestes distincts :
 | Clic sur le boîtier | montre la fiche et la liste ; **ne change pas** le deck de jeu |
 | **« Sélectionner »** (sous le boîtier) | le deck devient le deck de jeu et est **mémorisé** |
 | « Jouer avec ce deck » (dans la fiche) | sélectionne, mémorise **et** lance un duel avec ce deck |
-| « Lancer le duel » (écran Jouer) | joue avec le deck de jeu courant |
+| « Mode histoire » (écran Jouer) | ouvre le récit de la campagne ; le duel rapide passe par « Jouer avec ce deck » |
 
 - **Qui est sélectionnable** : **tous les decks complets** — Veilleurs du Désert,
   Sentiers de cendre, la Cour des Djinns, **la Marée des abysses** (le deck
@@ -168,7 +168,7 @@ l'encadré reste sans fond, l'illustration flotte sur la table (voir
   comme les autres), **relance** (le choix est restauré), sauvegarde corrompue /
   périmée, stockage indisponible, **adversaire** (Cour contre Veilleurs, plaques,
   avatar, deck envoyé au moteur), **filtre** (puces, compteur, fiche refermée si le deck est
-  écarté), « Jouer avec ce deck » et « Lancer le duel » avec les vrais decks, reprise
+  écarté), « Jouer avec ce deck » et « Mode histoire » avec les vrais decks, reprise
   d'un duel en cours ; plus des garde-fous sur la 3D (perspective, `preserve-3d`,
   faces cachées, animations réduites) et sur le bouton (au-dessus de la zone
   cliquable, pleine largeur en disposition ouverte, 44 px au doigt).

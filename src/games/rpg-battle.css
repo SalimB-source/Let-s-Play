@@ -4353,6 +4353,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   margin: 8px 0 0;
   color: rgba(246, 235, 215, .72);
   font: italic 13px/1.5 Georgia, serif;
+  /* Le voile du décor est plus clair : l'ombre portée garde la devise lisible. */
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .75);
 }
 .rpg-mode-menu__switch {
   display: flex;
@@ -4437,34 +4439,38 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   margin: 4px 0 0;
   color: #fff1d5;
   font: 700 clamp(22px, 3vw, 32px)/1 Georgia, serif;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, .8);
 }
 .rpg-free-tours__heading p {
   margin: 8px 0 0;
   color: rgba(244, 233, 214, .68);
   font: italic 13px/1.5 Georgia, serif;
   max-width: 60ch;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .75);
 }
-.rpg-menu-button--resume-inline {
-  width: 100%;
-  max-width: 440px;
-  margin-top: 14px;
-  border-color: rgba(163, 203, 164, .44);
-  color: #c8e4c1;
+/* Partie en cours : le bouton de reprise flotte en bas au centre du menu,
+   visible sans défiler quel que soit l'onglet ouvert. */
+.rpg-menu-button--resume.rpg-menu-button--floating {
+  position: fixed;
+  z-index: 40;
+  /* Remonté du bord bas : le bouton respire au-dessus du pied de page. */
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: 0 auto;
+  background: rgba(18, 28, 21, .93);
+  backdrop-filter: blur(8px);
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .5));
 }
-.rpg-menu-button--resume-inline:hover { background: rgba(49, 90, 57, .36); }
-.rpg-quick-tip kbd {
-  display: inline-grid;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 3px;
-  margin: 0 2px;
-  place-items: center;
-  border: 1px solid rgba(235, 208, 151, .25);
-  border-radius: 3px;
-  background: rgba(255,255,255,.05);
-  color: rgba(244, 233, 214, .7);
-  font: 800 9px/1 var(--mono, monospace);
-}
+.rpg-menu-button--resume.rpg-menu-button--floating:hover,
+.rpg-menu-button--resume.rpg-menu-button--floating:focus-visible { background: rgba(49, 90, 57, .5); }
+/* La place laissée au bouton flottant : le pied de page reste lisible dessous. */
+.rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 108px; }
+/* Le héros de l'onglet « Jouer » n'a plus de fond : ni cadre, ni voile sombre,
+   ni illustration de deck. Le titre et les boutons posent directement sur le
+   décor de la page ; seuls les grains de sable et le halo restent en place. */
 .rpg-mode-menu__hero {
   position: relative;
   isolation: isolate;
@@ -4472,27 +4478,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   display: flex;
   align-items: end;
   overflow: hidden;
-  border: 1px solid rgba(235, 208, 151, .3);
+  border: 0;
   border-radius: 22px;
-  background: #171015;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .38), 0 0 38px rgba(183, 130, 57, .1) inset;
+  background: none;
+  box-shadow: none;
 }
-.rpg-mode-menu__hero::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  background-image: linear-gradient(90deg, rgba(10, 8, 11, .96) 0%, rgba(10, 8, 11, .82) 42%, rgba(10, 8, 11, .2) 100%), var(--rpg-menu-card-art);
-  background-position: center, 55% 34%;
-  background-size: cover;
-  transform: scale(1.02);
-}
+.rpg-mode-menu__hero::before,
 .rpg-mode-menu__hero::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 50% 0 0;
-  background: linear-gradient(0deg, rgba(7, 6, 9, .82), transparent);
+  content: none;
 }
 .rpg-mode-menu__hero-copy {
   width: min(620px, 82%);
@@ -4511,16 +4504,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   margin: 0 0 22px;
   color: rgba(246, 237, 220, .8);
   font: 14px/1.65 Georgia, serif;
+  /* Plus de voile sombre derrière le héros : l'ombre portée garde le texte
+     lisible sur le décor de la page. */
+  text-shadow: 0 2px 14px rgba(0, 0, 0, .85);
 }
-.rpg-mode-menu__hero-mark {
-  position: absolute;
-  top: 6%;
-  right: 5%;
-  color: rgba(242, 213, 151, .18);
-  font: 700 clamp(70px, 12vw, 148px)/1 Georgia, serif;
-  user-select: none;
-  pointer-events: none;
-  text-shadow: 0 6px 30px rgba(0, 0, 0, .35);
+.rpg-mode-menu__hero-copy .rpg-mode-menu__eyebrow {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .8);
 }
 .rpg-mode-menu__loadout {
   min-width: 0;
@@ -4606,6 +4595,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-menu-button--primary { background: linear-gradient(135deg, #e5c06b, #b77d32); border-color: #f0d994; color: #21170d; box-shadow: 0 8px 28px rgba(197, 139, 53, .2); }
 .rpg-menu-button--primary:hover,
 .rpg-menu-button--primary:focus-visible { background: linear-gradient(135deg, #ffdda0, #d99d48); color: #1c130b; }
+/* Le bouton « Mode histoire » se distingue du duel : bleu clair, pas le laiton. */
+.rpg-menu-button--primary.rpg-menu-button--histoire {
+  background: linear-gradient(135deg, #bfe2f7, #6fb3dc);
+  border-color: #dcf1fd;
+  color: #10314a;
+  box-shadow: 0 8px 28px rgba(96, 165, 210, .28);
+}
+.rpg-menu-button--primary.rpg-menu-button--histoire:hover,
+.rpg-menu-button--primary.rpg-menu-button--histoire:focus-visible {
+  background: linear-gradient(135deg, #dbf1ff, #8cc6e9);
+  color: #0b2739;
+}
 .rpg-menu-button--resume { width: 100%; margin-top: auto; border-color: rgba(163, 203, 164, .44); color: #c8e4c1; }
 .rpg-menu-button--resume:hover { background: rgba(49, 90, 57, .36); }
 .rpg-menu-button--resume-pulse { position: relative; animation: resume-pulse 2.2s ease-in-out infinite; }
@@ -4702,20 +4703,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   justify-content: flex-start;
   padding: 12px 14px;
 }
-.rpg-quick-tip {
-  margin-top: 18px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid rgba(235, 195, 110, .2);
-  border-radius: 10px;
-  background: rgba(229, 192, 107, .08);
-  backdrop-filter: blur(4px);
-}
-.rpg-quick-tip__icon { font-size: 16px; flex: none; margin-top: 1px; }
-.rpg-quick-tip p { margin: 0; font-size: 11px; line-height: 1.4; color: rgba(246, 237, 220, .7); }
-
 /* Indicateur VS entre les decks */
 .rpg-vs-indicator {
   display: grid;
@@ -5037,15 +5024,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu__switch button { flex: 1 1 0; min-width: 0; padding: 9px 2px; font-size: 10px; letter-spacing: .06em; }
   .rpg-mode-menu__switch button span { display: block; margin: 0 0 5px; }
   .rpg-mode-menu__brand p { font-size: 11px; }
-  .rpg-mode-menu__hero { min-height: 360px; border-radius: 16px; }
-  .rpg-mode-menu__hero::before { background-position: center, 58% center; }
+  .rpg-mode-menu__hero { min-height: 360px; }
   .rpg-mode-menu__hero-copy { width: 100%; padding: 22px 19px; }
   .rpg-mode-menu__hero-copy h2 { font-size: clamp(28px, 9vw, 39px); }
   .rpg-mode-menu__hero-copy p { font-size: 12px; }
-  .rpg-mode-menu__hero-mark { top: 5%; right: 4%; font-size: 78px; }
   .rpg-mode-menu__secondary-actions { grid-template-columns: 1fr; }
-  .rpg-quick-tip { margin-top: 14px; padding: 8px 10px; }
-  .rpg-quick-tip p { font-size: 10px; }
+  .rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 100px; }
   .rpg-mode-menu__loadout { grid-template-columns: minmax(0, 1fr); padding: 14px; }
   .rpg-mode-menu__loadout-heading { grid-column: auto; align-items: center; }
   .rpg-menu-deck-summary { min-height: 82px; }

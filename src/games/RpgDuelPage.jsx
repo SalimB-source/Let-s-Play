@@ -1457,14 +1457,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       || (catalogueCouleur === 'hybride' ? colors.length > 1 : colors.includes(catalogueCouleur));
     return couleurCorrespond && (catalogueType === 'tous' || carte.kind === catalogueType);
   });
-  const imageForDeck = (deck) => {
-    const cardId = deck?.cardIds.find((id) => cardById(id)?.kind !== 'terrain') ?? deck?.cardIds[0];
-    return cardId ? cardArt(cardId) : '';
-  };
   // La tour ouverte dans le mode Histoire (page d'étages), ou null (galerie).
   const tourOuverte = tourOuverteId ? tourHistoireParId(tourOuverteId) : null;
   const resumeTourOuverte = tourOuverte ? resumeTourHistoire(tourOuverte.id, progressionHistoire) : null;
-  const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .96) 0%, rgba(8, 7, 13, .82) 48%, rgba(8, 7, 13, .72) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
+  // Voile noir volontairement léger : le keyart de Bab El reste lisible derrière
+  // les menus, le côté gauche garde assez d'ombre pour porter les textes.
+  const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .80) 0%, rgba(8, 7, 13, .58) 48%, rgba(8, 7, 13, .40) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
   // Quitter l'onglet Deck referme l'étagère et l'atelier : le prochain passage repart sans liste.
   useEffect(() => { if (screen !== 'decks') { setOpenDeckId(null); setAtelier(null); } }, [screen]);
   // Quitter l'onglet Histoire referme la tour ouverte : le prochain passage sur
@@ -1546,7 +1544,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
 
   return (
     <section
-      className={`rpg-mode-menu rpg-mode-menu--${screen}`}
+      className={`rpg-mode-menu rpg-mode-menu--${screen}${hasGame ? ' rpg-mode-menu--reprise' : ''}`}
       style={{ backgroundImage: menuBackground }}
       // L'aperçu au survol est placé d'après la position de la carte au moment
       // du survol : dès que l'écran défile, il désignerait la mauvaise ligne.
@@ -1573,11 +1571,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
               <span aria-hidden="true">⚔</span> Jouer
             </button>
-            <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('tours'); }}>
-              <span aria-hidden="true">🗼</span> Tours
-            </button>
             <button type="button" className={screen === 'histoire' ? 'is-active' : ''} aria-current={screen === 'histoire' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('histoire'); }}>
               <span aria-hidden="true">⌛</span> Histoire
+            </button>
+            <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('tours'); }}>
+              <span aria-hidden="true">🗼</span> Tours
             </button>
             <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('decks'); }}>
               <span aria-hidden="true">▤</span> Deck
@@ -1590,7 +1588,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
 
         {screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
-            <section className="rpg-mode-menu__hero" style={{ '--rpg-menu-card-art': `url("${imageForDeck(playerDeck)}")` }}>
+            {/* Pas de fond : le titre et les boutons posent sur le décor de la page. */}
+            <section className="rpg-mode-menu__hero">
               {/* Effet visuel thématique : grains de sable qui tombent */}
               <div className="rpg-sand-fx" aria-hidden="true">
                 {Array.from({ length: 18 }).map((_, i) => (
@@ -1605,11 +1604,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <h2>Le sable se souvient.<br /><em>À vous d’écrire la suite.</em></h2>
                 <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes de Bab El. Chaque carte compte, chaque mana compte, chaque choix façonne votre victoire.</p>
                 <div className="rpg-mode-menu__hero-actions">
-                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--glow" onClick={() => { play('select'); onStartGame(); }}>
-                    <span className="rpg-menu-button__icon">⚔</span>
+                  {/* Le bouton principal ouvre le mode Histoire (reprend ou débute
+                      le récit) ; le duel rapide reste dispo via l'onglet Deck. */}
+                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--histoire rpg-menu-button--glow" onClick={() => { play('select'); onContinueRecit?.(); }}>
+                    <span className="rpg-menu-button__icon">⌛</span>
                     <span className="rpg-menu-button__text">
-                      <strong>Lancer le duel</strong>
-                      <small>Partie rapide contre l'IA</small>
+                      <strong>Mode histoire</strong>
+                      <small>La campagne des Tours de Bab El</small>
                     </span>
                     <span className="rpg-menu-button__arrow" aria-hidden="true">→</span>
                   </button>
@@ -1630,22 +1631,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </button>
                   </div>
                 </div>
-                {hasGame && (
-                  <button type="button" className="rpg-menu-button rpg-menu-button--resume rpg-menu-button--resume-inline rpg-menu-button--resume-pulse" onClick={() => { play('select'); onResumeGame(); }}>
-                    <span className="rpg-menu-button__icon">↩</span>
-                    <span className="rpg-menu-button__text">
-                      <strong>Reprendre le duel en cours</strong>
-                      <small>Une partie n'est pas terminée</small>
-                    </span>
-                    <span className="rpg-resume-badge" aria-hidden="true">!</span>
-                  </button>
-                )}
-                <div className="rpg-quick-tip">
-                  <span className="rpg-quick-tip__icon">💡</span>
-                  <p>Astuce : vous pouvez annuler votre dernière action avec le bouton ↶ pendant votre tour. <kbd>F</kbd> pour le plein écran, <kbd>M</kbd> pour le son. Rendez-vous dans l'onglet <b>Tours</b> pour des parties par étages.</p>
-                </div>
               </div>
-              <div className="rpg-mode-menu__hero-mark" aria-hidden="true">باب</div>
+              {/* Le halo doré reste : simple lumière, pas un fond. */}
               <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
             </section>
           </main>
@@ -1710,11 +1697,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     <h2>Choisissez votre défi</h2>
                     <p>Gravissez les tours étage par étage. Chaque victoire débloque l'étage suivant. Deck complet et PV pleins à chaque duel.</p>
                   </div>
-                  {hasGame && (
-                    <button type="button" className="rpg-menu-button rpg-menu-button--resume rpg-menu-button--resume-pulse" onClick={() => { play('select'); onResumeGame(); }}>
-                      ↩ Reprendre le duel en cours
-                    </button>
-                  )}
                 </header>
                 <div className="rpg-story__tours">
                   {RPG_STORY_TOURS.map((tour) => {
@@ -2008,7 +1990,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   {confirmation?.supprime && <span className="is-unsaved">Deck supprimé de l'étagère.</span>}
                 </p>
               )}
-                {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
               </aside>
             )}
 
@@ -2110,7 +2091,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <h2>Catalogue</h2>
                 <p>Parcourez les créatures, héros, terrains et magies de Bab El.</p>
               </div>
-              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
             </header>
             <div className="rpg-card-catalogue__filters" aria-label="Filtres du catalogue">
               <label>
@@ -2194,6 +2174,18 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
         )}
         <footer className="rpg-mode-menu__footer"><span>LE SABLIER</span><span>STRATÉGIE · CRÉATURES · MAGIE</span></footer>
       </div>
+      {/* Partie en cours : le bouton de reprise flotte en bas au centre, visible
+          sans défiler quel que soit l'onglet du menu. */}
+      {hasGame && (
+        <button type="button" className="rpg-menu-button rpg-menu-button--resume rpg-menu-button--floating rpg-menu-button--resume-pulse" onClick={() => { play('select'); onResumeGame(); }}>
+          <span className="rpg-menu-button__icon">↩</span>
+          <span className="rpg-menu-button__text">
+            <strong>Reprendre le duel en cours</strong>
+            <small>Une partie n'est pas terminée</small>
+          </span>
+          <span className="rpg-resume-badge" aria-hidden="true">!</span>
+        </button>
+      )}
     </section>
   );
 }
