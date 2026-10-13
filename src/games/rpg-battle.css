@@ -4342,6 +4342,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   margin: 8px 0 0;
   color: rgba(246, 235, 215, .72);
   font: italic 13px/1.5 Georgia, serif;
+  /* Le voile du décor est plus clair : l'ombre portée garde la devise lisible. */
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .75);
 }
 .rpg-mode-menu__switch {
   display: flex;
@@ -4426,12 +4428,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   margin: 4px 0 0;
   color: #fff1d5;
   font: 700 clamp(22px, 3vw, 32px)/1 Georgia, serif;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, .8);
 }
 .rpg-free-tours__heading p {
   margin: 8px 0 0;
   color: rgba(244, 233, 214, .68);
   font: italic 13px/1.5 Georgia, serif;
   max-width: 60ch;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .75);
 }
 .rpg-menu-button--resume-inline {
   width: 100%;

@@ -1421,7 +1421,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // La tour ouverte dans le mode Histoire (page d'étages), ou null (galerie).
   const tourOuverte = tourOuverteId ? tourHistoireParId(tourOuverteId) : null;
   const resumeTourOuverte = tourOuverte ? resumeTourHistoire(tourOuverte.id, progressionHistoire) : null;
-  const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .96) 0%, rgba(8, 7, 13, .82) 48%, rgba(8, 7, 13, .72) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
+  // Voile noir volontairement léger : le keyart de Bab El reste lisible derrière
+  // les menus, le côté gauche garde assez d'ombre pour porter les textes.
+  const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .80) 0%, rgba(8, 7, 13, .58) 48%, rgba(8, 7, 13, .40) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
   // Quitter l'onglet Deck referme l'étagère et l'atelier : le prochain passage repart sans liste.
   useEffect(() => { if (screen !== 'decks') { setOpenDeckId(null); setAtelier(null); } }, [screen]);
   // Quitter l'onglet Histoire referme la tour ouverte : le prochain passage sur
