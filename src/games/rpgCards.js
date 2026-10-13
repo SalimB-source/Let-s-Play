@@ -49,6 +49,10 @@ export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige'];
  * Chaque combinaison a son identité, y compris celles qui n'existent pas
  * encore dans le catalogue : ses couleurs se partagent le cadre en diagonale,
  * sans reflet animé.
+ *
+ * Exception : les armes gardent un cadre d'**acier métallique guilloché**
+ * (`arme`), mais teinté dans la couleur de leur élément — acier de Braise,
+ * d'Eau, de Sable ou de Neige.
  */
 export const CARD_FRAME_COLORS = {
   braise: { label: 'Braise', color: '#e0412a' },
@@ -66,6 +70,14 @@ export const CARD_FRAME_COLORS = {
   'hybride-braise-sable-neige': { label: 'Braise + Sable + Neige', color: '#e8b98a' },
   'hybride-eau-sable-neige': { label: 'Eau + Sable + Neige', color: '#a8e2dc' },
   'hybride-braise-eau-sable-neige': { label: 'Braise + Eau + Sable + Neige', color: '#e6d3a4' },
+  /* Les cadres des armes : le même acier guilloché pour toutes, teinté dans
+     la couleur de leur élément (les dégradés métalliques sont peints dans
+     `rpg-battle.css`). La clé générique sert de repli. */
+  'arme-braise': { label: 'Acier de Braise', color: '#e0412a' },
+  'arme-eau': { label: 'Acier d’Eau', color: '#3f9fe8' },
+  'arme-sable': { label: 'Acier de Sable', color: '#d8bc86' },
+  'arme-neige': { label: 'Acier de Neige', color: '#a9e0f5' },
+  arme: { label: 'Acier des armes', color: '#9aa6b2' },
 };
 
 /** Clé de repli : les quatre couleurs, si une combinaison inconnue apparaissait. */
@@ -76,6 +88,13 @@ const CARD_FRAME_COLOR_ORDER = RPG_ELEMENTS;
 
 /** Clé et couleur de cadre d'une carte : élément seul, ou combinaison multicolore. */
 export function cardFrameInfo(carte) {
+  // Les armes gardent la matière commune des armes — acier guilloché peint
+  // par la classe `rpg-card--frame-arme` — mais leur teinte suit leur
+  // élément : acier doré du Sable, acier bleu de l'Eau, et ainsi de suite.
+  if (carte?.kind === 'arme') {
+    const couleur = cardColors(carte)[0] ?? 'sable';
+    return { key: 'arme', ...(CARD_FRAME_COLORS[`arme-${couleur}`] ?? CARD_FRAME_COLORS.arme) };
+  }
   const colors = cardColors(carte).slice().sort(
     (a, b) => CARD_FRAME_COLOR_ORDER.indexOf(a) - CARD_FRAME_COLOR_ORDER.indexOf(b),
   );
@@ -104,6 +123,11 @@ export function cardFrameColor(carte) {
 /** Classes communes à toutes les présentations d'une carte du Sablier. */
 export function cardFrameClass(carte) {
   const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
+  // Une arme ajoute la teinte d'acier de son élément à la matière commune.
+  if (carte?.kind === 'arme') {
+    const couleurArme = cardColors(carte)[0];
+    if (couleurArme) classes.push(`rpg-card--frame-arme-${couleurArme}`);
+  }
   if (cardHasShinyFrame(carte)) classes.push('rpg-card--frame-brillant');
   if (cardHasMythicFrame(carte)) classes.push('rpg-card--mythique');
   return classes.join(' ');
@@ -925,6 +949,22 @@ export const RPG_JETON_CARDS = [
     text: 'Un chien de sable créé par Tarek à son arrivée : 1/1 avec Rapidité, sans coût.',
     flavor: 'Il se lève du sable comme la dune se lève du vent.',
   },
+  {
+    id: 'serpent-des-citernes',
+    name: 'Serpent des citernes',
+    pluriel: 'serpents des citernes',
+    element: 'eau',
+    cost: 0,
+    atk: 3,
+    def: 1,
+    rapidite: true,
+    rarity: 'commune',
+    kind: 'creature',
+    jeton: true,
+    typeLine: 'Créature-jeton — Serpent',
+    text: 'Un serpent des citernes appelé par le Bâton : 3/1, Rapidité, détruit à la fin du tour.',
+    flavor: 'Il ne garde les citernes qu’une marée à la fois.',
+  },
 ];
 
 /** Retrouve une créature-jeton par son identifiant. */
@@ -1650,12 +1690,94 @@ export const RPG_MAGIE_CARDS = [
   },
 ];
 
+/**
+ * Les armes — le cinquième type de cartes du duel (prototype : quatre armes,
+ * une par élément).
+ *
+ * Une arme se joue depuis la main, payée en mana comme un sort, et s'attache
+ * directement à une créature alliée (héros et jetons compris) : le porteur
+ * gagne le bonus `bonus` (+attaque/+défense) et, selon l'arme, le mot-clé
+ * `donne` (esquive, envol…) ou l'effet déclenché `declenche`, tant qu'il la
+ * porte. Une seule arme par créature : en attacher une seconde envoie la
+ * première au cimetière. Quand le porteur quitte la table — détruit, renvoyé
+ * en main — l'arme tombe avec lui, au cimetière. Le moteur vit dans
+ * `rpgDuel.js` (`rpgJouerArme`), l'IA dans `rpgAI.js`.
+ *
+ * Les effets sont étagés par rareté, comme le reste du set : la commune
+ * rend son porteur inbloquable (Infiltration), les rares un effet propre à
+ * leur élément (Envol pour la Lance, les serpents appelés du Bâton), la
+ * mythique une immunité doublée de Rapidité.
+ */
+export const RPG_ARME_CARDS = [
+  {
+    id: 'takouba-des-pistes',
+    name: 'Takouba des pistes',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Takouba',
+    cost: 3,
+    rarity: 'commune',
+    bonus: { atk: 2, def: 0 },
+    donne: { infiltration: true },
+    text: 'Arme — Le porteur gagne +2/+0 et Infiltration (il ne peut pas être bloqué).',
+    flavor: 'Une lame droite pour les pistes qui ne pardonnent pas.',
+  },
+  {
+    id: 'baton-des-citernes',
+    name: 'Bâton des citernes',
+    element: 'eau',
+    kind: 'arme',
+    typeLine: 'Arme — Bâton',
+    cost: 2,
+    rarity: 'rare',
+    bonus: { atk: 1, def: 2 },
+    // À l'arrivée de l'arme, puis à la demande contre 3 manas (capacité
+    // activée, `rpgActiverArme` dans le moteur) : un serpent 3/1 rapide qui
+    // ne survit pas au tour (`ephemere`, soldé à `rpgFinDeTour`).
+    arrivee: { type: 'jetons', jeton: 'serpent-des-citernes', nombre: 1, ephemere: true },
+    activation: { cout: 3, effet: { type: 'jetons', jeton: 'serpent-des-citernes', nombre: 1, ephemere: true } },
+    text: 'Arme — Le porteur gagne +1/+2. Quand cette arme arrive en jeu, créez un jeton Serpent 3/1 avec Rapidité, détruit à la fin du tour. 3 : créez un jeton Serpent 3/1 avec Rapidité, détruit à la fin du tour.',
+    flavor: 'Il soulève les serpents des citernes comme des rubans de soie — puis les lâche, furieux, entre l’ennemi et vous.',
+  },
+  {
+    id: 'armure-de-cendres',
+    name: 'Armure de cendres',
+    element: 'braise',
+    kind: 'arme',
+    typeLine: 'Arme — Armure',
+    cost: 3,
+    rarity: 'mythique',
+    bonus: { atk: 3, def: 3 },
+    donne: { rapidite: true, immunite: 'braise' },
+    text: 'Arme — Le porteur gagne +3/+3 et Rapidité. Il est immunisé contre la Braise.',
+    flavor: 'Forgée dans le cratère même : aucune flamme ne mord deux fois cet acier-là.',
+  },
+  {
+    id: 'lance-de-givre',
+    name: 'Lance de givre',
+    element: 'neige',
+    kind: 'arme',
+    typeLine: 'Arme — Lance',
+    cost: 3,
+    rarity: 'rare',
+    bonus: { atk: 3, def: 1 },
+    donne: { envol: true },
+    text: 'Arme — Le porteur gagne +3/+1 et Envol.',
+    flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
+  },
+];
+
+export function armeById(id) {
+  return RPG_ARME_CARDS.find((card) => card.id === id) ?? null;
+}
+
 /** Le catalogue complet du duel, avec un type unifié pour les filtres d’interface. */
 export const RPG_DUEL_CARDS = [
   ...RPG_CREATURE_CARDS.map((card) => ({ ...card, kind: 'creature' })),
   ...RPG_HERO_CARDS,
   ...RPG_TERRAIN_CARDS,
   ...RPG_MAGIE_CARDS,
+  ...RPG_ARME_CARDS,
 ];
 
 export function magieById(id) {
@@ -1779,6 +1901,7 @@ export function cardTypeLine(card) {
   if (card.kind === 'creature') return 'Créature — Habitants de Bab El';
   if (card.kind === 'terrain') return `Terrain — ${card.name}`;
   if (card.kind === 'magie') return card.instant ? 'Magie Rapide' : 'Sorcellerie';
+  if (card.kind === 'arme') return 'Arme';
   return 'Carte';
 }
 

@@ -88,6 +88,8 @@ const PLEIN_ART_45 = [
   // Les créatures-jetons de Tarek : deux chiens de sable peints dans la
   // palette de son illustration, livrés eux aussi au format de la face.
   'chien-de-sable',
+  // Les quatre armes du prototype, peintes comme le reste du catalogue.
+  'takouba-des-pistes', 'baton-des-citernes', 'armure-de-cendres', 'lance-de-givre',
   // La refonte du Père des corbeaux (Odin photoréaliste) est livrée elle
   // aussi au ratio exact de la face.
   'pere-des-corbeaux',
@@ -147,7 +149,7 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
   assert.equal(new Set(RPG_DUEL_CARDS.map((carte) => carte.id)).size, RPG_DUEL_CARDS.length,
     'le catalogue réunit les cartes sans doublon');
   assert.deepEqual(new Set(RPG_DUEL_CARDS.map((carte) => carte.kind)),
-    new Set(['creature', 'hero', 'terrain', 'magie']));
+    new Set(['creature', 'hero', 'terrain', 'magie', 'arme']));
 });
 
 test('le set de créatures existe : trente-six cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
@@ -456,8 +458,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
   // dédiée, variante du Glacier comprise (aucune ne partage le fichier d’une autre).
   const illustrationsNeige = RPG_DECK_NEIGE_BASE.filter((id, index, deck) => deck.indexOf(id) === index);
-  assert.equal(illustrationsNeige.length, 15,
-    'le deck Neige réunit les quinze cartes que la recette du Serment retient');
+  assert.equal(illustrationsNeige.length, 16,
+    'le deck Neige réunit les seize cartes que la recette du Serment retient');
   for (const carteId of illustrationsNeige) {
     assert.equal(cardArtId(carteId), carteId,
       `${carteId} affiche sa propre illustration Neige`);
@@ -2260,15 +2262,15 @@ test('Parade de verre ne se lance pas si sa créature cible est absente', () => 
   assert.ok(duel.joueur.main.includes('parade-du-verre'), 'la carte et le mana restent intacts');
 });
 
-test('le plein art du Serment est livré : les vingt cartes Neige sont dédiées, aucune provisoire', () => {
+test('le plein art du Serment est livré : les vingt et une cartes Neige sont dédiées, aucune provisoire', () => {
   // La liste des illustrations provisoires est vide : le deck Neige et sa
   // variante de Glacier sont entièrement peints.
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
-  const fiches = ['creature', 'hero', 'magie', 'terrain'];
+  const fiches = ['creature', 'hero', 'magie', 'terrain', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 20, 'vingt cartes Neige au catalogue');
+  assert.equal(cartesNeige.length, 21, 'vingt et une cartes Neige au catalogue');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
-    ['creature', 'hero', 'magie', 'terrain'], 'le set Neige couvre les quatre types de cartes');
+    ['arme', 'creature', 'hero', 'magie', 'terrain'], 'le set Neige couvre les cinq types de cartes');
   for (const carte of cartesNeige) {
     assert.ok(fiches.includes(carte.kind), `${carte.id} est une carte jouable du set Neige`);
     assert.equal(cardArtId(carte), carte.id, `${carte.id} affiche son illustration dédiée`);
@@ -2317,7 +2319,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 20, 'les vingt peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 21, 'les vingt et une peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 17 terrains en deux arts, mythiques en un exemplaire', () => {
@@ -2510,9 +2512,9 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'anqa-des-braises').length, 1,
     'les Sentiers de cendre contiennent une Anqa mythique');
   for (const [deck, terrainsAttendus, creaturesAttendues, magiesAttendues] of [
-    [RPG_DECK_JOUEUR_BASE, 17, 18, 5],
-    [RPG_DECK_SORCIER_BASE, 22, 12, 6],
-    [RPG_DECK_NEIGE_BASE, 17, 16, 7],
+    [RPG_DECK_JOUEUR_BASE, 17, 16, 5],
+    [RPG_DECK_SORCIER_BASE, 22, 11, 6],
+    [RPG_DECK_NEIGE_BASE, 17, 14, 7],
   ]) {
     const valide = rpgValiderDeck(deck);
     assert.equal(valide.ok, true, valide.raison);
@@ -2562,8 +2564,9 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'dunes-du-tenere').length, 3);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'montagne').length, 3);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'cretes-de-cendre').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 18);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 16);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 5);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'arme').length, 2);
   for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.rarity === 'mythique')) {
     assert.ok(RPG_DECK_HYBRIDE_BASE.filter((id) => id === carte.id).length <= 1,
       `${carte.id} mythique apparaît au plus une fois dans le deck hybride`);

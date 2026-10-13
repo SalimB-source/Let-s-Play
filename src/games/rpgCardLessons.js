@@ -11,6 +11,13 @@ export const RPG_CARD_LESSONS = Object.freeze([
     text: 'Le catalogue distingue terrains, créatures, héros et magies. Un terrain fournit du mana ; créatures et héros occupent le champ de bataille et combattent ; une magie produit son effet puis rejoint le cimetière. Un héros est donc une carte à part dans la collection, mais une créature en jeu.',
   },
   {
+    id: 'armes',
+    section: 'Types de cartes',
+    cardIds: ['takouba-des-pistes', 'baton-des-citernes', 'armure-de-cendres', 'lance-de-givre'],
+    title: 'Les armes équipent vos créatures',
+    text: 'Une arme se paie en mana puis s’attache à une créature alliée : son porteur gagne le bonus imprimé (+attaque/+défense) et, selon l’arme, un mot-clé comme Envol ou Infiltration (le Takouba rend son porteur inbloquable), un effet de combat, ou même un serpent appelé à son arrivée (le Bâton des citernes, qui peut en appeler d’autres pour 3 manas). Une seule arme par créature — en attacher une autre envoie la première au cimetière — et quand le porteur quitte la table, détruit ou renvoyé en main, son arme tombe avec lui au cimetière.',
+  },
+  {
     id: 'terrain-hybride',
     section: 'Types de cartes',
     cardIds: ['petra', 'desert'],
@@ -124,6 +131,13 @@ export const RPG_CARD_LESSONS = Object.freeze([
   },
   {
     id: 'infiltration',
+    section: 'Capacités des créatures',
+    cardIds: ['takouba-des-pistes'],
+    title: 'Infiltration : le porteur est inbloquable',
+    text: 'Le Takouba des pistes rend son porteur inbloquable : quand il attaque le sorcier, aucune créature ne peut se mettre en travers — ni au sol, ni en vol. Ses dégâts passent toujours (une protection contre sa couleur reste une affaire de ciblage, pas de blocage). Le +2/+0 sans défense ajoutée en fait une arme d’assaut pur : elle frappe fort, elle ne protège pas.',
+  },
+  {
+    id: 'infiltration-tin-hinan',
     section: 'Capacités des créatures',
     cardIds: ['tin-hinan'],
     title: 'Infiltration frappe sans être bloquée',

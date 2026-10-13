@@ -96,6 +96,24 @@ function valeurEffet(effet = {}) {
  */
 export function valeurCarte(carte) {
   if (!carte || carte.kind === 'terrain') return 0;
+  if (carte.kind === 'arme') {
+    // Une arme vaut ce qu'elle ajoute à son porteur : les chiffres d'abord,
+    // puis le mot-clé donné (aux mêmes prix que sur une créature), puis le
+    // déclenché de combat, lu comme un effet de dégâts ordinaire.
+    let valeur = 1.3 * (carte.bonus?.atk ?? 0) + (carte.bonus?.def ?? 0);
+    if (carte.donne?.envol) valeur += 2.5;
+    if (carte.donne?.infiltration) valeur += 2.5;
+    if (carte.donne?.esquive) valeur += 1.5 * carte.donne.esquive;
+    if (carte.donne?.furie) valeur += 1 + 0.7 * carte.donne.furie;
+    if (carte.donne?.immunite) valeur += 2;
+    if (carte.donne?.rapidite) valeur += 0.5;
+    if (carte.declenche?.effet) valeur += valeurEffet(carte.declenche.effet);
+    // Un jeton appelé à l'arrivée (le serpent du Bâton) vaut sa frappe d'un
+    // tour ; la capacité activée vaut l'option de le rappeler à volonté.
+    if (carte.arrivee?.type === 'jetons') valeur += 3;
+    if (carte.activation) valeur += 3;
+    return valeur;
+  }
   if (carte.kind === 'magie') {
     let valeur = valeurEffet(carte.effet ?? {});
     // Un sort qui pioche en plus de son effet (le Courant de retour, la
@@ -105,6 +123,7 @@ export function valeurCarte(carte) {
   }
   let valeur = 1.3 * (carte.atk ?? 0) + (carte.def ?? 0);
   if (carte.envol) valeur += 2.5;
+  if (carte.infiltration) valeur += 2.5;
   if (carte.coupRapide) valeur += 2;
   if (carte.rapidite) valeur += 0.5;
   if (carte.esquive) valeur += 1.5 * carte.esquive;

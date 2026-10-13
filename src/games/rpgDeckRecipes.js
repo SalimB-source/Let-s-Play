@@ -13,6 +13,8 @@
  *                   pas le même sable mais la même chose) ;
  *   - `creatures` : les places de créatures et de héros ;
  *   - `magies`    : les places de sorts ;
+ *   - `armes`     : les places d'armes (0 par défaut : les paquets de
+ *                   l'Histoire n'en alignent pas encore) ;
  *   - `signature` : les cartes qui portent l'archétype du deck, posées avant
  *                   le remplissage — c'est l'âme du boîtier, et c'est aussi ce
  *                   qui distingue deux decks qui puisent dans le même vivier.
@@ -22,8 +24,8 @@
  * sorcier aligne, pour que la rampe des Tours tienne — la Garde du fjord
  * n'ouvre pas avec le Père des corbeaux, le Maître des Neuf Hivers si.
  *
- * La somme `terrains + creatures + magies` doit faire 40 — c'est le contrôle
- * de `tests/rpg-decks-puissance.test.js`, avec bien d'autres.
+ * La somme `terrains + creatures + magies + armes` doit faire 40 — c'est le
+ * contrôle de `tests/rpg-decks-puissance.test.js`, avec bien d'autres.
  */
 
 /**
@@ -42,8 +44,9 @@ export const RPG_RECETTES_DECKS = {
   'veilleurs-du-desert': {
     identite: ['sable'],
     terrains: [['desert', 9], ['dunes-du-tenere', 8]],
-    creatures: 18,
+    creatures: 16,
     magies: 5,
+    armes: 2,
     signature: [
       ['amani-des-ksour', 3],
       ['cavalier-amazigh-du-desert', 1],
@@ -64,8 +67,9 @@ export const RPG_RECETTES_DECKS = {
   'cour-des-djinns': {
     identite: ['braise'],
     terrains: [['montagne', 11], ['cretes-de-cendre', 11]],
-    creatures: 12,
+    creatures: 11,
     magies: 6,
+    armes: 1,
     signature: [
       ['braisier-du-souk', 3],
       ['trait-de-braise', 3],
@@ -87,12 +91,14 @@ export const RPG_RECETTES_DECKS = {
       ['montagne', 3], ['cretes-de-cendre', 3],
       ['petra', 3], ['petra-des-deux-sources', 2],
     ],
-    creatures: 18,
+    creatures: 16,
     magies: 5,
+    armes: 2,
     signature: [
       ['djinn-de-foudre', 3],
       ['vent-rouge', 2],
       ['rempart-de-dunes', 1],
+      ['takouba-des-pistes', 1],
     ],
   },
   /**
@@ -107,8 +113,9 @@ export const RPG_RECETTES_DECKS = {
   'maree-des-abysses': {
     identite: ['eau'],
     terrains: [['mer', 8], ['lagune-des-salines', 8]],
-    creatures: 10,
+    creatures: 8,
     magies: 14,
+    armes: 2,
     signature: [
       ['contresort-des-abimes', 3],
       ['silence-decume', 3],
@@ -126,8 +133,9 @@ export const RPG_RECETTES_DECKS = {
   'serment-des-neuf-hivers': {
     identite: ['neige'],
     terrains: [['glacier', 9], ['glacier-des-arches', 8]],
-    creatures: 16,
+    creatures: 14,
     magies: 7,
+    armes: 2,
     signature: [
       ['jarl-au-marteau-de-guerre', 1],
       ['loup-des-neiges', 1],

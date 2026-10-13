@@ -107,8 +107,11 @@ import {
   rpgPeutMulligan,
   rpgPeutPayer,
   rpgPoserTerrain,
+  rpgActiverArme,
   rpgActiverCapacite,
+  rpgJouerArme,
   rpgPeutActiverCapacite,
+  rpgSorcierActiverArmes,
   rpgSorcierActiverCapacitesIA,
   rpgSorcierAnnonceSuivante,
   rpgSorcierPrepareTerrain,
@@ -129,6 +132,7 @@ import {
   cardArtId,
   cardById,
   cardTypeLine,
+  armeById,
   rpgValiderDeck,
 } from './rpgCards.js';
 
@@ -548,6 +552,7 @@ function cardFaceTypeLine(carte) {
 function cardFrameType(carte) {
   if (carte?.kind === 'terrain') return 'terrain';
   if (carte?.kind === 'magie') return 'magie';
+  if (carte?.kind === 'arme') return 'arme';
   return 'creature';
 }
 
@@ -568,9 +573,10 @@ function deckStats(deck) {
     if (!carte) return stats;
     if (carte.kind === 'terrain') stats.terrains += 1;
     else if (carte.kind === 'magie') stats.magies += 1;
+    else if (carte.kind === 'arme') stats.armes += 1;
     else stats.creatures += 1;
     return stats;
-  }, { terrains: 0, creatures: 0, magies: 0 });
+  }, { terrains: 0, creatures: 0, magies: 0, armes: 0 });
 }
 
 function deckCardList(deck) {
@@ -585,16 +591,20 @@ function deckCardList(deck) {
 function familleDeCarte(carte) {
   if (carte?.kind === 'terrain') return 'terrains';
   if (carte?.kind === 'magie') return 'sorts';
+  if (carte?.kind === 'arme') return 'armes';
   return 'creatures';
 }
 
 const RPG_DECK_FAMILLES = [
   { id: 'creatures', nom: 'Créatures', note: 'Les créatures et héros invoqués en jeu' },
   { id: 'sorts', nom: 'Sorts', note: 'Les magies, lancées depuis la main' },
+  { id: 'armes', nom: 'Armes', note: 'Les armes, attachées à une créature alliée' },
   { id: 'terrains', nom: 'Terrains', note: 'Les sources de mana du deck' },
 ];
 
 function targetMode(carte) {
+  // Une arme se joue sur une créature alliée : c'est elle qu'on désigne.
+  if (carte?.kind === 'arme') return 'allie';
   if (carte?.arrivee?.type === 'combat' && carte.arrivee.cible === 'creature') return 'ennemi';
   if (carte?.arrivee?.type === 'retour-main') return carte.arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
   if (carte?.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature') return 'ennemi';
@@ -702,6 +712,7 @@ function TableCard({
 }) {
   const carte = cardById(entite.carteId);
   const nom = entite.name;
+  const armeCarte = entite.arme ? cardById(entite.arme.carteId) : null;
   const protectionActive = entite.protection?.toursRestants > 0;
   const protectionLabel = protectionActive
     ? ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre
@@ -799,12 +810,17 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut être bloquée ce tour' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${armeCarte ? `, armée de ${armeCarte.name} (+${armeCarte.bonus?.atk ?? 0}/+${armeCarte.bonus?.def ?? 0})` : ''}${armeCarte?.donne?.immunite ? `, immunité contre ${ELEMENT_LABELS[armeCarte.donne.immunite] ?? armeCarte.donne.immunite}` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       <CardElementBadge carte={carte} />
+      {armeCarte && (
+        <span className="rpg-card__arme" title={`Armée de ${armeCarte.name} (+${armeCarte.bonus?.atk ?? 0}/+${armeCarte.bonus?.def ?? 0})`}>
+          <CardStatIcon type="attack" />{armeCarte.name} +{armeCarte.bonus?.atk ?? 0}/+{armeCarte.bonus?.def ?? 0}
+        </span>
+      )}
       <header className="rpg-card__title">
         <ManaCost carte={carte} compact showElement={false} />
       </header>
@@ -1001,6 +1017,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
         </div>
       )}
       {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
+      {carte.kind === 'arme' && <p className="rpg-hover-card-preview__stats">Porteur : +{carte.bonus?.atk ?? 0} ⚔ <span>·</span> +{carte.bonus?.def ?? 0} 🛡</p>}
     </>
   );
   const face = (
@@ -1435,7 +1452,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // (et la liste n'est même pas calculée) tant que le joueur n'a rien ouvert.
   const openDeck = decksVisibles.find((deck) => deck.id === openDeckId) ?? null;
   const openJouable = openDeck ? deckSeJoue(openDeck, collection) : false;
-  const openStats = openDeck ? deckStats(openDeck) : { terrains: 0, creatures: 0, magies: 0 };
+  const openStats = openDeck ? deckStats(openDeck) : { terrains: 0, creatures: 0, magies: 0, armes: 0 };
   const openCards = openDeck ? deckCardList(openDeck) : [];
   // La liste se lit par familles : créatures, puis sorts, puis terrains. Une
   // famille sans carte ne s'affiche pas, et les totaux additionnent les
@@ -2006,6 +2023,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <span><b>{openStats.terrains}</b><small>terrains</small></span>
                   <span><b>{openStats.creatures}</b><small>créatures</small></span>
                   <span><b>{openStats.magies}</b><small>magies</small></span>
+                  <span><b>{openStats.armes ?? 0}</b><small>armes</small></span>
                   <span className={openValidation.ok ? 'is-valid' : 'is-invalid'}><b>{openValidation.ok ? '✓' : '!'}</b><small>{openValidation.ok ? 'validé' : (openValidation.raisons ?? [openValidation.raison]).filter(Boolean).join(' · ')}</small></span>
                 </div>
                 <div className="rpg-deck-detail__list-heading"><h3>Liste des cartes</h3><span>{openCards.length} références · quantités incluses</span></div>
@@ -2089,7 +2107,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               <div>
                 <span className="rpg-mode-menu__eyebrow">COLLECTION COMPLÈTE · {RPG_DUEL_CARDS.length} CARTES</span>
                 <h2>Catalogue</h2>
-                <p>Parcourez les créatures, héros, terrains et magies de Bab El.</p>
+                <p>Parcourez les créatures, héros, terrains, magies et armes de Bab El.</p>
               </div>
             </header>
             <div className="rpg-card-catalogue__filters" aria-label="Filtres du catalogue">
@@ -2112,6 +2130,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <option value="hero">Héros</option>
                   <option value="terrain">Terrains</option>
                   <option value="magie">Magies</option>
+                  <option value="arme">Armes</option>
                 </select>
               </label>
               <p className="rpg-card-catalogue__count" aria-live="polite">
@@ -2125,7 +2144,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   const estCreature = ['creature', 'hero'].includes(carte.kind);
                   const type = carte.kind === 'terrain' ? 'Terrain'
                     : carte.kind === 'magie' ? 'Magie'
-                      : carte.kind === 'hero' ? 'Héros' : 'Créature';
+                      : carte.kind === 'arme' ? 'Arme'
+                        : carte.kind === 'hero' ? 'Héros' : 'Créature';
                   return (
                     <article
                       key={carte.id}
@@ -2160,6 +2180,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                               : `${deckColorGlyph({ element: carte.element, elements: cardColors(carte) })} ${cardColorLabel(carte)}${cardColors(carte).includes('sable') ? ' · Désert' : ''}`}
                           </span>
                           {estCreature && <b>⚔ {carte.atk} · 🛡 {carte.def}</b>}
+                          {carte.kind === 'arme' && <b>⚔ +{carte.bonus?.atk ?? 0} · 🛡 +{carte.bonus?.def ?? 0}</b>}
                         </div>
                         <p className="rpg-card-catalogue__rules"><RpgCardRules carte={carte} /></p>
                       </div>
@@ -3318,7 +3339,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     || cardArt(etageHistoire ? etageHistoire.avatar ?? 'ifrit-al-ahmar' : deckBoxArtUrl(deckAdverseAffiche));
   const cibleAnnoncee = carteAnnoncee?.kind === 'magie'
     ? describeAnnouncedMagicTarget(carteAnnoncee, duel.annonce.cibleId, duel, sorcierArtId, portraitSorcierAdverse)
-    : null;
+    : carteAnnoncee?.kind === 'arme'
+      ? (() => {
+        // L'annonce d'une arme désigne son futur porteur, dans le camp du sorcier.
+        const porteur = duel.sorcier.creatures.find((entite) => entite.id === duel.annonce.cibleId);
+        return porteur ? { nom: porteur.name, illustrationId: porteur.carteId } : { nom: 'Une créature du sorcier' };
+      })()
+      : null;
   const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
@@ -3624,6 +3651,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!rpgContreJouable(duel, 'joueur', carte)) return false;
     if (reponseApresBlocage && !carte.instant) return false;
     if (carte.kind === 'terrain') return monTour && !reponseApresBlocage && !duel.joueur.terrainPose;
+    // Une arme sans créature alliée à équiper reste éteinte dans la main.
+    if (carte.kind === 'arme' && !duel.joueur.creatures.length) return false;
     return (reponseApresBlocage ? carte.instant : monTour || (reponseActive && carte.instant))
       && rpgPeutPayer(duel.joueur, carte);
   };
@@ -3868,11 +3897,56 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
+  const equiperArme = (carteId, cibleId) => {
+    const etatAvantAction = JSON.stringify(duel);
+    const champAvantAction = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
+    const res = rpgJouerArme(duel, 'joueur', carteId, cibleId);
+    if (res.ok && res.contre && res.parIA) {
+      // Le sorcier contre l'arme : elle part au cimetière sans être portée.
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      invaliderAnnulation();
+    } else if (res.ok) {
+      conserverAnnulation(etatAvantAction);
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      jouerSfx('card_place');
+    } else {
+      jouerSfx('erreur');
+    }
+    force();
+  };
+
+  /** Capacité activée d'une arme portée (le Bâton des citernes) : même
+   *  patron que les autres actions payées — instantané d'annulation pris
+   *  avant, animation du champ après. */
+  const activerArmePorteur = (entite) => {
+    if (!monTour || phase || combatEntrant || cibleEnCours || mulliganOuvert) { jouerSfx('erreur'); return; }
+    const etatAvantAction = JSON.stringify(duel);
+    const champAvantAction = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
+    const res = rpgActiverArme(duel, 'joueur', entite.id);
+    if (res.ok) {
+      conserverAnnulation(etatAvantAction);
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      jouerSfx('apparition');
+    } else {
+      jouerSfx('erreur');
+    }
+    force();
+  };
+
   const poserCarte = (carteId) => {
     const carte = cardById(carteId);
     const peutRepondre = reponseActive && carte.instant;
     if (reponseApresBlocage && !carte.instant) return;
     if (!monTour && !peutRepondre) return;
+    if (carte.kind === 'arme') {
+      // On désigne la créature alliée qui portera l'arme.
+      if (!duel.joueur.creatures.length) { jouerSfx('erreur'); force(); return; }
+      setCibleEnCours(carteId);
+      force();
+      return;
+    }
     if (carte.kind === 'magie') {
       const cible = targetMode(carte);
       if (cible) {
@@ -3921,6 +3995,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (carte.kind === 'terrain') {
       demarrerVolCarte(carte, index, () => poserTerrain(carteId));
     } else if (carte.kind === 'magie') {
+      poserCarte(carteId);
+    } else if (carte.kind === 'arme') {
+      carteCibleeHandIndexRef.current = index;
       poserCarte(carteId);
     } else if ((['combat', 'retour-main'].includes(carte.arrivee?.type)
       || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature'))
@@ -4002,6 +4079,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       carteCibleeHandIndexRef.current = null;
       setCibleEnCours(null);
       demarrerVolCarte(carteSource, handIndex, () => finaliserPoseCreature(carteId, entite.id));
+      return true;
+    }
+    if (carteSource?.kind === 'arme') {
+      const carteId = cibleEnCours;
+      carteCibleeHandIndexRef.current = null;
+      setCibleEnCours(null);
+      equiperArme(carteId, entite.id);
       return true;
     }
     lancerMagie(cibleEnCours, entite.id);
@@ -4443,13 +4527,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     const annonce = rpgSorcierAnnonceSuivante(duel, rng);
     if (!annonce) {
-      // Le mana de glace restant peut finir en capacités activées (la foudre
-      // du Père des corbeaux) avant que le sorcier ne passe à l'attaque.
+      // Cartes épuisées : le sorcier dépense son mana restant avant de
+      // déclarer ses attaques — d'abord ses armes activables (le Bâton des
+      // citernes appelle ses serpents), puis ses capacités activées (la
+      // foudre du Père des corbeaux).
       const champAvantActivation = prendreInstantaneChamp();
-      const debutJournalDestructions = rpgNombreDestructions(duel);
-      const activations = rpgSorcierActiverCapacitesIA(duel, rng);
-      if (activations.length) {
-        animerModificationsChamp(champAvantActivation, [], debutJournalDestructions);
+      const debutJournalActivation = rpgNombreDestructions(duel);
+      const armesActivees = rpgSorcierActiverArmes(duel).length;
+      const capacitesActivees = rpgSorcierActiverCapacitesIA(duel, rng).length;
+      if (armesActivees || capacitesActivees) {
+        animerModificationsChamp(champAvantActivation, [], debutJournalActivation);
+        if (armesActivees) jouerSfx('apparition');
         force();
         later(declarerAttaqueSorcier, 900);
         return;
@@ -4845,7 +4933,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                           'joueur',
                         ).some((cible) => cible.id === entite.id))
                       )}
-                      canReceiveBlocker={Boolean(reponseActive && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
+                      canReceiveBlocker={Boolean(reponseActive && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id] && !entite.infiltration)}
                       onAssignBlocker={assignerBloqueur}
                       actionFx={animationsEntites[entite.id]}
                       tilt={TILTS[i % TILTS.length]}
@@ -5122,6 +5210,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     Annuler la cible
                   </button>
                 )}
+                {monTour && !phase && !combatEntrant && !cibleEnCours && !defausseOuverte && duel.joueur.creatures
+                  .filter((entite) => armeById(entite.arme?.carteId ?? '')?.activation)
+                  .map((entite) => {
+                    const carteArme = armeById(entite.arme.carteId);
+                    const cout = carteArme.activation.cout ?? 0;
+                    return (
+                      <button
+                        key={entite.id}
+                        type="button"
+                        className="rpg-btn rpg-btn--activation"
+                        disabled={!rpgPeutPayer(duel.joueur, { cost: cout })}
+                        aria-label={`Activer ${carteArme.name}, portée par ${entite.name}, pour ${cout} manas : créer un jeton Serpent 3/1 avec Rapidité, détruit à la fin du tour`}
+                        onClick={() => activerArmePorteur(entite)}
+                      >
+                        🐍 {carteArme.name} ({cout})
+                      </button>
+                    );
+                  })}
                 {defausseOuverte && (
                   <span className="rpg-discard-prompt" role="status" aria-live="polite">
                     Cliquez une carte de votre main pour la défausser ({duel.defausseEnAttente.restant}).
@@ -5337,6 +5443,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
                       <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
                       <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
+                    </span>
+                  )}
+                  {carte.kind === 'arme' && (
+                    <span className="rpg-hand__stats" aria-label={`Porteur : +${carte.bonus?.atk ?? 0} attaque, +${carte.bonus?.def ?? 0} défense`}>
+                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">+{carte.bonus?.atk ?? 0}</span></span>
+                      <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">+{carte.bonus?.def ?? 0}</span></span>
                     </span>
                   )}
                 </button>

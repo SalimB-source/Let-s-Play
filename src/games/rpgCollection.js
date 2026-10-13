@@ -12,7 +12,7 @@
  * 2. **Les récompenses d'étage** — chaque étage déblayé du mode Histoire rend
  *    des cartes confisquées par la Chambre des Heures (rares et
  *    mythiques). La correspondance étage → cartes est du contenu, dans
- *    `RPG_RECOMPENSES_PAR_ETAGE` : vingt étages, quarante-quatre cartes à
+ *    `RPG_RECOMPENSES_PAR_ETAGE` : vingt étages, quarante-sept cartes à
  *    ravir, parées pour que chaque couleur ouvre à peu près au moment où la
  *    campagne y entre — le mono-Eau au seuil des Abysses, le mono-Neige en
  *    entrant dans le Fjord. Chaque étage ne nomme que des cartes du catalogue :
@@ -69,7 +69,7 @@ export const RPG_RECOMPENSES_PAR_ETAGE = {
   'listes-3': ['amani-des-ksour', 'tempete-de-sable'],
   // Pétra et sa peinture alternative se débloquent ensemble à l’étage 4.
   'listes-4': ['petra', 'petra-des-deux-sources'],
-  'listes-5': ['sahir-des-braises', 'nuage-de-cendres', 'tarek'],
+  'listes-5': ['sahir-des-braises', 'nuage-de-cendres', 'tarek', 'armure-de-cendres'],
   // Tour du Souk — le feu se complète ; les citernes de la Gardienne rendent
   // les premières cartes d'Eau.
   'souk-1': ['vent-rouge'],
@@ -82,9 +82,9 @@ export const RPG_RECOMPENSES_PAR_ETAGE = {
   'sables-3': ['anqa-des-braises', 'tin-hinan', 'yamina'],
   // Tour des Abysses — les bêtes marines ; ce qui remonte du fond est gelé :
   // les premières cartes de Neige précèdent la tour du Fjord.
-  'abysses-1': ['kraken', 'sonneur-fele'],
+  'abysses-1': ['kraken', 'sonneur-fele', 'baton-des-citernes'],
   'abysses-2': ['leviathan', 'scalde-des-runes'],
-  'abysses-3': ['bakunawa', 'valkyrie-au-corbeau'],
+  'abysses-3': ['bakunawa', 'valkyrie-au-corbeau', 'lance-de-givre'],
   'abysses-4': ['jormungandr', 'boualem', 'brume-du-fjord'],
   // Tour du Fjord — le Serment au complet.
   'fjord-1': ['jarl-au-marteau-de-guerre', 'hurlement-du-blizzard', 'berserk-des-trois-hivers'],

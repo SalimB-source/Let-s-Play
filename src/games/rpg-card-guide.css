@@ -78,8 +78,9 @@
   box-shadow: 0 12px 30px rgba(0, 0, 0, .48), inset 0 0 22px color-mix(in srgb, var(--rpg-guide-frame, #d3ab62) 10%, transparent);
 }
 /* Même anneau orné que les autres faces : les hybrides partagent leur bord
-   en diagonale, même sans rareté mythique ; seuls les mythiques mono brillent. */
-.rpg-card-guide__example:is(.rpg-card--mythique, [class*="rpg-card--frame-hybride-"]) {
+   en diagonale, même sans rareté mythique ; seuls les mythiques mono brillent.
+   Les armes y portent aussi leur acier guilloché, à toute rareté. */
+.rpg-card-guide__example:is(.rpg-card--mythique, [class*="rpg-card--frame-hybride-"], .rpg-card--frame-arme) {
   border: 3px solid transparent;
   background-image:
     linear-gradient(155deg, #1e1c1c, #0d0d13),
@@ -94,6 +95,8 @@
 .rpg-card-guide__example.rpg-card--frame-brillant {
   animation: rpg-frame-shine-sweep var(--rpg-frame-shine-duration, 2.8s) ease-in-out infinite alternate;
 }
+/* La plaque des armes est renforcée dans le guide aussi (6 px contre 3 px). */
+.rpg-card-guide__example.rpg-card--frame-arme { border-width: 6px; }
 .rpg-card-guide__art {
   position: relative;
   overflow: hidden;
