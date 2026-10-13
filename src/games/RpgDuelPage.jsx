@@ -46,6 +46,7 @@ import { sauverCollectionDistante } from './rpgCollection.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
+import { rpgCombatFireSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
@@ -1962,8 +1963,10 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   }, [phaseDuelActive]);
   useEffect(() => {
     if (cartesEnDestruction.length > prevDestructionCountRef.current) {
-      const last = cartesEnDestruction[cartesEnDestruction.length - 1];
-      jouerSfx(last?.bruleeParBraise ? 'flame_gust' : 'destruction_hit');
+      const nouvellesDestructions = cartesEnDestruction.slice(prevDestructionCountRef.current);
+      jouerSfx(nouvellesDestructions.some((effet) => effet.bruleeParBraise)
+        ? 'flame_gust'
+        : 'destruction_hit');
     }
     prevDestructionCountRef.current = cartesEnDestruction.length;
   }, [cartesEnDestruction]);
@@ -3209,13 +3212,27 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ...duel.joueur.terrains,
       ...duel.sorcier.terrains,
     ].map((entite) => [entite.id, entite]));
-    const disparues = animationsReduites() ? [] : avant.filter((entite) => !vivants.has(entite.entityId));
+    const cartesDisparues = avant.filter((entite) => !vivants.has(entite.entityId));
+    const mouvementReduit = animationsReduites();
+    const disparues = mouvementReduit ? [] : cartesDisparues;
+    const evenementsDestruction = Number.isInteger(debutJournalDestructions)
+      ? rpgDestructionsDepuis(duel, debutJournalDestructions)
+      : [];
+    const idsDetruits = new Set(evenementsDestruction.map((evenement) => evenement.entityId));
+    const entitesBrulees = new Set(evenementsDestruction
+      .filter((evenement) => evenement.sourceElements.includes('braise'))
+      .map((evenement) => evenement.entityId));
+    // Une créature Braise garde son bruit de capacité de destruction quand
+    // elle est tuée par une autre couleur : l'effet vient bien de sa capacité.
+    for (const entite of cartesDisparues) {
+      if (idsDetruits.has(entite.entityId)
+        && rpgFireSoundFor(cardById(entite.cardId), 'destruction')) {
+        entitesBrulees.add(entite.entityId);
+      }
+    }
+    // Les animations réduites ne coupent pas les bruitages élémentaires.
+    if (mouvementReduit && entitesBrulees.size) jouerSfx('flame_gust');
     if (disparues.length) {
-      const entitesBrulees = new Set((Number.isInteger(debutJournalDestructions)
-        ? rpgDestructionsDepuis(duel, debutJournalDestructions)
-        : [])
-        .filter((evenement) => evenement.sourceElements.includes('braise'))
-        .map((evenement) => evenement.entityId));
       const token = ++sequenceAnimationRef.current;
       const duree = disparues.some((entite) => entitesBrulees.has(entite.entityId)) ? 1050 : 760;
       const effets = disparues.map((entite) => ({
@@ -3415,10 +3432,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const annoncerMagie = (carte, cible) => {
-    const son = cardColors(carte).includes('braise') && carte?.effet?.type === 'degats'
-      ? 'flame_gust'
-      : carte?.effet?.type === 'soin' ? 'soin_long'
-        : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie';
+    const son = rpgFireSoundFor(carte, 'spell')
+      ?? (carte?.effet?.type === 'soin' ? 'soin_long'
+        : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
     jouerSfx(son);
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
@@ -3534,6 +3550,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       jouerSfx('card_place');
+      const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
+      if (sonEffetBraise) jouerSfx(sonEffetBraise);
       avancerTutoriel('creature', 'invocation');
     }
     force();
@@ -3757,7 +3775,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         force();
         return;
       }
-      jouerSfx('player_attack_hit');
+      // Le coup rapide ne frappe qu'à la résolution du combat ; ici, on ne fait
+      // entendre que le retour de sélection de la cible.
+      jouerSfx('select');
       const cibles = { ...ciblesAttaque, [attaquant.id]: entite.id };
       setCiblesAttaque(cibles);
       const prochainId = prochainCoupRapideSansCible(attaquants, cibles);
@@ -3955,10 +3975,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     const vivants = new Set(attaquantsVivants);
     const blocages = Object.fromEntries(Object.entries(combatEntrant.blocages).filter(([id]) => vivants.has(id)));
-    const attaqueBraise = attaquantsVivants.some((id) => {
-      const entite = duel.sorcier.creatures.find((candidate) => candidate.id === id);
-      return cardColors(cardById(entite?.carteId)).includes('braise');
-    });
+    const sonAttaqueBraise = rpgCombatFireSound(duel, attaquantsVivants, blocages);
+    const sonFrappeDirecteBraise = rpgCombatFireSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -3977,9 +3995,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     const frappeDirecte = res.resume.frappeSorcier > 0;
+    const frappeCreature = res.resume.paires.length > 0
+      || res.resume.coupsRapides.some((coup) => !coup.annule);
     jouerSfx('combat');
-    if (res.resume.paires.length > 0) jouerSfx(attaqueBraise ? 'flame_gust' : 'player_attack_hit', 0.015);
-    if (frappeDirecte) { jouerSfx(attaqueBraise ? 'flame_gust' : 'degats', 0.18); }
+    if (frappeCreature) jouerSfx(sonAttaqueBraise ?? 'player_attack_hit', 0.015);
+    if (frappeDirecte) jouerSfx(sonFrappeDirecteBraise ?? 'degats', 0.18);
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     rpgFermerFenetreReponse(duel);
     setCombatEntrant(null);
@@ -4010,10 +4030,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const attaquantsBloques = (combat.attaquantsBloques
       ?? combat.attaquants.filter((id) => combat.blocages[id]?.length))
       .filter((id) => attaquantsVivants.includes(id));
-    const attaqueBraise = attaquantsVivants.some((id) => {
-      const entite = duel.joueur.creatures.find((candidate) => candidate.id === id);
-      return cardColors(cardById(entite?.carteId)).includes('braise');
-    });
+    const sonAttaqueBraise = rpgCombatFireSound(duel, attaquantsVivants, blocages);
+    const sonFrappeDirecteBraise = rpgCombatFireSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -4032,10 +4050,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
 
+    const frappeCreature = res.resume.paires.length > 0
+      || res.resume.coupsRapides.some((coup) => !coup.annule);
     jouerSfx('combat');
-    if (res.resume.paires.length > 0) jouerSfx(attaqueBraise ? 'flame_gust' : 'player_attack_hit', 0.015);
-    if (res.resume.frappeSorcier > 0) { jouerSfx(attaqueBraise ? 'flame_gust' : 'player_attack_hit', 0.18); }
-    else if (!res.resume.paires.length) { jouerSfx('block_impact', 0.2); }
+    if (frappeCreature) jouerSfx(sonAttaqueBraise ?? 'player_attack_hit', 0.015);
+    if (res.resume.frappeSorcier > 0) {
+      jouerSfx(sonFrappeDirecteBraise ?? 'player_attack_hit', 0.18);
+    } else if (!frappeCreature) {
+      jouerSfx('block_impact', 0.2);
+    }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran('dealt');
     rpgFermerFenetreReponse(duel);
@@ -4109,12 +4132,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // « Laisser passer » : la carte annoncée se résout (un contre du joueur peut la défaire).
   const laisserPasser = () => {
     if (!duel.annonce) { jouerSfx('erreur'); return; }
+    const carteAnnoncee = cardById(duel.annonce.carteId);
     setApercuSurvol(null);
     jouerSfx('pass');
     const champAvant = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur();
     const res = rpgSorcierResoudreAnnonce(duel);
+    if (res.ok) {
+      const sonEffetBraise = rpgFireSoundFor(carteAnnoncee, 'spell')
+        ?? rpgFireSoundFor(carteAnnoncee, 'arrival');
+      if (sonEffetBraise) jouerSfx(sonEffetBraise);
+    }
     if (res.ok && joueurToucheDepuis(degatsJoueurAvantResolution)) {
       declencherImpactEcran('received');
     }
