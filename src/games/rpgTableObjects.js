@@ -662,6 +662,77 @@ function buildGlassRose(env, { kind, color, seed }) {
   return group;
 }
 
+/**
+ * Un sapin vu d'en haut : quatre étages de branches festonnées, du plus large
+ * (en bas) à la pointe, vert sombre, la neige posée vers le cœur. `extent` est le
+ * diamètre de l'étage du bas.
+ */
+function buildPine(env) {
+  const group = new THREE.Group();
+  const random = seededRandom(77);
+  const around = 56, rings = 5;
+  const green = new THREE.Color('#1f4026'), snow = new THREE.Color('#e9f0f5'), tint = new THREE.Color();
+  const tiers = [[0.5, 0.0, 0.2, 11], [0.39, 0.12, 0.34, 9], [0.28, 0.25, 0.46, 8], [0.17, 0.37, 0.58, 6]];
+  tiers.forEach(([radius, base, top, lobes], tier) => {
+    const positions = [], colors = [], indices = [];
+    const phase = random() * 6;
+    for (let i = 0; i <= rings; i += 1) {
+      const s = 1 - i / rings; // 1 au bord, 0 à l'axe
+      for (let j = 0; j <= around; j += 1) {
+        const a = (j / around) * Math.PI * 2;
+        const spike = Math.abs(Math.cos((lobes * a) / 2 + phase)) ** 0.7;
+        const r = radius * s * (0.72 + 0.28 * spike);
+        positions.push(Math.cos(a) * r, Math.sin(a) * r, base + (top - base) * (1 - s) ** 0.8);
+        // La neige s'accroche vers l'axe, par plaques : le seuil change d'une branche à l'autre.
+        const patch = 0.5 + 0.5 * Math.sin(lobes * a + phase * 2) * Math.cos(a * 3 + tier);
+        tint.copy(green).lerp(snow, Math.min(1, Math.max(0, (1 - s) * 1.5 - 0.15 + (patch - 0.5) * 0.6)));
+        colors.push(tint.r, tint.g, tint.b);
+      }
+    }
+    for (let i = 0; i < rings; i += 1) for (let j = 0; j < around; j += 1) {
+      const a = i * (around + 1) + j, b = a + 1, c = a + around + 1, d = c + 1;
+      indices.push(a, c, b, b, c, d);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    group.add(mesh(geometry, new THREE.MeshStandardMaterial({ name: 'branches', vertexColors: true, roughness: 0.92, metalness: 0, side: THREE.DoubleSide, envMap: env, envMapIntensity: 0.12 }), `etage-${tier}`));
+  });
+  group.userData = { kind: 'sapin', extent: 1 };
+  return group;
+}
+
+/** Un rocher coiffé de neige : une boule bosselée, aplatie ; le dessus blanchit. */
+function buildRock(env) {
+  const random = seededRandom(5);
+  const geometry = new THREE.IcosahedronGeometry(0.5, 3);
+  const position = geometry.attributes.position;
+  const bumps = Array.from({ length: 6 }, () => [random() * 6, random() * 6, 0.35 + random() * 0.7, 1 + Math.floor(random() * 3)]);
+  for (let i = 0; i < position.count; i += 1) {
+    const x = position.getX(i), y = position.getY(i), z = position.getZ(i);
+    const a = Math.atan2(y, x), b = Math.acos(Math.max(-1, Math.min(1, z / 0.5)));
+    let bump = 1;
+    for (const [pa, pb, amount, k] of bumps) bump += Math.sin(a * k + pa) * Math.sin(b * (k + 1) + pb) * amount * 0.07;
+    position.setXYZ(i, x * bump * 1.08, y * bump * 0.95, z * bump * 0.62);
+  }
+  geometry.computeVertexNormals();
+  const colors = [], stone = new THREE.Color('#756a58'), snow = new THREE.Color('#f1f5f8'), tint = new THREE.Color();
+  for (let i = 0; i < position.count; i += 1) {
+    const up = geometry.attributes.normal.getZ(i) + Math.sin(position.getX(i) * 31) * 0.12 + Math.sin(position.getY(i) * 27) * 0.1;
+    tint.copy(stone).lerp(snow, Math.min(1, Math.max(0, (up - 0.72) * 3.2) * 0.85));
+    colors.push(tint.r, tint.g, tint.b);
+  }
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.computeBoundingBox();
+  geometry.translate(0, 0, -geometry.boundingBox.min.z);
+  const group = new THREE.Group();
+  group.add(mesh(geometry, new THREE.MeshStandardMaterial({ name: 'roche', vertexColors: true, roughness: 0.88, metalness: 0, envMap: env, envMapIntensity: 0.2 }), 'roche'));
+  group.userData = { kind: 'rocher', extent: 1.1 };
+  return group;
+}
+
 const BUILDERS = Object.freeze({
   bol: buildBowl,
   galets: buildPebbles,
@@ -682,6 +753,8 @@ const BUILDERS = Object.freeze({
   'rose-verte': (env) => buildGlassRose(env, { kind: 'rose-verte', color: '#0f5a34', seed: 23 }),
   'rose-rose': (env) => buildGlassRose(env, { kind: 'rose-rose', color: '#b4607c', seed: 37 }),
   'rose-mauve': (env) => buildGlassRose(env, { kind: 'rose-mauve', color: '#6a3060', seed: 41 }),
+  sapin: buildPine,
+  rocher: buildRock,
   rubis: (env) => buildCrystalCluster(env, { kind: 'rubis', color: '#a6132c', glow: '#5a0612', seed: 913 }),
 });
 

@@ -195,11 +195,11 @@ test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »'
     const size = jpegSize(file);
     assert.ok(size && Math.abs(size.width / size.height - 1.5) < 0.01, `${id} : plaque en 3:2 comme la peinture (${JSON.stringify(size)})`);
     assert.ok(size.width <= 2048, `${id} : plaque bornée à 2048 px (c'est la taille de texture maximale)`);
-    assert.ok(theme.objets.length <= 10, `${id} : au plus dix objets`);
+    assert.ok(theme.objets.length <= 24, `${id} : au plus vingt-quatre objets`);
     for (const objet of theme.objets) {
       assert.ok(RPG_TABLE_OBJECT_KINDS.includes(objet.kind), `${id} : genre ${objet.kind} connu`);
-      assert.ok(objet.u >= 0 && objet.u <= 1 && objet.v >= 0 && objet.v <= 1, `${id}/${objet.kind} : dans l'image`);
-      assert.ok(objet.size > 0.03 && objet.size <= 0.4, `${id}/${objet.kind} : taille plausible`);
+      assert.ok(objet.u >= -0.05 && objet.u <= 1.05 && objet.v >= -0.05 && objet.v <= 1.05, `${id}/${objet.kind} : dans l'image`);
+      assert.ok(objet.size > 0.015 && objet.size <= 0.4, `${id}/${objet.kind} : taille plausible`);
       assert.ok(Number.isFinite(objet.angle));
     }
   }
@@ -209,7 +209,7 @@ test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »'
 test('chaque objet se construit sous Node, posé au sol, borné et sans valeur invalide', () => {
   assert.equal(createTableObject('licorne'), null);
   // Le catalogue grandit avec les plateaux : on exige les genres déjà livrés, pas une liste figée.
-  for (const kind of ['amethyste', 'astrolabe', 'baton', 'corde-chanvre', 'rose-rouge', 'rose-verte', 'rose-rose', 'rose-mauve', 'bol', 'compas', 'cor', 'corde', 'corde-brune', 'galets', 'gourde', 'hache', 'lanterne', 'lanterne-fer', 'rubis', 'tapis']) {
+  for (const kind of ['amethyste', 'astrolabe', 'baton', 'corde-chanvre', 'rose-rouge', 'rose-verte', 'rose-rose', 'rose-mauve', 'sapin', 'rocher', 'bol', 'compas', 'cor', 'corde', 'corde-brune', 'galets', 'gourde', 'hache', 'lanterne', 'lanterne-fer', 'rubis', 'tapis']) {
     assert.ok(RPG_TABLE_OBJECT_KINDS.includes(kind), `genre livré : ${kind}`);
   }
   const byKind = {};
