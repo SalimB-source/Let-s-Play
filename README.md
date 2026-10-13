@@ -6545,3 +6545,54 @@ gardait le petit gabarit des cartes en jeu (23 px au plus, glyphe de 13 px).
 Elle passe à **`clamp(28px, 17%, 38px)`, glyphe de 19 px et liseré de 2 px** :
 la couleur qu'il faut lire pour décider se voit à la taille de la carte qui
 la porte.
+
+**4. L'aperçu au survol se colle à la carte survolée.** Il se posait d'après
+une taille devinée (680 × 400) : trop grand, il rebondissait aux bords de la
+fenêtre et se retrouvait loin de la carte. Désormais `placerApercuSurvol()`
+mesure la **boîte réelle du panneau** rendu, **retire sa marge intérieure**
+(le rembourrage, lu en style calculé) pour que la face elle-même touche
+presque la carte, **choisit le côté qui a la place** — à droite d'abord — et
+**bascule à gauche si le bord déborde** ; en hauteur, le haut de la face
+s'aligne sur celui de la carte et le panneau remonte si son bas sortirait.
+Le panneau est **reposé avant peinture** (`useLayoutEffect`) : le joueur ne
+le voit jamais sauter. Le même `panelRef` sert l'aperçu du duel, celui du
+menu et celui du **mulligan**, qui se colle lui aussi à la carte lue.
+
+### Où vit le code
+
+- `src/games/rpg-battle.css` — le disque de mana carré de 30 px sur PC
+  (`.rpg-battle:not(.rpg-battle--touch) .rpg-card--img
+  .rpg-mana-cost.is-compact`), la pastille de couleur à sa taille (30 px sur
+  la table, `min(28px, 30%)` dans la main, glyphe 15 px et liseré 2 px), et
+  celle de l'aperçu rapide aux grandes faces
+  (`.rpg-hover-card-preview__face`, `clamp(28px, 17%, 38px)`, 19 px / 2 px) ;
+- `src/games/RpgDuelPage.jsx` — `placerApercuSurvol()` (boîte réelle, marge
+  intérieure retirée, côté choisi, bascule au débordement), le
+  `useLayoutEffect` qui repose le panneau avant peinture, et `panelRef`
+  posé par `HoverCardPreview` sur l'aperçu du survol comme sur celui du
+  mulligan (`VoletMulligan` le transmet).
+
+### Vérifications
+
+```bash
+npm run check:rpg              # 342/342 — les règles du duel, inchangées
+npm run build                  # le bundle se construit
+npm run check:rpg-tutorial-ui  # le tutoriel, dans la vraie page
+npm run check:rpg-ui           # voir la réserve ci-dessous
+```
+
+`scripts/rpg-battle-ui-check.mjs` tient le contrat des quatre points : le
+disque carré de 30 px (et l'interdit de l'ellipse 36 × 25), la pastille à la
+taille du disque sur la table comme dans la main, celle de l'aperçu rapide
+aux 28–38 px des grandes faces, et le placement collé à la carte (boîte
+réelle mesurée, marge intérieure retirée, bascule au débordement, reposé
+avant peinture, `panelRef` sur le survol et le mulligan). Les scénarios
+JSDOM `rpg-card-state`, `rpg-preview`, `rpg-stacks`, `rpg-ghost`,
+`rpg-mulligan` et `rpg-turn-banner` rejouent la page entière autour du
+nouveau placement.
+
+**Réserve connue, hors de ces retouches :** `npm run check:rpg-ui` casse
+déjà à HEAD dans le volet JSDOM de `rpg-battle-ui-check` ; en contournant
+ce volet, huit assertions statiques restent rouges, pré-existantes (Coup
+rapide, Envol, Cavalier, 3 × Furie, maître-du-marteau ×2). Les contrôles
+Playwright demandent un navigateur, absent de cet environnement.

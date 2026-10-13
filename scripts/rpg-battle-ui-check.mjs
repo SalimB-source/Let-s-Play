@@ -160,8 +160,22 @@ assert.match(battlePage, /\{apercuMagie && \(\s*<HoverCardPreview\s+carte=\{card
   'l’aperçu de la magie lancée réutilise le composant de l’aperçu rapide, posé au centre, sans style de décor en ligne');
 assert.match(battleCss, /\.rpg-hover-card-preview__details\s*\{[^}]*background:\s*rgba\(5, 8, 11, \.8\);/s,
   'seul le fond de l’encadré des infos reste pour la lisibilité');
-assert.match(battlePage, /const largeurApercu = Math\.min\(680,[\s\S]*?const hauteurApercu = Math\.min\(400,/,
-  'le calcul de placement prend en compte la nouvelle taille de l’aperçu');
+assert.match(battlePage, /function placerApercuSurvol\(rectangle, panneau\) \{[\s\S]*?panneau\?\.getBoundingClientRect\?\.\(\)/,
+  'l’aperçu au survol se place d’après la boîte réelle de son panneau, pas d’une taille estimée');
+assert.match(battlePage, /function placerApercuSurvol\(rectangle, panneau\) \{[\s\S]*?getComputedStyle\(panneau\)[\s\S]*?paddingLeft/,
+  'le placement retire la marge intérieure du panneau : c’est la face qui se colle à la carte survolée');
+assert.match(battlePage, /let left = rectangle\.right \+ espace - margeGauche;\s*if \(left \+ largeur > largeurVue - marge\) \{\s*left = rectangle\.left - largeur - espace \+ margeDroite;/,
+  'l’aperçu choisit le côté qui a la place et bascule à gauche si son bord droit déborderait');
+assert.match(battlePage, /useLayoutEffect\(\(\) => \{\s*if \(!apercuSurvol\?\.rectangle \|\| !panelRef\.current\) return;\s*const style = placerApercuSurvol\(apercuSurvol\.rectangle, panelRef\.current\);/,
+  'l’aperçu est reposé avant peinture (useLayoutEffect), dès que son panneau est rendu');
+assert.match(battlePage, /function HoverCardPreview\(\{[^}]*panelRef = null/,
+  'l’aperçu rapide expose son panneau au placement');
+assert.match(battlePage, /<aside\s+ref=\{panelRef\}/,
+  'le panneau de l’aperçu porte la référence mesurée par le placement');
+assert.match(battlePage, /style=\{apercuSurvol\.style\}\s+panelRef=\{panelRef\}/,
+  'l’aperçu du survol est mesuré par son panneau');
+assert.match(battlePage, /panelRef=\{panelRef\}\s+variante="mulligan"/,
+  'l’aperçu du mulligan est mesuré par le même panneau');
 assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*grid;[^}]*gap:\s*7px;[\s\S]*?\.rpg-hover-card-preview__rules > span\s*\{\s*display:\s*block;/s,
   'chaque effet occupe sa propre ligne dans l’aperçu au survol');
 assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
