@@ -13,6 +13,7 @@ réactif de *Clair Obscur*.
 | [`04-progression-da.md`](04-progression-da.md) | Progression, économie du sable, direction artistique, son |
 | [`05-production.md`](05-production.md) | Roadmap, vertical slice, équipe, budget, risques |
 | [`10-scenario-la-derniere-liste.md`](10-scenario-la-derniere-liste.md) | Scénario de **La Dernière Liste** : épisode I intégré, plan des quatre actes suivants |
+| [`12-decor-3d-table.md`](12-decor-3d-table.md) | Le **décor 3D de la table** : relief, lumière et particules Three.js sous les cartes, repli CSS |
 | [`11-bible-visuelle.md`](11-bible-visuelle.md) | Portraits canoniques, continuité des personnages, état de réalisation, sauvegarde et vérifications |
 
 ## La décision de conception

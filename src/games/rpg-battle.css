@@ -4167,6 +4167,53 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-fullscreen-icon { display: block; width: 14px; height: 14px; }
 
+/* Le décor 3D de la table : même gabarit que les boutons son et plein écran. */
+.rpg-duel-nav__decor3d {
+  min-width: 32px;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.rpg-duel-nav__decor3d.is-on {
+  border-color: rgba(246, 207, 103, .45);
+  background: rgba(244, 192, 79, .14);
+  color: #ffe5a0;
+}
+
+/* Petit écran paysage : la barre est déjà serrée, le bouton se fait discret. */
+@media (max-width: 640px) {
+  .rpg-duel-nav__decor3d {
+    min-width: 24px;
+    padding: 6px 3px;
+    font-size: 9px;
+  }
+}
+
+/* ── Le décor 3D de la table (RpgTableScene3D) ───────────────────────────────
+   Sous tout le chrome (`z-index: -1` dans l'isolat de `.card-table`), sans
+   aucun geste : la peinture CSS du fond reste dessous, et c'est elle qu'on
+   voit tant que la 3D n'est pas prête ou si WebGL manque. Le canvas apparaît
+   en fondu une fois la première image rendue. */
+.rpg-table-3d {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .6s ease;
+}
+.rpg-table-3d.is-ready { opacity: 1; }
+.rpg-table-3d__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-table-3d { transition: none; }
+}
+
 /* Menu principal, catalogues des decks et des cartes de Sablier. */
 .rpg-battle--menu { background: #09080d; }
 .rpg-mode-menu {
