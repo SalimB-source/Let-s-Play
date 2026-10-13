@@ -1567,7 +1567,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <div className="rpg-mode-menu__hero-actions">
                   {/* Le bouton principal ouvre le mode Histoire (reprend ou débute
                       le récit) ; le duel rapide reste dispo via l'onglet Deck. */}
-                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--glow" onClick={() => { play('select'); onContinueRecit?.(); }}>
+                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--histoire rpg-menu-button--glow" onClick={() => { play('select'); onContinueRecit?.(); }}>
                     <span className="rpg-menu-button__icon">⌛</span>
                     <span className="rpg-menu-button__text">
                       <strong>Mode histoire</strong>

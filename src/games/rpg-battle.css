@@ -4583,6 +4583,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-menu-button--primary { background: linear-gradient(135deg, #e5c06b, #b77d32); border-color: #f0d994; color: #21170d; box-shadow: 0 8px 28px rgba(197, 139, 53, .2); }
 .rpg-menu-button--primary:hover,
 .rpg-menu-button--primary:focus-visible { background: linear-gradient(135deg, #ffdda0, #d99d48); color: #1c130b; }
+/* Le bouton « Mode histoire » se distingue du duel : bleu clair, pas le laiton. */
+.rpg-menu-button--primary.rpg-menu-button--histoire {
+  background: linear-gradient(135deg, #bfe2f7, #6fb3dc);
+  border-color: #dcf1fd;
+  color: #10314a;
+  box-shadow: 0 8px 28px rgba(96, 165, 210, .28);
+}
+.rpg-menu-button--primary.rpg-menu-button--histoire:hover,
+.rpg-menu-button--primary.rpg-menu-button--histoire:focus-visible {
+  background: linear-gradient(135deg, #dbf1ff, #8cc6e9);
+  color: #0b2739;
+}
 .rpg-menu-button--resume { width: 100%; margin-top: auto; border-color: rgba(163, 203, 164, .44); color: #c8e4c1; }
 .rpg-menu-button--resume:hover { background: rgba(49, 90, 57, .36); }
 .rpg-menu-button--resume-pulse { position: relative; animation: resume-pulse 2.2s ease-in-out infinite; }
