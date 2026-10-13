@@ -19,6 +19,7 @@ import {
   terrainManaColors,
 } from './rpgCards.js';
 import {
+  choisirActivationIA,
   choisirAttaquantsIA,
   choisirBloqueursIA,
   choisirCarteIA,
@@ -353,6 +354,66 @@ export function rpgEngagerTerrain(duel, cote, terrainId, couleurChoisie = null) 
 
 export const rpgMana = (camp) => ({ ...camp.mana, total: totalMana(camp) });
 
+/** Coût d'un effet activé sous la forme d'une « pseudo-carte » que `payer`
+ *  sait acquitter : tout le mana demandé doit venir de la couleur dédiée. */
+function coutActivation(activation) {
+  const cout = Math.max(0, Math.floor(Number(activation?.cout) || 0));
+  const couleur = activation?.couleur;
+  return {
+    cost: cout,
+    colorCost: couleur && RPG_COULEURS.includes(couleur) ? { [couleur]: cout } : {},
+    element: couleur ?? null,
+  };
+}
+
+/** La capacité activée d'une créature en jeu (le Père des corbeaux) : elle
+ *  s'active à son tour, tant qu'on peut en payer le mana de glace. */
+export function rpgPeutActiverCapacite(duel, cote, entiteId) {
+  const entite = duel[cote].creatures.find((candidate) => candidate.id === entiteId);
+  const activation = entite ? duelCardById(entite.carteId)?.activation : null;
+  if (!activation || duel.tour !== cote) return false;
+  return rpgPeutPayer(duel[cote], coutActivation(activation));
+}
+
+/** Active la capacité : le mana part d'abord — même si Boualem la contre —
+ *  puis elle inflige ses blessures à la créature choisie, alliée ou adverse
+ *  (« une créature au choix »). Les blessures ne sont ni une attaque ni une
+ *  magie : Esquive n'y fait rien. */
+export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
+  const camp = duel[cote];
+  const entite = camp.creatures.find((candidate) => candidate.id === entiteId);
+  const activation = entite ? duelCardById(entite.carteId)?.activation : null;
+  if (!entite || !activation) return { ok: false, raison: 'capacite' };
+  if (duel.tour !== cote) return { ok: false, raison: 'tour' };
+  const cibleCamp = ['joueur', 'sorcier'].find((possedant) => duel[possedant].creatures
+    .some((candidate) => candidate.id === cibleId)) ?? null;
+  const cible = cibleCamp
+    ? duel[cibleCamp].creatures.find((candidate) => candidate.id === cibleId)
+    : null;
+  if (!cible) return { ok: false, raison: 'cible' };
+  const carte = duelCardById(entite.carteId);
+  const couleur = activation.couleur ?? carte.element;
+  if (rpgEstProtegee(cible, couleur)) return { ok: false, raison: 'protection' };
+  const cout = coutActivation(activation);
+  if (!rpgPeutPayer(camp, cout)) return { ok: false, raison: 'mana' };
+  payer(duel, cote, cout);
+  // Boualem ne contre que l'effet qui le **cible vraiment** — la foudre l'a
+  // bien pris pour cible : elle se paie, puis se dénoue.
+  if (cible.carteId === 'boualem' && cible.boualemContresortDisponible) {
+    cible.boualemContresortDisponible = false;
+    duel.log.push('Boualem contre l’effet adverse qui le ciblait.');
+    rpgActionsEtat(duel);
+    return { ok: true, contre: true };
+  }
+  const montant = Math.max(0, Number(activation.effet?.amount) || 0);
+  if ((activation.effet?.type ?? 'degats') === 'degats') {
+    rpgBlesserCreature(duel, cibleCamp, cible.id, montant, couleur, null, 'capacite');
+  }
+  duel.log.push(`${entite.name} inflige ${montant} blessures à ${cible.name}.`);
+  rpgActionsEtat(duel);
+  return { ok: true, cibleId: cible.id };
+}
+
 const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
 
 function appliquerAuraSable(duel, cote) {
@@ -369,6 +430,49 @@ function appliquerAuraSable(duel, cote) {
     entite.pvMax += delta;
     entite.pv += delta;
   }
+}
+
+/**
+ * Amani — l'égide de la Gardienne des ksour : tant qu'Amani est en jeu, les
+ * **autres** créatures de son camp gagnent +0/+2. Même contrat que l'aura
+ * Sable : chaque entité ne garde que l'écart appliqué (`auraAmaniBonus`), pour
+ * qu'une créature qui entre ou qui meurt ne fasse pas dériver les statistiques
+ * déjà cumulées par la Furie ou d'autres renforts. L'égide compte **par source** :
+ * chaque Amani protège toutes les créatures sauf elle-même, donc une seconde
+ * Amani double le bonus des autres et protège la première. L'égide ne franchit
+ * jamais la ligne du camp adverse. La perdre ne tue jamais : au pire, 1 PV
+ * (la règle de la Résonance).
+ */
+function appliquerAuraAmani(duel, cote) {
+  const camp = duel[cote];
+  const nombreAmani = camp.creatures.filter((entite) => entite.carteId === 'amani-des-ksour').length;
+  for (const entite of camp.creatures) {
+    const sources = entite.carteId === 'amani-des-ksour'
+      ? nombreAmani - 1
+      : nombreAmani;
+    const prochainBonus = 2 * Math.max(0, sources);
+    const delta = prochainBonus - (entite.auraAmaniBonus ?? 0);
+    if (!delta) continue;
+    entite.auraAmaniBonus = prochainBonus;
+    entite.def = Math.max(1, entite.def + delta);
+    entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + delta);
+    entite.pv = Math.max(1, entite.pv + delta);
+  }
+}
+
+/**
+ * Rafraîchit toutes les auras de présence après un changement du champ de
+ * bataille (arrivée, mort, renvoi, retour programmé) : l'aura Sable de Tarek
+ * et l'égide d'Amani sur chaque camp, puis la Résonance de table. Chaque
+ * mécanisme ne pose que l'écart qu'il détient déjà — voir les commentaires de
+ * `appliquerAuraSable`, `appliquerAuraAmani` et `majResonance`.
+ */
+function rafraichirAuras(duel) {
+  appliquerAuraSable(duel, 'joueur');
+  appliquerAuraSable(duel, 'sorcier');
+  appliquerAuraAmani(duel, 'joueur');
+  appliquerAuraAmani(duel, 'sorcier');
+  majResonance(duel);
 }
 
 /** Protection temporaire contre les effets et les créatures d'une couleur donnée. */
@@ -409,11 +513,14 @@ function creerEntiteCreature(carte) {
     bouclier: 0,
     bouclierLumiere: false,
     auraSableBonus: 0,
+    auraAmaniBonus: 0,
     boualemContresortDisponible: carte.id === 'boualem',
     esquive: Math.max(0, carte.esquive ?? 0),
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
     envol: Boolean(carte.envol),
+    infiltration: false,
+    tenaciteDisponible: Boolean(carte.tenacite),
     protection: carte.protection ? {
       contre: carte.protection.contre,
       toursRestants: carte.protection.tours ?? 2,
@@ -426,13 +533,17 @@ function creerEntiteCreature(carte) {
 
 /**
  * Furie — capacité des vikings : une créature **blessée qui survit** gagne
- * +X/+X (X = la furie imprimée sur la carte). Les blessures d'un même échange
- * comptent une seule fois, et une attaque entièrement absorbée par un bouclier
- * n'est pas une blessure : la furie attend le premier sang.
+ * +X/+X (X = la furie imprimée sur la carte) — une seule fois. La première
+ * blessure survivée l'enflamme ; les suivantes ne la grandissent plus. Les
+ * blessures d'un même échange ne font donc jamais double effet, et une
+ * attaque entièrement absorbée par un bouclier n'est pas une blessure : la
+ * furie attend le premier sang. Renvoyée en main puis rejouée, la carte
+ * revient avec sa Furie neuve : la flambée appartient à la présence en jeu.
  */
 function appliquerFurie(duel, entite, degatsRecus) {
   const furie = Math.max(0, Number(duelCardById(entite.carteId)?.furie) || 0);
-  if (!furie || degatsRecus <= 0) return;
+  if (!furie || degatsRecus <= 0 || entite.furieDeclenchee) return;
+  entite.furieDeclenchee = true;
   entite.atk += furie;
   entite.pvMax = (entite.pvMax ?? entite.def) + furie;
   entite.def += furie;
@@ -530,8 +641,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       furieuses.push({ entite, recus });
     }
   }
-  // La furie monte après les blessures : les blessures d'un même échange ne
-  // comptent qu'une fois, et une créature morte ne s'énerve pas.
+  // La furie s'embrase après les blessures, une seule fois par présence : les
+  // blessures d'un même échange ne font jamais double effet, et une créature
+  // morte ne s'énerve pas.
   for (const { entite, recus } of furieuses) appliquerFurie(duel, entite, recus);
 
   // Retire d’abord toutes les victimes : une capacité de destruction ne peut
@@ -549,9 +661,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       appliquer(duel, mort.cote, carte.destruction, null, null, cardColors(carte), null, mort.entite.carteId);
     }
   }
-  appliquerAuraSable(duel, 'joueur');
-  appliquerAuraSable(duel, 'sorcier');
-  majResonance(duel);
+  rafraichirAuras(duel);
   rpgActionsEtat(duel);
 }
 
@@ -682,6 +792,15 @@ function annulerBonusTemporaires(duel, tourFerme) {
   }
 }
 
+/** L'Infiltration ne dure que le tour qui l'a vue naître : à la fin du tour,
+ *  chaque créature redevient bloquable. Les statistiques gagnées, elles,
+ *  restent acquises — seul le passe-droit s'efface. */
+function annulerInfiltrations(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) entite.infiltration = false;
+  }
+}
+
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut une
  *  entité du buff (le Colosse ne se buffe pas lui-même). */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
@@ -794,7 +913,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // modèle (`jetonById`), sans carte en main ni sable payé. Elles entrent
       // en jeu comme n'importe quelle créature — le mal d'invocation et les
       // auras du camp s'appliquent à leur tour, `rpgJouerCreature` finissant
-      // par `appliquerAuraSable` et `majResonance`.
+      // par `rafraichirAuras`.
       const modele = jetonById(effet.jeton);
       if (!modele) return;
       const nombre = Math.max(0, Math.floor(Number(effet.nombre) || 1));
@@ -825,6 +944,27 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.pv += bonusDefense;
         if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tour: duel.tour });
       }
+      return;
+    }
+    case 'infiltration': {
+      // Le ralliement de Tin Hinan : TOUTES les créatures du camp — la source
+      // comprise — gagnent +ATK/+DEF, et passent incognito jusqu'à la fin du
+      // tour (Infiltration : impossibles à bloquer). Les statistiques restent
+      // acquises ; le passe-droit s'efface à `rpgFinDeTour` (voir
+      // `annulerInfiltrations`). Contrairement au `buff`, aucune entité n'est
+      // exclue : « toutes les créatures du joueur ».
+      const source = duel[cote].creatures.find((entite) => entite.id === sauf);
+      const bonusAttaque = effet.atk ?? 0;
+      const bonusDefense = effet.def ?? 0;
+      for (const entite of duel[cote].creatures) {
+        if (rpgEstProtegee(entite, sourceElement)) continue;
+        entite.atk += bonusAttaque;
+        entite.pvMax = (entite.pvMax ?? entite.def) + bonusDefense;
+        entite.def += bonusDefense;
+        entite.pv += bonusDefense;
+        entite.infiltration = true;
+      }
+      duel.log.push(`Infiltration : ${source?.name ?? 'l’effet'} rend ses créatures impossibles à bloquer ce tour.`);
       return;
     }
     case 'combat': {
@@ -906,17 +1046,28 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
   // un chien de sable de Tarek deviendrait une carte gratuite et rejouable.
   if (presente.jeton) {
     duel.log.push(`${presente.name} quitte la table : un jeton cesse d’exister.`);
-    majResonance(duel);
+    rafraichirAuras(duel);
     return true;
   }
   camp.main.push(presente.carteId);
   duel.log.push(`${presente.name} retourne dans la main de son propriétaire.`);
-  majResonance(duel);
+  rafraichirAuras(duel);
   return true;
 }
 
 /** Retire une créature morte, puis déclenche sa capacité de destruction. */
 function enterrer(duel, cote, entite, sourceElements = []) {
+  // Tenacité : la destruction est refusée une fois — la créature survit et il
+  // lui reste 1 point de défense. Aucune capacité de destruction ne se
+  // déclenche : elle n'a pas été détruite. Seule cette présence en jeu la
+  // dépense : renvoyée en main puis rejouée, la carte revient avec sa Tenacité.
+  if (entite.tenaciteDisponible) {
+    entite.tenaciteDisponible = false;
+    entite.pv = 1;
+    entite.def = 1;
+    duel.log.push(`Tenacité : ${entite.name} refuse la destruction — il lui reste 1 point de défense.`);
+    return;
+  }
   journaliserDestruction(duel, entite, sourceElements);
   const camp = duel[cote];
   camp.creatures = camp.creatures.filter((e) => e.id !== entite.id);
@@ -926,8 +1077,7 @@ function enterrer(duel, cote, entite, sourceElements = []) {
   if (carte?.destruction) {
     appliquer(duel, cote, carte.destruction, null, null, cardColors(carte), null, entite.carteId);
   }
-  appliquerAuraSable(duel, cote);
-  majResonance(duel);
+  rafraichirAuras(duel);
 }
 
 /**
@@ -984,10 +1134,15 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   if (entite.pv <= 0) {
     const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
     enterrer(duel, cote, entite, elements);
+    // La Tenacité peut avoir sauvé la créature : elle a alors survécu à une
+    // blessure, et la Furie s'applique comme pour n'importe quel survivant.
+    if (duel[cote].creatures.some((candidate) => candidate.id === entite.id)) {
+      appliquerFurie(duel, entite, recus);
+    }
   } else {
     appliquerFurie(duel, entite, recus);
   }
-  appliquerAuraSable(duel, cote);
+  rafraichirAuras(duel);
   rpgActionsEtat(duel);
   return { ok: true, recus, absorbes, esquives: esquive };
 }
@@ -998,7 +1153,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
   const carte = duelCardById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
-  if (carte.arrivee?.type === 'combat') {
+  if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
+    // Une arrivée qui désigne une créature (duel du Cavalier, lance de givre de
+    // la Valkyrie, gueule du Bakunawa) exige sa cible tant qu'il reste une
+    // créature adverse à viser : la pose sans désignation est refusée.
     const adversaires = duel[autre(cote)].creatures;
     const cible = adversaires.find((entite) => entite.id === cibleId);
     if (cibleId && !cible) return { ok: false, raison: 'cible' };
@@ -1039,8 +1197,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
       : null;
     appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte), 'capacite', carte.id);
   }
-  majResonance(duel);
-  appliquerAuraSable(duel, cote);
+  rafraichirAuras(duel);
   rpgActionsEtat(duel);
   return { ok: true, entite };
 }
@@ -1050,9 +1207,12 @@ const pret = (entite) => entite && entite.ready && !entite.attaquee;
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
 const peutBloquer = (entite) => entite && !entite.attaquee;
 
-/** Envol : un attaquant volant ne peut être bloqué que par une créature volante. */
+/** Envol : un attaquant volant ne peut être bloqué que par une créature volante.
+ *  Infiltration : jusqu'à la fin du tour, la créature glisse entre les lignes et
+ *  ne peut être bloquée par personne. */
 export function rpgPeutBloquerAttaquant(bloqueur, attaquant) {
   if (!bloqueur || !attaquant) return false;
+  if (attaquant.infiltration) return false;
   return !attaquant.envol || Boolean(bloqueur.envol);
 }
 
@@ -1307,18 +1467,19 @@ export function rpgLancerAttaque(
     ]));
   const attaquantsDejaBloques = new Set((attaquantsBloques
     ?? Object.entries(affectations).filter(([, idsBloqueurs]) => idsBloqueurs.length).map(([id]) => id))
-    .filter((id) => ids.includes(id) && !ciblesRapides[id]));
+    .filter((id) => ids.includes(id)));
 
   const bloqueursUtilises = new Set();
   for (const [attaquantId, idsBloqueurs] of Object.entries(affectations)) {
     if (!ids.includes(attaquantId)) return { ok: false, raison: 'blocage' };
     if (new Set(idsBloqueurs).size !== idsBloqueurs.length) return { ok: false, raison: 'bloqueur' };
-    if (ciblesRapides[attaquantId] && idsBloqueurs.length) return { ok: false, raison: 'blocage' };
     const attaquant = attaquants.find((entite) => entite.id === attaquantId);
     for (const bloqueurId of idsBloqueurs) {
       const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
       if (!bloqueur || bloqueursUtilises.has(bloqueurId)) return { ok: false, raison: 'bloqueur' };
-      if (!rpgPeutBloquerAttaquant(bloqueur, attaquant)) return { ok: false, raison: 'envol' };
+      if (!rpgPeutBloquerAttaquant(bloqueur, attaquant)) {
+        return { ok: false, raison: attaquant.infiltration ? 'infiltration' : 'envol' };
+      }
       if (rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))) {
         return { ok: false, raison: 'protection' };
       }
@@ -1330,6 +1491,34 @@ export function rpgLancerAttaque(
   // blessures. Prévoir aussi les destructions en chaîne, boucliers et protections
   // sur une copie pour qu'une répartition invalide ne modifie jamais la partie.
   const degatsAvantCombat = [];
+  // Le Coup rapide frappe AVANT les blessures de combat : la cible choisie à la
+  // déclaration encaisse les dégâts d'attaque, sans riposte. L'attaque se
+  // poursuit ensuite normalement — l'attaquant peut être bloqué, échange ses
+  // blessures de combat, ou frappe le sorcier s'il passe. Un bloqueur emporté
+  // par cette frappe précoce est déjà hors du combat.
+  const frappesRapides = [];
+  for (const attaquant of attaquants) {
+    const cibleRapideId = ciblesRapides[attaquant.id];
+    if (!cibleRapideId) continue;
+    const cible = duel[adv].creatures.find((entite) => entite.id === cibleRapideId);
+    frappesRapides.push(cible
+      ? {
+        attaquantId: attaquant.id,
+        attaquant: attaquant.name,
+        cibleId: cible.id,
+        cible: cible.name,
+        degats: attaquant.atk,
+      }
+      : { attaquantId: attaquant.id, attaquant: attaquant.name, cibleId: cibleRapideId, cible: null, degats: 0, annule: true });
+    if (!cible) continue;
+    degatsAvantCombat.push({
+      cote: adv,
+      entiteId: cible.id,
+      amount: attaquant.atk,
+      sourceElement: cardColors(duelCardById(attaquant.carteId)),
+      sourceType: 'attaque',
+    });
+  }
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
@@ -1384,7 +1573,7 @@ export function rpgLancerAttaque(
   const resume = {
     frappeSorcier: 0,
     paires: [],
-    coupsRapides: [],
+    coupsRapides: frappesRapides,
     blocages: affectations,
     repartitions: repartitionFinale,
     attaquantsBloques: [...attaquantsDejaBloques],
@@ -1407,24 +1596,11 @@ export function rpgLancerAttaque(
   for (const attaquant of attaquants) {
     attaquant.attaquee = true;
     if (!duel[cote].creatures.some((entite) => entite.id === attaquant.id)) continue;
-    const cibleRapideId = ciblesRapides[attaquant.id];
-    if (cibleRapideId) {
-      const cible = duel[adv].creatures.find((entite) => entite.id === cibleRapideId);
-      resume.coupsRapides.push(cible
-        ? {
-          attaquantId: attaquant.id,
-          attaquant: attaquant.name,
-          cibleId: cible.id,
-          cible: cible.name,
-          degats: attaquant.atk,
-        }
-        : { attaquantId: attaquant.id, attaquant: attaquant.name, cibleId: cibleRapideId, cible: null, degats: 0, annule: true });
-      continue;
-    }
-
     const idsBloqueurs = blocagesApresCapacites[attaquant.id] ?? [];
     if (!idsBloqueurs.length) {
-      if (!attaquantsDejaBloques.has(attaquant.id)) {
+      // Un attaquant rapide n'est bloqué que par des bloqueurs encore debout :
+      // si la frappe précoce les a tous emportés, la voie est libre.
+      if (!attaquantsDejaBloques.has(attaquant.id) || ciblesRapides[attaquant.id]) {
         coupsSorcier.push({ attaquantId: attaquant.id, amount: attaquant.atk });
       }
       continue;
@@ -1460,28 +1636,6 @@ export function rpgLancerAttaque(
       );
     }
     resume.paires.push([attaquant.name, ...bloqueurs.map((bloqueur) => bloqueur.name)]);
-  }
-
-  for (const coup of resume.coupsRapides) {
-    if (coup.annule) continue;
-    const attaquantExiste = duel[cote].creatures.some((entite) => entite.id === coup.attaquantId);
-    const cibleExiste = duel[adv].creatures.some((entite) => entite.id === coup.cibleId);
-    if (!attaquantExiste || !cibleExiste) {
-      coup.annule = true;
-      continue;
-    }
-    const attaquantRapide = duel[cote].creatures.find((entite) => entite.id === coup.attaquantId);
-    const carteAttaquant = duelCardById(attaquantRapide.carteId);
-    enregistrerDegatsCombat(
-      degatsCombat,
-      adv,
-      coup.cibleId,
-      coup.degats,
-      cardColors(carteAttaquant),
-      'attaque',
-      cote,
-      coup.attaquantId,
-    );
   }
 
   for (const coup of coupsSorcier) {
@@ -1560,7 +1714,7 @@ function resoudreRetoursProgrammes(duel) {
       }
     }
   }
-  majResonance(duel);
+  rafraichirAuras(duel);
 }
 
 /** Fin du tour : le tour qui se ferme efface les renforts « jusqu'à la fin du
@@ -1586,6 +1740,7 @@ export function rpgFinDeTour(duel) {
     }
   }
   annulerBonusTemporaires(duel, duel.tour); // le bonus meurt avec le tour qui l’a vu jouer
+  annulerInfiltrations(duel); // l’Infiltration aussi : redevenues bloquables
   duel.tour = autre(duel.tour);
   const camp = duel[duel.tour];
   camp.mana = manaVide();           // le mana non dépensé s'évapore
@@ -1643,6 +1798,21 @@ export function rpgSorcierResoudreAnnonce(duel) {
   return { ...res, carteId: annonce.carteId };
 }
 
+/** Le sorcier convertit son mana de glace restant en capacités activées (la
+ *  foudre du Père des corbeaux), tant qu'un coup en vaut la peine. */
+export function rpgSorcierActiverCapacitesIA(duel, rng = Math.random) {
+  const actives = [];
+  let garde = 6;
+  while (garde-- > 0) {
+    const coup = choisirActivationIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
+    if (!coup) break;
+    const res = rpgActiverCapacite(duel, 'sorcier', coup.entiteId, coup.cibleId);
+    if (!res.ok) break;
+    actives.push(res);
+  }
+  return actives;
+}
+
 export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
   const joue = [];
   rpgSorcierPrepareTerrain(duel);
@@ -1654,6 +1824,7 @@ export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
     if (!res.ok) break;
     if (res.entite) joue.push(res.entite);
   }
+  rpgSorcierActiverCapacitesIA(duel, rng);
   return joue;
 }
 
