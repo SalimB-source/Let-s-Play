@@ -6064,12 +6064,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* À la souris, la table agrandie agrandit aussi les repères imprimés sur ses
    cartes — coût, attaque, défense et pastille d'élément. La main garde son
    échelle : ses cartes n'ont pas changé de taille. Les icônes d'arme et de
-   bouclier suivent la taille de la police (1em). */
+   bouclier suivent la taille de la police (1em). Le disque de mana des cartes
+   posées reste un disque : une boîte carrée de 30 px, jamais l'ellipse que
+   dessinaient `min-width: 36px` et `height: 25px`. */
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-mana-cost.is-compact {
-  min-width: 36px;
-  height: 25px;
-  padding: 3px 5px;
-  font-size: 13px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 15px;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card__stat--atk,
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card__pt {

@@ -6519,3 +6519,15 @@ la colonne des actions (même largeur que le rail, barre empilée sur toute la
 largeur), les deux aplats clairs et leur halo, l'extinction du halo quand la
 commande est grisée ou que `prefers-reduced-motion` est demandé — et l'interdit
 qui va avec : le fond sombre ne doit plus jamais repeindre ces deux commandes.
+
+## Le Sablier : les repères ronds, et l'aperçu collé à la carte
+
+Quatre retouches de présentation du duel, aucune règle touchée : les repères
+imprimés sur les faces gardent la même taille d'un support à l'autre, et
+l'aperçu au survol cesse de flotter loin de la carte qu'il décrit.
+
+**1. Le disque de mana des cartes posées reste rond, sur PC.** La table à la
+souris l'écrasait en ellipse (`min-width: 36px`, `height: 25px`, rembourrage
+latéral) : il devient une **boîte carrée de 30 px** (`aspect-ratio: 1`,
+`padding: 0`, `border-radius: 50%`), son chiffre passe à **15 px** — un disque,
+comme partout ailleurs dans le jeu.

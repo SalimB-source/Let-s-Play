@@ -685,6 +685,10 @@ assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^
   'le badge de coût sur les cartes posées reste un bloc bien rond et lisible');
 assert.match(cardMetricsCss, /\.rpg-hand__card--img \.rpg-mana-cost\s*\{[^}]*width:\s*28px;[^}]*height:\s*28px;[^}]*min-width:\s*28px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;[^}]*font-size:\s*13px;/s,
   'le badge de coût dans la main reste un bloc bien rond et lisible');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*width:\s*30px;[^}]*height:\s*30px;[^}]*min-width:\s*30px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;[^}]*font-size:\s*15px;/s,
+  'sur PC, le disque de mana des cartes posées reste rond : boîte carrée de 30 px, bordure ronde, chiffre de 15 px');
+assert.doesNotMatch(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*min-width:\s*36px;[^}]*height:\s*25px;/s,
+  'l’ellipse du disque de mana (36 × 25) ne revient pas sur les cartes posées');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-mana-cost,\s*\.rpg-battle--touch \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*width:\s*22px;[^}]*height:\s*22px;[^}]*min-width:\s*22px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
   'le badge de coût tactile reste un bloc bien rond sur les cartes en main et en jeu');
 assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-card__stat--atk,[\s\S]*?\.rpg-card--img \.rpg-card__pt,[\s\S]*?\.rpg-hand__stat\s*\{[^}]*min-width:\s*38px;[^}]*font-size:\s*13px;/s,
