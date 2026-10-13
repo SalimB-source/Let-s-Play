@@ -3843,7 +3843,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const declarerAttaqueAvecTous = () => {
     const ids = prets.map((entite) => entite.id);
     if (!ids.length) { jouerSfx('erreur'); return; }
-    jouerSfx('attaque_declaree');
+    jouerSfx('attackers_confirm');
     setPhase(true);
     avancerTutoriel('attaque', 'confirmer-attaque');
     setAttaquants(ids);
