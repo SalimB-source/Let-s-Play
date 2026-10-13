@@ -385,6 +385,22 @@
 }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius-sm, 8px); touch-action: pan-x; -webkit-touch-callout: none; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
+/* L'éventail de la souris est mis à zéro au doigt (voir « L'éventail de la
+   main » dans `rpg-battle.css`) : les trois repères valent alors 0 et les
+   cartes restent **droites et jointives**, comme le veut la règle « une carte =
+   une cible ». C'est aussi ce que rejouent les images-clés de la pioche, qui
+   citent les mêmes repères : une carte qui arrive au doigt glisse sans
+   s'incliner. Mettre les repères à zéro — plutôt que de compter sur un
+   `transform: none` plus loin dans la cascade — tient même si l'ordre des
+   feuilles change, et laisse l'éventail aux fenêtres étroites **pilotées à la
+   souris** (voir le bloc `hover: hover` plus bas). */
+@media (hover: none), (pointer: coarse) {
+  .rpg-battle--touch .rpg-hand .rpg-hand__card {
+    --hand-fan-step: 0deg;
+    --hand-fan-spread-scale: 0%;
+    --hand-fan-arc-scale: 0%;
+  }
+}
 /* Le mulligan, au doigt : le survol ne soulève rien (l'aperçu rapide y passe
    par l'appui long d'une seconde), et la rangée tient la largeur utile du volet
    — les cinq faces 4:5 se lisent sans pincer ni faire défiler. Le liseré doré
@@ -712,6 +728,24 @@
     flex: 0 1 clamp(48px, min(9vw, 17dvh), 136px);
     pointer-events: auto;
   }
+  /* Fenêtre étroite mais souris : la main se tient en éventail, comme sur
+     grand écran — les repères ne sont mis à zéro qu'au doigt (voir plus haut).
+     Le sélecteur porte la rangée en plus du dock : la règle `transform: none`
+     du doigt, écrite plus haut dans cette feuille, reste ainsi derrière. */
+  .rpg-battle--touch .rpg-hand-dock .rpg-hand .rpg-hand__card {
+    --hand-fan-lift: 0px;
+    --hand-fan-scale: 1;
+    transform:
+      translateY(calc(var(--hand-fan-drop) - var(--hand-fan-lift)))
+      translateX(var(--hand-fan-spread))
+      rotate(var(--hand-fan-angle))
+      scale(var(--hand-fan-scale));
+  }
+  .rpg-battle--touch .rpg-hand-dock .rpg-hand .rpg-hand__card:hover:not(:disabled) {
+    --hand-fan-lift: 30px;
+    --hand-fan-scale: 1.06;
+    z-index: 6;
+  }
   .rpg-battle--touch .rpg-hand-dock .rpg-hand__pile {
     display: flex;
     width: clamp(48px, min(9vw, 17dvh), 136px);
@@ -723,15 +757,17 @@
     min-width: 0;
     flex: 1 1 0;
   }
+  /* Le fond sombre des commandes en retrait. Confirmer l'attaque et Résoudre
+     le combat n'y figurent plus : ce sont les commandes principales, elles
+     portent un aplat clair et leur halo (`rpg-battle.css`, « La commande
+     principale du combat ») — un fond sombre plus spécifique les éteindrait. */
   .rpg-battle--touch .rpg-actions__turn .rpg-btn--undo,
   .rpg-battle--touch .rpg-actions__combat .rpg-btn--attaque-tous,
-  .rpg-battle--touch .rpg-actions__combat .rpg-btn--confirmer-attaque,
   .rpg-battle--touch .rpg-actions__combat .rpg-btn--cancel-attack {
     background: rgba(4, 3, 3, .9);
   }
   .rpg-battle--touch .rpg-actions__turn .rpg-btn--undo:hover:not(:disabled),
   .rpg-battle--touch .rpg-actions__combat .rpg-btn--attaque-tous:hover:not(:disabled),
-  .rpg-battle--touch .rpg-actions__combat .rpg-btn--confirmer-attaque:hover:not(:disabled),
   .rpg-battle--touch .rpg-actions__combat .rpg-btn--cancel-attack:hover:not(:disabled) {
     background: rgba(14, 10, 8, .94);
   }

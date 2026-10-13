@@ -217,6 +217,10 @@ assert.match(battleCss, /\.rpg-card-pile--deck \.rpg-card-pile__card--back\s*\{\
   'le paquet agrandi montre le dos gravé, le dégradé restant dessous en repli');
 assert.doesNotMatch(battleCss, /\.rpg-hidden-hand__card::after/,
   'le losange ◈ dessiné en CSS disparaît : la rune du dos le remplace');
+assert.match(battleCss, /\.rpg-hidden-hand__card\s*\{[^}]*width:\s*78px;[^}]*height:\s*101px;[^}]*margin-left:\s*-26px;/s,
+  'la main cachée du sorcier se lit en vraies cartes (78 × 101), pas en vignettes');
+assert.match(battleCss, /@media \(max-width: 620px\) \{\s*\.rpg-hidden-hand \{ top: 1%; \}\s*\.rpg-hidden-hand__card \{ width: 52px; height: 67px; margin-left: -18px;/s,
+  'sur un écran étroit, la main cachée garde la même proportion, un cran plus petite');
 
 assert.match(battleCss, /\.rpg-card-piles--player\s*\{\s*top:\s*44%;\s*right:\s*auto;\s*left:\s*14px;/,
   'le deck et le cimetière du joueur sont à gauche sur grand écran, centrés dans la bande libre au lieu de coller à la plaque du joueur');
@@ -334,14 +338,41 @@ assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn,\s*\.rpg-actions__turn 
   'les libellés des commandes sont centrés verticalement et horizontalement');
 assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn,\s*\.rpg-actions__turn \.rpg-btn\s*\{[^}]*min-height:\s*35px;[^}]*background:\s*rgba\(10, 9, 9, \.58\);[^}]*box-shadow:\s*none;/s,
   'les actions sont agrandies tout en restant compactes, sans couleurs criardes ni ombres');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__turn \.rpg-btn--undo,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat \.rpg-btn--attaque-tous,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat \.rpg-btn--confirmer-attaque,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat \.rpg-btn--cancel-attack\s*\{\s*background:\s*rgba\(4, 3, 3, \.9\);\s*\}/,
-  'sur PC, Annuler, Attaquer avec tous, Confirmer et Annuler l’attaque partagent le même fond sombre');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__turn \.rpg-btn--undo,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat \.rpg-btn--attaque-tous,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat \.rpg-btn--cancel-attack\s*\{\s*background:\s*rgba\(4, 3, 3, \.9\);\s*\}/,
+  'sur PC, Annuler, Attaquer avec tous et Annuler l’attaque partagent le même fond sombre');
+assert.doesNotMatch(battleCss, /\.rpg-actions__combat \.rpg-btn--(?:confirmer-attaque|resolve-combat)\s*\{\s*background:\s*rgba\(4, 3, 3, \.9\);/,
+  'les deux commandes principales du combat ne prennent plus le fond sombre des commandes en retrait');
+assert.doesNotMatch(mobileCss, /\.rpg-actions__combat \.rpg-btn--(?:confirmer-attaque|resolve-combat)[^{]*\{\s*background:\s*rgba\(4, 3, 3, \.9\);/,
+  'la fenêtre étroite pilotée à la souris garde, elle aussi, l’aplat clair des commandes principales');
 assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn--attaque,\s*\.rpg-actions__turn \.rpg-btn--endturn\s*\{[^}]*font: 600 11px\/1\.1 var\(--display\);[^}]*text-transform:\s*none;/s,
   'les actions restent compactes et sans capitales envahissantes');
 assert.match(battleCss, /\.rpg-actions__turn \.rpg-btn--endturn\s*\{[^}]*border-color:\s*rgba\(235, 194, 98, \.76\);[^}]*background:\s*linear-gradient\(180deg, rgba\(238, 202, 112, \.98\), rgba\(202, 158, 61, \.96\)\);[^}]*font-weight:\s*800;/s,
   'Fin du tour garde un repère doré compact et bien visible');
 assert.match(battleCss, /\/\* Commandes de duel compactes[\s\S]*?\.rpg-bottombar\s*\{[^}]*width: min\(340px, calc\(100vw - 230px\)\);/s,
   'la barre inférieure ne garde que les actions de combat, dans une largeur discrète');
+// ── La colonne des actions : le combat sous le rail, la main dessous ──────
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \{\s*--rpg-actions-column:\s*330px;[\s\S]*?--rpg-actions-bottom:\s*216px;[\s\S]*?--rpg-actions-reserve:\s*124px;\s*\}/,
+  'rail et barre de combat partagent la même colonne de droite, sous les mêmes repères');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\):has\(\.rpg-annonce-sort__compact\) \{\s*--rpg-actions-reserve:\s*204px;\s*\}/,
+  'la fenêtre de réponse à une magie annoncée relève le rail de sa hauteur');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \{\s*top:\s*auto;\s*bottom:\s*calc\(var\(--rpg-actions-bottom\) \+ var\(--rpg-actions-reserve\)\);\s*height:\s*max-content;\s*margin-block:\s*0;\s*transform:\s*none;\s*\}/,
+  'sur PC, le rail s’arrête juste au-dessus de la barre de combat');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-bottombar \{\s*right:\s*max\(16px, env\(safe-area-inset-right, 0px\)\);\s*bottom:\s*var\(--rpg-actions-bottom\);\s*width:\s*var\(--rpg-actions-column\);\s*gap:\s*8px;\s*\}/,
+  'les commandes de combat rejoignent la colonne des actions, juste au-dessus de la main du joueur');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat > \.rpg-btn \{\s*width:\s*100%;\s*margin:\s*0;\s*\}/,
+  'sur PC, les deux commandes du combat s’empilent sur toute la largeur de la colonne');
+assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn--confirmer-attaque,\s*\.rpg-actions__combat \.rpg-btn--resolve-combat \{\s*display:\s*inline-flex;[\s\S]*?background:\s*var\(--rpg-combat-fill,[\s\S]*?font:\s*800 15px\/1\.1 var\(--display\);[\s\S]*?animation:\s*rpg-combat-appel/s,
+  'Confirmer l’attaque et Résoudre le combat portent l’aplat clair de la commande principale et son halo qui respire');
+assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn--confirmer-attaque \{\s*--rpg-combat-edge:[^}]*--rpg-combat-fill:\s*linear-gradient\(180deg, #e2f4ff, #86ccf3 60%, #3f90c5\);[^}]*--rpg-combat-ink:\s*#08202e;/s,
+  'Confirmer l’attaque passe au bleu glacé, écrit en sombre');
+assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn--resolve-combat \{\s*--rpg-combat-edge:[^}]*--rpg-combat-fill:\s*linear-gradient\(180deg, #ffe9ab, #e0b458 60%, #b0852c\);[^}]*--rpg-combat-ink:\s*#241a05;/s,
+  'Résoudre le combat prend l’or du tour, écrit en sombre');
+assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn--confirmer-attaque:disabled,\s*\.rpg-actions__combat \.rpg-btn--resolve-combat:disabled \{\s*border-color:[^}]*animation:\s*none;/s,
+  'une commande principale indisponible s’éteint et cesse de battre');
+assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-actions__combat \.rpg-btn--confirmer-attaque,\s*\.rpg-actions__combat \.rpg-btn--resolve-combat \{ animation: none; \}\s*\}/,
+  'le battement du halo respecte « animations réduites »');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat \.rpg-btn--confirmer-attaque,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat \.rpg-btn--resolve-combat \{\s*min-height:\s*58px;\s*padding:\s*12px 18px;\s*font-size:\s*15px;\s*\}/,
+  'sur PC, la commande principale du combat dépasse d’une tête les boutons de tour');
 assert.doesNotMatch(battleCss, /rpg-actions__wait|rpg-empty-lane/,
   'les styles du bandeau d’indications et des rangées vides ont été retirés de la feuille de combat');
 assert.match(battleCss, /\.rpg-phase-step__icon\s*\{\s*display:\s*grid;\s*width:\s*24px;\s*height:\s*24px;/,
@@ -729,6 +760,23 @@ assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-hand\s*\{
   'sur PC, le conteneur plein écran de la main laisse passer les clics en dehors des cartes');
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-hand__card\s*\{[^}]*min-width:\s*0;[^}]*flex:\s*0 1 clamp\(76px, 9vw, 136px\);[^}]*pointer-events:\s*auto;/s,
   'les cartes restent cliquables et se resserrent pour être toutes visibles sur PC');
+// ── L'éventail de la main (souris) ───────────────────────────────────────
+assert.match(battlePage, /'--hand-fan': eventail,\s*'--hand-fan-arc': eventail \* eventail,/,
+  'chaque carte de la main reçoit sa place dans la rangée et son carré : l’éventail se calcule sans mesurer le DOM');
+assert.match(battleCss, /\.rpg-hand__card\s*\{\s*--hand-fan-step:\s*min\(3\.6deg, calc\(22deg \/ max\(1, var\(--hand-count, 1\) - 1\)\)\);\s*--hand-fan-angle:\s*calc\(var\(--hand-fan, 0\) \* var\(--hand-fan-step\)\);\s*--hand-fan-spread:[^;]*;\s*--hand-fan-drop:[^;]*;/s,
+  'l’angle, l’ouverture et la descente de l’éventail sortent de la place de la carte, et se resserrent quand la main s’allonge');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-hand__card\s*\{[^}]*--hand-fan-lift:\s*6px;[^}]*transform:\s*translateY\(calc\(var\(--hand-fan-drop\) - var\(--hand-fan-lift\)\)\)\s*translateX\(var\(--hand-fan-spread\)\)\s*rotate\(var\(--hand-fan-angle\)\)\s*scale\(var\(--hand-fan-scale\)\);/s,
+  'à la souris, la carte s’incline, s’écarte du centre et descend en arc : la main se tient en éventail');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-hand__card:hover:not\(:disabled\) \{\s*--hand-fan-lift:\s*32px;\s*--hand-fan-scale:\s*1\.06;/s,
+  'la carte survolée se soulève dans son axe, sans perdre son inclinaison ni sa place');
+assert.match(mobileCss, /@media \(hover: none\), \(pointer: coarse\) \{\s*\.rpg-battle--touch \.rpg-hand \.rpg-hand__card \{\s*--hand-fan-step: 0deg;\s*--hand-fan-spread-scale: 0%;\s*--hand-fan-arc-scale: 0%;/s,
+  'au doigt, l’éventail est mis à zéro : les cartes restent droites et jointives, une carte = une cible');
+assert.match(mobileCss, /@media \(hover: hover\) and \(pointer: fine\) \{[\s\S]*?\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \.rpg-hand__card \{\s*--hand-fan-lift:\s*0px;[\s\S]*?rotate\(var\(--hand-fan-angle\)\)/,
+  'une fenêtre étroite pilotée à la souris garde l’éventail');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-hand__card\.is-targeting \{\s*--hand-fan-lift:\s*48px;\s*--hand-fan-scale:\s*1\.08;/s,
+  'la carte choisie pour une cible garde, elle aussi, son inclinaison et sa place dans l’éventail');
+assert.match(battleCss, /@keyframes rpg-player-card-draw \{\s*0% \{ opacity: 0; transform: translate3d\(-100%, 0, 0\) translateY\(var\(--hand-fan-drop\)\) translateX\(var\(--hand-fan-spread\)\) rotate\(var\(--hand-fan-angle\)\); \}/,
+  'la carte piochée arrive dans son inclinaison d’éventail, sans se redresser puis retomber');
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-bottombar \.rpg-log \{ display: none; \}/,
   'le journal qui commente la partie est masqué sur PC au-dessus des commandes');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-bottombar \.rpg-log \{ display: none; \}/,
@@ -1021,7 +1069,7 @@ assert.match(battlePage, /const empilerCartes = viewport\.mobile;/,
   'les piles sont réservées au doigt : le grand écran garde une carte par emplacement');
 assert.match(battlePage, /const groupesMain = empilerCartes\s*\?\s*groupCartesMain\(duel\.joueur\.main\)\s*:\s*duel\.joueur\.main\.map\(\(carteId, index\) => \(\{ carteId, indices: \[index\] \}\)\);/s,
   'sans empilement, chaque carte de la main reste son propre groupe');
-assert.match(battlePage, /\{groupesMain\.map\(\(groupe\) => \{/, 'la main tactile est rendue pile par pile');
+assert.match(battlePage, /\{groupesMain\.map\(\(groupe, position\) => \{/, 'la main est rendue pile par pile, dans l’ordre de la rangée (l’éventail a besoin de la place de chaque carte)');
 assert.match(battlePage, /data-pile-count=\{exemplaires\}/, 'chaque emplacement de la main annonce son nombre d’exemplaires');
 assert.match(battlePage, /groupe\.indices\.includes\(carteEnVol\.handIndex\)/,
   'le vol de carte suit le groupe qui contient l’exemplaire joué');
@@ -1151,6 +1199,6 @@ console.log(
   + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, les Ruines de Tipaza, le Fjord des Neuf Hivers) attribués selon le deck — la Braise rejoint la Table des Heures après le retrait du plateau des Brûlés —; peintures visibles sans voile, capsules sombres pour la lisibilité; plaques PC compactes en capsule, cadre doré joueur et cuivré adversaire, nom du profil et d’Ifrit al-Ahmar affichés, nom d’étage conservé, tactile préservé, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
   + 'retouches du catalogue Eau et Sable : Rapport du greffier à trois manas, Rempart de dunes en +0/+3 borné au tour (le carnet du camp l’efface à la fin du tour, et une créature réduite à zéro par ce retrait tombe), Nuage de cendres dont la seconde vague reste suspendue jusqu’au tour suivant de son lanceur — elle brûle ce que le sorcier a posé entre-temps, même si la première vague avait vidé la table, et se dissipe en le disant si rien ne s’y trouve —, Tempête de sable à trois dégâts, Marée contraire devenue Déflection, et sept magies peintes en plein art 4:5 sur leur propre fichier, '
-  + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de la magie rapide qui élimine le dernier attaquant pendant la réponse.'
+  + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, éventail de la souris (angle, ouverture latérale et descente en arc, carte survolée qui se soulève dans son axe, mise à zéro au doigt), main du sorcier agrandie à la taille d’une carte, colonne des actions sous le rail et commandes du combat en aplat clair qui respire, régression de la magie rapide qui élimine le dernier attaquant pendant la réponse.'
 );
 process.exit(0);
