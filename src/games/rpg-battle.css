@@ -2349,7 +2349,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-row {
   z-index: 4;
   left: clamp(220px, 20%, 280px);
-  right: clamp(104px, 13%, 184px);
+  right: clamp(150px, 15%, 254px);
   height: 21%;
   justify-content: center;
   align-items: center;
@@ -2722,7 +2722,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* Les dimensions favorisent l’illustration full art et la lisibilité des repères de carte. */
-.rpg-card { width: clamp(108px, 10.2vw, 146px); }
+.rpg-card { width: clamp(132px, min(12.8vw, 17vh), 198px); }
 .rpg-hand__card { width: clamp(104px, 9.6vw, 136px); }
 
 .rpg-card--img .rpg-card__title {
@@ -4975,10 +4975,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   flex-direction: row;
   align-items: center;
   justify-content: space-around;
-  gap: 5px;
-  padding: 4px 7px;
+  gap: 8px;
+  padding: 7px 11px;
   border: 1px solid rgba(242, 154, 74, .24);
-  border-radius: 12px;
+  border-radius: 14px;
   background: rgba(8, 7, 9, .62);
   backdrop-filter: blur(6px);
 }
@@ -5001,8 +5001,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #f29a4a;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__icon {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   border-color: rgba(242, 154, 74, .28);
   background: rgba(12, 9, 8, .38);
   color: #f29a4a;
@@ -5013,8 +5013,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #f29a4a;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__icon svg {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__label {
   position: absolute;
@@ -5026,6 +5026,59 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   clip: rect(0, 0, 0, 0);
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* À la souris, le rail du tour se met à l'échelle du bureau : capsule
+   d'indicateur, rangée de phases et boutons d'action agrandis. Le rail tactile
+   garde ses repères de rpg-mobile.css ; sous 620px de large, la variante
+   compacte du rail reste la règle. La barre du bas recule d'autant (360px)
+   pour ne jamais passer sous le rail élargi. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail {
+  width: 330px;
+  max-width: 38vw;
+  gap: 10px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-turn-indicator {
+  min-height: 44px;
+  gap: 12px;
+  padding: 11px 20px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-turn-indicator__label {
+  font-size: 12px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-turn-indicator strong {
+  font-size: 15px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-turn-indicator__lamp {
+  width: 12px;
+  height: 12px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-actions__turn {
+  gap: 10px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn {
+  min-height: 46px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--attaque,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--endturn {
+  min-height: 48px;
+  padding: 11px 18px;
+  font-size: 13.5px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--undo {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-combat-action-icon {
+  width: 22px;
+  height: 22px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-bottombar {
+  right: 360px;
 }
 
 /* Le cadre suit la COULEUR de la carte, jamais sa rareté : bleu pour l’Eau,
@@ -5281,6 +5334,26 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hover-card-preview__stats { font-size: 14px; }
   .rpg-card-catalogue__cost { width: 35px; font-size: 16px; }
   .rpg-card-catalogue__meta b { font-size: 9px; }
+}
+
+/* À la souris, la table agrandie agrandit aussi les repères imprimés sur ses
+   cartes — coût, attaque, défense et pastille d'élément. La main garde son
+   échelle : ses cartes n'ont pas changé de taille. Les icônes d'arme et de
+   bouclier suivent la taille de la police (1em). */
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-mana-cost.is-compact {
+  min-width: 36px;
+  height: 25px;
+  padding: 3px 5px;
+  font-size: 13px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card__stat--atk,
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card__pt {
+  min-width: 46px;
+  padding: 3px 7px;
+  font-size: 15.5px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img {
+  --rpg-card-element-marker-size: clamp(18px, 18%, 30px);
 }
 
 /* Mobile / WebView : le mouvement horizontal parcourt les cartes, le
