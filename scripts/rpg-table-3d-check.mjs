@@ -6,6 +6,7 @@
  */
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
+import { RPG_TABLE_SCENE_THEMES } from '../src/games/rpgTableSceneThemes.js';
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined,
@@ -33,6 +34,16 @@ const watchContexts = () => {
   };
 };
 const draws = (page) => page.evaluate(() => window.__tableContexts.filter((entry) => entry.canvas.isConnected).map((entry) => entry.draws));
+// Attend (au plus 15 s) qu'une nouvelle image soit rendue : le rendu logiciel
+// de CI est lent, un délai fixe ne prouve rien.
+const nextFrame = async (page, before) => {
+  for (let i = 0; i < 60; i += 1) {
+    const now = await draws(page);
+    if (now[0] > before[0]) return now;
+    await page.waitForTimeout(250);
+  }
+  return before;
+};
 const live = (page) => page.evaluate(() => window.__tableContexts.filter((entry) => !entry.context.isContextLost()).length);
 
 const openDuel = async (page) => {
@@ -76,12 +87,17 @@ try {
     assert.ok(layers.navOnTop, 'la barre du duel reste au-dessus du canvas');
     assert.ok(!layers.canvasHit, 'aucun clic n\'atteint le canvas');
     assert.ok(layers.size.width > 1000 && layers.size.height > 600, 'le canvas couvre la table');
+    // Le décor pose exactement les objets que son plateau déclare.
+    const shown = await page.evaluate(() => ({
+      plateau: document.querySelector('[data-table-3d]').getAttribute('data-table-3d'),
+      objects: document.querySelector('.rpg-table-3d__canvas').dataset.objects,
+    }));
+    assert.equal(shown.objects, String(RPG_TABLE_SCENE_THEMES[shown.plateau].objets.length), `${shown.plateau} : objets 3D posés`);
     console.log('✓ Rendu WebGL réel, sous le chrome, sans geste capté');
 
     // 2. La boucle tourne, se suspend pendant un glisser et à l'onglet caché.
     const first = await draws(page);
-    await page.waitForTimeout(700);
-    const second = await draws(page);
+    const second = await nextFrame(page, first);
     assert.ok(second[0] > first[0], 'le décor s\'anime (images rendues)');
     assert.equal(await page.locator('.rpg-table-3d__canvas').getAttribute('data-motion'), 'animated');
     // Un vrai dragstart sur une carte jouable (la main est fixée par Math.random).
@@ -96,8 +112,7 @@ try {
     await page.waitForTimeout(600);
     assert.equal(await page.locator('.rpg-table-3d__canvas').getAttribute('data-motion'), 'animated', 'la boucle reprend après le dépôt');
     const resumed = await draws(page);
-    await page.waitForTimeout(700);
-    assert.ok((await draws(page))[0] > resumed[0], 'et rend de nouveau des images');
+    assert.ok((await nextFrame(page, resumed))[0] > resumed[0], 'et rend de nouveau des images');
     console.log(`✓ Boucle animée (${second[0] - first[0]} appels), suspendue pendant le glisser, reprise ensuite`);
 
     // 3. Le bouton 3D coupe le décor, libère le contexte, et le choix persiste.
@@ -162,6 +177,30 @@ try {
     assert.ok(fit.pixels <= 520000 * 1.05, `budget de pixels tactile (${fit.pixels})`);
     assert.ok(!fit.overflow, 'aucun débordement horizontal');
     console.log('✓ Téléphone paysage : canvas à la taille de la table, budget tenu');
+    await context.close().catch(() => {});
+  }
+
+  // 7. L'Erg du Sahara : la plaque vide est chargée et ses cinq objets sont posés.
+  {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page = await context.newPage();
+    const requested = [];
+    page.on('request', (request) => requested.push(request.url()));
+    await page.addInitScript(watchContexts);
+    // Tirage fixé : le sable désigne le deck des Veilleurs du Désert, donc l'Erg.
+    await page.addInitScript(() => { let n = 0; Math.random = () => (0.05 + (n++) * 0.137) % 1; });
+    await openDuel(page);
+    await wait3d(page);
+    const plateau = await page.locator('[data-table-3d]').getAttribute('data-table-3d');
+    assert.equal(plateau, 'erg-du-sahara', 'le tirage fixé donne l\'Erg');
+    assert.equal(await page.locator('.rpg-table-3d__canvas').getAttribute('data-objects'), '5');
+    assert.ok(requested.some((url) => url.endsWith('plateau-erg-du-sahara-vide.jpg')), 'la plaque sans objets peints est chargée');
+    const painted = await page.locator('.card-table').evaluate((el) => el.style.backgroundImage);
+    assert.match(painted, /plateau-erg-du-sahara\.jpg/, 'le fond CSS garde la peinture d\'origine (repli)');
+    await page.locator('.rpg-duel-nav__decor3d').click();
+    await page.waitForTimeout(300);
+    assert.equal(await live(page), 0, 'couper le décor libère aussi les objets, l\'ombre et le reflet');
+    console.log('✓ Erg du Sahara : plaque vide chargée, cinq objets 3D posés, repli CSS intact');
     await context.close().catch(() => {});
   }
 

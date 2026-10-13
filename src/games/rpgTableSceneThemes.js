@@ -54,9 +54,17 @@ const base = Object.freeze({
   roughness: 0.85,
   lights: Object.freeze([]),
   overlay: null,
+  // Les objets 3D posés sur la table, et la peinture « vide » sans eux. Sans
+  // objets, c'est la peinture du plateau (`fichier`) qui sert de plan.
+  plaque: null,
+  objets: Object.freeze([]),
 });
 
-const theme = (overrides) => Object.freeze({ ...base, ...overrides });
+const theme = (overrides) => Object.freeze({
+  ...base,
+  ...overrides,
+  objets: Object.freeze((overrides.objets ?? []).map((objet) => Object.freeze(objet))),
+});
 
 /**
  * Une particule : `vx`/`vy` en unités de scène par seconde, `sway` l'oscillation
@@ -90,6 +98,18 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
   // Le grand désert : soleil rasant, sable soufflé, ombres de nuages.
   'erg-du-sahara': theme({
     key: '#fff0c8', keyIntensity: 0.55, keyDirection: [-0.85, 0.5, 0.9], relief: 1.5, roughness: 0.96,
+    // La peinture sans ses objets (`plateau-erg-du-sahara-vide.jpg`), puis les
+    // objets au même endroit. `u`/`v` : l'origine de l'objet dans l'image
+    // peinte (0–1, `v` vers le bas) ; `size` : sa longueur en largeur d'image ;
+    // `angle` : où pointe son grand axe, en degrés depuis la droite.
+    plaque: 'plateau-erg-du-sahara-vide.jpg',
+    objets: [
+      { kind: 'lanterne', u: 0.0574, v: 0.9234, size: 0.217, angle: 63 },
+      { kind: 'gourde', u: 0.26, v: 0.9866, size: 0.16, angle: 126 },
+      { kind: 'galets', u: 0.8482, v: 0.8087, size: 0.089, angle: 0 },
+      { kind: 'bol', u: 0.9216, v: 0.8756, size: 0.097, angle: 0 },
+      { kind: 'corde', u: 0.9566, v: 0.1818, size: 0.092, angle: 0 },
+    ],
     particles: motes({ count: 80, color: '#f6d9a0', size: 0.03, opacity: 0.5, vx: 0.32, vy: 0.012, sway: 0.05, swayHz: 0.6, z: 0.5, zSpread: 0.4 }),
     overlay: { kind: 'ombre', color: '#3a2410', opacity: 0.16, speed: 0.011, scale: 1.6 },
   }),
@@ -158,6 +178,11 @@ export function tableSceneTheme(plateauId) {
   return RPG_TABLE_SCENE_THEMES[plateauId] ?? RPG_TABLE_SCENE_THEMES['table-des-heures'];
 }
 
+/** La peinture qui sert de plan : la plaque « vide » quand le thème pose des objets 3D. */
+export function tablePlaqueFile(plateau) {
+  return tableSceneTheme(plateau?.id).plaque ?? plateau?.fichier;
+}
+
 /** Les plateaux du catalogue sans thème 3D : doit toujours être vide (testé). */
 export function plateauxSansDecor3d() {
   return RPG_PLATEAUX.filter((plateau) => !RPG_TABLE_SCENE_THEMES[plateau.id]).map((plateau) => plateau.id);
@@ -178,6 +203,10 @@ export function tableSceneBudget({ width = 1280, height = 720, devicePixelRatio 
     particles: degraded > 1 ? 0 : coarse || degraded > 0 ? 0.55 : 1,
     textureSize: coarse ? 1536 : 2048,
     reliefSize: 512,
+    // Objets 3D et ombres portées : les premiers à tomber si la machine peine.
+    objects: degraded < 2,
+    shadows: degraded < 1,
+    shadowSize: coarse ? 1024 : 2048,
   };
 }
 

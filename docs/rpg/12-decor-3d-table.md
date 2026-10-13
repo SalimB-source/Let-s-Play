@@ -24,14 +24,55 @@ changent pas.
 Les neuf plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
 inconnu retombe sur celle de la Table des Heures.
 
+## Objets 3D posés sur le plateau
+
+Certains objets peints du plateau sont reconstruits en vrais objets 3D
+(`src/games/rpgTableObjects.js`) : ils reçoivent la lumière, projettent une
+ombre portée sur le sable et reflètent un environnement doux. Pilote livré :
+**Erg du Sahara** (lanterne, gourde, galets, bol, corde). Les autres plateaux
+n'ont pas d'objets (`objets: []`) et gardent leur peinture inchangée.
+
+- **Plaque vide.** Pour ne pas voir l'objet en double, le thème déclare une
+  `plaque` : la peinture sans ces objets (`public/plateau-erg-du-sahara-vide.jpg`,
+  2048 px). Elle n'alimente que la 3D ; le fond CSS (et donc le repli sans
+  WebGL) garde la peinture d'origine avec ses objets peints. Elle est fabriquée
+  par `scripts/plaque-vide/erg-du-sahara.py` : le sable d'une image donneuse est
+  fusionné (clonage de gradient) uniquement dans des polygones autour des
+  objets, le reste de la peinture est inchangé au pixel près.
+- **Placement.** Chaque objet est déclaré en coordonnées de l'image
+  (`u`, `v` en fraction de largeur/hauteur, `v` vers le bas ; `size` = largeur
+  de l'objet en fraction de l'image ; `angle` en degrés). `tableObjectTransform`
+  applique le même cadrage « cover » que la peinture : l'objet reste collé à son
+  emplacement peint à tout redimensionnement.
+- **Pose à plat.** Les objets sont posés à plat, à la hauteur maximale du relief
+  sous leur emprise (`rimHeight`) et pivotent seulement autour de Z. Ne pas les
+  incliner sur la normale du rebord : la table y est une cuvette convexe, le
+  plan tangent passe sous la surface et la moitié de l'objet est avalée.
+- **Lumière.** La lanterne porte une vraie `PointLight` (vacillement lent) ;
+  les ombres (PCFSoft) sont désactivées par le budget sur les petits écrans
+  (`objects`, `shadows`, `shadowSide`).
+- **Libération.** `disposeTableObject` libère géométries, matériaux et lumière
+  quand le décor est coupé ou le plateau change ; le canvas expose
+  `data-objects` (nombre d'objets posés) pour les vérifications.
+
+Ajouter les objets d'un autre plateau : lister ses objets dans le thème
+(`objets`), produire sa plaque vide sur le modèle du script, puis vérifier les
+alignements avec `tableObjectTransform` aux formats 1, 3:2, 16:9 et 2,4:1.
+Objets peints repérés pour la suite : Cavernes de Cristal (améthystes, rubis),
+Gourara (outre, corde, compas), Fjord (lanterne, cor, corde, hache), Tipaza
+(fûts, chapiteau), Désert de Verre (roses de verre, astrolabe, outre, corde),
+Abysses (coraux, colonnes, amphores), Îles (sapins, rochers, lanterne, corde).
+
 ## Fichiers
 
 | Fichier | Rôle |
 | --- | --- |
 | `src/games/rpgTableSceneThemes.js` | Données pures : ambiances, budgets, particules (testable sous Node) |
 | `src/games/rpgTableScene.js` | La scène Three.js (chargée à la demande) |
+| `src/games/rpgTableObjects.js` | Modèles 3D procéduraux des objets (bol, galets, corde, gourde, lanterne) |
+| `scripts/plaque-vide/` | Fabrication de la plaque sans objets peints (script + image donneuse) |
 | `src/games/RpgTableScene3D.jsx` | La vue React, premier enfant de `.card-table` |
-| `tests/rpg-table-3d.test.js` | Catalogue, bornes, particules, budget, cadrage, géométrie, bruits |
+| `tests/rpg-table-3d.test.js` | Catalogue, bornes, particules, budget, cadrage, géométrie, bruits, objets 3D |
 | `scripts/rpg-table-3d-check.mjs` | Vrai rendu WebGL (Chromium) |
 
 ## Garde-fous
@@ -56,7 +97,8 @@ inconnu retombe sur celle de la Table des Heures.
 - `npm run check:rpg-table-3d` : catalogue, bornes, particules, budgets.
 - `npm run check:rpg-table-3d-ui` (serveur Vite + Chromium) : rendu réel, couches,
   pause pendant un glisser, bouton, repli sans WebGL2, `reduced-motion`,
-  téléphone en paysage.
+  téléphone en paysage, Erg du Sahara (plaque vide chargée, cinq objets posés).
+  Le test attend l'image suivante (au plus 15 s) : le rendu logiciel de CI est lent.
 
 ## Limites connues
 
@@ -64,4 +106,9 @@ inconnu retombe sur celle de la Table des Heures.
   parallaxe) : les objets de bord peuvent être légèrement rognés.
 - Sur 568 px de large, la barre du duel déborde déjà sur la plaque du sorcier ;
   le bouton 3D y est réduit au minimum.
-- Pistes : décor 3D pour le mode Histoire, objets 3D posés sur la table.
+- Aux formats très larges (2,4:1) ou carrés, le cadrage « cover » rogne les
+  objets de coin, comme leur peinture : c'est voulu.
+- Les objets sont procéduraux (formes simples) : à distance de jeu ils
+  se confondent avec la peinture, de près on les reconnaît comme des maquettes.
+- Pistes : objets des autres plateaux (Cavernes de Cristal d'abord), décor 3D
+  pour le mode Histoire.

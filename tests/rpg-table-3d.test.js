@@ -13,7 +13,10 @@ import {
   tableSceneTheme,
   writeRpgTable3dPref,
 } from '../src/games/rpgTableSceneThemes.js';
-import { buildTableGeometry, coverTransform, tileableNoise } from '../src/games/rpgTableScene.js';
+import { existsSync, readFileSync } from 'node:fs';
+import { buildTableGeometry, coverTransform, rimHeight, tableObjectTransform, tileableNoise } from '../src/games/rpgTableScene.js';
+import { RPG_TABLE_OBJECT_KINDS, createTableObject, disposeTableObject, updateTableObject } from '../src/games/rpgTableObjects.js';
+import { tablePlaqueFile } from '../src/games/rpgTableSceneThemes.js';
 
 test('chaque plateau du catalogue a son décor 3D, et seulement eux', () => {
   assert.deepEqual(plateauxSansDecor3d(), []);
@@ -114,13 +117,13 @@ test('la table est plate au centre, relevée au bord, avec des normales valides'
     let centre = 0, rim = 0, flat = 0;
     for (let i = 0; i < positions.count; i += 1) {
       const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
-      assert.ok(Number.isFinite(z) && z >= 0 && z <= 0.25);
+      assert.ok(Number.isFinite(z) && z >= 0 && z <= 0.12);
       const edge = Math.max(Math.abs(x) / 5, Math.abs(y) / 3);
       if (edge < 0.8) { flat += 1; assert.equal(z, 0, 'la peinture reste à plat sous les cartes'); }
       if (edge < 0.05) centre = Math.max(centre, z);
       if (edge > 0.99) rim = Math.max(rim, z);
     }
-    assert.ok(flat > 500 && centre === 0 && rim > 0.2, 'bord relevé seulement');
+    assert.ok(flat > 500 && centre === 0 && rim > 0.08, 'bord relevé seulement');
     assert.ok(geometry.attributes.normal.array.every(Number.isFinite));
     assert.ok(geometry.attributes.uv, 'les UV portent la peinture');
   } finally { geometry.dispose(); }
@@ -160,4 +163,140 @@ test('la préférence du décor 3D est mémorisée, et activée par défaut', ()
   const broken = { getItem() { throw new Error('refusé'); }, setItem() { throw new Error('refusé'); } };
   assert.equal(readRpgTable3dPref(broken), true, 'stockage refusé : le décor reste actif');
   assert.doesNotThrow(() => writeRpgTable3dPref(false, broken));
+});
+
+const jpegSize = (file) => {
+  // Lit la taille d'un JPEG sans dépendance : premier marqueur SOFn.
+  const data = readFileSync(file);
+  for (let i = 2; i < data.length;) {
+    if (data[i] !== 0xff) { i += 1; continue; }
+    const marker = data[i + 1];
+    if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { height: data.readUInt16BE(i + 5), width: data.readUInt16BE(i + 7) };
+    i += 2 + data.readUInt16BE(i + 2);
+  }
+  return null;
+};
+
+test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »', () => {
+  for (const [id, theme] of Object.entries(RPG_TABLE_SCENE_THEMES)) {
+    const plateau = RPG_PLATEAUX.find((candidate) => candidate.id === id);
+    assert.ok(Object.isFrozen(theme.objets), `${id} : objets gelés`);
+    if (!theme.objets.length) {
+      assert.equal(theme.plaque, null, `${id} : pas d'objets, donc la peinture d'origine sert de plan`);
+      assert.equal(tablePlaqueFile(plateau), plateau.fichier);
+      continue;
+    }
+    // Des objets 3D sans plaque vide feraient deux objets : le peint et le 3D.
+    assert.ok(theme.plaque, `${id} : des objets exigent la plaque sans les objets peints`);
+    assert.notEqual(theme.plaque, plateau.fichier, `${id} : la plaque n'est pas la peinture d'origine`);
+    assert.equal(tablePlaqueFile(plateau), theme.plaque);
+    const file = new URL(`../public/${theme.plaque}`, import.meta.url);
+    assert.ok(existsSync(file), `${id} : ${theme.plaque} existe`);
+    const size = jpegSize(file);
+    assert.ok(size && Math.abs(size.width / size.height - 1.5) < 0.01, `${id} : plaque en 3:2 comme la peinture (${JSON.stringify(size)})`);
+    assert.ok(size.width <= 2048, `${id} : plaque bornée à 2048 px (c'est la taille de texture maximale)`);
+    assert.ok(theme.objets.length <= 8, `${id} : au plus huit objets`);
+    for (const objet of theme.objets) {
+      assert.ok(RPG_TABLE_OBJECT_KINDS.includes(objet.kind), `${id} : genre ${objet.kind} connu`);
+      assert.ok(objet.u >= 0 && objet.u <= 1 && objet.v >= 0 && objet.v <= 1, `${id}/${objet.kind} : dans l'image`);
+      assert.ok(objet.size > 0.03 && objet.size <= 0.3, `${id}/${objet.kind} : taille plausible`);
+      assert.ok(Number.isFinite(objet.angle));
+    }
+  }
+  assert.ok(RPG_TABLE_SCENE_THEMES['erg-du-sahara'].objets.length >= 5, 'le pilote : lanterne, gourde, galets, bol et corde');
+});
+
+test('chaque objet se construit sous Node, posé au sol, borné et sans valeur invalide', () => {
+  assert.equal(createTableObject('licorne'), null);
+  assert.deepEqual([...RPG_TABLE_OBJECT_KINDS].sort(), ['bol', 'corde', 'galets', 'gourde', 'lanterne']);
+  let triangles = 0;
+  for (const kind of RPG_TABLE_OBJECT_KINDS) {
+    const group = createTableObject(kind);
+    try {
+      const bounds = new THREE.Box3().setFromObject(group);
+      const size = bounds.getSize(new THREE.Vector3());
+      const { extent } = group.userData;
+      assert.equal(group.userData.kind, kind);
+      assert.ok(bounds.min.z >= -0.03, `${kind} : ne s'enfonce pas dans la table (${bounds.min.z})`);
+      assert.ok(bounds.min.z <= 0.03, `${kind} : ne flotte pas (${bounds.min.z})`);
+      assert.ok(size.z < Math.max(size.x, size.y), `${kind} : posé à plat, pas dressé`);
+      // La plus grande dimension suit l'`extent` annoncé : c'est lui qui règle l'échelle à l'écran.
+      assert.ok(Math.max(size.x, size.y) / extent > 0.6 && Math.max(size.x, size.y) / extent < 2.6, `${kind} : encombrement ${Math.max(size.x, size.y)} pour extent ${extent}`);
+      group.traverse((part) => {
+        if (!part.isMesh) return;
+        triangles += (part.geometry.index ? part.geometry.index.count : part.geometry.attributes.position.count) / 3;
+        for (const attribute of Object.values(part.geometry.attributes)) assert.ok(attribute.array.every(Number.isFinite), `${kind}/${part.name} : aucun sommet invalide`);
+        assert.ok(part.geometry.attributes.normal, `${kind}/${part.name} : réagit à la lumière`);
+        for (const material of [].concat(part.material)) {
+          for (const value of Object.values(material)) if (value?.isTexture) assert.ok(value.isDataTexture, `${kind} : textures locales, sans image à charger`);
+        }
+      });
+    } finally { disposeTableObject(group); }
+  }
+  assert.ok(triangles > 3000 && triangles < 40000, `budget de géométrie des cinq objets : ${triangles} triangles`);
+});
+
+test('les objets font de l\'ombre, sauf le verre ; seule la lanterne vit', () => {
+  const lantern = createTableObject('lanterne');
+  try {
+    const glass = lantern.getObjectByName('globe');
+    assert.equal(glass.castShadow, false, 'le verre ne projette pas d\'ombre pleine');
+    assert.equal(lantern.getObjectByName('pied').castShadow, true);
+    const lamp = lantern.getObjectByName('lueur');
+    const values = [];
+    for (let t = 0; t < 6; t += 0.37) { updateTableObject(lantern, t, 1.9); values.push(lamp.intensity); }
+    assert.ok(Math.max(...values) - Math.min(...values) > 0.05, 'la flamme vacille');
+    assert.ok(values.every((value) => value > 0.5 && value < 1.4), 'sans jamais s\'éteindre ni aveugler');
+  } finally { disposeTableObject(lantern); }
+  const bowl = createTableObject('bol');
+  assert.doesNotThrow(() => updateTableObject(bowl, 3), 'un objet inerte ignore l\'animation');
+  disposeTableObject(bowl);
+});
+
+test('disposeTableObject libère géométries, matériaux et textures', () => {
+  const group = createTableObject('gourde');
+  const freed = new Set();
+  group.traverse((part) => {
+    if (part.geometry) part.geometry.addEventListener('dispose', () => freed.add(part.geometry));
+    for (const material of [].concat(part.material ?? [])) {
+      material.addEventListener('dispose', () => freed.add(material));
+      for (const value of Object.values(material)) if (value?.isTexture) value.addEventListener('dispose', () => freed.add(value));
+    }
+  });
+  disposeTableObject(group);
+  let meshes = 0;
+  group.traverse((part) => { if (part.isMesh) meshes += 1; });
+  assert.ok(freed.size >= meshes * 2, `${freed.size} ressources libérées pour ${meshes} maillages`);
+});
+
+test('un objet reste collé à son emplacement peint, à toutes les tailles d\'écran', () => {
+  const lantern = RPG_TABLE_SCENE_THEMES['erg-du-sahara'].objets.find((objet) => objet.kind === 'lanterne');
+  const imageAspect = 1.5;
+  const place = (aspect, spec = lantern) => {
+    const planeHeight = 5.16, planeWidth = planeHeight * aspect;
+    const cover = coverTransform(aspect, imageAspect);
+    return { planeWidth, planeHeight, cover, result: tableObjectTransform(spec, { planeWidth, planeHeight, cover, imageAspect }) };
+  };
+  // Aux deux bouts du cadrage : le coin bas-gauche de l'image reste en bas à gauche.
+  for (const aspect of [1, 1.5, 16 / 9, 2.4]) {
+    const { planeWidth, planeHeight, result } = place(aspect);
+    assert.ok(result.x < 0 && result.y < 0, `${aspect} : en bas à gauche`);
+    // Écran carré ou ultra-large : l'image est rognée, la lanterne (près du bord) sort du cadre — comme sa peinture.
+    if (aspect >= 1.5 && aspect <= 16 / 9) assert.ok(Math.abs(result.x) <= planeWidth / 2 * 1.3 && Math.abs(result.y) <= planeHeight / 2 * 1.3, `${aspect} : près du cadre`);
+    assert.ok(result.z >= rimHeight(result.x, result.y, planeWidth, planeHeight) - 1e-9, `${aspect} : jamais sous le rebord de la table`);
+    assert.ok(result.z <= 0.1, `${aspect} : pas en lévitation`);
+    assert.equal(result.normal, undefined, 'posé à plat : le plan tangent d\'une cuvette passe sous la table');
+  }
+  // À 3:2 l'image remplit exactement le plan : taille = fraction de la largeur.
+  const exact = place(1.5);
+  assert.ok(Math.abs(exact.result.size - lantern.size * exact.planeWidth) < 1e-9);
+  assert.ok(Math.abs(exact.result.x - (lantern.u - 0.5) * exact.planeWidth) < 1e-9, 'exactement où la peinture le disait');
+  // Écran plus large : l'image déborde en largeur, l'objet grandit avec elle.
+  assert.ok(place(16 / 9).result.size > exact.result.size);
+  // Écran plus étroit : l'image est rognée sur les côtés, la taille suit la hauteur.
+  const narrow = place(1);
+  assert.ok(Math.abs(narrow.result.size - lantern.size * narrow.planeHeight * 1.5) < 1e-9);
+  // Les objets de droite restent à droite.
+  const bowl = RPG_TABLE_SCENE_THEMES['erg-du-sahara'].objets.find((objet) => objet.kind === 'bol');
+  assert.ok(place(16 / 9, bowl).result.x > 0 && place(16 / 9, bowl).result.y < 0);
 });

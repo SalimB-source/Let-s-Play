@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { tablePlaqueFile } from './rpgTableSceneThemes.js';
 
 /**
  * Le décor 3D de la table du duel (voir `rpgTableScene.js`).
@@ -30,7 +31,8 @@ export default function RpgTableScene3D({ plateau, enabled = true, paused = fals
           host: hostRef.current,
           canvas: canvasRef.current,
           plateauId: plateau.id,
-          imageUrl: `${import.meta.env.BASE_URL}${plateau.fichier}`,
+          // La plaque « vide » quand le plateau pose des objets 3D ; sinon la peinture.
+          imageUrl: `${import.meta.env.BASE_URL}${tablePlaqueFile(plateau)}`,
           pointerHost: pointerHost ?? hostRef.current.parentElement ?? hostRef.current,
           coarse: window.matchMedia?.('(pointer: coarse)')?.matches ?? false,
           onReady: () => { if (!disposed) setReady(true); },

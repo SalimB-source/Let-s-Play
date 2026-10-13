@@ -22,13 +22,15 @@
  * pixels, moins de particules) puis rend la main à la peinture CSS.
  */
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { particleAt, particleLayout, tableSceneBudget, tableSceneTheme } from './rpgTableSceneThemes.js';
+import { createTableObject, disposeTableObject, updateTableObject } from './rpgTableObjects.js';
 
 const CAMERA_Z = 10;
 const FOV = 28;
 const OVERSCAN = 1.035;
 /** Hauteur du rebord de la table relevé (unités de scène). */
-const RIM_HEIGHT = 0.22;
+const RIM_HEIGHT = 0.09;
 
 const visibleHeight = () => 2 * CAMERA_Z * Math.tan((FOV * Math.PI) / 360);
 const smoothstep = (a, b, x) => {
@@ -36,14 +38,17 @@ const smoothstep = (a, b, x) => {
   return t * t * (3 - 2 * t);
 };
 
+/** La hauteur de la table en (x, y) : plate au centre, relevée au bord. */
+export function rimHeight(x, y, width, height) {
+  const edge = Math.max(Math.abs(x) / (width / 2), Math.abs(y) / (height / 2));
+  return RIM_HEIGHT * smoothstep(0.86, 1, edge) ** 2;
+}
+
 /** Le bord de la table se relève vers la caméra : la peinture reste à plat au centre. */
 export function buildTableGeometry(width, height) {
   const geometry = new THREE.PlaneGeometry(width, height, 56, 36);
   const positions = geometry.attributes.position;
-  for (let i = 0; i < positions.count; i += 1) {
-    const edge = Math.max(Math.abs(positions.getX(i)) / (width / 2), Math.abs(positions.getY(i)) / (height / 2));
-    positions.setZ(i, RIM_HEIGHT * smoothstep(0.86, 1, edge) ** 2);
-  }
+  for (let i = 0; i < positions.count; i += 1) positions.setZ(i, rimHeight(positions.getX(i), positions.getY(i), width, height));
   geometry.computeVertexNormals();
   return geometry;
 }
@@ -56,6 +61,31 @@ export function coverTransform(planeAspect, imageAspect) {
   }
   const x = planeAspect / imageAspect;
   return { repeatX: x, repeatY: 1, offsetX: (1 - x) / 2, offsetY: 0 };
+}
+
+/**
+ * Où et comment poser un objet : ses coordonnées dans l'image peinte (`u`, `v`
+ * vers le bas) sont ramenées au plan à travers le même cadrage « cover » que la
+ * peinture, donc il reste collé à son emplacement à toutes les tailles
+ * d'écran. Il se pose à la hauteur du rebord relevé et sa taille suit la
+ * largeur de l'image à l'écran.
+ */
+export function tableObjectTransform(spec, { planeWidth, planeHeight, cover, imageAspect }) {
+  const planeU = (spec.u - cover.offsetX) / cover.repeatX;
+  const planeV = (1 - spec.v - cover.offsetY) / cover.repeatY;
+  const x = (planeU - 0.5) * planeWidth, y = (planeV - 0.5) * planeHeight;
+  // Le rebord est une cuvette : le plan tangent au bord passe SOUS la table dès
+  // qu'on s'en éloigne. Un objet incliné sur la pente s'y enfoncerait ; on le
+  // pose donc à plat, à la hauteur la plus haute de son emprise — rien ne
+  // s'enfonce, et l'écart (quelques centièmes) se perd dans son ombre.
+  const imageWidth = planeHeight * Math.max(planeWidth / planeHeight, imageAspect);
+  const radius = (spec.size * imageWidth) / 2;
+  let z = rimHeight(x, y, planeWidth, planeHeight);
+  for (let i = 0; i < 12; i += 1) {
+    const angle = (i / 12) * Math.PI * 2;
+    z = Math.max(z, rimHeight(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, planeWidth, planeHeight));
+  }
+  return { x, y, z, size: spec.size * imageWidth };
 }
 
 function softSprite() {
@@ -142,7 +172,9 @@ function preparePaintings(image, budget, maxTextureSize) {
  */
 export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost = host, coarse = false, onReady = () => {}, onUnavailable = () => {} }) {
   const theme = tableSceneTheme(plateauId);
-  let renderer, table, tableMaterial, overlay, particles, sprite, noise;
+  let renderer, table, tableMaterial, overlay, particles, sprite, noise, envTexture;
+  let objects = [];
+  let plane = { width: 1, height: 1, cover: null };
   let paintTexture, reliefTexture, imageAspect = 1.5;
   let disposed = false, failed = false, ready = false, raf = 0, paused = false, calm = false;
   let previousTime = 0, lastPaint = 0, elapsed = 0, degraded = 0;
@@ -166,7 +198,8 @@ export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost
       part?.geometry.dispose();
       part?.material.dispose();
     }
-    for (const texture of [paintTexture, reliefTexture, sprite, noise]) texture?.dispose();
+    clearObjects();
+    for (const texture of [paintTexture, reliefTexture, sprite, noise, envTexture]) texture?.dispose();
     scene.clear();
     if (renderer) {
       const alreadyLost = renderer.getContext().isContextLost();
@@ -179,6 +212,32 @@ export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost
     failed = true;
     onUnavailable();
     dispose();
+  };
+
+  const clearObjects = () => {
+    for (const entry of objects) { scene.remove(entry.group); disposeTableObject(entry.group); }
+    objects = [];
+  };
+  // Construit les objets une fois, puis les repose à chaque redimensionnement.
+  const syncObjects = () => {
+    const wanted = budget().objects && theme.objets.length > 0;
+    if (!wanted) { clearObjects(); canvas.dataset.objects = '0'; return; }
+    if (!objects.length) {
+      objects = theme.objets.map((spec, index) => {
+        const group = createTableObject(spec.kind, envTexture);
+        if (!group) return null;
+        scene.add(group);
+        return { spec, group, phase: index * 1.9 };
+      }).filter(Boolean);
+    }
+    for (const { spec, group } of objects) {
+      const place = tableObjectTransform(spec, { planeWidth: plane.width, planeHeight: plane.height, cover: plane.cover, imageAspect });
+      group.position.set(place.x, place.y, place.z);
+      // À plat, tourné vers `angle` (le grand axe de l'objet est +Y).
+      group.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), ((spec.angle - 90) * Math.PI) / 180);
+      group.scale.setScalar(place.size / group.userData.extent);
+    }
+    canvas.dataset.objects = String(objects.length);
   };
 
   const placeCamera = (t) => {
@@ -209,6 +268,7 @@ export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost
       const pulse = spec.pulse ? Math.sin(t * spec.pulseHz * Math.PI * 2 + phase) * spec.pulse : 0;
       lamp.intensity = spec.intensity * Math.max(0.05, 1 + flicker + pulse);
     });
+    objects.forEach((entry) => updateTableObject(entry.group, t, entry.phase));
     if (overlay) {
       noise.offset.x = (t * theme.overlay.speed) % 1;
       noise.offset.y = (t * theme.overlay.speed * 0.62) % 1;
@@ -269,6 +329,14 @@ export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost
     table.geometry.dispose();
     table.geometry = buildTableGeometry(width, height);
     const cover = coverTransform(size.aspect, imageAspect);
+    plane = { width, height, cover };
+    key.castShadow = current.shadows && theme.objets.length > 0;
+    if (key.castShadow) {
+      const shadow = key.shadow;
+      if (shadow.mapSize.x !== current.shadowSize) { shadow.mapSize.set(current.shadowSize, current.shadowSize); shadow.map?.dispose(); shadow.map = null; }
+      Object.assign(shadow.camera, { left: -width * 0.6, right: width * 0.6, top: height * 0.6, bottom: -height * 0.6, near: 1, far: 40 });
+      shadow.camera.updateProjectionMatrix();
+    }
     for (const texture of [paintTexture, reliefTexture]) {
       texture.repeat.set(cover.repeatX, cover.repeatY);
       texture.offset.set(cover.offsetX, cover.offsetY);
@@ -279,6 +347,7 @@ export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost
       noise.repeat.set(theme.overlay.scale * size.aspect, theme.overlay.scale);
     }
     buildParticles();
+    syncObjects();
     render();
   };
 
@@ -328,6 +397,16 @@ export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost
     renderer.toneMapping = THREE.NoToneMapping;
     renderer.setClearColor(0x120b06, 1);
     sprite = softSprite();
+    if (theme.objets.length) {
+      // Les objets posés ont leur ombre et reflètent une pièce neutre (métaux, verre).
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      const generator = new THREE.PMREMGenerator(renderer);
+      const room = new RoomEnvironment();
+      envTexture = generator.fromScene(room, 0.04).texture;
+      room.dispose?.();
+      generator.dispose();
+    }
 
     // Les écouteurs d'abord : un échec de chargement doit tout nettoyer.
     listen(canvas, 'webglcontextlost', (event) => { event.preventDefault(); unavailable(); });
@@ -364,6 +443,9 @@ export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost
     // physiques (r155+) : π d'intensité éclaire un aplat à sa couleur d'origine.
     ambient = new THREE.AmbientLight(theme.ambient, theme.ambientIntensity * Math.PI);
     key = new THREE.DirectionalLight(theme.key, theme.keyIntensity * Math.PI);
+    key.shadow.bias = -0.0006;
+    key.shadow.normalBias = 0.03;
+    key.shadow.radius = 3;
     scene.add(ambient, key);
     theme.lights.forEach((spec) => {
       const lamp = new THREE.PointLight(spec.color, spec.intensity, spec.distance, spec.decay);
@@ -384,6 +466,7 @@ export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost
         map: paintTexture, bumpMap: reliefTexture, bumpScale: 2.2 * theme.relief, roughness: theme.roughness, metalness: 0,
       });
       table = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), tableMaterial);
+      table.receiveShadow = true;
       scene.add(table);
       if (theme.overlay) {
         noise = tileableNoise(theme.overlay.kind);
