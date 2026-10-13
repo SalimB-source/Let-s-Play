@@ -514,7 +514,41 @@
 /* ── Fiche du deck ouvert ─────────────────────────────────────────────────── */
 .rpg-deck-detail { position: relative; animation: rpg-deck-detail-in .38s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes rpg-deck-detail-in { from { opacity: 0; transform: translateY(12px); } }
-.rpg-deck-detail__close { display: block; min-height: 30px; margin: -6px 0 4px auto; padding: 7px 0 7px 12px; }
+/* Le rail « Vos decks » s'efface quand un deck est ouvert : ce bouton devient
+   le seul chemin de retour vers l'étagère. Il est donc traité comme une vraie
+   commande — pastille bordée, texte lisible, cible tactile confortable — et
+   non comme le lien discret d'avant, qui se perdait en haut de la fiche. */
+.rpg-menu-link.rpg-deck-detail__close {
+  /* `flex` (et non `inline-flex`) pour que `margin-right: auto` plaque la
+     pastille à gauche de la fiche ; `fit-content` la garde à la taille du texte. */
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  margin: -4px auto 8px 0;
+  padding: 9px 16px;
+  border: 1px solid rgba(236, 214, 172, .42);
+  border-radius: 999px;
+  background: rgba(255, 246, 226, .08);
+  color: #ffe6a8;
+  font: 800 11px/1 var(--mono, monospace);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .07), 0 6px 16px rgba(0, 0, 0, .32), 0 0 20px rgba(245, 213, 143, .12);
+  transition: border-color .14s ease, background-color .14s ease, color .14s ease, transform .14s ease, box-shadow .14s ease;
+}
+.rpg-menu-link.rpg-deck-detail__close:hover,
+.rpg-menu-link.rpg-deck-detail__close:focus-visible {
+  border-color: #f5d58f;
+  background: rgba(245, 213, 143, .18);
+  color: #fff6dc;
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .1), 0 8px 20px rgba(0, 0, 0, .38), 0 0 24px rgba(245, 213, 143, .22);
+}
+.rpg-menu-link.rpg-deck-detail__close:focus-visible { outline: 2px solid #ffe9a0; outline-offset: 3px; }
+.rpg-menu-link.rpg-deck-detail__close:active { transform: translateY(0); }
 .rpg-deck-detail__header { gap: clamp(8px, 1.6vw, 18px); }
 .rpg-deck-detail__header > div { min-width: 0; }
 
@@ -555,6 +589,8 @@
   .rpg-deck-choice__select,
   .rpg-deck-catalog--open .rpg-deck-choice__select { min-height: 44px; }
   .rpg-deck-filter__chip { min-height: 40px; }
+  /* Seule sortie de la fiche au doigt : cible pleine, jamais sous 44 px. */
+  .rpg-menu-link.rpg-deck-detail__close { min-height: 44px; padding: 11px 18px; }
 }
 /* Très petit écran : « SÉLECTIONNER » doit tenir dans un tiers de la rangée. */
 @media (max-width: 360px) {

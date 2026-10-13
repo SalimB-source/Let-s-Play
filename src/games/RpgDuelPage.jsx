@@ -517,6 +517,21 @@ function deckCardList(deck) {
   return [...counts.entries()].map(([id, count]) => ({ carte: cardById(id), count })).filter((entry) => entry.carte);
 }
 
+/** Les trois familles de la fiche d'un deck : créatures, sorts, terrains.
+ * Les héros comptent parmi les créatures — c'est déjà le découpage de
+ * `deckStats`, donc la liste et les statistiques ne peuvent pas se contredire. */
+function familleDeCarte(carte) {
+  if (carte?.kind === 'terrain') return 'terrains';
+  if (carte?.kind === 'magie') return 'sorts';
+  return 'creatures';
+}
+
+const RPG_DECK_FAMILLES = [
+  { id: 'creatures', nom: 'Créatures', note: 'Les créatures et héros invoqués en jeu' },
+  { id: 'sorts', nom: 'Sorts', note: 'Les magies, lancées depuis la main' },
+  { id: 'terrains', nom: 'Terrains', note: 'Les sources de mana du deck' },
+];
+
 function targetMode(carte) {
   if (carte?.arrivee?.type === 'combat' && carte.arrivee.cible === 'creature') return 'ennemi';
   if (carte?.arrivee?.type === 'retour-main') return carte.arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
@@ -1303,10 +1318,14 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // Mode Histoire : la galerie des tours d'abord (`null`), la page d'une tour
   // — ses étages dévoilés — ensuite. Le clic sur une maquette ouvre la tour.
   const [tourOuverteId, setTourOuverteId] = useState(null);
+  // Mode Tours : galerie puis détail d'une tour sélectionnée.
+  const [tourLibreOuverteId, setTourLibreOuverteId] = useState(null);
   const [confirmerResetHistoire, setConfirmerResetHistoire] = useState(false);
   const [erreurResetHistoire, setErreurResetHistoire] = useState(false);
   const storyRef = useRef(null);
+  const libreRef = useRef(null);
   const derniereTourRef = useRef(null);
+  const derniereTourLibreRef = useRef(null);
   // La suppression d'un deck maison se confirme en deux temps (jamais de `window.confirm`).
   const [suppressionEnCours, setSuppressionEnCours] = useState(false);
   // L'atelier : `null` (fermé), `{ mode: 'nouveau' }`, `{ mode: 'edition', id }`
@@ -1329,6 +1348,17 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const openJouable = openDeck ? deckSeJoue(openDeck, collection) : false;
   const openStats = openDeck ? deckStats(openDeck) : { terrains: 0, creatures: 0, magies: 0 };
   const openCards = openDeck ? deckCardList(openDeck) : [];
+  // La liste se lit par familles : créatures, puis sorts, puis terrains. Une
+  // famille sans carte ne s'affiche pas, et les totaux additionnent les
+  // exemplaires (« ×4 » compte pour quatre cartes dans le deck).
+  const openFamilles = openDeck
+    ? RPG_DECK_FAMILLES
+      .map((famille) => {
+        const cartes = openCards.filter(({ carte }) => familleDeCarte(carte) === famille.id);
+        return { ...famille, cartes, total: cartes.reduce((somme, { count }) => somme + count, 0) };
+      })
+      .filter((famille) => famille.cartes.length > 0)
+    : [];
   const openValidation = openDeck
     ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection) : rpgValiderDeck(openDeck.cardIds))
     : { ok: false, raisons: ['Aucun deck ouvert.'] };
@@ -1351,6 +1381,22 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // Quitter l'onglet Histoire referme la tour ouverte : le prochain passage sur
   // l'onglet retrouve la galerie des maquettes, jamais les étages d'emblée.
   useEffect(() => { if (screen !== 'histoire') setTourOuverteId(null); }, [screen]);
+  // Quitter l'onglet Tours referme la tour libre ouverte : la galerie réapparaît.
+  useEffect(() => { if (screen !== 'tours') setTourLibreOuverteId(null); }, [screen]);
+  // Scroll vers la tour libre ouverte comme pour le mode Histoire.
+  useLayoutEffect(() => {
+    if (screen !== 'tours') { derniereTourLibreRef.current = null; return; }
+    if (tourLibreOuverteId) {
+      derniereTourLibreRef.current = tourLibreOuverteId;
+      const detail = libreRef.current?.querySelector('.rpg-story__detail');
+      detail?.scrollIntoView?.({ behavior: 'auto', block: 'start' });
+      detail?.querySelector('.rpg-story__back')?.focus?.({ preventScroll: true });
+    } else if (derniereTourLibreRef.current) {
+      const carte = libreRef.current?.querySelector(`[data-tour-libre="${derniereTourLibreRef.current}"]`);
+      carte?.focus?.({ preventScroll: true });
+      carte?.scrollIntoView?.({ behavior: 'auto', block: 'nearest' });
+    }
+  }, [screen, tourLibreOuverteId]);
   // Une tour choisie en bas de la galerie doit s'ouvrir depuis son sommet,
   // pas conserver le défilement de la cinquième carte et couper sa maquette.
   // Au retour, clavier et défilement retrouvent la carte que l'on consultait.
@@ -1367,10 +1413,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       carte?.scrollIntoView?.({ behavior: 'auto', block: 'nearest' });
     }
   }, [screen, tourOuverteId]);
-  // Sur écran étroit, la fiche s'ouvre sous l'étagère : on l'amène à l'écran.
+  // Le rail « Vos decks » s'efface dès qu'un deck s'ouvre : le boîtier cliqué
+  // disparaît avec lui et le focus se perdrait. On le repose sur la fiche dont
+  // « ✕ Fermer le deck » est la sortie, puis on l'amène à l'écran.
   useEffect(() => {
     const fiche = detailRef.current;
-    if (!openDeckId || atelier || !fiche?.scrollIntoView) return;
+    if (!openDeckId || atelier || !fiche) return;
+    if (document.activeElement === document.body) {
+      fiche.querySelector('.rpg-deck-detail__close')?.focus?.({ preventScroll: true });
+    }
+    if (!fiche.scrollIntoView) return;
     if (fiche.getBoundingClientRect().top <= window.innerHeight * 0.55) return;
     const calme = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     fiche.scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' });
@@ -1404,7 +1456,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   };
 
   return (
-    <section className={`rpg-mode-menu rpg-mode-menu--${screen}`} style={{ backgroundImage: menuBackground }}>
+    <section
+      className={`rpg-mode-menu rpg-mode-menu--${screen}`}
+      style={{ backgroundImage: menuBackground }}
+      // L'aperçu au survol est placé d'après la position de la carte au moment
+      // du survol : dès que l'écran défile, il désignerait la mauvaise ligne.
+      onScroll={onLeaveHoverCard}
+    >
       <div className="rpg-mode-menu__content">
         <header className="rpg-mode-menu__header">
           <div className="rpg-mode-menu__brand">
@@ -1426,6 +1484,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
               <span aria-hidden="true">⚔</span> Jouer
             </button>
+            <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('tours'); }}>
+              <span aria-hidden="true">🗼</span> Tours
+            </button>
             <button type="button" className={screen === 'histoire' ? 'is-active' : ''} aria-current={screen === 'histoire' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('histoire'); }}>
               <span aria-hidden="true">⌛</span> Histoire
             </button>
@@ -1441,44 +1502,176 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
         {screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
             <section className="rpg-mode-menu__hero" style={{ '--rpg-menu-card-art': `url("${imageForDeck(playerDeck)}")` }}>
+              {/* Effet visuel thématique : grains de sable qui tombent */}
+              <div className="rpg-sand-fx" aria-hidden="true">
+                {Array.from({ length: 18 }).map((_, i) => (
+                  <span key={i} className="rpg-sand-grain" style={{ '--delay': `${i * 0.21}s`, '--left': `${5 + Math.random() * 90}%`, '--duration': `${4 + Math.random() * 5}s`, '--size': `${1 + Math.random() * 2}px` }} />
+                ))}
+              </div>
               <div className="rpg-mode-menu__hero-copy">
-                <span className="rpg-mode-menu__eyebrow">UN DUEL · DEUX DECKS · 40 CARTES</span>
+                <span className="rpg-mode-menu__eyebrow">
+                  <span className="rpg-eyebrow-dot" />
+                  UN DUEL · DEUX DECKS · 40 CARTES
+                </span>
                 <h2>Le sable se souvient.<br /><em>À vous d’écrire la suite.</em></h2>
-                <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes.</p>
+                <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes de Bab El. Chaque carte compte, chaque mana compte, chaque choix façonne votre victoire.</p>
                 <div className="rpg-mode-menu__hero-actions">
-                  <button type="button" className="rpg-menu-button rpg-menu-button--primary" onClick={() => { play('select'); onStartGame(); }}>
-                    ⚔ Lancer le duel <span aria-hidden="true">→</span>
+                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--glow" onClick={() => { play('select'); onStartGame(); }}>
+                    <span className="rpg-menu-button__icon">⚔</span>
+                    <span className="rpg-menu-button__text">
+                      <strong>Lancer le duel</strong>
+                      <small>Partie rapide contre l'IA</small>
+                    </span>
+                    <span className="rpg-menu-button__arrow" aria-hidden="true">→</span>
                   </button>
-                  <button type="button" className="rpg-menu-button rpg-menu-button--tutorial" onClick={() => { play('select'); onStartTutorial?.(); }}>
-                    ⌛ Apprendre à jouer <span aria-hidden="true">→</span>
+                  <div className="rpg-mode-menu__secondary-actions">
+                    <button type="button" className="rpg-menu-button rpg-menu-button--tutorial" onClick={() => { play('select'); onStartTutorial?.(); }}>
+                      <span className="rpg-menu-button__icon">⌛</span>
+                      <span className="rpg-menu-button__text">
+                        <strong>Apprendre à jouer</strong>
+                        <small>Partie guidée en 5 étapes</small>
+                      </span>
+                    </button>
+                    <button type="button" className="rpg-menu-button rpg-menu-button--card-guide" onClick={() => { play('select'); onStartCardGuide?.(); }}>
+                      <span className="rpg-menu-button__icon">◇</span>
+                      <span className="rpg-menu-button__text">
+                        <strong>Cartes & effets</strong>
+                        <small>Guide complet des règles</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                {hasGame && (
+                  <button type="button" className="rpg-menu-button rpg-menu-button--resume rpg-menu-button--resume-inline rpg-menu-button--resume-pulse" onClick={() => { play('select'); onResumeGame(); }}>
+                    <span className="rpg-menu-button__icon">↩</span>
+                    <span className="rpg-menu-button__text">
+                      <strong>Reprendre le duel en cours</strong>
+                      <small>Une partie n'est pas terminée</small>
+                    </span>
+                    <span className="rpg-resume-badge" aria-hidden="true">!</span>
                   </button>
-                  <button type="button" className="rpg-menu-button rpg-menu-button--card-guide" onClick={() => { play('select'); onStartCardGuide?.(); }}>
-                    ◇ Cartes & effets <span aria-hidden="true">→</span>
-                  </button>
+                )}
+                <div className="rpg-quick-tip">
+                  <span className="rpg-quick-tip__icon">💡</span>
+                  <p>Astuce : vous pouvez annuler votre dernière action avec le bouton ↶ pendant votre tour. <kbd>F</kbd> pour le plein écran, <kbd>M</kbd> pour le son. Rendez-vous dans l'onglet <b>Tours</b> pour des parties par étages.</p>
                 </div>
               </div>
               <div className="rpg-mode-menu__hero-mark" aria-hidden="true">باب</div>
+              <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
             </section>
-
-            <aside className="rpg-mode-menu__loadout">
-              <div className="rpg-mode-menu__loadout-heading">
-                <div><span className="rpg-mode-menu__eyebrow">VOTRE AFFRONTEMENT</span><h2>Decks de départ</h2></div>
-                <button type="button" className="rpg-menu-link" onClick={() => { play('menu'); onChangeScreen('decks'); }}>Voir les decks <span aria-hidden="true">→</span></button>
+          </main>
+        ) : screen === 'tours' ? (
+          <main className="rpg-mode-menu__play rpg-mode-menu__play--full" ref={libreRef}>
+            {tourLibreOuverteId ? (
+              <div className="rpg-story__detail">
+                <button type="button" className="rpg-story__back" onClick={() => { play('menu'); setTourLibreOuverteId(null); }}>
+                  <span aria-hidden="true">←</span> Retour aux tours
+                </button>
+                {(() => {
+                  const tourLibre = tourHistoireParId(tourLibreOuverteId);
+                  const resumeLibre = resumeTourHistoire(tourLibre.id, progressionHistoire);
+                  return (
+                    <section key={tourLibre.id} className="rpg-story-tour">
+                      <header className="rpg-story-tour__header">
+                        <RpgStoryTowerPreview tour={tourLibre} className="rpg-story-tour__banner" detail />
+                        <div className="rpg-story-tour__heading">
+                          <span className="rpg-mode-menu__eyebrow">PARTIE LIBRE · {resumeLibre.vaincus} / {resumeLibre.total} ÉTAGES DÉBLAYÉS</span>
+                          <h3>{tourLibre.nom}</h3>
+                          <p>{tourLibre.resume}</p>
+                        </div>
+                      </header>
+                      <div className="rpg-story-tour__progress" aria-hidden="true">
+                        <span style={{ width: `${resumeLibre.total ? (resumeLibre.vaincus / resumeLibre.total) * 100 : 0}%` }} />
+                      </div>
+                      <ul className="rpg-story-tour__floors">
+                        {tourLibre.etages.map((etage, index) => {
+                          const vaincu = etageEstVaincu(progressionHistoire, etage.id);
+                          const debloque = etageEstDebloque(progressionHistoire, etage.id); // Progression dans les tours
+                          return (
+                            <li key={etage.id}>
+                              <button
+                                type="button"
+                                className={`rpg-story-floor${vaincu ? ' is-cleared' : debloque ? ' is-next' : ''}`}
+                                disabled={!debloque}
+                                data-etage={etage.id}
+                                onClick={() => { play('select'); onStartEtage(etage.id); }}
+                              >
+                                <span className="rpg-story-floor__step" aria-hidden="true">{vaincu ? '✓' : index + 1}</span>
+                                <span className="rpg-story-floor__copy">
+                                  <strong>{etage.nom}</strong>
+                                  <small>{etage.note}</small>
+                                </span>
+                                <span className="rpg-story-floor__badge">
+                                  {vaincu ? 'déblayé' : debloque ? `puissance ${etage.puissance}` : 'verrouillé'}
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  );
+                })()}
               </div>
-              {playerDeck && (
-                <article className="rpg-menu-deck-summary rpg-menu-deck-summary--player">
-                  <img src={deckBoxArtUrl(playerDeck)} alt="" />
-                  <div><small>VOTRE DECK · {deckColorGlyph(playerDeck)} {deckColorLabel(playerDeck).toUpperCase()}</small><strong>{playerDeck.name}</strong><span>{deckStats(playerDeck).creatures} créatures · {deckStats(playerDeck).magies} magies</span></div>
-                </article>
-              )}
-              {opponentDeck && (
-                <article className="rpg-menu-deck-summary rpg-menu-deck-summary--opponent">
-                  <img src={deckBoxArtUrl(opponentDeck)} alt="" />
-                  <div><small>ADVERSAIRE · {deckColorGlyph(opponentDeck)} {deckColorLabel(opponentDeck).toUpperCase()}</small><strong>{opponentDeck.name}</strong><span>{opponentDeck.affrontement ?? `Affrontez ${opponentDeck.name}.`}</span></div>
-                </article>
-              )}
-              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel en cours</button>}
-            </aside>
+            ) : (
+              <section className="rpg-free-tours">
+                <header className="rpg-free-tours__heading">
+                  <div>
+                    <span className="rpg-mode-menu__eyebrow">LES TOURS DE BAB EL</span>
+                    <h2>Choisissez votre défi</h2>
+                    <p>Gravissez les tours étage par étage. Chaque victoire débloque l'étage suivant. Deck complet et PV pleins à chaque duel.</p>
+                  </div>
+                  {hasGame && (
+                    <button type="button" className="rpg-menu-button rpg-menu-button--resume rpg-menu-button--resume-pulse" onClick={() => { play('select'); onResumeGame(); }}>
+                      ↩ Reprendre le duel en cours
+                    </button>
+                  )}
+                </header>
+                <div className="rpg-story__tours">
+                  {RPG_STORY_TOURS.map((tour) => {
+                    const resume = resumeTourHistoire(tour.id, progressionHistoire);
+                    return (
+                      <button
+                        key={tour.id}
+                        type="button"
+                        className="rpg-story-tower"
+                        data-tour-libre={tour.id}
+                        onClick={() => { play('select'); setTourLibreOuverteId(tour.id); }}
+                      >
+                        <RpgStoryTowerPreview tour={tour} className="rpg-story-tower__art" />
+                        <span className="rpg-story-tower__body">
+                          <span className="rpg-mode-menu__eyebrow">{resume.vaincus} / {resume.total} ÉTAGES DÉBLAYÉS</span>
+                          <strong className="rpg-story-tower__name">{tour.nom}</strong>
+                          <small className="rpg-story-tower__resume">{tour.resume}</small>
+                          <span className="rpg-story-tower__progress" aria-hidden="true">
+                            <span style={{ width: `${resume.total ? (resume.vaincus / resume.total) * 100 : 0}%` }} />
+                          </span>
+                          <span className="rpg-story-tower__cta">Voir les étages <span aria-hidden="true">→</span></span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </main>
+        ) : screen === 'histoire' ? (
+          <main ref={storyRef} className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
+            <RpgStoryCampaign
+              recit={progressionHistoire.recit}
+              cardArt={cardArt}
+              onContinue={onContinueRecit}
+              onJournal={onJournalRecit}
+              onRestart={onRestartRecit}
+              sauvegardeOk={sauvegardeHistoireOk}
+              duelEnCours={duelEnCours} campagneEnCours={campagneEnCours}
+            />
+            {confirmerResetHistoire && <div className="rpg-story__reset-confirm" role="group" aria-label="Confirmer l’effacement de la progression">
+              {erreurResetHistoire && <p role="status">La progression n’a pas été effacée : impossible de conserver vos cartes sur cet appareil. Libérez de l’espace avant de réessayer.</p>}
+              <p>Effacer le récit et les victoires sur cet appareil ? Les étages seront verrouillés de nouveau. Vos cartes et decks seront conservés.</p>
+              <button type="button" className="rpg-narrative-button" onClick={() => { play('annuler'); const ok = onResetHistoire(); setErreurResetHistoire(!ok); if (ok) setConfirmerResetHistoire(false); }}>Confirmer l’effacement</button>
+              <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
+            </div>}
           </main>
         ) : screen === 'decks' ? (atelier ? (
           <main className="rpg-deck-catalog rpg-deck-catalog--atelier" aria-label="Atelier de deck">
@@ -1506,13 +1699,15 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
           </main>
         ) : (
           <main className={`rpg-deck-catalog ${openDeck ? 'rpg-deck-catalog--open' : 'rpg-deck-catalog--closed'}`}>
-            <aside className="rpg-deck-catalog__rail">
+            {/* La liste des cartes d'un deck occupe toute la largeur : le rail
+                « Vos decks » s'efface tant qu'un deck est ouvert. « ✕ Fermer
+                le deck » le ramène, avec ses boîtiers et ses filtres. */}
+            {!openDeck && (
+              <aside className="rpg-deck-catalog__rail">
               <div className="rpg-deck-catalog__intro">
                 <span className="rpg-mode-menu__eyebrow">COLLECTION</span>
                 <h2>Vos decks</h2>
-                <p>{openDeck
-                  ? 'Cliquez sur un autre boîtier pour changer de deck, ou fermez celui-ci pour masquer sa liste.'
-                  : 'Cliquez un boîtier pour voir ses cartes ; «\u00a0Sélectionner\u00a0» le retient pour vos prochaines parties. Le boîtier « Nouveau deck » ouvre l’atelier.'}</p>
+                <p>Cliquez un boîtier pour voir ses cartes ; «\u00a0Sélectionner\u00a0» le retient pour vos prochaines parties. Le boîtier « Nouveau deck » ouvre l’atelier.</p>
                 <p className="rpg-deck-catalog__sync" role="status">
                   {statutSync === 'synchronise'
                     ? '☁ Synchronisé avec votre compte'
@@ -1635,8 +1830,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   {confirmation?.supprime && <span className="is-unsaved">Deck supprimé de l'étagère.</span>}
                 </p>
               )}
-              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
-            </aside>
+                {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
+              </aside>
+            )}
 
             {openDeck && (
               <section id="rpg-deck-detail" ref={detailRef} className={`rpg-deck-detail rpg-deck-detail--${deckColorModifier(openDeck)}`} aria-label={`Détails du deck ${openDeck.name}`}>
@@ -1654,15 +1850,32 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <span className={openValidation.ok ? 'is-valid' : 'is-invalid'}><b>{openValidation.ok ? '✓' : '!'}</b><small>{openValidation.ok ? 'validé' : (openValidation.raisons ?? [openValidation.raison]).filter(Boolean).join(' · ')}</small></span>
                 </div>
                 <div className="rpg-deck-detail__list-heading"><h3>Liste des cartes</h3><span>{openCards.length} références · quantités incluses</span></div>
-                <ul className="rpg-deck-list">
-                  {openCards.map(({ carte, count }) => (
-                    <li key={carte.id} data-card-id={carte.id}>
-                      <img src={cardArt(carte)} alt="" />
-                      <span><strong>{carte.name}</strong><small>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
-                      <b>×{count}</b>
-                    </li>
+                <div className="rpg-deck-list-panel">
+                  {openFamilles.map((famille) => (
+                    <section key={famille.id} className="rpg-deck-list-family" data-famille={famille.id}>
+                      <h4 className="rpg-deck-list-family__heading">
+                        <strong>{famille.nom}</strong>
+                        <em>{famille.note}</em>
+                        <small>
+                          {famille.cartes.length} référence{famille.cartes.length > 1 ? 's' : ''}
+                          {' · '}
+                          {famille.total} carte{famille.total > 1 ? 's' : ''}
+                        </small>
+                      </h4>
+                      <ul className="rpg-deck-list">
+                        {famille.cartes.map(({ carte, count }) => (
+                          <li key={carte.id} data-card-id={carte.id}
+                            onMouseEnter={(event) => onHoverCard?.(carte, event)}
+                            onMouseLeave={onLeaveHoverCard}>
+                            <img src={cardArt(carte)} alt="" />
+                            <span><strong>{carte.name}</strong><small>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
+                            <b>×{count}</b>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
                   ))}
-                </ul>
+                </div>
                 <div className="rpg-deck-detail__actions">
                   {openDeck.maison ? (
                     <>
@@ -1703,104 +1916,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               </section>
             )}
           </main>
-        )) : screen === 'histoire' ? (
-          <main ref={storyRef} className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
-            <RpgStoryCampaign
-              recit={progressionHistoire.recit}
-              cardArt={cardArt}
-              onContinue={onContinueRecit}
-              onJournal={onJournalRecit}
-              onRestart={onRestartRecit}
-              sauvegardeOk={sauvegardeHistoireOk}
-              duelEnCours={duelEnCours} campagneEnCours={campagneEnCours}
-            />
-            <div className="rpg-story__free-heading">
-              <div>
-                <h2>Tours libres</h2>
-                <p>Choisissez une tour en 3D pour dévoiler ses étages, à votre rythme. Deck complet et PV pleins à chaque duel. Vos victoires restent acquises pour la campagne.</p>
-              </div>
-              <button type="button" className="rpg-story__reset" onClick={() => setConfirmerResetHistoire(true)}>Effacer la progression</button>
-            </div>
-            {confirmerResetHistoire && <div className="rpg-story__reset-confirm" role="group" aria-label="Confirmer l’effacement de la progression">
-              {erreurResetHistoire && <p role="status">La progression n’a pas été effacée : impossible de conserver vos cartes sur cet appareil. Libérez de l’espace avant de réessayer.</p>}
-              <p>Effacer les victoires et le récit sur cet appareil ? Les étages seront verrouillés de nouveau. Vos cartes et decks seront conservés.</p>
-              <button type="button" className="rpg-narrative-button" onClick={() => { play('annuler'); const ok = onResetHistoire(); setErreurResetHistoire(!ok); if (ok) setConfirmerResetHistoire(false); }}>Confirmer l’effacement</button>
-              <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
-            </div>}
-            {tourOuverte ? (
-              <div className="rpg-story__detail">
-                <button type="button" className="rpg-story__back" onClick={() => { play('menu'); setTourOuverteId(null); }}>
-                  <span aria-hidden="true">←</span> Retour aux tours
-                </button>
-                <section key={tourOuverte.id} className="rpg-story-tour">
-                  <header className="rpg-story-tour__header">
-                    <RpgStoryTowerPreview tour={tourOuverte} className="rpg-story-tour__banner" detail />
-                    <div className="rpg-story-tour__heading">
-                      <span className="rpg-mode-menu__eyebrow">{resumeTourOuverte.vaincus} / {resumeTourOuverte.total} ÉTAGES DÉBLAYÉS</span>
-                      <h3>{tourOuverte.nom}</h3>
-                      <p>{tourOuverte.resume}</p>
-                    </div>
-                  </header>
-                  <div className="rpg-story-tour__progress" aria-hidden="true">
-                    <span style={{ width: `${resumeTourOuverte.total ? (resumeTourOuverte.vaincus / resumeTourOuverte.total) * 100 : 0}%` }} />
-                  </div>
-                  <ul className="rpg-story-tour__floors">
-                    {tourOuverte.etages.map((etage, index) => {
-                      const vaincu = etageEstVaincu(progressionHistoire, etage.id);
-                      const debloque = etageEstDebloque(progressionHistoire, etage.id);
-                      return (
-                        <li key={etage.id}>
-                          <button
-                            type="button"
-                            className={`rpg-story-floor${vaincu ? ' is-cleared' : debloque ? ' is-next' : ''}`}
-                            disabled={!debloque}
-                            data-etage={etage.id}
-                            onClick={() => { play('select'); onStartEtage(etage.id); }}
-                          >
-                            <span className="rpg-story-floor__step" aria-hidden="true">{vaincu ? '✓' : index + 1}</span>
-                            <span className="rpg-story-floor__copy">
-                              <strong>{etage.nom}</strong>
-                              <small>{etage.note}</small>
-                            </span>
-                            <span className="rpg-story-floor__badge">
-                              {vaincu ? 'déblayé' : debloque ? `puissance ${etage.puissance}` : 'verrouillé'}
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              </div>
-            ) : (
-              <div className="rpg-story__tours">
-                {RPG_STORY_TOURS.map((tour) => {
-                  const resume = resumeTourHistoire(tour.id, progressionHistoire);
-                  return (
-                    <button
-                      key={tour.id}
-                      type="button"
-                      className="rpg-story-tower"
-                      data-tour={tour.id}
-                      onClick={() => { play('select'); setTourOuverteId(tour.id); }}
-                    >
-                      <RpgStoryTowerPreview tour={tour} className="rpg-story-tower__art" />
-                      <span className="rpg-story-tower__body">
-                        <span className="rpg-mode-menu__eyebrow">{resume.vaincus} / {resume.total} ÉTAGES DÉBLAYÉS</span>
-                        <strong className="rpg-story-tower__name">{tour.nom}</strong>
-                        <small className="rpg-story-tower__resume">{tour.resume}</small>
-                        <span className="rpg-story-tower__progress" aria-hidden="true">
-                          <span style={{ width: `${resume.total ? (resume.vaincus / resume.total) * 100 : 0}%` }} />
-                        </span>
-                        <span className="rpg-story-tower__cta">Voir les étages <span aria-hidden="true">→</span></span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </main>
-        ) : screen === 'guide' ? (
+        )) : screen === 'guide' ? (
           <RpgCardGuide
             cardArt={cardArt}
             hasGame={hasGame}
