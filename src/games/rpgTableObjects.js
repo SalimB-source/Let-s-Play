@@ -526,6 +526,142 @@ function buildRuneStaff(env) {
   return group;
 }
 
+/**
+ * L'astrolabe : une mère de laiton à limbe gradué, la plaque, l'araignée (le
+ * réseau des étoiles), l'alidade. `extent` est le diamètre de la mère ; la bélière
+ * (l'anneau d'attache) part vers +Y.
+ */
+function buildAstrolabe(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const brass = kit.metal('laiton', '#a8883a', 0.36, 0.92);
+  const dark = kit.metal('laiton-sombre', '#7a5f28', 0.5, 0.8);
+  const flat = (geometry) => { geometry.rotateX(Math.PI / 2); return geometry; };
+  // La mère : une coupe peu profonde, bord épais.
+  group.add(mesh(flat(lathe([[0.001, 0], [0.5, 0], [0.5, 0.09], [0.45, 0.09], [0.45, 0.04], [0.001, 0.04]], 56)), brass, 'mere'));
+  // Le limbe : soixante graduations posées sur le bord.
+  const ticks = new THREE.InstancedMesh(new THREE.BoxGeometry(0.008, 0.035, 0.006), dark, 72);
+  ticks.name = 'graduations';
+  const matrix = new THREE.Matrix4(), turn = new THREE.Quaternion();
+  for (let i = 0; i < 72; i += 1) {
+    const angle = (i / 72) * Math.PI * 2;
+    turn.setFromAxisAngle(new THREE.Vector3(0, 0, 1), angle);
+    matrix.compose(new THREE.Vector3(Math.cos(angle) * 0.475, Math.sin(angle) * 0.475, 0.094), turn.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2)), new THREE.Vector3(1, i % 6 === 0 ? 1.7 : 1, 1));
+    ticks.setMatrixAt(i, matrix);
+  }
+  ticks.castShadow = false;
+  group.add(ticks);
+  // La plaque, gravée de cercles : tropiques et horizon.
+  const plate = mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.012, 56), kit.metal('plaque', '#c0a45a', 0.42, 0.85), 'plaque');
+  plate.rotation.x = Math.PI / 2;
+  plate.position.z = 0.05;
+  group.add(plate);
+  for (const [radius, offset] of [[0.36, 0], [0.26, -0.05], [0.16, -0.09]]) {
+    const circle = mesh(new THREE.TorusGeometry(radius, 0.004, 5, 56), dark, 'gravure');
+    circle.position.set(0, offset, 0.058);
+    circle.castShadow = false;
+    group.add(circle);
+  }
+  // L'araignée : un cercle excentré de l'écliptique et des pointes d'étoiles.
+  const rete = mesh(new THREE.TorusGeometry(0.31, 0.014, 6, 56), brass, 'araignee');
+  rete.position.set(0, 0.04, 0.075);
+  group.add(rete);
+  for (let i = 0; i < 7; i += 1) {
+    const angle = 0.5 + (i / 7) * Math.PI * 2;
+    const spike = mesh(new THREE.ConeGeometry(0.022, 0.12, 4), brass, 'etoile');
+    spike.position.set(Math.cos(angle) * 0.36, 0.04 + Math.sin(angle) * 0.36, 0.08);
+    spike.rotation.z = angle - Math.PI / 2;
+    group.add(spike);
+  }
+  // L'alidade : une règle sur un pivot, avec ses pinnules.
+  const rule = mesh(new THREE.BoxGeometry(0.94, 0.05, 0.012), brass, 'alidade');
+  rule.position.z = 0.106;
+  rule.rotation.z = 0.55;
+  group.add(rule);
+  for (const sign of [-1, 1]) {
+    const sight = mesh(new THREE.BoxGeometry(0.03, 0.05, 0.05), brass, 'pinnule');
+    sight.position.set(Math.cos(0.55) * 0.43 * sign, Math.sin(0.55) * 0.43 * sign, 0.12);
+    sight.rotation.z = 0.55;
+    group.add(sight);
+  }
+  const pivot = mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.05, 20), brass, 'pivot');
+  pivot.rotation.x = Math.PI / 2;
+  pivot.position.z = 0.115;
+  group.add(pivot);
+  // La bélière : le trône ajouré et l'anneau.
+  const throne = mesh(new THREE.BoxGeometry(0.2, 0.14, 0.05), brass, 'trone');
+  throne.position.set(0, 0.55, 0.045);
+  group.add(throne);
+  const ring = mesh(new THREE.TorusGeometry(0.1, 0.024, 8, 28), brass, 'beliere');
+  ring.position.set(0, 0.7, 0.03);
+  group.add(ring);
+  group.userData = { kind: 'astrolabe', extent: 1 };
+  return group;
+}
+
+/**
+ * Une rose de verre : quatre coupes de verre teinté, imbriquées et festonnées,
+ * un cœur doré, trois feuilles de verre vert. `extent` est le diamètre de la
+ * corolle ; les feuilles dépassent un peu.
+ */
+function buildGlassRose(env, { kind, color, seed }) {
+  const group = new THREE.Group();
+  const random = seededRandom(seed);
+  const around = 44, rings = 8;
+  const cup = ({ radius, height, flutes, phase }) => {
+    const positions = [], indices = [];
+    for (let i = 0; i <= rings; i += 1) {
+      const s = i / rings;
+      for (let j = 0; j <= around; j += 1) {
+        const a = (j / around) * Math.PI * 2;
+        const wave = Math.sin(flutes * a + phase);
+        const r = radius * s * (1 + 0.1 * wave * s * s);
+        positions.push(Math.cos(a) * r, Math.sin(a) * r, height * s ** 1.9 + 0.025 * wave * s ** 3);
+      }
+    }
+    for (let i = 0; i < rings; i += 1) for (let j = 0; j < around; j += 1) {
+      const a = i * (around + 1) + j, b = a + 1, c = a + around + 1, d = c + 1;
+      indices.push(a, b, c, b, d, c);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+  const glass = new THREE.MeshPhysicalMaterial({
+    name: 'verre-teinte', color, emissive: color, emissiveIntensity: 0.03, transparent: true, opacity: 0.92,
+    roughness: 0.14, metalness: 0, envMap: env, envMapIntensity: 0.8, side: THREE.DoubleSide,
+  });
+  [[0.5, 0.11, 7], [0.4, 0.14, 6], [0.3, 0.16, 5], [0.2, 0.17, 4]].forEach(([radius, height, flutes], index) => {
+    const part = mesh(cup({ radius, height, flutes, phase: random() * 6 }), glass, `petales-${index}`);
+    part.position.z = 0.012 + index * 0.04;
+    part.rotation.z = random() * 6;
+    group.add(part);
+  });
+  const gold = new THREE.MeshStandardMaterial({ name: 'or', color: '#c79a3a', roughness: 0.3, metalness: 0.9, envMap: env, envMapIntensity: 1 });
+  const heart = mesh(new THREE.SphereGeometry(0.06, 14, 10), gold, 'coeur');
+  heart.position.z = 0.19;
+  group.add(heart);
+  const leafGlass = new THREE.MeshPhysicalMaterial({
+    name: 'feuille', color: '#3a6a2c', transparent: true, opacity: 0.95, roughness: 0.25, metalness: 0,
+    envMap: env, envMapIntensity: 0.6, side: THREE.DoubleSide,
+  });
+  const leafShape = new THREE.Shape();
+  leafShape.moveTo(0, 0);
+  leafShape.quadraticCurveTo(0.2, 0.12, 0, 0.42);
+  leafShape.quadraticCurveTo(-0.2, 0.12, 0, 0);
+  for (let i = 0; i < 3; i += 1) {
+    const angle = 0.4 + i * 2.1 + random() * 0.5;
+    const leaf = mesh(new THREE.ShapeGeometry(leafShape, 8), leafGlass, 'feuille');
+    leaf.position.set(Math.cos(angle) * 0.4, Math.sin(angle) * 0.4, 0.015);
+    leaf.rotation.z = angle - Math.PI / 2;
+    group.add(leaf);
+  }
+  group.userData = { kind, extent: 1.1 };
+  return group;
+}
+
 const BUILDERS = Object.freeze({
   bol: buildBowl,
   galets: buildPebbles,
@@ -540,6 +676,12 @@ const BUILDERS = Object.freeze({
   cor: buildHorn,
   hache: buildAxe,
   baton: buildRuneStaff,
+  astrolabe: buildAstrolabe,
+  'corde-chanvre': (env) => buildRope(env, { kind: 'corde-chanvre', base: '#a8946a', tube: 0.06, turns: 2.6, tail: false, inner: 0.2 }),
+  'rose-rouge': (env) => buildGlassRose(env, { kind: 'rose-rouge', color: '#6e0f2a', seed: 11 }),
+  'rose-verte': (env) => buildGlassRose(env, { kind: 'rose-verte', color: '#0f5a34', seed: 23 }),
+  'rose-rose': (env) => buildGlassRose(env, { kind: 'rose-rose', color: '#b4607c', seed: 37 }),
+  'rose-mauve': (env) => buildGlassRose(env, { kind: 'rose-mauve', color: '#6a3060', seed: 41 }),
   rubis: (env) => buildCrystalCluster(env, { kind: 'rubis', color: '#a6132c', glow: '#5a0612', seed: 913 }),
 });
 

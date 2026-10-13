@@ -156,6 +156,18 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
       light({ color: '#ffc874', intensity: 2.4, x: 0.5, y: -0.3, orbit: 0.5, orbitHz: -0.028, pulse: 0.2 }),
     ],
     particles: motes({ count: 64, color: '#c9fff4', size: 0.028, opacity: 0.7, additive: true, vx: 0.05, vy: 0.02, sway: 0.2, swayHz: 0.5, z: 0.7 }),
+    // Cinq roses de verre, l'astrolabe, la corde et l'outre (plaque sans eux).
+    plaque: 'plateau-desert-de-verre-vide.jpg',
+    objets: [
+      { kind: 'rose-rouge', u: 0.022, v: 0.105, size: 0.105, angle: 20 },
+      { kind: 'rose-verte', u: 0.102, v: 0.091, size: 0.109, angle: 70 },
+      { kind: 'rose-verte', u: 0.077, v: 0.239, size: 0.119, angle: 140 },
+      { kind: 'rose-rose', u: 0.013, v: 0.306, size: 0.077, angle: 200 },
+      { kind: 'rose-mauve', u: 0.188, v: 0.091, size: 0.056, angle: 100 },
+      { kind: 'astrolabe', u: 0.941, v: 0.189, size: 0.169, angle: 0 },
+      { kind: 'corde-chanvre', u: 0.013, v: 0.808, size: 0.219, angle: 90 },
+      { kind: 'gourde', u: 0.976, v: 1, size: 0.306, angle: 115 },
+    ],
     overlay: null,
   }),
   // Les galeries sous Bab El : obsidienne, veines de braise qui respirent.

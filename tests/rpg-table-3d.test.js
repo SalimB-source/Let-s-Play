@@ -209,7 +209,7 @@ test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »'
 test('chaque objet se construit sous Node, posé au sol, borné et sans valeur invalide', () => {
   assert.equal(createTableObject('licorne'), null);
   // Le catalogue grandit avec les plateaux : on exige les genres déjà livrés, pas une liste figée.
-  for (const kind of ['amethyste', 'baton', 'bol', 'compas', 'cor', 'corde', 'corde-brune', 'galets', 'gourde', 'hache', 'lanterne', 'lanterne-fer', 'rubis', 'tapis']) {
+  for (const kind of ['amethyste', 'astrolabe', 'baton', 'corde-chanvre', 'rose-rouge', 'rose-verte', 'rose-rose', 'rose-mauve', 'bol', 'compas', 'cor', 'corde', 'corde-brune', 'galets', 'gourde', 'hache', 'lanterne', 'lanterne-fer', 'rubis', 'tapis']) {
     assert.ok(RPG_TABLE_OBJECT_KINDS.includes(kind), `genre livré : ${kind}`);
   }
   const byKind = {};

@@ -16,7 +16,7 @@ import cv2
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
-PAD = 80
+PAD = 200
 
 
 def _kernel(radius):
