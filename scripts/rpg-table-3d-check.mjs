@@ -46,9 +46,10 @@ const nextFrame = async (page, before) => {
 };
 const live = (page) => page.evaluate(() => window.__tableContexts.filter((entry) => !entry.context.isContextLost()).length);
 
-const openDuel = async (page) => {
+const openDuel = async (page, beforeStart) => {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(url);
+  if (beforeStart) await beforeStart(page);
   await page.getByRole('button', { name: /Lancer le duel/i }).click();
   await page.locator('.rpg-hand__card').first().waitFor({ timeout: 30000 });
   await page.locator('.rpg-mulligan__valider').click();
@@ -182,10 +183,19 @@ try {
 
   // 7. Les plateaux à objets 3D : la plaque vide est chargée, les objets sont
   // posés, le fond CSS garde la peinture d'origine, couper le décor libère tout.
-  // `seed` fixe le tirage du plateau (le sable désigne le deck, donc le plateau).
+  // Le plateau vient du deck du joueur (réglage mémorisé) et de deux tirages :
+  // `rq` = [qui impose son terrain, terrain classique ou double merveilleux].
+  // Les tirages de l'audio (réverbération) passent avant : on ne sert la file
+  // qu'aux appels qui ne viennent pas de `rpgAudio`.
   const withObjects = [
-    { id: 'erg-du-sahara', seed: () => { let n = 0; Math.random = () => (0.05 + (n++) * 0.137) % 1; } },
-    { id: 'cavernes-de-cristal', seed: () => { Math.random = () => 0.5; } },
+    { id: 'erg-du-sahara', deck: 'veilleurs-du-desert', rq: [0.1, 0.1] },
+    { id: 'desert-de-verre', deck: 'veilleurs-du-desert', rq: [0.1, 0.9] },
+    { id: 'cavernes-de-cristal', deck: 'cour-des-djinns', rq: [0.1, 0.9] },
+    { id: 'caravane-de-gourara', deck: 'sentiers-de-cendre', rq: [0.1, 0.1] },
+    { id: 'fjord-des-neuf-hivers', deck: 'serment-des-neuf-hivers', rq: [0.1, 0.1] },
+    { id: 'iles-celestes', deck: 'serment-des-neuf-hivers', rq: [0.1, 0.9] },
+    { id: 'ruines-de-tipaza', deck: 'maree-des-abysses', rq: [0.1, 0.1] },
+    { id: 'abysses-phosphorescentes', deck: 'maree-des-abysses', rq: [0.1, 0.9] },
   ];
   assert.deepEqual(withObjects.map((entry) => entry.id).sort(), Object.keys(RPG_TABLE_SCENE_THEMES).filter((id) => RPG_TABLE_SCENE_THEMES[id].objets.length).sort(), 'chaque plateau à objets a son scénario');
   for (const entry of withObjects) {
@@ -195,8 +205,12 @@ try {
     const requested = [];
     page.on('request', (request) => requested.push(request.url()));
     await page.addInitScript(watchContexts);
-    await page.addInitScript(entry.seed);
-    await openDuel(page);
+    await page.addInitScript((deck) => {
+      localStorage.setItem('letsplay_sablier_deck_v1', JSON.stringify({ deckId: deck }));
+      Error.stackTraceLimit = 4;
+      Math.random = () => (window.__rq?.length && !new Error().stack.includes('rpgAudio') ? window.__rq.shift() : 0.425);
+    }, entry.deck);
+    await openDuel(page, (target) => target.evaluate((rq) => { window.__rq = rq; }, entry.rq));
     await wait3d(page);
     assert.equal(await page.locator('[data-table-3d]').getAttribute('data-table-3d'), entry.id, 'le tirage fixé donne ce plateau');
     assert.equal(await page.locator('.rpg-table-3d__canvas').getAttribute('data-objects'), String(theme.objets.length));
