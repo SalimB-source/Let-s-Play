@@ -921,6 +921,10 @@ assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-prev
   'le badge de couleur de la carte annoncée est à l’échelle de sa grande face, comme au catalogue');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*19px;/s,
   'le glyphe de couleur de la carte annoncée reste lisible (19 px, liseré 2 px), comme sur les grandes faces du catalogue');
+assert.match(battleCss, /\.rpg-hover-card-preview__face\s*\{[^}]*--rpg-card-element-marker-size:\s*clamp\(28px, 17%, 38px\);/s,
+  'la pastille de couleur de l’aperçu rapide est à l’échelle de sa grande face (28–38 px), comme au catalogue');
+assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*19px;/s,
+  'le glyphe de couleur de l’aperçu rapide reste lisible (19 px, liseré 2 px), comme sur les grandes faces');
 assert.match(battleCss, /@media \(max-width: 620px\)[\s\S]*?\.rpg-hover-card-preview--annonce\s*\{[^}]*--rpg-annonce-column-width:\s*min\(210px, calc\(100vw/s,
   'sur mobile, la colonne est dimensionnée pour centrer tout l’aperçu sans couper son contenu');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__details-column\s*\{[^}]*position:\s*relative;[^}]*width:\s*var\(--rpg-annonce-column-width\);/s,

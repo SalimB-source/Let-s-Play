@@ -3375,7 +3375,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__face {
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
-  --rpg-card-element-marker-size: clamp(16px, 18%, 23px);
+  /* La face de l'aperçu rapide est une grande face, comme au catalogue : sa
+     pastille de couleur suit la même échelle (28–38 px, glyphe 19 px, liseré
+     2 px) au lieu du petit repère des cartes en jeu. */
+  --rpg-card-element-marker-size: clamp(28px, 17%, 38px);
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
@@ -3387,6 +3390,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 3px 10px rgba(0, 0, 0, .25);
 }
 .rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.rpg-hover-card-preview__face .rpg-card-element-badge {
+  border-width: 2px;
+  font-size: 19px;
+}
+.rpg-hover-card-preview__face .rpg-card-element-badge__pip {
+  border-width: 2px;
+}
 .rpg-hover-card-preview__details {
   display: grid;
   align-content: center;

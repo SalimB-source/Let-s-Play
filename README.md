@@ -6538,3 +6538,10 @@ sur la table** — le diamètre du disque —, **`min(28px, 30%)` dans la main**
 le disque de la main, borné pour les petites faces —, et des deux côtés le
 même **glyphe de 15 px dans un liseré de 2 px** (pastilles hybrides comprises,
 chacune à son liseré). Couleur et coût se lisent enfin à la même échelle.
+
+**3. L'aperçu rapide montre sa couleur à l'échelle de sa face.** Sa face est
+une grande face — celle du catalogue, de la carte annoncée — mais sa pastille
+gardait le petit gabarit des cartes en jeu (23 px au plus, glyphe de 13 px).
+Elle passe à **`clamp(28px, 17%, 38px)`, glyphe de 19 px et liseré de 2 px** :
+la couleur qu'il faut lire pour décider se voit à la taille de la carte qui
+la porte.
