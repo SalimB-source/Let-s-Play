@@ -50,9 +50,9 @@ def combler(plateau, regions, mode='poisson', grow=14, debug=None):
             if len(xs):
                 y0, y1, x0, x1 = max(ys.min() - 60, 0), ys.max() + 61, max(xs.min() - 60, 0), xs.max() + 61
                 mask = padded[y0:y1, x0:x1]
-                filled = cv2.inpaint(out[y0:y1, x0:x1], mask, int(12 * S), cv2.INPAINT_NS)
+                filled = cv2.inpaint(out[y0:y1, x0:x1], mask, int(region.get('rayon', 12) * S), cv2.INPAINT_NS)
                 # Le lissage efface les rayons de l'inpainting ; un grain léger garde la touche de la peinture.
-                soft = cv2.GaussianBlur(filled, (0, 0), 14 * S)
+                soft = cv2.GaussianBlur(filled, (0, 0), region.get('flou', 14) * S)
                 grain = np.random.default_rng(3).normal(0, 3.5, soft.shape).astype(np.float32)
                 soft = np.clip(soft.astype(np.float32) + cv2.GaussianBlur(grain, (0, 0), 2.0 * S) * 2.2, 0, 255).astype(np.uint8)
                 alpha = cv2.GaussianBlur(mask, (0, 0), 3 * S)[..., None] / 255.0

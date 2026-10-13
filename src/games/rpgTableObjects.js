@@ -733,6 +733,61 @@ function buildRock(env) {
   return group;
 }
 
+/**
+ * Un escargot de pierre : coquille en dôme, bandes brunes en spirale (la couleur
+ * suit la spirale, pas une texture), corps clair qui sort de l'ouverture.
+ * Origine au centre de la coquille ; l'ouverture est vers +Y. Diamètre 1.
+ */
+function buildSnail(env) {
+  const group = new THREE.Group();
+  const geometry = new THREE.SphereGeometry(0.5, 40, 22, 0, Math.PI * 2, 0, Math.PI / 2);
+  geometry.rotateX(Math.PI / 2); // le dôme monte vers +Z
+  geometry.scale(1, 1, 0.92);
+  const position = geometry.attributes.position;
+  const cream = new THREE.Color('#c9b48b'), brown = new THREE.Color('#2e1a0e'), tint = new THREE.Color();
+  const colors = [];
+  for (let i = 0; i < position.count; i += 1) {
+    const x = position.getX(i), y = position.getY(i);
+    const rho = Math.hypot(x, y), theta = Math.atan2(y, x);
+    // Une spirale logarithmique : la bande avance d'un tour tous les 0,25 de rayon.
+    const band = 0.5 + 0.5 * Math.sin(theta * 1 - rho * 34 + 0.4);
+    tint.copy(cream).lerp(brown, Math.pow(band, 1.1) * 0.95);
+    colors.push(tint.r, tint.g, tint.b);
+  }
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.computeVertexNormals();
+  const shell = mesh(geometry, new THREE.MeshStandardMaterial({ name: 'coquille', vertexColors: true, roughness: 0.38, metalness: 0, envMap: env, envMapIntensity: 0.3 }), 'coquille');
+  group.add(shell);
+  const body = new THREE.SphereGeometry(0.5, 16, 10);
+  const foot = mesh(body, new THREE.MeshStandardMaterial({ name: 'corps', color: '#b7a483', roughness: 0.8, metalness: 0 }), 'corps');
+  foot.scale.set(0.34, 0.5, 0.2);
+  foot.position.set(0, 0.5, 0.1);
+  group.add(foot);
+  group.userData = { kind: 'escargot', extent: 1 };
+  return group;
+}
+
+/** Une pièce de bronze verdi : disque, rebord en relief, effigie en creux. Diamètre 1. */
+function buildCoin(env) {
+  const group = new THREE.Group();
+  const bronze = new THREE.MeshStandardMaterial({ name: 'bronze-verdi', color: '#4f6f5b', roughness: 0.42, metalness: 0.75, envMap: env, envMapIntensity: 0.8 });
+  const rim = new THREE.MeshStandardMaterial({ name: 'bronze', color: '#8a7a47', roughness: 0.35, metalness: 0.85, envMap: env, envMapIntensity: 0.8 });
+  const disc = mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 40), bronze, 'disque');
+  disc.rotation.x = Math.PI / 2;
+  disc.position.z = 0.03;
+  group.add(disc);
+  const ring = mesh(new THREE.TorusGeometry(0.46, 0.022, 8, 48), rim, 'rebord');
+  ring.position.z = 0.06;
+  group.add(ring);
+  // L'effigie : un buste en bosse, sans prétendre à un visage.
+  const bust = mesh(new THREE.SphereGeometry(0.2, 16, 10), rim, 'effigie');
+  bust.scale.set(0.8, 1, 0.22);
+  bust.position.set(0.02, 0.02, 0.07);
+  group.add(bust);
+  group.userData = { kind: 'piece', extent: 1 };
+  return group;
+}
+
 const BUILDERS = Object.freeze({
   bol: buildBowl,
   galets: buildPebbles,
@@ -755,6 +810,8 @@ const BUILDERS = Object.freeze({
   'rose-mauve': (env) => buildGlassRose(env, { kind: 'rose-mauve', color: '#6a3060', seed: 41 }),
   sapin: buildPine,
   rocher: buildRock,
+  escargot: buildSnail,
+  piece: buildCoin,
   rubis: (env) => buildCrystalCluster(env, { kind: 'rubis', color: '#a6132c', glow: '#5a0612', seed: 913 }),
 });
 

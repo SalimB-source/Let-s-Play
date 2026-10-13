@@ -130,6 +130,18 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
   // Tipasa : brise marine, pierre claire, nuages rapides.
   'ruines-de-tipaza': theme({
     key: '#fff6e4', keyIntensity: 0.5, keyDirection: [-0.6, 0.7, 1], relief: 1.7, roughness: 0.88,
+    // Les petits objets des dalles : la pièce de monnaie et les escargots, qui
+    // gagnent à luire et à faire de l'ombre. Fûts, chapiteau, amphore et tessons
+    // restent peints : leur peinture est plus fine qu'une maquette. `angle` :
+    // où pointe l'ouverture de la coquille.
+    plaque: 'plateau-ruines-de-tipaza-vide.jpg',
+    objets: [
+      { kind: 'piece', u: 0.7736, v: 0.771, size: 0.042, angle: 0 },
+      { kind: 'escargot', u: 0.7398, v: 0.9298, size: 0.0255, angle: -35 },
+      { kind: 'escargot', u: 0.7798, v: 0.9042, size: 0.019, angle: -35 },
+      { kind: 'escargot', u: 0.6525, v: 0.9588, size: 0.022, angle: -30 },
+      { kind: 'escargot', u: 0.8163, v: 0.3367, size: 0.02, angle: -35 },
+    ],
     particles: motes({ count: 44, color: '#f1ead8', size: 0.026, opacity: 0.45, vx: 0.14, vy: 0.04, sway: 0.12, swayHz: 0.3 }),
     overlay: { kind: 'ombre', color: '#26333a', opacity: 0.15, speed: 0.014, scale: 1.8 },
   }),
