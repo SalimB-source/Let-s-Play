@@ -6559,13 +6559,13 @@ Le panneau est **reposé avant peinture** (`useLayoutEffect`) : le joueur ne
 le voit jamais sauter. Le même `panelRef` sert l'aperçu du duel, celui du
 menu et celui du **mulligan**, qui se colle lui aussi à la carte lue.
 
-**5. Les cadres des cartes, un peu plus épais.** L'anneau de couleur qui
-porte l'élément grandit légèrement, sur tous les gabarits à la fois — normal
-**4–5,5 px**, grand **5,5–7,5 px**, petit **3,5–4 px**, renforcé **4,5–6 px**
-(planchers et plafonds relevés, pente en `vw` à l'avenant) ; au doigt, seuls
-les plafonds bougent (4,5 et 5 px), les petites cartes gardent leur plancher.
-Le cadre reste dans ses proportions vérifiées (3 à 4,5 % de la carte) : il se
-voit un peu plus, il ne mange pas l'illustration.
+**5. Les cadres des cartes, un peu plus épais — puis un cran de plus.**
+L'anneau de couleur qui porte l'élément grandit, sur tous les gabarits à la
+fois — normal **4,5–6 px**, grand **6–8 px**, petit **4–4,25 px**, renforcé
+**5–6,5 px** (planchers et plafonds relevés, pente en `vw` à l'avenant) ; au
+doigt, seuls les plafonds bougent (5 et 5,5 px), les petites cartes gardent
+leur plancher. Le cadre reste dans ses proportions vérifiées (3 à 4,5 % de
+la carte) : il se voit davantage, il ne mange pas l'illustration.
 
 ### Où vit le code
 

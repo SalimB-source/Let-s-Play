@@ -445,10 +445,10 @@ assert.ok(grandMax / 232 >= 0.025 && grandMax / 232 <= 0.04,
   `le grand gabarit fait 2,5 à 4 % de la face de l'aperçu (reçu : ${(grandMax / 232 * 100).toFixed(1)} %)`);
 assert.ok(petitMax / 96 <= 0.045 && petitMin / 74 >= 0.03,
   `le petit gabarit fait 3 à 4,5 % d'un terrain (reçu : ${(petitMin / 74 * 100).toFixed(1)}–${(petitMax / 96 * 100).toFixed(1)} %)`);
-assert.match(battleCss, /\.rpg-battle\s*\{\s*--rpg-card-border:\s*clamp\(4px, 0\.42vw, 5\.5px\);\s*--rpg-card-border-large:\s*clamp\(5\.5px, 0\.62vw, 7\.5px\);\s*--rpg-card-border-small:\s*clamp\(3\.5px, 0\.3vw, 4px\);\s*--rpg-card-border-strong:\s*clamp\(4\.5px, 0\.52vw, 6px\);/,
-  'les cadres des cartes sont légèrement épaissis sur tous les gabarits (normal, grand, petit, renforcé)');
-assert.match(mobileCss, /--rpg-card-border:\s*clamp\(2\.5px, 1vw, 4\.5px\);[^}]*--rpg-card-border-strong:\s*clamp\(3px, 1\.1vw, 5px\);/s,
-  'au doigt aussi, le cadre grandit un peu (plafonds relevés, planchers des petites cartes inchangés)');
+assert.match(battleCss, /\.rpg-battle\s*\{\s*--rpg-card-border:\s*clamp\(4\.5px, 0\.48vw, 6px\);\s*--rpg-card-border-large:\s*clamp\(6px, 0\.68vw, 8px\);\s*--rpg-card-border-small:\s*clamp\(4px, 0\.34vw, 4\.25px\);\s*--rpg-card-border-strong:\s*clamp\(5px, 0\.58vw, 6\.5px\);/,
+  'les cadres des cartes sont encore épaissis sur tous les gabarits (normal, grand, petit, renforcé), sans dépasser 4,5 % de la carte');
+assert.match(mobileCss, /--rpg-card-border:\s*clamp\(2\.5px, 1\.1vw, 5px\);[^}]*--rpg-card-border-strong:\s*clamp\(3px, 1\.2vw, 5\.5px\);/s,
+  'au doigt aussi, le cadre grandit encore un peu (plafonds relevés, planchers des petites cartes inchangés)');
 assert.match(frameCss, /\.rpg-card\[class\*="rpg-card--frame-"\],\s*\.rpg-hand__card\[class\*="rpg-card--frame-"\],\s*\.rpg-card-destruction-fx\s*\{\s*border:\s*var\(--rpg-card-border, 4px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
   'main, table et animations partagent le gabarit normal, pour toute combinaison de couleurs');
 assert.match(frameCss, /\.rpg-hover-card-preview__face\s*\{\s*border:\s*var\(--rpg-card-border-large, 6px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
