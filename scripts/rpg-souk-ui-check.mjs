@@ -157,7 +157,33 @@ assert.ok(css.includes('@media (max-width: 480px)'), 'le portrait étroit est pr
 assert.ok(css.includes('@media (max-width: 640px)'), 'la cérémonie a son palier de téléphone');
 assert.match(css, /min-height: 44px/, 'les boutons font leur taille au doigt');
 
+// 9. Le paquet est un volume, et c'est lui qu'on achète.
+assert.match(ecranCode, /data-souk-ouvrir=\{rayon\.id\}/, 'le paquet lui-même est le bouton d’achat');
+assert.match(ecranCode, /data-souk-paquet=\{rayon\.couleur \?\? 'souk'\}/,
+  'et il porte la couleur de son rayon');
+assert.ok(!/data-souk-ouvrir-bouton/.test(ecranCode),
+  'aucun second bouton d’achat ne double le paquet');
+const faces = ['--dos', '--tranche', '--dessus', '--dessous', '--avant'];
+for (const face of faces) {
+  assert.ok(ecran.includes(`rpg-souk__paquet-face${face}`), `le paquet a sa face ${face}`);
+}
+assert.ok(ecran.includes('rpg-souk__paquet-sertissage'), 'et ses sertissages de sachet scellé');
+assert.match(ecranCode, /aria-label=\{nom\}/, 'le paquet se nomme pour qui ne le voit pas');
+assert.match(ecranCode, /aria-hidden="true"/, 'et sa scène 3D reste décorative');
+for (const regle of ['perspective:', 'transform-style: preserve-3d', 'translateZ(', 'rotateY(24deg)',
+  'backface-visibility: hidden', 'rpg-souk-paquet-sway', 'rpg-souk-paquet-reflet']) {
+  assert.ok(css.includes(regle), `le volume tient grâce à ${regle}`);
+}
+for (const teinte of ['braise', 'sable', 'eau', 'neige', 'souk']) {
+  assert.match(css, new RegExp(`\\.rpg-souk__rayon--${teinte}\\s*\\{`),
+    `le rayon ${teinte} a sa teinte de paquet`);
+}
+assert.ok(!css.includes('rpg-souk__rayon-prix'),
+  'le prix n’est plus écrit deux fois : l’étiquette du paquet suffit');
+assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,600}rpg-souk__paquet-scene \{ animation: none; \}/,
+  'et le balancement se coupe pour qui le demande');
+
 console.log('Le Souk (lots 3 à 5) est branché : sixième onglet, solde et pastille dessus,');
-console.log('trois quêtes réclamables, Cachet du cycle et de la semaine, cinq rayons avec');
-console.log('leur prix et leur taux, la cérémonie d’ouverture, le journal des ouvertures,');
-console.log('et les cartes achetées qui entrent dans la collection.');
+console.log('trois quêtes réclamables, Cachet du cycle et de la semaine, cinq rayons dont le');
+console.log('paquet en volume est le bouton d’achat, la cérémonie d’ouverture, le journal des');
+console.log('ouvertures, et les cartes achetées qui entrent dans la collection.');

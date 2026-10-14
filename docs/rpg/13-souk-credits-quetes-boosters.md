@@ -373,8 +373,8 @@ les lots 2 à 5.
 | ✅ `src/games/rpgEvenementsDuel.js` | le **contrat d'événements** : normalisation, ce qui paie, ce qui compte | `tests/rpg-evenements.test.js` |
 | ✅ `src/games/useSablierBourse.js` | état React + fusion + poussée au compte, patron de `useDecksSablier.js` | `scripts/rpg-souk-bourse-smoke.jsx` |
 | ✅ `scripts/rpg-souk-bourse-smoke.jsx` + `scripts/rpg-souk-bourse-check.mjs` | le hook monté dans jsdom (jour, gains, réclamation, rechargement) + les gardes de source | `npm run check:rpg-souk-branche` |
-| ✅ `src/games/RpgSouk.jsx` | l'écran : la bourse, les quêtes du jour, le Cachet, et les rayons **annoncés** (lot 4) | `scripts/rpg-souk-smoke.jsx` |
-| ✅ `src/games/rpg-souk.css` | mise en page, `prefers-reduced-motion`, portrait étroit, tactile | `scripts/rpg-souk-ui-check.mjs` (garde-fous de source) |
+| ✅ `src/games/RpgSouk.jsx` | l'écran : la bourse, les quêtes, les Cachets, le **paquet en volume qui est le bouton d'achat**, le journal | `scripts/rpg-souk-smoke.jsx` |
+| ✅ `src/games/rpg-souk.css` | mise en page, **volume des paquets** (perspective, faces, reflet), `prefers-reduced-motion`, portrait étroit, tactile | `scripts/rpg-souk-ui-check.mjs` (garde-fous de source) |
 | ✅ `scripts/rpg-souk-smoke.jsx` + `scripts/rpg-souk-ui-check.mjs` | l'écran monté dans jsdom **branché au vrai hook** (journée, barres, réclamation, Cachets, rayons, achat, cérémonie, coffret, journal, série) + les gardes de source du menu | `npm run check:rpg-souk-ui` |
 | ✅ `src/games/RpgBoosterOuverture.jsx` | la cérémonie des cinq cartes (et du coffret) | le même smoke |
 
@@ -485,10 +485,11 @@ quelque chose attend (une réclamation, une mythique promise à 0 paquet).
 2. **Les quêtes du jour** — trois cartes, une barre de progression par quête,
    la récompense, le bouton **Réclamer** (désactivé et expliqué si l'objectif
    n'est pas atteint), puis le **Cachet du cycle** quand les trois sont prises.
-3. **Les rayons** — les boosters en étagère, façon boîtiers de l'onglet Deck :
-   nom du rayon, prix, couleurs, une ligne de taux, « N cartes sur M vous
-   manquent encore », et le bouton **Ouvrir** (ou le motif du refus : solde
-   insuffisant, rayon fermé).
+3. **Les rayons** — les boosters en étagère : chaque boosters est un **paquet
+   en volume** (un sachet scellé de trois quarts, à la couleur de son rayon)
+   qui **est lui-même le bouton d'achat**, avec une ligne de taux, « N cartes
+   sur M vous manquent encore », et le motif du refus écrit noir sur blanc
+   (solde insuffisant, rayon fermé).
 
 L'écran affiche aussi **l'état de l'étagère** : « le Souk suit les marches que
 vous avez montées — prochaine ouverture : « Le Séisme de la Citerne » ». C'est
@@ -505,6 +506,31 @@ retournées une à une, la **rare en dernier** (l'ordre du tirage), tamponnées
 et **Tout ranger dans la collection** qui rend la main. Les cartes sont écrites
 sur l'appareil **avant** la cérémonie : fermer l'onglet au milieu d'un
 retournement ne coûte rien.
+
+**Le paquet, en volume.** Les cinq rayons ne vendent plus leur booster par un
+bouton posé à côté : le paquet **est** le bouton. Un sachet scellé de trois
+quarts — cinq faces (`--avant`, `--dos`, `--tranche`, `--dessus`, `--dessous`)
+montées autour d'un pavé large × haut × épais, sous une `perspective`, avec les
+deux **sertissages** écrasés d'un sachet thermoscellé, la rune `⌛`, le nom du
+rayon, ce qu'il contient (« 5 cartes », « 2 mythiques ») et une étiquette
+**Acheter · 140 ◈** bordée d'or. Trois choses le font vivre : un **balancement
+lent** (7,5 s, décalé d'un paquet à l'autre par `--i`, donc l'étagère n'est
+jamais synchrone), un **reflet qui glisse** sur le métal toutes les 6,5 s, et
+le paquet qui **se redresse et se soulève** au survol comme au focus clavier.
+Chaque rayon a sa teinte (`--foil-1/2`, `--foil-ink`, `--foil-shine`), un rayon
+gardé affiche un paquet **éteint** (désaturé, immobile, réduit de 6 %), et
+`prefers-reduced-motion` coupe le balancement comme le reflet — le volume reste,
+le mouvement s'en va.
+
+Ce choix tranche deux choses. D'abord **un seul prix par tuile** : le badge de
+l'en-tête a disparu, c'est l'étiquette du paquet qui le porte. Ensuite **un
+seul geste d'achat** : le bouton texte « Ouvrir · 140 ◈ » qui doublait le paquet
+a été retiré — deux boutons pour la même dépense, c'était deux façons de se
+tromper. Le coffret, lui, reste un bouton à part : c'est **une autre** dépense
+(dix paquets, remise, mythique assurée). L'accessibilité n'y perd rien : le
+paquet est un `<button>` qui porte `aria-label="Ouvrir le paquet Braise · 140
+crédits"`, la scène 3D ne porte que le décor (`aria-hidden`), le focus clavier
+l'entoure et le soulève, et son étiquette s'écrit toujours 140 ◈ en clair.
 
 **Ce que le lot 3 a livré** : les trois premiers points, **sans** les rayons.
 La bourse, les quêtes et le Cachet sont jouables ; la section des rayons
@@ -728,6 +754,18 @@ Les cas couverts :
   **aucune face cachée**, une mythique sortie, chaque paquet sans doublon ;
   un rayon fermé refuse l'achat (`rayon-ferme`) **sans toucher un seul crédit**,
   et un rayon ouvert sans solde désactive son bouton en disant ce qui manque ;
+- **le paquet en volume (lot 4)** — le smoke interroge le DOM du paquet :
+  `data-souk-paquet` porte la couleur du rayon, les **cinq faces** sont là, les
+  **deux sertissages** aussi, la rune du Sablier est marquée, le nom est celui du
+  rayon, l'étiquette s'écrit `Acheter · 140 ◈`, l'`aria-label` dit « Ouvrir le
+  paquet Braise · 140 crédits », la scène 3D est `aria-hidden`, **aucun** bouton
+  texte ne double le paquet (`data-souk-ouvrir-bouton` n'existe plus) et un
+  rayon gardé affiche un paquet éteint (`is-ferme`). Les gardes de source
+  tiennent le reste : `data-souk-ouvrir={rayon.id}`, le `preserve-3d`, les
+  `translateZ(`, le `rotateY(24deg)`, le reflet et le balancement nommés, la
+  `backface-visibility: hidden`, les cinq teintes de rayon, **un seul** prix par
+  tuile (plus de `rpg-souk__rayon-prix`) et le balancement coupé sous
+  `prefers-reduced-motion` ;
 - **série et journal (lot 5)** — quinze jours d'affilée ouverts un par un : la
   série suit, le Cachet de la semaine paie au **septième** et au
   **quatorzième** jour, jamais entre les deux, et jamais deux fois le même jour ;

@@ -161,6 +161,28 @@ export async function checkRpgSoukEcran(assert) {
       'et le refus dit qui la garde');
     assert.match(noeud('[data-souk-rayon="braise"] [data-souk-rayon-taux]')?.textContent ?? '', /5 cartes/,
       'chaque rayon annonce son taux');
+
+    // ── Le paquet en volume : cinq faces, deux sertissages, son étiquette ───
+    const paquet = noeud('[data-souk-ouvrir="braise"]');
+    assert.equal(paquet.dataset.soukPaquet, 'braise', 'le paquet porte la couleur de son rayon');
+    assert.equal(paquet.querySelectorAll('.rpg-souk__paquet-face').length, 5,
+      'le sachet est un pavé : cinq faces');
+    assert.equal(paquet.querySelectorAll('.rpg-souk__paquet-sertissage').length, 2,
+      'et il est scellé en haut et en bas');
+    assert.ok((paquet.querySelector('.rpg-souk__paquet-rune')?.textContent ?? '').includes('⌛'),
+      'la rune du Sablier est marquée sur le paquet');
+    assert.equal(paquet.querySelector('.rpg-souk__paquet-nom')?.textContent, 'Braise',
+      'le paquet dit de quel rayon il vient');
+    assert.match(paquet.querySelector('.rpg-souk__paquet-prix')?.textContent ?? '', /^Acheter · 140 ◈$/,
+      'son étiquette dit le geste et le prix');
+    assert.equal(paquet.getAttribute('aria-label'), 'Ouvrir le paquet Braise · 140 crédits',
+      'et le paquet se nomme pour qui ne le voit pas');
+    assert.equal(paquet.querySelector('.rpg-souk__paquet-scene')?.getAttribute('aria-hidden'), 'true',
+      'la scène est décorative : le bouton porte déjà tout le sens');
+    assert.equal(noeud('[data-souk-ouvrir-bouton="braise"]'), null,
+      'le paquet est la seule voie d’achat — pas de bouton texte qui le double');
+    assert.ok(noeud('[data-souk-ouvrir="neige"]')?.classList.contains('is-ferme'),
+      'un rayon gardé affiche un paquet éteint');
     assert.equal(noeud('[data-souk-attente]'), null, 'rien à réclamer : pas de bandeau');
 
     // ── Ce qui n'est pas terminé ne se réclame pas ──────────────────────────

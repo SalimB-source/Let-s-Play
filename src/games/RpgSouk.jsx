@@ -187,6 +187,54 @@ function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
   );
 }
 
+/**
+ * Le paquet d'un rayon, en volume : un sachet scellé de la couleur de son
+ * élément, avec ses deux sertissages, sa rune et son reflet qui glisse dessus.
+ *
+ * Le paquet **est** le bouton d'achat — c'est l'objet qu'on clique, pas une
+ * ligne de commande à côté de lui. La scène 3D est décorative (`aria-hidden`),
+ * le bouton porte un nom lisible (« Ouvrir le paquet Braise · 140 crédits ») et
+ * se désactive avec son motif quand l'achat est refusé.
+ */
+function PaquetDuRayon({ rayon, index, mythes, ferme, prix, refus, onOuvrir }) {
+  const nom = `Ouvrir le paquet ${rayon.nom} · ${prix} crédits`;
+  return (
+    <button
+      type="button"
+      className={`rpg-souk__paquet${ferme ? ' is-ferme' : ''}`}
+      data-souk-ouvrir={rayon.id}
+      data-souk-paquet={rayon.couleur ?? 'souk'}
+      disabled={Boolean(refus)}
+      title={refus ?? nom}
+      aria-label={nom}
+      onClick={() => { onOuvrir?.(rayon.id); }}
+    >
+      <span className="rpg-souk__paquet-ombre" aria-hidden="true" />
+      <span className="rpg-souk__paquet-scene" style={{ '--i': index }} aria-hidden="true">
+        <span className="rpg-souk__paquet-sway">
+          <span className="rpg-souk__paquet-corps">
+            <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dos" />
+            <span className="rpg-souk__paquet-face rpg-souk__paquet-face--tranche" />
+            <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dessus" />
+            <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dessous" />
+            <span className="rpg-souk__paquet-face rpg-souk__paquet-face--avant">
+              <span className="rpg-souk__paquet-sertissage" />
+              <span className="rpg-souk__paquet-rune">⌛</span>
+              <span className="rpg-souk__paquet-nom">{rayon.nom}</span>
+              <span className="rpg-souk__paquet-meta">
+                {TAUX.cartes} cartes
+                {mythes > 0 && <em>{mythes} mythique{mythes > 1 ? 's' : ''}</em>}
+              </span>
+              <span className="rpg-souk__paquet-sertissage" />
+            </span>
+          </span>
+        </span>
+      </span>
+      <span className="rpg-souk__paquet-prix">Acheter · {creditsLisible(prix)} ◈</span>
+    </button>
+  );
+}
+
 export default function RpgSouk({
   quetes = null,
   credits = 0,
@@ -391,22 +439,30 @@ export default function RpgSouk({
           </p>
         </div>
         <ul className="rpg-souk__rayons" data-souk-rayons-nombre={rayons.length}>
-          {rayons.map((etat) => {
+          {rayons.map((etat, index) => {
             const ferme = raisonFermeture(etat);
             const assez = credits >= etat.prix;
             const refus = ferme ?? (assez ? null : `Il manque ${creditsLisible(etat.prix - credits)} ◈.`);
             return (
               <li
                 key={etat.rayon.id}
-                className={`rpg-souk__rayon${etat.ouvert ? '' : ' is-ferme'}${etat.complet ? ' is-complet' : ''}`}
+                className={`rpg-souk__rayon rpg-souk__rayon--${etat.rayon.couleur ?? 'souk'}${etat.ouvert ? '' : ' is-ferme'}${etat.complet ? ' is-complet' : ''}`}
                 data-souk-rayon={etat.rayon.id}
                 data-souk-rayon-etat={ferme ? 'ferme' : refus ? 'sans-solde' : 'ouvert'}
               >
                 <header>
                   <h4>{etat.rayon.nom}</h4>
-                  <span className="rpg-souk__rayon-prix">{creditsLisible(etat.prix)} ◈</span>
                 </header>
                 <p className="rpg-souk__rayon-texte">{etat.rayon.texte}</p>
+                <PaquetDuRayon
+                  rayon={etat.rayon}
+                  index={index}
+                  mythes={etat.mythiques}
+                  ferme={Boolean(ferme)}
+                  prix={etat.prix}
+                  refus={refus}
+                  onOuvrir={onOuvrirBooster}
+                />
                 <p className="rpg-souk__rayon-taux" data-souk-rayon-taux>{ligneDeTaux(etat, portefeuille)}</p>
                 <p className="rpg-souk__rayon-reste" data-souk-rayon-reste={etat.nouvelles}>
                   {etat.complet
@@ -415,16 +471,6 @@ export default function RpgSouk({
                 </p>
                 <footer>
                   {refus && <p className="rpg-souk__rayon-refus" data-souk-rayon-refus>{refus}</p>}
-                  <button
-                    type="button"
-                    className="rpg-menu-button rpg-menu-button--primary"
-                    data-souk-ouvrir={etat.rayon.id}
-                    disabled={Boolean(refus)}
-                    title={refus ?? `Acheter et ouvrir pour ${etat.prix} crédits`}
-                    onClick={() => { onOuvrirBooster?.(etat.rayon.id); }}
-                  >
-                    Ouvrir · {creditsLisible(etat.prix)} ◈
-                  </button>
                   {etat.ouvert && etat.mythiques > 0 && (
                     <button
                       type="button"
