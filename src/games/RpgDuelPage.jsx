@@ -2508,6 +2508,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const contexte = campagneDuelRef.current;
     const campagne = contexte?.session === session && contexte.etageId === histoireEtageId;
     const maj = enregistrerVictoire(histoireEtageId, campagne ? contexte.curseur : null);
+    // Depuis le Souk (dossier 13), une victoire ne donne plus de cartes : elle
+    // **ouvre** celles de l'étage au Souk, et rend la liste des cartes
+    // nouvellement ouvertes. Le lot 2 créditera au même endroit les ◈ de la
+    // victoire, l'événement `etage-deblaye` et le badge d'onglet.
     noterVictoireEtage(histoireEtageId, maj);
     if (campagne) {
       annulerMinuteriesDuTour();

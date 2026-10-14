@@ -1,15 +1,19 @@
 # 13 — Le Souk : crédits, quêtes du jour, boosters
 
-> Le Sablier a aujourd'hui **une seule source de cartes** : la dotation de départ
-> et les récompenses d'étage. Ce document ajoute la **deuxième** : un Souk où
-> l'on dépense des **crédits** gagnés en jouant — quêtes du jour, victoires,
-> premières d'un étage — pour ouvrir des **boosters** de cinq cartes.
+> Le Sablier avait **une seule source de cartes** : la dotation de départ, puis
+> les récompenses d'étage. Ce document ouvre la **deuxième** — un Souk où l'on
+> dépense des **crédits** gagnés en jouant (quêtes du jour, victoires, premières
+> d'un étage) pour ouvrir des **boosters** de cinq cartes — et, pour lui faire
+> une place, **ferme la première** : les étages ne donnent plus de cartes, ils
+> les *révèlent*, et c'est le Souk qui les vend (D9).
 >
 > Trois règles gouvernent le chantier : **rien ne se paie avec de l'argent
 > réel**, **un booster ne court-circuite jamais le rythme des Tours** (pas d'Eau
-> avant le Souk, pas de Neige avant les Abysses), et **tout ce qui est gagné est
-> monotone** : une collection ou un solde ne redescendent jamais par accident,
-> ni par synchronisation, ni par remontée d'horloge.
+> avant les citernes du Souk, pas de Neige avant les Abysses, pas une carte du
+> Fjord avant d'y être entré), et **tout ce qui est gagné est monotone** : une
+> collection, un acquis ou un solde ne redescendent jamais par accident — ni par
+> synchronisation, ni par remontée d'horloge, ni par la migration du chapitre
+> précédent.
 
 ---
 
@@ -26,16 +30,18 @@
         └──────────────── événements du duel ◄──── doublons ◈    decks maison
 ```
 
-Le joueur qui ne fait que la campagne continue d'obtenir **toutes** les cartes
-comme aujourd'hui, étage après étage : le Souk n'est pas un péage, c'est un
-**raccourci choisi**. Celui qui veut un deck maison mono-Braise tout de suite,
-ou qui n'a plus d'étage à portée, vient acheter au Souk.
+Deux façons de jouer y mènent, et c'est voulu : le **campagnard** monte ses
+vingt étages (1 000 ◈ de premières, ses cartes révélées au fil des marches),
+le **quotidien** fait ses quêtes (jusqu'à 310 ◈ par jour) et achète au rythme
+de deux paquets par jour. Dans les deux cas, le Souk ne vend rien que la ville
+n'ait montré : l'étagère suit les marches, et **l'avance d'une marche** — la
+carte du boss qu'on n'a pas encore affronté — est le seul luxe offert.
 
 ## 2. Ce qui existe déjà, et sur quoi on se branche
 
 | Brique existante | Ce qu'elle fait | Ce que le Souk en fait |
 | --- | --- | --- |
-| `rpgCollection.js` | collection **dérivée** : dotation + étages + apports du compte | gagne une quatrième source : les cartes du Souk |
+| `rpgCollection.js` | collection **dérivée** : dotation + étages + apports du compte | devient la carte des **révélations** ; les étages sortent de la collection, un **gel des acquis** les y reprend une fois, et les cartes du Souk deviennent la quatrième source |
 | `rpgDeckBuilder.js` | casier local, `fusionnerEtatsSablier` (union monotone, pierres tombales) | la fusion prend aussi `bourse` et `quetes` |
 | `useDecksSablier.js` | état local + synchronisation du compte, défensif hors provider | sert de patron à `useSablierBourse.js` |
 | `rpgSablierRemote.js` | `state` jsonb dans `rpg_sablier_progress`, RLS stricte | **aucune nouvelle table, aucun SQL à écrire** |
@@ -58,36 +64,35 @@ cette économie-là mérite son propre chantier, une fois le Souk en place.
 - Aucune monnaie ne s'achète avec de l'argent réel, aucun coffret payant,
   jamais. C'est une règle du dossier, pas un réglage.
 
-### D2 — Un booster ne court-circuite pas la ville
+### D2 — Le Souk suit les marches que vous avez montées
 
-La première rédaction disait « une carte dont la tour est **ouverte** ». Le code
-a tranché autrement : dans *Le Sablier*, **la première marche de chaque tour est
-toujours jouable** (`etageEstDebloque` rend `true` sur un premier étage, et
-l'onglet Tours laisse entrer dans n'importe quelle tour) — « tour ouverte » ne
-voulait donc rien dire. La règle réelle tient en deux phrases, vérifiées par
-sonde sur la progression complète :
+**Ce qu'un paquet a le droit de contenir**, version finale — les étages ne
+donnent plus de cartes, ils les **révèlent** (D9), et le vivier suit :
 
-> **1. La tour doit être entamée.** Une carte n'entre dans un vivier que si au
-> moins un étage de **sa tour d'introduction** est vaincu. La Tour des Listes,
-> première de la ville, compte comme entamée dès le premier jour (c'est
-> `RPG_STORY_TOURS[0]`). Aucun paquet ne vend une carte du Fjord avant que le
-> joueur ait posé le pied dans le Fjord.
->
-> **2. La couleur doit être entrée dans la ville.** Un rayon n'ouvre que si un
-> étage vaincu a déjà rendu une carte de sa couleur.
+> **Une carte entre au vivier quand l'étage qui la révèle est vaincu, ou quand
+> c'est la marche suivante** — l'étage précédent de sa tour est déjà conquis.
 
-Mesuré sur les données réelles : le rayon **Sable** ouvre avec `listes-1`, la
-**Braise** avec `listes-2`, l'**Eau** avec `souk-2`, la **Neige** avec
-`abysses-2`. La promesse du dossier (« le mono-Eau au seuil des Abysses, le
-mono-Neige en entrant dans le Fjord ») tient donc **à l'intérieur du Souk
-aussi**. Le grand étal (rayon « Souk ») ouvre avec la première couleur.
+- **Le Souk ouvre à la première victoire.** Avant elle, aucun rayon n'est
+  ouvert : l'étagère le dit, et la quête du comptoir n'est pas tirée.
+- Gagner `listes-1` ouvre les cartes de `listes-1` **et** de `listes-2`.
+  L'étagère grandit à chaque marche.
+- **La dotation de départ ne compte pas** dans les couleurs ouvertes : ses 38
+  communes couvrent les quatre couleurs et ouvriraient tout dès le premier
+  duel. Elles remplissent les paquets, elles ne les ouvrent pas.
+- Aucun paquet ne vend une carte du Fjord avant que le joueur soit **entré
+  dans le Fjord** (la première marche d'une tour ne s'offre pas d'office).
 
-Ce que le rayon **peut** faire, en revanche : rendre les cartes **des étages à
-venir de la tour déjà entamée**. C'est là toute l'utilité du Souk — un joueur
-bloqué au 3ᵉ palier des Listes achète du Sable et reçoit ce que le 5ᵉ palier
-gardait. Quand sa tour est terminée, le rayon peut afficher **« complet »** :
-tout y est possédé, chaque carte paiera des crédits. Le Souk ne prétend jamais
-vendre du neuf qu'il n'a pas.
+Mesuré sur les données réelles : **Sable et Braise après `listes-1`**, **Eau
+après `souk-1`** (les citernes du Souk), **Neige après `abysses-1`** (le fond
+glacé). Une seule règle tient donc les seuils du dossier — celle-ci — sans
+garde de couleur séparée : la couleur d'un rayon n'est ouverte que si une carte
+de cette couleur est **entrée dans la ville**.
+
+Ce que le rayon fait, concrètement : il vend **l'avance d'une marche**. Le
+joueur bloqué devant `listes-5` peut acheter la carte de son boss avant de
+l'affronter — c'est là toute la valeur du Souk. Et quand sa tour est terminée,
+le rayon affiche **« complet »** : tout y est possédé, chaque carte paiera des
+crédits.
 
 ### D3 — Un booster = cinq cartes, taux annoncés, jamais deux fois la même
 
@@ -99,22 +104,64 @@ vendre du neuf qu'il n'a pas.
 
 - Les cinq cartes d'un même paquet sont **distinctes** (tirage sans remise dans
   le vivier) : pas de « trois fois la même commune », jamais.
-- **Garantie des nouvelles** : tant que le vivier contient au moins trois cartes
-  que le joueur ne possède pas, **trois** des cinq le sont. L'échange se fait
-  **vers le haut** — un doublon des trois premières places devient une carte
-  neuve au moins aussi rare (la rare garantie et la carte 5 ne sont jamais
-  touchées).
+- **Garantie des nouvelles** : tant que le vivier contient trois cartes que le
+  joueur ne possède pas, **trois** des cinq le sont. L'échange d'un doublon se
+  fait **vers le haut** — jamais contre une carte plus commune — et si les
+  seules cartes neuves qui restent sont plus rares que le doublon, **une seule**
+  place est promue (mesuré : sans cette promotion, les 26 mythiques du set se
+  ramassaient en ~400 paquets, soit six mois de quêtes ; avec elle, la
+  collection se boucle en ~33 paquets).
 - **Compteur de pitié** : huit ouvertures consécutives sans mythique ⇒ la
-  cinquième carte est mythique. Le compteur est **visible** dans le rayon
-  (« prochaine mythique assurée dans N paquets »).
-- Les taux sont **écrits** sur la fiche du rayon, **et la pitié se dit aussi** :
-  elle relève la moyenne au-dessus du taux du paquet. Mesuré sur dix mille
-  ouvertures semées : **24 % de mythiques** en moyenne sur un rayon thématique
-  (20 % annoncés par paquet) et **32 %** au grand étal (30 % annoncés), avec
-  **jamais plus de sept paquets secs d'affilée**. Le Souk affiche les deux
-  chiffres : le taux du paquet et la moyenne tenue.
-- Un rayon dont le vivier est **entièrement possédé** reste achetable, mais la
-  fiche le dit : « rayon complet — chaque carte rendra des crédits ».
+  cinquième carte est mythique. Il ne compte **que sur les rayons qui ont une
+  mythique au vivier** — une promesse ne se compte pas là où elle est
+  intenable — et il est **visible** (« prochaine mythique assurée dans N
+  paquets »).
+- Les taux sont **écrits** sur la fiche du rayon, **et la pitié se dit aussi**.
+  Mesuré sur trente mille ouvertures semées : **23,8 %** de mythiques en moyenne
+  sur un rayon thématique (20 % annoncés par paquet), **31,8 %** au grand étal
+  (30 % annoncés), **jamais plus de sept paquets secs d'affilée**, et **trois
+  nouvelles cartes par paquet** tant que le vivier en garde.
+- Les taux sont des **cibles**, pas une garantie de résultat : ce sont les
+  bornes ci-dessus (pitié, garantie des nouvelles) qui sont des promesses.
+
+### D9 — Les étages ne donnent plus de cartes, ils les révèlent
+
+Le changement de fond du chantier, décidé après avoir mesuré ce que l'ancien
+système laissait comme place au Souk :
+
+- **Avant** : la dotation (38 cartes) plus les vingt étages donnaient **les 99
+  cartes du set** — 61 cartes offertes, dont les 26 mythiques aux boss. Un
+  booster ne pouvait plus rien apprendre au joueur : dans le meilleur des cas il
+  rendait une carte qu'un étage aurait donnée de toute façon, et le plus souvent
+  un doublon remboursé.
+- **Après** : `RPG_REVELATIONS_PAR_ETAGE` dit **où** une carte entre dans la
+  ville, pas ce qu'un joueur reçoit. L'étage la révèle, le Souk la vend.
+
+**Le gel des acquis (`figerAcquisitions`) est obligatoire, pas un confort.**
+La collection était *dérivée* de la progression : rien n'était stocké. Retirer
+la source des récompenses aurait donc effacé, au premier lancement de cette
+version, tout ce que les joueurs avaient déjà gagné — et avec elle la jouabilité
+de leurs decks maison (l'atelier ne propose que les cartes possédées). Le gel
+reprend **une fois** les cartes que l'ancienne règle aurait données pour les
+étages déjà vaincus, les range dans `letsplay_sablier_acquis_v1` et pose
+`gel: true` : définitif, transmis avec le compte, et sans effet sur un joueur
+neuf (il n'a rien à reprendre).
+
+**Ce que le retrait change pour le joueur** :
+
+| | Avant | Après |
+| --- | --- | --- |
+| Ce qu'un étage donne | 2 à 4 cartes | des **crédits** (+50 ◈ au premier déblayage) et un récit |
+| Où l'on obtient une carte | en montant | au **Souk**, avec le produit des quêtes et des victoires |
+| Ce que voit l'écran de fin d'étage | « CARTES RENDUES À VOTRE COLLECTION » | « CE QUE L'ÉTAGE RÉVÈLE — À PRENDRE AU SOUK » |
+| Ce que dit l'atelier sur une carte verrouillée | « Vainquez « tel étage » » | « Le Souk la vendra après « tel étage » » |
+| Les decks maison | 38 cartes puis les étages | la dotation, les acquis gelés, et **ce que l'on achète** |
+
+**Le prix de ce choix, assumé** : la collection n'est plus infinie — elle se
+boucle en **19 jours** de jeu quotidien (≈ 5 200 ◈, 33 paquets, mesuré sur trois
+graines : 50 cartes à J6, 75 à J11, 90 à J17, 99 à J19). Au-delà, le Souk ne
+vend plus que des doublons remboursés — c'est précisément pourquoi le **lot 6**
+(un set dédié au Souk) devient la suite naturelle, et non un supplément.
 
 ### D4 — Le doublon n'est pas une punition
 
@@ -159,38 +206,57 @@ Terminer **les trois quêtes du jour** ouvre le **Cachet du cycle** : +80 ◈.
 
 ### D8 — Les gains sont lisibles et bornés
 
-| Source | Crédits |
+| Source | Gain |
 | --- | --- |
-| Premier déblayage d'un étage | **+50 ◈** |
-| Étage déjà déblayé, rejoué et gagné | +10 ◈ |
-| Partie libre gagnée (sans étage) | +8 ◈ |
-| Défaite | 0 ◈ |
-| Quêtes du jour (trois) | ≈ 200 ◈ |
-| Cachet du cycle (les trois terminées) | +80 ◈ |
+| Premier déblayage d'un étage | **50 ◈** |
+| Étage rejoué | **10 ◈** |
+| Duel libre gagné | **8 ◈** |
+| Duel perdu | 0 ◈ |
+| Quête facile terminée | 55 ◈ |
+| Quête moyenne terminée | 65 à 70 ◈ |
+| Quête difficile terminée | 75 à 100 ◈ |
+| **Cachet** du cycle (3 quêtes du jour) | **+80 ◈** |
 
-Une journée pleine vaut donc ≈ 300–350 ◈, soit **deux boosters**. Aucun gain
-n'est infini : la victoire d'un étage déjà déblayé ne vaut que 10 ◈, et le duel
-libre 8 ◈ — farmer ne remplace pas une journée de quêtes.
+Le **maximum théorique** d'une journée est donc **310 ◈** (quatre quêtes de 60,
+70, 100 et la quête du comptoir à 60, plus le cachet). La **moyenne** tourne
+autour de **250 à 280 ◈** — les quatre quêtes sorties du tirage peuvent valoir
+moins, et une journée ratée ne se rattrape pas (D6). Le calibrage visé —
+**≈ 2,3 paquets par jour** — et **5 200 ◈** pour les 33 paquets qui bouclent la
+collection — tient dans cette fourchette. Les 19 jours de la simulation
+(D9) incluent les crédits des étages, pas seulement les quêtes.
+
+**Ce que la campagne entière rapporte** : 20 étages × 50 ◈ = **1 000 ◈**, soit
+six paquets. Les Tours paient l'entrée au Souk, pas sa totalité — c'est la
+boucle quotidienne qui porte le reste, et c'est voulu.
 
 ## 4. Le contenu (données pures)
 
 ### 4.1 Les rayons du Souk
 
-Prix calibrés pour qu'une journée de jeu vaille ~2 paquets, et pour que le
-rayon thématique soit un peu plus cher que le générique.
+Prix calibrés pour qu'une journée de jeu (≈ 280 ◈) vaille deux paquets, le rayon
+thématique restant le meilleur marché.
 
 | Rayon | Prix | Ouvre après | Vivier | Particularité |
 | --- | --- | --- | --- | --- |
-| **Braise** | 140 ◈ | `listes-2` | cartes de Braise des tours entamées | 1 rare garantie |
-| **Sable** | 140 ◈ | `listes-1` | cartes de Sable des tours entamées | 1 rare garantie |
-| **Eau** | 160 ◈ | `souk-2` | cartes d'Eau des tours entamées | 1 rare garantie |
-| **Neige** | 160 ◈ | `abysses-2` | cartes de Neige des tours entamées | 1 rare garantie |
-| **Souk** (mélange) | 180 ◈ | première couleur | toutes les couleurs entrées | 1 rare garantie **+ carte 5 à 30 %** |
+| **Sable** | 140 ◈ | `listes-1` | cartes de Sable ouvertes | 1 rare garantie |
+| **Braise** | 140 ◈ | `listes-1` | cartes de Braise ouvertes | 1 rare garantie |
+| **Eau** | 160 ◈ | `souk-1` | cartes d'Eau ouvertes | 1 rare garantie |
+| **Neige** | 160 ◈ | `abysses-1` | cartes de Neige ouvertes | 1 rare garantie |
+| **Souk** (grand étal) | 180 ◈ | `listes-1` | toutes les couleurs ouvertes | 1 rare garantie **+ carte 5 à 30 %** |
 | **Coffret du Cycle** | 10 × prix − 10 % | le rayon choisi | celui du rayon choisi | **+ 1 mythique garanti** sur les dix paquets |
+
+« Ouvre après » se lit dans la règle D2 : c'est la **première victoire** qui
+ouvre la ville, et une couleur n'arrive qu'avec la carte qui l'introduit. Le
+Sable et la Braise sont là dès `listes-1`, l'Eau attend les citernes de `souk-1`
+(les sables ont leurs cartes d'Eau propres au même moment), la Neige attend
+`abysses-1`. Seuils mesurés sur les données réelles, pas estimés.
 
 Chaque vivier contient aussi **les communes et inhabituelles de la dotation**
 (elles font le remplissage et paient en doublon) : sans elles, un paquet ne
-serait fait que de rares et les taux annoncés ne voudraient plus rien dire.
+serait fait que de rares et les taux annoncés ne voudraient plus rien dire. Un
+vivier au début du jeu est **petit** — 10 cartes de Braise après `listes-1` —
+mais c'est exactement la mesure de la promesse : on n'y vend que ce que la ville
+a déjà montré.
 
 Le coffret ne se vend jamais seul : c'est « dix paquets du même rayon, d'un
 coup », et son prix suit le rayon choisi (Sable : 1 260 ◈, Souk : 1 620 ◈).
@@ -226,14 +292,20 @@ compte pas deux fois.
 
 ### 4.3 L'état sauvegardé
 
-Stockage local : `letsplay_sablier_bourse_v1` et `letsplay_sablier_quetes_v1`.
+Stockage local : `letsplay_sablier_bourse_v1`, `letsplay_sablier_quetes_v1`,
+plus `letsplay_sablier_acquis_v1` (le gel de D9, qui vit avec la collection).
 Le même contenu voyage dans le `state` du compte (`rpg_sablier_progress`) :
 
 ```jsonc
 {
   "decks": [ /* inchangé */ ],
   "supprimes": [ /* inchangé */ ],
-  "collection": [ /* inchangé */ ],
+  "collection": [ /* inchangé — les cartes venues d'un autre appareil */ ],
+  "acquis": {
+    "version": 1,
+    "gel": true,                        // définitif une fois posé
+    "cartes": [ "kraken", "tarek" ]     // reprises au premier lancement (D9)
+  },
   "bourse": {
     "credits": 1240,
     "cartes": ["tarek", "kraken"],      // cartes gagnées au Souk (union monotone)
@@ -259,6 +331,8 @@ autorisée dans `supabase/schema.sql`.
 
 | Champ | Règle | Pourquoi |
 | --- | --- | --- |
+| `acquis.cartes` | **union** | une carte gagnée ne se perd jamais |
+| `acquis.gel` | **ou** dès qu'un appareil l'a posé | un appareil non migré ne défait pas la migration d'un autre |
 | `bourse.cartes` | **union** | une carte gagnée ne se perd jamais |
 | `bourse.credits` | **maximum** | on ne fait pas disparaître un solde |
 | `bourse.ouvertures` / `pitie` | maximum, appariés | la pitié la plus avancée : la règle est généreuse |
@@ -266,6 +340,12 @@ autorisée dans `supabase/schema.sql`.
 | `quetes.progres` (même jour) | **maximum par quête** | deux appareils additionnent la même journée |
 | `quetes.reclamations` | **union** | on ne paie pas deux fois, on ne retire jamais un dû |
 | `quetes.serie` | maximum | idem |
+
+**Le gel vit sur l'appareil** (`letsplay_sablier_acquis_v1`) et voyage avec le
+compte : c'est la copie locale qui fait foi pour la migration — même si un
+appareil qui n'a pas encore la nouvelle version écrase `state` sans le champ
+`acquis`, l'appareil migré le repousse à la première fusion. Les cartes gelées ne
+peuvent donc pas être perdues par une écriture concurrente.
 
 **Le compromis assumé** : un joueur qui dépense 400 ◈ hors ligne sur l'appareil A
 peut voir ces 400 ◈ revenir si l'appareil B pousse un solde plus élevé avant
@@ -286,7 +366,10 @@ les lots 2 à 5.
 | ✅ `src/games/rpgHasard.js` | hasard semé : `graineNumerique` (FNV-1a), `rngSeme` (mulberry32), `tirerIndex`, `tirerParmi`, `choixPondere`, `melanger` | `tests/rpg-hasard.test.js` |
 | ✅ `src/games/rpgCredits.js` | portefeuille : normalisation, gains, dépense, barème des doublons, pitié, fusion, stockage | `tests/rpg-credits.test.js` |
 | ✅ `src/games/rpgQuetes.js` | pool, tirage semé, journée monotone, progression, réclamation, Cachet, fusion | `tests/rpg-quetes.test.js` |
-| ✅ `src/games/rpgBoosters.js` | rayons, viviers bornés, `tirerCartes`, `ouvrirBooster`, `ouvrirCoffret`, prix du coffret | `tests/rpg-boosters.test.js` |
+| ✅ `src/games/rpgBoosters.js` | rayons, viviers ouverts par les marches (D2), `tirerCartes`, `ouvrirBooster`, `ouvrirCoffret`, prix du coffret | `tests/rpg-boosters.test.js` |
+| ✅ `src/games/rpgCollection.js` | révélations d'étage, **gel des acquis** (D9), sources de la collection | `tests/rpg-collection.test.js` |
+| ✅ `src/games/rpgDeckBuilder.js` | la fusion de compte transporte les acquis, gel compris | `tests/rpg-deck-builder.test.js` |
+| ✅ `src/games/useDecksSablier.js` | pose le gel au montage, pousse les acquis, `noterVictoireEtage` ouvre les cartes | `scripts/rpg-story-narrative-smoke.jsx` |
 | `src/games/useSablierBourse.js` | état React + fusion + poussée au compte, patron de `useDecksSablier.js` | couvert par le smoke |
 | `src/games/RpgSouk.jsx` | l'écran : bourse, quêtes, rayons | `scripts/rpg-souk-smoke.jsx` |
 | `src/games/RpgBoosterOuverture.jsx` | la cérémonie des cinq cartes | idem |
@@ -309,7 +392,7 @@ RPG_BOURSE_STORAGE_KEY = 'letsplay_sablier_bourse_v1'
 portefeuilleVide() · normaliserPortefeuille(v)
 creditsDeVictoire({ mode, premiere }) · creditsDeDoublons(ids)
 crediterCredits(p, montant) · depenserCredits(p, prix) -> { ok, raison, portefeuille }
-ajouterCartesAuPortefeuille(p, ids) · enregistrerOuverture(p, { mythique })
+ajouterCartesAuPortefeuille(p, ids) · enregistrerOuverture(p, { mythique, aDesMythiques })
 paquetsAvantMythique(p, { aDesMythiques, seuil }) · fusionnerPortefeuilles(local, distant)
 chargerPortefeuille() · sauverPortefeuille(p)
 
@@ -326,22 +409,34 @@ fusionnerQuetes(local, distant) · chargerEtatQuetes() · sauverEtatQuetes(e) ·
 TAUX = { cartes: 5, communes: 0.88, mythique: 0.2, mythiqueSouk: 0.3, pitie: 8, nouvellesMin: 3 }
 COFFRET = { taille: 10, remise: 0.1, mythiqueAssuree: true } · RAYONS (5) · COULEURS_SOUK
 rayonParId(id) · prixCoffret(rayonId) · toursEntamees(progression) · tourIntroduction(cardId)
-carteAuVivier(cardId, progression) · couleursRapportees(progression) · tourQuiGarde(couleur)
+carteAuVivier(cardId, progression) · cartesOuvertes(progression) · etagesOuverts(progression)
+couleursOuvertes(progression) · tourQuiGarde(couleur)
 vivierRayon(rayonId, progression) · rayonOuvert(rayonId, progression)
 etatRayon(rayonId, progression, collection) · etatRayons(...) · rayonsOuverts(...)
 tirerCartes({ rayonId, progression, collection, rng, pitie })
 ouvrirBooster({ portefeuille, rayonId, progression, collection, rng })
 ouvrirCoffret({ portefeuille, rayonId, progression, collection, rng }) · etageIntroduction(cardId)
+
+// rpgCollection.js — le changement de nature des étages (D9)
+RPG_REVELATIONS_PAR_ETAGE (20 étages) · RPG_ACQUIS_STORAGE_KEY = 'letsplay_sablier_acquis_v1'
+cartesReveleesParEtage(etageId) · carteReveleePar(cardId) · revelationsDepuisEtages(etageIds)
+acquisVide() · normaliserAcquis(v) · fusionnerAcquisitions(...a) · figerAcquisitions({ acquis, progression })
+chargerAcquis() · sauverAcquis(a)
+collectionJoueur({ acquis, distante, souk })   // plus d'etagesVaincus : les étages ne donnent plus
 ```
 
 Trois choix d'implémentation que le code a tranchés, et qui valent d'être
 connus avant d'écrire les lots suivants :
 
 - **`collection` est optionnelle partout.** Sans elle, les modules prennent
-  `collectionJoueur({ progression })` — la collection dérivée. Le hook, lui,
-  passera la collection effective (celle qui compte les cartes du Souk) : c'est
-  la seule façon pour qu'un doublon soit reconnu comme tel juste après l'avoir
-  gagné.
+  `collectionJoueur()` — la dotation, les acquis gelés, les apports du compte.
+  Le hook, lui, passera la collection effective (celle qui compte les cartes du
+  Souk) : c'est la seule façon pour qu'un doublon soit reconnu comme tel juste
+  après l'avoir gagné.
+- **`collectionJoueur` ne prend plus d'étages** : depuis D9, la progression ne
+  décide plus de ce qu'on possède, elle décide de ce qui est **en vente**
+  (`carteAuVivier`). C'est `rpgBoosters.js` qui lit les étages, pas la
+  collection — la séparation est nette, et c'est ce qui rend le retrait sûr.
 - **La stabilité référentielle est tenue** : `progresserQuete` rend l'objet
   d'origine quand rien ne bouge (un terrain posé pendant un duel ne doit pas
   faire re-rendre l'écran du Souk), comme `marquerEtageVaincu` le fait déjà.
@@ -386,6 +481,11 @@ quelque chose attend (une réclamation, une mythique promise à 0 paquet).
    manquent encore », et le bouton **Ouvrir** (ou le motif du refus : solde
    insuffisant, rayon fermé).
 
+L'écran affiche aussi **l'état de l'étagère** : « le Souk suit les marches que
+vous avez montées — prochaine ouverture : « Le Séisme de la Citerne » ». C'est
+la règle D2 rendue visible, et c'est ce qui répond à la question du joueur
+devant un rayon fermé.
+
 **La cérémonie d'ouverture** : une nappe plein écran, les cinq cartes se
 retournent une à une (la rare en dernier), tampon **NOUVELLE** ou **déjà
 possédée → +45 ◈**, total encaissé, puis **« Tout ranger dans la collection »**
@@ -403,16 +503,18 @@ achat refusé.
 | Question | Réponse |
 | --- | --- |
 | Combien de cartes dans le jeu ? | 99 (35 communes, 3 inhabituelles, 35 rares, 26 mythiques) |
-| Ce que la campagne donne aujourd'hui | **99 / 99** — la dotation plus les vingt étages |
+| Ce que le joueur possède sans jouer | **38 / 99** — la dotation de départ |
+| Ce qu'un étage donne après D9 | des crédits (50 ◈ au premier déblayage) et le récit ; ses cartes deviennent **achetables** |
 | Ce qu'un booster ajoute | de l'**avance** dans une tour déjà ouverte, du **choix**, et des **mythiques** hors boss |
-| Une journée de jeu | ≈ 300–350 ◈ ⇒ deux boosters, ≈ 8 cartes dont 4 à 6 nouvelles |
-| Une tour de cinq étages | ≈ 4 à 6 journées pour en sortir avec le premier déblayage (250 ◈) plus les récompenses |
+| Une journée de jeu | 250–310 ◈ ⇒ deux boosters, ≈ 10 cartes dont 6 neuves quand l'étagère suit |
+| Boucler la collection | **19 jours** (≈ 5 200 ◈, 33 paquets) à 280 ◈/jour, la campagne fournissant ses 1 000 ◈ au passage |
 | Prix d'un coffret | 1 260 ◈ (Braise/Sable) — quatre journées, une mythique assurée |
 
 **Ce que le Souk ne fera pas** : vendre une carte avant sa tour, vendre un deck
 complet, ni créer une troisième monnaie. Et le joueur qui n'y met jamais les
-pieds ne perd **rien** de ce qui existe aujourd'hui : les vingt étages rendent
-toujours les mêmes cartes.
+pieds ne perd **rien** de ce qui existe aujourd'hui : il garde ses acquis gelés,
+la dotation, et les étages continuent de lui révéler la ville — simplement, il
+les paiera plus tard.
 
 ## 9. Le chantier, découpé en lots
 
@@ -420,6 +522,7 @@ toujours les mêmes cartes.
 | --- | --- | --- | --- |
 | **0** | **ce document**, validé | le dossier relu et tranché | `docs/rpg/13-…md`, `docs/rpg/README.md` |
 | **1 ✅ livré** | les règles pures | quatre suites vertes (**41 tests**), **invisible pour le joueur** | `rpgHasard.js`, `rpgCredits.js`, `rpgQuetes.js`, `rpgBoosters.js`, `tests/rpg-*.test.js`, `package.json` |
+| **1bis ✅ livré** | **les étages ne donnent plus de cartes** (D9) : révélations, gel des acquis, vivier refait, écrans réalignés | **428 tests verts** (4 suites préexistantes sans `jsdom`/`three`), collection d'un joueur neuf = 38 cartes exactement | `rpgCollection.js`, `rpgBoosters.js`, `rpgDeckBuilder.js`, `useDecksSablier.js`, `RpgStoryScene.jsx`, `RpgDeckAtelier.jsx`, tests, docs 06/09/10/13 |
 | **2** | les gains branchés | gagner un étage crédite le solde, l'événement est émis, badge sur l'onglet | `RpgDuelPage.jsx`, `useSablierBourse.js` |
 | **3** | l'écran Souk | la bourse, les quêtes, la réclamation — sans les rayons | `RpgSouk.jsx`, `rpg-souk.css`, smoke |
 | **4** | les boosters | achats, ouverture, doublons, cartes rangées dans la collection, poussée au compte | `RpgBoosterOuverture.jsx`, `rpgBoosters.js`, `useSablierBourse.js` |
@@ -437,6 +540,21 @@ taux annoncé (D3), la quête du comptoir exige une garde que les quêtes de
 couleur n'exigent pas, et le pool des quêtes compte **treize** entrées, pas
 douze.
 
+**Ce que le lot 1bis a appris** — trois corrections que le code a imposées, et
+qui valent d'être retenues :
+
+1. **La dotation ouvre tout si on la laisse compter.** Les 38 communes couvrent
+   les quatre couleurs : la première version de `rayonOuvert` ouvrait les cinq
+   rayons dès le premier jour. Ne comptent que les cartes **révélées**.
+2. **« L'étage suivant » était un contresens** : la règle est « l'étage est
+   vaincu, **ou** son étage précédent l'est » — autrement dit, *la marche
+   suivante est ouverte*. Écrite à l'envers, elle n'ouvrait rien.
+3. **La garantie des nouvelles ne suffisait pas à compléter la collection** :
+   les dernières mythiques ne sortaient que de la cinquième carte, et boucler
+   le set demandait ~400 paquets. Une seule place promue vers le haut ramène ça
+   à 33. Ce n'est pas un détail d'équilibrage, c'est ce qui rend le Souk
+   praticable.
+
 **La reprise du monolithe** : `RpgDuelPage.jsx` fait 283 Ko et ne doit pas
 grossir de l'écran du Souk. La page ne reçoit **que** l'onglet, le badge,
 l'appel `noterEvenementDuel` et le rendu `<RpgSouk … />` ; tout le reste vit dans
@@ -444,7 +562,9 @@ ses propres fichiers, comme `RpgDeckAtelier.jsx` l'a fait avant lui.
 
 ## 10. Vérifications
 
-Le lot 1 se vérifie en quatre commandes (agrégées par `check:rpg-souk`) :
+Le lot 1 se vérifie en quatre commandes (agrégées par `check:rpg-souk`) ; le
+lot 1bis se vérifie par `npm run check:rpg` — il touche à la collection, à la
+fusion de compte et au récit, donc au jeu entier :
 
 ```bash
 npm run check:rpg-hasard     # node --test tests/rpg-hasard.test.js
@@ -455,10 +575,10 @@ npm run check:rpg-souk       # les quatre d'affilée
 ```
 
 Les quatre suites sont aussi **entrées dans `check:rpg`** : une régression
-d'économie casse désormais la vérification du jeu entier. État au jour du lot 1 :
-**41 tests, 41 verts**. (`check:rpg` compte quatre échecs qui lui préexistent —
-`rpg-long-press`, `rpg-story-3d`, `rpg-table-3d`, `rpg-touch-drag` —, dus à
-`jsdom` absent de l'environnement, et sans rapport avec ce chantier.)
+d'économie casse désormais la vérification du jeu entier. État : **428 tests
+verts sur 432**, les quatre échecs restants étant ceux qui préexistaient à ce
+chantier (`rpg-long-press`, `rpg-story-3d`, `rpg-table-3d`, `rpg-touch-drag`,
+privés de `jsdom` et `three` dans cet environnement).
 
 Les cas couverts :
 
@@ -473,36 +593,55 @@ Les cas couverts :
   négligée par un événement d'une autre couleur, montant compté pour les dégâts,
   progression plafonnée, quête réclamée qui ne bouge plus, Cachet payé une seule
   fois, journée qui ne recule pas quand l'horloge recule, garde du comptoir ;
-- **boosters** — cinq cartes distinctes et du bon rayon, rare garantie, pitié
-  qui **force** la mythique après une série sèche, taux mesurés sur dix mille
-  ouvertures semées (24 % en moyenne par rayon thématique, 32 % au grand étal,
-  jamais plus de sept paquets secs), vivier borné (aucune carte du Fjord sans
-  tour entamée), garantie des trois nouvelles, doublons remboursés au barème,
-  achat refusé sans solde ni sur un rayon fermé, coffret à dix paquets avec
-  remise et mythique assurée.
+- **boosters** — cinq cartes distinctes et toutes du vivier du rayon, rare
+  garantie, pitié qui **force** la mythique après une série sèche (et qui ne
+  compte pas sur un rayon sans mythique), taux mesurés sur dix mille ouvertures
+  semées (23,8 % par rayon thématique, 31,8 % au grand étal, jamais plus de sept
+  paquets secs), **vivier qui suit les marches** (aucune carte du Fjord avant
+  d'y être entré, la marche suivante ouverte par la précédente), garantie des
+  trois nouvelles adaptée à ce que le vivier offre, doublons remboursés au
+  barème, achat refusé sans solde ni sur un rayon fermé, coffret à dix paquets
+  avec remise et mythique assurée ;
+- **collection (lot 1bis)** — chaque révélation nomme une carte réelle hors
+  dotation et sans doublon, dotation + révélations couvrent les 99 cartes,
+  **gagner un étage ne donne plus rien** (la collection d'un joueur neuf est
+  exactement la dotation), la collection grandit par les acquis / le Souk / le
+  compte, le **gel** reprend une fois exactement les cartes de l'ancienne règle
+  puis ne bouge plus, il se sauvegarde et se relit, et les quatre couleurs
+  entrent dans l'ordre de la campagne.
 
 ## 11. Risques et points ouverts
 
 | Risque | Réponse |
 | --- | --- |
-| La collection est **dérivée** : oublier la nouvelle source rendrait les cartes invisibles | une seule porte (`collectionJoueur`) + un test qui vérifie qu'une carte du Souk est bien possédée et jouable |
-| L'économie écrase le rythme de la campagne | le vivier borné par les tours (D2) + un test dédié qui refuse une carte du Fjord à la Tour des Listes |
+| **Retirer les récompenses d'étage efface les cartes déjà gagnées** | le **gel des acquis** (D9) les reprend une fois, avant que quiconque puisse les perdre ; testé, y compris sur un compte à deux appareils dont un seul a migré |
+| La collection est **dérivée** : oublier une source rendrait les cartes invisibles | une seule porte (`collectionJoueur`, quatre sources) + un test qui vérifie qu'une carte du Souk est bien possédée et jouable |
+| L'économie écrase le rythme de la campagne | le vivier qui suit les marches (D2) + un test qui refuse une carte du Fjord à qui n'y est pas entré |
+| **La collection se boucle en 19 jours** et le Souk n'a plus rien à vendre | assumé : c'est exactement ce qui rend le lot 6 (set dédié) nécessaire — et les doublons paient en crédits d'ici là |
 | Le solde donne envie de farmer les parties libres | 8 ◈ par duel libre, 10 ◈ par étage rejoué, et les quêtes restent le gros du revenu |
 | Deux appareils, dépense hors ligne | fusion par maximum, compromis documenté (§4.4) — jamais de perte |
 | Le monolithe `RpgDuelPage.jsx` | l'écran vit dans ses fichiers, la page ne gagne qu'une branche |
 
-**Décisions prises** (elles ont débloqué le lot 1) :
+**Décisions prises** (elles ont débloqué les lots 1 et 1bis) :
 
 1. **La monnaie s'appelle « crédits » (◈)** — le mot du demandeur. Le lore du
    dossier 04 passe des « dinars du courant » aux « crédits de la Chambre ».
-2. **Le rythme quotidien est celui du dossier** : ≈ 200 ◈ de quêtes, 80 ◈ de
+2. **Le rythme quotidien est celui du dossier** : quêtes de 55 à 100 ◈, 80 ◈ de
    Cachet, 50 ◈ par premier étage, rayons à 140–180 ◈ — une journée pleine vaut
-   ≈ 320 ◈, soit deux paquets.
+   **310 ◈ au maximum**, 250 à 280 en moyenne, soit deux paquets.
 3. **Le Cachet du cycle vaut +80 ◈**, en crédits, pas en booster offert : une
    seule mécanique à expliquer.
 4. **Les cartes du Souk (lot 6) attendent** : la boucle doit d'abord vivre en
    ligne avant qu'on lui ajoute un set dédié.
+5. **Les Tours ne donnent plus aucune carte** — choix « retirer complètement »,
+   exécuté **avant le lot 2** : trophées de boss compris, les mythiques d'étage
+   aussi. Corollaire accepté : les Tours ne rendent plus que du récit et des
+   crédits, et le Souk devient la seule voie d'acquisition.
 
-**Reste ouvert pour la suite** : les cartes du Souk (lot 6), une série de sept
+**Reste ouvert pour la suite** : les cartes du Souk (lot 6, **devenu la
+priorité** puisque la collection se boucle en trois semaines), une série de sept
 jours récompensée (lot 5), et le moment où le **sable** du dossier 04 entre en
 scène comme seconde devise — le portefeuille est déjà écrit pour l'accueillir.
+Un écart à trancher aussi : le calibrage vise « ≈ 200 ◈ de quêtes » alors que le
+maximum mesuré est 310 ◈ — la fourchette retenue est 250–280 en moyenne, à
+réajuster si les parties réelles s'en écartent.

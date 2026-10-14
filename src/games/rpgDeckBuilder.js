@@ -31,7 +31,7 @@ import {
   rpgValiderDeck,
   terrainManaColors,
 } from './rpgCards.js';
-import { fusionnerCollections, normaliserCollection } from './rpgCollection.js';
+import { fusionnerAcquisitions, fusionnerCollections, normaliserAcquis, normaliserCollection } from './rpgCollection.js';
 
 /** La taille d'un deck du Sablier, et la part minimale de terrains. */
 export const RPG_DECK_TAILLE = 40;
@@ -466,12 +466,18 @@ export function fusionnerEtatsSablier({ local = casierMaisonVide(), distant = nu
     .slice(0, 50);
 
   const collection = fusionnerCollections(local?.collection, distant?.collection);
+  // Les acquis (le gel des cartes gagnées avant le Souk, `rpgCollection.js`) se
+  // fusionnent comme le reste : union des cartes, gel définitif dès qu'un
+  // appareil l'a posé. Un appareil qui n'a pas encore migré ne peut donc pas
+  // défaire le gel d'un autre.
+  const acquis = fusionnerAcquisitions(local?.acquis, distant?.acquis);
   const casier = { decks, supprimes };
-  const etat = { decks, supprimes, collection, majLe: maintenantIso() };
-  const modifie = JSON.stringify({ decks, supprimes, collection }) !== JSON.stringify({
+  const etat = { decks, supprimes, collection, acquis, majLe: maintenantIso() };
+  const modifie = JSON.stringify({ decks, supprimes, collection, acquis }) !== JSON.stringify({
     decks: decksLocaux,
     supprimes: pierresLocales,
     collection: normaliserCollection(local?.collection),
+    acquis: normaliserAcquis(local?.acquis),
   });
   return { casier, etat, modifie };
 }

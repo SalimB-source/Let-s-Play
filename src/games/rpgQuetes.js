@@ -35,7 +35,7 @@ export const RPG_QUETES_STORAGE_KEY = 'letsplay_sablier_quetes_v1';
 export const PALIERS = Object.freeze(['facile', 'moyenne', 'difficile']);
 
 /**
- * Le pool des douze quêtes. `ecoute` dit quel événement du duel compte (voir le
+ * Le pool des treize quêtes. `ecoute` dit quel événement du duel compte (voir le
  * contrat d'événements du dossier 13) ; `montant: true` fait progresser du
  * montant de l'événement au lieu d'un point par événement ; `garde` empêche le
  * tirage tant que la condition n'est pas remplie.

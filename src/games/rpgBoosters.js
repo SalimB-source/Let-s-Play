@@ -2,22 +2,35 @@
  * Les rayons du Souk — boosters, viviers et tirages.
  *
  * **Ce qu'un paquet a le droit de contenir** est la seule vraie question de ce
- * module, et la réponse tient en deux phrases :
+ * module. Depuis que les étages ne donnent plus de cartes mais les **révèlent**
+ * (`rpgCollection.js`), la réponse tient en une phrase :
  *
- * 1. **La tour d'abord.** Une carte n'entre dans un vivier que si sa **tour
- *    d'introduction est entamée** — au moins un étage vaincu dans cette tour.
- *    La Tour des Listes, première de la ville, compte comme entamée dès le
- *    premier jour. Aucun paquet ne vend donc une carte du Fjord avant que le
- *    joueur ait posé le pied quelque part dans le Fjord.
- * 2. **La couleur doit être entrée dans la ville.** Un rayon n'ouvre que si un
- *    étage vaincu a déjà rendu une carte de sa couleur : le Sable ouvre avec
- *    `listes-1`, la Braise avec `listes-2`, l'Eau avec `souk-2`, la Neige avec
- *    `abysses-2`. Le grand étal (rayon « Souk ») ouvre dès la première couleur.
+ * > **Le Souk suit les marches que vous avez montées.** Une carte entre au
+ * > vivier quand l'étage qui la révèle est **vaincu**, ou quand c'est **la
+ * > marche suivante** — l'étage précédent de sa tour est déjà conquis.
+ *
+ * **Le Souk ouvre à la première victoire** : avant elle, l'étagère est fermée
+ * (les quêtes ne proposent alors pas la quête du comptoir). Ensuite, l'étagère
+ * grandit à chaque marche — gagner `listes-1` ouvre les cartes de `listes-1` et
+ * celles de `listes-2`, la marche suivante. Aucun paquet ne vend une carte du
+ * Fjord avant que le joueur ait posé le pied dans le Fjord, et l'Eau n'arrive
+ * qu'avec les citernes du Souk : cette règle unique tient les seuils du
+ * dossier 13, sans garde de couleur séparée. La **dotation de départ** ne
+ * compte pas dans les couleurs ouvertes — ses communes couvrent les quatre
+ * couleurs et ouvriraient tout dès le premier duel ; elles remplissent les
+ * paquets, elles ne les ouvrent pas.
  *
  * Le vivier garde **les communes et inhabituelles de la dotation** en plus des
- * cartes des tours entamées : elles font le remplissage des paquets et paient
- * des crédits en doublon (`rpgCredits.js`). Sans elles, un paquet ne serait
- * fait que de rares, et les taux annoncés ne voudraient plus rien dire.
+ * cartes ouvertes : elles font le remplissage des paquets et paient des crédits
+ * en doublon (`rpgCredits.js`). Sans elles, un paquet ne serait fait que de
+ * rares, et les taux annoncés ne voudraient plus rien dire.
+ *
+ * La **garantie des trois nouvelles** tient la promesse de compléter : les
+ * doublons des trois premières places s'échangent contre des cartes neuves au
+ * moins aussi rares, et si les seules cartes neuves qui restent sont plus rares
+ * que le doublon, **une seule** place est promue. Sans cette promotion, les
+ * dernières mythiques ne pourraient sortir que de la cinquième carte, et
+ * compléter la collection prendrait des mois de quêtes — mesuré, pas supposé.
  *
  * Le tirage lui-même (`tirerCartes`) est **pur** : `rng` injectable, aucun
  * accès au stockage, aucune dépendance à React — `tests/rpg-boosters.test.js`
@@ -25,7 +38,7 @@
  */
 
 import { RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardColors, cardRarityInfo } from './rpgCards.js';
-import { COLLECTION_DEPART, RPG_RECOMPENSES_PAR_ETAGE, collectionJoueur, recompenseEtage } from './rpgCollection.js';
+import { COLLECTION_DEPART, RPG_REVELATIONS_PAR_ETAGE, cartesReveleesParEtage, collectionJoueur } from './rpgCollection.js';
 import { RPG_STORY_TOURS, etageHistoireParId, tousLesEtages } from './rpgStoryTours.js';
 import {
   ajouterCartesAuPortefeuille,
@@ -71,15 +84,14 @@ export const RAYONS = Object.freeze([
 /** Rang de rareté : sert à n'échanger une carte que contre aussi rare ou plus rare. */
 const RANG_RARETE = Object.freeze({ commune: 0, inhabituelle: 1, rare: 2, mythique: 3 });
 
-/** La première tour de la ville : toujours entamée, par construction. */
-const PREMIERE_TOUR = RPG_STORY_TOURS[0]?.id ?? null;
-
-/** Les étages de chaque tour, et l'étage d'introduction de chaque carte (calculés une fois). */
+/** Les étages de chaque tour, l'étage suivant de chacun, et l'étage qui révèle chaque carte. */
 const ETAGES_PAR_TOUR = new Map(RPG_STORY_TOURS.map((tour) => [tour.id, tour.etages.map((etage) => etage.id)]));
 const TOUR_PAR_ETAGE = new Map(tousLesEtages().map(({ tour, etage }) => [etage.id, tour.id]));
+const PRECEDENT_PAR_ETAGE = new Map(tousLesEtages()
+  .map(({ tour, index, etage }) => [etage.id, tour.etages[index - 1]?.id ?? null]));
 const INTRO_PAR_CARTE = new Map();
 for (const { etage } of tousLesEtages()) {
-  for (const id of recompenseEtage(etage.id)) {
+  for (const id of cartesReveleesParEtage(etage.id)) {
     if (!INTRO_PAR_CARTE.has(id)) INTRO_PAR_CARTE.set(id, etage.id);
   }
 }
@@ -101,10 +113,10 @@ export function prixCoffret(rayonId) {
   return Math.round(rayon.prix * COFFRET.taille * (1 - COFFRET.remise));
 }
 
-/** Les tours entamées : la première de la ville, plus celles où un étage est vaincu. */
+/** Les tours entamées : celles où au moins un étage est vaincu. */
 export function toursEntamees(progression) {
   const vaincus = VAINCUS(progression);
-  const entamees = new Set(PREMIERE_TOUR ? [PREMIERE_TOUR] : []);
+  const entamees = new Set();
   for (const [tourId, etages] of ETAGES_PAR_TOUR) {
     if (etages.some((etageId) => vaincus.has(etageId))) entamees.add(tourId);
   }
@@ -117,42 +129,79 @@ export function tourIntroduction(cardId) {
   return etageId ? (TOUR_PAR_ETAGE.get(etageId) ?? null) : null;
 }
 
-/** La carte entre-t-elle dans un vivier à cette progression ? */
-export function carteAuVivier(cardId, progression) {
-  const carte = cardById(cardId);
-  if (!carte) return false;
-  if (DEBUT.has(cardId)) return true;
-  const tourId = tourIntroduction(cardId);
-  if (!tourId) return true;
-  return toursEntamees(progression).has(tourId);
+/**
+ * L'étage qui révèle une carte est-il **ouvert** par la progression ? Il l'est
+ * si l'étage est vaincu, ou si c'est **la marche suivante** — l'étage précédent
+ * de sa tour est vaincu, on n'a plus qu'à monter. `false` pour la dotation et
+ * les cartes inconnues.
+ */
+function etageOuvre(cardId, progression) {
+  const etageId = INTRO_PAR_CARTE.get(cardId);
+  if (!etageId) return false;
+  const vaincus = VAINCUS(progression);
+  if (vaincus.has(etageId)) return true;
+  const precedent = PRECEDENT_PAR_ETAGE.get(etageId);
+  return Boolean(precedent && vaincus.has(precedent));
 }
 
-/** Les couleurs rendues par les étages vaincus. */
-export function couleursRapportees(progression) {
+/**
+ * La carte entre-t-elle dans un vivier à cette progression ? La dotation de
+ * départ toujours ; sinon, l'étage qui la révèle doit être vaincu **ou** être
+ * l'étage suivant d'une tour déjà entamée.
+ */
+export function carteAuVivier(cardId, progression) {
+  if (!cardById(cardId)) return false;
+  if (DEBUT.has(cardId)) return true;
+  return etageOuvre(cardId, progression);
+}
+
+/**
+ * Les cartes que la progression **ouvre** : celles dont l'étage révélateur est
+ * vaincu, ou dont l'étage précédent l'est. C'est cette liste que l'écran de
+ * victoire annonce (« cet étage ouvre deux cartes au Souk »).
+ */
+export function cartesOuvertes(progression) {
+  return RPG_DUEL_CARDS
+    .filter((carte) => !DEBUT.has(carte.id) && etageOuvre(carte.id, progression))
+    .map((carte) => carte.id);
+}
+
+/**
+ * Les étages **ouverts** par la progression — exactement ceux dont les cartes
+ * sont au vivier : les étages vaincus, et la marche suivante de chaque tour
+ * conquise. La liste reste vide tant que le joueur n'a rien gagné : **le Souk
+ * ouvre à la première victoire**.
+ */
+export function etagesOuverts(progression) {
   const vaincus = VAINCUS(progression);
+  const ouverts = new Set(vaincus);
+  for (const { tour, index, etage } of tousLesEtages()) {
+    if (vaincus.has(etage.id)) ouverts.add(tour.etages[index + 1]?.id);
+  }
+  return [...ouverts].filter(Boolean);
+}
+
+/** Les couleurs que le Souk peut déjà servir : celles des cartes ouvertes. */
+export function couleursOuvertes(progression) {
   const couleurs = new Set();
-  for (const [etageId, recompense] of Object.entries(RPG_RECOMPENSES_PAR_ETAGE)) {
-    if (!vaincus.has(etageId)) continue;
-    for (const id of recompense) {
-      for (const couleur of cardColors(id)) couleurs.add(couleur);
-    }
+  for (const id of cartesOuvertes(progression)) {
+    for (const couleur of cardColors(id)) couleurs.add(couleur);
   }
   return couleurs;
 }
 
-/** La tour qui garde encore une couleur jamais rendue (pour le message du Souk). */
+/** La tour qui garde encore une couleur jamais ouverte (pour le message du Souk). */
 export function tourQuiGarde(couleur) {
-  for (const { tour, etage } of tousLesEtages()) {
-    if (recompenseEtage(etage.id).some((id) => cardColors(id).includes(couleur))) return tour;
-  }
-  return null;
+  const premiere = tousLesEtages()
+    .find(({ etage }) => cartesReveleesParEtage(etage.id).some((id) => cardColors(id).includes(couleur)));
+  return premiere?.tour ?? null;
 }
 
 /** Le vivier d'un rayon : sa couleur (ou toutes les couleurs ouvertes), tours entamées seulement. */
 export function vivierRayon(rayonId, progression) {
   const rayon = rayonParId(rayonId);
   if (!rayon) return [];
-  const couleurs = rayon.couleur ? [rayon.couleur] : [...couleursRapportees(progression)];
+  const couleurs = rayon.couleur ? [rayon.couleur] : [...couleursOuvertes(progression)];
   if (!couleurs.length) return [];
   const autorisees = new Set(couleurs);
   return RPG_DUEL_CARDS
@@ -161,12 +210,18 @@ export function vivierRayon(rayonId, progression) {
     .map((carte) => carte.id);
 }
 
-/** Le rayon est-il ouvert ? Sa couleur doit être entrée dans la ville par un étage vaincu. */
+/**
+ * Le rayon est-il ouvert ? Sa couleur doit être **entrée dans la ville par une
+ * carte ouverte** — c'est-à-dire révélée par un étage vaincu ou par la marche
+ * suivante. La dotation de départ ne compte **pas** : ses communes couvrent les
+ * quatre couleurs et ouvriraient tout dès le premier jour. Elles remplissent les
+ * paquets, elles ne les ouvrent pas.
+ */
 export function rayonOuvert(rayonId, progression) {
   const rayon = rayonParId(rayonId);
   if (!rayon) return false;
-  if (rayon.couleur) return couleursRapportees(progression).has(rayon.couleur);
-  return couleursRapportees(progression).size > 0;
+  const couleurs = couleursOuvertes(progression);
+  return rayon.couleur ? couleurs.has(rayon.couleur) : couleurs.size > 0;
 }
 
 /** Répartition par rareté d'une liste d'identifiants. */
@@ -271,6 +326,7 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
   const compteNouvelles = () => tirees.filter((id) => !possedees.has(id)).length;
   const disponiblesNeuves = vivier.filter((id) => !possedees.has(id)).length;
   const garantie = Math.min(TAUX.nouvellesMin, disponiblesNeuves);
+  let promotions = 0;
   for (let place = 0; place < 3 && compteNouvelles() < garantie; place += 1) {
     const actuelle = tirees[place];
     if (!actuelle || !possedees.has(actuelle)) continue;
@@ -278,7 +334,21 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
     const remplacant = ['rare', 'inhabituelle', 'commune']
       .flatMap((bande) => (RANG_RARETE[bande] >= rang ? (bandes[bande] ?? []) : []))
       .find((id) => !tirees.includes(id) && !possedees.has(id));
-    if (remplacant) tirees[place] = remplacant;
+    if (remplacant) {
+      tirees[place] = remplacant;
+      continue;
+    }
+    // Aucun équivalent à offrir : la seule carte neuve qui reste est plus rare
+    // que le doublon. **Une** place peut alors être promue — la cinquième carte
+    // n'est plus le seul chemin vers une mythique, et la dernière mythique d'une
+    // couleur se laisse approcher en jours plutôt qu'en mois. Une seule : le
+    // paquet reste un paquet, pas une livraison.
+    if (promotions >= 1) continue;
+    const promue = (bandes.mythique ?? []).find((id) => !tirees.includes(id) && !possedees.has(id));
+    if (promue) {
+      tirees[place] = promue;
+      promotions += 1;
+    }
   }
 
   return {
@@ -327,7 +397,10 @@ export function ouvrirBooster({ portefeuille, rayonId, progression = null, colle
   const { details, remboursement } = detaillerTirage(tirage.cartes, possedees);
   let apres = achat.portefeuille;
   apres = ajouterCartesAuPortefeuille(apres, tirage.cartes);
-  apres = enregistrerOuverture(apres, { mythique: tirage.mythique });
+  apres = enregistrerOuverture(apres, {
+    mythique: tirage.mythique,
+    aDesMythiques: vivierRayon(rayonId, progression).some((id) => cardById(id)?.rarity === 'mythique'),
+  });
   if (remboursement) {
     apres = { ...apres, credits: apres.credits + remboursement, majLe: new Date().toISOString() };
   }
@@ -374,7 +447,7 @@ export function ouvrirCoffret({ portefeuille, rayonId, progression = null, colle
     const { details, remboursement } = detaillerTirage(tirage.cartes, possedees);
     for (const carte of details) possedees.add(carte.id);
     apres = ajouterCartesAuPortefeuille(apres, tirage.cartes);
-    apres = enregistrerOuverture(apres, { mythique: tirage.mythique });
+    apres = enregistrerOuverture(apres, { mythique: tirage.mythique, aDesMythiques });
     if (remboursement) apres = { ...apres, credits: apres.credits + remboursement, majLe: new Date().toISOString() };
     mythique = mythique || tirage.mythique;
     paquets.push({ ...tirage, details, remboursement });

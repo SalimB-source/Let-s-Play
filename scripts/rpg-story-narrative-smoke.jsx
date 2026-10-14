@@ -6,7 +6,7 @@ import { cardById } from '../src/games/rpgCards.js';
 import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY } from '../src/games/rpgStory.js';
 import { RPG_STORY_DECKS, RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
 import { RPG_STORY_CAMPAIGN_FLOORS } from '../src/games/rpgStoryScenes.js';
-import { collectionJoueur, chargerCollectionDistante } from '../src/games/rpgCollection.js';
+import { collectionJoueur, chargerCollectionDistante, revelationsDepuisEtages } from '../src/games/rpgCollection.js';
 import { RPG_PV_JOUEUR } from '../src/games/rpgDuel.js';
 import { passerMulligan } from './rpg-duel-start.js';
 
@@ -101,7 +101,12 @@ export async function checkRpgStoryNarrative(assert) {
     assert.deepEqual(lire().etagesVaincus, ['listes-1']);
     assert.equal(lire().recit.curseur.id, 'listes-1-apres', 'victoire et curseur sont sauvegardés ensemble');
     assert.ok(query('.rpg-narrative__rewards'));
-    assert.ok(collectionJoueur().includes('scribe-de-la-liste'), 'la récompense normale est acquise');
+    assert.match(query('.rpg-narrative__rewards').textContent, /CE QUE L’ÉTAGE RÉVÈLE/,
+      'l’étage annonce ce qu’il révèle — le Souk les vendra');
+    assert.equal(collectionJoueur().includes('scribe-de-la-liste'), false,
+      'la victoire ne donne plus la carte : le Souk la vendra (dossier 13)');
+    assert.ok(revelationsDepuisEtages(lire().etagesVaincus).includes('scribe-de-la-liste'),
+      'la carte est bien révélée par l’étage');
     assert.equal(query('.card-table'), null, 'la table gagnée ne reste pas sous la scène');
 
     await mount();
@@ -149,14 +154,22 @@ export async function checkRpgStoryNarrative(assert) {
     await click(bouton('Oui, recommencer le récit'));
     assert.equal(lire().recit.curseur.id, 'listes-1-avant');
     assert.deepEqual(lire().etagesVaincus, ['listes-1', 'listes-2']);
-    assert.ok(collectionJoueur().includes('braisier-du-souk'), 'recommencer garde aussi les cartes');
+    assert.equal(collectionJoueur().includes('braisier-du-souk'), false,
+      'recommencer le récit ne donne pas de cartes : les étages révèlent');
 
     // Migration d'un joueur qui a déjà gagné les cinq étages : suivre le récit
     // complet sans grind, et finir par l'autre branche de l'épilogue.
     await unmount();
     window.localStorage.removeItem(RPG_STORY_STORAGE_KEY);
+    window.localStorage.removeItem('letsplay_sablier_acquis_v1');
     window.localStorage.setItem(RPG_STORY_LEGACY_STORAGE_KEY, JSON.stringify({ etagesVaincus: RPG_STORY_CAMPAIGN_FLOORS }));
     await mount();
+    // Le gel de migration reprend, une fois pour toutes, les cartes que
+    // l'ancienne règle avait données pour ces étages (dossier 13).
+    const acquisFiges = collectionJoueur();
+    for (const carte of revelationsDepuisEtages(RPG_STORY_CAMPAIGN_FLOORS)) {
+      assert.ok(acquisFiges.includes(carte), `${carte} est reprise par le gel de migration`);
+    }
     await ouvrirCampagne();
     let garde = 0;
     while (lire().recit.curseur.type !== 'fin' && garde++ < 40) {

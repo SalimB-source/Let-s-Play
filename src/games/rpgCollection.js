@@ -1,36 +1,37 @@
 /**
  * La collection du Sablier — les cartes que le joueur possède.
  *
- * L'atelier de deck (deck « maison », `rpgDeckBuilder.js`) ne propose que les
- * cartes possédées. La règle tient en deux sources, toutes deux **croissantes** :
+ * Depuis l'ouverture du Souk (`docs/rpg/13-souk-credits-quetes-boosters.md`),
+ * la règle a changé de nature : **les étages ne donnent plus de cartes**. Ils
+ * les **révèlent**. Un étage déblayé découvre des cartes, qui entrent alors au
+ * vivier des boosters (`rpgBoosters.js`) — c'est le Souk qui les vend, contre
+ * des crédits gagnés en jouant.
  *
- * 1. **La dotation de départ** — les cartes communes et inhabituelles du
- *    catalogue (terrains compris tant qu'ils sont communs) appartiennent à
- *    tout le monde, pour toujours. Une future carte commune rejoindrait donc
- *    d'elle-même la dotation : c'est la règle qui est codée, pas une liste
- *    figée.
- * 2. **Les récompenses d'étage** — chaque étage déblayé du mode Histoire rend
- *    des cartes confisquées par la Chambre des Heures (rares et
- *    mythiques). La correspondance étage → cartes est du contenu, dans
- *    `RPG_RECOMPENSES_PAR_ETAGE` : vingt étages, des cartes à
- *    ravir, parées pour que chaque couleur ouvre à peu près au moment où la
- *    campagne y entre — le mono-Eau au seuil des Abysses, le mono-Neige en
- *    entrant dans le Fjord. Chaque étage ne nomme que des cartes du catalogue :
- *    les trois cartes retirées du jeu (Rafale du minaret, Sentence de la Liste,
- *    Fureur du souk) ne sont plus promises nulle part. Le Serment du Soleil
- *    rouge complète désormais la réserve de Braise : ses communes sont
- *    données d’entrée et ses rares/mythiques se gagnent au Souk et aux Sables.
- *    Le mono-Braise maison devient ainsi composable au cours du Souk.
+ * La collection tient donc en quatre sources, toutes **croissantes** :
+ *
+ * 1. **La dotation de départ** — les communes et inhabituelles du catalogue
+ *    appartiennent à tout le monde, pour toujours. Une future carte commune
+ *    rejoindrait d'elle-même la dotation : c'est la règle qui est codée, pas
+ *    une liste figée.
+ * 2. **Les acquis figés** (`chargerAcquis`, `figerAcquisitions`) — au premier
+ *    lancement de cette version, la collection déjà gagnée sous l'ancienne
+ *    règle (les récompenses des étages) est **gelée une fois pour toutes**.
+ *    Sans ce gel, retirer la source des récompenses aurait effacé rétroactivement
+ *    les cartes des joueurs — et cassé leurs decks maison, dont la jouabilité
+ *    dépend de la collection. **Une carte gagnée ne se reprend pas.**
+ * 3. **Les cartes du Souk** — rangées dans le portefeuille (`rpgCredits.js`),
+ *    le nom de la variable du compte reste `collection` par compatibilité ;
+ *    l'écran les lit là où elles vivent.
+ * 4. **Les apports du compte** — des cartes gagnées sur un autre appareil,
+ *    mises en cache local (`chargerCollectionDistante`) et fusionnées.
  *
  * Les **decks du catalogue** (les six boîtiers de départ) ne consultent jamais
  * la collection : ce sont des decks préconstruits, jouables d'entrée de jeu.
  * Seuls les decks maison y sont tenus.
  *
- * Le compte connecté porte sa collection sur le serveur (`rpgSablierRemote.js`,
- * table `rpg_sablier_progress`) ; les apports du compte — des cartes gagnées sur
- * un autre appareil — sont mis en cache local (`chargerCollectionDistante`) et
- * fusionnés, sans jamais pouvoir retirer quoi que ce soit : une collection ne
- * fait que grossir (`fusionnerCollections`).
+ * Le compte connecté porte le tout sur le serveur (`rpgSablierRemote.js`, table
+ * `rpg_sablier_progress`) ; aucune collection ne peut jamais maigrir :
+ * `fusionnerCollections` et `fusionnerAcquisitions` ne font qu'union.
  */
 
 import { RPG_DUEL_CARDS, cardById, cardCopyLimit } from './rpgCards.js';
@@ -39,6 +40,9 @@ import { etageHistoireParId } from './rpgStoryTours.js';
 
 /** Cache local des apports du compte (cartes gagnées sur un autre appareil). */
 export const RPG_COLLECTION_STORAGE_KEY = 'letsplay_sablier_collection_v1';
+
+/** Les acquis figés de l'appareil (le gel de migration et les cartes reprises). */
+export const RPG_ACQUIS_STORAGE_KEY = 'letsplay_sablier_acquis_v1';
 
 /**
  * La dotation de départ : les cartes **communes et inhabituelles** du catalogue
@@ -52,18 +56,20 @@ export const COLLECTION_DEPART = RPG_DUEL_CARDS
   .map((carte) => carte.id);
 
 /**
- * Les cartes rendues par chaque étage déblayé — du contenu, pas de la logique.
- * Répartition : les tours du bas (Listes, Souk, Sables) rendent le Sable et la
- * Braise avec un premières eaux glissées par les citernes du Souk ; les
- * Abysses rendent leurs bêtes marines et les premières cartes de Neige —
- * l'eau du fond est glacée — ; le Fjord rend les figures du Nord.
+ * Les cartes que chaque étage **révèle** — du contenu, pas de la logique.
+ *
+ * Elles ne sont plus offertes : l'étage les découvre, le Souk les vend. La
+ * correspondance dit donc *où* une carte entre dans la ville, pas ce qu'un
+ * joueur reçoit. Répartition : les tours du bas (Listes, Souk, Sables)
+ * découvrent le Sable et la Braise, avec les premières eaux glissées par les
+ * citernes du Souk ; les Abysses découvrent leurs bêtes marines et les
+ * premières cartes de Neige ; le Fjord découvre les figures du Nord.
  */
-export const RPG_RECOMPENSES_PAR_ETAGE = {
-  // Tour des Listes — Sable et Braise, l'apprentissage. Chaque étage ne rend
-  // que des cartes encore au catalogue : Sentence de la Liste, Rafale du
-  // minaret et Fureur du souk en sont sorties, donc elles ne sont plus des
-  // récompenses (l'étage les avait promises, la Chambre des Heures les a
-  // reprises).
+export const RPG_REVELATIONS_PAR_ETAGE = {
+  // Tour des Listes — Sable et Braise, l'apprentissage. Chaque étage ne
+  // révèle que des cartes encore au catalogue : Sentence de la Liste, Rafale
+  // du minaret et Fureur du souk en sont sorties, donc plus aucun étage ne les
+  // découvre non plus — elles ne sont plus vendues nulle part.
   'listes-1': ['cavalier-amazigh-du-desert', 'scribe-de-la-liste'],
   'listes-2': ['braisier-du-souk'],
   'listes-3': ['amani-des-ksour', 'tempete-de-sable'],
@@ -105,16 +111,16 @@ export function normaliserCollection(value) {
   return cartes;
 }
 
-/** Les cartes rendues par un étage (identifiants connus), liste vide sinon. */
-export function recompenseEtage(etageId) {
-  const recompense = RPG_RECOMPENSES_PAR_ETAGE[etageId];
-  return Array.isArray(recompense) ? recompense.filter((id) => cardById(id)) : [];
+/** Les cartes qu'un étage révèle (identifiants connus), liste vide sinon. */
+export function cartesReveleesParEtage(etageId) {
+  const revelation = RPG_REVELATIONS_PAR_ETAGE[etageId];
+  return Array.isArray(revelation) ? revelation.filter((id) => cardById(id)) : [];
 }
 
-/** L'étage qui débloque une carte hors dotation : `{ etageId, etage, tour }`, sinon `null`. */
-export function carteDebloqueePar(cardId) {
-  for (const [etageId, recompense] of Object.entries(RPG_RECOMPENSES_PAR_ETAGE)) {
-    if (!Array.isArray(recompense) || !recompense.includes(cardId)) continue;
+/** L'étage qui révèle une carte hors dotation : `{ etageId, etage, tour }`, sinon `null`. */
+export function carteReveleePar(cardId) {
+  for (const [etageId, revelation] of Object.entries(RPG_REVELATIONS_PAR_ETAGE)) {
+    if (!Array.isArray(revelation) || !revelation.includes(cardId)) continue;
     const histoire = etageHistoireParId(etageId);
     if (!histoire) return { etageId, etage: etageId, tour: null };
     return { etageId, etage: histoire.etage?.nom ?? etageId, tour: histoire.tour?.nom ?? null };
@@ -136,12 +142,12 @@ export function fusionnerCollections(...collections) {
   return cartes;
 }
 
-/** Les cartes rendues par une liste d'étages déblayés. */
-export function collectionDepuisEtages(etageIds) {
+/** Les cartes révélées par une liste d'étages déblayés. */
+export function revelationsDepuisEtages(etageIds) {
   const vues = new Set();
   const cartes = [];
   for (const etageId of (Array.isArray(etageIds) ? etageIds : [])) {
-    for (const id of recompenseEtage(etageId)) {
+    for (const id of cartesReveleesParEtage(etageId)) {
       if (vues.has(id)) continue;
       vues.add(id);
       cartes.push(id);
@@ -151,23 +157,90 @@ export function collectionDepuisEtages(etageIds) {
 }
 
 /**
- * La collection du joueur : dotation de départ, plus les récompenses des
- * étages déblayés (progression locale ou liste passée en clair pour les tests),
- * plus les apports du compte (cache local, puis état distant fusionné par
- * l'appelant). Chaque source peut être omise.
+ * La collection du joueur : dotation de départ, **acquis figés** (le gel de
+ * migration, voir `figerAcquisitions`), apports du compte, et les cartes du
+ * Souk quand l'appelant les connaît (`souk`). Chaque source peut être omise.
+ *
+ * Les étages n'y entrent plus : ils révèlent des cartes, ils ne les donnent
+ * pas. Le troisième paramètre du compte garde le nom `collection` — c'est un
+ * nom sur le fil, pas une règle.
  */
-export function collectionJoueur({ etagesVaincus = null, progression = null, distante = null } = {}) {
-  const etages = Array.isArray(etagesVaincus)
-    ? etagesVaincus
-    : (progression?.etagesVaincus ?? chargerProgressionHistoire().etagesVaincus);
+export function collectionJoueur({ acquis = null, distante = null, souk = null } = {}) {
+  const acquisNormalise = normaliserAcquis(acquis ?? chargerAcquis());
   return fusionnerCollections(
     COLLECTION_DEPART,
-    collectionDepuisEtages(etages),
+    acquisNormalise.cartes,
     distante,
+    souk,
   );
 }
 
-/** La carte est-elle possédée ? Une collection absente (ou vide) ne dit rien : seules la dotation et les récompenses parlent. */
+/** Les acquis d'un joueur neuf : rien de gelé, rien de gagné. */
+export function acquisVide() {
+  return { version: 1, gel: false, cartes: [] };
+}
+
+/**
+ * Normalise un état d'acquis. `gel: true` est **définitif** : une fois le gel
+ * posé, plus aucune victoire n'y ajoute quoi que ce soit. C'est ce qui rend la
+ * bascule sûre — le passage aux révélations ne peut pas se rejouer deux fois et
+ * reprendre des cartes à quelqu'un.
+ */
+export function normaliserAcquis(value) {
+  const brut = value && typeof value === 'object' ? value : {};
+  return {
+    version: 1,
+    gel: Boolean(brut.gel),
+    cartes: normaliserCollection(brut.cartes),
+  };
+}
+
+/** Union d'acquis : le gel gagne, les cartes s'unissent — jamais l'inverse. */
+export function fusionnerAcquisitions(...acquisitions) {
+  const vues = new Set();
+  const cartes = [];
+  let gel = false;
+  for (const acquis of acquisitions) {
+    const normalise = normaliserAcquis(acquis);
+    gel = gel || normalise.gel;
+    for (const id of normalise.cartes) {
+      if (vues.has(id)) continue;
+      vues.add(id);
+      cartes.push(id);
+    }
+  }
+  return { version: 1, gel, cartes };
+}
+
+/**
+ * Le **gel des acquis** — la seule opération de ce module qui écrit quelque
+ * chose de neuf sans qu'on le lui demande, et la raison d'être de tout ce
+ * paragraphe :
+ *
+ * Avant le Souk, gagner un étage **rendait** des cartes (`recompenseEtage`), et
+ * la collection était *dérivée* de la progression : rien n'était stocké.
+ * Retirer cette source aurait donc effacé, au premier lancement de cette
+ * version, tout ce que les joueurs avaient déjà gagné — et leurs decks maison
+ * avec (l'atelier ne propose que les cartes possédées).
+ *
+ * `figerAcquisitions` rattrape donc une fois, et une seule : au premier appel,
+ * il reprend les cartes que l'ancienne règle aurait données pour les étages
+ * déjà vaincus, les range dans les **acquis**, et pose `gel: true`. Les appels
+ * suivants ne font plus rien : les victoires postérieures ne donnent plus de
+ * cartes, elles révèlent.
+ */
+export function figerAcquisitions({ acquis = null, progression = null } = {}) {
+  const base = normaliserAcquis(acquis ?? chargerAcquis());
+  if (base.gel) return base;
+  const etages = progression?.etagesVaincus ?? chargerProgressionHistoire().etagesVaincus;
+  return {
+    version: 1,
+    gel: true,
+    cartes: fusionnerCollections(base.cartes, revelationsDepuisEtages(etages)),
+  };
+}
+
+/** La carte est-elle possédée ? Une collection absente (ou vide) ne dit rien : seule la liste qu'on lui passe parle. */
 export function possedeCarte(collection, cardId) {
   return normaliserCollection(collection).includes(cardId);
 }
@@ -187,6 +260,29 @@ function browserStorage() {
     return globalThis.window?.localStorage || globalThis.localStorage || null;
   } catch {
     return null;
+  }
+}
+
+/** Les acquis de l'appareil (vides si le stockage manque ou ment). */
+export function chargerAcquis() {
+  const stockage = browserStorage();
+  if (!stockage) return acquisVide();
+  try {
+    return normaliserAcquis(JSON.parse(stockage.getItem(RPG_ACQUIS_STORAGE_KEY) ?? 'null'));
+  } catch {
+    return acquisVide();
+  }
+}
+
+/** Écrit les acquis de l'appareil. Rend `true` si l'écriture a eu lieu. */
+export function sauverAcquis(acquis) {
+  const stockage = browserStorage();
+  if (!stockage) return false;
+  try {
+    stockage.setItem(RPG_ACQUIS_STORAGE_KEY, JSON.stringify(normaliserAcquis(acquis)));
+    return true;
+  } catch {
+    return false;
   }
 }
 

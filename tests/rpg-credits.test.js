@@ -116,6 +116,12 @@ test('la pitié monte à chaque ouverture et ne retombe que sur une mythique', (
   assert.equal(p.ouvertures, 4);
   assert.equal(p.pitie, 0, 'la mythique remet la pitié à zéro');
   assert.equal(portefeuilleVide().pitie, 0);
+
+  // Une promesse ne se compte que là où elle est tenable : sur un rayon sans
+  // mythique au vivier, l'ouverture compte mais la pitié ne bouge pas.
+  const sansMythique = enregistrerOuverture(portefeuille(1000, { pitie: 4 }), { mythique: false, aDesMythiques: false });
+  assert.equal(sansMythique.ouvertures, 1);
+  assert.equal(sansMythique.pitie, 4, 'la pitié reste où elle en était');
 });
 
 test('« paquets avant la mythique assurée » compte juste, et se tait sans mythique au vivier', () => {

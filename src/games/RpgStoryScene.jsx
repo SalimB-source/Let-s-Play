@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { cardById } from './rpgCards.js';
-import { recompenseEtage } from './rpgCollection.js';
+import { cartesReveleesParEtage } from './rpgCollection.js';
 import { rpgSorcierPv } from './rpgDuel.js';
 import { etageHistoireParId } from './rpgStoryTours.js';
 import { acteCourantRecit, cleCurseurRecit } from './rpgStoryFlow.js';
@@ -60,11 +60,11 @@ export function StoryStorageNotice({ sauvegardeOk }) {
   return sauvegardeOk ? null : <p className="rpg-narrative__warning" role="status">La sauvegarde sur cet appareil est indisponible. Vous pouvez continuer, mais cette progression ne sera pas conservée après fermeture.</p>;
 }
 
-function StoryRewards({ etageId, label = 'CARTES RENDUES À VOTRE COLLECTION' }) {
-  const cartes = recompenseEtage(etageId);
+function StoryRewards({ etageId, label = 'CE QUE L’ÉTAGE RÉVÈLE — À PRENDRE AU SOUK' }) {
+  const cartes = cartesReveleesParEtage(etageId);
   if (!cartes.length) return null;
   return (
-    <aside className="rpg-narrative__rewards" aria-label="Récompenses de l’étage">
+    <aside className="rpg-narrative__rewards" aria-label="Cartes révélées par l’étage">
       <span>{label}</span>
       <ul>{cartes.map((id) => <li key={id}>{cardById(id)?.name}</li>)}</ul>
     </aside>
@@ -267,7 +267,7 @@ export default function RpgStoryScene({
           {!scene && curseur.type === 'duel' && (
             <StoryRewards
               etageId={etageId}
-              label={etagesVaincus.includes(etageId) ? 'CARTES DÉJÀ ACQUISES SUR CET ÉTAGE' : 'ENJEU DU DUEL · CARTES À DÉBLOQUER'}
+              label={etagesVaincus.includes(etageId) ? 'CES CARTES SONT DÉJÀ AU SOUK' : 'ENJEU DU DUEL · CARTES À OUVRIR AU SOUK'}
             />
           )}
           <footer className="rpg-narrative__footer">

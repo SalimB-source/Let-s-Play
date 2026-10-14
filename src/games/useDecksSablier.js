@@ -27,9 +27,12 @@ import {
 import {
   chargerCollectionDistante,
   collectionJoueur,
-  recompenseEtage,
+  figerAcquisitions,
+  sauverAcquis,
   sauverCollectionDistante,
 } from './rpgCollection.js';
+import { cartesOuvertes } from './rpgBoosters.js';
+import { cardById } from './rpgCards.js';
 import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
 
 /** L'identifiant du compte Sablier actif, ou `null` (hors provider, déconnecté, profil de démonstration). */
@@ -44,21 +47,31 @@ function compteSablierActif() {
 }
 
 /**
- * L'état complet porté par le compte : casier local + apports du compte en
- * cache. C'est ce que la fusion compare et ce que les mutations poussent.
+ * L'état complet porté par le compte : casier local, apports du compte en
+ * cache, et les acquis figés de l'appareil (le gel). C'est ce que la fusion
+ * compare et ce que les mutations poussent.
  */
-function etatLocalActuel() {
+function etatLocalActuel(acquis) {
   const casier = { decks: chargerDecksMaison(), supprimes: chargerSupprimesMaison() };
-  return { ...casier, collection: chargerCollectionDistante() };
+  return { ...casier, collection: chargerCollectionDistante(), acquis };
 }
 
 /** Statuts de synchronisation : `'local'`, `'attente'`, `'synchronise'`, `'horsligne'`. */
 export function useDecksSablier() {
+  // Le gel des acquis est calculé UNE fois, au montage : au premier lancement
+  // de cette version, il reprend les cartes que l'ancienne règle avait données
+  // pour les étages déjà vaincus (`figerAcquisitions`). Ensuite, `gel: true` le
+  // rend définitif — les victoires suivantes révèlent sans donner.
+  const [acquis, setAcquis] = useState(() => figerAcquisitions());
+  const acquisRef = useRef(acquis);
   const [decksMaison, setDecksMaison] = useState(() => chargerDecksMaison());
-  const [collection, setCollection] = useState(() => collectionJoueur({ distante: chargerCollectionDistante() }));
+  const [collection, setCollection] = useState(() => collectionJoueur({ acquis, distante: chargerCollectionDistante() }));
   const [statutSync, setStatutSync] = useState('local');
   const compteId = compteSablierActif();
   const supprimesRef = useRef(chargerSupprimesMaison());
+  // Le gel est écrit sur l'appareil dès qu'il change (silencieux s'il n'y a
+  // pas de stockage : le jeu reste jouable, la migration se refera).
+  useEffect(() => { sauverAcquis(acquis); }, [acquis]);
 
   // À la connexion (et au retour de connexion), la fusion compte ↔ appareil.
   useEffect(() => {
@@ -75,12 +88,18 @@ export function useDecksSablier() {
         setStatutSync(source === 'unavailable' ? 'horsligne' : 'local');
         return;
       }
-      const fusion = fusionnerEtatsSablier({ local: etatLocalActuel(), distant: state });
+      const fusion = fusionnerEtatsSablier({ local: etatLocalActuel(acquisRef.current), distant: state });
       sauverCasierMaison(fusion.casier);
       supprimesRef.current = fusion.casier.supprimes;
       setDecksMaison(fusion.casier.decks);
       sauverCollectionDistante(fusion.etat.collection);
-      setCollection(collectionJoueur({ distante: fusion.etat.collection }));
+      // Les acquis du compte rejoignent ceux de l'appareil (union, gel
+      // compris) : un autre appareil peut porter des cartes que celui-ci n'a
+      // pas encore vues.
+      const acquisFusionnes = fusion.etat.acquis ?? acquisRef.current;
+      acquisRef.current = acquisFusionnes;
+      setAcquis(acquisFusionnes);
+      setCollection(collectionJoueur({ acquis: acquisFusionnes, distante: fusion.etat.collection }));
       setStatutSync('synchronise');
       // La fusion a apporté quelque chose à l'appareil : les autres
       // appareils doivent le savoir (pierres tombales, decks récents).
@@ -91,13 +110,15 @@ export function useDecksSablier() {
     };
   }, [compteId]);
 
-  // Les decks, pierres tombales et la collection effective du moment, poussés au compte.
+  // Les decks, pierres tombales, la collection effective et les acquis du
+  // moment, poussés au compte.
   const pousser = useCallback((casier, collectionEffective) => {
     if (!compteId) return;
     sauverEtatSablier(compteId, {
       decks: casier.decks,
       supprimes: casier.supprimes,
       collection: collectionEffective,
+      acquis: acquisRef.current,
       majLe: new Date().toISOString(),
     });
   }, [compteId]);
@@ -113,7 +134,7 @@ export function useDecksSablier() {
     const enregistre = sauverCasierMaison(maj.casier);
     supprimesRef.current = maj.casier.supprimes;
     setDecksMaison(maj.casier.decks);
-    const collectionEffective = collectionJoueur({ distante: chargerCollectionDistante() });
+    const collectionEffective = collectionJoueur({ acquis: acquisRef.current, distante: chargerCollectionDistante() });
     pousser(maj.casier, collectionEffective);
     return { ok: true, raison: null, enregistre, deck: maj.deck };
   }, [pousser]);
@@ -124,29 +145,29 @@ export function useDecksSablier() {
     const enregistre = sauverCasierMaison(casier);
     supprimesRef.current = casier.supprimes;
     setDecksMaison(casier.decks);
-    pousser(casier, collectionJoueur({ distante: chargerCollectionDistante() }));
+    pousser(casier, collectionJoueur({ acquis: acquisRef.current, distante: chargerCollectionDistante() }));
     return enregistre;
   }, [pousser]);
 
   /**
-   * Une victoire d'étage vient d'être enregistrée : les cartes de sa
-   * récompense rejoignent la collection (dérivée de la progression — rien à
-   * écrire en local), et le compte reçoit l'union, pour les autres appareils.
-   * Rend les identifiants **nouveaux** débloqués par cet étage (annonçables).
+   * Une victoire d'étage vient d'être enregistrée : **elle ne donne plus de
+   * cartes**, elle en **ouvre** au Souk (`rpgBoosters.js`). Le
+   * compte reçoit l'union courante, pour les autres appareils, et la fonction
+   * rend les cartes que cette victoire vient d'ouvrir — l'écran de fin de duel
+   * peut les annoncer, et le lot 2 y branchera les crédits.
    */
   const noterVictoireEtage = useCallback((etageId, progressionMaj) => {
-    const avant = collection;
-    const collectionEffective = collectionJoueur({
-      etagesVaincus: progressionMaj?.etagesVaincus ?? null,
-      distante: chargerCollectionDistante(),
-    });
+    const collectionEffective = collectionJoueur({ acquis: acquisRef.current, distante: chargerCollectionDistante() });
     if (compteId) {
       pousser({ decks: chargerDecksMaison(), supprimes: supprimesRef.current }, collectionEffective);
     }
     setCollection(collectionEffective);
-    const nouvelles = recompenseEtage(etageId).filter((id) => !avant.includes(id));
-    return nouvelles;
-  }, [collection, compteId, pousser]);
+    const vaincusAvant = (progressionMaj?.etagesVaincus ?? []).filter((id) => id !== etageId);
+    const ouvertesAvant = new Set(cartesOuvertes({ etagesVaincus: vaincusAvant }));
+    return cartesOuvertes(progressionMaj)
+      .filter((id) => !ouvertesAvant.has(id))
+      .map((id) => ({ id, carte: cardById(id) }));
+  }, [compteId, pousser]);
 
   return { decksMaison, collection, statutSync, enregistrerDeckMaison, supprimerDeckMaison, noterVictoireEtage };
 }

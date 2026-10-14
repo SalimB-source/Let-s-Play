@@ -42,7 +42,7 @@ import {
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
 import { composerDeck } from '../src/games/rpgDeckComposer.js';
-import { COLLECTION_DEPART, carteDebloqueePar } from '../src/games/rpgCollection.js';
+import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 
 const duelVide = () => rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [] });
 const donner = (duel, cote, id) => duel[cote].main.push(id);
@@ -124,7 +124,7 @@ test('les armes entrent dans la collection comme les autres cartes', () => {
     'la Takouba commune appartient à tout le monde d’entrée');
   for (const id of ['baton-des-citernes', 'armure-de-cendres', 'lance-de-givre']) {
     assert.equal(COLLECTION_DEPART.includes(id), false, `${id} se conquiert`);
-    assert.ok(carteDebloqueePar(id), `${id} est la récompense d’un étage des Tours`);
+    assert.ok(carteReveleePar(id), `${id} est la récompense d’un étage des Tours`);
   }
 });
 

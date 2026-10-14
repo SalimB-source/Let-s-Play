@@ -107,7 +107,9 @@ fermeture de page.
 
 Les quatre actes suivants, les fins du portail, les neuf registres optionnels,
 le doublage et la synchronisation du récit sont hors de cette livraison.
-Le moteur `rpgDuel.js`, l'IA et les récompenses d'étage ne sont pas modifiés.
+Le moteur `rpgDuel.js` et l'IA ne sont pas modifiés. Les récompenses d'étage
+l'ont été depuis : le dossier 13 les a remplacées par des **révélations** —
+l'étage dit où la carte entre dans la ville, le Souk la vend.
 
 ## Vérifications
 

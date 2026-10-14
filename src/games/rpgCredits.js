@@ -136,15 +136,17 @@ export function ajouterCartesAuPortefeuille(portefeuille, cardIds) {
 }
 
 /**
- * Enregistre une ouverture : le compteur monte, la pitié se remet à zéro
- * **seulement** quand une mythique est réellement sortie du paquet.
+ * Enregistre une ouverture : le compteur d'ouvertures monte toujours, la pitié
+ * avec — sauf sur un rayon qui n'a **aucune mythique au vivier** : la promesse
+ * des huit paquets ne compte que là où une mythique est possible. Une mythique
+ * sortie remet la pitié à zéro.
  */
-export function enregistrerOuverture(portefeuille, { mythique = false } = {}) {
+export function enregistrerOuverture(portefeuille, { mythique = false, aDesMythiques = true } = {}) {
   const base = normaliserPortefeuille(portefeuille);
   return {
     ...base,
     ouvertures: base.ouvertures + 1,
-    pitie: mythique ? 0 : base.pitie + 1,
+    pitie: mythique ? 0 : (aDesMythiques ? base.pitie + 1 : base.pitie),
     majLe: new Date().toISOString(),
   };
 }

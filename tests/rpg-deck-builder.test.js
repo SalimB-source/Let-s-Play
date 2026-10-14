@@ -52,7 +52,9 @@ function stockageEnMemoire(donnees = new Map()) {
   };
 }
 
-const COLLECTION = collectionJoueur({ etagesVaincus: [] });
+// La collection d'un joueur neuf : la dotation de départ, rien de plus — les
+// étages ne donnent plus de cartes (dossier 13).
+const COLLECTION = collectionJoueur();
 
 /** Un deck maison valide de 40 cartes, entièrement dans la dotation (mono-Sable). */
 function deckValide(nom = 'Deck d\'essai', element = 'sable', id = nouvelIdDeckMaison()) {
@@ -231,9 +233,9 @@ test('rpgValiderDeckMaison liste les raisons de structure ET de collection', () 
   assert.equal(deckMaisonEstSelectionnable(avecKraken, COLLECTION), false, 'une carte hors collection rend le deck injouable');
   const avecKrakenPossede = { ...valide, cardIds: [...valide.cardIds.slice(0, 39), 'kraken'] };
   assert.equal(
-    deckMaisonEstSelectionnable(avecKrakenPossede, collectionJoueur({ etagesVaincus: ['abysses-1'] })),
+    deckMaisonEstSelectionnable(avecKrakenPossede, collectionJoueur({ acquis: { gel: true, cartes: ['kraken'] } })),
     true,
-    'le même deck devient jouable une fois le Kraken ravie',
+    'le même deck devient jouable une fois le Kraken acquis (gel de migration ou Souk)',
   );
 });
 
