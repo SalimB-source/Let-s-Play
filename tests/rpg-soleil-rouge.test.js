@@ -6,6 +6,7 @@ import { choisirCibleAutoIA } from '../src/games/rpgAI.js';
 import { RPG_SOLEIL_ROUGE_CARDS, RPG_SOLEIL_ROUGE_SET_ID } from '../src/games/rpgSoleilRouge.js';
 import { RPG_DECKS, cardById, cardColors, cardReceivesResonance, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
+import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
 import { rpgNouveauDuel, rpgJouerArme, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgAttaquerSorcier, rpgResonanceEnJeu, rpgBonusResonance, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
 
 function duelTest(rng = () => 0.5) {
@@ -64,6 +65,41 @@ test('le deck Soleil rouge est valide et ne mélange pas les deux cultures de Br
   for (const id of SAMOURAIS_AJOUTES) assert.equal(deck.cardIds.includes(id), false, id);
   const djinns = RPG_DECKS.find((d) => d.id === 'cour-des-djinns');
   assert.ok(djinns.cardIds.every((id) => cardById(id).set !== RPG_SOLEIL_ROUGE_SET_ID));
+});
+
+test('les préconstruits restent à l’écart des ajouts de puissance du set', () => {
+  // Règle de design : les boîtiers de départ ne doivent pas être trop forts.
+  // Les trois samouraïs ajoutés au set restent donc dehors, et le Daimyō comme
+  // son jeton avec eux : le Daimyō ne vit nulle part dans les decks — il
+  // s'obtient au Souk et se compose à l'atelier. La composition est recalculée
+  // à chaque chargement : ce contrôle est ce qui empêche une carte de
+  // « remonter » toute seule dans un boîtier le jour où sa valeur change.
+  for (const deck of RPG_DECKS) {
+    for (const id of SAMOURAIS_AJOUTES) {
+      assert.equal(deck.cardIds.includes(id), false, `le boîtier ${deck.id} contient ${id}`);
+    }
+  }
+  const listes = [
+    ...RPG_DECKS.map((deck) => [`catalogue ${deck.id}`, deck.cardIds]),
+    ...Object.entries(RPG_STORY_DECKS).map(([id, liste]) => [`Histoire ${id}`, liste]),
+  ];
+  for (const [nom, liste] of listes) {
+    assert.equal(liste.includes('daimyo-du-soleil-rouge'), false, `${nom} contient le Daimyō`);
+    assert.equal(liste.includes('samourai-du-daimyo'), false, `${nom} contient le jeton Samouraï`);
+  }
+  // Le boîtier du Soleil rouge garde exactement la signature du set : aucun des
+  // ajouts n'a pris la place d'une Onna-musha ou d'un Tengu.
+  const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
+  const compte = (id) => deck.cardIds.filter((candidat) => candidat === id).length;
+  assert.deepEqual([
+    compte('ashigaru-des-braises'), compte('ronin-du-soleil-rouge'), compte('samourai-du-torii'),
+    compte('onna-musha-des-cendres'), compte('tengu-du-mont-ardent'), compte('cavalier-des-deux-sabres'),
+    compte('kagutsuchi-flamme-originelle'), compte('orochi'), compte('susanoo'),
+  ], [3, 3, 3, 1, 2, 1, 1, 1, 1]);
+  // Le Kenshi reste, lui, au service de deux sorciers de la campagne (la
+  // Souffleuse de verre et le Grand Horloger) : c'est le seul des ajouts à
+  // sortir du Souk, et leurs plafonds de rares tiennent la rampe des Tours.
+  assert.ok(Object.values(RPG_STORY_DECKS).filter((liste) => liste.includes('kenshi-de-la-forge')).length <= 2);
 });
 
 test('les dix créatures suivent Honneur par rareté, sans anciens effets dispersés', () => {
