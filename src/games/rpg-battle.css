@@ -6942,3 +6942,138 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hover-card-preview__face,
   .rpg-card-catalogue__art { --rpg-card-marker-size: 35px; }
 }
+
+
+/* ── Les familles de sorts : le sceau, le socle, la ligne ─────────────────────
+   Un sort ne se distinguait d'une créature ou d'un terrain qu'en lisant sa
+   ligne de type : le cadre d'une carte suit son ÉLÉMENT — une Braise rapide et
+   un Djinn de Braise portent le même anneau rouge — et au doigt les faces de
+   jeu n'ont plus de cadre du tout. La famille manquait, voici son canal.
+
+   Trois pièces, trois canaux indépendants, pour que la distinction tienne même
+   sans couleur, même sans lecture, même en 40 px :
+
+   - la FORME du socle — chanfrein d'un côté (ça part vite), arche de l'autre
+     (ça se prépare) — qui reste lisible en noir et blanc ;
+   - la TEINTE — or contre améthyste — qui se repère de loin, dans une main de
+     huit cartes comme dans une grille de catalogue ;
+   - le SIGLE et le MOT — l'éclair ou l'étincelle, « Magie Rapide » ou
+     « Sorcellerie » — qui disent la règle à qui découvre le duel.
+
+   Rien de tout cela n'existe sur une créature, un héros, un terrain ou une
+   arme : c'est ce silence qui fait le repère. Le socle remplace, pour les
+   sorts, la ligne de type de la main — la famille s'écrit une seule fois, plus
+   grande, au lieu de deux fois, en 6 px.
+
+   Toutes les mesures dérivent de `--rpg-card-marker-size`, le repère de
+   couleur déjà posé par chaque face (22 px sur la main au doigt, 28 px à la
+   souris, 35–38 px dans les aperçus et au catalogue, 56 px sur la fiche
+   ouverte) : le socle garde donc ses proportions d'une surface à l'autre, sans
+   mesure parallèle à tenir à jour.
+   --------------------------------------------------------------------------- */
+
+.rpg-sort-sigil { width: 1em; height: 1em; flex: none; fill: currentColor; }
+
+/* Le socle d'une face de sort : le bandeau du bas, sigle à gauche du mot.
+   Il ne prend aucun geste : la carte reste le seul bouton de sa face. */
+.rpg-sort-socle {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--rpg-card-marker-size, 24px) * .16);
+  height: 22%;
+  padding: 0 5%;
+  font: 800 calc(var(--rpg-card-marker-size, 24px) * .26)/1 var(--mono, monospace);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px #000;
+  pointer-events: none;
+}
+.rpg-sort-socle__mot { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Magie Rapide : le chanfrein. Le coin gauche du bandeau est coupé — le sort
+   qui part sans attendre son tour — et l'or dit « jouable en réponse ». */
+.rpg-sort-socle--rapide {
+  --rpg-sort-teinte: rgba(255, 214, 25, .9);
+  color: #ffe9a0;
+  background: linear-gradient(180deg, rgba(9, 6, 1, 0) 0, rgba(24, 17, 2, .58) 34%, rgba(38, 26, 3, .95) 100%);
+  box-shadow: inset 0 1px 0 var(--rpg-sort-teinte);
+  clip-path: polygon(0 100%, 0 30%, 9% 0, 100% 0, 100% 100%);
+}
+
+/* Sorcellerie : l'arche. Le bandeau se voûte — le sort qu'on prépare chez soi,
+   à son tour — et l'améthyste le dit. */
+.rpg-sort-socle--sorcellerie {
+  --rpg-sort-teinte: rgba(179, 154, 224, .9);
+  color: #ece3ff;
+  background: linear-gradient(180deg, rgba(6, 4, 12, 0) 0, rgba(23, 16, 41, .58) 34%, rgba(31, 21, 54, .95) 100%);
+  box-shadow: inset 0 1px 0 var(--rpg-sort-teinte);
+  border-radius: 58% 58% 0 0 / 30% 30% 0 0;
+}
+
+/* Le sceau rond : la même famille, là où un bandeau ne tiendrait pas — le coin
+   d'une vignette de catalogue ou d'atelier, le bas d'une carte de mulligan. */
+.rpg-sort-sceau {
+  display: grid;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgba(255, 244, 216, .92);
+  color: #fff9ea;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .78), inset 0 1px rgba(255, 255, 255, .4);
+}
+/* La même forme que le socle, portée au sceau : la Magie Rapide est un
+   **jeton chanfreiné** — un coin coupé, comme le sort qui part sans attendre —
+   quand la Sorcellerie est un **médaillon rond**. Le repère se lit donc aussi
+   de loin, sans distinguer les couleurs, et il ne se confond pas avec la
+   pastille d'élément, qui garde le cercle plein. */
+.rpg-sort-sceau--rapide {
+  border-radius: 26%;
+  clip-path: polygon(0 6%, 6% 0, 100% 0, 100% 100%, 0 100%);
+  background: radial-gradient(circle at 34% 24%, #f8e69d, #8a5f0d 72%);
+  color: #2a1f04;
+  filter: drop-shadow(0 0 2px rgba(255, 215, 98, .8));
+}
+.rpg-sort-sceau--sorcellerie {
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 24%, #e3d7fb, #4b3676 72%);
+  color: #170c2e;
+  filter: drop-shadow(0 0 2px rgba(179, 154, 224, .85));
+}
+
+/* Les vignettes : le jeton de la famille au coin libre, en face du galet du
+   coût et à l'opposé du zoom. Il suit `--rpg-card-marker-size` — la mesure de
+   tous les repères d'une face — donc il grandit avec la vignette comme la
+   couleur et le coût. */
+.rpg-card-catalogue__sort,
+.rpg-atelier__carte-sort {
+  position: absolute;
+  z-index: 3;
+  bottom: 8px;
+  left: 8px;
+  width: var(--rpg-card-marker-size, 38px);
+  font-size: calc(var(--rpg-card-marker-size, 38px) * .6);
+}
+/* La face verrouillée de l'atelier garde son voile au-dessus du sceau. */
+.rpg-atelier__carte-sort { z-index: 1; bottom: 5px; left: 5px; }
+
+/* Le mulligan : le jeton prend la taille des repères de la carte, comme le
+   coût et la pastille de couleur qu'il accompagne. */
+.rpg-mulligan__sceau {
+  width: clamp(16px, 15cqw, 30px);
+  font-size: clamp(9px, 7cqw, 15px);
+}
+
+/* Les lignes de type qui écrivent la famille prennent sa teinte : l'aperçu,
+   la fiche, la ligne du mulligan, la liste de deck. Le fond du bandeau du
+   mulligan suit la famille ; l'aperçu et le catalogue gardent leur fond sombre,
+   c'est l'encre qui parle. Les règles du contre, plus spécifiques, gardent
+   leur or sur l'annonce d'un sort joué. */
+.rpg-sort-ligne--rapide { color: #ffdf7f; }
+.rpg-sort-ligne--sorcellerie { color: #ddccff; }
+.rpg-mulligan__type--rapide { border-color: rgba(255, 214, 25, .62); background: rgba(46, 32, 4, .9); color: #ffe9a0; }
+.rpg-mulligan__type--sorcellerie { border-color: rgba(179, 154, 224, .62); background: rgba(30, 20, 50, .9); color: #ece3ff; }

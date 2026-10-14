@@ -6902,3 +6902,104 @@ répond. Dans l'atelier, le clic droit d'une carte de la bibliothèque n'ouvre
 pas la fiche et ne retire rien (la carte n'y est pas), celui d'une ligne du
 deck retire l'exemplaire sans fiche — puis la carte est remise, et le deck en
 cours est intact.
+
+## Le Sablier : le socle des familles de sorts
+
+Un sort et une créature ne se ressemblaient pas sur la table — mais rien, sur
+leur **face**, ne disait qu'ils n'étaient pas de la même famille. Le cadre d'une
+carte suit son **élément**, jamais sa nature : une Braise rapide et un Djinn de
+Braise portaient le même anneau rouge, et un terrain de Mer le même bleu ; au
+doigt, où l'anneau de couleur s'efface (voir « les faces en jeu sans cadre »),
+il ne restait que la petite ligne de type de la main — six pixels, illisibles
+sur une carte de quarante. La question « qu'est-ce que je peux jouer, en
+réponse ? » se répondait donc en lisant, pas d'un coup d'œil.
+
+**Les deux familles de sorts ont maintenant une signature, et les autres cartes
+n'en ont pas.** C'est le silence des créatures, des héros, des terrains et des
+armes qui fait le repère : un socle au bas de la face veut dire *sort*, et sa
+forme dit lequel.
+
+| | Magie Rapide | Sorcellerie |
+| --- | --- | --- |
+| **Forme du socle** | chanfrein — le coin gauche coupé | arche — le bandeau voûté |
+| **Teinte** | or (`#ffd619`), l'or des cartes jouables | améthyste (`#b39ae0`), la couleur du contre |
+| **Sigle** | l'éclair — ça part sans attendre | l'étincelle — ça se prépare |
+| **Mot** | `MAGIE RAPIDE` | `SORCELLERIE` |
+
+Trois canaux indépendants, donc la distinction tient **même sans couleur** (la
+forme), **même sans lire** (la teinte), et **même sans connaître le jeu** (le
+mot). Le socle est dessiné en dur — `<svg>` et CSS, aucune police, aucun emoji —
+et il suit `--rpg-card-marker-size`, le diamètre du repère de couleur déjà posé
+sur chaque face : 22 px sur une carte en main au doigt, 28 px à la souris,
+35–38 px dans l'aperçu et au catalogue, 56 px sur la fiche ouverte. Ses
+proportions sont donc les mêmes partout, sans mesure parallèle à tenir à jour.
+
+**Une famille, un mot, écrit une fois.** La main n'imprime plus la ligne de type
+d'un sort — le socle la remplace, plus grande, à la place où le pouce passe. La
+ligne reste aux cartes qui ne se présentent pas autrement : les terrains, qui
+gardent leur bandeau `Terrain — Mer`, et les armes. Partout ailleurs — aperçu au
+survol, appui long, fiche du catalogue, mulligan, liste de deck — la famille
+garde sa ligne écrite, désormais **teintée** de sa couleur, et le sceau la
+double.
+
+**Le sceau, pour les vignettes.** Là où un bandeau ne tiendrait pas — le coin
+d'une vignette de catalogue ou d'atelier, le bas d'une carte de mulligan, le
+guide des cartes — c'est un **jeton** qui parle : chanfreiné pour la Magie
+Rapide, médaillon rond pour la Sorcellerie, avec le même sigle. Il ne se
+confond pas avec la pastille d'élément, qui reste un cercle plein à l'autre
+coin, ni avec le galet du coût, qui garde sa forme et sa place.
+
+**Le Sabre maudit reste une arme.** Le moteur le range parmi les magies
+(`effet.type === 'arme'`, il se lance comme un sort et cible un porteur), mais
+sa carte se présente comme les autres armes : cadre d'acier, ligne de type, et
+donc **aucune** signature de sort. La règle est dans le catalogue, pas dans la
+page : `magieFamille()` rend `null` dès que `carteEstArme()` est vrai — le drapeau
+`instant`, qui ne bouge pas, reste la seule autorité sur les deux familles.
+
+### Où vit le code
+
+- `src/games/rpgCards.js` — `RPG_SORT_FAMILIES` (libellé, teinte, encre) et
+  `magieFamille()` / `magieFamilleInfo()`, la seule définition de la famille ;
+- `src/games/rpgSortSignature.jsx` — `SortSigil` (les deux dessins),
+  `SortSocle` (le bandeau d'une face), `SortSceau` (le jeton des vignettes) et
+  `classeLigneFamille()` ; les trois ne rendent rien hors sort ;
+- `src/games/rpg-battle.css` — le bloc « Les familles de sorts : le sceau, le
+  socle, la ligne », en fin de feuille ;
+- `src/games/RpgDuelPage.jsx` — la main (socle, à la place de la ligne de type
+  des sorts), la face de `HoverCardPreview`, le mulligan, la grille du
+  catalogue, l'annonce d'un sort joué et la liste de deck ;
+- `src/games/RpgDeckAtelier.jsx` et `RpgCardGuide.jsx` — le jeton, avec la même
+  signature que le duel ;
+- `src/games/rpg-mobile.css` — **intact** : le socle et le sceau ne sont pas des
+  cadres, la règle « sans cadre au doigt » ne les touche pas.
+
+### Vérifications
+
+```bash
+npm run check:rpg-sort-signature   # la signature, du catalogue au duel réel
+npm run check:rpg                  # 483/483 — le moteur et le catalogue, inchangés
+npm run build                      # le bundle se construit
+```
+
+`scripts/rpg-sort-signature-check.mjs` tient les deux volets. Les assertions de
+source vérifient le catalogue (chaque carte `kind: 'magie'` non-arme porte
+exactement une famille, et le mot du socle est le mot de sa ligne de type), le
+registre des couleurs (les deux familles ne partagent ni forme ni teinte), le
+suivi de `--rpg-card-marker-size` par le socle et le jeton, et que la règle
+« sans cadre au doigt » ne mentionne ni `rpg-sort-socle` ni `rpg-sort-sceau`.
+Le scénario JSDOM monte ensuite le duel réel — une main de cinq cartes contenant
+un Trait de braise, un Rapport du greffier, un Désert, un Chien du guet et le
+Sabre maudit — et vérifie l'équivalence **dans les deux sens** : une face porte
+le socle *si et seulement si* sa carte est un sort, la ligne de type ne reste
+qu'aux cartes qui ne se présentent pas autrement, le mulligan pose le jeton et
+teinte le bandeau, l'aperçu d'une Magie Rapide et d'une Sorcellerie porte le
+sien, la grille du catalogue en montre un par vignette de sort, et la créature,
+le terrain et l'arme du scénario n'en portent aucun.
+
+**Contrôle visuel (Chromium réel, 1440 × 900 et 844 × 390 au doigt).** Le socle
+mesure 22 % de la hauteur de la carte et son mot suit
+`0.26 × --rpg-card-marker-size` ; le jeton des vignettes fait la taille du
+repère de couleur (38 px au catalogue, 30 px dans le guide et l'atelier). Les
+quatre visages sont dans la même pièce — l'or du chanfrein, l'améthyste de
+l'arche — et aucune carte ne bouge : tout est en `box-sizing: border-box`, le
+socle se pose sur l'illustration comme la ligne de type qu'il remplace.

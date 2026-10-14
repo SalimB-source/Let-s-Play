@@ -105,6 +105,46 @@ export function bonusArme(carte) {
   return null;
 }
 
+/**
+ * Les deux familles de sorts, et leur signature visuelle.
+ *
+ * Le duel distingue la **Magie Rapide** — jouable en réponse, pendant le tour
+ * adverse — de la **Sorcellerie**, qui attend son propre tour. Le mot était
+ * déjà écrit sur la face (`cardTypeLine`), mais il ne se lisait que là : le
+ * cadre, lui, ne dit que l'élément — une Braise rapide et un Djinn de Braise
+ * portent le même anneau rouge — et au doigt les faces de jeu n'ont plus de
+ * cadre du tout. Un sort ne se distinguait donc d'une créature ou d'un terrain
+ * qu'en lisant la ligne de type, écrite en 6 px.
+ *
+ * Chaque famille reçoit ici sa **teinte** et sa **couleur d'encre**, que les
+ * surfaces déclinent en trois canaux indépendants (voir `rpgSortSignature.jsx`
+ * et le bloc « Les familles de sorts » de `rpg-battle.css`) : la forme du socle
+ * — chanfrein pour la Magie Rapide, arche pour la Sorcellerie —, la teinte, et
+ * le couple sigle + mot. La forme se lit sans couleur, la couleur se lit sans
+ * lire, et le mot se lit sans couleur ni forme.
+ */
+export const RPG_SORT_FAMILIES = {
+  rapide: { key: 'rapide', label: 'Magie Rapide', teinte: '#ffd619', encre: '#ffe9a0' },
+  sorcellerie: { key: 'sorcellerie', label: 'Sorcellerie', teinte: '#b39ae0', encre: '#ece3ff' },
+};
+
+/**
+ * La famille de sort d'une carte : `'rapide'`, `'sorcellerie'`, ou `null` pour
+ * tout ce qui n'est pas un sort — créature, héros, terrain, et arme. Le Sabre
+ * maudit est une magie pour le moteur, mais sa carte se présente comme une
+ * arme : elle garde le cadre d'acier et ne porte pas la signature des sorts.
+ */
+export function magieFamille(carte) {
+  if (carte?.kind !== 'magie' || carteEstArme(carte)) return null;
+  return carte.instant ? 'rapide' : 'sorcellerie';
+}
+
+/** Le libellé, la teinte et l'encre de la famille de sort, ou `null` hors sort. */
+export function magieFamilleInfo(carte) {
+  const key = magieFamille(carte);
+  return key ? { ...RPG_SORT_FAMILIES[key] } : null;
+}
+
 /** Clé et couleur de cadre d'une carte : élément seul, ou combinaison multicolore. */
 export function cardFrameInfo(carte) {
   // Les armes gardent la matière commune des armes — acier guilloché peint

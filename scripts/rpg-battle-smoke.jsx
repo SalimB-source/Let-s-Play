@@ -436,9 +436,13 @@ export async function checkRpgBattle(assert) {
   visagesMain.forEach((carte) => assertElementFrame(carte, carte.dataset.cardId, 'chaque carte en main'));
   assert.ok(visagesMain.every((carte) => carte.querySelector('.rpg-hand__img')),
     'chaque carte en main montre son illustration');
+  // Le socle de famille a remplacé la ligne de type des sorts en main (voir
+  // « Le Sablier : le socle des familles de sorts » dans le README) : la ligne
+  // ne reste qu'aux cartes qui ne se présentent pas autrement — terrains, armes.
   assert.ok(visagesMain.every((carte) => Boolean(carte.querySelector('.rpg-hand__type'))
-    === !carte.classList.contains('rpg-hand__card--type-creature')),
-    'seules les magies et les terrains impriment leur ligne de type en main : une créature se lit à son cadre et à ses statistiques');
+    === (!carte.classList.contains('rpg-hand__card--type-creature')
+      && !carte.classList.contains('rpg-hand__card--type-magie'))),
+    'une carte en main n’imprime sa ligne de type que si elle n’est ni une créature ni un sort : la créature se lit à ses statistiques, le sort à son socle');
   const visageCreatureMain = visagesMain.find((carte) => carte.querySelector('.rpg-hand__stats'));
   assert.ok(visageCreatureMain?.classList.contains('rpg-hand__card--type-creature'),
     'les créatures conservent leur type sans que celui-ci détermine la bordure');
