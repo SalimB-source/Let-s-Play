@@ -172,11 +172,11 @@ test('chaque deck connaît ses couleurs ; le deck hybride en a deux, le Serment 
 test('le filtre retient les decks qui emploient la couleur, hybrides compris', () => {
   const noms = (couleur) => filtrerDecksParCouleur(RPG_DECKS, couleur).map((deck) => deck.id);
   assert.deepEqual(noms('toutes'),
-    ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers'],
+    ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers', 'serment-du-soleil-rouge'],
     '« toutes » garde l’étagère complète, dans son ordre');
   assert.deepEqual(noms(undefined), noms('toutes'), 'sans choix, rien n’est filtré');
   assert.deepEqual(noms('sable'), ['veilleurs-du-desert', 'sentiers-de-cendre'], 'le deck hybride compte pour le Sable');
-  assert.deepEqual(noms('braise'), ['cour-des-djinns', 'sentiers-de-cendre'], 'et aussi pour la Braise');
+  assert.deepEqual(noms('braise'), ['cour-des-djinns', 'sentiers-de-cendre', 'serment-du-soleil-rouge'], 'et aussi pour la Braise');
   assert.deepEqual(noms('eau'), ['maree-des-abysses'], 'la Marée des abysses est le seul deck Eau');
   assert.deepEqual(noms('neige'), ['serment-des-neuf-hivers'], 'la Neige a son deck, et lui seul');
   assert.deepEqual(noms('hybride'), ['sentiers-de-cendre'], '« hybride » ne garde que les decks bicolores');
@@ -189,7 +189,7 @@ test('les puces ne proposent que des couleurs qui retiennent au moins un deck', 
   const puces = filtresCouleurDecks(RPG_DECKS);
   assert.deepEqual(puces.map((puce) => puce.id), ['toutes', 'sable', 'braise', 'eau', 'neige', 'hybride'],
     'la puce Eau apparaît avec la Marée des abysses, la Neige avec le Serment');
-  assert.deepEqual(puces.map((puce) => puce.nombre), [5, 2, 2, 1, 1, 1]);
+  assert.deepEqual(puces.map((puce) => puce.nombre), [6, 2, 3, 1, 1, 1]);
   assert.deepEqual(puces.map((puce) => puce.couleurs), [[], ['sable'], ['braise'], ['eau'], ['neige'], ['sable', 'braise']],
     'la puce hybride dessine les couleurs de ses decks');
   for (const puce of puces) {
@@ -202,6 +202,6 @@ test('les puces ne proposent que des couleurs qui retiennent au moins un deck', 
   const avecEau = filtresCouleurDecks([...RPG_DECKS, deckEau]);
   assert.deepEqual(avecEau.map((puce) => puce.id), ['toutes', 'sable', 'braise', 'eau', 'neige', 'hybride']);
   assert.equal(avecEau.find((puce) => puce.id === 'eau').nombre, 2);
-  assert.equal(avecEau.find((puce) => puce.id === 'toutes').nombre, 6);
+  assert.equal(avecEau.find((puce) => puce.id === 'toutes').nombre, 7);
   assert.deepEqual(filtresCouleurDecks([]).map((puce) => puce.id), ['toutes'], 'sans deck, seule « toutes » reste');
 });

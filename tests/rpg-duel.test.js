@@ -157,8 +157,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'terrain', 'magie', 'arme']));
 });
 
-test('le set de créatures existe : trente-six cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 36);
+test('le set de créatures existe : quarante-quatre cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 46);
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -1218,10 +1218,10 @@ test('Sahir : les destructions en chaîne précèdent aussi le partage', () => {
 });
 
 test('les terrains et leurs variantes gardent les mêmes couleurs, types et productions de mana', () => {
-  assert.equal(RPG_TERRAIN_CARDS.length, 10);
+  assert.equal(RPG_TERRAIN_CARDS.length, 11);
   assert.deepEqual(RPG_TERRAIN_CARDS.map((t) => t.id).sort(), [
     'cretes-de-cendre', 'desert', 'dunes-du-tenere', 'glacier', 'glacier-des-arches',
-    'lagune-des-salines', 'mer', 'montagne', 'petra', 'petra-des-deux-sources',
+    'lagune-des-salines', 'mer', 'montagne', 'montagne-du-soleil-rouge', 'petra', 'petra-des-deux-sources',
   ]);
   assert.equal(RPG_TERRAIN_CARDS.find((t) => t.id === 'glacier').element, 'neige');
   assert.deepEqual(terrainManaColors('glacier'), ['neige']);
@@ -2131,7 +2131,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et magies rapides de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 20);
+  assert.equal(RPG_MAGIE_CARDS.length, 24);
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les quatre couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);
@@ -2506,8 +2506,8 @@ test('le Glacier produit un mana Neige : payer une créature Neige engage ses te
 
 test('les decks de départ respectent les limites mythiques et le deck hybride reste valide', () => {
   assert.deepEqual(RPG_DECKS.map(({ id }) => id),
-    ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers'],
-    'les cinq decks du catalogue : Sable, Braise, hybride, Eau et Neige');
+    ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers', 'serment-du-soleil-rouge'],
+    'les six decks du catalogue, dont les deux cultures de Braise');
   assert.equal(RPG_DECK_SORCIER_BASE.filter((id) => id === 'feriel').length, 1,
     'la Cour des Djinns contient une Fériel mythique');
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'feriel').length, 1,

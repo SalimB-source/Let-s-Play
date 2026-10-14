@@ -10,12 +10,13 @@
  * et au draft du prototype RPG ; le duel s’appuie sur les catalogues terrains,
  * créatures, héros et magies déclarés plus bas.
  *
- * Les cinq decks du jeu sont **composés** en fin de fichier : les recettes
+ * Les six decks du jeu sont **composés** en fin de fichier : les recettes
  * (`rpgDeckRecipes.js`) disent l’identité, les quotas et la signature, et
  * `composerDeck` (`rpgDeckComposer.js`) y met les meilleures cartes du
  * catalogue, palier de rareté puis puissance (`rpgCardPower.js`).
  */
 
+import { RPG_SOLEIL_ROUGE_CREATURES, RPG_SOLEIL_ROUGE_JETONS, RPG_SOLEIL_ROUGE_MAGIES, RPG_SOLEIL_ROUGE_TERRAINS } from './rpgSoleilRouge.js';
 import { composerDeck } from './rpgDeckComposer.js';
 import { RPG_RECETTES_DECKS } from './rpgDeckRecipes.js';
 
@@ -404,6 +405,7 @@ export const RPG_POWER_CARDS = [
  * MEURENT. Set jouable : créatures, héros, terrains et sorts composent les decks.
  */
 export const RPG_CREATURE_CARDS = [
+  ...RPG_SOLEIL_ROUGE_CREATURES,
   {
     id: 'fennec-des-decombres',
     name: 'Fennec des décombres',
@@ -932,6 +934,7 @@ export const RPG_CREATURE_CARDS = [
  * `renvoyerEnMain`, qui le fait disparaître au lieu de le renvoyer).
  */
 export const RPG_JETON_CARDS = [
+  ...RPG_SOLEIL_ROUGE_JETONS,
   {
     id: 'chien-de-sable',
     name: 'Chien de sable',
@@ -1176,7 +1179,7 @@ export function duelCardById(id) {
 }
 
 /*
- * Les cinq decks du jeu ne sont plus écrits carte par carte : ils sont
+ * Les six decks du jeu ne sont plus écrits carte par carte : ils sont
  * **composés** en fin de fichier, par `composerDeck` (`rpgDeckComposer.js`) à
  * partir des recettes (`rpgDeckRecipes.js`) et du catalogue ci-dessous —
  * « les meilleures cartes d’abord », palier de rareté puis puissance
@@ -1244,6 +1247,7 @@ export function rpgValiderDeck(deck) {
  * Désert → sable.
  */
 export const RPG_TERRAIN_CARDS = [
+  ...RPG_SOLEIL_ROUGE_TERRAINS,
   {
     id: 'montagne',
     name: 'Montagne',
@@ -1386,6 +1390,7 @@ export function terrainById(id) {
  * d'autres (parfois) les sorciers.
  */
 export const RPG_MAGIE_CARDS = [
+  ...RPG_SOLEIL_ROUGE_MAGIES,
   {
     id: 'trait-de-braise',
     name: 'Trait de braise',
@@ -1871,6 +1876,21 @@ export function cardColors(cardOrId) {
   return [...new Set(configured.filter((color) => RPG_CARD_COLORS.has(color)))];
 }
 
+/** Groupe renforcé par une source de Résonance : tribu ou élément. */
+export function cardResonanceGroup(card) {
+  return card?.resonanceTribu ?? card?.resonanceElement ?? card?.element;
+}
+
+/** Une résonance tribale suit le TYPE imprimé, jamais le nom ni la couleur. */
+export function cardReceivesResonance(cardOrId, group) {
+  const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
+  if (!card || ['terrain', 'magie'].includes(card.kind)) return false;
+  if (RPG_ELEMENTS.includes(group)) return cardColors(card).includes(group);
+  const normaliser = (texte) => String(texte).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const sousTypes = (card.typeLine ?? '').split('—').slice(1).join(' ').split(/[\s·]+/);
+  return sousTypes.some((type) => normaliser(type) === normaliser(group));
+}
+
 /** Pips colorés exigés. Les cartes mono gardent leur règle historique. */
 export function cardColorCost(cardOrId) {
   const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
@@ -2001,7 +2021,7 @@ export const RPG_DECKS = [
     boxArt: 'ifrit-al-ahmar',
     archetype: 'Djinns et sorcellerie',
     affrontement: 'Affrontez les djinns de Braise.',
-    description: 'Deck mono-Braise inspiré du folklore arabo-musulman autour des djinns, ifrits et ghuls : tout le vivier de Braise y est aligné à son maximum — les quatre communes à trois exemplaires, les six mythiques à un —, des sorcelleries de cendres qui montent jusqu’à l’Ifrit al-Ahmar.',
+    description: 'Deck mono-Braise inspiré du folklore arabo-musulman autour des djinns, ifrits et ghuls : le vivier original des djinns y est aligné à son maximum — les quatre cartes non mythiques à trois exemplaires, les six mythiques à un —, des sorcelleries de cendres qui montent jusqu’à l’Ifrit al-Ahmar.',
     cardIds: RPG_DECK_SORCIER_BASE,
   },
   {
@@ -2013,7 +2033,7 @@ export const RPG_DECKS = [
     terrain: 'petra',
     boxArt: 'feriel',
     archetype: 'Sable + Braise · deux couleurs, une même piste',
-    description: 'Un deck hybride de Sable et de Braise : le Désert et la Montagne se partagent les places avec Pétra, qui choisit sa couleur à chaque engagement. Ses cartes bicolores — le Djinn de foudre et le Vent rouge — exigent une source de chaque couleur, et sa liste réunit les neuf mythiques des deux couleurs, Fériel comprise.',
+    description: 'Un deck hybride de Sable et de Braise : le Désert et la Montagne se partagent les places avec Pétra, qui choisit sa couleur à chaque engagement. Ses cartes bicolores — le Djinn de foudre et le Vent rouge — exigent une source de chaque couleur, et sa liste réunit les meilleures mythiques des deux couleurs, Fériel comprise.',
     cardIds: RPG_DECK_HYBRIDE_BASE,
   },
   {
@@ -2039,5 +2059,17 @@ export const RPG_DECKS = [
     affrontement: 'Affrontez les serments du Nord.',
     description: 'Deck mono-Neige inspiré des récits du Nord : le loup des neiges, le guerrier au bouclier rond, le Jarl et sa Furie, le Mur de boucliers, la Brume et le Hurlement — et, par-dessus, les quatre figures du Nord (le Père des corbeaux, le Maître du marteau, la Dame des neuf mondes, le Serpent du monde) avec les valkyries et le Berserk à leur maximum. Aucune de ces figures n’est jamais nommée « dieu ».',
     cardIds: RPG_DECK_NEIGE_BASE,
+  },
+  {
+    id: 'serment-du-soleil-rouge',
+    name: 'Le Serment du Soleil rouge',
+    role: 'joueur',
+    element: 'braise',
+    terrain: 'montagne-du-soleil-rouge',
+    boxArt: 'kagutsuchi-flamme-originelle',
+    archetype: 'Braise · samouraïs et yōkai',
+    affrontement: 'Affrontez le Serment du Soleil rouge.',
+    description: 'Un deck mono-Braise inspiré des guerriers du Japon et de sa mythologie : ashigaru et rōnin ouvrent la marche, samouraïs et onna-musha tiennent le combat, le tengu survole la mêlée. Le Samouraï du torii, le Tengu et Kagutsuchi portent la Résonance samouraï : seules les créatures de type Samouraï des deux camps gagnent +1/+1 par source ; les créatures avec Honneur laissent une dernière frappe (1, 2 ou 3 dégâts à une créature adverse au hasard) à sa mort, tandis que l’iaijutsu, les feux de kitsune et le Serment de la forge préparent l’assaut décisif.',
+    cardIds: composerDeck(RPG_RECETTES_DECKS['serment-du-soleil-rouge'], CATALOGUE_DU_COMPOSEUR),
   },
 ];

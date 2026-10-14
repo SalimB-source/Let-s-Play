@@ -34,6 +34,20 @@
  * catalogue de leur couleur.
  */
 export const RPG_RECETTES_DECKS = {
+  /** Le set japonais tient ses 24 places hors terrain sans emprunter de djinns. */
+  'serment-du-soleil-rouge': {
+    identite: ['braise'],
+    terrains: [['montagne-du-soleil-rouge', 8], ['cretes-de-cendre', 8]],
+    creatures: 17,
+    magies: 7,
+    signature: [
+      ['ashigaru-des-braises', 3], ['ronin-du-soleil-rouge', 3],
+      ['samourai-du-torii', 3], ['onna-musha-des-cendres', 1], ['orochi', 1], ['susanoo', 1],
+      ['tengu-du-mont-ardent', 2], ['oni-de-la-fournaise', 1], ['cavalier-des-deux-sabres', 1],
+      ['kagutsuchi-flamme-originelle', 1],
+      ['frappe-iaijutsu', 2], ['feux-de-kitsune', 2], ['serment-de-la-forge', 1], ['sabre-maudit', 2],
+    ],
+  },
   /**
    * Mono-Sable. L'identité amazighe garde ses trois gardiennes des ksour (l'égide d'Amani, la protection de Tiziri, la guide Amayas) et l'éclaireuse
    * des Aurès ; le reste des places va aux meilleures cartes Sable du
@@ -57,7 +71,7 @@ export const RPG_RECETTES_DECKS = {
     ],
   },
   /**
-   * Mono-Braise. Le vivier Braise tient en dix cartes : le deck les aligne
+   * Mono-Braise. Le vivier original des djinns tient en dix cartes : le deck les aligne
    * toutes à leur maximum — les quatre communes (Braisier, Ghul, Trait, Nuage)
    * à trois, les six mythiques (Fériel, Anqa, Djinn du souk, Sahir, Ifrit des
    * ergs, Ifrit al-Ahmar) à un. Les quatre places restantes reviennent aux
@@ -71,7 +85,9 @@ export const RPG_RECETTES_DECKS = {
     magies: 6,
     armes: 1,
     signature: [
-      ['braisier-du-souk', 3],
+      ['braisier-du-souk', 3], ['ghul-des-cendres', 2],
+      ['feriel', 1], ['anqa-des-braises', 1], ['djinn-du-souk', 1],
+      ['sahir-des-braises', 1], ['ifrit-des-ergs', 1], ['ifrit-al-ahmar', 1],
       ['trait-de-braise', 3],
       ['nuage-de-cendres', 3],
     ],
@@ -95,7 +111,7 @@ export const RPG_RECETTES_DECKS = {
     magies: 5,
     armes: 2,
     signature: [
-      ['djinn-de-foudre', 3],
+      ['djinn-de-foudre', 2],
       ['vent-rouge', 2],
       ['rempart-de-dunes', 1],
       ['takouba-des-pistes', 1],

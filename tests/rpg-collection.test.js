@@ -48,7 +48,7 @@ function stockageEnMemoire(donnees = new Map()) {
 // ── La dotation de départ ────────────────────────────────────────────────────
 
 test('la dotation de départ tient la règle : communes et inhabituelles, jamais de rare', () => {
-  assert.equal(COLLECTION_DEPART.length, 34, 'les 30 cartes initiales plus 4 variantes communes de terrain sont possédées d\'entrée');
+  assert.equal(COLLECTION_DEPART.length, 37, 'la dotation inclut l’ashigaru, le rōnin et la Montagne du Soleil rouge et la Takouba');
   for (const id of COLLECTION_DEPART) {
     const carte = cardById(id);
     assert.ok(carte, `${id} existe au catalogue`);
@@ -126,16 +126,11 @@ test('une couleur ouvre à peu près quand la campagne y entre (pacing des réco
   const apresListes = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5'] });
   assert.ok(slots(apresListes, 'braise') < 24, 'la Braise n\'est pas complète au bout de la première tour');
 
-  // Le Souk épaissit la Braise (13 → 19 exemplaires entre la première tour et
-  // son sommet) mais ne l'ouvre pas en mono : la réserve de Braise du catalogue
-  // entier — références multipliées par leurs quotas — culmine sous les 24
-  // emplacements non-terrain d'un deck de 40, donc la Braise ne peut pas se
-  // jouer seule, quoi que le joueur gagne. C'est une couleur de paire : le
-  // catalogue lui-même la marie au Sable dans « Sentiers de cendre ».
+  // Le set Soleil rouge ouvre désormais la Braise en mono au Souk.
   const apresSouk4 = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5', 'souk-1', 'souk-2', 'souk-3', 'souk-4'] });
   assert.ok(slots(apresSouk4, 'braise') > slots(apresListes, 'braise'), 'le Souk étoffe la Braise');
-  assert.ok(slots(RPG_DUEL_CARDS.map((carte) => carte.id), 'braise') < 24,
-    'la Braise ne remplit jamais un deck à elle seule : sa réserve totale reste sous les 24 emplacements non-terrain');
+  assert.ok(slots(apresSouk4, 'braise') >= 24,
+    'la Braise s’ouvre en mono avec les récompenses du Soleil rouge au Souk');
 
   const apresSouk2 = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5', 'souk-1', 'souk-2'] });
   assert.ok(slots(apresSouk2, 'eau') >= 24, 'le mono-Eau s\'ouvre par les citernes de la Gardienne');

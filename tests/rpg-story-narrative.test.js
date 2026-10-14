@@ -347,4 +347,3 @@ test('les cinq actes couvrent les vingt duels des cinq tours, neuf registres et 
     }
   }
 });
-

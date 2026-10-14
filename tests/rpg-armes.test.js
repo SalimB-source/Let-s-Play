@@ -101,6 +101,7 @@ test('le catalogue compte quatre armes, une par élément, avec leur peinture', 
 
 test('chaque deck du catalogue aligne l’arme de sa couleur, toujours à 40 cartes valides', () => {
   const armeParDeck = {
+    'serment-du-soleil-rouge': 'sabre-maudit',
     'veilleurs-du-desert': 'takouba-des-pistes',
     'cour-des-djinns': 'armure-de-cendres',
     'sentiers-de-cendre': 'armure-de-cendres',

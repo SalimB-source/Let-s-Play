@@ -6685,3 +6685,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card__activation:hover {
   transform: scale(1.08);
 }
+
+/* Armes attachées : vignettes sur le porteur, sans masquer ses statistiques. */
+.rpg-card__weapons { position: absolute; right: 4px; bottom: 28px; z-index: 8; display: flex; gap: 2px; max-width: 70%; flex-wrap: wrap; }
+.rpg-card__weapons img { width: 22px; height: 28px; object-fit: cover; border: 1px solid #b98b50; border-radius: 3px; box-shadow: 0 1px 4px #0009; }
