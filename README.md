@@ -6759,26 +6759,13 @@ catalogue : « cliquez une carte pour l'ouvrir en grand, illustration et
 effets ». La rareté, elle, reste absente de toute lecture du duel — la fiche dit
 la **famille**, pas le palier.
 
-**Deux flèches la feuillettent.** La flèche de gauche dit la carte précédente,
-celle de droite la suivante, **dans l'ordre de la grille filtrée** qui a ouvert
-la fiche : filtrer sur les terrains ne fait plus tourner que des terrains. Les
-deux bouts se rejoignent — la dernière carte renvoie à la première — comme la
-visionneuse des articles (`ArticleGallery.jsx`), donc aucune flèche ne s'éteint.
-Un compteur `34 / 180` en bas du volet dit où l'on est, chaque flèche nomme dans
-son `aria-label` la carte qu'elle va ouvrir, et une région `aria-live` (`.sr-only`)
-annonce la carte feuilletée. Les flèches ne referment pas le volet : leur clic ne
-remonte pas jusqu'à lui (`stopPropagation`), comme celui du bouton Fermer.
-
-Même geste **au clavier** (flèches gauche/droite, Début et Fin pour sauter aux
-deux bouts) et **au doigt** (balayage horizontal de plus de 48 px, plus large que
-haut — le vertical laisse défiler le volet). Feuilleter ne joue rien, ne change
-ni filtre ni onglet, et fait entendre le pas de page (`page_turn`).
-
-L'ordre feuilleté est celui reçu **au moment du clic** (`idsCatalogue`, passé à
-`ouvrirApercuCatalogue`) : le volet couvre tout, les filtres ne peuvent donc pas
-changer pendant la lecture. Et la fiche **reste ouverte en portrait** — l'invite
-de rotation n'existe qu'en duel, le menu s'utilise tel quel dans les deux
-orientations, où la fiche s'empile et défile.
+**Une carte, une fiche.** Le volet ne montre que la carte ouverte : **pas de
+flèches sur les côtés, pas de compteur, pas de balayage** — rien à feuilleter.
+Pour lire une autre carte, on ouvre la sienne ; les flèches, le compteur
+`34 / 180` et leurs raccourcis clavier ont été retirés, comme tout le pas de
+page. Au clavier, seul Échap referme. Et la fiche **reste ouverte en portrait** —
+l'invite de rotation n'existe qu'en duel, le menu s'utilise tel quel dans les
+deux orientations, où la fiche s'empile et défile.
 
 **Au clavier encore**, le bouton étiré est l'unique arrêt de tabulation de la
 fiche (le `tabIndex` de l'`<article>` est parti) : Entrée ouvre, le focus arrive
@@ -6787,26 +6774,23 @@ sur « Fermer la fiche » sans faire défiler la grille (`preventScroll`), et le
 
 ### Où vit le code
 
-- `src/games/RpgDuelPage.jsx` — `ApercuCarteCatalogue` (le volet, ses flèches,
-  son compteur et son balayage), la variante `catalogue` de `HoverCardPreview`,
-  l'état `apercuCatalogue` avec `ouvrirApercuCatalogue` / `fermerApercuCatalogue`
-  (Échap compris, remis à zéro à chaque changement d'écran), `ordreCatalogue`
-  avec `voisinesCatalogue` / `feuilleterCatalogue` (flèches, Début et Fin), le
-  bouton étiré et l'amorce `⤢` dans la grille, et `idsCatalogue` — l'ordre
-  affiché, donné à la page au moment du clic. Deux helpers partagés au passage :
-  `carteFamille(carte)` — le mot de famille, qui remplace la variable `type` que
-  la grille calculait sans s'en servir — et `cardColorLine(carte)`, la couleur
-  écrite, désormais la même dans la grille et sur la fiche ;
-- `src/games/rpg-battle.css` — « La fiche du catalogue : la carte cliquée, en
-  grand », posé après le volet d'appui long : deux colonnes, une seule sous
-  720 px (l'illustration au-dessus, le volet défile), de nouveau deux en paysage
-  de téléphone où l'illustration se règle sur 44 dvh ; les flèches
-  `.rpg-card-peek__nav` flottent aux deux bords et la gouttière
-  `--rpg-fiche-gouttiere` leur réserve la place (84 px au plus, 48 px sous
-  720 px) pour qu'elles ne mangent jamais l'illustration ; la barre du bas
-  `.rpg-card-peek__bar` porte le compteur et « Fermer la fiche » ; puis les
-  règles de clicabilité de la grille (`.rpg-card-catalogue__ouvrir`, `__zoom`,
-  survol et focus, `hover: none`, mouvement réduit).
+- `src/games/RpgDuelPage.jsx` — `ApercuCarteCatalogue` (le volet : une carte,
+  ses armes, son sur-titre, « Fermer la fiche »), la variante `catalogue` de
+  `HoverCardPreview`, l'état `apercuCatalogue` avec `ouvrirApercuCatalogue` /
+  `fermerApercuCatalogue` (Échap compris, remis à zéro à chaque changement
+  d'écran), le bouton étiré et l'amorce `⤢` dans la grille. Deux helpers
+  partagés au passage : `carteFamille(carte)` — le mot de famille, qui remplace
+  la variable `type` que la grille calculait sans s'en servir — et
+  `cardColorLine(carte)`, la couleur écrite, désormais la même dans la grille et
+  sur la fiche ;
+- `src/games/rpg-battle.css` — « La fiche d'une carte : la carte cliquée — ou
+  cliquée droit — en grand », posé après le volet d'appui long : deux colonnes,
+  une seule sous 720 px (l'illustration au-dessus, le volet défile), de nouveau
+  deux en paysage de téléphone où l'illustration se règle sur 44 dvh ; la barre
+  du bas `.rpg-card-peek__bar` porte « Fermer la fiche » — plus de flèches
+  `.rpg-card-peek__nav`, plus de compteur, plus de gouttière à leur réserver,
+  puis les règles de clicabilité de la grille (`.rpg-card-catalogue__ouvrir`,
+  `__zoom`, survol et focus, `hover: none`, mouvement réduit).
 
 ### Vérifications
 
@@ -6820,13 +6804,11 @@ npm run build              # le bundle se construit
 et vérifie son contenu (illustration, nom, sur-titre `CATALOGUE · CRÉATURE`,
 ligne de type, couleur « ⏳ Sable · Désert », les deux capacités sur deux
 lignes, ⚔ 3 · 🛡 1), ses trois fermetures (bouton, Échap, volet) et l'immobilité
-des filtres comme de la grille. Il feuillette ensuite : les deux flèches et leurs
-`aria-label` qui nomment la carte voisine, le compteur `n / total` qui suit, les
-rebouclages aux deux bouts, les flèches du clavier avec Début et Fin, les
-balayages — horizontal de 80 px qui tourne, vertical de 150 px et horizontal de
-20 px qui ne tournent pas —, un passage en portrait (500 × 1000) qui ne referme
-rien et laisse les flèches tourner, puis le filtre « Terrains » : la fiche ouverte
-depuis la grille filtrée compte et parcourt les seuls terrains. Enfin il tient la
+des filtres comme de la grille. Il vérifie ensuite qu'**il n'y a rien à
+feuilleter** : aucune flèche `.rpg-card-peek__nav`, aucun compteur
+`.rpg-card-peek__position`, et les flèches du clavier comme Début ne changent pas
+la carte ouverte — y compris sur la fiche ouverte depuis la grille filtrée
+« Terrains », qui reste bien celle du terrain cliqué. Enfin il tient la
 même carte une seconde et vérifie que l'appui long ouvre toujours son aperçu
 rapide à lui, sans flèches — et que le clic avalé qui suit n'ouvre pas la fiche.
 
@@ -6837,3 +6819,81 @@ onglet, illustration 4:5 au grand gabarit, coût en haut à droite, cadres repri
 de `cardFrameClass`, rareté absente, catalogue hors du bloc « sans cadre, au
 doigt », appui long du menu — ont été revérifiées une à une sur le code modifié,
 et le compte des volets rendus n'a pas bougé.
+
+## Le Sablier : le clic droit ouvre la fiche, une carte à la fois
+
+Le jeu n'avait que trois gestes de consultation : le survol de la souris, un
+clic au catalogue, et l'appui long d'une seconde au doigt. Le **bouton droit**,
+lui, ne servait qu'à étouffer le menu du navigateur. Il ouvre désormais la
+**fiche** — le même volet sombre que le clic du catalogue : l'illustration
+entière dans son cadre d'élément, le nom, la famille, la couleur écrite, le
+coût, les effets ligne par ligne, les statistiques ou le bonus d'arme. Le geste
+marche partout où une carte se montre : la main, le champ du duel, les rails de
+terrains, le dessus d'un cimetière, la liste des cartes d'un deck, le guide des
+cartes et la grille du catalogue — toute carte du jeu porte un `data-card-id`,
+il n'y a rien d'autre à savoir.
+
+**Une carte, une fiche.** Le clic droit ne montre que la carte qu'il désigne —
+et c'est vrai du clic du catalogue comme de lui : `ouvrirApercuCatalogue(carte,
+…)`, **ni flèches sur les côtés, ni compteur, ni balayage** (voir « Le Sablier :
+le catalogue se clique, la carte s'ouvre en grand »). Le sur-titre dit d'où la
+fiche vient, par `SURFACE_FICHE` :
+`DUEL · CRÉATURE` sur la table, `CATALOGUE · TERRAIN` au catalogue, et
+`LE SABLIER · …` partout ailleurs — la liste d'un deck, le guide, le récit.
+
+**Consulter ne joue rien.** Le clic droit n'envoie aucun clic gauche : la
+créature n'est pas déclarée attaquante (son état de combat ne bouge pas, la
+teinture d'attaque non plus), la carte en main n'est ni posée ni payée — aucun
+mana ne s'engage —, et une magie ne demande aucune confirmation de lancement.
+Le survol de la souris s'efface et l'appui long en cours se désarme : une seule
+lecture à la fois, comme pour la fiche du catalogue. Les armes portées suivent,
+comme partout : le clic droit d'une créature équipée montre la ligne « ⚔
+Équipée de … » que le duel connaît (`data-armes`).
+
+**Ce que le bouton droit gardait.** Le menu du navigateur — « enregistrer
+l'image », callout iOS, menu Android — reste étouffé partout, sur la table nue
+comme sur une carte : la coque du menu et celle du duel écoutent
+`surMenuContextuel`, la coque du récit garde `neutraliserMenuContextuel`. Une
+carte sans identifiant, un bouton, une zone vide n'ouvrent donc rien et se
+contentent de ne pas montrer le menu système.
+
+**L'atelier garde son geste.** Dans l'atelier de decks, le clic droit a déjà un
+sens : il retire un exemplaire (le geste d'Arena), et son petit « − » reste là
+pour la souris comme pour le doigt. Ses deux `onContextMenu` appellent donc
+`stopPropagation` : le geste ne remonte pas jusqu'à la page, qui aurait ouvert
+la fiche par-dessus le retrait. C'est le seul écran où une carte a un autre
+sens au bouton droit ; partout ailleurs, le geste est une lecture.
+
+### Où vit le code
+
+- `src/games/RpgDuelPage.jsx` — `surMenuContextuel` (attaché aux coques
+  `data-scene="menu"` et `data-scene="duel"`), `SURFACE_FICHE`, la fiche
+  `ApercuCarteCatalogue` — avec `armes` et `surface` —,
+  `ouvrirApercuCatalogue(carte, { armes, surface })`, les états
+  `apercuCatalogueArmes` / `apercuCatalogueSurface`, et le rendu de la fiche
+  dans les deux coques (menu et duel) ;
+- `src/games/RpgDeckAtelier.jsx` — le `stopPropagation` des deux
+  `onContextMenu` (grille de la collection, lignes du deck) et la doc de tête,
+  qui dit pourquoi le geste ne remonte pas ;
+- `src/games/rpg-battle.css` — rien de neuf : c'est la même fiche, `ApercuCarteCatalogue`
+  et ses règles `.rpg-card-peek` (z-index 1250).
+
+### Vérifications
+
+```bash
+npm run check:rpg-preview  # le clic droit : la fiche partout, une carte à la fois
+npm run check:rpg          # 415/415 — les règles du duel et de la fiche, inchangées
+npm run build              # le bundle se construit
+```
+
+`scripts/rpg-preview-smoke.jsx` clique droit une carte du catalogue (la fiche
+s'ouvre, son sur-titre dit `CATALOGUE · CRÉATURE`, elle n'a ni flèche ni
+compteur — et le clic gauche, lui, les garde), clique droit le volet (rien ne
+bouge), puis Échap. Il clique droit une carte en main : la fiche s'ouvre, son
+sur-titre dit `DUEL · …`, la main n'a pas bougé, rien n'a été posé, et aucune
+magie ne demande confirmation. Sur la créature du champ, l'attaque n'est pas
+déclarée par le geste ; sur la table nue, seul l'étouffement du menu système
+répond. Dans l'atelier, le clic droit d'une carte de la bibliothèque n'ouvre
+pas la fiche et ne retire rien (la carte n'y est pas), celui d'une ligne du
+deck retire l'exemplaire sans fiche — puis la carte est remise, et le deck en
+cours est intact.

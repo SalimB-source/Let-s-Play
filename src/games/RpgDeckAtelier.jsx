@@ -5,7 +5,9 @@
  *
  *   - **à gauche, la collection en grille** : des cartes illustrées, pas des
  *     rangées de texte. Un clic ajoute une carte ; un clic droit (ou le petit
- *     « − ») la retire. Le nombre d'exemplaires déjà dans le deck est posé
+ *     « − ») la retire — un clic droit qui a son sens ici, et qui ne remonte
+ *     donc pas jusqu'à la page, où il ouvrirait la fiche de la carte
+ *     (`RpgDuelPage.jsx`). Le nombre d'exemplaires déjà dans le deck est posé
  *     sur la carte, les cartes au quota s'éteignent, les cartes verrouillées
  *     portent un cadenas et disent où se gagner ;
  *   - **au-dessus, une barre de filtres à bascules** : pips de couleur, coût
@@ -493,6 +495,9 @@ export function RpgDeckAtelier({
                 const estTerrain = carte.kind === 'terrain';
                 const estCreature = ['creature', 'hero'].includes(carte.kind);
                 const rarete = CARD_RARITIES[carte.rarity]?.label ?? carte.rarity;
+                // Le clic droit a son sens dans l'atelier — retirer un
+                // exemplaire —, il ne remonte donc pas jusqu'à la page : sans
+                // ça, la fiche de la carte s'ouvrirait en plus (RpgDuelPage).
                 return (
                   <li
                     key={carte.id}
@@ -508,7 +513,7 @@ export function RpgDeckAtelier({
                     style={{ '--frame': cardFrameColor(carte), '--rpg-frame-color': cardFrameColor(carte), '--rarete': CARD_RARITIES[carte.rarity]?.color ?? '#f1f3f5' }}
                     onMouseEnter={survoler(carte)}
                     onMouseLeave={quitter}
-                    onContextMenu={(event) => { event.preventDefault(); retirer(carte.id); }}
+                    onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); retirer(carte.id); }}
                   >
                     <button
                       type="button"
@@ -676,6 +681,7 @@ export function RpgDeckAtelier({
                   {references.length === 0 ? (
                     <p className="rpg-atelier__vide">Aucune carte de ce type pour l'instant.</p>
                   ) : references.map(({ carte, nombre }) => (
+                    // Même geste que la grille : retirer, sans ouvrir la fiche.
                     <div
                       key={carte.id}
                       className="rpg-atelier__ligne"
@@ -683,7 +689,7 @@ export function RpgDeckAtelier({
                       style={{ '--frame': cardFrameColor(carte) }}
                       onMouseEnter={survoler(carte)}
                       onMouseLeave={quitter}
-                      onContextMenu={(event) => { event.preventDefault(); retirer(carte.id); }}
+                      onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); retirer(carte.id); }}
                     >
                       <img src={artUrl(carte.id)} alt="" loading="lazy" />
                       {carte.kind === 'terrain'
