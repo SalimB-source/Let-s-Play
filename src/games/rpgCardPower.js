@@ -137,6 +137,9 @@ export function valeurCarte(carte) {
   if (carte.honneur) valeur += carte.honneur;
   if (carte.combat) valeur += 2;
   if (carte.aura) valeur += 2.5;
+  // Bannière : chaque attaque d'un Samouraï du camp laisse un +X/+X définitif
+  // à l'attaquant — un renfort récurrent, un cran au-dessus d'une aura fixe.
+  if (carte.banniere) valeur += 3;
   if (carte.arrivee) valeur += valeurEffet(carte.arrivee);
   if (carte.activation) valeur += valeurEffet(carte.activation.effet) + 1;
   return valeur;

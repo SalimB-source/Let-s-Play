@@ -37,6 +37,13 @@ jouables dans un deck.
   jour et la matière de sable sculpté de l'illustration de Tarek
   (`public/cards/tarek.jpg`), sans texte ni interface : deux chiens de sable
   debout sur une crête rocheuse, les ruines de la côte dans le lointain.
+- **Samouraï** (`samourai-du-daimyo.jpg`) — le jeton du Daimyō du Soleil rouge,
+  levé par deux à son arrivée : un ashigaru en armure lamellaire rouge braise
+  et lacets indigo, yari à la main, l'étendard de clan derrière lui, grand
+  soleil rouge à l'horizon et crêtes au lavis sumi. Peinture kaiga / nihonga
+  plein art 1024×1280 dans la palette du set, **sans aucun idéogramme** — une
+  étoffe ornée d'un seul motif de feuille d'or —, version de cache
+  `samourai-du-daimyo-kaiga-couleurs-v1`.
 
 Une créature-jeton suit les règles communes de l'illustration : sujet unique et
 lisible même en vignette, cadre et statistiques superposés par l'interface.
@@ -180,6 +187,14 @@ n'est pas un rendu photoréaliste.
 
 Ils portent `soleil-rouge-kaiga-couleurs-v7`. Ils ne figurent pas dans le deck préconstruit : ils se
 composent à l'atelier. Les trois ajouts sont des créatures `Samouraï` : ils reçoivent la Résonance samouraï.
+
+Le Daimyō a depuis sa **bannière** et ses deux **Samouraïs** : la carte devient
+un 3/3 à 5 qui lève deux créatures-jetons 1/1 en arrivant (`samourai-du-daimyo`,
+peinture dédiée ci-dessus) et grandit de +1/+1 chaque Samouraï de son camp qui
+attaque. Sa peinture ne change pas — le daimyō au cheval blanc reste son
+illustration, version `soleil-rouge-kaiga-couleurs-v7` —, et la refonte
+n’ajoute aucune carte au catalogue : le jeton vit hors de `RPG_DUEL_CARDS`,
+comme les chiens de sable.
 
 Les peintures sont versionnées `soleil-rouge-kaiga-couleurs-v7` dans
 `CARD_ART_CACHE_VERSIONS`, sauf les Feux de kitsune (`kitsune-kaiga-couleurs-v4`)

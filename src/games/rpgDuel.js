@@ -500,6 +500,48 @@ function appliquerAuraAmani(duel, cote) {
 }
 
 /**
+ * La bannière de guerre — « tant que cette créature est en jeu, chaque fois
+ * qu'un Samouraï de son camp attaque, il gagne +X/+X ». Le Daimyō du Soleil
+ * rouge la porte.
+ *
+ * Ce n'est pas une aura mais un **déclenché** : le renfort se pose au moment où
+ * l'attaque est déclarée (donc avant les blessures — la frappe du tour en
+ * profite), et il reste **acquis** à la créature, comme la Furie. La bannière
+ * ne reprend jamais ce qu'elle a donné : un Daimyō qui quitte la table, ou une
+ * attaque qui se termine, laisse les Samouraïs grandis tels quels.
+ *
+ * Seul le camp de la source en profite — les Samouraïs du sorcier ne reçoivent
+ * rien d'un Daimyō adverse, comme l'aura Sable de Tarek ne renforce que son
+ * camp. Plusieurs bannières en jeu se cumulent : chacune compte pour un
+ * déclenchement de plus. Le type se lit sur la ligne de type imprimée
+ * (`cardReceivesResonance`), jamais sur la couleur ni sur le nom ; le Daimyō
+ * lui-même est un Samouraï, donc sa propre attaque le grandit aussi.
+ */
+function appliquerBannieresAttaque(duel, cote, attaquants = []) {
+  const sources = [];
+  for (const entite of duel[cote].creatures) {
+    if (!(entite.pv > 0)) continue;
+    const carte = duelCardById(entite.carteId);
+    if (carte?.banniere) sources.push({ nom: carte.name, banniere: carte.banniere });
+  }
+  if (!sources.length) return;
+  for (const attaquant of attaquants) {
+    if (!(attaquant.pv > 0)) continue;
+    const carte = duelCardById(attaquant.carteId);
+    const recues = sources.filter(({ banniere }) => cardReceivesResonance(carte, banniere.tribu));
+    if (!recues.length) continue;
+    const bonusAttaque = recues.reduce((total, { banniere }) => total + Math.max(0, Number(banniere.atk) || 0), 0);
+    const bonusDefense = recues.reduce((total, { banniere }) => total + Math.max(0, Number(banniere.def) || 0), 0);
+    if (!bonusAttaque && !bonusDefense) continue;
+    attaquant.atk = Math.max(0, attaquant.atk + bonusAttaque);
+    attaquant.pvMax = Math.max(1, (attaquant.pvMax ?? attaquant.def) + bonusDefense);
+    attaquant.def = Math.max(1, attaquant.def + bonusDefense);
+    attaquant.pv = Math.max(1, attaquant.pv + bonusDefense);
+    duel.log.push(`Bannière ${recues.map(({ nom }) => nom).join(', ')} : ${attaquant.name} gagne +${bonusAttaque}/+${bonusDefense} en attaquant.`);
+  }
+}
+
+/**
  * Rafraîchit toutes les auras de présence après un changement du champ de
  * bataille (arrivée, mort, renvoi, retour programmé) : l'aura Sable de Tarek
  * et l'égide d'Amani sur chaque camp, puis la Résonance de table. Chaque
@@ -1538,6 +1580,9 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   const cible = duel[autre(cote)].creatures.find((e) => e.id === cibleId);
   if (!attaquant || !cible) return { ok: false, raison: 'absente' };
   if (!pret(attaquant)) return { ok: false, raison: 'pas-pret' };
+  // Toute attaque déclarée passe par une bannière : celle du Daimyō grandit
+  // l'attaquant Samouraï avant les blessures, comme dans `rpgLancerAttaque`.
+  appliquerBannieresAttaque(duel, cote, [attaquant]);
   attaquant.attaquee = true;
 
   const carteAttaquant = duelCardById(attaquant.carteId);
@@ -1805,6 +1850,28 @@ export function rpgLancerAttaque(
     }
   }
 
+  // La déclaration est légale : la bannière du Daimyō (et de tout porteur du
+  // même déclenché) grandit chaque Samouraï engagé AVANT que les blessures ne
+  // soient calculées — le partage et la frappe du tour lisent donc la force
+  // augmentée. Le contrôle des répartitions fournies par l'appelant, plus bas,
+  // compare au total de l'attaquant tel qu'il est ici : une répartition figée
+  // sur les statistiques d'avant la bannière est refusée. Une répartition
+  // refusée est une erreur d'appel (l'interface laisse le moteur partager) :
+  // la table est alors rendue telle qu'elle était, bannière comprise.
+  const avantBanniere = attaquants.map((entite) => ({
+    entite, atk: entite.atk, def: entite.def, pv: entite.pv, pvMax: entite.pvMax, journal: duel.log.length,
+  }));
+  const annulerBanniere = () => {
+    for (const etat of avantBanniere) {
+      etat.entite.atk = etat.atk;
+      etat.entite.def = etat.def;
+      etat.entite.pv = etat.pv;
+      etat.entite.pvMax = etat.pvMax;
+    }
+    duel.log.length = avantBanniere[0].journal;
+  };
+  appliquerBannieresAttaque(duel, cote, attaquants);
+
   // Les capacités déclenchées par les blocages précèdent même le partage des
   // blessures. Prévoir aussi les destructions en chaîne, boucliers et protections
   // sur une copie pour qu'une répartition invalide ne modifie jamais la partie.
@@ -1874,14 +1941,19 @@ export function rpgLancerAttaque(
       }
     } else {
       if (Object.keys(saisie).some((id) => !idsBloqueurs.includes(id))) {
+        annulerBanniere();
         return { ok: false, raison: 'repartition' };
       }
       for (const bloqueurId of idsBloqueurs) {
         const amount = Number(saisie[bloqueurId] ?? 0);
-        if (!Number.isInteger(amount) || amount < 0) return { ok: false, raison: 'repartition' };
+        if (!Number.isInteger(amount) || amount < 0) {
+          annulerBanniere();
+          return { ok: false, raison: 'repartition' };
+        }
         distribution[bloqueurId] = amount;
       }
       if (Object.values(distribution).reduce((total, amount) => total + amount, 0) !== attaquant.atk) {
+        annulerBanniere();
         return { ok: false, raison: 'repartition' };
       }
     }
@@ -2002,6 +2074,10 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   } else if (cibleCreatureId) {
     return { ok: false, raison: 'cible' };
   }
+  // L'attaque directe est une attaque comme une autre : la bannière grandit
+  // l'attaquant avant sa frappe. Le Coup rapide, plus haut, est passé par
+  // `rpgLancerAttaque` et a déjà reçu son déclenchement.
+  appliquerBannieresAttaque(duel, cote, [attaquant]);
   attaquant.attaquee = true;
   rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
   duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);

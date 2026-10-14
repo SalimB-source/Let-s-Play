@@ -184,6 +184,34 @@ elle ne peut pas être interceptée par le contresort de Boualem.
 Illustration : `public/cards/chien-de-sable.jpg`, peinture plein art 4:5 dans la
 palette et la matière de celle de Tarek (direction artistique `RPG-CARD-ART.md`).
 
+Deuxième famille de jetons, côté Soleil rouge : le **Daimyō du Soleil rouge**
+lève **deux Samouraïs 1/1** (`samourai-du-daimyo`) en arrivant, par le même
+effet `jetons`. Le jeton est un **Samouraï** au sens des règles — la Résonance
+samouraï le renforce donc comme la bannière de son seigneur — mais il ne porte
+ni Honneur (un jeton n'est pas une carte du set) ni Rapidité : il garde le mal
+d'invocation, comme les chiens de sable. Illustration dédiée
+`public/cards/samourai-du-daimyo.jpg`, plein art 4:5.
+
+### La bannière (Daimyō du Soleil rouge)
+
+Le Daimyō porte la seule capacité de ce genre au catalogue :
+
+> Quand le Daimyō arrive en jeu, il crée deux créatures-jetons « Samouraï »
+> 1/1. Tant qu'il est en jeu, chaque fois qu'un Samouraï de votre camp attaque,
+> ce Samouraï gagne +1/+1.
+
+- **C'est un déclenché d'attaque, pas une aura.** Le renfort (`banniere: {
+  tribu: 'samourai', atk: 1, def: 1 }`) se pose au moment où l'attaque est
+  **déclarée** — donc avant les blessures : la frappe du tour en profite déjà
+  (`rpgLancerAttaque`, `rpgAttaquerCreature`, `rpgAttaquerSorcier`). Le moteur
+  l'applique à travers `appliquerBannieresAttaque`, qui partage la lecture des
+  types avec la Résonance (`cardReceivesResonance`).
+- **Le gain reste acquis.** La bannière ne reprend jamais ce qu'elle a donné :
+  l'attaque finit, le Daimyō meurt, le Samouraï grandit reste grand.
+- **Un camp, pas les deux.** Contrairement à la Résonance, la bannière ne
+  renforce que le camp de sa source ; deux bannières en jeu se cumulent.
+- **Le Daimyō est un Samouraï** : sa propre attaque le grandit aussi.
+
 ## 4. La boucle de tour : six phases
 
 Un tour compte **six phases**, dans l'ordre (`RPG_PHASES` dans `rpgDuel.js`, lue

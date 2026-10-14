@@ -32,6 +32,17 @@ export const RPG_SOLEIL_ROUGE_JETONS = [{
   typeLine: 'Créature-jeton — Serpent',
   text: 'Créé à la mort d’Orochi. 4/4, sans coût.',
   flavor: 'Chaque fragment porte encore la force du serpent.',
+}, {
+  // Le Samouraï levé par le Daimyō : un corps de plus sur la table, de type
+  // Samouraï — il reçoit donc la Résonance samouraï comme la bannière de son
+  // seigneur. Sans coût, sans Honneur (un jeton n’est pas une carte du set) et
+  // sans Rapidité : il arrive avec le mal d’invocation, comme tout le monde.
+  id: 'samourai-du-daimyo', name: 'Samouraï', pluriel: 'samouraïs',
+  kind: 'creature', jeton: true, element: 'braise', set: RPG_SOLEIL_ROUGE_SET_ID,
+  art: 'samourai-du-daimyo', cost: 0, atk: 1, def: 1, rarity: 'commune',
+  typeLine: 'Créature-jeton — Humain · Samouraï',
+  text: 'Créé à l’arrivée du Daimyō du Soleil rouge. 1/1, sans coût.',
+  flavor: 'Il a répondu à l’étendard avant même de connaître son nom.',
 }];
 
 export const RPG_SOLEIL_ROUGE_CREATURES = [
@@ -130,9 +141,13 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'daimyo-du-soleil-rouge', name: 'Daimyō du Soleil rouge',
-    cost: 5, atk: 4, def: 5, rarity: 'rare',
+    cost: 5, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humain · Samouraï',
-    text: '—',
+    // Il lève ses deux Samouraïs en arrivant, puis grandit chaque attaque de son
+    // camp : la bannière ne se lit que sur les créatures de type Samouraï.
+    arrivee: { type: 'jetons', jeton: 'samourai-du-daimyo', nombre: 2 },
+    banniere: { tribu: 'samourai', atk: 1, def: 1 },
+    text: 'Quand le Daimyō arrive en jeu, il crée deux créatures-jetons « Samouraï » 1/1. Tant qu’il est en jeu, chaque fois qu’un Samouraï de votre camp attaque, ce Samouraï gagne +1/+1.',
     flavor: 'Sous son étendard, le soleil rouge ne se couche pas.',
   }),
 ];

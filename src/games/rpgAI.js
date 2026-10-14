@@ -131,6 +131,9 @@ export function valeurEntite(entite) {
   if (carte.furie && !entite?.furieDeclenchee) valeur += 1 + carte.furie * 0.7;
   // Résonance : aura de table de la couleur de la source.
   if (carte.resonance) valeur += 2 + carte.resonance * 2;
+  // Bannière : chaque attaque d'un Samouraï du camp grandit l'attaquant pour de
+  // bon — la source vaut plus que sa seule présence, elle récompense l'attaque.
+  if (carte.banniere) valeur += 2;
   if (carte.arrivee) valeur += 1.5;
   if (carte.destruction) valeur += 1;
   if (carte.honneur) valeur += carte.honneur;
@@ -856,6 +859,9 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       // suivante comme pour le blocage : deux chiens de sable valent deux tours
       // de pression en plus du sorcier lui-même.
       score += (Math.max(0, Math.floor(Number(arrivee.nombre) || 1))) * 2;
+      // Une bannière derrière les jetons les grandit à chaque attaque : le
+      // Daimyō et ses deux Samouraïs se renforcent l'un l'autre.
+      if (carte.banniere) score += 2;
     }
     if (arrivee.type === 'bouclier') score += 1.5;
     if (arrivee.type === 'retour-apres-tours') score += 2;

@@ -6902,3 +6902,70 @@ répond. Dans l'atelier, le clic droit d'une carte de la bibliothèque n'ouvre
 pas la fiche et ne retire rien (la carte n'y est pas), celui d'une ligne du
 deck retire l'exemplaire sans fiche — puis la carte est remise, et le deck en
 cours est intact.
+
+## Le Sablier : le Daimyō du Soleil rouge lève ses Samouraïs
+
+Troisième samouraï du set japonais, le **Daimyō du Soleil rouge** change de
+rôle : il n'est plus un simple corps rare, mais la **bannière** du Serment.
+La carte imprimée le dit d'une ligne, dans l'ordre où les effets se produisent :
+
+> Quand le Daimyō arrive en jeu, il crée deux créatures-jetons « Samouraï »
+> 1/1. Tant qu'il est en jeu, chaque fois qu'un Samouraï de votre camp attaque,
+> ce Samouraï gagne +1/+1.
+
+- **Un 3/3 à 5 mana** (au lieu du 4/5 d'origine) : son prix ne paie plus un
+  gros corps mais deux Samouraïs de plus sur la table et une bannière qui
+  grandit chaque attaque du camp. Honneur 2 (rare) est inchangé, comme son
+  illustration — le daimyō au cheval blanc reste sa peinture.
+- **Deux Samouraïs 1/1 en arrivant**, par l'effet d'arrivée `jetons` déjà
+  employé par Tarek : des **créatures-jetons** (`samourai-du-daimyo`), sans
+  coût, avec le mal d'invocation habituel, qui **cessent d'exister** si un
+  renvoi les prend — jamais une carte gratuite. Ils sont de type **Samouraï** :
+  la Résonance samouraï du Torii, du Tengu ou de Kagutsuchi les renforce, et
+  la bannière de leur seigneur les grandit à l'attaque.
+- **La bannière est un déclenché d'attaque, pas une aura.** Le +1/+1 se pose
+  quand l'attaque est **déclarée**, donc avant les blessures : la frappe du tour
+  en profite déjà. Il **reste acquis** — l'attaque finit, le Daimyō meurt, le
+  Samouraï grandit reste grand. La bannière ne renforce que **son camp** (celui
+  du Daimyō), contrairement à la Résonance qui touche les deux, et le Daimyō
+  étant lui-même un Samouraï, sa propre attaque le grandit aussi. Deux Daimyōs
+  en jeu se cumulent (+2/+2 par attaque).
+
+### Où vit le code
+
+- `src/games/rpgSoleilRouge.js` — la fiche du Daimyō (coût 5, 3/3, `arrivee:
+  { type: 'jetons', jeton: 'samourai-du-daimyo', nombre: 2 }` et `banniere:
+  { tribu: 'samourai', atk: 1, def: 1 }`) et le jeton `samourai-du-daimyo`
+  dans `RPG_SOLEIL_ROUGE_JETONS` (1/1, coût 0, `jeton: true`, type imprimé
+  `Créature-jeton — Humain · Samouraï`).
+- `src/games/rpgDuel.js` — `appliquerBannieresAttaque`, appelé par les trois
+  portes d'attaque du moteur (`rpgLancerAttaque`, `rpgAttaquerCreature`,
+  `rpgAttaquerSorcier`) : la déclaration est validée, puis chaque Samouraï
+  engagé grandit avant le calcul des blessures et du partage. Le type se lit
+  avec `cardReceivesResonance`, la même règle que la Résonance samouraï.
+- `src/games/rpgCardPower.js`, `src/games/rpgAI.js` — la bannière compte dans
+  la valeur d'une carte (une source qui récompense l'attaque vaut plus que sa
+  seule présence) et dans le score de pose de l'IA.
+- `public/cards/samourai-du-daimyo.jpg` — la peinture des deux Samouraïs, plein
+  art 4:5 (1024×1280) dans la palette kaiga du set, déclarée dans
+  `PLEIN_ART_45` et versionnée `samourai-du-daimyo-kaiga-couleurs-v1`.
+- `src/games/rpgCardLessons.js` — la fiche « La bannière grandit ceux qui
+  attaquent » du guide des cartes, illustrée par le Daimyō et le Torii ;
+  `RpgDuelPage.jsx` — la fiche lue à voix haute décrit la bannière.
+
+### Vérifications
+
+```bash
+npm run check:rpg         # 491/491 — la bannière, les jetons, la Résonance, les decks
+npm run build
+```
+
+`tests/rpg-soleil-rouge.test.js` ajoute huit contrôles : les chiffres et les
+deux capacités de la fiche, la pose payée une seule fois qui lève **deux**
+Samouraïs marqués `jeton` (jamais en main, jamais dans un deck ni dans la
+dotation de départ), un déclenchement **par attaque** — le sbire comme le
+Daimyō lui-même, jamais un non-Samouraï, jamais le camp d'en face —, le +1/+1
+acquis qui survit au départ du Daimyō, l'échange où la bannière arme la frappe
+du tour (4 dégâts sur une 2/4 : le bloqueur tombe, là où 3 ne l'auraient pas
+tué), l'attaque directe contre le sorcier, la Résonance samouraï reçue par les
+jetons, et le cumul de deux bannières dans un camp.

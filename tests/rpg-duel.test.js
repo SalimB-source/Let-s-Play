@@ -93,6 +93,9 @@ const PLEIN_ART_45 = [
   // Les créatures-jetons de Tarek : deux chiens de sable peints dans la
   // palette de son illustration, livrés eux aussi au format de la face.
   'chien-de-sable',
+  // Le Samouraï levé par le Daimyō du Soleil rouge, dans la palette kaiga du
+  // set japonais : lui aussi livré au ratio de la face.
+  'samourai-du-daimyo',
   // Les quatre armes du prototype, peintes comme le reste du catalogue.
   'takouba-des-pistes', 'baton-des-citernes', 'armure-de-cendres', 'lance-de-givre',
   // La refonte du Père des corbeaux (Odin photoréaliste) est livrée elle
