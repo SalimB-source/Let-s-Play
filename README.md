@@ -6614,6 +6614,14 @@ Playwright demandent un navigateur, absent de cet environnement.
 
 ## Le Sablier : les faces en jeu sans cadre, au doigt
 
+**Mise à jour :** le retrait des cadres s'applique désormais à **toutes les
+faces** sur mobile et dans l'APK, y compris le catalogue, le mulligan,
+les aperçus/appuis longs, les annonces, le guide et l'atelier. La règle finale
+`.rpg-battle.rpg-battle--touch [class*="rpg-card--frame-"][class]` retire la
+bordure et la matière du cadre, sans masquer les pastilles ni désactiver les
+animations du combat. Les cadres de la version ordinateur sont conservés.
+Le détail ci-dessous décrit le retrait initial, limité aux faces en jeu.
+
 Sur téléphone et dans l'APK, l'anneau de couleur ne se voit plus sur les trois
 familles de faces qu'on **joue** : les cartes de la main, celles posées sur la
 table, et les terrains du rail de mana. Partout ailleurs il reste : aperçu
@@ -6698,3 +6706,20 @@ script va jusqu'au bout : il ne reste que sept échecs, tous hors interface
 (aura de Neige, trois cartes attendant « valkyrie » sur leur face). Le contrôle
 Playwright `check:rpg-mobile` demande un navigateur, absent de cet
 environnement.
+
+
+## Le Sablier : couleur et coût de même diamètre, catalogue compris
+
+Le diamètre est défini une seule fois sur la face (`--rpg-card-marker-size`),
+puis hérité par la couleur et le coût : 30 px sur la table à la souris,
+28 px dans la main, 22 px sur les faces en jeu au doigt/APK, 35–38 px au
+catalogue et dans les aperçus. Le mulligan partage un même
+`clamp(16px, 15cqw, 30px)` pour ses deux repères. Chaque pastille d'une carte
+bicolore garde ce diamètre, sans réduire les couleurs pour tenir dans un
+seul disque. Les tailles indépendantes en pourcentage ont été retirées.
+
+`npm run check:rpg-card-markers` mesure les boîtes dans Chromium à 390, 568,
+844 et 1440 px, en mode souris et tactile : égalité des diamètres couleur/coût,
+cartes mono et hybrides, catalogue et mulligan inclus ; suppression des cadres
+sur les faces mobiles/APK et conservation sur ordinateur. Comme les autres
+checks navigateur, il utilise Playwright ou `CHROMIUM_EXECUTABLE_PATH`.

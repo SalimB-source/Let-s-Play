@@ -791,24 +791,25 @@ assert.match(battlePage, /instantanePiocheRef\.current = instantaneActuel/,
 assert.match(battlePage, /piocheEnCours \? 'rpg-hand-card--drawing' : ''/,
   'l’animation s’applique à la vraie carte directement dans la main du joueur');
 const cardMetricsCss = battleCss.slice(battleCss.lastIndexOf('/* Coût, attaque et défense'));
-assert.match(battleCss, /\.rpg-mana-cost\s*\{[^}]*display:\s*grid;[^}]*place-items:\s*center;[^}]*width:\s*24px;[^}]*height:\s*24px;[^}]*min-width:\s*24px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border:\s*2px solid rgba\(250, 233, 198, \.96\);[^}]*border-radius:\s*50%;[^}]*background:\s*radial-gradient\(circle at 34% 25%, #fff1c5, #b28539 72%\);/s,
-  'le coût des cartes en jeu reprend le bloc rond doré des cartes du catalogue');
-assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*width:\s*26px;[^}]*height:\s*26px;[^}]*min-width:\s*26px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;[^}]*font-size:\s*12px;/s,
-  'le badge de coût sur les cartes posées reste un bloc bien rond et lisible');
-assert.match(cardMetricsCss, /\.rpg-hand__card--img \.rpg-mana-cost\s*\{[^}]*width:\s*28px;[^}]*height:\s*28px;[^}]*min-width:\s*28px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;[^}]*font-size:\s*13px;/s,
-  'le badge de coût dans la main reste un bloc bien rond et lisible');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*width:\s*30px;[^}]*height:\s*30px;[^}]*min-width:\s*30px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;[^}]*font-size:\s*15px;/s,
-  'sur PC, le disque de mana des cartes posées reste rond : boîte carrée de 30 px, bordure ronde, chiffre de 15 px');
-assert.doesNotMatch(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*min-width:\s*36px;[^}]*height:\s*25px;/s,
-  'l’ellipse du disque de mana (36 × 25) ne revient pas sur les cartes posées');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img\s*\{[^}]*--rpg-card-element-marker-size:\s*30px;/s,
-  'sur la table PC, la pastille de couleur prend la taille du disque de mana (30 px)');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*15px;/s,
-  'sur la table PC, le glyphe de couleur se lit à 15 px dans un liseré de 2 px, comme le chiffre du disque');
-assert.match(battleCss, /\.rpg-hand__card--img \.rpg-card-element-badge\s*\{[^}]*--rpg-card-element-marker-size:\s*min\(28px, 30%\);[^}]*border-width:\s*2px;[^}]*font-size:\s*15px;/s,
-  'dans la main, la pastille de couleur prend la taille du disque (28 px, au plus 30 % de la carte), glyphe 15 px et liseré 2 px');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-mana-cost,\s*\.rpg-battle--touch \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*width:\s*22px;[^}]*height:\s*22px;[^}]*min-width:\s*22px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
-  'le badge de coût tactile reste un bloc bien rond sur les cartes en main et en jeu');
+for (const selector of ['.rpg-mana-cost', '.rpg-card-element-badge', '.rpg-card-element-badge--hybride', '.rpg-card-catalogue__cost']) {
+  const block = battleCss.slice(battleCss.indexOf(`${selector} {`)).split('}')[0];
+  assert.match(block, /width: var\(--rpg-card-marker-size, 24px\);/,
+    `${selector} utilise le diamètre commun de la face`);
+}
+assert.match(battleCss, /\.rpg-mana-cost\s*\{[^}]*height: var\(--rpg-card-marker-size, 24px\);[^}]*min-width: var\(--rpg-card-marker-size, 24px\);/s,
+  'le coût reste carré et ne rétrécit pas dans le bandeau');
+assert.match(battleCss, /\.rpg-card-element-badge__pip\s*\{[^}]*width:\s*100%;[^}]*aspect-ratio:\s*1;/s,
+  'chaque couleur hybride garde le même diamètre que le coût');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \{ --rpg-card-marker-size: 30px; \}/,
+  'sur PC, couleur et coût partagent le diamètre de 30 px');
+assert.match(battleCss, /\.rpg-hand__card--img \{ --rpg-card-marker-size: 28px; \}/,
+  'la main partage le diamètre de 28 px');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \{ --rpg-card-marker-size: 22px; \}/,
+  'au doigt, les deux repères partagent le diamètre de 22 px');
+assert.match(battleCss, /\.rpg-mulligan__card \{ --rpg-card-marker-size: clamp\(16px, 15cqw, 30px\); \}/,
+  'le mulligan utilise une seule taille responsive pour les deux repères');
+assert.match(mobileCss, /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--frame-"\]\[class\]\s*\{[^}]*border-width: 0;[^}]*background-image: none;/s,
+  'mobile et APK retirent aussi les cadres des faces de lecture, sans retirer les pastilles');
 assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-card__stat--atk,[\s\S]*?\.rpg-card--img \.rpg-card__pt,[\s\S]*?\.rpg-hand__stat\s*\{[^}]*min-width:\s*38px;[^}]*font-size:\s*13px;/s,
   'les indicateurs d’attaque et de défense sont agrandis sur les cartes');
 assert.match(cardMetricsCss, /@media \(max-width: 620px\)[\s\S]*?\.rpg-card--img \.rpg-card__stat--atk,[\s\S]*?\.rpg-card--img \.rpg-card__pt,[\s\S]*?\.rpg-hand__stat\s*\{[^}]*min-width:\s*29px;[^}]*font-size:\s*9\.5px;/s,
@@ -1029,12 +1030,8 @@ assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-prev
   'la carte annoncée par l’adversaire garde le grand gabarit de cadre des autres grandes cartes, pas un filet fixe plus fin');
 assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__face\s*\{[^}]*border-width:\s*\d+(?:\.\d+)?px;/s,
   'aucune épaisseur de cadre fixe en pixels ne rétrécit le cadre de la carte annoncée');
-assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__face\s*\{[^}]*--rpg-card-element-marker-size:\s*clamp\(28px, 17%, 38px\);/s,
-  'le badge de couleur de la carte annoncée est à l’échelle de sa grande face, comme au catalogue');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*19px;/s,
   'le glyphe de couleur de la carte annoncée reste lisible (19 px, liseré 2 px), comme sur les grandes faces du catalogue');
-assert.match(battleCss, /\.rpg-hover-card-preview__face\s*\{[^}]*--rpg-card-element-marker-size:\s*clamp\(28px, 17%, 38px\);/s,
-  'la pastille de couleur de l’aperçu rapide est à l’échelle de sa grande face (28–38 px), comme au catalogue');
 assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*19px;/s,
   'le glyphe de couleur de l’aperçu rapide reste lisible (19 px, liseré 2 px), comme sur les grandes faces');
 assert.match(battleCss, /@media \(max-width: 620px\)[\s\S]*?\.rpg-hover-card-preview--annonce\s*\{[^}]*--rpg-annonce-column-width:\s*min\(210px, calc\(100vw/s,
