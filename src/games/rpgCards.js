@@ -118,10 +118,12 @@ export function bonusArme(carte) {
  *
  * Chaque famille reçoit ici sa **teinte** et sa **couleur d'encre**, que les
  * surfaces déclinent en trois canaux indépendants (voir `rpgSortSignature.jsx`
- * et le bloc « Les familles de sorts » de `rpg-battle.css`) : la forme du socle
- * — chanfrein pour la Magie Rapide, arche pour la Sorcellerie —, la teinte, et
- * le couple sigle + mot. La forme se lit sans couleur, la couleur se lit sans
- * lire, et le mot se lit sans couleur ni forme.
+ * et le bloc « Les familles de sorts » de `rpg-battle.css`) : la **forme du
+ * jeton** — chanfreiné pour la Magie Rapide, rond pour la Sorcellerie —, la
+ * teinte, et le couple sigle + mot. Les deux socles partagent la même voûte :
+ * c'est le jeton, la couleur et le sigle qui séparent les familles. La forme se
+ * lit sans couleur, la couleur se lit sans lire, et le mot se lit sans couleur
+ * ni forme.
  */
 export const RPG_SORT_FAMILIES = {
   rapide: { key: 'rapide', label: 'Magie Rapide', teinte: '#ffd619', encre: '#ffe9a0' },
@@ -149,26 +151,36 @@ export function magieFamilleInfo(carte) {
  * Le motif gravé dans le cadre d'une carte, quand son type en mérite un autre
  * que la résille commune — celle que `.rpg-battle` pose à tous les cadres :
  *
- * - `magie` — **l'étoile**, celle du sigle des sorts : le sort se lit dans
- *   son cadre, comme sa famille se lit dans son socle ;
+ * - `losange` — **le losange de la Magie Rapide** : un diamant taillé, net et
+ *   régulier, tous les 8 px le long de l'anneau — la réponse part sans
+ *   attendre, et son cadre le dit sans un mot ; la famille garde son éclair au
+ *   socle (`rpgSortSignature.jsx`) : le socle porte l'icône, l'anneau le
+ *   dessin ;
+ * - `etincelle` — **l'étincelle de la Sorcellerie** : le dessin de son sigle,
+ *   celui du sort qu'on prépare à son tour ;
  * - `terrain` — **les strates**, les assises de pierre : la carte qu'on pose,
  *   pas celle qui passe.
  *
- * Deux types, et deux exclusions voulues : le Sabre maudit est une magie pour
- * le moteur mais son cadre est celui des armes — il garde l'acier guilloché
- * (voir `magieFamille`) — et une carte mythique garde le zellige qui dit sa
- * rareté, car le CSS ne pose ces motifs que sous `:not(.rpg-card--mythique)`.
- * Créatures, héros et armes n'ont que la résille commune.
+ * Chaque type a son dessin d'anneau, et le terrain le sien. Deux exclusions
+ * voulues : le Sabre maudit
+ * est une magie pour le moteur mais son cadre est celui des armes — il garde
+ * l'acier guilloché (voir `magieFamille`) — et une carte mythique garde le
+ * zellige qui dit sa rareté, car le CSS ne pose ces motifs que sous
+ * `:not(.rpg-card--mythique)`. Créatures, héros et armes n'ont que la résille
+ * commune.
  */
 export const RPG_CARD_MOTIFS = {
-  magie: { key: 'magie', label: 'Magie', motif: 'l’étoile à quatre branches' },
+  losange: { key: 'losange', label: 'Magie Rapide', motif: 'le losange taillé de la Magie Rapide' },
+  etincelle: { key: 'etincelle', label: 'Sorcellerie', motif: 'l’étincelle de la Sorcellerie' },
   terrain: { key: 'terrain', label: 'Terrain', motif: 'les strates des assises' },
 };
 
 /** La clé de motif d'une carte, ou `null` si son type porte la résille commune. */
 export function motifCarte(carte) {
   if (carte?.kind === 'terrain') return 'terrain';
-  if (magieFamille(carte)) return 'magie';
+  const famille = magieFamille(carte);
+  if (famille === 'rapide') return 'losange';
+  if (famille === 'sorcellerie') return 'etincelle';
   return null;
 }
 

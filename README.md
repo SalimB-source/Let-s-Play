@@ -6917,18 +6917,21 @@ réponse ? » se répondait donc en lisant, pas d'un coup d'œil.
 **Les deux familles de sorts ont maintenant une signature, et les autres cartes
 n'en ont pas.** C'est le silence des créatures, des héros, des terrains et des
 armes qui fait le repère : un socle au bas de la face veut dire *sort*, et sa
-forme dit lequel.
+**voûte**, son liseré et son jeton disent lequel.
 
 | | Magie Rapide | Sorcellerie |
 | --- | --- | --- |
-| **Forme du socle** | chanfrein — le coin gauche coupé | arche — le bandeau voûté |
+| **Socle** | la voûte, liseré d'or sur toute la courbe | la même voûte, liseré d'améthyste |
+| **Forme du jeton** | chanfreiné — le coin coupé | médaillon rond |
 | **Teinte** | or (`#ffd619`), l'or des cartes jouables | améthyste (`#b39ae0`), la couleur du contre |
 | **Sigle** | l'éclair — ça part sans attendre | l'étincelle — ça se prépare |
 | **Mot** | `MAGIE RAPIDE` | `SORCELLERIE` |
 
 Trois canaux indépendants, donc la distinction tient **même sans couleur** (la
-forme), **même sans lire** (la teinte), et **même sans connaître le jeu** (le
-mot). Le socle est dessiné en dur — `<svg>` et CSS, aucune police, aucun emoji —
+forme du jeton), **même sans lire** (la teinte), et **même sans connaître le jeu**
+(le mot). Les deux socles, eux, sont la même voûte — un chanfrein laissait son
+liseré d'or suivre la seule arête haute et couper la carte en travers ; c'est
+donc le jeton qui porte la forme, du catalogue au mulligan. Le socle est dessiné en dur — `<svg>` et CSS, aucune police, aucun emoji —
 et il suit `--rpg-card-marker-size`, le diamètre du repère de couleur déjà posé
 sur chaque face : 22 px sur une carte en main au doigt, 28 px à la souris,
 35–38 px dans l'aperçu et au catalogue, 56 px sur la fiche ouverte. Ses
@@ -7000,6 +7003,58 @@ le terrain et l'arme du scénario n'en portent aucun.
 mesure 22 % de la hauteur de la carte et son mot suit
 `0.26 × --rpg-card-marker-size` ; le jeton des vignettes fait la taille du
 repère de couleur (38 px au catalogue, 30 px dans le guide et l'atelier). Les
-quatre visages sont dans la même pièce — l'or du chanfrein, l'améthyste de
-l'arche — et aucune carte ne bouge : tout est en `box-sizing: border-box`, le
+quatre visages sont dans la même pièce — l'or et l'améthyste de la même voûte —
+et aucune carte ne bouge : tout est en `box-sizing: border-box`, le
 socle se pose sur l'illustration comme la ligne de type qu'il remplace.
+
+## Le Sablier : le motif gravé dans l'anneau
+
+Le cadre d'une carte disait sa **couleur** — l'élément — et, depuis le socle des
+familles, la nature des sorts. Il lui manquait le dessin : sur une table où
+quatre anneaux de même teinte se côtoient, rien dans l'anneau ne distinguait la
+tuile de pierre de la créature.
+
+**Chaque type a maintenant son motif, gravé dans la bordure.** La résille
+commune est posée une seule fois, sur `.rpg-battle` ; chaque variante ne
+remplace que l'**image** et la tuile qui la répète — l'épaisseur du cadre, sa
+couleur d'élément, sa matière, ses rayons et la géométrie de ses repères ne
+bougent pas d'un pixel.
+
+| Type | Motif | Tuile |
+| --- | --- | --- |
+| Créature, héros, jetons | la résille commune — le treillis des octogones | `8px 8px` |
+| **Magie Rapide** | le losange taillé — table claire, pavillon sombre | `8px 8px` |
+| **Sorcellerie** | l'étincelle — le dessin de son sigle | `12px 12px` |
+| **Terrain** | les strates — les assises décalées d'un rang à l'autre | `8px 8px` |
+| Arme | le guilloché d'acier — l'onde des lames | `18px 12px` |
+| Carte mythique | le zellige — il passe avant le motif du type | `12px 12px` |
+
+Chaque motif est dessiné en **ombre et reflet translucides** (`#000` et `#fff`
+à peine posés), comme la résille : il se lit sur n'importe quelle couleur de
+cadre, et jamais il ne repeint la matière. Le losange de la Magie Rapide est un
+diamant à quatre arêtes — la réponse part sans attendre —, l'étincelle des
+sorcelleries reprend le tracé de son sigle, et le **Sabre maudit**, magie pour
+le moteur mais carte d'acier, garde son guilloché : `motifCarte()` n'attribue un
+motif qu'aux cartes que `magieFamille()` reconnaît, donc jamais à lui.
+
+### Où vit le code
+
+`RPG_CARD_MOTIFS`, `motifCarte()` et `cardMotifClass()` dans
+`src/games/rpgCards.js` disent *quel* motif ; le bloc « Le motif des magies et
+des terrains », à la fin de `src/games/rpg-battle.css`, dit *comment il se
+peint*, dans le gabarit des cadres ornés (bordure transparente, fond de face sur
+la padding-box, motif puis matière sur la border-box). La classe est posée sur
+les onze faces d'une carte complète : les dix du duel — pile du dessus, carte de
+la table, aperçu rapide, mulligan, sort joué, catalogue, piles de terrains,
+destruction, main — plus la fiche du guide et la vignette de l'atelier.
+
+### Vérifications
+
+`npm run check:rpg-motif` (`scripts/rpg-card-motif-check.mjs`) décode chaque SVG
+et le relit : les trois motifs de type existent, l'étincelle gravée est bien
+celle du sigle de la Sorcellerie, le losange a ses quatre arêtes, chaque tracé
+est translucide, la règle ne touche ni l'épaisseur ni la couleur ni la matière,
+la carte mythique garde son zellige, le Sabre maudit n'a rien, et les onze
+surfaces le portent. Les planches de contrôle — `sablier-motifs-cadres.png` et
+sa loupe `sablier-motifs-cadres-zoom.png` — se refont par capture Chromium (voir
+la recette des captures du Sablier).

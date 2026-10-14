@@ -11,8 +11,9 @@
  * - `SortSigil` — le dessin de la famille : l'éclair de la Magie Rapide (ça
  *   part en réponse, sans attendre), l'étincelle de la Sorcellerie (le sort
  *   qu'on prépare à son tour). Dessiné en SVG, il ne dépend d'aucune police.
- * - `SortSocle` — le bandeau du bas d'une grande face : chanfrein d'or pour
- *   l'une, arche d'améthyste pour l'autre, avec le sigle et le mot écrit.
+ * - `SortSocle` — le bandeau du bas d'une grande face : la même voûte pour les
+ *   deux, liseré d'or pour l'une, d'améthyste pour l'autre, avec le sigle et le
+ *   mot écrit.
  * - `SortSceau` — le même repère en rond, pour les vignettes où un bandeau ne
  *   tiendrait pas (grille du catalogue, grille de l'atelier, mulligan).
  *

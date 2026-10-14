@@ -6953,8 +6953,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    Trois pièces, trois canaux indépendants, pour que la distinction tienne même
    sans couleur, même sans lecture, même en 40 px :
 
-   - la FORME du socle — chanfrein d'un côté (ça part vite), arche de l'autre
-     (ça se prépare) — qui reste lisible en noir et blanc ;
+   - la FORME du jeton — chanfreiné pour la Magie Rapide (le coin coupé de ce
+     qui part en réponse), rond pour la Sorcellerie — qui reste lisible en noir
+     et blanc ; les deux socles, eux, partagent la même voûte, où la teinte et
+     le sigle suffisent à séparer les familles ;
    - la TEINTE — or contre améthyste — qui se repère de loin, dans une main de
      huit cartes comme dans une grille de catalogue ;
    - le SIGLE et le MOT — l'éclair ou l'étincelle, « Magie Rapide » ou
@@ -6996,18 +6998,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-sort-socle__mot { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Magie Rapide : le chanfrein. Le coin gauche du bandeau est coupé — le sort
-   qui part sans attendre son tour — et l'or dit « jouable en réponse ». */
+/* Magie Rapide : la voûte, et l'or dessus. Le bandeau se courbe exactement
+   comme celui de la Sorcellerie — un chanfrein laissait son liseré d'or suivre
+   la seule arête haute et couper la carte en travers — et l'or dit « jouable
+   en réponse ». La forme, elle, est portée par le jeton (voir plus bas). */
 .rpg-sort-socle--rapide {
   --rpg-sort-teinte: rgba(255, 214, 25, .9);
   color: #ffe9a0;
   background: linear-gradient(180deg, rgba(9, 6, 1, 0) 0, rgba(24, 17, 2, .58) 34%, rgba(38, 26, 3, .95) 100%);
   box-shadow: inset 0 1px 0 var(--rpg-sort-teinte);
-  clip-path: polygon(0 100%, 0 30%, 9% 0, 100% 0, 100% 100%);
+  border-radius: 58% 58% 0 0 / 30% 30% 0 0;
 }
 
-/* Sorcellerie : l'arche. Le bandeau se voûte — le sort qu'on prépare chez soi,
-   à son tour — et l'améthyste le dit. */
+/* Sorcellerie : la même voûte, en améthyste — la couleur du contre, pour le
+   sort qu'on prépare chez soi, à son tour. */
 .rpg-sort-socle--sorcellerie {
   --rpg-sort-teinte: rgba(179, 154, 224, .9);
   color: #ece3ff;
@@ -7026,11 +7030,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #fff9ea;
   box-shadow: 0 2px 6px rgba(0, 0, 0, .78), inset 0 1px rgba(255, 255, 255, .4);
 }
-/* La même forme que le socle, portée au sceau : la Magie Rapide est un
-   **jeton chanfreiné** — un coin coupé, comme le sort qui part sans attendre —
-   quand la Sorcellerie est un **médaillon rond**. Le repère se lit donc aussi
-   de loin, sans distinguer les couleurs, et il ne se confond pas avec la
-   pastille d'élément, qui garde le cercle plein. */
+/* C'est ici que vit la FORME : les deux socles sont la même voûte, mais le
+   jeton de la Magie Rapide est **chanfreiné** — un coin coupé, comme le sort
+   qui part sans attendre — quand celui de la Sorcellerie est un **médaillon
+   rond**. Le repère se lit donc aussi de loin, sans distinguer les couleurs, et
+   il ne se confond pas avec la pastille d'élément, qui garde le cercle plein. */
 .rpg-sort-sceau--rapide {
   border-radius: 26%;
   clip-path: polygon(0 6%, 6% 0, 100% 0, 100% 100%, 0 100%);
@@ -7080,24 +7084,31 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* ── Le motif des magies et des terrains ──────────────────────────────────────
    La résille commune (posée par `.rpg-battle`) dit « ceci est un cadre » ; la
-   mythique y met son zellige, les armes leur guilloché d'acier. Il manquait le
-   motif des deux types qui se posent le plus souvent sur la table : la magie et
-   le terrain. Chacun grave le sien dans le même gabarit — la bordure
+   mythique y met son zellige, les armes leur guilloché d'acier. Il manquait les
+   deux types qui se posent le plus souvent sur la table : la magie et le
+   terrain. Chacun grave son dessin dans le même gabarit — la bordure
    transparente, le fond de face sur la padding-box, le motif puis la matière
    sur la border-box (voir « Cadres ornés ») : seule l'image change, l'épaisseur
    du cadre, sa couleur et sa matière restent celles de l'élément.
 
-   Les magies portent l'étoile à quatre branches du sigle des sorts, gravée
-   d'un double trait ; les
-   terrains, les strates de leurs assises, décalées d'un rang à l'autre comme
-   des pierres posées. Tous deux sont dessinés en ombre et reflet translucides,
-   comme la résille : ils se lisent sur n'importe quelle couleur de cadre.
+   Les magies rapides portent un **losange taillé** — quatre arêtes nettes, la
+   table claire et le pavillon sombre —, les sorcelleries l'**étincelle** de
+   leur sigle (voir `rpgSortSignature.jsx`), les terrains les **strates** de
+   leurs assises, décalées d'un rang à l'autre comme des pierres posées. Tous
+   sont dessinés en ombre et reflet translucides, comme la résille : ils se
+   lisent sur n'importe quelle couleur de cadre. La tuile du losange et celle
+   des strates font 8 px, celle de l'étincelle 12 : chaque bord de l'anneau n'en
+   montre qu'une bande de 6 px, et les dessins se relaient d'un bord à l'autre.
 
    `:not(.rpg-card--mythique)` : une carte mythique garde son zellige, quel que
    soit son type. Rien ici ne touche au cadre des armes — `cardMotifClass` n'en
    attribue aucun au Sabre maudit, qui reste une magie au cadre d'acier. */
-.rpg-card--motif-magie:not(.rpg-card--mythique) {
-  --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cg fill='none' stroke-width='.9'%3E%3Cpath d='M6 1.2 7.2 4.8 10.8 6 7.2 7.2 6 10.8 4.8 7.2 1.2 6 4.8 4.8Z' stroke='%23000' stroke-opacity='.34'/%3E%3Cpath d='M6 2.2 7.2 5.8 10.8 7 7.2 8.2 6 11.8 4.8 8.2 1.2 7 4.8 5.8Z' stroke='%23fff' stroke-opacity='.26'/%3E%3Cpath d='M6 3.6 6.6 5.4 8.4 6 6.6 6.6 6 8.4 5.4 6.6 3.6 6 5.4 5.4Z' stroke='%23000' stroke-opacity='.26'/%3E%3C/g%3E%3Ccircle cx='6' cy='6' r='.7' fill='%23fff' fill-opacity='.4'/%3E%3C/svg%3E");
+.rpg-card--motif-losange:not(.rpg-card--mythique) {
+  --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath transform='translate(.28 .28)' fill='%23000' fill-opacity='.34' stroke='%23000' stroke-opacity='.34' stroke-width='1.5' d='M4 1.7 5.9 4 4 6.3 2.1 4Z'/%3E%3Cpath fill='%23fff' fill-opacity='.34' d='M4 1.7 5.9 4 2.1 4Z'/%3E%3Cpath fill='%23fff' fill-opacity='.22' d='M4 6.3 5.9 4 2.1 4Z'/%3E%3Cpath fill='none' stroke='%23fff' stroke-opacity='.3' stroke-width='.5' d='M2.1 4h3.8'/%3E%3C/svg%3E");
+  --rpg-frame-motif-size: 8px 8px;
+}
+.rpg-card--motif-etincelle:not(.rpg-card--mythique) {
+  --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath transform='translate(-.08 -.18) scale(.269)' fill='%23000' fill-opacity='.34' stroke='%23000' stroke-opacity='.34' stroke-width='3.5' d='M12 1.6 14.6 9.4 22.4 12 14.6 14.6 12 22.4 9.4 14.6 1.6 12 9.4 9.4Z'/%3E%3Cpath transform='translate(-.13 -.23) scale(.269)' fill='%23fff' fill-opacity='.3' d='M12 1.6 14.6 9.4 22.4 12 14.6 14.6 12 22.4 9.4 14.6 1.6 12 9.4 9.4Z'/%3E%3Cpath transform='translate(5.72 5.72) scale(.269)' fill='%23000' fill-opacity='.34' stroke='%23000' stroke-opacity='.34' stroke-width='3.5' d='M12 1.6 14.6 9.4 22.4 12 14.6 14.6 12 22.4 9.4 14.6 1.6 12 9.4 9.4Z'/%3E%3Cpath transform='translate(5.67 5.67) scale(.269)' fill='%23fff' fill-opacity='.3' d='M12 1.6 14.6 9.4 22.4 12 14.6 14.6 12 22.4 9.4 14.6 1.6 12 9.4 9.4Z'/%3E%3C/svg%3E");
   --rpg-frame-motif-size: 12px 12px;
 }
 .rpg-card--motif-terrain:not(.rpg-card--mythique) {

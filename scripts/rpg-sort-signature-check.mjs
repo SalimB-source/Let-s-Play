@@ -1,9 +1,10 @@
 /**
  * La signature des familles de sorts — Magie Rapide et Sorcellerie.
  *
- * Deux volets : les assertions de source (les trois canaux du repère — forme,
- * teinte, mot — et le fait qu'aucune autre famille de carte ne les porte), puis
- * le scénario JSDOM qui monte le duel, le mulligan et le catalogue réels.
+ * Deux volets : les assertions de source (les trois canaux du repère — forme
+ * du **jeton**, teinte, mot — et le fait qu'aucune autre famille de carte ne
+ * les porte), puis le scénario JSDOM qui monte le duel, le mulligan et le
+ * catalogue réels.
  *
  * La feuille est lue ici comme un contrat de lecture : le socle doit suivre
  * `--rpg-card-marker-size` (le repère de couleur de chaque face) au lieu d'une
@@ -41,12 +42,17 @@ assert.match(signatureSource, /export function SortSceau\(/, 'le module partagé
 assert.equal((signatureSource.match(/if \(!famille\) return null;/g) ?? []).length, 2,
   'le socle et le sceau ne rendent rien hors sort : c’est ce silence qui fait le repère');
 
-// ── Le socle : forme, teinte, mot — trois canaux indépendants ────────────────
+// ── Le socle et le jeton : forme, teinte, mot — trois canaux indépendants ────
 const socleRapide = battleCss.match(/\.rpg-sort-socle--rapide\s*\{([^}]*)\}/)?.[1] ?? '';
 const socleSorcellerie = battleCss.match(/\.rpg-sort-socle--sorcellerie\s*\{([^}]*)\}/)?.[1] ?? '';
-assert.match(socleRapide, /clip-path:\s*polygon\(/, 'la Magie Rapide se reconnaît à son chanfrein, même en noir et blanc');
-assert.match(socleSorcellerie, /border-radius:\s*5\d% 5\d% 0 0/, 'la Sorcellerie se reconnaît à son arche');
-assert.doesNotMatch(socleRapide, /border-radius:/, 'les deux familles ne partagent pas la même forme');
+assert.match(socleSorcellerie, /border-radius:\s*58% 58% 0 0 \/ 30% 30% 0 0/,
+  'le socle de la Sorcellerie est une voûte');
+assert.match(socleRapide, /border-radius:\s*58% 58% 0 0 \/ 30% 30% 0 0/,
+  'et celui de la Magie Rapide la même voûte — même traitement, liseré d’or');
+assert.doesNotMatch(socleRapide, /clip-path:/,
+  'plus de chanfrein au socle : son liseré d’or suivait la seule arête haute et coupait la carte en travers');
+assert.match(socleRapide, /box-shadow:\s*inset 0 1px 0 var\(--rpg-sort-teinte\)/,
+  'le liseré d’or suit donc la courbe, comme le liseré d’améthyste de la Sorcellerie');
 const teinteRapide = socleRapide.match(/rgba\((\d+), (\d+), (\d+)/);
 const teinteSorcellerie = socleSorcellerie.match(/rgba\((\d+), (\d+), (\d+)/);
 assert.ok(teinteRapide && teinteSorcellerie, 'chaque socle porte sa teinte');
@@ -72,7 +78,7 @@ assert.match(battleCss, /\.rpg-sort-sceau--sorcellerie\s*\{[^}]*radial-gradient\
 assert.match(battleCss, /\.rpg-card-catalogue__sort,\s*\.rpg-atelier__carte-sort\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*8px;[^}]*left:\s*8px;[^}]*width:\s*var\(--rpg-card-marker-size, 38px\);/s,
   'le sceau des vignettes se pose au coin libre, en face du galet du coût, à l’échelle du repère');
 assert.match(battleCss, /\.rpg-sort-sceau--rapide\s*\{[^}]*clip-path:\s*polygon\(/s,
-  'le jeton de la Magie Rapide est chanfreiné, comme le socle : le repère se lit sans couleur');
+  'le jeton de la Magie Rapide est chanfreiné : c’est lui qui porte la forme, maintenant que les socles se ressemblent');
 assert.match(battleCss, /\.rpg-sort-sceau--sorcellerie\s*\{[^}]*border-radius:\s*50%;/s,
   'le jeton de la Sorcellerie reste un médaillon rond — la forme du repère dit la famille');
 assert.match(pageSource, /<SortSceau carte=\{carte\} className="rpg-mulligan__sceau" \/>/,

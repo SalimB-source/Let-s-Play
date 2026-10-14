@@ -3,13 +3,15 @@
  * node scripts/rpg-card-motif-check.mjs
  *
  * La résille commune est posée une fois, sur `.rpg-battle` ; la mythique met
- * son zellige, les armes leur guilloché. Ce contrôle tient les deux motifs de
- * type qui s'y ajoutent : leur image — décodée puis relue par un analyseur XML,
- * parce qu'une URI mal échappée ne peindrait simplement rien —, la tuile qui
- * les répète le long de l'anneau, et les surfaces qui les portent. Il vérifie
- * aussi ce qu'ils ne touchent pas : l'épaisseur, la couleur et la matière du
- * cadre ne changent pas, le zellige des mythiques reste au-dessus, et le Sabre
- * maudit — une magie au cadre d'acier — n'en reçoit aucun.
+ * son zellige, les armes leur guilloché. Ce contrôle tient les trois motifs de
+ * type qui s'y ajoutent — le losange de la Magie Rapide, l'étincelle de la
+ * Sorcellerie, les strates du terrain : leur image — décodée puis relue par un
+ * analyseur XML, parce qu'une URI mal échappée ne peindrait simplement rien —,
+ * le dessin du sigle qu'elle doit reprendre, la tuile qui les répète le long de
+ * l'anneau, et les surfaces qui les portent. Il vérifie aussi ce qu'ils ne
+ * touchent pas : l'épaisseur, la couleur et la matière du cadre ne changent
+ * pas, le zellige des mythiques reste au-dessus, et le Sabre maudit — une magie
+ * au cadre d'acier — n'en reçoit aucun.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -23,13 +25,14 @@ const guide = lire('RpgCardGuide.jsx');
 const atelier = lire('RpgDeckAtelier.jsx');
 
 // ── 1. Le catalogue ne nomme que deux motifs, et dit lesquels ────────────────
-assert.deepEqual(Object.keys(RPG_CARD_MOTIFS).sort(), ['magie', 'terrain'],
-  'deux types portent un motif propre : la magie et le terrain');
+assert.deepEqual(Object.keys(RPG_CARD_MOTIFS).sort(), ['etincelle', 'losange', 'terrain'],
+  'trois types portent un motif propre : la Magie Rapide, la Sorcellerie et le terrain');
 
 // ── 2. Qui en porte un, qui n’en porte pas ──────────────────────────────────
 const carte = (props) => ({ id: 'carte-de-test', name: 'Carte de test', ...props });
-assert.equal(motifCarte(carte({ kind: 'magie' })), 'magie', 'une sorcellerie porte l’étoile');
-assert.equal(motifCarte(carte({ kind: 'magie', instant: true })), 'magie', 'une Magie Rapide aussi');
+assert.equal(motifCarte(carte({ kind: 'magie', instant: true })), 'losange',
+  'une Magie Rapide porte le losange taillé');
+assert.equal(motifCarte(carte({ kind: 'magie' })), 'etincelle', 'une Sorcellerie porte l’étincelle');
 assert.equal(motifCarte(carte({ kind: 'terrain' })), 'terrain', 'un terrain porte les strates');
 for (const kind of ['creature', 'hero', 'arme', 'statut']) {
   assert.equal(motifCarte(carte({ kind })), null, `un ${kind} garde la résille commune`);
@@ -38,11 +41,16 @@ assert.equal(motifCarte(carte({ kind: 'magie', effet: { type: 'arme' } })), null
   'le Sabre maudit — une magie au cadre d’acier — n’a pas le motif des magies');
 assert.equal(magieFamille(carte({ kind: 'magie', effet: { type: 'arme' } })), null,
   'et c’est la même règle que le socle des familles : le Sabre maudit n’est pas un sort');
-assert.equal(cardMotifClass(carte({ kind: 'magie' })), 'rpg-card--motif-magie');
+assert.equal(cardMotifClass(carte({ kind: 'magie', instant: true })), 'rpg-card--motif-losange');
+assert.equal(cardMotifClass(carte({ kind: 'magie' })), 'rpg-card--motif-etincelle');
 assert.equal(cardMotifClass(carte({ kind: 'terrain' })), 'rpg-card--motif-terrain');
 assert.equal(cardMotifClass(carte({ kind: 'hero' })), '', 'aucun héros ne porte de classe de motif');
 assert.equal(motifInfo(carte({ kind: 'terrain' })).motif, RPG_CARD_MOTIFS.terrain.motif,
   'le catalogue nomme le dessin du terrain');
+assert.equal(motifInfo(carte({ kind: 'magie' })).label, 'Sorcellerie',
+  'et il nomme la famille dont l’étincelle est gravée');
+assert.equal(motifInfo(carte({ kind: 'magie', instant: true })).motif,
+  RPG_CARD_MOTIFS.losange.motif, 'le losange se nomme comme celui de la Magie Rapide');
 
 // ── 3. Les deux règles : seulement l’image, et le zellige au-dessus ─────────
 const motifDe = (cle) => {
@@ -70,19 +78,39 @@ const motifDe = (cle) => {
   dom.window.close();
   return image[1];
 };
-const motifMagie = motifDe('magie');
+const motifLosange = motifDe('losange');
+const motifEtincelle = motifDe('etincelle');
 const motifTerrain = motifDe('terrain');
-assert.match(battleCss, /\.rpg-card--motif-magie:not\(\.rpg-card--mythique\)\s*\{[^}]*--rpg-frame-motif-size:\s*12px 12px;/s,
-  'l’étoile se répète tous les 12 × 12 px le long de l’anneau');
+assert.match(battleCss, /\.rpg-card--motif-losange:not\(\.rpg-card--mythique\)\s*\{[^}]*--rpg-frame-motif-size:\s*8px 8px;/s,
+  'le losange se répète tous les 8 × 8 px le long de l’anneau');
+assert.match(battleCss, /\.rpg-card--motif-etincelle:not\(\.rpg-card--mythique\)\s*\{[^}]*--rpg-frame-motif-size:\s*12px 12px;/s,
+  'l’étincelle aussi');
 assert.match(battleCss, /\.rpg-card--motif-terrain:not\(\.rpg-card--mythique\)\s*\{[^}]*--rpg-frame-motif-size:\s*8px 8px;/s,
   'les strates se répètent tous les 8 × 8 px le long de l’anneau');
 
-// ── 4. Cinq cadres, cinq images : aucune ne recopie une autre ───────────────
+// ── 3 bis. La gravure : le sigle pour la Sorcellerie, la taille pour le losange
+const sigles = readFileSync(new URL('../src/games/rpgSortSignature.jsx', import.meta.url), 'utf8');
+const chemins = [...sigles.matchAll(/<path d="([^"]+)" \/>/g)].map(([, chemin]) => chemin);
+assert.equal(chemins.length, 2, 'le sigle des familles dessine deux formes : l’éclair et l’étincelle');
+const [cheminEclair, cheminEtincelle] = chemins;
+const dessin = (motif) => decodeURIComponent(motif.replace(/^data:image\/svg\+xml,/, ''));
+assert.ok(dessin(motifEtincelle).includes(cheminEtincelle),
+  'l’étincelle du cadre est celle du sigle de la Sorcellerie');
+assert.ok(!dessin(motifEtincelle).includes(cheminEclair), 'et l’éclair reste au socle de la Magie Rapide');
+const losange = 'M4 1.7 5.9 4 4 6.3 2.1 4Z';
+assert.ok(dessin(motifLosange).includes(losange),
+  'le losange des magies rapides est taillé : ses quatre arêtes sont dans l’anneau');
+const taille = dessin(motifLosange);
+assert.ok(taille.includes('M4 1.7 5.9 4 2.1 4Z') && taille.includes('M4 6.3 5.9 4 2.1 4Z'),
+  'la table et le pavillon du losange se lisent : deux moitiés claires sous la même arête');
+
+// ── 4. Six cadres, six images : aucune ne recopie une autre ─────────────────
 const toutes = [...battleCss.matchAll(/--rpg-frame-motif:\s*url\("([^"]+)"\)/g)].map(([, image]) => image);
-assert.equal(toutes.length, 5,
-  'cinq motifs en tout : la résille commune, le zellige mythique, le guilloché des armes, l’étoile et les strates');
+assert.equal(toutes.length, 6,
+  'six motifs en tout : la résille commune, le zellige mythique, le guilloché des armes, le losange, l’étincelle et les strates');
 assert.equal(new Set(toutes).size, toutes.length, 'aucun motif ne recopie l’image d’un autre cadre');
-assert.ok(toutes.includes(motifMagie) && toutes.includes(motifTerrain), 'les deux motifs de type sont bien dans la feuille');
+assert.ok(toutes.includes(motifLosange) && toutes.includes(motifEtincelle) && toutes.includes(motifTerrain),
+  'les trois motifs de type sont bien dans la feuille');
 assert.ok(toutes.some((image) => /width='18' height='12'/.test(decodeURIComponent(image))),
   'le guilloché des armes garde son onde de 18 × 12 px');
 assert.match(battleCss, /\.rpg-battle\s*\{\s*--rpg-frame-motif:\s*url\("data:image\/svg\+xml,%3Csvg /,
@@ -113,4 +141,4 @@ for (const [source, surface, attendu] of surfaces) {
 assert.equal((duel.match(/cardMotifClass\(/g) ?? []).length, 10, 'les dix faces du duel portent le motif');
 assert.equal((duel.match(/cardMotifClass\(carte\)/g) ?? []).length, 8, 'huit d’entre elles suivent la carte affichée');
 
-console.log('✓ Le cadre des magies grave l’étoile des sorts, celui des terrains ses strates : cinq images distinctes, les mythiques gardent leur zellige, les armes leur guilloché, et rien ne change d’épaisseur ni de couleur.');
+console.log('✓ Le cadre des magies rapides taille un losange, celui des sorcelleries grave l’étincelle de son sigle, celui des terrains ses strates : six images distinctes, les mythiques gardent leur zellige, les armes leur guilloché, et rien ne change d’épaisseur ni de couleur.');
