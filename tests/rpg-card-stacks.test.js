@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupCartesMain, groupEntitesParCarte } from '../src/games/rpgCardStacks.js';
+import { armesPortees, groupCartesMain, groupEntitesParCarte } from '../src/games/rpgCardStacks.js';
 
 const creature = (id, carteId) => ({ id, carteId, name: carteId, atk: 1, pv: 1 });
 
@@ -41,4 +41,32 @@ test('board copies pile up per card, per camp, without mixing sides', () => {
     'the same card on the other side stays a separate pile');
   assert.deepEqual(groupEntitesParCarte([]), []);
   assert.deepEqual(groupEntitesParCarte(), []);
+});
+
+test('an equipped creature is a pile of its own, never merged with identical bodies', () => {
+  const armee = { ...creature('armee', 'chien-du-guet'), arme: { carteId: 'takouba-des-pistes' } };
+  const nue = creature('nue', 'chien-du-guet');
+  const autreArmee = { ...creature('autre', 'chien-du-guet'), arme: { carteId: 'lance-de-givre' } };
+  const piles = groupEntitesParCarte([nue, armee, creature('nue-2', 'chien-du-guet'), autreArmee]);
+  assert.deepEqual(piles.map((pile) => pile.entites.map((entite) => entite.id)), [
+    ['nue', 'nue-2'],
+    ['armee'],
+    ['autre'],
+  ], 'the bare copies pile up together, each armed copy stands alone');
+  assert.equal(piles[1].carteId, 'chien-du-guet', 'the solo pile still names its card');
+});
+
+test('two identical armed creatures keep two separate piles', () => {
+  const avec = (id) => ({ ...creature(id, 'fennec-des-decombres'), arme: { carteId: 'baton-des-citernes' } });
+  const piles = groupEntitesParCarte([avec('a'), avec('b')]);
+  assert.deepEqual(piles.map((pile) => pile.entites.map((entite) => entite.id)), [['a'], ['b']]);
+});
+
+test('armesPortees lists the weapon of the prototype, then the magic weapons', () => {
+  assert.deepEqual(armesPortees(creature('nue', 'chien-du-guet')), []);
+  assert.deepEqual(armesPortees(undefined), []);
+  assert.deepEqual(armesPortees({ ...creature('a', 'chien-du-guet'), arme: { carteId: 'lance-de-givre' } }), ['lance-de-givre']);
+  assert.deepEqual(armesPortees({ ...creature('b', 'chien-du-guet'), armes: ['sabre-maudit'] }), ['sabre-maudit']);
+  assert.deepEqual(armesPortees({ ...creature('c', 'chien-du-guet'), arme: { carteId: 'takouba-des-pistes' }, armes: ['sabre-maudit'] }),
+    ['takouba-des-pistes', 'sabre-maudit']);
 });

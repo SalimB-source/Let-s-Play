@@ -417,3 +417,20 @@ extérieure des cartes ; une arme se reconnaît donc à sa matière et à sa
 teinte, jamais à l'épaisseur de son cadre.
 L'Armure de cendres, mythique, perd le zellige mais
 garde son reflet animé sur l'acier.
+
+**Créature armée = pile.** Une créature qui porte une arme se présente
+comme une **pile** sur la table, dans les deux camps et sur tous les
+formats : l'arme glisse sous elle, décalée vers le haut et la droite
+(`PileArmee` et `.rpg-card-stack--arme` dans `RpgDuelPage.jsx`,
+`.rpg-card-stack__arme` dans `rpg-mobile.css`). La pile ne change rien au
+jeu : la créature reste l'unique carte qui agit, et l'arme ne reçoit jamais
+le pointeur. Une créature armée ne se regroupe avec aucun homonyme
+(`groupEntitesParCarte`, `rpgCardStacks.js`) ; elle forme toujours sa propre
+pile, même au doigt. `armesPortees` lit à la fois l'arme du prototype
+(`entite.arme`) et l'arme de l'effet « arme » des magies (`entite.armes`,
+le Sabre maudit).
+
+**L'aperçu dit l'équipement.** Au survol comme à l'appui long, l'aperçu
+d'une créature armée affiche une ligne « ⚔ Équipée de <arme> +X/+Y »
+(`data-arme-equipee`, `.rpg-hover-card-preview__arme`), et son libellé
+accessible ajoute « équipée de <arme> (+X/+Y) ».

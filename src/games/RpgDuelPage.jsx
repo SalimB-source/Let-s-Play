@@ -22,7 +22,7 @@ import {
   tirerPlateauDuDuel,
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
-import { groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
+import { armesPortees, groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
 import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
@@ -596,6 +596,21 @@ function cardFrameStyle(carte) {
   return { '--rpg-frame-color': cardFrameColor(carte) };
 }
 
+/** Fiches des cartes d'arme portées, à partir de leurs identifiants. */
+function cartesDesIds(ids = []) {
+  return ids.map((id) => cardById(id)).filter(Boolean);
+}
+
+/** Bonus d'une arme, « +2/+0 » : celui de l'arme du prototype, ou l'effet
+ *  « arme » d'une magie (le Sabre maudit). */
+function bonusArmeTexte(arme) {
+  const bonus = arme?.bonus
+    ?? (arme?.effet?.type === 'arme' ? { atk: arme.effet.atk ?? 0, def: arme.effet.def ?? 0 } : null);
+  if (!bonus) return '';
+  const signe = (valeur) => (valeur >= 0 ? `+${valeur}` : `${valeur}`);
+  return `${signe(bonus.atk ?? 0)}/${signe(bonus.def ?? 0)}`;
+}
+
 function deckStats(deck) {
   return deck.cardIds.reduce((stats, id) => {
     const carte = cardById(id);
@@ -713,6 +728,23 @@ function CardStatIcon({ type }) {
 /** Face full art : couleur, coût, type et statistiques des créatures. */
 const BLOCKER_DRAG_TYPE = 'application/x-bab-el-blocker';
 
+/** Une créature équipée se présente comme une pile : son arme glisse sous elle,
+ *  décalée vers le haut et la droite, comme une carte posée dessous. La pile
+ *  ne change rien au jeu — la créature reste l'unique cible et la seule carte
+ *  qui agit ; seul le bord de l'arme dit qu'elle est équipée. */
+function PileArmee({ armes = [], children }) {
+  const arme = cardById(armes[0]);
+  if (!arme) return children;
+  return (
+    <span className="rpg-card-stack rpg-card-stack--arme">
+      <span className="rpg-card-stack__arme" aria-hidden="true" style={cardFrameStyle(arme)}>
+        <img src={cardArt(arme)} alt="" />
+      </span>
+      {children}
+    </span>
+  );
+}
+
 function TableCard({
   entite,
   cote,
@@ -743,6 +775,7 @@ function TableCard({
   const carte = cardById(entite.carteId);
   const nom = entite.name;
   const armeCarte = entite.arme ? cardById(entite.arme.carteId) : null;
+  const armes = armesPortees(entite);
   const protectionActive = entite.protection?.toursRestants > 0;
   const protectionLabel = protectionActive
     ? ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre
@@ -846,12 +879,13 @@ function TableCard({
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}
       data-card-id={carte?.id}
+      data-armes={armes.length ? armes.join(' ') : undefined}
       data-tutorial-target={tutorialTarget}
       draggable={canDragBlocker}
       onClick={onClick}
-      onMouseEnter={(event) => onHoverCard?.(carte, event)}
+      onMouseEnter={(event) => onHoverCard?.(carte, event, armes)}
       onMouseLeave={onLeaveHoverCard}
-      onFocus={(event) => onHoverCard?.(carte, event)}
+      onFocus={(event) => onHoverCard?.(carte, event, armes)}
       onBlur={onLeaveHoverCard}
       onDragStart={commencerGlisserBloqueur}
       onDragEnd={() => onEndBlockerDrag?.(entite.id)}
@@ -1040,7 +1074,7 @@ function BlockerArrows({ tableRef, assignments }) {
   );
 }
 
-function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null }) {
+function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null, armes = [] }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
@@ -1048,6 +1082,11 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   const effets = cardEffectLines(effet);
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
   const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
+  // Une créature équipée le dit dans son aperçu : l'arme, et son bonus porté.
+  const armesEquipees = estCreature ? armes.filter(Boolean) : [];
+  const armeLabel = armesEquipees.length
+    ? `, équipée de ${armesEquipees.map((arme) => `${arme.name}${bonusArmeTexte(arme) ? ` (${bonusArmeTexte(arme)})` : ''}`).join(', ')}`
+    : '';
   const details = (
     <>
       {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
@@ -1068,6 +1107,12 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
         </div>
       )}
       {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
+      {armesEquipees.length > 0 && (
+        <p className="rpg-hover-card-preview__arme" data-arme-equipee>
+          <span>⚔ Équipée de</span>
+          <b>{armesEquipees.map((arme) => `${arme.name}${bonusArmeTexte(arme) ? ` ${bonusArmeTexte(arme)}` : ''}`).join(' · ')}</b>
+        </p>
+      )}
       {carte.kind === 'arme' && <p className="rpg-hover-card-preview__stats">Porteur : +{carte.bonus?.atk ?? 0} ⚔ <span>·</span> +{carte.bonus?.def ?? 0} 🛡</p>}
     </>
   );
@@ -1086,7 +1131,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       ref={panelRef}
       className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${armeLabel}${cibleLabel}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
     >
       {variante === 'annonce' ? (
@@ -1111,7 +1156,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
  * que le survol de la souris, posé sur un volet sombre qui l'isole du plateau.
  * N'importe quel toucher — le volet ou le bouton — le referme. L'appui long ne
  * joue jamais la carte : c'est une consultation, pas une action. */
-function ApercuCarteAppuiLong({ carte, onFermer }) {
+function ApercuCarteAppuiLong({ carte, armes = [], onFermer }) {
   const boutonFermerRef = useRef(null);
   // Le focus arrive sur « Fermer l'aperçu » sans faire défiler la page :
   // un `scroll` même minuscule interromptrait un appui long encore en cours —
@@ -1131,7 +1176,7 @@ function ApercuCarteAppuiLong({ carte, onFermer }) {
     >
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__panel">
-        <HoverCardPreview carte={carte} variante="appui-long" />
+        <HoverCardPreview carte={carte} armes={armes} variante="appui-long" />
       </div>
       <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
         Fermer l’aperçu
@@ -2606,6 +2651,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // d'une seconde sur une carte ouvre donc le même aperçu (voir
   // `rpgLongPress.js`). C'est une consultation : la carte n'est jamais jouée.
   const [apercuAppui, setApercuAppui] = useState(null);
+  // Armes portées par la créature pressée (vides pour toute autre carte).
+  const [apercuAppuiArmes, setApercuAppuiArmes] = useState([]);
   const appuiLongRef = useRef(null);
   useEffect(() => {
     // Changer d'écran (menu, deck, catalogue, duel) referme l'aperçu au doigt
@@ -3093,7 +3140,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
   }, [duel?.joueur.terrains.length]);
 
-  const afficherApercuSurvol = (carte, event) => {
+  const afficherApercuSurvol = (carte, event, armes = []) => {
     if (!carte || !event?.currentTarget) return;
     const rectangle = event.currentTarget.getBoundingClientRect();
     // Première pose, au bord de la carte : le panneau n'existe pas encore,
@@ -3101,6 +3148,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // d'après sa boîte réelle, avant la première peinture.
     setApercuSurvol({
       carteId: carte.id,
+      armesIds: armes,
       rectangle: {
         left: rectangle.left,
         right: rectangle.right,
@@ -3150,6 +3198,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // appui long reprend la main.
     if (!peutDemarrerAppuiLong(event)) return;
     annulerAppuiLong();
+    const armesDeLaCarte = (hote.dataset.armes ?? '').split(' ').filter(Boolean);
     appuiLongRef.current = startRpgLongPress(event, {
       source: hote,
       onTrigger: () => {
@@ -3160,6 +3209,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         masquerApercuSurvol();
         unlockSfx();
         jouerSfx('hover');
+        setApercuAppuiArmes(armesDeLaCarte);
         setApercuAppui(carte.id);
       },
     });
@@ -4866,6 +4916,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       : entites.map((entite) => ({ carteId: entite.carteId, entites: [entite] })),
   });
   const clePile = (cote, carteId) => `${cote}:${carteId}`;
+  // Une pile homonyme se garde par son nom ; une créature armée, seule dans sa
+  // pile, par son identifiant — deux créatures armées identiques restent deux
+  // clés distinctes.
+  const clePileRendu = (pile) => (empilerCartes && !armesPortees(pile.entites[0]).length
+    ? pile.carteId
+    : pile.entites[0].id);
   const basculerPile = (cle) => {
     jouerSfx('pile');
     setPilesDeployees((actuel) => {
@@ -5075,7 +5131,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             const affichees = deployee ? pile.entites : [teteDePile('ennemi', pile)];
             const nom = cardById(pile.carteId)?.name ?? 'ces créatures';
             return (
-              <Fragment key={empilerCartes ? pile.carteId : pile.entites[0].id}>
+              <Fragment key={clePileRendu(pile)}>
                 {deployee && pile.entites.length > 1 && (
                   <button
                     type="button"
@@ -5115,7 +5171,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       onClick={() => cliquerCreatureEnnemie(entite)}
                     />
                   );
-                  if (deployee || pile.entites.length < 2) return carte;
+                  if (deployee || pile.entites.length < 2) {
+                    return <PileArmee key={entite.id} armes={armesPortees(entite)}>{carte}</PileArmee>;
+                  }
                   return (
                     <span
                       className="rpg-card-stack"
@@ -5146,7 +5204,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             const affichees = deployee ? pile.entites : [teteDePile('joueur', pile)];
             const nom = cardById(pile.carteId)?.name ?? 'ces créatures';
             return (
-              <Fragment key={empilerCartes ? pile.carteId : pile.entites[0].id}>
+              <Fragment key={clePileRendu(pile)}>
                 {deployee && pile.entites.length > 1 && (
                   <button
                     type="button"
@@ -5192,7 +5250,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       onClick={() => cliquerCreatureJoueur(entite)}
                     />
                   );
-                  if (deployee || pile.entites.length < 2) return carte;
+                  if (deployee || pile.entites.length < 2) {
+                    return <PileArmee key={entite.id} armes={armesPortees(entite)}>{carte}</PileArmee>;
+                  }
                   return (
                     <span
                       className="rpg-card-stack"
@@ -5671,6 +5731,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {apercuSurvol && !apercuMagie && !mulligan && !apercuAnnonceOuvert && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
+            armes={cartesDesIds(apercuSurvol.armesIds)}
             style={apercuSurvol.style}
             panelRef={panelRef}
           />
@@ -5743,7 +5804,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onClose={fermerTutoriel}
         />
       )}
-      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
+      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} onFermer={fermerApercuAppui} />}
       {mulligan && (
         <VoletMulligan
           main={duel.joueur.main}

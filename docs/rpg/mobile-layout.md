@@ -59,6 +59,7 @@ Le reste vient des **piles de cartes homonymes**, au doigt seulement (`empilerCa
 - tout groupe dont un exemplaire participe à l'**action en cours** — attaquants déclarés, combat entrant, blocages assignés, cible de sort, coup rapide, bloqueur sélectionné, effet visuel — **se déplie seul**, pour que les flèches de blocage, les halos de cible et les destructions retrouvent chaque carte ;
 - un exemplaire masqué **emprunte la place de sa pile** dans l'instantané du champ : son effet de destruction part du bon endroit au lieu du coin de la table ;
 - l'**appui long** d'une seconde ouvre l'aperçu de la pile sans rien jouer ni déplier ;
+- une **créature armée** n'est jamais regroupée avec ses homonymes : elle forme sa propre pile, l'arme glissée sous elle (`.rpg-card-stack--arme`), et son aperçu — survol ou appui long — porte la ligne « Équipée de » avec le bonus de l'arme ;
 - à la souris et sur grand écran, **rien ne change** : une carte = un emplacement, et le DOM de la main est exactement celui d'origine.
 
 Le regroupement est une présentation : chaque exemplaire reste une instance distincte dans le moteur, avec son index réel en main (le vol de carte, la pioche et le paiement visent l'exemplaire concerné). `src/games/rpgCardStacks.js` porte les deux fonctions pures (`groupCartesMain`, `groupEntitesParCarte`), `src/games/rpg-mobile.css` la présentation (`.rpg-hand__pile`, `.rpg-card-stack`, `.rpg-card-stack__count`, `.rpg-card-stack__toggle`).
