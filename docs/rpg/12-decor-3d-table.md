@@ -13,15 +13,14 @@ changent pas.
   tirée de sa luminance (joints de dalles, dunes, fissures, veines de braise) ;
   le bord de la table se relève vers la caméra, le centre reste plat.
 - **Lumière vivante** : bougies qui vacillent (Table des Heures), soleil rasant
-  qui dérive (Erg, Gourara, Tipaza), aurore (Îles Célestes), braises qui
-  respirent (Cavernes de Cristal), lumières qui glissent (Désert de Verre,
-  Abysses).
+  qui dérive (Erg, Gourara, Tipaza), aurore (Îles Célestes), lumières qui
+  glissent (Désert de Verre, Abysses).
 - **Surface** : ombres de nuages qui défilent, ou caustiques sous la mer.
 - **Particules** à plusieurs hauteurs : poussière, sable soufflé, neige, bulles,
   braises, éclats de verre.
 - **Parallaxe** : la caméra respire et suit la souris (jamais le doigt).
 
-Les neuf plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
+Les huit plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
 inconnu retombe sur celle de la Table des Heures.
 
 ## Objets 3D posés sur le plateau
@@ -34,7 +33,11 @@ ombre portée sur la table et reflètent un environnement doux. Plateaux livrés
 | --- | --- |
 | Erg du Sahara | lanterne (vraie lumière), gourde, galets, bol, corde |
 | Caravane de Gourara | tapis roulé (motif kilim), corde, compas de laiton à couvercle ouvert, outre |
-| Cavernes de Cristal | neuf amas d'améthystes et de rubis dans les coins (éclat qui pulse) |
+| Ruines de Tipaza | la pièce de monnaie et les quatre escargots (fûts, chapiteau, amphore et tessons restent peints) |
+| Fjord des Neuf Hivers | lanterne de fer, cor à boire, hache, corde, bâton de runes |
+| Désert de Verre | les cinq roses de verre, l'astrolabe de laiton, la corde et l'outre |
+| Abysses Phosphorescentes | la raie manta (battement d'ailes) et l'anneau de coquillages |
+| Îles Célestes | les douze sapins et les sept rochers des berges, la corde (berges de roche et lanterne restent peintes) |
 
 Les autres plateaux n'ont pas d'objets (`objets: []`) et gardent leur peinture
 inchangée.
@@ -45,10 +48,13 @@ inchangée.
   WebGL) garde la peinture d'origine avec ses objets peints. Elle est fabriquée
   par un script de `scripts/plaque-vide/` : de la matière prélevée ailleurs dans
   la peinture (ou d'une image donneuse) comble uniquement la zone des objets, le
-  reste de la peinture est inchangé au pixel près. Deux procédés : polygones
-  manuels + clonage de gradient sur le sable (`erg-du-sahara.py`) ; masque par
-  teinte + copie à bord adouci sur l'obsidienne (`cavernes-de-cristal.py` : le
-  clonage de gradient y étalait la teinte des cristaux).
+  reste de la peinture est inchangé au pixel près. Deux procédés selon le fond :
+  polygones manuels relevés sur la peinture, comblés par fusion de gradient sur
+  le sable, la roche ou les volutes (`caravane-de-gourara.py`,
+  `fjord-des-neuf-hivers.py`, `desert-de-verre.py`) ; comblement par le pourtour
+  quand le fond est lisse et l'objet petit ou opaque, sapins et coquillages
+  compris (`ruines-de-tipaza.py`, `abysses-phosphorescentes.py`,
+  `iles-celestes.py`).
 - **Placement.** Chaque objet est déclaré en coordonnées de l'image
   (`u`, `v` en fraction de largeur/hauteur, `v` vers le bas ; `size` = largeur
   de l'objet en fraction de l'image ; `angle` en degrés). `tableObjectTransform`

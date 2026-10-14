@@ -182,31 +182,6 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     ],
     overlay: null,
   }),
-  // Les galeries sous Bab El : obsidienne, veines de braise qui respirent.
-  'cavernes-de-cristal': theme({
-    ambient: '#d9c9ff', ambientIntensity: 0.62, key: '#e7d4ff', keyIntensity: 0.34, relief: 1.3, roughness: 0.4,
-    lights: [
-      light({ color: '#ff6a3d', intensity: 3.4, x: -0.7, y: -0.7, pulse: 0.35, pulseHz: 0.16, flicker: 0.1 }),
-      light({ color: '#c05cff', intensity: 3.4, x: 0.7, y: 0.6, pulse: 0.35, pulseHz: 0.13 }),
-      light({ color: '#ff8a50', intensity: 2.8, x: 0.75, y: -0.75, pulse: 0.3, pulseHz: 0.19, flicker: 0.1 }),
-    ],
-    particles: motes({ count: 52, color: '#ff9a62', size: 0.034, opacity: 0.75, additive: true, vx: 0.01, vy: 0.11, sway: 0.1, swayHz: 0.4, z: 0.9 }),
-    // Les huit amas de cristaux des coins (`u`/`v` : leur pied, au bord de la
-    // peinture ; `angle` : où ils pointent ; `size` : portée du plus long).
-    plaque: 'plateau-cavernes-de-cristal-vide.jpg',
-    objets: [
-      { kind: 'amethyste', u: 0, v: 0.0957, size: 0.101, angle: -20 },
-      { kind: 'amethyste', u: 0.1467, v: 0, size: 0.101, angle: -90 },
-      { kind: 'amethyste', u: 0.88, v: 0, size: 0.115, angle: -95 },
-      { kind: 'rubis', u: 1, v: 0.062, size: 0.09, angle: 182 },
-      { kind: 'rubis', u: 1, v: 0.957, size: 0.18, angle: 108 },
-      { kind: 'rubis', u: 1, v: 0.946, size: 0.12, angle: 152 },
-      { kind: 'rubis', u: 0.867, v: 1, size: 0.109, angle: 90 },
-      { kind: 'amethyste', u: 0, v: 0.909, size: 0.135, angle: 35 },
-      { kind: 'amethyste', u: 0.166, v: 1, size: 0.129, angle: 90 },
-    ],
-    overlay: null,
-  }),
   // Sous la mer : caustiques qui dansent, bulles qui montent.
   'abysses-phosphorescentes': theme({
     ambient: '#e6fff8', key: '#dffff5', keyIntensity: 0.46, relief: 1.5, roughness: 0.55,

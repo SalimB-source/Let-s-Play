@@ -198,7 +198,6 @@ try {
   const withObjects = [
     { id: 'erg-du-sahara', deck: 'veilleurs-du-desert', rq: [0.1, 0.1] },
     { id: 'desert-de-verre', deck: 'veilleurs-du-desert', rq: [0.1, 0.9] },
-    { id: 'cavernes-de-cristal', deck: 'cour-des-djinns', rq: [0.1, 0.9] },
     { id: 'caravane-de-gourara', deck: 'sentiers-de-cendre', rq: [0.1, 0.1] },
     { id: 'fjord-des-neuf-hivers', deck: 'serment-des-neuf-hivers', rq: [0.1, 0.1] },
     { id: 'iles-celestes', deck: 'serment-des-neuf-hivers', rq: [0.1, 0.9] },

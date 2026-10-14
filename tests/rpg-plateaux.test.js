@@ -270,10 +270,9 @@ const rngSequentiel = (valeurs) => {
   return () => valeurs[Math.min(appel++, valeurs.length - 1)];
 };
 
-test('chaque terrain classique a son double merveilleux, sauf la piste caravanière', () => {
+test('chaque terrain classique a son double merveilleux, sauf la piste caravanière et la table d’origine', () => {
   assert.deepEqual(RPG_PLATEAUX_VARIANTES_FANTAISISTES, {
     'erg-du-sahara': 'desert-de-verre',
-    'table-des-heures': 'cavernes-de-cristal',
     'ruines-de-tipaza': 'abysses-phosphorescentes',
     'fjord-des-neuf-hivers': 'iles-celestes',
   });
@@ -286,9 +285,11 @@ test('chaque terrain classique a son double merveilleux, sauf la piste caravani�
     assert.notEqual(variante.fichier, classique.fichier, `${varianteId} a son propre fond 4K`);
     assert.equal(varianteFantaisisteDe(variante), null, 'une variante n’a pas de double au second degré');
   }
-  for (const sansDouble of ['caravane-de-gourara', 'plateau-inconnu', null, 42]) {
+  for (const sansDouble of ['caravane-de-gourara', 'table-des-heures', 'cavernes-de-cristal', 'plateau-inconnu', null, 42]) {
     assert.equal(varianteFantaisisteDe(sansDouble), null, `${String(sansDouble)} reste unique`);
   }
+  // Le plateau retiré (les Cavernes de Cristal) ne fait plus partie du catalogue.
+  assert.equal(plateauParId('cavernes-de-cristal'), null);
 });
 
 test('sans l’option, le tirage ne rend jamais un double merveilleux', () => {
@@ -312,14 +313,16 @@ test('avec l’option, le second tirage peut donner le double merveilleux', () =
   const classique = tirerPlateauDuDuel({ ...duel, rng: rngSequentiel([0.1, 0.2]) });
   assert.equal(classique.plateau.id, 'erg-du-sahara');
   assert.equal(classique.variante, false);
-  // La Cour des Djinns se bat sur la Table des Heures : le second tirage
-  // l'embrase en Cavernes de Cristal.
+  // La Cour des Djinns se bat sur la Table des Heures : la table d'origine
+  // reste unique, le second tirage l'y laisse.
   const adverse = tirerPlateauDuDuel({ ...duel, rng: rngSequentiel([0.9, 0.9]) });
   assert.equal(adverse.camp, 'adversaire');
-  assert.equal(adverse.plateau.id, 'cavernes-de-cristal');
+  assert.equal(adverse.plateau.id, 'table-des-heures');
+  assert.equal(adverse.variante, false);
   // Le tirage reste déterministe : rejoué à l’identique, même terrain.
-  const rejoue = () => tirerPlateauDuDuel({ ...duel, rng: rngSequentiel([0.9, 0.9]) });
+  const rejoue = () => tirerPlateauDuDuel({ ...duel, rng: rngSequentiel([0.1, 0.9]) });
   assert.deepEqual(rejoue(), rejoue());
+  assert.equal(rejoue().plateau.id, 'desert-de-verre');
 });
 
 test('le second tirage n’est consommé que si le terrain a un double', () => {
@@ -330,15 +333,27 @@ test('le second tirage n’est consommé que si le terrain a un double', () => {
     rng: () => { appels += 1; return 0.1; },
   });
   assert.equal(appels, 2, 'terrain à double : le camp puis la variante');
-  // Seule la piste caravanière reste unique : le Grand Horloger reçoit sur la
-  // Table des Heures, qui s'embrase comme les autres terrains.
+  // Deux terrains restent uniques : la piste caravanière et la Table des
+  // Heures, la table d'origine depuis le retrait des Cavernes de Cristal. Le
+  // second tirage n'est alors pas consommé.
   appels = 0;
-  const tirage = tirerPlateauDuDuel({
+  const caravane = tirerPlateauDuDuel({
     ...avecOption, deckJoueur: 'sentiers-de-cendre', deckAdverse: 'sentiers-de-cendre',
     rng: () => { appels += 1; return 0.9; },
   });
-  assert.equal(tirage.variante, false, 'la piste caravanière garde son terrain unique');
+  assert.equal(caravane.plateau.id, 'caravane-de-gourara');
+  assert.equal(caravane.variante, false, 'la piste caravanière garde son terrain unique');
   assert.equal(appels, 1, 'terrain unique : le second tirage n’est pas consommé');
+  // Le Grand Horloger reçoit sur la table d'origine : elle non plus n'a pas de
+  // double merveilleux.
+  appels = 0;
+  const horloger = tirerPlateauDuDuel({
+    ...avecOption, deckJoueur: 'grand-horloger', deckAdverse: 'grand-horloger',
+    rng: () => { appels += 1; return 0.9; },
+  });
+  assert.equal(horloger.plateau.id, 'table-des-heures');
+  assert.equal(horloger.variante, false, 'la table d’origine garde son terrain unique');
+  assert.equal(appels, 1, 'la Table des Heures ne consomme pas le second tirage');
 });
 
 test('avec l’option, un tirage hors bornes rend toujours un plateau valide', () => {
