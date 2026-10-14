@@ -342,28 +342,30 @@ lumière et les couleurs ; le reste de la collection reste en huile.
 
 Règles de tir propres à ces dix cartes :
 
-- le **porteur est en mouvement** : poses franches, corps en action, jamais une
-  pose de catalogue ;
-- **angle de caméra dynamique** : contre-plongée, trois-quarts bas, composition
-  en diagonale, étoffes qui claquent ;
-- l'**équipement reste intégralement dans le cadre** — d'une extrémité à
-  l'autre de l'arme ou de la pièce d'armure, marge d'air comprise —, comme pour
-  les quatre armes du prototype ;
+- **l'équipement seul, rien d'autre** : ni porteur, ni animal, ni main, ni
+  silhouette. C'est l'objet qui est la carte — posé, planté ou pendu sur un
+  support sobre (dalle de grès, seuil de pierre, piquet de bois, monticule de
+  sable), jamais porté ;
+- l'objet est **entièrement dans le cadre**, d'une extrémité à l'autre, avec de
+  l'espace libre autour de lui ;
+- **composition centrée pour un cadre 4:5**, fond sobre — washi or de sable,
+  lavis d'indigo en haut du ciel — pour que la peinture se recadre au ratio de
+  la face sans rien rogner ;
 - aucun texte, glyphe, logo ni interface dessinée ;
 - plein art vertical, livré au ratio exact de la face (1024×1280).
 
-| Carte | La scène |
+| Carte | L'objet peint |
 |---|---|
-| Sandales de Tislit | la paire de sandales de cuir laissée sur le seuil de pierre d'une maison du ksar, porte de bois entrouverte |
-| Cuirasse de sel | un guerrier chargeant hors d'une sebkha, cuirasse de cuir incrustée de sel entièrement visible |
-| Javelot du beffroi | une vigie qui lance son javelot du haut d'une tour de terre, contre-plongée extrême |
-| Licou du chien de sable | un lévrier des sables en plein bond, collier et harnais tressés bien lisibles |
-| Boussole du Hoggar | la boussole de laiton ouverte, seule, posée à plat sur un rocher, le Hoggar derrière |
-| Harnais du méhari | un méhari qui se cabre, harnais complet à glands rouges et disques de laiton |
-| Masque du guetteur | une vigie accroupie qui pivote vers l'objectif, voile arraché par le vent, masque de cuir visible |
-| Jitte d'Amayas | un guide en pleine parade, le bâton fourchu de fer tenu en diagonale |
-| Lame des ergs | un khopesh de bronze planté dans la crête, un chien de sable bondissant à côté |
-| Takouba de Tin Hinan | une guerrière touarègue abattant sa takouba, lame entière dans le cadre, contre-plongée héroïque |
+| Sandales de Tislit | la paire de sandales de cuir posée sur le seuil de pierre d'une maison du ksar, porte entrouverte |
+| Cuirasse de sel | la cuirasse de cuir incrustée de sel, dressée sur un support de bois sombre |
+| Javelot du beffroi | le javelot planté en biais dans un monticule de sable |
+| Licou du chien de sable | le collier et le harnais tressés posés à plat sur une dalle de grès |
+| Boussole du Hoggar | la boussole de laiton ouverte, posée à plat sur un rocher |
+| Harnais du méhari | le harnais de méhari pendu à un piquet de bois, glands rouges et disques de laiton |
+| Masque du guetteur | le masque de cuir à œillère et cordons indigo, posé sur une dalle de grès |
+| Jitte d'Amayas | le bâton fourchu de fer posé sur une dalle de grès |
+| Lame des ergs | le khopesh de bronze planté dans le sable |
+| Takouba de Tin Hinan | la takouba dressée, la pointe posée sur une dalle de pierre |
 
 ## Dérogation : le lot du gel du Serment en fresque (octobre 2026)
 

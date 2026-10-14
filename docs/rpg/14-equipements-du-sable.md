@@ -270,22 +270,25 @@ Les dix peintures vivent dans `public/cards/<identifiant>.jpg`, plein art au
 ratio exact de la face (1024×1280). Elles suivent la dérogation documentée dans
 `src/games/RPG-CARD-ART.md` : un **nihonga coloré** — contours de sumi,
 pigments minéraux, feuille d'or — trempé dans une palette algérienne saturée
-(indigo, safran, henné, turquoise, or du sable), avec des porteurs **en
-mouvement** et des **angles de caméra dynamiques** (contre-plongée, diagonale),
-l'équipement toujours intégralement dans le cadre.
+(indigo, safran, henné, turquoise, or du sable).
 
-| Carte | La scène peinte |
+**L'équipement seul, rien d'autre** : ni porteur, ni animal, ni main. C'est
+l'objet qui est la carte, posé, planté ou pendu sur un support sobre (dalle de
+grès, seuil de pierre, piquet de bois, monticule de sable), entièrement dans le
+cadre, composition centrée pour un 4:5 sans recadrage destructeur.
+
+| Carte | L'objet peint |
 |---|---|
-| Sandales de Tislit | la paire de sandales laissée sur le seuil de pierre d'une maison du ksar, porte entrouverte |
-| Cuirasse de sel | un guerrier chargeant hors d'une sebkha, cuirasse incrustée de sel entièrement visible |
-| Javelot du beffroi | une vigie lançant son javelot du haut d'une tour de terre |
-| Licou du chien de sable | un lévrier des sables en plein bond, collier et harnais lisibles |
-| Boussole du Hoggar | la boussole de laiton ouverte, seule, posée à plat sur un rocher, le Hoggar derrière |
-| Harnais du méhari | un méhari qui se cabre, harnais à glands rouges et disques de laiton |
-| Masque du guetteur | une vigie accroupie pivotant vers l'objectif, voile arraché, masque de cuir visible |
-| Jitte d'Amayas | un guide en pleine parade, le bâton fourchu de fer en diagonale |
-| Lame des ergs | un khopesh de bronze planté dans la crête, chien de sable bondissant |
-| Takouba de Tin Hinan | une guerrière abattant sa takouba, lame entière, contre-plongée héroïque |
+| Sandales de Tislit | la paire de sandales posée sur le seuil de pierre d'une maison du ksar |
+| Cuirasse de sel | la cuirasse de cuir incrustée de sel, dressée sur un support de bois |
+| Javelot du beffroi | le javelot planté en biais dans un monticule de sable |
+| Licou du chien de sable | le collier et le harnais tressés posés à plat sur une dalle de grès |
+| Boussole du Hoggar | la boussole de laiton ouverte, posée à plat sur un rocher |
+| Harnais du méhari | le harnais pendu à un piquet de bois, glands rouges et disques de laiton |
+| Masque du guetteur | le masque de cuir et ses cordons indigo, posé sur une dalle de grès |
+| Jitte d'Amayas | le bâton fourchu de fer posé sur une dalle de grès |
+| Lame des ergs | le khopesh de bronze planté dans le sable |
+| Takouba de Tin Hinan | la takouba dressée, la pointe sur une dalle de pierre |
 
 ## 5. Les briques moteur
 
