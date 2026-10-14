@@ -5409,11 +5409,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: rgba(223, 211, 184, .3);
   transition: color .16s ease, border-color .16s ease, background-color .16s ease;
 }
-.rpg-phase-step[data-phase="principal"] { --rpg-phase-lit: #83e7d1; --rpg-phase-glow: rgba(114, 230, 208, .38); }
-.rpg-phase-step[data-phase="combat"] { --rpg-phase-lit: #ffd06b; --rpg-phase-glow: rgba(255, 194, 75, .42); }
-.rpg-phase-step[data-phase="reponse"] { --rpg-phase-lit: #8af2df; --rpg-phase-glow: rgba(91, 240, 218, .42); }
-.rpg-phase-step[data-phase="adverse"] { --rpg-phase-lit: #f5a47c; --rpg-phase-glow: rgba(232, 133, 98, .4); }
-.rpg-phase-step[data-phase="termine"] { --rpg-phase-lit: #ffe887; --rpg-phase-glow: rgba(255, 218, 94, .42); }
+.rpg-phase-step[data-phase="debut"] { --rpg-phase-lit: #b9e68a; --rpg-phase-glow: rgba(170, 224, 120, .38); }
+.rpg-phase-step[data-phase="principale"] { --rpg-phase-lit: #83e7d1; --rpg-phase-glow: rgba(114, 230, 208, .38); }
+.rpg-phase-step[data-phase="attaque"] { --rpg-phase-lit: #ffd06b; --rpg-phase-glow: rgba(255, 194, 75, .42); }
+.rpg-phase-step[data-phase="blocage"] { --rpg-phase-lit: #8af2df; --rpg-phase-glow: rgba(91, 240, 218, .42); }
+.rpg-phase-step[data-phase="principale2"] { --rpg-phase-lit: #8fc8f0; --rpg-phase-glow: rgba(120, 180, 235, .4); }
+.rpg-phase-step[data-phase="fin"] { --rpg-phase-lit: #ffe887; --rpg-phase-glow: rgba(255, 218, 94, .42); }
 .rpg-phase-step__icon {
   display: grid;
   width: 24px;
