@@ -32,6 +32,8 @@ import {
   terrainManaColors,
 } from './rpgCards.js';
 import { fusionnerAcquisitions, fusionnerCollections, normaliserAcquis, normaliserCollection } from './rpgCollection.js';
+import { fusionnerPortefeuilles, normaliserPortefeuille } from './rpgCredits.js';
+import { fusionnerQuetes, normaliserEtatQuetes } from './rpgQuetes.js';
 
 /** La taille d'un deck du Sablier, et la part minimale de terrains. */
 export const RPG_DECK_TAILLE = 40;
@@ -430,7 +432,18 @@ export function deckMaisonEstSelectionnable(deck, collection = null) {
  *   - **decks** : dernière écriture par deck (`majLe`, égalité → local) ;
  *   - **supprimes** : union ; une pierre plus récente que le deck enterre ce
  *     dernier, un deck réimporté plus récent que sa pierre ressuscite ;
- *   - **collection** : union monotone.
+ *   - **collection** : union monotone ;
+ *   - **acquis** : union des cartes, gel définitif dès qu'un appareil l'a posé ;
+ *   - **bourse** : chaque champ par sa règle (`fusionnerPortefeuilles` — cartes
+ *     en union, crédits et compteurs au maximum) ;
+ *   - **quetes** : jour le plus récent, progression par quête au maximum,
+ *     réclamations en union (`fusionnerQuetes`).
+ *
+ * C'est **le** point de fusion de l'état du compte : les deux hooks qui
+ * possèdent chacun une moitié (les decks pour `useDecksSablier`, l'économie
+ * pour `useSablierBourse`) passent tous les deux par ici, et lisent tous les
+ * deux le stockage local au moment d'écrire. Aucun ne peut donc écraser la
+ * moitié de l'autre — l'état poussé au compte est toujours entier.
  *
  * Rend `{ casier, etat, modifie }` — `etat` est ce que le serveur doit
  * porter, `modifie` dit si la fusion a apporté quelque chose au local (et
@@ -471,13 +484,20 @@ export function fusionnerEtatsSablier({ local = casierMaisonVide(), distant = nu
   // appareil l'a posé. Un appareil qui n'a pas encore migré ne peut donc pas
   // défaire le gel d'un autre.
   const acquis = fusionnerAcquisitions(local?.acquis, distant?.acquis);
+  // Chaque module fusionne chez lui (`fusionnerPortefeuilles`,
+  // `fusionnerQuetes` rendent `{ …, modifie }`) : ici on ne fait que les
+  // ranger côte à côte dans l'état du compte.
+  const bourse = fusionnerPortefeuilles(local?.bourse, distant?.bourse).portefeuille;
+  const quetes = fusionnerQuetes(local?.quetes, distant?.quetes).etat;
   const casier = { decks, supprimes };
-  const etat = { decks, supprimes, collection, acquis, majLe: maintenantIso() };
-  const modifie = JSON.stringify({ decks, supprimes, collection, acquis }) !== JSON.stringify({
+  const etat = { decks, supprimes, collection, acquis, bourse, quetes, majLe: maintenantIso() };
+  const modifie = JSON.stringify({ decks, supprimes, collection, acquis, bourse, quetes }) !== JSON.stringify({
     decks: decksLocaux,
     supprimes: pierresLocales,
     collection: normaliserCollection(local?.collection),
     acquis: normaliserAcquis(local?.acquis),
+    bourse: normaliserPortefeuille(local?.bourse),
+    quetes: normaliserEtatQuetes(local?.quetes),
   });
   return { casier, etat, modifie };
 }

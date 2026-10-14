@@ -56,6 +56,7 @@ import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
 import RpgTableScene3D from './RpgTableScene3D.jsx';
 import { readRpgTable3dPref, writeRpgTable3dPref } from './rpgTableSceneThemes.js';
 import { useDecksSablier } from './useDecksSablier.js';
+import { useSablierBourse } from './useSablierBourse.js';
 import {
   preparerDuelTutoriel,
   RPG_TUTORIAL_OPPONENT_DECK,
@@ -1522,7 +1523,7 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -1681,6 +1682,18 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <h1>Le <span>Sablier</span></h1>
             <p>Les portes de la ville attendent leur prochain gardien.</p>
           </div>
+          {/* Le jeton du Souk : le solde de crédits, et ce qui attend d'être
+              réclamé. C'est la seule fenêtre sur l'économie tant que l'écran du
+              Souk n'est pas là (lot 3) — mais la boucle tourne déjà : jouer
+              paie, les quêtes avancent, et le chiffre monte. */}
+          <p className="rpg-mode-menu__bourse" data-souk-bourse={credits} aria-label={`Bourse du Souk : ${credits} crédits`}>
+            <span className="rpg-mode-menu__bourse-solde"><span aria-hidden="true">◈</span> {credits}</span>
+            {aReclamer > 0 && (
+              <span className="rpg-mode-menu__bourse-pastille" data-souk-a-reclamer={aReclamer}>
+                {aReclamer} à réclamer
+              </span>
+            )}
+          </p>
           <button
             type="button"
             className={`rpg-mode-menu__fullscreen${fullscreen ? ' is-on' : ''}`}
@@ -2507,12 +2520,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     histoireVictoireMarqueeRef.current = session;
     const contexte = campagneDuelRef.current;
     const campagne = contexte?.session === session && contexte.etageId === histoireEtageId;
+    // Le premier déblayage est celui qui paie : l'état de la tour est lu AVANT
+    // `enregistrerVictoire`, sinon tout étage paraîtrait déjà conquis.
+    const premiere = !etageEstVaincu(progressionHistoireRef.current, histoireEtageId);
+    const tourId = etageHistoireParId(histoireEtageId)?.tour?.id ?? null;
     const maj = enregistrerVictoire(histoireEtageId, campagne ? contexte.curseur : null);
     // Depuis le Souk (dossier 13), une victoire ne donne plus de cartes : elle
-    // **ouvre** celles de l'étage au Souk, et rend la liste des cartes
-    // nouvellement ouvertes. Le lot 2 créditera au même endroit les ◈ de la
-    // victoire, l'événement `etage-deblaye` et le badge d'onglet.
+    // **ouvre** celles de l'étage au Souk — et elle paie (50 ◈ au premier
+    // déblayage, 10 ◈ au rejeu). Les deux événements du contrat font avancer
+    // les quêtes du jour ; `etage-deblaye` porte la garde « premier déblayage »
+    // de la quête du palier suivant, et c'est `duel-gagne` qui paie.
     noterVictoireEtage(histoireEtageId, maj);
+    noterEvenementDuel({ type: 'duel-gagne', mode: 'histoire', etageId: histoireEtageId, tourId, premiere });
+    if (premiere) noterEvenementDuel({ type: 'etage-deblaye', etageId: histoireEtageId, tourId, premiere: true });
     if (campagne) {
       annulerMinuteriesDuTour();
       sessionDuelRef.current += 1;
@@ -2524,6 +2544,39 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       setEcran((courant) => courant === 'partie' ? 'recit' : courant);
     }
   });
+  // Un **duel libre** gagné paie 8 ◈ — une fois par session, comme les étages :
+  // « Nouvelle partie » incrémente la session, et le duel suivant sera compté.
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (!duelCourant || histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
+    const session = sessionDuelRef.current;
+    if (libreVictoireMarqueeRef.current === session) return;
+    libreVictoireMarqueeRef.current = session;
+    noterEvenementDuel({ type: 'duel-gagne', mode: 'libre', premiere: false });
+  });
+
+  // « Le sorcier saigne » se compte sur les **PV du sorcier**, pas au point
+  // d'appel : toutes les sources y passent — attaques directes, sorts,
+  // capacités d'arrivée, échos différés de la Braise — et une action annulée
+  // puis rejouée ne compte pas deux fois, puisque l'on émet l'écart entre les
+  // dégâts cumulés et ceux déjà annoncés. Un duel neuf remet le compteur à son
+  // état de départ sans rien annoncer.
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (!duelCourant) return;
+    const cumules = Math.max(0, (duelCourant.sorcier.pvMax ?? 0) - duelCourant.sorcier.pv);
+    const memo = degatsSorcierRef.current;
+    if (memo.duel !== duelCourant) {
+      degatsSorcierRef.current = { duel: duelCourant, annonces: cumules };
+      return;
+    }
+    if (cumules > memo.annonces) {
+      const montant = cumules - memo.annonces;
+      memo.annonces = cumules;
+      noterEvenementDuel({ type: 'degats-infliges', montant });
+    }
+  });
+
   // Lancer (ou reprendre) une partie : le plein écran natif est demandé ici,
   // dans le geste du bouton — le navigateur le refuse ailleurs. La session de
   // paysage garde l'orientation et le pont Android, pas le plein écran.
@@ -2571,7 +2624,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     sauvegardeOk: sauvegardeHistoireOk, ouvrirRecit, agirRecit,
     enregistrerVictoire, recommencerRecit, effacerProgression,
   } = useRpgStory();
+  // La bourse du Souk (dossier 13, lot 2) : les gestes du duel l'alimentent par
+  // `noterEvenementDuel`, le solde et les quêtes du jour en sortent. Aucun écran
+  // du Souk n'existe encore — l'onglet et la pastille viennent au lot 3 —, mais
+  // la boucle tourne déjà : jouer paie, et les quêtes du jour avancent.
+  //
+  // Elle est branchée APRÈS `useRpgStory` : ses quêtes du jour lisent la
+  // progression, pour ne pas proposer « ouvrir le comptoir » tant que le Souk
+  // est fermé — y compris au tout premier rendu.
+  const { credits, aReclamer: soukAReclamer, noterEvenementDuel } = useSablierBourse({
+    progression: progressionHistoireRef.current,
+  });
   const histoireVictoireMarqueeRef = useRef(null);
+  // Un duel libre ne passe pas par la session du récit : il a son propre témoin.
+  const libreVictoireMarqueeRef = useRef(null);
+  // Dégâts cumulés annoncés au Souk pour le duel en cours (voir l'effet dédié).
+  const degatsSorcierRef = useRef({ duel: null, annonces: 0 });
   const campagneDuelRef = useRef(null);
   // Son du jeu en deux couches : le mode Histoire porte une boucle par tour
   // (`rpgAmbientMusic.js`), tandis que les bruitages tactiles (`rpgAudio.js`)
@@ -3410,6 +3478,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           campagneEnCours={Boolean(campagneDuelRef.current)}
           decksMaison={decksMaison}
           collection={collection}
+          credits={credits}
+          aReclamer={soukAReclamer}
           statutSync={statutSync}
           onEnregistrerDeckMaison={enregistrerDeckMaison}
           onSupprimerDeckMaison={supprimerDeckMaison}
@@ -3844,6 +3914,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       conserverAnnulation(etatAvantAction);
       jouerSfx('card_place');
       avancerTutoriel('terrain', 'mana');
+      noterEvenementDuel({ type: 'terrain-pose', cardId: carteId });
+      noterEvenementDuel({ type: 'carte-jouee', cardId: carteId });
     } else { jouerSfx('erreur'); }
     force();
   };
@@ -3976,6 +4048,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       invaliderAnnulation();
       annoncerMagie(carte, cibleDecrite);
       setCibleEnCours(null);
+      noterEvenementDuel({ type: 'magie-lancee', cardId });
+      noterEvenementDuel({ type: 'carte-jouee', cardId });
       if (reponseActive && combatEntrant?.coteAttaquant === 'joueur') {
         const attaquantsVivants = combatEntrant.attaquants
           .filter((id) => duel.joueur.creatures.some((entite) => entite.id === id));
@@ -4049,6 +4123,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
       avancerTutoriel('creature', 'invocation');
+      noterEvenementDuel({ type: 'creature-invoquee', cardId });
+      noterEvenementDuel({ type: 'carte-jouee', cardId });
     }
     force();
   };
@@ -4067,6 +4143,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       jouerSfx('card_place');
+      noterEvenementDuel({ type: 'arme-jouee', cardId });
+      noterEvenementDuel({ type: 'carte-jouee', cardId });
     } else {
       jouerSfx('erreur');
     }

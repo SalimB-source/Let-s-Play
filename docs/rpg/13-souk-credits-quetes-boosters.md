@@ -370,7 +370,9 @@ les lots 2 à 5.
 | ✅ `src/games/rpgCollection.js` | révélations d'étage, **gel des acquis** (D9), sources de la collection | `tests/rpg-collection.test.js` |
 | ✅ `src/games/rpgDeckBuilder.js` | la fusion de compte transporte les acquis, gel compris | `tests/rpg-deck-builder.test.js` |
 | ✅ `src/games/useDecksSablier.js` | pose le gel au montage, pousse les acquis, `noterVictoireEtage` ouvre les cartes | `scripts/rpg-story-narrative-smoke.jsx` |
-| `src/games/useSablierBourse.js` | état React + fusion + poussée au compte, patron de `useDecksSablier.js` | couvert par le smoke |
+| ✅ `src/games/rpgEvenementsDuel.js` | le **contrat d'événements** : normalisation, ce qui paie, ce qui compte | `tests/rpg-evenements.test.js` |
+| ✅ `src/games/useSablierBourse.js` | état React + fusion + poussée au compte, patron de `useDecksSablier.js` | `scripts/rpg-souk-bourse-smoke.jsx` |
+| ✅ `scripts/rpg-souk-bourse-smoke.jsx` + `scripts/rpg-souk-bourse-check.mjs` | le hook monté dans jsdom (jour, gains, réclamation, rechargement) + les gardes de source | `npm run check:rpg-souk-branche` |
 | `src/games/RpgSouk.jsx` | l'écran : bourse, quêtes, rayons | `scripts/rpg-souk-smoke.jsx` |
 | `src/games/RpgBoosterOuverture.jsx` | la cérémonie des cinq cartes | idem |
 | `src/games/rpg-souk.css` | mise en page, animations, `prefers-reduced-motion`, tactile | `scripts/rpg-souk-ui-check.mjs` (garde-fous de source) |
@@ -416,6 +418,13 @@ etatRayon(rayonId, progression, collection) · etatRayons(...) · rayonsOuverts(
 tirerCartes({ rayonId, progression, collection, rng, pitie })
 ouvrirBooster({ portefeuille, rayonId, progression, collection, rng })
 ouvrirCoffret({ portefeuille, rayonId, progression, collection, rng }) · etageIntroduction(cardId)
+
+// rpgEvenementsDuel.js — le contrat du duel (lot 2)
+EVENEMENTS_DUEL (9) · EVENEMENTS_PAYANTS = ['duel-gagne']
+normaliserEvenementDuel(e) -> e normalisé | null      // couleurs et kind lus DANS le catalogue
+creditsDeLEvenement(e) -> 0 | 8 | 10 | 50             // seul « duel-gagne » paie
+appliquerEvenementDuel({ bourse, quetes }, e) -> { bourse, quetes, gain, evenement, reconnu }
+compterReclamations(quetes) -> 0..4                    // ce que la pastille affiche
 
 // rpgCollection.js — le changement de nature des étages (D9)
 RPG_REVELATIONS_PAR_ETAGE (20 étages) · RPG_ACQUIS_STORAGE_KEY = 'letsplay_sablier_acquis_v1'
@@ -523,7 +532,7 @@ les paiera plus tard.
 | **0** | **ce document**, validé | le dossier relu et tranché | `docs/rpg/13-…md`, `docs/rpg/README.md` |
 | **1 ✅ livré** | les règles pures | quatre suites vertes (**41 tests**), **invisible pour le joueur** | `rpgHasard.js`, `rpgCredits.js`, `rpgQuetes.js`, `rpgBoosters.js`, `tests/rpg-*.test.js`, `package.json` |
 | **1bis ✅ livré** | **les étages ne donnent plus de cartes** (D9) : révélations, gel des acquis, vivier refait, écrans réalignés | **428 tests verts** (4 suites préexistantes sans `jsdom`/`three`), collection d'un joueur neuf = 38 cartes exactement | `rpgCollection.js`, `rpgBoosters.js`, `rpgDeckBuilder.js`, `useDecksSablier.js`, `RpgStoryScene.jsx`, `RpgDeckAtelier.jsx`, tests, docs 06/09/10/13 |
-| **2** | les gains branchés | gagner un étage crédite le solde, l'événement est émis, badge sur l'onglet | `RpgDuelPage.jsx`, `useSablierBourse.js` |
+| **2 ✅ livré** | les gains branchés | **475 tests verts** ; le solde et la pastille sont dans l'en-tête du menu, et l'événement est émis | `RpgDuelPage.jsx`, `useSablierBourse.js`, `rpgEvenementsDuel.js`, `rpg-souk-bourse-*` |
 | **3** | l'écran Souk | la bourse, les quêtes, la réclamation — sans les rayons | `RpgSouk.jsx`, `rpg-souk.css`, smoke |
 | **4** | les boosters | achats, ouverture, doublons, cartes rangées dans la collection, poussée au compte | `RpgBoosterOuverture.jsx`, `rpgBoosters.js`, `useSablierBourse.js` |
 | **5** | le fini | sons, plein écran, portrait étroit, série de 7 jours, journal des ouvertures | `rpgAudio.js`, `rpg-mobile.css`, docs |
@@ -532,13 +541,34 @@ les paiera plus tard.
 Le lot 1 est **livré** — et il était bien mergéable seul : il n'ajoute que des
 modules purs et des tests, ne touche à aucun écran (seuls `package.json` et
 l'index du dossier ont bougé), et il fige les règles sur lesquelles les lots
-suivants s'appuient. Les lots 2 à 4 sont chacun démontrables au joueur.
+suivants s'appuient. Le lot 2 est **livré** aussi : ce qui se gagne dans les
+Tours est maintenant compté, gardé et montré, et l'économie suit le joueur d'un
+appareil à l'autre. Le lot 3 n'a plus qu'à peindre ce qui existe.
 
 **Ce que le lot 1 a appris** (et qui a modifié ce dossier) : la règle du vivier
 a dû être réécrite (D2), la pitié relève la moyenne des mythiques au-dessus du
 taux annoncé (D3), la quête du comptoir exige une garde que les quêtes de
 couleur n'exigent pas, et le pool des quêtes compte **treize** entrées, pas
 douze.
+
+**Le lot 2 a tranché trois choses** que le dossier ne disait pas :
+
+1. **Le paiement tient à un seul événement, `duel-gagne`.** `duel-gagne` et
+   `etage-deblaye` tombent au même instant, pour le même étage : les faire payer
+   tous les deux aurait doublé chaque victoire. Le premier paie (8/10/50 ◈), le
+   second ne sert qu'à la quête du palier suivant — et il ne tombe que si
+   l'étage était vraiment neuf.
+2. **Les dégâts au sorcier se comptent sur ses PV**, pas au point d'appel. Un
+   effet de fin de tour, un écho différé, une capacité d'arrivée : sept chemins
+   différents font saigner le sorcier, et un point d'appel oublié était un
+   quota perdu. L'écart entre les dégâts cumulés et ceux déjà annoncés couvre
+   **toutes** les sources, et une action annulée puis rejouée ne compte pas
+   deux fois — l'écart retombe à zéro puis remonte, sans re-émettre.
+3. **Le contrat d'événements est un module pur** (`rpgEvenementsDuel.js`), pas
+   une liste de règles dans `RpgDuelPage.jsx`. Le duel *raconte*, le module
+   compte : la règle se teste sans monter un composant, et les couleurs d'une
+   carte jouée se lisent **dans le catalogue** au lieu d'être crues sur parole
+   par l'écran.
 
 **Ce que le lot 1bis a appris** — trois corrections que le code a imposées, et
 qui valent d'être retenues :
@@ -555,6 +585,12 @@ qui valent d'être retenues :
    à 33. Ce n'est pas un détail d'équilibrage, c'est ce qui rend le Souk
    praticable.
 
+**Le jeton du menu** : en attendant l'onglet du lot 3, le solde ◈ et le compte
+des réclamations vivent dans l'en-tête du menu (`data-souk-bourse`,
+`data-souk-a-reclamer`). C'est une fenêtre sur l'économie, pas l'écran du Souk :
+la pastille ne s'affiche que s'il y a quelque chose à réclamer, et le lot 3 la
+reprendra sur l'onglet.
+
 **La reprise du monolithe** : `RpgDuelPage.jsx` fait 283 Ko et ne doit pas
 grossir de l'écran du Souk. La page ne reçoit **que** l'onglet, le badge,
 l'appel `noterEvenementDuel` et le rendu `<RpgSouk … />` ; tout le reste vit dans
@@ -562,23 +598,34 @@ ses propres fichiers, comme `RpgDeckAtelier.jsx` l'a fait avant lui.
 
 ## 10. Vérifications
 
-Le lot 1 se vérifie en quatre commandes (agrégées par `check:rpg-souk`) ; le
-lot 1bis se vérifie par `npm run check:rpg` — il touche à la collection, à la
+Le lot 1 se vérifie en quatre commandes (agrégées par `check:rpg-souk`) ; les
+lots 1bis et 2 se vérifient par `check:rpg` — ils touchent à la collection, à la
 fusion de compte et au récit, donc au jeu entier :
 
 ```bash
-npm run check:rpg-hasard     # node --test tests/rpg-hasard.test.js
-npm run check:rpg-credits    # node --test tests/rpg-credits.test.js
-npm run check:rpg-quetes     # node --test tests/rpg-quetes.test.js
-npm run check:rpg-boosters   # node --test tests/rpg-boosters.test.js
-npm run check:rpg-souk       # les quatre d'affilée
+npm run check:rpg-hasard         # node --test tests/rpg-hasard.test.js
+npm run check:rpg-credits        # node --test tests/rpg-credits.test.js
+npm run check:rpg-quetes         # node --test tests/rpg-quetes.test.js
+npm run check:rpg-boosters       # node --test tests/rpg-boosters.test.js
+npm run check:rpg-evenements     # node --test tests/rpg-evenements.test.js
+npm run check:rpg-souk-branche   # le hook monté dans jsdom + les gardes de source
+npm run check:rpg-souk           # les six d'affilée
 ```
 
 Les quatre suites sont aussi **entrées dans `check:rpg`** : une régression
-d'économie casse désormais la vérification du jeu entier. État : **428 tests
-verts sur 432**, les quatre échecs restants étant ceux qui préexistaient à ce
-chantier (`rpg-long-press`, `rpg-story-3d`, `rpg-table-3d`, `rpg-touch-drag`,
-privés de `jsdom` et `three` dans cet environnement).
+d'économie casse désormais la vérification du jeu entier. État après le lot 2 : **475 tests,
+475 verts** — les quatre échecs qui traînaient venaient bien de `jsdom` et
+`three` absents de l'environnement de travail, et ils disparaissent dès que les
+dépendances sont installées.
+
+**Ce qui n'est pas vérifié automatiquement** : les smoke d'interface du dépôt
+(`check:rpg-story-ui`, `check:rpg-deck-ui`, `check:rpg-mobile`, `check:rpg-ui`)
+échouent dans cet environnement **avant comme après** ce chantier — vérifié au
+commit de base `2034b25` dans un worktree séparé, mêmes erreurs, mêmes lignes.
+Ce sont des tests d'animation et de mise en page, sensibles au rythme de la
+machine ; ils ne disent rien du Souk. Le smoke du lot 2 a été écrit pour ne
+**dépendre d'aucune minuterie** — et il pose sa graine, faute de quoi il passait
+ou échouait selon le tirage du jour (constaté, corrigé).
 
 Les cas couverts :
 
@@ -593,6 +640,22 @@ Les cas couverts :
   négligée par un événement d'une autre couleur, montant compté pour les dégâts,
   progression plafonnée, quête réclamée qui ne bouge plus, Cachet payé une seule
   fois, journée qui ne recule pas quand l'horloge recule, garde du comptoir ;
+- **événements (lot 2)** — le contrat compte neuf gestes et **un seul paie** ;
+  un événement inconnu, `null` ou mal formé est ignoré en silence ; les
+  couleurs d'une carte jouée sont lues **dans le catalogue** (une couleur
+  annoncée par l'appelant est ignorée) ; un montant glissé dans un autre
+  événement ne compte jamais ; le premier déblayage paie 50 ◈, le rejeu 10 ◈,
+  le duel libre 8 ◈, la défaite 0 ; `etage-deblaye` ne paie rien ; un geste sans
+  effet rend l'état **d'origine** (stabilité référentielle) ; chaque quête du
+  jour avance sur le geste de son type, et une carte d'une autre couleur ne
+  touche pas une quête de couleur ; les dégâts comptent leur montant et
+  plafonnent à l'objectif ; la quête du comptoir ne se tire pas tant que le Souk
+  est fermé ; la pastille compte les réclamations dues et pas une de plus ;
+- **bourse montée (lot 2)** — le smoke jsdom ouvre la journée, joue la boucle
+  (duel libre 8 ◈, premier étage 50 ◈, rejeu 10 ◈), vérifie qu'un événement hors
+  contrat ne casse rien, que le solde et la journée survivent à un
+  rechargement, qu'une quête réclamée paie son montant **une seule fois**, et
+  que le menu affiche le même chiffre que le hook ;
 - **boosters** — cinq cartes distinctes et toutes du vivier du rayon, rare
   garantie, pitié qui **force** la mythique après une série sèche (et qui ne
   compte pas sur un rayon sans mythique), taux mesurés sur dix mille ouvertures
@@ -637,6 +700,13 @@ Les cas couverts :
    exécuté **avant le lot 2** : trophées de boss compris, les mythiques d'étage
    aussi. Corollaire accepté : les Tours ne rendent plus que du récit et des
    crédits, et le Souk devient la seule voie d'acquisition.
+6. **Le jeton de bourse vit dans l'en-tête du menu** tant que l'écran du Souk
+   n'existe pas (lot 3) : le solde ◈ et le compte des réclamations y sont déjà,
+   et la pastille du lot 3 reprendra le même chiffre.
+7. **L'économie voyage avec le compte dès maintenant**, pas au lot 4 : les deux
+   hooks poussent **le même état entier**, chacun relisant le stockage local de
+   l'autre au moment d'écrire. Sans ça, le premier enregistrement de deck aurait
+   effacé les crédits — et c'est un bug qui n'aurait été vu qu'au lot 4.
 
 **Reste ouvert pour la suite** : les cartes du Souk (lot 6, **devenu la
 priorité** puisque la collection se boucle en trois semaines), une série de sept

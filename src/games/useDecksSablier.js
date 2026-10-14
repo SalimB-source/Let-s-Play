@@ -33,6 +33,8 @@ import {
 } from './rpgCollection.js';
 import { cartesOuvertes } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
+import { chargerPortefeuille, sauverPortefeuille } from './rpgCredits.js';
+import { chargerEtatQuetes, sauverEtatQuetes } from './rpgQuetes.js';
 import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
 
 /** L'identifiant du compte Sablier actif, ou `null` (hors provider, déconnecté, profil de démonstration). */
@@ -48,12 +50,22 @@ function compteSablierActif() {
 
 /**
  * L'état complet porté par le compte : casier local, apports du compte en
- * cache, et les acquis figés de l'appareil (le gel). C'est ce que la fusion
- * compare et ce que les mutations poussent.
+ * cache, acquis figés de l'appareil (le gel), et **l'économie** — le solde et
+ * les quêtes, qui appartiennent à `useSablierBourse.js`.
+ *
+ * Ce hook les relit sur l'appareil au moment d'écrire sans jamais les toucher :
+ * c'est ce qui lui permet de pousser l'état **entier** sans écraser les crédits
+ * de son voisin, et réciproquement.
  */
 function etatLocalActuel(acquis) {
   const casier = { decks: chargerDecksMaison(), supprimes: chargerSupprimesMaison() };
-  return { ...casier, collection: chargerCollectionDistante(), acquis };
+  return {
+    ...casier,
+    collection: chargerCollectionDistante(),
+    acquis,
+    bourse: chargerPortefeuille(),
+    quetes: chargerEtatQuetes(),
+  };
 }
 
 /** Statuts de synchronisation : `'local'`, `'attente'`, `'synchronise'`, `'horsligne'`. */
@@ -93,6 +105,11 @@ export function useDecksSablier() {
       supprimesRef.current = fusion.casier.supprimes;
       setDecksMaison(fusion.casier.decks);
       sauverCollectionDistante(fusion.etat.collection);
+      // L'économie appartient à `useSablierBourse.js` : ce hook la transporte,
+      // jamais ne la modifie — elle est rendue au stockage telle que la fusion
+      // l'a recomposée, pour que l'autre hook la voie.
+      sauverPortefeuille(fusion.etat.bourse);
+      sauverEtatQuetes(fusion.etat.quetes);
       // Les acquis du compte rejoignent ceux de l'appareil (union, gel
       // compris) : un autre appareil peut porter des cartes que celui-ci n'a
       // pas encore vues.
