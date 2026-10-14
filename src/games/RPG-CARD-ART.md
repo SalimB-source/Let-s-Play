@@ -301,10 +301,10 @@ côte balayée par un vortex. Un exemplaire remplace une Onna-musha dans le
 deck Soleil rouge : toujours 40 cartes, 17 créatures, 7 magies et 16 terrains.
 Susanoo se débloque à `sables-3`.
 
-## Dérogation : les quatre armes et le serpent en photoréaliste (octobre 2026)
+## Dérogation : les trois armes et le serpent en photoréaliste (octobre 2026)
 
-Les quatre armes du prototype (`takouba-des-pistes`, `baton-des-citernes`,
-`lance-de-givre`, `armure-de-cendres`) et le jeton `serpent-des-citernes`
+Trois armes du prototype (`takouba-des-pistes`, `baton-des-citernes`,
+`lance-de-givre`) et le jeton `serpent-des-citernes`
 dérogent **volontairement** à la direction « huile sur toile » ci-dessus :
 elles sont livrées en **rendu photoréaliste fantaisiste** (photo de cinéma,
 live-action), direction validée carte par carte au moment de leur création.
@@ -320,9 +320,6 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
   sujets ; les plans larges y arrivent mieux que les gros plans ;
 - aucun texte, glyphe, logo ni interface dessinée.
 
-- **Armure de cendres** (`armure-de-cendres.jpg`) — guerrier démoniaque en
-  armure noire au-dessus d'un volcan, deux épées noires entièrement
-  visibles ; le sujet de la carte est l'armure elle-même.
 - **Bâton des citernes** (`baton-des-citernes.jpg`) — magicienne sur un petit
   bateau dans une citerne inondée : son bâton fait léviter un serpent géant
   dans un tourbillon d'eau ; elle regarde le serpent, pas le spectateur.
@@ -361,18 +358,19 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
 - **Embuscade** (`embuscade.jpg`) — le cercle de loups qui se referme sur
   l’isolé, les défenses dehors.
 
-## Dérogation : les héros en nihonga algérien (octobre 2026)
+## Dérogation : la passe nihonga algérienne (octobre 2026)
 
-Six héros — les cinq du récit, **Salem** (`salem.jpg`), **Yamina**
+Six héros et une arme — les cinq du récit, **Salem** (`salem.jpg`), **Yamina**
 (`yamina.jpg`), **Fériel** (`feriel.jpg`), **Tarek** (`tarek.jpg`) et
 **Boualem** (`boualem.jpg`), plus le **Serpent du monde**
-(`serpent-du-monde.jpg`, figure du Nord) — dérogent **volontairement** à la
+(`serpent-du-monde.jpg`, figure du Nord) et l'**Armure de cendres**
+(`armure-de-cendres.jpg`) — dérogent **volontairement** à la
 direction « huile sur toile » ci-dessus : ils sont repeints en **peinture
 japonaise nihonga**
 (pigments minéraux *iwa-enogu* mats, blanc de coquille *gofun*, sous-drawing
 à l'encre *sumi*, fibre de papier *kozo washi*, nuages d'or plats *suyari
 kasumi* sur fond de feuille d'or *kinpaku*), direction demandée explicitement
-pour ces six cartes. Le reste de la collection reste en huile, à l'exception
+pour ces sept cartes. Le reste de la collection reste en huile, à l'exception
 des dérogations déjà documentées (Soleil rouge en kaiga, armes en
 photoréaliste, gel en fresque).
 
@@ -409,14 +407,20 @@ photoréaliste, gel en fresque).
   par quelques reflets safran et terre cuite sur les écailles et dans l'œil.
   Les motifs amazighs se glissent dans le dessin de l'eau et des écailles,
   comme une broderie, et non en encadrement : la peinture reste plein cadre.
+- l'**Armure de cendres** garde **son dessin d'origine trait pour trait** —
+  la même figure en armure noire au-dessus du volcan, les deux épées noires
+  entièrement visibles, le même cadrage et la même échelle : seule la
+  facture change, du photoréaliste vers le nihonga, avec les motifs amazighs
+  damasquinés dans l'acier noirci. Aucun ajout, aucun retrait de sujet :
+  c'est une conversion de style, pas une recomposition.
 
 ### Versions de cache
 
-Les six images sont datées ensemble par la révision
+Les six peintures de héros sont datées ensemble par la révision
 `heros-nihonga-algerien-v1` dans `CARD_ART_CACHE_VERSIONS`
-(`RpgDuelPage.jsx`) : mêmes noms de fichiers, donc aucun cache ne peut
-resservir les huiles précédentes. Pour le Serpent du monde, cette révision
-propre l'emporte sur `SET_NEIGE_ART_VERSION` — la passe est datée une seule
-fois pour toutes ses cartes. Le garde-fou `PLEIN_ART_45` de
-`tests/rpg-duel.test.js` vérifie désormais leur ratio 4:5 comme le reste de la
-collection.
+(`RpgDuelPage.jsx`) ; l'Armure de cendres porte la sienne, `armure-nihonga-v1`.
+Mêmes noms de fichiers, donc aucun cache ne peut resservir les huiles
+précédentes. Pour le Serpent du monde, la révision de la passe l'emporte sur
+`SET_NEIGE_ART_VERSION` — elle est datée une seule fois pour toutes ses cartes.
+Le garde-fou `PLEIN_ART_45` de `tests/rpg-duel.test.js` vérifie leur ratio 4:5
+comme le reste de la collection, l'Armure de cendres y compris.
