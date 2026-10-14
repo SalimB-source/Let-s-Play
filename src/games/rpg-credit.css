@@ -1,0 +1,64 @@
+/* ── La pièce des crédits ◈ ────────────────────────────────────────────────────
+   Ce que le losange ◈ annonçait en un signe, la pièce le montre : un losange
+   taillé, quatre facettes, un liseré clair sur les arêtes du dessus, et une
+   étincelle qui bat. Elle se dimensionne toute seule — `1em` — donc elle prend
+   la taille du texte qui l'entoure : 12 px dans une ligne de journal, 30 px à
+   côté du solde. Le doré est peint dans le SVG ; ici, il n'y a que le halo, le
+   placement sur la ligne de texte, et le mouvement. */
+
+.rpg-credit {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  /* Posée sur la ligne de base comme une lettre : elle ne casse aucune ligne de
+     texte existante. */
+  vertical-align: -.14em;
+  flex: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .55)) drop-shadow(0 0 2px rgba(255, 205, 92, .3));
+}
+
+/* L'étincelle : elle dort, puis bat. `fill-box` la fait tourner sur elle-même
+   quel que soit l'endroit du dessin où elle se trouve. */
+.rpg-credit__etincelle,
+.rpg-credit__halo {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.rpg-credit__etincelle { opacity: .5; }
+.rpg-credit__halo { opacity: .35; }
+
+.rpg-credit.is-anime .rpg-credit__etincelle,
+.rpg-credit.is-anime .rpg-credit__halo {
+  animation: rpg-credit-etincelle 3.6s ease-in-out infinite;
+}
+@keyframes rpg-credit-etincelle {
+  0%, 62%, 100% { transform: scale(.64); opacity: .35; }
+  74% { transform: scale(1.12); opacity: 1; }
+  86% { transform: scale(.92); opacity: .8; }
+}
+
+/* La grande pièce du solde respire : le halo s'allume et retombe. Elle n'est pas
+   là pour décorer, elle est là pour donner envie d'en gagner. */
+.rpg-credit.is-anime {
+  animation: rpg-credit-lueur 4.2s ease-in-out infinite;
+}
+@keyframes rpg-credit-lueur {
+  0%, 100% { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6)) drop-shadow(0 0 5px rgba(255, 205, 92, .38)); }
+  50% { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6)) drop-shadow(0 0 13px rgba(255, 216, 128, .72)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* La pièce reste frappée, elle cesse simplement de battre et de respirer. */
+  .rpg-credit.is-anime,
+  .rpg-credit.is-anime .rpg-credit__etincelle,
+  .rpg-credit.is-anime .rpg-credit__halo { animation: none; }
+  .rpg-credit__etincelle { opacity: .85; }
+  .rpg-credit__halo { opacity: .5; }
+}
+
+/* À l'impression, le halo et l'étincelle n'existent pas : il reste le dessin. */
+@media print {
+  .rpg-credit { filter: none; }
+  .rpg-credit__halo,
+  .rpg-credit__etincelle { display: none; }
+}

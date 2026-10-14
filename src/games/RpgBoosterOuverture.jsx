@@ -20,6 +20,8 @@ import { useEffect, useState } from 'react';
 import './rpg-souk.css';
 import { cardById, cardCost, cardFrameClass, cardRarityInfo, cardTypeLine } from './rpgCards.js';
 import { rayonParId } from './rpgBoosters.js';
+import { creditsLisible } from './rpgCredits.js';
+import RpgCreditIcon from './RpgCreditIcon.jsx';
 
 /** Une carte, face visible : son art, son nom, sa rareté, et ce qu'elle a rendu. */
 function CarteRevelee({ detail, cardArt, index }) {
@@ -44,7 +46,12 @@ function CarteRevelee({ detail, cardArt, index }) {
         <p className="rpg-souk__carte-cout" aria-label={`Coût : ${cardCost(carte)} mana`}>{cardCost(carte)} mana</p>
       </div>
       <p className="rpg-souk__carte-tampon" data-souk-carte-tampon={detail.doublon ? 'doublon' : 'nouvelle'}>
-        {detail.doublon ? `Déjà possédée · +${detail.remboursement} ◈` : 'Nouvelle'}
+        {detail.doublon ? (
+          <>
+            Déjà possédée · +{detail.remboursement} <RpgCreditIcon />
+            <span className="sr-only">crédits</span>
+          </>
+        ) : 'Nouvelle'}
       </p>
     </li>
   );
@@ -96,8 +103,8 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
           <h2>{rayon ? `Rayon ${rayon.nom}` : 'Le Souk'}</h2>
           <p>
             {ouverture.coffret
-              ? `${ouverture.prix} ◈ — dix paquets, une mythique assurée.`
-              : `${ouverture.prix} ◈ — cinq cartes, la rare en dernier.`}
+              ? <> {creditsLisible(ouverture.prix)} <RpgCreditIcon /> — dix paquets, une mythique assurée.</>
+              : <> {creditsLisible(ouverture.prix)} <RpgCreditIcon /> — cinq cartes, la rare en dernier.</>}
           </p>
         </header>
 
@@ -115,9 +122,12 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
 
         <footer className="rpg-souk__ceremonie-pied">
           <p className="rpg-souk__ceremonie-bilan" role="status" data-souk-ceremonie-bilan={ouverture.nouvelles ?? 0}>
-            {toutRevele
-              ? `${ouverture.nouvelles ?? 0} nouvelle${(ouverture.nouvelles ?? 0) > 1 ? 's' : ''}${total ? ` · ${total} ◈ rendus par les doublons` : ''}`
-              : `${revelees} / ${cartes.length} retournées`}
+            {toutRevele ? (
+              <>
+                {ouverture.nouvelles ?? 0} nouvelle{(ouverture.nouvelles ?? 0) > 1 ? 's' : ''}
+                {total ? <> {'·'} {total} <RpgCreditIcon /> rendus par les doublons</> : ''}
+              </>
+            ) : `${revelees} / ${cartes.length} retournées`}
           </p>
           {!toutRevele && (
             <button type="button" className="rpg-menu-button" data-souk-ceremonie-passer onClick={toutReveler}>

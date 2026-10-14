@@ -112,7 +112,7 @@ assert.match(ecran, /disabled=\{!terminee\}/, 'le bouton Réclamer est désactiv
 assert.match(ecran, /title=\{terminee \? .* : `Il reste \$\{reste\} à faire`\}/, 'et il écrit ce qu’il reste');
 assert.match(ecran, /disabled=\{Boolean\(refus\)\}/, 'le bouton Ouvrir est désactivé quand l’achat est refusé');
 assert.match(ecran, /Il manque \$\{creditsLisible\(etat\.prix - credits\)\}/, 'et il dit combien il manque');
-assert.match(ecran, /import \{ GAINS, paquetsAvantMythique \} from '\.\/rpgCredits\.js';/,
+assert.match(ecran, /import \{[^}]*GAINS[^}]*paquetsAvantMythique[^}]*\} from '\.\/rpgCredits\.js';/,
   'le montant du Cachet et la pitié viennent du barème, pas d’un chiffre écrit ici');
 
 // 5. La cérémonie d'ouverture est son propre composant, monté par l'écran.
@@ -183,7 +183,36 @@ assert.ok(!css.includes('rpg-souk__rayon-prix'),
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,600}rpg-souk__paquet-scene \{ animation: none; \}/,
   'et le balancement se coupe pour qui le demande');
 
+// 10. Le crédit a une pièce, et une seule façon de l'écrire à l'écran.
+const piece = lire('src/games/RpgCreditIcon.jsx');
+assert.match(piece, /export default function RpgCreditIcon/, 'la pièce est son propre composant');
+assert.ok(piece.includes("import './rpg-credit.css';"), 'et elle porte sa feuille');
+assert.match(piece, /aria-hidden="true"/, 'elle est décorative : le montant se lit déjà');
+assert.match(piece, /useId\(\)/, 'deux pièces ne partagent pas leurs dégradés');
+assert.match(piece, /anime = false/, 'la grande pièce s’allume par une prop, pas par une classe écrite à la main');
+for (const ecranDuSouk of ['RpgSouk.jsx', 'RpgBoosterOuverture.jsx', 'RpgDuelPage.jsx']) {
+  const code = sansCommentaires(lire(`src/games/${ecranDuSouk}`));
+  assert.ok(!code.includes('◈'), `${ecranDuSouk} n’écrit plus le losange à l’écran`);
+}
+assert.match(page, /<RpgCreditIcon className="rpg-mode-menu__souk-piece" \/>/,
+  'l’onglet du Souk porte la pièce');
+assert.match(page, /creditsLisible\(credits\)/, 'et son solde s’écrit avec l’espace fine, comme au Souk');
+assert.match(ecran, /<RpgCreditIcon anime \/>/, 'le grand solde porte la pièce qui respire');
+for (const montant of ['rpg-souk__recompense', 'rpg-souk__paquet-prix', 'rpg-souk__rayon-refus', 'rpg-souk__journal-notes']) {
+  assert.match(ecran, new RegExp(`${montant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]{0,260}<RpgCreditIcon`),
+    `la pièce est dans ${montant}`);
+}
+assert.match(credits, /export function creditsLisible/, 'le format des montants vit avec les règles');
+const pieceCss = lire('src/games/rpg-credit.css');
+assert.match(pieceCss, /width: 1em/, 'la pièce prend la taille du texte qui l’entoure');
+assert.match(pieceCss, /drop-shadow/, 'elle a son halo d’or');
+assert.match(pieceCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,400}animation: none/,
+  'et elle cesse de battre pour qui le demande');
+assert.match(css, /\.rpg-souk__solde-signe \{[^}]*font-size: clamp/, 'le solde donne sa taille à la pièce');
+assert.match(cssMenu, /\.rpg-mode-menu__souk-piece \{[^}]*font-size/, 'l’onglet donne la sienne');
+
 console.log('Le Souk (lots 3 à 5) est branché : sixième onglet, solde et pastille dessus,');
 console.log('trois quêtes réclamables, Cachet du cycle et de la semaine, cinq rayons dont le');
 console.log('paquet en volume est le bouton d’achat, la cérémonie d’ouverture, le journal des');
-console.log('ouvertures, et les cartes achetées qui entrent dans la collection.');
+console.log('ouvertures, et les cartes achetées qui entrent dans la collection. Le crédit y a');
+console.log('sa pièce — frappée or, une seule à l’écran, jamais deux fois le même dégradé.');

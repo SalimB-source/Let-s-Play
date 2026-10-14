@@ -26,6 +26,17 @@ import { cardById, cardRarityInfo } from './rpgCards.js';
 import { rayonParId } from './rpgBoosters.js';
 import { normaliserCollection } from './rpgCollection.js';
 
+/**
+ * Les crédits s'écrivent avec une espace fine insécable tous les trois chiffres :
+ * « 1 240 ◈ » se lit, « 1240 ◈ » se déchiffre. Vit ici, avec les règles, parce
+ * que trois écrans l'affichent (le Souk, la cérémonie, l'onglet) et qu'aucun ne
+ * doit réinventer le format.
+ */
+export function creditsLisible(montant) {
+  const nombre = Math.max(0, Math.floor(Number(montant) || 0));
+  return String(nombre).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+}
+
 /** Le portefeuille de l'appareil : solde, cartes du Souk, compteurs d'ouverture. */
 export const RPG_BOURSE_STORAGE_KEY = 'letsplay_sablier_bourse_v1';
 

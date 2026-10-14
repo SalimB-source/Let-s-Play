@@ -44,7 +44,7 @@
   margin: 0;
   color: #ffe7af;
 }
-.rpg-souk__solde-signe { color: #e5bf69; font-size: 16px; }
+.rpg-souk__solde-signe { display: inline-flex; align-items: center; align-self: center; font-size: clamp(22px, 3.4vw, 30px); }
 .rpg-souk__solde strong {
   font: 800 clamp(26px, 4vw, 36px)/1 var(--mono, monospace);
   font-variant-numeric: tabular-nums;
@@ -414,6 +414,16 @@
 .rpg-souk__paquet:disabled:not(.is-ferme) { filter: saturate(.8) brightness(.9); }
 .rpg-souk__paquet:disabled .rpg-souk__paquet-scene { animation: none; }
 .rpg-souk__paquet:disabled .rpg-souk__paquet-corps { transform: rotateX(-7deg) rotateY(24deg) scale(.94); }
+
+/* La pièce du crédit, dans les montants de l'écran : un cran plus grosse que le
+   texte qui l'entoure — 11 px dans une ligne de quête, 10 px dans une ligne de
+   refus, 20 px à côté du solde. C'est elle qui donne envie d'en gagner, elle
+   n'a pas à être discrète. */
+.rpg-souk__recompense .rpg-credit { font-size: 1.15em; }
+.rpg-souk__quete-pied .rpg-menu-button .rpg-credit { font-size: 1.1em; }
+.rpg-souk__cachet .rpg-menu-button .rpg-credit { font-size: 1.1em; }
+.rpg-souk__rayon-refus .rpg-credit { font-size: 1.4em; }
+.rpg-souk__journal-notes .rpg-credit { font-size: 1.15em; }
 
 /* ── Les rayons : cinq étagères, cinq prix ───────────────────────────────── */
 .rpg-souk__rayons {

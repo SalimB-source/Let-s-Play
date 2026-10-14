@@ -58,6 +58,8 @@ import { readRpgTable3dPref, writeRpgTable3dPref } from './rpgTableSceneThemes.j
 import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
 import RpgSouk from './RpgSouk.jsx';
+import RpgCreditIcon from './RpgCreditIcon.jsx';
+import { creditsLisible } from './rpgCredits.js';
 import {
   preparerDuelTutoriel,
   RPG_TUTORIAL_OPPONENT_DECK,
@@ -1717,10 +1719,10 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               data-souk-onglet={credits}
               onClick={() => { play('menu'); onChangeScreen('souk'); }}
             >
-              <span aria-hidden="true">◈</span>
+              <RpgCreditIcon className="rpg-mode-menu__souk-piece" />
               <span className="rpg-mode-menu__onglet-libelle">Souk</span>
               <span className="rpg-mode-menu__bourse-solde" data-souk-bourse={credits}>
-                {credits}
+                {creditsLisible(credits)}
               </span>
               {aReclamer > 0 && (
                 <span className="rpg-mode-menu__bourse-pastille" data-souk-a-reclamer={aReclamer} aria-hidden="true">

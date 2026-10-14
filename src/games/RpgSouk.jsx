@@ -23,7 +23,7 @@
 
 import { useEffect, useState } from 'react';
 import './rpg-souk.css';
-import { GAINS, paquetsAvantMythique } from './rpgCredits.js';
+import { GAINS, creditsLisible, paquetsAvantMythique } from './rpgCredits.js';
 import {
   JOURS_DE_LA_SERIE, cachetDeLaSemaineDisponible, cachetDisponible,
   joursAvantLeCachetDeLaSemaine, queteParId, secondesAvantMinuit,
@@ -31,18 +31,10 @@ import {
 import { COFFRET, TAUX, etatRayons, rayonParId, tourQuiGarde } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
+import RpgCreditIcon from './RpgCreditIcon.jsx';
 
 /** Les paliers, tels que le joueur les lit (le module les nomme en interne). */
 const PALIERS = Object.freeze({ facile: 'Facile', moyenne: 'Moyenne', difficile: 'Difficile' });
-
-/**
- * Les crédits s'écrivent avec une espace fine insécable tous les trois chiffres :
- * « 1 240 ◈ » se lit, « 1240 ◈ » se déchiffre.
- */
-export function creditsLisible(montant) {
-  const nombre = Math.max(0, Math.floor(Number(montant) || 0));
-  return String(nombre).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
-}
 
 /** « 7 h 12 », « 43 min », « moins d'une minute » — le temps qui reste au cycle. */
 export function dureeAvantMinuit(secondes) {
@@ -162,7 +154,10 @@ function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
         <span className="rpg-souk__jauge-texte">{progres} / {quete.objectif}</span>
       </div>
       <footer className="rpg-souk__quete-pied">
-        <span className="rpg-souk__recompense">+{quete.recompense} ◈</span>
+        <span className="rpg-souk__recompense">
+          +{quete.recompense} <RpgCreditIcon />
+          <span className="sr-only">crédits</span>
+        </span>
         {reclamee ? (
           <span className="rpg-souk__pris">Réclamée</span>
         ) : (
@@ -174,7 +169,12 @@ function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
             title={terminee ? `Encaisser ${quete.recompense} crédits` : `Il reste ${reste} à faire`}
             onClick={reclamer}
           >
-            Réclamer{terminee ? ` ${quete.recompense} ◈` : ''}
+            Réclamer{terminee ? (
+              <>
+                {' '}{quete.recompense} <RpgCreditIcon />
+                <span className="sr-only">crédits</span>
+              </>
+            ) : ''}
           </button>
         )}
       </footer>
@@ -230,7 +230,9 @@ function PaquetDuRayon({ rayon, index, mythes, ferme, prix, refus, onOuvrir }) {
           </span>
         </span>
       </span>
-      <span className="rpg-souk__paquet-prix">Acheter · {creditsLisible(prix)} ◈</span>
+      <span className="rpg-souk__paquet-prix">
+        Acheter · {creditsLisible(prix)} <RpgCreditIcon />
+      </span>
     </button>
   );
 }
@@ -298,7 +300,7 @@ export default function RpgSouk({
         </div>
         <div className="rpg-souk__bourse">
           <p className="rpg-souk__solde" data-souk-solde={credits} aria-label={`Bourse : ${credits} crédits`}>
-            <span className="rpg-souk__solde-signe" aria-hidden="true">◈</span>
+            <span className="rpg-souk__solde-signe" aria-hidden="true"><RpgCreditIcon anime /></span>
             <strong>{creditsLisible(credits)}</strong>
             <em>crédits</em>
           </p>
@@ -316,7 +318,7 @@ export default function RpgSouk({
 
       {aReclamer > 0 && (
         <p className="rpg-souk__attente" role="status" data-souk-attente={aReclamer}>
-          <span aria-hidden="true">◈</span>{' '}
+          <RpgCreditIcon />{' '}
           {aReclamer === 1 ? 'Une récompense vous attend' : `${aReclamer} récompenses vous attendent`} — elles sont plus bas.
         </p>
       )}
@@ -358,7 +360,7 @@ export default function RpgSouk({
             data-souk-cachet-reclamer
             onClick={reclamerCachet}
           >
-            Réclamer le Cachet · +{GAINS.cachetDuCycle} ◈
+            Réclamer le Cachet · +{GAINS.cachetDuCycle} <RpgCreditIcon />
           </button>
         ) : (
           <span className="rpg-souk__pris">{cachet === 'pris' ? 'Cachet réclamé' : 'Cachet scellé'}</span>
@@ -388,7 +390,7 @@ export default function RpgSouk({
             data-souk-semaine-reclamer
             onClick={() => { const gagne = onReclamerSemaine?.(); onPlaySfx?.(gagne ? 'victoire' : 'erreur'); }}
           >
-            Réclamer le Cachet de la semaine · +{GAINS.cachetDeLaSemaine} ◈
+            Réclamer le Cachet de la semaine · +{GAINS.cachetDeLaSemaine} <RpgCreditIcon />
           </button>
         ) : (
           <span className="rpg-souk__pris">{semaine === 'pris' ? 'Cachet de la semaine réclamé' : `${quetes?.serie ?? 0} / ${JOURS_DE_LA_SERIE} jours`}</span>
@@ -416,7 +418,9 @@ export default function RpgSouk({
                   <span className="rpg-souk__journal-notes">
                     {entree.coffret ? 'coffret' : 'paquet'}
                     {entree.mythique ? ' · mythique' : ''}
-                    {entree.remboursement ? ` · +${entree.remboursement} ◈` : ''}
+                    {entree.remboursement ? (
+                      <> {'·'} +{entree.remboursement} <RpgCreditIcon /></>
+                    ) : ''}
                   </span>
                 </li>
               );
@@ -442,7 +446,8 @@ export default function RpgSouk({
           {rayons.map((etat, index) => {
             const ferme = raisonFermeture(etat);
             const assez = credits >= etat.prix;
-            const refus = ferme ?? (assez ? null : `Il manque ${creditsLisible(etat.prix - credits)} ◈.`);
+            const manque = creditsLisible(etat.prix - credits);
+            const refus = ferme ?? (assez ? null : `Il manque ${creditsLisible(etat.prix - credits)} crédits.`);
             return (
               <li
                 key={etat.rayon.id}
@@ -470,7 +475,11 @@ export default function RpgSouk({
                     : `${etat.nouvelles} carte${etat.nouvelles > 1 ? 's' : ''} sur ${etat.taille} vous manque${etat.nouvelles > 1 ? 'nt' : ''} encore.`}
                 </p>
                 <footer>
-                  {refus && <p className="rpg-souk__rayon-refus" data-souk-rayon-refus>{refus}</p>}
+                  {refus && (
+                    <p className="rpg-souk__rayon-refus" data-souk-rayon-refus>
+                      {ferme ? refus : <>Il manque {manque} <RpgCreditIcon /></>}
+                    </p>
+                  )}
                   {etat.ouvert && etat.mythiques > 0 && (
                     <button
                       type="button"
@@ -482,7 +491,7 @@ export default function RpgSouk({
                         : `Dix paquets pour ${etat.prixCoffret} crédits — une mythique assurée`}
                       onClick={() => { onOuvrirCoffret?.(etat.rayon.id); }}
                     >
-                      Coffret · {creditsLisible(etat.prixCoffret)} ◈
+                      Coffret · {creditsLisible(etat.prixCoffret)} <RpgCreditIcon />
                       <span className="rpg-souk__rayon-remise">−{Math.round(COFFRET.remise * 100)} %</span>
                     </button>
                   )}

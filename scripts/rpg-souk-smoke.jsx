@@ -17,11 +17,11 @@ import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import { useSablierBourse } from '../src/games/useSablierBourse.js';
-import RpgSouk, { creditsLisible, dureeAvantMinuit } from '../src/games/RpgSouk.jsx';
+import RpgSouk, { dureeAvantMinuit } from '../src/games/RpgSouk.jsx';
+import { GAINS, RPG_BOURSE_STORAGE_KEY, creditsLisible, portefeuilleVide } from '../src/games/rpgCredits.js';
 import {
   RPG_GRAINE_STORAGE_KEY, RPG_QUETES_STORAGE_KEY, cleJour, jourPrecedent, queteParId,
 } from '../src/games/rpgQuetes.js';
-import { GAINS, RPG_BOURSE_STORAGE_KEY, portefeuilleVide } from '../src/games/rpgCredits.js';
 import { RPG_DUEL_CARDS, cardColors } from '../src/games/rpgCards.js';
 import { rngSeme } from '../src/games/rpgHasard.js';
 import { collectionJoueur } from '../src/games/rpgCollection.js';
@@ -153,7 +153,8 @@ export async function checkRpgSoukEcran(assert) {
     assert.equal(donnee('[data-souk-rayon="braise"]', 'soukRayonEtat'), 'sans-solde',
       'un rayon ouvert sans un crédit refuse l’achat');
     assert.match(noeud('[data-souk-rayon="braise"] [data-souk-rayon-refus]')?.textContent ?? '', /Il manque/,
-      'et il dit combien il manque');
+      'et il dit combien il manque');    assert.ok(noeud('[data-souk-rayon="braise"] [data-souk-rayon-refus] .rpg-credit'),
+      'le refus est frappé de la pièce lui aussi');
     assert.ok(noeud('[data-souk-ouvrir="braise"]').disabled, 'le bouton Ouvrir est donc désactivé');
     assert.equal(donnee('[data-souk-rayon="neige"]', 'soukRayonEtat'), 'ferme',
       'la Neige est encore gardée par sa tour');
@@ -173,8 +174,10 @@ export async function checkRpgSoukEcran(assert) {
       'la rune du Sablier est marquée sur le paquet');
     assert.equal(paquet.querySelector('.rpg-souk__paquet-nom')?.textContent, 'Braise',
       'le paquet dit de quel rayon il vient');
-    assert.match(paquet.querySelector('.rpg-souk__paquet-prix')?.textContent ?? '', /^Acheter · 140 ◈$/,
+    assert.match(paquet.querySelector('.rpg-souk__paquet-prix')?.textContent ?? '', /^\s*Acheter · 140\s*$/,
       'son étiquette dit le geste et le prix');
+    assert.ok(paquet.querySelector('.rpg-souk__paquet-prix .rpg-credit'),
+      'et le prix est frappé de la pièce, pas d’un losange de texte');
     assert.equal(paquet.getAttribute('aria-label'), 'Ouvrir le paquet Braise · 140 crédits',
       'et le paquet se nomme pour qui ne le voit pas');
     assert.equal(paquet.querySelector('.rpg-souk__paquet-scene')?.getAttribute('aria-hidden'), 'true',
@@ -184,6 +187,22 @@ export async function checkRpgSoukEcran(assert) {
     assert.ok(noeud('[data-souk-ouvrir="neige"]')?.classList.contains('is-ferme'),
       'un rayon gardé affiche un paquet éteint');
     assert.equal(noeud('[data-souk-attente]'), null, 'rien à réclamer : pas de bandeau');
+
+    // ── La pièce du crédit : frappée, décorative, et elle respire ───────────
+    const piece = noeud('[data-souk-solde] .rpg-credit');
+    assert.ok(piece, 'le solde est frappé de la pièce, plus écrit d’un losange de texte');
+    assert.ok(piece.classList.contains('is-anime'), 'la grande pièce respire : elle appelle à en gagner');
+    assert.equal(piece.getAttribute('aria-hidden'), 'true',
+      'et elle est décorative : le mot « crédits » est déjà dans l’aria-label du solde');
+    assert.ok(piece.querySelectorAll('polygon').length >= 6,
+      'la pièce est taillée : corps, quatre facettes, biseau, marque de frappe');
+    assert.ok(piece.querySelector('.rpg-credit__etincelle') && piece.querySelector('.rpg-credit__halo'),
+      'elle a son étincelle et son halo');
+    assert.ok(piece.querySelector('linearGradient'),
+      'et son or est un dégradé, pas un aplat');
+    const degrades = [...document.querySelectorAll('[data-souk] .rpg-credit linearGradient')].map((g) => g.id);
+    assert.equal(new Set(degrades).size, degrades.length,
+      'deux pièces ne partagent pas leurs dégradés — sinon toutes prendraient le premier');
 
     // ── Ce qui n'est pas terminé ne se réclame pas ──────────────────────────
     const jour = bourse.quetes.quetes.map((id) => queteParId(id));
@@ -196,7 +215,12 @@ export async function checkRpgSoukEcran(assert) {
       assert.ok(bouton.disabled, 'désactivé tant que l’objectif n’est pas atteint');
       assert.match(bouton.title, /^Il reste \d+/, 'et il dit ce qu’il reste');
       assert.ok(noeud(`[data-souk-quete="${quete.id}"] [data-souk-reste]`) !== null,
-        'la carte écrit aussi ce qu’il reste');
+        'la carte écrit aussi ce qu’il reste');      const recompense = noeud(`[data-souk-quete="${quete.id}"] .rpg-souk__recompense`);
+      assert.ok(recompense.querySelector('.rpg-credit'), 'la récompense est frappée de la pièce');
+      assert.match(recompense.textContent, new RegExp(`\\+${quete.recompense}`),
+        'le montant reste écrit à côté');
+      assert.match(recompense.querySelector('.sr-only')?.textContent ?? '', /crédits/,
+        'et le mot est là pour qui écoute');
     }
 
     // ── Jouer remplit la barre, et le bouton s'ouvre ────────────────────────
@@ -250,7 +274,8 @@ export async function checkRpgSoukEcran(assert) {
     }
     assert.equal(donnee('[data-souk-cachet]', 'soukCachet'), 'disponible',
       'les trois réclamées : le Cachet s’ouvre');
-    assert.ok(noeud('[data-souk-cachet-reclamer]'), 'et son bouton est là');
+    assert.ok(noeud('[data-souk-cachet-reclamer]'), 'et son bouton est là');    assert.ok(noeud('[data-souk-cachet-reclamer] .rpg-credit'),
+      'et son bouton est frappé de la pièce');
 
     const avantCachet = Number(donnee('[data-souk-solde]', 'soukSolde'));
     await act(async () => noeud('[data-souk-cachet-reclamer]').click());

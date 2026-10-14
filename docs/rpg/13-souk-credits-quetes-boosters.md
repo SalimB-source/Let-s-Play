@@ -532,6 +532,20 @@ paquet est un `<button>` qui porte `aria-label="Ouvrir le paquet Braise · 140
 crédits"`, la scène 3D ne porte que le décor (`aria-hidden`), le focus clavier
 l'entoure et le soulève, et son étiquette s'écrit toujours 140 ◈ en clair.
 
+**La pièce du crédit.** Le losange `◈` reste la façon d'**écrire** la monnaie —
+docs, commentaires, `aria-label` — mais à l'écran c'est une **pièce frappée or**
+qui s'affiche : un losange taillé à quatre facettes, les arêtes du dessus prises
+dans la lumière, un centre gravé, une étincelle et un halo. Elle se dimensionne
+toute seule (`1em`) : 11 px dans une ligne de récompense, 14 px sur l'onglet du
+menu, 22 à 30 px à côté du solde — et c'est la grande qui **respire**
+(`anime`), parce que c'est elle qu'on regarde avant de descendre au Souk. Elle
+est **décorative** (`aria-hidden`) : partout où elle sert, le mot « crédits » est
+déjà là — un `aria-label` sur le solde et sur l'onglet, un `title` sur les
+boutons, un `.sr-only` dans les lignes de quête — donc rien n'est lu deux fois.
+`creditsLisible` a suivi le mouvement : le format des montants (`1 240`) vit
+maintenant avec les règles, dans `rpgCredits.js`, parce que trois écrans
+l'affichent.
+
 **Ce que le lot 3 a livré** : les trois premiers points, **sans** les rayons.
 La bourse, les quêtes et le Cachet sont jouables ; la section des rayons
 attendait le lot 4. Le jeton du lot 2 a quitté sa pastille à part pour
@@ -766,6 +780,16 @@ Les cas couverts :
   `backface-visibility: hidden`, les cinq teintes de rayon, **un seul** prix par
   tuile (plus de `rpg-souk__rayon-prix`) et le balancement coupé sous
   `prefers-reduced-motion` ;
+- **la pièce du crédit** — le smoke vérifie qu'elle est frappée (six polygones et
+  plus : corps, quatre facettes, biseau, marque de frappe), qu'elle porte son
+  étincelle et son halo, que son or est un dégradé, que le grand solde respire
+  (`is-anime`), qu'elle est `aria-hidden`, et que **deux pièces ne partagent pas
+  leurs dégradés** — sans quoi le navigateur résoudrait le second `url(#…)` vers
+  le premier dessiné. Les gardes de source tiennent les quatre endroits où elle
+  s'affiche (solde, récompense de quête, refus de rayon, journal), le mot
+  « crédits » en `.sr-only`, la taille `1em`, le `prefers-reduced-motion` qui
+  l'apaise sans la faire disparaître, et l'absence du losange de texte dans les
+  trois écrans (`RpgSouk`, `RpgBoosterOuverture`, `RpgDuelPage`) ;
 - **série et journal (lot 5)** — quinze jours d'affilée ouverts un par un : la
   série suit, le Cachet de la semaine paie au **septième** et au
   **quatorzième** jour, jamais entre les deux, et jamais deux fois le même jour ;
