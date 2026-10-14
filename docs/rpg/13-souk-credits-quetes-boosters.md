@@ -374,6 +374,8 @@ les lots 2 à 5.
 | ✅ `src/games/useSablierBourse.js` | état React + fusion + poussée au compte, patron de `useDecksSablier.js` | `scripts/rpg-souk-bourse-smoke.jsx` |
 | ✅ `scripts/rpg-souk-bourse-smoke.jsx` + `scripts/rpg-souk-bourse-check.mjs` | le hook monté dans jsdom (jour, gains, réclamation, rechargement) + les gardes de source | `npm run check:rpg-souk-branche` |
 | ✅ `src/games/RpgSouk.jsx` | l'écran : la bourse, les quêtes, les Cachets, le **paquet en volume qui est le bouton d'achat**, le journal | `scripts/rpg-souk-smoke.jsx` |
+| ✅ `src/games/RpgQuetesDuJour.jsx` | le panneau des quêtes du jour dans l'onglet **Jouer** (barres, montants, encaissement, chemin du Souk) | `scripts/rpg-souk-smoke.jsx` |
+| ✅ `src/games/rpg-quetes-jour.css` | l'habit du panneau : carte de laiton, barres lisibles, appel quand c'est prêt | `scripts/rpg-souk-ui-check.mjs` (garde-fous de source) |
 | ✅ `src/games/rpg-souk.css` | mise en page, **volume des paquets** (perspective, faces, reflet), `prefers-reduced-motion`, portrait étroit, tactile | `scripts/rpg-souk-ui-check.mjs` (garde-fous de source) |
 | ✅ `scripts/rpg-souk-smoke.jsx` + `scripts/rpg-souk-ui-check.mjs` | l'écran monté dans jsdom **branché au vrai hook** (journée, barres, réclamation, Cachets, rayons, achat, cérémonie, coffret, journal, série) + les gardes de source du menu | `npm run check:rpg-souk-ui` |
 | ✅ `src/games/RpgBoosterOuverture.jsx` | la cérémonie des cinq cartes (et du coffret) | le même smoke |
@@ -531,6 +533,27 @@ tromper. Le coffret, lui, reste un bouton à part : c'est **une autre** dépense
 paquet est un `<button>` qui porte `aria-label="Ouvrir le paquet Braise · 140
 crédits"`, la scène 3D ne porte que le décor (`aria-hidden`), le focus clavier
 l'entoure et le soulève, et son étiquette s'écrit toujours 140 ◈ en clair.
+
+**Les quêtes du jour dans l'onglet Jouer.** La colonne de droite du menu — la
+grille `.rpg-mode-menu__play` avait **déjà** deux colonnes, la seconde attendait
+son contenu — porte le panneau des quêtes du jour : les trois quêtes avec leur
+palier, leur barre, leur montant frappé de la pièce, et le bouton **Réclamer**
+qui s'allume dès que l'objectif est atteint (« Encore 2. » tant qu'il ne l'est
+pas). En dessous, le **Cachet du cycle** (qui appelle quand les trois y sont
+passées), la **série** (« 3 jours d'affilée — Cachet de la semaine dans 4
+jours », et son bouton au septième), puis le **solde** et le chemin vers le Souk
+— parce qu'une récompense qu'on ne peut pas dépenser ne donne envie de rien.
+Sous 820 px, la grille repasse à une colonne et le panneau passe sous le héros :
+aucune règle de mise en page n'a été ajoutée pour ça.
+
+Ce que le panneau **ne fait pas** : il n'ajoute ni règle ni compteur. Il lit
+`vueDeLaQuete(etat, id)` — la vue partagée exportée par `rpgQuetes.js`, que
+l'écran du Souk utilise aussi : mêmes barres, mêmes montants, mêmes états
+(`encours`, `terminee`, `reclamee`), donc les deux écrans ne peuvent pas se
+contredire. Réclamer dans le panneau paie exactement ce que paie le Souk, parce
+que c'est **le même geste du hook** (`reclamerUneQuete`, `reclamerLeCachet`,
+`reclamerLeCachetDeLaSemaine`) — le smoke le prouve en encaissant une quête et
+le Cachet **depuis le panneau**, puis en relisant le Souk.
 
 **La pièce du crédit.** Le losange `◈` reste la façon d'**écrire** la monnaie —
 docs, commentaires, `aria-label` — mais à l'écran c'est une **pièce frappée or**
@@ -790,6 +813,18 @@ Les cas couverts :
   « crédits » en `.sr-only`, la taille `1em`, le `prefers-reduced-motion` qui
   l'apaise sans la faire disparaître, et l'absence du losange de texte dans les
   trois écrans (`RpgSouk`, `RpgBoosterOuverture`, `RpgDuelPage`) ;
+- **les quêtes du jour dans l'onglet Jouer** — le smoke monte le panneau à côté
+  de l'écran du Souk, **avec le même hook** : il vérifie que les deux écrans
+  annoncent le même solde et le même état de quête, que la barre du panneau se
+  remplit quand celle du Souk se remplit, que le bouton d'encaissement apparaît
+  au même moment, qu'une quête réclamée **depuis le panneau** paie le montant du
+  barème et que le Souk le voit, que le **Cachet du cycle** se réclame de la même
+  façon des deux côtés, et que le panneau mène au Souk (son compris). Les gardes
+  de source tiennent le reste : le panneau est monté dans la branche `jouer`,
+  il reçoit les trois gestes du hook et `onChangeScreen('souk')`, il lit la vue
+  partagée, il n'écrit aucun montant à la main (`GAINS` s'en charge), il ne
+  touche à aucun stockage, l'écran du Souk n'a plus de vue des quêtes à lui, et
+  la grille du menu garde ses deux colonnes (une seule sous 820 px) ;
 - **série et journal (lot 5)** — quinze jours d'affilée ouverts un par un : la
   série suit, le Cachet de la semaine paie au **septième** et au
   **quatorzième** jour, jamais entre les deux, et jamais deux fois le même jour ;

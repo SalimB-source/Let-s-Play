@@ -211,8 +211,48 @@ assert.match(pieceCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,400}an
 assert.match(css, /\.rpg-souk__solde-signe \{[^}]*font-size: clamp/, 'le solde donne sa taille à la pièce');
 assert.match(cssMenu, /\.rpg-mode-menu__souk-piece \{[^}]*font-size/, 'l’onglet donne la sienne');
 
+// 11. Les quêtes du jour sont aussi dans l'onglet Jouer, à droite du menu.
+const panneau = lire('src/games/RpgQuetesDuJour.jsx');
+const panneauCode = sansCommentaires(panneau);
+assert.match(page, /import RpgQuetesDuJour from '\.\/RpgQuetesDuJour\.jsx';/,
+  'le menu monte le panneau des quêtes');
+assert.match(page, /<RpgQuetesDuJour[\s\S]{0,600}quetes=\{quetes\}/,
+  'il lui passe les quêtes du jour');
+for (const geste of ['onReclamerQuete', 'onReclamerCachet', 'onReclamerSemaine']) {
+  assert.match(page, new RegExp(`<RpgQuetesDuJour[\\s\\S]{0,700}${geste}=\\{${geste}\\}`),
+    `le panneau encaisse par ${geste}, le geste du hook`);
+}
+assert.match(page, /onOuvrirSouk=\{[^}]*onChangeScreen\('souk'\)[^}]*\}/,
+  'et il mène au Souk');
+// Il vit dans la colonne de droite de la grille du menu — celle qui existait
+// déjà : le panneau ne réinvente pas la mise en page.
+assert.match(cssMenu, /\.rpg-mode-menu__play \{[^}]*grid-template-columns: minmax\(0, 1\.52fr\) minmax\(260px, \.82fr\)/,
+  'la colonne de droite du menu était déjà là');
+assert.match(cssMenu, /@media \(max-width: 820px\) \{\s*\.rpg-mode-menu__play \{ grid-template-columns: minmax\(0, 1fr\); \}/,
+  'et sous 820 px le panneau passe sous le menu');
+// Le panneau lit la vue partagée : aucune arithmétique de quête ne vit ici.
+assert.match(panneauCode, /import \{[\s\S]{0,200}vueDeLaQuete[\s\S]{0,200}\} from '\.\/rpgQuetes\.js';/,
+  'le panneau lit la vue partagée des quêtes');
+assert.match(panneauCode, /import \{ GAINS, creditsLisible \} from '\.\/rpgCredits\.js';/,
+  'et les montants viennent du barème');
+assert.ok(!/80|50 ◈|cachetDuCycle: /.test(panneauCode.replace(/GAINS\.\w+/g, 'GAINS.x')),
+  'aucun montant n’est écrit à la main dans le panneau');
+assert.ok(!/localStorage|sauver/.test(panneauCode),
+  'il ne touche à aucun stockage : il reçoit des états et rend des gestes');
+assert.ok(!/function etatDeLaQuete/.test(ecranCode),
+  'l’écran du Souk n’a plus sa propre vue des quêtes — elle est partagée');
+assert.match(ecranCode, /vueDeLaQuete\(quetes, id\)/, 'et il lit la même');
+assert.ok(panneau.includes('<RpgCreditIcon'), 'la pièce des crédits est aussi dans le panneau');
+const panneauCss = lire('src/games/rpg-quetes-jour.css');
+assert.match(panneauCss, /min-height: 44px/, 'les boutons du panneau font leur taille au doigt');
+assert.match(panneauCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,300}animation: none/,
+  'et son appel clignotant se coupe');
+assert.match(ecran, /vueDeLaQuete/, 'les deux écrans se servent de la même vue');
+
 console.log('Le Souk (lots 3 à 5) est branché : sixième onglet, solde et pastille dessus,');
 console.log('trois quêtes réclamables, Cachet du cycle et de la semaine, cinq rayons dont le');
 console.log('paquet en volume est le bouton d’achat, la cérémonie d’ouverture, le journal des');
 console.log('ouvertures, et les cartes achetées qui entrent dans la collection. Le crédit y a');
 console.log('sa pièce — frappée or, une seule à l’écran, jamais deux fois le même dégradé.');
+console.log('Les quêtes du jour attendent aussi dans l’onglet Jouer, à droite du menu :');
+console.log('mêmes barres, mêmes montants, et le geste d’encaissement au même endroit.');

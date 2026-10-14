@@ -246,6 +246,35 @@ export function queteTerminee(etat, queteId) {
   return (normaliserEtatQuetes(etat).progres[queteId] ?? 0) >= quete.objectif;
 }
 
+/**
+ * Une quête du jour telle qu'un écran la raconte : son objectif, où en est le
+ * joueur, si c'est terminé, si c'est déjà encaissé.
+ *
+ * C'est **la** vue partagée : l'écran du Souk et le panneau de l'onglet Jouer la
+ * lisent tous les deux, donc ils ne peuvent pas se contredire — même barre, même
+ * état, même montant. Les compteurs sont bornés ici (une progression au-delà de
+ * l'objectif, négative ou illisible vaut ce que valent les règles), et
+ * `etat` porte le mot que les deux écrans affichent : `encours`, `terminee`,
+ * `reclamee`.
+ */
+export function vueDeLaQuete(etat, queteId) {
+  const quete = QUETE_PAR_ID.get(queteId);
+  if (!quete) return null;
+  const base = normaliserEtatQuetes(etat);
+  const progres = Math.min(quete.objectif, Math.max(0, Math.floor(Number(base.progres[queteId]) || 0)));
+  const reclamee = base.reclamations.includes(queteId);
+  const terminee = progres >= quete.objectif;
+  return {
+    quete,
+    progres,
+    reste: quete.objectif - progres,
+    pourcent: Math.round((progres / quete.objectif) * 100),
+    reclamee,
+    terminee,
+    etat: reclamee ? 'reclamee' : terminee ? 'terminee' : 'encours',
+  };
+}
+
 /** Les quêtes terminées et non réclamées — ce que compte la pastille du menu. */
 export function quetesAReclamer(etat) {
   const base = normaliserEtatQuetes(etat);

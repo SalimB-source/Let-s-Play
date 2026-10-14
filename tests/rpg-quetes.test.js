@@ -25,6 +25,7 @@ import {
   reclamerQuete,
   secondesAvantMinuit,
   serieComplete,
+  vueDeLaQuete,
 } from '../src/games/rpgQuetes.js';
 import { GAINS } from '../src/games/rpgCredits.js';
 
@@ -308,4 +309,44 @@ test('le jour nouveau reprend le Cachet de la semaine, la série continue', () =
     'la fusion garde la semaine réclamée dès qu’un appareil la porte');
   assert.equal(fusionnerQuetes({ ...sept, jour: '2026-03-01', semaine: false }, sept).etat.semaine, true,
     'et le jour le plus récent décide du reste');
+});
+
+test('la vue d’une quête est la même pour tous les écrans', () => {
+  const jour = cleJour(new Date(2026, 5, 10));
+  const graine = 'vue-partagee';
+  const etat = ouvrirJournee({ etat: etatQuetesVide(), jour, graine, progression: null });
+  const premiere = etat.quetes[0];
+
+  // Avant de jouer : en cours, zéro, rien à réclamer.
+  const vide = vueDeLaQuete(etat, premiere);
+  assert.equal(vide.etat, 'encours', 'la quête commence en cours');
+  assert.equal(vide.progres, 0);
+  assert.equal(vide.reste, vide.quete.objectif, 'il reste tout à faire');
+  assert.equal(vide.pourcent, 0, 'la barre est vide');
+  assert.equal(vide.terminee, false);
+  assert.equal(vide.reclamee, false);
+
+  // Une quête inconnue n'a pas de vue du tout — les écrans n'inventent rien.
+  assert.equal(vueDeLaQuete(etat, 'quete-qui-nexiste-pas'), null);
+
+  // Une progression au-delà de l'objectif est bornée, comme partout ailleurs.
+  const plein = vueDeLaQuete({ ...etat, progres: { [premiere]: 99 } }, premiere);
+  assert.equal(plein.progres, plein.quete.objectif, 'la progression plafonne à l’objectif');
+  assert.equal(plein.pourcent, 100, 'la barre est pleine');
+  assert.equal(plein.reste, 0);
+  assert.equal(plein.etat, 'terminee', 'et la quête se dit terminée, pas encore réclamée');
+
+  // Réclamée : le mot change, le montant ne bouge plus.
+  const prise = reclamerQuete({ ...etat, progres: { [premiere]: 99 } }, premiere);
+  assert.equal(prise.ok, true, 'la quête pleine se réclame');
+  const vuePrise = vueDeLaQuete(prise.etat, premiere);
+  assert.equal(vuePrise.etat, 'reclamee');
+  assert.equal(vuePrise.terminee, true, 'une quête réclamée reste terminée');
+
+  // Des compteurs illisibles valent zéro, jamais NaN à l'écran.
+  for (const cassé of [undefined, null, 'beaucoup', -5, NaN]) {
+    const vue = vueDeLaQuete({ ...etat, progres: { [premiere]: cassé } }, premiere);
+    assert.equal(vue.progres, 0, `${String(cassé)} se lit comme zéro`);
+    assert.equal(vue.etat, 'encours');
+  }
 });

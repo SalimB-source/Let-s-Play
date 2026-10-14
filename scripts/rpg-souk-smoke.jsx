@@ -18,6 +18,7 @@ import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import { useSablierBourse } from '../src/games/useSablierBourse.js';
 import RpgSouk, { dureeAvantMinuit } from '../src/games/RpgSouk.jsx';
+import RpgQuetesDuJour from '../src/games/RpgQuetesDuJour.jsx';
 import { GAINS, RPG_BOURSE_STORAGE_KEY, creditsLisible, portefeuilleVide } from '../src/games/rpgCredits.js';
 import {
   RPG_GRAINE_STORAGE_KEY, RPG_QUETES_STORAGE_KEY, cleJour, jourPrecedent, queteParId,
@@ -68,6 +69,18 @@ function Sonde({ surPret, sons }) {
   });
   surPret(bourse);
   return (
+    <>
+    {/* Le panneau de l'onglet Jouer : la page le monte à droite du menu, il
+        reçoit exactement les mêmes états et les mêmes gestes que le Souk. */}
+    <RpgQuetesDuJour
+      quetes={bourse.quetes}
+      credits={bourse.credits}
+      onReclamerQuete={(id) => bourse.reclamerUneQuete(id)}
+      onReclamerCachet={() => bourse.reclamerLeCachet()}
+      onReclamerSemaine={() => bourse.reclamerLeCachetDeLaSemaine()}
+      onOuvrirSouk={() => { sons.push('vers-le-souk'); }}
+      onPlaySfx={(nom) => { sons.push(nom); }}
+    />
     <RpgSouk
       quetes={bourse.quetes}
       credits={bourse.credits}
@@ -86,6 +99,7 @@ function Sonde({ surPret, sons }) {
       onPlaySfx={(nom) => { sons.push(nom); }}
       onExit={() => { sons.push('sortie'); }}
     />
+    </>
   );
 }
 
@@ -207,6 +221,31 @@ export async function checkRpgSoukEcran(assert) {
     // ── Ce qui n'est pas terminé ne se réclame pas ──────────────────────────
     const jour = bourse.quetes.quetes.map((id) => queteParId(id));
     assert.ok(jour.every(Boolean), 'les quêtes du jour sont de vraies quêtes du pool');
+
+    // ── Le panneau de l'onglet Jouer : les mêmes quêtes, à droite du menu ───
+    assert.equal(Number(donnee('[data-jouer-quetes]', 'jouerQuetes')), 3,
+      'le panneau annonce les trois quêtes du jour');
+    assert.equal(donnee('[data-jouer-compte]', 'jouerCompte'), '0/3',
+      'aucune réclamée au premier jour');
+    assert.equal(donnee('[data-jouer-cachet]', 'jouerCachet'), 'attente',
+      'le Cachet du cycle y attend ses trois quêtes');
+    assert.equal(donnee('[data-jouer-solde]', 'jouerSolde'), donnee('[data-souk-solde]', 'soukSolde'),
+      'les deux écrans lisent le même solde');
+    assert.ok(Number(donnee('[data-jouer-serie]', 'jouerSerie')) >= 1, 'le panneau compte la série');
+    assert.ok(noeud('[data-jouer-souk]'), 'et il mène au Souk');
+    for (const quete of jour) {
+      assert.equal(donnee(`[data-jouer-quete="${quete.id}"]`, 'jouerQueteEtat'), 'encours',
+        `${quete.id} commence en cours dans le panneau aussi`);
+      assert.equal(donnee(`[data-jouer-quete="${quete.id}"] [data-jouer-progres]`, 'jouerProgres'),
+        `0/${quete.objectif}`, 'la barre du panneau part de zéro');
+      assert.equal(noeud(`[data-jouer-reclamer="${quete.id}"]`), null,
+        'pas de bouton à encaisser tant que l’objectif n’est pas atteint');
+      assert.ok(noeud(`[data-jouer-quete="${quete.id}"] [data-jouer-reste]`),
+        'et le panneau dit ce qu’il reste');
+    }
+    await act(async () => noeud('[data-jouer-souk]').click());
+    assert.ok(sons.includes('vers-le-souk') && sons.includes('menu'),
+      'le panneau mène au Souk, avec le son du menu');
     for (const quete of jour) {
       assert.equal(donnee(`[data-souk-quete="${quete.id}"]`, 'soukQueteEtat'), 'encours',
         `${quete.id} commence en cours`);
@@ -238,6 +277,13 @@ export async function checkRpgSoukEcran(assert) {
       'le bouton s’active quand l’objectif est atteint');
     assert.match(noeud(`[data-souk-reclamer="${premiere.id}"]`).textContent, new RegExp(String(premiere.recompense)),
       'et il annonce le montant qu’il paie');
+    // Le panneau de l'onglet Jouer voit la même barre se remplir, et propose
+    // le même geste au même moment — sans qu'on ait rien cliqué deux fois.
+    assert.equal(donnee(`[data-jouer-quete="${premiere.id}"] [data-jouer-progres]`, 'jouerProgres'),
+      `${premiere.objectif}/${premiere.objectif}`, 'le panneau montre la barre pleine');
+    const boutonPanneau = noeud(`[data-jouer-reclamer="${premiere.id}"]`);
+    assert.ok(boutonPanneau, 'et il propose d’encaisser');
+    assert.equal(boutonPanneau.disabled, false, 'actif, comme celui du Souk');
 
     // ── Réclamer paie, une seule fois ───────────────────────────────────────
     // Le solde est relevé juste avant le clic : les gestes qui ont rempli la
@@ -249,6 +295,9 @@ export async function checkRpgSoukEcran(assert) {
       'la réclamation encaisse la récompense annoncée');
     assert.equal(donnee(`[data-souk-quete="${premiere.id}"]`, 'soukQueteEtat'), 'reclamee');
     assert.equal(noeud(`[data-souk-reclamer="${premiere.id}"]`), null, 'le bouton disparaît une fois payé');
+    assert.equal(donnee(`[data-jouer-quete="${premiere.id}"]`, 'jouerQueteEtat'), 'reclamee',
+      'le panneau l’a encaissée du même coup d’œil');
+    assert.equal(donnee('[data-jouer-compte]', 'jouerCompte'), '1/3', 'et son compte suit');
     if (bourse.aReclamer > 0) {
       assert.equal(Number(donnee('[data-souk-attente]', 'soukAttente')), bourse.aReclamer,
         'le bandeau compte ce qui reste à réclamer');
@@ -266,22 +315,41 @@ export async function checkRpgSoukEcran(assert) {
         await act(async () => bourse.noterEvenementDuel(gesteSuivant));
       }
       const avant = Number(donnee('[data-souk-solde]', 'soukSolde'));
-      await act(async () => noeud(`[data-souk-reclamer="${quete.id}"]`)?.click());
+      // La première des deux se réclame **depuis le panneau du menu** : c'est
+      // le même geste du hook, donc le même argent — et le Souk le voit.
+      if (quete === jour[1]) {
+        const parLePanneau = noeud(`[data-jouer-reclamer="${quete.id}"]`);
+        assert.ok(parLePanneau, 'le panneau propose d’encaisser cette quête-là');
+        await act(async () => parLePanneau.click());
+      } else {
+        await act(async () => noeud(`[data-souk-reclamer="${quete.id}"]`)?.click());
+      }
       assert.equal(donnee(`[data-souk-quete="${quete.id}"]`, 'soukQueteEtat'), 'reclamee',
         `${quete.id} est réclamée`);
+      assert.equal(donnee(`[data-jouer-quete="${quete.id}"]`, 'jouerQueteEtat'), 'reclamee',
+        'et le panneau du menu dit exactement la même chose');
       assert.equal(Number(donnee('[data-souk-solde]', 'soukSolde')), avant + quete.recompense,
         `${quete.id} paie les ${quete.recompense} ◈ qu’elle annonce`);
     }
     assert.equal(donnee('[data-souk-cachet]', 'soukCachet'), 'disponible',
       'les trois réclamées : le Cachet s’ouvre');
-    assert.ok(noeud('[data-souk-cachet-reclamer]'), 'et son bouton est là');    assert.ok(noeud('[data-souk-cachet-reclamer] .rpg-credit'),
+    assert.ok(noeud('[data-souk-cachet-reclamer]'), 'et son bouton est là');
+    assert.ok(noeud('[data-souk-cachet-reclamer] .rpg-credit'),
       'et son bouton est frappé de la pièce');
+    assert.equal(donnee('[data-jouer-cachet]', 'jouerCachet'), 'disponible',
+      'le panneau du menu ouvre son Cachet en même temps');
+    assert.equal(donnee('[data-jouer-compte]', 'jouerCompte'), '3/3', 'les trois y sont réclamées');
 
     const avantCachet = Number(donnee('[data-souk-solde]', 'soukSolde'));
-    await act(async () => noeud('[data-souk-cachet-reclamer]').click());
+    // Celui-là se réclame depuis le panneau : le montant est le barème, pas un
+    // chiffre écrit dans un écran.
+    assert.ok(noeud('[data-jouer-cachet-reclamer] .rpg-credit'),
+      'le Cachet du panneau est frappé de la pièce lui aussi');
+    await act(async () => noeud('[data-jouer-cachet-reclamer]').click());
     assert.equal(Number(donnee('[data-souk-solde]', 'soukSolde')), avantCachet + GAINS.cachetDuCycle,
-      `le Cachet paie ${GAINS.cachetDuCycle} ◈`);
+      `le Cachet paie ${GAINS.cachetDuCycle} ◈, d’où qu’on le réclame`);
     assert.equal(donnee('[data-souk-cachet]', 'soukCachet'), 'pris', 'et il ne se réclame plus');
+    assert.equal(donnee('[data-jouer-cachet]', 'jouerCachet'), 'pris', 'le panneau le sait aussi');
     assert.equal(noeud('[data-souk-cachet-reclamer]'), null, 'son bouton disparaît');
     assert.equal(Number(donnee('[data-souk-attente]', 'soukAttente')) || 0, 0,
       'plus rien n’attend : le bandeau s’efface');

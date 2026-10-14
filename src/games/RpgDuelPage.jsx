@@ -59,6 +59,7 @@ import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
 import RpgSouk from './RpgSouk.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
+import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
 import { creditsLisible } from './rpgCredits.js';
 import {
   preparerDuelTutoriel,
@@ -1785,6 +1786,17 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               {/* Le halo doré reste : simple lumière, pas un fond. */}
               <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
             </section>
+            {/* La colonne de droite du menu : ce qu'il y a à gagner aujourd'hui,
+                avec de quoi l'encaisser sans quitter l'écran. */}
+            <RpgQuetesDuJour
+              quetes={quetes}
+              credits={credits}
+              onReclamerQuete={onReclamerQuete}
+              onReclamerCachet={onReclamerCachet}
+              onReclamerSemaine={onReclamerSemaine}
+              onOuvrirSouk={() => { onChangeScreen('souk'); }}
+              onPlaySfx={play}
+            />
           </main>
         ) : screen === 'tours' ? (
           <main className="rpg-mode-menu__play rpg-mode-menu__play--full" ref={libreRef}>

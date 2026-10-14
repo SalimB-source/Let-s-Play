@@ -26,7 +26,7 @@ import './rpg-souk.css';
 import { GAINS, creditsLisible, paquetsAvantMythique } from './rpgCredits.js';
 import {
   JOURS_DE_LA_SERIE, cachetDeLaSemaineDisponible, cachetDisponible,
-  joursAvantLeCachetDeLaSemaine, queteParId, secondesAvantMinuit,
+  joursAvantLeCachetDeLaSemaine, secondesAvantMinuit, vueDeLaQuete,
 } from './rpgQuetes.js';
 import { COFFRET, TAUX, etatRayons, rayonParId, tourQuiGarde } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
@@ -107,29 +107,13 @@ function raisonFermeture(etat) {
     : 'Fermé — aucune couleur n’est encore entrée dans la ville.';
 }
 
-/** L'état d'une quête, tel que la carte le raconte. */
-function etatDeLaQuete(etatQuetes, queteId) {
-  const quete = queteParId(queteId);
-  if (!quete) return null;
-  const progres = Math.min(quete.objectif, Math.max(0, Math.floor(Number(etatQuetes?.progres?.[queteId]) || 0)));
-  const reclamee = Array.isArray(etatQuetes?.reclamations) && etatQuetes.reclamations.includes(queteId);
-  const terminee = progres >= quete.objectif;
-  return {
-    quete,
-    progres,
-    reclamee,
-    terminee,
-    etat: reclamee ? 'reclamee' : terminee ? 'terminee' : 'encours',
-  };
-}
-
 /** Une quête du jour : son palier, sa barre, sa récompense, son bouton. */
 function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
-  const tout = etatDeLaQuete(etatQuetes, id);
+  // La vue partagée des quêtes : c'est aussi celle du panneau de l'onglet
+  // Jouer, donc les deux écrans disent forcément la même chose.
+  const tout = vueDeLaQuete(etatQuetes, id);
   if (!tout) return null;
-  const { quete, progres, reclamee, terminee, etat } = tout;
-  const pourcent = Math.round((progres / quete.objectif) * 100);
-  const reste = quete.objectif - progres;
+  const { quete, progres, reclamee, terminee, etat, pourcent, reste } = tout;
   const reclamer = () => {
     const gagne = onReclamer?.(id);
     onPlaySfx?.(gagne ? 'bell' : 'erreur');
@@ -259,7 +243,7 @@ export default function RpgSouk({
   const restant = useResteDuCycle();
   const jour = jourLisible(quetes?.jour);
   const liste = Array.isArray(quetes?.quetes) ? quetes.quetes : [];
-  const prises = liste.filter((id) => etatDeLaQuete(quetes, id)?.reclamee).length;
+  const prises = liste.filter((id) => vueDeLaQuete(quetes, id)?.reclamee).length;
   const cachet = cachetDisponible(quetes) ? 'disponible' : quetes?.cachet ? 'pris' : 'attente';
   // L'étagère : les cinq rayons et ce qu'ils gardent. `etatRayons` est une
   // lecture pure — elle ne réserve rien et ne débite rien.
