@@ -347,29 +347,39 @@ export async function checkRpgBattle(assert) {
   // Chaque deck est un boîtier 3D : le clic est porté par le bouton voisin du décor.
   const boutonDeck = (nom) => [...container.querySelectorAll('.rpg-deck-choice__button')]
     .find((button) => button.textContent.includes(nom));
+  // Un deck ouvert efface le rail de l’étagère : « ✕ Fermer le deck » le
+  // ramène avant de pouvoir cliquer le boîtier suivant.
+  const fermerDeckOuvert = async () => {
+    const boutonFermer = container.querySelector('.rpg-deck-detail__close');
+    if (boutonFermer) await act(async () => { boutonFermer.click(); });
+  };
   await act(async () => { boutonDeck('Serment des Neuf Hivers').click(); });
   const ficheNeige = container.querySelector('.rpg-deck-detail');
   assert.match(ficheNeige?.textContent ?? '', /Neige[\s\S]*GLACIER/i,
     'la fiche du Serment annonce son identité Neige et son terrain Glacier');
-  assert.match(ficheNeige?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*7[\s\S]*validé/,
-    'le Serment est validé à 40 cartes : 17 terrains, 16 créatures et héros, 7 magies');
+  assert.match(ficheNeige?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*14[\s\S]*7[\s\S]*2[\s\S]*validé/,
+    'le Serment est validé à 40 cartes : 17 terrains, 14 créatures, 7 magies, 2 armes');
+  await fermerDeckOuvert();
   await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   const veilleurs = RPG_DECKS.find((deck) => deck.id === 'veilleurs-du-desert');
   assert.equal(container.querySelectorAll('.rpg-deck-list li').length, new Set(veilleurs.cardIds).size,
     'la fiche détaille les références distinctes avec leurs quantités, le Cavalier et les Dunes du Ténéré inclus');
-  assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5/,
-    'la fiche indique la taille et la répartition terrain / créature / magie du deck validé');
+  assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*5[\s\S]*2/,
+    'la fiche indique la taille et la répartition terrain / créature / magie / arme du deck validé');
+  await fermerDeckOuvert();
   await act(async () => { boutonDeck('Cour des Djinns').click(); });
   assert.match(container.querySelector('.rpg-deck-detail')?.textContent ?? '', /Braise/,
     'la sélection affiche les détails du deck de Braise');
+  await fermerDeckOuvert();
   await act(async () => { boutonDeck('Sentiers de cendre').click(); });
   const ficheHybride = container.querySelector('.rpg-deck-detail');
   assert.match(ficheHybride?.textContent ?? '', /Sable \+ Braise[\s\S]*HYBRIDE/i,
     'la fiche précise l’identité bicolore du deck');
   assert.match(ficheHybride?.textContent ?? '', /Pétra[\s\S]*Djinn de foudre[\s\S]*Vent rouge/,
     'la liste hybride présente son terrain flexible et ses cartes bicolores');
-  assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5[\s\S]*validé/,
-    'le deck hybride est validé à 40 cartes, avec 17 terrains, 18 créatures et 5 magies');
+  assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*5[\s\S]*2[\s\S]*validé/,
+    'le deck hybride est validé à 40 cartes, avec 17 terrains, 16 créatures, 5 magies et 2 armes');
+  await fermerDeckOuvert();
   await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   assert.ok(findButton('Jouer avec ce deck'), 'la fiche du deck joueur permet de le lancer');
   await act(async () => { findButton('Jouer avec ce deck').click(); });

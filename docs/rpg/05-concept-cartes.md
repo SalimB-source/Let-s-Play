@@ -6,7 +6,7 @@ terrains. Tout ce qui existe dans le combat est une carte ; rien d'autre ne
 se clique. Implémenté dans `src/games/rpgCards.js` (catalogue),
 `rpgCombat.js` (règles) et `CardTable.jsx` (la table, 100 % DOM).
 
-## 1. Les quatre types de cartes
+## 1. Les cinq types de cartes
 
 Chaque carte porte **deux chiffres** : **⚔ attaque** (badge doré) et
 **🛡 défense** (badge acier). La pioche : **1 carte par tour**, main
@@ -360,3 +360,57 @@ et `tests/rpg-duel.test.js` vérifie le ratio des plein art concernés.
 Vérifications : `tests/rpg-maree.test.js` (moteur + IA) et le scénario « Ressac »
 de `scripts/rpg-battle-smoke.jsx` (cible cliquée, créature rendue à la main
 adverse), inclus dans `npm run check:rpg` et `npm run check:rpg-ui`.
+
+## 9. Les armes (l'équipement attaché en jeu)
+
+L'**arme** est le cinquième type de carte du duel (`RPG_ARME_CARDS` dans
+`rpgCards.js`, fiche via `armeById`). Elle ne reste pas seule sur la table :
+elle s'**attache directement**, en étant jouée depuis la main et payée en
+mana, sur une créature alliée — **héros et jetons compris**. L'emplacement
+est unique :
+
+- **une arme par créature** : attacher la seconde arme envoie la première
+  au cimetière ;
+- l'arme suit son porteur : quand il **quitte la table** (destruction,
+  renvoi en main, exil), l'arme part au cimetière — un jeton qui cesse
+  d'exister l'entraîne avec lui ;
+- le porteur gagne les bonus imprimés (**+X/+Y**) et les mots-clés donnés
+  (`donne` : Envol, Rapidité, immunité contre une couleur) **tant que
+  l'arme est attachée** ; le retrait se fait sans tuer, avec le plancher de
+  1 PV du patron Résonance. La **Rapidité** accordée désactive le mal
+  d'invocation du porteur, dans les deux sens ;
+- comme tout ce qui entre en jeu, une arme peut être **contrée** à la
+  pose ; contrée, elle ne s'attache pas et son éventuel effet d'arrivée
+  n'a pas lieu.
+
+Quatre armes forment le prototype — une par élément, des effets **mixtes
+étagés par rareté** (dérogation photoréaliste : voir `RPG-CARD-ART.md`) :
+
+| Carte | Élément | Coût | Effet |
+|---|---|---|---|
+| Takouba des pistes | Sable (commune) | 3 | **+2/+0 et Infiltration** : le porteur ne peut pas être bloqué, par personne — l'arme de départ, offerte dès la première collection, est devenue une arme d'assaut pur (aucune défense ajoutée). |
+| Bâton des citernes | Eau (rare) | 2 | +1/+2 ; à son arrivée et pour **3 manas** (capacité activée au tour du contrôleur) : un jeton **Serpent des citernes** 3/1 Rapidité, **détruit à la fin du tour** de sa création. |
+| Lance de givre | Neige (rare) | 3 | **+3/+1 et Envol** au porteur. |
+| Armure de cendres | Braise (**mythique**, unique dans un deck) | 3 | **+3/+3, Rapidité** et **immunité contre la Braise** : le porteur ne peut pas être ciblé par la Braise et n'en reçoit aucun dégât (protection pilotée par `rpgEstProtegee`). |
+
+Le serpent des citernes est le deuxième jeton du catalogue
+(`RPG_JETON_CARDS`, `serpent-des-citernes.jpg`) : contrairement au chien de
+sable, il est **éphémère** (`detruireFinDuTour`), soldé par
+`detruireEphemeres` dans `rpgFinDeTour`. Les quatre armes équipent les cinq
+decks du catalogue (40 cartes, au moins 40 % de terrains) ; les decks
+d'Histoire n'en reçoivent pas.
+
+Illustrations : `public/cards/<identifiant>.jpg` plein art 4:5 — un porteur
+en pleine action, l'arme entièrement dans le cadre (voir la dérogation
+photoréaliste de `RPG-CARD-ART.md`).
+
+Présentation : les cartes Arme portent un **cadre d'acier métallique**
+à motif de **guilloché de Damas** — fines ondes gravées façon lames
+damassées (`.rpg-card--frame-arme` dans `rpg-battle.css`, clé `arme` de
+`cardFrameInfo`), matière commune aux quatre éléments — mais chaque
+élément **teinte son acier** : rouge pour la Braise, bleu pour l'Eau,
+doré pour le Sable et glacé pour la Neige. Le cadre est
+**renforcé** : son anneau vaut ×1,6 le
+gabarit des autres cartes, sans changer leur taille extérieure.
+L'Armure de cendres, mythique, perd le zellige mais
+garde son reflet animé sur l'acier.

@@ -5,10 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { cardById } from '../src/games/rpgCards.js';
 import { collectionJoueur } from '../src/games/rpgCollection.js';
 import { RPG_STORY_CAST, RPG_STORY_DECORS, personnageEtage, personnageHistoire, portraitHistoire } from '../src/games/rpgStoryCast.js';
-import { RPG_STORY_CAMPAIGN_FLOORS, RPG_STORY_SCENES, RPG_STORY_SURVIVANTS, RPG_STORY_LIST_CHOICE, sceneHistoire, texteReplique } from '../src/games/rpgStoryScenes.js';
-import { recitHistoireVide, normaliserRecitHistoire, transitionRecitHistoire, resumeRecitHistoire } from '../src/games/rpgStoryFlow.js';
+import { RPG_STORY_ACTES, RPG_STORY_ALL_SCENES, RPG_STORY_CAMPAIGN_FLOORS, RPG_STORY_CHOICES, RPG_STORY_REGISTRES, RPG_STORY_SCENES, RPG_STORY_SURVIVANTS, RPG_STORY_LIST_CHOICE, registresDebloques, sceneHistoire, statutSurvivantsHistoire, texteEpilogueActe, texteRegistre, texteReplique } from '../src/games/rpgStoryScenes.js';
+import { acteCourantRecit, etapesRecitHistoire, recitHistoireVide, resumeActesHistoire, normaliserRecitHistoire, transitionRecitHistoire, resumeRecitHistoire } from '../src/games/rpgStoryFlow.js';
 import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY, progressionHistoireVide, normaliserProgressionHistoire, marquerEtageVaincu, chargerProgressionHistoire, sauverProgressionHistoire, reinitialiserProgressionHistoire } from '../src/games/rpgStory.js';
-import { etageHistoireParId } from '../src/games/rpgStoryTours.js';
+import { RPG_STORY_TOURS, etageHistoireParId } from '../src/games/rpgStoryTours.js';
 
 function agir(recit, type, extra = {}, victoires = RPG_STORY_CAMPAIGN_FLOORS) {
   return transitionRecitHistoire(recit, { type, curseur: recit.curseur, ...extra }, victoires);
@@ -242,3 +242,109 @@ test('le résumé ne prétend pas que les autres tours sont scénarisées', () =
   assert.equal(resumeRecitHistoire(null).total, 10);
   assert.equal(resumeRecitHistoire(null).commence, false);
 });
+
+test('les cinq paliers et pièces du dossier suivent l’avancement réel sans rien dévoiler d’avance', () => {
+  assert.equal(RPG_STORY_REGISTRES.length, 9);
+  assert.deepEqual(registresDebloques(null), []);
+  assert.equal(statutSurvivantsHistoire(null).etape, 'Au seuil de la Tour des Listes');
+  const etapesInitiales = etapesRecitHistoire(null, []);
+  assert.equal(etapesInitiales.length, 5);
+  assert.ok(etapesInitiales.every((e) => e.statut === 'a-venir'));
+
+  const debut = recitHistoireVide();
+  assert.equal(etapesRecitHistoire(debut)[0].statut, 'en-cours');
+
+  const apresDeuxieme = agir(jusquAuChoix(), 'choisir', { optionId: 'publique' });
+  const etapesMilieu = etapesRecitHistoire(apresDeuxieme, ['listes-1', 'listes-2']);
+  assert.equal(etapesMilieu[0].statut, 'termine');
+  assert.equal(etapesMilieu[1].statut, 'termine');
+  assert.equal(etapesMilieu[2].statut, 'en-cours');
+  assert.equal(etapesMilieu[3].statut, 'a-venir');
+
+  const pieces = registresDebloques(apresDeuxieme);
+  assert.deepEqual(pieces.map((r) => r.id), ['registre-ecrou-4sud', 'registre-bordereau-article9']);
+  assert.match(texteRegistre(pieces[1], apresDeuxieme.choix), /piliers du Souk/);
+  assert.match(texteRegistre(pieces[1], { 'diffusion-liste': 'confiee' }), /pli scellé à Tarek/);
+  assert.equal(statutSurvivantsHistoire(apresDeuxieme).etape, 'Sous la voûte du premier palier');
+});
+
+test('les cinq actes couvrent les vingt duels des cinq tours, neuf registres et les trois fins du Portail', () => {
+  const tousLesEtages = RPG_STORY_TOURS.flatMap((tour) => tour.etages.map((etage) => etage.id));
+  assert.equal(RPG_STORY_ACTES.length, 5);
+  assert.equal(RPG_STORY_ALL_SCENES.length, 40);
+  assert.equal(Object.keys(RPG_STORY_CHOICES).length, 5);
+  assert.equal(RPG_STORY_ACTES.flatMap((acte) => acte.etages).length, 20);
+  assert.deepEqual(
+    new Set(RPG_STORY_ACTES.flatMap((acte) => acte.etages)),
+    new Set(tousLesEtages),
+  );
+
+  function parcourirCampagneComplete(choixParQuestion) {
+    let recit = recitHistoireVide();
+    for (let idxActe = 0; idxActe < RPG_STORY_ACTES.length; idxActe += 1) {
+      const acte = RPG_STORY_ACTES[idxActe];
+      assert.equal(acteCourantRecit(recit), acte.id);
+      while (recit.curseur.type !== 'fin') {
+        if (recit.curseur.type === 'duel') {
+          recit = transitionRecitHistoire(recit, { type: 'victoire', curseur: recit.curseur, etageId: recit.curseur.etageId }, tousLesEtages);
+        } else {
+          const scene = sceneHistoire(recit.curseur.id);
+          recit = transitionRecitHistoire(recit, { type: 'resumer', curseur: recit.curseur }, tousLesEtages);
+          if (scene.choix) {
+            recit = transitionRecitHistoire(recit, {
+              type: 'choisir',
+              curseur: recit.curseur,
+              optionId: choixParQuestion[scene.choix],
+            }, tousLesEtages);
+          } else {
+            recit = transitionRecitHistoire(recit, { type: 'continuer', curseur: recit.curseur }, tousLesEtages);
+          }
+        }
+        assert.deepEqual(normaliserRecitHistoire(recit, tousLesEtages), recit);
+      }
+      assert.equal(acteCourantRecit(recit), acte.id);
+      assert.deepEqual(normaliserRecitHistoire(recit, tousLesEtages), recit);
+      const resume = resumeRecitHistoire(recit);
+      assert.equal(resume.termine, true);
+      if (idxActe < RPG_STORY_ACTES.length - 1) {
+        const suivant = RPG_STORY_ACTES[idxActe + 1];
+        assert.equal(resume.campagneTerminee, false);
+        assert.equal(resume.acteSuivant?.id, suivant.id);
+        recit = transitionRecitHistoire(recit, { type: 'ouvrir-acte', curseur: recit.curseur, acteId: suivant.id }, tousLesEtages);
+        assert.equal(recit.curseur.type, 'scene');
+        assert.equal(acteCourantRecit(recit), suivant.id);
+        assert.deepEqual(normaliserRecitHistoire(recit, tousLesEtages), recit);
+      } else {
+        assert.equal(resume.campagneTerminee, true);
+        assert.equal(resume.acteSuivant, null);
+      }
+    }
+    return recit;
+  }
+
+  for (const finPortail of ['ouvrir', 'tenir', 'prendre-la-place']) {
+    const recitFin = parcourirCampagneComplete({
+      'diffusion-liste': finPortail === 'ouvrir' ? 'publique' : 'confiee',
+      'dette-souk': finPortail === 'ouvrir' ? 'denoncer' : 'racheter',
+      'aveu-boualem': finPortail === 'tenir' ? 'pardonner' : 'exiger-temoignage',
+      'serment-archives': finPortail === 'prendre-la-place' ? 'lire-tout' : 'sceller',
+      'choix-portail': finPortail,
+    });
+    assert.equal(recitFin.scenesVues.length, 40);
+    assert.equal(registresDebloques(recitFin).length, 9);
+    const actesResumes = resumeActesHistoire(recitFin);
+    assert.ok(actesResumes.every((a) => a.statut === 'termine'));
+    const epilogue = texteEpilogueActe('acte-5', recitFin.choix);
+    if (finPortail === 'ouvrir') {
+      assert.match(epilogue.titre, /Ouvrir/);
+      assert.match(statutSurvivantsHistoire(recitFin).etape, /Portail ouvert/);
+    } else if (finPortail === 'tenir') {
+      assert.match(epilogue.titre, /Tenir/);
+      assert.match(statutSurvivantsHistoire(recitFin).etape, /Montée collective/);
+    } else {
+      assert.match(epilogue.titre, /Prendre la place/);
+      assert.match(statutSurvivantsHistoire(recitFin).etape, /Astrolabe arrêté/);
+    }
+  }
+});
+

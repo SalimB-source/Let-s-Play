@@ -88,9 +88,9 @@ assert.match(pageSource, /sorcierDeck \?\? deckAdverse\?\.cardIds/, 'le moteur r
 assert.match(pageSource, /setDeckAdverseId\(deckAdverse\?\.id \?\? null\)/, 'la plaque adverse retient le deck réellement joué');
 assert.match(pageSource, /\$\{deckAdverseAffiche\.name\} · \$\{deckColorLabel\(deckAdverseAffiche\)\}/, 'la plaque adverse nomme ce deck');
 // « Jouer avec ce deck » démarre avec le deck ouvert sans attendre le rendu suivant ; le bouton
-// « Lancer le duel » ne doit pas transmettre son événement de clic comme identifiant de deck.
+// « Mode histoire » (écran Jouer) ne doit pas transmettre son événement de clic comme identifiant.
 assert.match(pageSource, /onStartGame\(deck\.id\)/, '« Jouer avec ce deck » démarre le duel avec le deck ouvert');
-assert.match(pageSource, /onClick=\{\(\) => \{ play\('select'\); onStartGame\(\); \}\}/, '« Lancer le duel » ne transmet pas l’événement de clic');
+assert.match(pageSource, /onClick=\{\(\) => \{ play\('select'\); onContinueRecit\?\.\(\); \}\}/, '« Mode histoire » ne transmet pas l’événement de clic');
 assert.match(pageSource, /typeof deckId === 'string'/, 'seul un identifiant de deck est pris en compte au démarrage');
 assert.match(pageSource, /options\.deckId \?\? deckSelectionneId/, 'le duel prend le deck demandé, sinon le deck sélectionné');
 // Le filtre de couleur écarte les decks de l'étagère elle-même (et non de la liste des cartes).

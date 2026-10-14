@@ -5,7 +5,7 @@
  * à partir d'une **recette** (`rpgDeckRecipes.js`) et du catalogue
  * (`rpgCards.js`). La recette dit ce qui ne se négocie pas — l'identité
  * chromatique, les places de terrains (jusqu'à la peinture de chaque variante),
- * les places de créatures et de sorts, et sa **signature** : les quelques
+ * les places de créatures, de sorts et d'armes, et sa **signature** : les quelques
  * cartes qui portent son archétype. Le composeur remplit le reste avec **les
  * meilleures cartes de l'identité**, dans l'ordre du palier de rareté puis de
  * la puissance (`rpgCardPower.js`), chaque carte prise à son maximum légal
@@ -31,9 +31,12 @@
 
 import { comparerCartesParPuissance, RPG_RANGS_RARETE } from './rpgCardPower.js';
 
-/** Le seau d'une carte : une créature ou un héros occupe une place de créature. */
+/** Le seau d'une carte : une créature ou un héros occupe une place de créature,
+ *  une arme sa propre place (ni corps ni sort), le reste suit. */
 function seauDe(carte) {
-  return carte?.kind === 'magie' ? 'magie' : 'creature';
+  if (carte?.kind === 'magie') return 'magie';
+  if (carte?.kind === 'arme') return 'arme';
+  return 'creature';
 }
 
 /**
@@ -51,7 +54,7 @@ export function composerDeck(recette, catalogue) {
   const { cartes, couleursDe, limiteDe } = catalogue;
   const carteParId = new Map((cartes ?? []).map((carte) => [carte.id, carte]));
   const {
-    identite = [], terrains = [], creatures = 0, magies = 0,
+    identite = [], terrains = [], creatures = 0, magies = 0, armes = 0,
     signature = [], mythiquesMax = Infinity, raresMax = Infinity,
   } = recette ?? {};
 
@@ -60,8 +63,8 @@ export function composerDeck(recette, catalogue) {
     return couleurs.length > 0 && couleurs.every((couleur) => identite.includes(couleur));
   };
   const vivier = (cartes ?? []).filter((carte) => carte.kind !== 'terrain' && dansIdentite(carte));
-  const quotas = { creature: creatures, magie: magies };
-  const choisis = { creature: [], magie: [] };
+  const quotas = { creature: creatures, magie: magies, arme: armes };
+  const choisis = { creature: [], magie: [], arme: [] };
   const comptes = new Map();
 
   /** Pose jusqu'à `nombre` exemplaires d'une carte, sans dépasser limite ni quota. */
@@ -116,6 +119,7 @@ export function composerDeck(recette, catalogue) {
     ...terrains.flatMap(([id, nombre]) => Array(nombre).fill(id)),
     ...choisis.creature,
     ...choisis.magie,
+    ...choisis.arme,
   ];
 }
 

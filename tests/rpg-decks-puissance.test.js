@@ -59,8 +59,8 @@ function mieuxClasse(a, b) {
 test('chaque recette somme 40 cartes et désigne un quota cohérent', () => {
   for (const [deckId, recette] of Object.entries(RECETTES)) {
     const terrains = recette.terrains.reduce((somme, [, nombre]) => somme + nombre, 0);
-    assert.equal(terrains + recette.creatures + recette.magies, 40,
-      `${deckId} : terrains + créatures + magies doivent faire 40`);
+    assert.equal(terrains + recette.creatures + recette.magies + (recette.armes ?? 0), 40,
+      `${deckId} : terrains + créatures + magies + armes doivent faire 40`);
     assert.ok(terrains >= 16, `${deckId} : au moins 40 % de terrains`);
     assert.ok(recette.identite.length >= 1, `${deckId} : une identité chromatique`);
   }
@@ -98,7 +98,7 @@ test('aucune carte laissée de côté n’est mieux classée qu’une carte rete
     const remplissage = [...comptes.keys()]
       .filter((id) => !signature.has(id) && carteParId.get(id).kind !== 'terrain')
       .map((id) => carteParId.get(id));
-    const seau = (carte) => (carte.kind === 'magie' ? 'magie' : 'creature');
+    const seau = (carte) => (carte.kind === 'magie' ? 'magie' : carte.kind === 'arme' ? 'arme' : 'creature');
     // Un plafond de la campagne explique qu'une figure reste dehors : elle
     // n'entre pas dans la comparaison, ce n'est pas le classement qui l'écarte.
     const plafondAtteint = (carte) => {
@@ -141,10 +141,10 @@ test('les meilleures cartes sont prises à leur maximum légal', () => {
     // composeur remplit carte par carte, jamais à moitié par plaisir.
     const signature = new Set(recette.signature.map((entree) => (Array.isArray(entree) ? entree[0] : entree)));
     const partielle = new Set();
-    for (const famille of ['magie', 'creature']) {
+    for (const famille of ['magie', 'creature', 'arme']) {
       const classees = horsTerrains
         .map((id) => carteParId.get(id))
-        .filter((carte) => (carte.kind === 'magie' ? 'magie' : 'creature') === famille)
+        .filter((carte) => (carte.kind === 'magie' ? 'magie' : carte.kind === 'arme' ? 'arme' : 'creature') === famille)
         .filter((carte) => !signature.has(carte.id))
         .sort(comparerCartesParPuissance);
       if (classees.length) partielle.add(classees.at(-1).id);
@@ -201,11 +201,11 @@ test('les paquets de la campagne tiennent les plafonds de la rampe', () => {
     const validation = rpgValiderDeck(liste);
     assert.equal(validation.ok, true, `${deckId} : ${validation.raison}`);
     const comptes = compter(liste);
-    const parSeau = { creature: [], magie: [] };
+    const parSeau = { creature: [], magie: [], arme: [] };
     for (const id of comptes.keys()) {
       const carte = carteParId.get(id);
       if (carte.kind === 'terrain') continue;
-      parSeau[carte.kind === 'magie' ? 'magie' : 'creature'].push(carte);
+      parSeau[carte.kind === 'magie' ? 'magie' : carte.kind === 'arme' ? 'arme' : 'creature'].push(carte);
     }
     for (const [seau, cartes] of Object.entries(parSeau)) {
       const mythiques = cartes.filter((carte) => carte.rarity === 'mythique').length;

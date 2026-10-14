@@ -16,7 +16,7 @@
  *   1. Le premier geste (clic dans le menu) demande le plein écran natif sur la
  *      coque du jeu — pas sur `<html>` : le site entier ne part pas en plein
  *      écran, seul le Sablier.
- *   2. Lancer le duel : le même nœud reste en plein écran (le nœud de la coque
+ *   2. Démarrer une partie : le même nœud reste en plein écran (le nœud de la coque
  *      survit au changement d'écran), le bouton de la barre du duel est allumé.
  *   3. Retour au menu depuis le duel : le plein écran reste ouvert — la session
  *      de paysage ne possède plus le plein écran et ne le referme plus.
@@ -102,13 +102,22 @@ const shellOf = (node) => node.querySelector('.rpg-battle');
 const menuToggleOf = (node) => node.querySelector('.rpg-mode-menu__fullscreen');
 const duelToggleOf = (node) => node.querySelector('.rpg-duel-nav__fullscreen');
 const toggleOf = (node) => menuToggleOf(node) ?? duelToggleOf(node);
-const launchOf = (node) => node.querySelector('.rpg-mode-menu__play .rpg-menu-button--primary');
 const menuTabOf = (node, label) => [...node.querySelectorAll('.rpg-mode-menu__switch button')]
   .find((button) => squash(button.textContent).includes(label));
 const storyTowerOf = (node) => node.querySelector('.rpg-story-tower');
 const storyFloorOf = (node) => node.querySelector('.rpg-story-floor.is-next:not(:disabled)');
 const duelMenuButtonOf = (node) => [...node.querySelectorAll('.rpg-duel-nav button')]
   .find((button) => squash(button.textContent) === 'Menu');
+// Le bouton principal de l'écran Jouer ouvre le mode Histoire : une partie
+// rapide se démarre depuis l'onglet Deck (« Jouer avec ce deck »).
+const lancerDuel = async (node) => {
+  await click(menuTabOf(node, 'Deck'));
+  await settle();
+  await click(node.querySelector('.rpg-deck-choice__button'));
+  await settle();
+  await click(node.querySelector('.rpg-deck-detail__play'));
+  await settle();
+};
 
 /** Plein écran de la coque : natif, couche fixe, verrou de défilement, bouton allumé. */
 const stateOf = (node, api) => ({
@@ -152,8 +161,8 @@ export async function checkRpgFullscreen(assert) {
       assert.notEqual(api.element, document.documentElement, 'le Sablier part en plein écran, pas toute la page du site');
       assert.equal(api.element, coqueAuMontage, 'la cible est la coque du jeu');
 
-      // 2. Lancer le duel : le plein écran traverse le changement d'écran.
-      await click(launchOf(node));
+      // 2. Démarrer une partie : le plein écran traverse le changement d'écran.
+      await lancerDuel(node);
       await settle();
       const coqueEnDuel = shellOf(node);
       assert.equal(coqueEnDuel.dataset.scene, 'duel', 'le duel est lancé');
@@ -224,7 +233,7 @@ export async function checkRpgFullscreen(assert) {
       await api.browserExit();
       assert.deepEqual(stateOf(node, api), CLOSED, 'une sortie du navigateur rend la mise en page de la page');
       assert.ok(shellOf(node).dataset.scene, 'le jeu reste affiché et jouable dans la couche fixe');
-      await click(launchOf(node));
+      await lancerDuel(node);
       await settle();
       assert.deepEqual(stateOf(node, api), OPEN, 'relancer une partie rouvre le plein écran dans le geste');
       assert.equal(shellOf(node).dataset.scene, 'duel', 'le duel est reparti');
@@ -234,20 +243,20 @@ export async function checkRpgFullscreen(assert) {
       assert.equal(document.body.classList.contains('game-immersive-lock'), false, 'quitter la page rend le défilement');
     }
 
-    // ── 7. Le mode Histoire se lance en plein écran, dans le geste ─────────
+    // ── 7. Un étage des Tours se lance en plein écran, dans le geste ───────
     {
       const { node, unmount } = await mountPage();
-      await click(menuTabOf(node, 'Histoire'));
+      await click(menuTabOf(node, 'Tours'));
       await settle();
       const tour = storyTowerOf(node);
-      assert.ok(tour, 'le mode Histoire ouvre sur la galerie des tours');
+      assert.ok(tour, 'le mode Tours ouvre sur la galerie des tours');
       await click(tour);
       await settle();
       const etage = storyFloorOf(node);
       assert.ok(etage, 'le premier étage de la tour ouverte est jouable');
       await click(etage);
       await settle();
-      assert.deepEqual(stateOf(node, api), OPEN, 'un étage du mode Histoire se lance en plein écran');
+      assert.deepEqual(stateOf(node, api), OPEN, 'un étage du mode Tours se lance en plein écran');
       assert.equal(shellOf(node).dataset.scene, 'duel', 'le duel de l’étage est ouvert');
       await unmount();
     }
@@ -265,7 +274,7 @@ export async function checkRpgFullscreen(assert) {
       await press('f');
       await settle();
       assert.deepEqual(stateOf(node, api), CLOSED, 'F retire la couche fixe sans appeler exitFullscreen');
-      await click(launchOf(node));
+      await lancerDuel(node);
       await settle();
       assert.deepEqual(stateOf(node, api), { ...LAYER_ONLY, native: false },
         'le duel se lance dans la couche fixe, qui couvre tout le viewport');
