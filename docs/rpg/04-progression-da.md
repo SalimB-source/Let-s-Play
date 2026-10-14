@@ -29,8 +29,10 @@ Un joueur qui optimise le combat sacrifie les gens qu'il pourrait sauver. Un
 joueur qui sauve tout le monde arrive aux boss sous-équipé. **Il n'y a pas de
 bon choix, et c'est le sujet du jeu.**
 
-Les **dinars** servent au courant (nourriture, tramway, pots-de-vin) ; ils ne
-rachètent rien d'important.
+Les **crédits** (◈) servent au courant — les quêtes du jour, le Souk et ses
+boosters de cartes (`13-souk-credits-quetes-boosters.md`) ; ils ne rachètent
+rien d'important. Le **sable** reste la monnaie forte, celle des trois usages
+ci-dessus, et il n'est pas encore ouvert au joueur.
 
 ## 3. Équipement (volontairement maigre)
 

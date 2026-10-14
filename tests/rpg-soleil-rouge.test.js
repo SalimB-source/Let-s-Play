@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { choisirCibleAutoIA } from '../src/games/rpgAI.js';
 import { RPG_SOLEIL_ROUGE_CARDS, RPG_SOLEIL_ROUGE_SET_ID } from '../src/games/rpgSoleilRouge.js';
 import { RPG_DECKS, cardById, cardColors, cardReceivesResonance, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
-import { COLLECTION_DEPART, carteDebloqueePar } from '../src/games/rpgCollection.js';
+import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 import { rpgNouveauDuel, rpgJouerArme, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgResonanceEnJeu, rpgBonusResonance, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
 
 function duelTest(rng = () => 0.5) {
@@ -38,7 +38,7 @@ test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 ×
     assert.equal(cardById(carte.id).set, RPG_SOLEIL_ROUGE_SET_ID);
     assert.deepEqual(cardColors(carte.id), ['braise']);
     assert.equal(cardArtId(carte.id), carte.id);
-    assert.ok(COLLECTION_DEPART.includes(carte.id) || carteDebloqueePar(carte.id));
+    assert.ok(COLLECTION_DEPART.includes(carte.id) || carteReveleePar(carte.id));
     const jpg = readFileSync(new URL(`../public/cards/${carte.id}.jpg`, import.meta.url));
     empreintes.add(createHash('sha256').update(jpg).digest('hex'));
     let dimensions;
@@ -340,7 +340,7 @@ test('le Cavalier des deux sabres est mythique, rapide, samouraï et porte Honne
   assert.deepEqual([carte.cost, carte.atk, carte.def], [6, 5, 4]);
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 1);
-  assert.equal(carteDebloqueePar(carte.id).etageId, 'sables-3');
+  assert.equal(carteReveleePar(carte.id).etageId, 'sables-3');
   const duel = duelTest();
   jouer(duel, 'joueur', 'tengu-du-mont-ardent');
   const cavalier = jouer(duel, 'joueur', carte.id);
@@ -371,7 +371,7 @@ test('Orochi est un serpent 8/8 pour 8 et crée deux Petits Orochi 4/4 à sa mor
   assert.deepEqual([carte.cost, carte.atk, carte.def], [8, 8, 8]);
   assert.match(carte.typeLine, /Serpent/);
   assert.equal(cardReceivesResonance(carte, 'samourai'), false);
-  assert.equal(carteDebloqueePar(carte.id).etageId, 'sables-3');
+  assert.equal(carteReveleePar(carte.id).etageId, 'sables-3');
   for (const cote of ['joueur', 'sorcier']) {
     const duel = duelTest();
     const adverse = cote === 'joueur' ? 'sorcier' : 'joueur';
@@ -421,7 +421,7 @@ test('Susanoo est dans le deck : 6/3 pour 5, Honneur 3 et exil à l’arrivée',
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(deck.cardIds.length, 40);
   assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 1);
-  assert.equal(carteDebloqueePar(carte.id).etageId, 'sables-3');
+  assert.equal(carteReveleePar(carte.id).etageId, 'sables-3');
   for (const coteCible of ['joueur', 'sorcier']) {
     const duel = duelTest();
     const cible = jouer(duel, coteCible, 'orochi');

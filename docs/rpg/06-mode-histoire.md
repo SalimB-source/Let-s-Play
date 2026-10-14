@@ -106,7 +106,10 @@ autonome » (deck complet, PV pleins, rien de reporté).
    pour l'instant**. Chaque étage est un duel autonome : deck complet, PV pleins,
    aucune ressource reportée ; seule la progression (étages déblayés) compte.
    La piste B (bouclier de verre conservé entre les étages) reste différée.
-   Les récompenses d’étage sont déjà gérées par `rpgCollection.js`.
+   **Les étages ne donnent plus de cartes : ils les révèlent** (dossier 13).
+   `rpgCollection.js` porte la carte des révélations, `rpgBoosters.js` en fait
+   les viviers du Souk, et le gel des acquis a repris une fois pour toutes ce
+   que l’ancienne règle avait donné.
 
 4. **La Dernière Liste, épisode I** : l’entrée « Commencer le récit » précède
    les tours libres. La Tour des Listes porte dix scènes illustrées, une
@@ -131,8 +134,9 @@ restent accessibles en duels libres, sans scènes de campagne pour l’instant.
   plus de PV supplémentaires — le sorcier et le joueur partent tous les deux
   à 25 PV, la difficulté passe par le deck et le profil d'IA.
 - **Pas d'obligation de grind** : les trois decks de base gagnent la première
-  tour tels quels ; les récompenses ouvrent des cartes du classeur, pas la
-  suite de l'histoire.
+  tour tels quels ; les étages révèlent des cartes au Souk, ils ne commandent
+  pas la suite de l'histoire — et le Souk ne vend rien qu'une marche atteinte
+  n'a pas déjà révélé.
 - **Chaque sorcier a une signature lisible** (style + cartes emblématiques),
   pour que le joueur explique pourquoi il a gagné — la règle d'or de
   [`03-combat.md`](03-combat.md).

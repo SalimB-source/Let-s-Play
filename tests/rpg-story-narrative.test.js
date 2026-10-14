@@ -167,7 +167,9 @@ test('les deux branches rejoignent le même étage et ouvrent les mêmes cartes'
   const branches = RPG_STORY_LIST_CHOICE.options.map((option) => agir(avant, 'choisir', { optionId: option.id }));
   assert.deepEqual(branches[0].curseur, branches[1].curseur);
   assert.deepEqual(branches[0].scenesVues, branches[1].scenesVues);
-  assert.deepEqual(collectionJoueur({ progression: { etagesVaincus: ['listes-1', 'listes-2'], recit: branches[0] } }), collectionJoueur({ progression: { etagesVaincus: ['listes-1', 'listes-2'], recit: branches[1] } }));
+  // La collection ne dépend plus de la progression : ni du récit, ni des étages
+  // (les cartes s’acquièrent au Souk et dans les acquis figés — dossier 13).
+  assert.deepEqual(collectionJoueur(), collectionJoueur({ distante: null }));
 });
 
 test('une victoire libre préserve le récit et ses décisions sans le faire avancer', () => {
@@ -229,7 +231,7 @@ test('victoire et scène après-duel reprennent ensemble, puis décision et posi
 test('recommencer le récit préserve victoires et collection ; l’effacement complet enlève les deux clés', () => avecStockage((stockage) => {
   const ancien = { version: 2, etagesVaincus: ['listes-1', 'listes-2'], recit: jusquAuChoix() };
   const neuf = { ...ancien, recit: recitHistoireVide() };
-  assert.deepEqual(collectionJoueur({ progression: ancien }), collectionJoueur({ progression: neuf }));
+  assert.deepEqual(collectionJoueur(), collectionJoueur(), 'la collection ignore le récit');
   stockage.set(RPG_STORY_LEGACY_STORAGE_KEY, JSON.stringify(ancien));
   sauverProgressionHistoire(neuf);
   reinitialiserProgressionHistoire();

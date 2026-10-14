@@ -80,28 +80,36 @@ vignettes, de la jauge et des barres.
 ## La collection : ce que l'on possède
 
 `src/games/rpgCollection.js` — module pur, testé par
-`tests/rpg-collection.test.js`.
+`tests/rpg-collection.test.js`. Depuis l'ouverture du Souk (dossier 13), **les
+étages ne donnent plus de cartes : ils les révèlent**, et le Souk les vend.
 
 - **La dotation de départ** est une règle, pas une liste figée : toutes les
-  cartes **communes et inhabituelles** du set (29 cartes ; la pétra, matière
+  cartes **communes et inhabituelles** du set (38 cartes ; la pétra, matière
   à scénario, en est exclue).
-- **Les récompenses d'étage** (`RPG_RECOMPENSES_PAR_ETAGE`) donnent les
-  cartes rares : les 20 étages des sept chapitres débloquent au fil de l'eau
-  **46 cartes** — collection complète : **75 cartes** sur les 82 du set. Les
-  mythiques se gagnent aux boss ; le Kraken mythique attend la
-  victoire sur « Le Pêcheur de perles ».
-- **Le suivi** : `carteDebloqueePar(id)` dit quelle étage débloque une carte
-  (l'atelier s'en sert pour ses messages), `carteEstDebloquee(id, collection)`
-  répond à la question de l'instant. La collection voyagée dans un état
-  synchronisé est normalisée avant comparaison (`normaliserCollection`).
-- **Le cache local** : `letsplay_sablier_collection_v1` — lecture tolérante,
-  écriture silencieuse, valeur illisible → collection de départ, comme partout
-  dans la maison.
+- **Les acquis figés** (`figerAcquisitions`) — le gel de migration. Au premier
+  lancement de la version du Souk, les cartes que l'ancienne règle avait
+  données pour les étages déjà vaincus sont reprises **une fois**, rangées dans
+  `letsplay_sablier_acquis_v1`, et le gel est posé (`gel: true`). Il est
+  définitif : plus rien n'y entre ensuite. Sans lui, retirer les récompenses
+  aurait effacé les collections existantes et rendu injouables les decks
+  maison qui les utilisent.
+- **Les cartes du Souk** — achetées dans un booster, rangées dans le
+  portefeuille (`rpgCredits.js`), elles rejoignent la collection par la même
+  porte (`collectionJoueur({ souk })`, lot 4).
+- **Les apports du compte** — cache local `letsplay_sablier_collection_v1`,
+  fusionnés en union, jamais retirés.
+- **Le suivi** : `carteReveleePar(id)` dit quel étage révèle une carte (l'atelier
+  s'en sert pour ses messages : « Le Souk la vendra après « tel étage » »),
+  `cartesReveleesParEtage(etageId)` rend la liste d'un palier, et
+  `revelationsDepuisEtages` celle d'une progression. La collection voyagée dans
+  un état synchronisé est normalisée avant comparaison (`normaliserCollection`).
 
-Le rythme de débloquage suit celui du mode Histoire : le Sable est là dès le
-départ, l'Eau arrive au souk, la Braise se mérite à mi-parcours, la Neige
-n'existe qu'au fond des abysses — un deck maison d'une couleur donnée suppose
-donc d'être allé chercher cette couleur dans la ville.
+Le rythme de débloquage suit celui du mode Histoire, et **il passe désormais par
+le vivier du Souk** (`rpgBoosters.js`) : le Sable est là dès `listes-1`, l'Eau
+arrive avec les citernes du Souk, la Braise se mérite aux Listes, la Neige
+n'existe qu'au fond des Abysses — un deck maison d'une couleur donnée suppose
+donc d'être allé chercher cette couleur dans la ville, **et de l'avoir
+achetée**.
 
 ## Les règles de construction
 
@@ -305,7 +313,7 @@ casse.
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/games/rpgCollection.js` | dotation de départ, récompenses d'étage, `carteDebloqueePar`, `normaliserCollection` |
+| `src/games/rpgCollection.js` | dotation de départ, **révélations** d'étage, **gel des acquis**, `carteReveleePar`, `normaliserCollection` |
 | `src/games/rpgDeckBuilder.js` | limites (nom, plafond, `RPG_DECK_TAILLE`), `rpgValiderDeckMaison`, `normaliserDeckMaison`, `fusionnerEtatsSablier`, et le panneau du deck : `courbeDeMana`, `repartitionCouleurs`, `completerEnTerrains` |
 | `src/games/RpgDeckAtelier.jsx` + `rpg-deck-atelier.css` | l'éditeur façon Arena (grille, bascules, panneau du deck) : composant pur, tout état vient en props, la persistance et l'aperçu au survol restent au parent |
 | `src/games/rpgLongPress.js`, `src/games/RpgDuelPage.jsx` | le geste d'aperçu au doigt, délégué au menu entier (l'atelier compris) par `onPointerDown` |

@@ -56,6 +56,11 @@ import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
 import RpgTableScene3D from './RpgTableScene3D.jsx';
 import { readRpgTable3dPref, writeRpgTable3dPref } from './rpgTableSceneThemes.js';
 import { useDecksSablier } from './useDecksSablier.js';
+import { useSablierBourse } from './useSablierBourse.js';
+import RpgSouk from './RpgSouk.jsx';
+import RpgCreditIcon from './RpgCreditIcon.jsx';
+import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
+import { creditsLisible } from './rpgCredits.js';
 import {
   preparerDuelTutoriel,
   RPG_TUTORIAL_OPPONENT_DECK,
@@ -1651,7 +1656,7 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -1836,6 +1841,28 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('decks'); }}>
               <span aria-hidden="true">▤</span> Deck
             </button>
+            {/* Le jeton de la bourse vit sur l'onglet du Souk : le solde ◈ et
+                ce qui attend d'être réclamé sont lisibles sans ouvrir l'écran,
+                et l'onglet mène au reste. */}
+            <button
+              type="button"
+              className={`rpg-mode-menu__souk${screen === 'souk' ? ' is-active' : ''}`}
+              aria-current={screen === 'souk' ? 'page' : undefined}
+              aria-label={`Le Souk — ${credits} crédits${aReclamer > 0 ? `, ${aReclamer} à réclamer` : ''}`}
+              data-souk-onglet={credits}
+              onClick={() => { play('menu'); onChangeScreen('souk'); }}
+            >
+              <RpgCreditIcon className="rpg-mode-menu__souk-piece" />
+              <span className="rpg-mode-menu__onglet-libelle">Souk</span>
+              <span className="rpg-mode-menu__bourse-solde" data-souk-bourse={credits}>
+                {creditsLisible(credits)}
+              </span>
+              {aReclamer > 0 && (
+                <span className="rpg-mode-menu__bourse-pastille" data-souk-a-reclamer={aReclamer} aria-hidden="true">
+                  {aReclamer}
+                </span>
+              )}
+            </button>
             <button type="button" className={screen === 'catalogue' ? 'is-active' : ''} aria-current={screen === 'catalogue' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('catalogue'); }}>
               <span aria-hidden="true">▧</span> Catalogue
             </button>
@@ -1891,6 +1918,17 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               {/* Le halo doré reste : simple lumière, pas un fond. */}
               <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
             </section>
+            {/* La colonne de droite du menu : ce qu'il y a à gagner aujourd'hui,
+                avec de quoi l'encaisser sans quitter l'écran. */}
+            <RpgQuetesDuJour
+              quetes={quetes}
+              credits={credits}
+              onReclamerQuete={onReclamerQuete}
+              onReclamerCachet={onReclamerCachet}
+              onReclamerSemaine={onReclamerSemaine}
+              onOuvrirSouk={() => { onChangeScreen('souk'); }}
+              onPlaySfx={play}
+            />
           </main>
         ) : screen === 'tours' ? (
           <main className="rpg-mode-menu__play rpg-mode-menu__play--full" ref={libreRef}>
@@ -2340,6 +2378,26 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
           />
+        ) : screen === 'souk' ? (
+          <RpgSouk
+            quetes={quetes}
+            credits={credits}
+            aReclamer={aReclamer}
+            statutSync={statutSync}
+            portefeuille={portefeuille}
+            progression={progression}
+            collection={collection}
+            ouverture={ouverture}
+            cardArt={cardArt}
+            onReclamerQuete={onReclamerQuete}
+            onReclamerCachet={onReclamerCachet}
+            onReclamerSemaine={onReclamerSemaine}
+            onOuvrirBooster={onOuvrirBooster}
+            onOuvrirCoffret={onOuvrirCoffret}
+            onFermerOuverture={onFermerOuverture}
+            onPlaySfx={play}
+            onExit={() => onChangeScreen('jouer')}
+          />
         ) : (
           <main className="rpg-card-catalogue" aria-label="Catalogue complet des cartes">
             <header className="rpg-card-catalogue__header">
@@ -2643,8 +2701,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     histoireVictoireMarqueeRef.current = session;
     const contexte = campagneDuelRef.current;
     const campagne = contexte?.session === session && contexte.etageId === histoireEtageId;
+    // Le premier déblayage est celui qui paie : l'état de la tour est lu AVANT
+    // `enregistrerVictoire`, sinon tout étage paraîtrait déjà conquis.
+    const premiere = !etageEstVaincu(progressionHistoireRef.current, histoireEtageId);
+    const tourId = etageHistoireParId(histoireEtageId)?.tour?.id ?? null;
     const maj = enregistrerVictoire(histoireEtageId, campagne ? contexte.curseur : null);
+    // Depuis le Souk (dossier 13), une victoire ne donne plus de cartes : elle
+    // **ouvre** celles de l'étage au Souk — et elle paie (50 ◈ au premier
+    // déblayage, 10 ◈ au rejeu). Les deux événements du contrat font avancer
+    // les quêtes du jour ; `etage-deblaye` porte la garde « premier déblayage »
+    // de la quête du palier suivant, et c'est `duel-gagne` qui paie.
     noterVictoireEtage(histoireEtageId, maj);
+    noterEvenementDuel({ type: 'duel-gagne', mode: 'histoire', etageId: histoireEtageId, tourId, premiere });
+    if (premiere) noterEvenementDuel({ type: 'etage-deblaye', etageId: histoireEtageId, tourId, premiere: true });
     if (campagne) {
       annulerMinuteriesDuTour();
       sessionDuelRef.current += 1;
@@ -2656,6 +2725,39 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       setEcran((courant) => courant === 'partie' ? 'recit' : courant);
     }
   });
+  // Un **duel libre** gagné paie 8 ◈ — une fois par session, comme les étages :
+  // « Nouvelle partie » incrémente la session, et le duel suivant sera compté.
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (!duelCourant || histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
+    const session = sessionDuelRef.current;
+    if (libreVictoireMarqueeRef.current === session) return;
+    libreVictoireMarqueeRef.current = session;
+    noterEvenementDuel({ type: 'duel-gagne', mode: 'libre', premiere: false });
+  });
+
+  // « Le sorcier saigne » se compte sur les **PV du sorcier**, pas au point
+  // d'appel : toutes les sources y passent — attaques directes, sorts,
+  // capacités d'arrivée, échos différés de la Braise — et une action annulée
+  // puis rejouée ne compte pas deux fois, puisque l'on émet l'écart entre les
+  // dégâts cumulés et ceux déjà annoncés. Un duel neuf remet le compteur à son
+  // état de départ sans rien annoncer.
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (!duelCourant) return;
+    const cumules = Math.max(0, (duelCourant.sorcier.pvMax ?? 0) - duelCourant.sorcier.pv);
+    const memo = degatsSorcierRef.current;
+    if (memo.duel !== duelCourant) {
+      degatsSorcierRef.current = { duel: duelCourant, annonces: cumules };
+      return;
+    }
+    if (cumules > memo.annonces) {
+      const montant = cumules - memo.annonces;
+      memo.annonces = cumules;
+      noterEvenementDuel({ type: 'degats-infliges', montant });
+    }
+  });
+
   // Lancer (ou reprendre) une partie : le plein écran natif est demandé ici,
   // dans le geste du bouton — le navigateur le refuse ailleurs. La session de
   // paysage garde l'orientation et le pont Android, pas le plein écran.
@@ -2673,6 +2775,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     decksMaison,
     collection,
     statutSync,
+    rafraichirCollection,
     enregistrerDeckMaison,
     supprimerDeckMaison,
     noterVictoireEtage,
@@ -2703,7 +2806,29 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     sauvegardeOk: sauvegardeHistoireOk, ouvrirRecit, agirRecit,
     enregistrerVictoire, recommencerRecit, effacerProgression,
   } = useRpgStory();
+  // La bourse du Souk (dossier 13, lot 2) : les gestes du duel l'alimentent par
+  // `noterEvenementDuel`, le solde et les quêtes du jour en sortent. Aucun écran
+  // du Souk n'existe encore — l'onglet et la pastille viennent au lot 3 —, mais
+  // la boucle tourne déjà : jouer paie, et les quêtes du jour avancent.
+  //
+  // Elle est branchée APRÈS `useRpgStory` : ses quêtes du jour lisent la
+  // progression, pour ne pas proposer « ouvrir le comptoir » tant que le Souk
+  // est fermé — y compris au tout premier rendu.
+  const {
+    credits, aReclamer: soukAReclamer, quetes: quetesSouk, bourse: portefeuilleSouk,
+    noterEvenementDuel, reclamerUneQuete, reclamerLeCachet, reclamerLeCachetDeLaSemaine,
+    acheterBooster, acheterCoffret, fermerOuverture, ouverture: ouvertureSouk,
+  } = useSablierBourse({
+    progression: progressionHistoireRef.current,
+    // Un achat range ses cartes dans la collection : l'atelier de decks doit
+    // les voir tout de suite, sans qu'on recharge la page.
+    onCartesRangees: rafraichirCollection,
+  });
   const histoireVictoireMarqueeRef = useRef(null);
+  // Un duel libre ne passe pas par la session du récit : il a son propre témoin.
+  const libreVictoireMarqueeRef = useRef(null);
+  // Dégâts cumulés annoncés au Souk pour le duel en cours (voir l'effet dédié).
+  const degatsSorcierRef = useRef({ duel: null, annonces: 0 });
   const campagneDuelRef = useRef(null);
   // Son du jeu en deux couches : le mode Histoire porte une boucle par tour
   // (`rpgAmbientMusic.js`), tandis que les bruitages tactiles (`rpgAudio.js`)
@@ -3613,6 +3738,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           campagneEnCours={Boolean(campagneDuelRef.current)}
           decksMaison={decksMaison}
           collection={collection}
+          credits={credits}
+          aReclamer={soukAReclamer}
+          quetes={quetesSouk}
+          onReclamerQuete={reclamerUneQuete}
+          onReclamerCachet={reclamerLeCachet}
+          onReclamerSemaine={reclamerLeCachetDeLaSemaine}
+          portefeuille={portefeuilleSouk}
+          progression={progressionHistoire}
+          ouverture={ouvertureSouk}
+          onOuvrirBooster={acheterBooster}
+          onOuvrirCoffret={acheterCoffret}
+          onFermerOuverture={fermerOuverture}
           statutSync={statutSync}
           onEnregistrerDeckMaison={enregistrerDeckMaison}
           onSupprimerDeckMaison={supprimerDeckMaison}
@@ -4059,6 +4196,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       avancerTutoriel('terrain', 'mana');
     } else { jouerSfx('erreur'); }
     force();
+    // Le Souk est prévenu **après** le rendu du plateau : `noterEvenementDuel`
+    // met à jour la bourse, qui vit dans la même page — un état de bourse mis à
+    // jour avant `force()` fait passer le rendu du champ en tâche de fond, et la
+    // table montre encore l'ancien état juste après le geste (vu par
+    // `check:rpg-preview` : `rpgJouerCreature` rendait `ok: true` et la créature
+    // n'apparaissait qu'à la macrotâche suivante).
+    if (res.ok) {
+      noterEvenementDuel({ type: 'terrain-pose', cardId: carteId });
+      noterEvenementDuel({ type: 'carte-jouee', cardId: carteId });
+    }
   };
 
   const engager = (terrainId, couleurChoisie = null) => {
@@ -4164,6 +4311,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective);
+    // Le sort a-t-il été lancé ? Le Souk n'est prévenu qu'après `force()`.
+    let lancee = false;
     if (res.ok && res.contre && res.parIA) {
       // Le sorcier contre la carte du joueur : elle est défaussée, le tour du joueur continue.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
@@ -4189,6 +4338,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       invaliderAnnulation();
       annoncerMagie(carte, cibleDecrite);
       setCibleEnCours(null);
+      lancee = true;
       if (reponseActive && combatEntrant?.coteAttaquant === 'joueur') {
         const attaquantsVivants = combatEntrant.attaquants
           .filter((id) => duel.joueur.creatures.some((entite) => entite.id === id));
@@ -4239,6 +4389,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
     }
     force();
+    // Le Souk est prévenu **après** le rendu du plateau : `noterEvenementDuel`
+    // met à jour la bourse, qui vit dans la même page — un état de bourse mis à
+    // jour avant `force()` fait passer le rendu du champ en tâche de fond, et la
+    // table montre encore l'ancien état juste après le geste (vu par
+    // `check:rpg-preview` : `rpgJouerCreature` rendait `ok: true` et la créature
+    // n'apparaissait qu'à la macrotâche suivante).
+    if (lancee) {
+      noterEvenementDuel({ type: 'magie-lancee', cardId: carteId });
+      noterEvenementDuel({ type: 'carte-jouee', cardId: carteId });
+    }
   };
 
   const finaliserPoseCreature = (carteId, cibleId = null) => {
@@ -4264,6 +4424,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       avancerTutoriel('creature', 'invocation');
     }
     force();
+    // Le Souk est prévenu **après** le rendu du plateau : `noterEvenementDuel`
+    // met à jour la bourse, qui vit dans la même page — un état de bourse mis à
+    // jour avant `force()` fait passer le rendu du champ en tâche de fond, et la
+    // table montre encore l'ancien état juste après le geste (vu par
+    // `check:rpg-preview` : `rpgJouerCreature` rendait `ok: true` et la créature
+    // n'apparaissait qu'à la macrotâche suivante).
+    if (res.ok && !(res.contre && res.parIA)) {
+      noterEvenementDuel({ type: 'creature-invoquee', cardId: carteId });
+      noterEvenementDuel({ type: 'carte-jouee', cardId: carteId });
+    }
   };
 
   const equiperArme = (carteId, cibleId) => {
@@ -4284,6 +4454,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       jouerSfx('erreur');
     }
     force();
+    // Le Souk est prévenu **après** le rendu du plateau : `noterEvenementDuel`
+    // met à jour la bourse, qui vit dans la même page — un état de bourse mis à
+    // jour avant `force()` fait passer le rendu du champ en tâche de fond, et la
+    // table montre encore l'ancien état juste après le geste (vu par
+    // `check:rpg-preview` : `rpgJouerCreature` rendait `ok: true` et la créature
+    // n'apparaissait qu'à la macrotâche suivante).
+    if (res.ok && !(res.contre && res.parIA)) {
+      noterEvenementDuel({ type: 'arme-jouee', cardId: carteId });
+      noterEvenementDuel({ type: 'carte-jouee', cardId: carteId });
+    }
   };
 
   /** Capacité activée d'une arme portée (le Bâton des citernes) : même

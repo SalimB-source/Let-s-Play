@@ -42,7 +42,7 @@ import {
   cardTypeLine,
   terrainManaColors,
 } from './rpgCards.js';
-import { carteDebloqueePar, possedeCarte } from './rpgCollection.js';
+import { carteReveleePar, possedeCarte } from './rpgCollection.js';
 import {
   RPG_DECK_TAILLE,
   completerEnTerrains,
@@ -489,7 +489,7 @@ export function RpgDeckAtelier({
                 const dansLeDeck = compte.get(carte.id) ?? 0;
                 const limite = cardCopyLimit(carte);
                 const avis = peutAjouterCarte(carte.id, cardIds, collection);
-                const deblocage = acquise ? null : carteDebloqueePar(carte.id);
+                const deblocage = acquise ? null : carteReveleePar(carte.id);
                 const estTerrain = carte.kind === 'terrain';
                 const estCreature = ['creature', 'hero'].includes(carte.kind);
                 const rarete = CARD_RARITIES[carte.rarity]?.label ?? carte.rarity;
@@ -544,7 +544,7 @@ export function RpgDeckAtelier({
                         <small><i className="rpg-atelier__rarete" aria-hidden="true" />{typeLabel(carte)} · {rarete}</small>
                         {!acquise && deblocage && (
                           <small className="rpg-atelier__carte-verrou">
-                            Vainquez « {deblocage.etage} »{deblocage.tour ? ` — ${deblocage.tour}` : ''}
+                            Le Souk la vendra après « {deblocage.etage} »{deblocage.tour ? ` — ${deblocage.tour}` : ''}
                           </small>
                         )}
                       </span>

@@ -1,0 +1,197 @@
+/* ── Les quêtes du jour, dans l'onglet Jouer ───────────────────────────────────
+   La colonne de droite du menu. La grille qui la place existe déjà
+   (`.rpg-mode-menu__play`, deux colonnes jusqu'à 820 px) : ici, il n'y a que la
+   carte elle-même — l'habit du Sablier, laiton et nuit, et des barres lisibles
+   d'un coup d'œil. */
+
+.rpg-quests-jour {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px 15px 15px;
+  border: 1px solid rgba(236, 219, 183, .16);
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(201, 150, 57, .16), rgba(0, 0, 0, 0) 62%),
+    linear-gradient(168deg, rgba(38, 28, 17, .92), rgba(16, 13, 14, .94));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .34);
+}
+
+.rpg-quests-jour__tete { display: grid; gap: 5px; }
+.rpg-quests-jour__tete h3 {
+  margin: 0;
+  color: #ffe7af;
+  font-size: clamp(17px, 2.1vw, 21px);
+  letter-spacing: .01em;
+}
+.rpg-quests-jour__compte { margin: 0; color: rgba(247, 237, 218, .58); font-size: 12px; }
+
+.rpg-quests-jour__liste { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+
+.rpg-quests-jour__quete {
+  display: grid;
+  gap: 7px;
+  padding: 10px 11px;
+  border: 1px solid rgba(236, 219, 183, .14);
+  border-radius: 14px;
+  background: rgba(12, 10, 11, .5);
+  transition: border-color .25s ease, background .25s ease;
+}
+/* Terminée et pas encore encaissée : la carte s'allume. C'est le moment où le
+   panneau doit donner envie de cliquer. */
+.rpg-quests-jour__quete.is-terminee {
+  border-color: rgba(231, 191, 101, .55);
+  background: linear-gradient(150deg, rgba(201, 150, 57, .18), rgba(12, 10, 11, .55));
+}
+.rpg-quests-jour__quete.is-reclamee { opacity: .62; }
+
+.rpg-quests-jour__quete-tete {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.rpg-quests-jour__quete-tete strong { min-width: 0; color: #f7edda; font-size: 12.5px; line-height: 1.3; }
+.rpg-quests-jour__palier {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(236, 219, 183, .1);
+  color: rgba(247, 237, 218, .68);
+  font: 800 8.5px/1.5 var(--mono, monospace);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.rpg-quests-jour__gain {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #ffe7af;
+  font: 800 11.5px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rpg-quests-jour__gain .rpg-credit { font-size: 1.15em; }
+
+.rpg-quests-jour__jauge {
+  position: relative;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .42);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .5);
+  overflow: hidden;
+}
+.rpg-quests-jour__jauge-remplie {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(201, 150, 57, .85), #ffd98a);
+  transition: width .35s ease;
+}
+.rpg-quests-jour__quete.is-terminee .rpg-quests-jour__jauge-remplie,
+.rpg-quests-jour__quete.is-reclamee .rpg-quests-jour__jauge-remplie {
+  background: linear-gradient(90deg, #d9a63c, #fff0c4);
+}
+.rpg-quests-jour__jauge-texte {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff6e3;
+  font: 800 9.5px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+}
+
+.rpg-quests-jour__encore { margin: 0; color: rgba(247, 237, 218, .5); font: 700 9.5px/1.4 var(--mono, monospace); letter-spacing: .04em; }
+.rpg-quests-jour__pris { margin: 0; color: rgba(247, 237, 218, .58); font: 800 9.5px/1.4 var(--mono, monospace); letter-spacing: .1em; text-transform: uppercase; }
+.rpg-quests-jour__reclamer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px; /* la taille du doigt, comme partout ailleurs */
+  justify-content: center;
+}
+.rpg-quests-jour__reclamer .rpg-credit { font-size: 1.15em; }
+
+/* Le Cachet du cycle : la récompense des trois quêtes, mise à part. */
+.rpg-quests-jour__cachet {
+  display: grid;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px dashed rgba(236, 219, 183, .2);
+  border-radius: 14px;
+  background: rgba(12, 10, 11, .38);
+}
+.rpg-quests-jour__cachet.is-pret {
+  border-style: solid;
+  border-color: rgba(231, 191, 101, .6);
+  background: linear-gradient(150deg, rgba(201, 150, 57, .22), rgba(12, 10, 11, .5));
+  animation: rpg-quests-jour-appel 3.4s ease-in-out infinite;
+}
+@keyframes rpg-quests-jour-appel {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(231, 191, 101, .28); }
+  50% { box-shadow: 0 0 0 6px rgba(231, 191, 101, 0); }
+}
+.rpg-quests-jour__cachet-texte { margin: 0; color: rgba(247, 237, 218, .66); font-size: 11.5px; line-height: 1.45; }
+.rpg-quests-jour__cachet-texte .rpg-mode-menu__eyebrow { display: block; margin-bottom: 3px; }
+.rpg-quests-jour__cachet-gain {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 231, 175, .72);
+  font: 800 12px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-quests-jour__serie { margin: 0; color: rgba(247, 237, 218, .5); font: 700 9.5px/1.6 var(--mono, monospace); letter-spacing: .05em; }
+.rpg-quests-jour__semaine {
+  margin-top: 6px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Le pied : le solde, et ce qu'il achète. `margin-top: auto` le pose en bas de
+   la colonne quand le héros est plus haut que les quêtes. */
+.rpg-quests-jour__pied {
+  margin-top: auto;
+  display: grid;
+  gap: 9px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(236, 219, 183, .14);
+}
+.rpg-quests-jour__solde {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: #ffe7af;
+}
+.rpg-quests-jour__solde .rpg-credit { font-size: 19px; }
+.rpg-quests-jour__solde strong {
+  font: 800 21px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.rpg-quests-jour__solde em {
+  color: rgba(247, 237, 218, .5);
+  font: 700 9px/1 var(--mono, monospace);
+  font-style: normal;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.rpg-quests-jour__souk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-quests-jour__cachet.is-pret { animation: none; }
+  .rpg-quests-jour__jauge-remplie,
+  .rpg-quests-jour__quete { transition: none; }
+}

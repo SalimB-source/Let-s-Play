@@ -138,7 +138,7 @@ assert.match(pageSource, /rpg-deck-catalog__sync/, 'la ligne de synchronisation 
 assert.match(pageSource, /DECK MAISON/, 'les decks maison portent leur étiquette');
 assert.match(pageSource, /onSupprimerDeckMaison\(openDeck\.id\)/, 'la suppression d’un deck maison passe par le parent');
 assert.match(pageSource, /noterVictoireEtage\(histoireEtageId, maj\)/,
-  'une victoire d’étage débloque les cartes de sa récompense');
+  'une victoire d’étage passe par le hook, qui ouvre ses cartes au Souk');
 assert.match(boxCss, /\.rpg-deck-choice--neuf\s*\{/, 'la crate a son style de boîtier entrouvert');
 
 // ── Collection & compte : modules purs, transport Supabase, table SQL ──────────────────────
@@ -149,7 +149,11 @@ const hookSource = readSource('../src/games/useDecksSablier.js');
 const schemaSource = readSource('../supabase/schema.sql');
 assert.match(collectionSource, /COLLECTION_DEPART = RPG_DUEL_CARDS[\s\S]*?rarity === 'commune' \|\| carte\.rarity === 'inhabituelle'/,
   'la dotation de départ est une règle (communes + inhabituelles), pas une liste figée');
-assert.match(collectionSource, /RPG_RECOMPENSES_PAR_ETAGE = \{/, 'les récompenses d’étage sont du contenu déclaré');
+assert.match(collectionSource, /RPG_REVELATIONS_PAR_ETAGE = \{/, 'les révélations d’étage sont du contenu déclaré');
+assert.match(collectionSource, /export function figerAcquisitions/, 'le gel de migration reprend les cartes déjà gagnées');
+assert.match(hookSource, /figerAcquisitions\(\)/, 'le hook pose le gel des acquis au montage');
+assert.match(collectionSource, /const acquisNormalise = normaliserAcquis/, 'la collection ne lit des acquis que leur liste de cartes');
+assert.match(builderSource, /fusionnerAcquisitions\(local\?\.acquis, distant\?\.acquis\)/, 'la fusion de compte transporte les acquis, gel compris');
 assert.match(builderSource, /fusionnerEtatsSablier/, 'la fusion de compte est calculée côté client');
 assert.match(builderSource, /normaliserCollection\(local\?\.collection\)/, 'la fusion compare les collections normalisées');
 assert.match(remoteSource, /rpg_sablier_progress/, 'le transport parle à la table du compte');
@@ -161,7 +165,7 @@ assert.match(schemaSource, /create table if not exists public\.rpg_sablier_progr
 assert.match(schemaSource, /on public\.rpg_sablier_progress for select to authenticated using \(auth\.uid\(\) = user_id\)/,
   'la table est fermée par RLS à sa propre ligne');
 assert.match(readSource('../src/games/RpgDeckAtelier.jsx'), /rpgValiderDeckMaison/, 'l’atelier valide structure ET collection en direct');
-assert.match(readSource('../src/games/RpgDeckAtelier.jsx'), /carteDebloqueePar/, 'les cartes verrouillées annoncent où se débloquer');
+assert.match(readSource('../src/games/RpgDeckAtelier.jsx'), /carteReveleePar/, 'les cartes verrouillées annoncent où se débloquer');
 
 // ── L'aperçu au doigt vaut aussi dans le créateur de deck ───────────────────────────────────
 // Le geste est délégué par la page au menu entier (l’atelier y vit) : il suffit que les

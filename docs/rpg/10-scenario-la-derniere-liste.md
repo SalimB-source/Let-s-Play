@@ -61,8 +61,9 @@ interlocuteur après sa défaite. Battre un sorcier fait tomber son opposition,
 pas nécessairement son personnage.
 
 Les compagnons existent dans les dialogues indépendamment de leur carte :
-rencontrer Yamina ne débloque pas automatiquement la carte `yamina`. Les
-récompenses restent celles de `rpgCollection.js`.
+rencontrer Yamina ne débloque pas automatiquement la carte `yamina`. Depuis le
+Souk (dossier 13), **les étages ne donnent plus de cartes : ils les révèlent**,
+et `rpgCollection.js` porte la carte des révélations.
 
 ## 3. La campagne complète : cinq actes, les vingt duels existants
 
@@ -83,7 +84,7 @@ n'en aurait plus neuf. Les « étages » de duel sont des paliers internes à ce
 
 Le rôle de défense du pacte attribué au Zénith et celui d'archives froides du
 Fjord sont des propositions de mise en scène. Les adversaires, identifiants,
-decks, puissances et récompenses n'ont pas besoin d'être remplacés.
+decks, puissances et révélations n'ont pas besoin d'être remplacés.
 
 ### Les fins
 
@@ -151,8 +152,8 @@ Une relecture depuis le journal ne remplace pas le choix enregistré.
 | Cinq tours, vingt étages et les paramètres de chaque adversaire | `src/games/rpgStoryTours.js` |
 | Déblocage dans chaque tour, victoire et stockage local tolérant | `src/games/rpgStory.js` |
 | Galerie, lancement via `demarrerEtage`, création via `nouvellePartie`, écran de résultat | `src/games/RpgDuelPage.jsx` |
-| Récompenses des vingt étages, collection et cartes déjà possédées | `src/games/rpgCollection.js` |
-| Mise à jour de collection après victoire | `noterVictoireEtage` dans `src/games/useDecksSablier.js` |
+| Révélations des vingt étages, collection, acquis figés | `src/games/rpgCollection.js` |
+| Ouverture des cartes d’un étage au Souk après victoire | `noterVictoireEtage` dans `src/games/useDecksSablier.js` |
 | Illustrations des cinq tours, portraits de Salem, Yamina, Fériel, Boualem et Tarek | `public/sablier-tours/`, `public/cards/` |
 | Musique d'ambiance selon la tour | `src/games/rpgAmbientMusic.js` |
 
@@ -239,8 +240,9 @@ Campagne → scène avant → bouton Commencer le duel → duel existant
    mulligan caché derrière le dialogue, pas d'IA active pendant la lecture.
 2. À la victoire, remplacer l'orchestration actuelle par une transition
    unique qui conserve `marquerEtageVaincu` et `noterVictoireEtage`, puis
-   programme la scène de sortie. Ne pas ajouter un second effet concurrent
-   qui distribuerait les récompenses séparément.
+   programme la scène de sortie. `noterVictoireEtage` **ouvre** désormais les
+   cartes de l'étage au Souk (dossier 13) et créditera les crédits au lot 2 :
+   un seul effet les traite, personne d'autre ne les distribue.
 3. Les boutons « Étage suivant », « Rejouer » et « Retour aux tours » passent
    par ce contrôleur en campagne. Le résultat générique ne doit pas couvrir
    la scène ni permettre de sauter un choix non résolu.
@@ -285,7 +287,7 @@ mutations vers une version 2 qui garde `etagesVaincus` au même endroit :
   ressusciter l'ancienne partie.
 - Sauvegarder la victoire **et** le curseur de scène après-duel dans le même
   objet. Recharger après une victoire doit ouvrir la scène en attente, pas
-  exiger de regagner le duel ni oublier sa récompense.
+  exiger de regagner le duel ni oublier ses cartes révélées.
 - Marquer une scène vue à sa validation, pas à son ouverture. Conserver le
   choix et la position avant de passer à la scène suivante. Normaliser aussi
   les identifiants de scènes/options et les positions hors limites.
@@ -333,7 +335,7 @@ Tester aussi la défaite et le chargement d'une sauvegarde antérieure.
 ### Lot 2 — L'épisode des Listes complet
 
 Écrire les huit autres scènes, intégrer le choix de la Scribe et ses deux
-variantes d'épilogue, ajouter le journal minimal et les récompenses au bilan.
+variantes d'épilogue, ajouter le journal minimal et les cartes révélées au bilan.
 
 **L'épisode est validable quand :**
 
@@ -363,7 +365,7 @@ pour vérifier que l'histoire fonctionne.
   réinitialisation partielle/complète, conservation de `recit` après victoire.
 - Tests de flux : victoire, défaite, égalité, double événement, ancien callback,
   scène quittée puis reprise, relecture sans effet, duel déjà gagné.
-- Tests de collection : récompenses identiques à l'existant, aucune nouvelle
+- Tests de collection : les mêmes cartes révélées qu'avant, aucune nouvelle
   condition de dialogue pour posséder une carte.
 - Étendre `tests/rpg-story.test.js` et créer les tests purs du récit ; adapter
   `scripts/rpg-story-smoke.jsx` pour les deux entrées Campagne/Tours libres et

@@ -1,21 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RPG_DUEL_CARDS, cardById, cardCopyLimit } from '../src/games/rpgCards.js';
+import { RPG_DUEL_CARDS, cardById, cardColors, cardCopyLimit } from '../src/games/rpgCards.js';
 import { tousLesEtages } from '../src/games/rpgStoryTours.js';
 import {
   COLLECTION_DEPART,
-  RPG_RECOMPENSES_PAR_ETAGE,
-  carteDebloqueePar,
-  collectionDepuisEtages,
+  RPG_ACQUIS_STORAGE_KEY,
+  RPG_COLLECTION_STORAGE_KEY,
+  RPG_REVELATIONS_PAR_ETAGE,
+  acquisVide,
+  carteReveleePar,
+  cartesReveleesParEtage,
+  chargerAcquis,
+  chargerCollectionDistante,
   collectionJoueur,
   exemplairesPossedables,
+  figerAcquisitions,
+  fusionnerAcquisitions,
   fusionnerCollections,
+  normaliserAcquis,
   normaliserCollection,
   possedeCarte,
-  recompenseEtage,
+  revelationsDepuisEtages,
+  sauverAcquis,
   sauverCollectionDistante,
-  chargerCollectionDistante,
-  RPG_COLLECTION_STORAGE_KEY,
 } from '../src/games/rpgCollection.js';
 
 const idsCatalogue = () => RPG_DUEL_CARDS.map((carte) => carte.id).sort();
@@ -64,81 +71,140 @@ test('la dotation de départ tient la règle : communes et inhabituelles, jamais
   }
 });
 
-// ── Les récompenses d'étage ──────────────────────────────────────────────────
+// ── Les révélations d'étage : la carte de la ville ───────────────────────────
 
-test('chaque récompense nomme des cartes réelles, hors dotation, sans doublon', () => {
-  const toutes = Object.values(RPG_RECOMPENSES_PAR_ETAGE).flat();
+test('chaque révélation nomme des cartes réelles, hors dotation, sans doublon', () => {
+  const toutes = Object.values(RPG_REVELATIONS_PAR_ETAGE).flat();
   for (const id of toutes) {
     assert.ok(cardById(id), `${id} existe au catalogue`);
     assert.equal(possedeCarte(COLLECTION_DEPART, id), false, `${id} n'est pas donné d'entrée`);
   }
-  assert.equal(new Set(toutes).size, toutes.length, 'aucune carte dans deux étages');
+  assert.equal(new Set(toutes).size, toutes.length, 'aucune carte révélée par deux étages');
 });
 
-test('dotation + récompenses couvrent tout le catalogue : aucune carte inconquisable', () => {
-  const couverture = fusionnerCollections(COLLECTION_DEPART, ...Object.values(RPG_RECOMPENSES_PAR_ETAGE));
+test('dotation + révélations couvrent tout le catalogue : aucune carte introuvable', () => {
+  const couverture = fusionnerCollections(COLLECTION_DEPART, ...Object.values(RPG_REVELATIONS_PAR_ETAGE));
   assert.deepEqual(couverture.sort(), idsCatalogue());
 });
 
-test('les récompenses portent sur des étages connus des Tours de Bab El', () => {
+test('les révélations portent sur des étages connus des Tours de Bab El', () => {
   const connus = new Set(tousLesEtages().map(({ etage }) => etage.id));
-  for (const etageId of Object.keys(RPG_RECOMPENSES_PAR_ETAGE)) {
+  for (const etageId of Object.keys(RPG_REVELATIONS_PAR_ETAGE)) {
     assert.ok(connus.has(etageId), `${etageId} est un étage de la campagne`);
   }
 });
 
-test('chaque étage débloqué nomme son étage et sa tour', () => {
-  const deblocage = carteDebloqueePar('kraken');
-  assert.equal(deblocage.etageId, 'abysses-1');
-  assert.equal(typeof deblocage.etage, 'string');
-  assert.equal(deblocage.tour, 'La Tour des Abysses');
-  assert.equal(carteDebloqueePar('chien-du-guet'), null, 'une carte de la dotation ne se débloque nulle part');
-  assert.equal(carteDebloqueePar('carte-inconnue'), null);
+test('l’étage qui révèle une carte nomme son étage et sa tour', () => {
+  const revelation = carteReveleePar('kraken');
+  assert.equal(revelation.etageId, 'abysses-1');
+  assert.equal(typeof revelation.etage, 'string');
+  assert.equal(revelation.tour, 'La Tour des Abysses');
+  assert.equal(carteReveleePar('chien-du-guet'), null, 'une carte de la dotation n’est révélée nulle part');
+  assert.equal(carteReveleePar('carte-inconnue'), null);
+  assert.deepEqual(cartesReveleesParEtage('listes-1'), ['cavalier-amazigh-du-desert', 'scribe-de-la-liste']);
+  assert.deepEqual(cartesReveleesParEtage('etage-fantome'), []);
 });
 
-// ── Ce que le joueur possède, étage après étage ─────────────────────────────
+// ── Les étages ne donnent plus de cartes ─────────────────────────────────────
 
-test('la collection suit les étages déblayés et ne régresse jamais', () => {
-  const apresListes5 = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-5'] });
-  assert.equal(possedeCarte(apresListes5, 'cavalier-amazigh-du-desert'), true, 'récompense de listes-1');
-  assert.equal(possedeCarte(apresListes5, 'tarek'), true, 'récompense de listes-5');
-  assert.equal(possedeCarte(apresListes5, 'kraken'), false, 'les Abysses sont encore devant');
-  const apresAbysses = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-5', 'abysses-1'] });
-  assert.equal(possedeCarte(apresAbysses, 'kraken'), true);
-  assert.equal(collectionDepuisEtages([]).length, 0);
-  assert.equal(collectionDepuisEtages('pas une liste').length, 0);
+test('gagner un étage ne donne plus aucune carte : le Souk les vend', () => {
+  const apres = collectionJoueur({ acquis: acquisVide() });
+  assert.deepEqual(apres, [...COLLECTION_DEPART], 'la collection d’un joueur neuf est exactement la dotation');
+  for (const id of Object.values(RPG_REVELATIONS_PAR_ETAGE).flat()) {
+    assert.equal(possedeCarte(apres, id), false, `${id} s’achète au Souk, il ne se gagne plus`);
+  }
 });
 
-test('une couleur ouvre à peu près quand la campagne y entre (pacing des récompenses)', () => {
-  // Une couleur est jouable en mono quand ses références possédées, multipliées
-  // par leur quota, couvrent les 24 cartes non-terrain d'un deck de 40.
-  const slots = (collection, element) => collection
-    .map((id) => cardById(id))
-    .filter((carte) => carte && carte.kind !== 'terrain' && carte.element === element)
-    .reduce((total, carte) => total + cardCopyLimit(carte), 0);
+test('la collection grandit par les acquis, le Souk et le compte — jamais par les étages', () => {
+  const gel = { ...acquisVide(), gel: true, cartes: ['kraken'] };
+  const avecAcquis = collectionJoueur({ acquis: gel });
+  assert.equal(possedeCarte(avecAcquis, 'kraken'), true);
 
-  const depart = collectionJoueur({ etagesVaincus: [] });
-  assert.ok(slots(depart, 'sable') >= 24, 'le mono-Sable se compose dès le départ');
-  assert.ok(slots(depart, 'braise') < 24, 'le mono-Braise se gagne');
-  assert.ok(slots(depart, 'eau') < 24, 'le mono-Eau se gagne');
-  assert.ok(slots(depart, 'neige') < 24, 'le mono-Neige se gagne');
+  const avecSouk = collectionJoueur({ acquis: acquisVide(), souk: ['tarek'] });
+  assert.equal(possedeCarte(avecSouk, 'tarek'), true, 'une carte achetée au Souk est possédée');
 
-  const apresListes = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5'] });
-  assert.ok(slots(apresListes, 'braise') < 24, 'la Braise n\'est pas complète au bout de la première tour');
+  const avecCompte = collectionJoueur({ acquis: acquisVide(), distante: ['yamina'] });
+  assert.equal(possedeCarte(avecCompte, 'yamina'), true, 'une carte venue d’un autre appareil aussi');
 
-  // Le set Soleil rouge ouvre désormais la Braise en mono au Souk.
-  const apresSouk4 = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5', 'souk-1', 'souk-2', 'souk-3', 'souk-4'] });
-  assert.ok(slots(apresSouk4, 'braise') > slots(apresListes, 'braise'), 'le Souk étoffe la Braise');
-  assert.ok(slots(apresSouk4, 'braise') >= 24,
-    'la Braise s’ouvre en mono avec les récompenses du Soleil rouge au Souk');
+  const tout = collectionJoueur({ acquis: gel, distante: ['yamina'], souk: ['tarek'] });
+  assert.equal(tout.length, COLLECTION_DEPART.length + 3, 'les quatre sources s’unissent');
+  assert.ok(possedeCarte(tout, 'yamina') && possedeCarte(tout, 'tarek') && possedeCarte(tout, 'kraken'));
+});
 
-  const apresSouk2 = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5', 'souk-1', 'souk-2'] });
-  assert.ok(slots(apresSouk2, 'eau') >= 24, 'le mono-Eau s\'ouvre par les citernes de la Gardienne');
+test('exemplairesPossedables ouvre une carte du Souk comme une autre', () => {
+  const collection = collectionJoueur({ acquis: acquisVide(), souk: ['kraken', 'tarek'] });
+  assert.equal(exemplairesPossedables(collection, 'kraken'), 1, 'la mythique achetée est mobilisable');
+  assert.equal(exemplairesPossedables(collection, 'tarek'), 1);
+  assert.equal(exemplairesPossedables(collection, 'petra'), 0, 'et les autres restent verrouillées');
+});
 
-  const apresAbysses4 = collectionJoueur({
-    etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5', 'souk-1', 'souk-2', 'souk-3', 'souk-4', 'sables-1', 'sables-2', 'sables-3', 'abysses-1', 'abysses-2', 'abysses-3', 'abysses-4'],
+// ── Le gel des acquis : la migration ─────────────────────────────────────────
+
+test('le gel reprend une fois les cartes déjà gagnées sous l’ancienne règle', () => {
+  const gel = figerAcquisitions({ progression: { etagesVaincus: ['listes-1', 'listes-2'] } });
+  assert.equal(gel.gel, true);
+  assert.deepEqual(gel.cartes, ['cavalier-amazigh-du-desert', 'scribe-de-la-liste', 'braisier-du-souk']);
+  assert.deepEqual(figerAcquisitions({ progression: { etagesVaincus: [] } }).cartes, [], 'un joueur neuf ne gèle rien');
+
+  // Une fois gelé, plus rien ne s’ajoute : les victoires suivantes n’apportent
+  // plus de cartes, elles révèlent.
+  const encore = figerAcquisitions({
+    acquis: gel,
+    progression: { etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5'] },
   });
-  assert.ok(slots(apresAbysses4, 'neige') >= 24, 'le mono-Neige est prêt en entrant dans le Fjord');
+  assert.deepEqual(encore, gel, 'le gel est définitif');
+  assert.equal(possedeCarte(collectionJoueur({ acquis: encore }), 'tarek'), false, 'Tarek attend le Souk');
+});
+
+test('les acquis se normalisent et fusionnent : le gel gagne, les cartes s’unissent', () => {
+  assert.deepEqual(normaliserAcquis(null), acquisVide());
+  assert.deepEqual(normaliserAcquis({ gel: 'oui', cartes: ['kraken', 'kraken', 'inconnue'] }).cartes, ['kraken']);
+  const fusion = fusionnerAcquisitions({ gel: true, cartes: ['kraken'] }, { gel: false, cartes: ['tarek'] });
+  assert.equal(fusion.gel, true, 'un appareil qui n’a pas migré ne défait pas le gel d’un autre');
+  assert.deepEqual(fusion.cartes, ['kraken', 'tarek']);
+  assert.equal(fusionnerAcquisitions(null, null).gel, false);
+});
+
+test('les acquis se sauvegardent et se relisent sur l’appareil', () => {
+  const cache = stockageEnMemoire();
+  avecStockage({ value: cache.stockage.value }, () => {
+    assert.deepEqual(chargerAcquis(), acquisVide());
+    assert.equal(sauverAcquis({ gel: true, cartes: ['kraken'] }), true);
+    assert.deepEqual(chargerAcquis().cartes, ['kraken']);
+    assert.equal(chargerAcquis().gel, true);
+    cache.donnees.set(RPG_ACQUIS_STORAGE_KEY, '{ cassé');
+    assert.deepEqual(chargerAcquis(), acquisVide(), 'un stockage corrompu rend un acquis vide');
+  });
+});
+
+test('revelationsDepuisEtages liste ce qu’une progression a révélé, sans doublon', () => {
+  assert.deepEqual(revelationsDepuisEtages(['listes-1']), ['cavalier-amazigh-du-desert', 'scribe-de-la-liste']);
+  assert.deepEqual(revelationsDepuisEtages([]), []);
+  assert.deepEqual(revelationsDepuisEtages('pas une liste'), []);
+  const trois = revelationsDepuisEtages(['listes-1', 'listes-1', 'listes-2']);
+  assert.equal(new Set(trois).size, trois.length);
+});
+
+// ── Le pacing du contenu : les couleurs entrent dans l'ordre ──────────────────
+
+test('les révélations amènent les couleurs quand la campagne y entre', () => {
+  const couleursDesRevelations = (tours) => {
+    const vues = new Set();
+    for (const [etageId, cartes] of Object.entries(RPG_REVELATIONS_PAR_ETAGE)) {
+      const tour = tousLesEtages().find(({ etage }) => etage.id === etageId)?.tour.id;
+      if (!tours.includes(tour)) continue;
+      for (const id of cartes) for (const couleur of cardColors(cardById(id))) vues.add(couleur);
+    }
+    return vues;
+  };
+  assert.deepEqual([...couleursDesRevelations(['tour-des-listes'])].sort(), ['braise', 'sable'],
+    'les Listes révèlent le Sable et la Braise');
+  assert.deepEqual([...couleursDesRevelations(['tour-des-listes', 'tour-du-souk'])].sort(), ['braise', 'eau', 'sable'],
+    'le Souk révèle l’Eau de ses citernes');
+  assert.deepEqual([...couleursDesRevelations(['tour-des-listes', 'tour-du-souk', 'tour-des-sables'])].sort(),
+    ['braise', 'eau', 'sable'], 'les Sables restent dans les trois couleurs de la ville');
+  assert.deepEqual([...couleursDesRevelations(['tour-des-abysses'])].sort(), ['eau', 'neige'],
+    'les Abysses révèlent la Neige du fond');
 });
 
 // ── Normalisation, fusion, quotas ────────────────────────────────────────────
@@ -160,12 +226,6 @@ test('exemplairesPossedables suit les quotas de rareté et la possession', () =>
   const avecKraken = fusionnerCollections(COLLECTION_DEPART, ['kraken']);
   assert.equal(exemplairesPossedables(avecKraken, 'kraken'), 1, 'mythique : un exemplaire');
   assert.equal(exemplairesPossedables(COLLECTION_DEPART, 'petra'), 0, 'Pétra verrouillée au départ');
-});
-
-test('recompenseEtage rend les cartes d\'un étage, rien pour un étage inconnu', () => {
-  assert.deepEqual(recompenseEtage('listes-1'), ['cavalier-amazigh-du-desert', 'scribe-de-la-liste']);
-  assert.deepEqual(recompenseEtage('listes-4'), ['petra', 'petra-des-deux-sources']);
-  assert.deepEqual(recompenseEtage('etage-fantome'), []);
 });
 
 // ── Cache des apports du compte ──────────────────────────────────────────────

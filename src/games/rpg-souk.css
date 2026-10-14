@@ -1,0 +1,595 @@
+/* L'écran du Souk : la bourse, les quêtes du jour, le Cachet.
+   Laiton et nuit, comme le reste de l'onglet — mais c'est un lieu, pas un
+   formulaire : la seule zone claire est le solde, tout le reste se lit dessous.
+   Tactile d'abord : aucun état ne dépend du survol, et chaque bouton fait 44 px
+   au moins. */
+
+.rpg-souk {
+  width: 100%;
+  max-width: 1220px;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: clamp(10px, 2vw, 24px) clamp(4px, 1vw, 12px) 34px;
+  color: #f7edda;
+  display: grid;
+  gap: clamp(12px, 1.8vw, 18px);
+}
+
+/* ── L'en-tête : le titre, la bourse, le retour ───────────────────────────── */
+.rpg-souk__header {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(12px, 1.8vw, 22px);
+  flex-wrap: wrap;
+}
+.rpg-souk__titre { min-width: 0; flex: 1 1 320px; }
+.rpg-souk__titre h2 { margin: 6px 0 8px; font-size: clamp(24px, 3.4vw, 38px); line-height: 1; letter-spacing: .01em; }
+.rpg-souk__titre p { margin: 0; max-width: 62ch; color: rgba(247, 237, 218, .72); font-size: 13px; line-height: 1.6; }
+.rpg-souk__sync { margin-top: 7px !important; color: rgba(247, 237, 218, .5) !important; font: 700 10px/1.4 var(--mono, monospace); letter-spacing: .06em; }
+
+.rpg-souk__bourse {
+  flex: none;
+  min-width: min(100%, 240px);
+  padding: 13px 15px;
+  border: 1px solid rgba(232, 194, 113, .34);
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(43, 31, 17, .92), rgba(18, 14, 15, .92));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .3);
+}
+.rpg-souk__solde {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: #ffe7af;
+}
+.rpg-souk__solde-signe { display: inline-flex; align-items: center; align-self: center; font-size: clamp(22px, 3.4vw, 30px); }
+.rpg-souk__solde strong {
+  font: 800 clamp(26px, 4vw, 36px)/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .01em;
+}
+.rpg-souk__solde em { color: rgba(247, 237, 218, .58); font: 700 10px/1 var(--mono, monospace); font-style: normal; letter-spacing: .14em; text-transform: uppercase; }
+.rpg-souk__cycle { margin: 9px 0 0; color: rgba(247, 237, 218, .72); font-size: 12px; }
+.rpg-souk__cycle strong { color: #f0d194; font-variant-numeric: tabular-nums; }
+.rpg-souk__serie { margin: 4px 0 0; color: rgba(247, 237, 218, .48); font: 700 9px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
+.rpg-souk__retour { flex: none; }
+
+/* ── Ce qui attend d'être réclamé ─────────────────────────────────────────── */
+.rpg-souk__attente {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid rgba(231, 191, 101, .5);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(201, 150, 57, .22), rgba(111, 69, 34, .16));
+  color: #ffe7af;
+  font: 800 11px/1.5 var(--mono, monospace);
+  letter-spacing: .06em;
+}
+
+/* ── Une section, sa tête ─────────────────────────────────────────────────── */
+.rpg-souk__section,
+.rpg-souk__cachet,
+.rpg-souk__rayons {
+  padding: clamp(12px, 1.6vw, 18px);
+  border: 1px solid rgba(235, 215, 176, .18);
+  border-radius: 16px;
+  background: rgba(15, 12, 15, .78);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .22);
+}
+.rpg-souk__section-tete { display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.rpg-souk__section-tete h3 { margin: 0; font-size: clamp(15px, 2vw, 19px); letter-spacing: .02em; }
+.rpg-souk__section-tete p { margin: 0; color: rgba(247, 237, 218, .5); font: 700 9px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
+.rpg-souk__vide { margin: 0; color: rgba(247, 237, 218, .56); font-size: 12.5px; line-height: 1.65; }
+
+/* ── Les quêtes du jour ───────────────────────────────────────────────────── */
+.rpg-souk__quetes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: clamp(10px, 1.4vw, 14px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rpg-souk__quete {
+  display: grid;
+  gap: 9px;
+  padding: 13px;
+  border: 1px solid rgba(235, 215, 176, .17);
+  border-radius: 13px;
+  background: linear-gradient(165deg, rgba(30, 25, 26, .9), rgba(17, 14, 17, .9));
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.rpg-souk__quete.is-terminee { border-color: rgba(231, 191, 101, .55); box-shadow: 0 10px 26px rgba(197, 139, 53, .16); }
+.rpg-souk__quete.is-reclamee { opacity: .68; }
+.rpg-souk__quete-tete { display: flex; align-items: baseline; gap: 9px; }
+.rpg-souk__palier {
+  flex: none;
+  padding: 2px 7px;
+  border: 1px solid rgba(235, 215, 176, .3);
+  border-radius: 999px;
+  color: #e8c77f;
+  font: 800 8px/1.6 var(--mono, monospace);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.rpg-souk__quete-tete h4 { margin: 0; font-size: 14px; line-height: 1.25; }
+.rpg-souk__quete-texte { margin: 0; color: rgba(247, 237, 218, .68); font-size: 12.5px; line-height: 1.55; }
+
+.rpg-souk__jauge {
+  position: relative;
+  height: 22px;
+  border: 1px solid rgba(235, 215, 176, .2);
+  border-radius: 999px;
+  background: rgba(9, 8, 10, .8);
+  overflow: hidden;
+}
+.rpg-souk__jauge-remplie {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8c5f22, #e5c06b);
+  transition: width .35s ease;
+}
+.is-terminee .rpg-souk__jauge-remplie { background: linear-gradient(90deg, #b8802c, #ffe1a3); }
+.rpg-souk__jauge-texte {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff4dd;
+  font: 800 10px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .08em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .75);
+}
+.rpg-souk__quete-pied { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rpg-souk__recompense { color: #ffe7af; font: 800 13px/1 var(--mono, monospace); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+/* Au doigt, un bouton fait 44 px : c’est la règle des autres écrans. */
+.rpg-souk__quete-pied .rpg-menu-button { min-height: 44px; padding: 10px 13px; }
+.rpg-souk .rpg-menu-button:disabled,
+.rpg-souk .rpg-menu-button[disabled] {
+  border-color: rgba(235, 215, 176, .16);
+  background: rgba(20, 17, 18, .8);
+  color: rgba(247, 237, 218, .38);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.rpg-souk__pris { color: rgba(247, 237, 218, .5); font: 800 9px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
+.rpg-souk__quete-note { margin: 0; color: rgba(247, 237, 218, .46); font: 700 9.5px/1.4 var(--mono, monospace); letter-spacing: .06em; }
+
+/* ── Le Cachet du cycle ───────────────────────────────────────────────────── */
+.rpg-souk__cachet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(12px, 1.8vw, 20px);
+  flex-wrap: wrap;
+}
+.rpg-souk__cachet[data-souk-cachet="disponible"] {
+  border-color: rgba(231, 191, 101, .55);
+  background: linear-gradient(135deg, rgba(64, 45, 20, .82), rgba(20, 15, 15, .86));
+  box-shadow: 0 14px 34px rgba(197, 139, 53, .18);
+}
+.rpg-souk__cachet-texte { min-width: 0; flex: 1 1 300px; }
+.rpg-souk__cachet-texte h3 { margin: 5px 0 7px; font-size: clamp(14px, 1.9vw, 18px); }
+.rpg-souk__cachet-texte p { margin: 0; color: rgba(247, 237, 218, .68); font-size: 12.5px; line-height: 1.6; }
+.rpg-souk__cachet .rpg-menu-button { flex: none; }
+
+/* ── Le Cachet de la semaine ──────────────────────────────────────────────── */
+.rpg-souk__semaine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(12px, 1.8vw, 20px);
+  flex-wrap: wrap;
+  padding: clamp(12px, 1.6vw, 18px);
+  border: 1px solid rgba(235, 215, 176, .18);
+  border-radius: 16px;
+  background: rgba(15, 12, 15, .78);
+}
+.rpg-souk__semaine.is-disponible {
+  border-color: rgba(148, 130, 255, .5);
+  background: linear-gradient(135deg, rgba(43, 34, 66, .85), rgba(18, 14, 19, .88));
+  box-shadow: 0 14px 34px rgba(120, 96, 200, .18);
+}
+.rpg-souk__semaine .rpg-menu-button { flex: none; }
+
+/* ── Le journal des ouvertures ────────────────────────────────────────────── */
+.rpg-souk__journal { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.rpg-souk__journal li {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(235, 215, 176, .12);
+  border-radius: 10px;
+  background: rgba(10, 9, 11, .6);
+  font-size: 11.5px;
+}
+.rpg-souk__journal li[data-souk-journal-mythe="true"] { border-color: rgba(168, 117, 237, .45); }
+.rpg-souk__journal-rayon { color: #ffe7af; font: 800 9.5px/1.4 var(--mono, monospace); letter-spacing: .1em; text-transform: uppercase; }
+.rpg-souk__journal-date { color: rgba(247, 237, 218, .46); font: 700 9.5px/1.4 var(--mono, monospace); white-space: nowrap; }
+.rpg-souk__journal-cartes { min-width: 0; color: rgba(247, 237, 218, .8); line-height: 1.5; overflow-wrap: anywhere; }
+.rpg-souk__journal-notes { color: rgba(247, 237, 218, .5); font: 700 9px/1.4 var(--mono, monospace); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+
+/* ── Le paquet, en volume ─────────────────────────────────────────────────
+   Un sachet scellé, pas une vignette : cinq faces posées autour d'un pavé
+   (largeur × hauteur × épaisseur) sous une perspective, comme les boîtiers de
+   deck (`rpg-deckbox.css`). Le paquet **est** le bouton d'achat — il se
+   soulève au survol et au focus, et son reflet glisse sur le métal.
+   L'élément du rayon donne sa couleur (`--foil-*`) : chaque étagère a la
+   sienne, et le grand étal reste au laiton. */
+
+.rpg-souk__rayon {
+  --foil-1: #6b4a1d;
+  --foil-2: #2a1f14;
+  --foil-ink: #ffe7af;
+  --foil-shine: rgba(255, 233, 178, .5);
+}
+.rpg-souk__rayon--braise { --foil-1: #b4441f; --foil-2: #3a1410; --foil-ink: #ffd9bd; --foil-shine: rgba(255, 156, 96, .55); }
+.rpg-souk__rayon--sable { --foil-1: #a8802f; --foil-2: #33260f; --foil-ink: #ffeec2; --foil-shine: rgba(255, 221, 143, .55); }
+.rpg-souk__rayon--eau { --foil-1: #1f6c8c; --foil-2: #0d2431; --foil-ink: #d5f2ff; --foil-shine: rgba(126, 214, 248, .5); }
+.rpg-souk__rayon--neige { --foil-1: #4a83a3; --foil-2: #14303f; --foil-ink: #eaf8ff; --foil-shine: rgba(196, 236, 255, .6); }
+.rpg-souk__rayon--souk { --foil-1: #8a5a1e; --foil-2: #2b1f10; --foil-ink: #ffe7af; --foil-shine: rgba(255, 226, 160, .55); }
+
+.rpg-souk__paquet {
+  --pw: clamp(88px, 11vw, 118px);         /* largeur du sachet */
+  --ph: calc(var(--pw) * 1.42);           /* hauteur */
+  --pd: calc(var(--pw) * .12);            /* épaisseur */
+  position: relative;
+  display: block;
+  width: 100%;
+  /* Le bas respire plus : le paquet flotte, l'étiquette de prix se loge dessous. */
+  padding: 6px 0 26px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  perspective: calc(var(--pw) * 6.5);
+  perspective-origin: 50% 40%;
+}
+.rpg-souk__paquet:disabled { cursor: not-allowed; }
+.rpg-souk__paquet:focus-visible { outline: none; }
+.rpg-souk__paquet:focus-visible .rpg-souk__paquet-scene { outline: 2px solid rgba(231, 191, 101, .8); outline-offset: 4px; border-radius: 6px; }
+
+/* Ombre portée : le paquet est posé, pas collé au fond. */
+.rpg-souk__paquet-ombre {
+  position: absolute;
+  left: 50%;
+  /* Juste sous le sachet, au-dessus de l'étiquette : le paquet ne touche
+     jamais l'étagère. */
+  bottom: calc(26px + var(--pw) * .04);
+  width: calc(var(--pw) * 1.05);
+  height: calc(var(--pw) * .22);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, .62), rgba(0, 0, 0, 0) 70%);
+  filter: blur(3px);
+  transition: opacity .3s ease, width .3s ease;
+}
+
+/* La scène : le balancement continu, décalé d'un paquet à l'autre. */
+.rpg-souk__paquet-scene {
+  position: relative;
+  display: block;
+  width: var(--pw);
+  height: var(--ph);
+  margin: 0 auto;
+  transform-style: preserve-3d;
+  animation: rpg-souk-paquet-sway 7.5s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i, 0) * -1.9s);
+}
+@keyframes rpg-souk-paquet-sway {
+  from { transform: rotateY(-7deg) translateY(0); }
+  to { transform: rotateY(7deg) translateY(calc(var(--pw) * -.03)); }
+}
+.rpg-souk__paquet-sway { position: absolute; inset: 0; transform-style: preserve-3d; }
+.rpg-souk__paquet-corps {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* Posé de trois quarts : on voit la face et la tranche droite. */
+  transform: rotateX(-7deg) rotateY(24deg);
+  transition: transform .5s cubic-bezier(.2, .8, .2, 1);
+}
+.rpg-souk__paquet:hover .rpg-souk__paquet-corps,
+.rpg-souk__paquet:focus-visible .rpg-souk__paquet-corps { transform: rotateX(-4deg) rotateY(11deg) translateY(calc(var(--pw) * -.05)) scale(1.03); }
+.rpg-souk__paquet:hover .rpg-souk__paquet-ombre,
+.rpg-souk__paquet:focus-visible .rpg-souk__paquet-ombre { width: calc(var(--pw) * .92); opacity: .78; }
+
+/* Les faces : le sachet est un pavé mince, ses chants sont la tranche. */
+.rpg-souk__paquet-face {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: linear-gradient(165deg, var(--foil-1), var(--foil-2) 78%);
+}
+.rpg-souk__paquet-face--avant { inset: 0; transform: translateZ(calc(var(--pd) / 2)); border-radius: calc(var(--pw) * .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
+.rpg-souk__paquet-face--dos { inset: 0; transform: rotateY(180deg) translateZ(calc(var(--pd) / 2)); border-radius: calc(var(--pw) * .06); filter: brightness(.6); }
+.rpg-souk__paquet-face--tranche { top: 0; left: calc((var(--pw) - var(--pd)) / 2); width: var(--pd); height: 100%; transform: rotateY(90deg) translateZ(calc(var(--pw) / 2)); filter: brightness(.72); }
+.rpg-souk__paquet-face--dessus,
+.rpg-souk__paquet-face--dessous { left: 0; top: calc((var(--ph) - var(--pd)) / 2); width: 100%; height: var(--pd); }
+.rpg-souk__paquet-face--dessus { transform: rotateX(90deg) translateZ(calc(var(--ph) / 2)); filter: brightness(1.14); }
+.rpg-souk__paquet-face--dessous { transform: rotateX(-90deg) translateZ(calc(var(--ph) / 2)); filter: brightness(.5); }
+
+/* Les sertissages : les deux bords écrasés d'un sachet scellé. */
+.rpg-souk__paquet-sertissage {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  height: calc(var(--ph) * .07);
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .42) 0 2px, rgba(255, 255, 255, .1) 2px 4px),
+    linear-gradient(180deg, var(--foil-1), var(--foil-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16);
+}
+.rpg-souk__paquet-sertissage:first-child { top: 3.5%; }
+.rpg-souk__paquet-sertissage:last-child { bottom: 3.5%; }
+
+/* Le reflet : une bande de métal qui traverse la face, lentement. */
+.rpg-souk__paquet-face--avant::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(112deg, transparent 32%, var(--foil-shine) 46%, rgba(255, 255, 255, .9) 50%, var(--foil-shine) 54%, transparent 68%);
+  background-size: 280% 280%;
+  background-position: 130% 0;
+  animation: rpg-souk-paquet-reflet 6.5s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -1.3s);
+  opacity: .75;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+@keyframes rpg-souk-paquet-reflet {
+  0%, 55% { background-position: 130% 0; }
+  85%, 100% { background-position: -30% 0; }
+}
+
+/* Ce que le sachet annonce : la rune, le nom du rayon, et ce qu'on y trouve. */
+.rpg-souk__paquet-rune {
+  position: absolute;
+  top: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, .22);
+  font-size: calc(var(--pw) * .42);
+  line-height: 1;
+}
+.rpg-souk__paquet-nom {
+  position: absolute;
+  top: 48%;
+  left: 6%;
+  right: 6%;
+  color: var(--foil-ink);
+  font: 800 clamp(11px, 1.5vw, 15px)/1.15 var(--mono, monospace);
+  letter-spacing: .1em;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .7);
+}
+.rpg-souk__paquet-meta {
+  position: absolute;
+  bottom: 16%;
+  left: 6%;
+  right: 6%;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  color: rgba(255, 255, 255, .72);
+  font: 700 8px/1.4 var(--mono, monospace);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.rpg-souk__paquet-meta em {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .34);
+  color: #fff6e0;
+  font-style: normal;
+}
+/* L'étiquette de prix : sous le paquet, lisible même quand il est fermé. */
+.rpg-souk__paquet-prix {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border: 1px solid rgba(232, 194, 113, .5);
+  border-radius: 999px;
+  background: rgba(14, 11, 12, .92);
+  color: #ffe7af;
+  font: 800 11px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rpg-souk__paquet.is-ferme { filter: grayscale(.55) brightness(.72); }
+/* Sans solde, le rayon reste attirant — c'est un objectif, pas une porte
+   fermée — mais le paquet s'éteint doucement. */
+.rpg-souk__paquet:disabled:not(.is-ferme) { filter: saturate(.8) brightness(.9); }
+.rpg-souk__paquet:disabled .rpg-souk__paquet-scene { animation: none; }
+.rpg-souk__paquet:disabled .rpg-souk__paquet-corps { transform: rotateX(-7deg) rotateY(24deg) scale(.94); }
+
+/* La pièce du crédit, dans les montants de l'écran : un cran plus grosse que le
+   texte qui l'entoure — 11 px dans une ligne de quête, 10 px dans une ligne de
+   refus, 20 px à côté du solde. C'est elle qui donne envie d'en gagner, elle
+   n'a pas à être discrète. */
+.rpg-souk__recompense .rpg-credit { font-size: 1.15em; }
+.rpg-souk__quete-pied .rpg-menu-button .rpg-credit { font-size: 1.1em; }
+.rpg-souk__cachet .rpg-menu-button .rpg-credit { font-size: 1.1em; }
+.rpg-souk__rayon-refus .rpg-credit { font-size: 1.4em; }
+.rpg-souk__journal-notes .rpg-credit { font-size: 1.15em; }
+
+/* ── Les rayons : cinq étagères, cinq prix ───────────────────────────────── */
+.rpg-souk__rayons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: clamp(10px, 1.4vw, 14px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rpg-souk__rayon {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  justify-items: stretch;
+  padding: 13px;
+  border: 1px solid rgba(235, 215, 176, .17);
+  border-radius: 13px;
+  background: linear-gradient(165deg, rgba(30, 25, 26, .9), rgba(17, 14, 17, .9));
+}
+.rpg-souk__rayon.is-complet { border-color: rgba(148, 130, 255, .3); }
+.rpg-souk__rayon.is-ferme { opacity: .72; border-style: dashed; }
+.rpg-souk__rayon header { display: flex; align-items: baseline; justify-content: space-between; gap: 9px; }
+.rpg-souk__rayon h4 { margin: 0; font-size: 15px; letter-spacing: .02em; }
+.rpg-souk__rayon-texte { margin: 0; color: rgba(247, 237, 218, .66); font-size: 12px; line-height: 1.55; }
+.rpg-souk__rayon-taux { margin: 0; color: #e8c77f; font: 700 9.5px/1.5 var(--mono, monospace); letter-spacing: .08em; text-transform: uppercase; }
+.rpg-souk__rayon-reste { margin: 0; color: rgba(247, 237, 218, .52); font: 700 10px/1.5 var(--mono, monospace); }
+.rpg-souk__rayon footer { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 2px; }
+.rpg-souk__rayon-refus { flex: 1 1 100%; margin: 0; color: #f0b9a4; font: 700 9.5px/1.5 var(--mono, monospace); letter-spacing: .04em; }
+.rpg-souk__rayon footer .rpg-menu-button { flex: 1 1 auto; min-height: 44px; }
+.rpg-souk__rayon-remise {
+  margin-left: 6px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: rgba(255, 231, 175, .18);
+  color: #ffe7af;
+  font-size: 8px;
+  letter-spacing: .06em;
+}
+
+/* ── La cérémonie d'ouverture ─────────────────────────────────────────────── */
+.rpg-souk__ceremonie {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: clamp(10px, 2vw, 26px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.rpg-souk__ceremonie-nappe {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 8%, rgba(58, 40, 18, .9), rgba(8, 6, 8, .96) 62%);
+  backdrop-filter: blur(6px);
+}
+.rpg-souk__ceremonie-corps {
+  position: relative;
+  width: min(100%, 1020px);
+  display: grid;
+  gap: clamp(12px, 1.6vw, 18px);
+  padding: clamp(14px, 2vw, 24px);
+  border: 1px solid rgba(232, 194, 113, .34);
+  border-radius: 18px;
+  background: linear-gradient(170deg, rgba(34, 26, 20, .96), rgba(14, 11, 13, .97));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
+}
+.rpg-souk__ceremonie-tete h2 { margin: 6px 0 6px; font-size: clamp(20px, 3vw, 30px); }
+.rpg-souk__ceremonie-tete p { margin: 0; color: rgba(247, 237, 218, .66); font-size: 12.5px; }
+.rpg-souk__ceremonie-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: clamp(9px, 1.4vw, 14px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rpg-souk__carte {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid rgba(235, 215, 176, .22);
+  border-radius: 12px;
+  background: rgba(12, 10, 12, .82);
+  animation: rpg-souk-carte-pose .34s ease both;
+  animation-delay: calc(var(--rang, 0) * 60ms);
+}
+.rpg-souk__carte.is-nouvelle { border-color: rgba(231, 191, 101, .6); box-shadow: 0 10px 26px rgba(197, 139, 53, .18); }
+.rpg-souk__carte.is-doublon { opacity: .82; }
+.rpg-souk__carte-art img { display: block; width: 100%; height: auto; border-radius: 8px; }
+.rpg-souk__carte-corps { display: grid; gap: 3px; }
+.rpg-souk__carte-rarete { color: #e8c77f; font: 800 8px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
+.rpg-souk__carte-corps h4 { margin: 0; font-size: 13px; line-height: 1.2; }
+.rpg-souk__carte-corps p { margin: 0; color: rgba(247, 237, 218, .58); font-size: 10.5px; line-height: 1.4; }
+.rpg-souk__carte-tampon {
+  margin: 0 !important;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: rgba(255, 231, 175, .14);
+  color: #ffe7af !important;
+  font: 800 8.5px/1.4 var(--mono, monospace) !important;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.rpg-souk__carte.is-doublon .rpg-souk__carte-tampon { background: rgba(235, 215, 176, .08); color: rgba(247, 237, 218, .6) !important; }
+.rpg-souk__carte.is-dos {
+  min-height: 120px;
+  place-items: center;
+  border-color: rgba(235, 215, 176, .14);
+  background:
+    repeating-linear-gradient(45deg, rgba(120, 34, 30, .5) 0 8px, rgba(88, 24, 22, .5) 8px 16px),
+    rgba(12, 10, 12, .9);
+}
+.rpg-souk__carte-dos-rune { color: rgba(240, 209, 148, .7); font-size: 26px; }
+.rpg-souk__ceremonie-pied { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rpg-souk__ceremonie-bilan { flex: 1 1 200px; margin: 0; color: rgba(247, 237, 218, .72); font: 700 10.5px/1.5 var(--mono, monospace); letter-spacing: .06em; }
+.rpg-souk__ceremonie-pied .rpg-menu-button { min-height: 44px; }
+@keyframes rpg-souk-carte-pose {
+  from { opacity: 0; transform: translateY(10px) rotate(-1.2deg); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── Le téléphone et la tablette ──────────────────────────────────────────── */
+@media (max-width: 820px) {
+  .rpg-souk__header { gap: 12px; }
+  .rpg-souk__bourse { flex: 1 1 100%; min-width: 0; }
+  .rpg-souk__retour { order: -1; }
+  .rpg-souk__cachet .rpg-menu-button { flex: 1 1 100%; }
+}
+@media (max-width: 640px) {
+  /* Le journal passe en deux lignes : le rayon et la date d'abord, les cartes
+     ensuite — une ligne de quatre colonnes ne tient pas dans 320 px. */
+  .rpg-souk__journal li { grid-template-columns: auto minmax(0, 1fr); }
+  .rpg-souk__journal-cartes { grid-column: 1 / -1; }
+  .rpg-souk__journal-notes { grid-column: 1 / -1; }
+  /* Cinquante cartes ne tiennent pas dans une colonne : au téléphone, la
+     cérémonie passe en deux colonnes serrées et se fait défiler. */
+  .rpg-souk__ceremonie-cartes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .rpg-souk__ceremonie-pied .rpg-menu-button { flex: 1 1 100%; }
+}
+@media (max-width: 480px) {
+  .rpg-souk__quetes { grid-template-columns: minmax(0, 1fr); }
+  .rpg-souk__ceremonie-cartes { grid-template-columns: minmax(0, 1fr); }
+  .rpg-souk__quete-pied .rpg-menu-button { flex: 1 1 100%; }
+  .rpg-souk__section-tete { align-items: flex-start; }
+}
+
+/* Le mouvement ne sert à rien : la barre se pose d'un coup. */
+@media (max-width: 420px) {
+  /* Trois paquets par ligne plutôt qu'un : c'est une étagère, pas un catalogue. */
+  .rpg-souk__rayons { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
+  .rpg-souk__paquet { --pw: clamp(74px, 30vw, 96px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-souk__jauge-remplie,
+  .rpg-souk__quete { transition: none; }
+  /* Le retournement devient une apparition franche. */
+  .rpg-souk__carte { animation: none; }
+  /* Le paquet ne balance plus et son reflet se pose : il reste un volume, mais
+     immobile. */
+  .rpg-souk__paquet-scene { animation: none; }
+  .rpg-souk__paquet-face--avant::after { animation: none; background-position: 45% 0; }
+  .rpg-souk__paquet-corps,
+  .rpg-souk__paquet-ombre { transition: none; }
+}
