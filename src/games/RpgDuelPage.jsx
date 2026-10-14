@@ -734,11 +734,27 @@ function TableCard({
   const malInvocation = cote === 'joueur' && playerTurn && !entite.ready && !entite.attaquee;
   const [blockDropHover, setBlockDropHover] = useState(false);
   const [entreeEnCours, setEntreeEnCours] = useState(true);
+  const cardRef = useRef(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setEntreeEnCours(false), 620);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const element = cardRef.current;
+    const mouvementReduit = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!entite.envol || mouvementReduit || typeof element?.animate !== 'function') return undefined;
+
+    // Un léger va-et-vient sur `left` garde l'inclinaison, l'élévation et les
+    // animations CSS d'attaque indépendantes ; position:relative ne redistribue
+    // pas la place de la carte dans la rangée.
+    const balancement = element.animate(
+      [{ left: '-2px' }, { left: '2px' }],
+      { duration: 2800, direction: 'alternate', easing: 'ease-in-out', iterations: Infinity },
+    );
+    return () => balancement.cancel();
+  }, [entite.envol]);
 
   const commencerGlisserBloqueur = (event) => {
     if (!canDragBlocker) {
@@ -776,12 +792,14 @@ function TableCard({
 
   return (
     <button
+      ref={cardRef}
       type="button"
       className={[
         `rpg-card rpg-card--img rpg-card--elem-${carte?.element ?? 'sable'} rpg-card--type-${cardFrameType(carte)}`,
         cote === 'ennemi' ? 'rpg-card--ennemi' : 'rpg-card--equipe',
         cardFrameClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
+        entite.envol ? 'is-envol' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
         selectedBlocker ? 'is-blocker-selected' : '',
