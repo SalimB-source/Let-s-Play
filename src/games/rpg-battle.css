@@ -3593,6 +3593,191 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-peek__close { min-height: 44px; padding: 8px 20px; }
 }
 
+/* ── La fiche du catalogue : la carte cliquée, en grand ──────────────────────
+   Le catalogue est une surface de lecture : un clic sur une carte l'ouvre dans
+   le même volet sombre que l'appui long, mais l'illustration y prend la place
+   qu'elle mérite — jusqu'à 62 dvh — et la fiche dit tout le reste à côté :
+   sur-titre et famille, nom, ligne de type, couleur, coût, effets ligne par
+   ligne, statistiques ou bonus d'arme. Le volet défile si la fiche dépasse ;
+   consulter une carte ne la joue pas et ne quitte pas l'onglet. */
+/* Les flèches flottent aux deux bords du volet : la place leur est réservée,
+   pour qu'elles ne mangent jamais l'illustration, ni à la souris ni au doigt. */
+.rpg-card-peek--catalogue {
+  --rpg-fiche-gouttiere: clamp(56px, 6.4vw, 84px);
+  padding-left: var(--rpg-fiche-gouttiere);
+  padding-right: var(--rpg-fiche-gouttiere);
+}
+.rpg-card-peek--catalogue .rpg-card-peek__panel {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.rpg-card-peek--catalogue .rpg-hover-card-preview {
+  width: min(960px, 100%);
+  max-height: none;
+  grid-template-columns: minmax(240px, min(430px, 62dvh)) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(14px, 2.2vw, 26px);
+  padding: 0;
+  overflow: visible;
+  animation: rpg-catalogue-fiche-in .18s cubic-bezier(.2, .75, .25, 1) both;
+}
+@keyframes rpg-catalogue-fiche-in {
+  from { opacity: 0; transform: translateY(6px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__face {
+  /* La face est près de deux fois plus large que celle de l'aperçu rapide : la
+     pastille de couleur suit le même rapport qu'au catalogue (≈ 13 % de la
+     largeur), pour rester le repère franc de l'élément. Couleur et coût
+     partagent `--rpg-card-marker-size`, donc leurs diamètres restent égaux. */
+  --rpg-card-marker-size: clamp(38px, 6.4vw, 56px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .55), 0 0 26px rgba(239, 210, 139, .14);
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__face .rpg-card-element-badge {
+  border-width: 2px;
+  font-size: clamp(19px, 3vw, 27px);
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__face .rpg-card-element-badge__pip {
+  border-width: 2px;
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__details {
+  align-content: start;
+  gap: 10px;
+  max-height: none;
+  overflow: visible;
+  padding: clamp(12px, 1.8vw, 20px) clamp(14px, 2vw, 22px);
+  border-color: rgba(236, 214, 172, .24);
+  border-radius: 10px;
+  background: rgba(5, 8, 11, .84);
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__eyebrow { font-size: 11px; }
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__name {
+  white-space: normal;
+  font: 700 clamp(22px, 2.6vw, 32px)/1.12 Georgia, serif;
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__type { font-size: 15px; line-height: 1.3; }
+/* La couleur de la carte, écrite comme au catalogue : glyphe(s) puis nom. */
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__color {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  color: #f3d891;
+  font: 800 12px/1.35 var(--mono, monospace);
+  letter-spacing: .05em;
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__rules {
+  gap: 9px;
+  max-height: none;
+  overflow: visible;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__cost { font-size: 16px; }
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__cost b { font-size: 22px; }
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__stats { font-size: 21px; }
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__arme { font-size: 15px; }
+
+/* Feuilleter la fiche : la flèche de gauche dit la carte précédente, celle de
+   droite la suivante, dans l'ordre de la grille filtrée. Les deux bouts se
+   rejoignent — aucune flèche ne s'éteint — et le compteur, en bas, dit où l'on
+   est. Ni les flèches ni le compteur ne referment le volet. */
+.rpg-card-peek__nav {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: clamp(44px, 4.6vw, 56px);
+  height: clamp(44px, 4.6vw, 56px);
+  padding: 0;
+  border: 1px solid rgba(240, 213, 148, .5);
+  border-radius: 50%;
+  background: rgba(11, 8, 6, .8);
+  color: #ffedc7;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: border-color .16s ease-out, background .16s ease-out, transform .12s ease-out;
+}
+.rpg-card-peek__nav--prev { left: max(10px, env(safe-area-inset-left)); }
+.rpg-card-peek__nav--next { right: max(10px, env(safe-area-inset-right)); }
+.rpg-card-peek__nav svg {
+  width: 44%;
+  height: 44%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rpg-card-peek__nav:hover { border-color: #e4bd6b; background: rgba(31, 22, 12, .92); }
+.rpg-card-peek__nav:active { transform: translateY(-50%) scale(.93); }
+.rpg-card-peek__nav:focus-visible { outline: 2px solid #e4bd6b; outline-offset: 2px; }
+/* Le bas du volet : la place de la carte dans la grille, puis « Fermer ». */
+.rpg-card-peek__bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(9px, 1.4vw, 14px);
+  min-width: 0;
+  max-width: 100%;
+}
+.rpg-card-peek__position {
+  color: rgba(255, 237, 199, .68);
+  font: 800 10px/1 var(--mono, monospace);
+  letter-spacing: .13em;
+  white-space: nowrap;
+}
+
+/* Portrait étroit : l'illustration passe au-dessus, la fiche dessous — la carte
+   reste entière, c'est le volet qui défile. Les flèches restent aux bords, plus
+   petites, et la gouttière se resserre pour ne pas rogner l'illustration. */
+@media (max-width: 720px) {
+  .rpg-card-peek--catalogue { --rpg-fiche-gouttiere: 48px; }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 12px;
+  }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__face { width: min(100%, 320px, 56dvh); }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__details { width: 100%; }
+  .rpg-card-peek__nav {
+    width: 40px;
+    height: 40px;
+    border-width: 1px;
+  }
+  .rpg-card-peek__nav--prev { left: max(6px, env(safe-area-inset-left)); }
+  .rpg-card-peek__nav--next { right: max(6px, env(safe-area-inset-right)); }
+}
+
+/* Paysage de téléphone (et APK) : la fiche garde ses deux colonnes, avec
+   l'illustration réglée sur la hauteur disponible — après la règle du volet
+   d'appui long, qui l'emporterait sinon à spécificité égale. */
+@media (max-height: 520px) {
+  .rpg-card-peek--catalogue { --rpg-fiche-gouttiere: clamp(48px, 6.4vw, 68px); }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview {
+    width: min(880px, 100%);
+    grid-template-columns: minmax(120px, min(300px, 44dvh)) minmax(0, 1fr);
+    gap: 12px;
+  }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__details { gap: 7px; padding: 8px 12px; }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__name { font-size: 20px; }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__type,
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__rules { font-size: 13px; line-height: 1.45; }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__cost b { font-size: 17px; }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__stats { font-size: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card-peek--catalogue .rpg-hover-card-preview { animation: none; }
+  .rpg-card-peek__nav { transition: none; }
+  .rpg-card-peek__nav:active { transform: translateY(-50%); }
+}
+
 /* ── Le mulligan : la main de départ, en cartes 4:5 nues ─────────────────────
    À l'ouverture du duel, le volet isole la table et montre la main de départ :
    les cinq cartes, entières, toutes à l'écran — la rangée ne défile jamais, ni
@@ -5030,12 +5215,75 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-catalogue__count { margin: 0 0 2px auto; color: rgba(244, 233, 214, .6); font: 800 9px/1.3 var(--mono, monospace); white-space: nowrap; }
 .rpg-card-catalogue__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 205px), 1fr)); gap: 13px; align-items: stretch; }
 .rpg-card-catalogue__card {
+  position: relative;
   min-width: 0;
   overflow: hidden;
   border: 1px solid rgba(235, 215, 176, .17);
   border-radius: 13px;
   background: linear-gradient(160deg, rgba(24, 20, 21, .98), rgba(13, 11, 16, .98));
   box-shadow: 0 12px 26px rgba(0, 0, 0, .3);
+  transition: transform .16s ease-out, border-color .16s ease-out, box-shadow .16s ease-out;
+}
+/* Le catalogue se lit au clic : chaque fiche porte un bouton transparent étiré
+   sur toute la carte — c'est lui qui prend le clic (et le focus clavier), la
+   fiche s'ouvre alors en grand dans son volet (`.rpg-card-peek--catalogue`).
+   Le survol à la souris garde l'aperçu rapide ; l'appui long d'une seconde
+   garde le sien (`rpgLongPress.js`), et son clic avalé n'ouvre pas la fiche. */
+.rpg-card-catalogue__ouvrir {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  cursor: zoom-in;
+}
+.rpg-card-catalogue__ouvrir:focus-visible {
+  outline: 2px solid #e4bd6b;
+  outline-offset: -2px;
+}
+/* L'amorce de zoom : le coin de l'illustration le dit, discret au repos, franc
+   au survol comme au focus. Aucun geste à deviner. */
+.rpg-card-catalogue__zoom {
+  position: absolute;
+  z-index: 3;
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(250, 233, 198, .55);
+  border-radius: 50%;
+  background: rgba(8, 6, 5, .72);
+  color: #ffe9a0;
+  font: 700 13px/1 var(--mono, monospace);
+  opacity: .55;
+  pointer-events: none;
+  transition: opacity .16s ease-out, transform .16s ease-out;
+}
+.rpg-card-catalogue__card:hover,
+.rpg-card-catalogue__card:focus-within {
+  border-color: rgba(240, 213, 148, .46);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, .42);
+  transform: translateY(-2px);
+}
+.rpg-card-catalogue__card:hover .rpg-card-catalogue__zoom,
+.rpg-card-catalogue__card:focus-within .rpg-card-catalogue__zoom {
+  opacity: 1;
+  transform: scale(1.08);
+}
+/* Pas de survol au doigt : l'amorce reste visible, elle dit que la carte
+   s'ouvre — le geste, lui, est annoncé en tête du catalogue. */
+@media (hover: none) {
+  .rpg-card-catalogue__zoom { opacity: .82; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card-catalogue__card,
+  .rpg-card-catalogue__zoom { transition: none; }
+  .rpg-card-catalogue__card:hover,
+  .rpg-card-catalogue__card:focus-within { transform: none; }
 }
 .rpg-card-catalogue__art {
   position: relative;

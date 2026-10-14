@@ -249,6 +249,29 @@ assert.match(panneauCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,300}
   'et son appel clignotant se coupe');
 assert.match(ecran, /vueDeLaQuete/, 'les deux écrans se servent de la même vue');
 
+// 12. Les gestes du duel sont racontés au Souk sans piège.
+const pageCode = sansCommentaires(page);
+// Une clé écrite en abrégé (`{ type: 'x', cardId }`) lève un ReferenceError
+// silencieux quand la variable n'existe pas : React le signale sans casser le
+// geste, la quête n'avance jamais et rien ne le dit. La charge utile du contrat
+// s'écrit donc toujours `cardId: <expression>`. (Trois sites étaient tombés
+// dedans : sort, créature, arme — corrigés.)
+assert.doesNotMatch(pageCode, /noterEvenementDuel\(\{\s*type: '[a-z-]+',\s*(cardId|carteId)\s*[,}]/,
+  'aucun événement du duel ne passe sa carte en abrégé : le contrat lit `cardId`, et une abréviation d’une variable absente lève un ReferenceError silencieux');
+assert.match(pageCode, /noterEvenementDuel\(\{ type: 'creature-invoquee', cardId: carteId \}\)/,
+  'l’invocation d’une créature nomme la carte qu’elle raconte');
+assert.match(pageCode, /noterEvenementDuel\(\{ type: 'magie-lancee', cardId: carteId \}\)/,
+  'un sort lancé aussi');
+assert.match(pageCode, /noterEvenementDuel\(\{ type: 'arme-jouee', cardId: carteId \}\)/,
+  'une arme équipée aussi');
+// Et le Souk est prévenu **après** le rendu du plateau : un état de bourse mis à
+// jour avant `force()` fait passer le rendu du champ en tâche de fond (le
+// plateau montrait l'ancien état juste après le clic).
+for (const geste of ['creature-invoquee', 'magie-lancee', 'arme-jouee', 'terrain-pose']) {
+  assert.match(pageCode, new RegExp(`force\\(\\)[\\s\\S]{0,700}noterEvenementDuel\\(\\{ type: '${geste}'`),
+    `« ${geste} » est raconté après le rendu du plateau`);
+}
+
 console.log('Le Souk (lots 3 à 5) est branché : sixième onglet, solde et pastille dessus,');
 console.log('trois quêtes réclamables, Cachet du cycle et de la semaine, cinq rayons dont le');
 console.log('paquet en volume est le bouton d’achat, la cérémonie d’ouverture, le journal des');
@@ -256,3 +279,5 @@ console.log('ouvertures, et les cartes achetées qui entrent dans la collection.
 console.log('sa pièce — frappée or, une seule à l’écran, jamais deux fois le même dégradé.');
 console.log('Les quêtes du jour attendent aussi dans l’onglet Jouer, à droite du menu :');
 console.log('mêmes barres, mêmes montants, et le geste d’encaissement au même endroit.');
+console.log('Les gestes du duel sont racontés au Souk après le rendu du plateau, et');
+console.log('toujours avec la clé `cardId` que le contrat attend.');

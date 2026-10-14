@@ -803,6 +803,20 @@ Les cas couverts :
   `backface-visibility: hidden`, les cinq teintes de rayon, **un seul** prix par
   tuile (plus de `rpg-souk__rayon-prix`) et le balancement coupé sous
   `prefers-reduced-motion` ;
+- **les gestes du duel, et l'ordre dans lequel le Souk les apprend** — un
+  correctif qui vient de la fusion avec `main`, et qui a révélé un bug. La bourse
+  vit dans la même page que le plateau : appeler `noterEvenementDuel` **avant**
+  `force()` fait passer le rendu du champ en tâche de fond, et la table montre
+  encore l'ancien état juste après le clic (constaté par `check:rpg-preview` —
+  `rpgJouerCreature` rendait `ok: true` et la créature n'apparaissait qu'à la
+  macrotâche suivante). Les quatre gestes (terrain, sort, créature, arme) sont
+  donc racontés **après** le rendu. Au passage, trois d'entre eux passaient la
+  carte en abrégé — `{ type: 'creature-invoquee', cardId }` — alors que le
+  paramètre s'appelle `carteId` : un **`ReferenceError` silencieux** (React le
+  signale sans casser le geste), qui privait les quêtes du sort, de la créature
+  et de l'arme de leur progression depuis le lot 2. Corrigé, et gardé par deux
+  règles de source : aucun événement ne passe sa carte en abrégé, et les quatre
+  gestes sont racontés après `force()` ;
 - **la pièce du crédit** — le smoke vérifie qu'elle est frappée (six polygones et
   plus : corps, quatre facettes, biseau, marque de frappe), qu'elle porte son
   étincelle et son halo, que son or est un dégradé, que le grand solde respire
