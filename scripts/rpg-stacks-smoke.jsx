@@ -76,11 +76,16 @@ function creerDuel(assert, props) {
 
 export async function checkRpgCardStacks(assert) {
   const originalMatchMedia = window.matchMedia;
-  // Paysage tactile ; le mouvement réduit rend les poses de carte synchrones.
-  window.matchMedia = () => ({ matches: true });
   try {
+    // Paysage tactile ; le mouvement réduit rend les poses de carte synchrones.
+    window.matchMedia = () => ({ matches: true });
     await scenarioMainEtChampJoueur(assert);
     await scenarioChampAdverse(assert);
+    await scenarioCreatureArmee(assert, 'tactile');
+    // Ordinateur : la souris survole, l'écran est large, rien n'est empilé
+    // par nom — la créature armée, elle, reste une pile.
+    window.matchMedia = (requete) => ({ matches: /reduce|hover/.test(requete) });
+    await scenarioCreatureArmee(assert, 'ordinateur');
   } finally {
     window.matchMedia = originalMatchMedia;
   }
@@ -277,6 +282,90 @@ async function scenarioChampAdverse(assert) {
       'sans combat en cours, les Chiens adverses ne forment plus qu’une carte');
     assert.equal(compteur('ennemi', 'chien-du-guet').textContent, '×2', 'la pile adverse affiche son compteur ×2');
     assert.ok(pv('joueur') < pvAvantAttaque, 'l’attaque non bloquée a touché le joueur : ses PV baissent');
+  } finally {
+    await duel.fermer();
+  }
+}
+
+/**
+ * Une créature équipée d'une arme est une pile : l'arme glisse sous elle, et
+ * l'aperçu (survol, appui long) dit qu'elle est équipée et de quelle arme.
+ * Joué une fois au doigt, une fois à la souris : la pile ne dépend pas de la
+ * disposition.
+ */
+async function scenarioCreatureArmee(assert, disposition) {
+  const duel = creerDuel(assert, {});
+  const { container, root, click, hand, camp, finDuTour, appuiLong, fermerApercu } = duel;
+  const survoler = async (element) => {
+    await act(async () => element.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true, relatedTarget: null })));
+  };
+  const quitterSurvol = async (element) => {
+    await act(async () => element.dispatchEvent(new window.MouseEvent('mouseout', { bubbles: true, relatedTarget: null })));
+  };
+  try {
+    // Pioche : la fin du paquet part en premier (deux Déserts, le Chien, la
+    // Takouba, un Désert). Trois Déserts suffisent pour payer les trois manas.
+    await act(async () => root.render(<RpgDuelPage
+      joueurDeck={[...Array(8).fill('desert'), 'takouba-des-pistes', 'chien-du-guet', 'desert', 'desert', 'desert']}
+      sorcierDeck={Array(15).fill('desert')}
+      rng={() => .999}
+    />));
+    assert.ok(await lancerDuelDepuisMenu(container, (element) => click(element, `[${disposition}] le duel démarre`)), `[${disposition}] l’onglet Deck lance le duel`);
+    await passerMulligan(container, (element) => click(element, `[${disposition}] le mulligan se valide`));
+    assert.ok(hand('takouba-des-pistes'), `[${disposition}] la Takouba est en main`);
+
+    await click(hand('desert'), `[${disposition}] poser un Désert`);
+    await finDuTour();
+    await click(hand('desert'), `[${disposition}] poser le deuxième Désert`);
+    await click(hand('chien-du-guet'), `[${disposition}] jouer le Chien du guet`);
+    await finDuTour();
+    await click(hand('desert'), `[${disposition}] poser le troisième Désert`);
+
+    // ── Un Chien nu n'est pas une pile ─────────────────────────────────────
+    const chien = camp('equipe', 'chien-du-guet')[0];
+    assert.ok(chien, `[${disposition}] le Chien est sur le champ`);
+    assert.equal(chien.closest('.rpg-card-stack--arme'), null, `[${disposition}] un Chien nu n’est pas une pile armée`);
+
+    // ── La Takouba s'attache au Chien : le Chien devient une pile armée ────
+    await click(hand('takouba-des-pistes'), `[${disposition}] jouer la Takouba`);
+    await click(camp('equipe', 'chien-du-guet')[0], `[${disposition}] attacher la Takouba au Chien`);
+    const armee = camp('equipe', 'chien-du-guet')[0];
+    const pile = armee?.closest('.rpg-card-stack--arme') ?? null;
+    assert.ok(pile, `[${disposition}] le Chien équipé se présente comme une pile`);
+    assert.equal(pile.querySelectorAll('.rpg-card').length, 1, `[${disposition}] la pile ne compte qu’une créature`);
+    const dessous = pile.querySelector('.rpg-card-stack__arme');
+    assert.ok(dessous, `[${disposition}] l’arme glisse sous la créature`);
+    assert.ok(dessous.querySelector('img')?.getAttribute('src')?.includes('takouba-des-pistes'),
+      `[${disposition}] la pile montre l’illustration de l’arme`);
+    assert.equal(dessous.getAttribute('aria-hidden'), 'true', `[${disposition}] l’arme posée dessous reste décorative`);
+    assert.ok(armee.getAttribute('aria-label').includes('armée de Takouba des pistes'),
+      `[${disposition}] le libellé accessible dit l’arme`);
+    assert.equal(pile.querySelector('.rpg-card-stack__count'), null, `[${disposition}] une créature seule n’a pas de compteur ×N`);
+
+    // ── Survol : l'aperçu indique l'équipement ─────────────────────────────
+    await survoler(armee);
+    const apercu = container.querySelector('.rpg-hover-card-preview');
+    assert.ok(apercu, `[${disposition}] survoler la créature armée ouvre son aperçu`);
+    const ligne = apercu.querySelector('[data-arme-equipee]');
+    assert.ok(ligne, `[${disposition}] l’aperçu indique que la créature est équipée`);
+    assert.ok(ligne.textContent.includes('Équipée de') && ligne.textContent.includes('Takouba des pistes +2/+0'),
+      `[${disposition}] l’aperçu nomme l’arme et son bonus : « ${ligne.textContent} »`);
+    assert.ok(apercu.getAttribute('aria-label').includes('équipée de Takouba des pistes (+2/+0)'),
+      `[${disposition}] l’aperçu le dit aussi aux lecteurs d’écran`);
+    await quitterSurvol(armee);
+    assert.equal(container.querySelector('.rpg-hover-card-preview'), null, `[${disposition}] quitter la carte referme l’aperçu`);
+
+    // ── Appui long : même information, sans rien jouer ─────────────────────
+    await appuiLong(camp('equipe', 'chien-du-guet')[0]);
+    const volet = container.querySelector('.rpg-card-peek');
+    assert.ok(volet, `[${disposition}] tenir la créature armée une seconde ouvre son aperçu`);
+    const ligneVolet = volet.querySelector('[data-arme-equipee]');
+    assert.ok(ligneVolet?.textContent.includes('Takouba des pistes +2/+0'),
+      `[${disposition}] l’appui long montre aussi l’arme portée`);
+    await fermerApercu();
+    assert.equal(container.querySelector('.rpg-card-peek'), null, `[${disposition}] Échap referme l’aperçu`);
+    assert.equal(camp('equipe', 'chien-du-guet')[0].classList.contains('is-selected'), false,
+      `[${disposition}] l’aperçu n’a déclaré aucune attaque`);
   } finally {
     await duel.fermer();
   }

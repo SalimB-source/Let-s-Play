@@ -114,9 +114,9 @@ assert.match(confirmSortSource, /rpg-spell-confirm__rules[\s\S]*?effets\.map/,
   'chaque effet occupe une ligne dans la confirmation de sort');
 assert.match(hoverPreviewSource, /rpg-hover-card-preview__rules[\s\S]*?effets\.map/,
   'chaque effet occupe une ligne dans l’aperçu au survol');
-assert.match(battlePage, /const afficherApercuSurvol = \(carte, event\) => \{[\s\S]*?setApercuSurvol\(/,
+assert.match(battlePage, /const afficherApercuSurvol = \(carte, event, armes = \[\]\) => \{[\s\S]*?setApercuSurvol\(/,
   'le survol déclenche l’aperçu instantané de la carte');
-assert.match(tableCardSource, /onHoverCard\?\.\(carte, event\)/,
+assert.match(tableCardSource, /onHoverCard\?\.\(carte, event, armes\)/,
   'les créatures en jeu utilisent le même aperçu sans icône d’état');
 assert.match(battleCss, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.rpg-card--type-creature:is\(:hover, :focus-visible\) \.rpg-card__img \{[^}]*animation: rpg-creature-hover-float 2\.2s ease-in-out infinite;/s,
   'les illustrations des créatures flottent uniquement au survol ou au focus sur un appareil avec pointeur précis');
