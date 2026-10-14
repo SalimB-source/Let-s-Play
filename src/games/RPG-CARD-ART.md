@@ -167,13 +167,16 @@ Les scènes d’action et les identités des cartes sont conservées :
   au début du prochain tour du lanceur.
 - **Serment de la forge** : forgeron au travail, samouraï et apprenti à ses côtés.
 
-Trois samouraïs rejoignent le set, peints en pleine action selon une méthode en deux temps :
-une image photoréaliste en plan cinématographique (contre-plongée, plongée, diagonale), puis une
-reprise de cette composition en peinture kaiga. Les fichiers photo restent hors du dépôt.
+Trois samouraïs rejoignent le set, peints dans une direction **légendaire** : peinture kaiga
+épique à l'or en feuille, encres sumi marquées, couleurs minérales vives et aura mythique. Ce
+n'est pas un rendu photoréaliste.
 
-- **Hatamoto des cendres** (commune) : bond en diagonale, katana qui fend l'air, braises et torii brisé.
-- **Kenshi de la forge** (rare) : plongée sur l'enclume, frappe au-dessus de la tête, étincelles en spirale.
-- **Daimyō du Soleil rouge** (rare) : contre-plongée sur un cheval au galop, yari tendu, château en flammes.
+- **Hatamoto des cendres** (commune) : silhouette sur un toit en ruine, katana qui trace un croissant
+  d'or sous une lune géante, corbeaux rouges.
+- **Kenshi de la forge** (rare) : forgeron-samouraï qui frappe une lame en fusion, dragon de feu qui
+  s'élève des étincelles, angle plongeant.
+- **Daimyō du Soleil rouge** (rare) : daimyō sur un cheval blanc, yari levé, soleil rouge géant,
+  phénix d'or et cerisiers.
 
 Ils portent `soleil-rouge-kaiga-couleurs-v7`. Ils ne figurent pas dans le deck préconstruit : ils se
 composent à l'atelier. Les trois ajouts sont des créatures `Samouraï` : ils reçoivent la Résonance samouraï.
