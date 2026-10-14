@@ -305,10 +305,8 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, .45);
   transition: box-shadow .14s ease;
 }
-/* La plaque d'acier des armes est renforcée comme dans le duel (×1,6). */
-.rpg-atelier__carte-art.rpg-card--frame-arme {
-  border-width: calc(var(--rpg-card-border, 4px) * 1.6);
-}
+/* Les armes gardent le gabarit commun : leur plaque d'acier est l'épaisseur
+   de toutes les cartes (voir les gabarits en tête de `rpg-battle.css`). */
 /* Les mythiques mono possédées brillent comme dans le duel ; les hybrides
    gardent leur diagonale fixe et les cartes verrouillées restent grisées. */
 .rpg-atelier__carte:not(.is-locked) .rpg-atelier__carte-art.rpg-card--frame-brillant {

@@ -184,14 +184,39 @@ elle ne peut pas être interceptée par le contresort de Boualem.
 Illustration : `public/cards/chien-de-sable.jpg`, peinture plein art 4:5 dans la
 palette et la matière de celle de Tarek (direction artistique `RPG-CARD-ART.md`).
 
-## 4. La boucle de tour
+## 4. La boucle de tour : six phases
 
-1. **Piocher 1** ;
-2. poser **un terrain** (un par tour), engager ses terrains ;
-3. jouer des **créatures** et des **magies** en payant le mana ;
-4. **phase d'attaque** (⚔) : déclarer toutes les créatures attaquantes,
-   puis lancer l'attaque ;
-5. **Fin du tour** (la grande pastille dorée ⧗).
+Un tour compte **six phases**, dans l'ordre (`RPG_PHASES` dans `rpgDuel.js`, lue
+dans `duel.phase`). Le rail de l'interface les allume une à une ; le moteur les
+enregistre mais ne verrouille aucun geste : chaque fonction garde sa propre règle.
+
+| # | Phase | Ce qui s'y passe |
+| --- | --- | --- |
+| 1 | **Début de tour** (`debut`) | On dégage ses terrains et ses créatures, le mana non dépensé s'évapore, **on pioche 1 carte**, les échos et retours programmés tombent. |
+| 2 | **Phase principale** (`principale`) | On pose **un terrain** (un par tour), on engage ses terrains, on joue des **créatures** et des **magies** en payant le mana. |
+| 3 | **Phase d'attaque** (`attaque`, ⚔) | On déclare **toutes** les créatures attaquantes d'un coup, puis on confirme. |
+| 4 | **Phase de blocage** (`blocage`) | Le défenseur désigne ses bloqueurs. **Les deux camps peuvent jouer des magies rapides** avant les blessures — le joueur comme le sorcier. |
+| 5 | **Deuxième phase principale** (`principale2`) | Après le combat : mêmes gestes qu'en phase 2 — créatures, magies, terrain. **Le terrain reste unique pour tout le tour** (celui de la phase 2 compte). Les créatures qui ont attaqué **restent engagées** jusqu'à leur prochain tour. |
+| 6 | **Fin de tour** (`fin`, la grande pastille dorée ⧗) | Quand un camp termine son tour, **l'adversaire peut jouer une magie rapide** (une fenêtre, `rpgOuvrirFinDeTour`). Ensuite seulement le tour se ferme (`rpgFinDeTour`) et les effets « jusqu'à la fin du tour » prennent fin. |
+
+Précisions :
+
+- **Seules les magies rapides** se jouent hors de son tour (blocage, fin de tour).
+  Les sorcelleries restent réservées à ses phases principales. Un **contre** n'a
+  rien à contrer en fin de tour : il ne compte pas dans « j'ai une réponse ».
+- **Le Rempart de dunes** (« jusqu'à la fin du tour ») protège pendant toute la
+  fin de tour, y compris face à la magie rapide adverse ; il disparaît à la
+  fermeture du tour, après la fenêtre.
+- **Fenêtre de fin de tour du sorcier** : si le joueur a en main une magie rapide
+  qu'il peut payer, un bandeau « Fin du tour du sorcier — Magie rapide ? » avec un
+  bouton **Passer** s'ouvre ; sinon la fenêtre se referme d'elle-même. Fin du tour
+  du joueur : le sorcier joue au plus une magie rapide (`rpgSorcierMagieRapide`),
+  s'il en a une qui vaut son mana — il garde le mana qu'il n'a pas dépensé.
+- **Le sorcier a, lui aussi, une deuxième phase principale** : après son combat,
+  il peut encore annoncer des cartes (le joueur répond comme d'habitude), puis sa
+  fin de tour s'ouvre.
+- Pendant la phase de blocage d'une attaque du joueur, le sorcier peut répondre
+  par une magie rapide une fois les blocages acceptés, avant les blessures.
 
 ### Ce qui se passe à la charnière des deux tours
 
@@ -384,8 +409,11 @@ Présentation : les cartes Arme portent un **cadre d'acier métallique**
 damassées (`.rpg-card--frame-arme` dans `rpg-battle.css`, clé `arme` de
 `cardFrameInfo`), matière commune aux quatre éléments — mais chaque
 élément **teinte son acier** : rouge pour la Braise, bleu pour l'Eau,
-doré pour le Sable et glacé pour la Neige. Le cadre est
-**renforcé** : son anneau vaut ×1,6 le
-gabarit des autres cartes, sans changer leur taille extérieure.
+doré pour le Sable et glacé pour la Neige. Leur anneau n'est **pas plus
+épais** que celui des autres cartes : la plaque des armes — ×1,6 l'ancien
+gabarit — est devenue l'épaisseur commune de toutes les faces (variables
+`--rpg-card-border*` en tête de `rpg-battle.css`), sans changer la taille
+extérieure des cartes ; une arme se reconnaît donc à sa matière et à sa
+teinte, jamais à l'épaisseur de son cadre.
 L'Armure de cendres, mythique, perd le zellige mais
 garde son reflet animé sur l'acier.

@@ -42,6 +42,32 @@ export const RPG_PV_SORCIER_PAR_PUISSANCE = 0;
 export const RPG_MAIN_DEPART = 5;
 export const RPG_COULEURS = RPG_ELEMENTS;
 
+/**
+ * Les six phases d'un tour, dans l'ordre. Le moteur les enregistre dans
+ * `duel.phase` ; elles ne verrouillent aucune action (c'est la règle de
+ * chaque fonction qui décide), elles disent où l'on en est.
+ *
+ *  1. `debut`       — début de tour : on dégage, on PIOCHE, les échos tombent ;
+ *  2. `principale`  — terrain (un par tour), créatures, magies ;
+ *  3. `attaque`     — le joueur actif déclare TOUS ses attaquants ;
+ *  4. `blocage`     — le défenseur désigne ses bloqueurs ; les deux camps
+ *                     peuvent jouer des magies rapides avant les blessures ;
+ *  5. `principale2` — après le combat : mêmes gestes qu'en première principale
+ *                     (le terrain du tour reste unique) ; les créatures qui ont
+ *                     attaqué restent engagées ;
+ *  6. `fin`         — « Fin du tour » : l'adversaire peut jouer UNE magie rapide,
+ *                     puis les effets « jusqu'à la fin du tour » prennent fin.
+ */
+export const RPG_PHASES = ['debut', 'principale', 'attaque', 'blocage', 'principale2', 'fin'];
+export const RPG_PHASES_LIBELLES = {
+  debut: 'Début de tour',
+  principale: 'Phase principale',
+  attaque: 'Phase d’attaque',
+  blocage: 'Phase de blocage',
+  principale2: 'Deuxième phase principale',
+  fin: 'Fin de tour',
+};
+
 const destructionsParDuel = new WeakMap();
 
 export function rpgNombreDestructions(duel) {
@@ -110,6 +136,11 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       degatsEchos: [],
     },
     fenetreReponse: false,
+    // Phase du tour en cours (voir RPG_PHASES) et fenêtre de « fin de tour » :
+    // { cote } = le camp dont le tour se termine ; l'AUTRE camp peut y jouer
+    // une magie rapide avant que le tour ne se ferme pour de bon.
+    phase: 'principale',
+    finDeTour: null,
     // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
     annonce: null,
     // Défausse en attente (ex. Jörmungandr côté joueur) : { cote, restant, sourceCarteId }
@@ -1514,7 +1545,9 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   const carte = magieById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
-  const fenetreEphémère = cote === 'joueur'
+  // Magie rapide : le camp qui n'a pas la main peut la jouer pendant une
+  // fenêtre de réponse (blocage, fin de tour), joueur comme sorcier.
+  const fenetreEphémère = cote !== duel.tour
     && duel.fenetreReponse
     && carte.instant;
   if (duel.tour !== cote && !fenetreEphémère) return { ok: false, raison: 'timing' };
@@ -1835,6 +1868,9 @@ export function rpgLancerAttaque(
   duel.log.push(resume.paires.length || resume.coupsRapides.length
     ? `Combat : ${attaquants.length} attaquant(s), ${resume.paires.length} bloqué(s), ${resume.frappeSorcier} dégâts directs.`
     : `${attaquants.length} créature(s) frappent le sorcier (${resume.frappeSorcier}).`);
+  // Le combat est derrière nous : le joueur actif entre en deuxième phase
+  // principale (ses attaquants restent engagés jusqu'à son prochain tour).
+  if (cote === duel.tour) duel.phase = 'principale2';
   rpgActionsEtat(duel);
   return { ok: true, resume };
 }
@@ -1894,10 +1930,46 @@ function resoudreRetoursProgrammes(duel) {
   rafraichirAuras(duel);
 }
 
-/** Fin du tour : le tour qui se ferme efface les renforts « jusqu'à la fin du
- *  tour », puis l'autre camp commence — revenu de sable, pioche 1, ses
- *  créatures deviennent prêtes (le mal d'invocation tombe) et les échos différés
- *  (Nuage de cendres) dont il est le lanceur retombent sur la table d'en face. */
+/** Note la phase en cours (l'interface la lit pour son rail de phases). */
+export function rpgDefinirPhase(duel, phase) {
+  if (!RPG_PHASES.includes(phase)) return false;
+  duel.phase = phase;
+  return true;
+}
+
+/** Le joueur actif quitte son tour : on entre en phase de FIN DE TOUR. L'autre
+ *  camp a alors la main pour jouer une magie rapide (`rpgLancerMagie`). Rien
+ *  n'est encore effacé — un Rempart de dunes « jusqu'à la fin du tour » protège
+ *  donc toujours pendant cette fenêtre. `rpgFinDeTour` ferme ensuite le tour. */
+export function rpgOuvrirFinDeTour(duel) {
+  if (duel.finDeTour) return duel.finDeTour;
+  duel.phase = 'fin';
+  duel.finDeTour = { cote: duel.tour };
+  duel.fenetreReponse = true;
+  duel.log.push(`Fin du tour du ${duel.tour === 'joueur' ? 'joueur' : 'sorcier'} : ${duel.tour === 'joueur' ? 'le sorcier peut' : 'vous pouvez'} jouer une magie rapide.`);
+  return duel.finDeTour;
+}
+
+/** Le camp a-t-il en main une magie rapide qu'il peut jouer maintenant ?
+ *  (Un contre n'a rien à contrer en fin de tour : il ne compte pas.) */
+export function rpgPeutRepondre(duel, cote) {
+  return duel[cote].main.some((id) => {
+    const carte = magieById(id);
+    return Boolean(carte?.instant
+      && rpgContreJouable(duel, cote, carte)
+      && rpgPeutPayer(duel[cote], carte));
+  });
+}
+
+/** Une magie rapide de l'IA (fin de tour du joueur, blocage d'une attaque du
+ *  joueur) : au plus une carte, la plus utile selon son profil. */
+export function rpgSorcierMagieRapide(duel, rng = Math.random) {
+  const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng, seulementInstants: true });
+  if (!coup) return null;
+  const res = rpgLancerMagie(duel, 'sorcier', coup.carteId, coup.cibleId);
+  return res.ok ? { ...res, carteId: coup.carteId } : null;
+}
+
 /** Détruit les créatures éphémères (`detruireFinDuTour`) : elles ne
  *  survivent jamais au tour qui les a vues naître (serpents du Bâton). */
 function detruireEphemeres(duel) {
@@ -1910,7 +1982,14 @@ function detruireEphemeres(duel) {
   }
 }
 
+/** Fin du tour : le tour qui se ferme efface les renforts « jusqu'à la fin du
+ *  tour », puis l'autre camp commence — DÉBUT DE TOUR : revenu de sable,
+ *  pioche 1, ses créatures deviennent prêtes (le mal d'invocation tombe) et les
+ *  échos différés (Nuage de cendres) dont il est le lanceur retombent sur la
+ *  table d'en face. Le tour s'ouvre ensuite en phase principale. */
 export function rpgFinDeTour(duel) {
+  duel.phase = 'fin';
+  duel.finDeTour = null;
   while (duel.defausseEnAttente?.restant > 0 && duel[duel.defausseEnAttente.cote]?.main.length) {
     rpgDefausserCarte(duel, duel.defausseEnAttente.cote);
   }
@@ -1932,6 +2011,7 @@ export function rpgFinDeTour(duel) {
   annulerBonusTemporaires(duel, duel.tour); // le bonus meurt avec le tour qui l’a vu jouer
   annulerInfiltrations(duel); // l’Infiltration aussi : redevenues bloquables
   duel.tour = autre(duel.tour);
+  duel.phase = 'debut';
   const camp = duel[duel.tour];
   camp.mana = manaVide();           // le mana non dépensé s'évapore
   camp.terrainPose = false;         // un nouveau terrain peut être posé
@@ -1943,6 +2023,7 @@ export function rpgFinDeTour(duel) {
   }
   resoudreRetoursProgrammes(duel);
   resoudreEchos(duel);              // les échos dus au camp dont le tour s'ouvre
+  duel.phase = 'principale';
   rpgActionsEtat(duel);
   duel.log.push(`— Au tour du ${duel.tour === 'joueur' ? 'joueur' : 'sorcier'}.`);
   return duel;

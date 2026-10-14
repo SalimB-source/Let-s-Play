@@ -865,6 +865,9 @@ export function choisirCarteIA(duel, cote, options = {}) {
   for (const carteId of camp.main) {
     const carte = duelCardById(carteId) ?? magieById(carteId) ?? armeById(carteId);
     if (!carte || carte.kind === 'terrain' || terrainById(carteId)) continue;
+    // Hors de son tour (blocage, fin de tour) : seules les magies rapides, et
+    // jamais un contre — il n'y a rien à contrer.
+    if (options.seulementInstants && (!carte.instant || carte.effet?.type === 'contresort')) continue;
     if (!moteur.rpgPeutPayer(camp, carte)) continue;
     const evaluation = scoreCarte(duel, cote, carte, profil, rng);
     if (!evaluation || !(evaluation.score > 0)) continue;

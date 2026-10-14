@@ -26,26 +26,31 @@
   color-scheme: dark;
 }
 
-/* ── Cadres responsive : l'épaisseur suit la carte, dans l'esprit d'une carte
-   Magic. Le bord d'une carte Magic fait ≈ 2,8 mm sur 63 mm de large (≈ 4,5 %) ;
-   les cadres du Sablier visent ce poids, ≈ 4,5 % de la largeur — bien
-   présents pour porter la couleur de l'élément, sans manger l'illustration —
-   et comme les cartes sont dimensionnées en `vw`, le cadre l'est aussi pour
-   les suivre. Trois gabarits, chacun calé sur la largeur des cartes qu'il
-   habille :
+/* ── Cadres responsive : l'épaisseur suit la carte, et c'est la plaque des
+   armes qui donne la mesure. Les armes sont arrivées avec un cadre d'acier
+   1,6 fois plus épais que celui des autres cartes ; côte à côte, deux
+   épaisseurs se lisaient comme deux formats de cartes. Toutes les faces
+   prennent donc désormais cette plaque : ≈ 7 % de la largeur de la carte
+   (contre ≈ 4,5 % pour le bord d'une carte Magic, 2,8 mm sur 63 mm) — un
+   anneau large où la couleur de l'élément et le motif gravé se lisent
+   franchement, sans manger l'illustration (le tout est en `border-box` :
+   la taille extérieure des cartes ne bouge pas). Comme les cartes sont
+   dimensionnées en `vw`, le cadre l'est aussi pour les suivre. Trois
+   gabarits, chacun calé sur la largeur des cartes qu'il habille — et, dans
+   chaque gabarit, une seule épaisseur, arme ou non :
    - normal : cartes en main (104–136 px) et sur la table (108–146 px), atelier ;
    - grand : face de l'aperçu rapide (190–232 px), catalogue et mulligan
      (≈ 180–270 px) — l'aperçu est une carte agrandie, son cadre grandit avec ;
    - petit : terrains (74–96 px), dessus des piles et vignette de magie jouée.
-   Au doigt, `rpg-mobile.css` garde son gabarit normal (`clamp(2.5px, 1.1vw,
-   5px)` : des cartes plus petites, au bord déjà proportionnellement plus
+   Au doigt, `rpg-mobile.css` pose son gabarit normal (`clamp(4px, 1.76vw,
+   8px)` : des cartes plus petites, au bord déjà proportionnellement plus
    épais) ; les deux autres suivent le `vw` et tombent d'eux-mêmes à leur
    plancher. */
 .rpg-battle {
-  --rpg-card-border: clamp(4.5px, 0.48vw, 6px);
-  --rpg-card-border-large: clamp(6px, 0.68vw, 8px);
-  --rpg-card-border-small: clamp(4px, 0.34vw, 4.25px);
-  --rpg-card-border-strong: clamp(5px, 0.58vw, 6.5px);
+  --rpg-card-border: clamp(7.2px, 0.768vw, 9.6px);
+  --rpg-card-border-large: clamp(9.6px, 1.088vw, 12.8px);
+  --rpg-card-border-small: clamp(6.4px, 0.544vw, 6.8px);
+  --rpg-card-border-strong: clamp(8px, 0.928vw, 10.4px);
   --rpg-card-radius: clamp(6px, 0.9vw, 12px);
   --rpg-card-radius-sm: clamp(5px, 0.7vw, 8px);
 }
@@ -5438,11 +5443,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: rgba(223, 211, 184, .3);
   transition: color .16s ease, border-color .16s ease, background-color .16s ease;
 }
-.rpg-phase-step[data-phase="principal"] { --rpg-phase-lit: #83e7d1; --rpg-phase-glow: rgba(114, 230, 208, .38); }
-.rpg-phase-step[data-phase="combat"] { --rpg-phase-lit: #ffd06b; --rpg-phase-glow: rgba(255, 194, 75, .42); }
-.rpg-phase-step[data-phase="reponse"] { --rpg-phase-lit: #8af2df; --rpg-phase-glow: rgba(91, 240, 218, .42); }
-.rpg-phase-step[data-phase="adverse"] { --rpg-phase-lit: #f5a47c; --rpg-phase-glow: rgba(232, 133, 98, .4); }
-.rpg-phase-step[data-phase="termine"] { --rpg-phase-lit: #ffe887; --rpg-phase-glow: rgba(255, 218, 94, .42); }
+.rpg-phase-step[data-phase="debut"] { --rpg-phase-lit: #b9e68a; --rpg-phase-glow: rgba(170, 224, 120, .38); }
+.rpg-phase-step[data-phase="principale"] { --rpg-phase-lit: #83e7d1; --rpg-phase-glow: rgba(114, 230, 208, .38); }
+.rpg-phase-step[data-phase="attaque"] { --rpg-phase-lit: #ffd06b; --rpg-phase-glow: rgba(255, 194, 75, .42); }
+.rpg-phase-step[data-phase="blocage"] { --rpg-phase-lit: #8af2df; --rpg-phase-glow: rgba(91, 240, 218, .42); }
+.rpg-phase-step[data-phase="principale2"] { --rpg-phase-lit: #8fc8f0; --rpg-phase-glow: rgba(120, 180, 235, .4); }
+.rpg-phase-step[data-phase="fin"] { --rpg-phase-lit: #ffe887; --rpg-phase-glow: rgba(255, 218, 94, .42); }
 .rpg-phase-step__icon {
   display: grid;
   width: 24px;
@@ -5960,8 +5966,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    mais un **guilloché d'acier de Damas** — de fines ondes gravées, chacune
    une ligne sombre doublée de son reflet, comme la matière ondée des
    lames damassées et le guillochage des boîtiers de montre : un décor
-   discret et précieux, qui se lit dans l'anneau élargi comme une gravure
-   continue. Les règles viennent après celle des mythiques : l'Armure de
+   discret et précieux, qui se lit dans l'anneau large commun à toutes les
+   cartes comme une gravure continue. Les règles viennent après celle des
+   mythiques : l'Armure de
    cendres, mythique, perd le zellige mais garde son reflet animé sur son
    acier rouge (classe `rpg-card--frame-brillant`). */
 .rpg-card--frame-arme {
@@ -5992,26 +5999,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background-color: #47758d;
 }
 
-/* La plaque des armes est aussi plus épaisse : ×1,6 le gabarit de chaque
-   face, sans changer la taille extérieure de la carte (le tout est en
-   `box-sizing: border-box` : c'est l'illustration qui cède un peu de sa
-   marge, comme une carte gainée d'acier). Le guilloché, plus lisible
-   dans un anneau large, distingue les armes au premier coup d'œil. Au
-   doigt, `rpg-mobile.css` pose le même renfort sur ses règles tactiles. */
-.rpg-card.rpg-card--frame-arme,
-.rpg-hand__card.rpg-card--frame-arme,
-.rpg-card-destruction-fx.rpg-card--frame-arme {
-  border-width: calc(var(--rpg-card-border, 4px) * 1.6);
-}
-.rpg-hover-card-preview__face.rpg-card--frame-arme,
-.rpg-mulligan__card.rpg-card--frame-arme,
-.rpg-card-catalogue__art.rpg-card--frame-arme {
-  border-width: calc(var(--rpg-card-border-large, 6px) * 1.6);
-}
-.rpg-spell-played__art.rpg-card--frame-arme,
-.rpg-card-pile__card--top.rpg-card--frame-arme {
-  border-width: calc(var(--rpg-card-border-small, 3px) * 1.6);
-}
+/* La plaque des armes n'est pas plus épaisse que les autres cadres : c'est
+   elle qui a donné la mesure commune (`--rpg-card-border*`, en tête de
+   fichier). Les armes sont arrivées avec un anneau ×1,6, et deux épaisseurs
+   côte à côte se lisaient comme deux formats de cartes ; toutes les faces
+   ont donc repris la plaque, et une arme ne se reconnaît plus qu'à sa
+   matière — l'acier guilloché — et à sa teinte. Aucune règle d'épaisseur
+   propre aux armes, ici comme au doigt (`rpg-mobile.css`), dans l'atelier
+   ou dans le guide : le gabarit de chaque face vaut pour toutes ses cartes. */
 
 /* L'aperçu rapide n'a pas de fond : l'illustration y flotte sur la table (voir
    `docs/rpg/mobile-layout.md`). Or l'aperçu porte les classes de cadre de la
@@ -6327,7 +6322,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 /* La carte annoncée par l'adversaire est une carte agrandie, comme l'aperçu
    rapide : elle garde donc le grand gabarit de cadre (`--rpg-card-border-large`,
-   5–6,5 px) au lieu d'un filet fixe de 2 px, plus fin que celui de toutes les
+   9,6–12,8 px) au lieu d'un filet fixe de 2 px, plus fin que celui de toutes les
    autres cartes. Son badge de couleur suit la même échelle que les grandes
    faces du catalogue (pastille 28–38 px, glyphe 19 px, liseré 2 px) : plafonné
    à 23 px avec un glyphe de 13 px, il devenait illisible sur une face de

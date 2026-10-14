@@ -64,6 +64,16 @@
   min-height: 330px;
   padding: 12px 6px 17px;
 }
+/* Chaque fiche porte le même anneau orné que les autres faces du jeu, à la
+   même épaisseur pour toutes les cartes : 6 px, la plaque des armes. Le guide
+   la posait sur les seules armes (6 px contre 3 px pour les mythiques et les
+   hybrides, 1 px de filet pour les autres) ; trois épaisseurs côte à côte se
+   lisaient comme trois formats de cartes. La bordure est transparente, la
+   couleur et le motif sont peints dessous : le fond de la fiche sur la
+   padding-box, la résille (ou le zellige, ou le guilloché des armes) puis la
+   matière du cadre sur la border-box — un aplat de la couleur de l'élément
+   pour une carte mono, la diagonale bicolore d'une hybride, le dégradé qui
+   brille d'une mythique mono, l'acier teinté d'une arme. */
 .rpg-card-guide__example {
   position: relative;
   display: grid;
@@ -72,31 +82,25 @@
   min-width: 0;
   justify-self: center;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--rpg-guide-frame, #d3ab62) 72%, transparent);
+  border: 6px solid transparent;
   border-radius: 11px;
-  background: linear-gradient(155deg, rgba(30, 28, 28, .98), rgba(13, 13, 19, .98));
-  box-shadow: 0 12px 30px rgba(0, 0, 0, .48), inset 0 0 22px color-mix(in srgb, var(--rpg-guide-frame, #d3ab62) 10%, transparent);
-}
-/* Même anneau orné que les autres faces : les hybrides partagent leur bord
-   en diagonale, même sans rareté mythique ; seuls les mythiques mono brillent.
-   Les armes y portent aussi leur acier guilloché, à toute rareté. */
-.rpg-card-guide__example:is(.rpg-card--mythique, [class*="rpg-card--frame-hybride-"], .rpg-card--frame-arme) {
-  border: 3px solid transparent;
+  background-color: #141318;
   background-image:
     linear-gradient(155deg, #1e1c1c, #0d0d13),
-    var(--rpg-frame-motif),
-    var(--rpg-frame-gradient);
+    var(--rpg-frame-motif, none),
+    var(--rpg-frame-gradient, linear-gradient(var(--rpg-frame-color, var(--rpg-guide-frame, #d3ab62)), var(--rpg-frame-color, var(--rpg-guide-frame, #d3ab62))));
   background-origin: padding-box, border-box, border-box;
   background-clip: padding-box, border-box, border-box;
   background-size: 100% 100%, var(--rpg-frame-motif-size, 8px 8px), var(--rpg-frame-material-size, 100% 100%);
   background-repeat: no-repeat, repeat, no-repeat;
   background-position: 0 0, 0 0, 0% 0;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .48), inset 0 0 22px color-mix(in srgb, var(--rpg-guide-frame, #d3ab62) 10%, transparent);
 }
+/* Seuls les mythiques mono-élément brillent ; une hybride garde sa diagonale
+   fixe, une arme son acier. */
 .rpg-card-guide__example.rpg-card--frame-brillant {
   animation: rpg-frame-shine-sweep var(--rpg-frame-shine-duration, 2.8s) ease-in-out infinite alternate;
 }
-/* La plaque des armes est renforcée dans le guide aussi (6 px contre 3 px). */
-.rpg-card-guide__example.rpg-card--frame-arme { border-width: 6px; }
 .rpg-card-guide__art {
   position: relative;
   overflow: hidden;

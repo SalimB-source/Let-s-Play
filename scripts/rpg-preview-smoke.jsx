@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { cardById } from '../src/games/rpgCards.js';
 import { RPG_LONG_PRESS_MS } from '../src/games/rpgLongPress.js';
-import { passerMulligan } from './rpg-duel-start.js';
+import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 export async function checkRpgPreviewActions(assert) {
   const originalMatchMedia = window.matchMedia;
@@ -102,7 +102,7 @@ export async function checkRpgPreviewActions(assert) {
     assert.ok(peek() === null, 'le volet se referme, et le deck en cours est intact');
     await changerEcran('Jouer');
 
-    await click(container.querySelector('.rpg-menu-button--primary'));
+    await lancerDuelDepuisMenu(container, click);
     await passerMulligan(container, click);
     assert.ok(container.querySelector('.rpg-battle--touch'));
 
@@ -191,11 +191,11 @@ export async function checkRpgPreviewActions(assert) {
     await click(container.querySelector('.rpg-btn--attaque-tous'));
     assert.equal(container.querySelectorAll('.rpg-card--equipe.is-selected').length, 1,
       'attaque en masse : les créatures prêtes sont sélectionnées depuis la table');
-    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'combat');
+    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'attaque');
     assert.equal(container.querySelector('.rpg-btn--endturn').disabled, true);
     await click(container.querySelector('.rpg-btn--cancel-attack'));
     assert.equal(container.querySelectorAll('.rpg-card--equipe.is-selected').length, 0);
-    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'principal');
+    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'principale');
     assert.equal(container.querySelector('.rpg-btn--endturn').disabled, false);
 
     await click(fennec());

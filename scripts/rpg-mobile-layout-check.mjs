@@ -487,7 +487,7 @@ try {
   await page.locator('.rpg-hand__card[data-card-id="fennec-des-decombres"]').click();
   await page.locator('.rpg-card--equipe[data-card-id="fennec-des-decombres"]').waitFor();
   await page.locator('.rpg-btn--attaque-tous').click();
-  assert.equal(await page.locator('.rpg-phase-step.is-active').getAttribute('data-phase'), 'combat');
+  assert.equal(await page.locator('.rpg-phase-step.is-active').getAttribute('data-phase'), 'attaque');
   const waitForTilt = async (selector, expected) => page.waitForFunction(({ selector, expected }) => {
     const card = document.querySelector(selector);
     if (!card) return false;
@@ -515,7 +515,7 @@ try {
   await page.setViewportSize({ width: 844, height: 390 });
   if (process.env.RPG_CONTROLS_SCREENSHOT) await page.screenshot({ path: process.env.RPG_CONTROLS_SCREENSHOT });
   await page.locator('.rpg-btn--cancel-attack').click();
-  assert.equal(await page.locator('.rpg-phase-step.is-active').getAttribute('data-phase'), 'principal');
+  assert.equal(await page.locator('.rpg-phase-step.is-active').getAttribute('data-phase'), 'principale');
   assert.equal(await page.locator('.rpg-card--equipe.is-selected').count(), 0);
   await waitForTilt('.rpg-card--equipe', 0);
   await page.locator('.rpg-btn--attaque-tous').click();

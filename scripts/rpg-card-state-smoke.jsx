@@ -2,7 +2,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { passerMulligan } from './rpg-duel-start.js';
+import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 // Seuls les délais du jeu sont virtuels : aucun sommeil réel entre les tours.
 function horlogeDuJeu() {
@@ -84,10 +84,13 @@ async function avecDuel(assert, props, scenario, { mobile = false } = {}) {
     await annonces();
     const combat = container.querySelector('.rpg-btn--resolve-combat');
     if (combat && resoudre) await click(combat);
+    // Fin de tour du sorcier : le joueur peut répondre par une magie rapide ; ici il passe.
+    const passer = container.querySelector('.rpg-fin-tour button');
+    if (passer && resoudre) await click(passer);
   };
   try {
     await act(async () => root.render(<RpgDuelPage {...props} sorcierPuissance={0} rng={() => .999} />));
-    await click(container.querySelector('.rpg-mode-menu__play .rpg-menu-button--primary'));
+    await lancerDuelDepuisMenu(container, click);
     await passerMulligan(container, click);
     await scenario({ container, click, jouer, camp, finirTour, annonces, avancer: horloge.avancer });
     assert.equal(avertissementsCles.length, 0, 'chaque exemplaire visible garde une clé React unique');

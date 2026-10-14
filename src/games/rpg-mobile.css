@@ -100,8 +100,10 @@
 .rpg-battle--touch .card-table {
   --duel-card: clamp(48px, 17dvh, 100px);
   --terrain-inset: clamp(44px, 8vw, 160px);
-  --rpg-card-border: clamp(2.5px, 1.1vw, 5px);
-  --rpg-card-border-strong: clamp(3px, 1.2vw, 5.5px);
+  /* La plaque des armes, devenue l'épaisseur de toutes les cartes (voir les
+     gabarits en tête de `rpg-battle.css`) : ×1,6 l'ancien bord tactile. */
+  --rpg-card-border: clamp(4px, 1.76vw, 8px);
+  --rpg-card-border-strong: clamp(4.8px, 1.92vw, 8.8px);
   --rpg-card-radius: clamp(7px, 1.1vw, 12px);
   --rpg-card-radius-sm: clamp(6px, 0.9vw, 10px);
   /* Les trois repères de la grille, nommés : le rembourrage de la table, la
@@ -198,7 +200,10 @@
   overflow-x: auto;
   overflow-y: hidden;
 }
-.rpg-battle--touch .rpg-terrain { flex: 0 0 40px; width: 40px; height: 50px; border-width: 1px; border-radius: var(--rpg-card-radius-sm, 8px); }
+/* Les terrains gardent le petit gabarit de cadre de `rpg-battle.css`
+   (`--rpg-card-border-small`) : au doigt aussi, une carte posée a l'épaisseur
+   de toutes les autres — la plaque des armes —, la vignette seule rétrécit. */
+.rpg-battle--touch .rpg-terrain { flex: 0 0 40px; width: 40px; height: 50px; border-radius: var(--rpg-card-radius-sm, 8px); }
 .rpg-battle--touch .card-table > .card-row--ennemi { grid-area: enemy; border-bottom: 1px solid #cead7055; }
 .rpg-battle--touch .card-table > .card-row--equipe { grid-area: allies; }
 /* Les champs de bataille ne sont plus des zones de défilement : aucun masque
@@ -235,12 +240,8 @@
 .rpg-battle--touch .card-row .rpg-card-stack > .rpg-card { width: 100%; }
 .rpg-battle--touch .card-row .rpg-card { min-width: 0; min-height: 0; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius, 10px); touch-action: pan-x; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
-/* La plaque d'acier des armes garde son renfort au doigt (×1,6, comme sur PC). */
-.rpg-battle--touch .card-row .rpg-card.rpg-card--frame-arme,
-.rpg-battle--touch .rpg-hand .rpg-hand__card.rpg-card--frame-arme,
-.rpg-battle--touch .rpg-card-stack .rpg-card.rpg-card--frame-arme {
-  border-width: calc(var(--rpg-card-border, 2.5px) * 1.6);
-}
+/* Pas de renfort propre aux armes au doigt : leur plaque est l'épaisseur
+   commune (`--rpg-card-border`), sur la table, en main et dans les piles. */
 .rpg-battle--touch .card-table > .rpg-bottombar { grid-area: controls; display: flex; flex-direction: column; justify-content: flex-end; align-self: stretch; gap: 6px; padding: 4px max(4px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) 4px; overflow-y: auto; z-index: 20; }
 .rpg-battle--touch .rpg-turn-indicator { min-height: 22px; padding: 3px 5px; background: #18120c66; box-shadow: none; }
 .rpg-battle--touch .rpg-turn-indicator strong { font-size: 9px; letter-spacing: .02em; }
@@ -492,7 +493,6 @@
   flex: 0 0 48px;
   width: 48px;
   height: 60px;
-  border-width: 2px;
   border-radius: var(--rpg-card-radius-sm, 8px);
 }
 

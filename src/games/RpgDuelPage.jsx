@@ -87,6 +87,7 @@ import {
   rpgCibleAuto,
   rpgChoisirAttaquants,
   rpgContreJouable,
+  rpgDefinirPhase,
   rpgChoisirBloqueurs,
   rpgCiblesAttaqueRapide,
   rpgDefausserCarte,
@@ -102,6 +103,9 @@ import {
   rpgNombreDestructions,
   rpgDestructionsDepuis,
   rpgOuvrirFenetreReponse,
+  rpgOuvrirFinDeTour,
+  rpgPeutRepondre,
+  rpgSorcierMagieRapide,
   rpgEstProtegee,
   rpgPeutBloquerAttaquant,
   rpgPeutMulligan,
@@ -472,34 +476,42 @@ function CombatActionIcon({ type }) {
   );
 }
 
+// Les six phases d'un tour (voir RPG_PHASES dans rpgDuel.js). `label` est le nom
+// court ; `title` le nom complet, lu par les lecteurs d'écran et au survol.
 const RPG_PHASE_STEPS = [
-  { id: 'principal', label: 'Principal' },
-  { id: 'combat', label: 'Combat' },
-  { id: 'reponse', label: 'Réponse' },
-  { id: 'adverse', label: 'Adverse' },
-  { id: 'termine', label: 'Fin' },
+  { id: 'debut', label: 'Début', title: 'Début de tour' },
+  { id: 'principale', label: 'Principale', title: 'Phase principale' },
+  { id: 'attaque', label: 'Attaque', title: 'Phase d’attaque' },
+  { id: 'blocage', label: 'Blocage', title: 'Phase de blocage' },
+  { id: 'principale2', label: '2ᵉ principale', title: 'Deuxième phase principale' },
+  { id: 'fin', label: 'Fin', title: 'Fin de tour' },
 ];
 
 function PhaseGlyph({ phase }) {
-  const drawing = phase === 'principal' ? (
+  const drawing = phase === 'debut' ? (
+    <>
+      <path d="M12 3v9m0 0-3-3m3 3 3-3" />
+      <rect x="5" y="15" width="14" height="6" rx="1.5" />
+    </>
+  ) : phase === 'principale' ? (
     <>
       <rect x="6" y="3.5" width="12" height="15" rx="1.5" />
       <path d="M9 8h6M9 11h6M9 14h4M4 7v13a1 1 0 0 0 1 1h11" />
     </>
-  ) : phase === 'combat' ? (
+  ) : phase === 'principale2' ? (
+    <>
+      <rect x="8" y="3.5" width="12" height="15" rx="1.5" />
+      <path d="M11 8h6M11 11h6M11 14h4M4 3.5v17.5a1 1 0 0 0 1 1h11M7 7v10" />
+    </>
+  ) : phase === 'attaque' ? (
     <>
       <path d="m5 19 13-13M14.5 4.5l5 5M4 16l4 4M8 14l2 2" />
       <path d="m4 5 4 4M5 4 4 8m0 0 4-1" />
     </>
-  ) : phase === 'reponse' ? (
+  ) : phase === 'blocage' ? (
     <>
       <path d="m12 3 7 3v5c0 4-2.7 7.3-7 10-4.3-2.7-7-6-7-10V6l7-3Z" />
       <path d="m9 12 2 2 4-4" />
-    </>
-  ) : phase === 'adverse' ? (
-    <>
-      <path d="M19 8a7 7 0 0 0-12-2L5 8" />
-      <path d="M5 4v4h4M5 16a7 7 0 0 0 12 2l2-2M19 20v-4h-4" />
     </>
   ) : (
     <>
@@ -519,7 +531,7 @@ function PhaseTrack({ current }) {
     <ol className="rpg-phase-track" aria-label="Phases du duel">
       {RPG_PHASE_STEPS.map((step) => {
         const active = current === step.id;
-        const title = active ? `${step.label} · phase actuelle` : step.label;
+        const title = active ? `${step.title} · phase actuelle` : step.title;
         return (
           <li
             key={step.id}
@@ -2251,8 +2263,8 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   }, [vainqueur]);
   useEffect(() => {
     if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive) {
-      if (phaseDuelActive === 'combat') jouerSfx('phase');
-      else if (phaseDuelActive === 'reponse') jouerSfx('page_turn');
+      if (phaseDuelActive === 'attaque') jouerSfx('phase');
+      else if (phaseDuelActive === 'blocage') jouerSfx('page_turn');
     }
     prevPhaseRef.current = phaseDuelActive;
   }, [phaseDuelActive]);
@@ -2596,6 +2608,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const sequenceImpactRef = useRef(0);
   const timerImpactRef = useRef(null);
   const [phase, setPhase] = useState(false);
+  // Début de tour : la phase s'allume le temps de la pioche, avant la phase principale.
+  const [debutVisible, setDebutVisible] = useState(false);
+  // Le sorcier est en deuxième phase principale (après son combat).
+  const sorcierApresCombatRef = useRef(false);
   const [attaquants, setAttaquants] = useState([]);
   const [ciblesAttaque, setCiblesAttaque] = useState({});
   const [cibleAttaqueEnCours, setCibleAttaqueEnCours] = useState(null);
@@ -3314,7 +3330,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const vainqueur = rpgVainqueur(duel);
   const etageHistoire = histoireEtageId ? etageHistoireParId(histoireEtageId)?.etage ?? null : null;
   const etageSuivant = histoireEtageId ? prochainEtage(histoireEtageId) : null;
-  const monTour = duel.tour === 'joueur' && !vainqueur;
+  const tourDuJoueur = duel.tour === 'joueur' && !vainqueur;
+  // Fin de tour : le camp qui a fini ne joue plus ; l'AUTRE a la main pour une magie rapide.
+  const finTourJoueur = Boolean(duel.finDeTour?.cote === 'joueur' && !vainqueur);
+  const fenetreFinTour = Boolean(duel.finDeTour?.cote === 'sorcier' && !vainqueur);
+  const monTour = tourDuJoueur && !finTourJoueur;
   // Tant que le volet de mulligan est ouvert, la table attend : rien ne se
   // joue, rien ne s'engage, et le tour ne peut pas être rendu.
   const mulliganOuvert = Boolean(mulligan);
@@ -3346,7 +3366,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return porteur ? { nom: porteur.name, illustrationId: porteur.carteId } : { nom: 'Une créature du sorcier' };
       })()
       : null;
-  const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort);
+  const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort || fenetreFinTour);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
   const indicateurTour = vainqueur
@@ -3355,17 +3375,27 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ? 'À VOUS · DÉFAUSSE'
     : fenetreSort
       ? apercuAnnonceOuvert ? 'SORT ANNONCÉ' : 'À VOUS · RÉPONSE'
+    : finTourJoueur
+      ? 'FIN DE TOUR'
+    : fenetreFinTour
+      ? 'FIN DE TOUR · RÉPONSE'
     : reponseActive
       ? reponseApresBlocage ? 'À VOUS · RÉPONSE' : 'À VOUS · DÉFENSE'
       : phase ? 'À VOUS · ATTAQUE' : monTour ? 'À VOTRE TOUR' : 'TOUR DU SORCIER';
   const classeIndicateurTour = vainqueur ? 'is-finished' : reponseActive ? 'is-response' : phase ? 'is-player is-attacking' : monTour ? 'is-player' : 'is-opponent';
+  // La phase allumée dans le rail : l'écran du joueur (sélection d'attaquants,
+  // blocage en cours) prime, sinon on lit la phase enregistrée par le moteur.
   const phaseDuelActive = vainqueur
-    ? 'termine'
-    : reponseActive
-      ? 'reponse'
-      : combatEntrant || phase
-        ? 'combat'
-        : monTour ? 'principal' : 'adverse';
+    ? 'fin'
+    : finTourJoueur || fenetreFinTour
+      ? 'fin'
+      : combatEntrant
+        ? 'blocage'
+        : phase
+          ? 'attaque'
+          : debutVisible
+            ? 'debut'
+            : duel.phase ?? 'principale';
   const prets = duel.joueur.creatures.filter((e) => e.ready && !e.attaquee);
   const carteCiblee = cibleEnCours ? cardById(cibleEnCours) : null;
   const modeCible = targetMode(carteCiblee);
@@ -3483,6 +3513,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const champAvantFinDeTour = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     rpgFinDeTour(duel);
+    // Début de tour : le rail allume la phase le temps de la pioche.
+    setDebutVisible(true);
+    later(() => setDebutVisible(false), 800);
     animerModificationsChamp(champAvantFinDeTour, [], debutJournalDestructions);
     return joueurToucheDepuis(instantane);
   };
@@ -3857,7 +3890,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           if (!attaquantsVivants.length) {
             rpgFermerFenetreReponse(duel);
             setCombatEntrant(null);
-            if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
+            apresCombatSorcier();
           } else {
             const vivants = new Set(attaquantsVivants);
             setCombatEntrant((courant) => courant && ({
@@ -4394,7 +4427,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!attaquantsVivants.length) {
       rpgFermerFenetreReponse(duel);
       setCombatEntrant(null);
-      if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
+      apresCombatSorcier();
       force();
       return;
     }
@@ -4429,17 +4462,29 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     rpgFermerFenetreReponse(duel);
     setCombatEntrant(null);
     setCibleEnCours(null);
-    const touchePendantLaFinDuTour = !rpgVainqueur(duel) && terminerTourEtDetecterDegatsJoueur();
-    if (frappeDirecte || touchePendantLaFinDuTour) declencherImpactEcran('received');
+    if (frappeDirecte) declencherImpactEcran('received');
+    apresCombatSorcier();
     force();
   };
 
   const resoudreAttaqueJoueur = (combat = combatEntrant) => {
     if (!combat || combat.coteAttaquant !== 'joueur') return;
+    // Phase de blocage : une fois les blocages acceptés, le sorcier a lui aussi
+    // la main pour une magie rapide avant les blessures.
+    {
+      const champAvantReponse = prendreInstantaneChamp();
+      const debutJournalReponse = rpgNombreDestructions(duel);
+      const reponse = rpgSorcierMagieRapide(duel, rng);
+      if (reponse) {
+        jouerSfx(rpgFireSoundFor(cardById(reponse.carteId), 'spell') ?? 'magie');
+        animerModificationsChamp(champAvantReponse, [], debutJournalReponse);
+      }
+    }
     const attaquantsVivants = combat.attaquants
       .filter((id) => duel.joueur.creatures.some((entite) => entite.id === id));
     if (!attaquantsVivants.length) {
       rpgFermerFenetreReponse(duel);
+      rpgDefinirPhase(duel, 'principale2');
       setCombatEntrant(null);
       force();
       return;
@@ -4498,6 +4543,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     else resoudreAttaqueEnnemie();
   };
 
+  // Fin de tour du joueur : phase de fin. Le sorcier peut y jouer une magie
+  // rapide (il garde son mana d'un tour à l'autre) ; puis le tour se ferme.
   const finDuTour = () => {
     if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
     invaliderAnnulation();
@@ -4507,16 +4554,70 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCibleAttaqueEnCours(null);
     setCibleEnCours(null);
     setActivationEnCours(null);
-    if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
-    avancerTutoriel('fin-tour', 'tour-adverse');
+    rpgOuvrirFinDeTour(duel);
+
+    const fermerTour = () => {
+      if (rpgVainqueur(duel)) { force(); return; }
+      sorcierApresCombatRef.current = false;
+      if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
+      avancerTutoriel('fin-tour', 'tour-adverse');
+      force();
+      later(() => {
+        const champAvantIA = prendreInstantaneChamp();
+        const debutJournalDestructions = rpgNombreDestructions(duel);
+        rpgSorcierPrepareTerrain(duel);
+        animerModificationsChamp(champAvantIA, [], debutJournalDestructions);
+        annoncerSuivantSorcier();
+      }, 700);
+    };
+
+    if (!rpgPeutRepondre(duel, 'sorcier')) {
+      fermerTour();
+      return;
+    }
     force();
     later(() => {
-      const champAvantIA = prendreInstantaneChamp();
+      const champAvant = prendreInstantaneChamp();
       const debutJournalDestructions = rpgNombreDestructions(duel);
-      rpgSorcierPrepareTerrain(duel);
-      animerModificationsChamp(champAvantIA, [], debutJournalDestructions);
-      annoncerSuivantSorcier();
-    }, 700);
+      const degatsAvant = prendreInstantaneDegatsJoueur();
+      const reponse = rpgSorcierMagieRapide(duel, rng);
+      if (reponse) {
+        const carte = cardById(reponse.carteId);
+        jouerSfx(rpgFireSoundFor(carte, 'spell') ?? 'magie');
+        animerModificationsChamp(champAvant, [], debutJournalDestructions);
+        if (joueurToucheDepuis(degatsAvant)) declencherImpactEcran('received');
+      }
+      force();
+      later(fermerTour, reponse ? 1100 : 300);
+    }, 600);
+  };
+
+  // Fin de tour du sorcier : le joueur peut répondre par une magie rapide, ou
+  // passer. Sans magie rapide jouable en main, la fenêtre se referme d'elle-même.
+  const passerFinTourSorcier = () => {
+    if (duel.finDeTour?.cote !== 'sorcier') return;
+    if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
+    force();
+  };
+
+  const finirTourSorcier = () => {
+    sorcierApresCombatRef.current = false;
+    if (rpgVainqueur(duel)) { force(); return; }
+    rpgOuvrirFinDeTour(duel);
+    if (!rpgPeutRepondre(duel, 'joueur')) {
+      passerFinTourSorcier();
+      return;
+    }
+    force();
+  };
+
+  // Après le combat du sorcier : deuxième phase principale (il peut encore
+  // annoncer des cartes, le joueur répond comme d'habitude), puis fin de tour.
+  const apresCombatSorcier = () => {
+    if (rpgVainqueur(duel)) { force(); return; }
+    rpgDefinirPhase(duel, 'principale2');
+    sorcierApresCombatRef.current = true;
+    annoncerSuivantSorcier();
   };
 
   // Le sorcier annonce sa carte suivante. Le joueur répond avec une magie rapide, ou laisse passer.
@@ -4526,6 +4627,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     const annonce = rpgSorcierAnnonceSuivante(duel, rng);
+    if (!annonce && sorcierApresCombatRef.current) {
+      finirTourSorcier();
+      return;
+    }
     if (!annonce) {
       // Cartes épuisées : le sorcier dépense son mana restant avant de
       // déclarer ses attaques — d'abord ses armes activables (le Bâton des
@@ -4597,10 +4702,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const declarerAttaqueSorcier = () => {
       const ids = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
       if (!ids.length) {
-        if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
-        force();
+        finirTourSorcier();
         return;
       }
+      rpgDefinirPhase(duel, 'attaque');
       rpgOuvrirFenetreReponse(duel);
       const ciblesRapides = rpgCiblesAttaqueRapide(duel, 'sorcier', ids);
       setCombatEntrant({
@@ -5009,7 +5114,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       onStartBlockerDrag={commencerGlisserBloqueur}
                       onEndBlockerDrag={terminerGlisserBloqueur}
                       actionFx={animationsEntites[entite.id]}
-                      playerTurn={monTour}
+                      playerTurn={tourDuJoueur}
                       tutorialTarget={tutorielActif && etapeTutorielId === 'invocation' && entite.carteId === 'tislit-des-aures'
                         ? 'played-creature'
                         : undefined}
@@ -5267,6 +5372,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         </div>
 
+        {fenetreFinTour && (
+          <div className="rpg-annonce-sort__compact rpg-fin-tour" role="group"
+            aria-label="Fin du tour du sorcier : jouez une magie rapide ou passez">
+            <span className="rpg-annonce-sort__compact-label">
+              <span>Fin du tour du sorcier</span>
+              <b>Magie rapide ?</b>
+            </span>
+            <button
+              type="button"
+              className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
+              aria-label="Passer : ne pas jouer de magie rapide"
+              onClick={() => { jouerSfx('pass'); passerFinTourSorcier(); }}
+            >
+              <span aria-hidden="true">➜</span>
+              <span>Passer</span>
+            </button>
+          </div>
+        )}
+
         {apercuAnnonceOuvert && (
           <section
             className="rpg-annonce-sort"
@@ -5345,7 +5469,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
 
         <div
-          className={`rpg-hand-dock${combatEntrant || fenetreSort ? ' is-open' : ''}`}
+          className={`rpg-hand-dock${combatEntrant || fenetreSort || fenetreFinTour ? ' is-open' : ''}`}
           aria-label="Votre main"
           inert={apercuAnnonceOuvert ? true : undefined}
           data-tutorial-target={tutorielActif && ['main', 'magies'].includes(etapeTutorielId) ? 'hand' : undefined}
