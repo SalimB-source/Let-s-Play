@@ -34,6 +34,8 @@ try {
 
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+const guideCss = readFileSync(new URL('../src/games/rpg-card-guide.css', import.meta.url), 'utf8');
+const atelierCss = readFileSync(new URL('../src/games/rpg-deck-atelier.css', import.meta.url), 'utf8');
 const { RPG_PLATEAUX } = await import('../src/games/rpgPlateaux.js');
 const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const duelEngine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
@@ -160,20 +162,37 @@ assert.match(battlePage, /\{apercuMagie && \(\s*<HoverCardPreview\s+carte=\{card
   'l’aperçu de la magie lancée réutilise le composant de l’aperçu rapide, posé au centre, sans style de décor en ligne');
 assert.match(battleCss, /\.rpg-hover-card-preview__details\s*\{[^}]*background:\s*rgba\(5, 8, 11, \.8\);/s,
   'seul le fond de l’encadré des infos reste pour la lisibilité');
-assert.match(battlePage, /const largeurApercu = Math\.min\(680,[\s\S]*?const hauteurApercu = Math\.min\(400,/,
-  'le calcul de placement prend en compte la nouvelle taille de l’aperçu');
+assert.match(battlePage, /function placerApercuSurvol\(rectangle, panneau\) \{[\s\S]*?panneau\?\.getBoundingClientRect\?\.\(\)/,
+  'l’aperçu au survol se place d’après la boîte réelle de son panneau, pas d’une taille estimée');
+assert.match(battlePage, /function placerApercuSurvol\(rectangle, panneau\) \{[\s\S]*?getComputedStyle\(panneau\)[\s\S]*?paddingLeft/,
+  'le placement retire la marge intérieure du panneau : c’est la face qui se colle à la carte survolée');
+assert.match(battlePage, /let left = rectangle\.right \+ espace - margeGauche;\s*if \(left \+ largeur > largeurVue - marge\) \{\s*left = rectangle\.left - largeur - espace \+ margeDroite;/,
+  'l’aperçu choisit le côté qui a la place et bascule à gauche si son bord droit déborderait');
+assert.match(battlePage, /useLayoutEffect\(\(\) => \{\s*if \(!apercuSurvol\?\.rectangle \|\| !panelRef\.current\) return;\s*const style = placerApercuSurvol\(apercuSurvol\.rectangle, panelRef\.current\);/,
+  'l’aperçu est reposé avant peinture (useLayoutEffect), dès que son panneau est rendu');
+assert.match(battlePage, /function HoverCardPreview\(\{[^}]*panelRef = null/,
+  'l’aperçu rapide expose son panneau au placement');
+assert.match(battlePage, /<aside\s+ref=\{panelRef\}/,
+  'le panneau de l’aperçu porte la référence mesurée par le placement');
+assert.match(battlePage, /style=\{apercuSurvol\.style\}\s+panelRef=\{panelRef\}/,
+  'l’aperçu du survol est mesuré par son panneau');
+assert.match(battlePage, /panelRef=\{panelRef\}\s+variante="mulligan"/,
+  'l’aperçu du mulligan est mesuré par le même panneau');
 assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*grid;[^}]*gap:\s*7px;[\s\S]*?\.rpg-hover-card-preview__rules > span\s*\{\s*display:\s*block;/s,
   'chaque effet occupe sa propre ligne dans l’aperçu au survol');
 assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
   'la Rapidité rend la créature prête dès son arrivée, sans badge d’effet sur la carte');
-assert.match(duelEngine, /cibleRapideId[\s\S]*?resume\.coupsRapides\.push[\s\S]*?for \(const coup of resume\.coupsRapides\)[\s\S]*?enregistrerDegatsCombat\(\s*degatsCombat,\s*adv,\s*coup\.cibleId,\s*coup\.degats/s,
+// Le Coup rapide frappe avant les blessures de combat : la cible encaisse
+// l'attaque de la créature (`degatsAvantCombat`), sans riposte, et le résumé
+// du combat relate chaque frappe.
+assert.match(duelEngine, /const cibleRapideId = ciblesRapides\[attaquant\.id\];[\s\S]*?frappesRapides\.push\([\s\S]*?degats: attaquant\.atk,[\s\S]*?degatsAvantCombat\.push\(\{\s*cote: adv,\s*entiteId: cible\.id,\s*amount: attaquant\.atk,[\s\S]*?coupsRapides: frappesRapides,[\s\S]*?for \(const coup of resume\.coupsRapides\)/s,
   'le Coup rapide inflige l’attaque de la créature choisie, sans combat de riposte');
-assert.match(duelEngine, /export function rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\s*\{[\s\S]*?!attaquant\.envol \|\| Boolean\(bloqueur\.envol\)/,
-  'l’Envol n’autorise que les créatures volantes à bloquer un attaquant volant');
+assert.match(duelEngine, /export function rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\s*\{[\s\S]*?if \(attaquant\.infiltration\) return false;[\s\S]*?!attaquant\.envol \|\| Boolean\(bloqueur\.envol\)/,
+  'l’Infiltration rend l’attaquant inbloquable, et l’Envol n’autorise que les créatures volantes à bloquer un attaquant volant');
 assert.match(aiBrain, /peutBloquerAttaquant\(bloqueur, attaquant\)\s*&&\s*!estProtegee\(attaquant, cardColors\(duelCardById\(bloqueur\.carteId\)\)\)/,
   'l’IA écarte les bloqueurs sans Envol face à un attaquant volant');
-assert.match(duelEngine, /if \(!rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) return \{ ok: false, raison: 'envol' \}/,
-  'le moteur refuse un blocage terrestre contre un attaquant avec Envol');
+assert.match(duelEngine, /if \(!rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) \{\s*return \{ ok: false, raison: attaquant\.infiltration \? 'infiltration' : 'envol' \};/,
+  'le moteur refuse un blocage contre un attaquant avec Envol ou Infiltration, avec la raison qui convient');
 assert.match(battlePage, /if \(!retireDeCetteAttaque && !rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) \{\s*setBloqueurSelectionne\(null\);\s*jouerSfx\('erreur'\);/,
   'un bloqueur sans Envol est refusé par le bruitage d’erreur, sans phrase d’explication');
 assert.match(battlePage, /canDragBlocker=\{Boolean\(reponseActive && !reponseApresBlocage && bloqueursDisponibles\.some/,
@@ -271,8 +290,10 @@ for (const [source, camp] of [[attaqueEnnemie, 'ennemi'], [attaqueJoueur, 'joueu
 }
 assert.match(battlePage, /if \(res\.resume\.frappeSorcier > 0\) declencherImpactEcran\('dealt'\)/,
   'une attaque directe sur le sorcier déclenche la secousse après acceptation des blocages');
-assert.match(battlePage, /const frappeDirecte = res\.resume\.frappeSorcier > 0;[\s\S]*?if \(frappeDirecte \|\| touchePendantLaFinDuTour\) declencherImpactEcran\('received'\)/,
-  'une attaque directe reçue ou un écho qui tombe en fin de combat déclenche l’effet de dégâts du joueur');
+assert.match(battlePage, /const frappeDirecte = res\.resume\.frappeSorcier > 0;[\s\S]*?if \(frappeDirecte\) declencherImpactEcran\('received'\);\s*apresCombatSorcier\(\)/,
+  'une attaque directe reçue déclenche l’effet de dégâts du joueur, puis le sorcier entre en deuxième phase principale');
+assert.match(battlePage, /const passerFinTourSorcier = \(\) => \{[\s\S]*?terminerTourEtDetecterDegatsJoueur\(\)\) declencherImpactEcran\('received'\)/,
+  'un écho qui tombe à la fermeture du tour du sorcier déclenche l’effet de dégâts du joueur');
 assert.match(battlePage, /const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur\(\);[\s\S]*?const res = rpgSorcierResoudreAnnonce\(duel\);[\s\S]*?if \(res\.ok && joueurToucheDepuis\(degatsJoueurAvantResolution\)\) \{\s*declencherImpactEcran\('received'\);/,
   'un sort ou une capacité d’arrivée adverse qui touche les PV ou le bouclier déclenche le même impact rouge');
 assert.match(battleCss, /\.card-table\.rpg-screen-shake--a\s*\{\s*animation:\s*rpg-screen-shake-a/,
@@ -305,10 +326,14 @@ assert.match(battlePage, /rpg-actions__combat[\s\S]*?rpg-actions__turn[\s\S]*?rp
   'les actions de combat restent dans la barre, les actions de tour vivent dans le rail');
 assert.match(battlePage, /disabled=\{!monTour \|\| phase \|\| Boolean\(cibleEnCours\) \|\| Boolean\(combatEntrant\) \|\| mulliganOuvert\}/,
   'Fin du tour est indisponible pendant une sélection de combat ou de cible, et tant que le mulligan n’est pas validé');
-assert.match(battlePage, /const RPG_PHASE_STEPS = \[[\s\S]*?id: 'principal'[\s\S]*?id: 'combat'[\s\S]*?id: 'reponse'[\s\S]*?id: 'adverse'[\s\S]*?id: 'termine'/,
-  'le rail représente les grandes phases de la partie');
-assert.match(battlePage, /const phaseDuelActive = vainqueur[\s\S]*?reponseActive[\s\S]*?combatEntrant \|\| phase[\s\S]*?monTour/,
+assert.match(battlePage, /const RPG_PHASE_STEPS = \[[\s\S]*?id: 'debut'[\s\S]*?id: 'principale'[\s\S]*?id: 'attaque'[\s\S]*?id: 'blocage'[\s\S]*?id: 'principale2'[\s\S]*?id: 'fin'/,
+  'le rail représente les six phases du tour : début, principale, attaque, blocage, deuxième principale, fin');
+assert.match(battlePage, /const phaseDuelActive = vainqueur[\s\S]*?finTourJoueur \|\| fenetreFinTour[\s\S]*?combatEntrant[\s\S]*?phase[\s\S]*?debutVisible[\s\S]*?duel\.phase/,
   'la phase lumineuse suit l’état réel du duel');
+assert.match(battlePage, /const fenetreFinTour = Boolean\(duel\.finDeTour\?\.cote === 'sorcier'/,
+  'la fin de tour du sorcier ouvre une fenêtre où le joueur peut jouer une magie rapide');
+assert.match(battlePage, /rpgOuvrirFinDeTour\(duel\);[\s\S]*?rpgSorcierMagieRapide\(duel, rng\)/,
+  'à la fin du tour du joueur, le sorcier a la main pour une magie rapide avant la fermeture du tour');
 // ── Le rail du tour : phases, indicateur et « Fin du tour » au milieu ───────
 assert.match(battlePage, /<div className="rpg-turn-rail" role="group" aria-label="Déroulé du tour">[\s\S]*?rpg-turn-indicator[\s\S]*?<PhaseTrack current=\{phaseDuelActive\} \/>[\s\S]*?rpg-actions__turn[\s\S]*?rpg-btn--endturn/,
   'l’indicateur, les phases et « Fin du tour » forment le rail du tour, au milieu de la table');
@@ -403,34 +428,54 @@ assert.match(battlePage, /className="rpg-card-catalogue"[\s\S]*?Filtrer par coul
   'l’onglet Catalogue propose les filtres de couleur et de type');
 assert.match(battlePage, /onChangeScreen\('catalogue'\)[\s\S]*?Catalogue/,
   'Catalogue est accessible depuis le menu des modes');
-assert.match(battlePage, /if \(carte\.arrivee\?\.type === 'combat'\) \{[\s\S]*?if \(ciblesLegales\.length\) \{\s*setCibleEnCours\(carteId\);/,
+// L'arrivée du Cavalier (combat) partage son choix de cible avec les arrivées
+// qui blessent une créature (le marteau du Maître) : même branche, même éclat.
+assert.match(battlePage, /if \(carte\.arrivee\?\.type === 'combat' \|\| \(carte\.arrivee\?\.type === 'degats' && carte\.arrivee\.cible === 'creature'\)\) \{[\s\S]*?if \(ciblesLegales\.length\) \{\s*setCibleEnCours\(carteId\);/,
   'l’arrivée du Cavalier ouvre le choix d’une créature adverse, signalé par les cibles allumées');
 assert.match(battlePage, /demarrerVolCarte\(carteSource, handIndex, \(\) => finaliserPoseCreature\(carteId, entite\.id\)\)/,
   'la carte réelle vole depuis la main après la sélection de la cible');
 assert.match(battleCss, /\.rpg-card-catalogue__art\s*\{[\s\S]*?aspect-ratio:\s*4\s*\/\s*5;[\s\S]*?border:\s*var\(--rpg-card-border-large, 6px\) solid var\(--rpg-frame-color/s,
   'les illustrations du catalogue sont moins étirées verticalement en 4:5 et gardent un cadre piloté par l’élément, au grand gabarit');
+assert.match(battleCss, /\.rpg-card-catalogue__cost\s*\{[^}]*top:\s*9px;[^}]*right:\s*9px;[^}]*bottom:\s*auto;/s,
+  'le coût des cartes du catalogue est affiché en haut à droite de l’illustration');
 assert.match(battlePage, /⚔<\/span> Jouer\s*<\/button>/,
   'le menu comporte un mode Jouer');
 assert.match(battlePage, /cardFrameClass\(carte\)/,
   'les cartes en main, sur table et les aperçus portent leur élément');
 const frameCss = battleCss.slice(battleCss.lastIndexOf('/* Le cadre suit la COULEUR'));
-// L'épaisseur du cadre suit la largeur de la carte, dans l'esprit d'une carte
-// Magic : trois gabarits en `vw`, bornés, posés sur `.rpg-battle`, et chaque
-// format prend le sien — la couleur et la matière restant communes.
+// L'épaisseur du cadre suit la largeur de la carte : trois gabarits en `vw`,
+// bornés, posés sur `.rpg-battle`, et chaque format prend le sien — la
+// couleur et la matière restant communes.
 const gabarits = battleCss.match(/\.rpg-battle\s*\{\s*--rpg-card-border:\s*clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\);\s*--rpg-card-border-large:\s*clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\);\s*--rpg-card-border-small:\s*clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\);/);
 assert.ok(gabarits, 'les trois gabarits de cadre (normal, grand, petit) sont déclarés en `clamp(px, vw, px)` sur `.rpg-battle`');
 const [normalMin, normalVw, normalMax, grandMin, grandVw, grandMax, petitMin, petitVw, petitMax] = gabarits.slice(1).map(Number);
 assert.ok(petitMax <= normalMin && normalMax <= grandMin + 1 && petitVw < normalVw && normalVw < grandVw,
   `les gabarits s'emboîtent : petit (${petitMin}–${petitMax}px) < normal (${normalMin}–${normalMax}px) < grand (${grandMin}–${grandMax}px)`);
-// ≈ 3,5 % de la largeur : une carte en main fait clamp(104px, 9.6vw, 136px), la
-// face de l'aperçu 232 px, un terrain clamp(74px, 6.6vw, 96px). Ni le filet
-// d'avant (3 px partout, 1,3 % sur l'aperçu), ni un bord qui mange l'illustration.
-assert.ok(normalMax / 136 >= 0.03 && normalMax / 136 <= 0.045 && normalMin / 104 >= 0.03,
-  `le gabarit normal fait 3 à 4,5 % d'une carte en main (reçu : ${(normalMax / 136 * 100).toFixed(1)} % au plus large)`);
-assert.ok(grandMax / 232 >= 0.025 && grandMax / 232 <= 0.04,
-  `le grand gabarit fait 2,5 à 4 % de la face de l'aperçu (reçu : ${(grandMax / 232 * 100).toFixed(1)} %)`);
-assert.ok(petitMax / 96 <= 0.045 && petitMin / 74 >= 0.03,
-  `le petit gabarit fait 3 à 4,5 % d'un terrain (reçu : ${(petitMin / 74 * 100).toFixed(1)}–${(petitMax / 96 * 100).toFixed(1)} %)`);
+// La mesure commune est la plaque des armes : 1,6 fois l'ancien gabarit, soit
+// ≈ 7 % de la largeur — une carte en main fait clamp(104px, 9.6vw, 136px), la
+// face de l'aperçu 232 px, un terrain clamp(74px, 6.6vw, 96px). Un anneau
+// franc, qui ne mange pas l'illustration pour autant (jamais plus de 9 %).
+assert.ok(normalMax / 136 >= 0.06 && normalMax / 136 <= 0.09 && normalMin / 104 >= 0.06,
+  `le gabarit normal fait 6 à 9 % d'une carte en main (reçu : ${(normalMax / 136 * 100).toFixed(1)} % au plus large)`);
+assert.ok(grandMax / 232 >= 0.045 && grandMax / 232 <= 0.07,
+  `le grand gabarit fait 4,5 à 7 % de la face de l'aperçu (reçu : ${(grandMax / 232 * 100).toFixed(1)} %)`);
+assert.ok(petitMax / 96 <= 0.09 && petitMin / 74 >= 0.06,
+  `le petit gabarit fait 6 à 9 % d'un terrain (reçu : ${(petitMin / 74 * 100).toFixed(1)}–${(petitMax / 96 * 100).toFixed(1)} %)`);
+// Les valeurs exactes : chaque gabarit vaut 1,6 fois celui qu'avaient les
+// autres cartes avant que la plaque des armes ne devienne la mesure commune.
+assert.match(battleCss, /\.rpg-battle\s*\{\s*--rpg-card-border:\s*clamp\(7\.2px, 0\.768vw, 9\.6px\);\s*--rpg-card-border-large:\s*clamp\(9\.6px, 1\.088vw, 12\.8px\);\s*--rpg-card-border-small:\s*clamp\(6\.4px, 0\.544vw, 6\.8px\);\s*--rpg-card-border-strong:\s*clamp\(8px, 0\.928vw, 10\.4px\);/,
+  'tous les gabarits (normal, grand, petit, renforcé) valent la plaque des armes : 1,6 fois leur ancienne épaisseur');
+assert.match(mobileCss, /--rpg-card-border:\s*clamp\(4px, 1\.76vw, 8px\);\s*--rpg-card-border-strong:\s*clamp\(4\.8px, 1\.92vw, 8\.8px\);/s,
+  'au doigt aussi, le gabarit normal vaut la plaque des armes (1,6 fois l’ancien bord tactile)');
+// Plus aucune épaisseur propre aux armes : la plaque est commune à toutes
+// les cartes, sur chaque face du duel, au doigt, dans l'atelier et le guide.
+for (const [nom, css] of [['le duel', battleCss], ['le tactile', mobileCss], ['l’atelier', atelierCss], ['le guide', guideCss]]) {
+  assert.doesNotMatch(css, /\.rpg-card--frame-arme[^{,]*\{[^}]*border-width/s,
+    `${nom} ne donne plus aux armes une épaisseur de cadre à part`);
+  assert.doesNotMatch(css, /\* 1\.6\)/, `${nom} ne multiplie plus aucun gabarit par 1,6 : la plaque est dans le gabarit lui-même`);
+}
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-terrain(?:\.rpg-terrain-stack)?\s*\{[^}]*border-width:\s*\d/s,
+  'au doigt, les terrains gardent le petit gabarit commun au lieu d’un filet fixe de 1 ou 2 px');
 assert.match(frameCss, /\.rpg-card\[class\*="rpg-card--frame-"\],\s*\.rpg-hand__card\[class\*="rpg-card--frame-"\],\s*\.rpg-card-destruction-fx\s*\{\s*border:\s*var\(--rpg-card-border, 4px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
   'main, table et animations partagent le gabarit normal, pour toute combinaison de couleurs');
 assert.match(frameCss, /\.rpg-hover-card-preview__face\s*\{\s*border:\s*var\(--rpg-card-border-large, 6px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
@@ -536,6 +581,48 @@ assert.match(mythicRule, /--rpg-frame-motif-size:\s*12px 12px;/,
   'le motif du cadre mythique se répète tous les 12 px le long de l’anneau');
 assert.match(mythicRule, /--rpg-frame-shine-duration:\s*2\.8s;/,
   'le reflet des mythiques mono-élément garde sa cadence');
+// Toutes les armes partagent la même matière — acier poli guilloché, à la
+// place de la résille commune — mais chaque élément teinte son acier.
+// Le motif est décodé et relu par un analyseur XML, comme ceux des autres
+// cadres : une URI mal échappée ne peindrait simplement rien.
+const armeRule = frameCss.match(/\.rpg-card--frame-arme\s*\{([^}]*)\}/);
+assert.ok(armeRule, 'les armes ont leur propre cadre');
+assert.match(armeRule[1], /--rpg-frame-gradient:\s*linear-gradient\(115deg, #454e56/,
+  'la matière commune des armes reste un acier poli, avant sa teinte d’élément');
+const teintesAcier = armeRule[1].match(/#[0-9a-f]{6}/gi);
+assert.ok(teintesAcier.length >= 6 && teintesAcier.every((teinte) => {
+  const [r, g, b] = teinte.slice(1).match(/../g).map((canal) => parseInt(canal, 16));
+  return Math.max(r, g, b) - Math.min(r, g, b) <= 24;
+}), 'la trempe commune du cadre des armes reste un acier presque neutre');
+// Chaque élément teinte ensuite cet acier dans sa propre couleur, sans
+// toucher au guilloché : quatre dégradés métalliques, un par élément.
+for (const [element, teinte] of Object.entries({ braise: '#8f2d22', eau: '#28689b', sable: '#a87f42', neige: '#79b5cf' })) {
+  const rule = frameCss.match(new RegExp(`\\.rpg-card--frame-arme-${element}\\s*\\{([^}]*)\\}`));
+  assert.ok(rule, `l’acier des armes ${element} a sa teinte`);
+  assert.match(rule[1], /--rpg-frame-gradient:\s*linear-gradient\(115deg,/,
+    `l’acier des armes ${element} reste un dégradé métallique`);
+  assert.ok(rule[1].includes(teinte), `l’acier des armes ${element} porte sa couleur (${teinte})`);
+  assert.doesNotMatch(rule[1], /--rpg-frame-motif/,
+    `la teinte ${element} ne remplace pas le guilloché commun des armes`);
+}
+const armeMotif = armeRule[1].match(/--rpg-frame-motif:\s*url\("([^"]+)"\)/);
+assert.ok(armeMotif, 'le cadre des armes porte son propre motif');
+assert.match(armeMotif[1], /^data:image\/svg\+xml,%3Csvg /,
+  'le motif du cadre des armes est un SVG en ligne');
+const armeMotifDom = new JSDOM('<!doctype html><body></body>');
+const armeMotifDoc = new armeMotifDom.window.DOMParser().parseFromString(
+  decodeURIComponent(armeMotif[1].replace(/^data:image\/svg\+xml,/, '')), 'image/svg+xml');
+assert.equal(armeMotifDoc.querySelector('parsererror'), null,
+  'le SVG du guilloché des armes est bien formé une fois décodé');
+assert.ok(armeMotifDoc.querySelectorAll('path').length >= 4,
+  'le guilloché de Damas superpose au moins deux ondes gravées et leurs reflets');
+armeMotifDom.window.close();
+assert.match(armeRule[1], /--rpg-frame-motif-size:\s*18px 12px;/,
+  'les ondes du guilloché des armes se répètent tous les 18 × 12 px le long de l’anneau');
+assert.match(cardsSource, /carte\?\.kind === 'arme'[\s\S]*?CARD_FRAME_COLORS\[`arme-\$\{couleur\}`\]/,
+  'le catalogue attribue aux armes la teinte d’acier de leur élément');
+assert.match(cardsSource, /carte\?\.kind === 'arme'[\s\S]*?rpg-card--frame-arme-\$\{couleurArme\}/,
+  'les faces des armes ajoutent la classe de teinte de leur élément à la matière commune');
 assert.match(frameCss, /\.rpg-hover-card-preview\[class\*="rpg-card--frame-"\],\s*\.rpg-hover-card-preview__face\[class\*="rpg-card--frame-"\]\s*\{\s*background-color:\s*transparent;\s*\}/,
   'l’aperçu rapide ne garde aucune teinte de repli, ni sur son encadré entier ni derrière l’illustration');
 // Le vernis est réservé à la peinture mythique, indépendamment du cadre. Il
@@ -559,15 +646,18 @@ assert.match(glossCss, /\.rpg-card--mythique:is\(\.is-summoning-sick, \.is-attac
   'le vernis s’atténue quand la créature est fatiguée ou la vignette au quota');
 assert.match(glossCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-card--mythique::before,[\s\S]*?animation: none !important;[\s\S]*?background-position: 0 0, 50% 0 !important;/,
   'le vernis reste visible sans mouvement quand l’animation est réduite');
-const guideCss = readFileSync(new URL('../src/games/rpg-card-guide.css', import.meta.url), 'utf8');
-assert.match(guideCss, /\.rpg-card-guide__example:is\(\.rpg-card--mythique, \[class\*="rpg-card--frame-hybride-"\]\)\s*\{[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
-  'le guide peint aussi la diagonale bicolore sur les cartes non mythiques');
+// Le guide habille chaque fiche du même anneau orné que les autres faces, à
+// l'épaisseur commune de 6 px (la plaque des armes) : couleur unie d'une mono,
+// diagonale d'une hybride, acier des armes — plus de filet de 1 px ni de 3 px.
+assert.match(guideCss, /\.rpg-card-guide__example\s*\{[^}]*border:\s*6px solid transparent;[^}]*var\(--rpg-frame-gradient, linear-gradient\(var\(--rpg-frame-color, var\(--rpg-guide-frame, #d3ab62\)\), var\(--rpg-frame-color, var\(--rpg-guide-frame, #d3ab62\)\)\)\)[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
+  'le guide peint l’anneau orné — couleur unie, diagonale bicolore ou acier des armes — sur toutes ses fiches, à 6 px');
+assert.doesNotMatch(guideCss, /\.rpg-card-guide__example[^{]*\{[^}]*border(?:-width)?:\s*(?:1px|3px)/s,
+  'aucune fiche du guide ne garde un cadre plus fin que la plaque commune');
 assert.match(guideCss, /\.rpg-card-guide__example\.rpg-card--frame-brillant\s*\{\s*animation:\s*rpg-frame-shine-sweep/,
   'le guide n’anime que les cadres mythiques mono-élément');
 assert.match(guideCss, /\.rpg-card-guide__cost\s*\{\s*position: absolute;\s*z-index: 2;/,
   'le coût du guide reste au-dessus du reflet de l’illustration');
 {
-  const atelierCss = readFileSync(new URL('../src/games/rpg-deck-atelier.css', import.meta.url), 'utf8');
   assert.match(atelierCss, /\.rpg-atelier__carte-art\s*\{[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
     'l’atelier peint lui aussi la diagonale à la bonne taille');
   const states = new JSDOM(`<!doctype html><style>${battleCss}\n${atelierCss}</style><div class="rpg-battle">
@@ -685,6 +775,16 @@ assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^
   'le badge de coût sur les cartes posées reste un bloc bien rond et lisible');
 assert.match(cardMetricsCss, /\.rpg-hand__card--img \.rpg-mana-cost\s*\{[^}]*width:\s*28px;[^}]*height:\s*28px;[^}]*min-width:\s*28px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;[^}]*font-size:\s*13px;/s,
   'le badge de coût dans la main reste un bloc bien rond et lisible');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*width:\s*30px;[^}]*height:\s*30px;[^}]*min-width:\s*30px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;[^}]*font-size:\s*15px;/s,
+  'sur PC, le disque de mana des cartes posées reste rond : boîte carrée de 30 px, bordure ronde, chiffre de 15 px');
+assert.doesNotMatch(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*min-width:\s*36px;[^}]*height:\s*25px;/s,
+  'l’ellipse du disque de mana (36 × 25) ne revient pas sur les cartes posées');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img\s*\{[^}]*--rpg-card-element-marker-size:\s*30px;/s,
+  'sur la table PC, la pastille de couleur prend la taille du disque de mana (30 px)');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*15px;/s,
+  'sur la table PC, le glyphe de couleur se lit à 15 px dans un liseré de 2 px, comme le chiffre du disque');
+assert.match(battleCss, /\.rpg-hand__card--img \.rpg-card-element-badge\s*\{[^}]*--rpg-card-element-marker-size:\s*min\(28px, 30%\);[^}]*border-width:\s*2px;[^}]*font-size:\s*15px;/s,
+  'dans la main, la pastille de couleur prend la taille du disque (28 px, au plus 30 % de la carte), glyphe 15 px et liseré 2 px');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-mana-cost,\s*\.rpg-battle--touch \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*width:\s*22px;[^}]*height:\s*22px;[^}]*min-width:\s*22px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
   'le badge de coût tactile reste un bloc bien rond sur les cartes en main et en jeu');
 assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-card__stat--atk,[\s\S]*?\.rpg-card--img \.rpg-card__pt,[\s\S]*?\.rpg-hand__stat\s*\{[^}]*min-width:\s*38px;[^}]*font-size:\s*13px;/s,
@@ -911,6 +1011,10 @@ assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-prev
   'le badge de couleur de la carte annoncée est à l’échelle de sa grande face, comme au catalogue');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*19px;/s,
   'le glyphe de couleur de la carte annoncée reste lisible (19 px, liseré 2 px), comme sur les grandes faces du catalogue');
+assert.match(battleCss, /\.rpg-hover-card-preview__face\s*\{[^}]*--rpg-card-element-marker-size:\s*clamp\(28px, 17%, 38px\);/s,
+  'la pastille de couleur de l’aperçu rapide est à l’échelle de sa grande face (28–38 px), comme au catalogue');
+assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*19px;/s,
+  'le glyphe de couleur de l’aperçu rapide reste lisible (19 px, liseré 2 px), comme sur les grandes faces');
 assert.match(battleCss, /@media \(max-width: 620px\)[\s\S]*?\.rpg-hover-card-preview--annonce\s*\{[^}]*--rpg-annonce-column-width:\s*min\(210px, calc\(100vw/s,
   'sur mobile, la colonne est dimensionnée pour centrer tout l’aperçu sans couper son contenu');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__details-column\s*\{[^}]*position:\s*relative;[^}]*width:\s*var\(--rpg-annonce-column-width\);/s,
@@ -1128,9 +1232,13 @@ assert.ok(jarl && jarl.element === 'neige' && jarl.furie === 3,
   'le Jarl au marteau de guerre porte la Furie 3 du set Neige');
 assert.ok(RPG_DECK_NEIGE_BASE.includes('jarl-au-marteau-de-guerre'),
   'le Serment des Neuf Hivers aligne le Jarl');
+// La Furie est nordique : des vikings, et le Maître du marteau — un héros du
+// Nord, qui la porte sans la ligne de type « viking ». Depuis que la Furie ne
+// se déclenche qu'une fois, chaque face l'annonce « La première fois ».
 for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.furie)) {
-  assert.match(carte.typeLine, /viking/i, `${carte.id} est un viking`);
-  assert.match(carte.text, new RegExp(`Furie ${carte.furie} — Chaque fois qu’il est blessé et survit`),
+  assert.ok(/viking/i.test(carte.typeLine) || carte.kind === 'hero',
+    `${carte.id} est un viking ou un héros du Nord`);
+  assert.match(carte.text, new RegExp(`Furie ${carte.furie} — La première fois qu’il est blessé et survit`),
     `${carte.id} annonce sa Furie sur sa face`);
 }
 for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {
@@ -1194,7 +1302,7 @@ console.log(
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
-  + 'rail du tour remonté au milieu de la table — indicateur et « Fin du tour » doré en colonne à la verticale du centre; sur PC, cinq phases en icônes seules orange à l’horizontale sur fond foncé transparent, même rangée d’icônes au doigt, boutons de droite compacts —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, fond foncé commun aux boutons Annuler, Attaquer avec tous, Confirmer et Annuler l’attaque sur PC, icônes de phase orange agrandies sur PC, sur PC, plaques sombres, compactes et arrondies : cadre doré pour le joueur, cuivré pour l’adversaire; portrait à gauche, nom du profil ou du sorcier au-dessus des PV, tactile préservé, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
+  + 'rail du tour remonté au milieu de la table — indicateur et « Fin du tour » doré en colonne à la verticale du centre; sur PC, six phases en icônes seules orange à l’horizontale sur fond foncé transparent, même rangée d’icônes au doigt, boutons de droite compacts —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, fond foncé commun aux boutons Annuler, Attaquer avec tous, Confirmer et Annuler l’attaque sur PC, icônes de phase orange agrandies sur PC, sur PC, plaques sombres, compactes et arrondies : cadre doré pour le joueur, cuivré pour l’adversaire; portrait à gauche, nom du profil ou du sorcier au-dessus des PV, tactile préservé, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
   + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, les Ruines de Tipaza, le Fjord des Neuf Hivers) attribués selon le deck — la Braise rejoint la Table des Heures après le retrait du plateau des Brûlés —; peintures visibles sans voile, capsules sombres pour la lisibilité; plaques PC compactes en capsule, cadre doré joueur et cuivré adversaire, nom du profil et d’Ifrit al-Ahmar affichés, nom d’étage conservé, tactile préservé, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '

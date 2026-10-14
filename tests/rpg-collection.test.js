@@ -48,7 +48,7 @@ function stockageEnMemoire(donnees = new Map()) {
 // ── La dotation de départ ────────────────────────────────────────────────────
 
 test('la dotation de départ tient la règle : communes et inhabituelles, jamais de rare', () => {
-  assert.equal(COLLECTION_DEPART.length, 36, 'la dotation inclut l’ashigaru, le rōnin et la Montagne du Soleil rouge');
+  assert.equal(COLLECTION_DEPART.length, 37, 'la dotation inclut l’ashigaru, le rōnin et la Montagne du Soleil rouge et la Takouba');
   for (const id of COLLECTION_DEPART) {
     const carte = cardById(id);
     assert.ok(carte, `${id} existe au catalogue`);

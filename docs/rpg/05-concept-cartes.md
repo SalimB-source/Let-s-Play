@@ -6,7 +6,7 @@ terrains. Tout ce qui existe dans le combat est une carte ; rien d'autre ne
 se clique. Implémenté dans `src/games/rpgCards.js` (catalogue),
 `rpgCombat.js` (règles) et `CardTable.jsx` (la table, 100 % DOM).
 
-## 1. Les quatre types de cartes
+## 1. Les cinq types de cartes
 
 Chaque carte porte **deux chiffres** : **⚔ attaque** (badge doré) et
 **🛡 défense** (badge acier). La pioche : **1 carte par tour**, main
@@ -184,14 +184,39 @@ elle ne peut pas être interceptée par le contresort de Boualem.
 Illustration : `public/cards/chien-de-sable.jpg`, peinture plein art 4:5 dans la
 palette et la matière de celle de Tarek (direction artistique `RPG-CARD-ART.md`).
 
-## 4. La boucle de tour
+## 4. La boucle de tour : six phases
 
-1. **Piocher 1** ;
-2. poser **un terrain** (un par tour), engager ses terrains ;
-3. jouer des **créatures** et des **magies** en payant le mana ;
-4. **phase d'attaque** (⚔) : déclarer toutes les créatures attaquantes,
-   puis lancer l'attaque ;
-5. **Fin du tour** (la grande pastille dorée ⧗).
+Un tour compte **six phases**, dans l'ordre (`RPG_PHASES` dans `rpgDuel.js`, lue
+dans `duel.phase`). Le rail de l'interface les allume une à une ; le moteur les
+enregistre mais ne verrouille aucun geste : chaque fonction garde sa propre règle.
+
+| # | Phase | Ce qui s'y passe |
+| --- | --- | --- |
+| 1 | **Début de tour** (`debut`) | On dégage ses terrains et ses créatures, le mana non dépensé s'évapore, **on pioche 1 carte**, les échos et retours programmés tombent. |
+| 2 | **Phase principale** (`principale`) | On pose **un terrain** (un par tour), on engage ses terrains, on joue des **créatures** et des **magies** en payant le mana. |
+| 3 | **Phase d'attaque** (`attaque`, ⚔) | On déclare **toutes** les créatures attaquantes d'un coup, puis on confirme. |
+| 4 | **Phase de blocage** (`blocage`) | Le défenseur désigne ses bloqueurs. **Les deux camps peuvent jouer des magies rapides** avant les blessures — le joueur comme le sorcier. |
+| 5 | **Deuxième phase principale** (`principale2`) | Après le combat : mêmes gestes qu'en phase 2 — créatures, magies, terrain. **Le terrain reste unique pour tout le tour** (celui de la phase 2 compte). Les créatures qui ont attaqué **restent engagées** jusqu'à leur prochain tour. |
+| 6 | **Fin de tour** (`fin`, la grande pastille dorée ⧗) | Quand un camp termine son tour, **l'adversaire peut jouer une magie rapide** (une fenêtre, `rpgOuvrirFinDeTour`). Ensuite seulement le tour se ferme (`rpgFinDeTour`) et les effets « jusqu'à la fin du tour » prennent fin. |
+
+Précisions :
+
+- **Seules les magies rapides** se jouent hors de son tour (blocage, fin de tour).
+  Les sorcelleries restent réservées à ses phases principales. Un **contre** n'a
+  rien à contrer en fin de tour : il ne compte pas dans « j'ai une réponse ».
+- **Le Rempart de dunes** (« jusqu'à la fin du tour ») protège pendant toute la
+  fin de tour, y compris face à la magie rapide adverse ; il disparaît à la
+  fermeture du tour, après la fenêtre.
+- **Fenêtre de fin de tour du sorcier** : si le joueur a en main une magie rapide
+  qu'il peut payer, un bandeau « Fin du tour du sorcier — Magie rapide ? » avec un
+  bouton **Passer** s'ouvre ; sinon la fenêtre se referme d'elle-même. Fin du tour
+  du joueur : le sorcier joue au plus une magie rapide (`rpgSorcierMagieRapide`),
+  s'il en a une qui vaut son mana — il garde le mana qu'il n'a pas dépensé.
+- **Le sorcier a, lui aussi, une deuxième phase principale** : après son combat,
+  il peut encore annoncer des cartes (le joueur répond comme d'habitude), puis sa
+  fin de tour s'ouvre.
+- Pendant la phase de blocage d'une attaque du joueur, le sorcier peut répondre
+  par une magie rapide une fois les blocages acceptés, avant les blessures.
 
 ### Ce qui se passe à la charnière des deux tours
 
@@ -335,3 +360,60 @@ et `tests/rpg-duel.test.js` vérifie le ratio des plein art concernés.
 Vérifications : `tests/rpg-maree.test.js` (moteur + IA) et le scénario « Ressac »
 de `scripts/rpg-battle-smoke.jsx` (cible cliquée, créature rendue à la main
 adverse), inclus dans `npm run check:rpg` et `npm run check:rpg-ui`.
+
+## 9. Les armes (l'équipement attaché en jeu)
+
+L'**arme** est le cinquième type de carte du duel (`RPG_ARME_CARDS` dans
+`rpgCards.js`, fiche via `armeById`). Elle ne reste pas seule sur la table :
+elle s'**attache directement**, en étant jouée depuis la main et payée en
+mana, sur une créature alliée — **héros et jetons compris**. L'emplacement
+est unique :
+
+- **une arme par créature** : attacher la seconde arme envoie la première
+  au cimetière ;
+- l'arme suit son porteur : quand il **quitte la table** (destruction,
+  renvoi en main, exil), l'arme part au cimetière — un jeton qui cesse
+  d'exister l'entraîne avec lui ;
+- le porteur gagne les bonus imprimés (**+X/+Y**) et les mots-clés donnés
+  (`donne` : Envol, Rapidité, immunité contre une couleur) **tant que
+  l'arme est attachée** ; le retrait se fait sans tuer, avec le plancher de
+  1 PV du patron Résonance. La **Rapidité** accordée désactive le mal
+  d'invocation du porteur, dans les deux sens ;
+- comme tout ce qui entre en jeu, une arme peut être **contrée** à la
+  pose ; contrée, elle ne s'attache pas et son éventuel effet d'arrivée
+  n'a pas lieu.
+
+Quatre armes forment le prototype — une par élément, des effets **mixtes
+étagés par rareté** (dérogation photoréaliste : voir `RPG-CARD-ART.md`) :
+
+| Carte | Élément | Coût | Effet |
+|---|---|---|---|
+| Takouba des pistes | Sable (commune) | 3 | **+2/+0 et Infiltration** : le porteur ne peut pas être bloqué, par personne — l'arme de départ, offerte dès la première collection, est devenue une arme d'assaut pur (aucune défense ajoutée). |
+| Bâton des citernes | Eau (rare) | 2 | +1/+2 ; à son arrivée et pour **3 manas** (capacité activée au tour du contrôleur) : un jeton **Serpent des citernes** 3/1 Rapidité, **détruit à la fin du tour** de sa création. |
+| Lance de givre | Neige (rare) | 3 | **+3/+1 et Envol** au porteur. |
+| Armure de cendres | Braise (**mythique**, unique dans un deck) | 3 | **+3/+3, Rapidité** et **immunité contre la Braise** : le porteur ne peut pas être ciblé par la Braise et n'en reçoit aucun dégât (protection pilotée par `rpgEstProtegee`). |
+
+Le serpent des citernes est le deuxième jeton du catalogue
+(`RPG_JETON_CARDS`, `serpent-des-citernes.jpg`) : contrairement au chien de
+sable, il est **éphémère** (`detruireFinDuTour`), soldé par
+`detruireEphemeres` dans `rpgFinDeTour`. Les quatre armes équipent les cinq
+decks du catalogue (40 cartes, au moins 40 % de terrains) ; les decks
+d'Histoire n'en reçoivent pas.
+
+Illustrations : `public/cards/<identifiant>.jpg` plein art 4:5 — un porteur
+en pleine action, l'arme entièrement dans le cadre (voir la dérogation
+photoréaliste de `RPG-CARD-ART.md`).
+
+Présentation : les cartes Arme portent un **cadre d'acier métallique**
+à motif de **guilloché de Damas** — fines ondes gravées façon lames
+damassées (`.rpg-card--frame-arme` dans `rpg-battle.css`, clé `arme` de
+`cardFrameInfo`), matière commune aux quatre éléments — mais chaque
+élément **teinte son acier** : rouge pour la Braise, bleu pour l'Eau,
+doré pour le Sable et glacé pour la Neige. Leur anneau n'est **pas plus
+épais** que celui des autres cartes : la plaque des armes — ×1,6 l'ancien
+gabarit — est devenue l'épaisseur commune de toutes les faces (variables
+`--rpg-card-border*` en tête de `rpg-battle.css`), sans changer la taille
+extérieure des cartes ; une arme se reconnaît donc à sa matière et à sa
+teinte, jamais à l'épaisseur de son cadre.
+L'Armure de cendres, mythique, perd le zellige mais
+garde son reflet animé sur l'acier.

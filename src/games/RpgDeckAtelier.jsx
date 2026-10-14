@@ -59,6 +59,7 @@ const TYPES = [
   { id: 'creature', label: 'Créatures', court: 'Créat.' },
   { id: 'hero', label: 'Héros', court: 'Héros' },
   { id: 'magie', label: 'Magies', court: 'Magies' },
+  { id: 'arme', label: 'Armes', court: 'Armes' },
   { id: 'terrain', label: 'Terrains', court: 'Terr.' },
 ];
 const RARETES = Object.entries(CARD_RARITIES).map(([id, info]) => ({
@@ -74,12 +75,14 @@ const TRIS = [
 const GROUPES = [
   { id: 'creature', label: 'Créatures', kinds: ['creature', 'hero'] },
   { id: 'magie', label: 'Magies', kinds: ['magie'] },
+  { id: 'arme', label: 'Armes', kinds: ['arme'] },
   { id: 'terrain', label: 'Terrains', kinds: ['terrain'] },
 ];
 
 const typeLabel = (carte) => (carte.kind === 'terrain' ? 'Terrain'
   : carte.kind === 'magie' ? 'Magie'
-    : carte.kind === 'hero' ? 'Héros' : 'Créature');
+    : carte.kind === 'arme' ? 'Arme'
+      : carte.kind === 'hero' ? 'Héros' : 'Créature');
 
 /** Coût lisible : « 3 mana, dont 1 Braise ». */
 const coutLabel = (carte) => {
@@ -169,9 +172,10 @@ export function RpgDeckAtelier({
     if (!carte) return acc;
     if (carte.kind === 'terrain') acc.terrains += 1;
     else if (carte.kind === 'magie') acc.magies += 1;
+    else if (carte.kind === 'arme') acc.armes += 1;
     else acc.creatures += 1;
     return acc;
-  }, { terrains: 0, creatures: 0, magies: 0 }), [cardIds]);
+  }, { terrains: 0, creatures: 0, magies: 0, armes: 0 }), [cardIds]);
   const validation = useMemo(() => rpgValiderDeckMaison(cardIds, collection), [cardIds, collection]);
   const courbe = useMemo(() => courbeDeMana(cardIds), [cardIds]);
   const couleursDeck = useMemo(() => repartitionCouleurs(cardIds), [cardIds]);
@@ -520,6 +524,11 @@ export function RpgDeckAtelier({
                             {carte.atk}<i>/</i>{carte.def}
                           </span>
                         )}
+                        {carte.kind === 'arme' && (
+                          <span className="rpg-atelier__carte-pt" aria-label={`Porteur : +${carte.bonus?.atk ?? 0} attaque, +${carte.bonus?.def ?? 0} défense`}>
+                            +{carte.bonus?.atk ?? 0}<i>/</i>+{carte.bonus?.def ?? 0}
+                          </span>
+                        )}
                         {!acquise && <span className="rpg-atelier__carte-cadenas" aria-hidden="true">🔒</span>}
                       </span>
                       <span className="rpg-atelier__carte-nom">
@@ -583,6 +592,7 @@ export function RpgDeckAtelier({
               </div>
               <div><dt>Créatures</dt><dd>{stats.creatures}</dd></div>
               <div><dt>Magies</dt><dd>{stats.magies}</dd></div>
+              <div><dt>Armes</dt><dd>{stats.armes}</dd></div>
               <div><dt>Coût moyen</dt><dd>{courbe.nonTerrains ? courbe.moyenne.toLocaleString('fr-FR') : '—'}</dd></div>
             </dl>
             <p className={`rpg-atelier__verdict ${validation.ok ? 'is-valid' : 'is-invalid'}`} role="status">
@@ -673,7 +683,7 @@ export function RpgDeckAtelier({
                         : <Cout carte={carte} />}
                       <span className="rpg-atelier__ligne-nom">
                         <strong>{carte.name}</strong>
-                        <small>{typeLabel(carte)}{['creature', 'hero'].includes(carte.kind) ? ` · ${carte.atk}/${carte.def}` : ''}</small>
+                        <small>{typeLabel(carte)}{['creature', 'hero'].includes(carte.kind) ? ` · ${carte.atk}/${carte.def}` : carte.kind === 'arme' ? ` · +${carte.bonus?.atk ?? 0}/+${carte.bonus?.def ?? 0}` : ''}</small>
                       </span>
                       <span className="rpg-atelier__ligne-compte">
                         <button

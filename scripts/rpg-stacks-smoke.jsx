@@ -2,7 +2,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RPG_LONG_PRESS_MS } from '../src/games/rpgLongPress.js';
-import { passerMulligan } from './rpg-duel-start.js';
+import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 /**
  * Scénarios tactiles des piles de cartes homonymes : la main et les deux champs
@@ -98,7 +98,7 @@ async function scenarioMainEtChampJoueur(assert) {
       sorcierDeck={Array(15).fill('desert')}
       rng={() => .999}
     />));
-    await click(container.querySelector('.rpg-menu-button--primary'), 'le duel démarre');
+    assert.ok(await lancerDuelDepuisMenu(container, (element) => click(element, 'le duel démarre')), 'l’onglet Deck lance le duel');
     await passerMulligan(container, (element) => click(element, 'le mulligan se valide'));
     assert.ok(container.querySelector('.rpg-battle--touch'), 'le duel s’affiche en mode tactile');
 
@@ -220,7 +220,7 @@ async function scenarioChampAdverse(assert) {
       sorcierDeck={['desert', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'desert']}
       rng={rng}
     />));
-    await click(container.querySelector('.rpg-menu-button--primary'), 'le duel démarre');
+    assert.ok(await lancerDuelDepuisMenu(container, (element) => click(element, 'le duel démarre')), 'l’onglet Deck lance le duel');
     await passerMulligan(container, (element) => click(element, 'le mulligan se valide'));
     assert.ok(container.querySelector('.rpg-battle--touch'), 'le duel s’affiche en mode tactile');
 

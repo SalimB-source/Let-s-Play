@@ -263,3 +263,31 @@ version `susanoo-kaiga-couleurs-v1` : kami des tempêtes au katana sur une
 côte balayée par un vortex. Un exemplaire remplace une Onna-musha dans le
 deck Soleil rouge : toujours 40 cartes, 17 créatures, 7 magies et 16 terrains.
 Susanoo se débloque à `sables-3`.
+
+## Dérogation : les quatre armes et le serpent en photoréaliste (octobre 2026)
+
+Les quatre armes du prototype (`takouba-des-pistes`, `baton-des-citernes`,
+`lance-de-givre`, `armure-de-cendres`) et le jeton `serpent-des-citernes`
+dérogent **volontairement** à la direction « huile sur toile » ci-dessus :
+elles sont livrées en **rendu photoréaliste fantaisiste** (photo de cinéma,
+live-action), direction validée carte par carte au moment de leur création.
+Le reste de la collection reste en huile ; une éventuelle conversion globale
+n'est pas décidée.
+
+Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
+
+- un **porteur** tient l'arme, cadrage sur l'arme, pose **en pleine
+  action/attaque** ;
+- l'arme est **entièrement dans le cadre, pointe → pommeau**, avec une marge
+  d'espace libre à chaque extrémité — aucun bord ne rogne l'arme ni les
+  sujets ; les plans larges y arrivent mieux que les gros plans ;
+- aucun texte, glyphe, logo ni interface dessinée.
+
+- **Armure de cendres** (`armure-de-cendres.jpg`) — guerrier démoniaque en
+  armure noire au-dessus d'un volcan, deux épées noires entièrement
+  visibles ; le sujet de la carte est l'armure elle-même.
+- **Bâton des citernes** (`baton-des-citernes.jpg`) — magicienne sur un petit
+  bateau dans une citerne inondée : son bâton fait léviter un serpent géant
+  dans un tourbillon d'eau ; elle regarde le serpent, pas le spectateur.
+- **Serpent des citernes** (`serpent-des-citernes.jpg`) — le jeton évoqué
+  par le Bâton : serpent verdâtre dressé dans la citerne moussue.

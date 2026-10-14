@@ -4,7 +4,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { passerMulligan } from './rpg-duel-start.js';
+import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -40,7 +40,7 @@ export async function checkRpgTurnBanner(assert) {
   });
 
   // ── 0. Le mulligan tient la table : rien à annoncer ────────────────────────
-  await cliquer(container.querySelector('.rpg-mode-menu__play .rpg-menu-button--primary'), 'le menu Jouer lance le duel');
+  assert.ok(await lancerDuelDepuisMenu(container, (element) => cliquer(element, 'le menu mène au duel')), 'l’onglet Deck lance le duel');
   await act(async () => { await wait(120); });
   assert.ok(container.querySelector('.rpg-mulligan'), 'le duel s’ouvre sur son volet de mulligan');
   assert.equal(bandeau(), null,

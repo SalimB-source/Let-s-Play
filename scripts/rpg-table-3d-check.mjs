@@ -46,11 +46,19 @@ const nextFrame = async (page, before) => {
 };
 const live = (page) => page.evaluate(() => window.__tableContexts.filter((entry) => !entry.context.isContextLost()).length);
 
+// Le bouton principal de l'écran Jouer ouvre le mode Histoire : une partie
+// rapide démarre depuis l'onglet Deck (« Jouer avec ce deck »).
+const demarrerDuel = async (page) => {
+  await page.getByRole('button', { name: 'Deck', exact: true }).click();
+  await page.locator('.rpg-deck-choice__button').first().click();
+  await page.locator('.rpg-deck-detail__play').click();
+};
+
 const openDuel = async (page, beforeStart) => {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(url);
   if (beforeStart) await beforeStart(page);
-  await page.getByRole('button', { name: /Lancer le duel/i }).click();
+  await demarrerDuel(page);
   await page.locator('.rpg-hand__card').first().waitFor({ timeout: 30000 });
   await page.locator('.rpg-mulligan__valider').click();
   await page.waitForTimeout(600);
@@ -126,7 +134,7 @@ try {
     assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
     assert.equal(await page.evaluate(() => localStorage.getItem('letsplay_sablier_decor3d_v1')), 'off');
     await page.reload();
-    await page.getByRole('button', { name: /Lancer le duel/i }).click();
+    await demarrerDuel(page);
     await page.locator('.rpg-hand__card').first().waitFor({ timeout: 30000 });
     assert.equal(await page.locator('[data-table-3d]').count(), 0, 'le réglage coupé est retenu');
     console.log('✓ Bouton 3D : coupe, libère le contexte, mémorisé');

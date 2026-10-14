@@ -6,7 +6,7 @@ import { choisirCibleAutoIA } from '../src/games/rpgAI.js';
 import { RPG_SOLEIL_ROUGE_CARDS, RPG_SOLEIL_ROUGE_SET_ID } from '../src/games/rpgSoleilRouge.js';
 import { RPG_DECKS, cardById, cardColors, cardReceivesResonance, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART, carteDebloqueePar } from '../src/games/rpgCollection.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgResonanceEnJeu, rpgBonusResonance, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerArme, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgResonanceEnJeu, rpgBonusResonance, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
 
 function duelTest(rng = () => 0.5) {
   const duel = rpgNouveauDuel({
@@ -455,4 +455,17 @@ test('l’IA choisit une cible à exiler et l’exil retire les auras sans décl
   assert.equal(rpgJouerCreature(duel, 'sorcier', 'susanoo', source.id).ok, true);
   assert.deepEqual([cavalier.atk, cavalier.def], [5, 4]);
   assert.ok(!duel.log.some((ligne) => ligne.startsWith('Honneur')));
+});
+
+
+test('Susanoo exile aussi un porteur des nouvelles armes sans perdre son équipement', () => {
+  const duel = duelTest();
+  const porteur = jouer(duel, 'sorcier', 'chien-du-guet');
+  duel.sorcier.main.push('takouba-des-pistes');
+  assert.equal(rpgJouerArme(duel, 'sorcier', 'takouba-des-pistes', porteur.id).ok, true);
+  duel.joueur.main.push('susanoo');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', porteur.id).ok, true);
+  assert.deepEqual(duel.sorcier.exil, ['chien-du-guet']);
+  assert.ok(duel.sorcier.cimetiere.includes('takouba-des-pistes'));
+  assert.ok(!duel.sorcier.cimetiere.includes('chien-du-guet'));
 });

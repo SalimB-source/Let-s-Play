@@ -9,6 +9,7 @@
 
 import {
   RPG_ELEMENTS,
+  armeById,
   cardById,
   cardColorCost,
   cardColors,
@@ -42,6 +43,32 @@ export const RPG_PV_SORCIER_BASE = 25;
 export const RPG_PV_SORCIER_PAR_PUISSANCE = 0;
 export const RPG_MAIN_DEPART = 5;
 export const RPG_COULEURS = RPG_ELEMENTS;
+
+/**
+ * Les six phases d'un tour, dans l'ordre. Le moteur les enregistre dans
+ * `duel.phase` ; elles ne verrouillent aucune action (c'est la règle de
+ * chaque fonction qui décide), elles disent où l'on en est.
+ *
+ *  1. `debut`       — début de tour : on dégage, on PIOCHE, les échos tombent ;
+ *  2. `principale`  — terrain (un par tour), créatures, magies ;
+ *  3. `attaque`     — le joueur actif déclare TOUS ses attaquants ;
+ *  4. `blocage`     — le défenseur désigne ses bloqueurs ; les deux camps
+ *                     peuvent jouer des magies rapides avant les blessures ;
+ *  5. `principale2` — après le combat : mêmes gestes qu'en première principale
+ *                     (le terrain du tour reste unique) ; les créatures qui ont
+ *                     attaqué restent engagées ;
+ *  6. `fin`         — « Fin du tour » : l'adversaire peut jouer UNE magie rapide,
+ *                     puis les effets « jusqu'à la fin du tour » prennent fin.
+ */
+export const RPG_PHASES = ['debut', 'principale', 'attaque', 'blocage', 'principale2', 'fin'];
+export const RPG_PHASES_LIBELLES = {
+  debut: 'Début de tour',
+  principale: 'Phase principale',
+  attaque: 'Phase d’attaque',
+  blocage: 'Phase de blocage',
+  principale2: 'Deuxième phase principale',
+  fin: 'Fin de tour',
+};
 
 const destructionsParDuel = new WeakMap();
 // Hors de l’état JSON : les sauvegardes restent sérialisables et les tests
@@ -115,6 +142,11 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       degatsEchos: [],
     },
     fenetreReponse: false,
+    // Phase du tour en cours (voir RPG_PHASES) et fenêtre de « fin de tour » :
+    // { cote } = le camp dont le tour se termine ; l'AUTRE camp peut y jouer
+    // une magie rapide avant que le tour ne se ferme pour de bon.
+    phase: 'principale',
+    finDeTour: null,
     // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
     annonce: null,
     // Défausse en attente (ex. Jörmungandr côté joueur) : { cote, restant, sourceCarteId }
@@ -482,12 +514,17 @@ function rafraichirAuras(duel) {
   majResonance(duel);
 }
 
-/** Protection temporaire contre les effets et les créatures d'une couleur donnée. */
+/** Protection temporaire contre les effets et les créatures d'une couleur
+ *  donnée — plus l'immunité permanente que l'arme portée peut conférer
+ *  (`donne.immunite`, l'Armure de cendres contre la Braise) : même porte
+ *  d'entrée pour tous les dégâts, ciblages et blocages du moteur. */
 export function rpgEstProtegee(entite, element) {
   const couleursSources = normaliserCouleurs(element);
-  return Boolean(couleursSources.length
-    && entite?.protection?.toursRestants > 0
-    && couleursSources.includes(entite.protection.contre));
+  if (!entite || !couleursSources.length) return false;
+  if (entite.protection?.toursRestants > 0
+    && couleursSources.includes(entite.protection.contre)) return true;
+  const immunite = armeCarteDe(entite)?.donne?.immunite;
+  return Boolean(immunite && couleursSources.includes(immunite));
 }
 
 /** Les boucliers absorbent les prochains dégâts avant qu'ils n'atteignent les PV. */
@@ -526,7 +563,7 @@ function creerEntiteCreature(carte) {
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
     envol: Boolean(carte.envol),
-    infiltration: false,
+    infiltration: Boolean(carte.infiltration),
     tenaciteDisponible: Boolean(carte.tenacite),
     protection: carte.protection ? {
       contre: carte.protection.contre,
@@ -536,7 +573,74 @@ function creerEntiteCreature(carte) {
     attaquee: false,
     resonance: 0,
     honneur: Math.max(0, Number(carte.honneur) || 0),
+    // L'arme attachée (`{ carteId }`), ou null : une seule par créature.
+    // Bonus et mot-clé sont déjà fondus dans les champs ci-dessus (atk, def,
+    // pv, esquive, envol…) ; la fiche se relit par `armeById` quand il faut
+    // les retirer (remplacement) ou faire tomber l'arme au cimetière.
+    arme: null,
   };
+}
+
+/** La fiche de l'arme portée par une entité, ou null. */
+function armeCarteDe(entite) {
+  return entite?.arme ? armeById(entite.arme.carteId) : null;
+}
+
+/**
+ * Attache une arme à une créature : le bonus et le mot-clé donné se fondent
+ * dans ses champs, comme une aura permanente mais personnelle. Le +défense
+ * grandit PV max et PV présents du même montant (la créature se tient mieux
+ * debout) ; les retirer ne tuera jamais (plancher 1, comme la Résonance).
+ * Une seule arme par créature : attacher la nouvelle envoie l'ancienne au
+ * cimetière du même camp.
+ */
+function attacherArme(duel, cote, entite, carteArme) {
+  if (entite.arme) retirerArme(duel, cote, entite);
+  entite.arme = { carteId: carteArme.id };
+  entite.atk += carteArme.bonus?.atk ?? 0;
+  entite.pvMax = (entite.pvMax ?? entite.def) + (carteArme.bonus?.def ?? 0);
+  entite.def += carteArme.bonus?.def ?? 0;
+  entite.pv += carteArme.bonus?.def ?? 0;
+  if (carteArme.donne?.esquive) entite.esquive = (entite.esquive ?? 0) + carteArme.donne.esquive;
+  if (carteArme.donne?.envol) entite.envol = true;
+  if (carteArme.donne?.infiltration) entite.infiltration = true;
+  if (carteArme.donne?.rapidite) {
+    entite.rapidite = true;
+    entite.ready = true;
+  }
+}
+
+/** Retire l'arme d'une créature encore en jeu (remplacement) : bonus et
+ *  mot-clé repartent, l'arme rejoint le cimetière de son camp. */
+function retirerArme(duel, cote, entite) {
+  const carteArme = armeCarteDe(entite);
+  entite.arme = null;
+  if (!carteArme) return;
+  entite.atk = Math.max(0, entite.atk - (carteArme.bonus?.atk ?? 0));
+  entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) - (carteArme.bonus?.def ?? 0));
+  entite.def = Math.max(1, entite.def - (carteArme.bonus?.def ?? 0));
+  entite.pv = Math.max(1, Math.min(entite.pv, entite.pvMax));
+  if (carteArme.donne?.esquive) entite.esquive = Math.max(0, (entite.esquive ?? 0) - carteArme.donne.esquive);
+  if (carteArme.donne?.envol) entite.envol = Boolean(duelCardById(entite.carteId)?.envol);
+  if (carteArme.donne?.infiltration) entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
+    || Boolean(entite.infiltrationTour);
+  if (carteArme.donne?.rapidite) entite.rapidite = Boolean(duelCardById(entite.carteId)?.rapidite);
+  duel[cote].cimetiere.push(carteArme.id);
+  duel.log.push(`${entite.name} se sépare de ${carteArme.name} : l’arme rejoint le cimetière.`);
+}
+
+/**
+ * Le porteur quitte la table (destruction, renvoi en main…) : son arme tombe
+ * avec lui, au cimetière — jamais en main, jamais au sol. C'est le prix de
+ * l'investissement, et ce qui rend le renvoi et la destruction d'une grosse
+ * créature armée vraiment rentables.
+ */
+function armeAuCimetiere(duel, cote, entite) {
+  const carteArme = armeCarteDe(entite);
+  if (!carteArme) return;
+  entite.arme = null;
+  duel[cote].cimetiere.push(carteArme.id);
+  duel.log.push(`${carteArme.name}, l’arme de ${entite.name}, rejoint le cimetière.`);
 }
 
 /**
@@ -549,7 +653,8 @@ function creerEntiteCreature(carte) {
  * revient avec sa Furie neuve : la flambée appartient à la présence en jeu.
  */
 function appliquerFurie(duel, entite, degatsRecus) {
-  const furie = Math.max(0, Number(duelCardById(entite.carteId)?.furie) || 0);
+  const furie = Math.max(0, Number(duelCardById(entite.carteId)?.furie) || 0)
+    + Math.max(0, Number(armeCarteDe(entite)?.donne?.furie) || 0);
   if (!furie || degatsRecus <= 0 || entite.furieDeclenchee) return;
   entite.furieDeclenchee = true;
   entite.atk += furie;
@@ -706,6 +811,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   for (const mort of mortes) {
     const camp = duel[mort.cote];
     journaliserDestruction(duel, mort.entite, mort.sourceElements);
+    armeAuCimetiere(duel, mort.cote, mort.entite);
     camp.creatures = camp.creatures.filter((candidate) => candidate.id !== mort.entite.id);
     camp.cimetiere.push(mort.entite.carteId);
     detacherArmes(duel, mort.cote, mort.entite);
@@ -729,17 +835,35 @@ function degatsCreatureCombattue(carte) {
 }
 
 /** Prépare les dégâts des capacités « quand cette créature attaque ou bloque ».
- *  Ils se résolvent avant les blessures normales du combat. */
-function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible) {
+ *  Ils se résolvent avant les blessures normales du combat. Le déclenché de
+ *  l'arme portée (`declenche.sur === 'combat'`) frapperait par le même
+ *  chemin, mais sous la couleur de l'arme, pas de la créature. */
+function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible, entiteSource = null) {
+  if (!cible) return;
   const amount = degatsCreatureCombattue(carteSource);
-  if (amount <= 0 || !cible) return;
-  coups.push({
-    cote: autre(coteSource),
-    entiteId: cible.id,
-    amount,
-    sourceElement: cardColors(carteSource),
-    sourceType: 'capacite',
-  });
+  if (amount > 0) {
+    coups.push({
+      cote: autre(coteSource),
+      entiteId: cible.id,
+      amount,
+      sourceElement: cardColors(carteSource),
+      sourceType: 'capacite',
+    });
+  }
+  const carteArme = armeCarteDe(entiteSource);
+  const declenche = carteArme?.declenche;
+  if (declenche?.sur === 'combat' && declenche.effet?.type === 'degats') {
+    const degatsArme = Math.max(0, Number(declenche.effet.amount) || 0);
+    if (degatsArme > 0) {
+      coups.push({
+        cote: autre(coteSource),
+        entiteId: cible.id,
+        amount: degatsArme,
+        sourceElement: cardColors(carteArme),
+        sourceType: 'capacite',
+      });
+    }
+  }
 }
 
 /**
@@ -849,12 +973,18 @@ function annulerBonusTemporaires(duel, tourFerme) {
   }
 }
 
-/** L'Infiltration ne dure que le tour qui l'a vue naître : à la fin du tour,
- *  chaque créature redevient bloquable. Les statistiques gagnées, elles,
- *  restent acquises — seul le passe-droit s'efface. */
+/** L'Infiltration accordée pour un tour (le ralliement de Tin Hinan) ne dure
+ *  que le tour qui l'a vue naître : à la fin du tour, chaque créature
+ *  redevient bloquable — sauf source permanente : l'Infiltration imprimée ou
+ *  celle de l'arme portée (le Takouba) survit au changement de tour. Les
+ *  statistiques gagnées, elles, restent acquises. */
 function annulerInfiltrations(duel) {
   for (const cote of ['joueur', 'sorcier']) {
-    for (const entite of duel[cote].creatures) entite.infiltration = false;
+    for (const entite of duel[cote].creatures) {
+      entite.infiltrationTour = false;
+      entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
+        || Boolean(armeCarteDe(entite)?.donne?.infiltration);
+    }
   }
 }
 
@@ -882,6 +1012,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         if (rpgEstProtegee(victime, sourceElement)) return;
         duel[campCible].creatures = duel[campCible].creatures.filter((entite) => entite.id !== victime.id);
         detacherArmes(duel, campCible, victime);
+        armeAuCimetiere(duel, campCible, victime);
         if (!victime.jeton) {
           duel[campCible].exil ??= [];
           duel[campCible].exil.push(victime.carteId);
@@ -1007,10 +1138,14 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       if (!nombre) return;
       const source = duel[cote].creatures.find((entite) => entite.id === sauf);
       for (let i = 0; i < nombre; i += 1) {
-        duel[cote].creatures.push(creerEntiteCreature(modele));
+        const jeton = creerEntiteCreature(modele);
+        // `ephemere` : le jeton ne survit pas au tour qui l'a vu naître —
+        // `rpgFinDeTour` le détruit (serpents du Bâton des citernes).
+        if (effet.ephemere) jeton.detruireFinDuTour = true;
+        duel[cote].creatures.push(jeton);
       }
       const nom = nombre > 1 ? (modele.pluriel ?? modele.name) : modele.name;
-      duel.log.push(`${source?.name ?? 'L’effet'} crée ${nombre} ${nom.toLowerCase()} ${modele.atk}/${modele.def} sans coût.`);
+      duel.log.push(`${source?.name ?? 'L’effet'} crée ${nombre} ${nom.toLowerCase()} ${modele.atk}/${modele.def} sans coût${effet.ephemere ? ', détruit à la fin du tour' : ''}.`);
       return;
     }
     case 'buff': {
@@ -1050,6 +1185,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.def += bonusDefense;
         entite.pv += bonusDefense;
         entite.infiltration = true;
+        entite.infiltrationTour = true; // passe-droit du tour : voir `annulerInfiltrations`
       }
       duel.log.push(`Infiltration : ${source?.name ?? 'l’effet'} rend ses créatures impossibles à bloquer ce tour.`);
       return;
@@ -1137,6 +1273,8 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
   }
   camp.creatures = camp.creatures.filter((e) => e.id !== presente.id);
   detacherArmes(duel, cote, presente);
+  // Une arme, elle, ne suit pas son porteur en main : elle tombe au cimetière.
+  armeAuCimetiere(duel, cote, presente);
   // Une créature-jeton n'a pas de carte à renvoyer : elle **cesse d'exister**,
   // comme un jeton de table qui quitte le champ de bataille. Sans cette règle,
   // un chien de sable de Tarek deviendrait une carte gratuite et rejouable.
@@ -1165,6 +1303,7 @@ function enterrer(duel, cote, entite, sourceElements = []) {
     return;
   }
   journaliserDestruction(duel, entite, sourceElements);
+  armeAuCimetiere(duel, cote, entite);
   const camp = duel[cote];
   camp.creatures = camp.creatures.filter((e) => e.id !== entite.id);
   camp.cimetiere.push(entite.carteId);
@@ -1309,14 +1448,84 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
   return { ok: true, entite };
 }
 
+/**
+ * Joue une arme : payée en mana depuis la main, elle s'attache directement à
+ * une créature alliée désignée (héros et jetons compris) — pas de pose au sol,
+ * pas de déplacement ensuite. La protection contre la couleur de l'arme
+ * refuse l'attachement, comme elle refuse un bouclier ami. Une créature déjà
+ * armée voit son ancienne arme partir au cimetière (voir `attacherArme`).
+ * Le sorcier peut répondre par un contresort « carte », comme pour une
+ * créature : l'arme part alors au cimetière sans jamais être portée.
+ */
+export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
+  const camp = duel[cote];
+  const carte = armeById(carteId);
+  if (!carte) return { ok: false, raison: 'inconnue' };
+  if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
+  const cible = camp.creatures.find((entite) => entite.id === cibleId);
+  if (!cible) return { ok: false, raison: 'cible' };
+  if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  if (cote === 'joueur' && !duel.annonce) {
+    const contreIA = choisirContreIA(duel, carte);
+    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+  }
+  payer(duel, cote, carte);
+  camp.main.splice(camp.main.indexOf(carteId), 1);
+  attacherArme(duel, cote, cible, carte);
+  const bonus = `+${carte.bonus?.atk ?? 0}/+${carte.bonus?.def ?? 0}`;
+  duel.log.push(`${cote === 'joueur' ? 'Vous attachez' : 'Le sorcier attache'} ${carte.name} à ${cible.name} (${bonus}).`);
+  // L'arrivée de l'arme elle-même peut porter un effet (le Bâton des
+  // citernes appelle son premier serpent en s'attachant).
+  if (carte.arrivee) {
+    appliquer(duel, cote, carte.arrivee, null, cible.id, carte.element, null, carte.id);
+    appliquerAuraSable(duel, cote);
+    majResonance(duel);
+  }
+  rpgActionsEtat(duel);
+  return { ok: true, entite: cible };
+}
+
+/**
+ * Capacité activée d'une arme portée (le Bâton des citernes : 3 manas pour
+ * un serpent). Ce n'est pas une carte : rien à annoncer, rien à contrer —
+ * une décision de son tour, payable autant de fois que le mana le permet,
+ * comme tout le reste dans ce jeu se décide pendant son propre tour.
+ *
+ * @returns {{ok: true, entite: object} | {ok: false, raison: string}}
+ */
+export function rpgActiverArme(duel, cote, entiteId) {
+  if (duel.tour !== cote) return { ok: false, raison: 'tour' };
+  if (duel.annonce) return { ok: false, raison: 'annonce' };
+  const camp = duel[cote];
+  const entite = camp.creatures.find((candidate) => candidate.id === entiteId);
+  if (!entite) return { ok: false, raison: 'absente' };
+  const carte = armeCarteDe(entite);
+  const activation = carte?.activation;
+  if (!activation) return { ok: false, raison: 'aucune-activation' };
+  const cout = Math.max(0, Number(activation.cout) || 0);
+  if (!rpgPeutPayer(camp, { cost: cout })) return { ok: false, raison: 'mana' };
+  payer(duel, cote, { cost: cout });
+  duel.log.push(`${cote === 'joueur' ? 'Vous activez' : 'Le sorcier active'} ${carte.name} (${cout} manas).`);
+  appliquer(duel, cote, activation.effet, null, entite.id, carte.element, null, carte.id);
+  appliquerAuraSable(duel, cote);
+  majResonance(duel);
+  rpgActionsEtat(duel);
+  return { ok: true, entite };
+}
+
 const pret = (entite) => entite && entite.ready && !entite.attaquee;
 // Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
 const peutBloquer = (entite) => entite && !entite.attaquee;
 
-/** Envol : un attaquant volant ne peut être bloqué que par une créature volante.
- *  Infiltration : jusqu'à la fin du tour, la créature glisse entre les lignes et
- *  ne peut être bloquée par personne. */
+/**
+ * Qui peut bloquer qui :
+ * — Infiltration : l'attaquant ne peut pas être bloqué du tout, par personne.
+ *   Elle peut être permanente (imprimée, ou conférée par l'arme portée) ou
+ *   accordée jusqu'à la fin du tour (le ralliement de Tin Hinan) ;
+ * — Envol : un attaquant volant ne peut être bloqué que par une créature volante.
+ */
 export function rpgPeutBloquerAttaquant(bloqueur, attaquant) {
   if (!bloqueur || !attaquant) return false;
   if (attaquant.infiltration) return false;
@@ -1336,8 +1545,8 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   const couleursAttaquant = cardColors(carteAttaquant);
   const couleursCible = cardColors(carteCible);
   const degatsAvantCombat = [];
-  ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, carteAttaquant, cible);
-  ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, autre(cote), carteCible, attaquant);
+  ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, carteAttaquant, cible, attaquant);
+  ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, autre(cote), carteCible, attaquant, cible);
   appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
 
   const coupsNormaux = [];
@@ -1386,7 +1595,7 @@ export function rpgContreJouable(duel, cote, carte) {
   if (carte?.effet?.type !== 'contresort') return true;
   const annonce = duel.annonce;
   if (!annonce || annonce.cote === cote) return false;
-  const visee = duelCardById(annonce.carteId) ?? magieById(annonce.carteId);
+  const visee = duelCardById(annonce.carteId) ?? magieById(annonce.carteId) ?? armeById(annonce.carteId);
   return Boolean(visee && contreCorrespond(carte.effet, visee));
 }
 
@@ -1397,7 +1606,7 @@ export function rpgContreJouable(duel, cote, carte) {
 function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
   const camp = duel[cote];
   if (!annonce || annonce.cote === cote) return { ok: false, raison: 'rien-a-contrer' };
-  const cible = duelCardById(annonce.carteId) ?? magieById(annonce.carteId);
+  const cible = duelCardById(annonce.carteId) ?? magieById(annonce.carteId) ?? armeById(annonce.carteId);
   if (!cible || !contreCorrespond(carte.effet, cible)) return { ok: false, raison: 'cible' };
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   const campAnnonce = duel[annonce.cote];
@@ -1444,7 +1653,9 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   const carte = magieById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
-  const fenetreEphémère = cote === 'joueur'
+  // Magie rapide : le camp qui n'a pas la main peut la jouer pendant une
+  // fenêtre de réponse (blocage, fin de tour), joueur comme sorcier.
+  const fenetreEphémère = cote !== duel.tour
     && duel.fenetreReponse
     && carte.instant;
   if (duel.tour !== cote && !fenetreEphémère) return { ok: false, raison: 'timing' };
@@ -1629,8 +1840,8 @@ export function rpgLancerAttaque(
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
-      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur);
-      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant);
+      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant);
+      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur);
     }
   }
   const apresCapacites = degatsAvantCombat.length ? JSON.parse(JSON.stringify(duel)) : duel;
@@ -1765,6 +1976,9 @@ export function rpgLancerAttaque(
   duel.log.push(resume.paires.length || resume.coupsRapides.length
     ? `Combat : ${attaquants.length} attaquant(s), ${resume.paires.length} bloqué(s), ${resume.frappeSorcier} dégâts directs.`
     : `${attaquants.length} créature(s) frappent le sorcier (${resume.frappeSorcier}).`);
+  // Le combat est derrière nous : le joueur actif entre en deuxième phase
+  // principale (ses attaquants restent engagés jusqu'à son prochain tour).
+  if (cote === duel.tour) duel.phase = 'principale2';
   rpgActionsEtat(duel);
   return { ok: true, resume };
 }
@@ -1824,17 +2038,73 @@ function resoudreRetoursProgrammes(duel) {
   rafraichirAuras(duel);
 }
 
+/** Note la phase en cours (l'interface la lit pour son rail de phases). */
+export function rpgDefinirPhase(duel, phase) {
+  if (!RPG_PHASES.includes(phase)) return false;
+  duel.phase = phase;
+  return true;
+}
+
+/** Le joueur actif quitte son tour : on entre en phase de FIN DE TOUR. L'autre
+ *  camp a alors la main pour jouer une magie rapide (`rpgLancerMagie`). Rien
+ *  n'est encore effacé — un Rempart de dunes « jusqu'à la fin du tour » protège
+ *  donc toujours pendant cette fenêtre. `rpgFinDeTour` ferme ensuite le tour. */
+export function rpgOuvrirFinDeTour(duel) {
+  if (duel.finDeTour) return duel.finDeTour;
+  duel.phase = 'fin';
+  duel.finDeTour = { cote: duel.tour };
+  duel.fenetreReponse = true;
+  duel.log.push(`Fin du tour du ${duel.tour === 'joueur' ? 'joueur' : 'sorcier'} : ${duel.tour === 'joueur' ? 'le sorcier peut' : 'vous pouvez'} jouer une magie rapide.`);
+  return duel.finDeTour;
+}
+
+/** Le camp a-t-il en main une magie rapide qu'il peut jouer maintenant ?
+ *  (Un contre n'a rien à contrer en fin de tour : il ne compte pas.) */
+export function rpgPeutRepondre(duel, cote) {
+  return duel[cote].main.some((id) => {
+    const carte = magieById(id);
+    return Boolean(carte?.instant
+      && rpgContreJouable(duel, cote, carte)
+      && rpgPeutPayer(duel[cote], carte));
+  });
+}
+
+/** Une magie rapide de l'IA (fin de tour du joueur, blocage d'une attaque du
+ *  joueur) : au plus une carte, la plus utile selon son profil. */
+export function rpgSorcierMagieRapide(duel, rng = Math.random) {
+  const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng, seulementInstants: true });
+  if (!coup) return null;
+  const res = rpgLancerMagie(duel, 'sorcier', coup.carteId, coup.cibleId);
+  return res.ok ? { ...res, carteId: coup.carteId } : null;
+}
+
+/** Détruit les créatures éphémères (`detruireFinDuTour`) : elles ne
+ *  survivent jamais au tour qui les a vues naître (serpents du Bâton). */
+function detruireEphemeres(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    const ephemeres = duel[cote].creatures.filter((entite) => entite.detruireFinDuTour);
+    for (const entite of ephemeres) {
+      duel.log.push(`${entite.name} est détruit : la fin du tour le reprend.`);
+      enterrer(duel, cote, entite);
+    }
+  }
+}
+
 /** Fin du tour : le tour qui se ferme efface les renforts « jusqu'à la fin du
- *  tour », puis l'autre camp commence — revenu de sable, pioche 1, ses
- *  créatures deviennent prêtes (le mal d'invocation tombe) et les échos différés
- *  (Nuage de cendres) dont il est le lanceur retombent sur la table d'en face. */
+ *  tour », puis l'autre camp commence — DÉBUT DE TOUR : revenu de sable,
+ *  pioche 1, ses créatures deviennent prêtes (le mal d'invocation tombe) et les
+ *  échos différés (Nuage de cendres) dont il est le lanceur retombent sur la
+ *  table d'en face. Le tour s'ouvre ensuite en phase principale. */
 export function rpgFinDeTour(duel) {
+  duel.phase = 'fin';
+  duel.finDeTour = null;
   while (duel.defausseEnAttente?.restant > 0 && duel[duel.defausseEnAttente.cote]?.main.length) {
     rpgDefausserCarte(duel, duel.defausseEnAttente.cote);
   }
   duel.defausseEnAttente = null;
   duel.fenetreReponse = false;
   duel.annonce = null;
+  detruireEphemeres(duel);
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
       if (!(entite.protection?.toursRestants > 0)) continue;
@@ -1849,6 +2119,7 @@ export function rpgFinDeTour(duel) {
   annulerBonusTemporaires(duel, duel.tour); // le bonus meurt avec le tour qui l’a vu jouer
   annulerInfiltrations(duel); // l’Infiltration aussi : redevenues bloquables
   duel.tour = autre(duel.tour);
+  duel.phase = 'debut';
   const camp = duel[duel.tour];
   camp.mana = manaVide();           // le mana non dépensé s'évapore
   camp.terrainPose = false;         // un nouveau terrain peut être posé
@@ -1860,6 +2131,7 @@ export function rpgFinDeTour(duel) {
   }
   resoudreRetoursProgrammes(duel);
   resoudreEchos(duel);              // les échos dus au camp dont le tour s'ouvre
+  duel.phase = 'principale';
   rpgActionsEtat(duel);
   duel.log.push(`— Au tour du ${duel.tour === 'joueur' ? 'joueur' : 'sorcier'}.`);
   return duel;
@@ -1888,7 +2160,7 @@ export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
   if (!coup) return null;
   duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: coup.cibleId ?? null };
   duel.fenetreReponse = true;
-  duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? coup.carteId}.`);
+  duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? armeById(coup.carteId)?.name ?? coup.carteId}.`);
   return duel.annonce;
 }
 
@@ -1898,11 +2170,39 @@ export function rpgSorcierResoudreAnnonce(duel) {
   if (!annonce) return { ok: false, raison: 'aucune-annonce' };
   duel.annonce = null;
   duel.fenetreReponse = false;
-  const res = duelCardById(annonce.carteId)
-    ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
-    : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId);
+  const res = armeById(annonce.carteId)
+    ? rpgJouerArme(duel, 'sorcier', annonce.carteId, annonce.cibleId)
+    : duelCardById(annonce.carteId)
+      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
+      : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId);
   rpgActionsEtat(duel);
   return { ...res, carteId: annonce.carteId };
+}
+
+/**
+ * Le sorcier active les armes activables de ses créatures (le Bâton des
+ * citernes) : après ses annonces, chaque activation achète un serpent qui
+ * attaquera ce tour-ci — le mana restant s'évaporerait sinon. Il garde
+ * toutefois de quoi contrer (4 manas) s'il tient un contresort « carte ».
+ */
+export function rpgSorcierActiverArmes(duel) {
+  const actives = [];
+  const tientContresort = duel.sorcier.main.some((id) => magieById(id)?.effet?.type === 'contresort'
+    && magieById(id)?.effet?.cible === 'carte');
+  const reserve = tientContresort ? 4 : 0;
+  for (const porteur of duel.sorcier.creatures) {
+    const carte = armeById(porteur.arme?.carteId ?? '');
+    const activation = carte?.activation;
+    if (!activation) continue;
+    const cout = (Number(activation.cout) || 0) + reserve;
+    let garde = 8;
+    while (garde-- > 0 && rpgPeutPayer(duel.sorcier, { cost: cout })) {
+      const res = rpgActiverArme(duel, 'sorcier', porteur.id);
+      if (!res.ok) break;
+      actives.push(porteur);
+    }
+  }
+  return actives;
 }
 
 /** Le sorcier convertit son mana de glace restant en capacités activées (la
@@ -1931,6 +2231,7 @@ export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
     if (!res.ok) break;
     if (res.entite) joue.push(res.entite);
   }
+  rpgSorcierActiverArmes(duel);
   rpgSorcierActiverCapacitesIA(duel, rng);
   return joue;
 }

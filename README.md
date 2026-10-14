@@ -6519,3 +6519,95 @@ la colonne des actions (même largeur que le rail, barre empilée sur toute la
 largeur), les deux aplats clairs et leur halo, l'extinction du halo quand la
 commande est grisée ou que `prefers-reduced-motion` est demandé — et l'interdit
 qui va avec : le fond sombre ne doit plus jamais repeindre ces deux commandes.
+
+## Le Sablier : les repères ronds, et l'aperçu collé à la carte
+
+Quatre retouches de présentation du duel, puis les cadres un peu plus épais,
+aucune règle touchée : les repères imprimés sur les faces gardent la même
+taille d'un support à l'autre, et l'aperçu au survol cesse de flotter loin de
+la carte qu'il décrit.
+
+**1. Le disque de mana des cartes posées reste rond, sur PC.** La table à la
+souris l'écrasait en ellipse (`min-width: 36px`, `height: 25px`, rembourrage
+latéral) : il devient une **boîte carrée de 30 px** (`aspect-ratio: 1`,
+`padding: 0`, `border-radius: 50%`), son chiffre passe à **15 px** — un disque,
+comme partout ailleurs dans le jeu.
+
+**2. La pastille de couleur prend la taille du disque.** En haut à gauche de
+la face, le repère d'élément cesse d'être le parent pauvre du coût : **30 px
+sur la table** — le diamètre du disque —, **`min(28px, 30%)` dans la main** —
+le disque de la main, borné pour les petites faces —, et des deux côtés le
+même **glyphe de 15 px dans un liseré de 2 px** (pastilles hybrides comprises,
+chacune à son liseré). Couleur et coût se lisent enfin à la même échelle.
+
+**3. L'aperçu rapide montre sa couleur à l'échelle de sa face.** Sa face est
+une grande face — celle du catalogue, de la carte annoncée — mais sa pastille
+gardait le petit gabarit des cartes en jeu (23 px au plus, glyphe de 13 px).
+Elle passe à **`clamp(28px, 17%, 38px)`, glyphe de 19 px et liseré de 2 px** :
+la couleur qu'il faut lire pour décider se voit à la taille de la carte qui
+la porte.
+
+**4. L'aperçu au survol se colle à la carte survolée.** Il se posait d'après
+une taille devinée (680 × 400) : trop grand, il rebondissait aux bords de la
+fenêtre et se retrouvait loin de la carte. Désormais `placerApercuSurvol()`
+mesure la **boîte réelle du panneau** rendu, **retire sa marge intérieure**
+(le rembourrage, lu en style calculé) pour que la face elle-même touche
+presque la carte, **choisit le côté qui a la place** — à droite d'abord — et
+**bascule à gauche si le bord déborde** ; en hauteur, le haut de la face
+s'aligne sur celui de la carte et le panneau remonte si son bas sortirait.
+Le panneau est **reposé avant peinture** (`useLayoutEffect`) : le joueur ne
+le voit jamais sauter. Le même `panelRef` sert l'aperçu du duel, celui du
+menu et celui du **mulligan**, qui se colle lui aussi à la carte lue.
+
+**5. Les cadres des cartes, un peu plus épais — puis un cran de plus.**
+L'anneau de couleur qui porte l'élément grandit, sur tous les gabarits à la
+fois — normal **4,5–6 px**, grand **6–8 px**, petit **4–4,25 px**, renforcé
+**5–6,5 px** (planchers et plafonds relevés, pente en `vw` à l'avenant) ; au
+doigt, seuls les plafonds bougent (5 et 5,5 px), les petites cartes gardent
+leur plancher. Le cadre reste dans ses proportions vérifiées (3 à 4,5 % de
+la carte) : il se voit davantage, il ne mange pas l'illustration.
+
+### Où vit le code
+
+- `src/games/rpg-battle.css` — le disque de mana carré de 30 px sur PC
+  (`.rpg-battle:not(.rpg-battle--touch) .rpg-card--img
+  .rpg-mana-cost.is-compact`), la pastille de couleur à sa taille (30 px sur
+  la table, `min(28px, 30%)` dans la main, glyphe 15 px et liseré 2 px),
+  celle de l'aperçu rapide aux grandes faces
+  (`.rpg-hover-card-preview__face`, `clamp(28px, 17%, 38px)`, 19 px / 2 px),
+  et les gabarits de cadre légèrement épaissis (`--rpg-card-border*` en tête
+  de fichier) ;
+- `src/games/rpg-mobile.css` — les plafonds des gabarits de cadre au doigt,
+  relevés dans le même esprit, planchers des petites cartes inchangés ;
+- `src/games/RpgDuelPage.jsx` — `placerApercuSurvol()` (boîte réelle, marge
+  intérieure retirée, côté choisi, bascule au débordement), le
+  `useLayoutEffect` qui repose le panneau avant peinture, et `panelRef`
+  posé par `HoverCardPreview` sur l'aperçu du survol comme sur celui du
+  mulligan (`VoletMulligan` le transmet).
+
+### Vérifications
+
+```bash
+npm run check:rpg              # 342/342 — les règles du duel, inchangées
+npm run build                  # le bundle se construit
+npm run check:rpg-tutorial-ui  # le tutoriel, dans la vraie page
+npm run check:rpg-ui           # voir la réserve ci-dessous
+```
+
+`scripts/rpg-battle-ui-check.mjs` tient le contrat des quatre points — et
+des cadres épaissis : le disque carré de 30 px (et l'interdit de l'ellipse
+36 × 25), la pastille à la taille du disque sur la table comme dans la main,
+celle de l'aperçu rapide aux 28–38 px des grandes faces, le placement collé
+à la carte (boîte réelle mesurée, marge intérieure retirée, bascule au
+débordement, reposé avant peinture, `panelRef` sur le survol et le
+mulligan), et les quatre gabarits de cadre dans leurs nouvelles bornes,
+toujours entre 3 et 4,5 % de la carte. Les scénarios
+JSDOM `rpg-card-state`, `rpg-preview`, `rpg-stacks`, `rpg-ghost`,
+`rpg-mulligan` et `rpg-turn-banner` rejouent la page entière autour du
+nouveau placement.
+
+**Réserve connue, hors de ces retouches :** `npm run check:rpg-ui` casse
+déjà à HEAD dans le volet JSDOM de `rpg-battle-ui-check` ; en contournant
+ce volet, huit assertions statiques restent rouges, pré-existantes (Coup
+rapide, Envol, Cavalier, 3 × Furie, maître-du-marteau ×2). Les contrôles
+Playwright demandent un navigateur, absent de cet environnement.
