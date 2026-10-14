@@ -103,10 +103,12 @@ assert.match(evenements, /export const EVENEMENTS_PAYANTS = Object\.freeze\(\['d
   'un seul événement paie des crédits');
 
 // ── 3. Le jeton de bourse ───────────────────────────────────────────────────
+// Depuis le lot 3, le jeton vit **sur l'onglet du Souk** plutôt que dans une
+// pastille à part : même chiffre, même rôle, un seul endroit à lire.
 assert.match(page, /data-souk-bourse=\{credits\}/, 'le solde de crédits est rendu dans le menu');
 assert.match(page, /data-souk-a-reclamer=\{aReclamer\}/, 'ce qui attend d’être réclamé est rendu');
 assert.match(page, /aReclamer > 0 && \(/, 'la pastille ne s’affiche que s’il y a quelque chose à réclamer');
-assert.match(page, /aria-label=\{`Bourse du Souk : \$\{credits\} crédits`\}/, 'le jeton est décrit pour les lecteurs d’écran');
+assert.match(page, /aria-label=\{`Le Souk — \$\{credits\} crédits/, 'l’onglet est décrit pour les lecteurs d’écran');
 assert.ok(
   css.includes('@media (prefers-reduced-motion: reduce) {\n  .rpg-mode-menu__bourse-pastille { animation: none; }\n}'),
   'l’animation de la pastille est coupée par prefers-reduced-motion',

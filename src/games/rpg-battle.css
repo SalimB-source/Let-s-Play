@@ -4445,40 +4445,35 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #ffe7af;
   outline: none;
 }
-/* Le jeton du Souk : le solde ◈ et ce qui attend d'être réclamé, à gauche du
-   bouton plein écran, dans le laiton des autres commandes. La pastille ne
-   s'affiche que s'il y a quelque chose à réclamer — un zéro permanent serait du
-   bruit. Une seule animation, coupée par `prefers-reduced-motion`. */
-.rpg-mode-menu__bourse {
-  flex: none;
+/* Le jeton du Souk vit sur son onglet : le solde ◈ et ce qui attend d'être
+   réclamé se lisent sans ouvrir l'écran. La pastille ne s'affiche que s'il y a
+   quelque chose à réclamer — un zéro permanent serait du bruit. Une seule
+   animation, coupée par `prefers-reduced-motion`. */
+.rpg-mode-menu__switch button.rpg-mode-menu__souk {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 45px; /* la hauteur de la barre des modes : les trois sont alignés */
-  margin: 0;
-  padding: 10px 13px;
-  border: 1px solid rgba(240, 221, 183, .22);
-  border-radius: 13px;
-  background: rgba(12, 10, 13, .7);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
-  backdrop-filter: blur(10px);
+  justify-content: center;
+  gap: 6px;
 }
+/* Les onglets mettent leurs icônes en bloc au téléphone : celui-ci garde sa
+   ligne, sinon le solde passe à la trappe sous le mot « Souk ». */
+.rpg-mode-menu__switch button.rpg-mode-menu__souk span { display: inline; margin: 0; color: #e5bf69; }
 .rpg-mode-menu__bourse-solde {
   color: #ffe7af;
-  font: 800 13px/1 var(--mono, monospace);
-  letter-spacing: .06em;
+  font: 800 12px/1 var(--mono, monospace);
+  letter-spacing: .04em;
   font-variant-numeric: tabular-nums;
 }
-.rpg-mode-menu__bourse-solde span { color: #e5bf69; margin-right: 3px; }
 .rpg-mode-menu__bourse-pastille {
-  padding: 3px 7px;
+  min-width: 17px;
+  padding: 2px 5px;
   border: 1px solid rgba(231, 191, 101, .48);
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(201, 150, 57, .3), rgba(111, 69, 34, .24));
-  color: #ffe7af;
-  font: 800 9px/1 var(--mono, monospace);
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  background: linear-gradient(135deg, rgba(201, 150, 57, .42), rgba(111, 69, 34, .34));
+  color: #fff6e3;
+  font: 800 9px/1.3 var(--mono, monospace);
+  text-align: center;
   white-space: nowrap;
   animation: rpg-souk-pastille 2.4s ease-in-out infinite;
 }
@@ -5125,6 +5120,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu__switch { width: 100%; gap: 4px; padding: 4px; }
   .rpg-mode-menu__switch button { flex: 1 1 0; min-width: 0; padding: 9px 2px; font-size: 10px; letter-spacing: .06em; }
   .rpg-mode-menu__switch button span { display: block; margin: 0 0 5px; }
+  .rpg-mode-menu__switch button.rpg-mode-menu__souk { gap: 3px; }
+  .rpg-mode-menu__switch button.rpg-mode-menu__souk > span[aria-hidden="true"] { display: none; }
+  .rpg-mode-menu__switch button.rpg-mode-menu__souk .rpg-mode-menu__bourse-solde { font-size: 10px; }
+  .rpg-mode-menu__bourse-pastille { position: absolute; top: 2px; right: 2px; min-width: 14px; padding: 1px 4px; font-size: 8px; }
   .rpg-mode-menu__brand p { font-size: 11px; }
   .rpg-mode-menu__hero { min-height: 360px; }
   .rpg-mode-menu__hero-copy { width: 100%; padding: 22px 19px; }

@@ -373,10 +373,10 @@ les lots 2 à 5.
 | ✅ `src/games/rpgEvenementsDuel.js` | le **contrat d'événements** : normalisation, ce qui paie, ce qui compte | `tests/rpg-evenements.test.js` |
 | ✅ `src/games/useSablierBourse.js` | état React + fusion + poussée au compte, patron de `useDecksSablier.js` | `scripts/rpg-souk-bourse-smoke.jsx` |
 | ✅ `scripts/rpg-souk-bourse-smoke.jsx` + `scripts/rpg-souk-bourse-check.mjs` | le hook monté dans jsdom (jour, gains, réclamation, rechargement) + les gardes de source | `npm run check:rpg-souk-branche` |
-| `src/games/RpgSouk.jsx` | l'écran : bourse, quêtes, rayons | `scripts/rpg-souk-smoke.jsx` |
-| `src/games/RpgBoosterOuverture.jsx` | la cérémonie des cinq cartes | idem |
-| `src/games/rpg-souk.css` | mise en page, animations, `prefers-reduced-motion`, tactile | `scripts/rpg-souk-ui-check.mjs` (garde-fous de source) |
-| `scripts/rpg-souk-smoke.jsx` + `scripts/rpg-souk-ui-check.mjs` | l'écran monté dans jsdom (onglet, réclamation, achat, ouverture, ajout à la collection) | `npm run check:rpg-souk-ui` |
+| ✅ `src/games/RpgSouk.jsx` | l'écran : la bourse, les quêtes du jour, le Cachet, et les rayons **annoncés** (lot 4) | `scripts/rpg-souk-smoke.jsx` |
+| ✅ `src/games/rpg-souk.css` | mise en page, `prefers-reduced-motion`, portrait étroit, tactile | `scripts/rpg-souk-ui-check.mjs` (garde-fous de source) |
+| ✅ `scripts/rpg-souk-smoke.jsx` + `scripts/rpg-souk-ui-check.mjs` | l'écran monté dans jsdom **branché au vrai hook** (journée, barres, réclamation, Cachet, retour) + les gardes de source du menu | `npm run check:rpg-souk-ui` |
+| `src/games/RpgBoosterOuverture.jsx` | la cérémonie des cinq cartes | idem (au lot 4) |
 
 **Ce que les modules exportent** — le contrat réel, celui que les tests
 tiennent (aucun `fusionnerBourses` : le portefeuille et les quêtes se fusionnent
@@ -495,6 +495,18 @@ vous avez montées — prochaine ouverture : « Le Séisme de la Citerne » ». 
 la règle D2 rendue visible, et c'est ce qui répond à la question du joueur
 devant un rayon fermé.
 
+**Ce que le lot 3 a livré** : les trois premiers points, **sans** les rayons.
+La bourse, les quêtes et le Cachet sont jouables ; la section des rayons existe
+et dit qu'elle vient. Le jeton du lot 2 a quitté sa pastille à part pour
+**l'onglet lui-même** — mêmes chiffres, un seul endroit à lire — et l'onglet
+porte la pastille des réclamations dues.
+
+Trois détails tenus au passage : le bouton **Réclamer** est désactivé tant que
+l'objectif n'est pas atteint, et il écrit ce qu'il reste (« Il reste 4 à
+faire ») ; le compte à rebours du cycle se rafraîchit tout seul, sans dépendre
+d'une animation ; et l'écran **ne touche à aucun stockage** — il reçoit des états
+et rend des gestes, tout passe par `useSablierBourse`.
+
 **La cérémonie d'ouverture** : une nappe plein écran, les cinq cartes se
 retournent une à une (la rare en dernier), tampon **NOUVELLE** ou **déjà
 possédée → +45 ◈**, total encaissé, puis **« Tout ranger dans la collection »**
@@ -533,7 +545,7 @@ les paiera plus tard.
 | **1 ✅ livré** | les règles pures | quatre suites vertes (**41 tests**), **invisible pour le joueur** | `rpgHasard.js`, `rpgCredits.js`, `rpgQuetes.js`, `rpgBoosters.js`, `tests/rpg-*.test.js`, `package.json` |
 | **1bis ✅ livré** | **les étages ne donnent plus de cartes** (D9) : révélations, gel des acquis, vivier refait, écrans réalignés | **428 tests verts** (4 suites préexistantes sans `jsdom`/`three`), collection d'un joueur neuf = 38 cartes exactement | `rpgCollection.js`, `rpgBoosters.js`, `rpgDeckBuilder.js`, `useDecksSablier.js`, `RpgStoryScene.jsx`, `RpgDeckAtelier.jsx`, tests, docs 06/09/10/13 |
 | **2 ✅ livré** | les gains branchés | **475 tests verts** ; le solde et la pastille sont dans l'en-tête du menu, et l'événement est émis | `RpgDuelPage.jsx`, `useSablierBourse.js`, `rpgEvenementsDuel.js`, `rpg-souk-bourse-*` |
-| **3** | l'écran Souk | la bourse, les quêtes, la réclamation — sans les rayons | `RpgSouk.jsx`, `rpg-souk.css`, smoke |
+| **3 ✅ livré** | l'écran Souk | **475 tests verts** + le smoke de l'écran ; sixième onglet, solde et pastille dessus, trois quêtes réclamables, Cachet du cycle, rayons annoncés | `RpgSouk.jsx`, `rpg-souk.css`, `rpg-mode-menu__souk` (dans `rpg-battle.css`), `RpgDuelPage.jsx`, `scripts/rpg-souk-*` |
 | **4** | les boosters | achats, ouverture, doublons, cartes rangées dans la collection, poussée au compte | `RpgBoosterOuverture.jsx`, `rpgBoosters.js`, `useSablierBourse.js` |
 | **5** | le fini | sons, plein écran, portrait étroit, série de 7 jours, journal des ouvertures | `rpgAudio.js`, `rpg-mobile.css`, docs |
 | **6** *(plus tard)* | les **cartes du Souk** — un set dédié, hors des Tours, achetable seulement au Souk | contenu + art, hors de ce chantier | `rpgCards.js`, `public/cards/` |
@@ -543,7 +555,9 @@ modules purs et des tests, ne touche à aucun écran (seuls `package.json` et
 l'index du dossier ont bougé), et il fige les règles sur lesquelles les lots
 suivants s'appuient. Le lot 2 est **livré** aussi : ce qui se gagne dans les
 Tours est maintenant compté, gardé et montré, et l'économie suit le joueur d'un
-appareil à l'autre. Le lot 3 n'a plus qu'à peindre ce qui existe.
+appareil à l'autre. Le lot 3 est **livré** : le joueur peut ouvrir le Souk,
+voir sa bourse, ses trois quêtes du jour et son Cachet, et se faire payer. Le
+lot 4 n'a plus qu'à remplir les rayons.
 
 **Ce que le lot 1 a appris** (et qui a modifié ce dossier) : la règle du vivier
 a dû être réécrite (D2), la pitié relève la moyenne des mythiques au-dessus du
@@ -569,6 +583,19 @@ douze.
    compte : la règle se teste sans monter un composant, et les couleurs d'une
    carte jouée se lisent **dans le catalogue** au lieu d'être crues sur parole
    par l'écran.
+
+**Le lot 3 a tranché deux choses** :
+
+1. **Le jeton vit sur l'onglet du Souk**, pas à côté. Un solde affiché deux fois
+   finit par diverger — et l'onglet est le seul endroit d'où l'on peut agir.
+   Au téléphone, l'icône ◈ disparaît et le chiffre reste : le libellé et le
+   montant tiennent dans la largeur d'un onglet de 320 px.
+2. **L'écran est présentationnel, et le smoke le vérifie branché au vrai hook.**
+   `RpgSouk` ne connaît ni le stockage ni les crédits : il reçoit `quetes`,
+   `credits` et deux gestes. Le smoke le monte **avec** `useSablierBourse`, joue
+   la journée par les gestes du contrat et clique les boutons dans le DOM — donc
+   il mesure ce que le joueur voit (la barre qui se remplit, le bouton qui
+   s'active, le solde qui monte), pas l'état interne.
 
 **Ce que le lot 1bis a appris** — trois corrections que le code a imposées, et
 qui valent d'être retenues :
@@ -609,7 +636,8 @@ npm run check:rpg-quetes         # node --test tests/rpg-quetes.test.js
 npm run check:rpg-boosters       # node --test tests/rpg-boosters.test.js
 npm run check:rpg-evenements     # node --test tests/rpg-evenements.test.js
 npm run check:rpg-souk-branche   # le hook monté dans jsdom + les gardes de source
-npm run check:rpg-souk           # les six d'affilée
+npm run check:rpg-souk-ui        # l'écran monté dans jsdom + les gardes du menu
+npm run check:rpg-souk           # les sept d'affilée
 ```
 
 Les quatre suites sont aussi **entrées dans `check:rpg`** : une régression
@@ -656,6 +684,18 @@ Les cas couverts :
   contrat ne casse rien, que le solde et la journée survivent à un
   rechargement, qu'une quête réclamée paie son montant **une seule fois**, et
   que le menu affiche le même chiffre que le hook ;
+- **écran monté (lot 3)** — le smoke monte `RpgSouk` **avec** le vrai hook :
+  l'écran se rend, il annonce trois quêtes, le Cachet attend, les rayons se
+  disent « à venir », et rien ne s'affiche à réclamer le premier jour ; chacune
+  des trois quêtes commence **en cours**, son bouton **désactivé** et disant ce
+  qu'il reste ; les gestes du contrat remplissent la barre jusqu'à
+  `objectif/objectif`, le bouton s'active et annonce son montant ; un clic
+  encaisse **exactement** la récompense annoncée, la carte passe à « réclamée »
+  et le bouton disparaît (on ne paie pas deux fois) ; les trois réclamées
+  ouvrent le Cachet, qui paie ses 80 ◈ et se referme ; le bandeau compte ce qui
+  reste et s'efface à zéro ; les montants se lisent avec leur espace fine
+  (`1 240 ◈`) et le cycle se dit en heures et minutes ; le son d'encaissement et
+  celui du retour sont émis. Aucune assertion ne dépend d'une minuterie ;
 - **boosters** — cinq cartes distinctes et toutes du vivier du rayon, rare
   garantie, pitié qui **force** la mythique après une série sèche (et qui ne
   compte pas sur un rayon sans mythique), taux mesurés sur dix mille ouvertures
@@ -700,13 +740,23 @@ Les cas couverts :
    exécuté **avant le lot 2** : trophées de boss compris, les mythiques d'étage
    aussi. Corollaire accepté : les Tours ne rendent plus que du récit et des
    crédits, et le Souk devient la seule voie d'acquisition.
-6. **Le jeton de bourse vit dans l'en-tête du menu** tant que l'écran du Souk
-   n'existe pas (lot 3) : le solde ◈ et le compte des réclamations y sont déjà,
-   et la pastille du lot 3 reprendra le même chiffre.
+6. **Le jeton de bourse vit sur l'onglet du Souk** : le solde ◈ y était dès le
+   lot 2 (en attendant l'écran), l'onglet a pris le relais au lot 3 en gardant le
+   même chiffre et la même pastille. Un seul endroit à lire, et c'est celui qui
+   mène à l'écran.
 7. **L'économie voyage avec le compte dès maintenant**, pas au lot 4 : les deux
    hooks poussent **le même état entier**, chacun relisant le stockage local de
    l'autre au moment d'écrire. Sans ça, le premier enregistrement de deck aurait
    effacé les crédits — et c'est un bug qui n'aurait été vu qu'au lot 4.
+
+8. **L'écran du Souk est présentationnel** : `RpgSouk.jsx` ne touche à aucun
+   stockage et ne calcule aucun crédit — il reçoit `quetes`, `credits` et deux
+   gestes de réclamation. C'est ce qui permet au smoke de le monter branché au
+   vrai hook, et aux gardes de source de refuser toute persistance qui
+   s'inviterait dans l'écran.
+9. **Les rayons sont annoncés, jamais simulés** : tant que le lot 4 n'est pas
+   là, la section dit qu'elle viendra au lieu d'afficher des paquets qui ne
+   s'achètent pas.
 
 **Reste ouvert pour la suite** : les cartes du Souk (lot 6, **devenu la
 priorité** puisque la collection se boucle en trois semaines), une série de sept

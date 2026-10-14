@@ -57,6 +57,7 @@ import RpgTableScene3D from './RpgTableScene3D.jsx';
 import { readRpgTable3dPref, writeRpgTable3dPref } from './rpgTableSceneThemes.js';
 import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
+import RpgSouk from './RpgSouk.jsx';
 import {
   preparerDuelTutoriel,
   RPG_TUTORIAL_OPPONENT_DECK,
@@ -1523,7 +1524,7 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -1682,18 +1683,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <h1>Le <span>Sablier</span></h1>
             <p>Les portes de la ville attendent leur prochain gardien.</p>
           </div>
-          {/* Le jeton du Souk : le solde de crédits, et ce qui attend d'être
-              réclamé. C'est la seule fenêtre sur l'économie tant que l'écran du
-              Souk n'est pas là (lot 3) — mais la boucle tourne déjà : jouer
-              paie, les quêtes avancent, et le chiffre monte. */}
-          <p className="rpg-mode-menu__bourse" data-souk-bourse={credits} aria-label={`Bourse du Souk : ${credits} crédits`}>
-            <span className="rpg-mode-menu__bourse-solde"><span aria-hidden="true">◈</span> {credits}</span>
-            {aReclamer > 0 && (
-              <span className="rpg-mode-menu__bourse-pastille" data-souk-a-reclamer={aReclamer}>
-                {aReclamer} à réclamer
-              </span>
-            )}
-          </p>
           <button
             type="button"
             className={`rpg-mode-menu__fullscreen${fullscreen ? ' is-on' : ''}`}
@@ -1716,6 +1705,27 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             </button>
             <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('decks'); }}>
               <span aria-hidden="true">▤</span> Deck
+            </button>
+            {/* Le jeton de la bourse vit sur l'onglet du Souk : le solde ◈ et
+                ce qui attend d'être réclamé sont lisibles sans ouvrir l'écran,
+                et l'onglet mène au reste. */}
+            <button
+              type="button"
+              className={`rpg-mode-menu__souk${screen === 'souk' ? ' is-active' : ''}`}
+              aria-current={screen === 'souk' ? 'page' : undefined}
+              aria-label={`Le Souk — ${credits} crédits${aReclamer > 0 ? `, ${aReclamer} à réclamer` : ''}`}
+              data-souk-onglet={credits}
+              onClick={() => { play('menu'); onChangeScreen('souk'); }}
+            >
+              <span aria-hidden="true">◈</span> Souk
+              <span className="rpg-mode-menu__bourse-solde" data-souk-bourse={credits}>
+                {credits}
+              </span>
+              {aReclamer > 0 && (
+                <span className="rpg-mode-menu__bourse-pastille" data-souk-a-reclamer={aReclamer} aria-hidden="true">
+                  {aReclamer}
+                </span>
+              )}
             </button>
             <button type="button" className={screen === 'catalogue' ? 'is-active' : ''} aria-current={screen === 'catalogue' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('catalogue'); }}>
               <span aria-hidden="true">▧</span> Catalogue
@@ -2221,6 +2231,17 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
           />
+        ) : screen === 'souk' ? (
+          <RpgSouk
+            quetes={quetes}
+            credits={credits}
+            aReclamer={aReclamer}
+            statutSync={statutSync}
+            onReclamerQuete={onReclamerQuete}
+            onReclamerCachet={onReclamerCachet}
+            onPlaySfx={play}
+            onExit={() => onChangeScreen('jouer')}
+          />
         ) : (
           <main className="rpg-card-catalogue" aria-label="Catalogue complet des cartes">
             <header className="rpg-card-catalogue__header">
@@ -2632,7 +2653,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Elle est branchée APRÈS `useRpgStory` : ses quêtes du jour lisent la
   // progression, pour ne pas proposer « ouvrir le comptoir » tant que le Souk
   // est fermé — y compris au tout premier rendu.
-  const { credits, aReclamer: soukAReclamer, noterEvenementDuel } = useSablierBourse({
+  const {
+    credits, aReclamer: soukAReclamer, quetes: quetesSouk,
+    noterEvenementDuel, reclamerUneQuete, reclamerLeCachet,
+  } = useSablierBourse({
     progression: progressionHistoireRef.current,
   });
   const histoireVictoireMarqueeRef = useRef(null);
@@ -3480,6 +3504,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           collection={collection}
           credits={credits}
           aReclamer={soukAReclamer}
+          quetes={quetesSouk}
+          onReclamerQuete={reclamerUneQuete}
+          onReclamerCachet={reclamerLeCachet}
           statutSync={statutSync}
           onEnregistrerDeckMaison={enregistrerDeckMaison}
           onSupprimerDeckMaison={supprimerDeckMaison}
