@@ -161,6 +161,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'susanoo': 'susanoo-kaiga-couleurs-v1',
   'orochi': 'orochi-kaiga-vert-rouge-v2',
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
+  'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
   'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
   'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
@@ -705,6 +706,9 @@ function targetMode(carte) {
   // Renvoi en main : le joueur choisit la créature qui repart dans une main.
   if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
   if (['bouclier', 'arme'].includes(carte?.effet?.type) && carte.effet.cible === 'creature-amie') return 'allie';
+  // Le Défi du Jarl se joue en deux désignations : le champion allié d'abord
+  // (l'étape adverse est dérivée dans `modeCible`, une fois le champion choisi).
+  if (carte?.effet?.type === 'combat' && carte.effet?.sourceCible === 'creature-amie') return 'allie';
   return null;
 }
 
@@ -941,7 +945,7 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${entite.coupRapide ? ', Coup rapide : frappe une créature avant le combat' : ''}${entite.armes?.length ? `, arme attachée : ${entite.armes.map((id) => cardById(id)?.name).join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${armeCarte ? `, armée de ${armeCarte.name} (+${armeCarte.bonus?.atk ?? 0}/+${armeCarte.bonus?.def ?? 0})` : ''}${armeCarte?.donne?.immunite ? `, immunité contre ${ELEMENT_LABELS[armeCarte.donne.immunite] ?? armeCarte.donne.immunite}` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${entite.coupRapide ? ', Coup rapide : frappe une créature avant le combat' : ''}${entite.armes?.length ? `, arme attachée : ${entite.armes.map((id) => cardById(id)?.name).join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${armeCarte ? `, armée de ${armeCarte.name} (+${armeCarte.bonus?.atk ?? 0}/+${armeCarte.bonus?.def ?? 0})` : ''}${armeCarte?.donne?.immunite ? `, immunité contre ${ELEMENT_LABELS[armeCarte.donne.immunite] ?? armeCarte.donne.immunite}` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
@@ -2967,6 +2971,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [bloqueurGlisse, setBloqueurGlisse] = useState(null);
   const [bloqueurSelectionne, setBloqueurSelectionne] = useState(null);
   const [cibleEnCours, setCibleEnCours] = useState(null);
+  // Le Défi du Jarl : après avoir désigné votre champion, il reste la créature
+  // adverse à choisir — ce champ garde le champion entre les deux clics.
+  const [cibleAllieeMagie, setCibleAllieeMagie] = useState(null);
   const [activationEnCours, setActivationEnCours] = useState(null);
 
   // La foudre activée se désigne avec Échap, comme les autres ciblages.
@@ -3822,7 +3829,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             : duel.phase ?? 'principale';
   const prets = duel.joueur.creatures.filter((e) => e.ready && !e.attaquee);
   const carteCiblee = cibleEnCours ? cardById(cibleEnCours) : null;
-  const modeCible = targetMode(carteCiblee);
+  const modeCible = (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
+    ? (cibleAllieeMagie ? 'ennemi' : 'allie')
+    : targetMode(carteCiblee);
   const ciblesCoupRapideLegales = (attaquant, cote = 'joueur') => {
     const carte = cardById(attaquant?.carteId);
     if (!attaquant?.coupRapide) return [];
@@ -4205,7 +4214,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setTerrainManaChoix({ terrainId: terrain.id, nom: cardById(terrain.carteId)?.name ?? 'Terrain', couleurs, left, top });
   };
 
-  const decrireCibleMagie = (carte, cibleId) => {
+  const decrireCibleMagie = (carte, cibleId, cibleAllieeId = null) => {
+    // Le Défi du Jarl : les deux champions du duel.
+    if (carte?.effet?.type === 'combat' && carte.effet?.sourceCible === 'creature-amie') {
+      const champion = duel.joueur.creatures.find((entite) => entite.id === cibleAllieeId);
+      const adverse = duel.sorcier.creatures.find((entite) => entite.id === cibleId);
+      return {
+        nom: `${champion?.name ?? 'Votre champion'} se bat avec ${adverse?.name ?? 'la créature adverse'}`,
+        illustrationId: champion?.carteId,
+        targetPlate: 'sorcier',
+        targetIds: [cibleAllieeId, cibleId].filter(Boolean),
+      };
+    }
     if (cibleId === 'sorcier' || carte.effet?.cible === 'sorcier') {
       return { nom: nomSorcierAdverse, illustrationUrl: portraitSorcierAdverse, targetPlate: 'sorcier', targetIds: [] };
     }
@@ -4274,13 +4294,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, { contre: true });
   };
 
-  const lancerMagie = (carteId, cibleId = null) => {
+  const lancerMagie = (carteId, cibleId = null, cibleAllieeId = null) => {
     const carte = cardById(carteId);
     const cibleEffective = cibleId ?? rpgCibleAuto(duel, 'joueur', carte);
-    const cibleDecrite = decrireCibleMagie(carte, cibleEffective);
+    const cibleDecrite = decrireCibleMagie(carte, cibleEffective, cibleAllieeId ?? cibleAllieeMagie);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective);
+    setCibleAllieeMagie(null);
+    const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective, cibleAllieeId ?? null);
     // Le sort a-t-il été lancé ? Le Souk n'est prévenu qu'après `force()`.
     let lancee = false;
     if (res.ok && res.contre && res.parIA) {
@@ -4470,9 +4491,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (carte.kind === 'magie') {
       const cible = targetMode(carte);
       if (cible) {
+        setCibleAllieeMagie(null);
+        const duelDejarl = carte.effet?.type === 'combat' && carte.effet?.sourceCible === 'creature-amie';
         const aUneCible = cible === 'ennemi'
           ? duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))) || carte.cibles?.includes('sorcier')
-          : duel.joueur.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+          : duel.joueur.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))
+            // Le Défi du Jarl exige les deux champions : sans adversaire en
+            // face, le duel ne commence même pas.
+            && (!duelDejarl || duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))));
         if (aUneCible) setCibleEnCours(carteId);
         force();
         return;
@@ -4612,6 +4638,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       carteCibleeHandIndexRef.current = null;
       setCibleEnCours(null);
       equiperArme(carteId, entite.id);
+      return true;
+    }
+    // Le Défi du Jarl : deux désignations — votre champion, puis la créature
+    // adverse qui devra lui tenir tête.
+    if (carteSource?.effet?.type === 'combat' && carteSource?.effet?.sourceCible === 'creature-amie') {
+      if (cote === 'joueur') {
+        setCibleAllieeMagie(entite.id);
+        jouerSfx('select');
+        force();
+        return true;
+      }
+      const carteId = cibleEnCours;
+      const championId = cibleAllieeMagie;
+      setCibleEnCours(null);
+      setCibleAllieeMagie(null);
+      lancerMagie(carteId, entite.id, championId);
       return true;
     }
     lancerMagie(cibleEnCours, entite.id);

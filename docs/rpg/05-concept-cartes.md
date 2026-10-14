@@ -184,6 +184,60 @@ elle ne peut pas être interceptée par le contresort de Boualem.
 Illustration : `public/cards/chien-de-sable.jpg`, peinture plein art 4:5 dans la
 palette et la matière de celle de Tarek (direction artistique `RPG-CARD-ART.md`).
 
+Deuxième famille de jetons, côté Soleil rouge : le **Daimyō du Soleil rouge**
+lève **deux Samouraïs 1/1** (`samourai-du-daimyo`) en arrivant, par le même
+effet `jetons`. Le jeton est un **Samouraï** au sens des règles — la Résonance
+samouraï le renforce donc comme la bannière de son seigneur — mais il ne porte
+ni Honneur (un jeton n'est pas une carte du set) ni Rapidité : il garde le mal
+d'invocation, comme les chiens de sable. Illustration dédiée
+`public/cards/samourai-du-daimyo.jpg`, plein art 4:5.
+
+### L'aura de forge (Kenshi de la forge)
+
+Le Kenshi de la forge est un **1/3 à 3 mana** qui porte une aura de table :
+
+> Tant qu'il est en jeu, les autres créatures de type Samouraï de la table,
+> dans les deux camps, gagnent +2/+0.
+
+- **Les deux camps, comme la Résonance samouraï** — le Kenshi ne connaît pas la
+  ligne de bataille : il forge aussi bien les Samouraïs du sorcier. Le type se
+  lit sur la ligne de type imprimée (`cardReceivesResonance`), jamais sur la
+  couleur ni sur le nom.
+- **« Les autres » : il ne se forge pas lui-même.** Deux Kenshis en jeu se
+  donnent +2/+0 l'un à l'autre et +4/+0 au reste des Samouraïs.
+- **La défense ne bouge jamais** : perdre l'aura ne peut pas tuer, et l'attaque
+  retombe au plancher de 0. Chaque entité ne retient que l'écart appliqué
+  (`auraKenshiBonus`), même contrat que l'aura Sable de Tarek et l'égide
+  d'Amani — les statistiques déjà gagnées (Furie, renforts) ne dérivent pas.
+- L'aura se **cumule** avec la Résonance samouraï et la bannière du Daimyō :
+  sous un Torii et un Kenshi, un Samouraï de base gagne +3/+1.
+
+Moteur : `appliquerAuraKenshi` (`rpgDuel.js`), appelée par `rafraichirAuras`
+avec les autres auras de présence. Le catalogue imprime l'aura sur la carte
+(`aura: { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true,
+camps: 'tous' }`), et `rpgCardPower.js` en tient compte dans la valeur de la
+carte.
+
+### La bannière (Daimyō du Soleil rouge)
+
+Le Daimyō porte la seule capacité de ce genre au catalogue :
+
+> Quand le Daimyō arrive en jeu, il crée deux créatures-jetons « Samouraï »
+> 1/1. Tant qu'il est en jeu, chaque fois qu'un Samouraï de votre camp attaque,
+> ce Samouraï gagne +1/+1.
+
+- **C'est un déclenché d'attaque, pas une aura.** Le renfort (`banniere: {
+  tribu: 'samourai', atk: 1, def: 1 }`) se pose au moment où l'attaque est
+  **déclarée** — donc avant les blessures : la frappe du tour en profite déjà
+  (`rpgLancerAttaque`, `rpgAttaquerCreature`, `rpgAttaquerSorcier`). Le moteur
+  l'applique à travers `appliquerBannieresAttaque`, qui partage la lecture des
+  types avec la Résonance (`cardReceivesResonance`).
+- **Le gain reste acquis.** La bannière ne reprend jamais ce qu'elle a donné :
+  l'attaque finit, le Daimyō meurt, le Samouraï grandit reste grand.
+- **Un camp, pas les deux.** Contrairement à la Résonance, la bannière ne
+  renforce que le camp de sa source ; deux bannières en jeu se cumulent.
+- **Le Daimyō est un Samouraï** : sa propre attaque le grandit aussi.
+
 ## 4. La boucle de tour : six phases
 
 Un tour compte **six phases**, dans l'ordre (`RPG_PHASES` dans `rpgDuel.js`, lue

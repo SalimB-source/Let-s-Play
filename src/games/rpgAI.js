@@ -67,6 +67,11 @@ function estProtegee(entite, couleurs) {
     && liste.includes(entite.protection.contre));
 }
 
+/** Gelée (la Poigne de givre, le Verglas) : ni attaque ni blocage. */
+function estGelee(entite) {
+  return (entite?.gelToursRestants ?? 0) > 0;
+}
+
 /** Infiltration : inbloquable, par personne — permanente (imprimée ou par
  *  l'arme portée) ou accordée jusqu'à la fin du tour.
  *  Envol : seul un bloqueur volant arrête un volant. */
@@ -131,6 +136,9 @@ export function valeurEntite(entite) {
   if (carte.furie && !entite?.furieDeclenchee) valeur += 1 + carte.furie * 0.7;
   // Résonance : aura de table de la couleur de la source.
   if (carte.resonance) valeur += 2 + carte.resonance * 2;
+  // Bannière : chaque attaque d'un Samouraï du camp grandit l'attaquant pour de
+  // bon — la source vaut plus que sa seule présence, elle récompense l'attaque.
+  if (carte.banniere) valeur += 2;
   if (carte.arrivee) valeur += 1.5;
   if (carte.destruction) valeur += 1;
   if (carte.honneur) valeur += carte.honneur;
@@ -266,6 +274,19 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
   if (carte?.effet?.cible === 'creature-amie') {
     return meilleureCibleAmie(duel, cote, carte);
   }
+  if (carte?.effet?.type === 'combat' && carte.effet?.sourceCible === 'creature-amie') {
+    // Le Défi du Jarl : la cible adverse d'abord (la plus menaçante qu'on
+    // peut abattre), le champion allié étant choisi à part.
+    return meilleuresOptionsOffensives(duel, cote, carte, {
+      montant: null, sourceType: 'capacite', portee: 'combat', profil, rng,
+    })?.cibleId ?? null;
+  }
+  if (carte?.effet?.type === 'blocage-force') {
+    // L'Appât de la meute : on marque la plus grosse menace — elle devra se
+    // jeter sur la prochaine attaque.
+    return ciblesLegales(duel, cote, carte, 'creature')
+      .sort((a, b) => menace(b) - menace(a))[0]?.id ?? null;
+  }
   if (carte?.effet?.type === 'degats') {
     return meilleuresOptionsOffensives(duel, cote, carte, {
       montant: carte.effet.amount ?? 0,
@@ -276,6 +297,29 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
     })?.cibleId ?? null;
   }
   return null;
+}
+
+/**
+ * Champion d'un duel (le Défi du Jarl) : la créature alliée qui tue
+ * l'adversaire en y survivant, sinon la meilleure échange — en dernier
+ * recours, la plus menaçante. Le combat est un échange de coups simultanés,
+ * la simulation de blocage s'y applique telle quelle.
+ */
+export function choisirChampionDuelIA(duel, cote, cibleId = null) {
+  const adv = autre(cote);
+  const cible = duel[adv].creatures.find((entite) => entite.id === cibleId) ?? null;
+  return duel[cote].creatures
+    .map((entite) => {
+      let score = menace(entite);
+      if (cible) {
+        const echange = resultatBlocage(entite, cible);
+        if (echange.bloqueurMeurt && !echange.attaquantMeurt) score += 20 + valeurEntite(cible);
+        else if (echange.bloqueurMeurt && echange.attaquantMeurt) score += valeurEntite(cible) - valeurEntite(entite);
+        else if (echange.attaquantMeurt) score -= 15;
+      }
+      return { entite, score };
+    })
+    .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
 }
 
 /**
@@ -365,7 +409,7 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   // assignée comme bloqueur, et l'attaquant rapide se bloque comme un autre.
   const ids = [...new Set(attaquantIds ?? [])];
   const attaquants = duel[coteAttaquant].creatures.filter((entite) => ids.includes(entite.id));
-  const bloqueurs = duel[coteDefense].creatures.filter((entite) => entite && !entite.attaquee);
+  const bloqueurs = duel[coteDefense].creatures.filter((entite) => entite && !entite.attaquee && !estGelee(entite));
   const affectations = {};
   if (!attaquants.length || !bloqueurs.length) return affectations;
 
@@ -447,7 +491,7 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
 // ── Attaques ────────────────────────────────────────────────────────────────
 
 function attaquantsPrets(duel, cote) {
-  return duel[cote].creatures.filter((entite) => entite && entite.ready && !entite.attaquee);
+  return duel[cote].creatures.filter((entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite));
 }
 
 /**
@@ -458,7 +502,7 @@ function attaquantsPrets(duel, cote) {
  */
 function degatsGarantis(duel, cote, prets) {
   const adv = autre(cote);
-  const bloqueurs = duel[adv].creatures.filter((entite) => entite && !entite.attaquee);
+  const bloqueurs = duel[adv].creatures.filter((entite) => entite && !entite.attaquee && !estGelee(entite));
   const bloquablePar = (attaquant) => bloqueurs.some((bloqueur) => peutBloquerAttaquant(bloqueur, attaquant)
     && !estProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId))));
   const bloquables = prets.filter(bloquablePar)
@@ -687,7 +731,10 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         const echo = echoMontant > 0
           ? (duel[adv].creatures.length - tues.length) * echoMontant * 0.35
           : 0;
-        const gain = tues.reduce((somme, entite) => somme + valeurEntite(entite), 0) + blessees.length * 1.2 + echo;
+        const gain = tues.reduce((somme, entite) => somme + valeurEntite(entite), 0) + blessees.length * 1.2 + echo
+          // Le gel de zone (le Verglas) fige toute la table adverse en plus
+          // de la blessure : un tour entier de leur attaque en moins.
+          + (effet.gel ? duel[adv].creatures.length * 1.2 : 0);
         return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
       }
       const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
@@ -703,6 +750,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         const cible = duel[adv].creatures.find((entite) => entite.id === meilleure.cibleId);
         if (meilleure.kill) score = 5 + valeurEntite(cible) - cout * 0.2;
         else score = (profil.style === 'controle' ? 1.5 : 0.5) + menace(cible) * 0.2 - cout * 0.2;
+        if (effet.gel) score += 1.2; // la Poigne de givre fige sa cible en plus de la brûler
       }
       return { score, cibleId: meilleure.cibleId };
     }
@@ -732,6 +780,57 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const controle = profil.style === 'controle' ? 1 : 0;
       const score = tempo + controle + (effet.pioche ?? 0) * 2 - cout * 0.3;
       return { score: score > 0 ? score : 0, cibleId };
+    }
+    if (effet.type === 'combat' && effet.sourceCible === 'creature-amie') {
+      // Le Défi du Jarl : un duel à deux cibles. Sans champion, rien à jouer ;
+      // le combat ne vaut que s'il tue leur menace sans y laisser la nôtre.
+      if (!camp.creatures.length) return { score: 0, cibleId: null };
+      const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
+        montant: null, sourceType: 'capacite', portee: 'combat', profil, rng,
+      });
+      if (!meilleure?.cibleId || meilleure.cibleId === 'sorcier') return { score: 0, cibleId: null };
+      const cibleId = meilleure.cibleId;
+      const cibleAllieeId = choisirChampionDuelIA(duel, cote, cibleId);
+      const champion = camp.creatures.find((entite) => entite.id === cibleAllieeId);
+      const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      if (!champion || !cible) return { score: 0, cibleId: null };
+      const echange = resultatBlocage(champion, cible);
+      let score = 3 - cout * 0.2;
+      if (echange.bloqueurMeurt) score += valeurEntite(cible);
+      if (echange.attaquantMeurt) score -= valeurEntite(champion);
+      return { score: score > 0 ? score : 0, cibleId, cibleAllieeId };
+    }
+    if (effet.type === 'blocage-force') {
+      // L'Appât de la meute : on marque la plus grosse menace, utile surtout
+      // quand on s'apprête à charger.
+      const cibleId = ciblesLegales(duel, cote, carte, 'creature')
+        .sort((a, b) => menace(b) - menace(a))[0]?.id ?? null;
+      if (!cibleId) return { score: 0, cibleId: null };
+      const prets = attaquantsPrets(duel, cote).length;
+      return { score: prets ? 2 + prets - cout * 0.2 : 0, cibleId };
+    }
+    if (effet.type === 'brouillard') {
+      // Le Grand Voile blanc : il ne vaut que contre une attaque qui se
+      // prépare — plus l'adversaire lève de force, plus le voile est cher.
+      const menaceAttaque = duel[adv].creatures
+        .filter((entite) => entite.ready && !entite.attaquee && !estGelee(entite))
+        .reduce((somme, entite) => somme + (entite.atk ?? 0), 0);
+      const enDanger = menaceAttaque >= (camp.pv ?? 0) * 0.5;
+      return {
+        score: menaceAttaque > 0 ? 2 + menaceAttaque * 0.35 + (enDanger ? 3 : 0) - cout * 0.2 : 0,
+        cibleId: null,
+      };
+    }
+    if (effet.type === 'buff' && effet.cible === 'creatures-adverses') {
+      // L'Embuscade : le débuff ne tue jamais (plancher 1/1) mais ampute
+      // toute la table adverse avant de la jeter sur nos attaquants.
+      const adversaires = duel[adv].creatures;
+      if (!adversaires.length) return { score: 0, cibleId: null };
+      const retraitAtk = Math.abs(Number(effet.atk) || 0);
+      const retraitDef = Math.abs(Number(effet.def) || 0);
+      const score = 1.5 + adversaires.length * (0.8 + retraitAtk * 0.5 + retraitDef * 0.4)
+        + (effet.blocageForce ? 1.5 : 0) - cout * 0.2;
+      return { score: score > 0 ? score : 0, cibleId: null };
     }
     if (effet.type === 'buff') {
       // Rien à renforcer sans créature en jeu : le sort reste en main plutôt
@@ -856,6 +955,9 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       // suivante comme pour le blocage : deux chiens de sable valent deux tours
       // de pression en plus du sorcier lui-même.
       score += (Math.max(0, Math.floor(Number(arrivee.nombre) || 1))) * 2;
+      // Une bannière derrière les jetons les grandit à chaque attaque : le
+      // Daimyō et ses deux Samouraïs se renforcent l'un l'autre.
+      if (carte.banniere) score += 2;
     }
     if (arrivee.type === 'bouclier') score += 1.5;
     if (arrivee.type === 'retour-apres-tours') score += 2;
@@ -889,6 +991,7 @@ export function choisirCarteIA(duel, cote, options = {}) {
     candidats.push({
       carteId,
       cibleId: evaluation.cibleId ?? null,
+      cibleAllieeId: evaluation.cibleAllieeId ?? null,
       score: evaluation.score + (profil.style === 'controle' && carte.kind === 'magie' ? 0.5 : 0),
     });
   }

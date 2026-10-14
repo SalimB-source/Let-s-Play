@@ -6903,6 +6903,134 @@ pas la fiche et ne retire rien (la carte n'y est pas), celui d'une ligne du
 deck retire l'exemplaire sans fiche — puis la carte est remise, et le deck en
 cours est intact.
 
+## Le Sablier : le Daimyō du Soleil rouge lève ses Samouraïs
+
+Troisième samouraï du set japonais, le **Daimyō du Soleil rouge** change de
+rôle : il n'est plus un simple corps rare, mais la **bannière** du Serment.
+La carte imprimée le dit d'une ligne, dans l'ordre où les effets se produisent :
+
+> Quand le Daimyō arrive en jeu, il crée deux créatures-jetons « Samouraï »
+> 1/1. Tant qu'il est en jeu, chaque fois qu'un Samouraï de votre camp attaque,
+> ce Samouraï gagne +1/+1.
+
+- **Un 3/3 à 5 mana** (au lieu du 4/5 d'origine) : son prix ne paie plus un
+  gros corps mais deux Samouraïs de plus sur la table et une bannière qui
+  grandit chaque attaque du camp. Honneur 2 (rare) est inchangé, comme son
+  illustration — le daimyō au cheval blanc reste sa peinture.
+- **Deux Samouraïs 1/1 en arrivant**, par l'effet d'arrivée `jetons` déjà
+  employé par Tarek : des **créatures-jetons** (`samourai-du-daimyo`), sans
+  coût, avec le mal d'invocation habituel, qui **cessent d'exister** si un
+  renvoi les prend — jamais une carte gratuite. Ils sont de type **Samouraï** :
+  la Résonance samouraï du Torii, du Tengu ou de Kagutsuchi les renforce, et
+  la bannière de leur seigneur les grandit à l'attaque.
+- **La bannière est un déclenché d'attaque, pas une aura.** Le +1/+1 se pose
+  quand l'attaque est **déclarée**, donc avant les blessures : la frappe du tour
+  en profite déjà. Il **reste acquis** — l'attaque finit, le Daimyō meurt, le
+  Samouraï grandit reste grand. La bannière ne renforce que **son camp** (celui
+  du Daimyō), contrairement à la Résonance qui touche les deux, et le Daimyō
+  étant lui-même un Samouraï, sa propre attaque le grandit aussi. Deux Daimyōs
+  en jeu se cumulent (+2/+2 par attaque).
+
+### Où vit le code
+
+- `src/games/rpgSoleilRouge.js` — la fiche du Daimyō (coût 5, 3/3, `arrivee:
+  { type: 'jetons', jeton: 'samourai-du-daimyo', nombre: 2 }` et `banniere:
+  { tribu: 'samourai', atk: 1, def: 1 }`) et le jeton `samourai-du-daimyo`
+  dans `RPG_SOLEIL_ROUGE_JETONS` (1/1, coût 0, `jeton: true`, type imprimé
+  `Créature-jeton — Humain · Samouraï`).
+- `src/games/rpgDuel.js` — `appliquerBannieresAttaque`, appelé par les trois
+  portes d'attaque du moteur (`rpgLancerAttaque`, `rpgAttaquerCreature`,
+  `rpgAttaquerSorcier`) : la déclaration est validée, puis chaque Samouraï
+  engagé grandit avant le calcul des blessures et du partage. Le type se lit
+  avec `cardReceivesResonance`, la même règle que la Résonance samouraï.
+- `src/games/rpgCardPower.js`, `src/games/rpgAI.js` — la bannière compte dans
+  la valeur d'une carte (une source qui récompense l'attaque vaut plus que sa
+  seule présence) et dans le score de pose de l'IA.
+- `public/cards/samourai-du-daimyo.jpg` — la peinture des deux Samouraïs, plein
+  art 4:5 (1024×1280) dans la palette kaiga du set, déclarée dans
+  `PLEIN_ART_45` et versionnée `samourai-du-daimyo-kaiga-couleurs-v1`.
+- `src/games/rpgCardLessons.js` — la fiche « La bannière grandit ceux qui
+  attaquent » du guide des cartes, illustrée par le Daimyō et le Torii ;
+  `RpgDuelPage.jsx` — la fiche lue à voix haute décrit la bannière.
+
+### Vérifications
+
+```bash
+npm run check:rpg         # 491/491 — la bannière, les jetons, la Résonance, les decks
+npm run build
+```
+
+`tests/rpg-soleil-rouge.test.js` ajoute huit contrôles : les chiffres et les
+deux capacités de la fiche, la pose payée une seule fois qui lève **deux**
+Samouraïs marqués `jeton` (jamais en main, jamais dans un deck ni dans la
+dotation de départ), un déclenchement **par attaque** — le sbire comme le
+Daimyō lui-même, jamais un non-Samouraï, jamais le camp d'en face —, le +1/+1
+acquis qui survit au départ du Daimyō, l'échange où la bannière arme la frappe
+du tour (4 dégâts sur une 2/4 : le bloqueur tombe, là où 3 ne l'auraient pas
+tué), l'attaque directe contre le sorcier, la Résonance samouraï reçue par les
+jetons, et le cumul de deux bannières dans un camp.
+
+## Le Sablier : le Kenshi de la forge arme les samouraïs
+
+Le forgeron du set japonais change de métier : le **Kenshi de la forge** quitte
+son rôle de 2/4 muet pour devenir l'**armurier de la table**. Il devient un
+**1/3 à 3 mana** — le petit corps est le prix de l'aura — et sa carte imprime
+désormais :
+
+> Tant qu'il est en jeu, les autres créatures de type Samouraï de la table,
+> dans les deux camps, gagnent +2/+0.
+
+- **Une aura de table, pas un renfort de camp** : comme la Résonance samouraï
+  du Tengu et de Kagutsuchi, l'aura de forge ignore la ligne de bataille — elle
+  profite aux Samouraïs du sorcier comme aux vôtres, et à toutes les couleurs.
+  Le type se lit sur la ligne de type imprimée, jamais sur la couleur ni sur le
+  nom : un yōkai comme le Tengu, un kami comme Kagutsuchi ou un Chien de sable
+  n'en reçoivent rien.
+- **« Les autres »** : le Kenshi ne se forge pas lui-même. Deux Kenshis en jeu
+  se donnent +2/+0 l'un à l'autre et +4/+0 à tous les autres Samouraïs.
+- **La défense ne bouge jamais** : l'aura ne touche que l'attaque, donc la
+  perdre ne peut jamais tuer, et l'attaque retombe au plancher de 0. Chaque
+  créature ne retient que l'écart appliqué (`auraKenshiBonus`), même contrat
+  que l'aura Sable de Tarek et l'égide d'Amani : les statistiques déjà gagnées
+  par la Furie ou un autre renfort ne dérivent pas.
+- **Tout se cumule** : un Hatamoto 2/2 devient 3/3 sous un Torii (Résonance
+  +1/+1), 5/3 sous un Torii et un Kenshi (forge +2/+0), et part à **6/4** en
+  attaquant sous Torii, Kenshi et Daimyō (bannière +1/+1) — le tout sans jamais
+  dériver d'une arrivée ou d'une mort. L'Honneur 2 du Kenshi est inchangé, comme
+  sa peinture : le forgeron frappant une lame en fusion reste son illustration.
+
+### Où vit le code
+
+- `src/games/rpgSoleilRouge.js` — la fiche du Kenshi (1/3, `aura:
+  { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true,
+  camps: 'tous' }`) et son nouveau texte imprimé.
+- `src/games/rpgDuel.js` — `appliquerAuraKenshi`, appelée par `rafraichirAuras`
+  avec l'aura Sable de Tarek et l'égide d'Amani : elle compte les sources des
+  deux camps, retire le Kenshi de son propre compte (« les autres ») et ne pose
+  que l'écart d'attaque.
+- `src/games/rpgCardPower.js`, `src/games/rpgAI.js` — l'aura de forge compte
+  dans la valeur de la carte et dans l'évaluation de l'IA (`carte.aura`).
+- `src/games/rpgCardLessons.js` — la fiche « Une aura agit tant que sa source
+  reste en jeu » cite désormais le Kenshi ; `RpgDuelPage.jsx` — la fiche lue à
+  voix haute décrit l'aura de forge.
+- `src/games/RPG-CARD-ART.md`, `docs/rpg/05-concept-cartes.md` — la règle et la
+  direction artistique (peinture inchangée).
+
+### Vérifications
+
+```bash
+npm run check:rpg         # 496/496 — l'aura, la bannière, les jetons, les decks
+npm run build
+```
+
+`tests/rpg-soleil-rouge.test.js` ajoute trois contrôles : la fiche (1/3, aura
+imprimée, texte), l'aura de table qui ne touche ni le Kenshi lui-même ni les
+non-Samouraïs mais qui profite aux deux camps (Torii à 6/5, rōnin adverse à
+7/4 sous le Tengu), le compte **par source** (deux Kenshis : +2/+0 l'un pour
+l'autre, +4/+0 pour les autres), le retrait propre à l'exil — la défense n'a
+jamais bougé d'un point, le rōnin de 2 PV survit à la perte de l'aura — et le
+cumul forge + Résonance + bannière sans dérive.
+
 ## Le Sablier : le socle des familles de sorts
 
 Un sort et une créature ne se ressemblaient pas sur la table — mais rien, sur

@@ -195,9 +195,16 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'auras-et-resonance',
     section: 'Capacités des créatures',
-    cardIds: ['tarek', 'valkyrie-des-glaces', 'tengu-du-mont-ardent'],
+    cardIds: ['tarek', 'valkyrie-des-glaces', 'tengu-du-mont-ardent', 'kenshi-de-la-forge'],
     title: 'Une aura agit tant que sa source reste en jeu',
-    text: 'Tarek renforce les créatures Sable de son camp, et l’égide d’Amani donne +0/+2 aux autres créatures du sien. La Résonance de la Valkyrie renforce toutes les créatures Neige sur les deux champs de bataille. La Résonance samouraï du Tengu et de Kagutsuchi renforce uniquement les créatures de type Samouraï, même adverses et quelle que soit leur couleur, de +1/+1 par source. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas. La Résonance Neige reste indépendante. Si la source quitte la table, le bonus d’aura correspondant disparaît.',
+    text: 'Tarek renforce les créatures Sable de son camp, et l’égide d’Amani donne +0/+2 aux autres créatures du sien. La Résonance de la Valkyrie renforce toutes les créatures Neige sur les deux champs de bataille, et l’aura de forge du Kenshi donne +2/+0 aux autres Samouraïs de la table, dans les deux camps — il ne se forge pas lui-même, mais deux Kenshis se renforcent l’un l’autre et le reste des Samouraïs reçoit les deux. La Résonance samouraï du Tengu et de Kagutsuchi renforce uniquement les créatures de type Samouraï, même adverses et quelle que soit leur couleur, de +1/+1 par source. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas. La Résonance Neige reste indépendante. Si la source quitte la table, le bonus d’aura correspondant disparaît — l’aura de forge ne touche jamais la défense, donc la perdre ne peut pas tuer.',
+  },
+  {
+    id: 'banniere-samourai',
+    section: 'Capacités des créatures',
+    cardIds: ['daimyo-du-soleil-rouge', 'samourai-du-torii'],
+    title: 'La bannière grandit ceux qui attaquent',
+    text: 'Le Daimyō du Soleil rouge arrive avec deux créatures-jetons « Samouraï » 1/1, puis chaque Samouraï de son camp qui attaque gagne +1/+1 — pour de bon. Le renfort tombe à la déclaration de l’attaque, donc la frappe du tour en profite déjà ; il reste acquis, même si le Daimyō quitte la table ensuite. Seul le camp du Daimyō en profite, et le Daimyō lui-même est un Samouraï : sa propre attaque le grandit aussi.',
   },
   {
     id: 'coup-rapide',

@@ -500,17 +500,96 @@ function appliquerAuraAmani(duel, cote) {
 }
 
 /**
+ * La bannière de guerre — « tant que cette créature est en jeu, chaque fois
+ * qu'un Samouraï de son camp attaque, il gagne +X/+X ». Le Daimyō du Soleil
+ * rouge la porte.
+ *
+ * Ce n'est pas une aura mais un **déclenché** : le renfort se pose au moment où
+ * l'attaque est déclarée (donc avant les blessures — la frappe du tour en
+ * profite), et il reste **acquis** à la créature, comme la Furie. La bannière
+ * ne reprend jamais ce qu'elle a donné : un Daimyō qui quitte la table, ou une
+ * attaque qui se termine, laisse les Samouraïs grandis tels quels.
+ *
+ * Seul le camp de la source en profite — les Samouraïs du sorcier ne reçoivent
+ * rien d'un Daimyō adverse, comme l'aura Sable de Tarek ne renforce que son
+ * camp. Plusieurs bannières en jeu se cumulent : chacune compte pour un
+ * déclenchement de plus. Le type se lit sur la ligne de type imprimée
+ * (`cardReceivesResonance`), jamais sur la couleur ni sur le nom ; le Daimyō
+ * lui-même est un Samouraï, donc sa propre attaque le grandit aussi.
+ */
+function appliquerBannieresAttaque(duel, cote, attaquants = []) {
+  const sources = [];
+  for (const entite of duel[cote].creatures) {
+    if (!(entite.pv > 0)) continue;
+    const carte = duelCardById(entite.carteId);
+    if (carte?.banniere) sources.push({ nom: carte.name, banniere: carte.banniere });
+  }
+  if (!sources.length) return;
+  for (const attaquant of attaquants) {
+    if (!(attaquant.pv > 0)) continue;
+    const carte = duelCardById(attaquant.carteId);
+    const recues = sources.filter(({ banniere }) => cardReceivesResonance(carte, banniere.tribu));
+    if (!recues.length) continue;
+    const bonusAttaque = recues.reduce((total, { banniere }) => total + Math.max(0, Number(banniere.atk) || 0), 0);
+    const bonusDefense = recues.reduce((total, { banniere }) => total + Math.max(0, Number(banniere.def) || 0), 0);
+    if (!bonusAttaque && !bonusDefense) continue;
+    attaquant.atk = Math.max(0, attaquant.atk + bonusAttaque);
+    attaquant.pvMax = Math.max(1, (attaquant.pvMax ?? attaquant.def) + bonusDefense);
+    attaquant.def = Math.max(1, attaquant.def + bonusDefense);
+    attaquant.pv = Math.max(1, attaquant.pv + bonusDefense);
+    duel.log.push(`Bannière ${recues.map(({ nom }) => nom).join(', ')} : ${attaquant.name} gagne +${bonusAttaque}/+${bonusDefense} en attaquant.`);
+  }
+}
+
+/**
+ * Kenshi de la forge — l'aura de forge : tant qu'il est en jeu, **les autres**
+ * créatures de type Samouraï gagnent +2/+0. Comme la Résonance samouraï, elle
+ * est **de table** : elle profite aux deux camps et à toutes les couleurs ; le
+ * type se lit sur la ligne de type imprimée (`cardReceivesResonance`).
+ *
+ * Le Kenshi ne se forge pas lui-même — il dit « les autres » : il ne reçoit que
+ * l'aura de ses confrères, s'il y en a d'autres. Deux Kenshis se donnent donc
+ * +2/+0 l'un à l'autre et +4/+0 au reste des Samouraïs.
+ *
+ * Chaque entité ne retient que l'écart appliqué (`auraKenshiBonus`), même
+ * contrat que l'aura Sable et l'égide d'Amani : une arrivée ou une mort ne fait
+ * jamais dériver les statistiques déjà gagnées par la Furie ou un autre renfort.
+ * L'aura ne touche pas la défense : la perdre ne peut pas tuer, et l'attaque
+ * retombe au plancher de 0.
+ */
+function appliquerAuraKenshi(duel) {
+  let sources = 0;
+  for (const cote of ['joueur', 'sorcier']) {
+    sources += duel[cote].creatures.filter((entite) => entite.carteId === 'kenshi-de-la-forge').length;
+  }
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      const siennes = sources - (entite.carteId === 'kenshi-de-la-forge' ? 1 : 0);
+      const voulu = cardReceivesResonance(duelCardById(entite.carteId), 'samourai')
+        ? Math.max(0, 2 * siennes)
+        : 0;
+      const delta = voulu - (entite.auraKenshiBonus ?? 0);
+      if (!delta) continue;
+      entite.auraKenshiBonus = voulu;
+      entite.atk = Math.max(0, entite.atk + delta);
+    }
+  }
+}
+
+/**
  * Rafraîchit toutes les auras de présence après un changement du champ de
  * bataille (arrivée, mort, renvoi, retour programmé) : l'aura Sable de Tarek
- * et l'égide d'Amani sur chaque camp, puis la Résonance de table. Chaque
- * mécanisme ne pose que l'écart qu'il détient déjà — voir les commentaires de
- * `appliquerAuraSable`, `appliquerAuraAmani` et `majResonance`.
+ * et l'égide d'Amani sur chaque camp, l'aura de forge du Kenshi sur la table
+ * entière, puis la Résonance de table. Chaque mécanisme ne pose que l'écart
+ * qu'il détient déjà — voir les commentaires de `appliquerAuraSable`,
+ * `appliquerAuraAmani`, `appliquerAuraKenshi` et `majResonance`.
  */
 function rafraichirAuras(duel) {
   appliquerAuraSable(duel, 'joueur');
   appliquerAuraSable(duel, 'sorcier');
   appliquerAuraAmani(duel, 'joueur');
   appliquerAuraAmani(duel, 'sorcier');
+  appliquerAuraKenshi(duel);
   majResonance(duel);
 }
 
@@ -573,6 +652,15 @@ function creerEntiteCreature(carte) {
     attaquee: false,
     resonance: 0,
     honneur: Math.max(0, Number(carte.honneur) || 0),
+    // Gel (la Poigne de givre, le Verglas) : tours du contrôleur qui restent
+    // à couvrir — la créature ni n'attaque ni ne bloque tant que c'est > 0.
+    gelToursRestants: 0,
+    // Blocage forcé (l'Appât de la meute, l'Embuscade) : la créature marquée
+    // doit bloquer si elle le peut. `par` : le camp du lanceur (seule SA
+    // prochaine attaque la concerne) ; `portee` : 'attaque' (le marqueur vit
+    // jusqu'à la prochaine attaque du lanceur) ou 'tour' (il meurt avec le
+    // tour en cours).
+    blocageForce: null,
     // L'arme attachée (`{ carteId }`), ou null : une seule par créature.
     // Bonus et mot-clé sont déjà fondus dans les champs ci-dessus (atk, def,
     // pv, esquive, envol…) ; la fiche se relit par `armeById` quand il faut
@@ -760,6 +848,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   for (const coup of coups) {
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
+    // Le Grand Voile blanc : les dégâts de combat s’égarent dans le blanc —
+    // les dégâts de capacité et de magie, eux, traversent le voile.
+    if (duel.brouillardCombat && coup.sourceType === 'attaque') continue;
     if (entite.bouclierLumiere && (coup.sourceType === 'attaque' || coup.sourceType === 'magie')) {
       entite.bouclierLumiere = false;
       continue;
@@ -988,6 +1079,20 @@ function annulerInfiltrations(duel) {
   }
 }
 
+/**
+ * Gèle une créature (la Poigne de givre, le Verglas) : ni attaque ni blocage
+ * jusqu'à la fin du **prochain tour de son contrôleur** — si le gel tombe
+ * pendant le tour du contrôleur, il couvre donc le tour en cours et le
+ * suivant ; sinon, le prochain tour du contrôleur. `gelToursRestants` compte
+ * les tours du contrôleur qui restent à couvrir, décomptés à `rpgFinDeTour`.
+ */
+function gelerEntite(duel, entite) {
+  const proprietaire = duel.joueur.creatures.some((candidate) => candidate.id === entite.id)
+    ? 'joueur' : 'sorcier';
+  entite.gelToursRestants = duel.tour === proprietaire ? 2 : 1;
+  duel.log.push(`${entite.name} est gelée : ni attaque ni blocage jusqu’à la fin de son prochain tour.`);
+}
+
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut une
  *  entité du buff (le Colosse ne se buffe pas lui-même). */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
@@ -1154,18 +1259,52 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // le tour qui le voit naître, pour être effacé à `rpgFinDeTour` de CE
       // tour-là (voir `annulerBonusTemporaires`). Le Rempart de dunes tient donc
       // pour l’échange en cours, pas au-delà.
+      //
+      // `cible: 'creatures-adverses'` (l’Embuscade) inverse le camp visé : le
+      // maléfice frappe la table adverse, et `minimum` (plancher 1 pour
+      // l’Embuscade) empêche les statistiques de descendre sous ce seuil — une
+      // créature amputée survit, jamais tuée par le débuff seul. `blocageForce`
+      // marque aussi les créatures touchées : elles devront bloquer.
       const temporaire = Number(effet.tours) > 0;
-      const carnet = (duel[cote].bonusTemporaires ??= []);
-      for (const entite of duel[cote].creatures) {
+      const contreAdversaire = effet.cible === 'creatures-adverses';
+      const campCible = contreAdversaire ? duel[adv] : duel[cote];
+      const carnet = (campCible.bonusTemporaires ??= []);
+      const plancher = Number.isFinite(effet.minimum) ? effet.minimum : 0;
+      let forces = 0;
+      for (const entite of campCible.creatures) {
         if (sauf === entite.id || rpgEstProtegee(entite, sourceElement)) continue;
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
-        entite.atk += bonusAttaque;
-        entite.pvMax = (entite.pvMax ?? entite.def) + bonusDefense;
-        entite.def += bonusDefense;
-        entite.pv += bonusDefense;
+        entite.atk = Math.max(plancher, entite.atk + bonusAttaque);
+        entite.pvMax = Math.max(plancher, (entite.pvMax ?? entite.def) + bonusDefense);
+        entite.def = Math.max(plancher, entite.def + bonusDefense);
+        entite.pv = Math.max(plancher, entite.pv + bonusDefense);
         if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tour: duel.tour });
+        if (effet.blocageForce) {
+          entite.blocageForce = { par: cote, portee: effet.blocageForce === 'tour' ? 'tour' : 'attaque' };
+          forces += 1;
+        }
       }
+      if (forces) {
+        duel.log.push(`${forces} créature${forces > 1 ? 's adverses doivent' : ' adverse doit'} bloquer si ${forces > 1 ? 'elles le peuvent' : 'elle le peut'} ${effet.blocageForce === 'tour' ? 'ce tour' : 'lors de votre prochaine attaque'}.`);
+      }
+      return;
+    }
+    case 'brouillard': {
+      // Le Grand Voile blanc : aucun dégât de combat ce tour, des deux côtés.
+      // Le voile meurt avec le tour en cours (voir `rpgFinDeTour`).
+      duel.brouillardCombat = true;
+      duel.log.push('Un grand voile blanc couvre le champ : aucun dégât de combat ce tour.');
+      return;
+    }
+    case 'blocage-force': {
+      // L’Appât de la meute : la créature adverse ciblée doit bloquer si elle
+      // le peut lors de la prochaine attaque du lanceur (le marqueur est
+      // dépensé par cette attaque, voir `rpgLancerAttaque`).
+      const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
+      if (!entite || rpgEstProtegee(entite, sourceElement)) return;
+      entite.blocageForce = { par: cote, portee: effet.portee === 'tour' ? 'tour' : 'attaque' };
+      duel.log.push(`${entite.name} devra bloquer si elle le peut lors de votre prochaine attaque.`);
       return;
     }
     case 'infiltration': {
@@ -1239,6 +1378,13 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         : duel[adv].creatures.filter((entite) => entite.id === cibleId);
       for (const cible of cibles) {
         rpgBlesserCreature(duel, adv, cible.id, effet.amount ?? 0, sourceElement, null, sourceType);
+        // Le gel (`gel`) accompagne les dégâts — la Poigne de givre, le
+        // Verglas. La créature tuée n'a rien à figer ; la survivante ne
+        // rejoindra ni l'attaque ni le blocage avant la fin de son prochain tour.
+        if (effet.gel) {
+          const survivante = duel[adv].creatures.find((entite) => entite.id === cible.id);
+          if (survivante) gelerEntite(duel, survivante);
+        }
       }
       differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId);
       return;
@@ -1514,10 +1660,13 @@ export function rpgActiverArme(duel, cote, entiteId) {
   return { ok: true, entite };
 }
 
-const pret = (entite) => entite && entite.ready && !entite.attaquee;
+// Gelé (Poigne de givre, Verglas) : la créature ni n'attaque ni ne bloque.
+const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
+const pret = (entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite);
 // Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
-const peutBloquer = (entite) => entite && !entite.attaquee;
+// Le gel, lui, ferme aussi la défense.
+const peutBloquer = (entite) => entite && !entite.attaquee && !estGelee(entite);
 
 /**
  * Qui peut bloquer qui :
@@ -1538,6 +1687,9 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   const cible = duel[autre(cote)].creatures.find((e) => e.id === cibleId);
   if (!attaquant || !cible) return { ok: false, raison: 'absente' };
   if (!pret(attaquant)) return { ok: false, raison: 'pas-pret' };
+  // Toute attaque déclarée passe par une bannière : celle du Daimyō grandit
+  // l'attaquant Samouraï avant les blessures, comme dans `rpgLancerAttaque`.
+  appliquerBannieresAttaque(duel, cote, [attaquant]);
   attaquant.attaquee = true;
 
   const carteAttaquant = duelCardById(attaquant.carteId);
@@ -1647,7 +1799,7 @@ function choisirContreIA(duel, carte) {
 }
 
 /** Lancer une magie : sorcellerie pendant son tour, magie rapide aussi en réponse. */
-export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
+export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeId = null) {
   const camp = duel[cote];
   const adv = autre(cote);
   const carte = magieById(carteId);
@@ -1685,6 +1837,22 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
+  if (carte.effet.type === 'combat' && carte.effet.sourceCible === 'creature-amie') {
+    // Le Défi du Jarl : deux désignations — votre champion, puis la créature
+    // adverse. Sans les deux, le duel n'a pas lieu et le mana reste entier.
+    const champion = camp.creatures.find((entite) => entite.id === cibleAllieeId);
+    const adverse = duel[adv].creatures.find((entite) => entite.id === cibleId);
+    if (!champion || !adverse) return { ok: false, raison: 'cible' };
+    if (rpgEstProtegee(champion, cardColors(carte)) || rpgEstProtegee(adverse, cardColors(carte))) {
+      return { ok: false, raison: 'protection' };
+    }
+  }
+  if (carte.effet.type === 'blocage-force') {
+    // L’Appât de la meute exige une créature adverse à marquer.
+    const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+    if (!cible) return { ok: false, raison: 'cible' };
+    if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
 
   if (cote === 'joueur' && !duel.annonce) {
     const contreIA = choisirContreIA(duel, carte);
@@ -1698,7 +1866,11 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     && cibleId === 'sorcier'
     ? { ...carte.effet, cible: 'sorcier' }
     : carte.effet;
-  appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'magie', carteId);
+  // Pour un duel (`combat`), `sauf` porte le champion allié — le cas `combat`
+  // d’`appliquer` lit sa source dans ce paramètre.
+  appliquer(duel, cote, effet, cibleId,
+    carte.effet.type === 'combat' ? (cibleAllieeId ?? null) : null,
+    cardColors(carte), 'magie', carteId);
   if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
   rpgActionsEtat(duel);
@@ -1783,6 +1955,20 @@ export function rpgLancerAttaque(
       attaquantId,
       Array.isArray(idsBloqueurs) ? idsBloqueurs : idsBloqueurs ? [idsBloqueurs] : [],
     ]));
+  // Blocage forcé (l’Appât de la meute, l’Embuscade) : chaque créature marquée
+  // par ce camp doit bloquer si elle le peut — le marqueur part à la prochaine
+  // attaque du lanceur (« si elle le peut » : sans blocage légal, elle est libre).
+  const forces = bloqueursDisponibles.filter((entite) => entite.blocageForce?.par === cote);
+  for (const force of forces) {
+    const dejaAssigne = Object.values(affectations).some((idsBloqueurs) => idsBloqueurs.includes(force.id));
+    if (dejaAssigne) continue;
+    const candidats = attaquants
+      .filter((attaque) => rpgPeutBloquerAttaquant(force, attaque)
+        && !rpgEstProtegee(attaque, cardColors(duelCardById(force.carteId))))
+      .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
+    if (!candidats.length) continue;
+    affectations[candidats[0].id] = [...(affectations[candidats[0].id] ?? []), force.id];
+  }
   const attaquantsDejaBloques = new Set((attaquantsBloques
     ?? Object.entries(affectations).filter(([, idsBloqueurs]) => idsBloqueurs.length).map(([id]) => id))
     .filter((id) => ids.includes(id)));
@@ -1804,6 +1990,28 @@ export function rpgLancerAttaque(
       bloqueursUtilises.add(bloqueurId);
     }
   }
+
+  // La déclaration est légale : la bannière du Daimyō (et de tout porteur du
+  // même déclenché) grandit chaque Samouraï engagé AVANT que les blessures ne
+  // soient calculées — le partage et la frappe du tour lisent donc la force
+  // augmentée. Le contrôle des répartitions fournies par l'appelant, plus bas,
+  // compare au total de l'attaquant tel qu'il est ici : une répartition figée
+  // sur les statistiques d'avant la bannière est refusée. Une répartition
+  // refusée est une erreur d'appel (l'interface laisse le moteur partager) :
+  // la table est alors rendue telle qu'elle était, bannière comprise.
+  const avantBanniere = attaquants.map((entite) => ({
+    entite, atk: entite.atk, def: entite.def, pv: entite.pv, pvMax: entite.pvMax, journal: duel.log.length,
+  }));
+  const annulerBanniere = () => {
+    for (const etat of avantBanniere) {
+      etat.entite.atk = etat.atk;
+      etat.entite.def = etat.def;
+      etat.entite.pv = etat.pv;
+      etat.entite.pvMax = etat.pvMax;
+    }
+    duel.log.length = avantBanniere[0].journal;
+  };
+  appliquerBannieresAttaque(duel, cote, attaquants);
 
   // Les capacités déclenchées par les blocages précèdent même le partage des
   // blessures. Prévoir aussi les destructions en chaîne, boucliers et protections
@@ -1874,14 +2082,19 @@ export function rpgLancerAttaque(
       }
     } else {
       if (Object.keys(saisie).some((id) => !idsBloqueurs.includes(id))) {
+        annulerBanniere();
         return { ok: false, raison: 'repartition' };
       }
       for (const bloqueurId of idsBloqueurs) {
         const amount = Number(saisie[bloqueurId] ?? 0);
-        if (!Number.isInteger(amount) || amount < 0) return { ok: false, raison: 'repartition' };
+        if (!Number.isInteger(amount) || amount < 0) {
+          annulerBanniere();
+          return { ok: false, raison: 'repartition' };
+        }
         distribution[bloqueurId] = amount;
       }
       if (Object.values(distribution).reduce((total, amount) => total + amount, 0) !== attaquant.atk) {
+        annulerBanniere();
         return { ok: false, raison: 'repartition' };
       }
     }
@@ -1958,6 +2171,8 @@ export function rpgLancerAttaque(
 
   for (const coup of coupsSorcier) {
     if (!duel[cote].creatures.some((entite) => entite.id === coup.attaquantId)) continue;
+    // Le Grand Voile blanc avale aussi les coups portés au sorcier.
+    if (duel.brouillardCombat) continue;
     resume.frappeSorcier += coup.amount;
     rpgInfligerSorcier(duel, adv, coup.amount);
   }
@@ -1976,6 +2191,16 @@ export function rpgLancerAttaque(
   duel.log.push(resume.paires.length || resume.coupsRapides.length
     ? `Combat : ${attaquants.length} attaquant(s), ${resume.paires.length} bloqué(s), ${resume.frappeSorcier} dégâts directs.`
     : `${attaquants.length} créature(s) frappent le sorcier (${resume.frappeSorcier}).`);
+  if (duel.brouillardCombat) {
+    duel.log.push('Le grand voile blanc absorbe les dégâts de combat.');
+  }
+  // L’attaque est passée : le blocage forcé « lors de votre prochaine attaque »
+  // (l’Appât de la meute) a été dépensé par celle-ci.
+  for (const entite of duel[adv].creatures) {
+    if (entite.blocageForce?.par === cote && entite.blocageForce?.portee === 'attaque') {
+      entite.blocageForce = null;
+    }
+  }
   // Le combat est derrière nous : le joueur actif entre en deuxième phase
   // principale (ses attaquants restent engagés jusqu'à son prochain tour).
   if (cote === duel.tour) duel.phase = 'principale2';
@@ -2002,9 +2227,18 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   } else if (cibleCreatureId) {
     return { ok: false, raison: 'cible' };
   }
+  // L'attaque directe est une attaque comme une autre : la bannière grandit
+  // l'attaquant avant sa frappe. Le Coup rapide, plus haut, est passé par
+  // `rpgLancerAttaque` et a déjà reçu son déclenchement.
+  appliquerBannieresAttaque(duel, cote, [attaquant]);
   attaquant.attaquee = true;
-  rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
-  duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
+  if (duel.brouillardCombat) {
+    // Le Grand Voile blanc : le coup s'égare, le sorcier ne prend rien.
+    duel.log.push(`${attaquant.name} frappe dans le grand voile blanc : le sorcier ne prend rien.`);
+  } else {
+    rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
+    duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
+  }
   rpgActionsEtat(duel);
   return { ok: true };
 }
@@ -2118,6 +2352,21 @@ export function rpgFinDeTour(duel) {
   }
   annulerBonusTemporaires(duel, duel.tour); // le bonus meurt avec le tour qui l’a vu jouer
   annulerInfiltrations(duel); // l’Infiltration aussi : redevenues bloquables
+  // Le gel (la Poigne de givre, le Verglas) compte les tours du contrôleur de
+  // la créature figée : la fin de chacun de SES tours en décoche un.
+  for (const entite of duel[duel.tour].creatures) {
+    if (!(entite.gelToursRestants > 0)) continue;
+    entite.gelToursRestants -= 1;
+    if (entite.gelToursRestants <= 0) duel.log.push(`${entite.name} n’est plus gelée.`);
+  }
+  // Le Grand Voile blanc et le blocage forcé « ce tour » (l’Embuscade)
+  // meurent avec le tour en cours.
+  duel.brouillardCombat = false;
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      if (entite.blocageForce?.portee === 'tour') entite.blocageForce = null;
+    }
+  }
   duel.tour = autre(duel.tour);
   duel.phase = 'debut';
   const camp = duel[duel.tour];
@@ -2158,7 +2407,7 @@ export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
   if (duel.annonce) return duel.annonce;
   const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
   if (!coup) return null;
-  duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: coup.cibleId ?? null };
+  duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: coup.cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null };
   duel.fenetreReponse = true;
   duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? armeById(coup.carteId)?.name ?? coup.carteId}.`);
   return duel.annonce;
@@ -2174,7 +2423,7 @@ export function rpgSorcierResoudreAnnonce(duel) {
     ? rpgJouerArme(duel, 'sorcier', annonce.carteId, annonce.cibleId)
     : duelCardById(annonce.carteId)
       ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
-      : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId);
+      : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId, annonce.cibleAllieeId ?? null);
   rpgActionsEtat(duel);
   return { ...res, carteId: annonce.carteId };
 }

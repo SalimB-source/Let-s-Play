@@ -90,9 +90,16 @@ const PLEIN_ART_45 = [
   'cretes-de-cendre', 'lagune-des-salines', 'petra-des-deux-sources',
   'glacier-des-arches',
   'djinn-de-foudre', 'sonneur-fele', 'silence-decume',
+  // Le lot du gel du Serment : six peintures en fresque, livrées au ratio de
+  // la face comme le reste de la collection.
+  'poigne-de-givre', 'grand-voile-blanc', 'appat-de-la-meute',
+  'verglas', 'defi-du-jarl', 'embuscade',
   // Les créatures-jetons de Tarek : deux chiens de sable peints dans la
   // palette de son illustration, livrés eux aussi au format de la face.
   'chien-de-sable',
+  // Le Samouraï levé par le Daimyō du Soleil rouge, dans la palette kaiga du
+  // set japonais : lui aussi livré au ratio de la face.
+  'samourai-du-daimyo',
   // Les quatre armes du prototype, peintes comme le reste du catalogue.
   'takouba-des-pistes', 'baton-des-citernes', 'armure-de-cendres', 'lance-de-givre',
   // La refonte du Père des corbeaux (Odin photoréaliste) est livrée elle
@@ -463,8 +470,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
   // dédiée, variante du Glacier comprise (aucune ne partage le fichier d’une autre).
   const illustrationsNeige = RPG_DECK_NEIGE_BASE.filter((id, index, deck) => deck.indexOf(id) === index);
-  assert.equal(illustrationsNeige.length, 16,
-    'le deck Neige réunit les seize cartes que la recette du Serment retient');
+  assert.equal(illustrationsNeige.length, 18,
+    'le deck Neige réunit les dix-huit cartes que la recette du Serment retient');
   for (const carteId of illustrationsNeige) {
     assert.equal(cardArtId(carteId), carteId,
       `${carteId} affiche sa propre illustration Neige`);
@@ -2131,7 +2138,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et magies rapides de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 24);
+  assert.equal(RPG_MAGIE_CARDS.length, 30);
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les quatre couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);
@@ -2267,13 +2274,142 @@ test('Parade de verre ne se lance pas si sa créature cible est absente', () => 
   assert.ok(duel.joueur.main.includes('parade-du-verre'), 'la carte et le mana restent intacts');
 });
 
-test('le plein art du Serment est livré : les vingt et une cartes Neige sont dédiées, aucune provisoire', () => {
+// ── Le lot du gel du Serment ───────────────────────────────────────────────
+// Six sorts de contrôle du combat : gel (Poigne de givre, Verglas), brume de
+// combat (Grand Voile blanc), blocage forcé (Appât de la meute, Embuscade) et
+// duel de champions (Défi du Jarl).
+
+test('Poigne de givre : 2 dégâts et gel — la créature n’attaque ni ne bloque jusqu’à la fin de son prochain tour', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 5);
+  donnerMana(duel, 'sorcier', 5);
+  donner(duel, 'sorcier', 'colosse-de-sel'); // 5/5
+  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  colosse.ready = true;
+  donner(duel, 'joueur', 'poigne-de-givre');
+  const res = rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', colosse.id);
+  assert.equal(res.ok, true);
+  assert.equal(colosse.pv, 3, 'la Poigne inflige 2 dégâts');
+  assert.ok(colosse.gelToursRestants > 0, 'le Colosse est gelé');
+  assert.equal(rpgLancerAttaque(duel, 'sorcier', [colosse.id], { [colosse.id]: [] }).raison, 'pas-pret',
+    'une créature gelée ne part pas à l’attaque');
+  rpgFinDeTour(duel); // fin du tour du joueur
+  assert.ok(colosse.gelToursRestants > 0, 'le gel tient pendant le tour du contrôleur');
+  rpgFinDeTour(duel); // fin du prochain tour du sorcier
+  assert.equal(colosse.gelToursRestants, 0, 'le gel tombe à la fin du prochain tour du contrôleur');
+});
+
+test('Grand Voile blanc : les dégâts de combat du tour s’égarent dans le blanc', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 5);
+  donnerMana(duel, 'sorcier', 5);
+  donner(duel, 'sorcier', 'colosse-de-sel'); // 5/5
+  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  colosse.ready = true;
+  duel.tour = 'sorcier';
+  rpgOuvrirFenetreReponse(duel, 'sorcier');
+  donner(duel, 'joueur', 'grand-voile-blanc');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'grand-voile-blanc').ok, true,
+    'la magie rapide se joue dans la fenêtre de réponse adverse');
+  const res = rpgLancerAttaque(duel, 'sorcier', [colosse.id], { [colosse.id]: [] });
+  assert.equal(res.ok, true);
+  assert.equal(res.resume.frappeSorcier, 0, 'le voile avale les coups');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'aucun dégât de combat ne passe');
+  rpgFinDeTour(duel); // fin du tour du sorcier : le voile tombe avec le tour
+  assert.equal(duel.brouillardCombat, false);
+});
+
+test('Appât de la meute : la créature marquée doit bloquer la prochaine attaque du lanceur', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 5);
+  donnerMana(duel, 'sorcier', 5);
+  donner(duel, 'sorcier', 'colosse-de-sel'); // 5/5
+  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  donner(duel, 'joueur', 'appat-de-la-meute');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'appat-de-la-meute', colosse.id).ok, true);
+  donner(duel, 'joueur', 'chien-du-guet'); // 2/2
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  chien.ready = true;
+  // Même avec une affectation de blocage laissée vide, le marqueur force le
+  // Colosse à se jeter devant l’assaillant.
+  const res = rpgLancerAttaque(duel, 'joueur', [chien.id], { [chien.id]: [] });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.resume.blocages[chien.id], [colosse.id], 'le Colosse marqué se jette devant le Chien');
+  assert.equal(res.resume.frappeSorcier, 0, 'l’attaque est bloquée de force');
+  assert.equal(colosse.pv, 3, 'le Chien laisse 2 dégâts au Colosse avant de tomber');
+});
+
+test('Verglas : 1 dégât et gel de masse sur la table adverse', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 8);
+  donnerMana(duel, 'sorcier', 8);
+  donner(duel, 'sorcier', 'colosse-de-sel'); // 5/5
+  donner(duel, 'sorcier', 'fennec-des-decombres'); // 3/1, Esquive 1
+  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  const fennec = rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres').entite;
+  colosse.ready = true;
+  fennec.ready = true;
+  donner(duel, 'joueur', 'verglas');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'verglas').ok, true);
+  assert.equal(colosse.pv, 4, 'le Colosse prend le dégât de grêle');
+  assert.equal(fennec.pv, 1, 'l’Esquive du Fennec absorbe le dégât de magie');
+  assert.ok(colosse.gelToursRestants > 0 && fennec.gelToursRestants > 0,
+    'toute la table adverse est gelée');
+  assert.equal(rpgLancerAttaque(duel, 'sorcier', [colosse.id, fennec.id], {}).raison, 'pas-pret',
+    'plus personne ne part à l’attaque');
+});
+
+test('Défi du Jarl : le champion allié se bat avec la créature adverse ciblée', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 5);
+  donnerMana(duel, 'sorcier', 5);
+  donner(duel, 'joueur', 'colosse-de-sel'); // 5/5
+  donner(duel, 'sorcier', 'porteuse-de-cruches'); // 1/3
+  const colosse = rpgJouerCreature(duel, 'joueur', 'colosse-de-sel').entite;
+  const porteuse = rpgJouerCreature(duel, 'sorcier', 'porteuse-de-cruches').entite;
+  donner(duel, 'joueur', 'defi-du-jarl');
+  // Le duel exige les deux désignations : sans elles, rien ne se lance ni ne se paie.
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'defi-du-jarl', porteuse.id).raison, 'cible');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'defi-du-jarl', null, colosse.id).raison, 'cible');
+  assert.equal(duel.joueur.mana.neige, 5, 'le mana reste entier tant que le duel n’a pas ses deux cibles');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'defi-du-jarl', porteuse.id, colosse.id).ok, true);
+  assert.equal(duel.sorcier.creatures.length, 0, 'la Porteuse tombe sous les 5 dégâts du champion');
+  assert.equal(colosse.pv, 4, 'le Colosse encaisse le coup de la Porteuse et survit');
+});
+
+test('Embuscade : -2/-2 jamais sous 1/1, et toute la table adverse doit bloquer ce tour', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 8);
+  donnerMana(duel, 'sorcier', 8);
+  donner(duel, 'sorcier', 'colosse-de-sel'); // 5/5
+  donner(duel, 'sorcier', 'chien-du-guet'); // 2/2
+  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'embuscade');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'embuscade').ok, true);
+  assert.deepEqual([chien.atk, chien.def, chien.pv], [1, 1, 1],
+    'le Chien 2/2 tombe à 1/1 : jamais sous le plancher');
+  assert.deepEqual([colosse.atk, colosse.def, colosse.pv], [3, 3, 3], 'le Colosse 5/5 devient 3/3');
+  donner(duel, 'joueur', 'chien-du-guet');
+  const assaillant = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  assaillant.ready = true;
+  const res = rpgLancerAttaque(duel, 'joueur', [assaillant.id], { [assaillant.id]: [] });
+  assert.equal(res.ok, true);
+  assert.equal(res.resume.blocages[assaillant.id].length, 2,
+    'les deux créatures adverses doivent se jeter devant l’assaillant');
+  rpgFinDeTour(duel); // fin du tour : le marqueur « ce tour » s’efface
+  for (const entite of duel.sorcier.creatures) {
+    assert.equal(entite.blocageForce, null, `${entite.name} n’est plus forcée de bloquer`);
+  }
+});
+
+test('le plein art du Serment est livré : les vingt-sept cartes Neige sont dédiées, aucune provisoire', () => {
   // La liste des illustrations provisoires est vide : le deck Neige et sa
   // variante de Glacier sont entièrement peints.
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'terrain', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 21, 'vingt et une cartes Neige au catalogue');
+  assert.equal(cartesNeige.length, 27, 'vingt-sept cartes Neige au catalogue');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['arme', 'creature', 'hero', 'magie', 'terrain'], 'le set Neige couvre les cinq types de cartes');
   for (const carte of cartesNeige) {
@@ -2324,7 +2460,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 21, 'les vingt et une peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 27, 'les vingt-sept peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 17 terrains en deux arts, mythiques en un exemplaire', () => {

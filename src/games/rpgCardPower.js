@@ -55,7 +55,10 @@ function valeurEffet(effet = {}) {
         : effet.cible === 'sorcier' ? 1
           : 1.25;
       const echo = Number(effet.echo?.amount) || 0;
-      return montant * facteur + echo * 0.9;
+      // Le gel qui accompagne les dégâts (la Poigne de givre, le Verglas)
+      // vaut un retrait de tempo en plus de la blessure.
+      const gel = effet.gel ? 1.5 : 0;
+      return montant * facteur + echo * 0.9 + gel;
     }
     case 'soin':
       return montant * 0.5;
@@ -69,10 +72,23 @@ function valeurEffet(effet = {}) {
       return montant * 0.7;
     case 'bouclier-lumiere':
       return 2.5;
+    case 'brouillard':
+      // Une attaque entière annulée : la même échelle qu'un bon retrait.
+      return 3;
+    case 'blocage-force':
+      return 1.5;
     case 'arme':
       return (Number(effet.atk) || 0) * 0.8 + (Number(effet.def) || 0) * 0.6 + (effet.coupRapide ? 2 : 0);
-    case 'buff':
-      return (Number(effet.atk) || 0) * 0.8 + (Number(effet.def) || 0) * 0.6;
+    case 'buff': {
+      const atk = Number(effet.atk) || 0;
+      const def = Number(effet.def) || 0;
+      // Un débuff (l'Embuscade) vaut par ce qu'il retire à l'adversaire :
+      // ses chiffres comptent en valeur absolue, plus le blocage forcé.
+      if (effet.cible === 'creatures-adverses' || atk < 0 || def < 0) {
+        return Math.abs(atk) * 0.8 + Math.abs(def) * 0.6 + (effet.blocageForce ? 1 : 0) + 0.5;
+      }
+      return atk * 0.8 + def * 0.6;
+    }
     case 'infiltration':
       // +X/+Y durable ET tout le camp imblocable pour l'échange en cours :
       // le passe-droit vaut à lui seul une belle carte de pression.
@@ -137,6 +153,9 @@ export function valeurCarte(carte) {
   if (carte.honneur) valeur += carte.honneur;
   if (carte.combat) valeur += 2;
   if (carte.aura) valeur += 2.5;
+  // Bannière : chaque attaque d'un Samouraï du camp laisse un +X/+X définitif
+  // à l'attaquant — un renfort récurrent, un cran au-dessus d'une aura fixe.
+  if (carte.banniere) valeur += 3;
   if (carte.arrivee) valeur += valeurEffet(carte.arrivee);
   if (carte.activation) valeur += valeurEffet(carte.activation.effet) + 1;
   return valeur;
