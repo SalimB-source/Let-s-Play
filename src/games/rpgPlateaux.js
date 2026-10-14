@@ -25,14 +25,14 @@
  * Il n'y a donc plus ni pastille « Aléatoire », ni verrou de plateau, ni
  * sauvegarde du choix sur l'appareil : rien à mémoriser, rien à reprendre.
  *
- * Les terrains classiques ont leur **double merveilleux** : quand la partie
- * l'autorise (`variantesFantaisistes`), un second tirage peut échanger le
- * terrain imposé contre sa version fantaisiste — l'Erg contre le Désert de
+ * Trois des terrains classiques ont leur **double merveilleux** : quand la
+ * partie l'autorise (`variantesFantaisistes`), un second tirage peut échanger
+ * le terrain imposé contre sa version fantaisiste — l'Erg contre le Désert de
  * Verre, les Ruines contre les Abysses Phosphorescentes, le Fjord contre les
- * Îles Célestes, et la Table des Heures — le terrain de la Braise depuis le
- * retrait des Brûlés — contre les Cavernes de Cristal. Seule la piste
- * caravanière reste unique. Le motif et le camp ne bougent pas : ils disent
- * toujours quel deck a imposé le terrain.
+ * Îles Célestes. La piste caravanière et la Table des Heures — la table
+ * d'origine, que les Cavernes de Cristal ont quittée — restent uniques. Le
+ * motif et le camp ne bougent pas : ils disent toujours quel deck a imposé le
+ * terrain.
  *
  * Un plateau = un identifiant, un nom lisible, un lieu, un fichier de
  * `public/` et un résumé pour l'annonce d'ouverture. Le fichier est un fond
@@ -82,7 +82,7 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-ruines-de-tipaza.jpg',
     resume: 'La mosaïque de pierre noire et blanche ouverte par le vent, les dalles romaines disjointes, les fûts de colonne et le chapiteau corinthien tombés à l’entour.',
   },
-  // Les doubles merveilleux : un par couleur, atteints par le second tirage
+  // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
   {
     id: 'desert-de-verre',
@@ -90,13 +90,6 @@ export const RPG_PLATEAUX = [
     lieu: 'Au-delà de l’Erg, là où la foudre a fondu le sable',
     fichier: 'plateau-desert-de-verre.jpg',
     resume: 'L’étendue de sable vitrifié, ambrée et aigue-marine ; l’anneau de cristal pilé au centre, les roses de verre, l’astrolabe de laiton, l’outre et la corde aux coins.',
-  },
-  {
-    id: 'cavernes-de-cristal',
-    nom: 'Les Cavernes de Cristal',
-    lieu: 'Les Brûlés, galeries profondes sous Bab El',
-    fichier: 'plateau-cavernes-de-cristal.jpg',
-    resume: 'Le dallage d’obsidienne veiné de braise ; l’anneau de poussière de cristal au centre, les améthystes et les rubis, les fissures de lave aux bords.',
   },
   {
     id: 'abysses-phosphorescentes',
@@ -153,13 +146,13 @@ export const RPG_PLATEAUX_PAR_COULEUR = {
 
 /**
  * Le double merveilleux d'un terrain classique, par identifiant de plateau.
- * La Table des Heures — le terrain de la Braise depuis le retrait des
- * Brûlés — s'embrase en Cavernes de Cristal ; seule la piste caravanière
- * reste unique.
+ * L'Erg s'effile en Désert de Verre, les Ruines sombrent en Abysses
+ * Phosphorescentes, le Fjord s'allège en Îles Célestes. La piste caravanière
+ * et la Table des Heures — la table d'origine, depuis le retrait des Cavernes
+ * de Cristal — restent uniques.
  */
 export const RPG_PLATEAUX_VARIANTES_FANTAISISTES = {
   'erg-du-sahara': 'desert-de-verre',
-  'table-des-heures': 'cavernes-de-cristal',
   'ruines-de-tipaza': 'abysses-phosphorescentes',
   'fjord-des-neuf-hivers': 'iles-celestes',
 };
@@ -177,8 +170,8 @@ export function plateauDeRepli() {
 
 /**
  * Le double merveilleux d'un plateau — son identifiant ou le plateau lui-même
- * —, ou `null` quand il n'en a pas (piste caravanière, variantes
- * elles-mêmes, inconnu).
+ * —, ou `null` quand il n'en a pas (piste caravanière, Table des Heures,
+ * variantes elles-mêmes, inconnu).
  */
 export function varianteFantaisisteDe(plateau) {
   const identifiant = typeof plateau === 'string' ? plateau : plateau?.id;

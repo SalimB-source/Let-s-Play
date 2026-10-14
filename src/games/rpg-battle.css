@@ -2191,9 +2191,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-desert-de-verre {
   background-color: #9aa48a;
 }
-.card-table--plateau-cavernes-de-cristal {
-  background-color: #302830;
-}
 .card-table--plateau-abysses-phosphorescentes {
   background-color: #adc1b8;
 }
