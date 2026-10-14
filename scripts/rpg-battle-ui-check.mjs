@@ -34,6 +34,8 @@ try {
 
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+const guideCss = readFileSync(new URL('../src/games/rpg-card-guide.css', import.meta.url), 'utf8');
+const atelierCss = readFileSync(new URL('../src/games/rpg-deck-atelier.css', import.meta.url), 'utf8');
 const { RPG_PLATEAUX } = await import('../src/games/rpgPlateaux.js');
 const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const duelEngine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
@@ -441,27 +443,39 @@ assert.match(battlePage, /⚔<\/span> Jouer\s*<\/button>/,
 assert.match(battlePage, /cardFrameClass\(carte\)/,
   'les cartes en main, sur table et les aperçus portent leur élément');
 const frameCss = battleCss.slice(battleCss.lastIndexOf('/* Le cadre suit la COULEUR'));
-// L'épaisseur du cadre suit la largeur de la carte, dans l'esprit d'une carte
-// Magic : trois gabarits en `vw`, bornés, posés sur `.rpg-battle`, et chaque
-// format prend le sien — la couleur et la matière restant communes.
+// L'épaisseur du cadre suit la largeur de la carte : trois gabarits en `vw`,
+// bornés, posés sur `.rpg-battle`, et chaque format prend le sien — la
+// couleur et la matière restant communes.
 const gabarits = battleCss.match(/\.rpg-battle\s*\{\s*--rpg-card-border:\s*clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\);\s*--rpg-card-border-large:\s*clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\);\s*--rpg-card-border-small:\s*clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\);/);
 assert.ok(gabarits, 'les trois gabarits de cadre (normal, grand, petit) sont déclarés en `clamp(px, vw, px)` sur `.rpg-battle`');
 const [normalMin, normalVw, normalMax, grandMin, grandVw, grandMax, petitMin, petitVw, petitMax] = gabarits.slice(1).map(Number);
 assert.ok(petitMax <= normalMin && normalMax <= grandMin + 1 && petitVw < normalVw && normalVw < grandVw,
   `les gabarits s'emboîtent : petit (${petitMin}–${petitMax}px) < normal (${normalMin}–${normalMax}px) < grand (${grandMin}–${grandMax}px)`);
-// ≈ 3,5 % de la largeur : une carte en main fait clamp(104px, 9.6vw, 136px), la
-// face de l'aperçu 232 px, un terrain clamp(74px, 6.6vw, 96px). Ni le filet
-// d'avant (3 px partout, 1,3 % sur l'aperçu), ni un bord qui mange l'illustration.
-assert.ok(normalMax / 136 >= 0.03 && normalMax / 136 <= 0.045 && normalMin / 104 >= 0.03,
-  `le gabarit normal fait 3 à 4,5 % d'une carte en main (reçu : ${(normalMax / 136 * 100).toFixed(1)} % au plus large)`);
-assert.ok(grandMax / 232 >= 0.025 && grandMax / 232 <= 0.04,
-  `le grand gabarit fait 2,5 à 4 % de la face de l'aperçu (reçu : ${(grandMax / 232 * 100).toFixed(1)} %)`);
-assert.ok(petitMax / 96 <= 0.045 && petitMin / 74 >= 0.03,
-  `le petit gabarit fait 3 à 4,5 % d'un terrain (reçu : ${(petitMin / 74 * 100).toFixed(1)}–${(petitMax / 96 * 100).toFixed(1)} %)`);
-assert.match(battleCss, /\.rpg-battle\s*\{\s*--rpg-card-border:\s*clamp\(4\.5px, 0\.48vw, 6px\);\s*--rpg-card-border-large:\s*clamp\(6px, 0\.68vw, 8px\);\s*--rpg-card-border-small:\s*clamp\(4px, 0\.34vw, 4\.25px\);\s*--rpg-card-border-strong:\s*clamp\(5px, 0\.58vw, 6\.5px\);/,
-  'les cadres des cartes sont encore épaissis sur tous les gabarits (normal, grand, petit, renforcé), sans dépasser 4,5 % de la carte');
-assert.match(mobileCss, /--rpg-card-border:\s*clamp\(2\.5px, 1\.1vw, 5px\);[^}]*--rpg-card-border-strong:\s*clamp\(3px, 1\.2vw, 5\.5px\);/s,
-  'au doigt aussi, le cadre grandit encore un peu (plafonds relevés, planchers des petites cartes inchangés)');
+// La mesure commune est la plaque des armes : 1,6 fois l'ancien gabarit, soit
+// ≈ 7 % de la largeur — une carte en main fait clamp(104px, 9.6vw, 136px), la
+// face de l'aperçu 232 px, un terrain clamp(74px, 6.6vw, 96px). Un anneau
+// franc, qui ne mange pas l'illustration pour autant (jamais plus de 9 %).
+assert.ok(normalMax / 136 >= 0.06 && normalMax / 136 <= 0.09 && normalMin / 104 >= 0.06,
+  `le gabarit normal fait 6 à 9 % d'une carte en main (reçu : ${(normalMax / 136 * 100).toFixed(1)} % au plus large)`);
+assert.ok(grandMax / 232 >= 0.045 && grandMax / 232 <= 0.07,
+  `le grand gabarit fait 4,5 à 7 % de la face de l'aperçu (reçu : ${(grandMax / 232 * 100).toFixed(1)} %)`);
+assert.ok(petitMax / 96 <= 0.09 && petitMin / 74 >= 0.06,
+  `le petit gabarit fait 6 à 9 % d'un terrain (reçu : ${(petitMin / 74 * 100).toFixed(1)}–${(petitMax / 96 * 100).toFixed(1)} %)`);
+// Les valeurs exactes : chaque gabarit vaut 1,6 fois celui qu'avaient les
+// autres cartes avant que la plaque des armes ne devienne la mesure commune.
+assert.match(battleCss, /\.rpg-battle\s*\{\s*--rpg-card-border:\s*clamp\(7\.2px, 0\.768vw, 9\.6px\);\s*--rpg-card-border-large:\s*clamp\(9\.6px, 1\.088vw, 12\.8px\);\s*--rpg-card-border-small:\s*clamp\(6\.4px, 0\.544vw, 6\.8px\);\s*--rpg-card-border-strong:\s*clamp\(8px, 0\.928vw, 10\.4px\);/,
+  'tous les gabarits (normal, grand, petit, renforcé) valent la plaque des armes : 1,6 fois leur ancienne épaisseur');
+assert.match(mobileCss, /--rpg-card-border:\s*clamp\(4px, 1\.76vw, 8px\);\s*--rpg-card-border-strong:\s*clamp\(4\.8px, 1\.92vw, 8\.8px\);/s,
+  'au doigt aussi, le gabarit normal vaut la plaque des armes (1,6 fois l’ancien bord tactile)');
+// Plus aucune épaisseur propre aux armes : la plaque est commune à toutes
+// les cartes, sur chaque face du duel, au doigt, dans l'atelier et le guide.
+for (const [nom, css] of [['le duel', battleCss], ['le tactile', mobileCss], ['l’atelier', atelierCss], ['le guide', guideCss]]) {
+  assert.doesNotMatch(css, /\.rpg-card--frame-arme[^{,]*\{[^}]*border-width/s,
+    `${nom} ne donne plus aux armes une épaisseur de cadre à part`);
+  assert.doesNotMatch(css, /\* 1\.6\)/, `${nom} ne multiplie plus aucun gabarit par 1,6 : la plaque est dans le gabarit lui-même`);
+}
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-terrain(?:\.rpg-terrain-stack)?\s*\{[^}]*border-width:\s*\d/s,
+  'au doigt, les terrains gardent le petit gabarit commun au lieu d’un filet fixe de 1 ou 2 px');
 assert.match(frameCss, /\.rpg-card\[class\*="rpg-card--frame-"\],\s*\.rpg-hand__card\[class\*="rpg-card--frame-"\],\s*\.rpg-card-destruction-fx\s*\{\s*border:\s*var\(--rpg-card-border, 4px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
   'main, table et animations partagent le gabarit normal, pour toute combinaison de couleurs');
 assert.match(frameCss, /\.rpg-hover-card-preview__face\s*\{\s*border:\s*var\(--rpg-card-border-large, 6px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
@@ -609,16 +623,6 @@ assert.match(cardsSource, /carte\?\.kind === 'arme'[\s\S]*?CARD_FRAME_COLORS\[`a
   'le catalogue attribue aux armes la teinte d’acier de leur élément');
 assert.match(cardsSource, /carte\?\.kind === 'arme'[\s\S]*?rpg-card--frame-arme-\$\{couleurArme\}/,
   'les faces des armes ajoutent la classe de teinte de leur élément à la matière commune');
-// Le cadre des armes est renforcé : ×1,6 le gabarit de chaque face, sans
-// toucher aux épaisseurs des autres cartes ni à la taille extérieure.
-assert.match(frameCss, /\.rpg-card\.rpg-card--frame-arme,\s*\.rpg-hand__card\.rpg-card--frame-arme,\s*\.rpg-card-destruction-fx\.rpg-card--frame-arme\s*\{\s*border-width: calc\(var\(--rpg-card-border, 4px\) \* 1\.6\);/,
-  'cartes en main, sur table et destructions : le cadre des armes vaut 1,6 fois le gabarit normal');
-assert.match(frameCss, /\.rpg-hover-card-preview__face\.rpg-card--frame-arme,\s*\.rpg-mulligan__card\.rpg-card--frame-arme,\s*\.rpg-card-catalogue__art\.rpg-card--frame-arme\s*\{\s*border-width: calc\(var\(--rpg-card-border-large, 6px\) \* 1\.6\);/,
-  'aperçu, mulligan et catalogue : le cadre des armes vaut 1,6 fois le grand gabarit');
-assert.match(frameCss, /\.rpg-spell-played__art\.rpg-card--frame-arme,\s*\.rpg-card-pile__card--top\.rpg-card--frame-arme\s*\{\s*border-width: calc\(var\(--rpg-card-border-small, 3px\) \* 1\.6\);/,
-  'magie jouée et dessus de pile : le cadre des armes vaut 1,6 fois le petit gabarit');
-assert.match(mobileCss, /\.rpg-battle--touch \.card-row \.rpg-card\.rpg-card--frame-arme,\s*\.rpg-battle--touch \.rpg-hand \.rpg-hand__card\.rpg-card--frame-arme,\s*\.rpg-battle--touch \.rpg-card-stack \.rpg-card\.rpg-card--frame-arme\s*\{\s*border-width: calc\(var\(--rpg-card-border, 2\.5px\) \* 1\.6\);/,
-  'au doigt, la plaque des armes garde son renfort sur la table, en main et dans les piles');
 assert.match(frameCss, /\.rpg-hover-card-preview\[class\*="rpg-card--frame-"\],\s*\.rpg-hover-card-preview__face\[class\*="rpg-card--frame-"\]\s*\{\s*background-color:\s*transparent;\s*\}/,
   'l’aperçu rapide ne garde aucune teinte de repli, ni sur son encadré entier ni derrière l’illustration');
 // Le vernis est réservé à la peinture mythique, indépendamment du cadre. Il
@@ -642,15 +646,18 @@ assert.match(glossCss, /\.rpg-card--mythique:is\(\.is-summoning-sick, \.is-attac
   'le vernis s’atténue quand la créature est fatiguée ou la vignette au quota');
 assert.match(glossCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-card--mythique::before,[\s\S]*?animation: none !important;[\s\S]*?background-position: 0 0, 50% 0 !important;/,
   'le vernis reste visible sans mouvement quand l’animation est réduite');
-const guideCss = readFileSync(new URL('../src/games/rpg-card-guide.css', import.meta.url), 'utf8');
-assert.match(guideCss, /\.rpg-card-guide__example:is\(\.rpg-card--mythique, \[class\*="rpg-card--frame-hybride-"\], \.rpg-card--frame-arme\)\s*\{[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
-  'le guide peint aussi la diagonale bicolore et la plaque d’acier des armes sur les cartes non mythiques');
+// Le guide habille chaque fiche du même anneau orné que les autres faces, à
+// l'épaisseur commune de 6 px (la plaque des armes) : couleur unie d'une mono,
+// diagonale d'une hybride, acier des armes — plus de filet de 1 px ni de 3 px.
+assert.match(guideCss, /\.rpg-card-guide__example\s*\{[^}]*border:\s*6px solid transparent;[^}]*var\(--rpg-frame-gradient, linear-gradient\(var\(--rpg-frame-color, var\(--rpg-guide-frame, #d3ab62\)\), var\(--rpg-frame-color, var\(--rpg-guide-frame, #d3ab62\)\)\)\)[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
+  'le guide peint l’anneau orné — couleur unie, diagonale bicolore ou acier des armes — sur toutes ses fiches, à 6 px');
+assert.doesNotMatch(guideCss, /\.rpg-card-guide__example[^{]*\{[^}]*border(?:-width)?:\s*(?:1px|3px)/s,
+  'aucune fiche du guide ne garde un cadre plus fin que la plaque commune');
 assert.match(guideCss, /\.rpg-card-guide__example\.rpg-card--frame-brillant\s*\{\s*animation:\s*rpg-frame-shine-sweep/,
   'le guide n’anime que les cadres mythiques mono-élément');
 assert.match(guideCss, /\.rpg-card-guide__cost\s*\{\s*position: absolute;\s*z-index: 2;/,
   'le coût du guide reste au-dessus du reflet de l’illustration');
 {
-  const atelierCss = readFileSync(new URL('../src/games/rpg-deck-atelier.css', import.meta.url), 'utf8');
   assert.match(atelierCss, /\.rpg-atelier__carte-art\s*\{[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
     'l’atelier peint lui aussi la diagonale à la bonne taille');
   const states = new JSDOM(`<!doctype html><style>${battleCss}\n${atelierCss}</style><div class="rpg-battle">

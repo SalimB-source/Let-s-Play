@@ -409,8 +409,11 @@ Présentation : les cartes Arme portent un **cadre d'acier métallique**
 damassées (`.rpg-card--frame-arme` dans `rpg-battle.css`, clé `arme` de
 `cardFrameInfo`), matière commune aux quatre éléments — mais chaque
 élément **teinte son acier** : rouge pour la Braise, bleu pour l'Eau,
-doré pour le Sable et glacé pour la Neige. Le cadre est
-**renforcé** : son anneau vaut ×1,6 le
-gabarit des autres cartes, sans changer leur taille extérieure.
+doré pour le Sable et glacé pour la Neige. Leur anneau n'est **pas plus
+épais** que celui des autres cartes : la plaque des armes — ×1,6 l'ancien
+gabarit — est devenue l'épaisseur commune de toutes les faces (variables
+`--rpg-card-border*` en tête de `rpg-battle.css`), sans changer la taille
+extérieure des cartes ; une arme se reconnaît donc à sa matière et à sa
+teinte, jamais à l'épaisseur de son cadre.
 L'Armure de cendres, mythique, perd le zellige mais
 garde son reflet animé sur l'acier.
