@@ -69,39 +69,79 @@ assert.ok(
 
 // 2. L'écran est rendu par le menu, et il reçoit de quoi vivre.
 assert.match(page, /\) : screen === 'souk' \? \(\s*<RpgSouk/, 'l’écran du Souk est une branche du menu');
-for (const prop of ['quetes={quetesSouk}', 'credits={credits}', 'onReclamerQuete={onReclamerQuete}', 'onReclamerCachet={onReclamerCachet}']) {
+for (const prop of [
+  'quetes={quetesSouk}', 'credits={credits}', 'portefeuille={portefeuilleSouk}',
+  'progression={progressionHistoire}', 'collection={collection}', 'ouverture={ouvertureSouk}',
+  'onReclamerQuete={reclamerUneQuete}', 'onReclamerCachet={reclamerLeCachet}',
+  'onOuvrirBooster={acheterBooster}', 'onOuvrirCoffret={acheterCoffret}',
+  'onFermerOuverture={fermerOuverture}',
+]) {
   assert.ok(page.includes(prop), `la page passe ${prop} à l’écran`);
 }
-assert.match(page, /reclamerUneQuete, reclamerLeCachet,\n  \} = useSablierBourse\(\{/,
-  'les gestes de réclamation viennent du hook de bourse, pas de l’écran');
+assert.match(page, /reclamerUneQuete, reclamerLeCachet,[\s\S]{0,80}acheterBooster, acheterCoffret, fermerOuverture/,
+  'les gestes — réclamation, achat, fermeture — viennent du hook de bourse, pas de l’écran');
+assert.match(page, /onCartesRangees: rafraichirCollection/, 'un achat rafraîchit la collection de l’atelier');
 
 // 3. L'écran reste présentationnel : aucun stockage, aucune règle de crédits.
 for (const interdit of ['localStorage', 'sauverPortefeuille', 'chargerPortefeuille', 'useSablierBourse']) {
   assert.ok(!ecranCode.includes(interdit), `l’écran ne touche pas à ${interdit} : la persistance vit dans le hook`);
 }
 assert.match(ecran, /import '\.\/rpg-souk\.css';/, 'et il porte sa propre feuille de style');
+// Les prix, les taux et le barème ne sont pas écrits dans l'écran : ils sont lus
+// dans `rpgBoosters.js` / `rpgCredits.js`, qui ont leurs tests.
+assert.match(ecranCode, /etatRayons\(progression, collection\)/, 'l’étagère est une lecture pure des règles');
+assert.match(ecranCode, /TAUX\.cartes/, 'les taux viennent du module, pas d’une phrase recopiée');
+assert.match(ecranCode, /COFFRET\.remise/, 'la remise du coffret aussi');
+assert.ok(!/\b(140|160|180|1260)\b/.test(ecranCode), 'aucun prix en dur dans l’écran');
 
 // 4. Ce que l'écran doit montrer, et que le smoke lit dans le DOM.
 for (const marque of [
   'data-souk-solde', 'data-souk-quetes', 'data-souk-quete=', 'data-souk-quete-etat',
   'data-souk-progres', 'data-souk-reclamer=', 'data-souk-reste', 'data-souk-attente',
-  'data-souk-cachet', 'data-souk-cachet-reclamer', 'data-souk-rayons', 'data-souk-retour',
+  'data-souk-cachet', 'data-souk-cachet-reclamer', 'data-souk-retour',
+  'data-souk-rayons', 'data-souk-rayon=', 'data-souk-rayon-etat', 'data-souk-rayon-taux',
+  'data-souk-rayon-reste', 'data-souk-rayon-refus', 'data-souk-ouvrir=', 'data-souk-coffret=',
 ]) {
   assert.ok(ecran.includes(marque), `l’écran expose ${marque}`);
 }
 // Le bouton Réclamer est désactivé tant que l’objectif n’est pas atteint, et le
-// dit : c’est la règle D7 du dossier, et elle se vérifie à l’œil.
+// dit : c’est la règle D7 du dossier, et elle se vérifie à l’œil. Un achat
+// refusé (rayon fermé, solde insuffisant) s’explique de la même façon.
 assert.match(ecran, /disabled=\{!terminee\}/, 'le bouton Réclamer est désactivé avant l’objectif');
 assert.match(ecran, /title=\{terminee \? .* : `Il reste \$\{reste\} à faire`\}/, 'et il écrit ce qu’il reste');
-assert.match(ecran, /import \{ GAINS \} from '\.\/rpgCredits\.js';/, 'le montant du Cachet vient du barème, pas d’un chiffre écrit ici');
+assert.match(ecran, /disabled=\{Boolean\(refus\)\}/, 'le bouton Ouvrir est désactivé quand l’achat est refusé');
+assert.match(ecran, /Il manque \$\{creditsLisible\(etat\.prix - credits\)\}/, 'et il dit combien il manque');
+assert.match(ecran, /import \{ GAINS, paquetsAvantMythique \} from '\.\/rpgCredits\.js';/,
+  'le montant du Cachet et la pitié viennent du barème, pas d’un chiffre écrit ici');
 
-// 5. Tactile et mouvement : les règles reprises des autres écrans.
+// 5. La cérémonie d'ouverture est son propre composant, monté par l'écran.
+const ceremonie = lire('src/games/RpgBoosterOuverture.jsx');
+const ceremonieCode = sansCommentaires(ceremonie);
+assert.match(ecran, /import RpgBoosterOuverture from '\.\/RpgBoosterOuverture\.jsx';/,
+  'l’écran monte la cérémonie');
+for (const marque of ['data-souk-ceremonie', 'data-souk-carte=', 'data-souk-carte-dos',
+  'data-souk-carte-tampon', 'data-souk-ceremonie-passer', 'data-souk-ceremonie-ranger']) {
+  assert.ok(ceremonie.includes(marque), `la cérémonie expose ${marque}`);
+}
+assert.match(ceremonieCode, /disabled=\{!toutRevele\}/, 'on ne range pas des cartes encore face cachée');
+assert.ok(!/localStorage|sauverPortefeuille/.test(ceremonieCode),
+  'la cérémonie ne range rien elle-même : les cartes sont déjà achetées');
+
+// 6. Le portefeuille du Souk entre dans la collection de l'appareil.
+const decks = lire('src/games/useDecksSablier.js');
+assert.match(decks, /souk: chargerPortefeuille\(\)\.cartes/, 'les cartes du Souk rejoignent la collection');
+assert.match(decks, /export function useDecksSablier|[\s\S]*rafraichirCollection,/, 'et l’atelier peut la relire après un achat');
+assert.match(decks, /\.\.\.etatLocalActuel\(acquisRef\.current\),/,
+  'l’enregistrement d’un deck pousse l’état entier, économie comprise');
+assert.match(decks, /bourse: chargerPortefeuille\(\),\n    quetes: chargerEtatQuetes\(\),/,
+  'l’autre hook transporte l’économie sans la modifier');
+
+// 7. Tactile et mouvement : les règles reprises des autres écrans.
 assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'), 'le mouvement se coupe');
 assert.ok(css.includes('@media (max-width: 480px)'), 'le portrait étroit est prévu');
+assert.ok(css.includes('@media (max-width: 640px)'), 'la cérémonie a son palier de téléphone');
 assert.match(css, /min-height: 44px/, 'les boutons font leur taille au doigt');
 
-// 6. L'écran annonce les rayons au lieu de les simuler (lot 4).
-assert.match(ecran, /data-souk-rayons="bientot"/, 'les rayons disent qu’ils viendront');
-
-console.log('L’écran du Souk (lot 3) est branché : sixième onglet, solde et pastille sur');
-console.log('l’onglet, trois quêtes réclamables, Cachet du cycle, et les rayons annoncés.');
+console.log('Le Souk (lots 3 et 4) est branché : sixième onglet, solde et pastille dessus,');
+console.log('trois quêtes réclamables, Cachet, cinq rayons avec leur prix et leur taux,');
+console.log('la cérémonie d’ouverture, et les cartes achetées qui entrent dans la collection.');

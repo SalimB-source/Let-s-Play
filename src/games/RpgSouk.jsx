@@ -23,8 +23,10 @@
 
 import { useEffect, useState } from 'react';
 import './rpg-souk.css';
-import { GAINS } from './rpgCredits.js';
+import { GAINS, paquetsAvantMythique } from './rpgCredits.js';
 import { cachetDisponible, queteParId, secondesAvantMinuit } from './rpgQuetes.js';
+import { COFFRET, TAUX, etatRayons, tourQuiGarde } from './rpgBoosters.js';
+import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 
 /** Les paliers, tels que le joueur les lit (le module les nomme en interne). */
 const PALIERS = Object.freeze({ facile: 'Facile', moyenne: 'Moyenne', difficile: 'Difficile' });
@@ -68,6 +70,35 @@ function useResteDuCycle() {
     return () => clearInterval(battement);
   }, []);
   return secondes;
+}
+
+/**
+ * La ligne de taux d'un rayon : ce qu'on y trouve, et la promesse des
+ * mythiques. Le chiffre de pitié est celui du portefeuille — il ne se promet
+ * que sur un rayon qui a encore une mythique à donner.
+ */
+function ligneDeTaux(etat, portefeuille) {
+  const chance = Math.round((etat.rayon.chanceMythique ?? TAUX.mythique) * 100);
+  const avant = paquetsAvantMythique(portefeuille, {
+    aDesMythiques: etat.mythiques > 0,
+    seuil: TAUX.pitie,
+  });
+  const morceaux = [
+    `${TAUX.cartes} cartes`,
+    etat.mythiques
+      ? (avant === 0 ? 'mythique au prochain paquet' : `${chance} % de mythique · assurée dans ${avant}`)
+      : `aucune mythique ici`,
+  ];
+  return morceaux.join(' · ');
+}
+
+/** Le message d'un rayon fermé : qui le garde, et où l'ouvrir. */
+function raisonFermeture(etat) {
+  if (etat.ouvert) return null;
+  const garde = etat.rayon.couleur ? tourQuiGarde(etat.rayon.couleur) : null;
+  return garde
+    ? `Fermé — la ${garde.nom} le garde encore. Montez sa tour pour l’ouvrir.`
+    : 'Fermé — aucune couleur n’est encore entrée dans la ville.';
 }
 
 /** L'état d'une quête, tel que la carte le raconte. */
@@ -147,16 +178,28 @@ export default function RpgSouk({
   credits = 0,
   aReclamer = 0,
   statutSync = 'local',
+  portefeuille = null,
+  progression = null,
+  collection = null,
+  ouverture = null,
   onReclamerQuete,
   onReclamerCachet,
+  onOuvrirBooster,
+  onOuvrirCoffret,
+  onFermerOuverture,
   onExit,
   onPlaySfx,
+  cardArt,
 }) {
   const restant = useResteDuCycle();
   const jour = jourLisible(quetes?.jour);
   const liste = Array.isArray(quetes?.quetes) ? quetes.quetes : [];
   const prises = liste.filter((id) => etatDeLaQuete(quetes, id)?.reclamee).length;
   const cachet = cachetDisponible(quetes) ? 'disponible' : quetes?.cachet ? 'pris' : 'attente';
+  // L'étagère : les cinq rayons et ce qu'ils gardent. `etatRayons` est une
+  // lecture pure — elle ne réserve rien et ne débite rien.
+  const rayons = etatRayons(progression, collection);
+  const ouverts = rayons.filter((etat) => etat.ouvert).length;
   const sync = statutSync === 'synchronise'
     ? '☁ Synchronisé avec votre compte'
     : statutSync === 'attente'
@@ -172,6 +215,14 @@ export default function RpgSouk({
 
   return (
     <main className="rpg-souk" aria-label="Le Souk de Bab El" data-souk>
+      {ouverture && (
+        <RpgBoosterOuverture
+          ouverture={ouverture}
+          cardArt={cardArt}
+          onFermer={onFermerOuverture}
+          onPlaySfx={onPlaySfx}
+        />
+      )}
       <header className="rpg-souk__header">
         <div className="rpg-souk__titre">
           <span className="rpg-mode-menu__eyebrow">LE SABLIER · LE SOUK DE BAB EL</span>
@@ -248,15 +299,70 @@ export default function RpgSouk({
         )}
       </section>
 
-      <section className="rpg-souk__rayons" aria-labelledby="souk-rayons-titre" data-souk-rayons="bientot">
+      <section className="rpg-souk__section" aria-labelledby="souk-rayons-titre">
         <div className="rpg-souk__section-tete">
           <h3 id="souk-rayons-titre">Les rayons</h3>
-          <p>Pas encore ouverts.</p>
+          <p data-souk-rayons={ouverts > 0 ? 'ouverts' : 'fermes'}>
+            {ouverts > 0
+              ? `${ouverts} rayon${ouverts > 1 ? 's' : ''} ouvert${ouverts > 1 ? 's' : ''} · le Souk suit les marches que vous avez montées`
+              : 'le Souk suivra les marches que vous montez'}
+          </p>
         </div>
-        <p className="rpg-souk__vide">
-          Le marchand range encore ses paquets. Les boosters s’achètent ici — le temps que vos crédits
-          s’accumulent, ils ne seront pas perdus.
-        </p>
+        <ul className="rpg-souk__rayons" data-souk-rayons-nombre={rayons.length}>
+          {rayons.map((etat) => {
+            const ferme = raisonFermeture(etat);
+            const assez = credits >= etat.prix;
+            const refus = ferme ?? (assez ? null : `Il manque ${creditsLisible(etat.prix - credits)} ◈.`);
+            return (
+              <li
+                key={etat.rayon.id}
+                className={`rpg-souk__rayon${etat.ouvert ? '' : ' is-ferme'}${etat.complet ? ' is-complet' : ''}`}
+                data-souk-rayon={etat.rayon.id}
+                data-souk-rayon-etat={ferme ? 'ferme' : refus ? 'sans-solde' : 'ouvert'}
+              >
+                <header>
+                  <h4>{etat.rayon.nom}</h4>
+                  <span className="rpg-souk__rayon-prix">{creditsLisible(etat.prix)} ◈</span>
+                </header>
+                <p className="rpg-souk__rayon-texte">{etat.rayon.texte}</p>
+                <p className="rpg-souk__rayon-taux" data-souk-rayon-taux>{ligneDeTaux(etat, portefeuille)}</p>
+                <p className="rpg-souk__rayon-reste" data-souk-rayon-reste={etat.nouvelles}>
+                  {etat.complet
+                    ? `Aucune des ${etat.taille} cartes de ce rayon ne vous manque — les doublons y paient encore.`
+                    : `${etat.nouvelles} carte${etat.nouvelles > 1 ? 's' : ''} sur ${etat.taille} vous manque${etat.nouvelles > 1 ? 'nt' : ''} encore.`}
+                </p>
+                <footer>
+                  {refus && <p className="rpg-souk__rayon-refus" data-souk-rayon-refus>{refus}</p>}
+                  <button
+                    type="button"
+                    className="rpg-menu-button rpg-menu-button--primary"
+                    data-souk-ouvrir={etat.rayon.id}
+                    disabled={Boolean(refus)}
+                    title={refus ?? `Acheter et ouvrir pour ${etat.prix} crédits`}
+                    onClick={() => { onOuvrirBooster?.(etat.rayon.id); }}
+                  >
+                    Ouvrir · {creditsLisible(etat.prix)} ◈
+                  </button>
+                  {etat.ouvert && etat.mythiques > 0 && (
+                    <button
+                      type="button"
+                      className="rpg-menu-button"
+                      data-souk-coffret={etat.rayon.id}
+                      disabled={Boolean(ferme) || credits < etat.prixCoffret}
+                      title={credits < etat.prixCoffret
+                        ? `Le coffret coûte ${etat.prixCoffret} crédits`
+                        : `Dix paquets pour ${etat.prixCoffret} crédits — une mythique assurée`}
+                      onClick={() => { onOuvrirCoffret?.(etat.rayon.id); }}
+                    >
+                      Coffret · {creditsLisible(etat.prixCoffret)} ◈
+                      <span className="rpg-souk__rayon-remise">−{Math.round(COFFRET.remise * 100)} %</span>
+                    </button>
+                  )}
+                </footer>
+              </li>
+            );
+          })}
+        </ul>
       </section>
     </main>
   );

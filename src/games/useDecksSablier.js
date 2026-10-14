@@ -68,6 +68,20 @@ function etatLocalActuel(acquis) {
   };
 }
 
+/**
+ * La collection effective de l'appareil : la dotation de départ, les acquis
+ * gelés, les apports du compte — et les **cartes achetées au Souk**, qui vivent
+ * dans le portefeuille (`useSablierBourse.js`). Ce hook les transporte comme il
+ * transporte l'économie : il les relit sur l'appareil, il ne les modifie pas.
+ */
+function collectionDeLAppareil(acquis) {
+  return collectionJoueur({
+    acquis,
+    distante: chargerCollectionDistante(),
+    souk: chargerPortefeuille().cartes,
+  });
+}
+
 /** Statuts de synchronisation : `'local'`, `'attente'`, `'synchronise'`, `'horsligne'`. */
 export function useDecksSablier() {
   // Le gel des acquis est calculé UNE fois, au montage : au premier lancement
@@ -77,7 +91,7 @@ export function useDecksSablier() {
   const [acquis, setAcquis] = useState(() => figerAcquisitions());
   const acquisRef = useRef(acquis);
   const [decksMaison, setDecksMaison] = useState(() => chargerDecksMaison());
-  const [collection, setCollection] = useState(() => collectionJoueur({ acquis, distante: chargerCollectionDistante() }));
+  const [collection, setCollection] = useState(() => collectionDeLAppareil(acquis));
   const [statutSync, setStatutSync] = useState('local');
   const compteId = compteSablierActif();
   const supprimesRef = useRef(chargerSupprimesMaison());
@@ -116,7 +130,11 @@ export function useDecksSablier() {
       const acquisFusionnes = fusion.etat.acquis ?? acquisRef.current;
       acquisRef.current = acquisFusionnes;
       setAcquis(acquisFusionnes);
-      setCollection(collectionJoueur({ acquis: acquisFusionnes, distante: fusion.etat.collection }));
+      setCollection(collectionJoueur({
+        acquis: acquisFusionnes,
+        distante: fusion.etat.collection,
+        souk: fusion.etat.bourse?.cartes ?? [],
+      }));
       setStatutSync('synchronise');
       // La fusion a apporté quelque chose à l'appareil : les autres
       // appareils doivent le savoir (pierres tombales, decks récents).
@@ -128,14 +146,16 @@ export function useDecksSablier() {
   }, [compteId]);
 
   // Les decks, pierres tombales, la collection effective et les acquis du
-  // moment, poussés au compte.
+  // moment, poussés au compte — **avec l'économie**, relue sur l'appareil au
+  // moment d'écrire. `etatLocalActuel` est la seule fabrique de cet état : un
+  // enregistrement de deck ne doit jamais effacer les crédits de son voisin.
   const pousser = useCallback((casier, collectionEffective) => {
     if (!compteId) return;
     sauverEtatSablier(compteId, {
+      ...etatLocalActuel(acquisRef.current),
       decks: casier.decks,
       supprimes: casier.supprimes,
       collection: collectionEffective,
-      acquis: acquisRef.current,
       majLe: new Date().toISOString(),
     });
   }, [compteId]);
@@ -151,7 +171,7 @@ export function useDecksSablier() {
     const enregistre = sauverCasierMaison(maj.casier);
     supprimesRef.current = maj.casier.supprimes;
     setDecksMaison(maj.casier.decks);
-    const collectionEffective = collectionJoueur({ acquis: acquisRef.current, distante: chargerCollectionDistante() });
+    const collectionEffective = collectionDeLAppareil(acquisRef.current);
     pousser(maj.casier, collectionEffective);
     return { ok: true, raison: null, enregistre, deck: maj.deck };
   }, [pousser]);
@@ -162,7 +182,7 @@ export function useDecksSablier() {
     const enregistre = sauverCasierMaison(casier);
     supprimesRef.current = casier.supprimes;
     setDecksMaison(casier.decks);
-    pousser(casier, collectionJoueur({ acquis: acquisRef.current, distante: chargerCollectionDistante() }));
+    pousser(casier, collectionDeLAppareil(acquisRef.current));
     return enregistre;
   }, [pousser]);
 
@@ -174,7 +194,7 @@ export function useDecksSablier() {
    * peut les annoncer, et le lot 2 y branchera les crédits.
    */
   const noterVictoireEtage = useCallback((etageId, progressionMaj) => {
-    const collectionEffective = collectionJoueur({ acquis: acquisRef.current, distante: chargerCollectionDistante() });
+    const collectionEffective = collectionDeLAppareil(acquisRef.current);
     if (compteId) {
       pousser({ decks: chargerDecksMaison(), supprimes: supprimesRef.current }, collectionEffective);
     }
@@ -186,5 +206,17 @@ export function useDecksSablier() {
       .map((id) => ({ id, carte: cardById(id) }));
   }, [compteId, pousser]);
 
-  return { decksMaison, collection, statutSync, enregistrerDeckMaison, supprimerDeckMaison, noterVictoireEtage };
+  /**
+   * Relit la collection effective de l'appareil. Le Souk s'en sert après un
+   * achat : les cartes du portefeuille viennent d'entrer dans la collection, et
+   * l'atelier de decks doit les voir sans qu'on recharge la page.
+   */
+  const rafraichirCollection = useCallback(() => {
+    setCollection(collectionDeLAppareil(acquisRef.current));
+  }, []);
+
+  return {
+    decksMaison, collection, statutSync,
+    enregistrerDeckMaison, supprimerDeckMaison, noterVictoireEtage, rafraichirCollection,
+  };
 }

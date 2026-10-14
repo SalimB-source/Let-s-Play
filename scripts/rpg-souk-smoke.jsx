@@ -13,22 +13,57 @@
  * posée à la main, sans quoi la journée changerait d'un passage à l'autre.
  */
 
+import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import { useSablierBourse } from '../src/games/useSablierBourse.js';
 import RpgSouk, { creditsLisible, dureeAvantMinuit } from '../src/games/RpgSouk.jsx';
 import { RPG_GRAINE_STORAGE_KEY, queteParId } from '../src/games/rpgQuetes.js';
-import { GAINS } from '../src/games/rpgCredits.js';
+import { GAINS, RPG_BOURSE_STORAGE_KEY, portefeuilleVide } from '../src/games/rpgCredits.js';
 import { RPG_DUEL_CARDS, cardColors } from '../src/games/rpgCards.js';
+import { rngSeme } from '../src/games/rpgHasard.js';
+import { collectionJoueur } from '../src/games/rpgCollection.js';
+import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** La progression du joueur du smoke : les Listes sont montées, donc les rayons ouverts. */
-const PROGRESSION = { etagesVaincus: ['listes-1'] };
+/**
+ * La progression du joueur du smoke : **deux tours montées**. C'est le moment
+ * où l'étagère a de l'intérêt — Sable, Braise, Eau et le grand étal sont
+ * ouverts, la Neige attend encore ses abysses, et les rayons ont des mythiques
+ * à promettre. Une progression plus pauvre rendrait le smoke presque vide.
+ */
+const PROGRESSION = {
+  etagesVaincus: RPG_STORY_TOURS.slice(0, 2).flatMap((tour) => tour.etages.map((etage) => etage.id)),
+};
+
+/** L'illustration d'une carte : le smoke n'en charge aucune, il en pose le chemin. */
+const illustration = (carte) => `/cards/${carte?.id ?? 'inconnue'}.jpg`;
+
+/**
+ * La collection de l'appareil, telle que `useDecksSablier` la calcule : la
+ * dotation, les acquis, et **les cartes du Souk**, relues dans le portefeuille.
+ */
+function lireCollection() {
+  let cartes = [];
+  try {
+    cartes = JSON.parse(window.localStorage.getItem(RPG_BOURSE_STORAGE_KEY) ?? 'null')?.cartes ?? [];
+  } catch { cartes = []; }
+  return collectionJoueur({ souk: cartes });
+}
 
 /** L'écran, tel que la page le monte : le hook en dessous, l'écran au-dessus. */
 function Sonde({ surPret, sons }) {
-  const bourse = useSablierBourse({ progression: PROGRESSION });
+  // Le tirage est semé : sans ça, le smoke dépendrait du hasard — exactement ce
+  // qu'on refuse ailleurs. La graine est posée une fois pour toutes.
+  // La collection est un état du *parent*, comme dans la page : elle ne bouge
+  // que quand le hook prévient que des cartes viennent d'être rangées.
+  const [collection, setCollection] = useState(lireCollection);
+  const bourse = useSablierBourse({
+    progression: PROGRESSION,
+    rng: rngSeme(20261014),
+    onCartesRangees: () => { setCollection(lireCollection()); sons.push('collection-rafraichie'); },
+  });
   surPret(bourse);
   return (
     <RpgSouk
@@ -36,8 +71,16 @@ function Sonde({ surPret, sons }) {
       credits={bourse.credits}
       aReclamer={bourse.aReclamer}
       statutSync={bourse.statutSync}
+      portefeuille={bourse.bourse}
+      progression={PROGRESSION}
+      collection={collection}
+      ouverture={bourse.ouverture}
+      cardArt={illustration}
       onReclamerQuete={(id) => bourse.reclamerUneQuete(id)}
       onReclamerCachet={() => bourse.reclamerLeCachet()}
+      onOuvrirBooster={(rayonId) => bourse.acheterBooster(rayonId)}
+      onOuvrirCoffret={(rayonId) => bourse.acheterCoffret(rayonId)}
+      onFermerOuverture={() => bourse.fermerOuverture()}
       onPlaySfx={(nom) => { sons.push(nom); }}
       onExit={() => { sons.push('sortie'); }}
     />
@@ -68,6 +111,9 @@ function evenementPour(quete) {
 /** La valeur d'un attribut `data-` de l'écran (jamais un `container` figé). */
 const donnee = (selecteur, cle) => document.querySelector(selecteur)?.dataset?.[cle] ?? null;
 const noeud = (selecteur) => document.querySelector(selecteur);
+/** Ce qu'il manque encore à un rayon — l'attribut est sur la ligne, pas la tuile. */
+const manquantesDuRayon = (rayonId) => Number(noeud(`[data-souk-rayon="${rayonId}"] [data-souk-rayon-reste]`)
+  ?.dataset?.soukRayonReste);
 
 export async function checkRpgSoukEcran(assert) {
   // ── Les règles d'affichage, sans DOM ──────────────────────────────────────
@@ -83,10 +129,12 @@ export async function checkRpgSoukEcran(assert) {
   const conteneur = document.createElement('div');
   document.body.appendChild(conteneur);
   const root = createRoot(conteneur);
+  let root3 = null;
   const sons = [];
   let bourse = null;
+  const rendre = (racine) => racine.render(<Sonde surPret={(valeur) => { bourse = valeur; }} sons={sons} />);
   try {
-    await act(async () => root.render(<Sonde surPret={(valeur) => { bourse = valeur; }} sons={sons} />));
+    await act(async () => rendre(root));
 
     // ── L'écran est là, et il dit ce qu'il a ────────────────────────────────
     assert.ok(noeud('[data-souk]'), 'l’écran du Souk se rend');
@@ -95,8 +143,21 @@ export async function checkRpgSoukEcran(assert) {
     assert.ok(noeud('[data-souk-quetes]')?.children?.length === 3, 'et trois cartes sont peintes');
     assert.equal(donnee('[data-souk-cachet]', 'soukCachet'), 'attente',
       'le Cachet attend ses trois quêtes');
-    assert.equal(donnee('[data-souk-rayons]', 'soukRayons'), 'bientot',
-      'les rayons annoncent le lot suivant au lieu de mentir');
+    // ── L'étagère : cinq rayons, deux ouverts, et rien d'achetable sans solde ─
+    assert.equal(Number(donnee('[data-souk-rayons-nombre]', 'soukRayonsNombre')), 5, 'les cinq rayons sont là');
+    assert.equal(donnee('[data-souk-rayons]', 'soukRayons'), 'ouverts',
+      'les Listes sont montées : Sable et Braise sont ouverts');
+    assert.equal(donnee('[data-souk-rayon="braise"]', 'soukRayonEtat'), 'sans-solde',
+      'un rayon ouvert sans un crédit refuse l’achat');
+    assert.match(noeud('[data-souk-rayon="braise"] [data-souk-rayon-refus]')?.textContent ?? '', /Il manque/,
+      'et il dit combien il manque');
+    assert.ok(noeud('[data-souk-ouvrir="braise"]').disabled, 'le bouton Ouvrir est donc désactivé');
+    assert.equal(donnee('[data-souk-rayon="neige"]', 'soukRayonEtat'), 'ferme',
+      'la Neige est encore gardée par sa tour');
+    assert.match(noeud('[data-souk-rayon="neige"] [data-souk-rayon-refus]')?.textContent ?? '', /gard[eé]/,
+      'et le refus dit qui la garde');
+    assert.match(noeud('[data-souk-rayon="braise"] [data-souk-rayon-taux]')?.textContent ?? '', /5 cartes/,
+      'chaque rayon annonce son taux');
     assert.equal(noeud('[data-souk-attente]'), null, 'rien à réclamer : pas de bandeau');
 
     // ── Ce qui n'est pas terminé ne se réclame pas ──────────────────────────
@@ -175,6 +236,62 @@ export async function checkRpgSoukEcran(assert) {
     assert.equal(Number(donnee('[data-souk-attente]', 'soukAttente')) || 0, 0,
       'plus rien n’attend : le bandeau s’efface');
     assert.ok(sons.includes('victoire'), 'le Cachet sonne sa victoire');
+
+    // ── Acheter un paquet : la cérémonie, les cartes rangées, le solde ──────
+    const soldeAvantAchat = Number(donnee('[data-souk-solde]', 'soukSolde'));
+    const cartesAvant = bourse.bourse.cartes.length;
+    const manquantesAvant = manquantesDuRayon('braise');
+    assert.ok(Number.isFinite(manquantesAvant), 'le rayon Braise annonce ce qui lui manque');
+    await act(async () => noeud('[data-souk-ouvrir="braise"]').click());
+    assert.ok(noeud('[data-souk-ceremonie]'), 'la cérémonie d’ouverture s’ouvre');
+    // Le paquet coûte son prix, mais les doublons sont remboursés dans la
+    // foulée : le solde d'après vaut le solde d'avant, moins le prix, plus le
+    // remboursement. C'est la seule écriture qui touche au portefeuille.
+    assert.equal(
+      Number(donnee('[data-souk-solde]', 'soukSolde')),
+      soldeAvantAchat - 140 + bourse.ouverture.remboursement,
+      'le paquet coûte ses 140 ◈, moins ce que les doublons rendent',
+    );
+    assert.equal(bourse.bourse.cartes.length, cartesAvant + 5, 'les cinq cartes rejoignent le portefeuille');
+    assert.equal(noeud('[data-souk-ceremonie]').querySelectorAll('[data-souk-carte-dos]').length, 5,
+      'les cinq cartes commencent face cachée');
+    assert.ok(sons.includes('collection-rafraichie'), 'l’atelier de decks est prévenu : la collection a grandi');
+    assert.ok(noeud('[data-souk-ceremonie-ranger]').disabled, '« Tout ranger » attend la fin des retournements');
+    // Les cartes sont écrites, la collection est rafraîchie : l'étagère sait
+    // déjà ce qui vient d'être rangé, même sous la cérémonie.
+    assert.ok(manquantesDuRayon('braise') < manquantesAvant,
+      'l’achat rafraîchit la collection tout de suite, sans recharger la page');
+
+    // « Passer » retourne tout d'un coup : c'est le geste des gens pressés.
+    await act(async () => noeud('[data-souk-ceremonie-passer]').click());
+    const cartes = [...noeud('[data-souk-ceremonie]').querySelectorAll('[data-souk-carte]')];
+    assert.equal(cartes.length, 5, 'les cinq cartes sont retournées');
+    assert.equal(cartes.filter((carte) => carte.dataset.soukCarteEtat === 'nouvelle').length,
+      bourse.ouverture.nouvelles, 'les tampons NOUVELLE comptent ce que le tirage a donné');
+    assert.equal(
+      cartes.reduce((somme, carte) => somme + Number(carte.dataset.soukCarteRemboursement), 0),
+      bourse.ouverture.remboursement,
+      'et les doublons affichent exactement ce qu’ils rendent',
+    );
+    assert.ok(bourse.ouverture.cartes.every((detail) => detail.carte), 'chaque carte tirée est une carte réelle');
+    assert.equal(new Set(bourse.ouverture.cartes.map((detail) => detail.id)).size, 5, 'jamais deux fois la même');
+    assert.ok(noeud('[data-souk-ceremonie-ranger]').disabled === false, 'une fois retournées, on peut ranger');
+
+    // ── « Tout ranger » referme, et la collection voit les nouvelles cartes ──
+    await act(async () => noeud('[data-souk-ceremonie-ranger]').click());
+    assert.equal(noeud('[data-souk-ceremonie]'), null, 'la cérémonie rend la main');
+    assert.equal(bourse.ouverture, null, 'et le hook oublie l’ouverture');
+    if (bourse.quetes.quetes.includes('booster-1')) {
+      assert.ok(bourse.quetes.progres['booster-1'] >= 1, '« Ouvrir le comptoir » avance en achetant');
+    }
+    // Le coffret coûte dix paquets : hors de portée ici, et il le dit.
+    assert.ok(noeud('[data-souk-coffret="braise"]').disabled, 'le coffret demande ce qu’il coûte');
+    const soldeAvantRefus = Number(donnee('[data-souk-solde]', 'soukSolde'));
+    const refus = bourse.acheterBooster('neige');
+    assert.equal(refus.ok, false, 'un rayon fermé refuse l’achat');
+    assert.equal(refus.raison, 'rayon-ferme');
+    assert.equal(Number(donnee('[data-souk-solde]', 'soukSolde')), soldeAvantRefus,
+      'un refus ne touche pas un seul crédit');
 
     // ── Le retour rend la main ──────────────────────────────────────────────
     await act(async () => noeud('[data-souk-retour]').click());

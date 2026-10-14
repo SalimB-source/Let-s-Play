@@ -51,8 +51,9 @@ import {
   sauverEtatQuetes,
 } from './rpgQuetes.js';
 import { appliquerEvenementDuel, compterReclamations } from './rpgEvenementsDuel.js';
+import { ouvrirBooster, ouvrirCoffret } from './rpgBoosters.js';
+import { chargerAcquis, chargerCollectionDistante, collectionJoueur } from './rpgCollection.js';
 import { chargerDecksMaison, chargerSupprimesMaison, fusionnerEtatsSablier } from './rpgDeckBuilder.js';
-import { chargerAcquis, chargerCollectionDistante } from './rpgCollection.js';
 import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
 
 /** L'état local complet, tel qu'il vit sur l'appareil — les deux moitiés. */
@@ -84,7 +85,7 @@ function etatInitial(progression) {
 }
 
 /** Statuts de synchronisation : `'local'`, `'attente'`, `'synchronise'`, `'horsligne'`. */
-export function useSablierBourse({ progression = null } = {}) {
+export function useSablierBourse({ progression = null, rng = Math.random, onCartesRangees = null } = {}) {
   const authContext = useContext(AuthContext);
   const compteId = authContext?.user?.id ?? null;
   const [etat, setEtat] = useState(() => etatInitial(progression));
@@ -92,6 +93,16 @@ export function useSablierBourse({ progression = null } = {}) {
   // L'état courant, lisible depuis les rappels sans les recréer à chaque rendu.
   const etatRef = useRef(etat);
   etatRef.current = etat;
+  // La progression non plus : un achat ouvert en pleine campagne doit lire les
+  // marches du moment, pas celles du premier rendu.
+  const progressionRef = useRef(progression);
+  progressionRef.current = progression;
+  // La cérémonie d'ouverture en cours — `null` hors d'un achat. Elle vit dans
+  // l'état React mais **pas** dans le stockage : elle n'a rien à survivre à un
+  // rechargement, et les cartes, elles, sont déjà encaissées.
+  const [ouverture, setOuverture] = useState(null);
+  const rngRef = useRef(rng);
+  rngRef.current = rng;
 
   /** Écrit une paire (bourse, quêtes) : stockage d'abord, écran ensuite, compte en dernier. */
   const appliquer = useCallback((bourse, quetes) => {
@@ -183,6 +194,75 @@ export function useSablierBourse({ progression = null } = {}) {
     return resultat.credits;
   }, [appliquer, pousser]);
 
+  /**
+   * Achète et ouvre un paquet (ou un coffret de dix) : les crédits sont
+   * débités, les cinq cartes rejoignent le portefeuille, les doublons sont
+   * remboursés, la pitié avance — et « Ouvrir le comptoir » avance d'un cran.
+   *
+   * La **collection** que voit le tirage est celle de l'appareil au complet :
+   * dotation, acquis gelés, apports du compte et cartes déjà achetées au Souk.
+   * C'est ce qui évite de re-vendre une carte que le joueur possède déjà.
+   *
+   * Rend `{ ok, raison, prix, tirage }`. Un refus (rayon fermé, solde
+   * insuffisant) ne touche à rien — et il est dit en clair à l'écran.
+   */
+  const acheter = useCallback((rayonId, { coffret = false } = {}) => {
+    const avant = etatRef.current;
+    const collection = collectionJoueur({
+      acquis: chargerAcquis(),
+      distante: chargerCollectionDistante(),
+      souk: avant.bourse.cartes,
+    });
+    const ouvreur = coffret ? ouvrirCoffret : ouvrirBooster;
+    const achat = ouvreur({
+      portefeuille: avant.bourse,
+      rayonId,
+      progression: progressionRef.current,
+      collection,
+      rng: rngRef.current,
+    });
+    if (!achat.ok) return { ok: false, raison: achat.raison, prix: achat.prix, tirage: null };
+    // Le reste de la boucle : l'ouverture est un geste du contrat d'événements,
+    // donc les quêtes du jour la voient comme n'importe quel autre geste.
+    const suite = appliquerEvenementDuel(
+      { bourse: achat.portefeuille, quetes: avant.quetes },
+      { type: 'booster-ouvert', rayonId },
+    );
+    appliquer(suite.bourse, suite.quetes);
+    // Le paquet et le coffret ne rendent pas la même forme : le paquet rend un
+    // tirage, le coffret une liste de paquets. La cérémonie, elle, reçoit
+    // toujours la même : les cartes, une par une, et ce qu'elles ont rendu.
+    const paquets = coffret ? achat.paquets : [achat.tirage];
+    const cartes = paquets.flatMap((paquet) => paquet.details ?? []);
+    // Les cartes sont écrites sur l'appareil **avant** la cérémonie : fermer
+    // l'onglet au milieu d'un retournement ne doit rien coûter au joueur.
+    setOuverture({
+      rayonId,
+      coffret,
+      paquets: paquets.length,
+      prix: achat.prix,
+      cartes,
+      remboursement: paquets.reduce((somme, paquet) => somme + (paquet.remboursement ?? 0), 0),
+      nouvelles: cartes.filter((carte) => !carte.doublon).length,
+      mythique: paquets.some((paquet) => paquet.mythique),
+    });
+    pousser();
+    onCartesRangees?.();
+    return { ok: true, raison: null, prix: achat.prix, tirage: achat.tirage };
+  }, [appliquer, pousser, onCartesRangees]);
+
+  /** Le paquet : cinq cartes, le prix du rayon. */
+  const acheterBooster = useCallback((rayonId) => acheter(rayonId, { coffret: false }), [acheter]);
+
+  /** Le coffret : dix paquets d'un même rayon, une mythique assurée. */
+  const acheterCoffret = useCallback((rayonId) => acheter(rayonId, { coffret: true }), [acheter]);
+
+  /**
+   * Referme la cérémonie d'ouverture. Le portefeuille est déjà écrit et déjà
+   * poussé au compte : ici, on rend la main, rien de plus.
+   */
+  const fermerOuverture = useCallback(() => setOuverture(null), []);
+
   /** Le Cachet du cycle : +80 ◈ une fois les trois quêtes du jour réclamées. */
   const reclamerLeCachet = useCallback(() => {
     const avant = etatRef.current;
@@ -202,6 +282,10 @@ export function useSablierBourse({ progression = null } = {}) {
     noterEvenementDuel,
     reclamerUneQuete,
     reclamerLeCachet,
+    acheterBooster,
+    acheterCoffret,
+    fermerOuverture,
+    ouverture,
     pousser,
   };
 }

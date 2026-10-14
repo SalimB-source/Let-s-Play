@@ -1524,7 +1524,7 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -2237,8 +2237,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             credits={credits}
             aReclamer={aReclamer}
             statutSync={statutSync}
+            portefeuille={portefeuille}
+            progression={progression}
+            collection={collection}
+            ouverture={ouverture}
+            cardArt={cardArt}
             onReclamerQuete={onReclamerQuete}
             onReclamerCachet={onReclamerCachet}
+            onOuvrirBooster={onOuvrirBooster}
+            onOuvrirCoffret={onOuvrirCoffret}
+            onFermerOuverture={onFermerOuverture}
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
           />
@@ -2615,6 +2623,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     decksMaison,
     collection,
     statutSync,
+    rafraichirCollection,
     enregistrerDeckMaison,
     supprimerDeckMaison,
     noterVictoireEtage,
@@ -2654,10 +2663,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // progression, pour ne pas proposer « ouvrir le comptoir » tant que le Souk
   // est fermé — y compris au tout premier rendu.
   const {
-    credits, aReclamer: soukAReclamer, quetes: quetesSouk,
+    credits, aReclamer: soukAReclamer, quetes: quetesSouk, bourse: portefeuilleSouk,
     noterEvenementDuel, reclamerUneQuete, reclamerLeCachet,
+    acheterBooster, acheterCoffret, fermerOuverture, ouverture: ouvertureSouk,
   } = useSablierBourse({
     progression: progressionHistoireRef.current,
+    // Un achat range ses cartes dans la collection : l'atelier de decks doit
+    // les voir tout de suite, sans qu'on recharge la page.
+    onCartesRangees: rafraichirCollection,
   });
   const histoireVictoireMarqueeRef = useRef(null);
   // Un duel libre ne passe pas par la session du récit : il a son propre témoin.
@@ -3507,6 +3520,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           quetes={quetesSouk}
           onReclamerQuete={reclamerUneQuete}
           onReclamerCachet={reclamerLeCachet}
+          portefeuille={portefeuilleSouk}
+          progression={progressionHistoire}
+          ouverture={ouvertureSouk}
+          onOuvrirBooster={acheterBooster}
+          onOuvrirCoffret={acheterCoffret}
+          onFermerOuverture={fermerOuverture}
           statutSync={statutSync}
           onEnregistrerDeckMaison={enregistrerDeckMaison}
           onSupprimerDeckMaison={supprimerDeckMaison}
