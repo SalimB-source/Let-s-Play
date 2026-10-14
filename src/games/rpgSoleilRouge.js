@@ -61,14 +61,14 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   carte({
     id: 'ashigaru-des-braises', name: 'Ashigaru des braises',
     cost: 1, atk: 1, def: 1, rarity: 'commune',
-    typeLine: 'Créature — Humain · Ashigaru',
+    typeLine: 'Créature — Humain · Ashigaru · Samouraï',
     text: '—',
     flavor: 'Avant les noms gravés dans les chroniques, il y eut ceux qui tinrent la ligne.',
   }),
   carte({
     id: 'ronin-du-soleil-rouge', name: 'Rōnin du Soleil rouge',
     cost: 3, atk: 3, def: 2, rarity: 'inhabituelle', rapidite: true,
-    typeLine: 'Créature — Humain · Rōnin',
+    typeLine: 'Créature — Humain · Rōnin · Samouraï',
     text: 'Rapidité — Peut attaquer le tour où il arrive.',
     flavor: 'Sans maître, mais pas sans parole.',
   }),
@@ -84,7 +84,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   carte({
     id: 'onna-musha-des-cendres', name: 'Onna-musha des cendres',
     cost: 4, atk: 3, def: 3, rarity: 'rare',
-    typeLine: 'Créature — Humaine · Guerrière',
+    typeLine: 'Créature — Humaine · Guerrière · Samouraï',
     text: '—',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
@@ -112,6 +112,28 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     resonanceTribu: 'samourai',
     text: 'Résonance samouraï — Tant que Kagutsuchi est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
+  }),  // Trois samouraïs de plus : une recrue commune, une inhabituelle et un
+  // daimyō rare. Leur type imprimé suffit à recevoir la Résonance samouraï.
+  carte({
+    id: 'hatamoto-des-cendres', name: 'Hatamoto des cendres',
+    cost: 2, atk: 2, def: 2, rarity: 'commune',
+    typeLine: 'Créature — Humain · Samouraï',
+    text: '—',
+    flavor: 'Il marche derrière son seigneur, et devant la mort.',
+  }),
+  carte({
+    id: 'kenshi-de-la-forge', name: 'Kenshi de la forge',
+    cost: 3, atk: 2, def: 4, rarity: 'rare',
+    typeLine: 'Créature — Humain · Samouraï',
+    text: '—',
+    flavor: 'Il a appris à tenir l’acier avant de savoir tenir une lame.',
+  }),
+  carte({
+    id: 'daimyo-du-soleil-rouge', name: 'Daimyō du Soleil rouge',
+    cost: 5, atk: 4, def: 5, rarity: 'rare',
+    typeLine: 'Créature — Humain · Samouraï',
+    text: '—',
+    flavor: 'Sous son étendard, le soleil rouge ne se couche pas.',
   }),
 ];
 
