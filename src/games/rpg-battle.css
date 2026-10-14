@@ -7020,8 +7020,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-radius: 58% 58% 0 0 / 30% 30% 0 0;
 }
 
-/* Le sceau rond : la même famille, là où un bandeau ne tiendrait pas — le coin
-   d'une vignette de catalogue ou d'atelier, le bas d'une carte de mulligan. */
+/* Le sceau : la même famille en jeton, là où un bandeau ne tiendrait pas — le
+   coin d'une vignette de catalogue ou d'atelier, le bas d'une carte de mulligan. */
 .rpg-sort-sceau {
   display: grid;
   aspect-ratio: 1;
@@ -7031,17 +7031,33 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 2px 6px rgba(0, 0, 0, .78), inset 0 1px rgba(255, 255, 255, .4);
 }
 /* C'est ici que vit la FORME : les deux socles sont la même voûte, mais le
-   jeton de la Magie Rapide est **chanfreiné** — un coin coupé, comme le sort
-   qui part sans attendre — quand celui de la Sorcellerie est un **médaillon
-   rond**. Le repère se lit donc aussi de loin, sans distinguer les couleurs, et
-   il ne se confond pas avec la pastille d'élément, qui garde le cercle plein. */
+   jeton de la Magie Rapide est un **losange** — la taille que grave l'anneau de
+   ses cartes, son éclair au milieu — quand celui de la Sorcellerie est un
+   **médaillon rond**. Le repère se lit donc aussi de loin, sans distinguer les
+   couleurs, et il ne se confond pas avec la pastille d'élément, qui garde le
+   cercle plein. */
 .rpg-sort-sceau--rapide {
-  border-radius: 26%;
-  clip-path: polygon(0 6%, 6% 0, 100% 0, 100% 100%, 0 100%);
-  background: radial-gradient(circle at 34% 24%, #f8e69d, #8a5f0d 72%);
+  position: relative;
+  border-color: transparent; /* la découpe emporterait le liseré : il est peint dessous */
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: #fff4d8;
   color: #2a1f04;
   filter: drop-shadow(0 0 2px rgba(255, 215, 98, .8));
 }
+/* Le losange d'or, un peu plus petit : entre les deux court l'arête claire des
+   quatre pans. Peinte dans la découpe, elle suit le losange au lieu d'être
+   coupée avec les coins d'un carré, et elle tient à toutes les tailles — du
+   jeton du mulligan à celui du catalogue, qui suivent `--rpg-card-marker-size`. */
+.rpg-sort-sceau--rapide::before {
+  content: '';
+  position: absolute;
+  inset: 4%;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: radial-gradient(circle at 34% 24%, #f8e69d, #8a5f0d 72%);
+}
+/* L'éclair passe au-dessus de la nappe d'or : positionné à son tour, il la
+   suit dans l'ordre de peinture. */
+.rpg-sort-sceau--rapide .rpg-sort-sigil { position: relative; }
 .rpg-sort-sceau--sorcellerie {
   border-radius: 50%;
   background: radial-gradient(circle at 34% 24%, #e3d7fb, #4b3676 72%);

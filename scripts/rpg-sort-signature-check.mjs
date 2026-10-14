@@ -70,21 +70,23 @@ for (const [surface, regle] of [
   assert.match(battleCss + mobileCss, regle, `${surface} annonce le repère que le socle suit`);
 }
 
-// ── Le sceau rond : les vignettes et le mulligan ─────────────────────────────
-assert.match(battleCss, /\.rpg-sort-sceau--rapide\s*\{[^}]*radial-gradient\(circle at 34% 24%, #f8e69d, #8a5f0d/s,
-  'le sceau de la Magie Rapide reprend l’or des pastilles du jeu');
+// ── Le sceau : le losange de la Magie Rapide, le médaillon de la Sorcellerie ─
+assert.match(battleCss, /\.rpg-sort-sceau--rapide::before\s*\{[^}]*radial-gradient\(circle at 34% 24%, #f8e69d, #8a5f0d/s,
+  'la nappe du losange reprend l’or des pastilles du jeu — peinte dans la découpe, sous l’éclair');
 assert.match(battleCss, /\.rpg-sort-sceau--sorcellerie\s*\{[^}]*radial-gradient\(circle at 34% 24%, #e3d7fb, #4b3676/s,
   'le sceau de la Sorcellerie reprend l’améthyste');
 assert.match(battleCss, /\.rpg-card-catalogue__sort,\s*\.rpg-atelier__carte-sort\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*8px;[^}]*left:\s*8px;[^}]*width:\s*var\(--rpg-card-marker-size, 38px\);/s,
   'le sceau des vignettes se pose au coin libre, en face du galet du coût, à l’échelle du repère');
-assert.match(battleCss, /\.rpg-sort-sceau--rapide\s*\{[^}]*clip-path:\s*polygon\(/s,
-  'le jeton de la Magie Rapide est chanfreiné : c’est lui qui porte la forme, maintenant que les socles se ressemblent');
+assert.match(battleCss, /\.rpg-sort-sceau--rapide\s*\{[^}]*clip-path:\s*polygon\(50% 0, 100% 50%, 50% 100%, 0 50%\)/s,
+  'le jeton de la Magie Rapide est un losange : c’est lui qui porte la forme, maintenant que les socles se ressemblent');
+assert.match(battleCss, /\.rpg-sort-sceau--rapide::before\s*\{[^}]*clip-path:\s*polygon\(/s,
+  'l’arête claire du jeton est peinte dans la découpe — un liseré de bord serait coupé, lui, avec les coins du carré');
 assert.match(battleCss, /\.rpg-sort-sceau--sorcellerie\s*\{[^}]*border-radius:\s*50%;/s,
   'le jeton de la Sorcellerie reste un médaillon rond — la forme du repère dit la famille');
 assert.match(pageSource, /<SortSceau carte=\{carte\} className="rpg-mulligan__sceau" \/>/,
   'la carte du mulligan monte le sceau, au-dessus de sa ligne de type');
 assert.match(battleCss, /\.rpg-sort-sceau\s*\{[^}]*display:\s*grid;[^}]*aspect-ratio:\s*1;/s,
-  'le jeton garde le carré : sans `aspect-ratio`, un chanfrein large s’ovaliserait');
+  'le jeton garde son carré : sans `aspect-ratio`, le losange s’ovaliserait');
 assert.match(battleCss, /\.rpg-mulligan__sceau\s*\{\s*width:\s*clamp\(16px, 15cqw, 30px\);\s*font-size:\s*clamp\(9px, 7cqw, 15px\);\s*\}/s,
   'le sceau du mulligan prend la taille des repères de la carte, comme le coût et la pastille de couleur');
 assert.match(atelierCss, /\.rpg-atelier__carte-art\s*\{[^}]*--rpg-card-marker-size:\s*30px;/s,

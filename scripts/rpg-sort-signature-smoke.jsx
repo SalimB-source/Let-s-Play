@@ -224,5 +224,5 @@ export async function checkRpgSortSignature(assert) {
     assert.ok(sceaux >= 10, `catalogue : les deux familles de sorts se repèrent au sceau (${sceaux} vignettes)`);
   }, { lancerDuel: false });
 
-  console.log('✓ Familles de sorts : la voûte du socle (liseré d’or ou d’améthyste) et le jeton (chanfreiné ou rond) marquent les magies rapides et les sorcelleries sur la main, dans le mulligan, dans l’aperçu et dans le catalogue — créatures, terrains et armes n’en portent aucun.');
+  console.log('✓ Familles de sorts : la voûte du socle (liseré d’or ou d’améthyste) et le jeton (losange ou rond) marquent les magies rapides et les sorcelleries sur la main, dans le mulligan, dans l’aperçu et dans le catalogue — créatures, terrains et armes n’en portent aucun.');
 }

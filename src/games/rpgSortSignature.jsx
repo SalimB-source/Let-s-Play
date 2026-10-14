@@ -14,8 +14,9 @@
  * - `SortSocle` — le bandeau du bas d'une grande face : la même voûte pour les
  *   deux, liseré d'or pour l'une, d'améthyste pour l'autre, avec le sigle et le
  *   mot écrit.
- * - `SortSceau` — le même repère en rond, pour les vignettes où un bandeau ne
- *   tiendrait pas (grille du catalogue, grille de l'atelier, mulligan).
+ * - `SortSceau` — le même repère en jeton : le losange de la Magie Rapide, son
+ *   éclair au centre, le médaillon rond de la Sorcellerie — pour les vignettes
+ *   où un bandeau ne tiendrait pas (grille du catalogue, atelier, mulligan).
  *
  * Les trois ne rendent **rien** pour une créature, un héros, un terrain ou une
  * arme : c'est précisément ce silence qui rend un sort reconnaissable. Les
@@ -53,7 +54,7 @@ export function SortSocle({ carte, variante = '' }) {
   );
 }
 
-/** Le repère rond de la famille, pour les vignettes et le mulligan. */
+/** Le jeton de la famille — le losange ou le médaillon — des vignettes et du mulligan. */
 export function SortSceau({ carte, className = '' }) {
   const famille = magieFamilleInfo(carte);
   if (!famille) return null;

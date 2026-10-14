@@ -6922,7 +6922,7 @@ armes qui fait le repère : un socle au bas de la face veut dire *sort*, et sa
 | | Magie Rapide | Sorcellerie |
 | --- | --- | --- |
 | **Socle** | la voûte, liseré d'or sur toute la courbe | la même voûte, liseré d'améthyste |
-| **Forme du jeton** | chanfreiné — le coin coupé | médaillon rond |
+| **Forme du jeton** | losange — l'éclair au centre | médaillon rond |
 | **Teinte** | or (`#ffd619`), l'or des cartes jouables | améthyste (`#b39ae0`), la couleur du contre |
 | **Sigle** | l'éclair — ça part sans attendre | l'étincelle — ça se prépare |
 | **Mot** | `MAGIE RAPIDE` | `SORCELLERIE` |
@@ -6947,8 +6947,10 @@ double.
 
 **Le sceau, pour les vignettes.** Là où un bandeau ne tiendrait pas — le coin
 d'une vignette de catalogue ou d'atelier, le bas d'une carte de mulligan, le
-guide des cartes — c'est un **jeton** qui parle : chanfreiné pour la Magie
-Rapide, médaillon rond pour la Sorcellerie, avec le même sigle. Il ne se
+guide des cartes — c'est un **jeton** qui parle : un **losange** pour la Magie
+Rapide, avec son éclair au centre, un médaillon rond pour la Sorcellerie, avec
+sa croix. Son arête claire est peinte dans la découpe, sur les quatre pans : un
+liseré de bord, lui, serait coupé avec les coins du carré. Il ne se
 confond pas avec la pastille d'élément, qui reste un cercle plein à l'autre
 coin, ni avec le galet du coût, qui garde sa forme et sa place.
 
