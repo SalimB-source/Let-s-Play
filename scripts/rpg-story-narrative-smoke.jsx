@@ -86,7 +86,9 @@ export async function checkRpgStoryNarrative(assert) {
     assert.equal(window.localStorage.getItem(RPG_STORY_STORAGE_KEY), avantRelectureIntro, 'revoir l’introduction ne modifie pas la sauvegarde');
     await click(query('[data-story-start-duel]'));
     assert.ok(query('.rpg-mulligan'), 'le vrai duel s’ouvre sur le mulligan');
-    assert.equal(query('.rpg-wizard-plate--ennemi img').getAttribute('src'), guetteurSrc, 'portrait identique dans la scène et le duel');
+    // La scène montre le personnage découpé (stand) ; la plaque du duel garde
+    // le portrait canonique de la même peinture.
+    assert.match(query('.rpg-wizard-plate--ennemi img').getAttribute('src'), /cards\/guetteur-du-beffroi\.jpg/, 'le duel garde le portrait canonique du Guetteur');
     await click(bouton('Menu'));
     await click(bouton('Journal'));
     assert.ok(query('.rpg-campaign__confirm'), 'un duel en cours ne se perd pas sans confirmation');
@@ -133,11 +135,11 @@ export async function checkRpgStoryNarrative(assert) {
     assert.equal(container.querySelectorAll('[data-journal-scene]').length, 4, 'le journal ne dévoile que les scènes validées');
     assert.equal(container.querySelectorAll('[data-journal-register]').length, 2, 'le journal affiche les deux premières pièces versées au dossier');
     assert.match(query('[data-journal-survivors-status]')?.textContent ?? '', /Sous la voûte du premier palier/, 'le journal indique où se trouvent les douze habitants');
-    assert.equal(query('[data-personnage="salem"]').getAttribute('src'), salemSrc);
-    assert.equal(query('[data-personnage="scribe"]').getAttribute('src'), scribeSrc, 'la Scribe est la même dans le journal');
+    assert.match(query('[data-personnage="salem"]').getAttribute('src'), /cards\/salem\.jpg/, 'le journal garde le portrait canonique de Salem');
+    assert.match(query('[data-personnage="scribe"]').getAttribute('src'), /sablier-story\/scribe\.jpg/, 'le journal garde le portrait canonique de la Scribe');
     await click(query('[data-journal-scene="listes-2-apres"] summary'));
     await click(query('[data-journal-replay="listes-2-apres"]'));
-    assert.equal(query('[data-journal-stage="listes-2-apres"] [data-personnage="scribe"]')?.getAttribute('src'), scribeSrc, 'la relecture en scène dans le journal garde le portrait canonique');
+    assert.match(query('[data-journal-stage="listes-2-apres"] [data-personnage="scribe"]')?.getAttribute('src'), /sablier-story\/scribe\.jpg/, 'la relecture du journal garde le portrait canonique');
     await click(query('[data-journal-close-replay]'));
     assert.equal(query('[data-journal-stage]'), null, 'la relecture se referme proprement');
     assert.equal(window.localStorage.getItem(RPG_STORY_STORAGE_KEY), apresChoix, 'la relecture est sans effet');
@@ -218,7 +220,12 @@ export async function checkRpgStoryNarrative(assert) {
     await click(query('[data-story-start-duel]'));
     await click(query('.rpg-btn--endturn'));
     await act(async () => { await wait(1100); });
-    await click([...container.querySelectorAll('.rpg-annonce-sort button')].find((b) => b.textContent.includes('Laisser passer')));
+    // La fenêtre de réponse n'existe que si l'annonce adverse est encore
+    // pendante au réveil : sur une machine lente elle attend le clic, sur une
+    // machine rapide le sort (coût 0, 99 dégâts) a déjà résolu et le joueur
+    // est déjà à terre. Les deux chemins finissent sur l'écran de défaite.
+    const passer = [...container.querySelectorAll('.rpg-annonce-sort button')].find((b) => b.textContent.includes('Laisser passer'));
+    if (passer) await click(passer);
     await act(async () => { await wait(1600); });
     assert.ok(query('.rpg-overlay--loss'), 'la défaite garde son écran de résultat');
     assert.deepEqual(lire().etagesVaincus, []);

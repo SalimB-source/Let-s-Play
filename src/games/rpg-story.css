@@ -652,3 +652,370 @@
 @media (prefers-reduced-motion: reduce) {
   .rpg-story-portrait, .rpg-narrative__portrait img, .rpg-narrative-button, .rpg-narrative__progress span { animation: none; transition: none; }
 }
+
+/* ── Le lecteur animé — décor vivant, sable, machine à écrire, fil du récit ──
+   Même écran sombre dans les deux thèmes. Le portrait canonique n'est jamais
+   recoloré : uniquement un halo externe dans la couleur du personnage et une
+   lumière baissée quand la ville parle. Tout s'arrête pour
+   `prefers-reduced-motion` (bloc final) : le récit reste fixe et complet. */
+
+/* Le décor respire : un lent travelling (Ken Burns) au-dessus du fond statique
+   qui reste le repli si la couche animée ne se peint pas. */
+.rpg-narrative__decor {
+  position: fixed;
+  z-index: -1;
+  inset: -5%;
+  pointer-events: none;
+  background-image: linear-gradient(90deg, rgba(9, 16, 24, .74), rgba(9, 16, 24, .93) 58%, #0c141c), var(--rpg-story-decor, none);
+  background-size: cover;
+  background-position: var(--rpg-story-position, center);
+  animation: rpg-story-kenburns 46s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes rpg-story-kenburns {
+  from { transform: scale(1.04); }
+  to { transform: scale(1.13) translate3d(-1.4%, -1%, 0); }
+}
+
+/* Un voile de sable qui traverse la scène (boucle sans couture : une dalle,
+   une période). Purement décoratif, jamais au-dessus du texte. */
+.rpg-narrative__sable {
+  position: fixed;
+  z-index: -1;
+  inset: -12%;
+  pointer-events: none;
+  background-image:
+    radial-gradient(2px 2px at 18% 26%, rgba(233, 214, 173, .38), transparent 65%),
+    radial-gradient(1.4px 1.4px at 64% 58%, rgba(214, 189, 138, .32), transparent 65%),
+    radial-gradient(1.7px 1.7px at 39% 79%, rgba(233, 214, 173, .24), transparent 65%),
+    radial-gradient(1.2px 1.2px at 82% 12%, rgba(214, 189, 138, .28), transparent 65%);
+  background-size: 480px 480px;
+  opacity: .55;
+  animation: rpg-story-sable 80s linear infinite;
+  will-change: transform;
+}
+@keyframes rpg-story-sable { to { transform: translate3d(0, 480px, 0); } }
+
+/* Machine à écrire : la partie à venir reste posée (même mise en page, zéro
+   saut) mais invisible ; un pointeur invite au clic pour tout dévoiler. */
+.rpg-narrative__dialogue--en-cours { cursor: pointer; }
+.rpg-narrative__dialogue p > span[aria-hidden] { visibility: hidden; }
+.rpg-narrative__caret { display: inline-block; margin-left: 3px; color: #dfc797; animation: rpg-story-caret 1.05s steps(2, start) infinite; }
+@keyframes rpg-story-caret { to { visibility: hidden; } }
+
+/* Entrées : l'en-tête de scène à l'arrivée, le nom puis la réplique ensuite. */
+.rpg-narrative__entete { animation: rpg-story-ligne .45s ease both; }
+.rpg-narrative__dialogue > .rpg-narrative__speaker { animation: rpg-story-ligne .3s ease both; }
+.rpg-narrative__dialogue > p:not(.rpg-narrative__sr) { animation: rpg-story-ligne .42s ease both; }
+@keyframes rpg-story-ligne {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Le portrait vit : respiration lente, halo dans la couleur du parleur et
+   lumière baissée quand le narrateur porte la voix. */
+.rpg-narrative__portrait { transition: box-shadow .4s ease, filter .4s ease; }
+.rpg-narrative__portrait--parle {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rpg-story-speaker, #d9bf88) 55%, transparent),
+    0 0 38px color-mix(in srgb, var(--rpg-story-speaker, #d9bf88) 24%, transparent),
+    0 22px 65px rgba(0, 0, 0, .38);
+}
+.rpg-narrative__portrait--ecoute { filter: brightness(.85) saturate(.9); }
+.rpg-narrative__portrait img { animation: rpg-story-appear .28s ease both, rpg-story-respire 7.5s ease-in-out .3s infinite; }
+@keyframes rpg-story-respire {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.013); }
+}
+
+/* Les décisions entrent en cascade et se soulèvent au survol. */
+.rpg-narrative__choices button { transition: background .18s ease, border-color .18s ease, transform .18s ease; animation: rpg-story-ligne .38s ease both; }
+.rpg-narrative__choices button:nth-of-type(2) { animation-delay: .07s; }
+.rpg-narrative__choices button:nth-of-type(3) { animation-delay: .14s; }
+.rpg-narrative__choices button:hover { transform: translateY(-1px); }
+
+/* La barre de confort de lecture : fil du récit, texte animé, auto-lecture. */
+.rpg-narrative__lecture { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; margin-top: 16px; }
+.rpg-narrative__lecture-btn {
+  min-height: 32px;
+  padding: 5px 12px;
+  border: 1px solid rgba(211, 194, 160, .28);
+  border-radius: 999px;
+  background: rgba(13, 19, 25, .55);
+  color: #c9bfa9;
+  font: 600 9px/1.4 var(--mono, monospace);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.rpg-narrative__lecture-btn:hover { border-color: #dfc797; color: #f4e6c9; }
+.rpg-narrative__lecture-btn[aria-pressed="true"] { color: #f2ddaf; border-color: rgba(223, 199, 151, .75); background: rgba(217, 191, 136, .13); }
+
+/* Le fil du récit : le panneau des répliques déjà lues, refermable d'un clic
+   hors de lui ou d'Échap. z-index propre, au-dessus de tout le lecteur. */
+.rpg-narrative__fil { position: fixed; z-index: 80; inset: 0; display: flex; justify-content: flex-end; background: rgba(5, 10, 16, .78); }
+.rpg-narrative__fil-fond { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; cursor: pointer; }
+.rpg-narrative__fil-panneau {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  background: #0e1822;
+  border-left: 1px solid rgba(205, 186, 145, .35);
+  box-shadow: -34px 0 70px rgba(0, 0, 0, .55);
+  animation: rpg-story-panneau .26s ease both;
+}
+@keyframes rpg-story-panneau {
+  from { transform: translateX(34px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.rpg-narrative__fil-entete { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 20px 22px 14px; border-bottom: 1px solid rgba(205, 186, 145, .22); }
+.rpg-narrative__fil-titre > span { display: block; color: #beab84; font: 600 9px/1.6 var(--mono, monospace); letter-spacing: .16em; text-transform: uppercase; }
+.rpg-narrative__fil-titre > strong { color: #f2eadb; font: 400 21px/1.25 Georgia, serif; }
+.rpg-narrative__fil-fermer { min-width: 44px; min-height: 44px; border: 1px solid rgba(211, 194, 160, .3); border-radius: 3px; background: transparent; color: #d3c9b5; font-size: 15px; cursor: pointer; }
+.rpg-narrative__fil-fermer:hover { border-color: #dfc797; color: #f4e6c9; }
+.rpg-narrative__fil-liste { flex: 1; overflow: auto; padding: 4px 22px 30px; overscroll-behavior: contain; }
+.rpg-narrative__fil-lieu { margin: 16px 0 2px; color: #a6bec3; font: 500 10px/1.6 var(--mono, monospace); letter-spacing: .06em; text-transform: uppercase; }
+.rpg-narrative__fil-item { margin: 0 0 18px; padding: 0 0 14px; border-bottom: 1px solid rgba(120, 132, 130, .14); }
+.rpg-narrative__fil-item > span { display: block; margin-bottom: 5px; color: #d9bf88; font: 600 10px/1.5 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
+.rpg-narrative__fil-item p { margin: 0; color: #cfc5b2; font: 400 15px/1.7 Georgia, serif; }
+.rpg-narrative__fil-item--actuel { margin-left: -12px; padding-left: 10px; border-left: 2px solid #dfc797; }
+.rpg-narrative__fil-item--actuel p { color: #f4e9d5; }
+
+/* Le sablier de la scène : le haut est ce qu'il reste à lire, une granule
+   tombe tant que la scène continue. Les niveaux glissent, ils ne sautent pas. */
+.rpg-narrative__footer-groupe { display: inline-flex; align-items: center; gap: 10px; }
+.rpg-narrative__sablier { width: 21px; height: 28px; flex: none; }
+.rpg-narrative__sablier-sable { fill: #d9bd85; transition: y .45s ease, height .45s ease; }
+.rpg-narrative__sablier-grain { fill: #f2ddaf; animation: rpg-story-grain 1.15s ease-in infinite; }
+@keyframes rpg-story-grain {
+  0% { transform: translateY(0); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateY(1.6px); opacity: 0; }
+}
+
+/* Le texte complet est annoncé aux lecteurs d'écran une seule fois par
+   réplique — la machine à écrire n'est qu'un effet visible. */
+.rpg-narrative__sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+@media (max-width: 700px) {
+  .rpg-narrative__lecture { justify-content: flex-start; gap: 6px; margin-top: 12px; }
+  .rpg-narrative__lecture-btn { min-height: 30px; padding: 4px 9px; font-size: 8px; letter-spacing: .09em; }
+  .rpg-narrative__fil { background: rgba(5, 10, 16, .9); }
+  .rpg-narrative__footer-groupe { gap: 7px; }
+}
+
+/* Le bloc final : tout mouvement du lecteur s'arrête, le récit reste entier. */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-narrative__decor, .rpg-narrative__sable, .rpg-narrative__caret,
+  .rpg-narrative__entete, .rpg-narrative__dialogue > .rpg-narrative__speaker,
+  .rpg-narrative__dialogue > p, .rpg-narrative__fil-panneau,
+  .rpg-narrative__choices button, .rpg-narrative__sablier-grain,
+  .rpg-narrative__sablier-sable, .rpg-narrative__portrait img,
+  .rpg-narrative__lecture-btn { animation: none; transition: none; }
+  .rpg-narrative__portrait--ecoute { filter: none; }
+}
+
+/* ── Mise en scène de roman visuel (façon Persona) ──────────────────────────
+   Au maximum DEUX personnages par plan : des sprites détourés ancrés EN BAS
+   DE L'ÉCRAN, au premier plan — à gauche l'hôte de la scène, à droite celui
+   qui parle (ou son interlocuteur attitré quand l'hôte parle). La boîte de
+   dialogue, plus petite, vit entre les deux. Les sprites sont générés depuis
+   les peintures canoniques par `tools/make-stands.py` (fond magenta retiré,
+   fond transparent) : mêmes visages, même style, aucun recolorage. Un
+   personnage encore sans sprite garde le portrait encadré en repli. */
+.rpg-narrative__scene {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(1280px, 100%);
+  min-height: calc(100% - 83px);
+  margin: 0 auto;
+  padding: 16px clamp(18px, 3.4vw, 48px) 18px;
+}
+.rpg-narrative__cartouche {
+  position: relative;
+  z-index: 3;
+  width: min(480px, 26vw);
+  margin: 0 auto;
+  text-align: center;
+}
+/* Le cartouche vit ENTRE les deux têtes (les personnages occupent les bords) :
+   jamais au-dessus d'un visage, quelle que soit la hauteur d'écran. */
+.rpg-narrative__cartouche .rpg-narrative__lecture { justify-content: center; }
+.rpg-narrative__cartouche .rpg-narrative__eyebrow { margin: 0; }
+.rpg-narrative__cartouche .rpg-narrative__entete h1,
+.rpg-narrative__cartouche .rpg-narrative__location { margin: 6px 0 0; text-shadow: 0 2px 18px rgba(4, 8, 13, .9); }
+.rpg-narrative__cartouche .rpg-narrative__entete h1 { font-size: clamp(20px, 2.1vw, 28px); }
+
+/* Le duo du plan : fixé au bas de l'écran (ne défile pas), au-dessus de la
+   boîte. Aucune capture de clic : la scène se tourne au clavier et aux
+   commandes ; les personnages sont purs décors vivants. */
+.rpg-narrative__fenetre, .rpg-narrative__plateau { display: contents; }
+.rpg-narrative__stand {
+  position: fixed;
+  bottom: 0;
+  z-index: 4;
+  width: clamp(300px, 38vw, 640px);
+  margin: 0;
+  pointer-events: none;
+  filter: brightness(.46) saturate(.62);
+  transition: filter .38s ease;
+  transform-origin: bottom center;
+  animation: rpg-story-stand .5s ease both;
+}
+.rpg-narrative__stand:first-child { left: -2.2%; }
+.rpg-narrative__stand:last-child { right: -2.2%; }
+.rpg-narrative__stand:only-child { left: 0; right: auto; }
+.rpg-narrative__stand--actif { filter: none; }
+@keyframes rpg-story-stand {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; }
+}
+.rpg-narrative__stand-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 78vh;
+  object-fit: contain;
+  object-position: bottom;
+  filter: drop-shadow(0 16px 22px rgba(0, 0, 0, .55));
+  user-select: none;
+}
+
+/* Repli : personnage sans sprite — le portrait encadré, même placement. */
+.rpg-narrative__stand-cadre {
+  height: clamp(260px, 48vh, 540px);
+  overflow: hidden;
+  background: rgba(9, 15, 22, .35);
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 18px, 100% 100%, 0 100%, 0 18px);
+  -webkit-mask-image: linear-gradient(180deg, #000 80%, transparent 99%);
+  mask-image: linear-gradient(180deg, #000 80%, transparent 99%);
+}
+.rpg-narrative__stand--actif .rpg-narrative__stand-cadre { box-shadow: inset 0 -70px 60px -46px var(--stand-couleur, #d9bf88); }
+.rpg-narrative__stand:not(.rpg-narrative__stand--decoupe)::after {
+  content: '';
+  position: absolute;
+  right: 10%;
+  bottom: -9px;
+  left: 10%;
+  height: 18px;
+  background: radial-gradient(50% 100% at 50% 50%, rgba(0, 0, 0, .6), transparent 72%);
+}
+.rpg-narrative__stand .rpg-story-portrait { object-position: top center; }
+
+/* La boîte de dialogue : plus petite, entre les deux personnages, collée au
+   bas de la scène par la marge automatique du flux flex. */
+.rpg-narrative__boite {
+  position: relative;
+  z-index: 5;
+  width: min(700px, calc(100% - 150px));
+  margin: auto auto 0;
+  filter: drop-shadow(0 16px 36px rgba(0, 0, 0, .55));
+}
+/* Les pointes blanches de la bulle, côté personnages. */
+.rpg-narrative__boite::before,
+.rpg-narrative__boite::after { content: ''; position: absolute; background: #f2ead8; pointer-events: none; }
+.rpg-narrative__boite::before { right: -10px; bottom: 14px; width: 26px; height: 38px; clip-path: polygon(0 100%, 12% 34%, 58% 52%, 100% 0, 100% 100%); }
+.rpg-narrative__boite::after { left: 34%; top: -8px; width: 30px; height: 16px; clip-path: polygon(0 100%, 22% 0, 78% 12%, 100% 78%, 52% 100%); }
+.rpg-narrative__scene .rpg-narrative__dialogue {
+  position: relative;
+  min-height: 126px;
+  padding: 22px 24px 14px;
+  border: 2px solid #f2ead8;
+  background: rgba(8, 13, 19, .96);
+  box-shadow: 7px 7px 0 rgba(0, 0, 0, .42);
+  cursor: default;
+}
+.rpg-narrative__scene .rpg-narrative__dialogue--en-cours { cursor: pointer; }
+.rpg-narrative__scene .rpg-narrative__dialogue p:not(.rpg-narrative__sr) {
+  margin: 0;
+  font-size: clamp(16px, 1.15vw + 9px, 19px);
+  line-height: 1.6;
+  text-shadow: 0 2px 10px rgba(3, 6, 10, .8);
+}
+.rpg-narrative__scene .rpg-narrative__dialogue p.is-summary { font-size: clamp(13px, .8vw + 7px, 15px); line-height: 1.8; }
+
+/* La plaque de nom : petit onglet incliné posé dans la boîte, encre de la
+   couleur du personnage. */
+.rpg-narrative__scene .rpg-narrative__speaker {
+  position: absolute;
+  top: -17px;
+  left: 16px;
+  margin: 0;
+  padding: 5px 16px 4px;
+  border: 2px solid #f2ead8;
+  border-bottom: 3px solid var(--rpg-story-speaker, #d9bf88);
+  color: #131a21 !important; /* encre sombre sur la bulle blanche (style Persona) */
+  background: linear-gradient(180deg, #f8f2e4, #ebe0c8);
+  transform: skewX(-8deg) rotate(-1.2deg);
+  animation: rpg-story-nom .26s ease both;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, .45);
+}
+.rpg-narrative__scene .rpg-narrative__speaker::after { content: ''; position: absolute; inset: 2px; border: 1px solid rgba(19, 26, 33, .22); pointer-events: none; }
+@keyframes rpg-story-nom {
+  from { opacity: 0; transform: skewX(-8deg) rotate(-1.2deg) translateX(-8px); }
+  to { opacity: 1; transform: skewX(-8deg) rotate(-1.2deg); }
+}
+
+/* La flèche de suite : la réplique est révélée, on peut tourner la page. */
+.rpg-narrative__suite { position: absolute; right: 14px; bottom: 8px; color: #dfc797; font-size: 13px; text-shadow: 0 1px 6px #000; animation: rpg-story-suite 1.05s ease-in-out infinite; pointer-events: none; }
+@keyframes rpg-story-suite { 50% { transform: translateY(4px); opacity: .75; } }
+
+/* Décisions, commandes et relevés : colonne centrale, au-dessus du duo. */
+.rpg-narrative__scene .rpg-narrative__choices {
+  position: relative;
+  z-index: 5;
+  width: min(560px, 100%);
+  margin: 14px auto 0;
+  padding: 16px 18px 10px;
+  border: 1px solid rgba(217, 191, 136, .5);
+  background: linear-gradient(178deg, rgba(13, 21, 31, .97), rgba(9, 15, 23, .94));
+  clip-path: polygon(0 12px, 12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+}
+.rpg-narrative__scene .rpg-narrative__choices legend { padding: 0 0 10px; font-size: 17px; }
+.rpg-narrative__actions--scene { position: relative; z-index: 5; justify-content: center; width: min(620px, 100%); margin: 12px auto 0; }
+.rpg-narrative__scene .rpg-narrative__rewards,
+.rpg-narrative__scene .rpg-narrative__footer { position: relative; z-index: 5; width: min(620px, 100%); margin-left: auto; margin-right: auto; }
+.rpg-narrative__scene .rpg-narrative__footer { margin-top: 14px; }
+
+@media (min-width: 701px) and (max-height: 640px) {
+  .rpg-narrative__stand-img { max-height: 56vh; }
+}
+
+@media (max-width: 900px) {
+  .rpg-narrative__stand { width: 30vw; }
+  .rpg-narrative__boite,
+  .rpg-narrative__scene .rpg-narrative__choices,
+  .rpg-narrative__actions--scene,
+  .rpg-narrative__scene .rpg-narrative__rewards,
+  .rpg-narrative__scene .rpg-narrative__footer { width: min(640px, calc(100% - 120px)); min-width: 0; }
+  .rpg-narrative__cartouche { width: min(420px, 40vw); }
+}
+
+@media (max-width: 700px) {
+  .rpg-narrative__scene { min-height: calc(100% - 70px); padding: 10px 12px 14px; }
+  /* Sur téléphone, la lisibilité gagne : la boîte passe devant le duo, qui
+     reste visible au-dessus d'elle. */
+  .rpg-narrative__stand { width: 48vw; z-index: 2; }
+  .rpg-narrative__stand:first-child { left: -5%; }
+  .rpg-narrative__stand:last-child { right: -5%; }
+  .rpg-narrative__stand-img { max-height: 42vh; }
+  .rpg-narrative__scene .rpg-narrative__speaker { top: -14px; left: 10px; padding: 4px 11px 3px; font-size: 9px; }
+  .rpg-narrative__cartouche { width: 100%; }
+  .rpg-narrative__boite,
+  .rpg-narrative__scene .rpg-narrative__choices,
+  .rpg-narrative__actions--scene,
+  .rpg-narrative__scene .rpg-narrative__rewards,
+  .rpg-narrative__scene .rpg-narrative__footer { width: 100%; min-width: 0; }
+  .rpg-narrative__scene .rpg-narrative__dialogue { min-height: 104px; padding: 16px 14px 12px; }
+  .rpg-narrative__scene .rpg-narrative__dialogue p:not(.rpg-narrative__sr) { font-size: 16px; }
+  .rpg-narrative__cartouche .rpg-narrative__entete h1 { font-size: 22px; }
+}
+
+/* Le bloc final : la mise en scène s'immobilise aussi. */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-narrative__stand, .rpg-narrative__scene .rpg-narrative__speaker,
+  .rpg-narrative__stand .rpg-narrative__stand-img { animation: none; transition: none; }
+  .rpg-narrative__suite { animation: none; }
+}

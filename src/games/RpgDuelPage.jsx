@@ -3688,7 +3688,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onSelectDeck={choisirDeck}
             cardArt={cardArt} onEvent={agirRecit} onStartDuel={(id) => demarrerEtage(id, { campagne: true })}
             onExit={() => setEcran('histoire')} onJournal={ouvrirJournal}
-            sauvegardeOk={sauvegardeHistoireOk} sonActif={sonActif} onToggleSound={basculerSon} />
+            sauvegardeOk={sauvegardeHistoireOk} sonActif={sonActif} onToggleSound={basculerSon}
+            onSfx={jouerSfx} />
         )}
       </div>
     );
