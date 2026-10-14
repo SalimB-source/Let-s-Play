@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-11';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-14';
 import NewsCard from '../components/NewsCard';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';
 
-// Sélection du 11.10.2026 : une actu par univers, partagée avec les flux,
+// Sélection du 14.10.2026 : une actu par univers, partagée avec les flux,
 // les articles et la recherche, avec des miniatures locales dédiées.
 const todayStories = dailyNewsListing;
 
@@ -179,8 +179,8 @@ export default function News() {
           il reste la première chose lue sans s'afficher. */}
       <h1 className="sr-only">{copy.h1a} {copy.h1b}</h1>
 
-      {/* LES ACTUS DU JOUR (11.10.2026) : elles ouvrent la page — 3 cartes
-          avec leurs miniatures dédiées, avant le bandeau du hub. */}
+      {/* LES ACTUS DU JOUR (14.10.2026) : elles ouvrent la page — 6 cartes
+          sur 4 colonnes avec leurs miniatures dédiées, avant le bandeau du hub. */}
       <section className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" id="actus-du-jour">
         <div className="section-label">
           <span>{todaySectionCopy.label}</span>

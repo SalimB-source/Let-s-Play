@@ -8,7 +8,8 @@ import { getArticleViews, normalizeArticleId, formatViews } from '../lib/article
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-11';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-14';
+import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
 
 // Les URLs absolues (visuels officiels) passent telles quelles, les fichiers
 // locaux du site prennent le préfixe du baseUrl ; une carte éditoriale SVG de
@@ -91,6 +92,7 @@ export default function TechNews() {
   // visuel officiel ou éditorial de l'actu avec sa carte SVG en repli.
   const articles = useMemo(() => [
     ...dailyNewsListing.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
+    ...dailyNewsListing20261011.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, title: 'ANTHROPIC BRIDE SES AGENTS.', read: copy.read })),
     // Actu tech du mercredi 07.10.2026 : l'AI Act européen déclenche ses premiers
     // contrôles sur les modèles frontières (OpenAI, Google, Meta, Anthropic).
     { to: '/news/tech/ai-act-europe-premiers-controles', image: 'ai-act-europe-regulation-news.jpg', fallbackImage: 'ai-act-europe-controles-news.svg', alt: 'Régulation européenne de l’intelligence artificielle — illustration éditoriale originale Let’s Play', badge: 'EUROPE · RÉGULATION IA', kicker: '07.10.2026 · REUTERS', title: 'L’AI ACT : L’EUROPE S’ACTIVE.', excerpt: 'Le Bureau européen de l’IA adresse ses premières demandes de conformité aux concepteurs de modèles frontières dépassant 10^25 FLOPs. Les laboratoires ont 30 jours pour documenter leurs systèmes, sous peine d’amendes allant jusqu’à 7 % du chiffre d’affaires mondial.', read: copy.read, sentiment: 'mixed' },

@@ -42,7 +42,11 @@ import {
 } from '../src/articleTrailers.js';
 import { youTubeEmbedUrl } from '../src/lib/videoPlayback.js';
 import { youTubeThumbUrl } from '../src/lib/videoThumbnails.js';
-import { dailyStories, dailyNewsListing } from '../src/news/daily/2026-10-11.js';
+import { dailyStories, dailyNewsListing } from '../src/news/daily/2026-10-14.js';
+import {
+  dailyStories as dailyStories20261011,
+  dailyNewsListing as dailyNewsListing20261011,
+} from '../src/news/daily/2026-10-11.js';
 
 // Hôte et chemin des miniatures relus depuis la fabrique du site, jamais
 // recopiés ici : `npm run check:thumbs` interdit toute URL de miniature codée
@@ -128,6 +132,27 @@ const OFFICIAL_CHANNELS = new Set([
   // Legends (m4E5n06ZxNU, contrôle oEmbed du 11.10.2026) : c’est le
   // coproducteur de l’anime, sa chaîne est donc retenue, pas une rediffusion.
   'アニプレックス チャンネル',
+  // Chaînes vérifiées sur YouTube (oEmbed) le 14.10.2026 pour l’édition du
+  // mercredi 14 octobre 2026 :
+  // - « Sonic the Hedgehog » (SEGA) pour le trailer de lancement d’Avatar
+  //   Legends (mAN1R_RoKrI), le Year Two Showcase (O0TSwHOJ7Xw) et le mode
+  //   Duel (9iaR0YiqGJg) ;
+  // - « Paramount Pictures » pour la bande-annonce (U6sbm1OaJb8) et la
+  //   featurette d’entraînement (Zk2aB3Wc17c) du film Street Fighter (2026) ;
+  // - « Apple » pour les présentations officielles d’Apple HomeView
+  //   (QeQAXuQpGEA), de l’Apple TV 4K (bNdmGYamiWM) et du HomePod mini 2
+  //   (xLL4UnrLNWs) ;
+  // - « Bandai Namco Entertainment America » et « tekkenchannel » pour les
+  //   trailers de gameplay de Roger Jr. dans Tekken 8 (fehoyeYVOtE, ZMFY0G-DOv4)
+  //   et le trailer Accolades du million d’Ace Combat 8 (yOS-Yb5z3-k) ;
+  // - « Android Developers » (Google) pour les démonstrations de Gemini 4 Argon
+  //   sur Android UI (91oc9SyHxKI) et Android CLI (JMPd2jbQEqo).
+  'Sonic the Hedgehog',
+  'Paramount Pictures',
+  'Apple',
+  'Bandai Namco Entertainment America',
+  'tekkenchannel',
+  'Android Developers',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
@@ -181,12 +206,15 @@ const read = (file) => readFileSync(path.join(root, file), 'utf8');
 // Les actus cinéma sont les clés « cinema/<slug> » du dictionnaire de
 // CurrentNews.jsx ; les cartes du hub donnent les routes réellement publiées
 // (dont la série animée Diablo, servie par le gabarit Blizzard).
+const allDailyStoryKeys = [...Object.keys(dailyStories), ...Object.keys(dailyStories20261011)];
+const allDailyListings = [...dailyNewsListing, ...dailyNewsListing20261011];
+
 const cinemaKeys = [...new Set([
   ...[...read('src/pages/CurrentNews.jsx').matchAll(/'(cinema\/[a-z0-9-]+)'\s*:/g)].map((m) => m[1]),
-  ...Object.keys(dailyStories).filter((key) => key.startsWith('cinema/')),
+  ...allDailyStoryKeys.filter((key) => key.startsWith('cinema/')),
 ])];
 const hubRoutes = [...new Set([...read('src/pages/CinemaNews.jsx').matchAll(/to:\s*'(\/news\/[a-z0-9-]+(?:\/[a-z0-9-]+)?)'/g)].map((m) => m[1]))];
-hubRoutes.push(...dailyNewsListing.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => story.to));
+hubRoutes.push(...allDailyListings.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => story.to));
 const hubKeys = hubRoutes.map((route) => route.replace(/^\/news\//, ''));
 const covered = [...new Set([...cinemaKeys, ...hubKeys])];
 
@@ -195,10 +223,10 @@ const covered = [...new Set([...cinemaKeys, ...hubKeys])];
 // contrôlées quand elles existent, sans obligation d'entrée — une actu gaming
 // sans vidéo officielle reste valide, contrairement au cinéma.
 const gamingRoutes = [...new Set([...read('src/pages/GamingNews.jsx').matchAll(/to:\s*'(\/news\/[a-z0-9-]+(?:\/[a-z0-9-]+)?)'/g)].map((m) => m[1]))];
-gamingRoutes.push(...dailyNewsListing.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')).map((story) => story.to));
+gamingRoutes.push(...allDailyListings.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')).map((story) => story.to));
 const gamingKeys = [...new Set(gamingRoutes.map((route) => route.replace(/^\/news\//, '')))];
 const techRoutes = [...read('src/pages/TechNews.jsx').matchAll(/to:\s*'(\/news\/tech\/[a-z0-9-]+)'/g)].map((m) => m[1]);
-techRoutes.push(...dailyNewsListing.filter((story) => story.to.startsWith('/news/tech/')).map((story) => story.to));
+techRoutes.push(...allDailyListings.filter((story) => story.to.startsWith('/news/tech/')).map((story) => story.to));
 const techKeys = [...new Set(techRoutes.map((route) => route.replace(/^\/news\//, '')))];
 const published = [...new Set([...covered, ...gamingKeys, ...techKeys])];
 // SSR : les actus cinéma, plus les actus gaming et tech qui déclarent une

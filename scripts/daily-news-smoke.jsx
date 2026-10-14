@@ -1,4 +1,4 @@
-// Rendu réel de l’édition du 11.10.2026, via les routes publiques du site.
+// Rendu réel de l’édition du 14.10.2026, via les routes publiques du site.
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
@@ -12,7 +12,7 @@ import CinemaNews from '../src/pages/CinemaNews';
 import TechNews from '../src/pages/TechNews';
 import CurrentNews from '../src/pages/CurrentNews';
 import ArticleTrailer from '../src/components/ArticleTrailer';
-import { dailyStories } from '../src/news/daily/2026-10-11';
+import { dailyStories } from '../src/news/daily/2026-10-14';
 import { searchContent, searchIndex } from '../src/search/searchIndex';
 import { autoSearchEntries } from '../src/lib/autoNews';
 

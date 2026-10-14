@@ -73,6 +73,66 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // ---- Édition du mercredi 14.10.2026 --------------------------------------
+  // Titres et chaînes contrôlés via YouTube oEmbed le 14.10.2026.
+  // Gaming : le trailer de lancement du pack Avatar Legends (publié le 14.10.2026),
+  // le Year Two Showcase complet et la présentation du mode Duel proviennent de la
+  // chaîne officielle Sonic the Hedgehog.
+  // Cinéma : la bande-annonce et la featurette d'entraînement de Street Fighter (2026)
+  // proviennent de la chaîne principale Paramount Pictures.
+  // Tech : les trois vidéos de présentation d'Apple HomeView, de l'Apple TV 4K (A19)
+  // et du HomePod mini 2 (S10) proviennent de la chaîne principale Apple.
+  'sonic-racing-crossworlds-annee-2': {
+    label: 'SONIC RACING: CROSSWORLDS', meta: 'SEGA · ANNÉE 2 & AVATAR LEGENDS',
+    items: [
+      { id: 'mAN1R_RoKrI', kind: 'trailer', title: 'Sonic Racing: CrossWorlds - Avatar Legends Pack Launch Trailer', channel: 'Sonic the Hedgehog', verified: '14.10.2026' },
+      { id: 'O0TSwHOJ7Xw', kind: 'replay', title: 'Sonic Racing: CrossWorlds - Year Two Showcase', channel: 'Sonic the Hedgehog', verified: '14.10.2026', note: 'Présentation intégrale de la feuille de route de l’Année 2 (Bayonetta, Godzilla, Evangelion, Sanrio, SEGALAND, Final Fantasy VII Remake, Persona et baisse de prix).' },
+      { id: '9iaR0YiqGJg', kind: 'trailer', title: 'Sonic Racing: CrossWorlds - Duel Mode', channel: 'Sonic the Hedgehog', verified: '14.10.2026', note: 'Présentation du nouveau mode Duel en un contre un sans objets offensifs, inclus dans la mise à jour gratuite du 3 novembre 2026.' },
+    ],
+    credit: 'Vidéos officielles : chaîne principale Sonic the Hedgehog (SEGA), sur YouTube.',
+  },
+  'cinema/street-fighter-sortie-suite-sakurai': {
+    label: 'STREET FIGHTER (2026)', meta: 'PARAMOUNT · LEGENDARY / CAPCOM',
+    items: [
+      { id: 'U6sbm1OaJb8', kind: 'trailer', title: 'Street Fighter | New Trailer (2026 Movie)', channel: 'Paramount Pictures', verified: '14.10.2026' },
+      { id: 'Zk2aB3Wc17c', kind: 'coulisses', title: 'Training for Street Fighter (2026 Movie)', channel: 'Paramount Pictures', verified: '14.10.2026', note: 'Coulisses de la préparation physique et martiale du casting autour d’Andrew Koji, Noah Centineo et Callina Liang.' },
+    ],
+    credit: 'Vidéos officielles : chaîne principale Paramount Pictures, sur YouTube.',
+  },
+  'tech/apple-homeview-apple-tv-4k-homepod-mini-2': {
+    label: 'APPLE HOMEVIEW & SALON 2026', meta: 'APPLE · WELCOME HOME',
+    items: [
+      { id: 'QeQAXuQpGEA', kind: 'trailer', title: 'The new Apple HomeView: Keep the whole home connected, entertained, and in the know.', channel: 'Apple', verified: '14.10.2026' },
+      { id: 'bNdmGYamiWM', kind: 'trailer', title: 'The new Apple TV 4K: The ultimate cinematic experience.', channel: 'Apple', verified: '14.10.2026', note: 'Présentation officielle de l’Apple TV 4K de 4e génération équipée de la puce A19 et de microphones longue portée pour Siri AI.' },
+      { id: 'xLL4UnrLNWs', kind: 'trailer', title: 'The new HomePod mini 2: Rich, room-filling sound in a compact design.', channel: 'Apple', verified: '14.10.2026', note: 'Présentation officielle du HomePod mini 2 sous puce S10 et architecture acoustique à quatre haut-parleurs.' },
+    ],
+    credit: 'Vidéos officielles : chaîne principale Apple, sur YouTube.',
+  },
+  'tekken-8-roger-jr-ace-combat-8-million': {
+    label: 'TEKKEN 8 & ACE COMBAT 8', meta: 'BANDAI NAMCO · SAISON 3 & 1M',
+    items: [
+      { id: 'fehoyeYVOtE', kind: 'trailer', title: 'TEKKEN 8 - Roger Jr. Gameplay Reveal Trailer', channel: 'Bandai Namco Entertainment America', verified: '14.10.2026' },
+      { id: 'ZMFY0G-DOv4', kind: 'trailer', title: 'TEKKEN 8 - 「ロジャーJr.」 ゲームプレイトレイラー', channel: 'tekkenchannel', verified: '14.10.2026', note: 'Bande-annonce de gameplay de Roger Jr. dans sa version japonaise officielle publiée par tekkenchannel.' },
+      { id: 'yOS-Yb5z3-k', kind: 'trailer', title: 'ACE COMBAT 8: WINGS OF THEVE | Accolades Trailer', channel: 'Bandai Namco Entertainment America', verified: '14.10.2026', note: 'Bande-annonce officielle accompagnant le cap du million d’exemplaires vendus dans le monde pour Ace Combat 8: Wings of Theve.' },
+    ],
+    credit: 'Vidéos officielles : chaînes principales Bandai Namco Entertainment America et tekkenchannel, sur YouTube.',
+  },
+  'cinema/narnia-le-neveu-du-magicien-bande-annonce-netflix': {
+    label: 'NARNIA : LE NEVEU DU MAGICIEN', meta: 'NETFLIX · GRETA GERWIG',
+    items: [
+      { id: 'gDJ-ini7fF0', kind: 'trailer', title: 'NARNIA: THE MAGICIAN’S NEPHEW | Official Trailer | Netflix', channel: 'Netflix', verified: '14.10.2026' },
+    ],
+    credit: 'Bande-annonce officielle : chaîne principale Netflix, mise en ligne le 14 octobre 2026.',
+  },
+  'tech/google-play-apps-vibe-codees-gemini-spark': {
+    label: 'ANDROID & GEMINI 4 ARGON', meta: 'GOOGLE · ANDROID DEVELOPERS',
+    items: [
+      { id: '91oc9SyHxKI', kind: 'trailer', title: 'Project Planetarium: 3D Android UI with Gemini 4 Argon', channel: 'Android Developers', verified: '14.10.2026', note: 'Démonstration officielle publiée par Android Developers montrant Gemini 4 Argon générer et déployer une interface 3D spatiale interactive dans Jetpack Compose.' },
+      { id: 'JMPd2jbQEqo', kind: 'trailer', title: 'Android CLI and skills to improve your development', channel: 'Android Developers', verified: '14.10.2026', note: 'Présentation par l’équipe Android Developers des nouveaux outils et compétences d’assistance au développement mobile.' },
+    ],
+    credit: 'Vidéos officielles : chaîne principale Android Developers (Google), sur YouTube.',
+  },
+
   // ---- Édition du dimanche 11.10.2026 --------------------------------------
   // Titres et chaînes contrôlés via YouTube oEmbed le 11.10.2026.
   // Le teaser de l'anime Ghost of Tsushima: Legends date de juillet 2026 : la

@@ -48,7 +48,8 @@ import NotFound from '../src/pages/NotFound';
 import Auth from '../src/pages/Auth';
 import { gameTests } from '../src/reviewsData';
 import { autoStories } from '../src/news/autoIndex';
-import { dailyStories } from '../src/news/daily/2026-10-11';
+import { dailyStories } from '../src/news/daily/2026-10-14';
+import { dailyStories as dailyStories20261011 } from '../src/news/daily/2026-10-11';
 
 const e = React.createElement;
 
@@ -117,7 +118,7 @@ export const ROUTES = [
     'norvege-lunettes-connectees-interdiction',
     'ai-act-europe-premiers-controles',
   ].map((slug) => [`/news/tech/${slug}`, CurrentNews, '/news/tech/:slug', { slug: `tech/${slug}` }]),
-  ...Object.keys(dailyStories).map((key) => [
+  ...[...Object.keys(dailyStories), ...Object.keys(dailyStories20261011)].map((key) => [
     `/news/${key}`, CurrentNews,
     key.startsWith('cinema/') ? '/news/cinema/:slug' : key.startsWith('tech/') ? '/news/tech/:slug' : '/news/:slug',
     { slug: key },

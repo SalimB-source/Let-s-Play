@@ -8,7 +8,7 @@ import VideoThumb from '../components/VideoThumb';
 import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-11';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-14';
 import { leadTrailer } from '../articleTrailers';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
