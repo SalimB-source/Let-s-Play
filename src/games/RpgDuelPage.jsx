@@ -200,9 +200,9 @@ const CARD_ART_CACHE_VERSIONS = {
   // L'Armure de cendres quitte le lot photoréaliste : son dessin d'origine
   // est conservé trait pour trait et simplement repeint en nihonga.
   'armure-de-cendres': 'armure-nihonga-v1',
-  // Le Bâton des citernes quitte le lot photoréaliste à son tour : gros plan
-  // sur la main qui le tient et le serpent enroulé autour du bras.
-  'baton-des-citernes': 'baton-nihonga-main-serpent-v1',
+  // Le Bâton des citernes quitte le lot photoréaliste à son tour : le bâton
+  // seul derrière la glace d'une vitrine, les serpents dehors.
+  'baton-des-citernes': 'baton-nihonga-vitrine-dehors-v2',
   'djinn-de-foudre': 'plein-art-foudre-v1',
   'sonneur-fele': 'plein-art-cloche-v1',
   'brisure-de-verre': 'plein-art-verre-v2',

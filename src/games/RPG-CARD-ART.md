@@ -411,21 +411,24 @@ photoréaliste, gel en fresque).
   facture change, du photoréaliste vers le nihonga, avec les motifs amazighs
   damasquinés dans l'acier noirci. Aucun ajout, aucun retrait de sujet :
   c'est une conversion de style, pas une recomposition.
-- le **Bâton des citernes** est **recomposé sur le bâton et le serpent** :
-  gros plan sur la main et l'avant-bras qui serrent le bâton dressé, le
-  serpent enroulé en spirales autour du bras, sa tête levée près du pommeau
-  luisant. Le bâton et le serpent remplissent le cadre ; la magicienne
-  n'apparaît que par ce bras — ni visage, ni corps entier, ni barque. La
-  citerne inondée reste le décor, traité en aplat décoratif. Motifs amazighs
-  gravés dans le laiton du bâton et dans la pierre, bracelet kabyle argent et
-  corail au poignet.
+- le **Bâton des citernes** montre **le bâton seul**, debout dans une
+  **vitrine de musée** : glace sur les quatre faces, montants de laiton,
+  socle de pierre, arches et sol carrelé de la galerie derrière, lumière
+  tombant d'en haut. **Aucun personnage** — ni main, ni bras, ni visiteur :
+  l'objet exposé est le seul sujet, et il est seul derrière la glace. Les
+  serpents sont **tous à l'extérieur** de la vitrine : trois ou quatre,
+  enroulés autour de la glace et des montants de laiton, lovés sur le sol
+  tout autour du socle, têtes levées, museau contre la vitre et langue
+  dehors, qui regardent le bâton sans pouvoir l'atteindre. Aucun serpent à
+  l'intérieur. La citerne disparaît donc du cadre. Motifs amazighs carrelés
+  dans le laiton de la vitrine et du bâton.
 
 ### Versions de cache
 
 Les six peintures de héros sont datées ensemble par la révision
 `heros-nihonga-algerien-v1` dans `CARD_ART_CACHE_VERSIONS`
 (`RpgDuelPage.jsx`) ; l'Armure de cendres porte la sienne, `armure-nihonga-v1`,
-et le Bâton des citernes, `baton-nihonga-main-serpent-v1`. Le jeton
+et le Bâton des citernes, `baton-nihonga-vitrine-dehors-v2`. Le jeton
 `serpent-des-citernes` reste, lui, dans le lot photoréaliste : il n'a pas
 encore été repris.
 Mêmes noms de fichiers, donc aucun cache ne peut resservir les huiles
