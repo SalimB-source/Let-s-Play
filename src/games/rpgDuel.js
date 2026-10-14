@@ -542,17 +542,54 @@ function appliquerBannieresAttaque(duel, cote, attaquants = []) {
 }
 
 /**
+ * Kenshi de la forge — l'aura de forge : tant qu'il est en jeu, **les autres**
+ * créatures de type Samouraï gagnent +2/+0. Comme la Résonance samouraï, elle
+ * est **de table** : elle profite aux deux camps et à toutes les couleurs ; le
+ * type se lit sur la ligne de type imprimée (`cardReceivesResonance`).
+ *
+ * Le Kenshi ne se forge pas lui-même — il dit « les autres » : il ne reçoit que
+ * l'aura de ses confrères, s'il y en a d'autres. Deux Kenshis se donnent donc
+ * +2/+0 l'un à l'autre et +4/+0 au reste des Samouraïs.
+ *
+ * Chaque entité ne retient que l'écart appliqué (`auraKenshiBonus`), même
+ * contrat que l'aura Sable et l'égide d'Amani : une arrivée ou une mort ne fait
+ * jamais dériver les statistiques déjà gagnées par la Furie ou un autre renfort.
+ * L'aura ne touche pas la défense : la perdre ne peut pas tuer, et l'attaque
+ * retombe au plancher de 0.
+ */
+function appliquerAuraKenshi(duel) {
+  let sources = 0;
+  for (const cote of ['joueur', 'sorcier']) {
+    sources += duel[cote].creatures.filter((entite) => entite.carteId === 'kenshi-de-la-forge').length;
+  }
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      const siennes = sources - (entite.carteId === 'kenshi-de-la-forge' ? 1 : 0);
+      const voulu = cardReceivesResonance(duelCardById(entite.carteId), 'samourai')
+        ? Math.max(0, 2 * siennes)
+        : 0;
+      const delta = voulu - (entite.auraKenshiBonus ?? 0);
+      if (!delta) continue;
+      entite.auraKenshiBonus = voulu;
+      entite.atk = Math.max(0, entite.atk + delta);
+    }
+  }
+}
+
+/**
  * Rafraîchit toutes les auras de présence après un changement du champ de
  * bataille (arrivée, mort, renvoi, retour programmé) : l'aura Sable de Tarek
- * et l'égide d'Amani sur chaque camp, puis la Résonance de table. Chaque
- * mécanisme ne pose que l'écart qu'il détient déjà — voir les commentaires de
- * `appliquerAuraSable`, `appliquerAuraAmani` et `majResonance`.
+ * et l'égide d'Amani sur chaque camp, l'aura de forge du Kenshi sur la table
+ * entière, puis la Résonance de table. Chaque mécanisme ne pose que l'écart
+ * qu'il détient déjà — voir les commentaires de `appliquerAuraSable`,
+ * `appliquerAuraAmani`, `appliquerAuraKenshi` et `majResonance`.
  */
 function rafraichirAuras(duel) {
   appliquerAuraSable(duel, 'joueur');
   appliquerAuraSable(duel, 'sorcier');
   appliquerAuraAmani(duel, 'joueur');
   appliquerAuraAmani(duel, 'sorcier');
+  appliquerAuraKenshi(duel);
   majResonance(duel);
 }
 

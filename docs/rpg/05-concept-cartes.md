@@ -192,6 +192,32 @@ ni Honneur (un jeton n'est pas une carte du set) ni Rapidité : il garde le mal
 d'invocation, comme les chiens de sable. Illustration dédiée
 `public/cards/samourai-du-daimyo.jpg`, plein art 4:5.
 
+### L'aura de forge (Kenshi de la forge)
+
+Le Kenshi de la forge est un **1/3 à 3 mana** qui porte une aura de table :
+
+> Tant qu'il est en jeu, les autres créatures de type Samouraï de la table,
+> dans les deux camps, gagnent +2/+0.
+
+- **Les deux camps, comme la Résonance samouraï** — le Kenshi ne connaît pas la
+  ligne de bataille : il forge aussi bien les Samouraïs du sorcier. Le type se
+  lit sur la ligne de type imprimée (`cardReceivesResonance`), jamais sur la
+  couleur ni sur le nom.
+- **« Les autres » : il ne se forge pas lui-même.** Deux Kenshis en jeu se
+  donnent +2/+0 l'un à l'autre et +4/+0 au reste des Samouraïs.
+- **La défense ne bouge jamais** : perdre l'aura ne peut pas tuer, et l'attaque
+  retombe au plancher de 0. Chaque entité ne retient que l'écart appliqué
+  (`auraKenshiBonus`), même contrat que l'aura Sable de Tarek et l'égide
+  d'Amani — les statistiques déjà gagnées (Furie, renforts) ne dérivent pas.
+- L'aura se **cumule** avec la Résonance samouraï et la bannière du Daimyō :
+  sous un Torii et un Kenshi, un Samouraï de base gagne +3/+1.
+
+Moteur : `appliquerAuraKenshi` (`rpgDuel.js`), appelée par `rafraichirAuras`
+avec les autres auras de présence. Le catalogue imprime l'aura sur la carte
+(`aura: { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true,
+camps: 'tous' }`), et `rpgCardPower.js` en tient compte dans la valeur de la
+carte.
+
 ### La bannière (Daimyō du Soleil rouge)
 
 Le Daimyō porte la seule capacité de ce genre au catalogue :

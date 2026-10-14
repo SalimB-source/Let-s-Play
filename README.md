@@ -6969,3 +6969,64 @@ acquis qui survit au départ du Daimyō, l'échange où la bannière arme la fra
 du tour (4 dégâts sur une 2/4 : le bloqueur tombe, là où 3 ne l'auraient pas
 tué), l'attaque directe contre le sorcier, la Résonance samouraï reçue par les
 jetons, et le cumul de deux bannières dans un camp.
+
+## Le Sablier : le Kenshi de la forge arme les samouraïs
+
+Le forgeron du set japonais change de métier : le **Kenshi de la forge** quitte
+son rôle de 2/4 muet pour devenir l'**armurier de la table**. Il devient un
+**1/3 à 3 mana** — le petit corps est le prix de l'aura — et sa carte imprime
+désormais :
+
+> Tant qu'il est en jeu, les autres créatures de type Samouraï de la table,
+> dans les deux camps, gagnent +2/+0.
+
+- **Une aura de table, pas un renfort de camp** : comme la Résonance samouraï
+  du Tengu et de Kagutsuchi, l'aura de forge ignore la ligne de bataille — elle
+  profite aux Samouraïs du sorcier comme aux vôtres, et à toutes les couleurs.
+  Le type se lit sur la ligne de type imprimée, jamais sur la couleur ni sur le
+  nom : un yōkai comme le Tengu, un kami comme Kagutsuchi ou un Chien de sable
+  n'en reçoivent rien.
+- **« Les autres »** : le Kenshi ne se forge pas lui-même. Deux Kenshis en jeu
+  se donnent +2/+0 l'un à l'autre et +4/+0 à tous les autres Samouraïs.
+- **La défense ne bouge jamais** : l'aura ne touche que l'attaque, donc la
+  perdre ne peut jamais tuer, et l'attaque retombe au plancher de 0. Chaque
+  créature ne retient que l'écart appliqué (`auraKenshiBonus`), même contrat
+  que l'aura Sable de Tarek et l'égide d'Amani : les statistiques déjà gagnées
+  par la Furie ou un autre renfort ne dérivent pas.
+- **Tout se cumule** : un Hatamoto 2/2 devient 3/3 sous un Torii (Résonance
+  +1/+1), 5/3 sous un Torii et un Kenshi (forge +2/+0), et part à **6/4** en
+  attaquant sous Torii, Kenshi et Daimyō (bannière +1/+1) — le tout sans jamais
+  dériver d'une arrivée ou d'une mort. L'Honneur 2 du Kenshi est inchangé, comme
+  sa peinture : le forgeron frappant une lame en fusion reste son illustration.
+
+### Où vit le code
+
+- `src/games/rpgSoleilRouge.js` — la fiche du Kenshi (1/3, `aura:
+  { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true,
+  camps: 'tous' }`) et son nouveau texte imprimé.
+- `src/games/rpgDuel.js` — `appliquerAuraKenshi`, appelée par `rafraichirAuras`
+  avec l'aura Sable de Tarek et l'égide d'Amani : elle compte les sources des
+  deux camps, retire le Kenshi de son propre compte (« les autres ») et ne pose
+  que l'écart d'attaque.
+- `src/games/rpgCardPower.js`, `src/games/rpgAI.js` — l'aura de forge compte
+  dans la valeur de la carte et dans l'évaluation de l'IA (`carte.aura`).
+- `src/games/rpgCardLessons.js` — la fiche « Une aura agit tant que sa source
+  reste en jeu » cite désormais le Kenshi ; `RpgDuelPage.jsx` — la fiche lue à
+  voix haute décrit l'aura de forge.
+- `src/games/RPG-CARD-ART.md`, `docs/rpg/05-concept-cartes.md` — la règle et la
+  direction artistique (peinture inchangée).
+
+### Vérifications
+
+```bash
+npm run check:rpg         # 496/496 — l'aura, la bannière, les jetons, les decks
+npm run build
+```
+
+`tests/rpg-soleil-rouge.test.js` ajoute trois contrôles : la fiche (1/3, aura
+imprimée, texte), l'aura de table qui ne touche ni le Kenshi lui-même ni les
+non-Samouraïs mais qui profite aux deux camps (Torii à 6/5, rōnin adverse à
+7/4 sous le Tengu), le compte **par source** (deux Kenshis : +2/+0 l'un pour
+l'autre, +4/+0 pour les autres), le retrait propre à l'exil — la défense n'a
+jamais bougé d'un point, le rōnin de 2 PV survit à la perte de l'aura — et le
+cumul forge + Résonance + bannière sans dérive.

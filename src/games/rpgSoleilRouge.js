@@ -134,9 +134,12 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'kenshi-de-la-forge', name: 'Kenshi de la forge',
-    cost: 3, atk: 2, def: 4, rarity: 'rare',
+    cost: 3, atk: 1, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humain · Samouraï',
-    text: '—',
+    // L'aura de forge : +2/+0 aux AUTRES Samouraïs de la table, dans les deux
+    // camps — le petit corps est le prix de l'aura (voir `appliquerAuraKenshi`).
+    aura: { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true, camps: 'tous' },
+    text: 'Tant qu’il est en jeu, les autres créatures de type Samouraï de la table, dans les deux camps, gagnent +2/+0.',
     flavor: 'Il a appris à tenir l’acier avant de savoir tenir une lame.',
   }),
   carte({
