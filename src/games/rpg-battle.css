@@ -2783,6 +2783,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: none;
   animation: rpg-spell-arrival .28s ease-out both;
 }
+/* Contresort (joué par le joueur ou par le sorcier) : bordure dorée, pour qu'on
+   le reconnaisse d'un coup d'œil comme une réponse qui défait la carte visée. */
+.rpg-spell-played--contre {
+  border-color: rgba(255, 206, 110, .9);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .65), 0 0 18px rgba(255, 196, 92, .28), inset 0 1px rgba(255, 255, 255, .1);
+}
 .rpg-spell-played__art {
   display: block;
   width: 58px;
@@ -2794,6 +2800,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-spell-played__details { display: grid; min-width: 0; gap: 2px; }
 .rpg-spell-played__eyebrow { color: #72e6d0; font: 800 8px/1.1 var(--display); letter-spacing: .18em; }
+.rpg-spell-played--contre .rpg-spell-played__eyebrow { color: #ffd27a; }
 .rpg-spell-played__details > strong { overflow: hidden; color: #ffe9a0; font: 700 15px/1.1 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
 .rpg-spell-played__details > p { display: -webkit-box; margin: 0; overflow: hidden; color: rgba(244, 237, 218, .78); font: 500 9px/1.2 Georgia, serif; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
 .rpg-spell-played__target { display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 3px; }
@@ -6588,6 +6595,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-annonce-sort__compact-preview:focus-visible { outline: 2px solid #ffe9a0; outline-offset: 3px; }
 .rpg-annonce-sort__compact-pass { grid-area: pass; }
+/* Fin du tour du sorcier : pas de « Voir l’aperçu », un seul bouton — Passer —
+   qui prend toute la largeur de la colonne sous le libellé (sinon il restait
+   à droite, avec une case vide à gauche). */
+.rpg-fin-tour {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "label" "pass";
+}
 @keyframes rpg-annonce-panel-in {
   from { opacity: 0; transform: translateY(8px) scale(.985); }
   to { opacity: 1; transform: none; }
