@@ -3593,19 +3593,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-peek__close { min-height: 44px; padding: 8px 20px; }
 }
 
-/* ── La fiche du catalogue : la carte cliquée, en grand ──────────────────────
-   Le catalogue est une surface de lecture : un clic sur une carte l'ouvre dans
-   le même volet sombre que l'appui long, mais l'illustration y prend la place
-   qu'elle mérite — jusqu'à 62 dvh — et la fiche dit tout le reste à côté :
-   sur-titre et famille, nom, ligne de type, couleur, coût, effets ligne par
-   ligne, statistiques ou bonus d'arme. Le volet défile si la fiche dépasse ;
+/* ── La fiche d'une carte : la carte cliquée — ou cliquée droit — en grand ───
+   Le jeu est une surface de lecture : un clic sur une carte — au catalogue —,
+   ou un clic droit partout où une carte se montre, l'ouvre dans le même volet
+   sombre que l'appui long, mais l'illustration y prend la place qu'elle mérite
+   — jusqu'à 62 dvh — et la fiche dit tout le reste à côté : sur-titre et
+   famille, nom, ligne de type, couleur, coût, effets ligne par ligne,
+   statistiques ou bonus d'arme. **Une carte, une fiche** : pas de flèches sur
+   les côtés, pas de compteur — le volet défile si la fiche dépasse, et
    consulter une carte ne la joue pas et ne quitte pas l'onglet. */
-/* Les flèches flottent aux deux bords du volet : la place leur est réservée,
-   pour qu'elles ne mangent jamais l'illustration, ni à la souris ni au doigt. */
 .rpg-card-peek--catalogue {
-  --rpg-fiche-gouttiere: clamp(56px, 6.4vw, 84px);
-  padding-left: var(--rpg-fiche-gouttiere);
-  padding-right: var(--rpg-fiche-gouttiere);
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
 }
 .rpg-card-peek--catalogue .rpg-card-peek__panel {
   overflow-y: auto;
@@ -3679,42 +3678,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__stats { font-size: 21px; }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__arme { font-size: 15px; }
 
-/* Feuilleter la fiche : la flèche de gauche dit la carte précédente, celle de
-   droite la suivante, dans l'ordre de la grille filtrée. Les deux bouts se
-   rejoignent — aucune flèche ne s'éteint — et le compteur, en bas, dit où l'on
-   est. Ni les flèches ni le compteur ne referment le volet. */
-.rpg-card-peek__nav {
-  position: absolute;
-  z-index: 2;
-  top: 50%;
-  display: grid;
-  place-items: center;
-  width: clamp(44px, 4.6vw, 56px);
-  height: clamp(44px, 4.6vw, 56px);
-  padding: 0;
-  border: 1px solid rgba(240, 213, 148, .5);
-  border-radius: 50%;
-  background: rgba(11, 8, 6, .8);
-  color: #ffedc7;
-  cursor: pointer;
-  transform: translateY(-50%);
-  transition: border-color .16s ease-out, background .16s ease-out, transform .12s ease-out;
-}
-.rpg-card-peek__nav--prev { left: max(10px, env(safe-area-inset-left)); }
-.rpg-card-peek__nav--next { right: max(10px, env(safe-area-inset-right)); }
-.rpg-card-peek__nav svg {
-  width: 44%;
-  height: 44%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.rpg-card-peek__nav:hover { border-color: #e4bd6b; background: rgba(31, 22, 12, .92); }
-.rpg-card-peek__nav:active { transform: translateY(-50%) scale(.93); }
-.rpg-card-peek__nav:focus-visible { outline: 2px solid #e4bd6b; outline-offset: 2px; }
-/* Le bas du volet : la place de la carte dans la grille, puis « Fermer ». */
+/* Le bas du volet : « Fermer la fiche ». La fiche ne montre qu'une carte —
+   pas de flèches, pas de compteur, rien à feuilleter. */
 .rpg-card-peek__bar {
   position: relative;
   z-index: 1;
@@ -3725,18 +3690,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   min-width: 0;
   max-width: 100%;
 }
-.rpg-card-peek__position {
-  color: rgba(255, 237, 199, .68);
-  font: 800 10px/1 var(--mono, monospace);
-  letter-spacing: .13em;
-  white-space: nowrap;
-}
-
 /* Portrait étroit : l'illustration passe au-dessus, la fiche dessous — la carte
-   reste entière, c'est le volet qui défile. Les flèches restent aux bords, plus
-   petites, et la gouttière se resserre pour ne pas rogner l'illustration. */
+   reste entière, c'est le volet qui défile. */
 @media (max-width: 720px) {
-  .rpg-card-peek--catalogue { --rpg-fiche-gouttiere: 48px; }
   .rpg-card-peek--catalogue .rpg-hover-card-preview {
     width: 100%;
     grid-template-columns: minmax(0, 1fr);
@@ -3745,20 +3701,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__face { width: min(100%, 320px, 56dvh); }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__details { width: 100%; }
-  .rpg-card-peek__nav {
-    width: 40px;
-    height: 40px;
-    border-width: 1px;
-  }
-  .rpg-card-peek__nav--prev { left: max(6px, env(safe-area-inset-left)); }
-  .rpg-card-peek__nav--next { right: max(6px, env(safe-area-inset-right)); }
 }
 
 /* Paysage de téléphone (et APK) : la fiche garde ses deux colonnes, avec
    l'illustration réglée sur la hauteur disponible — après la règle du volet
    d'appui long, qui l'emporterait sinon à spécificité égale. */
 @media (max-height: 520px) {
-  .rpg-card-peek--catalogue { --rpg-fiche-gouttiere: clamp(48px, 6.4vw, 68px); }
   .rpg-card-peek--catalogue .rpg-hover-card-preview {
     width: min(880px, 100%);
     grid-template-columns: minmax(120px, min(300px, 44dvh)) minmax(0, 1fr);
@@ -3774,8 +3722,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .rpg-card-peek--catalogue .rpg-hover-card-preview { animation: none; }
-  .rpg-card-peek__nav { transition: none; }
-  .rpg-card-peek__nav:active { transform: translateY(-50%); }
 }
 
 /* ── Le mulligan : la main de départ, en cartes 4:5 nues ─────────────────────

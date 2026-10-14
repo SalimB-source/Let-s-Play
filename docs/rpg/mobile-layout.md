@@ -42,7 +42,7 @@ En paysage de téléphone, l’illustration de l’aperçu se règle sur la haut
 À la souris, le survol garde l’aperçu instantané collé à la carte, et le **bouton droit** ouvre la **fiche** — le même volet sombre que le clic du catalogue, avec le sur-titre de l’écran qui l’a ouvert (`DUEL · CRÉATURE` sur la table, `CATALOGUE · TERRAIN` au catalogue, `LE SABLIER · …` ailleurs).
 
 - le geste répond partout où une carte porte un `data-card-id` : main, créatures des deux camps, rails de terrains, dessus de cimetière, grille du catalogue, liste d’un deck et guide des cartes ;
-- **une carte, une fiche** : le clic droit ne montre que la carte qu’il désigne — ni flèches, ni compteur, ni balayage. Le feuilletage de la grille filtrée reste au **clic** du catalogue ;
+- **une carte, une fiche** : le volet ne montre que la carte désignée — celle du clic comme celle du clic droit. Ni flèches sur les côtés, ni compteur, ni balayage : pour lire une autre carte, on ouvre la sienne ;
 - **rien n’est joué** : la créature n’est pas déclarée attaquante, la carte en main n’est ni posée ni payée, et une magie ne demande aucune confirmation de lancement ;
 - la fiche se referme par le volet, Échap, son bouton Fermer, ou en changeant d’écran ;
 - le menu du navigateur reste étouffé partout (table nue comme carte) ; dans le **créateur de deck**, le clic droit garde son sens — il retire un exemplaire — et n’ouvre donc pas la fiche (voir « L’aperçu au doigt », ci-dessus).

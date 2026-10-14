@@ -1238,46 +1238,21 @@ function ApercuCarteAppuiLong({ carte, armes = [], onFermer }) {
  * à la grille, ne quitte pas l'onglet, et ne déclare aucune attaque. Le volet,
  * Échap ou le bouton Fermer referment la fiche.
  *
- * Les deux flèches la feuillettent : carte précédente, carte suivante, dans
- * l'ordre de la grille **filtrée** qui a ouvert la fiche — et elles rebouclent
- * d'un bout à l'autre, comme la visionneuse des articles (`ArticleGallery.jsx`).
- * Même geste au clavier (flèches, Début / Fin) et au doigt (balayage horizontal
- * de plus de 48 px, le vertical laissant défiler le volet). Une fiche ouverte au
- * **clic droit** ne porte qu'une carte : elle n'a donc ni flèches, ni compteur,
- * ni balayage — on n'y feuillette rien, on y lit ce qu'on a désigné.
+ * **Une carte, une fiche.** Le volet ne montre que la carte désignée — celle
+ * qu'on a cliquée, ou celle qu'on a cliquée droit : pas de flèches sur les
+ * côtés, pas de compteur, pas de balayage, rien à feuilleter. On y lit ce qu'on
+ * a ouvert ; pour lire une autre carte, on ouvre la sienne.
  *
  * `surface` est le mot du sur-titre — l'écran qui a ouvert la fiche ; `armes`
  * sont celles que porte la créature ouverte, quand le duel les connaît. */
-function ApercuCarteCatalogue({ carte, ordre = [], voisines = {}, armes = [], surface = 'CATALOGUE', onFeuilleter, onFermer }) {
+function ApercuCarteCatalogue({ carte, armes = [], surface = 'CATALOGUE', onFermer }) {
   const boutonFermerRef = useRef(null);
-  const balayageRef = useRef(null);
-  const total = ordre.length;
   // Le focus va au bouton Fermer sans faire défiler la grille : le catalogue
-  // reste où le joueur l'avait laissé, et Échap referme depuis là. Il n'y
-  // revient pas à chaque carte feuilletée — le composant reste monté.
+  // reste où le joueur l'avait laissé, et Échap referme depuis là.
   useEffect(() => {
     boutonFermerRef.current?.focus({ preventScroll: true });
   }, []);
   if (!carte) return null;
-  const index = ordre.indexOf(carte.id);
-  const position = total > 1 && index >= 0 ? `${index + 1} / ${total}` : null;
-  const nomVoisine = (pas) => cardById(voisines[pas < 0 ? 'precedente' : 'suivante'])?.name ?? null;
-  // Balayage au doigt : au-delà de 48 px, et plus horizontal que vertical —
-  // sinon c'est le volet qui défile, pas la fiche qui tourne.
-  const debutBalayage = (event) => {
-    const doigt = event.changedTouches?.[0];
-    if (!doigt || total < 2) return;
-    balayageRef.current = { x: doigt.clientX, y: doigt.clientY };
-  };
-  const finBalayage = (event) => {
-    const depart = balayageRef.current;
-    balayageRef.current = null;
-    const doigt = event.changedTouches?.[0];
-    if (!depart || !doigt || total < 2) return;
-    const dx = doigt.clientX - depart.x;
-    const dy = doigt.clientY - depart.y;
-    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)) onFeuilleter?.(dx < 0 ? 1 : -1);
-  };
   return (
     <div
       className="rpg-card-peek rpg-card-peek--catalogue"
@@ -1286,42 +1261,12 @@ function ApercuCarteCatalogue({ carte, ordre = [], voisines = {}, armes = [], su
       aria-label={`Fiche de ${carte.name}`}
       data-catalogue-preview={carte.id}
       onClick={onFermer}
-      onTouchStart={debutBalayage}
-      onTouchEnd={finBalayage}
     >
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__panel">
         <HoverCardPreview carte={carte} variante="catalogue" armes={armes} surface={surface} />
       </div>
-      {total > 1 && (
-        <>
-          {/* Les flèches ne remontent pas jusqu'au volet : elles feuillent, elles
-              ne referment pas. Aucun bouton ne remonte, d'ailleurs. */}
-          <button
-            type="button"
-            className="rpg-card-peek__nav rpg-card-peek__nav--prev"
-            data-catalogue-nav="prev"
-            aria-label={`Carte précédente${nomVoisine(-1) ? ` : ${nomVoisine(-1)}` : ''}`}
-            onClick={(event) => { event.stopPropagation(); onFeuilleter?.(-1); }}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 5 8 12l6.5 7" /></svg>
-          </button>
-          <button
-            type="button"
-            className="rpg-card-peek__nav rpg-card-peek__nav--next"
-            data-catalogue-nav="next"
-            aria-label={`Carte suivante${nomVoisine(1) ? ` : ${nomVoisine(1)}` : ''}`}
-            onClick={(event) => { event.stopPropagation(); onFeuilleter?.(1); }}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 5 16 12l-6.5 7" /></svg>
-          </button>
-        </>
-      )}
       <div className="rpg-card-peek__bar">
-        {position && <span className="rpg-card-peek__position" data-catalogue-position>{position}</span>}
-        {/* Le compteur visible reste muet ; c'est cette région cachée qui
-            annonce la carte feuilletée, nom compris, à voix haute. */}
-        {position && <span className="sr-only" aria-live="polite">{`Fiche ${index + 1} sur ${total} : ${carte.name}`}</span>}
         <button
           type="button"
           ref={boutonFermerRef}
@@ -1723,9 +1668,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       || (catalogueCouleur === 'hybride' ? colors.length > 1 : colors.includes(catalogueCouleur));
     return couleurCorrespond && (catalogueType === 'tous' || carte.kind === catalogueType);
   });
-  // L'ordre affiché, tel quel : la fiche ouverte d'un clic le reçoit pour que
-  // ses flèches feuillettent exactement ce que la grille montre, filtres compris.
-  const idsCatalogue = cartesCatalogue.map((carte) => carte.id);
   // La tour ouverte dans le mode Histoire (page d'étages), ou null (galerie).
   const tourOuverte = tourOuverteId ? tourHistoireParId(tourOuverteId) : null;
   const resumeTourOuverte = tourOuverte ? resumeTourHistoire(tourOuverte.id, progressionHistoire) : null;
@@ -2418,7 +2360,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         className="rpg-card-catalogue__ouvrir"
                         data-catalogue-open={carte.id}
                         aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}`}
-                        onClick={() => onOpenCardPreview?.(carte, idsCatalogue)}
+                        onClick={() => onOpenCardPreview?.(carte)}
                       />
                       <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)}`}>
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
@@ -2814,10 +2756,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // catalogue depuis toujours, et par un clic droit partout ailleurs dans le
   // jeu : la carte s'ouvre en grand, illustration et effets, sans être jouée.
   const [apercuCatalogue, setApercuCatalogue] = useState(null);
-  // L'ordre des cartes affichées quand la fiche s'est ouverte : c'est lui que
-  // les flèches du volet parcourent, filtres compris. Le clic du catalogue y met
-  // sa grille ; le clic droit, qui ne consulte qu'une carte, n'y met qu'elle.
-  const [ordreCatalogue, setOrdreCatalogue] = useState([]);
   // Les armes portées par la créature ouverte (vides partout ailleurs que sur
   // la table du duel) et le mot du sur-titre : l'écran qui a ouvert la fiche.
   const [apercuCatalogueArmes, setApercuCatalogueArmes] = useState([]);
@@ -3394,75 +3332,33 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * l'onglet. Le survol de la souris, qui montrait déjà l'aperçu rapide,
    * s'efface : une seule lecture à la fois.
    *
-   * `ordre` est la liste des cartes affichées au moment du geste, dans l'ordre
-   * où elles le sont — la grille filtrée du catalogue : c'est elle que les
-   * flèches de la fiche feuilletent, et elle seule. Le clic droit, lui, n'ouvre
-   * qu'une carte : il passe `[carte.id]`, la fiche n'a donc ni flèches ni
-   * compteur. Les filtres ne peuvent pas changer pendant la lecture — le volet
-   * couvre tout —, donc l'ordre reçu à l'ouverture reste vrai jusqu'à la
-   * fermeture. `armes` dit ce que porte la créature ouverte (duel), `surface`
+   * **Une carte, une fiche** : le volet ne montre que la carte désignée — ni
+   * flèches, ni compteur, ni pas de page. Pour lire une autre carte, on ouvre
+   * la sienne. `armes` dit ce que porte la créature ouverte (duel), `surface`
    * le mot du sur-titre : l'écran qui a ouvert la fiche. */
-  const ouvrirApercuCatalogue = (carte, ordre = [], { armes = [], surface = 'CATALOGUE' } = {}) => {
+  const ouvrirApercuCatalogue = (carte, { armes = [], surface = 'CATALOGUE' } = {}) => {
     if (!carte) return;
     annulerAppuiLong();
     masquerApercuSurvol();
     unlockSfx();
     jouerSfx('hover');
-    const ordreRecu = Array.isArray(ordre) ? ordre.filter(Boolean) : [];
-    setOrdreCatalogue(ordreRecu.includes(carte.id) ? ordreRecu : [carte.id]);
     setApercuCatalogueArmes(armes);
     setApercuCatalogueSurface(surface);
     setApercuCatalogue(carte.id);
   };
-  /** La carte d'à côté dans l'ordre de la grille : `pas` vaut -1 (flèche de
-   * gauche) ou +1 (flèche de droite), et les deux bouts se rejoignent — la
-   * dernière carte renvoie à la première, comme la visionneuse des articles. */
-  const voisinesCatalogue = () => {
-    const total = ordreCatalogue.length;
-    const index = ordreCatalogue.indexOf(apercuCatalogue);
-    if (total < 2 || index < 0) return {};
-    return {
-      precedente: ordreCatalogue[(index - 1 + total) % total],
-      suivante: ordreCatalogue[(index + 1) % total],
-    };
-  };
-  /** Feuilleter la fiche : la carte change, le volet reste — ni son, ni filtre,
-   * ni onglet ne bougent, seul le pas de page se fait entendre. */
-  const feuilleterCatalogue = (pas) => {
-    const total = ordreCatalogue.length;
-    const index = ordreCatalogue.indexOf(apercuCatalogue);
-    if (total < 2 || index < 0) return;
-    const voisine = pas < 0 ? (index - 1 + total) % total : (index + 1) % total;
-    jouerSfx('page_turn');
-    setApercuCatalogue(ordreCatalogue[voisine]);
-  };
-  // Échap referme l'aperçu au doigt comme la fiche du catalogue, à l'égal du
-  // volet et du bouton Fermer ; les flèches, Début et Fin feuillettent la fiche.
+  // Échap referme l'aperçu au doigt comme la fiche, à l'égal du volet et du
+  // bouton Fermer. Il n'y a rien d'autre à faire au clavier : la fiche ne
+  // montre qu'une carte, elle n'a ni flèches ni pas de page.
   useEffect(() => {
     if (!apercuAppui && !apercuCatalogue) return undefined;
     const surClavier = (event) => {
-      if (event.key === 'Escape') {
-        if (apercuCatalogue) fermerApercuCatalogue();
-        else fermerApercuAppui();
-        return;
-      }
-      if (!apercuCatalogue) return;
-      const pas = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : null;
-      if (pas !== null) {
-        event.preventDefault();
-        feuilleterCatalogue(pas);
-      } else if (event.key === 'Home' || event.key === 'End') {
-        // Début et Fin sautent aux deux bouts de la grille filtrée.
-        const bout = event.key === 'Home' ? ordreCatalogue[0] : ordreCatalogue[ordreCatalogue.length - 1];
-        if (!bout || bout === apercuCatalogue) return;
-        event.preventDefault();
-        jouerSfx('page_turn');
-        setApercuCatalogue(bout);
-      }
+      if (event.key !== 'Escape') return;
+      if (apercuCatalogue) fermerApercuCatalogue();
+      else fermerApercuAppui();
     };
     window.addEventListener('keydown', surClavier);
     return () => window.removeEventListener('keydown', surClavier);
-  }, [apercuAppui, apercuCatalogue, ordreCatalogue]);
+  }, [apercuAppui, apercuCatalogue]);
   // Le menu contextuel natif (callout iOS, « enregistrer l'image » / sélection
   // Android) n'appartient à aucun geste de la table : étouffé sur toute la
   // coque du jeu, pas seulement pendant un appui long armé. Sans ça, une seule
@@ -3488,7 +3384,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const hote = event.target?.closest?.('[data-card-id]');
     const carte = cardById(hote?.dataset?.cardId);
     if (!hote || !carte) return;
-    ouvrirApercuCatalogue(carte, [carte.id], {
+    ouvrirApercuCatalogue(carte, {
       armes: (hote.dataset.armes ?? '').split(' ').filter(Boolean),
       surface: SURFACE_FICHE[ecran] ?? 'LE SABLIER',
     });
@@ -3683,11 +3579,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {apercuCatalogue && (
           <ApercuCarteCatalogue
             carte={cardById(apercuCatalogue)}
-            ordre={ordreCatalogue}
             armes={cartesDesIds(apercuCatalogueArmes)}
             surface={apercuCatalogueSurface}
-            voisines={voisinesCatalogue()}
-            onFeuilleter={feuilleterCatalogue}
             onFermer={fermerApercuCatalogue}
           />
         )}
@@ -6086,11 +5979,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       {apercuCatalogue && (
         <ApercuCarteCatalogue
           carte={cardById(apercuCatalogue)}
-          ordre={ordreCatalogue}
           armes={cartesDesIds(apercuCatalogueArmes)}
           surface={apercuCatalogueSurface}
-          voisines={voisinesCatalogue()}
-          onFeuilleter={feuilleterCatalogue}
           onFermer={fermerApercuCatalogue}
         />
       )}
