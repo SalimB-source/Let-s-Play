@@ -305,3 +305,35 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
   dans un tourbillon d'eau ; elle regarde le serpent, pas le spectateur.
 - **Serpent des citernes** (`serpent-des-citernes.jpg`) — le jeton évoqué
   par le Bâton : serpent verdâtre dressé dans la citerne moussue.
+
+## Dérogation : le lot du gel du Serment en fresque (octobre 2026)
+
+Les six sorts de la famille « Gel & contrôle du combat » (`poigne-de-givre`,
+`grand-voile-blanc`, `appat-de-la-meute`, `verglas`, `defi-du-jarl`,
+`embuscade`) dérogent **volontairement** à la direction « huile sur toile »
+ci-dessus : ils sont livrés en **fresque** (peinture murale, chaux et
+pigments, plâtre patiné), direction validée carte par carte au moment de leur
+création. Le reste de la collection reste en huile.
+
+Format : pleine page **4:5**, 1024×1280, comme la face des cartes — aucun
+texte, cadre, logo ou interface dessinés.
+
+Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
+
+- les sujets sont **entièrement dans le cadre** : un recadrage 2:3 → 4:5 ne
+  coupe jamais une tête ni un élément du sujet — marge de ciel et de sol
+  réservées avant le tir ;
+- palette de chaux, gestes larges de fresque méditerranéenne, lisibles en
+  vignette comme en pleine page.
+
+- **Poigne de givre** (`poigne-de-givre.jpg`) — le froid qui se referme sur
+  une créature, givre et souffle blanc.
+- **Grand Voile blanc** (`grand-voile-blanc.jpg`) — la tourmente blanche
+  qui avale le champ de bataille.
+- **Appât de la meute** (`appat-de-la-meute.jpg`) — la meute qui se referme
+  sur l’appât, loups en cercle.
+- **Verglas** (`verglas.jpg`) — la grêle et le gel qui clouent la scène.
+- **Défi du Jarl** (`defi-du-jarl.jpg`) — le jarl et son ours polaire face à
+  la meute sur la banquise, duel de deux camps.
+- **Embuscade** (`embuscade.jpg`) — le cercle de loups qui se referme sur
+  l’isolé, les défenses dehors.
