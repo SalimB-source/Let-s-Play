@@ -187,8 +187,69 @@ async function scenarioDoublonsSorcier(assert) {
   });
 }
 
+/** Le contre du sorcier s'affiche, et la fenêtre « Passer » de fin de tour
+ *  tombe dans la barre d'actions — pas en plein plateau. */
+async function scenarioContreAffiche(assert) {
+  await avecDuel(assert, {
+    // Main de départ (le paquet se pioche depuis la fin) : Rempart de dunes
+    // (la carte qui se fera contrer), Mer puis deux Déserts à poser tour par
+    // tour, et Ressac — magie rapide Eau qui tient la fenêtre de fin de tour
+    // ouverte (pip Eau payé par la Mer posée au premier tour).
+    joueurDeck: ['desert', 'desert', 'desert', 'ressac', 'desert', 'desert', 'mer', 'rempart-de-dunes'],
+    // Main de départ du sorcier : quatre Mer et Silence d'écume. L'IA garde son
+    // contre (elle ne l'annonce jamais) et ne pose que des terrains : après deux
+    // tours, ses deux Mer engagées financent le Silence.
+    sorcierDeck: ['mer', 'mer', 'mer', 'mer', 'silence-decume', 'mer', 'mer', 'mer', 'mer'],
+  }, async ({ container, click, jouer, avancer }) => {
+    const finirTourSorcier = async () => {
+      await click(container.querySelector('.rpg-btn--endturn'));
+      await avancer(800);
+      // Seules les annonces du sorcier se laissent passer ici : le bouton
+      // « Passer » de la fenêtre de fin de tour partage la classe
+      // `rpg-annonce-sort__pass`, il faut le vérifier avant tout clic.
+      for (let i = 0; i < 12; i += 1) {
+        const annonce = container.querySelector('.rpg-annonce-sort .rpg-annonce-sort__pass');
+        if (!annonce) break;
+        await click(annonce);
+        await avancer(1000);
+      }
+      const passer = container.querySelector('.rpg-fin-tour button');
+      assert.ok(passer, 'la fenêtre de fin de tour du sorcier attend une magie rapide ou « Passer »');
+      assert.ok(passer.closest('.rpg-actions')?.closest('.rpg-bottombar'),
+        'le bouton Passer s’affiche dans la barre d’actions, sous les commandes de combat');
+      await click(passer);
+    };
+    await jouer('mer');
+    await finirTourSorcier();
+    await jouer('desert');
+    await finirTourSorcier();
+
+    // Troisième tour : les deux Mer du sorcier flottent en mana, prêtes à payer
+    // le Silence — la carte du joueur est contrée dès sa confirmation.
+    await jouer('desert');
+    await jouer('rempart-de-dunes');
+    const banniere = container.querySelector('.rpg-spell-played');
+    assert.ok(banniere, 'le contre du sorcier s’affiche sur la table');
+    assert.equal(banniere.querySelector('.rpg-spell-played__eyebrow')?.textContent, 'CONTRE !',
+      'la bannière annonce un contre, pas une magie ordinaire');
+    assert.match(banniere.textContent, /Silence d’écume/,
+      'le contresort joué par le sorcier est nommé');
+    assert.match(banniere.querySelector('.rpg-spell-played__target')?.textContent ?? '', /Rempart de dunes/,
+      'la carte annulée est nommée en cible du contre');
+    const apercu = container.querySelector('.rpg-hover-card-preview.is-spell-preview');
+    assert.match(apercu?.getAttribute('aria-label') ?? '', /Silence d’écume/,
+      'l’aperçu du contresort s’ouvre au centre de l’écran');
+    assert.equal(container.querySelector('.rpg-hand__card[data-card-id="rempart-de-dunes"]'), null,
+      'la carte annulée quitte la main');
+    assert.match(container.querySelector('.rpg-log')?.textContent ?? '', /Le sorcier contre Rempart de dunes/,
+      'le journal raconte le contre');
+  });
+}
+
 export async function checkRpgCardState(assert) {
   await scenarioDoublonsJoueur(assert);
   await scenarioDoublonsSorcier(assert);
+  await scenarioContreAffiche(assert);
   console.log('✓ Cartes engagées : aucune copie fantôme après une destruction dans les deux camps, les survivants se dégagent au tour de leur propriétaire et le duel continue.');
+  console.log('✓ Contre du sorcier : le contresort s’affiche avec la carte annulée, et « Passer » de fin de tour reste dans la barre d’actions.');
 }

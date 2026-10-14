@@ -1313,11 +1313,16 @@ function ConfirmationSort({ carte, onConfirmer, onAnnuler }) {
 function SpellAnnouncement({ annonce }) {
   const carte = cardById(annonce?.carteId);
   if (!carte) return null;
+  // Un contre (« CONTRE ! ») nomme la carte annulée en cible ; une magie
+  // ordinaire garde « MAGIE JOUÉE » et sa cible habituelle.
+  const contre = Boolean(annonce?.contre);
   return (
     <section
-      className="rpg-spell-played"
+      className={`rpg-spell-played${contre ? ' rpg-spell-played--contre' : ''}`}
       role="status"
-      aria-label={`Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
+      aria-label={contre
+        ? `Contre : ${carte.name} annule ${annonce.cible.nom}.`
+        : `Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
       <img
         className={`rpg-spell-played__art ${cardFrameClass(carte)}`}
@@ -1326,14 +1331,14 @@ function SpellAnnouncement({ annonce }) {
         alt=""
       />
       <div className="rpg-spell-played__details">
-        <span className="rpg-spell-played__eyebrow">MAGIE JOUÉE</span>
+        <span className="rpg-spell-played__eyebrow">{contre ? 'CONTRE !' : 'MAGIE JOUÉE'}</span>
         <strong>{carte.name}</strong>
         <p>{carte.text}</p>
         <div className="rpg-spell-played__target">
           {(annonce.cible.illustrationUrl || annonce.cible.illustrationId)
             ? <img src={annonce.cible.illustrationUrl ?? cardArt(annonce.cible.illustrationId)} alt="" />
             : <span className="rpg-spell-played__target-mark" aria-hidden="true">⌖</span>}
-          <span><small>CIBLE</small><b>{annonce.cible.nom}</b></span>
+          <span><small>{contre ? 'CONTRÉE' : 'CIBLE'}</small><b>{annonce.cible.nom}</b></span>
         </div>
       </div>
     </section>
@@ -3843,14 +3848,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return { nom: 'Le champ de bataille', targetIds: [] };
   };
 
-  const annoncerMagie = (carte, cible) => {
+  const annoncerMagie = (carte, cible, contre = false) => {
     const son = rpgFireSoundFor(carte, 'spell')
       ?? (carte?.effet?.type === 'soin' ? 'soin_long'
         : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
     jouerSfx(son);
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
-    setSortJoue({ carteId: carte.id, cible });
+    setSortJoue({ carteId: carte.id, cible, contre });
     setApercuMagie(carte.id);
     timerApercuMagieRef.current = window.setTimeout(() => {
       timerApercuMagieRef.current = null;
@@ -3862,6 +3867,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, 3600);
   };
 
+  /** Un contre vient d'être joué (par le sorcier ou par le joueur) : le
+   *  contresort prend la scène — bannière « CONTRE ! » et aperçu — et la carte
+   *  annulée est nommée en cible. Sans ça, quand le sorcier contre, la carte du
+   *  joueur disparaît de sa main et l'écran ne dit jamais pourquoi. */
+  const annoncerContre = (res) => {
+    const carteContre = cardById(res.carteContre);
+    const carteContree = cardById(res.carteContree);
+    if (!carteContre) return;
+    annoncerMagie(carteContre, {
+      nom: carteContree?.name ?? 'la carte annulée',
+      illustrationId: carteContree ? res.carteContree : null,
+      targetPlate: null,
+      targetIds: [],
+    }, true);
+  };
+
   const lancerMagie = (carteId, cibleId = null) => {
     const carte = cardById(carteId);
     const cibleEffective = cibleId ?? rpgCibleAuto(duel, 'joueur', carte);
@@ -3870,9 +3891,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective);
     if (res.ok && res.contre && res.parIA) {
-      // Le sorcier contre la carte du joueur : elle est défaussée, le tour du joueur continue.
+      // Le sorcier contre la carte du joueur : elle est défaussée, le tour du
+      // joueur continue. Son contresort s'affiche — sans lui, la carte disparaît
+      // sans explication.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       invaliderAnnulation();
+      annoncerContre(res);
       setCibleEnCours(null);
       force();
       return;
@@ -3881,7 +3905,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // Le contre a défait l'annonce du sorcier : il reprend son tour, carte suivante.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       invaliderAnnulation();
-      annoncerMagie(carte, cibleDecrite);
+      annoncerContre(res);
       setCibleEnCours(null);
       force();
       later(annoncerSuivantSorcier, 900);
@@ -3956,8 +3980,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       : (duel.sorcier.creatures[0]?.id ?? null);
     const res = rpgJouerCreature(duel, 'joueur', carteId, cibleAuto);
     if (res.ok && res.contre && res.parIA) {
-      // Le sorcier contre la créature : elle n'entre pas en jeu.
+      // Le sorcier contre la créature : elle n'entre pas en jeu. Son
+      // contresort s'affiche pour que le joueur sache ce qui l'a annulée.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      annoncerContre(res);
     } else if (res.ok) {
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
@@ -3976,8 +4002,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const res = rpgJouerArme(duel, 'joueur', carteId, cibleId);
     if (res.ok && res.contre && res.parIA) {
       // Le sorcier contre l'arme : elle part au cimetière sans être portée.
+      // Son contresort s'affiche, comme pour une créature ou une magie.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       invaliderAnnulation();
+      annoncerContre(res);
     } else if (res.ok) {
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
@@ -5414,27 +5442,30 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 </button>
               </div>
             )}
+            {/* La fenêtre de fin de tour du sorcier se glisse sous les commandes
+                de combat, dans la barre d'actions — comme le compact « En
+                attente ». Hors de cette barre, elle se posait n'importe où sur
+                le plateau (enfant statique d'une table où tout est absolu). */}
+            {fenetreFinTour && (
+              <div className="rpg-annonce-sort__compact rpg-fin-tour" role="group"
+                aria-label="Fin du tour du sorcier : jouez une magie rapide ou passez">
+                <span className="rpg-annonce-sort__compact-label">
+                  <span>Fin du tour du sorcier</span>
+                  <b>Magie rapide ?</b>
+                </span>
+                <button
+                  type="button"
+                  className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
+                  aria-label="Passer : ne pas jouer de magie rapide"
+                  onClick={() => { jouerSfx('pass'); passerFinTourSorcier(); }}
+                >
+                  <span aria-hidden="true">➜</span>
+                  <span>Passer</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
-
-        {fenetreFinTour && (
-          <div className="rpg-annonce-sort__compact rpg-fin-tour" role="group"
-            aria-label="Fin du tour du sorcier : jouez une magie rapide ou passez">
-            <span className="rpg-annonce-sort__compact-label">
-              <span>Fin du tour du sorcier</span>
-              <b>Magie rapide ?</b>
-            </span>
-            <button
-              type="button"
-              className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
-              aria-label="Passer : ne pas jouer de magie rapide"
-              onClick={() => { jouerSfx('pass'); passerFinTourSorcier(); }}
-            >
-              <span aria-hidden="true">➜</span>
-              <span>Passer</span>
-            </button>
-          </div>
-        )}
 
         {apercuAnnonceOuvert && (
           <section

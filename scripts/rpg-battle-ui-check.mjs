@@ -261,7 +261,7 @@ assert.match(battlePage, /if \(apres\.atk > entite\.atk \|\| apres\.def > entite
   'la flèche de gain est réservée aux augmentations d’attaque ou de défense');
 assert.match(battlePage, /animerEntites\(renforcees, 'glow', 1100, statsAugmentees\)/,
   'les gains d’attaque ou de défense transmettent leur indicateur à l’animation');
-assert.match(battlePage, /canTarget=\{Boolean\([\s\S]*?cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee/,
+assert.match(battlePage, /canTarget=\{Boolean\([\s\S]*?cibleEnCours && \['ennemi', 'tous'\]\.includes\(modeCible\) && !rpgEstProtegee/,
   'une créature protégée ne se présente pas comme cible légale contre sa couleur');
 assert.match(cardsSource, /export function cardFrameClass\(carte\)[\s\S]*?cardFrameInfo\(carte\)\.key/,
   'les cartes convertissent leur élément en classe de cadre commune à toutes les vues');
@@ -342,6 +342,23 @@ assert.match(battlePage, /const fenetreFinTour = Boolean\(duel\.finDeTour\?\.cot
   'la fin de tour du sorcier ouvre une fenêtre où le joueur peut jouer une magie rapide');
 assert.match(battlePage, /rpgOuvrirFinDeTour\(duel\);[\s\S]*?rpgSorcierMagieRapide\(duel, rng\)/,
   'à la fin du tour du joueur, le sorcier a la main pour une magie rapide avant la fermeture du tour');
+// ── Le contre du sorcier s'affiche ; la fenêtre « Passer » reste dans la barre ─
+assert.match(battlePage, /const annoncerContre = \(res\) => \{[\s\S]*?annoncerMagie\(carteContre, \{[\s\S]*?nom: carteContree\?\.name/,
+  'tout contre annonce le contresort et nomme la carte annulée');
+assert.match(battlePage, /res\.ok && res\.contre && res\.parIA\) \{[\s\S]*?annoncerContre\(res\);/,
+  'quand le sorcier contre une carte du joueur, son contresort s’affiche au lieu de faire disparaître la carte sans explication');
+assert.ok((battlePage.match(/annoncerContre\(res\);/g) ?? []).length >= 3,
+  'magie, créature et arme contrées par le sorcier passent toutes par l’annonce du contresort');
+assert.match(battlePage, /\{contre \? 'CONTRE !' : 'MAGIE JOUÉE'\}/,
+  'la bannière d’une magie jouée change de titre pour un contre');
+assert.match(battlePage, /\{contre \? 'CONTRÉE' : 'CIBLE'\}/,
+  'la cible affichée d’un contre est la carte annulée');
+assert.match(battleCss, /\.rpg-spell-played--contre\s*\{[^}]*border-color:\s*rgba\(242, 106, 97, \.78\)/s,
+  'le bandeau d’un contre porte les teintes chaudes du combat');
+assert.match(battlePage, /<div className="rpg-actions">[\s\S]*?\{fenetreFinTour && \([\s\S]*?rpg-annonce-sort__compact rpg-fin-tour/,
+  'la fenêtre de fin de tour du sorcier — et son bouton Passer — vivent dans la barre d’actions');
+assert.doesNotMatch(battlePage, /<\/div>\s*<\/div>\s*\n\s*\{fenetreFinTour && \(/,
+  'la fenêtre de fin de tour n’est plus un enfant statique posé n’importe où sur le plateau');
 // ── Le rail du tour : phases, indicateur et « Fin du tour » au milieu ───────
 assert.match(battlePage, /<div className="rpg-turn-rail" role="group" aria-label="Déroulé du tour">[\s\S]*?rpg-turn-indicator[\s\S]*?<PhaseTrack current=\{phaseDuelActive\} \/>[\s\S]*?rpg-actions__turn[\s\S]*?rpg-btn--endturn/,
   'l’indicateur, les phases et « Fin du tour » forment le rail du tour, au milieu de la table');
@@ -1227,14 +1244,14 @@ assert.match(battlePage, /cards\/\$\{artId\}\.jpg\$\{revision \? `\?v=\$\{revisi
 const { RPG_DECK_NEIGE_BASE, RPG_DUEL_CARDS } = await import('../src/games/rpgCards.js');
 assert.match(duelEngine, /entite\.atk \+= furie;[\s\S]*?duel\.log\.push\(`\$\{entite\.name\} entre en furie : \+\$\{furie\}\/\+\$\{furie\}\.`\)/,
   'le moteur applique et journalise la Furie d’une créature blessée qui survit');
-assert.match(duelEngine, /export function rpgResonanceEnJeu\(duel\)/,
+assert.match(duelEngine, /export function rpgResonanceEnJeu\(duel/,
   'la Résonance en jeu se compte sur toute la table, les deux camps compris');
-assert.match(duelEngine, /cardColors\(carte\)\.includes\('neige'\) \? total : 0[\s\S]*?entite\.pv = Math\.max\(1, entite\.pv \+ delta\)/,
-  'seule la Neige profite de l’aura, l’écart étant mémorisé par entité et les PV plancher à 1');
+assert.match(duelEngine, /GROUPES_RESONANCE\.filter\(\(groupe\) => cardReceivesResonance[\s\S]*?entite\.pv = Math\.max\(1, entite\.pv \+ delta\)/,
+  'seules les créatures d’un groupe de Résonance profitent de l’aura, l’écart étant mémorisé par entité et les PV plancher à 1');
 assert.match(aiBrain, /const furie = bloqueurFurie \* 0\.9 - attaquantFurie \* 1\.2;/,
   'l’IA sait qu’entamer un viking sans le tuer le nourrit');
-assert.match(aiBrain, /rpgResonanceEnJeu\(duel\)[\s\S]*?atk: \(carte\.atk \?\? 0\) \+ resonance/,
-  'l’IA compte la Résonance déjà en table quand elle évalue une arrivée Neige');
+assert.match(aiBrain, /moteur\.rpgBonusResonance\(duel, carte\)[\s\S]*?atk: \(carte\.atk \?\? 0\) \+ resonance/,
+  'l’IA compte la Résonance déjà en table quand elle évalue une arrivée résonante');
 const jarl = RPG_DUEL_CARDS.find((carte) => carte.id === 'jarl-au-marteau-de-guerre');
 assert.ok(jarl && jarl.element === 'neige' && jarl.furie === 3,
   'le Jarl au marteau de guerre porte la Furie 3 du set Neige');
@@ -1250,6 +1267,11 @@ for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.furie)) {
     `${carte.id} annonce sa Furie sur sa face`);
 }
 for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {
+  if (carte.resonanceTribu === 'samourai') {
+    assert.match(carte.text, /Résonance samouraï — .*créatures de type Samouraï de la table, dans les deux camps, gagnent \+1\/\+1/,
+      `${carte.id} annonce sa Résonance samouraï sur sa face`);
+    continue;
+  }
   assert.match(carte.typeLine, /valkyrie/i, `${carte.id} est une valkyrie`);
   assert.match(carte.text, /Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent \+1\/\+1/,
     `${carte.id} annonce sa Résonance sur sa face`);

@@ -2803,6 +2803,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-spell-played__target small { color: #8af2df; font: 800 6px/1 var(--display); letter-spacing: .17em; }
 .rpg-spell-played__target b { overflow: hidden; color: #fff0c6; font: 700 10px/1.1 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Un contre prend la même scène qu'une magie jouée, mais l'événement change :
+   le bandeau vire au chaud (la teinte des hostilités du combat) et nomme la
+   carte annulée (« CONTRÉE ») — le joueur doit voir d'un coup ce qui l'a
+   arrêté et ce que ça a coûté. */
+.rpg-spell-played--contre {
+  border-color: rgba(242, 106, 97, .78);
+  background: linear-gradient(120deg, rgba(40, 13, 12, .96), rgba(21, 14, 18, .95));
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .65), 0 0 18px rgba(238, 77, 68, .28), inset 0 1px rgba(255, 255, 255, .1);
+}
+.rpg-spell-played--contre .rpg-spell-played__art { border-color: #f26a61; }
+.rpg-spell-played--contre .rpg-spell-played__eyebrow { color: #f26a61; }
+.rpg-spell-played--contre .rpg-spell-played__target small { color: #f2a69e; }
+
 .rpg-card.is-spell-target {
   outline: 4px solid #9af4e3;
   box-shadow: 0 0 0 5px rgba(7, 33, 33, .9), 0 0 25px rgba(91, 240, 218, .78), 0 12px 28px rgba(0, 0, 0, .72);

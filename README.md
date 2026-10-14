@@ -6606,8 +6606,65 @@ JSDOM `rpg-card-state`, `rpg-preview`, `rpg-stacks`, `rpg-ghost`,
 `rpg-mulligan` et `rpg-turn-banner` rejouent la page entière autour du
 nouveau placement.
 
-**Réserve connue, hors de ces retouches :** `npm run check:rpg-ui` casse
-déjà à HEAD dans le volet JSDOM de `rpg-battle-ui-check` ; en contournant
-ce volet, huit assertions statiques restent rouges, pré-existantes (Coup
-rapide, Envol, Cavalier, 3 × Furie, maître-du-marteau ×2). Les contrôles
-Playwright demandent un navigateur, absent de cet environnement.
+**Note de suite :** trois contrats statiques de `rpg-battle-ui-check.mjs`
+étaient restés en retard sur le code (la cible légale `['ennemi', 'tous']
+.includes(modeCible)`, la signature `rpgResonanceEnJeu(duel, element)` et
+la Résonance samouraï à côté des valkyries) : ils ont été réalignés sur
+l'implémentation, et `npm run check:rpg-ui` repasse au complet en JSDOM.
+Les contrôles Playwright demandent un navigateur, absent de cet
+environnement.
+
+## Le Sablier : le contre du sorcier affiché, et « Passer » à sa place
+
+Deux retours de joueur sur le duel, l'un sur ce qu'on voit, l'autre sur où
+on le voit.
+
+**1. Le contre du sorcier s'affiche enfin.** Contre la Marée des abysses
+(deck bleu), le sorcier garde ses contresorts et ne s'en sert que pour
+annuler les cartes du joueur (`choisirContreIA`) : la carte visée partait
+au cimetière, payée, **sans qu'aucun écran ne dise pourquoi** — la bannière
+« MAGIE JOUÉE » ne servait que les magies du joueur, et le journal est
+caché au doigt. Désormais **tout contre prend la scène** : le contresort
+joué s'affiche dans la bannière de magie — variante `rpg-spell-played--contre`,
+titre **« CONTRE ! »**, teintes chaudes du combat — avec la carte annulée
+nommée et illustrée en **« CONTRÉE »**, plus l'aperçu centré du contresort
+(1,8 s) et le son du sort. Les trois gestes contrables passent par la même
+annonce (`annoncerContre`) : magie, créature et arme ; le contre du joueur
+sur une annonce du sorcier affiche lui aussi « CONTRE ! » et la carte
+annulée, au lieu de l'habituelle « CIBLE : Vous ».
+
+**2. « Passer » en fin de tour revient dans la barre d'actions.** La
+fenêtre « Fin du tour du sorcier — Magie rapide ? » et son bouton **Passer**
+étaient rendus **enfant statique direct du plateau** (`rpg-fin-tour`, hors
+`.rpg-bottombar`) : dans une table où tout est en `position: absolute`, le
+bloc se posait **en haut à gauche du plateau** — sous la main cachée du
+sorcier — au lieu de glisser sous les commandes de combat comme le compact
+« En attente ». Il rejoint `.rpg-actions`, dans la colonne de droite, où le
+rail se lève déjà de `--rpg-actions-reserve` pour le laisser passer.
+
+### Où vit le code
+
+- `src/games/RpgDuelPage.jsx` — `annoncerContre(res)` (le contresort prend
+  la scène, la carte annulée nommée en cible) appelée par les trois gestes
+  contrables et par le contre du joueur ; `annoncerMagie(carte, cible,
+  contre)` ; `SpellAnnouncement` en mode contre (« CONTRE ! » / « CONTRÉE ») ;
+  la fenêtre `fenetreFinTour` déplacée dans `.rpg-actions` ;
+- `src/games/rpg-battle.css` — `.rpg-spell-played--contre` (liseré et halo
+  `rgba(242, 106, 97)`, titre et « CONTRÉE » en teintes chaudes).
+
+### Vérifications
+
+```bash
+npm run check:rpg      # les règles du duel, inchangées (411 tests)
+npm run check:rpg-ui   # le contrat des deux retouches, en JSDOM
+```
+
+`scripts/rpg-card-state-smoke.jsx` rejoue le scénario réel contre le deck
+bleu : deux tours de terrains, le Silence d'écume du sorcier contre le
+Rempart de dunes — bannière « CONTRE ! », contresort nommé, carte annulée
+en cible, aperçu ouvert, carte partie de la main, journal à jour — puis
+vérifie à chaque fin de tour adverse que le bouton **Passer** reste dans
+`.rpg-bottombar` (`.rpg-actions`), jamais en plein plateau.
+`scripts/rpg-battle-ui-check.mjs` tient le contrat statique : les trois
+gestes contrables appellent `annoncerContre`, la bannière porte ses deux
+titres, et `fenetreFinTour` est rendu dans la barre d'actions.
