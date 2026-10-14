@@ -351,6 +351,9 @@ Règles de tir propres à ces dix cartes :
 - **composition centrée pour un cadre 4:5**, fond sobre — washi or de sable,
   lavis d'indigo en haut du ciel — pour que la peinture se recadre au ratio de
   la face sans rien rogner ;
+- **plein bord à bord** : aucun cadre, liseré, filet, marge ornementale ni
+  vignettage — la peinture court jusqu'aux quatre bords, comme pour le reste de
+  la collection ;
 - aucun texte, glyphe, logo ni interface dessinée ;
 - plein art vertical, livré au ratio exact de la face (1024×1280).
 
