@@ -6759,27 +6759,54 @@ catalogue : « cliquez une carte pour l'ouvrir en grand, illustration et
 effets ». La rareté, elle, reste absente de toute lecture du duel — la fiche dit
 la **famille**, pas le palier.
 
-**Au clavier**, le bouton étiré est l'unique arrêt de tabulation de la fiche (le
-`tabIndex` de l'`<article>` est parti) : Entrée ouvre, le focus arrive sur
-« Fermer la fiche » sans faire défiler la grille (`preventScroll`), et le
+**Deux flèches la feuillettent.** La flèche de gauche dit la carte précédente,
+celle de droite la suivante, **dans l'ordre de la grille filtrée** qui a ouvert
+la fiche : filtrer sur les terrains ne fait plus tourner que des terrains. Les
+deux bouts se rejoignent — la dernière carte renvoie à la première — comme la
+visionneuse des articles (`ArticleGallery.jsx`), donc aucune flèche ne s'éteint.
+Un compteur `34 / 180` en bas du volet dit où l'on est, chaque flèche nomme dans
+son `aria-label` la carte qu'elle va ouvrir, et une région `aria-live` (`.sr-only`)
+annonce la carte feuilletée. Les flèches ne referment pas le volet : leur clic ne
+remonte pas jusqu'à lui (`stopPropagation`), comme celui du bouton Fermer.
+
+Même geste **au clavier** (flèches gauche/droite, Début et Fin pour sauter aux
+deux bouts) et **au doigt** (balayage horizontal de plus de 48 px, plus large que
+haut — le vertical laisse défiler le volet). Feuilleter ne joue rien, ne change
+ni filtre ni onglet, et fait entendre le pas de page (`page_turn`).
+
+L'ordre feuilleté est celui reçu **au moment du clic** (`idsCatalogue`, passé à
+`ouvrirApercuCatalogue`) : le volet couvre tout, les filtres ne peuvent donc pas
+changer pendant la lecture. Et la fiche **reste ouverte en portrait** — l'invite
+de rotation n'existe qu'en duel, le menu s'utilise tel quel dans les deux
+orientations, où la fiche s'empile et défile.
+
+**Au clavier encore**, le bouton étiré est l'unique arrêt de tabulation de la
+fiche (le `tabIndex` de l'`<article>` est parti) : Entrée ouvre, le focus arrive
+sur « Fermer la fiche » sans faire défiler la grille (`preventScroll`), et le
 `onFocus` de l'article garde l'aperçu rapide au survol clavier.
 
 ### Où vit le code
 
-- `src/games/RpgDuelPage.jsx` — `ApercuCarteCatalogue` (le volet), la variante
-  `catalogue` de `HoverCardPreview`, l'état `apercuCatalogue` avec
-  `ouvrirApercuCatalogue` / `fermerApercuCatalogue` (Échap compris, remis à zéro
-  à chaque changement d'écran), le bouton étiré et l'amorce `⤢` dans la grille.
-  Deux helpers partagés au passage : `carteFamille(carte)` — le mot de famille,
-  qui remplace la variable `type` que la grille calculait sans s'en servir — et
-  `cardColorLine(carte)`, la couleur écrite, désormais la même dans la grille et
-  sur la fiche ;
+- `src/games/RpgDuelPage.jsx` — `ApercuCarteCatalogue` (le volet, ses flèches,
+  son compteur et son balayage), la variante `catalogue` de `HoverCardPreview`,
+  l'état `apercuCatalogue` avec `ouvrirApercuCatalogue` / `fermerApercuCatalogue`
+  (Échap compris, remis à zéro à chaque changement d'écran), `ordreCatalogue`
+  avec `voisinesCatalogue` / `feuilleterCatalogue` (flèches, Début et Fin), le
+  bouton étiré et l'amorce `⤢` dans la grille, et `idsCatalogue` — l'ordre
+  affiché, donné à la page au moment du clic. Deux helpers partagés au passage :
+  `carteFamille(carte)` — le mot de famille, qui remplace la variable `type` que
+  la grille calculait sans s'en servir — et `cardColorLine(carte)`, la couleur
+  écrite, désormais la même dans la grille et sur la fiche ;
 - `src/games/rpg-battle.css` — « La fiche du catalogue : la carte cliquée, en
   grand », posé après le volet d'appui long : deux colonnes, une seule sous
   720 px (l'illustration au-dessus, le volet défile), de nouveau deux en paysage
-  de téléphone où l'illustration se règle sur 44 dvh ; puis les règles de
-  clicabilité de la grille (`.rpg-card-catalogue__ouvrir`, `__zoom`, survol et
-  focus, `hover: none`, mouvement réduit).
+  de téléphone où l'illustration se règle sur 44 dvh ; les flèches
+  `.rpg-card-peek__nav` flottent aux deux bords et la gouttière
+  `--rpg-fiche-gouttiere` leur réserve la place (84 px au plus, 48 px sous
+  720 px) pour qu'elles ne mangent jamais l'illustration ; la barre du bas
+  `.rpg-card-peek__bar` porte le compteur et « Fermer la fiche » ; puis les
+  règles de clicabilité de la grille (`.rpg-card-catalogue__ouvrir`, `__zoom`,
+  survol et focus, `hover: none`, mouvement réduit).
 
 ### Vérifications
 
@@ -6793,9 +6820,15 @@ npm run build              # le bundle se construit
 et vérifie son contenu (illustration, nom, sur-titre `CATALOGUE · CRÉATURE`,
 ligne de type, couleur « ⏳ Sable · Désert », les deux capacités sur deux
 lignes, ⚔ 3 · 🛡 1), ses trois fermetures (bouton, Échap, volet) et l'immobilité
-des filtres comme de la grille ; puis il tient la même carte une seconde et
-vérifie que l'appui long ouvre toujours son aperçu rapide à lui — et que le clic
-avalé qui suit n'ouvre pas la fiche.
+des filtres comme de la grille. Il feuillette ensuite : les deux flèches et leurs
+`aria-label` qui nomment la carte voisine, le compteur `n / total` qui suit, les
+rebouclages aux deux bouts, les flèches du clavier avec Début et Fin, les
+balayages — horizontal de 80 px qui tourne, vertical de 150 px et horizontal de
+20 px qui ne tournent pas —, un passage en portrait (500 × 1000) qui ne referme
+rien et laisse les flèches tourner, puis le filtre « Terrains » : la fiche ouverte
+depuis la grille filtrée compte et parcourt les seuls terrains. Enfin il tient la
+même carte une seconde et vérifie que l'appui long ouvre toujours son aperçu
+rapide à lui, sans flèches — et que le clic avalé qui suit n'ouvre pas la fiche.
 
 `scripts/rpg-battle-ui-check.mjs` reste **périmé**, comme avant ce changement :
 il bute sur `canTarget` et sur la signature d'`ApercuCarteAppuiLong`, étrangers

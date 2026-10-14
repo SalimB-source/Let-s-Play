@@ -56,25 +56,43 @@ export async function checkRpgPreviewActions(assert) {
     />));
     // ── Hors duel : le catalogue se clique, la carte s'ouvre en grand ───────
     await changerEcran('Catalogue');
-    const carteCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="fennec-des-decombres"]');
+    const FENNEC = 'fennec-des-decombres';
+    const carteDe = (id) => container.querySelector(`.rpg-card-catalogue__card[data-card-id="${id}"]`);
+    const ouvrirDe = (id) => carteDe(id)?.querySelector('.rpg-card-catalogue__ouvrir');
+    const ordreGrille = () => [...container.querySelectorAll('.rpg-card-catalogue__card')].map((carte) => carte.dataset.cardId);
     const compteCatalogue = () => container.querySelector('.rpg-card-catalogue__count').textContent;
     const cartesAffichees = () => container.querySelectorAll('.rpg-card-catalogue__card').length;
     const fiche = () => container.querySelector('.rpg-card-peek--catalogue');
-    const ouvrirFiche = () => carteCatalogue.querySelector('.rpg-card-catalogue__ouvrir');
+    const fleche = (cote) => fiche()?.querySelector(`.rpg-card-peek__nav--${cote}`);
+    const carteOuverte = () => fiche()?.dataset.cataloguePreview;
+    const nomOuvert = () => fiche()?.querySelector('.rpg-hover-card-preview__name').textContent;
+    const position = () => fiche()?.querySelector('.rpg-card-peek__position').textContent;
+    const touche = (key) => act(async () => {
+      window.dispatchEvent(new window.KeyboardEvent('keydown', { key, bubbles: true }));
+    });
+    const filtrer = async (libelle, valeur) => act(async () => {
+      const select = container.querySelector(`.rpg-card-catalogue__filters select[aria-label="${libelle}"]`);
+      assert.ok(select, `le filtre « ${libelle} » existe`);
+      select.value = valeur;
+      select.dispatchEvent(new window.Event('change', { bubbles: true }));
+    });
     const compteAvantFiche = compteCatalogue();
     const cartesAvantFiche = cartesAffichees();
-    assert.ok(ouvrirFiche(), 'chaque carte du catalogue porte son bouton d’ouverture');
-    assert.match(ouvrirFiche().getAttribute('aria-label'), /^Agrandir Fennec des décombres — Créature, coût 2 mana/u,
+    const grille = ordreGrille();
+    const indexFennec = grille.indexOf(FENNEC);
+    assert.ok(indexFennec > 0 && indexFennec < grille.length - 1,
+      'le Fennec a bien une carte avant et une après lui dans la grille');
+    assert.ok(ouvrirDe(FENNEC), 'chaque carte du catalogue porte son bouton d’ouverture');
+    assert.match(ouvrirDe(FENNEC).getAttribute('aria-label'), /^Agrandir Fennec des décombres — Créature, coût 2 mana/u,
       'le bouton dit ce qu’il ouvre, et que le clic n’agit pas sur la partie');
-    await click(ouvrirFiche());
+    await click(ouvrirDe(FENNEC));
     assert.ok(fiche(), 'un clic sur une carte du catalogue ouvre sa fiche');
-    assert.equal(fiche().dataset.cataloguePreview, 'fennec-des-decombres', 'la fiche est celle de la carte cliquée');
+    assert.equal(carteOuverte(), FENNEC, 'la fiche est celle de la carte cliquée');
     assert.equal(fiche().getAttribute('aria-label'), 'Fiche de Fennec des décombres', 'le volet nomme la carte ouverte');
     assert.equal(fiche().getAttribute('role'), 'dialog', 'la fiche est une boîte de dialogue');
     assert.match(fiche().querySelector('.rpg-hover-card-preview__face img').getAttribute('src'),
       /cards\/fennec-des-decombres\.jpg/u, 'la fiche montre l’illustration de la carte, en grand');
-    assert.equal(fiche().querySelector('.rpg-hover-card-preview__name').textContent, 'Fennec des décombres',
-      'la fiche porte le nom de la carte');
+    assert.equal(nomOuvert(), 'Fennec des décombres', 'la fiche porte le nom de la carte');
     assert.equal(fiche().querySelector('.rpg-hover-card-preview__eyebrow').textContent, 'CATALOGUE · CRÉATURE',
       'la fiche dit d’où elle vient et la famille de la carte');
     assert.equal(fiche().querySelector('.rpg-hover-card-preview__type').textContent, 'Type — Fennec',
@@ -88,25 +106,113 @@ export async function checkRpgPreviewActions(assert) {
     assert.match(fiche().querySelector('.rpg-hover-card-preview__stats').textContent, /⚔ 3\s*·\s*🛡 1/u,
       'la fiche garde les statistiques de la créature');
     assert.ok(container.querySelector('.rpg-card-catalogue'), 'le catalogue reste ouvert sous la fiche');
-    await click(fiche().querySelector('.rpg-card-peek__close'));
-    assert.equal(fiche(), null, 'le bouton Fermer referme la fiche');
-    await click(ouvrirFiche());
-    assert.ok(fiche(), 'la fiche se rouvre d’un clic');
-    await act(async () => {
-      window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    });
-    assert.equal(fiche(), null, 'Échap referme la fiche du catalogue');
-    await click(ouvrirFiche());
+
+    // ── Les flèches : précédente à gauche, suivante à droite, dans l'ordre de
+    //    la grille filtrée — et les deux bouts se rejoignent.
+    assert.ok(fleche('prev') && fleche('next'), 'la fiche porte ses deux flèches');
+    assert.equal(position(), `${indexFennec + 1} / ${grille.length}`,
+      'le compteur dit la place de la carte dans la grille affichée');
+    assert.equal(fleche('next').getAttribute('aria-label'), `Carte suivante : ${cardById(grille[indexFennec + 1]).name}`,
+      'la flèche de droite nomme la carte qu’elle va ouvrir');
+    assert.equal(fleche('prev').getAttribute('aria-label'), `Carte précédente : ${cardById(grille[indexFennec - 1]).name}`,
+      'la flèche de gauche nomme la carte qu’elle va ouvrir');
+    await click(fleche('next'));
+    assert.equal(carteOuverte(), grille[indexFennec + 1], 'la flèche de droite ouvre la carte suivante de la grille');
+    assert.equal(nomOuvert(), cardById(grille[indexFennec + 1]).name, 'le nom, les effets et le compteur suivent la flèche');
+    assert.equal(position(), `${indexFennec + 2} / ${grille.length}`, 'le compteur avance d’une carte');
+    assert.ok(fiche().querySelector('.rpg-hover-card-preview__face img').getAttribute('src').includes('cards/'),
+      'l’illustration de la carte suivante est servie, en grand elle aussi');
+    await click(fleche('prev'));
+    assert.equal(carteOuverte(), FENNEC, 'la flèche de gauche revient à la carte précédente');
+    assert.equal(position(), `${indexFennec + 1} / ${grille.length}`, 'le compteur revient lui aussi');
+    // Au clavier, les mêmes flèches ; Début et Fin sautent aux deux bouts.
+    await touche('ArrowRight');
+    assert.equal(carteOuverte(), grille[indexFennec + 1], 'la flèche droite du clavier feuillette comme celle du volet');
+    await touche('ArrowLeft');
+    assert.equal(carteOuverte(), FENNEC, 'la flèche gauche du clavier revient en arrière');
+    await touche('Home');
+    assert.equal(carteOuverte(), grille[0], 'Début saute à la première carte de la grille');
+    await click(fleche('prev'));
+    assert.equal(carteOuverte(), grille[grille.length - 1],
+      'les deux bouts se rejoignent : la flèche de gauche reboucle sur la dernière carte');
+    await touche('End');
+    assert.equal(carteOuverte(), grille[grille.length - 1], 'Fin saute à la dernière carte');
+    await click(fleche('next'));
+    assert.equal(carteOuverte(), grille[0], 'la flèche de droite reboucle à son tour sur la première');
+    // Au doigt, le balayage horizontal feuillette comme les flèches — au-delà de
+    // 48 px et plus large que haut, sinon c'est le volet qui défile.
+    const balayer = async (dx, dy = 0) => {
+      const poser = async (type, x, y) => act(async () => {
+        const evenement = new window.Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(evenement, 'changedTouches', { value: [{ clientX: x, clientY: y }] });
+        fiche().dispatchEvent(evenement);
+      });
+      await poser('touchstart', 200, 200);
+      await poser('touchend', 200 + dx, 200 + dy);
+    };
+    await balayer(-80);
+    assert.equal(carteOuverte(), grille[1], 'un balayage vers la gauche ouvre la carte suivante');
+    await balayer(80);
+    assert.equal(carteOuverte(), grille[0], 'un balayage vers la droite revient à la précédente');
+    await balayer(12, 150);
+    assert.equal(carteOuverte(), grille[0], 'un balayage vertical ne feuillette pas : il laisse défiler le volet');
+    await balayer(-20);
+    assert.equal(carteOuverte(), grille[0], 'un petit balayage non plus : il faut plus de 48 px');
+    // En portrait, la fiche reste ouverte : le menu s'y utilise tel quel, sans
+    // invite de rotation (elle n'existe qu'en duel), et la fiche s'y empile —
+    // l'illustration au-dessus, les effets dessous, le volet qui défile.
+    const fenetrer = async (largeur, hauteur) => {
+      Object.defineProperty(window, 'innerWidth', { value: largeur, configurable: true, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: hauteur, configurable: true, writable: true });
+      await act(async () => { window.dispatchEvent(new window.Event('resize')); });
+    };
+    await fenetrer(500, 1000);
+    assert.equal(carteOuverte(), grille[0], 'tourner l’appareil en portrait ne referme pas la fiche');
+    await click(fleche('next'));
+    assert.equal(carteOuverte(), grille[1], 'les flèches feuillettent aussi en portrait');
+    await fenetrer(1024, 768);
+    assert.equal(carteOuverte(), grille[1], 'ni le retour au paysage');
+    // Feuilleter ne referme rien, ne joue rien, et ne touche pas aux filtres.
+    assert.equal(compteCatalogue(), compteAvantFiche, 'feuilleter la fiche ne change pas les filtres du catalogue');
+    assert.equal(cartesAffichees(), cartesAvantFiche, 'la grille garde toutes ses cartes : rien n’a été joué ni retiré');
+    await touche('Escape');
+    assert.equal(fiche(), null, 'Échap referme la fiche, d’où qu’elle ait été feuilletée');
+    await click(ouvrirDe(FENNEC));
     await click(fiche());
     assert.equal(fiche(), null, 'toucher le volet referme la fiche, comme l’aperçu au doigt');
     assert.equal(compteCatalogue(), compteAvantFiche, 'consulter une carte ne change pas les filtres du catalogue');
-    assert.equal(cartesAffichees(), cartesAvantFiche, 'la grille garde toutes ses cartes : rien n’a été joué ni retiré');
+
+    // ── Grille filtrée : les flèches ne parcourent que ce qui est affiché ───
+    await filtrer('Filtrer par type', 'terrain');
+    const terrains = ordreGrille();
+    assert.ok(terrains.length > 2 && terrains.every((id) => cardById(id).kind === 'terrain'),
+      'le filtre de type ne laisse que des terrains dans la grille');
+    await click(ouvrirDe(terrains[1]));
+    assert.equal(carteOuverte(), terrains[1], 'la fiche s’ouvre sur le terrain cliqué');
+    assert.equal(position(), `2 / ${terrains.length}`,
+      'le compteur compte la grille filtrée, pas le catalogue entier');
+    await click(fleche('next'));
+    assert.equal(carteOuverte(), terrains[2], 'la flèche de droite reste dans le filtre');
+    assert.equal(cardById(carteOuverte()).kind, 'terrain', 'la carte suivante est un terrain, comme tout ce que le filtre montre');
+    await click(fleche('prev'));
+    assert.equal(carteOuverte(), terrains[1], 'la flèche de gauche revient en arrière dans le filtre');
+    await click(fleche('prev'));
+    assert.equal(carteOuverte(), terrains[0], 'jusqu’au premier terrain de la grille filtrée');
+    await click(fleche('prev'));
+    assert.equal(carteOuverte(), terrains[terrains.length - 1],
+      'en arrière aussi : la flèche de gauche reboucle sur le dernier terrain');
+    await click(fiche().querySelector('.rpg-card-peek__close'));
+    assert.equal(fiche(), null, 'le bouton Fermer referme la fiche');
+    await filtrer('Filtrer par type', 'tous');
+    assert.equal(cartesAffichees(), cartesAvantFiche, 'le filtre remis à « tous », la grille est de nouveau complète');
 
     // ── Le catalogue répond aussi à l'appui long, qui garde son aperçu rapide ─
-    await appuiLong(carteCatalogue);
+    await appuiLong(carteDe(FENNEC));
     assert.ok(peek(), 'une carte du catalogue s’aperçoit aussi par appui long');
     assert.ok(peek().getAttribute('aria-label').includes('Fennec'), 'le volet nomme la carte du catalogue');
     assert.equal(fiche(), null, 'l’appui long ouvre l’aperçu rapide, pas la fiche du clic — et le clic avalé ne l’ouvre pas non plus');
+    assert.equal(peek().querySelector('.rpg-card-peek__nav'), null,
+      'l’aperçu de l’appui long n’a pas de flèches : il ne feuillette pas, il consulte');
     await attendre(460);
     await click(peek());
     assert.ok(peek() === null, 'le volet se referme au toucher');
