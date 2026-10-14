@@ -122,6 +122,14 @@ assert.match(battleCss, /@keyframes rpg-creature-hover-float\s*\{\s*0%, 100% \{ 
   'le mouvement des créatures combine un léger flottement et un balancement gauche-droite');
 assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-card--type-creature:is\(:hover, :focus-visible\) \.rpg-card__img \{[^}]*animation: none !important;/s,
   'le flottement des créatures respecte la préférence de mouvement réduit');
+assert.match(tableCardSource, /entite\.envol \? 'is-envol' : ''/,
+  'les créatures qui possèdent Envol reçoivent leur état visuel sur la table');
+assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*translate:\s*0 -6px;[^}]*filter:[^}]*drop-shadow\(0 11px 8px rgba\(0, 0, 0, \.38\)\)/s,
+  'une créature avec Envol flotte au-dessus du plateau avec une ombre plus profonde');
+assert.match(tableCardSource, /element\.animate\(\s*\[\{ left: '-2px' \}, \{ left: '2px' \}\]/s,
+  'les créatures avec Envol se balancent doucement de gauche à droite sans déplacer les cartes voisines');
+assert.match(tableCardSource, /matchMedia\?\.\('\(prefers-reduced-motion: reduce\)'\)/,
+  'le balancement latéral s’arrête si le joueur préfère limiter les mouvements');
 assert.match(battlePage, /onMouseEnter=\{\(event\) => afficherApercuSurvol\(carte, event\)\}/,
   'les cartes affichent leur aperçu dès l’entrée de la souris');
 assert.match(battlePage, /const cliquerCarteMain = \(carteId, handIndex\) => \{[\s\S]*?jouerCarteDepuisMain\(carteId, handIndex\)/,
@@ -1196,7 +1204,7 @@ assert.doesNotMatch(mobileCss, /grid-template-columns: repeat\(var\(--hand-count
 
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
-  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, beige Sable, rouge Braise, bleu glacé Neige, mythiques mono brillantes de leurs couleurs, hybrides à deux aplats diagonaux sans reflet), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
+  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, créatures avec Envol surélevées et animées d’un léger mouvement latéral sur le plateau, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, beige Sable, rouge Braise, bleu glacé Neige, mythiques mono brillantes de leurs couleurs, hybrides à deux aplats diagonaux sans reflet), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '

@@ -496,7 +496,7 @@
   box-shadow: 0 12px 28px rgba(0, 0, 0, .65), 0 2px 6px rgba(0, 0, 0, .5);
   cursor: pointer;
   transform: rotate(var(--tilt, 0deg));
-  transition: transform .35s ease, box-shadow .35s ease, filter .3s ease, opacity .3s ease;
+  transition: transform .35s ease, translate .35s ease, box-shadow .35s ease, filter .3s ease, opacity .3s ease;
 }
 
 /* Les héros gardent leur halo, sans modifier la couleur du cadre. */
@@ -891,6 +891,17 @@
 
 /* États de la carte posée. */
 .rpg-card:hover { transform: rotate(0deg) translateY(-6px); }
+
+/* Envol : la créature quitte légèrement le plan de la table. La propriété
+   `translate` s'ajoute à l'inclinaison et aux animations de combat sans les
+   remplacer ; l'ombre claire marque l'espace sous la carte, même au toucher. */
+.rpg-card.is-envol {
+  z-index: 2;
+  translate: 0 -6px;
+  filter:
+    drop-shadow(0 11px 8px rgba(0, 0, 0, .38))
+    drop-shadow(0 0 8px rgba(185, 225, 255, .24));
+}
 
 /* Sous la souris, l'illustration des créatures respire doucement. L'animation
    reste sur l'image pour ne pas remplacer celles de combat jouées par la carte. */
