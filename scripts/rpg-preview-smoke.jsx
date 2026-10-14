@@ -43,6 +43,19 @@ export async function checkRpgPreviewActions(assert) {
     await attendre(RPG_LONG_PRESS_MS + 120);
     await envoyerPointeur(element, 'pointerup');
   };
+  // Le clic droit de la souris : `contextmenu`, bouton 2, exactement ce
+  // qu'envoie le navigateur. Le scénario le veut étouffé partout — le menu du
+  // navigateur n'appartient à aucun geste du jeu — et porteur d'un sens sur
+  // une carte : la fiche s'ouvre.
+  const clicDroit = async (element) => {
+    assert.ok(element, 'la cible du clic droit existe');
+    let envoye = null;
+    await act(async () => {
+      envoye = new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, buttons: 2 });
+      element.dispatchEvent(envoye);
+    });
+    return envoye;
+  };
   const changerEcran = async (libelle) => {
     await act(async () => {
       [...container.querySelectorAll('.rpg-mode-menu__switch button')]
@@ -218,6 +231,35 @@ export async function checkRpgPreviewActions(assert) {
     assert.ok(peek() === null, 'le volet se referme au toucher');
     assert.equal(fiche(), null, 'le clic qui suit la levée du doigt n’ouvre pas la fiche');
 
+    // ── Le clic droit ouvre la fiche, sans passer par le bouton étiré ───────
+    // La souris a le survol et le clic ; le bouton droit, lui, est le seul
+    // geste qui consulte sans risquer d'agir : il ouvre la fiche du catalogue
+    // comme il l'ouvrira sur la table du duel. **Une carte, une fiche** : le
+    // clic droit ne montre que la carte qu'il désigne — pas de flèches, pas de
+    // compteur, pas de voisine ; le feuilletage reste au clic du catalogue.
+    const menuCatalogue = await clicDroit(carteDe(FENNEC));
+    assert.equal(menuCatalogue.defaultPrevented, true,
+      'le menu du navigateur ne s’ouvre pas sur une carte du catalogue');
+    assert.ok(fiche(), 'le clic droit ouvre la fiche de la carte');
+    assert.equal(carteOuverte(), FENNEC, 'la fiche est celle de la carte cliquée à droite');
+    assert.equal(fiche().querySelector('.rpg-hover-card-preview__eyebrow').textContent, 'CATALOGUE · CRÉATURE',
+      'la fiche dit toujours d’où elle vient quand le catalogue l’ouvre');
+    assert.equal(fleche('prev'), null, 'la fiche du clic droit n’a pas de flèche de gauche');
+    assert.equal(fleche('next'), null, 'ni de flèche de droite : elle ne montre que la carte désignée');
+    assert.equal(fiche().querySelector('.rpg-card-peek__position'), null,
+      'et pas de compteur : il n’y a rien à compter');
+    await clicDroit(fiche());
+    assert.equal(carteOuverte(), FENNEC,
+      'cliquer droit le volet lui-même ne change pas de carte — et n’ouvre rien d’autre');
+    await touche('Escape');
+    assert.equal(fiche(), null, 'Échap referme la fiche ouverte au clic droit');
+    assert.equal(compteCatalogue(), compteAvantFiche, 'et le catalogue n’a pas bougé');
+    // Le clic, lui, garde son feuilletage : la fiche du catalogue n'a pas
+    // perdu ses flèches en chemin.
+    await click(ouvrirDe(FENNEC));
+    assert.ok(fleche('prev') && fleche('next'), 'la fiche ouverte au clic garde ses deux flèches');
+    await touche('Escape');
+
     // ── Le créateur de deck répond au même geste ────────────────────────────
     await changerEcran('Deck');
     await click(container.querySelector('.rpg-deck-choice--neuf'), 'ouvrir l’atelier');
@@ -226,6 +268,14 @@ export async function checkRpgPreviewActions(assert) {
       'l’atelier annonce le geste, comme la barre du duel');
     const carteAtelier = container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
     const lignesAtelier = () => container.querySelectorAll('.rpg-atelier__ligne').length;
+    // Le clic droit, lui, a déjà son sens dans l'atelier : il retire un
+    // exemplaire. Il ne remonte donc pas jusqu'à la page, qui aurait ouvert la
+    // fiche en plus — les deux gestes ne se marchent pas dessus.
+    const menuAtelier = await clicDroit(carteAtelier);
+    assert.equal(menuAtelier.defaultPrevented, true,
+      'le menu du navigateur reste étouffé sur une carte de l’atelier');
+    assert.equal(fiche(), null, 'et le clic droit de l’atelier n’ouvre pas la fiche : il a son sens à lui');
+    assert.equal(lignesAtelier(), 0, 'il ne retire rien d’un deck où la carte n’est pas encore');
     await appuiLong(carteAtelier);
     assert.ok(peek(), 'une carte de la bibliothèque de l’atelier s’aperçoit par appui long');
     assert.ok(peek().getAttribute('aria-label').includes('Chien du guet'),
@@ -254,6 +304,12 @@ export async function checkRpgPreviewActions(assert) {
     await attendre(460);
     await click(peek());
     assert.ok(peek() === null, 'le volet se referme, et le deck en cours est intact');
+    // Le clic droit d'une ligne du deck retire son exemplaire, et rien d'autre.
+    await clicDroit(ligneAtelier);
+    assert.equal(fiche(), null, 'le clic droit d’une ligne du deck n’ouvre pas la fiche');
+    assert.equal(lignesAtelier(), 0, 'il retire bien l’exemplaire, comme le veut l’atelier');
+    await click(carteAtelier.querySelector('.rpg-atelier__carte-ajout'), 'remettre Chien du guet');
+    assert.equal(lignesAtelier(), 1, 'le deck en cours est comme avant');
     await changerEcran('Jouer');
 
     await lancerDuelDepuisMenu(container, click);
@@ -484,6 +540,47 @@ export async function checkRpgPreviewActions(assert) {
     await click(carteCourte);
     carteCourte.removeEventListener('click', noterClic);
     assert.ok(clicRecu, 'un appui court laisse passer le clic : la carte garde son action de jeu');
+
+    // ── Le clic droit : la fiche en grand, sans rien jouer ──────────────────
+    // Le clic gauche agit (poser, attaquer, payer) ; le bouton droit, lui,
+    // consulte — sur la table comme au catalogue, où le clic ouvre la fiche.
+    const mainAvantDroit = totalMain();
+    const terrainsAvantDroit = terrainsJoueurs().length;
+    const carteDuDroit = handCards()[0];
+    const idDuDroit = carteDuDroit.dataset.cardId;
+    const menuTable = await clicDroit(carteDuDroit);
+    assert.equal(menuTable.defaultPrevented, true, 'le menu du navigateur ne s’ouvre pas sur la table');
+    assert.ok(fiche(), 'le clic droit ouvre la fiche d’une carte en main');
+    assert.equal(carteOuverte(), idDuDroit, 'la fiche est celle de la carte cliquée à droite');
+    assert.equal(fiche().getAttribute('aria-label'), `Fiche de ${cardById(idDuDroit).name}`,
+      'la fiche nomme la carte ouverte');
+    assert.match(fiche().querySelector('.rpg-hover-card-preview__eyebrow').textContent, /^DUEL · /u,
+      'la fiche dit qu’elle vient de la table du duel, pas du catalogue');
+    assert.ok(fiche().querySelector('.rpg-hover-card-preview__name'),
+      'la fiche du duel imprime le nom de la carte, comme celle du catalogue');
+    assert.equal(totalMain(), mainAvantDroit, 'consulter une carte ne la joue pas');
+    assert.equal(terrainsJoueurs().length, terrainsAvantDroit, 'et ne pose rien sur la table');
+    assert.ok(confirmDialog() === null, 'consulter une magie ne demande pas confirmation');
+    // Aucune flèche, aucun compteur : le clic droit ne montre que la carte
+    // qu'il désigne, il ne feuillette pas la main.
+    assert.equal(fleche('prev'), null, 'pas de flèche de gauche sur la fiche du duel');
+    assert.equal(fleche('next'), null, 'pas de flèche de droite non plus');
+    assert.equal(fiche().querySelector('.rpg-card-peek__position'), null, 'pas de compteur');
+    await touche('Escape');
+    assert.equal(fiche(), null, 'Échap referme la fiche ouverte au clic droit');
+    // Sur le champ : la créature s'ouvre en grand sans être déclarée attaquante.
+    await clicDroit(fennec());
+    assert.ok(fiche(), 'une créature en jeu s’ouvre en grand au clic droit');
+    assert.equal(carteOuverte(), 'fennec-des-decombres');
+    assert.equal(fennec().classList.contains('is-selected'), false,
+      'le clic droit ne déclare pas la créature attaquante');
+    assert.equal(fennec().dataset.combatTilted, 'true', 'son état de combat ne change pas');
+    await click(fiche().querySelector('.rpg-card-peek__close'));
+    assert.equal(fiche(), null, 'le bouton Fermer referme la fiche du duel');
+    // La table nue n'ouvre rien : le menu du navigateur reste étouffé, c'est tout.
+    const menuTableNue = await clicDroit(container.querySelector('.card-table'));
+    assert.equal(menuTableNue.defaultPrevented, true, 'le menu du navigateur reste étouffé sur la table nue');
+    assert.equal(fiche(), null, 'et cliquer droit la table nue n’ouvre aucune fiche');
   } finally {
     await act(async () => root.unmount());
     container.remove();

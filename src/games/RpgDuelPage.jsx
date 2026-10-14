@@ -630,6 +630,11 @@ function cartesDesIds(ids = []) {
   return ids.map((id) => cardById(id)).filter(Boolean);
 }
 
+/** Le mot du sur-titre de la fiche : l'écran qui l'a ouverte — la table du
+ *  duel, le catalogue — ou le jeu lui-même pour les autres (deck, guide,
+ *  récit), que le clic droit ouvre aussi. */
+const SURFACE_FICHE = { partie: 'DUEL', catalogue: 'CATALOGUE' };
+
 /** Un bonus signé : « +2 », ou « -2 » pour le malus du Sabre maudit. */
 function signeBonus(valeur = 0) {
   return valeur >= 0 ? `+${valeur}` : `${valeur}`;
@@ -1106,7 +1111,7 @@ function BlockerArrows({ tableRef, assignments }) {
   );
 }
 
-function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null, armes = [] }) {
+function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
@@ -1126,7 +1131,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   const details = (
     <>
       {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
-      {estFiche && <span className="rpg-hover-card-preview__eyebrow">CATALOGUE · {carteFamille(carte).toUpperCase()}</span>}
+      {estFiche && <span className="rpg-hover-card-preview__eyebrow">{surface ? `${surface} · ` : ''}{carteFamille(carte).toUpperCase()}</span>}
       {(variante === 'annonce' || estFiche) && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
       {(estFiche || !estCreature) && <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>}
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
@@ -1223,19 +1228,27 @@ function ApercuCarteAppuiLong({ carte, armes = [], onFermer }) {
   );
 }
 
-/** La fiche du catalogue : une carte **cliquée** s'ouvre en grand sur le même
+/** La fiche d'une carte : une carte **cliquée** s'ouvre en grand sur le même
  * volet sombre que l'appui long — l'illustration entière dans son cadre
  * d'élément, puis le nom, la famille, la couleur, le coût, les effets ligne par
- * ligne et les statistiques. Le catalogue est une surface de lecture : le clic
- * ne joue rien, ne filtre rien, ne quitte pas l'onglet. Le volet, Échap ou le
- * bouton Fermer referment la fiche.
+ * ligne et les statistiques. Elle est née au catalogue, où le clic l'ouvre
+ * depuis toujours, et c'est aussi elle que le **clic droit** ouvre partout
+ * ailleurs dans le jeu (`surMenuContextuel`) : la table du duel, la liste d'un
+ * deck, le guide. Consulter ne joue rien : le clic ne touche ni aux filtres ni
+ * à la grille, ne quitte pas l'onglet, et ne déclare aucune attaque. Le volet,
+ * Échap ou le bouton Fermer referment la fiche.
  *
  * Les deux flèches la feuillettent : carte précédente, carte suivante, dans
  * l'ordre de la grille **filtrée** qui a ouvert la fiche — et elles rebouclent
  * d'un bout à l'autre, comme la visionneuse des articles (`ArticleGallery.jsx`).
  * Même geste au clavier (flèches, Début / Fin) et au doigt (balayage horizontal
- * de plus de 48 px, le vertical laissant défiler le volet). */
-function ApercuCarteCatalogue({ carte, ordre = [], voisines = {}, onFeuilleter, onFermer }) {
+ * de plus de 48 px, le vertical laissant défiler le volet). Une fiche ouverte au
+ * **clic droit** ne porte qu'une carte : elle n'a donc ni flèches, ni compteur,
+ * ni balayage — on n'y feuillette rien, on y lit ce qu'on a désigné.
+ *
+ * `surface` est le mot du sur-titre — l'écran qui a ouvert la fiche ; `armes`
+ * sont celles que porte la créature ouverte, quand le duel les connaît. */
+function ApercuCarteCatalogue({ carte, ordre = [], voisines = {}, armes = [], surface = 'CATALOGUE', onFeuilleter, onFermer }) {
   const boutonFermerRef = useRef(null);
   const balayageRef = useRef(null);
   const total = ordre.length;
@@ -1278,7 +1291,7 @@ function ApercuCarteCatalogue({ carte, ordre = [], voisines = {}, onFeuilleter, 
     >
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__panel">
-        <HoverCardPreview carte={carte} variante="catalogue" />
+        <HoverCardPreview carte={carte} variante="catalogue" armes={armes} surface={surface} />
       </div>
       {total > 1 && (
         <>
@@ -2797,12 +2810,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [apercuAppui, setApercuAppui] = useState(null);
   // Armes portées par la créature pressée (vides pour toute autre carte).
   const [apercuAppuiArmes, setApercuAppuiArmes] = useState([]);
-  // Fiche du catalogue : là où le doigt tient une seconde, la souris et le
-  // tactile **cliquent** — la carte s'ouvre en grand, illustration et effets.
+  // La fiche : là où le doigt tient une seconde, la souris **clique** — au
+  // catalogue depuis toujours, et par un clic droit partout ailleurs dans le
+  // jeu : la carte s'ouvre en grand, illustration et effets, sans être jouée.
   const [apercuCatalogue, setApercuCatalogue] = useState(null);
   // L'ordre des cartes affichées quand la fiche s'est ouverte : c'est lui que
-  // les flèches du volet parcourent, filtres compris.
+  // les flèches du volet parcourent, filtres compris. Le clic du catalogue y met
+  // sa grille ; le clic droit, qui ne consulte qu'une carte, n'y met qu'elle.
   const [ordreCatalogue, setOrdreCatalogue] = useState([]);
+  // Les armes portées par la créature ouverte (vides partout ailleurs que sur
+  // la table du duel) et le mot du sur-titre : l'écran qui a ouvert la fiche.
+  const [apercuCatalogueArmes, setApercuCatalogueArmes] = useState([]);
+  const [apercuCatalogueSurface, setApercuCatalogueSurface] = useState('CATALOGUE');
   const appuiLongRef = useRef(null);
   useEffect(() => {
     // Changer d'écran (menu, deck, catalogue, duel) referme l'aperçu au doigt
@@ -3370,16 +3389,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     jouerSfx('annuler');
     setApercuCatalogue(null);
   };
-  /** Le catalogue est une surface de lecture : cliquer une carte l'agrandit —
-   * illustration entière et effets — sans rien jouer ni quitter l'onglet. Le
-   * survol de la souris, qui montrait déjà l'aperçu rapide, s'efface : une seule
-   * lecture à la fois.
+  /** Le jeu est une surface de lecture : cliquer ou cliquer droit une carte
+   * l'agrandit — illustration entière et effets — sans rien jouer ni quitter
+   * l'onglet. Le survol de la souris, qui montrait déjà l'aperçu rapide,
+   * s'efface : une seule lecture à la fois.
    *
-   * `ordre` est la liste des cartes affichées au moment du clic, dans l'ordre de
-   * la grille filtrée : c'est elle que les flèches de la fiche feuillettent. Les
-   * filtres ne peuvent pas changer pendant la lecture — le volet couvre tout —,
-   * donc l'ordre reçu à l'ouverture reste vrai jusqu'à la fermeture. */
-  const ouvrirApercuCatalogue = (carte, ordre = []) => {
+   * `ordre` est la liste des cartes affichées au moment du geste, dans l'ordre
+   * où elles le sont — la grille filtrée du catalogue : c'est elle que les
+   * flèches de la fiche feuilletent, et elle seule. Le clic droit, lui, n'ouvre
+   * qu'une carte : il passe `[carte.id]`, la fiche n'a donc ni flèches ni
+   * compteur. Les filtres ne peuvent pas changer pendant la lecture — le volet
+   * couvre tout —, donc l'ordre reçu à l'ouverture reste vrai jusqu'à la
+   * fermeture. `armes` dit ce que porte la créature ouverte (duel), `surface`
+   * le mot du sur-titre : l'écran qui a ouvert la fiche. */
+  const ouvrirApercuCatalogue = (carte, ordre = [], { armes = [], surface = 'CATALOGUE' } = {}) => {
     if (!carte) return;
     annulerAppuiLong();
     masquerApercuSurvol();
@@ -3387,6 +3410,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     jouerSfx('hover');
     const ordreRecu = Array.isArray(ordre) ? ordre.filter(Boolean) : [];
     setOrdreCatalogue(ordreRecu.includes(carte.id) ? ordreRecu : [carte.id]);
+    setApercuCatalogueArmes(armes);
+    setApercuCatalogueSurface(surface);
     setApercuCatalogue(carte.id);
   };
   /** La carte d'à côté dans l'ordre de la grille : `pas` vaut -1 (flèche de
@@ -3444,6 +3469,30 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // longue pression qui échappe à `rpgLongPress.js` ouvre le menu système, qui
   // casse à son tour la chaîne tactile de la WebView — le jeu devient sourd.
   const neutraliserMenuContextuel = (event) => event.preventDefault();
+  // Le clic droit, lui, est un geste de **consultation** : sur une carte — tout
+  // élément qui porte un `data-card-id`, en main, sur la table, dans un rail de
+  // terrains, la liste d'un deck, le guide ou la grille du catalogue —, il
+  // ouvre la fiche en grand sans rien jouer. **Une carte, une fiche** : ce que
+  // le bouton droit montre, c'est la carte qu'il désigne, et rien d'autre —
+  // pas de flèches, pas de compteur, pas de voisine. Son sur-titre dit d'où
+  // elle vient : la table du duel, le catalogue, ou le jeu lui-même. Ailleurs —
+  // la table nue, un bouton, une rangée vide —, il n'ouvre rien et se contente
+  // d'étouffer le menu du navigateur, comme avant.
+  //
+  // Une carte qui a déjà un sens pour son clic droit garde le sien à elle : le
+  // clic droit de l'atelier retire un exemplaire du deck
+  // (`RpgDeckAtelier.jsx`), et l'atelier ne laisse pas son geste remonter
+  // jusqu'ici.
+  const surMenuContextuel = (event) => {
+    event.preventDefault();
+    const hote = event.target?.closest?.('[data-card-id]');
+    const carte = cardById(hote?.dataset?.cardId);
+    if (!hote || !carte) return;
+    ouvrirApercuCatalogue(carte, [carte.id], {
+      armes: (hote.dataset.armes ?? '').split(' ').filter(Boolean),
+      surface: SURFACE_FICHE[ecran] ?? 'LE SABLIER',
+    });
+  };
   // En portrait, l'écran de rotation reprend la main : plus rien à consulter.
   useEffect(() => {
     if (viewport.portrait && apercuAppui) fermerApercuAppui();
@@ -3584,7 +3633,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (ecran !== 'partie') {
     return (
-      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={neutraliserMenuContextuel}>
+      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <GameModeMenu
           screen={ecran}
           selectedDeckId={deckSelectionneId}
@@ -3635,6 +3684,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <ApercuCarteCatalogue
             carte={cardById(apercuCatalogue)}
             ordre={ordreCatalogue}
+            armes={cartesDesIds(apercuCatalogueArmes)}
+            surface={apercuCatalogueSurface}
             voisines={voisinesCatalogue()}
             onFeuilleter={feuilleterCatalogue}
             onFermer={fermerApercuCatalogue}
@@ -5204,7 +5255,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       data-scene="duel"
       style={DOS_DE_CARTE_STYLE}
       onPointerDown={demarrerAppuiLongCarte}
-      onContextMenu={neutraliserMenuContextuel}
+      onContextMenu={surMenuContextuel}
     >
       <SfxReactifsDuel
         vainqueur={vainqueur}
@@ -6030,6 +6081,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         />
       )}
       {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} onFermer={fermerApercuAppui} />}
+      {/* La même fiche que le catalogue : le clic droit l'ouvre sur la table,
+          en main, sur les terrains ou sur une pile — sans rien jouer. */}
+      {apercuCatalogue && (
+        <ApercuCarteCatalogue
+          carte={cardById(apercuCatalogue)}
+          ordre={ordreCatalogue}
+          armes={cartesDesIds(apercuCatalogueArmes)}
+          surface={apercuCatalogueSurface}
+          voisines={voisinesCatalogue()}
+          onFeuilleter={feuilleterCatalogue}
+          onFermer={fermerApercuCatalogue}
+        />
+      )}
       {mulligan && (
         <VoletMulligan
           main={duel.joueur.main}
