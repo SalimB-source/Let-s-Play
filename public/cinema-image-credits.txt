@@ -149,3 +149,30 @@ news/2026-10-11/philadelphie-roundhouse.jpg (actu tech) — photographie du « R
 https://audacy.com/kywnewsradio/news/local/city-no-redevelopment-plans-ppd-roundhouse
 
 Crédits complets de l’édition : news/2026-10-11/credits.md
+
+Fournée du 14.10.2026 :
+
+news/2026-10-14/sonic-racing-crossworlds-annee-2.jpg (actu gaming) — visuel promotionnel officiel SEGA / Sonic Team issu du Sonic Racing: CrossWorlds - Year Two Showcase diffusé lors de la finale des World Championship Finals à New York et sur la chaîne principale Sonic the Hedgehog (O0TSwHOJ7Xw), accompagné du trailer de lancement du pack Avatar Legends publié le 14.10.2026 (mAN1R_RoKrI) et du trailer du mode Duel (9iaR0YiqGJg), tous contrôlés via oEmbed le 14.10.2026. Recadrage 16:9 et compression.
+https://www.gamekult.com/actualite/pour-sa-nouvelle-annee-de-contenus-sonic-racing-crossworlds-invite-bayonetta-evangelion-godzilla-et-meme-final-fantasy-7-3050872430.html
+https://www.gematsu.com/2026/10/sonic-racing-crossworlds-dlc-avatar-legends-pack-launches-october-14
+
+news/2026-10-14/street-fighter-2026.jpg — affiche chorale promotionnelle officielle de Street Fighter (2026) réalisée pour Paramount Pictures / Legendary Pictures / Capcom (Andrew Koji, Noah Centineo, Callina Liang, David Dastmalchian, Jason Momoa, Cody Rhodes, Roman Reigns, Curtis « 50 Cent » Jackson), relayée par Deadline et Écran Large à l'occasion de la sortie en salle française le 14 octobre 2026. Recadrage 16:9 et compression ; crédit affiché dans l’article. La bande-annonce intégrée (U6sbm1OaJb8) et la featurette d'entraînement (Zk2aB3Wc17c) proviennent de la chaîne principale Paramount Pictures (contrôle oEmbed du 14.10.2026).
+https://www.ecranlarge.com/films/news/street-fighter-suite-developpement-condition-pas-gagne
+https://deadline.com/gallery/street-fighter-character-posters/
+
+news/2026-10-14/apple-homeview.jpg (actu tech) — visuel de presse officiel Apple Newsroom (Apple-HomeView-lineup-261013_Full-Bleed-Image.jpg) publié le 13 octobre 2026 lors de la présentation d'Apple HomeView, de l'Apple TV 4K (A19) et du HomePod mini 2 (S10). Les trois vidéos officielles intégrées proviennent de la chaîne principale Apple (QeQAXuQpGEA, bNdmGYamiWM, xLL4UnrLNWs ; contrôle oEmbed du 14.10.2026).
+https://www.apple.com/newsroom/2026/10/meet-apple-homeview-a-new-way-to-enjoy-entertainment-and-manage-the-home/
+https://www.apple.com/newsroom/2026/10/introducing-apple-home-collection-a-new-lineup-of-smart-home-accessories/
+
+news/2026-10-14/tekken-8-roger-jr.jpg (actu gaming) — visuel clé officiel du Gameplay Reveal Trailer de Roger Jr. pour la Saison 3 de Tekken 8 (Bandai Namco Entertainment, octobre 2026), relayé par Gematsu. Les trois vidéos officielles intégrées proviennent des chaînes principales Bandai Namco Entertainment America (fehoyeYVOtE, yOS-Yb5z3-k) et tekkenchannel (ZMFY0G-DOv4), contrôlées via oEmbed le 14.10.2026.
+https://www.gematsu.com/2026/10/tekken-8-dlc-character-roger-jr-launches-november-11-for-season-3-character-pass-owners-november-16-for-all
+https://www.gematsu.com/2026/10/ace-combat-8-wings-of-theve-sales-top-one-million
+
+news/2026-10-14/narnia-neveu-du-magicien.jpg — photo promotionnelle officielle Netflix de Narnia : Le Neveu du Magicien (Narnia: The Magician's Nephew) réalisé par Greta Gerwig (Emma Mackey en Jadis entourée de David McKenna et Beatrice Campbell dans les ruines de Charn), relayée par Écran Large le 14 octobre 2026. Recadrage 16:9 et compression ; crédit affiché dans l’article. La bande-annonce officielle intégrée provient de la chaîne principale Netflix (gDJ-ini7fF0, contrôle oEmbed du 14.10.2026).
+https://www.ecranlarge.com/films/news/narnia-le-neveu-du-magicien-bande-annonce-magique-netflix
+
+news/2026-10-14/google-play-vibe-coding.jpg (actu tech) — visuel officiel Google AI Studio / Google Play illustrant la génération d'applications Android en Kotlin et Jetpack Compose vers une piste privée du Play Store, relayé par Frandroid le 14 octobre 2026. Les vidéos officielles intégrées proviennent de la chaîne principale Android Developers (91oc9SyHxKI, JMPd2jbQEqo ; contrôle oEmbed du 14.10.2026).
+https://www.frandroid.com/android/developpement/3284029_google-ouvre-le-play-store-aux-apps-vibe-codees-privees-pourquoi-cest-different-des-applications-ia-qui-inondent-deja-le-store
+
+Crédits complets de l’édition : news/2026-10-14/credits.md
+
