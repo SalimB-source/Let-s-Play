@@ -23,11 +23,11 @@ les références, les fichiers livrés et la continuité de leurs URL dans l'int
 
 | Personnage | Illustration canonique | Règle |
 | --- | --- | --- |
-| Salem | `public/cards/salem.jpg` | Illustration existante, inchangée |
-| Yamina | `public/cards/yamina.jpg` | Illustration existante, inchangée |
-| Fériel | `public/cards/feriel.jpg` | Illustration existante, inchangée, y compris comme adversaire à `listes-4` |
-| Tarek | `public/cards/tarek.jpg` | Illustration existante, inchangée |
-| Boualem | `public/cards/boualem.jpg` | Réservé pour les actes suivants, illustration inchangée |
+| Salem | `public/cards/salem.jpg` | **Repeint en nihonga** (octobre 2026) : même visage, même perche, même carnet |
+| Yamina | `public/cards/yamina.jpg` | **Repeinte en nihonga** (octobre 2026) : même visage, même outil d'horlogère |
+| Fériel | `public/cards/feriel.jpg` | **Repeinte en nihonga** (octobre 2026), y compris comme adversaire à `listes-4` |
+| Tarek | `public/cards/tarek.jpg` | **Repeint en nihonga** (octobre 2026) : même visage, même charge sur l'épaule |
+| Boualem | `public/cards/boualem.jpg` | **Repeint en nihonga** (octobre 2026) ; toujours réservé pour les actes suivants |
 | Le Guetteur de palier | `public/cards/guetteur-du-beffroi.jpg` | Portrait existant adopté comme référence de ce gardien |
 | La Scribe | `public/sablier-story/scribe.jpg` | Portrait dédié au personnage féminin du récit ; ne remplace pas l'illustration de la carte générique `scribe-de-la-liste` |
 | Le Puisatier des Cendres | `public/sablier-story/puisatier.jpg` | Personnage distinct de Boualem |
@@ -36,7 +36,36 @@ les références, les fichiers livrés et la continuité de leurs URL dans l'int
 Les quatre nouveaux fichiers de `public/sablier-story/` sont des illustrations
 IA réalisées pour cet épisode : trois portraits et un décor vide (`greffe.jpg`).
 Les peintures de la Tour des Listes et les cartes existantes ont servi de
-références de style. Les anciennes illustrations n'ont pas été retouchées.
+références de style.
+
+### Les cinq héros repeints en nihonga
+
+Une passe postérieure a **repeint les cinq héros du récit** sous les mêmes
+noms de fichiers : Salem, Yamina, Fériel, Tarek et Boualem. Le principe du
+portrait unique est donc préservé — un personnage, un fichier —, seule la
+facture change : peinture japonaise **nihonga** (pigments minéraux mats sur
+feuille d'or, lavis d'encre, fibre de papier washi, nuages d'or plats) portée
+par une **palette algérienne** plus riche — indigo touareg, safran, henné,
+vert émeraude et turquoise, terre cuite, ocre, or abondant — avec des motifs
+amazighs (losanges, chevrons, zigzags), des bijoux kabyles argent et corail,
+et le sablier en filigrane.
+
+Les repères d'identité restent intacts : même âge, même visage, même coiffure,
+même tenue de métier et mêmes accessoires (perche à crochet et carnet de
+Salem, outils d'horlogère de Yamina, canne et verre en fusion de Fériel,
+carton de la Chambre de Tarek, corde et clef de citerne de Boualem), et la
+tête reste dans le tiers supérieur du cadre pour que les portraits de
+dialogue, le journal et les cartes la lisent sans recadrage. Les fichiers sont
+désormais livrés au ratio **4:5 de la face**, contrôlé par `PLEIN_ART_45`, et
+datés d'une seule révision de cache `heros-nihonga-algerien-v1` dans
+`RpgDuelPage.jsx` : aucun cache ne peut resservir les huiles précédentes.
+
+Les autres personnages du registre — Guetteur, Scribe, Puisatier des Cendres,
+Mahieddine et les figures des autres tours — gardent leur illustration d'origine.
+La passe a toutefois été étendue à la carte de héros **Le Serpent du monde**
+(`public/cards/serpent-du-monde.jpg`), figure du Nord et récompense de
+`fjord-4`, qui n'entre pas dans le casting du récit : même facture, même
+palette, même révision de cache.
 
 ### Repères des nouveaux personnages
 

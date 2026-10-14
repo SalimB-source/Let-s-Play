@@ -216,8 +216,8 @@ export async function checkRpgBattle(assert) {
   assert.ok(ferielCatalogue?.querySelector('.rpg-card-catalogue__art.rpg-card--frame-braise.rpg-card--frame-brillant.rpg-card--mythique'),
     'le catalogue donne à Fériel le même cadre brillant que dans le duel');
   assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
-    /\/cards\/feriel\.jpg\?v=lance-de-feu-photoreal-v1$/,
-    'le catalogue charge la nouvelle illustration de Fériel avec une URL versionnée contre le cache');
+    /\/cards\/feriel\.jpg\?v=heros-nihonga-algerien-v1$/,
+    'le catalogue charge la nouvelle illustration nihonga de Fériel avec une URL versionnée contre le cache');
   assert.equal(ferielCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '4',
     'le catalogue affiche le nouveau coût de quatre pour Fériel');
   assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /3\s*·\s*🛡\s*1/,

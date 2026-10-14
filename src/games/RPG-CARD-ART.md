@@ -301,11 +301,11 @@ côte balayée par un vortex. Un exemplaire remplace une Onna-musha dans le
 deck Soleil rouge : toujours 40 cartes, 17 créatures, 7 magies et 16 terrains.
 Susanoo se débloque à `sables-3`.
 
-## Dérogation : les quatre armes et le serpent en photoréaliste (octobre 2026)
+## Dérogation : deux armes et le serpent en photoréaliste (octobre 2026)
 
-Les quatre armes du prototype (`takouba-des-pistes`, `baton-des-citernes`,
-`lance-de-givre`, `armure-de-cendres`) et le jeton `serpent-des-citernes`
-dérogent **volontairement** à la direction « huile sur toile » ci-dessus :
+Deux armes du prototype (`takouba-des-pistes`, `lance-de-givre`) et le jeton
+`serpent-des-citernes` dérogent **volontairement** à la direction
+« huile sur toile » ci-dessus :
 elles sont livrées en **rendu photoréaliste fantaisiste** (photo de cinéma,
 live-action), direction validée carte par carte au moment de leur création.
 Le reste de la collection reste en huile ; une éventuelle conversion globale
@@ -320,12 +320,6 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
   sujets ; les plans larges y arrivent mieux que les gros plans ;
 - aucun texte, glyphe, logo ni interface dessinée.
 
-- **Armure de cendres** (`armure-de-cendres.jpg`) — guerrier démoniaque en
-  armure noire au-dessus d'un volcan, deux épées noires entièrement
-  visibles ; le sujet de la carte est l'armure elle-même.
-- **Bâton des citernes** (`baton-des-citernes.jpg`) — magicienne sur un petit
-  bateau dans une citerne inondée : son bâton fait léviter un serpent géant
-  dans un tourbillon d'eau ; elle regarde le serpent, pas le spectateur.
 - **Serpent des citernes** (`serpent-des-citernes.jpg`) — le jeton évoqué
   par le Bâton : serpent verdâtre dressé dans la citerne moussue.
 
@@ -401,3 +395,85 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
   la meute sur la banquise, duel de deux camps.
 - **Embuscade** (`embuscade.jpg`) — le cercle de loups qui se referme sur
   l’isolé, les défenses dehors.
+
+## Dérogation : la passe nihonga algérienne (octobre 2026)
+
+Six héros et deux armes — les cinq du récit, **Salem** (`salem.jpg`),
+**Yamina** (`yamina.jpg`), **Fériel** (`feriel.jpg`), **Tarek** (`tarek.jpg`)
+et **Boualem** (`boualem.jpg`), plus le **Serpent du monde**
+(`serpent-du-monde.jpg`, figure du Nord), l'**Armure de cendres**
+(`armure-de-cendres.jpg`) et le **Bâton des citernes**
+(`baton-des-citernes.jpg`) — dérogent **volontairement** à la
+direction « huile sur toile » ci-dessus : ils sont repeints en **peinture
+japonaise nihonga**
+(pigments minéraux *iwa-enogu* mats, blanc de coquille *gofun*, sous-drawing
+à l'encre *sumi*, fibre de papier *kozo washi*, nuages d'or plats *suyari
+kasumi* sur fond de feuille d'or *kinpaku*), direction demandée explicitement
+pour ces huit cartes. Le reste de la collection reste en huile, à l'exception
+des dérogations déjà documentées (Soleil rouge en kaiga, armes en
+photoréaliste, gel en fresque).
+
+### Ce qui change, et ce qui ne change pas
+
+- **Ce qui ne change pas** : l'identité de chaque héros. Âge, visage, teint,
+  coiffure, barbe, silhouette, tenue de métier et accessoires restent ceux de
+  la peinture précédente, reprise comme référence ; la pose et le cadrage
+  aussi. Un personnage garde **un seul fichier**, réutilisé par la carte, le
+  dialogue, le journal et la plaque adverse du duel (voir
+  `docs/rpg/11-bible-visuelle.md`). Pour le Serpent du monde, c'est la bête
+  elle-même qui est conservée : le même corps en anneau qui se mord la queue
+  autour des eaux froides, à la même échelle et dans le même cadrage.
+- **Ce qui change** : la facture (nihonga sur or) et la palette, désormais
+  algérienne et plus riche — indigo touareg profond, safran, rouge-orangé de
+  henné, vert émeraude et vert-de-gris, turquoise, terre cuite, ocre chaud et
+  or abondant. Motifs amazighs (losanges, chevrons, zigzags) brodés sur les
+  étoffes, bijoux kabyles argent et corail, sablier en filigrane dans le décor.
+
+### Règles de tir (vérifiées carte par carte)
+
+- plein art **4:5, 1024×1280**, peinture jusqu'aux bords ;
+- **tête dans le tiers supérieur** : le portrait de dialogue (3:4), le
+  journal (4:5) et la face de carte (4:5) lisent le visage sans recadrage ;
+- **aucun texte, aucun idéogramme** (ni kanji, ni kana, ni chiffre, ni logo,
+  ni cadre) : l'interface superpose seule nom, coût, statistiques et élément ;
+- pas d'anime ni de cartoon : visages adultes, dignes, naturalistes ;
+- la couleur de l'élément influence la lumière (sable ocré pour Salem et
+  Tarek, bleu de verre et d'eau pour Yamina et Boualem, braise orangée pour
+  Fériel) sans jamais devenir un badge dessiné ;
+- le **Serpent du monde** garde son élément Neige lisible : les eaux et la
+  glace restent bleu indigo, turquoise et vert émeraude — des teintes que la
+  palette algérienne porte déjà —, réchauffées par la feuille d'or du ciel et
+  par quelques reflets safran et terre cuite sur les écailles et dans l'œil.
+  Les motifs amazighs se glissent dans le dessin de l'eau et des écailles,
+  comme une broderie, et non en encadrement : la peinture reste plein cadre.
+- l'**Armure de cendres** garde **son dessin d'origine trait pour trait** —
+  la même figure en armure noire au-dessus du volcan, les deux épées noires
+  entièrement visibles, le même cadrage et la même échelle : seule la
+  facture change, du photoréaliste vers le nihonga, avec les motifs amazighs
+  damasquinés dans l'acier noirci. Aucun ajout, aucun retrait de sujet :
+  c'est une conversion de style, pas une recomposition.
+- le **Bâton des citernes** montre **le bâton seul**, debout dans une
+  **vitrine de musée** : glace sur les quatre faces, montants de laiton,
+  socle de pierre, arches et sol carrelé de la galerie derrière, lumière
+  tombant d'en haut. **Aucun personnage** — ni main, ni bras, ni visiteur :
+  l'objet exposé est le seul sujet, et il est seul derrière la glace. Les
+  serpents sont **tous à l'extérieur** de la vitrine : trois ou quatre,
+  enroulés autour de la glace et des montants de laiton, lovés sur le sol
+  tout autour du socle, têtes levées, museau contre la vitre et langue
+  dehors, qui regardent le bâton sans pouvoir l'atteindre. Aucun serpent à
+  l'intérieur. La citerne disparaît donc du cadre. Motifs amazighs carrelés
+  dans le laiton de la vitrine et du bâton.
+
+### Versions de cache
+
+Les six peintures de héros sont datées ensemble par la révision
+`heros-nihonga-algerien-v1` dans `CARD_ART_CACHE_VERSIONS`
+(`RpgDuelPage.jsx`) ; l'Armure de cendres porte la sienne, `armure-nihonga-v1`,
+et le Bâton des citernes, `baton-nihonga-vitrine-dehors-v2`. Le jeton
+`serpent-des-citernes` reste, lui, dans le lot photoréaliste : il n'a pas
+encore été repris.
+Mêmes noms de fichiers, donc aucun cache ne peut resservir les huiles
+précédentes. Pour le Serpent du monde, la révision de la passe l'emporte sur
+`SET_NEIGE_ART_VERSION` — elle est datée une seule fois pour toutes ses cartes.
+Le garde-fou `PLEIN_ART_45` de `tests/rpg-duel.test.js` vérifie leur ratio 4:5
+comme le reste de la collection, l'Armure de cendres y compris.

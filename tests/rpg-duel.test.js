@@ -110,6 +110,11 @@ const PLEIN_ART_45 = [
   // La refonte du Père des corbeaux (Odin photoréaliste) est livrée elle
   // aussi au ratio exact de la face.
   'pere-des-corbeaux',
+  // Les héros repeints en nihonga sur feuille d’or : livrés eux aussi au
+  // ratio exact de la face, désormais contrôlé comme le reste.
+  'salem', 'yamina', 'feriel', 'tarek', 'boualem',
+  // Le Serpent du monde reçoit la même passe que les héros du récit.
+  'serpent-du-monde',
 ];
 
 const VARIANTES_TERRAIN = [
