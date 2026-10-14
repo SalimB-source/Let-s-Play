@@ -11,7 +11,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { passerMulligan } from './rpg-duel-start.js';
+import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 import { RPG_DECKS } from '../src/games/rpgCards.js';
 
 /** Horloge virtuelle : les minuteries du jeu avancent à la demande. */
@@ -198,7 +198,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
     await act(async () => root.render(
       <RpgDuelPage joueurDeck={deckJoueur.cardIds} sorcierDeck={deckSorcier.cardIds} sorcierPuissance={0} rng={rng} />,
     ));
-    await click(q('.rpg-mode-menu__play .rpg-menu-button--primary'));
+    await lancerDuelDepuisMenu(container, (element) => click(element, 'menu'));
     await passerMulligan(container, (element) => click(element, 'mulligan'));
     await horloge.avancer(2000);
     verifier('ouverture');
@@ -383,7 +383,7 @@ export async function verifierRelance(assert) {
         rng={() => 0.5}
       />,
     ));
-    await click(q('.rpg-mode-menu__play .rpg-menu-button--primary'));
+    await lancerDuelDepuisMenu(container, (element) => click(element));
     await passerMulligan(container, (element) => click(element));
     await horloge.avancer(2000);
 
@@ -421,7 +421,7 @@ export async function verifierRelance(assert) {
     await click(boutonTexte(/^Menu$/));
     assert.ok(!q('.card-table'), 'la table est quittée');
 
-    await click(q('.rpg-mode-menu__play .rpg-menu-button--primary'));
+    await lancerDuelDepuisMenu(container, (element) => click(element));
     await passerMulligan(container, (element) => click(element));
     await horloge.avancer(4000);
 

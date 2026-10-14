@@ -14,6 +14,26 @@ export function mulliganOuvert(container) {
 }
 
 /**
+ * Lance une partie rapide depuis le menu. Le bouton principal de l'écran
+ * Jouer ouvre le mode Histoire : un duel libre se démarre depuis l'onglet
+ * Deck — on ouvre le premier boîtier de l'étagère, puis « Jouer avec ce
+ * deck ». Les scénarios qui passent leurs paquets en props (`joueurDeck`,
+ * `sorcierDeck`) les gardent : la page les préfère au deck du boîtier.
+ * `cliquer` est l'helper `act` du scénario. Retourne le bouton de lancement,
+ * pour les scénarios qui veulent vérifier qu'il existait.
+ */
+export async function lancerDuelDepuisMenu(container, cliquer) {
+  const ongletDeck = [...container.querySelectorAll('.rpg-mode-menu__switch button')]
+    .find((bouton) => bouton.textContent.replace(/\s+/g, ' ').trim().endsWith('Deck'));
+  if (ongletDeck) await cliquer(ongletDeck);
+  const boitier = container.querySelector('.rpg-deck-choice__button');
+  if (boitier) await cliquer(boitier);
+  const lancer = container.querySelector('.rpg-deck-detail__play');
+  if (lancer) await cliquer(lancer);
+  return lancer ?? null;
+}
+
+/**
  * Referme le volet : « valider » (aucune carte choisie = on garde la main), puis
  * « commencer le duel » si un échange a laissé une étape de résultat. Ne fait
  * rien quand il n'y a rien à valider — un duel repris, par exemple.

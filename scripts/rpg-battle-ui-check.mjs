@@ -180,7 +180,10 @@ assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*gri
   'chaque effet occupe sa propre ligne dans l’aperçu au survol');
 assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
   'la Rapidité rend la créature prête dès son arrivée, sans badge d’effet sur la carte');
-assert.match(duelEngine, /cibleRapideId[\s\S]*?resume\.coupsRapides\.push[\s\S]*?for \(const coup of resume\.coupsRapides\)[\s\S]*?enregistrerDegatsCombat\(\s*degatsCombat,\s*adv,\s*coup\.cibleId,\s*coup\.degats/s,
+// Le Coup rapide frappe avant les blessures de combat : la cible encaisse
+// l'attaque de la créature (`degatsAvantCombat`), sans riposte, et le résumé
+// du combat relate chaque frappe.
+assert.match(duelEngine, /const cibleRapideId = ciblesRapides\[attaquant\.id\];[\s\S]*?frappesRapides\.push\([\s\S]*?degats: attaquant\.atk,[\s\S]*?degatsAvantCombat\.push\(\{\s*cote: adv,\s*entiteId: cible\.id,\s*amount: attaquant\.atk,[\s\S]*?coupsRapides: frappesRapides,[\s\S]*?for \(const coup of resume\.coupsRapides\)/s,
   'le Coup rapide inflige l’attaque de la créature choisie, sans combat de riposte');
 assert.match(duelEngine, /export function rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\s*\{[\s\S]*?if \(attaquant\.infiltration\) return false;[\s\S]*?!attaquant\.envol \|\| Boolean\(bloqueur\.envol\)/,
   'l’Infiltration rend l’attaquant inbloquable, et l’Envol n’autorise que les créatures volantes à bloquer un attaquant volant');
@@ -423,7 +426,9 @@ assert.match(battlePage, /className="rpg-card-catalogue"[\s\S]*?Filtrer par coul
   'l’onglet Catalogue propose les filtres de couleur et de type');
 assert.match(battlePage, /onChangeScreen\('catalogue'\)[\s\S]*?Catalogue/,
   'Catalogue est accessible depuis le menu des modes');
-assert.match(battlePage, /if \(carte\.arrivee\?\.type === 'combat'\) \{[\s\S]*?if \(ciblesLegales\.length\) \{\s*setCibleEnCours\(carteId\);/,
+// L'arrivée du Cavalier (combat) partage son choix de cible avec les arrivées
+// qui blessent une créature (le marteau du Maître) : même branche, même éclat.
+assert.match(battlePage, /if \(carte\.arrivee\?\.type === 'combat' \|\| \(carte\.arrivee\?\.type === 'degats' && carte\.arrivee\.cible === 'creature'\)\) \{[\s\S]*?if \(ciblesLegales\.length\) \{\s*setCibleEnCours\(carteId\);/,
   'l’arrivée du Cavalier ouvre le choix d’une créature adverse, signalé par les cibles allumées');
 assert.match(battlePage, /demarrerVolCarte\(carteSource, handIndex, \(\) => finaliserPoseCreature\(carteId, entite\.id\)\)/,
   'la carte réelle vole depuis la main après la sélection de la cible');
@@ -1220,9 +1225,13 @@ assert.ok(jarl && jarl.element === 'neige' && jarl.furie === 3,
   'le Jarl au marteau de guerre porte la Furie 3 du set Neige');
 assert.ok(RPG_DECK_NEIGE_BASE.includes('jarl-au-marteau-de-guerre'),
   'le Serment des Neuf Hivers aligne le Jarl');
+// La Furie est nordique : des vikings, et le Maître du marteau — un héros du
+// Nord, qui la porte sans la ligne de type « viking ». Depuis que la Furie ne
+// se déclenche qu'une fois, chaque face l'annonce « La première fois ».
 for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.furie)) {
-  assert.match(carte.typeLine, /viking/i, `${carte.id} est un viking`);
-  assert.match(carte.text, new RegExp(`Furie ${carte.furie} — Chaque fois qu’il est blessé et survit`),
+  assert.ok(/viking/i.test(carte.typeLine) || carte.kind === 'hero',
+    `${carte.id} est un viking ou un héros du Nord`);
+  assert.match(carte.text, new RegExp(`Furie ${carte.furie} — La première fois qu’il est blessé et survit`),
     `${carte.id} annonce sa Furie sur sa face`);
 }
 for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {

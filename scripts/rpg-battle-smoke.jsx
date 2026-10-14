@@ -7,7 +7,7 @@ import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardHasShinyFrame } from '../src/games/rpgCards.js';
 import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 import { RPG_PV_JOUEUR, rpgSorcierPv } from '../src/games/rpgDuel.js';
-import { passerMulligan } from './rpg-duel-start.js';
+import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -47,9 +47,10 @@ export async function checkRpgBattle(assert) {
   const findButton = (label) => buttons().find((button) => button.textContent.includes(label));
   const cliquer = async (element) => { await act(async () => { element.click(); }); };
   const lancerDepuisMenu = async (target) => {
-    const button = target.querySelector('.rpg-mode-menu__play .rpg-menu-button--primary');
-    assert.ok(button, 'le menu Jouer propose de lancer le duel');
-    await act(async () => { button.click(); });
+    // Une partie rapide part de l'onglet Deck (« Jouer avec ce deck ») : le
+    // bouton principal de l'écran Jouer ouvre le mode Histoire.
+    const button = await lancerDuelDepuisMenu(target, cliquer);
+    assert.ok(button, 'l’onglet Deck propose de jouer avec le deck ouvert');
     // Le volet de mulligan ouvre la partie : les scénarios jouent la main
     // qu'on vient de garder, ils valident donc cette première étape.
     await passerMulligan(target, cliquer);
