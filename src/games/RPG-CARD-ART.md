@@ -360,3 +360,51 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
   la meute sur la banquise, duel de deux camps.
 - **Embuscade** (`embuscade.jpg`) — le cercle de loups qui se referme sur
   l’isolé, les défenses dehors.
+
+## Dérogation : les cinq héros du récit en nihonga algérien (octobre 2026)
+
+Les cinq héros du récit — **Salem** (`salem.jpg`), **Yamina** (`yamina.jpg`),
+**Fériel** (`feriel.jpg`), **Tarek** (`tarek.jpg`) et **Boualem**
+(`boualem.jpg`) — dérogent **volontairement** à la direction « huile sur
+toile » ci-dessus : ils sont repeints en **peinture japonaise nihonga**
+(pigments minéraux *iwa-enogu* mats, blanc de coquille *gofun*, sous-drawing
+à l'encre *sumi*, fibre de papier *kozo washi*, nuages d'or plats *suyari
+kasumi* sur fond de feuille d'or *kinpaku*), direction demandée explicitement
+pour ces cinq cartes. Le reste de la collection reste en huile, à l'exception
+des dérogations déjà documentées (Soleil rouge en kaiga, armes en
+photoréaliste, gel en fresque).
+
+### Ce qui change, et ce qui ne change pas
+
+- **Ce qui ne change pas** : l'identité de chaque héros. Âge, visage, teint,
+  coiffure, barbe, silhouette, tenue de métier et accessoires restent ceux de
+  la peinture précédente, reprise comme référence ; la pose et le cadrage
+  aussi. Un personnage garde **un seul fichier**, réutilisé par la carte, le
+  dialogue, le journal et la plaque adverse du duel (voir
+  `docs/rpg/11-bible-visuelle.md`).
+- **Ce qui change** : la facture (nihonga sur or) et la palette, désormais
+  algérienne et plus riche — indigo touareg profond, safran, rouge-orangé de
+  henné, vert émeraude et vert-de-gris, turquoise, terre cuite, ocre chaud et
+  or abondant. Motifs amazighs (losanges, chevrons, zigzags) brodés sur les
+  étoffes, bijoux kabyles argent et corail, sablier en filigrane dans le décor.
+
+### Règles de tir (vérifiées carte par carte)
+
+- plein art **4:5, 1024×1280**, peinture jusqu'aux bords ;
+- **tête dans le tiers supérieur** : le portrait de dialogue (3:4), le
+  journal (4:5) et la face de carte (4:5) lisent le visage sans recadrage ;
+- **aucun texte, aucun idéogramme** (ni kanji, ni kana, ni chiffre, ni logo,
+  ni cadre) : l'interface superpose seule nom, coût, statistiques et élément ;
+- pas d'anime ni de cartoon : visages adultes, dignes, naturalistes ;
+- la couleur de l'élément influence la lumière (sable ocré pour Salem et
+  Tarek, bleu de verre et d'eau pour Yamina et Boualem, braise orangée pour
+  Fériel) sans jamais devenir un badge dessiné.
+
+### Versions de cache
+
+Les cinq images sont datées ensemble par la révision
+`heros-nihonga-algerien-v1` dans `CARD_ART_CACHE_VERSIONS`
+(`RpgDuelPage.jsx`) : mêmes noms de fichiers, donc aucun cache ne peut
+resservir les huiles précédentes. Le garde-fou `PLEIN_ART_45` de
+`tests/rpg-duel.test.js` vérifie désormais leur ratio 4:5 comme le reste de la
+collection.

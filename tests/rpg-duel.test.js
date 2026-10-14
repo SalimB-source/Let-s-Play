@@ -105,6 +105,9 @@ const PLEIN_ART_45 = [
   // La refonte du Père des corbeaux (Odin photoréaliste) est livrée elle
   // aussi au ratio exact de la face.
   'pere-des-corbeaux',
+  // Les cinq héros du récit, repeints en nihonga sur feuille d’or : livrés
+  // eux aussi au ratio exact de la face, désormais contrôlé comme le reste.
+  'salem', 'yamina', 'feriel', 'tarek', 'boualem',
 ];
 
 const VARIANTES_TERRAIN = [

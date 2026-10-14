@@ -182,13 +182,18 @@ const CARD_ART_CACHE_VERSIONS = {
   'pere-des-corbeaux': 'odin-photoreal-v1',
   'djinn-du-souk': 'munch-impressionniste-v3',
   'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
-  feriel: 'lance-de-feu-photoreal-v1',
   'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
   'anqa-des-braises': 'anqa-des-braises-huile-v1',
-  salem: 'full-art-huile-realiste-v2',
-  yamina: 'full-art-huile-realiste-v2',
-  tarek: 'full-art-huile-realiste-v2',
-  boualem: 'full-art-citerne-protectrice-v1',
+  // Les cinq héros du récit ont été **repeints en nihonga** (pigments
+  // minéraux sur feuille d’or) avec une palette algérienne — indigo touareg,
+  // safran, henné, vert émeraude, turquoise et or. Mêmes noms de fichiers,
+  // mêmes visages et mêmes accessoires : on date donc les cinq images d’un
+  // seul geste pour qu’aucun cache ne resserve les huiles précédentes.
+  feriel: 'heros-nihonga-algerien-v1',
+  salem: 'heros-nihonga-algerien-v1',
+  yamina: 'heros-nihonga-algerien-v1',
+  tarek: 'heros-nihonga-algerien-v1',
+  boualem: 'heros-nihonga-algerien-v1',
   'djinn-de-foudre': 'plein-art-foudre-v1',
   'sonneur-fele': 'plein-art-cloche-v1',
   'brisure-de-verre': 'plein-art-verre-v2',
