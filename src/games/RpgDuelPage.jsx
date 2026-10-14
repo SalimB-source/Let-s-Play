@@ -700,6 +700,9 @@ function targetMode(carte) {
   // Renvoi en main : le joueur choisit la créature qui repart dans une main.
   if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
   if (['bouclier', 'arme'].includes(carte?.effet?.type) && carte.effet.cible === 'creature-amie') return 'allie';
+  // Le Défi du Jarl se joue en deux désignations : le champion allié d'abord
+  // (l'étape adverse est dérivée dans `modeCible`, une fois le champion choisi).
+  if (carte?.effet?.type === 'combat' && carte.effet?.sourceCible === 'creature-amie') return 'allie';
   return null;
 }
 
@@ -2942,6 +2945,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [bloqueurGlisse, setBloqueurGlisse] = useState(null);
   const [bloqueurSelectionne, setBloqueurSelectionne] = useState(null);
   const [cibleEnCours, setCibleEnCours] = useState(null);
+  // Le Défi du Jarl : après avoir désigné votre champion, il reste la créature
+  // adverse à choisir — ce champ garde le champion entre les deux clics.
+  const [cibleAllieeMagie, setCibleAllieeMagie] = useState(null);
   const [activationEnCours, setActivationEnCours] = useState(null);
 
   // La foudre activée se désigne avec Échap, comme les autres ciblages.
@@ -3797,7 +3803,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             : duel.phase ?? 'principale';
   const prets = duel.joueur.creatures.filter((e) => e.ready && !e.attaquee);
   const carteCiblee = cibleEnCours ? cardById(cibleEnCours) : null;
-  const modeCible = targetMode(carteCiblee);
+  const modeCible = (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
+    ? (cibleAllieeMagie ? 'ennemi' : 'allie')
+    : targetMode(carteCiblee);
   const ciblesCoupRapideLegales = (attaquant, cote = 'joueur') => {
     const carte = cardById(attaquant?.carteId);
     if (!attaquant?.coupRapide) return [];
@@ -4180,7 +4188,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setTerrainManaChoix({ terrainId: terrain.id, nom: cardById(terrain.carteId)?.name ?? 'Terrain', couleurs, left, top });
   };
 
-  const decrireCibleMagie = (carte, cibleId) => {
+  const decrireCibleMagie = (carte, cibleId, cibleAllieeId = null) => {
+    // Le Défi du Jarl : les deux champions du duel.
+    if (carte?.effet?.type === 'combat' && carte.effet?.sourceCible === 'creature-amie') {
+      const champion = duel.joueur.creatures.find((entite) => entite.id === cibleAllieeId);
+      const adverse = duel.sorcier.creatures.find((entite) => entite.id === cibleId);
+      return {
+        nom: `${champion?.name ?? 'Votre champion'} se bat avec ${adverse?.name ?? 'la créature adverse'}`,
+        illustrationId: champion?.carteId,
+        targetPlate: 'sorcier',
+        targetIds: [cibleAllieeId, cibleId].filter(Boolean),
+      };
+    }
     if (cibleId === 'sorcier' || carte.effet?.cible === 'sorcier') {
       return { nom: nomSorcierAdverse, illustrationUrl: portraitSorcierAdverse, targetPlate: 'sorcier', targetIds: [] };
     }
@@ -4249,13 +4268,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, { contre: true });
   };
 
-  const lancerMagie = (carteId, cibleId = null) => {
+  const lancerMagie = (carteId, cibleId = null, cibleAllieeId = null) => {
     const carte = cardById(carteId);
     const cibleEffective = cibleId ?? rpgCibleAuto(duel, 'joueur', carte);
-    const cibleDecrite = decrireCibleMagie(carte, cibleEffective);
+    const cibleDecrite = decrireCibleMagie(carte, cibleEffective, cibleAllieeId ?? cibleAllieeMagie);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective);
+    setCibleAllieeMagie(null);
+    const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective, cibleAllieeId ?? null);
     // Le sort a-t-il été lancé ? Le Souk n'est prévenu qu'après `force()`.
     let lancee = false;
     if (res.ok && res.contre && res.parIA) {
@@ -4445,9 +4465,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (carte.kind === 'magie') {
       const cible = targetMode(carte);
       if (cible) {
+        setCibleAllieeMagie(null);
+        const duelDejarl = carte.effet?.type === 'combat' && carte.effet?.sourceCible === 'creature-amie';
         const aUneCible = cible === 'ennemi'
           ? duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))) || carte.cibles?.includes('sorcier')
-          : duel.joueur.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+          : duel.joueur.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))
+            // Le Défi du Jarl exige les deux champions : sans adversaire en
+            // face, le duel ne commence même pas.
+            && (!duelDejarl || duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))));
         if (aUneCible) setCibleEnCours(carteId);
         force();
         return;
@@ -4587,6 +4612,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       carteCibleeHandIndexRef.current = null;
       setCibleEnCours(null);
       equiperArme(carteId, entite.id);
+      return true;
+    }
+    // Le Défi du Jarl : deux désignations — votre champion, puis la créature
+    // adverse qui devra lui tenir tête.
+    if (carteSource?.effet?.type === 'combat' && carteSource?.effet?.sourceCible === 'creature-amie') {
+      if (cote === 'joueur') {
+        setCibleAllieeMagie(entite.id);
+        jouerSfx('select');
+        force();
+        return true;
+      }
+      const carteId = cibleEnCours;
+      const championId = cibleAllieeMagie;
+      setCibleEnCours(null);
+      setCibleAllieeMagie(null);
+      lancerMagie(carteId, entite.id, championId);
       return true;
     }
     lancerMagie(cibleEnCours, entite.id);

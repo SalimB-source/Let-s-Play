@@ -142,9 +142,13 @@ export const RPG_RECETTES_DECKS = {
   /**
    * Mono-Neige. Le Serment garde l'âme du set — le loup, le guerrier au
    * bouclier rond, le Jarl et sa Furie (la seule Furie du jeu, montrée au
-   * duel), le Mur de boucliers, le Hurlement et la Brume — et empile ses
-   * meilleures cartes : les quatre figures du Nord, les deux valkyries et le
-   * Berserk à leur maximum.
+   * duel), le Mur de boucliers, le Hurlement et la Brume — et aligne le lot
+   * du gel : la Poigne de givre et le Grand Voile blanc tiennent les sept
+   * places de sorts en signature. Le reste du lot (l'Appât de la meute, le
+   * Verglas, le Défi du Jarl, l'Embuscade) vit dans le pool Neige : il
+   * s'ajoute au deck depuis l'atelier. Les quatre figures du Nord, les deux
+   * valkyries et le Berserk, eux, remplissent les places de créatures à leur
+   * maximum.
    */
   'serment-des-neuf-hivers': {
     identite: ['neige'],
@@ -159,6 +163,8 @@ export const RPG_RECETTES_DECKS = {
       ['mur-de-boucliers', 2],
       ['hurlement-du-blizzard', 1],
       ['brume-du-fjord', 1],
+      ['poigne-de-givre', 2],
+      ['grand-voile-blanc', 1],
     ],
   },
 };

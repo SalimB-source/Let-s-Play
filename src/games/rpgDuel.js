@@ -615,6 +615,15 @@ function creerEntiteCreature(carte) {
     attaquee: false,
     resonance: 0,
     honneur: Math.max(0, Number(carte.honneur) || 0),
+    // Gel (la Poigne de givre, le Verglas) : tours du contrôleur qui restent
+    // à couvrir — la créature ni n'attaque ni ne bloque tant que c'est > 0.
+    gelToursRestants: 0,
+    // Blocage forcé (l'Appât de la meute, l'Embuscade) : la créature marquée
+    // doit bloquer si elle le peut. `par` : le camp du lanceur (seule SA
+    // prochaine attaque la concerne) ; `portee` : 'attaque' (le marqueur vit
+    // jusqu'à la prochaine attaque du lanceur) ou 'tour' (il meurt avec le
+    // tour en cours).
+    blocageForce: null,
     // L'arme attachée (`{ carteId }`), ou null : une seule par créature.
     // Bonus et mot-clé sont déjà fondus dans les champs ci-dessus (atk, def,
     // pv, esquive, envol…) ; la fiche se relit par `armeById` quand il faut
@@ -802,6 +811,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   for (const coup of coups) {
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
+    // Le Grand Voile blanc : les dégâts de combat s’égarent dans le blanc —
+    // les dégâts de capacité et de magie, eux, traversent le voile.
+    if (duel.brouillardCombat && coup.sourceType === 'attaque') continue;
     if (entite.bouclierLumiere && (coup.sourceType === 'attaque' || coup.sourceType === 'magie')) {
       entite.bouclierLumiere = false;
       continue;
@@ -1030,6 +1042,20 @@ function annulerInfiltrations(duel) {
   }
 }
 
+/**
+ * Gèle une créature (la Poigne de givre, le Verglas) : ni attaque ni blocage
+ * jusqu'à la fin du **prochain tour de son contrôleur** — si le gel tombe
+ * pendant le tour du contrôleur, il couvre donc le tour en cours et le
+ * suivant ; sinon, le prochain tour du contrôleur. `gelToursRestants` compte
+ * les tours du contrôleur qui restent à couvrir, décomptés à `rpgFinDeTour`.
+ */
+function gelerEntite(duel, entite) {
+  const proprietaire = duel.joueur.creatures.some((candidate) => candidate.id === entite.id)
+    ? 'joueur' : 'sorcier';
+  entite.gelToursRestants = duel.tour === proprietaire ? 2 : 1;
+  duel.log.push(`${entite.name} est gelée : ni attaque ni blocage jusqu’à la fin de son prochain tour.`);
+}
+
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut une
  *  entité du buff (le Colosse ne se buffe pas lui-même). */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
@@ -1196,18 +1222,52 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // le tour qui le voit naître, pour être effacé à `rpgFinDeTour` de CE
       // tour-là (voir `annulerBonusTemporaires`). Le Rempart de dunes tient donc
       // pour l’échange en cours, pas au-delà.
+      //
+      // `cible: 'creatures-adverses'` (l’Embuscade) inverse le camp visé : le
+      // maléfice frappe la table adverse, et `minimum` (plancher 1 pour
+      // l’Embuscade) empêche les statistiques de descendre sous ce seuil — une
+      // créature amputée survit, jamais tuée par le débuff seul. `blocageForce`
+      // marque aussi les créatures touchées : elles devront bloquer.
       const temporaire = Number(effet.tours) > 0;
-      const carnet = (duel[cote].bonusTemporaires ??= []);
-      for (const entite of duel[cote].creatures) {
+      const contreAdversaire = effet.cible === 'creatures-adverses';
+      const campCible = contreAdversaire ? duel[adv] : duel[cote];
+      const carnet = (campCible.bonusTemporaires ??= []);
+      const plancher = Number.isFinite(effet.minimum) ? effet.minimum : 0;
+      let forces = 0;
+      for (const entite of campCible.creatures) {
         if (sauf === entite.id || rpgEstProtegee(entite, sourceElement)) continue;
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
-        entite.atk += bonusAttaque;
-        entite.pvMax = (entite.pvMax ?? entite.def) + bonusDefense;
-        entite.def += bonusDefense;
-        entite.pv += bonusDefense;
+        entite.atk = Math.max(plancher, entite.atk + bonusAttaque);
+        entite.pvMax = Math.max(plancher, (entite.pvMax ?? entite.def) + bonusDefense);
+        entite.def = Math.max(plancher, entite.def + bonusDefense);
+        entite.pv = Math.max(plancher, entite.pv + bonusDefense);
         if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tour: duel.tour });
+        if (effet.blocageForce) {
+          entite.blocageForce = { par: cote, portee: effet.blocageForce === 'tour' ? 'tour' : 'attaque' };
+          forces += 1;
+        }
       }
+      if (forces) {
+        duel.log.push(`${forces} créature${forces > 1 ? 's adverses doivent' : ' adverse doit'} bloquer si ${forces > 1 ? 'elles le peuvent' : 'elle le peut'} ${effet.blocageForce === 'tour' ? 'ce tour' : 'lors de votre prochaine attaque'}.`);
+      }
+      return;
+    }
+    case 'brouillard': {
+      // Le Grand Voile blanc : aucun dégât de combat ce tour, des deux côtés.
+      // Le voile meurt avec le tour en cours (voir `rpgFinDeTour`).
+      duel.brouillardCombat = true;
+      duel.log.push('Un grand voile blanc couvre le champ : aucun dégât de combat ce tour.');
+      return;
+    }
+    case 'blocage-force': {
+      // L’Appât de la meute : la créature adverse ciblée doit bloquer si elle
+      // le peut lors de la prochaine attaque du lanceur (le marqueur est
+      // dépensé par cette attaque, voir `rpgLancerAttaque`).
+      const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
+      if (!entite || rpgEstProtegee(entite, sourceElement)) return;
+      entite.blocageForce = { par: cote, portee: effet.portee === 'tour' ? 'tour' : 'attaque' };
+      duel.log.push(`${entite.name} devra bloquer si elle le peut lors de votre prochaine attaque.`);
       return;
     }
     case 'infiltration': {
@@ -1281,6 +1341,13 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         : duel[adv].creatures.filter((entite) => entite.id === cibleId);
       for (const cible of cibles) {
         rpgBlesserCreature(duel, adv, cible.id, effet.amount ?? 0, sourceElement, null, sourceType);
+        // Le gel (`gel`) accompagne les dégâts — la Poigne de givre, le
+        // Verglas. La créature tuée n'a rien à figer ; la survivante ne
+        // rejoindra ni l'attaque ni le blocage avant la fin de son prochain tour.
+        if (effet.gel) {
+          const survivante = duel[adv].creatures.find((entite) => entite.id === cible.id);
+          if (survivante) gelerEntite(duel, survivante);
+        }
       }
       differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId);
       return;
@@ -1556,10 +1623,13 @@ export function rpgActiverArme(duel, cote, entiteId) {
   return { ok: true, entite };
 }
 
-const pret = (entite) => entite && entite.ready && !entite.attaquee;
+// Gelé (Poigne de givre, Verglas) : la créature ni n'attaque ni ne bloque.
+const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
+const pret = (entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite);
 // Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
-const peutBloquer = (entite) => entite && !entite.attaquee;
+// Le gel, lui, ferme aussi la défense.
+const peutBloquer = (entite) => entite && !entite.attaquee && !estGelee(entite);
 
 /**
  * Qui peut bloquer qui :
@@ -1692,7 +1762,7 @@ function choisirContreIA(duel, carte) {
 }
 
 /** Lancer une magie : sorcellerie pendant son tour, magie rapide aussi en réponse. */
-export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
+export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeId = null) {
   const camp = duel[cote];
   const adv = autre(cote);
   const carte = magieById(carteId);
@@ -1730,6 +1800,22 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
+  if (carte.effet.type === 'combat' && carte.effet.sourceCible === 'creature-amie') {
+    // Le Défi du Jarl : deux désignations — votre champion, puis la créature
+    // adverse. Sans les deux, le duel n'a pas lieu et le mana reste entier.
+    const champion = camp.creatures.find((entite) => entite.id === cibleAllieeId);
+    const adverse = duel[adv].creatures.find((entite) => entite.id === cibleId);
+    if (!champion || !adverse) return { ok: false, raison: 'cible' };
+    if (rpgEstProtegee(champion, cardColors(carte)) || rpgEstProtegee(adverse, cardColors(carte))) {
+      return { ok: false, raison: 'protection' };
+    }
+  }
+  if (carte.effet.type === 'blocage-force') {
+    // L’Appât de la meute exige une créature adverse à marquer.
+    const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+    if (!cible) return { ok: false, raison: 'cible' };
+    if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
 
   if (cote === 'joueur' && !duel.annonce) {
     const contreIA = choisirContreIA(duel, carte);
@@ -1743,7 +1829,11 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     && cibleId === 'sorcier'
     ? { ...carte.effet, cible: 'sorcier' }
     : carte.effet;
-  appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'magie', carteId);
+  // Pour un duel (`combat`), `sauf` porte le champion allié — le cas `combat`
+  // d’`appliquer` lit sa source dans ce paramètre.
+  appliquer(duel, cote, effet, cibleId,
+    carte.effet.type === 'combat' ? (cibleAllieeId ?? null) : null,
+    cardColors(carte), 'magie', carteId);
   if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
   rpgActionsEtat(duel);
@@ -1828,6 +1918,20 @@ export function rpgLancerAttaque(
       attaquantId,
       Array.isArray(idsBloqueurs) ? idsBloqueurs : idsBloqueurs ? [idsBloqueurs] : [],
     ]));
+  // Blocage forcé (l’Appât de la meute, l’Embuscade) : chaque créature marquée
+  // par ce camp doit bloquer si elle le peut — le marqueur part à la prochaine
+  // attaque du lanceur (« si elle le peut » : sans blocage légal, elle est libre).
+  const forces = bloqueursDisponibles.filter((entite) => entite.blocageForce?.par === cote);
+  for (const force of forces) {
+    const dejaAssigne = Object.values(affectations).some((idsBloqueurs) => idsBloqueurs.includes(force.id));
+    if (dejaAssigne) continue;
+    const candidats = attaquants
+      .filter((attaque) => rpgPeutBloquerAttaquant(force, attaque)
+        && !rpgEstProtegee(attaque, cardColors(duelCardById(force.carteId))))
+      .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
+    if (!candidats.length) continue;
+    affectations[candidats[0].id] = [...(affectations[candidats[0].id] ?? []), force.id];
+  }
   const attaquantsDejaBloques = new Set((attaquantsBloques
     ?? Object.entries(affectations).filter(([, idsBloqueurs]) => idsBloqueurs.length).map(([id]) => id))
     .filter((id) => ids.includes(id)));
@@ -2030,6 +2134,8 @@ export function rpgLancerAttaque(
 
   for (const coup of coupsSorcier) {
     if (!duel[cote].creatures.some((entite) => entite.id === coup.attaquantId)) continue;
+    // Le Grand Voile blanc avale aussi les coups portés au sorcier.
+    if (duel.brouillardCombat) continue;
     resume.frappeSorcier += coup.amount;
     rpgInfligerSorcier(duel, adv, coup.amount);
   }
@@ -2048,6 +2154,16 @@ export function rpgLancerAttaque(
   duel.log.push(resume.paires.length || resume.coupsRapides.length
     ? `Combat : ${attaquants.length} attaquant(s), ${resume.paires.length} bloqué(s), ${resume.frappeSorcier} dégâts directs.`
     : `${attaquants.length} créature(s) frappent le sorcier (${resume.frappeSorcier}).`);
+  if (duel.brouillardCombat) {
+    duel.log.push('Le grand voile blanc absorbe les dégâts de combat.');
+  }
+  // L’attaque est passée : le blocage forcé « lors de votre prochaine attaque »
+  // (l’Appât de la meute) a été dépensé par celle-ci.
+  for (const entite of duel[adv].creatures) {
+    if (entite.blocageForce?.par === cote && entite.blocageForce?.portee === 'attaque') {
+      entite.blocageForce = null;
+    }
+  }
   // Le combat est derrière nous : le joueur actif entre en deuxième phase
   // principale (ses attaquants restent engagés jusqu'à son prochain tour).
   if (cote === duel.tour) duel.phase = 'principale2';
@@ -2079,8 +2195,13 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   // `rpgLancerAttaque` et a déjà reçu son déclenchement.
   appliquerBannieresAttaque(duel, cote, [attaquant]);
   attaquant.attaquee = true;
-  rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
-  duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
+  if (duel.brouillardCombat) {
+    // Le Grand Voile blanc : le coup s'égare, le sorcier ne prend rien.
+    duel.log.push(`${attaquant.name} frappe dans le grand voile blanc : le sorcier ne prend rien.`);
+  } else {
+    rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
+    duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
+  }
   rpgActionsEtat(duel);
   return { ok: true };
 }
@@ -2194,6 +2315,21 @@ export function rpgFinDeTour(duel) {
   }
   annulerBonusTemporaires(duel, duel.tour); // le bonus meurt avec le tour qui l’a vu jouer
   annulerInfiltrations(duel); // l’Infiltration aussi : redevenues bloquables
+  // Le gel (la Poigne de givre, le Verglas) compte les tours du contrôleur de
+  // la créature figée : la fin de chacun de SES tours en décoche un.
+  for (const entite of duel[duel.tour].creatures) {
+    if (!(entite.gelToursRestants > 0)) continue;
+    entite.gelToursRestants -= 1;
+    if (entite.gelToursRestants <= 0) duel.log.push(`${entite.name} n’est plus gelée.`);
+  }
+  // Le Grand Voile blanc et le blocage forcé « ce tour » (l’Embuscade)
+  // meurent avec le tour en cours.
+  duel.brouillardCombat = false;
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      if (entite.blocageForce?.portee === 'tour') entite.blocageForce = null;
+    }
+  }
   duel.tour = autre(duel.tour);
   duel.phase = 'debut';
   const camp = duel[duel.tour];
@@ -2234,7 +2370,7 @@ export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
   if (duel.annonce) return duel.annonce;
   const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
   if (!coup) return null;
-  duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: coup.cibleId ?? null };
+  duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: coup.cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null };
   duel.fenetreReponse = true;
   duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? armeById(coup.carteId)?.name ?? coup.carteId}.`);
   return duel.annonce;
@@ -2250,7 +2386,7 @@ export function rpgSorcierResoudreAnnonce(duel) {
     ? rpgJouerArme(duel, 'sorcier', annonce.carteId, annonce.cibleId)
     : duelCardById(annonce.carteId)
       ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
-      : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId);
+      : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId, annonce.cibleAllieeId ?? null);
   rpgActionsEtat(duel);
   return { ...res, carteId: annonce.carteId };
 }
