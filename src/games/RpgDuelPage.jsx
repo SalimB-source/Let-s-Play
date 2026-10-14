@@ -194,6 +194,9 @@ const CARD_ART_CACHE_VERSIONS = {
   yamina: 'heros-nihonga-algerien-v1',
   tarek: 'heros-nihonga-algerien-v1',
   boualem: 'heros-nihonga-algerien-v1',
+  // Le Serpent du monde reçoit la même passe, bien qu'il appartienne au set
+  // Neige : sa révision propre l'emporte sur celle du set.
+  'serpent-du-monde': 'heros-nihonga-algerien-v1',
   'djinn-de-foudre': 'plein-art-foudre-v1',
   'sonneur-fele': 'plein-art-cloche-v1',
   'brisure-de-verre': 'plein-art-verre-v2',

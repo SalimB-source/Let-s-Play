@@ -62,6 +62,10 @@ datés d'une seule révision de cache `heros-nihonga-algerien-v1` dans
 
 Les autres personnages du registre — Guetteur, Scribe, Puisatier des Cendres,
 Mahieddine et les figures des autres tours — gardent leur illustration d'origine.
+La passe a toutefois été étendue à la carte de héros **Le Serpent du monde**
+(`public/cards/serpent-du-monde.jpg`), figure du Nord et récompense de
+`fjord-4`, qui n'entre pas dans le casting du récit : même facture, même
+palette, même révision de cache.
 
 ### Repères des nouveaux personnages
 

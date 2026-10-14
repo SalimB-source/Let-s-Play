@@ -361,16 +361,18 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
 - **Embuscade** (`embuscade.jpg`) — le cercle de loups qui se referme sur
   l’isolé, les défenses dehors.
 
-## Dérogation : les cinq héros du récit en nihonga algérien (octobre 2026)
+## Dérogation : les héros en nihonga algérien (octobre 2026)
 
-Les cinq héros du récit — **Salem** (`salem.jpg`), **Yamina** (`yamina.jpg`),
-**Fériel** (`feriel.jpg`), **Tarek** (`tarek.jpg`) et **Boualem**
-(`boualem.jpg`) — dérogent **volontairement** à la direction « huile sur
-toile » ci-dessus : ils sont repeints en **peinture japonaise nihonga**
+Six héros — les cinq du récit, **Salem** (`salem.jpg`), **Yamina**
+(`yamina.jpg`), **Fériel** (`feriel.jpg`), **Tarek** (`tarek.jpg`) et
+**Boualem** (`boualem.jpg`), plus le **Serpent du monde**
+(`serpent-du-monde.jpg`, figure du Nord) — dérogent **volontairement** à la
+direction « huile sur toile » ci-dessus : ils sont repeints en **peinture
+japonaise nihonga**
 (pigments minéraux *iwa-enogu* mats, blanc de coquille *gofun*, sous-drawing
 à l'encre *sumi*, fibre de papier *kozo washi*, nuages d'or plats *suyari
 kasumi* sur fond de feuille d'or *kinpaku*), direction demandée explicitement
-pour ces cinq cartes. Le reste de la collection reste en huile, à l'exception
+pour ces six cartes. Le reste de la collection reste en huile, à l'exception
 des dérogations déjà documentées (Soleil rouge en kaiga, armes en
 photoréaliste, gel en fresque).
 
@@ -381,7 +383,9 @@ photoréaliste, gel en fresque).
   la peinture précédente, reprise comme référence ; la pose et le cadrage
   aussi. Un personnage garde **un seul fichier**, réutilisé par la carte, le
   dialogue, le journal et la plaque adverse du duel (voir
-  `docs/rpg/11-bible-visuelle.md`).
+  `docs/rpg/11-bible-visuelle.md`). Pour le Serpent du monde, c'est la bête
+  elle-même qui est conservée : le même corps en anneau qui se mord la queue
+  autour des eaux froides, à la même échelle et dans le même cadrage.
 - **Ce qui change** : la facture (nihonga sur or) et la palette, désormais
   algérienne et plus riche — indigo touareg profond, safran, rouge-orangé de
   henné, vert émeraude et vert-de-gris, turquoise, terre cuite, ocre chaud et
@@ -398,13 +402,21 @@ photoréaliste, gel en fresque).
 - pas d'anime ni de cartoon : visages adultes, dignes, naturalistes ;
 - la couleur de l'élément influence la lumière (sable ocré pour Salem et
   Tarek, bleu de verre et d'eau pour Yamina et Boualem, braise orangée pour
-  Fériel) sans jamais devenir un badge dessiné.
+  Fériel) sans jamais devenir un badge dessiné ;
+- le **Serpent du monde** garde son élément Neige lisible : les eaux et la
+  glace restent bleu indigo, turquoise et vert émeraude — des teintes que la
+  palette algérienne porte déjà —, réchauffées par la feuille d'or du ciel et
+  par quelques reflets safran et terre cuite sur les écailles et dans l'œil.
+  Les motifs amazighs se glissent dans le dessin de l'eau et des écailles,
+  comme une broderie, et non en encadrement : la peinture reste plein cadre.
 
 ### Versions de cache
 
-Les cinq images sont datées ensemble par la révision
+Les six images sont datées ensemble par la révision
 `heros-nihonga-algerien-v1` dans `CARD_ART_CACHE_VERSIONS`
 (`RpgDuelPage.jsx`) : mêmes noms de fichiers, donc aucun cache ne peut
-resservir les huiles précédentes. Le garde-fou `PLEIN_ART_45` de
+resservir les huiles précédentes. Pour le Serpent du monde, cette révision
+propre l'emporte sur `SET_NEIGE_ART_VERSION` — la passe est datée une seule
+fois pour toutes ses cartes. Le garde-fou `PLEIN_ART_45` de
 `tests/rpg-duel.test.js` vérifie désormais leur ratio 4:5 comme le reste de la
 collection.
