@@ -295,3 +295,31 @@ test('l’étage d’introduction d’une carte se retrouve, la dotation n’en 
   assert.equal(tourIntroduction(dotation), null);
   assert.equal(cardById(dotation) !== null, true);
 });
+
+// ── Le journal des ouvertures (lot 5) ───────────────────────────────────────
+
+test('chaque paquet acheté laisse une trace au journal, doublons compris', () => {
+  const p = progression('listes-1');
+  const rng = rngSeme(20260301);
+  const avant = journalier(10000);
+  const apres = ouvrirBooster({ portefeuille: avant, rayonId: 'braise', progression: p, rng });
+  assert.equal(apres.ok, true);
+  assert.equal(apres.portefeuille.journal.length, 1, 'un paquet, une entrée');
+  const entree = apres.portefeuille.journal[0];
+  assert.equal(entree.rayonId, 'braise');
+  assert.equal(entree.cartes.length, TAUX.cartes, 'les cinq cartes y sont');
+  assert.equal(entree.coffret, false);
+  assert.equal(entree.coffret === undefined, false, 'le champ existe toujours');
+  assert.equal(entree.remboursement, apres.tirage.remboursement, 'et le remboursement du paquet');
+  assert.ok(entree.cartes.every((id) => cardById(id)), 'des cartes du catalogue');
+
+  const coffret = ouvrirCoffret({ portefeuille: journalier(10000), rayonId: 'braise', progression: p, rng: rngSeme(20260401) });
+  assert.equal(coffret.ok, true);
+  assert.equal(coffret.portefeuille.journal.length, COFFRET.taille, 'dix paquets, dix entrées');
+  assert.ok(coffret.portefeuille.journal.every((ligne) => ligne.coffret), 'marquées comme venues d’un coffret');
+  assert.equal(coffret.portefeuille.journal[0].rayonId, 'braise');
+
+  const refuse = ouvrirBooster({ portefeuille: portefeuilleVide(), rayonId: 'braise', progression: p, rng });
+  assert.equal(refuse.ok, false);
+  assert.deepEqual(refuse.portefeuille.journal, [], 'un achat refusé n’écrit rien au journal');
+});

@@ -5120,9 +5120,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu__switch { width: 100%; gap: 4px; padding: 4px; }
   .rpg-mode-menu__switch button { flex: 1 1 0; min-width: 0; padding: 9px 2px; font-size: 10px; letter-spacing: .06em; }
   .rpg-mode-menu__switch button span { display: block; margin: 0 0 5px; }
+  /* Six onglets sur 320 px : celui du Souk garde son signe et son chiffre
+     (« ◈ 245 ») et lâche le mot — l'aria-label, lui, dit tout. */
   .rpg-mode-menu__switch button.rpg-mode-menu__souk { gap: 3px; }
-  .rpg-mode-menu__switch button.rpg-mode-menu__souk > span[aria-hidden="true"] { display: none; }
-  .rpg-mode-menu__switch button.rpg-mode-menu__souk .rpg-mode-menu__bourse-solde { font-size: 10px; }
+  .rpg-mode-menu__switch button.rpg-mode-menu__souk .rpg-mode-menu__onglet-libelle { display: none; }
+  .rpg-mode-menu__switch button.rpg-mode-menu__souk .rpg-mode-menu__bourse-solde { display: inline; font-size: 10px; }
   .rpg-mode-menu__bourse-pastille { position: absolute; top: 2px; right: 2px; min-width: 14px; padding: 1px 4px; font-size: 8px; }
   .rpg-mode-menu__brand p { font-size: 11px; }
   .rpg-mode-menu__hero { min-height: 360px; }

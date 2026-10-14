@@ -35,7 +35,7 @@
 
 import { cardById, cardColors } from './rpgCards.js';
 import { crediterCredits, creditsDeVictoire } from './rpgCredits.js';
-import { cachetDisponible, progresserQuete, quetesAReclamer } from './rpgQuetes.js';
+import { cachetDeLaSemaineDisponible, cachetDisponible, progresserQuete, quetesAReclamer } from './rpgQuetes.js';
 
 /** Les types d'événements du contrat — la liste que les tests tiennent à jour. */
 export const EVENEMENTS_DUEL = Object.freeze([
@@ -127,5 +127,7 @@ export function appliquerEvenementDuel({ bourse = null, quetes = null } = {}, ev
  * faire, pas de pastille. C'est le seul chiffre que la pastille affiche.
  */
 export function compterReclamations(quetes) {
-  return quetesAReclamer(quetes).length + (cachetDisponible(quetes) ? 1 : 0);
+  return quetesAReclamer(quetes).length
+    + (cachetDisponible(quetes) ? 1 : 0)
+    + (cachetDeLaSemaineDisponible(quetes) ? 1 : 0);
 }

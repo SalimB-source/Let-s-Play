@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BAREME_DOUBLON,
   GAINS,
+  JOURNAL_MAX,
   RPG_BOURSE_STORAGE_KEY,
   ajouterCartesAuPortefeuille,
   chargerPortefeuille,
@@ -12,7 +13,9 @@ import {
   depenserCredits,
   enregistrerOuverture,
   fusionnerPortefeuilles,
+  normaliserJournal,
   normaliserPortefeuille,
+  noterOuvertureJournal,
   paquetsAvantMythique,
   portefeuilleVide,
   sauverPortefeuille,
@@ -173,4 +176,67 @@ test('le portefeuille se sauvegarde et se relit, et se tait quand le stockage ma
   });
   assert.equal(sauverPortefeuille(portefeuille(10)), false, 'hors stockage, l’écriture échoue en silence');
   assert.equal(chargerPortefeuille().credits, 0);
+});
+
+// ── Le journal des ouvertures (lot 5) ───────────────────────────────────────
+
+test('le journal garde la plus récente en tête et refuse ce qu’il ne connaît pas', () => {
+  let p = portefeuilleVide();
+  p = noterOuvertureJournal(p, { rayonId: 'braise', cartes: ['tarek', 'yamina'], horloge: '2026-03-01T10:00:00.000Z' });
+  p = noterOuvertureJournal(p, { rayonId: 'souk', cartes: ['kraken'], mythique: true, remboursement: 45, horloge: '2026-03-02T10:00:00.000Z' });
+  assert.equal(p.journal.length, 2);
+  assert.equal(p.journal[0].rayonId, 'souk', 'la dernière ouverture est en tête');
+  assert.equal(p.journal[0].mythique, true);
+  assert.equal(p.journal[0].remboursement, 45);
+  assert.deepEqual(p.journal[1].cartes, ['tarek', 'yamina']);
+
+  assert.equal(noterOuvertureJournal(p, { rayonId: 'rayon-fantome', cartes: ['tarek'] }).journal.length, 2,
+    'un rayon inconnu n’entre pas au journal');
+  assert.equal(noterOuvertureJournal(p, { rayonId: 'braise', cartes: ['carte-fantome'] }).journal.length, 2,
+    'une carte inconnue non plus');
+  assert.equal(noterOuvertureJournal(p, { rayonId: 'braise', cartes: [] }).journal.length, 2,
+    'et une ouverture vide ne compte pas');
+});
+
+test('le journal est borné, se normalise et se fusionne sans doublon', () => {
+  let p = portefeuilleVide();
+  for (let index = 0; index < JOURNAL_MAX + 8; index += 1) {
+    p = noterOuvertureJournal(p, {
+      rayonId: 'braise',
+      cartes: ['tarek'],
+      horloge: new Date(Date.UTC(2026, 2, 1, 10, index)).toISOString(),
+    });
+  }
+  assert.equal(p.journal.length, JOURNAL_MAX, 'la mémoire est bornée');
+  assert.equal(p.journal[0].le, new Date(Date.UTC(2026, 2, 1, 10, JOURNAL_MAX + 7)).toISOString(),
+    'et c’est la plus récente qu’on garde');
+
+  assert.deepEqual(normaliserJournal('pas un tableau'), []);
+  assert.deepEqual(normaliserJournal([null, 12, {}, { le: 'hier', rayonId: 'braise' }]), [],
+    'une entrée sans date, sans rayon ou sans carte est jetée');
+
+  const ici = noterOuvertureJournal(portefeuilleVide(), {
+    rayonId: 'braise', cartes: ['tarek'], horloge: '2026-03-01T10:00:00.000Z',
+  });
+  const ailleurs = noterOuvertureJournal(portefeuilleVide(), {
+    rayonId: 'souk', cartes: ['kraken'], horloge: '2026-03-02T10:00:00.000Z',
+  });
+  const fusion = fusionnerPortefeuilles(ici, ailleurs).portefeuille;
+  assert.equal(fusion.journal.length, 2, 'les deux journaux se rejoignent');
+  assert.equal(fusion.journal[0].rayonId, 'souk', 'du plus récent au plus ancien');
+  assert.deepEqual(fusionnerPortefeuilles(ici, ici).portefeuille.journal.length, 1,
+    'un appareil qui a déjà tout n’écrit rien en double');
+});
+
+test('une ouverture avec cartes entre au journal, une ouverture sans cartes non', () => {
+  const sans = enregistrerOuverture(portefeuilleVide(), { mythique: false });
+  assert.equal(sans.ouvertures, 1, 'le compteur avance toujours');
+  assert.deepEqual(sans.journal, [], 'mais le journal ne devine rien');
+  const avec = enregistrerOuverture(portefeuilleVide(), {
+    mythique: true, rayonId: 'braise', cartes: ['tarek'], remboursement: 12, coffret: true,
+  });
+  assert.equal(avec.journal.length, 1);
+  assert.equal(avec.journal[0].coffret, true, 'un paquet de coffret se reconnaît');
+  assert.equal(avec.journal[0].mythique, true);
+  assert.equal(avec.pitie, 0, 'et la pitié repart, comme avant');
 });

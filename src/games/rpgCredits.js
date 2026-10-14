@@ -23,6 +23,7 @@
  */
 
 import { cardById, cardRarityInfo } from './rpgCards.js';
+import { rayonParId } from './rpgBoosters.js';
 import { normaliserCollection } from './rpgCollection.js';
 
 /** Le portefeuille de l'appareil : solde, cartes du Souk, compteurs d'ouverture. */
@@ -36,6 +37,13 @@ export const BAREME_DOUBLON = Object.freeze({
   mythique: 120,
 });
 
+/**
+ * Le journal des ouvertures : les dernières, la plus récente en tête. Vingt
+ * entrées suffisent à se rappeler ce qu'on a sorti — et tiennent en quelques
+ * kilo-octets dans le `jsonb` du compte, sans table ni migration.
+ */
+export const JOURNAL_MAX = 20;
+
 /** Les gains du jeu, une bonne fois pour toutes. */
 export const GAINS = Object.freeze({
   /** Premier déblayage d'un étage : la récompense du récit. */
@@ -46,11 +54,13 @@ export const GAINS = Object.freeze({
   duelLibre: 8,
   /** Le Cachet du cycle : les trois quêtes du jour terminées. */
   cachetDuCycle: 80,
+  /** Le Cachet de la semaine : sept jours d'affilée. Même montant, même geste. */
+  cachetDeLaSemaine: 80,
 });
 
 /** Le portefeuille d'un joueur neuf. */
 export function portefeuilleVide() {
-  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, majLe: null };
+  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], majLe: null };
 }
 
 /** Entier positif ou nul, quelle que soit l'entrée (chaîne, `NaN`, négatif). */
@@ -72,7 +82,66 @@ export function normaliserPortefeuille(value) {
     cartes: normaliserCollection(brut.cartes),
     ouvertures: entierPositif(brut.ouvertures),
     pitie: entierPositif(brut.pitie),
+    journal: normaliserJournal(brut.journal),
     majLe: typeof brut.majLe === 'string' ? brut.majLe : null,
+  };
+}
+
+/**
+ * Réduit le journal à ce qu'il peut porter : une date lisible, un rayon connu,
+ * des cartes du catalogue, et jamais plus de `JOURNAL_MAX` entrées. Une entrée
+ * illisible est jetée sans bruit — le journal n'est pas une source de vérité,
+ * seulement une mémoire.
+ */
+export function normaliserJournal(value) {
+  const brut = Array.isArray(value) ? value : [];
+  const propres = [];
+  for (const entree of brut) {
+    if (!entree || typeof entree !== 'object') continue;
+    if (typeof entree.le !== 'string') continue;
+    if (!rayonParId(entree.rayonId)) continue;
+    const cartes = normaliserCollection(entree.cartes);
+    if (!cartes.length) continue;
+    propres.push({
+      le: entree.le,
+      rayonId: entree.rayonId,
+      cartes,
+      mythique: Boolean(entree.mythique),
+      remboursement: entierPositif(entree.remboursement),
+      coffret: Boolean(entree.coffret),
+    });
+  }
+  // La même ouverture peut arriver des deux appareils (l'appareil pousse au
+  // compte, le compte redescend) : on la reconnaît à son horodatage, son rayon
+  // et ses cartes, et on ne la garde qu'une fois. Un coffret écrit dix entrées
+  // dans la même milliseconde : elles n'ont pas les mêmes cartes, donc elles
+  // restent toutes.
+  const vues = new Set();
+  const uniques = [];
+  for (const entree of propres) {
+    const cle = `${entree.le}|${entree.rayonId}|${entree.cartes.join(',')}`;
+    if (vues.has(cle)) continue;
+    vues.add(cle);
+    uniques.push(entree);
+  }
+  // La plus récente en tête : l'écran n'a pas à trier.
+  uniques.sort((a, b) => (a.le < b.le ? 1 : a.le > b.le ? -1 : 0));
+  return uniques.slice(0, JOURNAL_MAX);
+}
+
+/** Encore une ouverture au journal, la plus récente en tête, la mémoire bornée. */
+export function noterOuvertureJournal(portefeuille, { rayonId, cartes, mythique = false, remboursement = 0, coffret = false, horloge = null } = {}) {
+  const base = normaliserPortefeuille(portefeuille);
+  if (!rayonParId(rayonId)) return base;
+  const lot = normaliserCollection(cartes);
+  if (!lot.length) return base;
+  const le = typeof horloge === 'string' ? horloge : new Date().toISOString();
+  return {
+    ...base,
+    journal: normaliserJournal([
+      { le, rayonId, cartes: lot, mythique: Boolean(mythique), remboursement: entierPositif(remboursement), coffret: Boolean(coffret) },
+      ...base.journal,
+    ]),
   };
 }
 
@@ -141,14 +210,21 @@ export function ajouterCartesAuPortefeuille(portefeuille, cardIds) {
  * des huit paquets ne compte que là où une mythique est possible. Une mythique
  * sortie remet la pitié à zéro.
  */
-export function enregistrerOuverture(portefeuille, { mythique = false, aDesMythiques = true } = {}) {
+export function enregistrerOuverture(portefeuille, {
+  mythique = false, aDesMythiques = true, rayonId = null, cartes = null, remboursement = 0, coffret = false,
+} = {}) {
   const base = normaliserPortefeuille(portefeuille);
-  return {
+  const compte = {
     ...base,
     ouvertures: base.ouvertures + 1,
     pitie: mythique ? 0 : (aDesMythiques ? base.pitie + 1 : base.pitie),
     majLe: new Date().toISOString(),
   };
+  // Le journal ne suit que si l'appelant dit ce qui est sorti : les compteurs,
+  // eux, avancent toujours.
+  return rayonId && cartes
+    ? noterOuvertureJournal(compte, { rayonId, cartes, mythique, remboursement, coffret })
+    : compte;
 }
 
 /**
@@ -177,6 +253,9 @@ export function fusionnerPortefeuilles(local, distant) {
     cartes: normaliserCollection([...ici.cartes, ...la.cartes]),
     ouvertures: Math.max(ici.ouvertures, la.ouvertures),
     pitie: Math.max(ici.pitie, la.pitie),
+    // Les deux journaux, du plus récent au plus ancien : `normaliserJournal`
+    // trie et borne, donc deux appareils ne peuvent pas faire enfler la mémoire.
+    journal: normaliserJournal([...ici.journal, ...la.journal]),
     majLe: (ici.majLe ?? '') >= (la.majLe ?? '') ? ici.majLe : la.majLe,
   };
   const modifie = JSON.stringify(fusion) !== JSON.stringify(ici);

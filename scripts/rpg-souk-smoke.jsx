@@ -18,7 +18,9 @@ import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import { useSablierBourse } from '../src/games/useSablierBourse.js';
 import RpgSouk, { creditsLisible, dureeAvantMinuit } from '../src/games/RpgSouk.jsx';
-import { RPG_GRAINE_STORAGE_KEY, queteParId } from '../src/games/rpgQuetes.js';
+import {
+  RPG_GRAINE_STORAGE_KEY, RPG_QUETES_STORAGE_KEY, cleJour, jourPrecedent, queteParId,
+} from '../src/games/rpgQuetes.js';
 import { GAINS, RPG_BOURSE_STORAGE_KEY, portefeuilleVide } from '../src/games/rpgCredits.js';
 import { RPG_DUEL_CARDS, cardColors } from '../src/games/rpgCards.js';
 import { rngSeme } from '../src/games/rpgHasard.js';
@@ -130,6 +132,7 @@ export async function checkRpgSoukEcran(assert) {
   document.body.appendChild(conteneur);
   const root = createRoot(conteneur);
   let root3 = null;
+  let root4 = null;
   const sons = [];
   let bourse = null;
   const rendre = (racine) => racine.render(<Sonde surPret={(valeur) => { bourse = valeur; }} sons={sons} />);

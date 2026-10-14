@@ -24,8 +24,12 @@
 import { useEffect, useState } from 'react';
 import './rpg-souk.css';
 import { GAINS, paquetsAvantMythique } from './rpgCredits.js';
-import { cachetDisponible, queteParId, secondesAvantMinuit } from './rpgQuetes.js';
-import { COFFRET, TAUX, etatRayons, tourQuiGarde } from './rpgBoosters.js';
+import {
+  JOURS_DE_LA_SERIE, cachetDeLaSemaineDisponible, cachetDisponible,
+  joursAvantLeCachetDeLaSemaine, queteParId, secondesAvantMinuit,
+} from './rpgQuetes.js';
+import { COFFRET, TAUX, etatRayons, rayonParId, tourQuiGarde } from './rpgBoosters.js';
+import { cardById } from './rpgCards.js';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 
 /** Les paliers, tels que le joueur les lit (le module les nomme en interne). */
@@ -48,6 +52,16 @@ export function dureeAvantMinuit(secondes) {
   if (minutes < 60) return `${minutes} min`;
   const heures = Math.floor(minutes / 60);
   return `${heures} h ${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/** « 12 mars, 14 h 05 » — le journal se lit, il ne se déchiffre pas. */
+export function quandLisible(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const jour = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const heure = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  return `${jour}, ${heure} h ${minute}`;
 }
 
 /** La journée se lit en français, ou se taît si l'état n'a pas de jour. */
@@ -184,6 +198,7 @@ export default function RpgSouk({
   ouverture = null,
   onReclamerQuete,
   onReclamerCachet,
+  onReclamerSemaine,
   onOuvrirBooster,
   onOuvrirCoffret,
   onFermerOuverture,
@@ -200,6 +215,9 @@ export default function RpgSouk({
   // lecture pure — elle ne réserve rien et ne débite rien.
   const rayons = etatRayons(progression, collection);
   const ouverts = rayons.filter((etat) => etat.ouvert).length;
+  const semaine = cachetDeLaSemaineDisponible(quetes) ? 'disponible' : quetes?.semaine ? 'pris' : 'attente';
+  const journal = Array.isArray(portefeuille?.journal) ? portefeuille.journal : [];
+  const jouees = portefeuille?.ouvertures ?? 0;
   const sync = statutSync === 'synchronise'
     ? '☁ Synchronisé avec votre compte'
     : statutSync === 'attente'
@@ -296,6 +314,70 @@ export default function RpgSouk({
           </button>
         ) : (
           <span className="rpg-souk__pris">{cachet === 'pris' ? 'Cachet réclamé' : 'Cachet scellé'}</span>
+        )}
+      </section>
+
+      <section
+        className={`rpg-souk__semaine is-${semaine}`}
+        data-souk-semaine={semaine}
+        aria-labelledby="souk-semaine-titre"
+      >
+        <div className="rpg-souk__cachet-texte">
+          <span className="rpg-mode-menu__eyebrow">LE CACHET DE LA SEMAINE</span>
+          <h3 id="souk-semaine-titre">Sept jours d’affilée</h3>
+          <p>
+            {semaine === 'disponible'
+              ? `Votre série tient depuis ${JOURS_DE_LA_SERIE} jours : le Cachet est ouvert.`
+              : semaine === 'pris'
+                ? 'Cachet de la semaine encaissé. La série continue.'
+                : `Votre série : ${quetes?.serie ?? 0} jour${(quetes?.serie ?? 0) > 1 ? 's' : ''} — encore ${joursAvantLeCachetDeLaSemaine(quetes)} avant le Cachet.`}
+          </p>
+        </div>
+        {semaine === 'disponible' ? (
+          <button
+            type="button"
+            className="rpg-menu-button rpg-menu-button--primary"
+            data-souk-semaine-reclamer
+            onClick={() => { const gagne = onReclamerSemaine?.(); onPlaySfx?.(gagne ? 'victoire' : 'erreur'); }}
+          >
+            Réclamer le Cachet de la semaine · +{GAINS.cachetDeLaSemaine} ◈
+          </button>
+        ) : (
+          <span className="rpg-souk__pris">{semaine === 'pris' ? 'Cachet de la semaine réclamé' : `${quetes?.serie ?? 0} / ${JOURS_DE_LA_SERIE} jours`}</span>
+        )}
+      </section>
+
+      <section className="rpg-souk__section" aria-labelledby="souk-journal-titre">
+        <div className="rpg-souk__section-tete">
+          <h3 id="souk-journal-titre">Les dernières ouvertures</h3>
+          <p data-souk-journal={journal.length}>
+            {jouees > 0 ? `${jouees} paquet${jouees > 1 ? 's' : ''} depuis le début` : 'aucun paquet ouvert'}
+          </p>
+        </div>
+        {journal.length ? (
+          <ul className="rpg-souk__journal">
+            {journal.map((entree) => {
+              const rayon = rayonParId(entree.rayonId);
+              return (
+                <li key={`${entree.le}-${entree.rayonId}-${entree.cartes.join('-')}`} data-souk-journal-ligne={entree.rayonId} data-souk-journal-mythe={entree.mythique}>
+                  <span className="rpg-souk__journal-rayon">{rayon?.nom ?? entree.rayonId}</span>
+                  <span className="rpg-souk__journal-date">{quandLisible(entree.le)}</span>
+                  <span className="rpg-souk__journal-cartes">
+                    {entree.cartes.map((id) => cardById(id)?.name ?? id).join(' · ')}
+                  </span>
+                  <span className="rpg-souk__journal-notes">
+                    {entree.coffret ? 'coffret' : 'paquet'}
+                    {entree.mythique ? ' · mythique' : ''}
+                    {entree.remboursement ? ` · +${entree.remboursement} ◈` : ''}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="rpg-souk__vide" data-souk-journal-vide>
+            Rien encore : le premier paquet ouvert s’inscrira ici, cartes comprises.
+          </p>
         )}
       </section>
 

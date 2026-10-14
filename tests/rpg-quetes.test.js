@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  JOURS_DE_LA_SERIE,
   PALIERS,
   QUETES,
+  cachetDeLaSemaineDisponible,
   cachetDisponible,
   chargerGraine,
   cleJour,
@@ -17,9 +19,12 @@ import {
   quetesAReclamer,
   quetesDisponibles,
   quetesDuJour,
+  joursAvantLeCachetDeLaSemaine,
+  reclamerCachetDeLaSemaine,
   reclamerCachetDuCycle,
   reclamerQuete,
   secondesAvantMinuit,
+  serieComplete,
 } from '../src/games/rpgQuetes.js';
 import { GAINS } from '../src/games/rpgCredits.js';
 
@@ -244,4 +249,63 @@ test('la graine de l’appareil est créée une fois et se relit', () => {
     else delete globalThis.localStorage;
   }
   assert.equal(chargerGraine(), 'sans-compte', 'hors stockage, les quêtes restent jouables');
+});
+
+// ── Le Cachet de la semaine (lot 5) ─────────────────────────────────────────
+
+test('la série ne se complète qu’au septième jour, et jamais deux fois', () => {
+  let etat = etatQuetesVide();
+  const payees = [];
+  // Quinze jours d'affilée, jour après jour : c'est la seule façon honnête de
+  // vérifier une série — la forcer à la main ne prouverait que l'arithmétique.
+  for (let index = 1; index <= 15; index += 1) {
+    const jour = cleJour(new Date(2026, 2, index).getTime());
+    etat = ouvrirJournee({ etat, jour, graine: 'graine-de-serie' }).etat;
+    assert.equal(etat.serie, index, `jour ${index} : la série suit`);
+    if (!cachetDeLaSemaineDisponible(etat)) continue;
+    payees.push(index);
+    const paie = reclamerCachetDeLaSemaine({ etat });
+    assert.equal(paie.ok, true, `jour ${index} : sept jours d’affilée paient`);
+    assert.equal(paie.credits, GAINS.cachetDeLaSemaine);
+    etat = paie.etat;
+    assert.equal(reclamerCachetDeLaSemaine({ etat }).raison, 'deja-reclame', 'et une seule fois');
+  }
+  assert.deepEqual(payees, [7, 14], 'la semaine paie au septième et au quatorzième jour, pas entre');
+
+  const six = { ...etatQuetesVide(), jour: '2026-03-06', serie: 6 };
+  assert.equal(serieComplete(six), false, 'six jours, rien à réclamer');
+  assert.equal(cachetDeLaSemaineDisponible(six), false);
+  assert.equal(joursAvantLeCachetDeLaSemaine(six), 1, 'il en reste un à tenir');
+  assert.equal(joursAvantLeCachetDeLaSemaine({ ...six, serie: 7 }), JOURS_DE_LA_SERIE,
+    'le compte repart au jour suivant');
+});
+
+test('une série incomplète ne paie rien, même en trichant sur la série', () => {
+  const quatre = { ...etatQuetesVide(), jour: '2026-03-04', serie: 4 };
+  assert.equal(reclamerCachetDeLaSemaine({ etat: quatre }).ok, false);
+  assert.equal(reclamerCachetDeLaSemaine({ etat: quatre }).raison, 'serie-incomplete');
+  assert.equal(reclamerCachetDeLaSemaine({ etat: quatre, serie: 4 }).credits, 0,
+    'un état de quatre jours ne se réclame pas en annonçant sept');
+  // La série visée fait foi quand l'état est en retard : le garde de jour l'a
+  // comptée avant que l'état ne soit écrit.
+  const retard = reclamerCachetDeLaSemaine({ etat: quatre, serie: 7 });
+  assert.equal(retard.ok, true, 'un état écrit avant la réouverture du jour se rattrape');
+  assert.equal(retard.etat.serie, 7, 'et la série annoncée est écrite au passage');
+  assert.equal(reclamerCachetDeLaSemaine({}).ok, false, 'sans état, rien à réclamer');
+});
+
+test('le jour nouveau reprend le Cachet de la semaine, la série continue', () => {
+  const sept = { ...etatQuetesVide(), jour: '2026-03-07', serie: 7, semaine: true };
+  const lendemain = ouvrirJournee({ etat: sept, jour: '2026-03-08', graine: 'graine' });
+  assert.equal(lendemain.nouveau, true);
+  assert.equal(lendemain.etat.semaine, false, 'la nouvelle journée rouvre le Cachet de la semaine');
+  assert.equal(lendemain.etat.serie, 8, 'et la série, elle, continue');
+  // Le champ se lit comme le Cachet du cycle : ce qui est franc compte.
+  assert.equal(normaliserEtatQuetes({ ...sept, semaine: 1 }).semaine, true);
+  assert.equal(normaliserEtatQuetes({ ...sept, semaine: 0 }).semaine, false);
+  assert.equal(normaliserEtatQuetes({ ...sept, semaine: undefined }).semaine, false);
+  assert.equal(fusionnerQuetes(sept, { ...sept, semaine: false }).etat.semaine, true,
+    'la fusion garde la semaine réclamée dès qu’un appareil la porte');
+  assert.equal(fusionnerQuetes({ ...sept, jour: '2026-03-01', semaine: false }, sept).etat.semaine, true,
+    'et le jour le plus récent décide du reste');
 });

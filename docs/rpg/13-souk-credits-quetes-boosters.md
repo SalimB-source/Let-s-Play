@@ -375,7 +375,7 @@ les lots 2 à 5.
 | ✅ `scripts/rpg-souk-bourse-smoke.jsx` + `scripts/rpg-souk-bourse-check.mjs` | le hook monté dans jsdom (jour, gains, réclamation, rechargement) + les gardes de source | `npm run check:rpg-souk-branche` |
 | ✅ `src/games/RpgSouk.jsx` | l'écran : la bourse, les quêtes du jour, le Cachet, et les rayons **annoncés** (lot 4) | `scripts/rpg-souk-smoke.jsx` |
 | ✅ `src/games/rpg-souk.css` | mise en page, `prefers-reduced-motion`, portrait étroit, tactile | `scripts/rpg-souk-ui-check.mjs` (garde-fous de source) |
-| ✅ `scripts/rpg-souk-smoke.jsx` + `scripts/rpg-souk-ui-check.mjs` | l'écran monté dans jsdom **branché au vrai hook** (journée, barres, réclamation, Cachet, rayons, achat, cérémonie, coffret) + les gardes de source du menu | `npm run check:rpg-souk-ui` |
+| ✅ `scripts/rpg-souk-smoke.jsx` + `scripts/rpg-souk-ui-check.mjs` | l'écran monté dans jsdom **branché au vrai hook** (journée, barres, réclamation, Cachets, rayons, achat, cérémonie, coffret, journal, série) + les gardes de source du menu | `npm run check:rpg-souk-ui` |
 | ✅ `src/games/RpgBoosterOuverture.jsx` | la cérémonie des cinq cartes (et du coffret) | le même smoke |
 
 **Ce que les modules exportent** — le contrat réel, celui que les tests
@@ -542,6 +542,13 @@ achat refusé.
 | Boucler la collection | **19 jours** (≈ 5 200 ◈, 33 paquets) à 280 ◈/jour, la campagne fournissant ses 1 000 ◈ au passage |
 | Prix d'un coffret | 1 260 ◈ (Braise/Sable) — quatre journées, une mythique assurée |
 
+**Le Cachet de la semaine (lot 5) déplace la moyenne de 4 %** : +80 ◈ tous les
+sept jours d'affilée, soit ≈ +11 ◈ par jour. Le rythme tenu — « environ deux
+paquets par jour » — ne bouge pas (280 → 291 ◈), et la collection se boucle
+toujours en 19 jours (18 pour un joueur assidu). C'est la seule ligne du
+calibrage que ce chantier a touchée, et c'est pour récompenser l'habitude
+quotidienne : la série ne se rattrape pas (D6).
+
 **Ce que le Souk ne fera pas** : vendre une carte avant sa tour, vendre un deck
 complet, ni créer une troisième monnaie. Et le joueur qui n'y met jamais les
 pieds ne perd **rien** de ce qui existe aujourd'hui : il garde ses acquis gelés,
@@ -558,7 +565,7 @@ les paiera plus tard.
 | **2 ✅ livré** | les gains branchés | **475 tests verts** ; le solde et la pastille sont dans l'en-tête du menu, et l'événement est émis | `RpgDuelPage.jsx`, `useSablierBourse.js`, `rpgEvenementsDuel.js`, `rpg-souk-bourse-*` |
 | **3 ✅ livré** | l'écran Souk | **475 tests verts** + le smoke de l'écran ; sixième onglet, solde et pastille dessus, trois quêtes réclamables, Cachet du cycle, rayons annoncés | `RpgSouk.jsx`, `rpg-souk.css`, `rpg-mode-menu__souk` (dans `rpg-battle.css`), `RpgDuelPage.jsx`, `scripts/rpg-souk-*` |
 | **4 ✅ livré** | les boosters | **475 tests verts** + le smoke de l'écran ; paquet et coffret achetables, cérémonie des cinq cartes, doublons remboursés, cartes rangées dans la collection, poussée au compte **entière** | `RpgBoosterOuverture.jsx`, `RpgSouk.jsx`, `useSablierBourse.js`, `useDecksSablier.js`, `rpg-souk.css` |
-| **5** | le fini | sons, plein écran, portrait étroit, série de 7 jours, journal des ouvertures | `rpgAudio.js`, `rpg-mobile.css`, docs |
+| **5 ✅ livré** | le fini | **482 tests verts** + le smoke ; le Cachet de la semaine (sept jours d'affilée), le journal des vingt dernières ouvertures, le portrait étroit des six onglets, et le son branché sur la préférence du joueur | `rpgQuetes.js`, `rpgCredits.js`, `RpgSouk.jsx`, `rpg-souk.css`, `rpg-battle.css` |
 | **6** *(plus tard)* | les **cartes du Souk** — un set dédié, hors des Tours, achetable seulement au Souk | contenu + art, hors de ce chantier | `rpgCards.js`, `public/cards/` |
 
 Le lot 1 est **livré** — et il était bien mergéable seul : il n'ajoute que des
@@ -721,6 +728,17 @@ Les cas couverts :
   **aucune face cachée**, une mythique sortie, chaque paquet sans doublon ;
   un rayon fermé refuse l'achat (`rayon-ferme`) **sans toucher un seul crédit**,
   et un rayon ouvert sans solde désactive son bouton en disant ce qui manque ;
+- **série et journal (lot 5)** — quinze jours d'affilée ouverts un par un : la
+  série suit, le Cachet de la semaine paie au **septième** et au
+  **quatorzième** jour, jamais entre les deux, et jamais deux fois le même jour ;
+  une série de quatre ne se réclame pas même en annonçant sept (mais un état en
+  retard sur une série réelle se rattrape) ; la nouvelle journée rouvre le
+  Cachet de la semaine et laisse la série continuer ; un champ illisible ne vaut
+  pas une semaine réclamée. Le **journal** garde la plus récente en tête, refuse
+  un rayon inconnu, une carte inconnue et une ouverture vide, se borne à vingt
+  entrées, dédoublonne ce que le compte renvoie, et se fusionne sans doublon ;
+  une ouverture sans cartes fait avancer les compteurs **sans** écrire au
+  journal ;
 - **boosters** — cinq cartes distinctes et toutes du vivier du rayon, rare
   garantie, pitié qui **force** la mythique après une série sèche (et qui ne
   compte pas sur un rayon sans mythique), taux mesurés sur dix mille ouvertures

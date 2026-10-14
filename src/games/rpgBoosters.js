@@ -400,6 +400,9 @@ export function ouvrirBooster({ portefeuille, rayonId, progression = null, colle
   apres = enregistrerOuverture(apres, {
     mythique: tirage.mythique,
     aDesMythiques: vivierRayon(rayonId, progression).some((id) => cardById(id)?.rarity === 'mythique'),
+    rayonId,
+    cartes: tirage.cartes,
+    remboursement,
   });
   if (remboursement) {
     apres = { ...apres, credits: apres.credits + remboursement, majLe: new Date().toISOString() };
@@ -447,7 +450,16 @@ export function ouvrirCoffret({ portefeuille, rayonId, progression = null, colle
     const { details, remboursement } = detaillerTirage(tirage.cartes, possedees);
     for (const carte of details) possedees.add(carte.id);
     apres = ajouterCartesAuPortefeuille(apres, tirage.cartes);
-    apres = enregistrerOuverture(apres, { mythique: tirage.mythique, aDesMythiques });
+    apres = enregistrerOuverture(apres, {
+      mythique: tirage.mythique,
+      aDesMythiques,
+      rayonId,
+      cartes: tirage.cartes,
+      remboursement,
+      // Dix paquets en une fois : le journal garde **une** entrée par paquet,
+      // ce qui se lit encore ; les marquer « coffret » dit d'où ils viennent.
+      coffret: true,
+    });
     if (remboursement) apres = { ...apres, credits: apres.credits + remboursement, majLe: new Date().toISOString() };
     mythique = mythique || tirage.mythique;
     paquets.push({ ...tirage, details, remboursement });

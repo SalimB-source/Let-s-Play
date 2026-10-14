@@ -178,6 +178,44 @@
 .rpg-souk__cachet-texte p { margin: 0; color: rgba(247, 237, 218, .68); font-size: 12.5px; line-height: 1.6; }
 .rpg-souk__cachet .rpg-menu-button { flex: none; }
 
+/* ── Le Cachet de la semaine ──────────────────────────────────────────────── */
+.rpg-souk__semaine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(12px, 1.8vw, 20px);
+  flex-wrap: wrap;
+  padding: clamp(12px, 1.6vw, 18px);
+  border: 1px solid rgba(235, 215, 176, .18);
+  border-radius: 16px;
+  background: rgba(15, 12, 15, .78);
+}
+.rpg-souk__semaine.is-disponible {
+  border-color: rgba(148, 130, 255, .5);
+  background: linear-gradient(135deg, rgba(43, 34, 66, .85), rgba(18, 14, 19, .88));
+  box-shadow: 0 14px 34px rgba(120, 96, 200, .18);
+}
+.rpg-souk__semaine .rpg-menu-button { flex: none; }
+
+/* ── Le journal des ouvertures ────────────────────────────────────────────── */
+.rpg-souk__journal { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.rpg-souk__journal li {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(235, 215, 176, .12);
+  border-radius: 10px;
+  background: rgba(10, 9, 11, .6);
+  font-size: 11.5px;
+}
+.rpg-souk__journal li[data-souk-journal-mythe="true"] { border-color: rgba(168, 117, 237, .45); }
+.rpg-souk__journal-rayon { color: #ffe7af; font: 800 9.5px/1.4 var(--mono, monospace); letter-spacing: .1em; text-transform: uppercase; }
+.rpg-souk__journal-date { color: rgba(247, 237, 218, .46); font: 700 9.5px/1.4 var(--mono, monospace); white-space: nowrap; }
+.rpg-souk__journal-cartes { min-width: 0; color: rgba(247, 237, 218, .8); line-height: 1.5; overflow-wrap: anywhere; }
+.rpg-souk__journal-notes { color: rgba(247, 237, 218, .5); font: 700 9px/1.4 var(--mono, monospace); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+
 /* ── Les rayons : cinq étagères, cinq prix ───────────────────────────────── */
 .rpg-souk__rayons {
   display: grid;
@@ -310,6 +348,11 @@
   .rpg-souk__cachet .rpg-menu-button { flex: 1 1 100%; }
 }
 @media (max-width: 640px) {
+  /* Le journal passe en deux lignes : le rayon et la date d'abord, les cartes
+     ensuite — une ligne de quatre colonnes ne tient pas dans 320 px. */
+  .rpg-souk__journal li { grid-template-columns: auto minmax(0, 1fr); }
+  .rpg-souk__journal-cartes { grid-column: 1 / -1; }
+  .rpg-souk__journal-notes { grid-column: 1 / -1; }
   /* Cinquante cartes ne tiennent pas dans une colonne : au téléphone, la
      cérémonie passe en deux colonnes serrées et se fait défiler. */
   .rpg-souk__ceremonie-cartes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

@@ -46,6 +46,7 @@ import {
   fusionnerQuetes,
   normaliserEtatQuetes,
   ouvrirJournee,
+  reclamerCachetDeLaSemaine,
   reclamerCachetDuCycle,
   reclamerQuete,
   sauverEtatQuetes,
@@ -263,6 +264,24 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
    */
   const fermerOuverture = useCallback(() => setOuverture(null), []);
 
+  /**
+   * Le Cachet de la semaine : sept jours d'affilée. La série est relue **avant**
+   * la garde de jour, comme au montage : c'est elle qui dit si le Cachet est dû,
+   * et une série qui se termine aujourd'hui ne doit pas être perdue parce que
+   * la journée a été rouverte entre-temps.
+   */
+  const reclamerLeCachetDeLaSemaine = useCallback(() => {
+    const avant = etatRef.current;
+    const serie = ouvrirJournee({
+      etat: avant.quetes, graine: chargerGraine(), progression: progressionRef.current,
+    }).etat.serie;
+    const resultat = reclamerCachetDeLaSemaine({ etat: avant.quetes, serie });
+    if (!resultat.ok) return 0;
+    appliquer(crediterCredits(avant.bourse, resultat.credits).portefeuille, resultat.etat);
+    pousser();
+    return resultat.credits;
+  }, [appliquer, pousser]);
+
   /** Le Cachet du cycle : +80 ◈ une fois les trois quêtes du jour réclamées. */
   const reclamerLeCachet = useCallback(() => {
     const avant = etatRef.current;
@@ -282,6 +301,7 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     noterEvenementDuel,
     reclamerUneQuete,
     reclamerLeCachet,
+    reclamerLeCachetDeLaSemaine,
     acheterBooster,
     acheterCoffret,
     fermerOuverture,

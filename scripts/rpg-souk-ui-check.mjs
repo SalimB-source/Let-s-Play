@@ -99,6 +99,7 @@ for (const marque of [
   'data-souk-solde', 'data-souk-quetes', 'data-souk-quete=', 'data-souk-quete-etat',
   'data-souk-progres', 'data-souk-reclamer=', 'data-souk-reste', 'data-souk-attente',
   'data-souk-cachet', 'data-souk-cachet-reclamer', 'data-souk-retour',
+  'data-souk-semaine', 'data-souk-semaine-reclamer', 'data-souk-journal', 'data-souk-journal-ligne',
   'data-souk-rayons', 'data-souk-rayon=', 'data-souk-rayon-etat', 'data-souk-rayon-taux',
   'data-souk-rayon-reste', 'data-souk-rayon-refus', 'data-souk-ouvrir=', 'data-souk-coffret=',
 ]) {
@@ -127,7 +128,21 @@ assert.match(ceremonieCode, /disabled=\{!toutRevele\}/, 'on ne range pas des car
 assert.ok(!/localStorage|sauverPortefeuille/.test(ceremonieCode),
   'la cérémonie ne range rien elle-même : les cartes sont déjà achetées');
 
-// 6. Le portefeuille du Souk entre dans la collection de l'appareil.
+// 6. Le journal et la série sont des règles, pas une mise en page.
+assert.match(ecranCode, /import \{[\s\S]{0,120}joursAvantLeCachetDeLaSemaine[\s\S]{0,40}\} from '\.\/rpgQuetes\.js';/,
+  'la série et son compte à rebours viennent des règles des quêtes');
+assert.match(ecranCode, /cachetDeLaSemaineDisponible\(quetes\)/,
+  'le Cachet de la semaine se demande aux règles, il ne se devine pas');
+assert.ok(!/serie % [0-9]|serie % JOURS/.test(ecranCode) && !/serie % 7\b/.test(ecranCode),
+  'l’écran ne refait pas l’arithmétique de la série');
+const credits = lire('src/games/rpgCredits.js');
+assert.match(credits, /export const JOURNAL_MAX = 20;/, 'le journal est borné à la source');
+assert.match(credits, /journal: normaliserJournal\(brut\.journal\)/, 'et normalisé au chargement');
+assert.match(credits, /journal: normaliserJournal\(\[\.\.\.ici\.journal, \.\.\.la\.journal\]\)/,
+  'la fusion réunit les deux journaux');
+assert.match(credits, /rayonId && cartes\s*\n?\s*\? noterOuvertureJournal/, 'une ouverture connue écrit au journal');
+
+// 7. Le portefeuille du Souk entre dans la collection de l'appareil.
 const decks = lire('src/games/useDecksSablier.js');
 assert.match(decks, /souk: chargerPortefeuille\(\)\.cartes/, 'les cartes du Souk rejoignent la collection');
 assert.match(decks, /export function useDecksSablier|[\s\S]*rafraichirCollection,/, 'et l’atelier peut la relire après un achat');
@@ -136,12 +151,13 @@ assert.match(decks, /\.\.\.etatLocalActuel\(acquisRef\.current\),/,
 assert.match(decks, /bourse: chargerPortefeuille\(\),\n    quetes: chargerEtatQuetes\(\),/,
   'l’autre hook transporte l’économie sans la modifier');
 
-// 7. Tactile et mouvement : les règles reprises des autres écrans.
+// 8. Tactile et mouvement : les règles reprises des autres écrans.
 assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'), 'le mouvement se coupe');
 assert.ok(css.includes('@media (max-width: 480px)'), 'le portrait étroit est prévu');
 assert.ok(css.includes('@media (max-width: 640px)'), 'la cérémonie a son palier de téléphone');
 assert.match(css, /min-height: 44px/, 'les boutons font leur taille au doigt');
 
-console.log('Le Souk (lots 3 et 4) est branché : sixième onglet, solde et pastille dessus,');
-console.log('trois quêtes réclamables, Cachet, cinq rayons avec leur prix et leur taux,');
-console.log('la cérémonie d’ouverture, et les cartes achetées qui entrent dans la collection.');
+console.log('Le Souk (lots 3 à 5) est branché : sixième onglet, solde et pastille dessus,');
+console.log('trois quêtes réclamables, Cachet du cycle et de la semaine, cinq rayons avec');
+console.log('leur prix et leur taux, la cérémonie d’ouverture, le journal des ouvertures,');
+console.log('et les cartes achetées qui entrent dans la collection.');

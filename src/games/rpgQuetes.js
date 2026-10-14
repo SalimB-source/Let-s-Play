@@ -31,6 +31,9 @@ import { rngSeme, graineNumerique, tirerParmi } from './rpgHasard.js';
 /** L'état des quêtes de l'appareil. */
 export const RPG_QUETES_STORAGE_KEY = 'letsplay_sablier_quetes_v1';
 
+/** Sept jours d'affilée : le Cachet de la semaine. */
+export const JOURS_DE_LA_SERIE = 7;
+
 /** Les paliers, dans l'ordre du tirage : un seul tirage par palier et par jour. */
 export const PALIERS = Object.freeze(['facile', 'moyenne', 'difficile']);
 
@@ -63,7 +66,10 @@ const QUETE_PAR_ID = new Map(QUETES.map((quete) => [quete.id, quete]));
 
 /** L'état d'un joueur qui n'a encore rien vu. */
 export function etatQuetesVide() {
-  return { version: 1, jour: null, quetes: [], progres: {}, reclamations: [], cachet: false, serie: 0, majLe: null };
+  return {
+    version: 1, jour: null, quetes: [], progres: {}, reclamations: [],
+    cachet: false, semaine: false, serie: 0, majLe: null,
+  };
 }
 
 /** La quête par son identifiant (`null` si inconnue). */
@@ -155,6 +161,7 @@ export function normaliserEtatQuetes(value) {
     progres,
     reclamations,
     cachet: Boolean(brut.cachet),
+    semaine: Boolean(brut.semaine),
     serie,
     majLe: typeof brut.majLe === 'string' ? brut.majLe : null,
   };
@@ -182,6 +189,9 @@ export function ouvrirJournee({ etat, jour, graine = null, progression = null } 
     progres: Object.fromEntries(quetes.map((id) => [id, 0])),
     reclamations: [],
     cachet: false,
+    // Le Cachet de la semaine se reprend à chaque journée : c'est `serie` qui
+    // dit si elle est due, et elle ne recule jamais (D6).
+    semaine: false,
     serie: suite ? base.serie + 1 : 1,
     majLe: new Date().toISOString(),
   };
@@ -249,6 +259,45 @@ export function cachetDisponible(etat) {
   return base.quetes.every((id) => base.reclamations.includes(id));
 }
 
+/** Sept jours d'affilée : la série est pleine (et jamais deux fois la même). */
+export function serieComplete(etat) {
+  const base = normaliserEtatQuetes(etat);
+  return base.serie > 0 && base.serie % JOURS_DE_LA_SERIE === 0;
+}
+
+/** Le Cachet de la semaine attend-il ? (sept jours d'affilée, non réclamé) */
+export function cachetDeLaSemaineDisponible(etat) {
+  const base = normaliserEtatQuetes(etat);
+  return !base.semaine && serieComplete(base);
+}
+
+/** Combien de jours il reste à tenir pour le prochain Cachet de la semaine. */
+export function joursAvantLeCachetDeLaSemaine(etat) {
+  const base = normaliserEtatQuetes(etat);
+  return JOURS_DE_LA_SERIE - (base.serie % JOURS_DE_LA_SERIE);
+}
+
+/**
+ * Réclame le Cachet de la semaine : sept jours d'affilée, une fois. Le
+ * compteur de série, lui, ne bouge pas — c'est le jour suivant qui l'allonge.
+ */
+export function reclamerCachetDeLaSemaine({ etat, serie = null } = {}) {
+  const base = normaliserEtatQuetes(etat);
+  const serieVisee = Number.isFinite(Number(serie)) && Number(serie) > 0 ? Math.floor(Number(serie)) : base.serie;
+  if (base.semaine) return { ok: false, raison: 'deja-reclame', etat: base, credits: 0 };
+  if (!serieComplete({ ...base, serie: serieVisee, semaine: false })) {
+    return { ok: false, raison: 'serie-incomplete', etat: base, credits: 0, serie: serieVisee };
+  }
+  // La série visée peut être en avance sur l'état (le garde de jour l'a lue
+  // avant sa sauvegarde) : on l'écrit en même temps que la réclamation.
+  return {
+    ok: true,
+    raison: null,
+    etat: { ...base, semaine: true, serie: Math.max(base.serie, serieVisee), majLe: new Date().toISOString() },
+    credits: GAINS.cachetDeLaSemaine,
+  };
+}
+
 /**
  * Réclame une quête : elle doit exister, être terminée et ne pas avoir déjà été
  * payée. Rend `{ ok, raison, etat, credits }` — les crédits ne sont **pas**
@@ -310,6 +359,7 @@ export function fusionnerQuetes(local, distant) {
     progres,
     reclamations,
     cachet: memeJour ? ici.cachet || la.cachet : plusRecent.cachet,
+    semaine: memeJour ? ici.semaine || la.semaine : plusRecent.semaine,
     serie: Math.max(ici.serie, la.serie),
     majLe: (ici.majLe ?? '') >= (la.majLe ?? '') ? ici.majLe : la.majLe,
   };

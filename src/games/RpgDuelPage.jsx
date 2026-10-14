@@ -1524,7 +1524,7 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -1717,7 +1717,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               data-souk-onglet={credits}
               onClick={() => { play('menu'); onChangeScreen('souk'); }}
             >
-              <span aria-hidden="true">◈</span> Souk
+              <span aria-hidden="true">◈</span>
+              <span className="rpg-mode-menu__onglet-libelle">Souk</span>
               <span className="rpg-mode-menu__bourse-solde" data-souk-bourse={credits}>
                 {credits}
               </span>
@@ -2244,6 +2245,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             cardArt={cardArt}
             onReclamerQuete={onReclamerQuete}
             onReclamerCachet={onReclamerCachet}
+            onReclamerSemaine={onReclamerSemaine}
             onOuvrirBooster={onOuvrirBooster}
             onOuvrirCoffret={onOuvrirCoffret}
             onFermerOuverture={onFermerOuverture}
@@ -2664,7 +2666,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // est fermé — y compris au tout premier rendu.
   const {
     credits, aReclamer: soukAReclamer, quetes: quetesSouk, bourse: portefeuilleSouk,
-    noterEvenementDuel, reclamerUneQuete, reclamerLeCachet,
+    noterEvenementDuel, reclamerUneQuete, reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, fermerOuverture, ouverture: ouvertureSouk,
   } = useSablierBourse({
     progression: progressionHistoireRef.current,
@@ -3520,6 +3522,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           quetes={quetesSouk}
           onReclamerQuete={reclamerUneQuete}
           onReclamerCachet={reclamerLeCachet}
+          onReclamerSemaine={reclamerLeCachetDeLaSemaine}
           portefeuille={portefeuilleSouk}
           progression={progressionHistoire}
           ouverture={ouvertureSouk}
