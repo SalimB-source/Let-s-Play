@@ -542,9 +542,11 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 }
 .mirage-pause-stats b { color: #ffd76b; font: 800 13px var(--font-gaming); }
 
-.mirage-mobile-controls { display: none; }
 /* Ligne « MOBILE : … » du pied de jeu, réservée aux écrans tactiles : le bureau
-   garde ses touches, le téléphone son glissement. */
+   garde ses touches, le téléphone son glissement. Les anciens boutons virtuels
+   (`.mirage-mobile-controls`, `.mirage-jump-control`) ont été retirés — tout se
+   joue au glisser depuis la réécriture de mirageTouch.js — donc leurs règles
+   ont été nettoyées de ce fichier et du thème western. */
 .mirage-foot-touch { display: none; color: #f0c579; }
 .mirage-game-foot { display: flex; justify-content: space-between; gap: 12px; padding: 12px 15px; color: rgba(255, 242, 221, .48); font-size: 8px; letter-spacing: .12em; }
 .mirage-game-foot b { color: #e8ba64; }
@@ -868,20 +870,6 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   .mirage-pause-stats span { padding: 7px 10px; font-size: 7px; }
   .mirage-pause-stats b { font-size: 11px; }
   .mirage-game-foot { flex-direction: column; gap: 5px; padding: 9px; font-size: 7px; }
-  /* Commandes tactiles : visibles uniquement pendant la course. */
-  .mirage-game-shell.is-running .mirage-mobile-controls {
-    display: flex; align-items: center; justify-content: center; gap: 12px;
-    padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px));
-    background: rgba(18, 12, 29, .96); border-top: 1px solid rgba(255, 255, 255, .07);
-  }
-  .mirage-mobile-controls button {
-    width: 58px; height: 46px; border-radius: 12px; border: 1px solid rgba(255, 220, 153, .32);
-    background: rgba(255, 255, 255, .055); color: #fff0d5; font: 800 22px var(--font-gaming);
-    touch-action: manipulation; cursor: pointer; transition: background .12s, transform .12s;
-  }
-  .mirage-mobile-controls button:active { background: rgba(243, 198, 91, .25); transform: scale(.96); }
-  .mirage-mobile-controls .mirage-jump-control { width: 124px; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(229, 99, 160, .16); border-color: rgba(242, 119, 169, .4); color: #f5b7d7; font: 800 10px var(--mono); letter-spacing: .12em; }
-  .mirage-mobile-controls .mirage-jump-control span { font-size: 17px; }
   .mirage-settings-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mirage-settings-tabs button { min-height: 32px; }
   .mirage-shop-card { grid-template-columns: 1fr; }
@@ -1059,8 +1047,10 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-mode-copy small { color: #bbaaaf; font: 9px var(--mono); }
 .mirage-choice-dot { position: absolute; right: 10px; top: 10px; width: 15px; height: 15px; border-radius: 50%; border: 1px solid rgba(155, 139, 152, .45); color: #211824; text-align: center; font-size: 11px; }
 .mirage-mode-picker button[aria-pressed="true"] .mirage-choice-dot { background: #f6cd72; border-color: #f6cd72; }
-/* Dix horizons : 4 + 4 + 2 cartes sur trois rangées au bureau (3 + 3 + 3 + 1
-   sur mobile), avec les rangées incomplètes centrées. */
+/* Dix horizons : 4 + 4 + 2 cartes sur trois rangées au bureau. Sur téléphone,
+   un rail horizontal à défilement tactile remplace la grille 3 × 3 + 1 :
+   les 10 cartes gardent une largeur confortable et restent toutes atteignables
+   du pouce sans comprimer les illustrations. */
 .mirage-stage-picker { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .mirage-stage-picker > .mirage-map-card { flex: 0 0 calc((100% - 30px) / 4); min-width: 0; }
 .mirage-stage-locked { display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-radius: var(--mirage-radius); border: 1px dashed rgba(182, 160, 195, .32); background: rgba(37, 28, 41, .55); }
@@ -1129,8 +1119,32 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   .mirage-mode-copy strong { font-size: 13px; }
   .mirage-mode-copy > span { font-size: 10px; }
   .mirage-mode-copy small { font-size: 8px; }
-  .mirage-stage-picker { gap: 6px; }
-  .mirage-stage-picker > .mirage-map-card { flex-basis: calc((100% - 12px) / 3); }
+  /* Rail de terrains mobile : les cartes défilent à l'horizontale (swipe du pouce),
+     comme la main de cartes ou le rail des partenaires. `scroll-snap` aligne
+     chaque carte au début de la rangée ; les marges négatives et `padding`
+     font déborder le rail sous les gouttières de l'overlay pour que la
+     première et la dernière carte arrivent bien au centre quand on les choisit.
+     On garde `overflow-y: hidden` et `-webkit-overflow-scrolling: touch` pour
+     que le geste horizontal ne soit pas mangé par le scroll vertical. */
+  .mirage-stage-picker {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 8px;
+    margin: 0 -12px;
+    padding: 4px 12px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .mirage-stage-picker::-webkit-scrollbar { display: none; }
+  .mirage-stage-picker > .mirage-map-card {
+    flex: 0 0 150px;
+    min-width: 150px;
+    scroll-snap-align: start;
+  }
   .mirage-map-visual { height: 42px; }
   .mirage-map-number { top: 4px; left: 5px; font-size: 7px; }
   .mirage-map-check { top: 4px; right: 4px; width: 15px; height: 15px; font-size: 9px; }
