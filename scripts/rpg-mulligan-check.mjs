@@ -132,13 +132,13 @@ assert.match(cardRule, /overflow:\s*hidden;/,
   'l’illustration est tenue dans le cadre de la carte');
 assert.match(battleCss, /\.rpg-mulligan__img\s*\{[^}]*object-fit:\s*cover;/s,
   'l’illustration remplit la face sans déformer');
-assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}]*--rpg-card-element-marker-size:\s*clamp\([^;]*cqw/s,
+assert.match(battleCss, /\.rpg-mulligan__card\s*\{[^}]*--rpg-card-marker-size:\s*clamp\([^;]*cqw/s,
   'le badge d’élément se dimensionne sur la largeur de la carte');
 assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}]*--rpg-card-element-marker-top:\s*5%;[^}]*--rpg-card-element-marker-left:\s*6%;/s,
   'la couleur de la carte est en haut à gauche, comme sur les cartes du jeu');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}]*bottom:/s,
   'la couleur n’est plus en bas de la carte');
-assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*position:\s*absolute;[^}]*top:\s*5%;[^}]*right:\s*6%;[^}]*cqw[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
+assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*position:\s*absolute;[^}]*top:\s*5%;[^}]*right:\s*6%;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
   'le coût est posé en haut à droite de l’illustration dans un bloc bien rond, à la taille de la carte');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*left:/s,
   'le coût a quitté le coin gauche');
