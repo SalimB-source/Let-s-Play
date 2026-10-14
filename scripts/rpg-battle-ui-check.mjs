@@ -77,7 +77,7 @@ assert.doesNotMatch(battleCss, /\.rpg-card__(?:engagee|action-fx)\b/,
 assert.match(mobileCss, /\.rpg-terrain\.rpg-terrain-stack\.is-tapped\s*\{[^}]*transform:\s*rotate\(12deg\)/s,
   'un terrain engagé reste incliné sur écran tactile');
 assert.match(mobileCss, /\.rpg-terrain\.rpg-terrain-stack\.is-stacked\s*\{[^}]*box-shadow:/s,
-  'seules les vraies piles de terrains montrent une épaisseur décalée');
+  'hors disposition tactile, seules les vraies piles de terrains montrent une épaisseur décalée');
 assert.match(battlePage, /groupe\.count > 1 && <span className="rpg-terrain-stack__count"/,
   'un terrain seul n’affiche pas de compteur de pile');
 assert.match(battlePage, /groupe\.count > 1 && groupe\.tapped > 0[\s\S]*?rpg-terrain-stack__engagement/,
@@ -482,8 +482,22 @@ for (const [nom, css] of [['le duel', battleCss], ['le tactile', mobileCss], ['l
     `${nom} ne donne plus aux armes une épaisseur de cadre à part`);
   assert.doesNotMatch(css, /\* 1\.6\)/, `${nom} ne multiplie plus aucun gabarit par 1,6 : la plaque est dans le gabarit lui-même`);
 }
-assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-terrain(?:\.rpg-terrain-stack)?\s*\{[^}]*border-width:\s*\d/s,
-  'au doigt, les terrains gardent le petit gabarit commun au lieu d’un filet fixe de 1 ou 2 px');
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-terrain(?:\.rpg-terrain-stack)?\s*\{[^}]*border-width:\s*(?!0\b)\d/s,
+  'au doigt, les terrains n’ont aucun filet fixe : ni la couleur de l’élément (le petit gabarit hors disposition tactile), ni un cran de 1 ou 2 px');
+// Les faces en jeu — main, cartes posées et terrains — n'ont plus de cadre du
+// tout au doigt (voir « Sans cadre, au doigt », en fin de `rpg-mobile.css`) :
+// bord à zéro et aucune couche d'anneau, l'illustration gagne le cadre. Les
+// piles perdent leur ombre décalée, colorée du cadre de la carte.
+const sansCadre = mobileCss.slice(mobileCss.indexOf('/* ── Sans cadre, au doigt'));
+assert.ok(sansCadre.length > 1000, 'la feuille tactile porte le bloc « Sans cadre, au doigt »');
+assert.match(sansCadre, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.card-row \.rpg-card,\s*\.rpg-battle--touch \.rpg-terrain \{\s*border-width: 0;\s*background-image: none;\s*\}/,
+  'la main, la table et les terrains du doigt partagent la même règle : ni bord, ni anneau');
+assert.match(sansCadre, /\.rpg-battle--touch \.rpg-card-stack,\s*\.rpg-battle--touch \.rpg-terrain\.rpg-terrain-stack\.is-stacked \{\s*box-shadow: none;\s*\}/,
+  'au doigt, une pile — cartes homonymes ou terrains — n’a plus d’ombre de pile : le compteur ×N la dit');
+assert.match(sansCadre, /\.rpg-battle--touch \.rpg-terrain\.rpg-terrain-stack\.is-partially-tapped \{\s*box-shadow: 0 0 0 1px rgba\(255, 217, 168, \.45\);\s*\}/,
+  'l’engagement partiel d’une pile de terrains garde sa bague : c’est un état, pas une épaisseur');
+assert.doesNotMatch(sansCadre, /rpg-hover-card-preview|rpg-mulligan__card|rpg-card-pile__card|rpg-card-catalogue|rpg-card-guide|rpg-atelier/,
+  'les faces de lecture ou de repérage — aperçu, mulligan, piles, catalogue, guide, atelier — gardent leur cadre');
 assert.match(frameCss, /\.rpg-card\[class\*="rpg-card--frame-"\],\s*\.rpg-hand__card\[class\*="rpg-card--frame-"\],\s*\.rpg-card-destruction-fx\s*\{\s*border:\s*var\(--rpg-card-border, 4px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
   'main, table et animations partagent le gabarit normal, pour toute combinaison de couleurs');
 assert.match(frameCss, /\.rpg-hover-card-preview__face\s*\{\s*border:\s*var\(--rpg-card-border-large, 6px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,

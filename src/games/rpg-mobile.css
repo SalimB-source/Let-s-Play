@@ -779,3 +779,58 @@
   }
   .rpg-battle--touch .rpg-turn-rail .rpg-btn:disabled { pointer-events: none; }
 }
+
+/* ── Sans cadre, au doigt : la main, les cartes posées et les terrains ───────
+   L'anneau coloré des cartes (voir les gabarits en tête de `rpg-battle.css`)
+   est calé sur la **largeur** de la carte : `clamp(4px, 1.76vw, 8px)` vaut son
+   plafond de 8 px dès 455 px de fenêtre, donc sur tout téléphone en paysage.
+   Aux 62 px d'une carte en main sur un 844 × 390 (cinq cartes), cela fait
+   16 px — un quart de la carte —, et 41 % d'une carte à 39 px quand la main
+   s'allonge à huit. Les terrains du rail portent le petit gabarit
+   (`clamp(6.4px, 0.544vw, 6.8px)`) : 6,8 px sur une vignette de 40 px, un quart
+   de la face là encore. Sur ces trois familles de faces **en jeu**, l'anneau
+   mangeait l'illustration que le full art venait justement d'élargir, pour une
+   couleur d'élément que la pastille de la carte annonce déjà.
+
+   Elles s'en passent donc : bord à zéro, et aucune couche de fond — matière,
+   résille gravée, diagonale des hybrides, reflet des mythiques. La main et la
+   table sont en full art (`.rpg-card--img`, `.rpg-hand__card--img` :
+   l'illustration est posée `inset: 0`) ; le terrain, lui, est son image même
+   (`.rpg-terrain img`, 100 %). Chacune gagne donc exactement l'anneau. Le
+   liseré noir des cartes reste (`outline: 2px solid #000`, `rpg-battle.css`),
+   c'est lui qui les détache du bois ; le terrain n'en a jamais eu — sa
+   vignette se détache par sa propre ombre portée.
+
+   Rien d'autre ne bouge, et surtout pas la géométrie : tout est en
+   `border-box`, chaque face garde sa largeur, son 4:5 et sa mesure
+   (`--duel-card` pour la main, `--rpg-field-card` pour la table, les 40/48 px
+   du rail pour les terrains) — c'est l'illustration qui grandit, pas la face.
+   Les autres faces du duel gardent leur cadre : l'aperçu rapide, l'appui long
+   et l'annonce de sort, le volet du mulligan, le catalogue, les dessus de
+   paquet et de cimetière, la vignette de magie jouée, le guide et l'atelier —
+   des faces de lecture ou de repérage, pas des cartes en jeu. */
+.rpg-battle--touch .rpg-hand .rpg-hand__card,
+.rpg-battle--touch .card-row .rpg-card,
+.rpg-battle--touch .rpg-terrain {
+  border-width: 0;
+  background-image: none;
+}
+
+/* ── Les piles, au doigt : plus d'ombre de pile ─────────────────────────────
+   Les piles d'exemplaires identiques se signalaient par deux ombres décalées :
+   un cran sombre, puis la couleur du cadre (`--rpg-frame-color`, posé sur le
+   bloc de la pile). La couleur du cadre, au bord de la face : c'était le cadre,
+   en double. Puisque les faces en jeu n'ont plus d'anneau, l'ombre colorée part
+   avec lui — sur les cartes homonymes (main et champs de bataille) comme sur
+   les terrains. Le compteur `×N` et la pastille `↻N` d'engagement restent : ce
+   sont eux qui disent la pile, et le compteur se touche pour déplier.
+
+   Le repère d'un engagement partiel garde sa bague discrète : elle dit un
+   **état** — des terrains déjà engagés dans la pile —, pas une épaisseur. */
+.rpg-battle--touch .rpg-card-stack,
+.rpg-battle--touch .rpg-terrain.rpg-terrain-stack.is-stacked {
+  box-shadow: none;
+}
+.rpg-battle--touch .rpg-terrain.rpg-terrain-stack.is-partially-tapped {
+  box-shadow: 0 0 0 1px rgba(255, 217, 168, .45);
+}
