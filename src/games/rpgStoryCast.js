@@ -6,15 +6,15 @@
  */
 const personnages = {
   narrateur: { nom: 'Bab El', fonction: 'La ville qui monte', portrait: null, couleur: '#d7bc86' },
-  salem: { nom: 'Salem', fonction: 'Le Sondeur', carte: 'salem', portrait: 'cards/salem.jpg', position: '50% 24%', couleur: '#e6bf76' },
-  yamina: { nom: 'Yamina', fonction: 'L’Horlogère', carte: 'yamina', portrait: 'cards/yamina.jpg', position: '50% 26%', couleur: '#9fd1cc' },
-  feriel: { nom: 'Fériel', fonction: 'La Souffleuse de verre', carte: 'feriel', portrait: 'cards/feriel.jpg', position: '55% 22%', couleur: '#efb18e' },
-  tarek: { nom: 'Tarek', fonction: 'Le Porteur', carte: 'tarek', portrait: 'cards/tarek.jpg', position: '50% 24%', couleur: '#d4ad79' },
+  salem: { nom: 'Salem', fonction: 'Le Sondeur', carte: 'salem', portrait: 'cards/salem.jpg', position: '50% 24%', couleur: '#e6bf76', stand: 'sablier-story/stands/stand-salem.webp' },
+  yamina: { nom: 'Yamina', fonction: 'L’Horlogère', carte: 'yamina', portrait: 'cards/yamina.jpg', position: '50% 26%', couleur: '#9fd1cc', stand: 'sablier-story/stands/stand-yamina.webp' },
+  feriel: { nom: 'Fériel', fonction: 'La Souffleuse de verre', carte: 'feriel', portrait: 'cards/feriel.jpg', position: '55% 22%', couleur: '#efb18e', stand: 'sablier-story/stands/stand-feriel.webp' },
+  tarek: { nom: 'Tarek', fonction: 'Le Porteur', carte: 'tarek', portrait: 'cards/tarek.jpg', position: '50% 24%', couleur: '#d4ad79', stand: 'sablier-story/stands/stand-tarek.webp' },
   boualem: { nom: 'Boualem', fonction: 'Le Puisatier', carte: 'boualem', portrait: 'cards/boualem.jpg', position: '50% 22%', couleur: '#9bc7d2' },
-  guetteur: { nom: 'Le Guetteur', fonction: 'Vigie de la Chambre', carte: 'guetteur-du-beffroi', portrait: 'cards/guetteur-du-beffroi.jpg', position: '60% 22%', couleur: '#cebb99' },
-  scribe: { nom: 'La Scribe', fonction: 'Greffière des évacuations', portrait: 'sablier-story/scribe.jpg', position: '50% 24%', couleur: '#adc8b2' },
-  puisatier: { nom: 'Le Puisatier des Cendres', fonction: 'Gardien des registres de passage', portrait: 'sablier-story/puisatier.jpg', position: '50% 24%', couleur: '#9bc7d2' },
-  mahieddine: { nom: 'Mahieddine', fonction: 'Le Grand Horloger', portrait: 'sablier-story/mahieddine.jpg', position: '50% 24%', couleur: '#d7bc86' },
+  guetteur: { nom: 'Le Guetteur', fonction: 'Vigie de la Chambre', carte: 'guetteur-du-beffroi', portrait: 'cards/guetteur-du-beffroi.jpg', position: '60% 22%', couleur: '#cebb99', stand: 'sablier-story/stands/stand-guetteur.webp' },
+  scribe: { nom: 'La Scribe', fonction: 'Greffière des évacuations', portrait: 'sablier-story/scribe.jpg', position: '50% 24%', couleur: '#adc8b2', stand: 'sablier-story/stands/stand-scribe.webp' },
+  puisatier: { nom: 'Le Puisatier des Cendres', fonction: 'Gardien des registres de passage', portrait: 'sablier-story/puisatier.jpg', position: '50% 24%', couleur: '#9bc7d2', stand: 'sablier-story/stands/stand-puisatier.webp' },
+  mahieddine: { nom: 'Mahieddine', fonction: 'Le Grand Horloger', portrait: 'sablier-story/mahieddine.jpg', position: '50% 24%', couleur: '#d7bc86', stand: 'sablier-story/stands/stand-mahieddine.webp' },
   marchand: { nom: 'Le Marchand de sable', fonction: 'Facteur des étals', carte: 'faiseur-de-passage', portrait: 'cards/faiseur-de-passage.jpg', position: '50% 24%', couleur: '#d9b578' },
   amani: { nom: 'La Gardienne des ksour', fonction: 'Portière du souk haut', carte: 'amani-des-ksour', portrait: 'cards/amani-des-ksour.jpg', position: '50% 22%', couleur: '#e2bd84' },
   'djinn-souk': { nom: 'Le Djinn du tournant', fonction: 'Rouleur d’épices', carte: 'djinn-du-souk', portrait: 'cards/djinn-du-souk.jpg', position: '50% 22%', couleur: '#ef9d6e' },
@@ -68,6 +68,15 @@ export function portraitHistoire(id, baseUrl = '/', cardArt = null) {
   if (!personnage.portrait) return null;
   if (personnage.carte && cardArt) return cardArt(personnage.carte);
   return `${baseUrl}${personnage.portrait}?v=recit-listes-1`;
+}
+
+/**
+ * Le personnage « découpé » du plateau (sprite détouré, fond transparent),
+ * quand il existe — sinon la scène retombe sur le portrait encadré.
+ */
+export function standHistoire(id, baseUrl = '/') {
+  const personnage = personnageHistoire(id);
+  return personnage.stand ? `${baseUrl}${personnage.stand}?v=recit-listes-1` : null;
 }
 
 export function personnageEtage(etageId) {

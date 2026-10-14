@@ -117,6 +117,68 @@ autonome » (deck complet, PV pleins, rien de reporté).
    changer les choix. Les portraits canoniques du registre `rpgStoryCast.js`
    sont communs aux dialogues et aux duels ; les anciens joueurs peuvent
    passer les combats déjà remportés. Aucune règle de combat supplémentaire.
+5. **Le lecteur animé (octobre 2026)** — `RpgStoryScene.jsx` + `rpgStoryLecture.js`.
+   La lecture devient une scène vivante, sans toucher aux transitions du récit
+   (`rpgStoryFlow.js` reste la seule source de vérité du curseur) :
+   - **machine à écrire** (`useMachineAEcrire`) : la réplique s’écrit à
+     `MS_PAR_CARACTERE` (16 ms/caractère) ; le texte complet reste dans le DOM,
+     la partie à venir est masquée (`visibility`, jamais de saut de mise en
+     page) ; un clic sur la réplique, Espace, Entrée ou → l’affiche d’un bloc.
+     Les commandes du récit restent actives pendant l’écriture : un bouton
+     avance toujours, la machine n’est jamais un verrou.
+   - **auto-lecture** : entre répliques d’une même scène seulement — jamais
+     vers un duel, jamais dans un choix, jamais quand le fil du récit est
+     ouvert ou l’onglet caché (`delaiAutoLecture` plafonne à 6 s).
+   - **fil du récit** : panneau latéral (z-index propre, Échap ou clic hors
+     panneau pour le refermer) qui relit les répliques déjà vues de la scène.
+     Une relecture n’est jamais une décision.
+   - **clavier** : Espace / Entrée / → tournent la page (sauf commande
+     focusée, sauf choix en attente — un choix ne se fait jamais à la place
+     du joueur) ; Échap referme le fil.
+   - **mise en scène de roman visuel** : pendant les scènes, **deux
+     personnages maximum par plan** — de vrais **sprites détourés** ancrés
+     **en bas de l'écran, au premier plan** (`public/sablier-story/stands/stand-*.webp`,
+     fond transparent), générés depuis les peintures canoniques par
+     `tools/make-stands.py` (fond magenta retiré par inondation depuis les
+     bords, halo désincrusté, bords adoucis) — mêmes visages, même style de
+     peinture, aucun recolorage. À gauche l'hôte de la scène (`scene.figure`),
+     à droite celui qui parle, ou son interlocuteur attitré quand l'hôte
+     parle ; celui qui parle est en pleine lumière, l'autre dans l'ombre. Le
+     champ `stand` du registre `rpgStoryCast.js` porte les sprites et
+     `standHistoire()` les résout ; les personnages des actes suivants, encore
+     sans sprite, retombent sur le portrait encadré (même placement). Les
+     sprites sont purs décors (`pointer-events: none`, fixés au bas de
+     l'écran, 38vw de large et jusqu'à 78vh de haut avec un léger débord hors
+     des bords) ; la **boîte de dialogue passe devant leur buste** (style
+     Persona : contour blanc franc, pointes blanches, ombre dure) avec
+     l'**étiquette de nom en bulle blanche à encre sombre**, soulignée de la
+     couleur du personnage ; les décisions passent en colonne centrale
+     au-dessus du duo. Sur téléphone la boîte repasse devant le duo pour la
+     lisibilité. Briefings de duel, épilogues et journal gardent les
+     portraits canoniques en page.
+   - **décor vivant** : travelling lent (Ken Burns) sur la peinture de la
+     scène et voile de sable en boucle sans couture, sous le texte
+     (`.rpg-narrative__decor` / `__sable`, couches `position: fixed` en
+     `z-index: -1`, le fond statique de la section reste le repli).
+   - **portrait vivant** : respiration lente, halo externe dans la couleur du
+     personnage quand il parle, lumière baissée quand la ville porte la voix.
+     Le portrait canonique n’est jamais recoloré, retourné ni remplacé.
+   - **sablier de scène** : en pied de page, le sable du haut est ce qu’il
+     reste à lire ; une granule tombe tant que la scène continue.
+   - **préférences** : « Texte animé » et « Auto-lecture » dans la barre de
+     confort de lecture, persistées dans `letsplay_sablier_lecture_v1`
+     (`chargerPreferencesLecture` / `sauverPreferencesLecture`, écriture
+     protégée : un stockage refusé n’interrompt jamais la session).
+   - **sons** : blip de réplique, page-turn de changement de scène, select de
+     choix, menu d’ouverture du fil — via `onSfx` (`jouerSfx`), déjà soumis au
+     coupe-son du jeu.
+   - **accessibilité** : `prefers-reduced-motion` reçoit le texte d’un bloc et
+     un écran fixe (bloc final de `rpg-story.css`) ; le texte complet est
+     annoncé une seule fois par réplique via une région `role="status"`
+     visuellement masquée, la machine à écrire n’étant qu’un effet visible.
+   - Vérifications : `npm run check:rpg-lecture` (rythmes et préférences),
+     `npm run check:rpg-story-ui` (le smoke narratif rejoue scènes, relectures,
+     choix, journal et migration avec le lecteur animé monté).
 
 ## Ce qu'il reste à construire
 
