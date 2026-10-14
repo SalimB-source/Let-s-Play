@@ -301,11 +301,11 @@ côte balayée par un vortex. Un exemplaire remplace une Onna-musha dans le
 deck Soleil rouge : toujours 40 cartes, 17 créatures, 7 magies et 16 terrains.
 Susanoo se débloque à `sables-3`.
 
-## Dérogation : les trois armes et le serpent en photoréaliste (octobre 2026)
+## Dérogation : deux armes et le serpent en photoréaliste (octobre 2026)
 
-Trois armes du prototype (`takouba-des-pistes`, `baton-des-citernes`,
-`lance-de-givre`) et le jeton `serpent-des-citernes`
-dérogent **volontairement** à la direction « huile sur toile » ci-dessus :
+Deux armes du prototype (`takouba-des-pistes`, `lance-de-givre`) et le jeton
+`serpent-des-citernes` dérogent **volontairement** à la direction
+« huile sur toile » ci-dessus :
 elles sont livrées en **rendu photoréaliste fantaisiste** (photo de cinéma,
 live-action), direction validée carte par carte au moment de leur création.
 Le reste de la collection reste en huile ; une éventuelle conversion globale
@@ -320,9 +320,6 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
   sujets ; les plans larges y arrivent mieux que les gros plans ;
 - aucun texte, glyphe, logo ni interface dessinée.
 
-- **Bâton des citernes** (`baton-des-citernes.jpg`) — magicienne sur un petit
-  bateau dans une citerne inondée : son bâton fait léviter un serpent géant
-  dans un tourbillon d'eau ; elle regarde le serpent, pas le spectateur.
 - **Serpent des citernes** (`serpent-des-citernes.jpg`) — le jeton évoqué
   par le Bâton : serpent verdâtre dressé dans la citerne moussue.
 
@@ -360,17 +357,18 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
 
 ## Dérogation : la passe nihonga algérienne (octobre 2026)
 
-Six héros et une arme — les cinq du récit, **Salem** (`salem.jpg`), **Yamina**
-(`yamina.jpg`), **Fériel** (`feriel.jpg`), **Tarek** (`tarek.jpg`) et
-**Boualem** (`boualem.jpg`), plus le **Serpent du monde**
-(`serpent-du-monde.jpg`, figure du Nord) et l'**Armure de cendres**
-(`armure-de-cendres.jpg`) — dérogent **volontairement** à la
+Six héros et deux armes — les cinq du récit, **Salem** (`salem.jpg`),
+**Yamina** (`yamina.jpg`), **Fériel** (`feriel.jpg`), **Tarek** (`tarek.jpg`)
+et **Boualem** (`boualem.jpg`), plus le **Serpent du monde**
+(`serpent-du-monde.jpg`, figure du Nord), l'**Armure de cendres**
+(`armure-de-cendres.jpg`) et le **Bâton des citernes**
+(`baton-des-citernes.jpg`) — dérogent **volontairement** à la
 direction « huile sur toile » ci-dessus : ils sont repeints en **peinture
 japonaise nihonga**
 (pigments minéraux *iwa-enogu* mats, blanc de coquille *gofun*, sous-drawing
 à l'encre *sumi*, fibre de papier *kozo washi*, nuages d'or plats *suyari
 kasumi* sur fond de feuille d'or *kinpaku*), direction demandée explicitement
-pour ces sept cartes. Le reste de la collection reste en huile, à l'exception
+pour ces huit cartes. Le reste de la collection reste en huile, à l'exception
 des dérogations déjà documentées (Soleil rouge en kaiga, armes en
 photoréaliste, gel en fresque).
 
@@ -413,12 +411,23 @@ photoréaliste, gel en fresque).
   facture change, du photoréaliste vers le nihonga, avec les motifs amazighs
   damasquinés dans l'acier noirci. Aucun ajout, aucun retrait de sujet :
   c'est une conversion de style, pas une recomposition.
+- le **Bâton des citernes** est **recomposé sur le bâton et le serpent** :
+  gros plan sur la main et l'avant-bras qui serrent le bâton dressé, le
+  serpent enroulé en spirales autour du bras, sa tête levée près du pommeau
+  luisant. Le bâton et le serpent remplissent le cadre ; la magicienne
+  n'apparaît que par ce bras — ni visage, ni corps entier, ni barque. La
+  citerne inondée reste le décor, traité en aplat décoratif. Motifs amazighs
+  gravés dans le laiton du bâton et dans la pierre, bracelet kabyle argent et
+  corail au poignet.
 
 ### Versions de cache
 
 Les six peintures de héros sont datées ensemble par la révision
 `heros-nihonga-algerien-v1` dans `CARD_ART_CACHE_VERSIONS`
-(`RpgDuelPage.jsx`) ; l'Armure de cendres porte la sienne, `armure-nihonga-v1`.
+(`RpgDuelPage.jsx`) ; l'Armure de cendres porte la sienne, `armure-nihonga-v1`,
+et le Bâton des citernes, `baton-nihonga-main-serpent-v1`. Le jeton
+`serpent-des-citernes` reste, lui, dans le lot photoréaliste : il n'a pas
+encore été repris.
 Mêmes noms de fichiers, donc aucun cache ne peut resservir les huiles
 précédentes. Pour le Serpent du monde, la révision de la passe l'emporte sur
 `SET_NEIGE_ART_VERSION` — elle est datée une seule fois pour toutes ses cartes.
