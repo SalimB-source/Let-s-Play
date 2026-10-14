@@ -103,6 +103,16 @@ function valeurEffet(effet = {}) {
       return 2;
     case 'combat':
       return 2;
+    // Les trois effets nés avec le lot d'équipements du Sable : un mana rendu
+    // vaut un peu plus qu'un mana posé (il arrive au moment de l'attaque), une
+    // lecture de deck vaut la moitié d'une pioche (le terrain n'est pas
+    // garanti), et un compteur de Jitte vaut le mode qu'il paiera.
+    case 'sable':
+      return montant * 1.2;
+    case 'regarder-dessus':
+      return 1.5;
+    case 'compteurs-arme':
+      return montant * 2;
     default:
       return 0;
   }
@@ -127,7 +137,23 @@ export function valeurCarte(carte) {
     if (carte.donne?.furie) valeur += 1 + 0.7 * carte.donne.furie;
     if (carte.donne?.immunite) valeur += 2;
     if (carte.donne?.rapidite) valeur += 0.5;
+    if (carte.donne?.coupRapide) valeur += 2;
     if (carte.declenche?.effet) valeur += valeurEffet(carte.declenche.effet);
+    // Les déclencheurs du porteur (lot du Sable,
+    // `docs/rpg/14-equipements-du-sable.md`) : ce que l'arme rapporte à
+    // CHAQUE attaque vaut davantage que le même effet joué une seule fois —
+    // d'où le coefficient. Un jeton appelé au combat vaut son corps.
+    if (carte.porteurAttaque) valeur += valeurEffet(carte.porteurAttaque) * 1.5;
+    if (carte.porteurBlesseCreature) valeur += valeurEffet(carte.porteurBlesseCreature) * 1.5;
+    if (carte.porteurBlesseSorcier) {
+      valeur += valeurEffet(carte.porteurBlesseSorcier) * 1.5
+        + (carte.porteurBlesseSorcier.type === 'jetons' ? 2.5 : 0);
+    }
+    if (carte.porteurBlesse) valeur += valeurEffet(carte.porteurBlesse) * 2;
+    // Le Licou du chien de sable : deux cartes, payées du porteur.
+    if (carte.porteurMeurt) valeur += valeurEffet(carte.porteurMeurt) * 0.8;
+    // L'arme vivante se joue la table vide : elle apporte son propre bras.
+    if (carte.armeVivante) valeur += 2.5;
     // Un jeton appelé à l'arrivée (le serpent du Bâton) vaut sa frappe d'un
     // tour ; la capacité activée vaut l'option de le rappeler à volonté.
     if (carte.arrivee?.type === 'jetons') valeur += 3;

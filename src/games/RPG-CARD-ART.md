@@ -329,6 +329,47 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
 - **Serpent des citernes** (`serpent-des-citernes.jpg`) — le jeton évoqué
   par le Bâton : serpent verdâtre dressé dans la citerne moussue.
 
+## Dérogation : les équipements du Sable en nihonga coloré (octobre 2026)
+
+Les dix cartes du **lot d'équipements du Sable** (`docs/rpg/14-equipements-du-sable.md`)
+dérogent **volontairement** à la direction « huile sur toile » comme à la
+dérogation photoréaliste des quatre armes du prototype : elles sont livrées en
+**nihonga coloré** — la peinture japonaise (contours de sumi, pigments
+minéraux, passages de feuille d'or, papier washi) — **trempée dans une palette
+algérienne saturée** : indigo du tagelmust, ocre safran, rouge henné, turquoise
+des ksour, or du sable. Le Japon fournit la matière picturale, l'Algérie la
+lumière et les couleurs ; le reste de la collection reste en huile.
+
+Règles de tir propres à ces dix cartes :
+
+- **l'équipement seul, rien d'autre** : ni porteur, ni animal, ni main, ni
+  silhouette. C'est l'objet qui est la carte — posé, planté ou pendu sur un
+  support sobre (dalle de grès, seuil de pierre, piquet de bois, monticule de
+  sable), jamais porté ;
+- l'objet est **entièrement dans le cadre**, d'une extrémité à l'autre, avec de
+  l'espace libre autour de lui ;
+- **composition centrée pour un cadre 4:5**, fond sobre — washi or de sable,
+  lavis d'indigo en haut du ciel — pour que la peinture se recadre au ratio de
+  la face sans rien rogner ;
+- **plein bord à bord** : aucun cadre, liseré, filet, marge ornementale ni
+  vignettage — la peinture court jusqu'aux quatre bords, comme pour le reste de
+  la collection ;
+- aucun texte, glyphe, logo ni interface dessinée ;
+- plein art vertical, livré au ratio exact de la face (1024×1280).
+
+| Carte | L'objet peint |
+|---|---|
+| Sandales de Tislit | la paire de sandales de cuir posée sur le seuil de pierre d'une maison du ksar, porte entrouverte |
+| Cuirasse de sel | la cuirasse de cuir incrustée de sel, dressée sur un support de bois sombre |
+| Javelot du beffroi | le javelot planté en biais dans un monticule de sable |
+| Licou du chien de sable | le collier et le harnais tressés posés à plat sur une dalle de grès |
+| Boussole du Hoggar | la boussole de laiton ouverte, posée à plat sur un rocher |
+| Harnais du méhari | le harnais de méhari pendu à un piquet de bois, glands rouges et disques de laiton |
+| Masque du guetteur | le masque de cuir à œillère et cordons indigo, posé sur une dalle de grès |
+| Jitte d'Amayas | le bâton fourchu de fer posé sur une dalle de grès |
+| Lame des ergs | le khopesh de bronze planté dans le sable |
+| Takouba de Tin Hinan | la takouba dressée, la pointe posée sur une dalle de pierre |
+
 ## Dérogation : le lot du gel du Serment en fresque (octobre 2026)
 
 Les six sorts de la famille « Gel & contrôle du combat » (`poigne-de-givre`,

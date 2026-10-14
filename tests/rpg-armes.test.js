@@ -68,10 +68,23 @@ const equiper = (duel, cote, armeId, entite) => {
 
 // ── Le catalogue ────────────────────────────────────────────────────────────
 
-test('le catalogue compte quatre armes, une par élément, avec leur peinture', () => {
-  assert.equal(RPG_ARME_CARDS.length, 4);
-  assert.deepEqual(RPG_ARME_CARDS.map((carte) => carte.element).sort(), ['braise', 'eau', 'neige', 'sable']);
-  for (const carte of RPG_ARME_CARDS) {
+/**
+ * Les dix équipements du Sable (`docs/rpg/14-equipements-du-sable.md`) sont
+ * venus s'ajouter au prototype : pour que ces contrôles historiques restent
+ * lisibles, ils continuent de ne regarder que les quatre armes d'origine. Le
+ * lot a son propre fichier de tests (`tests/rpg-equipements-sable.test.js`).
+ */
+const LOT_EQUIPEMENTS_SABLE = [
+  'sandales-de-tislit', 'cuirasse-de-sel', 'javelot-du-beffroi',
+  'licou-du-chien-de-sable', 'boussole-du-hoggar', 'harnais-du-mehari',
+  'masque-du-guetteur', 'jitte-d-amayas', 'lame-des-ergs', 'takouba-de-tin-hinan',
+];
+const ARMES_PROTOTYPE = RPG_ARME_CARDS.filter((carte) => !LOT_EQUIPEMENTS_SABLE.includes(carte.id));
+
+test('le prototype compte quatre armes, une par élément, avec leur peinture', () => {
+  assert.equal(ARMES_PROTOTYPE.length, 4);
+  assert.deepEqual(ARMES_PROTOTYPE.map((carte) => carte.element).sort(), ['braise', 'eau', 'neige', 'sable']);
+  for (const carte of ARMES_PROTOTYPE) {
     assert.equal(carte.kind, 'arme', `${carte.id} est une arme`);
     assert.match(carte.typeLine, /^Arme — /, `${carte.id} affiche sa ligne de type`);
     assert.ok(carte.bonus && Number.isInteger(carte.bonus.atk) && Number.isInteger(carte.bonus.def),
@@ -102,15 +115,38 @@ test('le catalogue compte quatre armes, une par élément, avec leur peinture', 
 test('chaque deck du catalogue aligne l’arme de sa couleur, toujours à 40 cartes valides', () => {
   const armeParDeck = {
     'serment-du-soleil-rouge': 'sabre-maudit',
-    'veilleurs-du-desert': 'takouba-des-pistes',
     'cour-des-djinns': 'armure-de-cendres',
-    'sentiers-de-cendre': 'armure-de-cendres',
     'maree-des-abysses': 'baton-des-citernes',
     'serment-des-neuf-hivers': 'lance-de-givre',
   };
   for (const deck of RPG_DECKS) {
     assert.equal(deck.cardIds.length, 40, `${deck.name} fait 40 cartes`);
     assert.equal(rpgValiderDeck(deck.cardIds).ok, true, `${deck.name} reste valide`);
+    if (deck.id === 'veilleurs-du-desert') {
+      // Le Sable aligne maintenant onze armes : le composeur y prend les
+      // meilleures — la mythique du lot d'abord, puis la meilleure rare.
+      assert.equal(deck.cardIds.includes('takouba-de-tin-hinan'), true,
+        'les Veilleurs alignent la Takouba de Tin Hinan');
+      assert.equal(deck.cardIds.filter((id) => armeById(id)?.element === 'sable').length, 2,
+        'les Veilleurs alignent deux armes de Sable');
+      continue;
+    }
+    if (deck.id === 'sentiers-de-cendre') {
+      // Hybride Sable + Braise, deux places seulement : l'une tient à la
+      // signature du deck (la Takouba des pistes), l'autre va à la meilleure
+      // arme des deux couleurs — la mythique du lot du Sable.
+      assert.ok(deck.cardIds.includes('takouba-des-pistes'),
+        'les Sentiers gardent la Takouba des pistes de leur signature');
+      // Le deck hybride aligne les deux mythiques d'équipement de ses
+      // couleurs : l'Armure de cendres et la Takouba de Tin Hinan.
+      assert.ok(deck.cardIds.includes('armure-de-cendres'),
+        'les Sentiers alignent l’Armure de cendres');
+      assert.ok(deck.cardIds.includes('takouba-de-tin-hinan'),
+        'les Sentiers alignent la Takouba de Tin Hinan');
+      assert.equal(deck.cardIds.filter((id) => armeById(id)).length, 3,
+        'les Sentiers alignent trois armes');
+      continue;
+    }
     assert.ok(deck.cardIds.includes(armeParDeck[deck.id]),
       `${deck.name} aligne ${armeParDeck[deck.id]}`);
   }
@@ -137,8 +173,12 @@ test('le composeur remplit un quota d’armes comme les autres quotas', () => {
     armes: 2,
   }, CATALOGUE_DU_COMPOSEUR);
   assert.equal(liste.length, 40);
-  assert.equal(liste.filter((id) => id === 'takouba-des-pistes').length, 2,
-    'les deux places d’armes vont à la Takouba, seule arme Sable');
+  // Le Sable n'a plus une seule arme mais onze : les deux places vont aux
+  // deux meilleures, la mythique du lot puis la Jitte (la meilleure rare).
+  assert.equal(liste.filter((id) => id === 'takouba-de-tin-hinan').length, 1,
+    'la place de mythique va à la Takouba de Tin Hinan, seule mythique Sable');
+  assert.equal(liste.filter((id) => id === 'jitte-d-amayas').length, 1,
+    'la seconde place va à la meilleure arme rare du Sable');
   assert.equal(rpgValiderDeck(liste).ok, true);
 });
 

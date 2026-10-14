@@ -1,0 +1,381 @@
+/**
+ * Le lot d'équipements du Sable — dix armes, une mécanique par carte.
+ *
+ * Dessiné dans l'esprit des Equipment de Magic (`docs/rpg/14-equipements-du-sable.md`)
+ * et traduit dans le moteur du Sablier : les mots-clés donnés (Rapidité,
+ * Esquive, Coup rapide), les déclencheurs du porteur — `porteurAttaque`,
+ * `porteurBlesse`, `porteurBlesseCreature`, `porteurBlesseSorcier` — le
+ * déclencheur de mort `porteurMeurt`, les compteurs dépensables de la Jitte
+ * et l'arme vivante qui apporte son propre porteur.
+ *
+ * Contrôlés ici : le catalogue, chaque brique moteur (`appliquer`,
+ * `rpgLancerAttaque`, `rpgJouerArme`, `rpgActiverArme`, `enterrer`), et
+ * l'IA du sorcier qui sait dépenser des compteurs.
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+import {
+  rpgNouveauDuel,
+  rpgJouerCreature,
+  rpgJouerArme,
+  rpgActiverArme,
+  rpgPeutActiverArme,
+  rpgPeutBloquerAttaquant,
+  rpgLancerAttaque,
+  rpgBlesserCreature,
+  rpgDefausserCarte,
+  rpgSorcierActiverArmes,
+} from '../src/games/rpgDuel.js';
+import { RPG_ARME_CARDS, RPG_DUEL_CARDS, armeById, cardById } from '../src/games/rpgCards.js';
+
+/** Les dix cartes du lot, dans l'ordre du catalogue. */
+const LOT = [
+  'sandales-de-tislit', 'cuirasse-de-sel', 'javelot-du-beffroi',
+  'licou-du-chien-de-sable', 'boussole-du-hoggar', 'harnais-du-mehari',
+  'masque-du-guetteur', 'jitte-d-amayas', 'lame-des-ergs', 'takouba-de-tin-hinan',
+];
+const cartesDuLot = RPG_ARME_CARDS.filter((carte) => LOT.includes(carte.id));
+
+/** Un deck épais : les effets du lot piochent et lisent souvent. */
+const deckTest = () => Array.from({ length: 24 }, () => 'desert');
+const duelVide = () => rpgNouveauDuel({ joueurDeck: deckTest(), sorcierDeck: deckTest() });
+const donner = (duel, cote, id) => duel[cote].main.push(id);
+const manaPlein = (duel, cote) => { duel[cote].mana = { braise: 9, eau: 9, sable: 9, neige: 9 }; };
+const manaNul = (duel, cote) => { duel[cote].mana = { braise: 0, eau: 0, sable: 0, neige: 0 }; };
+
+/** Pose une créature et rend son entité : le futur porteur. */
+const poser = (duel, cote, id) => {
+  donner(duel, cote, id);
+  manaPlein(duel, cote);
+  const res = rpgJouerCreature(duel, cote, id);
+  assert.equal(res.ok, true, `${id} entre en jeu`);
+  return res.entite;
+};
+
+/** Lève le mal d'invocation : une créature posée ne peut pas attaquer le tour même. */
+const rendrePret = (entite) => { entite.ready = true; entite.attaquee = false; };
+
+/** Attache une arme à un porteur (ou à personne, pour une arme vivante). */
+const equiper = (duel, cote, armeId, entite = null) => {
+  donner(duel, cote, armeId);
+  manaPlein(duel, cote);
+  const res = rpgJouerArme(duel, cote, armeId, entite?.id ?? null);
+  assert.equal(res.ok, true, `${armeId} s'attache (${res.raison ?? 'ok'})`);
+  return res.entite;
+};
+
+// ── Le catalogue ────────────────────────────────────────────────────────────
+
+test('le lot compte dix équipements de Sable, tous peints', () => {
+  assert.equal(cartesDuLot.length, 10);
+  for (const carte of cartesDuLot) {
+    assert.equal(carte.element, 'sable', `${carte.id} est une carte de Sable`);
+    assert.equal(carte.kind, 'arme', `${carte.id} est une arme`);
+    assert.match(carte.typeLine, /^Arme — /, `${carte.id} affiche sa ligne de type`);
+    assert.ok(Number.isInteger(carte.bonus?.atk) && Number.isInteger(carte.bonus?.def),
+      `${carte.id} donne un bonus +attaque/+défense`);
+    assert.ok(carte.text && carte.flavor, `${carte.id} a son texte et sa saveur`);
+    assert.equal(armeById(carte.id), carte, `${carte.id} se retrouve par armeById`);
+    assert.ok(RPG_DUEL_CARDS.some((candidate) => candidate.id === carte.id),
+      `${carte.id} est une carte du duel`);
+    const image = fileURLToPath(new URL(`../public/cards/${carte.id}.jpg`, import.meta.url));
+    assert.ok(existsSync(image), `${carte.id} a sa peinture plein art (${image})`);
+  }
+});
+
+test('le lot s’étage par rareté : trois communes, trois inhabituelles, trois rares, une mythique', () => {
+  const compter = (rarete) => cartesDuLot.filter((carte) => carte.rarity === rarete).length;
+  assert.equal(compter('commune'), 3);
+  assert.equal(compter('inhabituelle'), 3);
+  assert.equal(compter('rare'), 3);
+  assert.equal(compter('mythique'), 1);
+  assert.equal(armeById('takouba-de-tin-hinan').rarity, 'mythique');
+});
+
+// ── Les mots-clés donnés ────────────────────────────────────────────────────
+
+test('les Sandales de Tislit donnent la Rapidité : un jeton équipé frappe le tour même', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  assert.equal(porteur.ready, false, 'le mal d’invocation tient la créature');
+  equiper(duel, 'joueur', 'sandales-de-tislit', porteur);
+  assert.equal(porteur.rapidite, true, 'le porteur gagne la Rapidité');
+  assert.equal(porteur.ready, true, 'il peut attaquer le tour où il arrive');
+  assert.equal(porteur.def, 2 + 1, '+0/+1');
+});
+
+test('la Cuirasse de sel donne +0/+3 et Esquive 1', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
+  equiper(duel, 'joueur', 'cuirasse-de-sel', porteur);
+  assert.equal(porteur.def, 5);
+  assert.equal(porteur.esquive, 1);
+  rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'braise', null, 'magie');
+  assert.equal(porteur.pv, 3, '3 dégâts moins 1 d’Esquive sur 5 de défense');
+});
+
+test('le Javelot du beffroi donne le Coup rapide, que le remplacement retire', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'javelot-du-beffroi', porteur);
+  assert.equal(porteur.coupRapide, true, 'le porteur gagne le Coup rapide');
+  assert.equal(porteur.atk, 4, '+2/+0');
+  // Une seconde arme envoie la première au cimetière : le mot-clé repart.
+  equiper(duel, 'joueur', 'sandales-de-tislit', porteur);
+  assert.equal(porteur.coupRapide, false, 'le Coup rapide appartenait au Javelot');
+  assert.ok(duel.joueur.cimetiere.includes('javelot-du-beffroi'),
+    'le Javelot remplacé rejoint le cimetière');
+});
+
+// ── Le Licou du chien de sable ──────────────────────────────────────────────
+
+test('le Licou tue ce qu’il équipe et paie deux cartes', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'fennec-des-decombres'); // 3/1
+  const mainAvant = duel.joueur.main.length;
+  equiper(duel, 'joueur', 'licou-du-chien-de-sable', porteur);
+  assert.equal(duel.joueur.creatures.length, 0, 'le Fennec 3/1 passe à 3/0 : il meurt');
+  assert.equal(duel.joueur.main.length, mainAvant + 2, 'deux cartes pour un mana');
+  assert.ok(duel.joueur.cimetiere.includes('licou-du-chien-de-sable'),
+    'l’arme tombe au cimetière avec son porteur');
+});
+
+test('sur une créature solide, le Licou reste une arme offensive et punit sa mort', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
+  equiper(duel, 'joueur', 'licou-du-chien-de-sable', porteur);
+  assert.equal(duel.joueur.creatures.length, 1, '2/2 passe à 3/1 : il survit');
+  assert.equal(porteur.atk, 3);
+  assert.equal(porteur.def, 1);
+  const mainAvant = duel.joueur.main.length;
+  rpgBlesserCreature(duel, 'joueur', porteur.id, 1, 'braise', null, 'magie');
+  assert.equal(duel.joueur.main.length, mainAvant + 2, 'sa mort pioche quand même');
+});
+
+test('un renvoi en main n’est pas une mort : le Licou ne pioche pas', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'licou-du-chien-de-sable', porteur);
+  const mainAvant = duel.joueur.main.length;
+  // Le renvoi passe par `renvoyerEnMain` : l’arme tombe, rien ne se déclenche.
+  duel.joueur.creatures = duel.joueur.creatures.filter((entite) => entite.id !== porteur.id);
+  assert.equal(duel.joueur.main.length, mainAvant, 'aucune pioche');
+});
+
+// ── Les déclencheurs d'attaque ──────────────────────────────────────────────
+
+test('la Boussole du Hoggar lit le dessus du deck à chaque attaque', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'boussole-du-hoggar', porteur);
+
+  // Un terrain sur le dessus : il est révélé et rejoint la main.
+  rendrePret(porteur);
+  duel.joueur.deck[duel.joueur.deck.length - 1] = 'dunes-du-tenere';
+  const deckAvant = duel.joueur.deck.length;
+  const mainAvant = duel.joueur.main.length;
+  const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
+  assert.equal(res.ok, true, 'l’attaque passe');
+  assert.equal(duel.joueur.main.length, mainAvant + 1, 'le terrain rejoint la main');
+  assert.equal(duel.joueur.deck.length, deckAvant - 1, 'il a quitté le deck');
+  assert.ok(duel.joueur.main.includes('dunes-du-tenere'));
+
+  // Autre chose qu'un terrain : la carte reste en place et n'est pas nommée.
+  rendrePret(porteur);
+  duel.joueur.deck[duel.joueur.deck.length - 1] = 'fennec-des-decombres';
+  const deckApres = duel.joueur.deck.length;
+  rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
+  assert.equal(duel.joueur.deck.length, deckApres, 'le deck ne bouge pas');
+  assert.ok(duel.log.some((ligne) => ligne.includes('ce n’est pas un terrain')),
+    'le journal ne dit pas ce qu’il a vu');
+});
+
+test('le Harnais du méhari rend un mana de sable à chaque attaque', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'harnais-du-mehari', porteur);
+  assert.deepEqual(porteur.atk, 4, '+2/+2 sur un 2/2');
+  rendrePret(porteur);
+  manaNul(duel, 'joueur');
+  rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
+  assert.equal(duel.joueur.mana.sable, 1, 'un mana de sable rendu');
+  rendrePret(porteur);
+  rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
+  assert.equal(duel.joueur.mana.sable, 2, 'à chaque attaque');
+});
+
+// ── Les déclencheurs de blessures ───────────────────────────────────────────
+
+test('le Masque du guetteur fait piocher deux cartes puis défausser, sur le sorcier', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'masque-du-guetteur', porteur);
+  rendrePret(porteur);
+  const pvAvant = duel.sorcier.pv;
+  const mainAvant = duel.joueur.main.length;
+  rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
+  assert.equal(duel.sorcier.pv, pvAvant - porteur.atk, 'le sorcier a été blessé');
+  assert.equal(duel.joueur.main.length, mainAvant + 2, 'deux cartes de butin');
+  assert.equal(duel.defausseEnAttente?.restant, 1, 'une carte à défausser');
+  rpgDefausserCarte(duel, 'joueur', 0);
+  assert.equal(duel.defausseEnAttente, null, 'la défausse est soldée');
+});
+
+test('bloqué, le Masque du guetteur ne se déclenche pas', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  const mur = poser(duel, 'sorcier', 'chien-du-guet');
+  equiper(duel, 'joueur', 'masque-du-guetteur', porteur);
+  rendrePret(porteur);
+  const mainAvant = duel.joueur.main.length;
+  rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [mur.id] });
+  assert.equal(duel.joueur.main.length, mainAvant, 'rien n’a été blessé chez le sorcier');
+  assert.equal(duel.defausseEnAttente, null);
+});
+
+// ── La Jitte d’Amayas ───────────────────────────────────────────────────────
+
+test('la Jitte accumule un compteur par attaque, et se vide en trois modes', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  const proie = poser(duel, 'sorcier', 'chien-du-guet');
+  equiper(duel, 'joueur', 'jitte-d-amayas', porteur);
+  assert.equal(porteur.arme.compteurs, undefined, 'la Jitte arrive vide');
+  assert.equal(rpgPeutActiverArme(duel, 'joueur', porteur.id), false, 'rien à dépenser');
+
+  rendrePret(porteur);
+  rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
+  assert.equal(porteur.arme.compteurs, 1, 'un compteur de sable par blessure portée');
+  rendrePret(porteur);
+  rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
+  assert.equal(porteur.arme.compteurs, 2);
+
+  assert.equal(rpgPeutActiverArme(duel, 'joueur', porteur.id), true);
+  // Mode « Force du guide » : +2/+2 jusqu’à la fin du tour, sur le porteur seul.
+  const atkAvant = porteur.atk;
+  const res = rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'force' });
+  assert.equal(res.ok, true, 'le mode est joué');
+  assert.equal(porteur.atk, atkAvant + 2);
+  assert.equal(porteur.arme.compteurs, 1, 'un compteur dépensé');
+  assert.ok(duel.joueur.bonusTemporaires.some((bonus) => bonus.entiteId === porteur.id),
+    'le bonus est inscrit au carnet du tour');
+
+  // Mode « Trait de sable » : 1 blessure à une créature adverse désignée.
+  const pvProie = proie.pv;
+  rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'trait', cibleId: proie.id });
+  assert.equal(proie.pv, pvProie - 1);
+  assert.equal(porteur.arme.compteurs, 0, 'la Jitte est à sec');
+  assert.equal(rpgPeutActiverArme(duel, 'joueur', porteur.id), false);
+  assert.equal(rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'puits' }).raison, 'compteurs');
+});
+
+test('le mode « Halte au puits » soigne, et un mode inconnu est refusé', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'jitte-d-amayas', porteur);
+  porteur.arme.compteurs = 1;
+  duel.joueur.pv = 10;
+  const res = rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'puits' });
+  assert.equal(res.ok, true);
+  assert.equal(duel.joueur.pv, 12, 'deux points de vie');
+  porteur.arme.compteurs = 1;
+  assert.equal(rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'inconnu' }).raison, 'mode');
+  assert.equal(rpgActiverArme(duel, 'joueur', porteur.id).raison, 'mode',
+    'une arme à modes exige son mode');
+});
+
+// ── L'arme vivante ──────────────────────────────────────────────────────────
+
+test('la Lame des ergs se joue la table vide : elle crée son chien et s’y attache', () => {
+  const duel = duelVide();
+  assert.equal(duel.joueur.creatures.length, 0, 'aucune créature à équiper');
+  const porteur = equiper(duel, 'joueur', 'lame-des-ergs', null);
+  assert.equal(duel.joueur.creatures.length, 1, 'un chien de sable est né');
+  assert.equal(porteur.carteId, 'chien-de-sable');
+  assert.equal(porteur.arme.carteId, 'lame-des-ergs', 'la lame s’y est attachée');
+  assert.equal(porteur.atk, 1 + 3, 'le chien 1/1 passe à 4/2');
+  assert.equal(porteur.def, 1 + 1);
+});
+
+test('une arme sans arme vivante refuse toujours de se jouer sans créature', () => {
+  const duel = duelVide();
+  donner(duel, 'joueur', 'sandales-de-tislit');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgJouerArme(duel, 'joueur', 'sandales-de-tislit', null).raison, 'cible');
+});
+
+// ── La mythique ─────────────────────────────────────────────────────────────
+
+test('la Takouba de Tin Hinan : le Coup rapide déclenche ses deux effets le même tour', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
+  const mur = poser(duel, 'sorcier', 'dune-marchante'); // 2/5
+  equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur); // → 5/4, Coup rapide
+  assert.equal(porteur.coupRapide, true);
+  assert.equal(porteur.infiltration, false, 'elle se fait bloquer : le Coup rapide est la voie');
+  assert.equal(rpgPeutBloquerAttaquant(mur, porteur), true);
+
+  rendrePret(porteur);
+  const mainAvant = duel.joueur.main.length;
+  const pvMur = mur.pv;
+  // Coup rapide sur le mur, puis l'attaque passe : le sorcier encaisse.
+  const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], {}, null, [], { [porteur.id]: mur.id });
+  assert.equal(res.ok, true, `l’attaque passe (${res.raison ?? 'ok'})`);
+  assert.equal(mur.pv, pvMur - porteur.atk, 'le Coup rapide a frappé le mur');
+  assert.equal(duel.joueur.main.length, mainAvant + 1, 'une carte pour une créature blessée');
+  const chiens = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');
+  assert.equal(chiens.length, 1, 'le sorcier blessé lève un chien de sable');
+});
+
+test('la Takouba bloquée : le Coup rapide pioche, mais le sorcier ne lève rien', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  const victime = poser(duel, 'sorcier', 'dune-marchante'); // emportée par le Coup rapide
+  const mur = poser(duel, 'sorcier', 'chien-du-guet'); // celui-là tient le blocage
+  equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur);
+  rendrePret(porteur);
+  const mainAvant = duel.joueur.main.length;
+  const pvSorcier = duel.sorcier.pv;
+  const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [victime.id, mur.id] },
+    null, [], { [porteur.id]: victime.id });
+  assert.equal(res.ok, true, `l’attaque passe (${res.raison ?? 'ok'})`);
+  assert.equal(duel.sorcier.creatures.includes(victime), false, 'le Coup rapide l’a emportée');
+  assert.equal(duel.joueur.main.length, mainAvant + 1, 'la frappe précoce a blessé une créature');
+  assert.equal(duel.sorcier.pv, pvSorcier, 'le mur a tenu : le sorcier n’a rien pris');
+  assert.equal(duel.joueur.creatures.filter((e) => e.carteId === 'chien-de-sable').length, 0,
+    'aucun chien');
+});
+
+test('les compteurs de la Jitte partent avec elle : le sorcier sait les dépenser', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'sorcier', 'chien-du-guet');
+  const proie = poser(duel, 'joueur', 'chien-du-guet');
+  donner(duel, 'sorcier', 'jitte-d-amayas');
+  manaPlein(duel, 'sorcier');
+  assert.equal(rpgJouerArme(duel, 'sorcier', 'jitte-d-amayas', porteur.id).ok, true);
+  porteur.arme.compteurs = 2;
+  proie.pv = 1; // une proie à achever : l'IA choisit le Trait de sable
+  duel.tour = 'sorcier'; // l'activation n'appartient qu'à son propre tour
+  const actives = rpgSorcierActiverArmes(duel);
+  assert.ok(actives.length >= 1, 'le sorcier active son arme');
+  assert.ok(porteur.arme.compteurs < 2, 'il dépense ses compteurs');
+  assert.equal(duel.joueur.creatures.length, 0, 'la proie a été achevée');
+});
+
+// ── Le catalogue reste jouable ──────────────────────────────────────────────
+
+test('chaque carte du lot se joue et s’attache sans casser la table', () => {
+  for (const id of LOT) {
+    const duel = duelVide();
+    const porteur = poser(duel, 'joueur', 'dune-marchante'); // 2/5, encaisse tout
+    donner(duel, 'joueur', id);
+    manaPlein(duel, 'joueur');
+    const res = rpgJouerArme(duel, 'joueur', id, porteur.id);
+    assert.equal(res.ok, true, `${id} s'attache (${res.raison ?? 'ok'})`);
+    assert.equal(duel.joueur.creatures.includes(porteur), true, `${id} laisse son porteur debout`);
+    assert.equal(cardById(id).kind, 'arme');
+  }
+});
