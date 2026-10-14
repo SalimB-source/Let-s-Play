@@ -18,6 +18,13 @@ export const RPG_CARD_LESSONS = Object.freeze([
     text: 'Pétra produit au choix un mana Braise ou Sable quand vous l’engagez. Le choix se fait à chaque activation ; elle ne produit qu’un mana et reste engagée jusqu’à son dégagement.',
   },
   {
+    id: 'arme-maudite',
+    section: 'Magies',
+    cardIds: ['sabre-maudit', 'samourai-du-torii'],
+    title: 'Une arme reste attachée à son porteur',
+    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +5/-2 et Coup rapide, comme Fériel. Ce n’est pas Rapidité : le mal d’invocation reste applicable. Le bonus persiste entre les tours ; une défense réduite à zéro tue le porteur. Quand il meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Honneur ni le type Samouraï.',
+  },
+  {
     id: 'rituel-ephemere',
     section: 'Magies',
     cardIds: ['rempart-de-dunes', 'parade-du-verre'],
@@ -165,11 +172,18 @@ export const RPG_CARD_LESSONS = Object.freeze([
     text: 'Si une créature avec Furie est blessée et survit, elle gagne +X/+X — une seule fois : la première blessure survivée l’enflamme, les suivantes ne la grandissent plus. Le Berserk gagne +2/+2, le Jarl +3/+3. Un bouclier qui absorbe entièrement le coup ne déclenche pas Furie.',
   },
   {
+    id: 'honneur',
+    section: 'Capacités des créatures',
+    cardIds: ['ashigaru-des-braises', 'samourai-du-torii', 'oni-de-la-fournaise'],
+    title: 'Honneur : une dernière frappe à la mort',
+    text: 'Quand une créature avec Honneur meurt, elle inflige X dégâts à une seule créature adverse vivante choisie au hasard. Honneur 1 pour les communes et inhabituelles, 2 pour les rares, 3 pour les mythiques. Sans créature adverse, rien ne se passe : le sorcier n’est jamais visé. Boucliers et protection s’appliquent normalement. Un renvoi en main ou un contresort ne déclenche pas Honneur.',
+  },
+  {
     id: 'auras-et-resonance',
     section: 'Capacités des créatures',
-    cardIds: ['tarek', 'valkyrie-des-glaces'],
+    cardIds: ['tarek', 'valkyrie-des-glaces', 'tengu-du-mont-ardent'],
     title: 'Une aura agit tant que sa source reste en jeu',
-    text: 'Tarek renforce les créatures Sable de son camp, et l’égide d’Amani donne +0/+2 aux autres créatures du sien. La Résonance de la Valkyrie renforce toutes les créatures Neige sur les deux champs de bataille. Si la source quitte la table, le bonus d’aura correspondant disparaît.',
+    text: 'Tarek renforce les créatures Sable de son camp, et l’égide d’Amani donne +0/+2 aux autres créatures du sien. La Résonance de la Valkyrie renforce toutes les créatures Neige sur les deux champs de bataille. La Résonance samouraï du Tengu et de Kagutsuchi renforce uniquement les créatures de type Samouraï, même adverses et quelle que soit leur couleur, de +1/+1 par source. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas. La Résonance Neige reste indépendante. Si la source quitte la table, le bonus d’aura correspondant disparaît.',
   },
   {
     id: 'coup-rapide',

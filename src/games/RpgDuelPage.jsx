@@ -136,6 +136,23 @@ const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄�
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', hybride: 'Sable + Braise' };
 const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', hybride: 'Hybride' };
 const CARD_ART_CACHE_VERSIONS = {
+  'susanoo': 'susanoo-kaiga-couleurs-v1',
+  'orochi': 'orochi-kaiga-vert-rouge-v2',
+  'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
+  'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
+  'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
+  'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
+  // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
+  'ashigaru-des-braises': 'soleil-rouge-kaiga-couleurs-v7',
+  'ronin-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
+  'samourai-du-torii': 'soleil-rouge-kaiga-couleurs-v7',
+  'onna-musha-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
+  'tengu-du-mont-ardent': 'soleil-rouge-kaiga-couleurs-v7',
+  'oni-de-la-fournaise': 'soleil-rouge-kaiga-couleurs-v7',
+  'kagutsuchi-flamme-originelle': 'soleil-rouge-kaiga-couleurs-v7',
+  'frappe-iaijutsu': 'iaijutsu-kaiga-couleurs-sans-jambes-v10',
+  'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
+  'serment-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
   'pere-des-corbeaux': 'odin-photoreal-v1',
   'djinn-du-souk': 'munch-impressionniste-v3',
   'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
@@ -558,13 +575,14 @@ const RPG_DECK_FAMILLES = [
 ];
 
 function targetMode(carte) {
+  if (carte?.arrivee?.type === 'exil') return 'tous';
   if (carte?.arrivee?.type === 'combat' && carte.arrivee.cible === 'creature') return 'ennemi';
   if (carte?.arrivee?.type === 'retour-main') return carte.arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
   if (carte?.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature') return 'ennemi';
   if (carte?.effet?.type === 'degats' && carte.effet.cible === 'creature') return 'ennemi';
   // Renvoi en main : le joueur choisit la créature qui repart dans une main.
   if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
-  if (carte?.effet?.type === 'bouclier' && carte.effet.cible === 'creature-amie') return 'allie';
+  if (['bouclier', 'arme'].includes(carte?.effet?.type) && carte.effet.cible === 'creature-amie') return 'allie';
   return null;
 }
 
@@ -762,11 +780,14 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut être bloquée ce tour' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${entite.coupRapide ? ', Coup rapide : frappe une créature avant le combat' : ''}${entite.armes?.length ? `, arme attachée : ${entite.armes.map((id) => cardById(id)?.name).join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut être bloquée ce tour' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
+      {!!entite.armes?.length && <span className="rpg-card__weapons" title={entite.armes.map((id) => `${cardById(id)?.name} : +5/-2, Coup rapide`).join(' · ')}>
+        {entite.armes.map((id, index) => <img key={`${id}-${index}`} src={cardArt(id)} alt={`Arme attachée : ${cardById(id)?.name}`} />)}
+      </span>}
       <CardElementBadge carte={carte} />
       <header className="rpg-card__title">
         <ManaCost carte={carte} compact showElement={false} />
@@ -3201,7 +3222,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const modeCible = targetMode(carteCiblee);
   const ciblesCoupRapideLegales = (attaquant, cote = 'joueur') => {
     const carte = cardById(attaquant?.carteId);
-    if (!carte?.coupRapide) return [];
+    if (!attaquant?.coupRapide) return [];
     const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
     return duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
   };
@@ -3707,7 +3728,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const cibleAuto = ['combat', 'retour-main'].includes(carte.arrivee?.type)
+    const cibleAuto = ['combat', 'retour-main', 'exil'].includes(carte.arrivee?.type)
       ? cibleId
       : (duel.sorcier.creatures[0]?.id ?? null);
     const res = rpgJouerCreature(duel, 'joueur', carteId, cibleAuto);
@@ -3741,6 +3762,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return;
       }
       lancerMagie(carteId);
+      return;
+    }
+    if (carte.arrivee?.type === 'exil'
+      && [...duel.joueur.creatures, ...duel.sorcier.creatures].some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
+      setCibleEnCours(carteId);
+      force();
       return;
     }
     if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
@@ -3779,9 +3806,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       demarrerVolCarte(carte, index, () => poserTerrain(carteId));
     } else if (carte.kind === 'magie') {
       poserCarte(carteId);
-    } else if ((['combat', 'retour-main'].includes(carte.arrivee?.type)
+    } else if ((['combat', 'retour-main', 'exil'].includes(carte.arrivee?.type)
       || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature'))
-      && duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
+      && (carte.arrivee?.type === 'exil' ? [...duel.joueur.creatures, ...duel.sorcier.creatures] : duel.sorcier.creatures).some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
       carteCibleeHandIndexRef.current = index;
       poserCarte(carteId);
     } else {
@@ -3853,7 +3880,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return true;
     }
-    if (['combat', 'retour-main', 'degats'].includes(carteSource?.arrivee?.type)) {
+    if (['combat', 'retour-main', 'degats', 'exil'].includes(carteSource?.arrivee?.type)) {
       const carteId = cibleEnCours;
       const handIndex = carteCibleeHandIndexRef.current;
       carteCibleeHandIndexRef.current = null;
@@ -4482,7 +4509,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const bloqueur = liste.find((entite) => bloqueursDisponibles.some((disponible) => disponible.id === entite.id));
         if (bloqueur) return bloqueur;
       }
-      if (cibleEnCours && modeCible === 'allie') {
+      if (cibleEnCours && ['allie', 'tous'].includes(modeCible)) {
         const cible = liste.find((entite) => !rpgEstProtegee(entite, cardColors(carteCiblee)));
         if (cible) return cible;
       }
@@ -4491,7 +4518,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ?? liste.find((entite) => !entite.attaquee && !attaquants.includes(entite.id))
         ?? liste[0];
     }
-    if (cibleEnCours && modeCible === 'ennemi') {
+    if (cibleEnCours && ['ennemi', 'tous'].includes(modeCible)) {
       return liste.find((entite) => !rpgEstProtegee(entite, cardColors(carteCiblee))) ?? liste[0];
     }
     if (cibleAttaqueEnCours) {
@@ -4695,7 +4722,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
                       canTarget={Boolean(
-                        (cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee(entite, cardColors(carteCiblee)))
+                        (cibleEnCours && ['ennemi', 'tous'].includes(modeCible) && !rpgEstProtegee(entite, cardColors(carteCiblee)))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige'))
                         || (cibleAttaqueEnCours && ciblesCoupRapideLegales(
                           duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
@@ -4767,7 +4794,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       blocking={bloqueursSelectionnes.has(entite.id)}
                       selectedBlocker={bloqueurSelectionne === entite.id}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
-                      canTarget={Boolean((cibleEnCours && modeCible === 'allie' && !rpgEstProtegee(entite, cardColors(carteCiblee)))
+                      canTarget={Boolean((cibleEnCours && ['allie', 'tous'].includes(modeCible) && !rpgEstProtegee(entite, cardColors(carteCiblee)))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige')))}
                       activationDispo={Boolean(monTour && !phase && !cibleEnCours && !cibleAttaqueEnCours
                         && !combatEntrant && !reponseActive

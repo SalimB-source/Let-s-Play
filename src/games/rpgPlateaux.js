@@ -126,6 +126,7 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'veilleurs-du-desert': 'erg-du-sahara',
   // Le plateau des Brûlés a été retiré : la Cour rejoint la table d'origine.
   'cour-des-djinns': 'table-des-heures',
+  'serment-du-soleil-rouge': 'table-des-heures',
   'sentiers-de-cendre': 'caravane-de-gourara',
   'maree-des-abysses': 'ruines-de-tipaza',
   // Le Nord : le Serment des Neuf Hivers se bat sur la glace du fjord.

@@ -69,12 +69,16 @@ function valeurEffet(effet = {}) {
       return montant * 0.7;
     case 'bouclier-lumiere':
       return 2.5;
+    case 'arme':
+      return (Number(effet.atk) || 0) * 0.8 + (Number(effet.def) || 0) * 0.6 + (effet.coupRapide ? 2 : 0);
     case 'buff':
       return (Number(effet.atk) || 0) * 0.8 + (Number(effet.def) || 0) * 0.6;
     case 'infiltration':
       // +X/+Y durable ET tout le camp imblocable pour l'échange en cours :
       // le passe-droit vaut à lui seul une belle carte de pression.
       return (Number(effet.atk) || 0) * 0.8 + (Number(effet.def) || 0) * 0.6 + 2;
+    case 'exil':
+      return 6;
     case 'retour-main':
       return 2;
     case 'contresort':
@@ -111,6 +115,7 @@ export function valeurCarte(carte) {
   if (carte.protection) valeur += 1.5;
   if (carte.furie) valeur += 1 + 0.7 * carte.furie;
   if (carte.resonance) valeur += 2 + 2 * carte.resonance;
+  if (carte.honneur) valeur += carte.honneur;
   if (carte.combat) valeur += 2;
   if (carte.aura) valeur += 2.5;
   if (carte.arrivee) valeur += valeurEffet(carte.arrivee);

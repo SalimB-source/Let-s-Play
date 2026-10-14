@@ -29,7 +29,7 @@ export function rpgFireSoundFor(cardOrId, action) {
     case 'combat':
       return CREATURE_KINDS.has(card.kind) && card.combat ? RPG_FIRE_SFX : null;
     case 'destruction':
-      return CREATURE_KINDS.has(card.kind) && card.destruction ? RPG_FIRE_SFX : null;
+      return CREATURE_KINDS.has(card.kind) && (card.destruction || card.honneur) ? RPG_FIRE_SFX : null;
     default:
       return null;
   }

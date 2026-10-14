@@ -12,17 +12,17 @@
  * 2. **Les récompenses d'étage** — chaque étage déblayé du mode Histoire rend
  *    des cartes confisquées par la Chambre des Heures (rares et
  *    mythiques). La correspondance étage → cartes est du contenu, dans
- *    `RPG_RECOMPENSES_PAR_ETAGE` : vingt étages, quarante-quatre cartes à
+ *    `RPG_RECOMPENSES_PAR_ETAGE` : vingt étages, des cartes à
  *    ravir, parées pour que chaque couleur ouvre à peu près au moment où la
  *    campagne y entre — le mono-Eau au seuil des Abysses, le mono-Neige en
  *    entrant dans le Fjord. Chaque étage ne nomme que des cartes du catalogue :
  *    les trois cartes retirées du jeu (Rafale du minaret, Sentence de la Liste,
- *    Fureur du souk) ne sont plus promises nulle part. La Braise, elle, ne fait
- *    pas un deck à elle seule — sa réserve culmine sous les vingt-quatre
- *    emplacements non-terrain d'un deck de quarante, donc elle se joue par
- *    paires, comme le deck « Sentiers de cendre » du catalogue.
+ *    Fureur du souk) ne sont plus promises nulle part. Le Serment du Soleil
+ *    rouge complète désormais la réserve de Braise : ses communes sont
+ *    données d’entrée et ses rares/mythiques se gagnent au Souk et aux Sables.
+ *    Le mono-Braise maison devient ainsi composable au cours du Souk.
  *
- * Les **decks du catalogue** (les cinq boîtiers de départ) ne consultent jamais
+ * Les **decks du catalogue** (les six boîtiers de départ) ne consultent jamais
  * la collection : ce sont des decks préconstruits, jouables d'entrée de jeu.
  * Seuls les decks maison y sont tenus.
  *
@@ -72,14 +72,14 @@ export const RPG_RECOMPENSES_PAR_ETAGE = {
   'listes-5': ['sahir-des-braises', 'nuage-de-cendres', 'tarek'],
   // Tour du Souk — le feu se complète ; les citernes de la Gardienne rendent
   // les premières cartes d'Eau.
-  'souk-1': ['vent-rouge'],
+  'souk-1': ['vent-rouge', 'samourai-du-torii'],
   'souk-2': ['salem', 'vipere-de-verre'],
-  'souk-3': ['djinn-du-souk', 'parade-du-verre'],
+  'souk-3': ['djinn-du-souk', 'parade-du-verre', 'frappe-iaijutsu'],
   'souk-4': ['ifrit-al-ahmar', 'feriel', 'colosse-de-sel'],
   // Tour des Sables — le sommet du Sable/Braise, l'Eau se précise.
-  'sables-1': ['ifrit-des-ergs', 'maree-contraire'],
-  'sables-2': ['brisure-de-verre', 'courant-de-retour'],
-  'sables-3': ['anqa-des-braises', 'tin-hinan', 'yamina'],
+  'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune'],
+  'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit'],
+  'sables-3': ['anqa-des-braises', 'tin-hinan', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo'],
   // Tour des Abysses — les bêtes marines ; ce qui remonte du fond est gelé :
   // les premières cartes de Neige précèdent la tour du Fjord.
   'abysses-1': ['kraken', 'sonneur-fele'],

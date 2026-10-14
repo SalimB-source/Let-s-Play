@@ -17,9 +17,9 @@ Toute nouvelle carte du duel doit recevoir une illustration **full art** avant d
 
 La collection adopte une fantasy adulte, sobre et incarnée, peinte comme une huile sur toile : modelés naturalistes, gestes et matières crédibles, clair-obscur maîtrisé, glacis profonds, touches de pinceau visibles et texture de toile discrète. Favoriser les compositions cinématographiques, les visages mûrs et expressifs, les palettes terreuses nuancées et les détails de matière plutôt que le spectaculaire facile.
 
-Éviter l’esthétique cartoon, anime, jeunesse, le rendu 3D lisse, le concept art numérique trop brillant, les poses de catalogue et les effets magiques envahissants. Les personnages, vêtements, paysages, architectures et objets doivent rester dignes et documentés, avec une inspiration amazighe et nord-africaine respectueuse, sans clichés d’exotisme.
+Éviter l’esthétique cartoon, anime, jeunesse, le rendu 3D lisse, le concept art numérique trop brillant, les poses de catalogue et les effets magiques envahissants. Les personnages, vêtements, paysages, architectures et objets doivent rester dignes et documentés, avec une inspiration culturelle respectueuse propre à chaque set (amazighe et nord-africaine, nordique ou japonaise), sans clichés d’exotisme.
 
-Cette direction s’applique à toute la collection sans exception — Sable, Eau, Braise, terrains, créatures, héros et magies. Chaque carte garde sa propre scène et son sujet clairement identifiable même en petit aperçu. La couleur de l’élément peut influencer la lumière et la palette, mais ne doit pas devenir un badge dessiné dans l’image. L’illustration reste une peinture plein cadre sans texte intégré; l’interface HTML/CSS superpose séparément types, coûts, icônes et statistiques.
+Cette direction constitue la base de la collection, avec les exceptions de style documentées par set ci-dessous — Sable, Eau, Braise, terrains, créatures, héros et magies. Chaque carte garde sa propre scène et son sujet clairement identifiable même en petit aperçu. La couleur de l’élément peut influencer la lumière et la palette, mais ne doit pas devenir un badge dessiné dans l’image. L’illustration reste une peinture plein cadre sans texte intégré; l’interface HTML/CSS superpose séparément types, coûts, icônes et statistiques.
 
 Les terrains gardent une illustration plein cadre, mais ne reçoivent ni coût ni badge élémentaire.
 
@@ -121,3 +121,145 @@ Chaque peinture garde son sujet propre même en vignette de 60 px. Une carte don
 `RPG_ART_PROVISOIRE` (`rpgCards.js`) : elle affiche alors le recadrage étalonné
 d'une illustration voisine, et `npm run check:rpg` vérifie que la liste ne
 contient que des cartes réellement livrées, image comprise. Les types, coûts, icônes et statistiques de jeu restent des éléments HTML/CSS séparés de l’illustration.
+
+
+## Le Serment du Soleil rouge — Braise
+
+Extension japonaise de quinze cartes, toutes livrées avec leur illustration
+plein art 1024×1280 dans `public/cards/`, sans texte ni bordure.
+
+**Direction spécifique du set : peinture japonaise kaiga, inspirée du nihonga.**
+Cette direction concerne uniquement les quinze cartes du **Soleil rouge** :
+les autres sets et leurs illustrations restent inchangés. Les Feux de kitsune
+et le Cavalier des deux sabres servent de références picturales pour
+harmoniser le set.
+
+Pigments minéraux mats et palette enrichie : vermillon, indigo, turquoise,
+jade, or, corail et ombres violettes. Contours à l’encre sumi avec pression
+variable et grain de papier washi. Les dix illustrations de personnages et
+de sorts ont été recolorées après le Cavalier ; le Sabre maudit et la Montagne
+du Soleil rouge conservent encore leur palette précédente.
+Composition asymétrique et profondeur picturale stylisée, gestes fluides,
+visages adultes expressifs et sujets lisibles en petit aperçu. Ce rendu peint
+remplace la 3D de ce set ; aucune interface, calligraphie, signature, sceau,
+bordure ou marge blanche n’est intégrée aux images plein cadre.
+
+Les scènes d’action et les identités des cartes sont conservées :
+
+- **Ashigaru des braises** : avance au yari, deux fantassins derrière lui.
+- **Rōnin du Soleil rouge** : course sur les marches brisées d’une forteresse.
+- **Samouraï du torii** : parade au katana contre un second guerrier.
+- **Onna-musha des cendres** : naginata sur un toit, avec une guerrière alliée.
+- **Tengu du mont ardent** : plongeon ailé entre les montagnes.
+- **Oni de la fournaise** : course sur un pont de pierre, kanabō sur l’épaule.
+- **Kagutsuchi, Flamme originelle** : geste de feu en mouvement sur le sol volcanique.
+- **Frappe d’iaijutsu** : pose plongeante inspirée de la référence fournie :
+  buste penché vers le spectateur, tête basse, bras largement étendus et vue
+  de dessus. Les jambes visibles au-dessus du dos ont été retirées ; cette
+  zone laisse apparaître le lavis de forêt et de montagnes. Deux sabres dans les mains et un
+  troisième tenu en bouche ; vêtements vermillon et hakama sombres, lavis de
+  montagnes, arcs de frappe ocre-or. Le style kaiga est conservé, sans effets
+  verts ni reprise du personnage de la référence. Cette scène remplace l’arbre
+  tranché des versions précédentes.
+- **Feux de kitsune** : renard de face, gueule ouverte, crachant de petites
+  flammes vers le spectateur ; scène conservée, palette enrichie. Le sort
+  inflige 2 dégâts à toutes les créatures adverses, puis 1 dégât supplémentaire
+  au début du prochain tour du lanceur.
+- **Serment de la forge** : forgeron au travail, samouraï et apprenti à ses côtés.
+
+Les peintures sont versionnées `soleil-rouge-kaiga-couleurs-v7` dans
+`CARD_ART_CACHE_VERSIONS`, sauf les Feux de kitsune (`kitsune-kaiga-couleurs-v4`)
+et la Frappe d’iaijutsu corrigée (`iaijutsu-kaiga-couleurs-sans-jambes-v10`). Les noms des fichiers, le plein art 1024×1280 et les
+règles des cartes restent inchangés.
+
+Les sujets humains s’inspirent des guerriers du Japon ; les tengu, oni,
+kitsune et Kagutsuchi relèvent de sa mythologie et ne sont pas présentés
+comme des figures historiques. Le deck utilise les Montagnes et les Crêtes
+de cendre existantes ; il n’ajoute pas de terrain sans illustration dédiée.
+
+
+### Résonance samouraï
+
+Le Samouraï du torii, le Tengu et Kagutsuchi portent **Résonance samouraï** : chaque source donne
++1/+1 uniquement aux créatures dont la ligne de type indique **Samouraï**, dans
+les deux camps et quelle que soit leur couleur. La couleur Braise et le nom
+d’une carte ne suffisent pas. Ni les yōkai, ni les kami, ni les autres types
+ne bénéficient du bonus. Les types imprimés existants restent inchangés.
+La Résonance Neige et Honneur gardent leurs règles. Les illustrations ne sont
+pas modifiées par cet ajustement de mécanique.
+
+
+### Sabre maudit et Montagne du Soleil rouge
+
+Deux nouvelles cartes peintes en kaiga / nihonga complètent le set :
+
+- **Sabre maudit** : lame sombre à fil argenté, garde ouvragée bronze et or,
+  poignée tressée rouge-noir ; un bras la tient et se corrompt de veines
+  d’encre noire et d’ombres violettes. Le décor est une terrasse de palais
+  délabrée sous la pleine lune, avec panneaux shoji brisés et mer lointaine.
+  Version d’image : `sabre-maudit-kaiga-palais-v1`.
+- **Montagne du Soleil rouge** : montagne volcanique, soleil vermillon,
+  nuages en lavis, pins et érables encadrant un chemin de sanctuaire.
+  Version d’image : `montagne-kaiga-soleil-rouge-v1`.
+
+La nouvelle montagne est une variante commune de Montagne : même mana Braise,
+mais une peinture autonome. Elle remplace huit Montagnes uniquement dans le
+préconstruit Soleil rouge ; les anciens terrains ne sont pas repeints.
+Le Sabre maudit est une arme rare à 4 mana, attachée à une créature alliée via
+le ciblage des magies : +5/-2 et Coup rapide permanents tant que le porteur
+reste en jeu. Il quitte le jeu avec lui (mort ou renvoi en main), au cimetière.
+Deux sabres remplacent un exemplaire de Frappe d’iaijutsu et un des Feux de
+kitsune : le deck reste à quarante cartes et seize terrains. Le terrain est
+possédé dès le départ ; le sabre se gagne à `sables-2`.
+
+
+### Cavalier des deux sabres — mythique
+
+Samouraï **sans armure**, en kimono et hakama, un katana dans chaque main,
+sur un cheval galopant à travers un champ de blé vers le spectateur.
+Palette enrichie : blés dorés, ciel turquoise, nuages corail, végétation jade
+et vêtements vermillon et indigo.
+Peinture kaiga / nihonga plein art 1024×1280, harmonisée avec le Soleil rouge,
+sans texte ni cadre ; version `cavalier-deux-sabres-kaiga-champ-ble-v2`.
+
+Créature mythique Braise de type Samouraï : coût 6, force/défense 5/4,
+Rapidité et Honneur 3. Elle bénéficie de Résonance samouraï. Un exemplaire
+remplace un Tengu dans le deck préconstruit, qui garde ses 40 cartes et ses
+16 terrains. La carte se débloque à `sables-3`.
+
+
+### Orochi et Petit Orochi
+
+Orochi rejoint Soleil rouge : créature légendaire mythique Braise, Serpent,
+coût 8, force/défense 8/8. À sa mort, son contrôleur crée sur son champ de
+bataille deux créatures-jetons « Petit Orochi » 4/4. Orochi ne possède pas Honneur, par exception à la règle de rareté du set. Les petits n’ont ni Honneur, ni
+Rapidité, ni effet de mort ; ils ne sont pas Samouraïs. Un renvoi en main
+d’Orochi ne crée pas de jetons, et un Petit Orochi renvoyé cesse d’exister.
+
+Deux illustrations kaiga colorées dédiées, plein art 1024×1280 :
+`orochi.jpg` (serpent mythologique menaçant à plusieurs têtes, écailles
+vert émeraude et jade, accents vermillon, ciel et brume rouge sombre) et
+`petit-orochi.jpg` (jeune serpent dans un ruisseau). Versions de cache
+`orochi-kaiga-vert-rouge-v2` et `petit-orochi-kaiga-couleurs-v1`.
+Le jeton est consultable par le moteur mais absent des decks et de la collection.
+Orochi se débloque à `sables-3`. Un exemplaire remplace une Onna-musha dans le
+préconstruit, qui conserve 40 cartes, 17 créatures, 7 magies et 16 terrains.
+
+
+### Susanoo — mythique
+
+Créature légendaire Braise — Kami · Tempête, coût 5, force/défense 6/3,
+Honneur 3. À son arrivée, son contrôleur choisit une créature de l’un ou
+l’autre camp et la retire de la partie. L’exil n’est pas une mort : ni
+Honneur, ni création de jetons, ni retour programmé ne se déclenchent.
+La cible ne rejoint ni la main ni le cimetière ; les armes attachées sont
+mises au cimetière et les auras de la créature quittant le jeu disparaissent.
+La protection et le contresort de Boualem s’appliquent aux capacités ciblées.
+Sans créature ciblable déjà présente, Susanoo peut être posé sans cible.
+
+Le joueur désigne la cible dans l’interface ; l’IA privilégie une menace
+adverse. Illustration kaiga colorée dédiée `susanoo.jpg`, 1024×1280,
+version `susanoo-kaiga-couleurs-v1` : kami des tempêtes au katana sur une
+côte balayée par un vortex. Un exemplaire remplace une Onna-musha dans le
+deck Soleil rouge : toujours 40 cartes, 17 créatures, 7 magies et 16 terrains.
+Susanoo se débloque à `sables-3`.

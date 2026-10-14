@@ -20,6 +20,8 @@ import {
   RPG_ELEMENTS,
   cardColorCost,
   cardColors,
+  cardResonanceGroup,
+  cardReceivesResonance,
   duelCardById,
   magieById,
   terrainById,
@@ -123,10 +125,11 @@ export function valeurEntite(entite) {
   // Furie : une seule flambée de +X/+X au premier sang survécu — une
   // créature déjà enflammée n'a plus rien à gagner.
   if (carte.furie && !entite?.furieDeclenchee) valeur += 1 + carte.furie * 0.7;
-  // Résonance : une aura qui renforce toute la Neige de la table.
+  // Résonance : aura de table de la couleur de la source.
   if (carte.resonance) valeur += 2 + carte.resonance * 2;
   if (carte.arrivee) valeur += 1.5;
   if (carte.destruction) valeur += 1;
+  if (carte.honneur) valeur += carte.honneur;
   if (carte.combat) valeur += 2;
   return valeur;
 }
@@ -242,6 +245,11 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
       rng,
     })?.cibleId ?? null;
   }
+  if (carte?.arrivee?.type === 'exil') {
+    return meilleureCibleRenvoiIA(duel, cote, carte)
+      ?? duel[cote].creatures.filter((entite) => !estProtegee(entite, cardColors(carte)))
+        .sort((a, b) => valeurEntite(a) - valeurEntite(b))[0]?.id ?? null;
+  }
   if (carte?.arrivee?.type === 'retour-main' || carte?.effet?.type === 'retour-main') {
     return meilleureCibleRenvoiIA(duel, cote, carte);
   }
@@ -265,6 +273,7 @@ function meilleureCibleAmie(duel, cote, carte) {
   const couleurs = cardColors(carte);
   return duel[cote].creatures
     .filter((entite) => !estProtegee(entite, couleurs))
+    .filter((entite) => carte.effet?.type !== 'arme' || entite.pv + (carte.effet.def ?? 0) > 0)
     .map((entite) => ({ entite, score: valeurEntite(entite) }))
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
 }
@@ -296,7 +305,7 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
   for (const id of [...new Set(attaquantIds)]) {
     const attaquant = duel[cote].creatures.find((entite) => entite.id === id);
     const carte = duelCardById(attaquant?.carteId);
-    if (!attaquant || !carte?.coupRapide) continue;
+    if (!attaquant || !attaquant.coupRapide) continue;
     const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
       montant: attaquant.atk, sourceType: 'attaque', portee: 'combat', profil, rng,
     });
@@ -607,9 +616,7 @@ export function couleurEngagement(carteTerrain, main = []) {
 /** Petite entité fictive pour évaluer un combat d’arrivée sans toucher la partie.
  *  `duel` fourni : l’entité naît avec la Résonance déjà en table, comme en jeu. */
 function entiteDeSecours(carte, duel = null) {
-  const resonance = duel && cardColors(carte).includes('neige')
-    ? Math.max(0, Number(moteur.rpgResonanceEnJeu(duel)) || 0)
-    : 0;
+  const resonance = duel ? moteur.rpgBonusResonance(duel, carte) : 0;
   return {
     id: 'simulation',
     carteId: carte.id,
@@ -669,6 +676,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       }
       return { score, cibleId: meilleure.cibleId };
     }
+    if (effet.type === 'arme') {
+      const cibleId = meilleureCibleAmie(duel, cote, carte);
+      if (!cibleId) return null;
+      const cible = camp.creatures.find((entite) => entite.id === cibleId);
+      return { score: 4 + (effet.atk ?? 0) * 0.8 + (cible.coupRapide ? 0 : 2) - cout * 0.2, cibleId };
+    }
     if (effet.type === 'soin') {
       const soin = Math.min(effet.amount ?? 0, manquePv);
       return { score: soin > 0 ? 1 + soin * 1.1 - cout * 0.2 : 0, cibleId: null };
@@ -713,11 +726,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   // une aura qui renforce toute la Neige déjà posée.
   if (carte.furie) score += 0.8 + carte.furie * 0.7;
   if (carte.resonance) {
-    const neigeAlliee = duel[cote].creatures
-      .filter((entite) => cardColors(duelCardById(entite.carteId)).includes('neige')).length;
-    const neigeAdverse = duel[adv].creatures
-      .filter((entite) => cardColors(duelCardById(entite.carteId)).includes('neige')).length;
-    score += 1.5 + carte.resonance * 1.5 + neigeAlliee * 0.6 - neigeAdverse * 0.4;
+    const element = cardResonanceGroup(carte);
+    const alliees = duel[cote].creatures
+      .filter((entite) => cardReceivesResonance(duelCardById(entite.carteId), element)).length;
+    const adverses = duel[adv].creatures
+      .filter((entite) => cardReceivesResonance(duelCardById(entite.carteId), element)).length;
+    score += 1.5 + carte.resonance * 1.5 + alliees * 0.6 - adverses * 0.4;
   }
   if (profil.style === 'controle' && cout <= 2) score -= 1;
   let cibleId = null;
@@ -728,12 +742,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const net = Math.max(0, (arrivee.pioche ?? 0) - (arrivee.defausse ?? 0));
       score += 1 + net * 1.5 + (camp.main.length <= 3 ? 2 : 0);
     }
-    if (arrivee.type === 'retour-main') {
-      const cibleRenvoi = meilleureCibleRenvoiIA(duel, cote, carte);
+    if (['retour-main', 'exil'].includes(arrivee.type)) {
+      const cibleRenvoi = arrivee.type === 'exil' ? choisirCibleAutoIA(duel, cote, carte) : meilleureCibleRenvoiIA(duel, cote, carte);
       if (cibleRenvoi) {
         cibleId = cibleRenvoi;
         const cible = duel[adv].creatures.find((entite) => entite.id === cibleRenvoi);
-        if (cible) score += 1.5 + menace(cible) * 0.4;
+        if (cible) score += arrivee.type === 'exil' ? 4 + valeurEntite(cible) : 1.5 + menace(cible) * 0.4;
       }
     }
     if (arrivee.type === 'soin') score += Math.min(arrivee.amount ?? 0, manquePv) * 0.8;
@@ -796,6 +810,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     if (arrivee.type === 'detruire-terrain-aleatoire') score += duel[adv].terrains.length ? 3 : 0;
   }
   if (carte.destruction) score += 1;
+  if (carte.honneur) score += carte.honneur * (duel[adv].creatures.length ? 0.8 : 0.3);
   if (carte.combat) score += 2;
   return { score, cibleId };
 }

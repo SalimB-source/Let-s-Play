@@ -12,6 +12,8 @@ import {
   cardById,
   cardColorCost,
   cardColors,
+  cardResonanceGroup,
+  cardReceivesResonance,
   duelCardById,
   jetonById,
   magieById,
@@ -42,6 +44,10 @@ export const RPG_MAIN_DEPART = 5;
 export const RPG_COULEURS = RPG_ELEMENTS;
 
 const destructionsParDuel = new WeakMap();
+// Hors de l’état JSON : les sauvegardes restent sérialisables et les tests
+// peuvent fournir un générateur déterministe. Une partie restaurée utilise Math.random.
+const hasardParDuel = new WeakMap();
+const GROUPES_RESONANCE = [...RPG_ELEMENTS, 'samourai'];
 
 export function rpgNombreDestructions(duel) {
   return destructionsParDuel.get(duel)?.length ?? 0;
@@ -117,6 +123,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     mulliganFait: { joueur: false, sorcier: false },
     log: [],
   };
+  hasardParDuel.set(duel, rng);
   for (let i = 0; i < RPG_MAIN_DEPART; i += 1) {
     rpgPiocher(duel, 'joueur');
     rpgPiocher(duel, 'sorcier');
@@ -528,6 +535,7 @@ function creerEntiteCreature(carte) {
     ready: Boolean(carte.rapidite),
     attaquee: false,
     resonance: 0,
+    honneur: Math.max(0, Number(carte.honneur) || 0),
   };
 }
 
@@ -551,34 +559,43 @@ function appliquerFurie(duel, entite, degatsRecus) {
   duel.log.push(`${entite.name} entre en furie : +${furie}/+${furie}.`);
 }
 
-/** Résonance — la valeur totale des sources présentes sur la table : chaque
- *  valkyrie en jeu ajoute la sienne (1 par défaut) au renfort de la Neige. */
-export function rpgResonanceEnJeu(duel) {
+/** Total des sources d'un groupe de Résonance (élément ou tribu), dans les
+ * deux camps. Le défaut Neige conserve l'API des valkyries. */
+export function rpgResonanceEnJeu(duel, element = 'neige') {
   let total = 0;
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
-      total += Math.max(0, Number(duelCardById(entite.carteId)?.resonance) || 0);
+      if (!(entite.pv > 0)) continue;
+      const carte = duelCardById(entite.carteId);
+      if (cardResonanceGroup(carte) !== element) continue;
+      total += Math.max(0, Number(carte?.resonance) || 0);
     }
   }
   return total;
 }
 
-/**
- * Résonance — aura de table : tant qu'une valkyrie est en jeu, **toutes** les
- * créatures Neige de la table (les deux camps) gagnent +1/+1 par source. On ne
- * pose que l'écart pour chaque entité (`entite.resonance`), pour qu'une source
- * qui entre ou qui meurt ne fasse pas dériver les statistiques déjà cumulées
- * par la Furie. Perdre la Résonance ne tue jamais : au pire, 1 PV.
- */
+/** Bonus total reçu par une carte : même filtrage en jeu et dans l'IA. */
+export function rpgBonusResonance(duel, carte) {
+  return GROUPES_RESONANCE.reduce((total, groupe) => total +
+    (cardReceivesResonance(carte, groupe) ? rpgResonanceEnJeu(duel, groupe) : 0), 0);
+}
+
+/** Aura de table par élément ou tribu. La Résonance samouraï ne renforce que
+ * le type Samouraï, quelle que soit sa couleur ; ni le Tengu ni Kagutsuchi ne
+ * se renforcent eux-mêmes. Les sources se cumulent dans les deux camps.
+ * La perte du bonus laisse au minimum 1 PV, comme en Neige. */
 function majResonance(duel) {
-  const total = rpgResonanceEnJeu(duel);
-  let renforcees = 0;
-  let affaiblies = 0;
+  const totaux = Object.fromEntries(GROUPES_RESONANCE.map((element) => [element, rpgResonanceEnJeu(duel, element)]));
+  const renforcees = new Set();
+  const affaiblies = new Set();
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
-      const carte = duelCardById(entite.carteId);
-      const voulu = cardColors(carte).includes('neige') ? total : 0;
+      if (!(entite.pv > 0)) continue;
+      const groupes = GROUPES_RESONANCE.filter((groupe) => cardReceivesResonance(duelCardById(entite.carteId), groupe));
+      const voulu = groupes.reduce((total, groupe) => total + (totaux[groupe] ?? 0), 0);
       const actuel = Math.max(0, Number(entite.resonance) || 0);
+      const precedents = entite.resonanceParGroupe ?? {};
+      entite.resonanceParGroupe = Object.fromEntries(groupes.map((groupe) => [groupe, totaux[groupe] ?? 0]));
       if (voulu === actuel) continue;
       const delta = voulu - actuel;
       entite.resonance = voulu;
@@ -586,11 +603,49 @@ function majResonance(duel) {
       entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + delta);
       entite.def = Math.max(1, entite.def + delta);
       entite.pv = Math.max(1, entite.pv + delta);
-      if (delta > 0) renforcees += 1; else affaiblies += 1;
+      for (const element of groupes) {
+        const ancien = precedents[element] ?? 0;
+        const prochain = totaux[element] ?? 0;
+        if (prochain > ancien) renforcees.add(element);
+        else if (prochain < ancien) affaiblies.add(element);
+      }
     }
   }
-  if (renforcees) duel.log.push(`La Résonance renforce la Neige : +${total}/+${total} aux créatures Neige.`);
-  else if (affaiblies) duel.log.push('La Résonance se tait : les créatures Neige perdent leur bonus.');
+  for (const element of renforcees) {
+    if (element === 'samourai') {
+      duel.log.push(`La Résonance samouraï renforce les Samouraïs : +${totaux[element]}/+${totaux[element]}.`);
+      continue;
+    }
+    const label = ELEMENT_LABELS[element];
+    duel.log.push(`La Résonance renforce la ${label} : +${totaux[element]}/+${totaux[element]} aux créatures ${label}.`);
+  }
+  for (const element of affaiblies) {
+    if (!renforcees.has(element)) duel.log.push(element === 'samourai'
+      ? 'La Résonance samouraï se tait : les Samouraïs perdent leur bonus.'
+      : `La Résonance se tait : les créatures ${ELEMENT_LABELS[element]} perdent leur bonus.`);
+  }
+}
+
+/** Honneur : une seule créature adverse vivante, choisie uniformément au
+ * hasard. Protection et bouclier restent applicables ; ce sont des dégâts de
+ * capacité, pas une attaque ni une magie. Sans créature adverse, aucun dégât. */
+function declencherHonneur(duel, cote, entite) {
+  const carte = duelCardById(entite.carteId);
+  const honneur = Math.max(0, Number(carte?.honneur) || 0);
+  if (!honneur) return;
+  // La source morte ne maintient plus sa Résonance pendant sa dernière frappe.
+  rafraichirAuras(duel);
+  const adversaire = autre(cote);
+  const cibles = duel[adversaire].creatures.filter((cible) => cible.pv > 0);
+  if (!cibles.length) {
+    duel.log.push(`Honneur ${honneur} : ${entite.name} ne trouve aucune créature adverse.`);
+    return;
+  }
+  const rng = hasardParDuel.get(duel) ?? Math.random;
+  const index = Math.min(cibles.length - 1, Math.max(0, Math.floor(rng() * cibles.length)));
+  const cible = cibles[index];
+  duel.log.push(`Honneur ${honneur} : ${entite.name} inflige ${honneur} dégâts à ${cible.name}, choisie au hasard.`);
+  rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite');
 }
 
 /** Applique les blessures d’un effet de combat simultanément avant de résoudre
@@ -653,6 +708,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     journaliserDestruction(duel, mort.entite, mort.sourceElements);
     camp.creatures = camp.creatures.filter((candidate) => candidate.id !== mort.entite.id);
     camp.cimetiere.push(mort.entite.carteId);
+    detacherArmes(duel, mort.cote, mort.entite);
     duel.log.push(`${mort.entite.name} est détruite et rejoint le cimetière.`);
   }
   for (const mort of mortes) {
@@ -660,6 +716,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     if (carte?.destruction) {
       appliquer(duel, mort.cote, carte.destruction, null, null, cardColors(carte), null, mort.entite.carteId);
     }
+    declencherHonneur(duel, mort.cote, mort.entite);
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
@@ -818,6 +875,36 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     }
   }
   switch (effet.type) {
+    case 'exil': {
+      for (const campCible of [adv, cote]) {
+        const victime = duel[campCible].creatures.find((entite) => entite.id === cibleId);
+        if (!victime) continue;
+        if (rpgEstProtegee(victime, sourceElement)) return;
+        duel[campCible].creatures = duel[campCible].creatures.filter((entite) => entite.id !== victime.id);
+        detacherArmes(duel, campCible, victime);
+        if (!victime.jeton) {
+          duel[campCible].exil ??= [];
+          duel[campCible].exil.push(victime.carteId);
+        }
+        duel.log.push(`${victime.name} est retirée de la partie.`);
+        rafraichirAuras(duel);
+        return;
+      }
+      return;
+    }
+    case 'arme': {
+      const porteur = duel[cote].creatures.find((entite) => entite.id === cibleId);
+      if (!porteur || rpgEstProtegee(porteur, sourceElement)) return;
+      porteur.armes ??= [];
+      porteur.armes.push(sourceCarteId);
+      porteur.atk += effet.atk ?? 0;
+      porteur.pvMax += effet.def ?? 0;
+      porteur.pv += effet.def ?? 0;
+      porteur.def += effet.def ?? 0;
+      if (effet.coupRapide) porteur.coupRapide = true;
+      duel.log.push(`${(cardById(sourceCarteId)?.name ?? 'Une arme')} s’attache à ${porteur.name} : +${effet.atk}/${effet.def}, Coup rapide.`);
+      return;
+    }
     case 'pioche':
       for (let i = 0; i < (effet.amount ?? 1); i += 1) rpgPiocher(duel, cote);
       return;
@@ -1024,6 +1111,14 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
   }
 }
 
+/** Une arme attachée quitte le jeu avec son porteur, sans revenir en main. */
+function detacherArmes(duel, cote, entite) {
+  const armes = entite.armes ?? [];
+  duel[cote].cimetiere.push(...armes);
+  entite.armes = [];
+  if (armes.length) duel.log.push(`Les armes de ${entite.name} rejoignent le cimetière.`);
+}
+
 /**
  * Renvoi en main (« bounce ») : la créature quitte la table **sans mourir** —
  * elle retourne dans la main de son propriétaire. Elle n'entre donc pas au
@@ -1041,6 +1136,7 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
     return false;
   }
   camp.creatures = camp.creatures.filter((e) => e.id !== presente.id);
+  detacherArmes(duel, cote, presente);
   // Une créature-jeton n'a pas de carte à renvoyer : elle **cesse d'exister**,
   // comme un jeton de table qui quitte le champ de bataille. Sans cette règle,
   // un chien de sable de Tarek deviendrait une carte gratuite et rejouable.
@@ -1072,11 +1168,13 @@ function enterrer(duel, cote, entite, sourceElements = []) {
   const camp = duel[cote];
   camp.creatures = camp.creatures.filter((e) => e.id !== entite.id);
   camp.cimetiere.push(entite.carteId);
+  detacherArmes(duel, cote, entite);
   duel.log.push(`${entite.name} est détruite et rejoint le cimetière.`);
   const carte = duelCardById(entite.carteId);
   if (carte?.destruction) {
     appliquer(duel, cote, carte.destruction, null, null, cardColors(carte), null, entite.carteId);
   }
+  declencherHonneur(duel, cote, entite);
   rafraichirAuras(duel);
 }
 
@@ -1162,6 +1260,15 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
     if (cibleId && !cible) return { ok: false, raison: 'cible' };
     if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
     if (!cibleId && adversaires.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
+      return { ok: false, raison: 'cible' };
+    }
+  }
+  if (carte.arrivee?.type === 'exil') {
+    const creatures = [...camp.creatures, ...duel[autre(cote)].creatures];
+    const cible = creatures.find((entite) => entite.id === cibleId);
+    if (cibleId && !cible) return { ok: false, raison: 'cible' };
+    if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+    if (!cibleId && creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
       return { ok: false, raison: 'cible' };
     }
   }
@@ -1353,7 +1460,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
       if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
     }
   }
-  if (carte.effet.type === 'bouclier' && carte.effet.cible === 'creature-amie') {
+  if (['bouclier', 'arme'].includes(carte.effet.type) && carte.effet.cible === 'creature-amie') {
     const cible = camp.creatures.find((entite) => entite.id === cibleId);
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
@@ -1381,7 +1488,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     ? { ...carte.effet, cible: 'sorcier' }
     : carte.effet;
   appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'magie', carteId);
-  camp.cimetiere.push(carteId);
+  if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
   rpgActionsEtat(duel);
   return { ok: true };
@@ -1450,8 +1557,8 @@ export function rpgLancerAttaque(
   for (const attaquant of attaquants) {
     const carte = duelCardById(attaquant.carteId);
     const cibleId = ciblesRapides[attaquant.id];
-    if (cibleId && !carte?.coupRapide) return { ok: false, raison: 'cible' };
-    if (!carte?.coupRapide) continue;
+    if (cibleId && !attaquant.coupRapide) return { ok: false, raison: 'cible' };
+    if (!attaquant.coupRapide) continue;
     const ciblesLegales = duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
     if (!cibleId && ciblesLegales.length) return { ok: false, raison: 'cible' };
     const cible = cibleId && duel[adv].creatures.find((entite) => entite.id === cibleId);
@@ -1668,7 +1775,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   if (!attaquant) return { ok: false, raison: 'absente' };
   if (!pret(attaquant)) return { ok: false, raison: 'pas-pret' };
   const carte = duelCardById(attaquant.carteId);
-  if (carte?.coupRapide) {
+  if (attaquant.coupRapide) {
     const ciblesLegales = duel[autre(cote)].creatures
       .filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
     if (ciblesLegales.length && !cibleCreatureId) return { ok: false, raison: 'cible' };

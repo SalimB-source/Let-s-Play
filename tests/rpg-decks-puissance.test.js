@@ -180,10 +180,19 @@ test('les cinq boîtiers du catalogue restent valides, illustrés et fidèles à
   }
 });
 
-test('chaque deck du catalogue aligne toutes les mythiques de son identité', () => {
+test('chaque deck aligne les mythiques de son identité ou sa signature culturelle complète', () => {
   for (const deck of RPG_DECKS) {
     const recette = RPG_RECETTES_DECKS[deck.id];
-    const mythiques = RPG_DUEL_CARDS.filter((carte) => carte.rarity === 'mythique'
+    // Une signature qui occupe tout un quota est un set culturel fermé.
+    const signature = new Map(recette.signature.map((entree) => Array.isArray(entree) ? entree : [entree, 1]));
+    const placesSignature = (magie) => [...signature].reduce((total, [id, n]) =>
+      total + ((cardById(id).kind === 'magie') === magie ? n : 0), 0);
+    const admise = (carte) => {
+      const magie = carte.kind === 'magie';
+      const quota = magie ? recette.magies : recette.creatures;
+      return placesSignature(magie) < quota || signature.has(carte.id);
+    };
+    const mythiques = RPG_DUEL_CARDS.filter((carte) => admise(carte) && carte.rarity === 'mythique'
       && cardColors(carte).length > 0
       && cardColors(carte).every((couleur) => recette.identite.includes(couleur))
       && carte.kind !== 'terrain');
