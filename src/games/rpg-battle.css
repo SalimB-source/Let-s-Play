@@ -291,6 +291,30 @@
 .rpg-btn--ghost { background: transparent; }
 .rpg-btn--activation { background: linear-gradient(180deg, #0d4a5a, #07242e); border-color: #2e7d8f; color: #c9eef7; }
 
+/* Le lot d'équipements du Sable : un bouton par mode d'arme, et celui dont la
+   proie est en train d'être désignée (le Trait de sable de la Jitte) garde le
+   liseré doré des choix en cours. */
+.rpg-btn--activation[aria-pressed='true'] {
+  border-color: #ffd619;
+  box-shadow: 0 0 0 2px rgba(255, 214, 25, .35);
+}
+
+/* Les compteurs de sable portés par une arme (la Jitte d’Amayas) : une pastille
+   posée sur la créature équipée, à côté du nom de l'arme. */
+.rpg-card__arme-compteurs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(216, 188, 134, .92);
+  color: #2c2106;
+  font: 700 10px/1.4 var(--display, sans-serif);
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+
 /* Fin du tour : la grande pastille dorée du Sablier, bien visible sur la table. */
 .rpg-btn--endturn {
   min-height: 48px;

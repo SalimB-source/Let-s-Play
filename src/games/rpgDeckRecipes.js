@@ -108,8 +108,12 @@ export const RPG_RECETTES_DECKS = {
       ['petra', 3], ['petra-des-deux-sources', 2],
     ],
     creatures: 16,
-    magies: 5,
-    armes: 2,
+    // Une place de sort cède la place à une troisième arme : l'identité
+    // Sable + Braise porte DEUX mythiques d'équipement depuis le lot du
+    // Désert (l'Armure de cendres et la Takouba de Tin Hinan) et le deck
+    // aligne les mythiques de ses deux couleurs — la règle reste entière.
+    magies: 4,
+    armes: 3,
     signature: [
       ['djinn-de-foudre', 2],
       ['vent-rouge', 2],

@@ -692,6 +692,7 @@ function attacherArme(duel, cote, entite, carteArme) {
   if (carteArme.donne?.esquive) entite.esquive = (entite.esquive ?? 0) + carteArme.donne.esquive;
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
+  if (carteArme.donne?.coupRapide) entite.coupRapide = true;
   if (carteArme.donne?.rapidite) {
     entite.rapidite = true;
     entite.ready = true;
@@ -712,6 +713,7 @@ function retirerArme(duel, cote, entite) {
   if (carteArme.donne?.envol) entite.envol = Boolean(duelCardById(entite.carteId)?.envol);
   if (carteArme.donne?.infiltration) entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
     || Boolean(entite.infiltrationTour);
+  if (carteArme.donne?.coupRapide) entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide);
   if (carteArme.donne?.rapidite) entite.rapidite = Boolean(duelCardById(entite.carteId)?.rapidite);
   duel[cote].cimetiere.push(carteArme.id);
   duel.log.push(`${entite.name} se sépare de ${carteArme.name} : l’arme rejoint le cimetière.`);
@@ -729,6 +731,22 @@ function armeAuCimetiere(duel, cote, entite) {
   entite.arme = null;
   duel[cote].cimetiere.push(carteArme.id);
   duel.log.push(`${carteArme.name}, l’arme de ${entite.name}, rejoint le cimetière.`);
+}
+
+/**
+ * Le porteur **meurt** : son arme tombe au cimetière et, si la carte le
+ * porte, son déclencheur `porteurMeurt` part — le Licou du chien de sable
+ * pioche alors ses deux cartes. Comme à Magic, seule la mort compte : un
+ * renvoi en main ou un exil emportent l'arme sans rien déclencher
+ * (`renvoyerEnMain`, `case 'exil'`), et la Tenacité, qui refuse la
+ * destruction, ne déclenche rien du tout.
+ */
+function armeDePorteurMort(duel, cote, entite) {
+  const carteArme = armeCarteDe(entite);
+  if (!carteArme) return;
+  armeAuCimetiere(duel, cote, entite);
+  if (!carteArme.porteurMeurt) return;
+  appliquer(duel, cote, carteArme.porteurMeurt, null, null, cardColors(carteArme), null, carteArme.id);
 }
 
 /**
@@ -902,7 +920,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   for (const mort of mortes) {
     const camp = duel[mort.cote];
     journaliserDestruction(duel, mort.entite, mort.sourceElements);
-    armeAuCimetiere(duel, mort.cote, mort.entite);
+    armeDePorteurMort(duel, mort.cote, mort.entite);
     camp.creatures = camp.creatures.filter((candidate) => candidate.id !== mort.entite.id);
     camp.cimetiere.push(mort.entite.carteId);
     detacherArmes(duel, mort.cote, mort.entite);
@@ -1204,8 +1222,49 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       return;
     }
     case 'sable':
-      duel[cote].sable += effet.amount ?? 0;
+      // Un mana RENDU (le Harnais du méhari, à chaque attaque de son
+      // porteur). Il rejoint la réserve ordinaire, celle que remplissent les
+      // terrains : l'ancien champ `camp.sable` ne comptait plus pour rien —
+      // l'effet dormait faute de carte pour le porter. Comme tout mana, il
+      // s'évapore au début du tour suivant s'il n'est pas dépensé.
+      duel[cote].mana.sable += Math.max(0, Number(effet.amount) || 0);
       return;
+    case 'regarder-dessus': {
+      // La Boussole du Hoggar : le désert se lit, il ne se pioche pas. On
+      // regarde la première carte du deck (le sommet est la FIN du tableau :
+      // `rpgPiocher` le tire d'un `pop`) ; un terrain part en main révélé,
+      // tout le reste reste en place et n'est nommé nulle part — l'adversaire
+      // n'apprend que ce qu'on veut bien lui montrer.
+      const camp = duel[cote];
+      const source = cardById(sourceCarteId);
+      if (!camp.deck.length) {
+        duel.log.push(`${source?.name ?? 'La capacité'} scrute un deck vide.`);
+        return;
+      }
+      const carteDessusId = camp.deck[camp.deck.length - 1];
+      const carteDessus = cardById(carteDessusId);
+      const estTerrain = carteDessus?.kind === 'terrain' || Boolean(terrainById(carteDessusId));
+      if (estTerrain) {
+        camp.deck.pop();
+        camp.main.push(carteDessusId);
+        duel.log.push(`${source?.name ?? 'La capacité'} révèle ${carteDessus?.name ?? 'un terrain'} : il rejoint la main.`);
+        return;
+      }
+      duel.log.push(`${source?.name ?? 'La capacité'} scrute la première carte du deck : ce n’est pas un terrain, elle reste en place.`);
+      return;
+    }
+    case 'compteurs-arme': {
+      // La Jitte d’Amayas : les compteurs vivent sur l'arme elle-même
+      // (`entite.arme.compteurs`), pas sur la créature — le porteur peut
+      // mourir, tomber au cimetière avec ses compteurs, rien ne suit.
+      const porteur = duel[cote].creatures.find((entite) => entite.id === sauf);
+      if (!porteur?.arme) return;
+      const nombre = Math.max(0, Math.floor(Number(effet.amount) || 1));
+      porteur.arme.compteurs = Math.max(0, (porteur.arme.compteurs ?? 0) + nombre);
+      const carte = armeById(porteur.arme.carteId);
+      duel.log.push(`${carte?.name ?? 'L’arme'} gagne ${nombre} compteur${nombre > 1 ? 's' : ''} de sable (${porteur.arme.compteurs} au total).`);
+      return;
+    }
     case 'soin':
       duel[cote].pv = Math.min(duel[cote].pvMax, duel[cote].pv + (effet.amount ?? 0));
       return;
@@ -1271,8 +1330,14 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       const carnet = (campCible.bonusTemporaires ??= []);
       const plancher = Number.isFinite(effet.minimum) ? effet.minimum : 0;
       let forces = 0;
-      for (const entite of campCible.creatures) {
-        if (sauf === entite.id || rpgEstProtegee(entite, sourceElement)) continue;
+      // `cible: 'porteur'` : le bonus ne vise que la créature désignée par
+      // `sauf` — un mode de la Jitte d’Amayas grandit le porteur seul, pas le
+      // camp entier. Toutes les autres buffs campent sur le camp et
+      // s'excluent elles-mêmes (`sauf`).
+      const ciblesBuff = effet.cible === 'porteur'
+        ? campCible.creatures.filter((entite) => entite.id === sauf && !rpgEstProtegee(entite, sourceElement))
+        : campCible.creatures.filter((entite) => entite.id !== sauf && !rpgEstProtegee(entite, sourceElement));
+      for (const entite of ciblesBuff) {
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
         entite.atk = Math.max(plancher, entite.atk + bonusAttaque);
@@ -1449,7 +1514,7 @@ function enterrer(duel, cote, entite, sourceElements = []) {
     return;
   }
   journaliserDestruction(duel, entite, sourceElements);
-  armeAuCimetiere(duel, cote, entite);
+  armeDePorteurMort(duel, cote, entite);
   const camp = duel[cote];
   camp.creatures = camp.creatures.filter((e) => e.id !== entite.id);
   camp.cimetiere.push(entite.carteId);
@@ -1608,9 +1673,13 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
   const carte = armeById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
-  const cible = camp.creatures.find((entite) => entite.id === cibleId);
-  if (!cible) return { ok: false, raison: 'cible' };
-  if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  let cible = camp.creatures.find((entite) => entite.id === cibleId) ?? null;
+  // Arme vivante (la Lame des ergs) : jouable la table vide — elle fait
+  // naître le chien de sable qui la portera. Aucun porteur désigné n'est
+  // alors exigé ; la création du jeton n'a pas de cible, Boualem ne peut pas
+  // la contrer, et l'arme s'attache au dernier jeton arrivé.
+  if (!cible && !carte.armeVivante) return { ok: false, raison: 'cible' };
+  if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (cote === 'joueur' && !duel.annonce) {
     const contreIA = choisirContreIA(duel, carte);
@@ -1618,9 +1687,21 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
   }
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
+  const porteurCree = !cible;
+  if (porteurCree) {
+    appliquer(duel, cote, {
+      type: 'jetons',
+      jeton: carte.armeVivante.jeton,
+      nombre: Math.max(1, Math.floor(Number(carte.armeVivante.nombre) || 1)),
+    }, null, null, cardColors(carte), null, carte.id);
+    cible = camp.creatures[camp.creatures.length - 1] ?? null;
+    if (!cible) return { ok: false, raison: 'cible' };
+  }
   attacherArme(duel, cote, cible, carte);
   const bonus = `+${carte.bonus?.atk ?? 0}/+${carte.bonus?.def ?? 0}`;
-  duel.log.push(`${cote === 'joueur' ? 'Vous attachez' : 'Le sorcier attache'} ${carte.name} à ${cible.name} (${bonus}).`);
+  duel.log.push(porteurCree
+    ? `${carte.name} fait naître son propre porteur et s’attache à ${cible.name} (${bonus}).`
+    : `${cote === 'joueur' ? 'Vous attachez' : 'Le sorcier attache'} ${carte.name} à ${cible.name} (${bonus}).`);
   // L'arrivée de l'arme elle-même peut porter un effet (le Bâton des
   // citernes appelle son premier serpent en s'attachant).
   if (carte.arrivee) {
@@ -1634,13 +1715,19 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
 
 /**
  * Capacité activée d'une arme portée (le Bâton des citernes : 3 manas pour
- * un serpent). Ce n'est pas une carte : rien à annoncer, rien à contrer —
- * une décision de son tour, payable autant de fois que le mana le permet,
- * comme tout le reste dans ce jeu se décide pendant son propre tour.
+ * un serpent ; la Jitte d’Amayas : un compteur de sable pour l'un de ses
+ * trois modes). Ce n'est pas une carte : rien à annoncer, rien à contrer —
+ * une décision de son tour, payable autant de fois que le mana (ou les
+ * compteurs) le permettent, comme tout le reste dans ce jeu se décide
+ * pendant son propre tour.
+ *
+ * `options.mode` choisit un mode quand l'arme en propose plusieurs
+ * (`activation.modes`) ; `options.cibleId` désigne la créature visée par un
+ * mode qui demande une cible (le Trait de sable de la Jitte).
  *
  * @returns {{ok: true, entite: object} | {ok: false, raison: string}}
  */
-export function rpgActiverArme(duel, cote, entiteId) {
+export function rpgActiverArme(duel, cote, entiteId, options = {}) {
   if (duel.tour !== cote) return { ok: false, raison: 'tour' };
   if (duel.annonce) return { ok: false, raison: 'annonce' };
   const camp = duel[cote];
@@ -1649,15 +1736,44 @@ export function rpgActiverArme(duel, cote, entiteId) {
   const carte = armeCarteDe(entite);
   const activation = carte?.activation;
   if (!activation) return { ok: false, raison: 'aucune-activation' };
+  const mode = activation.modes?.find((candidate) => candidate.id === options.mode) ?? null;
+  if (activation.modes?.length && !mode) return { ok: false, raison: 'mode' };
   const cout = Math.max(0, Number(activation.cout) || 0);
+  const compteurs = Math.max(0, Number(activation.compteurs) || 0);
+  if (compteurs && (entite.arme?.compteurs ?? 0) < compteurs) return { ok: false, raison: 'compteurs' };
   if (!rpgPeutPayer(camp, { cost: cout })) return { ok: false, raison: 'mana' };
-  payer(duel, cote, { cost: cout });
-  duel.log.push(`${cote === 'joueur' ? 'Vous activez' : 'Le sorcier active'} ${carte.name} (${cout} manas).`);
-  appliquer(duel, cote, activation.effet, null, entite.id, carte.element, null, carte.id);
+  if (cout) payer(duel, cote, { cost: cout });
+  if (compteurs) entite.arme.compteurs = Math.max(0, (entite.arme.compteurs ?? 0) - compteurs);
+  const prix = compteurs
+    ? `${compteurs} compteur${compteurs > 1 ? 's' : ''} de sable`
+    : `${cout} mana${cout > 1 ? 's' : ''}`;
+  duel.log.push(`${cote === 'joueur' ? 'Vous activez' : 'Le sorcier active'} ${carte.name} (${prix})${mode ? ` — ${mode.label}` : ''}.`);
+  appliquer(duel, cote, mode ? mode.effet : activation.effet, options.cibleId ?? null, entite.id, carte.element, null, carte.id);
   appliquerAuraSable(duel, cote);
   majResonance(duel);
   rpgActionsEtat(duel);
   return { ok: true, entite };
+}
+
+/** L'arme portée par cette créature a-t-elle de quoi s'activer, tout de suite ? */
+export function rpgPeutActiverArme(duel, cote, entiteId) {
+  const entite = duel?.[cote]?.creatures.find((candidate) => candidate.id === entiteId);
+  const activation = armeCarteDe(entite)?.activation;
+  if (!activation || duel.tour !== cote || duel.annonce) return false;
+  const compteurs = Math.max(0, Number(activation.compteurs) || 0);
+  if (compteurs && (entite.arme?.compteurs ?? 0) < compteurs) return false;
+  return rpgPeutPayer(duel[cote], { cost: Math.max(0, Number(activation.cout) || 0) });
+}
+
+/**
+ * Les modes d'activation de l'arme portée, tels que l'interface peut les
+ * présenter : un bouton par mode, avec son prix et son libellé.
+ */
+export function rpgModesArme(duel, cote, entiteId) {
+  const entite = duel?.[cote]?.creatures.find((candidate) => candidate.id === entiteId);
+  const activation = armeCarteDe(entite)?.activation;
+  if (!activation) return [];
+  return (activation.modes ?? [{ id: null, label: null, description: null, effet: activation.effet }]);
 }
 
 // Gelé (Poigne de givre, Verglas) : la créature ni n'attaque ni ne bloque.
@@ -1912,6 +2028,45 @@ export function rpgChoisirAttaquants(duel, cote = 'sorcier', options = {}) {
  * bloqueurs (répartition égale par défaut si aucune n'est fournie).
  * `blocages === null` laisse l'IA affecter automatiquement ses bloqueurs.
  */
+/**
+ * Les déclencheurs des armes portées par des attaquants — le lot du Sable
+ * (`docs/rpg/14-equipements-du-sable.md`) :
+ *
+ * — `porteurAttaque` : « quand le porteur attaque » (Boussole du Hoggar,
+ *   Harnais du méhari) — il part pour tout attaquant déclaré, même si le
+ *   combat l'emporte ;
+ * — `porteurBlesse` / `porteurBlesseCreature` / `porteurBlesseSorcier` :
+ *   « quand le porteur inflige des blessures de combat » (la Jitte d’Amayas
+ *   compte, le Masque du guetteur pioche, la Takouba de Tin Hinan fait les
+ *   deux).
+ *
+ * @param {Array<{id: string, armeId: string|null, creature: number, sorcier: number}>} bilans
+ */
+function declencherArmesAttaquants(duel, cote, bilans) {
+  let declenche = false;
+  for (const bilan of bilans) {
+    const carte = bilan.armeId ? armeById(bilan.armeId) : null;
+    if (!carte) continue;
+    const effets = [];
+    if (carte.porteurAttaque) effets.push(carte.porteurAttaque);
+    if (carte.porteurBlesse && bilan.creature + bilan.sorcier > 0) effets.push(carte.porteurBlesse);
+    if (carte.porteurBlesseCreature && bilan.creature > 0) effets.push(carte.porteurBlesseCreature);
+    if (carte.porteurBlesseSorcier && bilan.sorcier > 0) effets.push(carte.porteurBlesseSorcier);
+    for (const effet of effets) {
+      // Aucune cible : ces déclencheurs ne désignent rien, Boualem ne peut
+      // donc pas les contrer (même règle que les arrivées qui créent des
+      // jetons).
+      appliquer(duel, cote, effet, null, bilan.id, cardColors(carte), null, carte.id);
+      declenche = true;
+    }
+  }
+  if (!declenche) return;
+  // Un déclencheur peut avoir créé un chien de sable ou une carte piochée :
+  // les auras du camp se relisent comme après n'importe quelle arrivée.
+  appliquerAuraSable(duel, cote);
+  majResonance(duel);
+}
+
 export function rpgLancerAttaque(
   duel,
   cote,
@@ -1999,6 +2154,14 @@ export function rpgLancerAttaque(
   // sur les statistiques d'avant la bannière est refusée. Une répartition
   // refusée est une erreur d'appel (l'interface laisse le moteur partager) :
   // la table est alors rendue telle qu'elle était, bannière comprise.
+  // Le porteur d'une arme qui attaque emporte ses déclencheurs : on note ici
+  // QUI portait QUOI, parce que l'arme peut tomber au cimetière pendant le
+  // combat — le déclenchement part quand même, il appartient à l'attaque et
+  // pas à la survie, comme à Magic.
+  const porteursDeclencheurs = attaquants.map((entite) => ({
+    id: entite.id,
+    armeId: entite.arme?.carteId ?? null,
+  }));
   const avantBanniere = attaquants.map((entite) => ({
     entite, atk: entite.atk, def: entite.def, pv: entite.pv, pvMax: entite.pvMax, journal: duel.log.length,
   }));
@@ -2194,6 +2357,29 @@ export function rpgLancerAttaque(
   if (duel.brouillardCombat) {
     duel.log.push('Le grand voile blanc absorbe les dégâts de combat.');
   }
+  // Bilan des blessures portées par chaque attaquant, armes du Sable
+  // comprises : le Coup rapide compte, la riposte des bloqueurs non
+  // (`coupsNormaux` contient les deux sens), et le Grand Voile blanc efface
+  // tout ce qui visait le sorcier.
+  const ajouterBlessure = (carnet, id, montant) => carnet.set(id, (carnet.get(id) ?? 0) + Math.max(0, Number(montant) || 0));
+  const blessuresCreatures = new Map();
+  for (const frappe of frappesRapides) {
+    if (!frappe.annule) ajouterBlessure(blessuresCreatures, frappe.attaquantId, frappe.degats);
+  }
+  for (const coup of coupsNormaux) {
+    if (coup.cote !== adv) continue;
+    ajouterBlessure(blessuresCreatures, coup.sourceId, coup.amount);
+  }
+  const blessuresSorcier = new Map();
+  if (!duel.brouillardCombat) {
+    for (const coup of coupsSorcier) ajouterBlessure(blessuresSorcier, coup.attaquantId, coup.amount);
+  }
+  declencherArmesAttaquants(duel, cote, porteursDeclencheurs.map(({ id, armeId }) => ({
+    id,
+    armeId,
+    creature: blessuresCreatures.get(id) ?? 0,
+    sorcier: blessuresSorcier.get(id) ?? 0,
+  })));
   // L’attaque est passée : le blocage forcé « lors de votre prochaine attaque »
   // (l’Appât de la meute) a été dépensé par celle-ci.
   for (const entite of duel[adv].creatures) {
@@ -2232,13 +2418,24 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   // `rpgLancerAttaque` et a déjà reçu son déclenchement.
   appliquerBannieresAttaque(duel, cote, [attaquant]);
   attaquant.attaquee = true;
+  let frappeSorcier = 0;
   if (duel.brouillardCombat) {
     // Le Grand Voile blanc : le coup s'égare, le sorcier ne prend rien.
     duel.log.push(`${attaquant.name} frappe dans le grand voile blanc : le sorcier ne prend rien.`);
   } else {
+    frappeSorcier = attaquant.atk;
     rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
     duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
   }
+  // L'arme du Sable emporte ses déclencheurs : « attaque » et « blesse le
+  // sorcier » (le Coup rapide, plus haut, est passé par `rpgLancerAttaque`,
+  // qui les a déjà réglés).
+  declencherArmesAttaquants(duel, cote, [{
+    id: attaquant.id,
+    armeId: attaquant.arme?.carteId ?? null,
+    creature: 0,
+    sorcier: frappeSorcier,
+  }]);
   rpgActionsEtat(duel);
   return { ok: true };
 }
@@ -2434,6 +2631,36 @@ export function rpgSorcierResoudreAnnonce(duel) {
  * attaquera ce tour-ci — le mana restant s'évaporerait sinon. Il garde
  * toutefois de quoi contrer (4 manas) s'il tient un contresort « carte ».
  */
+/**
+ * La créature que le Trait de sable va piquer : la plus entamée d'abord —
+ * l'IA achève ce qu'elle peut achever —, la plus frêle à défaut.
+ */
+function choisirCibleDegatsArmeIA(duel, carte, montant) {
+  const proies = duel.joueur.creatures
+    .filter((entite) => !rpgEstProtegee(entite, cardColors(carte)))
+    .sort((a, b) => (a.pv ?? 0) - (b.pv ?? 0) || (a.def ?? 0) - (b.def ?? 0));
+  const tuable = proies.find((entite) => (entite.pv ?? 0) <= montant);
+  return (tuable ?? proies[0])?.id ?? null;
+}
+
+/**
+ * Quel mode une arme à modes dépense-t-elle, côté sorcier ? Le bon sens d'un
+ * joueur de Jitte : achever une créature d'abord, se soigner quand la
+ * blessure compte, grandir son porteur le reste du tour.
+ */
+function choisirModeArmeIA(duel, carte) {
+  const modes = carte.activation?.modes ?? [];
+  if (!modes.length) return null;
+  const proies = duel.joueur.creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+  if (proies.some((entite) => (entite.pv ?? 0) <= 1)) {
+    return modes.find((mode) => mode.effet?.type === 'degats') ?? modes[0];
+  }
+  if (duel.sorcier.pv <= duel.sorcier.pvMax - 4) {
+    return modes.find((mode) => mode.effet?.type === 'soin') ?? modes[0];
+  }
+  return modes.find((mode) => mode.effet?.type === 'buff') ?? modes[0];
+}
+
 export function rpgSorcierActiverArmes(duel) {
   const actives = [];
   const tientContresort = duel.sorcier.main.some((id) => magieById(id)?.effet?.type === 'contresort'
@@ -2444,8 +2671,23 @@ export function rpgSorcierActiverArmes(duel) {
     const activation = carte?.activation;
     if (!activation) continue;
     const cout = (Number(activation.cout) || 0) + reserve;
+    const parCompteurs = Math.max(0, Number(activation.compteurs) || 0) > 0;
     let garde = 8;
-    while (garde-- > 0 && rpgPeutPayer(duel.sorcier, { cost: cout })) {
+    while (garde-- > 0) {
+      if (parCompteurs) {
+        // La Jitte d’Amayas : on dépense les compteurs de sable un par un,
+        // jamais tous d'un coup sur le même geste.
+        if ((porteur.arme?.compteurs ?? 0) < activation.compteurs) break;
+        const mode = choisirModeArmeIA(duel, carte);
+        const cibleId = mode?.effet?.type === 'degats'
+          ? choisirCibleDegatsArmeIA(duel, carte, Math.max(0, Number(mode.effet.amount) || 0))
+          : null;
+        const res = rpgActiverArme(duel, 'sorcier', porteur.id, { mode: mode?.id ?? null, cibleId });
+        if (!res.ok) break;
+        actives.push(porteur);
+        continue;
+      }
+      if (!rpgPeutPayer(duel.sorcier, { cost: cout })) break;
       const res = rpgActiverArme(duel, 'sorcier', porteur.id);
       if (!res.ok) break;
       actives.push(porteur);

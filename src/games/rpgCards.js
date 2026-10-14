@@ -1812,8 +1812,8 @@ export const RPG_MAGIE_CARDS = [
 ];
 
 /**
- * Les armes — le cinquième type de cartes du duel (prototype : quatre armes,
- * une par élément).
+ * Les armes — le cinquième type de cartes du duel (les quatre du prototype,
+ * une par élément, puis le lot de dix du Sable).
  *
  * Une arme se joue depuis la main, payée en mana comme un sort, et s'attache
  * directement à une créature alliée (héros et jetons compris) : le porteur
@@ -1828,6 +1828,13 @@ export const RPG_MAGIE_CARDS = [
  * rend son porteur inbloquable (Infiltration), les rares un effet propre à
  * leur élément (Envol pour la Lance, les serpents appelés du Bâton), la
  * mythique une immunité doublée de Rapidité.
+ *
+ * **Les déclencheurs du porteur** (lot du Sable, `docs/rpg/14-equipements-du-sable.md`) :
+ * une arme peut en outre porter un effet qui part avec son porteur —
+ * `porteurAttaque` (quand il attaque), `porteurBlesseCreature` /
+ * `porteurBlesseSorcier` / `porteurBlesse` (quand il inflige des blessures de
+ * combat), `porteurMeurt` (quand il meurt, arme comprise). `armeVivante`
+ * permet de la jouer sans créature : elle crée son propre porteur.
  */
 export const RPG_ARME_CARDS = [
   {
@@ -1885,6 +1892,181 @@ export const RPG_ARME_CARDS = [
     donne: { envol: true },
     text: 'Arme — Le porteur gagne +3/+1 et Envol.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
+  },
+
+  // ── Le lot des Veilleurs : dix équipements du Sable ────────────────────
+  // Dessiné dans l'esprit des Equipment de Magic (la Jitte d'Umezawa,
+  // Skullclamp, les Épées de X et Y, l'Arme vivante) et traduit dans la
+  // grammaire du Sablier. Voir `docs/rpg/14-equipements-du-sable.md` : le
+  // lot entier, ses briques moteur et sa réserve.
+  {
+    id: 'sandales-de-tislit',
+    name: 'Sandales de Tislit',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Bottes',
+    cost: 1,
+    rarity: 'commune',
+    bonus: { atk: 0, def: 1 },
+    donne: { rapidite: true },
+    text: 'Arme — Le porteur gagne +0/+1 et Rapidité (il peut attaquer le tour où il arrive).',
+    flavor: 'Elle part avant la question.',
+  },
+  {
+    id: 'cuirasse-de-sel',
+    name: 'Cuirasse de sel',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Armure',
+    cost: 2,
+    rarity: 'commune',
+    bonus: { atk: 0, def: 3 },
+    donne: { esquive: 1 },
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive 1 (réduit de 1 les dégâts reçus de chaque attaque ou magie).',
+    flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
+  },
+  {
+    id: 'javelot-du-beffroi',
+    name: 'Javelot du beffroi',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Javelot',
+    cost: 2,
+    rarity: 'commune',
+    bonus: { atk: 2, def: 0 },
+    donne: { coupRapide: true },
+    text: 'Arme — Le porteur gagne +2/+0 et Coup rapide (déclaré attaquant, il inflige d’abord son attaque à une créature adverse de votre choix, puis son attaque suit son cours).',
+    flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
+  },
+  {
+    id: 'licou-du-chien-de-sable',
+    name: 'Licou du chien de sable',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Licou',
+    cost: 1,
+    rarity: 'inhabituelle',
+    bonus: { atk: 1, def: -1 },
+    // Le Skullclamp du Sablier : le malus de défense n'est pas une punition,
+    // c'est le déclencheur. Posé sur un chien de sable 1/1, il le fait passer
+    // à 2/0 — `rpgActionsEtat` l'enterre, `porteurMeurt` part, deux cartes
+    // pour un mana et un jeton.
+    porteurMeurt: { type: 'pioche', amount: 2 },
+    text: 'Arme — Le porteur gagne +1/−1. Quand le porteur meurt, piochez deux cartes.',
+    flavor: 'Il tirait bien. Il tire encore, d’une certaine façon.',
+  },
+  {
+    id: 'boussole-du-hoggar',
+    name: 'Boussole du Hoggar',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Boussole',
+    cost: 2,
+    rarity: 'inhabituelle',
+    bonus: { atk: 1, def: 1 },
+    // L'Explorer's Scope, traduit en « le désert se lit » : le terrain va en
+    // main, jamais posé — la règle « un terrain par tour » reste intacte.
+    porteurAttaque: { type: 'regarder-dessus', si: 'terrain' },
+    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur attaque : regardez la première carte de votre deck ; si c’est un terrain, révélez-le et ajoutez-le à votre main.',
+    flavor: 'Amayas ne cherche pas l’eau. Il se souvient de l’endroit.',
+  },
+  {
+    id: 'harnais-du-mehari',
+    name: 'Harnais du méhari',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Harnais',
+    cost: 3,
+    rarity: 'inhabituelle',
+    bonus: { atk: 2, def: 2 },
+    porteurAttaque: { type: 'sable', amount: 1 },
+    text: 'Arme — Le porteur gagne +2/+2. Quand le porteur attaque : gagnez 1 mana de sable.',
+    flavor: 'Le méhari connaît le puits d’avant la soif.',
+  },
+  {
+    id: 'masque-du-guetteur',
+    name: 'Masque du guetteur',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Masque',
+    cost: 2,
+    rarity: 'rare',
+    bonus: { atk: 1, def: 1 },
+    porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 2, defausse: 1 },
+    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez deux cartes, puis défaussez une carte.',
+    flavor: 'Il ne rapporte pas ce qu’il a vu. Il rapporte ce qui manquait.',
+  },
+  {
+    id: 'jitte-d-amayas',
+    name: 'Jitte d’Amayas',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Jitte',
+    cost: 2,
+    rarity: 'rare',
+    bonus: { atk: 2, def: 0 },
+    porteurBlesse: { type: 'compteurs-arme', amount: 1 },
+    activation: {
+      cout: 0,
+      compteurs: 1,
+      modes: [
+        {
+          id: 'force',
+          label: 'Force du guide',
+          description: 'Le porteur gagne +2/+2 jusqu’à la fin du tour.',
+          effet: { type: 'buff', atk: 2, def: 2, cible: 'porteur', tours: 1 },
+        },
+        {
+          id: 'trait',
+          label: 'Trait de sable',
+          description: 'La Jitte inflige 1 blessure à une créature adverse.',
+          effet: { type: 'degats', amount: 1 },
+        },
+        {
+          id: 'puits',
+          label: 'Halte au puits',
+          description: 'Vous gagnez 2 points de vie.',
+          effet: { type: 'soin', amount: 2 },
+        },
+      ],
+    },
+    text: 'Arme — Le porteur gagne +2/+0. Quand le porteur inflige des blessures de combat, mettez un compteur de sable sur la Jitte. Retirez un compteur : le porteur gagne +2/+2 jusqu’à la fin du tour, ou la Jitte inflige 1 blessure à une créature adverse, ou vous gagnez 2 PV.',
+    flavor: 'Trois gestes, et le guide n’a pas encore parlé.',
+  },
+  {
+    id: 'lame-des-ergs',
+    name: 'Lame des ergs',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Khopesh',
+    cost: 4,
+    rarity: 'rare',
+    bonus: { atk: 3, def: 1 },
+    // Arme vivante (Batterskull) : jouable la main vide, elle fait naître le
+    // chien de sable qui la portera (`rpgJouerArme` accepte `cibleId: null`).
+    armeVivante: { jeton: 'chien-de-sable', nombre: 1 },
+    text: 'Arme — Arme vivante : vous pouvez la jouer sans créature ; elle crée alors un chien de sable 1/1 et s’y attache. Le porteur gagne +3/+1.',
+    flavor: 'Le désert n’attend pas qu’on lui trouve un bras.',
+  },
+  {
+    id: 'takouba-de-tin-hinan',
+    name: 'Takouba de Tin Hinan',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Takouba',
+    cost: 4,
+    rarity: 'mythique',
+    bonus: { atk: 3, def: 2 },
+    // Le cycle des Épées de X et Y, en une seule lame : le Coup rapide
+    // garantit les DEUX déclencheurs — la frappe précoce sur une créature
+    // pioche, l'attaque qui passe lève un chien. Sans lui, un porteur
+    // inbloquable ne blesserait jamais une créature et la moitié de la carte
+    // dormirait.
+    donne: { coupRapide: true },
+    porteurBlesseCreature: { type: 'pioche', amount: 1 },
+    porteurBlesseSorcier: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },
+    text: 'Arme — Le porteur gagne +3/+2 et Coup rapide. Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
+    flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
 ];
 

@@ -329,6 +329,42 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
 - **Serpent des citernes** (`serpent-des-citernes.jpg`) — le jeton évoqué
   par le Bâton : serpent verdâtre dressé dans la citerne moussue.
 
+## Dérogation : les équipements du Sable en nihonga coloré (octobre 2026)
+
+Les dix cartes du **lot d'équipements du Sable** (`docs/rpg/14-equipements-du-sable.md`)
+dérogent **volontairement** à la direction « huile sur toile » comme à la
+dérogation photoréaliste des quatre armes du prototype : elles sont livrées en
+**nihonga coloré** — la peinture japonaise (contours de sumi, pigments
+minéraux, passages de feuille d'or, papier washi) — **trempée dans une palette
+algérienne saturée** : indigo du tagelmust, ocre safran, rouge henné, turquoise
+des ksour, or du sable. Le Japon fournit la matière picturale, l'Algérie la
+lumière et les couleurs ; le reste de la collection reste en huile.
+
+Règles de tir propres à ces dix cartes :
+
+- le **porteur est en mouvement** : poses franches, corps en action, jamais une
+  pose de catalogue ;
+- **angle de caméra dynamique** : contre-plongée, trois-quarts bas, composition
+  en diagonale, étoffes qui claquent ;
+- l'**équipement reste intégralement dans le cadre** — d'une extrémité à
+  l'autre de l'arme ou de la pièce d'armure, marge d'air comprise —, comme pour
+  les quatre armes du prototype ;
+- aucun texte, glyphe, logo ni interface dessinée ;
+- plein art vertical, livré au ratio exact de la face (1024×1280).
+
+| Carte | La scène |
+|---|---|
+| Sandales de Tislit | la paire de sandales de cuir laissée sur le seuil de pierre d'une maison du ksar, porte de bois entrouverte |
+| Cuirasse de sel | un guerrier chargeant hors d'une sebkha, cuirasse de cuir incrustée de sel entièrement visible |
+| Javelot du beffroi | une vigie qui lance son javelot du haut d'une tour de terre, contre-plongée extrême |
+| Licou du chien de sable | un lévrier des sables en plein bond, collier et harnais tressés bien lisibles |
+| Boussole du Hoggar | la boussole de laiton ouverte, seule, posée à plat sur un rocher, le Hoggar derrière |
+| Harnais du méhari | un méhari qui se cabre, harnais complet à glands rouges et disques de laiton |
+| Masque du guetteur | une vigie accroupie qui pivote vers l'objectif, voile arraché par le vent, masque de cuir visible |
+| Jitte d'Amayas | un guide en pleine parade, le bâton fourchu de fer tenu en diagonale |
+| Lame des ergs | un khopesh de bronze planté dans la crête, un chien de sable bondissant à côté |
+| Takouba de Tin Hinan | une guerrière touarègue abattant sa takouba, lame entière dans le cadre, contre-plongée héroïque |
+
 ## Dérogation : le lot du gel du Serment en fresque (octobre 2026)
 
 Les six sorts de la famille « Gel & contrôle du combat » (`poigne-de-givre`,

@@ -102,6 +102,11 @@ const PLEIN_ART_45 = [
   'samourai-du-daimyo',
   // Les quatre armes du prototype, peintes comme le reste du catalogue.
   'takouba-des-pistes', 'baton-des-citernes', 'armure-de-cendres', 'lance-de-givre',
+  // Le lot d'équipements du Sable : dix peintures au ratio de la face, dans la
+  // dérogation « nihonga coloré » documentée par `RPG-CARD-ART.md`.
+  'sandales-de-tislit', 'cuirasse-de-sel', 'javelot-du-beffroi',
+  'licou-du-chien-de-sable', 'boussole-du-hoggar', 'harnais-du-mehari',
+  'masque-du-guetteur', 'jitte-d-amayas', 'lame-des-ergs', 'takouba-de-tin-hinan',
   // La refonte du Père des corbeaux (Odin photoréaliste) est livrée elle
   // aussi au ratio exact de la face.
   'pere-des-corbeaux',
@@ -2706,8 +2711,12 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'montagne').length, 3);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'cretes-de-cendre').length, 3);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 16);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 5);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'arme').length, 2);
+  // Le lot d'équipements du Sable a porté l'identité Sable + Braise à DEUX
+  // mythiques d'arme (l'Armure de cendres et la Takouba de Tin Hinan) : une
+  // place de sort leur a cédé la place, les trois places d'armes du deck
+  // hybride les portent toutes, signature comprise.
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 4);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'arme').length, 3);
   for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.rarity === 'mythique')) {
     assert.ok(RPG_DECK_HYBRIDE_BASE.filter((id) => id === carte.id).length <= 1,
       `${carte.id} mythique apparaît au plus une fois dans le deck hybride`);

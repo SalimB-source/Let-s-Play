@@ -331,12 +331,28 @@ export function choisirChampionDuelIA(duel, cote, cibleId = null) {
  */
 function meilleureCibleArme(duel, cote, carte) {
   const couleurs = cardColors(carte);
-  return duel[cote].creatures
-    .filter((entite) => !entite.arme && !estProtegee(entite, couleurs))
+  const candidates = duel[cote].creatures
+    .filter((entite) => !entite.arme && !estProtegee(entite, couleurs));
+  // Une arme qui CONDAMNE son porteur (le Licou du chien de sable, +1/−1)
+  // ne cherche pas le meilleur bras : elle cherche le moins regrettable —
+  // un jeton, un mourant — puisque la pioche est le but et le porteur le
+  // prix. Sans condamné sous la main, elle retombe sur la logique ordinaire.
+  const tuePorteur = (carte?.bonus?.def ?? 0) < 0;
+  if (tuePorteur) {
+    const condamnees = candidates.filter((entite) => (entite.pv ?? 0) + (carte.bonus?.def ?? 0) <= 0);
+    if (condamnees.length) {
+      return condamnees
+        .map((entite) => ({ entite, score: valeurEntite(entite) + (entite.jeton ? -6 : 0) }))
+        .sort((a, b) => a.score - b.score)[0]?.entite.id ?? null;
+    }
+  }
+  return candidates
     .map((entite) => {
       let score = valeurEntite(entite);
       if (carte.donne?.envol && entite.envol) score -= 3;
       if (carte.donne?.esquive && (entite.esquive ?? 0) > 0) score -= 1;
+      if (carte.donne?.coupRapide && entite.coupRapide) score -= 3;
+      if (carte.donne?.rapidite && entite.rapidite) score -= 1;
       return { entite, score };
     })
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
@@ -851,19 +867,33 @@ function scoreCarte(duel, cote, carte, profil, rng) {
 
   if (carte.kind === 'arme') {
     // Une arme sans porteur libre ne se joue pas : elle attend une créature.
+    // Exception, l'**arme vivante** (la Lame des ergs) : elle fait naître le
+    // chien de sable qui la portera, elle se joue donc la table vide.
     // Son prix suit ce qu'elle ajoute — chiffres, mot-clé utile au porteur
     // choisi, déclenché — rapporté à son coût, comme un renfort permanent.
     const cibleId = meilleureCibleArme(duel, cote, carte);
-    if (!cibleId) return null;
+    if (!cibleId && !carte.armeVivante) return null;
     const porteur = camp.creatures.find((entite) => entite.id === cibleId);
+    // Porteur créé par l'arme elle-même : un jeton 1/1 armé, sans rien
+    // dépenser de plus que la carte.
     let gain = (carte.bonus?.atk ?? 0) * 1.3 + (carte.bonus?.def ?? 0);
+    if (!porteur) gain += 2.5;
     if (carte.donne?.esquive) gain += carte.donne.esquive * 1.5;
     if (carte.donne?.envol && !porteur?.envol) gain += 2.5;
     if (carte.donne?.infiltration && !porteur?.infiltration) gain += 2.5;
     if (carte.donne?.furie) gain += 1 + carte.donne.furie * 0.7;
     if (carte.donne?.rapidite && !porteur?.rapidite) gain += 0.7;
+    if (carte.donne?.coupRapide && !porteur?.coupRapide) gain += 2;
     if (carte.donne?.immunite && !estProtegee(porteur, carte.donne.immunite)) gain += 2;
     if (carte.declenche) gain += 2;
+    // Les déclencheurs du porteur (lot du Sable) : ce que l'arme rapporte
+    // chaque tour, au-delà des chiffres qu'elle affiche.
+    if (carte.porteurAttaque) gain += 1.5;
+    if (carte.porteurBlesse) gain += 1.5;
+    if (carte.porteurBlesseCreature) gain += 1;
+    if (carte.porteurBlesseSorcier) gain += 1.5;
+    // Le Licou du chien de sable : deux cartes au prix du porteur.
+    if (carte.porteurMeurt) gain += porteur?.jeton ? 3 : 1.2;
     // Un serpent appelé à l'arrivée, et un autre à la demande contre du mana
     // (Bâton des citernes) : un corps rapide d'un tour vaut sa frappe.
     if (carte.arrivee?.type === 'jetons') gain += 2.5;
