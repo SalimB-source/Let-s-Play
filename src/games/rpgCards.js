@@ -145,6 +145,45 @@ export function magieFamilleInfo(carte) {
   return key ? { ...RPG_SORT_FAMILIES[key] } : null;
 }
 
+/**
+ * Le motif gravé dans le cadre d'une carte, quand son type en mérite un autre
+ * que la résille commune — celle que `.rpg-battle` pose à tous les cadres :
+ *
+ * - `magie` — **l'étoile**, celle du sigle des sorts : le sort se lit dans
+ *   son cadre, comme sa famille se lit dans son socle ;
+ * - `terrain` — **les strates**, les assises de pierre : la carte qu'on pose,
+ *   pas celle qui passe.
+ *
+ * Deux types, et deux exclusions voulues : le Sabre maudit est une magie pour
+ * le moteur mais son cadre est celui des armes — il garde l'acier guilloché
+ * (voir `magieFamille`) — et une carte mythique garde le zellige qui dit sa
+ * rareté, car le CSS ne pose ces motifs que sous `:not(.rpg-card--mythique)`.
+ * Créatures, héros et armes n'ont que la résille commune.
+ */
+export const RPG_CARD_MOTIFS = {
+  magie: { key: 'magie', label: 'Magie', motif: 'l’étoile à quatre branches' },
+  terrain: { key: 'terrain', label: 'Terrain', motif: 'les strates des assises' },
+};
+
+/** La clé de motif d'une carte, ou `null` si son type porte la résille commune. */
+export function motifCarte(carte) {
+  if (carte?.kind === 'terrain') return 'terrain';
+  if (magieFamille(carte)) return 'magie';
+  return null;
+}
+
+/** Le libellé et le dessin du motif d'une carte, ou `null` pour un type sans motif. */
+export function motifInfo(carte) {
+  const key = motifCarte(carte);
+  return key ? { ...RPG_CARD_MOTIFS[key] } : null;
+}
+
+/** La classe de motif d'une carte — le dessin gravé dans son cadre. */
+export function cardMotifClass(carte) {
+  const key = motifCarte(carte);
+  return key ? `rpg-card--motif-${key}` : '';
+}
+
 /** Clé et couleur de cadre d'une carte : élément seul, ou combinaison multicolore. */
 export function cardFrameInfo(carte) {
   // Les armes gardent la matière commune des armes — acier guilloché peint

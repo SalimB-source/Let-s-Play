@@ -41,6 +41,7 @@ import {
   cardCost,
   cardFrameClass,
   cardFrameColor,
+  cardMotifClass,
   cardTypeLine,
   terrainManaColors,
 } from './rpgCards.js';
@@ -527,7 +528,7 @@ export function RpgDeckAtelier({
                       onFocus={survoler(carte)}
                       onBlur={quitter}
                     >
-                      <span className={`rpg-atelier__carte-art ${cardFrameClass(carte)}`}>
+                      <span className={`rpg-atelier__carte-art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
                         <img src={artUrl(carte.id)} alt="" loading="lazy" />
                         {!estTerrain && <Cout carte={carte} />}
                         {estTerrain && (

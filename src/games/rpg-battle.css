@@ -7077,3 +7077,30 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-sort-ligne--sorcellerie { color: #ddccff; }
 .rpg-mulligan__type--rapide { border-color: rgba(255, 214, 25, .62); background: rgba(46, 32, 4, .9); color: #ffe9a0; }
 .rpg-mulligan__type--sorcellerie { border-color: rgba(179, 154, 224, .62); background: rgba(30, 20, 50, .9); color: #ece3ff; }
+
+/* ── Le motif des magies et des terrains ──────────────────────────────────────
+   La résille commune (posée par `.rpg-battle`) dit « ceci est un cadre » ; la
+   mythique y met son zellige, les armes leur guilloché d'acier. Il manquait le
+   motif des deux types qui se posent le plus souvent sur la table : la magie et
+   le terrain. Chacun grave le sien dans le même gabarit — la bordure
+   transparente, le fond de face sur la padding-box, le motif puis la matière
+   sur la border-box (voir « Cadres ornés ») : seule l'image change, l'épaisseur
+   du cadre, sa couleur et sa matière restent celles de l'élément.
+
+   Les magies portent l'étoile à quatre branches du sigle des sorts, gravée
+   d'un double trait ; les
+   terrains, les strates de leurs assises, décalées d'un rang à l'autre comme
+   des pierres posées. Tous deux sont dessinés en ombre et reflet translucides,
+   comme la résille : ils se lisent sur n'importe quelle couleur de cadre.
+
+   `:not(.rpg-card--mythique)` : une carte mythique garde son zellige, quel que
+   soit son type. Rien ici ne touche au cadre des armes — `cardMotifClass` n'en
+   attribue aucun au Sabre maudit, qui reste une magie au cadre d'acier. */
+.rpg-card--motif-magie:not(.rpg-card--mythique) {
+  --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cg fill='none' stroke-width='.9'%3E%3Cpath d='M6 1.2 7.2 4.8 10.8 6 7.2 7.2 6 10.8 4.8 7.2 1.2 6 4.8 4.8Z' stroke='%23000' stroke-opacity='.34'/%3E%3Cpath d='M6 2.2 7.2 5.8 10.8 7 7.2 8.2 6 11.8 4.8 8.2 1.2 7 4.8 5.8Z' stroke='%23fff' stroke-opacity='.26'/%3E%3Cpath d='M6 3.6 6.6 5.4 8.4 6 6.6 6.6 6 8.4 5.4 6.6 3.6 6 5.4 5.4Z' stroke='%23000' stroke-opacity='.26'/%3E%3C/g%3E%3Ccircle cx='6' cy='6' r='.7' fill='%23fff' fill-opacity='.4'/%3E%3C/svg%3E");
+  --rpg-frame-motif-size: 12px 12px;
+}
+.rpg-card--motif-terrain:not(.rpg-card--mythique) {
+  --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cg fill='none' stroke-width='1'%3E%3Cpath d='M0 2h5' stroke='%23000' stroke-opacity='.34'/%3E%3Cpath d='M0 3h5' stroke='%23fff' stroke-opacity='.26'/%3E%3Cpath d='M3 6h5' stroke='%23000' stroke-opacity='.34'/%3E%3Cpath d='M3 7h5' stroke='%23fff' stroke-opacity='.26'/%3E%3C/g%3E%3C/svg%3E");
+  --rpg-frame-motif-size: 8px 8px;
+}

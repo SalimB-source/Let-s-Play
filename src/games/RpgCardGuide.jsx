@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { RPG_CARD_LESSONS } from './rpgCardLessons.js';
-import { bonusArme, cardById, cardColors, cardFrameClass, cardFrameColor, cardTypeLine, carteEstArme } from './rpgCards.js';
+import { bonusArme, cardById, cardColors, cardFrameClass, cardFrameColor, cardMotifClass, cardTypeLine, carteEstArme } from './rpgCards.js';
 // Le jeton des familles de sorts : le guide enseigne la face des cartes, il
 // montre donc le repère tel que le duel le pose (voir `rpgSortSignature.jsx`).
 import { SortSceau } from './rpgSortSignature.jsx';
@@ -26,7 +26,7 @@ function GuideCard({ carte, cardArt }) {
 
   return (
     <article
-      className={`rpg-card-guide__example rpg-card-guide__example--${carte.kind} ${cardFrameClass(carte)}`}
+      className={`rpg-card-guide__example rpg-card-guide__example--${carte.kind} ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
       data-card-id={carte.id}
       style={{ '--rpg-guide-frame': cardFrameColor(carte), '--rpg-frame-color': cardFrameColor(carte) }}
     >

@@ -130,6 +130,7 @@ import {
 import {
   cardRarityInfo,
   cardFrameClass,
+  cardMotifClass,
   cardFrameColor,
   cardColorCost,
   bonusArme,
@@ -747,7 +748,7 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
         {topCard
           ? <img
-              className={`rpg-card-pile__card rpg-card-pile__card--top ${cardFrameClass(carteDuDessus)}`}
+              className={`rpg-card-pile__card rpg-card-pile__card--top ${cardFrameClass(carteDuDessus)} ${cardMotifClass(carteDuDessus)}`}
               style={cardFrameStyle(carteDuDessus)}
               src={cardArt(topCard)}
               alt=""
@@ -896,6 +897,7 @@ function TableCard({
         `rpg-card rpg-card--img rpg-card--elem-${carte?.element ?? 'sable'} rpg-card--type-${cardFrameType(carte)}`,
         cote === 'ennemi' ? 'rpg-card--ennemi' : 'rpg-card--equipe',
         cardFrameClass(carte),
+        cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         entite.envol ? 'is-envol' : '',
         active ? 'is-active' : '',
@@ -1175,7 +1177,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   );
   const face = (
     <div
-      className={`rpg-hover-card-preview__face ${cardFrameClass(carte)}`}
+      className={`rpg-hover-card-preview__face ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
       style={cardFrameStyle(carte)}
       aria-hidden="true"
     >
@@ -1328,6 +1330,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
         `rpg-mulligan__card--type-${cardFrameType(carte)}`,
         `rpg-mulligan__card--elem-${carte.element}`,
         cardFrameClass(carte),
+        cardMotifClass(carte),
         selectionnee ? 'is-selected' : '',
         nouvelle ? 'is-new' : '',
       ].filter(Boolean).join(' ')}
@@ -1484,7 +1487,7 @@ function SpellAnnouncement({ annonce }) {
         : `Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
       <img
-        className={`rpg-spell-played__art ${cardFrameClass(carte)}`}
+        className={`rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
         style={cardFrameStyle(carte)}
         src={cardArt(carte)}
         alt=""
@@ -2442,7 +2445,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}`}
                         onClick={() => onOpenCardPreview?.(carte)}
                       />
-                      <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)}`}>
+                      <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span className="rpg-card-catalogue__cost" aria-label={`Coût ${cardCostLabel(carte)}`}>{carte.cost}</span>}
@@ -5475,7 +5478,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 type="button"
                 key={groupe.carteId}
                 aria-label={`${carte?.name ?? 'Terrain adverse'}, ${groupe.count} terrain${groupe.count > 1 ? 's' : ''}, ${groupe.available} disponible${groupe.available > 1 ? 's' : ''}, ${groupe.tapped} engagé${groupe.tapped > 1 ? 's' : ''}`}
-                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}`}
+                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)} ${cardMotifClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}`}
                 style={cardFrameStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
@@ -5653,7 +5656,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           return (
             <div
               key={effet.effectId}
-              className={`rpg-card-destruction-fx ${cardFrameClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
+              className={`rpg-card-destruction-fx ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
               data-rpg-destroyed-id={effet.entityId}
               data-destruction-source={effet.bruleeParBraise ? 'braise' : undefined}
               aria-hidden="true"
@@ -5692,7 +5695,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               <button
                 key={groupe.carteId}
                 type="button"
-                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
+                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)} ${cardMotifClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
                 style={cardFrameStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
@@ -6036,6 +6039,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     `rpg-hand__card--elem-${carte.element}`,
                     familleSort ? `rpg-hand__card--famille-${familleSort}` : '',
                     cardFrameClass(carte),
+                    cardMotifClass(carte),
                     piocheEnCours ? 'rpg-hand-card--drawing' : '',
                     carte.instant ? 'is-instant' : '',
                     cibleEnCours === carteId ? 'is-targeting' : '',

@@ -1,0 +1,116 @@
+/**
+ * Le motif gravé dans le cadre des magies et des terrains.
+ * node scripts/rpg-card-motif-check.mjs
+ *
+ * La résille commune est posée une fois, sur `.rpg-battle` ; la mythique met
+ * son zellige, les armes leur guilloché. Ce contrôle tient les deux motifs de
+ * type qui s'y ajoutent : leur image — décodée puis relue par un analyseur XML,
+ * parce qu'une URI mal échappée ne peindrait simplement rien —, la tuile qui
+ * les répète le long de l'anneau, et les surfaces qui les portent. Il vérifie
+ * aussi ce qu'ils ne touchent pas : l'épaisseur, la couleur et la matière du
+ * cadre ne changent pas, le zellige des mythiques reste au-dessus, et le Sabre
+ * maudit — une magie au cadre d'acier — n'en reçoit aucun.
+ */
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { JSDOM } from 'jsdom';
+import { cardMotifClass, magieFamille, motifCarte, motifInfo, RPG_CARD_MOTIFS } from '../src/games/rpgCards.js';
+
+const lire = (nom) => readFileSync(new URL(`../src/games/${nom}`, import.meta.url), 'utf8');
+const battleCss = lire('rpg-battle.css');
+const duel = lire('RpgDuelPage.jsx');
+const guide = lire('RpgCardGuide.jsx');
+const atelier = lire('RpgDeckAtelier.jsx');
+
+// ── 1. Le catalogue ne nomme que deux motifs, et dit lesquels ────────────────
+assert.deepEqual(Object.keys(RPG_CARD_MOTIFS).sort(), ['magie', 'terrain'],
+  'deux types portent un motif propre : la magie et le terrain');
+
+// ── 2. Qui en porte un, qui n’en porte pas ──────────────────────────────────
+const carte = (props) => ({ id: 'carte-de-test', name: 'Carte de test', ...props });
+assert.equal(motifCarte(carte({ kind: 'magie' })), 'magie', 'une sorcellerie porte l’étoile');
+assert.equal(motifCarte(carte({ kind: 'magie', instant: true })), 'magie', 'une Magie Rapide aussi');
+assert.equal(motifCarte(carte({ kind: 'terrain' })), 'terrain', 'un terrain porte les strates');
+for (const kind of ['creature', 'hero', 'arme', 'statut']) {
+  assert.equal(motifCarte(carte({ kind })), null, `un ${kind} garde la résille commune`);
+}
+assert.equal(motifCarte(carte({ kind: 'magie', effet: { type: 'arme' } })), null,
+  'le Sabre maudit — une magie au cadre d’acier — n’a pas le motif des magies');
+assert.equal(magieFamille(carte({ kind: 'magie', effet: { type: 'arme' } })), null,
+  'et c’est la même règle que le socle des familles : le Sabre maudit n’est pas un sort');
+assert.equal(cardMotifClass(carte({ kind: 'magie' })), 'rpg-card--motif-magie');
+assert.equal(cardMotifClass(carte({ kind: 'terrain' })), 'rpg-card--motif-terrain');
+assert.equal(cardMotifClass(carte({ kind: 'hero' })), '', 'aucun héros ne porte de classe de motif');
+assert.equal(motifInfo(carte({ kind: 'terrain' })).motif, RPG_CARD_MOTIFS.terrain.motif,
+  'le catalogue nomme le dessin du terrain');
+
+// ── 3. Les deux règles : seulement l’image, et le zellige au-dessus ─────────
+const motifDe = (cle) => {
+  const regle = battleCss.match(new RegExp(`\\.rpg-card--motif-${cle}:not\\(\\.rpg-card--mythique\\)\\s*\\{([^}]*)\\}`));
+  assert.ok(regle, `la règle du motif ${cle} existe et laisse son zellige à la carte mythique`);
+  const corps = regle[1];
+  assert.doesNotMatch(corps, /border|background-color|--rpg-frame-color|--rpg-frame-gradient|--rpg-frame-fill/,
+    `le motif ${cle} ne touche ni l’épaisseur, ni la couleur, ni la matière du cadre : il ne change que l’image`);
+  const image = corps.match(/--rpg-frame-motif:\s*url\("([^"]+)"\)/);
+  assert.ok(image, `le cadre des ${cle}s porte son motif`);
+  assert.match(image[1], /^data:image\/svg\+xml,%3Csvg /, `le motif ${cle} est un SVG en ligne`);
+  const dom = new JSDOM('<!doctype html><body></body>');
+  const doc = new dom.window.DOMParser().parseFromString(
+    decodeURIComponent(image[1].replace(/^data:image\/svg\+xml,/, '')), 'image/svg+xml');
+  assert.equal(doc.querySelector('parsererror'), null, `le SVG du motif ${cle} est bien formé une fois décodé`);
+  const traces = [...doc.querySelectorAll('path, circle')];
+  assert.ok(traces.length >= 4, `le motif ${cle} est gravé : au moins quatre tracés — l’ombre et son reflet`);
+  const encre = (noeud) => noeud.getAttribute('stroke') ?? noeud.getAttribute('fill');
+  assert.ok(traces.some((noeud) => encre(noeud) === '#000') && traces.some((noeud) => encre(noeud) === '#fff'),
+    `le motif ${cle} se lit sur toute couleur de cadre : une ombre et un reflet translucides, comme la résille`);
+  assert.ok(traces.every((noeud) => {
+    const opacite = noeud.getAttribute('stroke-opacity') ?? noeud.getAttribute('fill-opacity');
+    return Number(opacite) > 0 && Number(opacite) < 1;
+  }), `chaque tracé du motif ${cle} est translucide`);
+  dom.window.close();
+  return image[1];
+};
+const motifMagie = motifDe('magie');
+const motifTerrain = motifDe('terrain');
+assert.match(battleCss, /\.rpg-card--motif-magie:not\(\.rpg-card--mythique\)\s*\{[^}]*--rpg-frame-motif-size:\s*12px 12px;/s,
+  'l’étoile se répète tous les 12 × 12 px le long de l’anneau');
+assert.match(battleCss, /\.rpg-card--motif-terrain:not\(\.rpg-card--mythique\)\s*\{[^}]*--rpg-frame-motif-size:\s*8px 8px;/s,
+  'les strates se répètent tous les 8 × 8 px le long de l’anneau');
+
+// ── 4. Cinq cadres, cinq images : aucune ne recopie une autre ───────────────
+const toutes = [...battleCss.matchAll(/--rpg-frame-motif:\s*url\("([^"]+)"\)/g)].map(([, image]) => image);
+assert.equal(toutes.length, 5,
+  'cinq motifs en tout : la résille commune, le zellige mythique, le guilloché des armes, l’étoile et les strates');
+assert.equal(new Set(toutes).size, toutes.length, 'aucun motif ne recopie l’image d’un autre cadre');
+assert.ok(toutes.includes(motifMagie) && toutes.includes(motifTerrain), 'les deux motifs de type sont bien dans la feuille');
+assert.ok(toutes.some((image) => /width='18' height='12'/.test(decodeURIComponent(image))),
+  'le guilloché des armes garde son onde de 18 × 12 px');
+assert.match(battleCss, /\.rpg-battle\s*\{\s*--rpg-frame-motif:\s*url\("data:image\/svg\+xml,%3Csvg /,
+  'la résille commune reste posée une seule fois, sur `.rpg-battle`');
+assert.match(battleCss, /\.rpg-card--mythique\s*\{[^}]*--rpg-frame-motif:\s*url\("data:image\/svg\+xml,%3Csvg [^}]*--rpg-frame-motif-size:\s*12px 12px;/s,
+  'le zellige des mythiques est intact — il passe avant le motif du type');
+
+// ── 5. Le motif est posé sur toutes les faces d’une carte ───────────────────
+for (const [source, nom] of [[duel, 'le duel'], [guide, 'le guide des cartes'], [atelier, 'l’atelier de deck']]) {
+  assert.match(source, /import[\s\S]{0,400}cardMotifClass/, `${nom} importe la fabrique de classe`);
+}
+const surfaces = [
+  [duel, 'la carte du dessus d’une pile', '${cardFrameClass(carteDuDessus)} ${cardMotifClass(carteDuDessus)}'],
+  [duel, 'la carte posée sur la table', 'cardFrameClass(carte),\n        cardMotifClass(carte),'],
+  [duel, 'la face de l’aperçu rapide', 'rpg-hover-card-preview__face ${cardFrameClass(carte)} ${cardMotifClass(carte)}'],
+  [duel, 'la carte du mulligan', '`rpg-mulligan__card--elem-${carte.element}`,\n        cardFrameClass(carte),\n        cardMotifClass(carte),'],
+  [duel, 'la vignette d’un sort joué', 'rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}'],
+  [duel, 'la vignette du catalogue', 'rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}'],
+  [duel, 'les piles de terrains', '${cardFrameClass(carte)} ${cardMotifClass(carte)}${groupe.available'],
+  [duel, 'l’adieu d’une carte détruite', '${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}'],
+  [duel, 'la carte en main', 'cardFrameClass(carte),\n                    cardMotifClass(carte),'],
+  [guide, 'la fiche du guide', 'rpg-card-guide__example--${carte.kind} ${cardFrameClass(carte)} ${cardMotifClass(carte)}'],
+  [atelier, 'la vignette de l’atelier', 'rpg-atelier__carte-art ${cardFrameClass(carte)} ${cardMotifClass(carte)}'],
+];
+for (const [source, surface, attendu] of surfaces) {
+  assert.ok(source.includes(attendu), `${surface} prend le motif de son type`);
+}
+assert.equal((duel.match(/cardMotifClass\(/g) ?? []).length, 10, 'les dix faces du duel portent le motif');
+assert.equal((duel.match(/cardMotifClass\(carte\)/g) ?? []).length, 8, 'huit d’entre elles suivent la carte affichée');
+
+console.log('✓ Le cadre des magies grave l’étoile des sorts, celui des terrains ses strates : cinq images distinctes, les mythiques gardent leur zellige, les armes leur guilloché, et rien ne change d’épaisseur ni de couleur.');
