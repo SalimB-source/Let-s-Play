@@ -150,8 +150,8 @@ assert.match(battlePage, /onClick=\{\(\) => cliquerCreatureEnnemie\(entite\)\}/,
   'le clic sur une créature adverse agit directement, sans aperçu');
 assert.match(battlePage, /if \(!terrainInactif\) demanderCouleurMana\(event, terrain\);/,
   'le clic sur un terrain produit le mana directement, sans aperçu');
-assert.match(battlePage, /className="rpg-hover-card-preview__type"[\s\S]*?className="rpg-hover-card-preview__cost"[\s\S]*?className="rpg-hover-card-preview__rules"[\s\S]*?className="rpg-hover-card-preview__stats"/,
-  'l’aperçu au survol ne contient que le type, le coût, les effets et les statistiques');
+assert.match(battlePage, /className=\{`rpg-hover-card-preview__type\$\{ligneFamille\}`\}[\s\S]*?className="rpg-hover-card-preview__cost"[\s\S]*?className="rpg-hover-card-preview__rules"[\s\S]*?className="rpg-hover-card-preview__stats"/,
+  'l’aperçu au survol ne contient que le type, le coût, les effets et les statistiques — le type seul prend la teinte de la famille de sort');
 assert.match(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*grid-template-columns:\s*minmax\(190px, 232px\) minmax\(0, 1fr\);[^}]*width:\s*min\(680px, calc\(100vw - 20px\)\);/s,
   'l’aperçu au survol est agrandi à 680 px');
 assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*background:/s,

@@ -41,9 +41,13 @@ import {
   cardCost,
   cardFrameClass,
   cardFrameColor,
+  cardMotifClass,
   cardTypeLine,
   terrainManaColors,
 } from './rpgCards.js';
+// Le sceau des familles de sorts : l'atelier feuillette la collection entière,
+// c'est donc là aussi qu'un sort doit se repérer d'un coup d'œil.
+import { SortSceau } from './rpgSortSignature.jsx';
 import { carteReveleePar, possedeCarte } from './rpgCollection.js';
 import {
   RPG_DECK_TAILLE,
@@ -524,7 +528,7 @@ export function RpgDeckAtelier({
                       onFocus={survoler(carte)}
                       onBlur={quitter}
                     >
-                      <span className={`rpg-atelier__carte-art ${cardFrameClass(carte)}`}>
+                      <span className={`rpg-atelier__carte-art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
                         <img src={artUrl(carte.id)} alt="" loading="lazy" />
                         {!estTerrain && <Cout carte={carte} />}
                         {estTerrain && (
@@ -542,6 +546,7 @@ export function RpgDeckAtelier({
                             {signeBonus(bonusArme(carte)?.atk)}<i>/</i>{signeBonus(bonusArme(carte)?.def)}
                           </span>
                         )}
+                        <SortSceau carte={carte} className="rpg-atelier__carte-sort" />
                         {!acquise && <span className="rpg-atelier__carte-cadenas" aria-hidden="true">🔒</span>}
                       </span>
                       <span className="rpg-atelier__carte-nom">

@@ -111,6 +111,16 @@
 .rpg-card-guide__example--hero .rpg-card-guide__art,
 .rpg-card-guide__example--magie .rpg-card-guide__art { aspect-ratio: 4 / 4.3; }
 .rpg-card-guide__art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Le jeton de la famille du sort, au coin de l'illustration : le guide montre
+   la face du jeu, avec ses repères — le coût à droite, la famille à gauche. */
+.rpg-card-guide__sort {
+  position: absolute;
+  z-index: 2;
+  bottom: 8px;
+  left: 8px;
+  width: 30px;
+  font-size: 18px;
+}
 .rpg-card-guide__cost {
   position: absolute;
   z-index: 2;

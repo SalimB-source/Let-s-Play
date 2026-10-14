@@ -105,6 +105,97 @@ export function bonusArme(carte) {
   return null;
 }
 
+/**
+ * Les deux familles de sorts, et leur signature visuelle.
+ *
+ * Le duel distingue la **Magie Rapide** — jouable en réponse, pendant le tour
+ * adverse — de la **Sorcellerie**, qui attend son propre tour. Le mot était
+ * déjà écrit sur la face (`cardTypeLine`), mais il ne se lisait que là : le
+ * cadre, lui, ne dit que l'élément — une Braise rapide et un Djinn de Braise
+ * portent le même anneau rouge — et au doigt les faces de jeu n'ont plus de
+ * cadre du tout. Un sort ne se distinguait donc d'une créature ou d'un terrain
+ * qu'en lisant la ligne de type, écrite en 6 px.
+ *
+ * Chaque famille reçoit ici sa **teinte** et sa **couleur d'encre**, que les
+ * surfaces déclinent en trois canaux indépendants (voir `rpgSortSignature.jsx`
+ * et le bloc « Les familles de sorts » de `rpg-battle.css`) : la **forme du
+ * jeton** — chanfreiné pour la Magie Rapide, rond pour la Sorcellerie —, la
+ * teinte, et le couple sigle + mot. Les deux socles partagent la même voûte :
+ * c'est le jeton, la couleur et le sigle qui séparent les familles. La forme se
+ * lit sans couleur, la couleur se lit sans lire, et le mot se lit sans couleur
+ * ni forme.
+ */
+export const RPG_SORT_FAMILIES = {
+  rapide: { key: 'rapide', label: 'Magie Rapide', teinte: '#ffd619', encre: '#ffe9a0' },
+  sorcellerie: { key: 'sorcellerie', label: 'Sorcellerie', teinte: '#b39ae0', encre: '#ece3ff' },
+};
+
+/**
+ * La famille de sort d'une carte : `'rapide'`, `'sorcellerie'`, ou `null` pour
+ * tout ce qui n'est pas un sort — créature, héros, terrain, et arme. Le Sabre
+ * maudit est une magie pour le moteur, mais sa carte se présente comme une
+ * arme : elle garde le cadre d'acier et ne porte pas la signature des sorts.
+ */
+export function magieFamille(carte) {
+  if (carte?.kind !== 'magie' || carteEstArme(carte)) return null;
+  return carte.instant ? 'rapide' : 'sorcellerie';
+}
+
+/** Le libellé, la teinte et l'encre de la famille de sort, ou `null` hors sort. */
+export function magieFamilleInfo(carte) {
+  const key = magieFamille(carte);
+  return key ? { ...RPG_SORT_FAMILIES[key] } : null;
+}
+
+/**
+ * Le motif gravé dans le cadre d'une carte, quand son type en mérite un autre
+ * que la résille commune — celle que `.rpg-battle` pose à tous les cadres :
+ *
+ * - `losange` — **le losange de la Magie Rapide** : un diamant taillé, net et
+ *   régulier, tous les 8 px le long de l'anneau — la réponse part sans
+ *   attendre, et son cadre le dit sans un mot ; la famille garde son éclair au
+ *   socle (`rpgSortSignature.jsx`) : le socle porte l'icône, l'anneau le
+ *   dessin ;
+ * - `etincelle` — **l'étincelle de la Sorcellerie** : le dessin de son sigle,
+ *   celui du sort qu'on prépare à son tour ;
+ * - `terrain` — **les strates**, les assises de pierre : la carte qu'on pose,
+ *   pas celle qui passe.
+ *
+ * Chaque type a son dessin d'anneau, et le terrain le sien. Deux exclusions
+ * voulues : le Sabre maudit
+ * est une magie pour le moteur mais son cadre est celui des armes — il garde
+ * l'acier guilloché (voir `magieFamille`) — et une carte mythique garde le
+ * zellige qui dit sa rareté, car le CSS ne pose ces motifs que sous
+ * `:not(.rpg-card--mythique)`. Créatures, héros et armes n'ont que la résille
+ * commune.
+ */
+export const RPG_CARD_MOTIFS = {
+  losange: { key: 'losange', label: 'Magie Rapide', motif: 'le losange taillé de la Magie Rapide' },
+  etincelle: { key: 'etincelle', label: 'Sorcellerie', motif: 'l’étincelle de la Sorcellerie' },
+  terrain: { key: 'terrain', label: 'Terrain', motif: 'les strates des assises' },
+};
+
+/** La clé de motif d'une carte, ou `null` si son type porte la résille commune. */
+export function motifCarte(carte) {
+  if (carte?.kind === 'terrain') return 'terrain';
+  const famille = magieFamille(carte);
+  if (famille === 'rapide') return 'losange';
+  if (famille === 'sorcellerie') return 'etincelle';
+  return null;
+}
+
+/** Le libellé et le dessin du motif d'une carte, ou `null` pour un type sans motif. */
+export function motifInfo(carte) {
+  const key = motifCarte(carte);
+  return key ? { ...RPG_CARD_MOTIFS[key] } : null;
+}
+
+/** La classe de motif d'une carte — le dessin gravé dans son cadre. */
+export function cardMotifClass(carte) {
+  const key = motifCarte(carte);
+  return key ? `rpg-card--motif-${key}` : '';
+}
+
 /** Clé et couleur de cadre d'une carte : élément seul, ou combinaison multicolore. */
 export function cardFrameInfo(carte) {
   // Les armes gardent la matière commune des armes — acier guilloché peint

@@ -286,6 +286,9 @@
   display: block;
   aspect-ratio: 4 / 5;
   overflow: hidden;
+  /* Le repère de la vignette : le sceau de la famille d'un sort suit cette
+     mesure, comme les pastilles de couleur et de coût des faces du duel. */
+  --rpg-card-marker-size: 30px;
   border-radius: 11px 11px 7px 7px;
   background-color: #171218;
   /* Même gabarit et même anneau orné que les cartes en main (`--rpg-card-border`

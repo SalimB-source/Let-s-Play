@@ -130,6 +130,7 @@ import {
 import {
   cardRarityInfo,
   cardFrameClass,
+  cardMotifClass,
   cardFrameColor,
   cardColorCost,
   bonusArme,
@@ -144,8 +145,13 @@ import {
   cardById,
   cardTypeLine,
   armeById,
+  magieFamille,
   rpgValiderDeck,
 } from './rpgCards.js';
+// La signature des deux familles de sorts — sceau, socle, ligne teintée — vit
+// dans son propre module : l'atelier de decks la partage (voir
+// `rpgSortSignature.jsx`).
+import { SortSceau, SortSocle, classeLigneFamille } from './rpgSortSignature.jsx';
 
 const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
 const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', hybride: '🔥⏳' };
@@ -746,7 +752,7 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
         {topCard
           ? <img
-              className={`rpg-card-pile__card rpg-card-pile__card--top ${cardFrameClass(carteDuDessus)}`}
+              className={`rpg-card-pile__card rpg-card-pile__card--top ${cardFrameClass(carteDuDessus)} ${cardMotifClass(carteDuDessus)}`}
               style={cardFrameStyle(carteDuDessus)}
               src={cardArt(topCard)}
               alt=""
@@ -895,6 +901,7 @@ function TableCard({
         `rpg-card rpg-card--img rpg-card--elem-${carte?.element ?? 'sable'} rpg-card--type-${cardFrameType(carte)}`,
         cote === 'ennemi' ? 'rpg-card--ennemi' : 'rpg-card--equipe',
         cardFrameClass(carte),
+        cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         entite.envol ? 'is-envol' : '',
         active ? 'is-active' : '',
@@ -1124,6 +1131,10 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
+  // La même signature que celle de la main : la face de l'aperçu — survol,
+  // appui long, fiche du catalogue, annonce — porte le socle de la famille, et
+  // sa ligne de type prend la teinte de cette famille.
+  const ligneFamille = classeLigneFamille(carte);
   const effet = carte.text && carte.text !== '—' ? carte.text : null;
   const effets = cardEffectLines(effet);
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
@@ -1142,7 +1153,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
       {estFiche && <span className="rpg-hover-card-preview__eyebrow">{surface ? `${surface} · ` : ''}{carteFamille(carte).toUpperCase()}</span>}
       {(variante === 'annonce' || estFiche) && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
-      {(estFiche || !estCreature) && <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>}
+      {(estFiche || !estCreature) && <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>}
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
       {cibleAnnoncee && (
         <div className="rpg-spell-played__target rpg-hover-card-preview__target">
@@ -1170,12 +1181,13 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   );
   const face = (
     <div
-      className={`rpg-hover-card-preview__face ${cardFrameClass(carte)}`}
+      className={`rpg-hover-card-preview__face ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
       style={cardFrameStyle(carte)}
       aria-hidden="true"
     >
       <img src={cardArt(carte)} alt="" />
       <CardElementBadge carte={carte} />
+      <SortSocle carte={carte} />
     </div>
   );
   return (
@@ -1303,6 +1315,9 @@ function ApercuCarteCatalogue({ carte, armes = [], surface = 'CATALOGUE', onFerm
 function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBasculer, onSurvol, onQuitterSurvol }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
+  // Le mulligan montre la même main que le duel : un sort y reçoit donc le
+  // sceau de sa famille, au-dessus de sa ligne de type — qui prend sa teinte.
+  const familleSort = magieFamille(carte);
   return (
     <button
       type="button"
@@ -1319,6 +1334,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
         `rpg-mulligan__card--type-${cardFrameType(carte)}`,
         `rpg-mulligan__card--elem-${carte.element}`,
         cardFrameClass(carte),
+        cardMotifClass(carte),
         selectionnee ? 'is-selected' : '',
         nouvelle ? 'is-new' : '',
       ].filter(Boolean).join(' ')}
@@ -1337,7 +1353,10 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
           d'acier à droite, chacune sur son bord. */}
       <span className="rpg-mulligan__bas">
         {!estCreature && (
-          <span className="rpg-mulligan__type" aria-hidden="true">{cardFaceTypeLine(carte)}</span>
+          <>
+            <SortSceau carte={carte} className="rpg-mulligan__sceau" />
+            <span className={`rpg-mulligan__type${familleSort ? ` rpg-mulligan__type--${familleSort}` : ''}`} aria-hidden="true">{cardFaceTypeLine(carte)}</span>
+          </>
         )}
         {estCreature && (
           <span className="rpg-mulligan__stats" aria-hidden="true">
@@ -1472,13 +1491,16 @@ function SpellAnnouncement({ annonce }) {
         : `Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
       <img
-        className={`rpg-spell-played__art ${cardFrameClass(carte)}`}
+        className={`rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
         style={cardFrameStyle(carte)}
         src={cardArt(carte)}
         alt=""
       />
       <div className="rpg-spell-played__details">
-        <span className="rpg-spell-played__eyebrow">{contre ? 'CONTRE DU SORCIER' : 'MAGIE JOUÉE'}</span>
+        {/* Le sur-titre prend la teinte de la famille du sort annoncé. Un
+            contre garde son or : sa règle est plus spécifique (voir
+            `rpg-battle.css`). */}
+        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : 'MAGIE JOUÉE'}</span>
         <strong>{carte.name}</strong>
         <p>{carte.text}</p>
         <div className="rpg-spell-played__target">
@@ -2281,7 +2303,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                             onMouseEnter={(event) => onHoverCard?.(carte, event)}
                             onMouseLeave={onLeaveHoverCard}>
                             <img src={cardArt(carte)} alt="" />
-                            <span><strong>{carte.name}</strong><small>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
+                            <span><strong>{carte.name}</strong><small className={classeLigneFamille(carte).trim() || undefined}>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
                             <b>×{count}</b>
                           </li>
                         ))}
@@ -2399,6 +2421,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   const estTerrain = carte.kind === 'terrain';
                   const estCreature = ['creature', 'hero'].includes(carte.kind);
                   const famille = carteFamille(carte);
+                  // Le sceau de la famille au coin libre de la vignette : c'est
+                  // là qu'on feuillette la collection, et c'est là qu'il faut
+                  // repérer un sort sans ouvrir sa fiche.
                   return (
                     <article
                       key={carte.id}
@@ -2424,17 +2449,18 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}`}
                         onClick={() => onOpenCardPreview?.(carte)}
                       />
-                      <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)}`}>
+                      <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span className="rpg-card-catalogue__cost" aria-label={`Coût ${cardCostLabel(carte)}`}>{carte.cost}</span>}
+                        <SortSceau carte={carte} className="rpg-card-catalogue__sort" />
                         <span className="rpg-card-catalogue__zoom" aria-hidden="true">⤢</span>
                       </div>
                       <div className="rpg-card-catalogue__details">
                         <div className="rpg-card-catalogue__title">
                           <h3>{carte.name}</h3>
                         </div>
-                        <p className="rpg-card-catalogue__type">{cardFaceTypeLine(carte)}</p>
+                        <p className={`rpg-card-catalogue__type${classeLigneFamille(carte)}`}>{cardFaceTypeLine(carte)}</p>
                         <div className="rpg-card-catalogue__meta">
                           <span className={estTerrain ? 'is-terrain' : cardColors(carte).length > 1 ? 'is-hybrid' : ''}>
                             {cardColorLine(carte)}
@@ -5494,7 +5520,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 type="button"
                 key={groupe.carteId}
                 aria-label={`${carte?.name ?? 'Terrain adverse'}, ${groupe.count} terrain${groupe.count > 1 ? 's' : ''}, ${groupe.available} disponible${groupe.available > 1 ? 's' : ''}, ${groupe.tapped} engagé${groupe.tapped > 1 ? 's' : ''}`}
-                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}`}
+                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)} ${cardMotifClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}`}
                 style={cardFrameStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
@@ -5672,7 +5698,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           return (
             <div
               key={effet.effectId}
-              className={`rpg-card-destruction-fx ${cardFrameClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
+              className={`rpg-card-destruction-fx ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
               data-rpg-destroyed-id={effet.entityId}
               data-destruction-source={effet.bruleeParBraise ? 'braise' : undefined}
               aria-hidden="true"
@@ -5711,7 +5737,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               <button
                 key={groupe.carteId}
                 type="button"
-                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
+                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)} ${cardMotifClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
                 style={cardFrameStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
@@ -6009,6 +6035,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               const eventail = position - (groupesMain.length - 1) / 2;
               const estTerrain = carte.kind === 'terrain';
               const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
+              // Les sorts portent le socle de leur famille au bas de la face —
+              // la Magie Rapide comme la Sorcellerie — et n'impriment donc plus
+              // la petite ligne de type du haut (voir « Les familles de sorts »
+              // dans `rpg-battle.css`). Les créatures, elles, se lisent à leurs
+              // statistiques, et les terrains gardent leur ligne.
+              const familleSort = magieFamille(carte);
               const peutRepondre = reponseActive && carte.instant;
               // Une seule règle pour le halo doré, le glisser-déposer et le
               // clic : deux copies de la règle finissaient par diverger, et
@@ -6047,7 +6079,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     estTerrain ? 'rpg-hand__card--terrain' : '',
                     `rpg-hand__card--type-${cardFrameType(carte)}`,
                     `rpg-hand__card--elem-${carte.element}`,
+                    familleSort ? `rpg-hand__card--famille-${familleSort}` : '',
                     cardFrameClass(carte),
+                    cardMotifClass(carte),
                     piocheEnCours ? 'rpg-hand-card--drawing' : '',
                     carte.instant ? 'is-instant' : '',
                     cibleEnCours === carteId ? 'is-targeting' : '',
@@ -6082,7 +6116,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
                   </span>
-                  {!estCreature && <span className="rpg-hand__type">{cardFaceTypeLine(carte)}</span>}
+                  {familleSort && <SortSocle carte={carte} />}
+                  {!estCreature && !familleSort && <span className="rpg-hand__type">{cardFaceTypeLine(carte)}</span>}
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
                       <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
