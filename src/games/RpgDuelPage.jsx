@@ -583,6 +583,30 @@ function cardFaceTypeLine(carte) {
   return cardTypeLine(carte).replace(/^Créature(?: légendaire)?(?=\s|$)/u, 'Type');
 }
 
+/** La famille d'une carte en un mot : celle du catalogue et de ses filtres —
+ * « Terrain », « Arme », « Magie », « Héros », « Créature ». La fiche ouverte
+ * d'un clic la reprend en sur-titre, la grille s'en sert pour ses libellés. */
+function carteFamille(carte) {
+  if (carte?.kind === 'terrain') return 'Terrain';
+  if (carteEstArme(carte)) return 'Arme';
+  if (carte?.kind === 'magie') return 'Magie';
+  if (carte?.kind === 'hero') return 'Héros';
+  return 'Créature';
+}
+
+/** La couleur d'une carte, telle que le catalogue l'écrit : le ou les glyphes
+ * d'élément puis leur nom — « ⏳ Sable · Désert », « 🔥 Braise + Eau » pour une
+ * hybride, et les deux manas d'un terrain qui les produit au choix. */
+function cardColorLine(carte) {
+  if (carte?.kind === 'terrain') {
+    return terrainManaColors(carte).length > 1
+      ? '🔥 Braise ou ⏳ Sable'
+      : `${ELEMENT_GLYPHS[carte.element] ?? '◇'} ${cardColorLabel(carte)}`;
+  }
+  const colors = cardColors(carte);
+  return `${deckColorGlyph({ element: carte?.element, elements: colors })} ${cardColorLabel(carte)}${colors.includes('sable') ? ' · Désert' : ''}`;
+}
+
 function cardFrameType(carte) {
   if (carte?.kind === 'terrain') return 'terrain';
   if (carteEstArme(carte)) return 'arme';
@@ -1090,6 +1114,10 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   const effets = cardEffectLines(effet);
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
   const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
+  // La fiche du catalogue : la carte ouverte d'un clic, en grand. Elle se lit
+  // comme une fiche de collection — sur-titre, nom, famille, couleur — là où
+  // l'aperçu de jeu va droit au coût et aux effets.
+  const estFiche = variante === 'catalogue';
   // Une créature équipée le dit dans son aperçu : l'arme, et son bonus porté.
   const armesEquipees = estCreature ? armes.filter(Boolean) : [];
   const armeLabel = armesEquipees.length
@@ -1098,8 +1126,10 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   const details = (
     <>
       {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
-      {variante === 'annonce' && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
-      {!estCreature && <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>}
+      {estFiche && <span className="rpg-hover-card-preview__eyebrow">CATALOGUE · {carteFamille(carte).toUpperCase()}</span>}
+      {(variante === 'annonce' || estFiche) && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
+      {(estFiche || !estCreature) && <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>}
+      {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
       {cibleAnnoncee && (
         <div className="rpg-spell-played__target rpg-hover-card-preview__target">
           {(cibleAnnoncee.illustrationUrl || cibleAnnoncee.illustrationId)
@@ -1188,6 +1218,46 @@ function ApercuCarteAppuiLong({ carte, armes = [], onFermer }) {
       </div>
       <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
         Fermer l’aperçu
+      </button>
+    </div>
+  );
+}
+
+/** La fiche du catalogue : une carte **cliquée** s'ouvre en grand sur le même
+ * volet sombre que l'appui long — l'illustration entière dans son cadre
+ * d'élément, puis le nom, la famille, la couleur, le coût, les effets ligne par
+ * ligne et les statistiques. Le catalogue est une surface de lecture : le clic
+ * ne joue rien, ne filtre rien, ne quitte pas l'onglet. Le volet, Échap ou le
+ * bouton Fermer referment la fiche. */
+function ApercuCarteCatalogue({ carte, onFermer }) {
+  const boutonFermerRef = useRef(null);
+  // Le focus va au bouton Fermer sans faire défiler la grille : le catalogue
+  // reste où le joueur l'avait laissé, et Échap referme depuis là.
+  useEffect(() => {
+    boutonFermerRef.current?.focus({ preventScroll: true });
+  }, []);
+  if (!carte) return null;
+  return (
+    <div
+      className="rpg-card-peek rpg-card-peek--catalogue"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Fiche de ${carte.name}`}
+      data-catalogue-preview={carte.id}
+      onClick={onFermer}
+    >
+      <div className="rpg-card-peek__backdrop" aria-hidden="true" />
+      <div className="rpg-card-peek__panel">
+        <HoverCardPreview carte={carte} variante="catalogue" />
+      </div>
+      {/* Le bouton ne remonte pas jusqu'au volet : un seul « annuler » joué. */}
+      <button
+        type="button"
+        ref={boutonFermerRef}
+        className="rpg-btn rpg-btn--ghost rpg-card-peek__close"
+        onClick={(event) => { event.stopPropagation(); onFermer(); }}
+      >
+        Fermer la fiche
       </button>
     </div>
   );
@@ -1522,7 +1592,7 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -2214,7 +2284,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               <div>
                 <span className="rpg-mode-menu__eyebrow">COLLECTION COMPLÈTE · {RPG_DUEL_CARDS.length} CARTES</span>
                 <h2>Catalogue</h2>
-                <p>Parcourez les créatures, héros, terrains, magies et armes de Bab El.</p>
+                <p>Parcourez les créatures, héros, terrains, magies et armes de Bab El — cliquez une carte pour l’ouvrir en grand, illustration et effets.</p>
               </div>
             </header>
             <div className="rpg-card-catalogue__filters" aria-label="Filtres du catalogue">
@@ -2249,10 +2319,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 {cartesCatalogue.map((carte) => {
                   const estTerrain = carte.kind === 'terrain';
                   const estCreature = ['creature', 'hero'].includes(carte.kind);
-                  const type = carte.kind === 'terrain' ? 'Terrain'
-                    : carteEstArme(carte) ? 'Arme'
-                      : carte.kind === 'magie' ? 'Magie'
-                        : carte.kind === 'hero' ? 'Héros' : 'Créature';
+                  const famille = carteFamille(carte);
                   return (
                     <article
                       key={carte.id}
@@ -2262,16 +2329,27 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       data-colors={cardColors(carte).join(' ')}
                       data-type={carte.kind}
                       style={cardFrameStyle(carte)}
-                      tabIndex={0}
                       onMouseEnter={(event) => onHoverCard?.(carte, event)}
                       onMouseLeave={onLeaveHoverCard}
                       onFocus={(event) => onHoverCard?.(carte, event)}
                       onBlur={onLeaveHoverCard}
                     >
+                      {/* Toute la fiche est un bouton étiré : le clic — souris ou
+                          doigt — ouvre la carte en grand, illustration et effets,
+                          sans rien jouer. Le survol garde l'aperçu rapide, et
+                          l'appui long d'une seconde ouvre le même volet qu'ailleurs. */}
+                      <button
+                        type="button"
+                        className="rpg-card-catalogue__ouvrir"
+                        data-catalogue-open={carte.id}
+                        aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}`}
+                        onClick={() => onOpenCardPreview?.(carte)}
+                      />
                       <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)}`}>
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span className="rpg-card-catalogue__cost" aria-label={`Coût ${cardCostLabel(carte)}`}>{carte.cost}</span>}
+                        <span className="rpg-card-catalogue__zoom" aria-hidden="true">⤢</span>
                       </div>
                       <div className="rpg-card-catalogue__details">
                         <div className="rpg-card-catalogue__title">
@@ -2280,11 +2358,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         <p className="rpg-card-catalogue__type">{cardFaceTypeLine(carte)}</p>
                         <div className="rpg-card-catalogue__meta">
                           <span className={estTerrain ? 'is-terrain' : cardColors(carte).length > 1 ? 'is-hybrid' : ''}>
-                            {estTerrain
-                              ? terrainManaColors(carte).length > 1
-                                ? '🔥 Braise ou ⏳ Sable'
-                                : `${ELEMENT_GLYPHS[carte.element] ?? '◇'} ${cardColorLabel(carte)}`
-                              : `${deckColorGlyph({ element: carte.element, elements: cardColors(carte) })} ${cardColorLabel(carte)}${cardColors(carte).includes('sable') ? ' · Désert' : ''}`}
+                            {cardColorLine(carte)}
                           </span>
                           {estCreature && <b>⚔ {carte.atk} · 🛡 {carte.def}</b>}
                           {carteEstArme(carte) && <b>⚔ {signeBonus(bonusArme(carte)?.atk)} · 🛡 {signeBonus(bonusArme(carte)?.def)}</b>}
@@ -2661,11 +2735,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [apercuAppui, setApercuAppui] = useState(null);
   // Armes portées par la créature pressée (vides pour toute autre carte).
   const [apercuAppuiArmes, setApercuAppuiArmes] = useState([]);
+  // Fiche du catalogue : là où le doigt tient une seconde, la souris et le
+  // tactile **cliquent** — la carte s'ouvre en grand, illustration et effets.
+  const [apercuCatalogue, setApercuCatalogue] = useState(null);
   const appuiLongRef = useRef(null);
   useEffect(() => {
     // Changer d'écran (menu, deck, catalogue, duel) referme l'aperçu au doigt
-    // et désarme les gestes en cours.
+    // comme la fiche ouverte d'un clic, et désarme les gestes en cours.
     setApercuAppui(null);
+    setApercuCatalogue(null);
     return () => {
       touchDragRef.current?.();
       touchDragRef.current = null;
@@ -3222,15 +3300,35 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       },
     });
   };
-  // Échap referme l'aperçu, comme le volet et le bouton Fermer.
+  // ── La fiche du catalogue : la carte cliquée s'ouvre en grand ─────────────
+  const fermerApercuCatalogue = () => {
+    jouerSfx('annuler');
+    setApercuCatalogue(null);
+  };
+  /** Le catalogue est une surface de lecture : cliquer une carte l'agrandit —
+   * illustration entière et effets — sans rien jouer ni quitter l'onglet. Le
+   * survol de la souris, qui montrait déjà l'aperçu rapide, s'efface : une seule
+   * lecture à la fois. */
+  const ouvrirApercuCatalogue = (carte) => {
+    if (!carte) return;
+    annulerAppuiLong();
+    masquerApercuSurvol();
+    unlockSfx();
+    jouerSfx('hover');
+    setApercuCatalogue(carte.id);
+  };
+  // Échap referme l'aperçu au doigt comme la fiche du catalogue, à l'égal du
+  // volet et du bouton Fermer.
   useEffect(() => {
-    if (!apercuAppui) return undefined;
+    if (!apercuAppui && !apercuCatalogue) return undefined;
     const fermerAvecEchap = (event) => {
-      if (event.key === 'Escape') fermerApercuAppui();
+      if (event.key !== 'Escape') return;
+      if (apercuCatalogue) fermerApercuCatalogue();
+      else fermerApercuAppui();
     };
     window.addEventListener('keydown', fermerAvecEchap);
     return () => window.removeEventListener('keydown', fermerAvecEchap);
-  }, [apercuAppui]);
+  }, [apercuAppui, apercuCatalogue]);
   // Le menu contextuel natif (callout iOS, « enregistrer l'image » / sélection
   // Android) n'appartient à aucun geste de la table : étouffé sur toute la
   // coque du jeu, pas seulement pendant un appui long armé. Sans ça, une seule
@@ -3411,6 +3509,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onSupprimerDeckMaison={supprimerDeckMaison}
           onHoverCard={afficherApercuSurvol}
           onLeaveHoverCard={masquerApercuSurvol}
+          onOpenCardPreview={ouvrirApercuCatalogue}
           onPlaySfx={jouerSfx}
           fullscreen={pleinEcran}
           onToggleFullscreen={basculerPleinEcran}
@@ -3423,6 +3522,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         )}
         {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
+        {apercuCatalogue && <ApercuCarteCatalogue carte={cardById(apercuCatalogue)} onFermer={fermerApercuCatalogue} />}
       </div>
     );
   }

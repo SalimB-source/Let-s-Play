@@ -6723,3 +6723,84 @@ seul disque. Les tailles indépendantes en pourcentage ont été retirées.
 cartes mono et hybrides, catalogue et mulligan inclus ; suppression des cadres
 sur les faces mobiles/APK et conservation sur ordinateur. Comme les autres
 checks navigateur, il utilise Playwright ou `CHROMIUM_EXECUTABLE_PATH`.
+
+
+## Le Sablier : le catalogue se clique, la carte s'ouvre en grand
+
+Le catalogue était la seule surface du jeu où une carte ne répondait pas au
+clic : à la souris on la survolait pour l'aperçu rapide, au doigt on la tenait
+une seconde — et cliquer ne faisait rien. Chaque fiche porte désormais un
+**bouton transparent étiré** sur toute la carte
+(`.rpg-card-catalogue__ouvrir`) : un clic — souris ou doigt — ouvre la carte
+dans un volet sombre, en grand.
+
+**La fiche reprend l'aperçu rapide, en plus grand.** C'est le même composant
+(`HoverCardPreview`) dans une variante `catalogue` : l'illustration entière dans
+son cadre d'élément — résille gravée, diagonale des hybrides, vernis des
+mythiques, tout l'anneau orné du jeu — jusqu'à 62 dvh de haut, et à côté la
+fiche complète : sur-titre `CATALOGUE · CRÉATURE`, nom, ligne de type, couleur
+écrite comme dans la grille, coût, **effets ligne par ligne**, statistiques ou
+bonus d'arme. La pastille de couleur suit l'agrandissement
+(`--rpg-card-marker-size`, de 38 à 56 px) : couleur et coût gardent le même
+diamètre, comme partout ailleurs.
+
+**Consulter ne joue rien.** Le clic ne touche ni aux filtres ni à la grille et
+ne quitte pas l'onglet ; le volet, Échap ou « Fermer la fiche » referment. Les
+deux autres gestes restent exactement ce qu'ils étaient : le survol à la souris
+garde l'aperçu rapide collé à la carte — il s'efface à l'ouverture de la fiche,
+une seule lecture à la fois — et l'appui long d'une seconde garde son volet à
+lui, dont le clic avalé n'ouvre pas la fiche (`rpgLongPress.js`).
+
+**L'amorce est visible.** Un coin de l'illustration porte `⤢`
+(`.rpg-card-catalogue__zoom`), discret au repos, franc au survol comme au
+focus, et présent au doigt où le survol n'existe pas ; la fiche survolée se
+soulève de 2 px et son curseur passe en `zoom-in`. Le geste est écrit en tête du
+catalogue : « cliquez une carte pour l'ouvrir en grand, illustration et
+effets ». La rareté, elle, reste absente de toute lecture du duel — la fiche dit
+la **famille**, pas le palier.
+
+**Au clavier**, le bouton étiré est l'unique arrêt de tabulation de la fiche (le
+`tabIndex` de l'`<article>` est parti) : Entrée ouvre, le focus arrive sur
+« Fermer la fiche » sans faire défiler la grille (`preventScroll`), et le
+`onFocus` de l'article garde l'aperçu rapide au survol clavier.
+
+### Où vit le code
+
+- `src/games/RpgDuelPage.jsx` — `ApercuCarteCatalogue` (le volet), la variante
+  `catalogue` de `HoverCardPreview`, l'état `apercuCatalogue` avec
+  `ouvrirApercuCatalogue` / `fermerApercuCatalogue` (Échap compris, remis à zéro
+  à chaque changement d'écran), le bouton étiré et l'amorce `⤢` dans la grille.
+  Deux helpers partagés au passage : `carteFamille(carte)` — le mot de famille,
+  qui remplace la variable `type` que la grille calculait sans s'en servir — et
+  `cardColorLine(carte)`, la couleur écrite, désormais la même dans la grille et
+  sur la fiche ;
+- `src/games/rpg-battle.css` — « La fiche du catalogue : la carte cliquée, en
+  grand », posé après le volet d'appui long : deux colonnes, une seule sous
+  720 px (l'illustration au-dessus, le volet défile), de nouveau deux en paysage
+  de téléphone où l'illustration se règle sur 44 dvh ; puis les règles de
+  clicabilité de la grille (`.rpg-card-catalogue__ouvrir`, `__zoom`, survol et
+  focus, `hover: none`, mouvement réduit).
+
+### Vérifications
+
+```bash
+npm run check:rpg-preview  # la fiche au clic : contenu, fermetures, filtres intacts, appui long inchangé
+npm run check:rpg          # 415/415 — les règles du duel, inchangées
+npm run build              # le bundle se construit
+```
+
+`scripts/rpg-preview-smoke.jsx` ouvre au clic la fiche du Fennec des décombres
+et vérifie son contenu (illustration, nom, sur-titre `CATALOGUE · CRÉATURE`,
+ligne de type, couleur « ⏳ Sable · Désert », les deux capacités sur deux
+lignes, ⚔ 3 · 🛡 1), ses trois fermetures (bouton, Échap, volet) et l'immobilité
+des filtres comme de la grille ; puis il tient la même carte une seconde et
+vérifie que l'appui long ouvre toujours son aperçu rapide à lui — et que le clic
+avalé qui suit n'ouvre pas la fiche.
+
+`scripts/rpg-battle-ui-check.mjs` reste **périmé**, comme avant ce changement :
+il bute sur `canTarget` et sur la signature d'`ApercuCarteAppuiLong`, étrangers
+au catalogue. Les assertions qui concernent le catalogue — filtres et hybrides,
+onglet, illustration 4:5 au grand gabarit, coût en haut à droite, cadres repris
+de `cardFrameClass`, rareté absente, catalogue hors du bloc « sans cadre, au
+doigt », appui long du menu — ont été revérifiées une à une sur le code modifié,
+et le compte des volets rendus n'a pas bougé.

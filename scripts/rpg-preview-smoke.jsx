@@ -54,15 +54,63 @@ export async function checkRpgPreviewActions(assert) {
       joueurDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'rapport-du-greffier', 'fennec-des-decombres', 'desert', 'chien-du-guet', 'desert']}
       sorcierDeck={Array(15).fill('desert')} rng={() => .999}
     />));
-    // ── Hors duel : le catalogue répond au même appui long ──────────────────
+    // ── Hors duel : le catalogue se clique, la carte s'ouvre en grand ───────
     await changerEcran('Catalogue');
     const carteCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="fennec-des-decombres"]');
+    const compteCatalogue = () => container.querySelector('.rpg-card-catalogue__count').textContent;
+    const cartesAffichees = () => container.querySelectorAll('.rpg-card-catalogue__card').length;
+    const fiche = () => container.querySelector('.rpg-card-peek--catalogue');
+    const ouvrirFiche = () => carteCatalogue.querySelector('.rpg-card-catalogue__ouvrir');
+    const compteAvantFiche = compteCatalogue();
+    const cartesAvantFiche = cartesAffichees();
+    assert.ok(ouvrirFiche(), 'chaque carte du catalogue porte son bouton d’ouverture');
+    assert.match(ouvrirFiche().getAttribute('aria-label'), /^Agrandir Fennec des décombres — Créature, coût 2 mana/u,
+      'le bouton dit ce qu’il ouvre, et que le clic n’agit pas sur la partie');
+    await click(ouvrirFiche());
+    assert.ok(fiche(), 'un clic sur une carte du catalogue ouvre sa fiche');
+    assert.equal(fiche().dataset.cataloguePreview, 'fennec-des-decombres', 'la fiche est celle de la carte cliquée');
+    assert.equal(fiche().getAttribute('aria-label'), 'Fiche de Fennec des décombres', 'le volet nomme la carte ouverte');
+    assert.equal(fiche().getAttribute('role'), 'dialog', 'la fiche est une boîte de dialogue');
+    assert.match(fiche().querySelector('.rpg-hover-card-preview__face img').getAttribute('src'),
+      /cards\/fennec-des-decombres\.jpg/u, 'la fiche montre l’illustration de la carte, en grand');
+    assert.equal(fiche().querySelector('.rpg-hover-card-preview__name').textContent, 'Fennec des décombres',
+      'la fiche porte le nom de la carte');
+    assert.equal(fiche().querySelector('.rpg-hover-card-preview__eyebrow').textContent, 'CATALOGUE · CRÉATURE',
+      'la fiche dit d’où elle vient et la famille de la carte');
+    assert.equal(fiche().querySelector('.rpg-hover-card-preview__type').textContent, 'Type — Fennec',
+      'la ligne de type reste lisible sur la fiche d’une créature');
+    assert.match(fiche().querySelector('.rpg-hover-card-preview__color').textContent, /Sable · Désert/u,
+      'la fiche écrit la couleur comme la grille du catalogue');
+    const effetsFiche = [...fiche().querySelectorAll('.rpg-hover-card-preview__rules > span')].map((ligne) => ligne.textContent);
+    assert.equal(effetsFiche.length, 2, 'les deux capacités du Fennec sont écrites, ligne par ligne');
+    assert.match(effetsFiche[0], /^Rapidité/u, 'la première capacité est nommée');
+    assert.match(effetsFiche[1], /^Esquive 1/u, 'la seconde capacité est nommée');
+    assert.match(fiche().querySelector('.rpg-hover-card-preview__stats').textContent, /⚔ 3\s*·\s*🛡 1/u,
+      'la fiche garde les statistiques de la créature');
+    assert.ok(container.querySelector('.rpg-card-catalogue'), 'le catalogue reste ouvert sous la fiche');
+    await click(fiche().querySelector('.rpg-card-peek__close'));
+    assert.equal(fiche(), null, 'le bouton Fermer referme la fiche');
+    await click(ouvrirFiche());
+    assert.ok(fiche(), 'la fiche se rouvre d’un clic');
+    await act(async () => {
+      window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    assert.equal(fiche(), null, 'Échap referme la fiche du catalogue');
+    await click(ouvrirFiche());
+    await click(fiche());
+    assert.equal(fiche(), null, 'toucher le volet referme la fiche, comme l’aperçu au doigt');
+    assert.equal(compteCatalogue(), compteAvantFiche, 'consulter une carte ne change pas les filtres du catalogue');
+    assert.equal(cartesAffichees(), cartesAvantFiche, 'la grille garde toutes ses cartes : rien n’a été joué ni retiré');
+
+    // ── Le catalogue répond aussi à l'appui long, qui garde son aperçu rapide ─
     await appuiLong(carteCatalogue);
     assert.ok(peek(), 'une carte du catalogue s’aperçoit aussi par appui long');
     assert.ok(peek().getAttribute('aria-label').includes('Fennec'), 'le volet nomme la carte du catalogue');
+    assert.equal(fiche(), null, 'l’appui long ouvre l’aperçu rapide, pas la fiche du clic — et le clic avalé ne l’ouvre pas non plus');
     await attendre(460);
     await click(peek());
     assert.ok(peek() === null, 'le volet se referme au toucher');
+    assert.equal(fiche(), null, 'le clic qui suit la levée du doigt n’ouvre pas la fiche');
 
     // ── Le créateur de deck répond au même geste ────────────────────────────
     await changerEcran('Deck');
