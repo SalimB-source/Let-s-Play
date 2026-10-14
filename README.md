@@ -6611,3 +6611,90 @@ déjà à HEAD dans le volet JSDOM de `rpg-battle-ui-check` ; en contournant
 ce volet, huit assertions statiques restent rouges, pré-existantes (Coup
 rapide, Envol, Cavalier, 3 × Furie, maître-du-marteau ×2). Les contrôles
 Playwright demandent un navigateur, absent de cet environnement.
+
+## Le Sablier : les faces en jeu sans cadre, au doigt
+
+Sur téléphone et dans l'APK, l'anneau de couleur ne se voit plus sur les trois
+familles de faces qu'on **joue** : les cartes de la main, celles posées sur la
+table, et les terrains du rail de mana. Partout ailleurs il reste : aperçu
+rapide et appui long, annonce de sort, mulligan, catalogue, dessus de paquet et
+de cimetière, vignette de magie jouée, guide et atelier — des faces de lecture
+ou de repérage. Les piles perdent aussi leur ombre décalée, celle qui reprenait
+la couleur du cadre.
+
+**Pourquoi.** L'épaisseur du cadre suit la **largeur** de la face
+(`clamp(4px, 1.76vw, 8px)`) : son plafond de 8 px est atteint dès 455 px de
+fenêtre, donc sur tout téléphone en paysage. Aux 62 px d'une carte en main sur
+un 844 × 390 (cinq cartes), cela fait 16 px — un quart de la carte — et 41 %
+d'une carte à 39 px quand la main s'allonge à huit ; le petit gabarit des
+terrains (`clamp(6.4px, 0.544vw, 6.8px)`) met 6,8 px sur une vignette de 40 px,
+un quart de la face là encore. La main et la table étant en full art
+(l'illustration posée `inset: 0`) et le terrain n'étant que son image
+(`.rpg-terrain img`, 100 %), c'est l'illustration que l'anneau mangeait, pour
+une couleur d'élément que la pastille de la carte annonce déjà.
+
+**Comment.** Deux déclarations, sur les trois familles, en fin de
+`rpg-mobile.css` : `border-width: 0` et `background-image: none` — la seconde
+emporte d'un coup la matière, la résille gravée, la diagonale des hybrides et
+le reflet des mythiques, qui sont quatre couches du même fond. Aucune
+animation n'est éteinte : le reflet des mythiques ne fait aller et venir
+qu'une `background-position`, sur un fond qui n'existe plus, et un
+`animation: none` aurait emporté la pulsation des cibles
+(`.rpg-card.is-ciblable`) comme les animations du combat. Le liseré noir des
+cartes (`outline: 2px solid #000`) reste : c'est lui qui les détache du bois ;
+le terrain n'en a jamais eu — sa vignette se détache par sa propre ombre
+portée.
+
+**Les piles n'ont plus d'ombre non plus.** Elles se signalaient par deux
+ombres décalées — un cran sombre, puis la couleur du cadre posé sur le bloc de
+la pile : le cadre, en double. L'ombre colorée part avec l'anneau, sur les
+cartes homonymes (main et champs de bataille) comme sur les terrains ; le
+compteur `×N` et la pastille `↻N` d'engagement restent seuls à dire la pile, et
+le compteur se touche pour déplier. Une exception : l'engagement **partiel**
+d'une pile de terrains garde sa bague discrète (`0 0 0 1px rgba(255, 217, 168,
+.45)`) — elle dit un état, pas une épaisseur de pile.
+
+**Aucune géométrie ne bouge.** Tout est en `border-box` : chaque face garde sa
+largeur, son 4:5 et sa mesure (`--duel-card` pour la main, `--rpg-field-card`
+pour la table, les 40/48 px du rail pour les terrains) — c'est l'illustration
+qui gagne l'anneau, pas la face qui grandit. Le budget de la grille tactile
+(colonnes, lignes, `--rpg-field-card`, piles de cartes homonymes) et le contrat
+de `check:rpg-mobile` (aucun recouvrement dans la main, cibles tactiles,
+largeurs mesurées) sont donc inchangés.
+
+### Où vit le code
+
+- `src/games/rpg-mobile.css` — les deux blocs écrits en fin de feuille,
+  « Sans cadre, au doigt » (la main `.rpg-battle--touch .rpg-hand
+  .rpg-hand__card`, la table `.rpg-battle--touch .card-row .rpg-card` — elle
+  couvre les cartes dépliées d'une pile, qui sont des enfants de `.card-row` —
+  et les terrains `.rpg-battle--touch .rpg-terrain`) puis « Les piles, au
+  doigt » (`.rpg-card-stack` et `.rpg-terrain.rpg-terrain-stack.is-stacked`
+  passent à `box-shadow: none`) ;
+- `src/games/rpg-battle.css` — les gabarits `--rpg-card-border*`, l'anneau orné
+  et l'ombre décalée des piles de terrains, **inchangés** : ce sont la mesure du
+  duel à la souris (où l'ombre reste), de l'aperçu, du mulligan, du catalogue et
+  des faces de lecture.
+
+### Vérifications
+
+```bash
+npm run check:rpg          # 411/411 — les règles du duel, inchangées
+npm run build              # le bundle se construit ; les règles partent après l'anneau
+npm run check:rpg-ui       # voir la réserve ci-dessus
+```
+
+Le contrat de `scripts/rpg-battle-ui-check.mjs` suit la retouche : l'interdit de
+filet fixe sur les terrains au doigt accepte désormais le zéro (il refuse
+toujours 1 ou 2 px), et cinq assertions neuves tiennent le bloc ajouté — la
+règle partagée par la main, la table et les terrains ; l'ombre de pile éteinte
+sur les deux familles ; la bague conservée pour l'engagement partiel ; et
+l'interdit symétrique, l'aperçu, le mulligan, les piles de paquet et de
+cimetière, le catalogue, le guide et l'atelier ne devant pas entrer dans ce
+bloc. En neutralisant les assertions **périmées** déjà connues (`canTarget`
+écrit `['ennemi', 'tous']` là où le check attend `modeCible === 'ennemi'`,
+`rpgResonanceEnJeu(duel, element = 'neige')` là où il attend `(duel)`), le
+script va jusqu'au bout : il ne reste que sept échecs, tous hors interface
+(aura de Neige, trois cartes attendant « valkyrie » sur leur face). Le contrôle
+Playwright `check:rpg-mobile` demande un navigateur, absent de cet
+environnement.
