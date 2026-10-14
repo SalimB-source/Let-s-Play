@@ -84,6 +84,9 @@ async function avecDuel(assert, props, scenario, { mobile = false } = {}) {
     await annonces();
     const combat = container.querySelector('.rpg-btn--resolve-combat');
     if (combat && resoudre) await click(combat);
+    // Fin de tour du sorcier : le joueur peut répondre par une magie rapide ; ici il passe.
+    const passer = container.querySelector('.rpg-fin-tour button');
+    if (passer && resoudre) await click(passer);
   };
   try {
     await act(async () => root.render(<RpgDuelPage {...props} sorcierPuissance={0} rng={() => .999} />));

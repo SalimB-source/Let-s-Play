@@ -271,8 +271,10 @@ for (const [source, camp] of [[attaqueEnnemie, 'ennemi'], [attaqueJoueur, 'joueu
 }
 assert.match(battlePage, /if \(res\.resume\.frappeSorcier > 0\) declencherImpactEcran\('dealt'\)/,
   'une attaque directe sur le sorcier déclenche la secousse après acceptation des blocages');
-assert.match(battlePage, /const frappeDirecte = res\.resume\.frappeSorcier > 0;[\s\S]*?if \(frappeDirecte \|\| touchePendantLaFinDuTour\) declencherImpactEcran\('received'\)/,
-  'une attaque directe reçue ou un écho qui tombe en fin de combat déclenche l’effet de dégâts du joueur');
+assert.match(battlePage, /const frappeDirecte = res\.resume\.frappeSorcier > 0;[\s\S]*?if \(frappeDirecte\) declencherImpactEcran\('received'\);\s*apresCombatSorcier\(\)/,
+  'une attaque directe reçue déclenche l’effet de dégâts du joueur, puis le sorcier entre en deuxième phase principale');
+assert.match(battlePage, /const passerFinTourSorcier = \(\) => \{[\s\S]*?terminerTourEtDetecterDegatsJoueur\(\)\) declencherImpactEcran\('received'\)/,
+  'un écho qui tombe à la fermeture du tour du sorcier déclenche l’effet de dégâts du joueur');
 assert.match(battlePage, /const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur\(\);[\s\S]*?const res = rpgSorcierResoudreAnnonce\(duel\);[\s\S]*?if \(res\.ok && joueurToucheDepuis\(degatsJoueurAvantResolution\)\) \{\s*declencherImpactEcran\('received'\);/,
   'un sort ou une capacité d’arrivée adverse qui touche les PV ou le bouclier déclenche le même impact rouge');
 assert.match(battleCss, /\.card-table\.rpg-screen-shake--a\s*\{\s*animation:\s*rpg-screen-shake-a/,
@@ -305,10 +307,14 @@ assert.match(battlePage, /rpg-actions__combat[\s\S]*?rpg-actions__turn[\s\S]*?rp
   'les actions de combat restent dans la barre, les actions de tour vivent dans le rail');
 assert.match(battlePage, /disabled=\{!monTour \|\| phase \|\| Boolean\(cibleEnCours\) \|\| Boolean\(combatEntrant\) \|\| mulliganOuvert\}/,
   'Fin du tour est indisponible pendant une sélection de combat ou de cible, et tant que le mulligan n’est pas validé');
-assert.match(battlePage, /const RPG_PHASE_STEPS = \[[\s\S]*?id: 'principal'[\s\S]*?id: 'combat'[\s\S]*?id: 'reponse'[\s\S]*?id: 'adverse'[\s\S]*?id: 'termine'/,
-  'le rail représente les grandes phases de la partie');
-assert.match(battlePage, /const phaseDuelActive = vainqueur[\s\S]*?reponseActive[\s\S]*?combatEntrant \|\| phase[\s\S]*?monTour/,
+assert.match(battlePage, /const RPG_PHASE_STEPS = \[[\s\S]*?id: 'debut'[\s\S]*?id: 'principale'[\s\S]*?id: 'attaque'[\s\S]*?id: 'blocage'[\s\S]*?id: 'principale2'[\s\S]*?id: 'fin'/,
+  'le rail représente les six phases du tour : début, principale, attaque, blocage, deuxième principale, fin');
+assert.match(battlePage, /const phaseDuelActive = vainqueur[\s\S]*?finTourJoueur \|\| fenetreFinTour[\s\S]*?combatEntrant[\s\S]*?phase[\s\S]*?debutVisible[\s\S]*?duel\.phase/,
   'la phase lumineuse suit l’état réel du duel');
+assert.match(battlePage, /const fenetreFinTour = Boolean\(duel\.finDeTour\?\.cote === 'sorcier'/,
+  'la fin de tour du sorcier ouvre une fenêtre où le joueur peut jouer une magie rapide');
+assert.match(battlePage, /rpgOuvrirFinDeTour\(duel\);[\s\S]*?rpgSorcierMagieRapide\(duel, rng\)/,
+  'à la fin du tour du joueur, le sorcier a la main pour une magie rapide avant la fermeture du tour');
 // ── Le rail du tour : phases, indicateur et « Fin du tour » au milieu ───────
 assert.match(battlePage, /<div className="rpg-turn-rail" role="group" aria-label="Déroulé du tour">[\s\S]*?rpg-turn-indicator[\s\S]*?<PhaseTrack current=\{phaseDuelActive\} \/>[\s\S]*?rpg-actions__turn[\s\S]*?rpg-btn--endturn/,
   'l’indicateur, les phases et « Fin du tour » forment le rail du tour, au milieu de la table');
@@ -1194,7 +1200,7 @@ console.log(
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
-  + 'rail du tour remonté au milieu de la table — indicateur et « Fin du tour » doré en colonne à la verticale du centre; sur PC, cinq phases en icônes seules orange à l’horizontale sur fond foncé transparent, même rangée d’icônes au doigt, boutons de droite compacts —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, fond foncé commun aux boutons Annuler, Attaquer avec tous, Confirmer et Annuler l’attaque sur PC, icônes de phase orange agrandies sur PC, sur PC, plaques sombres, compactes et arrondies : cadre doré pour le joueur, cuivré pour l’adversaire; portrait à gauche, nom du profil ou du sorcier au-dessus des PV, tactile préservé, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
+  + 'rail du tour remonté au milieu de la table — indicateur et « Fin du tour » doré en colonne à la verticale du centre; sur PC, six phases en icônes seules orange à l’horizontale sur fond foncé transparent, même rangée d’icônes au doigt, boutons de droite compacts —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, fond foncé commun aux boutons Annuler, Attaquer avec tous, Confirmer et Annuler l’attaque sur PC, icônes de phase orange agrandies sur PC, sur PC, plaques sombres, compactes et arrondies : cadre doré pour le joueur, cuivré pour l’adversaire; portrait à gauche, nom du profil ou du sorcier au-dessus des PV, tactile préservé, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
   + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, les Ruines de Tipaza, le Fjord des Neuf Hivers) attribués selon le deck — la Braise rejoint la Table des Heures après le retrait du plateau des Brûlés —; peintures visibles sans voile, capsules sombres pour la lisibilité; plaques PC compactes en capsule, cadre doré joueur et cuivré adversaire, nom du profil et d’Ifrit al-Ahmar affichés, nom d’étage conservé, tactile préservé, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '

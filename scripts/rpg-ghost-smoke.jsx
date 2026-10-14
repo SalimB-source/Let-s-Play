@@ -204,6 +204,8 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
     verifier('ouverture');
 
     let attaqueFaite = false;
+    let tailleVue = -1;
+    let patience = 0;
     let aJoue = true; // la première main est déjà posée par l'ouverture
     for (let pas = 0; pas < pasMax; pas += 1) {
       // Un joueur n'attend pas toujours la fin des animations : une fois sur
@@ -233,6 +235,18 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
           await click(choisie, `ephemere-combat:${choisie.dataset.cardId}`);
           continue;
         }
+      }
+      // 2bis. Fin du tour du sorcier : magie rapide possible, sinon on passe.
+      const passerFinTour = q('.rpg-fin-tour button');
+      if (passerFinTour) {
+        const ephemeres = qa('.rpg-hand__card[data-jouable="true"]');
+        if (ephemeres.length && rng() < 0.5) {
+          const choisie = ephemeres[Math.floor(rng() * ephemeres.length)];
+          await click(choisie, `ephemere-fin-tour:${choisie.dataset.cardId}`);
+          continue;
+        }
+        await click(passerFinTour, 'passer-fin-tour');
+        continue;
       }
       const bloqueur = q('.card-row--equipe .rpg-card.is-blocker-draggable');
       const attaquantAdverse = q('.card-row--ennemi .rpg-card.is-blocker-target');
@@ -314,7 +328,11 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
       }
       // Rien à faire : si on a joué sans attendre, c'est que les animations du
       // sorcier tournent encore. On les laisse finir avant de crier au blocage.
-      if (impatient) {
+      // La fin de tour passe désormais par une fenêtre de réponse du sorcier : la
+      // chaîne de minuteries est plus longue, on laisse une seconde chance.
+      if (actions.length !== tailleVue) { tailleVue = actions.length; patience = 0; }
+      if (impatient || patience < 1) {
+        patience += 1;
         await horloge.avancer(3000);
         verifier('apres-attente');
         continue;

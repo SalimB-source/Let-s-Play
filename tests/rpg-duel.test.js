@@ -36,6 +36,11 @@ import {
   rpgActionsEtat,
   rpgContreJouable,
   rpgActiverCapacite,
+  RPG_PHASES,
+  RPG_PHASES_LIBELLES,
+  rpgOuvrirFinDeTour,
+  rpgPeutRepondre,
+  rpgSorcierMagieRapide,
 } from '../src/games/rpgDuel.js';
 import {
   CARD_RARITIES,
@@ -2856,4 +2861,131 @@ test('mulligan : la main de départ est le seul témoin, une pioche de tour ferm
   assert.deepEqual(duel.mainDepart, { joueur: RPG_MAIN_DEPART, sorcier: RPG_MAIN_DEPART });
   rpgPiocher(duel, 'joueur');
   assert.equal(rpgPeutMulligan(duel, 'joueur'), false, 'la main n’est plus la main de départ');
+});
+
+
+// ── Les six phases du tour ──────────────────────────────────────────────────
+
+test('un tour compte six phases, dans l’ordre : début, principale, attaque, blocage, deuxième principale, fin', () => {
+  assert.deepEqual(RPG_PHASES, ['debut', 'principale', 'attaque', 'blocage', 'principale2', 'fin']);
+  for (const phase of RPG_PHASES) assert.ok(RPG_PHASES_LIBELLES[phase], `${phase} a un libellé`);
+});
+
+test('début de tour : la pioche se fait à l’ouverture du tour, puis on entre en phase principale', () => {
+  const duel = duelDeBase();
+  assert.equal(duel.phase, 'principale', 'la partie s’ouvre en phase principale');
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'sorcier');
+  assert.equal(duel.phase, 'principale', 'le tour du sorcier s’ouvre aussi en phase principale');
+  const main = duel.joueur.main.length;
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'joueur');
+  assert.equal(duel.joueur.main.length, main + 1, 'une carte piochée au début du tour');
+  assert.equal(duel.phase, 'principale');
+});
+
+test('deuxième phase principale : après le combat on rejoue créatures, magies et terrain — un seul terrain par tour', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const attaquant = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  attaquant.ready = true;
+  assert.equal(duel.phase, 'principale');
+
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [attaquant.id]).ok, true);
+  assert.equal(duel.phase, 'principale2', 'le combat résolu ouvre la deuxième phase principale');
+  assert.equal(attaquant.attaquee, true, 'les créatures qui ont attaqué restent engagées');
+
+  donner(duel, 'joueur', 'fennec-des-decombres');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').ok, true, 'une créature se pose en deuxième principale');
+  donner(duel, 'joueur', 'trait-de-braise');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', 'sorcier').raison ?? 'ok', 'ok', 'une magie se lance en deuxième principale');
+  donner(duel, 'joueur', 'desert');
+  donner(duel, 'joueur', 'desert');
+  assert.equal(rpgPoserTerrain(duel, 'joueur', 'desert').ok, true, 'un terrain se pose en deuxième principale');
+  assert.equal(rpgPoserTerrain(duel, 'joueur', 'desert').ok, false, 'mais le terrain reste unique pour tout le tour');
+  assert.equal(attaquant.attaquee, true, 'le attaquant reste engagé jusqu’à son prochain tour');
+});
+
+test('fin de tour : l’adversaire peut jouer une magie rapide, pas une sorcellerie', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'trait-de-braise');
+  donner(duel, 'sorcier', 'lame-de-mer');
+
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', chien.id).raison, 'timing',
+    'hors fenêtre, le sorcier ne joue rien pendant le tour du joueur');
+  assert.equal(rpgPeutRepondre(duel, 'sorcier'), true, 'il a une magie rapide payable en main');
+
+  assert.deepEqual(rpgOuvrirFinDeTour(duel), { cote: 'joueur' });
+  assert.equal(duel.phase, 'fin');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'lame-de-mer', chien.id).raison, 'timing',
+    'une sorcellerie ne se joue pas en réponse');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', chien.id).ok, true,
+    'une magie rapide, si');
+  assert.equal(duel.joueur.creatures.includes(chien), false, 'le Trait de braise a touché sa cible');
+
+  rpgFinDeTour(duel);
+  assert.equal(duel.finDeTour, null, 'la fenêtre se referme avec le tour');
+  assert.equal(duel.fenetreReponse, false);
+  assert.equal(duel.tour, 'sorcier');
+});
+
+test('fin de tour : le Rempart de dunes tient encore pendant la réponse adverse, et tombe ensuite', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'rempart-de-dunes');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'rempart-de-dunes').ok, true);
+  assert.equal(chien.def, 5);
+
+  rpgOuvrirFinDeTour(duel);
+  assert.equal(chien.def, 5, 'ouvrir la fin de tour n’efface rien : la réponse adverse subit encore le rempart');
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'trait-de-braise');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', chien.id).ok, true);
+  assert.equal(duel.joueur.creatures.includes(chien), true, '3 dégâts contre 5 de défense : le chien survit');
+
+  assert.equal(chien.def, 2, 'il a pourtant encaissé les 3 dégâts');
+  rpgFinDeTour(duel);
+  assert.equal(duel.joueur.creatures.includes(chien), false,
+    'le rempart disparaît seulement à la fermeture du tour — et emporte la créature entamée');
+});
+
+test('fenêtre de fin de tour : le sorcier IA joue sa magie rapide, et jamais un contre', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'dune-marchante');
+  const dune = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
+  duel.sorcier.main = ['silence-decume'];
+  donnerMana(duel, 'sorcier', 10);
+  assert.equal(rpgPeutRepondre(duel, 'sorcier'), false, 'un contre seul n’a rien à contrer en fin de tour');
+  rpgOuvrirFinDeTour(duel);
+  assert.equal(rpgSorcierMagieRapide(duel), null);
+
+  duel.sorcier.main = ['trait-de-braise'];
+  const res = rpgSorcierMagieRapide(duel);
+  assert.equal(res?.ok, true);
+  assert.equal(res.carteId, 'trait-de-braise');
+  assert.ok(duel.sorcier.cimetiere.includes('trait-de-braise'));
+  assert.ok(dune.pv < dune.pvMax || !duel.joueur.creatures.includes(dune), 'la magie a frappé');
+});
+
+test('phase de blocage : les deux camps jouent des magies rapides avant les blessures', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const attaquant = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  attaquant.ready = true;
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'trait-de-braise');
+
+  assert.equal(rpgOuvrirFenetreReponse(duel, 'joueur'), true);
+  const res = rpgSorcierMagieRapide(duel);
+  assert.equal(res?.ok, true, 'le sorcier répond pendant le blocage');
+  assert.equal(duel.joueur.creatures.includes(attaquant), false, 'l’attaquant est abattu avant le combat');
 });

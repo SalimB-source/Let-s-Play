@@ -11,6 +11,12 @@ import { passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Fin du tour du sorcier : le joueur peut répondre par une magie rapide ; ces scénarios passent. */
+async function passerFinTourSorcier(racine) {
+  const passer = racine.querySelector('.rpg-fin-tour button');
+  if (passer) await act(async () => { passer.click(); });
+}
+
 /** Le sorcier annonce chaque carte : le joueur laisse passer (sans réponse dans ces scénarios). */
 async function passerAnnoncesSorcier(racine) {
   for (let annonce = 0; annonce < 8; annonce += 1) {
@@ -20,6 +26,7 @@ async function passerAnnoncesSorcier(racine) {
     await act(async () => { passer.click(); });
     await act(async () => { await wait(1100); });
   }
+  await passerFinTourSorcier(racine);
 }
 
 export async function checkRpgBattle(assert) {
@@ -107,6 +114,7 @@ export async function checkRpgBattle(assert) {
   const resoudreCombat = async () => {
     const bouton = container.querySelector('.rpg-btn--resolve-combat');
     if (bouton) await act(async () => { bouton.click(); });
+    await passerFinTourSorcier(document);
   };
   const poserTerrainSansEngager = async () => {
     const terrain = handCards().find((b) => b.className.includes('rpg-hand__card--terrain') && estJouable(b));
@@ -391,7 +399,7 @@ export async function checkRpgBattle(assert) {
     'Attaquer avec tous conserve son icône rouge');
   assert.equal(container.querySelector('.rpg-actions__combat .rpg-btn--endturn'), null,
     'la fin du tour est isolée des commandes d’attaque');
-  assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'principal',
+  assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'principale',
     'la phase principale s’allume au début du tour du joueur');
   assert.equal(container.querySelectorAll('.rpg-phase-step[aria-current="step"]').length, 1,
     'une seule phase du duel est annoncée comme active');
@@ -661,7 +669,7 @@ export async function checkRpgBattle(assert) {
   await act(async () => { visageTable.click(); });
   assert.ok(visageTable.classList.contains('is-declared-attacker'),
     'un clic sélectionne le Fennec comme attaquant dès le tour où il arrive');
-  assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'combat',
+  assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'attaque',
     'la phase de combat s’ouvre immédiatement pour le Fennec rapide');
   assert.ok(container.querySelector('.rpg-btn--confirmer-attaque .rpg-combat-action-icon--confirm'),
     'Confirmer affiche son icône de validation bleu clair');
@@ -808,7 +816,7 @@ export async function checkRpgBattle(assert) {
   assert.equal(mesCreatures.length, 2, 'les deux bloqueurs survivants peuvent aussi attaquer');
   await act(async () => { mesCreatures[0].click(); });
   assert.ok(findButton('Confirmer'), 'la phase d’attaque propose de confirmer');
-  assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'combat',
+  assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'attaque',
     'la phase Combat s’allume après le clic sur une créature');
   assert.equal(container.querySelector('.rpg-actions__turn .rpg-btn--endturn')?.disabled, true,
     'Fin du tour est désactivé pendant la sélection des attaquants');
@@ -821,8 +829,8 @@ export async function checkRpgBattle(assert) {
   assert.ok(!container.querySelector('.rpg-btn--undo'), 'une attaque confirmée ne peut plus être annulée');
   assert.match(container.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOUS · RÉPONSE/,
     'après le choix des bloqueurs adverses, la priorité revient au joueur');
-  assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'reponse',
-    'la phase Réponse s’allume après l’assignation des bloqueurs');
+  assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'blocage',
+    'la phase de blocage s’allume après l’assignation des bloqueurs');
   assert.ok(container.querySelector('.rpg-hand-dock.is-open'),
     'la main revient pour permettre de jouer une magie rapide');
   const accepterBlocages = container.querySelector('.rpg-btn--resolve-combat');
@@ -913,6 +921,7 @@ export async function checkRpgBattle(assert) {
     }
     const combat = responseContainer.querySelector('.rpg-btn--resolve-combat');
     if (combat) await act(async () => { combat.click(); });
+    await passerFinTourSorcier(document);
   };
   assert.ok(responseHand().some((card) => card.getAttribute('aria-label')?.includes('Trait de braise')),
     'Trait de braise est conservé en main jusqu’à la réponse aux bloqueurs');
@@ -1136,6 +1145,7 @@ export async function checkRpgBattle(assert) {
     .some((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres')),
   'le Fennec coût 2 est désormais sur le champ');
   await act(async () => { killContainer.querySelector('.rpg-btn--resolve-combat').click(); });
+  await passerFinTourSorcier(killContainer);
   await act(async () => { killContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
   await passerAnnoncesSorcier(killContainer);
@@ -1292,6 +1302,7 @@ export async function checkRpgBattle(assert) {
   await passerAnnoncesSorcier(waterContainer);
   const combatRapiditeEau = waterContainer.querySelector('.rpg-btn--resolve-combat');
   if (combatRapiditeEau) await act(async () => { combatRapiditeEau.click(); });
+  await passerFinTourSorcier(document);
   assert.ok([...waterContainer.querySelectorAll('.rpg-card--ennemi')]
     .some((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres')),
   'le Fennec a reçu son second mana avant d’être ciblé');
@@ -1385,6 +1396,7 @@ export async function checkRpgBattle(assert) {
       await passerAnnoncesSorcier(cavalryContainer);
       const combatSorcier = cavalryContainer.querySelector('.rpg-btn--resolve-combat');
       if (combatSorcier) await act(async () => { combatSorcier.click(); });
+      await passerFinTourSorcier(document);
     }
   }
   assert.ok([...cavalryContainer.querySelectorAll('.rpg-card--ennemi')]
@@ -1491,6 +1503,7 @@ export async function checkRpgBattle(assert) {
     await passerAnnoncesSorcier(ferielContainer);
     const resolve = ferielContainer.querySelector('.rpg-btn--resolve-combat');
     if (resolve) await act(async () => { resolve.click(); });
+    await passerFinTourSorcier(document);
   };
   for (let tour = 1; tour <= 3; tour += 1) {
     await poserDesertFeriel();
@@ -1552,6 +1565,7 @@ export async function checkRpgBattle(assert) {
     await passerAnnoncesSorcier(tarekContainer);
     const resolve = tarekContainer.querySelector('.rpg-btn--resolve-combat');
     if (resolve) await act(async () => { resolve.click(); });
+    await passerFinTourSorcier(document);
   };
   for (let tour = 1; tour <= 5; tour += 1) {
     const desert = tarekHand().find((card) => card.dataset.cardId === 'desert' && estJouable(card));
@@ -1603,6 +1617,7 @@ export async function checkRpgBattle(assert) {
     await passerAnnoncesSorcier(bounceContainer);
     const resoudre = bounceContainer.querySelector('.rpg-btn--resolve-combat');
     if (resoudre) await act(async () => { resoudre.click(); });
+    await passerFinTourSorcier(document);
   };
   await jouerTerrainBounce('Mer');
   await finirTourBounce();
@@ -1666,6 +1681,7 @@ export async function checkRpgBattle(assert) {
     await passerAnnoncesSorcier(nuageContainer);
     const resoudre = nuageContainer.querySelector('.rpg-btn--resolve-combat');
     if (resoudre) await act(async () => { resoudre.click(); });
+    await passerFinTourSorcier(document);
     await act(async () => { await wait(700); });
   };
 

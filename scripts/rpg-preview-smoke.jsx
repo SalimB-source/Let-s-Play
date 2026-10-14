@@ -191,11 +191,11 @@ export async function checkRpgPreviewActions(assert) {
     await click(container.querySelector('.rpg-btn--attaque-tous'));
     assert.equal(container.querySelectorAll('.rpg-card--equipe.is-selected').length, 1,
       'attaque en masse : les créatures prêtes sont sélectionnées depuis la table');
-    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'combat');
+    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'attaque');
     assert.equal(container.querySelector('.rpg-btn--endturn').disabled, true);
     await click(container.querySelector('.rpg-btn--cancel-attack'));
     assert.equal(container.querySelectorAll('.rpg-card--equipe.is-selected').length, 0);
-    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'principal');
+    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'principale');
     assert.equal(container.querySelector('.rpg-btn--endturn').disabled, false);
 
     await click(fennec());
