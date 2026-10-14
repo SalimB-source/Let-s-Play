@@ -167,6 +167,20 @@ Les scènes d’action et les identités des cartes sont conservées :
   au début du prochain tour du lanceur.
 - **Serment de la forge** : forgeron au travail, samouraï et apprenti à ses côtés.
 
+Trois samouraïs rejoignent le set, peints dans une direction **légendaire** : peinture kaiga
+épique à l'or en feuille, encres sumi marquées, couleurs minérales vives et aura mythique. Ce
+n'est pas un rendu photoréaliste.
+
+- **Hatamoto des cendres** (commune) : silhouette sur un toit en ruine, katana qui trace un croissant
+  d'or sous une lune géante, corbeaux rouges.
+- **Kenshi de la forge** (rare) : forgeron-samouraï qui frappe une lame en fusion, dragon de feu qui
+  s'élève des étincelles, angle plongeant.
+- **Daimyō du Soleil rouge** (rare) : daimyō sur un cheval blanc, yari levé, soleil rouge géant,
+  phénix d'or et cerisiers.
+
+Ils portent `soleil-rouge-kaiga-couleurs-v7`. Ils ne figurent pas dans le deck préconstruit : ils se
+composent à l'atelier. Les trois ajouts sont des créatures `Samouraï` : ils reçoivent la Résonance samouraï.
+
 Les peintures sont versionnées `soleil-rouge-kaiga-couleurs-v7` dans
 `CARD_ART_CACHE_VERSIONS`, sauf les Feux de kitsune (`kitsune-kaiga-couleurs-v4`)
 et la Frappe d’iaijutsu corrigée (`iaijutsu-kaiga-couleurs-sans-jambes-v10`). Les noms des fichiers, le plein art 1024×1280 et les

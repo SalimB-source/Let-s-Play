@@ -87,12 +87,30 @@ const CARD_FRAME_FALLBACK_KEY = 'hybride-braise-eau-sable-neige';
 /** Ordre canonique des couleurs : la clé d'une hybride ne dépend pas de l'ordre déclaré. */
 const CARD_FRAME_COLOR_ORDER = RPG_ELEMENTS;
 
+/**
+ * Une arme, pour la présentation : une carte `kind: 'arme'` (le prototype), ou
+ * une magie dont l'effet est « arme » (le Sabre maudit). Le moteur garde le
+ * Sabre parmi les magies (ciblage, `porteur.armes`) ; la carte, elle, doit
+ * porter le même cadre, la même ligne de type et les mêmes stats de porteur
+ * que les autres armes.
+ */
+export function carteEstArme(carte) {
+  return carte?.kind === 'arme' || carte?.effet?.type === 'arme';
+}
+
+/** Bonus porté par une arme (`{ atk, def }`), ou null si la carte n'est pas une arme. */
+export function bonusArme(carte) {
+  if (carte?.kind === 'arme') return carte.bonus ?? { atk: 0, def: 0 };
+  if (carteEstArme(carte)) return { atk: carte.effet.atk ?? 0, def: carte.effet.def ?? 0 };
+  return null;
+}
+
 /** Clé et couleur de cadre d'une carte : élément seul, ou combinaison multicolore. */
 export function cardFrameInfo(carte) {
   // Les armes gardent la matière commune des armes — acier guilloché peint
   // par la classe `rpg-card--frame-arme` — mais leur teinte suit leur
   // élément : acier doré du Sable, acier bleu de l'Eau, et ainsi de suite.
-  if (carte?.kind === 'arme') {
+  if (carteEstArme(carte)) {
     const couleur = cardColors(carte)[0] ?? 'sable';
     return { key: 'arme', ...(CARD_FRAME_COLORS[`arme-${couleur}`] ?? CARD_FRAME_COLORS.arme) };
   }
@@ -125,7 +143,7 @@ export function cardFrameColor(carte) {
 export function cardFrameClass(carte) {
   const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
   // Une arme ajoute la teinte d'acier de son élément à la matière commune.
-  if (carte?.kind === 'arme') {
+  if (carteEstArme(carte)) {
     const couleurArme = cardColors(carte)[0];
     if (couleurArme) classes.push(`rpg-card--frame-arme-${couleurArme}`);
   }
@@ -1921,7 +1939,7 @@ export function cardTypeLine(card) {
   if (card.kind === 'creature') return 'Créature — Habitants de Bab El';
   if (card.kind === 'terrain') return `Terrain — ${card.name}`;
   if (card.kind === 'magie') return card.instant ? 'Magie Rapide' : 'Sorcellerie';
-  if (card.kind === 'arme') return 'Arme';
+  if (carteEstArme(card)) return 'Arme';
   return 'Carte';
 }
 

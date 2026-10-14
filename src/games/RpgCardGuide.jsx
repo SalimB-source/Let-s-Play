@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { RPG_CARD_LESSONS } from './rpgCardLessons.js';
-import { cardById, cardColors, cardFrameClass, cardFrameColor, cardTypeLine } from './rpgCards.js';
+import { bonusArme, cardById, cardColors, cardFrameClass, cardFrameColor, cardTypeLine, carteEstArme } from './rpgCards.js';
 import './rpg-card-guide.css';
 
 const ELEMENT_LABELS = {
@@ -12,6 +12,9 @@ const ELEMENT_LABELS = {
   neige: 'Neige',
 };
 const ELEMENT_MARKS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️' };
+
+/** Un bonus signé pour l'affichage : « +2 », ou « -2 » pour le malus du Sabre maudit. */
+const signeBonus = (valeur = 0) => (valeur >= 0 ? `+${valeur}` : `${valeur}`);
 
 function GuideCard({ carte, cardArt }) {
   const colors = cardColors(carte);
@@ -33,7 +36,7 @@ function GuideCard({ carte, cardArt }) {
         <h3>{carte.name}</h3>
         <p className="rpg-card-guide__type">{cardTypeLine(carte)}</p>
         {estCreature && <p className="rpg-card-guide__stats">⚔ {carte.atk} · 🛡 {carte.def}</p>}
-        {carte.kind === 'arme' && <p className="rpg-card-guide__stats">Porteur : ⚔ +{carte.bonus?.atk ?? 0} · 🛡 +{carte.bonus?.def ?? 0}</p>}
+        {carteEstArme(carte) && <p className="rpg-card-guide__stats">Porteur : ⚔ {signeBonus(bonusArme(carte)?.atk)} · 🛡 {signeBonus(bonusArme(carte)?.def)}</p>}
         <p className="rpg-card-guide__rules"><RpgCardRules carte={carte} /></p>
       </div>
     </article>

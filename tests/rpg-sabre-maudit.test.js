@@ -132,3 +132,17 @@ test('le sabre est sérialisable et l’IA utilise une cible survivant au malus'
   const copie = JSON.parse(JSON.stringify(duel));
   assert.deepEqual(copie.sorcier.creatures.find((e) => e.id === robuste.id).armes, ['sabre-maudit']);
 });
+
+test('le sabre porte le cadre d’acier des armes, comme les autres armes', async () => {
+  const { cardFrameInfo, cardFrameClass, carteEstArme, bonusArme, cardById: byId } = await import('../src/games/rpgCards.js');
+  const sabre = byId('sabre-maudit');
+  assert.equal(carteEstArme(sabre), true);
+  assert.equal(sabre.kind, 'magie', 'le moteur le garde parmi les magies (ciblage, porteur.armes)');
+  assert.equal(cardFrameInfo(sabre).key, 'arme');
+  assert.equal(cardFrameClass(sabre), 'rpg-card--frame-arme rpg-card--frame-arme-braise');
+  assert.deepEqual(bonusArme(sabre), { atk: 5, def: -2 });
+  assert.deepEqual(bonusArme(byId('takouba-des-pistes')), { atk: 2, def: 0 });
+  assert.equal(carteEstArme(byId('samourai-du-torii')), false);
+  assert.equal(bonusArme(byId('samourai-du-torii')), null);
+  assert.match(sabre.text, /^Arme — Le porteur gagne \+5\/-2/, 'texte au format des autres armes');
+});

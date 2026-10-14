@@ -28,8 +28,11 @@ function sort(duel, id, cible) {
   assert.equal(rpgLancerMagie(duel, 'joueur', id, cible).ok, true, id);
 }
 
-test('Soleil rouge : quinze cartes mono-Braise uniques, illustrées en 1024 × 1280 et collectionnables', () => {
-  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 15);
+// Les trois samouraïs ajoutés (hatamoto, kenshi, daimyō) ne sont pas dans le deck préconstruit.
+const SAMOURAIS_AJOUTES = ['hatamoto-des-cendres', 'kenshi-de-la-forge', 'daimyo-du-soleil-rouge'];
+
+test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 × 1280 et collectionnables', () => {
+  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 18);
   const empreintes = new Set();
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
     assert.equal(cardById(carte.id).set, RPG_SOLEIL_ROUGE_SET_ID);
@@ -49,7 +52,7 @@ test('Soleil rouge : quinze cartes mono-Braise uniques, illustrées en 1024 × 1
     }
     assert.deepEqual(dimensions, [1024, 1280], carte.id);
   }
-  assert.equal(empreintes.size, 15, 'une illustration dédiée par carte');
+  assert.equal(empreintes.size, 18, 'une illustration dédiée par carte');
 });
 
 test('le deck Soleil rouge est valide et ne mélange pas les deux cultures de Braise', () => {
@@ -57,7 +60,8 @@ test('le deck Soleil rouge est valide et ne mélange pas les deux cultures de Br
   assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
   assert.equal(deck.cardIds.filter((id) => cardById(id).kind === 'terrain').length, 16);
   assert.deepEqual(new Set(deck.cardIds.filter((id) => cardById(id).kind !== 'terrain')),
-    new Set(RPG_SOLEIL_ROUGE_CARDS.filter((c) => c.kind !== 'terrain').map((c) => c.id)));
+    new Set(RPG_SOLEIL_ROUGE_CARDS.filter((c) => c.kind !== 'terrain' && !SAMOURAIS_AJOUTES.includes(c.id)).map((c) => c.id)));
+  for (const id of SAMOURAIS_AJOUTES) assert.equal(deck.cardIds.includes(id), false, id);
   const djinns = RPG_DECKS.find((d) => d.id === 'cour-des-djinns');
   assert.ok(djinns.cardIds.every((id) => cardById(id).set !== RPG_SOLEIL_ROUGE_SET_ID));
 });
@@ -91,16 +95,20 @@ test('la Résonance samouraï se cumule dans les deux camps, sans toucher les au
   const duel = duelTest();
   const ami = jouer(duel, 'joueur', 'samourai-du-torii');
   const adverse = jouer(duel, 'sorcier', 'samourai-du-torii');
-  const exclus = [
+  // Ashigaru, Rōnin et Onna-musha sont des Samouraïs : ils reçoivent la Résonance.
+  const samourais = [
     jouer(duel, 'joueur', 'ashigaru-des-braises'),
     jouer(duel, 'joueur', 'ronin-du-soleil-rouge'),
     jouer(duel, 'joueur', 'onna-musha-des-cendres'),
+  ];
+  const exclus = [
     jouer(duel, 'sorcier', 'oni-de-la-fournaise'),
     jouer(duel, 'sorcier', 'chien-du-guet'),
   ];
   const neige = jouer(duel, 'joueur', 'loup-des-neiges');
   const tengu = jouer(duel, 'joueur', 'tengu-du-mont-ardent');
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 3);
+  for (const entite of samourais) assert.equal(entite.resonance, 3, entite.name);
   assert.equal(rpgResonanceEnJeu(duel, 'braise'), 0);
   assert.deepEqual([ami.atk, ami.def], [5, 6]);
   assert.deepEqual([adverse.atk, adverse.def], [5, 6]);
@@ -109,6 +117,7 @@ test('la Résonance samouraï se cumule dans les deux camps, sans toucher les au
   assert.equal(neige.resonance, 0);
   const kagutsuchi = jouer(duel, 'sorcier', 'kagutsuchi-flamme-originelle');
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 4);
+  for (const entite of samourais) assert.equal(entite.resonance, 4, entite.name);
   assert.deepEqual([ami.atk, ami.def], [6, 7]);
   assert.deepEqual([adverse.atk, adverse.def], [6, 7]);
   assert.equal(kagutsuchi.resonance, 0, 'le Kami n’est pas de type Samouraï');

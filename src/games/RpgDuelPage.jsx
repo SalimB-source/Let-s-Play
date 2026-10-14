@@ -127,6 +127,8 @@ import {
   cardFrameClass,
   cardFrameColor,
   cardColorCost,
+  bonusArme,
+  carteEstArme,
   cardColors,
   terrainManaColors,
   RPG_DECK_JOUEUR_BASE,
@@ -156,6 +158,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'ronin-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
   'samourai-du-torii': 'soleil-rouge-kaiga-couleurs-v7',
   'onna-musha-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
+  'hatamoto-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
+  'kenshi-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
+  'daimyo-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
   'tengu-du-mont-ardent': 'soleil-rouge-kaiga-couleurs-v7',
   'oni-de-la-fournaise': 'soleil-rouge-kaiga-couleurs-v7',
   'kagutsuchi-flamme-originelle': 'soleil-rouge-kaiga-couleurs-v7',
@@ -580,8 +585,8 @@ function cardFaceTypeLine(carte) {
 
 function cardFrameType(carte) {
   if (carte?.kind === 'terrain') return 'terrain';
+  if (carteEstArme(carte)) return 'arme';
   if (carte?.kind === 'magie') return 'magie';
-  if (carte?.kind === 'arme') return 'arme';
   return 'creature';
 }
 
@@ -601,14 +606,17 @@ function cartesDesIds(ids = []) {
   return ids.map((id) => cardById(id)).filter(Boolean);
 }
 
+/** Un bonus signé : « +2 », ou « -2 » pour le malus du Sabre maudit. */
+function signeBonus(valeur = 0) {
+  return valeur >= 0 ? `+${valeur}` : `${valeur}`;
+}
+
 /** Bonus d'une arme, « +2/+0 » : celui de l'arme du prototype, ou l'effet
  *  « arme » d'une magie (le Sabre maudit). */
 function bonusArmeTexte(arme) {
-  const bonus = arme?.bonus
-    ?? (arme?.effet?.type === 'arme' ? { atk: arme.effet.atk ?? 0, def: arme.effet.def ?? 0 } : null);
+  const bonus = bonusArme(arme);
   if (!bonus) return '';
-  const signe = (valeur) => (valeur >= 0 ? `+${valeur}` : `${valeur}`);
-  return `${signe(bonus.atk ?? 0)}/${signe(bonus.def ?? 0)}`;
+  return `${signeBonus(bonus.atk ?? 0)}/${signeBonus(bonus.def ?? 0)}`;
 }
 
 function deckStats(deck) {
@@ -616,8 +624,8 @@ function deckStats(deck) {
     const carte = cardById(id);
     if (!carte) return stats;
     if (carte.kind === 'terrain') stats.terrains += 1;
+    else if (carte.kind === 'arme' || carteEstArme(carte)) stats.armes += 1;
     else if (carte.kind === 'magie') stats.magies += 1;
-    else if (carte.kind === 'arme') stats.armes += 1;
     else stats.creatures += 1;
     return stats;
   }, { terrains: 0, creatures: 0, magies: 0, armes: 0 });
@@ -634,8 +642,8 @@ function deckCardList(deck) {
  * `deckStats`, donc la liste et les statistiques ne peuvent pas se contredire. */
 function familleDeCarte(carte) {
   if (carte?.kind === 'terrain') return 'terrains';
+  if (carteEstArme(carte)) return 'armes';
   if (carte?.kind === 'magie') return 'sorts';
-  if (carte?.kind === 'arme') return 'armes';
   return 'creatures';
 }
 
@@ -649,7 +657,7 @@ const RPG_DECK_FAMILLES = [
 function targetMode(carte) {
   if (carte?.arrivee?.type === 'exil') return 'tous';
   // Une arme se joue sur une créature alliée : c'est elle qu'on désigne.
-  if (carte?.kind === 'arme') return 'allie';
+  if (carteEstArme(carte)) return 'allie';
   if (carte?.arrivee?.type === 'combat' && carte.arrivee.cible === 'creature') return 'ennemi';
   if (carte?.arrivee?.type === 'retour-main') return carte.arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
   if (carte?.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature') return 'ennemi';
@@ -1113,7 +1121,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
           <b>{armesEquipees.map((arme) => `${arme.name}${bonusArmeTexte(arme) ? ` ${bonusArmeTexte(arme)}` : ''}`).join(' · ')}</b>
         </p>
       )}
-      {carte.kind === 'arme' && <p className="rpg-hover-card-preview__stats">Porteur : +{carte.bonus?.atk ?? 0} ⚔ <span>·</span> +{carte.bonus?.def ?? 0} 🛡</p>}
+      {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
     </>
   );
   const face = (
@@ -2242,8 +2250,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   const estTerrain = carte.kind === 'terrain';
                   const estCreature = ['creature', 'hero'].includes(carte.kind);
                   const type = carte.kind === 'terrain' ? 'Terrain'
-                    : carte.kind === 'magie' ? 'Magie'
-                      : carte.kind === 'arme' ? 'Arme'
+                    : carteEstArme(carte) ? 'Arme'
+                      : carte.kind === 'magie' ? 'Magie'
                         : carte.kind === 'hero' ? 'Héros' : 'Créature';
                   return (
                     <article
@@ -2279,7 +2287,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                               : `${deckColorGlyph({ element: carte.element, elements: cardColors(carte) })} ${cardColorLabel(carte)}${cardColors(carte).includes('sable') ? ' · Désert' : ''}`}
                           </span>
                           {estCreature && <b>⚔ {carte.atk} · 🛡 {carte.def}</b>}
-                          {carte.kind === 'arme' && <b>⚔ +{carte.bonus?.atk ?? 0} · 🛡 +{carte.bonus?.def ?? 0}</b>}
+                          {carteEstArme(carte) && <b>⚔ {signeBonus(bonusArme(carte)?.atk)} · 🛡 {signeBonus(bonusArme(carte)?.def)}</b>}
                         </div>
                         <p className="rpg-card-catalogue__rules"><RpgCardRules carte={carte} /></p>
                       </div>
@@ -5698,10 +5706,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
                     </span>
                   )}
-                  {carte.kind === 'arme' && (
-                    <span className="rpg-hand__stats" aria-label={`Porteur : +${carte.bonus?.atk ?? 0} attaque, +${carte.bonus?.def ?? 0} défense`}>
-                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">+{carte.bonus?.atk ?? 0}</span></span>
-                      <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">+{carte.bonus?.def ?? 0}</span></span>
+                  {carteEstArme(carte) && (
+                    <span className="rpg-hand__stats" aria-label={`Porteur : ${signeBonus(bonusArme(carte)?.atk)} attaque, ${signeBonus(bonusArme(carte)?.def)} défense`}>
+                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.atk)}</span></span>
+                      <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.def)}</span></span>
                     </span>
                   )}
                 </button>

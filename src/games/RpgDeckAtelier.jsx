@@ -31,6 +31,8 @@ import {
   CARD_RARITIES,
   RPG_DUEL_CARDS,
   RPG_ELEMENTS,
+  bonusArme,
+  carteEstArme,
   cardById,
   cardColors,
   cardCopyLimit,
@@ -80,9 +82,15 @@ const GROUPES = [
 ];
 
 const typeLabel = (carte) => (carte.kind === 'terrain' ? 'Terrain'
-  : carte.kind === 'magie' ? 'Magie'
-    : carte.kind === 'arme' ? 'Arme'
+  : carteEstArme(carte) ? 'Arme'
+    : carte.kind === 'magie' ? 'Magie'
       : carte.kind === 'hero' ? 'Héros' : 'Créature');
+
+/** Le groupe de la liste du deck : une arme (même magie à effet « arme ») va dans Armes. */
+const groupeDeCarte = (carte) => (carteEstArme(carte) ? 'arme' : carte.kind === 'hero' ? 'creature' : carte.kind);
+
+/** Un bonus signé pour l'affichage : « +2 », « -2 ». */
+const signeBonus = (valeur = 0) => (valeur >= 0 ? `+${valeur}` : `${valeur}`);
 
 /** Coût lisible : « 3 mana, dont 1 Braise ». */
 const coutLabel = (carte) => {
@@ -171,8 +179,8 @@ export function RpgDeckAtelier({
     const carte = cardById(id);
     if (!carte) return acc;
     if (carte.kind === 'terrain') acc.terrains += 1;
+    else if (carteEstArme(carte)) acc.armes += 1;
     else if (carte.kind === 'magie') acc.magies += 1;
-    else if (carte.kind === 'arme') acc.armes += 1;
     else acc.creatures += 1;
     return acc;
   }, { terrains: 0, creatures: 0, magies: 0, armes: 0 }), [cardIds]);
@@ -524,9 +532,9 @@ export function RpgDeckAtelier({
                             {carte.atk}<i>/</i>{carte.def}
                           </span>
                         )}
-                        {carte.kind === 'arme' && (
-                          <span className="rpg-atelier__carte-pt" aria-label={`Porteur : +${carte.bonus?.atk ?? 0} attaque, +${carte.bonus?.def ?? 0} défense`}>
-                            +{carte.bonus?.atk ?? 0}<i>/</i>+{carte.bonus?.def ?? 0}
+                        {carteEstArme(carte) && (
+                          <span className="rpg-atelier__carte-pt" aria-label={`Porteur : ${signeBonus(bonusArme(carte)?.atk)} attaque, ${signeBonus(bonusArme(carte)?.def)} défense`}>
+                            {signeBonus(bonusArme(carte)?.atk)}<i>/</i>{signeBonus(bonusArme(carte)?.def)}
                           </span>
                         )}
                         {!acquise && <span className="rpg-atelier__carte-cadenas" aria-hidden="true">🔒</span>}
@@ -659,7 +667,7 @@ export function RpgDeckAtelier({
             {GROUPES.map((groupe) => {
               const references = [...compte.entries()]
                 .map(([id, nombre]) => ({ carte: cardById(id), nombre }))
-                .filter((entree) => entree.carte && groupe.kinds.includes(entree.carte.kind))
+                .filter((entree) => entree.carte && groupe.kinds.includes(groupeDeCarte(entree.carte)))
                 .sort((a, b) => cardCost(a.carte) - cardCost(b.carte) || a.carte.name.localeCompare(b.carte.name, 'fr'));
               const total = references.reduce((somme, entree) => somme + entree.nombre, 0);
               return (
@@ -683,7 +691,7 @@ export function RpgDeckAtelier({
                         : <Cout carte={carte} />}
                       <span className="rpg-atelier__ligne-nom">
                         <strong>{carte.name}</strong>
-                        <small>{typeLabel(carte)}{['creature', 'hero'].includes(carte.kind) ? ` · ${carte.atk}/${carte.def}` : carte.kind === 'arme' ? ` · +${carte.bonus?.atk ?? 0}/+${carte.bonus?.def ?? 0}` : ''}</small>
+                        <small>{typeLabel(carte)}{['creature', 'hero'].includes(carte.kind) ? ` · ${carte.atk}/${carte.def}` : carteEstArme(carte) ? ` · ${signeBonus(bonusArme(carte)?.atk)}/${signeBonus(bonusArme(carte)?.def)}` : ''}</small>
                       </span>
                       <span className="rpg-atelier__ligne-compte">
                         <button

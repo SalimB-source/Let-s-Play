@@ -73,9 +73,9 @@ export const RPG_RECOMPENSES_PAR_ETAGE = {
   // Tour du Souk — le feu se complète ; les citernes de la Gardienne rendent
   // les premières cartes d'Eau.
   'souk-1': ['vent-rouge', 'samourai-du-torii'],
-  'souk-2': ['salem', 'vipere-de-verre'],
+  'souk-2': ['salem', 'vipere-de-verre', 'kenshi-de-la-forge'],
   'souk-3': ['djinn-du-souk', 'parade-du-verre', 'frappe-iaijutsu'],
-  'souk-4': ['ifrit-al-ahmar', 'feriel', 'colosse-de-sel'],
+  'souk-4': ['ifrit-al-ahmar', 'feriel', 'colosse-de-sel', 'daimyo-du-soleil-rouge'],
   // Tour des Sables — le sommet du Sable/Braise, l'Eau se précise.
   'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune'],
   'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit'],
