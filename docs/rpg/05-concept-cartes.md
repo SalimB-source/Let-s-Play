@@ -400,6 +400,12 @@ sable, il est **éphémère** (`detruireFinDuTour`), soldé par
 decks du catalogue (40 cartes, au moins 40 % de terrains) ; les decks
 d'Histoire n'en reçoivent pas.
 
+Le **Sabre maudit** (Soleil rouge, rare, coût 4) est une arme de même nature : le moteur le
+traite comme une magie à effet `arme` (ciblage, `porteur.armes`), mais sa présentation est celle
+des armes — cadre d'acier de Braise, ligne « Arme — Sabre maudit », stats de porteur (+5/-2) dans
+la main, l'aperçu, l'atelier et le guide, et texte « Arme — Le porteur gagne… ». `carteEstArme`
+et `bonusArme` (`rpgCards.js`) disent qu'une carte est une arme pour l'affichage.
+
 Illustrations : `public/cards/<identifiant>.jpg` plein art 4:5 — un porteur
 en pleine action, l'arme entièrement dans le cadre (voir la dérogation
 photoréaliste de `RPG-CARD-ART.md`).

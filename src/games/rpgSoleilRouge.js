@@ -123,7 +123,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
     effet: { type: 'arme', cible: 'creature-amie', atk: 5, def: -2, coupRapide: true },
-    text: 'Attachez à une créature alliée. Le porteur gagne +5/-2 et Coup rapide : quand il attaque, choisissez une créature adverse ; il lui inflige sa force sans riposte, puis poursuit son attaque. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
+    text: 'Arme — Le porteur gagne +5/-2 et Coup rapide : quand il attaque, choisissez une créature adverse ; il lui inflige sa force sans riposte, puis poursuit son attaque. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({
