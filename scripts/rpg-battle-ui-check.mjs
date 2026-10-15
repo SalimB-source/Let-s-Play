@@ -114,6 +114,10 @@ assert.match(confirmSortSource, /rpg-spell-confirm__rules[\s\S]*?effets\.map/,
   'chaque effet occupe une ligne dans la confirmation de sort');
 assert.match(hoverPreviewSource, /rpg-hover-card-preview__rules[\s\S]*?effets\.map/,
   'chaque effet occupe une ligne dans l’aperçu au survol');
+assert.match(hoverPreviewSource, /rpg-hover-card-preview__rules[\s\S]*?rpg-hover-card-preview__rule--equipment[\s\S]*?effets\.map/,
+  'la ligne bleue de l’équipement ouvre la zone d’effets, avant les effets propres de la carte');
+assert.match(hoverPreviewSource, /effets d’équipement[\s\S]*?effet \$\{effet\}/,
+  'le libellé accessible annonce les effets d’équipement avant l’effet de la carte');
 assert.match(battlePage, /const afficherApercuSurvol = \(carte, event, armes = \[\]\) => \{[\s\S]*?setApercuSurvol\(/,
   'le survol déclenche l’aperçu instantané de la carte');
 assert.match(tableCardSource, /onHoverCard\?\.\(carte, event, armes\)/,
@@ -1358,6 +1362,31 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rp
   'la largeur d’une carte de la main se partage la rangée, entre le plancher tactile et la taille du champ de bataille');
 assert.doesNotMatch(mobileCss, /grid-template-columns: repeat\(var\(--hand-count\), minmax\(0, var\(--duel-card\)\)\)/,
   'la main ne superpose plus ses cartes : chacune reste entièrement cliquable');
+
+// ── Le bonus d'équipement au doigt : au-dessus des statistiques ──────────────
+// La bande du pied est nommée (taille des statistiques et hauteur qui en
+// découle), la pastille du bonus s'y accroche par le bas et suit la taille de
+// la carte ; les vignettes d'arme, doublon de l'arme glissée sous la créature,
+// disparaissent ; sous 45 px de large, la pastille s'efface (requête de
+// conteneur sur la carte, dont la largeur dépend de la rangée).
+assert.match(mobileCss, /--rpg-field-stat-font:\s*clamp\(8px, calc\(var\(--duel-card\) \* \.145\), 12px\);/,
+  'la taille des statistiques d’une carte posée est nommée une fois (`--rpg-field-stat-font`)');
+assert.match(mobileCss, /--rpg-field-stat-height:\s*calc\(1\.2 \* var\(--rpg-field-stat-font\) \+ 6px\);/,
+  'la hauteur du pied posé se calcule à partir de cette taille (`--rpg-field-stat-height`)');
+assert.match(mobileCss, /--rpg-field-foot:\s*3%;/,
+  'le bas du pied posé est nommé (`--rpg-field-foot`)');
+assert.match(mobileCss, /\.rpg-card--img \.rpg-card__foot,\s*\.rpg-hand__card--img \.rpg-hand__stats\s*\{[^}]*bottom:\s*var\(--rpg-field-foot, 3%\);/s,
+  'le pied garde son bas mesuré, y compris hors disposition tactile (repli à 3 %)');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-card__arme\s*\{\s*bottom:\s*calc\(var\(--rpg-field-foot, 3%\) \+ var\(--rpg-field-stat-height, 20px\) \+ 2px\);[\s\S]*?max-width:\s*88%;[\s\S]*?font-size:\s*clamp\(6px, calc\(var\(--duel-card\) \* \.1\), 9px\);/,
+  'la pastille du bonus se pose juste au-dessus du pied et suit la taille de la carte');
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-card__arme\s*\{[^}]*bottom:\s*13%/,
+  'au doigt, la pastille ne garde plus la mesure du bureau (13 %) qui recouvrait les statistiques');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-card__weapons\s*\{\s*display:\s*none;\s*\}/,
+  'au doigt, les vignettes d’arme ne doublonnent plus la face : l’arme est sous la créature');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-row \.rpg-card\s*\{\s*container-type:\s*inline-size;\s*\}/,
+  'une carte posée au doigt est un conteneur de requête : sa largeur vient de sa rangée');
+assert.match(mobileCss, /@container \(max-width: 45px\) \{\s*\.rpg-battle--touch \.rpg-card__arme\s*\{\s*display:\s*none;\s*\}\s*\}/,
+  'sous 45 px de large, la pastille s’efface : les repères, le pied et elle ne tiennent plus ensemble');
 
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
