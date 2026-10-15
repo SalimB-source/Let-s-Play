@@ -876,6 +876,7 @@ function TableCard({
   const protectionLabel = protectionActive
     ? ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre
     : null;
+  const gelee = (entite.gelToursRestants ?? 0) > 0;
   const blessee = entite.pv < (entite.pvMax ?? carte?.def ?? entite.pv);
   const activation = carte?.activation;
   const malInvocation = cote === 'joueur' && playerTurn && !entite.ready && !entite.attaquee;
@@ -948,13 +949,14 @@ function TableCard({
         cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         entite.envol ? 'is-envol' : '',
+        gelee ? 'is-frozen' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
         selectedBlocker ? 'is-blocker-selected' : '',
         blocking ? 'is-blocking' : '',
         entite.attaquee ? 'is-attacked' : '',
         declaredAttacker && !entite.attaquee ? 'is-declared-attacker' : '',
-        entite.ready && !entite.attaquee ? 'is-pret' : '',
+        entite.ready && !entite.attaquee && !gelee ? 'is-pret' : '',
         malInvocation ? 'is-summoning-sick' : '',
         blessee ? 'is-wounded' : '',
         canTarget ? 'is-ciblable' : '',
@@ -989,11 +991,15 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
+      {gelee && <span className="rpg-card__frost" aria-hidden="true">
+        <span className="rpg-card__frost-crystals" />
+        <span className="rpg-card__frozen-label">❄ Gelée</span>
+      </span>}
       {!!entite.armes?.length && <span className="rpg-card__weapons" title="Arme équipée" aria-hidden="true">
         {entite.armes.map((id, index) => <img key={`${id}-${index}`} src={cardArt(id)} alt="" />)}
       </span>}
@@ -3926,7 +3932,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           : debutVisible
             ? 'debut'
             : duel.phase ?? 'principale';
-  const prets = duel.joueur.creatures.filter((e) => e.ready && !e.attaquee);
+  const prets = duel.joueur.creatures.filter((e) => e.ready && !e.attaquee && !(e.gelToursRestants > 0));
   const carteCiblee = cibleEnCours ? cardById(cibleEnCours) : null;
   const modeCible = (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
     ? (cibleAllieeMagie ? 'ennemi' : 'allie')
@@ -4856,7 +4862,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const basculerAttaquant = (entite) => {
-    if (attaqueJouee || !entite.ready || entite.attaquee) {
+    if (attaqueJouee || !entite.ready || entite.attaquee || entite.gelToursRestants > 0) {
       jouerSfx('erreur');
       force();
       return;
@@ -4909,7 +4915,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return;
       }
       setPhase(true);
-      if (entite.ready && !entite.attaquee) {
+      if (entite.ready && !entite.attaquee && !(entite.gelToursRestants > 0)) {
         setAttaquants([entite.id]);
         setCiblesAttaque({});
       } else {
@@ -4975,7 +4981,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const lancerAttaque = () => {
     const ids = [...new Set(attaquants)];
     const attaquantsValides = ids.length && ids.every((id) => duel.joueur.creatures
-      .some((entite) => entite.id === id && entite.ready && !entite.attaquee));
+      .some((entite) => entite.id === id && entite.ready && !entite.attaquee && !(entite.gelToursRestants > 0)));
     if (!attaquantsValides) {
       jouerSfx('erreur');
       setPhase(false);
@@ -5158,6 +5164,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       null,
       Object.fromEntries(Object.entries(combatEntrant.ciblesAttaque ?? {})
         .filter(([id]) => attaquantsVivants.includes(id))),
+      { attaqueDeclaree: true },
     );
     if (!res.ok) {
       jouerSfx('erreur');
@@ -5231,6 +5238,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       attaquantsBloques,
       Object.fromEntries(Object.entries(combat.ciblesAttaque ?? {})
         .filter(([id]) => attaquantsVivants.includes(id))),
+      { attaqueDeclaree: true },
     );
     if (!res.ok) {
       jouerSfx('erreur');
@@ -5478,7 +5486,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     });
   };
 
-  const bloqueursDisponibles = duel.joueur.creatures.filter((e) => !e.attaquee);
+  const bloqueursDisponibles = duel.joueur.creatures.filter((e) => !e.attaquee && !(e.gelToursRestants > 0));
   const bloqueursSelectionnes = new Set(Object.values(combatEntrant?.blocages ?? {}).flat());
   const piochesJoueur = animationsPioche.filter((animation) => animation.side === 'joueur');
   const piochesSorcier = animationsPioche.filter((animation) => animation.side === 'sorcier');

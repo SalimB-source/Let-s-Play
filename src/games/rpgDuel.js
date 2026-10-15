@@ -2204,6 +2204,7 @@ export function rpgLancerAttaque(
   repartitions = null,
   attaquantsBloques = null,
   ciblesAttaque = null,
+  { attaqueDeclaree = false } = {},
 ) {
   const adv = autre(cote);
   // Une seule phase d'attaque par tour : le camp qui a déjà résolu son combat
@@ -2215,8 +2216,12 @@ export function rpgLancerAttaque(
   if (!attaquants.length) return { ok: false, raison: 'personne' };
   if (attaquants.length !== ids.length) return { ok: false, raison: 'absent' };
   for (const entite of attaquants) {
-    if (!pret(entite)) return { ok: false, raison: 'pas-pret' };
+    // Le gel interdit une nouvelle déclaration, mais ne doit pas bloquer
+    // la résolution d'une attaque déjà déclarée avant la réponse adverse.
+    if (!pret(entite) && !(attaqueDeclaree && estGelee(entite)
+      && entite.ready && !entite.attaquee)) return { ok: false, raison: 'pas-pret' };
   }
+  const forceCombat = (entite) => estGelee(entite) ? 0 : entite.atk;
 
   const ciblesRapides = ciblesAttaque ?? (cote === 'sorcier'
     ? rpgCiblesAttaqueRapide(duel, cote, ids)
@@ -2343,14 +2348,14 @@ export function rpgLancerAttaque(
         attaquant: attaquant.name,
         cibleId: cible.id,
         cible: cible.name,
-        degats: attaquant.atk,
+        degats: forceCombat(attaquant),
       }
       : { attaquantId: attaquant.id, attaquant: attaquant.name, cibleId: cibleRapideId, cible: null, degats: 0, annule: true });
     if (!cible) continue;
     degatsAvantCombat.push({
       cote: adv,
       entiteId: cible.id,
-      amount: attaquant.atk,
+      amount: forceCombat(attaquant),
       sourceElement: cardColors(duelCardById(attaquant.carteId)),
       sourceType: 'attaque',
     });
@@ -2365,7 +2370,7 @@ export function rpgLancerAttaque(
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
-      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant);
+      if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant);
       ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur);
     }
   }
@@ -2384,15 +2389,15 @@ export function rpgLancerAttaque(
     const idsBloqueurs = blocagesApresCapacites[attaquant.id] ?? [];
     if (!idsBloqueurs.length) continue;
     if (idsBloqueurs.length === 1) {
-      repartitionFinale[attaquant.id] = { [idsBloqueurs[0]]: attaquant.atk };
+      repartitionFinale[attaquant.id] = { [idsBloqueurs[0]]: forceCombat(attaquant) };
       continue;
     }
 
     const saisie = repartitions?.[attaquant.id];
     const distribution = {};
     if (saisie == null) {
-      const quotient = Math.floor(attaquant.atk / idsBloqueurs.length);
-      let reste = attaquant.atk - quotient * idsBloqueurs.length;
+      const quotient = Math.floor(forceCombat(attaquant) / idsBloqueurs.length);
+      let reste = forceCombat(attaquant) - quotient * idsBloqueurs.length;
       for (const bloqueurId of idsBloqueurs) {
         distribution[bloqueurId] = quotient + (reste > 0 ? 1 : 0);
         reste -= reste > 0 ? 1 : 0;
@@ -2410,7 +2415,7 @@ export function rpgLancerAttaque(
         }
         distribution[bloqueurId] = amount;
       }
-      if (Object.values(distribution).reduce((total, amount) => total + amount, 0) !== attaquant.atk) {
+      if (Object.values(distribution).reduce((total, amount) => total + amount, 0) !== forceCombat(attaquant)) {
         annulerBanniere();
         return { ok: false, raison: 'repartition' };
       }
@@ -2455,7 +2460,7 @@ export function rpgLancerAttaque(
       // Un attaquant déclaré bloqué le reste même si ses bloqueurs sont tombés
       // sous les capacités préalables : seul le passage libre frappe le sorcier.
       if (!attaquantsDejaBloques.has(attaquant.id)) {
-        coupsSorcier.push({ attaquantId: attaquant.id, amount: attaquant.atk });
+        coupsSorcier.push({ attaquantId: attaquant.id, amount: forceCombat(attaquant) });
       }
       continue;
     }
