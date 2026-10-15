@@ -986,7 +986,7 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${entite.coupRapide ? ', Coup rapide : frappe une créature avant le combat' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${entite.coupRapide ? ', Coup rapide : frappe une créature avant le combat' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
@@ -3851,6 +3851,38 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return porteur ? { nom: porteur.name, illustrationId: porteur.carteId } : { nom: 'Une créature du sorcier' };
       })()
       : null;
+  /* La lueur rouge de « visée » s'allume dès l'annonce : pendant la fenêtre de
+     réponse, les créatures que la carte du sorcier désigne brillent déjà —
+     c'est le moment décisif, celui où voir la cible dit s'il faut contrer.
+     Les effets de zone allument toutes les créatures du camp frappé, l'arme
+     son futur porteur, et l'identifiant réservé « sorcier » (l'adversaire du
+     lanceur) votre propre plaque. Même langue que le bandeau d'annonce : ce
+     que `cibleAnnoncee` nomme, la table le montre. */
+  const idsVisesParAnnonce = new Set();
+  let annonceViseVotrePlate = false;
+  if (fenetreSort && carteAnnoncee) {
+    const { cibleId, cibleAllieeId } = duel.annonce;
+    const effetAnnonce = carteAnnoncee.effet ?? {};
+    const arriveeAnnonce = carteAnnoncee.arrivee ?? {};
+    // L'identifiant réservé « sorcier » désigne l'adversaire du lanceur : vous.
+    // Même lecture que le bandeau (`describeAnnouncedMagicTarget`) — la plaque
+    // s'allume et aucune créature ne s'allume avec elle. Une arrivée qui frappe
+    // le sorcier adverse (l'Ifrit des ergs) ne porte aucun `cibleId` : le
+    // moteur déduit la cible, l'annonce la montre quand même.
+    annonceViseVotrePlate = cibleId === 'sorcier'
+      || Boolean(carteAnnoncee.kind === 'magie'
+        && (effetAnnonce.cible === 'sorcier'
+          || (carteAnnoncee.cibles?.includes('sorcier') && !cibleId)))
+      || Boolean(arriveeAnnonce.cible === 'sorcier' && (!cibleId || cibleId === 'sorcier'));
+    if (!annonceViseVotrePlate && cibleId) idsVisesParAnnonce.add(cibleId);
+    if (cibleAllieeId) idsVisesParAnnonce.add(cibleAllieeId);
+    if (effetAnnonce.cible === 'toutes-creatures' || arriveeAnnonce.cible === 'toutes-creatures') {
+      duel.joueur.creatures.forEach((entite) => idsVisesParAnnonce.add(entite.id));
+    }
+    if (carteAnnoncee.kind === 'magie' && effetAnnonce.type === 'buff') {
+      duel.sorcier.creatures.forEach((entite) => idsVisesParAnnonce.add(entite.id));
+    }
+  }
   const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort || fenetreFinTour);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
@@ -5429,7 +5461,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ...(combatEntrant?.attaquants ?? []),
     ...Object.values(combatEntrant?.blocages ?? {}).flat(),
     ...Object.values(combatEntrant?.ciblesAttaque ?? {}),
+    // La proie d'un Coup rapide brille en rouge dès sa désignation, avant le
+    // lancement de l'attaque : sa pile doit se déplier comme les autres.
+    ...Object.values(ciblesAttaque),
     ...(sortJoue?.cible?.targetIds ?? []),
+    ...idsVisesParAnnonce,
     ...(bloqueurSelectionne ? [bloqueurSelectionne] : []),
     ...(cibleAttaqueEnCours ? [cibleAttaqueEnCours] : []),
     ...Object.keys(animationsEntites ?? {}),
@@ -5680,8 +5716,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       blocking={bloqueursSelectionnes.has(entite.id)}
-                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
-                      coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id)}
+                      coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id) || Object.values(ciblesAttaque).includes(entite.id)}
                       canTarget={Boolean(
                         (cibleEnCours && ['ennemi', 'tous'].includes(modeCible) && !rpgEstProtegee(entite, cardColors(carteCiblee)))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige'))
@@ -5753,7 +5789,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
-                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id)}
                       blocking={bloqueursSelectionnes.has(entite.id)}
                       selectedBlocker={bloqueurSelectionne === entite.id}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
@@ -5923,7 +5959,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <CardPile count={duel.joueur.deck.length} label="Paquet" variant="deck" drawing={piochesJoueur.length > 0} drawToken={tokenPiocheJoueur} />
         </div>
 
-        <div className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' ? ' is-spell-target' : ''}`} title="Vous">
+        <div className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' || annonceViseVotrePlate ? ' is-spell-target' : ''}`} title="Vous">
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" aria-hidden="true"><img src={cardArt('tin-hinan')} alt="" /></span>
           <span className="rpg-wizard-plate__profile-name">{nomProfilJoueur}</span>
           <span className="rpg-wizard-plate__identity"><strong>VOUS</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>

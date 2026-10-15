@@ -2174,7 +2174,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rpg-card.is-ciblable { animation: none; }
+  /* Le halo des cartes ciblées respire : `!important` parce que la pulsation
+     rouge est portée par un sélecteur `:not(.fx-*)` plus spécifique. */
+  .rpg-card.is-ciblable,
+  .rpg-card.is-spell-target,
+  .rpg-card.is-coup-rapide-cible { animation: none !important; }
 }
 
 /* ── Table de duel façon TCG : mains opposées, deux champs, piles et vies ──
@@ -2860,24 +2864,40 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-spell-played__target small { color: #8af2df; font: 800 6px/1 var(--display); letter-spacing: .17em; }
 .rpg-spell-played__target b { overflow: hidden; color: #fff0c6; font: 700 10px/1.1 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
 
-.rpg-card.is-spell-target {
-  outline: 4px solid #9af4e3;
-  box-shadow: 0 0 0 5px rgba(7, 33, 33, .9), 0 0 25px rgba(91, 240, 218, .78), 0 12px 28px rgba(0, 0, 0, .72);
+/* ── Lueur rouge = « visée » ──────────────────────────────────────────────────
+   Toute créature ciblée par une attaque (Coup rapide), une magie, une
+   sorcellerie ou n'importe quel effet de carte s'allume en rouge, quel que
+   soit son camp : on voit immédiatement qui va être frappé. Le rouge est
+   celui du combat déjà employé pour la créature engagée (`is-attacked
+   .fx-lunge`) — même famille de couleur, même idée de danger. Le halo
+   « respire » via `box-shadow` et jamais via `filter`, pour ne pas écraser
+   le flash d'impact (`fx-hit`) ni le bond d'attaque (`fx-lunge`) : la garde
+   `:not(.fx-*)` rend l'animation à la carte dès que sa cinématique joue.
+   Le cyan reste la couleur du « ciblable » (`is-ciblable`) : l'invitation à
+   choisir une cible ne doit pas se confondre avec la désignation en cours. */
+@keyframes rpg-cible-visee {
+  from { box-shadow: 0 0 0 5px rgba(38, 8, 6, .9), 0 0 18px rgba(255, 64, 56, .55), 0 12px 28px rgba(0, 0, 0, .72); }
+  to { box-shadow: 0 0 0 5px rgba(38, 8, 6, .9), 0 0 32px rgba(255, 72, 60, .95), 0 12px 28px rgba(0, 0, 0, .72); }
+}
+.rpg-card.is-spell-target,
+.rpg-card.is-coup-rapide-cible {
+  outline: 4px solid #ff534c;
+  box-shadow: 0 0 0 5px rgba(38, 8, 6, .9), 0 0 26px rgba(255, 64, 56, .8), 0 12px 28px rgba(0, 0, 0, .72);
+}
+.rpg-card.is-spell-target:not(.fx-enter, .fx-lunge, .fx-hit, .fx-glow, .fx-block, .fx-unblock),
+.rpg-card.is-coup-rapide-cible:not(.fx-enter, .fx-lunge, .fx-hit, .fx-glow, .fx-block, .fx-unblock) {
+  animation: rpg-cible-visee 1.1s ease-in-out infinite alternate;
 }
 .rpg-wizard-plate.is-spell-target {
-  outline: 3px solid #9af4e3;
-  box-shadow: 0 0 0 4px rgba(7, 33, 33, .7), 0 0 25px rgba(91, 240, 218, .78);
+  outline: 3px solid #ff534c;
+  box-shadow: 0 0 0 4px rgba(38, 8, 6, .7), 0 0 25px rgba(255, 64, 56, .8);
   filter: brightness(1.18);
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate.is-ciblable {
   box-shadow: 0 0 18px rgba(91, 240, 218, .55);
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate.is-spell-target {
-  box-shadow: 0 0 0 4px rgba(7, 33, 33, .7), 0 0 25px rgba(91, 240, 218, .78);
-}
-.rpg-card.is-coup-rapide-cible {
-  outline: 4px solid #ffb15e;
-  box-shadow: 0 0 0 5px rgba(42, 18, 7, .9), 0 0 26px rgba(255, 128, 48, .82), 0 12px 28px rgba(0, 0, 0, .72);
+  box-shadow: 0 0 0 4px rgba(38, 8, 6, .7), 0 0 25px rgba(255, 64, 56, .8);
 }
 .rpg-btn--undo { border-color: rgba(234, 199, 128, .68); color: #f7e4b7; background: rgba(63, 43, 25, .72); }
 .rpg-btn--undo:hover { border-color: #ffe3a4; color: #fff2d5; background: rgba(108, 72, 35, .9); }
