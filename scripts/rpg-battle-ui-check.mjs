@@ -689,6 +689,13 @@ assert.match(guideCss, /\.rpg-card-guide__cost\s*\{\s*position: absolute;\s*z-in
     <div class="rpg-atelier__carte"><div class="rpg-atelier__carte-art rpg-card--mythique"><img data-filter="libre"></div></div>
     <div class="rpg-atelier__carte is-full"><div class="rpg-atelier__carte-art rpg-card--mythique"><img data-filter="pleine"></div></div>
     <div class="rpg-atelier__carte is-locked"><div class="rpg-atelier__carte-art rpg-card--mythique"><img data-filter="verrouillee"></div></div>
+    <article class="rpg-card-catalogue__card is-locked">
+      <div class="rpg-card-catalogue__art rpg-card--mythique rpg-card--frame-brillant">
+        <img data-filter="catalogue-verrouillee">
+        <span class="rpg-card-catalogue__lock" data-catalogue-lock>🔒</span>
+      </div>
+      <div class="rpg-card-catalogue__details" data-catalogue-locked-details></div>
+    </article>
   </div>`);
   const filtre = (etat) => states.window.getComputedStyle(states.window.document.querySelector(`[data-filter="${etat}"]`)).filter;
   assert.equal(filtre('prete'), 'saturate(1.1) contrast(1.04)', 'la peinture mythique prête gagne un léger relief');
@@ -697,6 +704,14 @@ assert.match(guideCss, /\.rpg-card-guide__cost\s*\{\s*position: absolute;\s*z-in
   assert.equal(filtre('libre'), 'saturate(1.1) contrast(1.04)', 'l’atelier vernit la carte mythique libre');
   assert.match(filtre('pleine'), /brightness\(\.45\)/, 'l’atelier assombrit toujours la mythique au quota');
   assert.match(filtre('verrouillee'), /grayscale\(\.85\)/, 'l’atelier ne vernit pas la mythique verrouillée');
+  assert.equal(filtre('catalogue-verrouillee'), 'grayscale(1) brightness(.62)',
+    'les cartes verrouillées du catalogue restent en gris, même si elles sont mythiques');
+  const cadenasCatalogue = states.window.getComputedStyle(states.window.document.querySelector('[data-catalogue-lock]'));
+  assert.equal(cadenasCatalogue.top, '50%', 'le cadenas verrouillé est centré verticalement sur l’illustration');
+  assert.equal(cadenasCatalogue.left, '50%', 'le cadenas verrouillé est centré horizontalement sur l’illustration');
+  assert.equal(cadenasCatalogue.pointerEvents, 'none', 'le cadenas ne bloque pas le bouton qui ouvre la fiche');
+  assert.equal(states.window.getComputedStyle(states.window.document.querySelector('[data-catalogue-locked-details]')).filter,
+    'grayscale(1)', 'les informations des cartes verrouillées sont elles aussi en gris');
   states.window.close();
 }
 // La règle ne suffit pas : l'aperçu porte les classes de cadre sur sa racine ET

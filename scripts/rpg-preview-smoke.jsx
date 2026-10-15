@@ -145,6 +145,23 @@ export async function checkRpgPreviewActions(assert) {
     await click(fiche());
     assert.equal(fiche(), null, 'toucher le volet referme la fiche, comme l’aperçu au doigt');
 
+    // ── Verrouillée, la carte garde sa fiche et son aperçu ──────────────────
+    const KRAKEN = 'kraken';
+    const kraken = carteDe(KRAKEN);
+    assert.ok(kraken?.classList.contains('is-locked'), 'le Kraken, absent de la collection de départ, est marqué verrouillé');
+    assert.equal(kraken.dataset.locked, 'true', 'l’état verrouillé est aussi exposé sur la vignette');
+    assert.equal(kraken.querySelector('.rpg-card-catalogue__lock')?.textContent, '🔒',
+      'la carte verrouillée montre un cadenas au milieu de son illustration');
+    assert.equal(ouvrirDe(KRAKEN).disabled, false, 'le bouton d’aperçu de la carte verrouillée reste actif');
+    assert.match(ouvrirDe(KRAKEN).getAttribute('aria-label'), /carte verrouillée/u,
+      'le libellé accessible annonce le verrou sans masquer l’action de consulter');
+    await click(ouvrirDe(KRAKEN));
+    assert.equal(carteOuverte(), KRAKEN, 'cliquer une carte verrouillée ouvre toujours sa fiche complète');
+    assert.match(fiche().querySelector('.rpg-hover-card-preview__face img').getAttribute('src'),
+      /cards\/kraken\.jpg/u, 'la fiche de la carte verrouillée garde son illustration');
+    await click(fiche().querySelector('.rpg-card-peek__close'));
+    assert.equal(fiche(), null, 'la fiche de la carte verrouillée se ferme normalement');
+
     // ── Filtrer ne change rien au geste : la fiche ouvre la carte cliquée ───
     await filtrer('Filtrer par type', 'terrain');
     const terrains = ordreGrille();
