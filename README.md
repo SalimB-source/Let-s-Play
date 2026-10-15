@@ -4806,6 +4806,16 @@ les dossiers et les tests à la fois, puisque tout passe par le même composant
 - `npm run check:light-news` : le thème clair des pages Actus, galeries
   comprises.
 
+## Édition du 15.10.2026 : bande-annonce de GTA VI
+
+`/news/gta-6-trailer-de-lancement` ouvre l’édition du jour et la une gaming. La
+brève se concentre sur le trailer de Rockstar, sa musique et la sortie du
+19 novembre. Les données sont dans `src/news/daily/2026-10-15.js`, la vidéo
+officielle dans `src/articleTrailers.js`, et trois photogrammes dans
+`src/articleGalleries.js` ; la route et le sitemap sont déclarés explicitement.
+`npm run check:daily-news` couvre la concision, le rendu, la recherche et les
+hubs ; `npm run check:trailers` valide la vidéo officielle.
+
 ## Édition du 11.10.2026 : articles, miniatures et vidéos
 
 Les trois actualités de cette édition partagent une seule source de données,

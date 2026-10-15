@@ -1,4 +1,9 @@
 // Édition du jeudi 15 octobre 2026. Synthèses originales des sources liées.
+// Quatre articles, et non trois : deux actus gaming ouvrent l'édition (la
+// bande-annonce de lancement de GTA VI, puis la présentation d'Ocarina of
+// Time), suivies du cinéma et de la tech. La grille des actus du jour est
+// déjà prévue pour quatre colonnes sur bureau (src/news-carousel.css) ; la
+// première entrée reste « l'actu du jour » de l'accueil et du hub gaming.
 import { youTubeThumbUrl } from '../../lib/videoThumbnails.js';
 
 export const editionDate = '15.10.2026';
@@ -6,6 +11,23 @@ export const editionIsoDate = '2026-10-15';
 
 const sourceRoot = 'https://www.journaldugeek.com/2026/10/15/';
 const entries = {
+  'gta-6-trailer-de-lancement': {
+    category: 'ROCKSTAR GAMES · GTA 6', readTime: '1 MIN DE LECTURE',
+    image: youTubeThumbUrl('rz1B4B2yBZY'),
+    fallbackImage: youTubeThumbUrl('rz1B4B2yBZY', 'hq'),
+    imageAlt: 'Miniature officielle de la bande-annonce de lancement de Grand Theft Auto VI, publiée par la chaîne Rockstar Games sur YouTube',
+    imageCredit: 'BANDE-ANNONCE OFFICIELLE · ROCKSTAR GAMES',
+    cover: 'GTA 6', title: 'GTA 6', accent: 'A SON TRAILER DE SORTIE.',
+    dek: 'Le troisième trailer officiel de GTA VI met Jason et Lucia en scène dans environ 90 secondes d’images capturées sur PS5.',
+    lead: 'Rockstar l’a publié sans annonce préalable ce 15 octobre, à cinq semaines de la sortie.',
+    intro: 'La vidéo est portée par « Flower in a Hurricane », morceau inédit de Justice avec Tame Impala, SZA et King Gizzard & The Lizard Wizard.',
+    h2: 'JASON ET LUCIA FACE À LEONIDA',
+    p1: 'Le couple se retrouve pris dans une conspiration criminelle qui s’étend à l’État de Leonida. Le montage enchaîne scènes d’action et moments plus intimes, sans séquence de gameplay continu.',
+    takeText: 'Sortie le 19 novembre 2026 sur PS5 et Xbox Series X|S ; aucune version PC annoncée par Rockstar.',
+    sourcePath: 'le-trailer-de-lancement-de-gta-6-vient-de-tomber-et-il-est-fou/',
+    credit: 'Vidéo officielle : Rockstar Games, « Grand Theft Auto VI Launch Trailer » (15.10.2026), titre et chaîne vérifiés via oEmbed. Images capturées sur PS5 selon Rockstar. Aucune image générée.',
+    sentiment: 'positive', keywords: 'gaming gta 6 gta vi grand theft auto vi rockstar games trailer de lancement bande annonce jason lucia leonida vice city justice tame impala sza king gizzard and the lizard wizard flower in a hurricane ps5 xbox series 19 novembre 2026 précommande',
+  },
   'zelda-ocarina-of-time-nouvelle-presentation': {
     category: 'NINTENDO · SWITCH 2',
     image: youTubeThumbUrl('8v8eDMh1o3g'),

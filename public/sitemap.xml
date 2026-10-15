@@ -4,6 +4,11 @@
   <url><loc>https://salimb-source.github.io/Let-s-Play/news</loc><priority>0.9</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/articles</loc><priority>0.8</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/tech</loc><priority>0.9</priority></url>
+  <!-- Édition du jeudi 15.10.2026 — deux actus gaming, cinéma & séries, tech. -->
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/gta-6-trailer-de-lancement</loc><lastmod>2026-10-15</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/zelda-ocarina-of-time-nouvelle-presentation</loc><lastmod>2026-10-15</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema/narnia-gerwig-chronologie-esthetique</loc><lastmod>2026-10-15</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/tech/free-mvpn-filtres-pays-widget</loc><lastmod>2026-10-15</lastmod><priority>0.8</priority></url>
   <!-- Édition du mercredi 14.10.2026 — gaming, cinéma & séries, tech. -->
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/sonic-racing-crossworlds-annee-2</loc><lastmod>2026-10-14</lastmod><priority>0.8</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema/street-fighter-sortie-suite-sakurai</loc><lastmod>2026-10-14</lastmod><priority>0.8</priority></url>
@@ -87,7 +92,4 @@
   <url><loc>https://salimb-source.github.io/Let-s-Play/dossiers/choc-generations-gaming</loc><priority>0.6</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/dossiers/20-ans-xbox-360</loc><priority>0.6</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/dossiers/25-ans-playstation-2</loc><priority>0.6</priority></url>
-  <url><loc>https://salimb-source.github.io/Let-s-Play/news/zelda-ocarina-of-time-nouvelle-presentation</loc><lastmod>2026-10-15</lastmod></url>
-  <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema/narnia-gerwig-chronologie-esthetique</loc><lastmod>2026-10-15</lastmod></url>
-  <url><loc>https://salimb-source.github.io/Let-s-Play/news/tech/free-mvpn-filtres-pays-widget</loc><lastmod>2026-10-15</lastmod></url>
 </urlset>

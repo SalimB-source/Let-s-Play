@@ -178,6 +178,11 @@ function App() {
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
             <Route path="/news/ea-sports-fc-27-carriere-dynamique" element={<CurrentNews slug="ea-sports-fc-27-carriere-dynamique" />} />
             <Route path="/news/hellraiser-revival-sortie" element={<CurrentNews slug="hellraiser-revival-sortie" />} />
+            {/* Actus gaming du 15.10.2026 : les clés sans préfixe de l'édition du
+                jour reçoivent leur route explicite, comme les articles de la
+                rédaction (la route générique /news/:slug les servirait aussi). */}
+            <Route path="/news/gta-6-trailer-de-lancement" element={<CurrentNews slug="gta-6-trailer-de-lancement" />} />
+            <Route path="/news/zelda-ocarina-of-time-nouvelle-presentation" element={<CurrentNews slug="zelda-ocarina-of-time-nouvelle-presentation" />} />
             {/* Actus gaming du 14.10.2026 et du 11.10.2026 : les clés sans préfixe
                 (hors cinéma et tech) reçoivent leur route explicite, comme les
                 articles de la rédaction. */}

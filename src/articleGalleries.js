@@ -17,6 +17,18 @@
 import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
+  // ---- Édition du jeudi 15.10.2026 ----------------------------------------
+  // Gaming : les photogrammes viennent de la bande-annonce de lancement de
+  // GTA VI elle-même, publiée le jour de la rédaction. YouTube prélève ces
+  // trois images automatiquement (quart, moitié et trois quarts de la vidéo) :
+  // les légendes situent donc le plan dans le montage, sans décrire un contenu
+  // que nous n'aurions pas pu vérifier image par image le jour même.
+  'gta-6-trailer-de-lancement': { label: 'GTA VI', meta: 'ROCKSTAR GAMES · TRAILER DE LANCEMENT', items: [
+    { src: youTubeFrameUrl('rz1B4B2yBZY', 1), alt: 'Grand Theft Auto VI — photogramme du premier quart de la bande-annonce de lancement officielle de Rockstar Games', caption: '01 / Début du montage : le passé de Jason' },
+    { src: youTubeFrameUrl('rz1B4B2yBZY', 2), alt: 'Grand Theft Auto VI — photogramme du milieu de la bande-annonce de lancement officielle de Rockstar Games', caption: '02 / Vers la moitié : Jason et Lucia, le couple au centre de l’histoire' },
+    { src: youTubeFrameUrl('rz1B4B2yBZY', 3), alt: 'Grand Theft Auto VI — photogramme du dernier quart de la bande-annonce de lancement officielle de Rockstar Games', caption: '03 / Fin du montage : l’action, avant le rendez-vous du 19 novembre' },
+  ], credit: 'Photogrammes prélevés automatiquement par YouTube (au quart, à la moitié et aux trois quarts) sur la bande-annonce de lancement officielle de Grand Theft Auto VI, publiée par Rockstar Games le 15 octobre 2026. Aucune image retouchée ni générée.', creditSources: [{ label: 'la bande-annonce de lancement sur YouTube', href: 'https://www.youtube.com/watch?v=rz1B4B2yBZY' }] },
+
   // ---- Actus du mercredi 07.10.2026 ----------------------------------------
   // Gaming : photogrammes du trailer officiel de GTA VI montrant Vice City.
   'gta-6-cloud-pc-dementi-xbox': { label: 'GTA VI', meta: 'ROCKSTAR GAMES · XBOX CLOUD', items: [
