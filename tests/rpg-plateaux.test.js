@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import * as plateaux from '../src/games/rpgPlateaux.js';
 import {
   couleurDominanteDeck,
@@ -250,6 +250,37 @@ test('le tirage désigne un camp, et c’est son deck qui donne le plateau', () 
     assert.equal(tirage.camp, 'adversaire', `rng ${valeur} : l’adversaire impose son terrain`);
     assert.equal(tirage.plateau.id, 'table-des-heures');
   }
+});
+
+test('en duel libre, le deck du joueur impose toujours son plateau', () => {
+  const duel = { deckJoueur: 'veilleurs-du-desert', deckAdverse: 'cour-des-djinns', campImpose: 'joueur' };
+  for (const valeur of [0, 0.5, 0.999]) {
+    const tirage = tirerPlateauDuDuel({ ...duel, rng: () => valeur });
+    assert.equal(tirage.camp, 'joueur');
+    assert.equal(tirage.plateau.id, 'erg-du-sahara');
+    assert.equal(tirage.motif, 'deck');
+  }
+  const deckImpérial = tirerPlateauDuDuel({
+    deckJoueur: 'serment-du-soleil-rouge', deckAdverse: 'veilleurs-du-desert',
+    campImpose: 'joueur', rng: () => 0.999,
+  });
+  assert.equal(deckImpérial.plateau.id, 'cour-de-l-empereur');
+});
+
+test('un deck joueur illisible ne cède pas le terrain au deck adverse si son camp est imposé', () => {
+  const tirage = tirerPlateauDuDuel({
+    deckJoueur: 'deck-inconnu', deckAdverse: 'maree-des-abysses',
+    campImpose: 'joueur', rng: () => 0.999,
+  });
+  assert.equal(tirage.camp, 'joueur');
+  assert.equal(tirage.plateau.id, RPG_PLATEAU_DE_REPLI);
+  assert.equal(tirage.motif, 'repli');
+});
+
+test('la page force le camp joueur en duel libre, mais conserve le tirage ailleurs', () => {
+  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  assert.match(page, /const modeLibre = !modeTutoriel && !etageCourant;/);
+  assert.match(page, /campImpose: modeLibre \? 'joueur' : null,/);
 });
 
 test('le tirage reste déterministe avec le rng du duel', () => {

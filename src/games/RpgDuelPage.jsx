@@ -2828,10 +2828,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setDeckSelectionneId(deck.id);
     return sauverDeckChoisi(deck.id, decksMaison, collection);
   };
-  // Plateau du duel : le joueur n'en choisit aucun. C'est le deck de l'un des
-  // deux duellistes qui impose son terrain, et le tirage du lancement
-  // (`nouvellePartie`) désigne lequel. Avant la première partie, la table
-  // d'origine de Bab El sert de décor.
+  // Plateau du duel : en duel libre, le deck du joueur impose son terrain ;
+  // l'Histoire et le tutoriel gardent le tirage entre les deux camps. Avant la
+  // première partie, la table d'origine de Bab El sert de décor.
   const [plateauId, setPlateauId] = useState(PLATEAU_PAR_DEFAUT.id);
   // Mode Histoire : l'étage en cours (null = duel libre).
   const [histoireEtageId, setHistoireEtageId] = useState(null);
@@ -3238,13 +3237,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setEtapeTutorielId(modeTutoriel ? 'bienvenue' : null);
     setDeckDuelId(modeTutoriel ? deckJoueurSelectionne?.id ?? 'veilleurs-du-desert' : joueurDeck ? null : deckJoueurSelectionne?.id ?? null);
     setDeckAdverseId(deckAdverse?.id ?? null);
-    // Le plateau n'est pas un choix du joueur : il vient du **deck de l'un des
-    // deux duellistes**, et c'est le tirage du duel qui désigne lequel. Les
-    // paquets joués sont exactement ceux du duel — une prop brute (sans
-    // identité de deck) parle par sa couleur dominante, un étage d'Histoire par
-    // la clé de son deck de campagne. En partie réelle (`variantesPlateaux`),
-    // le tirage peut en outre échanger le terrain contre son double
-    // merveilleux ; sans la prop (tests, scénarios), le classique est gardé.
+    // En duel libre, le deck du joueur impose toujours le terrain. L'Histoire
+    // et le tutoriel gardent le tirage entre les deux camps. Les paquets joués
+    // sont exactement ceux du duel — une prop brute parle par sa couleur
+    // dominante, un étage d'Histoire par la clé de son deck de campagne. En
+    // partie réelle (`variantesPlateaux`), le tirage peut échanger le terrain
+    // contre son double merveilleux ; sans la prop (tests, scénarios), le
+    // classique est gardé.
+    const modeLibre = !modeTutoriel && !etageCourant;
     const tiragePlateau = tirerPlateauDuDuel({
       deckJoueur: modeTutoriel ? deckJoueurSelectionne : joueurDeck ?? deckJoueurSelectionne,
       deckAdverse: modeTutoriel
@@ -3252,6 +3252,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         : etageCourant ? etageCourant.deck : sorcierDeck ?? deckAdverse,
       rng,
       variantesFantaisistes: variantesPlateaux,
+      campImpose: modeLibre ? 'joueur' : null,
     });
     const plateau = tiragePlateau.plateau;
     setPlateauId(plateau.id);
