@@ -230,6 +230,13 @@ assert.match(cssMenu, /\.rpg-mode-menu__play \{[^}]*grid-template-columns: minma
   'la colonne de droite du menu était déjà là');
 assert.match(cssMenu, /@media \(max-width: 820px\) \{\s*\.rpg-mode-menu__play \{ grid-template-columns: minmax\(0, 1fr\); \}/,
   'et sous 820 px le panneau passe sous le menu');
+// Le panneau des quêtes est plus haut que le récit du menu : la colonne de
+// gauche s'aligne sur lui et laissait le titre collé au bas de la page, un
+// grand vide au-dessus. Le récit se tient maintenant au milieu de la colonne
+// (`safe` : plus haut que la place disponible, il repart du haut au lieu
+// d'être rogné par l'`overflow: hidden` du héros).
+assert.match(cssMenu, /\.rpg-mode-menu__hero \{[^}]*align-items: center;[^}]*align-items: safe center;/,
+  'le récit de l’onglet Jouer est centré en vertical dans sa colonne');
 // Le panneau lit la vue partagée : aucune arithmétique de quête ne vit ici.
 assert.match(panneauCode, /import \{[\s\S]{0,200}vueDeLaQuete[\s\S]{0,200}\} from '\.\/rpgQuetes\.js';/,
   'le panneau lit la vue partagée des quêtes');
