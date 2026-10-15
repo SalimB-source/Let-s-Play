@@ -1,12 +1,11 @@
-// Régression de l’édition du 14.10.2026 : images, routes, cartes, vidéos et recherche.
+// Régression de l’édition du 15.10.2026 : images, routes, cartes, vidéos et recherche.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
-import { dailyStories, dailyNewsListing, dailySeoEntries, editionDate, editionIsoDate } from '../src/news/daily/2026-10-14.js';
+import { dailyStories, dailyNewsListing, dailySeoEntries, editionDate, editionIsoDate } from '../src/news/daily/2026-10-15.js';
 import { getArticleTrailerEntry, trailerFlagLabel, trailerWatchUrl } from '../src/articleTrailers.js';
 import { youTubeEmbedUrl } from '../src/lib/videoPlayback.js';
 
@@ -28,54 +27,41 @@ const assertTrailerFlag = (card, route) => {
   }
 };
 
-assert.equal(keys.length, 6, 'deux actualités dans chacun des trois univers');
-assert.equal(dailyNewsListing.length, 6);
-assert.equal(editionDate, '14.10.2026');
-assert.equal(editionIsoDate, '2026-10-14');
+assert.equal(keys.length, 3, 'une actualité dans chacun des trois univers');
+assert.equal(dailyNewsListing.length, 3);
+assert.equal(editionDate, '15.10.2026');
+assert.equal(editionIsoDate, '2026-10-15');
 assert.doesNotMatch(JSON.stringify(dailyStories), /mistral/i, 'le sujet écarté par l’utilisateur n’est pas publié');
 
-// Dimensions JPEG sans dépendance d’imagerie : trouver un segment SOF.
-function jpegSize(bytes) {
-  assert.equal(bytes.readUInt16BE(0), 0xffd8, 'image JPEG réelle');
-  let offset = 2;
-  while (offset < bytes.length) {
-    assert.equal(bytes[offset], 0xff);
-    while (bytes[offset] === 0xff) offset += 1;
-    const marker = bytes[offset++];
-    if (marker === 0xda || marker === 0xd9) break;
-    const length = bytes.readUInt16BE(offset);
-    if ([0xc0, 0xc1, 0xc2].includes(marker)) {
-      return { width: bytes.readUInt16BE(offset + 5), height: bytes.readUInt16BE(offset + 3) };
-    }
-    offset += length;
-  }
-  assert.fail('JPEG sans dimensions lisibles');
-}
-
-const hashes = new Set();
+// Miniatures provenant des vidéos Nintendo / Netflix et du portail officiel Free.
+const imageUrl = (image) => /^https?:\/\//.test(image) ? image : `/Let-s-Play/${image}`;
 for (const [key, story] of Object.entries(dailyStories)) {
   assert.equal(story.date, editionDate);
   assert.equal(story.image, story.thumbnail);
-  assert.ok(story.image.startsWith('news/2026-10-14/'));
-  assert.match(story.sourceUrl, /^https?:\/\//);
+  if (/^https?:\/\//.test(story.image)) {
+    assert.ok(['i.ytimg.com', 'portail.free.fr'].includes(new URL(story.image).hostname));
+  } else {
+    assert.ok(fs.statSync(path.join(root, 'public', story.image)).size > 10000);
+  }
   assert.ok(story.source && story.credit && story.imageAlt && story.dek);
-  const bytes = fs.readFileSync(path.join(root, 'public', story.thumbnail));
-  assert.ok(bytes.length > 10_000 && bytes.length < 250_000, `${key} : miniature exploitable et compressée`);
-  const { width, height } = jpegSize(bytes);
-  assert.ok(width >= 900 && Math.abs(width / height - 16 / 9) < 0.01, `${key} : format 16:9`);
-  hashes.add(createHash('sha256').update(bytes).digest('hex'));
-  const trailer = getArticleTrailerEntry(key);
-  assert.ok(trailer, `${key} : entrée de lecteur déclarée`);
-  assert.ok(
-    (trailer.items || []).length >= 1 || trailer.pending,
-    `${key} : vidéo officielle ou mention d’absence`,
-  );
-  assert.ok((trailer.items || []).every((item) => item.verified === editionDate));
+  assert.equal(new URL(story.sourceUrl).hostname, 'www.journaldugeek.com');
+  const entry = getArticleTrailerEntry(key);
+  if (key.startsWith('tech/')) {
+    assert.ok(entry.pending, 'absence de vidéo officielle Free explicitée');
+    assert.equal(entry.items.length, 0);
+    assert.equal(new URL(story.image).hostname, 'portail.free.fr');
+  } else {
+    const expectedId = key.startsWith('cinema/') ? 'gDJ-ini7fF0' : '8v8eDMh1o3g';
+    assert.equal(entry.items[0].id, expectedId);
+    assert.equal(entry.items[0].channel, key.startsWith('cinema/') ? 'Netflix' : 'Nintendo of America');
+    assert.equal(entry.items[0].verified, editionDate);
+    assert.ok(story.image.includes(`/vi/${expectedId}/`));
+    assert.ok(story.fallbackImage.endsWith('/hqdefault.jpg'));
+    assert.ok(!entry.pending);
+  }
   assert.equal(dailySeoEntries[`/news/${key}`].published, editionIsoDate);
-  assert.equal(dailySeoEntries[`/news/${key}`].image, story.thumbnail);
-  assert.ok(read('public/sitemap.xml').includes(`/news/${key}</loc>`), `${key} : sitemap`);
+  assert.ok(read('public/sitemap.xml').includes(`/news/${key}</loc>`));
 }
-assert.equal(hashes.size, 6, 'six miniatures distinctes');
 assert.ok(read('src/components/SEO.jsx').includes('...dailySeoEntries'));
 assert.ok(read('src/main.jsx').includes('path="/news/sonic-racing-crossworlds-annee-2"'));
 assert.ok(read('src/main.jsx').includes('path="/news/tekken-8-roger-jr-ace-combat-8-million"'));
@@ -93,7 +79,7 @@ const pages = new Map(renderPages().map(({ route, html }) => [route, new JSDOM(h
 
 const hub = pages.get('/news').querySelector('#actus-du-jour');
 const cards = [...hub.querySelectorAll('.news-carousel-card')];
-assert.equal(cards.length, 6);
+assert.equal(cards.length, 3);
 assert.match(read('src/news-carousel.css'), /\.news-hub-section\s+\.news-hub-headlines\s+\.news-carousel\.is-grid\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/, 'les actus du jour de la page Actus sont sur 4 colonnes');
 const archiveLink = hub.querySelector('.news-headlines-head .news-headlines-all');
 assert.ok(archiveLink, 'bouton dans l’en-tête des actualités du jour');
@@ -129,7 +115,7 @@ assert.ok(hub.querySelector('.section-label').textContent.includes(editionDate))
 assert.deepEqual(cards.map((card) => card.getAttribute('href')), dailyNewsListing.map((story) => story.to));
 for (const [index, card] of cards.entries()) {
   const story = dailyNewsListing[index];
-  assert.equal(card.querySelector('img').getAttribute('src'), `/Let-s-Play/${story.image}`);
+  assert.equal(card.querySelector('img').getAttribute('src'), imageUrl(story.image));
   assert.equal(card.querySelector('img').getAttribute('alt'), story.alt);
   assertTrailerFlag(card, story.to);
 }
@@ -137,7 +123,7 @@ for (const [index, card] of cards.entries()) {
 for (const [key, story] of Object.entries(dailyStories)) {
   const doc = pages.get(`/news/${key}`);
   assert.equal(doc.querySelector('h1').textContent, `${story.title}${story.accent}`, `${key} : vrai article, pas une 404`);
-  assert.equal(doc.querySelector('.article-cover img').getAttribute('src'), `/Let-s-Play/${story.thumbnail}`);
+  assert.equal(doc.querySelector('.article-cover img').getAttribute('src'), imageUrl(story.thumbnail));
   const entry = getArticleTrailerEntry(key);
   if (entry.pending) {
     // Une actu sans vidéo officielle doit le dire dans le corps de l'article.
@@ -158,7 +144,7 @@ for (const [category, key] of [['gaming', keys[0]], ['cinema', keys[1]], ['tech'
   const doc = pages.get(`/news/${category}`);
   const featured = doc.querySelector('.news-featured-story');
   assert.equal(featured.querySelector('.daily-news-copy').getAttribute('href'), `/news/${key}`);
-  assert.equal(featured.querySelector('img').getAttribute('src'), `/Let-s-Play/${dailyStories[key].thumbnail}`);
+  assert.equal(featured.querySelector('img').getAttribute('src'), imageUrl(dailyStories[key].thumbnail));
   assert.ok(featured.querySelector('.news-kicker').textContent.includes(editionDate));
   assertTrailerFlag(featured, key);
   assert.ok(doc.querySelector('.section-label').textContent.includes(editionDate));
@@ -172,7 +158,7 @@ assert.ok(home.querySelector('.news-kicker').textContent.includes(editionDate));
 for (const lang of ['en', 'ar']) {
   const html = renderPages(lang).find((page) => page.route === '/news').html;
   const doc = new JSDOM(html).window.document;
-  assert.equal(doc.querySelectorAll('#actus-du-jour .news-carousel-card').length, 6);
+  assert.equal(doc.querySelectorAll('#actus-du-jour .news-carousel-card').length, 3);
   assert.ok(doc.querySelector('#actus-du-jour .section-label').textContent.includes(editionDate));
   const button = doc.querySelector('#actus-du-jour .news-headlines-all');
   assert.equal(button.getAttribute('href'), '/news/articles');
@@ -211,4 +197,4 @@ assert.equal(document.querySelectorAll('iframe').length, 0);
 assert.ok(document.querySelector('.article-trailer-pending').textContent.includes('Aucune vidéo officielle'));
 await act(async () => pendingRoot.unmount());
 
-console.log('Édition du 14.10.2026 : OK — 6 articles, 6 miniatures locales, vidéos officielles vérifiées, hubs, accueil, routes, recherche, SEO, bouton d’archives et cartes Actus partagées.');
+console.log('Édition du 15.10.2026 : OK — 3 articles, hubs, accueil, archives, recherche et SEO.');

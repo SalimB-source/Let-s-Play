@@ -8,7 +8,7 @@ import VideoThumb from '../components/VideoThumb';
 import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-14';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-15';
 import { leadTrailer } from '../articleTrailers';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
@@ -61,8 +61,8 @@ const featuredStory = dailyNewsListing.find((story) => !story.to.startsWith('/ne
 const featuredVideo = leadTrailer(featuredStory.to);
 const featuredNews = {
   ...featuredStory,
-  video: featuredVideo.id,
-  videoTitle: featuredVideo.title,
+  video: featuredVideo?.id,
+  videoTitle: featuredVideo?.title,
 };
 
 // YouTube resolves this permanent channel URL to the channel's active live

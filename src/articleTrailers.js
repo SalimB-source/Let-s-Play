@@ -73,6 +73,25 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // Édition du 15.10.2026 : chaînes et miniatures contrôlées sur les pages YouTube.
+  'zelda-ocarina-of-time-nouvelle-presentation': {
+    label: 'ZELDA OCARINA OF TIME', meta: 'NINTENDO · SWITCH 2',
+    items: [
+      { id: '8v8eDMh1o3g', kind: 'trailer', title: 'The Legend of Zelda: Ocarina of Time – Overview Trailer – Nintendo Switch 2', channel: 'Nintendo of America', verified: '15.10.2026' },
+    ],
+    credit: 'Présentation officielle : Nintendo of America, publiée le 14 octobre 2026 sur YouTube.',
+  },
+  'cinema/narnia-gerwig-chronologie-esthetique': {
+    label: 'NARNIA : LE NEVEU DU MAGICIEN', meta: 'NETFLIX · GRETA GERWIG',
+    items: [
+      { id: 'gDJ-ini7fF0', kind: 'trailer', title: 'NARNIA: THE MAGICIAN’S NEPHEW | Official Trailer | Netflix', channel: 'Netflix', verified: '15.10.2026' },
+    ],
+    credit: 'Bande-annonce officielle : Netflix, publiée le 13 octobre 2026 sur YouTube.',
+  },
+  'tech/free-mvpn-filtres-pays-widget': {
+    label: 'FREE MVPN', items: [],
+    pending: 'Aucune vidéo officielle consacrée à cette mise à jour n’a été identifiée dans les sources consultées (Free mVPN et Mag Free, le 15 octobre 2026). Le visuel provient de Free ; aucun tutoriel tiers n’est présenté comme officiel.',
+  },
   // ---- Édition du mercredi 14.10.2026 --------------------------------------
   // Titres et chaînes contrôlés via YouTube oEmbed le 14.10.2026.
   // Gaming : le trailer de lancement du pack Avatar Legends (publié le 14.10.2026),
