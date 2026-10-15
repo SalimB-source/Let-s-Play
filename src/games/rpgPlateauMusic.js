@@ -15,6 +15,7 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   'abysses-phosphorescentes': `${RPG_AUDIO_BASE}deep-sea-underwater-ambience.mp3`,
   'desert-de-verre': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
   'fjord-des-neuf-hivers': `${RPG_AUDIO_BASE}full-track.mp3`,
+  'cour-de-l-empereur': `${RPG_AUDIO_BASE}CinematicJapanKotoUnderscore.mp3`,
   'iles-celestes': `${RPG_AUDIO_BASE}full-track.mp3`,
 });
 export const RPG_PLATEAUX_MUSICAUX = Object.freeze(new Set(Object.keys(RPG_PLATEAU_MUSIC_FILES)));

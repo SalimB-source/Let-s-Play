@@ -9,19 +9,20 @@
  *
  * 1. **Chaque deck a son terrain.** Un deck du catalogue (ou un deck du mode
  *    Histoire) porte une correspondance explicite — les Veilleurs du Désert se
- *    battent dans l'Erg, le Serment du Soleil rouge dans son sanctuaire, la
- *    Cour des Djinns sur la Table des Heures… Un deck
+ *    battent dans l'Erg, le Serment du Soleil rouge dans la Cour de l'Empereur,
+ *    la Cour des Djinns sur la Table des Heures… Un deck
  *    sans identité connue (paquet brut passé en prop, deck maison) retombe sur
  *    la **couleur dominante de ses cartes** : Sable → l'Erg, Braise → la Table
  *    des Heures, Eau → les Ruines de Tipaza, Neige → le Fjord des Neuf
  *    Hivers, deux couleurs à égalité → la Caravane de Gourara, le carrefour des
  *    pistes. Sans rien de lisible, c'est la Table des Heures, la table
  *    d'origine de Bab El.
- * 2. **Le sable désigne qui impose son terrain.** Au lancement du duel, un
- *    tirage choisit l'un des deux camps ; c'est le deck de ce duelliste qui
- *    donne son plateau à la partie. Le tirage passe par le `rng` du duel —
+ * 2. **Le camp qui impose le terrain dépend du mode.** En duel libre, le deck
+ *    du joueur impose toujours le plateau. Dans le tutoriel et l'Histoire, un
+ *    tirage choisit l'un des deux camps. Le tirage passe par le `rng` du duel —
  *    injectable — donc une partie se rejoue à l'identique, comme le reste du
- *    moteur, et une valeur hors bornes ne plante rien.
+ *    moteur, et une valeur hors bornes ne plante rien. `campImpose` permet aux
+ *    modes qui le demandent de fixer le camp sans consommer de tirage.
  *
  * Il n'y a donc plus ni pastille « Aléatoire », ni verrou de plateau, ni
  * sauvegarde du choix sur l'appareil : rien à mémoriser, rien à reprendre.
@@ -31,8 +32,8 @@
  * le terrain imposé contre sa version fantaisiste — l'Erg contre le Désert de
  * Verre, les Ruines contre les Abysses Phosphorescentes, le Fjord contre les
  * Îles Célestes. Les trois autres — la piste caravanière, la Table des Heures
- * (la table d'origine, que les Cavernes de Cristal ont quittée) et le
- * sanctuaire du Soleil rouge — restent uniques. Le
+ * (la table d'origine, que les Cavernes de Cristal ont quittée) et la
+ * Cour de l'Empereur — restent uniques. Le
  * motif et le camp ne bougent pas : ils disent toujours quel deck a imposé le
  * terrain.
  *
@@ -126,9 +127,8 @@ export const RPG_PLATEAU_DE_REPLI = 'table-des-heures';
 export const RPG_PLATEAUX_PAR_DECK = {
   // Catalogue — chaque deck se bat chez lui.
   'veilleurs-du-desert': 'erg-du-sahara',
-  // Le plateau des Brûlés a été retiré : la Cour rejoint la table d'origine.
+  // La Cour des Djinns garde la table d'origine.
   'cour-des-djinns': 'table-des-heures',
-  'serment-du-soleil-rouge': 'table-des-heures',
   'sentiers-de-cendre': 'caravane-de-gourara',
   'maree-des-abysses': 'ruines-de-tipaza',
   // Le Nord : le Serment des Neuf Hivers se bat sur la glace du fjord.
@@ -247,9 +247,11 @@ function borneDeTirage(rng) {
  * impose son terrain, et le sable désigne lequel.
  *
  * `deckJoueur` et `deckAdverse` acceptent ce que `plateauDeDeck` accepte —
- * identifiant de deck, deck du catalogue ou paquet brut. Un camp dont le deck
- * ne dit rien laisse la place à l'autre : on ne retombe sur la Table des
- * Heures que si aucun des deux paquets ne parle.
+ * identifiant de deck, deck du catalogue ou paquet brut. `campImpose` peut
+ * fixer le camp qui impose le terrain (`'joueur'` ou `'adversaire'`) ; s'il est
+ * défini, aucun autre camp ne remplace son plateau de repli. Sans cette option,
+ * le tirage choisit un camp au hasard et l'autre peut prendre le relais si son
+ * deck n'a aucun terrain lisible.
  *
  * Quand `variantesFantaisistes` est vrai, un second tirage peut échanger le
  * terrain imposé contre son double merveilleux (`variante` vaut alors `true`,
@@ -260,14 +262,17 @@ function borneDeTirage(rng) {
  * `'adversaire'`, le duelliste dont le deck a imposé le terrain (de quoi
  * l'annoncer en début de partie).
  */
-export function tirerPlateauDuDuel({ deckJoueur = null, deckAdverse = null, rng = Math.random, variantesFantaisistes = false } = {}) {
+export function tirerPlateauDuDuel({ deckJoueur = null, deckAdverse = null, rng = Math.random, variantesFantaisistes = false, campImpose = null } = {}) {
   const camps = [
     { camp: 'joueur', deck: deckJoueur },
     { camp: 'adversaire', deck: deckAdverse },
   ];
-  const [premier, second] = borneDeTirage(rng) < 0.5 ? camps : [camps[1], camps[0]];
+  const campForce = camps.find(({ camp }) => camp === campImpose) ?? null;
+  const [premier, second] = campForce
+    ? [campForce, camps.find(({ camp }) => camp !== campForce.camp)]
+    : borneDeTirage(rng) < 0.5 ? camps : [camps[1], camps[0]];
   let tirage = { ...plateauDeDeck(premier.deck), camp: premier.camp };
-  if (tirage.motif === 'repli') {
+  if (tirage.motif === 'repli' && !campForce) {
     const autre = plateauDeDeck(second.deck);
     if (autre.motif !== 'repli') tirage = { ...autre, camp: second.camp };
   }

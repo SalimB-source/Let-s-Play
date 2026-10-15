@@ -9,7 +9,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import {
   RPG_AMBIENT_BPM,
   RPG_AMBIENT_THEMES,
@@ -17,6 +17,8 @@ import {
   RpgAmbientMusic,
 } from '../src/games/rpgAmbientMusic.js';
 import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
+import { RPG_PLATEAU_MUSIC_FILES, RPG_PLATEAUX_MUSICAUX } from '../src/games/rpgPlateauMusic.js';
+import { plateauParId } from '../src/games/rpgPlateaux.js';
 
 test('cinq ambiances, une par tour du mode Histoire', () => {
   const tourIds = RPG_STORY_TOURS.map((t) => t.id);
@@ -101,6 +103,15 @@ test('la page du duel joue la musique d’ambiance du mode Histoire sans doubler
     'le lancement d’un étage naît dans le geste joueur (contexte audio)');
   assert.match(page, /onClick=\{basculerSon\}/,
     'un bouton de la barre du duel coupe ou rend la musique');
+});
+
+test('La Cour de l’Empereur joue la piste de koto fournie', () => {
+  const plateauId = 'cour-de-l-empereur';
+  const fichier = 'CinematicJapanKotoUnderscore.mp3';
+  assert.equal(plateauParId(plateauId)?.nom, 'La Cour de l’Empereur');
+  assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), 'le plateau doit être traité comme musical');
+  assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], `/audio/${fichier}`);
+  assert.ok(existsSync(new URL(`../public/audio/${fichier}`, import.meta.url)), 'le MP3 doit être livré dans public/audio');
 });
 
 // ── Le lecteur fait-il vraiment du son ? ─────────────────────────────
