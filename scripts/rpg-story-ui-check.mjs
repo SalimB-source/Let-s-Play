@@ -132,5 +132,19 @@ assert.doesNotMatch(readSource('../src/theme.css'), /\[data-theme='light'\][^{,]
 assert.match(readSource('./theme-ink-sweep.mjs'), /'\\\\\.rpg-'/,
   'le balayage d’encre exclut le jeu RPG (motif `.rpg-`)');
 
+// Sur mobile / écran étroit en portrait, les personnages de scène se posent dans
+// `.rpg-narrative__fenetre` / `.rpg-narrative__plateau` juste au-dessus de `.rpg-narrative__boite`
+// (au lieu de rester fixés en bas de l'écran cachés derrière le texte).
+assert.ok(declared(storyCss, '.rpg-narrative__plateau', 'display').includes('flex')
+  && declared(storyCss, '.rpg-narrative__plateau', 'align-items').includes('flex-end'),
+  'sur écran étroit, le plateau aligne les personnages côte à côte au-dessus de la boîte de dialogue');
+assert.ok(declared(storyCss, '.rpg-narrative__stand', 'position').includes('relative')
+  && declared(storyCss, '.rpg-narrative__stand', 'bottom').includes('auto'),
+  'sur mobile en portrait, les personnages ne restent pas fixés en bas de l’écran derrière le texte');
+assert.ok(declared(storyCss, '.rpg-narrative__boite', 'margin').includes('0 auto'),
+  'sur mobile en portrait, la boîte de dialogue se colle sous la fenêtre des personnages');
+assert.ok(declared(storyCss, '.rpg-narrative__stand-img', 'max-height').some((val) => val.includes('100vh - 54px')),
+  'en paysage mobile, les personnages remontent jusqu’en haut de la scène');
+
 console.log('✓ Mode Histoire : tours, verrous, lancement, identité du sorcier, retour menu et progression');
 console.log('✓ Mode Histoire : textes lisibles en thème clair et sombre (descriptions entières, étages verrouillés, fin d’étage, libellé du duel, jetons du thème)');

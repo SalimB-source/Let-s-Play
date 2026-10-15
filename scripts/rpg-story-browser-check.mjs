@@ -46,7 +46,7 @@ try {
     const capture = async (nom) => { if (screenshotDir) await page.screenshot({ path: join(screenshotDir, `${optionId}-${nom}.png`) }); };
     const portraits = new Map();
     const verifierPortrait = async () => {
-      const img = page.locator('.rpg-narrative__portrait img');
+      const img = page.locator('.rpg-narrative__stand--actif img[data-personnage], .rpg-narrative__stand img[data-personnage], .rpg-narrative__portrait img').first();
       await img.waitFor();
       await img.evaluate((image) => image.decode());
       const donnees = await img.evaluate((image) => ({ id: image.dataset.personnage, src: image.getAttribute('src'), width: image.naturalWidth }));
@@ -55,8 +55,17 @@ try {
       portraits.set(donnees.id, donnees.src);
     };
     const verifierLargeur = async () => {
-      const dimensions = await page.locator('.rpg-narrative').evaluate((el) => ({ client: el.clientWidth, contenu: el.scrollWidth }));
+      const dimensions = await page.locator('.rpg-narrative').evaluate((el) => {
+        const boite = el.querySelector('.rpg-narrative__boite')?.getBoundingClientRect();
+        const stands = [...el.querySelectorAll('.rpg-narrative__stand')].map((s) => s.getBoundingClientRect());
+        return {
+          client: el.clientWidth,
+          contenu: el.scrollWidth,
+          auDessusDeLaBoite: !boite || stands.every((s) => s.top < boite.top - 120),
+        };
+      });
       assert.ok(dimensions.contenu <= dimensions.client + 1, 'aucun débordement horizontal du lecteur');
+      assert.ok(dimensions.auDessusDeLaBoite, 'les personnages restent largement visibles au-dessus de la boîte de dialogue');
     };
 
     await page.goto(url);
