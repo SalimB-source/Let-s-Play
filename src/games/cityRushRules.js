@@ -6453,17 +6453,17 @@ export function cityRushPoliceCollisionHit({
 // dérive lente pour qu'il ne paraisse pas vissé au sol.
 //
 // Le cadrage est réglé au plus juste, parce qu'un appareil trop haut sort du
-// champ : la caméra de poursuite est à **6,6 m** et vise vers le bas, ce qui
+// champ : la caméra de poursuite est à **7,4 m** et vise vers le bas, ce qui
 // place l'horizon vers 46 % du haut de l'écran et les cartes du HUD sur la
 // bande des 30 % supérieurs. À 32 m devant et 11,2 m de haut, l'appareil
 // frôlait le bord supérieur (0,80 en coordonnée écran, où 1 est le haut) et
-// passait sous les cartes. À **18 m devant et 8 m de haut**, il vole dans la
+// passait sous les cartes. À **18 m devant et 8,8 m de haut**, il vole dans la
 // bande de ciel visible (mesuré entre 0,44 et 0,65 selon la ville, moyenne
-// 0,57) et grossit d'environ 20 % : il reste au-dessus des 7,1 m qui protègent
+// 0,57) et grossit d'environ 20 % : il reste au-dessus des 7,9 m qui protègent
 // la caméra, sans sortir du cadre. Le smoke projette sa position avec la vraie
 // caméra et le vérifie image par image.
 export const CITY_RUSH_WATCH_HELI_AHEAD = 18; // m : devant la voiture suivie
-export const CITY_RUSH_WATCH_HELI_HEIGHT = 8; // m : altitude au-dessus de la chaussée
+export const CITY_RUSH_WATCH_HELI_HEIGHT = 8.8; // m : altitude au-dessus de la chaussée
 export const CITY_RUSH_WATCH_HELI_LATERAL = 4.2; // m : décalage vers la droite du pilote
 
 export function cityRushWatchHelicopterPose({ playerX = 0, clock = 0, leaving = 0 } = {}) {
