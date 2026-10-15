@@ -144,6 +144,7 @@ export default function Home() {
       h2b: 'À LA UNE.',
       today: 'Actu du jour',
       read: 'Lire l’article',
+      resumeVideo: 'Reprendre la vidéo',
       seeAll: 'Voir toutes les actus',
     },
     en: {
@@ -154,6 +155,7 @@ export default function Home() {
       h2b: 'RIGHT NOW.',
       today: 'News of the day',
       read: 'Read the story',
+      resumeVideo: 'Resume the video',
       seeAll: 'See all news',
     },
     ar: {
@@ -164,6 +166,7 @@ export default function Home() {
       h2b: 'المميز.',
       today: 'خبر اليوم',
       read: 'اقرأ المقال',
+      resumeVideo: 'استئناف الفيديو',
       seeAll: 'عرض كل الأخبار',
     },
   };
@@ -250,6 +253,8 @@ export default function Home() {
               title={featuredNews.videoTitle}
               poster={`${base}${featuredNews.poster}`}
               showControls={false}
+              coverYoutubeOverlayOnPause
+              resumeLabel={newsHead.resumeVideo}
             />
             <span className="news-feature-badge">{featuredNews.badge}</span>
           </div>

@@ -9,6 +9,9 @@
  *   2. initSinglePlayback() — la règle « une seule vidéo à la fois » : dès
  *      qu'un lecteur démarre, tous les autres sont mis en pause.
  *
+ * `VIDEO_STATE_CHANGED_EVENT` diffuse les changements d'état des iframes
+ * YouTube pour permettre aux composants de réagir à la pause ou à la fin.
+ *
  * Fonctionnement du coordinateur (aucun script externe)
  * ----------------------------------------------------
  * Un embed YouTube chargé avec `enablejsapi=1` parle le protocole postMessage
@@ -43,6 +46,8 @@ const YT_ORIGINS = new Set([YT_ORIGIN, YT_NOCOOKIE_ORIGIN]);
 // l'identifiant de la vidéo, ce qui permet aux succès de compter les vidéos
 // distinctes sans connaître YouTube (« live_stream » pour le direct).
 export const VIDEO_PLAYED_EVENT = 'letsplay:video-played';
+// État d'un embed YouTube : { id, state, frame }.
+export const VIDEO_STATE_CHANGED_EVENT = 'letsplay:video-state-changed';
 
 // États du lecteur YouTube qui nous intéressent.
 const PLAYING = 1;
@@ -195,6 +200,18 @@ function announcePlayback(entry) {
   }
 }
 
+function announcePlayerState(frame, entry, state) {
+  if (typeof window === 'undefined' || typeof CustomEvent === 'undefined') return;
+  if (typeof window.dispatchEvent !== 'function') return;
+  try {
+    window.dispatchEvent(new CustomEvent(VIDEO_STATE_CHANGED_EVENT, {
+      detail: { id: entry.videoId, state, frame },
+    }));
+  } catch {
+    /* environnements sans CustomEvent complet */
+  }
+}
+
 function frameForWindow(win) {
   if (!win) return null;
   for (const frame of players.keys()) {
@@ -236,6 +253,7 @@ function pauseFrame(frame, entry) {
   // État optimiste : si la pause n'a pas pris, le prochain message du lecteur
   // (playerState 1) relancera l'arrêt des autres lecteurs.
   entry.state = PAUSED;
+  announcePlayerState(frame, entry, PAUSED);
 }
 
 function pauseNativeMedia() {
@@ -278,6 +296,7 @@ function onMessage(event) {
   const state = readState(data);
   if (state === null || state === entry.state) return; // infoDelivery répète l'état
   entry.state = state;
+  announcePlayerState(frame, entry, state);
   if (state === PLAYING) {
     stopOthers(frame);
     announcePlayback(entry);
