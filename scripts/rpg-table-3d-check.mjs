@@ -203,6 +203,9 @@ try {
     { id: 'iles-celestes', deck: 'serment-des-neuf-hivers', rq: [0.1, 0.9] },
     { id: 'ruines-de-tipaza', deck: 'maree-des-abysses', rq: [0.1, 0.1] },
     { id: 'abysses-phosphorescentes', deck: 'maree-des-abysses', rq: [0.1, 0.9] },
+    // Le sanctuaire n'a pas de double merveilleux : le second tirage n'est pas
+    // consommé, d'où la valeur unique.
+    { id: 'sanctuaire-du-soleil-rouge', deck: 'serment-du-soleil-rouge', rq: [0.1] },
   ];
   assert.deepEqual(withObjects.map((entry) => entry.id).sort(), Object.keys(RPG_TABLE_SCENE_THEMES).filter((id) => RPG_TABLE_SCENE_THEMES[id].objets.length).sort(), 'chaque plateau à objets a son scénario');
   for (const entry of withObjects) {

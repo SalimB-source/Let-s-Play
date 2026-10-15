@@ -89,7 +89,7 @@ export const RPG_PLATEAUX = [
     nom: 'Le Sanctuaire du Soleil rouge',
     lieu: 'Kyō, la cour du sanctuaire, sous les cerisiers',
     fichier: 'plateau-sanctuaire-du-soleil-rouge.jpg',
-    resume: 'Une estampe japonaise : la cour de gravier ratissé, ses cercles concentriques au centre, le torii vermillon ouvert sur les pierres noires, les deux lanternes de pierre allumées, la cloche de bronze et sa corde de chanvre, le bol laqué, l’éventail ouvert et le plateau de saké — les pétales de cerisier par-dessus.',
+    resume: 'Une estampe japonaise : la cour de gravier ratissé et ses cercles concentriques au centre, le torii vermillon ouvert sur ses pierres de passage, les deux lanternes de pierre allumées, et le service rangé au bord — le bol laqué, l’éventail ouvert, le plateau de saké — sous les pétales de cerisier. Le centre de la cour reste vide : c’est là que les cartes se posent.',
   },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.

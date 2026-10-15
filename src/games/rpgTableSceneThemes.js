@@ -162,18 +162,33 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
   }),
   // Le sanctuaire : l'encre et l'or d'une estampe japonaise. Le soleil rouge
   // est bas derrière le torii, les deux lanternes de pierre veillent, et les
-  // pétales de cerisier dérivent vers le bas du cadre. Aucun objet 3D : sur une
-  // peinture plate, les accessoires de l'estampe (torii, lanterne, cloche,
-  // éventail) sont plus beaux laissés au pinceau — l'ambiance seule anime la
-  // scène.
+  // pétales de cerisier dérivent vers le bas du cadre.
+  //
+  // Le décor en 3D reprend les objets de l'estampe, aux places relevées dessus
+  // (`u`, `v` : la porte, ses deux lanternes, ses pierres, puis le service rangé
+  // au bord droit). Tous sont montés « de face » dans le plan de la table —
+  // comme le cor du fjord : la caméra regarde la table de dessus, un objet
+  // couché s'y lit debout. `angle: 90` garde leur haut vers le haut du cadre.
   'sanctuaire-du-soleil-rouge': theme({
     ambient: '#fdf3e6', key: '#ffd9c2', keyIntensity: 0.5, keyDirection: [0.72, 0.55, 1], relief: 1.1, roughness: 0.9,
     lights: [
-      light({ color: '#ffb45e', intensity: 1.7, distance: 3.6, x: -0.82, y: -0.1, z: 0.7, flicker: 0.22 }),
-      light({ color: '#ffb45e', intensity: 1.7, distance: 3.6, x: 0.82, y: -0.1, z: 0.7, flicker: 0.22 }),
+      light({ color: '#ffb45e', intensity: 1.6, distance: 3.2, x: -0.62, y: -0.08, z: 0.7, flicker: 0.22 }),
+      light({ color: '#ffb45e', intensity: 1.6, distance: 3.2, x: 0.63, y: -0.08, z: 0.7, flicker: 0.22 }),
     ],
     particles: motes({ count: 64, color: '#f7cfd8', size: 0.05, opacity: 0.72, vx: 0.16, vy: -0.1, sway: 0.24, swayHz: 0.22, z: 1.1, zSpread: 0.7 }),
     overlay: { kind: 'ombre', color: '#4a3550', opacity: 0.12, speed: 0.012, scale: 2.2 },
+    plaque: 'plateau-sanctuaire-du-soleil-rouge-vide.jpg',
+    objets: [
+      // Les tailles suivent l'emprise peinte : 1 unité d'image ≈ 1 645 px de
+      // la peinture livrée, donc `size` = largeur peinte / 1 645.
+      { kind: 'torii', u: 0.507, v: 0.242, size: 0.276, angle: 90 },
+      { kind: 'pierres-passage', u: 0.493, v: 0.259, size: 0.142, angle: 90 },
+      { kind: 'lanterne-pierre', u: 0.176, v: 0.541, size: 0.164, angle: 90 },
+      { kind: 'lanterne-pierre', u: 0.821, v: 0.541, size: 0.164, angle: 90 },
+      { kind: 'bol-laque', u: 0.772, v: 0.785, size: 0.055, angle: 90 },
+      { kind: 'eventail', u: 0.803, v: 0.848, size: 0.137, angle: 90 },
+      { kind: 'service-sake', u: 0.862, v: 0.749, size: 0.15, angle: 90 },
+    ],
   }),
   // Le sable vitrifié : éclats de verre, deux lumières qui glissent.
   'desert-de-verre': theme({

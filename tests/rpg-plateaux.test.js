@@ -92,9 +92,11 @@ test('le sanctuaire du Soleil rouge est livré comme plateau de plein droit', ()
   assert.match(sanctuaire.fichier, /\.jpg$/);
   assert.match(sanctuaire.nom, /Soleil rouge/);
   assert.match(sanctuaire.lieu, /Kyō/);
-  // Le décor de l’estampe : la cour de gravier ratissée (le centre où les cartes
-  // se posent), le portique, les lanternes, la cloche et les pétales.
-  for (const accessoire of ['ratissé', 'torii', 'lanterne', 'cloche', 'éventail', 'pétales']) {
+  // Le décor de l’estampe : la cour de gravier ratissée (le centre vide où les
+  // cartes se posent), le portique, ses lanternes, le service et les pétales.
+  // La cloche de bronze et sa corde ont quitté la cour.
+  assert.doesNotMatch(sanctuaire.resume, /cloche/i, 'la cloche retirée ne se décrit plus');
+  for (const accessoire of ['ratissé', 'torii', 'lanterne', 'pierres', 'éventail', 'pétales']) {
     assert.match(sanctuaire.resume, new RegExp(accessoire, 'i'),
       `le résumé nomme ${accessoire} de la cour`);
   }

@@ -23,13 +23,8 @@ changent pas.
 Les neuf plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
 inconnu retombe sur celle de la Table des Heures.
 
-Deux plateaux ne posent aucun objet 3D et gardent leur peinture telle quelle : la
-Table des Heures (le bois gravé de Bab El) et le **Sanctuaire du Soleil rouge**,
-l'estampe japonaise du deck du Serment du Soleil rouge. Sur une peinture plate —
-encre, à-plats et pinceau — les accessoires dessinés (torii, lanternes, cloche,
-éventail) sont plus justes laissés au trait ; l'ambiance seule anime la scène :
-le soleil rouge derrière le torii, les deux lanternes de pierre qui vacillent, et
-les pétales de cerisier qui tombent en dérivant.
+Un seul plateau ne pose aucun objet 3D et garde sa peinture telle quelle : la
+Table des Heures, le bois gravé de Bab El.
 
 ## Objets 3D posés sur le plateau
 
@@ -46,6 +41,14 @@ ombre portée sur la table et reflètent un environnement doux. Plateaux livrés
 | Désert de Verre | les cinq roses de verre, l'astrolabe de laiton, la corde et l'outre |
 | Abysses Phosphorescentes | la raie manta (battement d'ailes) et l'anneau de coquillages |
 | Îles Célestes | les douze sapins et les sept rochers des berges, la corde (berges de roche et lanterne restent peintes) |
+| Sanctuaire du Soleil rouge | le torii vermillon, ses deux lanternes de pierre (vraie lumière), ses neuf pierres de passage, le bol à thé laqué, l'éventail déplié et le service de saké |
+
+Sur l'estampe japonaise, les objets reconstruits sont **montés de face** : la
+caméra regarde la table de dessus, donc un objet couché dans le plan de la table
+s'y lit debout — le procédé du cor du fjord et du bâton de runes. Le torii et
+ses lanternes sont ainsi assemblés le long de l'axe écran, à leur place relevée
+sur la peinture ; le centre de la cour (les cercles ratissés) reste libre, et
+c'est là que les cartes se posent.
 
 Les autres plateaux n'ont pas d'objets (`objets: []`) et gardent leur peinture
 inchangée.
@@ -62,7 +65,10 @@ inchangée.
   `fjord-des-neuf-hivers.py`, `desert-de-verre.py`) ; comblement par le pourtour
   quand le fond est lisse et l'objet petit ou opaque, sapins et coquillages
   compris (`ruines-de-tipaza.py`, `abysses-phosphorescentes.py`,
-  `iles-celestes.py`).
+  `iles-celestes.py`) ; et, sur l'estampe du sanctuaire
+  (`sanctuaire-du-soleil-rouge.py`), le gravier ratissé recopié franchement de
+  la donneuse là où la fusion de Poisson étalait la teinte ou cassait les lignes
+  de ratissage (le passage du torii et le dessous du service).
 - **Placement.** Chaque objet est déclaré en coordonnées de l'image
   (`u`, `v` en fraction de largeur/hauteur, `v` vers le bas ; `size` = largeur
   de l'objet en fraction de l'image ; `angle` en degrés). `tableObjectTransform`
@@ -92,7 +98,7 @@ Abysses (coraux, colonnes, amphores), Îles (sapins, rochers, lanterne, corde).
 | --- | --- |
 | `src/games/rpgTableSceneThemes.js` | Données pures : ambiances, budgets, particules (testable sous Node) |
 | `src/games/rpgTableScene.js` | La scène Three.js (chargée à la demande) |
-| `src/games/rpgTableObjects.js` | Modèles 3D procéduraux des objets (bol, galets, corde, gourde, lanterne, amas de cristaux) |
+| `src/games/rpgTableObjects.js` | Modèles 3D procéduraux des objets (bol, galets, corde, gourde, lanterne, torii, lanterne de pierre, pierres de passage, éventail, service de saké) |
 | `scripts/plaque-vide/` | Fabrication des plaques sans objets peints (un script par plateau) |
 | `src/games/RpgTableScene3D.jsx` | La vue React, premier enfant de `.card-table` |
 | `tests/rpg-table-3d.test.js` | Catalogue, bornes, particules, budget, cadrage, géométrie, bruits, objets 3D |
@@ -118,7 +124,8 @@ Abysses (coraux, colonnes, amphores), Îles (sapins, rochers, lanterne, corde).
 ## Vérifications
 
 - `npm run check:rpg-table-3d` : catalogue, bornes, particules, budgets (l'ambiance
-  du sanctuaire du Soleil rouge comprise : aucun objet 3D, des pétales qui tombent).
+  du sanctuaire du Soleil rouge comprise : ses sept objets — la porte, ses deux
+  lanternes, ses pierres et le service — et ses pétales qui tombent).
 - `npm run check:rpg-table-3d-ui` (serveur Vite + Chromium) : rendu réel, couches,
   pause pendant un glisser, bouton, repli sans WebGL2, `reduced-motion`,
   téléphone en paysage, chaque plateau à objets (plaque vide chargée, objets posés, repli CSS intact).
