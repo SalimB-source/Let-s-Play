@@ -146,21 +146,30 @@ autonome » (deck complet, PV pleins, rien de reporté).
      parle ; celui qui parle est en pleine lumière, l'autre dans l'ombre. Le
      champ `stand` du registre `rpgStoryCast.js` porte les sprites et
      `standHistoire()` les résout ; les personnages des actes suivants, encore
-     sans sprite, retombent sur le portrait encadré (même placement). Les
+     sans sprite, retombent sur le portrait encadré (même placement).
+     **Les personnages dépassent de l'écran** : chaque sprite est plus haut que
+     la fenêtre et son bas descend sous le bord (`--rpg-story-debord`,
+     `clamp(44px, 13vh, 156px)` sur écran large) — les jambes sont coupées par
+     le bord lui-même, jamais par une boîte, et c'est ce débord qui fait la
+     taille : la figure visible fait toujours `100vh - --rpg-story-tete`
+     (`max(22vh, 150px)`), donc le sprite grandit sans que la tête monte vers le
+     cartouche. Le portrait encadré du repli, lui, remonte du débord
+     (`margin-bottom`) : c'est le personnage qui dépasse, pas le cadre. Les
      sprites sont purs décors (`pointer-events: none`, fixés au bas de
-     l'écran, 38vw de large et jusqu'à 78vh de haut avec un léger débord hors
-     des bords) ; la **boîte de dialogue passe devant leur buste** (style
+     l'écran, 38vw de large) ; la **boîte de dialogue passe devant leur buste** (style
      Persona : contour blanc franc, pointes blanches, ombre dure) avec
      l'**étiquette de nom en bulle blanche à encre sombre**, soulignée de la
      couleur du personnage ; les décisions passent en colonne centrale
      au-dessus du duo. Sur mobile / écran étroit en portrait, la fenêtre de
      scène (`.rpg-narrative__fenetre` / `.rpg-narrative__plateau`) pose le duo
-     juste au-dessus de la boîte de dialogue (seul le bas coupé du buste glisse
-     derrière le bord supérieur de la bulle) afin que les personnages ne soient
-     jamais cachés sous le texte en bas d'écran ; en paysage mobile, les
-     personnages remontent jusqu'à la barre d'en-tête de part et d'autre d'une
-     boîte centrale resserrée. Briefings de duel, épilogues et journal gardent
-     les portraits canoniques en page.
+     juste au-dessus de la boîte de dialogue et son débord est plus court
+     (`clamp(42px, 8.5vh, 92px)`) : le bas des personnages glisse derrière le
+     bord supérieur de la bulle, qui recule d'autant sa marge, au lieu de
+     s'arrêter au-dessus d'elle — les personnages ne sont jamais cachés sous le
+     texte en bas d'écran ; en paysage mobile, les personnages remontent
+     jusqu'à la barre d'en-tête de part et d'autre d'une boîte centrale
+     resserrée, leur débord passant sous le bord bas. Briefings de duel,
+     épilogues et journal gardent les portraits canoniques en page.
    - **décor vivant** : travelling lent (Ken Burns) sur la peinture de la
      scène et voile de sable en boucle sans couture, sous le texte
      (`.rpg-narrative__decor` / `__sable`, couches `position: fixed` en
@@ -183,7 +192,11 @@ autonome » (deck complet, PV pleins, rien de reporté).
      visuellement masquée, la machine à écrire n’étant qu’un effet visible.
    - Vérifications : `npm run check:rpg-lecture` (rythmes et préférences),
      `npm run check:rpg-story-ui` (le smoke narratif rejoue scènes, relectures,
-     choix, journal et migration avec le lecteur animé monté).
+     choix, journal et migration avec le lecteur animé monté, et lit
+     `rpg-story.css` : le débord des personnages sous le bord de l'écran, la
+     remontée du portrait encadré et les trois mises en scène y sont vérifiés),
+     `npm run check:rpg-story-browser` (vrai navigateur : les personnages
+     restent largement visibles au-dessus de la boîte sur 320–1440 px).
 
 ## Ce qu'il reste à construire
 

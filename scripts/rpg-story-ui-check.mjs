@@ -132,6 +132,39 @@ assert.doesNotMatch(readSource('../src/theme.css'), /\[data-theme='light'\][^{,]
 assert.match(readSource('./theme-ink-sweep.mjs'), /'\\\\\.rpg-'/,
   'le balayage d’encre exclut le jeu RPG (motif `.rpg-`)');
 
+// ── Le duo dépasse l'écran ──────────────────────────────────────────────────
+// Les personnages de scène ne s'arrêtent plus au bord : leur bas descend SOUS
+// le bord de l'écran — les jambes sont coupées par le bord, jamais par une
+// boîte. Le sprite, plus haut que la fenêtre, garde pourtant sa tête sous le
+// cartouche : c'est le débord qui fait la taille, pas la place au-dessus.
+const debords = declared(storyCss, '.rpg-narrative__scene', '--rpg-story-debord');
+assert.ok(debords.length >= 3,
+  `le débord des personnages est déclaré pour l’écran large, le portrait étroit et le paysage mobile (déclaré : ${debords.length})`);
+for (const debord of debords) {
+  assert.match(debord, /^clamp\(\s*\d+px\s*,/, `le débord est borné en pixels : ${debord}`);
+}
+assert.ok(declared(storyCss, '.rpg-narrative__scene', '--rpg-story-tete').length > 0,
+  'l’air gardé au-dessus des têtes est déclaré avec le débord (le sprite grandit, la tête ne monte pas)');
+const basDesStands = declared(storyCss, '.rpg-narrative__stand', 'bottom');
+assert.ok(basDesStands.filter((val) => val.includes('calc(-1 * var(--rpg-story-debord))')).length >= 2
+  && basDesStands.includes('auto'),
+  'les personnages sont descendus du débord sous le bord de l’écran, sauf en portrait étroit où ils restent dans la fenêtre');
+const hauteursSprite = declared(storyCss, '.rpg-narrative__stand-img', 'max-height');
+assert.ok(hauteursSprite.filter((val) => val.includes('var(--rpg-story-debord)')).length >= 4,
+  'le sprite grandit du débord sur les trois mises en scène (écran large, paysage mobile, portrait étroit)');
+assert.ok(hauteursSprite.some((val) => val.includes('100vh + var(--rpg-story-debord) - var(--rpg-story-tete)')),
+  'sur écran large, la figure visible reste `100vh - tete` : le sprite est plus grand, la tête ne monte pas');
+assert.ok(hauteursSprite.every((val) => !/^78vh$/.test(val.trim())),
+  'plus aucun écran ne borne le sprite à 78vh (l’ancien plafond, sous le bord)');
+assert.ok(declared(storyCss, '.rpg-narrative__stand-img', 'object-position').includes('bottom'),
+  'le débord sort par le bas du sprite (les jambes), jamais par la tête');
+assert.ok(declared(storyCss, '.rpg-narrative__stand-cadre', 'margin-bottom')
+  .filter((val) => val.includes('var(--rpg-story-debord)')).length >= 2,
+  'le portrait encadré (repli sans sprite) remonte du débord : c’est le personnage qui dépasse, pas le cadre');
+assert.ok(declared(storyCss, '.rpg-narrative__fenetre', 'margin')
+  .some((val) => val.includes('calc(-1 * var(--rpg-story-debord))')),
+  'en portrait étroit, la bulle recouvre le bas des personnages du même débord (ils passent derrière son bord)');
+
 // Sur mobile / écran étroit en portrait, les personnages de scène se posent dans
 // `.rpg-narrative__fenetre` / `.rpg-narrative__plateau` juste au-dessus de `.rpg-narrative__boite`
 // (au lieu de rester fixés en bas de l'écran cachés derrière le texte).
@@ -143,8 +176,8 @@ assert.ok(declared(storyCss, '.rpg-narrative__stand', 'position').includes('rela
   'sur mobile en portrait, les personnages ne restent pas fixés en bas de l’écran derrière le texte');
 assert.ok(declared(storyCss, '.rpg-narrative__boite', 'margin').includes('0 auto'),
   'sur mobile en portrait, la boîte de dialogue se colle sous la fenêtre des personnages');
-assert.ok(declared(storyCss, '.rpg-narrative__stand-img', 'max-height').some((val) => val.includes('100vh - 54px')),
-  'en paysage mobile, les personnages remontent jusqu’en haut de la scène');
+assert.ok(hauteursSprite.some((val) => val.includes('100vh + var(--rpg-story-debord) - 54px')),
+  'en paysage mobile, les personnages remontent jusqu’en haut de la scène avec leur débord sous le bord');
 
 // ── Le décor reste visible ──────────────────────────────────────────────────
 // Le lecteur a longtemps posé une nappe sombre sur toute la peinture

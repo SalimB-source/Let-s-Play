@@ -57,15 +57,24 @@ try {
     const verifierLargeur = async () => {
       const dimensions = await page.locator('.rpg-narrative').evaluate((el) => {
         const boite = el.querySelector('.rpg-narrative__boite')?.getBoundingClientRect();
-        const stands = [...el.querySelectorAll('.rpg-narrative__stand')].map((s) => s.getBoundingClientRect());
+        const stands = [...el.querySelectorAll('.rpg-narrative__stand')]
+          .map((s) => ({ rect: s.getBoundingClientRect(), fixe: getComputedStyle(s).position === 'fixed' }));
         return {
           client: el.clientWidth,
           contenu: el.scrollWidth,
-          auDessusDeLaBoite: !boite || stands.every((s) => s.top < boite.top - 120),
+          auDessusDeLaBoite: !boite || stands.every((s) => s.rect.top < boite.top - 120),
+          // Les personnages dépassent : leur bas sort de la fenêtre (fixés) ou
+          // passe derrière le bord de la bulle (portrait étroit, où elle occupe
+          // la largeur utile).
+          debord: !boite ? [] : stands.map((s) => (s.fixe
+            ? s.rect.bottom - window.innerHeight
+            : s.rect.bottom - boite.top)),
         };
       });
       assert.ok(dimensions.contenu <= dimensions.client + 1, 'aucun débordement horizontal du lecteur');
       assert.ok(dimensions.auDessusDeLaBoite, 'les personnages restent largement visibles au-dessus de la boîte de dialogue');
+      assert.ok(dimensions.debord.every((valeur) => valeur > 16),
+        `les personnages dépassent de l’écran (jambes coupées par le bord, mesuré : ${dimensions.debord.join(', ')})`);
     };
 
     await page.goto(url);
@@ -138,7 +147,7 @@ try {
     assert.deepEqual(await lire(), sauvegarde, 'le journal ne change pas la sauvegarde');
     await capture('journal');
     assert.deepEqual(erreurs, [], 'aucune erreur JavaScript pendant le parcours');
-    console.log(`✓ Navigateur ${mobile ? 'tactile' : 'ordinateur'} : branche ${optionId}, migration, clavier, reprise, images cohérentes, journal, 320–1440 px et deux thèmes`);
+    console.log(`✓ Navigateur ${mobile ? 'tactile' : 'ordinateur'} : branche ${optionId}, migration, clavier, reprise, images cohérentes, personnages qui dépassent de l’écran, journal, 320–1440 px et deux thèmes`);
     await context.close();
   }
 } finally {
