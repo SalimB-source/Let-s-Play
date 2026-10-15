@@ -680,7 +680,8 @@
     font-size: 8px;
   }
   .city-rush-shell.is-running .city-rush-sound-button,
-  .city-rush-shell.is-running .city-rush-fullscreen-button { width: 38px; }
+  .city-rush-shell.is-running .city-rush-fullscreen-button,
+  .city-rush-shell.is-running .city-rush-camera-button { width: 38px; }
   .city-rush-shell.is-running .city-rush-top-button.is-quiet {
     width: 40px;
     min-width: 40px;

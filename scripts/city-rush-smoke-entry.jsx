@@ -305,6 +305,10 @@ for (const [index, city] of courses.entries()) {
     process.exit(1);
   }
   const buildMs = Date.now() - t0;
+  // Conduite jouée : celle du moteur nu (par voies) par défaut ;
+  // `CITY_RUSH_SMOKE_DRIVING=free` rejoue la course entière au volant libre — le
+  // pilote d'essai demande alors ses écarts comme des placements visés.
+  if (process.env.CITY_RUSH_SMOKE_DRIVING) world.setDrivingMode(process.env.CITY_RUSH_SMOKE_DRIVING);
   const api = Object.keys(world);
   for (const key of ['start', 'pause', 'reset', 'action', 'setPhase', 'setCountdown', 'destroy']) {
     if (typeof world[key] !== 'function') fail(`API manquante : ${key}`, api);

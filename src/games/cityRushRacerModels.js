@@ -1457,6 +1457,10 @@ export function makeRacerCar(profile, options = {}) {
     underglow,
     headlightCones,
     boostFlames,
+    // La vue cockpit (`cityRushCockpit.js`) remplace la coque et ses détails
+    // par le capot seul et l'habitacle : elle a besoin de les retrouver.
+    shell,
+    details: staticDetails,
     exhaustOffsets: [[-0.52, 0.35, 1.90], [0.52, 0.35, 1.90]],
     rearWheelOffsets: [
       [-wheelCenterX(spec, spec.wheelZ[spec.wheelZ.length - 1]), 0.08, spec.wheelZ[spec.wheelZ.length - 1]],
@@ -1469,6 +1473,66 @@ export function makeRacerCar(profile, options = {}) {
 }
 
 /** Ajoute une livrée d'interception à une voiture de course sans changer son modèle animé. */
+// ── Habitacle : les cotes que la vue cockpit lit sur la carrosserie ─────────
+// La vue cockpit ne dessine pas une cabine générique : le pied du pare-brise
+// (où finit le capot), sa largeur, la ligne de ceinture et la position des
+// rétroviseurs viennent du profil de chaque modèle, pour que le capot vu de
+// l'intérieur raccorde exactement avec la planche de bord.
+
+/**
+ * Cotes d'habitacle d'un modèle (repère de la voiture, avant vers −z) :
+ * pied (`cowl`) et haut (`header`) du pare-brise, pavillon, ligne de ceinture,
+ * nez, rétroviseurs extérieurs et demi-largeur de caisse à quelques stations.
+ * Un archétype inconnu retombe sur la berlinetta, comme `makeRacerCar`.
+ */
+export function cityRushCabinMetrics(archetype) {
+  const known = Boolean(CAR_MODELS[archetype]);
+  const spec = known ? CAR_MODELS[archetype] : CAR_MODELS.ferrari;
+  const [, baseRight, topRight] = spec.windshield;
+  const frontPane = spec.sideWindows[0];
+  const mirrorZ = -0.63;
+  const mirrorStemX = halfWidthAt(spec, mirrorZ) + 0.045;
+  const mirrorY = Math.min(0.94, sampleCarStation(spec, mirrorZ)[4] - 0.005);
+  return {
+    archetype: known ? archetype : 'ferrari',
+    cowl: { y: baseRight[1], z: baseRight[2], half: Math.abs(baseRight[0]) },
+    header: { y: topRight[1], z: topRight[2], half: Math.abs(topRight[0]) },
+    roof: Math.max(...spec.stations.map((station) => station[4])),
+    belt: Math.min(...frontPane.map((point) => point[1])),
+    sideWindowFrontZ: Math.min(...frontPane.map((point) => point[2])),
+    noseZ: spec.stations[0][0],
+    // Pod de rétroviseur : mêmes cotes que la pièce posée par `makeRacerCar`.
+    sideMirror: { x: mirrorStemX + 0.055, y: mirrorY + 0.05, z: mirrorZ, stemX: mirrorStemX, stemY: mirrorY },
+    halfWidthAt: (z) => halfWidthAt(spec, z),
+  };
+}
+
+/**
+ * Capot et ailes seuls : la coque de `car` coupée au pied du pare-brise. Seules
+ * les facettes entièrement en avant de `cutZ` sont gardées ; positions et
+ * normales lissées sont copiées, donc le capot vu du cockpit a exactement la
+ * teinte et les reflets de la carrosserie vue de la poursuite.
+ */
+export function makeRacerHoodGeometry(car, cutZ) {
+  const source = car?.userData?.shell?.geometry;
+  const geometry = new THREE.BufferGeometry();
+  if (!source?.index || !source.attributes.position) return geometry;
+  const position = source.attributes.position;
+  const index = source.index.array;
+  const kept = [];
+  for (let face = 0; face < index.length; face += 3) {
+    const a = index[face];
+    const b = index[face + 1];
+    const c = index[face + 2];
+    if (Math.max(position.getZ(a), position.getZ(b), position.getZ(c)) <= cutZ) kept.push(a, b, c);
+  }
+  geometry.setAttribute('position', position.clone());
+  if (source.attributes.normal) geometry.setAttribute('normal', source.attributes.normal.clone());
+  geometry.setIndex(kept);
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 export function applyPoliceRacerLivery(car) {
   if (!car || car.userData?.kind !== 'racer' || car.userData.policeLivery) return car;
 

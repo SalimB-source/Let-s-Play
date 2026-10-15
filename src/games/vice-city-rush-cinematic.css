@@ -322,6 +322,7 @@
 .city-rush-page .city-rush-sound-button { width: 36px; padding: 0; }
 .city-rush-page .city-rush-sound-button.is-on { border-color: #4c6eaa; background: #1b2b46; color: #a8c7ff; }
 .city-rush-page .city-rush-fullscreen-button.is-on { border-color: #4c6eaa; background: #1b2b46; color: #a8c7ff; }
+.city-rush-page .city-rush-camera-button.is-on { border-color: #4c6eaa; background: #1b2b46; color: #a8c7ff; }
 
 .city-rush-page .city-rush-live-pill {
   padding: 6px 9px;
@@ -1616,6 +1617,7 @@
   .city-rush-page .city-rush-top-button { width: 32px; height: 32px; padding: 0; justify-content: center; }
   .city-rush-page .city-rush-top-flag { display: none; }
   .city-rush-page .city-rush-fullscreen-label { display: none; }
+  .city-rush-page .city-rush-camera-label { display: none; }
   .city-rush-page .city-rush-live-pill { max-width: 96px; overflow: hidden; padding: 6px; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
 
   .city-rush-page .city-rush-viewport { height: min(78vh, 640px); min-height: 520px; }

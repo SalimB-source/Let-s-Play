@@ -105,6 +105,10 @@ export default function ViceCityRushMainMenu({
   bestsCount,
   soundOn,
   onToggleSound,
+  cameraMode = 'chase',
+  onToggleCamera,
+  drivingMode = 'free',
+  onToggleDriving,
   onToggleFullscreen,
   onStartTutorial,
   onPick,
@@ -130,7 +134,7 @@ export default function ViceCityRushMainMenu({
   };
 
   // Clavier : tout le menu se pilote sans souris, comme la référence
-  // (flèches + Entrée, G quitter, T stats, F plein écran, M son).
+  // (flèches + Entrée, G quitter, T stats, F plein écran, M son, C vue).
   useEffect(() => {
     const onKeyDown = (event) => {
       const tag = event.target?.tagName;
@@ -143,11 +147,12 @@ export default function ViceCityRushMainMenu({
       else if (key === 'g') { event.preventDefault(); navigate('/jeu'); }
       else if (isFullscreenShortcut(event)) { event.preventDefault(); onToggleFullscreen?.(); }
       else if (key === 'm') { event.preventDefault(); onToggleSound?.(); }
+      else if (key === 'c' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); onToggleCamera?.(); }
       else if (key === 'escape') { setPanel(null); }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [index, panel, navigate, onToggleFullscreen, onToggleSound, onPick]);
+  }, [index, panel, navigate, onToggleFullscreen, onToggleSound, onToggleCamera, onPick]);
 
   // Tactile : un glissé horizontal fait défiler le carrousel.
   const onTouchStart = (event) => { touchX.current = event.touches[0]?.clientX ?? null; };
@@ -260,6 +265,21 @@ export default function ViceCityRushMainMenu({
           <h2>OPTIONS</h2>
           <div className="vcr-menu-panel-actions">
             <button type="button" onClick={onToggleSound}>SON : {soundOn ? 'ON' : 'OFF'}</button>
+            {/* La vue de course : poursuite derrière la voiture, ou cockpit
+                depuis la place du pilote. La préférence reste sur l'appareil. */}
+            <button type="button" className="vcr-menu-camera-option" onClick={onToggleCamera} aria-pressed={cameraMode === 'cockpit'}>
+              CAMÉRA : {cameraMode === 'cockpit' ? 'COCKPIT' : 'POURSUITE'} · C
+            </button>
+            {/* La conduite : libre (par défaut, la voiture glisse où l'on veut)
+                ou par voies (un écart de voie entière par pression). */}
+            <button
+              type="button"
+              className="vcr-menu-driving-option"
+              onClick={onToggleDriving}
+              title={drivingMode === 'lanes' ? 'Passer à la conduite libre : la voiture glisse où tu veux' : 'Passer à la conduite par voies : un écart de voie par pression'}
+            >
+              CONDUITE : {drivingMode === 'lanes' ? 'VOIES' : 'LIBRE'}
+            </button>
             <button type="button" onClick={onToggleFullscreen}>PLEIN ÉCRAN · F</button>
             <button type="button" onClick={onStartTutorial}>TUTORIEL GUIDÉ</button>
             <button type="button" className="vcr-menu-panel-close" onClick={() => setPanel(null)}>FERMER</button>

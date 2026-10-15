@@ -1453,6 +1453,7 @@
   .city-rush-page.city-rush-page .city-rush-top-actions { gap: 5px; }
   .city-rush-page.city-rush-page .city-rush-top-button { min-height: 34px; width: 36px; padding: 0; justify-content: center; }
   .city-rush-page.city-rush-page .city-rush-fullscreen-label { display: none; }
+  .city-rush-page.city-rush-page .city-rush-camera-label { display: none; }
   .city-rush-page.city-rush-page .city-rush-wallet { min-width: 0; min-height: 34px; padding: 4px 8px; gap: 4px; }
   .city-rush-page.city-rush-page .city-rush-wallet-icon { width: 15px; }
   .city-rush-page.city-rush-page .city-rush-top-flag { display: none; }
@@ -2006,6 +2007,13 @@
 ) {
   border-color: var(--cr-cherry) !important;
   color: #fff !important;
+}
+
+/* Vue cockpit allumée : la puce garde son fond, le volant et le filet passent
+   au jaune de l'action — on sait d'un coup d'œil quelle vue attend la course. */
+:root .city-rush-page.city-rush-page .city-rush-top-button.city-rush-camera-button.is-on {
+  border-color: var(--cr-cherry) !important;
+  color: var(--cr-cherry) !important;
 }
 
 /* Le jaune de cerise reste la couleur de l'action : lancement, reprise,
