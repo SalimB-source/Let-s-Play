@@ -6058,6 +6058,13 @@ Salem a ramené douze habitants que la Chambre des Heures a déjà rayés de la 
   existantes. Un registre central donne à chaque personnage le même portrait
   dans ses dialogues, le journal, le briefing et le duel. Trois portraits
   manquants et un décor de greffe ont été ajoutés, sans repeindre les compagnons.
+- **Mise en scène de roman visuel** : pendant les scènes, **deux personnages au
+  maximum**, en sprites détourés qui **dépassent de l'écran** — le bas du
+  personnage (les jambes) est coupé par le bord de l'écran lui-même, et la
+  boîte de dialogue passe devant son buste. Sur téléphone en portrait, le duo
+  se pose au-dessus de la boîte et c'est le bord supérieur de la bulle qui
+  coupe le bas des personnages ; en paysage, ils remontent de part et d'autre
+  d'une boîte centrale resserrée.
 - **Journal** des scènes lues, des personnages et des douze noms, sans effet
   sur les décisions. Aucun chronomètre ; les scènes se lisent aussi en portrait.
 - **Sauvegarde v2 locale** : migration des anciennes victoires, reprise à la
