@@ -150,36 +150,43 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
     }
   }
 
-  // Les figures livrées avec leurs deux postures : les cinq héros, les figures
-  // de la Chambre et les antagonistes des actes I à IV.
-  for (const id of ['salem', 'yamina', 'feriel', 'tarek', 'boualem', 'mahieddine',
+  // Les vingt-quatre figures du casting ont leurs deux postures : les cinq
+  // héros, les figures de la Chambre et tous les antagonistes des actes I à V.
+  const FIGURES_POSE = ['salem', 'yamina', 'feriel', 'tarek', 'boualem', 'mahieddine',
     'scribe', 'guetteur', 'puisatier', 'marchand', 'amani', 'djinn-souk', 'reine-etals',
     'pecheur', 'nageuse', 'sonneur', 'devoreur', 'garde-fjord', 'meute-neiges',
-    'valkyrie-fjord', 'maitre-hivers', 'dernier-fennec']) {
-    assert.deepEqual(situationsPoseHistoire(id), ['duel', 'apres'], id);
+    'valkyrie-fjord', 'maitre-hivers', 'dernier-fennec', 'ifrit-ergs', 'horloger-zenith'];
+  // Celles qui posent une décision au lecteur ont en plus leur posture de
+  // décision — les deux figures de chaque scène de décision, sauf l'Horloger
+  // du Zénith, dont la décision retombe sur sa référence.
+  const FIGURES_DECISION = ['salem', 'yamina', 'scribe', 'djinn-souk', 'boualem',
+    'mahieddine', 'valkyrie-fjord'];
+  const avecVariante = Object.values(RPG_STORY_CAST).filter((p) => p.poses);
+  assert.equal(avecVariante.length, FIGURES_POSE.length,
+    'toute figure détourée porte ses variantes — le narrateur excepté');
+  for (const id of FIGURES_POSE) {
+    assert.deepEqual(situationsPoseHistoire(id),
+      FIGURES_DECISION.includes(id) ? ['duel', 'choix', 'apres'] : ['duel', 'apres'], id);
     assert.equal(poseHistoire(id, 'duel', '/base/').split('?')[0],
       `/base/sablier-story/stands/stand-${id}-affrontement.webp`, id);
     assert.equal(poseHistoire(id, 'apres', '/base/').split('?')[0],
       `/base/sablier-story/stands/stand-${id}-apaisement.webp`, id);
     assert.match(poseHistoire(id, 'duel', '/base/'), /\?v=[\w-]+$/, `${id} : la variante est datée comme la référence`);
-  }
-  // Une figure peut n'avoir que sa garde : la situation non déclarée retombe
-  // alors sur la pose de référence, sans trou ni carré cassé.
-  for (const id of ['ifrit-ergs']) {
-    assert.deepEqual(situationsPoseHistoire(id), ['duel'], id);
-    assert.equal(poseHistoire(id, 'duel', '/base/').split('?')[0],
-      `/base/sablier-story/stands/stand-${id}-affrontement.webp`, id);
-    assert.equal(poseHistoire(id, 'apres', '/base/'), standHistoire(id, '/base/'),
-      `${id} : une situation non déclarée retombe sur la référence`);
+    if (FIGURES_DECISION.includes(id)) {
+      assert.equal(poseHistoire(id, 'choix', '/base/').split('?')[0],
+        `/base/sablier-story/stands/stand-${id}-decision.webp`, id);
+    }
   }
 
-  // Une situation inconnue ou absente retombe sur la référence, et un
-  // personnage encore sans variante n'en invente pas.
+  // Une situation non déclarée pour une figure donnée retombe sur sa référence :
+  // à la dernière décision du récit, l'Horloger du Zénith n'en a pas.
+  assert.equal(poseHistoire('horloger-zenith', 'choix', '/base/'), standHistoire('horloger-zenith', '/base/'),
+    'une situation non déclarée retombe sur la référence de la figure');
+  assert.equal(poseHistoire('guetteur', 'choix', '/base/'), standHistoire('guetteur', '/base/'));
+
+  // Une situation inconnue ou absente retombe sur la référence.
   assert.equal(poseHistoire('salem', 'inconnue', '/base/'), standHistoire('salem', '/base/'));
   assert.equal(poseHistoire('salem', null, '/base/'), standHistoire('salem', '/base/'));
-  assert.equal(poseHistoire('horloger-zenith', 'duel', '/base/'), standHistoire('horloger-zenith', '/base/'),
-    'un personnage sans variante garde sa pose de référence');
-  assert.deepEqual(situationsPoseHistoire('horloger-zenith'), []);
   assert.deepEqual(situationsPoseHistoire('narrateur'), []);
   assert.equal(poseHistoire('narrateur', 'duel', '/base/'), null, 'la ville n’a pas de corps');
   assert.equal(poseHistoire('absent', 'duel', '/base/'), null);

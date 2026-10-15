@@ -43,6 +43,7 @@ registre, sous `poses` :
 ```js
 salem: { …, stand: '…/stand-salem.webp', poses: {
   duel: 'sablier-story/stands/stand-salem-affrontement.webp',
+  choix: 'sablier-story/stands/stand-salem-decision.webp',
   apres: 'sablier-story/stands/stand-salem-apaisement.webp',
 } }
 ```
@@ -51,14 +52,15 @@ Recette d’une variante : même peinture, même visage, même tenue que la pose
 référence (elle sert de **source de composition**), mais une autre posture —
 puis la même chaîne `tools/make-stands.py <id>-<pose> --debug`.
 
-Livrées : les deux poses des cinq héros (Salem, Yamina, Fériel, Tarek,
-Boualem, Mahieddine), des figures de la Chambre (Scribe, Guetteur, Puisatier
-des Cendres), des antagonistes des deux premiers actes (Marchand de sable,
-Gardienne des ksour, Djinn du tournant, Reine des étals) et des actes des
-Abysses et du Fjord (Pêcheur de perles, Nageuse des puits, Sonneur d’écume,
-Dévoreur de l’abîme, Garde du fjord, Meute des neiges, Valkyrie du fjord,
-Maître des Neuf Hivers, Dernier Fennec). Restent à peindre : la détente de
-l’Ifrit des ergs et les poses de l’Horloger du Zénith.
+Livrées : la garde et la détente de **toutes les figures détourées** — les cinq
+héros, les figures de la Chambre (Scribe, Guetteur, Puisatier des Cendres) et
+tous les antagonistes des actes I à V (Marchand de sable, Gardienne des ksour,
+Djinn du tournant, Reine des étals, Pêcheur de perles, Nageuse des puits,
+Sonneur d’écume, Dévoreur de l’abîme, Garde du fjord, Meute des neiges,
+Valkyrie du fjord, Maître des Neuf Hivers, Dernier Fennec, Ifrit des ergs,
+Horloger du Zénith) — plus la **pose de décision** des sept figures qui posent
+une question au lecteur : Salem, Yamina, la Scribe, le Djinn du tournant,
+Boualem, Mahieddine et la Valkyrie du fjord.
 
 Le **nom du fichier** dit la situation : `stand-<id>-<suffixe>.webp`, avec le
 suffixe déclaré par la situation (`affrontement`, `decision`, `apaisement`).

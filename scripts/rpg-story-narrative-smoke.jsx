@@ -5,7 +5,7 @@ import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { cardById } from '../src/games/rpgCards.js';
 import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY } from '../src/games/rpgStory.js';
 import { RPG_STORY_DECKS, RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
-import { RPG_STORY_CAMPAIGN_FLOORS, acteSuivantHistoire, sceneHistoire } from '../src/games/rpgStoryScenes.js';
+import { RPG_STORY_CAMPAIGN_FLOORS, acteSuivantHistoire, questionChoix, sceneHistoire } from '../src/games/rpgStoryScenes.js';
 import { recitHistoireVide, transitionRecitHistoire } from '../src/games/rpgStoryFlow.js';
 import { collectionJoueur, chargerCollectionDistante, revelationsDepuisEtages } from '../src/games/rpgCollection.js';
 import { RPG_PV_JOUEUR } from '../src/games/rpgDuel.js';
@@ -319,8 +319,12 @@ export async function checkRpgStoryPoses(assert) {
       }
       const scene = sceneHistoire(recit.curseur.id);
       if (scene.choix) {
+        // Chaque question a ses propres options : on prend la première, comme
+        // un lecteur qui tranche sans se poser de question.
+        const question = questionChoix(scene.choix);
         recit = transitionRecitHistoire(recit, { type: 'resumer', curseur: recit.curseur }, etages);
-        recit = transitionRecitHistoire(recit, { type: 'choisir', curseur: recit.curseur, optionId: 'publique' }, etages);
+        recit = transitionRecitHistoire(recit,
+          { type: 'choisir', curseur: recit.curseur, optionId: question.options[0].id }, etages);
       } else {
         recit = transitionRecitHistoire(recit, { type: 'continuer', curseur: recit.curseur }, etages);
       }
@@ -355,16 +359,16 @@ export async function checkRpgStoryPoses(assert) {
     assert.equal(sprite('salem').dataset.pose, 'apres', 'la scène d’après-duel a sa propre posture');
     assert.match(sprite('salem').getAttribute('src'), /stand-salem-apaisement\.webp/);
 
-    // 4. Une décision posée a sa situation à part : sans variante déclarée, la
-    //    référence revient — jamais de carré cassé ni de pose d’une autre scène.
+    // 4. Une décision posée a sa situation à part, et sa propre peinture : les
+    //    figures du plan qui en ont une la prennent ensemble, devant le lecteur.
     poserEtat({ type: 'scene', id: 'listes-2-apres', replique: dernier('listes-2-apres'), resume: false },
       { etagesVaincus: ['listes-1', 'listes-2'], scenesVues: ['listes-1-avant', 'listes-1-apres', 'listes-2-avant'] });
     await ouvrir();
     assert.ok(query('[data-story-choice-group]'), 'la décision est réellement posée');
-    assert.equal(sprite('salem').dataset.pose, undefined, 'situation « décision » : pose de référence');
-    assert.match(sprite('salem').getAttribute('src'), /stand-salem\.webp/);
-    assert.equal(sprite('scribe').dataset.pose, undefined, 'la Scribe n’a pas de variante pour une décision');
-    assert.match(sprite('scribe').getAttribute('src'), /stand-scribe\.webp/);
+    assert.equal(sprite('salem').dataset.pose, 'choix', 'la décision a sa propre posture');
+    assert.match(sprite('salem').getAttribute('src'), /stand-salem-decision\.webp/);
+    assert.equal(sprite('scribe').dataset.pose, 'choix', 'la Scribe montre la liste au lecteur');
+    assert.match(sprite('scribe').getAttribute('src'), /stand-scribe-decision\.webp/);
 
     // 5. Toute la campagne plus loin : les deux figures d'un même plan qui ont
     //    une variante l'utilisent ensemble — Salem et Mahieddine se détendent
@@ -379,6 +383,21 @@ export async function checkRpgStoryPoses(assert) {
     assert.match(sprite('salem').getAttribute('src'), /stand-salem-apaisement\.webp/);
     assert.equal(sprite('mahieddine').dataset.pose, 'apres', 'Mahieddine aussi : la même situation vaut pour tout le plan');
     assert.match(sprite('mahieddine').getAttribute('src'), /stand-mahieddine-apaisement\.webp/);
+
+    // 6. La dernière décision du récit : une figure du plan a sa pose de
+    //    décision, l'autre n'en a pas et garde sa référence — jamais de carré
+    //    cassé, et pas de pose empruntée à un autre moment.
+    const etatFinale = avancerJusqua('sables-3-apres');
+    poserEtat({
+      type: 'scene', id: 'sables-3-apres', replique: dernier('sables-3-apres'), resume: false,
+    }, { etagesVaincus: etatFinale.etages, scenesVues: etatFinale.recit.scenesVues, choix: etatFinale.recit.choix });
+    await ouvrir();
+    assert.ok(query('[data-story-choice-group]'), 'le choix du portail est posé au lecteur');
+    assert.equal(sprite('mahieddine').dataset.pose, 'choix', 'le Grand Horloger passe la plume');
+    assert.match(sprite('mahieddine').getAttribute('src'), /stand-mahieddine-decision\.webp/);
+    assert.equal(sprite('horloger-zenith').dataset.pose, undefined,
+      'sans variante de décision, l’Horloger du Zénith garde sa pose de référence');
+    assert.match(sprite('horloger-zenith').getAttribute('src'), /stand-horloger-zenith\.webp/);
   } finally {
     if (root) await act(async () => root.unmount());
     container.remove();

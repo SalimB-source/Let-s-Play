@@ -26,4 +26,4 @@ try {
   dom.window.close();
 }
 console.log('✓ La Dernière Liste : scènes, vraie victoire/défaite, migration, reprise, choix, épilogue, journal sans effet, portraits canoniques et stockage refusé');
-console.log('✓ La Dernière Liste : les poses alternatives suivent la situation (référence en cours de scène, garde avant le duel, détente après) et retombent proprement');
+console.log('✓ La Dernière Liste : les poses alternatives suivent la situation (référence en cours de scène, garde avant le duel, décision posée au lecteur, détente après) et retombent proprement');

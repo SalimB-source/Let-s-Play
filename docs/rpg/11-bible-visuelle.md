@@ -118,15 +118,18 @@ même visage, même tenue, même peinture, seule la posture change (et
 l'expression avec elle). Trois situations existent, déclarées une fois pour
 toutes dans `SITUATIONS_POSE_HISTOIRE` :
 
-| Situation | Quand elle s'applique | Posture |
-| --- | --- | --- |
-| `duel` | Dernier échange d'une scène d'avant-duel | On se met en garde, on se cambre |
-| `choix` | Une décision est posée au lecteur | La figure qui interroge tient son monde |
-| `apres` | Dernier échange d'une scène d'après-duel | Les épaules redescendent, la voix s'adoucit |
+| Situation | Fichier | Quand elle s'applique | Posture |
+| --- | --- | --- | --- |
+| `duel` | `-affrontement` | Dernier échange d'une scène d'avant-duel | On se met en garde, on se cambre |
+| `choix` | `-decision` | Une décision est posée au lecteur | La figure qui interroge tient son monde |
+| `apres` | `-apaisement` | Dernier échange d'une scène d'après-duel | Les épaules redescendent, la voix s'adoucit |
 
 Le registre est le seul endroit qui connaît les fichiers : chaque personnage
 porte `poses: { duel: 'sablier-story/stands/stand-<id>-affrontement.webp',
-apres: '…-apaisement.webp' }` et `poseHistoire(id, situation)` résout l'image.
+choix: '…-decision.webp', apres: '…-apaisement.webp' }` et
+`poseHistoire(id, situation)` résout l'image. Le nom du fichier suit toujours
+le suffixe que la situation déclare (`SITUATIONS_POSE_HISTOIRE`, champ
+`suffixe`) : le test refuse une variante mal nommée.
 **Règles de continuité :**
 
 - une situation non déclarée, inconnue ou absente retombe sur la pose de
@@ -143,25 +146,29 @@ apres: '…-apaisement.webp' }` et `poseHistoire(id, situation)` résout l'image
   vérifie que la pose change au dernier échange et revient au référentiel
   ensuite.
 
-**État livré :** les deux postures de **vingt-trois figures** — les cinq héros
-(Salem, Yamina, Fériel, Tarek, Boualem, Mahieddine), les figures de la Chambre
-(la Scribe, le Guetteur, le Puisatier des Cendres), les antagonistes des deux
-premiers actes (le Marchand de sable, la Gardienne des ksour, le Djinn du
-tournant, la Reine des étals) et **les actes des Abysses et du Fjord au
-complet** (le Pêcheur de perles, la Nageuse des puits, le Sonneur d'écume, le
-Dévoreur de l'abîme, la Garde du fjord, la Meute des neiges, la Valkyrie du
-fjord, le Maître des Neuf Hivers, le Dernier Fennec).
+**État livré :** les deux postures de **toutes les figures détourées** — les
+cinq héros (Salem, Yamina, Fériel, Tarek, Boualem, Mahieddine), les figures de
+la Chambre (la Scribe, le Guetteur, le Puisatier des Cendres) et les
+antagonistes des actes I à V (le Marchand de sable, la Gardienne des ksour, le
+Djinn du tournant, la Reine des étals, le Pêcheur de perles, la Nageuse des
+puits, le Sonneur d'écume, le Dévoreur de l'abîme, la Garde du fjord, la Meute
+des neiges, la Valkyrie du fjord, le Maître des Neuf Hivers, le Dernier Fennec,
+l'Ifrit des ergs, l'Horloger du Zénith).
 
-Trois exemples : la Scribe ouvre son registre et lève la main avant le duel,
-puis offre sa plume ; la Garde du fjord dresse son bouclier en mur devant sa
-poitrine, puis le pose contre sa jambe et ouvre la main vers la herse ; le
-Maître des Neuf Hivers abat son bâton dans la glace et fait tournoyer ses deux
-corbeaux, puis plante le bâton et offre le sceau du Nord.
+**Sept figures ont en plus leur posture de décision** — celles des cinq scènes
+où le lecteur tranche : Salem, Yamina, la Scribe, le Djinn du tournant,
+Boualem, Mahieddine et la Valkyrie du fjord. À `listes-2-apres`, la Scribe
+montre la liste ouverte au lecteur, pages tournées vers lui ; à
+`sables-3-apres`, le Grand Horloger ouvre les mains à hauteur de hanche et
+passe la plume. L'Horloger du Zénith, qui n'en a pas encore, garde sa pose de
+référence pendant ce même plan : c'est le repli, prouvé par le lecteur monté.
 
-**Il ne reste que la détente de l'Ifrit des ergs** (sa garde est livrée, la
-seconde pose est à reprendre) **et l'Horloger du Zénith**, encore sans aucune
-variante : une situation sans variante retombe simplement sur la pose de
-référence, et le registre ne déclare jamais un fichier qui n'existe pas.
+Quelques repères de la garde et de la détente : la Garde du fjord dresse son
+bouclier en mur devant sa poitrine, puis le pose contre sa jambe et ouvre la
+main vers la herse ; le Maître des Neuf Hivers abat son bâton dans la glace et
+fait tournoyer ses deux corbeaux, puis plante le bâton et offre le sceau du
+Nord ; le Sonneur d'écume hisse sa cloche de bronze au-dessus de l'épaule, puis
+s'écarte, la cloche au repos derrière le talon.
 
 ### Contour des sprites : le liseré de fond
 
@@ -180,8 +187,8 @@ Trois pièges du détourage, tous traités par l'outil et vérifiés par
    `python3 tools/check-stands.py` mesure les deux (liseré et gabarit) et nomme
    les sprites à reprendre. **Repris dans cette passe :** `stand-tarek.webp`
    (source portrait 896×1200), `stand-valkyrie-fjord.webp` et
-   `stand-ifrit-ergs.webp` (sources portrait). **69 sprites** (24 figures et
-   45 variantes) passent aujourd'hui le contrôle sans réserve.
+   `stand-ifrit-ergs.webp` (sources portrait). **79 sprites** (24 figures et
+   55 variantes) passent aujourd'hui le contrôle sans réserve.
 
 ## Mise en scène
 
