@@ -4062,7 +4062,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     });
   };
 
-  const animerModificationsChamp = (avant, attaquantsIds = [], debutJournalDestructions = null) => {
+  const animerModificationsChamp = (avant, attaquantsIds = [], debutJournalDestructions = null, entitesRenvoyees = []) => {
     if (!avant?.length) return;
     const vivants = new Map([
       ...duel.joueur.creatures,
@@ -4070,7 +4070,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ...duel.joueur.terrains,
       ...duel.sorcier.terrains,
     ].map((entite) => [entite.id, entite]));
-    const cartesDisparues = avant.filter((entite) => !vivants.has(entite.entityId));
+    const renvoyees = new Set(entitesRenvoyees.filter(Boolean));
+    const cartesDisparues = avant.filter((entite) => !vivants.has(entite.entityId)
+      && !renvoyees.has(entite.entityId));
     const mouvementReduit = animationsReduites();
     const disparues = mouvementReduit ? [] : cartesDisparues;
     const evenementsDestruction = Number.isInteger(debutJournalDestructions)
@@ -4315,11 +4317,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   // `contre` : la carte est un contresort (joué par le joueur ou par le sorcier)
   // qui défait la carte visée — le bandeau le dit au lieu de « Magie jouée ».
-  const annoncerMagie = (carte, cible, { contre = false } = {}) => {
+  const annoncerMagie = (carte, cible, { contre = false, sonForce = null } = {}) => {
     if (contre) {
       jouerSfx('card_countered');
     } else {
-      const son = rpgWaterSoundFor(carte, 'spell')
+      const son = sonForce
+        ?? rpgWaterSoundFor(carte, 'spell')
         ?? rpgFireSoundFor(carte, 'spell')
         ?? (carte?.effet?.type === 'soin' ? 'soin_long'
           : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
@@ -4385,9 +4388,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (res.ok) {
       jouerSfx('card_place');
-      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
+        [res.renvoiEntityId]);
       invaliderAnnulation();
-      annoncerMagie(carte, cibleDecrite);
+      annoncerMagie(carte, cibleDecrite, {
+        sonForce: res.renvoiMain ? 'creature_return' : null,
+      });
       setCibleEnCours(null);
       lancee = true;
       if (reponseActive && combatEntrant?.coteAttaquant === 'joueur') {
@@ -5228,8 +5234,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const reponse = rpgSorcierMagieRapide(duel, rng);
       if (reponse) {
         const carte = cardById(reponse.carteId);
-        jouerSfx(rpgWaterSoundFor(carte, 'spell') ?? rpgFireSoundFor(carte, 'spell') ?? 'magie');
-        animerModificationsChamp(champAvant, [], debutJournalDestructions);
+        jouerSfx(reponse.renvoiMain
+          ? 'creature_return'
+          : rpgWaterSoundFor(carte, 'spell') ?? rpgFireSoundFor(carte, 'spell') ?? 'magie');
+        animerModificationsChamp(champAvant, [], debutJournalDestructions,
+          [reponse.renvoiEntityId]);
         if (joueurToucheDepuis(degatsAvant)) declencherImpactEcran('received');
       }
       force();
@@ -5331,15 +5340,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur();
     const res = rpgSorcierResoudreAnnonce(duel);
     if (res.ok) {
-      const sonEffetBraise = rpgWaterSoundFor(carteAnnoncee, 'spell')
-        ?? rpgFireSoundFor(carteAnnoncee, 'spell')
-        ?? rpgFireSoundFor(carteAnnoncee, 'arrival');
+      const sonEffetBraise = res.renvoiMain
+        ? 'creature_return'
+        : rpgWaterSoundFor(carteAnnoncee, 'spell')
+          ?? rpgFireSoundFor(carteAnnoncee, 'spell')
+          ?? rpgFireSoundFor(carteAnnoncee, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
     }
     if (res.ok && joueurToucheDepuis(degatsJoueurAvantResolution)) {
       declencherImpactEcran('received');
     }
-    animerModificationsChamp(champAvant, [], debutJournalDestructions);
+    animerModificationsChamp(champAvant, [], debutJournalDestructions,
+      [res.renvoiEntityId]);
     force();
     later(annoncerSuivantSorcier, 900);
   };

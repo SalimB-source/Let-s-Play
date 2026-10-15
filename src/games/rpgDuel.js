@@ -2054,6 +2054,12 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
+  const creatureRetourneeEnMain = carte.effet.type === 'retour-main'
+    ? (carte.effet.cible === 'creature-amie'
+      ? camp.creatures.find((entite) => entite.id === cibleId)
+      : duel[adv].creatures.find((entite) => entite.id === cibleId)
+        ?? camp.creatures.find((entite) => entite.id === cibleId))
+    : null;
   if (carte.effet.type === 'combat' && carte.effet.sourceCible === 'creature-amie') {
     // Le Défi du Jarl : deux désignations — votre champion, puis la créature
     // adverse. Sans les deux, le duel n'a pas lieu et le mana reste entier.
@@ -2091,7 +2097,13 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
   rpgActionsEtat(duel);
-  return { ok: true };
+  return {
+    ok: true,
+    renvoiMain: Boolean(creatureRetourneeEnMain && !creatureRetourneeEnMain.jeton),
+    renvoiEntityId: creatureRetourneeEnMain && !creatureRetourneeEnMain.jeton
+      ? creatureRetourneeEnMain.id
+      : null,
+  };
 }
 
 /** Ouvre une fenêtre de réponse au contrôleur ciblé par la phase de combat. */
