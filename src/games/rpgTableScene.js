@@ -53,14 +53,20 @@ export function buildTableGeometry(width, height) {
   return geometry;
 }
 
-/** Cadrage « cover », comme `background-size: cover; background-position: center`. */
-export function coverTransform(planeAspect, imageAspect) {
+/** Cadrage « cover » centré, avec un zoom facultatif de la peinture. */
+export function coverTransform(planeAspect, imageAspect, zoom = 1) {
+  const scale = Number.isFinite(zoom) ? Math.max(1, zoom) : 1;
+  let repeatX, repeatY;
   if (planeAspect > imageAspect) {
-    const y = imageAspect / planeAspect;
-    return { repeatX: 1, repeatY: y, offsetX: 0, offsetY: (1 - y) / 2 };
+    repeatX = 1;
+    repeatY = imageAspect / planeAspect;
+  } else {
+    repeatX = planeAspect / imageAspect;
+    repeatY = 1;
   }
-  const x = planeAspect / imageAspect;
-  return { repeatX: x, repeatY: 1, offsetX: (1 - x) / 2, offsetY: 0 };
+  repeatX /= scale;
+  repeatY /= scale;
+  return { repeatX, repeatY, offsetX: (1 - repeatX) / 2, offsetY: (1 - repeatY) / 2 };
 }
 
 /**
@@ -328,7 +334,7 @@ export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost
     const height = visibleHeight() * OVERSCAN, width = height * size.aspect;
     table.geometry.dispose();
     table.geometry = buildTableGeometry(width, height);
-    const cover = coverTransform(size.aspect, imageAspect);
+    const cover = coverTransform(size.aspect, imageAspect, theme.paintZoom);
     plane = { width, height, cover };
     key.castShadow = current.shadows && theme.objets.length > 0;
     if (key.castShadow) {

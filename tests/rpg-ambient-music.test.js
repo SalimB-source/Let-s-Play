@@ -91,6 +91,10 @@ test('la page du duel joue la musique d’ambiance du mode Histoire sans doubler
     'la tour de l’étage en cours commande la boucle');
   assert.match(page, /RPG_PLATEAUX_MUSICAUX\.has\(plateauId\)/,
     'la page connaît les plateaux qui ont leur propre musique');
+  assert.match(page, /musiquePlateau\?\.setPlateau\(plateau\.id\)/,
+    'le lecteur reçoit le plateau choisi dans la fonction de lancement');
+  assert.match(page, /if \(modeLibre && sonActif && RPG_PLATEAUX_MUSICAUX\.has\(plateau\.id\)\) \{\s*void musiquePlateau\?\.start\(\);/,
+    'la piste du plateau démarre dans le geste du duel libre, uniquement s’il est musical');
   assert.match(page, /tourHistoireId && sonActif && !plateauMusical\) musique\.start\(\)/,
     'l’ambiance de la tour démarre seulement si le plateau n’a pas sa propre musique');
   assert.match(page, /musique\.stop\(\)/,

@@ -26,7 +26,11 @@ test('la cour de l’Empereur garde sa peinture : des pétales, aucun objet 3D',
   // peinture sert de plan.
   assert.deepEqual(theme.objets, []);
   assert.equal(theme.plaque, null);
+  assert.equal(theme.paintZoom, 1.16, 'la Cour seule rapproche la peinture');
   assert.equal(tablePlaqueFile(plateau), plateau.fichier);
+  const feuille = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+  assert.match(feuille, /\.card-table--plateau-cour-de-l-empereur::before[\s\S]*?transform:\s*scale\(1\.16\)/,
+    'le fond CSS de repli garde le même zoom que WebGL');
   // Les pétales de cerisier tombent en dérivant, comme la neige du fjord.
   const petals = theme.particles;
   assert.ok(petals.vy < 0, 'les pétales descendent');
@@ -127,6 +131,10 @@ test('le cadrage de la peinture est un « cover » centré, comme le fond CSS', 
   assert.ok(Math.abs(narrow.repeatX - 2 / 3) < 1e-9 && Math.abs(narrow.offsetX - 1 / 6) < 1e-9);
   const same = coverTransform(1.5, 1.5);
   assert.deepEqual([same.repeatX, same.repeatY, same.offsetX, same.offsetY], [1, 1, 0, 0]);
+  const close = coverTransform(2, 1.5, 1.16);
+  assert.ok(close.repeatX < wide.repeatX && close.repeatY < wide.repeatY, 'un zoom resserre le recadrage');
+  assert.ok(Math.abs(close.offsetX - (1 - close.repeatX) / 2) < 1e-9);
+  assert.ok(Math.abs(close.offsetY - (1 - close.repeatY) / 2) < 1e-9, 'le zoom reste centré');
 });
 
 test('la table est plate au centre, relevée au bord, avec des normales valides', () => {
