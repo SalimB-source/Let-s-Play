@@ -378,8 +378,8 @@ export async function checkRpgBattle(assert) {
     'la fiche précise l’identité bicolore du deck');
   assert.match(ficheHybride?.textContent ?? '', /Pétra[\s\S]*Djinn de foudre[\s\S]*Vent rouge/,
     'la liste hybride présente son terrain flexible et ses cartes bicolores');
-  assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*5[\s\S]*2[\s\S]*validé/,
-    'le deck hybride est validé à 40 cartes, avec 17 terrains, 16 créatures, 5 magies et 2 armes');
+  assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*4[\s\S]*3[\s\S]*validé/,
+    'le deck hybride est validé à 40 cartes, avec 17 terrains, 16 créatures, 4 magies et 3 armes');
   await fermerDeckOuvert();
   await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   assert.ok(findButton('Jouer avec ce deck'), 'la fiche du deck joueur permet de le lancer');
