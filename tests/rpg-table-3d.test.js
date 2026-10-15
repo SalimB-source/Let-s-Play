@@ -18,33 +18,15 @@ import { buildTableGeometry, coverTransform, rimHeight, tableObjectTransform, ti
 import { RPG_TABLE_OBJECT_KINDS, createTableObject, disposeTableObject, updateTableObject } from '../src/games/rpgTableObjects.js';
 import { tablePlaqueFile } from '../src/games/rpgTableSceneThemes.js';
 
-test('le sanctuaire du Soleil rouge relève son estampe : le torii, ses lanternes et son service en 3D', () => {
+test('le sanctuaire du Soleil rouge garde son estampe : des pétales, aucun objet 3D', () => {
   const plateau = plateauParId('sanctuaire-du-soleil-rouge');
   const theme = tableSceneTheme(plateau.id);
-  // Les objets de l'estampe sont reconstruits : la peinture d'origine garde
-  // tout (repli CSS), et la 3D pose ses objets sur la plaque « vide ».
-  assert.equal(theme.plaque, 'plateau-sanctuaire-du-soleil-rouge-vide.jpg');
-  assert.equal(tablePlaqueFile(plateau), theme.plaque);
-  assert.notEqual(theme.plaque, plateau.fichier);
-  const genres = theme.objets.map((objet) => objet.kind);
-  // Le portique une fois, ses deux lanternes, son passage, puis le service.
-  assert.deepEqual(genres, [
-    'torii', 'pierres-passage', 'lanterne-pierre', 'lanterne-pierre',
-    'bol-laque', 'eventail', 'service-sake',
-  ]);
-  assert.equal(genres.filter((genre) => genre === 'lanterne-pierre').length, 2, 'les deux lanternes de pierre');
-  // Chaque objet regarde le haut du cadre (la porte est montée de face) et
-  // occupe sa place relevée sur la peinture.
-  for (const objet of theme.objets) assert.equal(objet.angle, 90, `${objet.kind} : monté de face`);
-  const [torii, pierres, , , bol, eventail] = theme.objets;
-  assert.ok(torii.v < 0.45 && torii.u > 0.4 && torii.u < 0.6, 'le torii est en haut, au centre de la cour');
-  // Le passage des pierres court entre les deux montants : sa file part du seuil
-  // et descend vers la cour, donc son ancre tombe sous le centre du portique,
-  // sans dépasser sa base (la porte peinte fait 0,31 de haut).
-  assert.ok(pierres.v > torii.v && pierres.v < torii.v + 0.16,
-    `le passage court sous le torii, vers la cour (torii ${torii.v}, pierres ${pierres.v})`);
-  assert.ok(bol.u > 0.7 && bol.v > 0.7 && eventail.u > 0.7 && eventail.v > 0.8,
-    'le service attend au bord droit, en bas — le centre reste libre');
+  // Les accessoires de l'estampe (torii, lanternes, pierres de passage,
+  // service de saké) sont peints : rien n'est reconstruit en 3D, donc la
+  // peinture sert de plan.
+  assert.deepEqual(theme.objets, []);
+  assert.equal(theme.plaque, null);
+  assert.equal(tablePlaqueFile(plateau), plateau.fichier);
   // Les pétales de cerisier tombent en dérivant, comme la neige du fjord.
   const petals = theme.particles;
   assert.ok(petals.vy < 0, 'les pétales descendent');
@@ -52,10 +34,7 @@ test('le sanctuaire du Soleil rouge relève son estampe : le torii, ses lanterne
   const item = particleLayout(petals, 1, 3)[0];
   assert.ok(particleAt(petals, item, 3).y < item.y, 'la chute se voit');
   // Le soleil rouge est bas derrière le torii : la lumière vient de la droite.
-  assert.ok(theme.keyDirection[0] > 0 && theme.keyDirection[1] > 0, 'lumière du soleil levant');
-  // Les deux lanternes de pierre éclairent la cour, chacune de son côté.
-  assert.equal(theme.lights.length, 2);
-  assert.ok(theme.lights[0].x < 0 && theme.lights[1].x > 0, 'une lanterne par côté');
+  assert.ok(theme.keyDirection[0] > 0 && theme.keyDirection[1] > 0, ' lumière du soleil levant');
 });
 
 test('chaque plateau du catalogue a son décor 3D, et seulement eux', () => {
@@ -249,7 +228,7 @@ test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »'
 test('chaque objet se construit sous Node, posé au sol, borné et sans valeur invalide', () => {
   assert.equal(createTableObject('licorne'), null);
   // Le catalogue grandit avec les plateaux : on exige les genres déjà livrés, pas une liste figée.
-  for (const kind of ['astrolabe', 'baton', 'corde-chanvre', 'rose-rouge', 'rose-verte', 'rose-rose', 'rose-mauve', 'sapin', 'rocher', 'bol', 'bol-laque', 'compas', 'cor', 'corde', 'corde-brune', 'eventail', 'galets', 'gourde', 'hache', 'lanterne', 'lanterne-fer', 'lanterne-pierre', 'pierres-passage', 'service-sake', 'tapis', 'torii']) {
+  for (const kind of ['astrolabe', 'baton', 'corde-chanvre', 'rose-rouge', 'rose-verte', 'rose-rose', 'rose-mauve', 'sapin', 'rocher', 'bol', 'compas', 'cor', 'corde', 'corde-brune', 'galets', 'gourde', 'hache', 'lanterne', 'lanterne-fer', 'tapis']) {
     assert.ok(RPG_TABLE_OBJECT_KINDS.includes(kind), `genre livré : ${kind}`);
   }
   const byKind = {};

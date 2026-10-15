@@ -5399,9 +5399,7 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   144**, **Ruines de Tipaza 118**, Caravane de Gourara 102, Table des Heures 54).
 - `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
   `public/plateau-fjord-des-neuf-hivers.jpg`, `public/plateau-ruines-de-tipaza.jpg`,
-  `public/plateau-sanctuaire-du-soleil-rouge.jpg` et, quand le thème 3D pose des
-  objets, les plaques « vides » (`public/plateau-sanctuaire-du-soleil-rouge-vide.jpg`,
-  2048 px) que le décor charge à la place de la peinture
+  `public/plateau-sanctuaire-du-soleil-rouge.jpg`
   — les fonds, 4K (3840×2560) : des peintures vues de dessus, sans texte
   ni interface dessinée — l'interface du jeu se superpose (règle de
   `src/games/RPG-CARD-ART.md`). Le centre de chaque tableau est volontairement
