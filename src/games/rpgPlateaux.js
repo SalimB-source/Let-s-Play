@@ -85,11 +85,11 @@ export const RPG_PLATEAUX = [
     resume: 'La mosaïque de pierre noire et blanche ouverte par le vent, les dalles romaines disjointes, les fûts de colonne et le chapiteau corinthien tombés à l’entour.',
   },
   {
-    id: 'sanctuaire-du-soleil-rouge',
-    nom: 'Le Sanctuaire du Soleil rouge',
-    lieu: 'Kyō, la cour du sanctuaire, sous les cerisiers',
-    fichier: 'plateau-sanctuaire-du-soleil-rouge.jpg',
-    resume: 'Une estampe japonaise : la cour de gravier ratissé et ses cercles concentriques au centre, le torii vermillon ouvert sur ses pierres de passage, les deux lanternes de pierre allumées, et le service rangé au bord — le bol laqué, l’éventail ouvert, le plateau de saké — sous les pétales de cerisier. Le centre de la cour reste vide : c’est là que les cartes se posent.',
+    id: 'cour-de-l-empereur',
+    nom: 'La Cour de l’Empereur',
+    lieu: 'Kyō, la cour d’honneur du palais impérial',
+    fichier: 'plateau-cour-de-l-empereur.jpg',
+    resume: 'Une peinture japonaise : le grand parvis de gravier ratissé et ses cercles concentriques, vide au milieu, que gardent la véranda du trône aux tuiles turquoise et ses colonnes vermillon, les galeries couvertes des bords, les portes du palais, les lanternes de pierre, le tambour laqué, les bannières impériales, le bassin à l’eau claire, les pins et les cerisiers en fleurs. Le milieu de la cour reste vide : c’est là que les cartes se posent.',
   },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
@@ -133,9 +133,9 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'maree-des-abysses': 'ruines-de-tipaza',
   // Le Nord : le Serment des Neuf Hivers se bat sur la glace du fjord.
   'serment-des-neuf-hivers': 'fjord-des-neuf-hivers',
-  // L'Est : le Serment du Soleil rouge reçoit dans la cour de son sanctuaire,
-  // la cour de gravier ratissé de l'estampe japonaise.
-  'serment-du-soleil-rouge': 'sanctuaire-du-soleil-rouge',
+  // L'Est : le Serment du Soleil rouge reçoit dans la cour de l'Empereur, le
+  // grand parvis de gravier ratissé que garde le palais impérial.
+  'serment-du-soleil-rouge': 'cour-de-l-empereur',
   // Campagne (clés de `RPG_STORY_DECKS`) : la Souffleuse tient la piste de
   // caravane du deck hybride dont elle vient ; le Grand Horloger, lui, reçoit
   // dans la salle haute de la Chambre, sur la table d'origine. Les quatre

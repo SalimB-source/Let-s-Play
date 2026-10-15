@@ -86,35 +86,34 @@ test('les ruines de Tipaza sont livrées comme plateau de plein droit', () => {
     'le résumé annonce bien la mosaïque et les ruines romaines');
 });
 
-test('le sanctuaire du Soleil rouge est livré comme plateau de plein droit', () => {
-  const sanctuaire = plateauParId('sanctuaire-du-soleil-rouge');
-  assert.ok(sanctuaire, 'le sanctuaire du Soleil rouge fait partie des plateaux');
-  assert.match(sanctuaire.fichier, /\.jpg$/);
-  assert.match(sanctuaire.nom, /Soleil rouge/);
-  assert.match(sanctuaire.lieu, /Kyō/);
-  // Le décor de l’estampe : la cour de gravier ratissée (le centre vide où les
-  // cartes se posent), le portique, ses lanternes, le service et les pétales.
-  // La cloche de bronze et sa corde ont quitté la cour.
-  assert.doesNotMatch(sanctuaire.resume, /cloche/i, 'la cloche retirée ne se décrit plus');
-  for (const accessoire of ['ratissé', 'torii', 'lanterne', 'pierres', 'éventail', 'pétales']) {
-    assert.match(sanctuaire.resume, new RegExp(accessoire, 'i'),
+test('la cour de l’Empereur est livrée comme plateau de plein droit', () => {
+  const cour = plateauParId('cour-de-l-empereur');
+  assert.ok(cour, 'la cour de l’Empereur fait partie des plateaux');
+  assert.match(cour.fichier, /\.jpg$/);
+  assert.match(cour.nom, /Empereur/);
+  assert.match(cour.lieu, /Kyō/);
+  // Le décor de la peinture : le parvis de gravier ratissé (le milieu vide où
+  // les cartes se posent), le palais et ses tuiles turquoise, ses colonnes
+  // vermillon, ses galeries, ses lanternes de pierre et ses bannières.
+  for (const accessoire of ['ratissé', 'turquoise', 'vermillon', 'lanterne', 'tambour', 'bannières']) {
+    assert.match(cour.resume, new RegExp(accessoire, 'i'),
       `le résumé nomme ${accessoire} de la cour`);
   }
-  // Le Serment du Soleil rouge se bat chez lui, sous ses cerisiers.
-  assert.equal(RPG_PLATEAUX_PAR_DECK['serment-du-soleil-rouge'], 'sanctuaire-du-soleil-rouge');
-  assert.equal(plateauDeDeck('serment-du-soleil-rouge').plateau.id, 'sanctuaire-du-soleil-rouge');
+  // Le Serment du Soleil rouge se bat chez lui, dans la cour du palais.
+  assert.equal(RPG_PLATEAUX_PAR_DECK['serment-du-soleil-rouge'], 'cour-de-l-empereur');
+  assert.equal(plateauDeDeck('serment-du-soleil-rouge').plateau.id, 'cour-de-l-empereur');
   assert.equal(plateauDeDeck('serment-du-soleil-rouge').motif, 'deck');
-  // Le sanctuaire reste unique : pas de double merveilleux, et le second tirage
+  // La cour reste unique : pas de double merveilleux, et le second tirage
   // n’est donc jamais consommé quand il impose le terrain.
-  assert.equal(varianteFantaisisteDe('sanctuaire-du-soleil-rouge'), null);
+  assert.equal(varianteFantaisisteDe('cour-de-l-empereur'), null);
   let appels = 0;
   const tirage = tirerPlateauDuDuel({
     deckJoueur: 'serment-du-soleil-rouge', deckAdverse: 'cour-des-djinns',
     variantesFantaisistes: true, rng: () => { appels += 1; return 0.1; },
   });
-  assert.equal(tirage.plateau.id, 'sanctuaire-du-soleil-rouge');
+  assert.equal(tirage.plateau.id, 'cour-de-l-empereur');
   assert.equal(tirage.camp, 'joueur');
-  assert.equal(tirage.variante, false, 'le sanctuaire n’a pas de version fantaisiste');
+  assert.equal(tirage.variante, false, 'la cour n’a pas de version fantaisiste');
   assert.equal(appels, 1, 'terrain unique : le second tirage n’est pas consommé');
   // Quand c’est l’autre camp qui impose son terrain, le sanctuaire laisse la
   // place : le tirage départage bien les deux paquets.

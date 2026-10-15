@@ -18,11 +18,11 @@ import { buildTableGeometry, coverTransform, rimHeight, tableObjectTransform, ti
 import { RPG_TABLE_OBJECT_KINDS, createTableObject, disposeTableObject, updateTableObject } from '../src/games/rpgTableObjects.js';
 import { tablePlaqueFile } from '../src/games/rpgTableSceneThemes.js';
 
-test('le sanctuaire du Soleil rouge garde son estampe : des pétales, aucun objet 3D', () => {
-  const plateau = plateauParId('sanctuaire-du-soleil-rouge');
+test('la cour de l’Empereur garde sa peinture : des pétales, aucun objet 3D', () => {
+  const plateau = plateauParId('cour-de-l-empereur');
   const theme = tableSceneTheme(plateau.id);
-  // Les accessoires de l'estampe (torii, lanternes, pierres de passage,
-  // service de saké) sont peints : rien n'est reconstruit en 3D, donc la
+  // Les accessoires du palais (portes, galeries, tambour, bannières, bassin,
+  // pins, cerisiers) sont peints : rien n'est reconstruit en 3D, donc la
   // peinture sert de plan.
   assert.deepEqual(theme.objets, []);
   assert.equal(theme.plaque, null);
@@ -33,8 +33,8 @@ test('le sanctuaire du Soleil rouge garde son estampe : des pétales, aucun obje
   assert.ok(petals.vx > 0, 'le vent les pousse vers la droite');
   const item = particleLayout(petals, 1, 3)[0];
   assert.ok(particleAt(petals, item, 3).y < item.y, 'la chute se voit');
-  // Le soleil rouge est bas derrière le torii : la lumière vient de la droite.
-  assert.ok(theme.keyDirection[0] > 0 && theme.keyDirection[1] > 0, ' lumière du soleil levant');
+  // Le jour se lève sur le parvis : la lumière vient de la droite.
+  assert.ok(theme.keyDirection[0] > 0 && theme.keyDirection[1] > 0, ' lumière du matin');
 });
 
 test('chaque plateau du catalogue a son décor 3D, et seulement eux', () => {

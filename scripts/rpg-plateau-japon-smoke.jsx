@@ -1,6 +1,6 @@
 // Le plateau japonais du Sablier, monté pour de vrai dans jsdom : le joueur
 // ouvre le deck du Serment du Soleil rouge, lance la partie, et la table du
-// duel se couvre de l’estampe du sanctuaire.
+// duel se couvre de la cour de l’Empereur.
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
@@ -10,13 +10,13 @@ import { RPG_PLATEAUX, plateauParId } from '../src/games/rpgPlateaux.js';
 import { passerMulligan } from './rpg-duel-start.js';
 
 const DECK_ID = 'serment-du-soleil-rouge';
-const PLATEAU_ID = 'sanctuaire-du-soleil-rouge';
+const PLATEAU_ID = 'cour-de-l-empereur';
 
 export async function checkPlateauJapon(assert) {
   const plateau = plateauParId(PLATEAU_ID);
   const deck = RPG_DECKS.find(({ id }) => id === DECK_ID);
   assert.ok(deck, 'le deck du Serment du Soleil rouge fait partie du catalogue');
-  assert.ok(plateau, 'le sanctuaire du Soleil rouge fait partie des plateaux');
+  assert.ok(plateau, 'la cour de l’Empereur fait partie des plateaux');
 
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -45,11 +45,11 @@ export async function checkPlateauJapon(assert) {
     const posees = RPG_PLATEAUX.filter(({ id }) => table.classList.contains(`card-table--plateau-${id}`));
     assert.equal(posees.length, 1, 'la table porte exactement un plateau du catalogue');
     assert.equal(posees[0].id, PLATEAU_ID,
-      'le deck du Soleil rouge impose son terrain : le duel se joue au sanctuaire');
-    assert.match(table.style.backgroundImage, /plateau-sanctuaire-du-soleil-rouge\.jpg/,
-      'le fond de la table est bien l’estampe japonaise livrée dans public/');
-    assert.match(table.getAttribute('aria-label') ?? '', /Le Sanctuaire du Soleil rouge/,
-      'la table annonce le sanctuaire dans son libellé accessible');
+      'le deck du Soleil rouge impose son terrain : le duel se joue dans la cour');
+    assert.match(table.style.backgroundImage, /plateau-cour-de-l-empereur\.jpg/,
+      'le fond de la table est bien la peinture japonaise livrée dans public/');
+    assert.match(table.getAttribute('aria-label') ?? '', /La Cour de l.Empereur/,
+      'la table annonce la cour de l’Empereur dans son libellé accessible');
   } finally {
     await act(async () => { root.unmount(); });
     container.remove();

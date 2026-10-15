@@ -1,7 +1,7 @@
 /**
  * Le plateau japonais du Sablier, vérifié sur la vraie page du duel montée dans
  * jsdom (`scripts/rpg-plateau-japon-smoke.jsx`) : le deck du Serment du Soleil
- * rouge ouvre sa partie et la table se couvre de l'estampe du sanctuaire.
+ * rouge ouvre sa partie et la table se couvre de la cour de l'Empereur.
  * Complète `tests/rpg-plateaux.test.js` (le catalogue et le tirage) et
  * `npm run check:rpg-table-3d-ui` (le rendu WebGL, dans Chromium).
  *
@@ -42,11 +42,11 @@ try {
 // La peinture livrée : en 4K, au ratio 3:2 de tous les fonds, et sans texte ni
 // métadonnée d'éditeur (l'interface du jeu se superpose toujours).
 const plateauSource = readFileSync(new URL('../src/games/rpgPlateaux.js', import.meta.url), 'utf8');
-const fichier = new URL('../public/plateau-sanctuaire-du-soleil-rouge.jpg', import.meta.url);
-assert.ok(existsSync(fichier), 'le fond du sanctuaire est livré dans public/');
+const fichier = new URL('../public/plateau-cour-de-l-empereur.jpg', import.meta.url);
+assert.ok(existsSync(fichier), 'le fond de la cour est livré dans public/');
 const octets = readFileSync(fichier);
 assert.doesNotMatch(octets.toString('latin1'), /Photoshop|GIMP|Duparcq|signature|watermark|Adobe|exiftool|Canva/i,
-  'le fond du sanctuaire ne porte ni métadonnée d’éditeur ni signature');
+  'le fond de la cour ne porte ni métadonnée d’éditeur ni signature');
 // Dimensions JPEG : le marqueur SOF0 (0xC0) donne hauteur puis largeur.
 let taille = null;
 for (let i = 2; i < octets.length;) {
@@ -56,8 +56,8 @@ for (let i = 2; i < octets.length;) {
   }
   i += 2 + octets.readUInt16BE(i + 2);
 }
-assert.deepEqual(taille, { hauteur: 2560, largeur: 3840 }, 'l’estampe est livrée en 4K, comme les autres fonds');
-assert.match(plateauSource, /RPG_PLATEAUX_PAR_DECK = \{[\s\S]*?'serment-du-soleil-rouge': 'sanctuaire-du-soleil-rouge'/,
+assert.deepEqual(taille, { hauteur: 2560, largeur: 3840 }, 'la peinture est livrée en 4K, comme les autres fonds');
+assert.match(plateauSource, /RPG_PLATEAUX_PAR_DECK = \{[\s\S]*?'serment-du-soleil-rouge': 'cour-de-l-empereur'/,
   'le deck japonais est bien rattaché à son terrain dans le catalogue');
 
 console.log('Plateau japonais du Sablier : toutes les vérifications passent.');

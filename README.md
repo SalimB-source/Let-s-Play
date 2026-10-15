@@ -5342,7 +5342,7 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   tirage peut échanger le terrain imposé contre sa version fantaisiste —
   l'Erg contre le Désert de Verre, les Ruines contre les Abysses
   Phosphorescentes, le Fjord contre les Îles Célestes. La piste caravanière, la
-  Table des Heures — la table d'origine — et le Sanctuaire du Soleil rouge
+  Table des Heures — la table d'origine — et la Cour de l’Empereur
   restent uniques. Tous les fonds sont livrés en 4K (3840×2560).
 - **Les Cavernes de Cristal sont retirées.** Le double merveilleux de la Table
   des Heures quitte le jeu : son fond, sa plaque « vide », son thème 3D (les
@@ -5372,7 +5372,7 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 | `public/plateau-desert-de-verre.jpg` | **Le Désert de Verre** (double de l'Erg) | le sable vitrifié ambré et aigue-marine, l'anneau de cristal pilé, les roses de verre, l'astrolabe, l'outre et la corde. |
 | `public/plateau-abysses-phosphorescentes.jpg` | **Les Abysses Phosphorescentes** (double des Ruines) | le sable pâle sous l'eau claire, l'anneau de coquillages, les coraux, les colonnes tombées, les amphores et la raie manta. |
 | `public/plateau-iles-celestes.jpg` | **Les Îles Célestes** (double du Fjord) | le lac de glace polie où danse l'aurore, l'anneau gravé, les sapins, les rochers, la lanterne et la corde. |
-| `public/plateau-sanctuaire-du-soleil-rouge.jpg` | **Le Sanctuaire du Soleil rouge** (Kyō) | l'estampe japonaise de la cour : le gravier ratissé de ses cercles concentriques, le torii vermillon ouvert sur ses pierres de passage, les deux lanternes de pierre allumées, et le service rangé au bord droit — bol laqué, éventail ouvert, plateau de saké — sous les pétales de cerisier. Le centre de la cour reste vide : c'est là que les cartes se posent. |
+| `public/plateau-cour-de-l-empereur.jpg` | **La Cour de l'Empereur** (Kyō) | la peinture japonaise du palais : le grand parvis de gravier ratissé et ses cercles concentriques, vide au milieu, que gardent la véranda du trône aux tuiles turquoise et ses colonnes vermillon, les galeries couvertes des bords, les portes, les lanternes de pierre, le tambour laqué, les bannières impériales, le bassin à l'eau claire et les cerisiers en fleurs. Le milieu de la cour reste vide : c'est là que les cartes se posent. |
 
 ### Où vit le code
 
@@ -5395,11 +5395,10 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   **chrome** : chaque capsule — plaques des sorciers, barre de navigation du
   duel, rail du tour, compteurs de paquet et de cimetière, journal — porte son
   propre fond translucide, calibré sur la mesure des fonds livrés (luminance du
-  haut du cadre, sur 255 : **Erg du Sahara 142**, **Sanctuaire du Soleil rouge
-  144**, **Ruines de Tipaza 118**, Caravane de Gourara 102, Table des Heures 54).
+  haut du cadre, sur 255 : **Erg du Sahara 142**, **Cour de l'Empereur 127**, **Ruines de Tipaza 118**, Caravane de Gourara 102, Table des Heures 54).
 - `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
   `public/plateau-fjord-des-neuf-hivers.jpg`, `public/plateau-ruines-de-tipaza.jpg`,
-  `public/plateau-sanctuaire-du-soleil-rouge.jpg`
+  `public/plateau-cour-de-l-empereur.jpg`
   — les fonds, 4K (3840×2560) : des peintures vues de dessus, sans texte
   ni interface dessinée — l'interface du jeu se superpose (règle de
   `src/games/RPG-CARD-ART.md`). Le centre de chaque tableau est volontairement

@@ -24,12 +24,13 @@ Les neuf plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
 inconnu retombe sur celle de la Table des Heures.
 
 Deux plateaux ne posent aucun objet 3D et gardent leur peinture telle quelle : la
-Table des Heures (le bois gravé de Bab El) et le **Sanctuaire du Soleil rouge**,
-l'estampe japonaise du deck du Serment du Soleil rouge. Sur une peinture plate —
-encre, à-plats et pinceau — les accessoires dessinés (torii, lanternes, pierres
-de passage, service de saké) sont plus justes laissés au trait ; l'ambiance seule
-anime la scène : le soleil rouge derrière le torii, les deux lanternes de pierre
-qui vacillent, et les pétales de cerisier qui tombent en dérivant.
+Table des Heures (le bois gravé de Bab El) et la **Cour de l'Empereur**, la
+peinture japonaise du deck du Serment du Soleil rouge. Sur une peinture plate —
+encre, à-plats et pinceau — les accessoires dessinés (les portes du palais, les
+galeries, le tambour, les bannières, le bassin, les pins et les cerisiers) sont
+plus justes laissés au trait ; l'ambiance seule anime la scène : les deux
+lanternes de pierre qui vacillent aux bords, et les pétales de cerisier qui
+tombent en dérivant.
 
 ## Objets 3D posés sur le plateau
 
