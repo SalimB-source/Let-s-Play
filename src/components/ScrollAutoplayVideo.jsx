@@ -19,9 +19,10 @@ function isEnoughInView(element) {
  * Affiche d'abord la miniature, puis charge le lecteur YouTube muet quand au
  * moins 42 % de son cadre entre dans la fenêtre. L'autoplay démarre ainsi au
  * défilement vers le bloc vidéo, sans charger le lecteur dès l'ouverture.
- * `poster` permet de servir une miniature locale avant le repli YouTube.
+ * `poster` permet de servir une miniature locale avant le repli YouTube et
+ * `showControls` permet de masquer les commandes du lecteur si nécessaire.
  */
-export default function ScrollAutoplayVideo({ id, title, posterAlt, poster }) {
+export default function ScrollAutoplayVideo({ id, title, posterAlt, poster, showControls = true }) {
   const containerRef = useRef(null);
   const [started, setStarted] = useState(false);
 
@@ -87,7 +88,12 @@ export default function ScrollAutoplayVideo({ id, title, posterAlt, poster }) {
       />
       {started && (
         <iframe
-          src={youTubeEmbedUrl(id, { autoplay: true, muted: true, playsinline: true })}
+          src={youTubeEmbedUrl(id, {
+            autoplay: true,
+            muted: true,
+            playsinline: true,
+            controls: showControls,
+          })}
           title={title}
           loading="eager"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

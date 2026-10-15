@@ -249,6 +249,7 @@ export default function Home() {
               id={featuredNews.video}
               title={featuredNews.videoTitle}
               poster={`${base}${featuredNews.poster}`}
+              showControls={false}
             />
             <span className="news-feature-badge">{featuredNews.badge}</span>
           </div>

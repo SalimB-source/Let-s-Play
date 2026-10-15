@@ -42,6 +42,14 @@ check('autoplay au scroll : muet et intégré à la page', [
   scrollAutoplayUrl.searchParams.get('mute'),
   scrollAutoplayUrl.searchParams.get('playsinline'),
 ].join('/'), '1/1/1');
+const autoplayWithoutControlsUrl = new URL(youTubeEmbedUrl('abc', {
+  autoplay: true,
+  muted: true,
+  playsinline: true,
+  controls: false,
+}));
+check('les commandes YouTube peuvent être masquées', autoplayWithoutControlsUrl.searchParams.get('controls'), '0');
+check('les commandes restent inchangées par défaut', scrollAutoplayUrl.searchParams.has('controls'), false);
 check('pas d’autoplay par défaut', base.includes('autoplay'), false);
 check('start ignoré si absent', youTubeEmbedUrl('abc', { start: 0 }).includes('start'), false);
 check('start conservé si demandé', youTubeEmbedUrl('abc', { start: 389 }).includes('start=389'), true);
@@ -72,8 +80,14 @@ check('aucun embed YouTube codé en dur hors de src/lib/videoPlayback.js', [...o
 
 const main = readFileSync(path.join(root, 'src', 'main.jsx'), 'utf8');
 const modal = readFileSync(path.join(root, 'src', 'components', 'VideoModal.jsx'), 'utf8');
+const home = readFileSync(path.join(root, 'src', 'pages', 'Home.jsx'), 'utf8');
+const homeVideoOfDay = home.slice(
+  home.indexOf('<article className="daily-news-card home-news-card">'),
+  home.indexOf('<section className="featured-dossiers featured-dossiers--episodes'),
+);
 check('le coordinateur est démarré au lancement de l’app', /initSinglePlayback\(\)/.test(main), true);
 check('la modale coupe les lecteurs avant son autoplay', /pauseAllPlayback\(\)/.test(modal), true);
+check('la vidéo du jour sur l’accueil masque ses commandes', /showControls=\{false\}/.test(homeVideoOfDay), true);
 
 /* --------------------------------------------------- 3. DOM + protocole */
 

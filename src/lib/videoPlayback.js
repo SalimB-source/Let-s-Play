@@ -60,10 +60,10 @@ let initialized = false;
  * URL d'embed YouTube du site.
  *
  * @param {string} id identifiant de la vidéo YouTube
- * @param {{autoplay?: boolean, muted?: boolean, playsinline?: boolean, start?: number|null}} [options]
+ * @param {{autoplay?: boolean, muted?: boolean, playsinline?: boolean, controls?: boolean, start?: number|null}} [options]
  * @returns {string}
  */
-export function youTubeEmbedUrl(id, { autoplay = false, muted = false, playsinline = false, start = null } = {}) {
+export function youTubeEmbedUrl(id, { autoplay = false, muted = false, playsinline = false, controls = true, start = null } = {}) {
   const params = new URLSearchParams({ rel: '0', modestbranding: '1', enablejsapi: '1' });
   if (autoplay) params.set('autoplay', '1');
   // Les navigateurs bloquent généralement l'autoplay avec le son : les vidéos
@@ -71,6 +71,9 @@ export function youTubeEmbedUrl(id, { autoplay = false, muted = false, playsinli
   // lecteurs ouverts manuellement ailleurs sur le site.
   if (muted) params.set('mute', '1');
   if (playsinline) params.set('playsinline', '1');
+  // Par défaut, YouTube conserve ses commandes ; certains lecteurs intégrés
+  // (comme l'actu du jour sur l'accueil) peuvent les masquer.
+  if (controls === false) params.set('controls', '0');
   const seconds = Number(start);
   if (Number.isFinite(seconds) && seconds > 0) params.set('start', String(Math.floor(seconds)));
   return `${YT_ORIGIN}/embed/${id}?${params.toString()}`;
