@@ -153,9 +153,14 @@ autonome » (deck complet, PV pleins, rien de reporté).
      Persona : contour blanc franc, pointes blanches, ombre dure) avec
      l'**étiquette de nom en bulle blanche à encre sombre**, soulignée de la
      couleur du personnage ; les décisions passent en colonne centrale
-     au-dessus du duo. Sur téléphone la boîte repasse devant le duo pour la
-     lisibilité. Briefings de duel, épilogues et journal gardent les
-     portraits canoniques en page.
+     au-dessus du duo. Sur mobile / écran étroit en portrait, la fenêtre de
+     scène (`.rpg-narrative__fenetre` / `.rpg-narrative__plateau`) pose le duo
+     juste au-dessus de la boîte de dialogue (seul le bas coupé du buste glisse
+     derrière le bord supérieur de la bulle) afin que les personnages ne soient
+     jamais cachés sous le texte en bas d'écran ; en paysage mobile, les
+     personnages remontent jusqu'à la barre d'en-tête de part et d'autre d'une
+     boîte centrale resserrée. Briefings de duel, épilogues et journal gardent
+     les portraits canoniques en page.
    - **décor vivant** : travelling lent (Ken Burns) sur la peinture de la
      scène et voile de sable en boucle sans couture, sous le texte
      (`.rpg-narrative__decor` / `__sable`, couches `position: fixed` en

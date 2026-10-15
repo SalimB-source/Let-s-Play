@@ -604,7 +604,7 @@
 .rpg-story-journal__cast figcaption small { font-size: 10px; line-height: 1.5; color: #bcc8cb; }
 
 @keyframes rpg-story-appear { from { opacity: .65; } to { opacity: 1; } }
-@media (max-width: 700px) {
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .rpg-narrative__header { min-height: 70px; padding: 8px 10px; grid-template-columns: auto 1fr auto; gap: 5px; }
   .rpg-narrative__brand > span { font-size: 14px; letter-spacing: .12em; }
   .rpg-narrative__brand > small { font-size: 6px; letter-spacing: .09em; }
@@ -797,7 +797,7 @@
    réplique — la machine à écrire n'est qu'un effet visible. */
 .rpg-narrative__sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .rpg-narrative__lecture { justify-content: flex-start; gap: 6px; margin-top: 12px; }
   .rpg-narrative__lecture-btn { min-height: 30px; padding: 4px 9px; font-size: 8px; letter-spacing: .09em; }
   .rpg-narrative__fil { background: rgba(5, 10, 16, .9); }
@@ -979,28 +979,77 @@
 .rpg-narrative__scene .rpg-narrative__footer { position: relative; z-index: 5; width: min(620px, 100%); margin-left: auto; margin-right: auto; }
 .rpg-narrative__scene .rpg-narrative__footer { margin-top: 14px; }
 
-@media (min-width: 701px) and (max-height: 640px) {
-  .rpg-narrative__stand-img { max-height: 56vh; }
+@media (min-width: 901px) and (max-height: 640px) and (hover:hover), (min-width: 901px) and (max-height: 640px) and (min-device-width:601px) {
+  .rpg-narrative__stand-img { max-height: 78vh; }
 }
 
-@media (max-width: 900px) {
-  .rpg-narrative__stand { width: 30vw; }
+@media (max-width: 900px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  /* Sur écran étroit ou portrait, la boîte occupe la largeur utile : la
+     fenêtre de scène pose donc le duo juste au-dessus de la boîte de dialogue
+     (seul le bas coupé du buste glisse derrière le bord supérieur de la
+     bulle), au lieu de laisser les personnages tout en bas derrière le texte. */
+  .rpg-narrative__fenetre {
+    position: relative;
+    z-index: 2;
+    display: block;
+    width: min(640px, 100%);
+    margin: 10px auto -14px;
+    padding-top: 8px;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .rpg-narrative__plateau {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .rpg-narrative__stand {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    z-index: 2;
+    width: 48%;
+    max-width: 260px;
+    flex: 0 0 auto;
+  }
+  .rpg-narrative__stand:first-child,
+  .rpg-narrative__stand:last-child { left: auto; right: auto; }
+  .rpg-narrative__stand:only-child { left: auto; right: auto; margin: 0 auto; }
+  .rpg-narrative__stand-img {
+    max-height: clamp(200px, 35vh, 320px);
+    max-height: clamp(200px, 35dvh, 320px);
+  }
+  .rpg-narrative__stand-cadre {
+    height: clamp(190px, 31vh, 270px);
+    height: clamp(190px, 31dvh, 270px);
+  }
+  .rpg-narrative__boite { margin: 0 auto; }
   .rpg-narrative__boite,
   .rpg-narrative__scene .rpg-narrative__choices,
   .rpg-narrative__actions--scene,
   .rpg-narrative__scene .rpg-narrative__rewards,
-  .rpg-narrative__scene .rpg-narrative__footer { width: min(640px, calc(100% - 120px)); min-width: 0; }
-  .rpg-narrative__cartouche { width: min(420px, 40vw); }
+  .rpg-narrative__scene .rpg-narrative__footer { width: min(640px, 100%); min-width: 0; }
+  .rpg-narrative__scene .rpg-narrative__footer { margin-top: auto; padding-top: 14px; }
+  .rpg-narrative__cartouche { width: min(520px, 100%); }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .rpg-narrative__scene { min-height: calc(100% - 70px); padding: 10px 12px 14px; }
-  /* Sur téléphone, la lisibilité gagne : la boîte passe devant le duo, qui
-     reste visible au-dessus d'elle. */
-  .rpg-narrative__stand { width: 48vw; z-index: 2; }
-  .rpg-narrative__stand:first-child { left: -5%; }
-  .rpg-narrative__stand:last-child { right: -5%; }
-  .rpg-narrative__stand-img { max-height: 42vh; }
+  .rpg-narrative__fenetre { width: 100%; margin: 8px 0 -14px; padding-top: 6px; }
+  .rpg-narrative__stand { width: 48%; max-width: 240px; z-index: 2; }
+  .rpg-narrative__stand:first-child,
+  .rpg-narrative__stand:last-child { left: auto; right: auto; }
+  .rpg-narrative__stand:only-child { left: auto; right: auto; margin: 0 auto; }
+  .rpg-narrative__stand-img {
+    max-height: clamp(180px, 34vh, 290px);
+    max-height: clamp(180px, 34dvh, 290px);
+  }
+  .rpg-narrative__stand-cadre {
+    height: clamp(170px, 30vh, 240px);
+    height: clamp(170px, 30dvh, 240px);
+  }
   .rpg-narrative__scene .rpg-narrative__speaker { top: -14px; left: 10px; padding: 4px 11px 3px; font-size: 9px; }
   .rpg-narrative__cartouche { width: 100%; }
   .rpg-narrative__boite,
@@ -1008,9 +1057,53 @@
   .rpg-narrative__actions--scene,
   .rpg-narrative__scene .rpg-narrative__rewards,
   .rpg-narrative__scene .rpg-narrative__footer { width: 100%; min-width: 0; }
+  .rpg-narrative__boite { margin: 0 auto; }
+  .rpg-narrative__scene .rpg-narrative__footer { margin-top: auto; padding-top: 14px; }
   .rpg-narrative__scene .rpg-narrative__dialogue { min-height: 104px; padding: 16px 14px 12px; }
   .rpg-narrative__scene .rpg-narrative__dialogue p:not(.rpg-narrative__sr) { font-size: 16px; }
   .rpg-narrative__cartouche .rpg-narrative__entete h1 { font-size: 22px; }
+}
+
+@media (max-height: 520px) and (min-width: 600px) {
+  /* Téléphone en paysage : les personnages reprennent les bords gauche/droite
+     et montent jusqu'à la barre d'en-tête autour d'une boîte centrale resserrée. */
+  .rpg-narrative__scene { min-height: calc(100% - 60px); padding: 6px 16px 10px; }
+  .rpg-narrative__fenetre, .rpg-narrative__plateau { display: contents; }
+  .rpg-narrative__stand {
+    position: fixed;
+    bottom: 0;
+    z-index: 4;
+    width: clamp(220px, 31vw, 340px);
+    max-width: none;
+    margin: 0;
+  }
+  .rpg-narrative__stand:first-child { left: -1.5%; right: auto; }
+  .rpg-narrative__stand:last-child { right: -1.5%; left: auto; }
+  .rpg-narrative__stand:only-child { left: 0; right: auto; margin: 0; }
+  .rpg-narrative__stand-img {
+    max-height: calc(100vh - 54px);
+    max-height: calc(100dvh - 54px);
+  }
+  .rpg-narrative__stand-cadre {
+    height: calc(100vh - 64px);
+    height: calc(100dvh - 64px);
+    max-height: 360px;
+  }
+  .rpg-narrative__cartouche { width: min(380px, 44vw); }
+  .rpg-narrative__cartouche .rpg-narrative__entete h1 { font-size: 18px; margin-top: 2px; }
+  .rpg-narrative__cartouche .rpg-narrative__location { margin-top: 2px; }
+  .rpg-narrative__cartouche .rpg-narrative__lecture { margin-top: 6px; }
+  .rpg-narrative__boite { margin: auto auto 0; }
+  .rpg-narrative__boite,
+  .rpg-narrative__scene .rpg-narrative__choices,
+  .rpg-narrative__actions--scene,
+  .rpg-narrative__scene .rpg-narrative__rewards,
+  .rpg-narrative__scene .rpg-narrative__footer { width: min(460px, calc(100% - 250px)); min-width: 0; }
+  .rpg-narrative__scene .rpg-narrative__footer { margin-top: 6px; padding-top: 0; }
+  .rpg-narrative__scene .rpg-narrative__dialogue { min-height: 76px; padding: 14px 16px 10px; }
+  .rpg-narrative__scene .rpg-narrative__dialogue p:not(.rpg-narrative__sr) { font-size: 14px; line-height: 1.45; }
+  .rpg-narrative__actions--scene { margin-top: 8px; }
+  .rpg-narrative__actions--scene .rpg-narrative-button { min-height: 38px; padding: 6px 12px; font-size: 12px; }
 }
 
 /* Le bloc final : la mise en scène s'immobilise aussi. */
