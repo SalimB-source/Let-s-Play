@@ -363,6 +363,8 @@ test('Ressac renvoie une créature adverse dans la main de son propriétaire', (
   donner(duel, 'joueur', 'ressac');
   const res = rpgLancerMagie(duel, 'joueur', 'ressac', chien.id);
   assert.equal(res.ok, true, JSON.stringify(res));
+  assert.equal(res.renvoiMain, true, 'le moteur confirme le retour en main');
+  assert.ok(res.renvoiEntityId, 'le moteur identifie la créature renvoyée');
   assert.equal(duel.sorcier.creatures.length, 0, 'la créature quitte la table');
   assert.ok(duel.sorcier.main.includes('chien-du-guet'), 'elle retourne dans la main du sorcier');
   assert.equal(duel.sorcier.cimetiere.length, 0, 'un renvoi n’envoie rien au cimetière');
@@ -381,6 +383,7 @@ test('Courant de retour renvoie une créature adverse, puis fait piocher son lan
   donner(duel, 'joueur', 'courant-de-retour');
   const res = rpgLancerMagie(duel, 'joueur', 'courant-de-retour', colosse.id);
   assert.equal(res.ok, true, JSON.stringify(res));
+  assert.equal(res.renvoiMain, true, 'le moteur confirme le retour en main');
   assert.ok(duel.sorcier.main.includes('colosse-de-sel'), 'le Colosse repart dans la main adverse');
   assert.equal(duel.joueur.deck.length, 1, 'une carte a été piochée');
   assert.ok(duel.joueur.main.includes('mer'), 'la carte piochée vient du deck');
