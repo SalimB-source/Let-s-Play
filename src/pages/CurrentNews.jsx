@@ -9,8 +9,9 @@ import NotFound from './NotFound';
 // Les actus du jour générées par le robot (src/news/autoIndex.js, vide au
 // départ) cohabitent avec les articles manuels ci-dessous : même gabarit.
 import { autoStories } from '../news/autoIndex';
-import { dailyStories } from '../news/daily/2026-10-14';
+import { dailyStories } from '../news/daily/2026-10-15';
 import { dailyStories as dailyStories20261011 } from '../news/daily/2026-10-11';
+import { dailyStories as dailyStories20261014 } from '../news/daily/2026-10-14';
 import { incrementArticleView, getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
 import SpoilerAlert from '../components/SpoilerAlert';
@@ -28,6 +29,7 @@ const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${ima
 const stories = {
   // Édition du 14.10.2026 et archives du 11.10.2026 : données communes aux articles, cartes et SEO.
   ...dailyStories,
+  ...dailyStories20261014,
   ...dailyStories20261011,
 
   // ── Actus du mercredi 07.10.2026 ───────────────────────────────────────

@@ -11,8 +11,9 @@ import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 // une pastille « BANDE-ANNONCE » sur sa vignette (src/articleTrailers.js).
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-14';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-15';
 import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
+import { dailyNewsListing as dailyNewsListing20261014 } from '../news/daily/2026-10-14';
 
 // Images promotionnelles officielles lorsqu'elles sont disponibles. Le biopic
 // Fred Astaire n'ayant pas encore de visuel Sony, sa carte utilise une photo de
@@ -92,6 +93,7 @@ export default function CinemaNews() {
   // et Beware Boiúna —, puis celles du 26-29.09.2026.
   const articles = useMemo(() => [
     ...dailyNewsListing.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
+    ...dailyNewsListing20261014.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...dailyNewsListing20261011.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     { to: '/news/cinema/spider-man-4-destin-daniel-cretton', image: 'spider-man-4-cretton-news.jpg', fallbackImage: 'spider-man-4-cretton-news.svg', imageCredit: 'PHOTO DE PRESSE · SONY PICTURES / MARVEL STUDIOS', alt: 'Tom Holland dans le rôle de Peter Parker / Spider-Man — photo officielle Sony Pictures / Marvel Studios', badge: 'MARVEL · SONY PICTURES', kicker: '07.10.2026 · VARIETY', title: 'SPIDER-MAN 4 : LE CAP EST FIXÉ.', excerpt: 'Destin Daniel Cretton réalisera Spider-Man 4 avec Tom Holland et Zendaya. Sony Pictures et Marvel Studios arrêtent un tournage pour l’été et visent une sortie mondiale en salles en juillet 2027, intercalée entre les prochains Avengers.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/the-batman-part-ii-tournage-suspendu', image: youTubeThumbUrl('mqqft2x_Aa4'), fallbackImage: 'the-batman-part-ii-tournage-suspendu-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · WARNER BROS. PICTURES', alt: 'The Batman de Matt Reeves — miniature de la bande-annonce officielle Warner Bros. Pictures (2022)', badge: 'DC STUDIOS · TOURNAGE', kicker: '06.10.2026 · DC STUDIOS', title: 'GOTHAM RETIENT SON SOUFFLE.', excerpt: 'Warner Bros. et DC Studios ont suspendu temporairement le tournage de The Batman Part II : Matt Reeves s’éloigne de la production pour une affaire familiale, sans date de reprise. La sortie américaine reste fixée au 18 février 2028, avec Robert Pattinson, Jeffrey Wright, Andy Serkis et Colin Farrell.', read: copy.read, sentiment: 'negative' },

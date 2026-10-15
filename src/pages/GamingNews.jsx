@@ -11,8 +11,9 @@ import { getArticleViews, normalizeArticleId, formatViews } from '../lib/article
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-14';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-15';
 import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
+import { dailyNewsListing as dailyNewsListing20261014 } from '../news/daily/2026-10-14';
 
 // Visuels des cartes : les URLs absolues (images officielles hotlinkées) passent
 // telles quelles, les fichiers locaux du site prennent le préfixe du baseUrl ;
@@ -67,6 +68,7 @@ const FEATURED_COPY = {
 export const latestGamingStories = [
   // La nouvelle édition ouvre la liste ; les articles précédents sont conservés.
   ...dailyNewsListing.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
+  ...dailyNewsListing20261014.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
   ...dailyNewsListing20261011.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
   { to: '/news/gta-6-cloud-pc-dementi-xbox', image: 'gta-6-cloud-pc-dementi-news.jpg', fallbackImage: 'gta-6-cloud-pc-dementi-news.svg', alt: 'GTA VI — plan officiel de Vice City sous les néons, Rockstar Games relayé par Gamekult', badge: 'XBOX · GTA 6', kicker: '07.10.2026 · GAMEKULT', title: 'GTA 6 SUR PC : LE DÉMENTI TOMBE.', excerpt: 'Pendant quatre heures cette nuit, l’espoir d’un GTA VI jouable sur PC via Xbox Cloud Gaming a enflammé les réseaux. Matthew Ball, Chief Strategy Officer de Xbox, a coupé court aux rumeurs : le jeu ne sera pas streamé sur PC et reste strictement sur consoles au lancement.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
   { to: '/news/gta-6-satire-monde-invente', image: 'https://cdn.gamekult.com/optim/images/news/30/3050872331/nous-ne-souhaitons-cibler-aucune-personne-aucun-evenement-ni-aucun-mouvement-en-particulier-gta-vi-ne-visera-pas-la-satire-d-une-actualite-reelle-33b4df1a__930_300__0-7-2548-833.jpg', fallbackImage: 'gta-6-satire-monde-invente-news.svg', alt: 'GTA VI — visuel officiel Rockstar Games relayé par Gamekult', badge: 'ROCKSTAR · GTA 6', kicker: '06.10.2026 · GAMEKULT', title: 'ROCKSTAR INVENTE SON MONDE.', excerpt: 'Rockstar ne vise « aucune personne, aucun événement ni aucun mouvement en particulier » : la satire de GTA VI se jouera dans un État fictif nourri de la Floride, rendu plus grotesque que la réalité. Sortie maintenue au 19 novembre sur PS5 et Xbox Series.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },

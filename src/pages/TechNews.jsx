@@ -8,8 +8,9 @@ import { getArticleViews, normalizeArticleId, formatViews } from '../lib/article
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-14';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-15';
 import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
+import { dailyNewsListing as dailyNewsListing20261014 } from '../news/daily/2026-10-14';
 
 // Les URLs absolues (visuels officiels) passent telles quelles, les fichiers
 // locaux du site prennent le préfixe du baseUrl ; une carte éditoriale SVG de
@@ -92,6 +93,7 @@ export default function TechNews() {
   // visuel officiel ou éditorial de l'actu avec sa carte SVG en repli.
   const articles = useMemo(() => [
     ...dailyNewsListing.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
+    ...dailyNewsListing20261014.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...dailyNewsListing20261011.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, title: 'ANTHROPIC BRIDE SES AGENTS.', read: copy.read })),
     // Actu tech du mercredi 07.10.2026 : l'AI Act européen déclenche ses premiers
     // contrôles sur les modèles frontières (OpenAI, Google, Meta, Anthropic).

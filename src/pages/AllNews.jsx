@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { searchIndex } from '../search/searchIndex';
 import { autoSearchEntries, autoNewsListing } from '../lib/autoNews';
-import { dailyNewsListing } from '../news/daily/2026-10-14';
+import { dailyNewsListing } from '../news/daily/2026-10-15';
 import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
+import { dailyNewsListing as dailyNewsListing20261014 } from '../news/daily/2026-10-14';
 import { Arrow } from '../components/Arrow';
 import NewsCard from '../components/NewsCard';
 
@@ -16,7 +17,7 @@ export const allNewsArticles = [...new Map(
 // Réutiliser les données éditoriales lorsqu’elles sont disponibles : mêmes
 // titres, badges, dates/sources, miniatures et sentiments que les cartes Actus.
 const newsListingByRoute = new Map(
-  [...autoNewsListing, ...dailyNewsListing20261011, ...dailyNewsListing].map((story) => [story.to, story]),
+  [...autoNewsListing, ...dailyNewsListing20261011, ...dailyNewsListing20261014, ...dailyNewsListing].map((story) => [story.to, story]),
 );
 
 const COPY = {
