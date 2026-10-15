@@ -82,7 +82,7 @@ export const RPG_STORY_OPPONENT_CAST = Object.freeze({
 });
 
 /** Une seule révision de cache pour toute la famille des sprites du récit. */
-export const STAND_REVISION = 'recit-stands-2';
+export const STAND_REVISION = 'recit-stands-3';
 
 export function personnageHistoire(id) {
   return Object.hasOwn(RPG_STORY_CAST, id) ? RPG_STORY_CAST[id] : RPG_STORY_CAST.narrateur;
