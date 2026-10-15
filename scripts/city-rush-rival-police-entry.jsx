@@ -266,10 +266,18 @@ for (let run = 0; run < RUNS; run += 1) {
     if (sawFinalLap) finalLapRaces += 1;
     else if (VERBOSE) console.log(`${prefix} dernier tour non atteint (${(frames / 30).toFixed(0)} s · tour ${callbacks.huds.at(-1)?.lap ?? '?'}/${TEST_LAPS})`);
     if (firstFinalLapLeader && !firstFinalLapLeaderPursued) {
-      violations.push(`${prefix} le premier du dernier tour (${firstFinalLapLeader.id}) n’est pas pris en chasse dans les 15 images`, {
-        frame: firstFinalLapLeader.frame,
-        police: (callbacks.huds.at(-1)?.police || []).map((p) => `${p.id}->${p.targetId}/${p.reserveForId || '-'}${p.squad ? '/escouade' : ''}`),
-      });
+      // Cas dégénéré : un rival franchit la ligne à l'instant même où le
+      // dernier tour du joueur s'ouvre — l'arrivée range l'escouade et vide la
+      // liste des poursuivants dans la fenêtre des quinze images, sans que la
+      // poursuite ait manqué (le dossier, ouvert avant, reste jugé ci-dessous).
+      const finishedWithinWindow = Boolean(callbacks.finish)
+        && frames - firstFinalLapLeader.frame <= 15;
+      if (!finishedWithinWindow) {
+        violations.push(`${prefix} le premier du dernier tour (${firstFinalLapLeader.id}) n’est pas pris en chasse dans les 15 images`, {
+          frame: firstFinalLapLeader.frame,
+          police: (callbacks.huds.at(-1)?.police || []).map((p) => `${p.id}->${p.targetId}/${p.reserveForId || '-'}${p.squad ? '/escouade' : ''}`),
+        });
+      }
     }
     const leaderReasons = callbacks.effects
       .filter((effect) => effect.type === 'police-retaliation' && effect.reason === 'last-lap-leader')

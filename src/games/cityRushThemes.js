@@ -180,9 +180,9 @@ export const CITY_RUSH_THEMES = Object.freeze({
       route: CITY_RUSH_SHUTO_C1,
       // Lignes annoncées sur le panneau du portique de départ (江戸橋JCT).
       signExits: Object.freeze(['1号上野線', '6号向島線', 'B 湾岸線']),
-      // Coupe du tablier, en mètres : chaussée 13,4 + bandes d'arrêt d'urgence
+      // Coupe du tablier, en mètres : chaussée 15,8 + bandes d'arrêt d'urgence
       // + trottoir de service, puis glissière, mur antibruit et parapet.
-      deckHalfWidth: 10.6,
+      deckHalfWidth: 11.8,
       shoulderWidth: 1.5,
       barrierHeight: 1.05,
       parapetHeight: 0.95,

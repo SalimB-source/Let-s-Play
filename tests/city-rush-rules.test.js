@@ -53,6 +53,7 @@ import {
   CITY_RUSH_CAR_GAP,
   CITY_RUSH_LANE_X,
   CITY_RUSH_LANE_WIDTH,
+  CITY_RUSH_RACEWAY_LANE_WIDTH,
   CITY_RUSH_LANE_PAINT_WIDTH,
   CITY_RUSH_LANES_PER_DIRECTION,
   CITY_RUSH_ROAD_WIDTH,
@@ -530,10 +531,10 @@ test('Vice City Rush has six playable lanes with three lanes in each direction',
   assert.equal(CITY_RUSH_LANE_X.length, 6);
   assert.equal(CITY_RUSH_LANE_X.length, CITY_RUSH_LANES_PER_DIRECTION * 2);
   assert.equal(CITY_RUSH_LANES_PER_DIRECTION, 3);
-  assert.equal(CITY_RUSH_LANE_WIDTH, 2.1);
-  assert.equal(CITY_RUSH_ROAD_WIDTH, 13.4);
-  assert.equal(CITY_RUSH_ROAD_HALF_WIDTH, 6.7);
-  assert.deepEqual([...CITY_RUSH_LANE_X], [-5.25, -3.15, -1.05, 1.05, 3.15, 5.25]);
+  assert.equal(CITY_RUSH_LANE_WIDTH, 2.5);
+  assert.equal(CITY_RUSH_ROAD_WIDTH, 15.8);
+  assert.equal(CITY_RUSH_ROAD_HALF_WIDTH, 7.9);
+  assert.deepEqual([...CITY_RUSH_LANE_X], [-6.25, -3.75, -1.25, 1.25, 3.75, 6.25]);
   assert.deepEqual([...CITY_RUSH_ONCOMING_LANES], [0, 1, 2]);
   assert.deepEqual([...CITY_RUSH_FORWARD_LANES], [3, 4, 5]);
   assert.deepEqual([...CITY_RUSH_DEFAULT_LANES], [4, 5, 3]);
@@ -548,10 +549,10 @@ test('les lignes peintes séparent exactement les voies de chaque parcours', () 
   // Le marquage au sol n'est pas décoratif : chaque ligne tombe au milieu de la
   // paire de voies qu'elle sépare. Les six voies urbaines gardent ainsi leurs
   // séparateurs historiques, et la piste du Ring se coupe en quatre parts
-  // égales de 2,10 m.
+  // égales de 2,50 m.
   assert.equal(CITY_RUSH_LANE_PAINT_WIDTH, 0.16);
   const citySeparators = cityRushLaneSeparators(CITY_RUSH_CITIES[0]);
-  assert.deepEqual(citySeparators.map((x) => Number(x.toFixed(6))), [-4.2, -2.1, 0, 2.1, 4.2],
+  assert.deepEqual(citySeparators.map((x) => Number(x.toFixed(6))), [-5, -2.5, 0, 2.5, 5],
     'les six voies urbaines gardent leurs cinq séparateurs');
   assert.ok(citySeparators.every((x) => Math.abs(x) + CITY_RUSH_LANE_PAINT_WIDTH / 2 < CITY_RUSH_ROAD_HALF_WIDTH),
     'aucune ligne urbaine ne mord le trottoir');
@@ -566,7 +567,8 @@ test('les lignes peintes séparent exactement les voies de chaque parcours', () 
   separators.forEach((bridge, lane) => {
     assert.ok(Math.abs((lanes.laneX(lane) + lanes.laneX(lane + 1)) / 2 - bridge) < 1e-9,
       `la ligne ${lane + 1} tombe au milieu des voies ${lane} et ${lane + 1}`);
-    assert.ok(Math.abs(lanes.laneX(lane + 1) - lanes.laneX(lane) - CITY_RUSH_LANE_WIDTH) < 1e-9);
+    assert.ok(Math.abs(lanes.laneX(lane + 1) - lanes.laneX(lane) - CITY_RUSH_RACEWAY_LANE_WIDTH) < 1e-9,
+      'le Ring garde ses voies de 2,10 m');
   });
   assert.ok(separators.every((x) => Math.abs(x) + CITY_RUSH_LANE_PAINT_WIDTH / 2 < CITY_RUSH_RACEWAY_ROAD_HALF),
     'les lignes du Ring restent sur les 9,20 m de bitume');
@@ -869,7 +871,11 @@ test('la hit-box des voitures du trafic est resserrée : l’esquive de dernièr
 test('an oncoming collision nudges the hit car one lane without leaving the road', () => {
   assert.equal(CITY_RUSH_ONCOMING_MAX_WIDTH, 2.12);
   assert.equal(CITY_RUSH_ONCOMING_EDGE_MARGIN, 0.3);
-  assert.ok(Math.abs(CITY_RUSH_ONCOMING_SAFE_OUTER_X + 5.34) < 1e-9);
+  // La rive sûre suit la chaussée élargie : 7,30 m de demi-route, moins la
+  // demi-largeur du véhicule et la marge de rive.
+  assert.ok(Math.abs(CITY_RUSH_ONCOMING_SAFE_OUTER_X + (
+    CITY_RUSH_ROAD_HALF_WIDTH - CITY_RUSH_ONCOMING_MAX_WIDTH / 2 - CITY_RUSH_ONCOMING_EDGE_MARGIN
+  )) < 1e-9);
   assert.ok(CITY_RUSH_ONCOMING_SAFE_OUTER_X - CITY_RUSH_ONCOMING_MAX_WIDTH / 2
     >= -CITY_RUSH_ROAD_HALF_WIDTH + CITY_RUSH_ONCOMING_EDGE_MARGIN - 1e-9,
   'le véhicule le plus large conserve une marge sur le bitume');
@@ -1183,7 +1189,7 @@ test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic g
   assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].automatic, false);
   assert.match(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].description, /one pickup|un seul bonus/i);
   assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_PICKUPS.BOOST], undefined, 'le bonus turbo vert n’est pas un pouvoir stocké');
-  assert.equal(CITY_RUSH_TRACK_BOOST_DURATION, 3);
+  assert.equal(CITY_RUSH_TRACK_BOOST_DURATION, 2);
   assert.equal(CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, 1.46);
   assert.equal(CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR, CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, 'le turbo des rivaux est celui du joueur');
   assert.equal(CITY_RUSH_TRACK_BOOST_COLOR, '#50e48a');
@@ -2521,9 +2527,9 @@ test('London and the Shutō C1 drive on the left, the other courses on the right
     assert.deepEqual([...lanes.defaultLanes], [...CITY_RUSH_DEFAULT_LANES_LEFT_HAND], `${id} : la grille de départ est reflétée`);
     // Position réelle des voitures au départ : le joueur au milieu de la moitié
     // gauche, ses deux rivaux de part et d'autre.
-    assert.deepEqual([...lanes.defaultLanes].map((lane) => lanes.laneX(lane)), [-3.15, -5.25, -1.05]);
+    assert.deepEqual([...lanes.defaultLanes].map((lane) => lanes.laneX(lane)), [-3.75, -6.25, -1.25]);
     // Les abscisses ne changent pas : c'est le rôle des moitiés qui s'échange.
-    assert.deepEqual([...lanes.oncomingLanes].map((lane) => lanes.laneX(lane)), [1.05, 3.15, 5.25]);
+    assert.deepEqual([...lanes.oncomingLanes].map((lane) => lanes.laneX(lane)), [1.25, 3.75, 6.25]);
   }
 
   for (const city of CITY_RUSH_CITIES.filter((item) => item.id !== 'tokyo' && item.id !== 'london')) {

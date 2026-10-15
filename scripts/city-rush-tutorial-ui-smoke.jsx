@@ -107,7 +107,7 @@ export async function checkCityRushTutorialUi(assert) {
     await click(node.querySelectorAll('.cr-tutorial-progress-segment')[4]);
     panel = coachPanel(node);
     assert.match(squash(panel.textContent), /Traverse le conteneur jaune/);
-    assert.match(squash(panel.textContent), /BOUTON JAUNE/);
+    assert.match(squash(panel.textContent), /CONTENEUR JAUNE · 1 ROQUETTES/);
 
     const pause = new window.KeyboardEvent('keydown', { key: 'p', bubbles: true, cancelable: true });
     await act(async () => window.dispatchEvent(pause));

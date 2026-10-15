@@ -31,7 +31,8 @@ test('le bonus jaune donne un seul tir — deux roquettes par course — et la p
   assert.equal(CITY_RUSH_BAZOOKA_AMMO_PER_RACE, 2, 'une roquette par conteneur, deux conteneurs');
   assert.equal(CITY_RUSH_BAZOOKA_BLAST_CELLS, 8);
   assert.ok(CITY_RUSH_BAZOOKA_PROJECTILE_SPEED > 0);
-  assert.ok(Math.abs(CITY_RUSH_BAZOOKA_BLAST_CELLS * CITY_RUSH_LANE_WIDTH - 16.8) < 1e-9);
+  // Huit cases de voie de 2,50 m : le souffle couvre 20 m de chaussée.
+  assert.ok(Math.abs(CITY_RUSH_BAZOOKA_BLAST_CELLS * CITY_RUSH_LANE_WIDTH - 20) < 1e-9);
 });
 
 test('deux entrepôts par course, à 30 % et 65 % du parcours — le premier avant le garage de vie', () => {
@@ -105,17 +106,17 @@ test('chaque conteneur prend les deux voies extérieures du sens de course, sans
   // et celle qui la borde vers l'axe jaune. En conduite à gauche (Londres,
   // Shutō C1), tout le conteneur est reflété : sans ce miroir, il s'étalerait
   // sur les voies du contresens au lieu de rester de son côté de l'axe.
-  assert.match(worldSource, /function makeBazookaContainer\(city, pickupLaneX, side = 1\)/);
+  assert.match(worldSource, /function makeBazookaContainer\(city, pickupLaneX, side = 1, laneWidth = CITY_RUSH_LANE_WIDTH\)/);
   assert.match(worldSource, /neonText\(ctx, 'BAZOOKA HERE'/);
   assert.match(worldSource, /sign\.userData = \{ label: 'BAZOOKA HERE' \}/);
   assert.match(worldSource, /const bazookaOutwardSide = driveSide === 'left' \? -1 : 1/);
-  assert.match(worldSource, /makeBazookaContainer\(city, laneX\(bazookaPickupLane\), bazookaOutwardSide\)/);
+  assert.match(worldSource, /makeBazookaContainer\(city, laneX\(bazookaPickupLane\), bazookaOutwardSide, courseLanes\.laneWidth\)/);
   assert.match(worldSource, /const out = \(offset\) => pickupLaneX \+ side \* offset/);
   // La caisse fait exactement deux voies, de la voie de ramassage à la voie
   // voisine vers l'axe, et c'est cette largeur qui est posée sur la chaussée.
-  assert.match(worldSource, /const WIDTH = CITY_RUSH_LANE_WIDTH \* 2/);
-  assert.match(worldSource, /const innerX = out\(-CITY_RUSH_LANE_WIDTH \* 1\.5\)/);
-  assert.match(worldSource, /const outerX = out\(CITY_RUSH_LANE_WIDTH \/ 2\)/);
+  assert.match(worldSource, /const WIDTH = laneWidth \* 2/);
+  assert.match(worldSource, /const innerX = out\(-laneWidth \* 1\.5\)/);
+  assert.match(worldSource, /const outerX = out\(laneWidth \/ 2\)/);
   assert.match(worldSource, /addBox\('bazooka-container-inner-wall', \[WALL, CEILING, LENGTH\], \[innerWallX/);
   assert.match(worldSource, /addBox\('bazooka-container-outer-wall', \[WALL, CEILING, LENGTH\], \[outerWallX/);
   // Les parcours à trafic en face suivent leur côté de conduite ; le Ring,
@@ -136,11 +137,13 @@ test('chaque conteneur prend les deux voies extérieures du sens de course, sans
     );
     assert.equal(side, leftHand ? -1 : 1);
     // Les deux voies du conteneur : une voie et demie vers l'axe, une demie
-    // vers le bas-côté, soit deux voies pleines pour la caisse.
-    const innerEdge = pickupLaneX - side * CITY_RUSH_LANE_WIDTH * 1.5;
-    const outerEdge = pickupLaneX + side * CITY_RUSH_LANE_WIDTH / 2;
+    // vers le bas-côté, soit deux voies pleines pour la caisse. La largeur
+    // suit le parcours : 2,30 m en ville, 2,10 m sur un circuit.
+    const laneWidth = laneConfig.laneWidth;
+    const innerEdge = pickupLaneX - side * laneWidth * 1.5;
+    const outerEdge = pickupLaneX + side * laneWidth / 2;
     const containerWidth = (outerEdge - innerEdge) * side;
-    assert.ok(Math.abs(containerWidth - CITY_RUSH_LANE_WIDTH * 2) < 1e-9, `largeur du conteneur de ${course.name}`);
+    assert.ok(Math.abs(containerWidth - laneWidth * 2) < 1e-9, `largeur du conteneur de ${course.name}`);
     // Le conteneur ne franchit jamais l'axe jaune — sur le Ring, à sens
     // unique, sa paroi intérieure tombe exactement sur l'axe de la piste...
     assert.ok(side * innerEdge >= -1e-9, `le conteneur de ${course.name} doit rester de son côté de l'axe`);

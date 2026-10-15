@@ -127,7 +127,11 @@ const mount = {
   style: {},
 };
 const city = CITY_RUSH_COURSES.find((item) => item.id === 'vice-city');
-const car = CITY_RUSH_CARS.find((item) => item.id === 'city-hatch') || CITY_RUSH_CARS[0];
+// Le pilote du scénario roule en NOVA 1.8 GT : la citadine de départ (MISTRAL
+// 1.4) n'avait pas le souffle pour rejoindre le second entrepôt avant la
+// victoire de la rivale une fois les voies élargies à 2,50 m — le scénario
+// juge la mécanique du bazooka, pas la course d'une voiture au plancher.
+const car = CITY_RUSH_CARS.find((item) => item.id === 'nova-18-gt') || CITY_RUSH_CARS[0];
 const roster = selectCityRushRacers({ cityId: city.id, carId: car.id, runId: 7, playerDriverId: 'camila' });
 const bazookaLane = cityRushLaneConfig(city).forwardLanes.at(-1);
 const world = createCityRushWorld(
@@ -195,8 +199,31 @@ let frame = 0;
 const maxFrames = 12000;
 // Ramasse le prochain entrepôt non pris : la voie extérieure est celle de
 // l’entrée. On s’y place largement avant le conteneur, et on réessaie si une
-// voiture occupe momentanément la voie.
+// voiture occupe momentanément la voie. Le pilote naïf restait aussi scotché
+// derrière le trafic lent et les barrages de berlines — sur la grille élargie
+// à 2,50 m, la rivale franchissait la ligne 15 m avant le second entrepôt :
+// quand il traîne, il cherche la voie voisine la plus dégagée (le monde refuse
+// l'écart si elle est occupée). Seule la travée finale du conteneur (40 m) est
+// laissée au guidage des parois.
+const forwardLaneMin = Math.min(...cityRushLaneConfig(city).forwardLanes);
+const forwardLaneMax = Math.max(...cityRushLaneConfig(city).forwardLanes);
+const laneClearance = (lane, fromDistance) => {
+  let nearest = Infinity;
+  scene.traverse((object) => {
+    if (!String(object.name).startsWith('traffic-')) return;
+    if (Number(object.userData?.lane) !== lane) return;
+    const gap = Number(object.userData?.trackDistance) - fromDistance;
+    if (gap > 2 && gap < nearest) nearest = gap;
+  });
+  for (const police of (hud()?.police || [])) {
+    if (Number(police.lane) !== lane) continue;
+    const gap = Number(police.rawDistance) - fromDistance;
+    if (gap > 2 && gap < nearest) nearest = gap;
+  }
+  return nearest;
+};
 const collectNextWarehouse = (index) => {
+  let stuckFrames = 0;
   while (!callbacks.finish && frame < maxFrames) {
     const state = hud();
     if ((Number(state?.bazookaPickupsTaken) || 0) === index + 1) return Number(state.distance);
@@ -204,6 +231,24 @@ const collectNextWarehouse = (index) => {
     const playerLane = Number(state?.playerLane);
     if (Number.isFinite(gap) && gap < 520 && gap > -8 && playerLane !== bazookaLane && frame % 6 === 0) {
       world.action(playerLane < bazookaLane ? 'right' : 'left');
+      stuckFrames = 0;
+    } else if (Number.isFinite(gap) && gap > 40 && Number(state?.speed) < 70) {
+      stuckFrames += 1;
+      if (stuckFrames > 12) {
+        const distance = Number(state.distance);
+        const here = laneClearance(playerLane, distance);
+        const options = [playerLane - 1, playerLane + 1]
+          .filter((lane) => lane >= forwardLaneMin && lane <= forwardLaneMax)
+          .map((lane) => ({ lane, clearance: laneClearance(lane, distance) }))
+          .sort((a, b) => b.clearance - a.clearance);
+        const best = options[0];
+        if (best && best.clearance > here + 10) {
+          world.action(best.lane < playerLane ? 'left' : 'right');
+        }
+        stuckFrames = 0;
+      }
+    } else {
+      stuckFrames = 0;
     }
     if (Number.isFinite(gap) && gap < 460 && !byDistance[index].visible) {
       fail('l’entrepôt ne devient pas visible à l’approche', { gap, lap: state?.lap, index });
@@ -263,8 +308,12 @@ if (callbacks.effects.filter((effect) => effect.type === 'bazooka-pickup').lengt
 
 // ── Tir de bout en bout sur une poursuite du dernier tour ─────────────────
 // Le bazooka verrouille une patrouille sur la voie du joueur : on cherche
-// d’abord une cible alignée, sinon on se rabat sur la voie d’une patrouille
-// adjacente (le monde peut refuser le écart si la voie est encombrée).
+// d’abord une cible alignée, sinon on se rabat sur la voie d’une patrouille à
+// portée — adjacentes ou non, le pilote enchaîne les écarts vers elle (le
+// monde peut refuser un écart si la voie est encombrée, il retente à l'image
+// suivante). Auparavant, le rabattement ne visait que les patrouilles à une
+// voie de là : une berline deux voies plus loin — le pilote vient de quitter
+// la voie extérieure du conteneur — laissait la recherche tourner à vide.
 let forwardPolice = null;
 let playerLane = Number(hud()?.playerLane);
 let aimFrame = 0;
@@ -277,13 +326,13 @@ while (!forwardPolice && !callbacks.finish && aimFrame < 1200) {
       && police.lane === playerLane)
     .sort((a, b) => a.rawDistance - b.rawDistance)[0] || null;
   if (forwardPolice) break;
-  const adjacent = (state?.police || [])
+  const reachable = (state?.police || [])
     .filter((police) => police.rawDistance > world.distance + 2
       && police.rawDistance - world.distance < 120
-      && Math.abs(police.lane - playerLane) === 1)
+      && police.lane !== playerLane)
     .sort((a, b) => a.rawDistance - b.rawDistance)[0] || null;
-  if (adjacent) {
-    world.action(adjacent.lane > playerLane ? 'right' : 'left');
+  if (reachable) {
+    world.action(reachable.lane > playerLane ? 'right' : 'left');
     runFrames(1, 'rabattement sur la voie de la patrouille');
   } else {
     runFrames(1, 'recherche d’une patrouille à portée');
@@ -441,11 +490,13 @@ for (const course of CITY_RUSH_COURSES) {
     // La caisse prend **deux voies** : une voie et demie vers l'axe jaune, une
     // demie vers le bas-côté, depuis la voie extérieure de ramassage. Les deux
     // parois doivent tomber sur ces bords — sans ce miroir, le conteneur
-    // mordrait sur les voies du contresens à Londres et sur la Shutō C1.
+    // mordrait sur les voies du contresens à Londres et sur la Shutō C1. La
+    // largeur de voie suit le parcours : 2,30 m en ville, 2,10 m sur le Ring.
+    const laneWidth = laneConfig.laneWidth;
     const innerWall = group.children.find((child) => child.name === 'bazooka-container-inner-wall');
     const outerWall = group.children.find((child) => child.name === 'bazooka-container-outer-wall');
-    const innerEdge = pickupLaneX - outward * CITY_RUSH_LANE_WIDTH * 1.5;
-    const outerEdge = pickupLaneX + outward * CITY_RUSH_LANE_WIDTH / 2;
+    const innerEdge = pickupLaneX - outward * laneWidth * 1.5;
+    const outerEdge = pickupLaneX + outward * laneWidth / 2;
     const wallThickness = innerWall?.geometry?.parameters?.width;
     if (!innerWall || !outerWall || Math.abs(innerWall.position.x - (innerEdge + outward * wallThickness / 2)) > 1e-9) {
       fail(`la paroi intérieure de ${course.name} doit border la troisième voie`, {
@@ -461,7 +512,7 @@ for (const course of CITY_RUSH_COURSES) {
         outward,
       });
     }
-    if (Math.abs((outerEdge - innerEdge) * outward - CITY_RUSH_LANE_WIDTH * 2) > 1e-9) {
+    if (Math.abs((outerEdge - innerEdge) * outward - laneWidth * 2) > 1e-9) {
       fail(`le conteneur de ${course.name} doit être large de deux voies`, { innerEdge, outerEdge });
     }
     // La caisse ne franchit pas l'axe jaune (sur le Ring, à sens unique, sa

@@ -37,6 +37,8 @@ import {
   cityRushCornerPace,
   cityRushAiCornerPace,
   CITY_RUSH_CHASE_BEHIND,
+  CITY_RUSH_CHASE_X_SHARE,
+  CITY_RUSH_CHASE_LOOK_X_SHARE,
   CITY_RUSH_CHASE_LOOK_AHEAD,
   cityRushChasePlacement,
   cityRushChaseFollowRate,
@@ -79,6 +81,7 @@ import {
   CITY_RUSH_HEALTH_PICKUP_RESTORE,
   cityRushHealthPickupRepair,
   CITY_RUSH_MINI_GARAGE_WIDTH,
+  cityRushMiniGarageWidth,
   cityRushCarMaxHealth,
   CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
   CITY_RUSH_WRECK_SECONDS,
@@ -311,13 +314,14 @@ import {
   CITY_RUSH_DRIVING_FREE,
   CITY_RUSH_DRIVING_LANES,
   CITY_RUSH_FREE_LANE_HYSTERESIS,
+  cityRushFreeDriveStep,
   cityRushFreeFunnel,
   cityRushFreeLaneForX,
   cityRushFreeRampCatches,
   cityRushFreeRampZones,
+  cityRushFreeRoadCurvature,
   cityRushFreeSideContact,
   cityRushFreeSteerBounds,
-  cityRushFreeSteerStep,
   cityRushFreeSteerVisual,
   cityRushFreeStructurePhase,
   cityRushFreeTouchTarget,
@@ -435,10 +439,12 @@ const STEER_KEY_DIRECTIONS = Object.freeze({
 // depuis l'axe de la structure, longueurs en unités du monde (÷ SCALE pour des
 // mètres de route).
 // Mini-garage : tube néon d'entrée, poteau et paroi latérale forment une seule
-// paroi de 2,18 à 2,61 m de l'axe, de part et d'autre (voir `makeMiniGarageObject`).
-const MINI_GARAGE_WALL_FACES = Object.freeze([
-  CITY_RUSH_MINI_GARAGE_WIDTH / 2 - 0.52,
-  CITY_RUSH_MINI_GARAGE_WIDTH / 2 - 0.09,
+// paroi de 2,18 à 2,61 m de l'axe, de part et d'autre (voir
+// `makeMiniGarageObject`). La largeur du portique dépend du parcours : 5,80 m
+// en ville, 5,40 m sur un circuit permanent.
+const miniGarageWallFaces = (garageWidth = CITY_RUSH_MINI_GARAGE_WIDTH) => Object.freeze([
+  garageWidth / 2 - 0.52,
+  garageWidth / 2 - 0.09,
 ]);
 const MINI_GARAGE_FRONT_Z = 2.54; // face avant du tube néon d'entrée
 const MINI_GARAGE_BACK_Z = 2.28; // bout des parois latérales
@@ -792,9 +798,9 @@ function makeMiniGarageMaterials(city, garageLanes) {
 // centrales sont peintes au sol (flèche + « GARAGE ») et bordées de chevrons,
 // plus un panneau de bord de voie qui rappelle la distance. Tout est enfant du groupe
 // du garage : le repère disparaît avec lui quand la porte est fermée ou servie.
-function addMiniGarageLaneGuidance(group, materials, addBox) {
+function addMiniGarageLaneGuidance(group, materials, addBox, garageWidth = CITY_RUSH_MINI_GARAGE_WIDTH) {
   const signLead = CITY_RUSH_MINI_GARAGE_SIGN_LEAD * SCALE;
-  const paint = new THREE.Mesh(new THREE.PlaneGeometry(CITY_RUSH_MINI_GARAGE_WIDTH - 0.4, 6.2), materials.lanePaint);
+  const paint = new THREE.Mesh(new THREE.PlaneGeometry(garageWidth - 0.4, 6.2), materials.lanePaint);
   paint.name = 'mini-garage-lane-paint';
   paint.rotation.x = -Math.PI / 2;
   paint.position.set(0, 0.035, signLead - 1.4);
@@ -809,7 +815,7 @@ function addMiniGarageLaneGuidance(group, materials, addBox) {
       const chevron = addBox(
         'mini-garage-approach-chevron',
         [0.72, 0.03, 0.12],
-        [side * (CITY_RUSH_MINI_GARAGE_WIDTH * 0.36), 0.028, distance * SCALE],
+        [side * (garageWidth * 0.36), 0.028, distance * SCALE],
         step % 2 === 0 ? materials.accent : materials.laneMark,
       );
       chevron.rotation.y = side * (step % 2 === 0 ? 0.62 : 0.48);
@@ -818,7 +824,7 @@ function addMiniGarageLaneGuidance(group, materials, addBox) {
 
   // Panneau de bord de voie : le dernier rappel avant l'entrée.
   const postSide = 1;
-  const postX = postSide * (CITY_RUSH_MINI_GARAGE_WIDTH / 2 + 0.8);
+  const postX = postSide * (garageWidth / 2 + 0.8);
   addBox('mini-garage-sign-post', [0.1, 2.3, 0.1], [postX, 1.15, signLead], materials.body);
   addBox('mini-garage-sign-frame-road', [2.2, 0.92, 0.12], [postX, 2.5, signLead], materials.body);
   const roadSign = new THREE.Mesh(new THREE.PlaneGeometry(2.05, 0.82), materials.roadSign);
@@ -832,7 +838,7 @@ function addMiniGarageLaneGuidance(group, materials, addBox) {
   group.add(roadSignBack);
 }
 
-function makeMiniGarageObject(index, materials, garageLanes) {
+function makeMiniGarageObject(index, materials, garageLanes, garageWidth = CITY_RUSH_MINI_GARAGE_WIDTH) {
   const group = new THREE.Group();
   group.name = 'city-rush-mini-garage';
   group.userData = {
@@ -852,14 +858,14 @@ function makeMiniGarageObject(index, materials, garageLanes) {
     return mesh;
   };
 
-  const halfWidth = CITY_RUSH_MINI_GARAGE_WIDTH / 2;
+  const halfWidth = garageWidth / 2;
   // Portique ouvert, élargi pour couvrir les deux voies centrales sans
   // encombrer les voies voisines. Le joueur peut traverser par l'une ou l'autre.
-  addBox('mini-garage-floor', [CITY_RUSH_MINI_GARAGE_WIDTH + 0.3, 0.08, 5.1], [0, 0.045, 0], materials.floor);
-  addBox('mini-garage-roof', [CITY_RUSH_MINI_GARAGE_WIDTH, 0.22, 5.0], [0, 2.74, 0], materials.body);
-  addBox('mini-garage-front-beam', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.12, 0.26, 0.24], [0, 2.56, 2.38], materials.body);
-  addBox('mini-garage-back-beam', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.12, 0.22, 0.2], [0, 2.51, -2.38], materials.body);
-  addBox('mini-garage-open-shutter', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.8, 0.38, 0.12], [0, 2.25, -2.34], materials.wall);
+  addBox('mini-garage-floor', [garageWidth + 0.3, 0.08, 5.1], [0, 0.045, 0], materials.floor);
+  addBox('mini-garage-roof', [garageWidth, 0.22, 5.0], [0, 2.74, 0], materials.body);
+  addBox('mini-garage-front-beam', [garageWidth - 0.12, 0.26, 0.24], [0, 2.56, 2.38], materials.body);
+  addBox('mini-garage-back-beam', [garageWidth - 0.12, 0.22, 0.2], [0, 2.51, -2.38], materials.body);
+  addBox('mini-garage-open-shutter', [garageWidth - 0.8, 0.38, 0.12], [0, 2.25, -2.34], materials.wall);
 
   for (const side of [-1, 1]) {
     addBox('mini-garage-side-wall', [0.18, 1.9, 4.56], [side * (halfWidth - 0.18), 1.02, 0], materials.wall);
@@ -869,7 +875,7 @@ function makeMiniGarageObject(index, materials, garageLanes) {
     addBox('mini-garage-entry-mark', [0.08, 0.035, 4.65], [side * (halfWidth - 0.55), 0.105, 0], materials.accent);
   }
 
-  addBox('mini-garage-roof-neon', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.3, 0.08, 0.08], [0, 2.62, 2.53], materials.accent);
+  addBox('mini-garage-roof-neon', [garageWidth - 0.3, 0.08, 0.08], [0, 2.62, 2.53], materials.accent);
   addBox('mini-garage-sign-frame', [4.3, 0.78, 0.14], [0, 3.14, 2.52], materials.body);
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.1, 0.62), materials.sign);
   sign.name = 'mini-garage-sign';
@@ -900,7 +906,7 @@ function makeMiniGarageObject(index, materials, garageLanes) {
   }
 
   // Une indication large couvre les deux voies centrales du portique.
-  addMiniGarageLaneGuidance(group, materials, addBox);
+  addMiniGarageLaneGuidance(group, materials, addBox, garageWidth);
 
   return group;
 }
@@ -921,7 +927,7 @@ function makeMiniGarageObject(index, materials, garageLanes) {
  * Shutō C1), où tout le conteneur est reflété : sans ce miroir, il s'étalerait
  * sur les voies du contresens au lieu de rester de son côté de l'axe.
  */
-function makeBazookaContainer(city, pickupLaneX, side = 1) {
+function makeBazookaContainer(city, pickupLaneX, side = 1, laneWidth = CITY_RUSH_LANE_WIDTH) {
   const group = new THREE.Group();
   group.name = 'city-rush-bazooka-container';
   const cityName = String(city?.name || '').toUpperCase();
@@ -1016,23 +1022,23 @@ function makeBazookaContainer(city, pickupLaneX, side = 1) {
 
   // ── Cotes de la caisse ───────────────────────────────────────────────────
   // 40 pieds de long (12,20 m), hauteur de caisse haute (2,90 m sous plafond)
-  // et **deux voies** de large (4,20 m) : la voie de ramassage et celle qui la
-  // borde vers l'axe. La travée avant s'ouvre là où s'ouvrait l'ancien
+  // et **deux voies** de large (4,60 m en ville) : la voie de ramassage et celle
+  // qui la borde vers l'axe. La travée avant s'ouvre là où s'ouvrait l'ancien
   // entrepôt, à 8,70 m du repère, pour que la roquette tombe toujours à 6,10 m
   // du centre du conteneur.
   const BASE = 0.16; // plancher bois, au-dessus des rails de base
   const WALL = BAZOOKA_CONTAINER_WALL; // épaisseur de tôle
   const CEILING = 2.9; // hauteur libre sous le toit
-  const WIDTH = CITY_RUSH_LANE_WIDTH * 2; // deux voies de 2,10 m
+  const WIDTH = laneWidth * 2; // deux voies
   const LENGTH = BAZOOKA_CONTAINER_LENGTH; // 40 pieds
   const doorZ = BAZOOKA_CONTAINER_DOOR_Z;
   const backZ = doorZ - LENGTH;
   const centerZ = doorZ - LENGTH / 2;
   // Décalage latéral signé : positif vers l'extérieur de la chaussée.
   const out = (offset) => pickupLaneX + side * offset;
-  const innerX = out(-CITY_RUSH_LANE_WIDTH * 1.5);
-  const outerX = out(CITY_RUSH_LANE_WIDTH / 2);
-  const centerX = out(-CITY_RUSH_LANE_WIDTH / 2);
+  const innerX = out(-laneWidth * 1.5);
+  const outerX = out(laneWidth / 2);
+  const centerX = out(-laneWidth / 2);
   const topY = BASE + CEILING;
   const innerWallX = innerX + side * WALL / 2;
   const outerWallX = outerX - side * WALL / 2;
@@ -2916,13 +2922,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const trackWorldZ = (trackDistance, lateral = 0) => trackRelativeZ(trackDistance)
     - (path2d ? lateral * Math.sin(trackYaw(trackDistance)) * SCALE : 0);
   const miniGarageLanes = cityRushMiniGarageLanes(city);
+  const miniGarageWidth = cityRushMiniGarageWidth(city);
   const miniGarageCourse = cityRushMiniGarageAvailable({ sprint, course: city });
   const miniGarageMaterials = miniGarageCourse ? makeMiniGarageMaterials(city, miniGarageLanes) : null;
   // Une seule porte par course : celle de mi-course, à la moitié du parcours —
   // sauf sur le tōgé, où la montagne n'offre aucun garage.
   const miniGarageTrackDistances = cityRushMiniGarageTrackDistances({ laps: effectiveLaps });
   const miniGarages = miniGarageCourse ? miniGarageTrackDistances.map((trackDistance, index) => {
-    const group = makeMiniGarageObject(index + 1, miniGarageMaterials, miniGarageLanes);
+    const group = makeMiniGarageObject(index + 1, miniGarageMaterials, miniGarageLanes, miniGarageWidth);
     scene.add(group);
     return {
       index: index + 1,
@@ -2940,7 +2947,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const bazookaOutwardSide = driveSide === 'left' ? -1 : 1;
   const bazookaWarehouses = bazookaWarehouseEnabled
     ? bazookaTrackDistances.map((trackDistance, index) => {
-      const group = makeBazookaContainer(city, laneX(bazookaPickupLane), bazookaOutwardSide);
+      const group = makeBazookaContainer(city, laneX(bazookaPickupLane), bazookaOutwardSide, courseLanes.laneWidth);
       group.visible = false;
       scene.add(group);
       return {
@@ -2969,14 +2976,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // `'free'` (volant libre, `cityRushFreeDrive.js`). La page transmet la
   // préférence du joueur, conduite libre par défaut, via `setDrivingMode`.
   let drivingMode = CITY_RUSH_DRIVING_LANES;
-  // Volant libre : vitesse latérale (m/s), placement visé (démonstration du
-  // tutoriel ou écart demandé par `action`, `null` sinon), consigne du volant
-  // et sa lecture visuelle (lacet de la caisse, braquage des roues et du
-  // volant du cockpit). En conduite par voies, ces deux lectures suivent
-  // l'écart restant jusqu'au centre de la voie.
+  // Volant réel : le cap de la voiture (rad, positif nez à droite) et l'angle
+  // de braquage des roues avant (rad, positif à droite). Le glissement
+  // (`playerLateralSpeed`, m/s) devient une lecture dérivée : v·sin(cap). Le
+  // placement visé (démonstration du tutoriel ou écart demandé par `action`,
+  // `null` sinon) et la lecture visuelle (lacet de la caisse, braquage des
+  // roues et du volant du cockpit) suivent. En conduite par voies, ces deux
+  // lectures suivent l'écart restant jusqu'au centre de la voie.
   let playerLateralSpeed = 0;
+  let playerFreeHeading = 0;
+  let playerFreeSteer = 0;
   let playerSteerTarget = null;
-  let playerSteerDemand = 0;
   let playerSteerYaw = 0;
   let playerSteerVisual = 0;
   // Glissé au doigt en cours (conduite libre) : la voiture vise sa position
@@ -2997,6 +3007,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
     return freeBoundsCache;
   };
+  // Courbure du tracé sous la voiture (rad/m, positive à gauche), lissée sur
+  // la fenêtre du volant réel : c'est elle qui déporte le cap quand la route
+  // tourne — sans volant, la voiture continue tout droit.
+  const freeRoadCurvature = (atDistance) => cityRushFreeRoadCurvature(trackYaw, atDistance, {
+    lap: CITY_RUSH_LAP_LENGTH,
+  });
   let playerSlowLeft = 0;
   let playerBlueShotSlowLeft = 0;
   let playerTrafficRecoverLeft = 0;
@@ -3589,6 +3605,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let tutorialManualLeft = 0;
   let tutorialFireCooldown = 0;
   let tutorialAimSeen = false;
+  // Fraîcheur de la mire : une esquive réussie casse la mire avant que la
+  // voiture ne franchisse la ligne de voie — en conduite libre, le placement
+  // visé met encore quelques dixièmes de seconde à traverser. Le crédit
+  // d'esquive survit donc un souffle après la mire.
+  let tutorialAimFreshLeft = 0;
   let tutorialPoliceArmLeft = 0;
   let tutorialPropLeft = 0;
   let tutorialWatchdogLeft = 0;
@@ -3624,8 +3645,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function changePlayerLane(nextLane) {
     if (nextLane === playerLane || !canEnterLane('player', nextLane)) return false;
     if (freeDriving()) {
-      // Conduite libre : l'écart devient un placement visé. La voiture glisse
-      // jusqu'au centre de la voie demandée, et sa voie (la plus proche de sa
+      // Conduite libre : l'écart devient un placement visé. La voiture rejoint
+      // le centre de la voie demandée, et sa voie (la plus proche de sa
       // position) change en route, avec les mêmes traces.
       playerSteerTarget = laneX(nextLane);
       return true;
@@ -3637,13 +3658,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   /** La voie du pilote vient de changer : ligne propre et journal du tutoriel. */
   function notePlayerLaneChange() {
-    // Changer de voie ne ralentit pas : la voiture glisse à pleine allure. Seul
+    // Changer de voie ne ralentit pas : la voiture vire à pleine allure. Seul
     // le bonus de « ligne propre » retombe à zéro.
     playerCleanLineTime = 0;
     if (tutorialMode) {
       noteTutorialAction('steer');
       // Une esquive compte quand la mire rouge était déjà sur la voiture.
-      if (tutorialAimSeen && tutorialAimOnPlayer()) noteTutorialAction('dodge');
+      if (tutorialAimSeen && (tutorialAimOnPlayer() || tutorialAimFreshLeft > 0)) noteTutorialAction('dodge');
     }
   }
 
@@ -3956,6 +3977,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     tutorialActionDone = false;
     tutorialState = 'lesson';
     tutorialAimSeen = false;
+    tutorialAimFreshLeft = 0;
     tutorialPropLeft = 0;
     tutorialWatchdogLeft = CITY_RUSH_TUTORIAL_LESSON_TIMEOUT;
     tutorialLastAction = null;
@@ -4037,7 +4059,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       tutorialWeapons(dt, lesson);
       // ── La mire de la police, leçon « Poursuite » ─────────────────────
       if (lesson?.id === 'police') {
-        if (!tutorialAimSeen && tutorialAimOnPlayer()) tutorialAimSeen = true;
+        if (tutorialAimOnPlayer()) {
+          tutorialAimSeen = true;
+          tutorialAimFreshLeft = 1.5;
+        } else {
+          tutorialAimFreshLeft = Math.max(0, tutorialAimFreshLeft - dt);
+        }
         if (!tutorialAimSeen && tutorialPoliceArmLeft <= 0) {
           armTutorialPolice();
           tutorialPoliceArmLeft = 4;
@@ -4531,6 +4558,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     tutorialManualLeft = 0;
     tutorialFireCooldown = 0;
     tutorialAimSeen = false;
+    tutorialAimFreshLeft = 0;
     tutorialPoliceArmLeft = 0;
     tutorialPropLeft = 0;
     tutorialWatchdogLeft = CITY_RUSH_TUTORIAL_LESSON_TIMEOUT;
@@ -4547,8 +4575,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerLane = playerStartLane;
     playerX = laneX(playerLane);
     playerLateralSpeed = 0;
+    playerFreeHeading = 0;
+    playerFreeSteer = 0;
     playerSteerTarget = null;
-    playerSteerDemand = 0;
     playerSteerYaw = 0;
     playerSteerVisual = 0;
     touchSteer = null;
@@ -8503,7 +8532,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // conteneurs à bazooka, et les joues des tremplins.
   function freeStructures(halfWidth) {
     const structures = [];
-    const [garageInner, garageOuter] = MINI_GARAGE_WALL_FACES;
+    const [garageInner, garageOuter] = miniGarageWallFaces(miniGarageWidth);
     for (const garage of miniGarages) {
       if (garage.used || !garage.group.visible || !miniGarageAvailable(garage)) continue;
       structures.push({
@@ -8516,8 +8545,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Mêmes cotes que `makeBazookaContainer` : la paroi intérieure longe la
       // voie voisine, la paroi extérieure le bord de la voie de ramassage.
       const pickupX = laneX(bazookaPickupLane);
-      const innerX = pickupX - bazookaOutwardSide * CITY_RUSH_LANE_WIDTH * 1.5;
-      const outerX = pickupX + bazookaOutwardSide * CITY_RUSH_LANE_WIDTH / 2;
+      const innerX = pickupX - bazookaOutwardSide * courseLanes.laneWidth * 1.5;
+      const outerX = pickupX + bazookaOutwardSide * courseLanes.laneWidth / 2;
       const zones = cityRushFreeWallZones([
         [innerX, innerX + bazookaOutwardSide * BAZOOKA_CONTAINER_WALL],
         [outerX, outerX - bazookaOutwardSide * BAZOOKA_CONTAINER_WALL],
@@ -8568,16 +8597,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   /**
-   * Une image de volant libre : consigne (touche tenue, glissé au doigt ou
-   * placement visé), glissement borné par la chaussée, voitures à hauteur,
+   * Une image de volant réel : consigne (touche tenue, glissé au doigt ou
+   * placement visé), cap et braquage intégrés (modèle bicyclette, la route
+   * déporte le cap), glissement borné par la chaussée, voitures à hauteur,
    * structures, puis voie du pilote déduite de sa position.
    */
   function updateFreeSteering(dt) {
     const bounds = freeSteerBounds();
     const halfWidth = playerCollisionWidth() / 2;
     const priorX = playerX;
-    // Toupie, épave ou saut : le volant ne répond plus, et la voiture ne
-    // glisse pas en l'air.
+    // Toupie, épave ou saut : le volant ne répond plus, la voiture ne tourne
+    // plus et ne glisse pas en l'air — cap et braquage gèlent.
     const canSteer = !playerWrecked && playerStunLeft <= 0 && !playerJumpState.active;
     let input = 0;
     let target = null;
@@ -8594,21 +8624,29 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         aimingSteerTarget = true;
       }
     }
-    const step = cityRushFreeSteerStep({
+    // Un pas de volant réel : le volant tourne le nez, la route qui tourne
+    // déporte le cap, le cap déporte la voiture — et rien ne la ramène.
+    const step = cityRushFreeDriveStep({
       x: playerX,
-      velocity: canSteer ? playerLateralSpeed : 0,
+      heading: playerFreeHeading,
+      steer: playerFreeSteer,
       input,
       target,
       dt,
       speed: currentSpeed,
+      curvature: freeRoadCurvature(distance),
+      frozen: !canSteer,
       bounds,
     });
     let nextX = step.x;
-    let lateral = step.velocity;
+    let heading = step.heading;
+    let lateral = step.lateral;
     if (aimingSteerTarget && step.arrived) playerSteerTarget = null;
     // Une voiture à hauteur ne se traverse pas. Le pilote qui tourne vers elle
     // la pousse : c'est le choc latéral, comme un écart refusé en conduite par
-    // voies (un seul choc par côte-à-côte, voir `trySideBump`).
+    // voies (un seul choc par côte-à-côte, voir `trySideBump`). Le cap, lui,
+    // tient : la voiture reste penchée vers sa voisine, le temps qu'elle se
+    // range.
     const contact = cityRushFreeSideContact({ fromX: priorX, toX: nextX, halfWidth, cars: freeSideObstacles() });
     if (contact.blocked) {
       nextX = contact.x;
@@ -8617,16 +8655,25 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         trySideBump(contact.blocker.lane);
       }
     }
-    // Parois du mini-garage et du conteneur, joues des tremplins.
+    // Parois du mini-garage et du conteneur, joues des tremplins : elles
+    // canalisent la voiture et lui remettent le nez dans l'axe du passage.
     const channelled = applyFreeStructures(nextX, dt, halfWidth);
     if (channelled !== nextX) {
-      if (Math.sign(channelled - nextX) !== Math.sign(lateral)) lateral = 0;
       nextX = channelled;
+      heading = 0;
+      lateral = 0;
+    }
+    // Bord de la chaussée : la voiture bute et le nez se redresse le long du
+    // bord — elle frotte jusqu'à ce que le pilote dégage.
+    if (step.edge) {
+      heading = 0;
+      lateral = 0;
     }
     playerX = nextX;
+    playerFreeHeading = heading;
+    playerFreeSteer = step.steer;
     playerLateralSpeed = lateral;
-    playerSteerDemand = canSteer ? step.desired : 0;
-    const nextLane = cityRushFreeLaneForX(playerX, playerLane, courseLaneXs, CITY_RUSH_FREE_LANE_HYSTERESIS);
+    const nextLane = cityRushFreeLaneForX(playerX, playerLane, courseLaneXs, CITY_RUSH_FREE_LANE_HYSTERESIS, courseLanes.laneWidth);
     if (nextLane !== playerLane) {
       playerLane = nextLane;
       notePlayerLaneChange();
@@ -9708,8 +9755,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       countdownTime += dt;
       const t = smoothstep(countdownTime / 3.1);
       const fromX = px - 5.4;
-      cameraTarget.set(lerp(fromX, CHASE_POSITION.x + px * 0.16, t), lerp(1.5, CHASE_POSITION.y, t), lerp(PLAYER_Z - 6.2, CHASE_POSITION.z, t));
-      lookTarget.set(lerp(px, px * 0.09, t), lerp(1.0, CHASE_LOOK.y, t), lerp(PLAYER_Z, CHASE_LOOK.z, t));
+      cameraTarget.set(lerp(fromX, CHASE_POSITION.x + px * CITY_RUSH_CHASE_X_SHARE, t), lerp(1.5, CHASE_POSITION.y, t), lerp(PLAYER_Z - 6.2, CHASE_POSITION.z, t));
+      lookTarget.set(lerp(px, px * CITY_RUSH_CHASE_LOOK_X_SHARE, t), lerp(1.0, CHASE_LOOK.y, t), lerp(PLAYER_Z, CHASE_LOOK.z, t));
       targetFovOffset = lerp(-6, 0, t);
       followRate = 6;
     } else if (phase === 'finished') {
@@ -9741,11 +9788,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const jumpCamY = (playerJumpState.active || playerLandingBounce > 0) ? (playerCar.position.y || 0) * 0.42 : 0;
       const jumpLookY = (playerJumpState.active || playerLandingBounce > 0) ? (playerCar.position.y || 0) * 0.35 : 0;
       cameraTarget.set(
-        px * 0.16 + chase.cameraX + Math.sin(clockTime * 47) * shake,
+        px * CITY_RUSH_CHASE_X_SHARE + chase.cameraX + Math.sin(clockTime * 47) * shake,
         CHASE_POSITION.y + chase.cameraHill + Math.cos(clockTime * 39) * shake * 0.6 - speedRatio * 0.5 + jumpCamY,
         PLAYER_Z + chase.cameraZ + speedRatio * 0.6,
       );
-      lookTarget.set(px * 0.09 + chase.lookX, CHASE_LOOK.y + chase.lookHill + jumpLookY, PLAYER_Z + chase.lookZ);
+      lookTarget.set(px * CITY_RUSH_CHASE_LOOK_X_SHARE + chase.lookX, CHASE_LOOK.y + chase.lookHill + jumpLookY, PLAYER_Z + chase.lookZ);
       targetFovOffset = (playerBoostLeft > 0 ? 6 : 0) + speedRatio * 2.5;
       // Une poursuite ancrée suit plus ferme : dans une cassure, l'axe tourne
       // de 45° en un quart de seconde et le retard de lissage ferait couper le
@@ -9919,8 +9966,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt, coursePace);
       const priorPlayerX = playerX;
       // Conduite par voies : la voiture rejoint le centre de sa voie. Conduite
-      // libre : le volant pilote une vitesse latérale, et la voie du pilote suit
-      // sa position (voir `updateFreeSteering`).
+      // libre : le volant tourne le nez de la voiture et la voie du pilote
+      // suit sa position (voir `updateFreeSteering`).
       if (freeDriving()) updateFreeSteering(dt);
       else playerX = lerp(playerX, laneX(playerLane), Math.min(1, dt * 12));
       const playerSuvImpactAmount = playerWrecked
@@ -10047,9 +10094,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           pace: racerPace,
           storyPace: storyPaceBoost,
         });
+        // Mêmes bonus que le joueur : ligne propre (voie tenue) et contresens
+        // (jauge cumulative dans les voies inverses), voir `cityRushCleanLineFactor`
+        // et `cityRushOncomingBonusFactor`. Le turbo est déjà dans `speedTarget`.
+        racer.cleanLineTime = (racer.cleanLineTime || 0) + dt;
+        const racerInOncomingLane = !racer.wrecked && racer.stunLeft <= 0 && oncomingLaneSet.has(racer.lane);
+        racer.oncomingTime = advanceCityRushOncomingBonus(racer.oncomingTime || 0, dt, racerInOncomingLane);
+        rivalTargetTopSpeed *= cityRushCleanLineFactor(racer.cleanLineTime) * cityRushOncomingBonusFactor(racer.oncomingTime);
         // Une interception reste une poursuite, pas une course perdue au
         // premier ravitaillement : la cible ajuste son allure, sans téléportation,
         // pour rester à portée et devant le canon. Les autres modes sont inchangés.
+        // Le calage s'applique APRÈS les bonus : un fugitif qui cumule la jauge
+        // de contresens (jusqu'à ×1,35) filait à 1,24 fois la vitesse de son
+        // poursuivant et l'interception se perdait — la cible doit ralentir
+        // pour rester à portée de canon, bonus compris.
         if (missionFugitiveIds.has(racer.id) && missionTargetLeadMax > 0) {
           const lead = racer.distance - distance;
           if (lead > missionTargetLeadMax) {
@@ -10058,13 +10116,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             rivalTargetTopSpeed = Math.max(rivalTargetTopSpeed, playerCurrentSpeed * 1.18);
           }
         }
-        // Mêmes bonus que le joueur : ligne propre (voie tenue) et contresens
-        // (jauge cumulative dans les voies inverses), voir `cityRushCleanLineFactor`
-        // et `cityRushOncomingBonusFactor`. Le turbo est déjà dans `speedTarget`.
-        racer.cleanLineTime = (racer.cleanLineTime || 0) + dt;
-        const racerInOncomingLane = !racer.wrecked && racer.stunLeft <= 0 && oncomingLaneSet.has(racer.lane);
-        racer.oncomingTime = advanceCityRushOncomingBonus(racer.oncomingTime || 0, dt, racerInOncomingLane);
-        rivalTargetTopSpeed *= cityRushCleanLineFactor(racer.cleanLineTime) * cityRushOncomingBonusFactor(racer.oncomingTime);
         // Rattrapage : un rival qui a pris du retard sur le joueur accélère
         // (voir `cityRushRivalCatchupFactor`) ; un rival devant reste à 1.
         rivalTargetTopSpeed *= cityRushRivalCatchupFactor(distance - racer.distance);
@@ -10312,11 +10363,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
       const playerSpin = cityRushStunSpin(playerStunLeft, playerStunTotal, playerWrecked ? playerWreckSpinTurns : undefined);
       // Lacet et braquage : l'écart restant jusqu'au centre de la voie en
-      // conduite par voies, le glissement latéral en conduite libre. Le volant
-      // du cockpit lit le même braquage.
+      // conduite par voies ; en conduite libre, le lacet EST le cap de la
+      // voiture et le braquage l'angle réel de ses roues — le volant du
+      // cockpit lit le même braquage.
       if (freeDriving()) {
-        playerSteerYaw = cityRushFreeYaw(playerLateralSpeed);
-        playerSteerVisual = cityRushFreeSteerVisual({ velocity: playerLateralSpeed, desired: playerSteerDemand });
+        playerSteerYaw = cityRushFreeYaw(playerFreeHeading);
+        playerSteerVisual = cityRushFreeSteerVisual(playerFreeSteer);
       } else {
         playerSteerYaw = clamp((laneX(playerLane) - playerX) * -0.06, -0.12, 0.12);
         playerSteerVisual = clamp((laneX(playerLane) - playerX) * 0.28, -0.34, 0.34);
@@ -11173,6 +11225,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       releaseSteerKeys();
       touchSteer = null;
       playerLateralSpeed = 0;
+      playerFreeHeading = 0;
+      playerFreeSteer = 0;
       currentSpeed = 0;
       audioRef?.current?.engine({ speed: 0, throttle: 0, idle: true });
     },
@@ -11201,8 +11255,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (next === drivingMode) return;
       drivingMode = next;
       playerLateralSpeed = 0;
+      playerFreeHeading = 0;
+      playerFreeSteer = 0;
       playerSteerTarget = null;
-      playerSteerDemand = 0;
+      playerSteerYaw = 0;
+      playerSteerVisual = 0;
       touchSteer = null;
       if (next === CITY_RUSH_DRIVING_LANES) {
         const nearest = cityRushFreeLaneForX(playerX, playerLane, courseLaneXs, 0);

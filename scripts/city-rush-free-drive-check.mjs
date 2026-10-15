@@ -94,6 +94,8 @@ const HARNESS_ACCESS = `    // Harnais « conduite libre » : pilote, voitures e
         get lane() { return playerLane; },
         get x() { return playerX; },
         get lateral() { return playerLateralSpeed; },
+        get heading() { return playerFreeHeading; },
+        get steerAngle() { return playerFreeSteer; },
         get steerTarget() { return playerSteerTarget; },
         get cleanLine() { return playerCleanLineTime; },
         get distance() { return distance; },
@@ -107,12 +109,17 @@ const HARNESS_ACCESS = `    // Harnais « conduite libre » : pilote, voitures e
         halfLength: FREE_DRIVE_HALF_LENGTH,
         laneX: (lane) => laneX(lane),
         structures: () => freeStructures(playerCollisionWidth() / 2),
+        curvature: () => freeRoadCurvature(distance),
         place(x) {
           playerX = x;
           playerLane = cityRushFreeLaneForX(x, playerLane, courseLaneXs, 0);
           playerLateralSpeed = 0;
+          playerFreeHeading = 0;
+          playerFreeSteer = 0;
           playerSteerTarget = null;
         },
+        aim(x) { playerSteerTarget = Number(x); },
+        warp(d) { distance = Math.max(0, Number(d) || 0); },
         stunFor(seconds) { playerStunLeft = seconds; playerStunTotal = seconds; },
       };
     },
