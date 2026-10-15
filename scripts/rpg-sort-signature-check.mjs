@@ -94,6 +94,127 @@ assert.match(atelierCss, /\.rpg-atelier__carte-art\s*\{[^}]*--rpg-card-marker-si
 assert.match(pageSource, /<SortSceau carte=\{carte\} className="rpg-card-catalogue__sort" \/>/,
   'la vignette du catalogue monte le sceau');
 
+// ── La lueur de jouabilité : l'azur pour ce qui se pose, la famille pour un sort ─
+// Le halo de la main garde une seule règle d'allumage — `is-playable`, posé sur
+// le même verdict que le clic et le glisser-déposer, mana compris —, mais sa
+// teinte suit la famille : l'or pour la Magie Rapide, l'améthyste pour la
+// Sorcellerie, l'azur pour tout ce qui se POSE — créature, héros, terrain,
+// arme. Les deux familles déclarent leur teinte une fois, avec leur signature ;
+// l'azur, lui, n'est écrit qu'en repli de la règle commune, celle que lit toute
+// face sans famille.
+const haloMain = battleCss.match(/\.rpg-hand__card\.is-playable\s*\{([^}]*)\}/s)?.[1] ?? '';
+const haloSurvol = battleCss.match(/\.rpg-hand__card\.is-playable:hover:not\(:disabled\)\s*\{([^}]*)\}/s)?.[1] ?? '';
+assert.ok(haloMain && haloSurvol, 'la main allume ses cartes jouables, au repos comme au survol');
+assert.match(haloMain, /rgba\(var\(--rpg-play-halo-clair, 176, 197, 255\), \.98\)/,
+  'l’anneau du halo lit le reflet clair de la famille, l’azur pâle en repli — c’est lui que reçoivent créatures, terrains et armes');
+assert.match(haloMain, /rgba\(var\(--rpg-play-halo, 77, 125, 255\), \.92\)/,
+  'le flou extérieur suit la même variable, presque opaque : un halo, une teinte');
+assert.match(haloSurvol, /rgba\(var\(--rpg-play-halo-clair, 176, 197, 255\), 1\)/,
+  'le survol éclaircit l’anneau dans le reflet clair de la famille, densité pleine');
+assert.doesNotMatch(haloMain + haloSurvol, /border-color:/,
+  'le halo ne repeint jamais la bordure : la couleur du cadre reste celle de l’élément');
+const haloDeFamille = (famille) => battleCss.match(new RegExp(`\\.rpg-hand__card--famille-${famille}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+const triplet = (nom, bloc) => bloc.match(new RegExp(`--${nom}:\\s*(\\d+), (\\d+), (\\d+);`))?.slice(1).map(Number) ?? null;
+// L'azur des cartes qui se POSENT n'est déclaré nulle part : c'est le repli de
+// la règle commune, celui que lit toute face sans famille.
+const repli = (nom, bloc) => bloc.match(
+  new RegExp(`--${nom}, (\\d+), (\\d+), (\\d+)`),
+)?.slice(1).map(Number) ?? null;
+const azur = repli('rpg-play-halo', haloMain);
+const azurClair = repli('rpg-play-halo-clair', haloMain);
+const or = triplet('rpg-play-halo', haloDeFamille('rapide'));
+const orClair = triplet('rpg-play-halo-clair', haloDeFamille('rapide'));
+const amethyste = triplet('rpg-play-halo', haloDeFamille('sorcellerie'));
+const amethysteClair = triplet('rpg-play-halo-clair', haloDeFamille('sorcellerie'));
+assert.ok(azur && azurClair && or && orClair && amethyste && amethysteClair,
+  'les trois lueurs sont déclarées : l’azur en repli, l’or et l’améthyste par les familles');
+assert.ok(azur[2] > azur[0] && azur[2] > azur[1],
+  `la lueur des cartes qui se posent est bleue (reçu : ${azur.join(', ')})`);
+assert.ok(or[0] > or[2] && or[1] > or[2],
+  `la lueur de la Magie Rapide est jaune (reçu : ${or.join(', ')})`);
+assert.ok(amethyste[0] > amethyste[1] && amethyste[2] > amethyste[1],
+  `la lueur de la Sorcellerie est violette (reçu : ${amethyste.join(', ')})`);
+assert.notDeepEqual(or, amethyste,
+  'les deux familles ne s’allument pas de la même couleur');
+assert.notDeepEqual(azur, or,
+  'la Magie Rapide ne s’allume pas du bleu des cartes qui se posent');
+assert.deepEqual(or, teinteRapide.slice(1).map(Number),
+  'la Magie Rapide s’allume de l’or de son socle : le socle dit la famille, la lueur aussi');
+assert.deepEqual(azur, [77, 125, 255],
+  'et l’azur des cartes qui se posent est celui que la Magie Rapide portait avant l’échange');
+assert.deepEqual(or, [255, 214, 25],
+  'l’or de la Magie Rapide étant, lui, celui qui servait de repli avant l’échange');
+assert.deepEqual(amethyste, teinteSorcellerie.slice(1).map(Number),
+  'l’améthyste de la lueur est celle du socle et du jeton : une famille, une teinte');
+const clarte = ([rouge, vert, bleu]) => 0.299 * rouge + 0.587 * vert + 0.114 * bleu;
+assert.ok(clarte(azurClair) > clarte(azur) && clarte(orClair) > clarte(or) && clarte(amethysteClair) > clarte(amethyste),
+  'les trois reflets de survol sont plus clairs que la teinte qu’ils éclairent');
+
+// La cascade réelle : jsdom relit la feuille et rend la teinte que reçoit chaque face.
+const cascadeHalo = new JSDOM(
+  `<!doctype html><html><head><style>${battleCss}</style></head><body>
+    <button class="rpg-hand__card is-playable rpg-hand__card--famille-rapide" data-test="rapide"></button>
+    <button class="rpg-hand__card is-playable rpg-hand__card--famille-sorcellerie" data-test="sorcellerie"></button>
+    <button class="rpg-hand__card is-playable" data-test="creature"></button>
+  </body></html>`,
+  { pretendToBeVisual: true },
+);
+const teinteRecue = (test) => cascadeHalo.window.getComputedStyle(
+  cascadeHalo.window.document.querySelector(`[data-test="${test}"]`),
+).getPropertyValue('--rpg-play-halo').replaceAll(' ', '');
+assert.equal(teinteRecue('rapide'), or.join(','),
+  'une Magie Rapide jouable reçoit l’or de sa famille, pas le bleu des cartes qui se posent');
+assert.equal(teinteRecue('sorcellerie'), amethyste.join(','),
+  'une Sorcellerie jouable reçoit l’améthyste de la sienne');
+assert.equal(teinteRecue('creature'), '',
+  'une créature, un terrain ou une arme ne déclarent aucune teinte : ils gardent l’azur écrit en repli dans la règle du halo');
+cascadeHalo.window.close();
+
+// ── Un seul halo, le même contraste pour toute la main ──────────────────────
+// La règle commune de `is-playable` décide de tout : l'allumage, l'empreinte et
+// la densité. Un Désert, un Fennec et une Magie Rapide reçoivent donc le même
+// box-shadow au pixel près — seule la teinte change, par les deux triplets de
+// famille. Aucune règle ne rejoue la lueur d'une famille « plus fort » : ce
+// serait deux contrastes dans la même main.
+assert.doesNotMatch(battleCss, /\.rpg-hand__card--famille-(rapide|sorcellerie)[^{]*\{[^}]*box-shadow/,
+  'aucune famille de sorts ne rejoue son propre halo : le contraste est celui de la main entière');
+assert.equal((battleCss.match(/\.rpg-hand__card\.is-playable\s*\{/g) ?? []).length, 1,
+  'une seule règle dessine le halo d’une carte jouable, quelle que soit sa famille');
+assert.equal((battleCss.match(/\.rpg-hand__card\.is-playable:hover:not\(:disabled\)\s*\{/g) ?? []).length, 1,
+  'une seule règle le renforce au survol');
+// Les couches de teinte : anneau (`flou` 0), auréole rapprochée, flou extérieur.
+// La teinte a un repli d'azur (`var(--rpg-play-halo, 77, 125, 255)`), celle des
+// familles est nue : le motif accepte l'un et l'autre, sinon la comparaison
+// porterait sur zéro couche et passerait toute seule.
+const couchesHalo = (bloc) => [...bloc.matchAll(
+  /0 0 (\d+)px(?: (\d+)px)? rgba\(var\(--rpg-play-halo(?:-clair)?(?:, [\d, ]+)?\), (\d*\.?\d+)\)/g,
+)].map(([, flou, etalement, densite]) => ({
+  flou: +flou,
+  etalement: +(etalement ?? 0),
+  densite: +densite,
+}));
+const envergure = (couches) => Math.max(...couches.map(({ flou, etalement }) => flou + etalement));
+const couchesMain = couchesHalo(haloMain);
+const couchesSurvol = couchesHalo(haloSurvol);
+assert.equal(couchesMain.length, 3,
+  'le halo d’une carte jouable pose trois couches : l’anneau, l’auréole rapprochée et le flou extérieur');
+assert.equal(envergure(couchesMain), 22,
+  `le halo porte loin de 22 px (18 px de flou, 4 px d’étalement), comme avant la hausse de contraste (reçu : ${envergure(couchesMain)} px)`);
+assert.equal(envergure(couchesSurvol), 30,
+  `au survol, les rayons restent ceux d’origine : 24 px de flou et 6 px d’étalement (reçu : ${envergure(couchesSurvol)} px)`);
+assert.ok(Math.min(...couchesMain.map(({ densite }) => densite)) >= 0.8,
+  `chaque couche du halo est presque opaque : c’est le contraste qui rend le voyant lisible (reçu : ${couchesMain.map(({ densite }) => densite).join(', ')})`);
+assert.ok(Math.min(...couchesSurvol.map(({ densite }) => densite)) >= 0.9,
+  `au survol, la lueur est pleine (reçu : ${couchesSurvol.map(({ densite }) => densite).join(', ')})`);
+assert.match(haloMain, /0 0 6px 1px rgba\(var\(--rpg-play-halo-clair, 176, 197, 255\), \.82\)/,
+  'une auréole rapprochée sature le bord de la carte, dans le reflet clair de la famille');
+assert.match(haloMain, /0 0 18px 4px rgba\(var\(--rpg-play-halo, 77, 125, 255\), \.92\)/,
+  'le flou extérieur garde ses 18 px et gagne en densité');
+assert.match(haloMain, /0 6px 16px rgba\(0, 0, 0, \.62\)/,
+  'l’ombre portée s’assombrit pour que la lueur paraisse plus claire');
+assert.doesNotMatch(haloMain + haloSurvol, /border-color:/,
+  'le halo ne repeint jamais la bordure : la couleur du cadre reste celle de l’élément');
+
 // ── Le mot écrit une seule fois : le socle remplace la ligne de type des sorts ─
 assert.match(pageSource, /const familleSort = magieFamille\(carte\);\s*const peutRepondre = reponseActive && carte\.instant;/,
   'la main calcule la famille de la carte une seule fois, avant ses règles de jeu');

@@ -41,6 +41,9 @@ import {
   rpgOuvrirFinDeTour,
   rpgPeutRepondre,
   rpgSorcierMagieRapide,
+  arriveeCiblePortee,
+  arriveeACibleLegale,
+  rpgResoudreArriveeCiblee,
 } from '../src/games/rpgDuel.js';
 import {
   CARD_RARITIES,
@@ -787,6 +790,100 @@ test('Amani est une 2/5 à 4 dont l’égide donne +0/+2 aux autres créatures d
   assert.equal(porteuse.pv, 1, 'au pire, 1 PV');
   assert.deepEqual([mien.atk, mien.def, mien.pv], [2, 2, 2], 'le Chien retrouve son 2/2');
   assert.deepEqual([fennec.atk, fennec.def, fennec.pv], [3, 1, 1], 'le Fennec retrouve son 3/1');
+});
+
+test('la portée d’une arrivée ciblée est déclarée une fois, pour le moteur et pour la table', () => {
+  const portees = Object.fromEntries(
+    ['cavalier-amazigh-du-desert', 'vipere-de-verre', 'leviathan', 'sonneur-fele', 'susanoo',
+      'guetteur-du-beffroi', 'ifrit-des-ergs', 'braisier-du-souk']
+      .map((id) => [id, arriveeCiblePortee(cardById(id))]),
+  );
+  assert.deepEqual(portees, {
+    'cavalier-amazigh-du-desert': 'ennemi', // le duel : une créature adverse
+    'vipere-de-verre': 'ennemi',            // la morsure
+    leviathan: 'ennemi',                    // la gueule
+    'sonneur-fele': 'ennemi',               // le rebond (retour-main, cible créature)
+    susanoo: 'tous',                        // l’exil choisit dans les deux camps
+    'guetteur-du-beffroi': null,            // une pioche ne désigne personne
+    'ifrit-des-ergs': null,                 // les dégâts au sorcier non plus
+    'braisier-du-souk': null,               // ni les dégâts de zone
+  }, 'seule une arrivée qui désigne une cible annonce sa portée');
+});
+
+test('une arrivée ciblée se désigne APRÈS la pose : la créature entre en jeu d’abord', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  assert.equal(arriveeACibleLegale(duel, 'joueur', cardById('vipere-de-verre')), true,
+    'le Chien adverse est une cible légale pour la morsure');
+
+  donner(duel, 'joueur', 'vipere-de-verre');
+  const manaAvant = { ...duel.joueur.mana };
+  const pose = rpgJouerCreature(duel, 'joueur', 'vipere-de-verre', null, { cibleDifferee: true });
+  assert.equal(pose.ok, true, 'la pose différée passe : la Vipère entre en jeu sans cible');
+  assert.equal(duel.joueur.creatures.includes(pose.entite), true, 'la Vipère est sur la table');
+  assert.equal(duel.joueur.main.includes('vipere-de-verre'), false, 'la carte a quitté la main');
+  assert.notDeepEqual(duel.joueur.mana, manaAvant, 'le mana a bien été payé');
+  assert.equal(pose.arriveeEnAttente, true, 'l’arrivée reste en attente de sa victime');
+  assert.deepEqual(duel.arriveeEnAttente, {
+    cote: 'joueur', entiteId: pose.entite.id, carteId: 'vipere-de-verre',
+  }, 'le duel retient quelle créature doit encore désigner');
+  assert.equal(chien.pv, 2, 'la morsure n’a pas encore eu lieu : la cible se choisit sur la table');
+
+  const res = rpgResoudreArriveeCiblee(duel, 'joueur', chien.id);
+  assert.equal(res.ok, true, 'la désignation referme l’attente');
+  assert.equal(chien.pv, 0, 'les 2 dégâts tombent sur la créature choisie');
+  assert.equal(duel.sorcier.creatures.includes(chien), false, 'elle en meurt');
+  assert.equal(duel.arriveeEnAttente, null, 'il ne reste rien à désigner');
+  assert.ok(duel.joueur.creatures.includes(pose.entite), 'la Vipère, elle, reste en jeu');
+});
+
+test('une arrivée différée sans cible légale se résout avec la pose, sans attente', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donner(duel, 'joueur', 'vipere-de-verre');
+  const pose = rpgJouerCreature(duel, 'joueur', 'vipere-de-verre', null, { cibleDifferee: true });
+  assert.equal(pose.ok, true, 'la table adverse est vide : rien à désigner, la pose se résout');
+  assert.equal(pose.arriveeEnAttente, undefined, 'aucune attente n’est ouverte');
+  assert.equal(duel.arriveeEnAttente ?? null, null, 'le duel ne retient rien');
+  assert.equal(duel.joueur.creatures.includes(pose.entite), true, 'la Vipère est bien en jeu');
+});
+
+test('la désignation différée revalide sa cible : camp, protection, attente close', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  donner(duel, 'sorcier', 'dune-marchante');
+  const dune = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
+
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', chien.id).raison, 'aucune-attente',
+    'sans attente ouverte, aucune désignation n’est acceptée');
+  donner(duel, 'joueur', 'vipere-de-verre');
+  const pose = rpgJouerCreature(duel, 'joueur', 'vipere-de-verre', null, { cibleDifferee: true });
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', 'entite-absente').raison, 'cible',
+    'une cible qui n’est pas sur la table est refusée');
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', pose.entite.id).raison, 'cible',
+    'sa propre créature n’est pas une victime : la morsure ne vise que l’adversaire');
+  // La Vipère de verre est une Eau : la protection contre l’Eau arrête sa morsure.
+  Object.assign(dune, { protection: { contre: 'eau', toursRestants: 2 } });
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', dune.id).raison, 'protection',
+    'la protection contre la couleur du venin refuse la morsure, comme avant');
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', chien.id).ok, true,
+    'une cible légale finit par refermer l’attente');
+
+  // L’exil du Susanoo, lui, choisit dans les deux camps — mais jamais lui-même.
+  donner(duel, 'joueur', 'susanoo');
+  const susanoo = rpgJouerCreature(duel, 'joueur', 'susanoo', null, { cibleDifferee: true });
+  assert.equal(susanoo.arriveeEnAttente, true, 'le Susanoo se pose, puis désigne son exil');
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', susanoo.entite.id).raison, 'cible',
+    'la créature qui porte l’arrivée ne se désigne pas elle-même');
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', pose.entite.id).ok, true,
+    'en revanche, elle peut exiler une autre créature — ici la Vipère du même camp');
+  assert.equal(duel.joueur.creatures.includes(pose.entite), false, 'la Vipère choisie est retirée de la partie');
 });
 
 test('le Cavalier doit choisir une créature adverse et combat mutuellement à son arrivée', () => {

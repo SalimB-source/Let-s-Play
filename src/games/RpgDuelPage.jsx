@@ -90,6 +90,7 @@ import {
   filtresCouleurDecks,
 } from './rpgDeckFilter.js';
 import {
+  arriveeCiblePortee,
   rpgCibleAuto,
   rpgChoisirAttaquants,
   rpgContreJouable,
@@ -117,6 +118,7 @@ import {
   rpgPeutMulligan,
   rpgPeutPayer,
   rpgPoserTerrain,
+  rpgResoudreArriveeCiblee,
   rpgActiverArme,
   rpgActiverCapacite,
   rpgJouerArme,
@@ -731,12 +733,15 @@ const RPG_DECK_FAMILLES = [
 ];
 
 function targetMode(carte) {
-  if (carte?.arrivee?.type === 'exil') return 'tous';
+  // Une arrivée en jeu qui désigne sa cible : sa portée vient du moteur
+  // (`arriveeCiblePortee`), la même règle que celle qui exige et valide la
+  // désignation — l'exil du Susanoo choisit dans les deux camps, le duel du
+  // Cavalier chez l'adversaire. La créature qui la porte est **déjà posée** :
+  // c'est la table qui s'allume, pas la main (voir `finaliserPoseCreature`).
+  const porteeArrivee = arriveeCiblePortee(carte);
+  if (porteeArrivee) return porteeArrivee;
   // Une arme se joue sur une créature alliée : c'est elle qu'on désigne.
   if (carteEstArme(carte)) return 'allie';
-  if (carte?.arrivee?.type === 'combat' && carte.arrivee.cible === 'creature') return 'ennemi';
-  if (carte?.arrivee?.type === 'retour-main') return carte.arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
-  if (carte?.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature') return 'ennemi';
   if (carte?.effet?.type === 'degats' && carte.effet.cible === 'creature') return 'ennemi';
   // Renvoi en main : le joueur choisit la créature qui repart dans une main.
   if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
@@ -4447,16 +4452,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
   };
 
-  const finaliserPoseCreature = (carteId, cibleId = null) => {
+  /**
+   * La pose d'une créature ou d'un héros, une fois la carte arrivée au bout de
+   * son vol.
+   *
+   * **L'arrivée qui désigne sa cible se choisit sur la table** : la créature
+   * entre en jeu ici (`cibleDifferee`), et la désignation ne s'ouvre
+   * qu'ensuite — le moteur retient ce qu'il reste à désigner
+   * (`duel.arriveeEnAttente`), la page allume les cibles légales, et le clic
+   * referme l'attente (`resoudreCible`). Une arrivée qui ne désigne rien —
+   * pioche, jetons, dégâts de zone — se résout avec la pose, comme avant.
+   */
+  const finaliserPoseCreature = (carteId) => {
     const carte = cardById(carteId);
     carteCibleeHandIndexRef.current = null;
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const cibleAuto = ['combat', 'retour-main', 'exil'].includes(carte.arrivee?.type)
-      ? cibleId
-      : (duel.sorcier.creatures[0]?.id ?? null);
-    const res = rpgJouerCreature(duel, 'joueur', carteId, cibleAuto);
+    const res = rpgJouerCreature(duel, 'joueur', carteId, null, { cibleDifferee: true });
     if (res.ok && res.contre && res.parIA) {
       // Le sorcier contre la créature : elle n'entre pas en jeu.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
@@ -4468,6 +4481,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
       avancerTutoriel('creature', 'invocation');
+      // La créature attend sa victime : la table s'allume, la main est close.
+      if (res.arriveeEnAttente) setCibleEnCours(carteId);
     }
     force();
     // Le Souk est prévenu **après** le rendu du plateau : `noterEvenementDuel`
@@ -4607,28 +4622,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       lancerMagie(carteId);
       return;
     }
-    if (carte.arrivee?.type === 'exil'
-      && [...duel.joueur.creatures, ...duel.sorcier.creatures].some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
-      setCibleEnCours(carteId);
-      force();
-      return;
-    }
-    if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
-      const ciblesLegales = duel.sorcier.creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
-      if (ciblesLegales.length) {
-        setCibleEnCours(carteId);
-        force();
-        return;
-      }
-    }
-    if (carte.arrivee?.type === 'retour-main') {
-      const ciblesLegales = duel.sorcier.creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
-      if (ciblesLegales.length) {
-        setCibleEnCours(carteId);
-        force();
-        return;
-      }
-    }
+    // Une créature : elle se **pose d'abord**, son arrivée ciblée se désigne
+    // ensuite sur la table (voir `finaliserPoseCreature`). Le vol, lui, a déjà
+    // eu lieu : `jouerCarteDepuisMain` ne rappelle `poserCarte` qu'une fois la
+    // carte arrivée au bout de son animation — on n'en relance donc pas une
+    // seconde, la pose se termine ici.
     if (!monTour) return;
     finaliserPoseCreature(carteId);
   };
@@ -4650,11 +4648,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     } else if (carte.kind === 'magie') {
       poserCarte(carteId);
     } else if (carte.kind === 'arme') {
-      carteCibleeHandIndexRef.current = index;
-      poserCarte(carteId);
-    } else if ((['combat', 'retour-main', 'exil'].includes(carte.arrivee?.type)
-      || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature'))
-      && (carte.arrivee?.type === 'exil' ? [...duel.joueur.creatures, ...duel.sorcier.creatures] : duel.sorcier.creatures).some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
       carteCibleeHandIndexRef.current = index;
       poserCarte(carteId);
     } else {
@@ -4726,12 +4719,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return true;
     }
-    if (['combat', 'retour-main', 'degats', 'exil'].includes(carteSource?.arrivee?.type)) {
-      const carteId = cibleEnCours;
-      const handIndex = carteCibleeHandIndexRef.current;
-      carteCibleeHandIndexRef.current = null;
+    // L'arrivée ciblée d'une créature **déjà posée** : la table vient de
+    // désigner sa victime, on referme l'attente ouverte à la pose — la carte
+    // n'est plus en main, il n'y a donc pas de vol à relancer.
+    if (arriveeCiblePortee(carteSource) && duel.arriveeEnAttente?.carteId === cibleEnCours) {
+      const champAvantAction = prendreInstantaneChamp();
+      const debutJournalDestructions = rpgNombreDestructions(duel);
+      const res = rpgResoudreArriveeCiblee(duel, 'joueur', entite.id);
+      if (!res.ok) {
+        jouerSfx('erreur');
+        force();
+        return true;
+      }
       setCibleEnCours(null);
-      demarrerVolCarte(carteSource, handIndex, () => finaliserPoseCreature(carteId, entite.id));
+      jouerSfx('select');
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      force();
       return true;
     }
     if (carteSource?.kind === 'arme') {
@@ -5754,7 +5757,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       blocking={bloqueursSelectionnes.has(entite.id)}
                       selectedBlocker={bloqueurSelectionne === entite.id}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
-                      canTarget={Boolean((cibleEnCours && ['allie', 'tous'].includes(modeCible) && !rpgEstProtegee(entite, cardColors(carteCiblee)))
+                      canTarget={Boolean((cibleEnCours && ['allie', 'tous'].includes(modeCible)
+                          && entite.id !== duel.arriveeEnAttente?.entiteId
+                          && !rpgEstProtegee(entite, cardColors(carteCiblee)))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige')))}
                       activationDispo={Boolean(monTour && !phase && !cibleEnCours && !cibleAttaqueEnCours
                         && !combatEntrant && !reponseActive
@@ -5964,8 +5969,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   </button>
                 )}
                 {cibleEnCours && (
-                  <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => { setCibleEnCours(null); carteCibleeHandIndexRef.current = null;  }}>
-                    Annuler la cible
+                  <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => {
+                    // « Annuler la cible » n'annule que la **désignation** : une
+                    // créature déjà posée reste en jeu, son arrivée ciblée
+                    // renonce simplement à sa victime. Le bouton d'annulation
+                    // de la dernière action, lui, défait la pose entière.
+                    setCibleEnCours(null);
+                    carteCibleeHandIndexRef.current = null;
+                    if (duel.arriveeEnAttente?.cote === 'joueur') duel.arriveeEnAttente = null;
+                    force();
+                  }}>
+                    {duel.arriveeEnAttente?.cote === 'joueur' ? 'Renoncer à la cible' : 'Annuler la cible'}
                   </button>
                 )}
                 {monTour && !phase && !combatEntrant && !cibleEnCours && !defausseOuverte && duel.joueur.creatures
@@ -6163,9 +6177,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // statistiques, et les terrains gardent leur ligne.
               const familleSort = magieFamille(carte);
               const peutRepondre = reponseActive && carte.instant;
-              // Une seule règle pour le halo doré, le glisser-déposer et le
-              // clic : deux copies de la règle finissaient par diverger, et
-              // une carte allumée mais injouable enferme le joueur.
+              // Une seule règle pour le halo de jouabilité — bleu pour ce qui se
+              // pose, la teinte de la famille pour un sort (voir « La lueur de
+              // jouabilité d'un sort », dans `rpg-battle.css`) —, le
+              // glisser-déposer et le clic : deux copies de la règle
+              // finissaient par diverger, et une carte allumée mais injouable
+              // enferme le joueur.
               const jouable = defausseOuverte || peutJouerCarte(carte);
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId

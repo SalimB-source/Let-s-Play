@@ -5443,11 +5443,12 @@ bande du bas.
 **La table dit déjà tout.** Les consignes sont retirées : l'état du duel se lit
 là où il se passe.
 
-- **Ce qui est jouable s'allume.** Le halo doré de la main (`is-playable`,
-  `data-jouable`) est la seule réponse à « puis-je jouer cette carte ? ». Une
-  carte refusée reste éteinte, en main, avec son bruitage d'erreur — plus
-  personne n'écrit « mana insuffisant » ni « vous avez déjà posé votre terrain
-  ce tour ».
+- **Ce qui est jouable s'allume.** Le halo de la main (`is-playable`,
+  `data-jouable`) est la seule réponse à « puis-je jouer cette carte ? » — doré
+  pour une carte qui se pose, **azur pour une Magie Rapide et améthyste pour une
+  Sorcellerie** depuis « la lueur de jouabilité des sorts ». Une carte refusée
+  reste éteinte, en main, avec son bruitage d'erreur — plus personne n'écrit
+  « mana insuffisant » ni « vous avez déjà posé votre terrain ce tour ».
 - **Les cibles s'allument aussi.** Une magie ou un effet d'arrivée qui attend sa
   victime allume la carte en main (`is-targeting`) et chaque cible légale sur la
   table (`is-ciblable`) — le sorcier adverse compris, mais seulement quand il
@@ -7245,9 +7246,15 @@ armes qui fait le repère : un socle au bas de la face veut dire *sort*, et sa
 | --- | --- | --- |
 | **Socle** | la voûte, liseré d'or sur toute la courbe | la même voûte, liseré d'améthyste |
 | **Forme du jeton** | losange — l'éclair au centre | médaillon rond |
-| **Teinte** | or (`#ffd619`), l'or des cartes jouables | améthyste (`#b39ae0`), la couleur du contre |
+| **Teinte** | or (`#ffd619`) — le socle et le jeton | améthyste (`#b39ae0`), la couleur du contre |
+| **Lueur en main** | azur (`#4d7dff`) quand le mana est là | la même améthyste que son socle |
 | **Sigle** | l'éclair — ça part sans attendre | l'étincelle — ça se prépare |
 | **Mot** | `MAGIE RAPIDE` | `SORCELLERIE` |
+
+La dernière ligne ne se lit pas sur la face mais **dans la main** : c'est la
+lueur de jouabilité, celle qui s'allume quand la carte est payable (voir « la
+lueur de jouabilité des sorts », plus bas). Les autres disent la famille sur la
+carte elle-même, où qu'elle soit.
 
 Trois canaux indépendants, donc la distinction tient **même sans couleur** (la
 forme du jeton), **même sans lire** (la teinte), et **même sans connaître le jeu**
@@ -7382,3 +7389,246 @@ la carte mythique garde son zellige, le Sabre maudit n'a rien, et les onze
 surfaces le portent. Les planches de contrôle — `sablier-motifs-cadres.png` et
 sa loupe `sablier-motifs-cadres-zoom.png` — se refont par capture Chromium (voir
 la recette des captures du Sablier).
+
+## Le Sablier : la lueur de jouabilité des sorts
+
+La main répond à une seule question — « puis-je jouer cette carte, là, tout de
+suite ? » — et elle y répond d'une seule manière : le halo de `is-playable`,
+allumé sur le verdict de `peutJouerCarte()`, mana compris. Mais ce halo était
+**du même or pour tout le monde** : dans une main qui tenait trois sorts, la
+Magie Rapide et la Sorcellerie s'allumaient pareil, et il fallait lire le socle
+ou le mot — ou se souvenir de la carte — pour savoir laquelle part en réponse et
+laquelle attend son tour. Deux familles, un seul voyant.
+
+**Le halo garde une seule règle d'allumage, et prend maintenant la couleur de
+ce qu'il annonce.** Deux retouches ont suivi : le contraste est monté — le même
+pour toute la main, à empreinte inchangée — et les deux teintes ont été
+échangées, l'azur passant aux cartes qui se posent et l'or à la Magie Rapide.
+
+| Carte allumée | Lueur de jouabilité |
+| --- | --- |
+| **Magie Rapide** | or — `255, 214, 25`, reflet de survol `255, 239, 156` |
+| **Sorcellerie** | améthyste — `179, 154, 224`, reflet `236, 227, 255` |
+| Créature, héros, terrain, arme | azur — `77, 125, 255`, reflet `176, 197, 255` |
+
+Les deux teintes des familles de sorts et celle des cartes qui se posent sont
+**les mêmes qu'avant l'échange, seulement échangées** : l'azur, qui était à la
+Magie Rapide, est passé aux créatures et aux terrains ; l'or, qui servait de
+repli à tout le reste, est passé à la Magie Rapide. L'améthyste de la
+Sorcellerie n'a pas bougé — la famille garde **la** teinte de son socle, de son
+jeton et de sa ligne de type.
+
+Rien n'a bougé du côté du jeu : c'est toujours `RpgDuelPage` qui décide si une
+carte est jouable — `peutJouerCarte()` : le tour, la fenêtre de réponse, le
+contre qui a un sort à contrer, l'arme qui a un porteur, et `rpgPeutPayer()`
+pour le mana. Une carte que le mana ne paie pas — ou qu'une règle retient —
+reste éteinte, quelle que soit sa famille : c'est le même halo, avec un mot de
+plus à dire.
+
+**Un seul halo, pour toute la main — plus contrasté, jamais plus grand.** La
+règle commune de `is-playable` décide de tout : l'empreinte (anneau de 2 px,
+auréole rapprochée de 6 px, flou extérieur de 18 px étalé de 4 px, ombre portée
+de 16 px), la densité — pleine, celle d'un voyant qu'on repère d'un coup d'œil
+dans un éventail — et l'allumage. Un Désert, un Fennec, une Magie Rapide et une
+Sorcellerie reçoivent donc **le même `box-shadow` au pixel près** ; seule la
+teinte les sépare, et c'est elle qui a gagné le contraste : l'anneau porte le
+reflet clair de la famille, presque opaque (`.98`), une auréole courte le double
+vers l'intérieur, le flou extérieur est à `.92` et l'ombre portée s'assombrit
+(`.62`) pour que la lueur paraisse plus claire encore. Au survol, les mêmes
+rayons, densité pleine (anneau `1`, flou `1`). Aucune règle ne rejoue la lueur
+d'une famille « plus fort » : deux contrastes dans la même main, ce serait deux
+voyants pour une seule question.
+
+**L'azur est la couleur des cartes qui se posent** — créature, héros, terrain,
+arme. Les deux familles de sorts sont les seules à déclarer une teinte, et elles
+la déclarent **une fois**, au bloc « Les familles de sorts », en fin de feuille de
+combat : la règle du halo lit `rgba(var(--rpg-play-halo, 77, 125, 255), α)`, et
+l'azur n'est que le repli écrit dans cette règle. Changer la couleur d'une
+famille ne se fait donc qu'à un endroit, et une carte qui ne déclare rien
+s'allume en bleu sans qu'on ait à y penser.
+
+Les deux familles sont reconnaissables **au socle comme à la lueur** :
+l'améthyste est **la** couleur de la Sorcellerie — socle, jeton, ligne de type —
+et l'or est celui de la Magie Rapide, son liseré de socle, sa ligne de type et
+désormais sa lueur. L'azur, lui, n'appartient qu'aux cartes qui se posent : il se
+reconnaît sans se confondre avec le bleu de l'Eau (`#3f9fe8`) ni avec une
+diagonale de cadre. Le halo reste un ÉTAT, jamais une couleur de carte : la
+couleur du cadre, elle, continue de suivre l'élément.
+
+### Où vit le code
+
+- `src/games/rpg-battle.css` — **une seule règle**, au bloc de la main
+  (`.rpg-hand__card.is-playable`, et son survol) : elle décide de l'allumage,
+  de l'empreinte (2 px d'anneau, 6 px d'auréole, 18 px de flou étalé de 4 px,
+  16 px d'ombre) et de la densité ; la teinte est lue dans `var(--rpg-play-halo)`
+  — `var(--rpg-play-halo-clair)` pour l'anneau et l'auréole —, avec l'azur écrit
+  en repli, celui que reçoivent créatures, héros, terrains et armes ;
+- `src/games/rpg-battle.css`, encore — le bloc « La lueur de jouabilité d'un
+  sort », à la fin de la feuille, déclare les deux triplets de famille, avec le
+  reste de leur signature : `r`, `g`, `b` séparés, la seule forme que
+  `rgba(var(--…), α)` sache lire. La Magie Rapide y prend l'or de son socle, la
+  Sorcellerie son améthyste. **Aucune règle de famille ne rejoue un halo** :
+  c'était le cas un temps (un renfort plus contrasté pour les sorts), la
+  teinte des cartes qui se posent le rend inutile — un seul contraste, une seule
+  empreinte, pour toute la main ;
+- `src/games/RpgDuelPage.jsx` — **intact** : la face en main porte déjà la classe
+  de sa famille (`rpg-hand__card--famille-rapide` / `--famille-sorcellerie`,
+  posée par `magieFamille()`), et `is-playable` n'a pas bougé d'un caractère ;
+- `src/games/rpgTutorial.js` — l'étape de la main annonce les trois teintes :
+  « bleu pour une créature ou un terrain, or pour une Magie Rapide, violet pour
+  une Sorcellerie » ;
+- `src/games/rpg-mobile.css` — **intact** : au doigt, la carte pilote le même
+  halo ; le bloc des piles ne porte que son ombre décalée, jamais la lueur.
+
+### Vérifications
+
+```bash
+npm run check:rpg-sort-signature   # la lueur, du catalogue au duel réel
+npm run check:rpg                  # 511/511 — le moteur et le catalogue, inchangés
+npm run build                      # le bundle se construit
+```
+
+`scripts/rpg-sort-signature-check.mjs` gagne les volets qui manquaient. Les
+assertions de source lisent la feuille comme un contrat : le halo lit bien
+`--rpg-play-halo` (et son reflet clair au survol), il ne touche jamais
+`border-color`, les trois teintes existent, **l'azur est bleu** (`b > r`,
+`b > g`), **l'or de la Magie Rapide est jaune** (`r > b` et `g > b`),
+l'améthyste est violette (`r > g` et `b > g`), les trois diffèrent, l'or de la
+lueur est **celui du socle de la Magie Rapide**, l'améthyste **celle du socle et
+du jeton**, l'azur des cartes qui se posent est bien `77, 125, 255` et l'or de
+la Magie Rapide `255, 214, 25` — les deux valeurs de l'échange —, et chaque
+reflet de survol est plus clair que sa teinte. Puis la cascade réelle, montée par
+jsdom sur la feuille entière : une face qui porte `--famille-rapide` reçoit
+l'or, une face `--famille-sorcellerie` reçoit l'améthyste, et une face sans
+famille ne reçoit rien — c'est l'azur du repli.
+
+Le volet du contraste tient les deux moitiés de la promesse : **plus contrasté,
+pas plus large**. Le script relit les couches de la règle commune, calcule leur
+envergure (`flou + étalement`) et leur densité, et exige 22 px d'envergure au
+repos et 30 px au survol, avec des densités toutes supérieures à `.8` (et `.9` au
+survol). Une lueur qui gagnerait 12 px de flou échoue (« le halo porte loin de
+22 px… reçu : 44 px »). Deux assertions de source vérifient qu'il n'existe
+**qu'une** règle `is-playable` — au repos comme au survol — et qu'**aucune
+classe de famille ne rejoue un `box-shadow`** : c'est ce qui garantit que le
+Désert et le Fennec s'allument exactement comme la Magie Rapide. L'anneau porte
+le reflet clair à `.98`, l'auréole rapprochée à `.82`, le flou extérieur à
+`.92` — à 18 px, comme avant.
+
+Le scénario JSDOM du module monte ensuite une **vraie partie** pour la lueur :
+une main de Ressac (Magie Rapide — Eau, 1 mana), d'Eau de la source
+(Sorcellerie — Eau, 1 mana) et de trois Mers. À zéro mana, aucune des deux ne
+s'allume et le terrain est la seule carte allumée — sans famille, donc en azur.
+Le terrain est posé d'un clic : un mana eau est là, les deux sorts s'allument,
+et chacun porte la classe de la famille dont la feuille tient la teinte. Le
+deuxième terrain, lui, reste éteint — un seul terrain par tour : le halo suit la
+règle, pas le mana.
+
+**Contrôle visuel à faire (Chromium réel, 1440 × 900 et 844 × 390 au doigt).**
+Les trois teintes doivent se lire sur la table sombre **mieux** qu'avant — bord
+franc, flou dense — sans occuper plus de place : mêmes 2 px d'anneau, mêmes
+18 px de flou, aucune carte déplacée, et rien de recouvert — ni le coût, ni la
+pastille d'élément, ni le socle. Deux points de vigilance : **l'azur des
+créatures et des terrains ne doit pas se confondre avec le bleu de l'Eau** ni
+avec la lueur d'une carte ciblée sur la table, et **l'or de la Magie Rapide ne
+doit plus se confondre avec celui des créatures** qu'il servait à démarquer — les
+deux étaient pareils avant l'échange. L'autre bout de la main : un sort jouable
+ne doit pas éblouir la carte voisine, ni dépasser dans la barre d'action.
+
+## Le Sablier : la créature se pose avant de désigner sa cible
+
+« Quand une créature a un effet d'arrivée qui cible une autre créature ou un
+joueur, elle doit d'abord être posée sur la table avant de choisir la cible. »
+Le Cavalier amazigh arrivait dans la main : on le glissait sur la table, et la
+carte **attendait** — allumée en `is-targeting`, toujours dans la main, sans avoir
+payé ni quitté la main — qu'on désigne le Chien adverse. Le sable n'était payé
+qu'après, la créature n'existait nulle part pendant le choix, et le journal
+laissait le duel en suspens avant même la pose. Le geste se lisait à l'envers :
+on choisissait la victime **avant** de savoir si la créature entrait en jeu.
+
+**L'ordre est maintenant celui de la table : la créature se pose, puis la table
+s'allume.**
+
+- `rpgJouerCreature(duel, cote, carteId, cibleId, { cibleDifferee: true })`
+  (`src/games/rpgDuel.js`) paie le sable, fait quitter la main, crée l'entité,
+  pousse le journal (« Vous posez … ») et **retient** ce qu'il reste à désigner
+  (`duel.arriveeEnAttente = { cote, entiteId, carteId }`) au lieu d'appliquer
+  l'arrivée. Les validations d'origine restent : sans le drapeau, une arrivée
+  ciblée refuse toujours la pose sans cible (`raison: 'cible'`), et c'est ce
+  chemin que prend l'IA du sorcier.
+- `rpgResoudreArriveeCiblee(duel, cote, cibleId)` referme la désignation : elle
+  revalide la cible (camp de la portée, protection contre la couleur) parce que
+  la table a pu changer entre la pose et le clic, puis applique l'arrivée comme
+  avant — mêmes effets, mêmes journaux, mêmes animations.
+- `arriveeCiblePortee(carte)` est **la seule règle de portée** : `'ennemi'`
+  (Cavalier, Vipère, Valkyrie, Léviathan, Bakunawa, Sonneur félé), `'tous'`
+  (l'exil du Susanoo, qui choisit dans les deux camps), `'allie'` (un renvoi sur
+  son propre camp), `null` pour tout le reste (pioche, jetons, soin, dégâts de
+  zone ou au sorcier). Le moteur s'en sert pour exiger la cible, `targetMode()`
+  dans la page pour allumer les créatures légales : un camp ne peut pas demander
+  ce que l'autre refuse. `arriveeACibleLegale()` garde le cas « plus rien à
+  viser » : la pose se résout alors seule, sans attente.
+- La page ne change pas d'ordre : `jouerCarteDepuisMain` fait voler la carte
+  (720 ms), `poserCarte` termine la pose, et `finaliserPoseCreature` ouvre la
+  désignation (`setCibleEnCours(carteId)`) **après** que la créature est entrée
+  en jeu. Le clic sur une créature passe par la branche différée de
+  `resoudreCible`, qui n'a aucun vol à relancer — la carte n'est plus en main.
+- Le bouton de la cible dit ce qu'il fait : **« Renoncer à la cible »** quand
+  une créature attend sur la table (elle reste en jeu, on renonce seulement à
+  l'effet), « Annuler la cible » pour les sorts et les armes, jamais posés. Le
+  bouton « Annuler la dernière action » défait la pose entière, mana compris.
+
+Ce qui n'a pas bougé : les sorts gardent leur flux d'origine (une Magie Rapide
+lancée pendant le tour du sorcier désigne sa cible depuis la main, elle n'a pas
+de corps à poser), `rpgEstProtegee()` filtre les deux bouts (à la pose comme au
+clic), l'IA continue d'annoncer sa carte et de choisir sa victime **avant** de
+poser (`choisirCarteIA` → `rpgSorcierResoudreAnnonce`), l'annulation de la
+dernière action restitue l'état complet, le tutoriel avance sur la pose, et le
+Souk est prévenu après le rendu du plateau comme avant.
+
+### Vérifications
+
+```bash
+npm run check:rpg          # 511/511 — dont 4 nouveaux tests : portée, pose différée, attente sans cible, revalidation
+npm run check:rpg-ui       # le volet JSDOM rejoue le Cavalier : vol, pose, journal, cibles, renoncement
+npm run build              # le bundle se construit
+```
+
+Les quatre tests du moteur (`tests/rpg-duel.test.js`) tiennent le contrat :
+`arriveeCiblePortee` rend la bonne portée pour les huit cartes d'arrivée
+(pique, dégâts, exil, jetons, soin, zone), la Vipère posée en `cibleDifferee`
+est **en jeu** avec son mana payé et sa carte hors de la main pendant que le
+Chien reste intact, la désignation différée rejoue les refus d'origine (cible
+absente, sa propre créature, protection contre l'Eau) et l'attente se referme
+sur une cible légale, enfin une table vide ne laisse **aucune** attente ouverte.
+
+Le scénario JSDOM du Cavalier (`scripts/rpg-battle-smoke.jsx`) rejoue la partie
+entière : cinq Déserts posés pour financer la carte, puis le glisser-déposer qui
+fait **voler** la carte avant tout choix (`carteEnVol`), la pose seule dans le
+journal (« Vous posez Cavalier amazigh du Désert »), l'absence de `is-targeting`
+dans la main — le Cavalier n'y est plus —, les créatures adverses allumées en
+`is-ciblable`, le bouton « Renoncer à la cible », puis le clic qui laisse le
+Cavalier en jeu, détruit le Chien 2/2 et écrit l'affrontement au journal.
+
+`scripts/rpg-battle-ui-check.mjs` gagne six assertions statiques : le vol part de
+`jouerCarteDepuisMain` (`demarrerVolCarte(carte, index, () => poserCarte(carteId))`),
+`poserCarte` se termine par `finaliserPoseCreature(carteId)` sans relancer
+d'animation, `finaliserPoseCreature` appelle `rpgJouerCreature(… null, { cibleDifferee: true })`
+puis ouvre la désignation sur `res.arriveeEnAttente`, `resoudreCible` referme par
+`rpgResoudreArriveeCiblee`, et le moteur exporte `rpgResoudreArriveeCiblee` et
+`arriveeCiblePortee`.
+
+**Réserve connue, hors de cette retouche :** `npm run check:rpg-ui` casse
+toujours à HEAD dans son volet JSDOM (`le deck hybride est validé à 40 cartes,
+avec 17 terrains, 16 créatures, 5 magies et 2 armes` — les données du deck
+`Sentiers de cendre` donnent 4 magies et 3 armes), puis sur deux assertions
+statiques pré-existantes : `canTarget` attend encore `modeCible === 'ennemi'`
+là où la page teste `['ennemi', 'tous'].includes(modeCible)` (l'exil du Susanoo),
+et `.rpg-card-element-badge` ne trouve plus le premier bloc `{` du sélecteur.
+Ces trois-là échouent déjà sur l'arbre propre (`git stash` vérifié), comme
+`node scripts/rpg-tutorial-flow-check.mjs` (`card-guide-armes` attendu
+`card-guide-terrain-hybride`). Le Cavalier a donc été rejoué dans un harnais
+temporaire qui neutralise **ces seules** assertions : le volet JSDOM (la partie
+du Cavalier) y passe de bout en bout, les six nouvelles assertions statiques
+aussi — le contrôle s'arrête ensuite sur celle des badges, inchangée par cette
+retouche. Les contrôles Playwright demandent un navigateur, absent de cet
+environnement.

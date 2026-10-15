@@ -1595,8 +1595,59 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   return { ok: true, recus, absorbes, esquives: esquive };
 }
 
-/** Pose une créature : paie le sable, arrive en jeu, capacité d'arrivée. */
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
+/**
+ * La portée d'une **arrivée qui désigne une cible** : `'ennemi'` (le duel du
+ * Cavalier, la morsure de la Vipère, la lance de la Valkyrie, la gueule du
+ * Léviathan et du Bakunawa, le rebond du Sonneur), `'tous'` (l'exil du
+ * Susanoo, qui choisit dans les deux camps) ou `'allie'` (un renvoi en main
+ * sur une créature du camp qui le joue). `null` pour une arrivée qui se
+ * résout seule : soin, pioche, renfort, jetons, dégâts de zone ou au sorcier —
+ * ces effets ne demandent rien, il n'y a donc rien à ordonner.
+ *
+ * Cette portée est la **même règle** pour le moteur et pour la table : le duel
+ * s'en sert pour exiger la cible (`rpgJouerCreature`) et pour valider la
+ * désignation (`rpgResoudreArriveeCiblee`), la page pour allumer les cibles
+ * (`targetMode`) — une arrivée ne peut donc pas demander d'un côté ce qu'elle
+ * refuse de l'autre.
+ */
+export function arriveeCiblePortee(carte) {
+  const arrivee = carte?.arrivee;
+  if (!arrivee) return null;
+  if (arrivee.type === 'exil') return 'tous';
+  if (arrivee.type === 'combat') return arrivee.cible === 'creature' ? 'ennemi' : null;
+  if (arrivee.type === 'degats') return arrivee.cible === 'creature' ? 'ennemi' : null;
+  if (arrivee.type === 'retour-main') return arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
+  return null;
+}
+
+/** Les camps qu'une arrivée peut viser, dans l'ordre où on les propose. */
+function campsDePortee(cote, portee) {
+  if (portee === 'tous') return [cote, autre(cote)];
+  if (portee === 'allie') return [cote];
+  return [autre(cote)];
+}
+
+/** Reste-t-il, sur la table, une créature que cette arrivée peut désigner ? */
+export function arriveeACibleLegale(duel, cote, carte) {
+  const portee = arriveeCiblePortee(carte);
+  if (!portee) return false;
+  return campsDePortee(cote, portee)
+    .some((camp) => duel[camp].creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))));
+}
+
+/**
+ * Pose une créature : paie le sable, arrive en jeu, capacité d'arrivée.
+ *
+ * `cibleDifferee` — la **désignation sur la table**. Une arrivée qui désigne une
+ * cible (voir `arriveeCiblePortee`) demande normalement sa cible *avec* la pose :
+ * le moteur refuse la carte tant qu'aucune créature n'est désignée. Quand la page
+ * pose d'abord, elle passe `cibleDifferee: true` : la créature entre en jeu,
+ * l'arrivée est mise en attente (`duel.arriveeEnAttente`) et la désignation
+ * s'ouvre ensuite, sur la table — `rpgResoudreArriveeCiblee` la referme. Une
+ * arrivée qui ne désigne rien (ou qui n'a plus de cible légale) se résout, elle,
+ * dans les deux cas avec la pose.
+ */
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false } = {}) {
   const camp = duel[cote];
   const carte = duelCardById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
@@ -1604,12 +1655,14 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
   if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
     // Une arrivée qui désigne une créature (duel du Cavalier, lance de givre de
     // la Valkyrie, gueule du Bakunawa) exige sa cible tant qu'il reste une
-    // créature adverse à viser : la pose sans désignation est refusée.
+    // créature adverse à viser : la pose sans désignation est refusée — sauf
+    // quand la page pose la créature d'abord (`cibleDifferee`), la désignation
+    // suivant alors sur la table.
     const adversaires = duel[autre(cote)].creatures;
     const cible = adversaires.find((entite) => entite.id === cibleId);
     if (cibleId && !cible) return { ok: false, raison: 'cible' };
     if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
-    if (!cibleId && adversaires.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
+    if (!cibleId && !cibleDifferee && adversaires.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
       return { ok: false, raison: 'cible' };
     }
   }
@@ -1618,7 +1671,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
     const cible = creatures.find((entite) => entite.id === cibleId);
     if (cibleId && !cible) return { ok: false, raison: 'cible' };
     if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
-    if (!cibleId && creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
+    if (!cibleId && !cibleDifferee && creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
       return { ok: false, raison: 'cible' };
     }
   }
@@ -1645,6 +1698,16 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
     duel.log.push(`${entite.name} reçoit une protection contre ${couleur} pour ce tour et le prochain tour adverse.`);
   }
   if (carte.arrivee) {
+    // La désignation se fait **sur la table** : quand la page pose d'abord
+    // (`cibleDifferee`) et qu'il reste une cible légale, l'arrivée attend son
+    // tour — la créature est en jeu, le duel retient ce qu'il reste à désigner,
+    // et `rpgResoudreArriveeCiblee` appliquera l'effet sur la cible choisie.
+    if (cibleDifferee && !cibleId && arriveeACibleLegale(duel, cote, carte)) {
+      duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId };
+      rafraichirAuras(duel);
+      rpgActionsEtat(duel);
+      return { ok: true, entite, arriveeEnAttente: true };
+    }
     // Seuls les effets d'arrivée qui **désignent** une cible reçoivent un
     // `cibleId` : les autres (renfort de camp, pioche, création de jetons…)
     // n'en portent pas, ce qui évite qu'une cible quelconque — un Boualem
@@ -1657,6 +1720,44 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
   return { ok: true, entite };
+}
+
+/**
+ * Referme la désignation d'une arrivée en attente : la créature est **déjà en
+ * jeu** (`duel.arriveeEnAttente`), on ne fait qu'appliquer son effet d'arrivée
+ * sur la cible choisie. C'est le second temps de la pose quand la table
+ * désigne : la créature s'est posée, le joueur a cliqué la cible.
+ *
+ * La cible est revalidée ici — camp de la portée, protection — parce que la
+ * table a pu changer entre la pose et le clic (une réponse, une mort, un
+ * renvoi) : ce qui n'est plus visable est refusé, l'attente reste ouverte.
+ */
+export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
+  const attente = duel.arriveeEnAttente;
+  if (!attente || attente.cote !== cote) return { ok: false, raison: 'aucune-attente' };
+  const entite = duel[cote].creatures.find((candidate) => candidate.id === attente.entiteId);
+  const carte = duelCardById(entite?.carteId);
+  const portee = arriveeCiblePortee(carte);
+  if (!entite || !portee) {
+    // La créature a quitté la table (ou n'a plus d'arrivée à désigner) :
+    // l'attente n'a plus d'objet, on la lève sans effet.
+    duel.arriveeEnAttente = null;
+    return { ok: false, raison: portee ? 'absente' : 'arrivee' };
+  }
+  const cible = campsDePortee(cote, portee)
+    .flatMap((camp) => duel[camp].creatures)
+    .find((candidate) => candidate.id === cibleId);
+  if (!cible) return { ok: false, raison: 'cible' };
+  // « une AUTRE créature » : celle qui porte l'arrivée ne se désigne jamais
+  // elle-même — l'exil du Susanoo, qui choisit pourtant dans les deux camps,
+  // ne peut pas se retourner contre la créature qu'il vient de poser.
+  if (cible.id === entite.id) return { ok: false, raison: 'cible' };
+  if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  duel.arriveeEnAttente = null;
+  appliquer(duel, cote, carte.arrivee, cible.id, entite.id, cardColors(carte), 'capacite', carte.id);
+  rafraichirAuras(duel);
+  rpgActionsEtat(duel);
+  return { ok: true, cible };
 }
 
 /**
@@ -2535,6 +2636,10 @@ export function rpgFinDeTour(duel) {
   duel.defausseEnAttente = null;
   duel.fenetreReponse = false;
   duel.annonce = null;
+  // Une arrivée qui attendait sa victime meurt avec le tour : la page interdit
+  // de terminer tant qu'une désignation est ouverte, mais le moteur ne laisse
+  // jamais traîner l'attente d'un tour sur l'autre.
+  duel.arriveeEnAttente = null;
   detruireEphemeres(duel);
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {

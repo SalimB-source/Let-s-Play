@@ -118,6 +118,33 @@ limitée à 7.
   les créatures ennemies et encaissent la riposte même si leur cible
   meurt.
 
+### Les arrivées qui désignent une cible se choisissent sur la table
+
+Une créature dont l'effet d'arrivée désigne une victime — le duel du **Cavalier
+amazigh**, la morsure de la **Vipère de verre**, la lance de la **Valkyrie des
+glaces**, la gueule du **Léviathan** ou du **Bakunawa**, le rebond du **Sonneur
+félé**, l'exil du **Susanoo** — se **pose d'abord** : la carte vole depuis la
+main, le sable est payé, la créature entre en jeu et l'annonce le dit. La
+désignation ne s'ouvre qu'**ensuite**, sur la table, et c'est le clic sur la
+créature qui referme la capacité.
+
+- Le moteur retient ce qu'il reste à désigner (`duel.arriveeEnAttente`) et
+  revalide la cible au moment du clic : une créature qui a disparu, qui n'est
+  plus dans le bon camp, ou qui est protégée contre la couleur de la source est
+  refusée — l'attente reste ouverte.
+- **Renoncer à la cible** laisse la créature en jeu : on renonce à l'effet,
+  jamais à la pose. Le bouton « Annuler la dernière action », lui, défait la
+  pose entière (mana compris).
+- Une arrivée ciblée **sans cible légale** (table adverse vide, protections) se
+  résout avec la pose, comme avant : aucun choix à faire, aucune attente.
+- La portée est déclarée **une seule fois**, par `arriveeCiblePortee()` : le
+  moteur s'en sert pour exiger la cible, la page pour allumer les créatures
+  légales. Un camp ne peut donc pas demander ce que l'autre refuse.
+
+Le choix de la cible pendant la phase du sorcier (une Magie Rapide qui renvoie
+une créature, par exemple) garde son cours d'origine : là, la carte est un sort
+lancé depuis la main, elle n'a pas à se poser avant de désigner.
+
 ### Les capacités de clan du Nord
 
 Deux capacités appartiennent au set **Neige** et à lui seul ; elles se lisent

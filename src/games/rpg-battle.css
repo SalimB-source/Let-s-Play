@@ -2723,11 +2723,41 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* La main est consultable à tout moment ; seul le glisser-déposer joue la carte. */
 .rpg-hand__card[data-jouable="true"] { cursor: grab; }
 .rpg-hand__card[data-jouable="true"]:active { cursor: grabbing; }
+/* Le halo de la main — « cette carte part maintenant ». Une seule règle décide
+   de TOUT : l'allumage, posé sur le même verdict que le clic et le
+   glisser-déposer, mana compris (`rpgPeutPayer`) ; l'empreinte, la même pour
+   toute la main — anneau de 2 px, auréole rapprochée de 6 px, flou extérieur de
+   18 px étalé de 4 px, ombre portée de 16 px ; et la densité, pleine, celle
+   d'un voyant qu'on repère d'un coup d'œil dans un éventail. La couleur, elle,
+   dépend de ce qu'on joue : l'azur est aux cartes qui se POSENT — créature,
+   héros, terrain, arme —, la Magie Rapide s'allume de l'or de son socle, et la
+   Sorcellerie de l'améthyste de la sienne (les deux triplets des familles sont
+   déclarés une fois pour toutes au bloc « Les familles de sorts », en fin de
+   feuille). L'azur écrit en repli de `var()` est donc la teinte de toute carte
+   qui ne déclare pas de famille : changer la couleur d'une famille ne se fait
+   qu'à un endroit, et le halo, lui, ne bouge pas d'un pixel — un Désert, un
+   Fennec, une Magie Rapide et une Sorcellerie s'allument exactement pareil,
+   seule la teinte les sépare.
+
+   Le contraste est celui d'un voyant : l'anneau porte le reflet clair de la
+   famille (l'azur pâle en repli) plutôt que la teinte de base, une auréole
+   courte le double vers l'intérieur du flou, le halo extérieur est presque
+   opaque et l'ombre portée s'assombrit pour que la lueur paraisse plus claire
+   encore. Le survol reprend les mêmes rayons, densité pleine. Rien de tout cela
+   ne pousse la carte : le halo se peint sur son ombre, derrière la face. */
 .rpg-hand__card.is-playable {
-  box-shadow: 0 0 0 2px rgba(255, 214, 25, .58), 0 0 18px 4px rgba(255, 214, 25, .62), 0 6px 16px rgba(0, 0, 0, .5);
+  box-shadow:
+    0 0 0 2px rgba(var(--rpg-play-halo-clair, 176, 197, 255), .98),
+    0 0 6px 1px rgba(var(--rpg-play-halo-clair, 176, 197, 255), .82),
+    0 0 18px 4px rgba(var(--rpg-play-halo, 77, 125, 255), .92),
+    0 6px 16px rgba(0, 0, 0, .62);
 }
 .rpg-hand__card.is-playable:hover:not(:disabled) {
-  box-shadow: 0 0 0 2px rgba(255, 239, 156, .92), 0 0 24px 6px rgba(255, 214, 25, .78), 0 12px 22px rgba(0, 0, 0, .6);
+  box-shadow:
+    0 0 0 2px rgba(var(--rpg-play-halo-clair, 176, 197, 255), 1),
+    0 0 7px 1px rgba(var(--rpg-play-halo-clair, 176, 197, 255), .92),
+    0 0 24px 6px rgba(var(--rpg-play-halo, 77, 125, 255), 1),
+    0 12px 22px rgba(0, 0, 0, .68);
 }
 .rpg-hand__card.is-unplayable { filter: saturate(.58) brightness(.82); cursor: zoom-in; }
 .rpg-hand__card.is-dragging { opacity: .58; transform: translateY(-22px) scale(.94); }
@@ -7163,6 +7193,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-sort-ligne--sorcellerie { color: #ddccff; }
 .rpg-mulligan__type--rapide { border-color: rgba(255, 214, 25, .62); background: rgba(46, 32, 4, .9); color: #ffe9a0; }
 .rpg-mulligan__type--sorcellerie { border-color: rgba(179, 154, 224, .62); background: rgba(30, 20, 50, .9); color: #ece3ff; }
+
+/* ── La teinte de la lueur de jouabilité ─────────────────────────────────────
+   Le halo d'une carte en main (`.rpg-hand__card.is-playable`, plus haut dans
+   la feuille) répond à une seule question : « puis-je la jouer, là, tout de
+   suite ? » — le mana est là, c'est mon tour, ou la fenêtre de réponse est
+   ouverte. Sur une créature, un héros, un terrain ou une arme, il prend
+   l'**azur** — la carte se POSE, et c'est le bleu de la table qui s'allume. Sur
+   un sort, il prend la couleur de sa famille : **l'or** pour la Magie Rapide,
+   déjà la teinte du liseré de son socle et de sa ligne de type, et
+   l'**améthyste** pour la Sorcellerie, dont c'est la teinte du socle, du jeton
+   et de la ligne de type.
+
+   Deux triplets `r`, `g`, `b` séparés par des virgules, parce que c'est la
+   forme qu'attend `rgba(var(--rpg-play-halo), α)` dans la règle du halo : la
+   teinte et son reflet clair (celui du survol) se déclarent donc ici, avec la
+   signature des familles, et nulle part ailleurs. Le halo reste un ÉTAT, jamais
+   une couleur de cadre : une Braise rapide reçoit l'or de sa famille, pas le
+   rouge de son élément, et l'anneau de la carte n'a pas bougé.
+   ------------------------------------------------------------------------- */
+.rpg-hand__card--famille-rapide { --rpg-play-halo: 255, 214, 25; --rpg-play-halo-clair: 255, 239, 156; }
+.rpg-hand__card--famille-sorcellerie { --rpg-play-halo: 179, 154, 224; --rpg-play-halo-clair: 236, 227, 255; }
 
 /* ── Le motif des magies et des terrains ──────────────────────────────────────
    La résille commune (posée par `.rpg-battle`) dit « ceci est un cadre » ; la
