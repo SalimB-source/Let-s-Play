@@ -49,17 +49,22 @@ salem: { …, stand: '…/stand-salem.webp', poses: {
 
 Recette d’une variante : même peinture, même visage, même tenue que la pose de
 référence (elle sert de **source de composition**), mais une autre posture —
-puis la même chaîne `tools/make-stands.py <id>-<pose> --debug`. Une situation
-sans variante garde la pose de référence : aucune figure n’est obligée d’en
-avoir une, et une variante ne se partage jamais entre deux personnages.
+puis la même chaîne `tools/make-stands.py <id>-<pose> --debug`.
+
 Livrées : les deux poses des cinq héros (Salem, Yamina, Fériel, Tarek,
 Boualem, Mahieddine), des figures de la Chambre (Scribe, Guetteur, Puisatier
 des Cendres), des antagonistes des deux premiers actes (Marchand de sable,
-Gardienne des ksour, Djinn du tournant, Reine des étals) et de l’acte des
-Abysses (Pêcheur de perles, Nageuse des puits, Dévoreur de l’abîme, Garde du
-fjord) — plus la garde du Sonneur d’écume et celle de la Meute des neiges,
-dont la détente reste à peindre (une situation sans variante retombe sur sa
-référence).
+Gardienne des ksour, Djinn du tournant, Reine des étals) et des actes des
+Abysses et du Fjord (Pêcheur de perles, Nageuse des puits, Sonneur d’écume,
+Dévoreur de l’abîme, Garde du fjord, Meute des neiges, Valkyrie du fjord,
+Maître des Neuf Hivers, Dernier Fennec). Restent à peindre : la détente de
+l’Ifrit des ergs et les poses de l’Horloger du Zénith.
+
+Le **nom du fichier** dit la situation : `stand-<id>-<suffixe>.webp`, avec le
+suffixe déclaré par la situation (`affrontement`, `decision`, `apaisement`).
+Une situation sans variante garde la pose de référence : aucune figure n’est
+obligée d’en avoir une, et une variante ne se partage jamais entre deux
+personnages.
 
 Recette d’un contour propre : l’outil **étale la couleur du personnage sous ses
 pixels transparents** avant la plume (`etaler_couleur`) et désincruste à

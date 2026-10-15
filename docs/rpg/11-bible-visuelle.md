@@ -143,23 +143,25 @@ apres: '…-apaisement.webp' }` et `poseHistoire(id, situation)` résout l'image
   vérifie que la pose change au dernier échange et revient au référentiel
   ensuite.
 
-**État livré :** les deux postures de **dix-sept figures** — les cinq héros
+**État livré :** les deux postures de **vingt-trois figures** — les cinq héros
 (Salem, Yamina, Fériel, Tarek, Boualem, Mahieddine), les figures de la Chambre
 (la Scribe, le Guetteur, le Puisatier des Cendres), les antagonistes des deux
 premiers actes (le Marchand de sable, la Gardienne des ksour, le Djinn du
-tournant, la Reine des étals) et **l'acte des Abysses au complet** (le Pêcheur
-de perles, la Nageuse des puits, le Dévoreur de l'abîme, la Garde du fjord).
-Trois exemples : la Scribe ouvre son registre et lève la main avant le duel,
-puis offre sa plume ; le Guetteur met son crochet de herse en travers du
-passage, puis bascule sa capuche et ouvre la main ; le Sonneur d'écume hisse
-sa cloche de bronze au-dessus de l'épaule et fait éclater l'eau sous ses pieds,
-puis s'écarte, la cloche au repos derrière lui.
+tournant, la Reine des étals) et **les actes des Abysses et du Fjord au
+complet** (le Pêcheur de perles, la Nageuse des puits, le Sonneur d'écume, le
+Dévoreur de l'abîme, la Garde du fjord, la Meute des neiges, la Valkyrie du
+fjord, le Maître des Neuf Hivers, le Dernier Fennec).
 
-**Le Sonneur d'écume et la Meute des neiges** n'ont pour l'instant que leur
-garde : leur détente reste à peindre, et une situation sans variante retombe
-simplement sur la pose de référence. Il en va de même, sans aucune variante,
-de la Valkyrie du fjord, du Maître des Neuf Hivers, du Dernier Fennec, de
-l'Ifrit des ergs et de l'Horloger du Zénith : le système les concerne toutes.
+Trois exemples : la Scribe ouvre son registre et lève la main avant le duel,
+puis offre sa plume ; la Garde du fjord dresse son bouclier en mur devant sa
+poitrine, puis le pose contre sa jambe et ouvre la main vers la herse ; le
+Maître des Neuf Hivers abat son bâton dans la glace et fait tournoyer ses deux
+corbeaux, puis plante le bâton et offre le sceau du Nord.
+
+**Il ne reste que la détente de l'Ifrit des ergs** (sa garde est livrée, la
+seconde pose est à reprendre) **et l'Horloger du Zénith**, encore sans aucune
+variante : une situation sans variante retombe simplement sur la pose de
+référence, et le registre ne déclare jamais un fichier qui n'existe pas.
 
 ### Contour des sprites : le liseré de fond
 
@@ -178,8 +180,8 @@ Trois pièges du détourage, tous traités par l'outil et vérifiés par
    `python3 tools/check-stands.py` mesure les deux (liseré et gabarit) et nomme
    les sprites à reprendre. **Repris dans cette passe :** `stand-tarek.webp`
    (source portrait 896×1200), `stand-valkyrie-fjord.webp` et
-   `stand-ifrit-ergs.webp` (sources portrait). **60 sprites** (26 figures et
-   34 variantes) passent aujourd'hui le contrôle sans réserve.
+   `stand-ifrit-ergs.webp` (sources portrait). **69 sprites** (24 figures et
+   45 variantes) passent aujourd'hui le contrôle sans réserve.
 
 ## Mise en scène
 

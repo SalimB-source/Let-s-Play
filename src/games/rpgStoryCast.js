@@ -15,16 +15,19 @@
  * l'expression avec elle). La pose de référence reste `stand` ; `poses` ne
  * fait que la remplacer le temps d'une situation, et une situation sans
  * variante garde la référence. Une figure sans `poses` reste donc valide.
+ * Le fichier d'une variante suit toujours `stand-<id>-<suffixe>.webp`, le
+ * suffixe étant celui que déclare la situation (`affrontement`, `decision`,
+ * `apaisement`) : le test le vérifie, une variante mal nommée ne passe pas.
  */
 
 /** Les situations qui, dans une scène, changent la posture d'un personnage. */
 export const SITUATIONS_POSE_HISTOIRE = Object.freeze({
   /** La scène s'achève et un duel se prépare : on se met en garde. */
-  duel: Object.freeze({ id: 'duel', nom: 'Affrontement', description: 'Dernier échange avant le duel' }),
+  duel: Object.freeze({ id: 'duel', nom: 'Affrontement', suffixe: 'affrontement', description: 'Dernier échange avant le duel' }),
   /** Une décision est posée au lecteur : la figure qui l'ouvre se cambre. */
-  choix: Object.freeze({ id: 'choix', nom: 'Décision', description: 'Une décision est posée au lecteur' }),
+  choix: Object.freeze({ id: 'choix', nom: 'Décision', suffixe: 'decision', description: 'Une décision est posée au lecteur' }),
   /** La scène se referme après la victoire : les épaules redescendent. */
-  apres: Object.freeze({ id: 'apres', nom: 'Après-duel', description: 'Dernier échange de l’après-duel' }),
+  apres: Object.freeze({ id: 'apres', nom: 'Après-duel', suffixe: 'apaisement', description: 'Dernier échange de l’après-duel' }),
 });
 
 const personnages = {
@@ -44,14 +47,14 @@ const personnages = {
   'reine-etals': { nom: 'La Reine des étals', fonction: 'Doyenne du souk', carte: 'tin-hinan', portrait: 'cards/tin-hinan-des-pistes.jpg', position: '50% 22%', couleur: '#ecc987', stand: 'sablier-story/stands/stand-reine-etals.webp', poses: { duel: 'sablier-story/stands/stand-reine-etals-affrontement.webp', apres: 'sablier-story/stands/stand-reine-etals-apaisement.webp' } },
   pecheur: { nom: 'Le Pêcheur de perles', fonction: 'Plongeur des citernes basses', carte: 'veilleuse-des-citernes', portrait: 'cards/veilleuse-des-citernes.jpg', position: '50% 24%', couleur: '#8ec7d2', stand: 'sablier-story/stands/stand-pecheur.webp', poses: { duel: 'sablier-story/stands/stand-pecheur-affrontement.webp', apres: 'sablier-story/stands/stand-pecheur-apaisement.webp' } },
   nageuse: { nom: 'La Nageuse des puits', fonction: 'Gardienne des eaux souterraines', carte: 'bakunawa', portrait: 'cards/bakunawa.jpg', position: '50% 24%', couleur: '#7ab8cb', stand: 'sablier-story/stands/stand-nageuse.webp', poses: { duel: 'sablier-story/stands/stand-nageuse-affrontement.webp', apres: 'sablier-story/stands/stand-nageuse-apaisement.webp' } },
-  sonneur: { nom: 'Le Sonneur d’écume', fonction: 'Cloche des ports engloutis', carte: 'sonneur-fele', portrait: 'cards/sonneur-fele.jpg', position: '50% 24%', couleur: '#9fd1cc', stand: 'sablier-story/stands/stand-sonneur.webp', poses: { duel: 'sablier-story/stands/stand-sonneur-affrontement.webp' } },
+  sonneur: { nom: 'Le Sonneur d’écume', fonction: 'Cloche des ports engloutis', carte: 'sonneur-fele', portrait: 'cards/sonneur-fele.jpg', position: '50% 24%', couleur: '#9fd1cc', stand: 'sablier-story/stands/stand-sonneur.webp', poses: { duel: 'sablier-story/stands/stand-sonneur-affrontement.webp', apres: 'sablier-story/stands/stand-sonneur-apaisement.webp' } },
   devoreur: { nom: 'Le Dévoreur de l’abîme', fonction: 'Gardien du fond', carte: 'leviathan', portrait: 'cards/leviathan.jpg', position: '50% 24%', couleur: '#6fb3c8', stand: 'sablier-story/stands/stand-devoreur.webp', poses: { duel: 'sablier-story/stands/stand-devoreur-affrontement.webp', apres: 'sablier-story/stands/stand-devoreur-apaisement.webp' } },
   'garde-fjord': { nom: 'La Garde du fjord', fonction: 'Boucliers du passage', carte: 'guerrier-au-bouclier-rond', portrait: 'cards/guerrier-au-bouclier-rond.jpg', position: '50% 22%', couleur: '#a8cbe0', stand: 'sablier-story/stands/stand-garde-fjord.webp', poses: { duel: 'sablier-story/stands/stand-garde-fjord-affrontement.webp', apres: 'sablier-story/stands/stand-garde-fjord-apaisement.webp' } },
-  'meute-neiges': { nom: 'La Meute des neiges', fonction: 'Chasseurs du plateau de glace', carte: 'loup-des-neiges', portrait: 'cards/loup-des-neiges.jpg', position: '50% 24%', couleur: '#b9d6e8', stand: 'sablier-story/stands/stand-meute-neiges.webp', poses: { duel: 'sablier-story/stands/stand-meute-neiges-affrontement.webp' } },
-  'valkyrie-fjord': { nom: 'La Valkyrie du fjord', fonction: 'Porteuse du corbeau', carte: 'valkyrie-des-glaces', portrait: 'cards/valkyrie-des-glaces.jpg', position: '50% 22%', couleur: '#c4def0', stand: 'sablier-story/stands/stand-valkyrie-fjord.webp' },
-  'maitre-hivers': { nom: 'Le Maître des Neuf Hivers', fonction: 'Celui qui tient le serment', carte: 'pere-des-corbeaux', portrait: 'cards/pere-des-corbeaux.jpg', position: '50% 22%', couleur: '#d3e7f5', stand: 'sablier-story/stands/stand-maitre-hivers.webp' },
-  'dernier-fennec': { nom: 'Le Dernier Fennec', fonction: 'Éclaireur des étages perdus', carte: 'fennec-des-decombres', portrait: 'cards/fennec-des-decombres.jpg', position: '50% 24%', couleur: '#e3be7a', stand: 'sablier-story/stands/stand-dernier-fennec.webp' },
-  'ifrit-ergs': { nom: 'L’Ifrit des ergs', fonction: 'Gardien du portail', carte: 'ifrit-des-ergs', portrait: 'cards/ifrit-des-ergs.jpg', position: '50% 22%', couleur: '#f09c67', stand: 'sablier-story/stands/stand-ifrit-ergs.webp' },
+  'meute-neiges': { nom: 'La Meute des neiges', fonction: 'Chasseurs du plateau de glace', carte: 'loup-des-neiges', portrait: 'cards/loup-des-neiges.jpg', position: '50% 24%', couleur: '#b9d6e8', stand: 'sablier-story/stands/stand-meute-neiges.webp', poses: { duel: 'sablier-story/stands/stand-meute-neiges-affrontement.webp', apres: 'sablier-story/stands/stand-meute-neiges-apaisement.webp' } },
+  'valkyrie-fjord': { nom: 'La Valkyrie du fjord', fonction: 'Porteuse du corbeau', carte: 'valkyrie-des-glaces', portrait: 'cards/valkyrie-des-glaces.jpg', position: '50% 22%', couleur: '#c4def0', stand: 'sablier-story/stands/stand-valkyrie-fjord.webp', poses: { duel: 'sablier-story/stands/stand-valkyrie-fjord-affrontement.webp', apres: 'sablier-story/stands/stand-valkyrie-fjord-apaisement.webp' } },
+  'maitre-hivers': { nom: 'Le Maître des Neuf Hivers', fonction: 'Celui qui tient le serment', carte: 'pere-des-corbeaux', portrait: 'cards/pere-des-corbeaux.jpg', position: '50% 22%', couleur: '#d3e7f5', stand: 'sablier-story/stands/stand-maitre-hivers.webp', poses: { duel: 'sablier-story/stands/stand-maitre-hivers-affrontement.webp', apres: 'sablier-story/stands/stand-maitre-hivers-apaisement.webp' } },
+  'dernier-fennec': { nom: 'Le Dernier Fennec', fonction: 'Éclaireur des étages perdus', carte: 'fennec-des-decombres', portrait: 'cards/fennec-des-decombres.jpg', position: '50% 24%', couleur: '#e3be7a', stand: 'sablier-story/stands/stand-dernier-fennec.webp', poses: { duel: 'sablier-story/stands/stand-dernier-fennec-affrontement.webp', apres: 'sablier-story/stands/stand-dernier-fennec-apaisement.webp' } },
+  'ifrit-ergs': { nom: 'L’Ifrit des ergs', fonction: 'Gardien du portail', carte: 'ifrit-des-ergs', portrait: 'cards/ifrit-des-ergs.jpg', position: '50% 22%', couleur: '#f09c67', stand: 'sablier-story/stands/stand-ifrit-ergs.webp', poses: { duel: 'sablier-story/stands/stand-ifrit-ergs-affrontement.webp' } },
   'horloger-zenith': { nom: 'L’Horloger du Zénith', fonction: 'Voix de l’horloge du ciel', carte: 'sahir-des-braises', portrait: 'cards/sahir-des-braises.jpg', position: '50% 22%', couleur: '#e8c47c', stand: 'sablier-story/stands/stand-horloger-zenith.webp' },
 };
 export const RPG_STORY_CAST = Object.freeze(Object.fromEntries(

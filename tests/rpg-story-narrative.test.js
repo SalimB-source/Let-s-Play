@@ -129,6 +129,7 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
     assert.ok(Object.isFrozen(situation));
     assert.equal(Object.hasOwn(SITUATIONS_POSE_HISTOIRE, situation.id), true);
     assert.ok(situation.nom.length > 2 && situation.description.length > 8);
+    assert.match(situation.suffixe, /^[a-z]+$/, 'le suffixe nomme le fichier de la variante');
   }
 
   for (const personnage of Object.values(RPG_STORY_CAST)) {
@@ -136,7 +137,10 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
       assert.ok(Object.hasOwn(SITUATIONS_POSE_HISTOIRE, situation),
         `${personnage.id} : « ${situation} » n’est pas une situation connue`);
       assert.ok(personnage.stand, `${personnage.id} : une variante sans sprite de référence n’a aucun sens`);
-      assert.match(fichier, /^sablier-story\/stands\/stand-[\w-]+\.webp$/, personnage.id);
+      // Le nom du fichier dit la situation : stand-<id>-<suffixe>.webp.
+      assert.equal(fichier,
+        `sablier-story/stands/stand-${personnage.id}-${SITUATIONS_POSE_HISTOIRE[situation].suffixe}.webp`,
+        `${personnage.id} : la variante « ${situation} » doit porter le suffixe de sa situation`);
       assert.notEqual(fichier, personnage.stand, `${personnage.id} : la variante ${situation} doit différer de la référence`);
       const octets = readFileSync(fileURLToPath(new URL(`../public/${fichier}`, import.meta.url)));
       assert.equal(octets.subarray(0, 4).toString('ascii'), 'RIFF', `${personnage.id} (${situation}) : conteneur WebP`);
@@ -147,11 +151,11 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
   }
 
   // Les figures livrées avec leurs deux postures : les cinq héros, les figures
-  // de la Chambre et les antagonistes. Le Sonneur et la Meute n'ont pour
-  // l'instant que leur garde — leur détente est encore à peindre.
+  // de la Chambre et les antagonistes des actes I à IV.
   for (const id of ['salem', 'yamina', 'feriel', 'tarek', 'boualem', 'mahieddine',
     'scribe', 'guetteur', 'puisatier', 'marchand', 'amani', 'djinn-souk', 'reine-etals',
-    'pecheur', 'nageuse', 'devoreur', 'garde-fjord']) {
+    'pecheur', 'nageuse', 'sonneur', 'devoreur', 'garde-fjord', 'meute-neiges',
+    'valkyrie-fjord', 'maitre-hivers', 'dernier-fennec']) {
     assert.deepEqual(situationsPoseHistoire(id), ['duel', 'apres'], id);
     assert.equal(poseHistoire(id, 'duel', '/base/').split('?')[0],
       `/base/sablier-story/stands/stand-${id}-affrontement.webp`, id);
@@ -161,7 +165,7 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
   }
   // Une figure peut n'avoir que sa garde : la situation non déclarée retombe
   // alors sur la pose de référence, sans trou ni carré cassé.
-  for (const id of ['sonneur', 'meute-neiges']) {
+  for (const id of ['ifrit-ergs']) {
     assert.deepEqual(situationsPoseHistoire(id), ['duel'], id);
     assert.equal(poseHistoire(id, 'duel', '/base/').split('?')[0],
       `/base/sablier-story/stands/stand-${id}-affrontement.webp`, id);
@@ -173,9 +177,9 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
   // personnage encore sans variante n'en invente pas.
   assert.equal(poseHistoire('salem', 'inconnue', '/base/'), standHistoire('salem', '/base/'));
   assert.equal(poseHistoire('salem', null, '/base/'), standHistoire('salem', '/base/'));
-  assert.equal(poseHistoire('ifrit-ergs', 'duel', '/base/'), standHistoire('ifrit-ergs', '/base/'),
+  assert.equal(poseHistoire('horloger-zenith', 'duel', '/base/'), standHistoire('horloger-zenith', '/base/'),
     'un personnage sans variante garde sa pose de référence');
-  assert.deepEqual(situationsPoseHistoire('ifrit-ergs'), []);
+  assert.deepEqual(situationsPoseHistoire('horloger-zenith'), []);
   assert.deepEqual(situationsPoseHistoire('narrateur'), []);
   assert.equal(poseHistoire('narrateur', 'duel', '/base/'), null, 'la ville n’a pas de corps');
   assert.equal(poseHistoire('absent', 'duel', '/base/'), null);
