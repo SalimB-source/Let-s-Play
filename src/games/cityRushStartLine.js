@@ -23,10 +23,10 @@ import { START_ZONE_HALF } from './cityRushStage.js';
 
 const SCALE = CITY_RUSH_SCROLL_SCALE;
 const STAND_HALF = 15.8; // demi-longueur des tribunes (unités monde ≈ ±22 m)
-// 8,4 m : le boîtier des feux (point bas ≈ 7,3 m) reste au-dessus de la caméra
-// de poursuite (≤ 6,7 m) quand elle passe sous le portique à chaque tour, et
+// 9,2 m : le boîtier des feux (point bas ≈ 8,1 m) reste au-dessus de la caméra
+// de poursuite (≤ 7,5 m) quand elle passe sous le portique à chaque tour, et
 // le panneau reste visible sous le HUD pendant l'approche.
-const GANTRY_HEIGHT = 8.4;
+const GANTRY_HEIGHT = 9.2;
 export const START_LIGHT_COUNT = 5;
 
 /**

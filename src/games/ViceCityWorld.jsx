@@ -452,9 +452,10 @@ const RAMP_HALF_WIDTH = CITY_RUSH_RAMP_WIDTH / 2;
 const RAMP_HALF_LENGTH = CITY_RUSH_RAMP_LENGTH / 2 + 0.04;
 // Demi-longueur de la voiture du pilote, en mètres de route.
 const FREE_DRIVE_HALF_LENGTH = 2.2 / SCALE;
-// Caméra de poursuite plus basse que l'ancienne vue plongeante (8,8 m) :
-// on voit l'horizon, la skyline, les portes et le portique de départ. Tout
-// élément qui enjambe la route doit rester au-dessus de 7,1 m.
+// Caméra de poursuite un peu plus haute que le cadrage collé au bitume
+// (6,6 m), tout en restant sous l'ancienne vue plongeante (8,8 m) : on voit
+// encore l'horizon, la skyline, les portes et le portique de départ. Tout
+// élément qui enjambe la route doit rester au-dessus de 7,9 m.
 // Distance (en mètres) sous laquelle le passage d'un rival s'entend.
 const PASS_BY_RANGE = 11;
 // Le recul et l'avance du regard viennent de la règle pure
@@ -462,7 +463,7 @@ const PASS_BY_RANGE = 11;
 // d'intro / compte à rebours / arrivée cadrent la même voiture à la même
 // distance. En ligne droite, la poursuite retombe exactement sur ces deux
 // points ; dans une cassure, elle se recolle dans l'axe de la caisse.
-const CHASE_POSITION = new THREE.Vector3(0, 6.6, PLAYER_Z + CITY_RUSH_CHASE_BEHIND);
+const CHASE_POSITION = new THREE.Vector3(0, 7.4, PLAYER_Z + CITY_RUSH_CHASE_BEHIND);
 const CHASE_LOOK = new THREE.Vector3(0, 1.3, PLAYER_Z - CITY_RUSH_CHASE_LOOK_AHEAD);
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));

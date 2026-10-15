@@ -1834,12 +1834,12 @@ test('les quinze cellules se groupent bleu / vert / jaune et les trois dernière
 test('l’hélico d’observation du dernier tour vole devant le pilote et s’éloigne à l’arrivée', () => {
   const pose = cityRushWatchHelicopterPose({ playerX: 0, clock: 0 });
   // Il se poste devant la voiture, plus haut que la caméra de poursuite (qui
-  // est à 6,6 m) et sous la bande des cartes du HUD : c'est ce qui le rend
+  // est à 7,4 m) et sous la bande des cartes du HUD : c'est ce qui le rend
   // visible dans le ciel. Les bornes viennent de la mesure à l'écran (le smoke
   // projette l'appareil avec la vraie caméra) : plus haut, il passait derrière
   // les cartes ; plus loin, il était trop petit pour se voir.
   assert.ok(pose.ahead >= CITY_RUSH_WATCH_HELI_AHEAD - 3);
-  assert.ok(pose.height > 6.6);
+  assert.ok(pose.height > 7.4);
   assert.ok(pose.height <= CITY_RUSH_WATCH_HELI_HEIGHT + 1);
   // Garde-fou de cadrage : l'appareil reste bas et proche (mesuré à 0,44–0,65
   // en coordonnée écran, moyenne 0,57, contre 0,80 avant réglage).

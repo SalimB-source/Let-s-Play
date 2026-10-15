@@ -132,7 +132,7 @@ test('Tokyo runs on the Shuto Expressway Route 1 with an expressway art directio
   assert.ok(expressway.route.sectors.length >= 12, 'chaque échangeur et tunnel a son secteur');
   // Coupe transversale : le tablier dépasse la chaussée (bandes d'arrêt,
   // murets, parapets) et tout ce qui enjambe la piste reste au-dessus de la
-  // caméra de poursuite (6,7 m au plus haut).
+  // caméra de poursuite (7,5 m au plus haut).
   assert.ok(expressway.deckHalfWidth > CITY_RUSH_ROAD_HALF_WIDTH + 2);
   assert.ok(expressway.barrierHeight > 0.9 && expressway.barrierHeight < 1.4);
   assert.ok(expressway.parapetHeight > 0.8);

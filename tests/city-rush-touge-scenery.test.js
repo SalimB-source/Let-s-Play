@@ -132,7 +132,7 @@ test('les immeubles restent dans notre direction, même après un virage et au t
       camera.updateProjectionMatrix();
       for (let metre = -20; metre < CITY_RUSH_LAP_LENGTH * 2 + 20; metre += 5) {
         const chase = cityRushChasePlacement(metre, CITY_RUSH_TRACK_PROFILE_TOUGE);
-        camera.position.set(chase.cameraX, 6.6 + chase.cameraHill, 3.1 + chase.cameraZ);
+        camera.position.set(chase.cameraX, 7.4 + chase.cameraHill, 3.1 + chase.cameraZ);
         camera.lookAt(chase.lookX, 1.3 + chase.lookHill, 3.1 + chase.lookZ);
         camera.updateMatrixWorld();
         skyline.update(camera);
