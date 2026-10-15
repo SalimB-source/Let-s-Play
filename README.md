@@ -2614,6 +2614,190 @@ sa bande sur 98 % des images. Les images d'arrivée, d'épave et les secondes qu
 suivent un tremplin sont écartées. C'est ce contrôle qui attrape le défaut : sur
 le tōgé non corrigé, il échoue avec |x| = 1,52.
 
+## Vice City Rush : la vue cockpit
+
+La course se joue aussi **depuis la place du pilote**. La caméra de poursuite
+reste la vue par défaut ; la vue cockpit se choisit à tout moment :
+
+- touche **C** (ignorée avec Ctrl, Cmd ou Alt — Ctrl + C copie toujours — et
+  pendant une saisie de texte), y compris depuis l'écran-titre ;
+- bouton **COCKPIT** de la barre du jeu (icône de volant, `aria-pressed`) ;
+- **OPTIONS › CAMÉRA : POURSUITE / COCKPIT** dans l'écran-titre, et la même
+  entrée dans l'écran de pause.
+
+Le choix est une préférence de l'appareil (`letsplay_vice_city_rush_camera_v1`,
+`'chase'` ou `'cockpit'` ; toute autre valeur retombe sur la poursuite), comme
+le son. La vue embarquée ne vit qu'**au volant** — compte à rebours et course :
+l'orbite de présentation, le tour d'honneur et l'épave (deux tours de toupie,
+illisibles de l'intérieur) gardent leurs caméras extérieures. Chaque bascule est
+un **cut net**, sans traverser la carrosserie pendant un lissage.
+
+### Ce qu'on voit
+
+- Le **vrai capot** de la voiture choisie : la coque coupée au pied du
+  pare-brise (`makeRacerHoodGeometry`), à la couleur et à la livrée du modèle.
+  Les cotes de l'habitacle viennent de chaque carrosserie
+  (`cityRushCabinMetrics`) : la planche de bord raccorde exactement avec le capot.
+- Planche de bord, combiné à aiguilles (compteur et compte-tours), volant qui
+  braque — contre-braquage du drift compris —, montants, pavillon, portières,
+  rétroviseurs latéraux et essuie-glaces.
+- Un **rétroviseur intérieur** vivant : une cible de rendu 320 × 80, rafraîchie
+  une image sur deux, voiture du joueur masquée et ombres figées pendant ce
+  passage.
+- Le volant est **à droite** là où l'on roule à gauche et au Japon (Londres,
+  Shuto de Tokyo, mont Haruna), à gauche ailleurs.
+- Les rivaux se traversent : au départ, quand la grille s'élance, un rival qui
+  change de voie passe à travers la voiture du pilote. L'œil se retrouvait
+  alors **dans** sa carrosserie — un grand pan noir sur le pare-brise pendant
+  près d'une seconde. Le temps du rendu principal, une voiture dont la caisse
+  englobe l'œil (45 cm de marge pour un rival, 12 cm pour une voiture solide)
+  s'efface, et réapparaît dès qu'elle en sort (`cockpitGhostCars`).
+- En vue cockpit, la coque fermée, ses détails, sa livrée et les cônes des
+  phares s'effacent ; une doublure de la coque continue de porter l'ombre de la
+  voiture sur la route. La pluie s'arrête à l'habitacle (aucune goutte dans un
+  cylindre de 2,40 m autour du pilote), et le projecteur des phares de nuit
+  passe au nez de la voiture : posé dans la moitié arrière de la caisse, il
+  éclairait l'intérieur en gris clair.
+
+### Où vit le code
+
+- `src/games/cityRushCockpit.js` — règles pures (mode de caméra, cotes de
+  l'habitacle, régime, angle du volant et des aiguilles) et l'habitacle
+  three.js (`makeCityRushCockpit`).
+- `src/games/cityRushRacerModels.js` — `cityRushCabinMetrics` et
+  `makeRacerHoodGeometry`.
+- `src/games/ViceCityWorld.jsx` — `setCameraMode`, `syncCockpitView` (l'échange
+  de visibilité), `updateCockpitCamera` (œil lié à la caisse, regard qui anticipe
+  la courbe), le rendu du rétroviseur et `renderMainView` (les voitures qui
+  traversent l'œil s'effacent le temps du rendu).
+- `src/games/cityRushStage.js` — la pluie accepte un cylindre d'exclusion.
+- `src/games/ViceCityRushPage.jsx`, `src/games/ViceCityRushMainMenu.jsx` — la
+  préférence, la touche C, le bouton COCKPIT et les entrées CAMÉRA.
+
+### Vérifications
+
+```bash
+npm run check:city-rush-cockpit   # règles pures, les neuf parcours en vue cockpit, interface
+```
+
+`tests/city-rush-cockpit.test.js` (11 tests, aussi joués par `check:city-rush`)
+vérifie le mode et sa valeur de repli, la vue limitée au volant, le volant à
+droite des trois parcours concernés, l'habitacle de chaque modèle (pilote à sa
+place, capot raccordé), le compte-tours, le braquage et le contre-braquage, les
+aiguilles, le vrai capot coupé au pied du pare-brise, l'échange coque /
+habitacle, les témoins et essuie-glaces, et les cotes du rétroviseur.
+`scripts/city-rush-cockpit-check.mjs --all` joue le vrai monde avec un faux
+renderer qui sait viser une cible de rendu : intro extérieure, compte à rebours
+et course au volant, passage du rétroviseur, pluie hors habitacle, rival posé
+sur la voiture du pilote (jamais affiché quand il englobe l'œil, rendu dès
+qu'il s'écarte), retour en poursuite et épave vue de dehors, sur les neuf
+parcours.
+`scripts/vice-city-camera-ui-check.mjs` (jsdom) couvre l'entrée CAMÉRA, le
+bouton de la barre, la touche C et la préférence.
+
+## Vice City Rush : la conduite libre, sans voies
+
+La voiture n'est plus aimantée aux voies. En **conduite libre** — la conduite
+par défaut —, le volant pilote une **vitesse latérale** : tant que ← / →
+(ou Q / D) reste enfoncée, la voiture glisse ; à la relâche, elle s'arrête
+**là où elle est**, entre deux voies si le pilote le veut. Au doigt, la voiture
+suit le glissé pendant le geste : glisser sur 55 % de la largeur de l'écran
+traverse toute la chaussée, et un geste vif se termine une fois le doigt levé.
+
+La **conduite par voies** (un écart de voie entière par pression, maintien
+cadencé) reste au choix : **OPTIONS › CONDUITE : LIBRE / VOIES** dans
+l'écran-titre, et la même entrée dans l'écran de pause, applicable en pleine
+course. Préférence de l'appareil : `letsplay_vice_city_rush_driving_v1`
+(`'free'` ou `'lanes'`, toute autre valeur retombe sur la conduite libre).
+
+### Le volant libre
+
+- Vitesse latérale de pointe 9 m/s (une voie en ~0,35 s, la chaussée urbaine en
+  ~1,4 s), prise de braquage à 45 m/s², relâche et contre-braquage à 90 m/s² :
+  la voiture s'arrête en moins de 0,15 s. Le volant prend son plein effet à
+  12 m/s : arrêtée sur la grille, la voiture ne se décale pas en crabe.
+- Débattement : toute la chaussée, moins la demi-largeur de la caisse et 10 cm
+  de marge (±5,7 m en ville, ±3,6 m sur le Ring), jamais en deçà du centre des
+  voies extérieures (la chaussée étroite du tōgé garde ses quatre voies).
+- Toupie, épave ou saut : le volant ne répond plus, et une voiture en l'air ne
+  glisse pas.
+- Lacet de la caisse, roues avant et volant du cockpit suivent le glissement.
+
+### Le reste du jeu raisonne toujours en voies
+
+Trafic, rivaux, police, bonus, herse, contresens et tutoriel gardent leurs
+voies. La voie du pilote devient **la plus proche de sa position**, avec 20 cm
+d'hystérésis pour qu'une voiture qui roule sur une ligne ne papillonne pas.
+Franchir une ligne remet la ligne propre à zéro et compte comme un écart pour le
+tutoriel. Le choix est cohérent avec les contacts : le choc contre le trafic se
+juge à 1,52 m d'axe à axe (1,43 m pour la voiture la plus étroite du garage),
+au-delà des 1,25 m (demi-voie + hystérésis) où une voie reste celle du pilote —
+partager la voie d'une voiture veut donc toujours dire un vrai recouvrement.
+
+Les contacts se jugent sur la position réelle :
+
+- **Une voiture à hauteur** (moins de 3,6 m d'écart, celles qui ferment une voie
+  dans `canEnterLane` : trafic, contresens, escouade, patrouilles) ne se traverse
+  pas : la voiture du pilote glisse jusqu'à toucher sa carrosserie et s'arrête.
+  Insister vers elle déclenche le **choc latéral** (un seul par côte-à-côte), qui
+  la pousse sur la voie suivante. Les rivaux restent traversables.
+- **Mini-garage et conteneur à bazooka** : les parois canalisent la voiture.
+  Sur les 10 m qui précèdent l'entrée, elle est guidée (6 m/s au plus) vers le
+  passage praticable le plus proche — dedans ou à côté —, puis tenue hors des
+  parois tant qu'elle les longe. Dix centimètres de frôlement sont tolérés :
+  sans eux, longer le garage du Ring (portique de 5,40 m sur 9,20 m de chaussée)
+  aurait été impossible et sa traversée forcée.
+- **Tremplins** : un tremplin rattrape la voiture dont le centre passe à moins de
+  1,50 m de son axe, même à cheval sur sa ligne ; au-delà, la voiture le dépasse
+  franchement par le côté, jamais à travers sa joue.
+- `action('left' | 'right')` (la démonstration du tutoriel, les harnais) devient
+  un placement visé : la voiture glisse jusqu'au centre de la voie voisine et s'y
+  arrête sans la dépasser. La démonstration recentre aussi la voiture que le
+  pilote a laissée à cheval sur une ligne.
+
+### Où vit le code
+
+- `src/games/cityRushFreeDrive.js` — règles pures : mode de conduite, pas de
+  volant (`cityRushFreeSteerStep`), débattement, voie déduite
+  (`cityRushFreeLaneForX`), contact latéral, zones des parois et des tremplins,
+  canalisation, glissé au doigt, lecture visuelle.
+- `src/games/ViceCityWorld.jsx` — `setDrivingMode` et la prop `drivingMode`,
+  `updateFreeSteering` (consigne, contact, structures, voie déduite),
+  `freeSideObstacles`, `freeStructures`, `playerOnRamp`, les gestes
+  `pointerdown` / `pointermove` / `pointerup`. Le moteur nu démarre en conduite
+  par voies : les harnais historiques le pilotent ainsi, et la page lui transmet
+  la préférence du joueur.
+- `src/games/ViceCityRushPage.jsx`, `src/games/ViceCityRushMainMenu.jsx` — la
+  préférence, l'entrée CONDUITE, les réglages de l'écran de pause et les rappels
+  de commandes (« VOLANT LIBRE » ou « VOIES » selon la conduite).
+
+### Vérifications
+
+```bash
+npm run check:city-rush-free-drive   # règles pures, monde joué au volant libre (9 parcours), interface
+npm run check:city-rush              # inclut tests/city-rush-free-drive.test.js
+CITY_RUSH_SMOKE_DRIVING=free npm run check:city-rush-smoke        # course complète au volant libre
+CITY_RUSH_TUTORIAL_DRIVING=free npm run check:city-rush-tutorial-run
+```
+
+`tests/city-rush-free-drive.test.js` (17 tests) : mode et préférence, plein
+effet du volant, débattement des neuf parcours, glissement borné, arrêt net
+sans rappel vers un centre, placement visé sans dépassement, bords, hystérésis,
+cohérence voie / boîte de collision sur chaque parcours, contact latéral (sans
+effet tunnel ni répulsion), zones des parois (le Ring garde un passage à côté
+du garage), tremplins, canalisation, glissé au doigt, signes du lacet et du
+braquage. `scripts/city-rush-free-drive-check.mjs --all` pilote le vrai monde
+par de vrais événements clavier et tactiles : aucun saut de voie à la pression,
+arrêt en moins de 0,15 s, bords, dernière touche pressée, voie et ligne propre,
+`action`, glissé au doigt, voiture à hauteur jamais imbriquée et poussée une
+fois, rival traversé, toupie, retour aux voies, tremplin rattrapé ou évité,
+garage et conteneur longés ou traversés — roquette prise dedans.
+`scripts/vice-city-driving-ui-check.mjs` (jsdom) couvre l'entrée CONDUITE,
+l'écran de pause, les rappels et la préférence. Les harnais de la conduite par
+voies (`check:city-rush-steer-hold`, `check:city-rush-side-bump`,
+`check:city-rush-police-reaction`, `check:city-rush-ramp-blue`…) jouent
+toujours le moteur nu, donc la conduite par voies.
+
 ## Barre de navigation : le logo et le menu « Jeux »
 
 Deux choses à savoir avant de toucher à la barre (`src/components/Layout.jsx`,

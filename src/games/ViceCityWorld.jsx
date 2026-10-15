@@ -293,6 +293,38 @@ import { buildNordschleifeTrack, makeNordschleifeRoad } from './nordschleifeStag
 import { buildTougeTrack, makeTougeRoad, makeTougeSkyline } from './tougeStage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
 import { animateRacerCar, applyPoliceRacerLivery, configureCarReflections, createSmokePool, makeRacerCar, makeTrafficVehicle, setRacerDriver } from './cityRushCars';
+import {
+  CITY_RUSH_COCKPIT_BODY_FOLLOW,
+  CITY_RUSH_COCKPIT_BOOST_FOV,
+  CITY_RUSH_COCKPIT_FOV,
+  CITY_RUSH_COCKPIT_LOOK_AHEAD_MAX,
+  CITY_RUSH_COCKPIT_LOOK_AHEAD_METERS,
+  CITY_RUSH_COCKPIT_LOOK_AHEAD_SHARE,
+  CITY_RUSH_COCKPIT_PITCH,
+  CITY_RUSH_COCKPIT_SPEED_FOV,
+  cityRushCockpitActive,
+  cityRushCockpitRightHandDrive,
+  makeCityRushCockpit,
+  normalizeCityRushCameraMode,
+} from './cityRushCockpit.js';
+import {
+  CITY_RUSH_DRIVING_FREE,
+  CITY_RUSH_DRIVING_LANES,
+  CITY_RUSH_FREE_LANE_HYSTERESIS,
+  cityRushFreeFunnel,
+  cityRushFreeLaneForX,
+  cityRushFreeRampCatches,
+  cityRushFreeRampZones,
+  cityRushFreeSideContact,
+  cityRushFreeSteerBounds,
+  cityRushFreeSteerStep,
+  cityRushFreeSteerVisual,
+  cityRushFreeStructurePhase,
+  cityRushFreeTouchTarget,
+  cityRushFreeWallZones,
+  cityRushFreeYaw,
+  normalizeCityRushDrivingMode,
+} from './cityRushFreeDrive.js';
 import { makeBoostPadMaterial, makeLapBoard, makePickupMaterial } from './cityRushTextures';
 
 const PLAYER_Z = 3.1;
@@ -395,6 +427,31 @@ const STEER_KEY_DIRECTIONS = Object.freeze({
   arrowright: 'right',
   d: 'right',
 });
+// ── Conduite libre : ce que la voiture ne traverse pas ─────────────────────
+// En conduite par voies, la voiture ne quitte jamais le centre d'une voie et
+// ces cotes ne servent à rien. En conduite libre (`cityRushFreeDrive.js`),
+// elle peut rouler n'importe où sur la chaussée : les parois du mini-garage et
+// du conteneur, et les joues des tremplins, la canalisent. Abscisses en mètres
+// depuis l'axe de la structure, longueurs en unités du monde (÷ SCALE pour des
+// mètres de route).
+// Mini-garage : tube néon d'entrée, poteau et paroi latérale forment une seule
+// paroi de 2,18 à 2,61 m de l'axe, de part et d'autre (voir `makeMiniGarageObject`).
+const MINI_GARAGE_WALL_FACES = Object.freeze([
+  CITY_RUSH_MINI_GARAGE_WIDTH / 2 - 0.52,
+  CITY_RUSH_MINI_GARAGE_WIDTH / 2 - 0.09,
+]);
+const MINI_GARAGE_FRONT_Z = 2.54; // face avant du tube néon d'entrée
+const MINI_GARAGE_BACK_Z = 2.28; // bout des parois latérales
+// Conteneur à bazooka : une caisse de 40 pieds ouverte aux deux bouts, porte à
+// 8,70 m du repère du groupe (voir `makeBazookaContainer`).
+const BAZOOKA_CONTAINER_LENGTH = 12.2;
+const BAZOOKA_CONTAINER_DOOR_Z = 8.7;
+const BAZOOKA_CONTAINER_WALL = 0.1;
+// Tremplin : demi-largeur hors tout (joues comprises) et demi-longueur du tablier.
+const RAMP_HALF_WIDTH = CITY_RUSH_RAMP_WIDTH / 2;
+const RAMP_HALF_LENGTH = CITY_RUSH_RAMP_LENGTH / 2 + 0.04;
+// Demi-longueur de la voiture du pilote, en mètres de route.
+const FREE_DRIVE_HALF_LENGTH = 2.2 / SCALE;
 // Caméra de poursuite plus basse que l'ancienne vue plongeante (8,8 m) :
 // on voit l'horizon, la skyline, les portes et le portique de départ. Tout
 // élément qui enjambe la route doit rester au-dessus de 7,1 m.
@@ -963,11 +1020,11 @@ function makeBazookaContainer(city, pickupLaneX, side = 1) {
   // entrepôt, à 8,70 m du repère, pour que la roquette tombe toujours à 6,10 m
   // du centre du conteneur.
   const BASE = 0.16; // plancher bois, au-dessus des rails de base
-  const WALL = 0.1; // épaisseur de tôle
+  const WALL = BAZOOKA_CONTAINER_WALL; // épaisseur de tôle
   const CEILING = 2.9; // hauteur libre sous le toit
   const WIDTH = CITY_RUSH_LANE_WIDTH * 2; // deux voies de 2,10 m
-  const LENGTH = 12.2; // 40 pieds
-  const doorZ = 8.7;
+  const LENGTH = BAZOOKA_CONTAINER_LENGTH; // 40 pieds
+  const doorZ = BAZOOKA_CONTAINER_DOOR_Z;
   const backZ = doorZ - LENGTH;
   const centerZ = doorZ - LENGTH / 2;
   // Décalage latéral signé : positif vers l'extérieur de la chaussée.
@@ -2906,6 +2963,39 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let sprintTimeLeft = sprintTimeBonus;
   let playerLane = playerStartLane;
   let playerX = laneX(playerLane);
+  // Conduite du pilote : `'lanes'` (écart d'une voie entière par pression, la
+  // conduite historique — celle du moteur nu, que les harnais pilotent) ou
+  // `'free'` (volant libre, `cityRushFreeDrive.js`). La page transmet la
+  // préférence du joueur, conduite libre par défaut, via `setDrivingMode`.
+  let drivingMode = CITY_RUSH_DRIVING_LANES;
+  // Volant libre : vitesse latérale (m/s), placement visé (démonstration du
+  // tutoriel ou écart demandé par `action`, `null` sinon), consigne du volant
+  // et sa lecture visuelle (lacet de la caisse, braquage des roues et du
+  // volant du cockpit). En conduite par voies, ces deux lectures suivent
+  // l'écart restant jusqu'au centre de la voie.
+  let playerLateralSpeed = 0;
+  let playerSteerTarget = null;
+  let playerSteerDemand = 0;
+  let playerSteerYaw = 0;
+  let playerSteerVisual = 0;
+  // Glissé au doigt en cours (conduite libre) : la voiture vise sa position
+  // au début du geste, décalée du chemin parcouru par le doigt.
+  let touchSteer = null;
+  const freeDriving = () => drivingMode === CITY_RUSH_DRIVING_FREE;
+  const courseLaneXs = Array.from({ length: laneCount }, (_, lane) => laneX(lane));
+  let freeBoundsCache = null;
+  // Débattement du volant libre : la chaussée entière, moins la demi-largeur
+  // de la caisse (calculé une fois : la voiture ne change pas en course).
+  const freeSteerBounds = () => {
+    if (!freeBoundsCache) {
+      freeBoundsCache = cityRushFreeSteerBounds({
+        laneXs: courseLaneXs,
+        roadHalf: courseLanes.roadHalf,
+        halfWidth: playerCollisionWidth() / 2,
+      });
+    }
+    return freeBoundsCache;
+  };
   let playerSlowLeft = 0;
   let playerBlueShotSlowLeft = 0;
   let playerTrafficRecoverLeft = 0;
@@ -3013,6 +3103,38 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const lookTarget = new THREE.Vector3().copy(CHASE_LOOK);
   const lookCurrent = new THREE.Vector3().copy(CHASE_LOOK);
   const scratch = new THREE.Vector3();
+  // ── Vue cockpit (touche C de la page) ────────────────────────────────
+  // `cameraMode` est la préférence du joueur ; `cockpitShown` dit si la vue
+  // embarquée est réellement à l'écran (compte à rebours et course, jamais sur
+  // l'épave ni pendant l'orbite de présentation ou le tour d'honneur — voir
+  // `cityRushCockpitActive`). L'habitacle n'est construit qu'au premier
+  // passage en cockpit. `cameraSnap` coupe le lissage d'une image : un
+  // changement de vue est un cut, pas un travelling à travers la carrosserie.
+  let cameraMode = 'chase';
+  let cockpitShown = false;
+  let playerCockpit = null;
+  let cameraSnap = false;
+  let cameraBaseFov = CAMERA_BASE_FOV;
+  let cockpitLookYaw = 0;
+  const cockpitEye = new THREE.Vector3();
+  const cockpitFollowQuat = new THREE.Quaternion();
+  const cockpitHeadQuat = new THREE.Quaternion();
+  const cockpitTargetQuat = new THREE.Quaternion();
+  const cockpitHeadEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+  const cockpitIdentity = new THREE.Quaternion();
+  // Three.js tire ses UUID dans Math.random() : l'habitacle et le rétroviseur
+  // sont construits avec un tirage à part, pour que basculer de vue ne décale
+  // jamais le trafic, les bonus ni les graines des harnais.
+  const cockpitVisualRandom = seededRandom(0xC0C1 + cityIndex * 409);
+  const withCockpitVisualRandom = (create) => {
+    const gameplayRandom = Math.random;
+    Math.random = cockpitVisualRandom;
+    try {
+      return create();
+    } finally {
+      Math.random = gameplayRandom;
+    }
+  };
 
   const makeRacerRows = () => [
     {
@@ -3500,7 +3622,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   /** Écart de voie de la voiture (pilote ou démonstration), avec ses traces. */
   function changePlayerLane(nextLane) {
     if (nextLane === playerLane || !canEnterLane('player', nextLane)) return false;
+    if (freeDriving()) {
+      // Conduite libre : l'écart devient un placement visé. La voiture glisse
+      // jusqu'au centre de la voie demandée, et sa voie (la plus proche de sa
+      // position) change en route, avec les mêmes traces.
+      playerSteerTarget = laneX(nextLane);
+      return true;
+    }
     playerLane = nextLane;
+    notePlayerLaneChange();
+    return true;
+  }
+
+  /** La voie du pilote vient de changer : ligne propre et journal du tutoriel. */
+  function notePlayerLaneChange() {
     // Changer de voie ne ralentit pas : la voiture glisse à pleine allure. Seul
     // le bonus de « ligne propre » retombe à zéro.
     playerCleanLineTime = 0;
@@ -3509,7 +3644,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Une esquive compte quand la mire rouge était déjà sur la voiture.
       if (tutorialAimSeen && tutorialAimOnPlayer()) noteTutorialAction('dodge');
     }
-    return true;
   }
 
   /** La leçon des tirs : la police entre en piste et prend la voiture en chasse. */
@@ -3887,13 +4021,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // ── Le pilotage automatique ───────────────────────────────────────
       // Le pilote garde la main : après une touche, la démonstration s'efface
       // quelques instants et le laisse conduire.
-      if (tutorialManualLeft <= 0 && tutorialSteerCooldown <= 0 && playerStunLeft <= 0 && !playerWrecked) {
-        const target = tutorialTargetLane();
-        if (Number.isFinite(target) && target !== playerLane && canEnterLane('player', target)) {
-          changePlayerLane(target);
-          tutorialSteerCooldown = CITY_RUSH_TUTORIAL_STEER_INTERVAL;
-        }
-      }
+      tutorialAutopilot();
       // ── Les accessoires de la leçon ───────────────────────────────────
       tutorialPropLeft = Math.max(0, tutorialPropLeft - dt);
       if (lesson?.prop && tutorialPropLeft <= 0) {
@@ -3939,13 +4067,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       tutorialTickLeft = Math.max(0, tutorialTickLeft - dt);
       // Pendant le tic, la voiture continue de rouler (l'IA reprend la main).
       tutorialSteerCooldown = Math.max(0, tutorialSteerCooldown - dt);
-      if (tutorialManualLeft <= 0 && tutorialSteerCooldown <= 0 && playerStunLeft <= 0 && !playerWrecked) {
-        const target = tutorialTargetLane();
-        if (Number.isFinite(target) && target !== playerLane && canEnterLane('player', target)) {
-          changePlayerLane(target);
-          tutorialSteerCooldown = CITY_RUSH_TUTORIAL_STEER_INTERVAL;
-        }
-      }
+      tutorialAutopilot();
       if (tutorialTickLeft > 0) return;
       if (tutorialLessonIndex + 1 < tutorialSteps.length) {
         startTutorialLesson(tutorialLessonIndex + 1);
@@ -3961,6 +4083,27 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         score,
       });
       emitHud(true);
+    }
+  }
+
+  /**
+   * Le volant de la démonstration : un écart vers la voie visée, à la cadence
+   * de la leçon. En conduite libre, la démonstration recentre aussi la voiture
+   * dans sa voie quand le pilote l'a laissée à cheval sur une ligne.
+   */
+  function tutorialAutopilot() {
+    if (tutorialManualLeft > 0 || tutorialSteerCooldown > 0 || playerStunLeft > 0 || playerWrecked) return;
+    const target = tutorialTargetLane();
+    if (!Number.isFinite(target)) return;
+    if (target !== playerLane) {
+      if (canEnterLane('player', target)) {
+        changePlayerLane(target);
+        tutorialSteerCooldown = CITY_RUSH_TUTORIAL_STEER_INTERVAL;
+      }
+      return;
+    }
+    if (freeDriving() && playerSteerTarget === null && !touchSteer && Math.abs(playerX - laneX(target)) > 0.3) {
+      playerSteerTarget = laneX(target);
     }
   }
 
@@ -4172,7 +4315,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // consommateurs historiques.
       bazookaNextDistance: bazookaWarehouseEnabled ? nextBazookaWarehouseGap() : null,
       bazookaWarehouseGap: bazookaWarehouseEnabled ? nextBazookaWarehouseGap() : null,
+      // Voie du pilote — en conduite libre, la voie la plus proche de sa
+      // position (`playerX`, en mètres depuis l'axe de la chaussée).
       playerLane,
+      playerX,
+      drivingMode,
       slowLeft: Math.max(playerSlowLeft, playerBlueShotSlowLeft),
       trafficImpactLeft: playerTrafficImpactLeft,
       boostLeft: playerBoostLeft,
@@ -4398,6 +4545,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     sprintTimeLeft = sprintTimeBonus;
     playerLane = playerStartLane;
     playerX = laneX(playerLane);
+    playerLateralSpeed = 0;
+    playerSteerTarget = null;
+    playerSteerDemand = 0;
+    playerSteerYaw = 0;
+    playerSteerVisual = 0;
+    touchSteer = null;
     playerSlowLeft = 0;
     playerBlueShotSlowLeft = 0;
     playerTrafficRecoverLeft = 0;
@@ -8320,6 +8473,165 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     kept.forEach((id) => sideBumpContacts.add(id));
   }
 
+  // ── Conduite libre : le volant, les voitures à hauteur, les structures ───
+  // Les voitures qu'une carrosserie ne traverse pas de côté : exactement celles
+  // qui ferment une voie au pilote dans `canEnterLane` — trafic en ronde,
+  // contresens, escouade et patrouilles d'un mini-garage. Les rivaux restent
+  // traversables, et une berline en plein saut passe au-dessus.
+  function freeSideObstacles() {
+    const obstacles = [];
+    const add = (car, x, width) => {
+      const lateral = Number(x);
+      if (!car || !Number.isFinite(lateral)) return;
+      obstacles.push({ id: car.id, lane: car.lane, x: lateral, width: Number(width) || 1.9, gap: car.distance - distance });
+    };
+    rollingTraffic().forEach((car) => add(car, car.currentX, car.width));
+    oncomingCars.forEach((car) => {
+      if (!car.rallied && !car.destroyed) add(car, car.currentX, car.width);
+    });
+    activePursuers().forEach((police) => {
+      if (!police.jumpState?.active) add(police, police.currentX, police.width);
+    });
+    patrolCars.forEach((patrol) => add(patrol, patrol.currentX, Number(patrol.width) || 1.94));
+    return obstacles;
+  }
+
+  // Les structures que la voiture longe ou traverse, chacune avec son étendue
+  // sur la route et ses zones interdites au centre de la caisse : les parois
+  // du mini-garage (de part et d'autre des voies centrales), celles des
+  // conteneurs à bazooka, et les joues des tremplins.
+  function freeStructures(halfWidth) {
+    const structures = [];
+    const [garageInner, garageOuter] = MINI_GARAGE_WALL_FACES;
+    for (const garage of miniGarages) {
+      if (garage.used || !garage.group.visible || !miniGarageAvailable(garage)) continue;
+      structures.push({
+        start: garage.trackDistance - MINI_GARAGE_FRONT_Z / SCALE,
+        end: garage.trackDistance + MINI_GARAGE_BACK_Z / SCALE,
+        zones: cityRushFreeWallZones([[-garageOuter, -garageInner], [garageInner, garageOuter]], halfWidth),
+      });
+    }
+    if (bazookaWarehouses.length) {
+      // Mêmes cotes que `makeBazookaContainer` : la paroi intérieure longe la
+      // voie voisine, la paroi extérieure le bord de la voie de ramassage.
+      const pickupX = laneX(bazookaPickupLane);
+      const innerX = pickupX - bazookaOutwardSide * CITY_RUSH_LANE_WIDTH * 1.5;
+      const outerX = pickupX + bazookaOutwardSide * CITY_RUSH_LANE_WIDTH / 2;
+      const zones = cityRushFreeWallZones([
+        [innerX, innerX + bazookaOutwardSide * BAZOOKA_CONTAINER_WALL],
+        [outerX, outerX - bazookaOutwardSide * BAZOOKA_CONTAINER_WALL],
+      ], halfWidth);
+      for (const warehouse of bazookaWarehouses) {
+        if (!warehouse.group.visible) continue;
+        const groupDistance = warehouse.trackDistance + BAZOOKA_PICKUP_LOCAL_Z / SCALE;
+        structures.push({
+          start: groupDistance - BAZOOKA_CONTAINER_DOOR_Z / SCALE,
+          end: groupDistance + (BAZOOKA_CONTAINER_LENGTH - BAZOOKA_CONTAINER_DOOR_Z) / SCALE,
+          zones,
+        });
+      }
+    }
+    for (const ramp of ramps) {
+      if (!ramp.group.visible) continue;
+      structures.push({
+        start: ramp.trackDistance - RAMP_HALF_LENGTH / SCALE,
+        end: ramp.trackDistance + RAMP_HALF_LENGTH / SCALE,
+        zones: cityRushFreeRampZones(laneX(ramp.lane), { halfWidth, rampHalfWidth: RAMP_HALF_WIDTH }),
+      });
+    }
+    return structures;
+  }
+
+  // Canalisation : guidée vers un passage praticable à l'approche, tenue dedans.
+  // En l'air, la voiture survole tout.
+  function applyFreeStructures(x, dt, halfWidth) {
+    if (playerJumpState.active) return x;
+    let next = x;
+    for (const structure of freeStructures(halfWidth)) {
+      const structurePhase = cityRushFreeStructurePhase({
+        distance,
+        start: structure.start,
+        end: structure.end,
+        halfLength: FREE_DRIVE_HALF_LENGTH,
+      });
+      if (!structurePhase) continue;
+      next = cityRushFreeFunnel({ x: next, zones: structure.zones, bounds: freeSteerBounds(), phase: structurePhase, dt });
+    }
+    return next;
+  }
+
+  // Le tremplin rattrape-t-il le pilote ? En conduite par voies, il faut être
+  // dans sa voie ; en conduite libre, passer assez près de son axe.
+  function playerOnRamp(ramp) {
+    return freeDriving() ? cityRushFreeRampCatches(playerX, laneX(ramp.lane)) : ramp.lane === playerLane;
+  }
+
+  /**
+   * Une image de volant libre : consigne (touche tenue, glissé au doigt ou
+   * placement visé), glissement borné par la chaussée, voitures à hauteur,
+   * structures, puis voie du pilote déduite de sa position.
+   */
+  function updateFreeSteering(dt) {
+    const bounds = freeSteerBounds();
+    const halfWidth = playerCollisionWidth() / 2;
+    const priorX = playerX;
+    // Toupie, épave ou saut : le volant ne répond plus, et la voiture ne
+    // glisse pas en l'air.
+    const canSteer = !playerWrecked && playerStunLeft <= 0 && !playerJumpState.active;
+    let input = 0;
+    let target = null;
+    let aimingSteerTarget = false;
+    if (canSteer) {
+      if (steerHoldDirection) {
+        // La main du pilote passe avant tout placement en cours.
+        input = steerHoldDirection === 'left' ? -1 : 1;
+        playerSteerTarget = null;
+      } else if (touchSteer && touchSteer.target !== null) {
+        target = touchSteer.target;
+      } else if (playerSteerTarget !== null) {
+        target = playerSteerTarget;
+        aimingSteerTarget = true;
+      }
+    }
+    const step = cityRushFreeSteerStep({
+      x: playerX,
+      velocity: canSteer ? playerLateralSpeed : 0,
+      input,
+      target,
+      dt,
+      speed: currentSpeed,
+      bounds,
+    });
+    let nextX = step.x;
+    let lateral = step.velocity;
+    if (aimingSteerTarget && step.arrived) playerSteerTarget = null;
+    // Une voiture à hauteur ne se traverse pas. Le pilote qui tourne vers elle
+    // la pousse : c'est le choc latéral, comme un écart refusé en conduite par
+    // voies (un seul choc par côte-à-côte, voir `trySideBump`).
+    const contact = cityRushFreeSideContact({ fromX: priorX, toX: nextX, halfWidth, cars: freeSideObstacles() });
+    if (contact.blocked) {
+      nextX = contact.x;
+      lateral = 0;
+      if (step.desired !== 0 && Math.sign(step.desired) === Math.sign(contact.blocker.x - priorX)) {
+        trySideBump(contact.blocker.lane);
+      }
+    }
+    // Parois du mini-garage et du conteneur, joues des tremplins.
+    const channelled = applyFreeStructures(nextX, dt, halfWidth);
+    if (channelled !== nextX) {
+      if (Math.sign(channelled - nextX) !== Math.sign(lateral)) lateral = 0;
+      nextX = channelled;
+    }
+    playerX = nextX;
+    playerLateralSpeed = lateral;
+    playerSteerDemand = canSteer ? step.desired : 0;
+    const nextLane = cityRushFreeLaneForX(playerX, playerLane, courseLaneXs, CITY_RUSH_FREE_LANE_HYSTERESIS);
+    if (nextLane !== playerLane) {
+      playerLane = nextLane;
+      notePlayerLaneChange();
+    }
+  }
+
   function applyTrafficImpact(racerId, traffic, contact = null) {
     if (!traffic || traffic.impactCooldownLeft > 0 || traffic.impactChanging) return false;
     const racer = racerId === 'player' ? null : racers.find((item) => item.id === racerId);
@@ -8853,8 +9165,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (ramp.pickup.visible) animatePickupSlot(ramp.pickup, dt);
       if (!ramp.pickupType || ramp.pickupTaken) continue;
       if (Math.abs(distance - ramp.trackDistance) > crossingWindow) continue;
-      // Un passage dans une autre voie ne compte pas : le pilote attend la sienne.
-      if (playerLane !== ramp.lane || ramp.crossedRacers.has('player')) continue;
+      // Un passage dans une autre voie ne compte pas : le pilote attend la sienne
+      // (en conduite libre : le tremplin doit l'avoir rattrapé).
+      if (!playerOnRamp(ramp) || ramp.crossedRacers.has('player')) continue;
       ramp.crossedRacers.add('player');
       if (!canCollectCityRushPickup(inventory, ramp.pickupType, {
         health: playerHealth,
@@ -9067,7 +9380,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const height = Math.max(1, Math.floor(bounds.height || mount.clientHeight || 1));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    camera.fov = aspectFov(CAMERA_BASE_FOV + fovOffset);
+    camera.fov = aspectFov(cameraBaseFov + fovOffset);
     camera.updateProjectionMatrix();
   };
   const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
@@ -9288,7 +9601,98 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
+  function ensurePlayerCockpit() {
+    if (playerCockpit) return playerCockpit;
+    playerCockpit = withCockpitVisualRandom(() => makeCityRushCockpit(playerCar, {
+      rightHandDrive: cityRushCockpitRightHandDrive(city),
+      accent: playerProfile.accent,
+      daylight,
+      weather: theme.weather,
+      label: playerProfile.name,
+    }));
+    return playerCockpit;
+  }
+
+  // Bascule réelle de la vue : l'habitacle remplace la coque (ou l'inverse),
+  // le champ de base change et l'image suivante coupe net.
+  function syncCockpitView() {
+    const wanted = cityRushCockpitActive({ mode: cameraMode, phase, wrecked: playerWrecked });
+    if (wanted === cockpitShown) return;
+    const cockpit = wanted ? ensurePlayerCockpit() : playerCockpit;
+    if (wanted && !cockpit) return;
+    cockpitShown = wanted;
+    cockpit?.setActive(wanted);
+    cameraSnap = true;
+    cameraBaseFov = wanted ? CITY_RUSH_COCKPIT_FOV : CAMERA_BASE_FOV;
+    camera.fov = aspectFov(cameraBaseFov + fovOffset);
+    camera.updateProjectionMatrix();
+  }
+
+  /**
+   * Caméra embarquée : l'œil est un point de la caisse (il suit rebonds,
+   * roulis et tangage), le regard prend le cap de la voiture, une part des
+   * mouvements de caisse (`CITY_RUSH_COCKPIT_BODY_FOLLOW`) et anticipe la
+   * courbe de la route. Les chocs secouent la tête, sauf en mouvement réduit.
+   */
+  function updateCockpitCamera(dt) {
+    const cockpit = playerCockpit;
+    const body = playerCar.userData.body;
+    if (phase === 'countdown') countdownTime += dt;
+    playerCar.updateMatrixWorld(true);
+    cockpit.eye.getWorldPosition(cockpitEye);
+    camera.position.copy(cockpitEye);
+    cockpitFollowQuat.copy(cockpitIdentity).slerp(body.quaternion, reduceMotion ? 0.15 : CITY_RUSH_COCKPIT_BODY_FOLLOW);
+    const bendRaw = trackYaw(distance + CITY_RUSH_COCKPIT_LOOK_AHEAD_METERS) - trackYaw(distance);
+    const bend = Math.atan2(Math.sin(bendRaw), Math.cos(bendRaw));
+    const lookYaw = clamp(bend * CITY_RUSH_COCKPIT_LOOK_AHEAD_SHARE, -CITY_RUSH_COCKPIT_LOOK_AHEAD_MAX, CITY_RUSH_COCKPIT_LOOK_AHEAD_MAX);
+    cockpitLookYaw = cameraSnap ? lookYaw : lerp(cockpitLookYaw, lookYaw, 1 - Math.exp(-dt * 3));
+    const speedRatio = clamp(currentSpeed / (playerTopSpeed * CITY_RUSH_TRACK_BOOST_SPEED_FACTOR), 0, 1);
+    const shake = reduceMotion
+      ? 0
+      : cameraKick * 0.014
+        + (playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 || playerSpikeSlowLeft > 0 ? 0.004 : 0)
+        + speedRatio * 0.0012;
+    cockpitHeadEuler.set(
+      CITY_RUSH_COCKPIT_PITCH + Math.cos(clockTime * 39) * shake,
+      cockpitLookYaw + Math.sin(clockTime * 47) * shake,
+      0,
+      'YXZ',
+    );
+    cockpitHeadQuat.setFromEuler(cockpitHeadEuler);
+    cockpitTargetQuat.copy(playerCar.quaternion).multiply(cockpitFollowQuat).multiply(cockpitHeadQuat);
+    if (cameraSnap) camera.quaternion.copy(cockpitTargetQuat);
+    else camera.quaternion.slerp(cockpitTargetQuat, 1 - Math.exp(-dt * 14));
+    // Le regard de la poursuite reste calé devant la voiture : au retour en
+    // vue extérieure, la caméra repart d'un point sensé.
+    lookCurrent.set(playerCar.position.x * 0.09, CHASE_LOOK.y, CHASE_LOOK.z);
+    cameraKick = Math.max(0, cameraKick - dt * 2.2);
+    const targetFovOffset = phase === 'countdown'
+      ? lerp(-4, 0, smoothstep(countdownTime / 3.1))
+      : (playerBoostLeft > 0 ? CITY_RUSH_COCKPIT_BOOST_FOV : 0) + speedRatio * CITY_RUSH_COCKPIT_SPEED_FOV;
+    const nextOffset = cameraSnap ? targetFovOffset : lerp(fovOffset, targetFovOffset, 1 - Math.exp(-dt * 4));
+    if (cameraSnap || Math.abs(nextOffset - fovOffset) > 0.01) {
+      fovOffset = nextOffset;
+      camera.fov = aspectFov(cameraBaseFov + fovOffset);
+      camera.updateProjectionMatrix();
+    }
+    cameraSnap = false;
+    cockpit.update({
+      speed: currentSpeed,
+      topSpeed: playerTopSpeed,
+      steer: playerSteerVisual,
+      driftYaw: body.rotation.y,
+      boosting: playerBoostLeft > 0,
+      critical: playerHealthActive && playerHealth > 0 && playerHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL,
+      reduceMotion,
+    }, dt, clockTime);
+  }
+
   function updateCamera(dt) {
+    syncCockpitView();
+    if (cockpitShown) {
+      updateCockpitCamera(dt);
+      return;
+    }
     const px = playerCar.position.x;
     let followRate = 3.2;
     let targetFovOffset = 0;
@@ -9348,16 +9752,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       followRate = cityRushChaseFollowRate(chase.anchor);
     }
     cameraKick = Math.max(0, cameraKick - dt * 2.2);
-    const amount = 1 - Math.exp(-dt * followRate);
+    // Retour de la vue cockpit : cut net sur le cadrage, sans traverser la
+    // carrosserie pendant le lissage.
+    const amount = cameraSnap ? 1 : 1 - Math.exp(-dt * followRate);
     camera.position.lerp(cameraTarget, amount);
     lookCurrent.lerp(lookTarget, amount);
     camera.lookAt(lookCurrent);
-    const nextOffset = lerp(fovOffset, targetFovOffset, 1 - Math.exp(-dt * 4));
-    if (Math.abs(nextOffset - fovOffset) > 0.01) {
+    const nextOffset = cameraSnap ? targetFovOffset : lerp(fovOffset, targetFovOffset, 1 - Math.exp(-dt * 4));
+    if (cameraSnap || Math.abs(nextOffset - fovOffset) > 0.01) {
       fovOffset = nextOffset;
-      camera.fov = aspectFov(CAMERA_BASE_FOV + fovOffset);
+      camera.fov = aspectFov(cameraBaseFov + fovOffset);
       camera.updateProjectionMatrix();
     }
+    cameraSnap = false;
   }
 
   // Résolution adaptative. Pendant une course, on mesure le temps moyen d'image
@@ -9428,8 +9835,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // voie fermée (trafic, saut en cours, toupie) ne fait rien sur le coup :
       // le cran suivant retente sa chance, ce qui donne le glissement continu
       // attendu — la voiture se rabat dès que la voie s'ouvre.
+      // En conduite libre, la touche tenue est lue en continu par
+      // `updateFreeSteering` : pas d'écart cadencé.
       steerHoldCooldown = Math.max(0, steerHoldCooldown - dt);
-      if (steerHoldDirection && steerHoldCooldown <= 0) {
+      if (!freeDriving() && steerHoldDirection && steerHoldCooldown <= 0) {
         action(steerHoldDirection);
         steerHoldCooldown = STEER_HOLD_LANE_INTERVAL;
       }
@@ -9508,7 +9917,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // pointe est plus basse, la montée en régime garde sa durée.
       const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt, coursePace);
       const priorPlayerX = playerX;
-      playerX = lerp(playerX, laneX(playerLane), Math.min(1, dt * 12));
+      // Conduite par voies : la voiture rejoint le centre de sa voie. Conduite
+      // libre : le volant pilote une vitesse latérale, et la voie du pilote suit
+      // sa position (voir `updateFreeSteering`).
+      if (freeDriving()) updateFreeSteering(dt);
+      else playerX = lerp(playerX, laneX(playerLane), Math.min(1, dt * 12));
       const playerSuvImpactAmount = playerWrecked
         ? 0
         : clamp(playerSuvImpactLeft / PLAYER_POLICE_SUV_RAM_IMPACT_DURATION, 0, 1);
@@ -9674,7 +10087,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Détection de tremplin pour le joueur
       if (!playerJumpState.active && playerStunLeft <= 0 && !playerWrecked) {
         for (const ramp of ramps) {
-          if (ramp.lane === playerLane && detectCityRushRampContact(distance, playerLane, ramp.trackDistance, ramp.lane)) {
+          if (playerOnRamp(ramp) && detectCityRushRampContact(distance, ramp.lane, ramp.trackDistance, ramp.lane)) {
             const takeoffSpeed = Math.max(14, currentSpeed);
             const jumpDistance = computeCityRushJumpDistance(takeoffSpeed);
             const jumpHeight = computeCityRushJumpHeight(takeoffSpeed);
@@ -9897,12 +10310,22 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
 
       const playerSpin = cityRushStunSpin(playerStunLeft, playerStunTotal, playerWrecked ? playerWreckSpinTurns : undefined);
+      // Lacet et braquage : l'écart restant jusqu'au centre de la voie en
+      // conduite par voies, le glissement latéral en conduite libre. Le volant
+      // du cockpit lit le même braquage.
+      if (freeDriving()) {
+        playerSteerYaw = cityRushFreeYaw(playerLateralSpeed);
+        playerSteerVisual = cityRushFreeSteerVisual({ velocity: playerLateralSpeed, desired: playerSteerDemand });
+      } else {
+        playerSteerYaw = clamp((laneX(playerLane) - playerX) * -0.06, -0.12, 0.12);
+        playerSteerVisual = clamp((laneX(playerLane) - playerX) * 0.28, -0.34, 0.34);
+      }
       playerCar.rotation.y = trackYaw(distance)
         + playerSpin
         + playerSuvImpactYaw
-        + clamp((laneX(playerLane) - playerX) * -0.06, -0.12, 0.12)
+        + playerSteerYaw
         + skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide, 0.1, 14);
-      const playerSteer = clamp((laneX(playerLane) - playerX) * 0.28, -0.34, 0.34);
+      const playerSteer = playerSteerVisual;
       const playerDrift = playerWrecked || playerStunLeft > 0 || playerJumpState.active
         ? 0
         : driftFor(distance, currentSpeed, playerTopSpeed);
@@ -10244,10 +10667,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             scale: 0.22 + damage * 0.34,
             grow: 2.0 + damage * 1.1,
             life: 0.55 + damage * 0.5,
-            velocity: [(Math.random() - 0.5) * 0.6, 1.4 + damage * 1.0, 1.8 + Math.random() * 0.8],
+            // Vue cockpit : la fumée monte du capot devant le pare-brise au lieu
+            // de filer à travers l'habitacle (même nombre de tirages).
+            velocity: [(Math.random() - 0.5) * 0.6, 1.4 + damage * 1.0, cockpitShown ? 0.35 + Math.random() * 0.3 : 1.8 + Math.random() * 0.8],
           });
           if (playerHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL && Math.random() < 0.35) {
-            smoke.emit(playerHoodScratch, { color: 0xff8a33, opacity: 0.8, scale: 0.13, grow: 1.4, life: 0.3, velocity: [(Math.random() - 0.5) * 1.6, 1.8 + Math.random(), 1.4] });
+            smoke.emit(playerHoodScratch, { color: 0xff8a33, opacity: 0.8, scale: 0.13, grow: 1.4, life: 0.3, velocity: [(Math.random() - 0.5) * 1.6, 1.8 + Math.random(), cockpitShown ? 0.4 : 1.4] });
           }
         }
       }
@@ -10448,19 +10873,146 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (prop.group.visible) prop.update(dt, clockTime);
     }
     startLine.update(dt, clockTime, lineGap);
-    rain?.update(dt, worldTravel);
+    // En vue cockpit, la pluie ne traverse pas l'habitacle.
+    rain?.update(dt, worldTravel, cockpitShown ? { x: playerCar.position.x, z: playerCar.position.z, radius: 2.4, top: 2.3 } : null);
     smoke.update(dt, worldTravel);
     updatePickupPop(dt);
     updatePickupBursts(dt);
     sky.material.uniforms.time.value = clockTime;
     if (headlamp.visible) {
-      headlamp.position.set(trackWorldX(distance - 2, playerX), 0.8, trackWorldZ(distance - 2, playerX));
+      // En vue cockpit, le projecteur passe au nez de la voiture : posé dans
+      // la moitié arrière de la caisse, il éclairerait l'habitacle par
+      // l'arrière comme une lampe de chantier.
+      const lampDistance = cockpitShown ? distance + 2.7 : distance - 2;
+      headlamp.position.set(trackWorldX(lampDistance, playerX), 0.8, trackWorldZ(lampDistance, playerX));
       headlamp.target.position.set(trackWorldX(distance + 22), trackRelativeY(distance + 22), trackRelativeZ(distance + 22));
     }
     updateWatchHelicopter(dt);
     updateCamera(dt);
     tougeSkyline?.update(camera);
-    renderer.render(scene, camera);
+    renderCockpitMirror();
+    renderMainView();
+  }
+
+  // ── Rétroviseur intérieur ────────────────────────────────────────────
+  // En vue cockpit, le miroir montre la vraie route derrière la voiture : une
+  // petite image (320 × 80) rendue une image sur deux depuis la tête du
+  // pilote, regard vers l'arrière, voiture du joueur masquée et ombres non
+  // recalculées. En qualité allégée (tactile, WebView Android) ou sans cible
+  // de rendu, le miroir garde son reflet peint.
+  const MIRROR_TURN = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.05, Math.PI, 0, 'YXZ'));
+  let mirrorTarget = null;
+  let mirrorCamera = null;
+  let mirrorFrame = 0;
+  let mirrorBroken = lite;
+  function renderCockpitMirror() {
+    if (!cockpitShown || !playerCockpit || mirrorBroken) return;
+    if (typeof renderer.setRenderTarget !== 'function') return;
+    mirrorFrame += 1;
+    if (mirrorTarget && mirrorFrame % 2 === 1) return;
+    const shadowAutoUpdate = renderer.shadowMap.autoUpdate;
+    try {
+      if (!mirrorTarget) {
+        withCockpitVisualRandom(() => {
+          const halfFloat = Boolean(renderer.capabilities?.isWebGL2 && renderer.extensions?.has?.('EXT_color_buffer_float'));
+          mirrorTarget = new THREE.WebGLRenderTarget(320, 80, { type: halfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType });
+          mirrorCamera = new THREE.PerspectiveCamera(15, 4, 0.3, 180);
+        });
+        // Un miroir inverse la gauche et la droite.
+        mirrorTarget.texture.repeat.set(-1, 1);
+        mirrorTarget.texture.offset.set(1, 0);
+        const glass = playerCockpit.mirror.material;
+        glass.map = mirrorTarget.texture;
+        glass.color.setHex(0xffffff);
+        glass.needsUpdate = true;
+      }
+      mirrorCamera.position.copy(cockpitEye);
+      mirrorCamera.position.y += 0.05;
+      mirrorCamera.quaternion.copy(playerCar.quaternion).multiply(MIRROR_TURN);
+      mirrorCamera.updateMatrixWorld();
+      renderer.shadowMap.autoUpdate = false;
+      playerCar.visible = false;
+      renderer.setRenderTarget(mirrorTarget);
+      renderer.render(scene, mirrorCamera);
+    } catch {
+      // Cible flottante refusée, contexte perdu : le miroir garde son reflet
+      // peint et la course continue.
+      mirrorBroken = true;
+      const glass = playerCockpit.mirror.material;
+      glass.map = playerCockpit.mirror.fallback;
+      glass.needsUpdate = true;
+    } finally {
+      playerCar.visible = true;
+      renderer.setRenderTarget(null);
+      renderer.shadowMap.autoUpdate = shadowAutoUpdate;
+    }
+  }
+
+  // ── Vue cockpit : les voitures qui traversent l'œil du pilote ──────────
+  // Les rivaux se traversent. Au départ, la grille s'élance et un rival qui
+  // change de voie passe à travers la voiture du pilote : en poursuite, les
+  // deux caisses se chevauchent un instant ; en vue cockpit, l'œil se
+  // retrouvait **dans** la carrosserie du rival — un grand pan noir sur le
+  // pare-brise pendant près d'une seconde. Le temps du rendu principal, une
+  // voiture dont la caisse englobe l'œil du pilote (petite marge comprise)
+  // s'efface ; elle réapparaît dès qu'elle en sort. Les voitures solides
+  // (trafic, police) suivent la même règle avec une marge plus fine : hors
+  // cas limites (un saut qui rase un camion), elles n'atteignent jamais l'œil.
+  const COCKPIT_GHOST_MARGIN = 0.45;
+  const COCKPIT_SOLID_MARGIN = 0.12;
+  const COCKPIT_GHOST_REACH = 7; // m : au-delà, aucune caisse ne peut toucher l'œil
+  const NO_COCKPIT_GHOSTS = Object.freeze([]);
+  const ghostEye = new THREE.Vector3();
+  const ghostBox = new THREE.Box3();
+  const ghostRelative = new THREE.Matrix4();
+  const ghostInverse = new THREE.Matrix4();
+  // Caisse d'une voiture dans son propre repère, calculée une fois : les
+  // surfaces opaques seulement (ni cônes de phares, ni flammes, ni halos).
+  function carLocalBox(mesh) {
+    if (mesh.userData.cockpitGhostBox) return mesh.userData.cockpitGhostBox;
+    mesh.updateMatrixWorld(true);
+    ghostInverse.copy(mesh.matrixWorld).invert();
+    const box = new THREE.Box3();
+    mesh.traverse((node) => {
+      if (!node.isMesh || !node.geometry) return;
+      const materials = Array.isArray(node.material) ? node.material : [node.material];
+      if (materials.some((material) => material?.transparent)) return;
+      if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
+      ghostRelative.multiplyMatrices(ghostInverse, node.matrixWorld);
+      box.union(ghostBox.copy(node.geometry.boundingBox).applyMatrix4(ghostRelative));
+    });
+    mesh.userData.cockpitGhostBox = box;
+    return box;
+  }
+  function cockpitGhostCars() {
+    if (!cockpitShown) return NO_COCKPIT_GHOSTS;
+    let ghosts = null;
+    const consider = (mesh, margin) => {
+      if (!mesh || mesh === playerCar || !mesh.visible) return;
+      if (mesh.position.distanceToSquared(camera.position) > COCKPIT_GHOST_REACH * COCKPIT_GHOST_REACH) return;
+      const box = carLocalBox(mesh);
+      if (box.isEmpty()) return;
+      mesh.worldToLocal(ghostEye.copy(camera.position));
+      if (ghostEye.x < box.min.x - margin || ghostEye.x > box.max.x + margin) return;
+      if (ghostEye.y < box.min.y - margin || ghostEye.y > box.max.y + margin) return;
+      if (ghostEye.z < box.min.z - margin || ghostEye.z > box.max.z + margin) return;
+      (ghosts ||= []).push(mesh);
+    };
+    for (const racer of racers) consider(racer.mesh, COCKPIT_GHOST_MARGIN);
+    for (const car of trafficCars) consider(car.mesh, COCKPIT_SOLID_MARGIN);
+    for (const car of oncomingCars) consider(car.mesh, COCKPIT_SOLID_MARGIN);
+    for (const police of policeCars) consider(police.mesh, COCKPIT_SOLID_MARGIN);
+    for (const patrol of patrolCars) consider(patrol.mesh, COCKPIT_SOLID_MARGIN);
+    return ghosts || NO_COCKPIT_GHOSTS;
+  }
+  function renderMainView() {
+    const ghosts = cockpitGhostCars();
+    for (const mesh of ghosts) mesh.visible = false;
+    try {
+      renderer.render(scene, camera);
+    } finally {
+      for (const mesh of ghosts) mesh.visible = true;
+    }
   }
 
   function onKeyDown(event) {
@@ -10474,9 +11026,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (['arrowleft', 'arrowright', 'q', 'd', 'z', 'x'].includes(key)) noteTutorialManualInput();
     const steerDirection = STEER_KEY_DIRECTIONS[key];
     if (steerDirection) {
-      // La première pression répond tout de suite ; les écarts suivants sont
-      // cadencés par la boucle de rendu tant que la touche reste enfoncée.
-      if (pressSteerKey(key)) action(steerDirection);
+      // Conduite par voies : la première pression répond tout de suite ; les
+      // écarts suivants sont cadencés par la boucle de rendu tant que la touche
+      // reste enfoncée. Conduite libre : la touche tenue est lue à chaque image
+      // (`updateFreeSteering`) — la voiture glisse jusqu'à la relâche.
+      if (pressSteerKey(key) && !freeDriving()) action(steerDirection);
     } else if (key === 'z') {
       // Une seule touche pour les trois armes — AK-47, pompe, bazooka : le
       // premier tir part tout de suite, les suivants sont cadencés dans la
@@ -10499,18 +11053,57 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // Fenêtre quittée : plus aucune touche n'est fiable, on lâche tout.
     releasePistolKey();
     releaseSteerKeys();
+    touchSteer = null;
   };
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('blur', onWindowBlur);
 
+  // Au doigt (ou à la souris) sur la route. Conduite par voies : un glissé
+  // franc, une fois le doigt levé, change de voie. Conduite libre : la voiture
+  // suit le doigt pendant le geste — glisser de 55 % de la largeur de l'écran
+  // traverse toute la chaussée — et finit le geste une fois le doigt levé.
   let pointerStart = null;
+  const touchViewportWidth = () => Number(renderer.domElement.clientWidth)
+    || Number(mount?.clientWidth)
+    || Number(window.innerWidth)
+    || 1;
   const onPointerDown = (event) => {
     if (!active || !event.isPrimary) return;
     pointerStart = { x: event.clientX, y: event.clientY };
     renderer.domElement.setPointerCapture?.(event.pointerId);
+    if (freeDriving()) {
+      // Le doigt prend le volant : la voiture part de là où elle est.
+      playerSteerTarget = null;
+      touchSteer = { pointerId: event.pointerId, startClientX: event.clientX, startX: playerX, target: null, noted: false };
+    }
+  };
+  const onPointerMove = (event) => {
+    if (!touchSteer || event.pointerId !== touchSteer.pointerId) return;
+    if (!active || !freeDriving()) { touchSteer = null; return; }
+    const dx = event.clientX - touchSteer.startClientX;
+    // Quelques pixels de zone morte : une simple touche ne braque pas.
+    if (touchSteer.target === null && Math.abs(dx) < 4) return;
+    if (!touchSteer.noted) {
+      noteTutorialManualInput();
+      touchSteer.noted = true;
+    }
+    touchSteer.target = cityRushFreeTouchTarget({
+      startX: touchSteer.startX,
+      startPointer: touchSteer.startClientX,
+      pointer: event.clientX,
+      viewportWidth: touchViewportWidth(),
+      bounds: freeSteerBounds(),
+    });
   };
   const onPointerUp = (event) => {
+    if (touchSteer && event.pointerId === touchSteer.pointerId) {
+      // Doigt levé : la voiture finit le geste, puis tient sa place.
+      if (touchSteer.target !== null && active && freeDriving()) playerSteerTarget = touchSteer.target;
+      touchSteer = null;
+      pointerStart = null;
+      return;
+    }
     if (!pointerStart || !active) { pointerStart = null; return; }
     const dx = event.clientX - pointerStart.x;
     if (Math.abs(dx) > 20) {
@@ -10519,8 +11112,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
     pointerStart = null;
   };
-  const onPointerCancel = () => { pointerStart = null; };
+  const onPointerCancel = () => {
+    pointerStart = null;
+    touchSteer = null;
+  };
   renderer.domElement.addEventListener('pointerdown', onPointerDown);
+  renderer.domElement.addEventListener('pointermove', onPointerMove);
   renderer.domElement.addEventListener('pointerup', onPointerUp);
   renderer.domElement.addEventListener('pointercancel', onPointerCancel);
 
@@ -10570,8 +11167,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       active = false;
       releasePistolKey();
       // Pause : le maintien des flèches s'arrête net, la reprise ne repart pas
-      // d'elle-même dans une direction laissée enfoncée avant la pause.
+      // d'elle-même dans une direction laissée enfoncée avant la pause. Le
+      // glissement libre et le geste au doigt s'arrêtent avec.
       releaseSteerKeys();
+      touchSteer = null;
+      playerLateralSpeed = 0;
       currentSpeed = 0;
       audioRef?.current?.engine({ speed: 0, throttle: 0, idle: true });
     },
@@ -10583,6 +11183,46 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       applyRoster(nextRoster);
       emitHud(true);
     },
+    // Vue de la course : `'chase'` (poursuite, par défaut) ou `'cockpit'`
+    // (place du pilote). Applicable à tout moment ; la vue embarquée ne
+    // s'affiche qu'au volant (compte à rebours et course).
+    setCameraMode(mode) {
+      cameraMode = normalizeCityRushCameraMode(mode);
+      syncCockpitView();
+    },
+    get cameraMode() { return cameraMode; },
+    // Conduite : `'free'` (volant libre) ou `'lanes'` (écart de voie entière).
+    // Applicable à tout moment, même en pleine course : en repassant aux voies,
+    // la voiture rejoint le centre de la voie la plus proche ; en passant au
+    // volant libre, elle reste où elle est.
+    setDrivingMode(mode) {
+      const next = normalizeCityRushDrivingMode(mode);
+      if (next === drivingMode) return;
+      drivingMode = next;
+      playerLateralSpeed = 0;
+      playerSteerTarget = null;
+      playerSteerDemand = 0;
+      touchSteer = null;
+      if (next === CITY_RUSH_DRIVING_LANES) {
+        const nearest = cityRushFreeLaneForX(playerX, playerLane, courseLaneXs, 0);
+        if (nearest !== playerLane) {
+          playerLane = nearest;
+          notePlayerLaneChange();
+        }
+      }
+      // Le maintien des flèches repart de zéro dans la nouvelle conduite.
+      releaseSteerKeys();
+      emitHud(true);
+    },
+    get drivingMode() { return drivingMode; },
+    // Position latérale du pilote (m depuis l'axe) et glissement (m/s) : les
+    // vérifications de la conduite libre les lisent à l'image.
+    get playerX() { return playerX; },
+    get playerLane() { return playerLane; },
+    get lateralSpeed() { return playerLateralSpeed; },
+    get cockpitActive() { return cockpitShown; },
+    get cockpit() { return playerCockpit; },
+    get playerCar() { return playerCar; },
     get lite() { return lite; },
     get scene() { return scene; },
     get camera() { return camera; },
@@ -10610,20 +11250,29 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       releasePistolKey();
       releaseSteerKeys();
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
+      renderer.domElement.removeEventListener('pointermove', onPointerMove);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       renderer.domElement.removeEventListener('pointercancel', onPointerCancel);
       startLine.dispose();
       smoke.dispose();
+      mirrorTarget?.dispose();
       disposeScene(scene, renderer);
     },
   };
 }
 
-export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, onTutorial, actionsRef, audioRef }) {
+export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, cameraMode = 'chase', drivingMode = CITY_RUSH_DRIVING_FREE, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, onTutorial, actionsRef, audioRef }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbacksRef = useRef({});
   callbacksRef.current = { onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, onTutorial };
+  // La vue choisie suit le monde quand il est reconstruit (nouvelle voiture,
+  // nouveau parcours) sans le reconstruire elle-même.
+  const cameraModeRef = useRef(cameraMode);
+  cameraModeRef.current = cameraMode;
+  // Même chose pour la conduite (libre par défaut, voies au choix).
+  const drivingModeRef = useRef(drivingMode);
+  drivingModeRef.current = drivingMode;
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -10643,6 +11292,8 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
       return undefined;
     }
     worldRef.current = world;
+    world.setCameraMode?.(cameraModeRef.current);
+    world.setDrivingMode?.(drivingModeRef.current);
     if (actionsRef) actionsRef.current = (name) => world.action(name);
     callbacksRef.current.onReady?.();
     return () => {
@@ -10655,6 +11306,14 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
   useEffect(() => {
     if (roster) worldRef.current?.setRoster?.(roster);
   }, [roster]);
+
+  useEffect(() => {
+    worldRef.current?.setCameraMode?.(cameraMode);
+  }, [cameraMode]);
+
+  useEffect(() => {
+    worldRef.current?.setDrivingMode?.(drivingMode);
+  }, [drivingMode]);
 
   useEffect(() => {
     if (active) worldRef.current?.start();

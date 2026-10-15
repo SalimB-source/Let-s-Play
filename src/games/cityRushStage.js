@@ -1672,8 +1672,12 @@ export function makeRain(theme, cameraZ, lite = false) {
   lines.frustumCulled = false;
   return {
     object: lines,
-    update(dt, worldTravel) {
+    // `exclude` (facultatif) : un cylindre { x, z, radius, top } où aucune
+    // goutte n'est dessinée — l'habitacle de la vue cockpit. La goutte continue
+    // de tomber (mêmes tirages), elle est simplement rangée sous la route.
+    update(dt, worldTravel, exclude = null) {
       const array = geometry.attributes.position.array;
+      const radiusSquared = exclude ? exclude.radius * exclude.radius : 0;
       drops.forEach((drop, index) => {
         drop.y -= drop.speed * dt;
         drop.z += worldTravel * 0.8;
@@ -1684,11 +1688,15 @@ export function makeRain(theme, cameraZ, lite = false) {
         }
         if (drop.z > cameraZ + 10) drop.z -= 70;
         const base = index * 6;
+        const hidden = exclude
+          && drop.y < exclude.top
+          && (drop.x - exclude.x) ** 2 + (drop.z - exclude.z) ** 2 < radiusSquared;
+        const y = hidden ? -40 : drop.y;
         array[base] = drop.x;
-        array[base + 1] = drop.y;
+        array[base + 1] = y;
         array[base + 2] = drop.z;
         array[base + 3] = drop.x;
-        array[base + 4] = drop.y + drop.length;
+        array[base + 4] = y + drop.length;
         array[base + 5] = drop.z - worldTravel * 0.5;
       });
       geometry.attributes.position.needsUpdate = true;

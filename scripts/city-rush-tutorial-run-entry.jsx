@@ -155,6 +155,9 @@ function runTour(seed) {
     tutorial: (event) => callbacks.lessons.push({ ...event, frame: virtualFrame, at: virtualNow }),
     finish: (result) => callbacks.finishes.push({ ...result, frame: virtualFrame }),
   }), car.id, null, null, 1, false, 'laps', null, true);
+  // `CITY_RUSH_TUTORIAL_DRIVING=free` : la démonstration joue au volant libre
+  // (ses écarts deviennent des placements visés), comme sur la page.
+  if (process.env.CITY_RUSH_TUTORIAL_DRIVING) world.setDrivingMode(process.env.CITY_RUSH_TUTORIAL_DRIVING);
 
   try {
     world.setPhase('playing');

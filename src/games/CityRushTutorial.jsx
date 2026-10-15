@@ -212,6 +212,10 @@ export default function CityRushTutorial({
   tick = null,
   police = false,
   complete = false,
+  // Conduite du joueur : le rappel des flèches dit « VOLANT » en conduite
+  // libre (la voiture glisse tant que la touche reste enfoncée), « VOIES » en
+  // conduite par voies.
+  drivingMode = 'free',
 }) {
   const total = CITY_RUSH_TUTORIAL_STEPS.length;
   const paused = coursePhase !== 'playing';
@@ -340,7 +344,7 @@ export default function CityRushTutorial({
 
         <footer className="cr-tutorial-footer">
           <div className="cr-tutorial-utility-hint" aria-label="Commandes de course">
-            <span>← / → <small>VOIES</small></span>
+            <span>← / → <small>{drivingMode === 'lanes' ? 'VOIES' : 'VOLANT'}</small></span>
             <span>Z <small>TIR</small></span>
             <span>P <small>PAUSE</small></span>
             <span>{paused ? 'PAUSE' : 'AUTO'} <small>{paused ? 'COURSE SUSPENDUE' : 'LA VOITURE CONDUIT'}</small></span>

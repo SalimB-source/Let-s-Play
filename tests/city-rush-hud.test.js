@@ -143,13 +143,14 @@ test('maintenir une flèche enchaîne les changements de voie jusqu’à la rel�
   // La première pression répond tout de suite. Q et ← tiennent la même
   // direction : la seconde touche ne relance ni écart immédiat, ni délai.
   assert.match(world, /const steerDirection = STEER_KEY_DIRECTIONS\[key\];/);
-  assert.match(world, /if \(pressSteerKey\(key\)\) action\(steerDirection\)/);
+  // (En conduite libre, la touche tenue est lue à chaque image : pas d'écart.)
+  assert.match(world, /if \(pressSteerKey\(key\) && !freeDriving\(\)\) action\(steerDirection\)/);
   assert.match(world, /if \(directionHeld\) return false;/);
   assert.match(world, /steerHoldCooldown = STEER_HOLD_FIRST_DELAY;/);
   // Les écarts suivants partent de la boucle de rendu, jamais de la répétition
   // native du clavier, qui reste ignorée.
   assert.match(world, /if \(!active \|\| finished \|\| event\.repeat\) return;/);
-  assert.match(world, /steerHoldCooldown = Math\.max\(0, steerHoldCooldown - dt\);\s*\n\s*if \(steerHoldDirection && steerHoldCooldown <= 0\) \{\s*\n\s*action\(steerHoldDirection\);\s*\n\s*steerHoldCooldown = STEER_HOLD_LANE_INTERVAL;/);
+  assert.match(world, /steerHoldCooldown = Math\.max\(0, steerHoldCooldown - dt\);\s*\n\s*if \(!freeDriving\(\) && steerHoldDirection && steerHoldCooldown <= 0\) \{\s*\n\s*action\(steerHoldDirection\);\s*\n\s*steerHoldCooldown = STEER_HOLD_LANE_INTERVAL;/);
   // La relâche s'écoute même hors course : une touche laissée enfoncée pendant
   // la pause ne repart pas toute seule au retour en piste.
   assert.match(world, /if \(STEER_KEY_DIRECTIONS\[key\]\) \{ liftSteerKey\(key\); return; \}/);
@@ -157,10 +158,11 @@ test('maintenir une flèche enchaîne les changements de voie jusqu’à la rel�
   // flèche, ou un doublon de la même direction (Q relâché, ← toujours enfoncé).
   assert.match(world, /const liftSteerKey = \(key\) => \{\s*\n\s*if \(!steerKeysHeld\.has\(key\)\) return;/);
   assert.match(world, /steerHoldDirection = steerKeysHeld\.size \? \[\.\.\.steerKeysHeld\.values\(\)\]\.pop\(\) : null;/);
-  // Fenêtre quittée, pause, nouvelle course et démontage lâchent les touches.
-  assert.match(world, /releasePistolKey\(\);\s*\n\s*releaseSteerKeys\(\);\s*\n\s*\};/);
-  assert.equal(world.match(/releaseSteerKeys\(\);/g)?.length, 4,
-    'relâche sur le blur, au reset, à la pause et au démontage');
+  // Fenêtre quittée, pause, nouvelle course, changement de conduite et
+  // démontage lâchent les touches (et le geste du doigt en cours).
+  assert.match(world, /releasePistolKey\(\);\s*\n\s*releaseSteerKeys\(\);\s*\n\s*touchSteer = null;\s*\n\s*\};/);
+  assert.equal(world.match(/releaseSteerKeys\(\);/g)?.length, 5,
+    'relâche sur le blur, au reset, à la pause, au changement de conduite et au démontage');
   // La page annonce le maintien dans les commandes et le règlement du mode.
   assert.match(page, /← → \/ Q D · VOIES \(MAINTENIR\)/);
   assert.match(page, /← → \/ Q D : VOIES \(MAINTENIR\)/);
@@ -776,7 +778,10 @@ test('le fusil à pompe bleu se pose sur les tremplins et se prend en franchissa
   // Collecte : seul le pilote, dans la voie de la rampe, une fois par passage, et
   // jamais par un rival ni par la police.
   const collect = world.match(/function updateRampPickups\(dt\) \{[\s\S]*?\n  \}\n/)?.[0] || '';
-  assert.match(collect, /playerLane !== ramp\.lane \|\| ramp\.crossedRacers\.has\('player'\)/);
+  assert.match(collect, /!playerOnRamp\(ramp\) \|\| ramp\.crossedRacers\.has\('player'\)/);
+  // « Dans la voie de la rampe » : la voie exacte en conduite par voies, le
+  // rattrapage du tremplin (centre à moins de 1,5 m de son axe) en conduite libre.
+  assert.match(world, /function playerOnRamp\(ramp\) \{\s*return freeDriving\(\) \? cityRushFreeRampCatches\(playerX, laneX\(ramp\.lane\)\) : ramp\.lane === playerLane;\s*\}/);
   assert.match(collect, /canCollectCityRushPickup\(inventory, ramp\.pickupType,/);
   assert.match(collect, /collectPickup\(ramp\.pickupType, playerLane\)/);
   assert.doesNotMatch(collect, /collectRacerPickup|collectPolicePickup/);

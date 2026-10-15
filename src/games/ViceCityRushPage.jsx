@@ -11,6 +11,20 @@ import CityRushSpeedometer from './CityRushSpeedometer';
 import CityRushTutorial from './CityRushTutorial';
 import { CITY_RUSH_TUTORIAL_DURATION_SECONDS, CITY_RUSH_TUTORIAL_STEPS } from './cityRushTutorial';
 import FullscreenIcon from './FullscreenIcon';
+import {
+  CITY_RUSH_CAMERA_COCKPIT,
+  CITY_RUSH_CAMERA_PREF_KEY,
+  cityRushCameraModeLabel,
+  nextCityRushCameraMode,
+  normalizeCityRushCameraMode,
+} from './cityRushCockpit.js';
+import {
+  CITY_RUSH_DRIVING_FREE,
+  CITY_RUSH_DRIVING_PREF_KEY,
+  cityRushDrivingModeLabel,
+  nextCityRushDrivingMode,
+  normalizeCityRushDrivingMode,
+} from './cityRushFreeDrive.js';
 import { CityRushAudio } from './cityRushAudio';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
 import useGameFullscreen from './useGameFullscreen';
@@ -352,6 +366,33 @@ function readSoundPref() {
 function writeSoundPref(value) {
   try { window.localStorage.setItem(SOUND_KEY, value ? 'on' : 'off'); } catch {}
 }
+// Vue de la course (poursuite ou cockpit) : une préférence de l'appareil,
+// comme le son. Toute valeur inconnue retombe sur la poursuite.
+function readCameraPref() {
+  try { return normalizeCityRushCameraMode(window.localStorage.getItem(CITY_RUSH_CAMERA_PREF_KEY)); } catch { return normalizeCityRushCameraMode(null); }
+}
+function writeCameraPref(value) {
+  try { window.localStorage.setItem(CITY_RUSH_CAMERA_PREF_KEY, normalizeCityRushCameraMode(value)); } catch {}
+}
+// Conduite (libre ou par voies) : préférence de l'appareil elle aussi. Toute
+// valeur inconnue retombe sur la conduite libre, la conduite par défaut.
+function readDrivingPref() {
+  try { return normalizeCityRushDrivingMode(window.localStorage.getItem(CITY_RUSH_DRIVING_PREF_KEY)); } catch { return normalizeCityRushDrivingMode(null); }
+}
+function writeDrivingPref(value) {
+  try { window.localStorage.setItem(CITY_RUSH_DRIVING_PREF_KEY, normalizeCityRushDrivingMode(value)); } catch {}
+}
+
+/** Icône de la vue cockpit : un volant, décoratif (le bouton porte son libellé). */
+function CockpitIcon() {
+  return (
+    <svg className="city-rush-camera-icon" viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="6.2" />
+      <circle cx="8" cy="8.4" r="1.5" fill="currentColor" stroke="none" />
+      <path d="M2.2 7.4h4.2M9.6 7.4h4.2M8 10v3.9" />
+    </svg>
+  );
+}
 function formatTime(seconds = 0) {
   const safe = Math.max(0, Number(seconds) || 0);
   const minutes = Math.floor(safe / 60);
@@ -572,6 +613,10 @@ export default function ViceCityRushPage() {
   const [tutorialDoneCount, setTutorialDoneCount] = useState(0);
   const [tutorialTick, setTutorialTick] = useState(null);
   const [soundOn, setSoundOn] = useState(readSoundPref);
+  const [cameraMode, setCameraMode] = useState(readCameraPref);
+  const cockpitView = cameraMode === CITY_RUSH_CAMERA_COCKPIT;
+  const [drivingMode, setDrivingMode] = useState(readDrivingPref);
+  const freeDrive = drivingMode === CITY_RUSH_DRIVING_FREE;
   // Écran-titre façon NFS : Most Wanted posé à l'arrivée : le carrousel du
   // menu chapeaute la page. Version légère — la photo du modèle sert de décor
   // statique, aucune scène 3D n'est montée tant que le menu est ouvert.
@@ -1134,6 +1179,8 @@ export default function ViceCityRushPage() {
   }, []);
   useEffect(() => { audioRef.current?.setCity(cityId); }, [cityId]);
   useEffect(() => { writeSoundPref(soundOn); }, [soundOn]);
+  useEffect(() => { writeCameraPref(cameraMode); }, [cameraMode]);
+  useEffect(() => { writeDrivingPref(drivingMode); }, [drivingMode]);
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -1160,6 +1207,17 @@ export default function ViceCityRushPage() {
     if (phaseRef.current === 'playing' || phaseRef.current === 'countdown') audioRef.current?.start();
   };
   toggleSoundRef.current = toggleSound;
+
+  // Vue cockpit ⇄ poursuite (touche C, bouton COCKPIT de la barre, menu
+  // Options, écran de pause). Le monde applique la vue tout de suite en
+  // course ; hors course, elle attend le prochain départ.
+  const toggleCameraRef = useRef(null);
+  const toggleCamera = useCallback(() => setCameraMode((current) => nextCityRushCameraMode(current)), []);
+  toggleCameraRef.current = toggleCamera;
+
+  // Conduite libre ⇄ par voies (menu Options, écran de pause). Le monde
+  // l'applique tout de suite, même en pleine course.
+  const toggleDriving = useCallback(() => setDrivingMode((current) => nextCityRushDrivingMode(current)), []);
 
   // Le navigateur vient de refermer le plein écran (Échap, geste « retour »
   // d'Android) : en pleine course, on suspend plutôt que de laisser la voiture
@@ -1214,6 +1272,10 @@ export default function ViceCityRushPage() {
       } else if (key === 'm') {
         event.preventDefault();
         toggleSoundRef.current?.();
+      } else if (key === 'c' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        // C : vue cockpit, depuis la place du pilote (ou retour à la poursuite).
+        event.preventDefault();
+        toggleCameraRef.current?.();
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -1946,6 +2008,10 @@ export default function ViceCityRushPage() {
           bestsCount={Object.keys(bests).length}
           soundOn={soundOn}
           onToggleSound={toggleSound}
+          cameraMode={cameraMode}
+          onToggleCamera={toggleCamera}
+          drivingMode={drivingMode}
+          onToggleDriving={toggleDriving}
           onToggleFullscreen={toggleImmersive}
           onStartTutorial={handleTitleTutorial}
           onPick={handleTitlePick}
@@ -2013,6 +2079,22 @@ export default function ViceCityRushPage() {
                 <FullscreenIcon exit={immersive} />
                 <span className="city-rush-fullscreen-label">PLEIN ÉCRAN</span>
               </button>
+              <button
+                type="button"
+                className={`city-rush-top-button city-rush-camera-button${cockpitView ? ' is-on' : ''}`}
+                onClick={(event) => {
+                  toggleCamera();
+                  // Même règle que le plein écran : après un clic, le focus
+                  // rend la main au jeu (Espace, Entrée).
+                  if (event.detail > 0) event.currentTarget.blur();
+                }}
+                aria-pressed={cockpitView}
+                aria-label="Vue cockpit"
+                title={cockpitView ? 'Revenir à la vue poursuite (C)' : 'Vue cockpit, depuis la place du pilote (C)'}
+              >
+                <CockpitIcon />
+                <span className="city-rush-camera-label">COCKPIT</span>
+              </button>
               {phase === 'playing' && <>
                 <span className="city-rush-live-pill"><i /> {activeModeName} · EN COURSE</span>
                 <button type="button" className="city-rush-top-button" onClick={pauseRace}>Ⅱ PAUSE</button>
@@ -2028,7 +2110,7 @@ export default function ViceCityRushPage() {
               {tutorialMode && !tutorialGuideOpen && (phase === 'playing' || phase === 'paused') && (
                 <button type="button" className="city-rush-top-button is-guide city-rush-tutorial-guide-toggle" onClick={() => setTutorialGuideOpen(true)} aria-label="Rouvrir le guide du tutoriel" title="Rouvrir le guide du tutoriel">✦ GUIDE</button>
               )}
-              <span className="city-rush-top-flag"><i /> {tutorialMode ? '1 TOUR · SOLO' : sprintMode ? `SOLO · ${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : <>{currentLaps} TOUR{currentLaps > 1 ? 'S' : ''} · 4 VOIES</>}</span>
+              <span className="city-rush-top-flag"><i /> {tutorialMode ? '1 TOUR · SOLO' : sprintMode ? `SOLO · ${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : <>{currentLaps} TOUR{currentLaps > 1 ? 'S' : ''} · {freeDrive ? 'CONDUITE LIBRE' : '4 VOIES'}</>}</span>
             </div>
           </div>
 
@@ -2036,7 +2118,7 @@ export default function ViceCityRushPage() {
             className={`city-rush-viewport${phase === 'intro' ? ' is-intro' : ''}${phase === 'playing' ? ' is-live' : ''}${tutorialMode ? ' is-tutorial' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}${hud.trafficImpactLeft > 0 && phase === 'playing' ? ' is-impacting' : ''}${hud.playerHealthFlash > 0 && phase === 'playing' ? ' is-hurt' : ''}${policeAim > 0 && phase === 'playing' ? ' is-aimed' : ''}`}
             style={policeAim > 0 ? { '--cr-aim': policeAim.toFixed(2) } : undefined}
           >
-            <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={!tutorialMode && (missionMode ? Boolean(currentMission?.policeFromStart) : storyMode ? Boolean(currentStoryRace?.policeFromStart) : mode.policeFromStart)} raceFormat={sprintMode ? 'sprint' : 'laps'} storyRules={storyRules} tutorialMode={tutorialMode} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onEffect={effectMessage} onTutorial={tutorialEvent} audioRef={audioRef} />
+            <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={!tutorialMode && (missionMode ? Boolean(currentMission?.policeFromStart) : storyMode ? Boolean(currentStoryRace?.policeFromStart) : mode.policeFromStart)} raceFormat={sprintMode ? 'sprint' : 'laps'} storyRules={storyRules} tutorialMode={tutorialMode} cameraMode={cameraMode} drivingMode={drivingMode} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onEffect={effectMessage} onTutorial={tutorialEvent} audioRef={audioRef} />
             <div className="city-rush-vignette" aria-hidden="true" />
             {bazookaImpactPulse > 0 && (
               <div
@@ -2971,8 +3053,8 @@ export default function ViceCityRushPage() {
                     doigt (la feuille de style montre l'un ou l'autre selon le
                     pointeur). */}
                 <div className="city-rush-intro-foot">
-                  <span className="is-key-hint">← → / Q D · VOIES (MAINTENIR)</span>
-                  <span className="is-touch-hint">GLISSE ← → SUR LA ROUTE · CHANGE DE VOIE</span>
+                  <span className="is-key-hint">{freeDrive ? '← → / Q D · VOLANT LIBRE (MAINTENIR)' : '← → / Q D · VOIES (MAINTENIR)'}</span>
+                  <span className="is-touch-hint">{freeDrive ? 'DOIGT SUR LA ROUTE · LA VOITURE LE SUIT' : 'GLISSE ← → SUR LA ROUTE · CHANGE DE VOIE'}</span>
                   <span className="is-key-hint">SOURIS SUR LE GARAGE · REGARDE AUTOUR DE LA VOITURE</span>
                   <span className="is-touch-hint">GLISSE SUR LE GARAGE · REGARDE AUTOUR DE LA VOITURE</span>
                   <span className="is-key-hint">{tournamentMode ? 'BONUS VERT : TURBO · SANS ARME' : `Z · TIR (AK-47 ROUGE · POMPE BLEU · BAZOOKA JAUNE) · ${CITY_RUSH_SHOTGUN_FIRE_COOLDOWN} S PAR CARTOUCHE`}</span>
@@ -2980,6 +3062,8 @@ export default function ViceCityRushPage() {
                   <span>{currentLaps} TOURS · {currentDistance} M</span>
                   <span className="is-key-hint">M · SON</span>
                   <span className="is-key-hint">F · PLEIN ÉCRAN</span>
+                  <span className="is-key-hint">C · VUE COCKPIT</span>
+                  <span className="is-touch-hint">BOUTON COCKPIT · VUE DU PILOTE</span>
                 </div>
               </div>
             )}
@@ -3121,6 +3205,26 @@ export default function ViceCityRushPage() {
                 <div className="city-rush-overlay-buttons">
                   <button type="button" className="city-rush-start-button" onClick={resumeRace}>REPRENDRE <span>▶</span></button>
                   <button type="button" className="city-rush-text-button" onClick={openTitleMenu}>MENU PRINCIPAL</button>
+                </div>
+                {/* Réglages de pilotage, applicables sans quitter la course : la
+                    conduite (libre ou par voies) et la vue (poursuite ou cockpit). */}
+                <div className="city-rush-overlay-buttons city-rush-pause-options" role="group" aria-label="Réglages de pilotage">
+                  <button
+                    type="button"
+                    className="city-rush-text-button city-rush-pause-driving"
+                    onClick={toggleDriving}
+                    title={freeDrive ? 'Passer à la conduite par voies : un écart de voie par pression' : 'Passer à la conduite libre : la voiture glisse où tu veux'}
+                  >
+                    CONDUITE : {cityRushDrivingModeLabel(drivingMode)}
+                  </button>
+                  <button
+                    type="button"
+                    className="city-rush-text-button city-rush-pause-camera"
+                    onClick={toggleCamera}
+                    aria-pressed={cockpitView}
+                  >
+                    CAMÉRA : {cityRushCameraModeLabel(cameraMode)} · C
+                  </button>
                 </div>
                 <small>{city.name} · {activeModeLabel} · la route attend.</small>
               </div>
@@ -3344,14 +3448,15 @@ export default function ViceCityRushPage() {
                 tick={tutorialTick}
                 police={tutorialLive.police}
                 complete={tutorialLive.complete}
+                drivingMode={drivingMode}
               />
             )}
           </div>
 
           <div className="city-rush-shell-footer">
             <span><i className="city-rush-footer-dot" /> {activeModeName} <b>·</b> {city.name} <b>·</b> {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOUR${currentLaps > 1 ? 'S' : ''}`} · {currentDistance} M</span>
-            <span className="city-rush-desktop-hint">← → / Q D : VOIES (MAINTENIR) {sprintMode || !storyWeaponsOn ? '' : <><b>·</b> Z : TIR (AK-47 · POMPE · BAZOOKA) </>}<b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
-            <span className="city-rush-mobile-hint">GLISSE GAUCHE / DROITE{sprintMode ? ' · SOLO CONTRE LA MONTRE' : !storyWeaponsOn ? ' · COURSE PURE, SANS ARME' : ' · OBJETS EN BAS · BOUTON DE TIR'}</span>
+            <span className="city-rush-desktop-hint">{freeDrive ? '← → / Q D : VOLANT LIBRE' : '← → / Q D : VOIES (MAINTENIR)'} {sprintMode || !storyWeaponsOn ? '' : <><b>·</b> Z : TIR (AK-47 · POMPE · BAZOOKA) </>}<b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN <b>·</b> C : VUE COCKPIT</span>
+            <span className="city-rush-mobile-hint">{freeDrive ? 'GLISSE LE DOIGT · LA VOITURE SUIT' : 'GLISSE GAUCHE / DROITE'}{sprintMode ? ' · SOLO CONTRE LA MONTRE' : !storyWeaponsOn ? ' · COURSE PURE, SANS ARME' : ' · OBJETS EN BAS · BOUTON DE TIR'}</span>
           </div>
         </section>
 
@@ -3458,7 +3563,12 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
-            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{tournamentMode ? `${tournament.name}, manche ${tournamentLeg + 1}/${tournament.legs.length} : ${tournament.legs.length} courses de ${tournament.laps} tours sans police ni armes, ${CITY_RUSH_TOURNAMENT_POINTS.join(', ')} points par manche. Le plateau aligne ${CITY_RUSH_TOURNAMENT_RACER_COUNT} voitures de course, le trafic civil est clairsemé et aucune berline de police ne circule.` : missionMode ? `${currentMission?.name} : objectif — ${currentMission?.objective || ''} ${currentMission?.briefing || ''}` : storyMode ? `${currentStoryRace?.race?.name || city.name} : objectif — ${currentStoryRace?.objective?.label || ''}. ${currentStoryRace?.objective?.detail || ''} ${currentStoryRace?.tip || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque, et chaque choc contre une voiture — civile, en face ou berline de police — retire un carré de vie, ou deux contre un SUV de police. Un répit après chaque choc empêche les dégâts répétés tant que les voitures restent collées. Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Maintenir ← ou → (Q / D) enchaîne les écarts tout seul, sans marteler la touche : la voiture glisse de voie en voie jusqu’à la relâche. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
+            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{tournamentMode ? `${tournament.name}, manche ${tournamentLeg + 1}/${tournament.legs.length} : ${tournament.legs.length} courses de ${tournament.laps} tours sans police ni armes, ${CITY_RUSH_TOURNAMENT_POINTS.join(', ')} points par manche. Le plateau aligne ${CITY_RUSH_TOURNAMENT_RACER_COUNT} voitures de course, le trafic civil est clairsemé et aucune berline de police ne circule.` : missionMode ? `${currentMission?.name} : objectif — ${currentMission?.objective || ''} ${currentMission?.briefing || ''}` : storyMode ? `${currentStoryRace?.race?.name || city.name} : objectif — ${currentStoryRace?.objective?.label || ''}. ${currentStoryRace?.objective?.detail || ''} ${currentStoryRace?.tip || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque, et chaque choc contre une voiture — civile, en face ou berline de police — retire un carré de vie, ou deux contre un SUV de police. Un répit après chaque choc empêche les dégâts répétés tant que les voitures restent collées. {freeDrive
+              ? 'Conduite libre : la voiture n’est plus aimantée aux voies. Tant que ← ou → (Q / D) reste enfoncée, elle glisse, et elle s’arrête là où tu lâches la touche — entre deux voies si tu veux. Au doigt, garde le doigt sur la route : la voiture suit ton glissé. Changer de trajectoire ne ralentit jamais : double et évite le trafic à pleine allure. Une voiture à ta hauteur te barre le passage — insiste vers elle et tu la pousses. Les parois du mini-garage et du conteneur se longent ou se traversent par l’ouverture, jamais à travers. La conduite par voies, un écart par pression, reste au choix dans OPTIONS › CONDUITE et dans l’écran de pause.'
+              : 'Conduite par voies : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Maintenir ← ou → (Q / D) enchaîne les écarts tout seul, sans marteler la touche : la voiture glisse de voie en voie jusqu’à la relâche. La conduite libre, sans voies, se choisit dans OPTIONS › CONDUITE et dans l’écran de pause.'}
+            {' '}Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. {freeDrive
+              ? 'Un tremplin se prend en arrivant dessus, même à cheval sur sa ligne : en l’air, la voiture garde sa trajectoire jusqu’à l’atterrissage.'
+              : 'Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.'}{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
           </section>
 
           {/* En Sprint comme en tournoi, la carte de l'escouade disparaît : titre,
