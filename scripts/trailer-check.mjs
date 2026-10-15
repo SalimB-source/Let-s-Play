@@ -44,6 +44,10 @@ import { youTubeEmbedUrl } from '../src/lib/videoPlayback.js';
 import { youTubeThumbUrl } from '../src/lib/videoThumbnails.js';
 import { dailyStories, dailyNewsListing } from '../src/news/daily/2026-10-14.js';
 import {
+  dailyStories as dailyStories20261015,
+  dailyNewsListing as dailyNewsListing20261015,
+} from '../src/news/daily/2026-10-15.js';
+import {
   dailyStories as dailyStories20261011,
   dailyNewsListing as dailyNewsListing20261011,
 } from '../src/news/daily/2026-10-11.js';
@@ -153,6 +157,10 @@ const OFFICIAL_CHANNELS = new Set([
   'Bandai Namco Entertainment America',
   'tekkenchannel',
   'Android Developers',
+  // Vidéo officielle vérifiée sur YouTube (oEmbed) le 15.10.2026 : « The Legend
+  // of Zelda: Ocarina of Time – Overview Trailer – Nintendo Switch 2 »
+  // (8v8eDMh1o3g), publiée par Nintendo of America.
+  'Nintendo of America',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
@@ -206,8 +214,8 @@ const read = (file) => readFileSync(path.join(root, file), 'utf8');
 // Les actus cinéma sont les clés « cinema/<slug> » du dictionnaire de
 // CurrentNews.jsx ; les cartes du hub donnent les routes réellement publiées
 // (dont la série animée Diablo, servie par le gabarit Blizzard).
-const allDailyStoryKeys = [...Object.keys(dailyStories), ...Object.keys(dailyStories20261011)];
-const allDailyListings = [...dailyNewsListing, ...dailyNewsListing20261011];
+const allDailyStoryKeys = [...Object.keys(dailyStories), ...Object.keys(dailyStories20261015), ...Object.keys(dailyStories20261011)];
+const allDailyListings = [...dailyNewsListing, ...dailyNewsListing20261015, ...dailyNewsListing20261011];
 
 const cinemaKeys = [...new Set([
   ...[...read('src/pages/CurrentNews.jsx').matchAll(/'(cinema\/[a-z0-9-]+)'\s*:/g)].map((m) => m[1]),

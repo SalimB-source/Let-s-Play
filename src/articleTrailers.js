@@ -74,6 +74,19 @@ export function trailerWatchUrl(id) {
 
 export const articleTrailers = {
   // Édition du 15.10.2026 : chaînes et miniatures contrôlées sur les pages YouTube.
+  // GTA VI : la bande-annonce de lancement publiée le jour même par Rockstar
+  // Games. Titre et chaîne vérifiés via oEmbed le 15.10.2026 (« Grand Theft
+  // Auto VI Launch Trailer », Rockstar Games) ; l'URL est celle que
+  // rockstargames.com/VI/launch-trailer met en avant. Les deux trailers
+  // précédents ne sont pas ajoutés ici : l'article porte sur cette vidéo, et
+  // ils sont déjà déclarés sous les clés gaming du 06.10 et du 07.10.2026.
+  'gta-6-trailer-de-lancement': {
+    label: 'GRAND THEFT AUTO VI', meta: 'ROCKSTAR GAMES · 19 NOVEMBRE 2026',
+    items: [
+      { id: 'rz1B4B2yBZY', kind: 'trailer', title: 'Grand Theft Auto VI Launch Trailer', channel: 'Rockstar Games', verified: '15.10.2026' },
+    ],
+    credit: 'Bande-annonce officielle : Rockstar Games, publiée le 15 octobre 2026 sur YouTube. Images capturées dans le jeu sur PlayStation 5, selon le studio ; musique « Flower in a Hurricane » de Justice feat. Tame Impala, SZA et King Gizzard & The Lizard Wizard.',
+  },
   'zelda-ocarina-of-time-nouvelle-presentation': {
     label: 'ZELDA OCARINA OF TIME', meta: 'NINTENDO · SWITCH 2',
     items: [
