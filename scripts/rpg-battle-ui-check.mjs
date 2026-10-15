@@ -875,6 +875,12 @@ assert.match(plateauxSource, /id: 'fjord-des-neuf-hivers'[\s\S]*?fichier: 'plate
   'le fjord des Neuf Hivers est un plateau déclaré, avec son fond dans public/');
 assert.match(plateauxSource, /id: 'ruines-de-tipaza'[\s\S]*?fichier: 'plateau-ruines-de-tipaza\.jpg'/,
   'les ruines romaines de Tipaza sont un plateau déclaré, avec son fond dans public/');
+assert.match(plateauxSource, /id: 'sanctuaire-du-soleil-rouge'[\s\S]*?fichier: 'plateau-sanctuaire-du-soleil-rouge\.jpg'/,
+  'le sanctuaire du Soleil rouge est un plateau déclaré, avec l’estampe japonaise dans public/');
+assert.match(plateauxSource, /'serment-du-soleil-rouge': 'sanctuaire-du-soleil-rouge'/,
+  'le deck du Serment du Soleil rouge se bat dans la cour de son sanctuaire');
+assert.match(battleCss, /\.card-table--plateau-sanctuaire-du-soleil-rouge\s*\{[^}]*background-color:/s,
+  'le gravier ratissé du sanctuaire a sa propre couleur de repli');
 assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*background-color:/s,
   'la pierre des ruines a sa propre couleur de repli');
 

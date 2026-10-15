@@ -160,6 +160,21 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     ],
     overlay: { kind: 'ombre', color: '#1d2f45', opacity: 0.12, speed: 0.01, scale: 1.7 },
   }),
+  // Le sanctuaire : l'encre et l'or d'une estampe japonaise. Le soleil rouge
+  // est bas derrière le torii, les deux lanternes de pierre veillent, et les
+  // pétales de cerisier dérivent vers le bas du cadre. Aucun objet 3D : sur une
+  // peinture plate, les accessoires de l'estampe (torii, lanterne, cloche,
+  // éventail) sont plus beaux laissés au pinceau — l'ambiance seule anime la
+  // scène.
+  'sanctuaire-du-soleil-rouge': theme({
+    ambient: '#fdf3e6', key: '#ffd9c2', keyIntensity: 0.5, keyDirection: [0.72, 0.55, 1], relief: 1.1, roughness: 0.9,
+    lights: [
+      light({ color: '#ffb45e', intensity: 1.7, distance: 3.6, x: -0.82, y: -0.1, z: 0.7, flicker: 0.22 }),
+      light({ color: '#ffb45e', intensity: 1.7, distance: 3.6, x: 0.82, y: -0.1, z: 0.7, flicker: 0.22 }),
+    ],
+    particles: motes({ count: 64, color: '#f7cfd8', size: 0.05, opacity: 0.72, vx: 0.16, vy: -0.1, sway: 0.24, swayHz: 0.22, z: 1.1, zSpread: 0.7 }),
+    overlay: { kind: 'ombre', color: '#4a3550', opacity: 0.12, speed: 0.012, scale: 2.2 },
+  }),
   // Le sable vitrifié : éclats de verre, deux lumières qui glissent.
   'desert-de-verre': theme({
     key: '#fff0cf', keyIntensity: 0.46, relief: 1.2, roughness: 0.3,

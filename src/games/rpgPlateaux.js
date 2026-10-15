@@ -9,7 +9,8 @@
  *
  * 1. **Chaque deck a son terrain.** Un deck du catalogue (ou un deck du mode
  *    Histoire) porte une correspondance explicite — les Veilleurs du Désert se
- *    battent dans l'Erg, la Cour des Djinns sur la Table des Heures… Un deck
+ *    battent dans l'Erg, le Serment du Soleil rouge dans son sanctuaire, la
+ *    Cour des Djinns sur la Table des Heures… Un deck
  *    sans identité connue (paquet brut passé en prop, deck maison) retombe sur
  *    la **couleur dominante de ses cartes** : Sable → l'Erg, Braise → la Table
  *    des Heures, Eau → les Ruines de Tipaza, Neige → le Fjord des Neuf
@@ -29,8 +30,9 @@
  * partie l'autorise (`variantesFantaisistes`), un second tirage peut échanger
  * le terrain imposé contre sa version fantaisiste — l'Erg contre le Désert de
  * Verre, les Ruines contre les Abysses Phosphorescentes, le Fjord contre les
- * Îles Célestes. La piste caravanière et la Table des Heures — la table
- * d'origine, que les Cavernes de Cristal ont quittée — restent uniques. Le
+ * Îles Célestes. Les trois autres — la piste caravanière, la Table des Heures
+ * (la table d'origine, que les Cavernes de Cristal ont quittée) et le
+ * sanctuaire du Soleil rouge — restent uniques. Le
  * motif et le camp ne bougent pas : ils disent toujours quel deck a imposé le
  * terrain.
  *
@@ -82,6 +84,13 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-ruines-de-tipaza.jpg',
     resume: 'La mosaïque de pierre noire et blanche ouverte par le vent, les dalles romaines disjointes, les fûts de colonne et le chapiteau corinthien tombés à l’entour.',
   },
+  {
+    id: 'sanctuaire-du-soleil-rouge',
+    nom: 'Le Sanctuaire du Soleil rouge',
+    lieu: 'Kyō, la cour du sanctuaire, sous les cerisiers',
+    fichier: 'plateau-sanctuaire-du-soleil-rouge.jpg',
+    resume: 'Une estampe japonaise : la cour de gravier ratissé, ses cercles concentriques au centre, le torii vermillon ouvert sur les pierres noires, les deux lanternes de pierre allumées, la cloche de bronze et sa corde de chanvre, le bol laqué, l’éventail ouvert et le plateau de saké — les pétales de cerisier par-dessus.',
+  },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
   {
@@ -124,6 +133,9 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'maree-des-abysses': 'ruines-de-tipaza',
   // Le Nord : le Serment des Neuf Hivers se bat sur la glace du fjord.
   'serment-des-neuf-hivers': 'fjord-des-neuf-hivers',
+  // L'Est : le Serment du Soleil rouge reçoit dans la cour de son sanctuaire,
+  // la cour de gravier ratissé de l'estampe japonaise.
+  'serment-du-soleil-rouge': 'sanctuaire-du-soleil-rouge',
   // Campagne (clés de `RPG_STORY_DECKS`) : la Souffleuse tient la piste de
   // caravane du deck hybride dont elle vient ; le Grand Horloger, lui, reçoit
   // dans la salle haute de la Chambre, sur la table d'origine. Les quatre
