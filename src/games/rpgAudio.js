@@ -22,6 +22,8 @@ const CARD_DRAW_SAMPLE_URL = new URL('./assets/card-draw.wav', import.meta.url);
 const ATTACKERS_CONFIRM_SAMPLE_URL = new URL('./assets/attackers-confirm.mp3', import.meta.url);
 const PLAYER_ATTACK_HIT_SAMPLE_URL = new URL('./assets/player-attack-hit.wav', import.meta.url);
 const FLAME_GUST_SAMPLE_URL = new URL('./assets/flame-gust.wav', import.meta.url);
+const WATER_WAVE_SAMPLE_URL = new URL('./assets/water-wave.wav', import.meta.url);
+const CARD_COUNTERED_SAMPLE_URL = new URL('./assets/card-countered.wav', import.meta.url);
 const BLOCK_IMPACT_SAMPLE_URL = new URL('./assets/block-impact.mp3', import.meta.url);
 const DESTRUCTION_HIT_SAMPLE_URL = new URL('./assets/destruction-hit.mp3', import.meta.url);
 const PAGE_TURN_SAMPLE_URL = new URL('./assets/page-turn.mp3', import.meta.url);
@@ -30,6 +32,8 @@ const CARD_DRAW_VOLUME = 0.52;
 const ATTACKERS_CONFIRM_VOLUME = 0.58;
 const PLAYER_ATTACK_HIT_VOLUME = 0.64;
 const FLAME_GUST_VOLUME = 0.56;
+const WATER_WAVE_VOLUME = 0.58;
+const CARD_COUNTERED_VOLUME = 0.6;
 const BLOCK_IMPACT_VOLUME = 0.58;
 const DESTRUCTION_HIT_VOLUME = 0.6;
 const PAGE_TURN_VOLUME = 0.5;
@@ -57,7 +61,7 @@ export const RPG_SFX_NAMES = Object.freeze([
   'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap', 'mana',
   'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'bouclier',
   'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
-  'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'block_impact', 'destruction_hit', 'page_turn', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
+  'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'water_wave', 'card_countered', 'block_impact', 'destruction_hit', 'page_turn', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
 ]);
 
 /**
@@ -295,6 +299,10 @@ export function rpgSfx(name) {
       return [{ kind: 'sample', at: 0, dur: 0.666, g: 1 }];
     case 'flame_gust':
       return [{ kind: 'sample', at: 0, dur: 2.287, g: 1 }];
+    case 'water_wave':
+      return [{ kind: 'sample', at: 0, dur: 2.691, g: 1 }];
+    case 'card_countered':
+      return [{ kind: 'sample', at: 0, dur: 1.602, g: 1 }];
     case 'block_impact':
       return [{ kind: 'sample', at: 0, dur: 0.967, g: 1 }];
     case 'destruction_hit':
@@ -376,6 +384,8 @@ export class RpgAudioPlayer {
     this.attackersConfirmAudio = null;
     this.playerAttackHitAudio = null;
     this.flameGustAudio = null;
+    this.waterWaveAudio = null;
+    this.cardCounteredAudio = null;
     this.blockImpactAudio = null;
     this.destructionHitAudio = null;
     this.pageTurnAudio = null;
@@ -397,6 +407,12 @@ export class RpgAudioPlayer {
         this.flameGustAudio = new AudioCtor(FLAME_GUST_SAMPLE_URL.href);
         this.flameGustAudio.preload = 'auto';
         this.flameGustAudio.volume = FLAME_GUST_VOLUME;
+        this.waterWaveAudio = new AudioCtor(WATER_WAVE_SAMPLE_URL.href);
+        this.waterWaveAudio.preload = 'auto';
+        this.waterWaveAudio.volume = WATER_WAVE_VOLUME;
+        this.cardCounteredAudio = new AudioCtor(CARD_COUNTERED_SAMPLE_URL.href);
+        this.cardCounteredAudio.preload = 'auto';
+        this.cardCounteredAudio.volume = CARD_COUNTERED_VOLUME;
         this.blockImpactAudio = new AudioCtor(BLOCK_IMPACT_SAMPLE_URL.href);
         this.blockImpactAudio.preload = 'auto';
         this.blockImpactAudio.volume = BLOCK_IMPACT_VOLUME;
@@ -503,6 +519,14 @@ export class RpgAudioPlayer {
       this.flameGustAudio.volume = this.muted ? 0 : FLAME_GUST_VOLUME;
       if (this.muted) this.flameGustAudio.pause?.();
     }
+    if (this.waterWaveAudio) {
+      this.waterWaveAudio.volume = this.muted ? 0 : WATER_WAVE_VOLUME;
+      if (this.muted) this.waterWaveAudio.pause?.();
+    }
+    if (this.cardCounteredAudio) {
+      this.cardCounteredAudio.volume = this.muted ? 0 : CARD_COUNTERED_VOLUME;
+      if (this.muted) this.cardCounteredAudio.pause?.();
+    }
     if (this.blockImpactAudio) {
       this.blockImpactAudio.volume = this.muted ? 0 : BLOCK_IMPACT_VOLUME;
       if (this.muted) this.blockImpactAudio.pause?.();
@@ -528,13 +552,15 @@ export class RpgAudioPlayer {
 
   play(name, delay = 0) {
     if (!this.ctx || !this.master || this.muted) return;
-    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn') {
+    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn') {
       const sample = name === 'card_place'
         ? this.cardPlaceAudio
         : name === 'card_draw' ? this.cardDrawAudio
           : name === 'attackers_confirm' ? this.attackersConfirmAudio
-              : name === 'player_attack_hit' ? this.playerAttackHitAudio
+                : name === 'player_attack_hit' ? this.playerAttackHitAudio
                 : name === 'flame_gust' ? this.flameGustAudio
+                : name === 'water_wave' ? this.waterWaveAudio
+                : name === 'card_countered' ? this.cardCounteredAudio
                 : name === 'block_impact' ? this.blockImpactAudio
                   : name === 'destruction_hit' ? this.destructionHitAudio : this.pageTurnAudio;
       if (!sample) return;
@@ -756,6 +782,22 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.flameGustAudio = null;
+    if (this.waterWaveAudio) {
+      try {
+        this.waterWaveAudio.pause?.();
+        this.waterWaveAudio.removeAttribute?.('src');
+        this.waterWaveAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.waterWaveAudio = null;
+    if (this.cardCounteredAudio) {
+      try {
+        this.cardCounteredAudio.pause?.();
+        this.cardCounteredAudio.removeAttribute?.('src');
+        this.cardCounteredAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.cardCounteredAudio = null;
     if (this.blockImpactAudio) {
       try {
         this.blockImpactAudio.pause?.();
