@@ -6144,11 +6144,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // statistiques, et les terrains gardent leur ligne.
               const familleSort = magieFamille(carte);
               const peutRepondre = reponseActive && carte.instant;
-              // Une seule règle pour le halo de jouabilité — doré, ou teinté de la
-              // famille pour un sort (voir « La lueur de jouabilité d'un
-              // sort », dans `rpg-battle.css`) —, le glisser-déposer et le
-              // clic : deux copies de la règle finissaient par diverger, et
-              // une carte allumée mais injouable enferme le joueur.
+              // Une seule règle pour le halo de jouabilité — bleu pour ce qui se
+              // pose, la teinte de la famille pour un sort (voir « La lueur de
+              // jouabilité d'un sort », dans `rpg-battle.css`) —, le
+              // glisser-déposer et le clic : deux copies de la règle
+              // finissaient par diverger, et une carte allumée mais injouable
+              // enferme le joueur.
               const jouable = defausseOuverte || peutJouerCarte(carte);
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId

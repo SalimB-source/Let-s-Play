@@ -7391,13 +7391,22 @@ ou le mot — ou se souvenir de la carte — pour savoir laquelle part en répon
 laquelle attend son tour. Deux familles, un seul voyant.
 
 **Le halo garde une seule règle d'allumage, et prend maintenant la couleur de
-ce qu'il annonce.**
+ce qu'il annonce.** Deux retouches ont suivi : le contraste est monté — le même
+pour toute la main, à empreinte inchangée — et les deux teintes ont été
+échangées, l'azur passant aux cartes qui se posent et l'or à la Magie Rapide.
 
 | Carte allumée | Lueur de jouabilité |
 | --- | --- |
-| **Magie Rapide** | azur — `77, 125, 255`, reflet de survol `176, 197, 255` |
+| **Magie Rapide** | or — `255, 214, 25`, reflet de survol `255, 239, 156` |
 | **Sorcellerie** | améthyste — `179, 154, 224`, reflet `236, 227, 255` |
-| Créature, héros, terrain, arme | l'or du jeu, inchangé — `255, 214, 25` |
+| Créature, héros, terrain, arme | azur — `77, 125, 255`, reflet `176, 197, 255` |
+
+Les deux teintes des familles de sorts et celle des cartes qui se posent sont
+**les mêmes qu'avant l'échange, seulement échangées** : l'azur, qui était à la
+Magie Rapide, est passé aux créatures et aux terrains ; l'or, qui servait de
+repli à tout le reste, est passé à la Magie Rapide. L'améthyste de la
+Sorcellerie n'a pas bougé — la famille garde **la** teinte de son socle, de son
+jeton et de sa ligne de type.
 
 Rien n'a bougé du côté du jeu : c'est toujours `RpgDuelPage` qui décide si une
 carte est jouable — `peutJouerCarte()` : le tour, la fenêtre de réponse, le
@@ -7406,51 +7415,58 @@ pour le mana. Une carte que le mana ne paie pas — ou qu'une règle retient —
 reste éteinte, quelle que soit sa famille : c'est le même halo, avec un mot de
 plus à dire.
 
-**Un sort brille plus fort qu'une carte qui se pose — plus contrasté, pas plus
-grand.** Créature, terrain et arme se contentent de l'or du halo d'origine :
-anneau de 2 px, flou extérieur de 18 px étalé de 4 px. Les deux familles de
-sorts reprennent **la même empreinte au pixel près** — les rayons ne gagnent
-rien, la lueur ne pousse aucune carte de la main — mais aucune de leurs couches
-ne faiblit : l'anneau passe au reflet clair de la famille, presque opaque
-(`.98`), une auréole rapprochée de 6 px sature le bord, le flou extérieur monte
-à `.92` (contre `.62`) et l'ombre portée s'assombrit (`.62` contre `.5`) pour
-que la lueur paraisse plus claire encore. Au survol, même chose : les rayons du
-halo d'origine, densité pleine (anneau `1`, flou `1`). C'est le **contraste** qui
-achète la lisibilité, jamais la surface — un sort se repère d'un coup d'œil dans
-un éventail, sans manger la carte voisine.
+**Un seul halo, pour toute la main — plus contrasté, jamais plus grand.** La
+règle commune de `is-playable` décide de tout : l'empreinte (anneau de 2 px,
+auréole rapprochée de 6 px, flou extérieur de 18 px étalé de 4 px, ombre portée
+de 16 px), la densité — pleine, celle d'un voyant qu'on repère d'un coup d'œil
+dans un éventail — et l'allumage. Un Désert, un Fennec, une Magie Rapide et une
+Sorcellerie reçoivent donc **le même `box-shadow` au pixel près** ; seule la
+teinte les sépare, et c'est elle qui a gagné le contraste : l'anneau porte le
+reflet clair de la famille, presque opaque (`.98`), une auréole courte le double
+vers l'intérieur, le flou extérieur est à `.92` et l'ombre portée s'assombrit
+(`.62`) pour que la lueur paraisse plus claire encore. Au survol, les mêmes
+rayons, densité pleine (anneau `1`, flou `1`). Aucune règle ne rejoue la lueur
+d'une famille « plus fort » : deux contrastes dans la même main, ce serait deux
+voyants pour une seule question.
 
-**L'or reste la couleur des cartes qui se posent** — créature, héros, terrain,
+**L'azur est la couleur des cartes qui se posent** — créature, héros, terrain,
 arme. Les deux familles de sorts sont les seules à déclarer une teinte, et elles
 la déclarent **une fois**, au bloc « Les familles de sorts », en fin de feuille de
-combat : la règle du halo lit `rgba(var(--rpg-play-halo, 255, 214, 25), α)`, et
-l'or n'est que le repli écrit dans cette règle. Changer la couleur d'une famille
-ne se fait donc qu'à un endroit, et une carte qui ne déclare rien s'allume en or
-sans qu'on ait à y penser.
+combat : la règle du halo lit `rgba(var(--rpg-play-halo, 77, 125, 255), α)`, et
+l'azur n'est que le repli écrit dans cette règle. Changer la couleur d'une
+famille ne se fait donc qu'à un endroit, et une carte qui ne déclare rien
+s'allume en bleu sans qu'on ait à y penser.
 
-L'améthyste est **la** couleur de la Sorcellerie — socle, jeton, ligne de type,
-et maintenant lueur : une famille, une teinte. L'azur, lui, n'appartient qu'à la
-lueur : le socle de la Magie Rapide garde son or, qui dit « jouable en
-réponse », et l'azur se reconnaît sans se confondre avec le bleu de l'Eau
-(`#3f9fe8`) ni avec une diagonale de cadre. Le halo reste un ÉTAT, jamais une
-couleur de carte : la couleur du cadre, elle, continue de suivre l'élément.
+Les deux familles sont reconnaissables **au socle comme à la lueur** :
+l'améthyste est **la** couleur de la Sorcellerie — socle, jeton, ligne de type —
+et l'or est celui de la Magie Rapide, son liseré de socle, sa ligne de type et
+désormais sa lueur. L'azur, lui, n'appartient qu'aux cartes qui se posent : il se
+reconnaît sans se confondre avec le bleu de l'Eau (`#3f9fe8`) ni avec une
+diagonale de cadre. Le halo reste un ÉTAT, jamais une couleur de carte : la
+couleur du cadre, elle, continue de suivre l'élément.
 
 ### Où vit le code
 
-- `src/games/rpg-battle.css` — la règle du halo, au bloc de la main
-  (`.rpg-hand__card.is-playable`, et son survol) : même anneau, même flou, même
-  ombre, teinte lue dans `var(--rpg-play-halo)` — `var(--rpg-play-halo-clair)`
-  pour le reflet de survol, l'or en repli des deux. C'est elle, et elle seule,
-  qui décide de l'allumage : les cartes qui se posent gardent ce halo tel quel ;
+- `src/games/rpg-battle.css` — **une seule règle**, au bloc de la main
+  (`.rpg-hand__card.is-playable`, et son survol) : elle décide de l'allumage,
+  de l'empreinte (2 px d'anneau, 6 px d'auréole, 18 px de flou étalé de 4 px,
+  16 px d'ombre) et de la densité ; la teinte est lue dans `var(--rpg-play-halo)`
+  — `var(--rpg-play-halo-clair)` pour l'anneau et l'auréole —, avec l'azur écrit
+  en repli, celui que reçoivent créatures, héros, terrains et armes ;
 - `src/games/rpg-battle.css`, encore — le bloc « La lueur de jouabilité d'un
   sort », à la fin de la feuille, déclare les deux triplets de famille, avec le
   reste de leur signature : `r`, `g`, `b` séparés, la seule forme que
-  `rgba(var(--…), α)` sache lire. Juste après, la règle de famille
-  (`.rpg-hand__card.is-playable:is(--famille-rapide, --famille-sorcellerie)`,
-  plus spécifique que la commune, et son survol) resserre la lueur des sorts sur
-  les mêmes rayons, sans toucher à l'or des autres ;
+  `rgba(var(--…), α)` sache lire. La Magie Rapide y prend l'or de son socle, la
+  Sorcellerie son améthyste. **Aucune règle de famille ne rejoue un halo** :
+  c'était le cas un temps (un renfort plus contrasté pour les sorts), la
+  teinte des cartes qui se posent le rend inutile — un seul contraste, une seule
+  empreinte, pour toute la main ;
 - `src/games/RpgDuelPage.jsx` — **intact** : la face en main porte déjà la classe
   de sa famille (`rpg-hand__card--famille-rapide` / `--famille-sorcellerie`,
   posée par `magieFamille()`), et `is-playable` n'a pas bougé d'un caractère ;
+- `src/games/rpgTutorial.js` — l'étape de la main annonce les trois teintes :
+  « bleu pour une créature ou un terrain, or pour une Magie Rapide, violet pour
+  une Sorcellerie » ;
 - `src/games/rpg-mobile.css` — **intact** : au doigt, la carte pilote le même
   halo ; le bloc des piles ne porte que son ombre décalée, jamais la lueur.
 
@@ -7458,49 +7474,55 @@ couleur de carte : la couleur du cadre, elle, continue de suivre l'élément.
 
 ```bash
 npm run check:rpg-sort-signature   # la lueur, du catalogue au duel réel
-npm run check:rpg                  # 507/507 — le moteur et le catalogue, inchangés
+npm run check:rpg                  # 511/511 — le moteur et le catalogue, inchangés
 npm run build                      # le bundle se construit
 ```
 
 `scripts/rpg-sort-signature-check.mjs` gagne les volets qui manquaient. Les
 assertions de source lisent la feuille comme un contrat : le halo lit bien
 `--rpg-play-halo` (et son reflet clair au survol), il ne touche jamais
-`border-color`, les deux triplets de famille existent, l'azur est bleu
-(`b > r`, `b > g`), l'améthyste est violette (`r > g` et `b > g`), les deux diffèrent,
-l'améthyste de la lueur est **celle du socle** et l'azur n'est **pas** l'or du
-socle, et chaque reflet de survol est plus clair que sa teinte. Puis la cascade
-réelle, montée par jsdom sur la feuille entière : une face qui porte
-`--famille-rapide` reçoit l'azur, une face `--famille-sorcellerie` reçoit
-l'améthyste, et une face sans famille ne reçoit rien — c'est l'or du repli.
+`border-color`, les trois teintes existent, **l'azur est bleu** (`b > r`,
+`b > g`), **l'or de la Magie Rapide est jaune** (`r > b` et `g > b`),
+l'améthyste est violette (`r > g` et `b > g`), les trois diffèrent, l'or de la
+lueur est **celui du socle de la Magie Rapide**, l'améthyste **celle du socle et
+du jeton**, l'azur des cartes qui se posent est bien `77, 125, 255` et l'or de
+la Magie Rapide `255, 214, 25` — les deux valeurs de l'échange —, et chaque
+reflet de survol est plus clair que sa teinte. Puis la cascade réelle, montée par
+jsdom sur la feuille entière : une face qui porte `--famille-rapide` reçoit
+l'or, une face `--famille-sorcellerie` reçoit l'améthyste, et une face sans
+famille ne reçoit rien — c'est l'azur du repli.
 
-Les assertions du renfort, elles, tiennent les deux moitiés de la promesse :
-**plus contrasté, pas plus large**. Le script relit les couches des deux règles,
-calcule leur envergure (`flou + étalement`) et leur densité, et exige que celle
-des sorts soit **égale** à celle du halo commun — 22 px au repos, 30 px au
-survol — pendant que chaque couche d'un sort est plus dense que la plus dense
-des cartes qui se posent. Une lueur qui gagnerait 12 px de flou échoue (« un
-sort ne brille pas plus LARGE qu'une carte qui se pose : 44 px d'envergure dans
-les deux cas »), une lueur qui retomberait aux densités d'origine échoue aussi
-(« chaque couche d'un sort est plus dense que la plus dense… reçu : 0.92, 0.3,
-0.62 contre 0.58, 0.62 »). L'anneau doit porter le reflet clair à `.98`,
-l'auréole rapprochée à `.82`, le flou extérieur à `.92` — à 18 px, comme avant.
+Le volet du contraste tient les deux moitiés de la promesse : **plus contrasté,
+pas plus large**. Le script relit les couches de la règle commune, calcule leur
+envergure (`flou + étalement`) et leur densité, et exige 22 px d'envergure au
+repos et 30 px au survol, avec des densités toutes supérieures à `.8` (et `.9` au
+survol). Une lueur qui gagnerait 12 px de flou échoue (« le halo porte loin de
+22 px… reçu : 44 px »). Deux assertions de source vérifient qu'il n'existe
+**qu'une** règle `is-playable` — au repos comme au survol — et qu'**aucune
+classe de famille ne rejoue un `box-shadow`** : c'est ce qui garantit que le
+Désert et le Fennec s'allument exactement comme la Magie Rapide. L'anneau porte
+le reflet clair à `.98`, l'auréole rapprochée à `.82`, le flou extérieur à
+`.92` — à 18 px, comme avant.
 
 Le scénario JSDOM du module monte ensuite une **vraie partie** pour la lueur :
 une main de Ressac (Magie Rapide — Eau, 1 mana), d'Eau de la source
 (Sorcellerie — Eau, 1 mana) et de trois Mers. À zéro mana, aucune des deux ne
-s'allume et le terrain est la seule carte allumée — sans famille, donc en or.
+s'allume et le terrain est la seule carte allumée — sans famille, donc en azur.
 Le terrain est posé d'un clic : un mana eau est là, les deux sorts s'allument,
 et chacun porte la classe de la famille dont la feuille tient la teinte. Le
 deuxième terrain, lui, reste éteint — un seul terrain par tour : le halo suit la
 règle, pas le mana.
 
 **Contrôle visuel à faire (Chromium réel, 1440 × 900 et 844 × 390 au doigt).**
-Les deux teintes doivent se lire sur la table sombre **mieux** que l'or — bord
+Les trois teintes doivent se lire sur la table sombre **mieux** qu'avant — bord
 franc, flou dense — sans occuper plus de place : mêmes 2 px d'anneau, mêmes
 18 px de flou, aucune carte déplacée, et rien de recouvert — ni le coût, ni la
-pastille d'élément, ni le socle. Le point de vigilance est l'autre bout de la
-main : un sort jouable ne doit pas éblouir la carte voisine, ni dépasser dans la
-barre d'action.
+pastille d'élément, ni le socle. Deux points de vigilance : **l'azur des
+créatures et des terrains ne doit pas se confondre avec le bleu de l'Eau** ni
+avec la lueur d'une carte ciblée sur la table, et **l'or de la Magie Rapide ne
+doit plus se confondre avec celui des créatures** qu'il servait à démarquer — les
+deux étaient pareils avant l'échange. L'autre bout de la main : un sort jouable
+ne doit pas éblouir la carte voisine, ni dépasser dans la barre d'action.
 
 ## Le Sablier : la créature se pose avant de désigner sa cible
 

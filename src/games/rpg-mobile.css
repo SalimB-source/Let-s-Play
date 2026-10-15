@@ -508,8 +508,8 @@
 }
 /* Les ombres décalées sont portées par le bloc de la pile, jamais par la carte
    elle-même : `.rpg-card.is-pret`, `.is-ciblable`, `.is-blocking` et consorts
-   pilotent leur propre `box-shadow` (halo de jouabilité, doré ou teinté de la
-   famille d’un sort, halo de cible) et ce fichier est
+   pilotent leur propre `box-shadow` (halo de jouabilité, bleu pour ce qui se
+   pose et teinté de la famille pour un sort, halo de cible) et ce fichier est
    chargé après `rpg-battle.css` — il les écraserait. Le bloc reprend le rayon
    de la carte et sa couleur de cadre (`cardFrameStyle` posé sur la pile). */
 .rpg-card-stack {
