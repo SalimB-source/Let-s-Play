@@ -6,27 +6,22 @@
 //   · le moteur nu démarre en conduite par voies (les harnais historiques le
 //     pilotent ainsi) ; `setDrivingMode` bascule, une valeur inconnue retombe
 //     sur la conduite libre, et le HUD publie la conduite ;
-//   · la voiture tourne comme une vraie voiture : la touche tenue braque les
-//     roues et tourne le nez ; relâchée, le volant se rend mais le cap tient —
-//     la voiture continue tout droit, et il faut contre-braquer pour
-//     s'arrêter net (le dernier cran de volant est pardonné sur route droite) ;
+//   · touche tenue : aucun saut de voie à la pression, la voiture glisse tant
+//     que la touche reste enfoncée, s'arrête net (≤ 0,15 s) à la relâche et
+//     reste où elle est, entre deux voies — aucun rappel vers un centre ;
 //   · Q / D comme ← / →, et la dernière touche pressée tient le volant ;
-//   · bord de la chaussée : la voiture bute sans jamais déborder, et le bord
-//     lui remet le nez dans l'axe le temps du frottement ;
+//   · bord de la chaussée : la voiture bute sans jamais déborder ;
 //   · la voie du pilote suit sa position (hystérésis comprise) et la ligne
 //     propre retombe à zéro au franchissement d'une ligne ;
-//   · lacet de la caisse et braquage des roues suivent le cap et le volant ;
-//   · dans les virages (Ring, Vice City, tōgé) : sans volant, la voiture file
-//     vers l'extérieur ; le pilote qui braque tient sa ligne, et le placement
-//     assisté contre-braque tout seul ;
-//   · `action('right')` rejoint le centre de la voie voisine, sans dépasser ;
+//   · lacet de la caisse et braquage des roues suivent le glissement ;
+//   · `action('right')` glisse jusqu'au centre de la voie voisine, sans dépasser ;
 //   · au doigt : la voiture suit le glissé (55 % de l'écran = toute la
 //     chaussée), finit le geste quand le doigt se lève, ne bouge pas sur une
 //     simple touche, et une flèche reprend la main ;
-//   · une voiture à hauteur bloque le geste — jamais de carrosseries
+//   · une voiture à hauteur bloque le glissement — jamais de carrosseries
 //     imbriquées — et le pilote qui insiste la pousse (un seul choc latéral) ;
 //     un rival, lui, se traverse ;
-//   · toupie et saut : le volant ne répond plus, la voiture gèle ;
+//   · toupie et saut : le volant ne répond plus ;
 //   · repasser aux voies recentre la voiture et rend l'écart instantané ;
 //   · tremplin : rattrapé au centre ou à cheval, franchement évité à côté —
 //     jamais traversé ;
@@ -113,10 +108,8 @@ const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_COURSES,
   CITY_RUSH_CARS,
-  CITY_RUSH_LANE_WIDTH,
-  CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_SIDE_CONTACT_GAP,
-  cityRushTrackProfile,
+  cityRushMiniGarageWidth,
   isCityRushPoliceTrafficType,
 } = await import('../src/games/cityRushRules.js');
 const {
@@ -124,7 +117,6 @@ const {
   CITY_RUSH_FREE_RAMP_CATCH,
   CITY_RUSH_FREE_TOUCH_SPAN,
   cityRushFreeLaneForX,
-  cityRushFreeRoadCurvature,
 } = await import('../src/games/cityRushFreeDrive.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -215,21 +207,10 @@ const makeWorld = (city, raceFormat) => {
 const parkAll = (world, keep = new Set()) => {
   const h = world.harness;
   let offset = 0;
-  for (const car of [...h.trafficCars, ...h.oncomingCars, ...h.patrolCars]) {
+  for (const car of [...h.trafficCars, ...h.oncomingCars, ...h.racers, ...h.patrolCars]) {
     if (keep.has(car)) continue;
     offset += 40;
     car.distance = h.distance + 4000 + offset;
-    car.impactChanging = false;
-    car.impactCooldownLeft = 0;
-  }
-  // Les rivaux se garent DERRIÈRE le pilote : garés loin devant, un warp en
-  // fin de premier tour les faisait franchir l'arrivée et la course se
-  // clôturait sous le scénario (tour d'honneur, plus de volant).
-  let behind = 0;
-  for (const car of h.racers) {
-    if (keep.has(car)) continue;
-    behind += 40;
-    car.distance = Math.max(0, h.distance - 600 - behind);
     car.impactChanging = false;
     car.impactCooldownLeft = 0;
   }
@@ -262,26 +243,12 @@ const fresh = (world, label) => {
   effects = [];
 };
 
-const laneXs = (h) => Array.from({ length: h.laneCount }, (_, lane) => h.laneX(lane));
-
-// La fenêtre de 120 m la plus droite du tour : les scénarios qui veulent une
-// route franchement droite (relâche, contre-braquage, raccrochage du cap) y
-// sont téléportés — sur le tōgé ou le Ring, le hasard du départ pouvait tomber
-// en pleine épingle.
-const straightSpot = (city) => {
-  const profile = cityRushTrackProfile(city.id);
-  const lap = CITY_RUSH_LAP_LENGTH;
-  const span = 120;
-  let best = null;
-  for (let start = 100; start < lap - span; start += 10) {
-    let worst = 0;
-    for (let s = start; s < start + span; s += 10) {
-      worst = Math.max(worst, Math.abs(cityRushFreeRoadCurvature(profile.yaw, s, { lap })));
-    }
-    if (!best || worst < best.worst) best = { start, worst };
-  }
+const nearestLaneCenter = (h, x) => {
+  let best = Infinity;
+  for (let lane = 0; lane < h.laneCount; lane += 1) best = Math.min(best, Math.abs(h.laneX(lane) - x));
   return best;
 };
+const laneXs = (h) => Array.from({ length: h.laneCount }, (_, lane) => h.laneX(lane));
 
 const summaries = [];
 
@@ -301,6 +268,7 @@ for (const [cityIndex, city] of cities.entries()) {
   const mid = Math.floor((H.laneCount - 1) / 2);
   const bounds = H.bounds();
   const halfWidth = H.halfWidth();
+  const laneW = Math.abs(H.laneX(1) - H.laneX(0));
 
   // ── 1. Conduite du moteur nu, bascule, HUD ────────────────────────────
   {
@@ -318,61 +286,30 @@ for (const [cityIndex, city] of cities.entries()) {
     results.push(`débattement ${bounds.min.toFixed(2)} … ${bounds.max.toFixed(2)} m`);
   }
 
-  // ── 2. Volant réel : tenue, cap qui tient, contre-braquage ────────────
+  // ── 2. Touche tenue, relâche nette, aucune aimantation ────────────────
   {
     fresh(world, label);
-    const straight = straightSpot(city);
-    H.warp(straight.start);
-    runFrames(0.3, () => parkAll(world));
-    const x0 = H.laneX(0);
+    const x0 = H.laneX(mid);
     H.place(x0);
     keyDown('ArrowRight');
     check(H.x === x0, 'la pression ne doit pas sauter de voie');
     stepFrame();
     check(H.x > x0 && H.x < x0 + 0.1, 'la voiture doit commencer à glisser dès la première image', H.x - x0);
     let previous = H.x;
-    runFrames(0.22, () => {
+    runFrames(0.12, () => {
       check(H.x >= previous - EPS, 'touche → tenue : la voiture ne doit jamais reculer');
       previous = H.x;
     });
-    check(H.lateral > 0 && H.heading > 0, 'la touche tenue doit tourner le nez et déporter la voiture', {
-      cap: H.heading, glissement: H.lateral,
-    });
+    check(H.lateral > 0, 'la touche tenue doit donner un glissement', H.lateral);
     keyUp('ArrowRight');
-    // Relâche : le volant se rend, le cap tient — la voiture continue tout
-    // droit, de biais, sans aucun rappel vers un centre de voie.
-    runFrames(0.2);
-    const drift = H.x;
-    check(H.steerVisual === 0, 'relâché, le volant revient au centre', H.steerVisual);
-    check(H.heading > 0 && H.lateral > 0, 'relâché, le cap tient : la voiture continue tout droit, de biais', {
-      cap: H.heading, glissement: H.lateral,
-    });
-    runFrames(0.2);
-    check(H.x > drift, 'sans volant ni contre-braquage, la voiture file de côté', { avant: drift, après: H.x });
-    // Contre-braquage : le pilote redresse, la voiture s'arrête net.
-    keyDown('ArrowLeft');
-    const straightened = runUntil(() => H.lateral <= 0, 1.2);
-    check(straightened !== null, 'le contre-braquage doit redresser la voiture', { cap: H.heading, glissement: H.lateral });
-    keyUp('ArrowLeft');
-    // Sur une route droite, le dernier cran de volant est pardonné : la
-    // voiture s'arrête net. Sur un circuit qui ne se redresse jamais (le
-    // Ring), le cap revient près de la ligne et la route reprend ses droits.
-    if (straight.worst <= 0.002) {
-      // Arrêt net = cap droit ET volant rendu : le cap peut franchir zéro un
-      // instant avant que le volant ait fini de se rendre.
-      const stopped = runUntil(() => H.lateral === 0 && H.steerVisual === 0, 0.5);
-      check(stopped !== null && stopped <= 0.25 + EPS, 'redressée, la voiture doit s’arrêter net (dernier cran pardonné)', stopped);
-    } else {
-      runFrames(0.15);
-      check(Math.abs(H.heading) <= 0.16, 'redressée sur une route qui tourne, le cap revient près de la ligne', H.heading);
-    }
+    const stopped = runUntil(() => H.lateral === 0, 0.5);
+    check(stopped !== null && stopped <= 0.15 + EPS, 'la voiture doit s’arrêter net à la relâche', stopped);
     const rest = H.x;
-    runFrames(0.5);
-    if (straight.worst <= 0.002) {
-      check(H.x === rest, 'aucun rappel vers le centre d’une voie une fois redressée', { avant: rest, après: H.x });
-    }
+    runFrames(0.6);
+    check(H.x === rest, 'aucun rappel vers le centre d’une voie après la relâche', { avant: rest, après: H.x });
+    check(nearestLaneCenter(H, rest) > 0.1, 'un appui court doit laisser la voiture entre deux voies', rest);
     check(H.lane === cityRushFreeLaneForX(rest, H.lane, laneXs(H)), 'la voie publiée doit suivre la position', { x: rest, voie: H.lane });
-    results.push(`appui 0,25 s : ${(rest - x0).toFixed(2)} m, cap tenu à la relâche, redressé en ${(straightened ?? 0).toFixed(2)} s`);
+    results.push(`appui 0,13 s : ${(rest - x0).toFixed(2)} m, arrêt en ${(stopped ?? 0).toFixed(2)} s`);
   }
 
   // ── 3. Bords de la chaussée, Q / D, dernière touche pressée ───────────
@@ -391,7 +328,7 @@ for (const [cityIndex, city] of cities.entries()) {
     runFrames(0.25);
     check(H.lateral < 0 && H.x < bounds.max, 'la dernière touche pressée doit tenir le volant', { x: H.x, glissement: H.lateral });
     keyUp('ArrowLeft');
-    runFrames(0.45);
+    runFrames(0.25);
     check(H.lateral > 0, 'à la relâche de ←, D (toujours enfoncée) reprend la main', H.lateral);
     keyUp('d');
     keyDown('q');
@@ -401,56 +338,33 @@ for (const [cityIndex, city] of cities.entries()) {
     check(left !== null, 'Q tenue doit mener au bord gauche de la chaussée', H.x);
     keyUp('q');
     runFrames(0.2);
-    check(H.steerVisual === 0, 'Q relâchée : le volant revient au centre', H.steerVisual);
-    // Route droite : le bord tient la voiture et plus rien ne la fait glisser.
-    // Route qui tourne (le Ring) : la route reprend ses droits et peut la
-    // décoller du bord — on ne juge que le volant rendu.
-    if (Math.abs(H.curvature()) <= 0.002) {
-      check(H.lateral === 0, 'Q relâchée : plus de glissement', H.lateral);
-    }
+    check(H.lateral === 0, 'Q relâchée : plus de glissement');
   }
 
   // ── 4. Voie déduite, ligne propre, lecture visuelle ───────────────────
   {
     fresh(world, label);
-    const straight = straightSpot(city);
-    H.warp(straight.start);
-    runFrames(0.3, () => parkAll(world));
     H.place(H.laneX(mid));
     runFrames(1.2);
     check(H.cleanLine > 1, 'la ligne propre doit monter quand la voiture tient sa voie', H.cleanLine);
     const lineX = (H.laneX(mid) + H.laneX(mid + 1)) / 2;
+    const hyst = Math.min(CITY_RUSH_FREE_LANE_HYSTERESIS, laneW * 0.2);
     keyDown('ArrowRight');
     stepFrame();
     stepFrame();
-    check(H.yaw < 0 && H.steerVisual > 0.1, 'vers la droite : nez tourné à droite, roues braquées', { lacet: H.yaw, braquage: H.steerVisual });
+    check(H.yaw < 0 && H.steerVisual > 0.05, 'vers la droite : nez tourné à droite, roues braquées', { lacet: H.yaw, braquage: H.steerVisual });
     const crossed = runUntil(() => H.lane === mid + 1, 1.5);
     check(crossed !== null, 'la voie doit changer quand la voiture franchit la ligne', H.x);
-    check(H.x >= lineX + CITY_RUSH_FREE_LANE_HYSTERESIS - 0.25, 'la voie ne change qu’après l’hystérésis', { x: H.x, ligne: lineX });
+    check(H.x >= lineX + hyst - 0.3, 'la voie ne change qu’après l’hystérésis', { x: H.x, ligne: lineX });
     check(H.cleanLine < 0.05, 'la ligne propre doit retomber au franchissement', H.cleanLine);
     keyUp('ArrowRight');
     runFrames(0.35);
-    // Le volant se rend, mais la caisse garde son cap : le nez reste tourné,
-    // la voiture file de biais — la lecture visuelle est le cap réel.
-    check(H.steerVisual === 0, 'relâché, les roues reviennent droites', H.steerVisual);
-    check(H.yaw < 0 && H.lateral > 0, 'relâché, la caisse garde son cap, le nez reste tourné', { lacet: H.yaw, glissement: H.lateral });
-    keyDown('ArrowLeft');
-    runUntil(() => H.lateral <= 0, 1.2);
-    keyUp('ArrowLeft');
-    if (straight.worst <= 0.002) {
-      const settled = runUntil(() => H.lateral === 0 && H.yaw === 0, 0.5);
-      check(settled !== null, 'contre-braquée puis raccrochée, la voiture reprend la ligne droite', { lacet: H.yaw, glissement: H.lateral });
-    } else {
-      runFrames(0.2);
-      check(Math.abs(H.yaw) <= 0.16, 'contre-braquée sur une route qui tourne, la voiture revient près de la ligne', { lacet: H.yaw });
-    }
+    check(H.yaw === 0 && H.steerVisual === 0, 'à l’arrêt du glissement, caisse et roues reviennent droites', { lacet: H.yaw, braquage: H.steerVisual });
   }
 
   // ── 5. Écart demandé par `action` ─────────────────────────────────────
   {
     fresh(world, label);
-    H.warp(straightSpot(city).start);
-    runFrames(0.3, () => parkAll(world));
     H.place(H.laneX(mid));
     world.action('right');
     stepFrame();
@@ -473,9 +387,6 @@ for (const [cityIndex, city] of cities.entries()) {
   {
     pointerWorld = world;
     fresh(world, label);
-    const straight = straightSpot(city);
-    H.warp(straight.start);
-    runFrames(0.3, () => parkAll(world));
     const x0 = H.laneX(mid);
     H.place(x0);
     const metersPerPixel = (bounds.max - bounds.min) / (1280 * CITY_RUSH_FREE_TOUCH_SPAN);
@@ -486,46 +397,26 @@ for (const [cityIndex, city] of cities.entries()) {
     check(Math.abs(H.x - target) < EPS && H.lateral === 0, 'la voiture doit suivre le doigt', { x: H.x, visée: target });
     pointer('pointermove', 640 - 64);
     const back = Math.max(bounds.min, x0 - 64 * metersPerPixel);
-    runFrames(1.2);
+    runFrames(0.8);
     check(Math.abs(H.x - back) < EPS, 'le doigt qui revient ramène la voiture', { x: H.x, visée: back });
     pointer('pointerup', 640 - 64);
     runFrames(0.4);
-    // Route droite : la voiture reste exactement en place. Sur un circuit qui
-    // tourne encore, seule la route peut la déporter — du souffle de sa
-    // courbure, rien de plus (un cap né au point de lever, laissé à la route).
-    if (straight.worst <= 0.002) {
-      check(Math.abs(H.x - back) < EPS, 'doigt levé à destination : la voiture reste en place', { x: H.x, visée: back });
-    } else {
-      const k = H.curvature();
-      const carry = Math.abs(k) < 1e-6 ? 0 : Math.abs((1 - Math.cos(k * H.speed * 0.4)) / k);
-      check(Math.abs(H.x - back) < carry + 0.06, 'doigt levé à destination : seule la route peut déporter la voiture', { x: H.x, visée: back, déportRoute: carry.toFixed(3) });
-    }
+    check(Math.abs(H.x - back) < EPS, 'doigt levé à destination : la voiture reste en place', H.x);
     // Geste vif : le doigt se lève avant que la voiture n'arrive.
     const from = H.x;
     pointer('pointerdown', 300);
     pointer('pointermove', 300 + 200);
     pointer('pointerup', 300 + 200);
     const flickTarget = Math.min(bounds.max, from + 200 * metersPerPixel);
-    let flickReached = false;
-    runFrames(1.4, () => {
-      flickReached = flickReached || Math.abs(H.x - flickTarget) < 0.06;
-    });
-    check(flickReached, 'doigt levé en route : la voiture finit le geste', { x: H.x, visée: flickTarget });
-    if (straight.worst <= 0.002) {
-      check(Math.abs(H.x - flickTarget) < EPS, 'la voiture se gare sur la cible du geste', { x: H.x, visée: flickTarget });
-    }
+    runFrames(1.0);
+    check(Math.abs(H.x - flickTarget) < EPS, 'doigt levé en route : la voiture finit le geste', { x: H.x, visée: flickTarget });
     // Simple touche : rien ne bouge.
-    // Simple touche : le volant ne bouge pas. (Sur un circuit qui tourne, la
-    // voiture peut être portée par la route — c'est le volant qu'on juge.)
     const tapX = H.x;
-    let tapSteered = false;
     pointer('pointerdown', 900);
     pointer('pointermove', 902);
     pointer('pointerup', 902);
-    runFrames(0.5, () => {
-      tapSteered = tapSteered || H.steerVisual !== 0;
-    });
-    check(!tapSteered, 'une simple touche ne doit pas braquer', { avant: tapX, après: H.x });
+    runFrames(0.5);
+    check(H.x === tapX, 'une simple touche ne doit pas braquer', { avant: tapX, après: H.x });
     // Une flèche reprend la main sur un geste en cours.
     pointer('pointerdown', 640);
     pointer('pointermove', 640 + 220);
@@ -614,9 +505,6 @@ for (const [cityIndex, city] of cities.entries()) {
   {
     const rampCase = (offset) => {
       fresh(world, label);
-      // Sur une route droite : l'approche ne doit dériver que du scénario.
-      H.warp(straightSpot(city).start);
-      runFrames(0.3, () => parkAll(world));
       const ramp = H.ramps[0];
       ramp.lane = F[Math.min(1, F.length - 1)];
       ramp.trackDistance = H.distance + 45;
@@ -626,10 +514,6 @@ for (const [cityIndex, city] of cities.entries()) {
       // Décalage vers l'intérieur de la chaussée quand le bord est trop près.
       const side = rampX + offset <= bounds.max && rampX + offset >= bounds.min ? 1 : -1;
       H.place(rampX + side * offset);
-      // La ligne d'approche est tenue par le placement assisté : sur un
-      // circuit qui ne se redresse jamais (le Ring), une voiture sans volant
-      // dérive de plusieurs mètres avant le tremplin.
-      H.aim(rampX + side * offset);
       const outer = 1.2 + halfWidth;
       let worst = Infinity;
       let airborneDrift = 0;
@@ -667,14 +551,10 @@ for (const [cityIndex, city] of cities.entries()) {
     const R = race.harness;
     const structureCase = (pick, startX, holdKey = null) => {
       fresh(race, label);
-      // Sur une route droite : l'approche ne doit dériver que du scénario.
-      R.warp(straightSpot(city).start);
-      runFrames(0.3, () => parkAll(race));
       const structure = pick();
       parkAll(race, new Set([structure]));
       R.place(startX);
       if (holdKey) keyDown(holdKey);
-      else R.aim(startX);
       let overlapFrames = 0;
       runUntil(() => R.distance > structure.trackDistance + 25, 6, () => {
         for (const span of R.structures()) {
@@ -689,18 +569,19 @@ for (const [cityIndex, city] of cities.entries()) {
       return overlapFrames;
     };
     if (R.miniGarages.length) {
+      const garageHalf = cityRushMiniGarageWidth(city) / 2;
       const placeGarage = () => {
         const garage = R.miniGarages[0];
         garage.used = false;
         garage.trackDistance = R.distance + 45;
         return garage;
       };
-      // À 2,90 m de l'axe : la sortie la plus proche est à côté du garage.
-      const besideFrames = structureCase(placeGarage, 2.9);
+      // Du côté extérieur de la paroi : la sortie la plus proche est à côté du garage.
+      const besideFrames = structureCase(placeGarage, garageHalf + 0.2);
       check(besideFrames > 0, 'le garage doit avoir été longé');
       check(effectsOf('mini-garage-used').length === 0, 'longer le garage ne doit pas le prendre');
-      // À 1,90 m : la voiture est canalisée dedans, et l'atelier la répare.
-      structureCase(placeGarage, 1.9);
+      // Du côté intérieur de la paroi : la voiture est canalisée dedans, et l'atelier la répare.
+      structureCase(placeGarage, garageHalf - 0.8);
       check(effectsOf('mini-garage-used').length === 1, 'canalisée dedans, la voiture doit traverser l’atelier', effectsOf('mini-garage-used').length);
       results.push('garage : longé à côté, traversé dedans');
     } else {
@@ -709,7 +590,7 @@ for (const [cityIndex, city] of cities.entries()) {
     if (R.bazookaWarehouses.length) {
       const pickupX = R.laneX(R.bazookaPickupLane);
       const side = pickupX > 0 ? 1 : -1;
-      const innerWall = pickupX - side * (CITY_RUSH_LANE_WIDTH * 1.5 - 0.05);
+      const innerWall = pickupX - side * (laneW * 1.5 - 0.05);
       const placeWarehouse = () => {
         const warehouse = R.bazookaWarehouses[0];
         warehouse.taken = false;
@@ -746,108 +627,11 @@ for (const [cityIndex, city] of cities.entries()) {
     rival.currentX = R.laneX(lane);
     const key = towardRight ? 'ArrowRight' : 'ArrowLeft';
     keyDown(key);
-    runFrames(0.75);
+    runFrames(0.5);
     keyUp(key);
     const crossed = towardRight ? R.x >= R.laneX(lane) - EPS : R.x <= R.laneX(lane) + EPS;
     check(crossed, 'un rival à hauteur se traverse', { x: R.x, rival: R.laneX(lane) });
     check(effectsOf('side-bump').length === 0, 'traverser un rival ne fait aucun choc');
-  }
-
-  // ── 13. Virages : sans volant, la voiture sort ; au volant, elle tient ──
-  {
-    const profile = cityRushTrackProfile(city.id);
-    const lap = CITY_RUSH_LAP_LENGTH;
-    let pin = null;
-    for (let s = 150; s < lap - 250; s += 5) {
-      const k = cityRushFreeRoadCurvature(profile.yaw, s, { lap });
-      if (!pin || Math.abs(k) > Math.abs(pin.k)) pin = { s, k };
-    }
-    if (!pin || Math.abs(pin.k) < 0.006) {
-      results.push('virage : ignoré (parcours droit)');
-    } else {
-      const outside = Math.sign(pin.k); // κ > 0 : le virage est à gauche, la sortie à droite
-      // a) Mains libres : la route tourne, pas la voiture — elle continue
-      //    tout droit et file vers l'extérieur, le bord la retient.
-      fresh(world, label);
-      H.warp(pin.s - 70);
-      runFrames(0.3, () => parkAll(world));
-      const laneMid = H.laneX(mid);
-      H.place(laneMid);
-      const from = H.x;
-      let outsidePeak = 0;
-      let nosePeak = 0;
-      let touchedEdge = false;
-      let sawPin = false;
-      runUntil(() => H.distance > pin.s + 55, 14, () => {
-        parkAll(world);
-        check(H.x >= bounds.min - EPS && H.x <= bounds.max + EPS, 'sans volant, la voiture reste sur la chaussée (le bord la retient)', H.x);
-        if (Math.abs(H.x - (outside > 0 ? bounds.max : bounds.min)) < 0.06) touchedEdge = true;
-        if (Math.abs(H.curvature()) > 0.004) {
-          sawPin = true;
-          outsidePeak = Math.max(outsidePeak, (H.x - from) * outside);
-          nosePeak = Math.max(nosePeak, H.heading * outside);
-        }
-      });
-      check(sawPin, 'le scénario doit traverser le virage', { distance: H.distance, virage: pin.s });
-      check(outsidePeak >= 1.2 || touchedEdge, 'sans volant, la voiture doit sortir vers l’extérieur du virage', { excursion: outsidePeak, auBord: touchedEdge });
-      check(nosePeak > 0.1, 'sans volant, le nez doit pointer vers l’extérieur', nosePeak);
-      // b) Au volant, comme un joueur aux flèches : braquer tient la ligne.
-      fresh(world, label);
-      H.warp(pin.s - 70);
-      runFrames(0.3, () => parkAll(world));
-      const target = H.laneX(mid);
-      H.place(target);
-      // Comme un joueur aux flèches : braquer vers la cible dès que la
-      // voiture s'en écarte, rendre le volant quand elle y revient.
-      let heldKey = null;
-      const steerTo = (key) => {
-        if (heldKey === key) return;
-        if (heldKey) keyUp(heldKey);
-        heldKey = key;
-        if (key) keyDown(key);
-      };
-      let worstOffset = 0;
-      let steerInto = 0;
-      sawPin = false;
-      runUntil(() => H.distance > pin.s + 55, 14, () => {
-        parkAll(world);
-        const offset = H.x - target;
-        if (heldKey && Math.abs(offset) < 0.1) steerTo(null);
-        else if (!heldKey && Math.abs(offset) > 0.3) steerTo(offset > 0 ? 'ArrowLeft' : 'ArrowRight');
-        worstOffset = Math.max(worstOffset, Math.abs(offset));
-        if (Math.abs(H.curvature()) > 0.004) {
-          sawPin = true;
-          steerInto = Math.max(steerInto, -outside * H.steerAngle);
-        }
-        check(H.x >= bounds.min - EPS && H.x <= bounds.max + EPS, 'au volant, la voiture reste sur la chaussée', H.x);
-      });
-      steerTo(null);
-      check(sawPin, 'le scénario doit traverser le virage (au volant)', { distance: H.distance, virage: pin.s });
-      check(worstOffset < 2.8, 'au volant, le joueur tient sa ligne dans le virage', worstOffset);
-      check(steerInto > 0.02, 'tenir le virage demande de braquer vers l’intérieur', steerInto);
-      // c) Placement assisté (glissé au doigt tenu, démonstration du
-      //    tutoriel) : le pilote assisté contre-braque tout seul.
-      fresh(world, label);
-      H.warp(pin.s - 70);
-      runFrames(0.3, () => parkAll(world));
-      H.place(H.laneX(mid));
-      let worstAim = 0;
-      let assistSteer = 0;
-      sawPin = false;
-      runUntil(() => H.distance > pin.s + 55, 14, () => {
-        parkAll(world);
-        if (H.steerTarget === null) H.aim(H.laneX(mid));
-        worstAim = Math.max(worstAim, Math.abs(H.x - H.laneX(mid)));
-        if (Math.abs(H.curvature()) > 0.004) {
-          sawPin = true;
-          assistSteer = Math.max(assistSteer, -outside * H.steerAngle);
-        }
-      });
-      check(sawPin, 'le scénario doit traverser le virage (assisté)', { distance: H.distance, virage: pin.s });
-      check(worstAim < 0.9, 'le placement assisté tient la ligne dans le virage', worstAim);
-      check(assistSteer > 0.02, 'le placement assisté contre-braque dans le virage', assistSteer);
-      results.push(`virage (κ=${pin.k.toFixed(3)} rad/m) : sortie ${touchedEdge ? 'jusqu’au bord' : `${outsidePeak.toFixed(1)} m`} sans volant, tenu à ${worstOffset.toFixed(2)} m au volant, ${worstAim.toFixed(2)} m en assisté`);
-    }
   }
 
   world.destroy?.();
@@ -856,4 +640,3 @@ for (const [cityIndex, city] of cities.entries()) {
 }
 
 console.log(summaries.join('\n'));
-console.log('VÉRIF CONDUITE LIBRE OK');

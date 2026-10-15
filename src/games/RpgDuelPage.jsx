@@ -1190,8 +1190,10 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   // comme une fiche de collection — sur-titre, nom, famille, couleur — là où
   // l'aperçu de jeu va droit au coût et aux effets.
   const estFiche = variante === 'catalogue';
-  // Les bonus directs de l'équipement rejoignent les effets de la créature,
-  // en bleu et sans répéter le nom de l'arme.
+  // Les bonus directs de l'équipement **ouvrent** le texte d'effet de la
+  // créature : en bleu, sans répéter le nom de l'arme, et avant ses propres
+  // lignes — ce que l'équipement accorde se lit d'abord, comme la première
+  // chose que la carte devient.
   const armesEquipees = estCreature ? armes.filter(Boolean) : [];
   const effetsArmesEquipees = armesEquipees.map(effetsAccordesParArme).filter(Boolean);
   const details = (
@@ -1212,7 +1214,8 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       {!estTerrain && <p className="rpg-hover-card-preview__cost"><span>Coût</span><b>{carte.cost}</b>{cardColors(carte).length > 1 && <small>{cardColorCostLabel(carte)}</small>}</p>}
       {(effet || effetsArmesEquipees.length > 0) && (
         <div className="rpg-hover-card-preview__rules" aria-label="Effets">
-          {effets.map((ligne, index) => <span key={`${index}-${ligne}`}><RpgCardRules carte={carte} text={ligne} /></span>)}
+          {/* La ligne bleue de l'équipement passe en tête : elle dit ce que le
+              porteur devient, avant les effets propres de sa carte. */}
           {effetsArmesEquipees.map((ligne, index) => (
             <span
               key={`equipement-${index}-${ligne}`}
@@ -1222,6 +1225,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
               {ligne}
             </span>
           ))}
+          {effets.map((ligne, index) => <span key={`${index}-${ligne}`}><RpgCardRules carte={carte} text={ligne} /></span>)}
         </div>
       )}
       {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
@@ -1244,7 +1248,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       ref={panelRef}
       className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${cibleLabel}`}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
     >
       {variante === 'annonce' ? (

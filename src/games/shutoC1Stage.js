@@ -623,7 +623,7 @@ function addJunctionRamps(batch, m, cs, cfg, atlas, sector, random, lite) {
       const z = toZ(position);
       const yaw = (ramp % 2 ? 1 : -1) * (0.22 + random() * 0.16);
       const deckY = 12.2 + ramp * 1.7 + random() * 0.6;
-      const halfSpan = 19;
+      const halfSpan = cs.deckHalf + 7.2;
       const cos = Math.cos(yaw);
       const sin = Math.sin(yaw);
       // Repère de la bretelle : un point local (lx, lz) devient

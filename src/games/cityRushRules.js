@@ -57,17 +57,15 @@ export const CITY_RUSH_PLAYER_SPEED = 35; // m/s : rythme de course relevé à e
 export const CITY_RUSH_RACEWAY_PACE = 0.85; // le Ring à ~107 km/h au lieu de 126
 // Garde-fou du facteur : un parcours peut ralentir la course, jamais la figer.
 export const CITY_RUSH_COURSE_PACE_MIN = 0.5;
-// Largeur d'une **voie urbaine** : 2,50 m (elle était de 2,10 m à l'origine,
-// puis 2,30 m). Une voie plus large change la conduite : la caisse (1,90 m)
-// respire enfin dans sa voie, un écart de quelques centimètres ne frôle plus
-// la voiture voisine, et le passage d'une voie à l'autre se lit mieux à
-// l'écran. La chaussée urbaine suit : 6 × 2,50 m + 0,80 m de rives = 15,80 m.
-export const CITY_RUSH_LANE_WIDTH = 2.5;
-export const CITY_RUSH_ROAD_WIDTH = 15.8;
+// Largeur d'une **voie urbaine** : 5,00 m (deux fois la largeur précédente de
+// 2,50 m). Chaque sens de circulation à trois voies passe ainsi de 7,50 m à
+// 15,00 m, et la chaussée urbaine suit : 6 × 5,00 m + 0,80 m de rives = 30,80 m.
+export const CITY_RUSH_LANE_WIDTH = 5;
+export const CITY_RUSH_ROAD_WIDTH = 30.8;
 export const CITY_RUSH_ROAD_HALF_WIDTH = CITY_RUSH_ROAD_WIDTH / 2;
 // Piste d'un circuit permanent (Nürburgring Nordschleife) : 9,20 m de bitume —
 // les 8,40 m réels du Ring plus 0,40 m de marge peinte de chaque côté — au lieu
-// des 15,80 m d'une artère urbaine. Quatre voies de 2,10 m s'y partagent le
+// des 30,80 m d'une artère urbaine. Quatre voies de 2,10 m s'y partagent le
 // sens unique, exactement la largeur d'une voiture entre deux voies.
 export const CITY_RUSH_RACEWAY_ROAD_WIDTH = 9.2;
 export const CITY_RUSH_RACEWAY_ROAD_HALF = CITY_RUSH_RACEWAY_ROAD_WIDTH / 2;
@@ -82,11 +80,11 @@ export const CITY_RUSH_RACEWAY_LANE_WIDTH = 2.1;
 export const CITY_RUSH_TOUGE_ROAD_WIDTH = 8.4;
 export const CITY_RUSH_TOUGE_ROAD_HALF = CITY_RUSH_TOUGE_ROAD_WIDTH / 2;
 // Six voies au total : trois d'un sens, trois dans l'autre, séparées par l'axe
-// jaune central. Les voies gardent le même espacement de 2,5 m ; c'est le
+// jaune central. Les voies gardent le même espacement de 5,0 m ; c'est le
 // **côté** du contresens qui dépend du pays (voir `cityRushDriveSide`) : à
 // droite de l'axe en Amérique et en France, à gauche au Royaume-Uni et au
 // Japon.
-export const CITY_RUSH_LANE_X = Object.freeze([-6.25, -3.75, -1.25, 1.25, 3.75, 6.25]);
+export const CITY_RUSH_LANE_X = Object.freeze([-12.5, -7.5, -2.5, 2.5, 7.5, 12.5]);
 export const CITY_RUSH_LANES_PER_DIRECTION = 3;
 // Moitié gauche (abscisses négatives) et moitié droite de la chaussée, dans
 // l'ordre des voies de la grille.
@@ -181,7 +179,7 @@ export const CITY_RUSH_SHOTGUN_FIRE_COOLDOWN = 1.5; // s
 export const CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP = 1;
 export const CITY_RUSH_BAZOOKA_BLAST_CELLS = 8;
 export const CITY_RUSH_BAZOOKA_PROJECTILE_SPEED = 180; // roquette visible, tirée droit devant
-export const CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH = CITY_RUSH_LANE_WIDTH * 1.35;
+export const CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH = 3.375;
 // Parts de la distance totale de la course où se dressent les deux entrepôts :
 // le premier avant le garage de vie (50 %), le second après.
 export const CITY_RUSH_BAZOOKA_PICKUP_SHARES = Object.freeze([0.3, 0.65]);
@@ -3812,13 +3810,13 @@ export const CITY_RUSH_CHASE_LOOK_AHEAD = 15; // unités monde : avance du regar
 // Part du décalage latéral de la voiture que la caméra (et son regard)
 // accompagnent : la caisse glisse vers le bord du cadre en changement de voie —
 // c'est le cadrage historique — sans jamais sortir de l'image. Les voies
-// urbaines sont passées de 2,10 m à 2,50 m : pour que la glissière apparente
-// par changement de voie reste celle d'avant ((1 − part) × largeur de voie
-// constante), la caméra accompagne 30 % du décalage (16 % avant) et le regard
-// 24 % (9 % avant). Sur la voie extrême (±6,25 m), la caisse reste ainsi dans
-// le cadre même en dérapage, comme sur l'ancienne grille.
-export const CITY_RUSH_CHASE_X_SHARE = 0.3; // × le x de la voiture : position de la caméra
-export const CITY_RUSH_CHASE_LOOK_X_SHARE = 0.24; // × le x de la voiture : point regardé
+// urbaines sont passées à 5,00 m : pour que la glissière apparente par
+// changement de voie reste celle d'avant ((1 − part) × largeur de voie
+// constante), la caméra accompagne 65 % du décalage et le regard 62 %. Sur la
+// voie extrême (±12,50 m), la caisse reste ainsi dans le cadre même en
+// dérapage, comme sur l'ancienne grille.
+export const CITY_RUSH_CHASE_X_SHARE = 0.65; // × le x de la voiture : position de la caméra
+export const CITY_RUSH_CHASE_LOOK_X_SHARE = 0.62; // × le x de la voiture : point regardé
 export const CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD = 21; // unités monde : avance du regard dans l'axe de la caisse
 export const CITY_RUSH_CHASE_ANCHOR_DRIFT_START = 7.5; // m d'écart entre les deux placements : l'ancrage commence
 export const CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL = 15; // m d'écart : l'ancrage est complet
@@ -4233,7 +4231,10 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
       const front = ordered[frontIndex];
       if (front.jumping || front.isJumping) continue;
       if (front.collisionGroup === 'racer' && following.collisionGroup === 'racer') continue;
-      const sameLane = front.lane === following.lane;
+      const hasLateral = Number.isFinite(Number(front.x)) && Number.isFinite(Number(following.x));
+      const sameLane = (front.freeDrive || following.freeDrive) && hasLateral
+        ? false
+        : front.lane === following.lane;
       const rawFrontWidth = Number.isFinite(Number(front.width)) ? Number(front.width) : 1.9;
       // Devant un véhicule du trafic, la largeur opposée est sa **boîte de
       // contact** (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`) : la retenue et le
@@ -4245,8 +4246,7 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
         ? cityRushTrafficHitboxWidth(rawFrontWidth)
         : rawFrontWidth;
       const followingWidth = Number.isFinite(Number(following.width)) ? Number(following.width) : 1.9;
-      const lateralOverlap = Number.isFinite(Number(front.x))
-        && Number.isFinite(Number(following.x))
+      const lateralOverlap = hasLateral
         && Math.abs(Number(front.x) - Number(following.x)) < (frontWidth + followingWidth) / 2;
       if (!sameLane && !lateralOverlap) continue;
       // Le trafic lent retient à **son** enveloppe (3,6 m dans l'axe, 2,9 m
@@ -4326,8 +4326,10 @@ export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_T
       // étroite que sa carrosserie (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`) : c'est
       // ce qui laisse passer une esquive de dernière seconde.
       const trafficWidth = cityRushTrafficHitboxWidth(finiteNumber(vehicle.width, 1.9));
-      const sameLane = racer.lane === vehicle.lane;
       const hasLateral = Number.isFinite(Number(racer.x)) && Number.isFinite(Number(vehicle.x));
+      const sameLane = (racer.freeDrive || vehicle.freeDrive) && hasLateral
+        ? false
+        : racer.lane === vehicle.lane;
       // Sans position latérale connue, on juge les deux voitures dans l'axe :
       // l'enveloppe reste pleine, comme avant le découpage par écart latéral.
       const lateralDistance = hasLateral ? Math.abs(Number(racer.x) - Number(vehicle.x)) : 0;
@@ -6146,9 +6148,12 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
       // pas deux fois la distance de sécurité.
       const otherDistance = Number.isFinite(Number(other.nextDistance)) ? Number(other.nextDistance) : Number(other.distance);
       if (!Number.isFinite(otherDistance) || otherDistance <= previousDistance) continue;
-      const sameLane = other.lane === car.lane;
       const otherX = lateralX(other);
-      const lateralOverlap = Number.isFinite(otherX) && Number.isFinite(carX)
+      const hasLateral = Number.isFinite(otherX) && Number.isFinite(carX);
+      const sameLane = (other.freeDrive || car.freeDrive) && hasLateral
+        ? false
+        : other.lane === car.lane;
+      const lateralOverlap = hasLateral
         && Math.abs(otherX - carX) < (carWidth + lateralWidth(other)) / 2;
       if (!sameLane && !lateralOverlap) continue;
       const limit = Math.max(previousDistance, otherDistance - safeGap);

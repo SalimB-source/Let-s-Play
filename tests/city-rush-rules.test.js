@@ -531,10 +531,10 @@ test('Vice City Rush has six playable lanes with three lanes in each direction',
   assert.equal(CITY_RUSH_LANE_X.length, 6);
   assert.equal(CITY_RUSH_LANE_X.length, CITY_RUSH_LANES_PER_DIRECTION * 2);
   assert.equal(CITY_RUSH_LANES_PER_DIRECTION, 3);
-  assert.equal(CITY_RUSH_LANE_WIDTH, 2.5);
-  assert.equal(CITY_RUSH_ROAD_WIDTH, 15.8);
-  assert.equal(CITY_RUSH_ROAD_HALF_WIDTH, 7.9);
-  assert.deepEqual([...CITY_RUSH_LANE_X], [-6.25, -3.75, -1.25, 1.25, 3.75, 6.25]);
+  assert.equal(CITY_RUSH_LANE_WIDTH, 5);
+  assert.equal(CITY_RUSH_ROAD_WIDTH, 30.8);
+  assert.equal(CITY_RUSH_ROAD_HALF_WIDTH, 15.4);
+  assert.deepEqual([...CITY_RUSH_LANE_X], [-12.5, -7.5, -2.5, 2.5, 7.5, 12.5]);
   assert.deepEqual([...CITY_RUSH_ONCOMING_LANES], [0, 1, 2]);
   assert.deepEqual([...CITY_RUSH_FORWARD_LANES], [3, 4, 5]);
   assert.deepEqual([...CITY_RUSH_DEFAULT_LANES], [4, 5, 3]);
@@ -549,10 +549,10 @@ test('les lignes peintes séparent exactement les voies de chaque parcours', () 
   // Le marquage au sol n'est pas décoratif : chaque ligne tombe au milieu de la
   // paire de voies qu'elle sépare. Les six voies urbaines gardent ainsi leurs
   // séparateurs historiques, et la piste du Ring se coupe en quatre parts
-  // égales de 2,50 m.
+  // égales de 2,10 m.
   assert.equal(CITY_RUSH_LANE_PAINT_WIDTH, 0.16);
   const citySeparators = cityRushLaneSeparators(CITY_RUSH_CITIES[0]);
-  assert.deepEqual(citySeparators.map((x) => Number(x.toFixed(6))), [-5, -2.5, 0, 2.5, 5],
+  assert.deepEqual(citySeparators.map((x) => Number(x.toFixed(6))), [-10, -5, 0, 5, 10],
     'les six voies urbaines gardent leurs cinq séparateurs');
   assert.ok(citySeparators.every((x) => Math.abs(x) + CITY_RUSH_LANE_PAINT_WIDTH / 2 < CITY_RUSH_ROAD_HALF_WIDTH),
     'aucune ligne urbaine ne mord le trottoir');
@@ -2527,9 +2527,9 @@ test('London and the Shutō C1 drive on the left, the other courses on the right
     assert.deepEqual([...lanes.defaultLanes], [...CITY_RUSH_DEFAULT_LANES_LEFT_HAND], `${id} : la grille de départ est reflétée`);
     // Position réelle des voitures au départ : le joueur au milieu de la moitié
     // gauche, ses deux rivaux de part et d'autre.
-    assert.deepEqual([...lanes.defaultLanes].map((lane) => lanes.laneX(lane)), [-3.75, -6.25, -1.25]);
+    assert.deepEqual([...lanes.defaultLanes].map((lane) => lanes.laneX(lane)), [-7.5, -12.5, -2.5]);
     // Les abscisses ne changent pas : c'est le rôle des moitiés qui s'échange.
-    assert.deepEqual([...lanes.oncomingLanes].map((lane) => lanes.laneX(lane)), [1.25, 3.75, 6.25]);
+    assert.deepEqual([...lanes.oncomingLanes].map((lane) => lanes.laneX(lane)), [2.5, 7.5, 12.5]);
   }
 
   for (const city of CITY_RUSH_CITIES.filter((item) => item.id !== 'tokyo' && item.id !== 'london')) {

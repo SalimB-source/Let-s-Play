@@ -1439,20 +1439,21 @@ et le dernier tour durait 21 s.
   percute, et la raison d'effet `'undercover-contact'` a disparu. Le taxi n'a ni
   gyrophare ni marquage latéral : caisse jaune, toit noir et damier sur les
   flancs.
-- **Les voies s'élargissent.** La voie urbaine passe de **2,10 m à 2,50 m**
-  (`CITY_RUSH_LANE_WIDTH`) : la caisse (1,90 m) respire enfin dans sa voie, un
-  écart de quelques centimètres ne frôle plus la voiture voisine, et le passage
-  d'une voie à l'autre se lit mieux à l'écran. La chaussée suit —
-  `CITY_RUSH_ROAD_WIDTH` = **15,80 m** au lieu de 13,40 m, trottoirs et
-  mobilier urbain reculant d'autant — et la grille des six voies avec
-  (`CITY_RUSH_LANE_X`, de −6,25 m à +6,25 m ; les séparateurs peints tombent à
-  ∓2,50 m et ∓5,00 m). **Les circuits permanents gardent leurs 2,10 m** : le
+- **Les voies s'élargissent.** La voie urbaine double à **5,00 m**
+  (`CITY_RUSH_LANE_WIDTH`) : la caisse (1,90 m) respire largement dans sa voie,
+  les doublages et glissés latéraux ont de la place, et le passage d'une voie à
+  l'autre se lit mieux à l'écran. La chaussée suit —
+  `CITY_RUSH_ROAD_WIDTH` = **30,80 m**, trottoirs et mobilier urbain reculant
+  d'autant — et la grille des six voies avec
+  (`CITY_RUSH_LANE_X`, de −12,50 m à +12,50 m ; les séparateurs peints tombent à
+  ∓5,00 m et ∓10,00 m). **Les circuits permanents gardent leurs 2,10 m** : le
   Ring et le tōgé roulent sur leur bitume réel (8,40 m utiles pour quatre
   voies), d'où `CITY_RUSH_RACEWAY_LANE_WIDTH` et `cityRushLaneWidth(course)` —
   la largeur d'une voie dépend du parcours, `cityRushLaneConfig(...).laneWidth`
-  la porte au monde 3D (conteneur à bazooka, mini-garage de 6,20 m en ville
-  contre 5,40 m sur le Ring, hystérésis de la conduite libre). Le marquage,
-  les flèches et les textures suivent la grille, rien n'est codé en dur.
+  la porte au monde 3D (conteneur à bazooka de 10,00 m en ville contre 4,20 m
+  sur le Ring, mini-garage de 11,20 m en ville contre 5,40 m sur le Ring,
+  hystérésis de la conduite libre). Le marquage, les flèches et les textures
+  suivent la grille, rien n'est codé en dur.
 - **Changer de voie ne ralentit plus.** Doubler, se rabattre ou esquiver le
   trafic est **gratuit en vitesse** : la voiture glisse latéralement vers
   `CITY_RUSH_LANE_X` à pleine allure, sans coup de frein. L'ancien malus —
@@ -2714,39 +2715,12 @@ bouton de la barre, la touche C et la préférence.
 ## Vice City Rush : la conduite libre, sans voies
 
 La voiture n'est plus aimantée aux voies. En **conduite libre** — la conduite
-par défaut —, la voiture se conduit comme une vraie : maintenir ← / →
-(ou Q / D) **braque les roues avant**, le nez tourne, et le **cap tient** à la
-relâche — la voiture continue tout droit, et s'arrête droite en contre-braquant.
-Le volant ne pilote plus un glissement latéral mais un vrai modèle de bicyclette
-(empattement 2,6 m, braquage max 0,42 rad, prise à 4,5 rad/s, rend et
-contre-braquage à 12 rad/s, cap borné à 0,20 rad, lacet plafonné à 28 m/s
-divisé par la vitesse — l'adhérence faiblit avec l'allure) : la vitesse
-latérale suit `v·sin(cap)` (5 m/s en ville au maximum, 7 sur le Ring), le lacet suit
-`v/L·tan(δ)`, et la route tourne sous la voiture (sa courbure × distance,
-mesurée sur 20 m devant). Un appui bref reste sous le cran pardonné : la
-voiture ne tressaille pas à chaque touche.
-
-Deux raccourcis de conduite, pour que le clavier reste jouable sans
-contre-braquer à la main :
-
-- **Route droite** (|κ| ≤ 0,002 rad/m) : volant rendu et cap à moins de 0,13 rad
-  → la voiture raccroche la ligne droite. C'est le « dernier cran pardonné » :
-  relâcher les touches arrête la voiture nette. Sur le Ring (κ ≈ 0,007), le
-  pardon ne s'applique pas : la route reprend ses droits, un cap résiduel
-  subsiste comme sur une vraie piste.
-- **Virages** : sans volant, la force centrifuge déporte la voiture vers
-  l'extérieur jusqu'au bord de la chaussée, qui la bute et redresse son cap —
-  sortie au bord, jamais à travers. Au volant, la ligne se tient (1,18 m
-  d'écart tenu sur le virage κ = 0,013 du Ring).
-
-Au **doigt**, la voiture suit un pilote assisté : elle rejoint le point visé
-par le glissé (55 % de la largeur de l'écran traverse la chaussée) sur un
-profil de freinage (40 m/s², réserve 0,7, correction 6 rad/s par rad d'écart),
-et s'y **gare exactement, alignée sur la route** — le volant rendu garde le
-contre-braquage de la courbe (`atan(−κ·L)`), visible en vue cockpit. Une
-touche qui ne vise pas (zone morte de 4 px) ne braque pas. Le monde efface la
-cible à l'arrivée : un geste vif finit son dernier segment puis rend la voiture
-à la route ; le doigt maintenu garde la cible.
+par défaut —, le volant pilote une **vitesse latérale** : tant que ← / →
+(ou Q / D) reste enfoncée, la voiture glisse à gauche ou à droite ; à la
+relâche, elle s'arrête **là où elle est**, entre deux voies si le pilote le
+veut, sans braquage de cap ni dérive dans les virages. Au doigt, la voiture
+suit le glissé pendant le geste : glisser sur 55 % de la largeur de l'écran
+traverse toute la chaussée, et un geste vif se termine une fois le doigt levé.
 
 La **conduite par voies** (un écart de voie entière par pression, maintien
 cadencé) reste au choix : **OPTIONS › CONDUITE : LIBRE / VOIES** dans
@@ -2754,16 +2728,19 @@ l'écran-titre, et la même entrée dans l'écran de pause, applicable en pleine
 course. Préférence de l'appareil : `letsplay_vice_city_rush_driving_v1`
 (`'free'` ou `'lanes'`, toute autre valeur retombe sur la conduite libre).
 
-### Les limites du volant
+### Le volant libre
 
+- Vitesse latérale de pointe 15 m/s (une voie urbaine de 5,00 m en ~0,43 s),
+  prise à 75 m/s², relâche et freinage opposé à 150 m/s² : la voiture s'arrête
+  en moins de 0,12 s. Le déplacement latéral prend son plein effet à 12 m/s :
+  arrêtée sur la grille, la voiture ne se décale pas en crabe.
 - Débattement : toute la chaussée, moins la demi-largeur de la caisse et 10 cm
-  de marge (±5,7 m en ville, ±3,6 m sur le Ring, ±3,2 m sur le tōgé), jamais en
-  deçà du centre des voies extérieures (la chaussée étroite du tōgé garde ses
+  de marge (±14,35 m en ville, ±3,6 m sur le Ring, ±3,2 m sur le tōgé), jamais
+  en deçà du centre des voies extérieures (la chaussée étroite du tōgé garde ses
   quatre voies).
-- Toupie, épave ou saut : le volant ne répond plus, et une voiture en l'air
-  garde son cap — le nez ne tourne plus que la route tourne.
-- Lacet de la caisse, roues avant braquées et volant du cockpit suivent le
-  modèle (volant rendu borné à 0,34 rad pour rester lisible).
+- Toupie, épave ou saut : le volant ne répond plus, et une voiture en l'air ne
+  glisse pas.
+- Lacet de la caisse, roues avant et volant du cockpit suivent le glissement.
 
 ### Le reste du jeu raisonne toujours en voies
 
@@ -2800,10 +2777,8 @@ Les contacts se jugent sur la position réelle :
 
 ### Où vit le code
 
-- `src/games/cityRushFreeDrive.js` — règles pures : mode de conduite, modèle de
-  bicyclette (`cityRushFreeDriveStep` : volant, cap, dérive, arrivée assistée,
-  bord), courbure du tracé lue devant la voiture
-  (`cityRushFreeRoadCurvature`), débattement, voie déduite
+- `src/games/cityRushFreeDrive.js` — règles pures : mode de conduite, glissement
+  latéral (`cityRushFreeSteerStep`), débattement, voie déduite
   (`cityRushFreeLaneForX`), contact latéral, zones des parois et des tremplins,
   canalisation, glissé au doigt, lecture visuelle.
 - `src/games/ViceCityWorld.jsx` — `setDrivingMode` et la prop `drivingMode`,
@@ -2819,11 +2794,9 @@ Les contacts se jugent sur la position réelle :
 ### Vérifications
 
 `npm run check:city-rush-free-drive` joue la conduite libre sur les 9 parcours :
-débattement, appui bref (le cap tient, l'arrêt est net à la relâche), doigt
-tenu et geste vif, tap sans visée (le volant seul juge), repos (aucun rappel
-vers le centre d'une voie une fois redressée), contact à hauteur, tremplin,
-garage, conteneur, et pour finir trois fois le même virage : sans volant
-(sortie au bord), au volant (ligne tenue), assisté (0,00 m d'écart).
+débattement, appui bref (arrêt net à la relâche), doigt tenu et geste vif, tap
+sans visée, repos (aucun rappel vers le centre d'une voie), contact à hauteur,
+tremplin, garage et conteneur.
 
 ```bash
 npm run check:city-rush-free-drive   # règles pures, monde joué au volant libre (9 parcours), interface
@@ -7700,6 +7673,120 @@ aussi — le contrôle s'arrête ensuite sur celle des badges, inchangée par ce
 retouche. Les contrôles Playwright demandent un navigateur, absent de cet
 environnement.
 
+## Le Sablier : le bonus d'équipement au-dessus des statistiques, et la ligne bleue en premier
+
+Deux retouches de lecture, **aucune règle du duel touchée** : sur une face posée
+au doigt, le rappel du bonus d'équipement ne recouvre plus l'attaque et la
+défense de la créature ; dans l'aperçu d'une carte — survol, appui long, fiche
+du catalogue, annonce de sort —, la **ligne bleue** de l'équipement passe en
+premier, avant les effets propres de la carte.
+
+**Le bug, chiffré.** La pastille du bonus (`.rpg-card__arme`, « +2/+0 » avec son
+icône d'attaque) gardait la mesure du **bureau** sur toutes les présentations :
+police de 8 px sur `line-height: 1.5`, rembourrage `1px 6px`, filet de 1,5 px,
+`bottom: 13 %`, `max-width: 92 %`. Sur un 568 × 320 — le plus petit paysage
+testé —, `--duel-card` vaut 17dvh = 54,4 px, donc une carte posée de
+**46,2 × 57,8 px** (85 % de la main, 4:5). La pastille y faisait **17 px** de
+haut à partir de 7,5 px du bas, alors que le pied (ATQ à gauche, DEF à droite,
+des plaques de `1.2 × 8 + 6 = 15,6 px` posées à 3 %, soit 1,7 px du bas)
+remplissait déjà 1,7 → 17,3 px : la pastille tombait **sur** les deux
+statistiques. Elle tronquait en plus son propre texte (≈ 49 px de contenu pour
+les 42,5 px que s'autorisaient les 92 % de largeur).
+
+**La pastille se range, la bande du pied se nomme.** Le pied d'une carte posée
+a désormais trois variables dans `.rpg-battle--touch .card-table` :
+`--rpg-field-stat-font` (la taille des deux statistiques, la seule déclaration),
+`--rpg-field-stat-height` (`calc(1.2 * la taille + 6px)` : un chiffre, son
+rembourrage de 2 px et son filet de 1 px) et `--rpg-field-foot` (3 %). Le pied
+consomme les deux premières — il les déclarait à la main — et la pastille se
+pose **juste au-dessus** : `bottom: calc(var(--rpg-field-foot) +
+var(--rpg-field-stat-height) + 2px)`, soit 19,3 px du bas sur un 568 × 320. Elle
+suit aussi la taille de la carte (`font-size: clamp(6px, --duel-card × .1, 9px)`,
+`max-width: 88 %`, filet de 1 px) : **12,8 px** de haut, son papier s'arrête à
+25,8 px du haut quand les deux repères ronds (22 px à 5 %) finissent à 24,9 px —
+elles ne se touchent plus. Sur un 844 × 390, il reste 10,7 px d'air.
+
+**Les vignettes d'arme s'effacent au doigt.** `.rpg-card__weapons` empile des
+images de **22 × 28 px** à `right: 4px; bottom: 28px` : sur une face de 58 px de
+haut, ces vignettes occupaient 28 → 56 px du bas, donc le milieu de
+l'illustration **et** les repères du haut — et doublonnaient l'arme déjà glissée
+sous la créature (`.rpg-card-stack--arme`). Au doigt, la pile, la pastille du
+bonus et l'aperçu disent l'équipement ; la face reste entière. À la souris, les
+vignettes restent : sur une carte de 183 px de haut, elles ne croisent aucun
+repère.
+
+**Sous 45 px de large, la pastille s'efface.** Une face ne porte pas trois
+bandes : deux repères de 22 px en haut, le pied d'environ 16 px en bas, la
+pastille au milieu. La largeur qui décide n'est pas celle de la fenêtre — elle
+se partage entre les emplacements de la rangée (`--row-count`, `:has(> :
+nth-child(N))`), jusqu'au plancher `--rpg-field-min: 40px`. La carte devient donc
+un **conteneur de requête** (`container-type: inline-size`, déjà utilisé par le
+mulligan) et `@container (max-width: 45px)` range la pastille : au plancher, la
+bande libre fait 8,4 px pour une pastille de 12,8 px, elle toucherait les
+repères. Sans `@container` (vieille WebView), la pastille reste affichée — la
+requête est un raffinement, pas une dépendance.
+
+**Dans l'aperçu, la ligne bleue passe devant.** `HoverCardPreview` rendait les
+effets de la carte (`effets.map`) puis les bonus d'équipement
+(`effetsArmesEquipees.map`, la classe `rpg-hover-card-preview__rule--equipment`
+et son `data-effet-equipement`) : ce que l'arme accorde arrive maintenant
+**premier**, dans le même encadré sombre. Le libellé accessible suit le même
+ordre (`effets d'équipement` avant `effet`) pour que la lecture au lecteur
+d'écran corresponde à celle de l'œil. Rien d'autre ne bouge : ni les effets
+propres, ni les statistiques, ni le nom de l'arme — toujours absent de la ligne.
+
+### Où vit le code
+
+- `src/games/rpg-mobile.css` — les trois variables du pied dans le bloc
+  `.rpg-battle--touch .card-table` ; le pied qui les consomme
+  (`bottom: var(--rpg-field-foot, 3%)`, `font-size: var(--rpg-field-stat-font,
+  …)`) ; puis, sous le titre « Le bonus d'équipement ne recouvre plus l'attaque
+  et la défense », les règles tactiles : `.rpg-card__weapons` éteint,
+  `.rpg-card__arme` au-dessus du pied avec ses tailles, le `.card-row
+  .rpg-card` promu conteneur de requête et le `@container (max-width: 45px)`
+  qui range la pastille ;
+- `src/games/RpgDuelPage.jsx` — `HoverCardPreview` : l'ordre des deux `map`
+  dans `.rpg-hover-card-preview__rules`, le commentaire du bloc
+  `effetsArmesEquipees`, et le `aria-label` du panneau dans le même ordre ;
+- `docs/rpg/mobile-layout.md` — la pastille sur une créature équipée (liste de
+  présentation), la ligne bleue en tête (aperçu au survol, créature armée) et
+  le contrat des nouvelles vérifications.
+
+### Vérifications
+
+```bash
+npm run check:rpg          # 524/524 — les règles du duel, inchangées
+npm run build              # le bundle se construit
+node scripts/rpg-card-state-check.mjs     # ✓
+node scripts/rpg-preview-check.mjs        # ✓ (aperçu, appui long, fiche)
+node scripts/rpg-ghost-check.mjs          # ✓
+node scripts/rpg-mulligan-check.mjs       # ✓
+node scripts/rpg-turn-banner-check.mjs    # ✓
+node scripts/rpg-sort-signature-check.mjs # ✓
+node scripts/rpg-card-motif-check.mjs     # ✓
+```
+
+Onze assertions neuves sont entrées dans `scripts/rpg-battle-ui-check.mjs` :
+deux sur l’aperçu (la ligne bleue ouvrant `.rpg-hover-card-preview__rules`,
+l'effet de la carte après elle, le libellé accessible dans le même ordre) et
+neuf sur la face au doigt (les trois variables du pied, le pied qui les
+consomme avec son repli à 3 %, la pastille au-dessus du pied à l'échelle de la
+carte, l'interdit du `bottom: 13 %` du bureau, les vignettes d'arme éteintes, la
+carte conteneur de requête, le `@container` à 45 px).
+
+**Réserve connue, hors de cette retouche.** `npm run check:rpg-ui` casse
+toujours **avant** elles, à HEAD comme ici, dans son volet JSDOM
+(`le deck hybride est validé à 40 cartes, avec 17 terrains, 16 créatures,
+5 magies et 2 armes` — les données du deck `Sentiers de cendre` donnent 4 magies
+et 3 armes), puis `scripts/rpg-stacks-check.mjs` sur une assertion pré-existante
+(`le sorcier attaque encore : son groupe est déplié`). Les onze assertions
+neuves ont donc été rejouées dans un harnais temporaire qui lit les deux mêmes
+fichiers (`rpg-mobile.css`, la tranche `HoverCardPreview` de `RpgDuelPage.jsx`) :
+**11/11**. Les contrôles Playwright (`check:rpg-mobile`,
+`check:rpg-card-markers`, `check:rpg-card-motif` en navigateur) demandent un
+navigateur, absent de cet environnement — la géométrie de la pastille est donc
+donnée par le calcul ci-dessus, pas par une mesure d'écran.
+
 ## Le Sablier : le Coup rapide est un choix, et une seule phase d'attaque par tour
 
 Deux règles du duel ont changé d'un même geste, à la demande du jeu :
@@ -7764,11 +7851,11 @@ règles y sont écrites à côté des capacités de clan) et
 `docs/rpg/14-equipements-du-sable.md` (la Takouba demande maintenant **deux**
 attaques pour déclencher ses deux effets — la frappe pioche, l'attaque qui
 passe lève le chien).
-
 ### Vérifications
 
+
 ```bash
-npm run check:rpg          # 529/529
+npm run check:rpg          # 529 tests au dernier passage sur cette retouche (main en annonce 524, avant elle)
 npm run check:rpg-ui       # le volet JSDOM rejoue Fériel : désignation, renoncement, arrêt de l'attaque, rail des phases
 npm run build              # le bundle se construit
 ```
@@ -7786,9 +7873,10 @@ entier : la confirmation active **sans** cible, les proies légales s'allument,
 la proie désignée passe au rouge (`is-coup-rapide-cible`), un second clic
 retire la désignation, l'attaque fait tomber le Chien 2/2 **sans** entamer la
 plaque du sorcier, l'étape `attaque` du rail passe en `is-jouee` et « Attaquer
-avec tous » se ferme. `scripts/rpg-battle-ui-check.mjs` gagne quatorze assertions
-statiques (frappe qui arrête l'attaque, refus de blocage, choix de la cible
-sans état séparé, verrou et coche de la phase d'attaque).
+avec tous » se ferme. `scripts/rpg-battle-ui-check.mjs` gagne quatorze
+assertions statiques de plus — les onze de la retouche précédente restent — :
+frappe qui arrête l'attaque, refus de blocage, choix de la cible sans état
+séparé, verrou et coche de la phase d'attaque.
 
 **Réserve connue, hors de cette retouche :** `npm run check:rpg-ui` casse
 toujours à HEAD dans son volet JSDOM (`le deck hybride est validé à 40 cartes,
