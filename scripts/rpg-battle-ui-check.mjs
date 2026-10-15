@@ -215,8 +215,23 @@ assert.match(battlePage, /attaquantsVivants,\s*blocages,\s*null, \/\/ Ne pas fig
   'l’attaque du joueur ne transmet pas de partage figé avant les capacités');
 assert.match(battlePage, /cibleAttaqueEnCours[\s\S]*?prochainCoupRapideSansCible[\s\S]*?ciblesAttaque/,
   'l’interface exige la cible de chaque Coup rapide avant de confirmer les attaquants');
-assert.match(battleCss, /\.rpg-card\.is-coup-rapide-cible\s*\{[^}]*outline:\s*4px solid #ffb15e/s,
-  'la victime du Coup rapide est mise en évidence pendant la résolution');
+// Lueur rouge « visée » : la victime d'un Coup rapide, la cible d'une magie,
+// d'une sorcellerie ou de tout autre effet de carte portent le même rouge, de
+// l'annonce du sorcier jusqu'à la résolution — on sait toujours qui va être
+// frappé. La pulsation passe par `box-shadow` et cède la place aux
+// cinématiques (`fx-hit`, `fx-lunge`…) dès qu'elles jouent.
+assert.match(battleCss, /\.rpg-card\.is-spell-target,\s*\.rpg-card\.is-coup-rapide-cible\s*\{[^}]*outline:\s*4px solid #ff534c/s,
+  'la créature visée par une attaque ou un effet porte la lueur rouge « visée »');
+assert.match(battleCss, /\.rpg-card\.is-spell-target:not\(\.fx-enter, \.fx-lunge, \.fx-hit, \.fx-glow, \.fx-block, \.fx-unblock\),\s*\.rpg-card\.is-coup-rapide-cible:not\(\.fx-enter, \.fx-lunge, \.fx-hit, \.fx-glow, \.fx-block, \.fx-unblock\)\s*\{\s*animation:\s*rpg-cible-visee 1\.1s ease-in-out infinite alternate;/s,
+  'le halo de visée respire sans écraser les cinématiques d’impact et d’attaque');
+assert.match(battleCss, /\.rpg-wizard-plate\.is-spell-target\s*\{[^}]*outline:\s*3px solid #ff534c/s,
+  'la plaque du sorcier visé par un effet prend le même rouge');
+assert.match(battlePage, /spellTarget=\{Boolean\(sortJoue\?\.cible\.targetIds\.includes\(entite\.id\)\) \|\| idsVisesParAnnonce\.has\(entite\.id\)\}/,
+  'la carte annoncée par le sorcier allume sa cible en rouge dès la fenêtre de réponse');
+assert.match(battlePage, /Object\.values\(combatEntrant\?\.ciblesAttaque \?\? \{\}\)\.includes\(entite\.id\) \|\| Object\.values\(ciblesAttaque\)\.includes\(entite\.id\)/,
+  'la proie d’un Coup rapide brille dès sa désignation, avant même l’attaque lancée');
+assert.match(battlePage, /rpg-wizard-plate--joueur\$\{sortJoue\?\.cible\.targetPlate === 'joueur' \|\| annonceViseVotrePlate \? ' is-spell-target' : ''\}/,
+  'votre plaque s’allume en rouge quand l’annonce du sorcier vous vise');
 assert.match(battlePage, /CombatActionIcon type="attack-all"/,
   'Attaquer avec tous possède son icône rouge dédiée');
 assert.match(battlePage, /CombatActionIcon type="confirm"/,
