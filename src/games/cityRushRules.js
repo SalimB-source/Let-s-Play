@@ -57,15 +57,24 @@ export const CITY_RUSH_PLAYER_SPEED = 35; // m/s : rythme de course relevé à e
 export const CITY_RUSH_RACEWAY_PACE = 0.85; // le Ring à ~107 km/h au lieu de 126
 // Garde-fou du facteur : un parcours peut ralentir la course, jamais la figer.
 export const CITY_RUSH_COURSE_PACE_MIN = 0.5;
-export const CITY_RUSH_LANE_WIDTH = 2.1;
-export const CITY_RUSH_ROAD_WIDTH = 13.4;
+// Largeur d'une **voie urbaine** : 2,50 m (elle était de 2,10 m à l'origine,
+// puis 2,30 m). Une voie plus large change la conduite : la caisse (1,90 m)
+// respire enfin dans sa voie, un écart de quelques centimètres ne frôle plus
+// la voiture voisine, et le passage d'une voie à l'autre se lit mieux à
+// l'écran. La chaussée urbaine suit : 6 × 2,50 m + 0,80 m de rives = 15,80 m.
+export const CITY_RUSH_LANE_WIDTH = 2.5;
+export const CITY_RUSH_ROAD_WIDTH = 15.8;
 export const CITY_RUSH_ROAD_HALF_WIDTH = CITY_RUSH_ROAD_WIDTH / 2;
 // Piste d'un circuit permanent (Nürburgring Nordschleife) : 9,20 m de bitume —
 // les 8,40 m réels du Ring plus 0,40 m de marge peinte de chaque côté — au lieu
-// des 13,40 m d'une artère urbaine. Quatre voies de 2,10 m s'y partagent le
+// des 15,80 m d'une artère urbaine. Quatre voies de 2,10 m s'y partagent le
 // sens unique, exactement la largeur d'une voiture entre deux voies.
 export const CITY_RUSH_RACEWAY_ROAD_WIDTH = 9.2;
 export const CITY_RUSH_RACEWAY_ROAD_HALF = CITY_RUSH_RACEWAY_ROAD_WIDTH / 2;
+// Largeur d'une voie **de circuit** : 2,10 m, comme avant. Le Ring et le tōgé
+// gardent leur bitume réel — 8,40 m utiles pour quatre voies — et n'ont donc
+// pas suivi l'élargissement des voies urbaines (voir `cityRushLaneWidth`).
+export const CITY_RUSH_RACEWAY_LANE_WIDTH = 2.1;
 // Chaussée du tōgé : 8,40 m — quatre voies de 2,10 m, exactement la largeur du
 // Ring. Le ruban de bitume ne peut pas être plus large sans se replier dans les
 // épingles (rayon de courbure minimal du tracé ≈ 4,2 m) : les bas-côtés de
@@ -73,11 +82,11 @@ export const CITY_RUSH_RACEWAY_ROAD_HALF = CITY_RUSH_RACEWAY_ROAD_WIDTH / 2;
 export const CITY_RUSH_TOUGE_ROAD_WIDTH = 8.4;
 export const CITY_RUSH_TOUGE_ROAD_HALF = CITY_RUSH_TOUGE_ROAD_WIDTH / 2;
 // Six voies au total : trois d'un sens, trois dans l'autre, séparées par l'axe
-// jaune central. Les voies restent au même espacement de 2,1 m ; c'est le
+// jaune central. Les voies gardent le même espacement de 2,5 m ; c'est le
 // **côté** du contresens qui dépend du pays (voir `cityRushDriveSide`) : à
 // droite de l'axe en Amérique et en France, à gauche au Royaume-Uni et au
 // Japon.
-export const CITY_RUSH_LANE_X = Object.freeze([-5.25, -3.15, -1.05, 1.05, 3.15, 5.25]);
+export const CITY_RUSH_LANE_X = Object.freeze([-6.25, -3.75, -1.25, 1.25, 3.75, 6.25]);
 export const CITY_RUSH_LANES_PER_DIRECTION = 3;
 // Moitié gauche (abscisses négatives) et moitié droite de la chaussée, dans
 // l'ordre des voies de la grille.
@@ -95,7 +104,7 @@ export const CITY_RUSH_FORWARD_LANES = CITY_RUSH_RIGHT_HALF_LANES;
 // Le joueur part au milieu des voies de course, avec ses deux rivaux de part
 // et d'autre pour que la chaussée soit visible dès le départ. En conduite à
 // gauche, la même grille est simplement reflétée : le joueur au milieu de la
-// moitié gauche (voie 1), ses rivaux de part et d'autre (−5,25 m et −3,15 m).
+// moitié gauche (voie 1), ses rivaux de part et d'autre (−6,25 m et −3,75 m).
 export const CITY_RUSH_DEFAULT_LANES = Object.freeze([
   CITY_RUSH_LANES_PER_DIRECTION + 1,
   CITY_RUSH_LANE_X.length - 1,
@@ -119,7 +128,12 @@ export const CITY_RUSH_CAR_GAP = 4.8;
 export const CITY_RUSH_RACER_VIEW_DISTANCE = 120; // m : portée avant où un rival est rendu à l'écran
 export const CITY_RUSH_BLUE_SHOT_DURATION = 1.8; // s : ralentissement bien visible après un tir bleu
 export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 55 % de sa vitesse
-export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du bonus turbo vert ramassé en vol
+// Durée du bonus turbo vert ramassé au sol : **2 s** (elle était de 3 s). Le
+// rond turbo reste une aubaine — +46 % de vitesse — mais il ne traîne plus :
+// on le prend, on profite, et la vitesse de base revient. Un bonus de vitesse
+// trop long efface le trafic et la course devient un simple ronron ; deux
+// secondes suffisent à franchir deux rangées de bonus.
+export const CITY_RUSH_TRACK_BOOST_DURATION = 2; // s : durée du bonus turbo vert ramassé en vol
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un bonus turbo
 export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = CITY_RUSH_TRACK_BOOST_SPEED_FACTOR; // × vitesse des rivaux sous un bonus turbo : le même que le joueur
 // Les objets de la route mêlent les bonus turbo verts, les chargeurs rouges de
@@ -700,9 +714,9 @@ export const CITY_RUSH_TRAFFIC_HOLD_MARGIN = 0.05; // m
 // Une voiture lente de 1,94 m ne compte donc plus que sur 1,16 m de large
 // (`CITY_RUSH_TRAFFIC_HITBOX_SCALE` = 0,6 de la largeur réelle), celles du
 // contresens comme les berlines lâchées par un mini-garage. Sur une chaussée à
-// voies de 2,10 m, la conséquence est directe : avec la boîte pleine, le pilote
-// devait avoir accompli 91 % de son changement de voie pour être hors de
-// portée ; la boîte resserrée le dégage à 73 %, et l'enveloppe diagonale tombe
+// voies de 2,50 m, la conséquence est directe : avec la boîte pleine, le pilote
+// doit avoir accompli 77 % de son changement de voie pour être hors de
+// portée ; la boîte resserrée le dégage à 61 %, et l'enveloppe diagonale tombe
 // à son minimum (le frôlement) au même moment. Un coup de volant donné au
 // dernier moment passe donc là où il se payait un carré.
 //
@@ -829,8 +843,12 @@ export function cityRushCleanLineFactor(cleanLineTime) {
 // chargée — et un choc frontal l'annule net (voir `applyOncomingImpact` dans
 // `ViceCityWorld.jsx`). Un parcours sans contresens (le Ring) ne charge jamais
 // cette jauge : il n'y a personne en face.
+//
+// La vidange ne laisse traîner que **0,8 s** (elle en laissait 1,2 s) : le
+// bonus de contresens ne survit pas au pilote qui se recale, il retombe
+// aussitôt. Comme le turbo vert, un bonus de vitesse se prend vite et dure peu.
 export const CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION = 4; // s de contresens pour la jauge pleine
-export const CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION = 1.2; // s pour retomber une fois revenu
+export const CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION = 0.8; // s pour retomber une fois revenu
 export const CITY_RUSH_ONCOMING_BONUS_MAX = 1.35; // × vitesse à jauge pleine
 
 /** Facteur de vitesse du bonus de contresens (1 → rien, `MAX` → jauge pleine). */
@@ -2272,7 +2290,7 @@ export const CITY_RUSH_MEXICO_COUNTRYSIDE = Object.freeze({
 // constantes historiques attendues par les succès qui comptent les villes.
 // ── Nürburgring Nordschleife ────────────────────────────────────────────────
 // Le circuit permanent se joue en sens unique, à deux voies resserrées autour
-// de l'axe (8,40 m de bitume utile au lieu des 13,40 m de l'autoroute
+// de l'axe (8,40 m de bitume utile au lieu des 15,80 m de l'autoroute
 // urbaine) : plus de trafic en face, un décor de forêt, de bas-côtés herbeux,
 // de glissières et de panneaux allemands, et le tour réel rejoué secteur par
 // secteur — Hatzenbach, Flugplatz, Aremberg, Fuchsröhre, Bergwerk, Karussell,
@@ -2294,8 +2312,8 @@ export const CITY_RUSH_NORDSCHLEIFE_COURSE = Object.freeze({
   skyGlow: 0xf3d9a4,
   style: 'nordschleife',
   // Quatre voies dans le même sens, aucun véhicule en face : un circuit, pas
-  // une route. Les voies occupent le cœur de la grille urbaine (∓1,05 m et
-  // ∓3,15 m), soit exactement la largeur de bitume du Ring.
+  // une route. Les voies occupent le cœur de la grille (∓1,05 m et ∓3,15 m),
+  // soit exactement la largeur de bitume du Ring.
   laneCount: 4,
   oncomingCount: 0,
   // Sur la piste, le trafic est celui d'une journée de tourisme : une voiture
@@ -2667,21 +2685,36 @@ export function cityRushLaneCount(course) {
 }
 
 /**
+ * Largeur d'une voie (en mètres) pour un parcours : 2,50 m sur les villes et
+ * les routes ouvertes, 2,10 m sur un circuit permanent. Le Ring et le tōgé
+ * gardent ainsi leur bitume réel (8,40 m utiles pour quatre voies) quand les
+ * artères urbaines s'élargissent.
+ */
+export function cityRushLaneWidth(course = null) {
+  return cityRushLaneCount(course) < CITY_RUSH_LANE_X.length
+    ? CITY_RUSH_RACEWAY_LANE_WIDTH
+    : CITY_RUSH_LANE_WIDTH;
+}
+
+/**
  * Abscisse (en mètres) d'une voie. Sur un parcours à double sens, les six voies
- * gardent exactement leurs positions historiques (de −5,25 m à +5,25 m ; c'est
- * le *rôle* de chaque moitié — course ou contresens — qui change selon le pays,
- * jamais l'abscisse). Sur un circuit à sens unique, les voies se
- * répartissent symétriquement autour de l'axe, au pas de 2,10 m : les quatre
- * voies du Ring tombent ainsi exactement sur les quatre voies intérieures de la
- * grille urbaine (∓1,05 m et ∓3,15 m), c'est-à-dire la largeur de bitume réelle
+ * gardent exactement leurs positions (de −6,25 m à +6,25 m ; c'est le *rôle* de
+ * chaque moitié — course ou contresens — qui change selon le pays, jamais
+ * l'abscisse). Sur un circuit à sens unique, les voies se répartissent
+ * symétriquement autour de l'axe, au pas de 2,10 m : les quatre voies du Ring
+ * tombent ainsi exactement sur les quatre voies intérieures de la grille
+ * urbaine (∓1,05 m et ∓3,15 m), c'est-à-dire la largeur de bitume réelle
  * d'une piste de circuit.
  */
-export function cityRushLaneX(lane, laneCount = CITY_RUSH_LANE_X.length) {
+export function cityRushLaneX(lane, laneCount = CITY_RUSH_LANE_X.length, laneWidth = CITY_RUSH_LANE_WIDTH) {
   const index = clampCityRushLane(lane, laneCount);
   if (laneCount >= CITY_RUSH_LANE_X.length) return CITY_RUSH_LANE_X[index];
-  const centered = (index - (laneCount - 1) / 2) * CITY_RUSH_LANE_WIDTH;
+  const width = Number.isFinite(Number(laneWidth)) && Number(laneWidth) > 0
+    ? Number(laneWidth)
+    : CITY_RUSH_LANE_WIDTH;
+  const centered = (index - (laneCount - 1) / 2) * width;
   // Deux voies centrées tombent exactement sur les deux voies intérieures de
-  // la grille urbaine (∓1,05 m) : rien ne bouge pour un parcours resserré.
+  // la grille urbaine (∓1,25 m) : rien ne bouge pour un parcours resserré.
   return centered;
 }
 
@@ -2698,7 +2731,10 @@ export function cityRushLaneConfig(course) {
   const driveSide = cityRushDriveSide(course);
   const leftHand = driveSide === 'left';
   const raceway = laneCount < CITY_RUSH_LANE_X.length;
-  const laneX = (lane) => cityRushLaneX(lane, laneCount);
+  // Les villes et les routes ouvertes roulent sur des voies de 2,50 m ; un
+  // circuit permanent garde ses 2,10 m (son bitume est celui du Ring).
+  const laneWidth = raceway ? CITY_RUSH_RACEWAY_LANE_WIDTH : CITY_RUSH_LANE_WIDTH;
+  const laneX = (lane) => cityRushLaneX(lane, laneCount, laneWidth);
   if (!raceway) {
     const forwardLanes = leftHand ? CITY_RUSH_LEFT_HALF_LANES : CITY_RUSH_FORWARD_LANES;
     return {
@@ -2706,6 +2742,7 @@ export function cityRushLaneConfig(course) {
       raceway: false,
       driveSide,
       laneX,
+      laneWidth,
       roadHalf: CITY_RUSH_ROAD_HALF_WIDTH,
       roadWidth: CITY_RUSH_ROAD_WIDTH,
       lanes: Object.freeze(Array.from({ length: laneCount }, (_, lane) => lane)),
@@ -2728,7 +2765,7 @@ export function cityRushLaneConfig(course) {
   // Largeur de chaussée : le Ring garde ses 9,20 m ; un parcours peut en
   // déclarer une plus étroite (le tōgé : 8,40 m, quatre voies et des bas-côtés).
   const declaredHalf = Number(course?.roadHalf);
-  const roadHalf = Number.isFinite(declaredHalf) && declaredHalf > CITY_RUSH_LANE_WIDTH / 2
+  const roadHalf = Number.isFinite(declaredHalf) && declaredHalf > laneWidth / 2
     ? declaredHalf
     : CITY_RUSH_RACEWAY_ROAD_HALF;
   return {
@@ -2738,6 +2775,7 @@ export function cityRushLaneConfig(course) {
     // change rien, et `oncomingLanes` reste vide.
     driveSide,
     laneX,
+    laneWidth,
     roadHalf,
     roadWidth: roadHalf * 2,
     lanes,
@@ -2755,8 +2793,8 @@ export function cityRushLaneConfig(course) {
 // Les voies ne sont pas qu'une grille de simulation : elles sont peintes sur le
 // bitume. Une ligne blanche discontinue sépare deux voies voisines, exactement
 // à mi-chemin de leurs abscisses — les six voies urbaines gardent ainsi leurs
-// séparateurs historiques (∓2,10 m et ∓4,20 m, plus l'axe central) et la piste
-// du Ring se découpe en ses quatre voies de 2,10 m (−2,10 m, 0 et +2,10 m).
+// séparateurs (∓2,50 m et ∓5,00 m, plus l'axe central) et la piste du Ring se
+// découpe en ses quatre voies de 2,10 m (−2,10 m, 0 et +2,10 m).
 export const CITY_RUSH_LANE_PAINT_WIDTH = 0.16; // m : largeur peinte d'une ligne de voie
 
 /**
@@ -2766,7 +2804,7 @@ export const CITY_RUSH_LANE_PAINT_WIDTH = 0.16; // m : largeur peinte d'une lign
  */
 export function cityRushLaneSeparators(course) {
   const laneCount = cityRushLaneCount(course);
-  const laneX = (lane) => cityRushLaneX(lane, laneCount);
+  const laneX = (lane) => cityRushLaneX(lane, laneCount, cityRushLaneWidth(course));
   return Object.freeze(Array.from(
     { length: Math.max(0, laneCount - 1) },
     (_, lane) => (laneX(lane) + laneX(lane + 1)) / 2,
@@ -3771,6 +3809,16 @@ export function cityRushCornerPace(course = null, distance = 0, profile = null) 
 // latéral de la voie, le tremblement d'impact et le relief des sauts.
 export const CITY_RUSH_CHASE_BEHIND = 13.2; // unités monde : recul de la poursuite
 export const CITY_RUSH_CHASE_LOOK_AHEAD = 15; // unités monde : avance du regard qui suit la route
+// Part du décalage latéral de la voiture que la caméra (et son regard)
+// accompagnent : la caisse glisse vers le bord du cadre en changement de voie —
+// c'est le cadrage historique — sans jamais sortir de l'image. Les voies
+// urbaines sont passées de 2,10 m à 2,50 m : pour que la glissière apparente
+// par changement de voie reste celle d'avant ((1 − part) × largeur de voie
+// constante), la caméra accompagne 30 % du décalage (16 % avant) et le regard
+// 24 % (9 % avant). Sur la voie extrême (±6,25 m), la caisse reste ainsi dans
+// le cadre même en dérapage, comme sur l'ancienne grille.
+export const CITY_RUSH_CHASE_X_SHARE = 0.3; // × le x de la voiture : position de la caméra
+export const CITY_RUSH_CHASE_LOOK_X_SHARE = 0.24; // × le x de la voiture : point regardé
 export const CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD = 21; // unités monde : avance du regard dans l'axe de la caisse
 export const CITY_RUSH_CHASE_ANCHOR_DRIFT_START = 7.5; // m d'écart entre les deux placements : l'ancrage commence
 export const CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL = 15; // m d'écart : l'ancrage est complet
@@ -5191,7 +5239,12 @@ export const CITY_RUSH_MINI_GARAGE_COUNT = 1;
 // Part du parcours où se tient la porte de mi-course (la moitié).
 export const CITY_RUSH_MINI_GARAGE_MID_RACE_SHARE = 0.5;
 export const CITY_RUSH_MINI_GARAGE_LANE_COUNT = 2;
+// Largeur du portique : deux voies plus la marge qui borde ses parois. En
+// ville, il suit les voies élargies (6,20 m) ; sur un circuit permanent, il
+// garde ses 5,40 m — les 9,20 m du Ring ne laisseraient pas la place d'une
+// voiture de chaque côté du portique.
 export const CITY_RUSH_MINI_GARAGE_WIDTH = CITY_RUSH_LANE_WIDTH * CITY_RUSH_MINI_GARAGE_LANE_COUNT + 1.2;
+export const CITY_RUSH_RACEWAY_MINI_GARAGE_WIDTH = CITY_RUSH_RACEWAY_LANE_WIDTH * CITY_RUSH_MINI_GARAGE_LANE_COUNT + 1.2;
 export const CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT = 6; // carrés rendus à la coque
 // Longueur du portique (5,1 unités de scène) convertie en mètres de piste.
 export const CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH = 2.55 / CITY_RUSH_SCROLL_SCALE;
@@ -5200,6 +5253,16 @@ export const CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH = 2.55 / CITY_RUSH_SCROL
 export const CITY_RUSH_MINI_GARAGE_SIGN_LEAD = 34; // m
 // Le HUD n'allume le compteur que lorsque la porte approche vraiment.
 export const CITY_RUSH_MINI_GARAGE_HUD_RANGE = 500; // m
+
+/**
+ * Largeur du mini-garage d'un parcours : 6,20 m en ville (les deux voies
+ * centrales élargies), 5,40 m sur un circuit permanent.
+ */
+export function cityRushMiniGarageWidth(course = null) {
+  return cityRushLaneCount(course) < CITY_RUSH_LANE_X.length
+    ? CITY_RUSH_RACEWAY_MINI_GARAGE_WIDTH
+    : CITY_RUSH_MINI_GARAGE_WIDTH;
+}
 
 /**
  * Les deux voies centrales de la chaussée, numérotées à partir de 1 dans

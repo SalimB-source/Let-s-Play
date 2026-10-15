@@ -28,7 +28,7 @@ export const START_ZONE_HALF = 34; // m : tribunes et portique autour de la lign
 export const GATE_TRACK_POSITION = LAP / 2;
 export const LANDMARK_TRACK_POSITION = LAP * 0.27;
 const ROAD_HALF = CITY_RUSH_ROAD_HALF_WIDTH;
-const SIDEWALK_OUTER = 9.85;
+const SIDEWALK_OUTER = 11.05; // trottoir de 3,15 m : il suit la chaussée élargie
 export const ROAD_TILE_LENGTH = 26.8;
 
 const toZ = (trackMeters) => -trackMeters * SCALE;
@@ -671,7 +671,7 @@ function addRoute66UtilityPole(batch, m, x, z, side, random) {
 function addRoute66SectorMarker(batch, m, atlas, sector, trackMeters, side, index) {
   if (!atlas?.routeCount) return;
   const z = toZ(trackMeters);
-  const x = side * 8.9;
+  const x = side * 9.5;
   batch.cylinder(m.wood, [x, 1.75, z], 0.07, 0.09, 3.5, 6);
   batch.box(m.cream, [x, 3.4, z], [0.24, 2.1, 5.2]);
   batch.box(m.red, [x + (-side * 0.14), 3.4, z], [0.08, 1.85, 4.95]);
@@ -1199,17 +1199,17 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
     // Portique d'entrée de pueblo : deux piliers d'adobe chaulés de blanc,
     // arche de tuiles rouges et panneau peint à la main.
     for (const side of [-1, 1]) {
-      batch.box(m.white, [side * 8.4, 3.7, z], [0.9, 7.4, 0.9]);
-      batch.box(m.tile || m.roof, [side * 8.4, 7.55, z], [1.1, 0.22, 1.1]);
+      batch.box(m.white, [side * 9.0, 3.7, z], [0.9, 7.4, 0.9]);
+      batch.box(m.tile || m.roof, [side * 9.0, 7.55, z], [1.1, 0.22, 1.1]);
       // Pot de fleurs coloré en haut.
-      batch.box(m.red, [side * 8.4, 7.95, z], [0.5, 0.4, 0.5]);
+      batch.box(m.red, [side * 9.0, 7.95, z], [0.5, 0.4, 0.5]);
     }
     // Arche cintrée : un prisme polygonal.
     const segments = 9;
     for (let s = 0; s < segments; s += 1) {
       const t = s / (segments - 1);
       const angle = Math.PI * t;
-      const x = Math.cos(angle) * 8.4;
+      const x = Math.cos(angle) * 9.0;
       const y = 7.4 + Math.sin(angle) * 2.6;
       batch.box(m.tile || m.roof, [x, y, z], [1.1, 0.75, 1.1], [0, 0, angle - Math.PI / 2]);
     }
@@ -1225,36 +1225,36 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
     // poteaux bois, bouclier US 66 et lettrage noir/blanc, sans arche de
     // circuit moderne au milieu d'un paysage désertique.
     for (const side of [-1, 1]) {
-      batch.box(m.wood, [side * 8.5, 3.9, z], [0.48, 7.8, 0.48]);
-      batch.box(m.cream, [side * 8.5, 7.55, z], [0.72, 0.18, 0.72]);
-      batch.box(m.red, [side * 8.5, 8.1, z], [0.22, 0.42, 0.22]);
+      batch.box(m.wood, [side * 9.1, 3.9, z], [0.48, 7.8, 0.48]);
+      batch.box(m.cream, [side * 9.1, 7.55, z], [0.72, 0.18, 0.72]);
+      batch.box(m.red, [side * 9.1, 8.1, z], [0.22, 0.42, 0.22]);
     }
-    batch.box(m.wood, [0, 7.35, z], [17.5, 0.42, 0.52]);
+    batch.box(m.wood, [0, 7.35, z], [19, 0.42, 0.52]);
     batch.box(m.cream, [0, 7.45, z + 0.02], [12.8, 2.05, 0.18]);
     batch.plane(m.signs, [0, 7.48, z + 0.13], 11.9, 1.55, null, { uv: signUv });
     batch.plane(m.signs, [0, 7.48, z - 0.13], 11.9, 1.55, [0, Math.PI, 0], { uv: signUv });
     // Deux petits boucliers de route sur les côtés rappellent les bornes
     // historiques, sans réutiliser un logo de marque contemporain.
     for (const side of [-1, 1]) {
-      batch.box(m.red, [side * 6.2, 4.5, z + 0.18], [1.35, 1.4, 0.12]);
-      batch.plane(m.signs, [side * 6.2, 4.5, z + 0.26], 1.1, 1.05, null, { uv: atlas.signUv(0) });
+      batch.box(m.red, [side * 7.4, 4.5, z + 0.18], [1.35, 1.4, 0.12]);
+      batch.plane(m.signs, [side * 7.4, 4.5, z + 0.26], 1.1, 1.05, null, { uv: atlas.signUv(0) });
     }
     return;
   }
   if (style === 'deco-arch') {
     for (const side of [-1, 1]) {
       for (let step = 0; step < 4; step += 1) {
-        batch.box(m.cream, [side * 8.4, 2.4 + step * 2.6, z], [2.4 - step * 0.45, 2.6, 2.4 - step * 0.45]);
-        batch.box(m.neon, [side * 8.4 - side * (1.22 - step * 0.225), 2.4 + step * 2.6, z], [0.08, 2.0, 0.12]);
+        batch.box(m.cream, [side * 9.0, 2.4 + step * 2.6, z], [2.4 - step * 0.45, 2.6, 2.4 - step * 0.45]);
+        batch.box(m.neon, [side * 9.0 - side * (1.22 - step * 0.225), 2.4 + step * 2.6, z], [0.08, 2.0, 0.12]);
       }
-      batch.box(m.neonSecondary, [side * 8.4, 10.7, z], [1.3, 0.14, 1.3]);
+      batch.box(m.neonSecondary, [side * 9.0, 10.7, z], [1.3, 0.14, 1.3]);
     }
     // L'arche et l'enseigne laissent 10,6 m de dégagement : la caméra de
     // poursuite (≈ 8,8 m) passe dessous sans jamais les traverser.
     const segments = 11;
     for (let segment = 0; segment < segments; segment += 1) {
       const angle = Math.PI * (segment / (segments - 1));
-      const x = Math.cos(angle) * 8.4;
+      const x = Math.cos(angle) * 9.0;
       const y = 10.5 + Math.sin(angle) * 3.4;
       batch.box(m.cream, [x, y, z], [1.0, 0.9, 1.4], [0, 0, angle - Math.PI / 2]);
       batch.box(m.neon, [x, y, z + 0.72], [0.9, 0.12, 0.08], [0, 0, angle - Math.PI / 2]);
@@ -1273,8 +1273,8 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
   }
   if (style === 'overpass') {
     for (const side of [-1, 1]) {
-      batch.box(m.concrete, [side * 8.3, 5.1, z], [2.0, 10.2, 3.2]);
-      batch.box(m.concrete, [side * 8.3, 0.3, z], [2.6, 0.6, 3.8]);
+      batch.box(m.concrete, [side * 8.9, 5.1, z], [2.0, 10.2, 3.2]);
+      batch.box(m.concrete, [side * 8.9, 0.3, z], [2.6, 0.6, 3.8]);
     }
     // Tablier à 10,2 m : la caméra de poursuite passe dessous.
     batch.box(m.darkMetal, [0, 10.6, z], [20, 0.8, 3.6]);
@@ -1299,8 +1299,8 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
   }
   if (style === 'torii') {
     for (const side of [-1, 1]) {
-      batch.cylinder(m.red, [side * 7.6, 5.9, z], 0.42, 0.5, 11.8, 10, [0, 0, side * 0.03]);
-      batch.cylinder(m.darkMetal, [side * 7.6, 0.4, z], 0.6, 0.65, 0.8, 10);
+      batch.cylinder(m.red, [side * 8.8, 5.9, z], 0.42, 0.5, 11.8, 10, [0, 0, side * 0.03]);
+      batch.cylinder(m.darkMetal, [side * 8.8, 0.4, z], 0.6, 0.65, 0.8, 10);
     }
     // Linteaux à plus de 10 m : la caméra de poursuite passe sous le torii.
     batch.box(m.red, [0, 12.0, z], [18.4, 0.75, 0.9]);
@@ -1309,19 +1309,19 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
     batch.box(m.red, [0, 10.2, z], [16.6, 0.5, 0.6]);
     batch.box(m.red, [0, 11.1, z], [0.9, 1.3, 0.45]);
     batch.plane(m.signs, [0, 11.1, z + 0.24], 0.9, 1.3, null, { uv: atlas.gateUv });
-    for (const side of [-1, 1]) batch.cylinder(m.red, [side * 7.6, 11.1, z + 0.6], 0.14, 0.14, 1.4, 6, [0, 0, 0]);
+    for (const side of [-1, 1]) batch.cylinder(m.red, [side * 8.8, 11.1, z + 0.6], 0.14, 0.14, 1.4, 6, [0, 0, 0]);
     return;
   }
   if (style === 'arc') {
     for (const side of [-1, 1]) {
-      batch.box(m.stone, [side * 8.1, 5.6, z], [3.4, 11.2, 3.6]);
-      batch.box(m.stone, [side * 8.1, 0.5, z], [3.9, 1.0, 4.1]);
-      batch.box(m.cream, [side * 8.1, 7.6, z + 1.85], [2.0, 2.6, 0.1]);
-      batch.box(m.cream, [side * 8.1, 7.6, z - 1.85], [2.0, 2.6, 0.1]);
-      batch.box(m.cream, [side * 8.1, 3.4, z + 1.85], [2.0, 3.2, 0.1]);
-      batch.box(m.cream, [side * 8.1, 3.4, z - 1.85], [2.0, 3.2, 0.1]);
-      batch.plane(m.accentCone, [side * 8.1, 1.4, z + 1.9], 2.8, 2.6, [0, 0, 0]);
-      batch.plane(m.accentCone, [side * 8.1, 1.4, z - 1.9], 2.8, 2.6, [0, Math.PI, 0]);
+      batch.box(m.stone, [side * 9.3, 5.6, z], [3.4, 11.2, 3.6]);
+      batch.box(m.stone, [side * 9.3, 0.5, z], [3.9, 1.0, 4.1]);
+      batch.box(m.cream, [side * 9.3, 7.6, z + 1.85], [2.0, 2.6, 0.1]);
+      batch.box(m.cream, [side * 9.3, 7.6, z - 1.85], [2.0, 2.6, 0.1]);
+      batch.box(m.cream, [side * 9.3, 3.4, z + 1.85], [2.0, 3.2, 0.1]);
+      batch.box(m.cream, [side * 9.3, 3.4, z - 1.85], [2.0, 3.2, 0.1]);
+      batch.plane(m.accentCone, [side * 9.3, 1.4, z + 1.9], 2.8, 2.6, [0, 0, 0]);
+      batch.plane(m.accentCone, [side * 9.3, 1.4, z - 1.9], 2.8, 2.6, [0, Math.PI, 0]);
     }
     batch.box(m.stone, [0, 12.6, z], [19.6, 2.8, 3.6]);
     batch.box(m.stone, [0, 14.6, z], [20.2, 1.2, 4.0]);
@@ -1339,7 +1339,7 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
   }
   // Tower Bridge.
   for (const side of [-1, 1]) {
-    const x = side * 8.6;
+    const x = side * 9.8;
     batch.box(m.stone, [x, 7, z], [3.4, 14, 3.4]);
     batch.box(m.stone, [x, 0.6, z], [4.0, 1.2, 4.0]);
     for (const corner of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
@@ -1755,7 +1755,7 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
       // Poteaux électriques très espacés (pas tous les 28 m) et végétation
       // rustique sur les bas-côtés.
       for (let position = START_ZONE_HALF + 12; position < end; position += 40) {
-        addLamp(batch, m, theme, side * (8.2 + random() * 0.4), toZ(position + (side > 0 ? 12 : 0)), side);
+        addLamp(batch, m, theme, side * (9.4 + random() * 0.4), toZ(position + (side > 0 ? 12 : 0)), side);
         if (random() < 0.85) {
           const cluster = 1 + Math.floor(random() * 2);
           for (let c = 0; c < cluster; c += 1) addTree(batch, m, theme, side * (11 + random() * 3.5), toZ(position + c * 3 - 2 + random() * 2), random);
@@ -1849,8 +1849,8 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
     }
     // Lampadaires et arbres à intervalle régulier le long du trottoir.
     for (let position = START_ZONE_HALF + 8; position < LAP - START_ZONE_HALF - 4; position += 24) {
-      addLamp(batch, m, theme, side * 7.15, toZ(position + (side > 0 ? 12 : 0)), side);
-      if (city.style !== 'new-york' || random() < 0.6) addTree(batch, m, theme, side * 8.8, toZ(position + (side > 0 ? 0 : 12)), random);
+      addLamp(batch, m, theme, side * 8.35, toZ(position + (side > 0 ? 12 : 0)), side);
+      if (city.style !== 'new-york' || random() < 0.6) addTree(batch, m, theme, side * 10.0, toZ(position + (side > 0 ? 0 : 12)), random);
     }
   }
 
@@ -1863,7 +1863,7 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
     dynamicProps.push(makeFlickerSign(position, index % 2 ? 1 : -1, atlas.signUv(index), atlas.signsMaterial, random));
   });
   if (city.style === 'new-york') {
-    dynamicProps.push(makeSteamVent(LAP * 0.22, -3.15), makeSteamVent(LAP * 0.57, 1.05), makeSteamVent(LAP * 0.81, 3.15));
+    dynamicProps.push(makeSteamVent(LAP * 0.22, -3.75), makeSteamVent(LAP * 0.57, 1.25), makeSteamVent(LAP * 0.81, 3.75));
     dynamicProps.push(makeTrafficLight(LAP * 0.36, m), makeTrafficLight(LAP * 0.72, m));
   } else if (city.style === 'tokyo') {
     [0.14, 0.31, 0.62, 0.78].forEach((fraction) => dynamicProps.push(makeLanternString(LAP * fraction, m)));

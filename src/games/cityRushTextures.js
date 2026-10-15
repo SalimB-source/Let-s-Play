@@ -3,7 +3,7 @@
 // panneaux du portique et décalcomanies des voitures. Tout est dessiné sur
 // canvas au chargement : aucune image externe.
 import * as THREE from 'three';
-import { CITY_RUSH_LANE_X, CITY_RUSH_ROAD_WIDTH } from './cityRushRules.js';
+import { CITY_RUSH_LANE_X, CITY_RUSH_ROAD_WIDTH, cityRushLaneSeparators } from './cityRushRules.js';
 import { makeCanvasTexture, neonText } from './cityRushBuilder.js';
 import { cityRushThemeDriveSide } from './cityRushThemes.js';
 
@@ -1334,7 +1334,7 @@ export function makeSmokeTexture() {
 // les parois de tunnel, les murs antibruit et le béton du viaduc.
 
 /** Tablier de la C1 : chaussée, bandes d'arrêt d'urgence et trottoir de service. */
-export function makeExpresswayDeckTexture(theme, random, { halfWidth = 10.6 } = {}) {
+export function makeExpresswayDeckTexture(theme, random, { halfWidth = 11.8 } = {}) {
   const width = 1024;
   const height = 1024;
   const base = new THREE.Color(theme.roadTint);
@@ -1397,9 +1397,10 @@ export function makeExpresswayDeckTexture(theme, random, { halfWidth = 10.6 } = 
 
     // Séparations de voies : pointillés blancs dans chaque sens, et ligne
     // jaune continue là où le changement de voie est interdit (très fréquent
-    // sur la C1, avant chaque sortie).
+    // sur la C1, avant chaque sortie). Les séparateurs viennent de la grille
+    // des voies (2,30 m de large), pas d'une liste figée.
     const dash = height / 6;
-    for (const separator of [-4.2, -2.1, 2.1, 4.2]) {
+    for (const separator of cityRushLaneSeparators().filter((x) => Math.abs(x) > 1e-6)) {
       const px = toPixel(separator);
       const prohibited = Math.abs(separator) > 3;
       if (prohibited) {

@@ -134,7 +134,7 @@ export async function checkViceCityDrivingUi(assert) {
         assert.match(introFootOf(node), /DOIGT SUR LA ROUTE · LA VOITURE LE SUIT/, 'rappel tactile du volant libre');
         assert.doesNotMatch(introFootOf(node), /VOIES \(MAINTENIR\)/, 'plus de rappel des voies en conduite libre');
         assert.match(desktopHintOf(node), /← → \/ Q D : VOLANT LIBRE/, 'pied de page : volant libre');
-        assert.match(helpOf(node), /Conduite libre : la voiture n’est plus aimantée aux voies/, 'l’aide du mode explique la conduite libre');
+        assert.match(helpOf(node), /Conduite libre : la voiture tourne comme une vraie voiture/, 'l’aide du mode explique la conduite libre');
         assert.match(helpOf(node), /OPTIONS › CONDUITE/, 'l’aide indique où retrouver la conduite par voies');
 
         await startRace(node);

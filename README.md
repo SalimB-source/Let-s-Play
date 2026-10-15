@@ -1133,7 +1133,9 @@ et le dernier tour durait 21 s.
   une boucle. Chaque caisse prend **deux voies** du sens de course : la **voie
   extérieure** de ramassage (la plus à droite en conduite à droite, la plus à
   gauche à Londres et sur la Shutō C1) et celle qui la borde vers l'axe jaune,
-  soit 4,20 m de large. Elle est **ouverte aux deux bouts** — la voiture entre
+  soit 4,60 m de large (deux voies urbaines de 2,30 m ; sur le Ring, la caisse
+  garde ses 4,20 m d'origine — `cityRushLaneConfig(...).laneWidth` suit le
+  parcours). Elle est **ouverte aux deux bouts** — la voiture entre
   par la travée avant, ramasse la roquette sous le toit et ressort par la porte
   arrière — et ses quatre vantaux, rabattus à plat contre les parois, gardent
   toute la largeur libre. Le conteneur est **reflété** selon le côté de conduite
@@ -1384,10 +1386,10 @@ et le dernier tour durait 21 s.
   mini-garage et patrouilles du flot — sont en plus jugées sur une **boîte de
   contact resserrée** : `CITY_RUSH_TRAFFIC_HITBOX_SCALE` = **0,6** de leur
   largeur réelle (`cityRushTrafficHitboxWidth`), soit 1,16 m pour une berline
-  de 1,94 m. Sur une chaussée à voies de 2,10 m, la boîte pleine exigeait 91 %
-  du changement de voie pour être dégagé, la boîte resserrée se contente de
-  73 % : un coup de volant donné **au dernier moment** passe là où il se payait
-  un carré. La même boîte sert partout où le véhicule est jugé — détection du
+  de 1,94 m. Sur une chaussée à voies de 2,30 m (voir « Les voies s'élargissent »
+  plus bas), la boîte pleine exige 84 % du changement de voie pour être dégagée,
+  la boîte resserrée se contente de 67 % : un coup de volant donné **au dernier
+  moment** passe là où il se payait un carré. La même boîte sert partout où le véhicule est jugé — détection du
   choc, retenue du suiveur (`resolveCityRushCarMovement`), choc frontal
   (`checkOncomingImpacts`) et contact d'une patrouille (`checkPoliceRally`) —
   pour que le pilote ne soit pas dégagé par l'un et raboté par l'autre. Le
@@ -1437,6 +1439,20 @@ et le dernier tour durait 21 s.
   percute, et la raison d'effet `'undercover-contact'` a disparu. Le taxi n'a ni
   gyrophare ni marquage latéral : caisse jaune, toit noir et damier sur les
   flancs.
+- **Les voies s'élargissent.** La voie urbaine passe de **2,10 m à 2,50 m**
+  (`CITY_RUSH_LANE_WIDTH`) : la caisse (1,90 m) respire enfin dans sa voie, un
+  écart de quelques centimètres ne frôle plus la voiture voisine, et le passage
+  d'une voie à l'autre se lit mieux à l'écran. La chaussée suit —
+  `CITY_RUSH_ROAD_WIDTH` = **15,80 m** au lieu de 13,40 m, trottoirs et
+  mobilier urbain reculant d'autant — et la grille des six voies avec
+  (`CITY_RUSH_LANE_X`, de −6,25 m à +6,25 m ; les séparateurs peints tombent à
+  ∓2,50 m et ∓5,00 m). **Les circuits permanents gardent leurs 2,10 m** : le
+  Ring et le tōgé roulent sur leur bitume réel (8,40 m utiles pour quatre
+  voies), d'où `CITY_RUSH_RACEWAY_LANE_WIDTH` et `cityRushLaneWidth(course)` —
+  la largeur d'une voie dépend du parcours, `cityRushLaneConfig(...).laneWidth`
+  la porte au monde 3D (conteneur à bazooka, mini-garage de 6,20 m en ville
+  contre 5,40 m sur le Ring, hystérésis de la conduite libre). Le marquage,
+  les flèches et les textures suivent la grille, rien n'est codé en dur.
 - **Changer de voie ne ralentit plus.** Doubler, se rabattre ou esquiver le
   trafic est **gratuit en vitesse** : la voiture glisse latéralement vers
   `CITY_RUSH_LANE_X` à pleine allure, sans coup de frein. L'ancien malus —
@@ -1498,7 +1514,7 @@ et le dernier tour durait 21 s.
   **1,35 ×**. Il se **multiplie** au bonus de ligne propre dans
   `targetPlayerSpeed` (jusqu'à ~1,51 × combinés) : c'est la récompense des voies
   les plus dangereuses de la chaussée. Revenir dans le sens de la course vide la
-  jauge en `CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION` = **1,2 s seulement** —
+  jauge en `CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION` = **0,8 s seulement** —
   elle retombe plus vite qu'elle n'a monté — et un **choc frontal** l'annule
   net (`playerOncomingTime = 0` dans `applyOncomingImpact`, avec l'effet
   `oncoming-bonus` de palier `'lost'`) : le pilote est recalé derrière la voiture
@@ -1582,7 +1598,7 @@ et le dernier tour durait 21 s.
   `CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.83`). Chaque bonus rouge rare recharge les
   **sept balles** du chargeur ; chaque pression en tire une, et maintenir `Z`
   tire à cadence régulière. Le bonus vert s'active automatiquement et accélère
-  pendant `CITY_RUSH_TRACK_BOOST_DURATION` = 3 s. Comme il se voit moins qu'une
+  pendant `CITY_RUSH_TRACK_BOOST_DURATION` = 2 s. Comme il se voit moins qu'une
   icône suspendue, il se fait aussi plus rare : `keepsCityRushBoostPickup()`
   écarte un quart des emplacements tirés « turbo », en course ; le tutoriel
   garde tous les siens, pour que chaque leçon croise son exemple. Un cercle
@@ -2197,7 +2213,7 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   Ring la rejoue au **1:17** : les repères kilométriques, les noms et l'ordre
   sont réels, la longueur ne l'est pas. Le HUD affiche le kilomètre officiel.
 - **Les voies.** La piste fait **9,20 m** (les 8,40 m réels plus la marge
-  peinte) au lieu des 13,40 m d'une artère urbaine, et se partage en **quatre
+  peinte) au lieu des 14,60 m d'une artère urbaine, et se partage en **quatre
   voies dans le même sens** : un circuit permanent ne croise personne, donc
   **aucun véhicule en face** (les voies de contresens sont vides, la police, les
   bonus et les rivaux ne se placent que sur les voies de course). Le marquage
@@ -2698,11 +2714,39 @@ bouton de la barre, la touche C et la préférence.
 ## Vice City Rush : la conduite libre, sans voies
 
 La voiture n'est plus aimantée aux voies. En **conduite libre** — la conduite
-par défaut —, le volant pilote une **vitesse latérale** : tant que ← / →
-(ou Q / D) reste enfoncée, la voiture glisse ; à la relâche, elle s'arrête
-**là où elle est**, entre deux voies si le pilote le veut. Au doigt, la voiture
-suit le glissé pendant le geste : glisser sur 55 % de la largeur de l'écran
-traverse toute la chaussée, et un geste vif se termine une fois le doigt levé.
+par défaut —, la voiture se conduit comme une vraie : maintenir ← / →
+(ou Q / D) **braque les roues avant**, le nez tourne, et le **cap tient** à la
+relâche — la voiture continue tout droit, et s'arrête droite en contre-braquant.
+Le volant ne pilote plus un glissement latéral mais un vrai modèle de bicyclette
+(empattement 2,6 m, braquage max 0,42 rad, prise à 4,5 rad/s, rend et
+contre-braquage à 12 rad/s, cap borné à 0,20 rad, lacet plafonné à 28 m/s
+divisé par la vitesse — l'adhérence faiblit avec l'allure) : la vitesse
+latérale suit `v·sin(cap)` (5 m/s en ville au maximum, 7 sur le Ring), le lacet suit
+`v/L·tan(δ)`, et la route tourne sous la voiture (sa courbure × distance,
+mesurée sur 20 m devant). Un appui bref reste sous le cran pardonné : la
+voiture ne tressaille pas à chaque touche.
+
+Deux raccourcis de conduite, pour que le clavier reste jouable sans
+contre-braquer à la main :
+
+- **Route droite** (|κ| ≤ 0,002 rad/m) : volant rendu et cap à moins de 0,13 rad
+  → la voiture raccroche la ligne droite. C'est le « dernier cran pardonné » :
+  relâcher les touches arrête la voiture nette. Sur le Ring (κ ≈ 0,007), le
+  pardon ne s'applique pas : la route reprend ses droits, un cap résiduel
+  subsiste comme sur une vraie piste.
+- **Virages** : sans volant, la force centrifuge déporte la voiture vers
+  l'extérieur jusqu'au bord de la chaussée, qui la bute et redresse son cap —
+  sortie au bord, jamais à travers. Au volant, la ligne se tient (1,18 m
+  d'écart tenu sur le virage κ = 0,013 du Ring).
+
+Au **doigt**, la voiture suit un pilote assisté : elle rejoint le point visé
+par le glissé (55 % de la largeur de l'écran traverse la chaussée) sur un
+profil de freinage (40 m/s², réserve 0,7, correction 6 rad/s par rad d'écart),
+et s'y **gare exactement, alignée sur la route** — le volant rendu garde le
+contre-braquage de la courbe (`atan(−κ·L)`), visible en vue cockpit. Une
+touche qui ne vise pas (zone morte de 4 px) ne braque pas. Le monde efface la
+cible à l'arrivée : un geste vif finit son dernier segment puis rend la voiture
+à la route ; le doigt maintenu garde la cible.
 
 La **conduite par voies** (un écart de voie entière par pression, maintien
 cadencé) reste au choix : **OPTIONS › CONDUITE : LIBRE / VOIES** dans
@@ -2710,18 +2754,16 @@ l'écran-titre, et la même entrée dans l'écran de pause, applicable en pleine
 course. Préférence de l'appareil : `letsplay_vice_city_rush_driving_v1`
 (`'free'` ou `'lanes'`, toute autre valeur retombe sur la conduite libre).
 
-### Le volant libre
+### Les limites du volant
 
-- Vitesse latérale de pointe 9 m/s (une voie en ~0,35 s, la chaussée urbaine en
-  ~1,4 s), prise de braquage à 45 m/s², relâche et contre-braquage à 90 m/s² :
-  la voiture s'arrête en moins de 0,15 s. Le volant prend son plein effet à
-  12 m/s : arrêtée sur la grille, la voiture ne se décale pas en crabe.
 - Débattement : toute la chaussée, moins la demi-largeur de la caisse et 10 cm
-  de marge (±5,7 m en ville, ±3,6 m sur le Ring), jamais en deçà du centre des
-  voies extérieures (la chaussée étroite du tōgé garde ses quatre voies).
-- Toupie, épave ou saut : le volant ne répond plus, et une voiture en l'air ne
-  glisse pas.
-- Lacet de la caisse, roues avant et volant du cockpit suivent le glissement.
+  de marge (±5,7 m en ville, ±3,6 m sur le Ring, ±3,2 m sur le tōgé), jamais en
+  deçà du centre des voies extérieures (la chaussée étroite du tōgé garde ses
+  quatre voies).
+- Toupie, épave ou saut : le volant ne répond plus, et une voiture en l'air
+  garde son cap — le nez ne tourne plus que la route tourne.
+- Lacet de la caisse, roues avant braquées et volant du cockpit suivent le
+  modèle (volant rendu borné à 0,34 rad pour rester lisible).
 
 ### Le reste du jeu raisonne toujours en voies
 
@@ -2738,7 +2780,7 @@ Les contacts se jugent sur la position réelle :
 
 - **Une voiture à hauteur** (moins de 3,6 m d'écart, celles qui ferment une voie
   dans `canEnterLane` : trafic, contresens, escouade, patrouilles) ne se traverse
-  pas : la voiture du pilote glisse jusqu'à toucher sa carrosserie et s'arrête.
+  pas : la voiture du pilote bute contre sa carrosserie et s'y arrête.
   Insister vers elle déclenche le **choc latéral** (un seul par côte-à-côte), qui
   la pousse sur la voie suivante. Les rivaux restent traversables.
 - **Mini-garage et conteneur à bazooka** : les parois canalisent la voiture.
@@ -2751,14 +2793,17 @@ Les contacts se jugent sur la position réelle :
   1,50 m de son axe, même à cheval sur sa ligne ; au-delà, la voiture le dépasse
   franchement par le côté, jamais à travers sa joue.
 - `action('left' | 'right')` (la démonstration du tutoriel, les harnais) devient
-  un placement visé : la voiture glisse jusqu'au centre de la voie voisine et s'y
-  arrête sans la dépasser. La démonstration recentre aussi la voiture que le
-  pilote a laissée à cheval sur une ligne.
+  un placement visé : la voiture rejoint le centre de la voie voisine par le
+  pilote assisté et s'y gare exacte, alignée sur la route, sans la dépasser. La
+  démonstration recentre aussi la voiture que le pilote a laissée à cheval sur
+  une ligne.
 
 ### Où vit le code
 
-- `src/games/cityRushFreeDrive.js` — règles pures : mode de conduite, pas de
-  volant (`cityRushFreeSteerStep`), débattement, voie déduite
+- `src/games/cityRushFreeDrive.js` — règles pures : mode de conduite, modèle de
+  bicyclette (`cityRushFreeDriveStep` : volant, cap, dérive, arrivée assistée,
+  bord), courbure du tracé lue devant la voiture
+  (`cityRushFreeRoadCurvature`), débattement, voie déduite
   (`cityRushFreeLaneForX`), contact latéral, zones des parois et des tremplins,
   canalisation, glissé au doigt, lecture visuelle.
 - `src/games/ViceCityWorld.jsx` — `setDrivingMode` et la prop `drivingMode`,
@@ -2773,6 +2818,13 @@ Les contacts se jugent sur la position réelle :
 
 ### Vérifications
 
+`npm run check:city-rush-free-drive` joue la conduite libre sur les 9 parcours :
+débattement, appui bref (le cap tient, l'arrêt est net à la relâche), doigt
+tenu et geste vif, tap sans visée (le volant seul juge), repos (aucun rappel
+vers le centre d'une voie une fois redressée), contact à hauteur, tremplin,
+garage, conteneur, et pour finir trois fois le même virage : sans volant
+(sortie au bord), au volant (ligne tenue), assisté (0,00 m d'écart).
+
 ```bash
 npm run check:city-rush-free-drive   # règles pures, monde joué au volant libre (9 parcours), interface
 npm run check:city-rush              # inclut tests/city-rush-free-drive.test.js
@@ -2780,18 +2832,22 @@ CITY_RUSH_SMOKE_DRIVING=free npm run check:city-rush-smoke        # course compl
 CITY_RUSH_TUTORIAL_DRIVING=free npm run check:city-rush-tutorial-run
 ```
 
-`tests/city-rush-free-drive.test.js` (17 tests) : mode et préférence, plein
-effet du volant, débattement des neuf parcours, glissement borné, arrêt net
-sans rappel vers un centre, placement visé sans dépassement, bords, hystérésis,
-cohérence voie / boîte de collision sur chaque parcours, contact latéral (sans
-effet tunnel ni répulsion), zones des parois (le Ring garde un passage à côté
-du garage), tremplins, canalisation, glissé au doigt, signes du lacet et du
-braquage. `scripts/city-rush-free-drive-check.mjs --all` pilote le vrai monde
-par de vrais événements clavier et tactiles : aucun saut de voie à la pression,
-arrêt en moins de 0,15 s, bords, dernière touche pressée, voie et ligne propre,
-`action`, glissé au doigt, voiture à hauteur jamais imbriquée et poussée une
-fois, rival traversé, toupie, retour aux voies, tremplin rattrapé ou évité,
-garage et conteneur longés ou traversés — roquette prise dedans.
+`tests/city-rush-free-drive.test.js` (20 tests) : mode et préférence, débattement
+des neuf parcours, volant qui prend et se rend, cap qui tient à la relâche, arrêt
+net sur route droite sans rappel vers un centre, virage (dérive vers l'extérieur
+sans volant, ligne tenue au volant, 0,00 m en assisté), voiture gelée tant que le
+volant n'est pas rendu, placement visé sans dépassement (le volant garde le
+contre-braquage), bords, hystérésis, cohérence voie / boîte de collision sur
+chaque parcours, contact latéral (sans effet tunnel ni répulsion), zones des
+parois (le Ring garde un passage à côté du garage), tremplins, canalisation,
+glissé au doigt, signes du lacet et du braquage.
+`scripts/city-rush-free-drive-check.mjs --all` pilote le vrai monde par de vrais
+événements clavier et tactiles : débattement, appui bref (cap tenu, arrêt net),
+repos (aucun rappel vers le centre d'une voie), doigt tenu, geste vif, tap sans
+visée jugé au volant, contact à hauteur jamais imbriqué et poussé une fois,
+rival traversé, toupie, tremplin rattrapé ou évité, garage et conteneur longés
+ou traversés — roquette prise dedans —, et le triple contrat du virage
+(extérieur sans volant, ligne tenue au volant, 0,00 m assisté).
 `scripts/vice-city-driving-ui-check.mjs` (jsdom) couvre l'entrée CONDUITE,
 l'écran de pause, les rappels et la préférence. Les harnais de la conduite par
 voies (`check:city-rush-steer-hold`, `check:city-rush-side-bump`,

@@ -273,7 +273,12 @@ for (let run = 0; run < RUNS; run += 1) {
     }
 
     let trackedHealth = null;
-    const healthEvents = callbacks.effects.filter((effect) => effect.type === 'player-health' || effect.type === 'player-hit');
+    // La coque suit trois événements : la barre initiale, les impacts (qui
+    // retirent) et les retours de vie — trousse de soin ramassée ou passage au
+    // mini-garage, qui rendent des cellules sans émettre de `player-hit`. Sans
+    // ces derniers, la réserve suivie dérive au-dessus de la vraie et le
+    // prochain impact semble ne pas retirer son carré.
+    const healthEvents = callbacks.effects.filter((effect) => ['player-health', 'player-hit', 'player-health-pickup', 'mini-garage-used'].includes(effect.type));
     for (const effect of healthEvents) {
       if (effect.type === 'player-health') {
         if (effect.maxHealth !== WRECK_TEST_MAX_HEALTH || effect.health !== WRECK_TEST_HEALTH) {
@@ -281,6 +286,10 @@ for (let run = 0; run < RUNS; run += 1) {
           console.error(`[${city.id}#${run}] ÉCHEC : le smoke ne démarre pas à la réserve de cellules préconditionnée`, effect);
         }
         trackedHealth = effect.health;
+        continue;
+      }
+      if (effect.type === 'player-health-pickup' || effect.type === 'mini-garage-used') {
+        if (Number.isFinite(effect.health)) trackedHealth = effect.health;
         continue;
       }
       const maximumDamage = effect.source === 'suv-collision' ? 2 : 1;

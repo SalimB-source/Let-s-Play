@@ -92,7 +92,7 @@ const server = await createServer({
             // cellule par tir.
             code: code
               .replaceAll('new THREE.WebGLRenderer(', 'new (globalThis.__FakeWebGLRenderer)(')
-              .replaceAll('const playerMaxHealth = cityRushCarMaxHealth(playerProfile);', 'const playerMaxHealth = 3;'),
+              .replaceAll('const playerMaxHealth = storyHealthOverride ?? cityRushCarMaxHealth(playerProfile);', 'const playerMaxHealth = 3;'),
             map: null,
           };
         }

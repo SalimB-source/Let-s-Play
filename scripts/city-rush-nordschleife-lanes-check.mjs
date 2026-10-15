@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 import { seededRandom } from '../src/games/cityRushBuilder.js';
 import {
   CITY_RUSH_LANE_PAINT_WIDTH,
-  CITY_RUSH_LANE_WIDTH,
+  CITY_RUSH_RACEWAY_LANE_WIDTH,
   CITY_RUSH_NORDSCHLEIFE_COURSE,
   CITY_RUSH_RACEWAY_ROAD_HALF,
   CITY_RUSH_SCROLL_SCALE,
@@ -92,8 +92,8 @@ for (let lane = 0; lane < lanes.laneCount - 1; lane += 1) {
   const bridge = separators[lane];
   assert.ok(Math.abs((lanes.laneX(lane) + lanes.laneX(lane + 1)) / 2 - bridge) < 1e-9,
     `la ligne ${lane + 1} sépare exactement les voies ${lane} et ${lane + 1}`);
-  assert.ok(Math.abs((lanes.laneX(lane + 1) - lanes.laneX(lane)) - CITY_RUSH_LANE_WIDTH) < 1e-9,
-    'deux voies voisines gardent 2,10 m d’écart');
+  assert.ok(Math.abs((lanes.laneX(lane + 1) - lanes.laneX(lane)) - CITY_RUSH_RACEWAY_LANE_WIDTH) < 1e-9,
+    'deux voies voisines gardent 2,10 m d’écart (le circuit garde ses voies étroites)');
 }
 
 // ── Les traits de voie effectivement peints ─────────────────────────────────

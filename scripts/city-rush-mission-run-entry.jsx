@@ -70,6 +70,7 @@ const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES,
+  cityRushLaneConfig,
   selectCityRushRacers,
 } = await import('../src/games/cityRushRules.js');
 
@@ -145,13 +146,74 @@ try {
     // La vraie commande tactile en maintien, identique au bouton du HUD.
     if (run === 0) world.action('pistol-down');
     else listeners.window.keydown.forEach(handler => handler({ key: 'z', preventDefault() {} }));
+    // Voies du parcours : le bot de police reste du côté du cours quand il
+    // n'est pas en poursuite, et connaît sa voie de départ (les chargeurs).
+    const missionLanes = cityRushLaneConfig(city);
+    const forwardLaneMin = Math.min(...missionLanes.forwardLanes);
+    const forwardLaneMax = Math.max(...missionLanes.forwardLanes);
+    const startLane = Math.min(forwardLaneMax, Math.max(forwardLaneMin, player.lane));
+    // La voie la plus dégagée : le trafic roule plus lentement que l'officier,
+    // et traîner derrière lui laissait fuir le dealer.
+    const laneClearance = (lane, fromDistance) => {
+      let nearest = Infinity;
+      world.scene.traverse((object) => {
+        if (!String(object.name).startsWith('traffic-')) return;
+        if (Number(object.userData?.lane) !== lane) return;
+        const gap = Number(object.userData?.trackDistance) - fromDistance;
+        if (gap > 2 && gap < nearest) nearest = gap;
+      });
+      for (const police of (hud.police || [])) {
+        if (Number(police.lane) !== lane) continue;
+        const gap = Number(police.rawDistance) - fromDistance;
+        if (gap > 2 && gap < nearest) nearest = gap;
+      }
+      return nearest;
+    };
+    let stuckFrames = 0;
     for (let frame = 0; frame < 30 * 360 && !result; frame++) {
       const dealerTarget = hud.racers.find(r => r.id === 'dealer');
       const accompliceTarget = hud.racers.find(r => r.id === 'accomplice');
       const target = dealerTarget?.health > 0 ? dealerTarget : accompliceTarget?.health > 0 ? accompliceTarget : null;
       // Garder le fugitif actif dans la mire avec des munitions. À vide,
       // revenir chercher les chargeurs garantis dans la voie de départ.
-      const lane = hud.inventory.pistol > 0 && target ? target.lane : player.lane;
+      // La gâchette ne reste enfoncée que la cible est dans la voie et à
+      // portée : la rafale en continu gaspillait le chargeur pendant les
+      // changements de voie du fugitif — sur la grille élargie à 2,50 m, le
+      // dealer gardait encore 8 PV à l'issue des trois tours.
+      const targetGap = target ? target.distance - hud.distance : Infinity;
+      const inRange = Boolean(target) && targetGap > 2 && targetGap < 120;
+      const aligned = inRange && target.lane === hud.playerLane;
+      if (aligned) {
+        if (run === 0) world.action('pistol-down');
+        else listeners.window.keydown.forEach(handler => handler({ key: 'z', preventDefault() {} }));
+      } else if (frame % 3 === 0) {
+        if (run === 0) world.action('pistol-up');
+        else listeners.window.keyup.forEach(handler => handler({ key: 'z', preventDefault() {} }));
+      }
+      // Le volant : poursuite quand le fugitif est à portée (le scénario le
+      // tient entre 24 et 80 m), ravitaillement à vide, sinon croisière du
+      // côté du cours — le calage du scénario ramène le fugitif à portée de
+      // canon, inutile de courir après lui dans le contresens.
+      let lane = hud.playerLane;
+      if (hud.inventory.pistol > 0 && inRange) lane = target.lane;
+      else if (hud.inventory.pistol <= 0) lane = startLane;
+      else if (hud.playerLane < forwardLaneMin || hud.playerLane > forwardLaneMax) lane = startLane;
+      // En croisière, ne pas traîner derrière le trafic lent.
+      if (lane === hud.playerLane && Number(hud.speed) < 70) {
+        stuckFrames += 1;
+        if (stuckFrames > 12) {
+          const distance = Number(hud.distance);
+          const here = laneClearance(hud.playerLane, distance);
+          const options = [hud.playerLane - 1, hud.playerLane + 1]
+            .filter((candidate) => candidate >= forwardLaneMin && candidate <= forwardLaneMax)
+            .map((candidate) => ({ lane: candidate, clearance: laneClearance(candidate, distance) }))
+            .sort((a, b) => b.clearance - a.clearance);
+          if (options[0] && options[0].clearance > here + 10) lane = options[0].lane;
+          stuckFrames = 0;
+        }
+      } else {
+        stuckFrames = 0;
+      }
       // Vers une voie fermée, l'appui ne fait rien sur la base. Avec le choc
       // latéral, il pousserait la voiture qui bloque : le bot attend que la voie
       // soit libre, puis tourne.
