@@ -3,7 +3,7 @@
 // panneaux du portique et décalcomanies des voitures. Tout est dessiné sur
 // canvas au chargement : aucune image externe.
 import * as THREE from 'three';
-import { CITY_RUSH_LANE_X, CITY_RUSH_ROAD_WIDTH, cityRushLaneSeparators } from './cityRushRules.js';
+import { CITY_RUSH_LANE_WIDTH, CITY_RUSH_LANE_X, CITY_RUSH_ROAD_WIDTH, cityRushLaneSeparators } from './cityRushRules.js';
 import { makeCanvasTexture, neonText } from './cityRushBuilder.js';
 import { cityRushThemeDriveSide } from './cityRushThemes.js';
 
@@ -1334,7 +1334,7 @@ export function makeSmokeTexture() {
 // les parois de tunnel, les murs antibruit et le béton du viaduc.
 
 /** Tablier de la C1 : chaussée, bandes d'arrêt d'urgence et trottoir de service. */
-export function makeExpresswayDeckTexture(theme, random, { halfWidth = 11.8 } = {}) {
+export function makeExpresswayDeckTexture(theme, random, { halfWidth = 19.3 } = {}) {
   const width = 1024;
   const height = 1024;
   const base = new THREE.Color(theme.roadTint);
@@ -1402,7 +1402,7 @@ export function makeExpresswayDeckTexture(theme, random, { halfWidth = 11.8 } = 
     const dash = height / 6;
     for (const separator of cityRushLaneSeparators().filter((x) => Math.abs(x) > 1e-6)) {
       const px = toPixel(separator);
-      const prohibited = Math.abs(separator) > 3;
+      const prohibited = Math.abs(separator) > CITY_RUSH_LANE_WIDTH * 1.5;
       if (prohibited) {
         // Zone interdite sur la seconde moitié du carreau : la ligne blanche
         // se change en jaune continu, comme avant une sortie de la C1.

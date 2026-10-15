@@ -156,7 +156,7 @@ checkTexture({
 // la moitié de la largeur du carreau. Une ville qui roule à droite appelée avec
 // la même texture doit garder la peinture historique (contresens à gauche) —
 // c'est le thème qui décide, pas la ville de Tokyo.
-const deckHalfWidth = 11.8;
+const deckHalfWidth = 19.3;
 const deckWidth = 1024;
 const toDeckLane = (px) => ((px - deckWidth / 2) / (deckWidth / 2)) * deckHalfWidth;
 

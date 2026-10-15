@@ -180,9 +180,9 @@ export const CITY_RUSH_THEMES = Object.freeze({
       route: CITY_RUSH_SHUTO_C1,
       // Lignes annoncées sur le panneau du portique de départ (江戸橋JCT).
       signExits: Object.freeze(['1号上野線', '6号向島線', 'B 湾岸線']),
-      // Coupe du tablier, en mètres : chaussée 15,8 + bandes d'arrêt d'urgence
+      // Coupe du tablier, en mètres : chaussée 30,8 + bandes d'arrêt d'urgence
       // + trottoir de service, puis glissière, mur antibruit et parapet.
-      deckHalfWidth: 11.8,
+      deckHalfWidth: 19.3,
       shoulderWidth: 1.5,
       barrierHeight: 1.05,
       parapetHeight: 0.95,
@@ -190,7 +190,7 @@ export const CITY_RUSH_THEMES = Object.freeze({
       // La ville est treize mètres plus bas ; les tours de Shiodome et de
       // Ginza remontent bien au-dessus du tablier.
       streetDepth: 13,
-      towerBaseX: 15.5,
+      towerBaseX: 23.0,
       // Vert officiel de la signalisation Shuto, blanc des caractères.
       signGreen: '#0b6b3f',
       signGreenDark: '#064a2c',
