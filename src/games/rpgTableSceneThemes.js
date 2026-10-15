@@ -52,6 +52,7 @@ const base = Object.freeze({
   keyDirection: Object.freeze([-0.55, 0.65, 1]),
   relief: 1,
   roughness: 0.85,
+  paintZoom: 1,
   lights: Object.freeze([]),
   overlay: null,
   // Les objets 3D posés sur la table, et la peinture « vide » sans eux. Sans
@@ -170,6 +171,7 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
   // cour reste libre pour les cartes.
   'cour-de-l-empereur': theme({
     ambient: '#fdf3e6', key: '#ffd9c2', keyIntensity: 0.5, keyDirection: [0.72, 0.55, 1], relief: 1.1, roughness: 0.9,
+    paintZoom: 1.16,
     lights: [
       light({ color: '#ffb45e', intensity: 1.7, distance: 3.6, x: -0.74, y: -0.72, z: 0.7, flicker: 0.22 }),
       light({ color: '#ffb45e', intensity: 1.7, distance: 3.6, x: 0.72, y: -0.72, z: 0.7, flicker: 0.22 }),

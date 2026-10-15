@@ -2215,6 +2215,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-cour-de-l-empereur {
   background-color: #608280;
 }
+.card-table--plateau-cour-de-l-empereur::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  background-image: inherit;
+  background-position: center;
+  background-size: cover;
+  pointer-events: none;
+  transform: scale(1.16);
+}
 .card-table--plateau-desert-de-verre {
   background-color: #9aa48a;
 }
