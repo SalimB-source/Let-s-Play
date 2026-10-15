@@ -143,20 +143,23 @@ apres: '…-apaisement.webp' }` et `poseHistoire(id, situation)` résout l'image
   vérifie que la pose change au dernier échange et revient au référentiel
   ensuite.
 
-**État livré :** les deux postures de **treize figures** — les cinq héros
+**État livré :** les deux postures de **dix-sept figures** — les cinq héros
 (Salem, Yamina, Fériel, Tarek, Boualem, Mahieddine), les figures de la Chambre
-(la Scribe, le Guetteur, le Puisatier des Cendres) et les antagonistes des deux
+(la Scribe, le Guetteur, le Puisatier des Cendres), les antagonistes des deux
 premiers actes (le Marchand de sable, la Gardienne des ksour, le Djinn du
-tournant, la Reine des étals). Trois exemples : la Scribe ouvre son registre et
-lève la main avant le duel, puis offre sa plume ; le Guetteur met son crochet
-de herse en travers du passage, puis bascule sa capuche et ouvre la main ; la
-Reine des étals tient son livre à deux mains comme un siège de jugement, puis
-tend la clef de bronze.
+tournant, la Reine des étals) et **l'acte des Abysses au complet** (le Pêcheur
+de perles, la Nageuse des puits, le Dévoreur de l'abîme, la Garde du fjord).
+Trois exemples : la Scribe ouvre son registre et lève la main avant le duel,
+puis offre sa plume ; le Guetteur met son crochet de herse en travers du
+passage, puis bascule sa capuche et ouvre la main ; le Sonneur d'écume hisse
+sa cloche de bronze au-dessus de l'épaule et fait éclater l'eau sous ses pieds,
+puis s'écarte, la cloche au repos derrière lui.
 
-**Le Pêcheur de perles** n'a pour l'instant que sa garde (lampe levée, ligne
-tendue) : sa détente reste à peindre, et une situation sans variante retombe
-simplement sur sa pose de référence. Les autres figures du casting suivent la
-même règle ; le système, lui, les concerne toutes.
+**Le Sonneur d'écume et la Meute des neiges** n'ont pour l'instant que leur
+garde : leur détente reste à peindre, et une situation sans variante retombe
+simplement sur la pose de référence. Il en va de même, sans aucune variante,
+de la Valkyrie du fjord, du Maître des Neuf Hivers, du Dernier Fennec, de
+l'Ifrit des ergs et de l'Horloger du Zénith : le système les concerne toutes.
 
 ### Contour des sprites : le liseré de fond
 
@@ -175,8 +178,8 @@ Trois pièges du détourage, tous traités par l'outil et vérifiés par
    `python3 tools/check-stands.py` mesure les deux (liseré et gabarit) et nomme
    les sprites à reprendre. **Repris dans cette passe :** `stand-tarek.webp`
    (source portrait 896×1200), `stand-valkyrie-fjord.webp` et
-   `stand-ifrit-ergs.webp` (sources portrait). **51 sprites** (26 figures et
-   25 variantes) passent aujourd'hui le contrôle sans réserve.
+   `stand-ifrit-ergs.webp` (sources portrait). **60 sprites** (26 figures et
+   34 variantes) passent aujourd'hui le contrôle sans réserve.
 
 ## Mise en scène
 

@@ -147,10 +147,11 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
   }
 
   // Les figures livrées avec leurs deux postures : les cinq héros, les figures
-  // de la Chambre et les antagonistes des deux premiers actes. Le Pêcheur et le
-  // Sonneur n'ont pour l'instant que leur garde.
+  // de la Chambre et les antagonistes. Le Sonneur et la Meute n'ont pour
+  // l'instant que leur garde — leur détente est encore à peindre.
   for (const id of ['salem', 'yamina', 'feriel', 'tarek', 'boualem', 'mahieddine',
-    'scribe', 'guetteur', 'puisatier', 'marchand', 'amani', 'djinn-souk', 'reine-etals']) {
+    'scribe', 'guetteur', 'puisatier', 'marchand', 'amani', 'djinn-souk', 'reine-etals',
+    'pecheur', 'nageuse', 'devoreur', 'garde-fjord']) {
     assert.deepEqual(situationsPoseHistoire(id), ['duel', 'apres'], id);
     assert.equal(poseHistoire(id, 'duel', '/base/').split('?')[0],
       `/base/sablier-story/stands/stand-${id}-affrontement.webp`, id);
@@ -158,17 +159,23 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
       `/base/sablier-story/stands/stand-${id}-apaisement.webp`, id);
     assert.match(poseHistoire(id, 'duel', '/base/'), /\?v=[\w-]+$/, `${id} : la variante est datée comme la référence`);
   }
-  assert.deepEqual(situationsPoseHistoire('pecheur'), ['duel']);
-  assert.equal(poseHistoire('pecheur', 'apres', '/base/'), standHistoire('pecheur', '/base/'),
-    'une situation non déclarée retombe sur la référence');
+  // Une figure peut n'avoir que sa garde : la situation non déclarée retombe
+  // alors sur la pose de référence, sans trou ni carré cassé.
+  for (const id of ['sonneur', 'meute-neiges']) {
+    assert.deepEqual(situationsPoseHistoire(id), ['duel'], id);
+    assert.equal(poseHistoire(id, 'duel', '/base/').split('?')[0],
+      `/base/sablier-story/stands/stand-${id}-affrontement.webp`, id);
+    assert.equal(poseHistoire(id, 'apres', '/base/'), standHistoire(id, '/base/'),
+      `${id} : une situation non déclarée retombe sur la référence`);
+  }
 
   // Une situation inconnue ou absente retombe sur la référence, et un
   // personnage encore sans variante n'en invente pas.
   assert.equal(poseHistoire('salem', 'inconnue', '/base/'), standHistoire('salem', '/base/'));
   assert.equal(poseHistoire('salem', null, '/base/'), standHistoire('salem', '/base/'));
-  assert.equal(poseHistoire('nageuse', 'duel', '/base/'), standHistoire('nageuse', '/base/'),
+  assert.equal(poseHistoire('ifrit-ergs', 'duel', '/base/'), standHistoire('ifrit-ergs', '/base/'),
     'un personnage sans variante garde sa pose de référence');
-  assert.deepEqual(situationsPoseHistoire('nageuse'), []);
+  assert.deepEqual(situationsPoseHistoire('ifrit-ergs'), []);
   assert.deepEqual(situationsPoseHistoire('narrateur'), []);
   assert.equal(poseHistoire('narrateur', 'duel', '/base/'), null, 'la ville n’a pas de corps');
   assert.equal(poseHistoire('absent', 'duel', '/base/'), null);

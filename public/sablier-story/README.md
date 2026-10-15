@@ -54,10 +54,12 @@ sans variante garde la pose de référence : aucune figure n’est obligée d’
 avoir une, et une variante ne se partage jamais entre deux personnages.
 Livrées : les deux poses des cinq héros (Salem, Yamina, Fériel, Tarek,
 Boualem, Mahieddine), des figures de la Chambre (Scribe, Guetteur, Puisatier
-des Cendres) et des antagonistes des deux premiers actes (Marchand de sable,
-Gardienne des ksour, Djinn du tournant, Reine des étals) — plus la garde du
-Pêcheur de perles, dont la détente reste à peindre (une situation sans variante
-retombe sur sa référence).
+des Cendres), des antagonistes des deux premiers actes (Marchand de sable,
+Gardienne des ksour, Djinn du tournant, Reine des étals) et de l’acte des
+Abysses (Pêcheur de perles, Nageuse des puits, Dévoreur de l’abîme, Garde du
+fjord) — plus la garde du Sonneur d’écume et celle de la Meute des neiges,
+dont la détente reste à peindre (une situation sans variante retombe sur sa
+référence).
 
 Recette d’un contour propre : l’outil **étale la couleur du personnage sous ses
 pixels transparents** avant la plume (`etaler_couleur`) et désincruste à
