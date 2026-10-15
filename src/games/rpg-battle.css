@@ -2212,6 +2212,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-fjord-des-neuf-hivers {
   background-color: #b9cdd6;
 }
+.card-table--plateau-cour-de-l-empereur {
+  background-color: #608280;
+}
 .card-table--plateau-desert-de-verre {
   background-color: #9aa48a;
 }

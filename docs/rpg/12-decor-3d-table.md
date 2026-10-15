@@ -20,8 +20,17 @@ changent pas.
   braises, éclats de verre.
 - **Parallaxe** : la caméra respire et suit la souris (jamais le doigt).
 
-Les huit plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
+Les neuf plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
 inconnu retombe sur celle de la Table des Heures.
+
+Deux plateaux ne posent aucun objet 3D et gardent leur peinture telle quelle : la
+Table des Heures (le bois gravé de Bab El) et la **Cour de l'Empereur**, la
+peinture japonaise du deck du Serment du Soleil rouge. Sur une peinture plate —
+encre, à-plats et pinceau — les accessoires dessinés (les portes du palais, les
+galeries, le tambour, les bannières, le bassin, les pins et les cerisiers) sont
+plus justes laissés au trait ; l'ambiance seule anime la scène : les deux
+lanternes de pierre qui vacillent aux bords, et les pétales de cerisier qui
+tombent en dérivant.
 
 ## Objets 3D posés sur le plateau
 
@@ -109,7 +118,8 @@ Abysses (coraux, colonnes, amphores), Îles (sapins, rochers, lanterne, corde).
 
 ## Vérifications
 
-- `npm run check:rpg-table-3d` : catalogue, bornes, particules, budgets.
+- `npm run check:rpg-table-3d` : catalogue, bornes, particules, budgets (l'ambiance
+  du sanctuaire du Soleil rouge comprise : aucun objet 3D, des pétales qui tombent).
 - `npm run check:rpg-table-3d-ui` (serveur Vite + Chromium) : rendu réel, couches,
   pause pendant un glisser, bouton, repli sans WebGL2, `reduced-motion`,
   téléphone en paysage, chaque plateau à objets (plaque vide chargée, objets posés, repli CSS intact).

@@ -5328,7 +5328,8 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 - **Chaque deck a son terrain.** Les Veilleurs du Désert se battent dans l'Erg
   du Sahara, la Cour des Djinns sur la Table des Heures, les Sentiers de cendre
   sur la piste de la Caravane de Gourara, la Marée des abysses dans les Ruines
-  de Tipaza, le Serment des Neuf Hivers sur la glace du Fjord. Les decks
+  de Tipaza, le Serment des Neuf Hivers sur la glace du Fjord, le Serment du
+  Soleil rouge dans la cour de son sanctuaire japonais. Les decks
   de campagne ont leur entrée aussi — la Souffleuse de verre tient la piste de
   caravane, le Grand Horloger reçoit dans la salle haute de la Chambre sur la
   Table des Heures, et les quatre étages de la Tour du Fjord (la Garde, la
@@ -5350,9 +5351,9 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 - **Les terrains ont leur double merveilleux.** En partie réelle, un second
   tirage peut échanger le terrain imposé contre sa version fantaisiste —
   l'Erg contre le Désert de Verre, les Ruines contre les Abysses
-  Phosphorescentes, le Fjord contre les Îles Célestes. La piste caravanière et
-  la Table des Heures — la table d'origine — restent uniques. Tous les fonds
-  sont livrés en 4K (3840×2560).
+  Phosphorescentes, le Fjord contre les Îles Célestes. La piste caravanière, la
+  Table des Heures — la table d'origine — et la Cour de l’Empereur
+  restent uniques. Tous les fonds sont livrés en 4K (3840×2560).
 - **Les Cavernes de Cristal sont retirées.** Le double merveilleux de la Table
   des Heures quitte le jeu : son fond, sa plaque « vide », son thème 3D (les
   amas d'améthystes et de rubis des coins, avec le genre d'objet
@@ -5364,9 +5365,10 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   sa sauvegarde sur l'appareil (la clé `letsplay_sablier_plateau_v1` n'est plus
   ni lue ni écrite). Rien à régler : le terrain se découvre à l'ouverture du
   duel.
-- **Le plateau est annoncé.** Le duel ouvre sur « Plateau : … — …, imposé par
-  votre deck / le deck adverse / le deck de <sorcier de l'étage> » dans la barre
-  du bas, et la table porte son terrain dans son libellé accessible.
+- **Le plateau se voit, il ne se raconte pas.** La table porte le terrain tiré
+  dans sa classe (`card-table--plateau-<id>`), son fond et son nom dans son
+  libellé accessible : aucune phrase ne le commente, la peinture sous les
+  cartes suffit.
 
 ### Les plateaux
 
@@ -5380,6 +5382,7 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 | `public/plateau-desert-de-verre.jpg` | **Le Désert de Verre** (double de l'Erg) | le sable vitrifié ambré et aigue-marine, l'anneau de cristal pilé, les roses de verre, l'astrolabe, l'outre et la corde. |
 | `public/plateau-abysses-phosphorescentes.jpg` | **Les Abysses Phosphorescentes** (double des Ruines) | le sable pâle sous l'eau claire, l'anneau de coquillages, les coraux, les colonnes tombées, les amphores et la raie manta. |
 | `public/plateau-iles-celestes.jpg` | **Les Îles Célestes** (double du Fjord) | le lac de glace polie où danse l'aurore, l'anneau gravé, les sapins, les rochers, la lanterne et la corde. |
+| `public/plateau-cour-de-l-empereur.jpg` | **La Cour de l'Empereur** (Kyō) | la peinture japonaise du palais : le grand parvis de gravier ratissé et ses cercles concentriques, vide au milieu, que gardent la véranda du trône aux tuiles turquoise et ses colonnes vermillon, les galeries couvertes des bords, les portes, les lanternes de pierre, le tambour laqué, les bannières impériales, le bassin à l'eau claire et les cerisiers en fleurs. Le milieu de la cour reste vide : c'est là que les cartes se posent. |
 
 ### Où vit le code
 
@@ -5402,11 +5405,11 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   **chrome** : chaque capsule — plaques des sorciers, barre de navigation du
   duel, rail du tour, compteurs de paquet et de cimetière, journal — porte son
   propre fond translucide, calibré sur la mesure des fonds livrés (luminance du
-  haut du cadre, sur 255 : **Erg du Sahara 142**, **Ruines de Tipaza 118**,
-  Caravane de Gourara 102, Table des Heures 54).
+  haut du cadre, sur 255 : **Erg du Sahara 142**, **Cour de l'Empereur 127**, **Ruines de Tipaza 118**, Caravane de Gourara 102, Table des Heures 54).
 - `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
-  `public/plateau-fjord-des-neuf-hivers.jpg`, `public/plateau-ruines-de-tipaza.jpg`
-  — les fonds, 1536×1024 JPEG chacun : des peintures vues de dessus, sans texte
+  `public/plateau-fjord-des-neuf-hivers.jpg`, `public/plateau-ruines-de-tipaza.jpg`,
+  `public/plateau-cour-de-l-empereur.jpg`
+  — les fonds, 4K (3840×2560) : des peintures vues de dessus, sans texte
   ni interface dessinée — l'interface du jeu se superpose (règle de
   `src/games/RPG-CARD-ART.md`). Le centre de chaque tableau est volontairement
   calme et peu contrasté : c'est la zone où les cartes se posent.
@@ -5414,15 +5417,16 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 ### Vérifications
 
 ```bash
-npm run check:rpg        # règles + les 17 tests des plateaux
-npm run check:rpg-ui     # la page montée dans jsdom : aucun sélecteur de plateau au menu, terrain imposé par le deck, lisibilité sans voile comprise
+npm run check:rpg            # règles + les tests des plateaux (catalogue, tirage, ambiances 3D)
+npm run check:rpg-sanctuaire # la page montée dans jsdom : le deck du Soleil rouge ouvre sa partie sur l'estampe du sanctuaire
+npm run check:rpg-ui         # la page montée dans jsdom : aucun sélecteur de plateau au menu, terrain imposé par le deck, lisibilité sans voile comprise
 ```
 
 `tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds
 livrés dans `public/`, retrait de la Terre de Damnation et présence de chaque
-terrain restant), le tirage (déterminisme par `rng`, valeurs hors bornes sans
-plantage), les correspondances deck/couleur et le repli vers la Table des
-Heures. `check:rpg-ui` monte la page : le menu ne propose aucun choix de
+terrain restant, sanctuaire du Soleil rouge compris), le tirage (déterminisme
+par `rng`, valeurs hors bornes sans plantage), les correspondances deck/couleur
+et le repli vers la Table des Heures. `check:rpg-ui` monte la page : le menu ne propose aucun choix de
 plateau, et le duel utilise bien le terrain du deck désigné. Il vérifie aussi
 la **lisibilité sans voile** : aucune variable de voile ni calque `::before`
 sur la table, chaque plateau restant garde sa couleur de repli, et les capsules
