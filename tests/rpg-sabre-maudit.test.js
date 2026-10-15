@@ -69,19 +69,32 @@ test('une défense réduite à zéro tue le porteur et déclenche son Honneur', 
   assert.equal(duel.joueur.cimetiere.filter((id) => id === 'sabre-maudit').length, 1);
 });
 
-test('le porteur utilise Coup rapide à sa force augmentée, sans riposte, puis attaque', () => {
+test('le porteur frappe à sa force augmentée, sans riposte, et l’attaque s’arrête là', () => {
   const duel = partie();
   const porteur = poser(duel, 'joueur', 'samourai-du-torii');
   const cible = poser(duel, 'sorcier', 'colosse-de-sel');
   armer(duel, porteur);
   porteur.ready = true;
-  assert.equal(rpgLancerAttaque(duel, 'joueur', [porteur.id], {}).raison, 'cible');
-  const r = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: cible.id }, null, null, { [porteur.id]: cible.id });
+  const pvSorcier = duel.sorcier.pv;
+  const r = rpgLancerAttaque(duel, 'joueur', [porteur.id], {}, null, null, { [porteur.id]: cible.id });
   assert.equal(r.ok, true);
   assert.equal(r.resume.coupsRapides[0].degats, 8);
-  assert.equal(duel.sorcier.creatures.length, 0);
+  assert.equal(duel.sorcier.creatures.length, 0, 'le colosse tombe sous les 8 dégâts');
   assert.equal(porteur.def, 2, 'le colosse détruit ne riposte pas');
-  assert.equal(duel.sorcier.pv, 17);
+  assert.equal(duel.sorcier.pv, pvSorcier, 'l’attaque s’arrête sur la frappe rapide');
+});
+
+test('sans créature désignée, le porteur du Sabre maudit attaque le sorcier de ses 8 dégâts', () => {
+  const duel = partie();
+  const porteur = poser(duel, 'joueur', 'samourai-du-torii');
+  const cible = poser(duel, 'sorcier', 'colosse-de-sel');
+  armer(duel, porteur);
+  porteur.ready = true;
+  const pvSorcier = duel.sorcier.pv;
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [] }).ok, true,
+    'le Coup rapide n’impose plus de cible');
+  assert.equal(duel.sorcier.pv, pvSorcier - 8, 'la force augmentée part au visage');
+  assert.equal(duel.sorcier.creatures.includes(cible), true, 'la créature écartée reste en jeu');
 });
 
 test('l’attaque directe du sorcier reconnaît aussi Coup rapide accordé par une arme', () => {

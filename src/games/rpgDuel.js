@@ -146,6 +146,11 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     // { cote } = le camp dont le tour se termine ; l'AUTRE camp peut y jouer
     // une magie rapide avant que le tour ne se ferme pour de bon.
     phase: 'principale',
+    // UNE SEULE PHASE D'ATTAQUE PAR TOUR : le camp qui a déclaré son combat est
+    // noté ici ('joueur' ou 'sorcier'). Une seconde déclaration du même camp est
+    // refusée avant que le tour ne passe (`rpgFinDeTour` remet le champ à null) ;
+    // un refus de déclaration, lui, ne consomme rien.
+    attaqueJouee: null,
     finDeTour: null,
     // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
     annonce: null,
@@ -1887,13 +1892,16 @@ const peutBloquer = (entite) => entite && !entite.attaquee && !estGelee(entite);
 
 /**
  * Qui peut bloquer qui :
+ * — Coup rapide : l'attaquant qui frappe une créature (`frappeRapide` vrai)
+ *   voit son attaque s'arrêter sur sa frappe — il n'y a plus rien à bloquer ;
  * — Infiltration : l'attaquant ne peut pas être bloqué du tout, par personne.
  *   Elle peut être permanente (imprimée, ou conférée par l'arme portée) ou
  *   accordée jusqu'à la fin du tour (le ralliement de Tin Hinan) ;
  * — Envol : un attaquant volant ne peut être bloqué que par une créature volante.
  */
-export function rpgPeutBloquerAttaquant(bloqueur, attaquant) {
+export function rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide = false) {
   if (!bloqueur || !attaquant) return false;
+  if (frappeRapide) return false;
   if (attaquant.infiltration) return false;
   return !attaquant.envol || Boolean(bloqueur.envol);
 }
@@ -2123,7 +2131,8 @@ export function rpgChoisirBloqueurs(duel, cote, attaquantIds, ciblesAttaque = {}
   return choisirBloqueursIA(duel, cote, attaquantIds, ciblesAttaque, options);
 }
 
-/** L’IA vise avec le Coup rapide la créature la plus intéressante à abattre. */
+/** L’IA choisit, pour chaque attaquant rapide, la créature qu’il abat d’une
+ *  frappe (l’attaque s’arrête là) — aucune entrée pour qui attaque le sorcier. */
 export function rpgCiblesAttaqueRapide(duel, cote, attaquantIds, options = {}) {
   return choisirCiblesRapidesIA(duel, cote, attaquantIds, options);
 }
@@ -2140,6 +2149,13 @@ export function rpgChoisirAttaquants(duel, cote = 'sorcier', options = {}) {
  * bloqueur frappe l'attaquant ; l'attaquant répartit sa force entre ses
  * bloqueurs (répartition égale par défaut si aucune n'est fournie).
  * `blocages === null` laisse l'IA affecter automatiquement ses bloqueurs.
+ *
+ * `ciblesAttaque` porte le CHOIX du Coup rapide, attaquant par attaquant :
+ * l'identifiant d'une créature adverse à frapper — la frappe tombe avant les
+ * blessures de combat, l'attaque s'arrête là et l'attaquant n'est alors ni
+ * bloqué ni porté sur le sorcier — ou rien du tout, et l'attaquant attaque
+ * normalement. C'est aussi la seule phase d'attaque du camp pour ce tour : la
+ * suivante est refusée (`raison: 'attaque-jouee'`) jusqu'au tour prochain.
  */
 /**
  * Les déclencheurs des armes portées par des attaquants — le lot du Sable
@@ -2190,6 +2206,10 @@ export function rpgLancerAttaque(
   ciblesAttaque = null,
 ) {
   const adv = autre(cote);
+  // Une seule phase d'attaque par tour : le camp qui a déjà résolu son combat
+  // n'en déclare pas un second. Le drapeau n'est posé que sur une déclaration
+  // acceptée (plus bas) : un refus ne consomme rien.
+  if (duel.attaqueJouee === cote) return { ok: false, raison: 'attaque-jouee' };
   const ids = [...new Set(attaquantIds ?? [])];
   const attaquants = duel[cote].creatures.filter((e) => ids.includes(e.id));
   if (!attaquants.length) return { ok: false, raison: 'personne' };
@@ -2205,16 +2225,28 @@ export function rpgLancerAttaque(
     || Object.keys(ciblesRapides).some((id) => !ids.includes(id))) {
     return { ok: false, raison: 'cible' };
   }
+  // Le Coup rapide est un CHOIX, attaquant par attaquant : frapper une créature
+  // adverse — l'attaque s'arrête alors sur cette frappe — ou attaquer
+  // normalement, vers le sorcier. Sans cible désignée il n'y a rien à frapper,
+  // et la déclaration reste parfaitement légale : l'attaquant rejoint la vague
+  // ordinaire (bloquable, blessures de combat, sorcier s'il passe). La cible
+  // désignée, elle, doit être une créature adverse non protégée.
   for (const attaquant of attaquants) {
-    const carte = duelCardById(attaquant.carteId);
     const cibleId = ciblesRapides[attaquant.id];
-    if (cibleId && !attaquant.coupRapide) return { ok: false, raison: 'cible' };
-    if (!attaquant.coupRapide) continue;
-    const ciblesLegales = duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
-    if (!cibleId && ciblesLegales.length) return { ok: false, raison: 'cible' };
-    const cible = cibleId && duel[adv].creatures.find((entite) => entite.id === cibleId);
-    if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+    if (!cibleId) continue;
+    if (!attaquant.coupRapide) return { ok: false, raison: 'cible' };
+    const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+    // Une cible disparue entre la déclaration et la résolution n'est pas une
+    // erreur d'appel : la frappe est annulée plus bas, l'attaque suit son cours.
+    if (cible && rpgEstProtegee(cible, cardColors(duelCardById(attaquant.carteId)))) {
+      return { ok: false, raison: 'protection' };
+    }
   }
+
+  // L'attaquant dont la frappe rapide a trouvé sa cible : son attaque s'arrête
+  // sur cette frappe — rien à bloquer, et personne à interposer.
+  const frappeSurCreature = (attaquant) => Boolean(ciblesRapides[attaquant?.id]
+    && duel[adv].creatures.some((entite) => entite.id === ciblesRapides[attaquant.id]));
 
   const bloqueursDisponibles = duel[adv].creatures.filter(peutBloquer);
   const affectations = blocages === null
@@ -2231,7 +2263,7 @@ export function rpgLancerAttaque(
     const dejaAssigne = Object.values(affectations).some((idsBloqueurs) => idsBloqueurs.includes(force.id));
     if (dejaAssigne) continue;
     const candidats = attaquants
-      .filter((attaque) => rpgPeutBloquerAttaquant(force, attaque)
+      .filter((attaque) => rpgPeutBloquerAttaquant(force, attaque, frappeSurCreature(attaque))
         && !rpgEstProtegee(attaque, cardColors(duelCardById(force.carteId))))
       .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
     if (!candidats.length) continue;
@@ -2244,13 +2276,16 @@ export function rpgLancerAttaque(
   const bloqueursUtilises = new Set();
   for (const [attaquantId, idsBloqueurs] of Object.entries(affectations)) {
     if (!ids.includes(attaquantId)) return { ok: false, raison: 'blocage' };
+    // Sa frappe a une cible : l'attaque s'arrête dessus, rien à bloquer.
+    const frappeRapide = frappeSurCreature(attaquants.find((entite) => entite.id === attaquantId));
+    if (frappeRapide && idsBloqueurs.length) return { ok: false, raison: 'blocage' };
     if (new Set(idsBloqueurs).size !== idsBloqueurs.length) return { ok: false, raison: 'bloqueur' };
     const attaquant = attaquants.find((entite) => entite.id === attaquantId);
     for (const bloqueurId of idsBloqueurs) {
       const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
       if (!bloqueur || bloqueursUtilises.has(bloqueurId)) return { ok: false, raison: 'bloqueur' };
-      if (!rpgPeutBloquerAttaquant(bloqueur, attaquant)) {
-        return { ok: false, raison: attaquant.infiltration ? 'infiltration' : 'envol' };
+      if (!rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide)) {
+        return { ok: false, raison: frappeRapide ? 'blocage' : attaquant.infiltration ? 'infiltration' : 'envol' };
       }
       if (rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))) {
         return { ok: false, raison: 'protection' };
@@ -2293,11 +2328,10 @@ export function rpgLancerAttaque(
   // blessures. Prévoir aussi les destructions en chaîne, boucliers et protections
   // sur une copie pour qu'une répartition invalide ne modifie jamais la partie.
   const degatsAvantCombat = [];
-  // Le Coup rapide frappe AVANT les blessures de combat : la cible choisie à la
-  // déclaration encaisse les dégâts d'attaque, sans riposte. L'attaque se
-  // poursuit ensuite normalement — l'attaquant peut être bloqué, échange ses
-  // blessures de combat, ou frappe le sorcier s'il passe. Un bloqueur emporté
-  // par cette frappe précoce est déjà hors du combat.
+  // Le Coup rapide frappe AVANT les blessures de combat : la créature désignée à
+  // la déclaration encaisse les dégâts d'attaque, sans riposte. C'est un choix —
+  // et il coupe court : l'attaquant qui a frappé s'arrête là, il n'est ni
+  // bloqué, ni échangé, et ne touche pas le sorcier (`attaquantsArretes`).
   const frappesRapides = [];
   for (const attaquant of attaquants) {
     const cibleRapideId = ciblesRapides[attaquant.id];
@@ -2321,6 +2355,13 @@ export function rpgLancerAttaque(
       sourceType: 'attaque',
     });
   }
+  // Les attaquants dont la frappe a trouvé sa cible : leur attaque s'arrête sur
+  // cette frappe. Elle ne connaît ni blocage, ni blessures de combat, ni dégâts
+  // au sorcier. Une cible disparue entre-temps annule la frappe (`annule`) et
+  // rend l'attaquant à la vague ordinaire.
+  const attaquantsArretes = new Set(frappesRapides
+    .filter((frappe) => !frappe.annule)
+    .map((frappe) => frappe.attaquantId));
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
@@ -2398,16 +2439,22 @@ export function rpgLancerAttaque(
       sourceId,
     });
   };
+  // La déclaration passe à l'histoire : la phase d'attaque de ce camp est jouée,
+  // aucun second combat ne s'ouvrira avant le tour suivant (`rpgFinDeTour`).
+  duel.attaqueJouee = cote;
   // Appliquer réellement cette étape une seule fois, avant les blessures normales.
   appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
   for (const attaquant of attaquants) {
     attaquant.attaquee = true;
     if (!duel[cote].creatures.some((entite) => entite.id === attaquant.id)) continue;
+    // Sa frappe rapide a touché : l'attaque s'arrête là, sans blocage, sans
+    // blessures de combat et sans dégâts au sorcier.
+    if (attaquantsArretes.has(attaquant.id)) continue;
     const idsBloqueurs = blocagesApresCapacites[attaquant.id] ?? [];
     if (!idsBloqueurs.length) {
-      // Un attaquant rapide n'est bloqué que par des bloqueurs encore debout :
-      // si la frappe précoce les a tous emportés, la voie est libre.
-      if (!attaquantsDejaBloques.has(attaquant.id) || ciblesRapides[attaquant.id]) {
+      // Un attaquant déclaré bloqué le reste même si ses bloqueurs sont tombés
+      // sous les capacités préalables : seul le passage libre frappe le sorcier.
+      if (!attaquantsDejaBloques.has(attaquant.id)) {
         coupsSorcier.push({ attaquantId: attaquant.id, amount: attaquant.atk });
       }
       continue;
@@ -2507,16 +2554,19 @@ export function rpgLancerAttaque(
   return { ok: true, resume };
 }
 
-/** Résolution d'une attaque qui n'a pas été bloquée par une créature. */
+/**
+ * Résolution d'une attaque qui n'a pas été bloquée par une créature — le
+ * raccourci d'une attaque isolée (les scénarios sans interface s'en servent).
+ * Le Coup rapide garde son choix : avec `cibleCreatureId`, la créature frappe
+ * la créature désignée et son attaque s'arrête là (`rpgLancerAttaque`) ;
+ * sans cible, elle attaque le sorcier comme n'importe quelle créature.
+ */
 export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null) {
   const attaquant = duel[cote].creatures.find((e) => e.id === entiteId);
   if (!attaquant) return { ok: false, raison: 'absente' };
   if (!pret(attaquant)) return { ok: false, raison: 'pas-pret' };
   const carte = duelCardById(attaquant.carteId);
   if (attaquant.coupRapide) {
-    const ciblesLegales = duel[autre(cote)].creatures
-      .filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
-    if (ciblesLegales.length && !cibleCreatureId) return { ok: false, raison: 'cible' };
     if (cibleCreatureId) {
       const cible = duel[autre(cote)].creatures.find((entite) => entite.id === cibleCreatureId);
       if (!cible) return { ok: false, raison: 'cible' };
@@ -2683,6 +2733,9 @@ export function rpgFinDeTour(duel) {
   }
   duel.tour = autre(duel.tour);
   duel.phase = 'debut';
+  // Nouveau tour, nouvelle phase d'attaque : le camp qui vient de jouer a
+  // consommé la sienne, l'autre ouvre la sienne.
+  duel.attaqueJouee = null;
   const camp = duel[duel.tour];
   camp.mana = manaVide();           // le mana non dépensé s'évapore
   camp.terrainPose = false;         // un nouveau terrain peut être posé

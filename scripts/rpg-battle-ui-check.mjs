@@ -195,13 +195,20 @@ assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
 // du combat relate chaque frappe.
 assert.match(duelEngine, /const cibleRapideId = ciblesRapides\[attaquant\.id\];[\s\S]*?frappesRapides\.push\([\s\S]*?degats: attaquant\.atk,[\s\S]*?degatsAvantCombat\.push\(\{\s*cote: adv,\s*entiteId: cible\.id,\s*amount: attaquant\.atk,[\s\S]*?coupsRapides: frappesRapides,[\s\S]*?for \(const coup of resume\.coupsRapides\)/s,
   'le Coup rapide inflige l’attaque de la créature choisie, sans combat de riposte');
-assert.match(duelEngine, /export function rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\s*\{[\s\S]*?if \(attaquant\.infiltration\) return false;[\s\S]*?!attaquant\.envol \|\| Boolean\(bloqueur\.envol\)/,
-  'l’Infiltration rend l’attaquant inbloquable, et l’Envol n’autorise que les créatures volantes à bloquer un attaquant volant');
+// Le Coup rapide se CHOISIT : une frappe sur une créature clôt l’attaque de
+// l’attaquant — `attaquantsArretes` l’écarte du blocage, des blessures de
+// combat et du sorcier —, sinon il attaque normalement, sans cible exigée.
+assert.match(duelEngine, /const attaquantsArretes = new Set\(frappesRapides\s*\n?\s*\.filter\(\(frappe\) => !frappe\.annule\)/,
+  'la frappe rapide qui a trouvé sa cible arrête l’attaque de son attaquant');
+assert.match(duelEngine, /if \(attaquantsArretes\.has\(attaquant\.id\)\) continue;/,
+  'l’attaquant arrêté sur sa frappe ne passe pas aux blessures de combat');
+assert.match(duelEngine, /export function rpgPeutBloquerAttaquant\(bloqueur, attaquant, frappeRapide = false\)\s*\{[\s\S]*?if \(frappeRapide\) return false;[\s\S]*?if \(attaquant\.infiltration\) return false;[\s\S]*?!attaquant\.envol \|\| Boolean\(bloqueur\.envol\)/,
+  'rien ne se met en travers d’une frappe rapide, et l’Infiltration comme l’Envol gardent leurs refus');
 assert.match(aiBrain, /peutBloquerAttaquant\(bloqueur, attaquant\)\s*&&\s*!estProtegee\(attaquant, cardColors\(duelCardById\(bloqueur\.carteId\)\)\)/,
   'l’IA écarte les bloqueurs sans Envol face à un attaquant volant');
-assert.match(duelEngine, /if \(!rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) \{\s*return \{ ok: false, raison: attaquant\.infiltration \? 'infiltration' : 'envol' \};/,
-  'le moteur refuse un blocage contre un attaquant avec Envol ou Infiltration, avec la raison qui convient');
-assert.match(battlePage, /if \(!retireDeCetteAttaque && !rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) \{\s*setBloqueurSelectionne\(null\);\s*jouerSfx\('erreur'\);/,
+assert.match(duelEngine, /if \(!rpgPeutBloquerAttaquant\(bloqueur, attaquant, frappeRapide\)\) \{\s*return \{ ok: false, raison: frappeRapide \? 'blocage' : attaquant\.infiltration \? 'infiltration' : 'envol' \};/,
+  'le moteur refuse un blocage contre un attaquant avec Envol ou Infiltration, et contre une frappe rapide, avec la raison qui convient');
+assert.match(battlePage, /if \(!retireDeCetteAttaque && !rpgPeutBloquerAttaquant\(bloqueur, attaquant, frappeRapide\)\) \{\s*setBloqueurSelectionne\(null\);\s*jouerSfx\('erreur'\);/,
   'un bloqueur sans Envol est refusé par le bruitage d’erreur, sans phrase d’explication');
 assert.match(battlePage, /canDragBlocker=\{Boolean\(reponseActive && !reponseApresBlocage && bloqueursDisponibles\.some/,
   'seuls les bloqueurs légaux restent saisissables : l’attaque adverse n’a pas besoin d’annonce écrite');
@@ -213,8 +220,32 @@ assert.match(battlePage, /attaquantsVivants,\s*blocages,\s*null, \/\/ Le moteur 
   'la défense ne transmet pas de partage figé avant les capacités');
 assert.match(battlePage, /attaquantsVivants,\s*blocages,\s*null, \/\/ Ne pas figer/,
   'l’attaque du joueur ne transmet pas de partage figé avant les capacités');
-assert.match(battlePage, /cibleAttaqueEnCours[\s\S]*?prochainCoupRapideSansCible[\s\S]*?ciblesAttaque/,
-  'l’interface exige la cible de chaque Coup rapide avant de confirmer les attaquants');
+// La cible du Coup rapide reste un CHOIX : l’invitation à désigner se déduit
+// de la sélection, le bouton de confirmation ne dépend que des attaquants, et
+// un second clic sur la même créature retire la désignation.
+assert.match(battlePage, /const cibleAttaqueEnCours = phase \? prochainCoupRapideSansCible\(attaquants\) : null;/,
+  'la proie invitée se déduit de la sélection d’attaquants, sans état de ciblage séparé');
+assert.match(battlePage, /disabled=\{!attaquants\.length\} onClick=\{\(\) => lancerAttaque\(\)\}/,
+  'la confirmation ne réclame plus la cible d’un Coup rapide : elle part vers le sorcier sans proie');
+assert.match(battlePage, /const dejaVisee = candidats\.find\(\(candidate\) => ciblesAttaque\[candidate\.id\] === entite\.id\);[\s\S]*?if \(dejaVisee\) delete cibles\[dejaVisee\.id\];\s*\n\s*else cibles\[libre\.id\] = entite\.id;/,
+  'un second clic sur la même créature retire la désignation de la proie');
+// Une seule phase d’attaque par tour : le moteur refuse la seconde déclaration
+// du camp (`attaqueJouee`, remis à null par `rpgFinDeTour`), et la page range
+// l’étape du rail en « jouée » — le bouton « Attaquer avec tous » se ferme.
+assert.match(duelEngine, /if \(duel\.attaqueJouee === cote\) return \{ ok: false, raison: 'attaque-jouee' \};/,
+  'le moteur refuse une seconde phase d’attaque du même camp dans le tour');
+assert.match(duelEngine, /duel\.attaqueJouee = cote;\s*\n\s*\/\/ Appliquer réellement cette étape une seule fois/,
+  'la phase d’attaque n’est consommée que par une déclaration acceptée');
+assert.match(duelEngine, /duel\.tour = autre\(duel\.tour\);\s*\n\s*duel\.phase = 'debut';[\s\S]{0,200}?duel\.attaqueJouee = null;/,
+  'la fin du tour rend sa phase d’attaque au camp suivant');
+assert.match(battlePage, /const attaqueJouee = duel\.attaqueJouee === 'joueur' \|\| combatEntrant\?\.coteAttaquant === 'joueur';/,
+  'la page lit la phase d’attaque déjà jouée, combat en attente compris');
+assert.match(battlePage, /<PhaseTrack current=\{phaseDuelActive\} jouees=\{attaqueJouee \? \['attaque'\] : \[\]\} \/>/,
+  'le rail des phases marque l’étape d’attaque comme jouée');
+assert.match(battleCss, /\.rpg-phase-step\.is-jouee\s*\{[^}]*color:/s,
+  'l’étape d’attaque jouée se range au lieu de s’allumer');
+assert.match(battlePage, /disabled=\{!monTour \|\| attaqueJouee \|\| !prets\.length \|\| Boolean\(combatEntrant\) \|\| defausseOuverte\}/,
+  '« Attaquer avec tous » se verrouille une fois la phase d’attaque du tour jouée');
 // Lueur rouge « visée » : la victime d'un Coup rapide, la cible d'une magie,
 // d'une sorcellerie ou de tout autre effet de carte portent le même rouge, de
 // l'annonce du sorcier jusqu'à la résolution — on sait toujours qui va être

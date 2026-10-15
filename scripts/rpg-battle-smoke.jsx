@@ -1555,23 +1555,38 @@ export async function checkRpgBattle(assert) {
     'aucune flamme n’est rendue autour des cartes mythiques');
   await act(async () => { ferielEnJeu.click(); });
   const confirmerFeriel = ferielContainer.querySelector('.rpg-btn--confirmer-attaque');
-  assert.equal(confirmerFeriel.disabled, true, 'la confirmation attend que la cible du Coup rapide soit choisie');
+  assert.equal(confirmerFeriel.disabled, false,
+    'la frappe du Coup rapide est un choix : la confirmation n’exige aucune cible');
   assert.ok(ferielContainer.querySelector('.rpg-card--ennemi.is-ciblable'),
     'les cibles légales du Coup rapide s’allument sur la table, sans consigne écrite');
   const chienCibleFeriel = [...ferielContainer.querySelectorAll('.rpg-card--ennemi')]
     .find((card) => card.dataset.cardId === 'chien-du-guet');
   assert.ok(chienCibleFeriel?.classList.contains('is-ciblable'), 'le Chien adverse est présenté comme cible légale');
   await act(async () => { chienCibleFeriel.click(); });
-  assert.equal(ferielContainer.querySelector('.rpg-btn--confirmer-attaque').disabled, false,
-    'la confirmation s’active après le choix de la cible');
+  assert.ok(chienCibleFeriel.classList.contains('is-coup-rapide-cible'),
+    'la proie désignée s’allume en rouge avant l’attaque');
+  await act(async () => { chienCibleFeriel.click(); });
+  assert.equal(chienCibleFeriel.classList.contains('is-coup-rapide-cible'), false,
+    'un second clic sur la même créature retire la désignation : Fériel repart vers le sorcier');
+  await act(async () => { chienCibleFeriel.click(); });
+  const pvSorcierFeriel = ferielContainer.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent.trim();
   await act(async () => { ferielContainer.querySelector('.rpg-btn--confirmer-attaque').click(); });
   assert.ok(ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]'),
     'Fériel reste en jeu car la créature ciblée ne riposte pas');
   assert.equal(ferielContainer.querySelector('.rpg-card--ennemi[data-card-id="chien-du-guet"]'), null,
     'le Coup rapide inflige les 3 dégâts d’attaque et détruit le Chien 2/2');
+  assert.equal(ferielContainer.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent.trim(), pvSorcierFeriel,
+    'l’attaque s’arrête sur la frappe : le sorcier ne perd aucun point de vie');
   assert.match(ferielContainer.querySelector('.rpg-log')?.textContent ?? '',
     /FÉRIEL inflige 3 dégâts à Chien du guet avec Coup rapide/i,
     'le journal du duel annonce le montant et la cible de l’attaque ciblée');
+  // Une seule phase d’attaque par tour : l’étape du rail se range, et
+  // « Attaquer avec tous » se verrouille jusqu’au prochain tour.
+  assert.ok(ferielContainer.querySelector('.rpg-phase-step[data-phase="attaque"].is-jouee'),
+    'le rail des phases marque l’attaque du tour comme jouée');
+  const attaqueTousFeriel = ferielContainer.querySelector('.rpg-btn--attaque-tous');
+  assert.ok(attaqueTousFeriel?.classList.contains('is-jouee') && attaqueTousFeriel.disabled,
+    '« Attaquer avec tous » se ferme une fois la phase d’attaque consommée');
   await act(async () => { ferielRoot.unmount(); });
   ferielContainer.remove();
 

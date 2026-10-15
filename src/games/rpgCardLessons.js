@@ -211,7 +211,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['feriel', 'berserk-des-trois-hivers'],
     title: 'Coup rapide vise avant les blessures de combat',
-    text: 'Quand vous sélectionnez Fériel ou le Berserk comme attaquant, choisissez une créature adverse : Coup rapide lui inflige la valeur d’attaque de votre créature, sans riposte, avant les blessures de combat. L’attaque se poursuit ensuite normalement : votre créature peut être bloquée, échange ses dégâts de combat, ou frappe le sorcier si personne n’interpose. La cible doit être choisie avant de confirmer l’attaque.',
+    text: 'Quand vous sélectionnez Fériel ou le Berserk comme attaquant, vous pouvez désigner une créature adverse : Coup rapide lui inflige la valeur d’attaque de votre créature, sans riposte, avant les blessures de combat — et l’attaque s’arrête sur cette frappe. Votre créature n’est alors ni bloquée, ni échangée, et le sorcier ne prend rien. Sans créature désignée, elle attaque normalement : elle peut être bloquée, échange ses dégâts de combat, ou frappe le sorcier si personne ne s’interpose. Le choix se fait avant de confirmer l’attaque ; sans proie désignée, elle part vers le sorcier.',
   },
   {
     id: 'capacite-de-combat',

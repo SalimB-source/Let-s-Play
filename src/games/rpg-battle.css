@@ -5889,6 +5889,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: var(--rpg-phase-lit);
   text-shadow: 0 0 6px var(--rpg-phase-glow);
 }
+/* Phase déjà passée que le tour ne rouvre pas : la phase d'attaque est unique
+   (voir `duel.attaqueJouee`) — l'étape se range, son icône porte une coche. */
+.rpg-phase-step.is-jouee {
+  border-color: rgba(223, 196, 143, .24);
+  color: rgba(223, 211, 184, .44);
+}
+.rpg-phase-step.is-jouee .rpg-phase-step__icon {
+  border-color: rgba(223, 196, 143, .3);
+  background: rgba(8, 7, 7, .62);
+}
+.rpg-phase-step.is-jouee .rpg-phase-step__icon::after {
+  content: '✓';
+  margin: -2px 0 0 1px;
+  color: var(--rpg-phase-lit);
+  font: 700 11px/1 var(--display);
+  grid-area: 1 / 1;
+}
+.rpg-phase-step.is-jouee .rpg-phase-step__icon svg { opacity: .28; }
+.rpg-phase-step.is-jouee .rpg-phase-step__label { color: rgba(223, 211, 184, .5); }
 @keyframes rpg-phase-icon-light {
   0%, 100% { box-shadow: 0 0 6px var(--rpg-phase-glow), inset 0 0 4px rgba(255, 255, 255, .06); }
   50% { box-shadow: 0 0 12px var(--rpg-phase-glow), inset 0 0 6px rgba(255, 255, 255, .12); }
