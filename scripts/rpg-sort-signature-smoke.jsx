@@ -1,7 +1,8 @@
 // La signature des familles de sorts dans le jeu réel : le socle d'une Magie
 // Rapide et d'une Sorcellerie sur la main, leur sceau dans le mulligan et dans
-// la grille du catalogue, la teinte de leur ligne de type dans l'aperçu — et
-// rien de tout cela sur une créature, un terrain ou une arme.
+// la grille du catalogue, la teinte de leur ligne de type dans l'aperçu, la
+// lueur de jouabilité qui s'allume dans la couleur de la famille quand le mana
+// est là — et rien de tout cela sur une créature, un terrain ou une arme.
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
@@ -25,6 +26,16 @@ import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
  */
 const DECK_SIGNATURE = ['trait-de-braise', 'rapport-du-greffier', 'desert', 'chien-du-guet', 'sabre-maudit'];
 const DECK_ADVERSE = ['desert', 'desert', 'desert', 'desert', 'desert'];
+
+/**
+ * La main de la lueur de jouabilité : une Magie Rapide et une Sorcellerie qui
+ * coûtent **un mana eau** chacune (Ressac et Eau de la source), et les terrains
+ * qui les paient. Un seul terrain posé — un mana — suffit donc à allumer les
+ * deux, ce qui rend le scénario indépendant de l'ordre du battage : les cinq
+ * cartes partent en main, et la question « assez de mana ? » se pose et se
+ * résout dans la même partie.
+ */
+const DECK_LUEUR = ['ressac', 'eau-de-la-source', 'mer', 'mer', 'mer'];
 
 /** Le catalogue dit-il la même famille que le drapeau du moteur ? */
 function verifierCatalogueDeCartes(assert) {
@@ -89,7 +100,7 @@ function verifierMain(assert, container) {
   return familles;
 }
 
-async function avecDuel(assert, scenario, { lancerDuel = true } = {}) {
+async function avecDuel(assert, scenario, { lancerDuel = true, deck = DECK_SIGNATURE, deckAdverse = DECK_ADVERSE } = {}) {
   const originalMatchMedia = window.matchMedia;
   // Le survol doit être constaté comme disponible : c'est lui qui ouvre l'aperçu.
   window.matchMedia = (query) => ({
@@ -110,7 +121,7 @@ async function avecDuel(assert, scenario, { lancerDuel = true } = {}) {
   };
   try {
     await act(async () => {
-      root.render(<RpgDuelPage joueurDeck={[...DECK_SIGNATURE]} sorcierDeck={[...DECK_ADVERSE]} sorcierPuissance={0} rng={() => 0.999} />);
+      root.render(<RpgDuelPage joueurDeck={[...deck]} sorcierDeck={[...deckAdverse]} sorcierPuissance={0} rng={() => 0.999} />);
     });
     // Le duel s'ouvre depuis l'onglet Deck (« Jouer avec ce deck ») : le
     // volet de mulligan suit le lancement, pas le rendu.
@@ -224,5 +235,45 @@ export async function checkRpgSortSignature(assert) {
     assert.ok(sceaux >= 10, `catalogue : les deux familles de sorts se repèrent au sceau (${sceaux} vignettes)`);
   }, { lancerDuel: false });
 
-  console.log('✓ Familles de sorts : la voûte du socle (liseré d’or ou d’améthyste) et le jeton (losange ou rond) marquent les magies rapides et les sorcelleries sur la main, dans le mulligan, dans l’aperçu et dans le catalogue — créatures, terrains et armes n’en portent aucun.');
+  // ── 6. La lueur de jouabilité : le mana allume, la famille teinte ──────────
+  // La main de ce scénario paie ses deux sorts d'un seul terrain : rien n'est
+  // allumé à zéro mana, et les deux s'allument — chacun dans la classe de sa
+  // famille, celle qui reçoit l'azur ou l'améthyste — dès que le terrain est
+  // posé. Le terrain lui-même, allumé avant d'être posé, ne porte aucune
+  // famille : son halo reste l'or du jeu.
+  await avecDuel(assert, async ({ container, cliquer }) => {
+    const faceDe = (id) => container.querySelector(`.rpg-hand__card[data-card-id="${id}"]`);
+    const familleDe = (face) => [...face.classList]
+      .find((classe) => classe.startsWith('rpg-hand__card--famille-')) ?? null;
+    const allumee = (face) => face.classList.contains('is-playable');
+    const terrain = faceDe('mer');
+    assert.ok(terrain, 'la main de départ aligne le terrain qui paie les sorts');
+
+    // La main de départ se garde : le volet du mulligan se referme, la table
+    // est au joueur et aucune carte n'est encore payable.
+    await passerMulligan(container, cliquer);
+    assert.equal(container.querySelector('.rpg-mulligan'), null, 'le volet du mulligan est refermé');
+    assert.equal(allumee(faceDe('ressac')), false, 'sans mana, la Magie Rapide reste éteinte');
+    assert.equal(allumee(faceDe('eau-de-la-source')), false, 'sans mana, la Sorcellerie reste éteinte');
+    assert.equal(familleDe(terrain), null, 'un terrain ne porte aucune famille : son halo reste l’or du jeu');
+    assert.equal(allumee(terrain), true, 'le terrain se pose sans mana : il est la seule carte allumée');
+
+    await cliquer(terrain);
+    assert.equal(container.querySelectorAll('.rpg-hand__card[data-card-id="mer"]').length, 2,
+      'le terrain posé a quitté la main — les deux autres attendent leur tour');
+    assert.ok(container.querySelector('.rpg-terrain--joueur'), 'son mana attend sur la table');
+    assert.equal(allumee(faceDe('mer')), false,
+      'un seul terrain par tour : le suivant reste éteint, l’or compris');
+
+    const rapide = faceDe('ressac');
+    const sorcellerie = faceDe('eau-de-la-source');
+    assert.equal(allumee(rapide), true, 'payable à un mana, la Magie Rapide s’allume');
+    assert.equal(familleDe(rapide), 'rpg-hand__card--famille-rapide',
+      'la face allumée est celle de la famille que la feuille teinte en azur');
+    assert.equal(allumee(sorcellerie), true, 'payable à un mana, la Sorcellerie s’allume');
+    assert.equal(familleDe(sorcellerie), 'rpg-hand__card--famille-sorcellerie',
+      'la face allumée est celle de la famille que la feuille teinte en améthyste');
+  }, { deck: DECK_LUEUR });
+
+  console.log('✓ Familles de sorts : la voûte du socle (liseré d’or ou d’améthyste) et le jeton (losange ou rond) marquent les magies rapides et les sorcelleries sur la main, dans le mulligan, dans l’aperçu et dans le catalogue — créatures, terrains et armes n’en portent aucun. La lueur de jouabilité suit le mana et prend la couleur de la famille : azur pour une Magie Rapide payable, améthyste pour une Sorcellerie payable, or pour tout ce qui se pose.');
 }

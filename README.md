@@ -5433,11 +5433,12 @@ bande du bas.
 **La table dit déjà tout.** Les consignes sont retirées : l'état du duel se lit
 là où il se passe.
 
-- **Ce qui est jouable s'allume.** Le halo doré de la main (`is-playable`,
-  `data-jouable`) est la seule réponse à « puis-je jouer cette carte ? ». Une
-  carte refusée reste éteinte, en main, avec son bruitage d'erreur — plus
-  personne n'écrit « mana insuffisant » ni « vous avez déjà posé votre terrain
-  ce tour ».
+- **Ce qui est jouable s'allume.** Le halo de la main (`is-playable`,
+  `data-jouable`) est la seule réponse à « puis-je jouer cette carte ? » — doré
+  pour une carte qui se pose, **azur pour une Magie Rapide et améthyste pour une
+  Sorcellerie** depuis « la lueur de jouabilité des sorts ». Une carte refusée
+  reste éteinte, en main, avec son bruitage d'erreur — plus personne n'écrit
+  « mana insuffisant » ni « vous avez déjà posé votre terrain ce tour ».
 - **Les cibles s'allument aussi.** Une magie ou un effet d'arrivée qui attend sa
   victime allume la carte en main (`is-targeting`) et chaque cible légale sur la
   table (`is-ciblable`) — le sorcier adverse compris, mais seulement quand il
@@ -7235,9 +7236,15 @@ armes qui fait le repère : un socle au bas de la face veut dire *sort*, et sa
 | --- | --- | --- |
 | **Socle** | la voûte, liseré d'or sur toute la courbe | la même voûte, liseré d'améthyste |
 | **Forme du jeton** | losange — l'éclair au centre | médaillon rond |
-| **Teinte** | or (`#ffd619`), l'or des cartes jouables | améthyste (`#b39ae0`), la couleur du contre |
+| **Teinte** | or (`#ffd619`) — le socle et le jeton | améthyste (`#b39ae0`), la couleur du contre |
+| **Lueur en main** | azur (`#4d7dff`) quand le mana est là | la même améthyste que son socle |
 | **Sigle** | l'éclair — ça part sans attendre | l'étincelle — ça se prépare |
 | **Mot** | `MAGIE RAPIDE` | `SORCELLERIE` |
+
+La dernière ligne ne se lit pas sur la face mais **dans la main** : c'est la
+lueur de jouabilité, celle qui s'allume quand la carte est payable (voir « la
+lueur de jouabilité des sorts », plus bas). Les autres disent la famille sur la
+carte elle-même, où qu'elle soit.
 
 Trois canaux indépendants, donc la distinction tient **même sans couleur** (la
 forme du jeton), **même sans lire** (la teinte), et **même sans connaître le jeu**
@@ -7372,3 +7379,96 @@ la carte mythique garde son zellige, le Sabre maudit n'a rien, et les onze
 surfaces le portent. Les planches de contrôle — `sablier-motifs-cadres.png` et
 sa loupe `sablier-motifs-cadres-zoom.png` — se refont par capture Chromium (voir
 la recette des captures du Sablier).
+
+## Le Sablier : la lueur de jouabilité des sorts
+
+La main répond à une seule question — « puis-je jouer cette carte, là, tout de
+suite ? » — et elle y répond d'une seule manière : le halo de `is-playable`,
+allumé sur le verdict de `peutJouerCarte()`, mana compris. Mais ce halo était
+**du même or pour tout le monde** : dans une main qui tenait trois sorts, la
+Magie Rapide et la Sorcellerie s'allumaient pareil, et il fallait lire le socle
+ou le mot — ou se souvenir de la carte — pour savoir laquelle part en réponse et
+laquelle attend son tour. Deux familles, un seul voyant.
+
+**Le halo garde une seule règle d'allumage, et prend maintenant la couleur de
+ce qu'il annonce.**
+
+| Carte allumée | Lueur de jouabilité |
+| --- | --- |
+| **Magie Rapide** | azur — `77, 125, 255`, reflet de survol `176, 197, 255` |
+| **Sorcellerie** | améthyste — `179, 154, 224`, reflet `236, 227, 255` |
+| Créature, héros, terrain, arme | l'or du jeu, inchangé — `255, 214, 25` |
+
+Rien n'a bougé du côté du jeu : c'est toujours `RpgDuelPage` qui décide si une
+carte est jouable — `peutJouerCarte()` : le tour, la fenêtre de réponse, le
+contre qui a un sort à contrer, l'arme qui a un porteur, et `rpgPeutPayer()`
+pour le mana. La feuille n'ajoute qu'une teinte : l'anneau de 2 px, le flou de
+18 px et l'ombre portée sont ceux d'avant, au pixel près, et le survol éclaircit
+toujours l'anneau. Une carte que le mana ne paie pas — ou qu'une règle retient —
+reste éteinte, quelle que soit sa famille : c'est le même halo, avec un mot de
+plus à dire.
+
+**L'or reste la couleur des cartes qui se posent** — créature, héros, terrain,
+arme. Les deux familles de sorts sont les seules à déclarer une teinte, et elles
+la déclarent **une fois**, au bloc « Les familles de sorts », en fin de feuille de
+combat : la règle du halo lit `rgba(var(--rpg-play-halo, 255, 214, 25), α)`, et
+l'or n'est que le repli écrit dans cette règle. Changer la couleur d'une famille
+ne se fait donc qu'à un endroit, et une carte qui ne déclare rien s'allume en or
+sans qu'on ait à y penser.
+
+L'améthyste est **la** couleur de la Sorcellerie — socle, jeton, ligne de type,
+et maintenant lueur : une famille, une teinte. L'azur, lui, n'appartient qu'à la
+lueur : le socle de la Magie Rapide garde son or, qui dit « jouable en
+réponse », et l'azur se reconnaît sans se confondre avec le bleu de l'Eau
+(`#3f9fe8`) ni avec une diagonale de cadre. Le halo reste un ÉTAT, jamais une
+couleur de carte : la couleur du cadre, elle, continue de suivre l'élément.
+
+### Où vit le code
+
+- `src/games/rpg-battle.css` — la règle du halo, au bloc de la main
+  (`.rpg-hand__card.is-playable`, et son survol) : même anneau, même flou, même
+  ombre, teinte lue dans `var(--rpg-play-halo)` — `var(--rpg-play-halo-clair)`
+  pour le reflet de survol, l'or en repli des deux ;
+- `src/games/rpg-battle.css`, encore — le bloc « La lueur de jouabilité d'un
+  sort », à la fin de la feuille, déclare les deux triplets de famille, avec le
+  reste de leur signature : `r`, `g`, `b` séparés, la seule forme que
+  `rgba(var(--…), α)` sache lire ;
+- `src/games/RpgDuelPage.jsx` — **intact** : la face en main porte déjà la classe
+  de sa famille (`rpg-hand__card--famille-rapide` / `--famille-sorcellerie`,
+  posée par `magieFamille()`), et `is-playable` n'a pas bougé d'un caractère ;
+- `src/games/rpg-mobile.css` — **intact** : au doigt, la carte pilote le même
+  halo ; le bloc des piles ne porte que son ombre décalée, jamais la lueur.
+
+### Vérifications
+
+```bash
+npm run check:rpg-sort-signature   # la lueur, du catalogue au duel réel
+npm run check:rpg                  # 507/507 — le moteur et le catalogue, inchangés
+npm run build                      # le bundle se construit
+```
+
+`scripts/rpg-sort-signature-check.mjs` gagne les deux volets qui manquaient. Les
+assertions de source lisent la feuille comme un contrat : le halo lit bien
+`--rpg-play-halo` (et son reflet clair au survol), il ne touche jamais
+`border-color`, les deux triplets de famille existent, l'azur est bleu
+(`b > r`, `b > g`), l'améthyste est violette (`r > g` et `b > g`), les deux diffèrent,
+l'améthyste de la lueur est **celle du socle** et l'azur n'est **pas** l'or du
+socle, et chaque reflet de survol est plus clair que sa teinte. Puis la cascade
+réelle, montée par jsdom sur la feuille entière : une face qui porte
+`--famille-rapide` reçoit l'azur, une face `--famille-sorcellerie` reçoit
+l'améthyste, et une face sans famille ne reçoit rien — c'est l'or du repli.
+
+Le scénario JSDOM du module monte ensuite une **vraie partie** pour la lueur :
+une main de Ressac (Magie Rapide — Eau, 1 mana), d'Eau de la source
+(Sorcellerie — Eau, 1 mana) et de trois Mers. À zéro mana, aucune des deux ne
+s'allume et le terrain est la seule carte allumée — sans famille, donc en or.
+Le terrain est posé d'un clic : un mana eau est là, les deux sorts s'allument,
+et chacun porte la classe de la famille dont la feuille tient la teinte. Le
+deuxième terrain, lui, reste éteint — un seul terrain par tour : le halo suit la
+règle, pas le mana.
+
+**Contrôle visuel à faire (Chromium réel, 1440 × 900 et 844 × 390 au doigt).**
+Les deux teintes doivent se lire sur la table sombre comme l'or, au même anneau
+de 2 px ; le halo ne change ni de taille ni de place, ne pousse aucune carte et
+ne recouvre ni le coût, ni la pastille d'élément, ni le socle — il se peint
+derrière la carte, sur son ombre, comme l'or qu'il remplace.
