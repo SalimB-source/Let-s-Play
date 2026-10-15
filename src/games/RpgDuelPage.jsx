@@ -48,6 +48,7 @@ import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
 import { rpgCombatFireSound, rpgFireSoundFor } from './rpgFireAudio.js';
+import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
@@ -4286,10 +4287,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // `contre` : la carte est un contresort (joué par le joueur ou par le sorcier)
   // qui défait la carte visée — le bandeau le dit au lieu de « Magie jouée ».
   const annoncerMagie = (carte, cible, { contre = false } = {}) => {
-    const son = rpgFireSoundFor(carte, 'spell')
-      ?? (carte?.effet?.type === 'soin' ? 'soin_long'
-        : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
-    jouerSfx(son);
+    if (contre) {
+      jouerSfx('card_countered');
+    } else {
+      const son = rpgWaterSoundFor(carte, 'spell')
+        ?? rpgFireSoundFor(carte, 'spell')
+        ?? (carte?.effet?.type === 'soin' ? 'soin_long'
+          : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
+      jouerSfx(son);
+    }
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
     setSortJoue({ carteId: carte.id, cible, contre });
@@ -5086,7 +5092,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const debutJournalReponse = rpgNombreDestructions(duel);
       const reponse = rpgSorcierMagieRapide(duel, rng);
       if (reponse) {
-        jouerSfx(rpgFireSoundFor(cardById(reponse.carteId), 'spell') ?? 'magie');
+        jouerSfx(rpgWaterSoundFor(cardById(reponse.carteId), 'spell')
+          ?? rpgFireSoundFor(cardById(reponse.carteId), 'spell')
+          ?? 'magie');
         animerModificationsChamp(champAvantReponse, [], debutJournalReponse);
       }
     }
@@ -5193,7 +5201,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const reponse = rpgSorcierMagieRapide(duel, rng);
       if (reponse) {
         const carte = cardById(reponse.carteId);
-        jouerSfx(rpgFireSoundFor(carte, 'spell') ?? 'magie');
+        jouerSfx(rpgWaterSoundFor(carte, 'spell') ?? rpgFireSoundFor(carte, 'spell') ?? 'magie');
         animerModificationsChamp(champAvant, [], debutJournalDestructions);
         if (joueurToucheDepuis(degatsAvant)) declencherImpactEcran('received');
       }
@@ -5296,7 +5304,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur();
     const res = rpgSorcierResoudreAnnonce(duel);
     if (res.ok) {
-      const sonEffetBraise = rpgFireSoundFor(carteAnnoncee, 'spell')
+      const sonEffetBraise = rpgWaterSoundFor(carteAnnoncee, 'spell')
+        ?? rpgFireSoundFor(carteAnnoncee, 'spell')
         ?? rpgFireSoundFor(carteAnnoncee, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
     }
