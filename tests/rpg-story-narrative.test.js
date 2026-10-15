@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { cardById } from '../src/games/rpgCards.js';
 import { collectionJoueur } from '../src/games/rpgCollection.js';
-import { RPG_STORY_CAST, RPG_STORY_DECORS, personnageEtage, personnageHistoire, portraitHistoire } from '../src/games/rpgStoryCast.js';
+import { RPG_STORY_CAST, RPG_STORY_DECORS, SITUATIONS_POSE_HISTOIRE, personnageEtage, personnageHistoire, portraitHistoire, poseHistoire, situationsPoseHistoire, standHistoire } from '../src/games/rpgStoryCast.js';
 import { RPG_STORY_ACTES, RPG_STORY_ALL_SCENES, RPG_STORY_CAMPAIGN_FLOORS, RPG_STORY_CHOICES, RPG_STORY_REGISTRES, RPG_STORY_SCENES, RPG_STORY_SURVIVANTS, RPG_STORY_LIST_CHOICE, registresDebloques, sceneHistoire, statutSurvivantsHistoire, texteEpilogueActe, texteRegistre, texteReplique } from '../src/games/rpgStoryScenes.js';
 import { acteCourantRecit, etapesRecitHistoire, recitHistoireVide, resumeActesHistoire, normaliserRecitHistoire, transitionRecitHistoire, resumeRecitHistoire } from '../src/games/rpgStoryFlow.js';
 import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY, progressionHistoireVide, normaliserProgressionHistoire, marquerEtageVaincu, chargerProgressionHistoire, sauverProgressionHistoire, reinitialiserProgressionHistoire } from '../src/games/rpgStory.js';
@@ -84,6 +84,94 @@ test('les personnages ont un portrait unique livré et commun aux scènes et aux
   assert.equal(personnageEtage('inconnu'), null);
   assert.equal(personnageHistoire('__proto__').id, 'narrateur');
   assert.equal(portraitHistoire('absent'), null);
+});
+
+test('tout personnage qui parle a son sprite détouré, livré et daté', () => {
+  // Le plateau du récit ne montre plus de portrait encadré : chaque figure du
+  // casting — héros, antagonistes des cinq tours, figurants du Souk — a son
+  // sprite à fond transparent, dérivé de sa peinture canonique.
+  const sansSprite = [];
+  for (const personnage of Object.values(RPG_STORY_CAST)) {
+    if (!personnage.portrait) continue;
+    const stand = standHistoire(personnage.id, '/Let-s-Play/');
+    if (!stand) {
+      sansSprite.push(personnage.id);
+      continue;
+    }
+    assert.equal(stand.split('?')[0], `/Let-s-Play/${personnage.stand}`,
+      `${personnage.id} : le sprite suit la racine de l’application`);
+    assert.match(stand, /\?v=/, `${personnage.id} : le sprite est daté (aucun cache ne peut resservir un ancien détourage)`);
+    assert.ok(existsSync(fileURLToPath(new URL(`../public/${personnage.stand}`, import.meta.url))),
+      `${personnage.id} : le sprite est livré dans public/${personnage.stand}`);
+  }
+  assert.deepEqual(sansSprite, [], 'aucun personnage joué ne retombe sur le portrait encadré');
+  assert.equal(standHistoire('narrateur', '/'), null, 'la ville parle sans sprite : le décor porte la scène');
+  assert.equal(standHistoire('absent', '/'), null);
+  assert.equal(standHistoire('__proto__', '/'), null, 'un identifiant inconnu ne peut pas atteindre le prototype');
+});
+
+test('les sprites du casting portent bien un fond transparent', () => {
+  // Un sprite opaque trahirait un détourage raté (fond magenta resté collé).
+  for (const personnage of Object.values(RPG_STORY_CAST)) {
+    if (!personnage.stand) continue;
+    const chemin = fileURLToPath(new URL(`../public/${personnage.stand}`, import.meta.url));
+    const octets = readFileSync(chemin);
+    assert.equal(octets.subarray(0, 4).toString('ascii'), 'RIFF', `${personnage.id} : conteneur WebP`);
+    assert.equal(octets.subarray(8, 12).toString('ascii'), 'WEBP', `${personnage.id} : conteneur WebP`);
+    assert.ok(octets.includes(Buffer.from('ALPH')), `${personnage.id} : le sprite déclare un canal alpha`);
+  }
+});
+
+test('les poses alternatives suivent la situation et livrent leur propre sprite', () => {
+  // Trois situations, toutes définies au même endroit que le casting.
+  assert.deepEqual(Object.keys(SITUATIONS_POSE_HISTOIRE), ['duel', 'choix', 'apres']);
+  for (const situation of Object.values(SITUATIONS_POSE_HISTOIRE)) {
+    assert.ok(Object.isFrozen(situation));
+    assert.equal(Object.hasOwn(SITUATIONS_POSE_HISTOIRE, situation.id), true);
+    assert.ok(situation.nom.length > 2 && situation.description.length > 8);
+  }
+
+  for (const personnage of Object.values(RPG_STORY_CAST)) {
+    for (const [situation, fichier] of Object.entries(personnage.poses ?? {})) {
+      assert.ok(Object.hasOwn(SITUATIONS_POSE_HISTOIRE, situation),
+        `${personnage.id} : « ${situation} » n’est pas une situation connue`);
+      assert.ok(personnage.stand, `${personnage.id} : une variante sans sprite de référence n’a aucun sens`);
+      assert.match(fichier, /^sablier-story\/stands\/stand-[\w-]+\.webp$/, personnage.id);
+      assert.notEqual(fichier, personnage.stand, `${personnage.id} : la variante ${situation} doit différer de la référence`);
+      const octets = readFileSync(fileURLToPath(new URL(`../public/${fichier}`, import.meta.url)));
+      assert.equal(octets.subarray(0, 4).toString('ascii'), 'RIFF', `${personnage.id} (${situation}) : conteneur WebP`);
+      assert.ok(octets.includes(Buffer.from('ALPH')), `${personnage.id} (${situation}) : fond transparent attendu`);
+      assert.equal(poseHistoire(personnage.id, situation, '/base/').split('?')[0], `/base/${fichier}`);
+      assert.ok(situationsPoseHistoire(personnage.id).includes(situation));
+    }
+  }
+
+  // Les figures livrées avec leurs deux postures : les cinq héros, les figures
+  // de la Chambre et les antagonistes des deux premiers actes. Le Pêcheur et le
+  // Sonneur n'ont pour l'instant que leur garde.
+  for (const id of ['salem', 'yamina', 'feriel', 'tarek', 'boualem', 'mahieddine',
+    'scribe', 'guetteur', 'puisatier', 'marchand', 'amani', 'djinn-souk', 'reine-etals']) {
+    assert.deepEqual(situationsPoseHistoire(id), ['duel', 'apres'], id);
+    assert.equal(poseHistoire(id, 'duel', '/base/').split('?')[0],
+      `/base/sablier-story/stands/stand-${id}-affrontement.webp`, id);
+    assert.equal(poseHistoire(id, 'apres', '/base/').split('?')[0],
+      `/base/sablier-story/stands/stand-${id}-apaisement.webp`, id);
+    assert.match(poseHistoire(id, 'duel', '/base/'), /\?v=[\w-]+$/, `${id} : la variante est datée comme la référence`);
+  }
+  assert.deepEqual(situationsPoseHistoire('pecheur'), ['duel']);
+  assert.equal(poseHistoire('pecheur', 'apres', '/base/'), standHistoire('pecheur', '/base/'),
+    'une situation non déclarée retombe sur la référence');
+
+  // Une situation inconnue ou absente retombe sur la référence, et un
+  // personnage encore sans variante n'en invente pas.
+  assert.equal(poseHistoire('salem', 'inconnue', '/base/'), standHistoire('salem', '/base/'));
+  assert.equal(poseHistoire('salem', null, '/base/'), standHistoire('salem', '/base/'));
+  assert.equal(poseHistoire('nageuse', 'duel', '/base/'), standHistoire('nageuse', '/base/'),
+    'un personnage sans variante garde sa pose de référence');
+  assert.deepEqual(situationsPoseHistoire('nageuse'), []);
+  assert.deepEqual(situationsPoseHistoire('narrateur'), []);
+  assert.equal(poseHistoire('narrateur', 'duel', '/base/'), null, 'la ville n’a pas de corps');
+  assert.equal(poseHistoire('absent', 'duel', '/base/'), null);
 });
 
 test('ouvrir une scène ne la marque pas lue ; sa position est persistante', () => {

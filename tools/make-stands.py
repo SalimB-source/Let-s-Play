@@ -15,7 +15,7 @@ Usage :
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageChops, ImageFilter, ImageOps
 
 BRUT = Path(__file__).resolve().parent.parent / "tools" / "stands-raw"
 SORTIE = Path(__file__).resolve().parent.parent / "public" / "sablier-story" / "stands"
@@ -23,7 +23,7 @@ DEBUG = Path(__file__).resolve().parent.parent / "tools" / "stands-raw" / "debug
 
 MAGENTA = (255, 0, 255)
 TOLERANCE = 132          # distance RGB admise pour rejoindre le fond
-DESPILL = 42             # seuil de teinte magenta résiduelle sur le contour
+DESPILL = 22             # seuil de teinte magenta résiduelle sur le contour
 PLUME = 1.2              # rayon de flou du masque (feather)
 HAUTEUR_MAX = 1024
 FOND_APERCU = (16, 24, 34, 255)  # bleu nuit du jeu, pour contrôler les bords
@@ -38,6 +38,31 @@ def est_magenta(pixel):
     """Magenta franc : rouge et bleu hauts, vert nettement plus bas."""
     r, g, b = pixel[0], pixel[1], pixel[2]
     return r > 150 and b > 130 and g < min(r, b) - 60
+
+
+def etaler_couleur(image, passes=4):
+    """Étale la couleur du personnage sous ses pixels transparents.
+
+    Sans ça, le bord garde le magenta du fond : le flou d'alpha le rend
+    visible et tous les sprites ont un liseré rose. On dilate donc la couleur
+    du contour de quelques pixels dans la zone vide (l'alpha, lui, ne bouge
+    pas) — la plume ne peut plus révéler que des couleurs du personnage.
+    """
+    largeur, hauteur = image.size
+    marge = passes + 1  # évite que le débordement ne revienne par le bord opposé
+    rgb = ImageOps.expand(image.convert('RGB'), marge, fill=(0, 0, 0))
+    rempli = ImageOps.expand(image.split()[3], marge, fill=0)
+    for _ in range(passes):
+        vide = rempli.point(lambda v: 255 if v == 0 else 0)
+        if not vide.getbbox():
+            break
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            voisin_rgb = ImageChops.offset(rgb, dx, dy)
+            voisin_rempli = ImageChops.offset(rempli, dx, dy)
+            prend = ImageChops.multiply(vide, voisin_rempli)
+            rgb = Image.composite(voisin_rgb, rgb, prend)
+            rempli = Image.composite(voisin_rempli, rempli, prend)
+    return rgb.crop((marge, marge, marge + largeur, marge + hauteur))
 
 
 def detourer(chemin):
@@ -85,8 +110,11 @@ def detourer(chemin):
                 grisé = (g + max(r, b)) // 4
                 pixels[x, y] = (min(r, g + DESPILL), g, min(b, g + DESPILL), a)
 
-    # Plume du masque : flou léger de l'alpha seulement.
+    # Plume du masque : flou léger de l'alpha seulement. La couleur du
+    # personnage est d'abord étalée sous la zone vide, sinon la plume révèle
+    # le magenta du fond sur tout le contour.
     alpha = image.split()[3].filter(ImageFilter.GaussianBlur(PLUME))
+    image = etaler_couleur(image, passes=4).convert('RGBA')
     image.putalpha(alpha)
 
     # Rogner sur le personnage.

@@ -146,5 +146,54 @@ assert.ok(declared(storyCss, '.rpg-narrative__boite', 'margin').includes('0 auto
 assert.ok(declared(storyCss, '.rpg-narrative__stand-img', 'max-height').some((val) => val.includes('100vh - 54px')),
   'en paysage mobile, les personnages remontent jusqu’en haut de la scène');
 
+// ── Le décor reste visible ──────────────────────────────────────────────────
+// Le lecteur a longtemps posé une nappe sombre sur toute la peinture
+// (`linear-gradient(90deg, rgba(9,16,24,.7), …, #0c141c)`), si bien qu'on ne
+// voyait plus le décor. Interdit : les deux couches qui portent la peinture ne
+// déclarent que l'image. Le seul assombrissement toléré est la bande de sol du
+// bas de l'écran, posée par `.rpg-narrative__decor::after`, qui ne commence
+// pas avant la moitié basse et n'est jamais opaque.
+for (const couche of ['.rpg-narrative', '.rpg-narrative__decor']) {
+  for (const image of declared(storyCss, couche, 'background-image')) {
+    assert.doesNotMatch(image, /gradient\(/,
+      `${couche} ne pose aucun voile dégradé sur le décor (la peinture est livrée nue)`);
+  }
+  assert.ok(declared(storyCss, couche, 'background-image').some((image) => image.includes('var(--rpg-story-decor')),
+    `${couche} affiche bien la peinture du décor`);
+}
+const bandeDeSol = declared(storyCss, '.rpg-narrative__decor::after', 'background').join(' ').replace(/\s+/g, ' ');
+const debutBande = bandeDeSol.match(/linear-gradient\(\s*180deg\s*,\s*transparent\s+(\d+)%/);
+assert.ok(debutBande, 'la bande de sol est un dégradé vertical qui part du transparent');
+assert.ok(Number(debutBande[1]) >= 55,
+  `la bande de sol ne commence pas avant 55 % de la hauteur (déclaré : ${debutBande[1]} %)`);
+const alphaBande = [...bandeDeSol.matchAll(/rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*(\.\d+|\d)\s*\)/g)]
+  .map((match) => Number(match[1]));
+assert.ok(alphaBande.length > 0 && alphaBande.every((alpha) => alpha <= 0.6),
+  'la bande de sol reste un fondu léger (jamais un bandeau noir)');
+// La lisibilité ne vient donc plus du voile mais des panneaux qui portent du
+// texte : sans fond propre, un libellé clair passerait sur une peinture claire.
+assert.ok(declared(storyCss, '.rpg-narrative__cartouche::before', 'background').some((value) => /radial-gradient/.test(value)),
+  'le cartouche de scène garde un halo sombre local derrière son texte');
+assert.ok(declared(storyCss, '.rpg-narrative__page::before', 'background').some((value) => /radial-gradient/.test(value)),
+  'la page du briefing et de l’épilogue garde son propre fond derrière le texte');
+for (const choix of declared(storyCss, '.rpg-narrative__choices button', 'background')) {
+  const alpha = Number(choix.match(/rgba\([^)]*,\s*(\.\d+|\d)\s*\)/)?.[1] ?? 0);
+  assert.ok(alpha >= 0.6, `les décisions portent un fond assez dense pour rester lisibles sur le décor (déclaré : ${choix})`);
+}
+
+// ── Les poses alternatives ──────────────────────────────────────────────────
+// La posture change avec la situation : le lecteur doit exposer la situation
+// choisie, et la transition doit rester une courte recomposition (neutralisée
+// pour qui refuse le mouvement).
+const sceneSource = readSource('../src/games/RpgStoryScene.jsx');
+assert.match(sceneSource, /situationPose/, 'le lecteur calcule la situation de la pose (duel, choix, après-duel)');
+assert.match(sceneSource, /data-pose=/, 'la pose portée par un sprite est exposée dans le DOM (contrôlable au navigateur)');
+assert.ok(declared(storyCss, '.rpg-narrative__stand-img[data-pose]', 'animation').some((value) => /rpg-story-repose/.test(value)),
+  'un changement de pose rejoue une courte transition au lieu de sauter');
+assert.ok(declared(storyCss, '.rpg-narrative__stand-img[data-pose]', 'animation').length > 1,
+  'la transition de pose est aussi neutralisée dans le bloc prefers-reduced-motion');
+
 console.log('✓ Mode Histoire : tours, verrous, lancement, identité du sorcier, retour menu et progression');
+console.log('✓ Mode Histoire : le décor des tours reste visible, le texte garde ses propres fonds');
+console.log('✓ Mode Histoire : les poses alternatives suivent la situation et se recomposent sans heurt');
 console.log('✓ Mode Histoire : textes lisibles en thème clair et sombre (descriptions entières, étages verrouillés, fin d’étage, libellé du duel, jetons du thème)');

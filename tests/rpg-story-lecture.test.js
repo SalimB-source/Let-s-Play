@@ -79,20 +79,26 @@ test('la machine à écrire a un rythme lisible et respecte prefers-reduced-moti
   assert.equal(mouvementReduit(), false, 'sans media query (essai hors navigateur), le mouvement reste possible');
 });
 
-test('chaque sprite « découpé » annoncé est un fichier livré, et l’Acte I est complet', () => {
+test('chaque sprite « découpé » annoncé est un fichier livré, et le récit entier est complet', () => {
   for (const personnage of Object.values(RPG_STORY_CAST)) {
     if (!personnage.stand) continue;
     const chemin = fileURLToPath(new URL(`../public/${personnage.stand}`, import.meta.url));
     assert.ok(existsSync(chemin), `${personnage.id} : ${personnage.stand} est livré`);
     assert.match(personnage.stand, /^sablier-story\/stands\/stand-[\w-]+\.webp$/);
-    assert.equal(standHistoire(personnage.id, '/base/'), `/base/${personnage.stand}?v=recit-listes-1`);
+    // L'URL est datée : sa révision n'est jamais figée dans un test, mais elle
+    // doit exister pour qu'un nouveau détourage ne soit pas servi depuis un cache.
+    const url = standHistoire(personnage.id, '/base/');
+    assert.equal(url.split('?')[0], `/base/${personnage.stand}`);
+    assert.match(url, /\?v=[\w-]+$/);
   }
   assert.equal(standHistoire('narrateur', '/'), null, 'la ville n’a pas de corps');
   assert.equal(standHistoire('absent', '/'), null);
-  // L'épisode I doit être jouable de bout en bout en personnages découpés.
-  for (const scene of RPG_STORY_SCENES.filter((item) => item.acteId === 'acte-1')) {
+  // Les cinq actes se jouent de bout en bout en personnages découpés : chaque
+  // figure d'une scène — et non le seul hôte — a son sprite.
+  for (const scene of RPG_STORY_SCENES) {
     const presents = new Set([scene.figure, ...scene.repliques.map((ligne) => ligne.personnage)]);
     for (const id of presents) {
+      if (id === 'narrateur') continue;
       assert.ok(RPG_STORY_CAST[id]?.stand, `${scene.id} : ${id} a un sprite découpé`);
     }
   }

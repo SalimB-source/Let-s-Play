@@ -12,7 +12,7 @@ import {
   preferencesLecture,
   sauverPreferencesLecture,
 } from './rpgStoryLecture.js';
-import { personnageEtage, personnageHistoire, portraitHistoire, standHistoire, RPG_STORY_DECORS } from './rpgStoryCast.js';
+import { personnageEtage, personnageHistoire, portraitHistoire, poseHistoire, standHistoire, RPG_STORY_DECORS } from './rpgStoryCast.js';
 import {
   RPG_STORY_ALL_SCENES,
   acteHistoire,
@@ -61,6 +61,32 @@ export function StoryHeader({ onExit, onJournal, sonActif, onToggleSound }) {
         {onToggleSound && <button type="button" onClick={onToggleSound} aria-pressed={sonActif} aria-label={sonActif ? 'Couper le son' : 'Activer le son'}>{sonActif ? 'Son activé' : 'Son coupé'}</button>}
       </nav>
     </header>
+  );
+}
+
+/**
+ * Le personnage du plateau : son sprite détouré, **dans la pose de la
+ * situation** (affrontement avant le duel, décision, après-duel), ou le
+ * portrait encadré en repli. Le repli sert quand le sprite n'existe pas encore
+ * **et** quand le fichier ne se décode pas : jamais de carré cassé, jamais de
+ * fond de détourage visible dans la scène.
+ */
+export function StoryStand({ personnageId, situation = null, cardArt }) {
+  const personnage = personnageHistoire(personnageId);
+  const stand = poseHistoire(personnageId, situation, BASE);
+  const pose = situation && personnage.poses?.[situation] ? situation : null;
+  const [illisible, setIllisible] = useState(false);
+  if (!stand || illisible) {
+    return (
+      <div className="rpg-narrative__stand-cadre">
+        <StoryPortrait personnageId={personnageId} cardArt={cardArt} />
+      </div>
+    );
+  }
+  return (
+    <img key={stand} className="rpg-narrative__stand-img" src={stand} alt=""
+      data-personnage={personnageId} data-pose={pose ?? undefined}
+      loading="eager" draggable="false" onError={() => setIllisible(true)} />
   );
 }
 
@@ -333,6 +359,13 @@ export default function RpgStoryScene({
     return [...new Set(actif === scene.figure ? [scene.figure, interlocuteur] : [scene.figure, actif])].slice(0, 2);
   })() : [];
   const flecheSuite = Boolean(scene && (machine.termine || !machineActive) && !derniere);
+  // La situation du plateau : une décision posée au lecteur, le dernier
+  // échange d'une scène d'avant-duel (on se met en garde), ou celui d'une
+  // scène d'après-duel (les épaules redescendent). Hors de ces trois cas, les
+  // personnages gardent leur pose de référence.
+  const situationPose = !dansScene ? null
+    : choixEnAttente ? 'choix'
+      : derniereLecture ? (scene.moment === 'apres' ? 'apres' : 'duel') : null;
 
   return (
     <section ref={lecteurRef} className="rpg-narrative" data-story-cursor={curseur.id ?? curseur.etageId ?? curseur.acteId ?? 'fin'}
@@ -374,13 +407,7 @@ export default function RpgStoryScene({
                   <div key={id} data-personnage-stand={id}
                     className={`rpg-narrative__stand${id === standActif ? ' rpg-narrative__stand--actif' : ''}${stand ? ' rpg-narrative__stand--decoupe' : ''}`}
                     style={{ '--stand-couleur': figurant.couleur }}>
-                    {stand ? (
-                      <img className="rpg-narrative__stand-img" src={stand} alt="" data-personnage={id} loading="eager" draggable="false" />
-                    ) : (
-                      <div className="rpg-narrative__stand-cadre">
-                        <StoryPortrait personnageId={id} cardArt={cardArt} />
-                      </div>
-                    )}
+                    <StoryStand personnageId={id} situation={situationPose} cardArt={cardArt} />
                   </div>
                 );
               })}
