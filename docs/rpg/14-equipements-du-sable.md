@@ -99,10 +99,11 @@ pose que `esquive`, `envol`, `infiltration` et `rapidite` ; il faut lui ajouter
 `entite.coupRapide` (`rpgChoisirAttaquants`, `rpgAttaquerSorcier`).
 
 Pourquoi c'est intéressant : le Sable n'avait accès au Coup rapide que par le
-Djinn de foudre. Sur un porteur déjà Infiltrable, le Javelot transforme chaque
-attaque en **deux** blessures — une sur la créature de votre choix, une sur le
-sorcier. C'est la carte qui fait regretter à l'adversaire de ne pas avoir tué
-le porteur au tour d'avant.
+Djinn de foudre. Le Javelot pose la question à chaque attaque : **frapper la
+créature de votre choix** — ses dégâts d'attaque, sans riposte, et l'attaque
+s'arrête là — **ou viser le sorcier**, en acceptant les bloqueurs. C'est la
+carte qui oblige l'adversaire à choisir entre garder sa créature et garder ses
+points de vie.
 
 ### 4. Licou du chien de sable — inhabituelle — 1 — **la carte du lot**
 
@@ -250,10 +251,12 @@ même déclencheur.
 **Pourquoi le Coup rapide et pas l'Infiltration.** La première version donnait
 l'Infiltration : c'était une erreur. Un porteur inbloquable ne blesse **jamais**
 une créature au combat, donc la moitié de la carte — la pioche — ne partait
-jamais. Le Coup rapide, lui, garantit les deux : la frappe précoce pique la
-créature désignée (pioche), puis l'attaque suit son cours et, si elle passe,
-frappe le sorcier (chien de sable). Les deux effets peuvent se déclencher le
-même tour, ce qui est exactement ce qu'on attend d'une mythique. Le Javelot du
+jamais. Le Coup rapide, lui, ouvre les deux : la frappe précoce pique la
+créature désignée (pioche) et **arrête là** l'attaque du porteur ; l'attaque
+ordinaire, elle, passe par les bloqueurs et frappe le sorcier (chien de sable).
+Les deux effets demandent donc deux attaques — deux tours —, jamais le même : la
+Takouba laisse choisir lequel des deux déclencheurs on veut voir partir
+aujourd'hui, ce qui est exactement ce qu'on attend d'une mythique. Le Javelot du
 beffroi partage donc son mot-clé avec la mythique du lot : assumé, le Sable est
 la couleur qui frappe avant le combat, comme la Neige est celle qui frappe en
 l'air.

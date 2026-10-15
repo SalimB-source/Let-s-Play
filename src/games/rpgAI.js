@@ -74,9 +74,12 @@ function estGelee(entite) {
 
 /** Infiltration : inbloquable, par personne — permanente (imprimée ou par
  *  l'arme portée) ou accordée jusqu'à la fin du tour.
- *  Envol : seul un bloqueur volant arrête un volant. */
-function peutBloquerAttaquant(bloqueur, attaquant) {
+ *  Envol : seul un bloqueur volant arrête un volant.
+ *  Coup rapide : un attaquant qui frappe une créature voit son attaque
+ *  s'arrêter — personne ne se met en travers de cette frappe-là. */
+function peutBloquerAttaquant(bloqueur, attaquant, frappePrecoce = false) {
   if (!bloqueur || !attaquant) return false;
+  if (frappePrecoce) return false;
   if (attaquant.infiltration) return false;
   return !attaquant.envol || Boolean(bloqueur.envol);
 }
@@ -386,22 +389,32 @@ function meilleureCibleRenvoiIA(duel, cote, carte) {
 }
 
 /**
- * Cible du Coup rapide : la créature qu’on peut tuer avec le plus de valeur,
- * sinon la menace principale (le coup gratuit ne riposte jamais).
+ * Le Coup rapide est un choix, attaquant par attaquant : frapper une créature
+ * adverse — l'attaque s'arrête là, sans riposte ni blocage — ou attaquer
+ * normalement, vers le sorcier. L'IA ne s'arrête que sur ce qu'elle abat : une
+ * créature retirée de la table vaut plus que les dégâts rendus au visage.
+ * Exception : quand l'assaut entier suffit déjà à faire tomber le sorcier,
+ * aucune frappe ne détourne ces dégâts-là.
  */
 export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = {}) {
   const { profil, rng } = optionsIA(duel, cote, options);
+  const adv = autre(cote);
   const cibles = {};
-  for (const id of [...new Set(attaquantIds)]) {
-    const attaquant = duel[cote].creatures.find((entite) => entite.id === id);
-    const carte = duelCardById(attaquant?.carteId);
-    if (!attaquant || !attaquant.coupRapide) continue;
+  const attaquants = [...new Set(attaquantIds)]
+    .map((id) => duel[cote].creatures.find((entite) => entite.id === id))
+    .filter(Boolean);
+  const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
+  const degatsAuVisage = attaquants.reduce((somme, entite) => somme + (entite.atk ?? 0), 0);
+  if (degatsAuVisage >= pvAdv) return cibles;
+  for (const attaquant of attaquants) {
+    if (!attaquant.coupRapide) continue;
+    const carte = duelCardById(attaquant.carteId);
     const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
       montant: attaquant.atk, sourceType: 'attaque', portee: 'combat', profil, rng,
     });
-    if (meilleure?.cibleId && meilleure.cibleId !== 'sorcier') {
-      cibles[attaquant.id] = meilleure.cibleId;
-    }
+    if (!meilleure?.cibleId || meilleure.cibleId === 'sorcier') continue;
+    const proie = duel[adv].creatures.find((entite) => entite.id === meilleure.cibleId);
+    if (proie && meurtSous(proie, attaquant.atk, 'attaque')) cibles[attaquant.id] = proie.id;
   }
   return cibles;
 }
@@ -421,10 +434,12 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
 export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], ciblesAttaque = {}, options = {}) {
   const coteDefense = autre(coteAttaquant);
   const { profil, rng } = optionsIA(duel, coteDefense, options);
-  // La frappe du Coup rapide ne dispense pas du blocage : sa cible peut être
-  // assignée comme bloqueur, et l'attaquant rapide se bloque comme un autre.
+  // Un attaquant rapide qui frappe une créature n'attaque plus : son attaque
+  // s'arrête sur sa frappe, personne ne se met en travers, et il ne touche pas
+  // le sorcier — il ne pèse donc ni dans la menace, ni dans les blocages.
   const ids = [...new Set(attaquantIds ?? [])];
-  const attaquants = duel[coteAttaquant].creatures.filter((entite) => ids.includes(entite.id));
+  const attaquants = duel[coteAttaquant].creatures
+    .filter((entite) => ids.includes(entite.id) && !ciblesAttaque?.[entite.id]);
   const bloqueurs = duel[coteDefense].creatures.filter((entite) => entite && !entite.attaquee && !estGelee(entite));
   const affectations = {};
   if (!attaquants.length || !bloqueurs.length) return affectations;
@@ -513,8 +528,9 @@ function attaquantsPrets(duel, cote) {
 /**
  * Dégâts au visage garantis quel que soit le blocage adverse : chaque
  * bloqueur ne peut encaisser qu’un attaquant, donc les K plus gros coups
- * peuvent être retenus — le reste passe. Le Coup rapide frappe sa cible en
- * préalable, puis l’attaque compte comme les autres.
+ * peuvent être retenus — le reste passe. Le Coup rapide, lui, ne détourne des
+ * dégâts que si l’IA choisit la frappe (`choisirCiblesRapidesIA`) : ce calcul
+ * majore donc légèrement les dégâts quand un rapide peut abattre une créature.
  */
 function degatsGarantis(duel, cote, prets) {
   const adv = autre(cote);
@@ -560,8 +576,9 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
   const enCourse = menaceAdverse >= (duel[cote].pv ?? 0) + (duel[cote].bouclier ?? 0);
 
   const evaluation = (ensemble) => {
-    // Le Coup rapide frappe sa cible en préalable (valeur comptée à part),
-    // puis l'attaquant combat normalement : blocages et dégâts au visage.
+    // Le Coup rapide choisit : la frappe sur une créature (valeur comptée à
+    // part) arrête l'attaque — ni blocage, ni dégâts au visage —, et l'attaquant
+    // qui s'en passe combat comme les autres.
     const ciblesRapides = choisirCiblesRapidesIA(duel, cote, ensemble.map((entite) => entite.id), options);
     const blocages = choisirBloqueursIA(duel, cote, ensemble.map((entite) => entite.id), ciblesRapides, options);
     let face = 0;
@@ -570,6 +587,8 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
     let notreFurie = 0;
     let leurFurie = 0;
     for (const attaquant of ensemble) {
+      // Sa frappe l'a arrêté avant les blessures de combat.
+      if (ciblesRapides[attaquant.id]) continue;
       const idsBloqueurs = blocages[attaquant.id] ?? [];
       const bloqueur = idsBloqueurs.length
         ? duel[adv].creatures.find((entite) => entite.id === idsBloqueurs[0])

@@ -7786,3 +7786,108 @@ fichiers (`rpg-mobile.css`, la tranche `HoverCardPreview` de `RpgDuelPage.jsx`) 
 `check:rpg-card-markers`, `check:rpg-card-motif` en navigateur) demandent un
 navigateur, absent de cet environnement — la géométrie de la pastille est donc
 donnée par le calcul ci-dessus, pas par une mesure d'écran.
+
+## Le Sablier : le Coup rapide est un choix, et une seule phase d'attaque par tour
+
+Deux règles du duel ont changé d'un même geste, à la demande du jeu :
+
+1. **Le Coup rapide s'arrête sur sa frappe.** « La créature peut infliger ses
+   dégâts à la créature ciblée ou attaquer directement l'adversaire. Si elle
+   inflige des dégâts à une créature, son attaque s'arrête. » Jusqu'ici la
+   frappe précoce tombait avant les blessures de combat, **puis l'attaque se
+   poursuivait normalement** : l'attaquant pouvait encore être bloqué, échanger
+   ses blessures de combat et frapper le sorcier. Désormais la frappe **clôt
+   l'attaque** : ni blocage, ni riposte, ni dégâts au sorcier.
+2. **Une seule phase d'attaque par tour.** Le camp qui a déclaré son combat n'en
+   déclare pas un second avant le tour suivant, quel que soit le nombre de
+   créatures encore prêtes.
+
+**Le moteur** (`src/games/rpgDuel.js`) :
+
+- `duel.attaqueJouee` (`'joueur'` | `'sorcier'` | `null`, créé par
+  `rpgNouveauDuel`) porte la phase d'attaque du tour. `rpgLancerAttaque` la
+  refuse (`raison: 'attaque-jouee'`) et ne la pose **que sur une déclaration
+  acceptée** — un refus (`'pas-pret'`, `'blocage'`, `'cible'`…) ne consomme
+  rien. `rpgFinDeTour` la remet à `null`.
+- `ciblesAttaque` est un **choix**, attaquant par attaquant : la créature
+  désignée encaisse les dégâts d'attaque, sans riposte, avant les blessures de
+  combat ; sans cible désignée, la déclaration reste légale et l'attaquant
+  rejoint la vague ordinaire (bloquable, blessures de combat, sorcier s'il
+  passe). La cible déclarée doit exister chez l'adversaire et n'être pas
+  protégée contre la couleur de l'attaquant ; une cible disparue entre-temps
+  annule la frappe et rend l'attaquant à la vague ordinaire.
+- `attaquantsArretes` écarte du combat les attaquants dont la frappe a trouvé sa
+  cible : `attaquee = true`, puis `continue` — pas de blocage, pas d'échange,
+  pas de `coupsSorcier`.
+- `rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide)` refuse le
+  blocage d'une frappe rapide (même règle pour le blocage forcé de l’Appât et
+  de l’Embuscade), et une déclaration qui désigne à la fois une proie et un
+  bloqueur est refusée (`'blocage'`) : les deux ne peuvent pas coexister.
+- `rpgAttaquerSorcier(duel, cote, id, cibleCreatureId = null)` : sans cible,
+  l'attaque va au sorcier ; avec cible, elle passe par `rpgLancerAttaque`. La
+  raison `'cible'` disparaît, l'attaquant rapide n'étant plus obligé de frapper.
+
+**L'IA** (`src/games/rpgAI.js`) : elle ne s'arrête que sur ce qu'elle **abat**
+(`choisirCiblesRapidesIA` ne retient la proie que si `meurtSous` la tue, et
+laisse tout l'assaut au visage quand celui-ci suffit à faire tomber le
+sorcier) ; `choisirBloqueursIA` ne met personne devant un frappeur ; et
+l'évaluation de `choisirAttaquantsIA` cesse de compter le combat des attaquants
+qui frappent — leur attaque n'existe plus.
+
+**L'interface** (`src/games/RpgDuelPage.jsx`) : la frappe est un choix qui se
+lit sur la table. Cliquer une proie légale la désigne au premier attaquant qui
+en a besoin, un second clic retire la désignation, et cliquer le sorcier y
+renonce pour toute la sélection. « Confirmer l'attaque » n'exige donc plus de
+cible : il n'est plus désactivé que par l'absence d'attaquant. L'état de
+ciblage séparé (`cibleAttaqueEnCours`) disparaît — l'invitation à désigner se
+déduit de la sélection. Une fois la phase consommée, l'étape « attaque » du rail
+se range avec une coche (`.rpg-phase-step.is-jouee`) et « Attaquer avec tous »
+se verrouille sous le libellé **« Attaque jouée ce tour »**.
+
+**Les textes** suivent la règle, mot pour mot : Djinn de foudre, Berserk des
+trois hivers, Fériel, Javelot du beffroi, Takouba de Tin Hinan, Sabre maudit,
+la leçon `coup-rapide` du guide, `docs/rpg/05-concept-cartes.md` (les deux
+règles y sont écrites à côté des capacités de clan) et
+`docs/rpg/14-equipements-du-sable.md` (la Takouba demande maintenant **deux**
+attaques pour déclencher ses deux effets — la frappe pioche, l'attaque qui
+passe lève le chien).
+### Vérifications
+
+
+```bash
+npm run check:rpg          # 529 tests au dernier passage sur cette retouche (main en annonce 524, avant elle)
+npm run check:rpg-ui       # le volet JSDOM rejoue Fériel : désignation, renoncement, arrêt de l'attaque, rail des phases
+npm run build              # le bundle se construit
+```
+
+Les tests du moteur tiennent le contrat (`tests/rpg-duel.test.js` 140, plus
+`rpg-equipements-sable`, `rpg-sabre-maudit`, `rpg-soleil-rouge`, `rpg-ia`) :
+la frappe désignée fait tomber la créature **sans** toucher le sorcier et sans
+échange de combat, l'attaquant rapide qui ne désigne personne frappe le sorcier
+comme les autres, un bloqueur devant une frappe rapide est refusé, l'IA n'abat
+que ce qu'elle tue, et deux déclarations dans le même tour répondent
+`'attaque-jouee'` — une déclaration refusée, elle, laisse la phase ouverte.
+
+Le scénario JSDOM de Fériel (`scripts/rpg-battle-smoke.jsx`) rejoue le geste
+entier : la confirmation active **sans** cible, les proies légales s'allument,
+la proie désignée passe au rouge (`is-coup-rapide-cible`), un second clic
+retire la désignation, l'attaque fait tomber le Chien 2/2 **sans** entamer la
+plaque du sorcier, l'étape `attaque` du rail passe en `is-jouee` et « Attaquer
+avec tous » se ferme. `scripts/rpg-battle-ui-check.mjs` gagne quatorze
+assertions statiques de plus — les onze de la retouche précédente restent — :
+frappe qui arrête l'attaque, refus de blocage, choix de la cible sans état
+séparé, verrou et coche de la phase d'attaque.
+
+**Réserve connue, hors de cette retouche :** `npm run check:rpg-ui` casse
+toujours à HEAD dans son volet JSDOM (`le deck hybride est validé à 40 cartes,
+avec 17 terrains, 16 créatures, 5 magies et 2 armes` — les données du deck
+`Sentiers de cendre` donnent 4 magies et 3 armes), puis sur deux assertions
+statiques pré-existantes : `canTarget` attend encore `modeCible === 'ennemi'`
+là où la page teste `['ennemi', 'tous'].includes(modeCible)` (l'exil du Susanoo),
+et `.rpg-card-element-badge` ne trouve plus le premier bloc `{` du sélecteur.
+Ces trois-là échouent déjà sur l'arbre propre (`git stash` vérifié), comme
+`node scripts/rpg-tutorial-flow-check.mjs` (`card-guide-armes` attendu
+`card-guide-terrain-hybride`). Rejoué dans un harnais temporaire qui neutralise
+**ces seules** assertions, le volet JSDOM de Fériel et les quatorze nouvelles
+assertions statiques passent de bout en bout. Les contrôles Playwright demandent
+un navigateur, absent de cet environnement.

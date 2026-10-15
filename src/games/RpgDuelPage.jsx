@@ -579,16 +579,19 @@ function PhaseGlyph({ phase }) {
   );
 }
 
-function PhaseTrack({ current }) {
+// `jouees` : les phases déjà passées que le tour ne rouvre pas — la phase
+// d'attaque d'un camp est unique (voir `duel.attaqueJouee`).
+function PhaseTrack({ current, jouees = [] }) {
   return (
     <ol className="rpg-phase-track" aria-label="Phases du duel">
       {RPG_PHASE_STEPS.map((step) => {
         const active = current === step.id;
-        const title = active ? `${step.title} · phase actuelle` : step.title;
+        const jouee = jouees.includes(step.id);
+        const title = active ? `${step.title} · phase actuelle` : jouee ? `${step.title} · jouée` : step.title;
         return (
           <li
             key={step.id}
-            className={`rpg-phase-step${active ? ' is-active' : ''}`}
+            className={`rpg-phase-step${active ? ' is-active' : ''}${jouee ? ' is-jouee' : ''}`}
             data-phase={step.id}
             aria-current={active ? 'step' : undefined}
             title={title}
@@ -986,7 +989,7 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${entite.coupRapide ? ', Coup rapide : frappe une créature avant le combat' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
@@ -3018,7 +3021,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const sorcierApresCombatRef = useRef(false);
   const [attaquants, setAttaquants] = useState([]);
   const [ciblesAttaque, setCiblesAttaque] = useState({});
-  const [cibleAttaqueEnCours, setCibleAttaqueEnCours] = useState(null);
   const [combatEntrant, setCombatEntrant] = useState(null);
   const [bloqueurGlisse, setBloqueurGlisse] = useState(null);
   const [bloqueurSelectionne, setBloqueurSelectionne] = useState(null);
@@ -3297,7 +3299,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setPhase(false);
     setAttaquants([]);
     setCiblesAttaque({});
-    setCibleAttaqueEnCours(null);
     setCombatEntrant(null);
     setBloqueurGlisse(null);
     setBloqueurSelectionne(null);
@@ -3936,11 +3937,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
     return duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
   };
+  // L'attaquant rapide invité à désigner sa proie : le premier de la sélection
+  // qui a des cibles légales et rien de désigné. La frappe reste un CHOIX — on
+  // peut confirmer sans rien désigner, l'attaquant part alors vers le sorcier —
+  // l'invitation n'existe donc que pour allumer les proies possibles.
   const prochainCoupRapideSansCible = (ids, selections = ciblesAttaque) => ids.find((id) => {
     const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
     const ciblesLegales = ciblesCoupRapideLegales(attaquant, 'joueur');
     return ciblesLegales.length > 0 && !ciblesLegales.some((cible) => cible.id === selections?.[id]);
   }) ?? null;
+  const cibleAttaqueEnCours = phase ? prochainCoupRapideSansCible(attaquants) : null;
+  // Une seule phase d'attaque par tour : le moteur note le camp qui a déjà joué
+  // la sienne (`duel.attaqueJouee`) et refuse la déclaration suivante. Une
+  // attaque déjà déclarée, en attente de blocage, la consomme aussi.
+  const attaqueJouee = duel.attaqueJouee === 'joueur' || combatEntrant?.coteAttaquant === 'joueur';
   const repartitionValide = !combatEntrant || combatEntrant.attaquants.every((id) => {
     const coteAttaquant = combatEntrant.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier';
     const attaquant = duel[coteAttaquant].creatures.find((entite) => entite.id === id);
@@ -4199,7 +4209,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setPhase(false);
     setAttaquants([]);
     setCiblesAttaque({});
-    setCibleAttaqueEnCours(null);
     setCibleEnCours(null);
     setConfirmationSort(null);
     setApercuSurvol(null);
@@ -4847,7 +4856,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const basculerAttaquant = (entite) => {
-    if (!entite.ready || entite.attaquee) {
+    if (attaqueJouee || !entite.ready || entite.attaquee) {
       jouerSfx('erreur');
       force();
       return;
@@ -4861,8 +4870,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (dejaSelectionnee) delete cibles[entite.id];
     setAttaquants(ids);
     setCiblesAttaque(cibles);
-    const prochainId = prochainCoupRapideSansCible(ids, cibles);
-    setCibleAttaqueEnCours(prochainId);
     force();
   };
 
@@ -4893,22 +4900,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (reponseApresBlocage || !monTour) return;
-    if (cibleAttaqueEnCours) {
-      if (entite.id === cibleAttaqueEnCours) basculerAttaquant(entite);
-      force();
-      return;
-    }
     if (!phase) {
+      // Une seule phase d'attaque par tour : celle du camp est jouée, on ne
+      // rouvre plus la sélection d'attaquants de ce tour.
+      if (attaqueJouee) {
+        jouerSfx('erreur');
+        force();
+        return;
+      }
       setPhase(true);
       if (entite.ready && !entite.attaquee) {
-        const cibleRequise = ciblesCoupRapideLegales(entite, 'joueur').length > 0;
         setAttaquants([entite.id]);
         setCiblesAttaque({});
-        setCibleAttaqueEnCours(cibleRequise ? entite.id : null);
       } else {
         setAttaquants([]);
         setCiblesAttaque({});
-        setCibleAttaqueEnCours(null);
       }
       force();
       return;
@@ -4929,21 +4935,28 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       resoudreActivationArme(entite);
       return;
     }
-    if (cibleAttaqueEnCours) {
-      const attaquant = duel.joueur.creatures.find((candidate) => candidate.id === cibleAttaqueEnCours);
-      const ciblesLegales = ciblesCoupRapideLegales(attaquant, 'joueur');
-      if (!attaquant || !ciblesLegales.some((cible) => cible.id === entite.id)) {
+    // Déclaration d'attaque en cours : la frappe du Coup rapide ne tombe qu'à
+    // la résolution du combat — ici, seul le retour de sélection se fait
+    // entendre. Cliquer une proie légale la désigne au premier attaquant qui en
+    // a besoin ; un second clic sur la même créature retire sa désignation :
+    // l'attaquant repart vers le sorcier, la frappe étant un choix.
+    if (phase) {
+      const candidats = attaquants
+        .map((id) => duel.joueur.creatures.find((candidate) => candidate.id === id))
+        .filter((candidate) => ciblesCoupRapideLegales(candidate, 'joueur')
+          .some((cible) => cible.id === entite.id));
+      const dejaVisee = candidats.find((candidate) => ciblesAttaque[candidate.id] === entite.id);
+      const libre = dejaVisee ? null : candidats.find((candidate) => !ciblesAttaque[candidate.id]);
+      if (!dejaVisee && !libre) {
         jouerSfx('erreur');
         force();
         return;
       }
-      // Le coup rapide ne frappe qu'à la résolution du combat ; ici, on ne fait
-      // entendre que le retour de sélection de la cible.
-      jouerSfx('select');
-      const cibles = { ...ciblesAttaque, [attaquant.id]: entite.id };
+      const cibles = { ...ciblesAttaque };
+      if (dejaVisee) delete cibles[dejaVisee.id];
+      else cibles[libre.id] = entite.id;
+      jouerSfx(dejaVisee ? 'annuler' : 'select');
       setCiblesAttaque(cibles);
-      const prochainId = prochainCoupRapideSansCible(attaquants, cibles);
-      setCibleAttaqueEnCours(prochainId);
       force();
       return;
     }
@@ -4968,19 +4981,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       setPhase(false);
       setAttaquants([]);
       setCiblesAttaque({});
-      setCibleAttaqueEnCours(null);
       force();
       return;
     }
 
-    const cibleManquante = prochainCoupRapideSansCible(ids, ciblesAttaque);
-    if (cibleManquante) {
-      jouerSfx('erreur');
-      setCibleAttaqueEnCours(cibleManquante);
-      force();
-      return;
-    }
     jouerSfx('attackers_confirm');
+    // Le Coup rapide est un choix : seules les proies réellement désignées
+    // arrêtent leur attaquant, les autres créatures partent vers le sorcier.
     const ciblesFinales = Object.fromEntries(ids.flatMap((id) => {
       const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
       const cible = ciblesCoupRapideLegales(attaquant, 'joueur')
@@ -5007,7 +5014,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setPhase(false);
     setAttaquants([]);
     setCiblesAttaque({});
-    setCibleAttaqueEnCours(null);
     if (!attaquantsBloques.length) {
       resoudreAttaqueJoueur(combat);
       return;
@@ -5019,14 +5025,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const declarerAttaqueAvecTous = () => {
     const ids = prets.map((entite) => entite.id);
-    if (!ids.length) { jouerSfx('erreur'); return; }
+    if (!ids.length || attaqueJouee) { jouerSfx('erreur'); return; }
     jouerSfx('attackers_confirm');
     setPhase(true);
     avancerTutoriel('attaque', 'confirmer-attaque');
     setAttaquants(ids);
     setCiblesAttaque({});
-    const prochainId = prochainCoupRapideSansCible(ids, {});
-    setCibleAttaqueEnCours(prochainId);
     force();
   };
 
@@ -5035,7 +5039,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setPhase(false);
     setAttaquants([]);
     setCiblesAttaque({});
-    setCibleAttaqueEnCours(null);
     force();
   };
 
@@ -5046,6 +5049,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (!monTour) return;
+    // Pendant la déclaration d'attaque, désigner le sorcier est le geste du
+    // Coup rapide qui y renonce : les proies désignées s'effacent et toutes les
+    // créatures déclarées attaquent normalement.
+    if (phase && Object.keys(ciblesAttaque).length) {
+      jouerSfx('annuler');
+      setCiblesAttaque({});
+      force();
+      return;
+    }
     jouerSfx('menu');
     force();
   };
@@ -5069,7 +5081,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const bloqueur = duel.joueur.creatures.find((entite) => entite.id === bloqueurId && !entite.attaquee);
     if (!reponseActive || combatEntrant?.coteAttaquant === 'joueur' || !attaquant || !bloqueur) return;
     const retireDeCetteAttaque = (combatEntrant?.blocages[attaquantId] ?? []).includes(bloqueurId);
-    if (!retireDeCetteAttaque && !rpgPeutBloquerAttaquant(bloqueur, attaquant)) {
+    // Un attaquant qui frappe une créature au Coup rapide n'est pas bloquable :
+    // sa frappe a clos son attaque.
+    const frappeRapide = Boolean(combatEntrant?.ciblesAttaque?.[attaquantId]);
+    if (!retireDeCetteAttaque && !rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide)) {
       setBloqueurSelectionne(null);
       jouerSfx('erreur');
       force();
@@ -5125,7 +5140,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     const vivants = new Set(attaquantsVivants);
-    const blocages = Object.fromEntries(Object.entries(combatEntrant.blocages).filter(([id]) => vivants.has(id)));
+    // Un attaquant rapide qui frappe une créature ne reçoit pas de bloqueur :
+    // sa frappe a déjà clos son attaque.
+    const blocages = Object.fromEntries(Object.entries(combatEntrant.blocages)
+      .filter(([id]) => vivants.has(id))
+      .map(([id, idsBloqueurs]) => [id, combatEntrant.ciblesAttaque?.[id] ? [] : idsBloqueurs]));
     const sonAttaqueBraise = rpgCombatFireSound(duel, attaquantsVivants, blocages);
     const sonFrappeDirecteBraise = rpgCombatFireSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
@@ -5188,9 +5207,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const bloqueursVivants = new Set(duel.sorcier.creatures
       .filter((entite) => !entite.attaquee)
       .map((entite) => entite.id));
+    // Une frappe rapide clôt l'attaque de son attaquant : aucun bloqueur ne
+    // s'interpose devant lui, même si une affectation traînait.
     const blocages = Object.fromEntries(attaquantsVivants.map((id) => [
       id,
-      (combat.blocages[id] ?? []).filter((bloqueurId) => bloqueursVivants.has(bloqueurId)),
+      combat.ciblesAttaque?.[id]
+        ? []
+        : (combat.blocages[id] ?? []).filter((bloqueurId) => bloqueursVivants.has(bloqueurId)),
     ]));
     const attaquantsBloques = (combat.attaquantsBloques
       ?? combat.attaquants.filter((id) => combat.blocages[id]?.length))
@@ -5246,7 +5269,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setPhase(false);
     setAttaquants([]);
     setCiblesAttaque({});
-    setCibleAttaqueEnCours(null);
     setCibleEnCours(null);
     setActivationEnCours(null);
     rpgOuvrirFinDeTour(duel);
@@ -6010,7 +6032,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   <>
                     <button type="button" className="rpg-btn rpg-btn--attaque rpg-btn--confirmer-attaque"
                       data-tutorial-target={tutorielActif && etapeTutorielId === 'confirmer-attaque' ? 'confirm-attack' : undefined}
-                      disabled={!attaquants.length || Boolean(cibleAttaqueEnCours) || Boolean(prochainCoupRapideSansCible(attaquants, ciblesAttaque))} onClick={() => lancerAttaque()}>
+                      disabled={!attaquants.length} onClick={() => lancerAttaque()}>
                       <CombatActionIcon type="confirm" /> Confirmer l’attaque ({attaquants.length})
                     </button>
                     <button type="button" className="rpg-btn rpg-btn--ghost rpg-btn--cancel-attack" onClick={annulerAttaque}>
@@ -6177,17 +6199,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <span className="rpg-turn-indicator__lamp" aria-hidden="true" />
             <strong>{indicateurTour}</strong>
           </div>
-          <PhaseTrack current={phaseDuelActive} />
+          <PhaseTrack current={phaseDuelActive} jouees={attaqueJouee ? ['attaque'] : []} />
           <div className="rpg-actions__turn" role="group" aria-label="Actions de tour">
             {!phase && (
                   <button
                     type="button"
-                    className="rpg-btn rpg-btn--attaque rpg-btn--attaque-tous"
+                    className={`rpg-btn rpg-btn--attaque rpg-btn--attaque-tous${attaqueJouee ? ' is-jouee' : ''}`}
                     data-tutorial-target={tutorielActif && etapeTutorielId === 'attaque' ? 'attack-all' : undefined}
-                    disabled={!monTour || !prets.length || Boolean(combatEntrant) || defausseOuverte}
+                    disabled={!monTour || attaqueJouee || !prets.length || Boolean(combatEntrant) || defausseOuverte}
                     onClick={declarerAttaqueAvecTous}
                   >
-                    <CombatActionIcon type="attack-all" /> Attaquer avec tous ({prets.length})
+                    <CombatActionIcon type="attack-all" /> {attaqueJouee ? 'Attaque jouée ce tour' : `Attaquer avec tous (${prets.length})`}
                   </button>
             )}
             {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && !defausseOuverte && (

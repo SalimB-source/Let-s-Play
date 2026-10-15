@@ -173,6 +173,16 @@ Les deux capacités se cumulent, et les vikings comme les valkyries gardent
 leurs capacités propres (Coup rapide du Berserk, Envol et arrivée des
 valkyries, arrivées du Guerrier et du Jarl).
 
+Deux règles encadrent ces attaques. **Une seule phase d'attaque par tour**, et
+par camp : une fois le combat déclaré et résolu, il n'y en a pas de second avant
+le tour suivant (`duel.attaqueJouee`, posé par `rpgLancerAttaque` sur une
+déclaration acceptée et remis à `null` par `rpgFinDeTour`). Et **Coup rapide**
+(Fériel, le Djinn de foudre, le Berserk, et les armes qui le donnent) : déclaré
+attaquant, le porteur **peut** frapper une créature adverse de votre choix —
+elle encaisse ses dégâts, sans riposte, avant les blessures de combat, et
+**son attaque s'arrête là** : ni blocage, ni échange, ni dégâts au sorcier.
+Sans proie désignée, il attaque normalement.
+
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
 

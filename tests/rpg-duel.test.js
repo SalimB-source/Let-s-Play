@@ -977,7 +977,7 @@ test('Fériel est une mythique 4 mana 3/1 avec Rapidité et Coup rapide', () => 
   assert.equal(cardArtId(feriel), 'feriel', 'Fériel utilise sa nouvelle illustration dédiée');
 });
 
-test('le Coup rapide de Fériel frappe sa cible, puis l’attaque continue jusqu’au sorcier', () => {
+test('le Coup rapide frappe la créature désignée, et l’attaque s’arrête là', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -988,25 +988,40 @@ test('le Coup rapide de Fériel frappe sa cible, puis l’attaque continue jusqu
   Object.assign(fennec, { pv: 5, def: 5, pvMax: 5 });
 
   assert.equal(feriel.ready, true, 'Fériel peut attaquer dès son tour de pose');
-  assert.equal(rpgLancerAttaque(duel, 'joueur', [feriel.id]).raison, 'cible',
-    'le moteur réclame une cible quand une créature adverse peut être choisie');
-  assert.equal(rpgAttaquerSorcier(duel, 'joueur', feriel.id).raison, 'cible',
-    'Fériel ne peut pas contourner son Coup rapide pour frapper directement le sorcier');
-
   const pvSorcier = duel.sorcier.pv;
   const res = rpgLancerAttaque(duel, 'joueur', [feriel.id], {}, null, null, { [feriel.id]: fennec.id });
   assert.equal(res.ok, true);
   assert.equal(fennec.pv, 3, 'les 3 dégâts d’attaque perdent 1 point face à Esquive 1');
   assert.equal(feriel.pv, 1, 'la créature visée ne riposte pas contre le Coup rapide');
-  assert.equal(duel.sorcier.pv, pvSorcier - 3,
-    'l’attaque se poursuit normalement : non bloquée, elle frappe aussi le sorcier');
+  assert.equal(duel.sorcier.pv, pvSorcier, 'l’attaque s’arrête sur la frappe : le sorcier ne prend rien');
+  assert.equal(res.resume.frappeSorcier, 0);
+  assert.deepEqual(res.resume.paires, [], 'aucun combat de blocage : la frappe a clos l’attaque');
   assert.equal(feriel.attaquee, true, 'Fériel a consommé son attaque');
   assert.deepEqual(res.resume.coupsRapides.map(({ attaquant, cible, degats }) => ({ attaquant, cible, degats })), [
     { attaquant: 'FÉRIEL', cible: 'Fennec des décombres', degats: 3 },
   ]);
 });
 
-test('après le Coup rapide, l’attaque suit le combat normal : la créature peut être bloquée', () => {
+test('sans créature désignée, le Coup rapide attaque le sorcier comme n’importe quel attaquant', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'feriel');
+  const feriel = rpgJouerCreature(duel, 'joueur', 'feriel').entite;
+  donner(duel, 'sorcier', 'fennec-des-decombres');
+  const fennec = rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres').entite;
+
+  const pvSorcier = duel.sorcier.pv;
+  // Aucun bloqueur assigné : rien ne s’interpose, l’attaque va au sorcier.
+  const res = rpgLancerAttaque(duel, 'joueur', [feriel.id], {});
+  assert.equal(res.ok, true, 'aucune cible n’est exigée : le choix appartient à l’attaquant');
+  assert.equal(duel.sorcier.pv, pvSorcier - 3, 'la voie est libre : elle frappe le sorcier');
+  assert.equal(fennec.pv, fennec.pvMax, 'la créature adverse n’a rien encaissé');
+  assert.deepEqual(res.resume.coupsRapides, [], 'aucune frappe rapide n’a été déclarée');
+  assert.equal(feriel.attaquee, true, 'l’attaque est consommée comme les autres');
+});
+
+test('un Coup rapide qui ne frappe personne est bloqué comme n’importe quel attaquant', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -1016,17 +1031,16 @@ test('après le Coup rapide, l’attaque suit le combat normal : la créature pe
   const vise = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
   donner(duel, 'sorcier', 'chien-du-guet');
   const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-  // Corps de test : la cible encaisse la frappe précoce, le bloqueur (0 ATQ)
-  // absorbe le combat sans blesser le Berserk — pas de Furie en vue.
+  // Corps de test : le bloqueur (0 ATQ) absorbe le combat sans blesser le
+  // Berserk — pas de Furie en vue.
   Object.assign(vise, { pv: 5, def: 5, pvMax: 5 });
   Object.assign(bloqueur, { atk: 0, pv: 3, def: 3, pvMax: 3 });
   berserk.ready = true;
 
   const pvSorcier = duel.sorcier.pv;
-  const res = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [bloqueur.id] }, null, null,
-    { [berserk.id]: vise.id });
+  const res = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [bloqueur.id] }, null, null, {});
   assert.equal(res.ok, true);
-  assert.equal(vise.pv, 2, 'la cible du Coup rapide encaisse les 3 dégâts d’attaque, sans riposte');
+  assert.equal(vise.pv, 5, 'aucune frappe rapide : la créature écartée reste intacte');
   assert.equal(duel.sorcier.creatures.includes(bloqueur), false,
     'le combat normal a lieu : le bloqueur meurt sous les 3 dégâts de combat');
   assert.equal(berserk.pv, 3, 'le bloqueur blessant à 0, le Berserk sort indemne — pas de Furie');
@@ -1036,7 +1050,26 @@ test('après le Coup rapide, l’attaque suit le combat normal : la créature pe
     'le blocage est compté dans le résumé du combat');
 });
 
-test('le Coup rapide de Fériel choisit automatiquement une cible légale pendant le tour de l’IA', () => {
+test('la frappe du Coup rapide n’est pas bloquable : l’attaquant s’arrête dessus', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'berserk-des-trois-hivers');
+  const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const vise = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  const bloqueur = vise;
+  berserk.ready = true;
+
+  assert.equal(rpgPeutBloquerAttaquant(bloqueur, berserk, true), false,
+    'la frappe rapide ne laisse rien à bloquer');
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [bloqueur.id] }, null, null,
+    { [berserk.id]: vise.id }).raison, 'blocage',
+    'désigner une proie et un bloqueur est contradictoire, la déclaration est refusée');
+  assert.equal(berserk.attaquee, false, 'un refus ne consomme rien — ni l’attaque, ni la phase');
+});
+
+test('l’IA abat d’un Coup rapide la créature qu’elle peut tuer, et son attaque s’arrête', () => {
   const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.999 });
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -1047,10 +1080,29 @@ test('le Coup rapide de Fériel choisit automatiquement une cible légale pendan
   const pvJoueur = duel.joueur.pv;
 
   rpgTourSorcierIA(duel);
-  assert.equal(duel.joueur.creatures.includes(chien), false, 'Fériel vise automatiquement le Chien adverse');
-  assert.equal(duel.joueur.pv, pvJoueur - 3,
-    'l’attaque se poursuit : le Chien mort sous la frappe précoce, elle frappe le joueur');
+  assert.equal(duel.joueur.creatures.includes(chien), false, 'Fériel abat le Chien 2/2 d’une frappe');
+  assert.equal(duel.joueur.pv, pvJoueur, 'l’attaque s’arrête sur la frappe : le joueur ne prend rien');
   assert.equal(feriel.attaquee, true, 'l’attaque rapide de l’IA est bien consommée');
+});
+
+test('l’IA ne s’arrête pas sur une créature qu’elle ne tue pas : elle attaque le sorcier', () => {
+  const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.999 });
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  Object.assign(chien, { pv: 5, def: 5, pvMax: 5 });
+  // Le Chien s’est déjà engagé à l’attaque : il ne peut plus bloquer, et rien
+  // ne se met devant le Coup rapide — l’IA doit donc choisir sa cible.
+  chien.attaquee = true;
+  donner(duel, 'sorcier', 'feriel');
+  const feriel = rpgJouerCreature(duel, 'sorcier', 'feriel').entite;
+  const pvJoueur = duel.joueur.pv;
+
+  rpgTourSorcierIA(duel);
+  assert.equal(chien.pv, 5, 'le Chien survit à la frappe : l’IA ne s’y arrête pas');
+  assert.equal(duel.joueur.pv, pvJoueur - 3, 'Fériel attaque normalement et frappe le joueur');
+  assert.equal(feriel.attaquee, true, 'l’attaque est consommée');
 });
 
 test('les capacités de feu punissent les bloqueurs et rendent les djinns distincts', () => {
@@ -2191,7 +2243,30 @@ test('phase d’attaque sans bloqueur : tous les attaquants frappent le sorcier'
   assert.equal(res.resume.frappeSorcier, 2 + 2, 'chien 2 + dune 2');
   assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE - 4);
   assert.ok(duel.joueur.creatures.every((e) => e.attaquee), 'tout le monde a frappé');
-  assert.equal(rpgLancerAttaque(duel, 'joueur', ids).raison, 'pas-pret', 'une seule attaque par tour');
+  assert.equal(rpgLancerAttaque(duel, 'joueur', ids).raison, 'attaque-jouee',
+    'une seule phase d’attaque par tour');
+  // Deux fins de tour ramènent la main au joueur : sa prochaine phase d’attaque
+  // est ouverte, et les créatures sont dégagées.
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'joueur');
+  assert.equal(rpgLancerAttaque(duel, 'joueur', ids).ok, true, 'le tour suivant rouvre la phase');
+});
+
+test('une déclaration refusée ne consomme pas la phase d’attaque du tour', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  donner(duel, 'joueur', 'dune-marchante');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  const dune = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
+  chien.attaquee = true; // le Chien s’est déjà engagé : sa déclaration est refusée
+
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [chien.id]).raison, 'pas-pret');
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [dune.id]).ok, true,
+    'la phase reste ouverte après un refus');
 });
 
 test('après le choix des bloqueurs, une magie rapide répond avant les dégâts et un attaquant reste bloqué', () => {
@@ -2654,7 +2729,8 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   rpgJouerCreature(duel, 'joueur', 'drakkar-a-tete-de-dragon');
   assert.equal(duel.joueur.main.length, mainAvant, 'le Drakkar est entré en jeu et a pioché sa carte');
 
-  // Berserk : Coup rapide — il frappe une créature choisie sans riposte directe.
+  // Berserk : Coup rapide — il abat une créature choisie sans riposte possible,
+  // et son attaque s'arrête sur cette frappe.
   donner(duel, 'sorcier', 'chien-du-guet');
   rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
   const chien = duel.sorcier.creatures.at(-1);
@@ -2662,12 +2738,14 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
   assert.equal(cardById('berserk-des-trois-hivers').coupRapide, true);
   berserk.ready = true;
+  const pvSorcierAvantBerserk = duel.sorcier.pv;
   const attaque = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [] }, null, null, { [berserk.id]: chien.id });
   assert.equal(attaque.ok, true, 'le Coup rapide accepte une cible choisie');
   assert.equal(duel.sorcier.creatures.includes(chien), false, 'le Chien tombe sous le Coup rapide');
   assert.equal(berserk.pv, 5, 'le Berserk n’encaisse aucune riposte : sa Furie n’a rien à venger');
-  assert.equal(attaque.resume.frappeSorcier, berserk.atk,
-    'l’attaque continue : non bloqué, le Berserk frappe aussi le sorcier');
+  assert.equal(attaque.resume.frappeSorcier, 0);
+  assert.equal(duel.sorcier.pv, pvSorcierAvantBerserk,
+    'l’attaque s’arrête sur la frappe : le sorcier ne prend rien');
 
   // Magies : sorcelleries et magies rapides.
   donner(duel, 'joueur', 'mur-de-boucliers');

@@ -55,8 +55,17 @@ const poser = (duel, cote, id) => {
   return res.entite;
 };
 
-/** Lève le mal d'invocation : une créature posée ne peut pas attaquer le tour même. */
-const rendrePret = (entite) => { entite.ready = true; entite.attaquee = false; };
+/**
+ * Ouvre un nouveau tour d'attaque pour le camp : lève le mal d'invocation de la
+ * créature et rend au camp sa phase d'attaque (une seule par tour, voir
+ * `rpgLancerAttaque`). Les tests qui attaquent « à chaque attaque » simulent
+ * ainsi le tour suivant, comme `rpgFinDeTour` le ferait.
+ */
+const rendrePret = (duel, entite) => {
+  duel.attaqueJouee = null;
+  entite.ready = true;
+  entite.attaquee = false;
+};
 
 /** Attache une arme à un porteur (ou à personne, pour une arme vivante). */
 const equiper = (duel, cote, armeId, entite = null) => {
@@ -173,7 +182,7 @@ test('la Boussole du Hoggar lit le dessus du deck à chaque attaque', () => {
   equiper(duel, 'joueur', 'boussole-du-hoggar', porteur);
 
   // Un terrain sur le dessus : il est révélé et rejoint la main.
-  rendrePret(porteur);
+  rendrePret(duel, porteur);
   duel.joueur.deck[duel.joueur.deck.length - 1] = 'dunes-du-tenere';
   const deckAvant = duel.joueur.deck.length;
   const mainAvant = duel.joueur.main.length;
@@ -184,7 +193,7 @@ test('la Boussole du Hoggar lit le dessus du deck à chaque attaque', () => {
   assert.ok(duel.joueur.main.includes('dunes-du-tenere'));
 
   // Autre chose qu'un terrain : la carte reste en place et n'est pas nommée.
-  rendrePret(porteur);
+  rendrePret(duel, porteur);
   duel.joueur.deck[duel.joueur.deck.length - 1] = 'fennec-des-decombres';
   const deckApres = duel.joueur.deck.length;
   rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
@@ -198,11 +207,11 @@ test('le Harnais du méhari rend un mana de sable à chaque attaque', () => {
   const porteur = poser(duel, 'joueur', 'chien-du-guet');
   equiper(duel, 'joueur', 'harnais-du-mehari', porteur);
   assert.deepEqual(porteur.atk, 4, '+2/+2 sur un 2/2');
-  rendrePret(porteur);
+  rendrePret(duel, porteur);
   manaNul(duel, 'joueur');
   rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
   assert.equal(duel.joueur.mana.sable, 1, 'un mana de sable rendu');
-  rendrePret(porteur);
+  rendrePret(duel, porteur);
   rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
   assert.equal(duel.joueur.mana.sable, 2, 'à chaque attaque');
 });
@@ -213,7 +222,7 @@ test('le Masque du guetteur fait piocher deux cartes puis défausser, sur le sor
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet');
   equiper(duel, 'joueur', 'masque-du-guetteur', porteur);
-  rendrePret(porteur);
+  rendrePret(duel, porteur);
   const pvAvant = duel.sorcier.pv;
   const mainAvant = duel.joueur.main.length;
   rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
@@ -229,7 +238,7 @@ test('bloqué, le Masque du guetteur ne se déclenche pas', () => {
   const porteur = poser(duel, 'joueur', 'chien-du-guet');
   const mur = poser(duel, 'sorcier', 'chien-du-guet');
   equiper(duel, 'joueur', 'masque-du-guetteur', porteur);
-  rendrePret(porteur);
+  rendrePret(duel, porteur);
   const mainAvant = duel.joueur.main.length;
   rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [mur.id] });
   assert.equal(duel.joueur.main.length, mainAvant, 'rien n’a été blessé chez le sorcier');
@@ -246,10 +255,10 @@ test('la Jitte accumule un compteur par attaque, et se vide en trois modes', () 
   assert.equal(porteur.arme.compteurs, undefined, 'la Jitte arrive vide');
   assert.equal(rpgPeutActiverArme(duel, 'joueur', porteur.id), false, 'rien à dépenser');
 
-  rendrePret(porteur);
+  rendrePret(duel, porteur);
   rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
   assert.equal(porteur.arme.compteurs, 1, 'un compteur de sable par blessure portée');
-  rendrePret(porteur);
+  rendrePret(duel, porteur);
   rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
   assert.equal(porteur.arme.compteurs, 2);
 
@@ -309,7 +318,7 @@ test('une arme sans arme vivante refuse toujours de se jouer sans créature', ()
 
 // ── La mythique ─────────────────────────────────────────────────────────────
 
-test('la Takouba de Tin Hinan : le Coup rapide déclenche ses deux effets le même tour', () => {
+test('la Takouba de Tin Hinan : le Coup rapide frappe une créature et pioche, sans chien', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   const mur = poser(duel, 'sorcier', 'dune-marchante'); // 2/5
@@ -318,35 +327,38 @@ test('la Takouba de Tin Hinan : le Coup rapide déclenche ses deux effets le mê
   assert.equal(porteur.infiltration, false, 'elle se fait bloquer : le Coup rapide est la voie');
   assert.equal(rpgPeutBloquerAttaquant(mur, porteur), true);
 
-  rendrePret(porteur);
+  rendrePret(duel, porteur);
   const mainAvant = duel.joueur.main.length;
   const pvMur = mur.pv;
-  // Coup rapide sur le mur, puis l'attaque passe : le sorcier encaisse.
+  const pvSorcier = duel.sorcier.pv;
+  // Coup rapide sur le mur : l'attaque s'arrête sur la frappe.
   const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], {}, null, [], { [porteur.id]: mur.id });
   assert.equal(res.ok, true, `l’attaque passe (${res.raison ?? 'ok'})`);
   assert.equal(mur.pv, pvMur - porteur.atk, 'le Coup rapide a frappé le mur');
   assert.equal(duel.joueur.main.length, mainAvant + 1, 'une carte pour une créature blessée');
-  const chiens = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');
-  assert.equal(chiens.length, 1, 'le sorcier blessé lève un chien de sable');
+  assert.equal(duel.sorcier.pv, pvSorcier, 'l’attaque s’est arrêtée : le sorcier ne prend rien');
+  assert.equal(duel.joueur.creatures.filter((e) => e.carteId === 'chien-de-sable').length, 0,
+    'aucun chien : le sorcier n’a pas été blessé');
 });
 
-test('la Takouba bloquée : le Coup rapide pioche, mais le sorcier ne lève rien', () => {
+test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet');
-  const victime = poser(duel, 'sorcier', 'dune-marchante'); // emportée par le Coup rapide
-  const mur = poser(duel, 'sorcier', 'chien-du-guet'); // celui-là tient le blocage
+  const mur = poser(duel, 'sorcier', 'dune-marchante'); // le bloqueur écarté du test
   equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur);
-  rendrePret(porteur);
+  rendrePret(duel, porteur);
   const mainAvant = duel.joueur.main.length;
+  const pvMur = mur.pv;
   const pvSorcier = duel.sorcier.pv;
-  const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [victime.id, mur.id] },
-    null, [], { [porteur.id]: victime.id });
+  // Aucune proie désignée : le porteur attaque normalement, et aucun bloqueur
+  // n'est assigné — le sorcier encaisse ses 5 dégâts.
+  const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [] });
   assert.equal(res.ok, true, `l’attaque passe (${res.raison ?? 'ok'})`);
-  assert.equal(duel.sorcier.creatures.includes(victime), false, 'le Coup rapide l’a emportée');
-  assert.equal(duel.joueur.main.length, mainAvant + 1, 'la frappe précoce a blessé une créature');
-  assert.equal(duel.sorcier.pv, pvSorcier, 'le mur a tenu : le sorcier n’a rien pris');
-  assert.equal(duel.joueur.creatures.filter((e) => e.carteId === 'chien-de-sable').length, 0,
-    'aucun chien');
+  assert.equal(mur.pv, pvMur, 'la créature écartée n’a rien encaissé');
+  assert.equal(duel.sorcier.pv, pvSorcier - porteur.atk, 'le sorcier encaisse la frappe entière');
+  assert.equal(duel.joueur.main.length, mainAvant, 'aucune pioche : aucune créature n’a été blessée');
+  const chiens = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');
+  assert.equal(chiens.length, 1, 'le sorcier blessé lève un chien de sable');
 });
 
 test('les compteurs de la Jitte partent avec elle : le sorcier sait les dépenser', () => {

@@ -839,7 +839,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'djinn-de-foudre',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Coup rapide — Quand le Djinn de foudre est sélectionné pour attaquer, choisissez une créature adverse : il lui inflige ses dégâts d’attaque, puis son attaque se poursuit normalement.',
+    text: 'Rapidité. Coup rapide — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
@@ -916,7 +916,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'berserk-des-trois-hivers',
     furie: 2,
     coupRapide: true,
-    text: 'Furie 2 — La première fois qu’il est blessé et survit, le Berserk gagne +2/+2. Coup rapide — Quand il est sélectionné pour attaquer, choisissez une créature adverse : il lui inflige ses dégâts d’attaque, puis son attaque se poursuit normalement.',
+    text: 'Furie 2 — La première fois qu’il est blessé et survit, le Berserk gagne +2/+2. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Trois hivers de rage tenus dans un seul bras — et le sang ne fait que l’attiser.',
   },
   {
@@ -1153,7 +1153,7 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Coup rapide — Quand Fériel est sélectionnée pour attaquer, choisissez une créature adverse : Fériel lui inflige ses dégâts d’attaque, puis son attaque se poursuit normalement.',
+    text: 'Rapidité. Coup rapide — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'Le verre se souvient du feu.',
   },
   {
@@ -2026,7 +2026,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { coupRapide: true },
-    text: 'Arme — Le porteur gagne +2/+0 et Coup rapide (déclaré attaquant, il inflige d’abord son attaque à une créature adverse de votre choix, puis son attaque suit son cours).',
+    text: 'Arme — Le porteur gagne +2/+0 et Coup rapide (déclaré attaquant, il peut frapper une créature adverse de votre choix : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement).',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -2148,11 +2148,11 @@ export const RPG_ARME_CARDS = [
     cost: 4,
     rarity: 'mythique',
     bonus: { atk: 3, def: 2 },
-    // Le cycle des Épées de X et Y, en une seule lame : le Coup rapide
-    // garantit les DEUX déclencheurs — la frappe précoce sur une créature
-    // pioche, l'attaque qui passe lève un chien. Sans lui, un porteur
-    // inbloquable ne blesserait jamais une créature et la moitié de la carte
-    // dormirait.
+    // Le cycle des Épées de X et Y, en une seule lame : le Coup rapide ouvre
+    // les DEUX déclencheurs — la frappe précoce sur une créature pioche (et
+    // arrête l'attaque du porteur là), l'attaque ordinaire qui passe lève un
+    // chien. Sans lui, un porteur inbloquable ne blesserait jamais une créature
+    // et la moitié de la carte dormirait.
     donne: { coupRapide: true },
     porteurBlesseCreature: { type: 'pioche', amount: 1 },
     porteurBlesseSorcier: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },

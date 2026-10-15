@@ -583,29 +583,34 @@ test('la bannière du Daimyō grandit chaque Samouraï qui attaque, et lui-même
   const allie = jouer(duel, 'joueur', 'chien-du-guet');
   const adverse = jouer(duel, 'sorcier', 'ashigaru-des-braises');
   const pvSorcier = duel.sorcier.pv;
+  // Une seule phase d'attaque par tour : chaque déclaration du camp ouvre donc
+  // son propre tour (deux fins de tour ramènent la main au joueur).
+  const nouveauTour = (cote) => {
+    do { rpgFinDeTour(duel); } while (duel.tour !== cote);
+  };
   // Le rōnin est un Samouraï : sa frappe du tour part à 3 + 1 = 4. Aucun
   // bloqueur n’est assigné, pour isoler la bannière du reste du combat.
   assert.equal(rpgLancerAttaque(duel, 'joueur', [ronin.id], { [ronin.id]: [] }).ok, true);
   assert.equal(duel.sorcier.pv, pvSorcier - 4, 'la bannière est posée avant les blessures');
   assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [4, 3, 3], 'le +1/+1 reste acquis');
   // Un chien du guet n’est pas un Samouraï : rien pour lui.
-  allie.ready = true;
+  nouveauTour('joueur');
   assert.equal(rpgLancerAttaque(duel, 'joueur', [allie.id], { [allie.id]: [] }).ok, true);
   assert.deepEqual([allie.atk, allie.def], [2, 2]);
   // Les deux Samouraïs 1/1 levés par le Daimyō sont, eux, de la tribu.
+  nouveauTour('joueur');
   const jeton = duel.joueur.creatures.find((entite) => entite.carteId === 'samourai-du-daimyo');
-  jeton.ready = true;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [jeton.id], { [jeton.id]: [] }).ok, true);
   assert.deepEqual([jeton.atk, jeton.def], [2, 2], 'le jeton Samouraï reçoit la bannière');
   // Un Daimyō ne grandit que son camp : le samouraï du sorcier attaque à 1,
   // et sa propre arrivée n’a pas levé de jetons chez le joueur.
-  adverse.ready = true;
+  nouveauTour('sorcier');
   assert.equal(rpgLancerAttaque(duel, 'sorcier', [adverse.id], { [adverse.id]: [] }).ok, true);
   assert.deepEqual([adverse.atk, adverse.def], [1, 1]);
   assert.equal(duel.joueur.creatures.filter((entite) => entite.carteId === 'samourai-du-daimyo').length,
     2, 'chaque camp ne lève que ses propres Samouraïs');
   // Le Daimyō est un Samouraï : sa propre attaque le grandit aussi.
-  daimyo.ready = true;
+  nouveauTour('joueur');
   assert.equal(rpgLancerAttaque(duel, 'joueur', [daimyo.id], { [daimyo.id]: [] }).ok, true);
   assert.deepEqual([daimyo.atk, daimyo.def], [4, 4]);
 });
@@ -627,8 +632,10 @@ test('la bannière s’applique à chaque attaque et reste acquise quand le Daim
   rpgBlesserCreature(duel, 'joueur', daimyo.id, 10, 'eau');
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === daimyo.id), false);
   assert.deepEqual([ronin.atk, ronin.def], [5, 4]);
-  // …et la déclaration suivante ne le grandit plus.
-  ronin.attaquee = false;
+  // …et la déclaration suivante — un tour plus tard, une seule phase d'attaque
+  // par tour — ne le grandit plus.
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
   assert.equal(rpgLancerAttaque(duel, 'joueur', [ronin.id], { [ronin.id]: [] }).ok, true);
   assert.deepEqual([ronin.atk, ronin.def], [5, 4]);
   assert.ok(duel.log.some((ligne) => ligne.startsWith('Bannière Daimyō du Soleil rouge')));
