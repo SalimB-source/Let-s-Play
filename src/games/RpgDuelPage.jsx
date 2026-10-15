@@ -43,7 +43,7 @@ import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
-import { sauverCollectionDistante } from './rpgCollection.js';
+import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
@@ -2441,14 +2441,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   const estTerrain = carte.kind === 'terrain';
                   const estCreature = ['creature', 'hero'].includes(carte.kind);
                   const famille = carteFamille(carte);
+                  const verrouillee = !possedeCarte(collection, carte.id);
                   // Le sceau de la famille au coin libre de la vignette : c'est
                   // là qu'on feuillette la collection, et c'est là qu'il faut
                   // repérer un sort sans ouvrir sa fiche.
                   return (
                     <article
                       key={carte.id}
-                      className={`rpg-card-catalogue__card rpg-card-catalogue__card--${carte.kind}`}
+                      className={`rpg-card-catalogue__card rpg-card-catalogue__card--${carte.kind}${verrouillee ? ' is-locked' : ''}`}
                       data-card-id={carte.id}
+                      data-locked={verrouillee}
                       data-color={carte.element}
                       data-colors={cardColors(carte).join(' ')}
                       data-type={carte.kind}
@@ -2466,7 +2468,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         type="button"
                         className="rpg-card-catalogue__ouvrir"
                         data-catalogue-open={carte.id}
-                        aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}`}
+                        aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${verrouillee ? ', carte verrouillée' : ''}`}
                         onClick={() => onOpenCardPreview?.(carte)}
                       />
                       <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
@@ -2474,6 +2476,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span className="rpg-card-catalogue__cost" aria-label={`Coût ${cardCostLabel(carte)}`}>{carte.cost}</span>}
                         <SortSceau carte={carte} className="rpg-card-catalogue__sort" />
+                        {verrouillee && <span className="rpg-card-catalogue__lock" aria-hidden="true">🔒</span>}
                         <span className="rpg-card-catalogue__zoom" aria-hidden="true">⤢</span>
                       </div>
                       <div className="rpg-card-catalogue__details">

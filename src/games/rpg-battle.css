@@ -5191,6 +5191,36 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 12px 26px rgba(0, 0, 0, .3);
   transition: transform .16s ease-out, border-color .16s ease-out, box-shadow .16s ease-out;
 }
+/* Une carte absente de la collection reste consultable : seule sa vignette est
+   désaturée, son bouton d'ouverture et ses gestes d'aperçu restent actifs. */
+.rpg-card-catalogue__card.is-locked {
+  border-color: rgba(170, 170, 170, .28);
+  background: linear-gradient(160deg, rgba(28, 28, 30, .98), rgba(13, 13, 15, .98));
+}
+.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__art {
+  --rpg-frame-color: #777;
+  --rpg-frame-gradient: linear-gradient(#777, #777);
+  --rpg-frame-motif: none;
+  --rpg-frame-material-size: 100% 100%;
+  --rpg-frame-fill: #171717;
+}
+.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__art > img,
+.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__art.rpg-card--mythique > img {
+  filter: grayscale(1) brightness(.62) !important;
+}
+.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__details,
+.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__art .rpg-card-element-badge,
+.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__cost,
+.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__sort,
+.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__zoom {
+  filter: grayscale(1);
+}
+.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__art.rpg-card--frame-brillant {
+  animation: none;
+}
+.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__art.rpg-card--mythique::before {
+  content: none;
+}
 /* Le catalogue se lit au clic : chaque fiche porte un bouton transparent étiré
    sur toute la carte — c'est lui qui prend le clic (et le focus clavier), la
    fiche s'ouvre alors en grand dans son volet (`.rpg-card-peek--catalogue`).
@@ -5229,6 +5259,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   opacity: .55;
   pointer-events: none;
   transition: opacity .16s ease-out, transform .16s ease-out;
+}
+.rpg-card-catalogue__lock {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 56px;
+  aspect-ratio: 1;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(225, 225, 225, .62);
+  border-radius: 50%;
+  background: rgba(18, 18, 20, .78);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, .72), inset 0 1px rgba(255, 255, 255, .16);
+  color: #f0f0f0;
+  font-size: 30px;
+  line-height: 1;
+  pointer-events: none;
 }
 .rpg-card-catalogue__card:hover,
 .rpg-card-catalogue__card:focus-within {
