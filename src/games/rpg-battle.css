@@ -7198,8 +7198,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    Le halo d'une carte en main (`.rpg-hand__card.is-playable`, plus haut dans
    la feuille) répond à une seule question : « puis-je la jouer, là, tout de
    suite ? » — le mana est là, c'est mon tour, ou la fenêtre de réponse est
-   ouverte. Sur une créature, un héros, un terrain ou une arme, il prend
-   l'**azur** — la carte se POSE, et c'est le bleu de la table qui s'allume. Sur
+   ouverte. Sur une créature, un héros ou un terrain, il prend le **blanc**.
+   Les armes gardent l'**azur** de la table. Sur
    un sort, il prend la couleur de sa famille : **l'or** pour la Magie Rapide,
    déjà la teinte du liseré de son socle et de sa ligne de type, et
    l'**améthyste** pour la Sorcellerie, dont c'est la teinte du socle, du jeton
@@ -7212,6 +7212,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    une couleur de cadre : une Braise rapide reçoit l'or de sa famille, pas le
    rouge de son élément, et l'anneau de la carte n'a pas bougé.
    ------------------------------------------------------------------------- */
+.rpg-hand__card--type-creature,
+.rpg-hand__card--type-terrain {
+  --rpg-play-halo: 255, 255, 255;
+  --rpg-play-halo-clair: 255, 255, 255;
+}
 .rpg-hand__card--famille-rapide { --rpg-play-halo: 255, 214, 25; --rpg-play-halo-clair: 255, 239, 156; }
 .rpg-hand__card--famille-sorcellerie { --rpg-play-halo: 179, 154, 224; --rpg-play-halo-clair: 236, 227, 255; }
 

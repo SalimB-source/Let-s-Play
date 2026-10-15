@@ -155,7 +155,9 @@ const cascadeHalo = new JSDOM(
   `<!doctype html><html><head><style>${battleCss}</style></head><body>
     <button class="rpg-hand__card is-playable rpg-hand__card--famille-rapide" data-test="rapide"></button>
     <button class="rpg-hand__card is-playable rpg-hand__card--famille-sorcellerie" data-test="sorcellerie"></button>
-    <button class="rpg-hand__card is-playable" data-test="creature"></button>
+    <button class="rpg-hand__card is-playable rpg-hand__card--type-creature" data-test="creature"></button>
+    <button class="rpg-hand__card is-playable rpg-hand__card--type-terrain" data-test="terrain"></button>
+    <button class="rpg-hand__card is-playable rpg-hand__card--type-arme" data-test="arme"></button>
   </body></html>`,
   { pretendToBeVisual: true },
 );
@@ -166,8 +168,14 @@ assert.equal(teinteRecue('rapide'), or.join(','),
   'une Magie Rapide jouable reçoit l’or de sa famille, pas le bleu des cartes qui se posent');
 assert.equal(teinteRecue('sorcellerie'), amethyste.join(','),
   'une Sorcellerie jouable reçoit l’améthyste de la sienne');
-assert.equal(teinteRecue('creature'), '',
-  'une créature, un terrain ou une arme ne déclarent aucune teinte : ils gardent l’azur écrit en repli dans la règle du halo');
+for (const type of ['creature', 'terrain']) {
+  assert.equal(teinteRecue(type), '255,255,255', `${type} : la lueur est blanche`);
+  assert.equal(cascadeHalo.window.getComputedStyle(
+    cascadeHalo.window.document.querySelector(`[data-test="${type}"]`),
+  ).getPropertyValue('--rpg-play-halo-clair').replaceAll(' ', ''), '255,255,255',
+  `${type} : le reflet au survol reste blanc`);
+}
+assert.equal(teinteRecue('arme'), '', 'les armes gardent l’azur en repli');
 cascadeHalo.window.close();
 
 // ── Un seul halo, le même contraste pour toute la main ──────────────────────
