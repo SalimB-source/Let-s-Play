@@ -677,6 +677,24 @@ function bonusArmeTexte(arme) {
   return `${signeBonus(bonus.atk ?? 0)}/${signeBonus(bonus.def ?? 0)}`;
 }
 
+/** Bonus et mots-clés qu'une arme confère directement à son porteur.
+ *  La ligne n'affiche jamais le nom de l'arme : elle rejoint le texte d'effet
+ *  de la créature, en bleu, pour que son équipement se lise comme un effet. */
+function effetsAccordesParArme(arme) {
+  const bonus = bonusArme(arme);
+  if (!bonus) return '';
+  const donne = arme.donne ?? (arme.effet?.type === 'arme' ? arme.effet : {});
+  const effets = [];
+  if (donne.infiltration) effets.push('Infiltration (ne peut pas être bloquée)');
+  if (donne.rapidite) effets.push('Rapidité');
+  if (donne.envol) effets.push('Envol');
+  if (donne.coupRapide) effets.push('Coup rapide');
+  if (donne.esquive) effets.push(`Esquive ${donne.esquive}`);
+  if (donne.immunite) effets.push(`Immunité contre ${ELEMENT_LABELS[donne.immunite] ?? donne.immunite}`);
+  if (donne.furie) effets.push(`Furie ${donne.furie}`);
+  return `Bonus d’équipement : ${bonusArmeTexte(arme)}${effets.length ? ` · ${effets.join(' · ')}` : ''}`;
+}
+
 function deckStats(deck) {
   return deck.cardIds.reduce((stats, id) => {
     const carte = cardById(id);
@@ -845,6 +863,7 @@ function TableCard({
   const nom = entite.name;
   const armeCarte = entite.arme ? cardById(entite.arme.carteId) : null;
   const armes = armesPortees(entite);
+  const effetsArmesEquipees = cartesDesIds(armes).map(effetsAccordesParArme).filter(Boolean);
   const protectionActive = entite.protection?.toursRestants > 0;
   const protectionLabel = protectionActive
     ? ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre
@@ -962,18 +981,18 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${entite.coupRapide ? ', Coup rapide : frappe une créature avant le combat' : ''}${entite.armes?.length ? `, arme attachée : ${entite.armes.map((id) => cardById(id)?.name).join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${armeCarte ? `, armée de ${armeCarte.name} (+${armeCarte.bonus?.atk ?? 0}/+${armeCarte.bonus?.def ?? 0})` : ''}${armeCarte?.donne?.immunite ? `, immunité contre ${ELEMENT_LABELS[armeCarte.donne.immunite] ?? armeCarte.donne.immunite}` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${entite.coupRapide ? ', Coup rapide : frappe une créature avant le combat' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
-      {!!entite.armes?.length && <span className="rpg-card__weapons" title={entite.armes.map((id) => `${cardById(id)?.name} : +5/-2, Coup rapide`).join(' · ')}>
-        {entite.armes.map((id, index) => <img key={`${id}-${index}`} src={cardArt(id)} alt={`Arme attachée : ${cardById(id)?.name}`} />)}
+      {!!entite.armes?.length && <span className="rpg-card__weapons" title="Arme équipée" aria-hidden="true">
+        {entite.armes.map((id, index) => <img key={`${id}-${index}`} src={cardArt(id)} alt="" />)}
       </span>}
       <CardElementBadge carte={carte} />
       {armeCarte && (
-        <span className="rpg-card__arme" title={`Armée de ${armeCarte.name} (+${armeCarte.bonus?.atk ?? 0}/+${armeCarte.bonus?.def ?? 0})${entite.arme?.compteurs ? ` — ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable` : ''}`}>
-          <CardStatIcon type="attack" />{armeCarte.name} +{armeCarte.bonus?.atk ?? 0}/+{armeCarte.bonus?.def ?? 0}
+        <span className="rpg-card__arme" title={`${effetsAccordesParArme(armeCarte)}${entite.arme?.compteurs ? ` — ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable` : ''}`}>
+          <CardStatIcon type="attack" />{bonusArmeTexte(armeCarte)}
           {!!entite.arme?.compteurs && (
             <span className="rpg-card__arme-compteurs">{entite.arme.compteurs} ●</span>
           )}
@@ -1163,11 +1182,10 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   // comme une fiche de collection — sur-titre, nom, famille, couleur — là où
   // l'aperçu de jeu va droit au coût et aux effets.
   const estFiche = variante === 'catalogue';
-  // Une créature équipée le dit dans son aperçu : l'arme, et son bonus porté.
+  // Les bonus directs de l'équipement rejoignent les effets de la créature,
+  // en bleu et sans répéter le nom de l'arme.
   const armesEquipees = estCreature ? armes.filter(Boolean) : [];
-  const armeLabel = armesEquipees.length
-    ? `, équipée de ${armesEquipees.map((arme) => `${arme.name}${bonusArmeTexte(arme) ? ` (${bonusArmeTexte(arme)})` : ''}`).join(', ')}`
-    : '';
+  const effetsArmesEquipees = armesEquipees.map(effetsAccordesParArme).filter(Boolean);
   const details = (
     <>
       {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
@@ -1184,18 +1202,21 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
         </div>
       )}
       {!estTerrain && <p className="rpg-hover-card-preview__cost"><span>Coût</span><b>{carte.cost}</b>{cardColors(carte).length > 1 && <small>{cardColorCostLabel(carte)}</small>}</p>}
-      {effet && (
+      {(effet || effetsArmesEquipees.length > 0) && (
         <div className="rpg-hover-card-preview__rules" aria-label="Effets">
           {effets.map((ligne, index) => <span key={`${index}-${ligne}`}><RpgCardRules carte={carte} text={ligne} /></span>)}
+          {effetsArmesEquipees.map((ligne, index) => (
+            <span
+              key={`equipement-${index}-${ligne}`}
+              className="rpg-hover-card-preview__rule--equipment"
+              data-effet-equipement
+            >
+              {ligne}
+            </span>
+          ))}
         </div>
       )}
       {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
-      {armesEquipees.length > 0 && (
-        <p className="rpg-hover-card-preview__arme" data-arme-equipee>
-          <span>⚔ Équipée de</span>
-          <b>{armesEquipees.map((arme) => `${arme.name}${bonusArmeTexte(arme) ? ` ${bonusArmeTexte(arme)}` : ''}`).join(' · ')}</b>
-        </p>
-      )}
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
     </>
   );
@@ -1215,7 +1236,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       ref={panelRef}
       className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${armeLabel}${cibleLabel}`}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${cibleLabel}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
     >
       {variante === 'annonce' ? (

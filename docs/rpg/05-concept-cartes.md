@@ -490,7 +490,9 @@ pile, même au doigt. `armesPortees` lit à la fois l'arme du prototype
 (`entite.arme`) et l'arme de l'effet « arme » des magies (`entite.armes`,
 le Sabre maudit).
 
-**L'aperçu dit l'équipement.** Au survol comme à l'appui long, l'aperçu
-d'une créature armée affiche une ligne « ⚔ Équipée de <arme> +X/+Y »
-(`data-arme-equipee`, `.rpg-hover-card-preview__arme`), et son libellé
-accessible ajoute « équipée de <arme> (+X/+Y) ».
+**L'aperçu dit l'équipement.** Au survol, à l'appui long et sur la fiche,
+les statistiques et effets directs accordés par l'arme rejoignent le texte
+d'effet de la créature en bleu (« Bonus d’équipement : +X/+Y · Infiltration »,
+par exemple). Le nom de l'arme n'est plus imprimé sur la carte ; le petit
+rappel de statistiques ne montre que son bonus, et les compteurs de la Jitte
+restent visibles.

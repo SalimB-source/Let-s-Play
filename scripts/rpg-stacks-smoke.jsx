@@ -338,30 +338,44 @@ async function scenarioCreatureArmee(assert, disposition) {
     assert.ok(dessous.querySelector('img')?.getAttribute('src')?.includes('takouba-des-pistes'),
       `[${disposition}] la pile montre l’illustration de l’arme`);
     assert.equal(dessous.getAttribute('aria-hidden'), 'true', `[${disposition}] l’arme posée dessous reste décorative`);
-    assert.ok(armee.getAttribute('aria-label').includes('armée de Takouba des pistes'),
-      `[${disposition}] le libellé accessible dit l’arme`);
+    assert.match(armee.querySelector('.rpg-card__arme')?.textContent ?? '', /\+2\/\+0/u,
+      `[${disposition}] la carte garde le bonus de stats sans le nom de l’arme`);
+    assert.doesNotMatch(armee.textContent, /Takouba des pistes/u,
+      `[${disposition}] le nom de l’arme n’est plus imprimé sur la carte`);
+    assert.match(armee.getAttribute('aria-label'), /Bonus d’équipement : \+2\/\+0.*Infiltration/u,
+      `[${disposition}] le libellé accessible indique le bonus et l’effet sans nommer l’arme`);
+    assert.doesNotMatch(armee.getAttribute('aria-label'), /Takouba des pistes/u,
+      `[${disposition}] le nom de l’arme n’est plus annoncé depuis la carte équipée`);
     assert.equal(pile.querySelector('.rpg-card-stack__count'), null, `[${disposition}] une créature seule n’a pas de compteur ×N`);
 
-    // ── Survol : l'aperçu indique l'équipement ─────────────────────────────
+    // ── Survol : les bonus d'équipement rejoignent les effets en bleu ──────
     await survoler(armee);
     const apercu = container.querySelector('.rpg-hover-card-preview');
     assert.ok(apercu, `[${disposition}] survoler la créature armée ouvre son aperçu`);
-    const ligne = apercu.querySelector('[data-arme-equipee]');
-    assert.ok(ligne, `[${disposition}] l’aperçu indique que la créature est équipée`);
-    assert.ok(ligne.textContent.includes('Équipée de') && ligne.textContent.includes('Takouba des pistes +2/+0'),
-      `[${disposition}] l’aperçu nomme l’arme et son bonus : « ${ligne.textContent} »`);
-    assert.ok(apercu.getAttribute('aria-label').includes('équipée de Takouba des pistes (+2/+0)'),
-      `[${disposition}] l’aperçu le dit aussi aux lecteurs d’écran`);
+    const ligne = apercu.querySelector('[data-effet-equipement]');
+    assert.ok(ligne, `[${disposition}] l’aperçu ajoute les bonus à la zone d’effets`);
+    assert.match(ligne.textContent, /Bonus d’équipement : \+2\/\+0.*Infiltration/u,
+      `[${disposition}] l’effet bleu donne les stats et le mot-clé : « ${ligne.textContent} »`);
+    assert.ok(ligne.classList.contains('rpg-hover-card-preview__rule--equipment'),
+      `[${disposition}] les effets d’équipement ont leur style bleu`);
+    assert.equal(apercu.querySelector('[data-arme-equipee]'), null,
+      `[${disposition}] l’aperçu n’ajoute plus une ligne séparée avec le nom de l’arme`);
+    assert.doesNotMatch(apercu.textContent, /Takouba des pistes/u,
+      `[${disposition}] le texte d’effet n’affiche pas le nom de l’arme`);
+    assert.match(apercu.getAttribute('aria-label'), /effets d’équipement.*\+2\/\+0.*Infiltration/u,
+      `[${disposition}] les bonus d’équipement sont également accessibles`);
     await quitterSurvol(armee);
     assert.equal(container.querySelector('.rpg-hover-card-preview'), null, `[${disposition}] quitter la carte referme l’aperçu`);
 
-    // ── Appui long : même information, sans rien jouer ─────────────────────
+    // ── Appui long : même effet bleu, sans rien jouer ──────────────────────
     await appuiLong(camp('equipe', 'chien-du-guet')[0]);
     const volet = container.querySelector('.rpg-card-peek');
     assert.ok(volet, `[${disposition}] tenir la créature armée une seconde ouvre son aperçu`);
-    const ligneVolet = volet.querySelector('[data-arme-equipee]');
-    assert.ok(ligneVolet?.textContent.includes('Takouba des pistes +2/+0'),
-      `[${disposition}] l’appui long montre aussi l’arme portée`);
+    const ligneVolet = volet.querySelector('[data-effet-equipement]');
+    assert.ok(ligneVolet?.textContent.includes('+2/+0') && ligneVolet.textContent.includes('Infiltration'),
+      `[${disposition}] l’appui long montre les stats et effets accordés, sans nommer l’arme`);
+    assert.doesNotMatch(volet.textContent, /Takouba des pistes/u,
+      `[${disposition}] l’appui long n’affiche pas le nom de l’arme`);
     await fermerApercu();
     assert.equal(container.querySelector('.rpg-card-peek'), null, `[${disposition}] Échap referme l’aperçu`);
     assert.equal(camp('equipe', 'chien-du-guet')[0].classList.contains('is-selected'), false,

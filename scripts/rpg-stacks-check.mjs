@@ -17,5 +17,5 @@ try {
   await checkRpgCardStacks(assert);
   console.log('✓ Piles de cartes homonymes au doigt (main et camp du joueur) : les exemplaires identiques ne forment qu’un emplacement avec son compteur ×N, la pile agit sur l’exemplaire prêt, le compteur déplie le groupe et la puce ×N le replie, un groupe se déplie seul dès qu’un exemplaire est déclaré attaquant, et les pioches remplissent la pile sans élargir la main');
   console.log('✓ Piles de cartes homonymes au doigt (camp du sorcier) : les créatures adverses identiques s’empilent aussi, le groupe se déplie pendant son attaque pour que chaque attaquant reste visible et recevable, un bloqueur s’assigne depuis la pile repliée du joueur, puis les deux camps se replient une fois le combat résolu');
-  console.log('✓ Créature équipée d’une arme (tactile et ordinateur) : elle forme une pile où l’arme glisse sous elle, sans se mêler à ses homonymes ; l’aperçu au survol et à l’appui long indique « Équipée de » avec le bonus de l’arme');
+  console.log('✓ Créature équipée d’une arme (tactile et ordinateur) : l’aperçu au survol et à l’appui long ajoute les statistiques et effets directs en bleu dans le texte d’effet, sans afficher le nom de l’arme sur la carte');
 } finally { dom.window.close(); }
