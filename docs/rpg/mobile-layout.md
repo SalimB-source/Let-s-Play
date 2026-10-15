@@ -19,7 +19,7 @@ Le plateau conserve les illustrations originales de Bab El, avec une organisatio
 
 Le clic sur une carte en main la joue immédiatement, sur ordinateur comme sur mobile : la pose réutilise les validations et les animations du glisser-déposer, y compris le paiement automatique et le choix ultérieur d’une cible. Une carte refusée reste en main et le refus est expliqué (mana, limite de terrain, phase). **Les magies demandent une confirmation** avant le lancement ; Annuler laisse le sort en main. Les créatures et terrains déjà posés agissent aussi directement au clic : attaque ou retrait de la sélection, blocage, choix de cible ou production de mana selon l’état de la partie. La confirmation de l’attaque se fait uniquement sur le plateau, à côté de la fin du tour, où reste aussi l’annulation de la dernière action. Les statistiques d’une créature en jeu reflètent ses valeurs actuelles.
 
-Au survol d’une carte (ordinateur), l’aperçu instantané reste le seul moyen de consulter les détails : effets, statistiques, compteurs de terrains, sans texte explicatif bleu.
+Au survol d’une carte (ordinateur), l’aperçu instantané reste le seul moyen de consulter les détails : effets, statistiques et compteurs de terrains. Les bonus de stats et effets directs d’une arme équipée s’ajoutent au texte d’effet de la créature en bleu.
 
 ## L’aperçu au doigt : appui long d’une seconde
 
@@ -69,7 +69,7 @@ Le reste vient des **piles de cartes homonymes**, au doigt seulement (`empilerCa
 - tout groupe dont un exemplaire participe à l'**action en cours** — attaquants déclarés, combat entrant, blocages assignés, cible de sort, coup rapide, bloqueur sélectionné, effet visuel — **se déplie seul**, pour que les flèches de blocage, les halos de cible et les destructions retrouvent chaque carte ;
 - un exemplaire masqué **emprunte la place de sa pile** dans l'instantané du champ : son effet de destruction part du bon endroit au lieu du coin de la table ;
 - l'**appui long** d'une seconde ouvre l'aperçu de la pile sans rien jouer ni déplier ;
-- une **créature armée** n'est jamais regroupée avec ses homonymes : elle forme sa propre pile, l'arme glissée sous elle (`.rpg-card-stack--arme`), et son aperçu — survol ou appui long — porte la ligne « Équipée de » avec le bonus de l'arme ;
+- une **créature armée** n'est jamais regroupée avec ses homonymes : elle forme sa propre pile, l'arme glissée sous elle (`.rpg-card-stack--arme`), et son aperçu — survol ou appui long — ajoute les stats et effets accordés par l'arme en bleu dans le texte d'effet, sans en afficher le nom ;
 - à la souris et sur grand écran, **rien ne change** : une carte = un emplacement, et le DOM de la main est exactement celui d'origine.
 
 Le regroupement est une présentation : chaque exemplaire reste une instance distincte dans le moteur, avec son index réel en main (le vol de carte, la pioche et le paiement visent l'exemplaire concerné). `src/games/rpgCardStacks.js` porte les deux fonctions pures (`groupCartesMain`, `groupEntitesParCarte`), `src/games/rpg-mobile.css` la présentation (`.rpg-hand__pile`, `.rpg-card-stack`, `.rpg-card-stack__count`, `.rpg-card-stack__toggle`).
