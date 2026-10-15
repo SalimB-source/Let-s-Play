@@ -58,9 +58,9 @@ tous les antagonistes des actes I à V (Marchand de sable, Gardienne des ksour,
 Djinn du tournant, Reine des étals, Pêcheur de perles, Nageuse des puits,
 Sonneur d’écume, Dévoreur de l’abîme, Garde du fjord, Meute des neiges,
 Valkyrie du fjord, Maître des Neuf Hivers, Dernier Fennec, Ifrit des ergs,
-Horloger du Zénith) — plus la **pose de décision** des sept figures qui posent
+Horloger du Zénith) — plus la **pose de décision** des huit figures qui posent
 une question au lecteur : Salem, Yamina, la Scribe, le Djinn du tournant,
-Boualem, Mahieddine et la Valkyrie du fjord.
+Boualem, Mahieddine, la Valkyrie du fjord et l’Horloger du Zénith.
 
 Le **nom du fichier** dit la situation : `stand-<id>-<suffixe>.webp`, avec le
 suffixe déclaré par la situation (`affrontement`, `decision`, `apaisement`).

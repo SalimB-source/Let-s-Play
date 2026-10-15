@@ -157,10 +157,9 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
     'pecheur', 'nageuse', 'sonneur', 'devoreur', 'garde-fjord', 'meute-neiges',
     'valkyrie-fjord', 'maitre-hivers', 'dernier-fennec', 'ifrit-ergs', 'horloger-zenith'];
   // Celles qui posent une décision au lecteur ont en plus leur posture de
-  // décision — les deux figures de chaque scène de décision, sauf l'Horloger
-  // du Zénith, dont la décision retombe sur sa référence.
+  // décision : les deux figures de chacune des cinq scènes de décision.
   const FIGURES_DECISION = ['salem', 'yamina', 'scribe', 'djinn-souk', 'boualem',
-    'mahieddine', 'valkyrie-fjord'];
+    'mahieddine', 'valkyrie-fjord', 'horloger-zenith'];
   const avecVariante = Object.values(RPG_STORY_CAST).filter((p) => p.poses);
   assert.equal(avecVariante.length, FIGURES_POSE.length,
     'toute figure détourée porte ses variantes — le narrateur excepté');
@@ -179,10 +178,12 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
   }
 
   // Une situation non déclarée pour une figure donnée retombe sur sa référence :
-  // à la dernière décision du récit, l'Horloger du Zénith n'en a pas.
-  assert.equal(poseHistoire('horloger-zenith', 'choix', '/base/'), standHistoire('horloger-zenith', '/base/'),
+  // le Guetteur n'a pas de posture de décision, il n'en invente pas.
+  assert.equal(poseHistoire('guetteur', 'choix', '/base/'), standHistoire('guetteur', '/base/'),
     'une situation non déclarée retombe sur la référence de la figure');
-  assert.equal(poseHistoire('guetteur', 'choix', '/base/'), standHistoire('guetteur', '/base/'));
+  assert.deepEqual(situationsPoseHistoire('guetteur'), ['duel', 'apres']);
+  // Aucune figure du casting ne reste sans variante : les vingt-quatre y sont.
+  assert.equal(FIGURES_POSE.every((id) => situationsPoseHistoire(id).length >= 2), true);
 
   // Une situation inconnue ou absente retombe sur la référence.
   assert.equal(poseHistoire('salem', 'inconnue', '/base/'), standHistoire('salem', '/base/'));

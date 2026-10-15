@@ -384,9 +384,9 @@ export async function checkRpgStoryPoses(assert) {
     assert.equal(sprite('mahieddine').dataset.pose, 'apres', 'Mahieddine aussi : la même situation vaut pour tout le plan');
     assert.match(sprite('mahieddine').getAttribute('src'), /stand-mahieddine-apaisement\.webp/);
 
-    // 6. La dernière décision du récit : une figure du plan a sa pose de
-    //    décision, l'autre n'en a pas et garde sa référence — jamais de carré
-    //    cassé, et pas de pose empruntée à un autre moment.
+    // 6. La dernière décision du récit, atteinte par le vrai rejeu de la
+    //    campagne : les deux figures du plan prennent leur pose de décision —
+    //    aucun plateau de décision ne reste sur une posture d'un autre moment.
     const etatFinale = avancerJusqua('sables-3-apres');
     poserEtat({
       type: 'scene', id: 'sables-3-apres', replique: dernier('sables-3-apres'), resume: false,
@@ -395,9 +395,10 @@ export async function checkRpgStoryPoses(assert) {
     assert.ok(query('[data-story-choice-group]'), 'le choix du portail est posé au lecteur');
     assert.equal(sprite('mahieddine').dataset.pose, 'choix', 'le Grand Horloger passe la plume');
     assert.match(sprite('mahieddine').getAttribute('src'), /stand-mahieddine-decision\.webp/);
-    assert.equal(sprite('horloger-zenith').dataset.pose, undefined,
-      'sans variante de décision, l’Horloger du Zénith garde sa pose de référence');
-    assert.match(sprite('horloger-zenith').getAttribute('src'), /stand-horloger-zenith\.webp/);
+    assert.equal(sprite('horloger-zenith').dataset.pose, 'choix', 'l’Horloger du Zénith pose sa montre');
+    assert.match(sprite('horloger-zenith').getAttribute('src'), /stand-horloger-zenith-decision\.webp/);
+    assert.equal(query('.rpg-narrative__plateau [data-pose="apres"], .rpg-narrative__plateau [data-pose="duel"]'), null,
+      'et aucune pose de duel ne traîne sur un plateau de décision');
   } finally {
     if (root) await act(async () => root.unmount());
     container.remove();

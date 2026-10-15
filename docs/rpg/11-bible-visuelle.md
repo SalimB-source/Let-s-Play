@@ -155,13 +155,16 @@ puits, le Sonneur d'écume, le Dévoreur de l'abîme, la Garde du fjord, la Meut
 des neiges, la Valkyrie du fjord, le Maître des Neuf Hivers, le Dernier Fennec,
 l'Ifrit des ergs, l'Horloger du Zénith).
 
-**Sept figures ont en plus leur posture de décision** — celles des cinq scènes
-où le lecteur tranche : Salem, Yamina, la Scribe, le Djinn du tournant,
-Boualem, Mahieddine et la Valkyrie du fjord. À `listes-2-apres`, la Scribe
-montre la liste ouverte au lecteur, pages tournées vers lui ; à
-`sables-3-apres`, le Grand Horloger ouvre les mains à hauteur de hanche et
-passe la plume. L'Horloger du Zénith, qui n'en a pas encore, garde sa pose de
-référence pendant ce même plan : c'est le repli, prouvé par le lecteur monté.
+**Huit figures ont en plus leur posture de décision** — les deux figures de
+chacune des cinq scènes où le lecteur tranche : Salem, Yamina, la Scribe, le
+Djinn du tournant, Boualem, Mahieddine, la Valkyrie du fjord et l'Horloger du
+Zénith. À `listes-2-apres`, la Scribe montre la liste ouverte au lecteur, pages
+tournées vers lui ; à `sables-3-apres`, le Grand Horloger ouvre les mains à
+hauteur de hanche et passe la plume tandis que l'Horloger du Zénith tend son
+astrolabe. **Aucun plateau de décision ne reste donc sur une posture d'un autre
+moment**, et le repli garde sa preuve juste à côté : au niveau du registre, une
+situation non déclarée pour une figure donnée (le Guetteur, qui n'a pas de pose
+de décision) rend bien sa pose de référence.
 
 Quelques repères de la garde et de la détente : la Garde du fjord dresse son
 bouclier en mur devant sa poitrine, puis le pose contre sa jambe et ouvre la
@@ -187,8 +190,8 @@ Trois pièges du détourage, tous traités par l'outil et vérifiés par
    `python3 tools/check-stands.py` mesure les deux (liseré et gabarit) et nomme
    les sprites à reprendre. **Repris dans cette passe :** `stand-tarek.webp`
    (source portrait 896×1200), `stand-valkyrie-fjord.webp` et
-   `stand-ifrit-ergs.webp` (sources portrait). **79 sprites** (24 figures et
-   55 variantes) passent aujourd'hui le contrôle sans réserve.
+   `stand-ifrit-ergs.webp` (sources portrait). **80 sprites** (24 figures et
+   56 variantes) passent aujourd'hui le contrôle sans réserve.
 
 ## Mise en scène
 
