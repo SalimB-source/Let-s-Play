@@ -7699,3 +7699,117 @@ du Cavalier) y passe de bout en bout, les six nouvelles assertions statiques
 aussi — le contrôle s'arrête ensuite sur celle des badges, inchangée par cette
 retouche. Les contrôles Playwright demandent un navigateur, absent de cet
 environnement.
+
+## Le Sablier : le bonus d'équipement au-dessus des statistiques, et la ligne bleue en premier
+
+Deux retouches de lecture, **aucune règle du duel touchée** : sur une face posée
+au doigt, le rappel du bonus d'équipement ne recouvre plus l'attaque et la
+défense de la créature ; dans l'aperçu d'une carte — survol, appui long, fiche
+du catalogue, annonce de sort —, la **ligne bleue** de l'équipement passe en
+premier, avant les effets propres de la carte.
+
+**Le bug, chiffré.** La pastille du bonus (`.rpg-card__arme`, « +2/+0 » avec son
+icône d'attaque) gardait la mesure du **bureau** sur toutes les présentations :
+police de 8 px sur `line-height: 1.5`, rembourrage `1px 6px`, filet de 1,5 px,
+`bottom: 13 %`, `max-width: 92 %`. Sur un 568 × 320 — le plus petit paysage
+testé —, `--duel-card` vaut 17dvh = 54,4 px, donc une carte posée de
+**46,2 × 57,8 px** (85 % de la main, 4:5). La pastille y faisait **17 px** de
+haut à partir de 7,5 px du bas, alors que le pied (ATQ à gauche, DEF à droite,
+des plaques de `1.2 × 8 + 6 = 15,6 px` posées à 3 %, soit 1,7 px du bas)
+remplissait déjà 1,7 → 17,3 px : la pastille tombait **sur** les deux
+statistiques. Elle tronquait en plus son propre texte (≈ 49 px de contenu pour
+les 42,5 px que s'autorisaient les 92 % de largeur).
+
+**La pastille se range, la bande du pied se nomme.** Le pied d'une carte posée
+a désormais trois variables dans `.rpg-battle--touch .card-table` :
+`--rpg-field-stat-font` (la taille des deux statistiques, la seule déclaration),
+`--rpg-field-stat-height` (`calc(1.2 * la taille + 6px)` : un chiffre, son
+rembourrage de 2 px et son filet de 1 px) et `--rpg-field-foot` (3 %). Le pied
+consomme les deux premières — il les déclarait à la main — et la pastille se
+pose **juste au-dessus** : `bottom: calc(var(--rpg-field-foot) +
+var(--rpg-field-stat-height) + 2px)`, soit 19,3 px du bas sur un 568 × 320. Elle
+suit aussi la taille de la carte (`font-size: clamp(6px, --duel-card × .1, 9px)`,
+`max-width: 88 %`, filet de 1 px) : **12,8 px** de haut, son papier s'arrête à
+25,8 px du haut quand les deux repères ronds (22 px à 5 %) finissent à 24,9 px —
+elles ne se touchent plus. Sur un 844 × 390, il reste 10,7 px d'air.
+
+**Les vignettes d'arme s'effacent au doigt.** `.rpg-card__weapons` empile des
+images de **22 × 28 px** à `right: 4px; bottom: 28px` : sur une face de 58 px de
+haut, ces vignettes occupaient 28 → 56 px du bas, donc le milieu de
+l'illustration **et** les repères du haut — et doublonnaient l'arme déjà glissée
+sous la créature (`.rpg-card-stack--arme`). Au doigt, la pile, la pastille du
+bonus et l'aperçu disent l'équipement ; la face reste entière. À la souris, les
+vignettes restent : sur une carte de 183 px de haut, elles ne croisent aucun
+repère.
+
+**Sous 45 px de large, la pastille s'efface.** Une face ne porte pas trois
+bandes : deux repères de 22 px en haut, le pied d'environ 16 px en bas, la
+pastille au milieu. La largeur qui décide n'est pas celle de la fenêtre — elle
+se partage entre les emplacements de la rangée (`--row-count`, `:has(> :
+nth-child(N))`), jusqu'au plancher `--rpg-field-min: 40px`. La carte devient donc
+un **conteneur de requête** (`container-type: inline-size`, déjà utilisé par le
+mulligan) et `@container (max-width: 45px)` range la pastille : au plancher, la
+bande libre fait 8,4 px pour une pastille de 12,8 px, elle toucherait les
+repères. Sans `@container` (vieille WebView), la pastille reste affichée — la
+requête est un raffinement, pas une dépendance.
+
+**Dans l'aperçu, la ligne bleue passe devant.** `HoverCardPreview` rendait les
+effets de la carte (`effets.map`) puis les bonus d'équipement
+(`effetsArmesEquipees.map`, la classe `rpg-hover-card-preview__rule--equipment`
+et son `data-effet-equipement`) : ce que l'arme accorde arrive maintenant
+**premier**, dans le même encadré sombre. Le libellé accessible suit le même
+ordre (`effets d'équipement` avant `effet`) pour que la lecture au lecteur
+d'écran corresponde à celle de l'œil. Rien d'autre ne bouge : ni les effets
+propres, ni les statistiques, ni le nom de l'arme — toujours absent de la ligne.
+
+### Où vit le code
+
+- `src/games/rpg-mobile.css` — les trois variables du pied dans le bloc
+  `.rpg-battle--touch .card-table` ; le pied qui les consomme
+  (`bottom: var(--rpg-field-foot, 3%)`, `font-size: var(--rpg-field-stat-font,
+  …)`) ; puis, sous le titre « Le bonus d'équipement ne recouvre plus l'attaque
+  et la défense », les règles tactiles : `.rpg-card__weapons` éteint,
+  `.rpg-card__arme` au-dessus du pied avec ses tailles, le `.card-row
+  .rpg-card` promu conteneur de requête et le `@container (max-width: 45px)`
+  qui range la pastille ;
+- `src/games/RpgDuelPage.jsx` — `HoverCardPreview` : l'ordre des deux `map`
+  dans `.rpg-hover-card-preview__rules`, le commentaire du bloc
+  `effetsArmesEquipees`, et le `aria-label` du panneau dans le même ordre ;
+- `docs/rpg/mobile-layout.md` — la pastille sur une créature équipée (liste de
+  présentation), la ligne bleue en tête (aperçu au survol, créature armée) et
+  le contrat des nouvelles vérifications.
+
+### Vérifications
+
+```bash
+npm run check:rpg          # 524/524 — les règles du duel, inchangées
+npm run build              # le bundle se construit
+node scripts/rpg-card-state-check.mjs     # ✓
+node scripts/rpg-preview-check.mjs        # ✓ (aperçu, appui long, fiche)
+node scripts/rpg-ghost-check.mjs          # ✓
+node scripts/rpg-mulligan-check.mjs       # ✓
+node scripts/rpg-turn-banner-check.mjs    # ✓
+node scripts/rpg-sort-signature-check.mjs # ✓
+node scripts/rpg-card-motif-check.mjs     # ✓
+```
+
+Onze assertions neuves sont entrées dans `scripts/rpg-battle-ui-check.mjs` :
+deux sur l’aperçu (la ligne bleue ouvrant `.rpg-hover-card-preview__rules`,
+l'effet de la carte après elle, le libellé accessible dans le même ordre) et
+neuf sur la face au doigt (les trois variables du pied, le pied qui les
+consomme avec son repli à 3 %, la pastille au-dessus du pied à l'échelle de la
+carte, l'interdit du `bottom: 13 %` du bureau, les vignettes d'arme éteintes, la
+carte conteneur de requête, le `@container` à 45 px).
+
+**Réserve connue, hors de cette retouche.** `npm run check:rpg-ui` casse
+toujours **avant** elles, à HEAD comme ici, dans son volet JSDOM
+(`le deck hybride est validé à 40 cartes, avec 17 terrains, 16 créatures,
+5 magies et 2 armes` — les données du deck `Sentiers de cendre` donnent 4 magies
+et 3 armes), puis `scripts/rpg-stacks-check.mjs` sur une assertion pré-existante
+(`le sorcier attaque encore : son groupe est déplié`). Les onze assertions
+neuves ont donc été rejouées dans un harnais temporaire qui lit les deux mêmes
+fichiers (`rpg-mobile.css`, la tranche `HoverCardPreview` de `RpgDuelPage.jsx`) :
+**11/11**. Les contrôles Playwright (`check:rpg-mobile`,
+`check:rpg-card-markers`, `check:rpg-card-motif` en navigateur) demandent un
+navigateur, absent de cet environnement — la géométrie de la pastille est donc
+donnée par le calcul ci-dessus, pas par une mesure d'écran.
