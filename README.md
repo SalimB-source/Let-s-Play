@@ -7502,3 +7502,101 @@ pastille d'élément, ni le socle. Le point de vigilance est l'autre bout de la
 main : un sort jouable ne doit pas éblouir la carte voisine, ni dépasser dans la
 barre d'action.
 
+## Le Sablier : la créature se pose avant de désigner sa cible
+
+« Quand une créature a un effet d'arrivée qui cible une autre créature ou un
+joueur, elle doit d'abord être posée sur la table avant de choisir la cible. »
+Le Cavalier amazigh arrivait dans la main : on le glissait sur la table, et la
+carte **attendait** — allumée en `is-targeting`, toujours dans la main, sans avoir
+payé ni quitté la main — qu'on désigne le Chien adverse. Le sable n'était payé
+qu'après, la créature n'existait nulle part pendant le choix, et le journal
+laissait le duel en suspens avant même la pose. Le geste se lisait à l'envers :
+on choisissait la victime **avant** de savoir si la créature entrait en jeu.
+
+**L'ordre est maintenant celui de la table : la créature se pose, puis la table
+s'allume.**
+
+- `rpgJouerCreature(duel, cote, carteId, cibleId, { cibleDifferee: true })`
+  (`src/games/rpgDuel.js`) paie le sable, fait quitter la main, crée l'entité,
+  pousse le journal (« Vous posez … ») et **retient** ce qu'il reste à désigner
+  (`duel.arriveeEnAttente = { cote, entiteId, carteId }`) au lieu d'appliquer
+  l'arrivée. Les validations d'origine restent : sans le drapeau, une arrivée
+  ciblée refuse toujours la pose sans cible (`raison: 'cible'`), et c'est ce
+  chemin que prend l'IA du sorcier.
+- `rpgResoudreArriveeCiblee(duel, cote, cibleId)` referme la désignation : elle
+  revalide la cible (camp de la portée, protection contre la couleur) parce que
+  la table a pu changer entre la pose et le clic, puis applique l'arrivée comme
+  avant — mêmes effets, mêmes journaux, mêmes animations.
+- `arriveeCiblePortee(carte)` est **la seule règle de portée** : `'ennemi'`
+  (Cavalier, Vipère, Valkyrie, Léviathan, Bakunawa, Sonneur félé), `'tous'`
+  (l'exil du Susanoo, qui choisit dans les deux camps), `'allie'` (un renvoi sur
+  son propre camp), `null` pour tout le reste (pioche, jetons, soin, dégâts de
+  zone ou au sorcier). Le moteur s'en sert pour exiger la cible, `targetMode()`
+  dans la page pour allumer les créatures légales : un camp ne peut pas demander
+  ce que l'autre refuse. `arriveeACibleLegale()` garde le cas « plus rien à
+  viser » : la pose se résout alors seule, sans attente.
+- La page ne change pas d'ordre : `jouerCarteDepuisMain` fait voler la carte
+  (720 ms), `poserCarte` termine la pose, et `finaliserPoseCreature` ouvre la
+  désignation (`setCibleEnCours(carteId)`) **après** que la créature est entrée
+  en jeu. Le clic sur une créature passe par la branche différée de
+  `resoudreCible`, qui n'a aucun vol à relancer — la carte n'est plus en main.
+- Le bouton de la cible dit ce qu'il fait : **« Renoncer à la cible »** quand
+  une créature attend sur la table (elle reste en jeu, on renonce seulement à
+  l'effet), « Annuler la cible » pour les sorts et les armes, jamais posés. Le
+  bouton « Annuler la dernière action » défait la pose entière, mana compris.
+
+Ce qui n'a pas bougé : les sorts gardent leur flux d'origine (une Magie Rapide
+lancée pendant le tour du sorcier désigne sa cible depuis la main, elle n'a pas
+de corps à poser), `rpgEstProtegee()` filtre les deux bouts (à la pose comme au
+clic), l'IA continue d'annoncer sa carte et de choisir sa victime **avant** de
+poser (`choisirCarteIA` → `rpgSorcierResoudreAnnonce`), l'annulation de la
+dernière action restitue l'état complet, le tutoriel avance sur la pose, et le
+Souk est prévenu après le rendu du plateau comme avant.
+
+### Vérifications
+
+```bash
+npm run check:rpg          # 511/511 — dont 4 nouveaux tests : portée, pose différée, attente sans cible, revalidation
+npm run check:rpg-ui       # le volet JSDOM rejoue le Cavalier : vol, pose, journal, cibles, renoncement
+npm run build              # le bundle se construit
+```
+
+Les quatre tests du moteur (`tests/rpg-duel.test.js`) tiennent le contrat :
+`arriveeCiblePortee` rend la bonne portée pour les huit cartes d'arrivée
+(pique, dégâts, exil, jetons, soin, zone), la Vipère posée en `cibleDifferee`
+est **en jeu** avec son mana payé et sa carte hors de la main pendant que le
+Chien reste intact, la désignation différée rejoue les refus d'origine (cible
+absente, sa propre créature, protection contre l'Eau) et l'attente se referme
+sur une cible légale, enfin une table vide ne laisse **aucune** attente ouverte.
+
+Le scénario JSDOM du Cavalier (`scripts/rpg-battle-smoke.jsx`) rejoue la partie
+entière : cinq Déserts posés pour financer la carte, puis le glisser-déposer qui
+fait **voler** la carte avant tout choix (`carteEnVol`), la pose seule dans le
+journal (« Vous posez Cavalier amazigh du Désert »), l'absence de `is-targeting`
+dans la main — le Cavalier n'y est plus —, les créatures adverses allumées en
+`is-ciblable`, le bouton « Renoncer à la cible », puis le clic qui laisse le
+Cavalier en jeu, détruit le Chien 2/2 et écrit l'affrontement au journal.
+
+`scripts/rpg-battle-ui-check.mjs` gagne six assertions statiques : le vol part de
+`jouerCarteDepuisMain` (`demarrerVolCarte(carte, index, () => poserCarte(carteId))`),
+`poserCarte` se termine par `finaliserPoseCreature(carteId)` sans relancer
+d'animation, `finaliserPoseCreature` appelle `rpgJouerCreature(… null, { cibleDifferee: true })`
+puis ouvre la désignation sur `res.arriveeEnAttente`, `resoudreCible` referme par
+`rpgResoudreArriveeCiblee`, et le moteur exporte `rpgResoudreArriveeCiblee` et
+`arriveeCiblePortee`.
+
+**Réserve connue, hors de cette retouche :** `npm run check:rpg-ui` casse
+toujours à HEAD dans son volet JSDOM (`le deck hybride est validé à 40 cartes,
+avec 17 terrains, 16 créatures, 5 magies et 2 armes` — les données du deck
+`Sentiers de cendre` donnent 4 magies et 3 armes), puis sur deux assertions
+statiques pré-existantes : `canTarget` attend encore `modeCible === 'ennemi'`
+là où la page teste `['ennemi', 'tous'].includes(modeCible)` (l'exil du Susanoo),
+et `.rpg-card-element-badge` ne trouve plus le premier bloc `{` du sélecteur.
+Ces trois-là échouent déjà sur l'arbre propre (`git stash` vérifié), comme
+`node scripts/rpg-tutorial-flow-check.mjs` (`card-guide-armes` attendu
+`card-guide-terrain-hybride`). Le Cavalier a donc été rejoué dans un harnais
+temporaire qui neutralise **ces seules** assertions : le volet JSDOM (la partie
+du Cavalier) y passe de bout en bout, les six nouvelles assertions statiques
+aussi — le contrôle s'arrête ensuite sur celle des badges, inchangée par cette
+retouche. Les contrôles Playwright demandent un navigateur, absent de cet
+environnement.

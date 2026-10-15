@@ -436,12 +436,20 @@ assert.match(battlePage, /className="rpg-card-catalogue"[\s\S]*?Filtrer par coul
   'l’onglet Catalogue propose les filtres de couleur et de type');
 assert.match(battlePage, /onChangeScreen\('catalogue'\)[\s\S]*?Catalogue/,
   'Catalogue est accessible depuis le menu des modes');
-// L'arrivée du Cavalier (combat) partage son choix de cible avec les arrivées
-// qui blessent une créature (le marteau du Maître) : même branche, même éclat.
-assert.match(battlePage, /if \(carte\.arrivee\?\.type === 'combat' \|\| \(carte\.arrivee\?\.type === 'degats' && carte\.arrivee\.cible === 'creature'\)\) \{[\s\S]*?if \(ciblesLegales\.length\) \{\s*setCibleEnCours\(carteId\);/,
-  'l’arrivée du Cavalier ouvre le choix d’une créature adverse, signalé par les cibles allumées');
-assert.match(battlePage, /demarrerVolCarte\(carteSource, handIndex, \(\) => finaliserPoseCreature\(carteId, entite\.id\)\)/,
-  'la carte réelle vole depuis la main après la sélection de la cible');
+// Une créature se pose **avant** de désigner : la carte vole, `finaliserPoseCreature`
+// entre en jeu (arrivée différée), et la table s'allume — le clic referme l'attente.
+assert.match(battlePage, /demarrerVolCarte\(carte, index, \(\) => poserCarte\(carteId\)\)/,
+  'la carte d’une créature vole vers la table dès qu’elle est jouée : la pose passe avant la cible');
+assert.match(battlePage, /const poserCarte = \(carteId\) => \{[\s\S]*?finaliserPoseCreature\(carteId\);\s*\};/,
+  'la créature arrivée au bout de son vol se pose sans relancer une seconde animation');
+assert.match(battlePage, /rpgJouerCreature\(duel, 'joueur', carteId, null, \{ cibleDifferee: true \}\)[\s\S]*?if \(res\.arriveeEnAttente\) setCibleEnCours\(carteId\);/,
+  'le Cavalier entre en jeu, puis la page ouvre la désignation de sa victime');
+assert.match(battlePage, /if \(arriveeCiblePortee\(carteSource\) && duel\.arriveeEnAttente\?\.carteId === cibleEnCours\) \{[\s\S]*?rpgResoudreArriveeCiblee\(duel, 'joueur', entite\.id\)/,
+  'la cible cliquée referme l’attente ouverte à la pose, sans reposer la créature');
+assert.match(duelEngine, /export function rpgResoudreArriveeCiblee\(duel, cote, cibleId\)/,
+  'le moteur expose la reprise de l’arrivée en attente');
+assert.match(duelEngine, /export function arriveeCiblePortee\(carte\)/,
+  'la portée d’une arrivée ciblée est une seule règle, partagée par le moteur et la page');
 assert.match(battleCss, /\.rpg-card-catalogue__art\s*\{[\s\S]*?aspect-ratio:\s*4\s*\/\s*5;[\s\S]*?border:\s*var\(--rpg-card-border-large, 6px\) solid var\(--rpg-frame-color/s,
   'les illustrations du catalogue sont moins étirées verticalement en 4:5 et gardent un cadre piloté par l’élément, au grand gabarit');
 assert.match(battleCss, /\.rpg-card-catalogue__cost\s*\{[^}]*top:\s*9px;[^}]*right:\s*9px;[^}]*bottom:\s*auto;/s,

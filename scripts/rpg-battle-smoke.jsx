@@ -1383,7 +1383,7 @@ export async function checkRpgBattle(assert) {
   await act(async () => { protectionRoot.unmount(); });
   protectionContainer.remove();
 
-  // ── Le Cavalier choisit sa cible, puis la vraie carte quitte la main ────
+  // ── Le Cavalier se pose d'abord, puis choisit sa victime sur la table ──
   const cavalryContainer = document.createElement('div');
   document.body.appendChild(cavalryContainer);
   const cavalryRoot = createRoot(cavalryContainer);
@@ -1420,25 +1420,39 @@ export async function checkRpgBattle(assert) {
   const cavalryInHand = cavalryHand().find((card) => card.dataset.cardId === 'cavalier-amazigh-du-desert');
   assert.ok(cavalryInHand && estJouable(cavalryInHand), 'le Cavalier est payable avec les cinq Déserts posés');
   await glisserSurTable(cavalryContainer, cavalryInHand, false);
-  assert.ok(cavalryInHand.isConnected && !cavalryInHand.classList.contains('rpg-card-flight'),
-    'la carte attend le choix de cible avant de quitter la main');
-  assert.ok(cavalryInHand.classList.contains('is-targeting')
-    && cavalryContainer.querySelector('.rpg-card--ennemi.is-ciblable'),
-  'la carte en attente et les cibles légales s’allument : l’effet d’arrivée se choisit sans consigne écrite');
+  assert.equal(carteEnVol(cavalryContainer), cavalryInHand,
+    'la carte du Cavalier vole vers la table dès qu’elle est jouée : la pose passe avant la cible');
+  assert.equal(cavalryContainer.querySelector('.rpg-card--equipe[data-card-id="cavalier-amazigh-du-desert"]'), null,
+    'le Cavalier n’est pas encore posé tant que son vol n’est pas arrivé');
+  await terminerVol(cavalryContainer);
+  const cavalierPose = cavalryContainer.querySelector('.rpg-card--equipe[data-card-id="cavalier-amazigh-du-desert"]');
+  assert.ok(cavalierPose, 'le Cavalier arrive sur son champ de bataille avant de choisir sa victime');
+  assert.match(cavalryContainer.querySelector('.rpg-log')?.textContent ?? '',
+    /Vous posez Cavalier amazigh du Désert/,
+    'le journal annonce la pose seule : l’affrontement attend la désignation');
+  assert.equal([...cavalryContainer.querySelectorAll('button.rpg-hand__card')]
+    .some((card) => card.classList.contains('is-targeting')), false,
+  'plus aucune carte de la main n’est en attente de cible : le Cavalier n’est plus dans la main');
+  assert.ok(cavalryContainer.querySelector('.rpg-card--ennemi.is-ciblable'),
+    'les cibles légales s’allument sur la table, une fois le Cavalier posé');
+  const boutonRenonce = [...cavalryContainer.querySelectorAll('.rpg-btn')]
+    .find((bouton) => bouton.textContent.includes('Renoncer à la cible'));
+  assert.ok(boutonRenonce,
+    'l’annulation propose de renoncer à la cible, la créature restant en jeu');
   const cibleCavalier = [...cavalryContainer.querySelectorAll('.rpg-card--ennemi')]
     .find((card) => card.getAttribute('aria-label')?.includes('Chien du guet'));
   assert.ok(cibleCavalier?.classList.contains('is-ciblable'), 'la créature adverse devient une cible cliquable');
   await act(async () => { cibleCavalier.click(); });
-  assert.equal(carteEnVol(cavalryContainer), cavalryInHand,
-    'après le choix, la véritable carte du Cavalier vole depuis la main');
-  await terminerVol(cavalryContainer);
   assert.ok(cavalryContainer.querySelector('.rpg-card--equipe[data-card-id="cavalier-amazigh-du-desert"]'),
-    'le Cavalier arrive sur son champ de bataille après l’animation');
+    'le Cavalier reste en jeu après la résolution de son arrivée');
   assert.equal(cavalryContainer.querySelector('.rpg-card--ennemi[data-card-id="chien-du-guet"]'), null,
     'les 4 dégâts d’arrivée détruisent bien le Chien 2/2 ciblé');
   assert.match(cavalryContainer.querySelector('.rpg-log')?.textContent ?? '',
     /Cavalier amazigh du Désert se bat contre Chien du guet \(4 \/ 2\)/,
     'le journal du duel garde le résultat de l’affrontement mutuel');
+  assert.equal([...cavalryContainer.querySelectorAll('.rpg-btn')]
+    .some((bouton) => bouton.textContent.includes('Renoncer à la cible')), false,
+  'la désignation refermée, le bouton de renoncement disparaît');
   await act(async () => { cavalryRoot.unmount(); });
   cavalryContainer.remove();
 
