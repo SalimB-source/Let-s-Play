@@ -59,7 +59,7 @@ export const RPG_TUTORIAL_STEPS = Object.freeze([
     target: '[data-tutorial-target="hand"]',
     eyebrow: 'ÉTAPE 1 · VOTRE MAIN',
     title: 'Vos cartes, vos options',
-    text: 'Votre main contient cinq cartes. Le coût et les symboles indiquent ce qu’il faut payer ; les cartes jouables ont un halo doré. L’exercice utilise une main préparée pour vous guider.',
+    text: 'Votre main contient cinq cartes. Le coût et les symboles indiquent ce qu’il faut payer ; les cartes jouables s’allument d’un halo — or, ou bleu pour une Magie Rapide et violet pour une Sorcellerie. L’exercice utilise une main préparée pour vous guider.',
     nextLabel: 'Poser un terrain',
     side: 'top',
   },

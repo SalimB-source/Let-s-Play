@@ -156,7 +156,7 @@ export async function checkRpgMulligan(assert) {
   assert.equal(q('.rpg-btn--endturn')?.disabled, true, 'le tour ne peut pas être rendu avant la validation');
   assert.equal(qa('.rpg-hand__card[data-jouable="true"]').length, 0, 'aucune carte de la main n’est jouable');
   assert.equal(qa('.rpg-hand__card').every((carte) => carte.getAttribute('draggable') === 'false'), true,
-    'aucune carte ne se glisse : le halo doré est éteint, la poignée aussi');
+    'aucune carte ne se glisse : le halo de jouabilité est éteint, la poignée aussi');
   assert.equal(q('.rpg-terrains--joueur .rpg-terrain'), null, 'rien n’est posé sur la table pendant le mulligan');
 
   // ── 3. Le choix des cartes à changer ─────────────────────────────────────
