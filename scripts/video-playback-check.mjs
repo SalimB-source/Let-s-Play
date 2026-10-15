@@ -18,7 +18,12 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { youTubeEmbedUrl, initSinglePlayback, pauseAllPlayback } from '../src/lib/videoPlayback.js';
+import {
+  youTubeEmbedUrl,
+  initSinglePlayback,
+  pauseAllPlayback,
+  VIDEO_STATE_CHANGED_EVENT,
+} from '../src/lib/videoPlayback.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -42,6 +47,14 @@ check('autoplay au scroll : muet et intégré à la page', [
   scrollAutoplayUrl.searchParams.get('mute'),
   scrollAutoplayUrl.searchParams.get('playsinline'),
 ].join('/'), '1/1/1');
+const autoplayWithoutControlsUrl = new URL(youTubeEmbedUrl('abc', {
+  autoplay: true,
+  muted: true,
+  playsinline: true,
+  controls: false,
+}));
+check('les commandes YouTube peuvent être masquées', autoplayWithoutControlsUrl.searchParams.get('controls'), '0');
+check('les commandes restent inchangées par défaut', scrollAutoplayUrl.searchParams.has('controls'), false);
 check('pas d’autoplay par défaut', base.includes('autoplay'), false);
 check('start ignoré si absent', youTubeEmbedUrl('abc', { start: 0 }).includes('start'), false);
 check('start conservé si demandé', youTubeEmbedUrl('abc', { start: 389 }).includes('start=389'), true);
@@ -72,8 +85,15 @@ check('aucun embed YouTube codé en dur hors de src/lib/videoPlayback.js', [...o
 
 const main = readFileSync(path.join(root, 'src', 'main.jsx'), 'utf8');
 const modal = readFileSync(path.join(root, 'src', 'components', 'VideoModal.jsx'), 'utf8');
+const home = readFileSync(path.join(root, 'src', 'pages', 'Home.jsx'), 'utf8');
+const homeVideoOfDay = home.slice(
+  home.indexOf('<article className="daily-news-card home-news-card">'),
+  home.indexOf('<section className="featured-dossiers featured-dossiers--episodes'),
+);
 check('le coordinateur est démarré au lancement de l’app', /initSinglePlayback\(\)/.test(main), true);
 check('la modale coupe les lecteurs avant son autoplay', /pauseAllPlayback\(\)/.test(modal), true);
+check('la vidéo du jour sur l’accueil masque ses commandes', /showControls=\{false\}/.test(homeVideoOfDay), true);
+check('la vidéo du jour masque aussi l’overlay YouTube en pause/fin', /coverYoutubeOverlayOnPause/.test(homeVideoOfDay), true);
 
 /* --------------------------------------------------- 3. DOM + protocole */
 
@@ -111,12 +131,20 @@ const media = [{ paused: false, pauseCalls: 0, pause() { this.pauseCalls += 1; t
 
 const iframes = Object.values(frames);
 const messageHandlers = [];
+const dispatchedEvents = [];
 const timers = [];
+globalThis.CustomEvent = class CustomEvent {
+  constructor(type, { detail } = {}) {
+    this.type = type;
+    this.detail = detail;
+  }
+};
 
 globalThis.window = {
   location: { href: 'https://lets-play.dz/' },
   HTMLIFrameElement: class {},
   addEventListener: (type, handler) => { if (type === 'message') messageHandlers.push(handler); },
+  dispatchEvent: (event) => { dispatchedEvents.push(event); return true; },
   setTimeout: (handler, delay) => { timers.push({ handler, delay }); return timers.length; },
 };
 globalThis.document = {
@@ -147,6 +175,18 @@ timers.splice(0).forEach((timer) => timer.handler());
 check('second abonnement après le load', listening(frames.episode) >= 2, true);
 
 emit(frames.episode, { event: 'infoDelivery', info: { playerState: 1, currentTime: 12.4 } });
+const episodePlayingState = dispatchedEvents.find((event) => (
+  event.type === VIDEO_STATE_CHANGED_EVENT
+  && event.detail?.frame === frames.episode
+  && event.detail.state === 1
+));
+check('l’état du lecteur est notifié pour son iframe', episodePlayingState?.detail?.state ?? null, 1);
+const reelCoordinatorPause = dispatchedEvents.find((event) => (
+  event.type === VIDEO_STATE_CHANGED_EVENT
+  && event.detail?.frame === frames.reel
+  && event.detail.state === 2
+));
+check('la pause du coordinateur est aussi notifiée', reelCoordinatorPause?.detail?.state ?? null, 2);
 check('l’épisode joue : le reel reçoit pauseVideo', received(frames.reel, 'pauseVideo'), 1);
 check('… le lecteur nocookie aussi, sur sa propre origine', received(frames.nocookie, 'pauseVideo'), 1);
 check('… avec la bonne cible (youtube-nocookie.com)', lastOrigin(frames.nocookie), YT_NOCOOKIE);
@@ -174,6 +214,12 @@ check('un lecteur retiré de la page est oublié', frames.nocookie.messages.leng
 
 pauseAllPlayback();
 check('pauseAllPlayback coupe le lecteur en cours', received(frames.reel, 'pauseVideo'), 1);
+emit(frames.reel, { event: 'onStateChange', info: 1 });
+emit(frames.reel, { event: 'onStateChange', info: 2 });
+const reelPauseState = [...dispatchedEvents].reverse().find((event) => (
+  event.type === VIDEO_STATE_CHANGED_EVENT && event.detail?.frame === frames.reel
+));
+check('l’état pause est notifié pour masquer « Plus de vidéos »', reelPauseState?.detail?.state ?? null, 2);
 
 console.log(`\n  ${failures === 0 ? 'OK' : `${failures} échec(s)`} — une seule vidéo à la fois\n`);
 if (failures > 0) process.exitCode = 1;
