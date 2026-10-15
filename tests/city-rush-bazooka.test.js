@@ -31,8 +31,8 @@ test('le bonus jaune donne un seul tir — deux roquettes par course — et la p
   assert.equal(CITY_RUSH_BAZOOKA_AMMO_PER_RACE, 2, 'une roquette par conteneur, deux conteneurs');
   assert.equal(CITY_RUSH_BAZOOKA_BLAST_CELLS, 8);
   assert.ok(CITY_RUSH_BAZOOKA_PROJECTILE_SPEED > 0);
-  // Huit cases de voie de 2,50 m : le souffle couvre 20 m de chaussée.
-  assert.ok(Math.abs(CITY_RUSH_BAZOOKA_BLAST_CELLS * CITY_RUSH_LANE_WIDTH - 20) < 1e-9);
+  // Huit cases de voie de 5,00 m : le souffle couvre 40 m de chaussée.
+  assert.ok(Math.abs(CITY_RUSH_BAZOOKA_BLAST_CELLS * CITY_RUSH_LANE_WIDTH - 40) < 1e-9);
 });
 
 test('deux entrepôts par course, à 30 % et 65 % du parcours — le premier avant le garage de vie', () => {

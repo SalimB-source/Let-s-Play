@@ -17,6 +17,7 @@ import {
   CITY_RUSH_BAZOOKA_PROJECTILE_SPEED,
   CITY_RUSH_BOOST_SPAWN_CHANCE,
   CITY_RUSH_LANE_WIDTH,
+  CITY_RUSH_ROAD_HALF_WIDTH,
   CITY_RUSH_PISTOL_SPIN_TURNS,
   CITY_RUSH_TRACK_BOOST_DURATION,
   CITY_RUSH_TRACK_BOOST_SPEED_FACTOR,
@@ -314,14 +315,13 @@ import {
   CITY_RUSH_DRIVING_FREE,
   CITY_RUSH_DRIVING_LANES,
   CITY_RUSH_FREE_LANE_HYSTERESIS,
-  cityRushFreeDriveStep,
   cityRushFreeFunnel,
   cityRushFreeLaneForX,
   cityRushFreeRampCatches,
   cityRushFreeRampZones,
-  cityRushFreeRoadCurvature,
   cityRushFreeSideContact,
   cityRushFreeSteerBounds,
+  cityRushFreeSteerStep,
   cityRushFreeSteerVisual,
   cityRushFreeStructurePhase,
   cityRushFreeTouchTarget,
@@ -2977,15 +2977,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // préférence du joueur, conduite libre par défaut, via `setDrivingMode`.
   let drivingMode = CITY_RUSH_DRIVING_LANES;
   // Volant réel : le cap de la voiture (rad, positif nez à droite) et l'angle
-  // de braquage des roues avant (rad, positif à droite). Le glissement
-  // (`playerLateralSpeed`, m/s) devient une lecture dérivée : v·sin(cap). Le
+  // Glissement latéral libre : en m/s, positif vers la droite (x croissant). Le
   // placement visé (démonstration du tutoriel ou écart demandé par `action`,
   // `null` sinon) et la lecture visuelle (lacet de la caisse, braquage des
   // roues et du volant du cockpit) suivent. En conduite par voies, ces deux
   // lectures suivent l'écart restant jusqu'au centre de la voie.
   let playerLateralSpeed = 0;
-  let playerFreeHeading = 0;
-  let playerFreeSteer = 0;
   let playerSteerTarget = null;
   let playerSteerYaw = 0;
   let playerSteerVisual = 0;
@@ -3007,12 +3004,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
     return freeBoundsCache;
   };
-  // Courbure du tracé sous la voiture (rad/m, positive à gauche), lissée sur
-  // la fenêtre du volant réel : c'est elle qui déporte le cap quand la route
-  // tourne — sans volant, la voiture continue tout droit.
-  const freeRoadCurvature = (atDistance) => cityRushFreeRoadCurvature(trackYaw, atDistance, {
-    lap: CITY_RUSH_LAP_LENGTH,
-  });
   let playerSlowLeft = 0;
   let playerBlueShotSlowLeft = 0;
   let playerTrafficRecoverLeft = 0;
@@ -4575,8 +4566,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerLane = playerStartLane;
     playerX = laneX(playerLane);
     playerLateralSpeed = 0;
-    playerFreeHeading = 0;
-    playerFreeSteer = 0;
     playerSteerTarget = null;
     playerSteerYaw = 0;
     playerSteerVisual = 0;
@@ -6319,7 +6308,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       {
         id: 'player', name: 'TOI', isPlayer: true, distance, lane: playerLane,
         x: playerX, width: playerCollisionWidth(), speed: currentSpeed, racer: null,
-        jumping: Boolean(playerJumpState.active),
+        jumping: Boolean(playerJumpState.active), freeDrive: freeDriving(),
       },
       ...activeRacers().map((racer) => ({
         id: racer.id,
@@ -8332,7 +8321,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     ];
     const blockedLanes = nearby
       .filter((other) => Math.abs(other.distance - traffic.distance) < 11)
-      .filter((other) => other.lane !== undefined && Math.abs(other.x - laneX(traffic.lane)) < 5.4)
+      .filter((other) => other.lane !== undefined && Math.abs(other.x - laneX(traffic.lane)) < Math.max(5.4, courseLanes.laneWidth * 2.2))
       .map((other) => other.lane);
     return chooseCityRushTrafficEscapeLane({
       currentLane: traffic.lane,
@@ -8388,10 +8377,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Une tentative de rabattement sur une voie occupée à côté du pilote : si une
   // voiture s'y trouve, qu'elle n'a pas déjà été poussée pendant ce côte-à-côte
   // et qu'une voie libre l'attend de son côté, elle est poussée. Sinon, rien.
-  function trySideBump(targetLane) {
+  function trySideBump(targetLane, fromLane = playerLane) {
     if (!active || finished || playerWrecked || playerStunLeft > 0 || playerJumpState.active) return false;
     const choice = cityRushSideBumpChoice({
-      playerLane,
+      playerLane: fromLane,
       playerDistance: distance,
       targetLane,
       cars: sideBumpRoster(),
@@ -8409,7 +8398,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const fromLane = blocker.lane;
     // La voiture part du côté où elle se trouve déjà : le pilote, lui, est
     // repoussé de l'autre côté.
-    const side = Math.sign(fromLane - playerLane) || 1;
+    const side = Math.sign(farLane - fromLane) || Math.sign(fromLane - playerLane) || 1;
     car.lane = farLane;
     if (blocker.kind === 'traffic' || blocker.kind === 'police-traffic' || blocker.kind === 'patrol') {
       // Même rabat que le trafic heurté (`applyTrafficImpact`) : la voie visée
@@ -8597,17 +8586,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   /**
-   * Une image de volant réel : consigne (touche tenue, glissé au doigt ou
-   * placement visé), cap et braquage intégrés (modèle bicyclette, la route
-   * déporte le cap), glissement borné par la chaussée, voitures à hauteur,
-   * structures, puis voie du pilote déduite de sa position.
+   * Une image de volant libre : consigne (touche tenue, glissé au doigt ou
+   * placement visé), glissement latéral borné par la chaussée, voitures à
+   * hauteur, structures, puis voie du pilote déduite de sa position.
    */
   function updateFreeSteering(dt) {
     const bounds = freeSteerBounds();
     const halfWidth = playerCollisionWidth() / 2;
     const priorX = playerX;
-    // Toupie, épave ou saut : le volant ne répond plus, la voiture ne tourne
-    // plus et ne glisse pas en l'air — cap et braquage gèlent.
+    // Toupie, épave ou saut : le volant ne répond plus et la voiture ne glisse
+    // pas en l'air — sa vitesse latérale tombe à zéro.
     const canSteer = !playerWrecked && playerStunLeft <= 0 && !playerJumpState.active;
     let input = 0;
     let target = null;
@@ -8624,55 +8612,40 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         aimingSteerTarget = true;
       }
     }
-    // Un pas de volant réel : le volant tourne le nez, la route qui tourne
-    // déporte le cap, le cap déporte la voiture — et rien ne la ramène.
-    const step = cityRushFreeDriveStep({
+    const step = cityRushFreeSteerStep({
       x: playerX,
-      heading: playerFreeHeading,
-      steer: playerFreeSteer,
+      velocity: canSteer ? playerLateralSpeed : 0,
       input,
       target,
-      dt,
+      dt: canSteer ? dt : 0,
       speed: currentSpeed,
-      curvature: freeRoadCurvature(distance),
-      frozen: !canSteer,
       bounds,
     });
     let nextX = step.x;
-    let heading = step.heading;
-    let lateral = step.lateral;
+    let nextVelocity = step.velocity;
     if (aimingSteerTarget && step.arrived) playerSteerTarget = null;
     // Une voiture à hauteur ne se traverse pas. Le pilote qui tourne vers elle
     // la pousse : c'est le choc latéral, comme un écart refusé en conduite par
-    // voies (un seul choc par côte-à-côte, voir `trySideBump`). Le cap, lui,
-    // tient : la voiture reste penchée vers sa voisine, le temps qu'elle se
-    // range.
+    // voies (un seul choc par côte-à-côte, voir `trySideBump`).
     const contact = cityRushFreeSideContact({ fromX: priorX, toX: nextX, halfWidth, cars: freeSideObstacles() });
     if (contact.blocked) {
       nextX = contact.x;
-      lateral = 0;
+      nextVelocity = 0;
       if (step.desired !== 0 && Math.sign(step.desired) === Math.sign(contact.blocker.x - priorX)) {
-        trySideBump(contact.blocker.lane);
+        trySideBump(contact.blocker.lane, contact.blocker.lane - Math.sign(contact.blocker.x - priorX));
       }
     }
     // Parois du mini-garage et du conteneur, joues des tremplins : elles
-    // canalisent la voiture et lui remettent le nez dans l'axe du passage.
+    // canalisent la voiture et coupent le glissement qui voudrait les traverser.
     const channelled = applyFreeStructures(nextX, dt, halfWidth);
     if (channelled !== nextX) {
       nextX = channelled;
-      heading = 0;
-      lateral = 0;
-    }
-    // Bord de la chaussée : la voiture bute et le nez se redresse le long du
-    // bord — elle frotte jusqu'à ce que le pilote dégage.
-    if (step.edge) {
-      heading = 0;
-      lateral = 0;
+      nextVelocity = 0;
     }
     playerX = nextX;
-    playerFreeHeading = heading;
-    playerFreeSteer = step.steer;
-    playerLateralSpeed = lateral;
+    playerLateralSpeed = nextVelocity;
+    playerSteerYaw = cityRushFreeYaw(playerLateralSpeed);
+    playerSteerVisual = cityRushFreeSteerVisual({ velocity: playerLateralSpeed, desired: canSteer ? step.desired : 0 });
     const nextLane = cityRushFreeLaneForX(playerX, playerLane, courseLaneXs, CITY_RUSH_FREE_LANE_HYSTERESIS, courseLanes.laneWidth);
     if (nextLane !== playerLane) {
       playerLane = nextLane;
@@ -10271,6 +10244,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           nextDistance: priorDistance + requestedPlayerSpeed * dt,
           jumping: Boolean(playerJumpState.active),
           landing: playerLandedThisFrame,
+          freeDrive: freeDriving(),
         },
         ...racingRacers.map((racer) => ({
           id: racer.id,
@@ -10363,13 +10337,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
       const playerSpin = cityRushStunSpin(playerStunLeft, playerStunTotal, playerWrecked ? playerWreckSpinTurns : undefined);
       // Lacet et braquage : l'écart restant jusqu'au centre de la voie en
-      // conduite par voies ; en conduite libre, le lacet EST le cap de la
-      // voiture et le braquage l'angle réel de ses roues — le volant du
-      // cockpit lit le même braquage.
-      if (freeDriving()) {
-        playerSteerYaw = cityRushFreeYaw(playerFreeHeading);
-        playerSteerVisual = cityRushFreeSteerVisual(playerFreeSteer);
-      } else {
+      // conduite par voies ; en conduite libre, `updateFreeSteering` les a déjà
+      // déduits de la vitesse latérale et de la consigne.
+      if (!freeDriving()) {
         playerSteerYaw = clamp((laneX(playerLane) - playerX) * -0.06, -0.12, 0.12);
         playerSteerVisual = clamp((laneX(playerLane) - playerX) * 0.28, -0.34, 0.34);
       }
@@ -11225,8 +11195,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       releaseSteerKeys();
       touchSteer = null;
       playerLateralSpeed = 0;
-      playerFreeHeading = 0;
-      playerFreeSteer = 0;
       currentSpeed = 0;
       audioRef?.current?.engine({ speed: 0, throttle: 0, idle: true });
     },
@@ -11255,8 +11223,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (next === drivingMode) return;
       drivingMode = next;
       playerLateralSpeed = 0;
-      playerFreeHeading = 0;
-      playerFreeSteer = 0;
       playerSteerTarget = null;
       playerSteerYaw = 0;
       playerSteerVisual = 0;

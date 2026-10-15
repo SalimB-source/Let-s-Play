@@ -270,14 +270,13 @@ export default function ViceCityRushMainMenu({
             <button type="button" className="vcr-menu-camera-option" onClick={onToggleCamera} aria-pressed={cameraMode === 'cockpit'}>
               CAMÉRA : {cameraMode === 'cockpit' ? 'COCKPIT' : 'POURSUITE'} · C
             </button>
-            {/* La conduite : libre (par défaut, la voiture a un vrai volant et
-                un cap à tenir) ou par voies (un écart de voie entière par
-                pression). */}
+            {/* La conduite : libre (par défaut, la voiture glisse où l'on veut)
+                ou par voies (un écart de voie entière par pression). */}
             <button
               type="button"
               className="vcr-menu-driving-option"
               onClick={onToggleDriving}
-              title={drivingMode === 'lanes' ? 'Passer à la conduite libre : la voiture tourne comme une vraie voiture, à toi de tenir les virages' : 'Passer à la conduite par voies : un écart de voie par pression'}
+              title={drivingMode === 'lanes' ? 'Passer à la conduite libre : la voiture glisse où tu veux' : 'Passer à la conduite par voies : un écart de voie par pression'}
             >
               CONDUITE : {drivingMode === 'lanes' ? 'VOIES' : 'LIBRE'}
             </button>

@@ -5,6 +5,7 @@
 // devant les mêmes façades à chaque tour, comme sur un vrai circuit.
 import * as THREE from 'three';
 import {
+  CITY_RUSH_LANE_WIDTH,
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_ROAD_HALF_WIDTH,
   CITY_RUSH_SCROLL_SCALE,
@@ -28,7 +29,7 @@ export const START_ZONE_HALF = 34; // m : tribunes et portique autour de la lign
 export const GATE_TRACK_POSITION = LAP / 2;
 export const LANDMARK_TRACK_POSITION = LAP * 0.27;
 const ROAD_HALF = CITY_RUSH_ROAD_HALF_WIDTH;
-const SIDEWALK_OUTER = 11.05; // trottoir de 3,15 m : il suit la chaussée élargie
+const SIDEWALK_OUTER = ROAD_HALF + 3.15; // trottoir de 3,15 m : il suit la chaussée élargie
 export const ROAD_TILE_LENGTH = 26.8;
 
 const toZ = (trackMeters) => -trackMeters * SCALE;
@@ -671,7 +672,7 @@ function addRoute66UtilityPole(batch, m, x, z, side, random) {
 function addRoute66SectorMarker(batch, m, atlas, sector, trackMeters, side, index) {
   if (!atlas?.routeCount) return;
   const z = toZ(trackMeters);
-  const x = side * 9.5;
+  const x = side * (ROAD_HALF + 1.6);
   batch.cylinder(m.wood, [x, 1.75, z], 0.07, 0.09, 3.5, 6);
   batch.box(m.cream, [x, 3.4, z], [0.24, 2.1, 5.2]);
   batch.box(m.red, [x + (-side * 0.14), 3.4, z], [0.08, 1.85, 4.95]);
@@ -683,7 +684,7 @@ function addRoute66Stop(batch, m, city, theme, atlas, side, trackMeters, depthMe
   const z = toZ(trackMeters);
   const depth = depthMeters * SCALE;
   const width = options.back ? 8 + random() * 3 : 7 + random() * 3;
-  const innerX = side * (options.back ? 18 + random() * 4 : 8.25 + random() * 1.2);
+  const innerX = side * ((options.back ? ROAD_HALF + 10.1 : ROAD_HALF + 0.35) + random() * (options.back ? 4 : 1.2));
   const height = (options.back ? 3.4 : 2.7) + random() * (options.back ? 1.8 : 1.2);
   const colorHex = city.buildingColors[Math.floor(random() * city.buildingColors.length)];
   const tint = hexToRgb(colorHex).map((channel) => Math.min(1, channel * (0.88 + random() * 0.2)));
@@ -773,7 +774,7 @@ function addMexicoRancho(batch, m, city, theme, atlas, side, trackMeters, depthM
   const z = toZ(trackMeters);
   const depth = depthMeters * SCALE;
   const width = options.back ? 7 + random() * 4 : 6 + random() * 3;
-  const innerX = side * (options.back ? 20 + random() * 4 : 9 + random() * 1.5);
+  const innerX = side * ((options.back ? ROAD_HALF + 12.1 : ROAD_HALF + 1.1) + random() * (options.back ? 4 : 1.5));
   const height = (options.back ? 2.6 : 2.2) + random() * (options.back ? 1.2 : 1.0);
   const colorHex = city.buildingColors[Math.floor(random() * city.buildingColors.length)];
   const tint = hexToRgb(colorHex).map((channel) => Math.min(1, channel * (0.85 + random() * 0.25)));
@@ -1024,7 +1025,7 @@ function addBuilding(batch, m, city, theme, atlas, side, trackMeters, depthMeter
   let floors = baseFloors + Math.floor(random() * (extraFloors + 1));
   if (options.back) floors = Math.round(floors * (style === 'paris' || style === 'london' ? 1.35 : style === 'mexico' ? 1.2 : 1.6)) + 2;
   const height = floors * floorHeight;
-  const innerX = side * (options.back ? 20.5 + random() * 3 : SIDEWALK_OUTER + 0.05);
+  const innerX = side * (options.back ? SIDEWALK_OUTER + 9.45 + random() * 3 : SIDEWALK_OUTER + 0.05);
   const colorHex = city.buildingColors[Math.floor(random() * city.buildingColors.length)];
   const brightness = 0.86 + random() * 0.24;
   const tint = hexToRgb(colorHex).map((channel) => Math.min(1, channel * brightness));
@@ -1195,21 +1196,23 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
   const z = toZ(trackMeters);
   const style = theme.gate.style;
   const signUv = atlas.gateUv;
+  const roadWiden = ROAD_HALF - 7.9;
   if (style === 'mexico-arch') {
+    const pillarX = ROAD_HALF + 1.1;
     // Portique d'entrée de pueblo : deux piliers d'adobe chaulés de blanc,
     // arche de tuiles rouges et panneau peint à la main.
     for (const side of [-1, 1]) {
-      batch.box(m.white, [side * 9.0, 3.7, z], [0.9, 7.4, 0.9]);
-      batch.box(m.tile || m.roof, [side * 9.0, 7.55, z], [1.1, 0.22, 1.1]);
+      batch.box(m.white, [side * pillarX, 3.7, z], [0.9, 7.4, 0.9]);
+      batch.box(m.tile || m.roof, [side * pillarX, 7.55, z], [1.1, 0.22, 1.1]);
       // Pot de fleurs coloré en haut.
-      batch.box(m.red, [side * 9.0, 7.95, z], [0.5, 0.4, 0.5]);
+      batch.box(m.red, [side * pillarX, 7.95, z], [0.5, 0.4, 0.5]);
     }
     // Arche cintrée : un prisme polygonal.
     const segments = 9;
     for (let s = 0; s < segments; s += 1) {
       const t = s / (segments - 1);
       const angle = Math.PI * t;
-      const x = Math.cos(angle) * 9.0;
+      const x = Math.cos(angle) * pillarX;
       const y = 7.4 + Math.sin(angle) * 2.6;
       batch.box(m.tile || m.roof, [x, y, z], [1.1, 0.75, 1.1], [0, 0, angle - Math.PI / 2]);
     }
@@ -1221,40 +1224,42 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
     return;
   }
   if (style === 'route66') {
+    const pillarX = ROAD_HALF + 1.2;
     // Portique inspiré des panneaux d'entrée de ville et des vieux motels :
     // poteaux bois, bouclier US 66 et lettrage noir/blanc, sans arche de
     // circuit moderne au milieu d'un paysage désertique.
     for (const side of [-1, 1]) {
-      batch.box(m.wood, [side * 9.1, 3.9, z], [0.48, 7.8, 0.48]);
-      batch.box(m.cream, [side * 9.1, 7.55, z], [0.72, 0.18, 0.72]);
-      batch.box(m.red, [side * 9.1, 8.1, z], [0.22, 0.42, 0.22]);
+      batch.box(m.wood, [side * pillarX, 3.9, z], [0.48, 7.8, 0.48]);
+      batch.box(m.cream, [side * pillarX, 7.55, z], [0.72, 0.18, 0.72]);
+      batch.box(m.red, [side * pillarX, 8.1, z], [0.22, 0.42, 0.22]);
     }
-    batch.box(m.wood, [0, 7.35, z], [19, 0.42, 0.52]);
+    batch.box(m.wood, [0, 7.35, z], [19 + roadWiden * 2, 0.42, 0.52]);
     batch.box(m.cream, [0, 7.45, z + 0.02], [12.8, 2.05, 0.18]);
     batch.plane(m.signs, [0, 7.48, z + 0.13], 11.9, 1.55, null, { uv: signUv });
     batch.plane(m.signs, [0, 7.48, z - 0.13], 11.9, 1.55, [0, Math.PI, 0], { uv: signUv });
     // Deux petits boucliers de route sur les côtés rappellent les bornes
     // historiques, sans réutiliser un logo de marque contemporain.
     for (const side of [-1, 1]) {
-      batch.box(m.red, [side * 7.4, 4.5, z + 0.18], [1.35, 1.4, 0.12]);
-      batch.plane(m.signs, [side * 7.4, 4.5, z + 0.26], 1.1, 1.05, null, { uv: atlas.signUv(0) });
+      batch.box(m.red, [side * (ROAD_HALF - 0.5), 4.5, z + 0.18], [1.35, 1.4, 0.12]);
+      batch.plane(m.signs, [side * (ROAD_HALF - 0.5), 4.5, z + 0.26], 1.1, 1.05, null, { uv: atlas.signUv(0) });
     }
     return;
   }
   if (style === 'deco-arch') {
+    const pillarX = ROAD_HALF + 1.1;
     for (const side of [-1, 1]) {
       for (let step = 0; step < 4; step += 1) {
-        batch.box(m.cream, [side * 9.0, 2.4 + step * 2.6, z], [2.4 - step * 0.45, 2.6, 2.4 - step * 0.45]);
-        batch.box(m.neon, [side * 9.0 - side * (1.22 - step * 0.225), 2.4 + step * 2.6, z], [0.08, 2.0, 0.12]);
+        batch.box(m.cream, [side * pillarX, 2.4 + step * 2.6, z], [2.4 - step * 0.45, 2.6, 2.4 - step * 0.45]);
+        batch.box(m.neon, [side * pillarX - side * (1.22 - step * 0.225), 2.4 + step * 2.6, z], [0.08, 2.0, 0.12]);
       }
-      batch.box(m.neonSecondary, [side * 9.0, 10.7, z], [1.3, 0.14, 1.3]);
+      batch.box(m.neonSecondary, [side * pillarX, 10.7, z], [1.3, 0.14, 1.3]);
     }
     // L'arche et l'enseigne laissent 10,6 m de dégagement : la caméra de
     // poursuite (≈ 8,8 m) passe dessous sans jamais les traverser.
     const segments = 11;
     for (let segment = 0; segment < segments; segment += 1) {
       const angle = Math.PI * (segment / (segments - 1));
-      const x = Math.cos(angle) * 9.0;
+      const x = Math.cos(angle) * pillarX;
       const y = 10.5 + Math.sin(angle) * 3.4;
       batch.box(m.cream, [x, y, z], [1.0, 0.9, 1.4], [0, 0, angle - Math.PI / 2]);
       batch.box(m.neon, [x, y, z + 0.72], [0.9, 0.12, 0.08], [0, 0, angle - Math.PI / 2]);
@@ -1272,17 +1277,20 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
     return;
   }
   if (style === 'overpass') {
+    const pillarX = ROAD_HALF + 1.0;
+    const deckWidth = 20 + roadWiden * 2;
+    const trussHalf = Math.round(ROAD_HALF);
     for (const side of [-1, 1]) {
-      batch.box(m.concrete, [side * 8.9, 5.1, z], [2.0, 10.2, 3.2]);
-      batch.box(m.concrete, [side * 8.9, 0.3, z], [2.6, 0.6, 3.8]);
+      batch.box(m.concrete, [side * pillarX, 5.1, z], [2.0, 10.2, 3.2]);
+      batch.box(m.concrete, [side * pillarX, 0.3, z], [2.6, 0.6, 3.8]);
     }
     // Tablier à 10,2 m : la caméra de poursuite passe dessous.
-    batch.box(m.darkMetal, [0, 10.6, z], [20, 0.8, 3.6]);
-    batch.box(m.darkMetal, [0, 12.4, z], [20, 0.16, 3.6]);
-    for (let truss = -8; truss <= 8; truss += 2) {
+    batch.box(m.darkMetal, [0, 10.6, z], [deckWidth, 0.8, 3.6]);
+    batch.box(m.darkMetal, [0, 12.4, z], [deckWidth, 0.16, 3.6]);
+    for (let truss = -trussHalf; truss <= trussHalf; truss += 2) {
       batch.box(m.darkMetal, [truss, 11.5, z + 1.7], [0.14, 1.9, 0.14]);
       batch.box(m.darkMetal, [truss, 11.5, z - 1.7], [0.14, 1.9, 0.14]);
-      if (truss < 8) {
+      if (truss < trussHalf) {
         batch.box(m.darkMetal, [truss + 1, 11.5, z + 1.7], [0.1, 2.6, 0.1], [0, 0, 0.72]);
         batch.box(m.darkMetal, [truss + 1, 11.5, z - 1.7], [0.1, 2.6, 0.1], [0, 0, -0.72]);
       }
@@ -1298,39 +1306,41 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
     return;
   }
   if (style === 'torii') {
+    const pillarX = ROAD_HALF + 0.9;
     for (const side of [-1, 1]) {
-      batch.cylinder(m.red, [side * 8.8, 5.9, z], 0.42, 0.5, 11.8, 10, [0, 0, side * 0.03]);
-      batch.cylinder(m.darkMetal, [side * 8.8, 0.4, z], 0.6, 0.65, 0.8, 10);
+      batch.cylinder(m.red, [side * pillarX, 5.9, z], 0.42, 0.5, 11.8, 10, [0, 0, side * 0.03]);
+      batch.cylinder(m.darkMetal, [side * pillarX, 0.4, z], 0.6, 0.65, 0.8, 10);
     }
     // Linteaux à plus de 10 m : la caméra de poursuite passe sous le torii.
-    batch.box(m.red, [0, 12.0, z], [18.4, 0.75, 0.9]);
-    batch.box(m.darkMetal, [0, 12.5, z], [19.4, 0.36, 1.1]);
-    for (const side of [-1, 1]) batch.box(m.darkMetal, [side * 9.2, 12.85, z], [1.6, 0.5, 1.1], [0, 0, side * 0.22]);
-    batch.box(m.red, [0, 10.2, z], [16.6, 0.5, 0.6]);
+    batch.box(m.red, [0, 12.0, z], [18.4 + roadWiden * 2, 0.75, 0.9]);
+    batch.box(m.darkMetal, [0, 12.5, z], [19.4 + roadWiden * 2, 0.36, 1.1]);
+    for (const side of [-1, 1]) batch.box(m.darkMetal, [side * (ROAD_HALF + 1.3), 12.85, z], [1.6, 0.5, 1.1], [0, 0, side * 0.22]);
+    batch.box(m.red, [0, 10.2, z], [16.6 + roadWiden * 2, 0.5, 0.6]);
     batch.box(m.red, [0, 11.1, z], [0.9, 1.3, 0.45]);
     batch.plane(m.signs, [0, 11.1, z + 0.24], 0.9, 1.3, null, { uv: atlas.gateUv });
-    for (const side of [-1, 1]) batch.cylinder(m.red, [side * 8.8, 11.1, z + 0.6], 0.14, 0.14, 1.4, 6, [0, 0, 0]);
+    for (const side of [-1, 1]) batch.cylinder(m.red, [side * pillarX, 11.1, z + 0.6], 0.14, 0.14, 1.4, 6, [0, 0, 0]);
     return;
   }
   if (style === 'arc') {
+    const pillarX = ROAD_HALF + 1.4;
     for (const side of [-1, 1]) {
-      batch.box(m.stone, [side * 9.3, 5.6, z], [3.4, 11.2, 3.6]);
-      batch.box(m.stone, [side * 9.3, 0.5, z], [3.9, 1.0, 4.1]);
-      batch.box(m.cream, [side * 9.3, 7.6, z + 1.85], [2.0, 2.6, 0.1]);
-      batch.box(m.cream, [side * 9.3, 7.6, z - 1.85], [2.0, 2.6, 0.1]);
-      batch.box(m.cream, [side * 9.3, 3.4, z + 1.85], [2.0, 3.2, 0.1]);
-      batch.box(m.cream, [side * 9.3, 3.4, z - 1.85], [2.0, 3.2, 0.1]);
-      batch.plane(m.accentCone, [side * 9.3, 1.4, z + 1.9], 2.8, 2.6, [0, 0, 0]);
-      batch.plane(m.accentCone, [side * 9.3, 1.4, z - 1.9], 2.8, 2.6, [0, Math.PI, 0]);
+      batch.box(m.stone, [side * pillarX, 5.6, z], [3.4, 11.2, 3.6]);
+      batch.box(m.stone, [side * pillarX, 0.5, z], [3.9, 1.0, 4.1]);
+      batch.box(m.cream, [side * pillarX, 7.6, z + 1.85], [2.0, 2.6, 0.1]);
+      batch.box(m.cream, [side * pillarX, 7.6, z - 1.85], [2.0, 2.6, 0.1]);
+      batch.box(m.cream, [side * pillarX, 3.4, z + 1.85], [2.0, 3.2, 0.1]);
+      batch.box(m.cream, [side * pillarX, 3.4, z - 1.85], [2.0, 3.2, 0.1]);
+      batch.plane(m.accentCone, [side * pillarX, 1.4, z + 1.9], 2.8, 2.6, [0, 0, 0]);
+      batch.plane(m.accentCone, [side * pillarX, 1.4, z - 1.9], 2.8, 2.6, [0, Math.PI, 0]);
     }
-    batch.box(m.stone, [0, 12.6, z], [19.6, 2.8, 3.6]);
-    batch.box(m.stone, [0, 14.6, z], [20.2, 1.2, 4.0]);
-    batch.box(m.cream, [0, 12.6, z + 1.85], [11, 1.6, 0.1]);
-    batch.box(m.cream, [0, 12.6, z - 1.85], [11, 1.6, 0.1]);
+    batch.box(m.stone, [0, 12.6, z], [19.6 + roadWiden * 2, 2.8, 3.6]);
+    batch.box(m.stone, [0, 14.6, z], [20.2 + roadWiden * 2, 1.2, 4.0]);
+    batch.box(m.cream, [0, 12.6, z + 1.85], [11 + roadWiden * 2, 1.6, 0.1]);
+    batch.box(m.cream, [0, 12.6, z - 1.85], [11 + roadWiden * 2, 1.6, 0.1]);
     const segments = 9;
     for (let segment = 0; segment < segments; segment += 1) {
       const angle = Math.PI * (segment / (segments - 1));
-      batch.box(m.stone, [Math.cos(angle) * 6.5, 9.8 + Math.sin(angle) * 1.6, z], [1.9, 1.1, 3.6], [0, 0, angle - Math.PI / 2]);
+      batch.box(m.stone, [Math.cos(angle) * (ROAD_HALF - 1.4), 9.8 + Math.sin(angle) * 1.6, z], [1.9, 1.1, 3.6], [0, 0, angle - Math.PI / 2]);
     }
     batch.plane(m.signs, [0, 10.0, z + 1.82], 7, 1.3, null, { uv: signUv });
     batch.plane(m.signs, [0, 10.0, z - 1.82], 7, 1.3, [0, Math.PI, 0], { uv: signUv });
@@ -1338,8 +1348,11 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
     return;
   }
   // Tower Bridge.
+  const towerX = ROAD_HALF + 1.9;
+  const walkwaySpan = 14 + roadWiden * 2;
+  const postHalf = 6 + roadWiden;
   for (const side of [-1, 1]) {
-    const x = side * 9.8;
+    const x = side * towerX;
     batch.box(m.stone, [x, 7, z], [3.4, 14, 3.4]);
     batch.box(m.stone, [x, 0.6, z], [4.0, 1.2, 4.0]);
     for (const corner of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
@@ -1352,15 +1365,15 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
       batch.box(m.neonWarm, [x - side * 1.72, level * 2.6 + 0.6, z], [0.04, 1.0, 0.6]);
     }
   }
-  batch.box(m.blue, [0, 10.6, z], [14, 0.5, 2.4]);
-  batch.box(m.blue, [0, 12.2, z], [14, 0.3, 2.4]);
-  for (let post = -6; post <= 6; post += 1.5) {
+  batch.box(m.blue, [0, 10.6, z], [walkwaySpan, 0.5, 2.4]);
+  batch.box(m.blue, [0, 12.2, z], [walkwaySpan, 0.3, 2.4]);
+  for (let post = -postHalf; post <= postHalf; post += 1.5) {
     batch.box(m.blue, [post, 11.4, z + 1.15], [0.1, 1.4, 0.1]);
     batch.box(m.blue, [post, 11.4, z - 1.15], [0.1, 1.4, 0.1]);
   }
   for (const side of [-1, 1]) {
-    batch.box(m.blue, [side * 4.2, 7.9, z], [0.14, 7.8, 0.14], [0, 0, side * 0.56]);
-    batch.box(m.blue, [side * 2.0, 8.9, z], [0.14, 5.0, 0.14], [0, 0, side * 0.42]);
+    batch.box(m.blue, [side * (ROAD_HALF - 3.7), 7.9, z], [0.14, 7.8, 0.14], [0, 0, side * 0.56]);
+    batch.box(m.blue, [side * (ROAD_HALF - 5.9), 8.9, z], [0.14, 5.0, 0.14], [0, 0, side * 0.42]);
   }
   // Enseigne logée entre les deux passerelles (dégagement caméra ≥ 10 m).
   batch.box(m.darkMetal, [0, 11.4, z], [6.2, 1.3, 0.3]);
@@ -1371,7 +1384,7 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
 // ─── Monument ──────────────────────────────────────────────────────────────
 function addLandmark(batch, m, city, trackMeters, side, atlas = null) {
   const z = toZ(trackMeters);
-  const x = side * 27;
+  const x = side * (ROAD_HALF + 19.1);
   const style = city.style;
   if (style === 'mexico') {
     // Chapelle blanche au bord de la route, campanile et croix peinte en
@@ -1544,14 +1557,17 @@ function makeSteamVent(trackMeters, lane) {
 
 function makeLanternString(trackMeters, m) {
   const group = new THREE.Group();
+  const roadWiden = ROAD_HALF - 7.9;
+  const ropeWidth = 17.6 + roadWiden * 2;
+  const lanternSpan = 15.0 + roadWiden * 2;
   // Cordes à 7,9 m : les lampions (point bas ≈ 7 m) passent au-dessus de la caméra.
-  const rope = new THREE.Mesh(new THREE.BoxGeometry(17.6, 0.04, 0.04), m.darkMetal);
+  const rope = new THREE.Mesh(new THREE.BoxGeometry(ropeWidth, 0.04, 0.04), m.darkMetal);
   rope.position.y = 7.9;
   group.add(rope);
   const lanterns = [];
   for (let index = 0; index < 7; index += 1) {
     const pivot = new THREE.Group();
-    pivot.position.set(-7.5 + index * 2.5, 7.9, 0);
+    pivot.position.set(-lanternSpan / 2 + index * (lanternSpan / 6), 7.9, 0);
     const lantern = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.7, 8), m.lantern);
     lantern.position.y = -0.55;
     const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.32, 0.12, 8), m.darkMetal);
@@ -1573,15 +1589,18 @@ function makeLanternString(trackMeters, m) {
 function makeStringLights(trackMeters, colorA, colorB) {
   const group = new THREE.Group();
   const bulbs = [];
+  const roadWiden = ROAD_HALF - 7.9;
+  const wireWidth = 18 + roadWiden * 2;
+  const bulbSpan = 17.2 + roadWiden * 2;
   const materialA = new THREE.MeshBasicMaterial({ color: colorA, toneMapped: false });
   const materialB = new THREE.MeshBasicMaterial({ color: colorB, toneMapped: false });
-  const wire = new THREE.Mesh(new THREE.BoxGeometry(18, 0.03, 0.03), new THREE.MeshBasicMaterial({ color: 0x222634 }));
+  const wire = new THREE.Mesh(new THREE.BoxGeometry(wireWidth, 0.03, 0.03), new THREE.MeshBasicMaterial({ color: 0x222634 }));
   wire.position.y = 7.8;
   group.add(wire);
   for (let index = 0; index < 15; index += 1) {
     const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 5), index % 2 ? materialA : materialB);
     const t = index / 14;
-    bulb.position.set(-8.6 + t * 17.2, 7.8 - Math.sin(t * Math.PI) * 0.7 - 0.12, 0);
+    bulb.position.set(-bulbSpan / 2 + t * bulbSpan, 7.8 - Math.sin(t * Math.PI) * 0.7 - 0.12, 0);
     group.add(bulb);
     bulbs.push(bulb);
   }
@@ -1620,14 +1639,16 @@ function makeFlickerSign(trackMeters, side, uv, material, random) {
 
 function makeTrafficLight(trackMeters, m) {
   const group = new THREE.Group();
+  const poleX = ROAD_HALF + 0.45;
+  const armSpan = poleX + CITY_RUSH_LANE_WIDTH + 0.5;
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 8, 6), m.metal);
-  pole.position.set(7.4, 4.0, 0);
-  const arm = new THREE.Mesh(new THREE.BoxGeometry(9.6, 0.12, 0.12), m.metal);
-  arm.position.set(2.8, 7.7, 0);
+  pole.position.set(poleX, 4.0, 0);
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(armSpan, 0.12, 0.12), m.metal);
+  arm.position.set((poleX - CITY_RUSH_LANE_WIDTH - 0.5) / 2, 7.7, 0);
   group.add(pole, arm);
   const lights = [];
-  // Les feux pendent entre les voies (x ±2,1), hors de l'axe de la caméra.
-  for (const x of [-2.1, 2.1]) {
+  // Les feux pendent entre les voies, hors de l'axe de la caméra.
+  for (const x of [-CITY_RUSH_LANE_WIDTH, CITY_RUSH_LANE_WIDTH]) {
     const housing = new THREE.Mesh(new THREE.BoxGeometry(0.44, 1.2, 0.4), m.darkMetal);
     housing.position.set(x, 7.0, 0);
     group.add(housing);
@@ -1737,7 +1758,7 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
         sinceProp += 1;
         if (gapCenter < end - 4) {
           sinceProp = 0;
-          addCityProp(batch, m, theme, city, side * 9.0, toZ(gapCenter), side, random, atlas);
+          addCityProp(batch, m, theme, city, side * (ROAD_HALF + 1.1), toZ(gapCenter), side, random, atlas);
         }
         cursor += depthMeters + gap;
       }
@@ -1748,17 +1769,17 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
         const depthMeters = 12 + Math.floor(random() * 3) * 4;
         addMexicoRancho(batch, m, city, theme, atlas, side, backCursor + depthMeters / 2, depthMeters, random, { back: true });
         for (let veg = 0; veg < 2; veg += 1) {
-          if (random() < 0.9) addTree(batch, m, theme, side * (18 + random() * 5), toZ(backCursor + depthMeters * (0.2 + veg * 0.35) + random() * 4), random);
+          if (random() < 0.9) addTree(batch, m, theme, side * (ROAD_HALF + 10.1 + random() * 5), toZ(backCursor + depthMeters * (0.2 + veg * 0.35) + random() * 4), random);
         }
         backCursor += depthMeters + 16 + random() * 14;
       }
       // Poteaux électriques très espacés (pas tous les 28 m) et végétation
       // rustique sur les bas-côtés.
       for (let position = START_ZONE_HALF + 12; position < end; position += 40) {
-        addLamp(batch, m, theme, side * (9.4 + random() * 0.4), toZ(position + (side > 0 ? 12 : 0)), side);
+        addLamp(batch, m, theme, side * (ROAD_HALF + 1.5 + random() * 0.4), toZ(position + (side > 0 ? 12 : 0)), side);
         if (random() < 0.85) {
           const cluster = 1 + Math.floor(random() * 2);
-          for (let c = 0; c < cluster; c += 1) addTree(batch, m, theme, side * (11 + random() * 3.5), toZ(position + c * 3 - 2 + random() * 2), random);
+          for (let c = 0; c < cluster; c += 1) addTree(batch, m, theme, side * (ROAD_HALF + 3.1 + random() * 3.5), toZ(position + c * 3 - 2 + random() * 2), random);
         }
       }
     }
@@ -1767,7 +1788,7 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
     // Panneaux directionnels peints pour chaque secteur.
     city.route?.sectors?.slice(1, -1).forEach((sector, index) => {
       const sideSign = index % 2 ? 1 : -1;
-      addMexicoRoadSign(batch, m, atlas, sideSign * 9.5, sector.from * LAP + 5, sideSign, index);
+      addMexicoRoadSign(batch, m, atlas, sideSign * (ROAD_HALF + 1.6), sector.from * LAP + 5, sideSign, index);
     });
     return { dynamicProps, atlas, random };
   }
@@ -1789,7 +1810,7 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
         sinceProp += 1;
         if (sinceProp >= 1 && gapCenter < end - 3) {
           sinceProp = 0;
-          addCityProp(batch, m, theme, city, side * 8.8, toZ(gapCenter), side, random, atlas);
+          addCityProp(batch, m, theme, city, side * (ROAD_HALF + 0.9), toZ(gapCenter), side, random, atlas);
         }
         cursor += depthMeters + gap;
       }
@@ -1799,12 +1820,12 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
       while (backCursor < end) {
         const depthMeters = 16 + Math.floor(random() * 3) * 5;
         addRoute66Stop(batch, m, city, theme, atlas, side, backCursor + depthMeters / 2, depthMeters, random, { back: true });
-        if (random() < 0.8) addTree(batch, m, theme, side * (17 + random() * 2), toZ(backCursor + depthMeters * 0.35), random);
+        if (random() < 0.8) addTree(batch, m, theme, side * (ROAD_HALF + 9.1 + random() * 2), toZ(backCursor + depthMeters * 0.35), random);
         backCursor += depthMeters + 9 + random() * 10;
       }
       for (let position = START_ZONE_HALF + 7; position < end; position += 28) {
-        addRoute66UtilityPole(batch, m, side * (11.2 + random() * 0.5), toZ(position + (side > 0 ? 8 : 0)), side, random);
-        if (random() < 0.72) addTree(batch, m, theme, side * (13.5 + random() * 2), toZ(position), random);
+        addRoute66UtilityPole(batch, m, side * (ROAD_HALF + 3.3 + random() * 0.5), toZ(position + (side > 0 ? 8 : 0)), side, random);
+        if (random() < 0.72) addTree(batch, m, theme, side * (ROAD_HALF + 5.6 + random() * 2), toZ(position), random);
       }
     }
     addGate(batch, m, city, theme, atlas, GATE_TRACK_POSITION);
@@ -1835,7 +1856,7 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
       sinceProp += 1;
       if (sinceProp >= 2 && gapCenter < end - 4) {
         sinceProp = 0;
-        addCityProp(batch, m, theme, city, side * 8.2, toZ(gapCenter), side, random, atlas);
+        addCityProp(batch, m, theme, city, side * (ROAD_HALF + 0.3), toZ(gapCenter), side, random, atlas);
       }
       cursor += depthMeters + gap;
     }
@@ -1849,8 +1870,8 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
     }
     // Lampadaires et arbres à intervalle régulier le long du trottoir.
     for (let position = START_ZONE_HALF + 8; position < LAP - START_ZONE_HALF - 4; position += 24) {
-      addLamp(batch, m, theme, side * 8.35, toZ(position + (side > 0 ? 12 : 0)), side);
-      if (city.style !== 'new-york' || random() < 0.6) addTree(batch, m, theme, side * 10.0, toZ(position + (side > 0 ? 0 : 12)), random);
+      addLamp(batch, m, theme, side * (ROAD_HALF + 0.45), toZ(position + (side > 0 ? 12 : 0)), side);
+      if (city.style !== 'new-york' || random() < 0.6) addTree(batch, m, theme, side * (ROAD_HALF + 2.1), toZ(position + (side > 0 ? 0 : 12)), random);
     }
   }
 
@@ -1863,7 +1884,7 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
     dynamicProps.push(makeFlickerSign(position, index % 2 ? 1 : -1, atlas.signUv(index), atlas.signsMaterial, random));
   });
   if (city.style === 'new-york') {
-    dynamicProps.push(makeSteamVent(LAP * 0.22, -3.75), makeSteamVent(LAP * 0.57, 1.25), makeSteamVent(LAP * 0.81, 3.75));
+    dynamicProps.push(makeSteamVent(LAP * 0.22, -CITY_RUSH_LANE_WIDTH * 1.5), makeSteamVent(LAP * 0.57, CITY_RUSH_LANE_WIDTH * 0.5), makeSteamVent(LAP * 0.81, CITY_RUSH_LANE_WIDTH * 1.5));
     dynamicProps.push(makeTrafficLight(LAP * 0.36, m), makeTrafficLight(LAP * 0.72, m));
   } else if (city.style === 'tokyo') {
     [0.14, 0.31, 0.62, 0.78].forEach((fraction) => dynamicProps.push(makeLanternString(LAP * fraction, m)));

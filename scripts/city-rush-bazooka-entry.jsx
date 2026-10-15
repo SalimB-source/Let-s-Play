@@ -131,7 +131,7 @@ const city = CITY_RUSH_COURSES.find((item) => item.id === 'vice-city');
 // 1.4) n'avait pas le souffle pour rejoindre le second entrepôt avant la
 // victoire de la rivale une fois les voies élargies à 2,50 m — le scénario
 // juge la mécanique du bazooka, pas la course d'une voiture au plancher.
-const car = CITY_RUSH_CARS.find((item) => item.id === 'nova-18-gt') || CITY_RUSH_CARS[0];
+const car = CITY_RUSH_CARS.find((item) => item.id === 'pulse-rs') || CITY_RUSH_CARS[0];
 const roster = selectCityRushRacers({ cityId: city.id, carId: car.id, runId: 7, playerDriverId: 'camila' });
 const bazookaLane = cityRushLaneConfig(city).forwardLanes.at(-1);
 const world = createCityRushWorld(
@@ -205,7 +205,10 @@ const maxFrames = 12000;
 // quand il traîne, il cherche la voie voisine la plus dégagée (le monde refuse
 // l'écart si elle est occupée). Seule la travée finale du conteneur (40 m) est
 // laissée au guidage des parois.
-const forwardLaneMin = Math.min(...cityRushLaneConfig(city).forwardLanes);
+// Le pilote esquive sur les deux voies hors portique (4 et 5) pour ne pas
+// traverser par mégarde le mini-garage au début du dernier tour et semer
+// l'escouade que la seconde roquette doit justement viser.
+const forwardLaneMin = Math.min(...cityRushLaneConfig(city).forwardLanes) + 1;
 const forwardLaneMax = Math.max(...cityRushLaneConfig(city).forwardLanes);
 const laneClearance = (lane, fromDistance) => {
   let nearest = Infinity;
@@ -229,10 +232,12 @@ const collectNextWarehouse = (index) => {
     if ((Number(state?.bazookaPickupsTaken) || 0) === index + 1) return Number(state.distance);
     const gap = Number(state?.bazookaNextDistance);
     const playerLane = Number(state?.playerLane);
-    if (Number.isFinite(gap) && gap < 520 && gap > -8 && playerLane !== bazookaLane && frame % 6 === 0) {
+    const distance = Number(state?.distance);
+    if (Number.isFinite(gap) && gap < 520 && gap > -8 && playerLane !== bazookaLane && frame % 6 === 0
+      && (gap <= 45 || laneClearance(bazookaLane, distance) > 28)) {
       world.action(playerLane < bazookaLane ? 'right' : 'left');
       stuckFrames = 0;
-    } else if (Number.isFinite(gap) && gap > 40 && Number(state?.speed) < 70) {
+    } else if (Number.isFinite(gap) && gap > 45 && Number(state?.speed) < 85) {
       stuckFrames += 1;
       if (stuckFrames > 12) {
         const distance = Number(state.distance);
@@ -389,9 +394,13 @@ if (!impact.destroyed.some((id) => bazookaKills.some((kill) => kill.id === id)))
 // chaussée et remplacer les voitures de police détruites par leurs carcasses.
 let bazookaExplosion = null;
 let bazookaWreckCount = 0;
+let bazookaVisibleWreckCount = 0;
 scene.traverse((object) => {
   if (object.name === 'city-rush-bazooka-explosion') bazookaExplosion = object;
-  if (object.name === 'police-wreck' && object.visible && object.userData?.taken) bazookaWreckCount += 1;
+  if (object.name === 'police-wreck' && object.userData?.taken) {
+    bazookaWreckCount += 1;
+    if (object.visible) bazookaVisibleWreckCount += 1;
+  }
 });
 const scorchMark = bazookaExplosion?.getObjectByName('bazooka-scorch-mark');
 const mushroomCloud = bazookaExplosion?.getObjectByName('bazooka-mushroom-cloud');
@@ -402,9 +411,10 @@ if (!bazookaExplosion || !scorchMark || !mushroomCloud?.getObjectByName('bazooka
     mushroom: mushroomCloud?.name,
   });
 }
-if (bazookaWreckCount < impact.destroyed.length) {
+if (bazookaWreckCount < impact.destroyed.length || bazookaVisibleWreckCount < 1) {
   fail('les voitures de police touchées par le souffle doivent rester sous forme de carcasses', {
     wrecks: bazookaWreckCount,
+    visibleWrecks: bazookaVisibleWreckCount,
     destroyed: impact.destroyed,
   });
 }
