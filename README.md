@@ -7402,11 +7402,22 @@ ce qu'il annonce.**
 Rien n'a bougé du côté du jeu : c'est toujours `RpgDuelPage` qui décide si une
 carte est jouable — `peutJouerCarte()` : le tour, la fenêtre de réponse, le
 contre qui a un sort à contrer, l'arme qui a un porteur, et `rpgPeutPayer()`
-pour le mana. La feuille n'ajoute qu'une teinte : l'anneau de 2 px, le flou de
-18 px et l'ombre portée sont ceux d'avant, au pixel près, et le survol éclaircit
-toujours l'anneau. Une carte que le mana ne paie pas — ou qu'une règle retient —
+pour le mana. Une carte que le mana ne paie pas — ou qu'une règle retient —
 reste éteinte, quelle que soit sa famille : c'est le même halo, avec un mot de
 plus à dire.
+
+**Un sort brille plus fort qu'une carte qui se pose — plus contrasté, pas plus
+grand.** Créature, terrain et arme se contentent de l'or du halo d'origine :
+anneau de 2 px, flou extérieur de 18 px étalé de 4 px. Les deux familles de
+sorts reprennent **la même empreinte au pixel près** — les rayons ne gagnent
+rien, la lueur ne pousse aucune carte de la main — mais aucune de leurs couches
+ne faiblit : l'anneau passe au reflet clair de la famille, presque opaque
+(`.98`), une auréole rapprochée de 6 px sature le bord, le flou extérieur monte
+à `.92` (contre `.62`) et l'ombre portée s'assombrit (`.62` contre `.5`) pour
+que la lueur paraisse plus claire encore. Au survol, même chose : les rayons du
+halo d'origine, densité pleine (anneau `1`, flou `1`). C'est le **contraste** qui
+achète la lisibilité, jamais la surface — un sort se repère d'un coup d'œil dans
+un éventail, sans manger la carte voisine.
 
 **L'or reste la couleur des cartes qui se posent** — créature, héros, terrain,
 arme. Les deux familles de sorts sont les seules à déclarer une teinte, et elles
@@ -7428,11 +7439,15 @@ couleur de carte : la couleur du cadre, elle, continue de suivre l'élément.
 - `src/games/rpg-battle.css` — la règle du halo, au bloc de la main
   (`.rpg-hand__card.is-playable`, et son survol) : même anneau, même flou, même
   ombre, teinte lue dans `var(--rpg-play-halo)` — `var(--rpg-play-halo-clair)`
-  pour le reflet de survol, l'or en repli des deux ;
+  pour le reflet de survol, l'or en repli des deux. C'est elle, et elle seule,
+  qui décide de l'allumage : les cartes qui se posent gardent ce halo tel quel ;
 - `src/games/rpg-battle.css`, encore — le bloc « La lueur de jouabilité d'un
   sort », à la fin de la feuille, déclare les deux triplets de famille, avec le
   reste de leur signature : `r`, `g`, `b` séparés, la seule forme que
-  `rgba(var(--…), α)` sache lire ;
+  `rgba(var(--…), α)` sache lire. Juste après, la règle de famille
+  (`.rpg-hand__card.is-playable:is(--famille-rapide, --famille-sorcellerie)`,
+  plus spécifique que la commune, et son survol) resserre la lueur des sorts sur
+  les mêmes rayons, sans toucher à l'or des autres ;
 - `src/games/RpgDuelPage.jsx` — **intact** : la face en main porte déjà la classe
   de sa famille (`rpg-hand__card--famille-rapide` / `--famille-sorcellerie`,
   posée par `magieFamille()`), et `is-playable` n'a pas bougé d'un caractère ;
@@ -7447,7 +7462,7 @@ npm run check:rpg                  # 507/507 — le moteur et le catalogue, inch
 npm run build                      # le bundle se construit
 ```
 
-`scripts/rpg-sort-signature-check.mjs` gagne les deux volets qui manquaient. Les
+`scripts/rpg-sort-signature-check.mjs` gagne les volets qui manquaient. Les
 assertions de source lisent la feuille comme un contrat : le halo lit bien
 `--rpg-play-halo` (et son reflet clair au survol), il ne touche jamais
 `border-color`, les deux triplets de famille existent, l'azur est bleu
@@ -7457,6 +7472,18 @@ socle, et chaque reflet de survol est plus clair que sa teinte. Puis la cascade
 réelle, montée par jsdom sur la feuille entière : une face qui porte
 `--famille-rapide` reçoit l'azur, une face `--famille-sorcellerie` reçoit
 l'améthyste, et une face sans famille ne reçoit rien — c'est l'or du repli.
+
+Les assertions du renfort, elles, tiennent les deux moitiés de la promesse :
+**plus contrasté, pas plus large**. Le script relit les couches des deux règles,
+calcule leur envergure (`flou + étalement`) et leur densité, et exige que celle
+des sorts soit **égale** à celle du halo commun — 22 px au repos, 30 px au
+survol — pendant que chaque couche d'un sort est plus dense que la plus dense
+des cartes qui se posent. Une lueur qui gagnerait 12 px de flou échoue (« un
+sort ne brille pas plus LARGE qu'une carte qui se pose : 44 px d'envergure dans
+les deux cas »), une lueur qui retomberait aux densités d'origine échoue aussi
+(« chaque couche d'un sort est plus dense que la plus dense… reçu : 0.92, 0.3,
+0.62 contre 0.58, 0.62 »). L'anneau doit porter le reflet clair à `.98`,
+l'auréole rapprochée à `.82`, le flou extérieur à `.92` — à 18 px, comme avant.
 
 Le scénario JSDOM du module monte ensuite une **vraie partie** pour la lueur :
 une main de Ressac (Magie Rapide — Eau, 1 mana), d'Eau de la source
@@ -7468,7 +7495,10 @@ deuxième terrain, lui, reste éteint — un seul terrain par tour : le halo sui
 règle, pas le mana.
 
 **Contrôle visuel à faire (Chromium réel, 1440 × 900 et 844 × 390 au doigt).**
-Les deux teintes doivent se lire sur la table sombre comme l'or, au même anneau
-de 2 px ; le halo ne change ni de taille ni de place, ne pousse aucune carte et
-ne recouvre ni le coût, ni la pastille d'élément, ni le socle — il se peint
-derrière la carte, sur son ombre, comme l'or qu'il remplace.
+Les deux teintes doivent se lire sur la table sombre **mieux** que l'or — bord
+franc, flou dense — sans occuper plus de place : mêmes 2 px d'anneau, mêmes
+18 px de flou, aucune carte déplacée, et rien de recouvert — ni le coût, ni la
+pastille d'élément, ni le socle. Le point de vigilance est l'autre bout de la
+main : un sort jouable ne doit pas éblouir la carte voisine, ni dépasser dans la
+barre d'action.
+

@@ -153,6 +153,71 @@ assert.equal(teinteRecue('creature'), '',
   'une créature, un terrain ou une arme ne déclarent aucune teinte : ils gardent l’or écrit dans la règle du halo');
 cascadeHalo.window.close();
 
+// ── Un sort brille plus fort, sans briller plus large ───────────────────────
+// Même règle d'allumage, même empreinte : les deux familles reprennent les
+// rayons du halo d'origine — anneau de 2 px, flou extérieur de 18 px étalé de
+// 4 px — et ne gagnent **rien** en surface. Ce qui monte, c'est le contraste :
+// l'anneau passe au reflet clair de la famille, une auréole rapprochée sature
+// le bord, le flou extérieur devient presque opaque et l'ombre portée
+// s'assombrit. L'or des cartes qui se POSENT, lui, ne bouge pas (une Braise
+// rapide brille donc plus fort qu'un Fennec, à taille égale).
+const regleSorts = (suffixe = '') => battleCss.match(
+  new RegExp(`(\\.rpg-hand__card\\.is-playable:is\\([^{]*\\)${suffixe})\\s*\\{([^}]*)\\}`, 's'),
+);
+const sortsMain = regleSorts();
+const sortsSurvol = regleSorts(':hover:not\\(:disabled\\)');
+assert.ok(sortsMain && sortsSurvol,
+  'les sorts jouables reçoivent leur propre règle de halo, au repos comme au survol');
+assert.match(sortsMain[1], /\.rpg-hand__card--famille-rapide/,
+  'la Magie Rapide est du renfort');
+assert.match(sortsMain[1], /\.rpg-hand__card--famille-sorcellerie/,
+  'la Sorcellerie aussi');
+assert.doesNotMatch(sortsMain[1], /is-playable\s*\{/,
+  'la règle commune reste seule : le renfort vient d’une règle de famille, plus spécifique');
+// Les couches de teinte : anneau (`flou` 0), auréole rapprochée, flou
+// extérieur. La règle commune a un repli d'or (`var(--rpg-play-halo, 255, 214,
+// 25)`), celui des familles est nu : le motif accepte l'un et l'autre, sinon la
+// comparaison porterait sur zéro couche et passerait toute seule.
+const couchesHalo = (bloc) => [...bloc.matchAll(
+  /0 0 (\d+)px(?: (\d+)px)? rgba\(var\(--rpg-play-halo(?:-clair)?(?:, [\d, ]+)?\), (\d*\.?\d+)\)/g,
+)].map(([, flou, etalement, densite]) => ({
+  flou: +flou,
+  etalement: +(etalement ?? 0),
+  densite: +densite,
+}));
+const envergure = (couches) => Math.max(...couches.map(({ flou, etalement }) => flou + etalement));
+const lueur = (couches) => couches.reduce(
+  (somme, { flou, etalement, densite }) => somme + (flou + etalement) * densite, 0);
+const couchesPose = couchesHalo(haloMain);
+const couchesPoseSurvol = couchesHalo(haloSurvol);
+const couchesSorts = couchesHalo(sortsMain[2]);
+const couchesSortsSurvol = couchesHalo(sortsSurvol[2]);
+assert.equal(couchesPose.length, 2,
+  'la règle commune pose deux couches de teinte : l’anneau et le flou extérieur');
+assert.equal(couchesSorts.length, 3,
+  'un sort en pose trois : l’anneau, l’auréole rapprochée et le flou extérieur');
+assert.equal(envergure(couchesSorts), envergure(couchesPose),
+  `un sort ne brille pas plus LARGE qu’une carte qui se pose (${envergure(couchesSorts)} px d’envergure dans les deux cas)`);
+assert.equal(envergure(couchesSortsSurvol), envergure(couchesPoseSurvol),
+  'au survol non plus : les rayons du halo d’origine sont repris tels quels');
+const plusDenses = couchesSorts.filter(
+  (couche) => couche.densite > Math.max(...couchesPose.map((autre) => autre.densite)),
+);
+assert.equal(plusDenses.length, couchesSorts.length,
+  `chaque couche d’un sort est plus dense que la plus dense des cartes qui se posent (reçu : ${couchesSorts.map(({ densite }) => densite).join(', ')} contre ${couchesPose.map(({ densite }) => densite).join(', ')})`);
+assert.ok(lueur(couchesSorts) > lueur(couchesPose) && lueur(couchesSortsSurvol) > lueur(couchesPoseSurvol),
+  `la lueur des sorts dépasse celle des cartes qui se posent, au repos (${lueur(couchesSorts).toFixed(1)} > ${lueur(couchesPose).toFixed(1)}) comme au survol (${lueur(couchesSortsSurvol).toFixed(1)} > ${lueur(couchesPoseSurvol).toFixed(1)})`);
+// Le contraste vient aussi du bord : l'anneau porte le reflet clair de la
+// famille, et une auréole courte le double vers l'intérieur du flou.
+assert.match(sortsMain[2], /0 0 0 2px rgba\(var\(--rpg-play-halo-clair\), \.98\)/,
+  'l’anneau d’un sort jouable prend le reflet clair de sa famille, presque opaque');
+assert.match(sortsMain[2], /0 0 6px 1px rgba\(var\(--rpg-play-halo-clair\), \.82\)/,
+  'une auréole rapprochée sature le bord de la carte');
+assert.match(sortsMain[2], /0 0 18px 4px rgba\(var\(--rpg-play-halo\), \.92\)/,
+  'le flou extérieur reste à 18 px et gagne en densité');
+assert.doesNotMatch(sortsMain[2] + sortsSurvol[2], /border-color:/,
+  'le renfort ne repeint toujours pas la bordure : la couleur du cadre reste celle de l’élément');
+
 // ── Le mot écrit une seule fois : le socle remplace la ligne de type des sorts ─
 assert.match(pageSource, /const familleSort = magieFamille\(carte\);\s*const peutRepondre = reponseActive && carte\.instant;/,
   'la main calcule la famille de la carte une seule fois, avant ses règles de jeu');

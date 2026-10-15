@@ -7159,6 +7159,37 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hand__card--famille-rapide { --rpg-play-halo: 77, 125, 255; --rpg-play-halo-clair: 176, 197, 255; }
 .rpg-hand__card--famille-sorcellerie { --rpg-play-halo: 179, 154, 224; --rpg-play-halo-clair: 236, 227, 255; }
 
+/* ── Un sort brille plus fort qu'une carte qui se pose ───────────────────────
+   Le halo doré d'une créature, d'un terrain ou d'une arme dit « celle-ci se
+   pose » ; un sort, lui, se LANCE, et il doit se repérer d'un coup d'œil dans
+   une main en éventail. Les deux familles reçoivent donc le même halo, **plus
+   contrasté** : la MÊME empreinte au pixel près — anneau de 2 px, flou de
+   18 px étalé de 4 px, ombre portée identique — mais aucune couche ne
+   faiblit. L'anneau prend le reflet clair de la famille (`.98` contre `.58`)
+   et se double d'une auréole rapprochée de 6 px qui sature le bord de la
+   carte ; le flou extérieur monte à `.92` (contre `.62`) sans gagner un
+   millimètre ; l'ombre portée s'assombrit pour que la lueur, elle, paraisse
+   plus claire. Au survol, même chose : les rayons du halo d'origine, densité
+   pleine. Un sort est donc plus net, jamais plus gros.
+
+   La règle commune du halo reste la seule à DÉCIDER de l'allumage : ici, on ne
+   fait que renforcer une carte déjà `is-playable`, par une règle plus
+   spécifique — les cartes qui se posent gardent l'or et le halo d'origine. */
+.rpg-hand__card.is-playable:is(.rpg-hand__card--famille-rapide, .rpg-hand__card--famille-sorcellerie) {
+  box-shadow:
+    0 0 0 2px rgba(var(--rpg-play-halo-clair), .98),
+    0 0 6px 1px rgba(var(--rpg-play-halo-clair), .82),
+    0 0 18px 4px rgba(var(--rpg-play-halo), .92),
+    0 6px 16px rgba(0, 0, 0, .62);
+}
+.rpg-hand__card.is-playable:is(.rpg-hand__card--famille-rapide, .rpg-hand__card--famille-sorcellerie):hover:not(:disabled) {
+  box-shadow:
+    0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
+    0 0 7px 1px rgba(var(--rpg-play-halo-clair), .92),
+    0 0 24px 6px rgba(var(--rpg-play-halo), 1),
+    0 12px 22px rgba(0, 0, 0, .68);
+}
+
 /* ── Le motif des magies et des terrains ──────────────────────────────────────
    La résille commune (posée par `.rpg-battle`) dit « ceci est un cadre » ; la
    mythique y met son zellige, les armes leur guilloché d'acier. Il manquait les
