@@ -3317,3 +3317,93 @@ test('phase de blocage : les deux camps jouent des magies rapides avant les bles
   assert.equal(res?.ok, true, 'le sorcier répond pendant le blocage');
   assert.equal(duel.joueur.creatures.includes(attaquant), false, 'l’attaquant est abattu avant le combat');
 });
+
+// Régression : Poigne de givre pendant la réponse à une attaque déclarée.
+for (const cote of ['joueur', 'sorcier']) {
+  for (const nombreBloqueurs of [0, 1, 2]) {
+    test(`gel en réponse : combat de ${cote}, ${nombreBloqueurs} bloqueur(s), sans blocage du jeu`, () => {
+      const duel = duelDeBase();
+      const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
+      donnerMana(duel, cote, 20);
+      donnerMana(duel, adv, 20);
+      donner(duel, cote, 'colosse-de-sel');
+      const attaquant = rpgJouerCreature(duel, cote, 'colosse-de-sel').entite;
+      attaquant.ready = true;
+      const bloqueurs = Array.from({ length: nombreBloqueurs }, () => {
+        donner(duel, adv, 'chien-du-guet');
+        return rpgJouerCreature(duel, adv, 'chien-du-guet').entite;
+      });
+      duel.tour = cote;
+      rpgOuvrirFenetreReponse(duel, cote);
+      donner(duel, adv, 'poigne-de-givre');
+      assert.equal(rpgLancerMagie(duel, adv, 'poigne-de-givre', attaquant.id).ok, true);
+      const pvAvant = duel[adv].pv;
+      const res = rpgLancerAttaque(duel, cote, [attaquant.id],
+        { [attaquant.id]: bloqueurs.map((e) => e.id) }, null, null, {}, { attaqueDeclaree: true });
+      assert.equal(res.ok, true);
+      assert.equal(res.resume.frappeSorcier, 0);
+      assert.equal(duel[adv].pv, pvAvant);
+      for (const bloqueur of bloqueurs) assert.equal(bloqueur.pv, bloqueur.pvMax);
+      assert.equal(duel.attaqueJouee, cote);
+      assert.equal(duel.phase, 'principale2', 'la partie peut continuer après le combat');
+      assert.equal(attaquant.attaquee, true);
+      assert.ok(attaquant.gelToursRestants > 0);
+    });
+  }
+}
+
+test('gel en réponse : les autres attaquants infligent encore leurs blessures', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'sorcier', 20);
+  donnerMana(duel, 'joueur', 20);
+  const attaquants = ['colosse-de-sel', 'chien-du-guet'].map((id) => {
+    donner(duel, 'sorcier', id);
+    const entite = rpgJouerCreature(duel, 'sorcier', id).entite;
+    entite.ready = true;
+    return entite;
+  });
+  duel.tour = 'sorcier';
+  rpgOuvrirFenetreReponse(duel, 'sorcier');
+  donner(duel, 'joueur', 'poigne-de-givre');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', attaquants[0].id).ok, true);
+  const res = rpgLancerAttaque(duel, 'sorcier', attaquants.map((e) => e.id), {},
+    null, null, {}, { attaqueDeclaree: true });
+  assert.equal(res.ok, true);
+  assert.equal(res.resume.frappeSorcier, attaquants[1].atk);
+});
+
+test('gel en réponse : le Coup rapide ne blesse plus sa cible', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'sorcier', 20);
+  donnerMana(duel, 'joueur', 20);
+  donner(duel, 'sorcier', 'colosse-de-sel');
+  const attaquant = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  attaquant.ready = true;
+  attaquant.coupRapide = true;
+  donner(duel, 'joueur', 'chien-du-guet');
+  const cible = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  duel.tour = 'sorcier';
+  rpgOuvrirFenetreReponse(duel, 'sorcier');
+  donner(duel, 'joueur', 'poigne-de-givre');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', attaquant.id).ok, true);
+  const res = rpgLancerAttaque(duel, 'sorcier', [attaquant.id], {}, null, null,
+    { [attaquant.id]: cible.id }, { attaqueDeclaree: true });
+  assert.equal(res.ok, true);
+  assert.equal(res.resume.coupsRapides[0].degats, 0);
+  assert.equal(cible.pv, cible.pvMax);
+  assert.equal(res.resume.frappeSorcier, 0);
+});
+
+
+test('gel : animation, état persistant, accessibilité et résolution dans les deux camps', () => {
+  const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+  // Le gel est lisible dans les deux camps, sans intercepter les clics de cible.
+  assert.match(battlePage, /gelee && <span className="rpg-card__frost" aria-hidden="true">/);
+  assert.match(battlePage, /gelee \? 'is-frozen'/);
+  assert.match(battlePage, /gelée : ne peut ni attaquer ni bloquer/);
+  assert.match(battleCss, /\.rpg-card__frost\s*\{[^}]*pointer-events:\s*none;[^}]*animation:\s*rpg-freeze-spread/s);
+  assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card__frost, \.rpg-card__frost-crystals \{ animation: none;/);
+  assert.equal((battlePage.match(/\{ attaqueDeclaree: true \}/g) ?? []).length, 2,
+    'les deux camps résolvent une attaque déjà déclarée malgré un gel en réponse');
+});

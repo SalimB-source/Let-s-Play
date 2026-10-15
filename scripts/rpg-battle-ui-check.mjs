@@ -197,7 +197,7 @@ assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
 // Le Coup rapide frappe avant les blessures de combat : la cible encaisse
 // l'attaque de la créature (`degatsAvantCombat`), sans riposte, et le résumé
 // du combat relate chaque frappe.
-assert.match(duelEngine, /const cibleRapideId = ciblesRapides\[attaquant\.id\];[\s\S]*?frappesRapides\.push\([\s\S]*?degats: attaquant\.atk,[\s\S]*?degatsAvantCombat\.push\(\{\s*cote: adv,\s*entiteId: cible\.id,\s*amount: attaquant\.atk,[\s\S]*?coupsRapides: frappesRapides,[\s\S]*?for \(const coup of resume\.coupsRapides\)/s,
+assert.match(duelEngine, /const cibleRapideId = ciblesRapides\[attaquant\.id\];[\s\S]*?frappesRapides\.push\([\s\S]*?degats: forceCombat\(attaquant\),[\s\S]*?degatsAvantCombat\.push\(\{\s*cote: adv,\s*entiteId: cible\.id,\s*amount: forceCombat\(attaquant\),[\s\S]*?coupsRapides: frappesRapides,[\s\S]*?for \(const coup of resume\.coupsRapides\)/s,
   'le Coup rapide inflige l’attaque de la créature choisie, sans combat de riposte');
 // Le Coup rapide se CHOISIT : une frappe sur une créature clôt l’attaque de
 // l’attaquant — `attaquantsArretes` l’écarte du blocage, des blessures de
