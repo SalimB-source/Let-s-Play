@@ -625,12 +625,11 @@
    et laisse la première carte atteignable dès que la rangée déborde. */
 .rpg-battle--touch .rpg-hand-dock .rpg-hand {
   --rpg-hand-gap: 6px;
-  --rpg-hand-min: 34px;
   --hand-count: 1;
   display: flex;
   flex-flow: row nowrap;
   align-items: center;
-  justify-content: safe center;
+  justify-content: center;
   gap: var(--rpg-hand-gap);
   width: 100%;
   max-width: none;
@@ -638,12 +637,7 @@
   max-height: none;
   margin: 0;
   padding: 4px 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  scroll-padding-inline: 6px;
-  scrollbar-width: none;
+  overflow: hidden;
   mask-image: none;
   -webkit-mask-image: none;
 }
@@ -652,9 +646,10 @@
    tient la cible tactile, `--duel-card` garde l'échelle du champ de bataille. */
 .rpg-battle--touch .rpg-hand .rpg-hand__card,
 .rpg-battle--touch .rpg-hand .rpg-hand__pile {
-  flex: 0 0 auto;
-  width: clamp(var(--rpg-hand-min), calc((100% - (var(--hand-count) - 1) * var(--rpg-hand-gap)) / var(--hand-count)), var(--duel-card));
-  scroll-snap-align: center;
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  max-width: var(--duel-card);
 }
 .rpg-battle--touch .rpg-hand .rpg-hand__pile { display: block; }
 .rpg-battle--touch .rpg-hand .rpg-hand__pile > .rpg-hand__card { width: 100%; }
