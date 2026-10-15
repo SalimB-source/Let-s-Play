@@ -483,7 +483,10 @@
 .rpg-story__reset-confirm button { margin: 4px 10px 4px 0; }
 
 /* Plein écran conservé par la coque parente. Ce lecteur peut défiler, y
-   compris en petit paysage et à fort zoom ; aucun texte n'est tronqué. */
+   compris en petit paysage et à fort zoom ; aucun texte n'est tronqué.
+   Le décor se voit : aucune nappe sombre ne le recouvre. La lisibilité vient
+   des panneaux qui portent réellement du texte — boîte de dialogue opaque,
+   cartouche, choix, pied de scène — et de leurs ombres portées. */
 .rpg-narrative {
   position: absolute;
   z-index: 20;
@@ -492,7 +495,7 @@
   overscroll-behavior: contain;
   color: #eee8dc;
   background: #0c141c;
-  background-image: linear-gradient(90deg, rgba(9, 16, 24, .7), rgba(9, 16, 24, .92) 58%, #0c141c), var(--rpg-story-decor, none);
+  background-image: var(--rpg-story-decor, none);
   background-size: cover;
   background-position: var(--rpg-story-position, center);
   background-attachment: fixed;
@@ -514,8 +517,18 @@
 .rpg-narrative__portrait figcaption { position: absolute; z-index: 2; right: 18px; left: 18px; bottom: 25px; text-align: center; }
 .rpg-narrative__portrait figcaption span { display: block; color: #f4e9d5; font: 400 clamp(20px, 2.5vw, 30px)/1.15 Georgia, serif; }
 .rpg-narrative__portrait figcaption small { display: block; color: #d1bd95; font-size: 10px; letter-spacing: .08em; margin-top: 7px; }
-.rpg-narrative__page { min-width: 0; padding: 10px 0; }
-.rpg-narrative__location { margin: 22px 0 8px; font-size: 11px; color: #b6c0c5; }
+.rpg-narrative__page { position: relative; min-width: 0; padding: 10px 0; }
+/* Le texte du briefing et de l'épilogue garde son propre fond : le décor est
+   visible tout autour, jamais derrière les mots. */
+.rpg-narrative__page::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -26px -32px -18px;
+  pointer-events: none;
+  background: radial-gradient(118% 104% at 34% 38%, rgba(6, 11, 17, .84), rgba(6, 11, 17, .6) 56%, rgba(6, 11, 17, .12) 100%);
+}
+.rpg-narrative__location { margin: 22px 0 8px; font-size: 11px; color: #cfd7da; text-shadow: 0 2px 12px rgba(4, 8, 13, .85); }
 .rpg-narrative__reading h1,
 .rpg-story-journal h1 { margin: 0 0 28px; font: 400 clamp(30px, 3.6vw, 48px)/1.1 Georgia, 'Times New Roman', serif; letter-spacing: -.025em; color: #eee7d8; }
 .rpg-narrative__dialogue { padding: 24px 0 0; border-top: 1px solid rgba(211, 189, 148, .3); min-height: 178px; }
@@ -525,17 +538,19 @@
 .rpg-narrative__actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; margin: 28px 0 0; }
 .rpg-narrative__actions .rpg-narrative-button { flex-shrink: 1; }
 .rpg-narrative__choices { margin: 26px 0 0; padding: 0; border: 0; min-width: 0; }
-.rpg-narrative__choices legend { padding: 0 0 12px; color: #e7d8b8; font: 400 20px/1.45 Georgia, serif; }
-.rpg-narrative__choices button { width: 100%; padding: 15px 18px; margin: 0 0 10px; color: #eee5d3; border: 1px solid #8c7954; border-radius: 3px; background: rgba(217, 191, 136, .055); text-align: left; font-family: inherit; cursor: pointer; }
-.rpg-narrative__choices button:hover { background: rgba(217, 191, 136, .16); border-color: #dfc797; }
+.rpg-narrative__choices legend { padding: 0 0 12px; color: #e7d8b8; font: 400 20px/1.45 Georgia, serif; text-shadow: 0 2px 14px rgba(4, 8, 13, .9); }
+/* Les décisions portent leur propre fond : le décor se voit autour, jamais
+   au travers des libellés. */
+.rpg-narrative__choices button { width: 100%; padding: 15px 18px; margin: 0 0 10px; color: #eee5d3; border: 1px solid #8c7954; border-radius: 3px; background: rgba(8, 13, 19, .74); text-align: left; font-family: inherit; cursor: pointer; }
+.rpg-narrative__choices button:hover { background: rgba(24, 21, 14, .88); border-color: #dfc797; }
 .rpg-narrative__choices button strong { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 600; }
 .rpg-narrative__choices button small { display: block; margin-top: 6px; font-size: 12px; line-height: 1.6; color: #c8c7bd; }
 .rpg-narrative__choices > p { font-size: 11px; line-height: 1.7; color: #bbc4c9; }
-.rpg-narrative__rewards { margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(200, 184, 148, .18); }
-.rpg-narrative__rewards > span { font: 500 8px/1.6 var(--mono, monospace); letter-spacing: .12em; color: #a9c4b2; }
+.rpg-narrative__rewards { margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(200, 184, 148, .28); }
+.rpg-narrative__rewards > span { font: 500 8px/1.6 var(--mono, monospace); letter-spacing: .12em; color: #bcd6c4; text-shadow: 0 2px 10px rgba(4, 8, 13, .9); }
 .rpg-narrative__rewards ul { display: flex; flex-wrap: wrap; gap: 7px; padding: 0; margin: 9px 0 0; list-style: none; }
-.rpg-narrative__rewards li { padding: 5px 8px; border: 1px solid rgba(157, 185, 159, .3); border-radius: 3px; font-size: 11px; color: #d3dfce; background: rgba(81, 114, 90, .12); }
-.rpg-narrative__footer { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin-top: 35px; color: #a9b6bb; font: 500 8px/1.5 var(--mono, monospace); letter-spacing: .12em; }
+.rpg-narrative__rewards li { padding: 5px 8px; border: 1px solid rgba(157, 185, 159, .34); border-radius: 3px; font-size: 11px; color: #dfeade; background: rgba(10, 22, 15, .66); }
+.rpg-narrative__footer { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin-top: 35px; color: #c3ced2; font: 500 8px/1.5 var(--mono, monospace); letter-spacing: .12em; text-shadow: 0 2px 10px rgba(4, 8, 13, .9); }
 .rpg-narrative__progress { flex-basis: 100%; height: 2px; background: #34404a; }
 .rpg-narrative__progress span { display: block; height: 100%; background: #d9bd85; transition: width .2s ease; }
 .rpg-narrative__lead { color: #e2d7c2; font: 400 21px/1.65 Georgia, serif; }
@@ -651,6 +666,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-story-portrait, .rpg-narrative__portrait img, .rpg-narrative-button, .rpg-narrative__progress span { animation: none; transition: none; }
+  .rpg-narrative__stand-img[data-pose] { animation: none; }
 }
 
 /* ── Le lecteur animé — décor vivant, sable, machine à écrire, fil du récit ──
@@ -660,17 +676,29 @@
    `prefers-reduced-motion` (bloc final) : le récit reste fixe et complet. */
 
 /* Le décor respire : un lent travelling (Ken Burns) au-dessus du fond statique
-   qui reste le repli si la couche animée ne se peint pas. */
+   qui reste le repli si la couche animée ne se peint pas. La peinture est
+   posée nue — ni voile, ni désaturation. Le seul assombrissement toléré est
+   la bande de sol du bas de l'écran (voir `::after`), là où vivent les
+   personnages, la boîte de dialogue et le pied de scène. */
 .rpg-narrative__decor {
   position: fixed;
   z-index: -1;
   inset: -5%;
   pointer-events: none;
-  background-image: linear-gradient(90deg, rgba(9, 16, 24, .74), rgba(9, 16, 24, .93) 58%, #0c141c), var(--rpg-story-decor, none);
+  background-image: var(--rpg-story-decor, none);
   background-size: cover;
   background-position: var(--rpg-story-position, center);
   animation: rpg-story-kenburns 46s ease-in-out infinite alternate;
   will-change: transform;
+}
+/* La bande de sol : le dernier tiers seulement, en fondu, pour que les sprites
+   et le pied de scène se détachent. Tout le reste de la peinture — les deux
+   tiers hauts, où l'on regarde — reste intact. */
+.rpg-narrative__decor::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 66%, rgba(6, 11, 17, .44));
 }
 @keyframes rpg-story-kenburns {
   from { transform: scale(1.04); }
@@ -840,6 +868,16 @@
   margin: 0 auto;
   text-align: center;
 }
+/* Un halo sombre LOCAL derrière le cartouche — un panneau, pas un voile :
+   le décor reste entier tout autour, la scène reste lisible par-dessus. */
+.rpg-narrative__cartouche::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -20px -34px -12px;
+  pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 46%, rgba(6, 11, 17, .74), rgba(6, 11, 17, .4) 62%, transparent 100%);
+}
 /* Le cartouche vit ENTRE les deux têtes (les personnages occupent les bords) :
    jamais au-dessus d'un visage, quelle que soit la hauteur d'écran. */
 .rpg-narrative__cartouche .rpg-narrative__lecture { justify-content: center; }
@@ -881,6 +919,14 @@
   object-position: bottom;
   filter: drop-shadow(0 16px 22px rgba(0, 0, 0, .55));
   user-select: none;
+}
+/* Un changement de situation change la pose : la silhouette se recompose au
+   lieu de sauter. `key` est posé sur l'image, l'animation rejoue donc à chaque
+   nouvelle pose — et jamais sur la pose de référence. */
+.rpg-narrative__stand-img[data-pose] { animation: rpg-story-repose .52s ease both; }
+@keyframes rpg-story-repose {
+  from { opacity: .4; transform: translateY(7px) scale(.994); }
+  to { opacity: 1; transform: none; }
 }
 
 /* Repli : personnage sans sprite — le portrait encadré, même placement. */

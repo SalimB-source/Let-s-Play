@@ -18,10 +18,12 @@ globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.win
 globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 try {
-  const { checkRpgStoryNarrative, checkRpgStoryStorageDenied } = await import('../node_modules/.cache/rpg-story-narrative/rpg-story-narrative-smoke.js');
+  const { checkRpgStoryNarrative, checkRpgStoryPoses, checkRpgStoryStorageDenied } = await import('../node_modules/.cache/rpg-story-narrative/rpg-story-narrative-smoke.js');
   await checkRpgStoryNarrative(assert);
   await checkRpgStoryStorageDenied(assert);
+  await checkRpgStoryPoses(assert);
 } finally {
   dom.window.close();
 }
 console.log('✓ La Dernière Liste : scènes, vraie victoire/défaite, migration, reprise, choix, épilogue, journal sans effet, portraits canoniques et stockage refusé');
+console.log('✓ La Dernière Liste : les poses alternatives suivent la situation (référence en cours de scène, garde avant le duel, décision posée au lecteur, détente après) et retombent proprement');

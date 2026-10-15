@@ -5,7 +5,8 @@ import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { cardById } from '../src/games/rpgCards.js';
 import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY } from '../src/games/rpgStory.js';
 import { RPG_STORY_DECKS, RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
-import { RPG_STORY_CAMPAIGN_FLOORS } from '../src/games/rpgStoryScenes.js';
+import { RPG_STORY_CAMPAIGN_FLOORS, acteSuivantHistoire, questionChoix, sceneHistoire } from '../src/games/rpgStoryScenes.js';
+import { recitHistoireVide, transitionRecitHistoire } from '../src/games/rpgStoryFlow.js';
 import { collectionJoueur, chargerCollectionDistante, revelationsDepuisEtages } from '../src/games/rpgCollection.js';
 import { RPG_PV_JOUEUR } from '../src/games/rpgDuel.js';
 import { passerMulligan } from './rpg-duel-start.js';
@@ -269,6 +270,137 @@ export async function checkRpgStoryStorageDenied(assert) {
   } finally {
     await act(async () => root.unmount());
     proto.setItem = original;
+    container.remove();
+  }
+}
+
+/**
+ * Les poses alternatives : la situation d'une scène change la posture des
+ * personnages qui en ont une (garde avant le duel, détente après la victoire),
+ * et rien d'autre ne bouge — la pose de référence reste la règle.
+ */
+export async function checkRpgStoryPoses(assert) {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  let root = null;
+  const query = (selector) => container.querySelector(selector);
+  const sprite = (id) => container.querySelector(`[data-personnage-stand="${id}"] img[data-personnage]`);
+  const dernier = (id) => sceneHistoire(id).repliques.length - 1;
+  const poserEtat = (curseur, { etagesVaincus = [], scenesVues = [], choix = {} } = {}) => window.localStorage.setItem(
+    RPG_STORY_STORAGE_KEY,
+    JSON.stringify({ version: 2, etagesVaincus, recit: { ...recitHistoireVide(), curseur, scenesVues, choix } }),
+  );
+  const ouvrir = async () => {
+    if (root) await act(async () => root.unmount());
+    root = createRoot(container);
+    await act(async () => root.render(<RpgDuelPage />));
+    await act(async () => [...container.querySelectorAll('.rpg-mode-menu__switch button')]
+      .find((b) => b.textContent.includes('Histoire')).click());
+    await act(async () => container.querySelector('[data-story-campaign]').click());
+    assert.ok(query('.rpg-narrative__plateau'), 'la scène est montée avec son plateau');
+  };
+  // Rejoue la campagne par les vraies transitions jusqu'à la scène visée : la
+  // sauvegarde produite est exactement celle qu'un lecteur aurait à ce point.
+  const avancerJusqua = (idScene) => {
+    let recit = recitHistoireVide();
+    let etages = [];
+    for (let i = 0; i < 400 && recit.curseur.id !== idScene; i += 1) {
+      if (recit.curseur.type === 'fin') {
+        const suivant = acteSuivantHistoire(recit.curseur.acteId ?? 'acte-1');
+        if (!suivant) break;
+        recit = transitionRecitHistoire(recit, { type: 'ouvrir-acte', curseur: recit.curseur, acteId: suivant.id }, etages);
+        continue;
+      }
+      if (recit.curseur.type === 'duel') {
+        etages = [...etages, recit.curseur.etageId];
+        recit = transitionRecitHistoire(recit,
+          { type: 'victoire', curseur: recit.curseur, etageId: recit.curseur.etageId }, etages);
+        continue;
+      }
+      const scene = sceneHistoire(recit.curseur.id);
+      if (scene.choix) {
+        // Chaque question a ses propres options : on prend la première, comme
+        // un lecteur qui tranche sans se poser de question.
+        const question = questionChoix(scene.choix);
+        recit = transitionRecitHistoire(recit, { type: 'resumer', curseur: recit.curseur }, etages);
+        recit = transitionRecitHistoire(recit,
+          { type: 'choisir', curseur: recit.curseur, optionId: question.options[0].id }, etages);
+      } else {
+        recit = transitionRecitHistoire(recit, { type: 'continuer', curseur: recit.curseur }, etages);
+      }
+    }
+    assert.equal(recit.curseur.id, idScene, `la campagne atteint ${idScene}`);
+    return { recit, etages };
+  };
+  try {
+    window.localStorage.clear();
+    window.localStorage.setItem('letsplay_sablier_sound_v1', 'off');
+
+    // 1. En cours de scène, personne ne change de posture.
+    poserEtat({ type: 'scene', id: 'listes-1-avant', replique: 0, resume: false });
+    await ouvrir();
+    assert.match(sprite('salem').getAttribute('src'), /stand-salem\.webp/, 'en cours de scène, la pose de référence');
+    assert.equal(sprite('salem').dataset.pose, undefined, 'hors situation, aucune variante déclarée');
+    assert.equal(query('.rpg-narrative__plateau [data-pose]'), null, 'le plateau entier reste sur les poses de référence');
+
+    // 2. Dernier échange d'une scène d'avant-duel : on se met en garde.
+    poserEtat({ type: 'scene', id: 'listes-1-avant', replique: dernier('listes-1-avant'), resume: false });
+    await ouvrir();
+    assert.equal(sprite('salem').dataset.pose, 'duel', 'au dernier échange, Salem se met en garde');
+    assert.match(sprite('salem').getAttribute('src'), /stand-salem-affrontement\.webp/, 'la variante remplace la référence');
+    assert.match(sprite('guetteur').getAttribute('src'), /stand-guetteur-affrontement\.webp/,
+      'la situation vaut pour tous les présents : le Guetteur barre le passage');
+    assert.equal(sprite('guetteur').dataset.pose, 'duel');
+
+    // 3. Après le duel, les épaules redescendent.
+    poserEtat({ type: 'scene', id: 'listes-1-apres', replique: dernier('listes-1-apres'), resume: false },
+      { etagesVaincus: ['listes-1'], scenesVues: ['listes-1-avant'] });
+    await ouvrir();
+    assert.equal(sprite('salem').dataset.pose, 'apres', 'la scène d’après-duel a sa propre posture');
+    assert.match(sprite('salem').getAttribute('src'), /stand-salem-apaisement\.webp/);
+
+    // 4. Une décision posée a sa situation à part, et sa propre peinture : les
+    //    figures du plan qui en ont une la prennent ensemble, devant le lecteur.
+    poserEtat({ type: 'scene', id: 'listes-2-apres', replique: dernier('listes-2-apres'), resume: false },
+      { etagesVaincus: ['listes-1', 'listes-2'], scenesVues: ['listes-1-avant', 'listes-1-apres', 'listes-2-avant'] });
+    await ouvrir();
+    assert.ok(query('[data-story-choice-group]'), 'la décision est réellement posée');
+    assert.equal(sprite('salem').dataset.pose, 'choix', 'la décision a sa propre posture');
+    assert.match(sprite('salem').getAttribute('src'), /stand-salem-decision\.webp/);
+    assert.equal(sprite('scribe').dataset.pose, 'choix', 'la Scribe montre la liste au lecteur');
+    assert.match(sprite('scribe').getAttribute('src'), /stand-scribe-decision\.webp/);
+
+    // 5. Toute la campagne plus loin : les deux figures d'un même plan qui ont
+    //    une variante l'utilisent ensemble — Salem et Mahieddine se détendent
+    //    dans l'après-duel du sommet de la Tour des Listes.
+    const etatFinal = avancerJusqua('listes-5-apres');
+    poserEtat({
+      type: 'scene', id: 'listes-5-apres', replique: dernier('listes-5-apres'), resume: false,
+    }, { etagesVaincus: etatFinal.etages, scenesVues: etatFinal.recit.scenesVues, choix: etatFinal.recit.choix });
+    await ouvrir();
+    assert.ok(sprite('salem') && sprite('mahieddine'), 'les deux figures du plan sont montées');
+    assert.equal(sprite('salem').dataset.pose, 'apres', 'Salem se détend après son duel');
+    assert.match(sprite('salem').getAttribute('src'), /stand-salem-apaisement\.webp/);
+    assert.equal(sprite('mahieddine').dataset.pose, 'apres', 'Mahieddine aussi : la même situation vaut pour tout le plan');
+    assert.match(sprite('mahieddine').getAttribute('src'), /stand-mahieddine-apaisement\.webp/);
+
+    // 6. La dernière décision du récit, atteinte par le vrai rejeu de la
+    //    campagne : les deux figures du plan prennent leur pose de décision —
+    //    aucun plateau de décision ne reste sur une posture d'un autre moment.
+    const etatFinale = avancerJusqua('sables-3-apres');
+    poserEtat({
+      type: 'scene', id: 'sables-3-apres', replique: dernier('sables-3-apres'), resume: false,
+    }, { etagesVaincus: etatFinale.etages, scenesVues: etatFinale.recit.scenesVues, choix: etatFinale.recit.choix });
+    await ouvrir();
+    assert.ok(query('[data-story-choice-group]'), 'le choix du portail est posé au lecteur');
+    assert.equal(sprite('mahieddine').dataset.pose, 'choix', 'le Grand Horloger passe la plume');
+    assert.match(sprite('mahieddine').getAttribute('src'), /stand-mahieddine-decision\.webp/);
+    assert.equal(sprite('horloger-zenith').dataset.pose, 'choix', 'l’Horloger du Zénith pose sa montre');
+    assert.match(sprite('horloger-zenith').getAttribute('src'), /stand-horloger-zenith-decision\.webp/);
+    assert.equal(query('.rpg-narrative__plateau [data-pose="apres"], .rpg-narrative__plateau [data-pose="duel"]'), null,
+      'et aucune pose de duel ne traîne sur un plateau de décision');
+  } finally {
+    if (root) await act(async () => root.unmount());
     container.remove();
   }
 }

@@ -85,14 +85,134 @@ tenue, bijoux et accessoires. Pas de variante aléatoire ni de portrait provenan
 d'une autre carte pour meubler une réplique. La version livrée n'utilise aucune
 variante et garantit donc la continuité par réemploi du même fichier.
 
+## Les sprites détourés (« stands »)
+
+Le plateau du récit ne présente plus de portrait encadré : chaque personnage y
+est posé **découpé sur le décor**, à la manière d'un roman visuel. Le sprite
+provient toujours de la peinture canonique — même visage, même tenue, mêmes
+accessoires — mais composée en pied, de face, sur fond magenta uni, puis
+détourée par `tools/make-stands.py` (inondation depuis les bords, désincrustage
+du halo, plume légère, WebP à fond transparent, 900 px de haut au plus).
+
+- **Un sprite par personnage**, livré dans `public/sablier-story/stands/`, et
+  déclaré dans `RPG_STORY_CAST` (`stand`). Le registre reste l'unique source :
+  les scènes ne portent aucun chemin d'image.
+- Les actes II à V sont désormais tous détourés : Marchand de sable, Gardienne
+  des ksour, Djinn du tournant, Reine des étals, Pêcheur de perles, Nageuse des
+  puits, Sonneur d'écume, Dévoreur de l'abîme, Garde du fjord, Meute des neiges,
+  Valkyrie du fjord, Maître des Neuf Hivers, Dernier Fennec, Ifrit des ergs,
+  Horloger du Zénith.
+- La **carte** reste la référence du duel : la plaque adverse du duel garde le
+  portrait encadré, le plateau du récit garde le sprite. Même peinture, deux
+  usages.
+- Un sprite qui ne se décode pas retombe sur le portrait encadré : jamais de
+  carré cassé, jamais de fond de détourage visible.
+- Une nouvelle passe de détourage incrémente la révision `?v=` de
+  `standHistoire()` : aucun cache ne peut resservir l'ancienne image.
+
+## Les poses selon la situation
+
+Un personnage ne garde pas la même posture du premier au dernier échange. La
+**situation** de la scène remplace sa pose de référence par une variante —
+même visage, même tenue, même peinture, seule la posture change (et
+l'expression avec elle). Trois situations existent, déclarées une fois pour
+toutes dans `SITUATIONS_POSE_HISTOIRE` :
+
+| Situation | Fichier | Quand elle s'applique | Posture |
+| --- | --- | --- | --- |
+| `duel` | `-affrontement` | Dernier échange d'une scène d'avant-duel | On se met en garde, on se cambre |
+| `choix` | `-decision` | Une décision est posée au lecteur | La figure qui interroge tient son monde |
+| `apres` | `-apaisement` | Dernier échange d'une scène d'après-duel | Les épaules redescendent, la voix s'adoucit |
+
+Le registre est le seul endroit qui connaît les fichiers : chaque personnage
+porte `poses: { duel: 'sablier-story/stands/stand-<id>-affrontement.webp',
+choix: '…-decision.webp', apres: '…-apaisement.webp' }` et
+`poseHistoire(id, situation)` résout l'image. Le nom du fichier suit toujours
+le suffixe que la situation déclare (`SITUATIONS_POSE_HISTOIRE`, champ
+`suffixe`) : le test refuse une variante mal nommée.
+**Règles de continuité :**
+
+- une situation non déclarée, inconnue ou absente retombe sur la pose de
+  référence (`stand`) : aucune figure n'est jamais obligée d'avoir une variante ;
+- la variante d'un personnage ne sert jamais à un autre — pas de pose
+  empruntée, pas de retournement horizontal ;
+- les variantes sont détourées par le même `tools/make-stands.py`, à partir de
+  la pose de référence comme source de composition ;
+- toute nouvelle variante incrémente la révision `?v=` de `standHistoire()` ;
+- un changement de pose rejoue une courte recomposition
+  (`@keyframes rpg-story-repose`), neutralisée pour `prefers-reduced-motion` ;
+- les tests refusent une situation inventée, une variante identique à la
+  référence, un fichier non livré ou sans canal alpha, et le lecteur monté
+  vérifie que la pose change au dernier échange et revient au référentiel
+  ensuite.
+
+**État livré :** les deux postures de **toutes les figures détourées** — les
+cinq héros (Salem, Yamina, Fériel, Tarek, Boualem, Mahieddine), les figures de
+la Chambre (la Scribe, le Guetteur, le Puisatier des Cendres) et les
+antagonistes des actes I à V (le Marchand de sable, la Gardienne des ksour, le
+Djinn du tournant, la Reine des étals, le Pêcheur de perles, la Nageuse des
+puits, le Sonneur d'écume, le Dévoreur de l'abîme, la Garde du fjord, la Meute
+des neiges, la Valkyrie du fjord, le Maître des Neuf Hivers, le Dernier Fennec,
+l'Ifrit des ergs, l'Horloger du Zénith).
+
+**Huit figures ont en plus leur posture de décision** — les deux figures de
+chacune des cinq scènes où le lecteur tranche : Salem, Yamina, la Scribe, le
+Djinn du tournant, Boualem, Mahieddine, la Valkyrie du fjord et l'Horloger du
+Zénith. À `listes-2-apres`, la Scribe montre la liste ouverte au lecteur, pages
+tournées vers lui ; à `sables-3-apres`, le Grand Horloger ouvre les mains à
+hauteur de hanche et passe la plume tandis que l'Horloger du Zénith tend son
+astrolabe. **Aucun plateau de décision ne reste donc sur une posture d'un autre
+moment**, et le repli garde sa preuve juste à côté : au niveau du registre, une
+situation non déclarée pour une figure donnée (le Guetteur, qui n'a pas de pose
+de décision) rend bien sa pose de référence.
+
+Quelques repères de la garde et de la détente : la Garde du fjord dresse son
+bouclier en mur devant sa poitrine, puis le pose contre sa jambe et ouvre la
+main vers la herse ; le Maître des Neuf Hivers abat son bâton dans la glace et
+fait tournoyer ses deux corbeaux, puis plante le bâton et offre le sceau du
+Nord ; le Sonneur d'écume hisse sa cloche de bronze au-dessus de l'épaule, puis
+s'écarte, la cloche au repos derrière le talon.
+
+### Contour des sprites : le liseré de fond
+
+Trois pièges du détourage, tous traités par l'outil et vérifiés par
+`tools/check-stands.py` :
+
+1. **La couleur du fond survit sous les pixels transparents.** Le flou d'alpha
+   de la plume la révélait : tous les sprites portaient un liseré rose. La
+   couleur du personnage est donc **étalée sous la zone vide** avant la plume
+   (`etaler_couleur`) — le contour ne peut plus révéler que des couleurs du
+   personnage. Le désincrustage a été resserré en même temps (`DESPILL` 42 → 22).
+2. **La fringe JPEG** propre au fond magenta est absorbée par cette étape.
+3. **Le cadrage de la source.** Le détourage rogne sur la figure : un sprite
+   livré plus court que 900 px vient d'une source où la figure n'occupait pas
+   toute la hauteur, et elle paraît plus petite que les autres sur le plateau.
+   `python3 tools/check-stands.py` mesure les deux (liseré et gabarit) et nomme
+   les sprites à reprendre. **Repris dans cette passe :** `stand-tarek.webp`
+   (source portrait 896×1200), `stand-valkyrie-fjord.webp` et
+   `stand-ifrit-ergs.webp` (sources portrait). **80 sprites** (24 figures et
+   56 variantes) passent aujourd'hui le contrôle sans réserve.
+
 ## Mise en scène
 
-- Décor atmosphérique indépendant, portrait encadré et cartouche de dialogue.
-- Décors : extérieur des Listes, greffe, citernes et atelier du Souk. Les
-  miniatures existantes servent de vues d'ambiance ; le nouveau greffe est vide.
+- Décor atmosphérique indépendant, personnages découpés et cartouche de dialogue.
+- **Le décor se voit.** Aucune nappe sombre ne recouvre la peinture : les deux
+  couches qui la portent (`.rpg-narrative`, `.rpg-narrative__decor`) ne
+  déclarent que l'image. Le seul assombrissement est la *bande de sol* — un
+  fondu du dernier tiers de l'écran, jamais opaque — là où vivent les sprites,
+  la boîte de dialogue et le pied de scène.
+- La lisibilité vient donc des **panneaux qui portent du texte** et non d'un
+  voile : boîte de dialogue opaque à liseré clair, halo local du cartouche et
+  de la page de briefing, fond dense des décisions, ombres portées des
+  libellés. Le garde-fou `npm run check:rpg-story-ui` refuse le retour d'un
+  dégradé sombre sur les couches de décor.
+- Décors : extérieur des Listes, greffe, citernes, atelier du Souk, fjord et
+  sables. Les miniatures existantes servent de vues d'ambiance ; le nouveau
+  greffe est vide.
 - Pas de texte imprimé dans les images : les noms et répliques restent nets,
   sélectionnables et accessibles aux lecteurs d'écran.
-- Un changement d'interlocuteur remplace le portrait par **sa** référence.
+- Un changement d'interlocuteur remplace le sprite par **le sien** — et jamais
+  le portrait encadré : le plateau ne montre que des figures détourées.
   Aucun retournement horizontal, recoloration de costume ou nouvel âge.
 - Lecteur utilisable en portrait sur téléphone, en paysage et au clavier.
   Le plein écran conserve la même coque que le duel.
@@ -142,10 +262,16 @@ l'étage dit où la carte entre dans la ville, le Souk la vend.
 
 ## Vérifications
 
-- `npm run check:rpg` : 300 tests, dont 17 nouveaux sur le récit et les portraits.
+- `npm run check:rpg` : tests du récit, dont les garde-fous de casting — tout
+  personnage joué a son sprite, le fichier est livré, daté, et son WebP déclare
+  bien un canal alpha (un fond opaque signalerait un détourage raté).
 - `npm run check:rpg-story-ui` : tours libres et lecteur réellement montés ;
   victoire/défaite du moteur sur fixtures accélérées, reprise, décisions,
-  journal, réinitialisation, stockage refusé, contrôle de l'interruption d'un duel.
+  journal, réinitialisation, stockage refusé, contrôle de l'interruption d'un
+  duel — et le contrôle du décor : aucune des deux couches qui portent la
+  peinture ne déclare de dégradé sombre, la bande de sol ne commence pas avant
+  55 % de la hauteur et reste un fondu léger (alpha ≤ 0,6), le cartouche et la
+  page de briefing gardent leur halo, les décisions leur fond dense.
 - `npm run check:rpg-story-browser` : les deux branches dans Chromium, en tactile
   et sur ordinateur ; migration, clavier, rechargement, images décodées,
   portraits identiques, journal sans effet, 320 à 1440 px, thèmes clair/sombre.
