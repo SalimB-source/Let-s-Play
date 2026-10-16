@@ -2104,8 +2104,9 @@ export function rpgModesArme(duel, cote, entiteId) {
 
 // Gelé (Poigne de givre, Verglas) : la créature ni n'attaque ni ne bloque.
 const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
-const pret = (entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite)
+export const rpgPeutAttaquer = (entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite)
   && !(entite.empecheAttaqueToursRestants > 0);
+const pret = rpgPeutAttaquer;
 // Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
 // Le gel, lui, ferme aussi la défense.

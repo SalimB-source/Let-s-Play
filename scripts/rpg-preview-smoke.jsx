@@ -115,8 +115,10 @@ export async function checkRpgPreviewActions(assert) {
     assert.equal(effetsFiche.length, 2, 'les deux capacités du Fennec sont écrites, ligne par ligne');
     assert.match(effetsFiche[0], /^Rapidité/u, 'la première capacité est nommée');
     assert.match(effetsFiche[1], /^Butin/u, 'la seconde capacité du Fennec est nommée');
-    assert.match(fiche().querySelector('.rpg-hover-card-preview__stats').textContent, /⚔ 3\s*·\s*🛡 1/u,
-      'la fiche garde les statistiques de la créature');
+    assert.equal(fiche().querySelector('.rpg-hover-card-preview__face .rpg-card__stat--atk .rpg-stat-value')?.textContent, '3',
+      'la fiche imprime l’attaque sur la carte');
+    assert.equal(fiche().querySelector('.rpg-hover-card-preview__face .rpg-card__pt .rpg-stat-value')?.textContent, '1',
+      'la fiche imprime la défense sur la carte');
     assert.ok(container.querySelector('.rpg-card-catalogue'), 'le catalogue reste ouvert sous la fiche');
 
     assert.ok(container.querySelector('.rpg-card-catalogue'), 'le catalogue reste ouvert sous la fiche');
@@ -424,8 +426,10 @@ export async function checkRpgPreviewActions(assert) {
       lignesAttendues,
       'les effets de la carte tiennent dans l’aperçu, un par ligne');
     if (attendue.kind === 'creature' || attendue.kind === 'hero') {
-      assert.equal(apercuAppui.querySelector('.rpg-hover-card-preview__stats')?.textContent.trim(),
-        `⚔ ${attendue.atk} · 🛡 ${attendue.def}`, 'l’attaque et la défense restent lisibles au doigt');
+      assert.equal(apercuAppui.querySelector('.rpg-hover-card-preview__face .rpg-card__stat--atk .rpg-stat-value')?.textContent,
+        String(attendue.atk), 'l’attaque reste lisible sur la carte au doigt');
+      assert.equal(apercuAppui.querySelector('.rpg-hover-card-preview__face .rpg-card__pt .rpg-stat-value')?.textContent,
+        String(attendue.def), 'la défense reste lisible sur la carte au doigt');
     }
     assert.equal(totalMain(), mainAvantAppui, 'l’appui long ne joue pas la carte');
     assert.equal(terrainsJoueurs().length, terrainsAvantAppui, 'l’appui long ne pose rien sur la table');

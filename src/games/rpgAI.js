@@ -522,7 +522,7 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
 // ── Attaques ────────────────────────────────────────────────────────────────
 
 function attaquantsPrets(duel, cote) {
-  return duel[cote].creatures.filter((entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite));
+  return duel[cote].creatures.filter(moteur.rpgPeutAttaquer);
 }
 
 /**
