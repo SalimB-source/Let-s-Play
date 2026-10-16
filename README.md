@@ -7891,3 +7891,68 @@ Ces trois-là échouent déjà sur l'arbre propre (`git stash` vérifié), comme
 **ces seules** assertions, le volet JSDOM de Fériel et les quatorze nouvelles
 assertions statiques passent de bout en bout. Les contrôles Playwright demandent
 un navigateur, absent de cet environnement.
+
+## Le Sablier : plus de glow multicolore sur les cartes de la table
+
+Le **foil** — le calque qui fait briller une face sous la lumière — couvrait
+huit familles de faces : la main, le mulligan, les cartes en jeu, les terrains,
+le dessus du paquet, plus trois faces de lecture (l'aperçu, le guide, le Souk).
+Sur les cinq premières, il se lisait comme un **glow multicolore figé** : ses
+quatre taches d'arc-en-ciel (rose, cyan, or, violet) sont placées par la lumière
+du plateau (`--rpg-foil-cx/cy`, lus sur le curseur), or une carte **posée** ne
+s'incline pas. Les taches ne bougeaient donc jamais : elles teintaient
+l'illustration, sur la main, sous le volet du mulligan, sur les créatures en
+jeu, sur les terrains et sur le sommet du paquet.
+
+**Ce qui change.** `src/games/rpg-battle.css` — la section « LE FOIL » perd cinq
+sélecteurs : `.rpg-card--img::after`, `.rpg-hand__card--img::after`,
+`.rpg-mulligan__card::after`, `.rpg-terrain::after` et
+`.rpg-card-pile__card--top::after`. Ces cinq faces n'ont plus de calque du tout
+— ni taches, ni grain, ni éclat : l'illustration y est nue, comme l'anneau de
+couleur l'est déjà sur les faces jouées au doigt.
+
+**Ce qui ne change pas.** Le foil reste entier sur les trois faces de
+**lecture** : `.rpg-hover-card-preview__face::after` — l'aperçu est la seule
+carte que l'on incline, et ses taches glissent avec l'inclinaison —,
+`.rpg-card-guide__example::after` et `.rpg-souk__carte-art::after`. La lumière
+du plateau (`useLumiereCartes`) continue d'être lue : elle n'éclaire simplement
+plus aucune face posée. Ni les halos d'état (jouabilité, cible, bloqueur), ni le
+liseré doré du mulligan, ni les animations du combat ne bougent.
+
+**Retour en arrière.** Une seule liste à compléter, en tête de la section
+« LE FOIL » : y remettre le sélecteur d'une face de la table lui rend le reflet
+entier. Une note de deux lignes, à la place des cinq faces retirées, le dit à
+l'endroit où on le cherchera.
+
+### Où vit le code
+
+- `src/games/rpg-battle.css` — le commentaire d'en-tête de « LE FOIL » (les trois
+  faces de lecture, le pourquoi des cinq autres, la phrase de retour en arrière)
+  et sa liste de sélecteurs, réduite à trois ;
+- `scripts/rpg-battle-ui-check.mjs` — les assertions du foil : la liste des trois
+  faces de lecture et son ordre, l'absence des cinq sélecteurs de la table dans
+  la règle, et le foil lui-même inchangé pour les autres — grain, quatre taches
+  d'arc-en-ciel, éclat, `mix-blend-mode: screen`, placement par
+  `var(--rpg-foil-cx, 0%)`, multiplicateurs ×1,35, ×0,7, ×1,7 —, la vignette du
+  catalogue restant, elle, sans foil.
+
+### Vérifications
+
+```bash
+npm run check:rpg          # 570/570 — les règles du duel, inchangées
+npm run build              # le bundle se construit
+```
+
+Le volet JSDOM de `scripts/rpg-battle-ui-check.mjs` casse toujours **avant** ces
+assertions, à HEAD comme ici, sur des données de cartes plus récentes que le
+harnais (`le catalogue affiche les nouvelles statistiques 3/1 de Fériel` — le
+catalogue donne 4/3 — puis `le coût de quatre de l'Anqa`, qui en affiche 5),
+comme `scripts/rpg-preview-check.mjs` (`Esquive 1` attendue sur le Butin) et
+`scripts/rpg-mulligan-check.mjs` : `git stash` vérifié, ces trois-là échouent sur
+l'arbre propre. Les quinze assertions du volet « foil » ont donc été rejouées
+dans un harnais temporaire qui lit le même fichier : **15/15**. Un passage de
+`css-tree` sur les cinq feuilles du Sablier (`rpg-battle`, `rpg-mobile`,
+`rpg-deck-atelier`, `rpg-card-guide`, `rpg-souk`) confirme qu'aucune autre règle
+`::after` ne peint plus rien sur ces faces, et qu'aucune n'a été cassée. Les
+contrôles Playwright (`check:rpg-mobile`, `check:rpg-card-markers`,
+`check:rpg-card-motif`) demandent un navigateur, absent de cet environnement.

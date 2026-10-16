@@ -714,15 +714,24 @@ assert.doesNotMatch(frameCss, /rpg-mythic-art-gloss/,
 assert.doesNotMatch(frameCss, /rpg-card--mythique::before[^{]*\{[^}]*\b(?:background|animation)\s*:/s,
   'les faces mythiques ne portent plus de calque de reflet séparé du foil');
 const foilCss = frameCss.slice(frameCss.indexOf('LE FOIL'), frameCss.indexOf("/* ── La face de l'aperçu en 3D"));
+// Le foil ne vit plus que sur les trois faces de **lecture** : l'aperçu (survol,
+// appui long, fiche du catalogue, annonce, mulligan), les fiches du guide et les
+// cartes du Souk. Les faces de la table — main, mulligan, cartes en jeu,
+// terrains, dessus du paquet — ne portent plus ce calque : une carte posée ne
+// s'incline pas, et ses taches d'arc-en-ciel s'y lisaient comme un glow
+// multicolore figé sur l'illustration.
+const foilRule = foilCss.slice(0, foilCss.indexOf('{'));
+assert.match(foilRule,
+  /\.rpg-hover-card-preview__face::after,\s*\.rpg-card-guide__example::after,\s*\.rpg-souk__carte-art::after\s*$/,
+  'le foil ne couvre plus que les trois faces de lecture : aperçu, guide et Souk');
 for (const face of [
   '.rpg-card--img::after',
   '.rpg-hand__card--img::after',
   '.rpg-mulligan__card::after',
   '.rpg-terrain::after',
-  '.rpg-hover-card-preview__face::after',
   '.rpg-card-pile__card--top::after',
 ]) {
-  assert.ok(foilCss.includes(face), `${face} porte le foil commun`);
+  assert.ok(!foilRule.includes(face), `${face} ne porte plus le foil : la table reste sans reflet`);
 }
 // La face du catalogue n'a plus de foil, seulement son voile du bas : sa règle
 // est vérifiée à part. Elle est écrite bien avant `frameCss`, on la cherche donc
@@ -741,6 +750,11 @@ assert.match(foilCss, /var\(--rpg-foil-cx, 0%\)/,
   'le foil est placé par l’angle de vue, et non par une trame qui défile');
 assert.match(foilCss, /\* 1\.35\)[\s\S]*?\* 0\.7\)[\s\S]*?\* 1\.7\)/,
   'les taches d’arc-en-ciel glissent à des vitesses différentes, sinon la carte resterait plate');
+// Le foil lui-même doit continuer à mêler le grain du support et les taches
+// d'arc-en-ciel, en lumière ajoutée : c'est ce qui en fait une carte brillante
+// sous la lumière, et non une image teintée.
+assert.match(foilCss, /repeating-linear-gradient\(118deg[\s\S]*?linear-gradient\(112deg, transparent 30%/,
+  'le foil des faces de lecture garde ses quatre taches, son grain et son éclat, dans l’ordre');
 // Le mythe reste reconnaissable, mais par son cadre et son relief — plus par un
 // reflet qui lui serait propre.
 assert.match(frameCss, /filter: saturate\(1\.1\) contrast\(1\.04\);/,
