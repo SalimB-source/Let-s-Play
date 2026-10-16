@@ -651,8 +651,18 @@ function creerEntiteCreature(carte) {
     tenaciteDisponible: Boolean(carte.tenacite),
     protection: carte.protection ? {
       contre: carte.protection.contre,
-      toursRestants: carte.protection.tours ?? 2,
+      // Sans `tours` déclaré, la protection est **permanente** (Tiziri) :
+      // `Infinity` survit aux décomptes de `rpgFinDeTour`.
+      toursRestants: carte.protection.tours ?? Infinity,
     } : null,
+    // Interdits de combat (le venin de la Vipère, la lune dévorée de
+    // Bakunawa) : tours du contrôleur qui restent à couvrir, comme le gel —
+    // l'un interdit d'attaquer, l'autre de bloquer.
+    empecheAttaqueToursRestants: 0,
+    empecheBlocageToursRestants: 0,
+    // Compte à rebours du Guetteur du beffroi : `{ restants, effet }`, décompté
+    // au début de chaque tour du contrôleur (`resoudreHeures`).
+    heures: null,
     ready: Boolean(carte.rapidite),
     attaquee: false,
     resonance: 0,
@@ -1116,6 +1126,38 @@ function gelerEntite(duel, entite) {
   duel.log.push(`${entite.name} est gelée : ni attaque ni blocage jusqu’à la fin de son prochain tour.`);
 }
 
+/**
+ * Durée, en tours du contrôleur, d'un interdit « jusqu'à la fin de son
+ * prochain tour » (le venin de la Vipère, la lune de Bakunawa) : la même
+ * horloge que le gel — 2 si son tour est en cours, 1 sinon.
+ */
+function dureeJusquAuProchainTour(duel, entite) {
+  const proprietaire = duel.joueur.creatures.some((candidate) => candidate.id === entite.id)
+    ? 'joueur' : 'sorcier';
+  return duel.tour === proprietaire ? 2 : 1;
+}
+
+/**
+ * Butin (le set Sable) : quand une créature dotée du mot-clé touche le
+ * sorcier adverse en combat, son contrôleur pioche une carte puis en
+ * défausse une. Même chemin que les déclencheurs d'armes : les bilans de
+ * combat disent qui a frappé le sorcier et pour combien.
+ */
+function declencherButins(duel, cote, bilans) {
+  let declenche = false;
+  for (const bilan of bilans) {
+    if (!(bilan.sorcier > 0)) continue;
+    const entite = duel[cote].creatures.find((candidate) => candidate.id === bilan.id);
+    const carte = entite ? duelCardById(entite.carteId) : null;
+    if (!carte?.butin) continue;
+    appliquer(duel, cote, { type: 'pioche-defausse', pioche: 1, defausse: 1 },
+      null, entite.id, cardColors(carte), 'capacite', carte.id);
+    duel.log.push(`Butin : ${entite.name} touche le sorcier — pioche 1, défausse 1.`);
+    declenche = true;
+  }
+  return declenche;
+}
+
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut une
  *  entité du buff (le Colosse ne se buffe pas lui-même). */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
@@ -1198,8 +1240,16 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // Renvoi en main (« bounce » / Rebond) : la cible quitte la table pour la
       // main de son propriétaire. `creature` vise le camp adverse (ou une
       // créature alliée explicitement désignée hors `sauf`), `creature-amie` le
-      // camp du lanceur. `pioche` fait piocher le lanceur après le renvoi.
-      if (effet.cible === 'creature-amie') {
+      // camp du lanceur, `toutes-autres` la table entière hors la source (la
+      // vague du Léviathan). `pioche` fait piocher le lanceur après le renvoi.
+      if (effet.cible === 'toutes-autres') {
+        for (const campCible of [cote, adv]) {
+          for (const entite of [...duel[campCible].creatures]) {
+            if (entite.id === sauf) continue;
+            renvoyerEnMain(duel, campCible, entite, sourceElement);
+          }
+        }
+      } else if (effet.cible === 'creature-amie') {
         const cibles = duel[cote].creatures.filter((entite) => entite.id === cibleId);
         for (const cible of cibles) {
           renvoyerEnMain(duel, cote, cible, sourceElement);
@@ -1350,6 +1400,12 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.def = Math.max(plancher, entite.def + bonusDefense);
         entite.pv = Math.max(plancher, entite.pv + bonusDefense);
         if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tour: duel.tour });
+        // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
+        // et la mort est attribuée à la couleur de la source, pour le journal.
+        if (!(entite.pv > 0) && plancher <= 0) {
+          enterrer(duel, contreAdversaire ? adv : cote, entite, sourceElement ? [sourceElement] : []);
+          continue;
+        }
         if (effet.blocageForce) {
           entite.blocageForce = { par: cote, portee: effet.blocageForce === 'tour' ? 'tour' : 'attaque' };
           forces += 1;
@@ -1378,16 +1434,19 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       return;
     }
     case 'infiltration': {
-      // Le ralliement de Tin Hinan : TOUTES les créatures du camp — la source
-      // comprise — gagnent +ATK/+DEF, et passent incognito jusqu'à la fin du
-      // tour (Infiltration : impossibles à bloquer). Les statistiques restent
-      // acquises ; le passe-droit s'efface à `rpgFinDeTour` (voir
-      // `annulerInfiltrations`). Contrairement au `buff`, aucune entité n'est
-      // exclue : « toutes les créatures du joueur ».
+      // Le ralliement de Tin Hinan : les créatures du camp passent incognito
+      // jusqu'à la fin du tour (Infiltration : impossibles à bloquer).
+      // `cible: 'autres-allies'` — la version validée de la matriarche : elle
+      // ouvre la route POUR LES SIENS, elle ne gagne rien elle-même, et le
+      // boost de stats a disparu (`atk`/`def` restent disponibles pour
+      // d'autres cartes). Le passe-droit s'efface à `rpgFinDeTour` (voir
+      // `annulerInfiltrations`).
       const source = duel[cote].creatures.find((entite) => entite.id === sauf);
       const bonusAttaque = effet.atk ?? 0;
       const bonusDefense = effet.def ?? 0;
+      const ouvreLaRoute = effet.cible === 'autres-allies';
       for (const entite of duel[cote].creatures) {
+        if (ouvreLaRoute && entite.id === sauf) continue;
         if (rpgEstProtegee(entite, sourceElement)) continue;
         entite.atk += bonusAttaque;
         entite.pvMax = (entite.pvMax ?? entite.def) + bonusDefense;
@@ -1396,7 +1455,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.infiltration = true;
         entite.infiltrationTour = true; // passe-droit du tour : voir `annulerInfiltrations`
       }
-      duel.log.push(`Infiltration : ${source?.name ?? 'l’effet'} rend ses créatures impossibles à bloquer ce tour.`);
+      duel.log.push(`Infiltration : ${source?.name ?? 'l’effet'} ouvre la route — ${ouvreLaRoute ? 'ses autres créatures' : 'ses créatures'} sont impossibles à bloquer ce tour.`);
       return;
     }
     case 'combat': {
@@ -1456,7 +1515,148 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
           if (survivante) gelerEntite(duel, survivante);
         }
       }
+      // `etSorcier` : le feu se propage jusqu'au sorcier adverse (le Braisier
+      // du souk) — le même effet frappe la table, puis le visage.
+      if (effet.etSorcier) {
+        rpgInfligerSorcier(duel, adv, effet.etSorcier);
+      }
       differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId);
+      return;
+    }
+    case 'recyclage': {
+      // Cimetière → main : la Dune marchante renvoie les magies, le
+      // Faussoyeur les créatures, le Scribe n'importe quelle carte de la
+      // Liste (`cible` : 'magie-cimetiere' | 'creature-cimetiere' |
+      // 'carte-cimetiere'). La DERNIÈRE entrée qui convient part en main —
+      // la dépouille la plus fraîche. La source qui vient de mourir ne se
+      // renvoie jamais elle-même : la Liste survit à ceux qui la tiennent,
+      // pas à eux-mêmes.
+      const camp = duel[cote];
+      const convient = {
+        'magie-cimetiere': (id) => Boolean(magieById(id)),
+        'creature-cimetiere': (id) => {
+          const carteAuCimetiere = duelCardById(id);
+          return Boolean(carteAuCimetiere) && !magieById(id) && !armeById(id)
+            && carteAuCimetiere.kind !== 'terrain';
+        },
+        'carte-cimetiere': (id) => Boolean(cardById(id)),
+      }[effet.cible ?? 'carte-cimetiere'] ?? ((id) => Boolean(cardById(id)));
+      const fin = sourceCarteId && camp.cimetiere[camp.cimetiere.length - 1] === sourceCarteId
+        ? camp.cimetiere.length - 1
+        : camp.cimetiere.length;
+      let index = -1;
+      for (let i = fin - 1; i >= 0; i -= 1) {
+        if (convient(camp.cimetiere[i])) { index = i; break; }
+      }
+      const source = sauf ? duel[cote].creatures.find((entite) => entite.id === sauf) : null;
+      const nomSource = source?.name ?? duelCardById(sourceCarteId)?.name ?? 'La capacité';
+      if (index < 0) {
+        duel.log.push(`${nomSource} : rien à renvoyer du cimetière.`);
+        return;
+      }
+      const [carteRenvoyee] = camp.cimetiere.splice(index, 1);
+      camp.main.push(carteRenvoyee);
+      duel.log.push(`${nomSource} renvoie ${cardById(carteRenvoyee)?.name ?? carteRenvoyee} du cimetière en main.`);
+      return;
+    }
+    case 'reanimation': {
+      // Cimetière → table (la Réanimation du Sable) : la dernière créature du
+      // cimetière revient en jeu — avec son mal d'invocation ordinaire (elle
+      // n'attaquera qu'à votre prochain tour, sauf Rapidité) et ses arrivées.
+      const camp = duel[cote];
+      const convient = (id) => {
+        const carteAuCimetiere = duelCardById(id);
+        return Boolean(carteAuCimetiere) && !magieById(id) && !armeById(id)
+          && carteAuCimetiere.kind !== 'terrain';
+      };
+      let index = -1;
+      for (let i = camp.cimetiere.length - 1; i >= 0; i -= 1) {
+        if (convient(camp.cimetiere[i])) { index = i; break; }
+      }
+      if (index < 0) {
+        duel.log.push('Réanimation : aucune créature au cimetière.');
+        return;
+      }
+      const [carteRevivee] = camp.cimetiere.splice(index, 1);
+      const carte = duelCardById(carteRevivee);
+      const entite = creerEntiteCreature(carte);
+      camp.creatures.push(entite);
+      duel.log.push(`Réanimation : ${carte.name} revient en jeu.`);
+      if (carte.arrivee) {
+        const cibleArrivee = rpgCibleAuto(duel, cote, carte);
+        appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte), 'capacite', carte.id);
+      }
+      return;
+    }
+    case 'heures': {
+      // Le Guetteur du beffroi : un compte à rebours d'Heures posé sur lui.
+      // `resoudreHeures` le décompte au début de chaque tour du contrôleur et
+      // résout `effetFinal` à la sonnerie (le dernier compteur retiré).
+      const entite = duel[cote].creatures.find((candidate) => candidate.id === sauf);
+      if (!entite) return;
+      const compteurs = Math.max(1, Math.floor(Number(effet.compteurs) || 2));
+      entite.heures = { restants: compteurs, effet: effet.effetFinal ?? null };
+      duel.log.push(`${entite.name} commence à compter : ${compteurs} heures.`);
+      return;
+    }
+    case 'debuff': {
+      // Le venin de la Vipère de verre : une créature adverse ciblée perd du
+      // pouvoir (`atk`/`def` négatifs) et peut être empêchée d'attaquer
+      // (`empecheAttaque`) ou de bloquer (`empecheBlocage`) jusqu'à la fin de
+      // son prochain tour. La langue de l'Eau : elle ronge, elle ne brûle pas
+      // (`minimum` empêche de tuer par la statistique seule — l'Embuscade).
+      const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
+      if (!entite || rpgEstProtegee(entite, sourceElement)) return;
+      const plancher = Number.isFinite(effet.minimum) ? effet.minimum : 0;
+      const bonusDefense = effet.def ?? 0;
+      entite.atk = Math.max(plancher, entite.atk + (effet.atk ?? 0));
+      entite.pvMax = Math.max(plancher, (entite.pvMax ?? entite.def) + bonusDefense);
+      entite.def = Math.max(plancher, entite.def + bonusDefense);
+      entite.pv = Math.max(plancher, entite.pv + bonusDefense);
+      if (Number(effet.tours) > 0) {
+        const carnet = (duel[adv].bonusTemporaires ??= []);
+        carnet.push({ entiteId: entite.id, atk: effet.atk ?? 0, def: bonusDefense, tour: duel.tour });
+      }
+      const duree = dureeJusquAuProchainTour(duel, entite);
+      if (effet.empecheAttaque) {
+        entite.empecheAttaqueToursRestants = Math.max(entite.empecheAttaqueToursRestants, duree);
+        duel.log.push(`${entite.name} ne pourra pas attaquer avant la fin de son prochain tour.`);
+      }
+      if (effet.empecheBlocage) {
+        entite.empecheBlocageToursRestants = Math.max(entite.empecheBlocageToursRestants, duree);
+        duel.log.push(`${entite.name} ne pourra pas bloquer avant la fin de son prochain tour.`);
+      }
+      // Le venin qui ronge jusqu'à l'os tue sa victime (la Lame de mer ronge
+      // les 1/1) — la mort est attribuée à la couleur de la source.
+      if (!(entite.pv > 0) && plancher <= 0) {
+        enterrer(duel, adv, entite, sourceElement ? [sourceElement] : []);
+      }
+      return;
+    }
+    case 'empeche-blocage': {
+      // La lune dévorée de Bakunawa : la créature adverse ciblée reste sur la
+      // table, mais la défense s'éteint — elle ne peut pas bloquer jusqu'à la
+      // fin de son prochain tour.
+      const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
+      if (!entite || rpgEstProtegee(entite, sourceElement)) return;
+      entite.empecheBlocageToursRestants = Math.max(
+        entite.empecheBlocageToursRestants,
+        dureeJusquAuProchainTour(duel, entite),
+      );
+      duel.log.push(`${entite.name} ne pourra pas bloquer avant la fin de son prochain tour.`);
+      return;
+    }
+    case 'donne': {
+      // Le Faiseur de passage : un mot-clé prêté à une créature alliée pour
+      // le tour (`donne: { infiltration: true }` — le passage est ouvert).
+      const entite = duel[cote].creatures.find((candidate) => candidate.id === cibleId);
+      if (!entite) return;
+      if (effet.donne?.infiltration) {
+        entite.infiltration = true;
+        entite.infiltrationTour = true;
+        duel.log.push(`${entite.name} gagne Infiltration jusqu’à la fin du tour.`);
+      }
+      if (effet.donne?.rapidite) entite.ready = true;
       return;
     }
     default:
@@ -1621,7 +1821,12 @@ export function arriveeCiblePortee(carte) {
   if (arrivee.type === 'exil') return 'tous';
   if (arrivee.type === 'combat') return arrivee.cible === 'creature' ? 'ennemi' : null;
   if (arrivee.type === 'degats') return arrivee.cible === 'creature' ? 'ennemi' : null;
-  if (arrivee.type === 'retour-main') return arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
+  if (arrivee.type === 'retour-main') {
+    if (arrivee.cible === 'toutes-autres') return null; // la vague du Léviathan ne désigne rien
+    return arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
+  }
+  if (arrivee.type === 'debuff' || arrivee.type === 'empeche-blocage') return 'ennemi';
+  if (arrivee.type === 'donne') return 'allie';
   return null;
 }
 
@@ -1686,6 +1891,19 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
+  if (['debuff', 'empeche-blocage', 'donne'].includes(carte.arrivee?.type)) {
+    // Une arrivée qui marque une créature (le venin de la Vipère, la lune de
+    // Bakunawa, le passage ouvert du Faiseur) exige sa cible comme le duel
+    // d'un Jarl — la portée dit quel camp, la protection garde ses droits.
+    const portee = arriveeCiblePortee(carte);
+    const creatures = campsDePortee(cote, portee).flatMap((camp) => duel[camp].creatures);
+    const cible = creatures.find((entite) => entite.id === cibleId);
+    if (cibleId && !cible) return { ok: false, raison: 'cible' };
+    if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+    if (!cibleId && !cibleDifferee && creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
+      return { ok: false, raison: 'cible' };
+    }
+  }
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   // L'IA peut répondre à la créature avant son entrée en jeu. Dans ce cas,
   // `contrerAnnonce` paie la créature lancée ainsi que le contresort adverse.
@@ -1700,7 +1918,9 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
   if (entite.protection) {
     const couleur = ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre;
-    duel.log.push(`${entite.name} reçoit une protection contre ${couleur} pour ce tour et le prochain tour adverse.`);
+    duel.log.push(entite.protection.toursRestants === Infinity
+      ? `${entite.name} reçoit une protection permanente contre ${couleur}.`
+      : `${entite.name} reçoit une protection contre ${couleur} pour ce tour et le prochain tour adverse.`);
   }
   if (carte.arrivee) {
     // La désignation se fait **sur la table** : quand la page pose d'abord
@@ -1884,11 +2104,13 @@ export function rpgModesArme(duel, cote, entiteId) {
 
 // Gelé (Poigne de givre, Verglas) : la créature ni n'attaque ni ne bloque.
 const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
-const pret = (entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite);
+const pret = (entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite)
+  && !(entite.empecheAttaqueToursRestants > 0);
 // Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
 // Le gel, lui, ferme aussi la défense.
-const peutBloquer = (entite) => entite && !entite.attaquee && !estGelee(entite);
+const peutBloquer = (entite) => entite && !entite.attaquee && !estGelee(entite)
+  && !(entite.empecheBlocageToursRestants > 0);
 
 /**
  * Qui peut bloquer qui :
@@ -1956,6 +2178,13 @@ export function rpgCibleAuto(duel, cote, carte) {
  *  (n'importe quelle carte) ou 'sort' (magies seulement) ; `contre` : couleurs visées. */
 function contreCorrespond(effet, carte) {
   if (effet.cible === 'sort' && !magieById(carte.id)) return false;
+  // Écueil : ne contre que les créatures (héros et jetons compris) — jamais
+  // un sort, jamais une arme. Le cas `carte` (le Contresort des abîmes)
+  // accepte tout, `sort` (le Silence d’écume) les seules magies.
+  if (effet.cible === 'creature') {
+    const kind = carte?.kind ?? 'creature';
+    if (kind !== 'creature' && kind !== 'hero') return false;
+  }
   if (effet.contre && !cardColors(carte).some((couleur) => effet.contre.includes(couleur))) return false;
   return true;
 }
@@ -2061,6 +2290,23 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     const cible = campCible.creatures.find((entite) => entite.id === cibleId);
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
+  if (carte.effet.type === 'debuff' || carte.effet.type === 'empeche-blocage') {
+    // Le venin de la Vipère (et sa sœur d'ébène Bakunawa, en sort) exige une
+    // créature adverse à marquer ; la protection contre l'eau la refuse.
+    const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+    if (!cible) return { ok: false, raison: 'cible' };
+    if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
+  if (carte.effet.type === 'reanimation') {
+    // La Réanimation ne se lance qu'avec une créature au cimetière — le mana
+    // reste entier, comme pour un renvoi sans cible.
+    const convient = (id) => {
+      const carteAuCimetiere = duelCardById(id);
+      return Boolean(carteAuCimetiere) && !magieById(id) && !armeById(id)
+        && carteAuCimetiere.kind !== 'terrain';
+    };
+    if (!camp.cimetiere.some(convient)) return { ok: false, raison: 'cible' };
   }
   const creatureRetourneeEnMain = carte.effet.type === 'retour-main'
     ? (carte.effet.cible === 'creature-amie'
@@ -2545,6 +2791,12 @@ export function rpgLancerAttaque(
     creature: blessuresCreatures.get(id) ?? 0,
     sorcier: blessuresSorcier.get(id) ?? 0,
   })));
+  // Butin : les créatures du Sable qui ont touché le sorcier piochent puis
+  // défaussent — même bilan, même fenêtre que les armes.
+  declencherButins(duel, cote, porteursDeclencheurs.map(({ id }) => ({
+    id,
+    sorcier: blessuresSorcier.get(id) ?? 0,
+  })));
   // L’attaque est passée : le blocage forcé « lors de votre prochaine attaque »
   // (l’Appât de la meute) a été dépensé par celle-ci.
   for (const entite of duel[adv].creatures) {
@@ -2604,8 +2856,33 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
     creature: 0,
     sorcier: frappeSorcier,
   }]);
+  declencherButins(duel, cote, [{ id: attaquant.id, sorcier: frappeSorcier }]);
   rpgActionsEtat(duel);
   return { ok: true };
+}
+
+/**
+ * Les heures du Guetteur du beffroi : au début de chaque tour de son
+ * contrôleur, un compteur tombe — et le dernier emporte la sonnerie
+ * (`effetFinal`, d'habitude des dégâts au sorcier adverse et une carte).
+ */
+function resoudreHeures(duel) {
+  const camp = duel[duel.tour];
+  for (const entite of [...camp.creatures]) {
+    if (!entite.heures) continue;
+    entite.heures.restants -= 1;
+    if (entite.heures.restants > 0) {
+      duel.log.push(`${entite.name} : ${entite.heures.restants} heure${entite.heures.restants > 1 ? 's' : ''} à compter.`);
+      continue;
+    }
+    const effetFinal = entite.heures.effet;
+    entite.heures = null;
+    duel.log.push(`Le beffroi sonne : ${entite.name} a fini de compter.`);
+    const effets = Array.isArray(effetFinal) ? effetFinal : (effetFinal ? [effetFinal] : []);
+    for (const effet of effets) {
+      appliquer(duel, duel.tour, effet, null, entite.id, cardColors(duelCardById(entite.carteId)), 'capacite', entite.carteId);
+    }
+  }
 }
 
 /** Fait avancer d’un tour les cartes promises à revenir et les remet en jeu. */
@@ -2722,11 +2999,22 @@ export function rpgFinDeTour(duel) {
   annulerBonusTemporaires(duel, duel.tour); // le bonus meurt avec le tour qui l’a vu jouer
   annulerInfiltrations(duel); // l’Infiltration aussi : redevenues bloquables
   // Le gel (la Poigne de givre, le Verglas) compte les tours du contrôleur de
-  // la créature figée : la fin de chacun de SES tours en décoche un.
+  // la créature figée : la fin de chacun de SES tours en décoche un. Les
+  // interdits de combat (le venin de la Vipère, la lune de Bakunawa) suivent
+  // la même horloge.
   for (const entite of duel[duel.tour].creatures) {
-    if (!(entite.gelToursRestants > 0)) continue;
-    entite.gelToursRestants -= 1;
-    if (entite.gelToursRestants <= 0) duel.log.push(`${entite.name} n’est plus gelée.`);
+    if (entite.gelToursRestants > 0) {
+      entite.gelToursRestants -= 1;
+      if (entite.gelToursRestants <= 0) duel.log.push(`${entite.name} n’est plus gelée.`);
+    }
+    if (entite.empecheAttaqueToursRestants > 0) {
+      entite.empecheAttaqueToursRestants -= 1;
+      if (entite.empecheAttaqueToursRestants <= 0) duel.log.push(`${entite.name} peut de nouveau attaquer.`);
+    }
+    if (entite.empecheBlocageToursRestants > 0) {
+      entite.empecheBlocageToursRestants -= 1;
+      if (entite.empecheBlocageToursRestants <= 0) duel.log.push(`${entite.name} peut de nouveau bloquer.`);
+    }
   }
   // Le Grand Voile blanc et le blocage forcé « ce tour » (l’Embuscade)
   // meurent avec le tour en cours.
@@ -2751,6 +3039,7 @@ export function rpgFinDeTour(duel) {
     entite.attaquee = false;
   }
   resoudreRetoursProgrammes(duel);
+  resoudreHeures(duel);             // les compteurs d'Heures du beffroi
   resoudreEchos(duel);              // les échos dus au camp dont le tour s'ouvre
   duel.phase = 'principale';
   rpgActionsEtat(duel);

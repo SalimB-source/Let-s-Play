@@ -374,6 +374,13 @@ Un contre ne peut être joué que pendant une annonce du sorcier, et il vise
 | *Contresort des abîmes* (×3) | n'importe quelle carte annoncée (créature ou sort) | `cible: 'carte'` |
 | *Silence d'écume* (×3) | la magie rapide ou la sorcellerie annoncée | `cible: 'sort'` |
 | *Déflection* (×2) | un sort annoncé, puis piochez une carte | `cible: 'sort'`, `pioche: 1` |
+| *Écueil* (×2) | la **créature** annoncée (jamais un sort, jamais une arme) | `cible: 'creature'` |
+
+La famille des contres se lit comme une échelle : **Écueil** (2 manas) ne
+recouvre que les créatures, **Silence d'écume** (2) les sortilèges,
+**Déflection** (3) les sortilèges avec pioche, **Contresort des abîmes** (4)
+tout ce qui s'annonce. Chaque carton a sa fenêtre — la plus étroite est la
+moins chère.
 
 La carte s'appelle **Déflection** depuis la refonte de son illustration (le
 sorcier qui renvoie le sort sans bouger) ; son identifiant de catalogue reste
@@ -393,10 +400,14 @@ sans la payer. Une bannière « Le sorcier annonce X » apparaît, et le joueur 
 - ou **laisser passer** (`rpgSorcierResoudreAnnonce`) : la carte se résout, puis le
   sorcier annonce la suivante, jusqu'à épuisement avant sa phase d'attaque.
 
-**Bakunawa** (mythique) n'a plus d'effet de contre : à son arrivée, elle inflige
-2 dégâts à une créature adverse ciblée. Les autres bêtes : **Kraken** (à sa
-destruction, pioche 2), **Léviathan** (3 dégâts à une créature à l'arrivée),
-**Jörmungandr** (pioche 3 cartes et défausse 1 carte à l'arrivée).
+**Bakunawa** (mythique) n'a plus d'effet de contre : à son arrivée, la lune
+dévorée **interdit à une créature adverse de bloquer** jusqu'à la fin de son
+prochain tour (débuff ciblé, `empeche-blocage`). Les autres bêtes : **Kraken**
+(à sa destruction, pioche 2), **Léviathan** (à son arrivée : **renvoie toutes
+les autres créatures** en main — `retour-main`, `cible: 'toutes-autres'`),
+**Jörmungandr** (pioche 3 cartes et défausse 1 carte à l'arrivée). La langue
+de l'Eau est le contrôle : elle **ronge** (−X/−X, la *Lame de mer*, la
+*Brisure de verre*), elle ne brûle plus — voir la note de direction (§11).
 
 **Contre de l'IA.** Quand le joueur lance une magie ou pose une créature (hors
 annonce en cours), le sorcier peut contrer : il choisit le contre le moins cher
@@ -480,9 +491,9 @@ Quatre armes forment le prototype — une par élément, des effets **mixtes
 | Carte | Élément | Coût | Effet |
 |---|---|---|---|
 | Takouba des pistes | Sable (commune) | 3 | **+2/+0 et Infiltration** : le porteur ne peut pas être bloqué, par personne — l'arme de départ, offerte dès la première collection, est devenue une arme d'assaut pur (aucune défense ajoutée). |
-| Bâton des citernes | Eau (rare) | 2 | +1/+2 ; à son arrivée et pour **3 manas** (capacité activée au tour du contrôleur) : un jeton **Serpent des citernes** 3/1 Rapidité, **détruit à la fin du tour** de sa création. |
+| Bâton des citernes | Eau (rare) | 4 | +1/+2 ; à son arrivée et pour **3 manas** (capacité activée au tour du contrôleur) : un jeton **Serpent des citernes** 3/1 Rapidité, **détruit à la fin du tour** de sa création. |
 | Lance de givre | Neige (rare) | 3 | **+3/+1 et Envol** au porteur. |
-| Armure de cendres | Braise (**mythique**, unique dans un deck) | 3 | **+3/+3, Rapidité** et **immunité contre la Braise** : le porteur ne peut pas être ciblé par la Braise et n'en reçoit aucun dégât (protection pilotée par `rpgEstProtegee`). |
+| Armure de cendres | Braise (**mythique**, unique dans un deck) | 4 | **+3/+3, Rapidité** et **immunité contre la Braise** : le porteur ne peut pas être ciblé par la Braise et n'en reçoit aucun dégât (protection pilotée par `rpgEstProtegee`). |
 
 Le serpent des citernes est le deuxième jeton du catalogue
 (`RPG_JETON_CARDS`, `serpent-des-citernes.jpg`) : contrairement au chien de
@@ -493,7 +504,7 @@ d'Histoire n'en reçoivent pas.
 
 Le **Sabre maudit** (Soleil rouge, rare, coût 4) est une arme de même nature : le moteur le
 traite comme une magie à effet `arme` (ciblage, `porteur.armes`), mais sa présentation est celle
-des armes — cadre d'acier de Braise, ligne « Arme — Sabre maudit », stats de porteur (+5/-2) dans
+des armes — cadre d'acier de Braise, ligne « Arme — Sabre maudit », stats de porteur (+4/-2) dans
 la main, l'aperçu, l'atelier et le guide, et texte « Arme — Le porteur gagne… ». `carteEstArme`
 et `bonusArme` (`rpgCards.js`) disent qu'une carte est une arme pour l'affichage.
 
@@ -533,3 +544,52 @@ d'effet de la créature en bleu (« Bonus d’équipement : +X/+Y · Infiltratio
 par exemple). Le nom de l'arme n'est plus imprimé sur la carte ; le petit
 rappel de statistiques ne montre que son bonus, et les compteurs de la Jitte
 restent visibles.
+
+## 10. Le Butin (set Sable)
+
+Le **Butin** est le mot-clé offensif du set Sable (`nerfs-set-sable.md`) :
+quand une créature dotée du Butin **touche le sorcier adverse en combat**, son
+contrôleur **pioche une carte puis en défausse une**.
+
+- le déclenchement exige une **blessure de combat au sorcier** : une créature
+  bloquée qui n'a pas le champ libre ne butine rien ; le coup rapide porté à
+  une créature non plus ; le Grand Voile blanc, qui avale les coups, l'annule ;
+- c'est le même chemin que les déclencheurs d'armes du Sable : les bilans de
+  combat (`rpgLancerAttaque`, `rpgAttaquerSorcier`) disent qui a frappé le
+  sorcier et pour combien, et `declencherButins` (`rpgDuel.js`) résout la
+  pioche puis la défausse — la défausse passe par `defausseEnAttente`, comme
+  toutes les défausses ;
+- le mot-clé se lit sur la fiche (`butin: true`, `rpgCards.js`), et vaut
+  **+1,2** dans la formule de puissance (`rpgCardPower.js`) ;
+- son icône est la **besace percée** (`#effet-butin` du sprite
+  `preview-effets-icone.html`), pastille sous la ligne de type.
+
+Porteurs (set Sable) : **Fennec des décombres** (2 mana 3/1, Rapidité + Butin —
+son Esquive 1 a été rendue au Butin), **Chien du guet** (2 mana 2/2), **Cavalier
+amazigh du Désert** (5 mana 4/4, duel à l'arrivée), **Faussoyeur des dunes**
+(3 mana 2/2, nouveau — à son arrivée : renvoyez une créature de votre
+cimetière en main). Butin et réanimation/récupération portent ensemble
+l'identité du Sable : **il prend, il revend, il ressuscite**.
+
+## 11. Note de direction : les dégâts bruts = la Braise
+
+**Les dégâts bruts sont la langue de la Braise.** C'est elle qui brûle, qui
+brûle encore, qui brûle le visage : « X dégâts » en texte de carte veut dire
+le feu (le *Feu d'ifrit*, le *Braisier du souk* qui frappe la table **et** le
+sorcier, `etSorcier`). Les autres éléments ne parlent pas comme ça :
+
+- **Eau** : elle **ronge** (−X/−X, la *Lame de verre* en plus franc, la
+  *Brisure de verre* en rideau), elle **renvoie** (*Sonneur fêlé*, la vague du
+  *Léviathan*), elle **éteint** (interdits de blocage, le *Silence d'écume*,
+  l'*Écueil*). Ses dégâts directs ont été convertis en pertes de pouvoir —
+  une créature défaite par l'Eau est **amputée**, jamais brûlée ;
+- **Sable** : **tempo et récupération** — le Butin, les renvois du cimetière
+  en main (recyclage), la réanimation, les compteurs d'Heures ;
+- **Neige** : **le corps et le froid** — statistiques, Furie, gel, durs à
+  renverser.
+
+Quand une nouvelle carte doit infliger des dégâts nus, elle est **Braise** ou
+elle doit réécrire son effet dans la langue de son élément (dégâts = brûlure,
+eau = retrait de pouvoir, sable = prélèvement, neige = blocage/froid). Toute
+la campagne de rééquilibrage des cinq sets suit cette règle
+(`nerfs-set-{braise,eau,sable,neige,soleil-rouge}.md`).

@@ -83,7 +83,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'souk-3': ['djinn-du-souk', 'parade-du-verre', 'frappe-iaijutsu'],
   'souk-4': ['ifrit-al-ahmar', 'feriel', 'colosse-de-sel', 'daimyo-du-soleil-rouge'],
   // Tour des Sables — le sommet du Sable/Braise, l'Eau se précise.
-  'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas'],
+  'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation'],
   'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit'],
   'sables-3': ['anqa-des-braises', 'tin-hinan', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'lame-des-ergs', 'takouba-de-tin-hinan'],
   // Tour des Abysses — les bêtes marines ; ce qui remonte du fond est gelé :

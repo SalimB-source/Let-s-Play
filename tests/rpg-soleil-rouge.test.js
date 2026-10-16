@@ -110,11 +110,12 @@ test('les dix créatures suivent Honneur par rareté, sans anciens effets disper
     else assert.match(carte.text, new RegExp(`Honneur ${carte.honneur}`));
     // Deux arrivées dans le set : l'exil de Susanoo et les deux Samouraïs du
     // Daimyō. La bannière du Daimyō est un déclenché d'attaque, pas un des
-    // « anciens effets dispersés » que le set a retirés (ni combat, ni esquive).
+    // « anciens effets dispersés » que le set a retirés (ni combat, ni esquive
+    // sauf l'Esquive 1 assumée de l'Onna-musha).
     if (!['susanoo', 'daimyo-du-soleil-rouge'].includes(carte.id)) assert.equal(carte.arrivee, undefined);
     if (carte.id !== 'orochi') assert.equal(carte.destruction, undefined);
     assert.equal(carte.combat, undefined);
-    assert.equal(carte.esquive, undefined);
+    assert.equal(carte.esquive, carte.id === 'onna-musha-des-cendres' ? 1 : undefined, carte.id);
   }
   assert.equal(cardById('tengu-du-mont-ardent').resonance, 1);
   assert.equal(cardById('kagutsuchi-flamme-originelle').resonance, 1);
@@ -127,7 +128,7 @@ test('le rōnin garde Rapidité et le tengu combine Envol et Résonance', () => 
   const tengu = jouer(duel, 'joueur', 'tengu-du-mont-ardent');
   assert.equal(tengu.envol, true);
   assert.equal(duel.joueur.main.length, avant, 'aucune pioche à l’arrivée');
-  assert.deepEqual([tengu.atk, tengu.def], [4, 2]);
+  assert.deepEqual([tengu.atk, tengu.def], [2, 2]);
 });
 
 test('la Résonance samouraï se cumule dans les deux camps, sans toucher les autres types ni la Neige', () => {
@@ -149,16 +150,16 @@ test('la Résonance samouraï se cumule dans les deux camps, sans toucher les au
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 3);
   for (const entite of samourais) assert.equal(entite.resonance, 3, entite.name);
   assert.equal(rpgResonanceEnJeu(duel, 'braise'), 0);
-  assert.deepEqual([ami.atk, ami.def], [5, 6]);
-  assert.deepEqual([adverse.atk, adverse.def], [5, 6]);
+  assert.deepEqual([ami.atk, ami.def], [4, 6]);
+  assert.deepEqual([adverse.atk, adverse.def], [4, 6]);
   assert.equal(tengu.resonance, 0, 'le Tengu n’est pas de type Samouraï');
   for (const entite of exclus) assert.equal(entite.resonance, 0, entite.name);
   assert.equal(neige.resonance, 0);
   const kagutsuchi = jouer(duel, 'sorcier', 'kagutsuchi-flamme-originelle');
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 4);
   for (const entite of samourais) assert.equal(entite.resonance, 4, entite.name);
-  assert.deepEqual([ami.atk, ami.def], [6, 7]);
-  assert.deepEqual([adverse.atk, adverse.def], [6, 7]);
+  assert.deepEqual([ami.atk, ami.def], [5, 7]);
+  assert.deepEqual([adverse.atk, adverse.def], [5, 7]);
   assert.equal(kagutsuchi.resonance, 0, 'le Kami n’est pas de type Samouraï');
   jouer(duel, 'joueur', 'valkyrie-au-corbeau');
   assert.equal(rpgResonanceEnJeu(duel), 1, 'l’API sans élément conserve la Neige');
@@ -188,7 +189,7 @@ test('le renvoi d’une source retire sa Résonance, sans déclencher Honneur', 
   const cible = jouer(duel, 'sorcier', 'chien-du-guet');
   sort(duel, 'ressac', source.id);
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 1);
-  assert.deepEqual([ami.atk, ami.def], [3, 4]);
+  assert.deepEqual([ami.atk, ami.def], [2, 4]);
   assert.equal(cible.def, 2);
   assert.ok(duel.sorcier.main.includes('tengu-du-mont-ardent'));
   assert.ok(!duel.log.some((ligne) => ligne.startsWith('Honneur')));
@@ -216,7 +217,7 @@ test('Honneur inflige 1, 2 ou 3 dégâts selon la rareté et fonctionne dans les
       const mort = jouer(duel, cote, id);
       const cible = jouer(duel, adverse, 'colosse-de-sel');
       rpgBlesserCreature(duel, cote, mort.id, 20, 'eau');
-      assert.equal(cible.def, 5 - montant, `${cote} ${id}`);
+      assert.equal(cible.def, 6 - montant, `${cote} ${id}`);
     }
   }
 });
@@ -242,7 +243,7 @@ test('les dégâts d’Honneur respectent bouclier et protection, mais pas Esqui
   cible.esquive = 3;
   rpgBlesserCreature(autre, 'joueur', mort2.id, 20, 'eau');
   assert.equal(cible.bouclier, 0);
-  assert.equal(cible.def, 4, 'capacité : Esquive n’intervient pas');
+  assert.equal(cible.def, 5, 'capacité : Esquive n’intervient pas (6 − 1 du reste)');
 });
 
 test('Honneur peut provoquer une chaîne de morts sans se déclencher deux fois', () => {
@@ -277,8 +278,8 @@ test('la mort d’une source retire la Résonance avant sa frappe d’Honneur', 
   const cible = jouer(duel, 'sorcier', 'colosse-de-sel');
   rpgBlesserCreature(duel, 'joueur', tengu.id, 20, 'eau');
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 1);
-  assert.deepEqual([ami.atk, ami.def], [3, 4]);
-  assert.equal(cible.def, 3);
+  assert.deepEqual([ami.atk, ami.def], [2, 4]);
+  assert.equal(cible.def, 4, 'Honneur 2 du Tengu sur le colosse 6');
 });
 
 test('l’iaijutsu détruit sa cible et le serment expire à la fin du tour', () => {
@@ -355,7 +356,7 @@ test('les actions d’état déclenchent Honneur une seule fois pour une créatu
   mort.pv = 0;
   mort.def = 0;
   assert.equal(rpgActionsEtat(duel), 1);
-  assert.equal(cible.def, 3);
+  assert.equal(cible.def, 4);
   assert.equal(rpgActionsEtat(duel), 0);
   assert.equal(duel.joueur.cimetiere.filter((id) => id === 'samourai-du-torii').length, 1);
 });
@@ -366,7 +367,7 @@ test('Honneur fonctionne aussi après un aller-retour JSON de la partie', () => 
   const cible = jouer(duel, 'sorcier', 'colosse-de-sel');
   duel = JSON.parse(JSON.stringify(duel));
   rpgBlesserCreature(duel, 'joueur', mort.id, 20, 'eau');
-  assert.equal(duel.sorcier.creatures.find((c) => c.id === cible.id).def, 2);
+  assert.equal(duel.sorcier.creatures.find((c) => c.id === cible.id).def, 3);
 });
 
 
@@ -387,18 +388,18 @@ test('le Cavalier des deux sabres est mythique, rapide, samouraï et porte Honne
   assert.deepEqual([cavalier.atk, cavalier.def], [6, 5]);
   const cible = jouer(duel, 'sorcier', 'colosse-de-sel');
   rpgBlesserCreature(duel, 'joueur', cavalier.id, 20, 'eau');
-  assert.equal(cible.def, 2, 'Honneur 3 à la mort');
+  assert.equal(cible.def, 3, 'Honneur 3 à la mort');
 });
 
 
 test('le Samouraï du torii donne Résonance samouraï, se renforce et retire son bonus en quittant le jeu', () => {
   const carte = cardById('samourai-du-torii');
-  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [3, 2, 3, 2]);
+  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [3, 1, 3, 2]);
   assert.equal(carte.resonance, 1);
   const duel = duelTest();
   const cavalier = jouer(duel, 'joueur', 'cavalier-des-deux-sabres');
   const source = jouer(duel, 'sorcier', carte.id);
-  assert.deepEqual([source.atk, source.def], [3, 4]);
+  assert.deepEqual([source.atk, source.def], [2, 4]);
   assert.deepEqual([cavalier.atk, cavalier.def], [6, 5]);
   sort(duel, 'ressac', source.id);
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 0);
@@ -454,9 +455,9 @@ test('renvoyer Orochi ne crée pas de petits, et renvoyer un Petit Orochi le fai
   assert.ok(!deck.cardIds.includes('petit-orochi'));
 });
 
-test('Susanoo est dans le deck : 6/3 pour 5, Honneur 3 et exil à l’arrivée', () => {
+test('Susanoo est dans le deck : 5/3 pour 6, Honneur 3 et exil à l’arrivée', () => {
   const carte = cardById('susanoo');
-  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [5, 6, 3, 3]);
+  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [6, 5, 3, 3]);
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(deck.cardIds.length, 40);
   assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 1);
@@ -470,7 +471,7 @@ test('Susanoo est dans le deck : 6/3 pour 5, Honneur 3 et exil à l’arrivée',
     assert.equal(duel.joueur.mana.braise, mana);
     const res = rpgJouerCreature(duel, 'joueur', 'susanoo', cible.id);
     assert.equal(res.ok, true);
-    assert.equal(duel.joueur.mana.braise, mana - 5);
+    assert.equal(duel.joueur.mana.braise, mana - 6);
     assert.ok(!duel[coteCible].creatures.some((e) => e.id === cible.id));
     assert.deepEqual(duel[coteCible].exil, ['orochi']);
     assert.ok(!duel[coteCible].cimetiere.includes('orochi'));
@@ -490,7 +491,7 @@ test('Susanoo respecte la protection et peut être joué sans cible sur une tabl
   const susanoo = jouer(vide, 'joueur', 'susanoo');
   const cible = jouer(vide, 'sorcier', 'colosse-de-sel');
   rpgBlesserCreature(vide, 'joueur', susanoo.id, 3, 'eau');
-  assert.equal(cible.def, 2, 'Honneur 3 fonctionne à la mort de Susanoo');
+  assert.equal(cible.def, 3, 'Honneur 3 fonctionne à la mort de Susanoo');
 });
 
 test('l’IA choisit une cible à exiler et l’exil retire les auras sans déclencher Honneur', () => {
@@ -650,7 +651,7 @@ test('le jeton Samouraï reçoit la Résonance samouraï comme la bannière de s
   // bannière, pas la Résonance — mais les jetons, eux, sont des Samouraïs.
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 1);
   for (const jeton of jetons) assert.deepEqual([jeton.atk, jeton.def], [2, 2]);
-  assert.deepEqual([torii.atk, torii.def], [3, 4]);
+  assert.deepEqual([torii.atk, torii.def], [2, 4]);
   assert.deepEqual([daimyo.atk, daimyo.def], [4, 4]);
   // En attaquant, le jeton gagne encore +1/+1 par bannière : 3/3.
   for (const jeton of jetons) jeton.ready = true;
@@ -664,10 +665,10 @@ test('la bannière arme la frappe du tour dans l’échange, pas seulement sur l
   const duel = duelTest();
   jouer(duel, 'joueur', 'daimyo-du-soleil-rouge');
   const ronin = jouer(duel, 'joueur', 'ronin-du-soleil-rouge');
-  // Un 4/4 neutre : ni Samouraï (la bannière du camp d’en face ne le touche
-  // pas), ni Honneur — il meurt à 4 dégâts, il survivrait à 3.
+  // Un 3/4 neutre : ni Samouraï (la bannière du camp d’en face ne le touche
+  // pas), ni Honneur — il meurt à 4 dégâts (l’attaque armée), il survivrait à 3.
   const bloqueur = jouer(duel, 'sorcier', 'jarl-au-marteau-de-guerre');
-  assert.deepEqual([bloqueur.atk, bloqueur.def], [4, 4]);
+  assert.deepEqual([bloqueur.atk, bloqueur.def], [3, 4]);
   const pvSorcier = duel.sorcier.pv;
   const res = rpgLancerAttaque(duel, 'joueur', [ronin.id], { [ronin.id]: [bloqueur.id] });
   assert.equal(res.ok, true);
@@ -676,7 +677,7 @@ test('la bannière arme la frappe du tour dans l’échange, pas seulement sur l
     '4 dégâts sur une 4/4 : le bloqueur tombe, là où 3 ne l’auraient pas tué');
   assert.equal(duel.sorcier.pv, pvSorcier, 'l’attaque était bloquée : aucun dégât direct');
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === ronin.id), false,
-    'le rōnin encaisse 4 : il tombe, sa bannière ne l’a pas sauvé');
+    'le rōnin encaisse 3 : il tombe, sa bannière ne l’a pas sauvé');
 });
 
 test('une répartition refusée ne laisse pas la bannière derrière elle', () => {
@@ -716,9 +717,9 @@ test('la bannière déclenche aussi une attaque directe contre le sorcier', () =
   assert.deepEqual([daimyo.atk, daimyo.def], [4, 4]);
 });
 
-test('le Kenshi de la forge est un 1/3 à 3 qui forge les autres Samouraïs', () => {
+test('le Kenshi de la forge est un 1/2 à 3 qui forge les autres Samouraïs', () => {
   const carte = cardById('kenshi-de-la-forge');
-  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.rarity, carte.honneur], [3, 1, 3, 'rare', 2]);
+  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.rarity, carte.honneur], [3, 1, 2, 'rare', 2]);
   assert.match(carte.typeLine, /Samouraï/);
   assert.deepEqual(carte.aura, { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true, camps: 'tous' });
   assert.match(carte.text, /les autres créatures de type Samouraï de la table, dans les deux camps, gagnent \+2\/\+0/);
@@ -734,15 +735,15 @@ test('le Kenshi de la forge est un 1/3 à 3 qui forge les autres Samouraïs', ()
   // la Résonance samouraï, donc il compte comme source pour les autres.
   const yokai = jouer(duel, 'joueur', 'tengu-du-mont-ardent');
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 2, 'le Torii et le Tengu');
-  assert.deepEqual([kenshi.atk, kenshi.def], [3, 5],
+  assert.deepEqual([kenshi.atk, kenshi.def], [3, 4],
     'le Kenshi reçoit la Résonance mais pas sa propre forge');
-  // Le Torii : 2/3 d’imprimé, +2/+2 des deux Résonances, +2/+0 de la forge.
-  assert.deepEqual([torii.atk, torii.def], [6, 5]);
+  // Le Torii : 1/3 d’imprimé, +2/+2 des deux Résonances, +2/+0 de la forge.
+  assert.deepEqual([torii.atk, torii.def], [5, 5]);
   // Le rōnin adverse : 3/2, +2/+2 de Résonance et +2/+0 de forge — ni la
   // Résonance ni la forge ne connaissent les camps.
   assert.deepEqual([adverse.atk, adverse.def], [7, 4]);
   assert.deepEqual([nonSamourai.atk, nonSamourai.def], [2, 2], 'un Chien n’est pas un Samouraï');
-  assert.deepEqual([yokai.atk, yokai.def], [4, 2], 'un Tengu n’est pas un Samouraï');
+  assert.deepEqual([yokai.atk, yokai.def], [2, 2], 'un Tengu n’est pas un Samouraï');
   assert.ok(duel.log.some((ligne) => ligne.startsWith('La Résonance samouraï')));
 });
 
@@ -758,8 +759,8 @@ test('la forge compte par source, se retire à l’exil et ne touche jamais la d
   const second = jouer(duel, 'sorcier', 'kenshi-de-la-forge');
   assert.deepEqual([ronin.atk, ronin.def], [7, 2], 'le rōnin cumule les deux forges');
   assert.deepEqual([onna.atk, onna.def], [7, 3]);
-  assert.deepEqual([premier.atk, premier.def], [3, 3], 'chaque Kenshi ne reçoit que l’autre');
-  assert.deepEqual([second.atk, second.def], [3, 3]);
+  assert.deepEqual([premier.atk, premier.def], [3, 2], 'chaque Kenshi ne reçoit que l’autre');
+  assert.deepEqual([second.atk, second.def], [3, 2]);
   // On retire les sources par l'exil de Susanoo : l'exil n'est pas une mort,
   // ni Honneur, ni capacité de destruction ne se déclenchent — là où une
   // blessure ferait frapper l'Honneur 2 du Kenshi et brouillerait la mesure.
@@ -770,7 +771,7 @@ test('la forge compte par source, se retire à l’exil et ne touche jamais la d
   exiler(premier.id);
   assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [5, 2, 2], 'la forge de l’absent est retirée');
   assert.deepEqual([onna.atk, onna.def], [5, 3]);
-  assert.deepEqual([second.atk, second.def], [1, 3], 'le dernier Kenshi retombe à 1/3');
+  assert.deepEqual([second.atk, second.def], [1, 2], 'le dernier Kenshi retombe à 1/2');
   // Plus de forge du tout : les Samouraïs reviennent à leur force imprimée.
   exiler(second.id);
   assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [3, 2, 2]);
@@ -789,15 +790,15 @@ test('la forge, la Résonance samouraï et la bannière se cumulent sans dérive
   // seule, donc +1/+1 ; la forge ajoute +2/+0 à tout le monde sauf au Kenshi,
   // et la bannière attend l’attaque.
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 1);
-  assert.deepEqual([kenshi.atk, kenshi.def], [2, 4], 'le Kenshi reçoit la Résonance, pas sa forge');
-  assert.deepEqual([torii.atk, torii.def], [5, 4]);
+  assert.deepEqual([kenshi.atk, kenshi.def], [2, 3], 'le Kenshi reçoit la Résonance, pas sa forge');
+  assert.deepEqual([torii.atk, torii.def], [4, 4]);
   assert.deepEqual([daimyo.atk, daimyo.def], [6, 4]);
   assert.deepEqual([jeton.atk, jeton.def], [4, 2]);
   // La table bouge encore (le jeton grandit à l’attaque) : la forge ne dérive pas.
   jeton.ready = true;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [jeton.id], { [jeton.id]: [] }).ok, true);
   assert.deepEqual([jeton.atk, jeton.def], [5, 3], 'bannière +1/+1 sur la forge et la Résonance');
-  assert.deepEqual([torii.atk, torii.def], [5, 4], 'les autres n’ont pas bougé');
+  assert.deepEqual([torii.atk, torii.def], [4, 4], 'les autres n’ont pas bougé');
   assert.deepEqual([daimyo.atk, daimyo.def], [6, 4]);
 });
 

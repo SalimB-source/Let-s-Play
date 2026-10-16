@@ -191,7 +191,7 @@ test('le sorcier enchaîne les annonces, une par une', () => {
   assert.ok(rpgSorcierAnnonceSuivante(duel, () => 0.5), 'la carte suivante est annoncée après le passage');
 });
 
-test('Bakunawa, à son arrivée, inflige 2 dégâts à une créature adverse', () => {
+test('Bakunawa, à son arrivée, interdit le blocage à une créature adverse', () => {
   const duel = duelVide();
   duel.tour = 'joueur';
   donner(duel, 'sorcier', 'chien-du-guet');
@@ -202,7 +202,8 @@ test('Bakunawa, à son arrivée, inflige 2 dégâts à une créature adverse', (
   mana(duel, 'joueur', 'eau', 4);
   const pose = rpgJouerCreature(duel, 'joueur', 'bakunawa', chien.entite.id);
   assert.equal(pose.ok, true, JSON.stringify(pose));
-  assert.equal(duel.sorcier.creatures.length, 0, 'le chien (2 de défense) tombe sous les 2 dégâts');
+  assert.equal(duel.sorcier.creatures.length, 1, 'Bakunawa n’inflige plus de dégâts d’arrivée');
+  assert.ok(chien.entite.empecheBlocageToursRestants >= 1, 'le chien ne peut plus bloquer');
 });
 
 test('le sorcier IA ne lance jamais un contre : il le garde en main', () => {
@@ -419,6 +420,7 @@ test('une créature protégée contre l’Eau échappe au renvoi', () => {
   const duel = duelVide();
   duel.tour = 'joueur';
   const tiziri = creatureAdverse(duel, 'tiziri-du-djurdjura');
+  tiziri.protection = { contre: 'eau', toursRestants: 2 }; // Tiziri ne protège plus que de la Braise : on force l'Eau
   mana(duel, 'joueur', 'eau', 1);
   donner(duel, 'joueur', 'ressac');
   const res = rpgLancerMagie(duel, 'joueur', 'ressac', tiziri.id);
