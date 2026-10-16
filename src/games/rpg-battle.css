@@ -7236,11 +7236,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font-size: clamp(9px, 7cqw, 15px);
 }
 
+/* Même ligne et mêmes marges que la couleur, sur toutes les tailles d'aperçu.
+   Le chiffre suit aussi le diamètre partagé, y compris dans la grande fiche. */
 .rpg-hover-card-preview__face .rpg-mana-cost {
   position: absolute;
   z-index: 4;
-  top: 8px;
-  right: 8px;
+  top: var(--rpg-card-element-marker-top, 5%);
+  right: var(--rpg-card-element-marker-left, 6%);
+  font-size: calc(var(--rpg-card-marker-size, 38px) * .48);
 }
 .rpg-hand__sceau,
 .rpg-hand__sort {

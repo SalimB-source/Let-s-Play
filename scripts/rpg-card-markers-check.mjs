@@ -1,4 +1,4 @@
-/** Browser regression for shared marker diameters and frameless mobile cards.
+/** Browser regression for shared marker diameters and frameless cards.
  * node scripts/rpg-card-markers-check.mjs
  * CHROMIUM_EXECUTABLE_PATH can override Playwright's browser.
  */
@@ -12,10 +12,11 @@ const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined,
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 });
-const markers = (hybrid, catalogue = false) => `
+const markers = (hybrid, catalogue = false, preview = false) => `
   <span class="rpg-card-element-badge rpg-card-element-badge--${hybrid ? 'hybride' : 'braise'}">${hybrid
     ? '<i class="rpg-card-element-badge__pip">🔥</i><i class="rpg-card-element-badge__pip">⏳</i>' : '🔥'}</span>
   ${catalogue ? '<span class="rpg-card-catalogue__cost">3</span>'
+    : preview ? '<span class="rpg-mana-cost rpg-mana-cost--braise"><b>3</b></span>'
     : '<header class="rpg-card__title rpg-hand__title"><span class="rpg-mana-cost is-compact"><b>3</b></span></header>'}`;
 try {
   const page = await browser.newPage();
@@ -31,18 +32,31 @@ try {
               style="position: relative; width: ${width < 620 ? 80 : 160}px; height: 200px;">
               ${markers(hybrid, classes === 'rpg-card-catalogue__art')}
             </div>`)).join('')}
-          ${['rpg-hover-card-preview__face', 'rpg-spell-played__art', 'rpg-terrain',
+          ${['', 'catalogue', 'annonce'].flatMap((variant) => [false, true].map((hybrid) => `
+            <aside class="rpg-hover-card-preview ${variant ? `rpg-hover-card-preview--${variant}` : ''}"
+              style="position: relative; display: block; width: 340px;">
+              <div data-face="aperçu ${variant || 'rapide'} ${hybrid ? 'hybride' : 'mono'}"
+                class="rpg-hover-card-preview__face rpg-card--frame-braise" style="width: 280px;">
+                ${markers(hybrid, false, true)}
+              </div>
+            </aside>`)).join('')}
+          ${['rpg-spell-played__art', 'rpg-terrain',
             'rpg-card-pile__card--top', 'rpg-card-guide__example', 'rpg-atelier__carte-art']
             .map((name) => `<div data-face="${name}" class="${name} rpg-card--frame-braise"></div>`).join('')}
         </main>`);
       const results = await page.locator('[data-face]').evaluateAll((faces) => faces.map((face) => {
-        const size = (node) => node ? { width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height } : null;
+        const size = (node) => node ? (() => {
+          const rect = node.getBoundingClientRect();
+          return { width: rect.width, height: rect.height, top: rect.top, left: rect.left, right: rect.right };
+        })() : null;
         const style = getComputedStyle(face);
         const hybrid = face.querySelector('.rpg-card-element-badge__pip');
         return {
           name: face.dataset.face,
           color: size(hybrid || face.querySelector('.rpg-card-element-badge')),
           cost: size(face.querySelector('.rpg-mana-cost, .rpg-card-catalogue__cost')),
+          face: size(face),
+          costFont: parseFloat(getComputedStyle(face.querySelector('.rpg-mana-cost') || face).fontSize),
           border: parseFloat(style.borderTopWidth),
           background: style.backgroundImage,
         };
@@ -55,16 +69,23 @@ try {
           assert.ok(Math.abs(result.cost.width - result.cost.height) < 0.1, `${label}: coût rond`);
           assert.ok(result.cost.width >= 16, `${label}: repères visibles`);
         }
-        if (touch) {
-          assert.equal(result.border, 0, `${label}: aucun cadre`);
+        if (result.name.startsWith('aperçu')) {
+          assert.ok(Math.abs(result.color.top - result.cost.top) < 0.1, `${label}: couleur et coût alignés en haut`);
+          const leftInset = result.color.left - result.face.left;
+          const rightInset = result.face.right - result.cost.right;
+          assert.ok(Math.abs(leftInset - rightInset) < 0.1, `${label}: marges symétriques`);
+          assert.ok(result.costFont >= result.cost.width * .45, `${label}: chiffre à l'échelle du disque`);
+        }
+        // L'essai sans cadre s'applique désormais aussi à l'ordinateur.
+        assert.equal(result.border, 0, `${label}: aucun cadre`);
+        // Le guide conserve son fond de texte, qui n'est pas un cadre.
+        if (result.name !== 'rpg-card-guide__example') {
           assert.equal(result.background, 'none', `${label}: aucune matière de cadre`);
-        } else {
-          assert.ok(result.border > 0, `${label}: cadre ordinateur conservé`);
         }
       }
     }
   }
-  console.log('✓ Diamètres couleur/coût identiques (mono et hybride), catalogue inclus ; cadres retirés sur mobile/APK uniquement.');
+  console.log('✓ Diamètres couleur/coût identiques (mono et hybride), catalogue et aperçus inclus ; alignement, marges et chiffre des aperçus vérifiés ; cadres retirés sur souris et mobile/APK.');
 } finally {
   await browser.close();
 }
