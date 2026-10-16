@@ -4356,6 +4356,35 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   filter: none;
 }
 
+/* Valeurs sur le champ : l'état neutre laisse voir la carte à travers une
+   plaque noire translucide. Un bonus la teint en bleu clair, un malus en rouge.
+   La spécificité et `filter: none` gardent les variations visibles même si la
+   créature vient d'arriver, est engagée ou reste blessée sous un bonus de DÉF. */
+.rpg-card.rpg-card--img .rpg-card__foot > .rpg-card__stat--atk:not(.is-buffed, .is-debuffed),
+.rpg-card.rpg-card--img .rpg-card__foot > .rpg-card__pt:not(.is-buffed, .is-debuffed, .is-wounded) {
+  border-color: rgba(255, 255, 255, .34);
+  background: rgba(0, 0, 0, .68);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .62), inset 0 1px rgba(255, 255, 255, .12);
+  color: #fff8e8;
+  text-shadow: 0 1px 2px #000;
+}
+.rpg-card.rpg-card--img .rpg-card__foot > .is-buffed {
+  border-color: #0369a1;
+  background: linear-gradient(180deg, #e0f2fe, #7dd3fc);
+  box-shadow: 0 0 10px rgba(56, 189, 248, .62), inset 0 1px rgba(240, 249, 255, .82);
+  color: #082f49;
+  text-shadow: 0 1px rgba(255, 255, 255, .58);
+  filter: none;
+}
+.rpg-card.rpg-card--img .rpg-card__foot > .is-debuffed {
+  border-color: #7f1d1d;
+  background: linear-gradient(180deg, #fca5a5, #c62f3b);
+  box-shadow: 0 0 10px rgba(220, 38, 38, .58), inset 0 1px rgba(255, 241, 242, .68);
+  color: #fff7ed;
+  text-shadow: 0 1px 2px #450a0a;
+  filter: none;
+}
+
 /* Les chiffres ATQ/DÉF deviennent plus lisibles sur les petites faces full-art. */
 .rpg-card--img .rpg-card__stat--atk,
 .rpg-card--img .rpg-card__pt {
