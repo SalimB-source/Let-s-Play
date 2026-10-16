@@ -52,6 +52,7 @@ import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
+import { EffetsSprite, PastillesCarte, IconesCarte } from './effetIcons.jsx';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
 import RpgTableScene3D from './RpgTableScene3D.jsx';
@@ -1004,6 +1005,7 @@ function TableCard({
         {entite.armes.map((id, index) => <img key={`${id}-${index}`} src={cardArt(id)} alt="" />)}
       </span>}
       <CardElementBadge carte={carte} />
+      <IconesCarte carte={carte} entite={entite} className="rpg-card-icones--table" />
       {armeCarte && (
         <span className="rpg-card__arme" title={`${effetsAccordesParArme(armeCarte)}${entite.arme?.compteurs ? ` — ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable` : ''}`}>
           <CardStatIcon type="attack" />{bonusArmeTexte(armeCarte)}
@@ -1208,6 +1210,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       {estFiche && <span className="rpg-hover-card-preview__eyebrow">{surface ? `${surface} · ` : ''}{carteFamille(carte).toUpperCase()}</span>}
       {(variante === 'annonce' || estFiche) && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
       {(estFiche || !estCreature) && <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>}
+      <PastillesCarte carte={carte} className="rpg-hover-card-preview__pastilles" />
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
       {cibleAnnoncee && (
         <div className="rpg-spell-played__target rpg-hover-card-preview__target">
@@ -1405,6 +1408,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       <CardElementBadge carte={carte} />
+      <IconesCarte carte={carte} className="rpg-card-icones--main" />
       <ManaCost carte={carte} showElement={false} />
       {/* Le bas de la carte : la ligne de type pour les terrains et les sorts —
           pour une créature, elle n'apprendrait rien, la face du jeu s'en passe —
@@ -2515,6 +2519,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span className="rpg-card-catalogue__cost" aria-label={`Coût ${cardCostLabel(carte)}`}>{carte.cost}</span>}
                         <SortSceau carte={carte} className="rpg-card-catalogue__sort" />
+                        <IconesCarte carte={carte} className="rpg-card-icones--catalogue" />
                         {verrouillee && <span className="rpg-card-catalogue__lock" aria-hidden="true">🔒</span>}
                         <span className="rpg-card-catalogue__zoom" aria-hidden="true">⤢</span>
                       </div>
@@ -2523,6 +2528,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                           <h3>{carte.name}</h3>
                         </div>
                         <p className={`rpg-card-catalogue__type${classeLigneFamille(carte)}`}>{cardFaceTypeLine(carte)}</p>
+                        <PastillesCarte carte={carte} className="rpg-card-catalogue__pastilles" />
                         <div className="rpg-card-catalogue__meta">
                           <span className={estTerrain ? 'is-terrain' : cardColors(carte).length > 1 ? 'is-hybrid' : ''}>
                             {cardColorLine(carte)}
@@ -3761,6 +3767,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   if (ecran !== 'partie') {
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
+        <EffetsSprite />
         <GameModeMenu
           screen={ecran}
           selectedDeckId={deckSelectionneId}
@@ -5599,6 +5606,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       onPointerDown={demarrerAppuiLongCarte}
       onContextMenu={surMenuContextuel}
     >
+      <EffetsSprite />
       <SfxReactifsDuel
         vainqueur={vainqueur}
         phaseDuelActive={phaseDuelActive}
@@ -6341,6 +6349,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
                   <CardElementBadge carte={carte} />
+                  <IconesCarte carte={carte} className="rpg-card-icones--main" />
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
                   </span>

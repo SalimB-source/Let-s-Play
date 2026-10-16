@@ -1,0 +1,83 @@
+/* Les icônes d'effets : pastilles des fiches, badges des faces, interlignage.
+   Monochromes (stroke: currentColor) — l'icône prend la couleur du texte qui
+   l'accueille et passe sur les quatre cadres d'élément sans variante. */
+
+/* L'icône dans le flux du texte : alignée sur la ligne, jamais déformée. */
+.rpg-effet-icone {
+  flex: none;
+  vertical-align: -0.16em;
+}
+
+.rpg-effet-icone--ligne {
+  margin-right: 5px;
+  color: #edcb8b;
+}
+
+/* ── Les pastilles : mots-clés passifs sous la ligne de type ────────────────── */
+.rpg-pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.rpg-pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2.5px 8px 2.5px 6px;
+  border: 1px solid rgba(237, 203, 139, .45);
+  border-radius: 999px;
+  background: rgba(5, 8, 11, .55);
+  color: #ffeec2;
+  font: 650 11px/1.35 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+
+.rpg-pastille .rpg-effet-icone {
+  color: #edcb8b;
+}
+
+/* ── Les badges : l'icône seule sur les faces de cartes ──────────────────────
+   Une rangée discrète en bas de l'illustration, au-dessus des statistiques :
+   fond sombre translucide pour rester lisible sur les quatre illustrations
+   d'élément, valeur en petit chiffre quand le mot-clé en porte une. */
+.rpg-card-icones {
+  position: absolute;
+  z-index: 6;
+  left: 6px;
+  bottom: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: calc(100% - 12px);
+  pointer-events: none;
+}
+
+.rpg-card-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgba(237, 203, 139, .55);
+  border-radius: 999px;
+  background: rgba(5, 8, 11, .78);
+  color: #ffe9a0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+  line-height: 1;
+}
+
+.rpg-card-icone small {
+  font: 800 9px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #fff3d6;
+}
+
+/* La main : les statistiques sont plus basses, la rangée se pose juste au-dessus. */
+.rpg-card-icones--main {
+  bottom: 34px;
+}
+
+/* Le catalogue : l'illustration finit plus bas, la rangée colle à son pied. */
+.rpg-card-icones--catalogue {
+  bottom: 8px;
+}

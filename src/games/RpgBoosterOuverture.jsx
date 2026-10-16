@@ -22,6 +22,7 @@ import { cardById, cardCost, cardFrameClass, cardRarityInfo, cardTypeLine } from
 import { rayonParId } from './rpgBoosters.js';
 import { creditsLisible } from './rpgCredits.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
+import { PastillesCarte } from './effetIcons.jsx';
 
 /** Une carte, face visible : son art, son nom, sa rareté, et ce qu'elle a rendu. */
 function CarteRevelee({ detail, cardArt, index }) {
@@ -43,6 +44,7 @@ function CarteRevelee({ detail, cardArt, index }) {
         <span className="rpg-souk__carte-rarete" data-souk-carte-rarete={rarete.key}>{rarete.label}</span>
         <h4>{carte.name}</h4>
         <p>{cardTypeLine(carte)}</p>
+        <PastillesCarte carte={carte} className="rpg-souk__carte-pastilles" />
         <p className="rpg-souk__carte-cout" aria-label={`Coût : ${cardCost(carte)} mana`}>{cardCost(carte)} mana</p>
       </div>
       <p className="rpg-souk__carte-tampon" data-souk-carte-tampon={detail.doublon ? 'doublon' : 'nouvelle'}>

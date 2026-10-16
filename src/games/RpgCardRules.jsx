@@ -1,4 +1,6 @@
 import { terrainManaColors } from './rpgCards.js';
+import { iconePourLigne } from './effetIcons.js';
+import { EffetIcone } from './effetIcons.jsx';
 import './rpg-card-rules.css';
 
 const MANA_ICONS = {
@@ -9,13 +11,27 @@ const MANA_ICONS = {
 };
 
 /**
- * Les terrains impriment leurs couleurs de mana sous forme d'icônes, y compris
- * les deux choix d'un hybride. Le texte du catalogue reste lisible pour la
- * recherche et les libellés accessibles ; les autres cartes sont inchangées.
+ * Le texte de règle d'une carte, prêt à lire :
+ * - les terrains impriment leurs couleurs de mana sous forme d'icônes, y
+ *   compris les deux choix d'un hybride (le texte du catalogue reste lisible
+ *   pour la recherche et les libellés accessibles) ;
+ * - chaque autre ligne est **précédée de l'icône de son effet** — le
+ *   pictogramme annonce la règle avant les mots (voir `effetIcons.js`).
+ *   L'icône double l'information, elle ne la remplace pas : le texte reste
+ *   entier à côté.
  */
 export default function RpgCardRules({ carte, text = carte?.text }) {
   if (!text || text === '—') return 'Aucune capacité.';
-  if (carte?.kind !== 'terrain') return text;
+  if (carte?.kind !== 'terrain') {
+    const cle = iconePourLigne(carte, text);
+    if (!cle) return text;
+    return (
+      <>
+        <EffetIcone cle={cle} size={14} className="rpg-effet-icone--ligne" />
+        {text}
+      </>
+    );
+  }
 
   const colors = terrainManaColors(carte);
   return String(text).split(/(\b(?:braise|eau|sable|neige)\b)/giu).map((part, index) => {
