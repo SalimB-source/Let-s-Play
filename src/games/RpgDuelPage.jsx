@@ -1008,7 +1008,6 @@ function TableCard({
         {entite.armes.map((id, index) => <img key={`${id}-${index}`} src={cardArt(id)} alt="" />)}
       </span>}
       <CardElementBadge carte={carte} />
-      <IconesCarte carte={carte} entite={entite} className="rpg-card-icones--table" />
       {armeCarte && (
         <span className="rpg-card__arme" title={`${effetsAccordesParArme(armeCarte)}${entite.arme?.compteurs ? ` — ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable` : ''}`}>
           <CardStatIcon type="attack" />{bonusArmeTexte(armeCarte)}
@@ -1379,7 +1378,6 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
           {effets.map((ligne, index) => <span key={`${index}-${ligne}`}><RpgCardRules carte={carte} text={ligne} /></span>)}
         </div>
       )}
-      {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
     </>
   );
@@ -1394,6 +1392,12 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
       <SortSceau carte={carte} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" />
+      {estCreature && (
+        <footer className="rpg-card__foot" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
+          <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
+        </footer>
+      )}
     </div>
   );
   return (

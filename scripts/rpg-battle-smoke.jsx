@@ -664,6 +664,8 @@ export async function checkRpgBattle(assert) {
   assert.ok(visageTable.classList.contains('fx-enter'), 'une créature nouvellement posée entre avec une courte animation');
   assert.equal(visageTable.hasAttribute('title'), false, 'une créature sur table n’affiche pas d’infobulle native');
   assert.equal(visageTable.querySelector('[title]'), null, 'les icônes sur la carte ne déclenchent pas d’infobulle native');
+  assert.equal(visageTable.querySelector('.rpg-card-icones--table'), null,
+    'les cartes en jeu n’affichent pas les icônes d’effets');
   await act(async () => { envoyerSouris(visageTable, 'mouseover'); });
   const apercuFennecSurvol = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
   assert.ok(apercuFennecSurvol, 'le survol d’une créature en jeu ouvre immédiatement son aperçu');
@@ -679,8 +681,14 @@ export async function checkRpgBattle(assert) {
     'l’aperçu affiche le coût');
   assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Rapidité.*Butin/,
     'l’aperçu affiche les effets importants');
-  assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__stats')?.textContent.trim(), '⚔ 3 · 🛡 1',
-    'l’aperçu affiche ATQ et DÉF');
+  const statsApercu = apercuFennecSurvol.querySelector('.rpg-hover-card-preview__face .rpg-card__foot');
+  assert.ok(statsApercu, 'l’aperçu imprime ATQ et DÉF directement sur la carte');
+  assert.equal(statsApercu.querySelector('.rpg-card__stat--atk .rpg-stat-value')?.textContent, '3',
+    'l’aperçu affiche l’attaque avec le composant visuel du plateau');
+  assert.equal(statsApercu.querySelector('.rpg-card__pt .rpg-stat-value')?.textContent, '1',
+    'l’aperçu affiche la défense avec le composant visuel du plateau');
+  assert.equal(statsApercu.querySelectorAll('.rpg-stat-icon').length, 2,
+    'l’aperçu réutilise les icônes vectorielles attaque et défense du plateau');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__flavor, .rpg-hover-card-preview__rarity, h2'), null,
     'l’aperçu reste concis et ne montre pas de saveur, rareté ou nom redondant');
   await act(async () => { envoyerSouris(visageTable, 'mouseout'); });
