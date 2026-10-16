@@ -7630,6 +7630,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      taches d'arc-en-ciel glissent avec elle. C'est le geste du joueur qui
      pilote, pas une boucle.
 
+   Trois faces seulement le portent, et ce sont les faces qu'on **lit** :
+   l'aperçu — au survol, à l'appui long, dans la fiche du catalogue, à l'annonce,
+   et celui du mulligan, qui est une face de lecture lui aussi —, les fiches du
+   guide et les cartes du Souk. Les faces **de la table**, elles, ne le portent
+   plus du tout : la main, le mulligan, les cartes en jeu, les terrains et le
+   dessus du paquet sont des cartes **posées**, qui ne s'inclinent pas — leurs
+   quatre taches d'arc-en-ciel n'avaient donc rien à suivre, et se lisaient comme
+   un glow multicolore figé sur l'illustration. La lumière du plateau reste lue
+   (`useLumiereCartes`, plus haut dans la page) : elle n'éclaire simplement plus
+   aucune face posée. Pour rendre le foil à l'une d'elles, il suffit de remettre
+   son sélecteur dans la liste ci-dessous — c'est la seule liste, et rien
+   d'autre n'est à changer.
+
    Six couches, du grain au plus fort :
    1. le grain du foil — de fines stries à angle fixe, le quadrillage qu'on voit
       en rapprochant la carte ;
@@ -7639,12 +7652,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    6. l'éclat qui court, inversé par rapport aux taches : il reste sur les bords
       quand celles-ci sont au centre.
    ══════════════════════════════════════════════════════════════════════════ */
-.rpg-card--img::after,
-.rpg-hand__card--img::after,
-.rpg-mulligan__card::after,
-.rpg-terrain::after,
 .rpg-hover-card-preview__face::after,
-.rpg-card-pile__card--top::after,
 .rpg-card-guide__example::after,
 .rpg-souk__carte-art::after {
   content: "";
@@ -7671,6 +7679,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     calc(50% + var(--rpg-foil-cx, 0%) * 0.5) 0;
   mix-blend-mode: screen;
 }
+
+/* Le reste des faces — la main, le mulligan, les cartes en jeu, les terrains et
+   le dessus du paquet — n'a plus de foil du tout : le pourquoi est en tête de
+   section, et le retour en arrière tient à un sélecteur dans sa liste. */
 
 /* ── La face de l'aperçu en 3D ───────────────────────────────────────────────
    Seule l'aperçu — survol, appui long, fiche du catalogue, annonce, mulligan —
