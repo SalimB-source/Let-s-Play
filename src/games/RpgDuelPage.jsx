@@ -1389,7 +1389,8 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
     >
       <img src={cardArt(carte)} alt="" />
       <CardElementBadge carte={carte} />
-      <SortSocle carte={carte} />
+      <ManaCost carte={carte} showElement={false} />
+      <SortSceau carte={carte} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" />
     </div>
   );
   return (
@@ -6493,7 +6494,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
                   </span>
-                  {familleSort && <SortSocle carte={carte} />}
+                  {familleSort && <SortSceau carte={carte} className="rpg-hand__sceau rpg-hand__sort" />}
                   {!estCreature && !familleSort && <span className="rpg-hand__type">{cardFaceTypeLine(carte)}</span>}
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>

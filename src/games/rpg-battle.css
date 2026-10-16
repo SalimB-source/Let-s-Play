@@ -1854,6 +1854,29 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-shadow: 0 1px 1px rgba(255, 255, 255, .55);
 }
 
+/* Le rond qui contient le coût prend la couleur de l'élément de la carte. */
+.rpg-mana-cost--braise {
+  background: radial-gradient(circle at 35% 25%, #ef9675, #8e2e1d 72%);
+  color: #fff9ea;
+  text-shadow: 0 1px 2px #000;
+}
+.rpg-mana-cost--eau {
+  background: radial-gradient(circle at 35% 25%, #9dd5f2, #285e91 72%);
+  color: #fff9ea;
+  text-shadow: 0 1px 2px #000;
+}
+.rpg-mana-cost--sable {
+  background: radial-gradient(circle at 35% 25%, #f8e29a, #9a7425 72%);
+  color: #241a04;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, .55);
+}
+.rpg-mana-cost--neige {
+  background: radial-gradient(circle at 35% 25%, #eefaff, #4a86ab 72%);
+  color: #08202e;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, .7);
+  filter: drop-shadow(0 0 2px rgba(150, 220, 255, .85));
+}
+
 .rpg-mana-cost.is-compact { font-size: 11px; }
 .rpg-mana-cost.is-compact i { width: 11px; height: 11px; font-size: 7px; }
 
@@ -7211,6 +7234,31 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mulligan__sceau {
   width: clamp(16px, 15cqw, 30px);
   font-size: clamp(9px, 7cqw, 15px);
+}
+
+.rpg-hover-card-preview__face .rpg-mana-cost {
+  position: absolute;
+  z-index: 4;
+  top: 8px;
+  right: 8px;
+}
+.rpg-hand__sceau,
+.rpg-hand__sort {
+  position: absolute;
+  z-index: 3;
+  bottom: 8px;
+  left: 8px;
+  width: var(--rpg-card-marker-size, 28px);
+  font-size: calc(var(--rpg-card-marker-size, 28px) * .6);
+}
+.rpg-hover-card-preview__sceau,
+.rpg-hover-card-preview__sort {
+  position: absolute;
+  z-index: 3;
+  bottom: 8px;
+  left: 8px;
+  width: var(--rpg-card-marker-size, 38px);
+  font-size: calc(var(--rpg-card-marker-size, 38px) * .6);
 }
 
 /* Les lignes de type qui écrivent la famille prennent sa teinte : l'aperçu,
