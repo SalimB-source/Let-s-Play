@@ -415,14 +415,20 @@ photoréaliste, gel en fresque).
 
 ### Ce qui change, et ce qui ne change pas
 
-- **Ce qui ne change pas** : l'identité de chaque héros. Âge, visage, teint,
-  coiffure, barbe, silhouette, tenue de métier et accessoires restent ceux de
-  la peinture précédente, reprise comme référence ; la pose et le cadrage
-  aussi. Un personnage garde **un seul fichier**, réutilisé par la carte, le
-  dialogue, le journal et la plaque adverse du duel (voir
-  `docs/rpg/11-bible-visuelle.md`). Pour le Serpent du monde, c'est la bête
-  elle-même qui est conservée : le même corps en anneau qui se mord la queue
-  autour des eaux froides, à la même échelle et dans le même cadrage.
+- **Ce qui ne change pas** : l'identité des cinq héros du récit. Âge, visage,
+  teint, coiffure, barbe, silhouette, tenue de métier et accessoires restent
+  ceux de la peinture précédente, reprise comme référence ; la pose et le
+  cadrage aussi. Un personnage garde **un seul fichier**, réutilisé par la
+  carte, le dialogue, le journal et la plaque adverse du duel (voir
+  `docs/rpg/11-bible-visuelle.md`). Le Serpent du monde garde, lui, son identité
+  de grand serpent marin du Nord et la facture nihonga algérienne.
+- **Nouvelle composition du Serpent du monde** : un seul serpent anatomiquement
+  cohérent encercle un globe bleu-vert, l'Afrique tournée vers le lecteur. Sa
+  tête rejoint sans rupture un cou musclé puis un corps continu, qui passe
+  lisiblement derrière la planète sur l'arc supérieur et devant elle sur
+  l'arc inférieur ; la gueule referme doucement l'anneau sur l'unique queue.
+  Écailles dorsales et plaques ventrales suivent la courbe du corps. Aucune
+  tête doublée, aucun membre, aucune aile ni segment détaché.
 - **Ce qui change** : la facture (nihonga sur or) et la palette, désormais
   algérienne et plus riche — indigo touareg profond, safran, rouge-orangé de
   henné, vert émeraude et vert-de-gris, turquoise, terre cuite, ocre chaud et
@@ -440,12 +446,12 @@ photoréaliste, gel en fresque).
 - la couleur de l'élément influence la lumière (sable ocré pour Salem et
   Tarek, bleu de verre et d'eau pour Yamina et Boualem, braise orangée pour
   Fériel) sans jamais devenir un badge dessiné ;
-- le **Serpent du monde** garde son élément Neige lisible : les eaux et la
-  glace restent bleu indigo, turquoise et vert émeraude — des teintes que la
-  palette algérienne porte déjà —, réchauffées par la feuille d'or du ciel et
-  par quelques reflets safran et terre cuite sur les écailles et dans l'œil.
-  Les motifs amazighs se glissent dans le dessin de l'eau et des écailles,
-  comme une broderie, et non en encadrement : la peinture reste plein cadre.
+- le **Serpent du monde** garde son élément Neige lisible : ses écailles
+  indigo et turquoise et les mers bleu-vert du globe restent froides, tandis
+  que l'or du ciel réchauffe la scène et que quelques reflets safran et terre
+  cuite ponctuent l'œil et les motifs. Les géométries amazighes suivent les
+  écailles comme une broderie, jamais en encadrement : la peinture reste plein
+  cadre.
 - l'**Armure de cendres** garde **son dessin d'origine trait pour trait** —
   la même figure en armure noire au-dessus du volcan, les deux épées noires
   entièrement visibles, le même cadrage et la même échelle : seule la
@@ -466,14 +472,14 @@ photoréaliste, gel en fresque).
 
 ### Versions de cache
 
-Les six peintures de héros sont datées ensemble par la révision
+Les cinq peintures des héros du récit sont datées ensemble par la révision
 `heros-nihonga-algerien-v1` dans `CARD_ART_CACHE_VERSIONS`
-(`RpgDuelPage.jsx`) ; l'Armure de cendres porte la sienne, `armure-nihonga-v1`,
-et le Bâton des citernes, `baton-nihonga-vitrine-dehors-v2`. Le jeton
-`serpent-des-citernes` reste, lui, dans le lot photoréaliste : il n'a pas
-encore été repris.
-Mêmes noms de fichiers, donc aucun cache ne peut resservir les huiles
-précédentes. Pour le Serpent du monde, la révision de la passe l'emporte sur
-`SET_NEIGE_ART_VERSION` — elle est datée une seule fois pour toutes ses cartes.
-Le garde-fou `PLEIN_ART_45` de `tests/rpg-duel.test.js` vérifie leur ratio 4:5
+(`RpgDuelPage.jsx`). Le Serpent du monde porte désormais sa révision dédiée,
+`serpent-terre-nihonga-v1`, car sa composition a été entièrement repensée.
+L'Armure de cendres porte la sienne, `armure-nihonga-v1`, et le Bâton des
+citernes, `baton-nihonga-vitrine-dehors-v2`. Le jeton `serpent-des-citernes`
+reste, lui, dans le lot photoréaliste : il n'a pas encore été repris.
+Ces révisions empêchent les caches de resservir les images précédentes. Pour
+le Serpent du monde, la révision dédiée l'emporte sur `SET_NEIGE_ART_VERSION`.
+Le garde-fou `PLEIN_ART_45` de `tests/rpg-duel.test.js` vérifie le ratio 4:5
 comme le reste de la collection, l'Armure de cendres y compris.

@@ -64,8 +64,13 @@ Les autres personnages du registre — Guetteur, Scribe, Puisatier des Cendres,
 Mahieddine et les figures des autres tours — gardent leur illustration d'origine.
 La passe a toutefois été étendue à la carte de héros **Le Serpent du monde**
 (`public/cards/serpent-du-monde.jpg`), figure du Nord et récompense de
-`fjord-4`, qui n'entre pas dans le casting du récit : même facture, même
-palette, même révision de cache.
+`fjord-4`, qui n'entre pas dans le casting du récit. Sa composition a été
+entièrement repensée : un seul serpent anatomiquement lisible encercle un globe
+bleu-vert, l'Afrique tournée vers nous, le corps passant clairement devant et
+derrière la Terre et la tête refermant doucement l'anneau sur sa queue. La
+facture nihonga, la palette algérienne et les motifs amazighs restent cohérents
+avec les autres cartes ; sa nouvelle image porte la révision dédiée
+`serpent-terre-nihonga-v1`.
 
 ### Repères des nouveaux personnages
 
