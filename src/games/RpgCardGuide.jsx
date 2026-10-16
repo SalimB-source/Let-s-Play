@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
+import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
 import { RPG_CARD_LESSONS } from './rpgCardLessons.js';
 import { bonusArme, cardById, cardColors, cardFrameClass, cardFrameColor, cardMotifClass, cardTypeLine, carteEstArme } from './rpgCards.js';
 // Le jeton des familles de sorts : le guide enseigne la face des cartes, il
@@ -39,6 +40,7 @@ function GuideCard({ carte, cardArt }) {
         <span className="rpg-card-guide__element">{labelElement}</span>
         <h3>{carte.name}</h3>
         <p className="rpg-card-guide__type">{cardTypeLine(carte)}</p>
+        <PastillesCarte carte={carte} className="rpg-card-guide__pastilles" />
         {estCreature && <p className="rpg-card-guide__stats">⚔ {carte.atk} · 🛡 {carte.def}</p>}
         {carteEstArme(carte) && <p className="rpg-card-guide__stats">Porteur : ⚔ {signeBonus(bonusArme(carte)?.atk)} · 🛡 {signeBonus(bonusArme(carte)?.def)}</p>}
         <p className="rpg-card-guide__rules"><RpgCardRules carte={carte} /></p>
@@ -80,6 +82,7 @@ export default function RpgCardGuide({ cardArt, onExit, onResumeGame, hasGame, o
 
   return (
     <main className="rpg-card-guide" aria-label="Guide des cartes et des effets">
+      <EffetsSprite />
       <header className="rpg-card-guide__header">
         <div>
           <span className="rpg-mode-menu__eyebrow">LE SABLIER · GUIDE DES CARTES</span>
