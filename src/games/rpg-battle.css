@@ -3545,17 +3545,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* Les statistiques sont imprimées sur la face comme sur une carte posée :
-   mêmes pastilles dorée/acier et mêmes icônes vectorielles que le plateau. */
+   mêmes pastilles dorée/acier et mêmes icônes vectorielles que le plateau.
+   Même bande aussi : deux rectangles côte à côte qui prennent toute la
+   largeur de la carte — ATQ à gauche, DÉF à droite — exactement comme
+   les cartes en jeu sur le plateau (`rpg-mobile.css`). */
 .rpg-hover-card-preview__face .rpg-card__foot {
   position: absolute;
   z-index: 2;
-  right: 6%;
+  right: 4%;
   bottom: 4%;
-  left: 6%;
-  display: flex;
+  left: 4%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  justify-content: space-between;
-  gap: 5px;
+  gap: 2px;
   margin: 0;
   padding: 0;
   background: transparent;
@@ -3563,7 +3566,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-hover-card-preview__face .rpg-card__stat--atk,
 .rpg-hover-card-preview__face .rpg-card__pt {
-  min-width: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
   padding: 3px 7px;
   font-size: 15.5px;
 }
