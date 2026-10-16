@@ -209,11 +209,16 @@ export function vivierRayon(rayonId, progression) {
   if (!rayon) return [];
   const couleurs = rayon.couleur ? [rayon.couleur] : [...RPG_ELEMENTS];
   const autorisees = new Set(couleurs);
+  // Le vivier n'expose que ce que la ville possède déjà : la dotation de
+  // départ, plus les cartes qu'un étage vaincu a révélées — jamais tout le
+  // catalogue de la couleur dès le premier jour (les mythiques attendent
+  // leur étage, sinon la pitié des boosters n'aurait aucun sens).
+  const ouvertes = cartesOuvertes(progression);
   const ids = new Set();
   for (const carte of RPG_DUEL_CARDS) {
-    if (cardColors(carte).some((couleur) => autorisees.has(couleur))) ids.add(carte.id);
+    if (!cardColors(carte).some((couleur) => autorisees.has(couleur))) continue;
+    if (DEBUT.has(carte.id) || ouvertes.includes(carte.id)) ids.add(carte.id);
   }
-  for (const id of DEBUT) ids.add(id);
   return [...ids];
 }
 

@@ -345,7 +345,8 @@ test('une seconde arme envoie la première au cimetière et retire son bonus', (
 
 test('la protection contre la couleur de l’arme refuse l’attachement', () => {
   const duel = duelVide();
-  const tiziri = poser(duel, 'joueur', 'tiziri-du-djurdjura'); // protégée contre l’Eau à l’arrivée
+  const tiziri = poser(duel, 'joueur', 'tiziri-du-djurdjura');
+  tiziri.protection = { contre: 'eau', toursRestants: 2 }; // protection forcée : Tiziri ne protège plus que de la Braise
   donner(duel, 'joueur', 'baton-des-citernes');
   manaPlein(duel, 'joueur');
   const res = rpgJouerArme(duel, 'joueur', 'baton-des-citernes', tiziri.id);

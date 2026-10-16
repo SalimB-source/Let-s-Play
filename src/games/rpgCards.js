@@ -6,10 +6,6 @@
  * résolvent leurs effets avant de rejoindre le cimetière. Les fiches portent coût,
  * élément, rareté, ligne de type, texte de règle et illustration locale.
  *
- * Les anciennes cartes de pouvoir et de base restent disponibles au classeur
- * et au draft du prototype RPG ; le duel s’appuie sur les catalogues terrains,
- * créatures, héros et magies déclarés plus bas.
- *
  * Les six decks du jeu sont **composés** en fin de fichier : les recettes
  * (`rpgDeckRecipes.js`) disent l’identité, les quotas et la signature, et
  * `composerDeck` (`rpgDeckComposer.js`) y met les meilleures cartes du
@@ -262,264 +258,6 @@ export const CARD_KIND_LABELS = {
   statut: 'Utilité',
 };
 
-/** Actions de base, gratuites, de toute créature : non collectionnables. */
-export const RPG_BASIC_CARDS = [
-  {
-    id: 'sonder-le-sol',
-    name: 'Sonder le sol',
-    cost: 0,
-    effect: 'sonder',
-    target: 'soi',
-    text: 'Une fois par tour : +20 sable sur notre sol. Le mana de Bab El.',
-  },
-];
-
-/**
- * Le catalogue des pouvoirs collectionnables. Les attaques de départ des
- * compagnons sont leur carte de base (`basic` sur la fiche du personnage) ;
- * tout le reste se gagne en draftant.
- */
-export const RPG_POWER_CARDS = [
-  // ── Salem ─────────────────────────────────────────────────────────────
-  {
-    id: 'crochet',
-    name: 'Crochet de palier',
-    element: 'sable',
-    kind: 'physique',
-    cost: 10,
-    power: 72,
-    push: 1,
-    target: 'ennemi',
-    rarity: 'commune',
-    text: 'Inflige 72 et tire vers le bas : l’ennemi descend d’un étage. Du 3e au 1er, c’est une Chute (×1,4).',
-    flavor: 'On ne monte pas un étage condamné sans redescendre.',
-  },
-  {
-    id: 'effondrement',
-    name: 'Effondrement',
-    element: 'sable',
-    kind: 'physique',
-    cost: 40,
-    power: 230,
-    target: 'tous-ennemis',
-    crystallizePower: 460,
-    rarity: 'rare',
-    text: 'Le palier cède : touche TOUS les ennemis.',
-    flavor: 'Bab El compte neuf étages. Le sol en compte un de plus.',
-  },
-  {
-    id: 'le-dernier-etage',
-    name: 'Le Dernier Étage',
-    element: 'sable',
-    kind: 'physique',
-    cost: 40,
-    power: 320,
-    felure: 20,
-    target: 'ennemi',
-    requiresName: 3,
-    rarity: 'mythique',
-    text: '320 dégâts et +20 Fêlure. Exige le Nom complet (3 segments).',
-    flavor: 'Il frappe comme on ferme une porte sur un étage condamné.',
-  },
-  // ── Yamina ────────────────────────────────────────────────────────────
-  {
-    id: 'retard',
-    name: 'Retard',
-    element: 'eau',
-    kind: 'statut',
-    cost: 10,
-    delay: true,
-    target: 'ennemi',
-    rarity: 'commune',
-    text: 'La carte annoncée par cet ennemi attendra un round de plus.',
-    flavor: 'Un rendez-vous décalé, c’est une vie épargnée.',
-  },
-  {
-    id: 'avance',
-    name: 'Avance',
-    element: 'eau',
-    kind: 'statut',
-    cost: 10,
-    draw: 1,
-    target: 'soi',
-    rarity: 'commune',
-    text: 'Pioche une carte.',
-    flavor: 'Elle remonte le mécanisme d’un cran.',
-  },
-  {
-    id: 'heure-pleine',
-    name: 'Heure pleine',
-    element: 'eau',
-    kind: 'magie',
-    cost: 40,
-    power: 300,
-    draw: 1,
-    target: 'ennemi',
-    requiresName: 3,
-    rarity: 'mythique',
-    text: '300 dégâts et pioche une carte. Exige le Nom complet.',
-    flavor: 'Elle donne l’heure exacte. Ça fait très mal.',
-  },
-  // ── Boualem ───────────────────────────────────────────────────────────
-  {
-    id: 'nappe',
-    name: 'Nappe',
-    element: 'eau',
-    kind: 'statut',
-    cost: 0,
-    ground: 40,
-    target: 'soi',
-    rarity: 'commune',
-    text: '+40 sable sur notre sol, à dépenser en cartes.',
-    flavor: 'Il fait remonter la nappe d’un coup de talon.',
-  },
-  {
-    id: 'vague',
-    name: 'Vague',
-    element: 'eau',
-    kind: 'magie',
-    cost: 25,
-    power: 175,
-    interrupt: true,
-    target: 'ennemi',
-    crystallizePower: 350,
-    rarity: 'rare',
-    text: '175 dégâts. Interrompt une incantation si l’élément correspond.',
-    flavor: 'Un mur d’eau tiède qui sort du sol.',
-  },
-  {
-    id: 'deluge',
-    name: 'Déluge',
-    element: 'eau',
-    kind: 'magie',
-    cost: 40,
-    power: 265,
-    target: 'tous-ennemis',
-    requiresName: 3,
-    rarity: 'mythique',
-    text: '265 dégâts à TOUS les ennemis. Exige le Nom complet.',
-    flavor: 'Il ouvre les vannes. Tout le monde est touché.',
-  },
-  {
-    id: 'recolte',
-    name: 'Récolte',
-    element: 'eau',
-    kind: 'soin',
-    cost: 0,
-    effect: 'recolte',
-    target: 'allie',
-    rarity: 'commune',
-    text: 'Convertit jusqu’à 40 sable de notre sol en soins (×0,8 PV).',
-    flavor: 'Le sable rend ce qu’on lui prête, en eau.',
-  },
-  // ── Fêriel ────────────────────────────────────────────────────────────
-  {
-    id: 'bulle',
-    name: 'Bulle',
-    element: 'eau',
-    kind: 'statut',
-    cost: 20,
-    effect: 'barrage',
-    target: 'allie',
-    instant: true,
-    rarity: 'commune',
-    text: 'Magie Rapide : un barrage de verre sur un compagnon, il absorbe avant les PV.',
-    flavor: 'Le verre cède, mais pas tout de suite.',
-  },
-  {
-    id: 'four',
-    name: 'Four',
-    element: 'braise',
-    kind: 'magie',
-    cost: 25,
-    power: 205,
-    target: 'ennemi',
-    crystallizePower: 410,
-    rarity: 'rare',
-    text: '205 dégâts de braise.',
-    flavor: 'Elle ouvre son four de souffleur. Ça ne pardonne pas.',
-  },
-  {
-    id: 'verre-fondu',
-    name: 'Verre fondu',
-    element: 'braise',
-    kind: 'magie',
-    cost: 40,
-    power: 330,
-    target: 'ennemi',
-    requiresName: 3,
-    rarity: 'mythique',
-    text: '330 dégâts, le plus gros monocible de l’équipe. Exige le Nom complet.',
-    flavor: 'Une coulée à mille degrés.',
-  },
-  // ── Tarek ─────────────────────────────────────────────────────────────
-  {
-    id: 'rempart',
-    name: 'Rempart',
-    element: 'sable',
-    kind: 'statut',
-    cost: 20,
-    effect: 'barrage',
-    target: 'soi',
-    instant: true,
-    rarity: 'commune',
-    text: 'Magie Rapide : un barrage de verre sur celui qui joue la carte.',
-    flavor: 'C’est le meilleur endroit pour le poser.',
-  },
-  {
-    id: 'charge',
-    name: 'Charge',
-    element: 'sable',
-    kind: 'physique',
-    cost: 25,
-    power: 190,
-    push: 1,
-    target: 'ennemi',
-    rarity: 'rare',
-    text: '190 dégâts et pousse : l’ennemi descend d’un étage.',
-    flavor: 'Il pousse. Toujours.',
-  },
-  // ── Réponses ──────────────────────────────────────────────────────────
-  {
-    id: 'garde',
-    name: 'Garde',
-    element: 'sable',
-    kind: 'statut',
-    cost: 0,
-    effect: 'garde',
-    target: 'soi',
-    instant: true,
-    rarity: 'commune',
-    text: 'Magie Rapide : −60 % sur le prochain coup reçu. Si le coup était annoncé sur vous, +1 Verre.',
-    flavor: 'On ne pare pas à Bab El. On se tient simplement ailleurs.',
-  },
-  {
-    id: 'souffle',
-    name: 'Souffle',
-    element: 'sable',
-    kind: 'statut',
-    cost: 0,
-    effect: 'souffle',
-    target: 'soi',
-    rarity: 'commune',
-    text: 'Retire jusqu’à 40 sable du sol ennemi, en récupère la moitié.',
-    flavor: 'Le vent rend visite aux deux côtés de la table.',
-  },
-  {
-    id: 'reposition',
-    name: 'Reposition',
-    element: 'sable',
-    kind: 'statut',
-    cost: 10,
-    effect: 'reposition',
-    target: 'allie',
-    rarity: 'commune',
-    text: 'Fait monter un compagnon d’un étage (frapper de haut : +15 %/étage).',
-    flavor: 'Les escaliers de Bab El sont une arme.',
-  },
-];
-
-/** Le classeur de départ de la démo : de quoi tenir la première vague. */
 /**
  * Les créatures du duel — façon Magic : un coût en sable, ⚔ l'attaque,
  * 🛡 la défense, et parfois une capacité À L'ARRIVÉE ou QUAND ELLES
@@ -536,9 +274,7 @@ export const RPG_CREATURE_CARDS = [
     def: 1,
     rarity: 'inhabituelle',
     typeLine: 'Créature — Fennec',
-    rapidite: true,
-    esquive: 1,
-    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Esquive 1 — Réduit de 1 les dégâts reçus de chaque attaque ou magie (minimum 0).',
+    rapidite: true, butin: true, text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
     flavor: 'Les éclats sifflent ; le Fennec a déjà choisi son prochain pas.',
   },
   {
@@ -549,8 +285,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 2,
     rarity: 'commune',
-    typeLine: 'Créature — Chien',
-    text: '—',
+    typeLine: 'Créature — Chien', butin: true, text: 'Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
     flavor: 'Il n’aboie pas. Il compte.',
   },
   {
@@ -575,8 +310,7 @@ export const RPG_CREATURE_CARDS = [
     def: 2,
     rarity: 'commune',
     typeLine: 'Créature — Vigie',
-    arrivee: { type: 'pioche', amount: 1 },
-    text: 'Quand le Guetteur arrive : piochez une carte.',
+    arrivee: { type: 'heures', compteurs: 2, effetFinal: [ { type: 'degats', amount: 2, cible: 'sorcier' }, { type: 'pioche', amount: 1 } ] }, text: 'Quand le Guetteur arrive : mettez 2 compteurs d’Heures sur lui. Au début de chacun de vos tours, retirez-en un ; quand le dernier part, il inflige 2 dégâts au sorcier adverse et vous piochez une carte.',
     flavor: 'D’en haut, il voit la vague avant qu’elle ne se nomme.',
   },
   {
@@ -588,8 +322,7 @@ export const RPG_CREATURE_CARDS = [
     def: 1,
     rarity: 'rare',
     typeLine: 'Créature — Serpent',
-    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Quand la Vipère arrive : elle mord une créature adverse (2 dégâts).',
+    arrivee: { type: 'debuff', atk: -2, def: 0, cible: 'creature', empecheAttaque: true, tours: 1 }, text: 'Quand la Vipère arrive : choisissez une créature adverse — son venin lui retire 2 attaques et elle ne pourra pas attaquer jusqu’à la fin de son prochain tour.',
     flavor: 'Elle se brise, mais d’abord elle tranche.',
   },
   {
@@ -600,28 +333,33 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 5,
     rarity: 'commune',
-    typeLine: 'Créature — Élémental',
-    text: '—',
+    typeLine: 'Créature — Élémental', destruction: { type: 'recyclage', cible: 'magie-cimetiere' }, text: 'Quand la Dune meurt : renvoyez une magie de votre cimetière dans votre main.',
     flavor: 'Le vent la déplace. Elle revient toujours devant la porte.',
   },
+    {
+      id: 'faussoyeur-des-dunes', name: 'Faussoyeur des dunes', element: 'sable', cost: 3, atk: 2, def: 2,
+      rarity: 'inhabituelle', typeLine: 'Créature — Pillard', art: 'faussoyeur-des-dunes',
+      butin: true,
+      arrivee: { type: 'recyclage', cible: 'creature-cimetiere' },
+      text: 'Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une. Quand le Faussoyeur arrive : renvoyez une créature de votre cimetière dans votre main.',
+      flavor: 'Ce que les dunes enterrent, il le déterre.',
+    },
   {
     id: 'scribe-de-la-liste',
     name: 'Scribe de la Liste',
     element: 'sable',
     cost: 3,
-    atk: 2,
-    def: 2,
+    atk: 2, def: 3,
     rarity: 'rare',
     typeLine: 'Créature — Scribe',
-    destruction: { type: 'pioche', amount: 2 },
-    text: 'Quand le Scribe meurt : piochez deux cartes.',
+    destruction: { type: 'recyclage', cible: 'carte-cimetiere' }, text: 'Quand le Scribe meurt : renvoyez une carte de votre cimetière dans votre main.',
     flavor: 'Sa mort est déjà notée. En double exemplaire.',
   },
   {
     id: 'sonneur-fele',
     name: 'Sonneur fêlé',
     element: 'eau',
-    cost: 4,
+    cost: 3,
     atk: 2,
     def: 3,
     rarity: 'rare',
@@ -636,8 +374,7 @@ export const RPG_CREATURE_CARDS = [
     name: 'Colosse de sel',
     element: 'eau',
     cost: 6,
-    atk: 5,
-    def: 5,
+    atk: 6, def: 6,
     rarity: 'rare',
     typeLine: 'Créature — Géant',
     arrivee: { type: 'buff', atk: 1, def: 1 },
@@ -649,8 +386,7 @@ export const RPG_CREATURE_CARDS = [
     name: 'Djinn du souk',
     element: 'braise',
     cost: 5,
-    atk: 3,
-    def: 3,
+    atk: 5, def: 4,
     rarity: 'mythique',
     typeLine: 'Créature — Djinn',
     art: 'djinn-du-souk',
@@ -677,13 +413,11 @@ export const RPG_CREATURE_CARDS = [
     name: 'Faiseur de passage',
     element: 'sable',
     cost: 2,
-    atk: 2,
-    def: 2,
+    atk: 2, def: 1,
     rarity: 'commune',
     typeLine: 'Créature — Éclaireur',
     art: 'faiseur-de-passage',
-    arrivee: { type: 'pioche', amount: 1 },
-    text: 'Quand le Faiseur arrive : piochez une carte.',
+    arrivee: { type: 'donne', cible: 'allie', donne: { infiltration: true }, tours: 1 }, text: 'Quand le Faiseur arrive : une créature alliée ciblée gagne Infiltration jusqu’à la fin du tour.',
     flavor: 'Il trouve une porte là où les autres voient un mur.',
   },
   // ── Veilleurs du Désert : personnages originaux inspirés des peuples amazighs d’Algérie ──
@@ -692,8 +426,7 @@ export const RPG_CREATURE_CARDS = [
     name: 'Tislit, éclaireuse des Aurès',
     element: 'sable',
     cost: 1,
-    atk: 1,
-    def: 2,
+    atk: 1, def: 1,
     rarity: 'commune',
     typeLine: 'Créature — Amazighe chaouie',
     art: 'tislit-des-aures',
@@ -706,14 +439,12 @@ export const RPG_CREATURE_CARDS = [
     name: 'Tiziri, voix du Djurdjura',
     element: 'sable',
     cost: 2,
-    atk: 2,
-    def: 2,
+    atk: 2, def: 1,
     rarity: 'commune',
     typeLine: 'Créature — Amazighe kabyle',
     art: 'tiziri-du-djurdjura',
-    protection: { contre: 'eau', tours: 2 },
-    arrivee: { type: 'buff', atk: 1, def: 0 },
-    text: 'À son arrivée, Tiziri est protégée contre l’Eau pendant ce tour et le prochain tour adverse. Vos autres créatures gagnent +1 ATQ.',
+    protection: { contre: 'braise' }, arrivee: { type: 'buff', cible: 'porteur', atk: 1, def: 0, tours: 1 },
+    text: 'À son arrivée, Tiziri est protégée contre la Braise de façon permanente, et gagne +1 ATQ jusqu’à la fin du tour.',
     flavor: 'Son chant rassemble les villages avant la tempête.',
   },
   {
@@ -784,15 +515,15 @@ export const RPG_CREATURE_CARDS = [
     id: 'anqa-des-braises',
     name: 'Anqa',
     element: 'braise',
-    cost: 4,
+    cost: 5,
     atk: 4,
     def: 4,
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Oiseau de feu',
     art: 'anqa-des-braises',
     envol: true,
-    destruction: { type: 'retour-apres-tours', tours: 2 },
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Quand Anqa est détruite : elle revient en jeu après deux tours.',
+    destruction: { type: 'retour-apres-tours', tours: 4 },
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Quand Anqa est détruite : elle revient en jeu après quatre tours.',
     flavor: 'Même la cendre sait où se cachent les braises.',
   },
   {
@@ -814,13 +545,12 @@ export const RPG_CREATURE_CARDS = [
     name: 'Braisier du souk',
     element: 'braise',
     cost: 3,
-    atk: 1,
-    def: 1,
+    atk: 2, def: 2,
     rarity: 'rare',
     typeLine: 'Créature — Souffleur',
     art: 'braisier-du-souk',
-    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
-    text: 'Quand le Braisier arrive : 1 dégât à toutes les créatures adverses.',
+    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures', etSorcier: 1 },
+    text: 'Quand le Braisier arrive : 1 dégât à toutes les créatures adverses et 1 dégât au sorcier adverse.',
     flavor: 'Une seule braise, et le marché se vide.',
   },
   {
@@ -832,9 +562,8 @@ export const RPG_CREATURE_CARDS = [
     def: 4,
     rarity: 'rare',
     typeLine: 'Créature — Guerrier amazigh',
-    art: 'cavalier-amazigh-du-desert',
-    arrivee: { type: 'combat', cible: 'creature' },
-    text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque.',
+    art: 'cavalier-amazigh-du-desert', butin: true, arrivee: { type: 'combat', cible: 'creature' },
+    text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
     flavor: 'Sa monture blanche fend la poussière ; le sabre ouvre la route au milieu du tumulte.',
   },
   {
@@ -906,8 +635,7 @@ export const RPG_CREATURE_CARDS = [
     name: 'Valkyrie au corbeau',
     element: 'neige',
     cost: 4,
-    atk: 3,
-    def: 3,
+    atk: 2, def: 3,
     rarity: 'rare',
     typeLine: 'Créature — Valkyrie',
     art: 'valkyrie-au-corbeau',
@@ -921,8 +649,7 @@ export const RPG_CREATURE_CARDS = [
     name: 'Berserk des trois hivers',
     element: 'neige',
     cost: 4,
-    atk: 3,
-    def: 3,
+    atk: 3, def: 2,
     rarity: 'rare',
     typeLine: 'Créature — Berserk viking',
     art: 'berserk-des-trois-hivers',
@@ -936,8 +663,7 @@ export const RPG_CREATURE_CARDS = [
     name: 'Jarl au marteau de guerre',
     element: 'neige',
     cost: 5,
-    atk: 4,
-    def: 4,
+    atk: 3, def: 4,
     rarity: 'rare',
     typeLine: 'Créature — Jarl viking',
     art: 'jarl-au-marteau-de-guerre',
@@ -950,8 +676,7 @@ export const RPG_CREATURE_CARDS = [
     name: 'Valkyrie des glaces',
     element: 'neige',
     cost: 5,
-    atk: 4,
-    def: 4,
+    atk: 3, def: 3,
     rarity: 'rare',
     typeLine: 'Créature — Valkyrie',
     art: 'valkyrie-des-glaces',
@@ -1012,8 +737,7 @@ export const RPG_CREATURE_CARDS = [
     def: 6,
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Bête marine',
-    arrivee: { type: 'degats', amount: 3, cible: 'creature' },
-    text: 'Quand le Léviathan arrive : 3 dégâts à une créature adverse ciblée.',
+    arrivee: { type: 'retour-main', cible: 'toutes-autres' }, text: 'Quand le Léviathan arrive : renvoyez toutes les autres créatures dans la main de leur propriétaire.',
     flavor: 'Nul ne le dompte, et nul ne l’a jamais vu en entier.',
   },
   {
@@ -1025,8 +749,7 @@ export const RPG_CREATURE_CARDS = [
     def: 6,
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Serpent lunaire',
-    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Quand Bakunawa arrive : choisissez une créature adverse — il lui inflige 2 dégâts.',
+    arrivee: { type: 'empeche-blocage', cible: 'creature', tours: 1 }, text: 'Quand Bakunawa arrive : choisissez une créature adverse — la lune dévorée l’empêche de bloquer jusqu’à la fin de son prochain tour.',
     flavor: 'Il avale tout ce qui brille sur la table.',
   },
   {
@@ -1158,8 +881,7 @@ export const RPG_HERO_CARDS = [
     role: 'La Souffleuse de verre',
     element: 'braise',
     cost: 4,
-    atk: 3,
-    def: 1,
+    atk: 4, def: 3,
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
@@ -1196,8 +918,8 @@ export const RPG_HERO_CARDS = [
     kind: 'hero',
     typeLine: 'Créature légendaire — Matriarche touarègue',
     art: 'tin-hinan-des-pistes',
-    arrivee: { type: 'infiltration', atk: 2, def: 0 },
-    text: 'Quand Tin Hinan arrive : toutes vos créatures gagnent +2/+0. Infiltration — jusqu’à la fin du tour, elles ne peuvent pas être bloquées.',
+    arrivee: { type: 'infiltration', cible: 'autres-allies', tours: 1 },
+    text: 'Quand Tin Hinan arrive : vos autres créatures gagnent Infiltration jusqu’à la fin du tour.',
     flavor: 'Dans la mémoire des pistes, elle ouvre la route et rassemble les siens.',
   },
   {
@@ -1250,10 +972,10 @@ export const RPG_HERO_CARDS = [
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     art: 'maitre-du-marteau',
-    arrivee: { type: 'degats', amount: 3, cible: 'toutes-creatures' },
+    arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
     furie: 3,
     tenacite: true,
-    text: 'Quand il arrive : son marteau tombe — 3 dégâts à toutes les créatures adverses. Furie 3 — La première fois qu’il est blessé et survit, le Maître gagne +3/+3. Tenacité — Une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense.',
+    text: 'Quand il arrive : son marteau tombe — 2 dégâts à toutes les créatures adverses. Furie 3 — La première fois qu’il est blessé et survit, le Maître gagne +3/+3. Tenacité — Une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense.',
     flavor: 'Le tonnerre n’est pas un bruit : c’est un rendez-vous — et son marteau, lui, retrouve toujours sa main.',
   },
   {
@@ -1565,8 +1287,7 @@ export const RPG_MAGIE_CARDS = [
     cost: 2,
     rarity: 'commune',
     cibles: ['creature'],
-    effet: { type: 'degats', amount: 3, cible: 'creature' },
-    text: '3 dégâts à une créature ciblée.',
+    effet: { type: 'debuff', atk: -2, def: -2, cible: 'creature' }, text: 'La Lame de mer retire 2 attaques et 2 défenses à une créature ciblée.',
     flavor: 'La vague coupe plus propre que le couteau.',
   },
   {
@@ -1593,7 +1314,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Sable',
     art: 'tempete-de-sable',
-    cost: 4,
+    cost: 5,
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 3, cible: 'toutes-creatures' },
@@ -1626,10 +1347,26 @@ export const RPG_MAGIE_CARDS = [
     cost: 2,
     rarity: 'rare',
     cibles: ['toutes'],
-    effet: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
-    text: 'Magie Rapide — 1 dégât à toutes les créatures adverses.',
+    effet: { type: 'buff', atk: -1, def: -1, cible: 'creatures-adverses', minimum: 0 },
+    text: 'Magie Rapide — Toutes les créatures adverses perdent 1 attaque et 1 défense.',
     flavor: 'Le verre se fend en mille éclats, jamais au hasard.',
   },
+    {
+      id: 'ecueil', name: 'Écueil', element: 'eau', kind: 'magie',
+      typeLine: 'Magie Rapide — Eau', art: 'ecueil', instant: true, cost: 2, rarity: 'commune',
+      cibles: ['soi'],
+      effet: { type: 'contresort', cible: 'creature' },
+      text: 'Magie Rapide — Contrez une créature adverse.',
+      flavor: 'Elle heurte le récif avant même la côte.',
+    },
+    {
+      id: 'reanimation', name: 'Réanimation', element: 'sable', kind: 'magie',
+      typeLine: 'Sorcellerie — Sable', art: 'reanimation', cost: 5, rarity: 'rare',
+      cibles: ['soi'],
+      effet: { type: 'reanimation' },
+      text: 'Fait revenir une créature de votre cimetière en jeu.',
+      flavor: 'Le sable rend tout, tôt ou tard.',
+    },
   {
     id: 'nuage-de-cendres',
     name: 'Nuage de cendres',
@@ -1915,8 +1652,8 @@ export const RPG_MAGIE_CARDS = [
 ];
 
 /**
- * Les armes — le cinquième type de cartes du duel (les quatre du prototype,
- * une par élément, puis le lot de dix du Sable).
+ * Les armes — le cinquième type de cartes du duel (quatre armes d’origine,
+ * une par élément, puis le lot du Sable).
  *
  * Une arme se joue depuis la main, payée en mana comme un sort, et s'attache
  * directement à une créature alliée (héros et jetons compris) : le porteur
@@ -1959,7 +1696,7 @@ export const RPG_ARME_CARDS = [
     element: 'eau',
     kind: 'arme',
     typeLine: 'Arme — Bâton',
-    cost: 2,
+    cost: 4,
     rarity: 'rare',
     bonus: { atk: 1, def: 2 },
     // À l'arrivée de l'arme, puis à la demande contre 3 manas (capacité
@@ -1976,7 +1713,7 @@ export const RPG_ARME_CARDS = [
     element: 'braise',
     kind: 'arme',
     typeLine: 'Arme — Armure',
-    cost: 3,
+    cost: 4,
     rarity: 'mythique',
     bonus: { atk: 3, def: 3 },
     donne: { rapidite: true, immunite: 'braise' },
@@ -2095,8 +1832,8 @@ export const RPG_ARME_CARDS = [
     cost: 2,
     rarity: 'rare',
     bonus: { atk: 1, def: 1 },
-    porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 2, defausse: 1 },
-    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez deux cartes, puis défaussez une carte.',
+    porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 1, defausse: 1 },
+    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez une carte, puis défaussez-en une.',
     flavor: 'Il ne rapporte pas ce qu’il a vu. Il rapporte ce qui manquait.',
   },
   {
@@ -2105,7 +1842,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Jitte',
-    cost: 2,
+    cost: 4,
     rarity: 'rare',
     bonus: { atk: 2, def: 0 },
     porteurBlesse: { type: 'compteurs-arme', amount: 1 },
@@ -2190,76 +1927,14 @@ export function magieById(id) {
   return RPG_MAGIE_CARDS.find((card) => card.id === id) ?? null;
 }
 
-export const RPG_STARTING_COLLECTION = ['garde', 'bulle', 'nappe', 'vague', 'recolte'];
-
-/** Cartes de base des compagnons : leur seule attaque au début. */
-export const RPG_BASIC_ATTACKS = {
-  salem: {
-    id: 'sonde',
-    name: 'Sonde',
-    element: 'sable',
-    kind: 'physique',
-    power: 112,
-    felure: 8,
-    target: 'ennemi',
-    basic: true,
-    text: 'L’attaque de base de Salem : un coup de perche franc, +8 Fêlure.',
-  },
-  yamina: {
-    id: 'aiguille',
-    name: 'Aiguille',
-    element: 'eau',
-    kind: 'magie',
-    power: 190,
-    interrupt: true,
-    target: 'ennemi',
-    basic: true,
-    text: 'L’attaque de base de Yamina : interrompt une incantation si l’élément correspond.',
-  },
-  boualem: {
-    id: 'puisage',
-    name: 'Puisage',
-    element: 'eau',
-    kind: 'soin',
-    power: 95,
-    target: 'allie',
-    basic: true,
-    text: 'La carte de base de Boualem : soigne un compagnon.',
-  },
-  feriel: {
-    id: 'eclat-de-verre',
-    name: 'Éclat de verre',
-    element: 'eau',
-    kind: 'physique',
-    power: 100,
-    interrupt: true,
-    target: 'ennemi',
-    basic: true,
-    text: 'L’attaque de base de Fêriel : un shard lancé à la main.',
-  },
-  tarek: {
-    id: 'palette',
-    name: 'Palette',
-    element: 'sable',
-    kind: 'physique',
-    power: 125,
-    felure: 12,
-    target: 'ennemi',
-    basic: true,
-    text: 'L’attaque de base de Tarek : il frappe avec ce qu’il porte, +12 Fêlure.',
-  },
-};
-
 /**
- * Le catalogue indexé par identifiant : les cartes jouables, les cartes de
- * pouvoir et de base du prototype, et les **créatures-jetons** — que
- * `cardById` doit savoir peindre (elles apparaissent sur la table) sans
- * qu'elles entrent pour autant dans `RPG_DUEL_CARDS`, donc ni dans la
- * collection ni dans l'atelier de decks.
+ * Le catalogue indexé par identifiant : les cartes jouables et les
+ * **créatures-jetons** — que `cardById` doit savoir peindre (elles apparaissent
+ * sur la table) sans qu’elles entrent pour autant dans `RPG_DUEL_CARDS`, donc
+ * ni dans la collection ni dans l’atelier de decks.
  */
 const CATALOG = new Map(
-  [...RPG_POWER_CARDS, ...RPG_BASIC_CARDS, ...Object.values(RPG_BASIC_ATTACKS),
-    ...RPG_DUEL_CARDS, ...RPG_JETON_CARDS]
+  [...RPG_DUEL_CARDS, ...RPG_JETON_CARDS]
     .map((card) => [card.id, card]),
 );
 
@@ -2346,7 +2021,7 @@ export function cardCost(card) {
  * l'équipe, dont on en choisira une. Même graine, même offre.
  */
 export function rpgDraftOffer(rng, collection = []) {
-  const pool = [...RPG_POWER_CARDS, ...RPG_CREATURE_CARDS].filter((card) => !collection.includes(card.id));
+  const pool = RPG_CREATURE_CARDS.filter((card) => !collection.includes(card.id));
   const offer = [];
   while (offer.length < 3 && pool.length) {
     const index = Math.floor(rng() * pool.length);

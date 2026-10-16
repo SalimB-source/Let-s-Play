@@ -58,7 +58,10 @@ function valeurEffet(effet = {}) {
       // Le gel qui accompagne les dégâts (la Poigne de givre, le Verglas)
       // vaut un retrait de tempo en plus de la blessure.
       const gel = effet.gel ? 1.5 : 0;
-      return montant * facteur + echo * 0.9 + gel;
+      // `etSorcier` : le feu qui déborde de la table jusqu'au visage (le
+      // Braisier du souk) se paie au même taux qu'un sort de dégâts direct.
+      const exces = effet.etSorcier ? effet.etSorcier * 1.25 : 0;
+      return montant * facteur + echo * 0.9 + gel + exces;
     }
     case 'soin':
       return montant * 0.5;
@@ -89,14 +92,56 @@ function valeurEffet(effet = {}) {
       }
       return atk * 0.8 + def * 0.6;
     }
-    case 'infiltration':
-      // +X/+Y durable ET tout le camp imblocable pour l'échange en cours :
-      // le passe-droit vaut à lui seul une belle carte de pression.
-      return (Number(effet.atk) || 0) * 0.8 + (Number(effet.def) || 0) * 0.6 + 2;
+    case 'debuff': {
+      // Le venin de la Vipère : les chiffres retirés valent comme un débuff
+      // de `buff`, et les interdits de combat ont leur prix — la défense
+      // réduite tue, l'attaque volée se remplace, le blocage interdit non.
+      const atk = Math.abs(Number(effet.atk) || 0);
+      const def = Math.abs(Number(effet.def) || 0);
+      return atk * 0.8 + def * 0.6
+        + (effet.empecheAttaque ? 1.5 : 0)
+        + (effet.empecheBlocage ? 1 : 0);
+    }
+    case 'empeche-blocage':
+      // La lune dévorée de Bakunawa : la défense adverse s'éteint un tour.
+      return 1.5;
+    case 'donne':
+      // Le Faiseur de passage : un mot-clé prêté pour le tour.
+      return effet.donne?.infiltration ? 2.5 : (effet.donne?.rapidite ? 0.5 : 0);
+    case 'infiltration': {
+      // +X/+Y durable si la carte les porte (`atk`/`def`), et le passe-droit
+      // Infiltration pour l'échange en cours. Tin Hinan n'accorde ni stats ni
+      // passe-droit à elle-même — sa valeur tient dans le +2 du camp.
+      const bonus = (Number(effet.atk) || 0) * 0.8 + (Number(effet.def) || 0) * 0.6;
+      return bonus + 2;
+    }
+    case 'recyclage':
+      // Cimetière → main : la carte recyclée vaut un peu moins qu'une pioche
+      // (elle est connue), le choix libre — toute la Liste — un cran au-dessus.
+      return effet.cible === 'carte-cimetiere' ? 2 : 1.5;
+    case 'reanimation':
+      // Cimetière → table : un corps qui revient, arrivées comprises. C'est
+      // une créature entière à crédit, d'où le prix de carte entière.
+      return 6;
+    case 'heures': {
+      // Le compte à rebours du beffroi : l'effet final à crédit, minoré pour
+      // l'attente (deux tours en général — le dernier compteur fait sonner).
+      const effets = Array.isArray(effet.effetFinal) ? effet.effetFinal : [effet.effetFinal].filter(Boolean);
+      return effets.reduce((total, sous) => total + valeurEffet(sous ?? {}), 0) * 0.7;
+    }
     case 'exil':
       return 6;
     case 'retour-main':
-      return 2;
+      // La vague du Léviathan : renvoyer toute la table entière vaut une
+      // tempête ; le renvoi ciblé reste un rebond ordinaire.
+      return effet.cible === 'toutes-autres' ? 6 : 2;
+    case 'retour-apres-tours': {
+      // Le retour d'Anqa : différé et dégressif — deux tours valent 2,5,
+      // chaque tour de plus retire 0,375 (quatre tours ≈ 1,75). Le sorcier a
+      // le temps de préparer la tombe.
+      const tours = Math.max(2, Number(effet.tours) || 2);
+      return Math.max(1, 2.5 - (tours - 2) * 0.375);
+    }
     case 'contresort':
       return effet.cible === 'carte' ? 3.5 : 2.5;
     case 'destruire-terrain-aleatoire':
@@ -182,7 +227,13 @@ export function valeurCarte(carte) {
   // Bannière : chaque attaque d'un Samouraï du camp laisse un +X/+X définitif
   // à l'attaquant — un renfort récurrent, un cran au-dessus d'une aura fixe.
   if (carte.banniere) valeur += 3;
+  // Butin (le set Sable) : chaque contact avec le sorcier adverse fait
+  // piocher puis défausser — une carte qui creuse, jouée à chaque attaque.
+  if (carte.butin) valeur += 1.2;
   if (carte.arrivee) valeur += valeurEffet(carte.arrivee);
+  // L'effet de destruction n'arrive que si la créature tombe : compté, mais
+  // à 80 % — la mort n'est pas une garantie, et certaines tombent trop tard.
+  if (carte.destruction) valeur += valeurEffet(carte.destruction) * 0.8;
   if (carte.activation) valeur += valeurEffet(carte.activation.effet) + 1;
   return valeur;
 }

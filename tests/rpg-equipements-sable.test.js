@@ -178,7 +178,8 @@ test('un renvoi en main n’est pas une mort : le Licou ne pioche pas', () => {
 
 test('la Boussole du Hoggar lit le dessus du deck à chaque attaque', () => {
   const duel = duelVide();
-  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  // Porteur sans Butin : la pioche d'attaque doit venir de la Boussole seule.
+  const porteur = poser(duel, 'joueur', 'dune-marchante');
   equiper(duel, 'joueur', 'boussole-du-hoggar', porteur);
 
   // Un terrain sur le dessus : il est révélé et rejoint la main.
@@ -343,7 +344,8 @@ test('la Takouba de Tin Hinan : le Coup rapide frappe une créature et pioche, s
 
 test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', () => {
   const duel = duelVide();
-  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  // Porteur sans Butin ni déclencheur : seule la Takouba doit parler dans ce test.
+  const porteur = poser(duel, 'joueur', 'dune-marchante');
   const mur = poser(duel, 'sorcier', 'dune-marchante'); // le bloqueur écarté du test
   equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur);
   rendrePret(duel, porteur);

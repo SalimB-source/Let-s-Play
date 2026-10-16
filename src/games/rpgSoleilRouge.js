@@ -48,7 +48,7 @@ export const RPG_SOLEIL_ROUGE_JETONS = [{
 export const RPG_SOLEIL_ROUGE_CREATURES = [
   carte({
     id: 'susanoo', name: 'Susanoo',
-    cost: 5, atk: 6, def: 3, rarity: 'mythique',
+    cost: 6, atk: 5, def: 3, rarity: 'mythique',
     typeLine: 'Créature légendaire — Kami · Tempête',
     arrivee: { type: 'exil', cible: 'creature' },
     text: 'Quand Susanoo arrive en jeu, retirez de la partie une créature de votre choix.',
@@ -85,7 +85,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'samourai-du-torii', name: 'Samouraï du torii',
-    cost: 3, atk: 2, def: 3, rarity: 'rare',
+    cost: 3, atk: 1, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humain · Samouraï',
     resonance: 1,
     resonanceTribu: 'samourai',
@@ -96,12 +96,12 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'onna-musha-des-cendres', name: 'Onna-musha des cendres',
     cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
-    text: '—',
+    esquive: 1, text: 'Esquive 1 — Réduit de 1 les dégâts reçus de chaque attaque ou magie (minimum 0).',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({
     id: 'tengu-du-mont-ardent', name: 'Tengu du mont ardent',
-    cost: 4, atk: 4, def: 2, rarity: 'rare', envol: true,
+    cost: 4, atk: 2, def: 2, rarity: 'rare', envol: true,
     typeLine: 'Créature — Yōkai · Tengu',
     resonance: 1,
     resonanceTribu: 'samourai',
@@ -134,7 +134,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'kenshi-de-la-forge', name: 'Kenshi de la forge',
-    cost: 3, atk: 1, def: 3, rarity: 'rare',
+    cost: 3, atk: 1, def: 2, rarity: 'rare',
     typeLine: 'Créature — Humain · Samouraï',
     // L'aura de forge : +2/+0 aux AUTRES Samouraïs de la table, dans les deux
     // camps — le petit corps est le prix de l'aura (voir `appliquerAuraKenshi`).
@@ -162,8 +162,8 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     kind: 'magie', cost: 4, rarity: 'rare',
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 5, def: -2, coupRapide: true },
-    text: 'Arme — Le porteur gagne +5/-2 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
+    effet: { type: 'arme', cible: 'creature-amie', atk: 4, def: -2, coupRapide: true },
+    text: 'Arme — Le porteur gagne +4/-2 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({
@@ -177,7 +177,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
   }),
   carte({
     id: 'feux-de-kitsune', name: 'Feux de kitsune',
-    kind: 'magie', cost: 3, rarity: 'rare',
+    kind: 'magie', cost: 4, rarity: 'rare',
     typeLine: 'Sorcellerie — Feu follet · Braise',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', echo: { amount: 1, tours: 1 } },
