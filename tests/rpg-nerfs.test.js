@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   rpgNouveauDuel, rpgJouerCreature, rpgJouerArme, rpgLancerMagie, rpgAttaquerSorcier,
   rpgLancerAttaque, rpgFinDeTour, rpgEstProtegee, rpgContreJouable, rpgResoudreArriveeCiblee,
-  rpgDefausserCarte, rpgBlesserCreature,
+  rpgDefausserCarte, rpgBlesserCreature, rpgPeutAttaquer, rpgChoisirAttaquants,
 } from '../src/games/rpgDuel.js';
 import { magieById } from '../src/games/rpgCards.js';
 
@@ -184,3 +184,38 @@ test('Anqa', () => {
     JSON.stringify(programmes));
 }
 });
+
+
+for (const cote of ['joueur', 'sorcier']) {
+  test(`Vipère : ${cote} ne peut pas sélectionner ni attaquer avec la victime avant expiration`, () => {
+    const adverse = cote === 'joueur' ? 'sorcier' : 'joueur';
+    const duel = duelAvecMains();
+    duel[cote].main = ['fennec-des-decombres', 'chien-du-guet'];
+    const victime = rpgJouerCreature(duel, cote, 'fennec-des-decombres').entite;
+    const libre = rpgJouerCreature(duel, cote, 'chien-du-guet').entite;
+    duel.tour = adverse;
+    duel[adverse].main = ['vipere-de-verre'];
+    assert.equal(rpgJouerCreature(duel, adverse, 'vipere-de-verre', victime.id).ok, true);
+    assert.equal(victime.atk, 1, 'la victime conserve une attaque positive');
+    rpgFinDeTour(duel);
+    assert.equal(duel.tour, cote);
+    assert.equal(victime.ready, true);
+    assert.equal(rpgPeutAttaquer(victime), false);
+    assert.equal(rpgPeutAttaquer(libre), true);
+    // Sans défenseur, l’IA voudrait envoyer toutes les créatures disponibles.
+    duel[adverse].creatures = [];
+    for (const niveau of ['recit', 'normale', 'veilleur']) {
+      assert.deepEqual(rpgChoisirAttaquants(duel, cote, { ia: { niveau } }), [libre.id]);
+    }
+    const avant = structuredClone(duel);
+    assert.deepEqual(rpgLancerAttaque(duel, cote, [victime.id, libre.id]),
+      { ok: false, raison: 'pas-pret' });
+    assert.deepEqual(duel, avant, 'le refus ne modifie pas le duel');
+    assert.equal(rpgLancerAttaque(duel, cote, [libre.id]).ok, true);
+    rpgFinDeTour(duel);
+    assert.equal(victime.empecheAttaqueToursRestants, 0);
+    rpgFinDeTour(duel);
+    assert.equal(rpgPeutAttaquer(victime), true);
+    assert.equal(rpgLancerAttaque(duel, cote, [victime.id]).ok, true);
+  });
+}
