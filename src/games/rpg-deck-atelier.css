@@ -763,3 +763,17 @@
   .rpg-atelier__carte:hover { transform: none; }
   .rpg-atelier__carte:hover .rpg-atelier__carte-art img { transform: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   EXPÉRIMENTATION — PLUS AUCUN CADRE DE CARTE (test visuel, à jeter)
+   Jumeau du bloc de fin de `rpg-battle.css` : la vignette de l'atelier perd
+   elle aussi son anneau. La bordure disparaît, les trois couches d'anneau
+   avec — il ne reste que la face et son ombre. Les pastilles, le liseré de
+   survol, le grisé des cartes verrouillées et la jauge de quota ne bougent pas.
+   Pour revenir en arrière : supprimer ce bloc.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-atelier__carte-art[class*="rpg-card--frame-"] {
+  border-width: 0 !important;
+  background-image: none !important;
+  animation: none !important;
+}

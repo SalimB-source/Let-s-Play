@@ -7452,3 +7452,65 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
  .rpg-mode-menu__play { padding-right: 12px; padding-left: 12px; }
  .rpg-mode-menu__switch button, .rpg-mode-menu__switch button.rpg-mode-menu__souk { padding: 0 9px; font-size: 10px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   EXPÉRIMENTATION — PLUS AUCUN CADRE DE CARTE (test visuel, à jeter)
+   ──────────────────────────────────────────────────────────────────────────
+   Tout l'ornement des faces du Sablier tient dans l'anneau de bordure : le
+   bord transparent, le fond de la face peint sur la padding-box, puis le motif
+   et la matière de l'élément sur la border-box. On ne garde ici que la face —
+   `border-width: 0` et `background-image: none` — et l'illustration, absolue
+   et en `inset: 0`, gagne la place de l'anneau.
+
+   Les `!important` sont volontaires : cet essai est jetable et doit l'emporter
+   sur les dizaines de `border-width` dispersés plus haut (annonce, palettes,
+   paliers `vw`, mobile). Rien d'autre n'est touché — pastilles, badges, liserés
+   de sélection, halos d'état et ombres restent exactement où ils étaient.
+
+   Pour revenir en arrière : supprimer ce bloc (et les deux jumeaux en fin de
+   `rpg-deck-atelier.css` et de `rpg-card-guide.css`). Rien d'autre n'a bougé.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-card[class*="rpg-card--frame-"],
+.rpg-hand__card[class*="rpg-card--frame-"],
+.rpg-terrain[class*="rpg-card--frame-"],
+.rpg-hover-card-preview[class*="rpg-card--frame-"],
+.rpg-hover-card-preview__face[class*="rpg-card--frame-"],
+.rpg-spell-played__art[class*="rpg-card--frame-"],
+.rpg-card-destruction-fx[class*="rpg-card--frame-"],
+.rpg-card-pile__card--top[class*="rpg-card--frame-"],
+.rpg-mulligan__card[class*="rpg-card--frame-"],
+.rpg-card-catalogue__art[class*="rpg-card--frame-"] {
+  border-width: 0 !important;
+  background-image: none !important;
+  animation: none !important;
+}
+
+/* La teinte de matière des mythiques et des armes (`#62180d`, l'acier…) ne
+   servait qu'à teindre l'anneau : sans anneau, elle ne peindrait plus qu'un
+   aplat derrière l'illustration. On la retire donc des deux familles. */
+.rpg-card--mythique[class*="rpg-card--frame-"],
+.rpg-card--frame-arme[class*="rpg-card--frame-"] {
+  background-color: transparent !important;
+}
+
+/* La plaque d'arme glissée derrière une créature en pile : même nature de
+   filet (la couleur de l'élément), donc même traitement. */
+.rpg-card-stack__arme {
+  border-width: 0 !important;
+}
+
+/* L'ombre décalée des piles était peinte avec `--rpg-frame-color` : c'est le
+   cadre en double, un cran plus loin de la carte (mobile.css le dit déjà :
+   « la couleur du cadre, au bord de la face : c'était le cadre, en double »).
+   Sans cadre, elle deviendrait la dernière trace de la couleur de l'élément :
+   on la retire donc partout, comme le fait déjà la feuille tactile. Le
+   compteur ×N et la pastille d'engagement restent — ce sont eux qui disent
+   la pile. L'engagement partiel garde sa bague, qui dit un état.
+   (Deux règles à retirer si l'on veut garder la profondeur des piles.) */
+.rpg-card-stack,
+.rpg-terrain.rpg-terrain-stack.is-stacked {
+  box-shadow: none !important;
+}
+.rpg-terrain.rpg-terrain-stack.is-partially-tapped {
+  box-shadow: 0 0 0 1px rgba(255, 217, 168, .45) !important;
+}
