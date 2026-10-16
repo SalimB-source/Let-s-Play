@@ -705,27 +705,46 @@ assert.match(cardsSource, /carte\?\.kind === 'arme'[\s\S]*?rpg-card--frame-arme-
   'les faces des armes ajoutent la classe de teinte de leur élément à la matière commune');
 assert.match(frameCss, /\.rpg-hover-card-preview\[class\*="rpg-card--frame-"\],\s*\.rpg-hover-card-preview__face\[class\*="rpg-card--frame-"\]\s*\{\s*background-color:\s*transparent;\s*\}/,
   'l’aperçu rapide ne garde aucune teinte de repli, ni sur son encadré entier ni derrière l’illustration');
-// Le vernis est réservé à la peinture mythique, indépendamment du cadre. Il
-// suit chaque face visible sans calque DOM ajouté au mulligan, et ne masque ni
-// les repères ni les états de jeu, même sur un appareil à mouvement réduit.
-const glossCss = frameCss.slice(frameCss.indexOf('/* Vernis des illustrations mythiques'), frameCss.indexOf('/* Coût, attaque et défense doivent'));
+// Le foil partagé a remplacé le vernis des mythiques. Une seule face brille
+// maintenant, avec le même calque partout : superposer un second reflet en
+// boucle se lisait comme un défaut de rendu, pas comme une carte brillante.
+// Et surtout, ce calque bouge avec la carte au lieu de tourner dans le vide.
+assert.doesNotMatch(frameCss, /rpg-mythic-art-gloss/,
+  'aucun reflet ne tourne en boucle sur une face : le foil est posé par la lumière');
+assert.doesNotMatch(frameCss, /rpg-card--mythique::before[^{]*\{[^}]*\b(?:background|animation)\s*:/s,
+  'les faces mythiques ne portent plus de calque de reflet séparé du foil');
+const foilCss = frameCss.slice(frameCss.indexOf('LE FOIL'), frameCss.indexOf("/* ── La face de l'aperçu en 3D"));
 for (const face of [
-  '.rpg-card--img.rpg-card--mythique::before',
-  '.rpg-hand__card--img.rpg-card--mythique::before',
-  '.rpg-mulligan__card.rpg-card--mythique::before',
-  '.rpg-hover-card-preview__face.rpg-card--mythique::before',
-  '.rpg-card-catalogue__art.rpg-card--mythique::before',
-  '.rpg-card-guide__example.rpg-card--mythique .rpg-card-guide__art::before',
-  '.rpg-atelier__carte:not(.is-locked) .rpg-atelier__carte-art.rpg-card--mythique::before',
+  '.rpg-card--img::after',
+  '.rpg-hand__card--img::after',
+  '.rpg-mulligan__card::after',
+  '.rpg-terrain::after',
+  '.rpg-hover-card-preview__face::after',
+  '.rpg-card-pile__card--top::after',
 ]) {
-  assert.ok(glossCss.includes(face), `${face} reçoit le reflet de l’illustration mythique`);
+  assert.ok(foilCss.includes(face), `${face} porte le foil commun`);
 }
-assert.match(glossCss, /content: "";[\s\S]*?z-index: 1;[\s\S]*?pointer-events: none;[\s\S]*?radial-gradient\([\s\S]*?linear-gradient\([\s\S]*?mix-blend-mode: screen;[\s\S]*?animation: rpg-mythic-art-gloss/,
-  'le reflet est peint sur l’image sans bloquer les gestes, et non sur le cadre');
-assert.match(glossCss, /\.rpg-card--mythique:is\(\.is-summoning-sick, \.is-attacked\)::before,[\s\S]*?opacity: \.2;\s*animation: none;/,
-  'le vernis s’atténue quand la créature est fatiguée ou la vignette au quota');
-assert.match(glossCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-card--mythique::before,[\s\S]*?animation: none !important;[\s\S]*?background-position: 0 0, 50% 0 !important;/,
-  'le vernis reste visible sans mouvement quand l’animation est réduite');
+// La face du catalogue n'a plus de foil, seulement son voile du bas : sa règle
+// est vérifiée à part. Elle est écrite bien avant `frameCss`, on la cherche donc
+// dans toute la feuille plutôt que dans la tranche des cadres.
+const catalogueArtCss = battleCss.match(/\.rpg-card-catalogue__art::after\s*\{[\s\S]*?\n\}/)?.[0] ?? '';
+assert.doesNotMatch(catalogueArtCss, /radial-gradient|--rpg-foil-/,
+  'la vignette du catalogue reste sans foil : la grille ne doit pas onduler sous le curseur');
+assert.match(catalogueArtCss, /linear-gradient\(0deg, rgba\(5, 4, 7/,
+  'la vignette du catalogue garde son voile du bas, qui rend le nom et le coût lisibles');
+// Le foil revient sur la fiche ouverte au clic — la seule face où l'on incline.
+assert.match(foilCss, /\.rpg-hover-card-preview__face::after/,
+  'la fiche ouverte au clic porte le foil, là où la carte suit vraiment le curseur');
+assert.match(foilCss, /repeating-linear-gradient[\s\S]*?radial-gradient\(ellipse[\s\S]*?mix-blend-mode: screen;/,
+  'le foil mêle le grain du support et des taches d’arc-en-ciel, en lumière ajoutée');
+assert.match(foilCss, /var\(--rpg-foil-cx, 0%\)/,
+  'le foil est placé par l’angle de vue, et non par une trame qui défile');
+assert.match(foilCss, /\* 1\.35\)[\s\S]*?\* 0\.7\)[\s\S]*?\* 1\.7\)/,
+  'les taches d’arc-en-ciel glissent à des vitesses différentes, sinon la carte resterait plate');
+// Le mythe reste reconnaissable, mais par son cadre et son relief — plus par un
+// reflet qui lui serait propre.
+assert.match(frameCss, /filter: saturate\(1\.1\) contrast\(1\.04\);/,
+  'la peinture mythique garde son relief, sans calque de reflet ajouté');
 // Le guide habille chaque fiche du même anneau orné que les autres faces, à
 // l'épaisseur commune de 6 px (la plaque des armes) : couleur unie d'une mono,
 // diagonale d'une hybride, acier des armes — plus de filet de 1 px ni de 3 px.

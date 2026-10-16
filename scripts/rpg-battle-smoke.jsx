@@ -184,17 +184,15 @@ export async function checkRpgBattle(assert) {
       `${contexte} nomme chaque couleur, y compris les deux choix de Pétra`);
     };
     verifierRegles(carte.querySelector('.rpg-card-catalogue__rules'), `Catalogue : ${id}`);
+    // Le survol n'ouvre plus d'aperçu au catalogue : la fiche montre déjà
+    // l'illustration, le nom, la famille, la couleur, le coût et les effets.
     await act(async () => { envoyerSouris(carte, 'mouseover'); });
-    const apercu = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
-    verifierRegles(apercu?.querySelector('.rpg-hover-card-preview__rules'), `Aperçu : ${id}`);
+    assert.equal(container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)'), null,
+      `le survol de ${id} au catalogue n'ouvre aucun aperçu`);
     if (id === 'petra') {
       assert.ok(carte.querySelector('.rpg-card-catalogue__art.rpg-card--frame-hybride-braise-sable:not(.rpg-card--frame-brillant)'),
         'le catalogue montre la diagonale fixe de Pétra');
-      assert.ok(apercu?.querySelector('.rpg-hover-card-preview__face.rpg-card--frame-hybride-braise-sable:not(.rpg-card--frame-brillant)'),
-        'son aperçu conserve les deux couleurs sans animation de cadre');
     }
-    assert.ok(apercu.getAttribute('aria-label').includes(cardById(id).text),
-      `le libellé accessible de ${id} conserve le texte original`);
     await act(async () => { envoyerSouris(carte, 'mouseout'); });
   }
   for (const carte of RPG_DUEL_CARDS.filter((carte) => carte.kind !== 'terrain')) {
@@ -326,11 +324,15 @@ export async function checkRpgBattle(assert) {
   assert.ok(cavalierCatalogue && cavalierCatalogue.dataset.type === 'creature',
     'le Cavalier rare apparaît comme créature dans le catalogue filtré');
   await act(async () => { envoyerSouris(cavalierCatalogue, 'mouseover'); });
-  const apercuCavalierCatalogue = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
-  assert.ok(apercuCavalierCatalogue, 'les cartes du catalogue ont aussi un aperçu instantané au survol');
-  assert.equal(apercuCavalierCatalogue.querySelector('.rpg-hover-card-preview__cost b')?.textContent, '5',
-    'l’aperçu du Cavalier montre son coût de cinq manas');
+  assert.equal(container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)'), null,
+    'aucune carte du catalogue n’ouvre d’aperçu au survol');
   await act(async () => { envoyerSouris(cavalierCatalogue, 'mouseout'); });
+  // Le clic, lui, ouvre toujours la fiche en grand : c'est le geste annoncé.
+  await act(async () => { cavalierCatalogue.querySelector('[data-catalogue-open]').click(); });
+  const apercuCavalierCatalogue = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
+  assert.ok(apercuCavalierCatalogue, 'le clic sur une carte du catalogue ouvre sa fiche en grand');
+  assert.equal(apercuCavalierCatalogue.querySelector('.rpg-hover-card-preview__cost b')?.textContent, '5',
+    'la fiche du Cavalier montre son coût de cinq manas');
   await act(async () => {
     [...container.querySelectorAll('.rpg-mode-menu__switch button')]
       .find((button) => button.textContent.includes('Deck')).click();

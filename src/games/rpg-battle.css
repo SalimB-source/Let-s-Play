@@ -3701,6 +3701,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   to { opacity: 1; transform: none; }
 }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__face {
+  /* Ouvrir une vignette ne doit pas la changer de forme : on reprend la
+     silhouette de la fiche du catalogue (grands coins du haut, plus serrés en
+     bas) au lieu du rayon générique des aperçus de duel, qui suit la largeur de
+     la fenêtre. Le ratio, lui, était déjà le même — 4/5 des deux côtés. */
+  border-radius: 12px 12px 7px 7px;
   /* La face est près de deux fois plus large que celle de l'aperçu rapide : la
      pastille de couleur suit le même rapport qu'au catalogue (≈ 13 % de la
      largeur), pour rester le repère franc de l'élément. Couleur et coût
@@ -5278,14 +5283,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-catalogue__card.is-locked .rpg-card-catalogue__art.rpg-card--frame-brillant {
   animation: none;
 }
-.rpg-card-catalogue__card.is-locked .rpg-card-catalogue__art.rpg-card--mythique::before {
-  content: none;
-}
 /* Le catalogue se lit au clic : chaque fiche porte un bouton transparent étiré
    sur toute la carte — c'est lui qui prend le clic (et le focus clavier), la
    fiche s'ouvre alors en grand dans son volet (`.rpg-card-peek--catalogue`).
-   Le survol à la souris garde l'aperçu rapide ; l'appui long d'une seconde
-   garde le sien (`rpgLongPress.js`), et son clic avalé n'ouvre pas la fiche. */
+   Plus d'aperçu au survol : la carte elle-même porte son foil, et une
+   vignette posée sous le pointeur ne se laisse pas lire. L'appui long d'une
+   seconde garde le sien (`rpgLongPress.js`), et son clic avalé n'ouvre pas la
+   fiche. */
 .rpg-card-catalogue__ouvrir {
   position: absolute;
   z-index: 4;
@@ -5370,7 +5374,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-radius: 12px 12px 7px 7px;
   background: #171218;
 }
-.rpg-card-catalogue__art::after { content: ""; position: absolute; z-index: 1; inset: 56% 0 0; background: linear-gradient(0deg, rgba(5, 4, 7, .36), transparent); pointer-events: none; }
+/* Pas de foil ici. La vignette du catalogue est une petite face qu'on survole
+   pour comparer deux cartes, pas une carte tenue à la main : un reflet qui
+   glisse sur chacune d'elles ferait onduler la grille entière à chaque
+   passage du curseur, et noierait la comparaison qu'elle sert justement.
+   Le foil revient sur la fiche ouverte au clic
+   (`.rpg-hover-card-preview__face`), seule face où l'on incline vraiment.
+   Ce `::after` ne garde donc que le voile du bas, qui sert à lire le nom et le
+   coût posés sur la peinture. */
+.rpg-card-catalogue__art::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background-image: linear-gradient(0deg, rgba(5, 4, 7, .36), transparent 56%);
+  pointer-events: none;
+}
 .rpg-card-catalogue__art > img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .rpg-card-catalogue__art .rpg-card-element-badge { top: 8px; left: 8px; width: var(--rpg-card-marker-size, 24px); border-width: 2px; font-size: 19px; }
 .rpg-card-catalogue__cost {
@@ -6431,36 +6450,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview[class*="rpg-card--frame-"],
 .rpg-hover-card-preview__face[class*="rpg-card--frame-"] { background-color: transparent; }
 
-/* Vernis des illustrations mythiques, distinct du reflet de leur cadre : une
-   lumière douce reste en haut de l'image et un éclat étroit la traverse. Le
-   calque est au-dessus de la peinture, sous les coûts, badges et statistiques.
-   On ne touche pas aux vignettes verrouillées de l'atelier ; aucun enfant DOM
-   supplémentaire n'interfère avec le glisser-déposer ou le mulligan. */
-.rpg-card--img.rpg-card--mythique::before,
-.rpg-hand__card--img.rpg-card--mythique::before,
-.rpg-mulligan__card.rpg-card--mythique::before,
-.rpg-hover-card-preview__face.rpg-card--mythique::before,
-.rpg-card-catalogue__art.rpg-card--mythique::before,
-.rpg-card-guide__example.rpg-card--mythique .rpg-card-guide__art::before,
-.rpg-atelier__carte:not(.is-locked) .rpg-atelier__carte-art.rpg-card--mythique::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 85% 55% at 18% 5%, rgba(255, 255, 255, .22), rgba(255, 255, 255, .07) 42%, transparent 75%),
-    linear-gradient(110deg, transparent 32%, rgba(255, 255, 255, .06) 42%, rgba(255, 255, 255, .27) 50%, rgba(255, 255, 255, .08) 56%, transparent 66%);
-  background-size: 100% 100%, 250% 100%;
-  background-repeat: no-repeat;
-  background-position: 0 0, 0% 0;
-  mix-blend-mode: screen;
-  animation: rpg-mythic-art-gloss 5.2s ease-in-out infinite alternate;
-}
-
-/* La peinture gagne un soupçon de relief, sans virer vers une autre couleur.
-   Les filtres d'état (fatigue, blessure, carte verrouillée) restent prioritaires. */
+/* La peinture mythique garde un soupçon de relief, sans virer vers une autre
+   couleur. C'est tout ce qui la distingue maintenant de ses voisines : son
+   reflet n'est plus un calque à part, c'est le foil commun, plus dense parce
+   qu'elle a déjà un cadre doré autour. Les filtres d'état (fatigue, blessure,
+   carte verrouillée) restent prioritaires. */
 .rpg-card--mythique:not(.is-summoning-sick, .is-attacked) > .rpg-card__img,
 .rpg-card--mythique > .rpg-hand__img,
 .rpg-card--mythique > .rpg-mulligan__img,
@@ -6469,27 +6463,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-guide__example.rpg-card--mythique .rpg-card-guide__art > img,
 .rpg-atelier__carte:not(.is-locked, .is-full) .rpg-atelier__carte-art.rpg-card--mythique > img {
   filter: saturate(1.1) contrast(1.04);
-}
-
-/* Une créature épuisée ne doit pas étinceler comme une carte prête à jouer. */
-.rpg-card--mythique:is(.is-summoning-sick, .is-attacked)::before,
-.rpg-atelier__carte.is-full .rpg-atelier__carte-art.rpg-card--mythique::before {
-  opacity: .2;
-  animation: none;
-}
-
-@keyframes rpg-mythic-art-gloss {
-  from { background-position: 0 0, 0% 0; }
-  to { background-position: 0 0, 100% 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rpg-card--mythique::before,
-  .rpg-card-guide__example.rpg-card--mythique .rpg-card-guide__art::before,
-  .rpg-atelier__carte-art.rpg-card--mythique::before {
-    animation: none !important;
-    background-position: 0 0, 50% 0 !important;
-  }
 }
 
 /* Coût, attaque et défense doivent rester immédiatement lisibles sur les faces. */
@@ -7513,4 +7486,167 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-terrain.rpg-terrain-stack.is-partially-tapped {
   box-shadow: 0 0 0 1px rgba(255, 217, 168, .45) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA BOUTIQUE DU SABLIER — le cadre des armes revient, plus fin et gris
+   ──────────────────────────────────────────────────────────────────────────
+   Après « plus aucun cadre », une seule famille garde un anneau : les armes.
+   Même matière pour toutes — de l'acier — mais un acier gris, sans la trempe
+   colorée de l'élément. La carte d'une arme ne se distingue plus que par la
+   sienne ; celle d'une créature reste une image sans bordure.
+
+   Et l'anneau n'est plus un trait plein : il est repeint à la façon du jeu —
+   bordure transparente, matière peinte sur la border-box — pour porter un
+   acier poli ( `--rpg-arme-metal` ) et le guilloché de Damas. Ce dernier est
+   celui que `.rpg-card--frame-arme` posait déjà (`--rpg-frame-motif`), toujours
+   en vigueur : on ne réinvente pas la texture, on la repose à sa place. Le
+   zellige des mythiques et la résille des cartes, eux, restent absents.
+
+   L'épaisseur n'est plus celle d'une plaque (≈ 7 à 9 px, l'×1,6 des armes) mais
+   celle d'un filet de carte : 3 px sur les faces du jeu, 2 px sur les
+   petites — terrains, dessus des piles, vignette de magie jouée. Tout se règle
+   sur `--rpg-arme-cadre*` et `--rpg-arme-metal`, posés ci-dessous.
+
+   La bordure, elle, est transparente : tout l'anneau est peint sur la
+   border-box, à la façon du jeu — le fond de la face passe en `background-color`
+   (il est déjà posé par chaque face, via `--rpg-frame-fill`), et les deux
+   couches d'image ne portent que le décor : le guilloché puis l'acier poli.
+   C'est deux couches et non trois : le fond de face ne pouvait pas rester une
+   couche, trois couches dont une en `var()` ne sont plus tranchables par la
+   cascade de test — et la bordure transparente rend la première inutile.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-battle {
+  --rpg-arme-cadre: 5px;
+  --rpg-arme-cadre-fin: 3px;
+  /* L'acier poli : des bandes sombres et claires en travers de l'anneau, ce
+     qui le fait lire comme du métal plutôt que comme un trait de peinture.
+     Trois réglages pour toute la matière — la couleur du gris, le nombre de
+     bandes, leur écart. */
+  --rpg-arme-metal: linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd);
+}
+
+/* Le filet est posé en `border` — le raccourci, comme le fait le jeu partout
+   ailleurs — et non en `border-width` : c'est plus court, et c'est la seule
+   forme que la cascade de test arrive à trancher entre deux règles
+   `!important` qui se suivent (voir le bloc jumeau de l'atelier). */
+.rpg-card[class*="rpg-card--frame-arme"],
+.rpg-hand__card[class*="rpg-card--frame-arme"],
+.rpg-hover-card-preview__face[class*="rpg-card--frame-arme"],
+.rpg-mulligan__card[class*="rpg-card--frame-arme"],
+.rpg-card-catalogue__art[class*="rpg-card--frame-arme"],
+.rpg-card-destruction-fx[class*="rpg-card--frame-arme"] {
+  border: var(--rpg-arme-cadre, 5px) solid transparent !important;
+  background-color: var(--rpg-frame-fill, #0c0c0e) !important;
+  background-image:
+    var(--rpg-frame-motif, none),
+    var(--rpg-arme-metal, linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd)) !important;
+  background-origin: border-box, border-box !important;
+  background-clip: border-box, border-box !important;
+  background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100% !important;
+  background-repeat: repeat, no-repeat !important;
+  background-position: 0 0, 0 0 !important;
+}
+
+/* Les petites faces gardent proportionnellement le même filet : 2 px sur
+   43–96 px de large, 3 px y mangeraient le tiers de l'image. */
+.rpg-terrain[class*="rpg-card--frame-arme"],
+.rpg-spell-played__art[class*="rpg-card--frame-arme"],
+.rpg-card-pile__card--top[class*="rpg-card--frame-arme"] {
+  border: var(--rpg-arme-cadre-fin, 3px) solid transparent !important;
+  background-color: var(--rpg-frame-fill, #0c0c0e) !important;
+  background-image:
+    var(--rpg-frame-motif, none),
+    var(--rpg-arme-metal, linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd)) !important;
+  background-origin: border-box, border-box !important;
+  background-clip: border-box, border-box !important;
+  background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100% !important;
+  background-repeat: repeat, no-repeat !important;
+  background-position: 0 0, 0 0 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LE FOIL — une carte qui brille vraiment, et qui brille *quand on la bouge*
+   ──────────────────────────────────────────────────────────────────────────
+   Un foil de Magic ou de Pokémon ne fait pas tourner un reflet dans le vide :
+   le reflet se déplace parce que la carte a changé d'angle sous la lumière.
+   Ce calque ne s'anime donc pas — il est *placé* par l'angle de vue.
+
+   L'angle vient de deux sources ; la face la plus proche du curseur l'emporte :
+   - `--rpg-foil-cx/cy`, posés sur `<html>` par `useLumiereCartes` : une seule
+     lumière pour tout le plateau, lue sur le curseur. Un seul reflet que toutes
+     les faces partagent, comme une table de cartes vues ensemble ;
+   - les mêmes deux variables, réécrites par la face de l'aperçu elle-même à
+     chaque inclinaison : l'aperçu est la seule carte qu'on incline, et son
+     reflet part de l'inclinaison plutôt que du curseur. On la tourne, les
+     taches d'arc-en-ciel glissent avec elle. C'est le geste du joueur qui
+     pilote, pas une boucle.
+
+   Six couches, du grain au plus fort :
+   1. le grain du foil — de fines stries à angle fixe, le quadrillage qu'on voit
+      en rapprochant la carte ;
+   2–5. quatre taches d'arc-en-ciel, décalées en profondeur (× 1,35, × 0,7,
+      × 1,7) : c'est ce décalage qui donne le relief — sans lui, les taches
+      coulisseraient comme un calque unique et la carte paraitrait plate ;
+   6. l'éclat qui court, inversé par rapport aux taches : il reste sur les bords
+      quand celles-ci sont au centre.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-card--img::after,
+.rpg-hand__card--img::after,
+.rpg-mulligan__card::after,
+.rpg-terrain::after,
+.rpg-hover-card-preview__face::after,
+.rpg-card-pile__card--top::after,
+.rpg-card-guide__example::after,
+.rpg-souk__carte-art::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(118deg, rgba(255, 255, 255, .10) 0 1px, rgba(255, 255, 255, 0) 1px 3px),
+    radial-gradient(ellipse 40% 32% at 30% 24%, rgba(255, 74, 168, .42), transparent 72%),
+    radial-gradient(ellipse 36% 30% at 74% 32%, rgba(92, 214, 255, .38), transparent 72%),
+    radial-gradient(ellipse 42% 30% at 38% 78%, rgba(255, 212, 92, .34), transparent 72%),
+    radial-gradient(ellipse 34% 28% at 78% 82%, rgba(160, 108, 255, .34), transparent 72%),
+    linear-gradient(112deg, transparent 30%, rgba(255, 255, 255, .34) 48%, transparent 66%);
+  background-size: 100% 100%, 300% 300%, 300% 300%, 300% 300%, 300% 300%, 240% 100%;
+  background-repeat: no-repeat;
+  background-position:
+    0 0,
+    calc(50% - var(--rpg-foil-cx, 0%)) calc(50% - var(--rpg-foil-cy, 0%)),
+    calc(50% - var(--rpg-foil-cx, 0%) * 1.35) calc(50% - var(--rpg-foil-cy, 0%) * 1.35),
+    calc(50% - var(--rpg-foil-cx, 0%) * 0.7) calc(50% - var(--rpg-foil-cy, 0%) * 0.7),
+    calc(50% - var(--rpg-foil-cx, 0%) * 1.7) calc(50% - var(--rpg-foil-cy, 0%) * 1.7),
+    calc(50% + var(--rpg-foil-cx, 0%) * 0.5) 0;
+  mix-blend-mode: screen;
+}
+
+/* ── La face de l'aperçu en 3D ───────────────────────────────────────────────
+   Seule l'aperçu — survol, appui long, fiche du catalogue, annonce, mulligan —
+   penche avec le curseur ; toutes les autres cartes restent à plat, sinon la
+   table danserait sous le pointeur. L'inclinaison vient de deux variables que
+   la page écrit sur la face ; le retour au repos est la transition, qu'on
+   coupe le temps que le curseur suit (`is-suit-la-souris`), sans quoi la
+   carte traînerait derrière lui. La focale est posée dans le `transform`
+   lui-même : la face reste ainsi indépendante de la perspective du parent, qui
+   sert à l'aperçu annoncé et à la fiche. */
+.rpg-hover-card-preview .rpg-hover-card-preview__face {
+  /* `--rpg-face-3d-s` annule l'agrandissement que la perspective applique au
+     côté le plus proche du pointeur : sans lui, la carte penchée dépasse sa
+     propre boîte et le volet lui en rognerait les bords. C'est l'équivalent
+     explicite de ce que la perspective fait déjà — la carte garde sa taille,
+     elle ne sort simplement plus de son cadre. */
+  transform:
+    perspective(var(--rpg-face-3d-focale, 880px))
+    rotateX(var(--rpg-face-3d-x, 0deg))
+    rotateY(var(--rpg-face-3d-y, 0deg))
+    scale(var(--rpg-face-3d-s, 1));
+  will-change: transform;
+  transition: transform .55s cubic-bezier(.22, 1, .36, 1);
+}
+.rpg-hover-card-preview .rpg-hover-card-preview__face.is-suit-la-souris {
+  transition: none;
 }

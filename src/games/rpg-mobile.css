@@ -919,3 +919,28 @@
   border-width: 0;
   background-image: none;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA BOUTIQUE DU SABLIER — le cadre des armes revient, plus fin et gris
+   ──────────────────────────────────────────────────────────────────────────
+   La plaque d'arme d'une pile est le seul cas particulier : elle ne porte
+   aucune classe de cadre (c'est un `<span>` décoratif glissé derrière la
+   créature, qui ne reçoit que la couleur en variable), et sa bordure est
+   déclarée ici même, plus haut — donc dans une feuille chargée *après*
+   `rpg-battle.css`. L'exception se pose donc ici, à côté de la règle qu'elle
+   corrige, plutôt que dans le bloc du duel : elle passe ainsi devant dans
+   n'importe quel ordre de chargement. À retirer si l'on ne veut pas de filet
+   sur la plaque.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-card-stack__arme {
+  border: var(--rpg-arme-cadre, 5px) solid transparent !important;
+  background-color: #0c0c0e !important;
+  background-image:
+    var(--rpg-frame-motif, none),
+    var(--rpg-arme-metal, linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd)) !important;
+  background-origin: border-box, border-box !important;
+  background-clip: border-box, border-box !important;
+  background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100% !important;
+  background-repeat: repeat, no-repeat !important;
+  background-position: 0 0, 0 0 !important;
+}
