@@ -134,166 +134,29 @@ export async function checkRpgFullscreen(assert) {
   window.localStorage.clear();
   const api = installFullscreenApi();
   try {
-    // ── 0-6. Le plein écran vit du menu au duel ────────────────────────────
-    {
-      const { node, unmount } = await mountPage();
-      const coqueAuMontage = shellOf(node);
-      assert.ok(coqueAuMontage, 'la coque du Sablier est rendue dès l’ouverture de la page');
-      assert.equal(coqueAuMontage.dataset.scene, 'menu', 'la page s’ouvre sur le menu, avant toute partie');
+    const { node, unmount } = await mountPage();
+    assert.deepEqual(stateOf(node, api), CLOSED, 'le Sablier s’ouvre dans la page, sans couche ni plein écran natif');
+    assert.deepEqual(counts(api), { requests: 0, exits: 0 }, 'aucune demande native au montage');
 
-      // 0. Plein écran « de base » : la couche fixe couvre le viewport sans
-      // geste ; le natif attend le premier geste du joueur.
-      assert.deepEqual(stateOf(node, api), LAYER_ONLY, 'l’interface se lance en plein écran de base, menu compris');
-      assert.deepEqual(counts(api), { requests: 0, exits: 0 }, 'aucune demande native avant un geste du joueur');
-      const bouton = menuToggleOf(node);
-      assert.ok(bouton, 'le menu propose son bouton « plein écran »');
-      assert.equal(bouton.getAttribute('aria-pressed'), 'true', 'le bouton reflète le plein écran de base');
-      assert.equal(bouton.getAttribute('aria-label'), 'Quitter le plein écran');
-      assert.match(bouton.title, /\(F\)/, 'l’infobulle annonce la touche F');
-      assert.ok(bouton.querySelector('svg.rpg-fullscreen-icon'), 'icône dessinée en SVG (pas de glyphe absent des polices)');
-      assert.ok(bouton.classList.contains('is-on'), 'le bouton est allumé tant que le plein écran est voulu');
+    // Le plein écran reste disponible sur demande explicite.
+    await click(menuToggleOf(node));
+    await settle();
+    assert.deepEqual(stateOf(node, api), OPEN, 'le bouton permet toujours de demander explicitement le plein écran');
+    await click(menuToggleOf(node));
+    await settle();
+    assert.deepEqual(stateOf(node, api), CLOSED, 'le bouton permet de revenir à la page');
 
-      // 1. Le premier geste demande le plein écran natif — sur la coque du jeu.
-      await touch(coqueAuMontage);
-      await settle();
-      assert.deepEqual(stateOf(node, api), OPEN, 'le premier geste ouvre le plein écran natif');
-      assert.deepEqual(since(api, { requests: 0, exits: 0 }), { requests: 1, exits: 0 }, 'une seule demande native');
-      assert.notEqual(api.element, document.documentElement, 'le Sablier part en plein écran, pas toute la page du site');
-      assert.equal(api.element, coqueAuMontage, 'la cible est la coque du jeu');
-
-      // 2. Démarrer une partie : le plein écran traverse le changement d'écran.
-      await lancerDuel(node);
-      await settle();
-      const coqueEnDuel = shellOf(node);
-      assert.equal(coqueEnDuel.dataset.scene, 'duel', 'le duel est lancé');
-      assert.equal(coqueEnDuel, coqueAuMontage, 'la coque est le même nœud : le navigateur ne referme pas le plein écran');
-      assert.deepEqual(stateOf(node, api), OPEN, 'le duel continue en plein écran');
-      assert.equal(api.element, coqueEnDuel, 'le plein écran natif porte toujours sur la coque');
-      const boutonDuel = duelToggleOf(node);
-      assert.ok(boutonDuel, 'la barre du duel a son bouton « plein écran »');
-      assert.equal(boutonDuel.getAttribute('aria-pressed'), 'true', 'le bouton du duel reflète le plein écran');
-      assert.match(boutonDuel.title, /\(F\)/, 'l’infobulle du duel annonce la touche F');
-      assert.ok(boutonDuel.querySelector('svg.rpg-fullscreen-icon'), 'même icône SVG dans la barre du duel');
-
-      // 4. Touche F : ferme, puis rouvre (depuis le duel).
-      const avantF = counts(api);
-      await press('f');
-      await settle();
-      assert.deepEqual(stateOf(node, api), CLOSED, 'F referme le plein écran natif et rend la page');
-      assert.deepEqual(since(api, avantF), { requests: 0, exits: 1 }, 'F passe par exitFullscreen');
-      assert.equal(duelToggleOf(node).getAttribute('aria-pressed'), 'false', 'le bouton du duel s’éteint');
-      assert.equal(duelToggleOf(node).getAttribute('aria-label'), 'Jouer en plein écran');
-      await press('F');
-      await settle();
-      assert.deepEqual(stateOf(node, api), OPEN, 'F majuscule rouvre le plein écran, en duel comme au menu');
-
-      // 4 bis. Les combinaisons du navigateur et la touche maintenue ne font rien.
-      const avantCombos = counts(api);
-      for (const init of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }, { repeat: true }]) {
-        const event = await press('f', init);
-        assert.equal(event.defaultPrevented, false, `F avec ${JSON.stringify(init)} reste au navigateur`);
-      }
-      await settle();
-      assert.deepEqual(since(api, avantCombos), { requests: 0, exits: 0 }, 'aucune bascule sur une combinaison ou une touche maintenue');
-
-      // 5. Un « f » tapé dans un champ de saisie ne bascule rien.
-      const champ = document.createElement('input');
-      document.body.append(champ);
-      const avantSaisie = counts(api);
-      const eventSaisie = await press('f', {}, champ);
-      assert.equal(eventSaisie.defaultPrevented, false, 'la saisie du nom d’un deck garde la touche f');
-      await settle();
-      assert.deepEqual(since(api, avantSaisie), { requests: 0, exits: 0 }, 'rien ne bascule pendant la saisie');
-      // Un clic dans un champ ne demande pas non plus le natif.
-      await act(async () => { api.element = null; });
-      await touch(champ);
-      await settle();
-      assert.equal(api.requests, avantSaisie.requests, 'un geste dans un champ ne demande pas le plein écran');
-      champ.remove();
-      await act(async () => { api.element = coqueEnDuel; document.dispatchEvent(new window.Event('fullscreenchange')); });
-      await settle();
-
-      // 3. Retour au menu : le plein écran reste ouvert.
-      await click(duelMenuButtonOf(node));
-      await settle();
-      assert.equal(shellOf(node).dataset.scene, 'menu', 'le menu est revenu');
-      assert.deepEqual(stateOf(node, api), OPEN, 'quitter le duel ne referme pas le plein écran du menu');
-      assert.deepEqual(since(api, avantF), { requests: 1, exits: 1 }, 'la session de paysage ne referme plus le plein écran');
-      assert.equal(shellOf(node), coqueAuMontage, 'un seul et même nœud du menu au duel');
-
-      // 6. Le navigateur referme (Échap, geste « retour » d'Android) : la page
-      // suit, le jeu reste jouable, et relancer une partie rouvre l'écran. La
-      // touche qui referme ne le rouvre pas dans la foulée, même quand le
-      // navigateur n'a pas encore envoyé son `fullscreenchange`.
-      await act(async () => { api.element = null; });
-      const avantEchap = counts(api);
-      await press('Escape');
-      await settle();
-      assert.deepEqual(since(api, avantEchap), { requests: 0, exits: 0 }, 'Échap ne rouvre pas le plein écran qu’il vient de fermer');
-      await api.browserExit();
-      assert.deepEqual(stateOf(node, api), CLOSED, 'une sortie du navigateur rend la mise en page de la page');
-      assert.ok(shellOf(node).dataset.scene, 'le jeu reste affiché et jouable dans la couche fixe');
-      await lancerDuel(node);
-      await settle();
-      assert.deepEqual(stateOf(node, api), OPEN, 'relancer une partie rouvre le plein écran dans le geste');
-      assert.equal(shellOf(node).dataset.scene, 'duel', 'le duel est reparti');
-
-      await unmount();
-      assert.equal(api.element, null, 'quitter la page referme le plein écran');
-      assert.equal(document.body.classList.contains('game-immersive-lock'), false, 'quitter la page rend le défilement');
-    }
-
-    // ── 7. Un étage des Tours se lance en plein écran, dans le geste ───────
-    {
-      const { node, unmount } = await mountPage();
-      await click(menuTabOf(node, 'Tours'));
-      await settle();
-      const tour = storyTowerOf(node);
-      assert.ok(tour, 'le mode Tours ouvre sur la galerie des tours');
-      await click(tour);
-      await settle();
-      const etage = storyFloorOf(node);
-      assert.ok(etage, 'le premier étage de la tour ouverte est jouable');
-      await click(etage);
-      await settle();
-      assert.deepEqual(stateOf(node, api), OPEN, 'un étage du mode Tours se lance en plein écran');
-      assert.equal(shellOf(node).dataset.scene, 'duel', 'le duel de l’étage est ouvert');
-      await unmount();
-    }
-
-    // ── 8. Sans Fullscreen API (iPhone, iframe) : la couche fixe suffit ────
-    {
-      api.uninstall();
-      const { node, unmount } = await mountPage();
-      assert.deepEqual(stateOf(node, api), { ...LAYER_ONLY, native: false },
-        'le plein écran de base tient sans Fullscreen API');
-      await touch(shellOf(node));
-      await settle();
-      assert.deepEqual(stateOf(node, api), { ...LAYER_ONLY, native: false },
-        'un geste ne casse rien quand le navigateur n’a pas l’API');
-      await press('f');
-      await settle();
-      assert.deepEqual(stateOf(node, api), CLOSED, 'F retire la couche fixe sans appeler exitFullscreen');
-      await lancerDuel(node);
-      await settle();
-      assert.deepEqual(stateOf(node, api), { ...LAYER_ONLY, native: false },
-        'le duel se lance dans la couche fixe, qui couvre tout le viewport');
-      await unmount();
-      assert.equal(document.body.classList.contains('game-immersive-lock'), false, 'le défilement est rendu même sans API');
-    }
-
-    // ── 9. Le navigateur refuse (politique, iframe sans allowfullscreen) ───
-    {
-      const refusee = installFullscreenApi();
-      refusee.refuse = true;
-      const { node, unmount } = await mountPage();
-      await touch(shellOf(node));
-      await settle();
-      assert.deepEqual(stateOf(node, refusee), LAYER_ONLY, 'une demande refusée laisse la couche fixe, qui suffit pour jouer');
-      assert.equal(refusee.element, null, 'rien n’est en plein écran natif');
-      await unmount();
-      refusee.uninstall();
-    }
+    // Ni un geste ordinaire ni le lancement d’une partie ne demandent le natif.
+    await touch(shellOf(node));
+    await settle();
+    assert.deepEqual(stateOf(node, api), CLOSED, 'un toucher ordinaire ne déclenche pas le plein écran');
+    await lancerDuel(node);
+    await settle();
+    assert.deepEqual(stateOf(node, api), CLOSED, 'le lancement du duel reste dans la page');
+    assert.equal(shellOf(node).dataset.scene, 'duel', 'la partie est bien lancée');
+    await unmount();
+    assert.equal(api.element, null, 'quitter la page ferme un éventuel plein écran');
+    api.uninstall();
   } finally {
     api.uninstall();
     document.body.classList.remove('game-immersive-lock');
