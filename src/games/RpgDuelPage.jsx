@@ -12,7 +12,7 @@ import './rpg-story.css';
 import './rpg-deckbox.css';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
-import { isFullscreenShortcut, nativeFullscreenElement } from './gameFullscreen.js';
+import { isFullscreenShortcut } from './gameFullscreen.js';
 import useGameFullscreen from './useGameFullscreen.js';
 import { AuthContext } from '../auth/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -2852,53 +2852,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, [ecran]);
 
   // ── Plein écran ──────────────────────────────────────────────────────────
-  // Le Sablier SE LANCE EN PLEIN ÉCRAN, sur ordinateur comme sur téléphone, et
-  // son interface d'avant-partie en fait partie : le menu Jouer, le mode
-  // Histoire, les decks et le catalogue s'affichent déjà plein écran, le duel
-  // n'a plus qu'à continuer dans le même espace. Le mécanisme (Fullscreen API,
-  // couche fixe en repli, verrou de défilement) est celui des jeux d'arcade —
-  // `gameFullscreen.js` / `useGameFullscreen.js` ; ici, les règles du jeu :
-  //   - la coque est une couche fixe qui couvre tout le viewport : elle est
-  //     posée dès le montage de la page, sans geste, et le choix est
-  //     « épinglé » — il traverse les écrans jusqu'à ce que le joueur le quitte
-  //     (bouton du menu ou de la barre du duel, touche F, Échap, geste
-  //     « retour » d'Android) ;
-  //   - le navigateur exige un geste pour le plein écran natif : le premier
-  //     clic ou la première touche du joueur le demande (effet suivant) ;
-  //   - lancer une partie (duel libre, étage de l'Histoire, « Reprendre »,
-  //     « Activer le paysage ») le redemande dans le geste du bouton, ce qui
-  //     rouvre un plein écran quitté depuis le menu ;
-  //   - la session de paysage ne possède plus le plein écran
-  //     (`enter({ fullscreen: false })`) : un seul propriétaire, sinon le
-  //     retour au menu refermait l'écran demandé.
-  useEffect(() => {
-    // Plein écran « de base » : la couche fixe se pose sans geste. `native` est
-    // faux car le navigateur refuserait une demande hors geste — le natif part
-    // au premier geste du joueur.
-    entrerPleinEcran({ pinned: true, native: false });
-  }, [entrerPleinEcran]);
-
-  // Le navigateur exige un geste pour le vrai plein écran : le premier clic ou
-  // la première touche (hors champ de saisie) le demande, au menu comme en duel.
-  // Le natif posé — ou le plein écran quitté — l'écoute s'arrête d'elle-même.
-  useEffect(() => {
-    if (!pleinEcran) return undefined;
-    const upgrade = (event) => {
-      if (nativeFullscreenElement()) return;
-      if (vientDunChampDeSaisie(event.target)) return;
-      // Échap (ou le geste « retour ») referme le plein écran dans le
-      // navigateur : si la touche nous parvient quand même, elle ne doit pas le
-      // rouvrir aussitôt — la sortie appartient au joueur.
-      if (String(event.key || '').toLowerCase() === 'escape') return;
-      entrerPleinEcran({ pinned: true });
-    };
-    window.addEventListener('pointerdown', upgrade, true);
-    window.addEventListener('keydown', upgrade, true);
-    return () => {
-      window.removeEventListener('pointerdown', upgrade, true);
-      window.removeEventListener('keydown', upgrade, true);
-    };
-  }, [pleinEcran, entrerPleinEcran]);
+  // Le Sablier s'ouvre dans la page, sans plein écran natif ni couche immersive
+  // automatique. Le joueur peut choisir le plein écran à tout moment avec le
+  // bouton du menu/de la barre du duel ou la touche F. Le lancement d'une partie
+  // ne déclenche jamais la Fullscreen API ; la session de paysage ne gère que
+  // l'orientation et le pont Android.
 
   // « F » bascule le plein écran, sur tous les écrans du jeu. Ni Ctrl/Cmd+F (la
   // recherche du navigateur), ni Alt+F, ni une touche maintenue, ni un « f »
@@ -2982,11 +2940,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
   });
 
-  // Lancer (ou reprendre) une partie : le plein écran natif est demandé ici,
-  // dans le geste du bouton — le navigateur le refuse ailleurs. La session de
-  // paysage garde l'orientation et le pont Android, pas le plein écran.
+  // Lancer (ou reprendre) une partie ne demande pas le plein écran. Le bouton
+  // « Activer le paysage » ne change que l'orientation de l'appareil.
   const demanderPleinEcranEtPaysage = () => {
-    entrerPleinEcran({ pinned: true });
     landscapeRef.current?.enter({ fullscreen: false });
   };
   const reprendrePartie = () => {

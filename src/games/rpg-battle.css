@@ -1340,18 +1340,10 @@
 }
 
 /* ── Plein écran : le menu comme le duel ─────────────────────────────────────
-   Le Sablier se lance en plein écran, sur ordinateur comme sur téléphone, et
-   son interface d'avant-partie (menu Jouer, mode Histoire, decks, catalogue) en
-   fait partie. Deux couches, comme les jeux d'arcade :
-     - la couche fixe ci-dessus, qui couvre tout le viewport dès l'ouverture de
-       la page — `is-immersive` est posée par `useGameFullscreen` au montage,
-       sans geste, et reste quand le navigateur refuse le plein écran natif
-       (iPhone, `iframe` sans `allowfullscreen`) ;
-     - le plein écran natif, demandé au premier geste du joueur, au lancement
-       d'une partie, par le bouton du menu ou de la barre du duel, ou par la
-       touche F (`gameFullscreen.js`).
-   Les marges d'encoche (`env(safe-area-inset-*)`, plus bas) sont conservées :
-   c'est sur iPhone, sans natif, que la couche fixe seule tient le jeu. */
+   La page ne force jamais le plein écran : la couche immersive et l'API native
+   ne sont activées que sur demande explicite (boutons ou touche F). Les règles
+   visuelles partagées par le menu et le duel sont définies ici. Les marges
+   d'encoche (`env(safe-area-inset-*)`, plus bas) restent conservées. */
 body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-battle.is-immersive { overscroll-behavior: none; }
 
