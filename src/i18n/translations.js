@@ -26,7 +26,7 @@ export const translations = {
       games: 'Games',
       // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
       // la section se déplie en deux pages, les jeux de la maison et les quizz.
-      videoGames: 'Video games',
+      videoGames: "Let's Play",
       gamesMenuAria: 'Show the games menu',
       profile: 'Profile',
       levelShort: 'LVL',
@@ -453,7 +453,7 @@ export const translations = {
       games: 'Jeux',
       // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
       // la section se déplie en deux pages, les jeux de la maison et les quizz.
-      videoGames: 'Jeux-vidéo',
+      videoGames: "Let's Play",
       gamesMenuAria: 'Afficher le menu des jeux',
       profile: 'Profil',
       levelShort: 'NIV.',
@@ -872,7 +872,7 @@ export const translations = {
       games: 'ألعاب',
       // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
       // la section se déplie en deux pages, les jeux de la maison et les quizz.
-      videoGames: 'ألعاب الفيديو',
+      videoGames: "Let's Play",
       gamesMenuAria: 'إظهار قائمة الألعاب',
       profile: 'الملف',
       levelShort: 'المستوى',

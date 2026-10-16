@@ -225,6 +225,8 @@ function App() {
                 Rush n'est qu'une des cartes), chaque jeu a sa propre route. */}
             <Route path="/jeu" element={<Games />} />
             <Route path="/jeux" element={<Games />} />
+            <Route path="/jeux-video" element={<Games />} />
+            <Route path="/lets-play" element={<Games />} />
             <Route path="/jeu/mirage-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Mirage Rush…" />}><MirageRushPage /></Suspense>} />
             <Route path="/jeu/vice-city-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Vice City Rush…" />}><ViceCityRushPage /></Suspense>} />
             <Route path="/jeu/sablier-de-bab-el" element={<Suspense fallback={<RouteLoading label="Chargement du duel…" />}><RpgDuelPage variantesPlateaux /></Suspense>} />

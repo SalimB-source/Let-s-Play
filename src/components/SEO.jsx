@@ -56,7 +56,22 @@ const pageMeta = {
     type: 'website',
   },
   '/jeu': {
-    title: 'Les jeux de Let’s Play — Mirage Rush et Vice City Rush',
+    title: 'Let’s Play — Arcade & Jeux — Mirage Rush, Vice City Rush & Le Sablier',
+    description: 'Joue directement dans la page à Mirage Rush, runner 3D western, et Vice City Rush, course arcade néon en décapotable à travers cinq villes.',
+    type: 'website',
+  },
+  '/jeux': {
+    title: 'Let’s Play — Arcade & Jeux — Mirage Rush, Vice City Rush & Le Sablier',
+    description: 'Joue directement dans la page à Mirage Rush, runner 3D western, et Vice City Rush, course arcade néon en décapotable à travers cinq villes.',
+    type: 'website',
+  },
+  '/jeux-video': {
+    title: 'Let’s Play — Arcade & Jeux — Mirage Rush, Vice City Rush & Le Sablier',
+    description: 'Joue directement dans la page à Mirage Rush, runner 3D western, et Vice City Rush, course arcade néon en décapotable à travers cinq villes.',
+    type: 'website',
+  },
+  '/lets-play': {
+    title: 'Let’s Play — Arcade & Jeux — Mirage Rush, Vice City Rush & Le Sablier',
     description: 'Joue directement dans la page à Mirage Rush, runner 3D western, et Vice City Rush, course arcade néon en décapotable à travers cinq villes.',
     type: 'website',
   },

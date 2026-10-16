@@ -380,7 +380,7 @@ export default function Layout({ children }) {
     { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
     { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
     { to: '/communaute', label: t.nav.community || 'Communauté', num: '05', desc: 'COMMUNITY / TALK' },
-    { to: '/jeu', label: t.nav.videoGames || t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / MIRAGE RUSH · VICE CITY RUSH', aliases: ['/jeux'] },
+    { to: '/jeu', label: t.nav.videoGames || t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / MIRAGE RUSH · VICE CITY RUSH', aliases: ['/jeux', '/jeux-video', '/lets-play'] },
     { to: '/quizz', label: t.nav.quiz, num: '07', desc: 'QUIZZ / SURVIVAL', aliases: ['/quiz', '/quizzes'] },
   ];
 
@@ -862,7 +862,7 @@ export default function Layout({ children }) {
           <Link to="/dossiers">{t.nav.dossiers}</Link>
           <Link to="/communaute">{t.nav.community || 'Communauté'}</Link>
           <Link to="/quizz">{t.nav.quiz}</Link>
-          <Link to="/jeu">{t.nav.games || t.nav.game}</Link>
+          <Link to="/jeu">{t.nav.videoGames || t.nav.games || t.nav.game}</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a>
           <span>{t.footer.copyright}</span>
