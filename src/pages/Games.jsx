@@ -126,45 +126,58 @@ export default function Games() {
       </div>
 
       <div className="games-grid">
-        {GAMES.map((game) => {
+        {GAMES.map((game, index) => {
           const playable = Boolean(game.route);
           const card = (
             <>
-              <div className="game-card-media">
-                {game.thumb ? (
-                  <img
-                    className="game-card-thumb"
-                    src={game.thumb}
-                    alt={game.alt}
-                    loading={game.featured ? 'eager' : 'lazy'}
-                    decoding="async"
-                  />
-                ) : (
-                  <div className="game-card-blank" aria-hidden="true">
-                    <span className="game-card-blank-icon">⧗</span>
-                    <span className="game-card-blank-text">{head.soon}</span>
-                  </div>
-                )}
-                <span className="game-card-badge">{game.badge}</span>
-                {playable && (
-                  <span className="game-card-overlay">
-                    <span className="game-card-play-btn">{head.play} <span aria-hidden="true">↗</span></span>
-                  </span>
-                )}
+              <div className="game-cartridge-header" aria-hidden="true">
+                <span className="game-cartridge-grip" />
+                <span>LET’S PLAY</span>
+                <span className="game-cartridge-grip" />
               </div>
-              <div className="game-card-copy">
-                <h3>{game.title}</h3>
-                <p className="game-card-subtitle">{game.subtitle}</p>
-                <p className="game-card-desc">{game.description}</p>
-                <div className="game-card-tags">
-                  {game.tags.map((tag) => (
-                    <span className="game-card-tag" key={tag}>{tag}</span>
-                  ))}
+              <div className="game-cartridge-label">
+                <div className="game-card-media">
+                  {game.thumb ? (
+                    <img
+                      className="game-card-thumb"
+                      src={game.thumb}
+                      alt={game.alt}
+                      loading={game.featured ? 'eager' : 'lazy'}
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="game-card-blank" aria-hidden="true">
+                      <span className="game-card-blank-icon">⧗</span>
+                      <span className="game-card-blank-text">{head.soon}</span>
+                    </div>
+                  )}
+                  <span className="game-card-badge">{game.badge}</span>
+                  {playable && (
+                    <span className="game-card-overlay">
+                      <span className="game-card-play-btn">{head.play} <span aria-hidden="true">↗</span></span>
+                    </span>
+                  )}
                 </div>
-                <span className="game-card-cta">
-                  {playable ? <>{head.play} <Arrow /></> : <>{head.soon}</>}
-                </span>
+                <div className="game-card-copy">
+                  <h3>{game.title}</h3>
+                  <p className="game-card-subtitle">{game.subtitle}</p>
+                  <p className="game-card-desc">{game.description}</p>
+                  <div className="game-card-tags">
+                    {game.tags.map((tag) => (
+                      <span className="game-card-tag" key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                  <span className="game-card-cta">
+                    {playable ? <>{head.play} <Arrow /></> : <>{head.soon}</>}
+                  </span>
+                </div>
               </div>
+              <div className="game-cartridge-footer" aria-hidden="true">
+                <span className="game-cartridge-screw" />
+                <span className="game-cartridge-serial">LP–{String(index + 1).padStart(3, '0')} · {playable ? '▼' : '—'}</span>
+                <span className="game-cartridge-screw" />
+              </div>
+              <div className="game-cartridge-connector" aria-hidden="true" />
             </>
           );
 
@@ -174,11 +187,11 @@ export default function Games() {
               className={`game-card game-card--${game.tone}${game.featured ? ' is-featured' : ''}${playable ? '' : ' is-locked'}`}
             >
               {playable ? (
-                <Link className="game-card-link" to={game.route}>
+                <Link className="game-card-link game-cartridge-front" to={game.route}>
                   <span className="sr-only">{game.title}</span>
                   {card}
                 </Link>
-              ) : card}
+              ) : <div className="game-cartridge-front">{card}</div>}
             </article>
           );
         })}

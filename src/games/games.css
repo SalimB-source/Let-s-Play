@@ -1,30 +1,10 @@
-/* ════════════════════════════════════════════════════════════════════
-   PAGE « JEU » (/jeu) — la vitrine arcade.
-   Ce n'est pas la page d'un jeu : c'est la liste des jeux de la maison.
-   Mirage Rush n'est qu'une des cartes (la première, donc la plus en
-   avant) ; les cartes « bientôt » gardent la place des suivants.
-
-   Le vocabulaire visuel reprend celui de l'accueil (--display, cadres
-   HUD) et celui de Mirage Rush (or du désert, cyan des cristaux) pour
-   que la vitrine et le jeu semblent le même endroit.
-
-   Toute la surface suit le thème clair/sombre du site (jetons --panel,
-   --ink, --muted, --line) : c'est une page de contenu, pas un écran de
-   jeu. Seuls deux éléments gardent une couleur posée en dur, parce
-   qu'ils sont peints sur une image ou sur un aplat saturé :
-     - les équerres néon du cadre média (`.game-card-media::before`) ;
-     - l'encre sombre du badge et du bouton « JOUER ».
-   ════════════════════════════════════════════════════════════════════ */
-
+/* Arcade shelf: CSS-only cartridge shells, no WebGL or extra image assets.
+   Shell colours stay fixed like a physical object; labels follow the site theme. */
 .games-page {
   --games-gold: #f3c65b;
-  --games-gold-soft: rgba(243, 198, 91, .32);
-  /* néon fixe : posé sur la vignette, hors thème */
-  --games-neon: #22d3ee;
-  --games-ink-on-neon: #06131a;
+  --games-gold-soft: #f3c65b52;
   padding: 100px 0 70px;
 }
-
 .games-page-head { padding: 24px 0 0; }
 .games-page-head h2 {
   font-family: var(--display);
@@ -48,226 +28,160 @@
   color: var(--muted);
 }
 
-/* ── Grille ──────────────────────────────────────────────────────── */
-/* Cartes compactes et de même taille : les trois jeux tiennent sur une
-   seule rangée (avant, Mirage Rush prenait deux colonnes avec une vignette
-   géante et « Projet 03 » se retrouvait seul sur une deuxième ligne). */
 .games-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: 48px 32px;
   max-width: 1040px;
-  margin-top: 32px;
+  margin: 44px 12px 0;
+  padding-bottom: 20px;
 }
-
-/* ── Carte ───────────────────────────────────────────────────────── */
 .game-card {
+  --cartridge-accent: #f3c65b;
+  position: relative;
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  border-radius: 14px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-md, 0 24px 70px rgba(8, 5, 15, .38));
-  overflow: hidden;
-  transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease;
+  border: 1px solid #62636c;
+  border-radius: 18px 18px 10px 10px;
+  background: #303139;
+  /* Layered edges remain visible even on touch screens. */
+  box-shadow: 1px 1px 0 #212229, 2px 2px 0 #212229,
+    3px 3px 0 #212229, 4px 4px 0 #212229,
+    5px 5px 0 #17181e, 6px 6px 0 #17181e,
+    7px 7px 0 #17181e, 8px 8px 0 #101116,
+    14px 24px 22px -12px #0009;
+  transform: perspective(1100px) rotateX(5deg) rotateY(-9deg) rotateZ(-1deg);
+  transition: transform .3s ease, box-shadow .3s ease;
 }
-.game-card-link {
+.game-card--vice { --cartridge-accent: #ff8fae; }
+.game-card--soon { --cartridge-accent: #a1a6b8; }
+.game-cartridge-front {
+  position: relative;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  width: 100%;
+  min-width: 0;
+  padding: 0 19px;
+  border-radius: inherit;
+  background:
+    linear-gradient(100deg, #ffffff0b, transparent 40%, #0002),
+    linear-gradient(#3d3e47, #292a31);
+  box-shadow: inset 0 2px 1px #ffffff30, inset 2px 0 1px #ffffff12,
+    inset -2px -3px 2px #0006;
   color: inherit;
   text-decoration: none;
 }
-/* Mirage Rush reste le jeu phare, mais à taille égale : il se distingue
-   par un liseré doré plutôt que par une double largeur. */
-.game-card.is-featured { border-color: var(--games-gold-soft); }
-
-.game-card:not(.is-locked):hover,
-.game-card:not(.is-locked):focus-within {
-  transform: translateY(-4px);
-  border-color: var(--games-gold);
-  box-shadow: 0 0 44px -12px var(--games-gold-soft), 0 30px 70px -30px rgba(0, 0, 0, .9);
+/* Recessed grooves along both sides of the plastic shell. */
+.game-cartridge-front::before,
+.game-cartridge-front::after {
+  content: '';
+  position: absolute;
+  top: 66px;
+  bottom: 62px;
+  width: 7px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(to bottom, #16171c 0 2px, #ffffff16 2px 3px, transparent 3px 7px);
+  pointer-events: none;
 }
-
-/* ── Média (16:9, comme les cartes épisodes de l'accueil) ────────── */
-/* Les équerres néon sont posées en pseudo-élément (même geste que
-   `.calls-frame`) : un `background` les écraserait, et la vignette en
-   `position: absolute` les cacherait si elles restaient derrière. */
+.game-cartridge-front::before { left: 5px; }
+.game-cartridge-front::after { right: 5px; }
+.game-cartridge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 49px;
+  flex-shrink: 0;
+  color: #b4b5bd;
+  font: 800 11px var(--mono);
+  letter-spacing: .22em;
+  text-shadow: 0 1px 1px #000;
+}
+.game-cartridge-grip {
+  flex: 1;
+  height: 15px;
+  background: repeating-linear-gradient(to bottom, #17181e 0 2px, #ffffff14 2px 3px, transparent 3px 5px);
+}
+.game-cartridge-label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border: 2px solid #15161c;
+  border-top: 4px solid var(--cartridge-accent);
+  border-radius: 6px 6px 12px 6px;
+  background: var(--panel);
+  box-shadow: 0 1px 0 #ffffff24, 0 0 0 2px #0002;
+}
 .game-card-media {
   position: relative;
-  aspect-ratio: 16 / 9;
-  /* Fond sombre dans les deux thèmes : la vignette est un média. */
-  background-color: #151020;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
+  background: #151020;
+  border-bottom: 1px solid var(--line);
 }
-.game-card-media::before {
-  content: "";
+.game-card-media::after {
+  content: '';
   position: absolute;
-  z-index: 4;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(var(--games-neon), var(--games-neon)) left top / 22px 2px no-repeat,
-    linear-gradient(var(--games-neon), var(--games-neon)) left top / 2px 22px no-repeat,
-    linear-gradient(var(--games-neon), var(--games-neon)) right top / 22px 2px no-repeat,
-    linear-gradient(var(--games-neon), var(--games-neon)) right top / 2px 22px no-repeat,
-    linear-gradient(var(--games-neon), var(--games-neon)) left bottom / 22px 2px no-repeat,
-    linear-gradient(var(--games-neon), var(--games-neon)) left bottom / 2px 22px no-repeat,
-    linear-gradient(var(--games-neon), var(--games-neon)) right bottom / 22px 2px no-repeat,
-    linear-gradient(var(--games-neon), var(--games-neon)) right bottom / 2px 22px no-repeat;
-  opacity: .85;
+  background: linear-gradient(120deg, #ffffff1c, transparent 45%, #0002);
 }
 .game-card-thumb {
-  position: absolute;
-  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
-  transition: transform .5s ease;
+  transition: transform .4s ease;
 }
-.game-card:not(.is-locked):hover .game-card-thumb { transform: scale(1.04); }
-
-/* Repli des cartes sans visuel : cadre hachuré, même langue que les
-   replis de vignettes YouTube du site. */
-.game-card-blank {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 12px;
-  background-color: #151020;
-  background-image:
-    repeating-linear-gradient(135deg, rgba(148, 130, 255, .07) 0 12px, transparent 12px 24px),
-    linear-gradient(140deg, rgba(34, 211, 238, .1), transparent 62%);
-}
-.game-card-blank-icon {
-  font-size: 30px;
-  color: rgba(238, 240, 255, .4);
-  line-height: 1;
-}
-.game-card-blank-text {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: rgba(238, 240, 255, .55);
-}
-
-/* Badge d'état (JOUABLE / WIP / BIENTÔT) — posé sur la vignette. */
 .game-card-badge {
   position: absolute;
-  z-index: 3;
-  top: 12px;
-  left: 12px;
-  padding: 5px 10px;
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: var(--games-ink-on-neon);
-  background: var(--games-neon);
-  border-radius: 999px;
-  box-shadow: 0 0 18px rgba(34, 211, 238, .45);
-}
-.game-card--soon .game-card-badge {
-  color: rgba(238, 240, 255, .75);
-  background: rgba(11, 13, 30, .82);
-  border: 1px solid rgba(242, 198, 132, .28);
-  box-shadow: none;
-}
-
-/* Voile + bouton « JOUER » au survol */
-.game-card-overlay {
-  position: absolute;
-  inset: 0;
   z-index: 2;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(0deg, rgba(5, 6, 15, .78), rgba(5, 6, 15, .12) 55%, transparent);
-  opacity: 0;
-  transition: opacity .28s ease;
+  top: 10px;
+  inset-inline-start: 10px;
+  padding: 5px 8px;
+  font: 800 9px var(--mono);
+  letter-spacing: .12em;
+  color: #111318;
+  background: var(--cartridge-accent);
+  border-radius: 3px;
 }
-.game-card:not(.is-locked):hover .game-card-overlay,
-.game-card:not(.is-locked):focus-within .game-card-overlay { opacity: 1; }
-.game-card-play-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 20px;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: var(--games-ink-on-neon);
-  background: var(--games-gold);
-  border-radius: 999px;
-  box-shadow: 0 0 26px rgba(243, 198, 91, .5);
-  transform: translateY(6px);
-  transition: transform .28s ease;
-}
-.game-card:not(.is-locked):hover .game-card-play-btn,
-.game-card:not(.is-locked):focus-within .game-card-play-btn { transform: translateY(0); }
-
-/* ── Texte de la carte ───────────────────────────────────────────── */
 .game-card-copy {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 7px;
-  padding: 14px 16px 16px;
+  gap: 9px;
+  padding: 16px 12px;
 }
 .game-card-copy h3 {
   margin: 0;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: clamp(17px, 1.5vw, 21px);
-  line-height: 1.08;
-  letter-spacing: .005em;
-  text-transform: uppercase;
+  font: 800 clamp(18px, 1.6vw, 23px)/1.08 var(--display);
   color: var(--ink);
 }
 .game-card-subtitle {
   margin: 0;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--games-gold);
+  font: 800 9px/1.5 var(--mono);
+  letter-spacing: .1em;
+  color: var(--muted);
 }
 .game-card-desc {
   margin: 0;
-  font-size: 12.5px;
+  font-size: 12px;
   line-height: 1.5;
   color: var(--muted);
-  /* 3 lignes max : toutes les cartes gardent la même hauteur. */
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.game-card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 2px;
-}
+.game-card-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .game-card-tag {
-  padding: 3px 7px;
-  font-family: var(--mono);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
+  padding: 3px 5px;
+  font: 700 8px var(--mono);
+  letter-spacing: .06em;
   color: var(--muted);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 3px;
 }
 .game-card-cta {
   display: inline-flex;
@@ -275,36 +189,102 @@
   gap: 8px;
   margin-top: auto;
   padding-top: 8px;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 800;
+  font: 800 10px var(--mono);
   letter-spacing: .2em;
-  text-transform: uppercase;
-  color: var(--cyan);
+  color: var(--ink);
 }
-.game-card--soon .game-card-cta { color: var(--dim); }
+.game-cartridge-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 39px;
+  flex-shrink: 0;
+}
+.game-cartridge-screw {
+  width: 9px;
+  height: 9px;
+  border: 1px solid #17181d;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #565760 43%, #18191e 44% 57%, #565760 58%);
+  box-shadow: 0 1px 0 #ffffff26, inset 0 1px 2px #0008;
+}
+.game-cartridge-serial {
+  color: #a6a7b0;
+  font: 700 9px var(--mono);
+  letter-spacing: .16em;
+}
+.game-cartridge-connector {
+  width: 58%;
+  height: 17px;
+  margin: 0 auto;
+  border: solid #141519;
+  border-width: 4px 7px 0;
+  border-radius: 5px 5px 0 0;
+  background: repeating-linear-gradient(90deg, #9b7638 0 3px, #e6c879 3px 8px, #6b542e 8px 9px, #191a20 9px 12px);
+  box-shadow: inset 0 4px 5px #0007;
+}
+.game-card-overlay {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #080a1444;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.game-card-play-btn {
+  padding: 12px 18px;
+  border-radius: 4px;
+  background: var(--cartridge-accent);
+  color: #111318;
+  font: 800 11px var(--mono);
+  letter-spacing: .16em;
+}
+.game-card:not(.is-locked):focus-within {
+  transform: perspective(1100px) translateY(-8px) rotateX(0) rotateY(0) rotateZ(0);
+}
+.game-card-link:focus-visible { outline: 3px solid var(--cartridge-accent); outline-offset: 6px; }
+.game-card:focus-within .game-card-overlay { opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .game-card:not(.is-locked):hover {
+    transform: perspective(1100px) translateY(-8px) rotateX(0) rotateY(0) rotateZ(0);
+    box-shadow: 2px 3px 0 #17181e, 5px 7px 0 #101116, 10px 30px 30px -12px #0009;
+  }
+  .game-card:not(.is-locked):hover .game-card-overlay { opacity: 1; }
+  .game-card:not(.is-locked):hover .game-card-thumb { transform: scale(1.04); }
+}
+.game-card-blank {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  color: #b2b4c5;
+  background: repeating-linear-gradient(135deg, #ffffff06 0 12px, transparent 12px 24px), #1c1e2a;
+}
+.game-card-blank-icon { font-size: 40px; }
+.game-card-blank-text { font: 800 10px var(--mono); letter-spacing: .22em; }
+.game-card.is-locked .game-cartridge-label { border-top-color: #888b99; }
 
-/* Les cartes non jouables restent lisibles mais inactives. */
-.game-card.is-locked { opacity: .72; }
-.game-card.is-locked .game-card-copy h3 { color: var(--muted); }
-
-/* ── Adaptations ─────────────────────────────────────────────────── */
 @media (max-width: 860px) {
-  .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px 26px; }
 }
 @media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .games-page { padding: 88px 0 50px; }
-  .games-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 440px; margin-inline: auto; }
+  .games-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 38px;
+    max-width: 330px;
+    margin: 32px auto 0;
+    padding-inline: 14px;
+  }
 }
-
-/* Sens de lecture arabe : le badge suit le coin droit. */
-[dir="rtl"] .game-card-badge { left: auto; right: 12px; }
-
-/* Respect du réglage système « moins d'animations ». */
 @media (prefers-reduced-motion: reduce) {
-  .game-card,
-  .game-card-thumb,
-  .game-card-overlay,
-  .game-card-play-btn { transition: none; }
+  .game-card, .game-card-thumb, .game-card-overlay { transition: none; }
+  .game-card:not(.is-locked):hover, .game-card:not(.is-locked):focus-within {
+    transform: perspective(1100px) rotateX(5deg) rotateY(-9deg) rotateZ(-1deg);
+  }
   .game-card:not(.is-locked):hover .game-card-thumb { transform: none; }
 }
