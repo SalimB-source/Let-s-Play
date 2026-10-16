@@ -70,3 +70,18 @@ test('armesPortees lists the weapon of the prototype, then the magic weapons', (
   assert.deepEqual(armesPortees({ ...creature('c', 'chien-du-guet'), arme: { carteId: 'takouba-des-pistes' }, armes: ['sabre-maudit'] }),
     ['takouba-des-pistes', 'sabre-maudit']);
 });
+
+
+test('engaged and available copies split, then regroup when untapped', () => {
+  const a = creature('a', 'chien-du-guet');
+  const b = { ...creature('b', 'chien-du-guet'), attaquee: true };
+  const c = { ...creature('c', 'chien-du-guet'), attaquee: false };
+  const d = { ...creature('d', 'chien-du-guet'), attaquee: true };
+  const entities = [a, b, c, d];
+  const before = JSON.stringify(entities);
+  assert.deepEqual(groupEntitesParCarte(entities).map(p => p.entites.map(e => e.id)),
+    [['a', 'c'], ['b', 'd']]);
+  assert.equal(JSON.stringify(entities), before);
+  assert.deepEqual(groupEntitesParCarte([b, a]).map(p => p.entites.map(e => e.id)), [['b'], ['a']]);
+  assert.equal(groupEntitesParCarte(entities.map(e => ({ ...e, attaquee: false }))).length, 1);
+});

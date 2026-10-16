@@ -944,3 +944,39 @@
   background-repeat: repeat, no-repeat !important;
   background-position: 0 0, 0 0 !important;
 }
+
+/* Les repères suivent la largeur réelle de chaque créature, pas le viewport.
+   Définir les unités sur les descendants : le conteneur est la carte elle-même,
+   y compris lorsqu'elle est dans une pile. Aucun plancher en px ne doit faire
+   grossir les repères relativement aux cartes d'une rangée encombrée. */
+.rpg-battle .card-row .rpg-card { container-type: inline-size; }
+.rpg-battle .card-row .rpg-card > * { --rpg-card-marker-size: 27cqw; }
+.rpg-battle .card-row .rpg-card .rpg-card-element-badge,
+.rpg-battle .card-row .rpg-card .rpg-mana-cost.is-compact {
+  font-size: 14cqw;
+  border-width: 1.5cqw;
+}
+.rpg-battle .card-row .rpg-card .rpg-card-element-badge__pip {
+  border-width: 1.5cqw;
+}
+.rpg-battle .card-row .rpg-card .rpg-card-element-badge--hybride { gap: 2cqw; border: 0; }
+.rpg-battle .card-row .rpg-card .rpg-card__stat--atk,
+.rpg-battle .card-row .rpg-card .rpg-card__pt {
+  min-width: 0;
+  font-size: 14cqw;
+  padding: 2cqw 3cqw;
+  gap: 1cqw;
+}
+.rpg-battle .card-row .rpg-card .rpg-card__foot { gap: 2cqw; }
+.rpg-battle .card-row .rpg-card .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
+.rpg-battle .card-row .rpg-card .rpg-card-icones { left: 6cqw; bottom: 30cqw; gap: 3cqw; max-width: 88cqw; }
+.rpg-battle .card-row .rpg-card .rpg-card-icone { padding: 2cqw; gap: 2cqw; border-width: 1cqw; font-size: 12cqw; }
+.rpg-battle .card-row .rpg-card .rpg-card-icone small { font-size: 9cqw; }
+.rpg-battle .card-row .rpg-card .rpg-card__arme {
+  font-size: 9cqw;
+  padding: 1cqw 4cqw;
+  bottom: 23cqw;
+}
+.rpg-battle .card-row .rpg-card .rpg-card-icone .rpg-effet-icone { width: 14cqw; height: 14cqw; }
+.rpg-battle .card-row .rpg-card .rpg-card__activation { top: 6cqw; right: 6cqw; padding: 3cqw 7cqw; border-width: 1cqw; }
+.rpg-battle .card-row .rpg-card .rpg-mana-cost i { width: 11cqw; height: 11cqw; font-size: 7cqw; }
