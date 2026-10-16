@@ -103,6 +103,13 @@
 }
 .rpg-souk__quete.is-terminee { border-color: rgba(231, 191, 101, .55); box-shadow: 0 10px 26px rgba(197, 139, 53, .16); }
 .rpg-souk__quete.is-reclamee { opacity: .68; }
+/* La quête active (en cours) partage le même bleu clair que le panneau Jouer,
+   pour que « en cours », « terminée » (doré) et « réclamée » (atténuée) se
+   lisent pareil des deux écrans. */
+.rpg-souk__quete.is-encours {
+  border-color: rgba(120, 180, 235, .5);
+  background: linear-gradient(165deg, rgba(120, 175, 235, .22), rgba(17, 16, 24, .9));
+}
 .rpg-souk__quete-tete { display: flex; align-items: baseline; gap: 9px; }
 .rpg-souk__palier {
   flex: none;
@@ -408,6 +415,45 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* Quand le paquet porte l'illustration d'une carte mythique, celle-ci recouvre
+   la face avant : le sachet devient la vitrine de son prix. Le rune cède la
+   place à l'image ; le nom et la récompense restent lisibles sur un voile. */
+.rpg-souk__paquet-carte {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(var(--pw) * .06);
+}
+.rpg-souk__paquet-voile {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .12) 0%, rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, .62) 100%);
+}
+.rpg-souk__paquet-face--avant.has-carte .rpg-souk__paquet-rune { display: none; }
+.rpg-souk__paquet-face--avant.has-carte .rpg-souk__paquet-nom {
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .9);
+}
+.rpg-souk__paquet-face--avant.has-carte .rpg-souk__paquet-meta {
+  color: rgba(255, 255, 255, .92);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .85);
+}
+.rpg-souk__paquet-mythique-tag {
+  position: absolute;
+  top: 6%;
+  left: 6%;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #b07be0, #7b3fb0);
+  color: #fff;
+  font: 800 7px/1 var(--mono, monospace);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+}
 .rpg-souk__paquet.is-ferme { filter: grayscale(.55) brightness(.72); }
 /* Sans solde, le rayon reste attirant — c'est un objectif, pas une porte
    fermée — mais le paquet s'éteint doucement. */
@@ -581,6 +627,119 @@
   .rpg-souk__paquet { --pw: clamp(74px, 30vw, 96px); }
 }
 
+/* ── La fête d'une récompense : pièces, solde qui pop, sceau ──────────────── */
+/* Le solde fait un petit bond et brille quand il vient d'encaisser. */
+.rpg-souk__solde.is-pop { animation: rpg-souk-solde-pop .55s ease; }
+@keyframes rpg-souk-solde-pop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.13); filter: drop-shadow(0 0 11px rgba(255, 210, 120, .95)); }
+  100% { transform: scale(1); }
+}
+
+/* Les pièces qui volent du bouton jusqu'au solde. Le conteneur est muet,
+   chaque pièce et le gain sont en position fixe, aux coordonnées de l'écran. */
+.rpg-souk__burst { position: fixed; inset: 0; pointer-events: none; z-index: 70; }
+.rpg-souk__coin {
+  position: fixed;
+  left: var(--bx); top: var(--by);
+  width: 13px; height: 13px; margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #fff6da, #e8b54a 58%, #9c6c1d);
+  box-shadow: 0 0 7px rgba(255, 214, 120, .85), inset 0 0 0 1px rgba(255, 255, 255, .45);
+  animation: rpg-souk-coin-fly .92s cubic-bezier(.32, .72, .28, 1) forwards;
+  animation-delay: calc(var(--n) * 42ms);
+}
+@keyframes rpg-souk-coin-fly {
+  0% { transform: translate(0, 0) scale(.35); opacity: 0; }
+  16% { opacity: 1; transform: translate(var(--sx), var(--sy)) scale(1); }
+  100% { transform: translate(var(--dx), var(--dy)) scale(.5); opacity: 0; }
+}
+.rpg-souk__gain {
+  position: fixed;
+  left: var(--bx); top: var(--by);
+  transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 4px;
+  color: #ffe7af;
+  font: 800 15px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 9px rgba(0, 0, 0, .85);
+  animation: rpg-souk-gain-float 1s ease-out forwards;
+}
+.rpg-souk__gain .rpg-credit { font-size: 1.2em; }
+@keyframes rpg-souk-gain-float {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(.6); }
+  22% { opacity: 1; transform: translate(-50%, -96%) scale(1.08); }
+  100% { opacity: 0; transform: translate(-50%, -168%) scale(1); }
+}
+
+/* La barre de quête, une fois l'objectif atteint : halo + balayage de lumière. */
+.rpg-souk__quete.is-terminee .rpg-souk__jauge {
+  border-color: rgba(231, 191, 101, .6);
+  box-shadow: 0 0 14px rgba(231, 191, 101, .32);
+}
+.rpg-souk__quete.is-terminee .rpg-souk__jauge-remplie::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: linear-gradient(100deg, transparent 32%, rgba(255, 255, 255, .6) 50%, transparent 68%);
+  background-size: 220% 100%;
+  animation: rpg-souk-jauge-shine 1.9s linear infinite;
+}
+@keyframes rpg-souk-jauge-shine { from { background-position: 130% 0; } to { background-position: -130% 0; } }
+
+/* Le sceau de cire s'abat sur un Cachet encaissé, avec son onde et ses
+   étincelles. Positionné dans la section, au-dessus du bouton. */
+.rpg-souk__cachet,
+.rpg-souk__semaine { position: relative; }
+.rpg-souk__sceau {
+  position: absolute;
+  right: clamp(14px, 4vw, 34px);
+  top: 50%;
+  width: 0; height: 0;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 5;
+}
+.rpg-souk__sceau-corps {
+  position: absolute; left: 0; top: 0;
+  transform: translate(-50%, -50%);
+  font-size: 46px; line-height: 1;
+  color: #ffd98a;
+  filter: drop-shadow(0 0 12px rgba(255, 200, 110, .95));
+  animation: rpg-souk-sceau-slam .62s cubic-bezier(.2, .9, .2, 1) both;
+}
+@keyframes rpg-souk-sceau-slam {
+  0% { transform: translate(-50%, -50%) scale(2.6) rotate(-16deg); opacity: 0; }
+  50% { transform: translate(-50%, -50%) scale(.82) rotate(0); opacity: 1; }
+  70% { transform: translate(-50%, -50%) scale(1.1); }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+.rpg-souk__sceau-onde {
+  position: absolute; left: 0; top: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 210, 120, .85);
+  animation: rpg-souk-sceau-onde .62s ease-out forwards;
+}
+@keyframes rpg-souk-sceau-onde {
+  0% { width: 18px; height: 18px; opacity: .9; }
+  100% { width: 150px; height: 150px; opacity: 0; }
+}
+.rpg-souk__sceau-etincelle {
+  position: absolute; left: 0; top: 0;
+  width: 4px; height: 4px; margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: #ffe7af;
+  box-shadow: 0 0 6px #ffd98a;
+  --angle: calc(var(--s) * 40deg);
+  animation: rpg-souk-sceau-etincelle .62s ease-out forwards;
+}
+@keyframes rpg-souk-sceau-etincelle {
+  0% { transform: rotate(var(--angle)) translateY(0) scale(1); opacity: 1; }
+  100% { transform: rotate(var(--angle)) translateY(-34px) scale(.35); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rpg-souk__jauge-remplie,
   .rpg-souk__quete { transition: none; }
@@ -592,4 +751,12 @@
   .rpg-souk__paquet-face--avant::after { animation: none; background-position: 45% 0; }
   .rpg-souk__paquet-corps,
   .rpg-souk__paquet-ombre { transition: none; }
+  /* Les nouveautés : aucune fête animée sous mouvement réduit. */
+  .rpg-souk__solde.is-pop,
+  .rpg-souk__coin,
+  .rpg-souk__gain,
+  .rpg-souk__sceau-corps,
+  .rpg-souk__sceau-onde,
+  .rpg-souk__sceau-etincelle { animation: none !important; }
+  .rpg-souk__quete.is-terminee .rpg-souk__jauge-remplie::after { content: none; }
 }

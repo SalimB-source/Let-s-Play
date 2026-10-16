@@ -22,6 +22,7 @@ import {
   joursAvantLeCachetDeLaSemaine, quetesAReclamer, serieComplete, vueDeLaQuete,
 } from './rpgQuetes.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
+import RpgMarketIcon from './RpgMarketIcon.jsx';
 import './rpg-quetes-jour.css';
 
 /** Une quête du jour, telle que le panneau la montre : barre, montant, geste. */
@@ -43,6 +44,10 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
           <span className="sr-only">crédits</span>
         </span>
       </div>
+      <p className="rpg-quests-jour__quete-texte">
+        <span className="rpg-quests-jour__quete-texte-icone" aria-hidden="true">▶</span>
+        {quete.texte}
+      </p>
       <div
         className="rpg-quests-jour__jauge"
         role="progressbar"
@@ -94,7 +99,13 @@ export default function RpgQuetesDuJour({
     <aside className="rpg-quests-jour" aria-labelledby="jouer-quetes-titre" data-jouer-quetes={liste.length}>
       <header className="rpg-quests-jour__tete">
         <span className="rpg-mode-menu__eyebrow">LE SABLIER · AUJOURD’HUI</span>
-        <h3 id="jouer-quetes-titre">Quêtes du jour</h3>
+        <div className="rpg-quests-jour__tete-ligne">
+          <h3 id="jouer-quetes-titre">Quêtes du jour</h3>
+          <p className="rpg-quests-jour__solde-mini" data-jouer-solde={credits} aria-label={`Bourse : ${credits} crédits`}>
+            <RpgCreditIcon anime /> <strong>{creditsLisible(credits)}</strong>
+            <em>crédits</em>
+          </p>
+        </div>
         <p className="rpg-quests-jour__compte" data-jouer-compte={`${prises}/${liste.length}`}>
           {liste.length === 0
             ? 'Le marchand prépare la journée — elle s’ouvre au premier duel.'
@@ -184,17 +195,13 @@ export default function RpgQuetesDuJour({
       {/* Le solde et le chemin vers ce qu'il achète : sans le Souk, une
           récompense n'est qu'un chiffre. */}
       <footer className="rpg-quests-jour__pied">
-        <p className="rpg-quests-jour__solde" data-jouer-solde={credits} aria-label={`Bourse : ${credits} crédits`}>
-          <RpgCreditIcon /> <strong>{creditsLisible(credits)}</strong>
-          <em>crédits</em>
-        </p>
         <button
           type="button"
           className="rpg-menu-button rpg-quests-jour__souk"
           data-jouer-souk
           onClick={() => { onPlaySfx?.('menu'); onOuvrirSouk?.(); }}
         >
-          Aller au Souk <span aria-hidden="true">→</span>
+          <RpgMarketIcon /> Aller au Souk <span aria-hidden="true">→</span>
         </button>
       </footer>
     </aside>

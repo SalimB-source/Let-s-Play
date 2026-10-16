@@ -59,7 +59,7 @@ import { readRpgTable3dPref, writeRpgTable3dPref } from './rpgTableSceneThemes.j
 import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
 import RpgSouk from './RpgSouk.jsx';
-import RpgCreditIcon from './RpgCreditIcon.jsx';
+import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
 import { creditsLisible } from './rpgCredits.js';
 import {
@@ -1892,7 +1892,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               data-souk-onglet={credits}
               onClick={() => { play('menu'); onChangeScreen('souk'); }}
             >
-              <RpgCreditIcon className="rpg-mode-menu__souk-piece" />
+              <RpgMarketIcon className="rpg-mode-menu__souk-piece" />
               <span className="rpg-mode-menu__onglet-libelle">Souk</span>
               <span className="rpg-mode-menu__bourse-solde" data-souk-bourse={credits}>
                 {creditsLisible(credits)}

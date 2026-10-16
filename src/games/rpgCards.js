@@ -42,6 +42,18 @@ export function cardRarityInfo(carte) {
  */
 export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige'];
 
+/** Une carte mythique emblématique par élément, pour illustrer les boosters du
+ *  Souk. C'est une vitrine (son art existe dans `public/cards/`), pas un
+ *  tirage : chaque rayon montre la même pour son élément, pour donner envie
+ *  d'ouvrir le paquet. Les identifiants pointent vers des illustrations
+ *  présentes. */
+export const MYTHIQUE_VITRINE_PAR_ELEMENT = Object.freeze({
+  braise: 'djinn-du-souk',
+  eau: 'kraken',
+  sable: 'salem',
+  neige: 'pere-des-corbeaux',
+});
+
 /**
  * Couleur du cadre : elle suit l'ÉLÉMENT de la carte, jamais sa rareté.
  * Les mythiques mono-élément brillent dans cette couleur ; les hybrides,
