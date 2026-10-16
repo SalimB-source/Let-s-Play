@@ -1,7 +1,7 @@
-// Régressions des cartes engagées : vrais tours et interactions dans jsdom.
+// Régressions des cartes sur table : couleurs des stats, vrais tours et interactions dans jsdom.
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
+import RpgDuelPage, { TableCard } from '../src/games/RpgDuelPage.jsx';
 import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 // Seuls les délais du jeu sont virtuels : aucun sommeil réel entre les tours.
@@ -103,6 +103,58 @@ async function avecDuel(assert, props, scenario, { mobile = false } = {}) {
   }
 }
 
+async function scenarioCouleursStats(assert) {
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  const entite = (id, atk, pv) => ({
+    id,
+    carteId: 'chien-du-guet',
+    name: 'Chien du guet',
+    atk,
+    def: pv,
+    pv,
+    pvMax: pv,
+    ready: true,
+    attaquee: false,
+  });
+  try {
+    await act(async () => root.render(
+      <div>
+        <TableCard entite={entite('buff', 4, 4)} cote="joueur" tilt={0} />
+        <TableCard entite={entite('neutre', 2, 2)} cote="joueur" tilt={0} />
+        <TableCard entite={entite('debuff', 1, 1)} cote="ennemi" tilt={0} />
+        <TableCard entite={entite('mixte', 4, 1)} cote="joueur" tilt={0} />
+      </div>,
+    ));
+    const stats = (id) => [...container.querySelectorAll(`[data-entity-id="${id}"] .rpg-card__foot > span`)];
+    const [attaqueBuff, defenseBuff] = stats('buff');
+    const [attaqueNeutre, defenseNeutre] = stats('neutre');
+    const [attaqueDebuff, defenseDebuff] = stats('debuff');
+    const [attaqueMixte, defenseMixte] = stats('mixte');
+
+    assert.ok(attaqueBuff.classList.contains('is-buffed') && defenseBuff.classList.contains('is-buffed'),
+      'un bonus ATQ/DÉF applique séparément l’état bleu clair aux deux plaques');
+    assert.deepEqual([attaqueBuff.dataset.statVariation, defenseBuff.dataset.statVariation], ['buff', 'buff']);
+    assert.ok(attaqueDebuff.classList.contains('is-debuffed') && defenseDebuff.classList.contains('is-debuffed'),
+      'un malus ATQ/DÉF applique séparément l’état rouge aux deux plaques');
+    assert.deepEqual([attaqueDebuff.dataset.statVariation, defenseDebuff.dataset.statVariation], ['debuff', 'debuff']);
+    assert.deepEqual([attaqueMixte.dataset.statVariation, defenseMixte.dataset.statVariation], ['buff', 'debuff'],
+      'une même créature peut montrer son ATQ en bleu clair et sa DÉF en rouge');
+    assert.equal(attaqueNeutre.dataset.statVariation, undefined, 'une ATQ imprimée reste neutre');
+    assert.equal(defenseNeutre.dataset.statVariation, undefined, 'une DÉF imprimée reste neutre');
+    assert.match(container.querySelector('[data-entity-id="buff"]').getAttribute('aria-label'),
+      /attaque 4, défense 4, attaque augmentée, défense augmentée/,
+      'les bonus sont aussi annoncés sans dépendre du bleu clair');
+    assert.match(container.querySelector('[data-entity-id="debuff"]').getAttribute('aria-label'),
+      /attaque 1, défense 1, attaque diminuée, défense diminuée/,
+      'les malus sont aussi annoncés sans dépendre du rouge');
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+  }
+}
+
 async function scenarioDoublonsJoueur(assert) {
   await avecDuel(assert, {
     joueurDeck: [...Array(5).fill('desert'), 'chien-du-guet', 'chien-du-guet', 'fennec-des-decombres', 'desert', 'montagne'],
@@ -188,7 +240,8 @@ async function scenarioDoublonsSorcier(assert) {
 }
 
 export async function checkRpgCardState(assert) {
+  await scenarioCouleursStats(assert);
   await scenarioDoublonsJoueur(assert);
   await scenarioDoublonsSorcier(assert);
-  console.log('✓ Cartes engagées : aucune copie fantôme après une destruction dans les deux camps, les survivants se dégagent au tour de leur propriétaire et le duel continue.');
+  console.log('✓ Cartes de table : buffs bleu clair, debuffs rouges et aucune copie fantôme après une destruction dans les deux camps.');
 }
