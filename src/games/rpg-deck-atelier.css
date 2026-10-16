@@ -324,12 +324,39 @@
   transition: transform .25s ease;
 }
 .rpg-atelier__carte:hover .rpg-atelier__carte-art img { transform: scale(1.04); }
+/* Comme au catalogue : le voile du bas et le foil se partagent ce `::after`, et
+   le voile interdit `mix-blend-mode: screen` — un voile noir est transparent
+   pour un `screen`, il disparaîtrait. D'où des teintes un peu plus basses. */
 .rpg-atelier__carte-art::after {
   content: "";
   position: absolute;
-  inset: 55% 0 0;
-  background: linear-gradient(0deg, rgba(5, 4, 7, .55), transparent);
+  z-index: 1;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(118deg, rgba(255, 255, 255, .09) 0 1px, rgba(255, 255, 255, 0) 1px 3px),
+    radial-gradient(ellipse 40% 32% at 30% 24%, rgba(255, 74, 168, .30), transparent 72%),
+    radial-gradient(ellipse 36% 30% at 74% 32%, rgba(92, 214, 255, .27), transparent 72%),
+    radial-gradient(ellipse 42% 30% at 38% 78%, rgba(255, 212, 92, .24), transparent 72%),
+    radial-gradient(ellipse 34% 28% at 78% 82%, rgba(160, 108, 255, .24), transparent 72%),
+    linear-gradient(112deg, transparent 30%, rgba(255, 255, 255, .28) 48%, transparent 66%),
+    linear-gradient(0deg, rgba(5, 4, 7, .55), transparent 56%);
+  background-size: 100% 100%, 300% 300%, 300% 300%, 300% 300%, 300% 300%, 240% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  background-position:
+    0 0,
+    calc(50% - var(--rpg-foil-cx, 0%)) calc(50% - var(--rpg-foil-cy, 0%)),
+    calc(50% - var(--rpg-foil-cx, 0%) * 1.35) calc(50% - var(--rpg-foil-cy, 0%) * 1.35),
+    calc(50% - var(--rpg-foil-cx, 0%) * 0.7) calc(50% - var(--rpg-foil-cy, 0%) * 0.7),
+    calc(50% - var(--rpg-foil-cx, 0%) * 1.7) calc(50% - var(--rpg-foil-cy, 0%) * 1.7),
+    calc(50% + var(--rpg-foil-cx, 0%) * 0.5) 0,
+    0 100%;
   pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-atelier__carte-art::after {
+    animation: none !important;
+    background-position: 42% 0, 0 100%, 0 0 !important;
+  }
 }
 
 .rpg-atelier__carte-art .rpg-atelier__cout,
@@ -762,4 +789,46 @@
   .rpg-atelier__toggle { transition: none; }
   .rpg-atelier__carte:hover { transform: none; }
   .rpg-atelier__carte:hover .rpg-atelier__carte-art img { transform: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   EXPÉRIMENTATION — PLUS AUCUN CADRE DE CARTE (test visuel, à jeter)
+   Jumeau du bloc de fin de `rpg-battle.css` : la vignette de l'atelier perd
+   elle aussi son anneau. La bordure disparaît, les trois couches d'anneau
+   avec — il ne reste que la face et son ombre. Les pastilles, le liseré de
+   survol, le grisé des cartes verrouillées et la jauge de quota ne bougent pas.
+   Pour revenir en arrière : supprimer ce bloc.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-atelier__carte-art[class*="rpg-card--frame-"] {
+  border-width: 0 !important;
+  background-image: none !important;
+  animation: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA BOUTIQUE DU SABLIER — le cadre des armes revient, plus fin et gris
+   Jumeau du bloc de fin de `rpg-battle.css` : la vignette d'une arme garde
+   elle aussi son filet d'acier gris. L'atelier est hors de `.rpg-battle`, les
+   valeurs y sont donc répétées en repli — à garder d'accord avec celles du
+   duel si l'on affine davantage. Pour revenir en arrière : supprimer ce bloc.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-atelier__carte-art[class*="rpg-card--frame-arme"] {
+  border: var(--rpg-arme-cadre, 5px) solid transparent !important;
+  background-color: #171218 !important;
+  background-image:
+    var(--rpg-frame-motif, none),
+    var(--rpg-arme-metal, linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd)) !important;
+  background-origin: border-box, border-box !important;
+  background-clip: border-box, border-box !important;
+  background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100% !important;
+  background-repeat: repeat, no-repeat !important;
+  background-position: 0 0, 0 0 !important;
+}
+
+/* Une arme verrouillée gardait son anneau terni : elle le garde, mais sans la
+   matière polie ni le guilloché — le simple aplat gris-brun que le jeu lui
+   réservait déjà pour les cartes verrouillées. */
+.rpg-atelier__carte.is-locked .rpg-atelier__carte-art[class*="rpg-card--frame-arme"] {
+  border-color: rgba(120, 110, 95, .8) !important;
+  background-image: none !important;
 }

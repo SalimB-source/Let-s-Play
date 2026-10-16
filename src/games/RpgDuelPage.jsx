@@ -1182,7 +1182,146 @@ function BlockerArrows({ tableRef, assignments }) {
   );
 }
 
+/**
+ * La lumière du Sablier — l'angle sous lequel on regarde le plateau.
+ *
+ * Une carte brillante n'a pas de reflet qui tourne tout seul : le reflet bouge
+ * quand la carte bouge, parce qu'on la regarde sous un autre angle. On pose donc
+ * ici un seul angle de vue pour tout le plateau, lu sur le curseur, et toutes
+ * les faces en héritent. Une seule écoute pour des centaines de cartes, et deux
+ * variables sur `<html>` — les faces se contentent de les lire.
+ *
+ * Rien au doigt : là il n'y a pas de curseur, et le reflet d'une carte qu'on
+ * touche n'a personne à suivre.
+ */
+function useLumiereCartes() {
+  useEffect(() => {
+    if (!window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches) return undefined;
+    const racine = document.documentElement;
+    let frame = 0;
+    let point = null;
+    const appliquer = () => {
+      frame = 0;
+      if (!point) return;
+      racine.style.setProperty('--rpg-foil-cx', `${point.x}%`);
+      racine.style.setProperty('--rpg-foil-cy', `${point.y}%`);
+    };
+    const suivre = (event) => {
+      if (event.pointerType === 'touch') return;
+      // ±38 % : assez pour que la face s'écarte franchement du reflet, assez
+      // peu pour qu'aucune tache ne quitte la carte.
+      const x = ((event.clientX / Math.max(window.innerWidth, 1)) - 0.5) * 2;
+      const y = ((event.clientY / Math.max(window.innerHeight, 1)) - 0.5) * 2;
+      point = { x: (x * 38).toFixed(1), y: (y * 38).toFixed(1) };
+      if (!frame) frame = window.requestAnimationFrame(appliquer);
+    };
+    window.addEventListener('pointermove', suivre, { passive: true });
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('pointermove', suivre);
+      racine.style.removeProperty('--rpg-foil-cx');
+      racine.style.removeProperty('--rpg-foil-cy');
+    };
+  }, []);
+}
+
 function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null }) {
+  const faceRef = useRef(null);
+  const carteId = carte?.id ?? null;
+
+  // L'aperçu est la seule carte qui suit le curseur : sa face s'incline vers
+  // lui, et revient au repos par inertie dès qu'il s'en éloigne.
+  //
+  // L'écoute est portée par la fenêtre, pas par le panneau : l'aperçu est posé
+  // en `pointer-events: none` pour ne pas voler le survol à la carte qu'il
+  // commente. On ne penche donc que quand le curseur est vraiment sur la face —
+  // une marge de quelques pixels autour, le temps que le volet se place.
+  //
+  // Rien au doigt : là il n'y a pas de curseur à suivre, et le volet se referme
+  // d'un toucher — incliner une fiche qu'on referme n'aurait pas de sens.
+  useEffect(() => {
+    const face = faceRef.current;
+    if (!face) return undefined;
+    if (!window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches) return undefined;
+    const MAX = 9;
+    const MARGE = 28;
+    let frame = 0;
+    let point = null;
+    let pose = false;
+    const borne = (valeur) => Math.max(-1, Math.min(1, valeur));
+    const focale = Number.parseFloat(
+      window.getComputedStyle(face).getPropertyValue('--rpg-face-3d-focale'),
+    ) || 880;
+    /* La perspective agrandit le côté qui vient vers le pointeur : penchée, la
+       carte déborde de sa propre boîte, et le volet — qui masque ce qui dépasse —
+       lui rognerait les bords. On annule exactement cette agrandissement par un
+       facteur d'échelle calculé sur la taille réelle de la face. La carte garde
+       donc son gabarit et ne sort plus de son cadre. */
+    const facteurCadre = (point) => {
+      const tx = (point.inclineX * Math.PI) / 180;
+      const ty = (point.inclineY * Math.PI) / 180;
+      const z = (point.demiA * Math.abs(Math.sin(ty))) + (point.demiB * Math.abs(Math.sin(tx)));
+      const k = focale / Math.max(focale - z, 1);
+      return Math.min(1, 1 / (Math.cos(ty) * k), 1 / (Math.cos(tx) * k)) * 0.995;
+    };
+    const appliquer = () => {
+      frame = 0;
+      if (!point) return;
+      face.style.setProperty('--rpg-face-3d-x', `${point.inclineX.toFixed(2)}deg`);
+      face.style.setProperty('--rpg-face-3d-y', `${point.inclineY.toFixed(2)}deg`);
+      face.style.setProperty('--rpg-face-3d-s', `${facteurCadre(point).toFixed(4)}`);
+      // Le reflet part de la même inclinaison : c'est ce qui fait lire la face
+      // comme une carte brillante tenue à la main — on la tourne, et les
+      // taches d'arc-en-ciel glissent avec elle au lieu de tourner seules.
+      face.style.setProperty('--rpg-foil-cx', `${(point.nx * 46).toFixed(1)}%`);
+      face.style.setProperty('--rpg-foil-cy', `${(point.ny * 46).toFixed(1)}%`);
+      face.classList.add('is-suit-la-souris');
+      pose = true;
+    };
+    const figer = () => {
+      if (frame) { window.cancelAnimationFrame(frame); frame = 0; }
+      point = null;
+      if (!pose) return;
+      pose = false;
+      face.classList.remove('is-suit-la-souris');
+      face.style.setProperty('--rpg-face-3d-x', '0deg');
+      face.style.setProperty('--rpg-face-3d-y', '0deg');
+      face.style.setProperty('--rpg-face-3d-s', '1');
+      // Le reflet rend la main à la lumière du plateau.
+      face.style.removeProperty('--rpg-foil-cx');
+      face.style.removeProperty('--rpg-foil-cy');
+    };
+    const suivre = (event) => {
+      if (event.pointerType === 'touch') return;
+      const boite = face.getBoundingClientRect();
+      if (!boite.width || !boite.height) return;
+      const dx = event.clientX - boite.left;
+      const dy = event.clientY - boite.top;
+      const surLaFace = dx >= -MARGE && dx <= boite.width + MARGE
+        && dy >= -MARGE && dy <= boite.height + MARGE;
+      if (!surLaFace) { figer(); return; }
+      const nx = borne(((dy / boite.height) - 0.5) * 2);
+      const ny = borne(((dx / boite.width) - 0.5) * -2);
+      point = {
+        nx,
+        ny,
+        inclineX: nx * MAX,
+        inclineY: ny * MAX,
+        demiA: boite.width / 2,
+        demiB: boite.height / 2,
+      };
+      // Un `pointermove` par image : la face suit le curseur sans qu'on
+      // réécrive ses variables une fois par pixel parcouru.
+      if (!frame) frame = window.requestAnimationFrame(appliquer);
+    };
+    window.addEventListener('pointermove', suivre, { passive: true });
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('pointermove', suivre);
+      figer();
+    };
+  }, [carteId]);
+
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
@@ -1243,6 +1382,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   );
   const face = (
     <div
+      ref={faceRef}
       className={`rpg-hover-card-preview__face ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
       style={cardFrameStyle(carte)}
       aria-hidden="true"
@@ -2498,15 +2638,14 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       data-colors={cardColors(carte).join(' ')}
                       data-type={carte.kind}
                       style={cardFrameStyle(carte)}
-                      onMouseEnter={(event) => onHoverCard?.(carte, event)}
-                      onMouseLeave={onLeaveHoverCard}
-                      onFocus={(event) => onHoverCard?.(carte, event)}
-                      onBlur={onLeaveHoverCard}
                     >
                       {/* Toute la fiche est un bouton étiré : le clic — souris ou
                           doigt — ouvre la carte en grand, illustration et effets,
-                          sans rien jouer. Le survol garde l'aperçu rapide, et
-                          l'appui long d'une seconde ouvre le même volet qu'ailleurs. */}
+                          sans rien jouer. Pas d'aperçu au survol ici : la fiche
+                          montre déjà l'illustration, le nom, la famille, la
+                          couleur, le coût et les effets — un aperçu par-dessus
+                          ne ferait que répéter ce qu'on a sous les yeux. Le clic
+                          et l'appui long d'une seconde, eux, restent. */}
                       <button
                         type="button"
                         className="rpg-card-catalogue__ouvrir"
@@ -2629,6 +2768,7 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
 }
 
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random, variantesPlateaux = false } = {}) {
+  useLumiereCartes();
   const authContext = useContext(AuthContext);
   const authUser = authContext?.user ?? null;
   const [nomProfilJoueur, setNomProfilJoueur] = useState(() => profileNameFallback(authUser));
