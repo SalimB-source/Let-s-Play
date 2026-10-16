@@ -53,7 +53,7 @@ import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
-import { EffetsSprite, PastillesCarte, IconesCarte } from './effetIcons.jsx';
+import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
 import RpgTableScene3D from './RpgTableScene3D.jsx';
@@ -1581,7 +1581,6 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       <CardElementBadge carte={carte} />
-      <IconesCarte carte={carte} className="rpg-card-icones--main" />
       <ManaCost carte={carte} showElement={false} />
       {/* Le bas de la carte : la ligne de type pour les terrains et les sorts —
           pour une créature, elle n'apprendrait rien, la face du jeu s'en passe —
@@ -2691,7 +2690,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span className="rpg-card-catalogue__cost" aria-label={`Coût ${cardCostLabel(carte)}`}>{carte.cost}</span>}
                         <SortSceau carte={carte} className="rpg-card-catalogue__sort" />
-                        <IconesCarte carte={carte} className="rpg-card-icones--catalogue" />
                         {verrouillee && <span className="rpg-card-catalogue__lock" aria-hidden="true">🔒</span>}
                         <span className="rpg-card-catalogue__zoom" aria-hidden="true">⤢</span>
                       </div>
@@ -6522,8 +6520,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
                   <CardElementBadge carte={carte} />
-                  <IconesCarte carte={carte} className="rpg-card-icones--main" />
-                  <span className="rpg-hand__title">
+                              <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
                   </span>
                   {familleSort && <SortSceau carte={carte} className="rpg-hand__sceau rpg-hand__sort" />}
