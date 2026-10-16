@@ -362,7 +362,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 3,
     atk: 2,
     def: 3,
-    rarity: 'rare',
+    rarity: 'inhabituelle',
     typeLine: 'Créature — Sonneur',
     art: 'sonneur-fele',
     arrivee: { type: 'retour-main', cible: 'creature' },
@@ -1022,15 +1022,10 @@ export function duelCardById(id) {
 }
 
 /*
- * Les six decks du jeu ne sont plus écrits carte par carte : ils sont
- * **composés** en fin de fichier, par `composerDeck` (`rpgDeckComposer.js`) à
- * partir des recettes (`rpgDeckRecipes.js`) et du catalogue ci-dessous —
- * « les meilleures cartes d’abord », palier de rareté puis puissance
- * (`rpgCardPower.js`). Les listes composées (`RPG_DECK_JOUEUR_BASE`,
- * `RPG_DECK_SORCIER_BASE`, `RPG_DECK_HYBRIDE_BASE`, `RPG_DECK_NEIGE_BASE`,
- * `RPG_DECK_MAREE_BASE`) et `RPG_DECKS` vivent tout en bas du fichier, une
- * fois le catalogue complet — elles lisent les couleurs, les limites
- * d’exemplaires et les terrains.
+ * Les six decks du jeu sont composés en fin de fichier à partir de recettes
+ * et du catalogue. Ils gardent leurs mécaniques de signature, une mythique
+ * chacun et un quota global de rares ; le composeur complète les places restantes
+ * par puissance. Le reste des cartes de ces paliers reste à obtenir au Souk.
  */
 
 /**
@@ -1519,7 +1514,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Neige',
     art: 'appat-de-la-meute',
     cost: 2,
-    rarity: 'commune',
+    rarity: 'inhabituelle',
     instant: true,
     cibles: ['creature'],
     effet: { type: 'blocage-force', cible: 'creature', portee: 'attaque' },
@@ -2035,16 +2030,16 @@ export function rpgDraftOffer(rng, collection = []) {
  *
  * Chaque liste est le produit d'une **recette** (`rpgDeckRecipes.js`) passée au
  * **composeur** (`rpgDeckComposer.js`) avec le catalogue complet : identité
- * chromatique, quotas de terrains, de créatures et de sorts, signature — puis
- * **les meilleures cartes de l'identité**, palier de rareté d'abord, puissance
- * ensuite, chaque carte à son maximum légal (une mythique, trois exemplaires
- * pour les autres). Le catalogue n'a plus de deck « de reste » : chaque boîtier
- * aligne ce que sa couleur a de mieux.
+ * chromatique, quotas de terrains, de créatures, de sorts et d'armes, signature
+ * mécanique, puis les meilleures cartes restantes. Les six decks de départ
+ * contiennent chacun une seule mythique et au plus quatre cartes non-terrain
+ * rares distinctes (six pour le set du Soleil rouge) ; les autres mythiques et rares
+ * se découvrent dans les boosters.
  *
- * Les recettes vivent à part parce qu'elles sont lisibles : une recette dit ce
- * qui ne se négocie pas, le composeur fait le reste. Ajouter une carte au
- * catalogue, c'est la donner à tous les decks dont elle mérite la place — ce
- * sont les contrôles de `tests/rpg-decks-puissance.test.js` qui la suivent.
+ * Les recettes vivent à part parce qu'elles sont lisibles : elles fixent les
+ * synergies qui définissent chaque archétype et le composeur complète les places
+ * restantes sans jamais dépasser les plafonds globaux. Les contrôles de
+ * `tests/rpg-decks-puissance.test.js` suivent le contrat.
  */
 export const CATALOGUE_DU_COMPOSEUR = {
   cartes: RPG_DUEL_CARDS,
@@ -2052,19 +2047,19 @@ export const CATALOGUE_DU_COMPOSEUR = {
   limiteDe: cardCopyLimit,
 };
 
-/** Les Veilleurs du Désert — mono-Sable, les trois héros du sable en tête. */
+/** Veilleurs du Désert — Butin et équipements, avec la Takouba de Tin Hinan comme seule mythique. */
 export const RPG_DECK_JOUEUR_BASE = composerDeck(RPG_RECETTES_DECKS['veilleurs-du-desert'], CATALOGUE_DU_COMPOSEUR);
 
-/** La Cour des Djinns — mono-Braise, tout le vivier Braise à son maximum. */
+/** Cour des Djinns — cendres, Honneur et retour différé d'Anqa. */
 export const RPG_DECK_SORCIER_BASE = composerDeck(RPG_RECETTES_DECKS['cour-des-djinns'], CATALOGUE_DU_COMPOSEUR);
 
-/** Les Sentiers de cendre — hybride Sable + Braise, les neuf mythiques des deux couleurs. */
+/** Sentiers de cendre — Pétra, mana bicolore et frappe rapide de Fériel. */
 export const RPG_DECK_HYBRIDE_BASE = composerDeck(RPG_RECETTES_DECKS['sentiers-de-cendre'], CATALOGUE_DU_COMPOSEUR);
 
-/** La Marée des abysses — mono-Eau, contresorts et bêtes marines. */
+/** Marée des abysses — contresorts, rebonds et Léviathan comme unique mythique. */
 export const RPG_DECK_MAREE_BASE = composerDeck(RPG_RECETTES_DECKS['maree-des-abysses'], CATALOGUE_DU_COMPOSEUR);
 
-/** Le Serment des Neuf Hivers — mono-Neige, les quatre figures du Nord. */
+/** Serment des Neuf Hivers — Furie, Résonance et une figure mythique du Nord. */
 export const RPG_DECK_NEIGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-des-neuf-hivers'], CATALOGUE_DU_COMPOSEUR);
 
 /** Decks de départ. `boxArt` : l'illustration plein art (carte emblématique) imprimée
@@ -2085,7 +2080,7 @@ export const RPG_DECKS = [
     boxArt: 'cavalier-amazigh-du-desert',
     archetype: 'Assaut des dunes',
     affrontement: 'Affrontez les veilleurs du Désert.',
-    description: 'Deck mono-Sable inspiré des peuples amazighs d’Algérie : l’égide d’Amani, la protection de Tiziri et la piste d’Amayas ouvrent la voie aux trois héros du sable — Salem, Tarek et Tin Hinan — et au Cavalier amazigh, sabre au clair.',
+    description: 'Deck mono-Sable inspiré des peuples amazighs d’Algérie : Butin, protection, la pioche de Tislit et l’égide d’Amani soutiennent les équipements du Désert. La Takouba de Tin Hinan est son unique mythique ; Salem, Tarek, la figure de Tin Hinan et les autres équipements d’exception restent à découvrir dans les boosters.',
     cardIds: RPG_DECK_JOUEUR_BASE,
   },
   {
@@ -2094,10 +2089,10 @@ export const RPG_DECKS = [
     role: 'adversaire',
     element: 'braise',
     terrain: 'montagne',
-    boxArt: 'ifrit-al-ahmar',
+    boxArt: 'anqa-des-braises',
     archetype: 'Djinns et sorcellerie',
     affrontement: 'Affrontez les djinns de Braise.',
-    description: 'Deck mono-Braise inspiré du folklore arabo-musulman autour des djinns, ifrits et ghuls : le vivier original des djinns y est aligné à son maximum — les quatre cartes non mythiques à trois exemplaires, les six mythiques à un —, des sorcelleries de cendres qui montent jusqu’à l’Ifrit al-Ahmar.',
+    description: 'Deck mono-Braise autour des djinns et des ghuls : le Ghul frappe à sa mort, le Nuage de cendres revient en écho et Anqa — son unique mythique — renaît après quatre tours. Ashigaru, rōnin et Samouraï du torii ajoutent Honneur et Résonance ; les autres figures mythiques s’obtiennent dans les boosters.',
     cardIds: RPG_DECK_SORCIER_BASE,
   },
   {
@@ -2109,7 +2104,7 @@ export const RPG_DECKS = [
     terrain: 'petra',
     boxArt: 'feriel',
     archetype: 'Sable + Braise · deux couleurs, une même piste',
-    description: 'Un deck hybride de Sable et de Braise : le Désert et la Montagne se partagent les places avec Pétra, qui choisit sa couleur à chaque engagement. Ses cartes bicolores — le Djinn de foudre et le Vent rouge — exigent une source de chaque couleur, et sa liste réunit les meilleures mythiques des deux couleurs, Fériel comprise.',
+    description: 'Deck hybride Sable + Braise : les terrains de Pétra paient les deux couleurs, tandis que le Djinn de foudre et le Vent rouge ouvrent la voie à Fériel, son unique mythique et spécialiste du Coup rapide. Butin et équipements du Désert complètent l’assaut ; les autres mythiques attendent dans les boosters.',
     cardIds: RPG_DECK_HYBRIDE_BASE,
   },
   {
@@ -2121,7 +2116,7 @@ export const RPG_DECKS = [
     boxArt: 'leviathan',
     archetype: 'Contresorts · bêtes marines mythiques',
     affrontement: 'Affrontez la marée des abysses.',
-    description: 'Deck mono-Eau : les contresorts répondent aux cartes annoncées par le sorcier, les renvois en main reprennent le tempo, et les bêtes marines mythiques (Kraken, Léviathan, Bakunawa, Jörmungandr) surgissent des profondeurs aux côtés de Yamina l’Horlogère et de Boualem le Puisatier.',
+    description: 'Deck mono-Eau de contrôle : contresorts, Ressac et rebonds ralentissent le sorcier, tandis que le Bâton appelle ses serpents des citernes. Le Léviathan est l’unique mythique du deck ; Kraken, Bakunawa, Jörmungandr, Yamina et Boualem restent à ouvrir dans les boosters.',
     cardIds: RPG_DECK_MAREE_BASE,
   },
   {
@@ -2133,7 +2128,7 @@ export const RPG_DECKS = [
     boxArt: 'valkyrie-des-glaces',
     archetype: 'Neige · valkyries, guerriers et drakkars',
     affrontement: 'Affrontez les serments du Nord.',
-    description: 'Deck mono-Neige inspiré des récits du Nord : le loup des neiges, le guerrier au bouclier rond, le Jarl et sa Furie, le Mur de boucliers, la Brume et le Hurlement — et, par-dessus, les quatre figures du Nord (le Père des corbeaux, le Maître du marteau, la Dame des neuf mondes, le Serpent du monde) avec les valkyries et le Berserk à leur maximum. Aucune de ces figures n’est jamais nommée « dieu ».',
+    description: 'Deck mono-Neige : Furie et Résonance renforcent les guerriers, la Poigne de givre et l’Appât de la meute contrôlent le combat, et le Maître du marteau — unique mythique — apporte Furie et Ténacité. Les autres figures du Nord se découvrent dans les boosters ; elles ne sont jamais nommées « dieux ».',
     cardIds: RPG_DECK_NEIGE_BASE,
   },
   {
@@ -2145,7 +2140,7 @@ export const RPG_DECKS = [
     boxArt: 'kagutsuchi-flamme-originelle',
     archetype: 'Braise · samouraïs et yōkai',
     affrontement: 'Affrontez le Serment du Soleil rouge.',
-    description: 'Un deck mono-Braise inspiré des guerriers du Japon et de sa mythologie : ashigaru et rōnin ouvrent la marche, samouraïs et onna-musha tiennent le combat, le tengu survole la mêlée. Le Samouraï du torii, le Tengu et Kagutsuchi portent la Résonance samouraï : seules les créatures de type Samouraï des deux camps gagnent +1/+1 par source ; les créatures avec Honneur laissent une dernière frappe (1, 2 ou 3 dégâts à une créature adverse au hasard) à sa mort, tandis que l’iaijutsu, les feux de kitsune et le Serment de la forge préparent l’assaut décisif.',
+    description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Samouraï du torii, le Tengu, le Kenshi et Kagutsuchi font résonner les Samouraïs, et le Daimyō lève des jetons qui grandissent en attaquant. Kagutsuchi est l’unique mythique du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
     cardIds: composerDeck(RPG_RECETTES_DECKS['serment-du-soleil-rouge'], CATALOGUE_DU_COMPOSEUR),
   },
 ];

@@ -129,10 +129,11 @@ l'unicité). Sans `boxArt`, le boîtier retombe sur la première carte non-terra
 | Deck | Illustration du boîtier |
 |---|---|
 | Veilleurs du Désert | `cavalier-amazigh-du-desert` |
-| Cour des Djinns | `ifrit-al-ahmar` |
+| Cour des Djinns | `anqa-des-braises` |
 | Sentiers de cendre | `feriel` (cheval de feu dans les dunes : Sable + Braise) |
 | Marée des abysses | `leviathan` |
 | Serment des Neuf Hivers | `valkyrie-des-glaces` (Valkyrie et monture pâle dans la tempête) |
+| Serment du Soleil rouge | `kagutsuchi-flamme-originelle` |
 
 Les raretés sont **celles de Magic** — commune, inhabituelle, rare, mythique
 (`CARD_RARITIES`) ; il n'existe pas d'« épique ». Seule la **mythique**

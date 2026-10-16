@@ -220,9 +220,11 @@ async function scenarioChampAdverse(assert) {
     }
   };
   try {
+    // Main adverse déterministe : deux Déserts et trois Chiens d’ouverture ; les
+    // deux derniers Déserts piochés assurent un Chien par tour jusqu’au combat.
     await act(async () => root.render(<RpgDuelPage
       joueurDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'chien-du-guet', 'fennec-des-decombres', 'desert', 'desert']}
-      sorcierDeck={['desert', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'desert']}
+      sorcierDeck={['chien-du-guet', 'chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'desert', 'desert']}
       rng={rng}
     />));
     assert.ok(await lancerDuelDepuisMenu(container, (element) => click(element, 'le duel démarre')), 'l’onglet Deck lance le duel');

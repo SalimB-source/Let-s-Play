@@ -19,86 +19,69 @@
  *                   le remplissage — c'est l'âme du boîtier, et c'est aussi ce
  *                   qui distingue deux decks qui puisent dans le même vivier.
  *
- * Deux plafonds facultatifs (`mythiquesMax`, `raresMax`) ne servent qu'aux
- * decks de l'Histoire : ils bornent le nombre de figures et de rares qu'un
- * sorcier aligne, pour que la rampe des Tours tienne — la Garde du fjord
- * n'ouvre pas avec le Père des corbeaux, le Maître des Neuf Hivers si.
+ * Les plafonds globaux (`mythiquesTotalMax`, `raresTotalMax`) contrôlent la
+ * collection de raretés des decks de départ et comptent toutes les familles.
+ * Les plafonds facultatifs de campagne (`mythiquesMax`, `raresMax`) restent
+ * comptés par famille : ils règlent la rampe des Tours sans laisser de place vide.
  *
  * La somme `terrains + creatures + magies + armes` doit faire 40 — c'est le
  * contrôle de `tests/rpg-decks-puissance.test.js`, avec bien d'autres.
  */
 
 /**
- * Les cinq boîtiers de l'étagère (onglet Deck). Ils ne connaissent aucun
- * plafond : ce sont les decks du joueur, et le duel libre leur laisse tout le
- * catalogue de leur couleur.
+ * Les six boîtiers de l'étagère (onglet Deck). Chaque recette fixe les cartes
+ * signature, une seule mythique et un nombre de rares borné ; les autres cartes
+ * de ces paliers restent à obtenir dans des boosters.
  */
 export const RPG_RECETTES_DECKS = {
-  /** Le set japonais tient ses 24 places hors terrain sans emprunter de djinns. */
-  'serment-du-soleil-rouge': {
-    identite: ['braise'],
-    terrains: [['montagne-du-soleil-rouge', 8], ['cretes-de-cendre', 8]],
-    creatures: 17,
-    magies: 7,
-    signature: [
-      ['ashigaru-des-braises', 3], ['ronin-du-soleil-rouge', 3],
-      ['samourai-du-torii', 3], ['onna-musha-des-cendres', 1], ['orochi', 1], ['susanoo', 1],
-      ['tengu-du-mont-ardent', 2], ['oni-de-la-fournaise', 1], ['cavalier-des-deux-sabres', 1],
-      ['kagutsuchi-flamme-originelle', 1],
-      ['frappe-iaijutsu', 2], ['feux-de-kitsune', 2], ['serment-de-la-forge', 1], ['sabre-maudit', 2],
-    ],
-  },
   /**
-   * Mono-Sable. L'identité amazighe garde ses trois gardiennes des ksour (l'égide d'Amani, la protection de Tiziri, la guide Amayas) et l'éclaireuse
-   * des Aurès ; le reste des places va aux meilleures cartes Sable du
-   * catalogue — les trois héros mythiques (Salem, Tarek, Tin Hinan), le
-   * Cavalier et le Scribe, et le Fennec à son maximum. Côté sorts, la Tempête
-   * de sable balaie la table et le Rapport du greffier fait piocher.
+   * Les Veilleurs apprennent les mécaniques récentes du Sable : Butin,
+   * équipements à déclenchement et récupération de cartes. La Takouba de
+   * Tin Hinan est leur unique mythique ; les autres figures et équipements
+   * mythiques restent à ouvrir au Souk.
    */
   'veilleurs-du-desert': {
     identite: ['sable'],
     terrains: [['desert', 9], ['dunes-du-tenere', 8]],
-    creatures: 16,
-    magies: 5,
-    armes: 2,
+    creatures: 15,
+    magies: 4,
+    armes: 4,
+    raresTotalMax: 4,
+    mythiquesTotalMax: 1,
     signature: [
-      ['amani-des-ksour', 3],
-      ['cavalier-amazigh-du-desert', 1],
-      ['tiziri-du-djurdjura', 1],
-      ['amayas-du-hoggar', 1],
-      ['tislit-des-aures', 1],
-      ['tempete-de-sable', 1],
+      ['chien-du-guet', 2], ['fennec-des-decombres', 2], ['tislit-des-aures', 1],
+      ['amani-des-ksour', 1], ['cavalier-amazigh-du-desert', 1],
+      ['rapport-du-greffier', 1], ['tempete-de-sable', 1],
+      ['sandales-de-tislit', 1], ['licou-du-chien-de-sable', 1],
+      ['jitte-d-amayas', 1], ['takouba-de-tin-hinan', 1],
     ],
   },
   /**
-   * Mono-Braise. Le vivier original des djinns tient en dix cartes : le deck les aligne
-   * toutes à leur maximum — les quatre communes (Braisier, Ghul, Trait, Nuage)
-   * à trois, les six mythiques (Fériel, Anqa, Djinn du souk, Sahir, Ifrit des
-   * ergs, Ifrit al-Ahmar) à un. Les quatre places restantes reviennent aux
-   * terrains : vingt-deux cartes de Braise, une courbe qui grimpe jusqu'à
-   * l'Ifrit al-Ahmar.
+   * Les Djinns font travailler les nouvelles règles de Braise : dégâts en
+   * plusieurs vagues, effets à la mort et retour différé d'Anqa. Les guerriers
+   * au Honneur et le Samouraï du torii relient le nouveau lot du Soleil rouge
+   * à l'ancien feu. Anqa est l'unique mythique de ce boîtier.
    */
   'cour-des-djinns': {
     identite: ['braise'],
-    terrains: [['montagne', 11], ['cretes-de-cendre', 11]],
-    creatures: 11,
+    terrains: [['montagne', 9], ['cretes-de-cendre', 9]],
+    creatures: 16,
     magies: 6,
-    armes: 1,
+    raresTotalMax: 4,
+    mythiquesTotalMax: 1,
     signature: [
-      ['braisier-du-souk', 3], ['ghul-des-cendres', 2],
-      ['feriel', 1], ['anqa-des-braises', 1], ['djinn-du-souk', 1],
-      ['sahir-des-braises', 1], ['ifrit-des-ergs', 1], ['ifrit-al-ahmar', 1],
-      ['trait-de-braise', 3],
-      ['nuage-de-cendres', 3],
+      ['ghul-des-cendres', 3], ['braisier-du-souk', 3],
+      ['ashigaru-des-braises', 3], ['ronin-du-soleil-rouge', 2],
+      ['samourai-du-torii', 1], ['anqa-des-braises', 1],
+      ['hatamoto-des-cendres', 3],
+      ['trait-de-braise', 3], ['nuage-de-cendres', 2], ['frappe-iaijutsu', 1],
     ],
   },
   /**
-   * Hybride Sable + Braise. Les deux couleurs n'ont plus de terrains séparés :
-   * Désert et Montagne se partagent la moitié des places, Pétra (et sa seconde
-   * source) prend l'autre et choisit sa couleur à chaque engagement. La
-   * signature est bicolore — le Djinn de foudre et le Vent rouge exigent une
-   * source de chaque — et le remplissage fait entrer **les neuf mythiques des
-   * deux couleurs**, plus le Gardien des ksour et le Braisier.
+   * L'hybride garde ses sources doubles Pétra, les coûts Braise + Sable, la
+   * frappe rapide de Fériel et les équipements du Désert. Fériel est son
+   * unique mythique ; les autres figures des deux couleurs attendent les
+   * boosters.
    */
   'sentiers-de-cendre': {
     identite: ['sable', 'braise'],
@@ -107,68 +90,79 @@ export const RPG_RECETTES_DECKS = {
       ['montagne', 3], ['cretes-de-cendre', 3],
       ['petra', 3], ['petra-des-deux-sources', 2],
     ],
-    creatures: 16,
-    // Une place de sort cède la place à une troisième arme : l'identité
-    // Sable + Braise porte DEUX mythiques d'équipement depuis le lot du
-    // Désert (l'Armure de cendres et la Takouba de Tin Hinan) et le deck
-    // aligne les mythiques de ses deux couleurs — la règle reste entière.
-    magies: 4,
-    armes: 3,
+    creatures: 13,
+    magies: 6,
+    armes: 4,
+    raresTotalMax: 4,
+    mythiquesTotalMax: 1,
     signature: [
-      ['djinn-de-foudre', 2],
-      ['vent-rouge', 2],
-      ['rempart-de-dunes', 1],
-      ['takouba-des-pistes', 1],
+      ['ghul-des-cendres', 2], ['fennec-des-decombres', 1],
+      ['djinn-de-foudre', 2], ['cavalier-amazigh-du-desert', 1], ['feriel', 1],
+      ['rempart-de-dunes', 1], ['vent-rouge', 2], ['trait-de-braise', 1],
+      ['takouba-des-pistes', 1], ['harnais-du-mehari', 1],
+      ['jitte-d-amayas', 1], ['masque-du-guetteur', 1],
     ],
   },
   /**
-   * Mono-Eau. L'archétype du deck est le contresort : les six contres
-   * (Contresort des abîmes, Silence d'écume, Défection) et les deux renvois en
-   * main (Ressac, Courant de retour) sont posés d'abord. Le reste des places
-   * va aux bêtes mythiques — Bakunawa, Kraken, Léviathan, Jörmungandr — et aux
-   * deux héros d'Eau que le catalogue n'avait encore jamais alignés : Yamina
-   * l'Horlogère et Boualem le Puisatier, aux côtés du Colosse de sel et de la
-   * Vipère de verre.
+   * La Marée enseigne le tempo : contresorts, rebonds, la Vipère et le Bâton
+   * des citernes. Son unique mythique, le Léviathan, reprend toute la table en
+   * main ; Yamina, Boualem et les autres bêtes restent aux boosters.
    */
   'maree-des-abysses': {
     identite: ['eau'],
     terrains: [['mer', 8], ['lagune-des-salines', 8]],
     creatures: 8,
-    magies: 14,
-    armes: 2,
+    magies: 15,
+    armes: 1,
+    raresTotalMax: 4,
+    mythiquesTotalMax: 1,
     signature: [
-      ['contresort-des-abimes', 3],
-      ['silence-decume', 3],
-      ['ressac', 2],
-      ['courant-de-retour', 1],
+      ['porteuse-de-cruches', 2], ['veilleuse-des-citernes', 1],
+      ['sonneur-fele', 1], ['vipere-de-verre', 1], ['leviathan', 1],
+      ['contresort-des-abimes', 2], ['silence-decume', 2], ['ressac', 2],
+      ['eau-de-la-source', 1], ['courant-de-retour', 1], ['maree-contraire', 1],
+      ['baton-des-citernes', 1],
     ],
   },
   /**
-   * Mono-Neige. Le Serment garde l'âme du set — le loup, le guerrier au
-   * bouclier rond, le Jarl et sa Furie (la seule Furie du jeu, montrée au
-   * duel), le Mur de boucliers, le Hurlement et la Brume — et aligne le lot
-   * du gel : la Poigne de givre et le Grand Voile blanc tiennent les sept
-   * places de sorts en signature. Le reste du lot (l'Appât de la meute, le
-   * Verglas, le Défi du Jarl, l'Embuscade) vit dans le pool Neige : il
-   * s'ajoute au deck depuis l'atelier. Les quatre figures du Nord, les deux
-   * valkyries et le Berserk, eux, remplissent les places de créatures à leur
-   * maximum.
+   * Le Serment des Neuf Hivers associe Furie et Résonance aux tours de gel,
+   * au brouillard de combat et à la Lance de givre. Le Maître du marteau est
+   * son unique mythique ; les autres figures du Nord se gagnent au Souk.
    */
   'serment-des-neuf-hivers': {
     identite: ['neige'],
     terrains: [['glacier', 9], ['glacier-des-arches', 8]],
-    creatures: 14,
-    magies: 7,
-    armes: 2,
+    creatures: 13,
+    magies: 9,
+    armes: 1,
+    raresTotalMax: 4,
+    mythiquesTotalMax: 1,
     signature: [
-      ['jarl-au-marteau-de-guerre', 1],
-      ['loup-des-neiges', 1],
-      ['guerrier-au-bouclier-rond', 1],
-      ['mur-de-boucliers', 2],
-      ['hurlement-du-blizzard', 1],
-      ['brume-du-fjord', 1],
-      ['poigne-de-givre', 2],
-      ['grand-voile-blanc', 1],
+      ['guerrier-au-bouclier-rond', 2], ['loup-des-neiges', 2],
+      ['jarl-au-marteau-de-guerre', 1], ['valkyrie-des-glaces', 1], ['maitre-du-marteau', 1],
+      ['poigne-de-givre', 1], ['appat-de-la-meute', 1],
+      ['grand-voile-blanc', 1], ['mur-de-boucliers', 1], ['lance-de-givre', 1],
+    ],
+  },
+  /**
+   * Le Soleil rouge donne sa place aux trois mécaniques du set : Honneur à la
+   * mort, Résonance samouraï et Bannière du Daimyō. Kagutsuchi est l'unique
+   * mythique du deck ; Orochi, Susanoo et les autres figures s'ouvrent dans les
+   * boosters.
+   */
+  'serment-du-soleil-rouge': {
+    identite: ['braise'],
+    terrains: [['montagne-du-soleil-rouge', 8], ['cretes-de-cendre', 8]],
+    creatures: 17,
+    magies: 7,
+    raresTotalMax: 6,
+    mythiquesTotalMax: 1,
+    signature: [
+      ['ashigaru-des-braises', 3], ['hatamoto-des-cendres', 3],
+      ['ronin-du-soleil-rouge', 3], ['samourai-du-torii', 3],
+      ['daimyo-du-soleil-rouge', 1], ['kenshi-de-la-forge', 2],
+      ['tengu-du-mont-ardent', 1], ['kagutsuchi-flamme-originelle', 1],
+      ['trait-de-braise', 3], ['frappe-iaijutsu', 2], ['feux-de-kitsune', 2],
     ],
   },
 };

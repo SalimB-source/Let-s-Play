@@ -6393,154 +6393,83 @@ site, donc les deux correctifs — le voile et la main — arrivent dans l'appli
 dès que le site est déployé, au prochain lancement du jeu.
 
 
-## Le Sablier : les decks recréés — les meilleures cartes d'abord
+## Le Sablier : les six decks de départ recréés
 
-Les **dix paquets du jeu** — les cinq boîtiers de l'onglet Deck et les cinq
-variantes que la campagne aligne — ne sont plus écrits carte par carte. Ils sont
-**composés** : une **recette** dit ce qui ne se négocie pas (l'identité
-chromatique, les places de terrains, de créatures et de sorts, la signature du
-deck), et le composeur y met **les meilleures cartes de cette identité**, palier
-de rareté d'abord, puissance ensuite. Une carte ajoutée au catalogue entre donc
-d'elle-même dans les decks dont elle mérite la place, et une carte qu'on
-retire ne casse aucune liste : sa place revient à la meilleure carte restante.
+Les six boîtiers de `RPG_DECKS` sont construits à partir des recettes de
+`src/games/rpgDeckRecipes.js`. Chaque recette conserve une signature liée aux
+mécaniques déjà présentes au catalogue ; `rpgDeckComposer.js` complète ensuite
+les places par identité, rareté et puissance.
 
-La règle tient en une phrase : *une mythique passe avant une rare, une rare
-avant une commune ; à palier égal, la carte qui rend le plus pour son mana —
-et chacune est prise à son maximum légal (une mythique, trois exemplaires pour
-le reste).*
+**Règles des starters :** quarante cartes, au moins seize terrains, des communes,
+des inhabituelles, des rares et exactement une mythique distincte par deck. Les
+plafonds comptent les cartes rares **distinctes non-terrain** : quatre dans les
+cinq premiers boîtiers, six pour le Serment du Soleil rouge. Les copies restent
+soumises à la limite de chaque carte. Les boîtiers restent jouables d’entrée,
+mais leurs cartes rares et mythiques ne sont pas ajoutées à la collection de
+l’atelier ; toutes les mythiques absentes des starters sont révélées par un
+étage et s’obtiennent dans les boosters du Souk.
 
-### 1. L'échelle de puissance
+### Composition et raretés
 
-`src/games/rpgCardPower.js` — `puissanceCarte(carte)` = **le palier de rareté**
-(commune 1, inhabituelle 2, rare 3, mythique 4, multiplié par dix : aucune
-commune ne peut dépasser une rare, quel que soit son texte) **puis la valeur de
-la carte rapportée à son mana** (`valeurCarte`) :
+Le tableau indique les copies, terrains compris séparément. Chaque deck totalise
+40 cartes ; la dernière colonne compte les types de cartes rares distincts, pas
+leurs exemplaires.
 
-| Ce qui compte | Poids |
-| --- | --- |
-| ⚔ attaque / 🛡 défense | 1,3 par point d'attaque, 1 par point de défense |
-| Envol · coup rapide · rapidité | 2,5 · 2 · 0,5 |
-| Esquive · protection · combat · aura | 1,5 par point · 1,5 · 2 · 2,5 |
-| Furie · résonance | 1 + 0,7 par point · 2 + 2 par point |
-| Dégâts d'un sort | 1,25 par point sur une cible, 1,9 sur toutes les créatures, 1 sur le sorcier (+ 0,9 par point d'écho) |
-| Soin · pioche · bouclier · buff | 0,5 · 1,5 · 0,7 · 0,8 par point d'attaque et 0,6 par point de défense |
-| Contresort · renvoi en main | 3,5 sur une carte, 2,5 sur un sort · 2 (+ 1,5 si le sort pioche) |
-| Le reste | soin des créatures 0,65 le point · pioche sur défausse 1,2 par carte piochée moins 0,4 par carte défaussée · bouclier de lumière 2,5 · destruction de terrain aléatoire 2 · un sort qui pioche ajoute 1,5 par carte |
+| Deck | Terrains | Communes | Inhabituelles | Rares | Mythiques | Rares distinctes max. |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Veilleurs du Désert | 17 | 5 | 7 | 10 | 1 | 4 |
+| Cour des Djinns | 18 | 12 | 2 | 7 | 1 | 4 |
+| Sentiers de cendre | 17 | 6 | 8 | 8 | 1 | 4 |
+| Marée des abysses | 16 | 12 | 1 | 10 | 1 | 4 |
+| Serment des Neuf Hivers | 17 | 9 | 3 | 10 | 1 | 4 |
+| Serment du Soleil rouge | 16 | 9 | 3 | 11 | 1 | 6 |
 
-Tout est calculé sur la fiche de la carte, sans jamais lire le catalogue : la
-même échelle sert à composer les decks, à les contrôler et — demain — à trier
-l'atelier ou à classer le catalogue.
+### Signatures et mythiques
 
-### 2. Les recettes
-
-`src/games/rpgDeckRecipes.js` — une recette tient en cinq lignes : `identite`,
-`terrains` (jusqu'à la peinture de chaque variante), `creatures`, `magies`,
-`signature` (les cartes d'archétype, posées avant tout), plus les **plafonds**
-de la campagne (`mythiquesMax`, `raresMax`).
-
-| Deck | Identité | Terrains | Créatures + héros | Sorts | Signature |
-| --- | --- | --- | --- | --- | --- |
-| Veilleurs du Désert | Sable | 17 (Désert 9, Dunes 8) | 18 | 5 | Amani ×3 · Cavalier · Tiziri · Amayas · Tislit · Tempête de sable |
-| Cour des Djinns | Braise | 22 (Montagne 11, Crêtes 11) | 12 | 6 | Braisier ×3 · Trait ×3 · Nuage ×3 |
-| Sentiers de cendre | Sable + Braise | 17 (3 Désert, 3 Dunes, 3 Montagne, 3 Crêtes, 3 Pétra, 2 Pétra des deux sources) | 18 | 5 | Djinn de foudre ×3 · Vent rouge ×2 · Rempart de dunes |
-| Marée des abysses | Eau | 16 (Mer 8, Lagune 8) | 10 | 14 | Contresort ×3 · Silence ×3 · Ressac ×2 · Courant de retour |
-| Serment des Neuf Hivers | Neige | 17 (Glacier 9, Arches 8) | 16 | 7 | Jarl · Loup · Guerrier · Mur ×2 · Hurlement · Brume |
-
-### 3. Ce que la composition a changé dans les boîtiers
-
-| Deck | Ce qui entre, à son maximum | Ce qui cède la place |
+| Deck | Mécaniques mises en avant | Mythique du boîtier |
 | --- | --- | --- |
-| **Veilleurs du Désert** | **SALEM**, **TAREK** et **Tin Hinan** (les trois mythiques Sable, désormais toutes au deck), le **Scribe de la Liste** ×3, le Cavalier 1 → 3, le Fennec 2 → 3, la Tempête de sable 1 → 3 | Faiseur de passage ×3, Rempart de dunes ×2, Tiziri, Amayas et Tislit reviennent à un exemplaire — l'identité amazighe garde ses gardiennes, le reste va à la puissance |
-| **Cour des Djinns** | rien : le vivier Braise était déjà aligné au complet — ses six mythiques à un exemplaire, le Braisier et le Nuage à trois | rien |
-| **Sentiers de cendre** | **SALEM**, **TAREK**, **Tin Hinan** et **l'Ifrit al-Ahmar** (les neuf mythiques des deux couleurs sont désormais dans le deck), Amani 0 → 3, Braisier 1 → 3, Tempête de sable 0 → 2 | Fennec ×3, Cavalier ×2, Faiseur ×2, Tislit ×2, Trait de braise ×2 — le Djinn de foudre, le Vent rouge et le Rempart restent la signature bicolore |
-| **Marée des abysses** | **YAMINA** et **BOUALEM** (les deux héros Eau), le **Colosse de sel**, la Vipère de verre 1 → 3, le Courant de retour 1 → 3, la Déflection 2 → 3 | Porteuse de cruches, Veilleuse des citernes et Sonneur fêlé quittent la liste, la Parade et la Brisure de verre aussi : les six contres et les deux renvois en main restent la colonne vertébrale du deck |
-| **Serment des Neuf Hivers** | les quatre **figures du Nord** restent, et les valkyries, le Berserk et la Brume de fjord passent à trois exemplaires, le Hurlement à deux | Scalde des runes, Géant des banquises, Drakkar à tête de dragon, Éclair du marteau et Festin des vaillants — le Serment passe de vingt à quinze cartes distinctes, toutes choisies pour la puissance, et le Jarl garde sa Furie au tableau |
+| **Veilleurs du Désert** | Butin, protection, équipements et récupération de cartes | Takouba de Tin Hinan |
+| **Cour des Djinns** | dégâts en vagues, effets à la mort, retour différé d’Anqa, Honneur et Résonance samouraï | Anqa des braises |
+| **Sentiers de cendre** | Pétra et mana bicolore, Butin, équipements, Coup rapide | Fériel |
+| **Marée des abysses** | contresorts, rebonds, Vipère de verre et serpents du Bâton des citernes | Léviathan |
+| **Serment des Neuf Hivers** | Furie, Résonance, gel et contrôle du combat | Maître du marteau |
+| **Serment du Soleil rouge** | Honneur, Résonance samouraï et Bannière du Daimyō | Kagutsuchi, flamme originelle |
 
-Deux effets de bord assumés :
+Les autres mythiques — par exemple Salem, Tarek et Tin Hinan chez les Veilleurs,
+les bêtes marines hors du Léviathan, ou Cavalier des deux sabres, Orochi et
+Susanoo pour le Soleil rouge — restent hors de la dotation : leur étage ouvre
+leur présence dans le vivier, puis un booster peut les donner. Les six decks ne
+contiennent donc jamais toutes les mythiques de leur identité.
 
-- **Le duel libre s'ouvre.** Le joueur qui prend la Cour des Djinns affronte
-  désormais un deck de même acabit : chaque boîtier aligne **toutes les
-  mythiques de son identité** (trois chez les Veilleurs, six dans la Cour, six
-  dans la Marée, quatre dans le Serment, neuf dans l'Hybride), les parties sont
-  plus tranchées et plus courtes.
-- **Les héros entrent dans les paquets de départ.** Le dossier de conception les
-  réservait à l'exploration ; la règle « les meilleures cartes d'abord » les fait
-  entrer — Salem et Tarek chez les Veilleurs, Yamina et Boualem dans la Marée.
-  Ils restent à un exemplaire (mythiques) et continuent de se gagner par les
-  étages pour l'atelier.
+Pour équilibrer les archétypes, le Sonneur fêlé passe de rare à inhabituelle et
+l’Appât de la meute de commune à inhabituelle. Le Sonneur rejoint ainsi la
+dotation de départ et n’est plus listé comme carte à révéler à Abysses 1 ; le
+catalogue de révélations continue de couvrir toutes les cartes qui ne sont pas
+dans la dotation.
 
-### 4. La rampe de la campagne
+### Composeur et contrôles
 
-Les cinq paquets de l'Histoire suivent la même règle, avec deux plafonds qui
-préservent la montée des Tours — et des plafonds **par famille** : un sorcier ne
-renonce pas à ses sorts rares parce qu'il a aligné quatre créatures rares.
+- `src/games/rpgDeckComposer.js` applique les plafonds globaux des starters à la
+  signature comme au remplissage. Les recettes de l’Histoire gardent leurs
+  plafonds séparés par famille pour préserver la rampe des Tours.
+- `src/games/rpgCards.js` expose les six listes composées et les descriptions
+  actualisées des boîtiers ; l’illustration de chaque boîtier est une carte
+  effectivement présente dans sa liste.
+- `tests/rpg-decks-puissance.test.js` vérifie les 40 cartes, la composition par
+  recette, les quatre raretés, l’unique mythique, les plafonds rares, les cartes
+  absentes accessibles dans les boosters et l’identité chromatique.
+- Les tests de collection, de boosters, d’armes, de Marée et du Soleil rouge
+  suivent également la nouvelle composition.
 
-| Paquet | Étages | Terrains / Créatures / Sorts | Plafonds | Ce qu'il joue |
-| --- | --- | --- | --- | --- |
-| `souffleuse-de-verre` | Listes 4 · Souk 4 | 17 / 17 / 6 | 4 mythiques, 3 rares | Fériel, le Trait de braise ×3, le Fennec et le Vent rouge : l'Hybride agressive |
-| `gardes-du-fjord` | Fjord 1 | 21 / 12 / 7 | **1 mythique**, 2 rares | La Dame des neuf mondes, le Scalde ×3, le Guerrier ×3, la Valkyrie des glaces ×3, murs, brumes et festins — la muraille, pas l'avalanche |
-| `meute-des-neiges` | Fjord 2 | 21 / 13 / 6 | **0 mythique**, 3 rares | Loups ×3, Berserk ×3, les deux valkyries ×3, le Hurlement et la Brume ×3 — la course |
-| `maitre-des-neuf-hivers` | Fjord 4 (boss) | 18 / 15 / 7 | 2 mythiques, 4 rares | Le Père des corbeaux, le Maître du marteau, les valkyries, le Berserk et le Drakkar ×3 |
-| `grand-horloger` | Listes 5 · Sables 3 (boss) | 17 / 17 / 6 | 3 mythiques, 4 rares | Tin Hinan, Sahir des braises et l'Anqa, Amani, Braisier et le Cavalier ×3, Tempête et Nuage ×3 |
-
-Le **Grand Horloger** gagne au passage une réparation : ses deux mythiques de
-Braise étaient **injouables** — le paquet n'avait aucune source de Braise. Sa
-recette lui donne Pétra ×2, trois Montagnes et deux Crêtes de cendre, à côté des
-dix déserts de son identité sable : le boss de la Chambre des Heures joue enfin
-les cartes qu'il annonce.
-
-### 5. Ce qui reste à l'atelier
-
-Douze cartes du catalogue ne sont dans aucun deck — et c'est cohérent : ce sont
-les moins bien classées de leur couleur. Quatre **Sable** (Chien du guet,
-Guetteur du beffroi, Dune marchante, Faiseur de passage), sept **Eau** (Porteuse
-de cruches, Veilleuse des citernes, Sonneur fêlé, Eau de la source, Lame de mer,
-Parade de verre, Brisure de verre) et le **Géant des banquises**, seul Neige
-laissé de côté : elles restent jouables par la collection et l'atelier de decks,
-le joueur peut les mettre dans un deck maison, aucun boîtier ne les aligne
-d'office.
-
-### Où vit le code
-
-- `src/games/rpgCardPower.js` — l'échelle : `RPG_RANGS_RARETE`, `valeurCarte`,
-  `puissanceCarte`, `comparerCartesParPuissance` ;
-- `src/games/rpgDeckRecipes.js` — les dix recettes, commentées deck par deck ;
-- `src/games/rpgDeckComposer.js` — `composerDeck(recette, catalogue)` : la
-  signature, puis le remplissage, les plafonds par famille et la passe de
-  secours qui ne laisse jamais une place vide ;
-- `src/games/rpgCards.js` — les cinq listes du catalogue sont désormais
-  **dérivées** (`composerDeck(...)`) en fin de fichier, avec `RPG_DECKS` et ses
-  descriptions mises à jour ;
-- `src/games/rpgStoryTours.js` — les cinq paquets d'Histoire suivent leurs
-  recettes (`RPG_RECETTES_HISTOIRE`) ;
-- `tests/rpg-decks-puissance.test.js` — le contrat : chaque deck vaut la
-  composition de sa recette, **aucune carte laissée de côté n'est mieux classée
-  qu'une carte retenue** (hors signature et hors plafonds), les mythiques de
-  l'identité sont toutes là, les plafonds tiennent, l'identité chromatique est
-  stricte et le boîtier montre une carte du deck.
-
-
-### Vérifications
+Vérifications :
 
 ```bash
-npm run check:rpg-decks  # la règle « les meilleures d'abord », deck par deck
-npm run check:rpg        # 311 tests : règles du duel, IA, Histoire, collection, decks
-npm run check:rpg-ui     # la page montée dans jsdom : fiche, boîtiers, tutoriel, mulligan
+npm run check:rpg-decks
+npm run check:rpg
+npm run check:rpg-ui
 npm run build
 ```
 
-
-`npm run check:rpg-decks` recalcule chaque liste à partir de sa recette : une
-carte retirée à la main d'un deck, une meilleure carte oubliée ou un plafond
-dépassé font échouer le contrôle. `scripts/rpg-battle-ui-check.mjs` et
-`scripts/rpg-battle-smoke.jsx` lisent désormais le nombre de références d'une
-fiche dans `RPG_DECKS` plutôt que de l'écrire en dur, et le tutoriel joue les
-cartes de la main préparée qui existent vraiment dans le deck composé
-(le Rempart de dunes y cède sa place à la Tempête de sable).
-
-Le contrôle tactile Playwright (`npm run check:rpg-mobile`) n'a pas pu être
-rejoué ici : ses navigateurs ne sont pas téléchargeables depuis cet
-environnement.
 
 ## Le Sablier : les chiens de sable de Tarek
 

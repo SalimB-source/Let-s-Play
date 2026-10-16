@@ -29,7 +29,7 @@ function sort(duel, id, cible) {
   assert.equal(rpgLancerMagie(duel, 'joueur', id, cible).ok, true, id);
 }
 
-// Les trois samouraïs ajoutés (hatamoto, kenshi, daimyō) ne sont pas dans le deck préconstruit.
+// Les trois cartes de soutien ajoutées (hatamoto, kenshi, daimyō) forment désormais la charpente du starter.
 const SAMOURAIS_AJOUTES = ['hatamoto-des-cendres', 'kenshi-de-la-forge', 'daimyo-du-soleil-rouge'];
 
 test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 × 1280 et collectionnables', () => {
@@ -56,50 +56,45 @@ test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 ×
   assert.equal(empreintes.size, 18, 'une illustration dédiée par carte');
 });
 
-test('le deck Soleil rouge est valide et ne mélange pas les deux cultures de Braise', () => {
+test('le deck Soleil rouge est valide et concentre sa signature culturelle', () => {
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
   assert.equal(deck.cardIds.filter((id) => cardById(id).kind === 'terrain').length, 16);
-  assert.deepEqual(new Set(deck.cardIds.filter((id) => cardById(id).kind !== 'terrain')),
-    new Set(RPG_SOLEIL_ROUGE_CARDS.filter((c) => c.kind !== 'terrain' && !SAMOURAIS_AJOUTES.includes(c.id)).map((c) => c.id)));
-  for (const id of SAMOURAIS_AJOUTES) assert.equal(deck.cardIds.includes(id), false, id);
-  const djinns = RPG_DECKS.find((d) => d.id === 'cour-des-djinns');
-  assert.ok(djinns.cardIds.every((id) => cardById(id).set !== RPG_SOLEIL_ROUGE_SET_ID));
+  const signature = [
+    'ashigaru-des-braises', 'daimyo-du-soleil-rouge', 'feux-de-kitsune',
+    'frappe-iaijutsu', 'hatamoto-des-cendres', 'kagutsuchi-flamme-originelle',
+    'kenshi-de-la-forge', 'ronin-du-soleil-rouge', 'samourai-du-torii',
+    'tengu-du-mont-ardent', 'trait-de-braise',
+  ];
+  assert.deepEqual(
+    [...new Set(deck.cardIds.filter((id) => cardById(id).kind !== 'terrain'))].sort(),
+    signature.sort(),
+  );
+  assert.ok(deck.cardIds.every((id) => cardColors(id).every((couleur) => couleur === 'braise')));
 });
 
-test('les préconstruits restent à l’écart des ajouts de puissance du set', () => {
-  // Règle de design : les boîtiers de départ ne doivent pas être trop forts.
-  // Les trois samouraïs ajoutés au set restent donc dehors, et le Daimyō comme
-  // son jeton avec eux : le Daimyō ne vit nulle part dans les decks — il
-  // s'obtient au Souk et se compose à l'atelier. La composition est recalculée
-  // à chaque chargement : ce contrôle est ce qui empêche une carte de
-  // « remonter » toute seule dans un boîtier le jour où sa valeur change.
-  for (const deck of RPG_DECKS) {
-    for (const id of SAMOURAIS_AJOUTES) {
-      assert.equal(deck.cardIds.includes(id), false, `le boîtier ${deck.id} contient ${id}`);
-    }
-  }
-  const listes = [
-    ...RPG_DECKS.map((deck) => [`catalogue ${deck.id}`, deck.cardIds]),
-    ...Object.entries(RPG_STORY_DECKS).map(([id, liste]) => [`Histoire ${id}`, liste]),
-  ];
-  for (const [nom, liste] of listes) {
-    assert.equal(liste.includes('daimyo-du-soleil-rouge'), false, `${nom} contient le Daimyō`);
-    assert.equal(liste.includes('samourai-du-daimyo'), false, `${nom} contient le jeton Samouraï`);
-  }
-  // Le boîtier du Soleil rouge garde exactement la signature du set : aucun des
-  // ajouts n'a pris la place d'une Onna-musha ou d'un Tengu.
+test('le starter met en avant Honneur, Résonance samouraï et la Bannière sans offrir les autres mythiques', () => {
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
-  const compte = (id) => deck.cardIds.filter((candidat) => candidat === id).length;
-  assert.deepEqual([
-    compte('ashigaru-des-braises'), compte('ronin-du-soleil-rouge'), compte('samourai-du-torii'),
-    compte('onna-musha-des-cendres'), compte('tengu-du-mont-ardent'), compte('cavalier-des-deux-sabres'),
-    compte('kagutsuchi-flamme-originelle'), compte('orochi'), compte('susanoo'),
-  ], [3, 3, 3, 1, 2, 1, 1, 1, 1]);
-  // Le Kenshi reste, lui, au service de deux sorciers de la campagne (la
-  // Souffleuse de verre et le Grand Horloger) : c'est le seul des ajouts à
-  // sortir du Souk, et leurs plafonds de rares tiennent la rampe des Tours.
-  assert.ok(Object.values(RPG_STORY_DECKS).filter((liste) => liste.includes('kenshi-de-la-forge')).length <= 2);
+  const ids = new Set(deck.cardIds);
+  for (const id of SAMOURAIS_AJOUTES) assert.equal(ids.has(id), true, `${id} anime le boîtier`);
+  for (const id of ['samourai-du-torii', 'feux-de-kitsune', 'frappe-iaijutsu', 'kagutsuchi-flamme-originelle']) {
+    assert.equal(ids.has(id), true, `${id} porte une mécanique du set`);
+  }
+  assert.deepEqual([...new Set(deck.cardIds.filter((id) => cardById(id).rarity === 'mythique'))],
+    ['kagutsuchi-flamme-originelle']);
+
+  for (const carte of RPG_SOLEIL_ROUGE_CARDS.filter((candidate) => candidate.rarity === 'mythique'
+    && candidate.id !== 'kagutsuchi-flamme-originelle')) {
+    assert.equal(ids.has(carte.id), false, `${carte.id} reste hors du deck de départ`);
+    assert.equal(COLLECTION_DEPART.includes(carte.id), false, `${carte.id} n’est pas dans la dotation`);
+    assert.ok(carteReveleePar(carte.id), `${carte.id} est accessible dans un booster après sa révélation`);
+  }
+
+  const listes = [
+    ...RPG_DECKS.map((starter) => starter.cardIds),
+    ...Object.values(RPG_STORY_DECKS),
+  ];
+  for (const liste of listes) assert.equal(liste.includes('samourai-du-daimyo'), false, 'le jeton ne figure pas dans une liste');
 });
 
 test('les dix créatures suivent Honneur par rareté, sans anciens effets dispersés', () => {
@@ -379,7 +374,8 @@ test('le Cavalier des deux sabres est mythique, rapide, samouraï et porte Honne
   assert.equal(cardReceivesResonance(carte, 'samourai'), true);
   assert.deepEqual([carte.cost, carte.atk, carte.def], [6, 5, 4]);
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
-  assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 1);
+  assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 0, 'la mythique non-signature reste au Souk');
+  assert.equal(COLLECTION_DEPART.includes(carte.id), false);
   assert.equal(carteReveleePar(carte.id).etageId, 'sables-3');
   const duel = duelTest();
   jouer(duel, 'joueur', 'tengu-du-mont-ardent');
@@ -451,16 +447,18 @@ test('renvoyer Orochi ne crée pas de petits, et renvoyer un Petit Orochi le fai
   assert.ok(!duel.sorcier.main.includes('petit-orochi'));
   assert.ok(!COLLECTION_DEPART.includes('petit-orochi'));
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
-  assert.equal(deck.cardIds.filter((id) => id === 'orochi').length, 1);
+  assert.equal(deck.cardIds.filter((id) => id === 'orochi').length, 0, 'Orochi reste hors du starter');
+  assert.ok(carteReveleePar('orochi'), 'Orochi est accessible dans un booster');
   assert.ok(!deck.cardIds.includes('petit-orochi'));
 });
 
-test('Susanoo est dans le deck : 5/3 pour 6, Honneur 3 et exil à l’arrivée', () => {
+test('Susanoo reste hors du starter : 5/3 pour 6, Honneur 3 et exil à l’arrivée', () => {
   const carte = cardById('susanoo');
   assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [6, 5, 3, 3]);
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(deck.cardIds.length, 40);
-  assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 1);
+  assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 0, 'l’autre mythique attend les boosters');
+  assert.equal(COLLECTION_DEPART.includes(carte.id), false);
   assert.equal(carteReveleePar(carte.id).etageId, 'sables-3');
   for (const coteCible of ['joueur', 'sorcier']) {
     const duel = duelTest();

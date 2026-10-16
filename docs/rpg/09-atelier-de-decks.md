@@ -84,8 +84,8 @@ vignettes, de la jauge et des barres.
 étages ne donnent plus de cartes : ils les révèlent**, et le Souk les vend.
 
 - **La dotation de départ** est une règle, pas une liste figée : toutes les
-  cartes **communes et inhabituelles** du set (38 cartes ; la pétra, matière
-  à scénario, en est exclue).
+  cartes **communes et inhabituelles** du catalogue (49 cartes après le reclassement
+  du Sonneur fêlé ; Pétra, rare, en est exclue).
 - **Les acquis figés** (`figerAcquisitions`) — le gel de migration. Au premier
   lancement de la version du Souk, les cartes que l'ancienne règle avait
   données pour les étages déjà vaincus sont reprises **une fois**, rangées dans
@@ -132,18 +132,18 @@ lisent tous la même chose.
 
 ## Les recettes : d'où viennent les decks du catalogue
 
-Le joueur qui ouvre l'atelier veut comprendre ce que l'étagère lui propose. Les
-dix boîtiers du jeu — les cinq du catalogue et les cinq variantes de la
-campagne — ne sont plus écrits à la main : ils sont **composés** par la règle
-« **les meilleures cartes d'abord** ».
+Les **onze paquets du jeu** — les six boîtiers de l'étagère et les cinq
+variantes de la campagne — sont composés par recette, pas écrits carte par
+carte. Les six starters privilégient les mécaniques déjà présentes au
+catalogue, puis le composeur complète les places dans l'identité du deck.
 
-Trois fichiers la portent, sans dépendance circulaire :
+Trois fichiers portent cette règle, sans dépendance circulaire :
 
 | Fichier | Ce qu'il contient |
 |---|---|
 | `src/games/rpgCardPower.js` | l'échelle de puissance d'une carte |
-| `src/games/rpgDeckRecipes.js` | les dix recettes (données pures) |
-| `src/games/rpgDeckComposer.js` | `composerDeck(recette, catalogue)` |
+| `src/games/rpgDeckRecipes.js` | les six recettes de starter et les cinq recettes d'Histoire |
+| `src/games/rpgDeckComposer.js` | `composerDeck(recette, catalogue)` et l'application des plafonds |
 
 ### La puissance d'une carte
 
@@ -153,102 +153,94 @@ la carte rapportée à son mana** (`valeurCarte` : ⚔ 1,3 le point, 🛡 1, la
 vol 2,5, un contresort 3,5 sur une carte, un sort de dégâts 1,25 le point sur
 une cible, le soin 0,5, la pioche 1,5…). Aucune commune ne peut donc dépasser
 une rare, quel que soit son texte ; à palier égal, la carte la plus rentable
-passe devant. Le classement ne lit jamais le catalogue : il ne lit que la fiche
-de la carte, ce qui permet de le rejouer sur une carte toute neuve.
+passe devant.
 
-### Une recette, cinq lignes
+### Une recette, ses quotas et sa signature
 
-Une recette dit ce qui ne se négocie pas, et rien d'autre :
+Chaque recette fixe :
 
-- `identite` — la ou les couleurs du deck. **La composition ne peut jamais
-  sortir de l'identité** : un deck mono-Sable reste cent pour cent sable ;
-- `terrains` — le nombre de terrains, jusqu'à la peinture de chaque variante ;
-- `creatures` et `magies` — les places de chaque famille ;
-- `signature` — les cartes d'archétype, posées **avant** tout le reste et
-  conservées même si une carte mieux classée frappe à la porte : c'est l'âme
-  du deck (le Djinn de foudre et le Vent rouge dans l'Hybride, les valkyries
-  dans le Serment, le Fennec chez les Veilleurs) ;
-- `mythiquesMax` et `raresMax` — les **plafonds de la campagne** seulement,
-  comptés **par famille** : les cinq boîtiers du catalogue n'en ont pas, les
-  cinq paquets de l'Histoire si.
+- `identite` — la ou les couleurs du deck. **Aucune carte ne sort de cette
+  identité** ;
+- `terrains`, `creatures`, `magies` et, pour les decks concernés, `armes` — les
+  places de chaque famille, pour un total de quarante ;
+- `signature` — les cartes d'archétype posées avant le remplissage, même si
+  une carte mieux classée frappe à la porte ;
+- pour les starters, `mythiquesTotalMax: 1` et `raresTotalMax` — des plafonds
+  globaux comptant les cartes rares distinctes non-terrain (quatre pour cinq
+  decks, six pour le Soleil rouge) ;
+- pour les paquets d'Histoire, `mythiquesMax` et `raresMax` — des plafonds par
+  famille, conservés pour régler la montée des Tours.
 
-### Comment le composeur remplit
+Le composeur pose la signature, remplit les familles par rareté puis puissance,
+et poursuit jusqu'à ce qu'aucune place ne reste vide. Les plafonds globaux des
+starters sont durs : ils s'appliquent aussi à la signature et à la passe finale.
+Les plafonds d'Histoire restent par famille. Chaque carte ne dépasse jamais sa
+limite légale (une copie d'une mythique, trois des autres cartes non-terrain) ;
+les terrains sont sans plafond de copies.
 
-1. il pose la **signature** ;
-2. il remplit au fil du classement, plafonds d'abord ;
-3. puis les rares sans plafond, puis tout le reste — de sorte qu'une place ne
-   reste jamais vide ;
-4. si une carte de la recette n'existe pas (ou plus) au catalogue, sa place
-   revient à la meilleure carte restante de la même famille.
+### Les six starters
 
-Chaque carte est prise à son **maximum légal** : une mythique à un exemplaire,
-les autres à trois, les terrains en quantité libre. Les plafonds ne se
-contournent jamais : quand le plafond tombe, la famille passe à la carte
-suivante du classement, même moins puissante.
+La répartition des raretés ci-dessous compte les **copies** ; les terrains sont
+présentés à part. Chaque ligne totalise quarante cartes. Le plafond rare compte
+les cartes rares distinctes, pas leurs copies.
 
-### Les dix recettes
+| Deck | Terrains / Créatures / Magies / Armes | Commune | Inhabituelle | Rare | Mythique | Plafond rare distinct |
+|---|---:|---:|---:|---:|---:|---:|
+| Veilleurs du Désert | 17 / 15 / 4 / 4 | 5 | 7 | 10 | 1 | 4 |
+| Cour des Djinns | 18 / 16 / 6 / 0 | 12 | 2 | 7 | 1 | 4 |
+| Sentiers de cendre | 17 / 13 / 6 / 4 | 6 | 8 | 8 | 1 | 4 |
+| Marée des abysses | 16 / 8 / 15 / 1 | 12 | 1 | 10 | 1 | 4 |
+| Serment des Neuf Hivers | 17 / 13 / 9 / 1 | 9 | 3 | 10 | 1 | 4 |
+| Serment du Soleil rouge | 16 / 17 / 7 / 0 | 9 | 3 | 11 | 1 | 6 |
 
-| Deck | Identité | Terrains / Créatures / Sorts | Plafonds | Signature |
-|---|---|---|---|---|
-| Veilleurs du Désert | Sable | 17 / 18 / 5 | — | Amani ×3 · Cavalier · Tiziri · Amayas · Tislit · Tempête de sable |
-| Cour des Djinns | Braise | 22 / 12 / 6 | — | Braisier ×3 · Trait de braise ×3 · Nuage de cendres ×3 |
-| Sentiers de cendre | Sable + Braise | 17 / 18 / 5 | — | Djinn de foudre ×3 · Vent rouge ×2 · Rempart de dunes |
-| Marée des abysses | Eau | 16 / 10 / 14 | — | Contresort ×3 · Silence d'écume ×3 · Ressac ×2 · Courant de retour |
-| Serment des Neuf Hivers | Neige | 17 / 16 / 7 | — | Jarl · Loup · Guerrier · Mur ×2 · Hurlement · Brume |
-| `souffleuse-de-verre` | Braise + Sable | 17 / 17 / 6 | 4 mythiques · 3 rares | Fériel · Trait de braise ×3 · Fennec ×3 · Vent rouge ×2 · Djinn de foudre |
-| `gardes-du-fjord` | Neige | 21 / 12 / 7 | 1 mythique · 2 rares | Dame des neuf mondes · Mur ×3 · Brume ×2 · Festin ×2 · Scalde · Guerrier |
-| `meute-des-neiges` | Neige | 21 / 13 / 6 | 0 mythique · 3 rares | Loup ×3 · Berserk ×2 · Guerrier · Hurlement |
-| `maitre-des-neuf-hivers` | Neige | 18 / 15 / 7 | 2 mythiques · 4 rares | Père des corbeaux · Maître du marteau |
-| `grand-horloger` | Braise + Sable | 17 / 17 / 6 | 3 mythiques · 4 rares | Tin Hinan · Sahir · Anqa |
+| Starter | Mécaniques mises en avant | Unique mythique |
+|---|---|---|
+| Veilleurs du Désert | Butin, protection, pioche de Tislit, équipements et récupération de cartes | Takouba de Tin Hinan |
+| Cour des Djinns | dégâts en vagues, effets à la mort, retour différé d'Anqa, Honneur et Résonance samouraï | Anqa des braises |
+| Sentiers de cendre | Pétra et mana bicolore, Butin, équipements, Coup rapide | Fériel |
+| Marée des abysses | contresorts, rebonds, Vipère de verre et serpents du Bâton des citernes | Léviathan |
+| Serment des Neuf Hivers | Furie, Résonance, gel et contrôle du combat | Maître du marteau |
+| Serment du Soleil rouge | Honneur, Résonance samouraï et Bannière du Daimyō | Kagutsuchi, flamme originelle |
 
-Les paliers de la Tour du Fjord sont lisibles d'un coup d'œil : **une** figure
-mythique pour la Garde, **aucune** pour la Meute, **deux** pour le Maître,
-**trois** pour le Grand Horloger. La montée des Tours est préservée par la
-recette, pas par un cas particulier dans le code.
+**Les autres mythiques ne sont pas ajoutées à la dotation.** Les étages les
+révèlent, puis les boosters du Souk peuvent les donner. Le starter marée ne
+contient ainsi que le Léviathan, tandis que Kraken, Bakunawa et Jörmungandr
+restent à ouvrir ; Cavalier des deux sabres, Orochi et Susanoo attendent aussi
+les boosters pour le Soleil rouge. Les rares hors starter suivent la même
+progression de révélation et d'achat.
 
-### Ce que la composition a changé
+Le Sonneur fêlé passe de rare à inhabituelle pour composer une Marée avec les
+quatre raretés ; il entre alors dans la dotation de départ et sort des
+révélations d'Abysses 1. L'Appât de la meute passe de commune à inhabituelle
+pour la même raison de composition. Les deux cartes restent dans la dotation,
+qui comprend toutes les communes et inhabituelles.
 
-- **Les mythiques montent toutes** dans les boîtiers : les trois figures Sable
-  chez les Veilleurs, les six de la Cour (Braise), les neuf de l'Hybride, les six
-  de la Marée, les quatre du Nord — et les héros (Salem, Tarek, Yamina, Boualem)
-  entrent dans les paquets de départ, à un exemplaire ;
-- **les listes resserrent leurs cartes distinctes** autour des meilleures :
-  les Veilleurs passent de treize à douze, la Cour de douze à dix, l'Hybride de
-  vingt à quinze, la Marée de dix-sept à treize, le Serment de vingt à quinze.
-  Les cartes écartées (Scalde des runes, Géant des banquises, Drakkar de
-  l'ancien Serment, Éclairs du marteau, Festin des vaillants…) restent au
-  catalogue et dans la collection ;
-- **La Cour des Djinns ne bouge pas** : son vivier Braise était déjà aligné au
-  complet — un boîtier que la règle confirme au lieu de le réécrire ;
-- **Le Grand Horloger gagne une réparation** : ses deux mythiques de Braise
-  étaient injouables, le paquet n'avait aucune source de Braise. Sa recette lui
-  donne Pétra ×2, trois Montagnes et deux Crêtes de cendre, à côté des dix
-  terrains de son identité sable.
+### Les cinq paquets d'Histoire
 
-### Les cartes hors deck
+Les recettes d'Histoire gardent leurs plafonds **par famille** : elles règlent
+la difficulté sans laisser une créature rare empêcher le sorcier d'aligner ses
+sorts.
 
-Douze cartes du catalogue ne figurent dans aucun boîtier, parce qu'elles sont
-les moins bien classées de leur couleur : quatre **Sable** (Chien du guet,
-Guetteur du beffroi, Dune marchante, Faiseur de passage), sept **Eau** (Porteuse
-de cruches, Veilleuse des citernes, Sonneur fêlé, Eau de la source, Lame de mer,
-Parade de verre, Brisure de verre) et le **Géant des banquises**, seul Neige
-laissé de côté. Elles restent dans la collection et l'atelier : le joueur peut
-les mettre dans un deck maison, aucun boîtier ne les aligne d'office.
+| Paquet | Étages | Terrains / Créatures / Magies | Plafonds | Signature |
+|---|---|---:|---|---|
+| `souffleuse-de-verre` | Listes 4 · Souk 4 | 17 / 17 / 6 | 4 mythiques · 3 rares | Fériel · Trait de braise ×3 · Fennec ×3 · Vent rouge ×2 · Djinn de foudre |
+| `gardes-du-fjord` | Fjord 1 | 21 / 12 / 7 | 1 mythique · 2 rares | Dame des neuf mondes · Mur ×3 · Brume ×2 · Festin ×2 · Scalde · Guerrier |
+| `meute-des-neiges` | Fjord 2 | 21 / 13 / 6 | 0 mythique · 3 rares | Loup ×3 · Berserk ×2 · Guerrier · Hurlement |
+| `maitre-des-neuf-hivers` | Fjord 4 | 18 / 15 / 7 | 2 mythiques · 4 rares | Père des corbeaux · Maître du marteau |
+| `grand-horloger` | Listes 5 · Sables 3 | 17 / 17 / 6 | 3 mythiques · 4 rares | Tin Hinan · Sahir · Anqa |
 
 ### Le contrôle
 
 `npm run check:rpg-decks` (`tests/rpg-decks-puissance.test.js`) recalcule chaque
-liste à partir de sa recette et exige que :
+liste à partir de sa recette et vérifie :
 
-- chaque deck soit **exactement** `composerDeck(recette)` ;
-- **aucune carte laissée de côté ne soit mieux classée qu'une carte retenue de
-  sa famille** (la signature, les terrains et les plafonds expliquent les seules
-  exceptions admises, et seule la dernière carte d'une famille peut être
-  partielle quand le quota est coupé) ;
-- les mythiques de l'identité soient toutes là, à un exemplaire ;
-- les plafonds de la campagne tiennent, boîtier et étage compris ;
-- l'identité chromatique soit stricte, et le boîtier (`boxArt`) tiré d'une carte
-  du deck.
+- les quarante cartes, l'identité chromatique et la composition par recette ;
+- au moins une carte de chaque rareté et exactement une mythique dans chacun
+  des six starters ;
+- les plafonds rares, la disponibilité en boosters des rares et mythiques hors
+  starters, et les cartes d'illustration présentes dans leur boîtier ;
+- les plafonds de campagne par famille et le classement des cartes de
+  remplissage.
 
 ## L'étagère maison
 

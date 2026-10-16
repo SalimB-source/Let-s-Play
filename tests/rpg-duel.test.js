@@ -487,8 +487,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
   // dédiée, variante du Glacier comprise (aucune ne partage le fichier d’une autre).
   const illustrationsNeige = RPG_DECK_NEIGE_BASE.filter((id, index, deck) => deck.indexOf(id) === index);
-  assert.equal(illustrationsNeige.length, 18,
-    'le deck Neige réunit les dix-huit cartes que la recette du Serment retient');
+  assert.equal(illustrationsNeige.length, 13,
+    'le deck Neige réunit les treize cartes distinctes retenues par sa recette');
   for (const carteId of illustrationsNeige) {
     assert.equal(cardArtId(carteId), carteId,
       `${carteId} affiche sa propre illustration Neige`);
@@ -2846,18 +2846,16 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   assert.deepEqual(RPG_DECKS.map(({ id }) => id),
     ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers', 'serment-du-soleil-rouge'],
     'les six decks du catalogue, dont les deux cultures de Braise');
-  assert.equal(RPG_DECK_SORCIER_BASE.filter((id) => id === 'feriel').length, 1,
-    'la Cour des Djinns contient une Fériel mythique');
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'feriel').length, 1,
-    'les Sentiers de cendre contiennent une Fériel mythique');
   assert.equal(RPG_DECK_SORCIER_BASE.filter((id) => id === 'anqa-des-braises').length, 1,
-    'la Cour des Djinns contient une Anqa mythique');
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'anqa-des-braises').length, 1,
-    'les Sentiers de cendre contiennent une Anqa mythique');
-  for (const [deck, terrainsAttendus, creaturesAttendues, magiesAttendues] of [
-    [RPG_DECK_JOUEUR_BASE, 17, 16, 5],
-    [RPG_DECK_SORCIER_BASE, 22, 11, 6],
-    [RPG_DECK_NEIGE_BASE, 17, 14, 7],
+    'la Cour des Djinns contient Anqa comme unique mythique');
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'feriel').length, 1,
+    'les Sentiers de cendre contiennent Fériel comme unique mythique');
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'anqa-des-braises').length, 0,
+    'les Sentiers de cendre laissent les autres mythiques dans les boosters');
+  for (const [deck, terrainsAttendus, creaturesAttendues, magiesAttendues, armesAttendues] of [
+    [RPG_DECK_JOUEUR_BASE, 17, 15, 4, 4],
+    [RPG_DECK_SORCIER_BASE, 18, 16, 6, 0],
+    [RPG_DECK_NEIGE_BASE, 17, 13, 9, 1],
   ]) {
     const valide = rpgValiderDeck(deck);
     assert.equal(valide.ok, true, valide.raison);
@@ -2875,8 +2873,10 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
     }
     const creatures = deck.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind));
     const magies = deck.filter((id) => cardById(id)?.kind === 'magie');
+    const armes = deck.filter((id) => cardById(id)?.kind === 'arme');
     assert.equal(creatures.length, creaturesAttendues);
     assert.equal(magies.length, magiesAttendues);
+    assert.equal(armes.length, armesAttendues);
   }
 
   for (const [deck, element] of [
@@ -2907,13 +2907,11 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'dunes-du-tenere').length, 3);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'montagne').length, 3);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'cretes-de-cendre').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 16);
-  // Le lot d'équipements du Sable a porté l'identité Sable + Braise à DEUX
-  // mythiques d'arme (l'Armure de cendres et la Takouba de Tin Hinan) : une
-  // place de sort leur a cédé la place, les trois places d'armes du deck
-  // hybride les portent toutes, signature comprise.
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 4);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'arme').length, 3);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 13);
+  // Les quatre places d'armes servent les équipements de la signature ; Fériel
+  // reste l'unique mythique du deck hybride, tout le reste attend les boosters.
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 6);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'arme').length, 4);
   for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.rarity === 'mythique')) {
     assert.ok(RPG_DECK_HYBRIDE_BASE.filter((id) => id === carte.id).length <= 1,
       `${carte.id} mythique apparaît au plus une fois dans le deck hybride`);
@@ -2943,10 +2941,10 @@ test('le validateur rejette : pas 40 cartes, trop d’exemplaires, trop peu de t
 
   const mythiqueEnDouble = [...RPG_DECK_HYBRIDE_BASE];
   const emplacementDjinn = mythiqueEnDouble.indexOf('djinn-de-foudre');
-  mythiqueEnDouble[emplacementDjinn] = 'sahir-des-braises';
+  mythiqueEnDouble[emplacementDjinn] = 'feriel';
   const resultatMythique = rpgValiderDeck(mythiqueEnDouble);
   assert.equal(resultatMythique.ok, false, 'deux exemplaires du même mythique sont refusés');
-  assert.match(resultatMythique.raison, /sahir-des-braises mythique en 2 exemplaires \(1 max\)/);
+  assert.match(resultatMythique.raison, /feriel mythique en 2 exemplaires \(1 max\)/);
 
   const sansTerrains = Array.from({ length: 40 }, (_, index) => RPG_CREATURE_CARDS[index % RPG_CREATURE_CARDS.length].id);
   assert.equal(rpgValiderDeck(sansTerrains).ok, false, '0 terrain = refus');
