@@ -3544,6 +3544,34 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 3px 10px rgba(0, 0, 0, .25);
 }
 .rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* Les statistiques sont imprimées sur la face comme sur une carte posée :
+   mêmes pastilles dorée/acier et mêmes icônes vectorielles que le plateau. */
+.rpg-hover-card-preview__face .rpg-card__foot {
+  position: absolute;
+  z-index: 2;
+  right: 6%;
+  bottom: 4%;
+  left: 6%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  pointer-events: none;
+}
+.rpg-hover-card-preview__face .rpg-card__stat--atk,
+.rpg-hover-card-preview__face .rpg-card__pt {
+  min-width: 46px;
+  padding: 3px 7px;
+  font-size: 15.5px;
+}
+.rpg-hover-card-preview__face .rpg-stat-icon {
+  width: .85em;
+  height: .85em;
+  flex: 0 0 .85em;
+}
 .rpg-hover-card-preview__face .rpg-card-element-badge {
   border-width: 2px;
   font-size: 19px;
