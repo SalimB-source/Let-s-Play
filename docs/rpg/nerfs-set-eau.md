@@ -11,7 +11,7 @@
 | Carte | Avant | Après | Rendement |
 |---|---|---|---|
 | **Bâton des citernes** | 2 mana | **4 mana** (serpents gardés) | 4,65 → 2,33 |
-| **Sonneur fêlé** | 4 mana 2/3 | **3 mana 2/3** | 1,90 → 2,53 |
+| **Sonneur fêlé** | rare, 4 mana 2/3 | **inhabituelle, 3 mana 2/3** | 1,90 → 2,53 |
 | **Colosse de sel** | 6 mana 5/5 | **6 mana 6/6** | 2,15 → 2,53 |
 | **Vipère de verre** | arrivee : 2 dégâts ciblés | **-2/-0 + ne peut pas attaquer** (la morsure engourdit) | 2,47 → 2,83 |
 | **Bakunawa** | arrivee : 2 dégâts ciblés | **ne peut pas bloquer** (la lune dévorée) | 3,10 → 2,98 |
@@ -44,11 +44,12 @@ comme la Jitte d’Amayas côté Sable.
 }
 ```
 
-## 2. Sonneur fêlé — 3 mana
+## 2. Sonneur fêlé — inhabituelle, 3 mana
 
-**Changement :** `cost: 4 → 3`. Renvoyer une créature ciblée à 4 manas sur un
-2/3 sous-payait son Rebond ; à 3 manas, le Sonneur retrouve sa place dans la
-courbe.
+**Changements :** `cost: 4 → 3` et `rare → inhabituelle`. Renvoyer une créature
+ciblée à 4 manas sur un 2/3 sous-payait son Rebond ; à 3 manas, le Sonneur
+retrouve sa place dans la courbe. Son reclassement en inhabituelle le fait
+entrer dans la dotation de départ ; Abysses 1 ne le révèle donc plus au Souk.
 
 ```js
 {
@@ -58,7 +59,7 @@ courbe.
   cost: 3,
   atk: 2,
   def: 3,
-  rarity: 'rare',
+  rarity: 'inhabituelle',
   typeLine: 'Créature — Sonneur',
   art: 'sonneur-fele',
   arrivee: { type: 'retour-main', cible: 'creature' },

@@ -114,7 +114,7 @@ export async function checkRpgPreviewActions(assert) {
     const effetsFiche = [...fiche().querySelectorAll('.rpg-hover-card-preview__rules > span')].map((ligne) => ligne.textContent);
     assert.equal(effetsFiche.length, 2, 'les deux capacités du Fennec sont écrites, ligne par ligne');
     assert.match(effetsFiche[0], /^Rapidité/u, 'la première capacité est nommée');
-    assert.match(effetsFiche[1], /^Esquive 1/u, 'la seconde capacité est nommée');
+    assert.match(effetsFiche[1], /^Butin/u, 'la seconde capacité du Fennec est nommée');
     assert.match(fiche().querySelector('.rpg-hover-card-preview__stats').textContent, /⚔ 3\s*·\s*🛡 1/u,
       'la fiche garde les statistiques de la créature');
     assert.ok(container.querySelector('.rpg-card-catalogue'), 'le catalogue reste ouvert sous la fiche');

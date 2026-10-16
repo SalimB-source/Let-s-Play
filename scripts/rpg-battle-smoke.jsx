@@ -117,6 +117,18 @@ export async function checkRpgBattle(assert) {
     if (bouton) await act(async () => { bouton.click(); });
     await passerFinTourSorcier(document);
   };
+  const resoudreButinEnAttente = async () => {
+    let defausseEnAttente = false;
+    while (container.querySelector('.rpg-discard-prompt')) {
+      defausseEnAttente = true;
+      assert.match(container.querySelector('.rpg-log')?.textContent ?? '', /Butin\s*:/,
+        'Butin est journalisé avant la défausse');
+      const carteADefausser = handCards()[0];
+      assert.ok(carteADefausser, 'une carte de la main est disponible pour la défausse de Butin');
+      await act(async () => { carteADefausser.click(); });
+    }
+    return defausseEnAttente;
+  };
   const poserTerrainSansEngager = async () => {
     const terrain = handCards().find((b) => b.className.includes('rpg-hand__card--terrain') && estJouable(b));
     if (terrain) {
@@ -218,8 +230,8 @@ export async function checkRpgBattle(assert) {
     'le catalogue charge la nouvelle illustration nihonga de Fériel avec une URL versionnée contre le cache');
   assert.equal(ferielCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '4',
     'le catalogue affiche le nouveau coût de quatre pour Fériel');
-  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /3\s*·\s*🛡\s*1/,
-    'le catalogue affiche les nouvelles statistiques 3/1 de Fériel');
+  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /4\s*·\s*🛡\s*3/,
+    'le catalogue affiche les nouvelles statistiques 4/3 de Fériel');
   assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Coup rapide/s,
     'le catalogue décrit Rapidité et le ciblage du Coup rapide');
   const traitCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="trait-de-braise"]');
@@ -236,12 +248,12 @@ export async function checkRpgBattle(assert) {
   assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
     /\/cards\/anqa-des-braises\.jpg\?v=anqa-des-braises-huile-v1$/,
     'le catalogue charge l’illustration de l’Anqa avec une URL versionnée');
-  assert.equal(anqaCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '4',
-    'le catalogue affiche le coût de quatre de l’Anqa');
+  assert.equal(anqaCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '5',
+    'le catalogue affiche le coût de cinq de l’Anqa');
   assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /4\s*·\s*🛡\s*4/,
     'le catalogue affiche les statistiques 4/4 de l’Anqa');
-  assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /revient en jeu après deux tours/i,
-    'le catalogue décrit le retour de l’Anqa deux tours après sa destruction');
+  assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /revient en jeu après quatre tours/i,
+    'le catalogue décrit le retour de l’Anqa quatre tours après sa destruction');
   assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '',
     /Envol — Ne peut être bloquée que par une créature avec Envol/,
     'le catalogue décrit l’Envol de l’Anqa et son blocage réservé aux créatures volantes');
@@ -251,8 +263,8 @@ export async function checkRpgBattle(assert) {
     'le Fennec n’affiche aucune icône d’effet dans le catalogue');
   assert.equal(fennecCatalogue.querySelector('.rpg-card-catalogue__art .rpg-card-element-badge')?.textContent.trim(), '⏳',
     'le badge élémentaire Sable du Fennec reste visible dans le catalogue');
-  assert.match(fennecCatalogue.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Esquive 1/,
-    'le catalogue conserve le texte de Rapidité et Esquive');
+  assert.match(fennecCatalogue.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Butin/,
+    'le catalogue conserve Rapidité et la mécanique Butin du Fennec');
   // Refonte « plein art 4:5 » des magies d’Eau et de Sable. Une peinture
   // reprise sous le même nom de fichier doit changer d’URL — sinon le cache du
   // navigateur resservirait l’ancien cadrage ; une peinture nouvelle n’a rien à
@@ -360,15 +372,15 @@ export async function checkRpgBattle(assert) {
   const ficheNeige = container.querySelector('.rpg-deck-detail');
   assert.match(ficheNeige?.textContent ?? '', /Neige[\s\S]*GLACIER/i,
     'la fiche du Serment annonce son identité Neige et son terrain Glacier');
-  assert.match(ficheNeige?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*14[\s\S]*7[\s\S]*2[\s\S]*validé/,
-    'le Serment est validé à 40 cartes : 17 terrains, 14 créatures, 7 magies, 2 armes');
+  assert.match(ficheNeige?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*13[\s\S]*9[\s\S]*1[\s\S]*validé/,
+    'le Serment est validé à 40 cartes : 17 terrains, 13 créatures, 9 magies, 1 arme');
   await fermerDeckOuvert();
   await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   const veilleurs = RPG_DECKS.find((deck) => deck.id === 'veilleurs-du-desert');
   assert.equal(container.querySelectorAll('.rpg-deck-list li').length, new Set(veilleurs.cardIds).size,
     'la fiche détaille les références distinctes avec leurs quantités, le Cavalier et les Dunes du Ténéré inclus');
-  assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*5[\s\S]*2/,
-    'la fiche indique la taille et la répartition terrain / créature / magie / arme du deck validé');
+  assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*15[\s\S]*4[\s\S]*4/,
+    'la fiche indique 17 terrains, 15 créatures, 4 magies et 4 armes au total');
   await fermerDeckOuvert();
   await act(async () => { boutonDeck('Cour des Djinns').click(); });
   assert.match(container.querySelector('.rpg-deck-detail')?.textContent ?? '', /Braise/,
@@ -380,8 +392,8 @@ export async function checkRpgBattle(assert) {
     'la fiche précise l’identité bicolore du deck');
   assert.match(ficheHybride?.textContent ?? '', /Pétra[\s\S]*Djinn de foudre[\s\S]*Vent rouge/,
     'la liste hybride présente son terrain flexible et ses cartes bicolores');
-  assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*4[\s\S]*3[\s\S]*validé/,
-    'le deck hybride est validé à 40 cartes, avec 17 terrains, 16 créatures, 4 magies et 3 armes');
+  assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*13[\s\S]*6[\s\S]*4[\s\S]*validé/,
+    'le deck hybride est validé à 40 cartes, avec 17 terrains, 13 créatures, 6 magies et 4 armes');
   await fermerDeckOuvert();
   await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   assert.ok(findButton('Jouer avec ce deck'), 'la fiche du deck joueur permet de le lancer');
@@ -456,8 +468,8 @@ export async function checkRpgBattle(assert) {
   const fennecMain = visagesMain.find((carte) => carte.dataset.cardId === 'fennec-des-decombres');
   assert.equal(fennecMain?.querySelector('.rpg-card-rapidity, .rpg-card-evasion'), null,
     'le Fennec n’affiche pas d’icône d’effet sur la carte en main');
-  assert.match(fennecMain?.getAttribute('aria-label') ?? '', /Rapidité.*attaquer le tour où elle arrive.*Esquive 1/,
-    'les deux capacités du Fennec restent annoncées de façon accessible');
+  assert.match(fennecMain?.getAttribute('aria-label') ?? '', /Rapidité.*attaquer le tour où elle arrive.*Butin.*touch/,
+    'Rapidité et Butin restent annoncés de façon accessible');
   assert.equal(fennecMain?.hasAttribute('title'), false, 'la carte en main n’affiche plus d’aide au survol');
   const veilleurMain = visagesMain.find((carte) => carte.dataset.cardId === 'djinn-de-foudre');
   assert.ok(veilleurMain, 'la main de test contient une créature hybride');
@@ -634,8 +646,8 @@ export async function checkRpgBattle(assert) {
   assert.equal(visageTable.dataset.cardId, 'fennec-des-decombres', 'la créature jouée est le Fennec inhabituel du deck');
   assert.equal(visageTable.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
     'les icônes d’effets sont absentes de la carte posée sur la table');
-  assert.match(visageTable.getAttribute('aria-label') ?? '', /rapidité.*attaquer le tour où elle arrive.*esquive 1 contre les attaques et magies/,
-    'Rapidité et Esquive restent annoncées dans le libellé accessible');
+  assert.match(visageTable.getAttribute('aria-label') ?? '', /butin.*touch.*rapidité.*attaquer le tour où elle arrive/i,
+    'Rapidité et Butin restent annoncés dans le libellé accessible');
   assert.ok(visageTable.querySelector('.rpg-card__img')
     && visageTable.querySelector('.rpg-mana-cost') && visageTable.querySelector('.rpg-card-element-badge')
     && visageTable.querySelector('.rpg-card__foot')?.querySelectorAll(':scope > span').length === 2,
@@ -665,7 +677,7 @@ export async function checkRpgBattle(assert) {
     'le type de la créature reste dans le libellé accessible de l’aperçu');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__cost b')?.textContent, '2',
     'l’aperçu affiche le coût');
-  assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Rapidité.*Esquive 1/,
+  assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Rapidité.*Butin/,
     'l’aperçu affiche les effets importants');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__stats')?.textContent.trim(), '⚔ 3 · 🛡 1',
     'l’aperçu affiche ATQ et DÉF');
@@ -749,8 +761,8 @@ export async function checkRpgBattle(assert) {
     'les cartes Eau utilisent la goutte d’eau');
   await glisserSurTable(container, parade);
   const cibleParade = [...container.querySelectorAll('.rpg-card--equipe')]
-    .find((carte) => carte.getAttribute('aria-label')?.includes('Chien du guet'));
-  assert.ok(cibleParade, 'le Chien fournit une cible distincte du Fennec esquiveur');
+    .find((carte) => carte.getAttribute('aria-label')?.includes('Fennec des décombres'));
+  assert.ok(cibleParade, 'le Fennec reçoit Parade avant son assignation comme bloqueur');
   const nomCibleParade = cibleParade.getAttribute('aria-label').split(',')[0];
   await act(async () => { cibleParade.click(); });
   assert.match(container.querySelector('.rpg-log')?.textContent ?? '', /Vous lancez Parade de verre/,
@@ -844,25 +856,29 @@ export async function checkRpgBattle(assert) {
     'les créatures déclarées s’inclinent à 15° avant la confirmation');
   await act(async () => { lancer.click(); });
   assert.ok(!container.querySelector('.rpg-btn--undo'), 'une attaque confirmée ne peut plus être annulée');
-  assert.match(container.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOUS · RÉPONSE/,
-    'après le choix des bloqueurs adverses, la priorité revient au joueur');
-  assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'blocage',
-    'la phase de blocage s’allume après l’assignation des bloqueurs');
-  assert.ok(container.querySelector('.rpg-hand-dock.is-open'),
-    'la main revient pour permettre de jouer une magie rapide');
+  await resoudreButinEnAttente();
   const accepterBlocages = container.querySelector('.rpg-btn--resolve-combat');
-  assert.match(accepterBlocages?.textContent ?? '', /Accepter les blocages/,
-    'le joueur peut accepter les bloqueurs choisis par le sorcier tels quels');
-  const bloqueursChoisis = container.querySelectorAll('.rpg-card--ennemi.is-blocking').length;
-  if (bloqueursChoisis) {
-    assert.equal(container.querySelector('.rpg-blocker-arrows')?.getAttribute('data-arrow-count'), String(bloqueursChoisis),
-      'chaque bloqueur choisi par le sorcier est relié à son attaquant par une flèche jaune');
+  if (accepterBlocages) {
+    assert.match(container.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOUS · RÉPONSE/,
+      'après le choix des bloqueurs adverses, la priorité revient au joueur');
+    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'blocage',
+      'la phase de blocage s’allume après l’assignation des bloqueurs');
+    assert.ok(container.querySelector('.rpg-hand-dock.is-open'),
+      'la main revient pour permettre de jouer une magie rapide');
+    assert.match(accepterBlocages.textContent, /Accepter les blocages/,
+      'le joueur peut accepter les bloqueurs choisis par le sorcier tels quels');
+    const bloqueursChoisis = container.querySelectorAll('.rpg-card--ennemi.is-blocking').length;
+    if (bloqueursChoisis) {
+      assert.equal(container.querySelector('.rpg-blocker-arrows')?.getAttribute('data-arrow-count'), String(bloqueursChoisis),
+        'chaque bloqueur choisi par le sorcier est relié à son attaquant par une flèche jaune');
+    }
+    assert.ok(container.querySelectorAll('.rpg-card--equipe.is-declared-attacker').length > 0,
+      'les attaquants restent inclinés pendant la réponse, avant les dégâts');
+    await resoudreCombat();
+    await resoudreButinEnAttente();
   }
-  assert.ok(container.querySelectorAll('.rpg-card--equipe.is-declared-attacker').length > 0,
-    'les attaquants restent inclinés pendant la réponse, avant les dégâts');
-  await resoudreCombat();
   assert.match(container.querySelector('.rpg-log')?.textContent ?? '', /Combat :|frappent le sorcier/,
-    'accepter les blocages résout ensuite le combat');
+    'le combat est résolu immédiatement sans bloqueur, ou après acceptation des blocages');
   assert.ok(!container.querySelector('.rpg-card--equipe.is-pret'),
     'les attaquants ont frappé : plus personne n’est prêt');
   assert.ok(container.querySelector('.rpg-card--equipe.is-attacked'),
@@ -1325,7 +1341,11 @@ export async function checkRpgBattle(assert) {
   'le Fennec a reçu son second mana avant d’être ciblé');
   const lameDeMer = waterHand().find((button) => button.getAttribute('aria-label')?.includes('Lame de mer'));
   assert.ok(lameDeMer && estJouable(lameDeMer), 'deux terrains permettent de payer le sort Eau');
-  await glisserSurTable(waterContainer, lameDeMer);
+  await act(async () => { lameDeMer.click(); });
+  const confirmerLameDeMer = waterContainer.querySelector('.rpg-spell-confirm .rpg-btn--primary');
+  assert.ok(confirmerLameDeMer?.textContent.includes('Lancer le sort'),
+    'la Lame de mer attend une confirmation avant son choix de cible');
+  await act(async () => { confirmerLameDeMer.click(); });
   const cibleEau = waterContainer.querySelector('.rpg-card--ennemi');
   assert.ok(cibleEau?.getAttribute('aria-label')?.includes('Fennec des décombres'), 'le Fennec est la cible de Lame de mer');
   await act(async () => { cibleEau.click(); });
@@ -1576,11 +1596,11 @@ export async function checkRpgBattle(assert) {
   assert.ok(ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]'),
     'Fériel reste en jeu car la créature ciblée ne riposte pas');
   assert.equal(ferielContainer.querySelector('.rpg-card--ennemi[data-card-id="chien-du-guet"]'), null,
-    'le Coup rapide inflige les 3 dégâts d’attaque et détruit le Chien 2/2');
+    'le Coup rapide inflige les 4 dégâts d’attaque et détruit le Chien 2/2');
   assert.equal(ferielContainer.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent.trim(), pvSorcierFeriel,
     'l’attaque s’arrête sur la frappe : le sorcier ne perd aucun point de vie');
   assert.match(ferielContainer.querySelector('.rpg-log')?.textContent ?? '',
-    /FÉRIEL inflige 3 dégâts à Chien du guet avec Coup rapide/i,
+    /FÉRIEL inflige 4 dégâts à Chien du guet avec Coup rapide/i,
     'le journal du duel annonce le montant et la cible de l’attaque ciblée');
   // Une seule phase d’attaque par tour : l’étape du rail se range, et
   // « Attaquer avec tous » se verrouille jusqu’au prochain tour.

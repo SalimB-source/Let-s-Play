@@ -88,7 +88,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'sables-3': ['anqa-des-braises', 'tin-hinan', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'lame-des-ergs', 'takouba-de-tin-hinan'],
   // Tour des Abysses — les bêtes marines ; ce qui remonte du fond est gelé :
   // les premières cartes de Neige précèdent la tour du Fjord.
-  'abysses-1': ['kraken', 'sonneur-fele', 'baton-des-citernes'],
+  'abysses-1': ['kraken', 'baton-des-citernes'],
   'abysses-2': ['leviathan', 'scalde-des-runes'],
   'abysses-3': ['bakunawa', 'valkyrie-au-corbeau', 'lance-de-givre'],
   'abysses-4': ['jormungandr', 'boualem', 'brume-du-fjord', 'grand-voile-blanc'],

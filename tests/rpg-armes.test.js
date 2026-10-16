@@ -112,47 +112,32 @@ test('le prototype compte quatre armes, une par élément, avec leur peinture', 
   assert.equal(armeById('armure-de-cendres').donne.rapidite, true);
 });
 
-test('chaque deck du catalogue aligne l’arme de sa couleur, toujours à 40 cartes valides', () => {
-  const armeParDeck = {
-    'serment-du-soleil-rouge': 'sabre-maudit',
-    'cour-des-djinns': 'armure-de-cendres',
-    'maree-des-abysses': 'baton-des-citernes',
-    'serment-des-neuf-hivers': 'lance-de-givre',
+test('les decks du catalogue suivent leur quota d’armes sans dépasser une mythique', () => {
+  const armesParDeck = {
+    'veilleurs-du-desert': ['sandales-de-tislit', 'licou-du-chien-de-sable', 'jitte-d-amayas', 'takouba-de-tin-hinan'],
+    'cour-des-djinns': [],
+    'sentiers-de-cendre': ['takouba-des-pistes', 'harnais-du-mehari', 'jitte-d-amayas', 'masque-du-guetteur'],
+    'maree-des-abysses': ['baton-des-citernes'],
+    'serment-des-neuf-hivers': ['lance-de-givre'],
+    'serment-du-soleil-rouge': [],
   };
   for (const deck of RPG_DECKS) {
     assert.equal(deck.cardIds.length, 40, `${deck.name} fait 40 cartes`);
     assert.equal(rpgValiderDeck(deck.cardIds).ok, true, `${deck.name} reste valide`);
-    if (deck.id === 'veilleurs-du-desert') {
-      // Le Sable aligne maintenant onze armes : le composeur y prend les
-      // meilleures — la mythique du lot d'abord, puis la meilleure rare.
-      assert.equal(deck.cardIds.includes('takouba-de-tin-hinan'), true,
-        'les Veilleurs alignent la Takouba de Tin Hinan');
-      assert.equal(deck.cardIds.filter((id) => armeById(id)?.element === 'sable').length, 2,
-        'les Veilleurs alignent deux armes de Sable');
-      continue;
-    }
-    if (deck.id === 'sentiers-de-cendre') {
-      // Hybride Sable + Braise, deux places seulement : l'une tient à la
-      // signature du deck (la Takouba des pistes), l'autre va à la meilleure
-      // arme des deux couleurs — la mythique du lot du Sable.
-      assert.ok(deck.cardIds.includes('takouba-des-pistes'),
-        'les Sentiers gardent la Takouba des pistes de leur signature');
-      // Le deck hybride aligne les deux mythiques d'équipement de ses
-      // couleurs : l'Armure de cendres et la Takouba de Tin Hinan.
-      assert.ok(deck.cardIds.includes('armure-de-cendres'),
-        'les Sentiers alignent l’Armure de cendres');
-      assert.ok(deck.cardIds.includes('takouba-de-tin-hinan'),
-        'les Sentiers alignent la Takouba de Tin Hinan');
-      assert.equal(deck.cardIds.filter((id) => armeById(id)).length, 3,
-        'les Sentiers alignent trois armes');
-      continue;
-    }
-    assert.ok(deck.cardIds.includes(armeParDeck[deck.id]),
-      `${deck.name} aligne ${armeParDeck[deck.id]}`);
+    const armes = [...new Set(deck.cardIds.filter((id) => armeById(id)))].sort();
+    assert.deepEqual(armes, armesParDeck[deck.id].sort(), `${deck.name} respecte sa sélection d’armes`);
+    const mythiques = [...new Set(deck.cardIds.filter((id) => cardById(id).rarity === 'mythique'))];
+    assert.equal(mythiques.length, 1, `${deck.name} ne garde qu’une mythique distincte`);
   }
-  assert.equal(RPG_DECKS.find((deck) => deck.id === 'cour-des-djinns')
-    .cardIds.filter((id) => id === 'armure-de-cendres').length, 1,
-  'l’Armure mythique reste en un exemplaire');
+
+  const veilleurs = RPG_DECKS.find((deck) => deck.id === 'veilleurs-du-desert');
+  assert.ok(veilleurs.cardIds.includes('takouba-de-tin-hinan'),
+    'les Veilleurs gardent la Takouba mythique comme seule mythique');
+  const sentiers = RPG_DECKS.find((deck) => deck.id === 'sentiers-de-cendre');
+  assert.ok(sentiers.cardIds.includes('takouba-des-pistes'),
+    'les Sentiers gardent la Takouba des pistes de leur signature');
+  assert.deepEqual([...new Set(sentiers.cardIds.filter((id) => cardById(id).rarity === 'mythique'))], ['feriel'],
+    'Fériel est la seule mythique des Sentiers, pas les deux équipements mythiques');
 });
 
 test('les armes entrent dans la collection comme les autres cartes', () => {

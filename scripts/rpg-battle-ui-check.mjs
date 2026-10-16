@@ -311,7 +311,7 @@ assert.match(battlePage, /if \(apres\.atk > entite\.atk \|\| apres\.def > entite
   'la flèche de gain est réservée aux augmentations d’attaque ou de défense');
 assert.match(battlePage, /animerEntites\(renforcees, 'glow', 1100, statsAugmentees\)/,
   'les gains d’attaque ou de défense transmettent leur indicateur à l’animation');
-assert.match(battlePage, /canTarget=\{Boolean\([\s\S]*?cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee/,
+assert.match(battlePage, /canTarget=\{Boolean\([\s\S]*?cibleEnCours && \['ennemi', 'tous'\]\.includes\(modeCible\) && !rpgEstProtegee/,
   'une créature protégée ne se présente pas comme cible légale contre sa couleur');
 assert.match(cardsSource, /export function cardFrameClass\(carte\)[\s\S]*?cardFrameInfo\(carte\)\.key/,
   'les cartes convertissent leur élément en classe de cadre commune à toutes les vues');
@@ -393,7 +393,7 @@ assert.match(battlePage, /const fenetreFinTour = Boolean\(duel\.finDeTour\?\.cot
 assert.match(battlePage, /rpgOuvrirFinDeTour\(duel\);[\s\S]*?rpgSorcierMagieRapide\(duel, rng\)/,
   'à la fin du tour du joueur, le sorcier a la main pour une magie rapide avant la fermeture du tour');
 // ── Le rail du tour : phases, indicateur et « Fin du tour » au milieu ───────
-assert.match(battlePage, /<div className="rpg-turn-rail" role="group" aria-label="Déroulé du tour">[\s\S]*?rpg-turn-indicator[\s\S]*?<PhaseTrack current=\{phaseDuelActive\} \/>[\s\S]*?rpg-actions__turn[\s\S]*?rpg-btn--endturn/,
+assert.match(battlePage, /<div className="rpg-turn-rail" role="group" aria-label="Déroulé du tour">[\s\S]*?rpg-turn-indicator[\s\S]*?<PhaseTrack current=\{phaseDuelActive\}[^>]*\/>[\s\S]*?rpg-actions__turn[\s\S]*?rpg-btn--endturn/,
   'l’indicateur, les phases et « Fin du tour » forment le rail du tour, au milieu de la table');
 assert.doesNotMatch(battlePage, /rpg-bottombar__status/,
   'la barre du bas ne porte plus l’indicateur de tour : elle garde le journal et les actions de combat');
@@ -898,7 +898,9 @@ assert.match(battlePage, /piocheEnCours \? 'rpg-hand-card--drawing' : ''/,
   'l’animation s’applique à la vraie carte directement dans la main du joueur');
 const cardMetricsCss = battleCss.slice(battleCss.lastIndexOf('/* Coût, attaque et défense'));
 for (const selector of ['.rpg-mana-cost', '.rpg-card-element-badge', '.rpg-card-element-badge--hybride', '.rpg-card-catalogue__cost']) {
-  const block = battleCss.slice(battleCss.indexOf(`${selector} {`)).split('}')[0];
+  const debutBloc = battleCss.indexOf(`\n${selector} {`) + 1;
+  assert.ok(debutBloc > 0, `${selector} possède une règle dédiée`);
+  const block = battleCss.slice(debutBloc).split('}')[0];
   assert.match(block, /width: var\(--rpg-card-marker-size, 24px\);/,
     `${selector} utilise le diamètre commun de la face`);
 }
@@ -1163,8 +1165,10 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort__pass,[\s\S]*?\.
 // Le plateau est peint, pas voilé : les capsules tiennent la lisibilité.
 assert.doesNotMatch(battleCss, /--rpg-plateau-voile/,
   'aucun voile noir n’habille plus les plateaux : la peinture reste entière');
-assert.doesNotMatch(battleCss, /card-table--plateau-[a-z-]+::before/,
-  'les vignettes par plateau qui se composaient avec le voile partent avec lui');
+assert.doesNotMatch(battleCss, /card-table--plateau-(?!cour-de-l-empereur)[a-z-]+::before/,
+  'les plateaux ne gardent plus les vignettes qui composaient avec le voile');
+assert.match(battleCss, /\.card-table--plateau-cour-de-l-empereur::before\s*\{[^}]*background-image:\s*inherit;[^}]*transform:\s*scale\(1\.16\);/s,
+  'la Cour de l’Empereur conserve son zoom de fond indépendant du voile');
 assert.doesNotMatch(battleCss, /\.card-table::before\s*\{/,
   'la table n’a plus de calque d’ombre posé au-dessus de son fond');
 for (const { id } of RPG_PLATEAUX) {
@@ -1203,8 +1207,8 @@ assert.match(battlePage, /data-scene="duel"\s*(?:style=\{DOS_DE_CARTE_STYLE\}\s*
   'le plateau répond au même appui long');
 assert.match(battlePage, /touchDragRef\.current\?\.\(\);[\s\S]*?setApercuAppui\(carte\.id\)/,
   'consulter une carte désarme le glisser-déposer lancé par le même doigt');
-assert.equal(battlePage.match(/<ApercuCarteAppuiLong carte=\{cardById\(apercuAppui\)\} onFermer=\{fermerApercuAppui\} \/>/g).length, 2,
-  'le volet d’aperçu est rendu au menu comme en duel');
+assert.equal(battlePage.match(/<ApercuCarteAppuiLong carte=\{cardById\(apercuAppui\)\}(?: armes=\{[^}]*\})? onFermer=\{fermerApercuAppui\} \/>/g).length, 2,
+  'le volet d’aperçu est rendu au menu comme en duel, avec les armes portées quand elles existent');
 assert.match(battleCss, /\.rpg-card-peek\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*1250;/s,
   'le volet de l’aperçu couvre l’écran, au-dessus de l’écran de rotation');
 assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-hover-card-preview \{ display: none; \}[\s\S]*?\.rpg-card-peek \.rpg-hover-card-preview \{ display: grid; \}/,
@@ -1215,8 +1219,8 @@ assert.match(battleCss, /@media \(max-height: 520px\) \{[\s\S]*?\.rpg-card-peek 
   'en paysage de téléphone, l’illustration de l’aperçu se règle sur la hauteur disponible — au menu comme en duel');
 assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-battle \[data-card-id\]\s*\{[^}]*-webkit-touch-callout:\s*none;[^}]*user-select:\s*none;/s,
   'une carte tenue une seconde n’appelle ni le menu natif ni la sélection de texte');
-assert.match(battlePage, /function ApercuCarteAppuiLong\(\{ carte, onFermer \}\)[\s\S]*?<HoverCardPreview carte=\{carte\} variante="appui-long" \/>/,
-  'l’appui long ouvre l’aperçu de la carte, sans légender le geste');
+assert.match(battlePage, /function ApercuCarteAppuiLong\(\{ carte, armes = \[\], onFermer \}\)[\s\S]*?<HoverCardPreview carte=\{carte\} armes=\{armes\} variante="appui-long" \/>/,
+  'l’appui long ouvre l’aperçu de la carte et des armes portées, sans légender le geste');
 
 // ── Zone de jeu tactile élargie et piles de cartes homonymes ───────────────
 const cardStacks = readFileSync(new URL('../src/games/rpgCardStacks.js', import.meta.url), 'utf8');
@@ -1249,8 +1253,10 @@ assert.match(mobileCss, /\.rpg-battle--touch \.card-row > :is\(\.rpg-card, \.rpg
   'les cartes posées partagent la largeur de leur rangée : le groupe tient toujours sans défiler');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-row:has\(> :nth-child\(2\)\) \{ --row-count: 2; \}/,
   'le nombre d’emplacements d’un champ est compté en CSS');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*--rpg-hand-gap:\s*6px;[^}]*--rpg-hand-min:\s*34px;[^}]*justify-content:\s*safe center;[^}]*gap:\s*var\(--rpg-hand-gap\);[^}]*overflow-x:\s*auto;/s,
-  'la main tactile partage sa largeur entre ses cartes, se centre tant qu’elle tient, et défile au-delà');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*--rpg-hand-gap:\s*6px;[^}]*justify-content:\s*center;[^}]*gap:\s*var\(--rpg-hand-gap\);[^}]*overflow:\s*hidden;/s,
+  'la main tactile se centre et garde un espacement constant sans masquer les cartes');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.rpg-hand \.rpg-hand__pile \{[^}]*flex:\s*1 1 0;[^}]*min-width:\s*0;[^}]*max-width:\s*var\(--duel-card\);/s,
+  'les cartes et piles de la main se partagent la largeur, jusqu’à la taille normale des cartes');
 assert.match(battleCss, /\.rpg-terrains\s*\{[^}]*z-index:\s*41;/s,
   'le rail des terrains reste derrière les cartes de la main');
 assert.match(battleCss, /\.rpg-hand-dock\s*\{[^}]*z-index:\s*42;/s,
@@ -1298,8 +1304,8 @@ assert.doesNotMatch(mobileCss, /\.rpg-card-stack > \.rpg-card \{[^}]*box-shadow/
 assert.match(battlePage, /className="rpg-card-stack"[\s\S]{0,120}?style=\{cardFrameStyle\(cardById\(pile\.carteId\)\)\}/,
   'la pile reprend la couleur de cadre de sa carte pour ses ombres décalées');
 
-assert.match(battlePage, /import \{ groupCartesMain, groupEntitesParCarte \} from '\.\/rpgCardStacks\.js';/,
-  'la page de duel regroupe les homonymes avec le même module que ses tests');
+assert.match(battlePage, /import \{ armesPortees, groupCartesMain, groupEntitesParCarte \} from '\.\/rpgCardStacks\.js';/,
+  'la page de duel regroupe les homonymes et lit les armes portées dans le même module que ses tests');
 assert.match(battlePage, /const empilerCartes = viewport\.mobile;/,
   'les piles sont réservées au doigt : le grand écran garde une carte par emplacement');
 assert.match(battlePage, /const groupesMain = empilerCartes\s*\?\s*groupCartesMain\(duel\.joueur\.main\)\s*:\s*duel\.joueur\.main\.map\(\(carteId, index\) => \(\{ carteId, indices: \[index\] \}\)\);/s,
@@ -1350,14 +1356,14 @@ assert.match(battlePage, /cards\/\$\{artId\}\.jpg\$\{revision \? `\?v=\$\{revisi
 const { RPG_DECK_NEIGE_BASE, RPG_DUEL_CARDS } = await import('../src/games/rpgCards.js');
 assert.match(duelEngine, /entite\.atk \+= furie;[\s\S]*?duel\.log\.push\(`\$\{entite\.name\} entre en furie : \+\$\{furie\}\/\+\$\{furie\}\.`\)/,
   'le moteur applique et journalise la Furie d’une créature blessée qui survit');
-assert.match(duelEngine, /export function rpgResonanceEnJeu\(duel\)/,
-  'la Résonance en jeu se compte sur toute la table, les deux camps compris');
-assert.match(duelEngine, /cardColors\(carte\)\.includes\('neige'\) \? total : 0[\s\S]*?entite\.pv = Math\.max\(1, entite\.pv \+ delta\)/,
-  'seule la Neige profite de l’aura, l’écart étant mémorisé par entité et les PV plancher à 1');
+assert.match(duelEngine, /export function rpgResonanceEnJeu\(duel(?:, element = 'neige')?\)/,
+  'la Résonance en jeu se compte sur toute la table, par élément et pour les deux camps');
+assert.match(duelEngine, /const groupes = GROUPES_RESONANCE\.filter\(\(groupe\) => cardReceivesResonance\(duelCardById\(entite\.carteId\), groupe\)\);[\s\S]*?entite\.pv = Math\.max\(1, entite\.pv \+ delta\)/,
+  'chaque groupe de Résonance ne renforce que ses créatures, avec un plancher de 1 PV');
 assert.match(aiBrain, /const furie = bloqueurFurie \* 0\.9 - attaquantFurie \* 1\.2;/,
   'l’IA sait qu’entamer un viking sans le tuer le nourrit');
-assert.match(aiBrain, /rpgResonanceEnJeu\(duel\)[\s\S]*?atk: \(carte\.atk \?\? 0\) \+ resonance/,
-  'l’IA compte la Résonance déjà en table quand elle évalue une arrivée Neige');
+assert.match(aiBrain, /moteur\.rpgBonusResonance\(duel, carte\)[\s\S]*?atk: \(carte\.atk \?\? 0\) \+ resonance/,
+  'l’IA compte la Résonance déjà en table quand elle évalue une arrivée de carte renforcée');
 const jarl = RPG_DUEL_CARDS.find((carte) => carte.id === 'jarl-au-marteau-de-guerre');
 assert.ok(jarl && jarl.element === 'neige' && jarl.furie === 3,
   'le Jarl au marteau de guerre porte la Furie 3 du set Neige');
@@ -1373,9 +1379,14 @@ for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.furie)) {
     `${carte.id} annonce sa Furie sur sa face`);
 }
 for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {
-  assert.match(carte.typeLine, /valkyrie/i, `${carte.id} est une valkyrie`);
-  assert.match(carte.text, /Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent \+1\/\+1/,
-    `${carte.id} annonce sa Résonance sur sa face`);
+  if (carte.resonanceTribu === 'samourai') {
+    assert.match(carte.text, /Résonance samouraï — Tant (?:qu’il|que Kagutsuchi) est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent \+1\/\+1/,
+      `${carte.id} annonce sa Résonance de tribu sur sa face`);
+  } else {
+    assert.match(carte.typeLine, /valkyrie/i, `${carte.id} est une valkyrie`);
+    assert.match(carte.text, /Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent \+1\/\+1/,
+      `${carte.id} annonce sa Résonance de Neige sur sa face`);
+  }
 }
 
 // ── Retouches du catalogue : bonus borné, écho, coût et peintures reprises ─
@@ -1420,10 +1431,10 @@ for (const illustration of ['brisure-de-verre', 'parade-du-verre', 'maree-contra
 // Les commandes de tour, réunies dans le rail : attaque générale puis fin du tour.
 assert.match(battlePage, /aria-label="Actions de tour">[\s\S]*?rpg-btn--attaque-tous[\s\S]*?rpg-btn--endturn/, 'attaque générale et fin du tour partagent le même groupe');
 // La main au doigt : une carte = une cible. Plus de grille qui superpose les
-// cartes (deux cartes sous le même doigt, l'une jouée pour l'autre) : la rangée
-// partage sa largeur entre ses emplacements, avec un plancher tactile.
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.rpg-hand \.rpg-hand__pile \{[^}]*width:\s*clamp\(var\(--rpg-hand-min\), calc\(\(100% - \(var\(--hand-count\) - 1\) \* var\(--rpg-hand-gap\)\) \/ var\(--hand-count\)\), var\(--duel-card\)\);/s,
-  'la largeur d’une carte de la main se partage la rangée, entre le plancher tactile et la taille du champ de bataille');
+// cartes (deux cartes sous le même doigt, l'une jouée pour l'autre) : chaque
+// carte ou pile partage la largeur disponible sans dépasser l’échelle du champ.
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.rpg-hand \.rpg-hand__pile \{[^}]*flex:\s*1 1 0;[^}]*min-width:\s*0;[^}]*max-width:\s*var\(--duel-card\);/s,
+  'la largeur de chaque carte ou pile se partage entre les emplacements, sans dépasser la taille du champ');
 assert.doesNotMatch(mobileCss, /grid-template-columns: repeat\(var\(--hand-count\), minmax\(0, var\(--duel-card\)\)\)/,
   'la main ne superpose plus ses cartes : chacune reste entièrement cliquable');
 

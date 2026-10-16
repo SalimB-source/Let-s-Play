@@ -20,6 +20,7 @@ import {
   cardColors,
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
+import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 
 const duelVide = () => rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [] });
 const donner = (duel, cote, id) => duel[cote].main.push(id);
@@ -36,7 +37,7 @@ const annoncer = (duel, carteId) => {
 };
 const contre = (duel, id) => rpgLancerMagie(duel, 'joueur', id);
 
-test('la Marée des abysses est un deck d’Eau valide de 40 cartes, avec les quatre bêtes mythiques', () => {
+test('la Marée des abysses garde une mythique et ouvre les autres bêtes dans les boosters', () => {
   assert.equal(RPG_DECK_MAREE_BASE.length, 40);
   assert.equal(rpgValiderDeck(RPG_DECK_MAREE_BASE).ok, true);
   assert.equal(RPG_DECK_MAREE_BASE.filter((id) => cardById(id).kind === 'terrain').length, 16, '16 terrains Eau');
@@ -44,8 +45,16 @@ test('la Marée des abysses est un deck d’Eau valide de 40 cartes, avec les qu
   assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'lagune-des-salines').length, 8, '8 Lagunes des salines');
   for (const id of ['kraken', 'leviathan', 'bakunawa', 'jormungandr']) {
     assert.equal(cardById(id).rarity, 'mythique', `${id} est mythique`);
-    assert.equal(RPG_DECK_MAREE_BASE.filter((x) => x === id).length, 1, `${id} en un seul exemplaire`);
+    const exemplaires = RPG_DECK_MAREE_BASE.filter((x) => x === id).length;
+    if (id === 'leviathan') {
+      assert.equal(exemplaires, 1, 'le Léviathan est l’unique mythique du deck');
+    } else {
+      assert.equal(exemplaires, 0, `${id} reste hors du starter`);
+      assert.equal(COLLECTION_DEPART.includes(id), false, `${id} n’est pas dans la dotation`);
+      assert.ok(carteReveleePar(id), `${id} peut être ouvert dans un booster après sa révélation`);
+    }
   }
+  assert.deepEqual(RPG_DECK_MAREE_BASE.filter((id) => cardById(id).rarity === 'mythique'), ['leviathan']);
   for (const id of new Set(RPG_DECK_MAREE_BASE)) {
     assert.deepEqual(cardColors(cardById(id)), ['eau'], `${id} est bleu (Eau)`);
   }

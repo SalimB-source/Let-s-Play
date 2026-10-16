@@ -33,6 +33,7 @@ import { RPG_RECETTES_DECKS, RPG_RECETTES_HISTOIRE } from '../src/games/rpgDeckR
 import { composerDeck } from '../src/games/rpgDeckComposer.js';
 import { comparerCartesParPuissance, puissanceCarte, rangRarete } from '../src/games/rpgCardPower.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
+import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 
 const RECETTES = { ...RPG_RECETTES_DECKS, ...RPG_RECETTES_HISTOIRE };
 const carteParId = new Map(RPG_DUEL_CARDS.map((carte) => [carte.id, carte]));
@@ -99,18 +100,23 @@ test('aucune carte laissée de côté n’est mieux classée qu’une carte rete
       .filter((id) => !signature.has(id) && carteParId.get(id).kind !== 'terrain')
       .map((id) => carteParId.get(id));
     const seau = (carte) => (carte.kind === 'magie' ? 'magie' : carte.kind === 'arme' ? 'arme' : 'creature');
-    // Un plafond de la campagne explique qu'une figure reste dehors : elle
-    // n'entre pas dans la comparaison, ce n'est pas le classement qui l'écarte.
+    // Les plafonds globaux des starters sont durs ; les plafonds de campagne,
+    // eux, restent par famille et peuvent céder lors de la dernière passe.
+    const distinctes = (rarete) => [...comptes.keys()]
+      .map((id) => carteParId.get(id))
+      .filter((autre) => autre.kind !== 'terrain' && autre.rarity === rarete).length;
     const plafondAtteint = (carte) => {
       const famille = seau(carte);
       const memes = [...comptes.keys()]
         .map((id) => carteParId.get(id))
         .filter((autre) => seau(autre) === famille && autre.kind !== 'terrain');
       if (carte.rarity === 'mythique') {
-        return memes.filter((autre) => autre.rarity === 'mythique').length >= (recette.mythiquesMax ?? Infinity);
+        return distinctes('mythique') >= (recette.mythiquesTotalMax ?? Infinity)
+          || memes.filter((autre) => autre.rarity === 'mythique').length >= (recette.mythiquesMax ?? Infinity);
       }
       if (carte.rarity === 'rare') {
-        return memes.filter((autre) => autre.rarity === 'rare').length >= (recette.raresMax ?? Infinity);
+        return distinctes('rare') >= (recette.raresTotalMax ?? Infinity)
+          || memes.filter((autre) => autre.rarity === 'rare').length >= (recette.raresMax ?? Infinity);
       }
       return false;
     };
@@ -160,7 +166,7 @@ test('les meilleures cartes sont prises à leur maximum légal', () => {
 
 // ── 3. Les invariants du jeu ────────────────────────────────────────────────
 
-test('les cinq boîtiers du catalogue restent valides, illustrés et fidèles à leur couleur', () => {
+test('les six boîtiers du catalogue restent valides, illustrés et fidèles à leur couleur', () => {
   for (const deck of RPG_DECKS) {
     const validation = rpgValiderDeck(deck.cardIds);
     assert.equal(validation.ok, true, `${deck.name} : ${validation.raison}`);
@@ -180,27 +186,42 @@ test('les cinq boîtiers du catalogue restent valides, illustrés et fidèles à
   }
 });
 
-test('chaque deck aligne les mythiques de son identité ou sa signature culturelle complète', () => {
+test('chaque deck de départ mélange les quatre raretés et ne contient qu’une mythique', () => {
   for (const deck of RPG_DECKS) {
     const recette = RPG_RECETTES_DECKS[deck.id];
-    // Une signature qui occupe tout un quota est un set culturel fermé.
-    const signature = new Map(recette.signature.map((entree) => Array.isArray(entree) ? entree : [entree, 1]));
-    const placesSignature = (magie) => [...signature].reduce((total, [id, n]) =>
-      total + ((cardById(id).kind === 'magie') === magie ? n : 0), 0);
-    const admise = (carte) => {
-      const magie = carte.kind === 'magie';
-      const quota = magie ? recette.magies : recette.creatures;
-      return placesSignature(magie) < quota || signature.has(carte.id);
-    };
-    const mythiques = RPG_DUEL_CARDS.filter((carte) => admise(carte) && carte.rarity === 'mythique'
-      && cardColors(carte).length > 0
-      && cardColors(carte).every((couleur) => recette.identite.includes(couleur))
-      && carte.kind !== 'terrain');
-    assert.ok(mythiques.length > 0, `${deck.name} : son identité compte des mythiques`);
-    for (const carte of mythiques) {
-      assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 1,
-        `${deck.name} : ${carte.id} est une mythique de l’identité, elle y est une fois`);
+    const comptes = compter(deck.cardIds);
+    const cartesNonTerrain = [...comptes.keys()]
+      .map((id) => cardById(id))
+      .filter((carte) => carte.kind !== 'terrain');
+    const mythiques = cartesNonTerrain.filter((carte) => carte.rarity === 'mythique');
+    const raresDistinctes = cartesNonTerrain.filter((carte) => carte.rarity === 'rare');
+    const raretes = new Set(cartesNonTerrain.map((carte) => carte.rarity));
+
+    assert.equal(mythiques.length, 1, `${deck.name} : exactement une mythique`);
+    assert.equal(recette.mythiquesTotalMax, 1, `${deck.name} : plafond global déclaré dans sa recette`);
+    assert.ok(raresDistinctes.length >= 1, `${deck.name} : au moins une rare`);
+    assert.ok(raresDistinctes.length <= recette.raresTotalMax,
+      `${deck.name} : ${raresDistinctes.length} rares distinctes, plafond ${recette.raresTotalMax}`);
+    for (const rarete of ['commune', 'inhabituelle', 'rare', 'mythique']) {
+      assert.ok(raretes.has(rarete), `${deck.name} : contient une carte ${rarete}`);
     }
+
+    // La mythique désignée par le starter deck est jouable dans son boîtier,
+    // mais elle n'est pas remise comme carte de collection : elle se gagne au Souk.
+    for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.rarity === 'mythique'
+      && candidate.kind !== 'terrain'
+      && cardColors(candidate).length > 0
+      && cardColors(candidate).every((couleur) => recette.identite.includes(couleur)))) {
+      if (carte.id === mythiques[0].id) continue;
+      assert.equal(comptes.has(carte.id), false, `${deck.name} : ${carte.id} reste hors du deck de départ`);
+    }
+  }
+});
+
+test('les cartes rares et mythiques qui restent hors des starters sont réservées au Souk', () => {
+  for (const carte of RPG_DUEL_CARDS.filter((candidate) => ['rare', 'mythique'].includes(candidate.rarity))) {
+    assert.equal(COLLECTION_DEPART.includes(carte.id), false, `${carte.id} n’est pas dans la dotation gratuite`);
+    assert.ok(carteReveleePar(carte.id), `${carte.id} est révélée puis ouvrable dans un booster`);
   }
 });
 

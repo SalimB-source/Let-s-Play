@@ -11,16 +11,16 @@
  * la puissance (`rpgCardPower.js`), chaque carte prise à son maximum légal
  * (une mythique en un exemplaire, les autres jusqu'à trois).
  *
- * Deux garde-fous :
+ * Trois garde-fous :
  *
- *   - **Les plafonds du Récit.** Une recette d'Histoire peut borner le nombre
- *     de mythiques et de rares qu'un sorcier aligne (`mythiquesMax`,
- *     `raresMax`) : c'est ce qui garde la rampe des Tours — la Garde du fjord
- *     n'ouvre pas avec les figures du Nord, le Maître des Neuf Hivers si. Les
- *     plafonds comptent les **cartes distinctes**, signature comprise.
- *   - **Aucune place vide.** Si les plafonds interdisaient de remplir un
- *     quota, une seconde passe les ignore : mieux vaut un deck un cran plus
- *     fort qu'un deck de trente-neuf cartes.
+ *   - **Les plafonds globaux.** Une recette peut fixer `mythiquesTotalMax` et
+ *     `raresTotalMax` pour borner le nombre de cartes distinctes de ces paliers
+ *     dans l'ensemble du deck. Ils comptent la signature et ne cèdent jamais.
+ *   - **Les plafonds du Récit.** `mythiquesMax` et `raresMax` restent des
+ *     plafonds par famille pour les paquets de campagne ; ils gardent la rampe
+ *     des Tours sans qu'un sort rare soit écarté par une créature rare.
+ *   - **Aucune place vide.** La dernière passe peut ignorer les plafonds par
+ *     famille de l'Histoire, mais respecte toujours les plafonds globaux.
  *
  * Le composeur ne connaît ni le catalogue ni les règles de couleur : ils
  * arrivent en paramètres (`couleursDe`, `limiteDe`, `cartes`). C'est ce qui
@@ -56,6 +56,7 @@ export function composerDeck(recette, catalogue) {
   const {
     identite = [], terrains = [], creatures = 0, magies = 0, armes = 0,
     signature = [], mythiquesMax = Infinity, raresMax = Infinity,
+    mythiquesTotalMax = Infinity, raresTotalMax = Infinity,
   } = recette ?? {};
 
   const dansIdentite = (carte) => {
@@ -67,9 +68,24 @@ export function composerDeck(recette, catalogue) {
   const choisis = { creature: [], magie: [], arme: [] };
   const comptes = new Map();
 
-  /** Pose jusqu'à `nombre` exemplaires d'une carte, sans dépasser limite ni quota. */
+  /** Nombre de cartes distinctes d'une rareté, dans une famille facultative. */
+  const distinctesDeRarete = (rarete, seau = null) => [...comptes.keys()]
+    .filter((id) => {
+      const carte = carteParId.get(id);
+      return carte?.rarity === rarete && (!seau || seauDe(carte) === seau);
+    }).length;
+
+  /** Les plafonds globaux sont durs, y compris pour la signature et la passe de secours. */
+  const depassePlafondGlobal = (carte) => {
+    if (!carte || comptes.has(carte.id)) return false;
+    if (carte.rarity === 'mythique' && distinctesDeRarete('mythique') >= mythiquesTotalMax) return true;
+    if (carte.rarity === 'rare' && distinctesDeRarete('rare') >= raresTotalMax) return true;
+    return false;
+  };
+
+  /** Pose jusqu'à `nombre` exemplaires, sans dépasser la limite, le quota ni les plafonds globaux. */
   const poser = (carte, nombre) => {
-    if (!carte) return 0;
+    if (!carte || depassePlafondGlobal(carte)) return 0;
     const seau = seauDe(carte);
     const limite = limiteDe(carte);
     const deja = comptes.get(carte.id) ?? 0;
@@ -80,12 +96,6 @@ export function composerDeck(recette, catalogue) {
     return copies;
   };
 
-  const distinctesDeRarete = (rarete, seau) => [...comptes.keys()]
-    .filter((id) => {
-      const carte = carteParId.get(id);
-      return carte?.rarity === rarete && seauDe(carte) === seau;
-    }).length;
-
   // 1. La signature : les cartes d'archétype du deck, posées avant tout.
   for (const entree of signature) {
     const [id, nombre] = Array.isArray(entree) ? entree : [entree, 1];
@@ -93,18 +103,18 @@ export function composerDeck(recette, catalogue) {
   }
 
   // 2. Le remplissage : les meilleures cartes de l'identité, palier par palier.
-  // Les plafonds se comptent **par famille** — au plus N figures parmi les
-  // créatures, au plus N rares parmi les sorts : un sorcier ne renonce pas à
-  // ses sorts rares parce qu'il a déjà aligné quatre créatures rares. Le
-  // plafond des mythiques ne cède jamais avant celui des rares (une figure est
-  // un événement de la campagne, une rare est une carte ordinaire), et la
-  // dernière passe ne sert qu'à ne pas laisser une place vide.
+  // Les plafonds `mythiquesMax` et `raresMax` de l'Histoire restent par famille
+  // et peuvent céder en dernier recours pour ne pas laisser un paquet incomplet.
+  // `mythiquesTotalMax` et `raresTotalMax`, eux, sont globaux et durs : ils
+  // s'appliquent aux six decks de départ comme à leur signature, toutes familles
+  // confondues. Ainsi, une arme mythique compte autant qu'un héros mythique.
   const classees = [...vivier].sort(comparerCartesParPuissance);
   for (const passe of ['plafons', 'rares-sans-plafond', 'sans-plafond']) {
     for (const carte of classees) {
       const seau = seauDe(carte);
       if (choisis[seau].length >= quotas[seau]) continue;
       if ((comptes.get(carte.id) ?? 0) >= limiteDe(carte)) continue;
+      if (depassePlafondGlobal(carte)) continue;
       if (!comptes.has(carte.id)) {
         if (carte.rarity === 'mythique' && passe !== 'sans-plafond'
           && distinctesDeRarete('mythique', seau) >= mythiquesMax) continue;

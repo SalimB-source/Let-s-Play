@@ -29,8 +29,8 @@ import {
 } from './rpgCards.js';
 
 /**
- * Les paquets de la campagne — les cinq decks du catalogue, joués tels quels
- * par les sorciers qui les portent, et les cinq **variantes** que seuls les
+ * Les paquets de la campagne — les cinq decks du catalogue utilisés dans
+ * l'Histoire, joués tels quels par leurs sorciers, et les cinq **variantes** que seuls les
  * étages alignent.
  *
  * Les variantes ne sont pas écrites carte par carte : elles passent par les
