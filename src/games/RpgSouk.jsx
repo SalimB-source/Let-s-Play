@@ -21,7 +21,7 @@
  * déjà là, elle dit simplement que le marchand range encore ses paquets.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './rpg-souk.css';
 import { GAINS, creditsLisible, paquetsAvantMythique } from './rpgCredits.js';
 import {
@@ -29,7 +29,7 @@ import {
   joursAvantLeCachetDeLaSemaine, secondesAvantMinuit, vueDeLaQuete,
 } from './rpgQuetes.js';
 import { COFFRET, TAUX, etatRayons, rayonParId, tourQuiGarde } from './rpgBoosters.js';
-import { cardById } from './rpgCards.js';
+import { cardById, MYTHIQUE_VITRINE_PAR_ELEMENT } from './rpgCards.js';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 
@@ -98,6 +98,21 @@ function ligneDeTaux(etat, portefeuille) {
   return morceaux.join(' · ');
 }
 
+/** Le sceau de cire qui s'abat quand un Cachet est encaissé — pur décor. */
+function Sceau({ actif }) {
+  if (!actif) return null;
+  const ETINCELLES = 9;
+  return (
+    <span className="rpg-souk__sceau" aria-hidden="true">
+      <span className="rpg-souk__sceau-onde" />
+      <span className="rpg-souk__sceau-corps">◈</span>
+      {Array.from({ length: ETINCELLES }).map((_, i) => (
+        <span key={i} className="rpg-souk__sceau-etincelle" style={{ '--s': i }} />
+      ))}
+    </span>
+  );
+}
+
 /** Le message d'un rayon fermé : qui le garde, et où l'ouvrir. */
 function raisonFermeture(etat) {
   if (etat.ouvert) return null;
@@ -108,15 +123,16 @@ function raisonFermeture(etat) {
 }
 
 /** Une quête du jour : son palier, sa barre, sa récompense, son bouton. */
-function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
+function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx, onCelebrate }) {
   // La vue partagée des quêtes : c'est aussi celle du panneau de l'onglet
   // Jouer, donc les deux écrans disent forcément la même chose.
   const tout = vueDeLaQuete(etatQuetes, id);
   if (!tout) return null;
   const { quete, progres, reclamee, terminee, etat, pourcent, reste } = tout;
-  const reclamer = () => {
+  const reclamer = (event) => {
     const gagne = onReclamer?.(id);
     onPlaySfx?.(gagne ? 'bell' : 'erreur');
+    if (gagne) onCelebrate?.(quete.recompense, event.currentTarget);
   };
   return (
     <li className={`rpg-souk__quete is-${etat}`} data-souk-quete={id} data-souk-quete-etat={etat}>
@@ -180,8 +196,12 @@ function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
  * le bouton porte un nom lisible (« Ouvrir le paquet Braise · 140 crédits ») et
  * se désactive avec son motif quand l'achat est refusé.
  */
-function PaquetDuRayon({ rayon, index, mythes, ferme, prix, refus, onOuvrir }) {
+function PaquetDuRayon({ rayon, index, mythes, ferme, prix, refus, onOuvrir, cardArt }) {
   const nom = `Ouvrir le paquet ${rayon.nom} · ${prix} crédits`;
+  // La vitrine montre la mythique de l'élément dès que le rayon en a une
+  // (ouvert ou fermé) : c'est l'appât du paquet, pas un droit de tirage. Le
+  // grand étal (couleur null) n'a pas de mythique unique à montrer.
+  const mythiqueId = MYTHIQUE_VITRINE_PAR_ELEMENT[rayon.couleur] ?? null;
   return (
     <button
       type="button"
@@ -201,8 +221,12 @@ function PaquetDuRayon({ rayon, index, mythes, ferme, prix, refus, onOuvrir }) {
             <span className="rpg-souk__paquet-face rpg-souk__paquet-face--tranche" />
             <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dessus" />
             <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dessous" />
-            <span className="rpg-souk__paquet-face rpg-souk__paquet-face--avant">
+            <span className={`rpg-souk__paquet-face rpg-souk__paquet-face--avant${mythiqueId ? ' has-carte' : ''}`}>
+              {mythiqueId && cardArt && (
+                <img className="rpg-souk__paquet-carte" src={cardArt(mythiqueId)} alt={`Illustration de la carte mythique du rayon ${rayon.nom}`} loading="lazy" />
+              )}
               <span className="rpg-souk__paquet-sertissage" />
+              {mythiqueId && <span className="rpg-souk__paquet-voile" aria-hidden="true" />}
               <span className="rpg-souk__paquet-rune">⌛</span>
               <span className="rpg-souk__paquet-nom">{rayon.nom}</span>
               <span className="rpg-souk__paquet-meta">
@@ -210,6 +234,7 @@ function PaquetDuRayon({ rayon, index, mythes, ferme, prix, refus, onOuvrir }) {
                 {mythes > 0 && <em>{mythes} mythique{mythes > 1 ? 's' : ''}</em>}
               </span>
               <span className="rpg-souk__paquet-sertissage" />
+              {mythiqueId && <span className="rpg-souk__paquet-mythique-tag" aria-hidden="true">Mythique</span>}
             </span>
           </span>
         </span>
@@ -241,6 +266,36 @@ export default function RpgSouk({
   cardArt,
 }) {
   const restant = useResteDuCycle();
+  const soldeRef = useRef(null);
+  const cachetBtnRef = useRef(null);
+  const semaineBtnRef = useRef(null);
+  const burstSeq = useRef(0);
+  const reduceMotion = useRef(
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+  const [bursts, setBursts] = useState([]);
+  const [soldePop, setSoldePop] = useState(false);
+  const [cachetSlam, setCachetSlam] = useState(false);
+  const [semaineSlam, setSemaineSlam] = useState(false);
+
+  /** La fête d'une récompense : des pièces du bouton jusqu'au solde, et le
+      solde qui fait un pop. Rien ne s'anime si l'utilisateur a demandé le
+      mouvement réduit — le montant se met à jour tout seul. */
+  const celebrate = (amount, sourceEl) => {
+    if (reduceMotion.current || !sourceEl || !soldeRef.current) return;
+    const a = sourceEl.getBoundingClientRect();
+    const b = soldeRef.current.getBoundingClientRect();
+    const from = { x: a.left + a.width / 2, y: a.top + a.height / 2 };
+    const to = { x: b.left + b.width * 0.32, y: b.top + b.height / 2 };
+    const id = ++burstSeq.current;
+    setBursts((prev) => [...prev, { id, from, to, amount }]);
+    setSoldePop(true);
+    window.setTimeout(() => {
+      setBursts((prev) => prev.filter((x) => x.id !== id));
+    }, 1000);
+    window.setTimeout(() => setSoldePop(false), 560);
+  };
   const jour = jourLisible(quetes?.jour);
   const liste = Array.isArray(quetes?.quetes) ? quetes.quetes : [];
   const prises = liste.filter((id) => vueDeLaQuete(quetes, id)?.reclamee).length;
@@ -263,6 +318,11 @@ export default function RpgSouk({
   const reclamerCachet = () => {
     const gagne = onReclamerCachet?.();
     onPlaySfx?.(gagne ? 'victoire' : 'erreur');
+    if (gagne && !cachetSlam) {
+      celebrate(GAINS.cachetDuCycle, cachetBtnRef.current);
+      setCachetSlam(true);
+      window.setTimeout(() => setCachetSlam(false), 700);
+    }
   };
 
   return (
@@ -283,7 +343,7 @@ export default function RpgSouk({
           <p className="rpg-souk__sync" role="status">{sync}</p>
         </div>
         <div className="rpg-souk__bourse">
-          <p className="rpg-souk__solde" data-souk-solde={credits} aria-label={`Bourse : ${credits} crédits`}>
+          <p className={`rpg-souk__solde${soldePop ? ' is-pop' : ''}`} ref={soldeRef} data-souk-solde={credits} aria-label={`Bourse : ${credits} crédits`}>
             <span className="rpg-souk__solde-signe" aria-hidden="true"><RpgCreditIcon anime /></span>
             <strong>{creditsLisible(credits)}</strong>
             <em>crédits</em>
@@ -315,7 +375,7 @@ export default function RpgSouk({
         {liste.length ? (
           <ul className="rpg-souk__quetes" data-souk-quetes={liste.length}>
             {liste.map((id) => (
-              <CarteQuete key={id} id={id} etatQuetes={quetes} onReclamer={onReclamerQuete} onPlaySfx={onPlaySfx} />
+              <CarteQuete key={id} id={id} etatQuetes={quetes} onReclamer={onReclamerQuete} onPlaySfx={onPlaySfx} onCelebrate={celebrate} />
             ))}
           </ul>
         ) : (
@@ -326,6 +386,7 @@ export default function RpgSouk({
       </section>
 
       <section className="rpg-souk__cachet" data-souk-cachet={cachet}>
+        <Sceau actif={cachetSlam} />
         <div className="rpg-souk__cachet-texte">
           <span className="rpg-mode-menu__eyebrow">LE CACHET DU CYCLE</span>
           <h3>Les trois quêtes du jour, réclamées d’affilée</h3>
@@ -342,6 +403,7 @@ export default function RpgSouk({
             type="button"
             className="rpg-menu-button rpg-menu-button--primary"
             data-souk-cachet-reclamer
+            ref={cachetBtnRef}
             onClick={reclamerCachet}
           >
             Réclamer le Cachet · +{GAINS.cachetDuCycle} <RpgCreditIcon />
@@ -356,6 +418,7 @@ export default function RpgSouk({
         data-souk-semaine={semaine}
         aria-labelledby="souk-semaine-titre"
       >
+        <Sceau actif={semaineSlam} />
         <div className="rpg-souk__cachet-texte">
           <span className="rpg-mode-menu__eyebrow">LE CACHET DE LA SEMAINE</span>
           <h3 id="souk-semaine-titre">Sept jours d’affilée</h3>
@@ -372,7 +435,16 @@ export default function RpgSouk({
             type="button"
             className="rpg-menu-button rpg-menu-button--primary"
             data-souk-semaine-reclamer
-            onClick={() => { const gagne = onReclamerSemaine?.(); onPlaySfx?.(gagne ? 'victoire' : 'erreur'); }}
+            ref={semaineBtnRef}
+            onClick={() => {
+              const gagne = onReclamerSemaine?.();
+              onPlaySfx?.(gagne ? 'victoire' : 'erreur');
+              if (gagne && !semaineSlam) {
+                celebrate(GAINS.cachetDeLaSemaine, semaineBtnRef.current);
+                setSemaineSlam(true);
+                window.setTimeout(() => setSemaineSlam(false), 700);
+              }
+            }}
           >
             Réclamer le Cachet de la semaine · +{GAINS.cachetDeLaSemaine} <RpgCreditIcon />
           </button>
@@ -450,6 +522,7 @@ export default function RpgSouk({
                   ferme={Boolean(ferme)}
                   prix={etat.prix}
                   refus={refus}
+                  cardArt={cardArt}
                   onOuvrir={onOuvrirBooster}
                 />
                 <p className="rpg-souk__rayon-taux" data-souk-rayon-taux>{ligneDeTaux(etat, portefeuille)}</p>
@@ -485,6 +558,39 @@ export default function RpgSouk({
           })}
         </ul>
       </section>
+
+      {bursts.map((b) => {
+        const dx = b.to.x - b.from.x;
+        const dy = b.to.y - b.from.y;
+        return (
+          <span key={b.id} className="rpg-souk__burst" aria-hidden="true">
+            {Array.from({ length: 7 }).map((_, i) => {
+              const ang = (i / 7) * Math.PI * 2;
+              const rayon = 9 + (i % 3) * 7;
+              const sx = Math.cos(ang) * rayon;
+              const sy = Math.sin(ang) * rayon - 10;
+              return (
+                <span
+                  key={i}
+                  className="rpg-souk__coin"
+                  style={{
+                    '--bx': `${b.from.x}px`,
+                    '--by': `${b.from.y}px`,
+                    '--dx': `${dx}px`,
+                    '--dy': `${dy}px`,
+                    '--sx': `${sx}px`,
+                    '--sy': `${sy}px`,
+                    '--n': i,
+                  }}
+                />
+              );
+            })}
+            <span className="rpg-souk__gain" style={{ '--bx': `${b.from.x}px`, '--by': `${b.from.y}px` }}>
+              +{b.amount} <RpgCreditIcon />
+            </span>
+          </span>
+        );
+      })}
     </main>
   );
 }

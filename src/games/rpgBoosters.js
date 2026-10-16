@@ -197,17 +197,24 @@ export function tourQuiGarde(couleur) {
   return premiere?.tour ?? null;
 }
 
-/** Le vivier d'un rayon : sa couleur (ou toutes les couleurs ouvertes), tours entamées seulement. */
+/**
+ * Le vivier d'un rayon : **toutes les cartes du catalogue** de sa couleur (ou des
+ * quatre couleurs pour le grand étal). C'est le contenu des boosters : plus de
+ * seuil d'étage, plus de carte « verrouillée » — un paquet peut contenir
+ * n'importe quelle carte existante de l'élément. La dotation de départ reste
+ * dans le vivier pour remplir les paquets de communes.
+ */
 export function vivierRayon(rayonId, progression) {
   const rayon = rayonParId(rayonId);
   if (!rayon) return [];
-  const couleurs = rayon.couleur ? [rayon.couleur] : [...couleursOuvertes(progression)];
-  if (!couleurs.length) return [];
+  const couleurs = rayon.couleur ? [rayon.couleur] : [...RPG_ELEMENTS];
   const autorisees = new Set(couleurs);
-  return RPG_DUEL_CARDS
-    .filter((carte) => cardColors(carte).some((couleur) => autorisees.has(couleur)))
-    .filter((carte) => carteAuVivier(carte.id, progression))
-    .map((carte) => carte.id);
+  const ids = new Set();
+  for (const carte of RPG_DUEL_CARDS) {
+    if (cardColors(carte).some((couleur) => autorisees.has(couleur))) ids.add(carte.id);
+  }
+  for (const id of DEBUT) ids.add(id);
+  return [...ids];
 }
 
 /**

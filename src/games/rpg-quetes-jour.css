@@ -27,6 +27,43 @@
 }
 .rpg-quests-jour__compte { margin: 0; color: rgba(247, 237, 218, .58); font-size: 12px; }
 
+/* Titre et solde sur la même ligne : « Quêtes du jour » à gauche, la bourse à
+   droite — ce qu'on a déjà, avant de décider de jouer. */
+.rpg-quests-jour__tete-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.rpg-quests-jour__solde-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 3px 10px 3px 9px;
+  border: 1px solid rgba(232, 194, 113, .42);
+  border-radius: 999px;
+  background: rgba(14, 11, 12, .6);
+  color: #ffe7af;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.rpg-quests-jour__solde-mini .rpg-credit { font-size: 15px; }
+.rpg-quests-jour__solde-mini strong {
+  font: 800 15px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.rpg-quests-jour__solde-mini em {
+  color: rgba(247, 237, 218, .5);
+  font: 700 8px/1 var(--mono, monospace);
+  font-style: normal;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+/* L'icône de marché du lien vers le Souk : 1em, comme la pièce. */
+.rpg-market { width: 1.15em; height: 1.15em; flex: none; }
+
 .rpg-quests-jour__liste { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 
 .rpg-quests-jour__quete {
@@ -45,6 +82,13 @@
   background: linear-gradient(150deg, rgba(201, 150, 57, .18), rgba(12, 10, 11, .55));
 }
 .rpg-quests-jour__quete.is-reclamee { opacity: .62; }
+/* La quête active (en cours, pas encore terminée) : un fond bleu clair pour la
+   repérer d'un coup d'œil à côté des quêtes terminées (doré) et réclamées
+   (atténuées). Le texte reste clair, donc le contraste tient. */
+.rpg-quests-jour__quete.is-encours {
+  border-color: rgba(120, 180, 235, .55);
+  background: linear-gradient(150deg, rgba(120, 175, 235, .26), rgba(16, 20, 32, .6));
+}
 
 .rpg-quests-jour__quete-tete {
   display: grid;
@@ -73,6 +117,28 @@
   white-space: nowrap;
 }
 .rpg-quests-jour__gain .rpg-credit { font-size: 1.15em; }
+
+/* Ce qu'il faut faire pour finir la quête : lue, pas devinée. Le Souk le dit
+   déjà ; le panneau Jouer le taisait — un joueur ne peut pas décider de jouer
+   sans savoir ce qu'on lui demande. Petit marqueur doré, texte lisible. */
+.rpg-quests-jour__quete-texte {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  color: rgba(247, 237, 218, .74);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.rpg-quests-jour__quete-texte-icone {
+  flex: none;
+  color: #e8c77f;
+  font-size: 7.5px;
+  line-height: 1;
+  transform: translateY(1px);
+}
+.rpg-quests-jour__quete.is-terminee .rpg-quests-jour__quete-texte { color: rgba(247, 237, 218, .9); }
+.rpg-quests-jour__quete.is-reclamee .rpg-quests-jour__quete-texte { opacity: .7; }
 
 .rpg-quests-jour__jauge {
   position: relative;
