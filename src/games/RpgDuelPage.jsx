@@ -5684,11 +5684,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       : entites.map((entite) => ({ carteId: entite.carteId, entites: [entite] })),
   });
   const clePile = (cote, carteId) => `${cote}:${carteId}`;
-  // Une pile homonyme se garde par son nom ; une créature armée, seule dans sa
+  // Une pile homonyme se garde par son nom et son engagement ; une créature armée, seule dans sa
   // pile, par son identifiant — deux créatures armées identiques restent deux
   // clés distinctes.
   const clePileRendu = (pile) => (empilerCartes && !armesPortees(pile.entites[0]).length
-    ? pile.carteId
+    ? `${pile.carteId}:${pile.entites[0].attaquee ? "engagee" : "degagee"}`
     : pile.entites[0].id);
   const basculerPile = (cle) => {
     jouerSfx('pile');
