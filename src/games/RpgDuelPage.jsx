@@ -200,9 +200,10 @@ const CARD_ART_CACHE_VERSIONS = {
   yamina: 'heros-nihonga-algerien-v1',
   tarek: 'heros-nihonga-algerien-v1',
   boualem: 'heros-nihonga-algerien-v1',
-  // Le Serpent du monde reçoit la même passe, bien qu'il appartienne au set
-  // Neige : sa révision propre l'emporte sur celle du set.
-  'serpent-du-monde': 'heros-nihonga-algerien-v1',
+  // Le Serpent du monde garde la facture nihonga, mais sa composition est
+  // repensée : un serpent unique et anatomiquement cohérent encercle le globe.
+  // Sa révision dédiée l’emporte sur celle du set Neige.
+  'serpent-du-monde': 'serpent-terre-nihonga-v1',
   // L'Armure de cendres quitte le lot photoréaliste : son dessin d'origine
   // est conservé trait pour trait et simplement repeint en nihonga.
   'armure-de-cendres': 'armure-nihonga-v1',
