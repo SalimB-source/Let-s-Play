@@ -541,14 +541,14 @@
   border-radius: 50%;
   font-size: 11px;
 }
-/* Le coût ne s'imprime plus sur la carte posée : une créature en jeu n'a plus
-   rien à payer, la petite face garde l'essentiel — la pastille de couleur, les
+/* Le coût ne s'imprime plus sur la carte posée — au doigt comme à la souris,
+   dans tous les modes : une créature en jeu n'a plus rien à payer, la petite face garde l'essentiel — la pastille de couleur, les
    compteurs et ATQ/DEF. Le disque reste dans le DOM (le `aria-label` de la
    carte continue de dire le coût) et sur toutes les autres faces : main,
    mulligan, aperçus, catalogue. La règle ci-dessus garde donc son sens pour le
    disque de neige du bouton de capacité activée (`.rpg-card__activation`), qui
    vit hors du titre de la carte et reste visible. */
-.rpg-battle--touch .card-row .rpg-card .rpg-card__title .rpg-mana-cost { display: none; }
+.rpg-battle .card-row .rpg-card .rpg-card__title .rpg-mana-cost { display: none; }
 .rpg-battle--touch .rpg-hand__card--img .rpg-hand__stat,
 .rpg-battle--touch .rpg-card--img .rpg-card__stat--atk,
 .rpg-battle--touch .rpg-card--img .rpg-card__pt {

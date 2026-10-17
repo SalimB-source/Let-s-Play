@@ -1157,14 +1157,17 @@ export function TableCard({
         <ManaCost carte={carte} compact showElement={false} />
       </header>
       {/* Table d'essai sans terrains : les icônes d'effets de la créature se
-          rangent en colonne sous son coût, centrées sur le même axe. Sur une
-          hybride, les losanges de compteurs occupent déjà ce dessous : la
-          colonne descend d'un cran pour les laisser lisibles. */}
+          rangent en colonne à la place du coût (qui ne s'imprime plus sur une
+          carte posée), sur le même axe. Si le coin est pris — losanges de
+          compteurs d'une hybride, bouton de capacité activée —, la colonne
+          descend pour les laisser lisibles. */}
       {iconesEffets && (
         <IconesCarte
           carte={carte}
           entite={entite}
-          className={`rpg-card-icones--colonne${hybride && (entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0)) ? ' rpg-card-icones--sous-compteurs' : ''}`}
+          className={`rpg-card-icones--colonne${hybride && (entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0))
+            ? ' rpg-card-icones--sous-compteurs'
+            : activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
         />
       )}
       {activation && cote === 'joueur' && onActiver && (
