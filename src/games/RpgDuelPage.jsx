@@ -1256,7 +1256,7 @@ export function TableCard({
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       {entite.rapidite && <ElectriciteRapidite />}
       {/* Infiltration : la carte devient une silhouette de brume — à demi
-          transparente, voilée de nappes de brouillard qui dérivent. */}
+          transparente, traversée de nuages gris qui défilent. */}
       {entite.infiltration && (
         <span className="rpg-card__brume" aria-hidden="true">
           <span className="rpg-card__brume-nappe rpg-card__brume-nappe--a" />

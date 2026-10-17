@@ -8318,8 +8318,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* ── Infiltration : la carte brumeuse et transparente ────────────────────────
    Une créature qui ne peut pas être bloquée se fond dans le décor : la face
    devient translucide (la table transparaît), l'illustration pâlit et se
-   trouble légèrement, et deux nappes de brouillard dérivent lentement sur la
-   face, en sens opposés. La transparence ne passe PAS par l'opacité de la
+   trouble légèrement, et deux nappes de nuages gris défilent sur la face, à
+   des vitesses et en sens différents. La transparence ne passe PAS par l'opacité de la
    carte — elle rendrait aussi ses repères translucides : seuls le fond, le
    cadre et l'illustration s'effacent. La pastille de couleur, les icônes
    d'effets et ATQ/DEF restent opaques, au-dessus de la brume. Pas de
@@ -8353,27 +8353,41 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background: radial-gradient(ellipse at 50% 50%, rgba(235, 242, 248, 0) 35%, rgba(225, 235, 244, .38) 100%);
   box-shadow: inset 0 0 18px rgba(230, 238, 246, .45);
 }
+/* Les nuages gris : chaque nappe fait deux largeurs de carte et répète deux
+   fois le même motif de nuages (`background-size: 50%`) ; elle glisse d'une
+   demi-largeur en boucle, donc sans à-coup au raccord. Deux nappes à des
+   hauteurs, des vitesses et des sens différents donnent du relief. */
 .rpg-card__brume-nappe {
   position: absolute;
-  inset: -40% -60%;
-  opacity: .55;
-  background:
-    radial-gradient(ellipse 30% 18% at 22% 30%, rgba(240, 246, 252, .75), transparent 70%),
-    radial-gradient(ellipse 26% 14% at 64% 58%, rgba(232, 240, 248, .65), transparent 70%),
-    radial-gradient(ellipse 34% 16% at 40% 82%, rgba(244, 248, 252, .6), transparent 70%),
-    radial-gradient(ellipse 22% 12% at 82% 20%, rgba(236, 243, 250, .55), transparent 70%);
-  filter: blur(4px);
-  animation: rpg-brume-derive 14s ease-in-out infinite alternate;
+  top: -10%;
+  left: 0;
+  width: 200%;
+  height: 120%;
+  background-image:
+    radial-gradient(ellipse 13% 10% at 12% 22%, rgba(140, 147, 156, .95), transparent 72%),
+    radial-gradient(ellipse 10% 8% at 20% 18%, rgba(170, 176, 184, .8), transparent 72%),
+    radial-gradient(ellipse 15% 9% at 38% 52%, rgba(125, 132, 142, .9), transparent 72%),
+    radial-gradient(ellipse 9% 7% at 46% 47%, rgba(165, 171, 179, .75), transparent 72%),
+    radial-gradient(ellipse 14% 10% at 70% 30%, rgba(135, 142, 151, .9), transparent 72%),
+    radial-gradient(ellipse 11% 8% at 78% 26%, rgba(172, 178, 186, .75), transparent 72%),
+    radial-gradient(ellipse 16% 9% at 88% 78%, rgba(138, 145, 155, .75), transparent 72%),
+    radial-gradient(ellipse 12% 8% at 24% 84%, rgba(155, 162, 170, .7), transparent 72%);
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  filter: blur(1.6px);
+  opacity: .95;
+  animation: rpg-nuages-defilent 16s linear infinite;
 }
 .rpg-card__brume-nappe--b {
-  opacity: .4;
-  transform: scaleX(-1);
-  animation-duration: 19s;
-  animation-direction: alternate-reverse;
+  top: 5%;
+  opacity: .7;
+  transform: scale(1.3) scaleY(-1);
+  animation-duration: 24s;
+  animation-direction: reverse;
 }
-@keyframes rpg-brume-derive {
-  from { translate: -18% 4%; }
-  to { translate: 18% -4%; }
+@keyframes rpg-nuages-defilent {
+  from { translate: 0 0; }
+  to { translate: -50% 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-card__brume-nappe { animation: none; }
