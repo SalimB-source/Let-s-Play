@@ -1472,16 +1472,27 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       if (!modele) return;
       const nombre = Math.max(0, Math.floor(Number(effet.nombre) || 1));
       if (!nombre) return;
+      // Cinq emplacements au maximum (mode essai) : les jetons qui n'ont pas
+      // de place libre ne naissent pas — la table ne dépasse jamais ses cases.
+      const crees = Math.min(nombre, placesLibresChamp(duel, cote));
+      if (!crees) {
+        duel.log.push(`Le champ est plein : les ${(modele.pluriel ?? modele.name).toLowerCase()} ne peuvent pas entrer.`);
+        return;
+      }
       const source = duel[cote].creatures.find((entite) => entite.id === sauf);
-      for (let i = 0; i < nombre; i += 1) {
+      for (let i = 0; i < crees; i += 1) {
         const jeton = creerEntiteCreature(modele);
         // `ephemere` : le jeton ne survit pas au tour qui l'a vu naître —
         // `rpgFinDeTour` le détruit (serpents du Bâton des citernes).
         if (effet.ephemere) jeton.detruireFinDuTour = true;
         duel[cote].creatures.push(jeton);
       }
-      const nom = nombre > 1 ? (modele.pluriel ?? modele.name) : modele.name;
-      duel.log.push(`${source?.name ?? 'L’effet'} crée ${nombre} ${nom.toLowerCase()} ${modele.atk}/${modele.def} sans coût${effet.ephemere ? ', détruit à la fin du tour' : ''}.`);
+      const nom = crees > 1 ? (modele.pluriel ?? modele.name) : modele.name;
+      duel.log.push(`${source?.name ?? 'L’effet'} crée ${crees} ${nom.toLowerCase()} ${modele.atk}/${modele.def} sans coût${effet.ephemere ? ', détruit à la fin du tour' : ''}.`);
+      if (crees < nombre) {
+        const restants = nombre - crees;
+        duel.log.push(`Le champ est plein : ${restants} ${(modele.pluriel ?? modele.name).toLowerCase()} de plus ne peu${restants > 1 ? 'vent' : 't'} pas entrer.`);
+      }
       return;
     }
     case 'buff': {
@@ -1694,6 +1705,13 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         duel.log.push('Réanimation : aucune créature au cimetière.');
         return;
       }
+      // Pas de place libre : la créature reste au cimetière, la carte n'est
+      // pas consommée. Un mort ne revient pas « à côté » des cinq cases.
+      if (!placesLibresChamp(duel, cote)) {
+        const carteEnAttente = duelCardById(camp.cimetiere[index]);
+        duel.log.push(`Réanimation : aucune place libre — ${carteEnAttente?.name ?? 'la créature'} reste au cimetière.`);
+        return;
+      }
       const [carteRevivee] = camp.cimetiere.splice(index, 1);
       const carte = duelCardById(carteRevivee);
       const entite = creerEntiteCreature(carte);
@@ -1893,6 +1911,17 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle) {
   }
   declencherHonneur(duel, cote, entite);
   rafraichirAuras(duel);
+}
+
+/**
+ * Combien de créatures peuvent encore entrer sur le champ. En essai, les cinq
+ * emplacements dessinés sur le plateau sont les **seules** places : un jeton,
+ * une réanimation ou un retour programmé doit lui aussi en prendre une. Hors
+ * essai, le format historique garde son champ sans plafond.
+ */
+function placesLibresChamp(duel, cote) {
+  if (duel.modeMana !== RPG_MODE_MANA_ESSAI) return Infinity;
+  return Math.max(0, RPG_MANA_ESSAI_CHAMP_MAX - duel[cote].creatures.length);
 }
 
 /** La créature qu'un camp sacrifie de lui-même : la plus frêle d'abord, la
@@ -3113,6 +3142,13 @@ function resoudreRetoursProgrammes(duel) {
       const carte = duelCardById(retour.carteId);
       const indexCimetiere = camp.cimetiere.lastIndexOf(retour.carteId);
       if (!carte || indexCimetiere < 0) continue;
+      // Le retour attend une place libre : sans elle, il est repoussé d'un tour
+      // plutôt que de poser une sixième créature hors des cases.
+      if (!placesLibresChamp(duel, cote)) {
+        camp.retoursProgrammes.push({ ...retour, toursRestants: 1 });
+        duel.log.push(`Le champ est plein : ${carte.name} attend une place libre pour revenir.`);
+        continue;
+      }
       camp.cimetiere.splice(indexCimetiere, 1);
       const entite = creerEntiteCreature(carte);
       camp.creatures.push(entite);

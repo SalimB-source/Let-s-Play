@@ -110,6 +110,15 @@ assert.match(page, /<CreatureSlots camp=\{duel\.sorcier\} cote="ennemi" \/>/,
   'le camp du sorcier dessine ses cinq emplacements');
 assert.match(page, /<CreatureSlots camp=\{duel\.joueur\} cote="joueur" \/>/,
   'le camp du joueur dessine ses cinq emplacements');
+// La carte jouée tombe dans sa case : la rangée et les cinq cases partagent la
+// même grille (aucune marge intérieure propre, même gouttière).
+const rangeeEssai = styles.match(/\.rpg-battle\[data-mode-mana="essai"\] \.card-row\s*\{[^}]*\}/)?.[0] ?? '';
+const casesEssai = styles.match(/\.rpg-creature-slots\s*\{[^}]*\}/)?.[0] ?? '';
+assert.match(rangeeEssai, /padding:\s*0;/, 'la rangée d’essai ne décale pas les cartes des cases');
+assert.match(casesEssai, /gap:\s*inherit;/, 'les cases reprennent la gouttière exacte des cartes');
+assert.match(casesEssai, /padding:\s*0;/, 'les cases n’ajoutent pas de marge intérieure');
+assert.match(page, /querySelectorAll\('\.rpg-creature-slot'\)/,
+  'le vol d’une carte vise la case libre, pas une position calculée');
 // Plateau plein : fenêtre du sacrifice (Sacrifier / Annuler), puis déchirement.
 assert.match(page, /Sacrifier une créature \?/, 'la sixième créature ouvre la fenêtre du sacrifice');
 assert.match(page, /rpg-sacrifice-choix__sacrifier/, 'le choix « Sacrifier » est proposé');
