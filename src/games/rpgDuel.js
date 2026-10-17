@@ -1,7 +1,8 @@
 /**
  * Le duel de sorciers — moteur « façon Magic » des règles v3.
  *
- * Règles : la partie commence avec une main de 5 cartes et une table vide.
+ * Règles : la partie commence avec une main de 5 cartes et une table vide
+ * (3 cartes dans le mode sans terrains, voir `rpgManaEssai.js`).
  * Les terrains produisent du mana coloré, les créatures ont le mal
  * d'invocation, les attaquants sont déclarés avant le combat et le défenseur
  * choisit ses bloqueurs. Les magies rapides ouvrent une fenêtre de réponse.
@@ -34,7 +35,14 @@ import {
   choisirCouleurManaIA,
   couleurEngagement,
 } from './rpgAI.js';
-import { RPG_MANA_ESSAI_CARTES_EXCLUES, RPG_MANA_ESSAI_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
+import {
+  RPG_MANA_ESSAI_CARTES_EXCLUES,
+  RPG_MANA_ESSAI_CREATURES_MAX,
+  RPG_MANA_ESSAI_MAIN_DEPART,
+  RPG_MANA_ESSAI_MAIN_MAX,
+  RPG_MANA_ESSAI_MAX,
+  RPG_MODE_MANA_ESSAI,
+} from './rpgManaEssai.js';
 
 /* Tout le monde part à 25 PV : le joueur comme chaque sorcier adverse. La
  * puissance d'un étage du mode Histoire ne gonfle plus les PV (bonus à 0) —
@@ -189,7 +197,10 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     log: [],
   };
   hasardParDuel.set(duel, rng);
-  for (let i = 0; i < RPG_MAIN_DEPART; i += 1) {
+  // Mode sans terrains : main de départ réduite à trois cartes. Le mode
+  // classique conserve sa main historique de cinq cartes.
+  const mainDepart = essaiMana ? RPG_MANA_ESSAI_MAIN_DEPART : RPG_MAIN_DEPART;
+  for (let i = 0; i < mainDepart; i += 1) {
     rpgPiocher(duel, 'joueur');
     rpgPiocher(duel, 'sorcier');
   }
@@ -273,6 +284,36 @@ export function rpgDefausserCarte(duel, cote = 'joueur', indexOuCarteId = null) 
     }
   }
   return { ok: true, carteId };
+}
+
+/** Cartes à défausser en fin de tour dans le mode sans terrains : au-delà de
+ * cinq cartes en main, l'excédent part au cimetière. Hors essai, aucune limite
+ * de fin de tour ne s'applique (la main classique n'est pas plafonnée ici). */
+export function rpgExcesMainFinDeTour(duel, cote) {
+  if (duel?.modeMana !== RPG_MODE_MANA_ESSAI) return 0;
+  const camp = duel?.[cote];
+  if (!camp) return 0;
+  return Math.max(0, camp.main.length - RPG_MANA_ESSAI_MAIN_MAX);
+}
+
+/**
+ * Ouvre la défausse de fin de tour du mode sans terrains : le camp désigné
+ * doit se séparer de son excédent de main (voir `rpgDefausserCarte`, qui
+ * referme l'attente carte après carte). L'interface du joueur s'en sert pour
+ * laisser CHOSIR les cartes défaussées avant que le tour ne se ferme ;
+ * `rpgFinDeTour`, lui, défausse d'office (choix de l'IA) ce qui resterait.
+ *
+ * @returns {number} le nombre de cartes à défausser (0 = rien à ouvrir)
+ */
+export function rpgPreparerDefausseFinDeTour(duel, cote) {
+  const exces = rpgExcesMainFinDeTour(duel, cote);
+  if (!exces) return 0;
+  if (duel.defausseEnAttente?.cote === cote && duel.defausseEnAttente.restant > 0) {
+    return duel.defausseEnAttente.restant;
+  }
+  duel.defausseEnAttente = { cote, restant: exces, sourceCarteId: null, motif: 'fin-de-tour' };
+  duel.log.push(`${cote === 'joueur' ? 'Vous avez' : 'Le sorcier a'} ${duel[cote].main.length} cartes en main : ${exces} carte${exces > 1 ? 's' : ''} à défausser pour redescendre à ${RPG_MANA_ESSAI_MAIN_MAX}.`);
+  return exces;
 }
 
 /** Le mulligan est ouvert tant que la partie n'a pas commencé : table vide et
@@ -1791,6 +1832,26 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
   return true;
 }
 
+/**
+ * Sacrifice consenti du mode sans terrains : une créature du camp quitte le
+ * plateau pour le cimetière afin de libérer l'un des cinq emplacements. C'est
+ * une vraie destruction — armes détachées au cimetière, capacité de
+ * destruction et honneur déclenchés — mais la Tenacité ne peut pas la refuser :
+ * le sacrifice est un choix, pas une blessure.
+ */
+export function rpgSacrifierCreature(duel, cote, entiteId) {
+  if (duel?.modeMana !== RPG_MODE_MANA_ESSAI) return { ok: false, raison: 'mode' };
+  const camp = duel?.[cote];
+  const entite = camp?.creatures.find((candidate) => candidate.id === entiteId);
+  if (!entite) return { ok: false, raison: 'absente' };
+  duel.log.push(`${cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${entite.name} pour libérer un emplacement.`);
+  entite.tenaciteDisponible = false;
+  enterrer(duel, cote, entite);
+  rafraichirAuras(duel);
+  rpgActionsEtat(duel);
+  return { ok: true, entite, carteId: entite.carteId };
+}
+
 /** Retire une créature morte, puis déclenche sa capacité de destruction. */
 function enterrer(duel, cote, entite, sourceElements = []) {
   // Tenacité : la destruction est refusée une fois — la créature survit et il
@@ -1943,11 +2004,26 @@ export function arriveeACibleLegale(duel, cote, carte) {
  * arrivée qui ne désigne rien (ou qui n'a plus de cible légale) se résout, elle,
  * dans les deux cas avec la pose.
  */
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeEntiteId = null } = {}) {
   const camp = duel[cote];
   const carte = duelCardById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
+  // Mode sans terrains : cinq emplacements par camp, pas un de plus. Une
+  // sixième créature exige le sacrifice d'une créature déjà en jeu
+  // (`sacrificeEntiteId`, désignée par l'interface après confirmation du
+  // joueur, ou par l'IA du sorcier) ; sans sacrifice désigné, la pose est
+  // refusée et ni le mana ni la carte ne bougent.
+  const plateauPlein = duel.modeMana === RPG_MODE_MANA_ESSAI
+    && camp.creatures.length >= RPG_MANA_ESSAI_CREATURES_MAX;
+  let sacrifice = null;
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI && sacrificeEntiteId) {
+    sacrifice = camp.creatures.find((entite) => entite.id === sacrificeEntiteId) ?? null;
+    if (!sacrifice) return { ok: false, raison: 'sacrifice' };
+    if (!plateauPlein) return { ok: false, raison: 'sacrifice-inutile' };
+  } else if (plateauPlein) {
+    return { ok: false, raison: 'plateau-plein' };
+  }
   if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
     // Une arrivée qui désigne une créature (duel du Cavalier, lance de givre de
     // la Valkyrie, gueule du Bakunawa) exige sa cible tant qu'il reste une
@@ -1999,8 +2075,21 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
+  // Le sacrifice tombe AVANT l'entrée en jeu : la créature sacrifiée est déjà
+  // au cimetière quand la nouvelle prend sa place — au même indice, pour que
+  // la carte posée occupe l'emplacement libéré. Si le sorcier a contré la
+  // créature plus haut, on n'arrive jamais ici : rien n'a été sacrifié.
+  let emplacement = camp.creatures.length;
+  if (sacrifice) {
+    emplacement = Math.max(0, camp.creatures.findIndex((entite) => entite.id === sacrifice.id));
+    const resSacrifice = rpgSacrifierCreature(duel, cote, sacrifice.id);
+    if (!resSacrifice.ok) return { ok: false, raison: 'sacrifice' };
+    // La capacité de destruction du sacrifié a pu déplacer la table (jetons,
+    // renvois) : l'emplacement libéré se borne à la rangée telle qu'elle est.
+    emplacement = Math.min(emplacement, camp.creatures.length);
+  }
   const entite = creerEntiteCreature(carte);
-  camp.creatures.push(entite);
+  camp.creatures.splice(emplacement, 0, entite);
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
   if (entite.protection) {
     const couleur = ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre;
@@ -2017,7 +2106,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId };
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
-      return { ok: true, entite, arriveeEnAttente: true };
+      return { ok: true, entite, arriveeEnAttente: true, sacrificeEntiteId: sacrifice?.id ?? null };
     }
     // Seuls les effets d'arrivée qui **désignent** une cible reçoivent un
     // `cibleId` : les autres (renfort de camp, pioche, création de jetons…)
@@ -2030,7 +2119,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
-  return { ok: true, entite };
+  return { ok: true, entite, sacrificeEntiteId: sacrifice?.id ?? null };
 }
 
 /**
@@ -3130,6 +3219,18 @@ export function rpgFinDeTour(duel) {
       if (entite.blocageForce?.portee === 'tour') entite.blocageForce = null;
     }
   }
+  // Mode sans terrains : main plafonnée à cinq cartes en fin de tour. Ce qui
+  // dépasse est défaussé ici — choisi par le joueur via l'interface quand il
+  // a ouvert la défausse, défaussé d'office (lecture de l'IA) sinon, et
+  // toujours pour le sorcier, qui n'a personne pour choisir à sa place.
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI) {
+    rpgPreparerDefausseFinDeTour(duel, duel.tour);
+    while (duel.defausseEnAttente?.cote === duel.tour && duel.defausseEnAttente.restant > 0
+      && duel[duel.tour].main.length) {
+      rpgDefausserCarte(duel, duel.tour);
+    }
+    if (duel.defausseEnAttente?.cote === duel.tour) duel.defausseEnAttente = null;
+  }
   duel.tour = autre(duel.tour);
   duel.phase = 'debut';
   // Nouveau tour, nouvelle phase d'attaque : le camp qui vient de jouer a
@@ -3228,10 +3329,20 @@ export function rpgSorcierResoudreAnnonce(duel) {
   if (!annonce) return { ok: false, raison: 'aucune-annonce' };
   duel.annonce = null;
   duel.fenetreReponse = false;
+  // Plateau plein (mode sans terrains) : le sorcier sacrifie sa créature la
+  // plus faible — la moindre force totale d'abord, la plus frêle ensuite — pour poser
+  // celle qu'il vient d'annoncer, comme le joueur le ferait après confirmation.
+  let sacrificeEntiteId = null;
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI && duelCardById(annonce.carteId)
+    && duel.sorcier.creatures.length >= RPG_MANA_ESSAI_CREATURES_MAX) {
+    sacrificeEntiteId = [...duel.sorcier.creatures]
+      .sort((a, b) => ((a.atk ?? 0) + (a.pv ?? 0)) - ((b.atk ?? 0) + (b.pv ?? 0))
+        || (a.pv ?? 0) - (b.pv ?? 0))[0]?.id ?? null;
+  }
   const res = armeById(annonce.carteId)
     ? rpgJouerArme(duel, 'sorcier', annonce.carteId, annonce.cibleId)
     : duelCardById(annonce.carteId)
-      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
+      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId, { sacrificeEntiteId })
       : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId, annonce.cibleAllieeId ?? null);
   rpgActionsEtat(duel);
   return { ...res, carteId: annonce.carteId };

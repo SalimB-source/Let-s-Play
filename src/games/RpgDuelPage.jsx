@@ -24,7 +24,9 @@ import {
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import {
+  RPG_MANA_ESSAI_CREATURES_MAX,
   RPG_MANA_ESSAI_DECKS,
+  RPG_MANA_ESSAI_MAIN_MAX,
   RPG_MANA_ESSAI_MAX,
   RPG_MODE_MANA_ESSAI,
   adversaireManaEssai,
@@ -108,6 +110,8 @@ import {
   rpgChoisirBloqueurs,
   rpgCiblesAttaqueRapide,
   rpgDefausserCarte,
+  rpgExcesMainFinDeTour,
+  rpgPreparerDefausseFinDeTour,
   rpgChoisirCouleurMana,
   rpgDemarrerManaEssai,
   rpgEngagerTerrain,
@@ -535,6 +539,34 @@ export function FluxManaTrack({ camp, cote }) {
   );
 }
 
+/** Les cinq emplacements de créatures du mode sans terrains, dessinés sous
+ * la rangée de chaque camp : une case par créature jouable, pleine quand elle
+ * est occupée, en pointillés quand elle attend encore sa créature. */
+export function CreatureSlots({ camp, cote }) {
+  const occupees = Math.min(RPG_MANA_ESSAI_CREATURES_MAX, camp.creatures?.length ?? 0);
+  return (
+    <div
+      className={`rpg-creature-slots rpg-creature-slots--${cote}`}
+      data-creature-slots={RPG_MANA_ESSAI_CREATURES_MAX}
+      data-creature-slots-occupes={occupees}
+      aria-label={`Emplacements de créatures ${cote === 'joueur' ? 'de votre camp' : 'du sorcier'} : ${occupees} sur ${RPG_MANA_ESSAI_CREATURES_MAX} occupés`}
+      aria-hidden="false"
+    >
+      {Array.from({ length: RPG_MANA_ESSAI_CREATURES_MAX }, (_, index) => (
+        <span
+          key={index}
+          className={`rpg-creature-slot${index < occupees ? ' is-occupied' : ' is-empty'}`}
+          data-creature-slot={index + 1}
+          data-creature-slot-occupe={index < occupees ? 'true' : 'false'}
+          aria-hidden="true"
+        >
+          <span className="rpg-creature-slot__numero">{index + 1}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function profileNameFallback(user) {
   const metadata = user?.user_metadata ?? {};
   const candidates = [
@@ -903,6 +935,7 @@ export function TableCard({
   selected,
   blocking,
   canTarget,
+  sacrificeTarget = false,
   spellTarget = false,
   coupRapideCible = false,
   declaredAttacker = false,
@@ -1031,6 +1064,7 @@ export function TableCard({
         malInvocation ? 'is-summoning-sick' : '',
         blessee ? 'is-wounded' : '',
         canTarget ? 'is-ciblable' : '',
+        sacrificeTarget ? 'is-sacrifice-target' : '',
         spellTarget ? 'is-spell-target' : '',
         coupRapideCible ? 'is-coup-rapide-cible' : '',
         canDragBlocker ? 'is-blocker-draggable' : '',
@@ -1062,7 +1096,7 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
@@ -2165,7 +2199,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <section className="rpg-flux-menu" aria-label="Essayer le mana sans terrains">
                   <span className="rpg-flux-menu__eyebrow">LABORATOIRE · DUEL LIBRE SANS RÉCOMPENSE</span>
                   <h3>Et si le mana remplaçait les terrains ?</h3>
-                  <p>30 cartes à jouer, aucun terrain à piocher. Gagnez un mana coloré à chaque tour jusqu’à 10 ; choisissez sa couleur si votre deck en a plusieurs.</p>
+                  <p>30 cartes à jouer, aucun terrain à piocher. Gagnez un mana coloré à chaque tour jusqu’à 10 ; choisissez sa couleur si votre deck en a plusieurs. Main de départ : 3 cartes, cinq créatures au plus par camp (la sixième demande un sacrifice) et cinq cartes en main au maximum en fin de tour.</p>
                   <div className="rpg-flux-menu__decks">
                     {RPG_MANA_ESSAI_DECKS.map((deck) => (
                       <button key={deck.id} type="button" onClick={() => { play('select'); onStartManaEssai(deck.id); }}>
@@ -3255,6 +3289,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
   const [confirmationSort, setConfirmationSort] = useState(null);
   const [carteDefausseSelectionnee, setCarteDefausseSelectionnee] = useState(null);
+  // Sacrifice du mode sans terrains : `sacrificeDemande` = la fenêtre « plateau
+  // plein » (Sacrifier / Annuler), `sacrificeCible` = la créature à désigner
+  // sur la table, `sacrificeFx` = la carte en train de se déchirer à sa place.
+  const [sacrificeDemande, setSacrificeDemande] = useState(null);
+  const [sacrificeCible, setSacrificeCible] = useState(null);
+  const [sacrificeFx, setSacrificeFx] = useState(null);
+  const sacrificeEnCoursRef = useRef(null);
+  // Fin de tour suspendue à la défausse de fin de tour (main > 5, mode essai) :
+  // le tour ne se ferme qu'une fois les cartes choisies défaussées.
+  const finTourApresDefausseRef = useRef(false);
   const [annonceApercueFermeePour, setAnnonceApercueFermeePour] = useState(null);
   // Mulligan : à l'ouverture du duel, la main de départ se découvre en grand
   // et le joueur choisit les cartes qu'il renvoie dans le paquet. `null` dès
@@ -3523,6 +3567,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     clicApresGlisserBloqueurRef.current = null;
     setCibleEnCours(null);
     setConfirmationSort(null);
+    setSacrificeDemande(null);
+    setSacrificeCible(null);
+    setSacrificeFx(null);
+    sacrificeEnCoursRef.current = null;
+    finTourApresDefausseRef.current = false;
+    setCarteDefausseSelectionnee(null);
     setApercuSurvol(null);
     appuiLongRef.current?.();
     appuiLongRef.current = null;
@@ -4154,6 +4204,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     && duel.joueur.main[carteDefausseSelectionnee.handIndex] === carteDefausseSelectionnee.carteId);
   const indicateurTour = vainqueur
     ? 'DUEL TERMINÉ'
+    : sacrificeDemande
+      ? 'PLATEAU PLEIN · SACRIFICE ?'
+    : sacrificeCible
+      ? 'À VOUS · SACRIFICE'
+    : sacrificeFx
+      ? 'SACRIFICE…'
     : choixManaEssaiOuvert
       ? 'CHOISISSEZ UN MANA'
     : defausseOuverte
@@ -4476,6 +4532,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // ne quitte la main — ni clic, ni glisser, ni sort en réponse.
     if (mulliganOuvert) return false;
     if (choixManaEssaiOuvert) return false;
+    if (sacrificeDemande || sacrificeCible || sacrificeFx) return false;
     if (defausseOuverte) return false;
     // Un contre sans annonce à contrer n'est pas jouable : l'allumer enfermait
     // le joueur dans une confirmation qui ne menait à rien.
@@ -4778,20 +4835,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * referme l'attente (`resoudreCible`). Une arrivée qui ne désigne rien —
    * pioche, jetons, dégâts de zone — se résout avec la pose, comme avant.
    */
-  const finaliserPoseCreature = (carteId) => {
+  const finaliserPoseCreature = (carteId, sacrificeEntiteId = null) => {
     const carte = cardById(carteId);
     carteCibleeHandIndexRef.current = null;
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const res = rpgJouerCreature(duel, 'joueur', carteId, null, { cibleDifferee: true });
+    const res = rpgJouerCreature(duel, 'joueur', carteId, null, { cibleDifferee: true, sacrificeEntiteId });
     if (res.ok && res.contre && res.parIA) {
       // Le sorcier contre la créature : elle n'entre pas en jeu.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       annoncerContreSorcier(res);
     } else if (res.ok) {
       conserverAnnulation(etatAvantAction);
-      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      // La créature sacrifiée a déjà eu son animation de déchirement : pas de
+      // second fantôme de destruction pour elle.
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
+        res.sacrificeEntiteId ? [res.sacrificeEntiteId] : []);
       jouerSfx('card_place');
       const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
@@ -4810,6 +4870,47 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       noterEvenementDuel({ type: 'creature-invoquee', cardId: carteId });
       noterEvenementDuel({ type: 'carte-jouee', cardId: carteId });
     }
+  };
+
+  /** Fenêtre « plateau plein » : le joueur vient d'essayer de jouer une
+   * sixième créature. « Annuler » rend la main sans rien payer ; « Sacrifier »
+   * ouvre la désignation de la créature à déchirer sur la table. */
+  const annulerSacrifice = () => {
+    setSacrificeDemande(null);
+    setSacrificeCible(null);
+    jouerSfx('annuler');
+    force();
+  };
+  const confirmerSacrifice = () => {
+    if (!sacrificeDemande) return;
+    setSacrificeCible(sacrificeDemande);
+    setSacrificeDemande(null);
+    jouerSfx('select');
+    force();
+  };
+  /** La créature à sacrifier est désignée : sa carte se déchire à sa place,
+   * PUIS seulement la nouvelle créature est posée dans l'emplacement libéré
+   * (le moteur sacrifie et pose d'un seul geste, à ce moment-là). */
+  const dechirerEtPoser = (entite) => {
+    const demande = sacrificeCible;
+    if (!demande || sacrificeEnCoursRef.current) return;
+    const instantane = prendreInstantaneChamp().find((carte) => carte.entityId === entite.id);
+    setSacrificeCible(null);
+    sacrificeEnCoursRef.current = { carteId: demande.carteId, sacrificeEntiteId: entite.id };
+    if (instantane) {
+      const token = ++sequenceAnimationRef.current;
+      setSacrificeFx({ ...instantane, token, effectId: `dechirement-${token}-${entite.id}` });
+    }
+    jouerSfx('flame_gust');
+    const duree = animationsReduites() ? 60 : 860;
+    later(() => {
+      const enCours = sacrificeEnCoursRef.current;
+      sacrificeEnCoursRef.current = null;
+      setSacrificeFx(null);
+      if (enCours) finaliserPoseCreature(enCours.carteId, enCours.sacrificeEntiteId);
+      force();
+    }, duree);
+    force();
   };
 
   const equiperArme = (carteId, cibleId) => {
@@ -4958,6 +5059,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (carte.kind !== 'terrain') { unlockSfx(); }
     const index = Number.isInteger(handIndex) && duel.joueur.main[handIndex] === carteId
       ? handIndex : duel.joueur.main.indexOf(carteId);
+    // Sixième créature du mode sans terrains : le plateau est plein (5/5).
+    // Avant tout vol et tout paiement, une fenêtre demande si l'on veut
+    // sacrifier une créature — « Annuler » ne coûte rien, « Sacrifier »
+    // ouvre la désignation sur la table (voir `dechirerEtPoser`).
+    if (duel.modeMana === RPG_MODE_MANA_ESSAI
+      && (carte.kind === 'creature' || carte.kind === 'hero')
+      && duel.joueur.creatures.length >= RPG_MANA_ESSAI_CREATURES_MAX
+      && !sacrificeDemande && !sacrificeCible && !sacrificeEnCoursRef.current) {
+      setSacrificeDemande({ carteId, handIndex: index });
+      jouerSfx('select');
+      force();
+      return;
+    }
     if (carte.kind === 'terrain') {
       demarrerVolCarte(carte, index, () => poserTerrain(carteId));
     } else if (carte.kind === 'magie') {
@@ -4992,6 +5106,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const res = rpgDefausserCarte(duel, 'joueur', Number.isInteger(handIndex) ? handIndex : carteId);
     setCarteDefausseSelectionnee(null);
     jouerSfx(res.ok ? 'annuler' : 'erreur');
+    // Défausse de fin de tour terminée (main redescendue à cinq) : le tour
+    // suspendu reprend et se ferme pour de bon.
+    if (res.ok && finTourApresDefausseRef.current && !duel.defausseEnAttente) {
+      finTourApresDefausseRef.current = false;
+      force();
+      finDuTour();
+      return;
+    }
     force();
   };
 
@@ -5005,6 +5127,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const carte = cardById(carteId);
     if (!carte) return;
     if (carteEnVol || cibleEnCours || cibleAttaqueEnCours) return;
+    // Pendant la demande ou la désignation d'un sacrifice, la main attend.
+    if (sacrificeDemande || sacrificeCible || sacrificeEnCoursRef.current) return;
     if (defausseOuverte) {
       setCarteDefausseSelectionnee({ carteId, handIndex, attente: duel.defausseEnAttente });
       jouerSfx('select');
@@ -5138,8 +5262,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const cliquerCreatureJoueur = (entite) => {
+    // Le déchirement est en cours : la table attend la pose qui le suit.
+    if (sacrificeEnCoursRef.current) return;
     if (clicApresGlisserBloqueurRef.current === entite.id) {
       clicApresGlisserBloqueurRef.current = null;
+      return;
+    }
+    // Désignation du sacrifice (plateau plein, mode sans terrains) : le clic
+    // sur une de vos créatures lance son déchirement, puis la pose.
+    if (sacrificeCible) {
+      dechirerEtPoser(entite);
       return;
     }
     if (cibleEnCours) {
@@ -5532,6 +5664,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const finDuTour = () => {
     if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
     if (choixManaEssaiOuvert) { jouerSfx('erreur'); return; }
+    if (sacrificeDemande || sacrificeCible || sacrificeEnCoursRef.current) { jouerSfx('erreur'); return; }
+    // Mode sans terrains : plus de cinq cartes en main à la fin du tour ? Le
+    // tour se suspend, le joueur CHOISIT ses défausses (l'attente du moteur),
+    // et `confirmerDefausse` relance cette fermeture quand la main est à cinq.
+    // Une défausse d'EFFET déjà en attente (le Butin d'un Chien du guet) ne
+    // suspend rien : elle garde son comportement historique, refermée
+    // d'office par la fermeture du tour.
+    const defausseEffetEnAttente = duel.defausseEnAttente?.cote === 'joueur'
+      && duel.defausseEnAttente.restant > 0
+      && duel.defausseEnAttente.motif !== 'fin-de-tour';
+    if (!defausseEffetEnAttente && rpgPreparerDefausseFinDeTour(duel, 'joueur') > 0) {
+      finTourApresDefausseRef.current = true;
+      setCarteDefausseSelectionnee(null);
+      jouerSfx('select');
+      force();
+      return;
+    }
     invaliderAnnulation();
     setPhase(false);
     setAttaquants([]);
@@ -5878,7 +6027,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
       <div
         ref={tableRef}
-        inert={viewport.portrait || mulliganOuvert || choixManaEssaiOuvert ? true : undefined}
+        inert={viewport.portrait || mulliganOuvert || choixManaEssaiOuvert || sacrificeDemande ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
         className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
@@ -6038,6 +6187,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
         <div className="card-row card-row--ennemi" aria-label="Champ du sorcier"
           data-tutorial-target={tutorielActif && etapeTutorielId === 'tour-adverse' ? 'enemy-field' : undefined}>
+          {duel.modeMana === RPG_MODE_MANA_ESSAI && <CreatureSlots camp={duel.sorcier} cote="ennemi" />}
           {duel.sorcier.creatures.length ? campEnnemi.piles.map((pile) => {
             const cle = clePile('ennemi', pile.carteId);
             const deployee = pileDeployee('ennemi', pile);
@@ -6111,6 +6261,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
         <div className="card-row card-row--equipe" aria-label="Votre champ de bataille"
           data-tutorial-target={tutorielActif && etapeTutorielId === 'termine' ? 'player-field' : undefined}>
+          {duel.modeMana === RPG_MODE_MANA_ESSAI && <CreatureSlots camp={duel.joueur} cote="joueur" />}
           {duel.joueur.creatures.length ? campJoueur.piles.map((pile) => {
             const cle = clePile('joueur', pile.carteId);
             const deployee = pileDeployee('joueur', pile);
@@ -6146,6 +6297,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                           && entite.id !== duel.arriveeEnAttente?.entiteId
                           && !rpgEstProtegee(entite, cardColors(carteCiblee)))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige')))}
+                      sacrificeTarget={Boolean(sacrificeCible)}
                       activationDispo={Boolean(monTour && !phase && !cibleEnCours && !cibleAttaqueEnCours
                         && !combatEntrant && !reponseActive
                         && (activationEnCours === entite.id || rpgPeutActiverCapacite(duel, 'joueur', entite.id)))}
@@ -6222,6 +6374,36 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             </div>
           );
         })}
+
+        {/* Déchirement du sacrifice : la carte désignée se fend en deux
+            moitiés à son emplacement, AVANT que la nouvelle créature ne soit
+            posée à sa place (`dechirerEtPoser` enchaîne les deux temps). */}
+        {sacrificeFx && (
+          <div
+            key={sacrificeFx.effectId}
+            className={`rpg-card-tear-fx ${cardFrameClass(cardById(sacrificeFx.cardId))} ${cardMotifClass(cardById(sacrificeFx.cardId))}`}
+            data-rpg-tear-id={sacrificeFx.entityId}
+            data-sacrifice-fx="dechirement"
+            role="status"
+            aria-label={`${sacrificeFx.name} se déchire : sacrifice en cours.`}
+            style={{
+              ...cardFrameStyle(cardById(sacrificeFx.cardId)),
+              left: `${sacrificeFx.left}px`,
+              top: `${sacrificeFx.top}px`,
+              width: `${sacrificeFx.width}px`,
+              height: `${sacrificeFx.height}px`,
+              '--rpg-fx-rotation': `${sacrificeFx.angle}rad`,
+            }}
+          >
+            <span className="rpg-card-tear-fx__half rpg-card-tear-fx__half--gauche" aria-hidden="true">
+              <img src={cardArt(sacrificeFx.cardId)} alt="" />
+            </span>
+            <span className="rpg-card-tear-fx__half rpg-card-tear-fx__half--droite" aria-hidden="true">
+              <img src={cardArt(sacrificeFx.cardId)} alt="" />
+            </span>
+            <b aria-hidden="true">{sacrificeFx.name}</b>
+          </div>
+        )}
 
         {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
           <FluxManaTrack camp={duel.joueur} cote="joueur" />
@@ -6405,9 +6587,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 {defausseOuverte && (
                   <>
                     <span className="rpg-discard-prompt" role="status" aria-live="polite">
-                      {selectionDefausseValide
-                        ? `Carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · ${duel.defausseEnAttente.restant} à défausser.`
-                        : `Choisissez une carte de votre main, puis validez la défausse (${duel.defausseEnAttente.restant}).`}
+                      {duel.defausseEnAttente.motif === 'fin-de-tour'
+                        ? selectionDefausseValide
+                          ? `Fin du tour : carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · encore ${duel.defausseEnAttente.restant} à défausser pour redescendre à ${RPG_MANA_ESSAI_MAIN_MAX} cartes.`
+                          : `Fin du tour : vous avez plus de ${RPG_MANA_ESSAI_MAIN_MAX} cartes en main. Choisissez une carte, puis validez la défausse (${duel.defausseEnAttente.restant} restante${duel.defausseEnAttente.restant > 1 ? 's' : ''}).`
+                        : selectionDefausseValide
+                          ? `Carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · ${duel.defausseEnAttente.restant} à défausser.`
+                          : `Choisissez une carte de votre main, puis validez la défausse (${duel.defausseEnAttente.restant}).`}
                     </span>
                     {selectionDefausseValide && (
                       <button
@@ -6767,6 +6953,56 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         )}
       </div>
+      {sacrificeDemande && !viewport.portrait && (
+        <div className="rpg-sacrifice-choix" role="dialog" aria-modal="true" aria-labelledby="rpg-sacrifice-titre" aria-describedby="rpg-sacrifice-texte">
+          <div className="rpg-sacrifice-choix__panel">
+            <p className="rpg-sacrifice-choix__eyebrow">Plateau plein · {duel.joueur.creatures.length}/{RPG_MANA_ESSAI_CREATURES_MAX} créatures</p>
+            <h2 id="rpg-sacrifice-titre">Sacrifier une créature ?</h2>
+            <p id="rpg-sacrifice-texte">
+              Vos {RPG_MANA_ESSAI_CREATURES_MAX} emplacements sont occupés. Pour poser{' '}
+              <strong>{cardById(sacrificeDemande.carteId)?.name ?? 'cette créature'}</strong>, une de vos
+              créatures doit être sacrifiée : vous choisirez laquelle sur la table, et sa carte se
+              déchirera avant que la nouvelle ne prenne sa place.
+            </p>
+            <div className="rpg-sacrifice-choix__actions">
+              <button
+                type="button"
+                autoFocus
+                className="rpg-btn rpg-btn--primary rpg-sacrifice-choix__sacrifier"
+                onClick={confirmerSacrifice}
+                aria-label="Sacrifier : choisir une créature à sacrifier sur la table"
+              >
+                ✂ Sacrifier
+              </button>
+              <button
+                type="button"
+                className="rpg-btn rpg-btn--ghost rpg-sacrifice-choix__annuler"
+                onClick={annulerSacrifice}
+                aria-label="Annuler : garder la carte en main sans rien sacrifier"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {sacrificeCible && !viewport.portrait && (
+        <div className="rpg-sacrifice-cible" role="status" aria-live="polite">
+          <span>
+            Quelle créature sacrifier pour poser{' '}
+            <strong>{cardById(sacrificeCible.carteId)?.name ?? 'cette créature'}</strong> ?
+            Cliquez une de vos créatures sur la table.
+          </span>
+          <button
+            type="button"
+            className="rpg-btn rpg-btn--ghost rpg-sacrifice-cible__annuler"
+            onClick={annulerSacrifice}
+            aria-label="Annuler le sacrifice"
+          >
+            Annuler
+          </button>
+        </div>
+      )}
       {choixManaEssaiOuvert && !viewport.portrait && (
         <div className="rpg-flux-choix" role="dialog" aria-modal="true" aria-labelledby="rpg-flux-choix-titre">
           <div className="rpg-flux-choix__panel">

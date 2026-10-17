@@ -524,7 +524,7 @@ assert.match(battlePage, /demarrerVolCarte\(carte, index, \(\) => poserCarte\(ca
   'la carte d’une créature vole vers la table dès qu’elle est jouée : la pose passe avant la cible');
 assert.match(battlePage, /const poserCarte = \(carteId\) => \{[\s\S]*?finaliserPoseCreature\(carteId\);\s*\};/,
   'la créature arrivée au bout de son vol se pose sans relancer une seconde animation');
-assert.match(battlePage, /rpgJouerCreature\(duel, 'joueur', carteId, null, \{ cibleDifferee: true \}\)[\s\S]*?if \(res\.arriveeEnAttente\) setCibleEnCours\(carteId\);/,
+assert.match(battlePage, /rpgJouerCreature\(duel, 'joueur', carteId, null, \{ cibleDifferee: true, sacrificeEntiteId \}\)[\s\S]*?if \(res\.arriveeEnAttente\) setCibleEnCours\(carteId\);/,
   'le Cavalier entre en jeu, puis la page ouvre la désignation de sa victime');
 assert.match(battlePage, /if \(arriveeCiblePortee\(carteSource\) && duel\.arriveeEnAttente\?\.carteId === cibleEnCours\) \{[\s\S]*?rpgResoudreArriveeCiblee\(duel, 'joueur', entite\.id\)/,
   'la cible cliquée referme l’attente ouverte à la pose, sans reposer la créature');
