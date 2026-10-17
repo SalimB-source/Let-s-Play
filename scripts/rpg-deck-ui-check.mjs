@@ -173,6 +173,12 @@ assert.match(readSource('../src/games/RpgDeckAtelier.jsx'), /carteReveleePar/, '
 const atelierSource = readSource('../src/games/RpgDeckAtelier.jsx');
 const atelierCss = stripComments(readSource('../src/games/rpg-deck-atelier.css'));
 const battleCss = stripComments(readSource('../src/games/rpg-battle.css'));
+const atelierCardOverlay = atelierCss.match(/\.rpg-atelier__carte-art::after\s*\{([^}]*)\}/)?.[1] ?? '';
+assert.ok(atelierCardOverlay, 'le voile des illustrations de l’atelier est défini');
+assert.doesNotMatch(atelierCardOverlay, /radial-gradient|conic-gradient|color-mix/,
+  'les cartes de l’atelier n’ont plus de halo multicolore');
+assert.match(atelierCardOverlay, /linear-gradient\(0deg, rgba\(5, 4, 7, \.55\)/,
+  'le voile sombre de lisibilité reste sous les noms des cartes');
 assert.equal((atelierSource.match(/data-card-id=/g) ?? []).length, 2,
   'les deux listes de l’atelier — bibliothèque et deck en cours — portent `data-card-id`');
 assert.match(pageSource, /data-scene="menu" onPointerDown=\{demarrerAppuiLongCarte\}/,
