@@ -4166,19 +4166,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       timersRef.current.push(timer);
     });
   }, [duel, duel?.joueur.deck.length, duel?.joueur.main.length, duel?.sorcier.deck.length, duel?.sorcier.main.length]);
-  // Mobile, table d'essai : la jauge de mana du joueur se range juste sous sa
-  // plaque, elle-même posée sous la ligne de séparation du plateau. La hauteur
-  // réelle de la plaque (qui varie selon l'écran) est publiée en variable CSS.
+  // Mobile, table d'essai : chaque plaque se pose contre la ligne de séparation
+  // du plateau (le joueur dessous, le sorcier dessus) et sa jauge de mana la
+  // suit de l'autre côté. La hauteur réelle des plaques (qui varie selon
+  // l'écran) est publiée en variables CSS.
   const essaiTactile = Boolean(duel && viewport.mobile && duel.modeMana === RPG_MODE_MANA_ESSAI);
   useLayoutEffect(() => {
     const table = tableRef.current;
-    const plaque = table?.querySelector('.rpg-wizard-plate--joueur');
-    if (!essaiTactile || !table || !plaque) return undefined;
-    const publier = () => table.style.setProperty('--rpg-plaque-joueur-h', `${plaque.offsetHeight}px`);
+    if (!essaiTactile || !table) return undefined;
+    const plaques = [
+      [table.querySelector('.rpg-wizard-plate--joueur'), '--rpg-plaque-joueur-h'],
+      [table.querySelector('.rpg-wizard-plate--ennemi'), '--rpg-plaque-ennemi-h'],
+    ].filter(([plaque]) => plaque);
+    if (!plaques.length) return undefined;
+    const publier = () => plaques.forEach(([plaque, variable]) => table.style.setProperty(variable, `${plaque.offsetHeight}px`));
     publier();
     if (typeof ResizeObserver !== 'function') return undefined;
     const observateur = new ResizeObserver(publier);
-    observateur.observe(plaque);
+    plaques.forEach(([plaque]) => observateur.observe(plaque));
     return () => observateur.disconnect();
   }, [essaiTactile]);
 

@@ -596,3 +596,48 @@
   width: 16px;
   height: 16px;
 }
+
+/* ── Mobile, table d'essai : le sorcier adverse en miroir ────────────────────
+   Sa plaque se pose juste AU-DESSUS de la ligne de séparation, sa jauge juste
+   au-dessus d'elle (même largeur, même épaisseur que celle du joueur), et la
+   capsule du compteur (« 0/0 ») au-dessus de la jauge, à droite. La hauteur
+   de la plaque est mesurée (`--rpg-plaque-ennemi-h`, voir RpgDuelPage). */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi {
+  grid-area: auto;
+  position: absolute;
+  top: auto;
+  bottom: calc(50% + 6px);
+  left: var(--rpg-touch-pad, 6px);
+  width: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset, 0px));
+  margin: 0;
+  box-sizing: border-box;
+  z-index: 3;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--ennemi {
+  grid-area: auto;
+  position: absolute;
+  top: auto;
+  bottom: calc(50% + 6px + var(--rpg-plaque-ennemi-h, 56px) + 8px);
+  left: var(--rpg-touch-pad, 6px);
+  width: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset, 0px));
+  min-height: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  z-index: 3;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__reserve {
+  top: auto;
+  bottom: calc(100% + 3px);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__bar {
+  padding: 7px 8px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__slot {
+  max-width: 22px;
+  font-size: 15px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__slot .rpg-emblem {
+  width: 16px;
+  height: 16px;
+}
