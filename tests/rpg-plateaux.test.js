@@ -12,6 +12,7 @@ import {
   RPG_PLATEAUX_PAR_COULEUR,
   RPG_PLATEAUX_PAR_DECK,
   RPG_PLATEAUX_VARIANTES_FANTAISISTES,
+  resoudrePlateauxDuDuel,
   tirerPlateauDuDuel,
   varianteFantaisisteDe,
 } from '../src/games/rpgPlateaux.js';
@@ -277,10 +278,21 @@ test('un deck joueur illisible ne cède pas le terrain au deck adverse si son ca
   assert.equal(tirage.motif, 'repli');
 });
 
-test('la page force le camp joueur en duel libre, mais conserve le tirage ailleurs', () => {
+test('la page découpe la table : chaque camp reçoit le plateau de son deck', () => {
   const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
   assert.match(page, /const modeLibre = !modeTutoriel && !etageCourant;/);
-  assert.match(page, /campImpose: modeLibre \? 'joueur' : null,/);
+  assert.match(page, /const resolutionPlateaux = resoudrePlateauxDuDuel\(\{/,
+    'la page résout un plateau par camp au lancement de la partie');
+  assert.match(page, /const plateau = resolutionPlateaux\.joueur\.plateau;/,
+    'le plateau du joueur reste le principal (musique, décor 3D)');
+  assert.match(page, /setPlateauAdverseId\(resolutionPlateaux\.adversaire\.plateau\.id\)/,
+    'le plateau adverse est mémorisé pour la moitié haute de la table');
+  assert.match(page, /const plateauDecoupe = plateauAdverse\.id !== plateau\.id;/,
+    'la table n’est découpée que si les deux terrains diffèrent');
+  assert.match(page, /rpg-plateau-moitie--adverse/, 'la moitié haute porte la peinture adverse');
+  assert.match(page, /rpg-plateau-moitie--joueur/, 'la moitié basse porte la peinture du joueur');
+  assert.match(page, /enabled=\{decor3dVisible\}/,
+    'le décor 3D s’efface quand la table est découpée');
 });
 
 test('le tirage reste déterministe avec le rng du duel', () => {
@@ -429,5 +441,87 @@ test('avec l’option, un tirage hors bornes rend toujours un plateau valide', (
     const tirage = tirerPlateauDuDuel({ ...duel, rng: () => valeur });
     assert.ok(RPG_PLATEAUX.includes(tirage.plateau), `valeur ${String(valeur)} : plateau valide`);
     assert.equal(typeof tirage.variante, 'boolean', `valeur ${String(valeur)} : variante renseignée`);
+  }
+});
+
+// ── La table découpée : un plateau par camp ─────────────────────────────────
+
+test('chaque camp reçoit le plateau de son deck, le joueur en principal', () => {
+  const resolution = resoudrePlateauxDuDuel({
+    deckJoueur: 'veilleurs-du-desert', deckAdverse: 'cour-des-djinns', rng: () => 0.9,
+  });
+  assert.equal(resolution.joueur.plateau.id, 'erg-du-sahara', 'la moitié du joueur : le terrain de son deck');
+  assert.equal(resolution.joueur.motif, 'deck');
+  assert.equal(resolution.adversaire.plateau.id, 'table-des-heures', 'la moitié adverse : le terrain de son deck');
+  assert.equal(resolution.principal, resolution.joueur, 'le plateau du joueur pilote musique et décor 3D');
+  assert.equal(resolution.decouper, true, 'deux terrains différents : la table se découpe');
+  assert.equal(resolution.joueur.variante, false);
+  assert.equal(resolution.adversaire.variante, false);
+});
+
+test('deux decks du même terrain : la table reste d’un seul tenant', () => {
+  const resolution = resoudrePlateauxDuDuel({
+    deckJoueur: 'veilleurs-du-desert',
+    deckAdverse: ['desert', 'desert', 'chien-du-guet', 'fennec-des-decombres'],
+  });
+  assert.equal(resolution.joueur.plateau.id, 'erg-du-sahara');
+  assert.equal(resolution.adversaire.plateau.id, 'erg-du-sahara');
+  assert.equal(resolution.decouper, false, 'même terrain des deux côtés : aucune couture');
+});
+
+test('un deck illisible retombe sur la table d’origine dans sa moitié seulement', () => {
+  const resolution = resoudrePlateauxDuDuel({ deckJoueur: null, deckAdverse: 'maree-des-abysses' });
+  assert.equal(resolution.joueur.plateau.id, RPG_PLATEAU_DE_REPLI);
+  assert.equal(resolution.joueur.motif, 'repli');
+  assert.equal(resolution.adversaire.plateau.id, 'ruines-de-tipaza',
+    'le repli du joueur n’emprunte rien au terrain adverse');
+  assert.equal(resolution.decouper, true);
+  const muette = resoudrePlateauxDuDuel();
+  assert.equal(muette.joueur.plateau.id, RPG_PLATEAU_DE_REPLI);
+  assert.equal(muette.adversaire.plateau.id, RPG_PLATEAU_DE_REPLI);
+  assert.equal(muette.decouper, false, 'sans aucun deck lisible, la table d’origine pleine');
+});
+
+test('sans les variantes fantaisistes, la résolution ne consomme aucun tirage', () => {
+  let appels = 0;
+  resoudrePlateauxDuDuel({
+    deckJoueur: 'veilleurs-du-desert', deckAdverse: 'maree-des-abysses',
+    rng: () => { appels += 1; return 0.4; },
+  });
+  assert.equal(appels, 0, 'rien à départager : la suite du rng du duel reste intacte');
+});
+
+test('chaque camp tire son double merveilleux indépendamment, joueur d’abord', () => {
+  const duel = { deckJoueur: 'veilleurs-du-desert', deckAdverse: 'maree-des-abysses', variantesFantaisistes: true };
+  // Premier tirage : le joueur (≥ 0,5 → double). Second : l’adversaire.
+  const joueurMerveilleux = resoudrePlateauxDuDuel({ ...duel, rng: rngSequentiel([0.9, 0.1]) });
+  assert.equal(joueurMerveilleux.joueur.plateau.id, 'desert-de-verre');
+  assert.equal(joueurMerveilleux.joueur.variante, true);
+  assert.equal(joueurMerveilleux.adversaire.plateau.id, 'ruines-de-tipaza');
+  assert.equal(joueurMerveilleux.adversaire.variante, false);
+  const adverseMerveilleux = resoudrePlateauxDuDuel({ ...duel, rng: rngSequentiel([0.1, 0.9]) });
+  assert.equal(adverseMerveilleux.joueur.plateau.id, 'erg-du-sahara');
+  assert.equal(adverseMerveilleux.joueur.variante, false);
+  assert.equal(adverseMerveilleux.adversaire.plateau.id, 'abysses-phosphorescentes');
+  assert.equal(adverseMerveilleux.adversaire.variante, true);
+  // La résolution reste déterministe : rejouée à l’identique, mêmes terrains.
+  const rejoue = () => resoudrePlateauxDuDuel({ ...duel, rng: rngSequentiel([0.9, 0.9]) });
+  assert.deepEqual(rejoue(), rejoue());
+  // Un camp sans double ne consomme pas son tirage : la Table des Heures du
+  // joueur laisse la première valeur à l’adversaire.
+  let appels = 0;
+  const horloger = resoudrePlateauxDuDuel({
+    deckJoueur: 'grand-horloger', deckAdverse: 'veilleurs-du-desert', variantesFantaisistes: true,
+    rng: () => { appels += 1; return 0.9; },
+  });
+  assert.equal(horloger.joueur.plateau.id, 'table-des-heures');
+  assert.equal(horloger.adversaire.plateau.id, 'desert-de-verre');
+  assert.equal(appels, 1, 'seul le camp dont le terrain a un double consomme un tirage');
+  // Hors bornes : les classiques sont gardés, les deux plateaux restent valides.
+  for (const valeur of [Number.NaN, Number.POSITIVE_INFINITY, -3, 12, 'x']) {
+    const resolution = resoudrePlateauxDuDuel({ ...duel, rng: () => valeur });
+    assert.ok(RPG_PLATEAUX.includes(resolution.joueur.plateau), `valeur ${String(valeur)} : plateau joueur valide`);
+    assert.ok(RPG_PLATEAUX.includes(resolution.adversaire.plateau), `valeur ${String(valeur)} : plateau adverse valide`);
+    assert.equal(typeof resolution.decouper, 'boolean', `valeur ${String(valeur)} : découpe renseignée`);
   }
 });

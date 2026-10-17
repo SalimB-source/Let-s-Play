@@ -21,8 +21,9 @@ export async function checkPlateauJapon(assert) {
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root = createRoot(container);
-  // Le tirage du plateau désigne un camp : 0,1 → c’est le joueur qui impose
-  // son terrain. Le duel, lui, se joue bien avec le paquet du deck ouvert.
+  // Chaque camp reçoit le plateau de son deck : la cour de l’Empereur couvre
+  // la moitié du joueur, la Table des Heures (Cour des Djinns) celle du
+  // sorcier. Le duel, lui, se joue bien avec le paquet du deck ouvert.
   await act(async () => { root.render(<RpgDuelPage rng={() => 0.1} />); });
   const cliquer = async (element) => { await act(async () => { element.click(); }); };
   try {
@@ -50,6 +51,25 @@ export async function checkPlateauJapon(assert) {
       'le fond de la table est bien la peinture japonaise livrée dans public/');
     assert.match(table.getAttribute('aria-label') ?? '', /La Cour de l.Empereur/,
       'la table annonce la cour de l’Empereur dans son libellé accessible');
+    // La table découpée : les deux terrains diffèrent, chaque moitié porte la
+    // peinture de son camp et le liseré souligne la jonction.
+    assert.ok(table.classList.contains('card-table--decoupee'),
+      'la table se découpe quand les deux decks imposent des terrains différents');
+    assert.equal(table.dataset.plateauJoueur, PLATEAU_ID,
+      'la moitié basse est le terrain du deck du joueur');
+    assert.equal(table.dataset.plateauAdversaire, 'table-des-heures',
+      'la moitié haute est le terrain du deck adverse (la Cour des Djinns)');
+    const moitieJoueur = table.querySelector('.rpg-plateau-moitie--joueur');
+    const moitieAdverse = table.querySelector('.rpg-plateau-moitie--adverse');
+    assert.ok(moitieJoueur && moitieAdverse, 'les deux moitiés peintes sont montées sur la table');
+    assert.match(moitieJoueur.style.backgroundImage, /plateau-cour-de-l-empereur\.jpg/,
+      'la moitié du joueur montre la cour de l’Empereur');
+    assert.match(moitieAdverse.style.backgroundImage, /card-table\.jpg/,
+      'la moitié du sorcier montre la Table des Heures');
+    assert.ok(table.querySelector('.rpg-plateau-lisere'),
+      'le liseré souligne la jonction des deux terrains');
+    assert.match(table.getAttribute('aria-label') ?? '', /Table des Heures côté sorcier, La Cour de l.Empereur côté joueur/,
+      'le libellé accessible nomme le terrain de chaque camp');
   } finally {
     await act(async () => { root.unmount(); });
     container.remove();

@@ -944,15 +944,23 @@ for (const { fichier } of RPG_PLATEAUX) {
 assert.match(plateauxSource, /id: 'erg-du-sahara'[\s\S]*?fichier: 'plateau-erg-du-sahara\.jpg'/,
   'le désert du Sahara est un plateau déclaré, avec son fond dans public/');
 const choixPlateauPartie = battlePage.slice(
-  battlePage.indexOf('const tiragePlateau = tirerPlateauDuDuel'),
-  battlePage.indexOf('const plateau = tiragePlateau.plateau'),
+  battlePage.indexOf('const resolutionPlateaux = resoudrePlateauxDuDuel'),
+  battlePage.indexOf('const plateau = resolutionPlateaux.joueur.plateau'),
 );
 assert.match(choixPlateauPartie, /deckJoueur: modeTutoriel \? deckJoueurSelectionne : joueurDeck \?\? deckJoueurSelectionne/,
   'le tutoriel tire son plateau du deck Veilleurs du Désert et les autres parties du deck choisi');
 assert.match(choixPlateauPartie, /deckAdverse: modeTutoriel[\s\S]*?RPG_TUTORIAL_OPPONENT_DECK[\s\S]*?etageCourant \? etageCourant\.deck : sorcierDeck \?\? deckAdverse/,
   'le plateau du tutoriel tient compte du deck d’entraînement, les autres duels du deck adverse');
 assert.match(choixPlateauPartie, /rng,/,
-  'le plateau reste tiré par le générateur aléatoire du duel');
+  'les plateaux restent résolus par le générateur aléatoire du duel');
+assert.match(battlePage, /setPlateauAdverseId\(resolutionPlateaux\.adversaire\.plateau\.id\)/,
+  'la moitié haute de la table reçoit le plateau du deck adverse : un terrain par camp');
+assert.match(battleCss, /\.rpg-plateau-moitie--adverse \{ clip-path: inset\(0 0 50% 0\); \}/,
+  'la moitié adverse est la peinture plein cadre rognée à son haut');
+assert.match(battleCss, /\.rpg-plateau-moitie--joueur \{ clip-path: inset\(50% 0 0 0\); \}/,
+  'la moitié du joueur est la peinture plein cadre rognée à son bas');
+assert.match(battleCss, /\.rpg-plateau-lisere \{[\s\S]*?top: 50%;/,
+  'un liseré souligne la jonction des deux terrains au centre de la table');
 assert.doesNotMatch(battlePage, /choixPlateau|onSelectPlateau|[cs]hargerChoixPlateau|sauverChoixPlateau|RPG_PLATEAU_ALEATOIRE|plateauPrecedent/,
   'le joueur ne choisit plus son plateau : ni verrou, ni pastille aléatoire, ni sauvegarde sur l’appareil');
 assert.doesNotMatch(battlePage, /rpg-mode-menu__boards|rpg-board-choice|rpg-board-grid/,
