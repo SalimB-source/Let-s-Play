@@ -1054,6 +1054,22 @@
   border-width: 1.5cqw;
 }
 .rpg-battle .card-row .rpg-card .rpg-card-element-badge--hybride { gap: 2cqw; border: 0; }
+/* Les pastilles de couleur des créatures posées (sable, braise, eau, neige)
+   se font plus discrètes : 19cqw au lieu du repère commun de 27cqw, glyphe et
+   liseré à l'échelle. Les losanges de compteurs d'une carte mono, rangés sous
+   la pastille, remontent d'autant et restent centrés sur elle. La main, le
+   mulligan, les aperçus et le catalogue gardent leurs pastilles. */
+.rpg-battle .card-row .rpg-card .rpg-card-element-badge {
+  width: 19cqw;
+  font-size: 10cqw;
+  border-width: 1.1cqw;
+}
+.rpg-battle .card-row .rpg-card .rpg-card-element-badge__pip { border-width: 1.1cqw; }
+.rpg-battle .card-row .rpg-card .rpg-card-element-badge--hybride { gap: 1.5cqw; border: 0; }
+.rpg-battle .card-row .rpg-card .rpg-card__compteurs:not(.rpg-card__compteurs--hybride) {
+  top: calc(5% + 19cqw + var(--rpg-card-counter-size) * .21 + 4px);
+  left: calc(6% + (19cqw - var(--rpg-card-counter-size)) / 2);
+}
 .rpg-battle .card-row .rpg-card .rpg-card__stat--atk,
 .rpg-battle .card-row .rpg-card .rpg-card__pt {
   min-width: 0;
