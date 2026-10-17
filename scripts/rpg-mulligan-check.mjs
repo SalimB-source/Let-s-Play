@@ -138,7 +138,7 @@ assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}
   'la couleur de la carte est en haut à gauche, comme sur les cartes du jeu');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}]*bottom:/s,
   'la couleur n’est plus en bas de la carte');
-assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*position:\s*absolute;[^}]*top:\s*5%;[^}]*right:\s*6%;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
+assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*position:\s*absolute;[^}]*top:\s*var\(--rpg-card-element-marker-top,\s*5%\);[^}]*right:\s*var\(--rpg-card-element-marker-left,\s*6%\);[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
   'le coût est posé en haut à droite de l’illustration dans un bloc bien rond, à la taille de la carte');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*left:/s,
   'le coût a quitté le coin gauche');
@@ -148,40 +148,24 @@ assert.match(battlePage, /rpg-card__pt"><CardStatIcon type="defense" \/><span cl
   'la défense porte la plaque du jeu : le bouclier dessiné et le chiffre');
 assert.doesNotMatch(mulliganPanel, /⚔|🛡/,
   'plus d’emoji ⚔/🛡 : l’attaque et la défense se lisent comme sur les cartes en jeu');
-assert.match(battleCss, /\.rpg-mulligan__stats\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*space-between;[^}]*width:\s*100%;/s,
-  'les deux plaques se partagent la largeur de la carte : l’attaque sur un bord, la défense sur l’autre');
-assert.match(battleCss, /\.rpg-mulligan__stats\s+\.rpg-card__stat--atk,[\s\S]{0,200}?\.rpg-mulligan__stats\s+\.rpg-card__pt\s*\{[\s\S]{0,400}?font:\s*900 clamp\(11px,\s*7\.6cqw,\s*26px\)/s,
-  'les plaques reprennent le dessin du jeu et se composent plus grand, sur la largeur de la carte');
+assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card__foot,\s*\.rpg-mulligan__card \.rpg-card__foot,\s*\.rpg-mulligan__stats\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/s,
+  'les deux plaques du mulligan partagent la même grille que la face de l’aperçu');
+assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card__stat--atk,\s*\.rpg-hover-card-preview__face \.rpg-card__pt,\s*\.rpg-mulligan__card \.rpg-card__stat--atk,\s*\.rpg-mulligan__card \.rpg-card__pt\s*\{[^}]*background:\s*rgba\(0,\s*0,\s*0,\s*\.68\);[^}]*font:\s*900 calc\(var\(--rpg-card-marker-size,\s*38px\) \* \.62\)\/1\.15 Georgia, serif;/s,
+  'les plaques ATQ/DÉF de l’aperçu et du mulligan reprennent le noir translucide du jeu');
 assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*--rpg-frame-gradient:\s*linear-gradient\(#ffd619,\s*#ffd619\);/s,
   'une carte mise de côté repeint son cadre orné en or, sans masquer son illustration');
 assert.match(battleCss, /@keyframes rpg-mulligan-new/,
   'les cartes qui entrent en main à l’étape du résultat ont leur propre entrée');
-assert.doesNotMatch(battleCss, /\.rpg-mulligan__(name|rules|flag|banner|top)\b/,
-  'plus un bloc de texte encombrant sur les cartes : nom, effets et drapeau ont quitté la feuille');
-assert.match(battleCss, /\.rpg-mulligan__bas\s*\{[^}]*position:\s*absolute;[^}]*right:\s*6%;[^}]*bottom:\s*5%;[^}]*left:\s*6%;[^}]*justify-items:\s*center;/s,
-  'le bas de la carte occupe toute sa largeur, ancré par son bas : la ligne de type est centrée');
-assert.match(battleCss, /\.rpg-mulligan__type\s*\{[^}]*background:\s*rgba\(31,\s*22,\s*13[^}]*text-align:\s*center;/s,
-  'la ligne de type porte le bandeau sombre des cartes du jeu et se centre');
-assert.match(battlePage, /rpg-mulligan__bas"[\s\S]{0,200}?\{!estCreature && \([\s\S]{0,160}?rpg-mulligan__type[\s\S]{0,200}?rpg-mulligan__stats"/,
-  'la ligne de type n’est écrite que hors créature, au-dessus des plaques quand elle l’est');
+assert.doesNotMatch(battleCss, /\.rpg-mulligan__(name|rules|flag|banner|top|bas|type)\b/,
+  'plus un bloc de texte encombrant sur les cartes : la face du mulligan est identique à celle de l’aperçu');
+assert.match(battlePage, /<SortSceau carte=\{carte\} className="rpg-mulligan__sceau rpg-mulligan__sort" \/>/,
+  'les sorts du mulligan portent le même sceau aligné que l’aperçu');
 
-// ── L'aperçu rapide : c'est lui qui porte le texte, au survol ──────────────
-assert.match(mulliganPanel, /onMouseEnter=\{survol \? \(event\) => onSurvol\(carte, event\) : undefined\}/,
-  'le survol d’une carte du mulligan ouvre l’aperçu rapide — quand la souris sait survoler');
-assert.match(mulliganPanel, /survol \? onQuitterSurvol : undefined/,
-  'quitter la carte referme l’aperçu');
-assert.match(battlePage, /const survol = typeof window\.matchMedia === 'function' \? window\.matchMedia\('\(hover: hover\)'\)\.matches : true;/,
-  'le survol est constaté, jamais supposé : au doigt, c’est l’appui long qui sert');
-assert.match(battlePage, /const \[viewport, setViewport\] = useState\(\{ mobile: false, portrait: false, survol: true \}\)/,
-  'le viewport porte la capacité de survol avec lui');
-assert.match(battlePage, /variante="mulligan"/,
-  'l’aperçu du mulligan se nomme : la feuille peut le poser au-dessus du volet');
-assert.match(battleCss, /\.rpg-hover-card-preview--mulligan\s*\{\s*z-index:\s*1200;\s*\}/,
-  'l’aperçu rapide passe au-dessus du volet (1150) et sous l’aperçu au doigt (1250)');
+// ── Pas d'aperçu rapide au survol dans le mulligan ──────────────────────────
+assert.doesNotMatch(mulliganPanel, /onMouseEnter=|onMouseLeave=|HoverCardPreview/,
+  'le survol d’une carte du mulligan n’ouvre plus d’aperçu rapide');
 assert.match(battlePage, /\{apercuSurvol && !apercuMagie && !mulligan && !apercuAnnonceOuvert && \(/,
-  'la table ne double pas l’aperçu du volet ni celui de l’annonce : un seul aperçu vivant à la fois');
-assert.match(battlePage, /apercu=\{apercuSurvol\}[\s\S]{0,200}?survol=\{viewport\.survol\}/,
-  'le volet reçoit l’aperçu et la capacité de survol de la page');
+  'la table n’ouvre aucun aperçu rapide tant que le mulligan est ouvert');
 assert.doesNotMatch(mulliganPanel, /aria-hidden="true">\s*\{(effets|nouvelle)/,
   'aucun texte d’effet ni drapeau d’état n’est rendu sur la carte');
 assert.match(mulliganPanel, /aria-pressed=\{selectionnee\}/,

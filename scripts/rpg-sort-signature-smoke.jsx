@@ -65,19 +65,17 @@ function verifierCatalogueDeCartes(assert) {
 function verifierFaceDeSort(assert, face, contexte) {
   const carte = cardById(face.dataset.cardId);
   const famille = magieFamille(carte);
-  const socle = face.querySelector('.rpg-sort-socle');
-  assert.equal(Boolean(socle), Boolean(famille),
-    `${contexte} : le socle est là si et seulement si ${carte.id} est un sort`);
+  const sceau = face.querySelector('.rpg-sort-sceau');
+  assert.equal(Boolean(sceau), Boolean(famille),
+    `${contexte} : le sceau est là si et seulement si ${carte.id} est un sort`);
   if (!famille) return null;
-  assert.equal(socle.classList.contains(`rpg-sort-socle--${famille}`), true,
-    `${contexte} : le socle de ${carte.id} porte la famille ${famille}`);
-  assert.equal(socle.textContent.trim(), RPG_SORT_FAMILIES[famille].label,
-    `${contexte} : le mot écrit est « ${RPG_SORT_FAMILIES[famille].label} »`);
-  assert.ok(socle.querySelector('.rpg-sort-sigil'), `${contexte} : le sigle est dessiné, pas emprunté à une police`);
+  assert.equal(sceau.classList.contains(`rpg-sort-sceau--${famille}`), true,
+    `${contexte} : le sceau de ${carte.id} porte la famille ${famille}`);
+  assert.ok(sceau.querySelector('.rpg-sort-sigil'), `${contexte} : le sigle est dessiné, pas emprunté à une police`);
   return famille;
 }
 
-/** La main du duel : les sorts portent le socle, et plus la petite ligne de type. */
+/** La main du duel : les sorts portent le sceau, et aucune carte n'imprime de texte de type. */
 function verifierMain(assert, container) {
   const faces = [...container.querySelectorAll('.rpg-hand__card')];
   assert.equal(faces.length, DECK_SIGNATURE.length, 'toute la main de cinq cartes est servie');
@@ -86,8 +84,8 @@ function verifierMain(assert, container) {
     const carte = cardById(face.dataset.cardId);
     const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
     const ligne = face.querySelector('.rpg-hand__type');
-    assert.equal(Boolean(ligne), !estCreature && !familles[index],
-      `main : la ligne de type reste aux cartes qui ne se présentent pas autrement — ${carte.id} en ${ligne ? 'porte une' : 'n’en porte pas'}`);
+    assert.equal(ligne, null,
+      `main : aucune carte en main n'imprime de ligne de type sur sa face (${carte.id})`);
     assert.equal(face.classList.contains(`rpg-hand__card--famille-${familles[index]}`), Boolean(familles[index]),
       `main : la face de ${carte.id} porte la classe de sa famille`);
     assert.equal(face.querySelector('.rpg-card-element-badge') === null, carte.kind === 'terrain',
@@ -96,7 +94,7 @@ function verifierMain(assert, container) {
       `main : ${carte.id} garde ses statistiques dessinées`);
   });
   assert.deepEqual(familles.filter(Boolean).sort(), ['rapide', 'sorcellerie'],
-    'la main du scénario porte une Magie Rapide et une Sorcellerie, chacune avec son socle');
+    'la main du scénario porte une Magie Rapide et une Sorcellerie, chacune avec son sceau');
   return familles;
 }
 
@@ -138,44 +136,36 @@ export async function checkRpgSortSignature(assert) {
   verifierCatalogueDeCartes(assert);
 
   await avecDuel(assert, async ({ container, cliquer, survoler }) => {
-    // ── 1. Le mulligan : le sceau de la famille au-dessus de la ligne de type ──
+    // ── 1. Le mulligan : le sceau de la famille aligné en bas à gauche ──
     const cartesMulligan = [...container.querySelectorAll('.rpg-mulligan__card')];
     assert.equal(cartesMulligan.length, DECK_SIGNATURE.length, 'le mulligan présente la main de départ');
     for (const carte of cartesMulligan) {
       const fiche = cardById(carte.dataset.cardId);
       const famille = magieFamille(fiche);
-      const sceau = carte.querySelector('.rpg-mulligan__bas .rpg-mulligan__sceau');
+      const sceau = carte.querySelector('.rpg-mulligan__sceau');
       assert.equal(Boolean(sceau), Boolean(famille),
         `mulligan : le sceau est là si et seulement si ${fiche.id} est un sort`);
-      const ligne = carte.querySelector('.rpg-mulligan__bas .rpg-mulligan__type');
-      assert.equal(Boolean(ligne), fiche.kind !== 'creature' && fiche.kind !== 'hero',
-        `mulligan : la ligne de type reste écrite pour un terrain ou un sort (${fiche.id})`);
+      assert.equal(carte.querySelector('.rpg-mulligan__type'), null,
+        `mulligan : aucune ligne de type n’est imprimée sur la carte (${fiche.id})`);
       if (famille) {
         assert.equal(sceau.classList.contains(`rpg-sort-sceau--${famille}`), true,
           `mulligan : le sceau de ${fiche.id} porte la famille ${famille}`);
-        assert.equal(ligne.classList.contains(`rpg-mulligan__type--${famille}`), true,
-          `mulligan : la ligne de type de ${fiche.id} prend la teinte de sa famille`);
-        assert.match(ligne.textContent, new RegExp(`^${RPG_SORT_FAMILIES[famille].label}`),
-          `mulligan : ${fiche.id} écrit toujours le mot de sa famille`);
       } else {
         assert.equal(sceau, null, `mulligan : ${fiche.id} ne porte aucun sceau de sort`);
-        assert.equal(Boolean(ligne?.className.includes('rpg-mulligan__type--')), false,
-          `mulligan : ${fiche.id} garde la teinte neutre du bandeau`);
       }
     }
     await passerMulligan(container, cliquer);
 
-    // ── 2. La main du duel : le socle remplace la ligne de type des sorts ─────
+    // ── 2. La main du duel : le sceau sur les sorts, pas de ligne de type ─────
     verifierMain(assert, container);
 
-    // ── 3. L'aperçu : la même face, le même socle, la ligne de type teintée ───
+    // ── 3. L'aperçu : la même face, le même sceau, la ligne de type teintée ───
     const rapide = container.querySelector('.rpg-hand__card[data-card-id="trait-de-braise"]');
     await survoler(rapide);
     const apercu = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
     assert.ok(apercu, 'survoler une Magie Rapide ouvre son aperçu');
-    const socleApercu = apercu.querySelector('.rpg-hover-card-preview__face .rpg-sort-socle--rapide');
-    assert.ok(socleApercu, 'la face de l’aperçu porte le socle de la Magie Rapide');
-    assert.equal(socleApercu.textContent.trim(), RPG_SORT_FAMILIES.rapide.label, 'le socle de l’aperçu écrit le mot de la famille');
+    const sceauApercu = apercu.querySelector('.rpg-hover-card-preview__face .rpg-sort-sceau--rapide');
+    assert.ok(sceauApercu, 'la face de l’aperçu porte le sceau de la Magie Rapide');
     assert.equal(apercu.querySelector('.rpg-hover-card-preview__type')?.classList.contains('rpg-sort-ligne--rapide'), true,
       'la ligne de type de l’aperçu prend la teinte de la Magie Rapide');
     await survoler(rapide, 'mouseout');
@@ -184,10 +174,8 @@ export async function checkRpgSortSignature(assert) {
     const sorcellerie = container.querySelector('.rpg-hand__card[data-card-id="rapport-du-greffier"]');
     await survoler(sorcellerie);
     const apercuSorcellerie = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
-    const socleSorcellerie = apercuSorcellerie?.querySelector('.rpg-hover-card-preview__face .rpg-sort-socle--sorcellerie');
-    assert.ok(socleSorcellerie, 'la face de l’aperçu porte le socle de la Sorcellerie');
-    assert.equal(socleSorcellerie.textContent.trim(), RPG_SORT_FAMILIES.sorcellerie.label,
-      'le socle de la Sorcellerie écrit le mot de sa famille');
+    const sceauSorcellerie = apercuSorcellerie?.querySelector('.rpg-hover-card-preview__face .rpg-sort-sceau--sorcellerie');
+    assert.ok(sceauSorcellerie, 'la face de l’aperçu porte le sceau de la Sorcellerie');
     assert.equal(apercuSorcellerie.querySelector('.rpg-hover-card-preview__type')?.classList.contains('rpg-sort-ligne--sorcellerie'), true,
       'la ligne de type de l’aperçu prend la teinte de la Sorcellerie');
     await survoler(sorcellerie, 'mouseout');
@@ -195,11 +183,11 @@ export async function checkRpgSortSignature(assert) {
     // ── 4. La créature, le terrain et l'arme : aucune signature de sort ───────
     for (const id of ['chien-du-guet', 'desert', 'sabre-maudit']) {
       const face = container.querySelector(`.rpg-hand__card[data-card-id="${id}"]`);
-      assert.equal(face.querySelector('.rpg-sort-socle'), null, `main : ${id} ne porte aucun socle de sort`);
+      assert.equal(face.querySelector('.rpg-sort-sceau'), null, `main : ${id} ne porte aucun sceau de sort`);
       await survoler(face);
       const fiche = cardById(id);
-      assert.equal(container.querySelector('.rpg-hover-card-preview__face .rpg-sort-socle'), null,
-        `aperçu : la face de ${fiche.name} ne porte aucun socle`);
+      assert.equal(container.querySelector('.rpg-hover-card-preview__face .rpg-sort-sceau'), null,
+        `aperçu : la face de ${fiche.name} ne porte aucun sceau`);
       const ligne = container.querySelector('.rpg-hover-card-preview__type');
       assert.equal(ligne?.className.includes('rpg-sort-ligne--') ?? false, false,
         `aperçu : la ligne de type de ${fiche.name} garde sa teinte neutre`);
