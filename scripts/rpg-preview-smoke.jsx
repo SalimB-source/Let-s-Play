@@ -111,10 +111,21 @@ export async function checkRpgPreviewActions(assert) {
       'la ligne de type reste lisible sur la fiche d’une créature');
     assert.match(fiche().querySelector('.rpg-hover-card-preview__color').textContent, /Sable · Désert/u,
       'la fiche écrit la couleur comme la grille du catalogue');
-    const effetsFiche = [...fiche().querySelectorAll('.rpg-hover-card-preview__rules > span')].map((ligne) => ligne.textContent);
-    assert.equal(effetsFiche.length, 2, 'les deux capacités du Fennec sont écrites, ligne par ligne');
-    assert.match(effetsFiche[0], /^Rapidité/u, 'la première capacité est nommée');
-    assert.match(effetsFiche[1], /^Butin/u, 'la seconde capacité du Fennec est nommée');
+    // Les deux capacités du Fennec sont des mots-clés : elles se lisent en
+    // pastilles, et leur explication s'ouvre au survol de chaque pastille.
+    const pastillesFiche = [...fiche().querySelectorAll('.rpg-hover-card-preview__pastilles .rpg-pastille')];
+    assert.deepEqual(pastillesFiche.map((pastille) => pastille.textContent), ['Rapidité', 'Butin'],
+      'les deux capacités du Fennec sont nommées en pastilles');
+    assert.match(pastillesFiche[1].getAttribute('aria-label') ?? '', /^Butin : Quand cette créature touche le sorcier adverse/u,
+      'chaque pastille porte ce que fait son effet');
+    assert.equal(fiche().querySelector('.rpg-hover-card-preview__rules'), null,
+      'les sections de mots-clés quittent le texte : rien ne se lit deux fois');
+    await act(async () => { pastillesFiche[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true })); });
+    assert.ok(fiche(), 'toucher une pastille ne referme pas la fiche');
+    assert.match(document.querySelector('.rpg-pastille-bulle[role="tooltip"]')?.textContent ?? '', /piochez une carte puis défaussez-en une/u,
+      'toucher une pastille ouvre la bulle de son effet');
+    await act(async () => { pastillesFiche[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true })); });
+    assert.equal(document.querySelector('.rpg-pastille-bulle'), null, 'un second toucher referme la bulle');
     assert.equal(fiche().querySelector('.rpg-hover-card-preview__face .rpg-card__stat--atk .rpg-stat-value')?.textContent, '3',
       'la fiche imprime l’attaque sur la carte');
     assert.equal(fiche().querySelector('.rpg-hover-card-preview__face .rpg-card__pt .rpg-stat-value')?.textContent, '1',

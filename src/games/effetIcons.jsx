@@ -15,7 +15,9 @@
  * jamais — le libellé reste porté par le `title` du badge et le texte de
  * règle reste écrit à côté.
  */
-import { EFFETS_SPRITE, EFFET_ICONE, pastillesPourCarte, iconePourLigne } from './effetIcons.js';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { EFFETS_SPRITE, EFFET_ICONE, effetsDetailles, pastillesPourCarte, iconePourLigne } from './effetIcons.js';
 import './effet-icons.css';
 
 /** Le sprite des 21 symboles, à monter une fois par écran (menu, duel, guide). */
@@ -58,20 +60,104 @@ export const pastilleTexte = (pastille) => (
 );
 
 /**
- * Les pastilles d'une fiche : icône + libellé, dans l'ordre de lecture.
- * À poser sous la ligne de type (fiche, aperçu, catalogue, guide).
+ * La bulle d'une pastille : ce que fait l'effet, posée au-dessus du mot (ou
+ * dessous, faute de place). Elle est rendue **hors** de la fiche (portail) :
+ * les aperçus rognent ce qui dépasse, la bulle, elle, ne doit jamais l'être.
+ * En plein écran, elle suit l'élément affiché en grand.
  */
-export function PastillesCarte({ carte, className = '' }) {
-  const pastilles = pastillesPourCarte(carte);
+function BulleEffet({ id, ancre, titre, description }) {
+  const bulleRef = useRef(null);
+  const [position, setPosition] = useState(null);
+  useLayoutEffect(() => {
+    const bulle = bulleRef.current;
+    if (!bulle || !ancre) return;
+    const cible = ancre.getBoundingClientRect();
+    const boite = bulle.getBoundingClientRect();
+    const largeurVue = window.innerWidth || document.documentElement.clientWidth || 1024;
+    const marge = 8;
+    const left = Math.max(marge, Math.min(cible.left + (cible.width / 2) - (boite.width / 2), largeurVue - boite.width - marge));
+    const dessous = cible.top - boite.height - 8 < marge;
+    const top = dessous ? cible.bottom + 8 : cible.top - boite.height - 8;
+    setPosition({ left, top, dessous });
+  }, [ancre, description]);
+  if (typeof document === 'undefined') return null;
+  const hote = document.fullscreenElement ?? document.body;
+  return createPortal(
+    <span
+      ref={bulleRef}
+      id={id}
+      role="tooltip"
+      className={`rpg-pastille-bulle${position?.dessous ? ' is-dessous' : ''}`}
+      style={position ? { left: `${position.left}px`, top: `${position.top}px` } : { left: '-9999px', top: '0px', visibility: 'hidden' }}
+    >
+      <strong>{titre}</strong>
+      {description}
+    </span>,
+    hote,
+  );
+}
+
+/**
+ * Une pastille qui s'explique : survolée (ou touchée, ou atteinte au clavier),
+ * elle ouvre la bulle de ce que fait son effet. Le toucher ne traverse pas :
+ * il n'ouvre ni ne referme la fiche qui l'accueille.
+ */
+export function PastilleEffet({ pastille }) {
+  const id = useId();
+  const ancreRef = useRef(null);
+  const [survolee, setSurvolee] = useState(false);
+  const [epinglee, setEpinglee] = useState(false);
+  const texte = pastilleTexte(pastille);
+  const ouverte = Boolean(pastille.description) && (survolee || epinglee);
+  return (
+    <span
+      ref={ancreRef}
+      className={`rpg-pastille${pastille.description ? ' rpg-pastille--explicable' : ''}${ouverte ? ' is-ouverte' : ''}`}
+      role="listitem"
+      tabIndex={pastille.description ? 0 : undefined}
+      aria-describedby={ouverte ? id : undefined}
+      aria-label={pastille.description ? `${texte} : ${pastille.description}` : undefined}
+      data-pastille={pastille.cle}
+      // La souris ouvre au survol ; le doigt, lui, ouvre et referme d'un toucher
+      // (son survol émulé ne doit pas laisser la bulle collée).
+      onPointerEnter={(event) => { if (event.pointerType === 'mouse') setSurvolee(true); }}
+      onPointerLeave={(event) => { if (event.pointerType === 'mouse') { setSurvolee(false); setEpinglee(false); } }}
+      onFocus={(event) => { if (event.currentTarget.matches?.(':focus-visible')) setSurvolee(true); }}
+      onBlur={() => { setSurvolee(false); setEpinglee(false); }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        setEpinglee((valeur) => !valeur);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && ouverte) {
+          event.stopPropagation();
+          setSurvolee(false);
+          setEpinglee(false);
+        }
+      }}
+    >
+      <EffetIcone cle={pastille.cle} size={13} />
+      {texte}
+      {ouverte && <BulleEffet id={id} ancre={ancreRef.current} titre={texte} description={pastille.description} />}
+    </span>
+  );
+}
+
+/**
+ * Les pastilles d'une fiche : icône + libellé, dans l'ordre de lecture.
+ * À poser sous la ligne de type (fiche, aperçu, catalogue, guide). Chaque
+ * pastille dit ce qu'elle fait au survol — le texte imprimé de la carte
+ * d'abord, le glossaire à défaut (`effetsDetailles`). `pastilles` permet de
+ * passer une lecture déjà faite (l'aperçu s'en sert aussi pour son texte).
+ */
+export function PastillesCarte({ carte, pastilles: lues = null, className = '' }) {
+  const pastilles = lues ?? effetsDetailles(carte).pastilles;
   if (!pastilles.length) return null;
   return (
     <span className={`rpg-pastilles${className ? ` ${className}` : ''}`} role="list" aria-label="Mots-clés et effets">
-      {pastilles.map((pastille) => (
-        <span key={pastille.cle} className="rpg-pastille" role="listitem" title={pastilleTexte(pastille)}>
-          <EffetIcone cle={pastille.cle} size={13} />
-          {pastilleTexte(pastille)}
-        </span>
-      ))}
+      {pastilles.map((pastille) => <PastilleEffet key={pastille.cle} pastille={pastille} />)}
     </span>
   );
 }

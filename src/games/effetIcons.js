@@ -240,3 +240,162 @@ export function iconePourLigne(carte, ligne = '') {
   if (carte?.butin) return 'butin';
   return null;
 }
+
+/* ── Ce que fait chaque effet : la bulle des pastilles ────────────────────────
+   Les pastilles d’un aperçu se lisent d’un coup d’œil ; le détail s’ouvre au
+   survol (ou au toucher). Le texte imprimé de la carte prime toujours : quand
+   la fiche écrit « Coup rapide — … », c’est cette phrase qui remplit la bulle.
+   Le glossaire ci-dessous ne sert que lorsque la carte nomme le mot-clé sans
+   l’expliquer (« Rapidité. ») ou ne le nomme pas du tout (Exil, Contresort…). */
+
+/** La définition de chaque effet, au féminin de « la créature » (ou de la carte). */
+export const EFFET_DEFINITIONS = {
+  envol: 'Ne peut être bloquée que par une créature avec Envol.',
+  infiltration: 'Ne peut pas être bloquée.',
+  rapidite: 'Peut attaquer le tour où elle arrive.',
+  coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+  furie: (n) => `La première fois qu’elle est blessée et survit, elle gagne +${n ?? 'X'}/+${n ?? 'X'}.`,
+  esquive: (n) => `Réduit de ${n ?? 'X'} les dégâts reçus de chaque attaque ou magie (minimum 0).`,
+  tenacite: 'Une fois par partie, si elle doit être détruite, elle survit avec 1 point de défense.',
+  resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
+  protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
+  bouclier: (n) => {
+    if (n === 1) return 'Absorbe le prochain dégât reçu, quelle que soit sa provenance.';
+    return n ? `Absorbe les ${n} prochains dégâts reçus, quelle que soit leur provenance.` : 'Absorbe les prochains dégâts reçus.';
+  },
+  aura: 'Tant qu’elle est en jeu, elle renforce d’autres créatures de son camp.',
+  banniere: 'Tant qu’elle est en jeu, les créatures de sa tribu gagnent un bonus.',
+  honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard.`,
+  butin: 'Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
+  contresort: 'Annule une carte annoncée par l’adversaire, avant qu’elle ne se résolve.',
+  reanimation: 'Fait revenir en jeu une créature de votre cimetière.',
+  recyclage: 'Renvoie une carte de votre cimetière dans votre main.',
+  heures: 'Porte des compteurs d’Heures : on en retire un au début de chacun de vos tours ; quand le dernier part, l’effet se déclenche.',
+  'retour-main': 'Renvoie une créature dans la main de son propriétaire : elle n’est pas détruite et pourra être rejouée.',
+  exil: 'Retire une créature de la partie : elle ne va pas au cimetière.',
+  'empeche-blocage': 'La créature visée ne peut pas bloquer pendant la durée indiquée.',
+};
+
+/** Les libellés tels qu’ils s’impriment en tête de phrase sur les fiches. */
+const LIBELLES_IMPRIMES = [
+  ['coupRapide', 'Coup rapide'],
+  ['envol', 'Envol'],
+  ['infiltration', 'Infiltration'],
+  ['rapidite', 'Rapidité'],
+  ['furie', 'Furie(?: \\d+)?'],
+  ['esquive', 'Esquive(?: \\d+)?'],
+  ['tenacite', 'T[ée]nacité'],
+  ['resonance', 'Résonance(?: samouraï)?'],
+  ['honneur', 'Honneur(?: \\d+)?'],
+  ['butin', 'Butin'],
+  ['banniere', 'Bannière'],
+  ['aura', 'Aura'],
+  ['retour-main', 'Rebond'],
+];
+
+/**
+ * Un mot-clé imprimé **en tête de phrase**, suivi soit d’un point
+ * (« Rapidité. »), soit d’un tiret qui ouvre son explication
+ * (« Coup rapide — … »). Le mot-clé cité au milieu d’une phrase (« sa Furie 3
+ * s’enflamme ») n’est pas une tête de section : il reste dans le texte.
+ */
+const TETE_DE_SECTION = new RegExp(
+  `(?:^|(?<=[.!?…]\\s+))(${LIBELLES_IMPRIMES.map(([, source]) => source).join('|')})(?:\\s*—\\s*|\\.(?=\\s|$))`,
+  'gu',
+);
+
+/**
+ * Où s’arrête l’explication d’un mot-clé : à la fin de sa phrase — plus les
+ * phrases qui la précisent (« Si vous ne désignez personne, elle attaque
+ * normalement. »). Une phrase qui ouvre un autre déclencheur (« Quand le
+ * Faussoyeur arrive : … ») n’appartient pas au mot-clé : elle reste écrite.
+ */
+const PRECISION = /^(?:Si|Sinon|Sans)\b/u;
+function finDeSection(texte, depuis, limite) {
+  const finDePhrase = (debut) => {
+    const reste = texte.slice(debut, limite);
+    const point = /[.!?…](?=\s|$)/u.exec(reste);
+    return point ? debut + point.index + 1 : limite;
+  };
+  let fin = finDePhrase(depuis);
+  while (fin < limite) {
+    const suite = texte.slice(fin, limite);
+    const blancs = suite.length - suite.trimStart().length;
+    if (!PRECISION.test(suite.trimStart())) break;
+    fin = finDePhrase(fin + blancs);
+  }
+  return fin;
+}
+
+const cleDuLibelle = (libelle) => LIBELLES_IMPRIMES
+  .find(([, source]) => new RegExp(`^(?:${source})$`, 'u').test(libelle))?.[0] ?? null;
+
+/** La définition générique d’une pastille (valeur et couleur comprises). */
+export function definitionPastille(pastille) {
+  const definition = EFFET_DEFINITIONS[pastille?.cle];
+  if (typeof definition !== 'function') return definition ?? '';
+  if (pastille.cle === 'protection') {
+    const couleur = String(pastille.label ?? '').replace(/^Protection\s*/u, '');
+    return definition(couleur || null);
+  }
+  return definition(pastille.valeur ?? null);
+}
+
+/**
+ * La lecture d’une fiche pour un aperçu : ses pastilles **avec ce qu’elles
+ * font** (`description`), et le texte de règle qui reste une fois les
+ * sections de mots-clés passées dans les bulles.
+ *
+ * - « Coup rapide — Sélectionnée pour attaquer… » : la section court jusqu’à
+ *   la fin de sa phrase (et des phrases qui la précisent, « Si vous ne
+ *   désignez personne… ») ; elle devient la bulle de la pastille Coup rapide
+ *   et quitte le texte ;
+ * - « Rapidité. » : la pastille prend la définition du glossaire, le mot
+ *   quitte le texte ;
+ * - tout ce qui n’est pas une section de mot-clé (arrivées, morts, sorts…)
+ *   reste écrit — aucune règle ne se cache derrière une pastille qui ne la
+ *   nommerait pas.
+ *
+ * @returns {{ pastilles: Array<{ cle, icone, label, valeur, description }>, texte: string }}
+ */
+export function effetsDetailles(carte) {
+  const pastilles = pastillesPourCarte(carte).map((pastille) => ({ ...pastille, description: '' }));
+  const brut = carte?.text && carte.text !== '—' ? String(carte.text) : '';
+  if (!brut || carte?.kind === 'terrain') {
+    for (const pastille of pastilles) pastille.description = definitionPastille(pastille);
+    return { pastilles, texte: brut };
+  }
+
+  const sections = [...brut.matchAll(TETE_DE_SECTION)].map((correspondance) => ({
+    cle: cleDuLibelle(correspondance[1]),
+    debut: correspondance.index,
+    finTete: correspondance.index + correspondance[0].length,
+    tiret: correspondance[0].includes('—'),
+  }));
+  const retirees = [];
+  sections.forEach((section, index) => {
+    const pastille = pastilles.find((candidate) => candidate.cle === section.cle);
+    if (!pastille) return;
+    const fin = section.tiret
+      ? finDeSection(brut, section.finTete, sections[index + 1]?.debut ?? brut.length)
+      : section.finTete;
+    if (section.tiret) {
+      const explication = brut.slice(section.finTete, fin).trim();
+      if (explication && !pastille.description) pastille.description = explication;
+    }
+    retirees.push([section.debut, fin]);
+  });
+
+  for (const pastille of pastilles) {
+    if (!pastille.description) pastille.description = definitionPastille(pastille);
+  }
+
+  let texte = '';
+  let curseur = 0;
+  for (const [debut, fin] of retirees) {
+    texte += `${brut.slice(curseur, debut)} `;
+    curseur = fin;
+  }
+  texte += brut.slice(curseur);
+  return { pastilles, texte: texte.replace(/\s+/gu, ' ').trim() };
+}

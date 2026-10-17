@@ -64,6 +64,7 @@ import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
+import { effetsDetailles } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
 import RpgTableScene3D from './RpgTableScene3D.jsx';
@@ -1370,7 +1371,7 @@ function useLumiereCartes() {
   }, []);
 }
 
-function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null }) {
+function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null }) {
   const faceRef = useRef(null);
   const carteId = carte?.id ?? null;
 
@@ -1465,7 +1466,12 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   // sa ligne de type prend la teinte de cette famille.
   const ligneFamille = classeLigneFamille(carte);
   const effet = carte.text && carte.text !== '—' ? carte.text : null;
-  const effets = cardEffectLines(effet);
+  // Les mots-clés passent en pastilles : leur explication s'ouvre au survol de
+  // la pastille (au toucher sur mobile), et quitte le texte de règle — il ne
+  // reste écrit que ce qu'aucune pastille ne nomme (arrivées, morts, sorts…).
+  // Le libellé accessible du panneau garde, lui, le texte entier.
+  const lecture = effetsDetailles(carte);
+  const effets = cardEffectLines(lecture.texte);
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
   const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
   // La fiche du catalogue : la carte ouverte d'un clic, en grand. Elle se lit
@@ -1483,7 +1489,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       {estFiche && <span className="rpg-hover-card-preview__eyebrow">{surface ? `${surface} · ` : ''}{carteFamille(carte).toUpperCase()}</span>}
       {(variante === 'annonce' || estFiche) && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
       {(estFiche || !estCreature) && <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>}
-      <PastillesCarte carte={carte} className="rpg-hover-card-preview__pastilles" />
+      <PastillesCarte carte={carte} pastilles={lecture.pastilles} className="rpg-hover-card-preview__pastilles" />
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
       {cibleAnnoncee && (
         <div className="rpg-spell-played__target rpg-hover-card-preview__target">
@@ -1510,7 +1516,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
           ))}
         </div>
       )}
-      {(effet || effetsArmesEquipees.length > 0) && (
+      {(effets.length > 0 || effetsArmesEquipees.length > 0) && (
         <div className="rpg-hover-card-preview__rules" aria-label="Effets">
           {/* La ligne bleue de l'équipement passe en tête : elle dit ce que le
               porteur devient, avant les effets propres de sa carte. */}
@@ -1551,7 +1557,9 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   return (
     <aside
       ref={panelRef}
-      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
+      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}${interactif ? ' is-interactif' : ''}`}
+      onPointerEnter={onPointerEnter ?? undefined}
+      onPointerLeave={onPointerLeave ?? undefined}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
       aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
@@ -3550,6 +3558,26 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // mulligan : sa boîte réelle sert à le coller à la carte survolée, reposé
   // avant peinture par `placerApercuSurvol`.
   const panelRef = useRef(null);
+  // L'aperçu au survol devient **lisible à la souris** quand on s'attarde sur
+  // une carte : ses pastilles d'effets s'ouvrent alors au survol.
+  // - Balayer la main reste fluide : tant que l'aperçu n'est pas lisible, il
+  //   ne capte rien et la carte suivante prend aussitôt la main.
+  // - Une fois lisible, seule sa colonne d'infos capte la souris (la face
+  //   reste transparente aux cartes qu'elle recouvre). Quitter la carte en
+  //   direction de cette colonne ouvre un court **couloir** : pendant ce
+  //   trajet, survoler d'autres cartes ne remplace pas l'aperçu. Repartir dans
+  //   l'autre sens, ou traîner hors du panneau, rend le survol aux cartes.
+  const apercuSurvolRef = useRef(null);
+  const minuteursSurvolRef = useRef({ lisible: 0, masquer: 0, couloir: 0 });
+  const couloirSurvolRef = useRef(null);
+  const dansApercuRef = useRef(false);
+  const pointeurRef = useRef({ x: -1, y: -1 });
+  useEffect(() => { apercuSurvolRef.current = apercuSurvol; }, [apercuSurvol]);
+  useEffect(() => () => {
+    window.clearTimeout(minuteursSurvolRef.current.lisible);
+    window.clearTimeout(minuteursSurvolRef.current.masquer);
+    window.clearTimeout(minuteursSurvolRef.current.couloir);
+  }, []);
   const [carteGlissee, setCarteGlissee] = useState(null);
   const [surZoneDepot, setSurZoneDepot] = useState(false);
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
@@ -3999,6 +4027,38 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const afficherApercuSurvol = (carte, event, armes = []) => {
     if (!carte || !event?.currentTarget) return;
     const rectangle = event.currentTarget.getBoundingClientRect();
+    const minuteurs = minuteursSurvolRef.current;
+    const actuel = apercuSurvolRef.current;
+    const memeCarte = actuel?.carteId === carte.id;
+    // En chemin vers la colonne d'infos de l'aperçu (ou dedans), les cartes
+    // traversées ne le remplacent pas.
+    if (!memeCarte && (couloirSurvolRef.current || dansApercuRef.current) && actuel) return;
+    window.clearTimeout(minuteurs.masquer);
+    window.clearTimeout(minuteurs.couloir);
+    couloirSurvolRef.current = null;
+    // Retour sur la carte déjà ouverte (après un passage sur son aperçu, ou
+    // parce que la carte soulevée a glissé sous la souris) : l'aperçu reste
+    // lisible, sans rejouer le son ; il ne suit que si la carte a bougé.
+    if (memeCarte) {
+      if (actuel.rectangle?.left !== rectangle.left || actuel.rectangle?.top !== rectangle.top) {
+        setApercuSurvol((courant) => (courant?.carteId === carte.id ? {
+          ...courant,
+          rectangle: {
+            left: rectangle.left,
+            right: rectangle.right,
+            top: rectangle.top,
+            bottom: rectangle.bottom,
+            width: rectangle.width,
+            height: rectangle.height,
+          },
+        } : courant));
+      }
+      return;
+    }
+    window.clearTimeout(minuteurs.lisible);
+    minuteurs.lisible = window.setTimeout(() => {
+      setApercuSurvol((courant) => (courant?.carteId === carte.id ? { ...courant, interactif: true } : courant));
+    }, 450);
     // Première pose, au bord de la carte : le panneau n'existe pas encore,
     // sa taille est inconnue. L'effet de mise en page ci-dessous le repose
     // d'après sa boîte réelle, avant la première peinture.
@@ -4017,7 +4077,74 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     });
     if (!viewport.mobile) jouerSfx('hover');
   };
-  const masquerApercuSurvol = () => setApercuSurvol(null);
+  const masquerApercuSurvol = () => {
+    window.clearTimeout(minuteursSurvolRef.current.lisible);
+    window.clearTimeout(minuteursSurvolRef.current.masquer);
+    window.clearTimeout(minuteursSurvolRef.current.couloir);
+    couloirSurvolRef.current = null;
+    dansApercuRef.current = false;
+    apercuSurvolRef.current = null;
+    setApercuSurvol(null);
+  };
+  /** L'aperçu s'efface et la carte restée sous la souris reprend son survol :
+   * elle n'a pas reçu d'entrée pendant que l'aperçu tenait la main. */
+  const rendreSurvolAuxCartes = () => {
+    masquerApercuSurvol();
+    window.requestAnimationFrame(() => {
+      const { x, y } = pointeurRef.current;
+      if (x < 0 || apercuSurvolRef.current) return;
+      const sous = document.elementFromPoint?.(x, y);
+      sous?.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true, clientX: x, clientY: y }));
+    });
+  };
+  /** La souris quitte la carte : l'aperçu lisible ouvre le couloir vers sa
+   * colonne d'infos ; l'aperçu encore inerte s'efface tout de suite. */
+  const quitterCarteSurvol = () => {
+    const actuel = apercuSurvolRef.current;
+    const details = panelRef.current?.querySelector('.rpg-hover-card-preview__details');
+    if (!actuel?.interactif || !details) {
+      masquerApercuSurvol();
+      return;
+    }
+    const boite = details.getBoundingClientRect();
+    const depart = pointeurRef.current;
+    couloirSurvolRef.current = {
+      depart,
+      sens: boite.left + (boite.width / 2) >= depart.x ? 1 : -1,
+    };
+    window.clearTimeout(minuteursSurvolRef.current.couloir);
+    minuteursSurvolRef.current.couloir = window.setTimeout(() => {
+      couloirSurvolRef.current = null;
+      if (!dansApercuRef.current) rendreSurvolAuxCartes();
+    }, 420);
+  };
+  const entrerApercuSurvol = () => {
+    dansApercuRef.current = true;
+    couloirSurvolRef.current = null;
+    window.clearTimeout(minuteursSurvolRef.current.couloir);
+    window.clearTimeout(minuteursSurvolRef.current.masquer);
+  };
+  const sortirApercuSurvol = () => {
+    dansApercuRef.current = false;
+    window.clearTimeout(minuteursSurvolRef.current.masquer);
+    minuteursSurvolRef.current.masquer = window.setTimeout(rendreSurvolAuxCartes, 120);
+  };
+  // La position de la souris, et la sortie du couloir : repartir à rebours de
+  // la colonne d'infos, c'est renoncer à la lire.
+  useEffect(() => {
+    const suivre = (event) => {
+      if (event.pointerType && event.pointerType !== 'mouse') return;
+      pointeurRef.current = { x: event.clientX, y: event.clientY };
+      const couloir = couloirSurvolRef.current;
+      if (couloir && (event.clientX - couloir.depart.x) * couloir.sens < -10) {
+        window.clearTimeout(minuteursSurvolRef.current.couloir);
+        couloirSurvolRef.current = null;
+        if (!dansApercuRef.current) rendreSurvolAuxCartes();
+      }
+    };
+    window.addEventListener('pointermove', suivre, { passive: true });
+    return () => window.removeEventListener('pointermove', suivre);
+  });
 
   // Reposé avant peinture : dès que le panneau de l'aperçu est rendu, sa
   // boîte réelle remplace la première pose et le colle à la carte survolée —
@@ -4335,7 +4462,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onEnregistrerDeckMaison={enregistrerDeckMaison}
           onSupprimerDeckMaison={supprimerDeckMaison}
           onHoverCard={afficherApercuSurvol}
-          onLeaveHoverCard={masquerApercuSurvol}
+          onLeaveHoverCard={quitterCarteSurvol}
           onOpenCardPreview={ouvrirApercuCatalogue}
           onPlaySfx={jouerSfx}
           fullscreen={pleinEcran}
@@ -4356,6 +4483,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             carte={cardById(apercuSurvol.carteId)}
             style={apercuSurvol.style}
             panelRef={panelRef}
+            interactif={Boolean(apercuSurvol.interactif)}
+            onPointerEnter={entrerApercuSurvol}
+            onPointerLeave={sortirApercuSurvol}
           />
         )}
         {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
@@ -6475,7 +6605,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             variant="graveyard"
             topCard={duel.sorcier.cimetiere.at(-1)}
             onHoverCard={afficherApercuSurvol}
-            onLeaveHoverCard={masquerApercuSurvol}
+            onLeaveHoverCard={quitterCarteSurvol}
           />
         </div>
 
@@ -6518,7 +6648,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 data-available-count={groupe.available}
                 data-tapped-count={groupe.tapped}
                 onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
-                onMouseLeave={masquerApercuSurvol}
+                onMouseLeave={quitterCarteSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
                 {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
@@ -6576,7 +6706,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       tilt={TILTS[i % TILTS.length]}
                       onHoverCard={afficherApercuSurvol}
-                      onLeaveHoverCard={masquerApercuSurvol}
+                      onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureEnnemie(entite)}
                     />
                   );
@@ -6659,7 +6789,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         : undefined}
                       tilt={TILTS[(i + 2) % TILTS.length]}
                       onHoverCard={afficherApercuSurvol}
-                      onLeaveHoverCard={masquerApercuSurvol}
+                      onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureJoueur(entite)}
                     />
                   );
@@ -6784,7 +6914,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   if (!terrainInactif) demanderCouleurMana(event, terrain);
                 }}
                 onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
-                onMouseLeave={masquerApercuSurvol}
+                onMouseLeave={quitterCarteSurvol}
                 onFocus={(event) => afficherApercuSurvol(carte, event)}
                 onBlur={masquerApercuSurvol}
               >
@@ -6835,7 +6965,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             variant="graveyard"
             topCard={duel.joueur.cimetiere.at(-1)}
             onHoverCard={afficherApercuSurvol}
-            onLeaveHoverCard={masquerApercuSurvol}
+            onLeaveHoverCard={quitterCarteSurvol}
           />
           <CardPile count={duel.joueur.deck.length} label="Paquet" variant="deck" drawing={piochesJoueur.length > 0} drawToken={tokenPiocheJoueur} />
         </div>
@@ -7165,7 +7295,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   onClick={() => cliquerCarteMain(carteId, i)}
                   aria-pressed={defausseOuverte ? defausseSelectionnee : undefined}
                   onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
-                  onMouseLeave={masquerApercuSurvol}
+                  onMouseLeave={quitterCarteSurvol}
                   onFocus={(event) => afficherApercuSurvol(carte, event)}
                   onBlur={masquerApercuSurvol}
                   onDragStart={(event) => commencerGlisserCarte(event, carte)}
@@ -7256,6 +7386,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             armes={cartesDesIds(apercuSurvol.armesIds)}
             style={apercuSurvol.style}
             panelRef={panelRef}
+            interactif={Boolean(apercuSurvol.interactif)}
+            onPointerEnter={entrerApercuSurvol}
+            onPointerLeave={sortirApercuSurvol}
           />
         )}
         {apercuMagie && (

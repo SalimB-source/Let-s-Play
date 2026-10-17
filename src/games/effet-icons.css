@@ -81,3 +81,68 @@
 .rpg-card-icones--catalogue {
   bottom: 8px;
 }
+
+/* ── La pastille qui s'explique : survol, toucher ou clavier ouvrent la bulle ── */
+.rpg-pastille--explicable {
+  position: relative;
+  z-index: 5; /* au-dessus du bouton étiré des fiches du catalogue */
+  cursor: help;
+  transition: border-color .12s ease, background-color .12s ease;
+}
+
+.rpg-pastille--explicable:hover,
+.rpg-pastille--explicable.is-ouverte,
+.rpg-pastille--explicable:focus-visible {
+  border-color: rgba(255, 222, 150, .95);
+  background: rgba(40, 28, 10, .82);
+  outline: none;
+}
+
+/* L'aperçu rapide du duel ne vole pas le survol aux cartes qu'il recouvre :
+   ses pastilles restent inertes tant qu'il n'est pas devenu lisible à la
+   souris (`is-interactif`). Les volets (appui long, fiche, annonce), eux, se
+   lisent pleinement. */
+.rpg-hover-card-preview .rpg-pastille { pointer-events: none; }
+/* Lisible, l'aperçu ne capte la souris que sur sa colonne d'infos : la face,
+   elle, reste transparente aux cartes qu'elle recouvre. */
+.rpg-hover-card-preview.is-interactif .rpg-hover-card-preview__details,
+.rpg-hover-card-preview.is-interactif .rpg-pastille,
+.rpg-card-peek .rpg-hover-card-preview .rpg-pastille,
+.rpg-hover-card-preview--annonce .rpg-pastille { pointer-events: auto; }
+
+.rpg-pastille-bulle {
+  position: fixed;
+  z-index: 5000;
+  display: block;
+  width: max-content;
+  max-width: min(290px, calc(100vw - 16px));
+  padding: 8px 11px 9px;
+  border: 1px solid rgba(237, 203, 139, .6);
+  border-radius: 8px;
+  background: rgba(10, 12, 15, .97);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .6);
+  color: #fff3d6;
+  font: 500 12.5px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  text-align: left;
+  text-shadow: none;
+  white-space: normal;
+  pointer-events: none;
+  animation: rpg-pastille-bulle-in .1s ease-out;
+}
+
+.rpg-pastille-bulle strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #edcb8b;
+  font: 750 11px/1.3 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+@keyframes rpg-pastille-bulle-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.rpg-pastille-bulle.is-dessous { animation-name: rpg-pastille-bulle-in-bas; }
+@keyframes rpg-pastille-bulle-in-bas { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-pastille-bulle { animation: none; }
+}
