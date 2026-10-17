@@ -8316,26 +8316,36 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ── Infiltration : la carte brumeuse et transparente ────────────────────────
-   Une créature qui ne peut pas être bloquée se fond dans le décor : la carte
+   Une créature qui ne peut pas être bloquée se fond dans le décor : la face
    devient translucide (la table transparaît), l'illustration pâlit et se
    trouble légèrement, et deux nappes de brouillard dérivent lentement sur la
-   face, en sens opposés. Les repères (pastille, icônes, ATQ/DEF) passent
-   au-dessus de la brume et restent lisibles. Le mouvement réduit garde la
-   brume, immobile. */
-/* Pas de `box-shadow` sur la carte : elle porte déjà les anneaux d'état
-   (attaquante, sélectionnée, ciblée…). La lueur de brume vit dans le voile. */
+   face, en sens opposés. La transparence ne passe PAS par l'opacité de la
+   carte — elle rendrait aussi ses repères translucides : seuls le fond, le
+   cadre et l'illustration s'effacent. La pastille de couleur, les icônes
+   d'effets et ATQ/DEF restent opaques, au-dessus de la brume. Pas de
+   `box-shadow` non plus : la carte porte déjà les anneaux d'état (attaquante,
+   sélectionnée, ciblée…). Le mouvement réduit garde la brume, immobile. */
 .rpg-card.has-infiltration {
-  opacity: .72;
+  /* Le fond sous l'illustration s'efface, et le cadre devient un liseré
+     voilé de sa propre couleur. */
+  --rpg-frame-fill: transparent;
+  --rpg-frame-gradient: linear-gradient(
+    color-mix(in srgb, var(--rpg-frame-color, #f1f3f5) 45%, transparent),
+    color-mix(in srgb, var(--rpg-frame-color, #f1f3f5) 45%, transparent)
+  );
+  background-color: transparent;
 }
-.rpg-card.has-infiltration.is-attacked { opacity: .62; }
 .rpg-card.has-infiltration .rpg-card__img {
-  opacity: .78;
-  filter: saturate(.7) brightness(1.08) blur(.4px);
+  opacity: .55;
+  filter: saturate(.7) brightness(1.1) blur(.4px);
 }
+.rpg-card.has-infiltration.is-attacked .rpg-card__img { opacity: .45; }
 .rpg-card__brume {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  /* Même niveau que ATQ/DEF (z-index 2) mais avant eux dans la carte : la
+     brume passe sous les statistiques, la pastille et les icônes. */
+  z-index: 2;
   overflow: hidden;
   border-radius: inherit;
   pointer-events: none;
