@@ -559,7 +559,7 @@
   animation: rpg-souk-carte-pose .34s ease both;
   animation-delay: calc(var(--rang, 0) * 60ms);
 }
-.rpg-souk__carte.is-nouvelle { border-color: rgba(231, 191, 101, .6); box-shadow: 0 10px 26px rgba(197, 139, 53, .18); }
+.rpg-souk__carte.is-nouvelle { border-color: rgba(231, 191, 101, .6); }
 .rpg-souk__carte.is-doublon { opacity: .82; }
 .rpg-souk__carte-art img { display: block; width: 100%; height: auto; border-radius: 8px; }
 .rpg-souk__carte-corps { display: grid; gap: 3px; }
