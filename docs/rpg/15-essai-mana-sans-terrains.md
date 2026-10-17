@@ -34,7 +34,7 @@ Ces règles ne valent que pour le mode sans terrains — les formats classiques 
   - le sorcier adverse a sa plaque de nom et de vie **à gauche**, dans la même forme que celle du joueur, sous le flux de mana adverse ;
   - la plaque du joueur se pose **juste sous la ligne de séparation du plateau**, au milieu de l'écran (colonne de gauche), et sa jauge de mana suit **juste en dessous, alignée à gauche et de la même largeur** que la plaque, avec la pastille du compteur (« 1/1 ») sous la jauge (hauteur de plaque mesurée : `--rpg-plaque-joueur-h`) ;
   - le sorcier adverse est disposé **en miroir** : sa plaque juste au-dessus de la ligne, sa jauge (même largeur, même épaisseur) juste au-dessus, et sa pastille (« 0/0 ») au-dessus de la jauge (`--rpg-plaque-ennemi-h`) ;
-  - dans chaque plaque, les **points de vie** sont **tout à droite, centrés verticalement**, inscrits dans un **rond rouge sang en volume** (reflet, ombre interne, halo ; un éventuel bouclier en petite capsule sous le rond) ; avatar et nom en haut à gauche, zones (Main · Paquet · Cimetière) sur une ligne dessous ;
+  - dans chaque plaque, les **points de vie** sont **tout à droite, centrés verticalement**, inscrits dans un **rond rouge sang en volume** (reflet, ombre interne, halo ; un éventuel bouclier en petite capsule sous le rond) ; avatar à gauche, centré en hauteur, et au milieu le **nom centré dans les deux sens** avec la ligne des zones (Main · Paquet · Cimetière) juste dessous, centrée elle aussi ;
   - les cartes de la main sont teintées **à la couleur de leur coût** : la braise, l'eau, le sable ou la neige de leurs pastilles, et le dégradé du mana hybride quand le coût mêle deux couleurs.
 
 ## Vérifier
