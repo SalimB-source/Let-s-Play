@@ -193,3 +193,19 @@ test('lecteur sans navigateur ou sans WebAudio : il reste muet sans planter', ()
   player.destroy();
   assert.ok(true);
 });
+
+test('setVolume ajuste le gain des sons du jeu et coupe la lecture à zéro', () => {
+  globalThis.window = { AudioContext: FakeAudioContext };
+  const player = new RpgAudioPlayer();
+  player.unlock();
+  player.setVolume(0.5);
+  assert.equal(player.volume, 0.5);
+  assert.ok(Math.abs(player.master.gain.value - 0.11) < 1e-6, 'le gain maître est réduit de moitié');
+
+  const beforeZero = { ...player.ctx.counters };
+  player.setVolume(0);
+  player.play('victoire');
+  assert.deepEqual(player.ctx.counters, beforeZero, 'à volume 0, aucun oscillateur supplémentaire n’est planifié');
+  player.destroy();
+});
+

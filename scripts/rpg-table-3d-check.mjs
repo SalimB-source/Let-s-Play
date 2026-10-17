@@ -124,7 +124,8 @@ try {
     assert.ok((await nextFrame(page, resumed))[0] > resumed[0], 'et rend de nouveau des images');
     console.log(`✓ Boucle animée (${second[0] - first[0]} appels), suspendue pendant le glisser, reprise ensuite`);
 
-    // 3. Le bouton 3D coupe le décor, libère le contexte, et le choix persiste.
+    // 3. Le bouton 3D (dans l'onglet Paramètres) coupe le décor, libère le contexte, et le choix persiste.
+    await page.locator('.rpg-duel-nav__settings-tab').click();
     const toggle = page.locator('.rpg-duel-nav__decor3d');
     assert.equal(await toggle.getAttribute('aria-pressed'), 'true');
     await toggle.click();
@@ -224,6 +225,7 @@ try {
     assert.ok(requested.some((url) => url.endsWith(theme.plaque)), `${theme.plaque} : la plaque sans objets peints est chargée`);
     const painted = await page.locator('.card-table').evaluate((el) => el.style.backgroundImage);
     assert.ok(painted.includes(`plateau-${entry.id}.jpg`), 'le fond CSS garde la peinture d\'origine (repli)');
+    await page.locator('.rpg-duel-nav__settings-tab').click();
     await page.locator('.rpg-duel-nav__decor3d').click();
     await page.waitForTimeout(300);
     assert.equal(await live(page), 0, 'couper le décor libère aussi les objets, l\'ombre et le reflet');

@@ -170,23 +170,38 @@
    hauteur de la barre, ni du défilement de la table, ni du rognage de la
    grille. Son fond est quasi opaque et **sans `backdrop-filter`** : certaines
    WebView ne peignent pas un panneau filtré posé sur un fond animé. */
-.rpg-battle--touch .rpg-duel-nav__burger {
+.rpg-battle--touch .rpg-duel-nav .rpg-duel-nav__burger {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 38px;
+  min-width: 48px;
   min-height: 38px;
-  padding: 4px 9px;
-  font-size: 15px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 26px;
+  line-height: 1;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .92), 0 0 12px rgba(0, 0, 0, .75);
   touch-action: manipulation;
 }
-/* La capsule ne fait que 38 px de haut : la cible du doigt déborde de 4 px
+.rpg-battle--touch .rpg-duel-nav .rpg-duel-nav__burger:is(:hover, :focus-visible, .is-open) {
+  background: transparent;
+  box-shadow: none;
+}
+.rpg-battle--touch .rpg-duel-nav .rpg-duel-nav__burger-icon {
+  display: block;
+  font-size: 26px;
+  line-height: 1;
+}
+/* La capsule ne fait que 38 px de haut : la cible du doigt déborde de 6 px
    tout autour sans déplacer la barre ni rétrécir la table. */
-.rpg-battle--touch .rpg-duel-nav__burger::after {
+.rpg-battle--touch .rpg-duel-nav .rpg-duel-nav__burger::after {
   content: "";
   position: absolute;
-  inset: -4px;
+  inset: -6px;
 }
 .rpg-battle--touch .rpg-duel-nav__menu {
   position: fixed;
@@ -201,7 +216,7 @@
   left: auto;
   z-index: 60; /* dans le contexte de la barre (z-index 50) : au-dessus de la table */
   display: none;
-  min-width: 168px;
+  min-width: 240px;
   max-width: calc(100vw - 16px);
   max-width: calc(100vw - max(8px, env(safe-area-inset-left, 0px)) - max(8px, env(safe-area-inset-right, 0px)));
   /* `vh` d'abord : les WebView qui ignorent `dvh` gardent un panneau mesuré. */
@@ -209,9 +224,9 @@
   max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 58px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 5px;
+  padding: 8px;
   border: 1px solid rgba(238, 216, 171, .34);
-  border-radius: 12px;
+  border-radius: 14px;
   background: linear-gradient(180deg, rgba(14, 11, 9, .97), rgba(8, 8, 12, .96));
   box-shadow: 0 14px 34px rgba(0, 0, 0, .6);
   backdrop-filter: none;
@@ -219,14 +234,38 @@
 }
 .rpg-battle--touch .rpg-duel-nav__menu.is-open {
   display: grid;
-  gap: 2px;
+  gap: 4px;
 }
-.rpg-battle--touch .rpg-duel-nav__menu button {
+.rpg-battle--touch .rpg-duel-nav .rpg-duel-nav__menu > button {
   width: 100%;
-  min-height: 40px;
-  padding: 8px 12px;
-  font-size: 11px;
+  min-height: 42px;
+  padding: 9px 14px;
+  font-size: 13px;
   text-align: left;
+}
+.rpg-battle--touch .rpg-duel-nav .rpg-duel-nav__settings {
+  position: static;
+  width: 100%;
+  min-width: 0;
+  margin: 2px 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(238, 216, 171, .22);
+  border-radius: 10px;
+  background: rgba(255, 244, 214, .05);
+  box-shadow: none;
+}
+@media (max-height: 380px) {
+  .rpg-battle--touch .rpg-duel-nav .rpg-duel-nav__menu {
+    padding: 6px;
+  }
+  .rpg-battle--touch .rpg-duel-nav .rpg-duel-nav__menu.is-open {
+    gap: 3px;
+  }
+  .rpg-battle--touch .rpg-duel-nav .rpg-duel-nav__menu > button {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
 }
 .rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi { grid-area: opponent; justify-self: center; align-self: center; width: 210px; }
 .rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { grid-area: player; align-self: end; padding-bottom: 8px; }
@@ -443,10 +482,11 @@
    décor reste visible jusque sous les libellés. Rien n'est opaque — la règle du
    duel tactile (aucun panneau opaque sur le champ de bataille) n'a pas bougé. */
 .rpg-battle--touch .card-table > .rpg-duel-nav {
-  padding: 3px 5px;
-  border: 1px solid rgba(238, 216, 171, .24);
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(9, 7, 6, .66), rgba(7, 7, 11, .58));
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .rpg-battle--touch .card-table > .rpg-wizard-plate {
   padding: 3px 6px;

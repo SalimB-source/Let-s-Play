@@ -1234,8 +1234,8 @@ assert.match(battleCss, /\.rpg-wizard-plate\s*\{[^}]*background:\s*linear-gradie
   'les plaques des deux sorciers gardent leur fond translucide');
 assert.match(battleCss, /\.rpg-bottombar \.rpg-log\s*\{[^}]*background:\s*rgba\(6, 6, 14, \.56\);/s,
   'le journal du duel se détache sur les plateaux clairs');
-assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-duel-nav\s*\{[^}]*background:\s*linear-gradient\(180deg, rgba\(9, 7, 6, \.66\), rgba\(7, 7, 11, \.58\)\);/s,
-  'au doigt, la barre de navigation du duel porte sa capsule sur les plateaux clairs');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-duel-nav\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/s,
+  'au doigt, le conteneur du menu hamburger reste sans fond ni bordure');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-wizard-plate\s*\{[^}]*background:\s*linear-gradient\(180deg, rgba\(9, 7, 6, \.66\), rgba\(7, 7, 11, \.58\)\);/s,
   'au doigt, les plaques des deux sorciers portent leur capsule, elles aussi');
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table::before/,
