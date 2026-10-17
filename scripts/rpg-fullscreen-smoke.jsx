@@ -6,31 +6,23 @@
  * (`/jeu/sablier-de-bab-el`) : le menu (Jouer, Histoire, Decks, Catalogue) et le
  * duel. jsdom n'a pas de Fullscreen API : on en installe une doublure qui répond
  * comme un navigateur (la demande aboutit un instant plus tard, puis
- * `fullscreenchange` part), qu'on peut aussi faire refuser, ou fermer « de
- * l'extérieur » (Échap, geste « retour » d'Android).
+ * `fullscreenchange` part), qu'on peut aussi faire refuser.
  *
- *   0. Plein écran « de base » : la page se lance en plein écran — la coque
- *      (`.rpg-battle`, couche fixe) porte `is-immersive` dès le montage, sans
- *      geste, et le verrou de défilement est posé. Le natif attend le premier
- *      geste du joueur (le navigateur refuse une demande hors geste).
- *   1. Le premier geste (clic dans le menu) demande le plein écran natif sur la
- *      coque du jeu — pas sur `<html>` : le site entier ne part pas en plein
- *      écran, seul le Sablier.
- *   2. Démarrer une partie : le même nœud reste en plein écran (le nœud de la coque
- *      survit au changement d'écran), le bouton de la barre du duel est allumé.
- *   3. Retour au menu depuis le duel : le plein écran reste ouvert — la session
- *      de paysage ne possède plus le plein écran et ne le referme plus.
- *   4. Touche F : ferme puis rouvre, au menu comme en duel ; F majuscule aussi ;
- *      Ctrl/Cmd/Alt + F et touche maintenue restent au navigateur.
- *   5. Saisie de texte : un « f » tapé dans un champ ne bascule rien, un clic
- *      dans un champ ne demande pas le natif.
- *   6. Le navigateur referme le plein écran (Échap, « retour » Android) : la
- *      page suit, le jeu reste jouable, la touche qui vient de refermer ne
- *      rouvre rien, et relancer une partie le rouvre.
- *   7. Un étage du mode Histoire se lance aussi en plein écran dans le geste.
- *   8. Sans Fullscreen API (iPhone, iframe) : la couche fixe seule suffit, F la
- *      retire sans appeler `exitFullscreen`.
- *   9. Démontage : le verrou de défilement est rendu et le plein écran refermé.
+ *   1. Ouverture : la page reste dans la page — ni plein écran natif, ni couche
+ *      fixe, ni verrou de défilement (aucune demande au montage).
+ *   2. Le bouton du menu demande le plein écran natif sur la coque du jeu — pas
+ *      sur `<html>` : le site entier ne part pas en plein écran, seul le
+ *      Sablier — et un second appui revient à la page.
+ *   3. Un toucher ordinaire ne demande rien, et lancer une partie à la souris
+ *      (jsdom n'a pas de pointeur grossier) reste dans la page : rien n'est
+ *      forcé sur ordinateur.
+ *   4. **Au doigt** (pointeur grossier : téléphone, tablette, application) :
+ *      lancer une partie demande le plein écran natif dans le geste — c'est la
+ *      seule condition sous laquelle le navigateur accepte ensuite
+ *      `screen.orientation.lock('landscape')`, qui couche la partie dans le
+ *      paysage. Le nœud de la coque survit au changement d'écran : le même nœud
+ *      reste en plein écran pendant le duel, bouton de la barre allumé.
+ *   5. Démontage : le verrou de défilement est rendu et le plein écran refermé.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -62,6 +54,25 @@ async function press(key, init = {}, target = window) {
 const touch = (element) => act(async () => {
   element.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
 });
+
+/** Pointeur grossier (téléphone, tablette, application) : `matchMedia` répond
+ * oui à `(pointer: coarse)` et non à tout le reste. jsdom n'implémente pas
+ * `matchMedia` : sans la doublure, la page se croit à la souris. */
+function installCoarsePointer() {
+  const original = window.matchMedia;
+  window.matchMedia = (query) => ({
+    matches: /pointer:\s*coarse/.test(String(query)),
+    media: String(query),
+    onchange: null,
+    addEventListener() {}, removeEventListener() {},
+    addListener() {}, removeListener() {},
+    dispatchEvent() { return false; },
+  });
+  return () => {
+    if (original === undefined) delete window.matchMedia;
+    else window.matchMedia = original;
+  };
+}
 
 /**
  * Fullscreen API de remplacement. `element` est l'élément en plein écran ;
@@ -156,6 +167,25 @@ export async function checkRpgFullscreen(assert) {
     assert.equal(shellOf(node).dataset.scene, 'duel', 'la partie est bien lancée');
     await unmount();
     assert.equal(api.element, null, 'quitter la page ferme un éventuel plein écran');
+
+    // Au doigt (téléphone, tablette, application), lancer une partie demande le
+    // plein écran natif dans le geste : c'est la seule condition sous laquelle
+    // le navigateur accepte `screen.orientation.lock('landscape')` — la partie
+    // se couche dans le paysage.
+    const restaurerPointeur = installCoarsePointer();
+    try {
+      const telephone = await mountPage();
+      const avant = counts(api);
+      await lancerDuel(telephone.node);
+      await settle();
+      assert.deepEqual(stateOf(telephone.node, api), OPEN, 'au doigt, le lancement du duel demande le plein écran natif sur la coque');
+      assert.deepEqual(since(api, avant), { requests: 1, exits: 0 }, 'une seule demande, dans le geste du lancement');
+      assert.equal(shellOf(telephone.node).dataset.scene, 'duel', 'la partie est bien lancée');
+      await telephone.unmount();
+      assert.equal(api.element, null, 'quitter la page ferme le plein écran du duel');
+    } finally {
+      restaurerPointeur();
+    }
     api.uninstall();
   } finally {
     api.uninstall();

@@ -67,8 +67,17 @@ try {
       for (const result of results) {
         const label = `${width}px ${touch ? 'mobile/APK' : 'souris'} ${result.name}`;
         if (result.cost) {
-          assert.ok(Math.abs(result.color.width - result.cost.width) < 0.1, `${label}: même diamètre`);
-          assert.ok(Math.abs(result.color.height - result.cost.height) < 0.1, `${label}: même hauteur`);
+          // Dans la main au doigt, la pastille de couleur est volontairement
+          // plus petite que le disque de coût (16 px contre 22) : elle laisse
+          // l'illustration respirer. Partout ailleurs — table, mulligan,
+          // catalogue, aperçus, souris —, les deux repères gardent même diamètre.
+          if (touch && result.name.startsWith('rpg-hand__card')) {
+            assert.ok(result.color.width <= result.cost.width - 4, `${label}: pastille de couleur réduite dans la main au doigt`);
+            assert.ok(result.color.width >= 12 && result.color.height >= 12, `${label}: pastille de couleur encore lisible`);
+          } else {
+            assert.ok(Math.abs(result.color.width - result.cost.width) < 0.1, `${label}: même diamètre`);
+            assert.ok(Math.abs(result.color.height - result.cost.height) < 0.1, `${label}: même hauteur`);
+          }
           assert.ok(Math.abs(result.cost.width - result.cost.height) < 0.1, `${label}: coût rond`);
           assert.ok(result.cost.width >= 16, `${label}: repères visibles`);
         }
@@ -92,7 +101,7 @@ try {
       }
     }
   }
-  console.log('✓ Diamètres couleur/coût identiques (mono et hybride), catalogue et aperçus inclus ; alignement, marges et chiffre des aperçus vérifiés ; cadres retirés sur souris et mobile/APK.');
+  console.log('✓ Diamètres couleur/coût identiques (mono et hybride), catalogue et aperçus inclus — la pastille de couleur de la main, elle, est réduite au doigt ; alignement, marges et chiffre des aperçus vérifiés ; cadres retirés sur souris et mobile/APK.');
 } finally {
   await browser.close();
 }

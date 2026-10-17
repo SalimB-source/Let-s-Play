@@ -115,9 +115,13 @@
   /* La colonne des commandes, à droite : resserrée (176 px au plus étroit,
      194 px sur un 844 × 390), le rail du tour s'y aligne. */
   --rpg-touch-controls: clamp(176px, 23vw, 280px);
-  /* Les cartes posées sur la table sont un peu plus petites que celles de la
-     main (85 %), sans toucher à `--duel-card` qui règle la grille et la main. */
-  --rpg-field-card: calc(var(--duel-card) * .85);
+  /* Les cartes posées sur la table restent un peu plus petites que celles de
+     la main — 95 %, agrandies depuis 85 % pour lire les créatures en jeu —,
+     sans toucher à `--duel-card` qui règle la grille et la main. Le budget
+     vertical tient toujours : une face 4:5 à 95 % fait 1,19 × `--duel-card`,
+     sous le plancher de rangée (1,4 × `--duel-card` + 8 px), et l'attaquant
+     couché à 15° (1,47 × sa largeur) reste dans sa rangée. */
+  --rpg-field-card: calc(var(--duel-card) * .95);
   --rpg-field-min: 40px;
   --rpg-field-gap: max(8px, calc(var(--duel-card) * .22));
   /* La taille des statistiques et le bas de la carte sont nommés une fois ;
@@ -427,6 +431,14 @@
   border-radius: 50%;
   font-size: 11px;
 }
+/* Le coût ne s'imprime plus sur la carte posée : une créature en jeu n'a plus
+   rien à payer, la petite face garde l'essentiel — la pastille de couleur, les
+   compteurs et ATQ/DEF. Le disque reste dans le DOM (le `aria-label` de la
+   carte continue de dire le coût) et sur toutes les autres faces : main,
+   mulligan, aperçus, catalogue. La règle ci-dessus garde donc son sens pour le
+   disque de neige du bouton de capacité activée (`.rpg-card__activation`), qui
+   vit hors du titre de la carte et reste visible. */
+.rpg-battle--touch .card-row .rpg-card .rpg-card__title .rpg-mana-cost { display: none; }
 .rpg-battle--touch .rpg-hand__card--img .rpg-hand__stat,
 .rpg-battle--touch .rpg-card--img .rpg-card__stat--atk,
 .rpg-battle--touch .rpg-card--img .rpg-card__pt {
@@ -624,16 +636,17 @@
 
 /* Une main lisible : une carte = une cible, jamais deux cartes sous le doigt.
    Quand la main s'allonge, c'est la **largeur des cartes** qui descend —
-   toutes ensemble, jusqu'à un plancher lisible (`--rpg-hand-min`) — et c'est
-   seulement sous ce plancher que la rangée défile, au glissement horizontal,
-   avec un cran par carte. Les cartes ne se recouvrent donc jamais : le doigt
-   qui touche une carte joue **cette** carte, où qu'il tombe dessus.
+   toutes ensemble (`flex: 1 1 0; min-width: 0`) : la rangée ne déborde jamais
+   de sa colonne, donc elle ne **recadre rien** (`overflow: visible`, aucun
+   masque). La pioche qui glisse depuis la gauche (`rpg-player-card-draw`,
+   `translate3d(-100% → 0)`) passe à découvert au lieu d'être coupée nette au
+   bord de la rangée, et les compteurs `×N` des piles ne sont pas rognés.
    Toute la géométrie sort d'une seule mesure : la largeur de la colonne de jeu
    divisée par le nombre d'emplacements (`--hand-count`, posé par la page sur
    la rangée), gouttières déduites. Sur un 844 × 390, cinq cartes font 62 px et
    huit en font 39 ; les piles homonymes (`×N`) réduisent le compte avant que
-   la place ne manque. `justify-content: safe center` centre une main courte,
-   et laisse la première carte atteignable dès que la rangée déborde. */
+   la place ne manque. `justify-content: center` centre la main dans sa
+   colonne. */
 .rpg-battle--touch .rpg-hand-dock .rpg-hand {
   --rpg-hand-gap: 6px;
   --hand-count: 1;
@@ -648,13 +661,13 @@
   max-height: none;
   margin: 0;
   padding: 4px 0;
-  overflow: hidden;
+  overflow: visible;
   mask-image: none;
   -webkit-mask-image: none;
 }
 .rpg-battle--touch .rpg-hand-dock .rpg-hand::-webkit-scrollbar { display: none; }
-/* La carte, et la pile qui l'emballe, partagent la même largeur : le plancher
-   tient la cible tactile, `--duel-card` garde l'échelle du champ de bataille. */
+/* La carte, et la pile qui l'emballe, partagent la même largeur : les cartes
+   rétrécissent ensemble, `--duel-card` garde l'échelle du champ de bataille. */
 .rpg-battle--touch .rpg-hand .rpg-hand__card,
 .rpg-battle--touch .rpg-hand .rpg-hand__pile {
   flex: 1 1 0;
@@ -872,9 +885,16 @@
 }
 
 
-/* Même diamètre pour les deux repères au doigt et dans la WebView Android. */
+/* Même diamètre pour les deux repères au doigt et dans la WebView Android.
+   Exception dans la main : la pastille de couleur y rétrécit à 16 px — elle
+   laisse l'illustration respirer sur les petites faces — pendant que le disque
+   de coût garde le diamètre commun de 22 px. Sur la table, le diamètre commun
+   reste, mais le disque de coût ne s'imprime plus (voir plus haut) : la
+   pastille de couleur y est le seul repère rond, en 27cqw proportionnels. */
 .rpg-battle--touch .rpg-card--img,
 .rpg-battle--touch .rpg-hand__card--img { --rpg-card-marker-size: 22px; }
+.rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge { width: 16px; border-width: 1.5px; font-size: 10px; }
+.rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge__pip { border-width: 1.5px; }
 
 /* Toutes les faces, y compris catalogue, mulligan, aperçus et atelier :
    pas de cadre sur mobile/APK. Les pastilles et les états interactifs restent.

@@ -485,6 +485,40 @@ try {
   // « Jouer la carte » à confirmer pour une créature.
   await page.locator('.rpg-hand__card[data-card-id="fennec-des-decombres"]').click();
   await page.locator('.rpg-card--equipe[data-card-id="fennec-des-decombres"]').waitFor();
+  // La face posée, au doigt : le coût ne s'imprime plus — il reste dans le
+  // libellé accessible —, la carte prend 95 % de la mesure de la main, et dans
+  // la main la pastille de couleur est plus petite que le disque de coût.
+  const facePosee = await page.evaluate(() => {
+    const table = document.querySelector('.card-table');
+    const posee = document.querySelector('.card-row--equipe .rpg-card');
+    const main = document.querySelector('.rpg-hand__card:has(.rpg-card-element-badge)');
+    const cout = posee?.querySelector('.rpg-card__title .rpg-mana-cost');
+    const rect = (node) => node?.getBoundingClientRect().width ?? 0;
+    // `--duel-card` est un `clamp()` : la propriété personnalisée ne se résout
+    // qu'à l'usage — une sonde invisible la mesure en px, sans rien déranger.
+    const sonde = document.createElement('div');
+    sonde.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;width:var(--duel-card);height:0;';
+    table.appendChild(sonde);
+    const duelCard = sonde.getBoundingClientRect().width;
+    sonde.remove();
+    return {
+      largeur: posee?.offsetWidth ?? 0,
+      duelCard,
+      coutImprime: Boolean(cout) && getComputedStyle(cout).display !== 'none' && rect(cout) > 0,
+      coutAnnonce: (posee?.getAttribute('aria-label') ?? '').includes('coût'),
+      pastille: rect(main?.querySelector('.rpg-card-element-badge')),
+      disque: rect(main?.querySelector('.rpg-mana-cost')),
+    };
+  });
+  assert.equal(facePosee.coutImprime, false, 'a placed card no longer prints its cost');
+  assert.equal(facePosee.coutAnnonce, true, 'the cost stays in the accessible label of the placed card');
+  assert.ok(Math.abs(facePosee.largeur - facePosee.duelCard * .95) < 1.5,
+    `the placed card takes 95 % of the hand measure (${facePosee.largeur} px for ${facePosee.duelCard} px)`);
+  // Si la main ne porte plus que des terrains à cet instant, elle n'a ni
+  // pastille ni disque à comparer — le diamètre réduit est vérifié sur faces
+  // synthétiques dans `check:rpg-card-markers`.
+  assert.ok(facePosee.pastille === 0 || (facePosee.disque > 0 && facePosee.pastille <= facePosee.disque - 4),
+    `the color badge of the hand is smaller than the cost disc (${facePosee.pastille} px vs ${facePosee.disque} px)`);
   await page.locator('.rpg-btn--attaque-tous').click();
   assert.equal(await page.locator('.rpg-phase-step.is-active').getAttribute('data-phase'), 'attaque');
   const waitForTilt = async (selector, expected) => page.waitForFunction(({ selector, expected }) => {

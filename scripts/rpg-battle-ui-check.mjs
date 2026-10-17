@@ -949,6 +949,10 @@ assert.match(battleCss, /\.rpg-hand__card--img \{ --rpg-card-marker-size: 28px; 
   'la main partage le diamètre de 28 px');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \{ --rpg-card-marker-size: 22px; \}/,
   'au doigt, les deux repères partagent le diamètre de 22 px');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-card-element-badge \{ width: 16px; border-width: 1\.5px; font-size: 10px; \}/,
+  'la pastille de couleur de la main rétrécit à 16 px au doigt, le disque de coût garde 22 px');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-card-element-badge__pip \{ border-width: 1\.5px; \}/,
+  'les deux couleurs d’une hybride en main suivent le filet réduit');
 assert.match(battleCss, /\.rpg-mulligan__card \{ --rpg-card-marker-size: clamp\(16px, 15cqw, 30px\); \}/,
   'le mulligan utilise une seule taille responsive pour les deux repères');
 assert.match(mobileCss, /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--frame-"\]\[class\]\s*\{[^}]*border-width: 0;[^}]*background-image: none;/s,
@@ -999,6 +1003,11 @@ assert.doesNotMatch(battlePage, /rpg-mode-menu__boards|rpg-board-choice|rpg-boar
   'le bloc « Le terrain d’affrontement » a disparu du menu Jouer');
 assert.doesNotMatch(battleCss, /\.rpg-board-choice|\.rpg-mode-menu__boards|\.rpg-board-grid/,
   'les styles du sélecteur de plateau ont été retirés de la feuille de combat');
+// La barre d'onglets du menu, dans la fenêtre tactile du jeu (téléphone en
+// paysage, petites tablettes) : une deuxième ligne pleine largeur, jamais
+// d'onglets qui débordent de l'écran ni passent sous le bouton plein écran.
+assert.match(battleCss, /@media \(min-width: 821px\) and \(max-width: 1100px\) \{\s*\.rpg-mode-menu__header \{ flex-wrap: wrap; \}\s*\.rpg-mode-menu__switch \{ order: 3;[^}]*flex: 0 0 calc\(100% \+ clamp\(14px, 4\.6vw, 74px\) \* 2\);[^}]*overflow-x: auto; scrollbar-width: none; \}\s*\.rpg-mode-menu__switch::-webkit-scrollbar \{ display: none; \}\s*\.rpg-mode-menu__switch button, \.rpg-mode-menu__switch button\.rpg-mode-menu__souk \{ flex: 1 0 auto; min-height: 46px;[^}]*\}\s*\}/,
+  'entre 821 et 1100 px, les six onglets passent sur leur propre ligne, pleine largeur, et se la partagent ; en dernier recours la barre défile sans onglet coupé');
 assert.match(plateauxSource, /RPG_PLATEAUX_PAR_DECK = \{[\s\S]*?'veilleurs-du-desert': 'erg-du-sahara',[\s\S]*?'cour-des-djinns': 'table-des-heures',[\s\S]*?'sentiers-de-cendre': 'caravane-de-gourara',[\s\S]*?'maree-des-abysses': 'ruines-de-tipaza'/,
   'chaque deck du catalogue a son terrain attitré');
 assert.match(plateauxSource, /couleurDominanteDeck/,
@@ -1290,14 +1299,18 @@ assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*pa
   'les champs de bataille tactiles ne recadrent plus leurs cartes : aucune zone de défilement');
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*overflow-x:\s*auto;/s,
   'plus de masque ni de défilement horizontal autour des cartes posées');
-assert.match(mobileCss, /--rpg-field-card:\s*calc\(var\(--duel-card\) \* \.85\);/,
-  'les cartes posées sur la table sont un peu plus petites que celles de la main');
+assert.match(mobileCss, /--rpg-field-card:\s*calc\(var\(--duel-card\) \* \.95\);/,
+  'les cartes posées sur la table sont agrandies à 95 % de la main, toujours un peu sous elle');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-row \.rpg-card \.rpg-card__title \.rpg-mana-cost \{ display: none; \}/,
+  'le coût ne s’imprime plus sur les cartes posées au doigt ; le bouton de capacité activée, hors du titre, garde son disque');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-row > :is\(\.rpg-card, \.rpg-card-stack\) \{[^}]*width:\s*clamp\(var\(--rpg-field-min\), calc\(\(100% - \(var\(--row-count\) - 1\) \* var\(--rpg-field-gap\)\) \/ var\(--row-count\)\), var\(--rpg-field-card\)\);/s,
   'les cartes posées partagent la largeur de leur rangée : le groupe tient toujours sans défiler');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-row:has\(> :nth-child\(2\)\) \{ --row-count: 2; \}/,
   'le nombre d’emplacements d’un champ est compté en CSS');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*--rpg-hand-gap:\s*6px;[^}]*justify-content:\s*center;[^}]*gap:\s*var\(--rpg-hand-gap\);[^}]*overflow:\s*hidden;/s,
-  'la main tactile se centre et garde un espacement constant sans masquer les cartes');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*--rpg-hand-gap:\s*6px;[^}]*justify-content:\s*center;[^}]*gap:\s*var\(--rpg-hand-gap\);[^}]*overflow:\s*visible;/s,
+  'la main tactile se centre, garde un espacement constant et ne recadre rien : la pioche qui glisse depuis la gauche n’est plus coupée au bord de la rangée');
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*overflow:\s*hidden;/s,
+  'plus de masque autour de la main : aucune carte n’est rognée sur les côtés');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.rpg-hand \.rpg-hand__pile \{[^}]*flex:\s*1 1 0;[^}]*min-width:\s*0;[^}]*max-width:\s*var\(--duel-card\);/s,
   'les cartes et piles de la main se partagent la largeur, jusqu’à la taille normale des cartes');
 assert.match(battleCss, /\.rpg-terrains\s*\{[^}]*z-index:\s*41;/s,

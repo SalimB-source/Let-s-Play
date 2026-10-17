@@ -128,3 +128,49 @@ test('without a Fullscreen API there is nothing to wait for', async () => {
   assert.deepEqual(verrous, ['landscape'], 'the rotate prompt stays the only fallback');
   s.leave();
 });
+
+// Le navigateur ne tourne l'écran qu'en plein écran, et le plein écran de la
+// page peut arriver APRÈS l'attente de `enter()` (navigateur lent, geste
+// suivant) : tant que la session est ouverte, chaque `fullscreenchange` rejoue
+// le verrou — la partie finit en paysage dès que le plein écran est là.
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+test('a fullscreen that lands after the wait still locks landscape', async () => {
+  const e = environment();
+  const doc = documentAvecEvenements();
+  const verrous = [];
+  e.win.screen.orientation.lock = async (mode) => {
+    verrous.push(mode);
+    if (!doc.fullscreenElement) throw new Error('fullscreen required');
+  };
+  const s = createRpgLandscapeSession(e.win, doc);
+  await s.enter({ fullscreen: false }); // l'attente expire, le premier verrou est refusé
+  assert.deepEqual(verrous, ['landscape'], 'a first attempt is always made');
+  doc.fullscreenElement = doc.documentElement;
+  doc.fire('fullscreenchange');
+  await tick();
+  assert.deepEqual(verrous, ['landscape', 'landscape'], 'the catch-up retries the lock once fullscreen is there');
+  doc.fire('fullscreenchange');
+  await tick();
+  assert.deepEqual(verrous, ['landscape', 'landscape'], 'the landscape is taken: no further attempt');
+  s.leave();
+  assert.equal(doc.listenerCount('fullscreenchange'), 0, 'leaving releases the catch-up listener');
+});
+test('a new duel re-arms a single catch-up listener', async () => {
+  const e = environment();
+  const doc = documentAvecEvenements();
+  const verrous = [];
+  e.win.screen.orientation.lock = async (mode) => {
+    verrous.push(mode);
+    if (!doc.fullscreenElement) throw new Error('fullscreen required');
+  };
+  const s = createRpgLandscapeSession(e.win, doc);
+  await s.enter({ fullscreen: false });
+  await s.enter({ fullscreen: false }); // « Activer le paysage » est rappuyé
+  assert.equal(doc.listenerCount('fullscreenchange'), 1, 'one catch-up listener is armed, with the newest token');
+  doc.fullscreenElement = doc.documentElement;
+  doc.fire('fullscreenchange');
+  await tick();
+  assert.deepEqual(verrous, ['landscape', 'landscape', 'landscape'], 'only the armed listener retries');
+  s.leave();
+});

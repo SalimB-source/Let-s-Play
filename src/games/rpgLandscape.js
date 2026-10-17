@@ -43,9 +43,49 @@ export function createRpgLandscapeSession(win = window, doc = document) {
   let generation = 0;
   let ownsFullscreen = false;
   let ownsOrientation = false;
+  // Une seule tentative de verrou à la fois : l'évènement `fullscreenchange` et
+  // le flux principal de `enter()` peuvent se croiser, ils partagent la même
+  // promesse au lieu d'appeler `lock` deux fois.
+  let verrouEnCours = null;
+  // Écouteur de rattrapage : tant que la session est ouverte et que le paysage
+  // n'est pas pris, chaque entrée en plein écran rejoue le verrou. Le
+  // navigateur refuse `screen.orientation.lock` hors plein écran, et le plein
+  // écran de la page peut arriver après l'attente de `enter()` (geste suivant,
+  // navigateur lent) — la partie doit finir en paysage dès qu'il est là.
+  let rattrapage = null;
   const mobile = () => Boolean(win.LetsPlayAndroid)
     || Boolean(win.matchMedia?.('(pointer: coarse)').matches)
     || win.innerWidth <= 620;
+
+  const libererRattrapage = () => {
+    if (!rattrapage) return;
+    try {
+      doc?.removeEventListener?.('fullscreenchange', rattrapage);
+      doc?.removeEventListener?.('webkitfullscreenchange', rattrapage);
+    } catch { /* document muet */ }
+    rattrapage = null;
+  };
+
+  const verrouillerPaysage = (token) => {
+    if (ownsOrientation || !active || token !== generation) return Promise.resolve(false);
+    if (verrouEnCours) return verrouEnCours;
+    if (!win.screen?.orientation?.lock) return Promise.resolve(false);
+    verrouEnCours = win.screen.orientation.lock('landscape')
+      .then(() => {
+        // Session close during the lock: hand the screen back.
+        if (!active || token !== generation) {
+          try { win.screen.orientation.unlock?.(); } catch { /* already unlocked */ }
+          return false;
+        }
+        ownsOrientation = true;
+        libererRattrapage();
+        return true;
+      })
+      .catch(() => false) // Safari / embedded previews: the rotate prompt is the fallback.
+      .finally(() => { verrouEnCours = null; });
+    return verrouEnCours;
+  };
+
   return {
     async enter({ fullscreen = true } = {}) {
       const needsLandscape = mobile();
@@ -53,6 +93,18 @@ export function createRpgLandscapeSession(win = window, doc = document) {
       const token = ++generation;
       if (needsLandscape) {
         try { win.LetsPlayAndroid?.setDuelLandscape?.(true); } catch { /* older APK */ }
+        // Un `enter()` qui remplace le précédent reprend l'écouteur avec le
+        // nouveau jeton — un seul rattrapage armé par session.
+        libererRattrapage();
+        if (typeof doc?.addEventListener === 'function') {
+          rattrapage = () => {
+            if (!active || token !== generation || ownsOrientation) return;
+            if (!nativeFullscreenElement(doc)) return;
+            verrouillerPaysage(token);
+          };
+          doc.addEventListener('fullscreenchange', rattrapage);
+          doc.addEventListener('webkitfullscreenchange', rattrapage);
+        }
       }
       // The native fullscreen request must happen inside the launch/resume
       // gesture. It applies on desktop too; CSS keeps the table fitted to the
@@ -69,26 +121,23 @@ export function createRpgLandscapeSession(win = window, doc = document) {
         }
       } else if (!fullscreen) {
         // `fullscreen: false` : le plein écran appartient à la page
-        // (`useGameFullscreen`, qui le pose dès le menu et le garde en duel).
-        // On l'attend avant de verrouiller l'orientation — le navigateur refuse
-        // `screen.orientation.lock` hors plein écran — sans jamais le refermer.
-        // Rien à attendre (plein écran déjà posé, document muet) : on enchaîne
-        // sans passer la main, comme avant.
+        // (`useGameFullscreen`) — au doigt, la page le demande dans le geste du
+        // lancement, juste avant cet appel. On l'attend avant de verrouiller
+        // l'orientation — le navigateur refuse `screen.orientation.lock` hors
+        // plein écran — sans jamais le refermer. S'il arrive après le délai,
+        // l'écouteur de rattrapage rejouera le verrou. Rien à attendre (plein
+        // écran déjà posé, document muet, API absente) : on enchaîne sans
+        // passer la main, comme avant.
         const attente = attendrePleinEcran(doc);
         if (attente) await attente;
       }
       if (!active || token !== generation || !needsLandscape) return;
-      try {
-        if (win.screen?.orientation?.lock) {
-          await win.screen.orientation.lock('landscape');
-          if (!active) win.screen.orientation.unlock?.();
-          else ownsOrientation = true;
-        }
-      } catch { /* Safari / embedded previews: the rotate prompt is the fallback. */ }
+      await verrouillerPaysage(token);
     },
     leave() {
       active = false;
       generation++;
+      libererRattrapage();
       try { win.LetsPlayAndroid?.setDuelLandscape?.(false); } catch { /* older APK */ }
       if (ownsOrientation) {
         try { win.screen.orientation.unlock?.(); } catch { /* already unlocked */ }
