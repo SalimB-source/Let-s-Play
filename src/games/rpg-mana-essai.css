@@ -769,3 +769,19 @@
   font-variant-numeric: lining-nums tabular-nums;
   text-box: trim-both cap alphabetic;
 }
+/* Le chiffre reste au centre du rond sur tous les appareils : une fenêtre PC
+   étroite (souris, `rpg-mobile.css`) pousse sinon le contenu des PV à gauche
+   (`justify-content: flex-start`, `gap`). Flex centré dans les deux axes,
+   sans écart ni marge parasite. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__hp-value {
+  margin: 0;
+  padding: 0;
+}
