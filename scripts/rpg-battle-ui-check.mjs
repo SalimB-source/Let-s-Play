@@ -1253,7 +1253,7 @@ assert.match(battlePage, /touchDragRef\.current\?\.\(\);[\s\S]*?setApercuAppui\(
 assert.equal(battlePage.match(/<ApercuCarteAppuiLong carte=\{cardById\(apercuAppui\)\}(?: armes=\{[^}]*\})? onFermer=\{fermerApercuAppui\} \/>/g).length, 2,
   'le volet d’aperçu est rendu au menu comme en duel, avec les armes portées quand elles existent');
 assert.match(battleCss, /\.rpg-card-peek\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*1250;/s,
-  'le volet de l’aperçu couvre l’écran, au-dessus de l’écran de rotation');
+  'le volet de l’aperçu couvre l’écran, au-dessus du chrome du duel');
 assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-hover-card-preview \{ display: none; \}[\s\S]*?\.rpg-card-peek \.rpg-hover-card-preview \{ display: grid; \}/,
   'au doigt le survol reste masqué, mais l’aperçu de l’appui long s’affiche');
 assert.match(battleCss, /\.rpg-card-peek \.rpg-hover-card-preview\s*\{[^}]*position:\s*relative;/s,

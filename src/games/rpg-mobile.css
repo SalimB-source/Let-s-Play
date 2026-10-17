@@ -1,26 +1,9 @@
-/* Landscape-first touch duel. Keep the original Bab El art; the battlefield
-   is unobstructed, with floating identities and contextual card actions. */
+/* Touch duel, two orientations. Keep the original Bab El art; the
+   battlefield is unobstructed, with floating identities and contextual
+   card actions. Le paysage reste la disposition de référence (grille
+   à trois colonnes ci-dessous) ; le portrait dispose le même plateau
+   en colonne unique — voir « LE PORTRAIT AU DOIGT » en fin de feuille. */
 .rpg-mobile-zones { display: none; }
-.rpg-rotate-prompt {
-  position: absolute;
-  inset: 0;
-  z-index: 1200;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
-  overflow-y: auto;
-  text-align: center;
-  color: #fff0cf;
-  background: radial-gradient(ellipse at top, #614020, #100d13 75%);
-}
-.rpg-rotate-prompt__icon { font: 64px/1 Georgia, serif; color: #f4ce78; }
-.rpg-rotate-prompt h2 { margin: 0; font: 26px/1.15 Georgia, serif; }
-.rpg-rotate-prompt p { max-width: 32ch; margin: 0; font-size: 16px; line-height: 1.5; }
-.rpg-rotate-prompt small { max-width: 40ch; color: #ccbca1; line-height: 1.5; }
-.rpg-rotate-prompt .rpg-btn { min-height: 44px; flex-shrink: 0; }
 
 /* Centre the played cards as a group, in both camps. Auto margins consume
    spare space but collapse on overflow, keeping the first card reachable.
@@ -939,3 +922,144 @@
 .rpg-battle .card-row .rpg-card .rpg-card-icone .rpg-effet-icone { width: 14cqw; height: 14cqw; }
 .rpg-battle .card-row .rpg-card .rpg-card__activation { top: 6cqw; right: 6cqw; padding: 3cqw 7cqw; border-width: 1cqw; }
 .rpg-battle .card-row .rpg-card .rpg-mana-cost i { width: 11cqw; height: 11cqw; font-size: 7cqw; }
+
+/* ══════════════════════════════════════════════════════════════════
+   LE PORTRAIT AU DOIGT — le même plateau, en colonne unique
+   ──────────────────────────────────────────────────────────────────
+   Le duel ne demande plus de tourner l'appareil : le paysage reste
+   la disposition de référence (grille à trois colonnes, ci-dessus),
+   mais le portrait **joue** — la table s'y réorganise en colonne
+   unique, du haut vers le bas : navigation du duel, plaque du
+   sorcier, ses terrains, son champ de bataille, le vôtre, vos
+   terrains, votre plaque, le déroulé du tour (rail horizontal),
+   les commandes, puis la main.
+
+   Le budget vertical est serré, donc les cartes rétrécissent :
+   `--duel-card` passe de `clamp(48px, 17dvh, 100px)` (paysage) à
+   `clamp(36px, 8.5dvh, 74px)`. Sur le plus petit écran courant
+   (375 × 667) : 38 (nav) + 42 (plaque) + 64 (terrains) + 2 × 73
+   (champs, au plancher 1,15 carte + 8) + 64 (terrains) + 44
+   (plaque) + 67 (rail) + 34 (commandes) + 113 (main) + 27 (neuf
+   gouttières de 3 px) + 12 (rembourrage) = 651 px ≤ 667 — la table
+   tient entière, rien ne défile. Sur un 390 × 844, les deux rangées
+   de jeu (les seules `1fr`) absorbent les 150 px de surplus : les
+   cartes restent centrées, plus d'air autour d'elles. La hauteur
+   d'une carte posée (4:5 du champ, soit 1,0625 × sa largeur) plus
+   son inclinaison d'attaque (15° : ~1,25 × la largeur) tient dans
+   le plancher de rangée — d'où le 1,15 au lieu du 1,4 du paysage.
+
+   Rien d'autre ne bouge : les terrains restent des bandes
+   horizontales à défilement latéral (sans le retrait de rail), la
+   main garde sa règle « une carte = une cible » (cartes jointives,
+   largeur partagée), les piles homonymes et les champs gardent
+   leur géométrie de comptage (`--row-count`), et les commandes de
+   combat restent dans la bande du bas, au-dessus de la main.
+   ══════════════════════════════════════════════════════════════════ */
+@media (orientation: portrait) {
+  .rpg-battle--touch .card-table {
+    --duel-card: clamp(36px, 8.5dvh, 74px);
+    --rpg-touch-hand: clamp(80px, 17dvh, 124px);
+    /* Plus de rail latéral : les terrains occupent toute la largeur,
+       hors du cadre illustré du bord — l'encart disparaît. */
+    --terrain-inset: 0px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows:
+      var(--rpg-touch-nav)
+      auto
+      min(64px, calc(var(--duel-card) * 1.4 + 8px))
+      minmax(calc(var(--duel-card) * 1.15 + 8px), 1fr)
+      minmax(calc(var(--duel-card) * 1.15 + 8px), 1fr)
+      min(64px, calc(var(--duel-card) * 1.4 + 8px))
+      auto
+      auto
+      auto
+      var(--rpg-touch-hand);
+    grid-template-areas:
+      "nav"
+      "opponent"
+      "enemy-mana"
+      "enemy"
+      "allies"
+      "mana"
+      "player"
+      "rail"
+      "controls"
+      "hand";
+    gap: 3px 6px;
+  }
+  /* Les plaques : bandes pleines, d'un bout à l'autre de la table. */
+  .rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi {
+    grid-area: opponent;
+    justify-self: stretch;
+    width: auto;
+  }
+  .rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { grid-area: player; }
+  /* Les terrains : bandes horizontales sans retrait de rail. La pile
+     de terrain (44 × 54) et son compteur tiennent dans les 64 px de
+     la bande, padding compris (54 + 2 × 4 ≤ 64) : aucun coin rogné. */
+  .rpg-battle--touch .card-table > .rpg-terrains {
+    margin-inline-start: 0;
+    height: min(64px, calc(var(--duel-card) * 1.4 + 8px));
+    padding: 4px 8px;
+  }
+  .rpg-battle--touch .rpg-terrain.rpg-terrain-stack {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 54px;
+  }
+  /* Le déroulé du tour : rail horizontal, indicateur à gauche des
+     phases, commandes du tour sur la rangée du dessous. */
+  .rpg-battle--touch .rpg-turn-rail {
+    grid-area: rail;
+    position: relative;
+    inset: auto;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: auto;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    transform: none;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 3px 6px;
+  }
+  .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+  }
+  .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator strong { white-space: nowrap; }
+  .rpg-battle--touch .rpg-turn-rail .rpg-phase-track { grid-column: 2; grid-row: 1; }
+  .rpg-battle--touch .rpg-turn-rail .rpg-actions__turn {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 4px;
+  }
+  /* L'annulation ne spanne plus toute la largeur : trois commandes
+     côte à côte (annulation, attaque générale, fin du tour). */
+  .rpg-battle--touch .rpg-turn-rail .rpg-btn--undo { grid-column: auto; grid-row: auto; }
+}
+
+/* Très petit portrait (premiers iPhone SE : 320 × 568) : la main,
+   la navigation et les plaques se resserrent encore, les gouttières
+   passent à 2 px — le budget tombe à ~558 px, la table tient sans
+   défiler. */
+@media (orientation: portrait) and (max-height: 620px) {
+  .rpg-battle--touch .card-table {
+    --rpg-touch-pad: 4px;
+    --rpg-touch-nav: 32px;
+    --rpg-touch-hand: clamp(72px, 14dvh, 100px);
+    gap: 2px 4px;
+  }
+  .rpg-battle--touch .rpg-duel-nav button { min-height: 30px; padding: 2px 4px; }
+  .rpg-battle--touch .card-table > .rpg-wizard-plate { padding: 2px 5px; }
+  .rpg-battle--touch .rpg-wizard-plate__avatar { width: 24px; height: 24px; }
+  .rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon { width: 22px; height: 22px; }
+}

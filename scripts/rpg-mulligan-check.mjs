@@ -60,7 +60,7 @@ assert.ok(mulliganPanel.length > 400 && mulliganPanel.includes('VoletMulligan'),
 // ── Le volet est une étape du jeu, pas une couche décorative ────────────────
 assert.match(battlePage, /setMulligan\(!modeTutoriel && rpgPeutMulligan\(duelRef\.current, 'joueur'\)[\s\S]*?\{ etape: 'choix', choix: new Set\(\)[\s\S]*?: null\)/,
   'les duels libres ouvrent le mulligan sur la main de départ, mais le tutoriel garde sa main guidée');
-assert.match(battlePage, /inert=\{viewport\.portrait \|\| mulliganOuvert \|\| choixManaEssaiOuvert \? true : undefined\}/,
+assert.match(battlePage, /inert=\{mulliganOuvert \|\| choixManaEssaiOuvert \? true : undefined\}/,
   'la table est inerte tant que le mulligan ou le choix du mana d’essai n’est pas validé');
 assert.match(battlePage, /const mulliganOuvert = Boolean\(mulligan\);/,
   'une seule source de vérité pour « le mulligan tient la table »');
@@ -98,7 +98,7 @@ assert.match(aiBrain, /if \(!terrains\.length\) return autres;/,
 
 // ── La feuille : des faces 4:5 nues, l'aperçu rapide pour tout lire ────────
 assert.match(battleCss, /\.rpg-mulligan\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*1150;/s,
-  'le volet est posé sur la table, sous l’écran de rotation et l’aperçu au doigt');
+  'le volet est posé sur la table, sous l’aperçu au doigt');
 assert.match(battleCss, /\.rpg-mulligan__panel\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto;[^}]*height:\s*min\(100%,\s*\d+px\);/s,
   'le volet tient une hauteur définie : la rangée de cartes reçoit une place mesurable');
 assert.match(battlePage, /rpg-mulligan__stage"[\s\S]{0,400}?rpg-mulligan__cards"/,

@@ -36,9 +36,11 @@ try {
   await page.locator('.rpg-hand__card').first().waitFor();
   // Let the initial card-draw animation finish before measuring the cards.
   await page.waitForTimeout(1400);
-  await page.locator('.rpg-rotate-prompt').waitFor();
-  assert.equal(await page.locator('.card-table').getAttribute('inert'), '');
-  console.log('✓ Portrait requests rotation and prevents playing behind the prompt');
+  // Le portrait se joue : plus d'invite de rotation. Au début du duel,
+  // la seule chose qui retient la table est le volet du mulligan —
+  // l'orientation n'y fait plus obstacle.
+  assert.equal(await page.locator('.rpg-rotate-prompt').count(), 0, 'portrait opens the duel without a rotation prompt');
+  console.log('✓ Portrait opens the duel directly, without a rotation prompt');
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });
     const result = await page.evaluate(() => {
@@ -219,7 +221,6 @@ try {
     console.log(`✓ Layout ${width} × ${height}`);
   }
   await page.setViewportSize({ width: 844, height: 390 });
-  await page.locator('.rpg-rotate-prompt').waitFor({ state: 'detached' });
   // Le duel s'ouvre sur son volet de mulligan : la mise en page se mesure
   // dessus, le jeu commence une fois la main de départ validée.
   // La main de départ se lit d'un seul coup : cinq cartes 4:5, entières,
@@ -534,8 +535,48 @@ try {
   console.log('✓ Attackers tilt 15° to the right on declaration, straighten on cancellation and keep the tilt after attacking');
   console.log('✓ Attack-all, cancellation and confirmation share the controls column; the turn rail keeps the phases, undo and end-turn above the hand');
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('.rpg-rotate-prompt').waitFor();
-  await page.getByRole('button', { name: 'Retour au menu', exact: true }).click();
+  // Le portrait se joue : le plateau s'y arrange en colonne unique,
+  // du haut vers le bas — navigation, plaque adverse, terrains et
+  // champ du sorcier, champ du joueur, terrains, plaque, déroulé du
+  // tour (rail horizontal), commandes, main — sans rien déborder,
+  // se chevaucher ou tronquer.
+  assert.equal(await page.locator('.rpg-rotate-prompt').count(), 0, 'no rotation prompt in portrait');
+  assert.equal(await page.locator('.card-table').getAttribute('inert'), null, 'the table is live in portrait');
+  const portrait = await page.evaluate(() => {
+    const rect = (selector) => document.querySelector(selector).getBoundingClientRect().toJSON();
+    const table = document.querySelector('.card-table');
+    const phases = [...document.querySelectorAll('.rpg-turn-rail .rpg-phase-step__icon')].map((icon) => icon.getBoundingClientRect());
+    const cards = [...document.querySelectorAll('.rpg-hand__card')].map((card) => card.getBoundingClientRect());
+    return {
+      overflowX: table.scrollWidth > table.clientWidth,
+      overflowY: table.scrollHeight > table.clientHeight + 1,
+      table: table.getBoundingClientRect().toJSON(),
+      stack: ['.rpg-duel-nav', '.rpg-wizard-plate--ennemi', '.rpg-terrains--ennemi', '.card-row--ennemi', '.card-row--equipe', '.rpg-terrains--joueur', '.rpg-wizard-plate--joueur', '.rpg-turn-rail', '.rpg-bottombar', '.rpg-hand-dock'].map(rect),
+      phasesRow: phases.length > 1 && phases.every((r, index) => !index || (Math.abs(r.top - phases[index - 1].top) < 1 && r.left >= phases[index - 1].right - 1)),
+      handOverlaps: cards.slice(1).filter((r, index) => cards[index].right > r.left + .5).length,
+      handWidths: cards.map((r) => Math.round(r.width)),
+      card: rect('.rpg-hand__card'),
+      hand: rect('.rpg-hand'),
+      endTurn: rect('.rpg-btn--endturn'),
+    };
+  });
+  assert.equal(portrait.overflowX, false, 'portrait: no horizontal overflow');
+  assert.equal(portrait.overflowY, false, 'portrait: the whole board fits the screen height');
+  for (let i = 1; i < portrait.stack.length; i++) {
+    assert.ok(portrait.stack[i].top >= portrait.stack[i - 1].bottom - 1, `portrait: the board stacks in one column, band ${i} below band ${i - 1}`);
+  }
+  assert.ok(portrait.stack.every((band) => band.left >= portrait.table.left - 1 && band.right <= portrait.table.right + 1),
+    'portrait: every band spans the table width without overflowing');
+  assert.ok(portrait.stack[2].bottom <= portrait.stack[3].top + 1 && portrait.stack[5].bottom <= portrait.stack[4].top + 1,
+    'portrait: each camp’s terrains sit above its battlefield');
+  assert.ok(portrait.phasesRow, 'portrait: the turn rail stays horizontal — phases in one row of icons');
+  assert.equal(portrait.handOverlaps, 0, 'portrait: hand cards never overlap, one card = one target');
+  assert.ok(portrait.handWidths.every((width) => width >= 34), `portrait: hand cards stay touchable (${portrait.handWidths.join(' × ')})`);
+  assert.ok(portrait.card.top >= portrait.hand.top - 1 && portrait.card.bottom <= portrait.hand.bottom + 1, 'portrait: hand cards are not clipped');
+  assert.ok(portrait.endTurn.bottom <= portrait.table.bottom + 1 && portrait.endTurn.right <= portrait.table.right + 1,
+    'portrait: the end-turn button stays on screen');
+  console.log('✓ Portrait 390 × 844: the board stacks in one column and stays playable');
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
   await page.locator('.rpg-mode-menu').waitFor();
   console.log('✓ Returning to portrait keeps the duel and allows leaving for the menu');
 
