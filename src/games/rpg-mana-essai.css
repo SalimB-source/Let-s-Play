@@ -241,9 +241,16 @@
    La rangée devient une grille de cinq colonnes : les cases dessinées dessous
    montrent les places libres (pointillés) comme les places prises (pleines),
    et la carte posée tombe dans la colonne de son emplacement. */
+/* Les cinq colonnes ont la largeur d'une carte posée — plus de colonnes
+   étirées sur toute la table : la grille se resserre au centre et les cases
+   ne laissent entre elles qu'une gouttière étroite. `--essai-colonne` est
+   partagée par la rangée et par la grille des cases dessinées dessous. */
 .rpg-battle[data-mode-mana="essai"] .card-row {
+  --essai-colonne: clamp(62px, min(11vw, 18.5vh), 160px);
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, var(--essai-colonne)));
+  justify-content: center;
+  column-gap: clamp(6px, .7vw, 10px);
   justify-items: center;
   align-items: end;
   /* Même plateau vide, la rangée garde la hauteur d'une carte : les cinq
@@ -258,7 +265,8 @@
   inset: 0;
   z-index: 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, var(--essai-colonne, 1fr)));
+  justify-content: center;
   align-items: end;
   justify-items: center;
   /* La gouttière des cartes vient de la rangée, quelle que soit la taille
@@ -272,7 +280,7 @@
   display: grid;
   place-items: center;
   width: clamp(58px, min(10vw, 17vh), 150px);
-  max-width: 92%;
+  max-width: 100%;
   aspect-ratio: 4 / 5;
   border: 2px dashed rgba(240, 214, 150, .5);
   border-radius: 12px;
@@ -519,4 +527,11 @@
 }
 .rpg-battle .card-row .rpg-card .rpg-card-icones.rpg-card-icones--sous-compteurs .rpg-card-icone:nth-child(n + 3) {
   display: none;
+}
+
+/* Au doigt, la colonne suit la carte posée (95 % de --duel-card), à peine
+   plus large, avec la gouttière tactile habituelle. */
+.rpg-battle--touch[data-mode-mana="essai"] .card-table > .card-row {
+  --essai-colonne: calc(var(--rpg-field-card, var(--duel-card, 64px)) + 4px);
+  column-gap: max(6px, calc(var(--duel-card, 64px) * .12));
 }
