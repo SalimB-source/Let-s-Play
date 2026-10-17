@@ -166,6 +166,8 @@ export class RpgAmbientMusic {
     this.nextTime = 0;
     this.running = false;
     this.paused = false;
+    this.muted = false;
+    this.volume = 1;
     this.session = 0;
     this.noiseBuffer = null;
     // État du tintement d'horloge (Tour des Listes).
@@ -182,6 +184,11 @@ export class RpgAmbientMusic {
     this.step = 0;
     this.tockToggle = false;
     this.dripCounter = 0;
+  }
+
+  effectiveMasterGain() {
+    if (this.muted || this.volume <= 0) return 0.0001;
+    return Math.max(0.0001, MASTER_VOLUME * this.volume);
   }
 
   static supportedTours() {
@@ -203,7 +210,7 @@ export class RpgAmbientMusic {
     if (this.context !== ctx || this.session !== session) return;
     if (!this.master) {
       this.master = ctx.createGain();
-      this.master.gain.value = MASTER_VOLUME;
+      this.master.gain.value = this.effectiveMasterGain();
       this.master.connect(ctx.destination);
 
       this.musicBus = ctx.createGain();
@@ -241,7 +248,7 @@ export class RpgAmbientMusic {
     }
     this.running = true;
     this.paused = false;
-    this.master.gain.setTargetAtTime(MASTER_VOLUME, ctx.currentTime, 0.25);
+    this.master.gain.setTargetAtTime(this.effectiveMasterGain(), ctx.currentTime, 0.25);
     this.nextTime = ctx.currentTime + 0.25;
     this.clearTicker();
     // La boucle est alimentée par un setInterval de 40 ms, comme la course.
@@ -271,15 +278,23 @@ export class RpgAmbientMusic {
   resume() {
     if (!this.running || !this.paused || !this.context) return;
     this.paused = false;
-    this.master.gain.setTargetAtTime(MASTER_VOLUME, this.context.currentTime, 0.25);
+    this.master.gain.setTargetAtTime(this.effectiveMasterGain(), this.context.currentTime, 0.25);
     this.nextTime = this.context.currentTime + 0.15;
     this.clearTicker();
     this.ticker = window.setInterval(() => this.schedule(), 40);
   }
 
   setMuted(muted) {
+    this.muted = Boolean(muted);
     if (!this.master) return;
-    this.master.gain.setTargetAtTime(muted ? 0.0001 : MASTER_VOLUME, this.context?.currentTime ?? 0, 0.15);
+    this.master.gain.setTargetAtTime(this.effectiveMasterGain(), this.context?.currentTime ?? 0, 0.15);
+  }
+
+  setVolume(volume) {
+    const num = Number(volume);
+    this.volume = Number.isFinite(num) ? Math.max(0, Math.min(1, num)) : 1;
+    if (!this.master) return;
+    this.master.gain.setTargetAtTime(this.effectiveMasterGain(), this.context?.currentTime ?? 0, 0.15);
   }
 
   destroy() {

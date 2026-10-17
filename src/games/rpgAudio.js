@@ -17,6 +17,12 @@ const MASTER_VOLUME = 0.22;
 const REVERB_SECONDS = 0.68;
 const REVERB_RETURN = 0.16;
 const MIN_GAIN = 0.0001;
+
+export function clampRpgVolume(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 1;
+  return Math.max(0, Math.min(1, num));
+}
 const CARD_PLACE_SAMPLE_URL = new URL('./assets/card-place.wav', import.meta.url);
 const CARD_DRAW_SAMPLE_URL = new URL('./assets/card-draw.wav', import.meta.url);
 const ATTACKERS_CONFIRM_SAMPLE_URL = new URL('./assets/attackers-confirm.mp3', import.meta.url);
@@ -383,6 +389,7 @@ export class RpgAudioPlayer {
     this.reverbReturn = null;
     this.noiseBuffer = null;
     this.muted = false;
+    this.volume = 1;
     this.cardPlaceAudio = null;
     this.cardDrawAudio = null;
     this.attackersConfirmAudio = null;
@@ -434,6 +441,16 @@ export class RpgAudioPlayer {
     }
   }
 
+  effectiveMasterGain() {
+    if (this.muted || this.volume <= 0) return MIN_GAIN;
+    return Math.max(MIN_GAIN, MASTER_VOLUME * this.volume);
+  }
+
+  sampleVolume(baseVolume) {
+    if (this.muted || this.volume <= 0) return 0;
+    return Math.max(0, Math.min(1, baseVolume * this.volume));
+  }
+
   unlock() {
     if (this.ctx) {
       if (this.ctx.state === 'suspended' && typeof this.ctx.resume === 'function') this.ctx.resume().catch(() => {});
@@ -447,7 +464,7 @@ export class RpgAudioPlayer {
       context = new AudioContext();
       this.ctx = context;
       this.master = context.createGain();
-      this.master.gain.value = this.muted ? MIN_GAIN : MASTER_VOLUME;
+      this.master.gain.value = this.effectiveMasterGain();
 
       this.sfxBus = context.createGain();
       this.sfxBus.gain.value = 1;
@@ -505,65 +522,50 @@ export class RpgAudioPlayer {
     if (context.state === 'suspended' && typeof context.resume === 'function') context.resume().catch(() => {});
   }
 
-  setMuted(muted) {
-    this.muted = Boolean(muted);
-    if (this.cardPlaceAudio) {
-      this.cardPlaceAudio.volume = this.muted ? 0 : CARD_PLACE_VOLUME;
-      if (this.muted) this.cardPlaceAudio.pause?.();
-    }
-    if (this.cardDrawAudio) {
-      this.cardDrawAudio.volume = this.muted ? 0 : CARD_DRAW_VOLUME;
-      if (this.muted) this.cardDrawAudio.pause?.();
-    }
-    if (this.attackersConfirmAudio) {
-      this.attackersConfirmAudio.volume = this.muted ? 0 : ATTACKERS_CONFIRM_VOLUME;
-      if (this.muted) this.attackersConfirmAudio.pause?.();
-    }
-    if (this.playerAttackHitAudio) {
-      this.playerAttackHitAudio.volume = this.muted ? 0 : PLAYER_ATTACK_HIT_VOLUME;
-      if (this.muted) this.playerAttackHitAudio.pause?.();
-    }
-    if (this.flameGustAudio) {
-      this.flameGustAudio.volume = this.muted ? 0 : FLAME_GUST_VOLUME;
-      if (this.muted) this.flameGustAudio.pause?.();
-    }
-    if (this.waterWaveAudio) {
-      this.waterWaveAudio.volume = this.muted ? 0 : WATER_WAVE_VOLUME;
-      if (this.muted) this.waterWaveAudio.pause?.();
-    }
-    if (this.cardCounteredAudio) {
-      this.cardCounteredAudio.volume = this.muted ? 0 : CARD_COUNTERED_VOLUME;
-      if (this.muted) this.cardCounteredAudio.pause?.();
-    }
-    if (this.creatureReturnAudio) {
-      this.creatureReturnAudio.volume = this.muted ? 0 : CREATURE_RETURN_VOLUME;
-      if (this.muted) this.creatureReturnAudio.pause?.();
-    }
-    if (this.blockImpactAudio) {
-      this.blockImpactAudio.volume = this.muted ? 0 : BLOCK_IMPACT_VOLUME;
-      if (this.muted) this.blockImpactAudio.pause?.();
-    }
-    if (this.destructionHitAudio) {
-      this.destructionHitAudio.volume = this.muted ? 0 : DESTRUCTION_HIT_VOLUME;
-      if (this.muted) this.destructionHitAudio.pause?.();
-    }
-    if (this.pageTurnAudio) {
-      this.pageTurnAudio.volume = this.muted ? 0 : PAGE_TURN_VOLUME;
-      if (this.muted) this.pageTurnAudio.pause?.();
+  syncOutputGain() {
+    const silent = this.muted || this.volume <= 0;
+    const samples = [
+      [this.cardPlaceAudio, CARD_PLACE_VOLUME],
+      [this.cardDrawAudio, CARD_DRAW_VOLUME],
+      [this.attackersConfirmAudio, ATTACKERS_CONFIRM_VOLUME],
+      [this.playerAttackHitAudio, PLAYER_ATTACK_HIT_VOLUME],
+      [this.flameGustAudio, FLAME_GUST_VOLUME],
+      [this.waterWaveAudio, WATER_WAVE_VOLUME],
+      [this.cardCounteredAudio, CARD_COUNTERED_VOLUME],
+      [this.creatureReturnAudio, CREATURE_RETURN_VOLUME],
+      [this.blockImpactAudio, BLOCK_IMPACT_VOLUME],
+      [this.destructionHitAudio, DESTRUCTION_HIT_VOLUME],
+      [this.pageTurnAudio, PAGE_TURN_VOLUME],
+    ];
+    for (const [audio, base] of samples) {
+      if (!audio) continue;
+      audio.volume = this.sampleVolume(base);
+      if (silent) audio.pause?.();
     }
     if (!this.master) return;
     const now = this.ctx?.currentTime ?? 0;
     const parameter = this.master.gain;
+    const target = this.effectiveMasterGain();
     parameter.cancelScheduledValues?.(now);
     if (typeof parameter.setTargetAtTime === 'function') {
-      parameter.setTargetAtTime(this.muted ? MIN_GAIN : MASTER_VOLUME, now, 0.035);
+      parameter.setTargetAtTime(target, now, 0.035);
     } else {
-      parameter.value = this.muted ? MIN_GAIN : MASTER_VOLUME;
+      parameter.value = target;
     }
   }
 
+  setMuted(muted) {
+    this.muted = Boolean(muted);
+    this.syncOutputGain();
+  }
+
+  setVolume(volume) {
+    this.volume = clampRpgVolume(volume);
+    this.syncOutputGain();
+  }
+
   play(name, delay = 0) {
-    if (!this.ctx || !this.master || this.muted) return;
+    if (!this.ctx || !this.master || this.muted || this.volume <= 0) return;
     if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn') {
       const sample = name === 'card_place'
         ? this.cardPlaceAudio

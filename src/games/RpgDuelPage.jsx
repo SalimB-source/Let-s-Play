@@ -57,7 +57,7 @@ import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
-import { RpgAudioPlayer } from './rpgAudio.js';
+import { clampRpgVolume, RpgAudioPlayer } from './rpgAudio.js';
 import { rpgCombatFireSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
@@ -1958,14 +1958,26 @@ const RPG_ANNONCE_TOUR_DUREE = 1500;
 // Le réglage sonore (musique et bruitages) reste mémorisé sur l'appareil ;
 // au prochain passage, le son revient par défaut.
 const RPG_SOUND_KEY = 'letsplay_sablier_sound_v1';
+const RPG_SFX_VOLUME_KEY = 'letsplay_sablier_sfx_volume_v1';
+const RPG_MUSIC_VOLUME_KEY = 'letsplay_sablier_music_volume_v1';
 function readRpgSoundPref() {
   try { return window.localStorage.getItem(RPG_SOUND_KEY) !== 'off'; } catch { return true; }
 }
 function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
+function readRpgVolumePref(key, fallback = 1) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (raw === null || raw === '') return fallback;
+    return clampRpgVolume(raw);
+  } catch { return fallback; }
+}
+function writeRpgVolumePref(key, value) {
+  try { window.localStorage.setItem(key, String(clampRpgVolume(value))); } catch { /* stockage indisponible */ }
+}
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -2171,6 +2183,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             </button>
             <button type="button" className={screen === 'catalogue' ? 'is-active' : ''} aria-current={screen === 'catalogue' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('catalogue'); }}>
               <span aria-hidden="true">▧</span> Catalogue
+            </button>
+            <button type="button" className={screen === 'parametres' ? 'is-active' : ''} aria-current={screen === 'parametres' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('parametres'); }}>
+              <span aria-hidden="true">⚙</span> Paramètres
             </button>
           </nav>
         </header>
@@ -2827,6 +2842,134 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             )}
           </main>
         )}
+        {screen === 'parametres' && (
+          <main className="rpg-settings" aria-label="Paramètres du jeu">
+            <div className="rpg-settings__header">
+              <span className="rpg-mode-menu__eyebrow">LE SABLIER · CONFIGURATION</span>
+              <h2>Paramètres</h2>
+              <p>Ajustez le décor 3D de la table ainsi que le volume des sons du jeu et des musiques.</p>
+            </div>
+            <div className="rpg-settings__grid">
+              <section className="rpg-settings__card" aria-label="Affichage 3D">
+                <div className="rpg-settings__card-head">
+                  <div>
+                    <span className="rpg-settings__eyebrow">AFFICHAGE & TABLE</span>
+                    <h3>Option 3D</h3>
+                  </div>
+                  <span className={`rpg-settings__status${decor3dActif ? ' is-on' : ''}`}>
+                    {decor3dActif ? 'Activée' : 'Désactivée'}
+                  </span>
+                </div>
+                <p className="rpg-settings__desc">
+                  Active le décor 3D de la table de duel : relief du plateau, éclairage dynamique, ombres portées et particules d’ambiance.
+                </p>
+                <button
+                  type="button"
+                  className={`rpg-settings__toggle rpg-settings__decor3d${decor3dActif ? ' is-on' : ''}`}
+                  aria-pressed={Boolean(decor3dActif)}
+                  aria-label={decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
+                  onClick={() => { play('menu'); onToggleDecor3d?.(); }}
+                >
+                  <span className="rpg-settings__toggle-badge" aria-hidden="true">3D</span>
+                  <span className="rpg-settings__toggle-copy">
+                    <strong>Décor 3D de la table</strong>
+                    <small>{decor3dActif ? 'Relief, lumière et particules actifs' : 'Table en peinture 2D classique'}</small>
+                  </span>
+                  <span className="rpg-settings__toggle-pill" aria-hidden="true">{decor3dActif ? 'ON' : 'OFF'}</span>
+                </button>
+              </section>
+
+              <section className="rpg-settings__card" aria-label="Contrôle du volume">
+                <div className="rpg-settings__card-head">
+                  <div>
+                    <span className="rpg-settings__eyebrow">AUDIO</span>
+                    <h3>Volume des sons et musiques</h3>
+                  </div>
+                  <button
+                    type="button"
+                    className={`rpg-settings__mute-all${sonActif ? ' is-on' : ''}`}
+                    aria-pressed={Boolean(sonActif)}
+                    aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'}
+                    onClick={() => { play('menu'); onToggleSound?.(); }}
+                  >
+                    <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
+                    <span>{sonActif ? 'Son actif' : 'Son coupé'}</span>
+                  </button>
+                </div>
+
+                <div className="rpg-settings__volumes">
+                  <div className="rpg-settings__volume-row">
+                    <div className="rpg-settings__volume-head">
+                      <label htmlFor="rpg-settings-sfx-volume" className="rpg-settings__volume-label">
+                        <strong>Sons du jeu</strong>
+                        <small>Bruitages des cartes, combats, sorts et interface</small>
+                      </label>
+                      <div className="rpg-settings__volume-actions">
+                        <button
+                          type="button"
+                          className={`rpg-settings__channel-mute${sonActif && volumeSfx > 0 ? ' is-on' : ''}`}
+                          aria-pressed={Boolean(sonActif && volumeSfx > 0)}
+                          aria-label={sonActif && volumeSfx > 0 ? 'Couper les sons du jeu' : 'Activer les sons du jeu'}
+                          onClick={() => onToggleSfxMute?.()}
+                        >
+                          {sonActif && volumeSfx > 0 ? '🔊' : '🔇'}
+                        </button>
+                        <output htmlFor="rpg-settings-sfx-volume" className="rpg-settings__volume-value">
+                          {sonActif ? Math.round(volumeSfx * 100) : 0} %
+                        </output>
+                      </div>
+                    </div>
+                    <input
+                      id="rpg-settings-sfx-volume"
+                      type="range"
+                      className="rpg-settings__slider rpg-settings__slider--sfx"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={sonActif ? Math.round(volumeSfx * 100) : 0}
+                      aria-label="Volume des sons du jeu"
+                      onChange={(event) => onChangeVolumeSfx?.(Number(event.target.value) / 100)}
+                    />
+                  </div>
+
+                  <div className="rpg-settings__volume-row">
+                    <div className="rpg-settings__volume-head">
+                      <label htmlFor="rpg-settings-music-volume" className="rpg-settings__volume-label">
+                        <strong>Musiques</strong>
+                        <small>Thèmes des plateaux et ambiances des tours de l’Histoire</small>
+                      </label>
+                      <div className="rpg-settings__volume-actions">
+                        <button
+                          type="button"
+                          className={`rpg-settings__channel-mute${sonActif && volumeMusique > 0 ? ' is-on' : ''}`}
+                          aria-pressed={Boolean(sonActif && volumeMusique > 0)}
+                          aria-label={sonActif && volumeMusique > 0 ? 'Couper les musiques' : 'Activer les musiques'}
+                          onClick={() => onToggleMusicMute?.()}
+                        >
+                          {sonActif && volumeMusique > 0 ? '♫' : '🔇'}
+                        </button>
+                        <output htmlFor="rpg-settings-music-volume" className="rpg-settings__volume-value">
+                          {sonActif ? Math.round(volumeMusique * 100) : 0} %
+                        </output>
+                      </div>
+                    </div>
+                    <input
+                      id="rpg-settings-music-volume"
+                      type="range"
+                      className="rpg-settings__slider rpg-settings__slider--music"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={sonActif ? Math.round(volumeMusique * 100) : 0}
+                      aria-label="Volume des musiques"
+                      onChange={(event) => onChangeVolumeMusique?.(Number(event.target.value) / 100)}
+                    />
+                  </div>
+                </div>
+              </section>
+            </div>
+          </main>
+        )}
         <footer className="rpg-mode-menu__footer"><span>LE SABLIER</span><span>STRATÉGIE · CRÉATURES · MAGIE</span></footer>
       </div>
       {/* Partie en cours : le bouton de reprise flotte en bas au centre, visible
@@ -3145,14 +3288,34 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const musiquePlateauRef = useRef(null);
   const sfxRef = useRef(null);
   const [sonActif, setSonActif] = useState(readRpgSoundPref);
+  const [volumeSfx, setVolumeSfx] = useState(() => readRpgVolumePref(RPG_SFX_VOLUME_KEY, 1));
+  const [volumeMusique, setVolumeMusique] = useState(() => readRpgVolumePref(RPG_MUSIC_VOLUME_KEY, 1));
+  const dernierVolumeSfxRef = useRef(volumeSfx > 0 ? volumeSfx : 1);
+  const dernierVolumeMusiqueRef = useRef(volumeMusique > 0 ? volumeMusique : 1);
   // Le décor 3D de la table (relief, lumière, particules) : mémorisé sur l'appareil.
   const [decor3dActif, setDecor3dActif] = useState(readRpgTable3dPref);
   const basculerDecor3d = () => setDecor3dActif((actif) => { writeRpgTable3dPref(!actif); return !actif; });
   useEffect(() => { writeRpgSoundPref(sonActif); }, [sonActif]);
   useEffect(() => {
+    writeRpgVolumePref(RPG_SFX_VOLUME_KEY, volumeSfx);
+    if (volumeSfx > 0) dernierVolumeSfxRef.current = volumeSfx;
+    sfxRef.current?.setVolume(volumeSfx);
+  }, [volumeSfx]);
+  useEffect(() => {
+    writeRpgVolumePref(RPG_MUSIC_VOLUME_KEY, volumeMusique);
+    if (volumeMusique > 0) dernierVolumeMusiqueRef.current = volumeMusique;
+    musiqueRef.current?.setVolume(volumeMusique);
+    musiquePlateauRef.current?.setVolume(volumeMusique);
+  }, [volumeMusique]);
+  useEffect(() => {
     musiqueRef.current = new RpgAmbientMusic();
+    musiqueRef.current.setVolume(volumeMusique);
+    musiqueRef.current.setMuted(!sonActif);
     musiquePlateauRef.current = new RpgPlateauMusic();
+    musiquePlateauRef.current.setVolume(volumeMusique);
+    musiquePlateauRef.current.setMuted(!sonActif);
     sfxRef.current = new RpgAudioPlayer();
+    sfxRef.current.setVolume(volumeSfx);
     sfxRef.current.setMuted(!sonActif);
     return () => {
       musiqueRef.current?.destroy();
@@ -3168,6 +3331,32 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     musiqueRef.current?.setMuted(!sonActif);
     musiquePlateauRef.current?.setMuted(!sonActif);
   }, [sonActif]);
+  const changerVolumeSfx = (valeur) => {
+    const prochain = clampRpgVolume(valeur);
+    setVolumeSfx(prochain);
+    if (prochain > 0 && !sonActif) setSonActif(true);
+  };
+  const changerVolumeMusique = (valeur) => {
+    const prochain = clampRpgVolume(valeur);
+    setVolumeMusique(prochain);
+    if (prochain > 0 && !sonActif) setSonActif(true);
+  };
+  const basculerVolumeSfx = () => {
+    if (!sonActif) {
+      setSonActif(true);
+      if (volumeSfx <= 0) setVolumeSfx(dernierVolumeSfxRef.current || 1);
+      return;
+    }
+    setVolumeSfx((actuel) => (actuel > 0 ? 0 : (dernierVolumeSfxRef.current || 1)));
+  };
+  const basculerVolumeMusique = () => {
+    if (!sonActif) {
+      setSonActif(true);
+      if (volumeMusique <= 0) setVolumeMusique(dernierVolumeMusiqueRef.current || 1);
+      return;
+    }
+    setVolumeMusique((actuel) => (actuel > 0 ? 0 : (dernierVolumeMusiqueRef.current || 1)));
+  };
   // La tour de l'étage en cours commande la boucle (null : duel libre).
   const lectureHistoire = ecran === 'recit' || ecran === 'journal';
   const tourHistoireId = lectureHistoire
@@ -3208,7 +3397,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     document.addEventListener('visibilitychange', surVisibilite);
     return () => document.removeEventListener('visibilitychange', surVisibilite);
   }, [ecran, lectureHistoire, tourHistoireId, plateauId, sonActif]);
-  const basculerSon = () => setSonActif((actif) => !actif);
+  const basculerSon = () => setSonActif((actif) => {
+    const prochain = !actif;
+    if (prochain && (ecran === 'partie' || lectureHistoire) && tourHistoireId) {
+      musiqueRef.current?.start();
+    }
+    return prochain;
+  });
   const jouerSfx = (nom, delai = 0) => {
     try {
       const p = sfxRef.current;
@@ -3304,29 +3499,34 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [sacrificeEnCours, setSacrificeEnCours] = useState(null);
   // Au doigt, la barre de navigation du duel se replie dans un bouton hamburger.
   const [navMenuOuvert, setNavMenuOuvert] = useState(false);
+  const [navParametresOuvert, setNavParametresOuvert] = useState(false);
 
   // La foudre activée se désigne avec Échap, comme les autres ciblages ; la
   // proie d'un mode d'arme aussi ; le sacrifice en attente, enfin, se renonce.
   useEffect(() => {
-    if (!activationEnCours && !sacrificeEnCours && !navMenuOuvert) return undefined;
+    if (!activationEnCours && !sacrificeEnCours && !navMenuOuvert && !navParametresOuvert) return undefined;
     const onKey = (event) => {
       if (event.key !== 'Escape') return;
       setActivationEnCours(null);
       setSacrificeEnCours(null);
       setNavMenuOuvert(false);
+      setNavParametresOuvert(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activationEnCours, sacrificeEnCours, navMenuOuvert]);
-  // Le menu hamburger se referme au premier geste hors de la barre du duel.
+  }, [activationEnCours, sacrificeEnCours, navMenuOuvert, navParametresOuvert]);
+  // Le menu hamburger et son onglet Paramètres se referment au premier geste hors de la barre du duel.
   useEffect(() => {
-    if (!navMenuOuvert) return undefined;
+    if (!navMenuOuvert && !navParametresOuvert) return undefined;
     const onDown = (event) => {
-      if (!event.target?.closest?.('.rpg-duel-nav')) setNavMenuOuvert(false);
+      if (!event.target?.closest?.('.rpg-duel-nav')) {
+        setNavMenuOuvert(false);
+        setNavParametresOuvert(false);
+      }
     };
     window.addEventListener('pointerdown', onDown);
     return () => window.removeEventListener('pointerdown', onDown);
-  }, [navMenuOuvert]);
+  }, [navMenuOuvert, navParametresOuvert]);
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
   const [confirmationSort, setConfirmationSort] = useState(null);
   const [carteDefausseSelectionnee, setCarteDefausseSelectionnee] = useState(null);
@@ -4140,6 +4340,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onPlaySfx={jouerSfx}
           fullscreen={pleinEcran}
           onToggleFullscreen={basculerPleinEcran}
+          decor3dActif={decor3dActif}
+          onToggleDecor3d={basculerDecor3d}
+          sonActif={sonActif}
+          onToggleSound={basculerSon}
+          volumeSfx={volumeSfx}
+          onChangeVolumeSfx={changerVolumeSfx}
+          onToggleSfxMute={basculerVolumeSfx}
+          volumeMusique={volumeMusique}
+          onChangeVolumeMusique={changerVolumeMusique}
+          onToggleMusicMute={basculerVolumeMusique}
         />
         {apercuSurvol && (
           <HoverCardPreview
@@ -6139,34 +6349,89 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             className={`rpg-duel-nav__menu${navMenuOuvert ? ' is-open' : ''}`}
             id="rpg-duel-nav-menu"
           >
-            <button type="button" onClick={() => { setNavMenuOuvert(false); setEcran(histoireEtageId ? 'histoire' : 'jouer'); }}>Menu</button>
-            <button type="button" onClick={() => { setNavMenuOuvert(false); setEcran('decks'); }}>Deck</button>
-            <button type="button" onClick={() => { setNavMenuOuvert(false); setEcran('catalogue'); }}>Catalogue</button>
+            <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran(histoireEtageId ? 'histoire' : 'jouer'); }}>Menu</button>
+            <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran('decks'); }}>Deck</button>
+            <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran('catalogue'); }}>Catalogue</button>
             <button
               type="button"
-              className={`rpg-duel-nav__sound${sonActif ? ' is-on' : ''}`}
-              onClick={basculerSon}
-              aria-pressed={sonActif}
-              title={sonActif ? 'Couper le son (M)' : 'Activer le son (M)'}
-              aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'}
+              className={`rpg-duel-nav__settings-tab${navParametresOuvert ? ' is-open' : ''}`}
+              aria-expanded={navParametresOuvert}
+              aria-controls="rpg-duel-nav-settings"
+              onClick={() => setNavParametresOuvert((ouvert) => !ouvert)}
             >
-              <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
+              Paramètres
             </button>
-            <button
-              type="button"
-              className={`rpg-duel-nav__decor3d${decor3dVisible ? ' is-on' : ''}`}
-              onClick={basculerDecor3d}
-              disabled={plateauDecoupe || undefined}
-              aria-pressed={decor3dVisible}
-              title={plateauDecoupe
-                ? 'Décor 3D indisponible : les deux terrains se partagent la table'
-                : decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
-              aria-label={plateauDecoupe
-                ? 'Décor 3D indisponible : les deux terrains se partagent la table'
-                : decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
+            <div
+              id="rpg-duel-nav-settings"
+              className={`rpg-duel-nav__settings${navParametresOuvert ? ' is-open' : ''}`}
+              role="region"
+              aria-label="Paramètres"
             >
-              <span aria-hidden="true">3D</span>
-            </button>
+              <div className="rpg-duel-nav__setting-row">
+                <span className="rpg-duel-nav__setting-label">Option 3D</span>
+                <button
+                  type="button"
+                  className={`rpg-duel-nav__decor3d${decor3dVisible ? ' is-on' : ''}`}
+                  onClick={basculerDecor3d}
+                  disabled={plateauDecoupe || undefined}
+                  aria-pressed={decor3dVisible}
+                  title={plateauDecoupe
+                    ? 'Décor 3D indisponible : les deux terrains se partagent la table'
+                    : decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
+                  aria-label={plateauDecoupe
+                    ? 'Décor 3D indisponible : les deux terrains se partagent la table'
+                    : decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
+                >
+                  <span aria-hidden="true">3D</span>
+                  <span className="rpg-duel-nav__decor3d-state">
+                    {plateauDecoupe ? 'Indisponible' : decor3dVisible ? 'Activé' : 'Désactivé'}
+                  </span>
+                </button>
+              </div>
+              <label className="rpg-duel-nav__volume">
+                <span className="rpg-duel-nav__volume-head">
+                  <span>Sons du jeu</span>
+                  <strong>{sonActif ? Math.round(volumeSfx * 100) : 0} %</strong>
+                </span>
+                <input
+                  type="range"
+                  className="rpg-duel-nav__slider rpg-duel-nav__slider--sfx"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={sonActif ? Math.round(volumeSfx * 100) : 0}
+                  aria-label="Volume des sons du jeu"
+                  onChange={(event) => changerVolumeSfx(Number(event.target.value) / 100)}
+                />
+              </label>
+              <label className="rpg-duel-nav__volume">
+                <span className="rpg-duel-nav__volume-head">
+                  <span>Musiques</span>
+                  <strong>{sonActif ? Math.round(volumeMusique * 100) : 0} %</strong>
+                </span>
+                <input
+                  type="range"
+                  className="rpg-duel-nav__slider rpg-duel-nav__slider--music"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={sonActif ? Math.round(volumeMusique * 100) : 0}
+                  aria-label="Volume des musiques"
+                  onChange={(event) => changerVolumeMusique(Number(event.target.value) / 100)}
+                />
+              </label>
+              <button
+                type="button"
+                className={`rpg-duel-nav__sound${sonActif ? ' is-on' : ''}`}
+                onClick={basculerSon}
+                aria-pressed={sonActif}
+                title={sonActif ? 'Couper le son (M)' : 'Activer le son (M)'}
+                aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'}
+              >
+                <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
+                <span className="rpg-duel-nav__sound-state">{sonActif ? 'Son activé' : 'Son coupé'}</span>
+              </button>
+            </div>
             <button
               type="button"
               className={`rpg-duel-nav__fullscreen${pleinEcran ? ' is-on' : ''}`}
@@ -6186,7 +6451,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             aria-expanded={navMenuOuvert}
             aria-controls="rpg-duel-nav-menu"
             aria-label={navMenuOuvert ? 'Fermer le menu du duel' : 'Ouvrir le menu du duel'}
-            onClick={() => setNavMenuOuvert((ouvert) => !ouvert)}
+            onClick={() => setNavMenuOuvert((ouvert) => {
+              if (ouvert) setNavParametresOuvert(false);
+              return !ouvert;
+            })}
           >
             <span aria-hidden="true" className="rpg-duel-nav__burger-icon">{navMenuOuvert ? '✕' : '☰'}</span>
           </button>

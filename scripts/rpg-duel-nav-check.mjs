@@ -61,16 +61,25 @@ const cascade = new JSDOM(`<!doctype html><html><head><style>${battleCss}\n${mob
 </body></html>`);
 try {
   const doc = cascade.window.document;
+  const nav = doc.querySelector('.rpg-duel-nav');
   const menu = doc.querySelector('#menu-tactile');
   const burger = doc.querySelector('.rpg-duel-nav__burger');
+  const styleNav = cascade.window.getComputedStyle(nav);
+  assert.ok(['transparent', 'rgba(0, 0, 0, 0)'].includes(styleNav.backgroundColor) && styleNav.backgroundImage === 'none',
+    'au doigt, le conteneur du menu hamburger est sans fond');
+  const styleBurger = cascade.window.getComputedStyle(burger);
+  assert.equal(styleBurger.minWidth, '48px', 'le bouton hamburger est agrandi');
+  assert.equal(styleBurger.fontSize, '26px', 'l’icône du bouton hamburger est agrandie');
   assert.equal(cascade.window.getComputedStyle(menu).display, 'none',
     'au doigt, le panneau reste replié tant qu’il n’a pas `is-open`');
-  assert.notEqual(cascade.window.getComputedStyle(burger).display, 'none',
+  assert.notEqual(styleBurger.display, 'none',
     'au doigt, le hamburger est visible dans la barre');
   menu.classList.add('is-open');
   const styleOuvert = cascade.window.getComputedStyle(menu);
   assert.equal(styleOuvert.display, 'grid',
     'au doigt, `is-open` déplie le panneau sous la barre');
+  assert.equal(styleOuvert.minWidth, '240px',
+    'au doigt, le panneau du menu hamburger est agrandi');
   // Le panneau ne doit pas dépendre du rognage de la table ni de la hauteur de
   // la barre : fixé au viewport, il reste visible même si la grille tactile
   // défile ou coupe ses débordements (`overflow: auto` sur `.card-table`).

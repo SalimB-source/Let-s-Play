@@ -20,6 +20,8 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
 });
 export const RPG_PLATEAUX_MUSICAUX = Object.freeze(new Set(Object.keys(RPG_PLATEAU_MUSIC_FILES)));
 
+const BASE_PLATEAU_VOLUME = 0.16;
+
 export class RpgPlateauMusic {
   constructor() {
     this.plateauId = null;
@@ -28,6 +30,12 @@ export class RpgPlateauMusic {
     this.running = false;
     this.paused = false;
     this.muted = false;
+    this.volume = 1;
+  }
+
+  effectiveVolume() {
+    if (this.muted || this.volume <= 0) return 0;
+    return Math.max(0, Math.min(1, BASE_PLATEAU_VOLUME * this.volume));
   }
 
   setPlateau(plateauId) {
@@ -50,11 +58,12 @@ export class RpgPlateauMusic {
       this.audio = new window.Audio(this.musicFile);
       this.audio.loop = true;
       this.audio.preload = 'auto';
-      this.audio.volume = 0.16;
+      this.audio.volume = this.effectiveVolume();
     } else if (this.audio.src !== new URL(this.musicFile, window.location.href).href) {
       this.audio.src = this.musicFile;
     }
-    this.audio.muted = this.muted;
+    this.audio.volume = this.effectiveVolume();
+    this.audio.muted = this.muted || this.volume <= 0;
     try {
       await this.audio.play();
       this.running = true;
@@ -84,7 +93,19 @@ export class RpgPlateauMusic {
 
   setMuted(muted) {
     this.muted = Boolean(muted);
-    if (this.audio) this.audio.muted = this.muted;
+    if (this.audio) {
+      this.audio.volume = this.effectiveVolume();
+      this.audio.muted = this.muted || this.volume <= 0;
+    }
+  }
+
+  setVolume(volume) {
+    const num = Number(volume);
+    this.volume = Number.isFinite(num) ? Math.max(0, Math.min(1, num)) : 1;
+    if (this.audio) {
+      this.audio.volume = this.effectiveVolume();
+      this.audio.muted = this.muted || this.volume <= 0;
+    }
   }
 
   destroy() {

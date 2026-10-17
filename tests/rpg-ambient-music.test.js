@@ -107,6 +107,12 @@ test('la page du duel joue la musique d’ambiance du mode Histoire sans doubler
     'le lancement d’un étage naît dans le geste joueur (contexte audio)');
   assert.match(page, /onClick=\{basculerSon\}/,
     'un bouton de la barre du duel coupe ou rend la musique');
+  assert.match(page, /musiqueRef\.current\?\.setVolume\(volumeMusique\)/,
+    'le volume des musiques pilote l’ambiance des tours');
+  assert.match(page, /musiquePlateauRef\.current\?\.setVolume\(volumeMusique\)/,
+    'le volume des musiques pilote aussi les pistes des plateaux');
+  assert.match(page, /sfxRef\.current\?\.setVolume\(volumeSfx\)/,
+    'le volume des sons du jeu pilote les bruitages');
 });
 
 test('La Cour de l’Empereur joue la piste de koto fournie', () => {
