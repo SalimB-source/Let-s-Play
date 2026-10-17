@@ -8274,6 +8274,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   width: 100%;
   height: 100%;
   overflow: visible;
+  /* Une lueur bleue autour de l'arc : il se détache sur toutes les tables. */
+  filter: drop-shadow(0 0 2.5px rgba(70, 165, 255, .85));
 }
 /* Le rectangle entoure le bord extérieur de la carte, à 4 px au-dehors, avec
    l'arrondi de la carte agrandi d'autant : même centre, même forme. */
@@ -8286,31 +8288,32 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   fill: none;
 }
 .rpg-card__electricite-halo {
-  stroke: #3fa9ff;
-  stroke-width: 2.5px;
-  opacity: .65;
+  stroke: #4ab3ff;
+  stroke-width: 3.4px;
+  opacity: .9;
 }
 .rpg-card__electricite-coeur {
-  stroke: #e6f6ff;
-  stroke-width: 1px;
+  stroke: #f0faff;
+  stroke-width: 1.4px;
 }
 /* Son opacité est animée au hasard (SMIL) : aucune opacité CSS ici. */
 .rpg-card__electricite-coeur--second {
-  stroke: #9fdcff;
-  stroke-width: .8px;
+  stroke: #b3e4ff;
+  stroke-width: 1px;
 }
 @keyframes rpg-electricite-vacille {
   0%, 100% { opacity: 1; }
-  9% { opacity: .7; }
+  9% { opacity: .8; }
   13% { opacity: 1; }
-  31% { opacity: .5; }
-  34% { opacity: .95; }
-  47% { opacity: .8; }
-  58% { opacity: .35; }
+  31% { opacity: .65; }
+  34% { opacity: 1; }
+  47% { opacity: .88; }
+  58% { opacity: .55; }
   61% { opacity: 1; }
-  79% { opacity: .65; }
+  79% { opacity: .75; }
   83% { opacity: 1; }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .rpg-card__electricite { animation: none; }
 }
