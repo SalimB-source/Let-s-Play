@@ -8314,3 +8314,57 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce) {
   .rpg-card__electricite { animation: none; }
 }
+
+/* ── Infiltration : la carte brumeuse et transparente ────────────────────────
+   Une créature qui ne peut pas être bloquée se fond dans le décor : la carte
+   devient translucide (la table transparaît), l'illustration pâlit et se
+   trouble légèrement, et deux nappes de brouillard dérivent lentement sur la
+   face, en sens opposés. Les repères (pastille, icônes, ATQ/DEF) passent
+   au-dessus de la brume et restent lisibles. Le mouvement réduit garde la
+   brume, immobile. */
+/* Pas de `box-shadow` sur la carte : elle porte déjà les anneaux d'état
+   (attaquante, sélectionnée, ciblée…). La lueur de brume vit dans le voile. */
+.rpg-card.has-infiltration {
+  opacity: .72;
+}
+.rpg-card.has-infiltration.is-attacked { opacity: .62; }
+.rpg-card.has-infiltration .rpg-card__img {
+  opacity: .78;
+  filter: saturate(.7) brightness(1.08) blur(.4px);
+}
+.rpg-card__brume {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Un voile laiteux plus dense sur les bords, plus clair au centre. */
+  background: radial-gradient(ellipse at 50% 50%, rgba(235, 242, 248, 0) 35%, rgba(225, 235, 244, .38) 100%);
+  box-shadow: inset 0 0 18px rgba(230, 238, 246, .45);
+}
+.rpg-card__brume-nappe {
+  position: absolute;
+  inset: -40% -60%;
+  opacity: .55;
+  background:
+    radial-gradient(ellipse 30% 18% at 22% 30%, rgba(240, 246, 252, .75), transparent 70%),
+    radial-gradient(ellipse 26% 14% at 64% 58%, rgba(232, 240, 248, .65), transparent 70%),
+    radial-gradient(ellipse 34% 16% at 40% 82%, rgba(244, 248, 252, .6), transparent 70%),
+    radial-gradient(ellipse 22% 12% at 82% 20%, rgba(236, 243, 250, .55), transparent 70%);
+  filter: blur(4px);
+  animation: rpg-brume-derive 14s ease-in-out infinite alternate;
+}
+.rpg-card__brume-nappe--b {
+  opacity: .4;
+  transform: scaleX(-1);
+  animation-duration: 19s;
+  animation-direction: alternate-reverse;
+}
+@keyframes rpg-brume-derive {
+  from { translate: -18% 4%; }
+  to { translate: 18% -4%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card__brume-nappe { animation: none; }
+}

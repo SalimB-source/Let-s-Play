@@ -1205,6 +1205,7 @@ export function TableCard({
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         entite.envol ? 'is-envol' : '',
         entite.rapidite ? 'has-rapidite' : '',
+        entite.infiltration ? 'has-infiltration' : '',
         gelee ? 'is-frozen' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
@@ -1254,6 +1255,14 @@ export function TableCard({
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       {entite.rapidite && <ElectriciteRapidite />}
+      {/* Infiltration : la carte devient une silhouette de brume — à demi
+          transparente, voilée de nappes de brouillard qui dérivent. */}
+      {entite.infiltration && (
+        <span className="rpg-card__brume" aria-hidden="true">
+          <span className="rpg-card__brume-nappe rpg-card__brume-nappe--a" />
+          <span className="rpg-card__brume-nappe rpg-card__brume-nappe--b" />
+        </span>
+      )}
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       {gelee && <span className="rpg-card__frost" aria-hidden="true">
         <span className="rpg-card__frost-crystals" />
