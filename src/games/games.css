@@ -285,7 +285,7 @@
    blanche — la tranche et l'ombre portée restent dessous. */
 .game-card:not(.is-locked):focus-within {
   box-shadow: 2px 3px 0 var(--shell-edge-2), 5px 7px 0 var(--shell-edge-3), 10px 30px 30px -12px #0009,
-    0 0 0 1px #ffffff8c, 0 0 22px 3px #ffffff66, 0 0 56px 10px #ffffff2e;
+    0 0 0 1px #ffffff59, 0 0 14px 1px #ffffff40, 0 0 34px 4px #ffffff1a;
 }
 @media (hover: hover) and (pointer: fine) {
   .game-card:hover {
@@ -295,12 +295,12 @@
       5px 5px 0 var(--shell-edge-2), 6px 6px 0 var(--shell-edge-2),
       7px 7px 0 var(--shell-edge-2), 8px 8px 0 var(--shell-edge-3),
       14px 24px 22px -12px #0009,
-      0 0 0 1px #ffffff8c, 0 0 22px 3px #ffffff66, 0 0 56px 10px #ffffff2e;
+      0 0 0 1px #ffffff59, 0 0 14px 1px #ffffff40, 0 0 34px 4px #ffffff1a;
   }
   .game-card:not(.is-locked):hover {
     transform: perspective(1100px) translateY(-8px) rotateX(0) rotateY(0) rotateZ(0);
     box-shadow: 2px 3px 0 var(--shell-edge-2), 5px 7px 0 var(--shell-edge-3), 10px 30px 30px -12px #0009,
-      0 0 0 1px #ffffff8c, 0 0 22px 3px #ffffff66, 0 0 56px 10px #ffffff2e;
+      0 0 0 1px #ffffff59, 0 0 14px 1px #ffffff40, 0 0 34px 4px #ffffff1a;
   }
   .game-card:not(.is-locked):hover .game-card-overlay { opacity: 1; }
   .game-card:not(.is-locked):hover .game-card-thumb { transform: scale(1.04); }
