@@ -5448,7 +5448,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return true;
       }
       setCibleEnCours(null);
-      jouerSfx('select');
+      jouerSfx(carteSource.arrivee?.type === 'retour-main' ? 'creature_return' : 'select');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       force();
       return true;
