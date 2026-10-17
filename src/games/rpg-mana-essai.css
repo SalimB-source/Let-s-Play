@@ -472,3 +472,36 @@
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate--ennemi { grid-template-columns: 28px minmax(0, 1fr); }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate--ennemi .rpg-wizard-plate__pv { grid-column: 2; grid-row: 2; }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate--ennemi .rpg-wizard-plate__zones { grid-column: 1 / -1; grid-row: 3; }
+
+/* ── Table d'essai : les icônes d'effets en colonne sous le coût ─────────────
+   Sur la table sans terrains, chaque créature posée montre ses icônes
+   d'effets (mots-clés imprimés et états vivants : bouclier, esquive…) en une
+   colonne verticale qui prolonge le disque de coût : même bord droit (6 %),
+   même largeur de repère, chaque badge centré sur l'axe du disque. Trois
+   badges tiennent entre le coût et les statistiques ; au-delà, l'aperçu au
+   survol garde la liste complète. Au doigt, le disque de coût ne s'imprime
+   pas sur la table : la colonne garde sa place, sous l'emplacement du coût. */
+.rpg-battle .card-row .rpg-card .rpg-card-icones.rpg-card-icones--colonne {
+  top: calc(5% + var(--rpg-card-marker-size, 27cqw) + 3cqw);
+  right: 6%;
+  bottom: auto;
+  left: auto;
+  width: var(--rpg-card-marker-size, 27cqw);
+  max-width: none;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2.5cqw;
+}
+.rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone {
+  justify-content: center;
+  min-width: 20cqw;
+  min-height: 20cqw;
+}
+.rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone:nth-child(n + 4) {
+  display: none;
+}
+/* Hybride avec compteurs : les losanges sont sous le coût, la colonne passe dessous. */
+.rpg-battle .card-row .rpg-card .rpg-card-icones.rpg-card-icones--sous-compteurs {
+  top: calc(5% + var(--rpg-card-marker-size, 27cqw) + 6cqw + clamp(8px, calc(var(--rpg-card-marker-size, 27cqw) * .58), 18px) * 1.3);
+}

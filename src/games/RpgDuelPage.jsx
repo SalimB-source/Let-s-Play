@@ -63,7 +63,7 @@ import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
-import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
+import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
 import { effetsDetailles } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
@@ -980,6 +980,7 @@ export function TableCard({
   tutorialTarget,
   onHoverCard,
   onLeaveHoverCard,
+  iconesEffets = false,
 }) {
   const carte = cardById(entite.carteId);
   const hybride = cardColors(carte).length > 1;
@@ -1155,6 +1156,17 @@ export function TableCard({
       <header className="rpg-card__title">
         <ManaCost carte={carte} compact showElement={false} />
       </header>
+      {/* Table d'essai sans terrains : les icônes d'effets de la créature se
+          rangent en colonne sous son coût, centrées sur le même axe. Sur une
+          hybride, les losanges de compteurs occupent déjà ce dessous : la
+          colonne descend d'un cran pour les laisser lisibles. */}
+      {iconesEffets && (
+        <IconesCarte
+          carte={carte}
+          entite={entite}
+          className={`rpg-card-icones--colonne${hybride && (entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0)) ? ' rpg-card-icones--sous-compteurs' : ''}`}
+        />
+      )}
       {activation && cote === 'joueur' && onActiver && (
         <span
           className={`rpg-card__activation${activationDispo ? ' is-pret' : ''}`}
@@ -6688,6 +6700,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       cote="ennemi"
+                      iconesEffets={duel.modeMana === RPG_MODE_MANA_ESSAI}
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       blocking={bloqueursSelectionnes.has(entite.id)}
@@ -6762,6 +6775,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       cote="joueur"
+                      iconesEffets={duel.modeMana === RPG_MODE_MANA_ESSAI}
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
