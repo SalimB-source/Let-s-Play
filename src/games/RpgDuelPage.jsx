@@ -980,33 +980,101 @@ function ElectriciteRapidite() {
     calque.style.setProperty('--rpg-elec-bord', style.borderTopWidth || '0px');
     calque.style.setProperty('--rpg-elec-rayon', style.borderTopLeftRadius || '8px');
   }, []);
-  const filtre = (suffixe, frequence, echelle, graines, duree, flou = 0) => (
+  // Le hasard est tiré une fois par carte : graines, rythme, amplitude et
+  // finesse de l'arc diffèrent d'une créature à l'autre, et les cycles de
+  // durées sans commune mesure ne se recalent jamais — l'arc ne se répète pas.
+  const [hasard] = useState(() => tirerHasardElectricite());
+  const filtre = (suffixe, reglages, flou = 0) => (
     <filter id={`${id}-${suffixe}`} x="-8%" y="-8%" width="116%" height="116%">
       {/* `fractalNoise` oscille autour de 0,5 : l'arc tremble de part et d'autre
           du bord sans glisser d'un côté (la `turbulence` décalait tout vers
           le haut et la gauche). */}
-      <feTurbulence type="fractalNoise" baseFrequency={frequence} numOctaves="2" seed={graines[0]} result="bruit">
+      <feTurbulence type="fractalNoise" baseFrequency={reglages.frequences[0]} numOctaves="2" seed={reglages.graines[0]} result="bruit">
         {!mouvementReduit && (
-          <animate attributeName="seed" values={graines.join(';')} dur={duree} repeatCount="indefinite" calcMode="discrete" />
+          <>
+            <animate attributeName="seed" values={reglages.graines.join(';')} keyTimes={reglages.instants.join(';')}
+              dur={`${reglages.duree}s`} repeatCount="indefinite" calcMode="discrete" />
+            <animate attributeName="baseFrequency" values={reglages.frequences.join(';')}
+              dur={`${reglages.dureeFrequence}s`} repeatCount="indefinite" calcMode="discrete" />
+          </>
         )}
       </feTurbulence>
-      <feDisplacementMap in="SourceGraphic" in2="bruit" scale={echelle} xChannelSelector="R" yChannelSelector="G" />
+      <feDisplacementMap in="SourceGraphic" in2="bruit" scale={reglages.amplitudes[0]} xChannelSelector="R" yChannelSelector="G">
+        {!mouvementReduit && (
+          <animate attributeName="scale" values={reglages.amplitudes.join(';')}
+            dur={`${reglages.dureeAmplitude}s`} repeatCount="indefinite" calcMode="discrete" />
+        )}
+      </feDisplacementMap>
       {flou > 0 && <feGaussianBlur stdDeviation={flou} />}
     </filter>
   );
   return (
-    <span ref={calqueRef} className="rpg-card__electricite" aria-hidden="true">
+    <span
+      ref={calqueRef}
+      className="rpg-card__electricite"
+      aria-hidden="true"
+      style={{
+        '--rpg-elec-vacille-duree': `${hasard.vacille.duree}s`,
+        '--rpg-elec-vacille-delai': `${hasard.vacille.delai}s`,
+      }}
+    >
       <svg focusable="false">
         <defs>
-          {filtre('halo', '0.06', 9, [2, 7, 11, 4, 9, 13], '0.6s', 1)}
-          {filtre('coeur', '0.08', 8, [5, 1, 8, 12, 3, 10], '0.45s')}
+          {filtre('halo', hasard.halo, 1)}
+          {filtre('coeur', hasard.coeur)}
+          {filtre('eclat', hasard.eclat)}
         </defs>
         <rect className="rpg-card__electricite-halo" filter={`url(#${id}-halo)`} />
         <rect className="rpg-card__electricite-coeur" filter={`url(#${id}-coeur)`} />
-        <rect className="rpg-card__electricite-coeur rpg-card__electricite-coeur--second" filter={`url(#${id}-halo)`} />
+        {/* L'éclat : un second fil qui ne s'allume que par moments, au hasard. */}
+        <rect className="rpg-card__electricite-coeur rpg-card__electricite-coeur--second" filter={`url(#${id}-eclat)`}>
+          {!mouvementReduit && (
+            <animate attributeName="opacity" values={hasard.eclats.join(';')}
+              dur={`${hasard.dureeEclats}s`} repeatCount="indefinite" calcMode="discrete" />
+          )}
+        </rect>
       </svg>
     </span>
   );
+}
+
+/** Le tirage d'une électricité : tout ce qui rend l'arc imprévisible. */
+function tirerHasardElectricite(aleatoire = Math.random) {
+  const entre = (min, max) => min + aleatoire() * (max - min);
+  const arrondi = (valeur, decimales = 3) => Number(valeur.toFixed(decimales));
+  const suite = (n, tirer) => Array.from({ length: n }, tirer);
+  // Instants irréguliers (0 au départ, croissants, < 1) : le rythme saccade.
+  const instants = (n) => {
+    const pas = suite(n, () => entre(.4, 1.6));
+    const total = pas.reduce((somme, valeur) => somme + valeur, 0);
+    let cumul = 0;
+    return pas.map((valeur) => {
+      const instant = cumul / total;
+      cumul += valeur;
+      return arrondi(instant, 4);
+    });
+  };
+  const reglages = ({ frequence, amplitude }) => {
+    const n = 14 + Math.floor(aleatoire() * 8);
+    return {
+      graines: suite(n, () => 1 + Math.floor(aleatoire() * 997)),
+      instants: instants(n),
+      duree: arrondi(entre(1.1, 2.3), 2),
+      frequences: suite(5, () => arrondi(entre(frequence * .7, frequence * 1.4), 4)),
+      dureeFrequence: arrondi(entre(1.7, 3.9), 2),
+      amplitudes: suite(7, () => arrondi(entre(amplitude * .55, amplitude * 1.35), 1)),
+      dureeAmplitude: arrondi(entre(1.3, 3.1), 2),
+    };
+  };
+  return {
+    halo: reglages({ frequence: .06, amplitude: 9 }),
+    coeur: reglages({ frequence: .08, amplitude: 8 }),
+    eclat: reglages({ frequence: .1, amplitude: 11 }),
+    // L'éclat reste éteint la plupart du temps et s'allume par à-coups.
+    eclats: suite(12, () => (aleatoire() < .3 ? arrondi(entre(.5, 1), 2) : 0)),
+    dureeEclats: arrondi(entre(1.6, 3.4), 2),
+    vacille: { duree: arrondi(entre(.9, 1.9), 2), delai: arrondi(-entre(0, 2), 2) },
+  };
 }
 
 export function TableCard({

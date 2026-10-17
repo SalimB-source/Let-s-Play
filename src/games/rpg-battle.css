@@ -8265,7 +8265,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   inset: calc(-1 * (var(--rpg-elec-bord, 0px) + var(--rpg-elec-marge)));
   z-index: 7;
   pointer-events: none;
-  animation: rpg-electricite-vacille 1.3s steps(1, end) infinite;
+  /* Durée et départ tirés au hasard par carte : les vacillements des
+     créatures électrisées ne battent jamais à l'unisson. */
+  animation: rpg-electricite-vacille var(--rpg-elec-vacille-duree, 1.3s) steps(1, end) var(--rpg-elec-vacille-delai, 0s) infinite;
 }
 .rpg-card__electricite svg {
   display: block;
@@ -8292,18 +8294,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   stroke: #fffbe0;
   stroke-width: 1px;
 }
+/* Son opacité est animée au hasard (SMIL) : aucune opacité CSS ici. */
 .rpg-card__electricite-coeur--second {
-  stroke: #ffe45c;
-  stroke-width: .7px;
-  opacity: .6;
+  stroke: #fff2a0;
+  stroke-width: .8px;
 }
 @keyframes rpg-electricite-vacille {
   0%, 100% { opacity: 1; }
-  18% { opacity: .55; }
-  24% { opacity: 1; }
-  52% { opacity: .8; }
+  9% { opacity: .7; }
+  13% { opacity: 1; }
+  31% { opacity: .5; }
+  34% { opacity: .95; }
+  47% { opacity: .8; }
   58% { opacity: .35; }
-  63% { opacity: 1; }
+  61% { opacity: 1; }
+  79% { opacity: .65; }
+  83% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-card__electricite { animation: none; }
