@@ -8056,3 +8056,49 @@ page) sont géométriquement inchangées par l'`overflow: visible` — au repos,
 main ne déborde jamais sa rangée. À noter : `check:rpg-souk-ui` échoue
 identiquement au point de départ de la branche (`solde-insuffisant` au lieu de
 `rayon-ferme`) — échec préexistant, sans rapport avec ces changements.
+
+## Le Sablier : le hamburger du duel déplie ses modes
+
+Sur téléphone, le bouton **hamburger** de la barre du duel changeait bien
+d'icône — ☰, puis ✕ — et `aria-expanded` passait à `true`, mais **aucun menu
+n'apparaissait** : Menu, Deck et Catalogue restaient inatteignables, et le
+joueur ne pouvait plus quitter la table. `rpg-mobile.css` ne déplie le panneau
+que sur `.rpg-duel-nav__menu.is-open` ; or `RpgDuelPage.jsx` ne posait jamais
+cette classe — elle vivait sur le bouton (`rpg-duel-nav__burger is-open`), que
+la feuille n'utilise pas. Le `<div>` du panneau porte désormais la même bascule
+que le bouton : la classe `is-open` lui est ajoutée quand `navMenuOuvert` est
+vrai.
+
+À la souris, rien ne change : `.rpg-duel-nav__menu { display: contents; }`
+garde les six commandes déroulées en ligne dans la barre, et le bouton reste
+masqué. Au doigt, le panneau s'ouvre sous la barre, dans la colonne des
+commandes (`z-index: 50`), avec ses **six boutons** : les trois modes (Menu,
+Deck, Catalogue), puis le son, la 3D et le plein écran. Un toucher hors de la
+barre, Échap ou le ✕ referment le panneau ; choisir un mode referme le panneau
+et ouvre son écran.
+
+### Où vit le code
+
+- `src/games/RpgDuelPage.jsx` — la classe `is-open` du panneau, posée avec la
+  même condition que `aria-expanded` du hamburger ;
+- `scripts/rpg-duel-nav-check.mjs` et `scripts/rpg-duel-nav-smoke.jsx` — le
+  nouveau scénario jsdom : pointeur grossier, duel lancé, panneau replié, appui
+  sur le hamburger, six commandes, fermeture hors barre, mode Deck ouvert ;
+- `scripts/rpg-mobile-layout-check.mjs` — l'assertion Playwright : le panneau
+  est visible dans la fenêtre 844 × 390, ses trois modes sont au-dessus de la
+  table et atteignables, les six commandes restent dans le panneau ;
+- `docs/rpg/mobile-layout.md` — la section « Le menu hamburger du duel ».
+
+### Vérifications
+
+```bash
+npm run check:rpg-duel-nav   # ✓ — jsdom : le panneau s'ouvre, se referme et mène au Deck
+npm run check:rpg-fullscreen # ✓ — le plein écran du duel, inchangé
+npm run check:rpg-ui         # ✓ — la page réelle montée dans jsdom, nouveau volet compris
+npm run build                # ✓ — le bundle se construit
+```
+
+Les contrôles Playwright (`check:rpg-mobile`) demandent un navigateur, absent
+de cet environnement : les assertions du hamburger suivent la règle CSS posée
+ici et se joueront là où Chromium est installé (`npx playwright install
+chromium`, `npm run dev` dans un autre terminal).
