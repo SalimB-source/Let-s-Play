@@ -131,6 +131,7 @@ import {
   rpgOuvrirFinDeTour,
   rpgPeutRepondre,
   rpgSorcierMagieRapide,
+  rpgEmplacementsChamp,
   rpgEstProtegee,
   rpgPeutBloquerAttaquant,
   rpgPeutMulligan,
@@ -425,7 +426,9 @@ function mesurerDestinationVol(table, kind, from, carteId) {
   // plateau. On vise la case elle-même (la cinquième reste toujours visible)
   // au lieu de répartir les cartes comme dans une rangée flexible.
   const slots = [...zone.querySelectorAll('.rpg-creature-slot')];
-  const slotLibre = slots[cards.length];
+  // La première case vide — pas la n-ième : une case libérée par une mort
+  // peut se trouver au milieu de la rangée.
+  const slotLibre = zone.querySelector('.rpg-creature-slot.is-empty') ?? slots[cards.length];
   const slotRect = slotLibre?.getBoundingClientRect();
   if (slotRect && (slotRect.width || slotLibre.offsetWidth) && (slotRect.height || slotLibre.offsetHeight)) {
     const slotWidth = slotRect.width || slotLibre.offsetWidth;
@@ -565,7 +568,10 @@ export function FluxManaTrack({ camp, cote }) {
  * la rangée de chaque camp : une case par créature jouable, pleine quand elle
  * est occupée, en pointillés quand elle attend encore sa créature. */
 export function CreatureSlots({ camp, cote }) {
-  const occupees = Math.min(RPG_MANA_ESSAI_CHAMP_MAX, camp.creatures?.length ?? 0);
+  // Chaque créature garde sa case : une case vidée par une mort reste vide
+  // au milieu de la rangée, les autres ne glissent pas pour la combler.
+  const cases = rpgEmplacementsChamp(camp);
+  const occupees = cases.filter(Boolean).length;
   return (
     <div
       className={`rpg-creature-slots rpg-creature-slots--${cote}`}
@@ -574,12 +580,12 @@ export function CreatureSlots({ camp, cote }) {
       aria-label={`Emplacements de créatures ${cote === 'joueur' ? 'de votre camp' : 'du sorcier'} : ${occupees} sur ${RPG_MANA_ESSAI_CHAMP_MAX} occupés`}
       aria-hidden="false"
     >
-      {Array.from({ length: RPG_MANA_ESSAI_CHAMP_MAX }, (_, index) => (
+      {cases.map((occupant, index) => (
         <span
           key={index}
-          className={`rpg-creature-slot${index < occupees ? ' is-occupied' : ' is-empty'}`}
+          className={`rpg-creature-slot${occupant ? ' is-occupied' : ' is-empty'}`}
           data-creature-slot={index + 1}
-          data-creature-slot-occupe={index < occupees ? 'true' : 'false'}
+          data-creature-slot-occupe={occupant ? 'true' : 'false'}
           aria-hidden="true"
         >
           <span className="rpg-creature-slot__numero">{index + 1}</span>
@@ -940,11 +946,11 @@ const BLOCKER_DRAG_TYPE = 'application/x-bab-el-blocker';
  *  décalée vers le haut et la droite, comme une carte posée dessous. La pile
  *  ne change rien au jeu — la créature reste l'unique cible et la seule carte
  *  qui agit ; seul le bord de l'arme dit qu'elle est équipée. */
-function PileArmee({ armes = [], children }) {
+function PileArmee({ armes = [], caseEssai = null, children }) {
   const arme = cardById(armes[0]);
   if (!arme) return children;
   return (
-    <span className="rpg-card-stack rpg-card-stack--arme">
+    <span className="rpg-card-stack rpg-card-stack--arme" style={caseEssai ? { '--case-essai': caseEssai } : undefined}>
       <span className="rpg-card-stack__arme" aria-hidden="true" style={cardFrameStyle(arme)}>
         <img src={cardArt(arme)} alt="" />
       </span>
@@ -981,6 +987,7 @@ export function TableCard({
   onHoverCard,
   onLeaveHoverCard,
   iconesEffets = false,
+  caseEssai = null,
 }) {
   const carte = cardById(entite.carteId);
   const hybride = cardColors(carte).length > 1;
@@ -1105,7 +1112,8 @@ export function TableCard({
         actionFx?.type === 'block' ? 'fx-block' : '',
         actionFx?.type === 'unblock' ? 'fx-unblock' : '',
       ].filter(Boolean).join(' ')}
-      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(carte) }}
+      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(carte), ...(caseEssai ? { '--case-essai': caseEssai } : {}) }}
+      data-case-essai={caseEssai ?? undefined}
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}
       data-card-id={carte?.id}
@@ -6414,6 +6422,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const campEnnemi = champEnPiles(duel.sorcier.creatures);
   const campJoueur = champEnPiles(duel.joueur.creatures);
+  // Mode essai : la colonne (1 à 5) de la case de chaque créature.
+  const casesParId = (camp) => (duel.modeMana === RPG_MODE_MANA_ESSAI
+    ? new Map(rpgEmplacementsChamp(camp).flatMap((entite, index) => (entite ? [[entite.id, index + 1]] : [])))
+    : null);
+  const casesEnnemi = casesParId(duel.sorcier);
+  const casesJoueur = casesParId(duel.joueur);
 
   return (
     <div
@@ -6704,6 +6718,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       entite={entite}
                       cote="ennemi"
                       iconesEffets={duel.modeMana === RPG_MODE_MANA_ESSAI}
+                      caseEssai={casesEnnemi?.get(entite.id) ?? null}
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       blocking={bloqueursSelectionnes.has(entite.id)}
@@ -6727,7 +6742,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
-                    return <PileArmee key={entite.id} armes={armesPortees(entite)}>{carte}</PileArmee>;
+                    return <PileArmee key={entite.id} armes={armesPortees(entite)} caseEssai={casesEnnemi?.get(entite.id) ?? null}>{carte}</PileArmee>;
                   }
                   return (
                     <span
@@ -6779,6 +6794,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       entite={entite}
                       cote="joueur"
                       iconesEffets={duel.modeMana === RPG_MODE_MANA_ESSAI}
+                      caseEssai={casesJoueur?.get(entite.id) ?? null}
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
@@ -6811,7 +6827,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
-                    return <PileArmee key={entite.id} armes={armesPortees(entite)}>{carte}</PileArmee>;
+                    return <PileArmee key={entite.id} armes={armesPortees(entite)} caseEssai={casesJoueur?.get(entite.id) ?? null}>{carte}</PileArmee>;
                   }
                   return (
                     <span

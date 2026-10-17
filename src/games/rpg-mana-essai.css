@@ -535,3 +535,12 @@
   --essai-colonne: calc(var(--rpg-field-card, var(--duel-card, 64px)) + 4px);
   column-gap: max(6px, calc(var(--duel-card, 64px) * .12));
 }
+
+/* Chaque créature garde sa case : la carte (ou la pile de son arme) se pose
+   dans la colonne de sa case (`--case-essai`, 1 à 5), quel que soit son rang
+   dans la rangée. Une case vidée par une mort reste vide au milieu de la
+   table : les autres créatures ne glissent pas pour prendre sa place. */
+.rpg-battle[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack) {
+  grid-column: var(--case-essai, auto);
+  grid-row: 1;
+}

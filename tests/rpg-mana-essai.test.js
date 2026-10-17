@@ -16,6 +16,7 @@ import {
   rpgChoisirCouleurMana,
   rpgDefausserCarte,
   rpgDemarrerManaEssai,
+  rpgEmplacementsChamp,
   rpgEngagerTerrain,
   rpgExcesMainFinDeTour,
   rpgFinDeTour,
@@ -330,6 +331,34 @@ test('plateau plein : cinq créatures au plus, la sixième exige un sacrifice qu
   classique.joueur.main = Array(6).fill('chien-du-guet');
   for (let i = 0; i < 6; i += 1) assert.equal(rpgJouerCreature(classique, 'joueur', 'chien-du-guet').ok, true);
   assert.equal(classique.joueur.creatures.length, 6, 'aucun plafond de créatures hors du mode sans terrains');
+});
+
+test('chaque créature garde sa case : une mort laisse un trou, la suivante le comble', () => {
+  const duel = nouveau(mono);
+  mulligans(duel);
+  rpgDemarrerManaEssai(duel);
+  duel.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+  duel.joueur.main = Array(5).fill('chien-du-guet');
+  for (let i = 0; i < 3; i += 1) assert.equal(rpgJouerCreature(duel, 'joueur', 'chien-du-guet').ok, true);
+  const [premiere, deuxieme, troisieme] = duel.joueur.creatures;
+  assert.deepEqual(duel.joueur.creatures.map((entite) => entite.emplacement), [0, 1, 2], 'cases 1, 2, 3 dans l’ordre de pose');
+  // La créature de la case 2 quitte le champ : les autres ne glissent pas.
+  assert.equal(rpgSacrifierCreature(duel, 'joueur', deuxieme.id).ok, true);
+  assert.deepEqual(rpgEmplacementsChamp(duel.joueur).map((entite) => entite?.id ?? null),
+    [premiere.id, null, troisieme.id, null, null], 'la case 2 reste vide, la troisième créature reste en case 3');
+  // La suivante comble le trou, puis la d’après prend la case 4.
+  const comble = rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  assert.equal(comble.entite.emplacement, 1, 'la nouvelle créature prend la première case libre');
+  const suivante = rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  assert.equal(suivante.entite.emplacement, 3);
+  // Une partie d’avant les cases fixes (sans `emplacement`) se range dans l’ordre.
+  const ancienne = { creatures: [{ id: 'a' }, { id: 'b', emplacement: 0 }] };
+  assert.deepEqual(rpgEmplacementsChamp(ancienne).map((entite) => entite?.id ?? null), ['b', 'a', null, null, null]);
+  // Hors essai, aucune case n’est attribuée.
+  const classique = rpgNouveauDuel({ joueurDeck: Array(12).fill('chien-du-guet'), sorcierDeck: [], rng });
+  classique.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+  classique.joueur.main = ['chien-du-guet'];
+  assert.equal(rpgJouerCreature(classique, 'joueur', 'chien-du-guet').entite.emplacement, undefined);
 });
 
 test('fin de tour : plus de cinq cartes en main oblige à défausser jusqu’à cinq', () => {
