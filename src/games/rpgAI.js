@@ -28,6 +28,7 @@ import {
   terrainById,
   terrainManaColors,
 } from './rpgCards.js';
+import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
 // Accès différé au moteur (cycle d'import maîtrisé : aucune de ces fonctions
 // n'est appelée pendant l'évaluation des modules) — il s'agit ici de tester la
 // solvabilité réelle avec exactement les mêmes règles de paiement que le jeu.
@@ -659,6 +660,31 @@ function compterBesoins(main) {
   return besoins;
 }
 
+/** Nouveau mana du banc d'essai : combler d'abord les pips manquants des
+ * cartes en main, sans jamais regarder le paquet caché. Un coût proche du
+ * prochain tour compte davantage qu'une mythique encore lointaine. */
+export function choisirCouleurManaIA(duel, cote = 'sorcier') {
+  const camp = duel[cote];
+  const capacite = camp?.manaMax ?? {};
+  const total = RPG_ELEMENTS.reduce((somme, couleur) => somme + (capacite[couleur] ?? 0), 0);
+  const cartes = (camp?.main ?? []).map((id) => duelCardById(id) ?? magieById(id) ?? armeById(id)).filter(Boolean);
+  const besoins = compterBesoins(camp?.main ?? []);
+  return [...(camp?.couleurs ?? [])].sort((a, b) => {
+    const score = (couleur) => {
+      const disponible = capacite[couleur] ?? 0;
+      let valeur = (besoins[couleur] ?? 0) / (disponible + 1);
+      for (const carte of cartes) {
+        const manque = (cardColorCost(carte)[couleur] ?? 0) - disponible;
+        if (manque <= 0) continue;
+        valeur += carte.cost <= total + 1 ? 5 : carte.cost <= total + 3 ? 2 : 0.5;
+        if (manque === 1 && carte.cost <= total + 1) valeur += 5;
+      }
+      return valeur;
+    };
+    return score(b) - score(a) || RPG_ELEMENTS.indexOf(a) - RPG_ELEMENTS.indexOf(b);
+  })[0] ?? null;
+}
+
 /** Parmi les terrains en main, celui qui ouvre le plus de coups. */
 export function choisirTerrainIA(duel, cote) {
   const camp = duel[cote];
@@ -694,6 +720,15 @@ export function choisirMulliganIA(duel, cote = 'sorcier', options = {}) {
   const profil = options.profil ?? rpgProfilIA(duel?.[cote]?.ia ?? null);
   const main = duel?.[cote]?.main ?? [];
   if (main.length < 2 || profil.niveau === 'recit') return [];
+  if (duel?.modeMana === RPG_MODE_MANA_ESSAI) {
+    // Aucun terrain à chercher : conserver les cartes de début de courbe et
+    // échanger les coûts 5+ quand la main manque de coups à 1–3 manas.
+    const petitsCouts = main.filter((id) => (duelCardById(id) ?? magieById(id) ?? armeById(id))?.cost <= 3).length;
+    return main.flatMap((id, index) => {
+      const cout = (duelCardById(id) ?? magieById(id) ?? armeById(id))?.cost ?? 0;
+      return cout > (petitsCouts >= 2 ? 5 : 3) ? [index] : [];
+    });
+  }
   const terrains = [];
   const autres = [];
   main.forEach((carteId, index) => (terrainById(carteId) ? terrains : autres).push(index));

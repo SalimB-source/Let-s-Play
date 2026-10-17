@@ -61,6 +61,7 @@ export async function checkRpgMulligan(assert) {
     // Il ne reste que l'illustration et les repères du jeu (coût, badge, stats).
     const reperes = (noeud) => noeud.classList?.contains('rpg-card-element-badge')
       || noeud.classList?.contains('rpg-mana-cost')
+      || noeud.classList?.contains('rpg-card-icones')
       || noeud.classList?.contains('rpg-mulligan__bas');
     for (const noeud of carte.childNodes) {
       if (noeud.nodeType === 3) {

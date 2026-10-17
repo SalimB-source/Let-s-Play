@@ -138,6 +138,10 @@
   font: 800 12px/1 var(--mono, monospace);
   box-shadow: 0 2px 9px rgba(0, 0, 0, .45);
 }
+.rpg-card-guide__cost--hybride {
+  background: var(--rpg-hybrid-cost-bg);
+  text-shadow: 0 1px 2px #000, 0 0 3px #000;
+}
 .rpg-card-guide__details { padding: 10px 11px 12px; }
 .rpg-card-guide__element {
   display: block;

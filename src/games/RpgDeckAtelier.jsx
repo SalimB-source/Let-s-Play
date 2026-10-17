@@ -41,6 +41,7 @@ import {
   cardCost,
   cardFrameClass,
   cardFrameColor,
+  cardHybridGradient,
   cardMotifClass,
   cardTypeLine,
   terrainManaColors,
@@ -144,8 +145,13 @@ function Pip({ couleur, taille = '' }) {
 function Cout({ carte }) {
   if (!carte || carte.kind === 'terrain') return null;
   const couleurs = cardColors(carte);
+  const degrade = cardHybridGradient(carte);
   return (
-    <span className="rpg-atelier__cout" aria-label={`Coût : ${coutLabel(carte)}`}>
+    <span
+      className={`rpg-atelier__cout${degrade ? ' rpg-atelier__cout--hybride' : ''}`}
+      style={degrade ? { '--rpg-hybrid-cost-bg': degrade } : undefined}
+      aria-label={`Coût : ${coutLabel(carte)}`}
+    >
       <b>{cardCost(carte)}</b>
       {couleurs.map((couleur) => <Pip key={couleur} couleur={couleur} taille="mini" />)}
     </span>

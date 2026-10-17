@@ -4,7 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardHasShinyFrame } from '../src/games/rpgCards.js';
+import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardHasShinyFrame, cardHybridGradient } from '../src/games/rpgCards.js';
 import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 import { RPG_PV_JOUEUR, rpgSorcierPv } from '../src/games/rpgDuel.js';
 import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
@@ -328,8 +328,15 @@ export async function checkRpgBattle(assert) {
     && cartesHybridesCatalogue.every((card) => ['sable', 'braise'].every((color) => card.dataset.colors.split(' ').includes(color))),
   'le filtre hybride isole les cartes qui exigent Braise et Sable, terrain de Pétra inclus');
   const veilleurCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="djinn-de-foudre"]');
-  assert.ok(veilleurCatalogue?.querySelector('.rpg-card-catalogue__cost')?.getAttribute('aria-label')?.includes('1 Sable et 1 Braise'),
+  const coutDjinnCatalogue = veilleurCatalogue?.querySelector('.rpg-card-catalogue__cost');
+  assert.ok(coutDjinnCatalogue?.getAttribute('aria-label')?.includes('1 Sable et 1 Braise'),
     'le coût du Djinn de foudre annonce clairement ses deux pips obligatoires');
+  assert.equal(coutDjinnCatalogue?.classList.contains('rpg-card-catalogue__cost--hybride'), true,
+    'le coût hybride a son propre disque dans le catalogue');
+  assert.equal(coutDjinnCatalogue?.style.getPropertyValue('--rpg-hybrid-cost-bg'), cardHybridGradient('djinn-de-foudre'),
+    'le catalogue peint le même partage Sable/Braise que le sceau des magies');
+  assert.equal(container.querySelector('.rpg-card-catalogue__card[data-card-id="petra"] .rpg-card-catalogue__cost'), null,
+    'un terrain hybride ne gagne pas de coût imprimé');
   await filtrerCatalogue(filtresCatalogue[0], 'toutes');
   await filtrerCatalogue(filtresCatalogue[1], 'creature');
   const cavalierCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="cavalier-amazigh-du-desert"]');
@@ -473,8 +480,15 @@ export async function checkRpgBattle(assert) {
   assert.equal(fennecMain?.hasAttribute('title'), false, 'la carte en main n’affiche plus d’aide au survol');
   const veilleurMain = visagesMain.find((carte) => carte.dataset.cardId === 'djinn-de-foudre');
   assert.ok(veilleurMain, 'la main de test contient une créature hybride');
-  assert.equal(veilleurMain.querySelector('.rpg-mana-cost b')?.textContent, '2',
+  const coutDjinnMain = veilleurMain.querySelector('.rpg-mana-cost');
+  assert.equal(coutDjinnMain?.querySelector('b')?.textContent, '2',
     'le coût hybride conserve son nombre de manas');
+  assert.equal(coutDjinnMain?.classList.contains('rpg-mana-cost--hybride'), true,
+    'le Djinn porte un coût bicolore dans la main');
+  assert.equal(coutDjinnMain?.style.getPropertyValue('--rpg-hybrid-cost-bg'), cardHybridGradient('djinn-de-foudre'),
+    'les deux moitiés de la créature reprennent les couleurs de son cadre');
+  assert.equal(fennecMain?.querySelector('.rpg-mana-cost--hybride'), null,
+    'les cartes mono gardent le médaillon ordinaire');
   assert.equal(veilleurMain.querySelector('.rpg-mana-cost__hybrid-pips, .rpg-mana-cost__pip'), null,
     'les icônes de couleur sont retirées du coût de la créature hybride');
   assert.match(veilleurMain.querySelector('.rpg-mana-cost')?.getAttribute('aria-label') ?? '', /1 Sable et 1 Braise/,

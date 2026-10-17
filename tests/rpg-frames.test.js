@@ -9,6 +9,7 @@ import {
   cardFrameClass,
   cardFrameColor,
   cardFrameInfo,
+  cardHybridGradient,
   cardHasMythicFrame,
   cardHasShinyFrame,
   cardRarityInfo,
@@ -40,6 +41,22 @@ test('une hybride garde la diagonale de sa combinaison sans reflet, même mythiq
   assert.equal(cardFrameClass(rare), 'rpg-card--frame-hybride-braise-sable');
   assert.equal(cardHasShinyFrame(hybride), false);
   assert.equal(cardHasShinyFrame(rare), false);
+});
+
+test('coûts et sceaux hybrides se partagent nettement les couleurs de la carte', () => {
+  assert.equal(cardHybridGradient(cardById('trait-de-braise')), null, 'une mono garde son coût ordinaire');
+  assert.equal(cardHybridGradient(cardById('desert')), null, 'un terrain mono n’a pas de dégradé');
+  const rouge = CARD_FRAME_COLORS.braise.color;
+  const sable = CARD_FRAME_COLORS.sable.color;
+  assert.equal(cardHybridGradient('vent-rouge'),
+    `linear-gradient(135deg, ${rouge} 0% 50%, ${sable} 50% 100%)`,
+    'Vent rouge : Braise en haut à gauche, Sable en bas à droite');
+  assert.equal(cardHybridGradient('djinn-de-foudre'),
+    `linear-gradient(135deg, ${sable} 0% 50%, ${rouge} 50% 100%)`,
+    'Djinn de foudre : le partage respecte aussi l’ordre de ses couleurs');
+  assert.equal(cardHybridGradient({ colors: ['braise', 'eau', 'neige'] }),
+    `linear-gradient(135deg, ${rouge} 0% 33%, ${CARD_FRAME_COLORS.eau.color} 33% 67%, ${CARD_FRAME_COLORS.neige.color} 67% 100%)`,
+    'une future tricolore recevra trois bandes sans changer les couleurs des cartes mono');
 });
 
 test('chaque combinaison, y compris future, garde ses couleurs sans fond brillant', () => {

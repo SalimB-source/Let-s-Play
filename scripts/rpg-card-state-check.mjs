@@ -12,8 +12,8 @@ if (previousEnv === undefined) delete process.env.NODE_ENV;
 else process.env.NODE_ENV = previousEnv;
 
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
-assert.match(battleCss, /\.rpg-card__stat--atk:not\(\.is-buffed, \.is-debuffed\)[\s\S]*?\.rpg-card__pt:not\(\.is-buffed, \.is-debuffed, \.is-wounded\)\s*\{[^}]*background:\s*rgba\(0, 0, 0, \.68\);/s,
-  'une statistique neutre repose sur une plaque noire translucide');
+assert.match(battleCss, /\.rpg-card__stat--atk:not\(\.is-buffed, \.is-debuffed\)[\s\S]*?\.rpg-card__pt:not\(\.is-buffed, \.is-debuffed, \.is-wounded\),\s*\.rpg-hand__card--type-creature \.rpg-hand__stat\s*\{[^}]*background:\s*rgba\(0, 0, 0, \.68\);/s,
+  'les statistiques neutres de table et de main reposent sur une plaque noire translucide');
 assert.match(battleCss, /\.rpg-card\.rpg-card--img \.rpg-card__foot > \.is-buffed\s*\{[^}]*background:[^}]*#7dd3fc[^}]*filter:\s*none;/s,
   'un buff colore sa statistique en bleu clair, même sur une créature grisée');
 assert.match(battleCss, /\.rpg-card\.rpg-card--img \.rpg-card__foot > \.is-debuffed\s*\{[^}]*background:[^}]*#c62f3b[^}]*filter:\s*none;/s,

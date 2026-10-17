@@ -60,6 +60,15 @@ assert.doesNotMatch(battlePage, /rpg-mana-cost__hybrid-pips|rpg-mana-cost__pip/,
   'les cartes hybrides n’affichent plus d’icônes de couleur à côté du coût numérique');
 assert.doesNotMatch(battleCss, /\.rpg-mana-cost__(?:hybrid-pips|pip)\b/,
   'les styles des icônes de couleur accolées au coût hybride ont été supprimés');
+for (const [css, classe] of [
+  [battleCss, 'rpg-mana-cost--hybride'],
+  [battleCss, 'rpg-card-catalogue__cost--hybride'],
+  [atelierCss, 'rpg-atelier__cout--hybride'],
+  [guideCss, 'rpg-card-guide__cost--hybride'],
+]) {
+  assert.match(css, new RegExp(`\\.${classe}\\s*\\{[^}]*background:\\s*var\\(--rpg-hybrid-cost-bg\\)`),
+    `le coût ${classe} partage son disque en deux couleurs, comme le sceau`);
+}
 assert.match(battlePage, /aria-label=\{`Coût : \$\{cardCostLabel\(carte\)\}`\}/,
   'le libellé accessible conserve le détail des couleurs exigées pour payer le coût hybride');
 assert.match(battlePage, /RPG_DUEL_CARDS\.filter\(\(carte\) => \{[\s\S]*?catalogueCouleur === 'hybride'[\s\S]*?colors\.includes\(catalogueCouleur\)/,
@@ -114,8 +123,24 @@ assert.match(confirmSortSource, /rpg-spell-confirm__rules[\s\S]*?effets\.map/,
   'chaque effet occupe une ligne dans la confirmation de sort');
 assert.match(hoverPreviewSource, /rpg-hover-card-preview__rules[\s\S]*?effets\.map/,
   'chaque effet occupe une ligne dans l’aperçu au survol');
+assert.match(hoverPreviewSource, /armesEquipees\.map\(\(arme, index\) => \([\s\S]*?data-arme-equipee=\{arme\.id\}[\s\S]*?src=\{cardArt\(arme\)\}[\s\S]*?<strong>\{arme\.name\}<\/strong>[\s\S]*?<small>\{arme\.text\}<\/small>/,
+  'la créature montre une petite carte par arme équipée, avec illustration, nom et effet');
+assert.match(battleCss, /\.rpg-hover-card-preview--catalogue \.rpg-hover-card-preview__weapon small\s*\{[^}]*overflow:\s*visible;/,
+  'la fiche ouverte révèle le texte complet de chaque arme');
 assert.match(hoverPreviewSource, /rpg-hover-card-preview__rules[\s\S]*?rpg-hover-card-preview__rule--equipment[\s\S]*?effets\.map/,
   'la ligne bleue de l’équipement ouvre la zone d’effets, avant les effets propres de la carte');
+assert.match(tableCardSource, /<CardElementBadge carte=\{carte\} \/>[\s\S]*?rpg-card__compteurs\$\{hybride \? ' rpg-card__compteurs--hybride' : ''\}[\s\S]*?data-compteur="heures"[\s\S]*?data-compteur="sable"/,
+  'les compteurs d’Heures et de sable restent accessibles, sous le coût d’une hybride et sous la couleur d’une mono');
+assert.match(battleCss, /\.rpg-card__compteurs\s*\{[^}]*top:\s*calc\(var\(--rpg-card-element-marker-top,[^}]*\+ var\(--rpg-card-marker-size,[^}]*\+ var\(--rpg-card-counter-size\)/,
+  'les compteurs sont placés juste en dessous du repère de couleur ou de coût');
+assert.match(battleCss, /\.rpg-card__compteurs--hybride\s*\{[^}]*--rpg-card-counter-size:\s*clamp\(8px,[^}]*left:\s*auto;[^}]*right:\s*calc\(6% \+ \(var\(--rpg-card-marker-size, 26px\) - var\(--rpg-card-counter-size\)\) \/ 2 - 1px\);/,
+  'les compteurs d’une créature hybride sont sous son coût à droite, réduits sur une carte étroite pour ne pas toucher ses deux pastilles');
+assert.match(battleCss, /\.rpg-card__compteur\s*\{[^}]*transform:\s*rotate\(45deg\);/,
+  'chaque compteur est un petit losange');
+assert.match(battleCss, /\.rpg-card__compteur > span\s*\{[^}]*transform:\s*rotate\(-45deg\);/,
+  'le chiffre du losange reste droit et lisible');
+assert.doesNotMatch(tableCardSource, /bonusArmeTexte\(armeCarte\)|title=\{`\$\{effetsAccordesParArme\(armeCarte\)/,
+  'ni bonus ni infobulle de texte d’effet de l’arme ne figurent sur la face jouée');
 assert.match(hoverPreviewSource, /effets d’équipement[\s\S]*?effet \$\{effet\}/,
   'le libellé accessible annonce les effets d’équipement avant l’effet de la carte');
 assert.match(battlePage, /const afficherApercuSurvol = \(carte, event, armes = \[\]\) => \{[\s\S]*?setApercuSurvol\(/,
@@ -338,6 +363,13 @@ assert.match(battleCss, /\.rpg-card\.is-wounded \.rpg-card__pt,[^{]+\{[^}]*color
   'la défense blessée est affichée en rouge');
 assert.match(battleCss, /font:\s*900 11px\/1\.15 Georgia/,
   'les statistiques du champ ont une taille supérieure');
+const statsCreatureMain = battleCss.match(/\.rpg-hand__card--type-creature \.rpg-hand__stat\s*\{([^}]*)\}/)?.[1] ?? '';
+assert.match(statsCreatureMain, /background:\s*rgba\(0, 0, 0, \.68\);/,
+  'ATQ et DÉF des créatures (héros compris) en main reprennent les plaques noires translucides du champ');
+assert.match(statsCreatureMain, /border-color:\s*rgba\(255, 255, 255, \.34\);[\s\S]*?color:\s*#fff8e8;/,
+  'les icônes et chiffres restent lisibles sur les nouvelles plaques');
+assert.doesNotMatch(battleCss, /\.rpg-hand__card--type-arme \.rpg-hand__stat\s*\{/,
+  'les bonus des armes en main ne sont pas recolorés avec les ATQ/DÉF des créatures');
 const attaqueEnnemie = battlePage.slice(battlePage.indexOf('const resoudreAttaqueEnnemie = () => {'),
   battlePage.indexOf('const resoudreAttaqueJoueur ='));
 const attaqueJoueur = battlePage.slice(battlePage.indexOf('const resoudreAttaqueJoueur = (combat = combatEntrant) => {'),
@@ -382,8 +414,8 @@ assert.match(battlePage, /const resoudreAttaqueJoueur = \(combat = combatEntrant
   'la résolution accepte aussi le combat fraîchement déclaré sans attendre un rendu');
 assert.match(battlePage, /rpg-actions__combat[\s\S]*?rpg-actions__turn[\s\S]*?rpg-btn--endturn/,
   'les actions de combat restent dans la barre, les actions de tour vivent dans le rail');
-assert.match(battlePage, /disabled=\{!monTour \|\| phase \|\| Boolean\(cibleEnCours\) \|\| Boolean\(combatEntrant\) \|\| mulliganOuvert\}/,
-  'Fin du tour est indisponible pendant une sélection de combat ou de cible, et tant que le mulligan n’est pas validé');
+assert.match(battlePage, /disabled=\{!monTour \|\| phase \|\| Boolean\(cibleEnCours\) \|\| Boolean\(combatEntrant\) \|\| mulliganOuvert \|\| choixManaEssaiOuvert\}/,
+  'Fin du tour attend le mulligan, le choix coloré ou la fin des sélections de combat et de cible');
 assert.match(battlePage, /const RPG_PHASE_STEPS = \[[\s\S]*?id: 'debut'[\s\S]*?id: 'principale'[\s\S]*?id: 'attaque'[\s\S]*?id: 'blocage'[\s\S]*?id: 'principale2'[\s\S]*?id: 'fin'/,
   'le rail représente les six phases du tour : début, principale, attaque, blocage, deuxième principale, fin');
 assert.match(battlePage, /const phaseDuelActive = vainqueur[\s\S]*?finTourJoueur \|\| fenetreFinTour[\s\S]*?combatEntrant[\s\S]*?phase[\s\S]*?debutVisible[\s\S]*?duel\.phase/,
@@ -834,13 +866,13 @@ assert.match(guideCss, /\.rpg-card-guide__cost\s*\{\s*position: absolute;\s*z-in
       `la face de l’aperçu d’une carte ${suffixe} reste sans fond derrière l’illustration (reçu : ${fondDe(`face-${suffixe}`)})`);
     assert.match(fondDe(`volet-${suffixe}`), transparent,
       `le volet d’appui long d’une carte ${suffixe} reste sans fond (reçu : ${fondDe(`volet-${suffixe}`)})`);
-    assert.doesNotMatch(fondDe(`main-${suffixe}`), transparent,
-      `la carte ${suffixe} en main garde la teinte de repli de son cadre`);
   }
-  assert.equal(fondDe('main-mythique'), 'rgb(98, 24, 13)',
-    'l’Anqa mythique Braise conserve une teinte de repli rouge profond');
-  assert.equal(fondDe('main-mythique-hybride'), fondDe('main-bicolore'),
-    'une mythique hybride conserve la teinte de repli de sa combinaison');
+  assert.doesNotMatch(fondDe('main-bicolore'), transparent,
+    'la carte bicolore ordinaire garde sa teinte de repli');
+  assert.match(fondDe('main-mythique'), transparent,
+    'sans cadre, la mythique Braise n’a plus de teinte de repli derrière son image');
+  assert.match(fondDe('main-mythique-hybride'), transparent,
+    'une mythique hybride reste aussi sans aplat derrière son illustration');
   const degradeDe = (test) => cascade.window.getComputedStyle(cascade.window.document.querySelector(`[data-test="${test}"]`))
     .getPropertyValue('--rpg-frame-gradient');
   assert.match(degradeDe('main-mythique'), /#e0412a/,
@@ -944,9 +976,9 @@ const choixPlateauPartie = battlePage.slice(
   battlePage.indexOf('const tiragePlateau = tirerPlateauDuDuel'),
   battlePage.indexOf('const plateau = tiragePlateau.plateau'),
 );
-assert.match(choixPlateauPartie, /deckJoueur: modeTutoriel \? deckJoueurSelectionne : joueurDeck \?\? deckJoueurSelectionne/,
-  'le tutoriel tire son plateau du deck Veilleurs du Désert et les autres parties du deck choisi');
-assert.match(choixPlateauPartie, /deckAdverse: modeTutoriel[\s\S]*?RPG_TUTORIAL_OPPONENT_DECK[\s\S]*?etageCourant \? etageCourant\.deck : sorcierDeck \?\? deckAdverse/,
+assert.match(choixPlateauPartie, /deckJoueur: deckEssai \?\? \(modeTutoriel \? deckJoueurSelectionne : joueurDeck \?\? deckJoueurSelectionne\)/,
+  'le tutoriel et les duels historiques tirent leur plateau comme avant ; l’essai utilise son deck');
+assert.match(choixPlateauPartie, /deckAdverse: adversaireEssai \?\? \(modeTutoriel[\s\S]*?RPG_TUTORIAL_OPPONENT_DECK[\s\S]*?etageCourant \? etageCourant\.deck : sorcierDeck \?\? deckAdverse\)/,
   'le plateau du tutoriel tient compte du deck d’entraînement, les autres duels du deck adverse');
 assert.match(choixPlateauPartie, /rng,/,
   'le plateau reste tiré par le générateur aléatoire du duel');
@@ -1026,8 +1058,8 @@ assert.match(battlePage, /supabase\.from\('profiles'\)\.select\('display_name, u
   'le nom affiché vient du profil public Let’s Play, avec repli sur le nom du compte');
 assert.match(battlePage, /className="rpg-wizard-plate__profile-name">\{nomProfilJoueur\}<\/span>/,
   'le nom du profil du joueur est rendu sur sa plaque');
-assert.match(battlePage, /const nomSorcierAdverse = etageHistoire\?\.nom \?\? \(tutorielActif \? 'Sorcier d’entraînement' : 'Ifrit al-Ahmar'\);/,
-  'le sorcier adverse porte un nom cohérent avec le mode histoire, le tutoriel ou le duel libre');
+assert.match(battlePage, /const nomSorcierAdverse = etageHistoire\?\.nom \?\? \(tutorielActif \? 'Sorcier d’entraînement' : duel\.modeMana === RPG_MODE_MANA_ESSAI \? 'Sorcier d’essai' : 'Ifrit al-Ahmar'\);/,
+  'le sorcier adverse porte un nom cohérent avec le mode histoire, le tutoriel, l’essai ou le duel libre');
 assert.match(battlePage, /className="rpg-wizard-plate__enemy-name">\{nomSorcierAdverse\}<\/span>/,
   'le nom du sorcier adverse est rendu sur sa plaque');
 
@@ -1438,30 +1470,23 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rp
 assert.doesNotMatch(mobileCss, /grid-template-columns: repeat\(var\(--hand-count\), minmax\(0, var\(--duel-card\)\)\)/,
   'la main ne superpose plus ses cartes : chacune reste entièrement cliquable');
 
-// ── Le bonus d'équipement au doigt : au-dessus des statistiques ──────────────
-// La bande du pied est nommée (taille des statistiques et hauteur qui en
-// découle), la pastille du bonus s'y accroche par le bas et suit la taille de
-// la carte ; les vignettes d'arme, doublon de l'arme glissée sous la créature,
-// disparaissent ; sous 45 px de large, la pastille s'efface (requête de
-// conteneur sur la carte, dont la largeur dépend de la rangée).
+// ── Compteurs d'effet au doigt : des losanges sous la couleur ────────────────
+// Les chiffres suivent la taille du repère de couleur, sans recouvrir le pied
+// ATQ/DEF ; ils restent affichés même si la carte se resserre dans sa rangée.
 assert.match(mobileCss, /--rpg-field-stat-font:\s*clamp\(8px, calc\(var\(--duel-card\) \* \.145\), 12px\);/,
   'la taille des statistiques d’une carte posée est nommée une fois (`--rpg-field-stat-font`)');
-assert.match(mobileCss, /--rpg-field-stat-height:\s*calc\(1\.2 \* var\(--rpg-field-stat-font\) \+ 6px\);/,
-  'la hauteur du pied posé se calcule à partir de cette taille (`--rpg-field-stat-height`)');
 assert.match(mobileCss, /--rpg-field-foot:\s*3%;/,
   'le bas du pied posé est nommé (`--rpg-field-foot`)');
 assert.match(mobileCss, /\.rpg-card--img \.rpg-card__foot,\s*\.rpg-hand__card--img \.rpg-hand__stats\s*\{[^}]*bottom:\s*var\(--rpg-field-foot, 3%\);/s,
   'le pied garde son bas mesuré, y compris hors disposition tactile (repli à 3 %)');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-card__arme\s*\{\s*bottom:\s*calc\(var\(--rpg-field-foot, 3%\) \+ var\(--rpg-field-stat-height, 20px\) \+ 2px\);[\s\S]*?max-width:\s*88%;[\s\S]*?font-size:\s*clamp\(6px, calc\(var\(--duel-card\) \* \.1\), 9px\);/,
-  'la pastille du bonus se pose juste au-dessus du pied et suit la taille de la carte');
-assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-card__arme\s*\{[^}]*bottom:\s*13%/,
-  'au doigt, la pastille ne garde plus la mesure du bureau (13 %) qui recouvrait les statistiques');
+assert.match(battleCss, /--rpg-card-counter-size:\s*clamp\(10px, calc\(var\(--rpg-card-marker-size, 26px\) \* \.58\), 18px\);/,
+  'le petit losange suit la largeur réelle du repère de couleur, même au doigt');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-card__weapons\s*\{\s*display:\s*none;\s*\}/,
   'au doigt, les vignettes d’arme ne doublonnent plus la face : l’arme est sous la créature');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-row \.rpg-card\s*\{\s*container-type:\s*inline-size;\s*\}/,
   'une carte posée au doigt est un conteneur de requête : sa largeur vient de sa rangée');
-assert.match(mobileCss, /@container \(max-width: 45px\) \{\s*\.rpg-battle--touch \.rpg-card__arme\s*\{\s*display:\s*none;\s*\}\s*\}/,
-  'sous 45 px de large, la pastille s’efface : les repères, le pied et elle ne tiennent plus ensemble');
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-card__compteurs\s*\{[^}]*display:\s*none/,
+  'les compteurs ne disparaissent plus sur les cartes étroites');
 
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '

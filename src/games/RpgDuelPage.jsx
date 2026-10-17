@@ -10,6 +10,7 @@ import './rpg-battle.css';
 import './rpg-mobile.css';
 import './rpg-story.css';
 import './rpg-deckbox.css';
+import './rpg-mana-essai.css';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
 import { isFullscreenShortcut, nativeFullscreenElement } from './gameFullscreen.js';
@@ -22,6 +23,13 @@ import {
   tirerPlateauDuDuel,
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
+import {
+  RPG_MANA_ESSAI_DECKS,
+  RPG_MANA_ESSAI_MAX,
+  RPG_MODE_MANA_ESSAI,
+  adversaireManaEssai,
+  deckManaEssaiParId,
+} from './rpgManaEssai.js';
 import { armesPortees, groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
 import { classeVariationStatCreature, libelleVariationStatCreature } from './rpgCreatureStats.js';
 import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
@@ -100,6 +108,8 @@ import {
   rpgChoisirBloqueurs,
   rpgCiblesAttaqueRapide,
   rpgDefausserCarte,
+  rpgChoisirCouleurMana,
+  rpgDemarrerManaEssai,
   rpgEngagerTerrain,
   rpgFermerFenetreReponse,
   rpgFinDeTour,
@@ -144,6 +154,7 @@ import {
   bonusArme,
   carteEstArme,
   cardColors,
+  cardHybridGradient,
   terrainManaColors,
   RPG_DECK_JOUEUR_BASE,
   RPG_DECK_SORCIER_BASE,
@@ -458,6 +469,7 @@ function ManaCost({ carte, compact = false, showElement = true }) {
   return (
     <span
       className={`rpg-mana-cost rpg-mana-cost--${hybrid ? 'hybride' : carte.element}${compact ? ' is-compact' : ''}`}
+      style={hybrid ? { '--rpg-hybrid-cost-bg': cardHybridGradient(carte) } : undefined}
       aria-label={`Coût : ${cardCostLabel(carte)}`}
     >
       <b>{carte.cost}</b>
@@ -481,6 +493,45 @@ function WizardManaCounters({ mana }) {
         <i key={color} className={`mana mana--${color}`} title={label}>{mana[color]}</i>
       ))}
     </span>
+  );
+}
+
+export function FluxManaTrack({ camp, cote }) {
+  const capacite = camp.manaMax ?? {};
+  const maximum = Object.values(capacite).reduce((total, valeur) => total + valeur, 0);
+  const disponible = Object.values(camp.mana).reduce((total, valeur) => total + valeur, 0);
+  // Dix orbes fixes, dans l'ordre d'acquisition. Un mana dépensé s'assombrit
+  // mais garde sa couleur ; il se rallume quand la réserve se recharge.
+  const restants = { ...camp.mana };
+  const slots = Array.from({ length: RPG_MANA_ESSAI_MAX }, (_, index) => {
+    const couleur = camp.manaSources?.[index] ?? null;
+    const allumee = Boolean(couleur && restants[couleur] > 0);
+    if (allumee) restants[couleur] -= 1;
+    return { index, couleur, etat: !couleur ? 'vide' : allumee ? 'disponible' : 'depense' };
+  });
+  return (
+    <div
+      className={`rpg-terrains rpg-terrains--${cote} rpg-flux-track rpg-flux-track--${cote}`}
+      data-mana-capacite={maximum}
+      data-mana-disponible={disponible}
+      role="status"
+      aria-label={`${cote === 'joueur' ? 'Votre mana' : 'Mana du sorcier'} : ${disponible} disponible sur ${maximum} acquis, maximum ${RPG_MANA_ESSAI_MAX}. ${Object.entries(capacite).filter(([, n]) => n > 0).map(([couleur, n]) => `${couleurLabel(couleur)} ${camp.mana[couleur] ?? 0} sur ${n}`).join(', ')}`}
+    >
+      <span className="rpg-flux-track__bar">
+        <b className="rpg-flux-track__reserve" aria-hidden="true">{disponible}<span>/</span>{maximum}</b>
+        <span className="rpg-flux-track__slots" aria-hidden="true">
+          {slots.map(({ index, couleur, etat }) => (
+            <i
+              key={index}
+              className={`rpg-flux-track__slot${couleur ? ` rpg-flux-track__slot--${couleur}` : ''} ${etat === 'vide' ? 'is-empty' : etat === 'disponible' ? 'is-lit' : 'is-spent'}`}
+              data-mana-slot={index + 1}
+              data-mana-etat={etat}
+              title={couleur ? `${couleurLabel(couleur)} — ${etat === 'disponible' ? 'disponible' : 'dépensé'}` : `Mana ${index + 1} non acquis`}
+            >{couleur ? <ElementEmblem element={couleur} /> : '◇'}</i>
+          ))}
+        </span>
+      </span>
+    </div>
   );
 }
 
@@ -873,6 +924,7 @@ export function TableCard({
   onLeaveHoverCard,
 }) {
   const carte = cardById(entite.carteId);
+  const hybride = cardColors(carte).length > 1;
   const nom = entite.name;
   const armeCarte = entite.arme ? cardById(entite.arme.carteId) : null;
   const armes = armesPortees(entite);
@@ -1010,7 +1062,7 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
@@ -1023,11 +1075,21 @@ export function TableCard({
         {entite.armes.map((id, index) => <img key={`${id}-${index}`} src={cardArt(id)} alt="" />)}
       </span>}
       <CardElementBadge carte={carte} />
-      {armeCarte && (
-        <span className="rpg-card__arme" title={`${effetsAccordesParArme(armeCarte)}${entite.arme?.compteurs ? ` — ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable` : ''}`}>
-          <CardStatIcon type="attack" />{bonusArmeTexte(armeCarte)}
-          {!!entite.arme?.compteurs && (
-            <span className="rpg-card__arme-compteurs">{entite.arme.compteurs} ●</span>
+      {/* Les losanges de compteurs sont sous la couleur d'une carte mono,
+          sous le coût d'une hybride (ses deux pastilles occupent la gauche).
+          Ceux de la Jitte restent sur l'arme dans le moteur ; sa créature
+          porteuse les montre ici, sans texte ni bonus d'arme. */}
+      {(entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0)) && (
+        <span className={`rpg-card__compteurs${hybride ? ' rpg-card__compteurs--hybride' : ''}`} aria-hidden="true">
+          {entite.heures?.restants > 0 && (
+            <span className="rpg-card__compteur rpg-card__compteur--heures" data-compteur="heures">
+              <span>{entite.heures.restants}</span>
+            </span>
+          )}
+          {armeCarte && entite.arme?.compteurs > 0 && (
+            <span className="rpg-card__compteur rpg-card__compteur--sable" data-compteur="sable">
+              <span>{entite.arme.compteurs}</span>
+            </span>
           )}
         </span>
       )}
@@ -1364,10 +1426,9 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   // comme une fiche de collection — sur-titre, nom, famille, couleur — là où
   // l'aperçu de jeu va droit au coût et aux effets.
   const estFiche = variante === 'catalogue';
-  // Les bonus directs de l'équipement **ouvrent** le texte d'effet de la
-  // créature : en bleu, sans répéter le nom de l'arme, et avant ses propres
-  // lignes — ce que l'équipement accorde se lit d'abord, comme la première
-  // chose que la carte devient.
+  // La petite carte montre le nom et l'effet complet de chaque arme portée.
+  // Ses bonus directs **ouvrent** aussi le texte d'effet de la créature : en
+  // bleu, sans répéter le nom, avant les propres lignes de la créature.
   const armesEquipees = estCreature ? armes.filter(Boolean) : [];
   const effetsArmesEquipees = armesEquipees.map(effetsAccordesParArme).filter(Boolean);
   const details = (
@@ -1387,6 +1448,22 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
         </div>
       )}
       {!estTerrain && <p className="rpg-hover-card-preview__cost"><span>Coût</span><b>{carte.cost}</b>{cardColors(carte).length > 1 && <small>{cardColorCostLabel(carte)}</small>}</p>}
+      {armesEquipees.length > 0 && (
+        <div className="rpg-hover-card-preview__weapons" role="group" aria-label="Armes équipées">
+          {armesEquipees.map((arme, index) => (
+            <figure className="rpg-hover-card-preview__weapon" data-arme-equipee={arme.id} key={`${arme.id}-${index}`}>
+              <span className="rpg-hover-card-preview__weapon-art" aria-hidden="true">
+                <img src={cardArt(arme)} alt="" />
+                <span className="rpg-hover-card-preview__weapon-cost">{arme.cost}</span>
+              </span>
+              <figcaption>
+                <strong>{arme.name}</strong>
+                {arme.text && arme.text !== '—' && <small>{arme.text}</small>}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
       {(effet || effetsArmesEquipees.length > 0) && (
         <div className="rpg-hover-card-preview__rules" aria-label="Effets">
           {/* La ligne bleue de l'équipement passe en tête : elle dit ce que le
@@ -1430,7 +1507,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       ref={panelRef}
       className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
     >
       {variante === 'annonce' ? (
@@ -1606,7 +1683,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
 }
 
 function VoletMulligan({
-  main, etape, choix, nouveau, bilan, apercu, survol, panelRef = null,
+  main, etape, choix, nouveau, bilan, apercu, survol, essaiMana = false, panelRef = null,
   onBasculer, onValider, onAnnulerSelection, onContinuer, onSurvol, onQuitterSurvol,
 }) {
   const nombre = choix.size;
@@ -1627,6 +1704,7 @@ function VoletMulligan({
           <p>{enChoix
             ? `Touchez une carte pour la mettre de côté : elle repart dans le paquet battu, et vous en piochez une nouvelle. Un seul échange, ${main.length} cartes en main. ${survol ? 'Survolez une carte pour la lire en entier.' : 'Appui long d’une seconde sur une carte pour la lire en entier.'}`
             : bilan}</p>
+          {essaiMana && <p className="rpg-mulligan__mana-note">Sans terrains : votre premier mana arrive après cet échange. Chaque nouveau tour en ajoute un, jusqu’à 10.</p>}
         </header>
         {/* La scène donne à la rangée une place mesurable, et c'est elle que
             les cartes interrogent : les cinq tiennent dans le volet. */}
@@ -1876,7 +1954,7 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -2131,6 +2209,21 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </button>
                   </div>
                 </div>
+                <section className="rpg-flux-menu" aria-label="Essayer le mana sans terrains">
+                  <span className="rpg-flux-menu__eyebrow">LABORATOIRE · DUEL LIBRE SANS RÉCOMPENSE</span>
+                  <h3>Et si le mana remplaçait les terrains ?</h3>
+                  <p>30 cartes à jouer, aucun terrain à piocher. Gagnez un mana coloré à chaque tour jusqu’à 10 ; choisissez sa couleur si votre deck en a plusieurs.</p>
+                  <div className="rpg-flux-menu__decks">
+                    {RPG_MANA_ESSAI_DECKS.map((deck) => (
+                      <button key={deck.id} type="button" onClick={() => { play('select'); onStartManaEssai(deck.id); }}>
+                        <span className="rpg-flux-menu__emblems" aria-hidden="true">{deck.elements.map((couleur) => ELEMENT_GLYPHS[couleur]).join(' ')}</span>
+                        <strong>{deck.elements.length} couleur{deck.elements.length > 1 ? 's' : ''}</strong>
+                        <small>{deck.name}</small>
+                      </button>
+                    ))}
+                  </div>
+                  <small className="rpg-flux-menu__note">Essai isolé : vos decks, cartes, crédits et progression restent inchangés.</small>
+                </section>
               </div>
               {/* Le halo doré reste : simple lumière, pas un fond. */}
               <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
@@ -2656,6 +2749,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 {cartesCatalogue.map((carte) => {
                   const estTerrain = carte.kind === 'terrain';
                   const estCreature = ['creature', 'hero'].includes(carte.kind);
+                  const degradeCout = estTerrain ? null : cardHybridGradient(carte);
                   const famille = carteFamille(carte);
                   const verrouillee = !possedeCarte(collection, carte.id);
                   // Le sceau de la famille au coin libre de la vignette : c'est
@@ -2689,7 +2783,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
                         <CardElementBadge carte={carte} />
-                        {!estTerrain && <span className="rpg-card-catalogue__cost" aria-label={`Coût ${cardCostLabel(carte)}`}>{carte.cost}</span>}
+                        {!estTerrain && <span
+                          className={`rpg-card-catalogue__cost${degradeCout ? ' rpg-card-catalogue__cost--hybride' : ''}`}
+                          style={degradeCout ? { '--rpg-hybrid-cost-bg': degradeCout } : undefined}
+                          aria-label={`Coût ${cardCostLabel(carte)}`}
+                        >{carte.cost}</span>}
                         <SortSceau carte={carte} className="rpg-card-catalogue__sort" />
                         <IconesCarte carte={carte} className="rpg-card-icones--catalogue" />
                         {verrouillee && <span className="rpg-card-catalogue__lock" aria-hidden="true">🔒</span>}
@@ -2921,7 +3019,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // son chemin habituel. Un duel libre n'avance jamais le récit par accident.
   useEffect(() => {
     const duelCourant = duelRef.current;
-    if (!duelCourant || !histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
+    if (!duelCourant || duelCourant.modeMana === RPG_MODE_MANA_ESSAI || !histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
     const session = sessionDuelRef.current;
     if (histoireVictoireMarqueeRef.current === session) return;
     histoireVictoireMarqueeRef.current = session;
@@ -2955,7 +3053,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // « Nouvelle partie » incrémente la session, et le duel suivant sera compté.
   useEffect(() => {
     const duelCourant = duelRef.current;
-    if (!duelCourant || histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
+    if (!duelCourant || duelCourant.modeMana === RPG_MODE_MANA_ESSAI || histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
     const session = sessionDuelRef.current;
     if (libreVictoireMarqueeRef.current === session) return;
     libreVictoireMarqueeRef.current = session;
@@ -3041,7 +3139,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // est fermé — y compris au tout premier rendu.
   const {
     credits, aReclamer: soukAReclamer, quetes: quetesSouk, bourse: portefeuilleSouk,
-    noterEvenementDuel, reclamerUneQuete, reclamerLeCachet, reclamerLeCachetDeLaSemaine,
+    noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, fermerOuverture, ouverture: ouvertureSouk,
   } = useSablierBourse({
     progression: progressionHistoireRef.current,
@@ -3049,6 +3147,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // les voir tout de suite, sans qu'on recharge la page.
     onCartesRangees: rafraichirCollection,
   });
+  // Les duels du laboratoire ne paient ni crédits, ni quêtes, ni trophées.
+  // Le témoin est celui du duel actif, pas le deck sélectionné dans l'atelier.
+  const noterEvenementDuel = (evenement) => {
+    if (duelRef.current?.modeMana === RPG_MODE_MANA_ESSAI) return;
+    noterEvenementDuelReel(evenement);
+  };
   const histoireVictoireMarqueeRef = useRef(null);
   // Un duel libre ne passe pas par la session du récit : il a son propre témoin.
   const libreVictoireMarqueeRef = useRef(null);
@@ -3417,17 +3521,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     sessionDuelRef.current += 1;
     annulerMinuteriesDuTour();
     const modeTutoriel = options.tutoriel === true;
-    const etageId = options.etageId !== undefined ? options.etageId : histoireEtageId;
+    const deckEssai = deckManaEssaiParId(options.essaiManaId);
+    const adversaireEssai = deckEssai ? adversaireManaEssai(deckEssai) : null;
+    const etageId = deckEssai ? null : options.etageId !== undefined ? options.etageId : histoireEtageId;
     const etageCourant = etageId ? etageHistoireParId(etageId)?.etage ?? null : null;
     const deckChoisiId = modeTutoriel ? 'veilleurs-du-desert' : options.deckId ?? deckSelectionneId;
     const deckJoueurSelectionne = decksTous.find((deck) => deck.id === deckChoisiId && deckSeJoue(deck, collection));
     // Duel libre : le sorcier joue la Cour des Djinns, ou un autre deck si le joueur joue déjà la Cour.
     // Dans le tutoriel, son paquet de Montagnes est volontairement passif.
-    const deckAdverse = modeTutoriel || etageCourant || sorcierDeck ? null : deckAdversePour(deckJoueurSelectionne);
+    const deckAdverse = modeTutoriel || etageCourant || sorcierDeck || deckEssai ? null : deckAdversePour(deckJoueurSelectionne);
     setTutorielActif(modeTutoriel);
     setEtapeTutorielId(modeTutoriel ? 'bienvenue' : null);
-    setDeckDuelId(modeTutoriel ? deckJoueurSelectionne?.id ?? 'veilleurs-du-desert' : joueurDeck ? null : deckJoueurSelectionne?.id ?? null);
-    setDeckAdverseId(deckAdverse?.id ?? null);
+    setDeckDuelId(deckEssai?.id ?? (modeTutoriel ? deckJoueurSelectionne?.id ?? 'veilleurs-du-desert' : joueurDeck ? null : deckJoueurSelectionne?.id ?? null));
+    setDeckAdverseId(adversaireEssai?.id ?? deckAdverse?.id ?? null);
     // En duel libre, le deck du joueur impose toujours le terrain. L'Histoire
     // et le tutoriel gardent le tirage entre les deux camps. Les paquets joués
     // sont exactement ceux du duel — une prop brute parle par sa couleur
@@ -3437,10 +3543,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // classique est gardé.
     const modeLibre = !modeTutoriel && !etageCourant;
     const tiragePlateau = tirerPlateauDuDuel({
-      deckJoueur: modeTutoriel ? deckJoueurSelectionne : joueurDeck ?? deckJoueurSelectionne,
-      deckAdverse: modeTutoriel
+      deckJoueur: deckEssai ?? (modeTutoriel ? deckJoueurSelectionne : joueurDeck ?? deckJoueurSelectionne),
+      deckAdverse: adversaireEssai ?? (modeTutoriel
         ? RPG_TUTORIAL_OPPONENT_DECK
-        : etageCourant ? etageCourant.deck : sorcierDeck ?? deckAdverse,
+        : etageCourant ? etageCourant.deck : sorcierDeck ?? deckAdverse),
       rng,
       variantesFantaisistes: variantesPlateaux,
       campImpose: modeLibre ? 'joueur' : null,
@@ -3455,16 +3561,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       void musiquePlateau?.start();
     }
     duelRef.current = rpgNouveauDuel({
-      joueurDeck: modeTutoriel
+      joueurDeck: deckEssai?.cardIds ?? (modeTutoriel
         ? RPG_TUTORIAL_PLAYER_DECK
-        : joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECK_JOUEUR_BASE,
-      sorcierDeck: modeTutoriel
+        : joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECK_JOUEUR_BASE),
+      sorcierDeck: adversaireEssai?.cardIds ?? (modeTutoriel
         ? RPG_TUTORIAL_OPPONENT_DECK
-        : etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECK_SORCIER_BASE,
+        : etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECK_SORCIER_BASE),
       sorcierPuissance: modeTutoriel ? 0 : etageCourant ? etageCourant.puissance : sorcierPuissance,
       sorcierIA: etageCourant ? etageCourant.ia : undefined,
+      modeMana: deckEssai ? RPG_MODE_MANA_ESSAI : null,
+      joueurCouleurs: deckEssai?.elements,
+      sorcierCouleurs: adversaireEssai?.elements,
       rng,
     });
+    if (deckEssai) duelRef.current.essaiDeckId = deckEssai.id;
     if (modeTutoriel) preparerDuelTutoriel(duelRef.current);
     histoireVictoireMarqueeRef.current = null;
     campagneDuelRef.current = options.campagne ? {
@@ -3551,6 +3661,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!ecartees.length) {
       // Rien n'a bougé : pas de nouvelle main à relire, le volet se referme sur
       // la table. Ce que le sorcier a fait de sa main se lit à son compteur.
+      if (duelCourant.modeMana === RPG_MODE_MANA_ESSAI) rpgDemarrerManaEssai(duelCourant);
       setMulligan(null);
       return;
     }
@@ -3567,8 +3678,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const terminerMulligan = () => {
     masquerApercuSurvol();
-    // Le volet se ferme après le choix ; le duel reprend sur la table.
+    // Le volet se ferme après le choix ; le tour 1 démarre seulement alors.
+    if (duelRef.current?.modeMana === RPG_MODE_MANA_ESSAI) rpgDemarrerManaEssai(duelRef.current);
     setMulligan(null);
+    force();
+  };
+  const choisirNouveauManaEssai = (couleur) => {
+    if (mulligan || !duelRef.current?.manaEssaiDemarre) return;
+    const resultat = rpgChoisirCouleurMana(duelRef.current, 'joueur', couleur);
+    if (!resultat.ok) { jouerSfx('erreur'); return; }
+    jouerSfx('select');
     force();
   };
 
@@ -3844,6 +3963,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     sfxRef.current?.unlock();
   };
 
+  const demarrerEssaiMana = (deckId) => {
+    if (!deckManaEssaiParId(deckId)) return;
+    unlockSfx();
+    jouerSfx('select');
+    setHistoireEtageId(null);
+    nouvellePartie({ etageId: null, essaiManaId: deckId });
+    reprendrePartie();
+    sfxRef.current?.unlock();
+  };
+
   const demarrerTutoriel = () => {
     unlockSfx();
     jouerSfx('select');
@@ -3947,6 +4076,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onSelectDeck={choisirDeck}
           onChangeScreen={setEcran}
           onStartGame={demarrerPartie}
+          onStartManaEssai={demarrerEssaiMana}
           onStartTutorial={demarrerTutoriel}
           onStartCardGuide={() => setEcran('guide')}
           onResumeGame={reprendrePartie}
@@ -4022,11 +4152,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Tant que le volet de mulligan est ouvert, la table attend : rien ne se
   // joue, rien ne s'engage, et le tour ne peut pas être rendu.
   const mulliganOuvert = Boolean(mulligan);
+  const choixManaEssaiOuvert = duel.modeMana === RPG_MODE_MANA_ESSAI
+    && Boolean(duel.joueur.manaChoixEnAttente) && !mulliganOuvert && !vainqueur;
   const etapeTutoriel = RPG_TUTORIAL_STEPS.find((step) => step.id === etapeTutorielId) ?? null;
   const indexEtapeTutoriel = etapeTutoriel ? RPG_TUTORIAL_STEPS.findIndex((step) => step.id === etapeTutoriel.id) : -1;
-  const deckJoueurAffiche = decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
-  const deckAdverseAffiche = RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
-  const nomSorcierAdverse = etageHistoire?.nom ?? (tutorielActif ? 'Sorcier d’entraînement' : 'Ifrit al-Ahmar');
+  const deckJoueurAffiche = (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(duel.essaiDeckId) : null)
+    ?? decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
+  const deckAdverseAffiche = (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(deckAdverseId) : null)
+    ?? RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
+  const nomSorcierAdverse = etageHistoire?.nom ?? (tutorielActif ? 'Sorcier d’entraînement' : duel.modeMana === RPG_MODE_MANA_ESSAI ? 'Sorcier d’essai' : 'Ifrit al-Ahmar');
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
   const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
@@ -4087,6 +4221,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
   const indicateurTour = vainqueur
     ? 'DUEL TERMINÉ'
+    : choixManaEssaiOuvert
+      ? 'CHOISISSEZ UN MANA'
     : defausseOuverte
       ? 'À VOUS · DÉFAUSSE'
     : fenetreSort
@@ -4406,6 +4542,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Le mulligan d'abord : tant que la main de départ n'est pas validée, rien
     // ne quitte la main — ni clic, ni glisser, ni sort en réponse.
     if (mulliganOuvert) return false;
+    if (choixManaEssaiOuvert) return false;
     if (defausseOuverte) return false;
     // Un contre sans annonce à contrer n'est pas jouable : l'allumer enfermait
     // le joueur dans une confirmation qui ne menait à rien.
@@ -5453,6 +5590,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // rapide (il garde son mana d'un tour à l'autre) ; puis le tour se ferme.
   const finDuTour = () => {
     if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
+    if (choixManaEssaiOuvert) { jouerSfx('erreur'); return; }
     invaliderAnnulation();
     setPhase(false);
     setAttaquants([]);
@@ -5777,6 +5915,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       data-scene="duel"
       style={DOS_DE_CARTE_STYLE}
       onPointerDown={demarrerAppuiLongCarte}
+      data-mode-mana={duel.modeMana ?? undefined}
       onContextMenu={surMenuContextuel}
     >
       <EffetsSprite />
@@ -5798,7 +5937,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
       <div
         ref={tableRef}
-        inert={viewport.portrait || mulliganOuvert ? true : undefined}
+        inert={viewport.portrait || mulliganOuvert || choixManaEssaiOuvert ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
         className={`card-table card-table--plateau-${plateau.id}${carteGlissee ? ' is-card-dragging' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
@@ -5815,6 +5954,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
           <strong>LE SABLIER</strong>
           {tutorielActif && <span className="rpg-duel-nav__tutorial">PARTIE D’ENTRAÎNEMENT</span>}
+          {duel.modeMana === RPG_MODE_MANA_ESSAI && <span className="rpg-duel-nav__tutorial rpg-duel-nav__mana-essai">ESSAI · 30 CARTES · MANA 0–10 · SANS GAIN</span>}
           {etageHistoire && (
             <span className="rpg-duel-nav__story">
               <span className="rpg-duel-nav__story-mode">MODE </span>HISTOIRE<span className="rpg-duel-nav__story-floor"> · {etageHistoire.nom}</span>
@@ -5893,6 +6033,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <span className="rpg-wizard-plate__zones">Main · {duel.sorcier.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.sorcier.deck.length} · Cimetière {duel.sorcier.cimetiere.length}</span></span>
         </button>
 
+        {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
+          <FluxManaTrack camp={duel.sorcier} cote="ennemi" />
+        ) : (
         <div className="rpg-terrains rpg-terrains--ennemi" aria-label="Terrains du sorcier">
           {groupTerrainStacks(duel.sorcier.terrains).map((groupe) => {
             const terrain = groupe.terrain;
@@ -5921,6 +6064,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             );
           })}
         </div>
+        )}
 
         <div className="card-row card-row--ennemi" aria-label="Champ du sorcier"
           data-tutorial-target={tutorielActif && etapeTutorielId === 'tour-adverse' ? 'enemy-field' : undefined}>
@@ -6109,6 +6253,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           );
         })}
 
+        {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
+          <FluxManaTrack camp={duel.joueur} cote="joueur" />
+        ) : (
         <div className="rpg-terrains rpg-terrains--joueur" aria-label="Vos terrains : clic manuel pour produire du mana, ou engagement automatique au paiement">
           {groupTerrainStacks(duel.joueur.terrains).map((groupe) => {
             const terrain = groupe.terrain;
@@ -6152,6 +6299,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             );
           })}
         </div>
+        )}
         {terrainManaChoix && (
           <div
             id="rpg-terrain-mana-choice"
@@ -6414,7 +6562,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <button type="button" className="rpg-btn rpg-btn--endturn"
               data-tutorial-target={tutorielActif && etapeTutorielId === 'fin-tour' ? 'end-turn' : undefined}
               onClick={finDuTour}
-              disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || mulliganOuvert}>
+              disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || mulliganOuvert || choixManaEssaiOuvert}>
               ⧗ Fin du tour
             </button>
           </div>
@@ -6599,9 +6747,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 ? vainqueur === 'joueur'
                   ? `${etageHistoire.nom} ne tient plus son palier. La suite de la tour vous attend.`
                   : `${etageHistoire.nom} vous attend au même étage : chaque duel repart à zéro.`
-                : vainqueur === 'joueur'
-                  ? 'Bab El respire : le cycle tient encore un soir.'
-                  : 'Le sable recouvre votre Nom. L’Astrolabe sonne pour quelqu’un d’autre.'}
+                : duel.modeMana === RPG_MODE_MANA_ESSAI
+                  ? 'Fin du duel d’essai : aucun crédit ni progrès enregistré. Rejouez ou changez de deck depuis le menu.'
+                  : vainqueur === 'joueur'
+                    ? 'Bab El respire : le cycle tient encore un soir.'
+                    : 'Le sable recouvre votre Nom. L’Astrolabe sonne pour quelqu’un d’autre.'}
             </p>
             {etageHistoire ? (
               <div className="rpg-overlay__actions">
@@ -6622,13 +6772,34 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 </button>
               </div>
             ) : (
-              <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => nouvellePartie()}>
-                Nouvelle partie
+              <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => nouvellePartie(duel.modeMana === RPG_MODE_MANA_ESSAI ? { etageId: null, essaiManaId: duel.essaiDeckId } : {})}>
+                {duel.modeMana === RPG_MODE_MANA_ESSAI ? 'Rejouer l’essai' : 'Nouvelle partie'}
               </button>
             )}
           </div>
         )}
       </div>
+      {choixManaEssaiOuvert && !viewport.portrait && (
+        <div className="rpg-flux-choix" role="dialog" aria-modal="true" aria-labelledby="rpg-flux-choix-titre">
+          <div className="rpg-flux-choix__panel">
+            <h2 id="rpg-flux-choix-titre" className="rpg-flux-choix__titre">Choisis ton mana</h2>
+            <div className="rpg-flux-choix__options">
+              {duel.joueur.couleurs.map((couleur, index) => (
+                <button
+                  key={couleur}
+                  type="button"
+                  autoFocus={index === 0}
+                  className={`rpg-flux-choix__option rpg-flux-choix__option--${couleur}`}
+                  onClick={() => choisirNouveauManaEssai(couleur)}
+                  aria-label={`Choisir le mana ${couleurLabel(couleur)}`}
+                >
+                  <span aria-hidden="true"><ElementEmblem element={couleur} /></span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {tutorielActif && etapeTutoriel && !viewport.portrait && !mulliganOuvert && (
         <RpgTutorialOverlay
           key={etapeTutoriel.id}
@@ -6660,6 +6831,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           bilan={mulligan.bilan}
           apercu={apercuSurvol}
           survol={viewport.survol}
+          essaiMana={duel.modeMana === RPG_MODE_MANA_ESSAI}
           panelRef={panelRef}
           onBasculer={basculerCarteMulligan}
           onValider={validerMulligan}

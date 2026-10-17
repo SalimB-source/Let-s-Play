@@ -131,6 +131,11 @@
   font: 800 12px/1 Georgia, serif;
 }
 .rpg-atelier__cout b { min-width: 9px; text-align: center; }
+.rpg-atelier__cout--hybride {
+  background: var(--rpg-hybrid-cost-bg);
+  color: #fff9ea;
+  text-shadow: 0 1px 2px #000, 0 0 3px #000;
+}
 .rpg-atelier__cout--terrain { padding: 0 4px; background: radial-gradient(circle at 35% 22%, #d9d2c0, #6f6553 72%); }
 
 /* ── La barre de filtres ──────────────────────────────────────────────────── */

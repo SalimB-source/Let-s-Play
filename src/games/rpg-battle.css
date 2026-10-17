@@ -299,21 +299,54 @@
   box-shadow: 0 0 0 2px rgba(255, 214, 25, .35);
 }
 
-/* Les compteurs de sable portés par une arme (la Jitte d’Amayas) : une pastille
-   posée sur la créature équipée, à côté du bonus d’équipement. */
-.rpg-card__arme-compteurs {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  margin-left: 4px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: rgba(216, 188, 134, .92);
-  color: #2c2106;
-  font: 700 10px/1.4 var(--display, sans-serif);
-  letter-spacing: .06em;
-  white-space: nowrap;
+/* Les compteurs d'effet de la créature (Heures) ou de son arme (sable) se
+   rangent juste SOUS sa couleur, ou sous le coût si la carte est hybride : ses
+   pastilles de couleur empilées occupent déjà la gauche. Un losange par type,
+   côte à côte si elle porte les deux ; la valeur demeure droite dans le carré
+   pivoté. L'échelle suit celle du repère, même sur une petite carte tactile. */
+.rpg-card__compteurs {
+  --rpg-card-counter-size: clamp(10px, calc(var(--rpg-card-marker-size, 26px) * .58), 18px);
+  position: absolute;
+  z-index: 5;
+  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-card-marker-size, 26px) + var(--rpg-card-counter-size) * .21 + 4px);
+  left: calc(var(--rpg-card-element-marker-left, 6%) + (var(--rpg-card-marker-size, 26px) - var(--rpg-card-counter-size)) / 2);
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
 }
+.rpg-card__compteurs--hybride {
+  /* Sur une carte de 40–46 px, deux losanges de 10 px mordent sur la seconde
+     pastille hybride à gauche. Seuls ceux des hybrides descendent à 8 px ;
+     un pixel de marge les sépare encore du bord de cette pastille. */
+  --rpg-card-counter-size: clamp(8px, calc(var(--rpg-card-marker-size, 26px) * .58), 18px);
+  left: auto;
+  right: calc(6% + (var(--rpg-card-marker-size, 26px) - var(--rpg-card-counter-size)) / 2 - 1px);
+  gap: clamp(1px, calc(var(--rpg-card-counter-size) * .12), 3px);
+}
+.rpg-card__compteur {
+  display: grid;
+  place-items: center;
+  flex: 0 0 var(--rpg-card-counter-size);
+  width: var(--rpg-card-counter-size);
+  aspect-ratio: 1;
+  border: 1px solid #eacb83;
+  border-radius: 2px;
+  background: linear-gradient(145deg, #665127, #322513);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .85), inset 0 1px rgba(255, 255, 255, .22);
+  transform: rotate(45deg);
+}
+.rpg-card__compteur > span {
+  color: #fff4d0;
+  font: 900 clamp(7px, calc(var(--rpg-card-counter-size) * .55), 10px)/1 var(--display, sans-serif);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px #100c08;
+  transform: rotate(-45deg);
+}
+.rpg-card__compteur--heures {
+  border-color: #b3d8f3;
+  background: linear-gradient(145deg, #426888, #1c344e);
+}
+.rpg-card__compteur--heures > span { color: #e8f6ff; }
 
 /* Fin du tour : la grande pastille dorée du Sablier, bien visible sur la table. */
 .rpg-btn--endturn {
@@ -704,38 +737,6 @@
   align-items: center;
   gap: 6px;
   padding: 0 2px;
-}
-
-/* Rappel du bonus de l'équipement, sans son nom : la ligne bleue de l'aperçu
-   donne les effets, tandis que la carte garde le +attaque/+défense visible. */
-.rpg-card__arme {
-  position: absolute;
-  left: 50%;
-  bottom: 13%;
-  transform: translateX(-50%);
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  max-width: 92%;
-  padding: 1px 6px;
-  border-radius: 6px;
-  border: 1.5px solid #000;
-  background: linear-gradient(180deg, #3d3a33, #211e19);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 1px 3px rgba(0, 0, 0, .6);
-  font: 700 8px/1.5 Georgia, serif;
-  letter-spacing: .02em;
-  color: #f3d98b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  pointer-events: none;
-}
-
-.rpg-card__arme .rpg-stat-icon {
-  width: 9px;
-  height: 9px;
-  flex: none;
 }
 
 .rpg-card__col {
@@ -1875,6 +1876,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #08202e;
   text-shadow: 0 1px 1px rgba(255, 255, 255, .7);
   filter: drop-shadow(0 0 2px rgba(150, 220, 255, .85));
+}
+/* Le coût hybride partage son disque entre les éléments, comme le sceau des
+   magies ; le chiffre clair reste lisible même sur la moitié Sable. */
+.rpg-mana-cost--hybride {
+  background: var(--rpg-hybrid-cost-bg);
+  color: #fff9ea;
+  text-shadow: 0 1px 2px #000, 0 0 3px #000;
 }
 
 .rpg-mana-cost.is-compact { font-size: 11px; }
@@ -3614,6 +3622,62 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__cost { justify-content: flex-start; color: #f3e7cc; }
 .rpg-hover-card-preview__cost b { color: #ffe9a0; font: 900 18px/1 var(--mono, monospace); }
 .rpg-hover-card-preview__cost small { color: rgba(255, 240, 207, .94); font: 700 11px/1.25 var(--mono, monospace); }
+/* Une vraie petite carte d'arme (illustration, coût, nom et effet) dans la
+   fiche du porteur. Le survol reste compact ; la fiche ouverte montre le texte
+   entier et peut défiler. Plusieurs armes tiennent côte à côte si possible. */
+.rpg-hover-card-preview__weapons { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.rpg-hover-card-preview__weapon {
+  display: flex;
+  align-items: center;
+  flex: 1 1 160px;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 4px 7px 4px 4px;
+  border: 1px solid rgba(123, 196, 238, .58);
+  border-radius: 6px;
+  background: rgba(22, 40, 56, .78);
+}
+.rpg-hover-card-preview__weapon-art {
+  position: relative;
+  display: block;
+  flex: 0 0 48px;
+  width: 48px;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border: 2px solid #adb9c1;
+  border-radius: 4px;
+  background: #212a30;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .45);
+}
+.rpg-hover-card-preview__weapon-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.rpg-hover-card-preview__weapon-cost {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  display: grid;
+  place-items: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 2px;
+  border: 1px solid #cfd9df;
+  border-radius: 50%;
+  background: #232c32;
+  color: #fff;
+  font: 700 9px/1 var(--mono, monospace);
+}
+.rpg-hover-card-preview__weapon figcaption { display: grid; gap: 2px; min-width: 0; }
+.rpg-hover-card-preview__weapon strong { color: #f6ead5; font: 700 12px/1.2 Georgia, serif; overflow-wrap: anywhere; }
+.rpg-hover-card-preview__weapon small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: #d6eaff;
+  font: 400 10px/1.25 Georgia, serif;
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__weapon small { display: block; overflow: visible; }
 .rpg-hover-card-preview__rules {
   display: grid;
   align-content: start;
@@ -3651,6 +3715,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hover-card-preview__rules { font-size: 12px; }
   .rpg-hover-card-preview__cost b { font-size: 13px; }
   .rpg-hover-card-preview__cost small { font-size: 9px; }
+  .rpg-hover-card-preview__weapon { flex-basis: 100%; gap: 6px; }
+  .rpg-hover-card-preview__weapon-art { flex-basis: 38px; width: 38px; }
+  .rpg-hover-card-preview__weapon strong { font-size: 11px; }
+  .rpg-hover-card-preview__weapon small { font-size: 9px; }
   .rpg-hover-card-preview__stats { font-size: 12px; }
 }
 
@@ -4384,12 +4452,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   filter: none;
 }
 
-/* Valeurs sur le champ : l'état neutre laisse voir la carte à travers une
-   plaque noire translucide. Un bonus la teint en bleu clair, un malus en rouge.
-   La spécificité et `filter: none` gardent les variations visibles même si la
-   créature vient d'arriver, est engagée ou reste blessée sous un bonus de DÉF. */
+/* Valeurs neutres sur le champ ET sur les créatures en main (héros compris) :
+   la plaque noire translucide laisse voir l'illustration. En jeu, un bonus la
+   teint en bleu clair, un malus en rouge ; la spécificité et `filter: none`
+   gardent ces variations visibles, même sur une créature engagée ou blessée.
+   Les bonus des cartes d'arme en main gardent leurs propres couleurs. */
 .rpg-card.rpg-card--img .rpg-card__foot > .rpg-card__stat--atk:not(.is-buffed, .is-debuffed),
-.rpg-card.rpg-card--img .rpg-card__foot > .rpg-card__pt:not(.is-buffed, .is-debuffed, .is-wounded) {
+.rpg-card.rpg-card--img .rpg-card__foot > .rpg-card__pt:not(.is-buffed, .is-debuffed, .is-wounded),
+.rpg-hand__card--type-creature .rpg-hand__stat {
   border-color: rgba(255, 255, 255, .34);
   background: rgba(0, 0, 0, .68);
   box-shadow: 0 1px 3px rgba(0, 0, 0, .62), inset 0 1px rgba(255, 255, 255, .12);
@@ -5489,6 +5559,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #21170d;
   font: 900 15px/1 var(--mono, monospace);
   text-shadow: 0 1px rgba(255,255,255,.5);
+}
+.rpg-card-catalogue__cost--hybride {
+  background: var(--rpg-hybrid-cost-bg);
+  color: #fff9ea;
+  text-shadow: 0 1px 2px #000, 0 0 3px #000;
 }
 .rpg-card-catalogue__details { display: grid; gap: 7px; padding: 11px 12px 13px; }
 .rpg-card-catalogue__title { display: flex; align-items: start; justify-content: space-between; gap: 7px; }
@@ -7162,8 +7237,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      qui part en réponse), rond pour la Sorcellerie — qui reste lisible en noir
      et blanc ; les deux socles, eux, partagent la même voûte, où la teinte et
      le sigle suffisent à séparer les familles ;
-   - la TEINTE — or contre améthyste — qui se repère de loin, dans une main de
-     huit cartes comme dans une grille de catalogue ;
+   - la TEINTE du sceau — Braise, Eau, Sable ou Neige, comme la carte elle-même,
+     avec ses deux éléments si elle est hybride ; le socle et le halo jouable
+     gardent l'or ou l'améthyste de la famille ;
    - le SIGLE et le MOT — l'éclair ou l'étincelle, « Magie Rapide » ou
      « Sorcellerie » — qui disent la règle à qui découvre le duel.
 
@@ -7225,15 +7301,37 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-radius: 58% 58% 0 0 / 30% 30% 0 0;
 }
 
-/* Le sceau : la même famille en jeton, là où un bandeau ne tiendrait pas — le
-   coin d'une vignette de catalogue ou d'atelier, le bas d'une carte de mulligan. */
+/* Le sceau garde la FORME de la famille, mais sa couleur suit l'ÉLÉMENT de
+   la carte, comme la pastille en haut de la face. Les deux éléments d'une
+   hybride occupent chacun une bande nette du même jeton. Les teintes des
+   socles et des halos de jouabilité restent propres à leur famille. */
 .rpg-sort-sceau {
+  --rpg-sort-sceau-clair: #f8e69d;
+  --rpg-sort-sceau-sombre: #795613;
+  --rpg-sort-sceau-encre: #281b05;
+  --rpg-sort-sceau-halo: rgba(255, 215, 98, .8);
+  --rpg-sort-sceau-fond: radial-gradient(circle at 34% 24%, var(--rpg-sort-sceau-clair), var(--rpg-sort-sceau-sombre) 72%);
   display: grid;
   aspect-ratio: 1;
   place-items: center;
   border: 1px solid rgba(255, 244, 216, .92);
-  color: #fff9ea;
+  color: var(--rpg-sort-sceau-encre);
   box-shadow: 0 2px 6px rgba(0, 0, 0, .78), inset 0 1px rgba(255, 255, 255, .4);
+}
+.rpg-sort-sceau--element-braise { --rpg-sort-sceau-clair: #f09675; --rpg-sort-sceau-sombre: #8e2e1d; --rpg-sort-sceau-encre: #fff9ea; --rpg-sort-sceau-halo: rgba(224, 65, 42, .8); }
+.rpg-sort-sceau--element-eau { --rpg-sort-sceau-clair: #a5dcf5; --rpg-sort-sceau-sombre: #285e91; --rpg-sort-sceau-encre: #fff9ea; --rpg-sort-sceau-halo: rgba(63, 159, 232, .8); }
+.rpg-sort-sceau--element-sable { --rpg-sort-sceau-clair: #f8e69d; --rpg-sort-sceau-sombre: #795613; --rpg-sort-sceau-encre: #281b05; --rpg-sort-sceau-halo: rgba(255, 215, 98, .8); }
+.rpg-sort-sceau--element-neige { --rpg-sort-sceau-clair: #eefaff; --rpg-sort-sceau-sombre: #4a86ab; --rpg-sort-sceau-encre: #08202e; --rpg-sort-sceau-halo: rgba(150, 220, 255, .85); }
+.rpg-sort-sceau--hybride {
+  --rpg-sort-sceau-fond: var(--rpg-sort-sceau-fond-hybride);
+  --rpg-sort-sceau-clair: color-mix(in srgb, var(--rpg-sort-sceau-couleur) 52%, white);
+  --rpg-sort-sceau-encre: #fff9ea;
+  --rpg-sort-sceau-halo: color-mix(in srgb, var(--rpg-sort-sceau-couleur) 78%, transparent);
+}
+.rpg-sort-sceau .rpg-sort-sigil { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .75)); }
+.rpg-sort-sceau--element-sable:not(.rpg-sort-sceau--hybride) .rpg-sort-sigil,
+.rpg-sort-sceau--element-neige:not(.rpg-sort-sceau--hybride) .rpg-sort-sigil {
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, .82));
 }
 /* C'est ici que vit la FORME : les deux socles sont la même voûte, mais le
    jeton de la Magie Rapide est un **losange** — la taille que grave l'anneau de
@@ -7245,29 +7343,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   position: relative;
   border-color: transparent; /* la découpe emporterait le liseré : il est peint dessous */
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  background: #fff4d8;
-  color: #2a1f04;
-  filter: drop-shadow(0 0 2px rgba(255, 215, 98, .8));
+  background: var(--rpg-sort-sceau-clair);
+  filter: drop-shadow(0 0 2px var(--rpg-sort-sceau-halo));
 }
-/* Le losange d'or, un peu plus petit : entre les deux court l'arête claire des
-   quatre pans. Peinte dans la découpe, elle suit le losange au lieu d'être
-   coupée avec les coins d'un carré, et elle tient à toutes les tailles — du
-   jeton du mulligan à celui du catalogue, qui suivent `--rpg-card-marker-size`. */
+/* L'intérieur du losange reprend le même fond élémentaire que le cercle.
+   L'arête claire reste visible entre les deux découpes, quelle que soit sa
+   teinte, du mulligan au catalogue (`--rpg-card-marker-size`). */
 .rpg-sort-sceau--rapide::before {
   content: '';
   position: absolute;
   inset: 4%;
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  background: radial-gradient(circle at 34% 24%, #f8e69d, #8a5f0d 72%);
+  background: var(--rpg-sort-sceau-fond);
 }
-/* L'éclair passe au-dessus de la nappe d'or : positionné à son tour, il la
-   suit dans l'ordre de peinture. */
+/* L'éclair reste au-dessus de la couleur du losange. */
 .rpg-sort-sceau--rapide .rpg-sort-sigil { position: relative; }
 .rpg-sort-sceau--sorcellerie {
   border-radius: 50%;
-  background: radial-gradient(circle at 34% 24%, #e3d7fb, #4b3676 72%);
-  color: #170c2e;
-  filter: drop-shadow(0 0 2px rgba(179, 154, 224, .85));
+  background: var(--rpg-sort-sceau-fond);
+  filter: drop-shadow(0 0 2px var(--rpg-sort-sceau-halo));
 }
 
 /* Les vignettes : le jeton de la famille au coin libre, en face du galet du

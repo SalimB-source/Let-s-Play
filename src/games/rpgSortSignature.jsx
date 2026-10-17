@@ -17,16 +17,18 @@
  * - `SortSceau` — le même repère en jeton : le losange de la Magie Rapide, son
  *   éclair au centre, le médaillon rond de la Sorcellerie — pour les vignettes
  *   où un bandeau ne tiendrait pas (grille du catalogue, atelier, mulligan).
+ *   Sa couleur suit la carte (Braise, Eau, Sable, Neige ou ses deux éléments),
+ *   tandis que sa forme continue de distinguer la famille.
  *
  * Les trois ne rendent **rien** pour une créature, un héros, un terrain ou une
  * arme : c'est précisément ce silence qui rend un sort reconnaissable. Les
- * mesures et les couleurs vivent dans `rpg-battle.css` (bloc « Les familles de
- * sorts : le sceau, le socle, la ligne »), qui suit `--rpg-card-marker-size`
- * — le repère de couleur de la face — pour que le socle garde ses proportions
- * de la carte en main (22 px au doigt) à la fiche du catalogue (56 px).
+ * mesures et les teintes simples vivent dans `rpg-battle.css` (bloc « Les
+ * familles de sorts : le sceau, le socle, la ligne ») ; les hybrides réutilisent
+ * `CARD_FRAME_COLORS`. Le tout suit `--rpg-card-marker-size` — le repère de
+ * couleur de la face — de la main (22 px au doigt) à la fiche (56 px).
  */
 
-import { magieFamilleInfo } from './rpgCards.js';
+import { cardColors, cardFrameColor, cardHybridGradient, magieFamilleInfo } from './rpgCards.js';
 
 /** Le sigle d'une famille : l'éclair, ou l'étincelle. */
 export function SortSigil({ famille }) {
@@ -54,13 +56,19 @@ export function SortSocle({ carte, variante = '' }) {
   );
 }
 
-/** Le jeton de la famille — le losange ou le médaillon — des vignettes et du mulligan. */
+/** Le jeton de la famille — losange rapide ou médaillon rond — teint comme la carte. */
 export function SortSceau({ carte, className = '' }) {
   const famille = magieFamilleInfo(carte);
   if (!famille) return null;
+  const couleurs = cardColors(carte);
+  const hybride = couleurs.length > 1;
   return (
     <span
-      className={`rpg-sort-sceau rpg-sort-sceau--${famille.key}${className ? ` ${className}` : ''}`}
+      className={`rpg-sort-sceau rpg-sort-sceau--${famille.key} rpg-sort-sceau--element-${couleurs[0] ?? 'sable'}${hybride ? ' rpg-sort-sceau--hybride' : ''}${className ? ` ${className}` : ''}`}
+      style={hybride ? {
+        '--rpg-sort-sceau-fond-hybride': cardHybridGradient(carte),
+        '--rpg-sort-sceau-couleur': cardFrameColor(carte),
+      } : undefined}
       aria-hidden="true"
     >
       <SortSigil famille={famille.key} />

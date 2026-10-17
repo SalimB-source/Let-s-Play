@@ -120,12 +120,9 @@
   --rpg-field-card: calc(var(--duel-card) * .85);
   --rpg-field-min: 40px;
   --rpg-field-gap: max(8px, calc(var(--duel-card) * .22));
-  /* La bande du pied d'une carte posée, nommée : la taille de ses deux
-     statistiques et la hauteur qui en découle (un chiffre, son rembourrage et
-     son filet). La pastille du bonus d'équipement s'accroche dessous — voir
-     « Le bonus d'équipement ne recouvre plus… », plus bas. */
+  /* La taille des statistiques et le bas de la carte sont nommés une fois ;
+     les losanges de compteurs vivent sous la couleur, loin du pied. */
   --rpg-field-stat-font: clamp(8px, calc(var(--duel-card) * .145), 12px);
-  --rpg-field-stat-height: calc(1.2 * var(--rpg-field-stat-font) + 6px);
   --rpg-field-foot: 3%;
   display: grid;
   grid-template-columns: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset)) minmax(0, 1fr) var(--rpg-touch-controls);
@@ -437,46 +434,13 @@
   padding: 2px 0;
   gap: 0;
 }
-/* ── Le bonus d'équipement ne recouvre plus l'attaque et la défense ──────────
-   Sur une face posée au doigt, la pastille du bonus gardait la mesure du
-   bureau (`bottom: 13 %`, police de 8 px, 92 % de largeur) : à 46 × 58 px —
-   une carte posée sur un 568 × 320 — elle tombait **sur** la bande du pied
-   (ATQ à gauche, DEF à droite, à 3 % du bas) et tronquait son propre texte.
-   Elle se range désormais dans la bande libre de la face : juste au-dessus du
-   pied, dont la hauteur est nommée (`--rpg-field-stat-height`, celle des deux
-   statistiques), et à l'échelle de la carte (`--duel-card`) pour tenir dans sa
-   largeur.
-
-   Les vignettes d'arme (`.rpg-card__weapons`, des images de 22 × 28 px posées
-   `bottom: 28px`) doublonnaient l'arme déjà glissée sous la créature
-   (`.rpg-card-stack--arme`) et mangeaient les repères du haut : au doigt, la
-   pile, la pastille du bonus et l'aperçu (sa ligne bleue) suffisent — la face
-   reste entière.
-
-   Sous 45 px de large, les trois bandes ne tiennent plus ensemble : deux
-   repères de 22 px en haut, le pied d'environ 16 px en bas, la pastille au
-   milieu. C'est la **largeur de la carte** qui le dit, pas celle de la
-   fenêtre — elle se partage entre les emplacements de la rangée
-   (`--row-count`). La carte devient donc un conteneur
-   (`container-type: inline-size`, déjà utilisé par le mulligan), et la
-   pastille s'efface quand elle n'a plus de place : l'arme reste lisible sous
-   la créature et dans l'aperçu. Sans `@container` (vieille WebView), la
-   pastille reste simplement affichée. */
+/* Les effets et le bonus de l'arme ne s'impriment pas sur la carte posée.
+   Les compteurs (Heures sur la créature, sable sur la Jitte) restent sous le
+   repère de couleur en petits losanges, même si la carte rétrécit au doigt.
+   Les anciennes vignettes d'arme sur la face doublonnaient l'arme glissée
+   sous la créature : elles restent masquées, la miniature est dans l'aperçu. */
 .rpg-battle--touch .rpg-card__weapons { display: none; }
-.rpg-battle--touch .rpg-card__arme {
-  bottom: calc(var(--rpg-field-foot, 3%) + var(--rpg-field-stat-height, 20px) + 2px);
-  max-width: 88%;
-  padding: 1px 4px;
-  border-width: 1px;
-  font-size: clamp(6px, calc(var(--duel-card) * .1), 9px);
-  line-height: 1.3;
-}
-.rpg-battle--touch .rpg-card__arme .rpg-stat-icon { width: .9em; height: .9em; flex-basis: .9em; }
-.rpg-battle--touch .rpg-card__arme-compteurs { margin-left: 2px; padding: 0 3px; font-size: .95em; }
 .rpg-battle--touch .card-row .rpg-card { container-type: inline-size; }
-@container (max-width: 45px) {
-  .rpg-battle--touch .rpg-card__arme { display: none; }
-}
 .rpg-battle--touch .rpg-card__foot .rpg-stat-icon,
 .rpg-battle--touch .rpg-hand__stats .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
 .rpg-battle--touch .rpg-spell-confirm { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 28px); overflow-y: auto; }
@@ -972,11 +936,6 @@
 .rpg-battle .card-row .rpg-card .rpg-card-icones { left: 6cqw; bottom: 30cqw; gap: 3cqw; max-width: 88cqw; }
 .rpg-battle .card-row .rpg-card .rpg-card-icone { padding: 2cqw; gap: 2cqw; border-width: 1cqw; font-size: 12cqw; }
 .rpg-battle .card-row .rpg-card .rpg-card-icone small { font-size: 9cqw; }
-.rpg-battle .card-row .rpg-card .rpg-card__arme {
-  font-size: 9cqw;
-  padding: 1cqw 4cqw;
-  bottom: 23cqw;
-}
 .rpg-battle .card-row .rpg-card .rpg-card-icone .rpg-effet-icone { width: 14cqw; height: 14cqw; }
 .rpg-battle .card-row .rpg-card .rpg-card__activation { top: 6cqw; right: 6cqw; padding: 3cqw 7cqw; border-width: 1cqw; }
 .rpg-battle .card-row .rpg-card .rpg-mana-cost i { width: 11cqw; height: 11cqw; font-size: 7cqw; }
