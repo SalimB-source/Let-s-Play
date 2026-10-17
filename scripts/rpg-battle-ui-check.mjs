@@ -963,7 +963,7 @@ assert.match(battleCss, /\.rpg-hand__card\.rpg-hand-card--drawing\s*\{[^}]*anima
   'la pioche anime les vraies cartes en taille réelle dans la main');
 assert.match(battleCss, /@keyframes rpg-player-card-draw\s*\{[\s\S]*?translate3d\(-100%, 0, 0\)[\s\S]*?translate3d\(0, 0, 0\)/,
   'les cartes piochées glissent de gauche à droite jusqu’à leur place dans la main');
-// ── Les plateaux du duel : le terrain vient du deck d'un des deux duellistes ─
+// ── Les plateaux du duel : un terrain par camp, choisi par son propre deck ───
 const plateauxSource = readFileSync(new URL('../src/games/rpgPlateaux.js', import.meta.url), 'utf8');
 // Un fond ne doit porter aucun texte : l'interface du jeu se superpose toujours
 // (RPG-CARD-ART.md). Les métadonnées sont un bon témoin d'une image retouchée.
@@ -976,15 +976,23 @@ for (const { fichier } of RPG_PLATEAUX) {
 assert.match(plateauxSource, /id: 'erg-du-sahara'[\s\S]*?fichier: 'plateau-erg-du-sahara\.jpg'/,
   'le désert du Sahara est un plateau déclaré, avec son fond dans public/');
 const choixPlateauPartie = battlePage.slice(
-  battlePage.indexOf('const tiragePlateau = tirerPlateauDuDuel'),
-  battlePage.indexOf('const plateau = tiragePlateau.plateau'),
+  battlePage.indexOf('const resolutionPlateaux = resoudrePlateauxDuDuel'),
+  battlePage.indexOf('const plateau = resolutionPlateaux.joueur.plateau'),
 );
 assert.match(choixPlateauPartie, /deckJoueur: deckEssai \?\? \(modeTutoriel \? deckJoueurSelectionne : joueurDeck \?\? deckJoueurSelectionne\)/,
   'le tutoriel et les duels historiques tirent leur plateau comme avant ; l’essai utilise son deck');
 assert.match(choixPlateauPartie, /deckAdverse: adversaireEssai \?\? \(modeTutoriel[\s\S]*?RPG_TUTORIAL_OPPONENT_DECK[\s\S]*?etageCourant \? etageCourant\.deck : sorcierDeck \?\? deckAdverse\)/,
   'le plateau du tutoriel tient compte du deck d’entraînement, les autres duels du deck adverse');
 assert.match(choixPlateauPartie, /rng,/,
-  'le plateau reste tiré par le générateur aléatoire du duel');
+  'les plateaux restent résolus par le générateur aléatoire du duel');
+assert.match(battlePage, /setPlateauAdverseId\(resolutionPlateaux\.adversaire\.plateau\.id\)/,
+  'la moitié haute de la table reçoit le plateau du deck adverse : un terrain par camp');
+assert.match(battleCss, /\.rpg-plateau-moitie--adverse \{ clip-path: inset\(0 0 50% 0\); \}/,
+  'la moitié adverse est la peinture plein cadre rognée à son haut');
+assert.match(battleCss, /\.rpg-plateau-moitie--joueur \{ clip-path: inset\(50% 0 0 0\); \}/,
+  'la moitié du joueur est la peinture plein cadre rognée à son bas');
+assert.match(battleCss, /\.rpg-plateau-lisere \{[\s\S]*?top: 50%;/,
+  'un liseré souligne la jonction des deux terrains au centre de la table');
 assert.doesNotMatch(battlePage, /choixPlateau|onSelectPlateau|[cs]hargerChoixPlateau|sauverChoixPlateau|RPG_PLATEAU_ALEATOIRE|plateauPrecedent/,
   'le joueur ne choisit plus son plateau : ni verrou, ni pastille aléatoire, ni sauvegarde sur l’appareil');
 assert.doesNotMatch(battlePage, /rpg-mode-menu__boards|rpg-board-choice|rpg-board-grid/,

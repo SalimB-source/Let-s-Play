@@ -20,7 +20,7 @@ import { supabase } from '../lib/supabase';
 import {
   plateauDeRepli,
   plateauParId,
-  tirerPlateauDuDuel,
+  resoudrePlateauxDuDuel,
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import {
@@ -3026,10 +3026,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setDeckSelectionneId(deck.id);
     return sauverDeckChoisi(deck.id, decksMaison, collection);
   };
-  // Plateau du duel : en duel libre, le deck du joueur impose son terrain ;
-  // l'Histoire et le tutoriel gardent le tirage entre les deux camps. Avant la
-  // première partie, la table d'origine de Bab El sert de décor.
+  // Plateaux du duel : la table est découpée en deux moitiés — en bas, le
+  // terrain du deck du joueur (`plateauId`, le principal : il pilote la
+  // musique dédiée et le décor 3D) ; en haut, celui du deck adverse. Avant la
+  // première partie, la table d'origine de Bab El sert de décor aux deux.
   const [plateauId, setPlateauId] = useState(PLATEAU_PAR_DEFAUT.id);
+  const [plateauAdverseId, setPlateauAdverseId] = useState(PLATEAU_PAR_DEFAUT.id);
   // Mode Histoire : l'étage en cours (null = duel libre).
   const [histoireEtageId, setHistoireEtageId] = useState(null);
   const {
@@ -3443,25 +3445,27 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setEtapeTutorielId(modeTutoriel ? 'bienvenue' : null);
     setDeckDuelId(deckEssai?.id ?? (modeTutoriel ? deckJoueurSelectionne?.id ?? 'veilleurs-du-desert' : joueurDeck ? null : deckJoueurSelectionne?.id ?? null));
     setDeckAdverseId(adversaireEssai?.id ?? deckAdverse?.id ?? null);
-    // En duel libre, le deck du joueur impose toujours le terrain. L'Histoire
-    // et le tutoriel gardent le tirage entre les deux camps. Les paquets joués
-    // sont exactement ceux du duel — une prop brute parle par sa couleur
-    // dominante, un étage d'Histoire par la clé de son deck de campagne. En
-    // partie réelle (`variantesPlateaux`), le tirage peut échanger le terrain
-    // contre son double merveilleux ; sans la prop (tests, scénarios), le
-    // classique est gardé.
+    // Chaque camp joue sur son terrain : la moitié basse de la table porte le
+    // plateau du deck du joueur (y compris dans l'essai mana), la moitié haute
+    // celui du deck adverse — même terrain des deux côtés, et la table reste
+    // d'un seul tenant. Un paquet brut parle par sa couleur dominante,
+    // un étage d'Histoire par la clé de son deck de campagne. En
+    // partie réelle (`variantesPlateaux`), chaque camp peut échanger son
+    // terrain contre son double merveilleux ; sans la prop (tests, scénarios),
+    // les classiques sont gardés. Le plateau du joueur reste le principal : la
+    // musique dédiée ci-dessous est la sienne.
     const modeLibre = !modeTutoriel && !etageCourant;
-    const tiragePlateau = tirerPlateauDuDuel({
+    const resolutionPlateaux = resoudrePlateauxDuDuel({
       deckJoueur: deckEssai ?? (modeTutoriel ? deckJoueurSelectionne : joueurDeck ?? deckJoueurSelectionne),
       deckAdverse: adversaireEssai ?? (modeTutoriel
         ? RPG_TUTORIAL_OPPONENT_DECK
         : etageCourant ? etageCourant.deck : sorcierDeck ?? deckAdverse),
       rng,
       variantesFantaisistes: variantesPlateaux,
-      campImpose: modeLibre ? 'joueur' : null,
     });
-    const plateau = tiragePlateau.plateau;
+    const plateau = resolutionPlateaux.joueur.plateau;
     setPlateauId(plateau.id);
+    setPlateauAdverseId(resolutionPlateaux.adversaire.plateau.id);
     // `play()` doit partir directement du geste qui lance le duel : un effet
     // React différé peut être refusé par la politique d'autoplay du navigateur.
     const musiquePlateau = musiquePlateauRef.current;
@@ -3602,6 +3606,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const duel = duelRef.current;
   const plateau = plateauParId(plateauId) ?? PLATEAU_PAR_DEFAUT;
+  // La moitié haute de la table : le terrain du deck adverse. La table n'est
+  // découpée que si les deux terrains diffèrent ; sinon, un seul tenant, sans
+  // couture. Le décor 3D couvre la table entière d'une seule peinture : il
+  // s'efface quand la table est découpée (le réglage du joueur, lui, reste).
+  const plateauAdverse = plateauParId(plateauAdverseId) ?? plateau;
+  const plateauDecoupe = plateauAdverse.id !== plateau.id;
+  const decor3dVisible = decor3dActif && !plateauDecoupe;
   // Bandeau d'ouverture de tour : chaque bascule de `duel.tour` — le tour du
   // joueur rendu, celui du sorcier rendu, une partie neuve, une reprise —
   // annonce 1,5 s en grand le camp qui prend la main, puis s'efface.
@@ -5859,18 +5870,42 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ref={tableRef}
         inert={viewport.portrait || mulliganOuvert || choixManaEssaiOuvert ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
-        className={`card-table card-table--plateau-${plateau.id}${carteGlissee ? ' is-card-dragging' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
+        className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
         data-screen-impact-token={impactEcran?.token ?? undefined}
+        data-plateau-joueur={plateau.id}
+        data-plateau-adversaire={plateauAdverse.id}
         aria-busy={carteEnVol ? 'true' : undefined}
         style={{ backgroundImage: `url(${import.meta.env.BASE_URL}${plateau.fichier})` }}
-        aria-label={`Table de jeu du duel de sorciers — ${plateau.nom}`}
+        aria-label={plateauDecoupe
+          ? `Table de jeu du duel de sorciers — ${plateauAdverse.nom} côté sorcier, ${plateau.nom} côté joueur`
+          : `Table de jeu du duel de sorciers — ${plateau.nom}`}
         onPointerDown={commencerGlisserTactile}
         onDragOver={survolerTablePourDepot}
         onDragLeave={quitterZoneDepot}
         onDrop={deposerCarteSurTable}
       >
-        <RpgTableScene3D plateau={plateau} enabled={decor3dActif} paused={Boolean(carteGlissee || carteEnVol || bloqueurGlisse)} />
+        {/* La table découpée : chaque moitié est la peinture plein cadre de son
+            camp, rognée à sa moitié par `clip-path` (voir `rpg-battle.css`) —
+            même échelle que la table pleine, jonction au centre soulignée d'un
+            liseré. La peinture du plateau principal reste le fond de la table :
+            elle tient lieu de repli le temps que les deux moitiés arrivent. */}
+        {plateauDecoupe && (
+          <>
+            <div
+              className={`rpg-plateau-moitie rpg-plateau-moitie--adverse rpg-plateau-moitie--plateau-${plateauAdverse.id}`}
+              style={{ backgroundImage: `url(${import.meta.env.BASE_URL}${plateauAdverse.fichier})` }}
+              aria-hidden="true"
+            />
+            <div
+              className={`rpg-plateau-moitie rpg-plateau-moitie--joueur rpg-plateau-moitie--plateau-${plateau.id}`}
+              style={{ backgroundImage: `url(${import.meta.env.BASE_URL}${plateau.fichier})` }}
+              aria-hidden="true"
+            />
+            <div className="rpg-plateau-lisere" aria-hidden="true" />
+          </>
+        )}
+        <RpgTableScene3D plateau={plateau} enabled={decor3dVisible} paused={Boolean(carteGlissee || carteEnVol || bloqueurGlisse)} />
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
           <strong>LE SABLIER</strong>
           {tutorielActif && <span className="rpg-duel-nav__tutorial">PARTIE D’ENTRAÎNEMENT</span>}
@@ -5895,11 +5930,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </button>
           <button
             type="button"
-            className={`rpg-duel-nav__decor3d${decor3dActif ? ' is-on' : ''}`}
+            className={`rpg-duel-nav__decor3d${decor3dVisible ? ' is-on' : ''}`}
             onClick={basculerDecor3d}
-            aria-pressed={decor3dActif}
-            title={decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
-            aria-label={decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
+            disabled={plateauDecoupe || undefined}
+            aria-pressed={decor3dVisible}
+            title={plateauDecoupe
+              ? 'Décor 3D indisponible : les deux terrains se partagent la table'
+              : decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
+            aria-label={plateauDecoupe
+              ? 'Décor 3D indisponible : les deux terrains se partagent la table'
+              : decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
           >
             <span aria-hidden="true">3D</span>
           </button>

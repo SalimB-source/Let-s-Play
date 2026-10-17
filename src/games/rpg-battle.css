@@ -2263,6 +2263,78 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background-color: #50636b;
 }
 
+/* ── La table découpée : un terrain par camp ─────────────────────────────────
+   Quand les deux decks imposent des terrains différents (`resoudrePlateauxDuDuel`
+   dans `rpgPlateaux.js`), la table se partage en deux moitiés : en haut le
+   plateau du sorcier, en bas celui du joueur. Chaque moitié est la peinture
+   **plein cadre** de son camp — `inset: 0`, `background-size: cover`, comme la
+   table d'un seul tenant — rognée à sa moitié par `clip-path` : l'échelle et le
+   cadrage sont donc exactement ceux de la table pleine, le haut montre le haut
+   de la peinture adverse, le bas le bas de celle du joueur, et la jonction
+   tombe au centre, là où les deux arènes sont vides. Sous tout le chrome
+   (`z-index: -1` dans l'isolat de `.card-table`, comme le décor 3D qu'elles
+   remplacent alors), sans aucun geste. La peinture du plateau principal reste
+   le fond de `.card-table` : repli le temps que les moitiés arrivent. Les
+   couleurs de repli ci-dessous recopient celles des `.card-table--plateau-*`
+   ci-dessus — les changer ensemble. */
+.rpg-plateau-moitie {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-position: center;
+  background-size: cover;
+  pointer-events: none;
+}
+.rpg-plateau-moitie--adverse { clip-path: inset(0 0 50% 0); }
+.rpg-plateau-moitie--joueur { clip-path: inset(50% 0 0 0); }
+.rpg-plateau-moitie--plateau-table-des-heures { background-color: #1c1006; }
+.rpg-plateau-moitie--plateau-erg-du-sahara { background-color: #a8804f; }
+.rpg-plateau-moitie--plateau-caravane-de-gourara { background-color: #a8764f; }
+.rpg-plateau-moitie--plateau-ruines-de-tipaza { background-color: #9d9179; }
+.rpg-plateau-moitie--plateau-fjord-des-neuf-hivers { background-color: #b9cdd6; }
+.rpg-plateau-moitie--plateau-cour-de-l-empereur { background-color: #608280; }
+.rpg-plateau-moitie--plateau-desert-de-verre { background-color: #9aa48a; }
+.rpg-plateau-moitie--plateau-abysses-phosphorescentes { background-color: #adc1b8; }
+.rpg-plateau-moitie--plateau-iles-celestes { background-color: #50636b; }
+
+/* Le liseré de la jonction : la ligne médiane du champ de bataille, entre les
+   deux territoires. Un filet doré qui naît et meurt aux bords, bordé d'ombre
+   des deux côtés pour tenir aussi bien sur la glace du fjord que sur le bois
+   sombre de la Table des Heures, et un losange au centre — le nœud du sablier,
+   là où les deux camps se rejoignent. */
+.rpg-plateau-lisere {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  z-index: -1;
+  height: 3px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(217, 180, 91, .85) 10%,
+    rgba(255, 233, 160, .95) 50%,
+    rgba(217, 180, 91, .85) 90%,
+    transparent);
+  box-shadow:
+    0 -1px 0 rgba(20, 12, 4, .5),
+    0 1px 0 rgba(20, 12, 4, .5),
+    0 0 12px rgba(217, 180, 91, .35);
+}
+.rpg-plateau-lisere::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: linear-gradient(135deg, #ffe9a0, #d9b45b);
+  border: 1px solid rgba(20, 12, 4, .6);
+  box-shadow: 0 0 10px rgba(217, 180, 91, .5);
+}
+
 /* ── Le chrome de la table : chaque texte porte son propre fond ──────────────
    La mesure qui a fait tomber le voile : sur les plateaux clairs, la luminosité
    du haut du cadre monte à 142/255 (Erg du Sahara) et celle du bas à 118 (Ruines
