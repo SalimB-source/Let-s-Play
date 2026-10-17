@@ -320,6 +320,8 @@ try {
   const navMenu = page.locator('.rpg-duel-nav__menu');
   await burger.tap();
   await navMenu.waitFor({ state: 'visible' });
+  assert.equal(await navMenu.evaluate((element) => getComputedStyle(element).position), 'fixed',
+    'the hamburger panel is fixed to the viewport, outside the scrolling table clip');
   const panneau = await navMenu.boundingBox();
   assert.ok(panneau && panneau.x >= 0 && panneau.y >= 0
     && panneau.x + panneau.width <= 844 && panneau.y + panneau.height <= 390,
@@ -336,6 +338,22 @@ try {
   assert.equal(await navMenu.getByRole('button').count(), 6, 'the panel keeps all six commands');
   await burger.tap();
   await navMenu.waitFor({ state: 'hidden' });
+  // Écran court : le panneau se cale sous la capsule et tient dans 320 px de
+  // haut — ses six commandes restent visibles sans dépendre du défilement.
+  await page.setViewportSize({ width: 568, height: 320 });
+  await burger.tap();
+  await navMenu.waitFor({ state: 'visible' });
+  const court = await navMenu.boundingBox();
+  assert.ok(court && court.x >= 0 && court.y >= 0
+    && court.x + court.width <= 568 && court.y + court.height <= 320,
+  'the hamburger menu fits inside a 568 × 320 landscape phone');
+  for (const mode of ['Menu', 'Deck', 'Catalogue']) {
+    assert.equal(await navMenu.getByRole('button', { name: mode, exact: true }).isVisible(), true,
+      `the ${mode} mode stays visible on a 568 × 320 phone`);
+  }
+  await burger.tap();
+  await navMenu.waitFor({ state: 'hidden' });
+  await page.setViewportSize({ width: 844, height: 390 });
   console.log('✓ The duel hamburger opens its six commands inside the landscape viewport');
   // Tap a creature without mana: nothing is played, and no hint banner explains it.
   const creature = page.locator('.rpg-hand__card:has(.rpg-hand__stats)').first();

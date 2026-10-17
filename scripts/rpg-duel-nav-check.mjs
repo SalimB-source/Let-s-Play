@@ -68,8 +68,18 @@ try {
   assert.notEqual(cascade.window.getComputedStyle(burger).display, 'none',
     'au doigt, le hamburger est visible dans la barre');
   menu.classList.add('is-open');
-  assert.equal(cascade.window.getComputedStyle(menu).display, 'grid',
+  const styleOuvert = cascade.window.getComputedStyle(menu);
+  assert.equal(styleOuvert.display, 'grid',
     'au doigt, `is-open` déplie le panneau sous la barre');
+  // Le panneau ne doit pas dépendre du rognage de la table ni de la hauteur de
+  // la barre : fixé au viewport, il reste visible même si la grille tactile
+  // défile ou coupe ses débordements (`overflow: auto` sur `.card-table`).
+  assert.equal(styleOuvert.position, 'fixed',
+    'au doigt, le panneau se fixe au viewport, hors du rognage de la table');
+  assert.equal(styleOuvert.backdropFilter, 'none',
+    'le panneau n’est pas peint par `backdrop-filter` (ignoré par certaines WebView)');
+  assert.equal(styleOuvert.overflowY, 'auto',
+    'sur un écran court, le panneau défile au lieu de perdre ses commandes');
 } finally {
   cascade.window.close();
 }
