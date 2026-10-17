@@ -4682,6 +4682,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   outline: none;
 }
 
+/* Le menu de la barre du duel : à la souris, ses boutons restent déroulés en
+   ligne — la boîte disparaît (`display: contents`), les boutons sont ceux de la
+   barre. Au doigt, `rpg-mobile.css` replie le tout dans le bouton hamburger et
+   le menu tombe en panneau sous la barre. */
+.rpg-duel-nav__menu { display: contents; }
+.rpg-duel-nav__burger { display: none; }
+
 /* La musique d'ambiance de la tour se coupe depuis la barre du duel. */
 .rpg-duel-nav__sound {
   min-width: 32px;

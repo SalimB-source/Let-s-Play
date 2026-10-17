@@ -273,7 +273,7 @@ assert.match(battlePage, /<PhaseTrack current=\{phaseDuelActive\} jouees=\{attaq
   'le rail des phases marque l’étape d’attaque comme jouée');
 assert.match(battleCss, /\.rpg-phase-step\.is-jouee\s*\{[^}]*color:/s,
   'l’étape d’attaque jouée se range au lieu de s’allumer');
-assert.match(battlePage, /disabled=\{!monTour \|\| attaqueJouee \|\| !prets\.length \|\| Boolean\(combatEntrant\) \|\| defausseOuverte\}/,
+assert.match(battlePage, /disabled=\{!monTour \|\| attaqueJouee \|\| !prets\.length \|\| Boolean\(combatEntrant\) \|\| Boolean\(sacrificeEnCours\) \|\| defausseOuverte\}/,
   '« Attaquer avec tous » se verrouille une fois la phase d’attaque du tour jouée');
 // Lueur rouge « visée » : la victime d'un Coup rapide, la cible d'une magie,
 // d'une sorcellerie ou de tout autre effet de carte portent le même rouge, de
@@ -414,7 +414,7 @@ assert.match(battlePage, /const resoudreAttaqueJoueur = \(combat = combatEntrant
   'la résolution accepte aussi le combat fraîchement déclaré sans attendre un rendu');
 assert.match(battlePage, /rpg-actions__combat[\s\S]*?rpg-actions__turn[\s\S]*?rpg-btn--endturn/,
   'les actions de combat restent dans la barre, les actions de tour vivent dans le rail');
-assert.match(battlePage, /disabled=\{!monTour \|\| phase \|\| Boolean\(cibleEnCours\) \|\| Boolean\(combatEntrant\) \|\| mulliganOuvert \|\| choixManaEssaiOuvert\}/,
+assert.match(battlePage, /disabled=\{!monTour \|\| phase \|\| Boolean\(cibleEnCours\) \|\| Boolean\(combatEntrant\) \|\| Boolean\(sacrificeEnCours\) \|\| mulliganOuvert \|\| choixManaEssaiOuvert\}/,
   'Fin du tour attend le mulligan, le choix coloré ou la fin des sélections de combat et de cible');
 assert.match(battlePage, /const RPG_PHASE_STEPS = \[[\s\S]*?id: 'debut'[\s\S]*?id: 'principale'[\s\S]*?id: 'attaque'[\s\S]*?id: 'blocage'[\s\S]*?id: 'principale2'[\s\S]*?id: 'fin'/,
   'le rail représente les six phases du tour : début, principale, attaque, blocage, deuxième principale, fin');
@@ -524,7 +524,7 @@ assert.match(battlePage, /demarrerVolCarte\(carte, index, \(\) => poserCarte\(ca
   'la carte d’une créature vole vers la table dès qu’elle est jouée : la pose passe avant la cible');
 assert.match(battlePage, /const poserCarte = \(carteId\) => \{[\s\S]*?finaliserPoseCreature\(carteId\);\s*\};/,
   'la créature arrivée au bout de son vol se pose sans relancer une seconde animation');
-assert.match(battlePage, /rpgJouerCreature\(duel, 'joueur', carteId, null, \{ cibleDifferee: true \}\)[\s\S]*?if \(res\.arriveeEnAttente\) setCibleEnCours\(carteId\);/,
+assert.match(battlePage, /rpgJouerCreature\(duel, 'joueur', carteId, null, \{ cibleDifferee: true, sacrificeId \}\)[\s\S]*?if \(res\.arriveeEnAttente\) setCibleEnCours\(carteId\);/,
   'le Cavalier entre en jeu, puis la page ouvre la désignation de sa victime');
 assert.match(battlePage, /if \(arriveeCiblePortee\(carteSource\) && duel\.arriveeEnAttente\?\.carteId === cibleEnCours\) \{[\s\S]*?rpgResoudreArriveeCiblee\(duel, 'joueur', entite\.id\)/,
   'la cible cliquée referme l’attente ouverte à la pose, sans reposer la créature');
@@ -1362,8 +1362,8 @@ assert.match(battlePage, /className="rpg-card-stack"[\s\S]{0,120}?style=\{cardFr
 
 assert.match(battlePage, /import \{ armesPortees, groupCartesMain, groupEntitesParCarte \} from '\.\/rpgCardStacks\.js';/,
   'la page de duel regroupe les homonymes et lit les armes portées dans le même module que ses tests');
-assert.match(battlePage, /const empilerCartes = viewport\.mobile;/,
-  'les piles sont réservées au doigt : le grand écran garde une carte par emplacement');
+assert.match(battlePage, /const empilerCartes = viewport\.mobile && duel\.modeMana !== RPG_MODE_MANA_ESSAI;/,
+  'les piles sont réservées au doigt et jamais au mode essai : le grand écran et le mode sans terrains gardent une carte par emplacement');
 assert.match(battlePage, /const groupesMain = empilerCartes\s*\?\s*groupCartesMain\(duel\.joueur\.main\)\s*:\s*duel\.joueur\.main\.map\(\(carteId, index\) => \(\{ carteId, indices: \[index\] \}\)\);/s,
   'sans empilement, chaque carte de la main reste son propre groupe');
 assert.match(battlePage, /\{groupesMain\.map\(\(groupe, position\) => \{/, 'la main est rendue pile par pile, dans l’ordre de la rangée (l’éventail a besoin de la place de chaque carte)');

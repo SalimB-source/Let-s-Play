@@ -89,8 +89,12 @@ assert.match(styles, /\.rpg-flux-track__slot\.is-spent\s*\{[^}]*grayscale/s,
   'les icônes dépensées restent visibles mais assombries');
 assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]:not\(\.rpg-battle--touch\) \.card-table > \.rpg-flux-track--joueur\s*\{\s*top:\s*calc\(67% \+ 64px\);[^}]*left:\s*14px;/s,
   'sur ordinateur, le mana du joueur suit sa plaque comme celui du sorcier');
-assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table > \.rpg-flux-track--joueur\s*\{\s*grid-area:\s*player;[^}]*align-self:\s*end;/s,
-  'au doigt, le mana reste sous le nom du joueur dans sa colonne');
+assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table > \.rpg-flux-track--joueur\s*\{\s*grid-area:\s*player;[^}]*align-self:\s*start;/s,
+  'au doigt, la barre de mana du joueur se pose au-dessus de son nom');
+assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table > \.rpg-flux-track--ennemi\s*\{\s*grid-area:\s*enemy-mana;[^}]*align-self:\s*start;/s,
+  'au doigt, la barre de mana du sorcier se pose au-dessus de son nom');
+assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table > \.rpg-wizard-plate--ennemi\s*\{\s*grid-area:\s*enemy-mana;[^}]*align-self:\s*end;/s,
+  'au doigt, le nom et les PV du sorcier adverse prennent la colonne de gauche, comme le joueur');
 assert.match(page, /const noterEvenementDuel = \(evenement\) => \{\s*if \(duelRef\.current\?\.modeMana === RPG_MODE_MANA_ESSAI\) return;/,
   'toutes les actions du duel d’essai restent sans événement économique');
 assert.match(page, /onClick=\{\(\) => nouvellePartie\(duel\.modeMana === RPG_MODE_MANA_ESSAI \? \{ etageId: null, essaiManaId: duel\.essaiDeckId \} : \{\}\)\}/,

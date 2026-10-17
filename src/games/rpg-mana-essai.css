@@ -51,12 +51,18 @@
 .rpg-flux-menu__decks strong { font: 800 11px/1.15 system-ui, sans-serif; }
 .rpg-flux-menu__decks small { color: #bbd1cb; font: 10px/1.25 system-ui, sans-serif; }
 .rpg-flux-menu__note { color: #b7d2cd; font: 10px/1.4 system-ui, sans-serif; }
-.rpg-duel-nav__tutorial.rpg-duel-nav__mana-essai {
-  border-color: rgba(127, 212, 207, .54);
-  background: rgba(15, 73, 76, .45);
-  color: #dbfcf2;
-}
 .rpg-mulligan__head .rpg-mulligan__mana-note { margin-top: 5px; color: #b9f0db; font-weight: 700; }
+
+/* Champ d'essai plein (cinq créatures) : la carte en attente de sacrifice
+   laisse la consigne dans la colonne d'actions, et la table s'allume de
+   créatures à choisir — la victime part au cimetière, la carte se pose. */
+.rpg-sacrifice-prompt {
+  color: #b9f0db;
+  font: 700 12px/1.35 var(--display, sans-serif);
+}
+@media (max-width: 700px) {
+  .rpg-sacrifice-prompt { flex: 1 1 100%; text-align: center; }
+}
 
 /* Dix places pour les symboles élémentaires : losange discret avant le gain,
    sablier/flamme/goutte/flocon lumineux une fois acquis, puis tamisés après
@@ -263,11 +269,30 @@
 .rpg-battle--touch .rpg-flux-track__slot { max-width: 18px; font-size: clamp(8px, 1.1vw, 12px); }
 .rpg-battle--touch .rpg-flux-track__slot .rpg-emblem { width: clamp(8px, 1.2vw, 13px); height: clamp(8px, 1.2vw, 13px); }
 .rpg-battle--touch .rpg-flux-track__slots { gap: 1px; }
-/* En paysage tactile, la plaque du joueur et son mana partagent la colonne
-   gauche : nom/PV en haut, les dix icônes juste en dessous, hors de la main. */
-.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { align-self: start; }
+/* En paysage tactile, chaque camp regroupe jauge et plaque dans la colonne de
+   gauche — le sorcier adverse comme le joueur. La barre de mana se pose
+   AU-DESSUS du nom et des PV : la jauge annonce la réserve, l'identité la
+   commente, et les deux restent hors des rangées de cartes. La capsule du
+   compteur déborde vers le haut de la jauge, comme sur les autres écrans. */
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--joueur {
   grid-area: player;
-  align-self: end;
-  margin-inline-start: 28px;
+  align-self: start;
+  margin-inline: 28px 0;
 }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { align-self: end; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--ennemi {
+  grid-area: enemy-mana;
+  align-self: start;
+  margin-inline: 28px 0;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi {
+  grid-area: enemy-mana;
+  align-self: end;
+  justify-self: stretch;
+  width: auto;
+}
+/* La plaque du sorcier adverse prend la mise en page de celle du joueur :
+   avatar à gauche, nom au centre, PV dessous, zones de cartes en bas. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate--ennemi { grid-template-columns: 28px minmax(0, 1fr); }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate--ennemi .rpg-wizard-plate__pv { grid-column: 2; grid-row: 2; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate--ennemi .rpg-wizard-plate__zones { grid-column: 1 / -1; grid-row: 3; }

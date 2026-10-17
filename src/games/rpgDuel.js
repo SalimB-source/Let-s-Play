@@ -34,7 +34,7 @@ import {
   choisirCouleurManaIA,
   couleurEngagement,
 } from './rpgAI.js';
-import { RPG_MANA_ESSAI_CARTES_EXCLUES, RPG_MANA_ESSAI_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
+import { RPG_MANA_ESSAI_CARTES_EXCLUES, RPG_MANA_ESSAI_CHAMP_MAX, RPG_MANA_ESSAI_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
 
 /* Tout le monde part à 25 PV : le joueur comme chaque sorcier adverse. La
  * puissance d'un étage du mode Histoire ne gonfle plus les PV (bonus à 0) —
@@ -1804,19 +1804,44 @@ function enterrer(duel, cote, entite, sourceElements = []) {
     duel.log.push(`Tenacité : ${entite.name} refuse la destruction — il lui reste 1 point de défense.`);
     return;
   }
+  rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.');
+}
+
+/**
+ * Sacrifice : la créature quitte la table **par la volonté de son camp** — le
+ * prix d'une pose quand le champ des cinq places est plein (mode essai). Comme
+ * une destruction, elle rejoint le cimetière et déclenche sa capacité de
+ * « quand elle meurt » ; mais la Tenacité ne s'applique pas : ce n'est pas une
+ * destruction évitable, c'est un don.
+ */
+function sacrifierCreature(duel, cote, entite) {
+  rejoindreCimetiere(duel, cote, entite, [], 'est sacrifiée et rejoint le cimetière.');
+}
+
+/** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
+function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle) {
   journaliserDestruction(duel, entite, sourceElements);
   armeDePorteurMort(duel, cote, entite);
   const camp = duel[cote];
   camp.creatures = camp.creatures.filter((e) => e.id !== entite.id);
   camp.cimetiere.push(entite.carteId);
   detacherArmes(duel, cote, entite);
-  duel.log.push(`${entite.name} est détruite et rejoint le cimetière.`);
+  duel.log.push(`${entite.name} ${libelle}`);
   const carte = duelCardById(entite.carteId);
   if (carte?.destruction) {
     appliquer(duel, cote, carte.destruction, null, null, cardColors(carte), null, entite.carteId);
   }
   declencherHonneur(duel, cote, entite);
   rafraichirAuras(duel);
+}
+
+/** La créature qu'un camp sacrifie de lui-même : la plus frêle d'abord, la
+ *  plus entamée ensuite — l'IA (et une pose sans désignation) garde toujours
+ *  ses meilleures cartes quand le champ est plein. */
+function choisirSacrifice(camp) {
+  return [...camp.creatures].sort((a, b) =>
+    ((a.atk ?? 0) + (a.def ?? 0)) - ((b.atk ?? 0) + (b.def ?? 0))
+    || (a.pv ?? 0) - (b.pv ?? 0))[0] ?? null;
 }
 
 /**
@@ -1942,12 +1967,31 @@ export function arriveeACibleLegale(duel, cote, carte) {
  * s'ouvre ensuite, sur la table — `rpgResoudreArriveeCiblee` la referme. Une
  * arrivée qui ne désigne rien (ou qui n'a plus de cible légale) se résout, elle,
  * dans les deux cas avec la pose.
+ *
+ * `sacrificeId` — le **prix de la pose** quand le champ des cinq places est
+ * plein (mode essai, `RPG_MANA_ESSAI_CHAMP_MAX`) : la créature désignée est
+ * sacrifiée au moment de payer, puis la nouvelle entre en jeu. Sans
+ * désignation, le moteur refuse la pose (`raison: 'champ-plein'`) sauf pour le
+ * sorcier, qui sacrifie automatiquement sa créature la plus frêle.
  */
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null } = {}) {
   const camp = duel[cote];
   const carte = duelCardById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
+  // Le champ d'essai n'a que cinq places : la sixième créature exige qu'une
+  // autre soit sacrifiée. La validation tôt (avant paiement et contre) laisse
+  // au joueur le temps de choisir sa victime ; le sacrifice, lui, n'a lieu
+  // qu'au moment d'engager la pose — un contresort annule tout sans rien coûter.
+  const champPlein = duel.modeMana === RPG_MODE_MANA_ESSAI
+    && camp.creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX;
+  let sacrifice = null;
+  if (champPlein) {
+    sacrifice = sacrificeId
+      ? camp.creatures.find((entite) => entite.id === sacrificeId) ?? null
+      : (cote === 'sorcier' ? choisirSacrifice(camp) : null);
+    if (!sacrifice) return { ok: false, raison: sacrificeId ? 'sacrifice' : 'champ-plein' };
+  }
   if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
     // Une arrivée qui désigne une créature (duel du Cavalier, lance de givre de
     // la Valkyrie, gueule du Bakunawa) exige sa cible tant qu'il reste une
@@ -1996,6 +2040,12 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (cote === 'joueur' && !duel.annonce) {
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+  }
+  // Rien n'a été annulé : le sacrifice de la place libre a lieu maintenant,
+  // juste avant le paiement — la créature entre ensuite sur le champ vidé.
+  if (sacrifice) {
+    duel.log.push(`${cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${sacrifice.name} pour faire place à ${carte.name}.`);
+    sacrifierCreature(duel, cote, sacrifice);
   }
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);

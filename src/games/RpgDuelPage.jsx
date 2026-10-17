@@ -24,6 +24,7 @@ import {
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import {
+  RPG_MANA_ESSAI_CHAMP_MAX,
   RPG_MANA_ESSAI_DECKS,
   RPG_MANA_ESSAI_MAX,
   RPG_MODE_MANA_ESSAI,
@@ -151,6 +152,7 @@ import {
   cardMotifClass,
   cardFrameColor,
   cardColorCost,
+  cardCostColors,
   bonusArme,
   carteEstArme,
   cardColors,
@@ -464,16 +466,20 @@ function placerApercuSurvol(rectangle, panneau) {
 
 function ManaCost({ carte, compact = false, showElement = true }) {
   if (!carte || carte.kind === 'terrain') return null;
-  const colors = cardColors(carte);
-  const hybrid = colors.length > 1;
+  // La couleur du disque suit le **coût** de la carte (les pips à payer), dans
+  // le même sens que les bandes de son cadre : en main, la couleur lue sur la
+  // carte et celle du coût ne font plus qu'une.
+  const colors = cardCostColors(carte);
+  const hybrid = colors.length > 1 || colors[0] === 'hybride';
+  const teinte = colors[0] ?? carte.element;
   return (
     <span
-      className={`rpg-mana-cost rpg-mana-cost--${hybrid ? 'hybride' : carte.element}${compact ? ' is-compact' : ''}`}
-      style={hybrid ? { '--rpg-hybrid-cost-bg': cardHybridGradient(carte) } : undefined}
+      className={`rpg-mana-cost rpg-mana-cost--${hybrid ? 'hybride' : teinte}${compact ? ' is-compact' : ''}`}
+      style={hybrid ? { '--rpg-hybrid-cost-bg': cardHybridGradient({ colors }) } : undefined}
       aria-label={`Coût : ${cardCostLabel(carte)}`}
     >
       <b>{carte.cost}</b>
-      {!hybrid && showElement && <i aria-hidden="true">{ELEMENT_GLYPHS[carte.element] ?? '◇'}</i>}
+      {!hybrid && showElement && <i aria-hidden="true">{ELEMENT_GLYPHS[teinte] ?? '◇'}</i>}
     </span>
   );
 }
@@ -551,11 +557,14 @@ function profileNameFallback(user) {
 
 function CardElementBadge({ carte }) {
   if (!carte?.element || carte.kind === 'terrain') return null;
-  const colors = cardColors(carte);
-  const hybrid = colors.length > 1;
+  // Comme le disque de coût : les couleurs affichées sont celles du coût de la
+  // carte, dans le même ordre que les bandes de son cadre.
+  const colors = cardCostColors(carte);
+  const hybrid = colors.length > 1 || colors[0] === 'hybride';
+  const teinte = colors[0] ?? carte.element;
   return (
     <span
-      className={`rpg-card-element-badge rpg-card-element-badge--${hybrid ? 'hybride' : carte.element}`}
+      className={`rpg-card-element-badge rpg-card-element-badge--${hybrid ? 'hybride' : teinte}`}
       aria-hidden="true"
     >
       {hybrid
@@ -564,7 +573,7 @@ function CardElementBadge({ carte }) {
             {ELEMENT_GLYPHS[couleur] ?? '◇'}
           </i>
         ))
-        : ELEMENT_GLYPHS[carte.element] ?? '◇'}
+        : ELEMENT_GLYPHS[teinte] ?? '◇'}
     </span>
   );
 }
@@ -3241,17 +3250,34 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Le lot du Sable : un mode d'arme qui désigne une proie (le Trait de sable
   // de la Jitte) se joue en deux clics — le bouton, puis la créature adverse.
   const [cibleArmeEnCours, setCibleArmeEnCours] = useState(null);
+  // Le champ d'essai plein (cinq créatures) : la carte à poser attend le choix
+  // de la créature à sacrifier — Échap ou « Renoncer » rend la carte à la main.
+  const [sacrificeEnCours, setSacrificeEnCours] = useState(null);
+  // Au doigt, la barre de navigation du duel se replie dans un bouton hamburger.
+  const [navMenuOuvert, setNavMenuOuvert] = useState(false);
 
   // La foudre activée se désigne avec Échap, comme les autres ciblages ; la
-  // proie d'un mode d'arme aussi.
+  // proie d'un mode d'arme aussi ; le sacrifice en attente, enfin, se renonce.
   useEffect(() => {
-    if (!activationEnCours) return undefined;
+    if (!activationEnCours && !sacrificeEnCours && !navMenuOuvert) return undefined;
     const onKey = (event) => {
-      if (event.key === 'Escape') setActivationEnCours(null);
+      if (event.key !== 'Escape') return;
+      setActivationEnCours(null);
+      setSacrificeEnCours(null);
+      setNavMenuOuvert(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activationEnCours]);
+  }, [activationEnCours, sacrificeEnCours, navMenuOuvert]);
+  // Le menu hamburger se referme au premier geste hors de la barre du duel.
+  useEffect(() => {
+    if (!navMenuOuvert) return undefined;
+    const onDown = (event) => {
+      if (!event.target?.closest?.('.rpg-duel-nav')) setNavMenuOuvert(false);
+    };
+    window.addEventListener('pointerdown', onDown);
+    return () => window.removeEventListener('pointerdown', onDown);
+  }, [navMenuOuvert]);
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
   const [confirmationSort, setConfirmationSort] = useState(null);
   const [carteDefausseSelectionnee, setCarteDefausseSelectionnee] = useState(null);
@@ -4778,13 +4804,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * referme l'attente (`resoudreCible`). Une arrivée qui ne désigne rien —
    * pioche, jetons, dégâts de zone — se résout avec la pose, comme avant.
    */
-  const finaliserPoseCreature = (carteId) => {
+  const finaliserPoseCreature = (carteId, sacrificeId = null) => {
     const carte = cardById(carteId);
     carteCibleeHandIndexRef.current = null;
+    setSacrificeEnCours(null);
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const res = rpgJouerCreature(duel, 'joueur', carteId, null, { cibleDifferee: true });
+    const res = rpgJouerCreature(duel, 'joueur', carteId, null, { cibleDifferee: true, sacrificeId });
     if (res.ok && res.contre && res.parIA) {
       // Le sorcier contre la créature : elle n'entre pas en jeu.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
@@ -4848,7 +4875,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    *  du champ après. Un mode qui désigne une proie (le Trait de sable) ne se
    *  résout pas tout de suite : il attend le clic sur la créature adverse. */
   const activerArmePorteur = (entite, mode = null) => {
-    if (!monTour || phase || combatEntrant || cibleEnCours || mulliganOuvert) { jouerSfx('erreur'); return; }
+    if (!monTour || phase || combatEntrant || cibleEnCours || sacrificeEnCours || mulliganOuvert) { jouerSfx('erreur'); return; }
     if (mode?.effet?.type === 'degats') {
       if (!duel.sorcier.creatures.some((cible) => !rpgEstProtegee(cible, cardColors(armeById(entite.arme.carteId))))) {
         jouerSfx('erreur');
@@ -4943,12 +4970,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // carte arrivée au bout de son animation — on n'en relance donc pas une
     // seconde, la pose se termine ici.
     if (!monTour) return;
+    // Champ d'essai plein : avant de poser, le joueur choisit la créature à
+    // sacrifier — la carte reste en main, la table s'allume, et le clic sur la
+    // victime termine la pose (`finaliserPoseCreature`, avec son sacrifice).
+    if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel.joueur.creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX) {
+      setSacrificeEnCours(carteId);
+      jouerSfx('select');
+      force();
+      return;
+    }
     finaliserPoseCreature(carteId);
   };
 
   const jouerCarteDepuisMain = (carteId, handIndex = null) => {
     const carte = cardById(carteId);
-    if (carteEnVol) return;
+    if (carteEnVol || sacrificeEnCours) return;
     if (!carte || !duel.joueur.main.includes(carteId)) return;
     if (!peutJouerCarte(carte)) {
       jouerSfx('erreur');
@@ -4966,6 +5002,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       carteCibleeHandIndexRef.current = index;
       poserCarte(carteId);
     } else {
+      // Champ d'essai plein : la carte reste en main tant que la créature à
+      // sacrifier n'est pas choisie — le vol n'a lieu qu'une fois la place faite
+      // (le clic sur la victime relance la pose avec son sacrifice).
+      if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel.joueur.creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX) {
+        setSacrificeEnCours(carteId);
+        jouerSfx('select');
+        force();
+        return;
+      }
       demarrerVolCarte(carte, index, () => poserCarte(carteId));
     }
   };
@@ -5004,7 +5049,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     unlockSfx();
     const carte = cardById(carteId);
     if (!carte) return;
-    if (carteEnVol || cibleEnCours || cibleAttaqueEnCours) return;
+    if (carteEnVol || cibleEnCours || cibleAttaqueEnCours || sacrificeEnCours) return;
     if (defausseOuverte) {
       setCarteDefausseSelectionnee({ carteId, handIndex, attente: duel.defausseEnAttente });
       jouerSfx('select');
@@ -5140,6 +5185,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const cliquerCreatureJoueur = (entite) => {
     if (clicApresGlisserBloqueurRef.current === entite.id) {
       clicApresGlisserBloqueurRef.current = null;
+      return;
+    }
+    // Pose en attente d'un sacrifice (champ d'essai plein) : ce clic désigne la
+    // créature qui fait la place — la carte s'envole alors, et se pose contre le
+    // sacrifice choisi (la victime part au cimetière avec la pose).
+    if (sacrificeEnCours) {
+      const carteId = sacrificeEnCours;
+      const carte = cardById(carteId);
+      const indexMain = duel.joueur.main.indexOf(carteId);
+      setSacrificeEnCours(null);
+      if (carte && indexMain >= 0 && !carteEnVol) {
+        demarrerVolCarte(carte, indexMain, () => finaliserPoseCreature(carteId, entite.id));
+      } else {
+        finaliserPoseCreature(carteId, entite.id);
+      }
       return;
     }
     if (cibleEnCours) {
@@ -5761,8 +5821,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
      choisir soi-même, et tout groupe dont un exemplaire participe à l'action
      en cours se déplie de lui-même afin que les flèches de blocage, les halos
      de cible et les destructions retrouvent leur carte.
-     Sur grand écran rien ne change : chaque carte garde son emplacement. */
-  const empilerCartes = viewport.mobile;
+     Sur grand écran rien ne change : chaque carte garde son emplacement. Le
+     mode essai (sans terrains) refuse lui la superposition : chaque carte,
+     en main comme sur le champ, garde sa place et son identité. */
+  const empilerCartes = viewport.mobile && duel.modeMana !== RPG_MODE_MANA_ESSAI;
   const groupesMain = empilerCartes
     ? groupCartesMain(duel.joueur.main)
     : duel.joueur.main.map((carteId, index) => ({ carteId, indices: [index] }));
@@ -5919,49 +5981,62 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
           <strong>LE SABLIER</strong>
           {tutorielActif && <span className="rpg-duel-nav__tutorial">PARTIE D’ENTRAÎNEMENT</span>}
-          {duel.modeMana === RPG_MODE_MANA_ESSAI && <span className="rpg-duel-nav__tutorial rpg-duel-nav__mana-essai">ESSAI · 30 CARTES · MANA 0–10 · SANS GAIN</span>}
           {etageHistoire && (
             <span className="rpg-duel-nav__story">
               <span className="rpg-duel-nav__story-mode">MODE </span>HISTOIRE<span className="rpg-duel-nav__story-floor"> · {etageHistoire.nom}</span>
             </span>
           )}
-          <button type="button" onClick={() => setEcran(histoireEtageId ? 'histoire' : 'jouer')}>Menu</button>
-          <button type="button" onClick={() => setEcran('decks')}>Deck</button>
-          <button type="button" onClick={() => setEcran('catalogue')}>Catalogue</button>
+          <div className="rpg-duel-nav__menu" id="rpg-duel-nav-menu">
+            <button type="button" onClick={() => { setNavMenuOuvert(false); setEcran(histoireEtageId ? 'histoire' : 'jouer'); }}>Menu</button>
+            <button type="button" onClick={() => { setNavMenuOuvert(false); setEcran('decks'); }}>Deck</button>
+            <button type="button" onClick={() => { setNavMenuOuvert(false); setEcran('catalogue'); }}>Catalogue</button>
+            <button
+              type="button"
+              className={`rpg-duel-nav__sound${sonActif ? ' is-on' : ''}`}
+              onClick={basculerSon}
+              aria-pressed={sonActif}
+              title={sonActif ? 'Couper le son (M)' : 'Activer le son (M)'}
+              aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'}
+            >
+              <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
+            </button>
+            <button
+              type="button"
+              className={`rpg-duel-nav__decor3d${decor3dVisible ? ' is-on' : ''}`}
+              onClick={basculerDecor3d}
+              disabled={plateauDecoupe || undefined}
+              aria-pressed={decor3dVisible}
+              title={plateauDecoupe
+                ? 'Décor 3D indisponible : les deux terrains se partagent la table'
+                : decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
+              aria-label={plateauDecoupe
+                ? 'Décor 3D indisponible : les deux terrains se partagent la table'
+                : decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
+            >
+              <span aria-hidden="true">3D</span>
+            </button>
+            <button
+              type="button"
+              className={`rpg-duel-nav__fullscreen${pleinEcran ? ' is-on' : ''}`}
+              onClick={basculerPleinEcran}
+              aria-pressed={pleinEcran}
+              title={pleinEcran ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
+              aria-label={pleinEcran ? 'Quitter le plein écran' : 'Jouer en plein écran'}
+            >
+              <FullscreenIcon exit={pleinEcran} className="rpg-fullscreen-icon" />
+            </button>
+          </div>
+          {/* Au doigt, la barre de navigation se replie dans ce bouton hamburger ;
+              à la souris, le menu reste déroulé en ligne (voir `rpg-mobile.css`). */}
           <button
             type="button"
-            className={`rpg-duel-nav__sound${sonActif ? ' is-on' : ''}`}
-            onClick={basculerSon}
-            aria-pressed={sonActif}
-            title={sonActif ? 'Couper le son (M)' : 'Activer le son (M)'}
-            aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'}
+            className={`rpg-duel-nav__burger${navMenuOuvert ? ' is-open' : ''}`}
+            aria-expanded={navMenuOuvert}
+            aria-controls="rpg-duel-nav-menu"
+            aria-label={navMenuOuvert ? 'Fermer le menu du duel' : 'Ouvrir le menu du duel'}
+            onClick={() => setNavMenuOuvert((ouvert) => !ouvert)}
           >
-            <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
-          </button>
-          <button
-            type="button"
-            className={`rpg-duel-nav__decor3d${decor3dVisible ? ' is-on' : ''}`}
-            onClick={basculerDecor3d}
-            disabled={plateauDecoupe || undefined}
-            aria-pressed={decor3dVisible}
-            title={plateauDecoupe
-              ? 'Décor 3D indisponible : les deux terrains se partagent la table'
-              : decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
-            aria-label={plateauDecoupe
-              ? 'Décor 3D indisponible : les deux terrains se partagent la table'
-              : decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
-          >
-            <span aria-hidden="true">3D</span>
-          </button>
-          <button
-            type="button"
-            className={`rpg-duel-nav__fullscreen${pleinEcran ? ' is-on' : ''}`}
-            onClick={basculerPleinEcran}
-            aria-pressed={pleinEcran}
-            title={pleinEcran ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
-            aria-label={pleinEcran ? 'Quitter le plein écran' : 'Jouer en plein écran'}
-          >
-            <FullscreenIcon exit={pleinEcran} className="rpg-fullscreen-icon" />
+            <span aria-hidden="true" className="rpg-duel-nav__burger-icon">{navMenuOuvert ? '✕' : '☰'}</span>
           </button>
         </nav>
 
@@ -6142,7 +6217,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       blocking={bloqueursSelectionnes.has(entite.id)}
                       selectedBlocker={bloqueurSelectionne === entite.id}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
-                      canTarget={Boolean((cibleEnCours && ['allie', 'tous'].includes(modeCible)
+                      canTarget={Boolean(sacrificeEnCours || (cibleEnCours && ['allie', 'tous'].includes(modeCible)
                           && entite.id !== duel.arriveeEnAttente?.entiteId
                           && !rpgEstProtegee(entite, cardColors(carteCiblee)))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige')))}
@@ -6371,6 +6446,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     {duel.arriveeEnAttente?.cote === 'joueur' ? 'Renoncer à la cible' : 'Annuler la cible'}
                   </button>
                 )}
+                {sacrificeEnCours && (
+                  <>
+                    <span className="rpg-sacrifice-prompt" role="status" aria-live="polite">
+                      Champ plein (5 créatures) — touchez la créature à sacrifier pour poser {cardById(sacrificeEnCours)?.name ?? 'cette carte'}.
+                    </span>
+                    <button
+                      type="button"
+                      className="rpg-btn rpg-btn--ghost rpg-btn--sacrifice-cancel"
+                      onClick={() => {
+                        setSacrificeEnCours(null);
+                        jouerSfx('annuler');
+                        force();
+                      }}
+                    >
+                      Renoncer
+                    </button>
+                  </>
+                )}
                 {monTour && !phase && !combatEntrant && !cibleEnCours && !defausseOuverte && duel.joueur.creatures
                   .filter((entite) => armeById(entite.arme?.carteId ?? '')?.activation)
                   .flatMap((entite) => {
@@ -6527,7 +6620,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     type="button"
                     className={`rpg-btn rpg-btn--attaque rpg-btn--attaque-tous${attaqueJouee ? ' is-jouee' : ''}`}
                     data-tutorial-target={tutorielActif && etapeTutorielId === 'attaque' ? 'attack-all' : undefined}
-                    disabled={!monTour || attaqueJouee || !prets.length || Boolean(combatEntrant) || defausseOuverte}
+                    disabled={!monTour || attaqueJouee || !prets.length || Boolean(combatEntrant) || Boolean(sacrificeEnCours) || defausseOuverte}
                     onClick={declarerAttaqueAvecTous}
                   >
                     <CombatActionIcon type="attack-all" /> {attaqueJouee ? 'Attaque jouée ce tour' : `Attaquer avec tous (${prets.length})`}
@@ -6546,7 +6639,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <button type="button" className="rpg-btn rpg-btn--endturn"
               data-tutorial-target={tutorielActif && etapeTutorielId === 'fin-tour' ? 'end-turn' : undefined}
               onClick={finDuTour}
-              disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || mulliganOuvert || choixManaEssaiOuvert}>
+              disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || Boolean(sacrificeEnCours) || mulliganOuvert || choixManaEssaiOuvert}>
               ⧗ Fin du tour
             </button>
           </div>
