@@ -33,15 +33,15 @@ try {
   dom.window.close();
 }
 
-// ── La page ne force jamais le plein écran ──────────────────────────────────
+// ── La page ne force le plein écran qu’au doigt, dans le geste du lancement ─
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 assert.doesNotMatch(page, /entrerPleinEcran\(\{ pinned: true, native: false \}\)/,
   'aucune couche immersive n’est posée automatiquement au montage');
 assert.doesNotMatch(page, /addEventListener\('pointerdown', upgrade/,
   'un toucher ordinaire ne déclenche pas le plein écran natif');
-assert.match(page, /const demanderPleinEcranEtPaysage = \(\) => \{\s*\n\s*landscapeRef\.current\?\.enter\(\{ fullscreen: false \}\);/,
-  'lancer ou reprendre une partie ne demande que l’orientation, jamais le plein écran');
+assert.match(page, /const demanderPleinEcranEtPaysage = \(\) => \{\s*\n\s*const veutPaysage = Boolean\(window\.LetsPlayAndroid\)\s*\n\s*\|\| Boolean\(window\.matchMedia\?\.\('\(pointer: coarse\)'\)\.matches\);\s*\n\s*if \(veutPaysage\) entrerPleinEcran\(\);\s*\n\s*landscapeRef\.current\?\.enter\(\{ fullscreen: false \}\);/,
+  'au doigt, lancer une partie demande le plein écran natif dans le geste puis verrouille le paysage ; sur ordinateur, rien');
 assert.match(page, /onToggleFullscreen=\{basculerPleinEcran\}/,
   'le bouton laisse le plein écran disponible sur demande explicite');
-console.log('check:rpg-fullscreen ✓ — le Sablier s’ouvre et se lance dans la page, sans plein écran forcé ; le bouton explicite reste disponible.');
+console.log('check:rpg-fullscreen ✓ — le Sablier s’ouvre dans la page ; au doigt, le lancement demande le plein écran natif puis le paysage ; le bouton explicite reste disponible.');
 process.exit(0);

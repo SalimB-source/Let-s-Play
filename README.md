@@ -7957,3 +7957,102 @@ sans erreur. Les contrôles Playwright (`check:rpg-mobile`,
 `check:rpg-card-markers`) demandent un navigateur, absent de cet environnement :
 leurs nouvelles assertions suivent exactement les règles CSS posées ici et se
 joueront là où Chromium est installé (`npx playwright install chromium`).
+
+## Le Sablier : la partie se lance en paysage, les six onglets tiennent, la main n'est plus coupée
+
+Trois correctifs demandés depuis le téléphone, tous à destination de la
+présentation tactile seulement : la partie se lance **toujours en paysage**
+autant que le navigateur le permet, la barre d'**onglets du menu** loge ses six
+onglets dans la fenêtre d'un téléphone en paysage, et les cartes de la **main**
+ne sont plus coupées par un masque invisible.
+
+**Le paysage au lancement.** Un navigateur mobile ne tourne l'écran que si le
+document est en plein écran — `screen.orientation.lock('landscape')` est refusé
+sinon —, et la page ne demandait jamais le plein écran au lancement : le verrou
+échouait à tous les coups et l'invite de rotation restait le seul chemin vers le
+paysage. Désormais `demanderPleinEcranEtPaysage` — appelé par chaque lancement
+ou reprise de partie, et par le bouton « Activer le paysage » — demande le
+plein écran natif **dans le geste du clic** au doigt (`pointer: coarse` ou pont
+`LetsPlayAndroid`), puis passe la main à la session de paysage : elle attend le
+plein écran de la page (1,2 s) et verrouille. Sur ordinateur, rien ne change :
+aucun plein écran automatique, aucune orientation verrouillée.
+
+**Le plein écran tardif est rattrapé.** Si le plein écran arrive après l'attente
+(navigateur lent, geste repoussé), la session ne renonce pas : tant que le duel
+est ouvert, un écouteur de rattrapage rejoue le verrou à chaque
+`fullscreenchange` — la partie se couche en paysage dès que le navigateur est
+prêt, sans deuxième clic. Une seule tentative de verrou vole à la fois
+(l'évènement et le flux principal partagent la même promesse), l'écouteur se
+retire dès le paysage obtenu, et `leave()` libère tout : aucune promesse tardive
+ne peut tourner l'écran après la sortie du duel. Dans l'APK,
+`LetsPlayAndroid.setDuelLandscape(true)` force toujours `SENSOR_LANDSCAPE` au
+niveau système (l'APK doit être reconstruite pour en bénéficier).
+
+**Les six onglets tiennent.** Dans la fenêtre d'un téléphone en paysage
+(821–1100 px — 844 × 390 au premier chef), l'en-tête du menu restait sur la
+ligne unique du bureau : la marque, les six onglets (Jouer, Histoire, Tours,
+Deck, Souk, Catalogue) et le bouton plein écran n'y tiennent pas, et la barre
+laissait les onglets déborder de l'écran, inatteignables. Le bloc des 820 px et
+moins (barre reportée sur une deuxième ligne) ne couvrait pas cette plage. Un
+nouveau bloc `@media (min-width: 821px) and (max-width: 1100px)` étend cette
+deuxième ligne jusqu'à la fenêtre tactile du jeu : la barre prend toute la
+largeur, d'un bord à l'autre de l'écran, et ses six onglets se la partagent
+(`flex: 1 0 auto`) — tous tiennent sans défiler dès 821 px. S'ils ne tenaient
+vraiment pas (fenêtre étroite), elle défile horizontalement sans barre de
+défilement visible au lieu de les laisser déborder. Les cibles tactiles gardent
+46 px de haut.
+
+**La main sans masque.** La dernière coupe visible ne venait pas du repos — les
+cartes se partagent la largeur et ne dépassent jamais la rangée — mais de
+**l'animation de pioche** : `rpg-player-card-draw` fait glisser chaque carte
+piochée depuis la gauche (`translate3d(-100% → 0)`, 0,68 s), et
+l'`overflow: hidden` de la rangée tactile la coupait nette au bord gauche — un
+masque vertical à chaque pioche, dès les cinq cartes du départ. La rangée ne
+recadre plus rien (`overflow: visible`) : la pioche glisse à découvert, les
+compteurs ×N des piles et les liserés ne sont plus rognés. La présentation à la
+souris (éventail, bloc `hover: hover`) était déjà en `overflow: visible` et ne
+change pas ; les cartes en vol (`position: fixed`) n'ont jamais été concernées.
+
+### Où vit le code
+
+- `src/games/RpgDuelPage.jsx` — `demanderPleinEcranEtPaysage` : le plein écran
+  natif au doigt dans le geste du lancement, puis la session de paysage ;
+- `src/games/rpgLandscape.js` — le verrou à tentative unique partagée
+  (`verrouillerPaysage`), l'écouteur de rattrapage sur `fullscreenchange` tant
+  que la session est ouverte, la libération dans `leave()` ;
+- `src/games/rpg-battle.css` — le bloc `@media (min-width: 821px) and
+  (max-width: 1100px)` de la barre d'onglets du menu (deuxième ligne pleine
+  largeur, onglets distribués, défilement invisible en secours) ;
+- `src/games/rpg-mobile.css` — la rangée de la main tactile en
+  `overflow: visible`, commentaire de la main mis à jour ;
+- `tests/rpg-landscape.test.js` — douze tests du cycle de vie de l'orientation,
+  dont deux nouveaux : le plein écran tardif verrouille quand même le paysage,
+  un `enter()` répété ne réarme qu'un seul écouteur ;
+- `scripts/rpg-fullscreen-check.mjs` et `scripts/rpg-fullscreen-smoke.jsx` — le
+  contrat mis à jour : la page s'ouvre sans plein écran, la souris ne demande
+  rien au lancement, le doigt demande le natif sur la coque dans le geste ;
+- `scripts/rpg-battle-ui-check.mjs` — l'assertion de la main tactile passée en
+  `overflow: visible` (avec interdiction du `hidden`) et le contrat statique de
+  la barre d'onglets 821–1100 px ;
+- `docs/rpg/mobile-layout.md` — la section « Plein écran et orientation »
+  (lancement au doigt, rattrapage), la puce de la main (aucun recadrage) et la
+  description des tests jsdom mise à jour.
+
+### Vérifications
+
+```bash
+npm run check:rpg            # 597/597 — règles du duel + cycle de vie de l'orientation (12 tests)
+npm run check:rpg-fullscreen # ✓ — jsdom : ouverture dans la page, bouton explicite, lancement au doigt
+npm run check:rpg-ui         # ✓ — les onze volets, dont les assertions statiques de la main et de la barre d'onglets
+npm run build                # le bundle se construit
+```
+
+Un passage de `css-tree` sur `rpg-battle.css` et `rpg-mobile.css` confirme que
+les deux feuilles se parsent sans erreur. Les contrôles Playwright
+(`check:rpg-mobile`, `check:rpg-card-markers`) demandent un navigateur, absent
+de cet environnement : les mesures de la main qui y vivent (largeur ≥ 34 px,
+aucun recouvrement, 8/8 cartes touchées en main pleine, pas de débordement de
+page) sont géométriquement inchangées par l'`overflow: visible` — au repos, la
+main ne déborde jamais sa rangée. À noter : `check:rpg-souk-ui` échoue
+identiquement au point de départ de la branche (`solde-insuffisant` au lieu de
+`rayon-ferme`) — échec préexistant, sans rapport avec ces changements.

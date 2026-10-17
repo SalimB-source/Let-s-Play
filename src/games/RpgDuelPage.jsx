@@ -2905,10 +2905,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   // ── Plein écran ──────────────────────────────────────────────────────────
   // Le Sablier s'ouvre dans la page, sans plein écran natif ni couche immersive
-  // automatique. Le joueur peut choisir le plein écran à tout moment avec le
-  // bouton du menu/de la barre du duel ou la touche F. Le lancement d'une partie
-  // ne déclenche jamais la Fullscreen API ; la session de paysage ne gère que
-  // l'orientation et le pont Android.
+  // automatique : au montage, rien n'est demandé. Le joueur peut choisir le
+  // plein écran à tout moment avec le bouton du menu/de la barre du duel ou la
+  // touche F. Au doigt (téléphone, tablette, application), **lancer une partie**
+  // demande en plus le plein écran natif dans le geste du clic : c'est la seule
+  // condition sous laquelle un navigateur mobile accepte ensuite
+  // `screen.orientation.lock('landscape')` — la partie se couche dans le
+  // paysage. Sur ordinateur, rien d'automatique : la session de paysage ne
+  // verrouille jamais l'orientation.
 
   // « F » bascule le plein écran, sur tous les écrans du jeu. Ni Ctrl/Cmd+F (la
   // recherche du navigateur), ni Alt+F, ni une touche maintenue, ni un « f »
@@ -2992,9 +2996,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
   });
 
-  // Lancer (ou reprendre) une partie ne demande pas le plein écran. Le bouton
-  // « Activer le paysage » ne change que l'orientation de l'appareil.
+  // Lancer (ou reprendre) une partie : au doigt seulement, le plein écran natif
+  // part dans le geste du clic (le navigateur l'exige), puis la session de
+  // paysage verrouille l'orientation — et le rejoue à chaque entrée en plein
+  // écran tant que le duel est ouvert. Le bouton « Activer le paysage » de
+  // l'invite de rotation repasse par ici : il redemande les deux.
   const demanderPleinEcranEtPaysage = () => {
+    const veutPaysage = Boolean(window.LetsPlayAndroid)
+      || Boolean(window.matchMedia?.('(pointer: coarse)').matches);
+    if (veutPaysage) entrerPleinEcran();
     landscapeRef.current?.enter({ fullscreen: false });
   };
   const reprendrePartie = () => {
