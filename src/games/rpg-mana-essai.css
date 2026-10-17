@@ -583,3 +583,16 @@
   top: calc(100% + 3px);
   bottom: auto;
 }
+/* La jauge du joueur, sous sa plaque, s'épaissit : plus de hauteur et des
+   losanges plus grands, pour se lire d'un coup d'œil au doigt. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__bar {
+  padding: 7px 8px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__slot {
+  max-width: 22px;
+  font-size: 15px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__slot .rpg-emblem {
+  width: 16px;
+  height: 16px;
+}
