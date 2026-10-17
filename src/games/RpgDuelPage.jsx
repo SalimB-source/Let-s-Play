@@ -103,6 +103,7 @@ import {
 } from './rpgDeckFilter.js';
 import {
   arriveeCiblePortee,
+  rpgCaseDeCreature,
   rpgCibleAuto,
   rpgChoisirAttaquants,
   rpgContreJouable,
@@ -424,7 +425,11 @@ function mesurerDestinationVol(table, kind, from, carteId) {
   // plateau. On vise la case elle-même (la cinquième reste toujours visible)
   // au lieu de répartir les cartes comme dans une rangée flexible.
   const slots = [...zone.querySelectorAll('.rpg-creature-slot')];
-  const slotLibre = slots[cards.length];
+  // La carte vise la case que le moteur va lui donner : la plus basse encore
+  // libre. Une case vidée par une mort reste vide jusqu'à la prochaine pose —
+  // c'est elle qui attire la carte, et non la colonne suivant le compte.
+  const slotLibre = slots.find((slot) => slot.dataset.creatureSlotOccupe === 'false')
+    ?? slots[cards.length];
   const slotRect = slotLibre?.getBoundingClientRect();
   if (slotRect && (slotRect.width || slotLibre.offsetWidth) && (slotRect.height || slotLibre.offsetHeight)) {
     const slotWidth = slotRect.width || slotLibre.offsetWidth;
@@ -560,11 +565,22 @@ export function FluxManaTrack({ camp, cote }) {
   );
 }
 
+/** Les cases prises d'un camp sur le plateau d'essai. Une créature garde **sa**
+ * case du jour de son arrivée jusqu'à son départ : une case libérée par une mort
+ * reste vide — les voisines ne glissent pas pour la prendre — jusqu'à ce qu'une
+ * nouvelle créature l'occupe. */
+export function casesPrisesDuChamp(camp) {
+  return new Set((camp?.creatures ?? [])
+    .map((entite, index) => rpgCaseDeCreature(entite, index))
+    .filter((numero) => numero !== null));
+}
+
 /** Les cinq emplacements de créatures du mode sans terrains, dessinés sous
  * la rangée de chaque camp : une case par créature jouable, pleine quand elle
  * est occupée, en pointillés quand elle attend encore sa créature. */
 export function CreatureSlots({ camp, cote }) {
-  const occupees = Math.min(RPG_MANA_ESSAI_CHAMP_MAX, camp.creatures?.length ?? 0);
+  const prises = casesPrisesDuChamp(camp);
+  const occupees = Math.min(RPG_MANA_ESSAI_CHAMP_MAX, prises.size);
   return (
     <div
       className={`rpg-creature-slots rpg-creature-slots--${cote}`}
@@ -573,17 +589,20 @@ export function CreatureSlots({ camp, cote }) {
       aria-label={`Emplacements de créatures ${cote === 'joueur' ? 'de votre camp' : 'du sorcier'} : ${occupees} sur ${RPG_MANA_ESSAI_CHAMP_MAX} occupés`}
       aria-hidden="false"
     >
-      {Array.from({ length: RPG_MANA_ESSAI_CHAMP_MAX }, (_, index) => (
-        <span
-          key={index}
-          className={`rpg-creature-slot${index < occupees ? ' is-occupied' : ' is-empty'}`}
-          data-creature-slot={index + 1}
-          data-creature-slot-occupe={index < occupees ? 'true' : 'false'}
-          aria-hidden="true"
-        >
-          <span className="rpg-creature-slot__numero">{index + 1}</span>
-        </span>
-      ))}
+      {Array.from({ length: RPG_MANA_ESSAI_CHAMP_MAX }, (_, index) => {
+        const prise = prises.has(index + 1);
+        return (
+          <span
+            key={index}
+            className={`rpg-creature-slot${prise ? ' is-occupied' : ' is-empty'}`}
+            data-creature-slot={index + 1}
+            data-creature-slot-occupe={prise ? 'true' : 'false'}
+            aria-hidden="true"
+          >
+            <span className="rpg-creature-slot__numero">{index + 1}</span>
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -939,11 +958,11 @@ const BLOCKER_DRAG_TYPE = 'application/x-bab-el-blocker';
  *  décalée vers le haut et la droite, comme une carte posée dessous. La pile
  *  ne change rien au jeu — la créature reste l'unique cible et la seule carte
  *  qui agit ; seul le bord de l'arme dit qu'elle est équipée. */
-function PileArmee({ armes = [], children }) {
+function PileArmee({ armes = [], style = null, children }) {
   const arme = cardById(armes[0]);
   if (!arme) return children;
   return (
-    <span className="rpg-card-stack rpg-card-stack--arme">
+    <span className="rpg-card-stack rpg-card-stack--arme" style={style ?? undefined}>
       <span className="rpg-card-stack__arme" aria-hidden="true" style={cardFrameStyle(arme)}>
         <img src={cardArt(arme)} alt="" />
       </span>
@@ -979,6 +998,11 @@ export function TableCard({
   tutorialTarget,
   onHoverCard,
   onLeaveHoverCard,
+  // Mode sans terrains : la case du plateau (1 à 5) où la carte se tient, et la
+  // colonne de la rangée qui la dessine. Une créature garde sa case — ses
+  // voisines ne glissent pas quand elle meurt.
+  emplacement = null,
+  style = null,
 }) {
   const carte = cardById(entite.carteId);
   const hybride = cardColors(carte).length > 1;
@@ -1103,10 +1127,11 @@ export function TableCard({
         actionFx?.type === 'block' ? 'fx-block' : '',
         actionFx?.type === 'unblock' ? 'fx-unblock' : '',
       ].filter(Boolean).join(' ')}
-      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(carte) }}
+      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(carte), ...style }}
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}
       data-card-id={carte?.id}
+      data-emplacement={emplacement ?? undefined}
       data-armes={armes.length ? armes.join(' ') : undefined}
       data-tutorial-target={tutorialTarget}
       draggable={canDragBlocker}
@@ -6269,6 +6294,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const campEnnemi = champEnPiles(duel.sorcier.creatures);
   const campJoueur = champEnPiles(duel.joueur.creatures);
+  // Mode sans terrains : la carte posée se tient dans **sa** case du plateau,
+  // numérotée de 1 à 5. Le moteur attribue la case à l'entrée en jeu
+  // (`entrerSurLeChamp`) et ne la reprend qu'au départ de la créature : une
+  // mort laisse donc sa case vide, et les voisines gardent la leur au lieu de
+  // glisser pour la prendre. La case s'écrit dans la grille de la rangée, qui
+  // compte exactement cinq colonnes — les mêmes que celles des cases dessinées.
+  const caseDuPlateau = (cote, entite) => {
+    if (duel.modeMana !== RPG_MODE_MANA_ESSAI) return null;
+    const champ = (cote === 'joueur' ? duel.joueur : duel.sorcier).creatures;
+    return rpgCaseDeCreature(entite, champ.findIndex((candidate) => candidate.id === entite.id));
+  };
+  const colonneDeCase = (cote, entite) => {
+    const numero = caseDuPlateau(cote, entite);
+    return numero ? { gridColumn: numero } : undefined;
+  };
 
   return (
     <div
@@ -6575,13 +6615,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       onAssignBlocker={assignerBloqueur}
                       actionFx={animationsEntites[entite.id]}
                       tilt={TILTS[i % TILTS.length]}
+                      emplacement={caseDuPlateau('ennemi', entite)}
+                      style={colonneDeCase('ennemi', entite)}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={masquerApercuSurvol}
                       onClick={() => cliquerCreatureEnnemie(entite)}
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
-                    return <PileArmee key={entite.id} armes={armesPortees(entite)}>{carte}</PileArmee>;
+                    return (
+                      <PileArmee key={entite.id} armes={armesPortees(entite)} style={colonneDeCase('ennemi', entite)}>
+                        {carte}
+                      </PileArmee>
+                    );
                   }
                   return (
                     <span
@@ -6658,13 +6704,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         ? 'played-creature'
                         : undefined}
                       tilt={TILTS[(i + 2) % TILTS.length]}
+                      emplacement={caseDuPlateau('joueur', entite)}
+                      style={colonneDeCase('joueur', entite)}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={masquerApercuSurvol}
                       onClick={() => cliquerCreatureJoueur(entite)}
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
-                    return <PileArmee key={entite.id} armes={armesPortees(entite)}>{carte}</PileArmee>;
+                    return (
+                      <PileArmee key={entite.id} armes={armesPortees(entite)} style={colonneDeCase('joueur', entite)}>
+                        {carte}
+                      </PileArmee>
+                    );
                   }
                   return (
                     <span
