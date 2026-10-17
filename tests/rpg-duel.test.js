@@ -168,7 +168,7 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
   assert.deepEqual(cavalier.arrivee, { type: 'combat', cible: 'creature' });
   assert.match(cavalier.text, /se bat contre une créature adverse ciblée/i);
   assert.equal(RPG_DUEL_CARDS.some((carte) => carte.id === cavalier.id && carte.kind === 'creature'), true);
-  assert.equal(RPG_DECK_JOUEUR_BASE.filter((id) => id === cavalier.id).length, 3,
+  assert.equal(RPG_DECK_JOUEUR_BASE.filter((id) => id === cavalier.id).length, 2,
     'le deck Veilleurs du Désert aligne le Cavalier à son maximum légal');
   assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE).ok, true, 'le deck conserve ses 40 cartes et sa limite d’exemplaires');
   assert.equal(new Set(RPG_DUEL_CARDS.map((carte) => carte.id)).size, RPG_DUEL_CARDS.length,
@@ -487,8 +487,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
   // dédiée, variante du Glacier comprise (aucune ne partage le fichier d’une autre).
   const illustrationsNeige = RPG_DECK_NEIGE_BASE.filter((id, index, deck) => deck.indexOf(id) === index);
-  assert.equal(illustrationsNeige.length, 13,
-    'le deck Neige réunit les treize cartes distinctes retenues par sa recette');
+  assert.equal(illustrationsNeige.length, 15,
+    'le deck Neige réunit les quinze cartes distinctes retenues par sa recette');
   for (const carteId of illustrationsNeige) {
     assert.equal(cardArtId(carteId), carteId,
       `${carteId} affiche sa propre illustration Neige`);
@@ -2682,10 +2682,10 @@ test('le Serment des Neuf Hivers est un deck mono-Neige : 17 terrains en deux ar
   // Les raretés sont celles de Magic : seule la mythique est unique ; une rare
   // du Nord (la Valkyrie des glaces) peut aller à trois comme toute rare.
   assert.deepEqual(Object.keys(CARD_RARITIES), ['commune', 'inhabituelle', 'rare', 'mythique'], 'pas de rareté « épique »');
-  assert.equal(cardCopyLimit(cardById('valkyrie-des-glaces')), 3);
+  assert.equal(cardCopyLimit(cardById('valkyrie-des-glaces')), 2);
   assert.equal(cardCopyLimit(cardById('maitre-du-marteau')), 1);
   assert.equal(cardCopyLimit(cardById('glacier')), Infinity, 'les terrains restent illimités');
-  assert.equal(cardCopyLimit(cardById('loup-des-neiges')), 3);
+  assert.equal(cardCopyLimit(cardById('loup-des-neiges')), 2);
   const mythiqueEnDouble = [...RPG_DECK_NEIGE_BASE];
   const placeDuLoup = mythiqueEnDouble.lastIndexOf('loup-des-neiges');
   mythiqueEnDouble[placeDuLoup] = 'maitre-du-marteau';

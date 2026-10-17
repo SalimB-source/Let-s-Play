@@ -221,7 +221,7 @@ test('fusionnerCollections est une union monotone et sans doublon', () => {
 });
 
 test('exemplairesPossedables suit les quotas de rareté et la possession', () => {
-  assert.equal(exemplairesPossedables(COLLECTION_DEPART, 'chien-du-guet'), 3, 'commune : trois exemplaires');
+  assert.equal(exemplairesPossedables(COLLECTION_DEPART, 'chien-du-guet'), 2, 'commune : deux exemplaires');
   assert.equal(exemplairesPossedables(COLLECTION_DEPART, 'kraken'), 0, 'verrouillée : rien');
   const avecKraken = fusionnerCollections(COLLECTION_DEPART, ['kraken']);
   assert.equal(exemplairesPossedables(avecKraken, 'kraken'), 1, 'mythique : un exemplaire');

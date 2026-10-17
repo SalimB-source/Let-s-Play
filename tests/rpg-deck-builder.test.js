@@ -62,10 +62,10 @@ function deckValide(nom = 'Deck d\'essai', element = 'sable', id = nouvelIdDeckM
   const communes = COLLECTION.filter((idCarte) => {
     const carte = cardById(idCarte);
     return carte && carte.kind !== 'terrain' && carte.element === element && carte.rarity === 'commune';
-  }).slice(0, 8);
+  }).slice(0, 12);
   const cardIds = [...Array(16).fill(terrains)];
   for (const idCarte of communes) {
-    if (cardIds.length < 40) cardIds.push(...Array(Math.min(3, 40 - cardIds.length)).fill(idCarte));
+    if (cardIds.length < 40) cardIds.push(...Array(Math.min(2, 40 - cardIds.length)).fill(idCarte));
   }
   return normaliserDeckMaison({ id, nom, cardIds });
 }
