@@ -138,7 +138,7 @@ const surfaces = [
 for (const [source, surface, attendu] of surfaces) {
   assert.ok(source.includes(attendu), `${surface} prend le motif de son type`);
 }
-assert.equal((duel.match(/cardMotifClass\(/g) ?? []).length, 10, 'les dix faces du duel portent le motif');
+assert.equal((duel.match(/cardMotifClass\(/g) ?? []).length, 11, 'les onze faces du duel portent le motif (dont la carte déchirée du sacrifice)');
 assert.equal((duel.match(/cardMotifClass\(carte\)/g) ?? []).length, 8, 'huit d’entre elles suivent la carte affichée');
 
 console.log('✓ Le cadre des magies rapides taille un losange, celui des sorcelleries grave l’étincelle de son sigle, celui des terrains ses strates : six images distinctes, les mythiques gardent leur zellige, les armes leur guilloché, et rien ne change d’épaisseur ni de couleur.');

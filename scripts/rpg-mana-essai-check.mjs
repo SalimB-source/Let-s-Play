@@ -99,4 +99,29 @@ assert.match(page, /const noterEvenementDuel = \(evenement\) => \{\s*if \(duelRe
   'toutes les actions du duel d’essai restent sans événement économique');
 assert.match(page, /onClick=\{\(\) => nouvellePartie\(duel\.modeMana === RPG_MODE_MANA_ESSAI \? \{ etageId: null, essaiManaId: duel\.essaiDeckId \} : \{\}\)\}/,
   'rejouer une victoire relance bien le mode essai et pas le duel historique');
+// Cinq emplacements de créatures dessinés de chaque côté du plateau.
+assert.match(styles, /\.rpg-creature-slots\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/s,
+  'les emplacements de créatures forment une rangée de cinq cases');
+assert.match(styles, /\.rpg-creature-slot\s*\{[^}]*border:\s*2px dashed/s,
+  'les emplacements libres sont dessinés en pointillés');
+assert.match(styles, /\.rpg-creature-slot\.is-occupied\s*\{[^}]*border-style:\s*solid;/s,
+  'les emplacements occupés se ferment en trait plein');
+assert.match(page, /<CreatureSlots camp=\{duel\.sorcier\} cote="ennemi" \/>/,
+  'le camp du sorcier dessine ses cinq emplacements');
+assert.match(page, /<CreatureSlots camp=\{duel\.joueur\} cote="joueur" \/>/,
+  'le camp du joueur dessine ses cinq emplacements');
+// Plateau plein : fenêtre du sacrifice (Sacrifier / Annuler), puis déchirement.
+assert.match(page, /Sacrifier une créature \?/, 'la sixième créature ouvre la fenêtre du sacrifice');
+assert.match(page, /rpg-sacrifice-choix__sacrifier/, 'le choix « Sacrifier » est proposé');
+assert.match(page, /rpg-sacrifice-choix__annuler/, 'le choix « Annuler » est proposé');
+assert.match(page, /sacrificeId/, 'la pose transmet la créature sacrifiée au moteur');
+assert.match(styles, /\.rpg-card-tear-fx__half--gauche\s*\{[^}]*clip-path:\s*polygon/s,
+  'la moitié gauche de la carte sacrifiée est rognée en dents de scie');
+assert.match(styles, /@keyframes rpg-tear-left\s*\{/, 'la moitié gauche s’écarte en pivotant');
+assert.match(styles, /@keyframes rpg-tear-right\s*\{/, 'la moitié droite s’écarte en pivotant');
+assert.match(styles, /\.rpg-card\.is-sacrifice-target\s*\{[^}]*animation:\s*rpg-sacrifice-pulse/s,
+  'les créatures sacrificiables pulsent sur la table');
+// Main de départ de trois cartes et défausse de fin de tour au-delà de cinq.
+assert.match(page, /rpgPreparerDefausseFinDeTour\(duel, 'joueur'\)/,
+  'la fin du tour ouvre la défausse obligatoire au-delà de cinq cartes');
 console.log('Banc d’essai mana : interface, séquence du mulligan et isolation économique vérifiées.');

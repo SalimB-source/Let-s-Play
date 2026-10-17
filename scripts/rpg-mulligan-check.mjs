@@ -60,8 +60,8 @@ assert.ok(mulliganPanel.length > 400 && mulliganPanel.includes('VoletMulligan'),
 // ── Le volet est une étape du jeu, pas une couche décorative ────────────────
 assert.match(battlePage, /setMulligan\(!modeTutoriel && rpgPeutMulligan\(duelRef\.current, 'joueur'\)[\s\S]*?\{ etape: 'choix', choix: new Set\(\)[\s\S]*?: null\)/,
   'les duels libres ouvrent le mulligan sur la main de départ, mais le tutoriel garde sa main guidée');
-assert.match(battlePage, /inert=\{viewport\.portrait \|\| mulliganOuvert \|\| choixManaEssaiOuvert \? true : undefined\}/,
-  'la table est inerte tant que le mulligan ou le choix du mana d’essai n’est pas validé');
+assert.match(battlePage, /inert=\{viewport\.portrait \|\| mulliganOuvert \|\| choixManaEssaiOuvert \|\| sacrificeDemande \? true : undefined\}/,
+  'la table est inerte tant que le mulligan, le choix du mana d’essai ou la fenêtre du sacrifice n’est pas validé');
 assert.match(battlePage, /const mulliganOuvert = Boolean\(mulligan\);/,
   'une seule source de vérité pour « le mulligan tient la table »');
 assert.match(battlePage, /const peutJouerCarte = \(carte\) => \{[\s\S]{0,240}?if \(mulliganOuvert\) return false;/,

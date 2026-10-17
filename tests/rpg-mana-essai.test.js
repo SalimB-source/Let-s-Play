@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   RPG_MANA_ESSAI_CHAMP_MAX,
   RPG_MANA_ESSAI_DECKS,
+  RPG_MANA_ESSAI_MAIN_DEPART,
+  RPG_MANA_ESSAI_MAIN_MAX,
   RPG_MANA_ESSAI_MAX,
   RPG_MANA_ESSAI_TAILLE,
   RPG_MODE_MANA_ESSAI,
@@ -12,8 +14,10 @@ import {
 import { cardById, cardColorCost, rpgValiderDeck, RPG_DECK_JOUEUR_BASE, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import {
   rpgChoisirCouleurMana,
+  rpgDefausserCarte,
   rpgDemarrerManaEssai,
   rpgEngagerTerrain,
+  rpgExcesMainFinDeTour,
   rpgFinDeTour,
   rpgJouerCreature,
   rpgLancerMagie,
@@ -23,6 +27,8 @@ import {
   rpgOuvrirFinDeTour,
   rpgPeutPayer,
   rpgPoserTerrain,
+  rpgPreparerDefausseFinDeTour,
+  rpgSacrifierCreature,
   rpgVainqueur,
 } from '../src/games/rpgDuel.js';
 import { choisirCouleurManaIA, choisirMulliganIA } from '../src/games/rpgAI.js';
@@ -69,9 +75,10 @@ test('trois decks de 30 cartes sans terrain et hors économie ; le format 40 car
 
 test('mana du tour 1 uniquement après les deux mulligans ; auto en mono, choix explicite en multi', () => {
   const duel = nouveau(mono);
-  assert.equal(duel.joueur.main.length, 5);
-  assert.equal(duel.sorcier.main.length, 5);
-  assert.equal(duel.joueur.deck.length, 25);
+  assert.equal(RPG_MANA_ESSAI_MAIN_DEPART, 3);
+  assert.equal(duel.joueur.main.length, 3, 'les deux joueurs commencent avec trois cartes');
+  assert.equal(duel.sorcier.main.length, 3);
+  assert.equal(duel.joueur.deck.length, 27);
   assert.equal(total(duel.joueur), 0);
   assert.deepEqual(duel.joueur.manaSources, [], 'dix emplacements éteints avant le premier tour');
   assert.equal(rpgDemarrerManaEssai(duel).ok, false);
@@ -84,12 +91,12 @@ test('mana du tour 1 uniquement après les deux mulligans ; auto en mono, choix 
   assert.equal(total(duel.joueur), 0);
   assert.equal(rpgDemarrerManaEssai(duel).ok, false, 'le sorcier doit aussi mulliganer');
   assert.equal(rpgMulliganSorcier(duel, rng).ok, true);
-  assert.equal(duel.joueur.main.length, 5);
+  assert.equal(duel.joueur.main.length, 3, 'le mulligan conserve la main de trois cartes');
   assert.equal(rpgDemarrerManaEssai(duel).ok, true);
   assert.deepEqual(duel.joueur.manaMax, { braise: 0, eau: 0, sable: 1, neige: 0 });
   assert.deepEqual(duel.joueur.manaSources, ['sable']);
   assert.equal(duel.joueur.mana.sable, 1);
-  assert.equal(duel.joueur.deck.length, 25, 'aucune pioche de sixième carte au tour 1');
+  assert.equal(duel.joueur.deck.length, 27, 'aucune pioche supplémentaire au tour 1');
   assert.equal(duel.joueur.manaChoixEnAttente, false);
   assert.equal(rpgDemarrerManaEssai(duel).ok, false, 'le démarrage ne donne pas de second mana');
 
@@ -260,7 +267,7 @@ test('carte chère jouable à huit manas (dont son pip Eau), pas avant', () => {
 });
 
 test('paquet vide : fatigue croissante seulement pour la pioche de tour de l’essai', () => {
-  const mini = { ...mono, cardIds: Array(5).fill('chien-du-guet') };
+  const mini = { ...mono, cardIds: Array(3).fill('chien-du-guet') };
   const duel = nouveau(mini, mini);
   mulligans(duel);
   rpgDemarrerManaEssai(duel);
@@ -289,11 +296,84 @@ test('paquet vide : fatigue croissante seulement pour la pioche de tour de l’e
   assert.equal(classique.sorcier.pv, 25);
 });
 
+test('plateau plein : cinq créatures au plus, la sixième exige un sacrifice qui libère sa place', () => {
+  assert.equal(RPG_MANA_ESSAI_CHAMP_MAX, 5);
+  const duel = nouveau(mono);
+  mulligans(duel);
+  rpgDemarrerManaEssai(duel);
+  duel.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+  duel.joueur.main = Array(6).fill('chien-du-guet');
+  for (let i = 0; i < RPG_MANA_ESSAI_CHAMP_MAX; i += 1) {
+    assert.equal(rpgJouerCreature(duel, 'joueur', 'chien-du-guet').ok, true, `créature ${i + 1}`);
+  }
+  assert.equal(duel.joueur.creatures.length, 5);
+  const manaAvant = duel.joueur.mana.sable;
+  const refusee = rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  assert.equal(refusee.ok, false);
+  assert.equal(refusee.raison, 'champ-plein', 'sans sacrifice désigné, la sixième créature est refusée');
+  assert.equal(duel.joueur.main.filter((id) => id === 'chien-du-guet').length, 1, 'la carte refusée reste en main');
+  assert.equal(duel.joueur.mana.sable, manaAvant, 'le refus ne paie aucun mana');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { sacrificeId: 'absente' }).raison, 'sacrifice');
+  const sacrifiee = duel.joueur.creatures[2];
+  const posee = rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { sacrificeId: sacrifiee.id });
+  assert.equal(posee.ok, true);
+  assert.equal(posee.sacrificeId, sacrifiee.id);
+  assert.equal(duel.joueur.creatures.length, 5, 'le plateau reste à cinq créatures');
+  assert.equal(duel.joueur.creatures[2].id, posee.entite.id, 'la nouvelle créature prend l’emplacement libéré');
+  assert.ok(duel.joueur.cimetiere.includes(sacrifiee.carteId), 'la créature sacrifiée rejoint le cimetière');
+  assert.equal(rpgSacrifierCreature(duel, 'joueur', duel.joueur.creatures[0].id).ok, true);
+  assert.equal(duel.joueur.creatures.length, 4);
+
+  const classique = rpgNouveauDuel({ joueurDeck: Array(12).fill('chien-du-guet'), sorcierDeck: [], rng });
+  assert.equal(classique.joueur.main.length, 5, 'le mode classique garde sa main de départ de cinq cartes');
+  classique.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+  classique.joueur.main = Array(6).fill('chien-du-guet');
+  for (let i = 0; i < 6; i += 1) assert.equal(rpgJouerCreature(classique, 'joueur', 'chien-du-guet').ok, true);
+  assert.equal(classique.joueur.creatures.length, 6, 'aucun plafond de créatures hors du mode sans terrains');
+});
+
+test('fin de tour : plus de cinq cartes en main oblige à défausser jusqu’à cinq', () => {
+  assert.equal(RPG_MANA_ESSAI_MAIN_MAX, 5);
+  const duel = nouveau(mono);
+  mulligans(duel);
+  rpgDemarrerManaEssai(duel);
+  duel.joueur.main.push('chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet');
+  assert.equal(duel.joueur.main.length, 7);
+  assert.equal(rpgExcesMainFinDeTour(duel, 'joueur'), 2);
+  assert.equal(rpgPreparerDefausseFinDeTour(duel, 'joueur'), 2);
+  assert.equal(duel.defausseEnAttente.motif, 'fin-de-tour');
+  // Le joueur choisit ses défausses, une par une, avant que le tour se ferme.
+  assert.equal(rpgDefausserCarte(duel, 'joueur', 0).ok, true);
+  assert.equal(duel.defausseEnAttente.restant, 1);
+  assert.equal(rpgDefausserCarte(duel, 'joueur', 0).ok, true);
+  assert.equal(duel.defausseEnAttente, null);
+  assert.equal(duel.joueur.main.length, 5);
+
+  // Sans choix exprimé, la fermeture du tour défausse d'office l'excédent —
+  // pour le joueur comme, à son tour, pour le sorcier.
+  duel.joueur.main.push('chien-du-guet', 'chien-du-guet');
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'sorcier');
+  assert.equal(duel.joueur.main.length, 5, 'la main du joueur est redescendue à cinq');
+  duel.sorcier.main.push('chien-du-guet', 'chien-du-guet', 'chien-du-guet');
+  assert.ok(duel.sorcier.main.length > 5);
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'joueur');
+  assert.equal(duel.sorcier.main.length, 5, 'le sorcier défausse aussi son excédent');
+
+  const classique = rpgNouveauDuel({ joueurDeck: Array(12).fill('chien-du-guet'), sorcierDeck: [], rng });
+  classique.joueur.main.push('chien-du-guet', 'chien-du-guet');
+  assert.equal(rpgExcesMainFinDeTour(classique, 'joueur'), 0, 'pas de plafond de main en mode classique');
+  assert.equal(rpgPreparerDefausseFinDeTour(classique, 'joueur'), 0);
+  rpgFinDeTour(classique);
+  assert.equal(classique.joueur.main.length, 7, 'la main classique n’est pas défaussée en fin de tour');
+});
+
 test('IA : choix de couleur d’après les pips en main et mulligan sans rechercher de terrain', () => {
   const duel = nouveau(mono, tri);
-  duel.sorcier.main = ['eau-de-la-source', 'ressac', 'sonneur-fele', 'djinn-de-foudre', 'jormungandr'];
+  duel.sorcier.main = ['eau-de-la-source', 'ressac', 'jormungandr'];
   assert.equal(choisirCouleurManaIA(duel), 'eau');
-  assert.deepEqual(choisirMulliganIA(duel), [4], 'la grosse carte repart, pas toutes les cartes sans terrain');
+  assert.deepEqual(choisirMulliganIA(duel), [2], 'la grosse carte repart, pas toutes les cartes sans terrain');
   mulligans(duel);
   rpgDemarrerManaEssai(duel);
   rpgFinDeTour(duel);

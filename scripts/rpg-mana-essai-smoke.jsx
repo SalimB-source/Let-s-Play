@@ -60,7 +60,7 @@ export async function checkManaEssaiUi(assert) {
     await click(boutons[index]);
     const partie = q('[data-scene="duel"]');
     assert.equal(partie?.getAttribute('data-mode-mana'), 'essai');
-    assert.equal(q('.rpg-mulligan__cards')?.children.length, 5, 'mulligan de cinq cartes');
+    assert.equal(q('.rpg-mulligan__cards')?.children.length, 3, 'mulligan de trois cartes : la nouvelle main de départ');
     assert.equal(q('.card-table')?.hasAttribute('inert'), true, 'la table attend le mulligan');
     assert.equal(q('.rpg-flux-choix'), null, 'le choix ne précède pas le mulligan');
     assert.equal(qa('.rpg-terrain').length, 0, 'aucun terrain posé');
@@ -70,7 +70,15 @@ export async function checkManaEssaiUi(assert) {
       assert.equal(orbes.length, 10, 'les dix orbes existent dès l’ouverture');
       assert.ok(orbes.every((orb) => orb.dataset.manaEtat === 'vide'), 'avant le premier tour, elles sont toutes éteintes');
     }
-    assert.equal(q('.rpg-card-piles--player .rpg-card-pile--deck b')?.textContent, '25', '30 cartes, moins la main de départ');
+    assert.equal(q('.rpg-card-piles--player .rpg-card-pile--deck b')?.textContent, '27', '30 cartes, moins la main de départ de trois cartes');
+    // Les cinq emplacements de créatures sont dessinés des deux côtés.
+    for (const cote of ['ennemi', 'joueur']) {
+      const emplacements = qa(`.rpg-creature-slots--${cote} .rpg-creature-slot`);
+      assert.equal(emplacements.length, 5, `cinq emplacements de créatures côté ${cote}`);
+      assert.deepEqual(emplacements.map((slot) => slot.dataset.creatureSlot), ['1', '2', '3', '4', '5']);
+      assert.ok(emplacements.every((slot) => slot.dataset.creatureSlotOccupe === 'false'), 'plateau vide : toutes les cases attendent');
+      assert.equal(q(`.rpg-creature-slots--${cote}`)?.dataset.creatureSlots, '5');
+    }
   };
   try {
     await verifierPalette();
@@ -123,18 +131,31 @@ export async function checkManaEssaiUi(assert) {
     await click(q('.rpg-mulligan__commencer'));
     assert.equal(qa('.rpg-flux-choix__option').length, 2);
     await click(q('.rpg-flux-choix__option--braise'));
+    // Main de départ de trois cartes : l'Ashigaru à 1 Braise n'y est pas encore.
+    // Il arrive avec la pioche du tour 2 — le tour 1 se termine sans le jouer,
+    // le sorcier n'a rien à annoncer avec son unique mana, et le second mana
+    // (Sable) laisse le Braise du tour 1 payer la créature.
+    assert.equal(q('.rpg-hand__card[data-card-id="ashigaru-des-braises"]'), null, 'pas d’Ashigaru dans la main de trois cartes');
+    await click(q('.rpg-btn--endturn'));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 1600)); });
+    assert.equal(qa('.rpg-flux-choix__option').length, 2, 'le tour 2 rouvre le choix du nouveau mana');
+    await click(q('.rpg-flux-choix__option--sable'));
     const ashigaru = q('.rpg-hand__card[data-card-id="ashigaru-des-braises"]');
-    assert.ok(ashigaru, 'une créature à 1 Braise est restée en main');
+    assert.ok(ashigaru, 'la pioche du tour 2 a apporté la créature à 1 Braise');
     assert.equal(ashigaru.dataset.jouable, 'true', 'le mana Braise peut la payer');
     await click(ashigaru);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 850)); });
-    assert.equal(q('.rpg-flux-track--joueur')?.dataset.manaDisponible, '0', 'la carte dépense le nouveau mana');
-    assert.equal(q('.rpg-flux-track--joueur')?.dataset.manaCapacite, '1', 'la source permanente reste acquise');
+    assert.equal(q('.rpg-flux-track--joueur')?.dataset.manaDisponible, '1', 'la carte dépense un des deux manas');
+    assert.equal(q('.rpg-flux-track--joueur')?.dataset.manaCapacite, '2', 'les deux sources permanentes restent acquises');
     const orbeDepensee = q('.rpg-flux-track--joueur .rpg-flux-track__slot:first-child');
     assert.equal(orbeDepensee?.dataset.manaEtat, 'depense', 'l’icône s’assombrit après paiement');
     assert.ok(orbeDepensee?.querySelector('svg.rpg-emblem--braise'), 'la flamme reste visible même dépensée');
     assert.ok(orbeDepensee?.classList.contains('rpg-flux-track__slot--braise'), 'elle garde sa couleur Braise');
-    assert.equal(qa('.rpg-flux-track--joueur .rpg-flux-track__slot.is-empty').length, 9);
+    assert.equal(qa('.rpg-flux-track--joueur .rpg-flux-track__slot.is-empty').length, 8);
+    // La créature posée occupe le premier des cinq emplacements dessinés.
+    assert.equal(q('.rpg-creature-slots--joueur')?.dataset.creatureSlotsOccupes, '1', 'un emplacement de créature occupé côté joueur');
+    assert.equal(q('.rpg-creature-slots--joueur .rpg-creature-slot')?.dataset.creatureSlotOccupe, 'true');
+    assert.equal(q('.rpg-creature-slots--ennemi')?.dataset.creatureSlotsOccupes, '0');
     assert.deepEqual(etatDurable(), origine, 'jouer une carte ne progresse ni les quêtes ni la bourse');
 
     // Mono : l'attribution du premier mana est automatique après le mulligan.
