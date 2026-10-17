@@ -1547,23 +1547,13 @@ function ApercuCarteCatalogue({ carte, armes = [], surface = 'CATALOGUE', onFerm
    la retoucher la reprend : elles repartent dans le paquet, qui est battu, et
    le camp pioche autant de cartes qu'il en a écartées. Un seul échange, et la
    main ne diminue jamais : c'est une décision, pas une punition. */
-function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBasculer, onSurvol, onQuitterSurvol }) {
+function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
-  // Le mulligan montre la même main que le duel : un sort y reçoit donc le
-  // sceau de sa famille, au-dessus de sa ligne de type — qui prend sa teinte.
-  const familleSort = magieFamille(carte);
   return (
     <button
       type="button"
       onClick={() => onBasculer(index)}
-      // Le survol ouvre l'aperçu rapide ; le doigt garde l'appui long d'une
-      // seconde, que la page arme depuis la table (`demarrerAppuiLongCarte`) :
-      // la carte porte un `data-card-id`, comme toutes celles du jeu.
-      onMouseEnter={survol ? (event) => onSurvol(carte, event) : undefined}
-      onMouseLeave={survol ? onQuitterSurvol : undefined}
-      onFocus={survol ? (event) => onSurvol(carte, event) : undefined}
-      onBlur={survol ? onQuitterSurvol : undefined}
       className={[
         'rpg-mulligan__card',
         `rpg-mulligan__card--type-${cardFrameType(carte)}`,
@@ -1582,31 +1572,20 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
-      {/* Le bas de la carte : la ligne de type pour les terrains et les sorts —
-          pour une créature, elle n'apprendrait rien, la face du jeu s'en passe —
-          puis les deux plaques du jeu : l'épée d'or à gauche, le bouclier
-          d'acier à droite, chacune sur son bord. */}
-      <span className="rpg-mulligan__bas">
-        {!estCreature && (
-          <>
-            <SortSceau carte={carte} className="rpg-mulligan__sceau" />
-            <span className={`rpg-mulligan__type${familleSort ? ` rpg-mulligan__type--${familleSort}` : ''}`} aria-hidden="true">{cardFaceTypeLine(carte)}</span>
-          </>
-        )}
-        {estCreature && (
-          <span className="rpg-mulligan__stats" aria-hidden="true">
-            <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
-            <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
-          </span>
-        )}
-      </span>
+      <SortSceau carte={carte} className="rpg-mulligan__sceau rpg-mulligan__sort" />
+      {estCreature && (
+        <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
+          <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
+        </footer>
+      )}
     </button>
   );
 }
 
 function VoletMulligan({
-  main, etape, choix, nouveau, bilan, apercu, survol, panelRef = null,
-  onBasculer, onValider, onAnnulerSelection, onContinuer, onSurvol, onQuitterSurvol,
+  main, etape, choix, nouveau, bilan,
+  onBasculer, onValider, onAnnulerSelection, onContinuer,
 }) {
   const nombre = choix.size;
   const enChoix = etape === 'choix';
@@ -1624,7 +1603,7 @@ function VoletMulligan({
           <span className="rpg-mulligan__eyebrow">Mulligan · main de départ</span>
           <h2>{enChoix ? 'Gardez votre main, ou changez des cartes' : (nouveau.length ? 'Voici votre nouvelle main' : 'Main de départ gardée')}</h2>
           <p>{enChoix
-            ? `Touchez une carte pour la mettre de côté : elle repart dans le paquet battu, et vous en piochez une nouvelle. Un seul échange, ${main.length} cartes en main. ${survol ? 'Survolez une carte pour la lire en entier.' : 'Appui long d’une seconde sur une carte pour la lire en entier.'}`
+            ? `Touchez une carte pour la mettre de côté : elle repart dans le paquet battu, et vous en piochez une nouvelle. Un seul échange, ${main.length} cartes en main.`
             : bilan}</p>
         </header>
         {/* La scène donne à la rangée une place mesurable, et c'est elle que
@@ -1638,10 +1617,7 @@ function VoletMulligan({
                 index={index}
                 selectionnee={choix.has(index)}
                 nouvelle={nouveau.includes(index)}
-                survol={survol}
                 onBasculer={onBasculer}
-                onSurvol={onSurvol}
-                onQuitterSurvol={onQuitterSurvol}
               />
             ))}
           </div>
@@ -1668,16 +1644,6 @@ function VoletMulligan({
           )}
         </footer>
       </div>
-      {/* L'aperçu rapide vit dans le volet : il passe au-dessus de lui, et il
-          est le seul à s'afficher tant que la main de départ est ouverte. */}
-      {apercu && (
-        <HoverCardPreview
-          carte={cardById(apercu.carteId)}
-          style={apercu.style}
-          panelRef={panelRef}
-          variante="mulligan"
-        />
-      )}
     </div>
   );
 }
@@ -6476,11 +6442,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
                   <CardElementBadge carte={carte} />
-                              <span className="rpg-hand__title">
+                  <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
                   </span>
                   {familleSort && <SortSceau carte={carte} className="rpg-hand__sceau rpg-hand__sort" />}
-                  {!estCreature && !familleSort && <span className="rpg-hand__type">{cardFaceTypeLine(carte)}</span>}
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
                       <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
@@ -6611,15 +6576,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           choix={mulligan.choix}
           nouveau={mulligan.nouveau}
           bilan={mulligan.bilan}
-          apercu={apercuSurvol}
-          survol={viewport.survol}
-          panelRef={panelRef}
           onBasculer={basculerCarteMulligan}
           onValider={validerMulligan}
           onAnnulerSelection={viderSelectionMulligan}
           onContinuer={terminerMulligan}
-          onSurvol={afficherApercuSurvol}
-          onQuitterSurvol={masquerApercuSurvol}
         />
       )}
     </div>

@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { build } from 'vite';
 import { JSDOM } from 'jsdom';
+
+const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+assert.match(battleCss, /\.rpg-hover-card-preview__sceau,\s*\.rpg-hover-card-preview__sort,\s*\.rpg-mulligan__sceau,\s*\.rpg-mulligan__sort\s*\{[^}]*bottom:\s*var\(--rpg-card-element-marker-top,\s*5%\);[^}]*left:\s*var\(--rpg-card-element-marker-left,\s*6%\);[^}]*width:\s*var\(--rpg-card-marker-size,\s*38px\);/s,
+  'dans l’aperçu des cartes et le mulligan, le sceau de Magie Rapide et de Sorcellerie s’aligne sur les mêmes marges et le même diamètre que la couleur de la carte');
+assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card__stat--atk,\s*\.rpg-hover-card-preview__face \.rpg-card__pt,\s*\.rpg-mulligan__card \.rpg-card__stat--atk,\s*\.rpg-mulligan__card \.rpg-card__pt\s*\{[^}]*background:\s*rgba\(0,\s*0,\s*0,\s*\.68\);[^}]*font:\s*900 calc\(var\(--rpg-card-marker-size,\s*38px\) \* \.62\)\/1\.15 Georgia, serif;/s,
+  'les statistiques ATQ/DÉF des créatures sont agrandies et noires translucides dans l’aperçu des cartes et le mulligan');
 
 const previousEnv = process.env.NODE_ENV;
 await build({ logLevel: 'error', build: { ssr: 'scripts/rpg-preview-smoke.jsx', outDir: 'node_modules/.cache/rpg-preview', emptyOutDir: true } });

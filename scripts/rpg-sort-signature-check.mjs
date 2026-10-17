@@ -83,12 +83,12 @@ assert.match(battleCss, /\.rpg-sort-sceau--rapide::before\s*\{[^}]*clip-path:\s*
   'l’arête claire du jeton est peinte dans la découpe — un liseré de bord serait coupé, lui, avec les coins du carré');
 assert.match(battleCss, /\.rpg-sort-sceau--sorcellerie\s*\{[^}]*border-radius:\s*50%;/s,
   'le jeton de la Sorcellerie reste un médaillon rond — la forme du repère dit la famille');
-assert.match(pageSource, /<SortSceau carte=\{carte\} className="rpg-mulligan__sceau" \/>/,
-  'la carte du mulligan monte le sceau, au-dessus de sa ligne de type');
+assert.match(pageSource, /<SortSceau carte=\{carte\} className="rpg-mulligan__sceau rpg-mulligan__sort" \/>/,
+  'la carte du mulligan monte le sceau aligné avec la couleur');
 assert.match(battleCss, /\.rpg-sort-sceau\s*\{[^}]*display:\s*grid;[^}]*aspect-ratio:\s*1;/s,
   'le jeton garde son carré : sans `aspect-ratio`, le losange s’ovaliserait');
-assert.match(battleCss, /\.rpg-mulligan__sceau\s*\{\s*width:\s*clamp\(16px, 15cqw, 30px\);\s*font-size:\s*clamp\(9px, 7cqw, 15px\);\s*\}/s,
-  'le sceau du mulligan prend la taille des repères de la carte, comme le coût et la pastille de couleur');
+assert.match(battleCss, /\.rpg-hover-card-preview__sceau,\s*\.rpg-hover-card-preview__sort,\s*\.rpg-mulligan__sceau,\s*\.rpg-mulligan__sort\s*\{[^}]*bottom:\s*var\(--rpg-card-element-marker-top,\s*5%\);[^}]*left:\s*var\(--rpg-card-element-marker-left,\s*6%\);[^}]*width:\s*var\(--rpg-card-marker-size,\s*38px\);/s,
+  'le sceau de l’aperçu et du mulligan prend la taille et l’alignement des repères de la carte, comme la pastille de couleur');
 assert.match(atelierCss, /\.rpg-atelier__carte-art\s*\{[^}]*--rpg-card-marker-size:\s*30px;/s,
   'l’atelier annonce son repère : le sceau de sa collection suit la même échelle');
 assert.match(pageSource, /<SortSceau carte=\{carte\} className="rpg-card-catalogue__sort" \/>/,
@@ -223,21 +223,21 @@ assert.match(haloMain, /0 6px 16px rgba\(0, 0, 0, \.62\)/,
 assert.doesNotMatch(haloMain + haloSurvol, /border-color:/,
   'le halo ne repeint jamais la bordure : la couleur du cadre reste celle de l’élément');
 
-// ── Le mot écrit une seule fois : le socle remplace la ligne de type des sorts ─
+// ── Le sceau remplace la ligne de type sur les faces (main, aperçu, mulligan) ─
 assert.match(pageSource, /const familleSort = magieFamille\(carte\);\s*const peutRepondre = reponseActive && carte\.instant;/,
   'la main calcule la famille de la carte une seule fois, avant ses règles de jeu');
 assert.match(pageSource, /familleSort \? `rpg-hand__card--famille-\$\{familleSort\}` : '',/,
   'la face en main porte la classe de sa famille');
-assert.match(pageSource, /\{familleSort && <SortSocle carte=\{carte\} \/>\}\s*\{!estCreature && !familleSort && <span className="rpg-hand__type">\{cardFaceTypeLine\(carte\)\}<\/span>\}/,
-  'en main, un sort porte le socle et n’imprime plus la petite ligne de type ; un terrain la garde');
-assert.match(pageSource, /<SortSocle carte=\{carte\} \/>\s*<\/div>\s*\);\s*return \(\s*<aside/,
-  'la face de l’aperçu — survol, appui long, fiche, annonce — porte le même socle');
+assert.match(pageSource, /\{familleSort && <SortSceau carte=\{carte\} className="rpg-hand__sceau rpg-hand__sort" \/>\}\s*\{estCreature && \(/,
+  'en main, un sort porte le sceau et aucune carte n’imprime de texte de type (terrain, magie ou sorcellerie)');
+assert.match(pageSource, /<SortSceau carte=\{carte\} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" \/>/,
+  'la face de l’aperçu — survol, appui long, fiche, annonce — porte le même sceau');
 assert.match(pageSource, /className=\{`rpg-hover-card-preview__type\$\{ligneFamille\}`\}/,
   'la ligne de type de l’aperçu prend la teinte de la famille');
 assert.match(pageSource, /className=\{`rpg-card-catalogue__type\$\{classeLigneFamille\(carte\)\}`\}/,
   'la ligne de type du catalogue prend la même teinte');
-assert.match(pageSource, /className=\{`rpg-mulligan__type\$\{familleSort \? ` rpg-mulligan__type--\$\{familleSort\}` : ''\}`\}/,
-  'la ligne de type du mulligan prend la teinte et le fond de sa famille');
+assert.match(pageSource, /<SortSceau carte=\{carte\} className="rpg-mulligan__sceau rpg-mulligan__sort" \/>/,
+  'les sorts du mulligan portent le même sceau que la face de l’aperçu');
 assert.match(pageSource, /className=\{`rpg-spell-played__eyebrow\$\{contre \? '' : classeLigneFamille\(carte\)\}`\}/,
   'l’annonce d’un sort joué prend la teinte de sa famille — un contre garde son or');
 

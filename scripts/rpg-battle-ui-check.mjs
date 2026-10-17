@@ -188,8 +188,8 @@ assert.match(battlePage, /<aside\s+ref=\{panelRef\}/,
   'le panneau de l’aperçu porte la référence mesurée par le placement');
 assert.match(battlePage, /style=\{apercuSurvol\.style\}\s+panelRef=\{panelRef\}/,
   'l’aperçu du survol est mesuré par son panneau');
-assert.match(battlePage, /panelRef=\{panelRef\}\s+variante="mulligan"/,
-  'l’aperçu du mulligan est mesuré par le même panneau');
+assert.doesNotMatch(battlePage, /variante="mulligan"/,
+  'aucun aperçu rapide au survol n’est rendu dans le mulligan');
 assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*grid;[^}]*gap:\s*7px;[\s\S]*?\.rpg-hover-card-preview__rules > span\s*\{\s*display:\s*block;/s,
   'chaque effet occupe sa propre ligne dans l’aperçu au survol');
 assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,

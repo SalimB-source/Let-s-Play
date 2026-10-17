@@ -251,18 +251,17 @@ try {
             && Boolean(card.querySelector('.rpg-mulligan__stats .rpg-card__stat--atk .rpg-stat-value')?.textContent.trim())
             && Boolean(card.querySelector('.rpg-mulligan__stats .rpg-card__pt .rpg-stat-value')?.textContent.trim());
         }),
-        // Le bas de la carte : les plaques pour une créature (jamais de ligne de
-        // type), la ligne de type seule et centrée pour un terrain ou un sort.
+        // Le bas de la carte : exactement comme la face de l'aperçu — les plaques
+        // d'attaque et de défense pour une créature, le sceau de sort aligné
+        // en bas à gauche pour un sort, rien pour un terrain ou une arme.
         basDeCarte: cards.every((card) => {
           const box = card.getBoundingClientRect();
-          const type = card.querySelector('.rpg-mulligan__bas .rpg-mulligan__type')?.getBoundingClientRect();
           const stats = card.querySelector('.rpg-mulligan__stats')?.getBoundingClientRect();
-          const centree = (r) => Math.abs((r.left + r.right) / 2 - (box.left + box.right) / 2) < 2;
+          const sceau = card.querySelector('.rpg-mulligan__sceau')?.getBoundingClientRect();
           const enBas = (r) => box.bottom - r.bottom < box.height * .35;
-          if (type && stats) return centree(type) && type.bottom <= stats.top + 1;
           if (stats) return enBas(stats) && stats.bottom <= box.bottom + 1;
-          if (type) return centree(type) && enBas(type);
-          return false;
+          if (sceau) return enBas(sceau) && sceau.left - box.left < box.width * .35;
+          return true;
         }),
         // Les plaques d'attaque et de défense : grandes, sur la largeur de la
         // carte, l'attaque contre le bord gauche et la défense contre le droit.
@@ -551,25 +550,15 @@ try {
     await demarrerDuel(pageBureau);
     const carte = pageBureau.locator('.rpg-mulligan__card').first();
     await carte.waitFor();
-    const nom = (await carte.getAttribute('aria-label')).split(' — ')[0];
-    // Le curseur est resté sur « Jouer avec ce deck », donc sur une carte du
-    // volet qui vient de s'ouvrir : on l'écarte avant de mesurer l'état de repos.
     await pageBureau.mouse.move(4, 4);
-    await pageBureau.locator('.rpg-hover-card-preview').waitFor({ state: 'detached' });
     assert.equal(await pageBureau.locator('.rpg-hover-card-preview').count(), 0,
       'aucun aperçu tant que rien n’est survolé');
     await carte.hover();
-    const apercu = pageBureau.locator('.rpg-hover-card-preview--mulligan');
-    await apercu.waitFor();
-    assert.ok((await apercu.getAttribute('aria-label'))?.startsWith(`Aperçu de ${nom}`),
-      'l’aperçu décrit la carte survolée');
-    assert.equal(await pageBureau.evaluate(() => getComputedStyle(document.querySelector('.rpg-hover-card-preview--mulligan')).zIndex), '1200',
-      'l’aperçu passe au-dessus du volet du mulligan (1150)');
-    await pageBureau.mouse.move(4, 4);
-    await pageBureau.locator('.rpg-hover-card-preview').waitFor({ state: 'detached' });
+    assert.equal(await pageBureau.locator('.rpg-hover-card-preview').count(), 0,
+      'survoler une carte du mulligan n’ouvre pas d’aperçu rapide');
     await pageBureau.getByRole('button', { name: /Garder cette main/i }).click();
     await pageBureau.locator('.rpg-mulligan').waitFor({ state: 'detached' });
-    console.log('✓ Mulligan : survoler une carte ouvre son aperçu rapide, au-dessus du volet');
+    console.log('✓ Mulligan : aucun aperçu rapide ne s’ouvre au survol d’une carte');
   } finally {
     await bureau.close();
   }
