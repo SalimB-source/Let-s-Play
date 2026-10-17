@@ -31,8 +31,10 @@ import {
   choisirDefausseIA,
   choisirMulliganIA,
   choisirTerrainIA,
+  choisirCouleurManaIA,
   couleurEngagement,
 } from './rpgAI.js';
+import { RPG_MANA_ESSAI_CARTES_EXCLUES, RPG_MANA_ESSAI_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
 
 /* Tout le monde part à 25 PV : le joueur comme chaque sorcier adverse. La
  * puissance d'un étage du mode Histoire ne gonfle plus les PV (bonus à 0) —
@@ -99,6 +101,27 @@ const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'N
 const normaliserCouleurs = (couleurs) => [...new Set((Array.isArray(couleurs) ? couleurs.flat(Infinity) : [couleurs]).filter(Boolean))];
 const manaVide = () => ({ braise: 0, eau: 0, sable: 0, neige: 0 });
 const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + camp.mana[c], 0);
+const totalCapaciteMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + (camp.manaMax?.[c] ?? 0), 0);
+
+/** Identité fixée au lancement du duel d'essai ; une pioche ne change jamais
+ * les couleurs proposées. Les decks historiques ne passent pas par ici. */
+function couleursManaEssai(deck, couleurs) {
+  const liste = couleurs ?? [...new Set(deck.flatMap((id) => cardColors(id)))];
+  if (!Array.isArray(liste) || liste.length < 1 || liste.length > 3
+    || liste.length !== new Set(liste).size || liste.some((couleur) => !RPG_COULEURS.includes(couleur))) {
+    throw new Error('Un duel sans terrains exige une identité de 1 à 3 couleurs.');
+  }
+  const valides = [...liste];
+  if (deck.some((id) => terrainById(id) || RPG_MANA_ESSAI_CARTES_EXCLUES.includes(id)
+    || !cardById(id) || cardColors(id).some((couleur) => !valides.includes(couleur)))) {
+    throw new Error('Un duel sans terrains ne peut contenir ni terrain, ni effet lié aux terrains, ni carte hors identité.');
+  }
+  return valides;
+}
+
+// La réserve sert au paiement ; la liste garde l'ordre des orbes gagnées,
+// pour que chaque nouveau mana allume la prochaine place sans recolorer les précédentes.
+const etatManaEssai = (couleurs) => ({ manaMax: manaVide(), manaSources: [], couleurs, manaChoixEnAttente: false, fatigue: 0 });
 
 /** PV d'un sorcier adverse : 25, quelle que soit sa puissance d'étage. */
 export const rpgSorcierPv = (puissance = 0) =>
@@ -120,16 +143,21 @@ function melangerDeck(deck, rng = Math.random) {
  * `sorcierIA` : profil de l'IA ({ niveau, style }) — voir rpgAI.js. Chaque
  * sorcier du mode Histoire peut porter le sien.
  */
-export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random } = {}) {
+export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random, modeMana = null, joueurCouleurs = null, sorcierCouleurs = null } = {}) {
+  const essaiMana = modeMana === RPG_MODE_MANA_ESSAI;
+  const identiteJoueur = essaiMana ? couleursManaEssai(joueurDeck, joueurCouleurs) : null;
+  const identiteSorcier = essaiMana ? couleursManaEssai(sorcierDeck, sorcierCouleurs) : null;
   const duel = {
+    ...(essaiMana ? { modeMana: RPG_MODE_MANA_ESSAI, manaEssaiDemarre: false } : {}),
     tour: 'joueur',
-    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck, rng), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
+    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), ...(essaiMana ? etatManaEssai(identiteJoueur) : {}), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck, rng), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
     sorcier: {
       pv: rpgSorcierPv(sorcierPuissance),
       pvMax: rpgSorcierPv(sorcierPuissance),
       puissance: sorcierPuissance,
       ia: sorcierIA,
       mana: manaVide(),
+      ...(essaiMana ? etatManaEssai(identiteSorcier) : {}),
       bouclier: 0,
       terrainPose: false,
       deck: melangerDeck(sorcierDeck, rng),
@@ -168,7 +196,39 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
   // Témoin de la main de départ : le mulligan n'est légal que tant qu'elle est
   // intacte (et il la conserve, puisque l'on pioche autant qu'on écarte).
   duel.mainDepart = { joueur: duel.joueur.main.length, sorcier: duel.sorcier.main.length };
+  // Le premier joueur ne pioche pas de sixième carte au tour 1. Son premier
+  // mana (même en mono) n'arrive qu'après les mulligans des deux camps.
+  if (essaiMana) duel.joueur.manaChoixEnAttente = true;
   return duel;
+}
+
+/** Fin des deux mulligans : ouvre le premier tour et accorde le premier mana.
+ * L'interface appelle ceci à la fermeture du volet, jamais pendant l'échange.
+ * Le mono choisit tout seul ; en multi, le joueur doit faire son choix. */
+export function rpgDemarrerManaEssai(duel) {
+  if (duel?.modeMana !== RPG_MODE_MANA_ESSAI || duel.manaEssaiDemarre) return { ok: false, raison: 'mode' };
+  if (!duel.mulliganFait?.joueur || !duel.mulliganFait?.sorcier) return { ok: false, raison: 'mulligan' };
+  duel.manaEssaiDemarre = true;
+  if (duel.joueur.couleurs.length === 1) return rpgChoisirCouleurMana(duel, 'joueur', duel.joueur.couleurs[0]);
+  return { ok: true, choixEnAttente: true };
+}
+
+/** Choisit uniquement la couleur du NOUVEAU mana permanent (pas celle des
+ * sources des tours passés). Ce choix vaut une fois par tour et ne peut pas
+ * dépasser dix sources. L'IA passe exactement par cette même règle. */
+export function rpgChoisirCouleurMana(duel, cote, couleur) {
+  if (duel?.modeMana !== RPG_MODE_MANA_ESSAI || !duel.manaEssaiDemarre) return { ok: false, raison: 'mode' };
+  if (!['joueur', 'sorcier'].includes(cote) || duel.tour !== cote) return { ok: false, raison: 'tour' };
+  const camp = duel[cote];
+  if (!camp.manaChoixEnAttente) return { ok: false, raison: 'deja-choisi' };
+  if (!camp.couleurs.includes(couleur)) return { ok: false, raison: 'couleur' };
+  if (totalCapaciteMana(camp) >= RPG_MANA_ESSAI_MAX) return { ok: false, raison: 'plafond' };
+  camp.manaMax[couleur] += 1;
+  camp.manaSources.push(couleur);
+  camp.mana[couleur] += 1;
+  camp.manaChoixEnAttente = false;
+  duel.log.push(`${cote === 'joueur' ? 'Vous gagnez' : 'Le sorcier gagne'} un mana ${ELEMENT_LABELS[couleur]} permanent (${totalCapaciteMana(camp)}/${RPG_MANA_ESSAI_MAX}).`);
+  return { ok: true, couleur };
 }
 
 /** Pioche 1 carte du deck vers la main ; null si le deck est vide. */
@@ -315,6 +375,7 @@ function sourcesCouvrentPips(sources, coutCouleur) {
 /** Une carte doit avoir assez de sources, et chaque pip coloré doit avoir
  *  une source distincte compatible. */
 export function rpgPeutPayer(camp, carte) {
+  if (camp.manaChoixEnAttente) return false;
   const sources = sourcesManaDisponibles(camp);
   const cout = Math.max(0, carte.cost ?? 0);
   return sources.length >= cout && sourcesCouvrentPips(sources, cardColorCost(carte));
@@ -347,7 +408,16 @@ function payer(duel, cote, carte) {
       reste -= 1;
     }
   }
-  for (const couleur of RPG_COULEURS) {
+  // Dans l'essai, seul le pip impose sa couleur : pour le générique, utiliser
+  // d'abord les autres réserves afin de garder la couleur exigée pour la suite
+  // du tour. Les duels classiques conservent leur ordre de paiement historique.
+  const prioriteGenerique = duel.modeMana === RPG_MODE_MANA_ESSAI
+    ? [
+        ...RPG_COULEURS.filter((couleur) => !coutCouleur[couleur]),
+        ...RPG_COULEURS.filter((couleur) => coutCouleur[couleur]),
+      ]
+    : RPG_COULEURS;
+  for (const couleur of prioriteGenerique) {
     const pris = Math.min(camp.mana[couleur], reste);
     camp.mana[couleur] -= pris;
     reste -= pris;
@@ -370,6 +440,7 @@ function payer(duel, cote, carte) {
 
 /** Pose UN terrain par tour, comme à Magic. */
 export function rpgPoserTerrain(duel, cote, carteId) {
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI) return { ok: false, raison: 'sans-terrains' };
   const camp = duel[cote];
   const carte = terrainById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
@@ -385,6 +456,7 @@ export function rpgPoserTerrain(duel, cote, carteId) {
 /** Engager un terrain dégagé : les terrains flexibles acceptent une couleur
  *  choisie, les terrains de base gardent leur production habituelle. */
 export function rpgEngagerTerrain(duel, cote, terrainId, couleurChoisie = null) {
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI) return { ok: false, raison: 'sans-terrains' };
   const terrain = duel[cote].terrains.find((t) => t.id === terrainId);
   if (!terrain) return { ok: false, raison: 'absent' };
   if (terrain.tapped) return { ok: false, raison: 'deja-engage' };
@@ -2468,6 +2540,9 @@ export function rpgLancerAttaque(
   { attaqueDeclaree = false } = {},
 ) {
   const adv = autre(cote);
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[cote]?.manaChoixEnAttente) {
+    return { ok: false, raison: 'choix-mana' };
+  }
   // Une seule phase d'attaque par tour : le camp qui a déjà résolu son combat
   // n'en déclare pas un second. Le drapeau n'est posé que sur une déclaration
   // acceptée (plus bas) : un refus ne consomme rien.
@@ -2941,6 +3016,7 @@ export function rpgDefinirPhase(duel, phase) {
  *  n'est encore effacé — un Rempart de dunes « jusqu'à la fin du tour » protège
  *  donc toujours pendant cette fenêtre. `rpgFinDeTour` ferme ensuite le tour. */
 export function rpgOuvrirFinDeTour(duel) {
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[duel.tour].manaChoixEnAttente) return null;
   if (duel.finDeTour) return duel.finDeTour;
   duel.phase = 'fin';
   duel.finDeTour = { cote: duel.tour };
@@ -2987,6 +3063,9 @@ function detruireEphemeres(duel) {
  *  échos différés (Nuage de cendres) dont il est le lanceur retombent sur la
  *  table d'en face. Le tour s'ouvre ensuite en phase principale. */
 export function rpgFinDeTour(duel) {
+  // Un joueur multicolore doit investir son nouveau mana avant de pouvoir
+  // quitter son tour. Ce garde-fou protège aussi les appels hors interface.
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[duel.tour].manaChoixEnAttente) return duel;
   duel.phase = 'fin';
   duel.finDeTour = null;
   while (duel.defausseEnAttente?.restant > 0 && duel[duel.defausseEnAttente.cote]?.main.length) {
@@ -3057,10 +3136,19 @@ export function rpgFinDeTour(duel) {
   // consommé la sienne, l'autre ouvre la sienne.
   duel.attaqueJouee = null;
   const camp = duel[duel.tour];
-  camp.mana = manaVide();           // le mana non dépensé s'évapore
-  camp.terrainPose = false;         // un nouveau terrain peut être posé
+  // La réserve encore disponible couvre les réponses pendant le tour adverse ;
+  // elle ne se cumule jamais d'un tour personnel à l'autre. Les capacités
+  // temporaires de mana ne deviennent pas des sources permanentes.
+  camp.mana = duel.modeMana === RPG_MODE_MANA_ESSAI ? { ...camp.manaMax } : manaVide();
+  camp.terrainPose = false;         // un nouveau terrain peut être posé (mode classique)
   for (const terrain of camp.terrains) terrain.tapped = false; // on dégage
-  rpgPiocher(duel, duel.tour);
+  if (!rpgPiocher(duel, duel.tour) && duel.modeMana === RPG_MODE_MANA_ESSAI) {
+    // Seule la pioche OBLIGATOIRE provoque la fatigue. Un effet qui tente de
+    // piocher dans un paquet vide ne blesse pas plusieurs fois par tour.
+    camp.fatigue += 1;
+    camp.pv -= camp.fatigue;
+    duel.log.push(`Fatigue : ${duel.tour === 'joueur' ? 'vous perdez' : 'le sorcier perd'} ${camp.fatigue} PV (paquet vide).`);
+  }
   for (const entite of camp.creatures) {
     entite.ready = true;
     entite.attaquee = false;
@@ -3068,6 +3156,14 @@ export function rpgFinDeTour(duel) {
   resoudreRetoursProgrammes(duel);
   resoudreHeures(duel);             // les compteurs d'Heures du beffroi
   resoudreEchos(duel);              // les échos dus au camp dont le tour s'ouvre
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI && !rpgVainqueur(duel)
+    && totalCapaciteMana(camp) < RPG_MANA_ESSAI_MAX) {
+    camp.manaChoixEnAttente = true;
+    if (duel.tour === 'sorcier' || camp.couleurs.length === 1) {
+      rpgChoisirCouleurMana(duel, duel.tour, duel.tour === 'sorcier'
+        ? choisirCouleurManaIA(duel, 'sorcier') : camp.couleurs[0]);
+    }
+  }
   duel.phase = 'principale';
   rpgActionsEtat(duel);
   duel.log.push(`— Au tour du ${duel.tour === 'joueur' ? 'joueur' : 'sorcier'}.`);
@@ -3079,6 +3175,8 @@ export function rpgFinDeTour(duel) {
  *  garni, burn pour conclure), puis prépare ses attaques. */
 /** Phase de préparation du sorcier : il pose son terrain et engage ses terrains. */
 export function rpgSorcierPrepareTerrain(duel) {
+  // En essai, le mana coloré a été choisi au début du tour du sorcier.
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI) return;
   const terrainEnMain = choisirTerrainIA(duel, 'sorcier');
   if (terrainEnMain) rpgPoserTerrain(duel, 'sorcier', terrainEnMain);
   for (const terrain of duel.sorcier.terrains) {

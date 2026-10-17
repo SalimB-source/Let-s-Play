@@ -3,7 +3,7 @@ import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
 import { RPG_CARD_LESSONS } from './rpgCardLessons.js';
-import { bonusArme, cardById, cardColors, cardFrameClass, cardFrameColor, cardMotifClass, cardTypeLine, carteEstArme } from './rpgCards.js';
+import { bonusArme, cardById, cardColorCost, cardColors, cardFrameClass, cardFrameColor, cardHybridGradient, cardMotifClass, cardTypeLine, carteEstArme } from './rpgCards.js';
 // Le jeton des familles de sorts : le guide enseigne la face des cartes, il
 // montre donc le repère tel que le duel le pose (voir `rpgSortSignature.jsx`).
 import { SortSceau } from './rpgSortSignature.jsx';
@@ -22,6 +22,9 @@ const signeBonus = (valeur = 0) => (valeur >= 0 ? `+${valeur}` : `${valeur}`);
 
 function GuideCard({ carte, cardArt }) {
   const colors = cardColors(carte);
+  const degradeCout = cardHybridGradient(carte);
+  const exigencesCout = Object.entries(cardColorCost(carte))
+    .map(([color, n]) => `${n} ${ELEMENT_LABELS[color] ?? color}`).join(' et ');
   const estCreature = ['creature', 'hero'].includes(carte.kind);
   const labelElement = colors.map((color) => `${ELEMENT_MARKS[color] ?? '◇'} ${ELEMENT_LABELS[color] ?? color}`).join(' · ');
 
@@ -33,7 +36,11 @@ function GuideCard({ carte, cardArt }) {
     >
       <div className="rpg-card-guide__art">
         <img src={cardArt(carte.id)} alt={`Illustration de ${carte.name}`} loading="lazy" />
-        {carte.kind !== 'terrain' && <span className="rpg-card-guide__cost" aria-label={`Coût : ${carte.cost} mana`}>{carte.cost}</span>}
+        {carte.kind !== 'terrain' && <span
+          className={`rpg-card-guide__cost${degradeCout ? ' rpg-card-guide__cost--hybride' : ''}`}
+          style={degradeCout ? { '--rpg-hybrid-cost-bg': degradeCout } : undefined}
+          aria-label={`Coût : ${carte.cost} mana${exigencesCout ? `, dont ${exigencesCout}` : ''}`}
+        >{carte.cost}</span>}
         <SortSceau carte={carte} className="rpg-card-guide__sort" />
       </div>
       <div className="rpg-card-guide__details">

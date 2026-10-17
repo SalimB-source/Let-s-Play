@@ -39,8 +39,15 @@ limitée à 7.
   type, aucune saveur ne les nomme autrement : le set raconte les mythes du
   Nord sans jamais écrire le mot « dieu ».
 - Chaque carte (créature, magie, héros) a un **type** : une des quatre couleurs.
-- Payer un coût de N exige **N mana au total, dont au moins un de la
-  couleur de la carte** (comme « 2R » à Magic).
+- Payer un coût de N exige **N mana au total, dont les pips colorés obligatoires** :
+  au moins un de la couleur d'une carte mono (comme « 2R » à Magic), un de
+  chaque couleur d'une hybride (par exemple Sable + Braise pour le Djinn de
+  foudre). Le disque du coût hybride est partagé **en deux moitiés nettes**
+  suivant l'ordre des couleurs de la carte, comme le sceau d'une magie hybride ;
+  le chiffre, les pips requis et le paiement restent inchangés. Cette face est
+  commune à la main, à la table, au catalogue et à l'atelier ; le guide emploie
+  le même rendu pour toute carte hybride payante qu'il présente. Les cartes
+  mono gardent leur disque habituel et les terrains n'affichent aucun coût.
 
 ### Créature
 
@@ -360,6 +367,13 @@ Les cartes posées sont **courtes** — la table reste lisible :
 Plus de grand encadré de règles ni de saveur sur les cartes posées : la
 règle détaillée vit dans la carte en main et dans le journal.
 
+Sur les cartes de sort, le **losange** (Magie Rapide, éclair) et le **rond**
+(Sorcellerie, étincelle) gardent leurs formes respectives. Leur couleur suit
+celle de la carte — Braise rouge, Eau bleue, Sable doré, Neige glacée ; une
+carte hybride partage le sceau entre ses éléments. Le bandeau de famille et
+la lueur de carte jouable gardent, eux, leur teinte de famille (or pour la
+Magie Rapide, améthyste pour la Sorcellerie).
+
 ## 7. Les contres (deck Marée des abysses)
 
 Le deck **Marée des abysses** (`RPG_DECK_MAREE_BASE`, mono-Eau, 16 Mer) joue la
@@ -538,12 +552,21 @@ pile, même au doigt. `armesPortees` lit à la fois l'arme du prototype
 (`entite.arme`) et l'arme de l'effet « arme » des magies (`entite.armes`,
 le Sabre maudit).
 
-**L'aperçu dit l'équipement.** Au survol, à l'appui long et sur la fiche,
-les statistiques et effets directs accordés par l'arme rejoignent le texte
-d'effet de la créature en bleu (« Bonus d’équipement : +X/+Y · Infiltration »,
-par exemple). Le nom de l'arme n'est plus imprimé sur la carte ; le petit
-rappel de statistiques ne montre que son bonus, et les compteurs de la Jitte
-restent visibles.
+**L'aperçu dit l'équipement.** Sur la carte posée, ni le texte d'effet ni
+le bonus d'attaque/défense de l'arme ne sont imprimés (et aucun infobulle
+n'en révèle le texte). Les compteurs d'effet sont des **petits losanges
+chiffrés sous le repère de couleur** d'une carte mono, mais **sous son coût**
+si elle est hybride : Heures sur la créature et sable sur la Jitte équipée,
+côte à côte si les deux sont présents ; ils disparaissent à zéro, et leur
+nature reste annoncée au lecteur d'écran. Les « ×N » des
+piles comptent des exemplaires, non des effets, et conservent leur bouton.
+Au survol, à l'appui long et sur la fiche ouverte depuis la table, l'aperçu
+de la créature contient une petite carte pour **chaque arme portée** : image,
+coût, nom et texte d'effet (abrégé visuellement au survol, entier sur la
+fiche). Les bonus et effets directs accordés par l'arme rejoignent aussi le
+texte d'effet de la créature en bleu (« Bonus d’équipement : +X/+Y ·
+Infiltration », par exemple). La pile armée et les règles du duel ne changent
+pas.
 
 ## 10. Le Butin (set Sable)
 

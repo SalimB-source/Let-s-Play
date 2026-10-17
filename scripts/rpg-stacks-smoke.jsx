@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
+import RpgDuelPage, { TableCard } from '../src/games/RpgDuelPage.jsx';
+import { cardById, cardHybridGradient } from '../src/games/rpgCards.js';
 import { RPG_LONG_PRESS_MS } from '../src/games/rpgLongPress.js';
 import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
@@ -86,6 +87,7 @@ export async function checkRpgCardStacks(assert) {
     // par nom — la créature armée, elle, reste une pile.
     window.matchMedia = (requete) => ({ matches: /reduce|hover/.test(requete) });
     await scenarioCreatureArmee(assert, 'ordinateur');
+    await scenarioCompteursSurCarte(assert);
   } finally {
     window.matchMedia = originalMatchMedia;
   }
@@ -177,10 +179,10 @@ async function scenarioMainEtChampJoueur(assert) {
     await click(container.querySelector('.rpg-btn--confirmer-attaque'), 'confirmer l’attaque');
     await attendre(1800);   // l'effet d'attaque tient le groupe déplié jusqu'au bout
     const apresAttaque = camp('equipe', 'chien-du-guet');
-    assert.equal(apresAttaque.length, 1, 'une fois l’attaque résolue, le groupe se replie');
-    assert.ok(apresAttaque[0].dataset.entityId !== premierChien,
-      'la tête de pile passe à l’exemplaire qui n’a pas encore attaqué');
-    assert.equal(compteur('equipe', 'chien-du-guet').textContent, '×2', 'le compteur compte toujours les deux Chiens');
+    assert.equal(apresAttaque.length, 2, 'après l’attaque, le Chien engagé se sépare du Chien encore prêt');
+    assert.equal(apresAttaque[0].dataset.entityId, premierChien, 'le premier exemplaire reste engagé sur la table');
+    assert.notEqual(apresAttaque[1].dataset.entityId, premierChien, 'le second est encore disponible');
+    assert.equal(compteur('equipe', 'chien-du-guet'), null, 'deux états d’engagement distincts ne partagent pas de compteur');
 
     // ── Les pioches remplissent la pile existante, pas la largeur ──────────
     const slotsAvant = mainSlots('desert').length;
@@ -272,7 +274,7 @@ async function scenarioChampAdverse(assert) {
     assert.equal(camp('equipe', 'chien-du-guet').length, 1, 'l’exemplaire qui a bloqué est tombé : un Chien reste');
     assert.equal(compteur('equipe', 'chien-du-guet'), null, '… donc plus de pile côté joueur');
 
-    // ── Tour 4 : attaque non bloquée, la pile adverse se replie sur ×2 ─────
+    // ── Tour 4 : attaque non bloquée, les états engagés restent distincts ──
     await click(hand('desert'), 'poser un Désert');
     await finirLeTour();
     assert.equal(camp('ennemi', 'chien-du-guet').length, 2, 'le sorcier attaque encore : son groupe est déplié');
@@ -280,9 +282,9 @@ async function scenarioChampAdverse(assert) {
     const pvAvantAttaque = pv('joueur');
     await click(resoudre(), 'laisser passer l’attaque');
     await attendre(1800);
-    assert.equal(camp('ennemi', 'chien-du-guet').length, 1,
-      'sans combat en cours, les Chiens adverses ne forment plus qu’une carte');
-    assert.equal(compteur('ennemi', 'chien-du-guet').textContent, '×2', 'la pile adverse affiche son compteur ×2');
+    assert.equal(camp('ennemi', 'chien-du-guet').length, 2,
+      'après le combat, un Chien adverse est engagé, l’autre reste prêt');
+    assert.equal(compteur('ennemi', 'chien-du-guet'), null, 'deux états d’engagement distincts restent visibles');
     assert.ok(pv('joueur') < pvAvantAttaque, 'l’attaque non bloquée a touché le joueur : ses PV baissent');
   } finally {
     await duel.fermer();
@@ -340,10 +342,12 @@ async function scenarioCreatureArmee(assert, disposition) {
     assert.ok(dessous.querySelector('img')?.getAttribute('src')?.includes('takouba-des-pistes'),
       `[${disposition}] la pile montre l’illustration de l’arme`);
     assert.equal(dessous.getAttribute('aria-hidden'), 'true', `[${disposition}] l’arme posée dessous reste décorative`);
-    assert.match(armee.querySelector('.rpg-card__arme')?.textContent ?? '', /\+2\/\+0/u,
-      `[${disposition}] la carte garde le bonus de stats sans le nom de l’arme`);
-    assert.doesNotMatch(armee.textContent, /Takouba des pistes/u,
-      `[${disposition}] le nom de l’arme n’est plus imprimé sur la carte`);
+    assert.equal(armee.querySelector('.rpg-card__compteurs'), null,
+      `[${disposition}] aucune pastille de compteur n’apparaît avant d’en gagner`);
+    assert.doesNotMatch(armee.textContent, /Takouba des pistes|\+2\/\+0|Infiltration/u,
+      `[${disposition}] la face de la créature ne montre ni nom, ni bonus, ni texte d’effet de l’arme`);
+    assert.doesNotMatch([...armee.querySelectorAll('[title]')].map((noeud) => noeud.title).join(' '), /\+2\/\+0|Infiltration/u,
+      `[${disposition}] aucun infobulle de la face ne révèle l’effet de l’arme`);
     assert.match(armee.getAttribute('aria-label'), /Bonus d’équipement : \+2\/\+0.*Infiltration/u,
       `[${disposition}] le libellé accessible indique le bonus et l’effet sans nommer l’arme`);
     assert.doesNotMatch(armee.getAttribute('aria-label'), /Takouba des pistes/u,
@@ -360,29 +364,116 @@ async function scenarioCreatureArmee(assert, disposition) {
       `[${disposition}] l’effet bleu donne les stats et le mot-clé : « ${ligne.textContent} »`);
     assert.ok(ligne.classList.contains('rpg-hover-card-preview__rule--equipment'),
       `[${disposition}] les effets d’équipement ont leur style bleu`);
-    assert.equal(apercu.querySelector('[data-arme-equipee]'), null,
-      `[${disposition}] l’aperçu n’ajoute plus une ligne séparée avec le nom de l’arme`);
-    assert.doesNotMatch(apercu.textContent, /Takouba des pistes/u,
-      `[${disposition}] le texte d’effet n’affiche pas le nom de l’arme`);
-    assert.match(apercu.getAttribute('aria-label'), /effets d’équipement.*\+2\/\+0.*Infiltration/u,
-      `[${disposition}] les bonus d’équipement sont également accessibles`);
+    const miniature = apercu.querySelector('[data-arme-equipee="takouba-des-pistes"]');
+    assert.ok(miniature, `[${disposition}] l’aperçu du porteur contient une petite carte d’arme`);
+    assert.match(miniature.querySelector('img')?.getAttribute('src') ?? '', /takouba-des-pistes/u,
+      `[${disposition}] la miniature reprend l’illustration de la Takouba`);
+    assert.match(miniature.querySelector('figcaption strong')?.textContent ?? '', /Takouba des pistes/u,
+      `[${disposition}] le nom de l’arme se lit dans l’aperçu, pas sur la face jouée`);
+    assert.match(miniature.querySelector('figcaption small')?.textContent ?? '', /Le porteur gagne \+2\/\+0 et Infiltration/u,
+      `[${disposition}] la miniature donne le texte d’effet de la carte d’arme`);
+    assert.match(apercu.getAttribute('aria-label'), /armes équipées Takouba des pistes.*effets d’équipement.*\+2\/\+0.*Infiltration/u,
+      `[${disposition}] le nom et les bonus d’équipement sont également accessibles`);
     await quitterSurvol(armee);
     assert.equal(container.querySelector('.rpg-hover-card-preview'), null, `[${disposition}] quitter la carte referme l’aperçu`);
 
-    // ── Appui long : même effet bleu, sans rien jouer ──────────────────────
+    // ── Appui long : même miniature et même effet bleu, sans rien jouer ────
     await appuiLong(camp('equipe', 'chien-du-guet')[0]);
     const volet = container.querySelector('.rpg-card-peek');
     assert.ok(volet, `[${disposition}] tenir la créature armée une seconde ouvre son aperçu`);
     const ligneVolet = volet.querySelector('[data-effet-equipement]');
     assert.ok(ligneVolet?.textContent.includes('+2/+0') && ligneVolet.textContent.includes('Infiltration'),
-      `[${disposition}] l’appui long montre les stats et effets accordés, sans nommer l’arme`);
-    assert.doesNotMatch(volet.textContent, /Takouba des pistes/u,
-      `[${disposition}] l’appui long n’affiche pas le nom de l’arme`);
+      `[${disposition}] l’appui long montre les stats et effets accordés`);
+    assert.match(volet.querySelector('[data-arme-equipee="takouba-des-pistes"] figcaption')?.textContent ?? '', /Takouba des pistes/u,
+      `[${disposition}] l’appui long conserve la petite carte d’arme`);
     await fermerApercu();
     assert.equal(container.querySelector('.rpg-card-peek'), null, `[${disposition}] Échap referme l’aperçu`);
+
+    // ── Clic droit : la fiche complète garde aussi la carte équipée ────────
+    await act(async () => {
+      camp('equipe', 'chien-du-guet')[0].dispatchEvent(new window.MouseEvent('contextmenu', {
+        bubbles: true, cancelable: true, button: 2,
+      }));
+    });
+    const fiche = container.querySelector('.rpg-card-peek--catalogue');
+    assert.ok(fiche, `[${disposition}] le clic droit ouvre la fiche de la créature`);
+    assert.match(fiche.querySelector('[data-arme-equipee="takouba-des-pistes"] figcaption')?.textContent ?? '', /Takouba des pistes.*Le porteur gagne \+2\/\+0/u,
+      `[${disposition}] la fiche conserve la miniature et le texte d’effet de l’arme`);
+    await fermerApercu();
     assert.equal(camp('equipe', 'chien-du-guet')[0].classList.contains('is-selected'), false,
-      `[${disposition}] l’aperçu n’a déclaré aucune attaque`);
+      `[${disposition}] consulter la créature n’a déclaré aucune attaque`);
   } finally {
     await duel.fermer();
+  }
+}
+
+// Les vrais compteurs d'effet (pas les ×N des piles) restent visibles sur la
+// créature et suivent les valeurs du duel : Heures et sable de la Jitte.
+async function scenarioCompteursSurCarte(assert) {
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  const fiche = cardById('guetteur-du-beffroi');
+  const entite = {
+    id: 'guetteur-compteurs', carteId: fiche.id, name: fiche.name,
+    atk: 4, pv: 2, pvMax: 2, ready: true,
+    heures: { restants: 2 },
+    arme: { carteId: 'jitte-d-amayas', compteurs: 3 },
+  };
+  const rendre = async (valeurs) => {
+    await act(async () => root.render(<TableCard entite={{ ...entite, ...valeurs }} cote="joueur" />));
+    return container.querySelector('.rpg-card');
+  };
+  try {
+    const carte = await rendre({});
+    const pastilles = carte.querySelector('.rpg-card__compteurs');
+    assert.ok(pastilles, 'la carte équipée porte les losanges chiffrés');
+    assert.equal(pastilles.classList.contains('rpg-card__compteurs--hybride'), false,
+      'sur une carte mono, les compteurs restent sous la couleur');
+    assert.equal(carte.querySelector('.rpg-card-element-badge').nextElementSibling, pastilles,
+      'les compteurs suivent le repère de couleur sur la face');
+    assert.equal(pastilles.getAttribute('aria-hidden'), 'true',
+      'les chiffres décoratifs ne doublonnent pas avec le libellé du bouton');
+    assert.equal(pastilles.querySelector('[data-compteur="heures"]')?.textContent, '2',
+      'les Heures de la créature ont un losange chiffré');
+    assert.equal(pastilles.querySelector('[data-compteur="sable"]')?.textContent, '3',
+      'les compteurs de sable de l’arme ont leur propre losange');
+    assert.match(carte.getAttribute('aria-label'), /2 compteurs d’Heures.*3 compteurs de sable/u,
+      'le nombre et la provenance de chaque compteur restent accessibles');
+    assert.doesNotMatch(carte.textContent, /●|\+2\/\+0/u,
+      'les losanges ne contiennent ni pastille ronde ni rappel du bonus d’arme');
+
+    const apresHeure = await rendre({ heures: { restants: 1 }, arme: { ...entite.arme, compteurs: 0 } });
+    assert.equal(apresHeure.querySelector('[data-compteur="heures"]')?.textContent, '1',
+      'le losange suit le retrait d’une Heure');
+    assert.equal(apresHeure.querySelector('[data-compteur="sable"]'), null,
+      'un compteur de sable dépensé disparaît de la carte');
+    const apresSable = await rendre({ heures: null, arme: { ...entite.arme, compteurs: 1 } });
+    assert.equal(apresSable.querySelector('[data-compteur="sable"]')?.textContent, '1',
+      'la Jitte seule affiche aussi son compteur');
+    assert.equal(apresSable.querySelector('[data-compteur="heures"]'), null,
+      'la sonnerie fait disparaître le losange d’Heures');
+    const vide = await rendre({ heures: null, arme: { ...entite.arme, compteurs: 0 } });
+    assert.equal(vide.querySelector('.rpg-card__compteurs'), null,
+      'aucun losange n’est montré quand tous les compteurs sont à zéro');
+
+    const hybride = await rendre({
+      carteId: 'djinn-de-foudre', name: 'Djinn de foudre', atk: 2, pv: 1, pvMax: 1,
+    });
+    const compteursHybrides = hybride.querySelector('.rpg-card__compteurs');
+    assert.equal(compteursHybrides?.classList.contains('rpg-card__compteurs--hybride'), true,
+      'sur la créature hybride, les compteurs passent sous le coût plutôt que sous les deux pastilles de couleur');
+    assert.equal(compteursHybrides.querySelectorAll('.rpg-card__compteur').length, 2,
+      'les deux losanges restent visibles, côte à côte sous le coût');
+    assert.equal(hybride.querySelector('.rpg-mana-cost--hybride')?.style.getPropertyValue('--rpg-hybrid-cost-bg'),
+      cardHybridGradient('djinn-de-foudre'), 'le Djinn porte aussi son coût bicolore sur la table');
+    assert.match(hybride.getAttribute('aria-label'), /2 compteurs d’Heures.*3 compteurs de sable/u,
+      'le déplacement ne retire pas les compteurs du libellé accessible');
+    const retourMono = await rendre({});
+    assert.equal(retourMono.querySelector('.rpg-card__compteurs--hybride'), null,
+      'revenir à une créature mono replace les losanges sous sa couleur');
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
   }
 }

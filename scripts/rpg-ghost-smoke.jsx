@@ -13,6 +13,7 @@ import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 import { RPG_DECKS } from '../src/games/rpgCards.js';
+import { rpgPeutAttaquer } from '../src/games/rpgDuel.js';
 
 /** Horloge virtuelle : les minuteries du jeu avancent à la demande. */
 function horlogeDuJeu() {
@@ -174,8 +175,9 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
       assert.equal(inclinees.length, 0,
         `${contexte} : aucune carte adverse engagée pendant les annonces (${inclinees.map((c) => c.dataset.cardId).join(', ')})`);
     }
-    // Début du tour du joueur : toutes ses créatures sont dégagées et comptées
-    // par le bouton « Attaquer avec tous » (le mal d'invocation excepté).
+    // Début du tour du joueur : les créatures qui peuvent attaquer sont comptées
+    // par le bouton « Attaquer avec tous ». Le gel et le venin de la Vipère
+    // interdisent aussi l'attaque, même après la fin du mal d'invocation.
     const attaqueTous = q('.rpg-btn--attaque-tous');
     const finTour = q('.rpg-btn--endturn');
     if (!anime && !auDoigt && attaqueTous && finTour && !finTour.disabled && !q('.rpg-annonce-sort') && !q('.rpg-btn--resolve-combat')) {
@@ -185,9 +187,12 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
         const engagees = mesCartes.filter((carte) => carte.dataset.combatTilted === 'true');
         assert.equal(engagees.length, 0,
           `${contexte} : aucune de vos cartes ne reste engagée au début du tour`);
-        const disponibles = mesCartes.filter((carte) => !carte.classList.contains('is-summoning-sick'));
-        assert.equal(disponibles.length, compte,
-          `${contexte} : les ${disponibles.length} cartes dégagées sont toutes jouables (${compte} annoncées) — ${mesCartes.map((carte) => `${carte.dataset.cardId}[${carte.className}]`).join(' | ')}`);
+        const disponibles = mesCartes.filter((carte) => carte.classList.contains('is-pret'));
+        const jouables = etat.joueur.creatures.filter(rpgPeutAttaquer);
+        assert.equal(disponibles.length, jouables.length,
+          `${contexte} : les créatures affichées prêtes correspondent au moteur`);
+        assert.equal(compte, jouables.length,
+          `${contexte} : les ${jouables.length} créatures qui peuvent attaquer sont annoncées par le bouton (${compte} annoncées) — ${mesCartes.map((carte) => `${carte.dataset.cardId}[${carte.className}]`).join(' | ')}`);
       }
     }
   };
@@ -215,6 +220,18 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
       if (q('.rpg-overlay')) { fin = 'duel terminé'; break; }
       verifier(aJoue ? 'tour' : 'debut-de-tour', { anime: impatient });
 
+      // Butin s'effectue en deux gestes depuis la confirmation ajoutée au duel :
+      // sélectionner une carte, puis valider la défausse avant de poursuivre.
+      if (q('.rpg-discard-prompt')) {
+        const confirmerDefausse = q('.rpg-btn--discard-confirm');
+        if (confirmerDefausse) await click(confirmerDefausse, 'valider-defausse');
+        else {
+          const carteADefausser = q('.rpg-hand__card');
+          assert.ok(carteADefausser, 'Butin : le joueur dispose d’une carte à défausser');
+          await click(carteADefausser, `choisir-defausse:${carteADefausser.dataset.cardId}`);
+        }
+        continue;
+      }
       // 1. Annonce du sorcier : répondre avec une magie rapide, ou laisser passer.
       const annonce = q('.rpg-annonce-sort__pass');
       if (annonce) {

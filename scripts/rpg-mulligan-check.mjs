@@ -60,8 +60,8 @@ assert.ok(mulliganPanel.length > 400 && mulliganPanel.includes('VoletMulligan'),
 // ── Le volet est une étape du jeu, pas une couche décorative ────────────────
 assert.match(battlePage, /setMulligan\(!modeTutoriel && rpgPeutMulligan\(duelRef\.current, 'joueur'\)[\s\S]*?\{ etape: 'choix', choix: new Set\(\)[\s\S]*?: null\)/,
   'les duels libres ouvrent le mulligan sur la main de départ, mais le tutoriel garde sa main guidée');
-assert.match(battlePage, /inert=\{viewport\.portrait \|\| mulliganOuvert \? true : undefined\}/,
-  'la table est rendue inerte tant que le mulligan n’est pas validé');
+assert.match(battlePage, /inert=\{viewport\.portrait \|\| mulliganOuvert \|\| choixManaEssaiOuvert \? true : undefined\}/,
+  'la table est inerte tant que le mulligan ou le choix du mana d’essai n’est pas validé');
 assert.match(battlePage, /const mulliganOuvert = Boolean\(mulligan\);/,
   'une seule source de vérité pour « le mulligan tient la table »');
 assert.match(battlePage, /const peutJouerCarte = \(carte\) => \{[\s\S]{0,240}?if \(mulliganOuvert\) return false;/,
@@ -187,4 +187,4 @@ assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*m
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-mulligan__card:not\(\.is-selected\):hover \{ transform: none; box-shadow: none; \}/,
   'au doigt, le survol ne soulève rien — et le liseré doré d’une carte choisie reste intact');
 
-console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus — couleur en haut à gauche, coût en haut à droite, plaques du jeu — attaque à gauche, défense à droite — et la ligne de type pour les terrains et les sorts seulement — l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
+console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans ligne de type — couleur en haut à gauche, coût en haut à droite, plaques ATQ/DÉF comme dans le jeu — toutes visibles d’un seul coup, échange contre le paquet battu et nouvelle main relue avant de rendre la table');

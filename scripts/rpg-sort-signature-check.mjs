@@ -70,11 +70,28 @@ for (const [surface, regle] of [
   assert.match(battleCss + mobileCss, regle, `${surface} annonce le repère que le socle suit`);
 }
 
-// ── Le sceau : le losange de la Magie Rapide, le médaillon de la Sorcellerie ─
-assert.match(battleCss, /\.rpg-sort-sceau--rapide::before\s*\{[^}]*radial-gradient\(circle at 34% 24%, #f8e69d, #8a5f0d/s,
-  'la nappe du losange reprend l’or des pastilles du jeu — peinte dans la découpe, sous l’éclair');
-assert.match(battleCss, /\.rpg-sort-sceau--sorcellerie\s*\{[^}]*radial-gradient\(circle at 34% 24%, #e3d7fb, #4b3676/s,
-  'le sceau de la Sorcellerie reprend l’améthyste');
+// ── Le sceau : forme de famille et couleur de la carte ──────────────────────
+for (const couleur of ['braise', 'eau', 'sable', 'neige']) {
+  const badge = battleCss.match(new RegExp(`\\.rpg-card-element-badge--${couleur}\\s*\\{([^}]*)\\}`))?.[1];
+  const teintes = badge?.match(/radial-gradient\(circle at 34% 24%, (#[\da-f]+), (#[\da-f]+) 72%\)/)?.slice(1);
+  const sceau = battleCss.match(new RegExp(`\\.rpg-sort-sceau--element-${couleur}\\s*\\{([^}]*)\\}`))?.[1];
+  assert.ok(teintes && sceau, `le repère et le sceau ${couleur} sont déclarés`);
+  assert.ok(sceau.includes(`--rpg-sort-sceau-clair: ${teintes[0]};`)
+    && sceau.includes(`--rpg-sort-sceau-sombre: ${teintes[1]};`),
+    `le sceau ${couleur} reprend les deux teintes du badge de couleur de la carte`);
+}
+assert.match(signatureSource, /const couleurs = cardColors\(carte\);[\s\S]*?rpg-sort-sceau--element-\$\{couleurs\[0\] \?\? 'sable'\}/,
+  'la couleur du jeton vient de chaque carte, indépendamment de sa famille');
+assert.match(cartesSource, /export function cardHybridGradient\(cardOrId\)[\s\S]*?CARD_FRAME_COLORS\[couleur\]\?\.color[\s\S]*?linear-gradient\(135deg, \$\{bandes\.join\(', '\)\}\)/,
+  'le dégradé partagé peint chaque élément côte à côte avec sa teinte de cadre');
+assert.match(signatureSource, /'--rpg-sort-sceau-fond-hybride': cardHybridGradient\(carte\)/,
+  'le sceau des magies hybrides réutilise le même dégradé que leur coût');
+assert.match(battleCss, /\.rpg-sort-sceau--hybride\s*\{[^}]*--rpg-sort-sceau-fond:\s*var\(--rpg-sort-sceau-fond-hybride\)/,
+  'la teinte hybride remplace le dégradé monochrome sur les deux formes');
+assert.match(battleCss, /\.rpg-sort-sceau--rapide::before\s*\{[^}]*background:\s*var\(--rpg-sort-sceau-fond\);/,
+  'l’intérieur du losange prend la couleur de la carte');
+assert.match(battleCss, /\.rpg-sort-sceau--sorcellerie\s*\{[^}]*background:\s*var\(--rpg-sort-sceau-fond\);/,
+  'le médaillon rond prend la même couleur de carte');
 assert.match(battleCss, /\.rpg-card-catalogue__sort,\s*\.rpg-atelier__carte-sort\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*8px;[^}]*left:\s*8px;[^}]*width:\s*var\(--rpg-card-marker-size, 38px\);/s,
   'le sceau des vignettes se pose au coin libre, en face du galet du coût, à l’échelle du repère');
 assert.match(battleCss, /\.rpg-sort-sceau--rapide\s*\{[^}]*clip-path:\s*polygon\(50% 0, 100% 50%, 50% 100%, 0 50%\)/s,
@@ -229,7 +246,7 @@ assert.match(pageSource, /const familleSort = magieFamille\(carte\);\s*const peu
 assert.match(pageSource, /familleSort \? `rpg-hand__card--famille-\$\{familleSort\}` : '',/,
   'la face en main porte la classe de sa famille');
 assert.match(pageSource, /\{familleSort && <SortSceau carte=\{carte\} className="rpg-hand__sceau rpg-hand__sort" \/>\}\s*\{estCreature && \(/,
-  'en main, un sort porte le sceau et aucune carte n’imprime de texte de type (terrain, magie ou sorcellerie)');
+  'en main, un sort porte son sceau coloré et aucune carte n’imprime de ligne de type');
 assert.match(pageSource, /<SortSceau carte=\{carte\} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" \/>/,
   'la face de l’aperçu — survol, appui long, fiche, annonce — porte le même sceau');
 assert.match(pageSource, /className=\{`rpg-hover-card-preview__type\$\{ligneFamille\}`\}/,
@@ -275,4 +292,4 @@ try {
   dom.window.close();
 }
 
-assert.match(smokeSource, /le socle est là si et seulement si/, 'le scénario tient l’équivalence, dans les deux sens');
+assert.match(smokeSource, /le sceau est là si et seulement si/, 'le scénario tient l’équivalence, dans les deux sens');

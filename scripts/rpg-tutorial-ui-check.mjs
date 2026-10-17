@@ -19,6 +19,8 @@ assert.match(cardGuide, /target\.scrollIntoView\(\{ behavior: mouvementReduit \?
   'chaque carte étudiée est amenée dans la fenêtre avant le repositionnement du spotlight');
 assert.match(cardGuideCss, /\.rpg-card-guide__header \.rpg-menu-button--resume\s*\{\s*width:\s*auto;\s*margin-top:\s*0;/u,
   'le bouton de reprise ne rétrécit pas la colonne de titre du guide');
+assert.match(cardGuide, /const degradeCout = cardHybridGradient\(carte\);[\s\S]*?rpg-card-guide__cost--hybride[\s\S]*?'--rpg-hybrid-cost-bg': degradeCout/u,
+  'le coût d’une éventuelle carte hybride du guide suit les couleurs de son sceau');
 assert.match(cardLessons, /terrain-hybride[\s\S]*?contresorts[\s\S]*?furie[\s\S]*?coup-rapide/u,
   'les fiches couvrent les terrains, les magies et les capacités de créature');
 assert.match(page, /<RpgTutorialOverlay[\s\S]*?onNext=\{continuerTutoriel\}[\s\S]*?onClose=\{fermerTutoriel\}/u,

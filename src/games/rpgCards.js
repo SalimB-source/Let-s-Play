@@ -124,14 +124,13 @@ export function bonusArme(carte) {
  * cadre du tout. Un sort ne se distinguait donc d'une créature ou d'un terrain
  * qu'en lisant la ligne de type, écrite en 6 px.
  *
- * Chaque famille reçoit ici sa **teinte** et sa **couleur d'encre**, que les
- * surfaces déclinent en trois canaux indépendants (voir `rpgSortSignature.jsx`
- * et le bloc « Les familles de sorts » de `rpg-battle.css`) : la **forme du
- * jeton** — chanfreiné pour la Magie Rapide, rond pour la Sorcellerie —, la
- * teinte, et le couple sigle + mot. Les deux socles partagent la même voûte :
- * c'est le jeton, la couleur et le sigle qui séparent les familles. La forme se
- * lit sans couleur, la couleur se lit sans lire, et le mot se lit sans couleur
- * ni forme.
+ * Chaque famille garde ici sa teinte et son encre pour le socle, la ligne de
+ * type et le halo de jouabilité (voir `rpgSortSignature.jsx` et le bloc « Les
+ * familles de sorts » de `rpg-battle.css`). Le jeton, lui, prend la **couleur
+ * de la carte** et distingue la famille par sa forme et son sigle : losange
+ * et éclair pour la Magie Rapide, cercle et étincelle pour la Sorcellerie.
+ * Les deux socles partagent la même voûte ; leur texte garde le nom de la
+ * famille même si leurs jetons ont la même couleur d'élément.
  */
 export const RPG_SORT_FAMILIES = {
   rapide: { key: 'rapide', label: 'Magie Rapide', teinte: '#ffd619', encre: '#ffe9a0' },
@@ -1945,6 +1944,20 @@ export function cardColors(cardOrId) {
   const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
   const configured = Array.isArray(card?.colors) && card.colors.length ? card.colors : [card?.element];
   return [...new Set(configured.filter((color) => RPG_CARD_COLORS.has(color)))];
+}
+
+/** Bandes nettes, une par élément, pour les sceaux et les coûts hybrides.
+ *  L'ordre des couleurs suit la carte, de la moitié haute gauche à la basse
+ *  droite ; une carte mono n'a pas besoin de ce dégradé. */
+export function cardHybridGradient(cardOrId) {
+  const couleurs = cardColors(cardOrId);
+  if (couleurs.length < 2) return null;
+  const part = 100 / couleurs.length;
+  const bandes = couleurs.map((couleur, index) => {
+    const teinte = CARD_FRAME_COLORS[couleur]?.color ?? CARD_FRAME_COLORS.sable.color;
+    return `${teinte} ${Math.round(index * part)}% ${Math.round((index + 1) * part)}%`;
+  });
+  return `linear-gradient(135deg, ${bandes.join(', ')})`;
 }
 
 /** Groupe renforcé par une source de Résonance : tribu ou élément. */
