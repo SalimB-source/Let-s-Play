@@ -249,6 +249,9 @@
   /* Même plateau vide, la rangée garde la hauteur d'une carte : les cinq
      emplacements dessinés dessous restent visibles. */
   min-height: clamp(110px, 23vh, 215px);
+  /* Aucune marge intérieure propre : la rangée et les cinq cases partagent
+     exactement la même grille, donc une carte posée tombe sur sa case. */
+  padding: 0;
 }
 .rpg-creature-slots {
   position: absolute;
@@ -258,8 +261,10 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: end;
   justify-items: center;
-  gap: 12px;
-  padding: 0 2%;
+  /* La gouttière des cartes vient de la rangée, quelle que soit la taille
+     d'écran : les colonnes des cases ne peuvent pas dériver des siennes. */
+  gap: inherit;
+  padding: 0;
   pointer-events: none;
 }
 .rpg-creature-slot {
@@ -288,6 +293,20 @@
 .rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card,
 .rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card-stack,
 .rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card-stack__toggle { position: relative; z-index: 1; }
+/* Une carte ne déborde jamais de sa case : elle se cale sur la largeur de sa
+   colonne, même quand la fenêtre rétrécit. */
+.rpg-battle[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack) {
+  max-width: 100%;
+}
+/* Au doigt, la rangée est une grille de cinq colonnes (et non une rangée
+   flexible) : la carte garde la largeur d'une case, et la marge négative qui
+   comprimait les voisines dans une rangée flexible disparaît. */
+.rpg-battle--touch[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack) {
+  width: min(100%, var(--rpg-field-card, 142px));
+}
+.rpg-battle--touch[data-mode-mana="essai"] .card-row > * + * {
+  margin-inline-start: 0;
+}
 
 /* ── Plateau plein : la fenêtre du sacrifice ────────────────────────────── */
 .rpg-sacrifice-choix {

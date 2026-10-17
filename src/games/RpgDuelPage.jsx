@@ -420,6 +420,22 @@ function mesurerDestinationVol(table, kind, from, carteId) {
   const exampleRect = example?.getBoundingClientRect();
   const width = example?.offsetWidth || exampleRect?.width || readPx(example, 'width', Math.min(from.width, 142));
   const height = example?.offsetHeight || exampleRect?.height || width * 1.25;
+  // Mode sans terrains : la carte jouée prend la place libre dessinée sur le
+  // plateau. On vise la case elle-même (la cinquième reste toujours visible)
+  // au lieu de répartir les cartes comme dans une rangée flexible.
+  const slots = [...zone.querySelectorAll('.rpg-creature-slot')];
+  const slotLibre = slots[cards.length];
+  const slotRect = slotLibre?.getBoundingClientRect();
+  if (slotRect && (slotRect.width || slotLibre.offsetWidth) && (slotRect.height || slotLibre.offsetHeight)) {
+    const slotWidth = slotRect.width || slotLibre.offsetWidth;
+    const slotHeight = slotRect.height || slotLibre.offsetHeight;
+    return {
+      left: slotRect.left + (slotWidth - width) / 2,
+      top: slotRect.top + slotHeight - height,
+      width,
+      height,
+    };
+  }
   const countAfterPlay = cards.length + 1;
   const available = Math.max(0, box.width - paddingLeft - paddingRight);
   const distributedSpace = Math.max(0, (available - countAfterPlay * width - (countAfterPlay - 1) * gap) / (countAfterPlay + 1));

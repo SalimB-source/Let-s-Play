@@ -450,3 +450,84 @@ test('champ limité à cinq créatures : la sixième exige un sacrifice choisi, 
   }
   assert.equal(classique.joueur.creatures.length, 6, 'le duel classique garde son champ illimité');
 });
+
+test('les créatures venues d’un effet prennent aussi une des cinq cases', () => {
+  const duel = nouveau(mono);
+  mulligans(duel);
+  rpgDemarrerManaEssai(duel);
+  duel.sorcier.main = [];
+  const payerSable = () => {
+    duel.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+    duel.joueur.manaChoixEnAttente = false;
+  };
+  const poser = (carteId) => {
+    payerSable();
+    duel.joueur.main = [carteId];
+    const res = rpgJouerCreature(duel, 'joueur', carteId);
+    assert.equal(res.ok, true, `${carteId} se pose`);
+    return res;
+  };
+  const jetons = () => duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable').length;
+
+  // Tarek arrive sur un champ vide : ses deux chiens de sable trouvent chacun
+  // une case (Tarek occupe la première, les chiens les deux suivantes).
+  poser('tarek');
+  assert.equal(duel.joueur.creatures.length, 3);
+  assert.equal(jetons(), 2, 'les deux jetons entrent quand deux cases restent');
+
+  // Une seule case libre : un seul chien naît, l'autre n'a pas de place.
+  const duelPartiel = nouveau(mono);
+  mulligans(duelPartiel);
+  rpgDemarrerManaEssai(duelPartiel);
+  duelPartiel.sorcier.main = [];
+  const poserPartiel = (carteId) => {
+    duelPartiel.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+    duelPartiel.joueur.manaChoixEnAttente = false;
+    duelPartiel.joueur.main = [carteId];
+    assert.equal(rpgJouerCreature(duelPartiel, 'joueur', carteId).ok, true);
+  };
+  for (let place = 0; place < 3; place += 1) poserPartiel('tislit-des-aures');
+  poserPartiel('tarek');
+  assert.equal(duelPartiel.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX);
+  assert.equal(duelPartiel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable').length, 1,
+    'une case libre, un seul jeton');
+  assert.ok(duelPartiel.log.some((ligne) => /champ est plein.*de plus/.test(ligne)),
+    'le journal raconte le jeton resté dehors');
+
+  // Champ déjà plein : Tarek entre comme cinquième créature, aucun jeton.
+  const duelPlein = nouveau(mono);
+  mulligans(duelPlein);
+  rpgDemarrerManaEssai(duelPlein);
+  duelPlein.sorcier.main = [];
+  const poserPlein = (carteId) => {
+    duelPlein.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+    duelPlein.joueur.manaChoixEnAttente = false;
+    duelPlein.joueur.main = [carteId];
+    assert.equal(rpgJouerCreature(duelPlein, 'joueur', carteId).ok, true);
+  };
+  for (let place = 0; place < 4; place += 1) poserPlein('tislit-des-aures');
+  poserPlein('tarek');
+  assert.equal(duelPlein.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX);
+  assert.equal(duelPlein.joueur.creatures.some((entite) => entite.carteId === 'chien-de-sable'), false,
+    'aucun jeton ne déborde des cinq cases');
+
+  // La Réanimation ne sort pas une créature du cimetière sans case libre, et
+  // la carte n'est pas consommée.
+  duelPlein.joueur.main = ['reanimation'];
+  duelPlein.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+  duelPlein.joueur.cimetiere = ['tislit-des-aures'];
+  const refusee = rpgLancerMagie(duelPlein, 'joueur', 'reanimation');
+  assert.equal(refusee.ok, true, 'la magie se lance');
+  assert.equal(duelPlein.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX, 'toujours cinq créatures');
+  assert.equal(duelPlein.joueur.cimetiere.filter((id) => id === 'tislit-des-aures').length, 1,
+    'la créature reste au cimetière');
+  assert.ok(duelPlein.log.some((ligne) => ligne.includes('aucune place libre')));
+
+  // Une case libérée : la même magie ramène la créature dans la case.
+  assert.equal(rpgSacrifierCreature(duelPlein, 'joueur', duelPlein.joueur.creatures[0].id).ok, true);
+  duelPlein.joueur.main = ['reanimation'];
+  duelPlein.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+  assert.equal(rpgLancerMagie(duelPlein, 'joueur', 'reanimation').ok, true);
+  assert.equal(duelPlein.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX, 'la réanimation reprend la case libre');
+  assert.equal(duelPlein.joueur.creatures.at(-1)?.carteId, 'tislit-des-aures');
+});
