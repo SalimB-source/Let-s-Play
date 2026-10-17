@@ -213,8 +213,8 @@ assert.match(battlePage, /<aside\s+ref=\{panelRef\}/,
   'le panneau de l’aperçu porte la référence mesurée par le placement');
 assert.match(battlePage, /style=\{apercuSurvol\.style\}\s+panelRef=\{panelRef\}/,
   'l’aperçu du survol est mesuré par son panneau');
-assert.match(battlePage, /panelRef=\{panelRef\}\s+variante="mulligan"/,
-  'l’aperçu du mulligan est mesuré par le même panneau');
+assert.doesNotMatch(battlePage, /variante="mulligan"/,
+  'aucun aperçu rapide au survol n’est rendu dans le mulligan');
 assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*grid;[^}]*gap:\s*7px;[\s\S]*?\.rpg-hover-card-preview__rules > span\s*\{\s*display:\s*block;/s,
   'chaque effet occupe sa propre ligne dans l’aperçu au survol');
 assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
@@ -746,16 +746,22 @@ assert.doesNotMatch(frameCss, /rpg-mythic-art-gloss/,
 assert.doesNotMatch(frameCss, /rpg-card--mythique::before[^{]*\{[^}]*\b(?:background|animation)\s*:/s,
   'les faces mythiques ne portent plus de calque de reflet séparé du foil');
 const foilCss = frameCss.slice(frameCss.indexOf('LE FOIL'), frameCss.indexOf("/* ── La face de l'aperçu en 3D"));
-// Le foil ne vit plus que sur les trois faces de **lecture** : l'aperçu (survol,
-// appui long, fiche du catalogue, annonce, mulligan), les fiches du guide et les
-// cartes du Souk. Les faces de la table — main, mulligan, cartes en jeu,
-// terrains, dessus du paquet — ne portent plus ce calque : une carte posée ne
-// s'incline pas, et ses taches d'arc-en-ciel s'y lisaient comme un glow
-// multicolore figé sur l'illustration.
+// Le foil reste sur les fiches du guide, mais pas sur les aperçus du duel ni
+// sur les cartes révélées pendant l'ouverture d'un booster.
 const foilRule = foilCss.slice(0, foilCss.indexOf('{'));
 assert.match(foilRule,
-  /\.rpg-hover-card-preview__face::after,\s*\.rpg-card-guide__example::after,\s*\.rpg-souk__carte-art::after\s*$/,
-  'le foil ne couvre plus que les trois faces de lecture : aperçu, guide et Souk');
+  /\.rpg-card-guide__example::after\s*$/,
+  'le foil reste réservé aux fiches du guide');
+assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview__face::after/,
+  'les cartes dans la preview ne portent plus le glow multicolore');
+assert.doesNotMatch(battleCss, /\.rpg-souk__carte-art::after/,
+  'les cartes révélées dans un booster ne portent plus le glow multicolore');
+assert.doesNotMatch(hoverPreviewSource, /--rpg-foil-/,
+  'l’inclinaison 3D de la preview ne déplace plus de reflet foil');
+assert.match(hoverPreviewSource, /--rpg-face-3d-x/,
+  'l’aperçu continue de s’incliner vers le curseur');
+assert.match(battleCss, /\.rpg-hover-card-preview \.rpg-hover-card-preview__face\s*\{[^}]*perspective\(var\(--rpg-face-3d-focale/s,
+  'la preview conserve son inclinaison 3D sans le glow multicolore');
 for (const face of [
   '.rpg-card--img::after',
   '.rpg-hand__card--img::after',
@@ -773,20 +779,17 @@ assert.doesNotMatch(catalogueArtCss, /radial-gradient|--rpg-foil-/,
   'la vignette du catalogue reste sans foil : la grille ne doit pas onduler sous le curseur');
 assert.match(catalogueArtCss, /linear-gradient\(0deg, rgba\(5, 4, 7/,
   'la vignette du catalogue garde son voile du bas, qui rend le nom et le coût lisibles');
-// Le foil revient sur la fiche ouverte au clic — la seule face où l'on incline.
-assert.match(foilCss, /\.rpg-hover-card-preview__face::after/,
-  'la fiche ouverte au clic porte le foil, là où la carte suit vraiment le curseur');
 assert.match(foilCss, /repeating-linear-gradient[\s\S]*?radial-gradient\(ellipse[\s\S]*?mix-blend-mode: screen;/,
-  'le foil mêle le grain du support et des taches d’arc-en-ciel, en lumière ajoutée');
+  'le foil du guide mêle grain, reflets colorés et lumière ajoutée');
 assert.match(foilCss, /var\(--rpg-foil-cx, 0%\)/,
-  'le foil est placé par l’angle de vue, et non par une trame qui défile');
+  'le foil restant est placé par l’angle de vue, et non par une trame qui défile');
 assert.match(foilCss, /\* 1\.35\)[\s\S]*?\* 0\.7\)[\s\S]*?\* 1\.7\)/,
   'les taches d’arc-en-ciel glissent à des vitesses différentes, sinon la carte resterait plate');
-// Le foil lui-même doit continuer à mêler le grain du support et les taches
+// Le foil restant continue à mêler le grain du support et les taches
 // d'arc-en-ciel, en lumière ajoutée : c'est ce qui en fait une carte brillante
 // sous la lumière, et non une image teintée.
 assert.match(foilCss, /repeating-linear-gradient\(118deg[\s\S]*?linear-gradient\(112deg, transparent 30%/,
-  'le foil des faces de lecture garde ses quatre taches, son grain et son éclat, dans l’ordre');
+  'le foil du guide garde ses taches, son grain et son éclat, dans l’ordre');
 // Le mythe reste reconnaissable, mais par son cadre et son relief — plus par un
 // reflet qui lui serait propre.
 assert.match(frameCss, /filter: saturate\(1\.1\) contrast\(1\.04\);/,
@@ -1178,8 +1181,8 @@ assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-ca
   'aucune épaisseur de cadre fixe en pixels ne rétrécit le cadre de la carte annoncée');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*19px;/s,
   'le glyphe de couleur de la carte annoncée reste lisible (19 px, liseré 2 px), comme sur les grandes faces du catalogue');
-assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*19px;/s,
-  'le glyphe de couleur de l’aperçu rapide reste lisible (19 px, liseré 2 px), comme sur les grandes faces');
+assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card-element-badge,\s*\.rpg-mulligan__card \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*calc\(var\(--rpg-card-marker-size, 38px\) \* \.5\);/s,
+  'les glyphes de l’aperçu rapide et du mulligan suivent le diamètre du repère, avec un liseré de 2 px');
 assert.match(battleCss, /@media \(max-width: 620px\)[\s\S]*?\.rpg-hover-card-preview--annonce\s*\{[^}]*--rpg-annonce-column-width:\s*min\(210px, calc\(100vw/s,
   'sur mobile, la colonne est dimensionnée pour centrer tout l’aperçu sans couper son contenu');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__details-column\s*\{[^}]*position:\s*relative;[^}]*width:\s*var\(--rpg-annonce-column-width\);/s,

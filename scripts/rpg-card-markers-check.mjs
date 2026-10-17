@@ -16,7 +16,7 @@ const markers = (hybrid, catalogue = false, preview = false) => `
   <span class="rpg-card-element-badge rpg-card-element-badge--${hybrid ? 'hybride' : 'braise'}">${hybrid
     ? '<i class="rpg-card-element-badge__pip">🔥</i><i class="rpg-card-element-badge__pip">⏳</i>' : '🔥'}</span>
   ${catalogue ? '<span class="rpg-card-catalogue__cost">3</span>'
-    : preview ? '<span class="rpg-mana-cost rpg-mana-cost--braise"><b>3</b></span>'
+    : preview ? '<span class="rpg-mana-cost rpg-mana-cost--braise"><b>3</b></span><span class="rpg-sort-sceau rpg-sort-sceau--rapide rpg-hover-card-preview__sceau rpg-hover-card-preview__sort"></span><footer class="rpg-card__foot"><span class="rpg-card__stat--atk"><svg class="rpg-stat-icon" viewBox="0 0 24 24"></svg><span class="rpg-stat-value">4</span></span><span class="rpg-card__pt"><svg class="rpg-stat-icon" viewBox="0 0 24 24"></svg><span class="rpg-stat-value">3</span></span></footer>'
     : '<header class="rpg-card__title rpg-hand__title"><span class="rpg-mana-cost is-compact"><b>3</b></span></header>'}`;
 try {
   const page = await browser.newPage();
@@ -47,16 +47,19 @@ try {
       const results = await page.locator('[data-face]').evaluateAll((faces) => faces.map((face) => {
         const size = (node) => node ? (() => {
           const rect = node.getBoundingClientRect();
-          return { width: rect.width, height: rect.height, top: rect.top, left: rect.left, right: rect.right };
+          return { width: rect.width, height: rect.height, top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
         })() : null;
         const style = getComputedStyle(face);
         const hybrid = face.querySelector('.rpg-card-element-badge__pip');
+        const atk = face.querySelector('.rpg-card__stat--atk');
         return {
           name: face.dataset.face,
           color: size(hybrid || face.querySelector('.rpg-card-element-badge')),
           cost: size(face.querySelector('.rpg-mana-cost, .rpg-card-catalogue__cost')),
+          sceau: size(face.querySelector('.rpg-hover-card-preview__sceau')),
           face: size(face),
           costFont: parseFloat(getComputedStyle(face.querySelector('.rpg-mana-cost') || face).fontSize),
+          statFont: atk ? parseFloat(getComputedStyle(atk).fontSize) : 0,
           border: parseFloat(style.borderTopWidth),
           background: style.backgroundImage,
         };
@@ -74,7 +77,11 @@ try {
           const leftInset = result.color.left - result.face.left;
           const rightInset = result.face.right - result.cost.right;
           assert.ok(Math.abs(leftInset - rightInset) < 0.1, `${label}: marges symétriques`);
+          assert.ok(Math.abs(result.sceau.left - result.color.left) < 0.1, `${label}: sceau de sort aligné sur la couleur`);
+          assert.ok(Math.abs((result.face.bottom - result.sceau.bottom) - (result.color.top - result.face.top)) < 0.5, `${label}: marge verticale du sceau symétrique à la couleur`);
+          assert.ok(Math.abs(result.sceau.width - result.color.width) < 0.1, `${label}: même diamètre pour le sceau et la couleur`);
           assert.ok(result.costFont >= result.cost.width * .45, `${label}: chiffre à l'échelle du disque`);
+          assert.ok(result.statFont >= result.color.width * .6, `${label}: statistiques ATQ/DÉF agrandies à l'échelle de l'aperçu`);
         }
         // L'essai sans cadre s'applique désormais aussi à l'ordinateur.
         assert.equal(result.border, 0, `${label}: aucun cadre`);

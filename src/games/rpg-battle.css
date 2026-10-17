@@ -1341,18 +1341,10 @@
 }
 
 /* ── Plein écran : le menu comme le duel ─────────────────────────────────────
-   Le Sablier se lance en plein écran, sur ordinateur comme sur téléphone, et
-   son interface d'avant-partie (menu Jouer, mode Histoire, decks, catalogue) en
-   fait partie. Deux couches, comme les jeux d'arcade :
-     - la couche fixe ci-dessus, qui couvre tout le viewport dès l'ouverture de
-       la page — `is-immersive` est posée par `useGameFullscreen` au montage,
-       sans geste, et reste quand le navigateur refuse le plein écran natif
-       (iPhone, `iframe` sans `allowfullscreen`) ;
-     - le plein écran natif, demandé au premier geste du joueur, au lancement
-       d'une partie, par le bouton du menu ou de la barre du duel, ou par la
-       touche F (`gameFullscreen.js`).
-   Les marges d'encoche (`env(safe-area-inset-*)`, plus bas) sont conservées :
-   c'est sur iPhone, sans natif, que la couche fixe seule tient le jeu. */
+   La page ne force jamais le plein écran : la couche immersive et l'API native
+   ne sont activées que sur demande explicite (boutons ou touche F). Les règles
+   visuelles partagées par le menu et le duel sont définies ici. Les marges
+   d'encoche (`env(safe-area-inset-*)`, plus bas) restent conservées. */
 body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-battle.is-immersive { overscroll-behavior: none; }
 
@@ -3553,38 +3545,62 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* Les statistiques sont imprimées sur la face comme sur une carte posée :
-   mêmes pastilles dorée/acier et mêmes icônes vectorielles que le plateau. */
-.rpg-hover-card-preview__face .rpg-card__foot {
+   mêmes pastilles dorée/acier et mêmes icônes vectorielles que le plateau.
+   Même bande aussi : deux rectangles côte à côte qui prennent toute la
+   largeur de la carte — ATQ à gauche, DÉF à droite — exactement comme
+   les cartes en jeu sur le plateau (`rpg-mobile.css`). */
+.rpg-hover-card-preview__face .rpg-card__foot,
+.rpg-mulligan__card .rpg-card__foot,
+.rpg-mulligan__stats {
   position: absolute;
-  z-index: 2;
-  right: 6%;
-  bottom: 4%;
-  left: 6%;
-  display: flex;
+  z-index: 4;
+  right: var(--rpg-card-element-marker-left, 6%);
+  bottom: var(--rpg-card-element-marker-top, 5%);
+  left: var(--rpg-card-element-marker-left, 6%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  justify-content: space-between;
-  gap: 5px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   background: transparent;
   pointer-events: none;
 }
 .rpg-hover-card-preview__face .rpg-card__stat--atk,
-.rpg-hover-card-preview__face .rpg-card__pt {
-  min-width: 46px;
-  padding: 3px 7px;
-  font-size: 15.5px;
+.rpg-hover-card-preview__face .rpg-card__pt,
+.rpg-mulligan__card .rpg-card__stat--atk,
+.rpg-mulligan__card .rpg-card__pt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 10px;
+  border: 1.5px solid rgba(255, 255, 255, .34);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .68);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .62), inset 0 1px rgba(255, 255, 255, .12);
+  color: #fff8e8;
+  text-shadow: 0 1px 2px #000;
+  font: 900 calc(var(--rpg-card-marker-size, 38px) * .62)/1.15 Georgia, serif;
 }
-.rpg-hover-card-preview__face .rpg-stat-icon {
-  width: .85em;
-  height: .85em;
-  flex: 0 0 .85em;
+.rpg-hover-card-preview__face .rpg-stat-icon,
+.rpg-hover-card-preview__face .rpg-card__foot .rpg-stat-icon,
+.rpg-battle--touch .rpg-hover-card-preview__face .rpg-card__foot .rpg-stat-icon,
+.rpg-mulligan__card .rpg-stat-icon,
+.rpg-mulligan__card .rpg-card__foot .rpg-stat-icon,
+.rpg-battle--touch .rpg-mulligan__card .rpg-card__foot .rpg-stat-icon {
+  width: 1em;
+  height: 1em;
+  flex: 0 0 1em;
 }
-.rpg-hover-card-preview__face .rpg-card-element-badge {
+.rpg-hover-card-preview__face .rpg-card-element-badge,
+.rpg-mulligan__card .rpg-card-element-badge {
   border-width: 2px;
-  font-size: 19px;
+  font-size: calc(var(--rpg-card-marker-size, 38px) * .5);
 }
-.rpg-hover-card-preview__face .rpg-card-element-badge__pip {
+.rpg-hover-card-preview__face .rpg-card-element-badge__pip,
+.rpg-mulligan__card .rpg-card-element-badge__pip {
   border-width: 2px;
 }
 .rpg-hover-card-preview__details {
@@ -3839,6 +3855,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__face .rpg-card-element-badge__pip {
   border-width: 2px;
 }
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__face .rpg-card__foot {
+  gap: 8px;
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__face .rpg-card__stat--atk,
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__face .rpg-card__pt {
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 10px;
+}
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__details {
   align-content: start;
   gap: 10px;
@@ -4030,6 +4055,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 /* La carte : la face 4:5 du jeu, et son cadre. */
 .rpg-mulligan__card {
+  --rpg-card-element-marker-top: 5%;
+  --rpg-card-element-marker-left: 6%;
   position: relative;
   aspect-ratio: 4 / 5;
   min-width: 0;
@@ -4037,7 +4064,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   overflow: hidden;
   padding: 0;
   border: var(--rpg-card-border-large, 6px) solid var(--rpg-frame-color, #efe0bd);
-  border-radius: 11px;
+  border-radius: var(--rpg-card-radius-sm, 8px);
   background: #0b0c10;
   color: #fff0cf;
   cursor: pointer;
@@ -4070,79 +4097,23 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   height: 100%;
   object-fit: cover;
 }
-/* Les repères des cartes du jeu, et rien d'autre : la couleur en haut à gauche,
-   le coût en haut à droite, et en bas à droite la ligne de type — la seule
-   ligne écrite de la face — au-dessus des plaques d'attaque et de défense. */
+/* Les repères des cartes du mulligan sont exactement ceux de l'aperçu :
+   la couleur en haut à gauche, le coût en haut à droite, le sceau d'un sort
+   en bas à gauche aligné sur la couleur, et en bas les deux plaques ATQ/DÉF
+   noires translucides d'une créature. */
 .rpg-mulligan__card .rpg-card-element-badge {
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
 }
-/* La pile du bas, sur toute la largeur de la carte : la ligne de type centrée,
-   puis les deux plaques du jeu, chacune sur son bord — l'attaque à gauche, la
-   défense à droite, comme la main du jeu. Le bloc est ancré par son bas : il
-   grandit vers le haut, et la ligne de type ne descend jamais sur les plaques. */
-.rpg-mulligan__bas {
-  position: absolute;
-  z-index: 3;
-  right: 6%;
-  bottom: 5%;
-  left: 6%;
-  display: grid;
-  gap: clamp(2px, 1.6cqw, 6px);
-  justify-items: center;
-  pointer-events: none;
-}
-.rpg-mulligan__type {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  min-width: 0;
-  padding: 1px 6px;
-  border: 1px solid rgba(20, 13, 7, .85);
-  border-radius: 4px;
-  background: rgba(31, 22, 13, .86);
-  color: #fff1cf;
-  font: 700 clamp(6.5px, 4.2cqw, 12px)/1.25 var(--mono, monospace);
-  letter-spacing: .03em;
-  max-width: 100%;
-  text-align: center;
-  text-transform: uppercase;
-  text-shadow: 0 1px 2px #000;
-}
-/* L'attaque et la défense comme sur les cartes en jeu : les deux plaques du jeu
-   — l'épée sur fond d'or à gauche, le bouclier sur fond d'acier à droite,
-   chacune sur son bord de la carte — icône et chiffre côte à côte. Elles se
-   règlent sur la largeur de la carte : à l'échelle du volet, elles sont plus
-   grandes qu'en main comme sur la table. */
-.rpg-mulligan__stats {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: clamp(3px, 2.4cqw, 9px);
-  width: 100%;
-  pointer-events: none;
-}
-.rpg-mulligan__stats .rpg-card__stat--atk,
-.rpg-mulligan__stats .rpg-card__pt {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(2px, 1.8cqw, 6px);
-  min-width: clamp(34px, 26cqw, 82px);
-  padding: clamp(2px, 1.6cqw, 6px) clamp(4px, 3cqw, 11px);
-  border-radius: clamp(5px, 4.4cqw, 13px);
-  font: 900 clamp(11px, 7.6cqw, 26px)/1.1 Georgia, serif;
-}
 .rpg-mulligan__card .rpg-mana-cost {
   position: absolute;
-  z-index: 3;
-  top: 5%;
-  right: 6%;
+  z-index: 4;
+  top: var(--rpg-card-element-marker-top, 5%);
+  right: var(--rpg-card-element-marker-left, 6%);
   aspect-ratio: 1;
   padding: 0;
   border-radius: 50%;
-  font-size: clamp(9px, 7cqw, 15px);
+  font-size: calc(var(--rpg-card-marker-size, 30px) * .48);
   pointer-events: none;
 }
 .rpg-mulligan__card .rpg-mana-cost i {
@@ -7311,6 +7282,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   --rpg-sort-sceau-encre: #281b05;
   --rpg-sort-sceau-halo: rgba(255, 215, 98, .8);
   --rpg-sort-sceau-fond: radial-gradient(circle at 34% 24%, var(--rpg-sort-sceau-clair), var(--rpg-sort-sceau-sombre) 72%);
+  position: relative;
   display: grid;
   aspect-ratio: 1;
   place-items: center;
@@ -7340,7 +7312,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    couleurs, et il ne se confond pas avec la pastille d'élément, qui garde le
    cercle plein. */
 .rpg-sort-sceau--rapide {
-  position: relative;
   border-color: transparent; /* la découpe emporterait le liseré : il est peint dessous */
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   background: var(--rpg-sort-sceau-clair);
@@ -7380,15 +7351,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* La face verrouillée de l'atelier garde son voile au-dessus du sceau. */
 .rpg-atelier__carte-sort { z-index: 1; bottom: 5px; left: 5px; }
 
-/* Le mulligan : le jeton prend la taille des repères de la carte, comme le
-   coût et la pastille de couleur qu'il accompagne. */
-.rpg-mulligan__sceau {
-  width: clamp(16px, 15cqw, 30px);
-  font-size: clamp(9px, 7cqw, 15px);
-}
-
-/* Même ligne et mêmes marges que la couleur, sur toutes les tailles d'aperçu.
-   Le chiffre suit aussi le diamètre partagé, y compris dans la grande fiche. */
+/* Le mulligan et l'aperçu : le jeton prend la taille et la position des repères
+   de la carte, aligné sur la pastille de couleur qu'il accompagne. */
 .rpg-hover-card-preview__face .rpg-mana-cost {
   position: absolute;
   z-index: 4;
@@ -7400,18 +7364,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hand__sort {
   position: absolute;
   z-index: 3;
-  bottom: 8px;
-  left: 8px;
+  bottom: var(--rpg-card-element-marker-top, 5%);
+  left: var(--rpg-card-element-marker-left, 6%);
   width: var(--rpg-card-marker-size, 28px);
+  height: var(--rpg-card-marker-size, 28px);
   font-size: calc(var(--rpg-card-marker-size, 28px) * .6);
 }
 .rpg-hover-card-preview__sceau,
-.rpg-hover-card-preview__sort {
+.rpg-hover-card-preview__sort,
+.rpg-mulligan__sceau,
+.rpg-mulligan__sort {
   position: absolute;
-  z-index: 3;
-  bottom: 8px;
-  left: 8px;
+  z-index: 4;
+  bottom: var(--rpg-card-element-marker-top, 5%);
+  left: var(--rpg-card-element-marker-left, 6%);
   width: var(--rpg-card-marker-size, 38px);
+  height: var(--rpg-card-marker-size, 38px);
   font-size: calc(var(--rpg-card-marker-size, 38px) * .6);
 }
 
@@ -7422,8 +7390,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    leur or sur l'annonce d'un sort joué. */
 .rpg-sort-ligne--rapide { color: #ffdf7f; }
 .rpg-sort-ligne--sorcellerie { color: #ddccff; }
-.rpg-mulligan__type--rapide { border-color: rgba(255, 214, 25, .62); background: rgba(46, 32, 4, .9); color: #ffe9a0; }
-.rpg-mulligan__type--sorcellerie { border-color: rgba(179, 154, 224, .62); background: rgba(30, 20, 50, .9); color: #ece3ff; }
 
 /* ── La teinte de la lueur de jouabilité ─────────────────────────────────────
    Le halo d'une carte en main (`.rpg-hand__card.is-playable`, plus haut dans
@@ -7768,47 +7734,29 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   LE FOIL — une carte qui brille vraiment, et qui brille *quand on la bouge*
+   LE FOIL — réservé aux fiches du guide
    ──────────────────────────────────────────────────────────────────────────
-   Un foil de Magic ou de Pokémon ne fait pas tourner un reflet dans le vide :
-   le reflet se déplace parce que la carte a changé d'angle sous la lumière.
-   Ce calque ne s'anime donc pas — il est *placé* par l'angle de vue.
+   Le reflet se déplace avec l'angle de vue, au lieu de tourner tout seul.
+   L'angle, lu sur le curseur et partagé par `useLumiereCartes`, place le calque
+   sur les cartes qui portent cet effet.
 
-   L'angle vient de deux sources ; la face la plus proche du curseur l'emporte :
-   - `--rpg-foil-cx/cy`, posés sur `<html>` par `useLumiereCartes` : une seule
-     lumière pour tout le plateau, lue sur le curseur. Un seul reflet que toutes
-     les faces partagent, comme une table de cartes vues ensemble ;
-   - les mêmes deux variables, réécrites par la face de l'aperçu elle-même à
-     chaque inclinaison : l'aperçu est la seule carte qu'on incline, et son
-     reflet part de l'inclinaison plutôt que du curseur. On la tourne, les
-     taches d'arc-en-ciel glissent avec elle. C'est le geste du joueur qui
-     pilote, pas une boucle.
-
-   Trois faces seulement le portent, et ce sont les faces qu'on **lit** :
-   l'aperçu — au survol, à l'appui long, dans la fiche du catalogue, à l'annonce,
-   et celui du mulligan, qui est une face de lecture lui aussi —, les fiches du
-   guide et les cartes du Souk. Les faces **de la table**, elles, ne le portent
-   plus du tout : la main, le mulligan, les cartes en jeu, les terrains et le
-   dessus du paquet sont des cartes **posées**, qui ne s'inclinent pas — leurs
-   quatre taches d'arc-en-ciel n'avaient donc rien à suivre, et se lisaient comme
-   un glow multicolore figé sur l'illustration. La lumière du plateau reste lue
-   (`useLumiereCartes`, plus haut dans la page) : elle n'éclaire simplement plus
-   aucune face posée. Pour rendre le foil à l'une d'elles, il suffit de remettre
-   son sélecteur dans la liste ci-dessous — c'est la seule liste, et rien
-   d'autre n'est à changer.
+   Les aperçus de cartes (`.rpg-hover-card-preview__face`) et les cartes
+   révélées dans les boosters (`.rpg-souk__carte-art`) en sont volontairement
+   exclus : leurs illustrations restent nettes, sans glow multicolore. L'aperçu
+   garde son inclinaison 3D au survol ; seule la couche de foil disparaît.
+   Les cartes posées sur la table (main, mulligan, créatures, terrains et dessus
+   du paquet) restent elles aussi sans foil.
 
    Six couches, du grain au plus fort :
    1. le grain du foil — de fines stries à angle fixe, le quadrillage qu'on voit
       en rapprochant la carte ;
    2–5. quatre taches d'arc-en-ciel, décalées en profondeur (× 1,35, × 0,7,
       × 1,7) : c'est ce décalage qui donne le relief — sans lui, les taches
-      coulisseraient comme un calque unique et la carte paraitrait plate ;
+      coulisseraient comme un calque unique et la carte paraîtrait plate ;
    6. l'éclat qui court, inversé par rapport aux taches : il reste sur les bords
       quand celles-ci sont au centre.
    ══════════════════════════════════════════════════════════════════════════ */
-.rpg-hover-card-preview__face::after,
-.rpg-card-guide__example::after,
-.rpg-souk__carte-art::after {
+.rpg-card-guide__example::after {
   content: "";
   position: absolute;
   z-index: 1;
@@ -7834,9 +7782,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   mix-blend-mode: screen;
 }
 
-/* Le reste des faces — la main, le mulligan, les cartes en jeu, les terrains et
-   le dessus du paquet — n'a plus de foil du tout : le pourquoi est en tête de
-   section, et le retour en arrière tient à un sélecteur dans sa liste. */
+/* Les faces de table, les aperçus et les cartes révélées dans les boosters
+   restent sans foil ; seules les fiches du guide gardent cette couche. */
 
 /* ── La face de l'aperçu en 3D ───────────────────────────────────────────────
    Seule l'aperçu — survol, appui long, fiche du catalogue, annonce, mulligan —
@@ -7863,4 +7810,23 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-hover-card-preview .rpg-hover-card-preview__face.is-suit-la-souris {
   transition: none;
+}
+
+/* La défausse est un choix confirmé : la carte retenue reste nettement
+   marquée pendant que le joueur vérifie son choix. */
+.rpg-hand__card.is-discard-selected {
+  outline: 3px solid #ffd619;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(255, 214, 25, .28), 0 0 24px rgba(255, 214, 25, .55);
+}
+.rpg-discard-prompt {
+  color: #ffe9a0;
+  font: 700 12px/1.35 var(--display, sans-serif);
+}
+.rpg-btn--discard-confirm {
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .rpg-discard-prompt { flex: 1 1 100%; text-align: center; }
+  .rpg-btn--discard-confirm { min-height: 40px; }
 }

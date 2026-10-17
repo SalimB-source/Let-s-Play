@@ -168,7 +168,7 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
   assert.deepEqual(cavalier.arrivee, { type: 'combat', cible: 'creature' });
   assert.match(cavalier.text, /se bat contre une créature adverse ciblée/i);
   assert.equal(RPG_DUEL_CARDS.some((carte) => carte.id === cavalier.id && carte.kind === 'creature'), true);
-  assert.equal(RPG_DECK_JOUEUR_BASE.filter((id) => id === cavalier.id).length, 3,
+  assert.equal(RPG_DECK_JOUEUR_BASE.filter((id) => id === cavalier.id).length, 2,
     'le deck Veilleurs du Désert aligne le Cavalier à son maximum légal');
   assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE).ok, true, 'le deck conserve ses 40 cartes et sa limite d’exemplaires');
   assert.equal(new Set(RPG_DUEL_CARDS.map((carte) => carte.id)).size, RPG_DUEL_CARDS.length,
@@ -487,8 +487,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
   // dédiée, variante du Glacier comprise (aucune ne partage le fichier d’une autre).
   const illustrationsNeige = RPG_DECK_NEIGE_BASE.filter((id, index, deck) => deck.indexOf(id) === index);
-  assert.equal(illustrationsNeige.length, 13,
-    'le deck Neige réunit les treize cartes distinctes retenues par sa recette');
+  assert.equal(illustrationsNeige.length, 15,
+    'le deck Neige réunit les quinze cartes distinctes retenues par sa recette');
   for (const carteId of illustrationsNeige) {
     assert.equal(cardArtId(carteId), carteId,
       `${carteId} affiche sa propre illustration Neige`);
@@ -852,6 +852,30 @@ test('une arrivée ciblée se désigne APRÈS la pose : la créature entre en je
   assert.equal(duel.sorcier.creatures.includes(chien), true, 'le venin ronge, il ne tue pas');
   assert.equal(duel.arriveeEnAttente, null, 'il ne reste rien à désigner');
   assert.ok(duel.joueur.creatures.includes(pose.entite), 'la Vipère, elle, reste en jeu');
+});
+
+test('le venin de la Vipère ronge jusqu’au bout du tour de sa victime', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'vipere-de-verre');
+  rpgJouerCreature(duel, 'joueur', 'vipere-de-verre', null, { cibleDifferee: true });
+  rpgResoudreArriveeCiblee(duel, 'joueur', chien.id);
+  assert.equal(chien.atk, 0, 'la morsure retire 2 attaques à la créature choisie');
+
+  // La morsure ne s'évapore pas à la fin du tour du joueur qui l'a donnée :
+  // elle tient tout le tour de la victime, comme l'interdit d'attaquer.
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'sorcier', 'c’est le tour de la victime');
+  assert.equal(chien.atk, 0, 'le venin ronge encore pendant le tour de la victime');
+  assert.ok(chien.empecheAttaqueToursRestants > 0, 'et la victime ne peut toujours pas attaquer');
+
+  rpgFinDeTour(duel);
+  assert.equal(chien.atk, 2, 'à la fin du tour de la victime, le venin s’évapore');
+  assert.equal(chien.empecheAttaqueToursRestants, 0, 'et la victime peut de nouveau attaquer');
+  assert.equal(chien.venin ?? null, null, 'plus rien ne ronge la créature');
 });
 
 test('une arrivée différée sans cible légale se résout avec la pose, sans attente', () => {
@@ -2682,10 +2706,10 @@ test('le Serment des Neuf Hivers est un deck mono-Neige : 17 terrains en deux ar
   // Les raretés sont celles de Magic : seule la mythique est unique ; une rare
   // du Nord (la Valkyrie des glaces) peut aller à trois comme toute rare.
   assert.deepEqual(Object.keys(CARD_RARITIES), ['commune', 'inhabituelle', 'rare', 'mythique'], 'pas de rareté « épique »');
-  assert.equal(cardCopyLimit(cardById('valkyrie-des-glaces')), 3);
+  assert.equal(cardCopyLimit(cardById('valkyrie-des-glaces')), 2);
   assert.equal(cardCopyLimit(cardById('maitre-du-marteau')), 1);
   assert.equal(cardCopyLimit(cardById('glacier')), Infinity, 'les terrains restent illimités');
-  assert.equal(cardCopyLimit(cardById('loup-des-neiges')), 3);
+  assert.equal(cardCopyLimit(cardById('loup-des-neiges')), 2);
   const mythiqueEnDouble = [...RPG_DECK_NEIGE_BASE];
   const placeDuLoup = mythiqueEnDouble.lastIndexOf('loup-des-neiges');
   mythiqueEnDouble[placeDuLoup] = 'maitre-du-marteau';

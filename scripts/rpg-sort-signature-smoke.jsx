@@ -81,7 +81,7 @@ function verifierFaceDeSort(assert, face, contexte) {
   return famille;
 }
 
-/** La main du duel : les sorts portent leur sceau, sans petite ligne de type. */
+/** La main du duel : les sorts portent le sceau, et aucune carte n'imprime de texte de type. */
 function verifierMain(assert, container) {
   const faces = [...container.querySelectorAll('.rpg-hand__card')];
   assert.equal(faces.length, DECK_SIGNATURE.length, 'toute la main de cinq cartes est servie');
@@ -90,8 +90,8 @@ function verifierMain(assert, container) {
     const carte = cardById(face.dataset.cardId);
     const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
     const ligne = face.querySelector('.rpg-hand__type');
-    assert.equal(Boolean(ligne), !estCreature && !familles[index],
-      `main : la ligne de type reste aux cartes qui ne se présentent pas autrement — ${carte.id} en ${ligne ? 'porte une' : 'n’en porte pas'}`);
+    assert.equal(ligne, null,
+      `main : aucune carte en main n'imprime de ligne de type sur sa face (${carte.id})`);
     assert.equal(face.classList.contains(`rpg-hand__card--famille-${familles[index]}`), Boolean(familles[index]),
       `main : la face de ${carte.id} porte la classe de sa famille`);
     assert.equal(face.querySelector('.rpg-card-element-badge') === null, carte.kind === 'terrain',
@@ -100,7 +100,7 @@ function verifierMain(assert, container) {
       `main : ${carte.id} garde ses statistiques dessinées`);
   });
   assert.deepEqual(familles.filter(Boolean).sort(), ['rapide', 'sorcellerie'],
-    'la main du scénario porte une Magie Rapide et une Sorcellerie, chacune avec son socle');
+    'la main du scénario porte une Magie Rapide et une Sorcellerie, chacune avec son sceau');
   return familles;
 }
 
@@ -142,39 +142,32 @@ export async function checkRpgSortSignature(assert) {
   verifierCatalogueDeCartes(assert);
 
   await avecDuel(assert, async ({ container, cliquer, survoler }) => {
-    // ── 1. Le mulligan : le sceau de la famille au-dessus de la ligne de type ──
+    // ── 1. Le mulligan : le sceau de la famille aligné en bas à gauche ──
     const cartesMulligan = [...container.querySelectorAll('.rpg-mulligan__card')];
     assert.equal(cartesMulligan.length, DECK_SIGNATURE.length, 'le mulligan présente la main de départ');
     for (const carte of cartesMulligan) {
       const fiche = cardById(carte.dataset.cardId);
       const famille = magieFamille(fiche);
-      const sceau = carte.querySelector('.rpg-mulligan__bas .rpg-mulligan__sceau');
+      const sceau = carte.querySelector('.rpg-mulligan__sceau');
       assert.equal(Boolean(sceau), Boolean(famille),
         `mulligan : le sceau est là si et seulement si ${fiche.id} est un sort`);
-      const ligne = carte.querySelector('.rpg-mulligan__bas .rpg-mulligan__type');
-      assert.equal(Boolean(ligne), fiche.kind !== 'creature' && fiche.kind !== 'hero',
-        `mulligan : la ligne de type reste écrite pour un terrain ou un sort (${fiche.id})`);
+      assert.equal(carte.querySelector('.rpg-mulligan__type'), null,
+        `mulligan : aucune ligne de type n’est imprimée sur la carte (${fiche.id})`);
       if (famille) {
         assert.equal(sceau.classList.contains(`rpg-sort-sceau--${famille}`), true,
           `mulligan : le sceau de ${fiche.id} porte la famille ${famille}`);
         assert.equal(sceau.classList.contains(`rpg-sort-sceau--element-${cardColors(fiche)[0]}`), true,
           `mulligan : son losange ou son rond suit la couleur de ${fiche.id}`);
-        assert.equal(ligne.classList.contains(`rpg-mulligan__type--${famille}`), true,
-          `mulligan : la ligne de type de ${fiche.id} prend la teinte de sa famille`);
-        assert.match(ligne.textContent, new RegExp(`^${RPG_SORT_FAMILIES[famille].label}`),
-          `mulligan : ${fiche.id} écrit toujours le mot de sa famille`);
       } else {
         assert.equal(sceau, null, `mulligan : ${fiche.id} ne porte aucun sceau de sort`);
-        assert.equal(Boolean(ligne?.className.includes('rpg-mulligan__type--')), false,
-          `mulligan : ${fiche.id} garde la teinte neutre du bandeau`);
       }
     }
     await passerMulligan(container, cliquer);
 
-    // ── 2. La main du duel : le sceau remplace la ligne de type des sorts ─────
+    // ── 2. La main du duel : le sceau sur les sorts, pas de ligne de type ─────
     verifierMain(assert, container);
 
-    // ── 3. L'aperçu : même forme, même élément, ligne de type teintée ─────────
+    // ── 3. L'aperçu : même forme et même élément, ligne de type teintée ──────
     const rapide = container.querySelector('.rpg-hand__card[data-card-id="trait-de-braise"]');
     await survoler(rapide);
     const apercu = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');

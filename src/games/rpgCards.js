@@ -1046,14 +1046,14 @@ export const RPG_ART_PROVISOIRE = [];
 export const CARD_UNIQUE_RARITIES = ['mythique'];
 
 /** Exemplaires autorisés dans un deck : terrains illimités, raretés d'exception
- *  à un exemplaire, tout le reste à trois. */
+ *  à un exemplaire, tout le reste à deux. */
 export function cardCopyLimit(card) {
   if (card?.kind === 'terrain') return Infinity;
-  return CARD_UNIQUE_RARITIES.includes(card?.rarity) ? 1 : 3;
+  return CARD_UNIQUE_RARITIES.includes(card?.rarity) ? 1 : 2;
 }
 
 /** Valide un deck : 40 cartes, au moins 40 % de terrains, cartes mythiques
- *  limitées à un exemplaire, autres cartes non-terrain limitées à trois
+ *  limitées à un exemplaire, autres cartes non-terrain limitées à deux
  *  exemplaires. */
 export function rpgValiderDeck(deck) {
   if (deck.length !== 40) return { ok: false, raison: `40 cartes exigées (${deck.length})` };

@@ -120,6 +120,10 @@ const ceremonie = lire('src/games/RpgBoosterOuverture.jsx');
 const ceremonieCode = sansCommentaires(ceremonie);
 assert.match(ecran, /import RpgBoosterOuverture from '\.\/RpgBoosterOuverture\.jsx';/,
   'l’écran monte la cérémonie');
+assert.doesNotMatch(cssMenu, /\.rpg-souk__carte-art::after/,
+  'les cartes ouvertes dans un booster n’ont pas le foil multicolore');
+assert.doesNotMatch(css, /\.rpg-souk__carte\.is-nouvelle\s*\{[^}]*box-shadow:/s,
+  'les cartes nouvelles gardent leur cadre doré mais sans halo extérieur');
 for (const marque of ['data-souk-ceremonie', 'data-souk-carte=', 'data-souk-carte-dos',
   'data-souk-carte-tampon', 'data-souk-ceremonie-passer', 'data-souk-ceremonie-ranger']) {
   assert.ok(ceremonie.includes(marque), `la cérémonie expose ${marque}`);

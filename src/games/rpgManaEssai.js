@@ -32,8 +32,8 @@ export const RPG_MANA_ESSAI_DECKS = Object.freeze([
     description: 'Mono-Sable : le mana grandit sans choix de couleur.',
     cardIds: [
       ...horsTerrains(RPG_DECK_JOUEUR_BASE),
-      ...copies('tislit-des-aures', 2), ...copies('faiseur-de-passage', 2),
-      ...copies('guetteur-du-beffroi', 2), 'dune-marchante',
+      'tislit-des-aures', ...copies('guetteur-du-beffroi', 2),
+      'dune-marchante', ...copies('rempart-de-dunes', 2), 'scribe-de-la-liste',
     ],
   },
   {

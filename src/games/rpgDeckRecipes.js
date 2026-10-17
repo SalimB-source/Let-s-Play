@@ -67,7 +67,7 @@ export const RPG_RECETTES_DECKS = {
     terrains: [['montagne', 9], ['cretes-de-cendre', 9]],
     creatures: 16,
     magies: 6,
-    raresTotalMax: 4,
+    raresTotalMax: 6,
     mythiquesTotalMax: 1,
     signature: [
       ['ghul-des-cendres', 3], ['braisier-du-souk', 3],
@@ -135,7 +135,7 @@ export const RPG_RECETTES_DECKS = {
     creatures: 13,
     magies: 9,
     armes: 1,
-    raresTotalMax: 4,
+    raresTotalMax: 6,
     mythiquesTotalMax: 1,
     signature: [
       ['guerrier-au-bouclier-rond', 2], ['loup-des-neiges', 2],
@@ -155,7 +155,7 @@ export const RPG_RECETTES_DECKS = {
     terrains: [['montagne-du-soleil-rouge', 8], ['cretes-de-cendre', 8]],
     creatures: 17,
     magies: 7,
-    raresTotalMax: 6,
+    raresTotalMax: 9,
     mythiquesTotalMax: 1,
     signature: [
       ['ashigaru-des-braises', 3], ['hatamoto-des-cendres', 3],
@@ -211,7 +211,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 12,
     magies: 7,
     mythiquesMax: 1,
-    raresMax: 2,
+    raresMax: 4,
     signature: [
       ['dame-des-neuf-mondes', 1],
       ['mur-de-boucliers', 3],
@@ -232,7 +232,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 13,
     magies: 6,
     mythiquesMax: 0,
-    raresMax: 3,
+    raresMax: 5,
     signature: [
       ['loup-des-neiges', 3],
       ['berserk-des-trois-hivers', 2],
@@ -251,7 +251,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 15,
     magies: 7,
     mythiquesMax: 2,
-    raresMax: 4,
+    raresMax: 5,
     signature: [
       ['pere-des-corbeaux', 1],
       ['maitre-du-marteau', 1],

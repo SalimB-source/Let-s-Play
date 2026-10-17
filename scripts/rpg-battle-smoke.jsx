@@ -126,6 +126,9 @@ export async function checkRpgBattle(assert) {
       const carteADefausser = handCards()[0];
       assert.ok(carteADefausser, 'une carte de la main est disponible pour la défausse de Butin');
       await act(async () => { carteADefausser.click(); });
+      const confirmer = container.querySelector('.rpg-btn--discard-confirm');
+      assert.ok(confirmer, 'le choix de la carte dévoile la confirmation de la défausse');
+      await act(async () => { confirmer.click(); });
     }
     return defausseEnAttente;
   };
@@ -457,13 +460,8 @@ export async function checkRpgBattle(assert) {
   visagesMain.forEach((carte) => assertElementFrame(carte, carte.dataset.cardId, 'chaque carte en main'));
   assert.ok(visagesMain.every((carte) => carte.querySelector('.rpg-hand__img')),
     'chaque carte en main montre son illustration');
-  // Le socle de famille a remplacé la ligne de type des sorts en main (voir
-  // « Le Sablier : le socle des familles de sorts » dans le README) : la ligne
-  // ne reste qu'aux cartes qui ne se présentent pas autrement — terrains, armes.
-  assert.ok(visagesMain.every((carte) => Boolean(carte.querySelector('.rpg-hand__type'))
-    === (!carte.classList.contains('rpg-hand__card--type-creature')
-      && !carte.classList.contains('rpg-hand__card--type-magie'))),
-    'une carte en main n’imprime sa ligne de type que si elle n’est ni une créature ni un sort : la créature se lit à ses statistiques, le sort à son socle');
+  assert.ok(visagesMain.every((carte) => !carte.querySelector('.rpg-hand__type')),
+    'aucune carte en main n’imprime de texte de type (terrain, magie ou sorcellerie) sur sa face');
   const visageCreatureMain = visagesMain.find((carte) => carte.querySelector('.rpg-hand__stats'));
   assert.ok(visageCreatureMain?.classList.contains('rpg-hand__card--type-creature'),
     'les créatures conservent leur type sans que celui-ci détermine la bordure');
@@ -578,8 +576,8 @@ export async function checkRpgBattle(assert) {
     'le terrain quitte visiblement la main et vole vers son emplacement sur la table');
   assert.equal(terrainEnVol, terrainAAnnuler,
     'le vol réutilise exactement le bouton et la face du terrain rendus dans la main');
-  assert.ok(terrainEnVol.querySelector('.rpg-hand__img') && terrainEnVol.querySelector('.rpg-hand__type'),
-    'la carte en vol garde son illustration et son type au lieu d’afficher une représentation reconstruite');
+  assert.ok(terrainEnVol.querySelector('.rpg-hand__img') && !terrainEnVol.querySelector('.rpg-hand__type'),
+    'la carte en vol garde son illustration sans ligne de texte de type sur sa face');
   assert.equal(container.querySelectorAll('.rpg-terrain--joueur').length, 0,
     'le terrain n’est ajouté au champ qu’à la fin du vol de sa vraie carte');
   assert.ok(!container.querySelector('.rpg-btn--undo'), 'l’action n’est validée qu’une fois la carte arrivée');

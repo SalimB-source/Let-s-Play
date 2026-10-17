@@ -9,6 +9,8 @@ import {
   rpgCiblesAttaqueRapide,
   rpgJouerCreature,
   rpgNouveauDuel,
+  rpgSorcierAnnonceSuivante,
+  rpgSorcierResoudreAnnonce,
   rpgTourSorcierIA,
   rpgVainqueur,
 } from '../src/games/rpgDuel.js';
@@ -393,4 +395,70 @@ test('l’IA sait convertir son mana de glace en foudre activée', () => {
   duel.sorcier.mana.neige = 0;
   assert.equal(choisirActivationIA(duel, 'sorcier'), null,
     'pas de mana de glace, pas de foudre');
+});
+
+// ── Arrivées qui désignent leur cible ───────────────────────────────────────
+
+test('le sorcier joue la Vipère : le venin mord, et l’annonce ne repart pas en boucle', () => {
+  const duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  duel.tour = 'sorcier';
+  donner(duel, 'sorcier', 'vipere-de-verre');
+
+  const annonce = rpgSorcierAnnonceSuivante(duel, () => 0.5);
+  assert.equal(annonce?.carteId, 'vipere-de-verre', 'la Vipère est annoncée');
+  assert.equal(annonce?.cibleId, chien.id, 'la morsure choisit sa victime');
+  const res = rpgSorcierResoudreAnnonce(duel);
+  assert.equal(res.ok, true, 'la carte annoncée se résout — elle ne repart pas en boucle');
+  assert.equal(duel.sorcier.main.includes('vipere-de-verre'), false, 'la Vipère a quitté la main');
+  assert.equal(chien.atk, 0, 'le venin retire 2 attaques');
+  assert.ok(chien.empecheAttaqueToursRestants > 0, 'la victime ne peut pas attaquer');
+  // L’annonce suivante porte sur autre chose : le sorcier ne réannonce pas
+  // la même carte (la partie était bloquée en boucle avant).
+  const suivante = rpgSorcierAnnonceSuivante(duel, () => 0.5);
+  assert.notEqual(suivante?.carteId, 'vipere-de-verre', 'la Vipère n’est pas réannoncée');
+});
+
+test('la Vipère sans victime sur la table reste en main : la partie continue', () => {
+  const duel = duelNu();
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'vipere-de-verre');
+  const annonce = rpgSorcierAnnonceSuivante(duel, () => 0.5);
+  assert.equal(annonce, null, 'rien n’est annoncé : la morsure n’aurait personne à mordre');
+  assert.equal(duel.sorcier.main.includes('vipere-de-verre'), true, 'la Vipère reste en main');
+  assert.equal(duel.annonce, null, 'aucune fenêtre de réponse ne reste ouverte');
+});
+
+test('Bakunawa et Faiseur de passage : la lune et le passage se choisissent aussi', () => {
+  const duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  duel.tour = 'sorcier';
+  donner(duel, 'sorcier', 'bakunawa');
+
+  const annonce = rpgSorcierAnnonceSuivante(duel, () => 0.5);
+  assert.equal(annonce?.carteId, 'bakunawa');
+  assert.equal(annonce?.cibleId, chien.id, 'la lune choisit sa victime');
+  assert.equal(rpgSorcierResoudreAnnonce(duel).ok, true, 'la Bakunawa se résout');
+  assert.ok(chien.empecheBlocageToursRestants > 0, 'la victime ne peut plus bloquer');
+
+  // Le Faiseur de passage : l’Infiltration va à un allié du sorcier.
+  const duel2 = duelNu();
+  donnerMana(duel2, 'joueur', 20);
+  donnerMana(duel2, 'sorcier', 20);
+  donner(duel2, 'sorcier', 'chien-du-guet');
+  const allie = rpgJouerCreature(duel2, 'sorcier', 'chien-du-guet').entite;
+  duel2.tour = 'sorcier';
+  donner(duel2, 'sorcier', 'faiseur-de-passage');
+  const annonce2 = rpgSorcierAnnonceSuivante(duel2, () => 0.5);
+  assert.equal(annonce2?.carteId, 'faiseur-de-passage');
+  assert.equal(annonce2?.cibleId, allie.id, 'le passage choisit son allié');
+  assert.equal(rpgSorcierResoudreAnnonce(duel2).ok, true, 'le Faiseur se résout');
+  assert.equal(allie.infiltration, true, 'l’allié passe sans être bloqué');
 });
