@@ -660,6 +660,10 @@ function creerEntiteCreature(carte) {
     // l'un interdit d'attaquer, l'autre de bloquer.
     empecheAttaqueToursRestants: 0,
     empecheBlocageToursRestants: 0,
+    // La morsure du venin (la Vipère de verre) : `{ atk, def, toursRestants }`
+    // — les chiffres retirés par la morsure et le temps qu'il lui reste à
+    // ronger. Elle s'efface avec l'interdit d'attaquer (voir `rpgFinDeTour`).
+    venin: null,
     // Compte à rebours du Guetteur du beffroi : `{ restants, effet }`, décompté
     // au début de chaque tour du contrôleur (`resoudreHeures`).
     heures: null,
@@ -1613,11 +1617,21 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       entite.pvMax = Math.max(plancher, (entite.pvMax ?? entite.def) + bonusDefense);
       entite.def = Math.max(plancher, entite.def + bonusDefense);
       entite.pv = Math.max(plancher, entite.pv + bonusDefense);
-      if (Number(effet.tours) > 0) {
-        const carnet = (duel[adv].bonusTemporaires ??= []);
-        carnet.push({ entiteId: entite.id, atk: effet.atk ?? 0, def: bonusDefense, tour: duel.tour });
-      }
       const duree = dureeJusquAuProchainTour(duel, entite);
+      if (Number(effet.tours) > 0) {
+        if (effet.empecheAttaque || effet.empecheBlocage) {
+          // Le venin de la Vipère : la morsure (-2/-0) vit aussi longtemps que
+          // l'interdit d'attaquer — jusqu'à la fin du prochain tour de la
+          // victime. Elle s'efface donc AVEC lui, et non à la fin du tour qui
+          // l'a vue naître (le carnet des renforts, lui, s'évapore à ce
+          // moment-là : la bouchée serait déjà partie avant le tour de la
+          // victime, et le venin ne rongerait plus rien).
+          entite.venin = { atk: effet.atk ?? 0, def: bonusDefense, toursRestants: duree };
+        } else {
+          const carnet = (duel[adv].bonusTemporaires ??= []);
+          carnet.push({ entiteId: entite.id, atk: effet.atk ?? 0, def: bonusDefense, tour: duel.tour });
+        }
+      }
       if (effet.empecheAttaque) {
         entite.empecheAttaqueToursRestants = Math.max(entite.empecheAttaqueToursRestants, duree);
         duel.log.push(`${entite.name} ne pourra pas attaquer avant la fin de son prochain tour.`);
@@ -3016,6 +3030,18 @@ export function rpgFinDeTour(duel) {
       entite.empecheBlocageToursRestants -= 1;
       if (entite.empecheBlocageToursRestants <= 0) duel.log.push(`${entite.name} peut de nouveau bloquer.`);
     }
+    // Le venin de la Vipère : la morsure s'efface avec l'interdit d'attaquer,
+    // à la fin du tour de la victime. La créature retrouve son attaque.
+    if (entite.venin?.toursRestants > 0) {
+      entite.venin.toursRestants -= 1;
+      if (entite.venin.toursRestants <= 0) {
+        entite.atk = Math.max(0, entite.atk - (entite.venin.atk ?? 0));
+        entite.pvMax = Math.max(0, (entite.pvMax ?? 0) - (entite.venin.def ?? 0));
+        entite.pv = Math.max(0, entite.pv - (entite.venin.def ?? 0));
+        duel.log.push(`Le venin s’évapore : ${entite.name} retrouve son attaque.`);
+        entite.venin = null;
+      }
+    }
   }
   // Le Grand Voile blanc et le blocage forcé « ce tour » (l’Embuscade)
   // meurent avec le tour en cours.
@@ -3064,15 +3090,38 @@ export function rpgSorcierPrepareTerrain(duel) {
 /** Le sorcier annonce sa prochaine carte sans la résoudre. La carte paie son
  *  coût à la résolution, ou au moment où le joueur la contre.
  *  Ouvre la fenêtre de réponse : le joueur peut répondre avec une magie rapide, ou laisser passer.
- *  Retourne null quand le sorcier n'a plus rien à jouer. */
+ *  Retourne null quand le sorcier n'a plus rien à jouer.
+ *
+ *  Une annonce ne doit jamais être une carte injouable : le moteur refuserait
+ *  la pose, la résolution échouerait, et le sorcier réannoncerait la même
+ *  carte sans fin — sa morsure, la lune de Bakunawa ou le passage du Faiseur
+ *  désignant une créature que l'IA n'avait pas su choisir. La carte est donc
+ *  écartée si elle exige une cible et qu'aucune cible ne peut être trouvée ;
+ *  le sorcier cherche alors autre chose, et sa partie continue. */
 export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
   if (duel.annonce) return duel.annonce;
-  const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
-  if (!coup) return null;
-  duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: coup.cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null };
-  duel.fenetreReponse = true;
-  duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? armeById(coup.carteId)?.name ?? coup.carteId}.`);
-  return duel.annonce;
+  const refuses = new Set();
+  for (let essai = 0; essai < 4; essai += 1) {
+    const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng, exclus: refuses });
+    if (!coup) return null;
+    const carte = duelCardById(coup.carteId) ?? magieById(coup.carteId) ?? armeById(coup.carteId);
+    // L'arrivée qui désigne sa cible emporte toujours sa cible : si l'IA en
+    // a oublié une, le moteur la retrouve (le venin de la Vipère, la lune de
+    // Bakunawa, le passage du Faiseur).
+    const cibleId = coup.cibleId
+      ?? (arriveeCiblePortee(carte) ? rpgCibleAuto(duel, 'sorcier', carte) : null);
+    if (!cibleId && arriveeCiblePortee(carte) && arriveeACibleLegale(duel, 'sorcier', carte)) {
+      // La carte exige une cible, il en reste une sur la table, et rien n'a
+      // pu être désigné : elle n'est pas jouable. On l'écarte.
+      refuses.add(coup.carteId);
+      continue;
+    }
+    duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null };
+    duel.fenetreReponse = true;
+    duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? armeById(coup.carteId)?.name ?? coup.carteId}.`);
+    return duel.annonce;
+  }
+  return null;
 }
 
 /** Laisser passer : résout la carte annoncée (paiement et effet). */

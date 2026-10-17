@@ -274,6 +274,16 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
   if (carte?.arrivee?.type === 'retour-main' || carte?.effet?.type === 'retour-main') {
     return meilleureCibleRenvoiIA(duel, cote, carte);
   }
+  if (carte?.arrivee?.type === 'debuff' || carte?.arrivee?.type === 'empeche-blocage') {
+    // Le venin de la Vipère de verre, la lune dévorée de Bakunawa : la
+    // créature marquée est la plus grosse menace que la protection ne
+    // protège pas.
+    return meilleureCibleMarqueeIA(duel, cote, carte)?.id ?? null;
+  }
+  if (carte?.arrivee?.type === 'donne') {
+    // Le Faiseur de passage : l'Infiltration va à l'allié le plus précieux.
+    return meilleureCibleAmie(duel, cote, carte);
+  }
   if (carte?.effet?.cible === 'creature-amie') {
     return meilleureCibleAmie(duel, cote, carte);
   }
@@ -369,6 +379,21 @@ function meilleureCibleAmie(duel, cote, carte) {
     .filter((entite) => carte.effet?.type !== 'arme' || entite.pv + (carte.effet.def ?? 0) > 0)
     .map((entite) => ({ entite, score: valeurEntite(entite) }))
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
+}
+
+/**
+ * La créature à marquer (le venin de la Vipère de verre, la lune dévorée de
+ * Bakunawa) : la plus grosse menace adverse que la protection ne protège
+ * pas. Sans victime légale, la fonction rend `null` — l'arrivée ne mordrait
+ * personne, et la carte n'a alors rien à faire sur la table.
+ */
+function meilleureCibleMarqueeIA(duel, cote, carte) {
+  const adv = autre(cote);
+  const couleurs = cardColors(carte);
+  return duel[adv].creatures
+    .filter((entite) => !estProtegee(entite, couleurs))
+    .map((entite) => ({ entite, score: menace(entite) + valeurEntite(entite) * 0.2 }))
+    .sort((a, b) => b.score - a.score)[0]?.entite ?? null;
 }
 
 /**
@@ -951,6 +976,25 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       }
     }
     if (arrivee.type === 'soin') score += Math.min(arrivee.amount ?? 0, manquePv) * 0.8;
+    if (arrivee.type === 'debuff' || arrivee.type === 'empeche-blocage') {
+      // Le venin de la Vipère de verre, la lune dévorée de Bakunawa : la
+      // victime se choisit — la plus grosse menace adverse que la protection
+      // ne protège pas. Sans victime, l'arrivée ne mord personne : la carte
+      // reste en main plutôt que de brûler son sable pour rien.
+      const marquee = meilleureCibleMarqueeIA(duel, cote, carte);
+      if (!marquee) return { score: 0, cibleId: null };
+      cibleId = marquee.id;
+      score += 1.5 + menace(marquee) * 0.35;
+    }
+    if (arrivee.type === 'donne') {
+      // Le Faiseur de passage : l'Infiltration va à l'allié le plus précieux,
+      // celui qui frappera le plus fort. Sans allié, l'arrivée ne sert à rien.
+      const allie = meilleureCibleAmie(duel, cote, carte);
+      if (!allie) return { score: 0, cibleId: null };
+      cibleId = allie;
+      const entiteAllie = duel[cote].creatures.find((entite) => entite.id === allie);
+      score += 1.2 + (entiteAllie ? menace(entiteAllie) * 0.2 : 0);
+    }
     if (arrivee.type === 'degats') {
       if (arrivee.cible === 'toutes-creatures') {
         score += duel[adv].creatures
@@ -1012,6 +1056,14 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     if (arrivee.type === 'retour-apres-tours') score += 2;
     if (arrivee.type === 'detruire-terrain-aleatoire') score += duel[adv].terrains.length ? 3 : 0;
   }
+  // Filet de sécurité : une arrivée qui désigne sa cible (le venin de la
+  // Vipère, la lune de Bakunawa, le passage du Faiseur) ne se joue pas sans
+  // cible — le moteur refuserait la carte, et le sorcier l'annoncerait sans
+  // fin. S'il reste une victime sur la table et que l'arrivée n'en a pas
+  // choisi, la carte reste en main.
+  if (!cibleId && moteur.arriveeCiblePortee(carte) && moteur.arriveeACibleLegale(duel, cote, carte)) {
+    return { score: 0, cibleId: null };
+  }
   if (carte.destruction) score += 1;
   if (carte.honneur) score += carte.honneur * (duel[adv].creatures.length ? 0.8 : 0.3);
   if (carte.combat) score += 2;
@@ -1027,10 +1079,14 @@ function scoreCarte(duel, cote, carte, profil, rng) {
 export function choisirCarteIA(duel, cote, options = {}) {
   const { profil, rng } = optionsIA(duel, cote, options);
   const camp = duel[cote];
+  // `exclus` : des cartes que l'appelant écarte (une carte injouable, que
+  // l'IA proposerait encore à l'annoncer sans fin).
+  const exclus = options.exclus ?? new Set();
   const candidats = [];
   for (const carteId of camp.main) {
     const carte = duelCardById(carteId) ?? magieById(carteId) ?? armeById(carteId);
     if (!carte || carte.kind === 'terrain' || terrainById(carteId)) continue;
+    if (exclus.has(carteId)) continue;
     // Hors de son tour (blocage, fin de tour) : seules les magies rapides, et
     // jamais un contre — il n'y a rien à contrer.
     if (options.seulementInstants && (!carte.instant || carte.effet?.type === 'contresort')) continue;
