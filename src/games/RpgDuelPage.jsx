@@ -5,7 +5,7 @@
  * pendant la fenêtre de réponse de l'adversaire.
  */
 
-import { Fragment, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import './rpg-mobile.css';
 import './rpg-story.css';
@@ -959,6 +959,41 @@ function PileArmee({ armes = [], caseEssai = null, children }) {
   );
 }
 
+/** Rapidité : un arc électrique jaune court le long du bord de la carte.
+ *  Le trait est un rectangle déformé par une turbulence dont la graine change
+ *  par à-coups — l'arc ne se fige jamais. Deux passes : un halo jaune épais
+ *  et flou, puis un cœur clair et fin. Le mouvement réduit garde l'arc, fixe. */
+function ElectriciteRapidite() {
+  const id = useId().replace(/:/g, '');
+  const [mouvementReduit] = useState(() => (
+    typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+  ));
+  const filtre = (suffixe, frequence, echelle, graines, duree, flou = 0) => (
+    <filter id={`${id}-${suffixe}`} x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="turbulence" baseFrequency={frequence} numOctaves="2" seed={graines[0]} result="bruit">
+        {!mouvementReduit && (
+          <animate attributeName="seed" values={graines.join(';')} dur={duree} repeatCount="indefinite" calcMode="discrete" />
+        )}
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="bruit" scale={echelle} xChannelSelector="R" yChannelSelector="G" />
+      {flou > 0 && <feGaussianBlur stdDeviation={flou} />}
+    </filter>
+  );
+  return (
+    <span className="rpg-card__electricite" aria-hidden="true">
+      <svg viewBox="0 0 100 125" preserveAspectRatio="none" focusable="false">
+        <defs>
+          {filtre('halo', '0.08', 11, [2, 7, 11, 4, 9, 13], '0.6s', 1.6)}
+          {filtre('coeur', '0.11', 9, [5, 1, 8, 12, 3, 10], '0.45s')}
+        </defs>
+        <rect className="rpg-card__electricite-halo" x="3.5" y="3.5" width="93" height="118" rx="7" filter={`url(#${id}-halo)`} />
+        <rect className="rpg-card__electricite-coeur" x="3.5" y="3.5" width="93" height="118" rx="7" filter={`url(#${id}-coeur)`} />
+        <rect className="rpg-card__electricite-coeur rpg-card__electricite-coeur--second" x="5" y="5" width="90" height="115" rx="6" filter={`url(#${id}-halo)`} />
+      </svg>
+    </span>
+  );
+}
+
 export function TableCard({
   entite,
   cote,
@@ -1086,6 +1121,7 @@ export function TableCard({
         cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         entite.envol ? 'is-envol' : '',
+        entite.rapidite ? 'has-rapidite' : '',
         gelee ? 'is-frozen' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
@@ -1134,6 +1170,7 @@ export function TableCard({
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+      {entite.rapidite && <ElectriciteRapidite />}
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       {gelee && <span className="rpg-card__frost" aria-hidden="true">
         <span className="rpg-card__frost-crystals" />

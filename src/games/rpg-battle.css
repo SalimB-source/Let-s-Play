@@ -8236,3 +8236,52 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   cursor: pointer;
 }
 
+
+/* ── Rapidité : l'électricité jaune autour de la carte posée ──────────────────
+   La face rogne ce qui dépasse (`overflow: hidden`) : l'arc court donc à
+   l'intérieur du bord, au-dessus de l'illustration et sous les repères
+   (pastille, icônes, statistiques). Un halo jaune vacille en dessous. */
+.rpg-card__electricite {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 16px rgba(255, 214, 40, .7), inset 0 0 4px rgba(255, 240, 150, .95);
+  animation: rpg-electricite-vacille 1.3s steps(1, end) infinite;
+}
+.rpg-card__electricite svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.rpg-card__electricite rect {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+.rpg-card__electricite-halo {
+  stroke: #ffd21f;
+  stroke-width: 6px;
+  opacity: .9;
+}
+.rpg-card__electricite-coeur {
+  stroke: #fffbe0;
+  stroke-width: 2px;
+}
+.rpg-card__electricite-coeur--second {
+  stroke: #ffe45c;
+  stroke-width: 1.2px;
+  opacity: .85;
+}
+@keyframes rpg-electricite-vacille {
+  0%, 100% { opacity: 1; }
+  18% { opacity: .55; }
+  24% { opacity: 1; }
+  52% { opacity: .8; }
+  58% { opacity: .35; }
+  63% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card__electricite { animation: none; }
+}
