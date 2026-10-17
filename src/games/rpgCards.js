@@ -561,8 +561,8 @@ export const RPG_CREATURE_CARDS = [
     def: 4,
     rarity: 'rare',
     typeLine: 'Créature — Guerrier amazigh',
-    art: 'cavalier-amazigh-du-desert', butin: true, arrivee: { type: 'combat', cible: 'creature' },
-    text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
+    art: 'cavalier-amazigh-du-desert', arrivee: { type: 'combat', cible: 'creature' },
+    text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque.',
     flavor: 'Sa monture blanche fend la poussière ; le sabre ouvre la route au milieu du tumulte.',
   },
   {
