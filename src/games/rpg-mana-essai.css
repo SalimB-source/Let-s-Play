@@ -549,8 +549,8 @@
    La plaque (avatar, nom, PV, zones) se pose juste sous la ligne qui sépare
    les deux moitiés du plateau (`.rpg-plateau-lisere`, à 50 % de la table), au
    milieu de l'écran, dans la colonne de gauche. Sa jauge de mana suit juste
-   en dessous, alignée à gauche sur la plaque ; 10 px d'écart laissent la
-   place à la capsule du compteur qui déborde au-dessus de la jauge. La
+   en dessous, alignée à gauche sur la plaque, et la capsule du compteur
+   (« 1/1 ») passe sous la jauge au lieu de déborder au-dessus. La
    hauteur de la plaque est mesurée (`--rpg-plaque-joueur-h`, voir
    RpgDuelPage) : la jauge la suit sur tous les écrans. `grid-area: auto` :
    un enfant absolu placé dans une zone de grille prendrait cette zone pour
@@ -568,10 +568,18 @@
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--joueur {
   grid-area: auto;
   position: absolute;
-  top: calc(50% + 6px + var(--rpg-plaque-joueur-h, 56px) + 10px);
+  top: calc(50% + 6px + var(--rpg-plaque-joueur-h, 56px) + 6px);
   left: var(--rpg-touch-pad, 6px);
-  width: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset, 0px) - 28px);
+  /* Même largeur que la plaque du joueur, juste au-dessus. */
+  width: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset, 0px));
+  box-sizing: border-box;
   margin: 0;
   padding-top: 0;
   z-index: 3;
+}
+/* La capsule du compteur du joueur se range SOUS sa jauge (à droite), et non
+   plus au-dessus : la jauge colle ainsi à la plaque. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__reserve {
+  top: calc(100% + 3px);
+  bottom: auto;
 }
