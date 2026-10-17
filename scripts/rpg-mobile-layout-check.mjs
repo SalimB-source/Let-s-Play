@@ -313,6 +313,30 @@ try {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.getByRole('button', { name: /Garder cette main/i }).click();
   await page.locator('.rpg-mulligan').waitFor({ state: 'detached' });
+  // Le menu hamburger du duel : au doigt, la barre ne montre que lui. Un appui
+  // déplie ses six commandes — les trois modes (Menu, Deck, Catalogue) et les
+  // trois réglages — dans un panneau sous la barre, au-dessus de la table.
+  const burger = page.locator('.rpg-duel-nav__burger');
+  const navMenu = page.locator('.rpg-duel-nav__menu');
+  await burger.tap();
+  await navMenu.waitFor({ state: 'visible' });
+  const panneau = await navMenu.boundingBox();
+  assert.ok(panneau && panneau.x >= 0 && panneau.y >= 0
+    && panneau.x + panneau.width <= 844 && panneau.y + panneau.height <= 390,
+  'the duel hamburger opens its menu inside the landscape viewport');
+  for (const mode of ['Menu', 'Deck', 'Catalogue']) {
+    const bouton = navMenu.getByRole('button', { name: mode, exact: true });
+    assert.equal(await bouton.isVisible(), true, `the ${mode} mode is visible in the hamburger menu`);
+    const box = await bouton.boundingBox();
+    const auDessus = await page.evaluate(({ x, y }) => Boolean(
+      document.elementFromPoint(x, y)?.closest('.rpg-duel-nav__menu'),
+    ), { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+    assert.equal(auDessus, true, `the ${mode} mode sits above the battlefield, within reach`);
+  }
+  assert.equal(await navMenu.getByRole('button').count(), 6, 'the panel keeps all six commands');
+  await burger.tap();
+  await navMenu.waitFor({ state: 'hidden' });
+  console.log('✓ The duel hamburger opens its six commands inside the landscape viewport');
   // Tap a creature without mana: nothing is played, and no hint banner explains it.
   const creature = page.locator('.rpg-hand__card:has(.rpg-hand__stats)').first();
   await creature.tap();

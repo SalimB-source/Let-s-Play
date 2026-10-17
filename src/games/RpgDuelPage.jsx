@@ -6119,7 +6119,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               <span className="rpg-duel-nav__story-mode">MODE </span>HISTOIRE<span className="rpg-duel-nav__story-floor"> · {etageHistoire.nom}</span>
             </span>
           )}
-          <div className="rpg-duel-nav__menu" id="rpg-duel-nav-menu">
+          <div
+            className={`rpg-duel-nav__menu${navMenuOuvert ? ' is-open' : ''}`}
+            id="rpg-duel-nav-menu"
+          >
             <button type="button" onClick={() => { setNavMenuOuvert(false); setEcran(histoireEtageId ? 'histoire' : 'jouer'); }}>Menu</button>
             <button type="button" onClick={() => { setNavMenuOuvert(false); setEcran('decks'); }}>Deck</button>
             <button type="button" onClick={() => { setNavMenuOuvert(false); setEcran('catalogue'); }}>Catalogue</button>
