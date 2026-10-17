@@ -100,8 +100,12 @@ assert.match(page, /const noterEvenementDuel = \(evenement\) => \{\s*if \(duelRe
 assert.match(page, /onClick=\{\(\) => nouvellePartie\(duel\.modeMana === RPG_MODE_MANA_ESSAI \? \{ etageId: null, essaiManaId: duel\.essaiDeckId \} : \{\}\)\}/,
   'rejouer une victoire relance bien le mode essai et pas le duel historique');
 // Cinq emplacements de créatures dessinés de chaque côté du plateau.
-assert.match(styles, /\.rpg-creature-slots\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/s,
-  'les emplacements de créatures forment une rangée de cinq cases');
+// Les colonnes ont la largeur d'une carte posée (`--essai-colonne`), partagée
+// par la rangée et par les cases : la grille se resserre au centre.
+assert.match(styles, /\.rpg-creature-slots\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*var\(--essai-colonne[^;]*\);[^}]*justify-content:\s*center;/s,
+  'les emplacements de créatures forment une rangée de cinq cases resserrée au centre');
+assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\] \.card-row\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*var\(--essai-colonne\)\)\);[^}]*justify-content:\s*center;/s,
+  'la rangée d’essai partage les cinq colonnes resserrées des cases');
 assert.match(styles, /\.rpg-creature-slot\s*\{[^}]*border:\s*2px dashed/s,
   'les emplacements libres sont dessinés en pointillés');
 assert.match(styles, /\.rpg-creature-slot\.is-occupied\s*\{[^}]*border-style:\s*solid;/s,
