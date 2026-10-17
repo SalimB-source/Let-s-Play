@@ -1210,16 +1210,14 @@ function BlockerArrows({ tableRef, assignments }) {
 }
 
 /**
- * La lumière du Sablier — l'angle sous lequel on regarde le plateau.
+ * La lumière commune aux surfaces foil du Sablier.
  *
- * Une carte brillante n'a pas de reflet qui tourne tout seul : le reflet bouge
- * quand la carte bouge, parce qu'on la regarde sous un autre angle. On pose donc
- * ici un seul angle de vue pour tout le plateau, lu sur le curseur, et toutes
- * les faces en héritent. Une seule écoute pour des centaines de cartes, et deux
- * variables sur `<html>` — les faces se contentent de les lire.
+ * Le reflet bouge avec l'angle de vue, au lieu de tourner tout seul. On pose
+ * donc ici un seul angle, lu sur le curseur, que les surfaces foil partagent.
+ * Les aperçus de cartes n'en portent pas : leur inclinaison 3D est indépendante
+ * de cette lumière.
  *
- * Rien au doigt : là il n'y a pas de curseur, et le reflet d'une carte qu'on
- * touche n'a personne à suivre.
+ * Rien au doigt : là il n'y a pas de curseur, et le reflet n'a personne à suivre.
  */
 function useLumiereCartes() {
   useEffect(() => {
@@ -1235,8 +1233,8 @@ function useLumiereCartes() {
     };
     const suivre = (event) => {
       if (event.pointerType === 'touch') return;
-      // ±38 % : assez pour que la face s'écarte franchement du reflet, assez
-      // peu pour qu'aucune tache ne quitte la carte.
+      // ±38 % : déplace franchement les reflets sans faire sortir les taches
+      // des cartes du cadre.
       const x = ((event.clientX / Math.max(window.innerWidth, 1)) - 0.5) * 2;
       const y = ((event.clientY / Math.max(window.innerHeight, 1)) - 0.5) * 2;
       point = { x: (x * 38).toFixed(1), y: (y * 38).toFixed(1) };
@@ -1297,11 +1295,6 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       face.style.setProperty('--rpg-face-3d-x', `${point.inclineX.toFixed(2)}deg`);
       face.style.setProperty('--rpg-face-3d-y', `${point.inclineY.toFixed(2)}deg`);
       face.style.setProperty('--rpg-face-3d-s', `${facteurCadre(point).toFixed(4)}`);
-      // Le reflet part de la même inclinaison : c'est ce qui fait lire la face
-      // comme une carte brillante tenue à la main — on la tourne, et les
-      // taches d'arc-en-ciel glissent avec elle au lieu de tourner seules.
-      face.style.setProperty('--rpg-foil-cx', `${(point.nx * 46).toFixed(1)}%`);
-      face.style.setProperty('--rpg-foil-cy', `${(point.ny * 46).toFixed(1)}%`);
       face.classList.add('is-suit-la-souris');
       pose = true;
     };
@@ -1314,9 +1307,6 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       face.style.setProperty('--rpg-face-3d-x', '0deg');
       face.style.setProperty('--rpg-face-3d-y', '0deg');
       face.style.setProperty('--rpg-face-3d-s', '1');
-      // Le reflet rend la main à la lumière du plateau.
-      face.style.removeProperty('--rpg-foil-cx');
-      face.style.removeProperty('--rpg-foil-cy');
     };
     const suivre = (event) => {
       if (event.pointerType === 'touch') return;
@@ -1330,8 +1320,6 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       const nx = borne(((dy / boite.height) - 0.5) * 2);
       const ny = borne(((dx / boite.width) - 0.5) * -2);
       point = {
-        nx,
-        ny,
         inclineX: nx * MAX,
         inclineY: ny * MAX,
         demiA: boite.width / 2,
