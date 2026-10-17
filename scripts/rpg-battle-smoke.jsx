@@ -403,12 +403,14 @@ export async function checkRpgBattle(assert) {
   // ── Nouvelle partie : table vide, 5 cartes, 25 PV face à un sorcier à 25 ─
   assert.ok(container.querySelector('.card-table'), 'la table de jeu doit être montée après le choix de Jouer');
   const tableDuDuel = container.querySelector('.card-table');
-  // Les deux paquets de ce scénario sont mono-Sable : quel que soit le camp
-  // désigné par le rng (0.999 → l'adversaire), le terrain est l'Erg du Sahara.
+  // Les deux paquets de ce scénario sont mono-Sable : les deux camps imposent
+  // le même terrain, l'Erg du Sahara — la table reste d'un seul tenant.
   const plateauxMontes = RPG_PLATEAUX.filter(({ id }) => tableDuDuel.classList.contains(`card-table--plateau-${id}`));
   assert.equal(plateauxMontes.length, 1, 'la table porte exactement un plateau du catalogue');
   assert.equal(plateauxMontes[0].id, 'erg-du-sahara',
-    'le duel se joue sur le terrain imposé par le deck désigné au lancement');
+    'le duel se joue sur le terrain imposé par les decks au lancement');
+  assert.equal(tableDuDuel.querySelector('.rpg-plateau-moitie'), null,
+    'même terrain des deux côtés : aucune moitié peinte, aucune couture');
   assert.match(tableDuDuel.style.backgroundImage, /plateau-erg-du-sahara\.jpg/,
     'le fond de la table est l’image du plateau imposé par le deck');
   assert.match(tableDuDuel.getAttribute('aria-label') ?? '', /L’Erg du Sahara/,

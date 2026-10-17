@@ -17,18 +17,24 @@
  *    Hivers, deux couleurs à égalité → la Caravane de Gourara, le carrefour des
  *    pistes. Sans rien de lisible, c'est la Table des Heures, la table
  *    d'origine de Bab El.
- * 2. **Le camp qui impose le terrain dépend du mode.** En duel libre, le deck
- *    du joueur impose toujours le plateau. Dans le tutoriel et l'Histoire, un
- *    tirage choisit l'un des deux camps. Le tirage passe par le `rng` du duel —
- *    injectable — donc une partie se rejoue à l'identique, comme le reste du
- *    moteur, et une valeur hors bornes ne plante rien. `campImpose` permet aux
- *    modes qui le demandent de fixer le camp sans consommer de tirage.
+ * 2. **Chaque camp joue sur son terrain.** La table est découpée en deux
+ *    moitiés (`resoudrePlateauxDuDuel`) : la moitié haute porte le plateau du
+ *    deck adverse, la moitié basse celui du deck du joueur — chacun se bat
+ *    chez lui, dans tous les modes. Quand les deux decks imposent le même
+ *    terrain, la table reste pleine, sans couture. Le plateau du joueur reste
+ *    le **principal** : c'est lui qui pilote la musique dédiée et le décor 3D
+ *    (ce dernier seulement quand la table n'est pas découpée). L'ancien tirage
+ *    d'un seul camp (`tirerPlateauDuDuel`, `campImpose`) reste exporté pour
+ *    les scénarios qui veulent une table d'un seul tenant désignée par le
+ *    sable. Les tirages passent par le `rng` du duel — injectable — donc une
+ *    partie se rejoue à l'identique, comme le reste du moteur, et une valeur
+ *    hors bornes ne plante rien.
  *
  * Il n'y a donc plus ni pastille « Aléatoire », ni verrou de plateau, ni
  * sauvegarde du choix sur l'appareil : rien à mémoriser, rien à reprendre.
  *
  * Trois des terrains classiques ont leur **double merveilleux** : quand la
- * partie l'autorise (`variantesFantaisistes`), un second tirage peut échanger
+ * partie l'autorise (`variantesFantaisistes`), un tirage par camp peut échanger
  * le terrain imposé contre sa version fantaisiste — l'Erg contre le Désert de
  * Verre, les Ruines contre les Abysses Phosphorescentes, le Fjord contre les
  * Îles Célestes. Les trois autres — la piste caravanière, la Table des Heures
@@ -283,4 +289,47 @@ export function tirerPlateauDuDuel({ deckJoueur = null, deckAdverse = null, rng 
     }
   }
   return { ...tirage, variante: false };
+}
+
+/**
+ * Les plateaux d'une nouvelle partie, **un par camp** : la table découpée en
+ * deux moitiés, chacune couverte du terrain du deck qui s'y bat.
+ *
+ * `deckJoueur` et `deckAdverse` acceptent ce que `plateauDeDeck` accepte —
+ * identifiant de deck, deck du catalogue ou paquet brut. Chaque camp parle
+ * pour lui-même : un deck illisible retombe sur la Table des Heures **dans sa
+ * moitié**, sans rien emprunter à l'autre.
+ *
+ * Quand `variantesFantaisistes` est vrai, chaque camp tire **son** double
+ * merveilleux indépendamment — le joueur d'abord, l'adversaire ensuite, pour
+ * que la suite du `rng` du duel reste déterministe. Le tirage d'un camp n'est
+ * consommé que si son terrain a un double ; sans l'option, la résolution ne
+ * consomme **aucune** valeur du `rng`. Une valeur hors bornes garde le
+ * classique, sans planter.
+ *
+ * Rend `{ joueur, adversaire, principal, decouper }` — `joueur` et
+ * `adversaire` sont des résolutions de `plateauDeDeck` augmentées de
+ * `variante` ; `principal` est la résolution du joueur, celle qui pilote la
+ * musique dédiée et le décor 3D ; `decouper` dit si les deux terrains
+ * diffèrent (sinon, la table reste d'un seul tenant).
+ */
+export function resoudrePlateauxDuDuel({ deckJoueur = null, deckAdverse = null, rng = Math.random, variantesFantaisistes = false } = {}) {
+  const resoudre = (deck) => {
+    const resolu = plateauDeDeck(deck);
+    if (variantesFantaisistes) {
+      const merveilleux = varianteFantaisisteDe(resolu.plateau);
+      if (merveilleux && borneDeTirage(rng) >= 0.5) {
+        return { ...resolu, plateau: merveilleux, variante: true };
+      }
+    }
+    return { ...resolu, variante: false };
+  };
+  const joueur = resoudre(deckJoueur);
+  const adversaire = resoudre(deckAdverse);
+  return {
+    joueur,
+    adversaire,
+    principal: joueur,
+    decouper: joueur.plateau.id !== adversaire.plateau.id,
+  };
 }
