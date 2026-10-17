@@ -18,10 +18,24 @@ Le mode est actif uniquement si le duel est créé avec `modeMana: 'essai'` (`sr
 
 Les trois decks et leur validateur propre à 30 cartes sont dans `src/games/rpgManaEssai.js`. Aucune validation de deck existant n’a été remplacée. Il s’agit pour l’instant d’une **expérience de duel prédéfinie**, pas d’un nouvel atelier où composer/importer des decks personnels.
 
+## Ce que la table d'essai fait de particulier
+
+Ces règles ne valent que pour le mode sans terrains — les formats classiques (quarante cartes, quatre terrains), l'histoire et le reste du jeu ne changent pas :
+
+- **Cinq créatures au maximum sur la table.** Pour poser une sixième créature, le joueur choisit d'abord laquelle de ses créatures sacrifier : elle rejoint le cimetière, la carte se pose dans la place libérée (« Renoncer » ou Échap annule la pose). Le sorcier adverse choisit seul sa victime — sa créature la plus frêle — et le journal du duel raconte chaque sacrifice.
+- **Aucun empilement d'homonymes.** Les créatures d'un même nom ne se superposent plus en une pile dépliable, ni dans la main ni sur le champ : chaque carte garde sa place, ses blessures et ses armes proprement à elle. Le format classique, lui, continue de montrer les piles du doigt.
+- **Le bandeau « essai · 30 cartes » a disparu** de la barre du duel : le mode se reconnaît à sa jauge de mana et à ses listes de decks, sans texte en trop.
+- **Au doigt (mobile et tactile)**, enfin, la table d'essai se range comme suit :
+  - la barre de navigation du duel tient dans un bouton hamburger (☰) — Menu, Deck, Catalogue, son, 3D et plein écran se déplient sous la barre ;
+  - le sorcier adverse a sa plaque de nom et de vie **à gauche**, dans la même forme que celle du joueur, sous le flux de mana adverse ;
+  - les jauges de mana passent **au-dessus des noms des sorciers** (une par camp, chacune au-dessus de sa plaque) ;
+  - les cartes de la main sont teintées **à la couleur de leur coût** : la braise, l'eau, le sable ou la neige de leurs pastilles, et le dégradé du mana hybride quand le coût mêle deux couleurs.
+
 ## Vérifier
 
 ```bash
 npm run check:rpg-mana-essai  # moteur + parcours interface et stockage (jsdom)
 npm run check:rpg             # régressions des règles classiques + nouvel essai
+npm run check:rpg-ui          # fumigènes de l'interface (mulligan, mana, navigation, piles)
 npm run build
 ```

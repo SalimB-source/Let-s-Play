@@ -1947,10 +1947,14 @@ export function cardColors(cardOrId) {
 }
 
 /** Bandes nettes, une par élément, pour les sceaux et les coûts hybrides.
- *  L'ordre des couleurs suit la carte, de la moitié haute gauche à la basse
- *  droite ; une carte mono n'a pas besoin de ce dégradé. */
+ *  L'ordre suit le même canon que le cadre de la carte (braise, eau, sable,
+ *  neige) : la couleur du coût et celle de la carte se lisent dans le même
+ *  sens, de la moitié haute gauche à la basse droite. Une carte mono n'a pas
+ *  besoin de ce dégradé. */
 export function cardHybridGradient(cardOrId) {
-  const couleurs = cardColors(cardOrId);
+  const couleurs = cardColors(cardOrId).slice().sort(
+    (a, b) => CARD_FRAME_COLOR_ORDER.indexOf(a) - CARD_FRAME_COLOR_ORDER.indexOf(b),
+  );
   if (couleurs.length < 2) return null;
   const part = 100 / couleurs.length;
   const bandes = couleurs.map((couleur, index) => {
@@ -1985,6 +1989,22 @@ export function cardColorCost(cardOrId) {
   return Number(card?.cost) > 0 && RPG_CARD_COLORS.has(card?.element)
     ? { [card.element]: 1 }
     : {};
+}
+
+/**
+ * Les couleurs que la carte **demande à payer** — ses pips, à défaut son
+ * identité — dans l'ordre canonique du cadre (braise, eau, sable, neige).
+ * Le disque de coût et la pastille de couleur d'une carte en main s'y
+ * accrochent : la couleur qu'on lit sur la carte est celle de son coût, dans
+ * le même sens que les bandes de son cadre.
+ */
+export function cardCostColors(cardOrId) {
+  const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
+  const exigences = Object.keys(cardColorCost(card));
+  const couleurs = exigences.length ? exigences : cardColors(card);
+  return couleurs.slice().sort(
+    (a, b) => CARD_FRAME_COLOR_ORDER.indexOf(a) - CARD_FRAME_COLOR_ORDER.indexOf(b),
+  );
 }
 
 /** Couleurs que peut produire un terrain lorsqu’il est engagé. */

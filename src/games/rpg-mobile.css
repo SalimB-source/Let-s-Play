@@ -158,6 +158,41 @@
 .rpg-battle--touch .card-table > .rpg-duel-nav { grid-area: nav; justify-content: flex-end; padding: 0; gap: 0; z-index: 50; }
 .rpg-battle--touch .rpg-duel-nav strong { display: none; }
 .rpg-battle--touch .rpg-duel-nav button { min-height: 38px; padding: 4px 5px; font-size: 9px; text-shadow: 0 1px 3px #000; }
+/* Au doigt, la barre de navigation du duel tient dans un seul bouton hamburger :
+   la capsule ne montre que lui (et l'éventuel bandeau de mode), les six
+   commandes — Menu, Deck, Catalogue, son, 3D, plein écran — se déplient en
+   panneau sous la barre. À la souris, tout reste déroulé (voir `rpg-battle.css`). */
+.rpg-battle--touch .rpg-duel-nav__burger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 4px 9px;
+  font-size: 15px;
+}
+.rpg-battle--touch .rpg-duel-nav__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  display: none;
+  min-width: 132px;
+  padding: 4px;
+  border: 1px solid rgba(238, 216, 171, .24);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(9, 7, 6, .88), rgba(7, 7, 11, .8));
+  box-shadow: 0 12px 26px rgba(0, 0, 0, .45);
+  backdrop-filter: blur(10px);
+}
+.rpg-battle--touch .rpg-duel-nav__menu.is-open {
+  display: grid;
+  gap: 2px;
+}
+.rpg-battle--touch .rpg-duel-nav__menu button {
+  width: 100%;
+  min-height: 38px;
+  text-align: left;
+}
 .rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi { grid-area: opponent; justify-self: center; align-self: center; width: 210px; }
 .rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { grid-area: player; align-self: end; padding-bottom: 8px; }
 .rpg-battle--touch .card-table > .rpg-wizard-plate {
