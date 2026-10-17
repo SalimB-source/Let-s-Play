@@ -8237,7 +8237,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 
-/* ── Rapidité : l'électricité jaune sur le bord de la carte posée ─────────────
+/* ── Rapidité : l'électricité bleue sur le bord de la carte posée ─────────────
    La face rogne d'ordinaire ce qui dépasse (`overflow: hidden`, au bord
    intérieur du cadre). Une carte électrisée rogne plus loin : `overflow: clip`
    avec une marge de 28 px laisse l'arc courir sur le bord extérieur et
@@ -8286,17 +8286,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   fill: none;
 }
 .rpg-card__electricite-halo {
-  stroke: #ffd21f;
+  stroke: #3fa9ff;
   stroke-width: 2.5px;
   opacity: .65;
 }
 .rpg-card__electricite-coeur {
-  stroke: #fffbe0;
+  stroke: #e6f6ff;
   stroke-width: 1px;
 }
 /* Son opacité est animée au hasard (SMIL) : aucune opacité CSS ici. */
 .rpg-card__electricite-coeur--second {
-  stroke: #fff2a0;
+  stroke: #9fdcff;
   stroke-width: .8px;
 }
 @keyframes rpg-electricite-vacille {

@@ -959,9 +959,9 @@ function PileArmee({ armes = [], caseEssai = null, children }) {
   );
 }
 
-/** Rapidité : un arc électrique jaune court **sur le bord** de la carte.
+/** Rapidité : un arc électrique bleu court **sur le bord** de la carte.
  *  Le trait est un rectangle déformé par une turbulence dont la graine change
- *  par à-coups — l'arc ne se fige jamais. Deux passes : un halo jaune épais
+ *  par à-coups — l'arc ne se fige jamais. Deux passes : un halo bleu épais
  *  et flou, puis un cœur clair et fin. Le calque déborde de la face : il
  *  reprend l'épaisseur du cadre et l'arrondi de la carte (mesurés une fois)
  *  pour que l'arc suive exactement le bord extérieur. Le mouvement réduit
