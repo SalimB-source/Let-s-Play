@@ -501,6 +501,11 @@
 .rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone:nth-child(n + 4) {
   display: none;
 }
+/* L'icône seule, sans chiffre derrière (Honneur, Bouclier, Esquive…) : la
+   valeur reste dans l'aperçu au survol et dans le libellé de la carte. */
+.rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone small {
+  display: none;
+}
 /* Hybride avec compteurs : les losanges sont sous le coût, la colonne passe dessous. */
 .rpg-battle .card-row .rpg-card .rpg-card-icones.rpg-card-icones--sous-compteurs {
   top: calc(5% + var(--rpg-card-marker-size, 27cqw) + 6cqw + clamp(8px, calc(var(--rpg-card-marker-size, 27cqw) * .58), 18px) * 1.3);
