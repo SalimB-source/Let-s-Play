@@ -61,9 +61,10 @@ test('le deck Soleil rouge est valide et concentre sa signature culturelle', () 
   assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
   assert.equal(deck.cardIds.filter((id) => cardById(id).kind === 'terrain').length, 16);
   const signature = [
-    'ashigaru-des-braises', 'daimyo-du-soleil-rouge', 'feux-de-kitsune',
-    'frappe-iaijutsu', 'hatamoto-des-cendres', 'kagutsuchi-flamme-originelle',
-    'kenshi-de-la-forge', 'ronin-du-soleil-rouge', 'samourai-du-torii',
+    'ashigaru-des-braises', 'braisier-du-souk', 'daimyo-du-soleil-rouge',
+    'feux-de-kitsune', 'frappe-iaijutsu', 'hatamoto-des-cendres',
+    'kagutsuchi-flamme-originelle', 'kenshi-de-la-forge', 'nuage-de-cendres',
+    'onna-musha-des-cendres', 'ronin-du-soleil-rouge', 'samourai-du-torii',
     'tengu-du-mont-ardent', 'trait-de-braise',
   ];
   assert.deepEqual(

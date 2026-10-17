@@ -58,7 +58,7 @@ test('tout deck complet est sélectionnable, la Cour des Djinns comprise ; le pr
   assert.equal(deckEstSelectionnable(null), false);
   assert.equal(deckEstSelectionnable({ id: 'sans-cartes' }), false);
   assert.equal(deckEstSelectionnable({ id: 'incomplet', role: 'joueur', cardIds: ['desert', 'desert'] }), false, '40 cartes exigées');
-  assert.equal(deckEstSelectionnable({ id: 'quotas', cardIds: Array(40).fill('amani-des-ksour') }), false, '40 cartes, mais 3 exemplaires maximum et 40 % de terrains minimum');
+  assert.equal(deckEstSelectionnable({ id: 'quotas', cardIds: Array(40).fill('amani-des-ksour') }), false, '40 cartes, mais 2 exemplaires maximum et 40 % de terrains minimum');
 
   assert.equal(deckParDefaut().id, 'veilleurs-du-desert', 'le défaut est le premier deck de départ du joueur, pas le premier du catalogue');
   assert.ok(deckEstSelectionnable(deckParDefaut()));

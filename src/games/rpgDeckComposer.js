@@ -9,7 +9,7 @@
  * cartes qui portent son archétype. Le composeur remplit le reste avec **les
  * meilleures cartes de l'identité**, dans l'ordre du palier de rareté puis de
  * la puissance (`rpgCardPower.js`), chaque carte prise à son maximum légal
- * (une mythique en un exemplaire, les autres jusqu'à trois).
+ * (une mythique en un exemplaire, les autres jusqu'à deux).
  *
  * Trois garde-fous :
  *
