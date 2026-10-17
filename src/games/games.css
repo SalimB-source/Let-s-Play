@@ -57,6 +57,11 @@
   --shell-edge-1: #212229;
   --shell-edge-2: #17181e;
   --shell-edge-3: #101116;
+  /* La lueur du survol, dans la couleur de la cartouche. */
+  --shell-glow: #ffffff;
+  --shell-glow-ring: color-mix(in srgb, var(--shell-glow) 75%, transparent);
+  --shell-glow-near: color-mix(in srgb, var(--shell-glow) 60%, transparent);
+  --shell-glow-far: color-mix(in srgb, var(--shell-glow) 28%, transparent);
   position: relative;
   display: flex;
   min-width: 0;
@@ -76,18 +81,22 @@
 .game-card--soon { --cartridge-accent: #a1a6b8; }
 /* Une couleur de plastique par cartouche. */
 .game-card[data-shell='mirage-rush'] {
+  --shell-glow: #ff9a4d;
   --shell-border: #c98a55; --shell-bg: #8f4b22; --shell-top: #a95a2b; --shell-bottom: #7a3c18;
   --shell-edge-1: #5a2b11; --shell-edge-2: #43200c; --shell-edge-3: #2e1608;
 }
 .game-card[data-shell='vice-city-rush'] {
+  --shell-glow: #ff6fb0;
   --shell-border: #d77aa6; --shell-bg: #92305f; --shell-top: #ad3d72; --shell-bottom: #7c2650;
   --shell-edge-1: #5a1a39; --shell-edge-2: #43132b; --shell-edge-3: #2d0d1d;
 }
 .game-card[data-shell='sablier-de-bab-el'] {
+  --shell-glow: #3fe0c8;
   --shell-border: #5fa39a; --shell-bg: #1f5e58; --shell-top: #27716a; --shell-bottom: #1a4f4a;
   --shell-edge-1: #123a36; --shell-edge-2: #0d2b28; --shell-edge-3: #091e1c;
 }
 .game-card[data-shell='projet-03'] {
+  --shell-glow: #a98bff;
   --shell-border: #9584c4; --shell-bg: #4c3d78; --shell-top: #5b4a8c; --shell-bottom: #3f3265;
   --shell-edge-1: #2e2449; --shell-edge-2: #221b37; --shell-edge-3: #171225;
 }
@@ -285,22 +294,22 @@
    blanche — la tranche et l'ombre portée restent dessous. */
 .game-card:not(.is-locked):focus-within {
   box-shadow: 2px 3px 0 var(--shell-edge-2), 5px 7px 0 var(--shell-edge-3), 10px 30px 30px -12px #0009,
-    0 0 0 1px #ffffff59, 0 0 14px 1px #ffffff40, 0 0 34px 4px #ffffff1a;
+    0 0 0 1px var(--shell-glow-ring), 0 0 18px 3px var(--shell-glow-near), 0 0 46px 10px var(--shell-glow-far);
 }
 @media (hover: hover) and (pointer: fine) {
   .game-card:hover {
-    border-color: #c9cad2;
+    border-color: var(--shell-glow);
     box-shadow: 1px 1px 0 var(--shell-edge-1), 2px 2px 0 var(--shell-edge-1),
       3px 3px 0 var(--shell-edge-1), 4px 4px 0 var(--shell-edge-1),
       5px 5px 0 var(--shell-edge-2), 6px 6px 0 var(--shell-edge-2),
       7px 7px 0 var(--shell-edge-2), 8px 8px 0 var(--shell-edge-3),
       14px 24px 22px -12px #0009,
-      0 0 0 1px #ffffff59, 0 0 14px 1px #ffffff40, 0 0 34px 4px #ffffff1a;
+      0 0 0 1px var(--shell-glow-ring), 0 0 18px 3px var(--shell-glow-near), 0 0 46px 10px var(--shell-glow-far);
   }
   .game-card:not(.is-locked):hover {
     transform: perspective(1100px) translateY(-8px) rotateX(0) rotateY(0) rotateZ(0);
     box-shadow: 2px 3px 0 var(--shell-edge-2), 5px 7px 0 var(--shell-edge-3), 10px 30px 30px -12px #0009,
-      0 0 0 1px #ffffff59, 0 0 14px 1px #ffffff40, 0 0 34px 4px #ffffff1a;
+      0 0 0 1px var(--shell-glow-ring), 0 0 18px 3px var(--shell-glow-near), 0 0 46px 10px var(--shell-glow-far);
   }
   .game-card:not(.is-locked):hover .game-card-overlay { opacity: 1; }
   .game-card:not(.is-locked):hover .game-card-thumb { transform: scale(1.04); }
