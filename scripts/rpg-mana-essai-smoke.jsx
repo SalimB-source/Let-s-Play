@@ -2,7 +2,7 @@
  * Une manche classique est couverte par les vérifications UI historiques. */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import RpgDuelPage, { FluxManaTrack } from '../src/games/RpgDuelPage.jsx';
+import RpgDuelPage, { CreatureSlots, FluxManaTrack } from '../src/games/RpgDuelPage.jsx';
 import { RPG_MANA_ESSAI_DECKS } from '../src/games/rpgManaEssai.js';
 import { RPG_BOURSE_STORAGE_KEY } from '../src/games/rpgCredits.js';
 import { RPG_QUETES_STORAGE_KEY } from '../src/games/rpgQuetes.js';
@@ -53,6 +53,30 @@ export async function checkManaEssaiUi(assert) {
       element.remove();
     }
   };
+  // Les cases se lisent une par une : une créature morte laisse son trou, les
+  // voisines gardent leur case (le plateau ne se resserre pas).
+  const verifierCases = async () => {
+    const element = document.createElement('div');
+    document.body.append(element);
+    const vue = createRoot(element);
+    const cases = () => [...element.querySelectorAll('.rpg-creature-slot')];
+    try {
+      const troue = { creatures: [{ id: 'a', emplacement: 1 }, { id: 'c', emplacement: 3 }] };
+      await act(async () => vue.render(<CreatureSlots camp={troue} cote="joueur" />));
+      assert.equal(cases().length, 5, 'les cinq cases sont toujours dessinées');
+      assert.deepEqual(cases().map((slot) => slot.dataset.creatureSlotOccupe),
+        ['true', 'false', 'true', 'false', 'false'],
+        'la case 2, vidée par une mort, reste vide : personne ne glisse pour la prendre');
+      assert.deepEqual(cases().map((slot) => slot.classList.contains('is-occupied')),
+        [true, false, true, false, false], 'le trait plein suit la case prise, pas le compte');
+      assert.equal(element.querySelector('.rpg-creature-slots')?.dataset.creatureSlotsOccupes, '2');
+      await act(async () => vue.render(<CreatureSlots camp={{ creatures: [] }} cote="ennemi" />));
+      assert.ok(cases().every((slot) => slot.dataset.creatureSlotOccupe === 'false'), 'plateau vide : tout attend');
+    } finally {
+      await act(async () => vue.unmount());
+      element.remove();
+    }
+  };
   const revenirAuMenu = async () => click(q('.rpg-duel-nav button'));
   const demarrer = async (index) => {
     const boutons = qa('.rpg-flux-menu__decks button');
@@ -82,6 +106,7 @@ export async function checkManaEssaiUi(assert) {
   };
   try {
     await verifierPalette();
+    await verifierCases();
     await act(async () => root.render(<RpgDuelPage rng={() => .999} />));
     const origine = etatDurable();
     assert.equal(q('.rpg-flux-menu__decks') !== null, true, 'le laboratoire est visible sans l’atelier');
@@ -156,6 +181,11 @@ export async function checkManaEssaiUi(assert) {
     assert.equal(q('.rpg-creature-slots--joueur')?.dataset.creatureSlotsOccupes, '1', 'un emplacement de créature occupé côté joueur');
     assert.equal(q('.rpg-creature-slots--joueur .rpg-creature-slot')?.dataset.creatureSlotOccupe, 'true');
     assert.equal(q('.rpg-creature-slots--ennemi')?.dataset.creatureSlotsOccupes, '0');
+    // La carte se tient dans **sa** case : la colonne de la rangée est écrite
+    // sur la carte, une morte laisserait donc un trou sans déplacer les autres.
+    assert.equal(q('.card-row--equipe .rpg-card')?.dataset.emplacement, '1', 'la carte posée porte sa case');
+    assert.match(q('.card-row--equipe .rpg-card')?.getAttribute('style') ?? '', /grid-column:\s*1;/,
+      'la carte occupe la colonne de sa case');
     assert.deepEqual(etatDurable(), origine, 'jouer une carte ne progresse ni les quêtes ni la bourse');
 
     // Mono : l'attribution du premier mana est automatique après le mulligan.

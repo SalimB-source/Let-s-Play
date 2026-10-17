@@ -13,6 +13,8 @@ import {
 } from '../src/games/rpgManaEssai.js';
 import { cardById, cardColorCost, rpgValiderDeck, RPG_DECK_JOUEUR_BASE, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import {
+  rpgActionsEtat,
+  rpgCaseDeCreature,
   rpgChoisirCouleurMana,
   rpgDefausserCarte,
   rpgDemarrerManaEssai,
@@ -530,4 +532,63 @@ test('les créatures venues d’un effet prennent aussi une des cinq cases', () 
   assert.equal(rpgLancerMagie(duelPlein, 'joueur', 'reanimation').ok, true);
   assert.equal(duelPlein.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX, 'la réanimation reprend la case libre');
   assert.equal(duelPlein.joueur.creatures.at(-1)?.carteId, 'tislit-des-aures');
+});
+
+test('chaque créature garde sa case : une mort laisse un trou, les voisines ne bougent pas', () => {
+  const duel = nouveau(mono);
+  mulligans(duel);
+  rpgDemarrerManaEssai(duel);
+  duel.sorcier.main = [];
+  const cases = (camp) => camp.creatures
+    .map((entite, index) => rpgCaseDeCreature(entite, index))
+    .sort((a, b) => a - b);
+  const poser = (carteId, options) => {
+    duel.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+    duel.joueur.manaChoixEnAttente = false;
+    duel.joueur.main.push(carteId);
+    const resultat = rpgJouerCreature(duel, 'joueur', carteId, null, options);
+    assert.equal(resultat.ok, true, `${carteId} se pose`);
+    return resultat;
+  };
+
+  for (let place = 0; place < 3; place += 1) poser('tislit-des-aures');
+  assert.deepEqual(cases(duel.joueur), [1, 2, 3], 'les trois cartes prennent les trois premières cases');
+
+  // La créature du milieu meurt de ses blessures : sa case se vide et **reste**
+  // vide — les deux autres gardent la leur, personne ne glisse pour la prendre.
+  const milieu = duel.joueur.creatures.find((entite) => entite.emplacement === 2);
+  assert.ok(milieu, 'une créature tient la case 2');
+  milieu.pv = 0;
+  assert.equal(rpgActionsEtat(duel), 1, 'la blessure mortelle retire la créature');
+  assert.deepEqual(cases(duel.joueur), [1, 3], 'les survivantes gardent leurs cases, la 2 reste vide');
+
+  // La prochaine créature rebouche le trou : la case libre la plus basse.
+  assert.equal(poser('chien-du-guet').entite.emplacement, 2, 'la case vide la plus basse est reprise');
+  assert.deepEqual(cases(duel.joueur), [1, 2, 3]);
+
+  // Un sacrifice libère sa case, et la remplaçante la reprend telle quelle :
+  // le plateau ne se resserre pas non plus.
+  poser('chien-du-guet');
+  poser('chien-du-guet');
+  assert.equal(duel.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX, 'le plateau est plein');
+  const victime = duel.joueur.creatures.find((entite) => entite.emplacement === 4);
+  assert.ok(victime, 'une créature tient la case 4');
+  assert.equal(poser('tislit-des-aures', { sacrificeId: victime.id }).entite.emplacement, 4,
+    'la nouvelle créature prend la case de la victime');
+  assert.deepEqual(cases(duel.joueur), [1, 2, 3, 4, 5], 'aucune case ne manque');
+
+  // Un sacrifice consenti (sans remplacement) laisse aussi son trou.
+  const donneuse = duel.joueur.creatures.find((entite) => entite.emplacement === 5);
+  assert.equal(rpgSacrifierCreature(duel, 'joueur', donneuse.id).ok, true);
+  assert.deepEqual(cases(duel.joueur), [1, 2, 3, 4], 'la case 5 reste vide, les autres ne bougent pas');
+
+  // Le format historique n'a pas de cases dessinées : rien n'est numéroté.
+  const classique = rpgNouveauDuel({ joueurDeck: Array(4).fill('chien-du-guet'), sorcierDeck: [], rng });
+  classique.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+  classique.joueur.main = Array(3).fill('chien-du-guet');
+  for (let place = 0; place < 3; place += 1) {
+    assert.equal(rpgJouerCreature(classique, 'joueur', 'chien-du-guet').ok, true);
+  }
+  assert.ok(classique.joueur.creatures.every((entite) => entite.emplacement === null),
+    'hors du mode sans terrains, aucune case n’est attribuée');
 });

@@ -240,15 +240,48 @@
    Dans le mode sans terrains, chaque camp ne peut aligner que cinq créatures.
    La rangée devient une grille de cinq colonnes : les cases dessinées dessous
    montrent les places libres (pointillés) comme les places prises (pleines),
-   et la carte posée tombe dans la colonne de son emplacement. */
+   et la carte posée tombe dans la colonne de son emplacement.
+
+   La rangée ne s'étale plus sur toute la table : elle se centre sur la largeur
+   exacte de ses cinq cases, gouttière resserrée. Les cartes posées grandissent
+   d'autant et se tiennent côte à côte, comme un vrai rang de jeu — chaque carte
+   remplit sa colonne, chaque case a la même largeur, et la carte recouvre
+   exactement la case qui l'attend. Une créature morte laisse sa case vide : les
+   voisines gardent la leur (voir `rpgCaseDeCreature` dans `rpgDuel.js`). */
+.rpg-battle[data-mode-mana="essai"] {
+  /* La largeur d'une case — donc d'une carte posée : plus grande que la carte
+     du format historique (142 px au plus), bornée par la hauteur de la fenêtre
+     pour rester entière dans sa rangée. */
+  --rpg-case-creature: clamp(96px, min(12.5vw, 20vh), 184px);
+  /* La gouttière qui rapproche les cinq cases : de quoi laisser passer
+     l'inclinaison des cartes sans les écarter les unes des autres. */
+  --rpg-gouttiere-case: clamp(5px, .8vw, 12px);
+}
+/* Au doigt, la case suit le gabarit de la table tactile : un peu plus grande
+   que la carte posée du format historique, sans dépasser la hauteur de sa
+   rangée (`--duel-card` × 1,4 + 8 px). Les deux réglages se posent là où
+   `--duel-card` existe — la table —, pour que les rangées en héritent. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table {
+  --rpg-case-creature: min(calc(var(--duel-card) * 1.15), 190px);
+  --rpg-gouttiere-case: max(4px, calc(var(--duel-card) * .08));
+}
 .rpg-battle[data-mode-mana="essai"] .card-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   justify-items: center;
   align-items: end;
+  gap: var(--rpg-gouttiere-case);
+  /* Cinq cases, pas une de plus : la rangée se resserre sur leur largeur et se
+     centre sur le plateau (marges automatiques, en absolu comme en grille).
+     Un plafond, pas une largeur : sur un plateau plus étroit que les cinq
+     cases, la rangée garde la place qui lui reste et les cartes rétrécissent
+     avec leurs colonnes au lieu de déborder. */
+  max-width: calc(5 * var(--rpg-case-creature) + 4 * var(--rpg-gouttiere-case));
+  margin-inline: auto;
+  justify-self: center;
   /* Même plateau vide, la rangée garde la hauteur d'une carte : les cinq
      emplacements dessinés dessous restent visibles. */
-  min-height: clamp(110px, 23vh, 215px);
+  min-height: max(clamp(110px, 23vh, 215px), calc(var(--rpg-case-creature) * 1.25));
   /* Aucune marge intérieure propre : la rangée et les cinq cases partagent
      exactement la même grille, donc une carte posée tombe sur sa case. */
   padding: 0;
@@ -271,8 +304,10 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: clamp(58px, min(10vw, 17vh), 150px);
-  max-width: 92%;
+  /* La case a exactement la largeur de sa colonne, donc celle de la carte qui
+     s'y posera : les cinq cases sont serrées les unes contre les autres. */
+  width: 100%;
+  max-width: none;
   aspect-ratio: 4 / 5;
   border: 2px dashed rgba(240, 214, 150, .5);
   border-radius: 12px;
@@ -293,16 +328,25 @@
 .rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card,
 .rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card-stack,
 .rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card-stack__toggle { position: relative; z-index: 1; }
-/* Une carte ne déborde jamais de sa case : elle se cale sur la largeur de sa
-   colonne, même quand la fenêtre rétrécit. */
+/* Une carte remplit sa case — et n'en déborde jamais : sa largeur est celle de
+   sa colonne, à la souris comme au doigt, même quand la fenêtre rétrécit. La
+   carte reste dans **sa** colonne (`grid-column`, écrit par la page d'après la
+   case attribuée par le moteur) : une case vidée par une mort reste vide, les
+   cartes voisines ne glissent pas pour la prendre. */
 .rpg-battle[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack) {
+  width: 100%;
   max-width: 100%;
+}
+/* La créature armée est une pile : son bloc prend la case, et la carte dedans
+   prend le bloc — l'arme glissée dessous suit la même largeur. */
+.rpg-battle[data-mode-mana="essai"] .card-row .rpg-card-stack > .rpg-card {
+  width: 100%;
 }
 /* Au doigt, la rangée est une grille de cinq colonnes (et non une rangée
    flexible) : la carte garde la largeur d'une case, et la marge négative qui
    comprimait les voisines dans une rangée flexible disparaît. */
 .rpg-battle--touch[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack) {
-  width: min(100%, var(--rpg-field-card, 142px));
+  width: 100%;
 }
 .rpg-battle--touch[data-mode-mana="essai"] .card-row > * + * {
   margin-inline-start: 0;

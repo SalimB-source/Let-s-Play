@@ -119,6 +119,48 @@ assert.match(casesEssai, /gap:\s*inherit;/, 'les cases reprennent la gouttière 
 assert.match(casesEssai, /padding:\s*0;/, 'les cases n’ajoutent pas de marge intérieure');
 assert.match(page, /querySelectorAll\('\.rpg-creature-slot'\)/,
   'le vol d’une carte vise la case libre, pas une position calculée');
+// Cartes plus grandes, cinq cases rapprochées : la rangée ne s'étale plus sur
+// toute la table, elle se centre sur la largeur exacte de ses cinq cases.
+const gabaritEssai = styles.match(/\.rpg-battle\[data-mode-mana="essai"\]\s*\{[^}]*\}/)?.[0] ?? '';
+assert.match(gabaritEssai, /--rpg-case-creature:\s*clamp\(96px, min\(12\.5vw, 20vh\), 184px\);/,
+  'les cartes posées sur la table d’essai sont plus grandes que celles du format historique');
+assert.match(gabaritEssai, /--rpg-gouttiere-case:\s*clamp\(5px, \.8vw, 12px\);/,
+  'les cinq emplacements se rapprochent : la gouttière est resserrée');
+assert.match(rangeeEssai, /gap:\s*var\(--rpg-gouttiere-case\);/, 'la rangée applique la gouttière resserrée');
+assert.match(rangeeEssai, /max-width:\s*calc\(5 \* var\(--rpg-case-creature\) \+ 4 \* var\(--rpg-gouttiere-case\)\);/,
+  'la rangée se resserre sur ses cinq cases au lieu de s’étaler sur la table');
+assert.match(rangeeEssai, /margin-inline:\s*auto;/, 'le rang de cinq cases reste centré sur le plateau');
+const gabaritTactile = styles.match(/\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table\s*\{[^}]*\}/)?.[0] ?? '';
+assert.match(gabaritTactile, /--rpg-case-creature:\s*min\(calc\(var\(--duel-card\) \* 1\.15\), 190px\);/,
+  'au doigt, la case grandit avec le gabarit de la table, posé là où il existe');
+const carteEssai = styles.match(/\.rpg-battle\[data-mode-mana="essai"\] \.card-row > :is\(\.rpg-card, \.rpg-card-stack\)\s*\{[^}]*\}/)?.[0] ?? '';
+assert.match(carteEssai, /width:\s*100%;/, 'chaque carte remplit sa case');
+const caseDessinee = styles.match(/\.rpg-creature-slot\s*\{[^}]*\}/)?.[0] ?? '';
+assert.match(caseDessinee, /width:\s*100%;/, 'la case dessinée a exactement la largeur de la carte qui s’y pose');
+// Une créature garde **sa** case : la page écrit la colonne de la rangée d’après
+// la case attribuée par le moteur, une mort laisse donc un trou sans déplacer
+// les cartes voisines.
+const moteur = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
+assert.match(moteur, /export function rpgCaseDeCreature\(entite, index = 0\)/,
+  'le moteur dit quelle case une créature occupe');
+assert.match(moteur, /function entrerSurLeChamp\(duel, cote, entite, \{ emplacement = null, index = null \} = \{\}\)/,
+  'toute entrée en jeu passe par l’attribution d’une case');
+assert.match(moteur, /emplacement: null,\n  \};\n\}/,
+  'une créature porte sa case dès sa création');
+assert.match(moteur, /entrerSurLeChamp\(duel, cote, jeton\);/, 'un jeton prend une case libre');
+assert.equal((moteur.match(/entrerSurLeChamp\(duel, cote, entite\);/g) ?? []).length, 2,
+  'la réanimation et le retour programmé prennent aussi une case libre');
+assert.match(moteur, /entrerSurLeChamp\(duel, cote, entite, \{ emplacement: caseSacrifice, index: emplacementSacrifice \}\);/,
+  'la remplaçante d’un sacrifice reprend la case de la victime');
+assert.match(page, /const colonneDeCase = \(cote, entite\) => \{\s*const numero = caseDuPlateau\(cote, entite\);\s*return numero \? \{ gridColumn: numero \} : undefined;/,
+  'la carte posée reste dans la colonne de sa case');
+assert.match(page, /data-emplacement=\{emplacement \?\? undefined\}/,
+  'la carte posée dit quelle case elle occupe');
+assert.match(page, /slot\.dataset\.creatureSlotOccupe === 'false'/,
+  'le vol d’une carte vise la première case encore libre');
+const renduCases = page.match(/export function CreatureSlots\(\{ camp, cote \}\) \{[\s\S]*?\n\}/)?.[0] ?? '';
+assert.match(renduCases, /prises\.has\(index \+ 1\)/,
+  'les cases pleines suivent les créatures qui les tiennent, pas leur nombre');
 // Plateau plein : fenêtre du sacrifice (Sacrifier / Annuler), puis déchirement.
 assert.match(page, /Sacrifier une créature \?/, 'la sixième créature ouvre la fenêtre du sacrifice');
 assert.match(page, /rpg-sacrifice-choix__sacrifier/, 'le choix « Sacrifier » est proposé');
