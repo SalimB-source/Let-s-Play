@@ -3816,7 +3816,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    consulter une carte ne la joue jamais. */
 .rpg-card-peek {
   position: fixed;
-  z-index: 1250; /* au-dessus de l'écran de rotation (1200), sous le HUD volant */
+  z-index: 1250; /* au-dessus du chrome du duel (nav, rail), sous le HUD volant */
   inset: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
@@ -4037,8 +4037,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    requêtes de taille — donc ni la fenêtre ni des constantes en vh n'entrent
    dans le calcul. On touche ce que l'on renvoie dans le paquet, on valide, et
    l'on repioche autant. Derrière, la table est `inert` : rien ne se joue avant
-   la validation. Le volet reste sous l'écran de rotation (1200) et sous
-   l'aperçu au doigt (1250). */
+   la validation. Le volet reste sous l'aperçu au doigt (1250). */
 .rpg-mulligan {
   position: fixed;
   z-index: 1150;

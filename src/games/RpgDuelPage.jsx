@@ -11,7 +11,6 @@ import './rpg-mobile.css';
 import './rpg-story.css';
 import './rpg-deckbox.css';
 import './rpg-mana-essai.css';
-import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
 import { isFullscreenShortcut } from './gameFullscreen.js';
 import useGameFullscreen from './useGameFullscreen.js';
@@ -2873,7 +2872,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [ecran, setEcran] = useState('jouer');
   const [tutorielActif, setTutorielActif] = useState(false);
   const [etapeTutorielId, setEtapeTutorielId] = useState(null);
-  const landscapeRef = useRef(null);
   // La coque du jeu (`.rpg-battle`) : menu, catalogues et duel partagent le même
   // élément — React garde le nœud d'un écran à l'autre —, donc le plein écran
   // survit au lancement d'une partie comme au retour au menu.
@@ -2884,24 +2882,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     toggle: basculerPleinEcran,
   } = useGameFullscreen(shellRef);
   // `survol` : le volet du mulligan y lit si la souris sait survoler.
-  const [viewport, setViewport] = useState({ mobile: false, portrait: false, survol: true });
+  const [viewport, setViewport] = useState({ mobile: false, survol: true });
   useEffect(() => {
-    landscapeRef.current = createRpgLandscapeSession();
     const update = () => {
       const mobile = Boolean(window.LetsPlayAndroid) || Boolean(window.matchMedia?.('(pointer: coarse), (max-width: 1100px)').matches);
       // Le survol n'existe pas au doigt : là, l'aperçu rapide passe par l'appui
       // long d'une seconde. `matchMedia` absent (WebView ancienne) : on suppose
       // la souris, et l'appui long reste armé de toute façon.
       const survol = typeof window.matchMedia === 'function' ? window.matchMedia('(hover: hover)').matches : true;
-      setViewport({ mobile, portrait: mobile && window.innerHeight > window.innerWidth, survol });
+      setViewport({ mobile, survol });
     };
     update();
     window.addEventListener('resize', update);
-    return () => { window.removeEventListener('resize', update); landscapeRef.current?.leave(); };
+    return () => { window.removeEventListener('resize', update); };
   }, []);
-  useEffect(() => {
-    if (ecran !== 'partie') landscapeRef.current?.leave();
-  }, [ecran]);
 
   // ── Plein écran ──────────────────────────────────────────────────────────
   // Le Sablier s'ouvre dans la page, sans plein écran natif ni couche immersive
@@ -2992,13 +2986,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
   });
 
-  // Lancer (ou reprendre) une partie ne demande pas le plein écran. Le bouton
-  // « Activer le paysage » ne change que l'orientation de l'appareil.
-  const demanderPleinEcranEtPaysage = () => {
-    landscapeRef.current?.enter({ fullscreen: false });
-  };
+  // Lancer (ou reprendre) une partie ne demande ni plein écran ni
+  // orientation : le duel se joue dans l'orientation de l'appareil —
+  // le plateau s'arrange en paysage comme en portrait (voir
+  // `rpg-mobile.css`, « LE PORTRAIT AU DOIGT »).
   const reprendrePartie = () => {
-    demanderPleinEcranEtPaysage();
     setEcran('partie');
   };
   // Decks maison et collection : l'atelier écrit dans le casier local, le compte
@@ -3837,10 +3829,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       surface: SURFACE_FICHE[ecran] ?? 'LE SABLIER',
     });
   };
-  // En portrait, l'écran de rotation reprend la main : plus rien à consulter.
-  useEffect(() => {
-    if (viewport.portrait && apercuAppui) fermerApercuAppui();
-  }, [viewport.portrait, apercuAppui]);
 
   // « M » coupe ou rend la musique d'ambiance, comme sur la course.
   useEffect(() => {
@@ -5857,18 +5845,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         impactEcran={impactEcran}
         jouerSfx={jouerSfx}
       />
-      {viewport.portrait && <div className="rpg-rotate-prompt" role="dialog" aria-modal="true" aria-label="Jouer en paysage">
-        <span className="rpg-rotate-prompt__icon" aria-hidden="true">↻</span>
-        <h2>Le duel se joue en paysage</h2>
-        <p>Tournez votre téléphone pour retrouver toute la largeur du plateau.</p>
-        <button type="button" className="rpg-btn rpg-btn--primary" onClick={demanderPleinEcranEtPaysage}>Activer le paysage</button>
-        <small>Si votre navigateur refuse la rotation automatique, tournez l’appareil et désactivez son verrouillage d’orientation.</small>
-        <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => setEcran('jouer')}>Retour au menu</button>
-      </div>}
-
       <div
         ref={tableRef}
-        inert={viewport.portrait || mulliganOuvert || choixManaEssaiOuvert ? true : undefined}
+        inert={mulliganOuvert || choixManaEssaiOuvert ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
         className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
@@ -6757,7 +6736,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         )}
       </div>
-      {choixManaEssaiOuvert && !viewport.portrait && (
+      {choixManaEssaiOuvert && (
         <div className="rpg-flux-choix" role="dialog" aria-modal="true" aria-labelledby="rpg-flux-choix-titre">
           <div className="rpg-flux-choix__panel">
             <h2 id="rpg-flux-choix-titre" className="rpg-flux-choix__titre">Choisis ton mana</h2>
@@ -6778,7 +6757,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         </div>
       )}
-      {tutorielActif && etapeTutoriel && !viewport.portrait && !mulliganOuvert && (
+      {tutorielActif && etapeTutoriel && !mulliganOuvert && (
         <RpgTutorialOverlay
           key={etapeTutoriel.id}
           step={etapeTutoriel}

@@ -39,9 +39,11 @@ assert.doesNotMatch(page, /entrerPleinEcran\(\{ pinned: true, native: false \}\)
   'aucune couche immersive n’est posée automatiquement au montage');
 assert.doesNotMatch(page, /addEventListener\('pointerdown', upgrade/,
   'un toucher ordinaire ne déclenche pas le plein écran natif');
-assert.match(page, /const demanderPleinEcranEtPaysage = \(\) => \{\s*\n\s*landscapeRef\.current\?\.enter\(\{ fullscreen: false \}\);/,
-  'lancer ou reprendre une partie ne demande que l’orientation, jamais le plein écran');
+assert.doesNotMatch(page, /landscapeRef\.current\?\.enter\(/,
+  'lancer ou reprendre une partie ne demande ni plein écran ni verrou d’orientation — le duel se joue dans l’orientation de l’appareil');
+assert.doesNotMatch(page, /createRpgLandscapeSession/,
+  'la session de paysage ne pilote plus le duel : paysage et portrait sont tous deux jouables');
 assert.match(page, /onToggleFullscreen=\{basculerPleinEcran\}/,
   'le bouton laisse le plein écran disponible sur demande explicite');
-console.log('check:rpg-fullscreen ✓ — le Sablier s’ouvre et se lance dans la page, sans plein écran forcé ; le bouton explicite reste disponible.');
+console.log('check:rpg-fullscreen ✓ — le Sablier s’ouvre et se lance dans la page, sans plein écran ni orientation forcés ; le bouton explicite reste disponible.');
 process.exit(0);
