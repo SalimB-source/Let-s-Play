@@ -981,8 +981,11 @@ function ElectriciteRapidite() {
     calque.style.setProperty('--rpg-elec-rayon', style.borderTopLeftRadius || '8px');
   }, []);
   const filtre = (suffixe, frequence, echelle, graines, duree, flou = 0) => (
-    <filter id={`${id}-${suffixe}`} x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence type="turbulence" baseFrequency={frequence} numOctaves="2" seed={graines[0]} result="bruit">
+    <filter id={`${id}-${suffixe}`} x="-8%" y="-8%" width="116%" height="116%">
+      {/* `fractalNoise` oscille autour de 0,5 : l'arc tremble de part et d'autre
+          du bord sans glisser d'un côté (la `turbulence` décalait tout vers
+          le haut et la gauche). */}
+      <feTurbulence type="fractalNoise" baseFrequency={frequence} numOctaves="2" seed={graines[0]} result="bruit">
         {!mouvementReduit && (
           <animate attributeName="seed" values={graines.join(';')} dur={duree} repeatCount="indefinite" calcMode="discrete" />
         )}
@@ -995,8 +998,8 @@ function ElectriciteRapidite() {
     <span ref={calqueRef} className="rpg-card__electricite" aria-hidden="true">
       <svg focusable="false">
         <defs>
-          {filtre('halo', '0.07', 9, [2, 7, 11, 4, 9, 13], '0.6s', 1.4)}
-          {filtre('coeur', '0.09', 7, [5, 1, 8, 12, 3, 10], '0.45s')}
+          {filtre('halo', '0.06', 9, [2, 7, 11, 4, 9, 13], '0.6s', 1)}
+          {filtre('coeur', '0.08', 8, [5, 1, 8, 12, 3, 10], '0.45s')}
         </defs>
         <rect className="rpg-card__electricite-halo" filter={`url(#${id}-halo)`} />
         <rect className="rpg-card__electricite-coeur" filter={`url(#${id}-coeur)`} />
