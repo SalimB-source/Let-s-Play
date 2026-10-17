@@ -32,7 +32,8 @@ Ces règles ne valent que pour le mode sans terrains — les formats classiques 
 - **Au doigt (mobile et tactile)**, enfin, la table d'essai se range comme suit :
   - la barre de navigation du duel tient dans un bouton hamburger (☰) — Menu, Deck, Catalogue, son, 3D et plein écran se déplient sous la barre ;
   - le sorcier adverse a sa plaque de nom et de vie **à gauche**, dans la même forme que celle du joueur, sous le flux de mana adverse ;
-  - les jauges de mana passent **au-dessus des noms des sorciers** (une par camp, chacune au-dessus de sa plaque) ;
+  - la jauge de mana du sorcier adverse passe **au-dessus de sa plaque** ;
+  - la plaque du joueur se pose **juste sous la ligne de séparation du plateau**, au milieu de l'écran (colonne de gauche), et sa jauge de mana suit **juste en dessous, alignée à gauche** sur la plaque (hauteur de plaque mesurée : `--rpg-plaque-joueur-h`) ;
   - les cartes de la main sont teintées **à la couleur de leur coût** : la braise, l'eau, le sable ou la neige de leurs pastilles, et le dégradé du mana hybride quand le coût mêle deux couleurs.
 
 ## Vérifier

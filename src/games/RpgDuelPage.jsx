@@ -4166,6 +4166,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       timersRef.current.push(timer);
     });
   }, [duel, duel?.joueur.deck.length, duel?.joueur.main.length, duel?.sorcier.deck.length, duel?.sorcier.main.length]);
+  // Mobile, table d'essai : la jauge de mana du joueur se range juste sous sa
+  // plaque, elle-même posée sous la ligne de séparation du plateau. La hauteur
+  // réelle de la plaque (qui varie selon l'écran) est publiée en variable CSS.
+  const essaiTactile = Boolean(duel && viewport.mobile && duel.modeMana === RPG_MODE_MANA_ESSAI);
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    const plaque = table?.querySelector('.rpg-wizard-plate--joueur');
+    if (!essaiTactile || !table || !plaque) return undefined;
+    const publier = () => table.style.setProperty('--rpg-plaque-joueur-h', `${plaque.offsetHeight}px`);
+    publier();
+    if (typeof ResizeObserver !== 'function') return undefined;
+    const observateur = new ResizeObserver(publier);
+    observateur.observe(plaque);
+    return () => observateur.disconnect();
+  }, [essaiTactile]);
 
   useLayoutEffect(() => {
     if (!duel) return;
