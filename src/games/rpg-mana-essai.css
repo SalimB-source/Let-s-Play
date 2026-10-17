@@ -785,3 +785,131 @@
   margin: 0;
   padding: 0;
 }
+
+/* ── Mobile, table d'essai : plaque et jauge à la verticale, côte à côte ─────
+   Chaque sorcier a sa colonne contre la ligne de séparation : la plaque
+   (avatar, nom, zones, goutte de PV empilés) et, juste à sa droite, la jauge
+   de mana dressée à la même hauteur, qui se remplit de bas en haut. Le
+   joueur part de la ligne vers le bas, le sorcier adverse vers le haut, en
+   miroir ; la capsule du compteur se pose au bout libre de chaque jauge. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table {
+  --essai-col-h: min(172px, calc(50% - 38px));
+  --essai-plaque-l: 78px;
+  --essai-jauge-l: 30px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  width: var(--essai-plaque-l);
+  height: var(--essai-col-h);
+  padding: 6px 4px;
+  text-align: center;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { top: calc(50% + 6px); bottom: auto; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi { top: auto; bottom: calc(50% + 6px); }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) :is(.rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name, .rpg-wizard-plate__sable) {
+  display: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__avatar {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__identity {
+  display: grid;
+  justify-items: center;
+  align-self: stretch;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  line-height: 1.15;
+  text-align: center;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__identity strong {
+  justify-self: center;
+  margin: 0;
+  font-size: 9px;
+  letter-spacing: .03em;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+/* Les zones s'empilent : Main, Paquet, Cimetière, une par ligne. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  overflow: visible;
+  font-size: 8.5px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones .rpg-mobile-zones { display: contents; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zone-sep { display: none; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+/* La jauge dressée, à droite de la plaque, de même hauteur. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) {
+  left: calc(var(--rpg-touch-pad, 6px) + var(--essai-plaque-l) + 5px);
+  width: var(--essai-jauge-l);
+  height: var(--essai-col-h);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--joueur { top: calc(50% + 6px); bottom: auto; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--ennemi { top: auto; bottom: calc(50% + 6px); }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) .rpg-flux-track__bar {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 7px 3px;
+}
+/* Le premier mana acquis en bas : la colonne se remplit de bas en haut. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) .rpg-flux-track__slots {
+  flex: 1;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  min-height: 0;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) .rpg-flux-track__slot {
+  /* Dix cases qui se partagent la hauteur, quelle que soit la jauge. */
+  flex: 1 1 0;
+  width: 22px;
+  max-width: 22px;
+  height: auto;
+  max-height: 22px;
+  min-height: 0;
+  aspect-ratio: auto;
+  font-size: 12px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) .rpg-flux-track__slot .rpg-emblem {
+  width: 13px;
+  height: 13px;
+}
+/* La capsule du compteur au bout libre de la jauge, centrée sur elle. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) .rpg-flux-track__reserve {
+  left: 50%;
+  right: auto;
+  min-width: 0;
+  padding: 3px 5px;
+  font-size: 10px;
+  transform: translateX(-50%);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__reserve { top: calc(100% + 3px); bottom: auto; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__reserve { top: auto; bottom: calc(100% + 3px); }

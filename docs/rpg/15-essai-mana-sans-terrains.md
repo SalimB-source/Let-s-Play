@@ -45,3 +45,11 @@ npm run check:rpg             # régressions des règles classiques + nouvel ess
 npm run check:rpg-ui          # fumigènes de l'interface (mulligan, mana, navigation, piles)
 npm run build
 ```
+
+### Mobile : plaque et jauge à la verticale
+
+Sur la table d'essai tactile, chaque sorcier a sa colonne contre la ligne de séparation du plateau (le joueur dessous, le sorcier adverse au-dessus, en miroir) :
+
+- la **plaque** est verticale : avatar, nom, zones (Main, Paquet, Cimetière, une par ligne) et goutte de PV empilés ;
+- la **jauge de mana** est dressée juste à sa droite, à la même hauteur (`--essai-col-h`), et **se remplit de bas en haut** : le premier mana acquis est en bas ;
+- la capsule du compteur se pose au bout libre de la jauge (sous celle du joueur, au-dessus de celle du sorcier).
