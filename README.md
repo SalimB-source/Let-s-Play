@@ -7885,3 +7885,75 @@ dans un harnais temporaire qui lit le même fichier : **15/15**. Un passage de
 `::after` ne peint plus rien sur ces faces, et qu'aucune n'a été cassée. Les
 contrôles Playwright (`check:rpg-mobile`, `check:rpg-card-markers`,
 `check:rpg-card-motif`) demandent un navigateur, absent de cet environnement.
+
+## Le Sablier : la table au doigt — cartes posées à 95 %, coût effacé, pastille de la main réduite
+
+Trois retouches de présentation au doigt seulement (`.rpg-battle--touch`,
+`rpg-mobile.css`), **aucune règle du duel touchée** : les créatures en jeu se
+lisent mieux, leur face s'allège, et la main laisse un peu plus de place à
+l'illustration.
+
+**Les cartes posées passent de 85 % à 95 % de la main.** `--rpg-field-card`
+vaut désormais `calc(var(--duel-card) * .95)` : sur un 844 × 390, une créature
+posée fait 63 px de large au lieu de 56,4 (`--duel-card` = 66,3 px) — toujours
+un peu sous la carte en main, comme le veut la table. Le budget vertical tient :
+une face 4:5 à 95 % mesure 1,19 × `--duel-card`, sous le plancher de rangée
+(1,4 × `--duel-card` + 8 px), et l'attaquant couché à 15° occupe 1,47 × sa
+largeur — 92,4 px sur 844 × 390, dans une rangée d'au moins 100,8 px. Le
+partage de largeur par `--row-count`, le plancher de 40 px et le
+chevauchement au-delà ne bougent pas ; les repères en `cqw` (pastille,
+statistiques, compteurs) suivent la carte agrandie, puisqu'ils sont mesurés sur
+elle.
+
+**Le coût ne s'imprime plus sur la face posée.** Une créature en jeu n'a plus
+rien à payer : le disque disparaît du titre des cartes des deux champs
+(`.rpg-battle--touch .card-row .rpg-card .rpg-card__title .rpg-mana-cost`,
+`display: none`). Il reste dans le DOM — le `aria-label` de la carte continue
+de dire le coût, comme la couleur et les statistiques — et sur toutes les
+autres faces : main, mulligan, aperçus (survol, appui long, fiche), catalogue.
+À la souris, la table garde son disque. Le bouton de capacité activée garde le
+sien : c'est son visage (`.rpg-card__activation`), posé hors du titre de la
+carte. Les compteurs d'effet ne bougent pas : losanges sous la couleur sur une
+mono, à droite sur une hybride — sous l'emplacement du coût effacé.
+
+**La pastille de couleur de la main rétrécit.** Au doigt, elle passe de 22 px
+à 16 px de diamètre (`font-size: 10px`, filet de 1,5 px — les deux pips d'une
+hybride suivent), pendant que le disque de coût de la main garde le diamètre
+commun de 22 px. La règle « les deux repères ronds font même diamètre » perd
+cette seule exception, dans la main au doigt ; elle reste entière partout
+ailleurs — table, mulligan, catalogue, aperçus, et toute la présentation à la
+souris.
+
+### Où vit le code
+
+- `src/games/rpg-mobile.css` — `--rpg-field-card` à 95 % (avec le commentaire
+  du budget vertical), le `display: none` du coût posé sous la règle des
+  disques tactiles, et la pastille de la main à 16 px à côté de
+  `--rpg-card-marker-size: 22px` ;
+- `scripts/rpg-battle-ui-check.mjs` — l'assertion des 95 %, celle du coût
+  masqué sur les faces posées, et celles de la pastille réduite (16 px, filet
+  de 1,5 px, pips comprises) ;
+- `scripts/rpg-card-markers-check.mjs` — l'égalité des diamètres couleur/coût
+  garde toutes les faces sauf la main au doigt, où la pastille est vérifiée
+  plus petite d'au moins 4 px et encore lisible (≥ 12 px) ;
+- `scripts/rpg-mobile-layout-check.mjs` — après la pose du Fennec : le coût de
+  la carte posée n'est pas imprimé mais reste dans son `aria-label`, la carte
+  prend 95 % de `--duel-card`, et la pastille de la main est plus petite que
+  le disque de coût ;
+- `docs/rpg/mobile-layout.md` — la liste de présentation : la main (pastille
+  réduite), les cartes posées (95 %, coût effacé) et la créature équipée
+  (compteurs hybrides à droite).
+
+### Vérifications
+
+```bash
+npm run check:rpg      # 595/595 — les règles du duel, inchangées
+npm run check:rpg-ui   # ✓ — les onze volets, dont les assertions statiques neuves
+npm run build          # le bundle se construit
+```
+
+Un passage de `css-tree` sur `rpg-mobile.css` confirme que la feuille se parse
+sans erreur. Les contrôles Playwright (`check:rpg-mobile`,
+`check:rpg-card-markers`) demandent un navigateur, absent de cet environnement :
+leurs nouvelles assertions suivent exactement les règles CSS posées ici et se
+joueront là où Chromium est installé (`npx playwright install chromium`).
