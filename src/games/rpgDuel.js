@@ -37,7 +37,7 @@ import {
 } from './rpgAI.js';
 import {
   RPG_MANA_ESSAI_CARTES_EXCLUES,
-  RPG_MANA_ESSAI_CREATURES_MAX,
+  RPG_MANA_ESSAI_CHAMP_MAX,
   RPG_MANA_ESSAI_MAIN_DEPART,
   RPG_MANA_ESSAI_MAIN_MAX,
   RPG_MANA_ESSAI_MAX,
@@ -1845,8 +1845,7 @@ export function rpgSacrifierCreature(duel, cote, entiteId) {
   const entite = camp?.creatures.find((candidate) => candidate.id === entiteId);
   if (!entite) return { ok: false, raison: 'absente' };
   duel.log.push(`${cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${entite.name} pour libérer un emplacement.`);
-  entite.tenaciteDisponible = false;
-  enterrer(duel, cote, entite);
+  sacrifierCreature(duel, cote, entite);
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
   return { ok: true, entite, carteId: entite.carteId };
@@ -1865,19 +1864,44 @@ function enterrer(duel, cote, entite, sourceElements = []) {
     duel.log.push(`Tenacité : ${entite.name} refuse la destruction — il lui reste 1 point de défense.`);
     return;
   }
+  rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.');
+}
+
+/**
+ * Sacrifice : la créature quitte la table **par la volonté de son camp** — le
+ * prix d'une pose quand le champ des cinq places est plein (mode essai). Comme
+ * une destruction, elle rejoint le cimetière et déclenche sa capacité de
+ * « quand elle meurt » ; mais la Tenacité ne s'applique pas : ce n'est pas une
+ * destruction évitable, c'est un don.
+ */
+function sacrifierCreature(duel, cote, entite) {
+  rejoindreCimetiere(duel, cote, entite, [], 'est sacrifiée et rejoint le cimetière.');
+}
+
+/** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
+function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle) {
   journaliserDestruction(duel, entite, sourceElements);
   armeDePorteurMort(duel, cote, entite);
   const camp = duel[cote];
   camp.creatures = camp.creatures.filter((e) => e.id !== entite.id);
   camp.cimetiere.push(entite.carteId);
   detacherArmes(duel, cote, entite);
-  duel.log.push(`${entite.name} est détruite et rejoint le cimetière.`);
+  duel.log.push(`${entite.name} ${libelle}`);
   const carte = duelCardById(entite.carteId);
   if (carte?.destruction) {
     appliquer(duel, cote, carte.destruction, null, null, cardColors(carte), null, entite.carteId);
   }
   declencherHonneur(duel, cote, entite);
   rafraichirAuras(duel);
+}
+
+/** La créature qu'un camp sacrifie de lui-même : la plus frêle d'abord, la
+ *  plus entamée ensuite — l'IA (et une pose sans désignation) garde toujours
+ *  ses meilleures cartes quand le champ est plein. */
+function choisirSacrifice(camp) {
+  return [...camp.creatures].sort((a, b) =>
+    ((a.atk ?? 0) + (a.def ?? 0)) - ((b.atk ?? 0) + (b.def ?? 0))
+    || (a.pv ?? 0) - (b.pv ?? 0))[0] ?? null;
 }
 
 /**
@@ -2003,26 +2027,31 @@ export function arriveeACibleLegale(duel, cote, carte) {
  * s'ouvre ensuite, sur la table — `rpgResoudreArriveeCiblee` la referme. Une
  * arrivée qui ne désigne rien (ou qui n'a plus de cible légale) se résout, elle,
  * dans les deux cas avec la pose.
+ *
+ * `sacrificeId` — le **prix de la pose** quand le champ des cinq places est
+ * plein (mode essai, `RPG_MANA_ESSAI_CHAMP_MAX`) : la créature désignée est
+ * sacrifiée au moment de payer, puis la nouvelle entre en jeu. Sans
+ * désignation, le moteur refuse la pose (`raison: 'champ-plein'`) sauf pour le
+ * sorcier, qui sacrifie automatiquement sa créature la plus frêle.
  */
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeEntiteId = null } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null } = {}) {
   const camp = duel[cote];
   const carte = duelCardById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
-  // Mode sans terrains : cinq emplacements par camp, pas un de plus. Une
-  // sixième créature exige le sacrifice d'une créature déjà en jeu
-  // (`sacrificeEntiteId`, désignée par l'interface après confirmation du
-  // joueur, ou par l'IA du sorcier) ; sans sacrifice désigné, la pose est
-  // refusée et ni le mana ni la carte ne bougent.
-  const plateauPlein = duel.modeMana === RPG_MODE_MANA_ESSAI
-    && camp.creatures.length >= RPG_MANA_ESSAI_CREATURES_MAX;
+  // Le champ d'essai n'a que cinq places, dessinées sur le plateau : la
+  // sixième créature exige qu'une autre soit sacrifiée. La validation tôt
+  // (avant paiement et contre) laisse au joueur le temps de choisir sa
+  // victime ; le sacrifice, lui, n'a lieu qu'au moment d'engager la pose —
+  // un contresort annule tout sans rien coûter.
+  const champPlein = duel.modeMana === RPG_MODE_MANA_ESSAI
+    && camp.creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX;
   let sacrifice = null;
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI && sacrificeEntiteId) {
-    sacrifice = camp.creatures.find((entite) => entite.id === sacrificeEntiteId) ?? null;
-    if (!sacrifice) return { ok: false, raison: 'sacrifice' };
-    if (!plateauPlein) return { ok: false, raison: 'sacrifice-inutile' };
-  } else if (plateauPlein) {
-    return { ok: false, raison: 'plateau-plein' };
+  if (champPlein) {
+    sacrifice = sacrificeId
+      ? camp.creatures.find((entite) => entite.id === sacrificeId) ?? null
+      : (cote === 'sorcier' ? choisirSacrifice(camp) : null);
+    if (!sacrifice) return { ok: false, raison: sacrificeId ? 'sacrifice' : 'champ-plein' };
   }
   if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
     // Une arrivée qui désigne une créature (duel du Cavalier, lance de givre de
@@ -2073,23 +2102,27 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
   }
+  // Rien n'a été annulé : le sacrifice de la place libre a lieu maintenant,
+  // juste avant le paiement — la créature entre ensuite sur le champ vidé.
+  // Si le sorcier a contré la créature plus haut, on n'arrive jamais ici :
+  // rien n'a été sacrifié. L'indice de la victime est retenu : la nouvelle
+  // créature prend sa place, au même emplacement du plateau.
+  let emplacementSacrifice = null;
+  if (sacrifice) {
+    emplacementSacrifice = camp.creatures.findIndex((entite) => entite.id === sacrifice.id);
+    duel.log.push(`${cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${sacrifice.name} pour faire place à ${carte.name}.`);
+    sacrifierCreature(duel, cote, sacrifice);
+  }
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
-  // Le sacrifice tombe AVANT l'entrée en jeu : la créature sacrifiée est déjà
-  // au cimetière quand la nouvelle prend sa place — au même indice, pour que
-  // la carte posée occupe l'emplacement libéré. Si le sorcier a contré la
-  // créature plus haut, on n'arrive jamais ici : rien n'a été sacrifié.
-  let emplacement = camp.creatures.length;
-  if (sacrifice) {
-    emplacement = Math.max(0, camp.creatures.findIndex((entite) => entite.id === sacrifice.id));
-    const resSacrifice = rpgSacrifierCreature(duel, cote, sacrifice.id);
-    if (!resSacrifice.ok) return { ok: false, raison: 'sacrifice' };
-    // La capacité de destruction du sacrifié a pu déplacer la table (jetons,
-    // renvois) : l'emplacement libéré se borne à la rangée telle qu'elle est.
-    emplacement = Math.min(emplacement, camp.creatures.length);
-  }
   const entite = creerEntiteCreature(carte);
-  camp.creatures.splice(emplacement, 0, entite);
+  // La capacité de destruction du sacrifié a pu déplacer la table (jetons,
+  // renvois) : l'emplacement libéré se borne à la rangée telle qu'elle est.
+  if (emplacementSacrifice !== null && emplacementSacrifice >= 0) {
+    camp.creatures.splice(Math.min(emplacementSacrifice, camp.creatures.length), 0, entite);
+  } else {
+    camp.creatures.push(entite);
+  }
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
   if (entite.protection) {
     const couleur = ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre;
@@ -2106,7 +2139,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId };
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
-      return { ok: true, entite, arriveeEnAttente: true, sacrificeEntiteId: sacrifice?.id ?? null };
+      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null };
     }
     // Seuls les effets d'arrivée qui **désignent** une cible reçoivent un
     // `cibleId` : les autres (renfort de camp, pioche, création de jetons…)
@@ -2119,7 +2152,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
-  return { ok: true, entite, sacrificeEntiteId: sacrifice?.id ?? null };
+  return { ok: true, entite, sacrificeId: sacrifice?.id ?? null };
 }
 
 /**
@@ -3329,20 +3362,13 @@ export function rpgSorcierResoudreAnnonce(duel) {
   if (!annonce) return { ok: false, raison: 'aucune-annonce' };
   duel.annonce = null;
   duel.fenetreReponse = false;
-  // Plateau plein (mode sans terrains) : le sorcier sacrifie sa créature la
-  // plus faible — la moindre force totale d'abord, la plus frêle ensuite — pour poser
-  // celle qu'il vient d'annoncer, comme le joueur le ferait après confirmation.
-  let sacrificeEntiteId = null;
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI && duelCardById(annonce.carteId)
-    && duel.sorcier.creatures.length >= RPG_MANA_ESSAI_CREATURES_MAX) {
-    sacrificeEntiteId = [...duel.sorcier.creatures]
-      .sort((a, b) => ((a.atk ?? 0) + (a.pv ?? 0)) - ((b.atk ?? 0) + (b.pv ?? 0))
-        || (a.pv ?? 0) - (b.pv ?? 0))[0]?.id ?? null;
-  }
+  // Champ d'essai plein : le moteur sacrifie d'office la créature la plus
+  // frêle du sorcier (`choisirSacrifice`, dans `rpgJouerCreature`) pour poser
+  // celle qu'il vient d'annoncer, comme le joueur le fait après confirmation.
   const res = armeById(annonce.carteId)
     ? rpgJouerArme(duel, 'sorcier', annonce.carteId, annonce.cibleId)
     : duelCardById(annonce.carteId)
-      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId, { sacrificeEntiteId })
+      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
       : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId, annonce.cibleAllieeId ?? null);
   rpgActionsEtat(duel);
   return { ...res, carteId: annonce.carteId };
