@@ -7769,3 +7769,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview .rpg-hover-card-preview__face.is-suit-la-souris {
   transition: none;
 }
+
+/* La défausse est un choix confirmé : la carte retenue reste nettement
+   marquée pendant que le joueur vérifie son choix. */
+.rpg-hand__card.is-discard-selected {
+  outline: 3px solid #ffd619;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(255, 214, 25, .28), 0 0 24px rgba(255, 214, 25, .55);
+}
+.rpg-discard-prompt {
+  color: #ffe9a0;
+  font: 700 12px/1.35 var(--display, sans-serif);
+}
+.rpg-btn--discard-confirm {
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .rpg-discard-prompt { flex: 1 1 100%; text-align: center; }
+  .rpg-btn--discard-confirm { min-height: 40px; }
+}

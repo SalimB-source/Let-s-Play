@@ -3184,6 +3184,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, [activationEnCours]);
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
   const [confirmationSort, setConfirmationSort] = useState(null);
+  const [carteDefausseSelectionnee, setCarteDefausseSelectionnee] = useState(null);
   const [annonceApercueFermeePour, setAnnonceApercueFermeePour] = useState(null);
   // Mulligan : à l'ouverture du duel, la main de départ se découvre en grand
   // et le joueur choisit les cartes qu'il renvoie dans le paquet. `null` dès
@@ -4039,6 +4040,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort || fenetreFinTour);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
+  const selectionDefausseValide = Boolean(defausseOuverte
+    && carteDefausseSelectionnee?.attente === duel.defausseEnAttente
+    && duel.joueur.main[carteDefausseSelectionnee.handIndex] === carteDefausseSelectionnee.carteId);
   const indicateurTour = vainqueur
     ? 'DUEL TERMINÉ'
     : defausseOuverte
@@ -4870,6 +4874,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     jouerCarteDepuisMain(carteId, handIndex);
   };
 
+  const confirmerDefausse = () => {
+    if (!defausseOuverte || !selectionDefausseValide) return;
+    const { carteId, handIndex } = carteDefausseSelectionnee;
+    const res = rpgDefausserCarte(duel, 'joueur', Number.isInteger(handIndex) ? handIndex : carteId);
+    setCarteDefausseSelectionnee(null);
+    jouerSfx(res.ok ? 'annuler' : 'erreur');
+    force();
+  };
+
   const cliquerCarteMain = (carteId, handIndex) => {
     if (clicApresGlisserRef.current) {
       clicApresGlisserRef.current = false;
@@ -4881,9 +4894,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!carte) return;
     if (carteEnVol || cibleEnCours || cibleAttaqueEnCours) return;
     if (defausseOuverte) {
-      const res = rpgDefausserCarte(duel, 'joueur', Number.isInteger(handIndex) ? handIndex : carteId);
-      jouerSfx(res.ok ? 'annuler' : 'erreur');
-      force();
+      setCarteDefausseSelectionnee({ carteId, handIndex, attente: duel.defausseEnAttente });
+      jouerSfx('select');
       return;
     }
     if (carte.kind === 'magie' && peutJouerCarte(carte)) {
@@ -6239,9 +6251,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     });
                   })}
                 {defausseOuverte && (
-                  <span className="rpg-discard-prompt" role="status" aria-live="polite">
-                    Cliquez une carte de votre main pour la défausser ({duel.defausseEnAttente.restant}).
-                  </span>
+                  <>
+                    <span className="rpg-discard-prompt" role="status" aria-live="polite">
+                      {selectionDefausseValide
+                        ? `Carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · ${duel.defausseEnAttente.restant} à défausser.`
+                        : `Choisissez une carte de votre main, puis validez la défausse (${duel.defausseEnAttente.restant}).`}
+                    </span>
+                    {selectionDefausseValide && (
+                      <button
+                        type="button"
+                        className="rpg-btn rpg-btn--primary rpg-btn--discard-confirm"
+                        onClick={confirmerDefausse}
+                        aria-label={`Valider la défausse de ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'la carte sélectionnée'}`}
+                      >
+                        ✓ Valider la défausse
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -6387,6 +6413,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               const exemplaires = groupe.indices.length;
               const carte = cardById(carteId);
               if (!carte) return null;
+              const defausseSelectionnee = defausseOuverte
+                && selectionDefausseValide
+                && carteDefausseSelectionnee.carteId === carteId
+                && groupe.indices.includes(carteDefausseSelectionnee.handIndex);
               // L'éventail : la carte connaît sa place dans la rangée — un
               // nombre signé, nul au centre — et son carré, qui donne la
               // descente en arc des bords. La feuille de style en fait un
@@ -6431,6 +6461,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   type="button"
                   draggable={jouable && !defausseOuverte}
                   onClick={() => cliquerCarteMain(carteId, i)}
+                  aria-pressed={defausseOuverte ? defausseSelectionnee : undefined}
                   onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
                   onMouseLeave={masquerApercuSurvol}
                   onFocus={(event) => afficherApercuSurvol(carte, event)}
@@ -6446,6 +6477,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     cardFrameClass(carte),
                     cardMotifClass(carte),
                     piocheEnCours ? 'rpg-hand-card--drawing' : '',
+                    defausseSelectionnee ? 'is-discard-selected' : '',
                     carte.instant ? 'is-instant' : '',
                     cibleEnCours === carteId ? 'is-targeting' : '',
                     jouable ? 'is-playable' : 'is-unplayable',
