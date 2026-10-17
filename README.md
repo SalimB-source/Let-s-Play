@@ -8069,24 +8069,41 @@ la feuille n'utilise pas. Le `<div>` du panneau porte désormais la même bascul
 que le bouton : la classe `is-open` lui est ajoutée quand `navMenuOuvert` est
 vrai.
 
+Le panneau, lui, ne doit plus dépendre de son ancêtre. Il était posé en
+`position: absolute` sous la barre, elle-même nichée dans la grille de la
+table : il héritait du **rognage** (`.card-table { overflow: auto }` sur un
+téléphone en paysage), de la hauteur de la barre et de son contexte
+d'empilement — de quoi changer d'état sans jamais être peint à l'écran sur
+certaines WebViews. Le panneau est désormais **fixé au viewport**
+(`position: fixed`, à 50 px du haut, calé à droite avec les marges de sécurité,
+`z-index: 60` dans le contexte de la barre). Il porte un fond quasi opaque et
+**plus aucun `backdrop-filter`** : certaines WebViews ne peignent pas un
+panneau filtré superposé à un plateau animé. Sur un écran court (568 × 320),
+`max-height` le laisse défiler plutôt que de perdre ses dernières commandes.
+
 À la souris, rien ne change : `.rpg-duel-nav__menu { display: contents; }`
 garde les six commandes déroulées en ligne dans la barre, et le bouton reste
-masqué. Au doigt, le panneau s'ouvre sous la barre, dans la colonne des
-commandes (`z-index: 50`), avec ses **six boutons** : les trois modes (Menu,
-Deck, Catalogue), puis le son, la 3D et le plein écran. Un toucher hors de la
-barre, Échap ou le ✕ referment le panneau ; choisir un mode referme le panneau
-et ouvre son écran.
+masqué. Au doigt, le panneau s'ouvre sous la barre avec ses **six boutons** :
+les trois modes (Menu, Deck, Catalogue), puis le son, la 3D et le plein écran.
+Un toucher hors de la barre, Échap ou le ✕ referment le panneau ; choisir un
+mode referme le panneau et ouvre son écran.
 
 ### Où vit le code
 
 - `src/games/RpgDuelPage.jsx` — la classe `is-open` du panneau, posée avec la
   même condition que `aria-expanded` du hamburger ;
+- `src/games/rpg-mobile.css` — le panneau fixé au viewport (`position: fixed`,
+  marges de sécurité, `max-height` défilante) et débarrassé de son
+  `backdrop-filter` ; le bouton porte `touch-action: manipulation` ;
 - `scripts/rpg-duel-nav-check.mjs` et `scripts/rpg-duel-nav-smoke.jsx` — le
-  nouveau scénario jsdom : pointeur grossier, duel lancé, panneau replié, appui
-  sur le hamburger, six commandes, fermeture hors barre, mode Deck ouvert ;
-- `scripts/rpg-mobile-layout-check.mjs` — l'assertion Playwright : le panneau
-  est visible dans la fenêtre 844 × 390, ses trois modes sont au-dessus de la
-  table et atteignables, les six commandes restent dans le panneau ;
+  scénario jsdom : pointeur grossier, duel lancé, panneau replié, appui sur le
+  hamburger, six commandes, fermeture hors barre, mode Deck ouvert, et le
+  contrat de peinture du panneau (`display: grid`, `position: fixed`, sans
+  `backdrop-filter`, défilement vertical) ;
+- `scripts/rpg-mobile-layout-check.mjs` — les assertions Playwright : le
+  panneau est fixé au viewport, visible et atteignable dans la fenêtre
+  844 × 390 **comme** dans un 568 × 320, ses trois modes sont au-dessus de la
+  table, les six commandes restent dans le panneau ;
 - `docs/rpg/mobile-layout.md` — la section « Le menu hamburger du duel ».
 
 ### Vérifications

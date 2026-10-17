@@ -153,6 +153,7 @@
   box-shadow: none;
   background: transparent;
   backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .rpg-battle--touch .card-table > .rpg-hidden-hand { display: none; }
 .rpg-battle--touch .card-table > .rpg-duel-nav { grid-area: nav; justify-content: flex-end; padding: 0; gap: 0; z-index: 50; }
@@ -161,8 +162,16 @@
 /* Au doigt, la barre de navigation du duel tient dans un seul bouton hamburger :
    la capsule ne montre que lui (et l'éventuel bandeau de mode), les six
    commandes — Menu, Deck, Catalogue, son, 3D, plein écran — se déplient en
-   panneau sous la barre. À la souris, tout reste déroulé (voir `rpg-battle.css`). */
+   panneau. À la souris, tout reste déroulé (voir `rpg-battle.css`).
+   Le panneau est **fixé au viewport**, pas posé sous la barre : ancré en
+   `absolute` dans la barre, il héritait du rognage de la table (`overflow:
+   auto`) et de son contexte d'empilement — selon la WebView il changeait bien
+   d'état (`is-open`) mais restait invisible. Fixe, il ne dépend plus ni de la
+   hauteur de la barre, ni du défilement de la table, ni du rognage de la
+   grille. Son fond est quasi opaque et **sans `backdrop-filter`** : certaines
+   WebView ne peignent pas un panneau filtré posé sur un fond animé. */
 .rpg-battle--touch .rpg-duel-nav__burger {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -170,19 +179,43 @@
   min-height: 38px;
   padding: 4px 9px;
   font-size: 15px;
+  touch-action: manipulation;
+}
+/* La capsule ne fait que 38 px de haut : la cible du doigt déborde de 4 px
+   tout autour sans déplacer la barre ni rétrécir la table. */
+.rpg-battle--touch .rpg-duel-nav__burger::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
 }
 .rpg-battle--touch .rpg-duel-nav__menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
+  position: fixed;
+  /* Le viewport, à quelques pixels sous la capsule du haut. Les valeurs nues
+     précèdent `env()` : une WebView qui ignore les encoches garde un panneau
+     placé, jamais un `top: auto`. */
+  top: 50px;
+  top: calc(env(safe-area-inset-top, 0px) + 50px);
+  right: 8px;
+  right: max(8px, env(safe-area-inset-right, 0px));
+  bottom: auto;
+  left: auto;
+  z-index: 60; /* dans le contexte de la barre (z-index 50) : au-dessus de la table */
   display: none;
-  min-width: 132px;
-  padding: 4px;
-  border: 1px solid rgba(238, 216, 171, .24);
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(9, 7, 6, .88), rgba(7, 7, 11, .8));
-  box-shadow: 0 12px 26px rgba(0, 0, 0, .45);
-  backdrop-filter: blur(10px);
+  min-width: 168px;
+  max-width: calc(100vw - 16px);
+  max-width: calc(100vw - max(8px, env(safe-area-inset-left, 0px)) - max(8px, env(safe-area-inset-right, 0px)));
+  /* `vh` d'abord : les WebView qui ignorent `dvh` gardent un panneau mesuré. */
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 58px);
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 58px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 5px;
+  border: 1px solid rgba(238, 216, 171, .34);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(14, 11, 9, .97), rgba(8, 8, 12, .96));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .6);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .rpg-battle--touch .rpg-duel-nav__menu.is-open {
   display: grid;
@@ -190,7 +223,9 @@
 }
 .rpg-battle--touch .rpg-duel-nav__menu button {
   width: 100%;
-  min-height: 38px;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 11px;
   text-align: left;
 }
 .rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi { grid-area: opponent; justify-self: center; align-self: center; width: 210px; }
