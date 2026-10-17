@@ -959,17 +959,29 @@ function PileArmee({ armes = [], caseEssai = null, children }) {
   );
 }
 
-/** Rapidité : un arc électrique jaune court le long du bord de la carte.
+/** Rapidité : un arc électrique jaune court **sur le bord** de la carte.
  *  Le trait est un rectangle déformé par une turbulence dont la graine change
  *  par à-coups — l'arc ne se fige jamais. Deux passes : un halo jaune épais
- *  et flou, puis un cœur clair et fin. Le mouvement réduit garde l'arc, fixe. */
+ *  et flou, puis un cœur clair et fin. Le calque déborde de la face : il
+ *  reprend l'épaisseur du cadre et l'arrondi de la carte (mesurés une fois)
+ *  pour que l'arc suive exactement le bord extérieur. Le mouvement réduit
+ *  garde l'arc, fixe. */
 function ElectriciteRapidite() {
   const id = useId().replace(/:/g, '');
+  const calqueRef = useRef(null);
   const [mouvementReduit] = useState(() => (
     typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
   ));
+  useLayoutEffect(() => {
+    const calque = calqueRef.current;
+    const carte = calque?.parentElement;
+    if (!carte || typeof window === 'undefined') return;
+    const style = window.getComputedStyle(carte);
+    calque.style.setProperty('--rpg-elec-bord', style.borderTopWidth || '0px');
+    calque.style.setProperty('--rpg-elec-rayon', style.borderTopLeftRadius || '8px');
+  }, []);
   const filtre = (suffixe, frequence, echelle, graines, duree, flou = 0) => (
-    <filter id={`${id}-${suffixe}`} x="-10%" y="-10%" width="120%" height="120%">
+    <filter id={`${id}-${suffixe}`} x="-5%" y="-5%" width="110%" height="110%">
       <feTurbulence type="turbulence" baseFrequency={frequence} numOctaves="2" seed={graines[0]} result="bruit">
         {!mouvementReduit && (
           <animate attributeName="seed" values={graines.join(';')} dur={duree} repeatCount="indefinite" calcMode="discrete" />
@@ -980,15 +992,15 @@ function ElectriciteRapidite() {
     </filter>
   );
   return (
-    <span className="rpg-card__electricite" aria-hidden="true">
-      <svg viewBox="0 0 100 125" preserveAspectRatio="none" focusable="false">
+    <span ref={calqueRef} className="rpg-card__electricite" aria-hidden="true">
+      <svg focusable="false">
         <defs>
-          {filtre('halo', '0.08', 11, [2, 7, 11, 4, 9, 13], '0.6s', 1.6)}
-          {filtre('coeur', '0.11', 9, [5, 1, 8, 12, 3, 10], '0.45s')}
+          {filtre('halo', '0.07', 9, [2, 7, 11, 4, 9, 13], '0.6s', 1.4)}
+          {filtre('coeur', '0.09', 7, [5, 1, 8, 12, 3, 10], '0.45s')}
         </defs>
-        <rect className="rpg-card__electricite-halo" x="3.5" y="3.5" width="93" height="118" rx="7" filter={`url(#${id}-halo)`} />
-        <rect className="rpg-card__electricite-coeur" x="3.5" y="3.5" width="93" height="118" rx="7" filter={`url(#${id}-coeur)`} />
-        <rect className="rpg-card__electricite-coeur rpg-card__electricite-coeur--second" x="5" y="5" width="90" height="115" rx="6" filter={`url(#${id}-halo)`} />
+        <rect className="rpg-card__electricite-halo" filter={`url(#${id}-halo)`} />
+        <rect className="rpg-card__electricite-coeur" filter={`url(#${id}-coeur)`} />
+        <rect className="rpg-card__electricite-coeur rpg-card__electricite-coeur--second" filter={`url(#${id}-halo)`} />
       </svg>
     </span>
   );
