@@ -854,6 +854,30 @@ test('une arrivée ciblée se désigne APRÈS la pose : la créature entre en je
   assert.ok(duel.joueur.creatures.includes(pose.entite), 'la Vipère, elle, reste en jeu');
 });
 
+test('le venin de la Vipère ronge jusqu’au bout du tour de sa victime', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'vipere-de-verre');
+  rpgJouerCreature(duel, 'joueur', 'vipere-de-verre', null, { cibleDifferee: true });
+  rpgResoudreArriveeCiblee(duel, 'joueur', chien.id);
+  assert.equal(chien.atk, 0, 'la morsure retire 2 attaques à la créature choisie');
+
+  // La morsure ne s'évapore pas à la fin du tour du joueur qui l'a donnée :
+  // elle tient tout le tour de la victime, comme l'interdit d'attaquer.
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'sorcier', 'c’est le tour de la victime');
+  assert.equal(chien.atk, 0, 'le venin ronge encore pendant le tour de la victime');
+  assert.ok(chien.empecheAttaqueToursRestants > 0, 'et la victime ne peut toujours pas attaquer');
+
+  rpgFinDeTour(duel);
+  assert.equal(chien.atk, 2, 'à la fin du tour de la victime, le venin s’évapore');
+  assert.equal(chien.empecheAttaqueToursRestants, 0, 'et la victime peut de nouveau attaquer');
+  assert.equal(chien.venin ?? null, null, 'plus rien ne ronge la créature');
+});
+
 test('une arrivée différée sans cible légale se résout avec la pose, sans attente', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 30);
