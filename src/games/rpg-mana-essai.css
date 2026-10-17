@@ -753,3 +753,19 @@
   font-size: 8.5px;
   letter-spacing: 0;
 }
+/* Goutte de PV agrandie ; le chiffre est rogné à sa hauteur de capitale
+   (`text-box`) pour tomber au centre optique exact du rond, quel que soit
+   l'interlignage de la police. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv {
+  width: 46px;
+  height: 46px;
+  font-size: 21px;
+  line-height: 1;
+  text-align: center;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__hp-value {
+  display: block;
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  text-box: trim-both cap alphabetic;
+}
