@@ -1017,3 +1017,35 @@
   position: relative;
   top: var(--rpg-allies-decalage, 0px);
 }
+
+/* ── Mobile, table d'essai : la colonne de droite autour du milieu ──────────
+   Les phases (indicateur de tour et pastilles) se posent juste AU-DESSUS de
+   la ligne du milieu ; « Attaquer avec tous » et « Fin du tour » juste
+   EN DESSOUS ; les commandes de combat (« Résoudre le combat », « Confirmer
+   l'attaque »…) et les autres invites contextuelles s'empilent sous ces
+   boutons. La hauteur des boutons de tour est mesurée
+   (`--rpg-actions-tour-h`, voir RpgDuelPage). */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail {
+  top: auto;
+  bottom: calc(50% + 6px);
+  margin-block: 0;
+  z-index: 21;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail .rpg-actions__turn {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  right: 0;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-bottombar {
+  grid-area: auto;
+  position: absolute;
+  top: calc(50% + 6px + var(--rpg-actions-tour-h, 34px) + 6px);
+  bottom: var(--rpg-touch-pad, 6px);
+  right: max(6px, env(safe-area-inset-right, 0px));
+  left: auto;
+  width: var(--rpg-touch-controls);
+  justify-content: flex-start;
+  padding: 0;
+  box-sizing: border-box;
+}

@@ -4193,6 +4193,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // réduit si la main du joueur ou le haut de la rangée adverse manquent de
   // place. Les rangées glissent par `top` (variables CSS), sans changer la
   // grille.
+  // Mobile, table d'essai : les boutons de tour passent juste sous la ligne du
+  // milieu, et les commandes de combat (« Résoudre le combat »…) juste en
+  // dessous d'eux. Leur hauteur réelle (une ou deux rangées selon le bouton
+  // d'annulation) est publiée en variable CSS.
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    const actions = table?.querySelector('.rpg-turn-rail .rpg-actions__turn');
+    if (!essaiTactile || !table || !actions) return undefined;
+    const publier = () => table.style.setProperty('--rpg-actions-tour-h', `${actions.offsetHeight}px`);
+    publier();
+    if (typeof ResizeObserver !== 'function') return undefined;
+    const observateur = new ResizeObserver(publier);
+    observateur.observe(actions);
+    return () => observateur.disconnect();
+  }, [essaiTactile]);
   const decalagesRangeesRef = useRef({ ennemi: 0, equipe: 0 });
   useLayoutEffect(() => {
     const table = tableRef.current;
