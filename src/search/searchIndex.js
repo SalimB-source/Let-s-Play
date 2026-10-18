@@ -110,6 +110,11 @@ const dossiers = [
   ['Pourquoi les Souls ?', 'Difficulté, narration, dopamine de la victoire et communauté.', '/dossiers/pourquoi-les-souls', 'souls fromsoftware analyse', 'OH51fSHznwg'],
 ].map(([title, description, route, keywords, videoId]) => ({ type: 'dossier', title, description, route, keywords, image: youTubeThumbUrl(videoId, 'hq') }));
 
+const dzDev = [
+  ['Dz DEV — développeurs de jeux vidéo algériens', 'Le répertoire des studios et créateurs algériens du jeu vidéo, avec HicoSoft Studio en premier portrait.', '/dz-dev', 'dz dev algérie algérien studio développeurs créateurs jeux vidéo gamedev', `${base}hicosoft-studio-lets-play.jpg`],
+  ['HicoSoft Studio, studio de jeux vidéo algérien', 'Portrait du studio basé à Alger, de son projet annoncé Eulogy: Cries of War et du reportage Let’s Play.', '/dz-dev/hicosoft', 'hicosoft algérie alger chéraga studio jeux vidéo eulogy cries of war amazigh unreal engine goya', `${base}hicosoft-studio-lets-play.jpg`],
+].map(([title, description, route, keywords, image]) => ({ type: 'dossier', title, description, route, keywords, image }));
+
 const reviews = gameTests.map((test) => ({
   type: 'review', title: test.name, description: test.excerpt, route: test.route,
   keywords: [test.platforms, test.genre, test.studio, test.cardTitle].join(' '),
@@ -137,7 +142,7 @@ const quizzes = quizCatalog.map((quiz) => ({
   image: quiz.image || youTubeThumbUrl(quiz.videoId, 'hq'),
 }));
 
-export const searchIndex = [...news, ...reviews, ...dossiers, ...releases, ...quizzes];
+export const searchIndex = [...news, ...reviews, ...dossiers, ...dzDev, ...releases, ...quizzes];
 
 export function normalizeSearch(value = '') {
   return String(value).toLocaleLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[’'`]/g, '').replace(/[^\p{Letter}\p{Number}]+/gu, ' ').trim();
@@ -164,4 +169,4 @@ export function searchContent(query) {
   return matches.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
 }
 
-export const searchCounts = { news: news.length + autoSearchEntries.length, review: reviews.length, dossier: dossiers.length, release: releases.length, quiz: quizzes.length };
+export const searchCounts = { news: news.length + autoSearchEntries.length, review: reviews.length, dossier: dossiers.length + dzDev.length, release: releases.length, quiz: quizzes.length };

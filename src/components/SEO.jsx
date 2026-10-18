@@ -50,6 +50,20 @@ const pageMeta = {
     description: 'Des dossiers de fond sur l’histoire du jeu vidéo, les générations de consoles, les studios et la culture gaming.',
     type: 'website',
   },
+  '/dz-dev': {
+    title: 'Dz DEV — Les développeurs de jeux vidéo algériens — Let’s Play',
+    description: 'Un répertoire des studios et développeurs de jeux vidéo algériens. Premier portrait : HicoSoft Studio, basé à Alger.',
+    image: 'hicosoft-studio-lets-play.jpg',
+    type: 'website',
+  },
+  '/dz-dev/hicosoft': {
+    title: 'HicoSoft Studio : portrait d’un studio de jeux vidéo algérien — Let’s Play',
+    description: 'Découvrez HicoSoft Studio, son projet annoncé Eulogy: Cries of War et le reportage Let’s Play consacré à cette équipe basée à Alger.',
+    image: 'hicosoft-studio-lets-play.jpg',
+    type: 'article',
+    published: '2026-10-18',
+    section: 'Dz DEV',
+  },
   '/quizz': {
     title: 'Quizz gaming & quizz du jour — Let’s Play',
     description: 'Teste tes connaissances gaming : culture générale, rétro, souls-like, RPG, e-sport et studios. Un quizz du jour, des succès et de l’XP à gagner.',

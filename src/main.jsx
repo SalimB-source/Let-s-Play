@@ -11,6 +11,7 @@ import './news-view-toggle.css';
 import './daily-news.css';
 import './monthly-releases.css';
 import './partners.css';
+import './dz-dev.css';
 import './reels-carousel.css';
 import './dossier-article.css';
 import './achievements/achievements.css';
@@ -73,6 +74,8 @@ const CurrentNews = lazy(() => import('./pages/CurrentNews'));
 const Reviews = lazy(() => import('./pages/Reviews'));
 const TestArticle = lazy(() => import('./pages/TestArticle'));
 const Dossiers = lazy(() => import('./pages/Dossiers'));
+const DzDev = lazy(() => import('./pages/DzDev'));
+const DzDevHicosoft = lazy(() => import('./pages/DzDevHicosoft'));
 const DossierSouls = lazy(() => import('./pages/DossierSouls'));
 const DossierGoya = lazy(() => import('./pages/DossierGoya'));
 const DossierComicCon = lazy(() => import('./pages/DossierComicCon'));
@@ -204,6 +207,8 @@ function App() {
             <Route path="/news/:slug" element={<CurrentNews />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
+            <Route path="/dz-dev" element={<DzDev />} />
+            <Route path="/dz-dev/hicosoft" element={<DzDevHicosoft />} />
             <Route path="/dossiers/pourquoi-les-souls" element={<DossierSouls />} />
             <Route path="/dossiers/goya-hicosoft" element={<DossierGoya />} />
             <Route path="/dossiers/games-comic-con-dzair" element={<DossierComicCon />} />

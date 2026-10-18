@@ -379,9 +379,10 @@ export default function Layout({ children }) {
     { to: '/news', label: t.nav.news, num: '02', desc: 'NEWS / DROPS' },
     { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
     { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
-    { to: '/communaute', label: t.nav.community || 'Communauté', num: '05', desc: 'COMMUNITY / TALK' },
-    { to: '/jeu', label: t.nav.videoGames || t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / MIRAGE RUSH · VICE CITY RUSH', aliases: ['/jeux', '/jeux-video', '/lets-play'] },
-    { to: '/quizz', label: t.nav.quiz, num: '07', desc: 'QUIZZ / SURVIVAL', aliases: ['/quiz', '/quizzes'] },
+    { to: '/dz-dev', label: 'Dz DEV', num: '05', desc: 'STUDIOS / ALGÉRIE', aliases: ['/dz-dev/hicosoft'] },
+    { to: '/communaute', label: t.nav.community || 'Communauté', num: '06', desc: 'COMMUNITY / TALK' },
+    { to: '/jeu', label: t.nav.videoGames || t.nav.games || t.nav.game, num: '07', desc: 'ARCADE / MIRAGE RUSH · VICE CITY RUSH', aliases: ['/jeux', '/jeux-video', '/lets-play'] },
+    { to: '/quizz', label: t.nav.quiz, num: '08', desc: 'QUIZZ / SURVIVAL', aliases: ['/quiz', '/quizzes'] },
   ];
 
   const profileMeta = user?.user_metadata || {};
@@ -548,9 +549,9 @@ export default function Layout({ children }) {
                 style={{ '--i': primaryLinks.length }}
               >
                 <span className="nav-link-main">
-                  {/* Numérotation HUD du menu mobile : 06 = Jeux-vidéo,
-                      07 = Quizz, 08 = messagerie, 09 = profil. */}
-                  <span className="nav-link-num">08</span>
+                  {/* Numérotation HUD du menu mobile : 07 = Jeux-vidéo,
+                      08 = Quizz, 09 = messagerie, 10 = profil. */}
+                  <span className="nav-link-num">09</span>
                   <span className="nav-link-text">
                     {/* La messagerie a son propre logo : il remplace le libellé
                         texte, gardé pour les lecteurs d'écran. */}
@@ -571,7 +572,7 @@ export default function Layout({ children }) {
                 aria-label={profileAria}
               >
                 <span className="nav-link-main">
-                  <span className="nav-link-num">09</span>
+                  <span className="nav-link-num">10</span>
                   <span className="nav-profile-avatar" aria-hidden="true">
                     <span className="nav-profile-avatar-face">
                       {profileAvatar ? (
