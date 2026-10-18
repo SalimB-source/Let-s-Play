@@ -179,8 +179,8 @@ export default function News() {
           il reste la première chose lue sans s'afficher. */}
       <h1 className="sr-only">{copy.h1a} {copy.h1b}</h1>
 
-      {/* LES ACTUS DU JOUR (15.10.2026) : elles ouvrent la page — 3 cartes
-          sur 4 colonnes avec leurs miniatures dédiées, avant le bandeau du hub. */}
+      {/* LES ACTUS DU JOUR ouvrent la page — trois cartes sur trois colonnes
+          avec leurs miniatures dédiées, avant le bandeau du hub. */}
       <section className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" id="actus-du-jour">
         <div className="section-label">
           <span>{todaySectionCopy.label}</span>

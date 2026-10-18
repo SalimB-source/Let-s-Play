@@ -106,10 +106,6 @@ export const articleTrailers = {
     ],
     credit: 'Bandes-annonces officielles : chaînes Sony Pictures Entertainment et Sony Pictures Germany, sur YouTube. Film réalisé par Nitesh Tiwari, produit par Namit Malhotra (DNEG), musique de Hans Zimmer et A.R. Rahman.',
   },
-  'tech/france-vague-cyberattaques-17-octobre': {
-    label: 'CYBERATTAQUES EN FRANCE', items: [],
-    pending: 'Aucune vidéo officielle consacrée à ces incidents n’a été publiée par l’ANSSI, la Cnaf ou les organisations visées dans les sources consultées (Journal du Coin, FrenchBreaches, Cyberattaque.org et Clubic, les 17 et 18 octobre 2026). Aucune analyse de youtubeur n’est présentée comme officielle : le lecteur reste vide et l’absence est dite.',
-  },
 
   // ---- Édition du samedi 17.10.2026 ----------------------------------------
   // Gaming : les deux vidéos de Total War: SHOGUN 2 - Complete Edition sont

@@ -1,9 +1,8 @@
-// Édition du dimanche 18 octobre 2026 (aujourd'hui) : deux actus gaming (les
-// options d'affichage de Zelda: Ocarina of Time sur Switch 2, puis l'arrivée
-// de PEAK sur consoles), une actu cinéma & séries (la nouvelle bande-annonce
-// de Ramayana: Rise of a Legend) et une actu tech (la vague de cyberattaques
-// revendiquées en France le 17 octobre). La première entrée reste « l'actu du
-// jour » de l'accueil et du hub gaming.
+// Édition du dimanche 18 octobre 2026 : deux actus gaming (les options
+// d'affichage de Zelda: Ocarina of Time sur Switch 2, puis l'arrivée de PEAK
+// sur consoles) et une actu cinéma & séries (la nouvelle bande-annonce de
+// Ramayana: Rise of a Legend). La première entrée reste « l'actu du jour »
+// de l'accueil et du hub gaming.
 import { youTubeThumbUrl } from '../../lib/videoThumbnails.js';
 
 export const editionDate = '18.10.2026';
@@ -108,39 +107,6 @@ export const dailyStories = {
     credit: 'Miniature et vidéo officielles : « RAMAYANA: RISE OF A LEGEND - NEW TRAILER », chaîne Sony Pictures Entertainment (2:37, publiée le 15.10.2026, 13,7 millions de vues au 18.10.2026), titre et chaîne vérifiés le 18.10.2026. Première bande-annonce : « RAMAYANA: RISE OF A LEGEND - Official Trailer » (Sony Pictures). Aucune image générée.',
     sentiment: 'positive',
     keywords: 'cinéma ramayana rise of a legend sony pictures nitesh tiwari namit malhotra dneg hans zimmer a r rahman ranbir kapoor yash sai pallavi ravie dubey sunny deol bande-annonce new trailer 5 novembre 2026 diwali imax pg-13 dussehra 20 octobre deuxième partie 2027',
-  },
-  'tech/france-vague-cyberattaques-17-octobre': {
-    date: editionDate,
-    category: 'CYBERSÉCURITÉ · FRANCE',
-    readTime: '5 MIN DE LECTURE',
-    image: 'news/2026-10-18/cyberattaques-france-anssi.jpg',
-    thumbnail: 'news/2026-10-18/cyberattaques-france-anssi.jpg',
-    fallbackImage: 'news/2026-10-18/cyberattaques-france-anssi.jpg',
-    imageAlt: 'Un agent de l’ANSSI vérifie des données sur un ordinateur à Paris — photo de presse AFP du 24 novembre 2022',
-    imageCredit: 'PHOTO DE PRESSE · AFP / RELAYÉE PAR RADIO FRANCE',
-    cover: 'CYBERATTAQUES EN FRANCE',
-    title: 'NEUF MILLIONS',
-    accent: 'DE FICHES.',
-    dek: 'Une vingtaine d’organisations françaises ont vu leurs fichiers revendiqués le 17 octobre : plus de 9 millions de personnes potentiellement concernées selon FrenchBreaches. L’ANSSI a été visée par un déni de service, mais la panne de la CAF relevait d’une simple panne technique.',
-    lead: 'Le samedi 17 octobre a ressemblé à une opération coordonnée, sans groupe unique : en quelques heures, les forums cybercriminels ont vu passer les fichiers d’une vingtaine d’organisations françaises.',
-    intro: 'Le décompte vient de Seb La Tombe (FrenchBreaches). Prudence : ce sont des revendications de pirates, crédibles mais non confirmées. Certaines cibles n’ont rien reconnu.',
-    h2: 'SIX NOMS FONT L’ESSENTIEL DU VOLUME',
-    p1: 'En tête, Nomad Education, avec 4 852 437 fiches revendiquées par le pseudonyme Angel_Batista : noms, e-mails et dates de naissance. L’échantillon de Cyberattaque.org ne contient ni mot de passe ni données bancaires, mais 254 jetons de connexion et 323 comptes de mineurs, le plus jeune ayant 6 ans. Le même vendeur propose 286 773 fiches d’élèves d’Inter-Etab pour 250 dollars.',
-    p2: 'Suivent I-CAD (2,2 millions de propriétaires et 50 000 vétérinaires, revendication non recoupée), la Centrale Canine (1,4 million), la Fédération française de tir (586 854 licenciés, 64 000 photos d’identité) et O’Tacos (334 474 adresses de livraison).',
-    quote: 'Une adresse de livraison ou une photo d’identité ne vaut rien seule : c’est en la croisant avec une autre fuite qu’elle devient un outil de hameçonnage crédible.',
-    quoteBy: 'L’ANALYSE LET’S PLAY',
-    h2b: 'DDOS REVENDIQUÉ À L’ANSSI, PANNE SIMPLE À LA CAF',
-    p3: 'La liste se prolonge : Alain Afflelou (49 761 factures), Malakoff Humanis (16 556 documents médicaux), les armureries Gilles et Laudier (38 000 clients). Le pseudonyme ChimeraZ revient derrière plusieurs revendications.',
-    p4: 'Le groupe prorusse CyberTroll Team, affilié à NoName057(16), revendique une attaque vers 10 h contre le site de l’ANSSI ; selon l’ENISA, seules 23,8 % des revendications de ce collectif sont corroborées. En revanche, la panne de caf.fr relevait d’une défaillance technique confirmée par la Cnaf — un DDoS avait d’abord été soupçonné. Aucune vidéo officielle ne documente ces incidents. Avez-vous déjà reçu un hameçonnage crédible après une fuite ? Répondez dans les commentaires.',
-    take: 'À RETENIR',
-    takeText: 'Une vingtaine d’organisations françaises revendiquées le 17 octobre, plus de 9 millions de personnes potentiellement touchées selon FrenchBreaches. ANSSI visée par un déni de service revendiqué ; panne de la CAF non criminelle. Changez vos mots de passe réutilisés et activez la double authentification.',
-    sourceName: 'JOURNAL DU COIN · FRENCHBREACHES',
-    source: 'D’après le récapitulatif de Seb La Tombe (FrenchBreaches) publié le 18.10.2026, l’article du Journal du Coin du 18.10.2026, les analyses de Cyberattaque.org (17.10.2026) et de Clubic (18.10.2026), et le point de la Cnaf sur la panne de caf.fr relayé le 18.10.2026, consultés le 18.10.2026.',
-    sourceUrl: 'https://journalducoin.com/technologies/vague-cyberattaques-france-17-octobre-2026',
-    sourceDetail: 'Lire le récapitulatif du Journal du Coin',
-    credit: 'Visuel : photo de presse AFP du 24 novembre 2022 montrant un agent de l’ANSSI vérifiant des données sur un ordinateur à Paris, relayée par Radio France ; recadrage éditorial Let’s Play au format 16:9. Aucune vidéo officielle d’ANSSI, de la Cnaf ou des organisations visées n’ayant été publiée sur ces incidents, le lecteur de l’article affiche une mention d’absence. Aucune image générée.',
-    sentiment: 'negative',
-    keywords: 'tech cybersécurité france cyberattaques en france 17 octobre 2026 fuite de données frenchbreaches seb la tombe nomad education i-cad centrale canine fédération française de tir o tacos inter-etab alain afflelou malakoff humanis armureries gilles laudier anssi ddos cybertroll team noname057 caf cnaf panne chimera angel_batista jetons de connexion hameçonnage double authentification',
   },
 };
 
