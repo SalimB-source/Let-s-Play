@@ -6,8 +6,10 @@ import { JSDOM } from 'jsdom';
 // Vérification d'interface du duel : rendu jsdom, aperçu instantané au survol,
 // aperçu au clic/sur magie, Rapidité, commandes, cadres par élément et bloqueurs.
 const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
-assert.match(mobileCss, /@supports \(height:\s*100svh\)\s*\{\s*\.rpg-battle--touch\.is-immersive \.card-table\s*\{[^}]*--duel-card:\s*clamp\(48px, 17svh, 100px\);[^}]*--rpg-touch-hand:\s*clamp\(84px, 28svh, 146px\);/s,
-  'en plein écran mobile, la table et la main utilisent une hauteur stable, indépendante des barres du navigateur');
+assert.match(mobileCss, /@supports \(height:\s*100svh\)\s*\{\s*\.rpg-battle--touch \.card-table\s*\{[^}]*--duel-card:\s*clamp\(48px, 17svh, 100px\);[^}]*--rpg-touch-hand:\s*clamp\(84px, 28svh, 146px\);/s,
+  'au doigt, la table et la main utilisent une hauteur stable, indépendante des barres du navigateur — plein écran ou non');
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch\.is-immersive \.card-table\s*\{[^}]*--duel-card:\s*clamp\(48px, 17svh/s,
+  'l’échelle stable n’est plus réservée au plein écran immersif : la coque du duel est toujours une couche fixe plein viewport, et le plein écran natif peut se refermer en pleine partie');
 const previousEnv = process.env.NODE_ENV;
 await build({
   logLevel: 'error',
@@ -1292,9 +1294,9 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \{[^}]*width:\s*var
 assert.match(mobileCss, /--terrain-inset:\s*clamp\(44px, 8vw, 160px\);/,
   'la marge qui tient les terrains hors du cadre illustré est conservée telle quelle');
 assert.match(mobileCss, /--duel-card:\s*clamp\(48px, 17dvh, 100px\);/,
-  'hors plein écran, les cartes gardent leur échelle fluide sans en montrer moins');
-assert.match(mobileCss, /@supports \(height:\s*100svh\)\s*\{\s*\.rpg-battle--touch\.is-immersive \.card-table\s*\{[^}]*--duel-card:\s*clamp\(48px, 17svh, 100px\);[^}]*--rpg-touch-hand:\s*clamp\(84px, 28svh, 146px\);/s,
-  'en plein écran mobile, la table et la main utilisent une hauteur stable, indépendante des barres du navigateur');
+  'sans `svh`, les cartes gardent leur échelle fluide en repli, sans en montrer moins');
+assert.match(mobileCss, /@supports \(height:\s*100svh\)\s*\{\s*\.rpg-battle--touch \.card-table\s*\{[^}]*--duel-card:\s*clamp\(48px, 17svh, 100px\);[^}]*--rpg-touch-hand:\s*clamp\(84px, 28svh, 146px\);/s,
+  'au doigt, la table et la main utilisent une hauteur stable, indépendante des barres du navigateur — plein écran ou non');
 assert.match(mobileCss, /--rpg-field-gap:\s*max\(8px, calc\(var\(--duel-card\) \* \.22\)\);/,
   'les gouttières des lignes de jeu sont resserrées pour montrer plus de cartes');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*padding:\s*4px max\(8px, calc\(var\(--duel-card\) \* \.12\)\); gap:\s*var\(--rpg-field-gap\); overflow:\s*visible;/s,
