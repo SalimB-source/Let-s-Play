@@ -842,6 +842,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Centrées sur la plaque (une règle plus ancienne les calait à gauche). */
+  align-self: center;
+  width: auto;
+  text-align: center;
   gap: 1px;
   overflow: visible;
   font-size: 8.5px;
