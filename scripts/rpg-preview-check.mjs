@@ -13,6 +13,14 @@ assert.doesNotMatch(battleCss, /\.rpg-preview-backdrop\s*\{[^}]*backdrop-filter\
   'le voile n’utilise pas de filtre de fond qui pourrait être recomposé au-dessus de la carte');
 assert.match(battleCss, /\.rpg-spell-preview-layer\s*>\s*\.rpg-hover-card-preview\.is-spell-preview\s*\{[^}]*position:\s*absolute;/s,
   'la carte du sort est positionnée dans la même couche que son voile');
+// Régression PR 879 : la couche isolée ne suffisait pas — au doigt,
+// `@media (pointer: coarse)` masque tous les aperçus de survol
+// (`display: none`), et jsdom ne résout ni les media queries ni la cascade,
+// donc les contrôles d’empilement passaient pendant que la carte restait
+// invisible sur téléphone (voile sombre seul). L’aperçu d’une magie jouée
+// doit explicitement échapper à ce masquage, comme le volet d’appui long.
+assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-spell-preview-layer \.rpg-hover-card-preview \{ display: grid; \}/,
+  'au doigt, l’aperçu de la magie jouée échappe au masquage des aperçus de survol et reste visible sur son voile');
 assert.match(battlePage, /\{apercuMagie && \(\s*<div className="rpg-spell-preview-layer">\s*<div className="rpg-preview-backdrop rpg-preview-backdrop--magie" aria-hidden="true" \/>\s*<HoverCardPreview\s+carte=\{cardById\(apercuMagie\)\}[\s\S]*?style=\{\{ left: '50%', top: '50%', transform: 'translate\(-50%, -50%\)' \}\}\s+spellPlayed\s*\/>\s*<\/div>\s*\)\}/,
   'l’aperçu de la magie réutilise le composant central, avec le voile comme frère et derrière lui');
 assert.match(battleCss, /\.rpg-card-peek\s*\{[^}]*position:\s*fixed;[^}]*isolation:\s*isolate;/s,

@@ -7052,6 +7052,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   /* Pas de survol au doigt : l'appui long d'une seconde prend le relais et
      affiche le même aperçu dans son volet. */
   .rpg-card-peek .rpg-hover-card-preview { display: grid; }
+  /* L'aperçu d'une magie jouée n'est pas un tooltip de survol : c'est un
+     évènement de jeu, centré sur son voile. Sans cette exception, la règle
+     ci-dessus le laissait en `display: none` au doigt — le voile sombre
+     apparaissait seul, sans la carte (leçon de la PR 879 : réunir le voile
+     et la carte dans une couche isolée ne suffisait pas, la carte restait
+     masquée par la règle des survols). Même exception que l'aperçu
+     d'annonce (`rpg-mobile.css`) et que les annonces automatiques
+     (`.rpg-auto-preview`, plus bas). */
+  .rpg-spell-preview-layer .rpg-hover-card-preview { display: grid; }
   /* Une carte tenue une seconde n'appelle ni le menu natif (callout iOS,
      « enregistrer l'image » Android) ni la sélection de texte : le geste
      appartient au jeu. Toutes les cartes affichées portent un `data-card-id` —
