@@ -84,8 +84,8 @@ tour), la vie est la seule contrainte réelle qui reste (25 PV fixes).
   générique `prixPv: N` (voir §8) ;
 - le paiement **ne peut pas faire descendre sous 1 PV** : sinon la carte est
   refusée, rien n'est payé (contrat de refus de paiement déjà en place) ;
-- **aucune dépense n'est obligatoire** dans les 30 cartes : Papyrus,
-  Offrande de lin et La Grande Pesée sont des options — le budget de vie
+- **aucune dépense n'est obligatoire** dans les 30 cartes : Papyrus
+  et La Grande Pesée sont des options — le budget de vie
   toujours jouable, jamais subi.
 
 La trinité du set : **on paie** (prixPv), **on reçoit** (Tribut,
@@ -97,9 +97,9 @@ transfert), **on meurt** (déclenchements de destruction).
 |---|---|---|
 | **La défausse** | *Nom effacé* | **1 carte max**, 2 mana, vitesse sorcellerie, **l'adversaire choisit** sa carte (il garde sa meilleure), **×2 max** — jamais gratuite, jamais collée à un corps (mode essai : 1 carte = 20 à 33 % d'une main de 3 à 5) |
 | **Le compte (mill)** | *Les feuillets*, *Scribe des feuillets* | paquet de 30 ⇒ 10 % par lot de 3 ; **3 cartes max par effet**, ×1 en rare ; la fatigue déjà codée en essai (1, 2, 3… PV) fait le reste |
-| **L'exil** | *La Dévoreuse* | à l'arrivée d'un corps, format Susanoo (6 mana 5/3 + exil) |
+| **L'exil** | *La Dévoreuse* | à l'arrivée d'un corps, 6 mana, 4/5 + exil |
 | **Les shabtis** | *Couveuse*, *Momie de lin* | jetons hors collection, mal d'invocation conservé (contrat du Samouraï du Daimyō) |
-| **Le pump** | *Offrande de lin* | payé en PV, borné à la fin du tour (contrat du Rempart de dunes) |
+| **Le pump** | *Offrande de lin* | sans paiement de PV, borné à la fin du tour (contrat du Rempart de dunes) |
 
 **Ce que le deck ne fait jamais** : infliger des dégâts, contrer, renvoyer en
 main, soigner sans contrepartie, défausser plus d'une carte.
@@ -115,33 +115,33 @@ exception demandée).
 
 | Carte | Coût | ⚔/🛡 | Rareté | Ex. | Rôle |
 |---|---|---|---|---|---|
-| Chacal du seuil | 1 | 1/2 | commune | 2 | **Tribut 1** — le grignon de départ |
+| Chacal du seuil | 1 | 1/2 | commune | 2 | **Tribut 1**, **Rapidité** — pression dès l’arrivée |
 | Ouvrier du natron | 1 | 2/1 | commune | 1 | à sa mort : transfert 1 |
 | Papyrus _(magie rapide)_ | 1 | — | commune | 2 | payez 2 PV : piochez 1 carte |
 | Gardienne de la balance | 2 | 1/3 | commune | 2 | à sa mort : vous gagnez 2 PV |
 | Scribe des feuillets | 2 | 2/1 | commune | 2 | à sa mort : 1 carte du paquet adverse au cimetière |
 | Prêtre de la bouche | 2 | 2/2 | inhabituelle | 2 | à l'arrivée : transfert 1 |
-| Nom effacé _(sorcellerie)_ | 2 | — | inhabituelle | 2 | l'adversaire défausse 1 carte (il choisit) |
-| Offrande de lin _(sorcellerie)_ | 2 | — | commune | 2 | payez 3 PV : +1/+0 à toutes vos créatures jusqu'à la fin du tour |
-| Uræus du seuil | 3 | 3/2 | inhabituelle | 2 | **Tribut 1** — le coup qui pèse |
+| Nom effacé _(sorcellerie)_ | 2 | — | inhabituelle | 2 | l'adversaire défausse 1 carte |
+| Offrande de lin _(sorcellerie)_ | 2 | — | commune | 2 | +1/+0 à toutes vos créatures jusqu'à la fin du tour |
+| Uræus du seuil | 3 | 2/1 | inhabituelle | 2 | **Coup rapide** — contrôle des créatures |
 | Momie de lin | 3 | 2/4 | commune | 2 | à sa mort : crée 1 Shabti 1/1 |
-| Ibis des comptes | 3 | 2/2 | inhabituelle | 2 | à l'arrivée : piochez 1 puis défaussez 1 |
-| Couveuse de shabtis | 3 | 2/2 | rare | 1 | à l'arrivée : crée 2 Shabtis 1/1 |
-| Khopesh d'or _(arme)_ | 3 | +2/+1 | rare | 1 | le porteur gagne **Tribut 1** |
+| Ibis des comptes | 3 | 2/2 | inhabituelle | 2 | **Envol** ; à l'arrivée : piochez 1 puis défaussez 1 |
+| Couveuse de shabtis | 3 | 2/2 | rare | 1 | à sa mort : crée 2 Shabtis 1/1 |
+| Khopesh d'or _(arme)_ | 3 | +2/+1 | rare | 1 | le porteur gagne **Tribut 1** ; à sa mort, revient avec 1 DEF |
 | Le Poids _(magie rapide)_ | 3 | — | commune | 2 | transfert 2 |
-| Celle qui pèse | 4 | 3/3 | rare | 1 | **Tribut 1** — la légendaire de pesée |
+| Celle qui pèse | 4 | 3/3 | rare | 1 | Arrivée : l’adversaire défausse une carte |
 | Les feuillets _(sorcellerie)_ | 4 | — | rare | 1 | 3 cartes du paquet adverse au cimetière |
 | La Grande Pesée _(sorcellerie)_ | 5 | — | rare | 1 | payez 3 PV : transfert 3, puis piochez 1 carte |
-| La Dévoreuse | 6 | 5/3 | **mythique** | 1 | à l'arrivée : retire de la partie une créature adverse |
-| Celui qui juge | 6 | 6/5 | rare | 1 | **Tribut 2** — la finition |
+| La Dévoreuse | 6 | 4/5 | **mythique** | 1 | à l'arrivée : retire de la partie une créature adverse |
+| Celui qui juge | 6 | 3/5 | rare | 1 | **Tribut 2** — la finition Arrivée : inflige 3 dégâts à toutes les autres créatures. |
 
 Répartition : 14 communes · 8 inhabituelles · 6 rares · 1 mythique.
 **Rendements à recalculer** avec `rpgCardPower.js` avant implémentation (même
 discipline que `nerfs-set-*.md`) ; La Dévoreuse est calquée au cheveu sur
 Susanoo (6 mana 5/3 + exil) pour ne pas créer de plafond.
 
-**Économie de vie** : dépenses optionnelles totales ≤ 8 PV par partie
-(2+3+3), rentrées du Tribut bornées au maximum — le deck ne peut jamais se
+**Économie de vie** : Papyrus coûte 2 PV et La Grande Pesée 3 PV par
+lancement ; Offrande de lin ne coûte plus de PV. Rentrées du Tribut bornées au maximum — le deck ne peut jamais se
 tuer tout seul, condition de jouabilité en 25 PV.
 
 ## 6. Fiches prêtes à coller
@@ -177,9 +177,9 @@ export const RPG_TENEBRES_JETONS = [{
 export const RPG_TENEBRES_CREATURES = [
   carte({
     id: 'chacal-du-seuil', name: 'Chacal du seuil',
-    cost: 1, atk: 1, def: 2, rarity: 'commune', tribut: 1,
+    cost: 1, atk: 1, def: 2, rarity: 'commune', tribut: 1, rapidite: true,
     typeLine: 'Créature — Animal · Chacal',
-    text: 'Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1.',
+    text: 'Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. Rapidité — Peut attaquer le tour où il arrive.',
     flavor: 'Il attend au seuil, où la balance n’a pas encore tranché.',
   }),
   carte({
@@ -216,10 +216,10 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'ureus-du-seuil', name: 'Uræus du seuil',
-    cost: 3, atk: 3, def: 2, rarity: 'inhabituelle', tribut: 1,
+    cost: 3, atk: 2, def: 1, rarity: 'inhabituelle', coupRapide: true,
     typeLine: 'Créature — Animal · Serpent royal',
-    text: 'Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1.',
-    flavor: 'Son mord la première fois ; la balance, elle, compte jusqu’au bout.',
+    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    flavor: 'Il frappe avant que la main n’atteigne le seuil.',
   }),
   carte({
     id: 'momie-de-lin', name: 'Momie de lin',
@@ -232,29 +232,31 @@ export const RPG_TENEBRES_CREATURES = [
   carte({
     id: 'ibis-des-comptes', name: 'Ibis des comptes',
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
+    envol: true,
     arrivee: { type: 'pioche-defausse', pioche: 1, defausse: 1 },
     typeLine: 'Créature — Oiseau · Ibis',
-    text: 'Quand Ibis des comptes arrive : piochez une carte puis défaussez une carte.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Quand Ibis des comptes arrive : piochez une carte puis défaussez une carte.',
     flavor: 'Il compte les feuillets comme on compte les jours : sans jamais en garder.',
   }),
   carte({
     id: 'couveuse-de-shabtis', name: 'Couveuse de shabtis',
     cost: 3, atk: 2, def: 2, rarity: 'rare',
-    arrivee: { type: 'jetons', jeton: 'shabti', nombre: 2 },
+    destruction: { type: 'jetons', jeton: 'shabti', nombre: 2 },
     typeLine: 'Créature — Humaine · Couveuse',
-    text: 'Quand Couveuse de shabtis arrive : créez deux créatures-jeton « Shabti » 1/1.',
+    text: 'Quand Couveuse de shabtis meurt : créez deux créatures-jeton « Shabti » 1/1.',
     flavor: 'Elle élève les serviteurs de ceux qui n’ont plus de mains.',
   }),
   carte({
     id: 'celle-qui-pese', name: 'Celle qui pèse',
-    cost: 4, atk: 3, def: 3, rarity: 'rare', tribut: 1,
+    cost: 4, atk: 3, def: 3, rarity: 'rare',
+    arrivee: { type: 'defausse-adverse' },
     typeLine: 'Créature légendaire — Celle qui pèse',
-    text: 'Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1.',
+    text: 'Quand Celle qui pèse arrive : l’adversaire défausse une carte.',
     flavor: 'Elle ne juge pas. Elle pèse.',
   }),
   carte({
     id: 'la-devoreuse', name: 'La Dévoreuse',
-    cost: 6, atk: 5, def: 3, rarity: 'mythique',
+    cost: 6, atk: 4, def: 5, rarity: 'mythique',
     arrivee: { type: 'exil', cible: 'creature' },
     typeLine: 'Créature légendaire — Bête du seuil',
     text: 'Quand La Dévoreuse arrive : retirez de la partie une créature adverse ciblée.',
@@ -262,9 +264,10 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'celui-qui-juge', name: 'Celui qui juge',
-    cost: 6, atk: 6, def: 5, rarity: 'rare', tribut: 2,
+    cost: 6, atk: 3, def: 5, rarity: 'rare', tribut: 2,
+    arrivee: { type: 'degats', amount: 3, cible: 'toutes-autres' },
     typeLine: 'Créature légendaire — Celui qui juge',
-    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',
+    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Celui qui juge arrive en jeu : il inflige 3 dégâts à toutes les autres créatures.',
     flavor: 'Il ne regarde pas le sable. Il regarde le poids.',
   }),
 ];
@@ -283,15 +286,15 @@ export const RPG_TENEBRES_MAGIES = [
     kind: 'magie', cost: 2, rarity: 'inhabituelle',
     typeLine: 'Sorcellerie — Effacement · Ténèbres',
     effet: { type: 'defausse-adverse' },
-    text: 'L’adversaire défausse une carte (il choisit laquelle).',
+    text: 'L’adversaire défausse une carte.',
     flavor: 'On ne tue pas un nom. On le raye, et la balance l’oublie.',
   }),
   carte({
     id: 'offrande-de-lin', name: 'Offrande de lin',
-    kind: 'magie', cost: 2, rarity: 'commune', prixPv: 3,
+    kind: 'magie', cost: 2, rarity: 'commune',
     typeLine: 'Sorcellerie — Offrande · Ténèbres',
     effet: { type: 'buff', atk: 1, def: 0, tours: 1 },
-    text: 'Payez 3 PV : toutes vos créatures gagnent +1/+0 jusqu’à la fin du tour.',
+    text: 'Toutes vos créatures gagnent +1/+0 jusqu’à la fin du tour.',
     flavor: 'Le lin prend la peau ; le prix prend le reste.',
   }),
   carte({
@@ -326,7 +329,8 @@ export const RPG_TENEBRES_ARMES = [
     kind: 'arme', cost: 3, rarity: 'rare',
     typeLine: 'Arme — Khopesh',
     bonus: { atk: 2, def: 1 }, donne: { tribut: 1 },
-    text: 'Arme — Le porteur gagne +2/+1 et Tribut 1.',
+    porteurMeurt: { type: 'reanimation-porteur' },
+    text: 'Arme — Le porteur gagne +2/+1 et Tribut 1. Quand le porteur meurt, il revient en jeu avec 1 point de défense.',
     flavor: 'Le fer recourbé prête sa lame au cœur qui pèse.',
   }),
 ];
@@ -460,8 +464,8 @@ panthéon égyptien — toujours nommées **par leur attribut** (jamais le mot
 
 | Carte | Identifiant | Couleur(s) | Coût | ⚔/🛡 | Capacités |
 |---|---|---|---|---|---|
-| **Le Passeur au masque de chacal** _(Anubis)_ | `passeur-au-masque-de-chacal` | Ténèbres | 6 | 5/5 | **Tribut 2** ; arrivée : réanime une créature de votre cimetière |
-| **Le Maître des hiéroglyphes** _(Thot)_ | `maitre-des-hieroglyphes` | Ténèbres | 5 | 3/5 | **Tribut 1** ; arrivée : piochez 2 cartes |
+| **Le Passeur au masque de chacal** _(Anubis)_ | `passeur-au-masque-de-chacal` | Ténèbres | 6 | 5/5 | Arrivée : réanime la dernière créature de votre cimetière |
+| **Le Maître des hiéroglyphes** _(Thot)_ | `maitre-des-hieroglyphes` | Ténèbres | 5 | 3/5 | **Envol**, **Coup rapide** ; arrivée : piochez 2 cartes |
 | **Le Faucon du zénith** _(Horus)_ | `faucon-du-zenith` | Sable | 5 | 4/4 | **Envol**, **Coup rapide**, **Tribut 1** |
 | **La Lionne du midi ardent** _(Sekhmet)_ | `lionne-du-midi-ardent` | Braise | 6 | 6/4 | **Rapidité** ; arrivée : 2 dégâts à toutes les créatures adverses |
 | **La Dame aux ailes d'or** _(Isis)_ | `dame-aux-ailes-d-or` | Sable | 5 | 3/5 | **Envol** ; arrivée : bouclier de lumière ; mort : vous gagnez 4 PV |
@@ -481,3 +485,59 @@ validateur), `tests/rpg-frames.test.js` (31 clés de cadre), un test
 `tests/rpg-tenebres.test.js` pour le Tribut (déclenchement, plafond de PV,
 arme qui donne le mot-clé) et les nouveaux effets
 (`transfert`, `defausse-adverse`, `defaussePaquet`, `prixPv`).
+
+
+## Révision des créatures — 18 octobre 2026
+
+Tribut est désormais réservé à **2 des 14 créatures de couleur Ténèbres**
+(contre 6 auparavant) : le Chacal du seuil pour démarrer et Celui qui juge
+pour finir. Le Khopesh d’or conserve Tribut ; les figures des autres couleurs
+ne changent pas. Les coûts, raretés et listes de decks restent inchangés. L’Uræus du seuil
+passe de 3/2 à 2/1 ; les autres statistiques restent inchangées.
+
+- **Uræus du seuil** remplace Tribut 1 par **Coup rapide** : il peut employer
+  son attaque contre une créature sans riposte, au lieu de toucher le sorcier.
+- **Celle qui pèse** remplace Tribut 1 par une défausse adverse à l’arrivée,
+  choisie par la victime. Sans carte en main adverse, cet effet ne fait rien.
+- **Le Passeur au masque de chacal** perd Tribut 2 et conserve la réanimation
+  à l’arrivée : la dernière créature du cimetière revient, si le champ a une
+  place libre. Il reste une menace de reconstruction plutôt qu’un finisseur
+  supplémentaire par transfert de vie.
+- **Le Maître des hiéroglyphes** perd Tribut 1, gagne Envol et Coup rapide et conserve
+  la pioche de deux cartes à l’arrivée : son rôle est de renouveler la main.
+
+Cette répartition distingue combat, défausse, réanimation et pioche, en plus
+des déclenchements de mort, jetons et transferts déjà présents. Les effets
+utilisent les mécanismes existants du moteur ; les textes imprimés et les
+pastilles suivent les fiches révisées. Les tests automatisés vérifient les
+rôles et leur résolution, sans remplacer les parties d’équilibrage.
+
+
+## Nouvelle mythique — La Dernière Pesée
+
+- **Identifiant :** `la-derniere-pesee`
+- **Couleur :** Ténèbres
+- **Type :** Sorcellerie — Jugement · Ténèbres
+- **Rareté :** mythique (un exemplaire maximum par deck)
+- **Coût :** 5 mana, sans prix en PV
+- **Texte :** « Détruisez toutes les créatures. »
+- **Illustration :** `public/cards/la-derniere-pesee.jpg`, plein art 1024 × 1280.
+
+Destruction réelle, pas des dégâts ni un exil : les créatures des deux camps
+rejoignent le cimetière, leurs armes suivent les règles ordinaires et les
+capacités de mort se déclenchent après le retrait des victimes. Les Shabtis
+créés par ces morts ne sont pas détruits par la même vague. Tenacité et les
+protections contre Ténèbres restent applicables selon les règles du Sablier ;
+les boucliers qui absorbent les dégâts ne préviennent pas cette destruction.
+
+La carte rejoint le catalogue et la galerie, sans modifier la liste de
+30 cartes du deck d’essai. Le catalogue Ténèbres compte désormais 7 magies.
+
+
+### Khopesh d’or — retour du porteur
+
+Le porteur gagne +2/+1 et Tribut 1. Quand il meurt, il revient en jeu avec
+1 point de défense, sans son arme : le Khopesh reste au cimetière. Le retour
+crée une nouvelle présence, avec le mal d’invocation habituel (sauf Rapidité),
+et déclenche à nouveau les effets d’arrivée. Les effets de mort se déclenchent
+aussi. Un renvoi en main, un exil ou une mort évitée ne déclenchent pas ce retour.

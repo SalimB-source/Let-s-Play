@@ -259,6 +259,7 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
     })?.cibleId ?? null;
   }
   if (carte?.arrivee?.type === 'degats') {
+    if (carte.arrivee.cible === 'toutes-autres') return null;
     return meilleuresOptionsOffensives(duel, cote, carte, {
       montant: carte.arrivee.amount ?? 0,
       sourceType: 'capacite',
@@ -817,6 +818,14 @@ function scoreCarte(duel, cote, carte, profil, rng) {
 
   if (carte.kind === 'magie' || magieById(carte.id)) {
     const effet = carte.effet ?? {};
+    if (effet.type === 'destruction-totale') {
+      const pertes = (c) => duel[c].creatures
+        .filter((entite) => !estProtegee(entite, cardColors(carte)))
+        .reduce((somme, entite) => somme + valeurEntite(entite)
+          * (entite.tenaciteDisponible ? 0.25 : 1), 0);
+      const gain = pertes(adv) - pertes(cote);
+      return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
+    }
     if (effet.type === 'degats') {
       const montant = effet.amount ?? 0;
       if (effet.cible === 'toutes-creatures') {
@@ -1060,7 +1069,14 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       score += 1.2 + (entiteAllie ? menace(entiteAllie) * 0.2 : 0);
     }
     if (arrivee.type === 'degats') {
-      if (arrivee.cible === 'toutes-creatures') {
+      if (arrivee.cible === 'toutes-autres') {
+        const valeurVague = (camp) => duel[camp].creatures.reduce((total, entite) => {
+          if (estProtegee(entite, cardColors(carte))) return total;
+          return total + (meurtSous(entite, arrivee.amount ?? 0, 'capacite')
+            ? valeurEntite(entite) : 0.5);
+        }, 0);
+        score += valeurVague(adv) - valeurVague(cote);
+      } else if (arrivee.cible === 'toutes-creatures') {
         score += duel[adv].creatures
           .filter((entite) => meurtSous(entite, arrivee.amount ?? 0, 'capacite'))
           .reduce((somme, entite) => somme + valeurEntite(entite), 0) + 1;

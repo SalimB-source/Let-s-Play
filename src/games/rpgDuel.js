@@ -917,7 +917,28 @@ function armeDePorteurMort(duel, cote, entite) {
   if (!carteArme) return;
   armeAuCimetiere(duel, cote, entite);
   if (!carteArme.porteurMeurt) return;
-  appliquer(duel, cote, carteArme.porteurMeurt, null, null, cardColors(carteArme), null, carteArme.id);
+  // Résoudre après le retrait des morts, jamais pendant qu’ils occupent encore
+  // leurs cases. Le Khopesh ramène son propre porteur, pas le dernier mort.
+  return () => {
+    if (carteArme.porteurMeurt.type === 'reanimation-porteur') {
+      const camp = duel[cote];
+      const index = camp.cimetiere.lastIndexOf(entite.carteId);
+      const carte = duelCardById(entite.carteId);
+      if (index < 0 || !carte || !placesLibresChamp(duel, cote)) return;
+      camp.cimetiere.splice(index, 1);
+      const revenant = creerEntiteCreature(carte);
+      revenant.pv = revenant.def = revenant.pvMax = 1;
+      camp.creatures.push(revenant);
+      placerDansEmplacement(duel, cote, revenant, entite.emplacement);
+      duel.log.push(`${carteArme.name} : ${carte.name} revient en jeu avec 1 point de défense, sans son arme.`);
+      if (carte.arrivee) {
+        const cible = rpgCibleAuto(duel, cote, carte);
+        appliquer(duel, cote, carte.arrivee, cible, revenant.id, cardColors(carte), 'capacite', carte.id);
+      }
+      return;
+    }
+    appliquer(duel, cote, carteArme.porteurMeurt, null, null, cardColors(carteArme), null, carteArme.id);
+  };
 }
 
 /**
@@ -1092,13 +1113,14 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   for (const mort of mortes) {
     const camp = duel[mort.cote];
     journaliserDestruction(duel, mort.entite, mort.sourceElements);
-    armeDePorteurMort(duel, mort.cote, mort.entite);
+    mort.declencherArme = armeDePorteurMort(duel, mort.cote, mort.entite);
     camp.creatures = camp.creatures.filter((candidate) => candidate.id !== mort.entite.id);
     camp.cimetiere.push(mort.entite.carteId);
     detacherArmes(duel, mort.cote, mort.entite);
     duel.log.push(`${mort.entite.name} est détruite et rejoint le cimetière.`);
   }
   for (const mort of mortes) {
+    mort.declencherArme?.();
     const carte = duelCardById(mort.entite.carteId);
     if (carte?.destruction) {
       appliquer(duel, mort.cote, carte.destruction, null, null, cardColors(carte), null, mort.entite.carteId);
@@ -1372,6 +1394,21 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     }
   }
   switch (effet.type) {
+    case 'destruction-totale': {
+      // Les morts sont retirés ensemble, avant leurs déclenchements : les
+      // jetons et les réanimations produits ensuite échappent à cette vague.
+      const declenchements = [];
+      const victimes = [cote, adv].flatMap((camp) => duel[camp].creatures
+        .filter((entite) => !rpgEstProtegee(entite, sourceElement))
+        .map((entite) => ({ camp, entite })));
+      for (const { camp, entite } of victimes) {
+        enterrer(duel, camp, entite, sourceElement, declenchements);
+      }
+      for (const declencher of declenchements) declencher();
+      rafraichirAuras(duel);
+      rpgActionsEtat(duel);
+      return;
+    }
     case 'exil': {
       for (const campCible of [adv, cote]) {
         const victime = duel[campCible].creatures.find((entite) => entite.id === cibleId);
@@ -1744,6 +1781,16 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       return;
     }
     case 'degats': {
+      if (effet.cible === 'toutes-autres') {
+        // Photographie des deux champs : la source est épargnée et les jetons
+        // créés par les morts ne subissent pas la vague qui les a fait naître.
+        const coups = [cote, adv].flatMap((camp) => duel[camp].creatures
+          .filter((entite) => entite.id !== sauf)
+          .map((entite) => ({ cote: camp, entiteId: entite.id,
+            amount: effet.amount ?? 0, sourceElement, sourceType })));
+        appliquerDegatsDeCombatSimultanes(duel, coups);
+        return;
+      }
       if (effet.cible === 'sorcier') {
         rpgInfligerSorcier(duel, adv, effet.amount ?? 0);
         differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId);
@@ -1990,7 +2037,7 @@ export function rpgSacrifierCreature(duel, cote, entiteId) {
 }
 
 /** Retire une créature morte, puis déclenche sa capacité de destruction. */
-function enterrer(duel, cote, entite, sourceElements = []) {
+function enterrer(duel, cote, entite, sourceElements = [], declenchements = null) {
   // Tenacité : la destruction est refusée une fois — la créature survit et il
   // lui reste 1 point de défense. Aucune capacité de destruction ne se
   // déclenche : elle n'a pas été détruite. Seule cette présence en jeu la
@@ -2002,7 +2049,7 @@ function enterrer(duel, cote, entite, sourceElements = []) {
     duel.log.push(`Tenacité : ${entite.name} refuse la destruction — il lui reste 1 point de défense.`);
     return;
   }
-  rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.');
+  rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.', declenchements);
 }
 
 /**
@@ -2017,20 +2064,27 @@ function sacrifierCreature(duel, cote, entite) {
 }
 
 /** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
-function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle) {
+function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null) {
   journaliserDestruction(duel, entite, sourceElements);
-  armeDePorteurMort(duel, cote, entite);
+  const declencherArme = armeDePorteurMort(duel, cote, entite);
   const camp = duel[cote];
   camp.creatures = camp.creatures.filter((e) => e.id !== entite.id);
   camp.cimetiere.push(entite.carteId);
   detacherArmes(duel, cote, entite);
   duel.log.push(`${entite.name} ${libelle}`);
-  const carte = duelCardById(entite.carteId);
-  if (carte?.destruction) {
-    appliquer(duel, cote, carte.destruction, null, null, cardColors(carte), null, entite.carteId);
+  const declencher = () => {
+    declencherArme?.();
+    const carte = duelCardById(entite.carteId);
+    if (carte?.destruction) {
+      appliquer(duel, cote, carte.destruction, null, null, cardColors(carte), null, entite.carteId);
+    }
+    declencherHonneur(duel, cote, entite);
+  };
+  if (declenchements) declenchements.push(declencher);
+  else {
+    declencher();
+    rafraichirAuras(duel);
   }
-  declencherHonneur(duel, cote, entite);
-  rafraichirAuras(duel);
 }
 
 /**

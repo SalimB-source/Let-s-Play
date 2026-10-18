@@ -52,6 +52,7 @@ function valeurEffet(effet = {}) {
   switch (effet.type) {
     case 'degats': {
       const facteur = effet.cible === 'toutes-creatures' ? 1.9
+        : effet.cible === 'toutes-autres' ? 1.4
         : effet.cible === 'sorcier' ? 1
           : 1.25;
       const echo = Number(effet.echo?.amount) || 0;
@@ -132,6 +133,8 @@ function valeurEffet(effet = {}) {
       // Cimetière → main : la carte recyclée vaut un peu moins qu'une pioche
       // (elle est connue), le choix libre — toute la Liste — un cran au-dessus.
       return effet.cible === 'carte-cimetiere' ? 2 : 1.5;
+    case 'reanimation-porteur':
+      return 4; // Retour conditionnel, sans l’arme et avec seulement 1 DEF.
     case 'reanimation':
       // Cimetière → table : un corps qui revient, arrivées comprises. C'est
       // une créature entière à crédit, d'où le prix de carte entière.
@@ -142,6 +145,8 @@ function valeurEffet(effet = {}) {
       const effets = Array.isArray(effet.effetFinal) ? effet.effetFinal : [effet.effetFinal].filter(Boolean);
       return effets.reduce((total, sous) => total + valeurEffet(sous ?? {}), 0) * 0.7;
     }
+    case 'destruction-totale':
+      return 8; // Nettoyage symétrique : détruit aussi le champ allié.
     case 'exil':
       return 6;
     case 'retour-main':

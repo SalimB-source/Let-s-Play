@@ -84,6 +84,7 @@ export const EFFET_ICONE = {
   banniere: 'i-aura',
   jetons: 'i-aura',
   exil: 'i-rebond',
+  'destruction-totale': 'i-degats',
   'retour-apres-tours': 'i-rebond',
 };
 
@@ -152,6 +153,7 @@ export const EFFET_LIBELLES = {
   heures: 'Heures',
   'empeche-blocage': 'Blocage interdit',
   exil: 'Exil',
+  'destruction-totale': 'Destruction totale',
 };
 
 const capitaliser = (mot = '') => (mot ? mot.charAt(0).toUpperCase() + mot.slice(1) : mot);
@@ -186,6 +188,7 @@ export function pastillesPourCarte(carte) {
   if (carte.honneur) ajouter('honneur', 'Honneur', Number(carte.honneur) || null);
   if (carte.butin) ajouter('butin', 'Butin');
   if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
+  if (carte.porteurMeurt?.type === 'reanimation-porteur') ajouter('reanimation', 'Réanimation');
 
   // L’effet signé des sorts (et des arrivées qui se lisent d’un coup d’œil).
   const typeEffet = carte.effet?.type ?? carte.arrivee?.type;
@@ -196,6 +199,7 @@ export function pastillesPourCarte(carte) {
     heures: ['heures', 'Heures'],
     'retour-main': ['retour-main', 'Rebond'],
     exil: ['exil', 'Exil'],
+    'destruction-totale': ['destruction-totale', 'Destruction totale'],
     'empeche-blocage': ['empeche-blocage', 'Blocage interdit'],
     transfert: ['transfert', 'Transfert'],
     'defausse-adverse': ['defausse-adverse', 'Défausse adverse'],
@@ -295,6 +299,7 @@ export const EFFET_DEFINITIONS = {
   recyclage: 'Renvoie une carte de votre cimetière dans votre main.',
   heures: 'Porte des compteurs d’Heures : on en retire un au début de chacun de vos tours ; quand le dernier part, l’effet se déclenche.',
   'retour-main': 'Renvoie une créature dans la main de son propriétaire : elle n’est pas détruite et pourra être rejouée.',
+  'destruction-totale': 'Détruit les créatures des deux camps, sans infliger de dégâts. Les capacités de mort se déclenchent.',
   exil: 'Retire une créature de la partie : elle ne va pas au cimetière.',
   'empeche-blocage': 'La créature visée ne peut pas bloquer pendant la durée indiquée.',
 };
