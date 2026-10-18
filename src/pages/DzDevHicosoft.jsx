@@ -40,6 +40,21 @@ export default function DzDevHicosoft() {
           <p className="dzdev-kicker">PROJET ANNONCÉ</p>
           <h2>EULOGY:<br /><em>CRIES OF WAR.</em></h2>
           <p>Dans une publication sur sa page LinkedIn officielle, HicoSoft présente <i>Eulogy: Cries of War</i> comme un jeu d’action-aventure fantastique à la troisième personne. Le studio indique que le projet s’inspire des mythologies nord-africaines et du patrimoine culturel amazigh, et partage un extrait cinématique réalisé sous Unreal Engine 5. La séquence est explicitement signalée comme du travail en cours.</p>
+          <figure className="dzdev-project-video">
+            <div className="dzdev-video-frame">
+              <video
+                controls
+                playsInline
+                preload="metadata"
+                poster={`${base}videos/hicosoft-eulogy-poster.jpg`}
+                aria-label="Extrait cinématique de Eulogy: Cries of War"
+              >
+                <source src={`${base}videos/hicosoft-studio-feature-1080p.mp4`} type="video/mp4" />
+                Votre navigateur ne prend pas en charge la lecture de cette vidéo.
+              </video>
+            </div>
+            <figcaption>Extrait cinématique de <i>Eulogy: Cries of War</i> · 39 s.</figcaption>
+          </figure>
           <a className="dzdev-source-link" href="https://www.linkedin.com/company/hicosoft-studio/" target="_blank" rel="noreferrer">Suivre les publications de HicoSoft Studio <Arrow /></a>
         </section>
 
