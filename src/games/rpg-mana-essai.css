@@ -1060,3 +1060,34 @@
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.card-row--ennemi, .card-row--equipe) > :not(.rpg-creature-slots) {
   pointer-events: auto;
 }
+
+/* ── Mobile, table d'essai : la main du sorcier, face cachée ─────────────────
+   Le mobile masquait la main adverse ; sur la table d'essai, la bande au-dessus
+   des emplacements du sorcier est libre (ils sont descendus vers le milieu) :
+   ses cartes s'y montrent de dos, en éventail compact, centrées au-dessus du
+   champ. Le nombre exact reste sur sa plaque (« Main · n ») ; la rangée est
+   inerte, elle ne prend aucun clic. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-hidden-hand {
+  display: grid;
+  grid-area: auto;
+  position: absolute;
+  top: max(4px, env(safe-area-inset-top, 0px));
+  left: 50%;
+  z-index: 3;
+  margin: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-hidden-hand__cards {
+  padding: 0 10px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-hidden-hand__card {
+  width: clamp(30px, 10dvh, 46px);
+  height: calc(clamp(30px, 10dvh, 46px) * 1.3);
+  margin-left: calc(clamp(30px, 10dvh, 46px) * -.38);
+  border-width: 2px;
+  border-radius: 5px;
+  box-shadow: 0 4px 9px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(236, 199, 117, .62);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-hidden-hand__card:first-child { margin-left: 0; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-hidden-hand__count { display: none; }
