@@ -7,7 +7,7 @@ import { rpgNouveauDuel, rpgJouerCreature, rpgLancerMagie, rpgFinDeTour, rpgBles
 
 function partie() {
   const duel = rpgNouveauDuel({ joueurDeck: Array(40).fill('montagne'), sorcierDeck: Array(40).fill('montagne'), rng: () => 0.5 });
-  for (const cote of ['joueur', 'sorcier']) duel[cote].mana = { braise: 100, sable: 100, eau: 100, neige: 100 };
+  for (const cote of ['joueur', 'sorcier']) duel[cote].mana = { braise: 100, sable: 100, eau: 100, neige: 100, tenebres: 100 };
   return duel;
 }
 function poser(duel, cote, id) {
@@ -26,7 +26,7 @@ test('le sabre reste à ouvrir au Souk et le deck garde sa montagne dédiée', (
   assert.equal(sabre.typeLine, 'Arme — Sabre maudit');
   assert.equal(sabre.cost, 4);
   assert.equal(sabre.honneur, undefined);
-  assert.deepEqual(sabre.effet, { type: 'arme', cible: 'creature-amie', atk: 4, def: -2, coupRapide: true });
+  assert.deepEqual(sabre.effet, { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true });
   const deck = RPG_DECKS.find((d) => d.id === 'serment-du-soleil-rouge');
   assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
   assert.equal(deck.cardIds.filter((id) => id === 'sabre-maudit').length, 0, 'la signature du starter réserve ses sept sorts');
@@ -37,18 +37,18 @@ test('le sabre reste à ouvrir au Souk et le deck garde sa montagne dédiée', (
   assert.equal(cardById('montagne-du-soleil-rouge').varianteDe, 'montagne');
 });
 
-test('l’arme applique +4/-2, reste attachée et persiste entre les tours', () => {
+test('l’arme applique +1/+0, reste attachée et persiste entre les tours', () => {
   const duel = partie();
-  const porteur = poser(duel, 'joueur', 'samourai-du-torii');
+  const porteur = poser(duel, 'joueur', 'momie-de-lin');
   assert.equal(armer(duel, porteur).ok, true);
-  assert.deepEqual([porteur.atk, porteur.def, porteur.pvMax], [6, 2, 2]);
+  assert.deepEqual([porteur.atk, porteur.def, porteur.pvMax], [3, 4, 4]);
   assert.equal(porteur.coupRapide, true);
   assert.equal(porteur.ready, false, 'Coup rapide ne donne pas Rapidité');
   assert.deepEqual(porteur.armes, ['sabre-maudit']);
   assert.ok(!duel.joueur.cimetiere.includes('sabre-maudit'));
   rpgFinDeTour(duel);
   rpgFinDeTour(duel);
-  assert.deepEqual([porteur.atk, porteur.def], [6, 2]);
+  assert.deepEqual([porteur.atk, porteur.def], [3, 4]);
 });
 
 test('la cible doit être alliée et non protégée, sans consommation sur cible invalide', () => {
@@ -57,53 +57,55 @@ test('la cible doit être alliée et non protégée, sans consommation sur cible
   const mana = duel.joueur.mana.braise;
   assert.equal(armer(duel, ennemi).ok, false);
   assert.equal(duel.joueur.mana.braise, mana);
-  const protege = poser(duel, 'joueur', 'amayas-du-hoggar');
+  const protege = poser(duel, 'joueur', 'tiziri-du-djurdjura');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', protege.id).raison, 'protection');
   assert.ok(duel.joueur.main.includes('sabre-maudit'));
 });
 
-test('une défense réduite à zéro tue le porteur et déclenche son Honneur', () => {
+test('le sabre ne ronge plus la défense : le porteur survit, lame au poing', () => {
   const duel = partie();
   const porteur = poser(duel, 'joueur', 'ronin-du-soleil-rouge');
-  const cible = poser(duel, 'sorcier', 'drakkar-a-tete-de-dragon');
   assert.equal(armer(duel, porteur).ok, true);
-  assert.equal(duel.joueur.creatures.length, 0);
-  assert.equal(cible.def, 5);
-  assert.equal(duel.joueur.cimetiere.filter((id) => id === 'sabre-maudit').length, 1);
+  assert.equal(duel.joueur.creatures.includes(porteur), true,
+    '+1/+0 ne menace plus la vie du porteur');
+  assert.deepEqual([porteur.atk, porteur.def], [4, 2]);
+  assert.deepEqual(porteur.armes, ['sabre-maudit']);
+  assert.equal(duel.joueur.cimetiere.includes('sabre-maudit'), false,
+    'le sabre reste attaché, pas au cimetière');
 });
 
 test('le porteur frappe à sa force augmentée, sans riposte, et l’attaque s’arrête là', () => {
   const duel = partie();
-  const porteur = poser(duel, 'joueur', 'samourai-du-torii');
-  const cible = poser(duel, 'sorcier', 'colosse-de-sel');
+  const porteur = poser(duel, 'joueur', 'momie-de-lin');
+  const cible = poser(duel, 'sorcier', 'chien-du-guet');
   armer(duel, porteur);
   porteur.ready = true;
   const pvSorcier = duel.sorcier.pv;
   const r = rpgLancerAttaque(duel, 'joueur', [porteur.id], {}, null, null, { [porteur.id]: cible.id });
   assert.equal(r.ok, true);
-  assert.equal(r.resume.coupsRapides[0].degats, 6);
-  assert.equal(duel.sorcier.creatures.length, 0, 'le colosse tombe sous les 6 dégâts');
-  assert.equal(porteur.def, 2, 'le colosse détruit ne riposte pas');
+  assert.equal(r.resume.coupsRapides[0].degats, 3);
+  assert.equal(duel.sorcier.creatures.length, 0, 'le Chien 2/2 tombe sous les 3 dégâts');
+  assert.equal(porteur.def, 4, 'la créature détruite ne riposte pas');
   assert.equal(duel.sorcier.pv, pvSorcier, 'l’attaque s’arrête sur la frappe rapide');
 });
 
-test('sans créature désignée, le porteur du Sabre maudit attaque le sorcier de ses 6 dégâts', () => {
+test('sans créature désignée, le porteur du Sabre maudit attaque le sorcier de ses 3 dégâts', () => {
   const duel = partie();
-  const porteur = poser(duel, 'joueur', 'samourai-du-torii');
+  const porteur = poser(duel, 'joueur', 'momie-de-lin');
   const cible = poser(duel, 'sorcier', 'colosse-de-sel');
   armer(duel, porteur);
   porteur.ready = true;
   const pvSorcier = duel.sorcier.pv;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [] }).ok, true,
     'le Coup rapide n’impose plus de cible');
-  assert.equal(duel.sorcier.pv, pvSorcier - 6, 'la force augmentée part au visage');
+  assert.equal(duel.sorcier.pv, pvSorcier - 3, 'la force augmentée part au visage');
   assert.equal(duel.sorcier.creatures.includes(cible), true, 'la créature écartée reste en jeu');
 });
 
 test('l’attaque directe du sorcier reconnaît aussi Coup rapide accordé par une arme', () => {
   const duel = partie();
-  const porteur = poser(duel, 'joueur', 'samourai-du-torii');
-  const cible = poser(duel, 'sorcier', 'colosse-de-sel');
+  const porteur = poser(duel, 'joueur', 'momie-de-lin');
+  const cible = poser(duel, 'sorcier', 'chien-du-guet');
   armer(duel, porteur);
   porteur.ready = true;
   assert.equal(rpgAttaquerSorcier(duel, 'joueur', porteur.id, cible.id).ok, true);
@@ -113,29 +115,29 @@ test('l’attaque directe du sorcier reconnaît aussi Coup rapide accordé par u
 test('mort et renvoi du porteur envoient le sabre au cimetière, jamais en main', () => {
   for (const renvoi of [false, true]) {
     const duel = partie();
-    const porteur = poser(duel, 'joueur', 'samourai-du-torii');
+    const porteur = poser(duel, 'joueur', 'momie-de-lin');
     armer(duel, porteur);
     if (renvoi) {
       duel.tour = 'sorcier';
       duel.sorcier.main.push('ressac');
       assert.equal(rpgLancerMagie(duel, 'sorcier', 'ressac', porteur.id).ok, true);
-      assert.ok(duel.joueur.main.includes('samourai-du-torii'));
+      assert.ok(duel.joueur.main.includes('momie-de-lin'));
     } else rpgBlesserCreature(duel, 'joueur', porteur.id, 5, 'eau');
     assert.equal(duel.joueur.cimetiere.filter((id) => id === 'sabre-maudit').length, 1);
     assert.ok(!duel.joueur.main.includes('sabre-maudit'));
     if (renvoi) {
-      const neuf = poser(duel, 'joueur', 'samourai-du-torii');
+      const neuf = poser(duel, 'joueur', 'momie-de-lin');
       assert.equal(neuf.coupRapide, false);
-      assert.equal(neuf.atk, 2, '1/3 imprimé + sa propre Résonance');
+      assert.equal(neuf.atk, 2, '2/4 imprimé, sans le sabre resté au cimetière');
     }
   }
 });
 
-test('le sabre est sérialisable et l’IA utilise une cible survivant au malus', () => {
+test('le sabre est sérialisable et l’IA arme sa meilleure créature', () => {
   const duel = partie();
   const fragile = poser(duel, 'sorcier', 'ashigaru-des-braises');
-  const robuste = poser(duel, 'sorcier', 'samourai-du-torii');
-  const cible = poser(duel, 'joueur', 'colosse-de-sel');
+  const robuste = poser(duel, 'sorcier', 'momie-de-lin');
+  const cible = poser(duel, 'joueur', 'chien-du-guet');
   duel.sorcier.main = ['sabre-maudit'];
   duel.tour = 'sorcier';
   const choix = choisirCarteIA(duel, 'sorcier');
@@ -156,9 +158,9 @@ test('le sabre porte le cadre d’acier des armes, comme les autres armes', asyn
   assert.equal(sabre.kind, 'magie', 'le moteur le garde parmi les magies (ciblage, porteur.armes)');
   assert.equal(cardFrameInfo(sabre).key, 'arme');
   assert.equal(cardFrameClass(sabre), 'rpg-card--frame-arme rpg-card--frame-arme-braise');
-  assert.deepEqual(bonusArme(sabre), { atk: 4, def: -2 });
+  assert.deepEqual(bonusArme(sabre), { atk: 1, def: 0 });
   assert.deepEqual(bonusArme(byId('takouba-des-pistes')), { atk: 2, def: 0 });
   assert.equal(carteEstArme(byId('samourai-du-torii')), false);
   assert.equal(bonusArme(byId('samourai-du-torii')), null);
-  assert.match(sabre.text, /^Arme — Le porteur gagne \+4\/-2/, 'texte au format des autres armes');
+  assert.match(sabre.text, /^Arme — Le porteur gagne \+1\/\+0/, 'texte au format des autres armes');
 });

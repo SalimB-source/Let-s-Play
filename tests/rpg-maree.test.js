@@ -70,7 +70,7 @@ test('Contresort des abîmes contre la carte annoncée, sort ou créature : la c
   const duel = duelVide();
   annoncer(duel, 'trait-de-braise');
   donner(duel, 'joueur', 'contresort-des-abimes');
-  mana(duel, 'joueur', 'eau', 4);
+  mana(duel, 'joueur', 'eau', 3);
   const res = contre(duel, 'contresort-des-abimes');
   assert.equal(res.ok, true);
   assert.equal(res.contre, true);
@@ -89,7 +89,7 @@ test('Contresort des abîmes peut contrer une créature annoncée', () => {
   annoncer(duel, 'chien-du-guet');
   mana(duel, 'sorcier', 'sable', 2);
   donner(duel, 'joueur', 'contresort-des-abimes');
-  mana(duel, 'joueur', 'eau', 4);
+  mana(duel, 'joueur', 'eau', 3);
   assert.equal(contre(duel, 'contresort-des-abimes').contre, true);
   assert.equal(duel.sorcier.creatures.length, 0, 'la créature n’entre pas sur la table');
   assert.ok(duel.sorcier.cimetiere.includes('chien-du-guet'));
@@ -236,7 +236,7 @@ test('l’IA contre une créature du joueur de coût 2 avec Contresort des abîm
   jouerJoueur(duel);
   mana(duel, 'joueur', 'eau', 2);
   donner(duel, 'joueur', 'porteuse-de-cruches');
-  mana(duel, 'sorcier', 'eau', 4);
+  mana(duel, 'sorcier', 'eau', 3);
   donner(duel, 'sorcier', 'contresort-des-abimes');
   const res = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
   assert.equal(res.ok, true);

@@ -60,12 +60,20 @@ const optionsIA = (duel, cote, options = {}) => ({
 
 // ── Évaluations de base ─────────────────────────────────────────────────────
 
+/** Le Serpent du monde : protégé contre les magies et les sorcelleries —
+ *  une carte `magie` ne peut ni le viser ni le toucher, l'IA l'écarte. */
+function horsDAtteinteDuSort(entite, carte) {
+  return Boolean(entite?.protectionSorts && carte?.kind === 'magie');
+}
+
 /** Version locale du test de protection (pur, sans dépendance au moteur). */
 function estProtegee(entite, couleurs) {
   const liste = [...new Set((Array.isArray(couleurs) ? couleurs.flat(Infinity) : [couleurs]).filter(Boolean))];
+  // `contre` accepte une couleur seule ou une liste (la Lionne du midi ardent).
+  const contre = [...new Set([entite?.protection?.contre].flat(Infinity).filter(Boolean))];
   return Boolean(liste.length
     && entite?.protection?.toursRestants > 0
-    && liste.includes(entite.protection.contre));
+    && contre.some((couleur) => liste.includes(couleur)));
 }
 
 /** Gelée (la Poigne de givre, le Verglas) : ni attaque ni blocage. */
@@ -199,7 +207,8 @@ function ciblesLegales(duel, cote, carte, portee) {
   const adv = autre(cote);
   const couleurs = cardColors(carte);
   if (portee === 'creature' || portee === 'combat') {
-    return duel[adv].creatures.filter((entite) => !estProtegee(entite, couleurs));
+    return duel[adv].creatures.filter((entite) => !estProtegee(entite, couleurs)
+      && !horsDAtteinteDuSort(entite, carte));
   }
   return [];
 }
@@ -269,8 +278,16 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
     })?.cibleId ?? null;
   }
   if (carte?.arrivee?.type === 'exil') {
-    return meilleureCibleRenvoiIA(duel, cote, carte)
-      ?? duel[cote].creatures.filter((entite) => !estProtegee(entite, cardColors(carte)))
+    // `coutMax` (le Père des corbeaux) : les cibles trop chères sont illégales.
+    const coutMax = Number.isFinite(carte.arrivee.coutMax) ? carte.arrivee.coutMax : Infinity;
+    const couleurs = cardColors(carte);
+    const legale = (entite) => !estProtegee(entite, couleurs)
+      && (duelCardById(entite.carteId)?.cost ?? 0) <= coutMax;
+    const adverse = duel[autre(cote)].creatures.filter(legale)
+      .map((entite) => ({ entite, score: menace(entite) + valeurEntite(entite) * 0.2 }))
+      .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
+    return adverse
+      ?? duel[cote].creatures.filter(legale)
         .sort((a, b) => valeurEntite(a) - valeurEntite(b))[0]?.id ?? null;
   }
   if (carte?.arrivee?.type === 'retour-main' || carte?.effet?.type === 'retour-main') {
@@ -377,7 +394,7 @@ function meilleureCibleArme(duel, cote, carte) {
 function meilleureCibleAmie(duel, cote, carte) {
   const couleurs = cardColors(carte);
   return duel[cote].creatures
-    .filter((entite) => !estProtegee(entite, couleurs))
+    .filter((entite) => !estProtegee(entite, couleurs) && !horsDAtteinteDuSort(entite, carte))
     .filter((entite) => carte.effet?.type !== 'arme' || entite.pv + (carte.effet.def ?? 0) > 0)
     .map((entite) => ({ entite, score: valeurEntite(entite) }))
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
@@ -393,7 +410,7 @@ function meilleureCibleMarqueeIA(duel, cote, carte) {
   const adv = autre(cote);
   const couleurs = cardColors(carte);
   return duel[adv].creatures
-    .filter((entite) => !estProtegee(entite, couleurs))
+    .filter((entite) => !estProtegee(entite, couleurs) && !horsDAtteinteDuSort(entite, carte))
     .map((entite) => ({ entite, score: menace(entite) + valeurEntite(entite) * 0.2 }))
     .sort((a, b) => b.score - a.score)[0]?.entite ?? null;
 }
@@ -410,7 +427,7 @@ function meilleureCibleRenvoiIA(duel, cote, carte) {
   const campCible = portee === 'creature-amie' ? duel[cote] : duel[autre(cote)];
   const couleurs = cardColors(carte);
   return campCible.creatures
-    .filter((entite) => !estProtegee(entite, couleurs))
+    .filter((entite) => !estProtegee(entite, couleurs) && !horsDAtteinteDuSort(entite, carte))
     .map((entite) => ({ entite, score: menace(entite) + valeurEntite(entite) * 0.2 }))
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
 }

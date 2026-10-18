@@ -137,14 +137,14 @@ test('journal : Le Poids (transfert) note les PV gagnés par le lanceur', () => 
   assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 2 }]);
 });
 
-test('journal : La Grande Pesée — payer 3 PV puis en regagner 3 reste un soin visible', () => {
+test('journal : La Grande Pesée — payer 1 PV puis en regagner 3 reste un soin visible', () => {
   const duel = duelTenebres();
   duel.joueur.main.push('la-grande-pesee');
   duel.joueur.pv = 20;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'la-grande-pesee').ok, true);
-  assert.equal(duel.joueur.pv, 20, 'le Prix et le gain s’annulent sur le compteur…');
+  assert.equal(duel.joueur.pv, 22, 'le Prix est tombé à 1 PV : le drain de 3 laisse +2 net');
   assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 3 }],
-    '…mais le gain de 3 PV a bien eu lieu : il s’anime et s’entend');
+    'le gain de 3 PV a bien eu lieu : il s’anime et s’entend');
 });
 
 test('journal : le Tribut, porté par une attaque, note le gain de son contrôleur', () => {
@@ -177,8 +177,8 @@ test('journal : la Gardienne de la balance soigne en mourant (capacité de destr
   assert.equal(pose.ok, true, JSON.stringify(pose));
   rpgConsommerSoins(duel);
   assert.equal(rpgBlesserCreature(duel, 'joueur', pose.entite.id, 100, 'braise').ok, true);
-  assert.equal(duel.joueur.pv, 22);
-  assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 2 }]);
+  assert.equal(duel.joueur.pv, 23);
+  assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 3 }]);
 });
 
 test('journal : hors de l’état sauvegardé — une copie du duel (annulation) repart vide', () => {

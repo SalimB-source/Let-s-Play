@@ -182,11 +182,11 @@ test('le générique dépense une autre couleur si possible, sans priver la cart
 
   const braise = commencer(bi);
   repartir(braise.joueur, ['braise', 'sable', 'braise']);
-  braise.joueur.main.push('ghul-des-cendres', 'ashigaru-des-braises');
-  assert.equal(rpgPeutPayer(braise.joueur, cardById('ghul-des-cendres')), true);
-  assert.equal(rpgJouerCreature(braise, 'joueur', 'ghul-des-cendres').ok, true);
+  braise.joueur.main.push('hatamoto-des-cendres', 'ashigaru-des-braises');
+  assert.equal(rpgPeutPayer(braise.joueur, cardById('hatamoto-des-cendres')), true);
+  assert.equal(rpgJouerCreature(braise, 'joueur', 'hatamoto-des-cendres').ok, true);
   assert.deepEqual(braise.joueur.mana, { braise: 1, eau: 0, sable: 0, neige: 0, tenebres: 0 },
-    'Ghul coûte un Braise et un générique : le Sable part avant le deuxième Braise');
+    'le Hatamoto coûte un Braise et un générique : le Sable part avant le deuxième Braise');
   assert.deepEqual(braise.joueur.manaSources, ['braise', 'sable', 'braise'], 'les sources ne changent pas');
   assert.equal(rpgJouerCreature(braise, 'joueur', 'ashigaru-des-braises').ok, true,
     'le Braise préservé permet encore de jouer une autre carte colorée');
@@ -201,22 +201,22 @@ test('le générique dépense une autre couleur si possible, sans priver la cart
 
   const sansAutreCouleur = commencer(bi);
   repartir(sansAutreCouleur.joueur, ['braise', 'braise']);
-  sansAutreCouleur.joueur.main.push('ghul-des-cendres');
-  assert.equal(rpgJouerCreature(sansAutreCouleur, 'joueur', 'ghul-des-cendres').ok, true);
+  sansAutreCouleur.joueur.main.push('hatamoto-des-cendres');
+  assert.equal(rpgJouerCreature(sansAutreCouleur, 'joueur', 'hatamoto-des-cendres').ok, true);
   assert.equal(sansAutreCouleur.joueur.mana.braise, 0,
     'sans autre couleur disponible, le générique peut prendre le deuxième Braise');
 
   const ia = commencer(bi);
   rpgFinDeTour(ia);
   repartir(ia.sorcier, ['braise', 'sable', 'braise']);
-  ia.sorcier.main.push('ghul-des-cendres');
-  assert.equal(rpgJouerCreature(ia, 'sorcier', 'ghul-des-cendres').ok, true);
+  ia.sorcier.main.push('hatamoto-des-cendres');
+  assert.equal(rpgJouerCreature(ia, 'sorcier', 'hatamoto-des-cendres').ok, true);
   assert.deepEqual(ia.sorcier.mana, { braise: 1, eau: 0, sable: 0, neige: 0, tenebres: 0 },
     'le sorcier paie lui aussi son générique avec une autre couleur');
 
-  const classique = rpgNouveauDuel({ joueurDeck: ['ghul-des-cendres'], sorcierDeck: [], rng });
+  const classique = rpgNouveauDuel({ joueurDeck: ['hatamoto-des-cendres'], sorcierDeck: [], rng });
   classique.joueur.mana = { braise: 2, eau: 0, sable: 1, neige: 0 };
-  assert.equal(rpgJouerCreature(classique, 'joueur', 'ghul-des-cendres').ok, true);
+  assert.equal(rpgJouerCreature(classique, 'joueur', 'hatamoto-des-cendres').ok, true);
   assert.deepEqual(classique.joueur.mana, { braise: 0, eau: 0, sable: 1, neige: 0 },
     'le paiement des duels classiques conserve sa priorité historique');
 });

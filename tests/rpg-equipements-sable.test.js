@@ -248,53 +248,45 @@ test('bloqué, le Masque du guetteur ne se déclenche pas', () => {
 
 // ── La Jitte d’Amayas ───────────────────────────────────────────────────────
 
-test('la Jitte accumule un compteur par attaque, et se vide en trois modes', () => {
+test('la Jitte d’Amayas : +2/+1, et une protection contre les Ténèbres', () => {
   const duel = duelVide();
-  const porteur = poser(duel, 'joueur', 'chien-du-guet');
-  const proie = poser(duel, 'sorcier', 'chien-du-guet');
+  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'jitte-d-amayas', porteur);
-  assert.equal(porteur.arme.compteurs, undefined, 'la Jitte arrive vide');
-  assert.equal(rpgPeutActiverArme(duel, 'joueur', porteur.id), false, 'rien à dépenser');
+  assert.deepEqual([porteur.atk, porteur.def, porteur.pv], [4, 3, 3], 'le 2/2 passe 4/3');
+  assert.equal(porteur.arme.compteurs, undefined, 'plus de compteurs : l’arme est simple');
+  assert.equal(rpgPeutActiverArme(duel, 'joueur', porteur.id), false, 'plus de modes à activer');
+  assert.equal(rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'force' }).ok, false,
+    'les trois gestes d’autrefois ont disparu de la fiche');
+  assert.equal(porteur.protection?.contre, 'tenebres', 'le porteur est gardé des Ténèbres');
+  assert.equal(porteur.protection?.toursRestants, Infinity, 'la garde tient tant que l’arme tient');
 
-  rendrePret(duel, porteur);
-  rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
-  assert.equal(porteur.arme.compteurs, 1, 'un compteur de sable par blessure portée');
-  rendrePret(duel, porteur);
-  rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
-  assert.equal(porteur.arme.compteurs, 2);
-
-  assert.equal(rpgPeutActiverArme(duel, 'joueur', porteur.id), true);
-  // Mode « Force du guide » : +2/+2 jusqu’à la fin du tour, sur le porteur seul.
-  const atkAvant = porteur.atk;
-  const res = rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'force' });
-  assert.equal(res.ok, true, 'le mode est joué');
-  assert.equal(porteur.atk, atkAvant + 2);
-  assert.equal(porteur.arme.compteurs, 1, 'un compteur dépensé');
-  assert.ok(duel.joueur.bonusTemporaires.some((bonus) => bonus.entiteId === porteur.id),
-    'le bonus est inscrit au carnet du tour');
-
-  // Mode « Trait de sable » : 1 blessure à une créature adverse désignée.
-  const pvProie = proie.pv;
-  rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'trait', cibleId: proie.id });
-  assert.equal(proie.pv, pvProie - 1);
-  assert.equal(porteur.arme.compteurs, 0, 'la Jitte est à sec');
-  assert.equal(rpgPeutActiverArme(duel, 'joueur', porteur.id), false);
-  assert.equal(rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'puits' }).raison, 'compteurs');
+  // Une source Ténèbres ne le blesse pas ; une autre couleur passe normalement.
+  assert.equal(rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'tenebres').recus, 0,
+    'la nuit glisse sur la Jitte');
+  assert.equal(porteur.pv, 3);
+  assert.equal(rpgBlesserCreature(duel, 'joueur', porteur.id, 1, 'braise').recus, 1,
+    'la Braise, elle, mord comme avant');
 });
 
-test('le mode « Halte au puits » soigne, et un mode inconnu est refusé', () => {
+test('la protection de la Jitte part avec elle — sauf celle imprimée sur la fiche', () => {
   const duel = duelVide();
-  const porteur = poser(duel, 'joueur', 'chien-du-guet');
-  equiper(duel, 'joueur', 'jitte-d-amayas', porteur);
-  porteur.arme.compteurs = 1;
-  duel.joueur.pv = 10;
-  const res = rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'puits' });
-  assert.equal(res.ok, true);
-  assert.equal(duel.joueur.pv, 12, 'deux points de vie');
-  porteur.arme.compteurs = 1;
-  assert.equal(rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'inconnu' }).raison, 'mode');
-  assert.equal(rpgActiverArme(duel, 'joueur', porteur.id).raison, 'mode',
-    'une arme à modes exige son mode');
+  const simple = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'jitte-d-amayas', simple);
+  // Remplacer l’arme : la Jitte tombe au cimetière et emporte sa garde.
+  donner(duel, 'joueur', 'takouba-des-pistes');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgJouerArme(duel, 'joueur', 'takouba-des-pistes', simple.id).ok, true);
+  assert.equal(duel.joueur.cimetiere.includes('jitte-d-amayas'), true);
+  assert.equal(simple.protection, null, 'le Chien n’est plus protégé de rien');
+
+  // Amayas porte sa propre protection Ténèbres imprimée : la Jitte partie, elle demeure.
+  const amayas = poser(duel, 'joueur', 'amayas-du-hoggar');
+  equiper(duel, 'joueur', 'jitte-d-amayas', amayas);
+  donner(duel, 'joueur', 'takouba-des-pistes');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgJouerArme(duel, 'joueur', 'takouba-des-pistes', amayas.id).ok, true);
+  assert.equal(amayas.protection?.contre, 'tenebres', 'sa protection imprimée demeure');
+  assert.equal(amayas.protection?.toursRestants, Infinity);
 });
 
 // ── L'arme vivante ──────────────────────────────────────────────────────────
@@ -363,20 +355,17 @@ test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', (
   assert.equal(chiens.length, 1, 'le sorcier blessé lève un chien de sable');
 });
 
-test('les compteurs de la Jitte partent avec elle : le sorcier sait les dépenser', () => {
+test('la Jitte simplifiée n’offre plus rien à activer : l’IA passe son chemin', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'sorcier', 'chien-du-guet');
-  const proie = poser(duel, 'joueur', 'chien-du-guet');
+  poser(duel, 'joueur', 'chien-du-guet');
   donner(duel, 'sorcier', 'jitte-d-amayas');
   manaPlein(duel, 'sorcier');
   assert.equal(rpgJouerArme(duel, 'sorcier', 'jitte-d-amayas', porteur.id).ok, true);
-  porteur.arme.compteurs = 2;
-  proie.pv = 1; // une proie à achever : l'IA choisit le Trait de sable
   duel.tour = 'sorcier'; // l'activation n'appartient qu'à son propre tour
   const actives = rpgSorcierActiverArmes(duel);
-  assert.ok(actives.length >= 1, 'le sorcier active son arme');
-  assert.ok(porteur.arme.compteurs < 2, 'il dépense ses compteurs');
-  assert.equal(duel.joueur.creatures.length, 0, 'la proie a été achevée');
+  assert.equal(actives.length, 0, 'plus de compteurs ni de modes : rien à dépenser');
+  assert.equal(duel.joueur.creatures.length, 1, 'la proie reste indemne');
 });
 
 // ── Le catalogue reste jouable ──────────────────────────────────────────────

@@ -1,5 +1,5 @@
 /**
- * Le sprite des icônes d’effets du duel — les 24 symboles validés
+ * Le sprite des icônes d’effets du duel — les 25 symboles validés
  * (`preview-effets-icone.html`), monochromes, tracé 24×24, `stroke: currentColor`.
  *
  * Deux usages :
@@ -13,7 +13,7 @@
  * sont **interlinéaires** — l’icône précède la règle qu’elle annonce.
  */
 
-/** Les 24 symboles, à injecter une seule fois par page. */
+/** Les 25 symboles, à injecter une seule fois par page. */
 export const EFFETS_SPRITE = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-butin" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></symbol>
@@ -38,6 +38,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-reanimation" viewBox="0 0 24 24"><path d="M12 20V4"/><path d="M6 10l6-6 6 6"/><path d="M4 22h16"/></symbol>
   <symbol id="i-heures" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
   <symbol id="i-tribut" viewBox="0 0 24 24"><path d="M4 8h16M12 8v11M8 21h8"/><path d="M4 8 1.5 13.5h5L4 8zm16 0-2.5 5.5h5L20 8z"/><path d="M12 5.4c0 0-2-1.4-2-2.7A1.1 1.1 0 0 1 12 2a1.1 1.1 0 0 1 2 .7c0 1.3-2 2.7-2 2.7z"/></symbol>
+  <symbol id="i-overkill" viewBox="0 0 24 24"><path d="M2.5 12h12"/><path d="M10.5 7.5 15 12l-4.5 4.5"/><path d="M18.5 3.5V9"/><path d="M18.5 15v5.5"/><path d="M15 12h6.5"/></symbol>
   <symbol id="i-defausse" viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="14" rx="1.5"/><path d="M17 8v8m0 0-3-3m3 3 3-3"/><path d="M7 19h10"/></symbol>
   <symbol id="i-paquet" viewBox="0 0 24 24"><rect x="5" y="3" width="12" height="9" rx="1.5"/><path d="M8 6.5h6M8 9h4"/><path d="M19 13v6m0 0-2.5-2.5M19 19l2.5-2.5"/></symbol>
 </svg>`.trim();
@@ -57,6 +58,8 @@ export const EFFET_ICONE = {
   tenacite: 'i-tenacite',
   infiltration: 'i-infiltration',
   protection: 'i-protection',
+  protectionSorts: 'i-protection',
+  overkill: 'i-overkill',
   bouclier: 'i-bouclier',
   'bouclier-lumiere': 'i-bouclier',
   aura: 'i-aura',
@@ -105,8 +108,8 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  * (type de combat d’abord, puis les protections et l’honneur).
  */
 export const MOTS_CLES_PASTILLES = [
-  'envol', 'infiltration', 'rapidite', 'coupRapide', 'furie', 'esquive',
-  'tenacite', 'resonance', 'protection', 'bouclier', 'aura', 'honneur', 'butin',
+  'envol', 'infiltration', 'rapidite', 'coupRapide', 'overkill', 'furie', 'esquive',
+  'tenacite', 'resonance', 'protection', 'protectionSorts', 'bouclier', 'aura', 'honneur', 'butin',
 ];
 
 /** Les pastilles d’une carte, en HTML — `carte` = fiche `rpgCards.js`. */
@@ -133,6 +136,8 @@ export const EFFET_LIBELLES = {
   tenacite: 'Tenacité',
   infiltration: 'Infiltration',
   protection: 'Protection',
+  protectionSorts: 'Protection anti-magie',
+  overkill: 'Overkill',
   bouclier: 'Bouclier',
   aura: 'Aura',
   banniere: 'Bannière',
@@ -176,13 +181,23 @@ export function pastillesPourCarte(carte) {
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Coup rapide');
+  if (carte.overkill) ajouter('overkill', 'Overkill');
   if (carte.furie) ajouter('furie', 'Furie', Number(carte.furie) || null);
   if (carte.esquive) ajouter('esquive', 'Esquive', Number(carte.esquive) || null);
   if (carte.tenacite) ajouter('tenacite', 'Tenacité');
   if (carte.resonance) {
     ajouter('resonance', carte.resonanceTribu === 'samourai' ? 'Résonance samouraï' : 'Résonance');
   }
-  if (carte.protection?.contre) ajouter('protection', `Protection ${capitaliser(carte.protection.contre)}`);
+  if (carte.protection?.contre) {
+    // Libellés accentués des couleurs (« Ténèbres », pas « Tenebres »).
+    const labels = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
+    const contre = [carte.protection.contre].flat(Infinity).filter(Boolean)
+      .map((couleur) => labels[couleur] ?? capitaliser(couleur)).join(' et ');
+    ajouter('protection', `Protection ${contre}`);
+  }
+  if (carte.protectionSorts) {
+    ajouter('protectionSorts', 'Protection contre les magies et les sorcelleries');
+  }
   if (carte.aura) ajouter('aura', 'Aura');
   if (carte.banniere) ajouter('banniere', 'Bannière');
   if (carte.honneur) ajouter('honneur', 'Honneur', Number(carte.honneur) || null);
@@ -221,6 +236,7 @@ const MOTIFS_LIGNE = [
   ['envol', /\benvol\b/iu],
   ['rapidite', /\brapidité/iu],
   ['coupRapide', /\bcoup rapide/iu],
+  ['overkill', /\boverkill\b/iu],
   ['tenacite', /\bténacité/iu],
   ['infiltration', /\binfiltration/iu],
   ['resonance', /\brésonance/iu],

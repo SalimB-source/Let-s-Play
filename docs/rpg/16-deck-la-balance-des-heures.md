@@ -115,10 +115,10 @@ exception demandée).
 
 | Carte | Coût | ⚔/🛡 | Rareté | Ex. | Rôle |
 |---|---|---|---|---|---|
-| Chacal du seuil | 1 | 1/2 | commune | 2 | **Tribut 1**, **Rapidité** — pression dès l’arrivée |
+| Chacal du seuil | 1 | 2/1 | commune | 2 | **Tribut 1**, **Rapidité** — pression dès l’arrivée |
 | Ouvrier du natron | 1 | 2/1 | commune | 1 | à sa mort : transfert 1 |
 | Papyrus _(magie rapide)_ | 1 | — | commune | 2 | payez 2 PV : piochez 1 carte |
-| Gardienne de la balance | 2 | 1/3 | commune | 2 | à sa mort : vous gagnez 2 PV |
+| Gardienne de la balance | 2 | 0/3 | commune | 2 | à sa mort : vous gagnez 3 PV |
 | Scribe des feuillets | 2 | 2/1 | commune | 2 | à sa mort : 1 carte du paquet adverse au cimetière |
 | Prêtre de la bouche | 2 | 2/2 | inhabituelle | 2 | à l'arrivée : transfert 1 |
 | Nom effacé _(sorcellerie)_ | 2 | — | inhabituelle | 2 | l'adversaire défausse 1 carte |
@@ -177,7 +177,7 @@ export const RPG_TENEBRES_JETONS = [{
 export const RPG_TENEBRES_CREATURES = [
   carte({
     id: 'chacal-du-seuil', name: 'Chacal du seuil',
-    cost: 1, atk: 1, def: 2, rarity: 'commune', tribut: 1, rapidite: true,
+    cost: 1, atk: 2, def: 1, rarity: 'commune', tribut: 1, rapidite: true,
     typeLine: 'Créature — Animal · Chacal',
     text: 'Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. Rapidité — Peut attaquer le tour où il arrive.',
     flavor: 'Il attend au seuil, où la balance n’a pas encore tranché.',
@@ -192,10 +192,10 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'gardienne-de-la-balance', name: 'Gardienne de la balance',
-    cost: 2, atk: 1, def: 3, rarity: 'commune',
-    destruction: { type: 'soin', amount: 2 },
+    cost: 2, atk: 0, def: 3, rarity: 'commune',
+    destruction: { type: 'soin', amount: 3 },
     typeLine: 'Créature — Humaine · Gardienne',
-    text: 'Quand Gardienne de la balance meurt, vous gagnez 2 PV.',
+    text: 'Quand Gardienne de la balance meurt, vous gagnez 3 PV.',
     flavor: 'Elle tient la lame et le lin d’un geste appris avant qu’elle ne parle.',
   }),
   carte({
@@ -466,8 +466,8 @@ panthéon égyptien — toujours nommées **par leur attribut** (jamais le mot
 |---|---|---|---|---|---|
 | **Le Passeur au masque de chacal** _(Anubis)_ | `passeur-au-masque-de-chacal` | Ténèbres | 6 | 5/5 | Arrivée : réanime la dernière créature de votre cimetière |
 | **Le Maître des hiéroglyphes** _(Thot)_ | `maitre-des-hieroglyphes` | Ténèbres | 5 | 3/5 | **Envol**, **Coup rapide** ; arrivée : piochez 2 cartes |
-| **Le Faucon du zénith** _(Horus)_ | `faucon-du-zenith` | Sable | 5 | 4/4 | **Envol**, **Coup rapide**, **Tribut 1** |
-| **La Lionne du midi ardent** _(Sekhmet)_ | `lionne-du-midi-ardent` | Braise | 6 | 6/4 | **Rapidité** ; arrivée : 2 dégâts à toutes les créatures adverses |
+| **Le Faucon du zénith** _(Horus)_ | `faucon-du-zenith` | Sable | 5 | 3/3 | **Envol**, **Coup rapide**, **Tribut 1**, **Protection Ténèbres** (permanente) |
+| **La Lionne du midi ardent** _(Sekhmet)_ | `lionne-du-midi-ardent` | Braise | 6 | 4/4 | **Rapidité**, **Protection Eau et Neige** (permanente) ; arrivée : 2 dégâts à toutes les créatures adverses |
 | **La Dame aux ailes d'or** _(Isis)_ | `dame-aux-ailes-d-or` | Sable | 5 | 3/5 | **Envol** ; arrivée : bouclier de lumière ; mort : vous gagnez 4 PV |
 | **Le Seigneur des mâchoires** _(Sobek)_ | `seigneur-des-machoires` | Eau | 6 | 6/6 | **Tenacité**, **Tribut 2** |
 
