@@ -12,7 +12,7 @@
  *  2. **Aucun regret** — hors signature, aucune carte laissée de côté n'est
  *     mieux classée (palier de rareté, puis puissance) qu'une carte retenue :
  *     c'est la définition même de « les meilleures d'abord ».
- *  3. **Les invariants du jeu** — 40 cartes, 40 % de terrains au moins,
+ *  3. **Les invariants du jeu** — 30 cartes sans terrain,
  *     mythiques à un exemplaire, identité chromatique stricte, plafonds de la
  *     campagne tenus, boîtier illustré par une carte du deck.
  */
@@ -24,6 +24,7 @@ import {
   CATALOGUE_DU_COMPOSEUR,
   RPG_DECKS,
   RPG_DUEL_CARDS,
+  carteJouableSansTerrain,
   cardById,
   cardColors,
   cardCopyLimit,
@@ -57,12 +58,12 @@ function mieuxClasse(a, b) {
 
 // ── 1. Chaque deck vaut la composition de sa recette ────────────────────────
 
-test('chaque recette somme 40 cartes et désigne un quota cohérent', () => {
+test('chaque recette somme 30 cartes sans terrain et désigne un quota cohérent', () => {
   for (const [deckId, recette] of Object.entries(RECETTES)) {
     const terrains = recette.terrains.reduce((somme, [, nombre]) => somme + nombre, 0);
-    assert.equal(terrains + recette.creatures + recette.magies + (recette.armes ?? 0), 40,
-      `${deckId} : terrains + créatures + magies + armes doivent faire 40`);
-    assert.ok(terrains >= 16, `${deckId} : au moins 40 % de terrains`);
+    assert.equal(terrains + recette.creatures + recette.magies + (recette.armes ?? 0), 30,
+      `${deckId} : créatures + magies + armes doivent faire 30`);
+    assert.equal(terrains, 0, `${deckId} : aucun terrain`);
     assert.ok(recette.identite.length >= 1, `${deckId} : une identité chromatique`);
   }
 });
@@ -120,7 +121,7 @@ test('aucune carte laissée de côté n’est mieux classée qu’une carte rete
       }
       return false;
     };
-    const laissees = RPG_DUEL_CARDS.filter((carte) => carte.kind !== 'terrain'
+    const laissees = RPG_DUEL_CARDS.filter((carte) => carteJouableSansTerrain(carte)
       && identite(carte) && !comptes.has(carte.id) && !signature.has(carte.id)
       && !plafondAtteint(carte));
     for (const carte of laissees) {
@@ -170,7 +171,7 @@ test('les six boîtiers du catalogue restent valides, illustrés et fidèles à 
   for (const deck of RPG_DECKS) {
     const validation = rpgValiderDeck(deck.cardIds);
     assert.equal(validation.ok, true, `${deck.name} : ${validation.raison}`);
-    assert.equal(deck.cardIds.length, 40);
+    assert.equal(deck.cardIds.length, 30);
     const recette = RPG_RECETTES_DECKS[deck.id];
     assert.equal(validation.terrains, recette.terrains.reduce((somme, [, n]) => somme + n, 0),
       `${deck.name} : les terrains de la recette`);

@@ -487,8 +487,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
   // dédiée, variante du Glacier comprise (aucune ne partage le fichier d’une autre).
   const illustrationsNeige = RPG_DECK_NEIGE_BASE.filter((id, index, deck) => deck.indexOf(id) === index);
-  assert.equal(illustrationsNeige.length, 15,
-    'le deck Neige réunit les quinze cartes distinctes retenues par sa recette');
+  assert.equal(illustrationsNeige.length, 18,
+    'le deck Neige réunit les dix-huit cartes distinctes retenues par sa recette');
   for (const carteId of illustrationsNeige) {
     assert.equal(cardArtId(carteId), carteId,
       `${carteId} affiche sa propre illustration Neige`);
@@ -1446,8 +1446,8 @@ test('les terrains et leurs variantes gardent les mêmes couleurs, types et prod
     assert.equal(variante.cost, base.cost, `${varianteId} garde le coût nul`);
     assert.deepEqual(terrainManaColors(variante), terrainManaColors(base),
       `${varianteId} produit exactement le même mana que ${baseId}`);
-    assert.ok(RPG_DECKS.some((deck) => deck.cardIds.includes(varianteId)),
-      `${varianteId} est introduit dans un deck du catalogue`);
+    assert.ok(RPG_DECKS.every((deck) => !deck.cardIds.includes(varianteId)),
+      `${varianteId} reste archivé, hors des decks sans terrain`);
   }
 });
 
@@ -2755,18 +2755,18 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
   assert.equal(empreintes.size, 27, 'les vingt-sept peintures Neige sont toutes différentes');
 });
 
-test('le Serment des Neuf Hivers est un deck mono-Neige : 17 terrains en deux arts, mythiques en un exemplaire', () => {
+test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes sans terrain, mythiques en un exemplaire', () => {
   const deck = RPG_DECKS.find(({ id }) => id === 'serment-des-neuf-hivers');
   assert.ok(deck, 'le deck Neige apparaît dans la sélection');
   assert.equal(deck.role, 'joueur');
   assert.equal(deck.element, 'neige');
   assert.equal(deck.terrain, 'glacier');
-  assert.equal(deck.cardIds, RPG_DECK_NEIGE_BASE, 'la sélection joue la liste de 40 cartes du deck');
+  assert.equal(deck.cardIds, RPG_DECK_NEIGE_BASE, 'la sélection joue la liste de 30 cartes du deck');
   const valide = rpgValiderDeck(deck.cardIds);
   assert.equal(valide.ok, true, valide.raison);
-  assert.equal(valide.terrains, 17, 'dix-sept terrains Neige, comme les autres decks mono');
-  assert.equal(deck.cardIds.filter((id) => id === 'glacier').length, 9);
-  assert.equal(deck.cardIds.filter((id) => id === 'glacier-des-arches').length, 8);
+  assert.equal(valide.terrains, 0, 'aucun terrain dans le format automatique');
+  assert.equal(deck.cardIds.filter((id) => id === 'glacier').length, 0);
+  assert.equal(deck.cardIds.filter((id) => id === 'glacier-des-arches').length, 0);
   for (const id of new Set(deck.cardIds)) {
     const carte = cardById(id);
     assert.deepEqual(cardColors(carte), ['neige'], `${id} reste dans l’identité Neige du deck`);
@@ -2949,13 +2949,13 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'anqa-des-braises').length, 0,
     'les Sentiers de cendre laissent les autres mythiques dans les boosters');
   for (const [deck, terrainsAttendus, creaturesAttendues, magiesAttendues, armesAttendues] of [
-    [RPG_DECK_JOUEUR_BASE, 17, 15, 4, 4],
-    [RPG_DECK_SORCIER_BASE, 18, 16, 6, 0],
-    [RPG_DECK_NEIGE_BASE, 17, 13, 9, 1],
+    [RPG_DECK_JOUEUR_BASE, 0, 18, 6, 6],
+    [RPG_DECK_SORCIER_BASE, 0, 21, 9, 0],
+    [RPG_DECK_NEIGE_BASE, 0, 17, 12, 1],
   ]) {
     const valide = rpgValiderDeck(deck);
     assert.equal(valide.ok, true, valide.raison);
-    assert.equal(deck.length, 40);
+    assert.equal(deck.length, 30);
     assert.equal(valide.terrains, terrainsAttendus);
     const comptes = {};
     for (const id of deck) {
@@ -2993,21 +2993,14 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   assert.ok(deckHybride, 'le deck hybride apparaît dans la sélection');
   assert.equal(deckHybride.role, 'joueur');
   assert.deepEqual(deckHybride.elements, ['sable', 'braise']);
-  assert.equal(deckHybride.cardIds, RPG_DECK_HYBRIDE_BASE, 'la sélection utilise le deck hybride de 40 cartes');
+  assert.equal(deckHybride.cardIds, RPG_DECK_HYBRIDE_BASE, 'la sélection utilise le deck hybride de 30 cartes');
   const valide = rpgValiderDeck(deckHybride.cardIds);
   assert.equal(valide.ok, true, valide.raison);
-  assert.equal(valide.terrains, 17);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'petra').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'petra-des-deux-sources').length, 2);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'desert').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'dunes-du-tenere').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'montagne').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'cretes-de-cendre').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 13);
-  // Les quatre places d'armes servent les équipements de la signature ; Fériel
-  // reste l'unique mythique du deck hybride, tout le reste attend les boosters.
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 6);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'arme').length, 4);
+  assert.equal(valide.terrains, 0);
+  assert.ok(RPG_DECK_HYBRIDE_BASE.every((id) => cardById(id)?.kind !== 'terrain'));
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 16);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 8);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'arme').length, 6);
   for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.rarity === 'mythique')) {
     assert.ok(RPG_DECK_HYBRIDE_BASE.filter((id) => id === carte.id).length <= 1,
       `${carte.id} mythique apparaît au plus une fois dans le deck hybride`);
@@ -3025,25 +3018,27 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
     'le deck contient plusieurs cartes exigeant une source Braise et une source Sable');
 });
 
-test('le validateur rejette : pas 40 cartes, trop d’exemplaires, trop peu de terrains', () => {
-  assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE.slice(0, 39)).ok, false);
-  const tropDeCopies = [
-    ...Array(17).fill('desert'),
-    ...RPG_DECK_JOUEUR_BASE.filter((id) => id !== 'desert').slice(0, 19),
-    'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet',
-  ];
-  assert.equal(tropDeCopies.length, 40);
-  assert.equal(rpgValiderDeck(tropDeCopies).ok, false, '4 exemplaires d’une créature sont refusés');
-
+test('le validateur exige 30 cartes sans terrain, les quotas et une identité de trois couleurs au plus', () => {
+  assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE.slice(0, 29)).ok, false);
+  assert.equal(rpgValiderDeck([...RPG_DECK_JOUEUR_BASE, 'chien-du-guet']).ok, false);
+  const tropDeCopies = [...RPG_DECK_JOUEUR_BASE];
+  tropDeCopies[0] = 'chien-du-guet';
+  assert.equal(rpgValiderDeck(tropDeCopies).ok, false);
+  assert.match(rpgValiderDeck(tropDeCopies).raison, /chien-du-guet.*3 exemplaires/);
   const mythiqueEnDouble = [...RPG_DECK_HYBRIDE_BASE];
-  const emplacementDjinn = mythiqueEnDouble.indexOf('djinn-de-foudre');
-  mythiqueEnDouble[emplacementDjinn] = 'feriel';
-  const resultatMythique = rpgValiderDeck(mythiqueEnDouble);
-  assert.equal(resultatMythique.ok, false, 'deux exemplaires du même mythique sont refusés');
-  assert.match(resultatMythique.raison, /feriel mythique en 2 exemplaires \(1 max\)/);
-
-  const sansTerrains = Array.from({ length: 40 }, (_, index) => RPG_CREATURE_CARDS[index % RPG_CREATURE_CARDS.length].id);
-  assert.equal(rpgValiderDeck(sansTerrains).ok, false, '0 terrain = refus');
+  mythiqueEnDouble[mythiqueEnDouble.indexOf('djinn-de-foudre')] = 'feriel';
+  assert.equal(rpgValiderDeck(mythiqueEnDouble).ok, false);
+  assert.match(rpgValiderDeck(mythiqueEnDouble).raison, /feriel mythique en 2 exemplaires \(1 max\)/);
+  for (const id of ['desert', 'boussole-du-hoggar', 'djinn-du-souk', 'inconnue']) {
+    const cartes = [...RPG_DECK_JOUEUR_BASE];
+    cartes[0] = id;
+    assert.equal(rpgValiderDeck(cartes).ok, false, `${id} est hors format`);
+  }
+  const quatreCouleurs = [...RPG_DECK_HYBRIDE_BASE];
+  quatreCouleurs[0] = 'ressac';
+  quatreCouleurs[1] = 'loup-des-neiges';
+  assert.equal(rpgValiderDeck(quatreCouleurs).ok, false);
+  assert.match(rpgValiderDeck(quatreCouleurs).raison, /1 à 3 couleurs/);
 });
 
 test('Trait de braise coûte 2, est une magie rapide et inflige 3 dégâts à une créature ou un sorcier', () => {

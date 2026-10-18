@@ -8,9 +8,7 @@
  *
  *   - `identite`  : la ou les couleurs du deck — aucune carte hors de là
  *                   n'entre, jamais (un mono-Sable reste cent pour cent Sable) ;
- *   - `terrains`  : les places de terrains, jusqu'à la peinture de chaque
- *                   variante (le Désert et les Dunes du Ténéré ne produisent
- *                   pas le même sable mais la même chose) ;
+ *   - `terrains`  : liste vide ; le mana est désormais automatique ;
  *   - `creatures` : les places de créatures et de héros ;
  *   - `magies`    : les places de sorts ;
  *   - `armes`     : les places d'armes (0 par défaut : les paquets de
@@ -24,13 +22,13 @@
  * Les plafonds facultatifs de campagne (`mythiquesMax`, `raresMax`) restent
  * comptés par famille : ils règlent la rampe des Tours sans laisser de place vide.
  *
- * La somme `terrains + creatures + magies + armes` doit faire 40 — c'est le
+ * La somme `creatures + magies + armes` doit faire 30 ; `terrains` reste vide — c'est le
  * contrôle de `tests/rpg-decks-puissance.test.js`, avec bien d'autres.
  */
 
 /**
  * Les six boîtiers de l'étagère (onglet Deck). Chaque recette fixe les cartes
- * signature, une seule mythique et un nombre de rares borné ; les autres cartes
+ * signature, une seule mythique et un nombre de rares adapté aux trente cartes jouables ; les autres cartes
  * de ces paliers restent à obtenir dans des boosters.
  */
 export const RPG_RECETTES_DECKS = {
@@ -42,14 +40,15 @@ export const RPG_RECETTES_DECKS = {
    */
   'veilleurs-du-desert': {
     identite: ['sable'],
-    terrains: [['desert', 9], ['dunes-du-tenere', 8]],
-    creatures: 15,
-    magies: 4,
-    armes: 4,
-    raresTotalMax: 4,
+    terrains: [],
+    creatures: 18,
+    magies: 6,
+    armes: 6,
+    raresTotalMax: 5,
     mythiquesTotalMax: 1,
     signature: [
-      ['chien-du-guet', 2], ['fennec-des-decombres', 2], ['tislit-des-aures', 1],
+      ['tiziri-du-djurdjura', 2], ['faiseur-de-passage', 2], ['rempart-de-dunes', 2],
+      ['chien-du-guet', 2], ['fennec-des-decombres', 2], ['tislit-des-aures', 2],
       ['amani-des-ksour', 1], ['cavalier-amazigh-du-desert', 1],
       ['rapport-du-greffier', 1], ['tempete-de-sable', 1],
       ['sandales-de-tislit', 1], ['licou-du-chien-de-sable', 1],
@@ -64,38 +63,37 @@ export const RPG_RECETTES_DECKS = {
    */
   'cour-des-djinns': {
     identite: ['braise'],
-    terrains: [['montagne', 9], ['cretes-de-cendre', 9]],
-    creatures: 16,
-    magies: 6,
-    raresTotalMax: 6,
+    terrains: [],
+    creatures: 21,
+    magies: 9,
+    armes: 0,
+    raresTotalMax: 10,
     mythiquesTotalMax: 1,
     signature: [
-      ['ghul-des-cendres', 3], ['braisier-du-souk', 3],
-      ['ashigaru-des-braises', 3], ['ronin-du-soleil-rouge', 2],
+      ['feux-de-kitsune', 2], ['sabre-maudit', 1],
+      ['ghul-des-cendres', 2], ['braisier-du-souk', 2],
+      ['ashigaru-des-braises', 2], ['ronin-du-soleil-rouge', 2],
       ['samourai-du-torii', 1], ['anqa-des-braises', 1],
-      ['hatamoto-des-cendres', 3],
-      ['trait-de-braise', 3], ['nuage-de-cendres', 2], ['frappe-iaijutsu', 1],
+      ['hatamoto-des-cendres', 2],
+      ['trait-de-braise', 2], ['nuage-de-cendres', 2], ['frappe-iaijutsu', 1],
     ],
   },
   /**
-   * L'hybride garde ses sources doubles Pétra, les coûts Braise + Sable, la
+   * L'hybride choisit son mana entre Braise et Sable et garde la
    * frappe rapide de Fériel et les équipements du Désert. Fériel est son
    * unique mythique ; les autres figures des deux couleurs attendent les
    * boosters.
    */
   'sentiers-de-cendre': {
     identite: ['sable', 'braise'],
-    terrains: [
-      ['desert', 3], ['dunes-du-tenere', 3],
-      ['montagne', 3], ['cretes-de-cendre', 3],
-      ['petra', 3], ['petra-des-deux-sources', 2],
-    ],
-    creatures: 13,
-    magies: 6,
-    armes: 4,
-    raresTotalMax: 4,
+    terrains: [],
+    creatures: 16,
+    magies: 8,
+    armes: 6,
+    raresTotalMax: 6,
     mythiquesTotalMax: 1,
     signature: [
+      ['tislit-des-aures', 2], ['ashigaru-des-braises', 2], ['hatamoto-des-cendres', 2],
       ['ghul-des-cendres', 2], ['fennec-des-decombres', 1],
       ['djinn-de-foudre', 2], ['cavalier-amazigh-du-desert', 1], ['feriel', 1],
       ['rempart-de-dunes', 1], ['vent-rouge', 2], ['trait-de-braise', 1],
@@ -110,15 +108,16 @@ export const RPG_RECETTES_DECKS = {
    */
   'maree-des-abysses': {
     identite: ['eau'],
-    terrains: [['mer', 8], ['lagune-des-salines', 8]],
-    creatures: 8,
-    magies: 15,
-    armes: 1,
-    raresTotalMax: 4,
+    terrains: [],
+    creatures: 10,
+    magies: 18,
+    armes: 2,
+    raresTotalMax: 7,
     mythiquesTotalMax: 1,
     signature: [
-      ['porteuse-de-cruches', 2], ['veilleuse-des-citernes', 1],
-      ['sonneur-fele', 1], ['vipere-de-verre', 1], ['leviathan', 1],
+      ['lame-de-mer', 2], ['ecueil', 2],
+      ['porteuse-de-cruches', 2], ['veilleuse-des-citernes', 2],
+      ['sonneur-fele', 2], ['vipere-de-verre', 1], ['leviathan', 1],
       ['contresort-des-abimes', 2], ['silence-decume', 2], ['ressac', 2],
       ['eau-de-la-source', 1], ['courant-de-retour', 1], ['maree-contraire', 1],
       ['baton-des-citernes', 1],
@@ -131,13 +130,14 @@ export const RPG_RECETTES_DECKS = {
    */
   'serment-des-neuf-hivers': {
     identite: ['neige'],
-    terrains: [['glacier', 9], ['glacier-des-arches', 8]],
-    creatures: 13,
-    magies: 9,
+    terrains: [],
+    creatures: 17,
+    magies: 12,
     armes: 1,
-    raresTotalMax: 6,
+    raresTotalMax: 10,
     mythiquesTotalMax: 1,
     signature: [
+      ['eclair-du-marteau', 2], ['festin-des-vaillants', 2],
       ['guerrier-au-bouclier-rond', 2], ['loup-des-neiges', 2],
       ['jarl-au-marteau-de-guerre', 1], ['valkyrie-des-glaces', 1], ['maitre-du-marteau', 1],
       ['poigne-de-givre', 1], ['appat-de-la-meute', 1],
@@ -152,17 +152,19 @@ export const RPG_RECETTES_DECKS = {
    */
   'serment-du-soleil-rouge': {
     identite: ['braise'],
-    terrains: [['montagne-du-soleil-rouge', 8], ['cretes-de-cendre', 8]],
-    creatures: 17,
-    magies: 7,
-    raresTotalMax: 9,
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
+    raresTotalMax: 10,
     mythiquesTotalMax: 1,
     signature: [
-      ['ashigaru-des-braises', 3], ['hatamoto-des-cendres', 3],
-      ['ronin-du-soleil-rouge', 3], ['samourai-du-torii', 3],
+      ['ghul-des-cendres', 2], ['nuage-de-cendres', 2], ['sabre-maudit', 2],
+      ['ashigaru-des-braises', 2], ['hatamoto-des-cendres', 2],
+      ['ronin-du-soleil-rouge', 2], ['samourai-du-torii', 2],
       ['daimyo-du-soleil-rouge', 1], ['kenshi-de-la-forge', 2],
       ['tengu-du-mont-ardent', 1], ['kagutsuchi-flamme-originelle', 1],
-      ['trait-de-braise', 3], ['frappe-iaijutsu', 2], ['feux-de-kitsune', 2],
+      ['trait-de-braise', 2], ['frappe-iaijutsu', 2], ['feux-de-kitsune', 2],
     ],
   },
 };
@@ -182,19 +184,16 @@ export const RPG_RECETTES_HISTOIRE = {
    */
   'souffleuse-de-verre': {
     identite: ['sable', 'braise'],
-    terrains: [
-      ['desert', 3], ['dunes-du-tenere', 3],
-      ['montagne', 3], ['cretes-de-cendre', 3],
-      ['petra', 3], ['petra-des-deux-sources', 2],
-    ],
-    creatures: 17,
-    magies: 6,
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
     mythiquesMax: 4,
     raresMax: 3,
     signature: [
       ['feriel', 1],
-      ['trait-de-braise', 3],
-      ['fennec-des-decombres', 3],
+      ['trait-de-braise', 2],
+      ['fennec-des-decombres', 2],
       ['vent-rouge', 2],
       ['djinn-de-foudre', 1],
     ],
@@ -207,14 +206,15 @@ export const RPG_RECETTES_HISTOIRE = {
    */
   'gardes-du-fjord': {
     identite: ['neige'],
-    terrains: [['glacier', 11], ['glacier-des-arches', 10]],
-    creatures: 12,
-    magies: 7,
+    terrains: [],
+    creatures: 17,
+    magies: 13,
+    armes: 0,
     mythiquesMax: 1,
-    raresMax: 4,
+    raresMax: 7,
     signature: [
       ['dame-des-neuf-mondes', 1],
-      ['mur-de-boucliers', 3],
+      ['mur-de-boucliers', 2],
       ['brume-du-fjord', 2],
       ['festin-des-vaillants', 2],
       ['scalde-des-runes', 1],
@@ -228,13 +228,14 @@ export const RPG_RECETTES_HISTOIRE = {
    */
   'meute-des-neiges': {
     identite: ['neige'],
-    terrains: [['glacier', 11], ['glacier-des-arches', 10]],
-    creatures: 13,
-    magies: 6,
+    terrains: [],
+    creatures: 18,
+    magies: 12,
+    armes: 0,
     mythiquesMax: 0,
-    raresMax: 5,
+    raresMax: 7,
     signature: [
-      ['loup-des-neiges', 3],
+      ['loup-des-neiges', 2],
       ['berserk-des-trois-hivers', 2],
       ['guerrier-au-bouclier-rond', 1],
       ['hurlement-du-blizzard', 1],
@@ -247,11 +248,12 @@ export const RPG_RECETTES_HISTOIRE = {
    */
   'maitre-des-neuf-hivers': {
     identite: ['neige'],
-    terrains: [['glacier', 9], ['glacier-des-arches', 9]],
-    creatures: 15,
-    magies: 7,
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
     mythiquesMax: 2,
-    raresMax: 5,
+    raresMax: 7,
     signature: [
       ['pere-des-corbeaux', 1],
       ['maitre-du-marteau', 1],
@@ -267,13 +269,10 @@ export const RPG_RECETTES_HISTOIRE = {
    */
   'grand-horloger': {
     identite: ['sable', 'braise'],
-    terrains: [
-      ['desert', 5], ['dunes-du-tenere', 5],
-      ['montagne', 3], ['cretes-de-cendre', 2],
-      ['petra', 2],
-    ],
-    creatures: 17,
-    magies: 6,
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
     mythiquesMax: 3,
     raresMax: 4,
     signature: [

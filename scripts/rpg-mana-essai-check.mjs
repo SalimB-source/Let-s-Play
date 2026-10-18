@@ -95,8 +95,8 @@ assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch 
   'au doigt, la barre de mana du sorcier se pose au-dessus de son nom');
 assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table > \.rpg-wizard-plate--ennemi\s*\{\s*grid-area:\s*enemy-mana;[^}]*align-self:\s*end;/s,
   'au doigt, le nom et les PV du sorcier adverse prennent la colonne de gauche, comme le joueur');
-assert.match(page, /const noterEvenementDuel = \(evenement\) => \{\s*if \(duelRef\.current\?\.modeMana === RPG_MODE_MANA_ESSAI\) return;/,
-  'toutes les actions du duel d’essai restent sans événement économique');
+assert.match(page, /const noterEvenementDuel = \(evenement\) => \{\s*noterEvenementDuelReel\(evenement\);/,
+  'les duels sans terrain transmettent les événements aux quêtes et à la bourse');
 assert.match(page, /onClick=\{\(\) => nouvellePartie\(duel\.modeMana === RPG_MODE_MANA_ESSAI \? \{ etageId: null, essaiManaId: duel\.essaiDeckId \} : \{\}\)\}/,
   'rejouer une victoire relance bien le mode essai et pas le duel historique');
 // Cinq emplacements de créatures dessinés de chaque côté du plateau.
@@ -144,4 +144,4 @@ assert.match(page, /<IconesCarte carte=\{carte\} className="rpg-card-icones--col
   'les cartes en main affichent aussi leurs icônes d’effets en colonne à droite sous le coût');
 assert.match(styles, /\.rpg-battle \.rpg-hand__card \.rpg-card-icones\.rpg-card-icones--colonne\s*\{[^}]*top:\s*calc\(5% \+ var\(--rpg-card-marker-size, 28px\) \+ 4px\);[^}]*right:\s*6%;[^}]*flex-direction:\s*column;/s,
   'dans la main, la colonne d’icônes d’effets se place à droite juste sous le disque de coût');
-console.log('Banc d’essai mana : interface, séquence du mulligan et isolation économique vérifiées.');
+console.log('Banc d’essai mana : interface, séquence du mulligan et événements économiques vérifiés.');

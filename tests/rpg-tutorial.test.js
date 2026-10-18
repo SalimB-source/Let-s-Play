@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   RPG_PV_SORCIER_BASE,
-  rpgEngagerTerrain,
+  rpgDemarrerManaEssai,
   rpgFinDeTour,
   rpgJouerCreature,
   rpgLancerAttaque,
@@ -11,9 +11,11 @@ import {
   rpgPoserTerrain,
 } from '../src/games/rpgDuel.js';
 import { RPG_DECK_JOUEUR_BASE, cardById } from '../src/games/rpgCards.js';
+import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 import { RPG_CARD_LESSONS } from '../src/games/rpgCardLessons.js';
 import {
   preparerDuelTutoriel,
+  RPG_TUTORIAL_OPPONENT_HAND,
   RPG_TUTORIAL_OPENING_HAND,
   RPG_TUTORIAL_OPPONENT_DECK,
   RPG_TUTORIAL_STEPS,
@@ -24,30 +26,32 @@ function nouveauDuelTutoriel() {
     joueurDeck: RPG_DECK_JOUEUR_BASE,
     sorcierDeck: RPG_TUTORIAL_OPPONENT_DECK,
     sorcierPuissance: 0,
+    modeMana: RPG_MODE_MANA_ESSAI,
     rng: () => 0.37,
   });
-  return preparerDuelTutoriel(duel);
+  preparerDuelTutoriel(duel);
+  assert.equal(rpgDemarrerManaEssai(duel).ok, true);
+  return duel;
 }
 
 test('le tutoriel prépare une main stable sans réduire les decks ni ouvrir le mulligan', () => {
   const duel = nouveauDuelTutoriel();
 
   assert.deepEqual(duel.joueur.main, RPG_TUTORIAL_OPENING_HAND);
-  assert.equal(duel.joueur.deck.length, 35);
-  assert.equal(duel.sorcier.main.length, 5);
-  assert.ok(duel.sorcier.main.every((carteId) => carteId === 'montagne'));
-  assert.equal(duel.sorcier.deck.length, 35);
+  assert.equal(duel.joueur.deck.length, 27);
+  assert.equal(duel.sorcier.main.length, 3);
+  assert.deepEqual(duel.sorcier.main, RPG_TUTORIAL_OPPONENT_HAND);
+  assert.equal(duel.sorcier.deck.length, 27);
   assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE);
   assert.equal(rpgPeutMulligan(duel, 'joueur'), false);
   assert.equal(rpgPeutMulligan(duel, 'sorcier'), false);
 });
 
-test('la partie guidée joue un tour complet : terrain, mana, créature puis attaque', () => {
+test('la partie guidée joue un tour complet : mana automatique, créature puis attaque', () => {
   const duel = nouveauDuelTutoriel();
 
-  assert.equal(rpgPoserTerrain(duel, 'joueur', 'desert').ok, true);
-  const terrain = duel.joueur.terrains[0];
-  assert.equal(rpgEngagerTerrain(duel, 'joueur', terrain.id, 'sable').ok, true);
+  assert.deepEqual(duel.joueur.terrains, []);
+  assert.equal(rpgPoserTerrain(duel, 'joueur', 'desert').ok, false);
   assert.equal(duel.joueur.mana.sable, 1);
 
   const pose = rpgJouerCreature(duel, 'joueur', 'tislit-des-aures');
@@ -60,7 +64,7 @@ test('la partie guidée joue un tour complet : terrain, mana, créature puis att
   rpgFinDeTour(duel);
   assert.equal(duel.tour, 'joueur');
   assert.equal(pose.entite.ready, true, 'la créature devient prête au début du tour suivant');
-  assert.equal(terrain.tapped, false, 'le terrain se dégage au début du nouveau tour');
+  assert.equal(duel.joueur.mana.sable, 2, 'le mana se recharge et augmente au tour suivant');
 
   const pvAvant = duel.sorcier.pv;
   const attaque = rpgLancerAttaque(duel, 'joueur', [pose.entite.id]);
@@ -72,7 +76,7 @@ test('la partie guidée joue un tour complet : terrain, mana, créature puis att
 test('le parcours explique les règles et pointe vers les zones réellement jouées', () => {
   const ids = RPG_TUTORIAL_STEPS.map((step) => step.id);
   assert.deepEqual(ids, [
-    'bienvenue', 'main', 'terrain', 'mana', 'creature', 'invocation', 'fin-tour',
+    'bienvenue', 'main', 'mana', 'creature', 'invocation', 'fin-tour',
     'tour-adverse', 'attaque', 'confirmer-attaque', 'combat', 'magies', 'termine',
   ]);
   assert.ok(RPG_TUTORIAL_STEPS.every((step) => step.target?.startsWith('[data-tutorial-target=')));

@@ -8120,6 +8120,42 @@ de cet environnement : les assertions du hamburger suivent la règle CSS posée
 ici et se joueront là où Chromium est installé (`npx playwright install
 chromium`, `npm run dev` dans un autre terminal).
 
+
+## Le Sablier : decks reconstruits pour le mana sans terrain
+
+Les recettes des six decks de base produisent directement **30 cartes jouables,
+aucun terrain**. Les constantes `RPG_DECK_*_BASE`, les boîtiers du catalogue et
+les paquets utilisés en Histoire lisent ces mêmes recettes : il ne s'agit plus
+d'un retrait des terrains au lancement suivi d'un remplissage générique.
+
+| Deck | Créatures / héros | Magies | Armes |
+| --- | ---: | ---: | ---: |
+| Veilleurs du Désert | 18 | 6 | 6 |
+| Cour des Djinns | 21 | 9 | 0 |
+| Sentiers de cendre | 16 | 8 | 6 |
+| Marée des abysses | 10 | 18 | 2 |
+| Serment des Neuf Hivers | 17 | 12 | 1 |
+| Serment du Soleil rouge | 20 | 10 | 0 |
+
+Chaque starter conserve une seule mythique, son identité chromatique et ses
+synergies. Les plafonds de rares sont adaptés à trente cartes actives, avec
+les quotas d'exemplaires habituels. La Boussole du Hoggar et le Djinn du souk,
+dont les effets exigent des terrains, sont exclus du catalogue du composeur.
+Les signatures favorisent les premiers tours : au moins huit cartes coûtent
+au plus deux manas, au moins quinze coûtent au plus trois, et au plus huit
+coûtent cinq ou plus. Ces garde-fous de construction ne remplacent pas un
+équilibrage par des parties réelles.
+
+Les variantes de campagne sont également recomposées en trente cartes. Les
+deux démonstrations Sable et Sable/Braise reprennent les nouveaux decks de
+base sans leur ajouter les anciens renforts, qui les feraient dépasser trente.
+
+Vérification ciblée :
+
+```sh
+node --test tests/rpg-decks-sans-terrains.test.js tests/rpg-decks-puissance.test.js tests/rpg-deck-choice.test.js tests/rpg-mana-essai.test.js
+```
+
 ## Le Sablier : la vie dépasse 25 — la réserve s’ouvre
 
 Le Sablier se jouait sur un **clock de 25 PV** : le joueur comme le sorcier
