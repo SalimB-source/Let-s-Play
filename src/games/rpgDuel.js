@@ -244,12 +244,31 @@ export function rpgChoisirCouleurMana(duel, cote, couleur) {
   return { ok: true, couleur };
 }
 
+// Événements de présentation uniquement : hors de l'état sauvegardé du duel.
+const presentations = new WeakMap();
+function presenter(duel, evenement) {
+  const file = presentations.get(duel) ?? [];
+  file.push(evenement);
+  presentations.set(duel, file);
+}
+export function rpgConsommerPresentations(duel) {
+  const file = presentations.get(duel) ?? [];
+  presentations.delete(duel);
+  return file;
+}
+function presenterEffet(duel, cote, carteId) {
+  if (duelCardById(carteId)?.kind === 'creature') {
+    presenter(duel, { type: 'effet', cote, carteId });
+  }
+}
+
 /** Pioche 1 carte du deck vers la main ; null si le deck est vide. */
 export function rpgPiocher(duel, cote) {
   const camp = duel[cote];
   if (!camp.deck.length) return null;
   const carte = camp.deck.pop();
   camp.main.push(carte);
+  presenter(duel, { type: 'pioche', cote, carteId: carte });
   return carte;
 }
 
@@ -568,6 +587,7 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
   const cout = coutActivation(activation);
   if (!rpgPeutPayer(camp, cout)) return { ok: false, raison: 'mana' };
   payer(duel, cote, cout);
+  presenterEffet(duel, cote, carte.id);
   // Boualem ne contre que l'effet qui le **cible vraiment** — la foudre l'a
   // bien pris pour cible : elle se paie, puis se dénoue.
   if (cible.carteId === 'boualem' && cible.boualemContresortDisponible) {
@@ -995,6 +1015,7 @@ function declencherHonneur(duel, cote, entite) {
   const carte = duelCardById(entite.carteId);
   const honneur = Math.max(0, Number(carte?.honneur) || 0);
   if (!honneur) return;
+  presenterEffet(duel, cote, entite.carteId);
   // La source morte ne maintient plus sa Résonance pendant sa dernière frappe.
   rafraichirAuras(duel);
   const adversaire = autre(cote);
@@ -1336,6 +1357,7 @@ function transfertVie(duel, coteSource, montant) {
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut une
  *  entité du buff (le Colosse ne se buffe pas lui-même). */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
+  presenterEffet(duel, cote, sourceCarteId);
   const adv = autre(cote);
   // Boualem ne contre que l'effet qui le **cible vraiment** : un effet de zone,
   // un renfort de camp ou une arrivée qui crée des jetons n'a pas de cible et
@@ -3311,7 +3333,7 @@ function resoudreRetoursProgrammes(duel) {
       duel.log.push(`${carte.name} renaît et revient en jeu.`);
       if (carte.arrivee) {
         const cibleArrivee = rpgCibleAuto(duel, cote, carte);
-        appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte));
+        appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte), 'capacite', carte.id);
       }
     }
   }
