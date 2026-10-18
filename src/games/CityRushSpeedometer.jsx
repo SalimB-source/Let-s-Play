@@ -7,7 +7,7 @@ import React, { useMemo, useState } from 'react';
  * entre km/h et MPH. L'aiguille suit la vitesse en douceur, l'anneau s'allume
  * en vert pendant le turbo et rougit dans la zone rouge.
  */
-const MAX_KMH = 320;
+const MAX_KMH = 400;
 const START_ANGLE = -225; // 0 en bas à gauche
 const SWEEP = 270;        // jusqu'en bas à droite
 const KMH_PER_MPH = 1.609344;

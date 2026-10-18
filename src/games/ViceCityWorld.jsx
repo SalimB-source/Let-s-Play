@@ -9942,7 +9942,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // libre : le volant tourne le nez de la voiture et la voie du pilote
       // suit sa position (voir `updateFreeSteering`).
       if (freeDriving()) updateFreeSteering(dt);
-      else playerX = lerp(playerX, laneX(playerLane), Math.min(1, dt * 12));
+      else playerX = lerp(playerX, laneX(playerLane), Math.min(1, dt * 16));
       const playerSuvImpactAmount = playerWrecked
         ? 0
         : clamp(playerSuvImpactLeft / PLAYER_POLICE_SUV_RAM_IMPACT_DURATION, 0, 1);
