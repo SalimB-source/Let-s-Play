@@ -1120,11 +1120,12 @@ test('chaque système calibré pour une seule vitesse suit désormais la voiture
   assert.ok(cityRushPickupRowCount(1000) <= CITY_RUSH_PICKUP_ROW_COUNT_MAX);
   assert.ok(CITY_RUSH_PICKUP_ROW_COUNT_MIN * CITY_RUSH_PICKUP_ROW_SPACING_MIN > 0);
 
-  // Sprint : 15 s à la vitesse de référence, puis le chrono suit la voiture —
+  // Sprint : le chrono à la vitesse de référence suit la voiture —
   // la citadine a besoin de plus de temps, la supercar n'a plus de cadeau.
-  assert.equal(cityRushSprintCheckpointTime(CITY_RUSH_PLAYER_SPEED), 15);
-  assert.ok(cityRushSprintCheckpointTime(topSpeed(starter)) > 15);
-  assert.ok(cityRushSprintCheckpointTime(topSpeed(top)) < 15);
+  const refSprintBonus = cityRushSprintCheckpointTime(CITY_RUSH_PLAYER_SPEED);
+  assert.equal(refSprintBonus, 9.5);
+  assert.ok(cityRushSprintCheckpointTime(topSpeed(starter)) > refSprintBonus);
+  assert.ok(cityRushSprintCheckpointTime(topSpeed(top)) < refSprintBonus);
   for (const car of CITY_RUSH_CARS) {
     const speed = topSpeed(car);
     const bonus = cityRushSprintCheckpointTime(speed);
@@ -1144,7 +1145,7 @@ test('chaque système calibré pour une seule vitesse suit désormais la voiture
 
 test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic ground boosts', () => {
   assert.equal(CITY_RUSH_DISTANCE, 8400); // 6 tours : 5 boucles de 1 200 m + un dernier tour de 2 boucles
-  assert.equal(CITY_RUSH_PLAYER_SPEED, 35);
+  assert.equal(CITY_RUSH_PLAYER_SPEED, 56);
   assert.equal(CITY_RUSH_BLUE_PICKUP_CHANCE, 0.03, 'le tirage du bleu reste à 3 % : l’emplacement tiré reste vide, le bleu vit sur les tremplins');
   assert.ok(CITY_RUSH_BLUE_PICKUP_CHANCE < CITY_RUSH_RED_PICKUP_CHANCE, 'le pompe est plus rare que l’AK-47');
   assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.08, 'le chargeur rouge apparaît dans 8 % des objets');
@@ -2579,11 +2580,11 @@ test('the Nürburgring plays at a slower pace, every other course keeps the hist
   assert.equal(cityRushCoursePace({ pace: 4 }), 1);
   assert.equal(cityRushCoursePace({ pace: 0.01 }), CITY_RUSH_COURSE_PACE_MIN);
 
-  // Vitesse annoncée : 35 m/s × 0,85 ≈ 107 km/h au lieu de 126.
+  // Vitesse annoncée : 56 m/s × 0,85 ≈ 171 km/h au lieu de 202.
   const ringTop = cityRushPacedSpeed(CITY_RUSH_PLAYER_SPEED, 'nordschleife');
   assert.ok(Math.abs(ringTop - CITY_RUSH_PLAYER_SPEED * CITY_RUSH_RACEWAY_PACE) < 1e-9);
   const ringKmh = ringTop * 3.6;
-  assert.ok(ringKmh > 100 && ringKmh < 115, `le Ring se joue à ${ringKmh.toFixed(0)} km/h`);
+  assert.ok(ringKmh > 160 && ringKmh < 185, `le Ring se joue à ${ringKmh.toFixed(0)} km/h`);
   assert.ok(ringKmh < CITY_RUSH_PLAYER_SPEED * 3.6, 'et plus lentement qu’en ville');
   assert.equal(cityRushPacedSpeed(CITY_RUSH_PLAYER_SPEED, 'vice-city'), CITY_RUSH_PLAYER_SPEED);
   assert.equal(cityRushPacedSpeed(CITY_RUSH_PLAYER_SPEED), CITY_RUSH_PLAYER_SPEED);
@@ -2858,7 +2859,7 @@ test('le tōgé freine avant ses épingles, pas une fois dedans', () => {
     }
     assert.ok(Number.isFinite(firstBrake) && firstBrake < group.entry, 'la cible baisse avant le repère d’entrée');
     assert.ok(group.entry - firstBrake > 30, `le freinage commence plus de 30 m avant l'entrée (${(group.entry - firstBrake).toFixed(0)} m)`);
-    assert.ok(speed < topSpeed * 0.62, `la voiture arrive déjà ralentie (${(speed * 3.6).toFixed(0)} km/h sur ${(topSpeed * 3.6).toFixed(0)})`);
+    assert.ok(speed < topSpeed * 0.76, `la voiture arrive déjà ralentie (${(speed * 3.6).toFixed(0)} km/h sur ${(topSpeed * 3.6).toFixed(0)})`);
   }
 });
 
@@ -3067,9 +3068,9 @@ test('Vice City, le Ring et le tōgé ralentissent les voitures dans leurs grand
     const pace = slowestIn(turn);
     assert.ok(pace <= CITY_RUSH_CORNER_PACE_SWEEP + 0.02, `${turn.name} ralentit dans le grand virage (${pace.toFixed(3)})`);
     assert.ok(pace > CITY_RUSH_CORNER_PACE_MIN, `${turn.name} reste une courbe rapide, pas une épingle`);
-    // 126 km/h → environ 91 km/h : le compteur doit bouger, pas seulement frémir.
+    // 202 km/h → environ 145 km/h : le compteur doit bouger, pas seulement frémir.
     const apexKmh = CITY_RUSH_PLAYER_SPEED * pace * 3.6;
-    assert.ok(apexKmh < 100, `${turn.name} tombe à ${apexKmh.toFixed(0)} km/h`);
+    assert.ok(apexKmh < 155, `${turn.name} tombe à ${apexKmh.toFixed(0)} km/h`);
   }
   for (const turn of sharpTurns) {
     const pace = slowestIn(turn);

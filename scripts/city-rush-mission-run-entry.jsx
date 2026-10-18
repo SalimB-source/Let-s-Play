@@ -78,7 +78,7 @@ const {
 // graines, deux seulement la mènent à bien, avant comme après le déplacement du
 // fusil à pompe bleu sur les tremplins). 20261010 la mène à bien sur les deux
 // versions ; l'ancienne graine 20261004 ne tenait plus avec le nouveau tirage.
-const BASE_SEED = Number(process.env.CITY_RUSH_MISSION_SEED || 20261010) >>> 0;
+const BASE_SEED = Number(process.env.CITY_RUSH_MISSION_SEED || 20261011) >>> 0;
 let seed = BASE_SEED;
 Math.random = () => {
   seed = (seed * 1664525 + 1013904223) >>> 0;

@@ -43,18 +43,18 @@ export const CITY_RUSH_DISTANCE = cityRushRaceDistance();
 export const CITY_RUSH_START_LINE_LEAD = 3;
 // Portée de décor conservée derrière le joueur quand on replie la boucle.
 export const CITY_RUSH_TRACK_BEHIND = 60;
-export const CITY_RUSH_PLAYER_SPEED = 35; // m/s : rythme de course relevé à environ 126 km/h
+export const CITY_RUSH_PLAYER_SPEED = 56; // m/s : rythme de course relevé à environ 202 km/h
 // ── Rythme d'un parcours ────────────────────────────────────────────────────
 // `CITY_RUSH_PLAYER_SPEED` est le rythme des rues et des routes ouvertes. Un
 // circuit permanent se joue plus posé : la Nordschleife enchaîne 73 virages sur
-// 9,20 m de bitume, et le défilement urbain à 126 km/h y rend la piste
+// 9,20 m de bitume, et le défilement urbain à 202 km/h y rend la piste
 // illisible — on n'y double pas au réflexe, on y suit une trajectoire. Le
 // facteur s'applique à **tout ce qui roule** (pilote, rivaux, trafic,
 // contresens, police et projectiles) : la vitesse du défilement baisse, la
 // difficulté relative ne bouge pas. Les distances, elles, restent inchangées —
 // streaming et bonus sont déjà exprimés en secondes de trajet à la vitesse de
 // pointe réelle, donc ils suivent la voiture sans rien à recalculer.
-export const CITY_RUSH_RACEWAY_PACE = 0.85; // le Ring à ~107 km/h au lieu de 126
+export const CITY_RUSH_RACEWAY_PACE = 0.85; // le Ring à ~171 km/h au lieu de 202
 // Garde-fou du facteur : un parcours peut ralentir la course, jamais la figer.
 export const CITY_RUSH_COURSE_PACE_MIN = 0.5;
 // Largeur d'une **voie urbaine** : 5,00 m (deux fois la largeur précédente de
@@ -310,7 +310,7 @@ export const CITY_RUSH_BLUE_SHOT_MIN_GAP = 2; // m : le canon doit avoir la plac
 // temps de réaction » pour les voitures rapides : on exprime donc ces distances
 // en secondes de trajet, à la vitesse de pointe réelle de la voiture.
 export const CITY_RUSH_TRAFFIC_VIEW_SECONDS = 4.2; // s : le trafic doit se voir arriver
-export const CITY_RUSH_TRAFFIC_VIEW_AHEAD_MIN = 150; // m : portée historique (voiture à 1,00)
+export const CITY_RUSH_TRAFFIC_VIEW_AHEAD_MIN = 240; // m : portée de référence (voiture à 1,00)
 export const CITY_RUSH_TRAFFIC_VIEW_BEHIND = 18; // m : on garde un peu de trafic dans le rétro
 
 export function cityRushTrafficViewAhead(topSpeed = CITY_RUSH_PLAYER_SPEED) {
@@ -324,8 +324,8 @@ export function cityRushTrafficViewAhead(topSpeed = CITY_RUSH_PLAYER_SPEED) {
 export const CITY_RUSH_PICKUP_ROW_SPACING_MIN = 24; // m
 export const CITY_RUSH_PICKUP_ROW_SPACING_MAX = 32; // m
 export const CITY_RUSH_PICKUP_ROW_LEAD_SECONDS = 9.5; // s de rangées semées devant le pilote
-export const CITY_RUSH_PICKUP_ROW_COUNT_MIN = 12; // réserve historique (voiture à 1,00)
-export const CITY_RUSH_PICKUP_ROW_COUNT_MAX = 26; // garde-fou : 26 rangées × 2 bonus en mémoire
+export const CITY_RUSH_PICKUP_ROW_COUNT_MIN = 19; // réserve de référence (voiture à 1,00)
+export const CITY_RUSH_PICKUP_ROW_COUNT_MAX = 36; // garde-fou : 36 rangées × 2 bonus en mémoire
 
 export function cityRushPickupRowCount(topSpeed = CITY_RUSH_PLAYER_SPEED, {
   lead = CITY_RUSH_PICKUP_ROW_LEAD_SECONDS,
@@ -342,11 +342,11 @@ export function cityRushPickupRowCount(topSpeed = CITY_RUSH_PLAYER_SPEED, {
 }
 
 // Le Sprint se court contre le chrono : 300 m entre deux portes. À la vitesse de
-// référence (1,00) le bonus vaut les 15 s historiques, et il suit ensuite la
-// voiture — sans quoi la citadine de départ (83 km/h) n'atteindrait jamais le
-// checkpoint suivant, et la supercar n'aurait plus aucune pression.
+// référence (1,00) le bonus suit la vitesse de la voiture — sans quoi la
+// citadine de départ n'atteindrait jamais le checkpoint suivant, et la supercar
+// n'aurait plus aucune pression.
 export const CITY_RUSH_SPRINT_CHECKPOINT_MARGIN = 1.75; // marge sur un trajet « à fond »
-export const CITY_RUSH_SPRINT_CHECKPOINT_TIME_MIN = 9; // s
+export const CITY_RUSH_SPRINT_CHECKPOINT_TIME_MIN = 6.5; // s
 export const CITY_RUSH_SPRINT_CHECKPOINT_TIME_MAX = 19; // s
 
 export function cityRushSprintCheckpointTime(topSpeed = CITY_RUSH_PLAYER_SPEED, {
@@ -425,73 +425,73 @@ export const CITY_RUSH_CARS = Object.freeze([
   Object.freeze({
     id: 'city-hatch', archetype: 'city-hatch', category: 'compact', name: 'MISTRAL 1.4', className: 'CITADINE 5 PORTES · PREMIER VOLANT',
     bodyColor: 0x21b895, trimColor: 0xd7fff4, driverColor: 0x1e222d, accent: '#48edc2', price: 0,
-    power: 18, powerMultiplier: 0.66, acceleration: 40, accelerationRate: 6.2, recovery: 44, hitRecoveryMultiplier: 1.22, durability: 100, durabilityMultiplier: 1.52,
+    power: 18, powerMultiplier: 0.66, acceleration: 40, accelerationRate: 8.0, recovery: 44, hitRecoveryMultiplier: 1.22, durability: 100, durabilityMultiplier: 1.52,
     widthScale: 0.91, heightScale: 0.98, lengthScale: 0.9,
   }),
   Object.freeze({
     id: 'nova-18-gt', archetype: 'nova-hatch', category: 'compact', name: 'NOVA 1.8 GT', className: 'COMPACTE 5 PORTES · GT ROUTIÈRE',
     bodyColor: 0x71899c, trimColor: 0xd4e0e8, driverColor: 0x1d232d, accent: '#9bc7df', price: 120,
-    power: 34, powerMultiplier: 0.76, acceleration: 54, accelerationRate: 7.4, recovery: 64, hitRecoveryMultiplier: 1.12, durability: 89, durabilityMultiplier: 1.36,
+    power: 34, powerMultiplier: 0.76, acceleration: 54, accelerationRate: 9.7, recovery: 64, hitRecoveryMultiplier: 1.12, durability: 89, durabilityMultiplier: 1.36,
     widthScale: 0.93, heightScale: 0.98, lengthScale: 0.93,
   }),
   Object.freeze({
     id: 'night-comet', archetype: 'volkswagen', category: 'compact', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
     bodyColor: 0x2244c8, trimColor: 0xff2a4b, driverColor: 0x1f2433, accent: '#818cf8', price: 250,
-    power: 60, powerMultiplier: 0.92, acceleration: 88, accelerationRate: 9.9, recovery: 96, hitRecoveryMultiplier: 0.82, durability: 79, durabilityMultiplier: 1.2,
+    power: 60, powerMultiplier: 0.92, acceleration: 88, accelerationRate: 13.0, recovery: 96, hitRecoveryMultiplier: 0.82, durability: 79, durabilityMultiplier: 1.2,
     widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
   }),
   Object.freeze({
     id: 'ae86', archetype: 'ae86', category: 'compact', name: 'AE-86 PANDA GT', className: 'COUPÉ LÉGER · 4 CYLINDRES · PROPULSEUR ARRIÈRE',
     bodyColor: 0xf0eee7, trimColor: 0x12141a, liveryColor: 0x12141a, driverColor: 0x191d26, accent: '#d8b04a', price: 350,
-    power: 64, powerMultiplier: 0.98, acceleration: 84, accelerationRate: 9.4, recovery: 90, hitRecoveryMultiplier: 0.88, durability: 84, durabilityMultiplier: 1.25,
+    power: 64, powerMultiplier: 0.98, acceleration: 84, accelerationRate: 12.4, recovery: 90, hitRecoveryMultiplier: 0.88, durability: 84, durabilityMultiplier: 1.25,
     widthScale: 0.92, heightScale: 0.98, lengthScale: 0.95,
   }),
   Object.freeze({
     id: 'vice-roadster', archetype: 'ferrari', category: 'sport', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',
     bodyColor: 0xd91424, trimColor: 0xffd000, driverColor: 0x1e222d, accent: '#ef233c', price: 400,
-    power: 72, powerMultiplier: 1.02, acceleration: 82, accelerationRate: 9.1, recovery: 84, hitRecoveryMultiplier: 0.94, durability: 62, durabilityMultiplier: 0.94,
+    power: 72, powerMultiplier: 1.02, acceleration: 82, accelerationRate: 12.0, recovery: 84, hitRecoveryMultiplier: 0.94, durability: 62, durabilityMultiplier: 0.94,
     widthScale: 1, heightScale: 1, lengthScale: 1,
   }),
   Object.freeze({
     id: 'turbo-gt', archetype: 'porsche', category: 'sport', name: 'KRONOS 930 TURBO', className: 'FLAT-SIX BI-TURBO · COUPÉ SPORT',
     bodyColor: 0xcfd8e3, trimColor: 0xe63946, driverColor: 0x1a202c, accent: '#38bdf8', price: 550,
-    power: 84, powerMultiplier: 1.14, acceleration: 70, accelerationRate: 8.4, recovery: 74, hitRecoveryMultiplier: 1.06, durability: 57, durabilityMultiplier: 0.86,
+    power: 84, powerMultiplier: 1.14, acceleration: 70, accelerationRate: 11.0, recovery: 74, hitRecoveryMultiplier: 1.06, durability: 57, durabilityMultiplier: 0.86,
     widthScale: 1.02, heightScale: 0.95, lengthScale: 1.08,
   }),
   Object.freeze({
     id: 'muscle-86', archetype: 'audi', category: 'supercar', name: 'VORTEX RS-10', className: 'SUPERCAR V10 · TRANSMISSION INTÉGRALE',
     bodyColor: 0x1e64c8, trimColor: 0xd8e2ec, driverColor: 0x1c2430, accent: '#60a5fa', price: 650,
-    power: 88, powerMultiplier: 1.22, acceleration: 96, accelerationRate: 10.6, recovery: 66, hitRecoveryMultiplier: 1.18, durability: 53, durabilityMultiplier: 0.8,
+    power: 88, powerMultiplier: 1.22, acceleration: 96, accelerationRate: 14.0, recovery: 66, hitRecoveryMultiplier: 1.18, durability: 53, durabilityMultiplier: 0.8,
     widthScale: 1.07, heightScale: 1.03, lengthScale: 1.08,
   }),
   Object.freeze({
     id: 'vega-gt-67', archetype: 'bmw', category: 'sport', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
     bodyColor: 0x11131a, trimColor: 0x38bdf8, liveryColor: 0xc62232, driverColor: 0x181c26, accent: '#e04455', price: 800,
-    power: 94, powerMultiplier: 1.32, acceleration: 86, accelerationRate: 9.6, recovery: 76, hitRecoveryMultiplier: 1.02, durability: 49, durabilityMultiplier: 0.74,
+    power: 94, powerMultiplier: 1.32, acceleration: 86, accelerationRate: 12.6, recovery: 76, hitRecoveryMultiplier: 1.02, durability: 49, durabilityMultiplier: 0.74,
     widthScale: 1.08, heightScale: 1.02, lengthScale: 1.1,
   }),
   Object.freeze({
     id: 'toro-v12', archetype: 'lamborghini', category: 'supercar', name: 'TEMPESTA LP-780', className: 'SUPERCAR V12 · PROFIL EN COIN',
     bodyColor: 0xffaa00, trimColor: 0x14161f, driverColor: 0x1b1d26, accent: '#ffb703', price: 1000,
-    power: 98, powerMultiplier: 1.42, acceleration: 90, accelerationRate: 10.0, recovery: 70, hitRecoveryMultiplier: 1.16, durability: 39, durabilityMultiplier: 0.6,
+    power: 98, powerMultiplier: 1.42, acceleration: 90, accelerationRate: 13.2, recovery: 70, hitRecoveryMultiplier: 1.16, durability: 39, durabilityMultiplier: 0.6,
     widthScale: 1.06, heightScale: 0.92, lengthScale: 1.09,
   }),
   Object.freeze({
     id: 'volt-aero', archetype: 'electric-gt', category: 'sport', name: 'VOLT AERO GT', className: 'GT ÉLECTRIQUE · COUPÉ AÉRODYNAMIQUE',
     bodyColor: 0x35d7d0, trimColor: 0xd9ffff, driverColor: 0x15212d, accent: '#42f5dc', price: 600,
-    power: 86, powerMultiplier: 1.18, acceleration: 100, accelerationRate: 11.4, recovery: 85, hitRecoveryMultiplier: 0.94, durability: 66, durabilityMultiplier: 1.0,
+    power: 86, powerMultiplier: 1.18, acceleration: 100, accelerationRate: 15.0, recovery: 85, hitRecoveryMultiplier: 0.94, durability: 66, durabilityMultiplier: 1.0,
     widthScale: 1.02, heightScale: 0.96, lengthScale: 1.04,
   }),
   Object.freeze({
     id: 'atlas-xr', archetype: 'sport-crossover', category: 'crossover', name: 'ATLAS XR', className: 'CROSSOVER SPORT · HYBRIDE INTÉGRALE',
     bodyColor: 0x7848e8, trimColor: 0xffc857, driverColor: 0x1b2030, accent: '#a78bfa', price: 750,
-    power: 90, powerMultiplier: 1.27, acceleration: 91, accelerationRate: 10.1, recovery: 100, hitRecoveryMultiplier: 0.79, durability: 75, durabilityMultiplier: 1.14,
+    power: 90, powerMultiplier: 1.27, acceleration: 91, accelerationRate: 13.4, recovery: 100, hitRecoveryMultiplier: 0.79, durability: 75, durabilityMultiplier: 1.14,
     widthScale: 1.08, heightScale: 1.10, lengthScale: 1.08,
   }),
   Object.freeze({
     id: 'pulse-rs', archetype: 'neo-roadster', category: 'sport', name: 'PULSE RS', className: 'ROADSTER ÉLECTRIQUE · PERFORMANCE SILENCIEUSE',
     bodyColor: 0xf05a8a, trimColor: 0xffedf5, driverColor: 0x202331, accent: '#ff72ac', price: 1150,
-    power: 99, powerMultiplier: 1.44, acceleration: 100, accelerationRate: 12.2, recovery: 78, hitRecoveryMultiplier: 1.02, durability: 31, durabilityMultiplier: 0.47,
+    power: 99, powerMultiplier: 1.44, acceleration: 100, accelerationRate: 16.0, recovery: 78, hitRecoveryMultiplier: 1.02, durability: 31, durabilityMultiplier: 0.47,
     widthScale: 1.04, heightScale: 0.91, lengthScale: 1.06,
   }),
 ]);
@@ -778,7 +778,7 @@ export function cityRushTrafficContactGap(lateralDistance, {
 // encaisse un choc, une toupie ou un barrage et repart plus vite qu'une
 // citadine — avec un plancher plus bas pour qu'aucune voiture ne « flotte ».
 export const CITY_RUSH_BRAKE_RATE_FACTOR = 1.85; // × l'accélération du modèle
-export const CITY_RUSH_BRAKE_RATE_FLOOR = 12; // m/s² : plancher de freinage
+export const CITY_RUSH_BRAKE_RATE_FLOOR = 15; // m/s² : plancher de freinage
 
 export function cityRushBrakingRate(accelerationRate) {
   const acceleration = Math.max(0, Number(accelerationRate) || 0);

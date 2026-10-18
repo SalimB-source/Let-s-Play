@@ -62,15 +62,15 @@ export function cityRushDrivingModeLabel(mode) {
 
 // ── Réglages du déplacement gauche / droite ─────────────────────────────────
 // Vitesse latérale de pointe (m/s) : une voie élargie (5,00 m) se traverse en
-// ~0,43 s, et toute la chaussée à six voies (28,7 m de débattement) en ~2 s.
-export const CITY_RUSH_FREE_STEER_MAX_LATERAL = 15;
+// ~0,36 s, et toute la chaussée à six voies (28,7 m de débattement) en ~1,7 s.
+export const CITY_RUSH_FREE_STEER_MAX_LATERAL = 18;
 // Le déplacement gagne son plein effet avec la vitesse d'avance : une voiture
 // arrêtée sur la grille ne se décale pas en crabe.
 export const CITY_RUSH_FREE_STEER_FULL_SPEED = 12; // m/s
 // Prise de glissement, puis relâche et inversion (plus francs : la voiture
 // s'arrête net où le pilote lâche la touche).
-export const CITY_RUSH_FREE_STEER_ACCEL = 75; // m/s²
-export const CITY_RUSH_FREE_STEER_BRAKE = 150; // m/s²
+export const CITY_RUSH_FREE_STEER_ACCEL = 95; // m/s²
+export const CITY_RUSH_FREE_STEER_BRAKE = 190; // m/s²
 // Distance sous laquelle un placement visé (glissé au doigt, démonstration du
 // tutoriel) est considéré comme atteint.
 export const CITY_RUSH_FREE_STEER_ARRIVE = 0.03; // m

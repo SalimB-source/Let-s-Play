@@ -2257,7 +2257,7 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   ce facteur — pilote, rivaux, trafic, contresens, police, projectiles, et
   jusqu'aux accélérations et aux freinages (plancher de freinage compris).
   73 virages sur 9,20 m de bitume ne se lisent pas au rythme d'une artère
-  urbaine : à puissance égale, le Ring se joue à **~107 km/h au lieu de 126**.
+  urbaine : à puissance égale, le Ring se joue à **~171 km/h au lieu de 202**.
   Le smoke le montre directement — `rythme 0.85 · pointe 81 km/h` sur le Ring
   contre `rythme 1 · pointe 96 km/h` à Vice City pour la même voiture. Rien ne
   devient plus facile pour autant : les écarts entre voitures, les distances de
@@ -2730,9 +2730,9 @@ course. Préférence de l'appareil : `letsplay_vice_city_rush_driving_v1`
 
 ### Le volant libre
 
-- Vitesse latérale de pointe 15 m/s (une voie urbaine de 5,00 m en ~0,43 s),
-  prise à 75 m/s², relâche et freinage opposé à 150 m/s² : la voiture s'arrête
-  en moins de 0,12 s. Le déplacement latéral prend son plein effet à 12 m/s :
+- Vitesse latérale de pointe 18 m/s (une voie urbaine de 5,00 m en ~0,36 s),
+  prise à 95 m/s², relâche et freinage opposé à 190 m/s² : la voiture s'arrête
+  en moins de 0,11 s. Le déplacement latéral prend son plein effet à 12 m/s :
   arrêtée sur la grille, la voiture ne se décale pas en crabe.
 - Débattement : toute la chaussée, moins la demi-largeur de la caisse et 10 cm
   de marge (±14,35 m en ville, ±3,6 m sur le Ring, ±3,2 m sur le tōgé), jamais
