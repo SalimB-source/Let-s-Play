@@ -5868,13 +5868,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    la carte du téléphone glisse donc sans s'incliner). Sans eux, la carte se
    redressait pendant la pioche puis retombait dans l'éventail à l'arrivée. */
 @keyframes rpg-player-card-draw {
-  0% { opacity: 0; transform: translate3d(-100%, 0, 0) translateY(var(--hand-fan-drop)) translateX(var(--hand-fan-spread)) rotate(var(--hand-fan-angle)); }
-  16% { opacity: 1; transform: translate3d(-68%, 0, 0) translateY(var(--hand-fan-drop)) translateX(var(--hand-fan-spread)) rotate(var(--hand-fan-angle)); }
+  0% { opacity: 0; transform: translate3d(var(--rpg-draw-x, -100%), var(--rpg-draw-y, 0px), 0) translateY(var(--hand-fan-drop)) translateX(var(--hand-fan-spread)) rotate(var(--hand-fan-angle)); }
+  16% { opacity: 1; transform: translate3d(calc(var(--rpg-draw-x, -100px) * .68), calc(var(--rpg-draw-y, 0px) * .68), 0) translateY(var(--hand-fan-drop)) translateX(var(--hand-fan-spread)) rotate(var(--hand-fan-angle)); }
   100% { opacity: 1; transform: translate3d(0, 0, 0) translateY(var(--hand-fan-drop)) translateX(var(--hand-fan-spread)) rotate(var(--hand-fan-angle)); }
 }
 @keyframes rpg-hidden-card-draw {
-  0% { opacity: 0; transform: translate3d(-100%, var(--card-rise, 0), 0) rotate(var(--card-angle, 0deg)); }
-  16% { opacity: 1; transform: translate3d(-68%, var(--card-rise, 0), 0) rotate(var(--card-angle, 0deg)); }
+  0% { opacity: 0; transform: translate3d(var(--rpg-draw-x, -100%), var(--rpg-draw-y, 0px), 0) rotate(var(--card-angle, 0deg)); }
+  16% { opacity: 1; transform: translate3d(calc(var(--rpg-draw-x, -100px) * .68), calc(var(--rpg-draw-y, 0px) * .68), 0) rotate(var(--card-angle, 0deg)); }
   100% { opacity: 1; transform: translate3d(0, var(--card-rise, 0), 0) rotate(var(--card-angle, 0deg)); }
 }
 @media (max-width: 620px) {
@@ -8471,3 +8471,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     flex: 0 0 max-content;
   }
 }
+/* Les annonces automatiques restent lisibles au doigt sans voler les gestes. */
+.rpg-auto-preview { position: absolute; inset: 0; z-index: 180; pointer-events: none; }
+.rpg-auto-preview .rpg-hover-card-preview { display: grid !important; pointer-events: none; }

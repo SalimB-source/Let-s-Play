@@ -181,6 +181,16 @@ function App() {
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
             <Route path="/news/ea-sports-fc-27-carriere-dynamique" element={<CurrentNews slug="ea-sports-fc-27-carriere-dynamique" />} />
             <Route path="/news/hellraiser-revival-sortie" element={<CurrentNews slug="hellraiser-revival-sortie" />} />
+            {/* Actus gaming du 18.10.2026 (aujourd'hui), du 17.10 et du 16.10.2026 :
+                comme pour les éditions précédentes, les clés sans préfixe de ces
+                éditions reçoivent leur route explicite. Les actus cinéma et tech
+                sont servies par /news/cinema/:slug et /news/tech/:slug. */}
+            <Route path="/news/zelda-ocarina-of-time-switch-2-affichages-hud" element={<CurrentNews slug="zelda-ocarina-of-time-switch-2-affichages-hud" />} />
+            <Route path="/news/peak-console-edition-crossplay-22-octobre" element={<CurrentNews slug="peak-console-edition-crossplay-22-octobre" />} />
+            <Route path="/news/steam-ensembles-de-succes-beta" element={<CurrentNews slug="steam-ensembles-de-succes-beta" />} />
+            <Route path="/news/total-war-shogun-2-complete-edition-retiree" element={<CurrentNews slug="total-war-shogun-2-complete-edition-retiree" />} />
+            <Route path="/news/modern-warfare-4-campagne-acces-anticipe" element={<CurrentNews slug="modern-warfare-4-campagne-acces-anticipe" />} />
+            <Route path="/news/beast-of-reincarnation-fin-cycle-mises-a-jour" element={<CurrentNews slug="beast-of-reincarnation-fin-cycle-mises-a-jour" />} />
             {/* Actus gaming du 15.10.2026 : les clés sans préfixe de l'édition du
                 jour reçoivent leur route explicite, comme les articles de la
                 rédaction (la route générique /news/:slug les servirait aussi). */}

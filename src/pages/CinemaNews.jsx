@@ -11,9 +11,12 @@ import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 // une pastille « BANDE-ANNONCE » sur sa vignette (src/articleTrailers.js).
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-15';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-18';
 import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
 import { dailyNewsListing as dailyNewsListing20261014 } from '../news/daily/2026-10-14';
+import { dailyNewsListing as dailyNewsListing20261015 } from '../news/daily/2026-10-15';
+import { dailyNewsListing as dailyNewsListing20261016 } from '../news/daily/2026-10-16';
+import { dailyNewsListing as dailyNewsListing20261017 } from '../news/daily/2026-10-17';
 
 // Images promotionnelles officielles lorsqu'elles sont disponibles. Le biopic
 // Fred Astaire n'ayant pas encore de visuel Sony, sa carte utilise une photo de
@@ -93,6 +96,9 @@ export default function CinemaNews() {
   // et Beware Boiúna —, puis celles du 26-29.09.2026.
   const articles = useMemo(() => [
     ...dailyNewsListing.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
+    ...dailyNewsListing20261017.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
+    ...dailyNewsListing20261016.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
+    ...dailyNewsListing20261015.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...dailyNewsListing20261014.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...dailyNewsListing20261011.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     { to: '/news/cinema/spider-man-4-destin-daniel-cretton', image: 'spider-man-4-cretton-news.jpg', fallbackImage: 'spider-man-4-cretton-news.svg', imageCredit: 'PHOTO DE PRESSE · SONY PICTURES / MARVEL STUDIOS', alt: 'Tom Holland dans le rôle de Peter Parker / Spider-Man — photo officielle Sony Pictures / Marvel Studios', badge: 'MARVEL · SONY PICTURES', kicker: '07.10.2026 · VARIETY', title: 'SPIDER-MAN 4 : LE CAP EST FIXÉ.', excerpt: 'Destin Daniel Cretton réalisera Spider-Man 4 avec Tom Holland et Zendaya. Sony Pictures et Marvel Studios arrêtent un tournage pour l’été et visent une sortie mondiale en salles en juillet 2027, intercalée entre les prochains Avengers.', read: copy.read, sentiment: 'positive' },

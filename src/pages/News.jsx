@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-15';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-18';
 import NewsCard from '../components/NewsCard';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';
 
-// Sélection du 15.10.2026 : une actu par univers, partagée avec les flux,
+// Sélection du 18.10.2026 : une actu par univers, partagée avec les flux,
 // les articles et la recherche, avec des miniatures locales dédiées.
 const todayStories = dailyNewsListing;
 

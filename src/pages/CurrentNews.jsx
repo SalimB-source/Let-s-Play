@@ -9,9 +9,12 @@ import NotFound from './NotFound';
 // Les actus du jour générées par le robot (src/news/autoIndex.js, vide au
 // départ) cohabitent avec les articles manuels ci-dessous : même gabarit.
 import { autoStories } from '../news/autoIndex';
-import { dailyStories } from '../news/daily/2026-10-15';
+import { dailyStories } from '../news/daily/2026-10-18';
 import { dailyStories as dailyStories20261011 } from '../news/daily/2026-10-11';
 import { dailyStories as dailyStories20261014 } from '../news/daily/2026-10-14';
+import { dailyStories as dailyStories20261015 } from '../news/daily/2026-10-15';
+import { dailyStories as dailyStories20261016 } from '../news/daily/2026-10-16';
+import { dailyStories as dailyStories20261017 } from '../news/daily/2026-10-17';
 import { incrementArticleView, getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
 import SpoilerAlert from '../components/SpoilerAlert';
@@ -27,8 +30,14 @@ import { getArticleTrailerEntry } from '../articleTrailers';
 const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
 
 const stories = {
-  // Édition du 14.10.2026 et archives du 11.10.2026 : données communes aux articles, cartes et SEO.
+  // Éditions quotidiennes du 18.10.2026 (aujourd'hui) au 11.10.2026 : données
+  // communes aux articles, aux cartes des hubs, à la une de l'accueil, à la
+  // recherche et au SEO. Chaque édition vit dans son fichier
+  // (src/news/daily/<date>.js) ; l'import nu désigne l'édition du jour.
   ...dailyStories,
+  ...dailyStories20261017,
+  ...dailyStories20261016,
+  ...dailyStories20261015,
   ...dailyStories20261014,
   ...dailyStories20261011,
 
@@ -309,7 +318,7 @@ const stories = {
   },
   'tech/coree-du-nord-ethereum-hashhiding': {
     date: '04.10.2026', category: 'CYBERSÉCURITÉ · BLOCKCHAIN', image: 'https://www.01net.com/app/uploads/2024/01/ethereum.jpg', thumbnail: 'https://www.01net.com/app/uploads/2024/01/ethereum.jpg', fallbackImage: 'coree-du-nord-ethereum-news.svg', imageAlt: 'Illustration Ethereum publiée par 01net (Unsplash)', cover: 'HASHHIDING',
-    title: 'CORÉE DU NORD', accent: 'DÉTOURNE ETHEREUM.', dek: 'Des chercheurs ont identifié une technique baptisée HashHiding : des pirates nord-coréens dissimulent l’adresse du serveur de commande de leur malware dans des transferts Ethereum, pour le rendre presque impossible à neutraliser.',
+    title: 'CORÉE DU NORD', accent: 'DÉTOURNE ETH.', dek: 'Des chercheurs ont identifié une technique baptisée HashHiding : des pirates nord-coréens dissimulent l’adresse du serveur de commande de leur malware dans des transferts Ethereum, pour le rendre presque impossible à neutraliser.',
     lead: 'Plutôt que de cacher leur infrastructure, les attaquants de la campagne XCTDH l’inscrivent dans un registre public, ineffaçable et non censurable : la blockchain.',
     intro: 'Le procédé, décrit fin septembre par Ransom-ISAC, consiste à envoyer des transferts vers des adresses fabriquées, dont personne ne détient la clé privée. La suite de caractères qui identifie le destinataire contient en réalité l’adresse du serveur à contacter.',
     h2: 'QUAND LA BLOCKCHAIN DEVIENT UN TABLEAU DE BORD', p1: 'Une fois installé chez une victime, le logiciel malveillant lit ces transactions pour trouver ses instructions. Il devient inutile de modifier son code : un simple transfert suffit à lui indiquer un nouveau serveur, quelques instants après que les autorités ont coupé le précédent.',

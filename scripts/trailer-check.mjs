@@ -44,13 +44,25 @@ import { youTubeEmbedUrl } from '../src/lib/videoPlayback.js';
 import { youTubeThumbUrl } from '../src/lib/videoThumbnails.js';
 import { dailyStories, dailyNewsListing } from '../src/news/daily/2026-10-14.js';
 import {
+  dailyStories as dailyStories20261011,
+  dailyNewsListing as dailyNewsListing20261011,
+} from '../src/news/daily/2026-10-11.js';
+import {
   dailyStories as dailyStories20261015,
   dailyNewsListing as dailyNewsListing20261015,
 } from '../src/news/daily/2026-10-15.js';
 import {
-  dailyStories as dailyStories20261011,
-  dailyNewsListing as dailyNewsListing20261011,
-} from '../src/news/daily/2026-10-11.js';
+  dailyStories as dailyStories20261016,
+  dailyNewsListing as dailyNewsListing20261016,
+} from '../src/news/daily/2026-10-16.js';
+import {
+  dailyStories as dailyStories20261017,
+  dailyNewsListing as dailyNewsListing20261017,
+} from '../src/news/daily/2026-10-17.js';
+import {
+  dailyStories as dailyStories20261018,
+  dailyNewsListing as dailyNewsListing20261018,
+} from '../src/news/daily/2026-10-18.js';
 
 // Hôte et chemin des miniatures relus depuis la fabrique du site, jamais
 // recopiés ici : `npm run check:thumbs` interdit toute URL de miniature codée
@@ -161,6 +173,25 @@ const OFFICIAL_CHANNELS = new Set([
   // of Zelda: Ocarina of Time – Overview Trailer – Nintendo Switch 2 »
   // (8v8eDMh1o3g), publiée par Nintendo of America.
   'Nintendo of America',
+  // Chaînes vérifiées sur les pages YouTube publiques le 18.10.2026 pour les
+  // éditions des 16, 17 et 18 octobre 2026 :
+  // - « Aggro Crab » pour l’annonce de PEAK: Console Edition (OsO0Dpt9OPs),
+  //   co-développeur du jeu avec Landfall ;
+  // - « Sony Pictures Germany » pour la version allemande de la bande-annonce de
+  //   Ramayana (djmh9ca-Ibg) — version de campagne officielle, distincte de
+  //   l’upload principal Sony Pictures Entertainment déjà admis ;
+  // - « Total War » (SEGA / The Creative Assembly) pour les trois vidéos de
+  //   Total War: SHOGUN 2 - Complete Edition (7GhrQYfOPPw, IC72MSW09qI,
+  //   aV87N57Ud58) ;
+  // - « Call of Duty » (Activision) pour la bande-annonce de la campagne de
+  //   Modern Warfare 4 (yLFRQaQT0qM) ;
+  // - « PlayStation » (Sony Interactive Entertainment) pour le trailer de
+  //   lancement de Beast of Reincarnation (YBAuVSnS0ls).
+  'Aggro Crab',
+  'Sony Pictures Germany',
+  'Total War',
+  'Call of Duty',
+  'PlayStation',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
@@ -214,8 +245,16 @@ const read = (file) => readFileSync(path.join(root, file), 'utf8');
 // Les actus cinéma sont les clés « cinema/<slug> » du dictionnaire de
 // CurrentNews.jsx ; les cartes du hub donnent les routes réellement publiées
 // (dont la série animée Diablo, servie par le gabarit Blizzard).
-const allDailyStoryKeys = [...Object.keys(dailyStories), ...Object.keys(dailyStories20261015), ...Object.keys(dailyStories20261011)];
-const allDailyListings = [...dailyNewsListing, ...dailyNewsListing20261015, ...dailyNewsListing20261011];
+const allDailyStoryKeys = [
+  ...Object.keys(dailyStories20261018), ...Object.keys(dailyStories20261017),
+  ...Object.keys(dailyStories20261016), ...Object.keys(dailyStories20261015),
+  ...Object.keys(dailyStories), ...Object.keys(dailyStories20261011),
+];
+const allDailyListings = [
+  ...dailyNewsListing20261018, ...dailyNewsListing20261017,
+  ...dailyNewsListing20261016, ...dailyNewsListing20261015,
+  ...dailyNewsListing, ...dailyNewsListing20261011,
+];
 
 const cinemaKeys = [...new Set([
   ...[...read('src/pages/CurrentNews.jsx').matchAll(/'(cinema\/[a-z0-9-]+)'\s*:/g)].map((m) => m[1]),
