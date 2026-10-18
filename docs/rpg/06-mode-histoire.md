@@ -76,8 +76,9 @@ autonome » (deck complet, PV pleins, rien de reporté).
     gameplay des boss, sans toucher aux règles.
 - **Decks et puissance** : `RPG_DECKS` (déjà 3 archétypes validés par
   `rpgValiderDeck`). `sorcierPuissance` ne modifie plus les PV du sorcier —
-  tous les duels se jouent à 25 PV de chaque côté (`RPG_PV_SORCIER_PAR_PUISSANCE`
-  = 0) ; la puissance reste l'indice de difficulté affiché sur la fiche d'étage.
+  tous les duels se jouent à 25 PV de départ de chaque côté
+  (`RPG_PV_SORCIER_PAR_PUISSANCE` = 0) ; la puissance reste l'indice de
+  difficulté affiché sur la fiche d'étage.
 - **Le duel complet** : `RpgDuelPage` rejoue tel quel, avec `joueurDeck`,
   `sorcierDeck`, `sorcierPuissance`, `rng` en props.
 - **IA tactique** (`rpgAI.js`) : ciblage (kill, menace, visage létal),
@@ -212,7 +213,8 @@ restent accessibles en duels libres, sans scènes de campagne pour l’instant.
   cachés : étage 1 en `recit`, boss en `veilleur`, et la puissance de l'étage
   (`sorcierPuissance`) est **affichée** sur la fiche d'étage. Elle ne donne
   plus de PV supplémentaires — le sorcier et le joueur partent tous les deux
-  à 25 PV, la difficulté passe par le deck et le profil d'IA.
+  à 25 PV (et peuvent monter au-dessus, les soins ouvrent la réserve), la
+  difficulté passe par le deck et le profil d'IA.
 - **Pas d'obligation de grind** : les trois decks de base gagnent la première
   tour tels quels ; les étages révèlent des cartes au Souk, ils ne commandent
   pas la suite de l'histoire — et le Souk ne vend rien qu'une marche atteinte

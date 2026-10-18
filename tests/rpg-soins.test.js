@@ -66,26 +66,27 @@ test('journal : un duel neuf n’a rien à montrer, et un duel absent non plus',
   assert.deepEqual(rpgConsommerSoins(undefined), []);
 });
 
-test('journal : une magie de soin note le vrai gain, borné au maximum, puis le relevé vide le journal', () => {
+test('journal : une magie de soin note le vrai gain, et la vie passe au-dessus de 25', () => {
   const duel = duelClassique();
   donner(duel, 'joueur', 'eau-de-la-source');
   duel.joueur.terrains.push({ id: 'mer-soin', carteId: 'mer', tapped: false });
   duel.joueur.pv = RPG_PV_JOUEUR - 3;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'eau-de-la-source').ok, true);
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'l’Eau de la source (4) plafonne à 25');
-  assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 3 }],
-    'le journal garde le gain réel (3), pas la valeur imprimée (4)');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 1, 'l’Eau de la source (4) porte la vie au-dessus de 25');
+  assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 4 }],
+    'le journal garde le gain réel (4)');
   assert.deepEqual(rpgConsommerSoins(duel), [], 'un soin ne se relève qu’une fois');
 });
 
-test('journal : à pleine vie, un soin ne laisse aucune trace', () => {
+test('journal : à pleine vie, un soin fait grimper la vie — 25 n’est plus un plafond', () => {
   const duel = duelClassique();
   donner(duel, 'joueur', 'eau-de-la-source');
   duel.joueur.terrains.push({ id: 'mer-plein', carteId: 'mer', tapped: false });
   assert.equal(duel.joueur.pv, RPG_PV_JOUEUR);
   assert.equal(rpgLancerMagie(duel, 'joueur', 'eau-de-la-source').ok, true, 'le sort reste jouable à pleine vie');
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR);
-  assert.deepEqual(rpgConsommerSoins(duel), [], 'rien à faire briller, rien à faire sonner');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 4, 'la réserve de vie s’ouvre');
+  assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 4 }],
+    'le gain s’illumine et se fait entendre');
 });
 
 test('journal : le soin du sorcier adverse est noté de son côté', () => {
@@ -104,8 +105,8 @@ test('journal : une capacité d’arrivée qui soigne est notée comme une magie
   donnerMana(duel, 'joueur', 3);
   duel.joueur.pv = RPG_PV_JOUEUR - 2;
   assert.equal(rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').ok, true);
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR);
-  assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 2 }]);
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 1, 'la Porteuse (+3) porte la vie au-dessus de 25');
+  assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 3 }]);
 });
 
 test('journal : Yamina soigne ses créatures blessées — chacune la sienne, et seulement les blessées', () => {
