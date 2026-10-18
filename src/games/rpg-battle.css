@@ -8236,3 +8236,162 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   cursor: pointer;
 }
 
+
+/* ── Rapidité : l'électricité bleue sur le bord de la carte posée ─────────────
+   La face rogne d'ordinaire ce qui dépasse (`overflow: hidden`, au bord
+   intérieur du cadre). Une carte électrisée rogne plus loin : `overflow: clip`
+   avec une marge de 28 px laisse l'arc courir sur le bord extérieur et
+   jaillir un peu au-dehors. Pour que rien d'autre ne déborde, l'illustration
+   et ses voiles gardent l'arrondi de la carte et l'illustration ne « respire »
+   plus au survol (l'électricité bouge déjà). Sans `overflow-clip-margin`
+   (Safari), l'arc reste visible sur le liseré intérieur. */
+.rpg-card.has-rapidite {
+  overflow: clip;
+  overflow-clip-margin: 28px;
+}
+.rpg-card.has-rapidite > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) {
+  border-radius: inherit;
+}
+.rpg-card.has-rapidite .rpg-card__img {
+  animation: none !important;
+}
+.rpg-card__electricite {
+  /* Le calque part du bord intérieur (bloc de positionnement) : il recule de
+     l'épaisseur du cadre, puis de 14 px de marge pour les éclairs. */
+  --rpg-elec-marge: 14px;
+  /* L'arc court 4 px AU-DEHORS du bord : il entoure la carte sans la mordre. */
+  --rpg-elec-ecart: 4px;
+  position: absolute;
+  inset: calc(-1 * (var(--rpg-elec-bord, 0px) + var(--rpg-elec-marge)));
+  z-index: 7;
+  pointer-events: none;
+  /* Durée et départ tirés au hasard par carte : les vacillements des
+     créatures électrisées ne battent jamais à l'unisson. */
+  animation: rpg-electricite-vacille var(--rpg-elec-vacille-duree, 1.3s) steps(1, end) var(--rpg-elec-vacille-delai, 0s) infinite;
+}
+.rpg-card__electricite svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  /* Une lueur bleue autour de l'arc : il se détache sur toutes les tables. */
+  filter: drop-shadow(0 0 2.5px rgba(70, 165, 255, .85));
+}
+/* Le rectangle entoure le bord extérieur de la carte, à 4 px au-dehors, avec
+   l'arrondi de la carte agrandi d'autant : même centre, même forme. */
+.rpg-card__electricite rect {
+  x: calc(var(--rpg-elec-marge) - var(--rpg-elec-ecart));
+  y: calc(var(--rpg-elec-marge) - var(--rpg-elec-ecart));
+  width: calc(100% - 2 * (var(--rpg-elec-marge) - var(--rpg-elec-ecart)));
+  height: calc(100% - 2 * (var(--rpg-elec-marge) - var(--rpg-elec-ecart)));
+  rx: calc(var(--rpg-elec-rayon, 8px) + var(--rpg-elec-ecart));
+  fill: none;
+}
+.rpg-card__electricite-halo {
+  stroke: #4ab3ff;
+  stroke-width: 3.4px;
+  opacity: .9;
+}
+.rpg-card__electricite-coeur {
+  stroke: #f0faff;
+  stroke-width: 1.4px;
+}
+/* Son opacité est animée au hasard (SMIL) : aucune opacité CSS ici. */
+.rpg-card__electricite-coeur--second {
+  stroke: #b3e4ff;
+  stroke-width: 1px;
+}
+@keyframes rpg-electricite-vacille {
+  0%, 100% { opacity: 1; }
+  9% { opacity: .8; }
+  13% { opacity: 1; }
+  31% { opacity: .65; }
+  34% { opacity: 1; }
+  47% { opacity: .88; }
+  58% { opacity: .55; }
+  61% { opacity: 1; }
+  79% { opacity: .75; }
+  83% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card__electricite { animation: none; }
+}
+
+/* ── Infiltration : la carte brumeuse et transparente ────────────────────────
+   Une créature qui ne peut pas être bloquée se fond dans le décor : la face
+   devient translucide (la table transparaît), l'illustration pâlit et se
+   trouble légèrement, et deux nappes de nuages gris défilent sur la face, à
+   des vitesses et en sens différents. La transparence ne passe PAS par l'opacité de la
+   carte — elle rendrait aussi ses repères translucides : seuls le fond, le
+   cadre et l'illustration s'effacent. La pastille de couleur, les icônes
+   d'effets et ATQ/DEF restent opaques, au-dessus de la brume. Pas de
+   `box-shadow` non plus : la carte porte déjà les anneaux d'état (attaquante,
+   sélectionnée, ciblée…). Le mouvement réduit garde la brume, immobile. */
+.rpg-card.has-infiltration {
+  /* Le fond sous l'illustration s'efface, et le cadre devient un liseré
+     voilé de sa propre couleur. */
+  --rpg-frame-fill: transparent;
+  --rpg-frame-gradient: linear-gradient(
+    color-mix(in srgb, var(--rpg-frame-color, #f1f3f5) 45%, transparent),
+    color-mix(in srgb, var(--rpg-frame-color, #f1f3f5) 45%, transparent)
+  );
+  background-color: transparent;
+}
+.rpg-card.has-infiltration .rpg-card__img {
+  opacity: .55;
+  filter: saturate(.7) brightness(1.1) blur(.4px);
+}
+.rpg-card.has-infiltration.is-attacked .rpg-card__img { opacity: .45; }
+.rpg-card__brume {
+  position: absolute;
+  inset: 0;
+  /* Même niveau que ATQ/DEF (z-index 2) mais avant eux dans la carte : la
+     brume passe sous les statistiques, la pastille et les icônes. */
+  z-index: 2;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Un voile laiteux plus dense sur les bords, plus clair au centre. */
+  background: radial-gradient(ellipse at 50% 50%, rgba(235, 242, 248, 0) 35%, rgba(225, 235, 244, .38) 100%);
+  box-shadow: inset 0 0 18px rgba(230, 238, 246, .45);
+}
+/* Les nuages gris : chaque nappe fait deux largeurs de carte et répète deux
+   fois le même motif de nuages (`background-size: 50%`) ; elle glisse d'une
+   demi-largeur en boucle, donc sans à-coup au raccord. Deux nappes à des
+   hauteurs, des vitesses et des sens différents donnent du relief. */
+.rpg-card__brume-nappe {
+  position: absolute;
+  top: -10%;
+  left: 0;
+  width: 200%;
+  height: 120%;
+  background-image:
+    radial-gradient(ellipse 13% 10% at 12% 22%, rgba(140, 147, 156, .95), transparent 72%),
+    radial-gradient(ellipse 10% 8% at 20% 18%, rgba(170, 176, 184, .8), transparent 72%),
+    radial-gradient(ellipse 15% 9% at 38% 52%, rgba(125, 132, 142, .9), transparent 72%),
+    radial-gradient(ellipse 9% 7% at 46% 47%, rgba(165, 171, 179, .75), transparent 72%),
+    radial-gradient(ellipse 14% 10% at 70% 30%, rgba(135, 142, 151, .9), transparent 72%),
+    radial-gradient(ellipse 11% 8% at 78% 26%, rgba(172, 178, 186, .75), transparent 72%),
+    radial-gradient(ellipse 16% 9% at 88% 78%, rgba(138, 145, 155, .75), transparent 72%),
+    radial-gradient(ellipse 12% 8% at 24% 84%, rgba(155, 162, 170, .7), transparent 72%);
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  filter: blur(1.6px);
+  opacity: .95;
+  animation: rpg-nuages-defilent 16s linear infinite;
+}
+.rpg-card__brume-nappe--b {
+  top: 5%;
+  opacity: .7;
+  transform: scale(1.3) scaleY(-1);
+  animation-duration: 24s;
+  animation-direction: reverse;
+}
+@keyframes rpg-nuages-defilent {
+  from { translate: 0 0; }
+  to { translate: -50% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card__brume-nappe { animation: none; }
+}

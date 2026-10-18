@@ -565,8 +565,10 @@ export async function checkRpgBattle(assert) {
   assert.ok(apercuFennecMain, 'le survol garde l’aperçu instantané, qui reste le seul moyen de lire la carte');
   assert.equal(apercuFennecMain.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
     'l’aperçu au survol ne montre aucune icône d’effet');
-  assert.equal(apercuFennecMain.querySelectorAll('.rpg-hover-card-preview__rules > span').length, 2,
-    'l’aperçu met Rapidité et Esquive chacune sur leur ligne');
+  assert.deepEqual([...apercuFennecMain.querySelectorAll('.rpg-hover-card-preview__pastilles .rpg-pastille')].map((pastille) => pastille.textContent),
+    ['Rapidité', 'Butin'], 'l’aperçu nomme Rapidité et Butin chacune dans sa pastille');
+  assert.equal(apercuFennecMain.querySelector('.rpg-hover-card-preview__rules'), null,
+    'leurs explications passent dans les bulles des pastilles, hors du texte');
   await act(async () => { envoyerSouris(fennecMain, 'mouseout'); });
 
   // ── Cliquer le terrain le pose ; une seule étape d'annulation le restaure ─
@@ -685,15 +687,15 @@ export async function checkRpgBattle(assert) {
   assert.ok(apercuFennecSurvol, 'le survol d’une créature en jeu ouvre immédiatement son aperçu');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
     'l’aperçu au survol n’affiche aucune icône d’effet');
-  assert.equal(apercuFennecSurvol.querySelectorAll('.rpg-hover-card-preview__rules > span').length, 2,
-    'l’aperçu au survol place Rapidité et Esquive chacune sur sa propre ligne');
+  assert.equal(apercuFennecSurvol.querySelectorAll('.rpg-hover-card-preview__pastilles .rpg-pastille--explicable').length, 2,
+    'l’aperçu au survol place Rapidité et Butin chacune dans une pastille qui s’explique au survol');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__type'), null,
     'l’aperçu d’une créature n’imprime pas de ligne de type');
   assert.match(apercuFennecSurvol.getAttribute('aria-label') ?? '', /Fennec/,
     'le type de la créature reste dans le libellé accessible de l’aperçu');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__cost b')?.textContent, '2',
     'l’aperçu affiche le coût');
-  assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Rapidité.*Butin/,
+  assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__pastilles')?.textContent ?? '', /Rapidité.*Butin/,
     'l’aperçu affiche les effets importants');
   const statsApercu = apercuFennecSurvol.querySelector('.rpg-hover-card-preview__face .rpg-card__foot');
   assert.ok(statsApercu, 'l’aperçu imprime ATQ et DÉF directement sur la carte');

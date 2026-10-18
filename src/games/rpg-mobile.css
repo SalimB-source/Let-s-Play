@@ -541,14 +541,14 @@
   border-radius: 50%;
   font-size: 11px;
 }
-/* Le coût ne s'imprime plus sur la carte posée : une créature en jeu n'a plus
-   rien à payer, la petite face garde l'essentiel — la pastille de couleur, les
+/* Le coût ne s'imprime plus sur la carte posée — au doigt comme à la souris,
+   dans tous les modes : une créature en jeu n'a plus rien à payer, la petite face garde l'essentiel — la pastille de couleur, les
    compteurs et ATQ/DEF. Le disque reste dans le DOM (le `aria-label` de la
    carte continue de dire le coût) et sur toutes les autres faces : main,
    mulligan, aperçus, catalogue. La règle ci-dessus garde donc son sens pour le
    disque de neige du bouton de capacité activée (`.rpg-card__activation`), qui
    vit hors du titre de la carte et reste visible. */
-.rpg-battle--touch .card-row .rpg-card .rpg-card__title .rpg-mana-cost { display: none; }
+.rpg-battle .card-row .rpg-card .rpg-card__title .rpg-mana-cost { display: none; }
 .rpg-battle--touch .rpg-hand__card--img .rpg-hand__stat,
 .rpg-battle--touch .rpg-card--img .rpg-card__stat--atk,
 .rpg-battle--touch .rpg-card--img .rpg-card__pt {
@@ -788,6 +788,16 @@
 .rpg-battle--touch .rpg-hand .rpg-hand__pile { display: block; }
 .rpg-battle--touch .rpg-hand .rpg-hand__pile > .rpg-hand__card { width: 100%; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { position: relative; }
+/* La carte qui s'envole vers la table quitte la rangée (`position: fixed`,
+   voir `.rpg-card-flight`) : la règle ci-dessus, plus précise, la gardait en
+   `relative`, donc DANS la rangée flex à côté de son fantôme
+   (`.rpg-hand__flight-placeholder`) — un emplacement de trop, et toute la main
+   rétrécissait le temps du vol. */
+.rpg-battle--touch .rpg-hand .rpg-hand__card.rpg-card-flight {
+  position: fixed;
+  flex: none;
+  max-width: none;
+}
 .rpg-battle--touch .rpg-hand .rpg-hand__card:focus-visible { z-index: 2; }
 
 /* Une fenêtre PC peut passer en disposition tactile quand elle est étroite.
@@ -1054,6 +1064,22 @@
   border-width: 1.5cqw;
 }
 .rpg-battle .card-row .rpg-card .rpg-card-element-badge--hybride { gap: 2cqw; border: 0; }
+/* Les pastilles de couleur des créatures posées (sable, braise, eau, neige)
+   se font plus discrètes : 19cqw au lieu du repère commun de 27cqw, glyphe et
+   liseré à l'échelle. Les losanges de compteurs d'une carte mono, rangés sous
+   la pastille, remontent d'autant et restent centrés sur elle. La main, le
+   mulligan, les aperçus et le catalogue gardent leurs pastilles. */
+.rpg-battle .card-row .rpg-card .rpg-card-element-badge {
+  width: 19cqw;
+  font-size: 10cqw;
+  border-width: 1.1cqw;
+}
+.rpg-battle .card-row .rpg-card .rpg-card-element-badge__pip { border-width: 1.1cqw; }
+.rpg-battle .card-row .rpg-card .rpg-card-element-badge--hybride { gap: 1.5cqw; border: 0; }
+.rpg-battle .card-row .rpg-card .rpg-card__compteurs:not(.rpg-card__compteurs--hybride) {
+  top: calc(5% + 19cqw + var(--rpg-card-counter-size) * .21 + 4px);
+  left: calc(6% + (19cqw - var(--rpg-card-counter-size)) / 2);
+}
 .rpg-battle .card-row .rpg-card .rpg-card__stat--atk,
 .rpg-battle .card-row .rpg-card .rpg-card__pt {
   min-width: 0;

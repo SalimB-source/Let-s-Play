@@ -23,13 +23,18 @@ Les trois decks et leur validateur propre à 30 cartes sont dans `src/games/rpgM
 Ces règles ne valent que pour le mode sans terrains — les formats classiques (quarante cartes, quatre terrains), l'histoire et le reste du jeu ne changent pas :
 
 - **Cinq créatures au maximum sur la table**, dessinées en cinq emplacements par camp. Pour poser une sixième créature, une fenêtre demande d'abord « Sacrifier » ou « Annuler » ; si le sacrifice est confirmé, le joueur désigne la victime sur la table : sa carte se déchire, elle rejoint le cimetière, et la nouvelle créature prend sa place, au même emplacement (le bandeau de désignation propose aussi « Renoncer », et Échap annule). Le sorcier adverse choisit seul sa victime — sa créature la plus frêle — et le journal du duel raconte chaque sacrifice.
+- **Des emplacements resserrés.** Les cinq colonnes ont la largeur d'une carte posée (`--essai-colonne`, partagée par la rangée et par les cases dessinées dessous) et se groupent au centre de la table avec une gouttière étroite, au lieu de s'étirer sur toute sa largeur.
+- **Chaque créature garde sa case.** Une créature posée reçoit la première case libre (`entite.emplacement`, 0 à 4 — la case de la victime pour un sacrifice) et la garde tant qu'elle reste en jeu. Quand une créature meurt ou quitte le champ, sa case reste vide au milieu de la rangée : les autres ne glissent pas pour prendre sa place, et la prochaine créature posée comble ce trou. `rpgEmplacementsChamp(camp)` donne les cinq cases (une partie sauvegardée sans cases se range dans l'ordre de la rangée) ; l'interface place chaque carte dans la colonne de sa case (`--case-essai`).
 - **Les cinq cases sont les seules places du champ**, y compris pour les créatures qui n'ont pas été jouées depuis la main : les jetons d'arrivée ne sont créés que dans les cases libres, la Réanimation laisse sa créature au cimetière si le champ est plein, et le retour programmé d'Anqa attend une place pour revenir. La carte jouée, elle, atterrit dans la case libre qui l'attend : sa case et la grille des cartes partagent les mêmes colonnes, à toutes les tailles d'écran.
 - **Aucun empilement d'homonymes.** Les créatures d'un même nom ne se superposent plus en une pile dépliable, ni dans la main ni sur le champ : chaque carte garde sa place, ses blessures et ses armes proprement à elle. Le format classique, lui, continue de montrer les piles du doigt.
+- **Les icônes d'effets des créatures posées** se rangent en colonne verticale dans le coin haut droit, à la place du coût — qui ne s'imprime plus sur aucune carte posée, dans aucun mode, à la souris comme au doigt (il reste dans le libellé accessible et sur la main, les aperçus et le catalogue). La colonne garde l'axe du disque de coût : mots-clés imprimés (Envol, Honneur…) et états vivants (bouclier, esquive, protection…), l'icône seule, sans chiffre derrière (la valeur, comme celle d'Honneur, reste dans l'aperçu au survol). Quatre badges tiennent au-dessus des statistiques — l'aperçu au survol garde la liste complète ; si le coin est pris (losanges de compteurs d'une hybride, bouton de capacité activée), la colonne descend dessous. Le format classique ne montre toujours aucune icône sur la table.
 - **Le bandeau « essai · 30 cartes » a disparu** de la barre du duel : le mode se reconnaît à sa jauge de mana et à ses listes de decks, sans texte en trop.
 - **Au doigt (mobile et tactile)**, enfin, la table d'essai se range comme suit :
   - la barre de navigation du duel tient dans un bouton hamburger (☰) — Menu, Deck, Catalogue, son, 3D et plein écran se déplient sous la barre ;
   - le sorcier adverse a sa plaque de nom et de vie **à gauche**, dans la même forme que celle du joueur, sous le flux de mana adverse ;
-  - les jauges de mana passent **au-dessus des noms des sorciers** (une par camp, chacune au-dessus de sa plaque) ;
+  - la plaque du joueur se pose **juste sous la ligne de séparation du plateau**, au milieu de l'écran (colonne de gauche), et sa jauge de mana suit **juste en dessous, alignée à gauche et de la même largeur** que la plaque, avec la pastille du compteur (« 1/1 ») sous la jauge (hauteur de plaque mesurée : `--rpg-plaque-joueur-h`) ;
+  - le sorcier adverse est disposé **en miroir** : sa plaque juste au-dessus de la ligne, sa jauge (même largeur, même épaisseur) juste au-dessus, et sa pastille (« 0/0 ») au-dessus de la jauge (`--rpg-plaque-ennemi-h`) ;
+  - dans chaque plaque, les **points de vie** sont **tout à droite, centrés verticalement**, inscrits dans un **rond rouge sang en volume** (reflet, ombre interne, halo ; un éventuel bouclier en petite capsule sous le rond) ; avatar à gauche, centré en hauteur, et au milieu le **nom centré dans les deux sens** avec la ligne des zones (Main · Paquet · Cimetière) juste dessous, centrée elle aussi ;
   - les cartes de la main sont teintées **à la couleur de leur coût** : la braise, l'eau, le sable ou la neige de leurs pastilles, et le dégradé du mana hybride quand le coût mêle deux couleurs.
 
 ## Vérifier
@@ -40,3 +45,15 @@ npm run check:rpg             # régressions des règles classiques + nouvel ess
 npm run check:rpg-ui          # fumigènes de l'interface (mulligan, mana, navigation, piles)
 npm run build
 ```
+
+### Mobile : plaque et jauge à la verticale
+
+Sur la table d'essai tactile, chaque sorcier a sa colonne contre la ligne de séparation du plateau (le joueur dessous, le sorcier adverse au-dessus, en miroir) :
+
+- la **plaque** est verticale : avatar, nom, zones (Main, Paquet, Cimetière, une par ligne) et goutte de PV empilés ;
+- la **jauge de mana** est dressée juste à sa droite, à la même hauteur (`--essai-col-h`), et **se remplit de bas en haut** : le premier mana acquis est en bas ;
+- la capsule du compteur se pose au bout libre de la jauge (sous celle du joueur, au-dessus de celle du sorcier).
+- le **paquet** et le **cimetière** réapparaissent en miniature au bout libre de chaque colonne, sous la plaque (au-dessus pour le sorcier), le nombre de cartes inscrit sur la pile ; le cimetière vide est un emplacement en pointillés, sinon il montre sa dernière carte. Les lignes « Paquet » et « Cimetière » de la plaque s'effacent (« Main » reste).
+- les **emplacements des deux camps** se placent **à la même distance du milieu** du plateau (50 % de la table) : le sorcier au-dessus, le joueur en dessous. L'écart visé vaut 4 % de la hauteur (10 à 28 px) et se réduit si la main du joueur manque de place ; les rangées glissent par `top` (`--rpg-ennemis-decalage`, `--rpg-allies-decalage`, mesurés).
+- la **colonne de droite** s'organise autour du milieu : les **phases** (indicateur de tour et pastilles) juste au-dessus de la ligne, **« Attaquer avec tous » et « Fin du tour »** juste en dessous, puis les commandes de combat (**« Résoudre le combat »**, « Confirmer l'attaque »…) sous ces boutons (`--rpg-actions-tour-h`, mesuré).
+- la **main du sorcier** se montre **face cachée** en haut de l'écran, en éventail compact centré au-dessus de son champ (sept dos au plus, comme sur PC ; le nombre exact reste sur sa plaque).

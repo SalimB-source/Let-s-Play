@@ -241,9 +241,16 @@
    La rangée devient une grille de cinq colonnes : les cases dessinées dessous
    montrent les places libres (pointillés) comme les places prises (pleines),
    et la carte posée tombe dans la colonne de son emplacement. */
+/* Les cinq colonnes ont la largeur d'une carte posée — plus de colonnes
+   étirées sur toute la table : la grille se resserre au centre et les cases
+   ne laissent entre elles qu'une gouttière étroite. `--essai-colonne` est
+   partagée par la rangée et par la grille des cases dessinées dessous. */
 .rpg-battle[data-mode-mana="essai"] .card-row {
+  --essai-colonne: clamp(62px, min(11vw, 18.5vh), 160px);
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, var(--essai-colonne)));
+  justify-content: center;
+  column-gap: clamp(6px, .7vw, 10px);
   justify-items: center;
   align-items: end;
   /* Même plateau vide, la rangée garde la hauteur d'une carte : les cinq
@@ -258,7 +265,8 @@
   inset: 0;
   z-index: 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, var(--essai-colonne, 1fr)));
+  justify-content: center;
   align-items: end;
   justify-items: center;
   /* La gouttière des cartes vient de la rangée, quelle que soit la taille
@@ -272,7 +280,7 @@
   display: grid;
   place-items: center;
   width: clamp(58px, min(10vw, 17vh), 150px);
-  max-width: 92%;
+  max-width: 100%;
   aspect-ratio: 4 / 5;
   border: 2px dashed rgba(240, 214, 150, .5);
   border-radius: 12px;
@@ -472,3 +480,615 @@
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate--ennemi { grid-template-columns: 28px minmax(0, 1fr); }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate--ennemi .rpg-wizard-plate__pv { grid-column: 2; grid-row: 2; }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate--ennemi .rpg-wizard-plate__zones { grid-column: 1 / -1; grid-row: 3; }
+
+/* ── Table d'essai : les icônes d'effets en colonne, à la place du coût ──────
+   Sur la table sans terrains, chaque créature posée montre ses icônes
+   d'effets (mots-clés imprimés et états vivants : bouclier, esquive…) en une
+   colonne verticale dans le coin haut droit. Le coût ne s'imprime plus sur
+   une carte posée (voir `rpg-mobile.css`) : la colonne prend sa place, sur le
+   même axe — même bord droit (6 %), même largeur de repère, chaque badge
+   centré. Quatre badges tiennent au-dessus des statistiques ; au-delà,
+   l'aperçu au survol garde la liste complète. */
+.rpg-battle .card-row .rpg-card .rpg-card-icones.rpg-card-icones--colonne {
+  top: 5%;
+  right: 6%;
+  bottom: auto;
+  left: auto;
+  width: var(--rpg-card-marker-size, 27cqw);
+  max-width: none;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2.5cqw;
+}
+.rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone {
+  justify-content: center;
+  min-width: 20cqw;
+  min-height: 20cqw;
+}
+.rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone:nth-child(n + 5) {
+  display: none;
+}
+/* L'icône seule, sans chiffre derrière (Honneur, Bouclier, Esquive…) : la
+   valeur reste dans l'aperçu au survol et dans le libellé de la carte. */
+.rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone small {
+  display: none;
+}
+/* Le coin haut droit déjà pris — losanges de compteurs d'une hybride, ou
+   bouton de capacité activée — : la colonne passe dessous. */
+.rpg-battle .card-row .rpg-card .rpg-card-icones.rpg-card-icones--sous-activation {
+  top: calc(5% + var(--rpg-card-marker-size, 27cqw) + 3cqw);
+}
+.rpg-battle .card-row .rpg-card .rpg-card-icones.rpg-card-icones--sous-activation .rpg-card-icone:nth-child(n + 4) {
+  display: none;
+}
+.rpg-battle .card-row .rpg-card .rpg-card-icones.rpg-card-icones--sous-compteurs {
+  top: calc(5% + var(--rpg-card-marker-size, 27cqw) + 6cqw + clamp(8px, calc(var(--rpg-card-marker-size, 27cqw) * .58), 18px) * 1.3);
+}
+.rpg-battle .card-row .rpg-card .rpg-card-icones.rpg-card-icones--sous-compteurs .rpg-card-icone:nth-child(n + 3) {
+  display: none;
+}
+
+/* Au doigt, la colonne suit la carte posée (95 % de --duel-card), à peine
+   plus large, avec la gouttière tactile habituelle. */
+.rpg-battle--touch[data-mode-mana="essai"] .card-table > .card-row {
+  --essai-colonne: calc(var(--rpg-field-card, var(--duel-card, 64px)) + 4px);
+  column-gap: max(6px, calc(var(--duel-card, 64px) * .12));
+}
+
+/* Chaque créature garde sa case : la carte (ou la pile de son arme) se pose
+   dans la colonne de sa case (`--case-essai`, 1 à 5), quel que soit son rang
+   dans la rangée. Une case vidée par une mort reste vide au milieu de la
+   table : les autres créatures ne glissent pas pour prendre sa place. */
+.rpg-battle[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack) {
+  grid-column: var(--case-essai, auto);
+  grid-row: 1;
+}
+
+/* ── Mobile, table d'essai : plaque du joueur sous la ligne de séparation ────
+   La plaque (avatar, nom, PV, zones) se pose juste sous la ligne qui sépare
+   les deux moitiés du plateau (`.rpg-plateau-lisere`, à 50 % de la table), au
+   milieu de l'écran, dans la colonne de gauche. Sa jauge de mana suit juste
+   en dessous, alignée à gauche sur la plaque, et la capsule du compteur
+   (« 1/1 ») passe sous la jauge au lieu de déborder au-dessus. La
+   hauteur de la plaque est mesurée (`--rpg-plaque-joueur-h`, voir
+   RpgDuelPage) : la jauge la suit sur tous les écrans. `grid-area: auto` :
+   un enfant absolu placé dans une zone de grille prendrait cette zone pour
+   repère — ici, c'est toute la table qui sert de repère, comme pour la ligne. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur {
+  grid-area: auto;
+  position: absolute;
+  top: calc(50% + 6px);
+  left: var(--rpg-touch-pad, 6px);
+  width: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset, 0px));
+  margin: 0;
+  box-sizing: border-box;
+  z-index: 3;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--joueur {
+  grid-area: auto;
+  position: absolute;
+  top: calc(50% + 6px + var(--rpg-plaque-joueur-h, 56px) + 6px);
+  left: var(--rpg-touch-pad, 6px);
+  /* Même largeur que la plaque du joueur, juste au-dessus. */
+  width: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset, 0px));
+  box-sizing: border-box;
+  margin: 0;
+  padding-top: 0;
+  z-index: 3;
+}
+/* La capsule du compteur du joueur se range SOUS sa jauge (à droite), et non
+   plus au-dessus : la jauge colle ainsi à la plaque. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__reserve {
+  top: calc(100% + 3px);
+  bottom: auto;
+}
+/* La jauge du joueur, sous sa plaque, s'épaissit : plus de hauteur et des
+   losanges plus grands, pour se lire d'un coup d'œil au doigt. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__bar {
+  padding: 7px 8px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__slot {
+  max-width: 22px;
+  font-size: 15px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__slot .rpg-emblem {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Mobile, table d'essai : le sorcier adverse en miroir ────────────────────
+   Sa plaque se pose juste AU-DESSUS de la ligne de séparation, sa jauge juste
+   au-dessus d'elle (même largeur, même épaisseur que celle du joueur), et la
+   capsule du compteur (« 0/0 ») au-dessus de la jauge, à droite. La hauteur
+   de la plaque est mesurée (`--rpg-plaque-ennemi-h`, voir RpgDuelPage). */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi {
+  grid-area: auto;
+  position: absolute;
+  top: auto;
+  bottom: calc(50% + 6px);
+  left: var(--rpg-touch-pad, 6px);
+  width: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset, 0px));
+  margin: 0;
+  box-sizing: border-box;
+  z-index: 3;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--ennemi {
+  grid-area: auto;
+  position: absolute;
+  top: auto;
+  bottom: calc(50% + 6px + var(--rpg-plaque-ennemi-h, 56px) + 8px);
+  left: var(--rpg-touch-pad, 6px);
+  width: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset, 0px));
+  min-height: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  z-index: 3;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__reserve {
+  top: auto;
+  bottom: calc(100% + 3px);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__bar {
+  padding: 7px 8px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__slot {
+  max-width: 22px;
+  font-size: 15px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__slot .rpg-emblem {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Mobile, table d'essai : les PV tout à droite des plaques ────────────────
+   Avatar et nom en haut à gauche, zones (Main · Paquet · Cimetière) dessous,
+   et les points de vie dans leur propre colonne, au bord droit de la plaque,
+   centrés verticalement sur toute sa hauteur — pour les deux sorciers. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 3px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__avatar {
+  grid-row: 1;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv {
+  grid-column: 3;
+  grid-row: 1 / -1;
+  align-self: center;
+  justify-self: end;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones {
+  grid-column: 1 / 3;
+  grid-row: 2;
+}
+/* Les zones tiennent sur une ligne à gauche des PV. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 8px;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── Mobile, table d'essai : les PV dans une goutte de sang ──────────────────
+   Les points de vie s'inscrivent dans un rond rouge sang, en volume : reflet
+   clair en haut à gauche, cœur plus sombre en bas à droite, ombre portée et
+   liseré interne, comme une perle de sang sur la plaque. Les icônes (bouclier
+   emoji, cœur) disparaissent : le rond suffit à dire « vie ». */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 196, 186, .85) 0 7%, rgba(255, 120, 110, .35) 16%, transparent 34%),
+    radial-gradient(circle at 50% 42%, #c4161c 0%, #8e0a12 52%, #4f0208 86%, #2c0004 100%);
+  box-shadow:
+    inset 0 -4px 7px rgba(25, 0, 3, .75),
+    inset 0 2px 3px rgba(255, 150, 140, .35),
+    0 0 0 1px rgba(60, 0, 6, .9),
+    0 3px 6px rgba(0, 0, 0, .7),
+    0 0 9px rgba(190, 20, 30, .45);
+  color: #fff3ee;
+  font: 800 17px/1 Georgia, serif;
+  text-shadow: 0 1px 0 #3a0006, 0 2px 4px rgba(0, 0, 0, .8);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__hp-icon {
+  display: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__hp-value {
+  margin: 0;
+}
+/* Le bouclier éventuel se range en petite capsule sous la goutte. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__shield-value {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 1px 4px;
+  border: 1px solid #9fc4dc;
+  border-radius: 100px;
+  background: #0b1620;
+  color: #d6ecff;
+  font: 700 8px/1 var(--mono, monospace);
+  white-space: nowrap;
+  text-shadow: none;
+}
+
+/* ── Mobile, table d'essai : le nom au centre de la plaque ───────────────────
+   Avatar à gauche et goutte de PV à droite, tous deux centrés en hauteur ; au
+   milieu, le nom et la ligne des zones juste dessous forment un bloc centré
+   dans les deux sens. La colonne centrale est étroite : les zones passent
+   sur deux lignes centrées plutôt que d'être tronquées. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) {
+  align-content: center;
+  row-gap: 2px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__avatar {
+  grid-row: 1 / -1;
+  align-self: center;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__identity {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  justify-items: center;
+  text-align: center;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  text-align: center;
+  white-space: normal;
+  overflow: visible;
+  font-size: 8.5px;
+  letter-spacing: 0;
+}
+/* Goutte de PV agrandie ; le chiffre est rogné à sa hauteur de capitale
+   (`text-box`) pour tomber au centre optique exact du rond, quel que soit
+   l'interlignage de la police. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv {
+  width: 46px;
+  height: 46px;
+  font-size: 21px;
+  line-height: 1;
+  text-align: center;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__hp-value {
+  display: block;
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  text-box: trim-both cap alphabetic;
+}
+/* Le chiffre reste au centre du rond sur tous les appareils : une fenêtre PC
+   étroite (souris, `rpg-mobile.css`) pousse sinon le contenu des PV à gauche
+   (`justify-content: flex-start`, `gap`). Flex centré dans les deux axes,
+   sans écart ni marge parasite. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__hp-value {
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Mobile, table d'essai : plaque et jauge à la verticale, côte à côte ─────
+   Chaque sorcier a sa colonne contre la ligne de séparation : la plaque
+   (avatar, nom, zones, goutte de PV empilés) et, juste à sa droite, la jauge
+   de mana dressée à la même hauteur, qui se remplit de bas en haut. Le
+   joueur part de la ligne vers le bas, le sorcier adverse vers le haut, en
+   miroir ; la capsule du compteur se pose au bout libre de chaque jauge. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table {
+  --essai-piles-h: 40px;
+  /* La colonne laisse sous elle (au-dessus pour le sorcier) la place des
+     piles de cartes et de la capsule du compteur. */
+  --essai-col-h: min(172px, calc(50% - 16px - var(--essai-piles-h)));
+  --essai-plaque-l: 78px;
+  --essai-jauge-l: 30px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  width: var(--essai-plaque-l);
+  height: var(--essai-col-h);
+  padding: 6px 4px;
+  text-align: center;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { top: calc(50% + 6px); bottom: auto; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi { top: auto; bottom: calc(50% + 6px); }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) :is(.rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name, .rpg-wizard-plate__sable) {
+  display: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__avatar {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__identity {
+  display: grid;
+  justify-items: center;
+  align-self: stretch;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  line-height: 1.15;
+  text-align: center;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__identity strong {
+  justify-self: center;
+  margin: 0;
+  font-size: 9px;
+  letter-spacing: .03em;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+/* Les zones s'empilent : Main, Paquet, Cimetière, une par ligne. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Centrées sur la plaque (une règle plus ancienne les calait à gauche). */
+  align-self: center;
+  width: auto;
+  text-align: center;
+  gap: 1px;
+  overflow: visible;
+  font-size: 8.5px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones .rpg-mobile-zones { display: contents; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zone-sep { display: none; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+/* La jauge dressée, à droite de la plaque, de même hauteur. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) {
+  left: calc(var(--rpg-touch-pad, 6px) + var(--essai-plaque-l) + 5px);
+  width: var(--essai-jauge-l);
+  height: var(--essai-col-h);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--joueur { top: calc(50% + 6px); bottom: auto; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--ennemi { top: auto; bottom: calc(50% + 6px); }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) .rpg-flux-track__bar {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 7px 3px;
+}
+/* Le premier mana acquis en bas : la colonne se remplit de bas en haut. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) .rpg-flux-track__slots {
+  flex: 1;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  min-height: 0;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) .rpg-flux-track__slot {
+  /* Dix cases qui se partagent la hauteur, quelle que soit la jauge. */
+  flex: 1 1 0;
+  width: 22px;
+  max-width: 22px;
+  height: auto;
+  max-height: 22px;
+  min-height: 0;
+  aspect-ratio: auto;
+  font-size: 12px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) .rpg-flux-track__slot .rpg-emblem {
+  width: 13px;
+  height: 13px;
+}
+/* La capsule du compteur au bout libre de la jauge, centrée sur elle. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-flux-track--joueur, .rpg-flux-track--ennemi) .rpg-flux-track__reserve {
+  left: 50%;
+  right: auto;
+  min-width: 0;
+  padding: 3px 5px;
+  font-size: 10px;
+  transform: translateX(-50%);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__reserve { top: calc(100% + 3px); bottom: auto; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__reserve { top: auto; bottom: calc(100% + 3px); }
+
+/* ── Mobile, table d'essai : paquet et cimetière au bout des colonnes ────────
+   Les deux piles de cartes (paquet, cimetière) réapparaissent en miniature,
+   au bout libre de chaque colonne, sous la plaque (au-dessus pour le sorcier,
+   en miroir) ; la capsule du compteur de mana occupe le même rang, sous la
+   jauge. Le nombre de cartes s'inscrit sur la pile : les lignes « Paquet » et
+   « Cimetière » de la plaque, redondantes, s'effacent ; « Main » reste. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.rpg-card-piles--player, .rpg-card-piles--opponent) {
+  display: flex;
+  grid-area: auto;
+  position: absolute;
+  left: var(--rpg-touch-pad, 6px);
+  right: auto;
+  width: var(--essai-plaque-l);
+  height: var(--essai-piles-h);
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  z-index: 3;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-card-piles--player {
+  top: calc(50% + 6px + var(--essai-col-h) + 4px);
+  bottom: auto;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-card-piles--opponent {
+  top: auto;
+  bottom: calc(50% + 6px + var(--essai-col-h) + 4px);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile {
+  position: relative;
+  min-width: 0;
+  padding: 3px;
+  gap: 0;
+  border-radius: 7px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile__stack,
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile__card {
+  width: 25px;
+  height: 34px;
+  border-width: 1px;
+  border-radius: 3px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile__card--back:first-child { transform: translate(-2px, -2px) rotate(-5deg); }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile__card--back:nth-child(2) { transform: translate(-1px, -1px) rotate(-2deg); }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile b {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 1px 3px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, .78);
+  color: #ffe9b1;
+  font-size: 10px;
+  line-height: 1;
+  animation: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile small {
+  display: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones .rpg-mobile-zones {
+  display: none;
+}
+/* Les miniatures se montrent (le mobile les masque d'ordinaire). Le paquet
+   montre ses dos de cartes ; le cimetière montre sa dernière carte, ou un
+   emplacement en pointillés tant qu'il est vide — on ne le confond pas avec
+   le paquet. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile__stack {
+  display: block;
+  filter: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile--graveyard .rpg-card-pile__card--back:not(.rpg-card-pile__card--top) {
+  display: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile--graveyard .rpg-card-pile__card--back.rpg-card-pile__card--top {
+  border: 1px dashed rgba(226, 190, 119, .6);
+  background: rgba(0, 0, 0, .35);
+  box-shadow: none;
+  transform: none;
+}
+
+/* ── Mobile, table d'essai : les deux camps à égale distance du milieu ───────
+   Les rangées de créatures (cases et cartes posées ensemble) glissent par
+   `top` pour que les cases du sorcier finissent et celles du joueur
+   commencent à la même distance du milieu du plateau. Les décalages sont
+   mesurés par RpgDuelPage (`--rpg-ennemis-decalage`, `--rpg-allies-decalage`). */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row--ennemi {
+  position: relative;
+  top: var(--rpg-ennemis-decalage, 0px);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row--equipe {
+  position: relative;
+  top: var(--rpg-allies-decalage, 0px);
+}
+
+/* ── Mobile, table d'essai : la colonne de droite autour du milieu ──────────
+   Les phases (indicateur de tour et pastilles) se posent juste AU-DESSUS de
+   la ligne du milieu ; « Attaquer avec tous » et « Fin du tour » juste
+   EN DESSOUS ; les commandes de combat (« Résoudre le combat », « Confirmer
+   l'attaque »…) et les autres invites contextuelles s'empilent sous ces
+   boutons. La hauteur des boutons de tour est mesurée
+   (`--rpg-actions-tour-h`, voir RpgDuelPage). */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail {
+  top: auto;
+  bottom: calc(50% + 6px);
+  margin-block: 0;
+  z-index: 21;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail .rpg-actions__turn {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  right: 0;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-bottombar {
+  grid-area: auto;
+  position: absolute;
+  top: calc(50% + 6px + var(--rpg-actions-tour-h, 34px) + 6px);
+  bottom: var(--rpg-touch-pad, 6px);
+  right: max(6px, env(safe-area-inset-right, 0px));
+  left: auto;
+  width: var(--rpg-touch-controls);
+  justify-content: flex-start;
+  padding: 0;
+  box-sizing: border-box;
+}
+/* Les rangées glissées se chevauchent sur quelques pixels autour du milieu :
+   le conteneur transparent de la rangée du joueur (dessiné après) recouvrait
+   le bas des cartes adverses et volait leurs clics. Les conteneurs laissent
+   passer les clics ; seules les cartes (et leurs piles d'armes) les prennent.
+   Le dépôt d'une carte de la main vise `.card-table`, il n'en dépend pas. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.card-row--ennemi, .card-row--equipe) {
+  pointer-events: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.card-row--ennemi, .card-row--equipe) > :not(.rpg-creature-slots) {
+  pointer-events: auto;
+}
+
+/* ── Mobile, table d'essai : la main du sorcier, face cachée ─────────────────
+   Le mobile masquait la main adverse ; sur la table d'essai, la bande au-dessus
+   des emplacements du sorcier est libre (ils sont descendus vers le milieu) :
+   ses cartes s'y montrent de dos, en éventail compact, centrées au-dessus du
+   champ. Le nombre exact reste sur sa plaque (« Main · n ») ; la rangée est
+   inerte, elle ne prend aucun clic. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-hidden-hand {
+  display: grid;
+  grid-area: auto;
+  position: absolute;
+  top: max(4px, env(safe-area-inset-top, 0px));
+  left: 50%;
+  z-index: 3;
+  margin: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-hidden-hand__cards {
+  padding: 0 10px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-hidden-hand__card {
+  --essai-main-adverse-l: clamp(36px, 12.5dvh, 58px);
+  width: var(--essai-main-adverse-l);
+  height: calc(var(--essai-main-adverse-l) * 1.3);
+  margin-left: calc(var(--essai-main-adverse-l) * -.38);
+  border-width: 2px;
+  border-radius: 5px;
+  box-shadow: 0 4px 9px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(236, 199, 117, .62);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-hidden-hand__card:first-child { margin-left: 0; }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-hidden-hand__count { display: none; }

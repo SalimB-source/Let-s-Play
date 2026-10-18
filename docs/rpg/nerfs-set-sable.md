@@ -17,7 +17,7 @@ Rendements calculés avec `rpgCardPower.js` (valeur ÷ coût).
 |---|---|---|---|
 | Chien du guet | 2 mana 2/2 *vanilla* | **2 mana 2/2 + Butin** | 2,30 → 2,90 |
 | Fennec des décombres | 2 mana 3/1 · Rapidité + Esquive 1 | **2 mana 3/1 · Rapidité + Butin** | 3,45 → 3,30 |
-| Cavalier amazigh du Désert | 5 mana 4/4 · duel | **5 mana 4/4 · duel + Butin** | 2,24 → 2,48 |
+| Cavalier amazigh du Désert | 5 mana 4/4 · duel | **5 mana 4/4 · duel** — *Butin retiré* | 2,24 → 2,24 |
 | Dune marchante | 4 mana 2/5 *vanilla* | **4 mana 2/5** — *à la mort : recyclage de magie* | 1,90 → 2,28 |
 | Faussoyeur des dunes 🆕 | — | **3 mana 2/2 + Butin** + *arrivée : recyclage de créature* | ~2,43 |
 | Réanimation 🆕 | — | **5 mana Sorcellerie** — *créature du cimetière → en jeu* | — |
@@ -74,7 +74,10 @@ arrive, il touche, il emporte.
 }
 ```
 
-## 3. Cavalier amazigh du Désert — duel + Butin
+## 3. Cavalier amazigh du Désert — duel seul (Butin retiré)
+
+Le Butin un temps ajouté au Cavalier lui a été retiré : il garde son duel à
+l’arrivée, sans pioche ni défausse quand il touche le sorcier adverse.
 
 ```js
 {
@@ -88,8 +91,7 @@ arrive, il touche, il emporte.
   typeLine: 'Créature — Guerrier amazigh',
   art: 'cavalier-amazigh-du-desert',
   arrivee: { type: 'combat', cible: 'creature' },
-  butin: true,
-  text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez une carte.',
+  text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque.',
   flavor: 'Sa monture blanche fend la poussière ; le sabre ouvre la route au milieu du tumulte.',
 }
 ```

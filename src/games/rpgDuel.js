@@ -1486,6 +1486,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         // `rpgFinDeTour` le détruit (serpents du Bâton des citernes).
         if (effet.ephemere) jeton.detruireFinDuTour = true;
         duel[cote].creatures.push(jeton);
+        placerDansEmplacement(duel, cote, jeton);
       }
       const nom = crees > 1 ? (modele.pluriel ?? modele.name) : modele.name;
       duel.log.push(`${source?.name ?? 'L’effet'} crée ${crees} ${nom.toLowerCase()} ${modele.atk}/${modele.def} sans coût${effet.ephemere ? ', détruit à la fin du tour' : ''}.`);
@@ -1716,6 +1717,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       const carte = duelCardById(carteRevivee);
       const entite = creerEntiteCreature(carte);
       camp.creatures.push(entite);
+      placerDansEmplacement(duel, cote, entite);
       duel.log.push(`Réanimation : ${carte.name} revient en jeu.`);
       if (carte.arrivee) {
         const cibleArrivee = rpgCibleAuto(duel, cote, carte);
@@ -1922,6 +1924,55 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle) {
 function placesLibresChamp(duel, cote) {
   if (duel.modeMana !== RPG_MODE_MANA_ESSAI) return Infinity;
   return Math.max(0, RPG_MANA_ESSAI_CHAMP_MAX - duel[cote].creatures.length);
+}
+
+/**
+ * Mode essai : chaque créature posée **garde sa case** (0 à 4) tant qu'elle
+ * reste en jeu. Quand une créature quitte le champ (mort, sacrifice, renvoi),
+ * sa case se vide et les autres ne glissent pas pour la combler ; la créature
+ * suivante prend la première case libre — ou, pour un sacrifice, la case de
+ * la victime (`prefere`). Hors essai, la rangée garde son ordre de pose.
+ */
+function placerDansEmplacement(duel, cote, entite, prefere = null) {
+  if (duel.modeMana !== RPG_MODE_MANA_ESSAI || !entite) return;
+  const prises = new Set(rpgEmplacementsChamp(duel[cote])
+    .map((occupant, index) => (occupant && occupant !== entite ? index : null))
+    .filter((index) => index !== null));
+  if (Number.isInteger(prefere) && prefere >= 0 && prefere < RPG_MANA_ESSAI_CHAMP_MAX && !prises.has(prefere)) {
+    entite.emplacement = prefere;
+    return;
+  }
+  for (let index = 0; index < RPG_MANA_ESSAI_CHAMP_MAX; index += 1) {
+    if (!prises.has(index)) {
+      entite.emplacement = index;
+      return;
+    }
+  }
+}
+
+/**
+ * Les cinq cases d'un camp (`duel.joueur`, `duel.sorcier`) en essai : un tableau de cinq entrées, la créature
+ * qui occupe chaque case ou `null`. Une créature sans case connue (partie
+ * sauvegardée avant les cases fixes) ou en doublon prend la première case
+ * libre, dans l'ordre de la rangée — sans rien modifier de l'état du duel.
+ */
+export function rpgEmplacementsChamp(camp) {
+  const cases = Array.from({ length: RPG_MANA_ESSAI_CHAMP_MAX }, () => null);
+  const sansCase = [];
+  for (const entite of camp?.creatures ?? []) {
+    const index = entite?.emplacement;
+    if (Number.isInteger(index) && index >= 0 && index < RPG_MANA_ESSAI_CHAMP_MAX && !cases[index]) {
+      cases[index] = entite;
+    } else {
+      sansCase.push(entite);
+    }
+  }
+  for (const entite of sansCase) {
+    const libre = cases.indexOf(null);
+    if (libre < 0) break;
+    cases[libre] = entite;
+  }
+  return cases;
 }
 
 /** La créature qu'un camp sacrifie de lui-même : la plus frêle d'abord, la
@@ -2137,8 +2188,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // rien n'a été sacrifié. L'indice de la victime est retenu : la nouvelle
   // créature prend sa place, au même emplacement du plateau.
   let emplacementSacrifice = null;
+  let caseSacrifice = null;
   if (sacrifice) {
     emplacementSacrifice = camp.creatures.findIndex((entite) => entite.id === sacrifice.id);
+    caseSacrifice = rpgEmplacementsChamp(camp).findIndex((occupant) => occupant?.id === sacrifice.id);
     duel.log.push(`${cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${sacrifice.name} pour faire place à ${carte.name}.`);
     sacrifierCreature(duel, cote, sacrifice);
   }
@@ -2152,6 +2205,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   } else {
     camp.creatures.push(entite);
   }
+  // Sa case : celle de la victime d'un sacrifice, sinon la première libre.
+  placerDansEmplacement(duel, cote, entite, caseSacrifice >= 0 ? caseSacrifice : null);
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
   if (entite.protection) {
     const couleur = ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre;
@@ -3152,6 +3207,7 @@ function resoudreRetoursProgrammes(duel) {
       camp.cimetiere.splice(indexCimetiere, 1);
       const entite = creerEntiteCreature(carte);
       camp.creatures.push(entite);
+      placerDansEmplacement(duel, cote, entite);
       duel.log.push(`${carte.name} renaît et revient en jeu.`);
       if (carte.arrivee) {
         const cibleArrivee = rpgCibleAuto(duel, cote, carte);

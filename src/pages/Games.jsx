@@ -36,7 +36,6 @@ const GAMES = [
     badge: 'JOUABLE',
     tone: 'desert',
     featured: true,
-    tags: ['ARCADE', 'SOLO', 'DUEL', 'COUPE', 'EN LIGNE'],
   },
   {
     id: 'vice-city-rush',
@@ -49,7 +48,6 @@ const GAMES = [
     badge: 'JOUABLE',
     tone: 'vice',
     featured: false,
-    tags: ['ARCADE', 'COURSE', '5 VILLES', 'SOLO'],
   },
   {
     id: 'sablier-de-bab-el',
@@ -62,7 +60,6 @@ const GAMES = [
     badge: 'PROTOTYPE',
     tone: 'desert',
     featured: false,
-    tags: ['RPG', 'TOUR PAR TOUR', 'SOLO', 'DÉMO'],
   },
   {
     id: 'projet-03',
@@ -75,7 +72,6 @@ const GAMES = [
     badge: 'BIENTÔT',
     tone: 'soon',
     featured: false,
-    tags: ['À VENIR'],
   },
 ];
 
@@ -161,12 +157,6 @@ export default function Games() {
                 <div className="game-card-copy">
                   <h3>{game.title}</h3>
                   <p className="game-card-subtitle">{game.subtitle}</p>
-                  <p className="game-card-desc">{game.description}</p>
-                  <div className="game-card-tags">
-                    {game.tags.map((tag) => (
-                      <span className="game-card-tag" key={tag}>{tag}</span>
-                    ))}
-                  </div>
                   <span className="game-card-cta">
                     {playable ? <>{head.play} <Arrow /></> : <>{head.soon}</>}
                   </span>
@@ -181,17 +171,22 @@ export default function Games() {
             </>
           );
 
+          // La cartouche ne porte que l'étiquette (visuel, titre, sous-titre) ; la
+          // description se lit en dessous, hors du boîtier.
           return (
-            <article
-              key={game.id}
-              className={`game-card game-card--${game.tone}${game.featured ? ' is-featured' : ''}${playable ? '' : ' is-locked'}`}
-            >
-              {playable ? (
-                <Link className="game-card-link game-cartridge-front" to={game.route}>
-                  <span className="sr-only">{game.title}</span>
-                  {card}
-                </Link>
-              ) : <div className="game-cartridge-front">{card}</div>}
+            <article key={game.id} className="game-entry">
+              <div
+                className={`game-card game-card--${game.tone}${game.featured ? ' is-featured' : ''}${playable ? '' : ' is-locked'}`}
+                data-shell={game.id}
+              >
+                {playable ? (
+                  <Link className="game-card-link game-cartridge-front" to={game.route}>
+                    <span className="sr-only">{game.title}</span>
+                    {card}
+                  </Link>
+                ) : <div className="game-cartridge-front">{card}</div>}
+              </div>
+              <p className="game-card-desc">{game.description}</p>
             </article>
           );
         })}

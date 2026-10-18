@@ -5,7 +5,7 @@
  * pendant la fenêtre de réponse de l'adversaire.
  */
 
-import { Fragment, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import './rpg-mobile.css';
 import './rpg-story.css';
@@ -63,7 +63,8 @@ import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
-import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
+import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
+import { effetsDetailles } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
 import RpgTableScene3D from './RpgTableScene3D.jsx';
@@ -130,6 +131,7 @@ import {
   rpgOuvrirFinDeTour,
   rpgPeutRepondre,
   rpgSorcierMagieRapide,
+  rpgEmplacementsChamp,
   rpgEstProtegee,
   rpgPeutBloquerAttaquant,
   rpgPeutMulligan,
@@ -424,7 +426,9 @@ function mesurerDestinationVol(table, kind, from, carteId) {
   // plateau. On vise la case elle-même (la cinquième reste toujours visible)
   // au lieu de répartir les cartes comme dans une rangée flexible.
   const slots = [...zone.querySelectorAll('.rpg-creature-slot')];
-  const slotLibre = slots[cards.length];
+  // La première case vide — pas la n-ième : une case libérée par une mort
+  // peut se trouver au milieu de la rangée.
+  const slotLibre = zone.querySelector('.rpg-creature-slot.is-empty') ?? slots[cards.length];
   const slotRect = slotLibre?.getBoundingClientRect();
   if (slotRect && (slotRect.width || slotLibre.offsetWidth) && (slotRect.height || slotLibre.offsetHeight)) {
     const slotWidth = slotRect.width || slotLibre.offsetWidth;
@@ -564,7 +568,10 @@ export function FluxManaTrack({ camp, cote }) {
  * la rangée de chaque camp : une case par créature jouable, pleine quand elle
  * est occupée, en pointillés quand elle attend encore sa créature. */
 export function CreatureSlots({ camp, cote }) {
-  const occupees = Math.min(RPG_MANA_ESSAI_CHAMP_MAX, camp.creatures?.length ?? 0);
+  // Chaque créature garde sa case : une case vidée par une mort reste vide
+  // au milieu de la rangée, les autres ne glissent pas pour la combler.
+  const cases = rpgEmplacementsChamp(camp);
+  const occupees = cases.filter(Boolean).length;
   return (
     <div
       className={`rpg-creature-slots rpg-creature-slots--${cote}`}
@@ -573,12 +580,12 @@ export function CreatureSlots({ camp, cote }) {
       aria-label={`Emplacements de créatures ${cote === 'joueur' ? 'de votre camp' : 'du sorcier'} : ${occupees} sur ${RPG_MANA_ESSAI_CHAMP_MAX} occupés`}
       aria-hidden="false"
     >
-      {Array.from({ length: RPG_MANA_ESSAI_CHAMP_MAX }, (_, index) => (
+      {cases.map((occupant, index) => (
         <span
           key={index}
-          className={`rpg-creature-slot${index < occupees ? ' is-occupied' : ' is-empty'}`}
+          className={`rpg-creature-slot${occupant ? ' is-occupied' : ' is-empty'}`}
           data-creature-slot={index + 1}
-          data-creature-slot-occupe={index < occupees ? 'true' : 'false'}
+          data-creature-slot-occupe={occupant ? 'true' : 'false'}
           aria-hidden="true"
         >
           <span className="rpg-creature-slot__numero">{index + 1}</span>
@@ -939,17 +946,135 @@ const BLOCKER_DRAG_TYPE = 'application/x-bab-el-blocker';
  *  décalée vers le haut et la droite, comme une carte posée dessous. La pile
  *  ne change rien au jeu — la créature reste l'unique cible et la seule carte
  *  qui agit ; seul le bord de l'arme dit qu'elle est équipée. */
-function PileArmee({ armes = [], children }) {
+function PileArmee({ armes = [], caseEssai = null, children }) {
   const arme = cardById(armes[0]);
   if (!arme) return children;
   return (
-    <span className="rpg-card-stack rpg-card-stack--arme">
+    <span className="rpg-card-stack rpg-card-stack--arme" style={caseEssai ? { '--case-essai': caseEssai } : undefined}>
       <span className="rpg-card-stack__arme" aria-hidden="true" style={cardFrameStyle(arme)}>
         <img src={cardArt(arme)} alt="" />
       </span>
       {children}
     </span>
   );
+}
+
+/** Rapidité : un arc électrique bleu court **sur le bord** de la carte.
+ *  Le trait est un rectangle déformé par une turbulence dont la graine change
+ *  par à-coups — l'arc ne se fige jamais. Deux passes : un halo bleu épais
+ *  et flou, puis un cœur clair et fin. Le calque déborde de la face : il
+ *  reprend l'épaisseur du cadre et l'arrondi de la carte (mesurés une fois)
+ *  pour que l'arc suive exactement le bord extérieur. Le mouvement réduit
+ *  garde l'arc, fixe. */
+function ElectriciteRapidite() {
+  const id = useId().replace(/:/g, '');
+  const calqueRef = useRef(null);
+  const [mouvementReduit] = useState(() => (
+    typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+  ));
+  useLayoutEffect(() => {
+    const calque = calqueRef.current;
+    const carte = calque?.parentElement;
+    if (!carte || typeof window === 'undefined') return;
+    const style = window.getComputedStyle(carte);
+    calque.style.setProperty('--rpg-elec-bord', style.borderTopWidth || '0px');
+    calque.style.setProperty('--rpg-elec-rayon', style.borderTopLeftRadius || '8px');
+  }, []);
+  // Le hasard est tiré une fois par carte : graines, rythme, amplitude et
+  // finesse de l'arc diffèrent d'une créature à l'autre, et les cycles de
+  // durées sans commune mesure ne se recalent jamais — l'arc ne se répète pas.
+  const [hasard] = useState(() => tirerHasardElectricite());
+  const filtre = (suffixe, reglages, flou = 0) => (
+    <filter id={`${id}-${suffixe}`} x="-8%" y="-8%" width="116%" height="116%">
+      {/* `fractalNoise` oscille autour de 0,5 : l'arc tremble de part et d'autre
+          du bord sans glisser d'un côté (la `turbulence` décalait tout vers
+          le haut et la gauche). */}
+      <feTurbulence type="fractalNoise" baseFrequency={reglages.frequences[0]} numOctaves="2" seed={reglages.graines[0]} result="bruit">
+        {!mouvementReduit && (
+          <>
+            <animate attributeName="seed" values={reglages.graines.join(';')} keyTimes={reglages.instants.join(';')}
+              dur={`${reglages.duree}s`} repeatCount="indefinite" calcMode="discrete" />
+            <animate attributeName="baseFrequency" values={reglages.frequences.join(';')}
+              dur={`${reglages.dureeFrequence}s`} repeatCount="indefinite" calcMode="discrete" />
+          </>
+        )}
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="bruit" scale={reglages.amplitudes[0]} xChannelSelector="R" yChannelSelector="G">
+        {!mouvementReduit && (
+          <animate attributeName="scale" values={reglages.amplitudes.join(';')}
+            dur={`${reglages.dureeAmplitude}s`} repeatCount="indefinite" calcMode="discrete" />
+        )}
+      </feDisplacementMap>
+      {flou > 0 && <feGaussianBlur stdDeviation={flou} />}
+    </filter>
+  );
+  return (
+    <span
+      ref={calqueRef}
+      className="rpg-card__electricite"
+      aria-hidden="true"
+      style={{
+        '--rpg-elec-vacille-duree': `${hasard.vacille.duree}s`,
+        '--rpg-elec-vacille-delai': `${hasard.vacille.delai}s`,
+      }}
+    >
+      <svg focusable="false">
+        <defs>
+          {filtre('halo', hasard.halo, 1)}
+          {filtre('coeur', hasard.coeur)}
+          {filtre('eclat', hasard.eclat)}
+        </defs>
+        <rect className="rpg-card__electricite-halo" filter={`url(#${id}-halo)`} />
+        <rect className="rpg-card__electricite-coeur" filter={`url(#${id}-coeur)`} />
+        {/* L'éclat : un second fil qui ne s'allume que par moments, au hasard. */}
+        <rect className="rpg-card__electricite-coeur rpg-card__electricite-coeur--second" filter={`url(#${id}-eclat)`}>
+          {!mouvementReduit && (
+            <animate attributeName="opacity" values={hasard.eclats.join(';')}
+              dur={`${hasard.dureeEclats}s`} repeatCount="indefinite" calcMode="discrete" />
+          )}
+        </rect>
+      </svg>
+    </span>
+  );
+}
+
+/** Le tirage d'une électricité : tout ce qui rend l'arc imprévisible. */
+function tirerHasardElectricite(aleatoire = Math.random) {
+  const entre = (min, max) => min + aleatoire() * (max - min);
+  const arrondi = (valeur, decimales = 3) => Number(valeur.toFixed(decimales));
+  const suite = (n, tirer) => Array.from({ length: n }, tirer);
+  // Instants irréguliers (0 au départ, croissants, < 1) : le rythme saccade.
+  const instants = (n) => {
+    const pas = suite(n, () => entre(.4, 1.6));
+    const total = pas.reduce((somme, valeur) => somme + valeur, 0);
+    let cumul = 0;
+    return pas.map((valeur) => {
+      const instant = cumul / total;
+      cumul += valeur;
+      return arrondi(instant, 4);
+    });
+  };
+  const reglages = ({ frequence, amplitude }) => {
+    const n = 14 + Math.floor(aleatoire() * 8);
+    return {
+      graines: suite(n, () => 1 + Math.floor(aleatoire() * 997)),
+      instants: instants(n),
+      duree: arrondi(entre(1.1, 2.3), 2),
+      frequences: suite(5, () => arrondi(entre(frequence * .7, frequence * 1.4), 4)),
+      dureeFrequence: arrondi(entre(1.7, 3.9), 2),
+      amplitudes: suite(7, () => arrondi(entre(amplitude * .55, amplitude * 1.35), 1)),
+      dureeAmplitude: arrondi(entre(1.3, 3.1), 2),
+    };
+  };
+  return {
+    halo: reglages({ frequence: .06, amplitude: 9 }),
+    coeur: reglages({ frequence: .08, amplitude: 8 }),
+    eclat: reglages({ frequence: .1, amplitude: 11 }),
+    // L'éclat reste éteint la plupart du temps et s'allume par à-coups.
+    eclats: suite(12, () => (aleatoire() < .3 ? arrondi(entre(.5, 1), 2) : 0)),
+    dureeEclats: arrondi(entre(1.6, 3.4), 2),
+    vacille: { duree: arrondi(entre(.9, 1.9), 2), delai: arrondi(-entre(0, 2), 2) },
+  };
 }
 
 export function TableCard({
@@ -979,6 +1104,8 @@ export function TableCard({
   tutorialTarget,
   onHoverCard,
   onLeaveHoverCard,
+  iconesEffets = false,
+  caseEssai = null,
 }) {
   const carte = cardById(entite.carteId);
   const hybride = cardColors(carte).length > 1;
@@ -1077,6 +1204,8 @@ export function TableCard({
         cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         entite.envol ? 'is-envol' : '',
+        entite.rapidite ? 'has-rapidite' : '',
+        entite.infiltration ? 'has-infiltration' : '',
         gelee ? 'is-frozen' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
@@ -1103,7 +1232,8 @@ export function TableCard({
         actionFx?.type === 'block' ? 'fx-block' : '',
         actionFx?.type === 'unblock' ? 'fx-unblock' : '',
       ].filter(Boolean).join(' ')}
-      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(carte) }}
+      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(carte), ...(caseEssai ? { '--case-essai': caseEssai } : {}) }}
+      data-case-essai={caseEssai ?? undefined}
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}
       data-card-id={carte?.id}
@@ -1124,6 +1254,15 @@ export function TableCard({
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+      {entite.rapidite && <ElectriciteRapidite />}
+      {/* Infiltration : la carte devient une silhouette de brume — à demi
+          transparente, traversée de nuages gris qui défilent. */}
+      {entite.infiltration && (
+        <span className="rpg-card__brume" aria-hidden="true">
+          <span className="rpg-card__brume-nappe rpg-card__brume-nappe--a" />
+          <span className="rpg-card__brume-nappe rpg-card__brume-nappe--b" />
+        </span>
+      )}
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       {gelee && <span className="rpg-card__frost" aria-hidden="true">
         <span className="rpg-card__frost-crystals" />
@@ -1154,6 +1293,20 @@ export function TableCard({
       <header className="rpg-card__title">
         <ManaCost carte={carte} compact showElement={false} />
       </header>
+      {/* Table d'essai sans terrains : les icônes d'effets de la créature se
+          rangent en colonne à la place du coût (qui ne s'imprime plus sur une
+          carte posée), sur le même axe. Si le coin est pris — losanges de
+          compteurs d'une hybride, bouton de capacité activée —, la colonne
+          descend pour les laisser lisibles. */}
+      {iconesEffets && (
+        <IconesCarte
+          carte={carte}
+          entite={entite}
+          className={`rpg-card-icones--colonne${hybride && (entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0))
+            ? ' rpg-card-icones--sous-compteurs'
+            : activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
+        />
+      )}
       {activation && cote === 'joueur' && onActiver && (
         <span
           className={`rpg-card__activation${activationDispo ? ' is-pret' : ''}`}
@@ -1370,7 +1523,7 @@ function useLumiereCartes() {
   }, []);
 }
 
-function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null }) {
+function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null }) {
   const faceRef = useRef(null);
   const carteId = carte?.id ?? null;
 
@@ -1465,7 +1618,12 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   // sa ligne de type prend la teinte de cette famille.
   const ligneFamille = classeLigneFamille(carte);
   const effet = carte.text && carte.text !== '—' ? carte.text : null;
-  const effets = cardEffectLines(effet);
+  // Les mots-clés passent en pastilles : leur explication s'ouvre au survol de
+  // la pastille (au toucher sur mobile), et quitte le texte de règle — il ne
+  // reste écrit que ce qu'aucune pastille ne nomme (arrivées, morts, sorts…).
+  // Le libellé accessible du panneau garde, lui, le texte entier.
+  const lecture = effetsDetailles(carte);
+  const effets = cardEffectLines(lecture.texte);
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
   const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
   // La fiche du catalogue : la carte ouverte d'un clic, en grand. Elle se lit
@@ -1483,7 +1641,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       {estFiche && <span className="rpg-hover-card-preview__eyebrow">{surface ? `${surface} · ` : ''}{carteFamille(carte).toUpperCase()}</span>}
       {(variante === 'annonce' || estFiche) && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
       {(estFiche || !estCreature) && <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>}
-      <PastillesCarte carte={carte} className="rpg-hover-card-preview__pastilles" />
+      <PastillesCarte carte={carte} pastilles={lecture.pastilles} className="rpg-hover-card-preview__pastilles" />
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
       {cibleAnnoncee && (
         <div className="rpg-spell-played__target rpg-hover-card-preview__target">
@@ -1510,7 +1668,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
           ))}
         </div>
       )}
-      {(effet || effetsArmesEquipees.length > 0) && (
+      {(effets.length > 0 || effetsArmesEquipees.length > 0) && (
         <div className="rpg-hover-card-preview__rules" aria-label="Effets">
           {/* La ligne bleue de l'équipement passe en tête : elle dit ce que le
               porteur devient, avant les effets propres de sa carte. */}
@@ -1551,7 +1709,9 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   return (
     <aside
       ref={panelRef}
-      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
+      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}${interactif ? ' is-interactif' : ''}`}
+      onPointerEnter={onPointerEnter ?? undefined}
+      onPointerLeave={onPointerLeave ?? undefined}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
       aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
@@ -3550,6 +3710,26 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // mulligan : sa boîte réelle sert à le coller à la carte survolée, reposé
   // avant peinture par `placerApercuSurvol`.
   const panelRef = useRef(null);
+  // L'aperçu au survol devient **lisible à la souris** quand on s'attarde sur
+  // une carte : ses pastilles d'effets s'ouvrent alors au survol.
+  // - Balayer la main reste fluide : tant que l'aperçu n'est pas lisible, il
+  //   ne capte rien et la carte suivante prend aussitôt la main.
+  // - Une fois lisible, seule sa colonne d'infos capte la souris (la face
+  //   reste transparente aux cartes qu'elle recouvre). Quitter la carte en
+  //   direction de cette colonne ouvre un court **couloir** : pendant ce
+  //   trajet, survoler d'autres cartes ne remplace pas l'aperçu. Repartir dans
+  //   l'autre sens, ou traîner hors du panneau, rend le survol aux cartes.
+  const apercuSurvolRef = useRef(null);
+  const minuteursSurvolRef = useRef({ lisible: 0, masquer: 0, couloir: 0 });
+  const couloirSurvolRef = useRef(null);
+  const dansApercuRef = useRef(false);
+  const pointeurRef = useRef({ x: -1, y: -1 });
+  useEffect(() => { apercuSurvolRef.current = apercuSurvol; }, [apercuSurvol]);
+  useEffect(() => () => {
+    window.clearTimeout(minuteursSurvolRef.current.lisible);
+    window.clearTimeout(minuteursSurvolRef.current.masquer);
+    window.clearTimeout(minuteursSurvolRef.current.couloir);
+  }, []);
   const [carteGlissee, setCarteGlissee] = useState(null);
   const [surZoneDepot, setSurZoneDepot] = useState(false);
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
@@ -3986,6 +4166,91 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       timersRef.current.push(timer);
     });
   }, [duel, duel?.joueur.deck.length, duel?.joueur.main.length, duel?.sorcier.deck.length, duel?.sorcier.main.length]);
+  // Mobile, table d'essai : chaque plaque se pose contre la ligne de séparation
+  // du plateau (le joueur dessous, le sorcier dessus) et sa jauge de mana la
+  // suit de l'autre côté. La hauteur réelle des plaques (qui varie selon
+  // l'écran) est publiée en variables CSS.
+  const essaiTactile = Boolean(duel && viewport.mobile && duel.modeMana === RPG_MODE_MANA_ESSAI);
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    if (!essaiTactile || !table) return undefined;
+    const plaques = [
+      [table.querySelector('.rpg-wizard-plate--joueur'), '--rpg-plaque-joueur-h'],
+      [table.querySelector('.rpg-wizard-plate--ennemi'), '--rpg-plaque-ennemi-h'],
+    ].filter(([plaque]) => plaque);
+    if (!plaques.length) return undefined;
+    const publier = () => plaques.forEach(([plaque, variable]) => table.style.setProperty(variable, `${plaque.offsetHeight}px`));
+    publier();
+    if (typeof ResizeObserver !== 'function') return undefined;
+    const observateur = new ResizeObserver(publier);
+    plaques.forEach(([plaque]) => observateur.observe(plaque));
+    return () => observateur.disconnect();
+  }, [essaiTactile]);
+  // Mobile, table d'essai : les emplacements des deux camps se placent à la
+  // même distance du milieu du plateau (50 % de la table, là où passent la
+  // ligne de séparation et la jonction des plaques) — le sorcier au-dessus,
+  // le joueur en dessous. L'écart visé (4 % de la hauteur, 10 à 28 px) se
+  // réduit si la main du joueur ou le haut de la rangée adverse manquent de
+  // place. Les rangées glissent par `top` (variables CSS), sans changer la
+  // grille.
+  // Mobile, table d'essai : les boutons de tour passent juste sous la ligne du
+  // milieu, et les commandes de combat (« Résoudre le combat »…) juste en
+  // dessous d'eux. Leur hauteur réelle (une ou deux rangées selon le bouton
+  // d'annulation) est publiée en variable CSS.
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    const actions = table?.querySelector('.rpg-turn-rail .rpg-actions__turn');
+    if (!essaiTactile || !table || !actions) return undefined;
+    const publier = () => table.style.setProperty('--rpg-actions-tour-h', `${actions.offsetHeight}px`);
+    publier();
+    if (typeof ResizeObserver !== 'function') return undefined;
+    const observateur = new ResizeObserver(publier);
+    observateur.observe(actions);
+    return () => observateur.disconnect();
+  }, [essaiTactile]);
+  const decalagesRangeesRef = useRef({ ennemi: 0, equipe: 0 });
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    const rangeeEnnemi = table?.querySelector('.card-row--ennemi');
+    const rangeeEquipe = table?.querySelector('.card-row--equipe');
+    if (!essaiTactile || !table || !rangeeEnnemi || !rangeeEquipe) return undefined;
+    const publier = () => {
+      const appliques = decalagesRangeesRef.current;
+      const boiteTable = table.getBoundingClientRect();
+      const caseEnnemi = rangeeEnnemi.querySelector('.rpg-creature-slot');
+      const caseEquipe = rangeeEquipe.querySelector('.rpg-creature-slot');
+      if (!caseEnnemi || !caseEquipe) return;
+      // Positions « naturelles » (sans le glissement déjà appliqué), relatives à la table.
+      const basEnnemi = caseEnnemi.getBoundingClientRect().bottom - boiteTable.top - appliques.ennemi;
+      const hautRangeeEnnemi = rangeeEnnemi.getBoundingClientRect().top - boiteTable.top - appliques.ennemi;
+      const hautEquipe = caseEquipe.getBoundingClientRect().top - boiteTable.top - appliques.equipe;
+      const main = table.querySelector('.rpg-hand-dock .rpg-hand__card') ?? table.querySelector('.rpg-hand-dock');
+      const hautMain = main ? main.getBoundingClientRect().top - boiteTable.top : boiteTable.height;
+      const milieu = boiteTable.height / 2;
+      const ecartVise = Math.min(28, Math.max(10, boiteTable.height * 0.04));
+      const ecart = Math.min(
+        ecartVise,
+        hautMain - 4 - caseEquipe.offsetHeight - milieu,
+        milieu - hautRangeeEnnemi - caseEnnemi.offsetHeight,
+      );
+      const ennemi = Math.round(milieu - ecart - basEnnemi);
+      const equipe = Math.round(milieu + ecart - hautEquipe);
+      if (ennemi === appliques.ennemi && equipe === appliques.equipe) return;
+      decalagesRangeesRef.current = { ennemi, equipe };
+      table.style.setProperty('--rpg-ennemis-decalage', `${ennemi}px`);
+      table.style.setProperty('--rpg-allies-decalage', `${equipe}px`);
+    };
+    publier();
+    if (typeof ResizeObserver !== 'function') return undefined;
+    const observateur = new ResizeObserver(publier);
+    [table, rangeeEnnemi, rangeeEquipe].forEach((element) => observateur.observe(element));
+    return () => {
+      observateur.disconnect();
+      decalagesRangeesRef.current = { ennemi: 0, equipe: 0 };
+      table.style.removeProperty('--rpg-ennemis-decalage');
+      table.style.removeProperty('--rpg-allies-decalage');
+    };
+  }, [essaiTactile]);
 
   useLayoutEffect(() => {
     if (!duel) return;
@@ -3999,6 +4264,38 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const afficherApercuSurvol = (carte, event, armes = []) => {
     if (!carte || !event?.currentTarget) return;
     const rectangle = event.currentTarget.getBoundingClientRect();
+    const minuteurs = minuteursSurvolRef.current;
+    const actuel = apercuSurvolRef.current;
+    const memeCarte = actuel?.carteId === carte.id;
+    // En chemin vers la colonne d'infos de l'aperçu (ou dedans), les cartes
+    // traversées ne le remplacent pas.
+    if (!memeCarte && (couloirSurvolRef.current || dansApercuRef.current) && actuel) return;
+    window.clearTimeout(minuteurs.masquer);
+    window.clearTimeout(minuteurs.couloir);
+    couloirSurvolRef.current = null;
+    // Retour sur la carte déjà ouverte (après un passage sur son aperçu, ou
+    // parce que la carte soulevée a glissé sous la souris) : l'aperçu reste
+    // lisible, sans rejouer le son ; il ne suit que si la carte a bougé.
+    if (memeCarte) {
+      if (actuel.rectangle?.left !== rectangle.left || actuel.rectangle?.top !== rectangle.top) {
+        setApercuSurvol((courant) => (courant?.carteId === carte.id ? {
+          ...courant,
+          rectangle: {
+            left: rectangle.left,
+            right: rectangle.right,
+            top: rectangle.top,
+            bottom: rectangle.bottom,
+            width: rectangle.width,
+            height: rectangle.height,
+          },
+        } : courant));
+      }
+      return;
+    }
+    window.clearTimeout(minuteurs.lisible);
+    minuteurs.lisible = window.setTimeout(() => {
+      setApercuSurvol((courant) => (courant?.carteId === carte.id ? { ...courant, interactif: true } : courant));
+    }, 450);
     // Première pose, au bord de la carte : le panneau n'existe pas encore,
     // sa taille est inconnue. L'effet de mise en page ci-dessous le repose
     // d'après sa boîte réelle, avant la première peinture.
@@ -4017,7 +4314,74 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     });
     if (!viewport.mobile) jouerSfx('hover');
   };
-  const masquerApercuSurvol = () => setApercuSurvol(null);
+  const masquerApercuSurvol = () => {
+    window.clearTimeout(minuteursSurvolRef.current.lisible);
+    window.clearTimeout(minuteursSurvolRef.current.masquer);
+    window.clearTimeout(minuteursSurvolRef.current.couloir);
+    couloirSurvolRef.current = null;
+    dansApercuRef.current = false;
+    apercuSurvolRef.current = null;
+    setApercuSurvol(null);
+  };
+  /** L'aperçu s'efface et la carte restée sous la souris reprend son survol :
+   * elle n'a pas reçu d'entrée pendant que l'aperçu tenait la main. */
+  const rendreSurvolAuxCartes = () => {
+    masquerApercuSurvol();
+    window.requestAnimationFrame(() => {
+      const { x, y } = pointeurRef.current;
+      if (x < 0 || apercuSurvolRef.current) return;
+      const sous = document.elementFromPoint?.(x, y);
+      sous?.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true, clientX: x, clientY: y }));
+    });
+  };
+  /** La souris quitte la carte : l'aperçu lisible ouvre le couloir vers sa
+   * colonne d'infos ; l'aperçu encore inerte s'efface tout de suite. */
+  const quitterCarteSurvol = () => {
+    const actuel = apercuSurvolRef.current;
+    const details = panelRef.current?.querySelector('.rpg-hover-card-preview__details');
+    if (!actuel?.interactif || !details) {
+      masquerApercuSurvol();
+      return;
+    }
+    const boite = details.getBoundingClientRect();
+    const depart = pointeurRef.current;
+    couloirSurvolRef.current = {
+      depart,
+      sens: boite.left + (boite.width / 2) >= depart.x ? 1 : -1,
+    };
+    window.clearTimeout(minuteursSurvolRef.current.couloir);
+    minuteursSurvolRef.current.couloir = window.setTimeout(() => {
+      couloirSurvolRef.current = null;
+      if (!dansApercuRef.current) rendreSurvolAuxCartes();
+    }, 420);
+  };
+  const entrerApercuSurvol = () => {
+    dansApercuRef.current = true;
+    couloirSurvolRef.current = null;
+    window.clearTimeout(minuteursSurvolRef.current.couloir);
+    window.clearTimeout(minuteursSurvolRef.current.masquer);
+  };
+  const sortirApercuSurvol = () => {
+    dansApercuRef.current = false;
+    window.clearTimeout(minuteursSurvolRef.current.masquer);
+    minuteursSurvolRef.current.masquer = window.setTimeout(rendreSurvolAuxCartes, 120);
+  };
+  // La position de la souris, et la sortie du couloir : repartir à rebours de
+  // la colonne d'infos, c'est renoncer à la lire.
+  useEffect(() => {
+    const suivre = (event) => {
+      if (event.pointerType && event.pointerType !== 'mouse') return;
+      pointeurRef.current = { x: event.clientX, y: event.clientY };
+      const couloir = couloirSurvolRef.current;
+      if (couloir && (event.clientX - couloir.depart.x) * couloir.sens < -10) {
+        window.clearTimeout(minuteursSurvolRef.current.couloir);
+        couloirSurvolRef.current = null;
+        if (!dansApercuRef.current) rendreSurvolAuxCartes();
+      }
+    };
+    window.addEventListener('pointermove', suivre, { passive: true });
+    return () => window.removeEventListener('pointermove', suivre);
+  });
 
   // Reposé avant peinture : dès que le panneau de l'aperçu est rendu, sa
   // boîte réelle remplace la première pose et le colle à la carte survolée —
@@ -4335,7 +4699,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onEnregistrerDeckMaison={enregistrerDeckMaison}
           onSupprimerDeckMaison={supprimerDeckMaison}
           onHoverCard={afficherApercuSurvol}
-          onLeaveHoverCard={masquerApercuSurvol}
+          onLeaveHoverCard={quitterCarteSurvol}
           onOpenCardPreview={ouvrirApercuCatalogue}
           onPlaySfx={jouerSfx}
           fullscreen={pleinEcran}
@@ -4356,6 +4720,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             carte={cardById(apercuSurvol.carteId)}
             style={apercuSurvol.style}
             panelRef={panelRef}
+            interactif={Boolean(apercuSurvol.interactif)}
+            onPointerEnter={entrerApercuSurvol}
+            onPointerLeave={sortirApercuSurvol}
           />
         )}
         {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
@@ -6269,6 +6636,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const campEnnemi = champEnPiles(duel.sorcier.creatures);
   const campJoueur = champEnPiles(duel.joueur.creatures);
+  // Mode essai : la colonne (1 à 5) de la case de chaque créature.
+  const casesParId = (camp) => (duel.modeMana === RPG_MODE_MANA_ESSAI
+    ? new Map(rpgEmplacementsChamp(camp).flatMap((entite, index) => (entite ? [[entite.id, index + 1]] : [])))
+    : null);
+  const casesEnnemi = casesParId(duel.sorcier);
+  const casesJoueur = casesParId(duel.joueur);
 
   return (
     <div
@@ -6475,7 +6848,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             variant="graveyard"
             topCard={duel.sorcier.cimetiere.at(-1)}
             onHoverCard={afficherApercuSurvol}
-            onLeaveHoverCard={masquerApercuSurvol}
+            onLeaveHoverCard={quitterCarteSurvol}
           />
         </div>
 
@@ -6495,7 +6868,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             {duel.sorcier.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.sorcier.bouclier}</span>}
           </span>
           <WizardManaCounters mana={duel.sorcier.mana} />
-          <span className="rpg-wizard-plate__zones">Main · {duel.sorcier.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.sorcier.deck.length} · Cimetière {duel.sorcier.cimetiere.length}</span></span>
+          <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.sorcier.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {duel.sorcier.deck.length}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.sorcier.cimetiere.length}</span></span></span>
         </button>
 
         {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
@@ -6518,7 +6891,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 data-available-count={groupe.available}
                 data-tapped-count={groupe.tapped}
                 onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
-                onMouseLeave={masquerApercuSurvol}
+                onMouseLeave={quitterCarteSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
                 {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
@@ -6558,6 +6931,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       cote="ennemi"
+                      iconesEffets={duel.modeMana === RPG_MODE_MANA_ESSAI}
+                      caseEssai={casesEnnemi?.get(entite.id) ?? null}
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       blocking={bloqueursSelectionnes.has(entite.id)}
@@ -6576,12 +6951,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       tilt={TILTS[i % TILTS.length]}
                       onHoverCard={afficherApercuSurvol}
-                      onLeaveHoverCard={masquerApercuSurvol}
+                      onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureEnnemie(entite)}
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
-                    return <PileArmee key={entite.id} armes={armesPortees(entite)}>{carte}</PileArmee>;
+                    return <PileArmee key={entite.id} armes={armesPortees(entite)} caseEssai={casesEnnemi?.get(entite.id) ?? null}>{carte}</PileArmee>;
                   }
                   return (
                     <span
@@ -6632,6 +7007,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       cote="joueur"
+                      iconesEffets={duel.modeMana === RPG_MODE_MANA_ESSAI}
+                      caseEssai={casesJoueur?.get(entite.id) ?? null}
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
@@ -6659,12 +7036,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         : undefined}
                       tilt={TILTS[(i + 2) % TILTS.length]}
                       onHoverCard={afficherApercuSurvol}
-                      onLeaveHoverCard={masquerApercuSurvol}
+                      onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureJoueur(entite)}
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
-                    return <PileArmee key={entite.id} armes={armesPortees(entite)}>{carte}</PileArmee>;
+                    return <PileArmee key={entite.id} armes={armesPortees(entite)} caseEssai={casesJoueur?.get(entite.id) ?? null}>{carte}</PileArmee>;
                   }
                   return (
                     <span
@@ -6784,7 +7161,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   if (!terrainInactif) demanderCouleurMana(event, terrain);
                 }}
                 onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
-                onMouseLeave={masquerApercuSurvol}
+                onMouseLeave={quitterCarteSurvol}
                 onFocus={(event) => afficherApercuSurvol(carte, event)}
                 onBlur={masquerApercuSurvol}
               >
@@ -6835,7 +7212,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             variant="graveyard"
             topCard={duel.joueur.cimetiere.at(-1)}
             onHoverCard={afficherApercuSurvol}
-            onLeaveHoverCard={masquerApercuSurvol}
+            onLeaveHoverCard={quitterCarteSurvol}
           />
           <CardPile count={duel.joueur.deck.length} label="Paquet" variant="deck" drawing={piochesJoueur.length > 0} drawToken={tokenPiocheJoueur} />
         </div>
@@ -6851,7 +7228,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             {duel.joueur.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.joueur.bouclier}</span>}
           </span>
           <WizardManaCounters mana={duel.joueur.mana} />
-          <span className="rpg-wizard-plate__zones">Main · {duel.joueur.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.joueur.deck.length} · Cimetière {duel.joueur.cimetiere.length}</span></span>
+          <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.joueur.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {duel.joueur.deck.length}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.joueur.cimetiere.length}</span></span></span>
         </div>
 
         <div className="rpg-bottombar">
@@ -7165,7 +7542,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   onClick={() => cliquerCarteMain(carteId, i)}
                   aria-pressed={defausseOuverte ? defausseSelectionnee : undefined}
                   onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
-                  onMouseLeave={masquerApercuSurvol}
+                  onMouseLeave={quitterCarteSurvol}
                   onFocus={(event) => afficherApercuSurvol(carte, event)}
                   onBlur={masquerApercuSurvol}
                   onDragStart={(event) => commencerGlisserCarte(event, carte)}
@@ -7256,6 +7633,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             armes={cartesDesIds(apercuSurvol.armesIds)}
             style={apercuSurvol.style}
             panelRef={panelRef}
+            interactif={Boolean(apercuSurvol.interactif)}
+            onPointerEnter={entrerApercuSurvol}
+            onPointerLeave={sortirApercuSurvol}
           />
         )}
         {apercuMagie && (
