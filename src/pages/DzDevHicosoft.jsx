@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
@@ -7,6 +7,76 @@ const videoId = 'aTs0zhm6Leg';
 
 function Arrow() {
   return <span aria-hidden="true">↗</span>;
+}
+
+/**
+ * Le trailer du studio, ouvert sur un bouton de lecture jaune.
+ *
+ * Le `<video>` natif garde ses `controls` (pointer, durée, son) : le bouton
+ * n'est qu'une invite posée sur l'affiche, jamais le seul moyen de lire. Il
+ * s'efface dès que la lecture démarre, et revient à la pause, en fin de
+ * séquence, ou simplement au survol du cadre pendant la lecture pour mettre en
+ * pause. Le libellé dit toujours l'action du clic — « Lire », « Pause »,
+ * « Reprendre » ou « Revoir ». L'état venant des événements du média et non du
+ * clic, la barre native et le clavier gardent le bouton synchronisé.
+ */
+function StudioTrailer() {
+  const videoRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [ended, setEnded] = useState(false);
+
+  // Le libellé décrit toujours l’action du clic : « Pause » tant que la
+  // séquence tourne (le bouton réapparaît au survol), puis « Reprendre » ou
+  // « Revoir » une fois arrêtée.
+  const label = playing ? 'Pause' : ended ? 'Revoir l’extrait' : started ? 'Reprendre l’extrait' : 'Lire l’extrait';
+
+  function toggle() {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      setEnded(false);
+      // `play()` peut être refusé (politique navigateur, média absent) : on
+      // n’en fait pas un cas d’erreur, le lecteur natif reste sous le bouton.
+      const startedRead = video.play();
+      if (startedRead && startedRead.catch) startedRead.catch(() => setPlaying(false));
+    } else {
+      video.pause();
+    }
+  }
+
+  return (
+    <figure className="dzdev-article-video wrap">
+      <div className={playing ? 'dzdev-video-frame dzdev-video-frame--poster is-playing' : 'dzdev-video-frame dzdev-video-frame--poster'}>
+        <video
+          ref={videoRef}
+          controls
+          playsInline
+          preload="metadata"
+          poster={`${base}videos/hicosoft-eulogy-poster.jpg`}
+          aria-label="Extrait cinématique de Eulogy: Cries of War"
+          onPlay={() => { setPlaying(true); setStarted(true); }}
+          onPause={() => setPlaying(false)}
+          onEnded={() => { setPlaying(false); setEnded(true); }}
+        >
+          <source src={`${base}videos/hicosoft-studio-feature-1080p.mp4`} type="video/mp4" />
+          Votre navigateur ne prend pas en charge la lecture de cette vidéo.
+        </video>
+        {/* Voile foncé : sans lui, l'affiche claire du studio mange le libellé. */}
+        <span className="dzdev-video-scrim" aria-hidden="true" />
+        <button
+          type="button"
+          className="dzdev-video-play"
+          onClick={toggle}
+          aria-label={playing ? 'Mettre l’extrait cinématique en pause' : `${label} de Eulogy: Cries of War`}
+        >
+          <span className="dzdev-video-play-badge" aria-hidden="true">{playing ? 'Ⅱ' : '▶'}</span>
+          <span className="dzdev-video-play-label">{label}</span>
+        </button>
+      </div>
+      <figcaption>L’extrait cinématique de <i>Eulogy: Cries of War</i>, le projet annoncé du studio · 39 s.</figcaption>
+    </figure>
+  );
 }
 
 export default function DzDevHicosoft() {
@@ -20,21 +90,7 @@ export default function DzDevHicosoft() {
         <div className="dzdev-byline"><span>PORTRAIT DZ DEV Nº 01</span><span>HICOSOFT STUDIO</span></div>
       </header>
 
-      <figure className="dzdev-article-video wrap">
-        <div className="dzdev-video-frame">
-          <video
-            controls
-            playsInline
-            preload="metadata"
-            poster={`${base}videos/hicosoft-eulogy-poster.jpg`}
-            aria-label="Extrait cinématique de Eulogy: Cries of War"
-          >
-            <source src={`${base}videos/hicosoft-studio-feature-1080p.mp4`} type="video/mp4" />
-            Votre navigateur ne prend pas en charge la lecture de cette vidéo.
-          </video>
-        </div>
-        <figcaption>L’extrait cinématique de <i>Eulogy: Cries of War</i>, le projet annoncé du studio · 39 s.</figcaption>
-      </figure>
+      <StudioTrailer />
 
       <article className="dzdev-story wrap">
         <p className="dzdev-story-lead">HicoSoft Studio est un studio de jeux vidéo indépendant basé à Alger. Son site présente trois pôles de production : le développement, le game design et l’art — de la programmation des systèmes à la création des mécaniques et de l’univers visuel.</p>
