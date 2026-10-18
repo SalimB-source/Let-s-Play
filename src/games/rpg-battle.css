@@ -2970,6 +2970,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-color: rgba(255, 206, 110, .9);
   box-shadow: 0 12px 30px rgba(0, 0, 0, .65), 0 0 18px rgba(255, 196, 92, .28), inset 0 1px rgba(255, 255, 255, .1);
 }
+/* Seconde vague d'un sort à écho (le Nuage de cendres) : bordure braise,
+   pour qu'on la reconnaisse comme le même sort qui retombe au tour suivant
+   de son lanceur — ni magie neuve (turquoise), ni contre (or). */
+.rpg-spell-played--vague {
+  border-color: rgba(255, 158, 100, .9);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .65), 0 0 18px rgba(255, 140, 80, .3), inset 0 1px rgba(255, 255, 255, .1);
+}
 .rpg-spell-played__art {
   display: block;
   width: 58px;
