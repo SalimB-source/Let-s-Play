@@ -1464,6 +1464,24 @@ assert.match(duelEngine, /if \(echo\.coteSource && echo\.coteSource !== lanceur\
   'tant que c’est l’autre camp qui commence, la promesse reste en suspens — il a son tour pour jouer');
 assert.match(duelEngine, /const cibles = \[\.\.\.camp\.creatures\];\s*if \(!cibles\.length\) \{\s*duel\.log\.push\(`L’écho de \$\{nomSource\} se dissipe : plus rien à brûler sur la table\.`\);/,
   'un écho qui ne trouve personne à son heure se dissipe, et le journal le dit');
+// La vague venue d'écho se voit : l'interface photographie le registre des
+// promesses avant de fermer le tour, puis réaffiche la carte de la promesse
+// éteinte en preview — comme au premier lancer, avec un bandeau qui nomme
+// la vague au lieu d'une magie jouée.
+assert.match(battlePage, /const echosAvantRetour = \(duel\.joueur\.degatsEchos \?\? \[\]\)\s*\.concat\(duel\.sorcier\.degatsEchos \?\? \[\]\);/,
+  'le registre des échos est photographié avant que le tour ne se ferme');
+assert.match(battlePage, /annoncerEchosRetombes\(echosAvantRetour\);/,
+  'l’ouverture du tour réaffiche la carte de la promesse venue d’écho');
+assert.match(battlePage, /\(echo\.coteSource === lanceur \|\| !echo\.coteSource\)\s*&& \(Number\(echo\.toursRestants\) \|\| 1\) <= 1\s*&& !promessesRestantes\.has\(echo\)/,
+  'seule la promesse éteinte — celle du tour qui vient de s’ouvrir — repart en preview, pas celles qui attendent encore');
+assert.match(battlePage, /annoncerMagie\(carte, cibleDecrite, \{ vague: true \}\);/,
+  'la vague retombe avec la preview et le bandeau du sort, marqués « vague »');
+assert.match(battlePage, /setSortJoue\(\{ carteId: carte\.id, cible, contre, vague \}\);/,
+  'l’état du bandeau porte le drapeau vague jusqu’au rendu');
+assert.match(battlePage, /contre \? 'CONTRE DU SORCIER' : vague \? 'SECONDE VAGUE' : 'MAGIE JOUÉE'/,
+  'le bandeau nomme la seconde vague au lieu d’une magie jouée');
+assert.match(battleCss, /\.rpg-spell-played--vague\s*\{[^}]*border-color:\s*rgba\(255, 158, 100, \.9\);/s,
+  'la vague a sa teinte braise, entre la magie neuve (turquoise) et le contre (or)');
 assert.match(aiBrain, /const durable = Number\(effet\.tours\) > 0 \? 0\.5 : 1;/,
   'l’IA ne paie pas un renfort de magie rapide au prix d’un renfort durable');
 assert.match(aiBrain, /const echoMontant = Math\.max\(0, Number\(effet\.echo\?\.amount\) \|\| 0\);/,

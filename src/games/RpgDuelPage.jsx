@@ -2031,13 +2031,19 @@ function SpellAnnouncement({ annonce }) {
   const carte = cardById(annonce?.carteId);
   if (!carte) return null;
   const contre = Boolean(annonce.contre);
+  // La vague d'un sort à écho (le Nuage de cendres) : au début du tour
+  // suivant de son lanceur, la carte se réaffiche en preview et le bandeau
+  // nomme la vague au lieu d'une magie qui partirait pour la première fois.
+  const vague = Boolean(annonce.vague);
   return (
     <section
-      className={`rpg-spell-played${contre ? ' rpg-spell-played--contre' : ''}`}
+      className={`rpg-spell-played${contre ? ' rpg-spell-played--contre' : ''}${vague ? ' rpg-spell-played--vague' : ''}`}
       role="status"
       aria-label={contre
         ? `Contre : ${carte.name} défait ${annonce.cible.nom}.`
-        : `Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
+        : vague
+          ? `Seconde vague : ${carte.name}. Cible : ${annonce.cible.nom}.`
+          : `Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
       <img
         className={`rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
@@ -2048,8 +2054,9 @@ function SpellAnnouncement({ annonce }) {
       <div className="rpg-spell-played__details">
         {/* Le sur-titre prend la teinte de la famille du sort annoncé. Un
             contre garde son or : sa règle est plus spécifique (voir
-            `rpg-battle.css`). */}
-        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : 'MAGIE JOUÉE'}</span>
+            `rpg-battle.css`). Une vague reprend la teinte du sort : elle est
+            le même sort qui retombe, pas une nouvelle magie. */}
+        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : vague ? 'SECONDE VAGUE' : 'MAGIE JOUÉE'}</span>
         <strong>{carte.name}</strong>
         <p>{carte.text}</p>
         <div className="rpg-spell-played__target">
@@ -5169,6 +5176,43 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     duel.joueur.pv < instantane.pv
     || (duel.joueur.bouclier ?? 0) < instantane.bouclier
   );
+  // Une sorcellerie à écho (le Nuage de cendres) dont la promesse est venue
+  // d'écho au début de ce tour : `rpgFinDeTour` vient de la consommer. La
+  // promesse éteinte — plus consignée dans le registre de l'un des deux camps
+  // — fait revenir la carte en preview au centre de la table, et le bandeau
+  // nomme la vague : le sort se reconnaît à sa deuxième apparition, comme au
+  // premier lancer.
+  const annoncerEchosRetombes = (echosAvant) => {
+    if (rpgVainqueur(duel)) return;
+    const lanceur = duel.tour;
+    const promessesRestantes = new Set((duel.joueur.degatsEchos ?? [])
+      .concat(duel.sorcier.degatsEchos ?? []));
+    const retombes = echosAvant.filter((echo) =>
+      (echo.coteSource === lanceur || !echo.coteSource)
+      && (Number(echo.toursRestants) || 1) <= 1
+      && !promessesRestantes.has(echo));
+    // Plusieurs vagues dues en même temps : la preview est un seul battement,
+    // on la porte sur la première promesse qui nomme une carte.
+    const promesse = retombes.find((echo) => cardById(echo?.carteId)) ?? retombes[0];
+    const carte = cardById(promesse?.carteId);
+    if (!carte) return;
+    const coteVisee = lanceur === 'joueur' ? 'sorcier' : 'joueur';
+    const cibles = coteVisee === 'sorcier' ? duel.sorcier.creatures : duel.joueur.creatures;
+    const cibleDecrite = promesse.cible === 'sorcier'
+      ? {
+          nom: coteVisee === 'sorcier' ? 'Le sorcier' : 'Vous',
+          illustrationUrl: coteVisee === 'sorcier' ? portraitSorcierAdverse : undefined,
+          targetPlate: coteVisee,
+          targetIds: [],
+        }
+      : {
+          nom: coteVisee === 'sorcier' ? 'Toutes les créatures adverses' : 'Toutes vos créatures',
+          targetPlate: coteVisee === 'sorcier' ? 'sorcier' : null,
+          targetIds: cibles.map((entite) => entite.id),
+        };
+    annoncerMagie(carte, cibleDecrite, { vague: true });
+  };
+
   // Le tour qui s'ouvre peut porter un écho différé (Nuage de cendres) : les
   // blessures et les morts qu'il cause s'animent comme les autres, au lieu de
   // se contenter d'un chiffre qui change sur la carte.
@@ -5176,11 +5220,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const instantane = prendreInstantaneDegatsJoueur();
     const champAvantFinDeTour = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
+    // Le registre des échos avant de fermer le tour : la promesse que l'ouverture
+    // de ce tour résout se réaffiche en preview (`annoncerEchosRetombes`).
+    const echosAvantRetour = (duel.joueur.degatsEchos ?? [])
+      .concat(duel.sorcier.degatsEchos ?? []);
     rpgFinDeTour(duel);
     // Début de tour : le rail allume la phase le temps de la pioche.
     setDebutVisible(true);
     later(() => setDebutVisible(false), 800);
     animerModificationsChamp(champAvantFinDeTour, [], debutJournalDestructions);
+    annoncerEchosRetombes(echosAvantRetour);
     return joueurToucheDepuis(instantane);
   };
 
@@ -5510,7 +5559,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   // `contre` : la carte est un contresort (joué par le joueur ou par le sorcier)
   // qui défait la carte visée — le bandeau le dit au lieu de « Magie jouée ».
-  const annoncerMagie = (carte, cible, { contre = false, sonForce = null } = {}) => {
+  // `vague` : la promesse d'un sort à écho (le Nuage de cendres) retombe au
+  // début du tour suivant de son lanceur — la carte se réaffiche en preview,
+  // le son du sort reprend, et le bandeau nomme la vague.
+  const annoncerMagie = (carte, cible, { contre = false, vague = false, sonForce = null } = {}) => {
     if (contre) {
       jouerSfx('card_countered');
     } else {
@@ -5526,7 +5578,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
-    setSortJoue({ carteId: carte.id, cible, contre });
+    setSortJoue({ carteId: carte.id, cible, contre, vague });
     setApercuMagie(carte.id);
     timerApercuMagieRef.current = window.setTimeout(() => {
       timerApercuMagieRef.current = null;
