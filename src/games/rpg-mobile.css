@@ -357,6 +357,15 @@
 .rpg-battle--touch .card-row .rpg-card-stack > .rpg-card { width: 100%; }
 .rpg-battle--touch .card-row .rpg-card { min-width: 0; min-height: 0; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius, 10px); touch-action: pan-x; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
+.rpg-battle--touch .card-row .rpg-card.is-declared-attacker,
+.rpg-battle--touch .card-row .rpg-card.is-selected.is-declared-attacker {
+  outline: 2.5px solid #ff534c;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 2px rgba(255, 83, 76, .96),
+    0 0 18px 5px rgba(239, 49, 43, .76),
+    0 0 30px 8px rgba(222, 38, 34, .45);
+}
 /* Pas de renfort propre aux armes au doigt : leur plaque est l'épaisseur
    commune (`--rpg-card-border`), sur la table, en main et dans les piles. */
 .rpg-battle--touch .card-table > .rpg-bottombar { grid-area: controls; display: flex; flex-direction: column; justify-content: flex-end; align-self: stretch; gap: 6px; padding: 4px max(4px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) 4px; overflow-y: auto; z-index: 20; }

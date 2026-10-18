@@ -2063,6 +2063,27 @@ function SpellAnnouncement({ annonce }) {
   );
 }
 
+/** Bandeau d'attente d'un choix ou d'une action du joueur, affiché au centre
+ *  de la table dans le même style que « Votre tour » (`AnnonceTour`). */
+function AnnonceActionJoueur({ invite, decalee = false }) {
+  return (
+    <div
+      className={`rpg-annonce-action${decalee ? ' is-avec-annonce-tour' : ''}`}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {invite && (
+        <p key={invite.cle} className={`rpg-annonce-action__bandeau is-joueur${invite.classe ? ` ${invite.classe}` : ''}`}>
+          <span className="rpg-annonce-tour__lamp" aria-hidden="true" />
+          <strong>{invite.texte}</strong>
+          <span className="rpg-annonce-tour__lamp" aria-hidden="true" />
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** Bandeau d'ouverture de tour : « Votre tour » / « Tour de l'adversaire ».
  *
  *  Purement informatif, il ne capte aucun geste (`pointer-events: none`) et
@@ -3713,7 +3734,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (!duel) return;
     const nouvelles = rpgConsommerPresentations(duel)
-      .filter((event) => event.type === 'effet' || event.cote === 'joueur');
+      .filter((event) => event.type === 'effet');
     if (nouvelles.length) setPresentationsCartes((file) => [...file, ...nouvelles]);
   });
   const presentationCarte = presentationsCartes[0];
@@ -4388,13 +4409,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const hautMain = main ? main.getBoundingClientRect().top - boiteTable.top : boiteTable.height;
       const milieu = boiteTable.height / 2;
       const ecartVise = Math.min(28, Math.max(10, boiteTable.height * 0.04));
-      const ecart = Math.min(
+      const ecartEquipe = Math.min(
         ecartVise,
         hautMain - 4 - caseEquipe.offsetHeight - milieu,
+      );
+      const ecartEnnemiVise = Math.min(46, Math.max(22, boiteTable.height * 0.08));
+      const ecartEnnemi = Math.min(
+        ecartEnnemiVise,
         milieu - hautRangeeEnnemi - caseEnnemi.offsetHeight,
       );
-      const ennemi = Math.round(milieu - ecart - basEnnemi);
-      const equipe = Math.round(milieu + ecart - hautEquipe);
+      const ennemi = Math.round(milieu - ecartEnnemi - basEnnemi);
+      const equipe = Math.round(milieu + ecartEquipe - hautEquipe);
       if (ennemi === appliques.ennemi && equipe === appliques.equipe) return;
       decalagesRangeesRef.current = { ennemi, equipe };
       table.style.setProperty('--rpg-ennemis-decalage', `${ennemi}px`);
@@ -6836,6 +6861,81 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     : null);
   const casesEnnemi = casesParId(duel.sorcier);
   const casesJoueur = casesParId(duel.joueur);
+  const inviteActionJoueur = (mulliganOuvert || choixManaEssaiOuvert || sacrificeDemande || Boolean(vainqueur))
+    ? null
+    : sacrificeEnCours
+      ? {
+        cle: `sacrifice:${sacrificeEnCours}`,
+        classe: 'rpg-sacrifice-prompt',
+        texte: `Champ plein — choisissez une créature à sacrifier pour poser ${cardById(sacrificeEnCours)?.name ?? 'cette carte'}`,
+      }
+      : defausseOuverte
+        ? {
+          cle: `defausse:${duel.defausseEnAttente.motif ?? 'effet'}:${duel.defausseEnAttente.restant}:${selectionDefausseValide ? carteDefausseSelectionnee.carteId : 'aucune'}`,
+          classe: 'rpg-discard-prompt',
+          texte: duel.defausseEnAttente.motif === 'fin-de-tour'
+            ? selectionDefausseValide
+              ? `Fin du tour : carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · encore ${duel.defausseEnAttente.restant} à défausser`
+              : `Fin du tour : choisissez une carte à défausser (${duel.defausseEnAttente.restant} restante${duel.defausseEnAttente.restant > 1 ? 's' : ''})`
+            : selectionDefausseValide
+              ? `Carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · ${duel.defausseEnAttente.restant} à défausser`
+              : `Choisissez une carte à défausser (${duel.defausseEnAttente.restant})`,
+        }
+        : cibleEnCours
+          ? {
+            cle: `cible:${cibleEnCours}:${cibleAllieeMagie ?? '1'}`,
+            classe: 'rpg-target-prompt',
+            texte: carteEstArme(carteCiblee)
+              ? `Choisissez une créature alliée à équiper avec ${carteCiblee.name}`
+              : (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
+                ? (cibleAllieeMagie
+                  ? 'Choisissez la créature adverse à affronter'
+                  : `Choisissez votre créature pour ${carteCiblee.name}`)
+                : modeCible === 'allie'
+                  ? `Choisissez une créature alliée pour ${carteCiblee?.name ?? 'cet effet'}`
+                  : modeCible === 'ennemi'
+                    ? `Choisissez une cible adverse pour ${carteCiblee?.name ?? 'cet effet'}`
+                    : `Choisissez une cible pour ${carteCiblee?.name ?? 'cet effet'}`,
+          }
+          : cibleArmeEnCours
+            ? {
+              cle: `arme:${cibleArmeEnCours.entiteId}:${cibleArmeEnCours.armeId}:${cibleArmeEnCours.mode ?? 'seul'}`,
+              classe: 'rpg-target-prompt',
+              texte: `Choisissez une cible pour ${armeById(cibleArmeEnCours.armeId)?.name ?? 'votre arme'}`,
+            }
+            : activationEnCours
+              ? {
+                cle: `activation:${activationEnCours}`,
+                classe: 'rpg-target-prompt',
+                texte: `Choisissez une cible pour ${cardById(duel.joueur.creatures.find((e) => e.id === activationEnCours)?.carteId)?.name ?? 'la capacité activée'}`,
+              }
+              : terrainManaChoix
+                ? {
+                  cle: `mana:${terrainManaChoix.terrainId}`,
+                  classe: 'rpg-mana-prompt',
+                  texte: 'Choisissez la couleur de mana à produire',
+                }
+                : (combatEntrant && reponseActive)
+                  ? {
+                    cle: `combat:${combatEntrant.coteAttaquant}:${bloqueurSelectionne ?? 'aucun'}`,
+                    classe: 'rpg-combat-prompt',
+                    texte: combatEntrant.coteAttaquant === 'joueur'
+                      ? 'Blocages déclarés — jouez un sort rapide ou acceptez les blocages'
+                      : bloqueurSelectionne
+                        ? 'Choisissez la créature attaquante à bloquer'
+                        : 'Choisissez vos bloqueurs ou résolvez le combat',
+                  }
+                  : (monTour && phase && !combatEntrant)
+                    ? {
+                      cle: `attaque:${cibleAttaqueEnCours ?? 'aucune'}:${attaquants.length}`,
+                      classe: 'rpg-attack-prompt',
+                      texte: cibleAttaqueEnCours
+                        ? 'Coup rapide — choisissez une cible ou confirmez l’attaque'
+                        : attaquants.length > 0
+                          ? `${attaquants.length} attaquant${attaquants.length > 1 ? 's' : ''} choisi${attaquants.length > 1 ? 's' : ''} — confirmez l’attaque`
+                          : 'Choisissez vos créatures attaquantes',
+                    }
+                    : null;
 
   return (
     <div
@@ -7030,6 +7130,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {/* Bandeau d'ouverture de tour : le camp qui prend la main se nomme au
             centre de la table pendant 1,5 s, puis s'efface (`AnnonceTour`). */}
         <AnnonceTour annonce={annonceTour} />
+        <AnnonceActionJoueur invite={inviteActionJoueur} decalee={Boolean(annonceTour)} />
 
         {/* Soins : quand VOS PV remontent, les bords de la table s'éclairent
             d'un vert doux — le pendant du voile rouge des coups reçus. La zone
@@ -7489,22 +7590,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   </button>
                 )}
                 {sacrificeEnCours && (
-                  <>
-                    <span className="rpg-sacrifice-prompt" role="status" aria-live="polite">
-                      Champ plein (5 créatures) — touchez la créature à sacrifier pour poser {cardById(sacrificeEnCours)?.name ?? 'cette carte'}.
-                    </span>
-                    <button
-                      type="button"
-                      className="rpg-btn rpg-btn--ghost rpg-btn--sacrifice-cancel"
-                      onClick={() => {
-                        setSacrificeEnCours(null);
-                        jouerSfx('annuler');
-                        force();
-                      }}
-                    >
-                      Renoncer
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    className="rpg-btn rpg-btn--ghost rpg-btn--sacrifice-cancel"
+                    onClick={() => {
+                      setSacrificeEnCours(null);
+                      jouerSfx('annuler');
+                      force();
+                    }}
+                  >
+                    Renoncer
+                  </button>
                 )}
                 {monTour && !phase && !combatEntrant && !cibleEnCours && !defausseOuverte && duel.joueur.creatures
                   .filter((entite) => armeById(entite.arme?.carteId ?? '')?.activation)
@@ -7537,28 +7633,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       );
                     });
                   })}
-                {defausseOuverte && (
-                  <>
-                    <span className="rpg-discard-prompt" role="status" aria-live="polite">
-                      {duel.defausseEnAttente.motif === 'fin-de-tour'
-                        ? selectionDefausseValide
-                          ? `Fin du tour : carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · encore ${duel.defausseEnAttente.restant} à défausser pour redescendre à ${RPG_MANA_ESSAI_MAIN_MAX} cartes.`
-                          : `Fin du tour : vous avez plus de ${RPG_MANA_ESSAI_MAIN_MAX} cartes en main. Choisissez une carte, puis validez la défausse (${duel.defausseEnAttente.restant} restante${duel.defausseEnAttente.restant > 1 ? 's' : ''}).`
-                        : selectionDefausseValide
-                          ? `Carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · ${duel.defausseEnAttente.restant} à défausser.`
-                          : `Choisissez une carte de votre main, puis validez la défausse (${duel.defausseEnAttente.restant}).`}
-                    </span>
-                    {selectionDefausseValide && (
-                      <button
-                        type="button"
-                        className="rpg-btn rpg-btn--primary rpg-btn--discard-confirm"
-                        onClick={confirmerDefausse}
-                        aria-label={`Valider la défausse de ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'la carte sélectionnée'}`}
-                      >
-                        ✓ Valider la défausse
-                      </button>
-                    )}
-                  </>
+                {defausseOuverte && selectionDefausseValide && (
+                  <button
+                    type="button"
+                    className="rpg-btn rpg-btn--primary rpg-btn--discard-confirm"
+                    onClick={confirmerDefausse}
+                    aria-label={`Valider la défausse de ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'la carte sélectionnée'}`}
+                  >
+                    ✓ Valider la défausse
+                  </button>
                 )}
               </div>
             </div>
@@ -7844,7 +7927,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <HoverCardPreview
               carte={cardById(presentationCarte.carteId)}
               variante="fiche"
-              surface={presentationCarte.type === 'pioche' ? 'CARTE PIOCHÉE' : 'EFFET ACTIVÉ'}
+              surface="EFFET ACTIVÉ"
               style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
             />
           </div>
@@ -7861,6 +7944,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onPointerLeave={sortirApercuSurvol}
           />
         )}
+        {apercuMagie && <div className="rpg-preview-backdrop rpg-preview-backdrop--magie" aria-hidden="true" />}
         {apercuMagie && (
           <HoverCardPreview
             carte={cardById(apercuMagie)}
