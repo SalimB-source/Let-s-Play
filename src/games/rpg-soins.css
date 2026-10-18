@@ -1,0 +1,325 @@
+/*
+ * Le Sablier — l'éclat des soins.
+ * --------------------------------
+ * Chaque gain de vie réel (le journal des soins du moteur, relevé par la page)
+ * allume, sur la plaque du sorcier soigné ou sur la créature soignée :
+ *   - un halo vert qui gonfle puis s'efface (`.rpg-soin__halo`) ;
+ *   - un voile de lumière qui remonte (`.rpg-soin__voile`) ;
+ *   - des motes — perles et petites croix — qui s'élèvent (`.rpg-soin__mote`) ;
+ *   - le « +N » regagné : il monte du chiffre des PV sur une plaque
+ *     (`.rpg-soin-montant`), du cœur de la carte sur une créature
+ *     (`.rpg-soin__montant`) ;
+ *   - un battement vert du chiffre des PV, du cœur, ou de la défense.
+ * Quand ce sont VOS PV qui remontent, les bords de la table s'éclairent d'un
+ * vert doux (`.rpg-soin-ecran`), pendant du voile rouge des coups reçus.
+ *
+ * Le vert du soin reste chaud (vert feuille, pointe d'or) : il ne se confond
+ * ni avec le cyan du « ciblable », ni avec le bleu clair des bonus de stats.
+ * Tout est décoratif et ne capte aucun geste ; en mouvement réduit, il ne
+ * reste qu'une lueur qui s'allume et s'éteint, et le « +N » sans glissé.
+ */
+
+.rpg-soin {
+  --soin-clair: #f1fff3;
+  --soin-vif: #8dffb2;
+  --soin-halo: rgba(74, 232, 132, .62);
+  --soin-fond: rgba(18, 92, 46, .9);
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* La plaque qui brille contient ses calques : le z-index de l'éclat ne se mêle
+   pas aux voisins de la table, même dans la disposition tactile. */
+.rpg-wizard-plate.is-healing { isolation: isolate; }
+
+/* ── Halo : l'anneau vert qui gonfle autour de la plaque ─────────────────── */
+.rpg-soin__halo {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  box-shadow:
+    0 0 0 2px var(--soin-vif),
+    0 0 16px 4px var(--soin-halo),
+    0 0 34px 10px rgba(74, 232, 132, .26),
+    inset 0 0 14px rgba(141, 255, 178, .45);
+  animation: rpg-soin-halo 1.5s ease-out forwards;
+}
+@keyframes rpg-soin-halo {
+  0% { opacity: 0; transform: scale(.97); }
+  16% { opacity: 1; transform: scale(1.02); }
+  48% { opacity: .8; transform: scale(1.035); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+
+/* ── Voile : une bande de lumière qui remonte la plaque ou la carte ──────── */
+.rpg-soin__voile {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: linear-gradient(180deg,
+    transparent 36%,
+    rgba(150, 255, 190, .16) 44%,
+    rgba(214, 255, 226, .6) 50%,
+    rgba(150, 255, 190, .16) 56%,
+    transparent 64%);
+  background-size: 100% 300%;
+  background-position: 50% 0%;
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: rpg-soin-voile 1.05s cubic-bezier(.3, .6, .35, 1) .08s forwards;
+}
+@keyframes rpg-soin-voile {
+  0% { opacity: 0; background-position: 50% 0%; }
+  15%, 80% { opacity: 1; }
+  100% { opacity: 0; background-position: 50% 100%; }
+}
+
+/* ── Motes : perles de lumière et petites croix qui s'élèvent ────────────── */
+.rpg-soin__mote {
+  position: absolute;
+  left: var(--x, 50%);
+  bottom: 12%;
+  width: var(--t, 5px);
+  height: var(--t, 5px);
+  margin-left: calc(var(--t, 5px) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--soin-clair) 0 30%, var(--soin-vif) 52%, rgba(141, 255, 178, 0) 72%);
+  box-shadow: 0 0 6px 1px rgba(141, 255, 178, .75);
+  opacity: 0;
+  animation: rpg-soin-mote 1.2s cubic-bezier(.22, .7, .35, 1) var(--d, 0ms) forwards;
+}
+.rpg-soin__mote--croix {
+  border-radius: 1px;
+  background:
+    linear-gradient(var(--soin-clair), var(--soin-clair)) center / 100% 30% no-repeat,
+    linear-gradient(var(--soin-clair), var(--soin-clair)) center / 30% 100% no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 0 2px var(--soin-vif)) drop-shadow(0 0 5px rgba(74, 232, 132, .85));
+}
+@keyframes rpg-soin-mote {
+  0% { opacity: 0; transform: translate(0, 6px) scale(.5); }
+  18% { opacity: 1; transform: translate(calc(var(--dx, 0px) * .3), -6px) scale(1); }
+  70% { opacity: .9; }
+  100% { opacity: 0; transform: translate(var(--dx, 0px), var(--montee, -42px)) scale(.85); }
+}
+
+/* ── Sur une créature : la carte rogne ses bords, tout se joue dedans ────── */
+.rpg-soin--carte { z-index: 9; }
+.rpg-soin--carte .rpg-soin__halo {
+  box-shadow:
+    inset 0 0 0 2px var(--soin-vif),
+    inset 0 0 26px 5px var(--soin-halo);
+  animation-name: rpg-soin-halo-carte;
+}
+@keyframes rpg-soin-halo-carte {
+  0% { opacity: 0; }
+  16% { opacity: 1; }
+  55% { opacity: .75; }
+  100% { opacity: 0; }
+}
+/* Une source de lumière monte du bas de la carte. */
+.rpg-soin--carte::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(ellipse 80% 55% at 50% 100%,
+    rgba(141, 255, 178, .55), rgba(74, 232, 132, .18) 55%, transparent 76%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: rpg-soin-source 1.4s ease-out forwards;
+}
+@keyframes rpg-soin-source {
+  0% { opacity: 0; transform: translateY(30%); }
+  25% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-22%); }
+}
+.rpg-soin--carte .rpg-soin__mote { bottom: 8%; --montee: -46cqw; }
+.rpg-soin__montant {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  color: var(--soin-clair);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(16px, 24cqw, 36px);
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow:
+    0 0 2px var(--soin-fond),
+    0 1px 0 var(--soin-fond),
+    0 -1px 0 var(--soin-fond),
+    1px 0 0 var(--soin-fond),
+    -1px 0 0 var(--soin-fond),
+    0 0 10px rgba(74, 232, 132, .95),
+    0 0 22px rgba(74, 232, 132, .6);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: rpg-soin-montant-carte 1.5s cubic-bezier(.2, .75, .3, 1) .06s forwards;
+}
+@keyframes rpg-soin-montant-carte {
+  0% { opacity: 0; transform: translate(-50%, -20%) scale(.55); }
+  16% { opacity: 1; transform: translate(-50%, -50%) scale(1.18); }
+  30% { transform: translate(-50%, -56%) scale(1); }
+  72% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -125%) scale(.96); }
+}
+/* La défense de la créature bat en vert pendant le soin. */
+.rpg-card.is-healing--a .rpg-card__pt { animation: rpg-soin-stat-a 1s ease-out; }
+.rpg-card.is-healing--b .rpg-card__pt { animation: rpg-soin-stat-b 1s ease-out; }
+@keyframes rpg-soin-stat-a {
+  25% { transform: scale(1.22); box-shadow: 0 0 0 2px rgba(150, 255, 185, .95), 0 0 14px rgba(74, 232, 132, .95); }
+  60% { transform: scale(1.04); box-shadow: 0 0 0 1px rgba(150, 255, 185, .6), 0 0 8px rgba(74, 232, 132, .6); }
+}
+@keyframes rpg-soin-stat-b {
+  25% { transform: scale(1.22); box-shadow: 0 0 0 2px rgba(150, 255, 185, .95), 0 0 14px rgba(74, 232, 132, .95); }
+  60% { transform: scale(1.04); box-shadow: 0 0 0 1px rgba(150, 255, 185, .6), 0 0 8px rgba(74, 232, 132, .6); }
+}
+
+/* ── Sur une plaque : le « +N » monte du chiffre des PV ──────────────────── */
+.rpg-wizard-plate__pv { position: relative; }
+.rpg-wizard-plate__hp-value { display: inline-block; }
+.rpg-soin-montant {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 62%;
+  color: #d2ffde;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: max(13px, .72em);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-shadow:
+    0 0 2px rgba(18, 92, 46, .95),
+    0 1px 0 rgba(8, 40, 20, .9),
+    0 0 9px rgba(74, 232, 132, .95),
+    0 0 18px rgba(74, 232, 132, .55);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(var(--soin-x, -50%));
+  animation: rpg-soin-montant 1.55s cubic-bezier(.2, .75, .3, 1) forwards;
+}
+@keyframes rpg-soin-montant {
+  0% { opacity: 0; transform: translate(var(--soin-x, -50%), 45%) scale(.6); }
+  16% { opacity: 1; transform: translate(var(--soin-x, -50%), 0) scale(1.16); }
+  30% { transform: translate(var(--soin-x, -50%), -8%) scale(1); }
+  72% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--soin-x, -50%), var(--soin-montee, -105%)) scale(.96); }
+}
+/* Sur PC (et dans une fenêtre PC étroite, à la souris), la fenêtre aligne les
+   PV à gauche d'une colonne large : le « +N » naît dans l'espace libre à
+   droite du chiffre, à sa hauteur, puis s'élève d'une ligne — il se lit
+   « 25 … +3 », jamais comme un exposant collé au nombre. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-soin-montant {
+  --soin-x: 0;
+  left: auto;
+  right: 12%;
+  bottom: 14%;
+}
+@media (hover: hover) and (pointer: fine) {
+  .rpg-battle--touch .rpg-soin-montant {
+    --soin-x: 0;
+    left: auto;
+    right: 12%;
+    bottom: 14%;
+  }
+}
+/* Au doigt, la plaque adverse touche le haut de l'écran, ses PV dans le coin :
+   le « +N » naît à gauche du chiffre, à sa hauteur, et y reste — monter le
+   ferait sortir de l'écran. */
+@media (hover: none), (pointer: coarse) {
+  .rpg-battle--touch .rpg-wizard-plate--ennemi .rpg-soin-montant {
+    --soin-x: -5px;
+    --soin-montee: -8%;
+    left: auto;
+    right: 100%;
+    bottom: 8%;
+  }
+}
+/* Table d'essai sur mobile (au doigt comme à la souris) : les PV tiennent dans
+   une goutte de 46 px, au milieu d'une colonne étroite collée au bord gauche
+   de l'écran — à gauche, le « +N » serait rogné ; centré, il couvrirait le
+   chiffre. Il naît sur l'épaule droite de la goutte, juste au-dessus du
+   chiffre, et monte un peu sans quitter la plaque. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-soin-montant {
+  --soin-x: 0;
+  --soin-montee: -70%;
+  left: 62%;
+  right: auto;
+  bottom: 66%;
+}
+/* Le chiffre des PV et son cœur (sur PC) battent en vert. `--a`/`--b`
+   alternent d'un soin à l'autre pour rejouer le battement. Rien n'anime le
+   bloc des PV lui-même : un `filter` y ferait passer le « +N » sous l'éclat. */
+.rpg-wizard-plate.is-healing--a .rpg-wizard-plate__hp-value { animation: rpg-soin-valeur-a .95s ease-out; }
+.rpg-wizard-plate.is-healing--b .rpg-wizard-plate__hp-value { animation: rpg-soin-valeur-b .95s ease-out; }
+.rpg-wizard-plate.is-healing--a .rpg-wizard-plate__hp-icon--heart { animation: rpg-soin-coeur-a .95s ease-out; }
+.rpg-wizard-plate.is-healing--b .rpg-wizard-plate__hp-icon--heart { animation: rpg-soin-coeur-b .95s ease-out; }
+@keyframes rpg-soin-valeur-a {
+  22% { transform: scale(1.3); color: #effff3; text-shadow: 0 0 10px rgba(74, 232, 132, .95), 0 0 2px rgba(8, 40, 20, .9); }
+  60% { transform: scale(1.05); color: #c2ffd3; }
+}
+@keyframes rpg-soin-valeur-b {
+  22% { transform: scale(1.3); color: #effff3; text-shadow: 0 0 10px rgba(74, 232, 132, .95), 0 0 2px rgba(8, 40, 20, .9); }
+  60% { transform: scale(1.05); color: #c2ffd3; }
+}
+@keyframes rpg-soin-coeur-a {
+  20% { transform: scale(1.4); color: #9dffbe; text-shadow: 0 0 10px rgba(74, 232, 132, .95); }
+  45% { transform: scale(.94); }
+  65% { transform: scale(1.12); }
+}
+@keyframes rpg-soin-coeur-b {
+  20% { transform: scale(1.4); color: #9dffbe; text-shadow: 0 0 10px rgba(74, 232, 132, .95); }
+  45% { transform: scale(.94); }
+  65% { transform: scale(1.12); }
+}
+
+/* ── Vos PV remontent : les bords de la table s'éclairent ────────────────── */
+.rpg-soin-ecran {
+  position: absolute;
+  z-index: 499;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    transparent 46%,
+    rgba(60, 200, 110, .06) 62%,
+    rgba(80, 230, 130, .22) 82%,
+    rgba(130, 255, 170, .38) 100%);
+  box-shadow: inset 0 0 90px 16px rgba(74, 232, 132, .24);
+  opacity: 0;
+  animation: rpg-soin-ecran 1.25s ease-out forwards;
+}
+@keyframes rpg-soin-ecran {
+  0%, 100% { opacity: 0; }
+  22% { opacity: 1; }
+  55% { opacity: .66; }
+}
+
+/* ── Mouvement réduit : une lueur qui s'allume et s'éteint, rien ne bouge ── */
+@keyframes rpg-soin-lueur {
+  0%, 100% { opacity: 0; }
+  20%, 60% { opacity: 1; }
+}
+@keyframes rpg-soin-montant-fixe {
+  0%, 100% { opacity: 0; }
+  12%, 75% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-soin__voile,
+  .rpg-soin__mote,
+  .rpg-soin--carte::before,
+  .rpg-soin-ecran { display: none; }
+  .rpg-soin__halo { animation-name: rpg-soin-lueur; transform: none; }
+  .rpg-soin-montant { animation-name: rpg-soin-montant-fixe; transform: translate(var(--soin-x, -50%), -20%); }
+  .rpg-soin__montant { animation-name: rpg-soin-montant-fixe; transform: translate(-50%, -50%); }
+  .rpg-wizard-plate.is-healing .rpg-wizard-plate__hp-value,
+  .rpg-wizard-plate.is-healing .rpg-wizard-plate__hp-icon--heart,
+  .rpg-card.is-healing .rpg-card__pt { animation: none; }
+}

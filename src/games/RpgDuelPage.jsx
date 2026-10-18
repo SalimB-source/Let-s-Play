@@ -11,6 +11,7 @@ import './rpg-mobile.css';
 import './rpg-story.css';
 import './rpg-deckbox.css';
 import './rpg-mana-essai.css';
+import './rpg-soins.css';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
 import { isFullscreenShortcut } from './gameFullscreen.js';
@@ -60,6 +61,7 @@ import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { clampRpgVolume, RpgAudioPlayer } from './rpgAudio.js';
 import { rpgCombatFireSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
+import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
@@ -119,6 +121,7 @@ import {
   rpgFermerFenetreReponse,
   rpgFinDeTour,
   rpgConsommerPresentations,
+  rpgConsommerSoins,
   rpgJouerCreature,
   rpgLancerAttaque,
   rpgPeutAttaquer,
@@ -1086,6 +1089,51 @@ function tirerHasardElectricite(aleatoire = Math.random) {
   };
 }
 
+/* ── Soins : l'éclat d'un gain de vie ─────────────────────────────────────── */
+// Motes de lumière fixes (position, départ, taille, dérive) : le même éclat à
+// chaque soin, sans hasard au rendu. Trois sont de petites croix — le signe du
+// soin —, les autres des perles de lumière.
+const MOTES_SOIN = [
+  { x: 14, d: 0, t: 7, dx: -5, croix: true },
+  { x: 27, d: 170, t: 4, dx: 4 },
+  { x: 40, d: 80, t: 5, dx: -3 },
+  { x: 53, d: 250, t: 8, dx: 5, croix: true },
+  { x: 66, d: 120, t: 4, dx: -4 },
+  { x: 78, d: 310, t: 5, dx: 3 },
+  { x: 89, d: 40, t: 7, dx: -2, croix: true },
+];
+
+/**
+ * L'éclat d'un soin, posé par-dessus une plaque de sorcier ou une créature :
+ * halo vert, voile de lumière qui remonte, motes qui s'élèvent et, sur une
+ * créature, le « +N » regagné. Purement décoratif (`aria-hidden`) : la phrase
+ * lue aux lecteurs d'écran vit dans la zone d'état de la table. L'appelant
+ * passe `key={soin.token}` : chaque nouveau soin rejoue l'éclat depuis le début.
+ */
+/** Variante d'un soin : `a`/`b` alternent d'un soin à l'autre, pour que le
+ *  battement du chiffre (une animation CSS) reparte même sur une cible déjà
+ *  en train de briller — le même principe que la secousse de l'écran. */
+const varianteSoin = (soin) => (soin.token % 2 ? 'a' : 'b');
+/** Les classes d'une plaque de sorcier qui regagne des PV. */
+const classeSoinPlaque = (soin) => (soin ? ` is-healing is-healing--${varianteSoin(soin)}` : '');
+
+function EclatSoin({ montant = null, surCarte = false }) {
+  return (
+    <span className={`rpg-soin ${surCarte ? 'rpg-soin--carte' : 'rpg-soin--plaque'}`} aria-hidden="true">
+      <span className="rpg-soin__halo" />
+      <span className="rpg-soin__voile" />
+      {MOTES_SOIN.map((mote) => (
+        <span
+          key={mote.x}
+          className={`rpg-soin__mote${mote.croix ? ' rpg-soin__mote--croix' : ''}`}
+          style={{ '--x': `${mote.x}%`, '--d': `${mote.d}ms`, '--t': `${mote.t}px`, '--dx': `${mote.dx}px` }}
+        />
+      ))}
+      {montant != null && <span className="rpg-soin__montant">+{montant}</span>}
+    </span>
+  );
+}
+
 export function TableCard({
   entite,
   cote,
@@ -1107,6 +1155,8 @@ export function TableCard({
   onEndBlockerDrag,
   onAssignBlocker,
   actionFx = null,
+  // `{ montant, token }` le temps de l'éclat d'un soin (`EclatSoin`), sinon null.
+  soin = null,
   playerTurn = false,
   activationDispo = false,
   onActiver = null,
@@ -1240,12 +1290,16 @@ export function TableCard({
         actionFx?.type === 'glow' ? 'fx-glow' : '',
         actionFx?.type === 'block' ? 'fx-block' : '',
         actionFx?.type === 'unblock' ? 'fx-unblock' : '',
+        // L'éclat du soin vit dans ses propres calques (`EclatSoin`) : la carte
+        // elle-même n'est pas animée, ses cinématiques `fx-*` restent libres.
+        soin ? `is-healing is-healing--${varianteSoin(soin)}` : '',
       ].filter(Boolean).join(' ')}
       style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(carte), ...(caseEssai ? { '--case-essai': caseEssai } : {}) }}
       data-case-essai={caseEssai ?? undefined}
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}
       data-card-id={carte?.id}
+      data-soin={soin ? soin.montant : undefined}
       data-armes={armes.length ? armes.join(' ') : undefined}
       data-tutorial-target={tutorialTarget}
       draggable={canDragBlocker}
@@ -1259,7 +1313,7 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
@@ -1351,6 +1405,7 @@ export function TableCard({
             <CardStatIcon type="defense" /><span className="rpg-stat-value">{entite.pv}</span>
           </span>
         </footer>
+        {soin && <EclatSoin key={soin.token} montant={soin.montant} surCarte />}
       </button>
   );
 }
@@ -3668,6 +3723,55 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(timer);
   }, [presentationCarte]);
 
+  // ── Soins : chaque gain de vie se voit et s'entend ────────────────────────
+  // Le moteur note chaque gain de vie réel (`rpgConsommerSoins`) — magie,
+  // arrivée, destruction, arme, Tribut ou transfert, des deux camps. Après
+  // chaque rendu, la page relève ce journal : la plaque du sorcier soigné ou la
+  // créature soignée s'illumine (`EclatSoin`) avec son « +N », et le soin se
+  // fait entendre — un seul bruitage par lot. `soinsVisibles` :
+  // `{ [cle]: { montant, token } }`, la clé étant 'joueur', 'sorcier' ou l'id
+  // de la créature. Un duel neuf ou restauré (annulation) repart d'un journal
+  // vide ; hors de la table, le journal est vidé sans rien montrer.
+  const [soinsVisibles, setSoinsVisibles] = useState({});
+  const sequenceSoinRef = useRef(0);
+  const soinsTimersRef = useRef([]);
+  const soinsDuelRef = useRef(null);
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    const soins = rpgConsommerSoins(duelCourant);
+    if (soinsDuelRef.current !== duelCourant || ecran !== 'partie') {
+      soinsDuelRef.current = duelCourant;
+      return;
+    }
+    const cibles = regrouperSoins(soins);
+    if (!cibles.length) return;
+    sequenceSoinRef.current += 1;
+    const token = sequenceSoinRef.current;
+    setSoinsVisibles((courant) => {
+      const suivant = { ...courant };
+      for (const { cle, montant } of cibles) suivant[cle] = { montant, token };
+      return suivant;
+    });
+    const son = sonDuSoin(soins);
+    if (son) jouerSfx(son);
+    const timer = window.setTimeout(() => {
+      soinsTimersRef.current = soinsTimersRef.current.filter((id) => id !== timer);
+      // Seul l'éclat de CE soin s'éteint : un soin plus récent sur la même
+      // cible garde le sien jusqu'au bout.
+      setSoinsVisibles((courant) => {
+        const restants = Object.fromEntries(Object.entries(courant).filter(([, soin]) => soin.token !== token));
+        return Object.keys(restants).length === Object.keys(courant).length ? courant : restants;
+      });
+    }, RPG_SOIN_DUREE);
+    soinsTimersRef.current.push(timer);
+  });
+  const effacerSoinsVisibles = () => {
+    soinsTimersRef.current.forEach((id) => window.clearTimeout(id));
+    soinsTimersRef.current = [];
+    setSoinsVisibles((courant) => (Object.keys(courant).length ? {} : courant));
+  };
+  useEffect(() => () => soinsTimersRef.current.forEach((id) => window.clearTimeout(id)), []);
+
   // Compteur de séquence pour les animations de pioche.
   const sequencePiocheRef = useRef(0);
   const carteOrigineVolRef = useRef(null);
@@ -3842,6 +3946,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return restants.length === current.length ? current : restants;
       });
       setAnimationsEntites((current) => (Object.keys(current).length ? {} : current));
+      setSoinsVisibles((current) => (Object.keys(current).length ? {} : current));
       const action = actionVolRef.current;
       if (action) {
         if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
@@ -4047,6 +4152,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCartesEnDestruction([]);
     setCarteEnVol(null);
     setImpactEcran(null);
+    effacerSoinsVisibles();
     carteOrigineVolRef.current = null;
     carteCibleeHandIndexRef.current = null;
     actionVolRef.current = null;
@@ -4793,6 +4899,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }
   if (!duel) return null;
   const vainqueur = rpgVainqueur(duel);
+  const soinJoueur = soinsVisibles.joueur ?? null;
+  const soinSorcier = soinsVisibles.sorcier ?? null;
+  // L'éclat de soin d'une créature posée. Une pile d'homonymes repliée ne
+  // montre que sa carte de tête : elle porte alors le plus grand soin de la
+  // pile, pour qu'aucun soin ne passe inaperçu derrière elle.
+  const soinDeCarte = (entite, pile, deployee) => soinsVisibles[entite.id]
+    ?? (deployee ? null : pile.entites
+      .map((membre) => soinsVisibles[membre.id])
+      .filter(Boolean)
+      .reduce((meilleur, soin) => (!meilleur || soin.montant > meilleur.montant ? soin : meilleur), null));
   const etageHistoire = histoireEtageId ? etageHistoireParId(histoireEtageId)?.etage ?? null : null;
   const etageSuivant = histoireEtageId ? prochainEtage(histoireEtageId) : null;
   const tourDuJoueur = duel.tour === 'joueur' && !vainqueur;
@@ -5088,6 +5204,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         atk: entite.atk,
         def: entite.def,
         pv: entite.pv,
+        pvMax: entite.pvMax ?? null,
         bouclier: entite.bouclier ?? 0,
         left: centerX - width / 2,
         top: centerY - height / 2,
@@ -5156,9 +5273,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     avant.forEach((entite) => {
       const apres = vivants.get(entite.entityId);
       if (!apres || entite.isTerrain) return;
+      // Un soin pur — les PV remontent vers un maximum inchangé, rien d'autre
+      // ne bouge — a sa propre cinématique (`EclatSoin`, relevé du journal des
+      // soins) : il ne rejoue pas, en plus, la lueur dorée des renforts.
+      const soinPur = apres.pv > entite.pv
+        && apres.atk === entite.atk
+        && (apres.pvMax ?? null) === entite.pvMax
+        && (apres.bouclier ?? 0) === entite.bouclier;
       if (apres.pv < entite.pv || (apres.bouclier ?? 0) < entite.bouclier || apres.def < entite.def) {
         if (!attaquants.has(entite.entityId)) touches.push(entite.entityId);
-      } else if (apres.pv > entite.pv || (apres.bouclier ?? 0) > entite.bouclier || apres.atk > entite.atk || apres.def > entite.def) {
+      } else if (!soinPur && (apres.pv > entite.pv || (apres.bouclier ?? 0) > entite.bouclier || apres.atk > entite.atk || apres.def > entite.def)) {
         renforcees.push(entite.entityId);
         if (apres.atk > entite.atk || apres.def > entite.def) statsAugmentees.push(entite.entityId);
       }
@@ -5365,11 +5489,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (contre) {
       jouerSfx('card_countered');
     } else {
+      // Un sort de soin garde le son commun des magies : le soin lui-même se
+      // fait entendre quand les PV remontent vraiment (`soin_vie`, relevé du
+      // journal des soins) — jamais deux carillons pour un seul geste, et
+      // rien de plus qu'une magie s'il est lancé à pleine vie.
       const son = sonForce
         ?? rpgWaterSoundFor(carte, 'spell')
         ?? rpgFireSoundFor(carte, 'spell')
-        ?? (carte?.effet?.type === 'soin' ? 'soin_long'
-          : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
+        ?? (carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
       jouerSfx(son);
     }
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
@@ -6904,6 +7031,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             centre de la table pendant 1,5 s, puis s'efface (`AnnonceTour`). */}
         <AnnonceTour annonce={annonceTour} />
 
+        {/* Soins : quand VOS PV remontent, les bords de la table s'éclairent
+            d'un vert doux — le pendant du voile rouge des coups reçus. La zone
+            d'état dit aux lecteurs d'écran qui regagne combien de PV. */}
+        {soinJoueur && <span key={soinJoueur.token} className="rpg-soin-ecran" aria-hidden="true" />}
+        <p className="sr-only" role="status" aria-live="polite">
+          {annonceSoins(soinsVisibles, {
+            nomAdversaire: nomSorcierAdverse,
+            nomCreature: (id) => [...duel.joueur.creatures, ...duel.sorcier.creatures]
+              .find((entite) => entite.id === id)?.name ?? null,
+          })}
+        </p>
+
         {combatEntrant && <BlockerArrows tableRef={tableRef} assignments={combatEntrant.blocages} />}
         <FaceDownHand count={duel.sorcier.main.length} drawAnimations={piochesSorcier} />
 
@@ -6919,8 +7058,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         </div>
 
-        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}`} onClick={cliquerSorcier}
+        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
           data-tutorial-target={tutorielActif && ['bienvenue', 'combat'].includes(etapeTutorielId) ? 'opponent-health' : undefined}
+          data-soin={soinSorcier ? soinSorcier.montant : undefined}
           title="Le sorcier adverse">
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={portraitSorcierAdverse} data-personnage={personnageSorcier ?? undefined} alt="" /></span>
           <span className="rpg-wizard-plate__enemy-name">{nomSorcierAdverse}</span>
@@ -6933,9 +7073,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
             <span className="rpg-wizard-plate__hp-value">{duel.sorcier.pv}</span>
             {duel.sorcier.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.sorcier.bouclier}</span>}
+            {soinSorcier && <span key={soinSorcier.token} className="rpg-soin-montant" aria-hidden="true">+{soinSorcier.montant}</span>}
           </span>
           <WizardManaCounters mana={duel.sorcier.mana} />
           <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.sorcier.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {duel.sorcier.deck.length}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.sorcier.cimetiere.length}</span></span></span>
+          {soinSorcier && <EclatSoin key={soinSorcier.token} />}
         </button>
 
         {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
@@ -7015,6 +7157,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       canReceiveBlocker={Boolean(reponseActive && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id] && !entite.infiltration)}
                       onAssignBlocker={assignerBloqueur}
                       actionFx={animationsEntites[entite.id]}
+                      soin={soinDeCarte(entite, pile, deployee)}
                       tilt={TILTS[i % TILTS.length]}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
@@ -7095,6 +7238,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       onStartBlockerDrag={commencerGlisserBloqueur}
                       onEndBlockerDrag={terminerGlisserBloqueur}
                       actionFx={animationsEntites[entite.id]}
+                      soin={soinDeCarte(entite, pile, deployee)}
                       playerTurn={tourDuJoueur}
                       tutorialTarget={tutorielActif && etapeTutorielId === 'invocation' && entite.carteId === 'tislit-des-aures'
                         ? 'played-creature'
@@ -7282,7 +7426,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <CardPile count={duel.joueur.deck.length} label="Paquet" variant="deck" drawing={piochesJoueur.length > 0} drawToken={tokenPiocheJoueur} />
         </div>
 
-        <div className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' || annonceViseVotrePlate ? ' is-spell-target' : ''}`} title="Vous">
+        <div className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' || annonceViseVotrePlate ? ' is-spell-target' : ''}${classeSoinPlaque(soinJoueur)}`} title="Vous"
+          data-soin={soinJoueur ? soinJoueur.montant : undefined}>
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" aria-hidden="true"><img src={cardArt('tin-hinan')} alt="" /></span>
           <span className="rpg-wizard-plate__profile-name">{nomProfilJoueur}</span>
           <span className="rpg-wizard-plate__identity"><strong>VOUS</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
@@ -7291,9 +7436,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
             <span className="rpg-wizard-plate__hp-value">{duel.joueur.pv}</span>
             {duel.joueur.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.joueur.bouclier}</span>}
+            {soinJoueur && <span key={soinJoueur.token} className="rpg-soin-montant" aria-hidden="true">+{soinJoueur.montant}</span>}
           </span>
           <WizardManaCounters mana={duel.joueur.mana} />
           <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.joueur.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {duel.joueur.deck.length}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.joueur.cimetiere.length}</span></span></span>
+          {soinJoueur && <EclatSoin key={soinJoueur.token} />}
         </div>
 
         <div className="rpg-bottombar">
