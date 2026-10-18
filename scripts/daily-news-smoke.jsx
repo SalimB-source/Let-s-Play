@@ -1,4 +1,8 @@
-// Rendu réel de l’édition du 15.10.2026, via les routes publiques du site.
+// Rendu réel des éditions quotidiennes, via les routes publiques du site.
+// L'édition du jour (18.10.2026) est importée nue — comme dans les pages du
+// site — et les éditions précédentes le sont sous alias : le script de contrôle
+// (scripts/daily-news-check.mjs) rejoue chaque édition, de l'ouverture du hub
+// Actus jusqu'à la carte de tête de l'accueil, en passant par les archives.
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
@@ -12,11 +16,27 @@ import CinemaNews from '../src/pages/CinemaNews';
 import TechNews from '../src/pages/TechNews';
 import CurrentNews from '../src/pages/CurrentNews';
 import ArticleTrailer from '../src/components/ArticleTrailer';
-import { dailyStories } from '../src/news/daily/2026-10-15';
+import { dailyStories } from '../src/news/daily/2026-10-18';
+import { dailyStories as dailyStories20261011 } from '../src/news/daily/2026-10-11';
+import { dailyStories as dailyStories20261014 } from '../src/news/daily/2026-10-14';
+import { dailyStories as dailyStories20261015 } from '../src/news/daily/2026-10-15';
+import { dailyStories as dailyStories20261016 } from '../src/news/daily/2026-10-16';
+import { dailyStories as dailyStories20261017 } from '../src/news/daily/2026-10-17';
 import { searchContent, searchIndex } from '../src/search/searchIndex';
 import { autoSearchEntries } from '../src/lib/autoNews';
 
 export { React, ArticleTrailer, searchContent, searchIndex, autoSearchEntries };
+
+// Toutes les clés d'article des éditions quotidiennes, du plus récent au plus
+// ancien — l'ordre de l'archive et des hubs en dépend.
+export const editionKeys = {
+  '2026-10-18': Object.keys(dailyStories),
+  '2026-10-17': Object.keys(dailyStories20261017),
+  '2026-10-16': Object.keys(dailyStories20261016),
+  '2026-10-15': Object.keys(dailyStories20261015),
+  '2026-10-14': Object.keys(dailyStories20261014),
+  '2026-10-11': Object.keys(dailyStories20261011),
+};
 
 export function NewsArchiveFlow() {
   return (
@@ -38,9 +58,9 @@ const pages = [
   ['/news/gaming', GamingNews],
   ['/news/cinema', CinemaNews],
   ['/news/tech', TechNews],
-  ...Object.keys(dailyStories).map((key) => {
+  ...Object.values(editionKeys).flat().map((key) => {
     const prefix = key.startsWith('cinema/') ? 'cinema/' : key.startsWith('tech/') ? 'tech/' : '';
-    return [`/news/${key}`, CurrentNews, `/news/${prefix}:slug`, prefix ? { slugPrefix: prefix } : {}];
+    return [`/news/${key}`, CurrentNews, `/news/${prefix}:slug`, { slug: key, ...(prefix ? { slugPrefix: prefix } : {}) }];
   }),
 ];
 

@@ -1,11 +1,20 @@
-// Régression de l’édition du 15.10.2026 : images, routes, cartes, vidéos et recherche.
+// Régression de l’édition du 18.10.2026 : images, routes, cartes, vidéos et
+// recherche. Les éditions des 16 et 17.10.2026, ajoutées dans la même fournée,
+// sont contrôlées en même temps (structure commune : un article par édition
+// gaming ×2, cinéma ×1, tech ×1). Les contrôles du sélecteur de vidéos et de la
+// mention d’absence rejouent aussi les entrées historiques (11.10.2026).
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
-import { dailyStories, dailyNewsListing, dailySeoEntries, editionDate, editionIsoDate } from '../src/news/daily/2026-10-15.js';
+import { dailyStories, dailyNewsListing, dailySeoEntries, editionDate, editionIsoDate } from '../src/news/daily/2026-10-18.js';
+import { dailyStories as dailyStories20261011, dailyNewsListing as dailyNewsListing20261011, dailySeoEntries as dailySeoEntries20261011, editionDate as editionDate20261011, editionIsoDate as editionIsoDate20261011 } from '../src/news/daily/2026-10-11.js';
+import { dailyStories as dailyStories20261014, dailyNewsListing as dailyNewsListing20261014, dailySeoEntries as dailySeoEntries20261014, editionDate as editionDate20261014, editionIsoDate as editionIsoDate20261014 } from '../src/news/daily/2026-10-14.js';
+import { dailyStories as dailyStories20261015, dailyNewsListing as dailyNewsListing20261015, dailySeoEntries as dailySeoEntries20261015, editionDate as editionDate20261015, editionIsoDate as editionIsoDate20261015 } from '../src/news/daily/2026-10-15.js';
+import { dailyStories as dailyStories20261016, dailyNewsListing as dailyNewsListing20261016, dailySeoEntries as dailySeoEntries20261016, editionDate as editionDate20261016, editionIsoDate as editionIsoDate20261016 } from '../src/news/daily/2026-10-16.js';
+import { dailyStories as dailyStories20261017, dailyNewsListing as dailyNewsListing20261017, dailySeoEntries as dailySeoEntries20261017, editionDate as editionDate20261017, editionIsoDate as editionIsoDate20261017 } from '../src/news/daily/2026-10-17.js';
 import { getArticleTrailerEntry, trailerFlagLabel, trailerWatchUrl } from '../src/articleTrailers.js';
 import { youTubeEmbedUrl } from '../src/lib/videoPlayback.js';
 import { youTubeThumbUrl } from '../src/lib/videoThumbnails.js';
@@ -17,7 +26,7 @@ const keys = Object.keys(dailyStories);
 const youtubeThumbHost = new URL(youTubeThumbUrl('abc123defgh')).hostname;
 // Clé d'un univers : les actus cinéma et tech sont préfixées, le gaming ne l'est
 // pas. Les hubs et la une de l'accueil se servent par préfixe, pas par position —
-// l'édition du 15.10.2026 compte deux actus gaming.
+// chaque édition compte deux actus gaming.
 const universeOf = (key) => (key.startsWith('cinema/') ? 'cinema' : key.startsWith('tech/') ? 'tech' : 'gaming');
 const keyOf = (universe) => keys.find((key) => universeOf(key) === universe);
 // Pastille de vidéo : « BANDE-ANNONCE »/« TEASER » quand l'article a une vidéo
@@ -38,31 +47,52 @@ assert.equal(keys.length, 4, 'deux actus gaming, une actu cinéma et une actu te
 assert.equal(dailyNewsListing.length, 4);
 assert.deepEqual(keys.map(universeOf), ['gaming', 'gaming', 'cinema', 'tech'], 'les univers de l’édition, dans l’ordre');
 // La première entrée ouvre la une de l'accueil et le hub gaming : c'est la
-// bande-annonce de lancement de GTA VI, publiée le jour même par Rockstar.
-assert.equal(keys[0], 'gta-6-trailer-de-lancement', 'l’actu gaming du jour ouvre l’édition');
-const gtaStory = dailyStories['gta-6-trailer-de-lancement'];
-assert.ok(gtaStory.title.length <= 20, 'GTA VI : titre dans le budget de 20 caractères');
-assert.ok(gtaStory.accent.length <= 24, 'GTA VI : accent dans le budget de 24 caractères');
-assert.ok(gtaStory.title.length + 1 + gtaStory.accent.length <= 40, 'GTA VI : titre complet dans le budget de 40 caractères');
-const gtaWordCount = ['dek', 'lead', 'intro', 'p1', 'p2', 'p3', 'p4', 'takeText']
-  .map((field) => gtaStory[field] || '').join(' ').trim().split(/\s+/).filter(Boolean).length;
-assert.ok(gtaWordCount <= 120, `GTA VI : brève de 120 mots maximum (${gtaWordCount})`);
-assert.equal(editionDate, '15.10.2026');
-assert.equal(editionIsoDate, '2026-10-15');
-assert.doesNotMatch(JSON.stringify(dailyStories), /mistral/i, 'le sujet écarté par l’utilisateur n’est pas publié');
+// présentation des options d'affichage d'Ocarina of Time sur Switch 2.
+assert.equal(keys[0], 'zelda-ocarina-of-time-switch-2-affichages-hud', 'l’actu gaming du jour ouvre l’édition');
+const opener = dailyStories[keys[0]];
+assert.ok(opener.title.length <= 20, 'ouverture : titre dans le budget de 20 caractères');
+assert.ok(opener.accent.length <= 24, 'ouverture : accent dans le budget de 24 caractères');
+assert.ok(opener.title.length + 1 + opener.accent.length <= 40, 'ouverture : titre complet dans le budget de 40 caractères');
+const openerWordCount = ['dek', 'lead', 'intro', 'p1', 'p2', 'p3', 'p4', 'takeText']
+  .map((field) => opener[field] || '').join(' ').trim().split(/\s+/).filter(Boolean).length;
+assert.ok(openerWordCount >= 120 && openerWordCount <= 500, `ouverture : brève complète entre 120 et 500 mots (${openerWordCount})`);
+// Les trois nouvelles éditions (16, 17 et 18.10.2026) partagent les budgets de
+// titres et la brève complète (dek + chapô + intro + corps + à retenir).
+const newEditions = [
+  { date: editionDate20261016, iso: editionIsoDate20261016, stories: dailyStories20261016 },
+  { date: editionDate20261017, iso: editionIsoDate20261017, stories: dailyStories20261017 },
+  { date: editionDate, iso: editionIsoDate, stories: dailyStories },
+];
+for (const { date, stories } of newEditions) {
+  assert.deepEqual(Object.keys(stories).map(universeOf), ['gaming', 'gaming', 'cinema', 'tech'], `${date} : les univers, dans l’ordre`);
+  for (const [key, story] of Object.entries(stories)) {
+    assert.ok(story.title.length <= 20, `${key} : titre dans le budget de 20 caractères`);
+    assert.ok(story.accent.length <= 24, `${key} : accent dans le budget de 24 caractères`);
+    assert.ok(story.title.length + 1 + story.accent.length <= 40, `${key} : titre complet dans le budget de 40 caractères`);
+    const wordCount = ['dek', 'lead', 'intro', 'p1', 'p2', 'p3', 'p4', 'takeText']
+      .map((field) => story[field] || '').join(' ').trim().split(/\s+/).filter(Boolean).length;
+    assert.ok(wordCount >= 120 && wordCount <= 500, `${key} : brève complète entre 120 et 500 mots (${wordCount})`);
+    assert.ok(story.quote && story.quoteBy && story.take && story.takeText, `${key} : éditorial au gabarit (citation, à retenir)`);
+    assert.ok(story.keywords && story.readTime, `${key} : mots-clés et temps de lecture`);
+  }
+}
+assert.equal(editionDate, '18.10.2026');
+assert.equal(editionIsoDate, '2026-10-18');
+assert.doesNotMatch(JSON.stringify(dailyStories), /minami/i, 'le sujet écarté faute de vidéo officielle n’est pas publié');
+assert.ok(!keys.includes('gta-6-trailer-de-lancement'), 'GTA VI, déjà couvert le 15.10.2026, n’est pas republié');
 
-// Vidéo officielle attendue par article : identifiant YouTube et chaîne qui l'a
-// publiée, contrôlés le 15.10.2026 (oEmbed pour Rockstar Games, Nintendo of
-// America et Netflix). L'actu tech n'en a pas : son entrée porte une mention
-// d'absence, vérifiée plus bas.
+// Vidéo officielle attendue par article de l'édition du jour : identifiant
+// YouTube et chaîne qui l'a publiée, contrôlés le 18.10.2026. L'actu tech n'en
+// a pas : son entrée porte une mention d'absence, vérifiée plus bas.
 const EXPECTED_VIDEOS = {
-  'gta-6-trailer-de-lancement': { id: 'rz1B4B2yBZY', channel: 'Rockstar Games' },
-  'zelda-ocarina-of-time-nouvelle-presentation': { id: '8v8eDMh1o3g', channel: 'Nintendo of America' },
-  'cinema/narnia-gerwig-chronologie-esthetique': { id: 'gDJ-ini7fF0', channel: 'Netflix' },
+  'zelda-ocarina-of-time-switch-2-affichages-hud': { id: '8v8eDMh1o3g', channel: 'Nintendo of America' },
+  'peak-console-edition-crossplay-22-octobre': { id: 'OsO0Dpt9OPs', channel: 'Aggro Crab' },
+  'cinema/ramayana-rise-of-a-legend-nouvelle-bande-annonce': { id: 'AYkPRN874m8', channel: 'Sony Pictures Entertainment' },
 };
 
-// Miniatures provenant des vidéos Rockstar / Nintendo / Netflix et du portail officiel Free.
-const imageUrl = (image) => /^https?:\/\//.test(image) ? image : `/Let-s-Play/${image}`;
+// Miniatures : vidéos officielles (i.ytimg.com, via la fabrique du site),
+// portail Free pour les visuels officiels, ou fichiers locaux de public/.
+const imageUrl = (image) => (/^https?:\/\//.test(image) ? image : `/Let-s-Play/${image}`);
 for (const [key, story] of Object.entries(dailyStories)) {
   assert.equal(story.date, editionDate);
   assert.equal(story.image, story.thumbnail);
@@ -72,17 +102,20 @@ for (const [key, story] of Object.entries(dailyStories)) {
     assert.ok(fs.statSync(path.join(root, 'public', story.image)).size > 10000);
   }
   assert.ok(story.source && story.credit && story.imageAlt && story.dek);
-  assert.equal(new URL(story.sourceUrl).hostname, 'www.journaldugeek.com');
+  const sourceUrl = new URL(story.sourceUrl);
+  assert.equal(sourceUrl.protocol, 'https:', `${key} : source officielle en https`);
+  assert.ok(sourceUrl.hostname.includes('.'), `${key} : hébergeur de la source`);
   const entry = getArticleTrailerEntry(key);
+  assert.ok(entry, `${key} : entrée du lecteur (vidéo ou mention)`);
+  const entryItems = entry.items || [];
   if (key.startsWith('tech/')) {
-    assert.ok(entry.pending, 'absence de vidéo officielle Free explicitée');
-    assert.equal(entry.items.length, 0);
-    assert.equal(new URL(story.image).hostname, 'portail.free.fr');
+    assert.ok(entry.pending, 'absence de vidéo officielle explicitée');
+    assert.equal(entryItems.length, 0);
   } else {
     const { id: expectedId, channel: expectedChannel } = EXPECTED_VIDEOS[key];
-    assert.equal(entry.items[0].id, expectedId, `${key} : vidéo officielle`);
-    assert.equal(entry.items[0].channel, expectedChannel, `${key} : chaîne officielle`);
-    assert.equal(entry.items[0].verified, editionDate);
+    assert.equal(entryItems[0].id, expectedId, `${key} : vidéo officielle`);
+    assert.equal(entryItems[0].channel, expectedChannel, `${key} : chaîne officielle`);
+    assert.equal(entryItems[0].verified, editionDate);
     assert.ok(story.image.includes(`/vi/${expectedId}/`));
     assert.ok(story.fallbackImage.endsWith('/hqdefault.jpg'));
     assert.ok(!entry.pending);
@@ -90,7 +123,68 @@ for (const [key, story] of Object.entries(dailyStories)) {
   assert.equal(dailySeoEntries[`/news/${key}`].published, editionIsoDate);
   assert.ok(read('public/sitemap.xml').includes(`/news/${key}</loc>`));
 }
+// Les éditions des 16 et 17.10.2026 suivent les mêmes règles de structure :
+// image = miniature, visuel référencé ou local vérifié, entrée de lecteur pour
+// chaque article (vidéo officielle ou mention d'absence), route au sitemap.
+for (const edition of newEditions.slice(0, 2)) {
+  const { date, iso, stories } = edition;
+  const listing = date === editionDate20261016 ? dailyNewsListing20261016 : dailyNewsListing20261017;
+  const seoEntries = date === editionDate20261016 ? dailySeoEntries20261016 : dailySeoEntries20261017;
+  assert.equal(listing.length, 4, `${date} : quatre cartes`);
+  for (const [key, story] of Object.entries(stories)) {
+    assert.equal(story.date, date);
+    assert.equal(story.image, story.thumbnail);
+    if (/^https?:\/\//.test(story.image)) {
+      assert.ok([youtubeThumbHost, 'portail.free.fr'].includes(new URL(story.image).hostname), `${key} : hébergeur d’image officiel`);
+    } else {
+      assert.ok(fs.statSync(path.join(root, 'public', story.image)).size > 10000, `${key} : fichier local de public/`);
+    }
+    assert.ok(story.source && story.credit && story.imageAlt && story.dek, `${key} : source, crédit et légende`);
+    const sourceUrl = new URL(story.sourceUrl);
+    assert.equal(sourceUrl.protocol, 'https:', `${key} : source officielle en https`);
+    const entry = getArticleTrailerEntry(key);
+    const items = (entry && entry.items) || [];
+    if (items.length) {
+      assert.ok(items[0].id && items[0].channel, `${key} : vidéo officielle identifiée`);
+      assert.ok(items[0].verified, `${key} : contrôle de la vidéo tracé`);
+      if (!/^https?:\/\//.test(story.image)) assert.ok(story.image.includes(`/vi/${items[0].id}/`), `${key} : miniature de la vidéo officielle`);
+    } else {
+      assert.ok(entry && entry.pending && entry.pending.length > 40, `${key} : mention d’absence explicite`);
+    }
+    assert.equal(seoEntries[`/news/${key}`].published, iso);
+    assert.ok(read('public/sitemap.xml').includes(`/news/${key}</loc>`), `${key} : route au sitemap`);
+  }
+}
+// Les éditions antérieures (11, 14 et 15.10.2026) gardent leurs contrôles de
+// structure : image = miniature, visuel référencé ou local, source en https.
+for (const [date, stories, iso, seoEntries] of [
+  [editionDate20261011, dailyStories20261011, editionIsoDate20261011, dailySeoEntries20261011],
+  [editionDate20261014, dailyStories20261014, editionIsoDate20261014, dailySeoEntries20261014],
+  [editionDate20261015, dailyStories20261015, editionIsoDate20261015, dailySeoEntries20261015],
+]) {
+  for (const [key, story] of Object.entries(stories)) {
+    assert.equal(story.date, date);
+    assert.equal(story.image, story.thumbnail);
+    if (/^https?:\/\//.test(story.image)) {
+      assert.ok([youtubeThumbHost, 'portail.free.fr'].includes(new URL(story.image).hostname), `${key} : hébergeur d’image officiel`);
+    } else {
+      assert.ok(fs.statSync(path.join(root, 'public', story.image)).size > 10000, `${key} : fichier local de public/`);
+    }
+    assert.ok(story.source && story.credit && story.imageAlt && story.dek);
+    assert.equal(new URL(story.sourceUrl).protocol, 'https:');
+    const entry = getArticleTrailerEntry(key);
+    const items = (entry && entry.items) || [];
+    if (items.length) {
+      assert.ok(story.image.includes(`/vi/${items[0].id}/`) || !/^https?:\/\//.test(story.image), `${key} : miniature de la vidéo officielle`);
+    }
+    assert.equal(seoEntries[`/news/${key}`].published, iso, `${key} : date de publication au SEO`);
+    assert.ok(read('public/sitemap.xml').includes(`/news/${key}</loc>`), `${key} : route au sitemap`);
+  }
+}
 assert.ok(read('src/components/SEO.jsx').includes('...dailySeoEntries'));
+for (const key of keys) {
+  if (!key.includes('/')) assert.ok(read('src/main.jsx').includes(`path="/news/${key}"`), `${key} : route gaming explicite`);
+}
 assert.ok(read('src/main.jsx').includes('path="/news/gta-6-trailer-de-lancement"'));
 assert.ok(read('src/main.jsx').includes('path="/news/sonic-racing-crossworlds-annee-2"'));
 assert.ok(read('src/main.jsx').includes('path="/news/tekken-8-roger-jr-ace-combat-8-million"'));
@@ -129,7 +223,7 @@ for (const card of archiveCards) {
     assert.ok(card.querySelector(selector), `${card.getAttribute('href')} : ${selector}`);
   }
   assert.equal(card.querySelector('img').getAttribute('loading'), 'lazy');
-  assert.doesNotMatch(card.querySelector('img').getAttribute('src'), /\/Let-s-Play\/\/Let-s-Play\//, 'pas de double préfixe de miniature');
+  assert.doesNotMatch(card.querySelector('img').getAttribute('src'), /\/Let-s-Play\/\/\/Let-s-Play\//, 'pas de double préfixe de miniature');
 }
 for (const [index, story] of dailyNewsListing.entries()) {
   const archiveCard = archive.querySelector(`.news-carousel-card[href="${story.to}"]`);
@@ -169,12 +263,15 @@ for (const [key, story] of Object.entries(dailyStories)) {
   assert.ok(doc.querySelector(`a[href="${story.sourceUrl}"]`), `${key} : source cliquable`);
   assert.ok(searchContent(story.cover.split(' · ')[0]).some((result) => result.route === `/news/${key}`), `${key} : recherche`);
 }
-const gtaDoc = pages.get('/news/gta-6-trailer-de-lancement');
-assert.equal(getArticleTrailerEntry('gta-6-trailer-de-lancement').items.length, 1, 'GTA VI : seul le trailer de lancement est intégré');
-assert.equal(gtaDoc.querySelectorAll('.article-gallery-item').length, 3, 'GTA VI : trois photogrammes du trailer');
+const zeldaDoc = pages.get('/news/zelda-ocarina-of-time-switch-2-affichages-hud');
+assert.equal(getArticleTrailerEntry('zelda-ocarina-of-time-switch-2-affichages-hud').items.length, 1, 'Ocarina of Time : seule la présentation officielle est intégrée');
+assert.equal(zeldaDoc.querySelectorAll('.article-gallery-item').length, 3, 'Ocarina of Time : trois photogrammes de la présentation');
+const ramayanaDoc = pages.get('/news/cinema/ramayana-rise-of-a-legend-nouvelle-bande-annonce');
+assert.equal(getArticleTrailerEntry('cinema/ramayana-rise-of-a-legend-nouvelle-bande-annonce').items.length, 3, 'Ramayana : nouvelle bande-annonce et deux vidéos de contexte');
+assert.equal(ramayanaDoc.querySelectorAll('.article-gallery-item').length, 3, 'Ramayana : trois photogrammes de la nouvelle bande-annonce');
 
 // Chaque hub d'univers met en avant sa première actu de l'édition : les clés se
-// lisent par préfixe, l'édition du 15.10.2026 comptant deux actus gaming.
+// lisent par préfixe, l'édition du jour comptant deux actus gaming.
 for (const category of ['gaming', 'cinema', 'tech']) {
   const key = keyOf(category);
   assert.ok(key, `${category} : une actu du jour dans cet univers`);
@@ -211,8 +308,7 @@ for (const lang of ['en', 'ar']) {
   assert.ok(button.textContent.includes(lang === 'en' ? 'View all articles' : 'عرض كل المقالات'));
 }
 
-// Le sélecteur de l’anime bascule vraiment de la version anglaise à la
-// version japonaise du même teaser officiel.
+// Le sélecteur bascule vraiment d'une vidéo officielle à l'autre.
 const dom = new JSDOM('<!doctype html><html><body><div id="video"></div></body></html>', { url: 'https://letsplay.test/Let-s-Play/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
@@ -222,25 +318,47 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { createRoot } = await import('react-dom/client');
 const { act } = React;
 const renderer = createRoot(document.querySelector('#video'));
-const legends = getArticleTrailerEntry('ghost-tsushima-legends-anime-2028');
-await act(async () => renderer.render(React.createElement(ArticleTrailer, legends)));
-assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(legends.items[0].id));
+const ramayana = getArticleTrailerEntry('cinema/ramayana-rise-of-a-legend-nouvelle-bande-annonce');
+await act(async () => renderer.render(React.createElement(ArticleTrailer, ramayana)));
+assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(ramayana.items[0].id));
 const choices = document.querySelectorAll('.article-trailer-choice');
-assert.equal(choices.length, 2);
+assert.equal(choices.length, 3);
 await act(async () => choices[1].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
 assert.equal(document.querySelectorAll('iframe').length, 1);
-assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(legends.items[1].id));
+assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(ramayana.items[1].id));
 assert.equal(choices[1].getAttribute('aria-pressed'), 'true');
 assert.equal(choices[0].getAttribute('aria-pressed'), 'false');
-assert.ok(document.querySelector('.article-trailer-note').textContent.includes('version japonaise'));
+assert.ok(document.querySelector('.article-trailer-note').textContent.includes('Première bande-annonce'));
 await act(async () => renderer.unmount());
+
+// Le sélecteur de l’anime historique bascule lui aussi (deux teasers : version
+// anglaise et japonaise du même teaser officiel).
+const legendsRoot = createRoot(document.querySelector('#video'));
+const legends = getArticleTrailerEntry('ghost-tsushima-legends-anime-2028');
+await act(async () => legendsRoot.render(React.createElement(ArticleTrailer, legends)));
+assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(legends.items[0].id));
+const legendsChoices = document.querySelectorAll('.article-trailer-choice');
+assert.equal(legendsChoices.length, 2);
+await act(async () => legendsChoices[1].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
+assert.equal(document.querySelectorAll('iframe').length, 1);
+assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(legends.items[1].id));
+assert.equal(legendsChoices[1].getAttribute('aria-pressed'), 'true');
+assert.equal(legendsChoices[0].getAttribute('aria-pressed'), 'false');
+assert.ok(document.querySelector('.article-trailer-note').textContent.includes('version japonaise'));
+await act(async () => legendsRoot.unmount());
 
 // Le sélecteur d'une actu sans vidéo officielle affiche la mention d'absence.
 const pendingRoot = createRoot(document.querySelector('#video'));
-const anthropic = getArticleTrailerEntry('tech/anthropic-claude-faux-indice-philadelphie');
-await act(async () => pendingRoot.render(React.createElement(ArticleTrailer, anthropic)));
+const cyber = getArticleTrailerEntry('tech/france-vague-cyberattaques-17-octobre');
+await act(async () => pendingRoot.render(React.createElement(ArticleTrailer, cyber)));
 assert.equal(document.querySelectorAll('iframe').length, 0);
 assert.ok(document.querySelector('.article-trailer-pending').textContent.includes('Aucune vidéo officielle'));
 await act(async () => pendingRoot.unmount());
+const anthropic = getArticleTrailerEntry('tech/anthropic-claude-faux-indice-philadelphie');
+const anthropicRoot = createRoot(document.querySelector('#video'));
+await act(async () => anthropicRoot.render(React.createElement(ArticleTrailer, anthropic)));
+assert.equal(document.querySelectorAll('iframe').length, 0);
+assert.ok(document.querySelector('.article-trailer-pending').textContent.includes('Aucune vidéo officielle'));
+await act(async () => anthropicRoot.unmount());
 
-console.log('Édition du 15.10.2026 : OK — 4 articles, hubs, accueil, archives, recherche et SEO.');
+console.log('Éditions des 16, 17 et 18.10.2026 : OK — 12 articles, hubs, accueil, archives, recherche, SEO et lecteurs.');

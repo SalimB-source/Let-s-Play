@@ -17,6 +17,50 @@
 import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
+  // ---- Édition du dimanche 18.10.2026 ----------------------------------------
+  // Photogrammes prélevés automatiquement par YouTube (au quart, à la moitié et
+  // aux trois quarts) sur les vidéos officielles citées : les légendes situent
+  // le plan dans le montage sans décrire un contenu non vérifié image par image.
+  'zelda-ocarina-of-time-switch-2-affichages-hud': { label: 'ZELDA OCARINA OF TIME', meta: 'NINTENDO · PRÉSENTATION OFFICIELLE', items: [
+    { src: youTubeFrameUrl('8v8eDMh1o3g', 1), alt: 'The Legend of Zelda: Ocarina of Time sur Switch 2 — photogramme du premier quart de la présentation officielle de Nintendo of America', caption: '01 / Début de la présentation : Hyrule avant l’interface' },
+    { src: youTubeFrameUrl('8v8eDMh1o3g', 2), alt: 'The Legend of Zelda: Ocarina of Time sur Switch 2 — photogramme du milieu de la présentation officielle de Nintendo of America', caption: '02 / Vers la moitié : les deux âges de Link' },
+    { src: youTubeFrameUrl('8v8eDMh1o3g', 3), alt: 'The Legend of Zelda: Ocarina of Time sur Switch 2 — photogramme du dernier quart de la présentation officielle de Nintendo of America', caption: '03 / Fin du montage : le rendez-vous du 5 novembre' },
+  ], credit: 'Photogrammes prélevés automatiquement par YouTube sur la présentation officielle « The Legend of Zelda: Ocarina of Time – Overview Trailer – Nintendo Switch 2 », publiée par Nintendo of America le 14 octobre 2026. Aucune image retouchée ni générée.', creditSources: [{ label: 'la présentation officielle sur YouTube', href: 'https://www.youtube.com/watch?v=8v8eDMh1o3g' }] },
+  'peak-console-edition-crossplay-22-octobre': { label: 'PEAK', meta: 'AGGRO CRAB · LANDFALL', items: [
+    { src: youTubeFrameUrl('OsO0Dpt9OPs', 1), alt: 'PEAK: Console Edition — photogramme du premier quart de l’annonce officielle d’Aggro Crab', caption: '01 / Début de l’annonce : la montagne' },
+    { src: youTubeFrameUrl('OsO0Dpt9OPs', 2), alt: 'PEAK: Console Edition — photogramme du milieu de l’annonce officielle d’Aggro Crab', caption: '02 / Vers la moitié : l’escalade en cordée' },
+    { src: youTubeFrameUrl('OsO0Dpt9OPs', 3), alt: 'PEAK: Console Edition — photogramme du dernier quart de l’annonce officielle d’Aggro Crab', caption: '03 / La date : 22 octobre sur consoles' },
+  ], credit: 'Photogrammes prélevés automatiquement par YouTube sur l’annonce officielle « PEAK: Console Edition | Coming October 22nd », publiée par Aggro Crab le 15 octobre 2026. Aucune image retouchée ni générée.', creditSources: [{ label: 'l’annonce officielle sur YouTube', href: 'https://www.youtube.com/watch?v=OsO0Dpt9OPs' }] },
+  'cinema/ramayana-rise-of-a-legend-nouvelle-bande-annonce': { label: 'RAMAYANA', meta: 'SONY PICTURES · NOUVELLE BANDE-ANNONCE', items: [
+    { src: youTubeFrameUrl('AYkPRN874m8', 1), alt: 'Ramayana: Rise of a Legend — photogramme du premier quart de la nouvelle bande-annonce officielle de Sony Pictures Entertainment', caption: '01 / « Avant que l’histoire ne soit écrite… » : le récit des origines' },
+    { src: youTubeFrameUrl('AYkPRN874m8', 2), alt: 'Ramayana: Rise of a Legend — photogramme du milieu de la nouvelle bande-annonce officielle de Sony Pictures Entertainment', caption: '02 / Vers la moitié : Ravana, « né du feu et de la fureur »' },
+    { src: youTubeFrameUrl('AYkPRN874m8', 3), alt: 'Ramayana: Rise of a Legend — photogramme du dernier quart de la nouvelle bande-annonce officielle de Sony Pictures Entertainment', caption: '03 / Ram face à son destin, avant le 5 novembre' },
+  ], credit: 'Photogrammes prélevés automatiquement par YouTube sur la nouvelle bande-annonce officielle « RAMAYANA: RISE OF A LEGEND - NEW TRAILER », publiée par Sony Pictures Entertainment le 15 octobre 2026. Légendes tirées du récit en voix off de la bande-annonce. Aucune image retouchée ni générée.', creditSources: [{ label: 'la nouvelle bande-annonce sur YouTube', href: 'https://www.youtube.com/watch?v=AYkPRN874m8' }] },
+
+  // ---- Édition du samedi 17.10.2026 ----------------------------------------
+  'total-war-shogun-2-complete-edition-retiree': { label: 'TOTAL WAR: SHOGUN 2', meta: 'TOTAL WAR · COMPLETE EDITION', items: [
+    { src: youTubeFrameUrl('7GhrQYfOPPw', 1), alt: 'Total War: SHOGUN 2 - Complete Edition — photogramme du premier quart du trailer de lancement officiel', caption: '01 / Début du trailer : le Japon féodal' },
+    { src: youTubeFrameUrl('7GhrQYfOPPw', 2), alt: 'Total War: SHOGUN 2 - Complete Edition — photogramme du milieu du trailer de lancement officiel', caption: '02 / Vers la moitié : les batailles en temps réel' },
+    { src: youTubeFrameUrl('7GhrQYfOPPw', 3), alt: 'Total War: SHOGUN 2 - Complete Edition — photogramme du dernier quart du trailer de lancement officiel', caption: '03 / Le lancement du 13 octobre' },
+  ], credit: 'Photogrammes prélevés automatiquement par YouTube sur le trailer de lancement officiel « Total War: SHOGUN 2 - Complete Edition - Launch Trailer », publié par la chaîne Total War le 13 octobre 2026 — quatre jours avant le retrait de cette édition de la vente. Aucune image retouchée ni générée.', creditSources: [{ label: 'le trailer de lancement sur YouTube', href: 'https://www.youtube.com/watch?v=7GhrQYfOPPw' }] },
+  'cinema/daredevil-born-again-saison-3-finale': { label: 'DAREDEVIL: BORN AGAIN', meta: 'MARVEL TELEVISION · SAISON 2', items: [
+    { src: youTubeFrameUrl('U1MqJBVn8Rk', 1), alt: 'Daredevil: Born Again saison 2 — photogramme du premier quart de la bande-annonce officielle Marvel Entertainment', caption: '01 / Début de la bande-annonce : Matt Murdock' },
+    { src: youTubeFrameUrl('U1MqJBVn8Rk', 2), alt: 'Daredevil: Born Again saison 2 — photogramme du milieu de la bande-annonce officielle Marvel Entertainment', caption: '02 / Vers la moitié : la guerre avec Wilson Fisk' },
+    { src: youTubeFrameUrl('U1MqJBVn8Rk', 3), alt: 'Daredevil: Born Again saison 2 — photogramme du dernier quart de la bande-annonce officielle Marvel Entertainment', caption: '03 / New York sous le costume rouge' },
+  ], credit: 'Photogrammes prélevés automatiquement par YouTube sur la bande-annonce officielle de la saison 2 de Daredevil: Born Again, publiée par Marvel Entertainment le 24 mars 2026. Aucune vidéo de la saison 3 n’ayant été publiée, ces images illustrent les déclarations de Brad Winderbaum. Aucune image retouchée ni générée.', creditSources: [{ label: 'la bande-annonce de la saison 2 sur YouTube', href: 'https://www.youtube.com/watch?v=U1MqJBVn8Rk' }] },
+
+  // ---- Édition du vendredi 16.10.2026 ----------------------------------------
+  'modern-warfare-4-campagne-acces-anticipe': { label: 'MODERN WARFARE 4', meta: 'CALL OF DUTY · CAMPAGNE', items: [
+    { src: youTubeFrameUrl('yLFRQaQT0qM', 1), alt: 'Call of Duty: Modern Warfare 4 — photogramme du premier quart de la bande-annonce officielle de la campagne', caption: '01 / Début du montage : la Task Force 141' },
+    { src: youTubeFrameUrl('yLFRQaQT0qM', 2), alt: 'Call of Duty: Modern Warfare 4 — photogramme du milieu de la bande-annonce officielle de la campagne', caption: '02 / Vers la moitié : une guerre sans frontières' },
+    { src: youTubeFrameUrl('yLFRQaQT0qM', 3), alt: 'Call of Duty: Modern Warfare 4 — photogramme du dernier quart de la bande-annonce officielle de la campagne', caption: '03 / Le capitaine Price, avant la sortie du 23 octobre' },
+  ], credit: 'Photogrammes prélevés automatiquement par YouTube sur la bande-annonce officielle « Call of Duty: Modern Warfare 4 - Official Campaign Trailer », publiée par la chaîne Call of Duty le 17 septembre 2026. Aucune image retouchée ni générée.', creditSources: [{ label: 'la bande-annonce de la campagne sur YouTube', href: 'https://www.youtube.com/watch?v=yLFRQaQT0qM' }] },
+  'beast-of-reincarnation-fin-cycle-mises-a-jour': { label: 'BEAST OF REINCARNATION', meta: 'GAME FREAK · PLAYSTATION', items: [
+    { src: youTubeFrameUrl('YBAuVSnS0ls', 1), alt: 'Beast of Reincarnation — photogramme du premier quart du trailer de lancement officiel PlayStation', caption: '01 / Début du trailer : le Japon ravagé' },
+    { src: youTubeFrameUrl('YBAuVSnS0ls', 2), alt: 'Beast of Reincarnation — photogramme du milieu du trailer de lancement officiel PlayStation', caption: '02 / Vers la moitié : Emma et Koo face aux Bêtes' },
+    { src: youTubeFrameUrl('YBAuVSnS0ls', 3), alt: 'Beast of Reincarnation — photogramme du dernier quart du trailer de lancement officiel PlayStation', caption: '03 / « Il ne reste qu’un seul espoir… vous. »' },
+  ], credit: 'Photogrammes prélevés automatiquement par YouTube sur le trailer de lancement officiel « Beast of Reincarnation - Launch Trailer | PS5 Games », publié par la chaîne PlayStation le 4 août 2026. Game Freak n’ayant diffusé aucune vidéo pour la fin du cycle de mises à jour, ces images servent d’illustration. Aucune image retouchée ni générée.', creditSources: [{ label: 'le trailer de lancement sur YouTube', href: 'https://www.youtube.com/watch?v=YBAuVSnS0ls' }] },
+
   // ---- Édition du jeudi 15.10.2026 ----------------------------------------
   // Gaming : les photogrammes viennent de la bande-annonce de lancement de
   // GTA VI elle-même, publiée le jour de la rédaction. YouTube prélève ces
