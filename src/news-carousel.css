@@ -65,17 +65,17 @@
   gap:8px;margin:0;font-size:10px;letter-spacing:.06em;white-space:nowrap;
 }
 .news-hub-section .news-hub-headlines .news-headlines-all:focus-visible{outline:2px solid var(--cyan);outline-offset:-4px}
-/* Les actus du jour sur la page Actus s'affichent sur quatre colonnes sur
-   bureau (trois colonnes sous 1100 px, deux colonnes sur téléphone). La règle
-   l'emporte par sa spécificité sur `.news-carousel.is-grid`
-   (news-view-toggle.css et les paliers de large-screen.css). */
-.news-hub-section .news-hub-headlines .news-carousel.is-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+/* Les trois actus du jour sur la page Actus remplissent trois colonnes sur
+   bureau (deux colonnes sous 1100 px et sur téléphone). La règle l'emporte par
+   sa spécificité sur `.news-carousel.is-grid` (news-view-toggle.css et les
+   paliers de large-screen.css). */
+.news-hub-section .news-hub-headlines .news-carousel.is-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 /* Bandeau du hub réduit à son libellé et à l'œil « Choisis ton univers » : les
    trois cartes d'univers remontent donc juste sous lui. */
 .news-hub-section .news-hub-head{padding-bottom:20px}
 .news-hub-section .news-hub-head + .news-hub-grid{margin-top:24px}
 @media(max-width:1100px){
-  .news-hub-section .news-hub-headlines .news-carousel.is-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .news-hub-section .news-hub-headlines .news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .news-hub-section .news-hub-headlines{padding-bottom:52px}

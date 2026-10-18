@@ -1,8 +1,9 @@
 // Régression de l’édition du 18.10.2026 : images, routes, cartes, vidéos et
 // recherche. Les éditions des 16 et 17.10.2026, ajoutées dans la même fournée,
-// sont contrôlées en même temps (structure commune : un article par édition
-// gaming ×2, cinéma ×1, tech ×1). Les contrôles du sélecteur de vidéos et de la
-// mention d’absence rejouent aussi les entrées historiques (11.10.2026).
+// sont contrôlées en même temps (les éditions des 16 et 17 comptent deux
+// articles gaming, un cinéma et un tech ; celle du 18 compte gaming ×2 et cinéma ×1).
+// Les contrôles du sélecteur de vidéos et de la mention d’absence rejouent aussi
+// les entrées historiques (11.10.2026).
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -43,9 +44,9 @@ const assertTrailerFlag = (card, route) => {
   }
 };
 
-assert.equal(keys.length, 4, 'deux actus gaming, une actu cinéma et une actu tech');
-assert.equal(dailyNewsListing.length, 4);
-assert.deepEqual(keys.map(universeOf), ['gaming', 'gaming', 'cinema', 'tech'], 'les univers de l’édition, dans l’ordre');
+assert.equal(keys.length, 3, 'deux actus gaming et une actu cinéma');
+assert.equal(dailyNewsListing.length, 3);
+assert.deepEqual(keys.map(universeOf), ['gaming', 'gaming', 'cinema'], 'les univers de l’édition, dans l’ordre');
 // La première entrée ouvre la une de l'accueil et le hub gaming : c'est la
 // présentation des options d'affichage d'Ocarina of Time sur Switch 2.
 assert.equal(keys[0], 'zelda-ocarina-of-time-switch-2-affichages-hud', 'l’actu gaming du jour ouvre l’édition');
@@ -64,7 +65,8 @@ const newEditions = [
   { date: editionDate, iso: editionIsoDate, stories: dailyStories },
 ];
 for (const { date, stories } of newEditions) {
-  assert.deepEqual(Object.keys(stories).map(universeOf), ['gaming', 'gaming', 'cinema', 'tech'], `${date} : les univers, dans l’ordre`);
+  const expectedUniverses = date === editionDate ? ['gaming', 'gaming', 'cinema'] : ['gaming', 'gaming', 'cinema', 'tech'];
+  assert.deepEqual(Object.keys(stories).map(universeOf), expectedUniverses, `${date} : les univers, dans l’ordre`);
   for (const [key, story] of Object.entries(stories)) {
     assert.ok(story.title.length <= 20, `${key} : titre dans le budget de 20 caractères`);
     assert.ok(story.accent.length <= 24, `${key} : accent dans le budget de 24 caractères`);
@@ -82,8 +84,7 @@ assert.doesNotMatch(JSON.stringify(dailyStories), /minami/i, 'le sujet écarté 
 assert.ok(!keys.includes('gta-6-trailer-de-lancement'), 'GTA VI, déjà couvert le 15.10.2026, n’est pas republié');
 
 // Vidéo officielle attendue par article de l'édition du jour : identifiant
-// YouTube et chaîne qui l'a publiée, contrôlés le 18.10.2026. L'actu tech n'en
-// a pas : son entrée porte une mention d'absence, vérifiée plus bas.
+// YouTube et chaîne qui l'a publiée, contrôlés le 18.10.2026.
 const EXPECTED_VIDEOS = {
   'zelda-ocarina-of-time-switch-2-affichages-hud': { id: '8v8eDMh1o3g', channel: 'Nintendo of America' },
   'peak-console-edition-crossplay-22-octobre': { id: 'OsO0Dpt9OPs', channel: 'Aggro Crab' },
@@ -202,8 +203,8 @@ const pages = new Map(renderPages().map(({ route, html }) => [route, new JSDOM(h
 
 const hub = pages.get('/news').querySelector('#actus-du-jour');
 const cards = [...hub.querySelectorAll('.news-carousel-card')];
-assert.equal(cards.length, 4, 'les quatre articles de l’édition ouvrent le hub Actus');
-assert.match(read('src/news-carousel.css'), /\.news-hub-section\s+\.news-hub-headlines\s+\.news-carousel\.is-grid\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/, 'les actus du jour de la page Actus sont sur 4 colonnes');
+assert.equal(cards.length, 3, 'les trois articles de l’édition ouvrent le hub Actus');
+assert.match(read('src/news-carousel.css'), /\.news-hub-section\s+\.news-hub-headlines\s+\.news-carousel\.is-grid\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'les trois actus du jour de la page Actus remplissent les 3 colonnes');
 const archiveLink = hub.querySelector('.news-headlines-head .news-headlines-all');
 assert.ok(archiveLink, 'bouton dans l’en-tête des actualités du jour');
 assert.equal(archiveLink.textContent.replace('↗', '').trim(), 'Voir tous les articles');
@@ -272,7 +273,7 @@ assert.equal(ramayanaDoc.querySelectorAll('.article-gallery-item').length, 3, 'R
 
 // Chaque hub d'univers met en avant sa première actu de l'édition : les clés se
 // lisent par préfixe, l'édition du jour comptant deux actus gaming.
-for (const category of ['gaming', 'cinema', 'tech']) {
+for (const category of ['gaming', 'cinema']) {
   const key = keyOf(category);
   assert.ok(key, `${category} : une actu du jour dans cet univers`);
   const doc = pages.get(`/news/${category}`);
@@ -283,6 +284,12 @@ for (const category of ['gaming', 'cinema', 'tech']) {
   assertTrailerFlag(featured, key);
   assert.ok(doc.querySelector('.section-label').textContent.includes(editionDate));
 }
+// Sans actu tech le 18.10, le hub tech ouvre sur la dernière édition disponible.
+const techHub = pages.get('/news/tech');
+const techFeatured = techHub.querySelector('.news-featured-story');
+assert.equal(techFeatured.querySelector('.daily-news-copy').getAttribute('href'), '/news/tech/google-ai-overviews-liens-mis-en-avant');
+assert.ok(techFeatured.querySelector('.news-kicker').textContent.includes('17.10.2026'));
+
 // La deuxième actu gaming de l'édition reste publiée dans la grille du hub,
 // juste après la une.
 const gamingHub = pages.get('/news/gaming');
@@ -297,11 +304,11 @@ assert.equal(home.querySelector('.daily-news-copy').getAttribute('href'), `/news
 assert.equal(home.querySelector('img').getAttribute('src'), `/Let-s-Play/${dailyStories[keys[0]].thumbnail}`);
 assert.ok(home.querySelector('.news-kicker').textContent.includes(editionDate));
 
-// EN et AR conservent aussi la date de publication et les quatre cartes.
+// EN et AR conservent aussi la date de publication et les trois cartes.
 for (const lang of ['en', 'ar']) {
   const html = renderPages(lang).find((page) => page.route === '/news').html;
   const doc = new JSDOM(html).window.document;
-  assert.equal(doc.querySelectorAll('#actus-du-jour .news-carousel-card').length, 4);
+  assert.equal(doc.querySelectorAll('#actus-du-jour .news-carousel-card').length, 3);
   assert.ok(doc.querySelector('#actus-du-jour .section-label').textContent.includes(editionDate));
   const button = doc.querySelector('#actus-du-jour .news-headlines-all');
   assert.equal(button.getAttribute('href'), '/news/articles');
@@ -348,12 +355,6 @@ assert.ok(document.querySelector('.article-trailer-note').textContent.includes('
 await act(async () => legendsRoot.unmount());
 
 // Le sélecteur d'une actu sans vidéo officielle affiche la mention d'absence.
-const pendingRoot = createRoot(document.querySelector('#video'));
-const cyber = getArticleTrailerEntry('tech/france-vague-cyberattaques-17-octobre');
-await act(async () => pendingRoot.render(React.createElement(ArticleTrailer, cyber)));
-assert.equal(document.querySelectorAll('iframe').length, 0);
-assert.ok(document.querySelector('.article-trailer-pending').textContent.includes('Aucune vidéo officielle'));
-await act(async () => pendingRoot.unmount());
 const anthropic = getArticleTrailerEntry('tech/anthropic-claude-faux-indice-philadelphie');
 const anthropicRoot = createRoot(document.querySelector('#video'));
 await act(async () => anthropicRoot.render(React.createElement(ArticleTrailer, anthropic)));
@@ -361,4 +362,4 @@ assert.equal(document.querySelectorAll('iframe').length, 0);
 assert.ok(document.querySelector('.article-trailer-pending').textContent.includes('Aucune vidéo officielle'));
 await act(async () => anthropicRoot.unmount());
 
-console.log('Éditions des 16, 17 et 18.10.2026 : OK — 12 articles, hubs, accueil, archives, recherche, SEO et lecteurs.');
+console.log('Éditions des 16, 17 et 18.10.2026 : OK — 11 articles, hubs, accueil, archives, recherche, SEO et lecteurs.');
