@@ -1003,3 +1003,17 @@
   box-shadow: none;
   transform: none;
 }
+
+/* ── Mobile, table d'essai : les deux camps à égale distance du milieu ───────
+   Les rangées de créatures (cases et cartes posées ensemble) glissent par
+   `top` pour que les cases du sorcier finissent et celles du joueur
+   commencent à la même distance du milieu du plateau. Les décalages sont
+   mesurés par RpgDuelPage (`--rpg-ennemis-decalage`, `--rpg-allies-decalage`). */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row--ennemi {
+  position: relative;
+  top: var(--rpg-ennemis-decalage, 0px);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row--equipe {
+  position: relative;
+  top: var(--rpg-allies-decalage, 0px);
+}

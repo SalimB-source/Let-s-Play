@@ -4186,6 +4186,56 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     plaques.forEach(([plaque]) => observateur.observe(plaque));
     return () => observateur.disconnect();
   }, [essaiTactile]);
+  // Mobile, table d'essai : les emplacements des deux camps se placent à la
+  // même distance du milieu du plateau (50 % de la table, là où passent la
+  // ligne de séparation et la jonction des plaques) — le sorcier au-dessus,
+  // le joueur en dessous. L'écart visé (4 % de la hauteur, 10 à 28 px) se
+  // réduit si la main du joueur ou le haut de la rangée adverse manquent de
+  // place. Les rangées glissent par `top` (variables CSS), sans changer la
+  // grille.
+  const decalagesRangeesRef = useRef({ ennemi: 0, equipe: 0 });
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    const rangeeEnnemi = table?.querySelector('.card-row--ennemi');
+    const rangeeEquipe = table?.querySelector('.card-row--equipe');
+    if (!essaiTactile || !table || !rangeeEnnemi || !rangeeEquipe) return undefined;
+    const publier = () => {
+      const appliques = decalagesRangeesRef.current;
+      const boiteTable = table.getBoundingClientRect();
+      const caseEnnemi = rangeeEnnemi.querySelector('.rpg-creature-slot');
+      const caseEquipe = rangeeEquipe.querySelector('.rpg-creature-slot');
+      if (!caseEnnemi || !caseEquipe) return;
+      // Positions « naturelles » (sans le glissement déjà appliqué), relatives à la table.
+      const basEnnemi = caseEnnemi.getBoundingClientRect().bottom - boiteTable.top - appliques.ennemi;
+      const hautRangeeEnnemi = rangeeEnnemi.getBoundingClientRect().top - boiteTable.top - appliques.ennemi;
+      const hautEquipe = caseEquipe.getBoundingClientRect().top - boiteTable.top - appliques.equipe;
+      const main = table.querySelector('.rpg-hand-dock .rpg-hand__card') ?? table.querySelector('.rpg-hand-dock');
+      const hautMain = main ? main.getBoundingClientRect().top - boiteTable.top : boiteTable.height;
+      const milieu = boiteTable.height / 2;
+      const ecartVise = Math.min(28, Math.max(10, boiteTable.height * 0.04));
+      const ecart = Math.min(
+        ecartVise,
+        hautMain - 4 - caseEquipe.offsetHeight - milieu,
+        milieu - hautRangeeEnnemi - caseEnnemi.offsetHeight,
+      );
+      const ennemi = Math.round(milieu - ecart - basEnnemi);
+      const equipe = Math.round(milieu + ecart - hautEquipe);
+      if (ennemi === appliques.ennemi && equipe === appliques.equipe) return;
+      decalagesRangeesRef.current = { ennemi, equipe };
+      table.style.setProperty('--rpg-ennemis-decalage', `${ennemi}px`);
+      table.style.setProperty('--rpg-allies-decalage', `${equipe}px`);
+    };
+    publier();
+    if (typeof ResizeObserver !== 'function') return undefined;
+    const observateur = new ResizeObserver(publier);
+    [table, rangeeEnnemi, rangeeEquipe].forEach((element) => observateur.observe(element));
+    return () => {
+      observateur.disconnect();
+      decalagesRangeesRef.current = { ennemi: 0, equipe: 0 };
+      table.style.removeProperty('--rpg-ennemis-decalage');
+      table.style.removeProperty('--rpg-allies-decalage');
+    };
+  }, [essaiTactile]);
 
   useLayoutEffect(() => {
     if (!duel) return;
