@@ -788,6 +788,16 @@
 .rpg-battle--touch .rpg-hand .rpg-hand__pile { display: block; }
 .rpg-battle--touch .rpg-hand .rpg-hand__pile > .rpg-hand__card { width: 100%; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { position: relative; }
+/* La carte qui s'envole vers la table quitte la rangée (`position: fixed`,
+   voir `.rpg-card-flight`) : la règle ci-dessus, plus précise, la gardait en
+   `relative`, donc DANS la rangée flex à côté de son fantôme
+   (`.rpg-hand__flight-placeholder`) — un emplacement de trop, et toute la main
+   rétrécissait le temps du vol. */
+.rpg-battle--touch .rpg-hand .rpg-hand__card.rpg-card-flight {
+  position: fixed;
+  flex: none;
+  max-width: none;
+}
 .rpg-battle--touch .rpg-hand .rpg-hand__card:focus-visible { z-index: 2; }
 
 /* Une fenêtre PC peut passer en disposition tactile quand elle est étroite.
