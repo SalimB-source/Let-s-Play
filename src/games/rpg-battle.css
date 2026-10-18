@@ -8459,6 +8459,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card__brume-nappe { animation: none; }
 }
 
+/* Une créature équipée est enveloppée par `.rpg-card-stack--arme` pour afficher
+   l'arme glissée dessous. Sur grand écran, ce wrapper est lui-même un item flex
+   de la rangée : laisser sa largeur `auto` peut le faire dimensionner à partir
+   du contenu débordant de la plaque d'arme, et agrandir la créature en plein
+   écran. Le wrapper suit donc la largeur intrinsèque de la carte et ne se
+   rétrécit pas ; la plaque, positionnée en absolu, garde son débordement visuel. */
+@media (min-width: 621px) {
+  .rpg-battle:not(.rpg-battle--touch) .card-row > .rpg-card-stack--arme {
+    width: max-content;
+    flex: 0 0 max-content;
+  }
+}
 /* Les annonces automatiques restent lisibles au doigt sans voler les gestes. */
 .rpg-auto-preview { position: absolute; inset: 0; z-index: 180; pointer-events: none; }
 .rpg-auto-preview .rpg-hover-card-preview { display: grid !important; pointer-events: none; }
