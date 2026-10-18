@@ -1049,3 +1049,14 @@
   padding: 0;
   box-sizing: border-box;
 }
+/* Les rangées glissées se chevauchent sur quelques pixels autour du milieu :
+   le conteneur transparent de la rangée du joueur (dessiné après) recouvrait
+   le bas des cartes adverses et volait leurs clics. Les conteneurs laissent
+   passer les clics ; seules les cartes (et leurs piles d'armes) les prennent.
+   Le dépôt d'une carte de la main vise `.card-table`, il n'en dépend pas. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.card-row--ennemi, .card-row--equipe) {
+  pointer-events: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.card-row--ennemi, .card-row--equipe) > :not(.rpg-creature-slots) {
+  pointer-events: auto;
+}
