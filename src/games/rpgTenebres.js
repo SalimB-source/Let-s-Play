@@ -3,7 +3,7 @@
  * Inspiration : l’Égypte pharaonique en égyptien revival art déco (les années
  * Toutankhamon mêlées aux façades de Bab El). Identité de jeu : le Prix (payer
  * des PV), le Tribut (transférer la vie), la mort qui déclenche. Jamais de
- * dégâts nus : les pertes et gains de PV restent écrits en « perd / gagne des
+ * dégâts nus, sauf la vague de jugement de Celui qui juge : les pertes et gains de PV restent écrits en « perd / gagne des
  * PV » (règle de direction de `docs/rpg/05-concept-cartes.md`, §11).
  *
  * Les grandes figures sont nommées par leur attribut, dans la prudence du set
@@ -39,6 +39,8 @@ export const RPG_TENEBRES_JETONS = [{
   flavor: 'Il fait le travail que les morts n’ont plus les mains pour faire.',
 }];
 
+// Tribut reste sur le petit collecteur et la finition ; les autres créatures
+// servent le combat, la défausse, la pioche ou le cimetière.
 export const RPG_TENEBRES_CREATURES = [
   carte({
     id: 'chacal-du-seuil',
@@ -48,8 +50,9 @@ export const RPG_TENEBRES_CREATURES = [
     def: 2,
     rarity: 'commune',
     tribut: 1,
+    rapidite: true,
     typeLine: 'Créature — Animal · Chacal',
-    text: 'Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1.',
+    text: 'Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. Rapidité — Peut attaquer le tour où il arrive.',
     flavor: 'Il attend au seuil, où la balance n’a pas encore tranché.',
   }),
   carte({
@@ -104,13 +107,13 @@ export const RPG_TENEBRES_CREATURES = [
     id: 'ureus-du-seuil',
     name: 'Uræus du seuil',
     cost: 3,
-    atk: 3,
-    def: 2,
+    atk: 2,
+    def: 1,
     rarity: 'inhabituelle',
-    tribut: 1,
+    coupRapide: true,
     typeLine: 'Créature — Animal · Serpent royal',
-    text: 'Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1.',
-    flavor: 'Son mord la première fois ; la balance, elle, compte jusqu’au bout.',
+    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    flavor: 'Il frappe avant que la main n’atteigne le seuil.',
   }),
   carte({
     id: 'momie-de-lin',
@@ -131,9 +134,10 @@ export const RPG_TENEBRES_CREATURES = [
     atk: 2,
     def: 2,
     rarity: 'inhabituelle',
+    envol: true,
     arrivee: { type: 'pioche-defausse', pioche: 1, defausse: 1 },
     typeLine: 'Créature — Oiseau · Ibis',
-    text: 'Quand Ibis des comptes arrive : piochez une carte puis défaussez une carte.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Quand Ibis des comptes arrive : piochez une carte puis défaussez une carte.',
     flavor: 'Il compte les feuillets comme on compte les jours : sans jamais en garder.',
   }),
   carte({
@@ -143,9 +147,9 @@ export const RPG_TENEBRES_CREATURES = [
     atk: 2,
     def: 2,
     rarity: 'rare',
-    arrivee: { type: 'jetons', jeton: 'shabti', nombre: 2 },
+    destruction: { type: 'jetons', jeton: 'shabti', nombre: 2 },
     typeLine: 'Créature — Humaine · Couveuse',
-    text: 'Quand Couveuse de shabtis arrive : créez deux créatures-jeton « Shabti » 1/1.',
+    text: 'Quand Couveuse de shabtis meurt : créez deux créatures-jeton « Shabti » 1/1.',
     flavor: 'Elle élève les serviteurs de ceux qui n’ont plus de mains.',
   }),
   carte({
@@ -155,17 +159,17 @@ export const RPG_TENEBRES_CREATURES = [
     atk: 3,
     def: 3,
     rarity: 'rare',
-    tribut: 1,
+    arrivee: { type: 'defausse-adverse' },
     typeLine: 'Créature légendaire — Celle qui pèse',
-    text: 'Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1.',
+    text: 'Quand Celle qui pèse arrive : l’adversaire défausse une carte.',
     flavor: 'Elle ne juge pas. Elle pèse.',
   }),
   carte({
     id: 'la-devoreuse',
     name: 'La Dévoreuse',
     cost: 6,
-    atk: 5,
-    def: 3,
+    atk: 4,
+    def: 5,
     rarity: 'mythique',
     arrivee: { type: 'exil', cible: 'creature' },
     typeLine: 'Créature légendaire — Bête du seuil',
@@ -176,12 +180,13 @@ export const RPG_TENEBRES_CREATURES = [
     id: 'celui-qui-juge',
     name: 'Celui qui juge',
     cost: 6,
-    atk: 6,
+    atk: 3,
     def: 5,
     rarity: 'rare',
     tribut: 2,
+    arrivee: { type: 'degats', amount: 3, cible: 'toutes-autres' },
     typeLine: 'Créature légendaire — Celui qui juge',
-    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',
+    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Celui qui juge arrive en jeu : il inflige 3 dégâts à toutes les autres créatures.',
     flavor: 'Il ne regarde pas le sable. Il regarde le poids.',
   }),
   // ── Les grandes figures d’Égypte : nommées par leur attribut, jamais « dieux » ──
@@ -193,10 +198,9 @@ export const RPG_TENEBRES_CREATURES = [
     atk: 5,
     def: 5,
     rarity: 'mythique',
-    tribut: 2,
     arrivee: { type: 'reanimation' },
     typeLine: 'Créature légendaire — Passeur du seuil',
-    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Le Passeur au masque de chacal arrive : fait revenir en jeu une créature de votre cimetière.',
+    text: 'Quand Le Passeur au masque de chacal arrive : la dernière créature de votre cimetière revient en jeu.',
     flavor: 'Il connaît le poids de chaque cœur avant même que l’aiguille ne bouge.',
   }),
   carte({
@@ -207,10 +211,11 @@ export const RPG_TENEBRES_CREATURES = [
     atk: 3,
     def: 5,
     rarity: 'mythique',
-    tribut: 1,
+    envol: true,
+    coupRapide: true,
     arrivee: { type: 'pioche', amount: 2 },
     typeLine: 'Créature légendaire — Greffier à tête d’ibis',
-    text: 'Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes.',
     flavor: 'Son calame note le verdict sans trembler, et le fleuve lui-même attend qu’il ait fini la ligne.',
   }),
   carte({
@@ -278,6 +283,18 @@ export const RPG_TENEBRES_FIGURES = RPG_TENEBRES_CREATURES.slice(12);
 
 export const RPG_TENEBRES_MAGIES = [
   carte({
+    id: 'la-derniere-pesee',
+    name: 'La Dernière Pesée',
+    kind: 'magie',
+    cost: 5,
+    rarity: 'mythique',
+    typeLine: 'Sorcellerie — Jugement · Ténèbres',
+    effet: { type: 'destruction-totale' },
+    cibles: ['soi'],
+    text: 'Détruisez toutes les créatures.',
+    flavor: 'Quand les deux plateaux se vident, plus aucun cœur ne fait pencher la balance.',
+  }),
+  carte({
     id: 'papyrus',
     name: 'Papyrus',
     kind: 'magie',
@@ -300,7 +317,7 @@ export const RPG_TENEBRES_MAGIES = [
     typeLine: 'Sorcellerie — Effacement · Ténèbres',
     effet: { type: 'defausse-adverse' },
     cibles: ['sorcier'],
-    text: 'L’adversaire défausse une carte (il choisit laquelle).',
+    text: 'L’adversaire défausse une carte.',
     flavor: 'On ne tue pas un nom. On le raye, et la balance l’oublie.',
   }),
   carte({
@@ -309,11 +326,10 @@ export const RPG_TENEBRES_MAGIES = [
     kind: 'magie',
     cost: 2,
     rarity: 'commune',
-    prixPv: 3,
     typeLine: 'Sorcellerie — Offrande · Ténèbres',
     effet: { type: 'buff', atk: 1, def: 0, tours: 1 },
     cibles: ['soi'],
-    text: 'Payez 3 PV : toutes vos créatures gagnent +1/+0 jusqu’à la fin du tour.',
+    text: 'Toutes vos créatures gagnent +1/+0 jusqu’à la fin du tour.',
     flavor: 'Le lin prend la peau ; le prix prend le reste.',
   }),
   carte({
@@ -366,7 +382,8 @@ export const RPG_TENEBRES_ARMES = [
     typeLine: 'Arme — Khopesh',
     bonus: { atk: 2, def: 1 },
     donne: { tribut: 1 },
-    text: 'Arme — Le porteur gagne +2/+1 et Tribut 1.',
+    porteurMeurt: { type: 'reanimation-porteur' },
+    text: 'Arme — Le porteur gagne +2/+1 et Tribut 1. Quand le porteur meurt, il revient en jeu avec 1 point de défense.',
     flavor: 'Le fer recourbé prête sa lame au cœur qui pèse.',
   }),
 ];

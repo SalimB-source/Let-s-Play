@@ -302,6 +302,7 @@ function describeAnnouncedMagicTarget(carte, cibleId, duel, sorcierArtId, sorcie
     .find((candidate) => candidate.id === cibleId);
   if (entite) return { nom: entite.name, illustrationId: entite.carteId };
 
+  if (effet.type === 'destruction-totale') return { nom: 'Toutes les créatures des deux camps' };
   if (effet.cible === 'toutes-creatures') return { nom: 'Toutes vos créatures' };
   if (effet.type === 'buff') return { nom: 'Toutes les créatures du sorcier' };
   if (effet.type === 'contresort') return { nom: 'La carte annoncée' };
@@ -5342,6 +5343,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         nom: 'Toutes vos créatures',
         targetIds: duel.joueur.creatures.map((entite) => entite.id),
       };
+    }
+    if (carte.effet?.type === 'destruction-totale') {
+      return { nom: 'Toutes les créatures des deux camps',
+        targetIds: [...duel.joueur.creatures, ...duel.sorcier.creatures].map((entite) => entite.id) };
     }
     if (carte.cibles?.includes('soi') || ['soin', 'pioche'].includes(carte.effet?.type)) {
       return { nom: 'Vous', illustrationId: 'salem', targetPlate: 'joueur', targetIds: [] };
