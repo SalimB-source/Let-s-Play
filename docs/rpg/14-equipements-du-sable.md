@@ -28,7 +28,7 @@ question « sur qui je la mets ? » soit toujours douloureuse.
 
 | Leçon MTG | Traduction Sable |
 |---|---|
-| *Umezawa's Jitte* — l'arme qui accumule des compteurs au combat | La Jitte d'Amayas : un compteur de sable par blessure infligée, dépensable en trois modes |
+| *Umezawa's Jitte* — l'arme qui accumule des compteurs au combat | La Jitte d'Amayas (depuis simplifiée : +2/+1 et protection contre les Ténèbres) |
 | *Skullclamp* — +1/−1 et « quand le porteur meurt, piochez 2 » | Le Licou du chien de sable : l'arme qui **tue ce qu'elle équipe** pour le transformer en cartes |
 | *Sword of Fire and Ice* — deux déclencheurs de dégâts de combat | La Takouba de Tin Hinan (mythique) : pioche sur une créature, chien de sable sur le sorcier |
 | *Mask of Memory* — blesser le joueur, piocher 2, défausser 1 | Le Masque du guetteur : l'information comme butin de guerre |
@@ -53,7 +53,7 @@ meilleures raisons d'attaquer.
 | 5 | Boussole du Hoggar | inhabituelle | 2 | +1/+1 | Attaque → lit le dessus du deck, garde les terrains |
 | 6 | Harnais du méhari | inhabituelle | 3 | +2/+2 | Attaque → 1 mana de sable |
 | 7 | Masque du guetteur | rare | 2 | +1/+1 | Blesse le sorcier → pioche 2, défausse 1 |
-| 8 | Jitte d'Amayas | rare | 2 | +2/+0 | Compteurs de sable, trois modes |
+| 8 | Jitte d'Amayas | rare | 4 | +2/+1 | Protection contre les Ténèbres |
 | 9 | Lame des ergs | rare | 4 | +3/+1 | Arme vivante : apporte son propre porteur |
 | 10 | Takouba de Tin Hinan | **mythique** | 4 | +3/+2 | Coup rapide + deux déclencheurs de combat |
 
@@ -189,29 +189,22 @@ C'est la carte qui fait gagner les parties longues : une créature Infiltrable
 (Takouba des pistes) équipée du Masque est une usine à cartes, et l'adversaire
 a une raison de plus de garder un mur devant lui.
 
-### 8. Jitte d'Amayas — rare — 2
+### 8. Jitte d'Amayas — rare — 4
 
-> **Arme — Jitte.** Le porteur gagne +2/+0. **Quand le porteur inflige des
-> blessures de combat, mettez un compteur de sable sur la Jitte d'Amayas.**
-> **Retirez un compteur de sable :** choix de trois, au tour de son
-> contrôleur —
-> • le porteur gagne +2/+2 jusqu'à la fin du tour ;
-> • la Jitte inflige 1 blessure à une créature adverse ;
-> • vous gagnez 2 points de vie.
+> **Arme — Jitte.** Le porteur gagne +2/+1 et une **protection contre les
+> Ténèbres** : les attaques, blocages et effets des Ténèbres ne peuvent ni le
+> cibler ni le blesser.
 >
-> *« Trois gestes, et le guide n'a pas encore parlé. »*
+> *« Le guide pare d'un geste ce que la nuit envoie. »*
 
-L'*Umezawa's Jitte*, la meilleure Equipment jamais imprimée, réduite à trois
-modes lisibles. La force de la carte n'est pas son bonus (+2/+0 pour 2, honnête)
-mais son **accumulation** : elle récompense le fait d'attaquer à répétition, et
-son troisième mode donne enfin au Sable un accès au soin (le `case 'soin'`
-existe déjà).
+La version d'origine portait les compteurs de sable et les trois modes de
+l'*Umezawa's Jitte* ; elle a été **simplifiée** en une arme de garde : un bonus
+honnête, et la protection permanente de couleur d'Amayas étendue à son porteur
+tant que l'arme reste attachée.
 
-**Briques moteur** : des compteurs sur l'arme (`entite.arme.compteurs`) et une
-capacité activée à coût de compteur — `rpgActiverArme` sait déjà payer un coût
-de mana et `appliquer` un effet ; il faut lui faire accepter un second prix
-(retirer un compteur) et un choix de mode. C'est la carte la plus chère du lot
-en développement, et la plus mémorable en jeu.
+**Briques moteur** : `donne.protection` sur l'arme — `attacherArme` couvre le
+porteur (`entite.protection`, permanente), `retirerArme` rend la protection
+imprimée de la fiche s'il y en avait une (Amayas garde la sienne).
 
 ### 9. Lame des ergs — rare — 4
 

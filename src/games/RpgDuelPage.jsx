@@ -145,6 +145,8 @@ import {
   rpgPeutPayer,
   rpgPoserTerrain,
   rpgResoudreArriveeCiblee,
+  rpgResoudreDestructionCiblee,
+  cibleRespecteCoutMax,
   rpgActiverArme,
   rpgActiverCapacite,
   rpgJouerArme,
@@ -1178,7 +1180,8 @@ export function TableCard({
   const effetsArmesEquipees = cartesDesIds(armes).map(effetsAccordesParArme).filter(Boolean);
   const protectionActive = entite.protection?.toursRestants > 0;
   const protectionLabel = protectionActive
-    ? ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre
+    ? [entite.protection.contre].flat(Infinity).filter(Boolean)
+      .map((couleur) => ELEMENT_LABELS[couleur] ?? couleur).join(' et ')
     : null;
   const gelee = (entite.gelToursRestants ?? 0) > 0;
   const blessee = entite.pv < (entite.pvMax ?? carte?.def ?? entite.pv);
@@ -1317,7 +1320,7 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? 'résonance samouraï : seules les créatures de type Samouraï' : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? `résonance samouraï : seules les ${carte.resonanceExclutSource ? 'autres ' : ''}créatures de type Samouraï` : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
@@ -5005,9 +5008,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const arriveeAnnonce = carteAnnoncee.arrivee ?? {};
     // L'identifiant réservé « sorcier » désigne l'adversaire du lanceur : vous.
     // Même lecture que le bandeau (`describeAnnouncedMagicTarget`) — la plaque
-    // s'allume et aucune créature ne s'allume avec elle. Une arrivée qui frappe
-    // le sorcier adverse (l'Ifrit des ergs) ne porte aucun `cibleId` : le
-    // moteur déduit la cible, l'annonce la montre quand même.
+    // s'allume et aucune créature ne s'allume avec elle. Une arrivée qui
+    // frapperait le sorcier adverse ne porterait aucun `cibleId` : le moteur
+    // déduirait la cible, l'annonce la montrerait quand même.
     annonceViseVotrePlate = cibleId === 'sorcier'
       || Boolean(carteAnnoncee.kind === 'magie'
         && (effetAnnonce.cible === 'sorcier'
@@ -5022,6 +5025,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       duel.sorcier.creatures.forEach((entite) => idsVisesParAnnonce.add(entite.id));
     }
   }
+  /* La destruction ciblée (le Ghul des cendres) : le mort attend que son
+     contrôleur désigne la créature adverse à frapper. Côté joueur, les cibles
+     légales s'allument comme celles d'un sort annoncé et un bandeau guide le
+     clic ; côté sorcier, le moteur choisit seul et rien ne s'affiche. */
+  const attenteDestruction = duel.destructionsEnAttente?.[0]?.cote === 'joueur'
+    ? duel.destructionsEnAttente[0]
+    : null;
+  const carteAttenteDestruction = attenteDestruction ? cardById(attenteDestruction.carteId) : null;
+  const idsCiblesDestruction = new Set(attenteDestruction
+    ? duel.sorcier.creatures
+      .filter((entite) => !rpgEstProtegee(entite, cardColors(carteAttenteDestruction)))
+      .map((entite) => entite.id)
+    : []);
   const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort || fenetreFinTour);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
@@ -5418,8 +5434,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Une arme sans créature alliée à équiper reste éteinte dans la main —
     // sauf arme vivante (la Lame des ergs), qui fait naître son porteur.
     if (carte.kind === 'arme' && !duel.joueur.creatures.length && !carte.armeVivante) return false;
+    // La faveur du Kraken : une magie rapide ou une sorcellerie (jamais un
+    // contresort) se lance sans payer son coût de mana tant que l'attente
+    // `duel.magieGratuite` est ouverte.
+    const lancementGratuit = carte.kind === 'magie' && carte.effet?.type !== 'contresort'
+      && duel.magieGratuite?.cote === 'joueur';
     return (reponseApresBlocage ? carte.instant : monTour || (reponseActive && carte.instant))
-      && rpgPeutPayer(duel.joueur, carte);
+      && (lancementGratuit || rpgPeutPayer(duel.joueur, carte));
   };
   const aReponseJouableEnMain = Boolean(apercuAnnonceOuvert && duel.joueur.main.some((carteId) => {
     const carte = cardById(carteId);
@@ -6069,7 +6090,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return true;
     }
     const carteSource = cardById(cibleEnCours);
-    if (rpgEstProtegee(entite, cardColors(carteSource))) {
+    if (rpgEstProtegee(entite, cardColors(carteSource))
+      // Le Serpent du monde : aucun sort ne peut le viser.
+      || (carteSource?.kind === 'magie' && entite.protectionSorts)
+      // Le Père des corbeaux : l'exil ne soulève que les coûts de 3 ou moins.
+      || !cibleRespecteCoutMax(carteSource, entite)) {
       jouerSfx('erreur');
       force();
       return true;
@@ -6238,6 +6263,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (cibleArmeEnCours) {
       resoudreActivationArme(entite);
+      return;
+    }
+    // Le Ghul des cendres attend sa victime : cliquer une créature adverse
+    // résout la destruction ciblée — une cible protégée est refusée d'un son
+    // d'erreur et l'attente reste ouverte.
+    if (duel.destructionsEnAttente?.[0]?.cote === 'joueur') {
+      const champAvantAction = prendreInstantaneChamp();
+      const debutJournalDestructions = rpgNombreDestructions(duel);
+      const res = rpgResoudreDestructionCiblee(duel, 'joueur', entite.id);
+      if (!res.ok) {
+        jouerSfx('erreur');
+        force();
+        return;
+      }
+      jouerSfx('select');
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      force();
       return;
     }
     // Déclaration d'attaque en cours : la frappe du Coup rapide ne tombe qu'à
@@ -6940,6 +6982,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               ? `Carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · ${duel.defausseEnAttente.restant} à défausser`
               : `Choisissez une carte à défausser (${duel.defausseEnAttente.restant})`,
         }
+        : attenteDestruction
+          ? {
+            cle: `destruction:${attenteDestruction.carteId}`,
+            classe: 'rpg-target-prompt',
+            texte: `${carteAttenteDestruction?.name ?? 'Capacité de destruction'} : cliquez la créature adverse qui subira ${carteAttenteDestruction?.destruction?.amount ?? 1} dégât${(carteAttenteDestruction?.destruction?.amount ?? 1) > 1 ? 's' : ''}`,
+          }
+        : (duel.magieGratuite?.cote === 'joueur' && !cibleEnCours)
+          ? {
+            cle: 'magie-gratuite',
+            classe: 'rpg-target-prompt',
+            texte: 'Kraken : lancez une magie rapide ou une sorcellerie de votre main sans payer son coût de mana — ou renoncez',
+          }
         : cibleEnCours
           ? {
             cle: `cible:${cibleEnCours}:${cibleAllieeMagie ?? '1'}`,
@@ -7305,10 +7359,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       blocking={bloqueursSelectionnes.has(entite.id)}
-                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id)}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesDestruction.has(entite.id)}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id) || Object.values(ciblesAttaque).includes(entite.id)}
                       canTarget={Boolean(
-                        (cibleEnCours && ['ennemi', 'tous'].includes(modeCible) && !rpgEstProtegee(entite, cardColors(carteCiblee)))
+                        idsCiblesDestruction.has(entite.id)
+                        || (cibleEnCours && ['ennemi', 'tous'].includes(modeCible)
+                          && !rpgEstProtegee(entite, cardColors(carteCiblee))
+                          && !(carteCiblee?.kind === 'magie' && entite.protectionSorts)
+                          && cibleRespecteCoutMax(carteCiblee, entite))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige'))
                         || (cibleAttaqueEnCours && ciblesCoupRapideLegales(
                           duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
@@ -7387,7 +7445,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
                       canTarget={Boolean(sacrificeEnCours || (cibleEnCours && ['allie', 'tous'].includes(modeCible)
                           && entite.id !== duel.arriveeEnAttente?.entiteId
-                          && !rpgEstProtegee(entite, cardColors(carteCiblee)))
+                          && !rpgEstProtegee(entite, cardColors(carteCiblee))
+                          && !(carteCiblee?.kind === 'magie' && entite.protectionSorts)
+                          && cibleRespecteCoutMax(carteCiblee, entite))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige')))}
                       sacrificeTarget={Boolean(sacrificeEnCours)}
                       activationDispo={Boolean(monTour && !phase && !cibleEnCours && !cibleAttaqueEnCours
@@ -7648,6 +7708,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     force();
                   }}>
                     {duel.arriveeEnAttente?.cote === 'joueur' ? 'Renoncer à la cible' : 'Annuler la cible'}
+                  </button>
+                )}
+                {duel.magieGratuite?.cote === 'joueur' && !cibleEnCours && (
+                  <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => {
+                    // Renoncer à la faveur du Kraken : l'attente se referme,
+                    // la main redevient ordinaire.
+                    duel.magieGratuite = null;
+                    jouerSfx('annuler');
+                    force();
+                  }}>
+                    Renoncer à la magie gratuite
                   </button>
                 )}
                 {sacrificeEnCours && (

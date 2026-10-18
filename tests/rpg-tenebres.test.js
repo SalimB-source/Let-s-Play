@@ -30,6 +30,7 @@ import {
   arriveeCiblePortee,
   rpgAttaquerSorcier,
   rpgDemarrerManaEssai,
+  rpgFinDeTour,
   rpgLancerMagie,
   rpgJouerCreature,
   rpgJouerArme,
@@ -102,7 +103,7 @@ test('les 21 fiches de base sont en Ténèbres, les 6 grandes figures couvrent l
 test('les mécaniques du moteur sont posées sur les fiches qui les servent', () => {
   assert.equal(cardById('le-poids').effet.type, 'transfert');
   assert.equal(cardById('la-grande-pesee').effet.type, 'transfert');
-  assert.equal(cardById('la-grande-pesee').effet.pioche, 1);
+  assert.equal(cardById('la-grande-pesee').effet.pioche, 2);
   assert.ok(cardById('la-grande-pesee').prixPv >= 1, 'la Grande Pesée se paie aussi en PV');
   assert.equal(cardById('nom-efface').effet.type, 'defausse-adverse');
   assert.equal(cardById('les-feuillets').effet.type, 'defaussePaquet');
@@ -326,11 +327,11 @@ test('moteur : l’Uræus frappe une créature sans riposte et sans transférer 
   assert.equal(ureus.attaquee, true);
 });
 
-test('moteur : le Chacal du seuil 1/2 attaque dès son arrivée avec Rapidité et Tribut', () => {
+test('moteur : le Chacal du seuil 2/1 attaque dès son arrivée avec Rapidité et Tribut', () => {
   const carte = cardById('chacal-du-seuil');
   assert.equal(carte.rapidite, true);
-  assert.equal(carte.atk, 1);
-  assert.equal(carte.def, 2);
+  assert.equal(carte.atk, 2);
+  assert.equal(carte.def, 1);
   assert.match(carte.text, /Rapidité/);
   assert.ok(pastillesPourCarte(carte).some((p) => p.label === 'Rapidité'));
   const duel = nouveau();
@@ -340,7 +341,7 @@ test('moteur : le Chacal du seuil 1/2 attaque dès son arrivée avec Rapidité e
   const chacal = poserTenebres(duel, 'chacal-du-seuil');
   assert.equal(chacal.ready, true);
   assert.equal(rpgAttaquerSorcier(duel, 'joueur', chacal.id).ok, true);
-  assert.equal(duel.sorcier.pv, adverse - 2);
+  assert.equal(duel.sorcier.pv, adverse - 3, '2 d’attaque et 1 de Tribut');
   assert.equal(duel.joueur.pv, 21);
 });
 
@@ -527,24 +528,28 @@ test('l’IA préfère la destruction totale quand le champ adverse domine', () 
   assert.equal(choisirCarteIA(duel, 'joueur', { rng })?.carteId, 'la-derniere-pesee');
 });
 
-test('Offrande de lin coûte seulement 2 mana, même avec 1 PV restant', () => {
+test('Offrande de lin : 2 mana et 1 PV pour +1/+0 et Tribut 1 jusqu’à la fin du tour', () => {
   const carte = cardById('offrande-de-lin');
-  assert.equal(carte.prixPv, undefined);
+  assert.equal(carte.prixPv, 1, 'le lin se paie d’une goutte de vie');
   assert.equal(carte.cost, 2);
-  assert.equal(carte.text, 'Toutes vos créatures gagnent +1/+0 jusqu’à la fin du tour.');
-  assert.deepEqual(carte.effet, { type: 'buff', atk: 1, def: 0, tours: 1 });
+  assert.equal(carte.text, 'Payez 1 PV : vos créatures gagnent +1/+0 et Tribut 1 jusqu’à la fin du tour.');
+  assert.deepEqual(carte.effet, { type: 'buff', atk: 1, def: 0, tribut: 1, tours: 1 });
   const duel = nouveau();
   installerMana(duel);
   const chacal = poserTenebres(duel, 'chacal-du-seuil');
-  duel.joueur.pv = 1;
+  duel.joueur.pv = 5;
   duel.joueur.mana.tenebres = 2;
   duel.joueur.main.push(carte.id);
   assert.equal(rpgPeutPayer(duel.joueur, carte), true);
   assert.equal(rpgLancerMagie(duel, 'joueur', carte.id).ok, true);
-  assert.equal(duel.joueur.pv, 1);
+  assert.equal(duel.joueur.pv, 4, 'le Prix de 1 PV est payé');
   assert.equal(duel.joueur.mana.tenebres, 0);
-  assert.equal(chacal.atk, 2);
-  assert.equal(chacal.def, 2);
+  assert.equal(chacal.atk, 3);
+  assert.equal(chacal.def, 1);
+  assert.equal(chacal.tribut, 2, 'son Tribut 1 imprimé monte à 2 jusqu’à la fin du tour');
+  rpgFinDeTour(duel);
+  assert.equal(chacal.atk, 2, 'le lin se défait à la fin du tour');
+  assert.equal(chacal.tribut, 1, 'le Tribut retombe à sa valeur imprimée');
 });
 
 test('le Maître des hiéroglyphes gagne Envol et Coup rapide sans perdre sa pioche', () => {

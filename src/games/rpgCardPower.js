@@ -199,6 +199,9 @@ export function valeurCarte(carte) {
     if (carte.donne?.esquive) valeur += 1.5 * carte.donne.esquive;
     if (carte.donne?.furie) valeur += 1 + 0.7 * carte.donne.furie;
     if (carte.donne?.immunite) valeur += 2;
+    // Une protection de couleur permanente (la Jitte d'Amayas) : ni ciblage ni
+    // blessure de cette couleur tant que l'arme tient — au prix d'une immunité.
+    if (carte.donne?.protection) valeur += 2.5;
     if (carte.donne?.rapidite) valeur += 0.5;
     if (carte.donne?.coupRapide) valeur += 2;
     if (carte.donne?.tribut) valeur += 1.6 * carte.donne.tribut;

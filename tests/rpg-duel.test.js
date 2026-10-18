@@ -25,6 +25,7 @@ import {
   rpgNombreDestructions,
   rpgPeutBloquerAttaquant,
   rpgResonanceEnJeu,
+  rpgResoudreDestructionCiblee,
   rpgDestructionsDepuis,
   rpgOuvrirFenetreReponse,
   rpgPiocher,
@@ -260,19 +261,19 @@ test('la Résonance des valkyries : +1/+1 à toutes les créatures Neige tant qu
     assert.match(cardById(id).text, /Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent \+1\/\+1/);
   }
 
-  // Sans valkyrie, aucune aura : le Loup est un 3/2.
+  // Sans valkyrie, aucune aura : le Loup est un 3/3.
   donner(duel, 'joueur', 'loup-des-neiges');
   const loup = rpgJouerCreature(duel, 'joueur', 'loup-des-neiges').entite;
   assert.equal(rpgResonanceEnJeu(duel), 0);
-  assert.deepEqual([loup.atk, loup.def, loup.pv], [3, 2, 2], 'pas de Résonance sans valkyrie');
+  assert.deepEqual([loup.atk, loup.def, loup.pv], [3, 3, 3], 'pas de Résonance sans valkyrie');
 
   // La valkyrie entre : elle est Neige, donc sa propre Résonance la renforce.
   donner(duel, 'joueur', 'valkyrie-au-corbeau');
   const premiere = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').entite;
   assert.equal(rpgResonanceEnJeu(duel), 1);
-  assert.deepEqual([premiere.atk, premiere.def, premiere.pv], [3, 4, 4],
-    'la Valkyrie 2/3 arrive en 3/4 : sa Résonance la renforce elle-même');
-  assert.deepEqual([loup.atk, loup.def, loup.pv], [4, 3, 3],
+  assert.deepEqual([premiere.atk, premiere.def, premiere.pv], [4, 4, 4],
+    'la Valkyrie 3/3 arrive en 4/4 : sa Résonance la renforce elle-même');
+  assert.deepEqual([loup.atk, loup.def, loup.pv], [4, 4, 4],
     'le Loup gagne +1/+1 de Résonance');
 
   // Une créature Neige qui arrive ensuite entre déjà renforcée.
@@ -284,17 +285,17 @@ test('la Résonance des valkyries : +1/+1 à toutes les créatures Neige tant qu
   // La Neige du camp adverse en profite aussi : la Résonance est une aura de table.
   donner(duel, 'sorcier', 'loup-des-neiges');
   const loupSorcier = rpgJouerCreature(duel, 'sorcier', 'loup-des-neiges').entite;
-  assert.deepEqual([loupSorcier.atk, loupSorcier.def], [4, 3], 'la Neige d’en face est renforcée aussi');
+  assert.deepEqual([loupSorcier.atk, loupSorcier.def], [4, 4], 'la Neige d’en face est renforcée aussi');
 
   // Une deuxième source double l’aura.
   donner(duel, 'joueur', 'valkyrie-au-corbeau');
   const seconde = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').entite;
   assert.equal(rpgResonanceEnJeu(duel), 2);
-  assert.deepEqual([seconde.atk, seconde.def], [4, 5], 'la deuxième Valkyrie 2/3 entre en 4/5');
-  assert.deepEqual([premiere.atk, premiere.def], [4, 5], 'la première monte à 4/5');
-  assert.deepEqual([loup.atk, loup.def], [5, 4],
+  assert.deepEqual([seconde.atk, seconde.def], [5, 5], 'la deuxième Valkyrie 3/3 entre en 5/5');
+  assert.deepEqual([premiere.atk, premiere.def], [5, 5], 'la première monte à 5/5');
+  assert.deepEqual([loup.atk, loup.def], [5, 5],
     'deux valkyries : +2/+2 sur le Loup');
-  assert.deepEqual([loupSorcier.atk, loupSorcier.def], [5, 4], 'et +2/+2 pour le Loup d’en face');
+  assert.deepEqual([loupSorcier.atk, loupSorcier.def], [5, 5], 'et +2/+2 pour le Loup d’en face');
 
   // Et une créature non-Neige reste hors de l’aura.
   donner(duel, 'joueur', 'chien-du-guet');
@@ -309,14 +310,14 @@ test('la Résonance des valkyries : +1/+1 à toutes les créatures Neige tant qu
   assert.deepEqual([jarl.atk, jarl.def, jarl.pv], [8, 8, 8], 'sa Furie 3 s’ajoute au bonus de Résonance');
 
   // Perdre l’aura ne tue jamais : le Loup d’en face tombe à 1 PV.
-  assert.equal(rpgBlesserCreature(duel, 'sorcier', loupSorcier.id, 3, 'braise').recus, 3);
+  assert.equal(rpgBlesserCreature(duel, 'sorcier', loupSorcier.id, 4, 'braise').recus, 4);
   assert.equal(loupSorcier.pv, 1);
 
   // La deuxième source meurt : l’aura retombe exactement, sans exécuter personne.
   assert.equal(rpgBlesserCreature(duel, 'joueur', seconde.id, 20, 'braise').ok, true);
   assert.equal(rpgResonanceEnJeu(duel), 1);
   assert.deepEqual([jarl.atk, jarl.def], [7, 7], 'perdre une source retire exactement +1/+1');
-  assert.deepEqual([loup.atk, loup.def], [4, 3]);
+  assert.deepEqual([loup.atk, loup.def], [4, 4]);
   assert.equal(loupSorcier.pv, 1, 'le plancher de 1 PV empêche l’aura de tuer');
   assert.equal(duel.sorcier.creatures.includes(loupSorcier), true);
 
@@ -560,7 +561,7 @@ test('les capacités des personnages amazighs se déclenchent à l’arrivée et
   donner(duel, 'joueur', 'tiziri-du-djurdjura');
   const tiziri = rpgJouerCreature(duel, 'joueur', 'tiziri-du-djurdjura').entite;
   assert.equal(fennec.atk, 3, 'Tiziri ne renforce que sa propre attaque');
-  assert.equal(tiziri.atk, 3, 'Tiziri gagne +1 ATQ jusqu’à la fin du tour (2/1 en 3/1)');
+  assert.equal(tiziri.atk, 2, 'Tiziri n’a plus de bonus d’arrivée : elle reste une 2/1');
   assert.equal(rpgEstProtegee(tiziri, ['braise']), true, 'sa protection contre la Braise est permanente');
   assert.equal(rpgEstProtegee(tiziri, ['eau']), false, 'et elle ne couvre que la Braise');
   donner(duel, 'joueur', 'amani-des-ksour');
@@ -571,7 +572,7 @@ test('les capacités des personnages amazighs se déclenchent à l’arrivée et
   donner(duel, 'joueur', 'amayas-du-hoggar');
   const amayas = rpgJouerCreature(duel, 'joueur', 'amayas-du-hoggar').entite;
   const mainAvantDestruction = duel.joueur.main.length;
-  // Amayas 3/2 pèse 4 sous l’égide d’Amani : il faut l’abattre pour de bon.
+  // Amayas 2/2 pèse 4 sous l’égide d’Amani : il faut l’abattre pour de bon.
   rpgBlesserCreature(duel, 'joueur', amayas.id, 4);
   assert.equal(duel.joueur.main.length, mainAvantDestruction + 1, 'Amayas fait piocher une carte quand il est détruit');
 
@@ -619,7 +620,7 @@ test('Tin Hinan donne l’Infiltration à ses autres créatures — rien à elle
   donner(duel, 'joueur', 'tin-hinan');
   const tin = rpgJouerCreature(duel, 'joueur', 'tin-hinan').entite;
   assert.deepEqual([chien.atk, chien.def], [2, 2], 'aucun boost : le Chien reste 2/2');
-  assert.deepEqual([tin.atk, tin.def], [4, 5], 'Tin Hinan reste 4/5');
+  assert.deepEqual([tin.atk, tin.def], [3, 3], 'Tin Hinan reste 3/3');
   assert.ok(chien.infiltration && chien.infiltrationTour,
     'le Chien est impossible à bloquer ce tour');
   assert.equal(tin.infiltration, false, 'la matriarche n’ouvre la route que pour les siens');
@@ -635,55 +636,36 @@ test('Tin Hinan donne l’Infiltration à ses autres créatures — rien à elle
     'redevenue bloquable, la créature peut de nouveau être interceptée');
 });
 
-test('le Père des corbeaux : 5/5 à 6, deux cartes à l’arrivée, et sa foudre activée', () => {
+test('le Père des corbeaux : 5/5 à 6 avec Envol, et ses corbeaux exilent une créature de coût 3 ou moins', () => {
   const carte = cardById('pere-des-corbeaux');
   assert.deepEqual({ cost: carte.cost, atk: carte.atk, def: carte.def }, { cost: 6, atk: 5, def: 5 });
-  assert.deepEqual(carte.activation, {
-    cout: 4,
-    couleur: 'neige',
-    effet: { type: 'degats', amount: 4, cible: 'creature' },
-  });
-  assert.match(carte.text, /Activé — Payez 4 mana de glace : il inflige 4 blessures à une créature au choix/);
+  assert.equal(carte.envol, true, 'le Père des corbeaux a Envol');
+  assert.equal(carte.activation, undefined, 'sa foudre activée a disparu');
+  assert.deepEqual(carte.arrivee, { type: 'exil', cible: 'creature', coutMax: 3 });
+  assert.match(carte.text, /Envol/);
+  assert.match(carte.text, /coût 3 ou moins/);
 
   const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 10);
-  donnerMana(duel, 'sorcier', 10);
-  duel.joueur.deck = ['glacier', 'glacier'];
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'sorcier', 'loup-des-neiges'); // coût 3 : exilable, pile au seuil
+  const proie = rpgJouerCreature(duel, 'sorcier', 'loup-des-neiges').entite;
+  donner(duel, 'sorcier', 'kraken'); // coût 5 : trop lourd pour les corbeaux
+  const kraken = rpgJouerCreature(duel, 'sorcier', 'kraken').entite;
+
+  // Une cible trop chère est illégale : l'exil la refuse.
   donner(duel, 'joueur', 'pere-des-corbeaux');
-  const mainAvant = duel.joueur.main.length;
-  const pere = rpgJouerCreature(duel, 'joueur', 'pere-des-corbeaux').entite;
-  assert.equal(duel.joueur.main.length, mainAvant - 1 + 2,
-    'ses deux corbeaux reviennent : deux cartes piochées');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'pere-des-corbeaux', kraken.id).raison, 'cible',
+    'le Kraken à 5 mana est hors de portée des corbeaux');
 
-  donner(duel, 'sorcier', 'dune-marchante');
-  const proie = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
-  donner(duel, 'joueur', 'chien-du-guet');
-  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
-
-  // 4 mana de glace, pas un de moins : la couleur est obligatoire.
-  duel.joueur.mana = { braise: 3, eau: 3, sable: 3, neige: 3 };
-  assert.equal(rpgActiverCapacite(duel, 'joueur', pere.id, proie.id).raison, 'mana',
-    '3 mana de glace ne suffisent pas');
-
-  duel.joueur.mana = { braise: 6, eau: 6, sable: 6, neige: 4 };
-  duel.tour = 'sorcier';
-  assert.equal(rpgActiverCapacite(duel, 'joueur', pere.id, proie.id).raison, 'tour',
-    'la capacité attend son propre tour');
-
-  duel.tour = 'joueur';
-  const proieAvant = proie.pv;
-  assert.equal(rpgActiverCapacite(duel, 'joueur', pere.id, proie.id).ok, true,
-    'la foudre part dès que le mana de glace est au complet');
-  assert.equal(proie.pv, proieAvant - 4, 'la créature choisie encaisse 4 blessures');
-  assert.equal(duel.joueur.mana.neige, 0, 'les 4 mana de glace sont dépensés');
-  assert.equal(duel.joueur.mana.braise, 6, 'les autres couleurs restent intactes');
-
-  // Une créature au choix : la foudre peut aussi viser les siens.
-  duel.joueur.mana.neige = 4;
-  assert.equal(rpgActiverCapacite(duel, 'joueur', pere.id, chien.id).ok, true,
-    'la cible est au choix, alliée comprise');
-  assert.equal(duel.joueur.creatures.includes(chien), false,
-    'le Chien 2/2 ne survit pas aux 4 blessures');
+  const pere = rpgJouerCreature(duel, 'joueur', 'pere-des-corbeaux', proie.id).entite;
+  assert.equal(pere.envol, true, 'le Père arrive avec Envol');
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === proie.id), false,
+    'le Loup à 3 mana est emporté');
+  assert.equal(duel.sorcier.exil?.includes('loup-des-neiges'), true,
+    'il est exilé — retiré de la partie, pas au cimetière');
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === kraken.id), true,
+    'le Kraken, lui, reste en jeu');
 });
 
 test('le Maître du marteau : 5/5 Furie 3, 2 dégâts à l’arrivée, et Tenacité', () => {
@@ -706,7 +688,7 @@ test('le Maître du marteau : 5/5 Furie 3, 2 dégâts à l’arrivée, et Tenaci
   const maitre = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau').entite;
   assert.equal(duel.sorcier.creatures.includes(chien), false,
     'le marteau brise le Chien 2/2');
-  assert.equal(dune.pv, 3, 'la Dune 2/5 encaisse les 2 dégâts');
+  assert.equal(dune.pv, 2, 'la Dune 2/4 encaisse les 2 dégâts');
 
   // Tenacité : la destruction est refusée — le Maître se relève à 1 de
   // défense, puis sa Furie 3 s’enflamme aussitôt (blessé et survivant).
@@ -793,7 +775,7 @@ test('Amani est une 2/5 à 4 dont l’égide donne +0/+2 aux autres créatures d
   // Perdre la dernière égide ne tue jamais : au pire, 1 PV (règle de la Résonance).
   donner(duel, 'joueur', 'porteuse-de-cruches');
   const porteuse = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').entite;
-  assert.deepEqual([porteuse.atk, porteuse.def, porteuse.pv], [1, 5, 5], 'la Porteuse 1/3 entre en 1/5');
+  assert.deepEqual([porteuse.atk, porteuse.def, porteuse.pv], [0, 5, 5], 'la Porteuse 0/3 entre en 0/5');
   assert.equal(rpgBlesserCreature(duel, 'joueur', porteuse.id, 4, 'braise').recus, 4);
   assert.deepEqual([porteuse.def, porteuse.pv], [1, 1], 'quatre blessures : elle ne tient plus qu’à 1 PV');
   assert.equal(rpgBlesserCreature(duel, 'joueur', seconde.id, 100, 'braise').ok, true);
@@ -956,21 +938,21 @@ test('les deux combattants meurent bien simultanément avant les effets de destr
   donnerMana(duel, 'joueur', 30);
   donnerMana(duel, 'sorcier', 30);
   donner(duel, 'joueur', 'cavalier-amazigh-du-desert');
-  donner(duel, 'sorcier', 'kraken');
-  const kraken = rpgJouerCreature(duel, 'sorcier', 'kraken').entite;
-  Object.assign(kraken, { atk: 4, def: 4, pv: 4, pvMax: 4 });
+  donner(duel, 'sorcier', 'drakkar-a-tete-de-dragon');
+  const drakkar = rpgJouerCreature(duel, 'sorcier', 'drakkar-a-tete-de-dragon').entite;
+  Object.assign(drakkar, { atk: 4, def: 4, pv: 4, pvMax: 4 });
   const mainAvant = duel.sorcier.main.length;
 
   const debut = rpgNombreDestructions(duel);
-  const pose = rpgJouerCreature(duel, 'joueur', 'cavalier-amazigh-du-desert', kraken.id);
+  const pose = rpgJouerCreature(duel, 'joueur', 'cavalier-amazigh-du-desert', drakkar.id);
   assert.equal(pose.ok, true);
-  assert.ok(!duel.joueur.creatures.includes(pose.entite), 'les 4 dégâts du Kraken détruisent le Cavalier');
-  assert.ok(!duel.sorcier.creatures.includes(kraken), 'les 4 dégâts du Cavalier détruisent le Kraken');
+  assert.ok(!duel.joueur.creatures.includes(pose.entite), 'les 4 dégâts du Drakkar détruisent le Cavalier');
+  assert.ok(!duel.sorcier.creatures.includes(drakkar), 'les 4 dégâts du Cavalier détruisent le Drakkar');
   assert.equal(duel.sorcier.main.length, mainAvant + 2,
-    'la capacité de destruction du Kraken se résout ensuite et fait piocher 2 cartes');
+    'la capacité de destruction du Drakkar se résout ensuite et fait piocher 2 cartes');
   assert.deepEqual(rpgDestructionsDepuis(duel, debut), [
-    { entityId: kraken.id, sourceElements: ['sable'] },
-    { entityId: pose.entite.id, sourceElements: ['eau'] },
+    { entityId: drakkar.id, sourceElements: ['sable'] },
+    { entityId: pose.entite.id, sourceElements: ['neige'] },
   ], 'les deux blessures mutuelles précèdent bien les capacités de destruction');
 });
 
@@ -1004,10 +986,10 @@ test('le Djinn de foudre gagne Rapidité en plus de son Coup rapide', () => {
   assert.equal(entite.ready, true, 'le Djinn est prêt dès son arrivée malgré le mal d’invocation habituel');
 });
 
-test('Fériel est une mythique 4 mana 4/3 avec Rapidité et Coup rapide', () => {
+test('Fériel est une mythique 4 mana 3/2 avec Rapidité et Coup rapide', () => {
   const feriel = cardById('feriel');
   assert.deepEqual({ cost: feriel.cost, atk: feriel.atk, def: feriel.def, rarity: feriel.rarity, rapidite: feriel.rapidite, coupRapide: feriel.coupRapide }, {
-    cost: 4, atk: 4, def: 3, rarity: 'mythique', rapidite: true, coupRapide: true,
+    cost: 4, atk: 3, def: 2, rarity: 'mythique', rapidite: true, coupRapide: true,
   });
   assert.equal(feriel.arrivee, undefined, 'son ancien effet de dégâts à l’arrivée est retiré');
   assert.match(feriel.text, /Rapidité/);
@@ -1029,14 +1011,14 @@ test('le Coup rapide frappe la créature désignée, et l’attaque s’arrête 
   const pvSorcier = duel.sorcier.pv;
   const res = rpgLancerAttaque(duel, 'joueur', [feriel.id], {}, null, null, { [feriel.id]: fennec.id });
   assert.equal(res.ok, true);
-  assert.equal(fennec.pv, 1, 'les 4 dégâts d’attaque pleins entament le Fennec de 5 PV');
-  assert.equal(feriel.pv, 3, 'la créature visée ne riposte pas contre le Coup rapide');
+  assert.equal(fennec.pv, 2, 'les 3 dégâts d’attaque pleins entament le Fennec de 5 PV');
+  assert.equal(feriel.pv, 2, 'la créature visée ne riposte pas contre le Coup rapide');
   assert.equal(duel.sorcier.pv, pvSorcier, 'l’attaque s’arrête sur la frappe : le sorcier ne prend rien');
   assert.equal(res.resume.frappeSorcier, 0);
   assert.deepEqual(res.resume.paires, [], 'aucun combat de blocage : la frappe a clos l’attaque');
   assert.equal(feriel.attaquee, true, 'Fériel a consommé son attaque');
   assert.deepEqual(res.resume.coupsRapides.map(({ attaquant, cible, degats }) => ({ attaquant, cible, degats })), [
-    { attaquant: 'FÉRIEL', cible: 'Fennec des décombres', degats: 4 },
+    { attaquant: 'FÉRIEL', cible: 'Fennec des décombres', degats: 3 },
   ]);
 });
 
@@ -1053,7 +1035,7 @@ test('sans créature désignée, le Coup rapide attaque le sorcier comme n’imp
   // Aucun bloqueur assigné : rien ne s’interpose, l’attaque va au sorcier.
   const res = rpgLancerAttaque(duel, 'joueur', [feriel.id], {});
   assert.equal(res.ok, true, 'aucune cible n’est exigée : le choix appartient à l’attaquant');
-  assert.equal(duel.sorcier.pv, pvSorcier - 4, 'la voie est libre : elle frappe le sorcier');
+  assert.equal(duel.sorcier.pv, pvSorcier - 3, 'la voie est libre : elle frappe le sorcier');
   assert.equal(fennec.pv, fennec.pvMax, 'la créature adverse n’a rien encaissé');
   assert.deepEqual(res.resume.coupsRapides, [], 'aucune frappe rapide n’a été déclarée');
   assert.equal(feriel.attaquee, true, 'l’attaque est consommée comme les autres');
@@ -1072,7 +1054,7 @@ test('un Coup rapide qui ne frappe personne est bloqué comme n’importe quel a
   // Corps de test : le bloqueur (0 ATQ) absorbe le combat sans blesser le
   // Berserk — pas de Furie en vue.
   Object.assign(vise, { pv: 5, def: 5, pvMax: 5 });
-  Object.assign(bloqueur, { atk: 0, pv: 3, def: 3, pvMax: 3 });
+  Object.assign(bloqueur, { atk: 0, pv: 2, def: 2, pvMax: 2 });
   berserk.ready = true;
 
   const pvSorcier = duel.sorcier.pv;
@@ -1080,8 +1062,8 @@ test('un Coup rapide qui ne frappe personne est bloqué comme n’importe quel a
   assert.equal(res.ok, true);
   assert.equal(vise.pv, 5, 'aucune frappe rapide : la créature écartée reste intacte');
   assert.equal(duel.sorcier.creatures.includes(bloqueur), false,
-    'le combat normal a lieu : le bloqueur meurt sous les 3 dégâts de combat');
-  assert.equal(berserk.pv, 2, 'le bloqueur blessant à 0, le Berserk sort indemne — pas de Furie');
+    'le combat normal a lieu : le bloqueur meurt sous les 2 dégâts de combat');
+  assert.equal(berserk.pv, 4, 'le bloqueur blessant à 0, le Berserk sort indemne — pas de Furie');
   assert.equal(duel.sorcier.pv, pvSorcier, 'bloqué, il ne touche pas les PV du sorcier');
   assert.equal(res.resume.frappeSorcier, 0);
   assert.deepEqual(res.resume.paires, [[berserk.name, bloqueur.name]],
@@ -1139,7 +1121,7 @@ test('l’IA ne s’arrête pas sur une créature qu’elle ne tue pas : elle at
 
   rpgTourSorcierIA(duel);
   assert.equal(chien.pv, 5, 'le Chien survit à la frappe : l’IA ne s’y arrête pas');
-  assert.equal(duel.joueur.pv, pvJoueur - 4, 'Fériel attaque normalement et frappe le joueur');
+  assert.equal(duel.joueur.pv, pvJoueur - 3, 'Fériel attaque normalement et frappe le joueur');
   assert.equal(feriel.attaquee, true, 'l’attaque est consommée');
 });
 
@@ -1157,11 +1139,59 @@ test('les capacités de feu punissent les bloqueurs et rendent les djinns distin
 
   donner(duel, 'sorcier', 'ifrit-des-ergs');
   const pvJoueur = duel.joueur.pv;
-  rpgJouerCreature(duel, 'sorcier', 'ifrit-des-ergs');
-  assert.equal(duel.joueur.pv, pvJoueur - 2, 'l’Ifrit frappe le sorcier adverse à son arrivée');
+  const ifrit = rpgJouerCreature(duel, 'sorcier', 'ifrit-des-ergs').entite;
+  assert.equal(duel.joueur.pv, pvJoueur, 'l’Ifrit n’a plus d’effet d’arrivée');
+  rpgBlesserCreature(duel, 'sorcier', ifrit.id, 10, 'eau');
+  assert.equal(duel.joueur.pv, pvJoueur - 4,
+    'l’Ifrit détruit inflige 4 dégâts au sorcier adverse');
   donner(duel, 'sorcier', 'ifrit-al-ahmar');
   rpgJouerCreature(duel, 'sorcier', 'ifrit-al-ahmar');
   assert.equal(duel.joueur.creatures.length, 0, 'l’Ifrit al-Ahmar balaie les créatures adverses à son arrivée');
+});
+
+test('le Ghul des cendres : son contrôleur désigne la créature frappée à sa mort', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+
+  // Deux créatures adverses : le choix est ouvert, la frappe attend un clic.
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  donner(duel, 'sorcier', 'dune-marchante');
+  const dune = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
+  donner(duel, 'joueur', 'ghul-des-cendres');
+  const ghul = rpgJouerCreature(duel, 'joueur', 'ghul-des-cendres').entite;
+  rpgBlesserCreature(duel, 'joueur', ghul.id, 1, 'eau');
+  assert.equal(duel.destructionsEnAttente?.length, 1, 'le Ghul mort attend sa désignation');
+  assert.equal(rpgResoudreDestructionCiblee(duel, 'sorcier', chien.id).ok, false,
+    'seul le contrôleur du mort désigne la victime');
+  const pvDune = dune.pv;
+  assert.equal(rpgResoudreDestructionCiblee(duel, 'joueur', dune.id).ok, true);
+  assert.equal(dune.pv, pvDune - 1, 'la Dune encaisse le dégât choisi');
+  assert.equal(duel.destructionsEnAttente.length, 0, 'l’attente est refermée');
+
+  // Une seule cible légale : la frappe se résout d'office, sans attente.
+  rpgBlesserCreature(duel, 'sorcier', chien.id, 10, 'eau');
+  donner(duel, 'joueur', 'ghul-des-cendres');
+  const second = rpgJouerCreature(duel, 'joueur', 'ghul-des-cendres').entite;
+  const pvDuneAvant = dune.pv;
+  rpgBlesserCreature(duel, 'joueur', second.id, 1, 'eau');
+  assert.equal(duel.destructionsEnAttente.length, 0, 'une seule cible : aucune attente');
+  assert.equal(dune.pv, pvDuneAvant - 1, 'la Dune, seule cible légale, encaisse d’office');
+
+  // Côté sorcier, l'IA choisit seule : jamais d'attente.
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chienJoueur = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'fennec-des-decombres');
+  const fennec = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').entite;
+  donner(duel, 'sorcier', 'ghul-des-cendres');
+  const ghulSorcier = rpgJouerCreature(duel, 'sorcier', 'ghul-des-cendres').entite;
+  const totalAvant = chienJoueur.pv + fennec.pv;
+  rpgBlesserCreature(duel, 'sorcier', ghulSorcier.id, 1, 'eau');
+  assert.equal(duel.destructionsEnAttente.length, 0, 'l’IA a frappé sans ouvrir d’attente');
+  const survivants = duel.joueur.creatures.filter((entite) => [chienJoueur.id, fennec.id].includes(entite.id));
+  const totalApres = survivants.reduce((somme, entite) => somme + entite.pv, 0);
+  assert.equal(totalApres, totalAvant - 1, 'une des deux créatures du joueur a pris le dégât');
 });
 
 test('le journal de destruction distingue la source immédiate et les capacités déclenchées', () => {
@@ -1451,28 +1481,35 @@ test('les terrains et leurs variantes gardent les mêmes couleurs, types et prod
   }
 });
 
-test('les créatures du Désert attaquent et leur protection colorée dure le tour posé et le suivant adverse', () => {
+test('les créatures du Désert attaquent : Amayas protège des Ténèbres en permanence, la protection temporaire expire', () => {
   const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 3);
+  donnerMana(duel, 'joueur', 5);
   donner(duel, 'joueur', 'amayas-du-hoggar');
   const amayas = rpgJouerCreature(duel, 'joueur', 'amayas-du-hoggar').entite;
 
-  assert.ok(amayas.atk > amayas.def, 'Amayas est une créature offensive du Désert');
-  assert.deepEqual(amayas.protection, { contre: 'braise', toursRestants: 2 });
-  assert.equal(rpgEstProtegee(amayas, 'braise'), true);
-  assert.equal(rpgEstProtegee(amayas, 'eau'), false, 'la protection ne couvre que la couleur indiquée');
-  assert.equal(cardById('tiziri-du-djurdjura').protection.contre, 'braise', 'Tiziri aussi protège contre la Braise — mais de façon permanente');
+  // Amayas : protection imprimée permanente contre les Ténèbres (pas de `tours`).
+  assert.deepEqual(amayas.protection, { contre: 'tenebres', toursRestants: Infinity });
+  assert.equal(rpgEstProtegee(amayas, 'tenebres'), true);
+  assert.equal(rpgEstProtegee(amayas, 'braise'), false, 'la protection ne couvre que la couleur indiquée');
+  assert.equal(cardById('tiziri-du-djurdjura').protection.contre, 'braise', 'Tiziri protège contre la Braise, de façon permanente aussi');
   assert.equal(cardById('tislit-des-aures').protection, undefined, 'la protection n’est pas attribuée à toutes les créatures');
+
+  // La protection temporaire (deux décomptes) reste une mécanique du moteur :
+  // on la pose à la main sur un Chien du guet, comme le ferait une carte à
+  // `tours: 2` — le tour posé et le tour adverse immédiatement suivant.
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  chien.protection = { contre: 'braise', toursRestants: 2 };
 
   rpgFinDeTour(duel);
   assert.equal(duel.tour, 'sorcier');
-  assert.equal(amayas.protection.toursRestants, 1, 'la protection reste active pendant le tour adverse juste après');
+  assert.equal(chien.protection.toursRestants, 1, 'la protection reste active pendant le tour adverse juste après');
   duel.sorcier.main.push('trait-de-braise');
   duel.sorcier.mana = { braise: 2, eau: 0, sable: 0, neige: 0 };
-  const magieBloquee = rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', amayas.id);
+  const magieBloquee = rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', chien.id);
   assert.equal(magieBloquee.raison, 'protection', 'la couleur protégée ne peut pas cibler la créature');
   assert.ok(duel.sorcier.main.includes('trait-de-braise'), 'le sort bloqué reste en main');
-  assert.equal(amayas.pv, 2, 'le sort protégé ne blesse pas');
+  assert.equal(chien.pv, 2, 'le sort protégé ne blesse pas');
 
   const ifrit = {
     id: 'ifrit-test', carteId: 'ifrit-des-ergs', name: 'Ifrit test',
@@ -1483,18 +1520,19 @@ test('les créatures du Désert attaquent et leur protection colorée dure le to
     atk: 2, def: 1, pv: 1, pvMax: 1, bouclier: 0, ready: false, attaquee: false,
   };
   duel.sorcier.creatures.push(ifrit, ghul);
-  assert.equal(rpgAttaquerCreature(duel, 'sorcier', ifrit.id, amayas.id).ok, true);
-  assert.equal(amayas.pv, 2, 'les dégâts de combat Braise sont aussi prévenus');
-  amayas.ready = true;
-  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [amayas.id]), {},
+  assert.equal(rpgAttaquerCreature(duel, 'sorcier', ifrit.id, chien.id).ok, true);
+  assert.equal(chien.pv, 2, 'les dégâts de combat Braise sont aussi prévenus');
+  chien.ready = true;
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [chien.id]), {},
     'un bloqueur Braise ne peut pas arrêter un attaquant protégé contre Braise');
-  assert.equal(rpgLancerAttaque(duel, 'joueur', [amayas.id], { [amayas.id]: [ghul.id] }).raison, 'protection',
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [chien.id], { [chien.id]: [ghul.id] }).raison, 'protection',
     'le moteur refuse aussi une affectation de blocage illégale');
 
   rpgFinDeTour(duel);
   assert.equal(duel.tour, 'joueur');
-  assert.equal(amayas.protection, null, 'la protection expire après le tour adverse immédiatement suivant');
-  assert.equal(rpgEstProtegee(amayas, 'braise'), false);
+  assert.equal(chien.protection, null, 'la protection temporaire expire après le tour adverse immédiatement suivant');
+  assert.equal(rpgEstProtegee(chien, 'braise'), false);
+  assert.equal(rpgEstProtegee(amayas, 'tenebres'), true, 'la permanente d’Amayas, elle, ne décompte jamais');
 });
 
 test('la partie démarre table vide et chaque camp pioche 5 cartes', () => {
@@ -2022,9 +2060,9 @@ test('capacité à l’arrivée : le Colosse buffe vos autres créatures', () =>
   assert.equal(colosse.atk, 6, 'lui-même n’est pas buffé');
 });
 
-test('le Djinn coûte 5, est 5/4 et détruit au hasard un terrain adverse à son arrivée', () => {
+test('le Djinn coûte 5, est 3/3 et détruit au hasard un terrain adverse à son arrivée', () => {
   const carte = cardById('djinn-du-souk');
-  assert.deepEqual({ cost: carte.cost, atk: carte.atk, def: carte.def }, { cost: 5, atk: 5, def: 4 });
+  assert.deepEqual({ cost: carte.cost, atk: carte.atk, def: carte.def }, { cost: 5, atk: 3, def: 3 });
   assert.deepEqual(carte.arrivee, { type: 'detruire-terrain-aleatoire' });
   assert.match(carte.text, /terrain adverse au hasard/i);
 
@@ -2151,7 +2189,7 @@ test('combat de créatures : dégâts mutuels, la plus fragile casse', () => {
   rpgFinDeTour(duel);
   rpgAttaquerCreature(duel, 'sorcier', chien.id, duel.joueur.creatures[0].id);
   assert.equal(duel.sorcier.creatures.length, 0, 'le chien meurt (2 ≥ 2)');
-  assert.equal(duel.joueur.creatures[0].pv, 3, 'la dune encaisse 2');
+  assert.equal(duel.joueur.creatures[0].pv, 2, 'la dune encaisse 2');
 });
 
 test('début de tour : on dégage ses terrains, le mana repart de zéro, pioche 1', () => {
@@ -2219,16 +2257,207 @@ test('Salem reçoit un bouclier de lumière qui absorbe le premier impact ennemi
   assert.equal(salem.pv, 2);
 });
 
-test('Yamina soigne toutes les créatures alliées de 2 à son arrivée', () => {
+test('Yamina soigne toutes les créatures alliées de 2 et rend 5 PV au joueur', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donner(duel, 'joueur', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   rpgBlesserCreature(duel, 'joueur', chien.id, 1);
+  duel.joueur.pv -= 7;
+  const pvAvant = duel.joueur.pv;
   donner(duel, 'joueur', 'yamina');
   const yamina = rpgJouerCreature(duel, 'joueur', 'yamina').entite;
   assert.equal(chien.pv, 2);
   assert.equal(yamina.pv, 4);
+  assert.equal(duel.joueur.pv, pvAvant + 5, 'son arrivée rend aussi 5 PV au joueur');
+  assert.match(cardById('yamina').text, /vous regagnez 5 PV/);
+});
+
+test('le Kraken offre une magie gratuite : le sort se lance sans payer son mana', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 5);
+  donner(duel, 'joueur', 'kraken');
+  const kraken = rpgJouerCreature(duel, 'joueur', 'kraken').entite;
+  assert.deepEqual([kraken.atk, kraken.def], [2, 5], 'le Kraken est passé 2/5');
+  assert.equal(duel.magieGratuite?.cote, 'joueur', 'la faveur du Kraken est ouverte');
+
+  // Le mana est épuisé par la pose : seule la faveur permet de lancer.
+  duel.joueur.mana = { braise: 0, eau: 0, sable: 0, neige: 0 };
+  donner(duel, 'joueur', 'rapport-du-greffier');
+  const mainAvant = duel.joueur.main.length;
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'rapport-du-greffier').ok, true,
+    'la sorcellerie se lance sans payer ses 3 manas');
+  assert.equal(duel.joueur.main.length, mainAvant - 1 + 2, '-1 carte lancée, +2 piochées');
+  assert.equal(duel.magieGratuite, null, 'la faveur se consume sur le sort lancé');
+
+  // La faveur consommée, le mana redevient exigible.
+  donner(duel, 'joueur', 'rapport-du-greffier');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'rapport-du-greffier').raison, 'mana',
+    'le deuxième sort repasse à la caisse');
+});
+
+test('la faveur du Kraken exclut les contresorts et s’éteint à la fin du tour', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 5);
+  donner(duel, 'joueur', 'kraken');
+  rpgJouerCreature(duel, 'joueur', 'kraken');
+  assert.equal(duel.magieGratuite?.cote, 'joueur');
+  duel.joueur.mana = { braise: 0, eau: 0, sable: 0, neige: 0 };
+
+  // Un contresort ne vit qu'en réponse : il n'entre pas dans la faveur.
+  donner(duel, 'joueur', 'ecueil');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'ecueil').ok, false,
+    'l’Écueil ne profite pas du lancement gratuit');
+  assert.equal(duel.magieGratuite?.cote, 'joueur', 'la faveur reste ouverte');
+
+  rpgFinDeTour(duel);
+  assert.equal(duel.magieGratuite, null, 'la faveur non employée s’éteint à la fin du tour');
+});
+
+test('le Serpent du monde est intouchable par les sorts, mais pas par le reste', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'serpent-du-monde');
+  const serpent = rpgJouerCreature(duel, 'joueur', 'serpent-du-monde').entite;
+
+  // Cibler le Serpent avec une magie est illégal, des deux camps.
+  duel.tour = 'sorcier';
+  donner(duel, 'sorcier', 'trait-de-braise');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', serpent.id).raison, 'protection',
+    'le Trait de braise ne peut pas le viser');
+
+  // Une magie de zone l'épargne aussi : les dégâts de sort glissent sur lui.
+  donner(duel, 'sorcier', 'tempete-de-sable');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'tempete-de-sable').ok, true);
+  assert.equal(serpent.pv, 6, 'la Tempête de sable ne l’écorche pas');
+
+  // Les blessures hors sort (capacités, armes, combat) passent normalement.
+  assert.equal(rpgBlesserCreature(duel, 'joueur', serpent.id, 2, ['braise'], null, 'capacite').recus, 2);
+  assert.equal(serpent.pv, 4, 'une capacité le blesse comme n’importe qui');
+});
+
+test('Overkill : l’excédent au-delà des bloqueurs perce jusqu’au sorcier', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'serpent-du-monde');
+  const serpent = rpgJouerCreature(duel, 'joueur', 'serpent-du-monde').entite;
+  serpent.ready = true;
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+
+  const pvSorcier = duel.sorcier.pv;
+  const res = rpgLancerAttaque(duel, 'joueur', [serpent.id], { [serpent.id]: [chien.id] });
+  assert.equal(res.ok, true);
+  assert.equal(duel.sorcier.creatures.includes(chien), false, 'le bloqueur 2/2 tombe');
+  assert.equal(duel.sorcier.pv, pvSorcier - 4,
+    '6 de force, 2 encaissés par le Chien : 4 percent jusqu’au sorcier');
+  assert.ok(duel.log.some((ligne) => ligne.includes('Overkill')), 'le journal nomme la percée');
+});
+
+test('le Hurlement du blizzard : 2 dégâts, et chaque survivante tire son gel à pile ou face', () => {
+  // Un hasard qui dit toujours « oui » : toutes les survivantes gèlent.
+  const duelGel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.1 });
+  donnerMana(duelGel, 'joueur', 20);
+  donnerMana(duelGel, 'sorcier', 20);
+  donner(duelGel, 'sorcier', 'dune-marchante');
+  const dune = rpgJouerCreature(duelGel, 'sorcier', 'dune-marchante').entite; // 2/4
+  donner(duelGel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duelGel, 'sorcier', 'chien-du-guet').entite; // 2/2
+  donner(duelGel, 'joueur', 'hurlement-du-blizzard');
+  assert.equal(rpgLancerMagie(duelGel, 'joueur', 'hurlement-du-blizzard').ok, true);
+  assert.equal(duelGel.sorcier.creatures.includes(chien), false, 'le Chien 2/2 meurt des 2 dégâts');
+  assert.equal(dune.pv, 2, 'la Dune encaisse les 2 dégâts');
+  assert.equal(dune.gelToursRestants > 0, true, 'la survivante est gelée : le jet a réussi');
+
+  // Un hasard qui dit toujours « non » : le givre ne prend pas.
+  const duelSec = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.9 });
+  donnerMana(duelSec, 'joueur', 20);
+  donnerMana(duelSec, 'sorcier', 20);
+  donner(duelSec, 'sorcier', 'dune-marchante');
+  const duneSeche = rpgJouerCreature(duelSec, 'sorcier', 'dune-marchante').entite;
+  donner(duelSec, 'joueur', 'hurlement-du-blizzard');
+  assert.equal(rpgLancerMagie(duelSec, 'joueur', 'hurlement-du-blizzard').ok, true);
+  assert.equal(duneSeche.pv, 2);
+  assert.equal(Boolean(duneSeche.gelToursRestants), false, 'le jet a échoué : pas de gel');
+  assert.ok(duelSec.log.some((ligne) => ligne.includes('secoue le givre')),
+    'le journal raconte le jet manqué');
+});
+
+test('la Brume du fjord est devenue une sorcellerie : 1 dégât à toutes, gel à une chance sur deux', () => {
+  const carte = cardById('brume-du-fjord');
+  assert.equal(carte.instant, undefined, 'plus une magie rapide');
+  assert.match(carte.typeLine, /^Sorcellerie/);
+  assert.deepEqual(carte.effet, { type: 'degats', amount: 1, cible: 'toutes-creatures', gelChance: 0.5 });
+
+  const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.1 });
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'dune-marchante');
+  const dune = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite; // 2/4
+  donner(duel, 'joueur', 'brume-du-fjord');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'brume-du-fjord').ok, true);
+  assert.equal(dune.pv, 3, 'la brume mord de 1');
+  assert.equal(dune.gelToursRestants > 0, true, 'et le froid prend : la Dune est gelée');
+});
+
+test('le Rempart de dunes se joue désormais en réponse, comme toute magie rapide', () => {
+  const carte = cardById('rempart-de-dunes');
+  assert.equal(carte.instant, true);
+  assert.match(carte.typeLine, /^Magie Rapide/);
+
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'rempart-de-dunes');
+  // Hors de son tour, dans une fenêtre de réponse : la magie rapide passe.
+  duel.tour = 'sorcier';
+  duel.fenetreReponse = true;
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'rempart-de-dunes').ok, true,
+    'le Rempart répond pendant le tour adverse');
+  assert.equal(chien.def, 5, '+0/+3 jusqu’à la fin du tour');
+});
+
+test('le Mur de boucliers donne +2/+2, et le bonus s’efface à la fin du tour', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite; // 2/2
+  donner(duel, 'joueur', 'mur-de-boucliers');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'mur-de-boucliers').ok, true);
+  assert.deepEqual([chien.atk, chien.def], [4, 4], 'le 2/2 se tient en 4/4');
+  rpgFinDeTour(duel);
+  assert.deepEqual([chien.atk, chien.def], [2, 2], 'la muraille se défait avec le tour');
+});
+
+test('la Brisure de verre fauche les créatures dont la défense tombe sous 1', () => {
+  assert.match(cardById('brisure-de-verre').text, /Si leur défense tombe en dessous de 1, elles sont détruites/);
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'ashigaru-des-braises');
+  const fragile = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite; // 1/1
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const solide = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite; // 2/2
+  donner(duel, 'joueur', 'brisure-de-verre');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'brisure-de-verre').ok, true);
+  assert.equal(duel.sorcier.creatures.includes(fragile), false, 'le 1/1 se brise');
+  assert.deepEqual([solide.atk, solide.pv], [1, 1], 'le 2/2 survit, amputé en 1/1');
+});
+
+test('la Lame de mer détruit la créature dont la défense tombe sous 1', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'lame-de-mer');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'lame-de-mer', chien.id).ok, true);
+  assert.equal(duel.sorcier.creatures.includes(chien), false,
+    'le -2/-2 jette sa défense à 0 : le Chien 2/2 est détruit');
+  assert.match(cardById('lame-de-mer').text, /Si sa défense tombe en dessous de 1, elle est détruite/);
 });
 
 test('Tarek donne +1/+1 aux créatures Sable tant qu’il est en jeu', () => {
@@ -2241,7 +2470,7 @@ test('Tarek donne +1/+1 aux créatures Sable tant qu’il est en jeu', () => {
   donner(duel, 'joueur', 'tarek');
   const tarek = rpgJouerCreature(duel, 'joueur', 'tarek').entite;
   assert.deepEqual({ atk: chien.atk, pv: chien.pv, def: chien.def }, { atk: 3, pv: 3, def: 3 });
-  assert.deepEqual({ atk: eau.atk, pv: eau.pv, def: eau.def }, { atk: 1, pv: 3, def: 3 });
+  assert.deepEqual({ atk: eau.atk, pv: eau.pv, def: eau.def }, { atk: 0, pv: 3, def: 3 });
   assert.deepEqual({ atk: tarek.atk, pv: tarek.pv, def: tarek.def }, { atk: 5, pv: 6, def: 6 });
 });
 
@@ -2411,8 +2640,8 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'chien-du-guet');   // 2/2
   donner(duel, 'joueur', 'vipere-de-verre'); // 3/1
-  donner(duel, 'sorcier', 'dune-marchante'); // 2/5
-  donner(duel, 'sorcier', 'dune-marchante'); // 2/5
+  donner(duel, 'sorcier', 'dune-marchante'); // 2/4
+  donner(duel, 'sorcier', 'dune-marchante'); // 2/4
   rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
   const vipere = rpgJouerCreature(duel, 'joueur', 'vipere-de-verre').entite;
   rpgJouerCreature(duel, 'sorcier', 'dune-marchante');
@@ -2424,8 +2653,8 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
   assert.equal(res.ok, true);
   // chien → dune 1 (2 dégâts), vipère → dune 2 (3 dégâts) ; chaque attaquant
   // encaisse la riposte (2) même si sa cible meurt : dégâts simultanés.
-  assert.equal(duel.sorcier.creatures.length, 2, 'les dunes 2/5 encaissent sans mourir');
-  assert.deepEqual(duel.sorcier.creatures.map((d) => d.pv).sort(), [2, 3]);
+  assert.equal(duel.sorcier.creatures.length, 2, 'les dunes 2/4 encaissent sans mourir');
+  assert.deepEqual(duel.sorcier.creatures.map((d) => d.pv).sort(), [1, 2]);
   assert.equal(duel.joueur.creatures.length, 0, 'chien 2/2 et vipère 3/1 meurent à la riposte');
 });
 
@@ -2493,7 +2722,7 @@ test('plusieurs bloqueurs défendent un attaquant et la force est répartie avan
   assert.equal(res.ok, true, 'les créatures nouvellement posées peuvent défendre');
   assert.deepEqual(res.resume.blocages[colosse.id], [porteuse.id, fennec.id]);
   assert.deepEqual(res.resume.repartitions[colosse.id], { [porteuse.id]: 3, [fennec.id]: 3 });
-  assert.equal(colosse.pv, 2, 'le Colosse reçoit 1 dégât de la Porteuse et 3 du Fennec');
+  assert.equal(colosse.pv, 3, 'le Colosse ne reçoit rien de la Porteuse 0/3 et 3 du Fennec');
   assert.deepEqual(duel.joueur.creatures, [], 'la répartition détruit la Porteuse et le Fennec');
   assert.ok(duel.joueur.cimetiere.includes('porteuse-de-cruches'));
   assert.ok(duel.joueur.cimetiere.includes('fennec-des-decombres'));
@@ -2666,7 +2895,7 @@ test('Défi du Jarl : le champion allié se bat avec la créature adverse ciblé
   assert.equal(duel.joueur.mana.neige, 5, 'le mana reste entier tant que le duel n’a pas ses deux cibles');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'defi-du-jarl', porteuse.id, colosse.id).ok, true);
   assert.equal(duel.sorcier.creatures.length, 0, 'la Porteuse tombe sous les 6 dégâts du champion');
-  assert.equal(colosse.pv, 5, 'le Colosse encaisse le coup de la Porteuse et survit');
+  assert.equal(colosse.pv, 6, 'la Porteuse 0/3 ne rend aucun coup : le Colosse reste intact');
 });
 
 test('Embuscade : -2/-2 jamais sous 1/1, et toute la table adverse doit bloquer ce tour', () => {
@@ -2823,21 +3052,27 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(glace.ok, true);
   assert.equal(dune.pv, avantGlace - 2, 'la lance de givre retire 2 PV à la Dune');
 
-  // Géant des banquises : 2 dégâts à toutes les créatures adverses.
+  // Géant des banquises : à l'arrivée, il gèle toutes les créatures adverses.
   donner(duel, 'sorcier', 'chien-du-guet');
   rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
   const chienGeant = duel.sorcier.creatures.at(-1);
   donner(duel, 'joueur', 'geant-des-banquises');
   rpgJouerCreature(duel, 'joueur', 'geant-des-banquises');
-  assert.equal(duel.sorcier.creatures.includes(chienGeant), false,
-    'le pas du Géant brise le Chien 2/2');
+  assert.equal(duel.sorcier.creatures.includes(chienGeant), true,
+    'le pas du Géant ne blesse plus personne : le Chien reste en jeu');
+  assert.equal(chienGeant.gelToursRestants > 0, true, 'mais le Chien est gelé par l’arrivée du Géant');
+  assert.equal(duel.log.some((ligne) => ligne.includes('est gelée : ni attaque ni blocage')), true,
+    'le journal annonce le gel');
 
-  // Drakkar : son équipage fait piocher une carte.
+  // Drakkar : il ne pioche plus à l'arrivée — son naufrage fait piocher deux cartes.
   duel.joueur.deck = ['glacier', 'glacier'];
   donner(duel, 'joueur', 'drakkar-a-tete-de-dragon');
   const mainAvant = duel.joueur.main.length;
-  rpgJouerCreature(duel, 'joueur', 'drakkar-a-tete-de-dragon');
-  assert.equal(duel.joueur.main.length, mainAvant, 'le Drakkar est entré en jeu et a pioché sa carte');
+  const drakkar = rpgJouerCreature(duel, 'joueur', 'drakkar-a-tete-de-dragon').entite;
+  assert.equal(duel.joueur.main.length, mainAvant - 1, 'le Drakkar entre en jeu sans faire piocher');
+  rpgBlesserCreature(duel, 'joueur', drakkar.id, 10, 'braise');
+  assert.equal(duel.joueur.main.length, mainAvant + 1,
+    'le Drakkar détruit fait piocher deux cartes');
 
   // Berserk : Coup rapide — il abat une créature choisie sans riposte possible,
   // et son attaque s'arrête sur cette frappe.
@@ -2852,7 +3087,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   const attaque = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [] }, null, null, { [berserk.id]: chien.id });
   assert.equal(attaque.ok, true, 'le Coup rapide accepte une cible choisie');
   assert.equal(duel.sorcier.creatures.includes(chien), false, 'le Chien tombe sous le Coup rapide');
-  assert.equal(berserk.pv, 4, 'le Berserk n’encaisse aucune riposte : sa Furie n’a rien à venger');
+  assert.equal(berserk.pv, 6, 'le Berserk 2/4, +2/+2 de Résonance, n’encaisse aucune riposte : sa Furie n’a rien à venger');
   assert.equal(attaque.resume.frappeSorcier, 0);
   assert.equal(duel.sorcier.pv, pvSorcierAvantBerserk,
     'l’attaque s’arrête sur la frappe : le sorcier ne prend rien');
@@ -2861,12 +3096,14 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   donner(duel, 'joueur', 'mur-de-boucliers');
   const loupAvant = loup.def;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'mur-de-boucliers').ok, true);
-  assert.equal(loup.def, loupAvant + 1, 'le Mur de boucliers donne +1/+1 à vos créatures');
+  assert.equal(loup.def, loupAvant + 2, 'le Mur de boucliers donne +2/+2 jusqu’à la fin du tour');
 
   donner(duel, 'joueur', 'brume-du-fjord');
   duel.fenetreReponse = false;
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'brume-du-fjord', loup.id).ok, true);
-  assert.equal(loup.bouclier, 3, 'la Brume du fjord pose un bouclier de 3');
+  const duneAvantBrume = dune.pv;
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'brume-du-fjord').ok, true);
+  assert.equal(dune.pv, duneAvantBrume - 1,
+    'la Brume du fjord mord toutes les créatures adverses de 1');
 
   donner(duel, 'joueur', 'festin-des-vaillants');
   duel.joueur.pv = RPG_PV_JOUEUR - 10;
@@ -2877,45 +3114,52 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   const dune2 = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
   donner(duel, 'joueur', 'hurlement-du-blizzard');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'hurlement-du-blizzard').ok, true);
-  assert.equal(dune2.pv, 3, 'le Hurlement du blizzard balaie toutes les créatures adverses');
+  assert.equal(dune2.pv, 2, 'le Hurlement du blizzard balaie toutes les créatures adverses');
 
   donner(duel, 'joueur', 'eclair-du-marteau');
   const pvSorcierAvantEclair = duel.sorcier.pv;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', 'sorcier').ok, true);
   assert.equal(duel.sorcier.pv, pvSorcierAvantEclair - 3, 'l’Éclair du marteau peut frapper le sorcier');
 
-  // Les quatre figures du Nord : pioche, balayage, soin et capacité de mort.
+  // Les quatre figures du Nord : exil, balayage, soin et le grand Serpent.
   for (const [id, figure] of [['pere-des-corbeaux', 'Le Père des corbeaux'], ['maitre-du-marteau', 'Le Maître du marteau'], ['dame-des-neuf-mondes', 'La Dame des neuf mondes']]) {
     const carte = cardById(id);
     assert.equal(carte.kind, 'hero', `${figure} est un héros`);
     assert.equal(carte.element, 'neige');
     donner(duel, 'joueur', id);
-    assert.equal(rpgJouerCreature(duel, 'joueur', id).ok, true, `${figure} se pose`);
+    // Le Père des corbeaux désigne une créature de coût 3 ou moins à exiler.
+    const cibleExil = id === 'pere-des-corbeaux'
+      ? [...duel.sorcier.creatures, ...duel.joueur.creatures]
+        .find((entite) => (cardById(entite.carteId)?.cost ?? 0) <= 3)?.id ?? null
+      : undefined;
+    assert.equal(rpgJouerCreature(duel, 'joueur', id, cibleExil).ok, true, `${figure} se pose`);
   }
   // Le Festin a laissé le joueur à 20 PV : le soin de la Dame s’ajoute en
   // entier (20 + 5) et n'est plus rogné par un plafond de 25.
   assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'le soin de la Dame s’ajoute en entier');
   assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR, 'le maximum ne bouge que si la vie le dépasse');
 
-  duel.joueur.deck = ['glacier', 'glacier', 'glacier'];
+  // Le Père des corbeaux : Envol, et ses corbeaux exilent une petite créature.
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const emportee = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
   donner(duel, 'joueur', 'pere-des-corbeaux');
-  const mainAvantCorbeaux = duel.joueur.main.length;
-  rpgJouerCreature(duel, 'joueur', 'pere-des-corbeaux');
-  assert.equal(duel.joueur.main.length, mainAvantCorbeaux - 1 + 2,
-    'le Père des corbeaux quitte la main et fait piocher deux cartes');
+  const corbeaux = rpgJouerCreature(duel, 'joueur', 'pere-des-corbeaux', emportee.id).entite;
+  assert.equal(corbeaux.envol, true, 'le Père des corbeaux vole');
+  assert.equal(duel.sorcier.creatures.includes(emportee), false,
+    'les corbeaux emportent le Chien à 2 mana');
+  assert.equal(duel.sorcier.exil?.includes('chien-du-guet'), true,
+    'exilé — retiré de la partie, pas au cimetière');
 
-  donner(duel, 'sorcier', 'dune-marchante');
-  const proie = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
-  donner(duel, 'sorcier', 'dune-marchante');
-  const voisine = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
+  // Le Serpent du monde : protégé des magies, Overkill au combat.
   donner(duel, 'joueur', 'serpent-du-monde');
   const serpent = rpgJouerCreature(duel, 'joueur', 'serpent-du-monde').entite;
   assert.deepEqual([serpent.atk, serpent.def], [8, 8],
     'le Serpent 6/6 entre en 8/8 sous les deux Résonances du deck');
-  assert.equal(rpgBlesserCreature(duel, 'joueur', serpent.id, serpent.pv).ok, true);
-  assert.equal(duel.joueur.creatures.includes(serpent), false, 'le Serpent du monde meurt');
-  assert.equal(proie.pv, 3, 'sa mort retombe : 2 dégâts sur chaque créature adverse');
-  assert.equal(voisine.pv, 3);
+  assert.equal(serpent.protectionSorts, true, 'protégé contre les magies et les sorcelleries');
+  assert.equal(serpent.overkill, true, 'il porte Overkill');
+  donner(duel, 'joueur', 'eclair-du-marteau');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', serpent.id).raison, 'protection',
+    'aucun sort ne peut le viser — pas même les vôtres');
 });
 
 test('le Glacier produit un mana Neige : payer une créature Neige engage ses terrains', () => {

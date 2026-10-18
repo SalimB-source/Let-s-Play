@@ -29,12 +29,12 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['sabre-maudit', 'samourai-du-torii'],
     title: 'Une arme reste attachée à son porteur',
-    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +5/-2 et Coup rapide, comme Fériel. Ce n’est pas Rapidité : le mal d’invocation reste applicable. Le bonus persiste entre les tours ; une défense réduite à zéro tue le porteur. Quand il meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Honneur ni le type Samouraï.',
+    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Coup rapide, comme Fériel. Ce n’est pas Rapidité : le mal d’invocation reste applicable. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Honneur ni le type Samouraï.',
   },
   {
     id: 'rituel-ephemere',
     section: 'Magies',
-    cardIds: ['rempart-de-dunes', 'parade-du-verre'],
+    cardIds: ['tempete-de-sable', 'rempart-de-dunes', 'parade-du-verre'],
     title: 'Rituel ou éphémère ?',
     text: 'Un rituel se lance pendant votre tour, hors réponse. Un éphémère peut aussi être joué pendant la fenêtre de réponse à une annonce ou à un combat. Le type est indiqué sur la ligne de la carte.',
   },
@@ -50,14 +50,14 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['eau-de-la-source', 'yamina', 'rapport-du-greffier'],
     title: 'Soigner ou renouveler ses ressources',
-    text: 'Eau de la source soigne le joueur ; Yamina soigne chacune de vos créatures. Rapport du greffier fait piocher deux cartes : ces effets agissent sur des ressources différentes et ne se remplacent pas.',
+    text: 'Eau de la source soigne le joueur ; Yamina soigne chacune de vos créatures de 2 et vous rend 5 PV en prime. Rapport du greffier fait piocher deux cartes : ces effets agissent sur des ressources différentes et ne se remplacent pas.',
   },
   {
     id: 'bonus-temporaires-et-durables',
     section: 'Magies',
-    cardIds: ['rempart-de-dunes', 'mur-de-boucliers'],
+    cardIds: ['rempart-de-dunes', 'mur-de-boucliers', 'tin-hinan'],
     title: 'Vérifiez combien de temps dure un bonus',
-    text: 'Le Rempart de dunes donne +0/+3 jusqu’à la fin du tour : le jeu retire ce bonus au bon moment. Le Mur de boucliers n’indique pas de durée ; son +1/+1 reste acquis tant que la créature demeure en jeu.',
+    text: 'Le Rempart de dunes (+0/+3) et le Mur de boucliers (+2/+2) donnent leur bonus jusqu’à la fin du tour : le jeu le retire au bon moment. D’autres gains restent acquis — le +2/+0 du ralliement de Tin Hinan ne s’efface pas, et le bonus d’une arme dure tant qu’elle reste attachée. La durée se lit toujours sur la carte.',
   },
   {
     id: 'boucliers',
@@ -65,6 +65,13 @@ export const RPG_CARD_LESSONS = Object.freeze([
     cardIds: ['parade-du-verre', 'salem'],
     title: 'Un bouclier absorbe les dégâts',
     text: 'La Parade de verre protège une créature alliée contre ses trois prochains dégâts, quelle que soit leur provenance. Le bouclier de lumière de Salem est différent : il le protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie le touche.',
+  },
+  {
+    id: 'degats-et-gel',
+    section: 'Magies',
+    cardIds: ['hurlement-du-blizzard', 'brume-du-fjord', 'poigne-de-givre'],
+    title: 'Des dégâts qui peuvent geler',
+    text: 'La Poigne de givre gèle toujours la créature qu’elle blesse. Le Hurlement du blizzard (2 dégâts) et la Brume du fjord (1 dégât) frappent toutes les créatures adverses, et chaque survivante tire sa chance : une sur deux est gelée — ni attaque ni blocage jusqu’à la fin de son prochain tour. Les créatures tuées par les dégâts n’ont plus rien à geler.',
   },
   {
     id: 'contresorts',
@@ -113,7 +120,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['scribe-de-la-liste', 'ghul-des-cendres'],
     title: 'Une capacité peut se déclencher à la destruction',
-    text: 'Le Scribe fait piocher deux cartes quand il meurt ; le Ghul blesse toutes les créatures adverses. Détruire une créature ne neutralise donc pas toujours son effet : lisez aussi la ligne « Quand… est détruit ».',
+    text: 'Le Scribe fait piocher deux cartes quand il meurt ; le Ghul inflige 1 dégât à une créature adverse que son contrôleur choisit. Détruire une créature ne neutralise donc pas toujours son effet : lisez aussi la ligne « Quand… est détruit ».',
   },
   {
     id: 'retour-apres-destruction',
@@ -153,9 +160,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'capacite-active',
     section: 'Capacités des créatures',
-    cardIds: ['pere-des-corbeaux'],
+    cardIds: ['baton-des-citernes'],
     title: 'Une capacité activée se paie en mana',
-    text: 'Le Père des corbeaux porte une capacité activée : autant de fois que vous le voulez, à votre tour, payez 4 mana de glace pour infliger 4 blessures à une créature au choix — alliée ou adverse. Le mana se dépense au moment d’activer, indépendamment du coût de la carte ; et parce que l’effet cible vraiment sa proie, Boualem peut le contre comme un sort.',
+    text: 'Le Bâton des citernes porte une capacité activée : autant de fois que vous le voulez, à votre tour, payez 3 manas pour appeler un Serpent des citernes supplémentaire. Le mana se dépense au moment d’activer, indépendamment du coût de la carte : une capacité activée est une dépense volontaire, répétable tant que vous pouvez la payer.',
   },
   {
     id: 'tenacite',
@@ -167,9 +174,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'protection',
     section: 'Capacités des créatures',
-    cardIds: ['tiziri-du-djurdjura', 'amayas-du-hoggar'],
+    cardIds: ['tiziri-du-djurdjura', 'amayas-du-hoggar', 'lionne-du-midi-ardent', 'faucon-du-zenith'],
     title: 'La protection dépend de la couleur source',
-    text: 'Tiziri est protégée contre l’Eau ; Amayas contre la Braise. Tant que la protection dure, les attaques et effets de cette couleur ne peuvent pas la cibler ou la blesser. La protection de ces cartes dure jusqu’à la fin du prochain tour adverse.',
+    text: 'Tiziri est protégée contre la Braise ; Amayas contre les Ténèbres — tous deux de façon permanente, comme le Faucon du zénith (Ténèbres) et la Lionne du midi ardent (Eau et Neige, les deux à la fois). Les attaques, blocages et effets d’une couleur protégée ne peuvent ni cibler ni blesser la créature. Une protection peut aussi être temporaire : elle dure alors le tour posé et le prochain tour adverse.',
   },
   {
     id: 'capacite-de-boualem',
@@ -188,16 +195,16 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'honneur',
     section: 'Capacités des créatures',
-    cardIds: ['ashigaru-des-braises', 'samourai-du-torii', 'oni-de-la-fournaise'],
+    cardIds: ['ronin-du-soleil-rouge', 'samourai-du-torii', 'oni-de-la-fournaise'],
     title: 'Honneur : une dernière frappe à la mort',
     text: 'Quand une créature avec Honneur meurt, elle inflige X dégâts à une seule créature adverse vivante choisie au hasard. Honneur 1 pour les communes et inhabituelles, 2 pour les rares, 3 pour les mythiques. Sans créature adverse, rien ne se passe : le sorcier n’est jamais visé. Boucliers et protection s’appliquent normalement. Un renvoi en main ou un contresort ne déclenche pas Honneur.',
   },
   {
     id: 'auras-et-resonance',
     section: 'Capacités des créatures',
-    cardIds: ['tarek', 'valkyrie-des-glaces', 'tengu-du-mont-ardent', 'kenshi-de-la-forge'],
+    cardIds: ['tarek', 'valkyrie-des-glaces', 'tengu-du-mont-ardent', 'samourai-du-torii', 'kenshi-de-la-forge'],
     title: 'Une aura agit tant que sa source reste en jeu',
-    text: 'Tarek renforce les créatures Sable de son camp, et l’égide d’Amani donne +0/+2 aux autres créatures du sien. La Résonance de la Valkyrie renforce toutes les créatures Neige sur les deux champs de bataille, et l’aura de forge du Kenshi donne +2/+0 aux autres Samouraïs de la table, dans les deux camps — il ne se forge pas lui-même, mais deux Kenshis se renforcent l’un l’autre et le reste des Samouraïs reçoit les deux. La Résonance samouraï du Tengu et de Kagutsuchi renforce uniquement les créatures de type Samouraï, même adverses et quelle que soit leur couleur, de +1/+1 par source. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas. La Résonance Neige reste indépendante. Si la source quitte la table, le bonus d’aura correspondant disparaît — l’aura de forge ne touche jamais la défense, donc la perdre ne peut pas tuer.',
+    text: 'Tarek renforce les créatures Sable de son camp, et l’égide d’Amani donne +0/+2 aux autres créatures du sien. La Résonance de la Valkyrie renforce toutes les créatures Neige sur les deux champs de bataille, et l’aura de forge du Kenshi donne +2/+0 aux autres Samouraïs de la table, dans les deux camps — il ne se forge pas lui-même, mais deux Kenshis se renforcent l’un l’autre et le reste des Samouraïs reçoit les deux. La Résonance samouraï du Tengu et de Kagutsuchi renforce uniquement les créatures de type Samouraï, même adverses et quelle que soit leur couleur, de +1/+1 par source. Celle du Samouraï du torii suit la même règle mais ne renforce que les autres Samouraïs — jamais lui-même ; deux toriis se renforcent l’un l’autre, et les autres sources le renforcent normalement. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas. La Résonance Neige reste indépendante. Si la source quitte la table, le bonus d’aura correspondant disparaît — l’aura de forge ne touche jamais la défense, donc la perdre ne peut pas tuer.',
   },
   {
     id: 'banniere-samourai',
@@ -219,5 +226,26 @@ export const RPG_CARD_LESSONS = Object.freeze([
     cardIds: ['sahir-des-braises'],
     title: 'Une capacité peut agir avant les dégâts de combat',
     text: 'Quand le Sahir attaque ou bloque, il inflige d’abord 2 dégâts à la créature qui le bloque ou qu’il bloque, avant les blessures de combat. Une capacité de combat peut donc changer l’issue de l’échange qui suit.',
+  },
+  {
+    id: 'exil-des-corbeaux',
+    section: 'Capacités des créatures',
+    cardIds: ['pere-des-corbeaux'],
+    title: 'L’exil retire la carte de la partie',
+    text: 'Quand le Père des corbeaux arrive — porté par son Envol — ses corbeaux exilent une créature de coût 3 ou moins, alliée ou adverse. Une carte exilée ne va pas au cimetière : elle quitte la partie, hors de portée des réanimations et des retours en main. Les créatures de coût 4 et plus sont hors d’atteinte des corbeaux : la cible doit respecter le seuil.',
+  },
+  {
+    id: 'overkill-et-protection',
+    section: 'Capacités des créatures',
+    cardIds: ['serpent-du-monde'],
+    title: 'Overkill perce, la protection anti-magie blinde',
+    text: 'Le Serpent du monde cumule deux défenses d’exception. Protégé contre les magies et les sorcelleries, aucun sort ne peut le cibler ni le blesser — seules les attaques, les capacités et les armes l’atteignent. Et quand il attaque, son Overkill perce : si les bloqueurs tombent sous ses dégâts, l’excédent passe au sorcier défenseur au lieu de se perdre.',
+  },
+  {
+    id: 'magie-gratuite',
+    section: 'Capacités des créatures',
+    cardIds: ['kraken'],
+    title: 'Une arrivée peut offrir un sort gratuit',
+    text: 'Quand le Kraken émerge, vous pouvez lancer depuis votre main une magie rapide ou une sorcellerie sans payer son coût de mana. Un éventuel Prix en PV reste dû, et un contresort — qui ne vit qu’en réponse — n’entre pas dans la faveur. La fenêtre se referme dès le sort lancé, ou à la fin du tour si vous y renoncez.',
   },
 ]);

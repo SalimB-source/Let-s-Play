@@ -70,7 +70,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'Sans armure, sans hésitation : les cimes ne sont qu’un autre chemin.',
   }),
   carte({
-    id: 'ashigaru-des-braises', name: 'Ashigaru des braises',
+    id: 'ashigaru-des-braises', name: 'Ashigaru des braises', honneur: 0,
     cost: 1, atk: 1, def: 1, rarity: 'commune',
     typeLine: 'Créature — Humain · Ashigaru · Samouraï',
     text: '—',
@@ -85,11 +85,12 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'samourai-du-torii', name: 'Samouraï du torii',
-    cost: 3, atk: 1, def: 3, rarity: 'rare',
+    cost: 3, atk: 2, def: 2, rarity: 'rare',
     typeLine: 'Créature — Humain · Samouraï',
     resonance: 1,
     resonanceTribu: 'samourai',
-    text: 'Résonance samouraï — Tant qu’il est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1.',
+    resonanceExclutSource: true,
+    text: 'Résonance samouraï — Tant qu’il est en jeu, toutes les autres créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1.',
     flavor: 'Il ne garde pas la porte pour empêcher les vivants d’entrer.',
   }),
   carte({
@@ -162,8 +163,8 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     kind: 'magie', cost: 4, rarity: 'rare',
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 4, def: -2, coupRapide: true },
-    text: 'Arme — Le porteur gagne +4/-2 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
+    effet: { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true },
+    text: 'Arme — Le porteur gagne +1/+0 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({

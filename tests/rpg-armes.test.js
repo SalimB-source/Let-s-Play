@@ -159,10 +159,11 @@ test('le composeur remplit un quota d’armes comme les autres quotas', () => {
   }, CATALOGUE_DU_COMPOSEUR);
   assert.equal(liste.length, 3);
   // Le Sable n'a plus une seule arme mais onze : les deux places vont aux
-  // deux meilleures, la mythique du lot puis la Jitte (la meilleure rare).
+  // deux meilleures, la mythique du lot puis la Lame des ergs (la meilleure
+  // rare depuis que la Jitte s'est simplifiée en +2/+1 et protection).
   assert.equal(liste.filter((id) => id === 'takouba-de-tin-hinan').length, 1,
     'la place de mythique va à la Takouba de Tin Hinan, seule mythique Sable');
-  assert.equal(liste.filter((id) => id === 'jitte-d-amayas').length, 1,
+  assert.equal(liste.filter((id) => id === 'lame-des-ergs').length, 1,
     'la seconde place va à la meilleure arme rare du Sable');
   assert.equal(rpgValiderDeck(liste).ok, false, 'ce mini-paquet teste les quotas, pas le format de trente cartes');
 });
@@ -203,10 +204,10 @@ const serpents = (duel, cote) => duel[cote].creatures
 
 test('à son arrivée, le Bâton appelle un serpent 3/1 avec Rapidité — et ne donne plus l’Esquive', () => {
   const duel = duelVide();
-  const dune = poser(duel, 'joueur', 'dune-marchante'); // 2/5
+  const dune = poser(duel, 'joueur', 'dune-marchante'); // 2/4
   equiper(duel, 'joueur', 'baton-des-citernes', dune);
   assert.equal(dune.atk, 3, 'le porteur gagne +1 d’attaque');
-  assert.equal(dune.pv, 7, 'le +2 de défense grandit les PV');
+  assert.equal(dune.pv, 6, 'le +2 de défense grandit les PV');
   assert.equal(dune.esquive, 0, 'le Bâton ne donne plus l’Esquive');
   const appeles = serpents(duel, 'joueur');
   assert.equal(appeles.length, 1, 'un serpent naît de l’arrivée du Bâton');
@@ -217,7 +218,7 @@ test('à son arrivée, le Bâton appelle un serpent 3/1 avec Rapidité — et ne
   assert.equal(appeles[0].ready, true, 'Rapidité : il peut attaquer dès ce tour');
   assert.equal(appeles[0].detruireFinDuTour, true, 'mais la fin du tour le reprendra');
   rpgBlesserCreature(duel, 'joueur', dune.id, 3, 'eau', null, 'magie');
-  assert.equal(dune.pv, 4, 'sans Esquive, la Dune encaisse les 3 dégâts');
+  assert.equal(dune.pv, 3, 'sans Esquive, la Dune encaisse les 3 dégâts');
 });
 
 test('le serpent du Bâton frappe le tour même, puis la fin du tour le détruit', () => {
@@ -495,7 +496,7 @@ test('contré par le sorcier, le Bâton n’appelle aucun serpent', () => {
 
 test('le sorcier joue son arme par la fenêtre d’annonce, comme ses autres cartes', () => {
   const duel = duelVide();
-  const ghul = poser(duel, 'sorcier', 'ghul-des-cendres'); // 2/1
+  const ghul = poser(duel, 'sorcier', 'ghul-des-cendres'); // 1/1
   duel.tour = 'sorcier';
   donner(duel, 'sorcier', 'takouba-des-pistes');
   manaPlein(duel, 'sorcier');
@@ -504,6 +505,6 @@ test('le sorcier joue son arme par la fenêtre d’annonce, comme ses autres car
   const res = rpgSorcierResoudreAnnonce(duel);
   assert.equal(res.ok, true);
   assert.equal(ghul.arme.carteId, 'takouba-des-pistes');
-  assert.equal(ghul.atk, 4, 'le Ghul porte la Takouba : 2 + 2');
+  assert.equal(ghul.atk, 3, 'le Ghul porte la Takouba : 1 + 2');
   assert.equal(ghul.pv, 1, 'et +0 de défense : toujours 1 PV');
 });

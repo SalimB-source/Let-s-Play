@@ -12,7 +12,8 @@ test('the Braise sound applies to fire and hybrid spells and attacks', () => {
 });
 
 test('each triggered ability of a Braise creature has the fire effect sound', () => {
-  assert.equal(rpgFireSoundFor('ifrit-des-ergs', 'arrival'), RPG_FIRE_SFX);
+  assert.equal(rpgFireSoundFor('ifrit-des-ergs', 'arrival'), null, 'l’Ifrit n’a plus d’effet d’arrivée');
+  assert.equal(rpgFireSoundFor('ifrit-des-ergs', 'destruction'), RPG_FIRE_SFX);
   assert.equal(rpgFireSoundFor('sahir-des-braises', 'arrival'), RPG_FIRE_SFX);
   assert.equal(rpgFireSoundFor('sahir-des-braises', 'combat'), RPG_FIRE_SFX);
   assert.equal(rpgFireSoundFor('ghul-des-cendres', 'destruction'), RPG_FIRE_SFX);

@@ -298,8 +298,10 @@ const attaquantTemoin = () => ({
 });
 
 const defenseurSousLeCoup = (duel) => {
-  donner(duel, 'joueur', 'dune-marchante');
-  const dune = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
+  // Amani 2/5 : seule en jeu, son égide ne la grandit pas — elle survit aux 4
+  // dégâts du Jarl (la Dune marchante, passée 2/4, ne survivrait plus).
+  donner(duel, 'joueur', 'amani-des-ksour');
+  const dune = rpgJouerCreature(duel, 'joueur', 'amani-des-ksour').entite;
   duel.joueur.pv = 8; // menace imminente : la pression autorise les blocages
   return dune;
 };
@@ -368,7 +370,7 @@ test('l’IA connaît la Résonance : une valkyrie vaut plus que ses seules stat
     'le Trait de braise tue la source de Résonance plutôt que le 3/3 nu');
 });
 
-test('l’IA sait convertir son mana de glace en foudre activée', () => {
+test('le Père des corbeaux n’a plus de foudre activée : l’IA n’a rien à déclencher', () => {
   const duel = duelNu();
   duel.tour = 'sorcier';
   duel.sorcier.mana = { braise: 0, eau: 0, sable: 0, neige: 6 };
@@ -383,18 +385,13 @@ test('l’IA sait convertir son mana de glace en foudre activée', () => {
   duel.sorcier.creatures.push(pere);
   duel.joueur.creatures.push(chien);
 
-  const coup = choisirActivationIA(duel, 'sorcier');
-  assert.ok(coup, 'une proie à abattre vaut son mana de glace');
-  assert.deepEqual(coup, { entiteId: 'pere', cibleId: 'chien' });
-  assert.equal(rpgActiverCapacite(duel, 'sorcier', coup.entiteId, coup.cibleId).ok, true);
-  assert.equal(duel.joueur.creatures.includes(chien), false,
-    'la foudre abat le Chien 2/2');
-
-  // Sans mana de glace, la capacité reste au fourreau.
-  donnerMana(duel, 'sorcier', 4);
-  duel.sorcier.mana.neige = 0;
+  // Sa foudre a disparu : même gorgée de mana de glace, l'IA ne trouve
+  // aucune capacité à activer, et le moteur refuse de toute façon.
   assert.equal(choisirActivationIA(duel, 'sorcier'), null,
-    'pas de mana de glace, pas de foudre');
+    'plus de capacité activée sur le Père des corbeaux');
+  assert.equal(rpgActiverCapacite(duel, 'sorcier', 'pere', 'chien').ok, false,
+    'le moteur ne connaît plus cette activation');
+  assert.equal(duel.joueur.creatures.includes(chien), true, 'le Chien reste en vie');
 });
 
 // ── Arrivées qui désignent leur cible ───────────────────────────────────────

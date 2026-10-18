@@ -118,6 +118,10 @@ function journaliserDestruction(duel, entite, sourceElements = []) {
 
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
 const normaliserCouleurs = (couleurs) => [...new Set((Array.isArray(couleurs) ? couleurs.flat(Infinity) : [couleurs]).filter(Boolean))];
+// Libellé des couleurs d'une protection : « Braise », ou « l'Eau et la Neige »
+// quand `contre` est une liste (la Lionne du midi ardent).
+const labelCouleursProtection = (contre) => normaliserCouleurs(contre)
+  .map((couleur) => ELEMENT_LABELS[couleur] ?? couleur).join(' et ');
 const manaVide = () => ({ braise: 0, eau: 0, sable: 0, neige: 0, tenebres: 0 });
 // Tolère une réserve déclarée sans toutes les couleurs (objets de test,
 // paquets classiques) : une clé absente compte pour zéro, jamais NaN.
@@ -809,8 +813,10 @@ function rafraichirAuras(duel) {
 export function rpgEstProtegee(entite, element) {
   const couleursSources = normaliserCouleurs(element);
   if (!entite || !couleursSources.length) return false;
+  // `contre` accepte une couleur seule ou une liste (la Lionne du midi
+  // ardent est protégée contre l'Eau ET la Neige).
   if (entite.protection?.toursRestants > 0
-    && couleursSources.includes(entite.protection.contre)) return true;
+    && normaliserCouleurs(entite.protection.contre).some((couleur) => couleursSources.includes(couleur))) return true;
   const immunite = armeCarteDe(entite)?.donne?.immunite;
   return Boolean(immunite && couleursSources.includes(immunite));
 }
@@ -856,6 +862,13 @@ function creerEntiteCreature(carte) {
     coupRapide: Boolean(carte.coupRapide),
     envol: Boolean(carte.envol),
     infiltration: Boolean(carte.infiltration),
+    // Overkill (le Serpent du monde) : comme le Piétinement — bloqué, il fait
+    // passer au sorcier défenseur la force qui dépasse ses bloqueurs.
+    overkill: Boolean(carte.overkill),
+    // Protection contre les magies rapides et les sorcelleries (le Serpent du
+    // monde) : aucun sort ne peut la cibler ni la blesser — les capacités,
+    // armes et attaques passent normalement.
+    protectionSorts: Boolean(carte.protectionSorts),
     tenaciteDisponible: Boolean(carte.tenacite),
     protection: carte.protection ? {
       contre: carte.protection.contre,
@@ -924,6 +937,11 @@ function attacherArme(duel, cote, entite, carteArme) {
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
   if (carteArme.donne?.tribut) entite.tribut = (entite.tribut ?? 0) + carteArme.donne.tribut;
+  // La Jitte d'Amayas : l'arme couvre son porteur d'une protection de couleur
+  // permanente (tant qu'elle est attachée), comme celle imprimée de Tiziri.
+  if (carteArme.donne?.protection) {
+    entite.protection = { contre: carteArme.donne.protection.contre, toursRestants: Infinity };
+  }
   if (carteArme.donne?.rapidite) {
     entite.rapidite = true;
     entite.ready = true;
@@ -947,6 +965,13 @@ function retirerArme(duel, cote, entite) {
   if (carteArme.donne?.coupRapide) entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide);
   if (carteArme.donne?.rapidite) entite.rapidite = Boolean(duelCardById(entite.carteId)?.rapidite);
   if (carteArme.donne?.tribut) entite.tribut = Math.max(0, Number(duelCardById(entite.carteId)?.tribut) || 0);
+  if (carteArme.donne?.protection) {
+    // L'arme partie, la protection retombe à celle imprimée sur la fiche.
+    const impression = duelCardById(entite.carteId)?.protection;
+    entite.protection = impression
+      ? { contre: impression.contre, toursRestants: impression.tours ?? Infinity }
+      : null;
+  }
   duel[cote].cimetiere.push(carteArme.id);
   duel.log.push(`${entite.name} se sépare de ${carteArme.name} : l’arme rejoint le cimetière.`);
 }
@@ -1047,6 +1072,9 @@ export function rpgBonusResonance(duel, carte) {
 /** Aura de table par élément ou tribu. La Résonance samouraï ne renforce que
  * le type Samouraï, quelle que soit sa couleur ; ni le Tengu ni Kagutsuchi ne
  * se renforcent eux-mêmes. Les sources se cumulent dans les deux camps.
+ * Une source marquée `resonanceExclutSource` (le Samouraï du torii) ne
+ * renforce que **les autres** : sa propre contribution est retirée du total
+ * qu'elle reçoit, mais les autres sources continuent de la renforcer.
  * La perte du bonus laisse au minimum 1 PV, comme en Neige. */
 function majResonance(duel) {
   const totaux = Object.fromEntries(GROUPES_RESONANCE.map((element) => [element, rpgResonanceEnJeu(duel, element)]));
@@ -1055,11 +1083,16 @@ function majResonance(duel) {
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
       if (!(entite.pv > 0)) continue;
-      const groupes = GROUPES_RESONANCE.filter((groupe) => cardReceivesResonance(duelCardById(entite.carteId), groupe));
-      const voulu = groupes.reduce((total, groupe) => total + (totaux[groupe] ?? 0), 0);
+      const carteEntite = duelCardById(entite.carteId);
+      const groupes = GROUPES_RESONANCE.filter((groupe) => cardReceivesResonance(carteEntite, groupe));
+      const recuPar = (groupe) => Math.max(0, (totaux[groupe] ?? 0) -
+        (carteEntite?.resonanceExclutSource && cardResonanceGroup(carteEntite) === groupe
+          ? Math.max(0, Number(carteEntite.resonance) || 0)
+          : 0));
+      const voulu = groupes.reduce((total, groupe) => total + recuPar(groupe), 0);
       const actuel = Math.max(0, Number(entite.resonance) || 0);
       const precedents = entite.resonanceParGroupe ?? {};
-      entite.resonanceParGroupe = Object.fromEntries(groupes.map((groupe) => [groupe, totaux[groupe] ?? 0]));
+      entite.resonanceParGroupe = Object.fromEntries(groupes.map((groupe) => [groupe, recuPar(groupe)]));
       if (voulu === actuel) continue;
       const delta = voulu - actuel;
       entite.resonance = voulu;
@@ -1069,7 +1102,7 @@ function majResonance(duel) {
       entite.pv = Math.max(1, entite.pv + delta);
       for (const element of groupes) {
         const ancien = precedents[element] ?? 0;
-        const prochain = totaux[element] ?? 0;
+        const prochain = recuPar(element);
         if (prochain > ancien) renforcees.add(element);
         else if (prochain < ancien) affaiblies.add(element);
       }
@@ -1120,6 +1153,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   for (const coup of coups) {
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
+    // Le Serpent du monde : protégé contre les magies — la vague d'un sort
+    // de zone le contourne, les attaques et capacités passent.
+    if (entite.protectionSorts && coup.sourceType === 'magie') continue;
     // Le Grand Voile blanc : les dégâts de combat s’égarent dans le blanc —
     // les dégâts de capacité et de magie, eux, traversent le voile.
     if (duel.brouillardCombat && coup.sourceType === 'attaque') continue;
@@ -1184,7 +1220,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     mort.declencherArme?.();
     const carte = duelCardById(mort.entite.carteId);
     if (carte?.destruction) {
-      appliquer(duel, mort.cote, carte.destruction, null, null, cardColors(carte), null, mort.entite.carteId);
+      declencherCapaciteDestruction(duel, mort.cote, carte, mort.entite.carteId);
     }
     declencherHonneur(duel, mort.cote, mort.entite);
   }
@@ -1328,6 +1364,8 @@ function annulerBonusTemporaires(duel, tourFerme) {
       entite.pvMax = Math.max(0, (entite.pvMax ?? 0) - (entry.def ?? 0));
       entite.pv = Math.max(0, entite.pv - (entry.def ?? 0));
       entite.def = Math.min(entite.def, Math.max(0, entite.pv));
+      // Le Tribut prêté par l'Offrande de lin repart avec le renfort.
+      if (entry.tribut) entite.tribut = Math.max(0, (entite.tribut ?? 0) - entry.tribut);
       effaces.push(entite.name);
     }
     camp.bonusTemporaires = restants;
@@ -1461,7 +1499,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // jetons et les réanimations produits ensuite échappent à cette vague.
       const declenchements = [];
       const victimes = [cote, adv].flatMap((camp) => duel[camp].creatures
-        .filter((entite) => !rpgEstProtegee(entite, sourceElement))
+        .filter((entite) => !rpgEstProtegee(entite, sourceElement)
+          && !(entite.protectionSorts && sourceType === 'magie'))
         .map((entite) => ({ camp, entite })));
       for (const { camp, entite } of victimes) {
         enterrer(duel, camp, entite, sourceElement, declenchements);
@@ -1476,6 +1515,10 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         const victime = duel[campCible].creatures.find((entite) => entite.id === cibleId);
         if (!victime) continue;
         if (rpgEstProtegee(victime, sourceElement)) return;
+        // `coutMax` (le Père des corbeaux) : les corbeaux ne soulèvent que les
+        // créatures de coût 3 ou moins — au-delà, la cible est illégale.
+        if (Number.isFinite(effet.coutMax)
+          && (duelCardById(victime.carteId)?.cost ?? 0) > effet.coutMax) return;
         duel[campCible].creatures = duel[campCible].creatures.filter((entite) => entite.id !== victime.id);
         detacherArmes(duel, campCible, victime);
         armeAuCimetiere(duel, campCible, victime);
@@ -1660,14 +1703,22 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       rpgGagnerVie(duel, cote, effet.amount ?? 0);
       return;
     }
-    case 'soin-creatures':
+    case 'soin-creatures': {
       for (const entite of duel[cote].creatures) {
         const pvAvant = entite.pv;
         entite.pv = Math.min(entite.pvMax, entite.pv + (effet.amount ?? 0));
         entite.def = Math.min(entite.pvMax, Math.max(entite.def, entite.pv));
         journaliserSoin(duel, cote, entite.pv - pvAvant, entite.id);
       }
+      // `etJoueur` (Yamina) : le même soin s'étend au sorcier du camp —
+      // les créatures d'abord, puis leur maître.
+      if ((effet.etJoueur ?? 0) > 0) {
+        const pvAvant = duel[cote].pv;
+        duel[cote].pv = Math.min(duel[cote].pvMax, duel[cote].pv + effet.etJoueur);
+        journaliserSoin(duel, cote, duel[cote].pv - pvAvant);
+      }
       return;
+    }
     case 'bouclier-lumiere': {
       const entite = duel[cote].creatures.find((candidate) => candidate.id === sauf);
       if (entite) entite.bouclierLumiere = true;
@@ -1740,9 +1791,16 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // `sauf` — un mode de la Jitte d’Amayas grandit le porteur seul, pas le
       // camp entier. Toutes les autres buffs campent sur le camp et
       // s'excluent elles-mêmes (`sauf`).
+      const horsSort = (entite) => contreAdversaire
+        && entite.protectionSorts && sourceType === 'magie';
       const ciblesBuff = effet.cible === 'porteur'
         ? campCible.creatures.filter((entite) => entite.id === sauf && !rpgEstProtegee(entite, sourceElement))
-        : campCible.creatures.filter((entite) => entite.id !== sauf && !rpgEstProtegee(entite, sourceElement));
+        : campCible.creatures.filter((entite) => entite.id !== sauf
+          && !rpgEstProtegee(entite, sourceElement) && !horsSort(entite));
+      // `tribut` (l'Offrande de lin) : le renfort porte aussi le mot-clé —
+      // chaque créature touchée gagne Tribut X, rendu avec le bonus quand le
+      // carnet s'efface à la fin du tour.
+      const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
       for (const entite of ciblesBuff) {
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
@@ -1750,7 +1808,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.pvMax = Math.max(plancher, (entite.pvMax ?? entite.def) + bonusDefense);
         entite.def = Math.max(plancher, entite.def + bonusDefense);
         entite.pv = Math.max(plancher, entite.pv + bonusDefense);
-        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tour: duel.tour });
+        if (bonusTribut) entite.tribut = (entite.tribut ?? 0) + bonusTribut;
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, tour: duel.tour });
         // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
         // et la mort est attribuée à la couleur de la source, pour le journal.
         if (!(entite.pv > 0) && plancher <= 0) {
@@ -1866,14 +1925,24 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       const cibles = effet.cible === 'toutes-creatures'
         ? [...duel[adv].creatures]
         : duel[adv].creatures.filter((entite) => entite.id === cibleId);
+      // `gelChance` (le Hurlement du blizzard, la Brume du fjord) : chaque
+      // créature touchée tire son propre jet — le même hasard que le duel.
+      const rngGel = hasardParDuel.get(duel) ?? Math.random;
       for (const cible of cibles) {
         rpgBlesserCreature(duel, adv, cible.id, effet.amount ?? 0, sourceElement, null, sourceType);
         // Le gel (`gel`) accompagne les dégâts — la Poigne de givre, le
         // Verglas. La créature tuée n'a rien à figer ; la survivante ne
         // rejoindra ni l'attaque ni le blocage avant la fin de son prochain tour.
-        if (effet.gel) {
+        if (effet.gel || effet.gelChance) {
           const survivante = duel[adv].creatures.find((entite) => entite.id === cible.id);
-          if (survivante) gelerEntite(duel, survivante);
+          if (!survivante) continue;
+          if (survivante.protectionSorts && sourceType === 'magie') continue;
+          if (rpgEstProtegee(survivante, sourceElement)) continue;
+          if (effet.gel || rngGel() < effet.gelChance) {
+            gelerEntite(duel, survivante);
+          } else {
+            duel.log.push(`${survivante.name} secoue le givre : le gel ne prend pas.`);
+          }
         }
       }
       // `etSorcier` : le feu se propage jusqu'au sorcier adverse (le Braisier
@@ -1882,6 +1951,42 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         rpgInfligerSorcier(duel, adv, effet.etSorcier);
       }
       differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId);
+      return;
+    }
+    case 'magie-gratuite': {
+      // Le Kraken : à l'arrivée, son contrôleur PEUT lancer une magie rapide
+      // ou une sorcellerie de sa main sans payer son coût de mana (le Prix en
+      // PV, lui, se paie toujours). Côté joueur, le jeton d'attente
+      // `duel.magieGratuite` reste ouvert jusqu'au lancement — ou s'éteint
+      // avec le tour. Côté sorcier, l'IA lance aussitôt son meilleur sort
+      // jouable, cible choisie par ses heuristiques.
+      if (cote === 'sorcier') {
+        duel.magieGratuite = { cote, carteId: sourceCarteId };
+        const candidates = duel.sorcier.main
+          .map((id) => magieById(id))
+          .filter((magie) => magie && magie.effet?.type !== 'contresort')
+          .sort((a, b) => (b.cost ?? 0) - (a.cost ?? 0));
+        for (const magie of candidates) {
+          const cible = choisirCibleAutoIA(duel, cote, magie);
+          if (rpgLancerMagie(duel, cote, magie.id, cible).ok) break;
+        }
+        duel.magieGratuite = null;
+        return;
+      }
+      duel.magieGratuite = { cote, carteId: sourceCarteId };
+      duel.log.push(`${cardById(sourceCarteId)?.name ?? 'Le Kraken'} : vous pouvez lancer une magie rapide ou une sorcellerie de votre main sans payer son coût de mana.`);
+      return;
+    }
+    case 'gel': {
+      // Le gel **sans blessure** (le Géant des banquises) : le froid seul fige
+      // les créatures adverses — ni attaque ni blocage jusqu'à la fin de leur
+      // prochain tour. La protection contre la couleur de la source fait écran
+      // au gel exactement comme elle ferait écran aux dégâts.
+      const cibles = effet.cible === 'toutes-creatures'
+        ? duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, sourceElement))
+        : duel[adv].creatures.filter((entite) => entite.id === cibleId
+          && !rpgEstProtegee(entite, sourceElement));
+      for (const cible of cibles) gelerEntite(duel, cible);
       return;
     }
     case 'recyclage': {
@@ -1976,6 +2081,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // (`minimum` empêche de tuer par la statistique seule — l'Embuscade).
       const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
       if (!entite || rpgEstProtegee(entite, sourceElement)) return;
+      if (entite.protectionSorts && sourceType === 'magie') return;
       const plancher = Number.isFinite(effet.minimum) ? effet.minimum : 0;
       const bonusDefense = effet.def ?? 0;
       entite.atk = Math.max(plancher, entite.atk + (effet.atk ?? 0));
@@ -2130,6 +2236,42 @@ function sacrifierCreature(duel, cote, entite) {
   rejoindreCimetiere(duel, cote, entite, [], 'est sacrifiée et rejoint le cimetière.');
 }
 
+/**
+ * Capacité « quand elle est détruite ». La plupart s'appliquent sans choix
+ * (le Kraken pioche, l'Ifrit frappe le sorcier) ; les dégâts à **une**
+ * créature (le Ghul des cendres) demandent une cible, et c'est le contrôleur
+ * du mort qui la désigne : l'IA choisit seule, le joueur passe par l'attente
+ * `duel.destructionsEnAttente` — résolue d'office quand une seule créature
+ * adverse est légale, par un clic sinon (`rpgResoudreDestructionCiblee`).
+ */
+function declencherCapaciteDestruction(duel, cote, carte, carteId) {
+  const effet = carte.destruction;
+  if (!(effet?.type === 'degats' && effet.cible === 'creature')) {
+    appliquer(duel, cote, effet, null, null, cardColors(carte), null, carteId);
+    return;
+  }
+  const adv = autre(cote);
+  const legales = duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+  if (!legales.length) {
+    duel.log.push(`${carte.name} ne trouve aucune créature adverse à frapper.`);
+    return;
+  }
+  const resoudre = (cibleId) => appliquer(duel, cote, effet, cibleId, null, cardColors(carte), null, carteId);
+  if (legales.length === 1) {
+    resoudre(legales[0].id);
+    return;
+  }
+  if (cote === 'sorcier') {
+    const choix = choisirCibleAutoIA(duel, cote, { ...carte, arrivee: effet });
+    resoudre(legales.some((entite) => entite.id === choix) ? choix : legales[0].id);
+    return;
+  }
+  duel.destructionsEnAttente = duel.destructionsEnAttente ?? [];
+  duel.destructionsEnAttente.push({ cote, carteId });
+  const amount = effet.amount ?? 0;
+  duel.log.push(`${carte.name} : désignez la créature adverse qui subira ${amount} dégât${amount > 1 ? 's' : ''}.`);
+}
+
 /** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
 function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null) {
   journaliserDestruction(duel, entite, sourceElements);
@@ -2143,7 +2285,7 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
     declencherArme?.();
     const carte = duelCardById(entite.carteId);
     if (carte?.destruction) {
-      appliquer(duel, cote, carte.destruction, null, null, cardColors(carte), null, entite.carteId);
+      declencherCapaciteDestruction(duel, cote, carte, entite.carteId);
     }
     declencherHonneur(duel, cote, entite);
   };
@@ -2260,6 +2402,10 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   if (rpgEstProtegee(entite, sourceElement)) {
     return { ok: true, recus: 0, absorbes: 0, protegee: true };
   }
+  // Le Serpent du monde : les sorts ne le blessent pas, même en zone.
+  if (entite.protectionSorts && sourceType === 'magie') {
+    return { ok: true, recus: 0, absorbes: 0, protegee: true };
+  }
   if (entite.bouclierLumiere && (sourceType === 'attaque' || sourceType === 'magie')) {
     entite.bouclierLumiere = false;
     return { ok: true, recus: 0, absorbes: 0, bouclierLumiere: true };
@@ -2328,11 +2474,19 @@ function campsDePortee(cote, portee) {
 }
 
 /** Reste-t-il, sur la table, une créature que cette arrivée peut désigner ? */
+/** `coutMax` (le Père des corbeaux) : la cible d'une arrivée doit coûter au
+ *  plus ce seuil — sans seuil déclaré, tout coût convient. */
+export function cibleRespecteCoutMax(carte, entite) {
+  if (!Number.isFinite(carte?.arrivee?.coutMax)) return true;
+  return (duelCardById(entite.carteId)?.cost ?? 0) <= carte.arrivee.coutMax;
+}
+
 export function arriveeACibleLegale(duel, cote, carte) {
   const portee = arriveeCiblePortee(carte);
   if (!portee) return false;
   return campsDePortee(cote, portee)
-    .some((camp) => duel[camp].creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))));
+    .some((camp) => duel[camp].creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))
+      && cibleRespecteCoutMax(carte, entite)));
 }
 
 /**
@@ -2390,8 +2544,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     const creatures = [...camp.creatures, ...duel[autre(cote)].creatures];
     const cible = creatures.find((entite) => entite.id === cibleId);
     if (cibleId && !cible) return { ok: false, raison: 'cible' };
+    if (cible && !cibleRespecteCoutMax(carte, cible)) return { ok: false, raison: 'cible' };
     if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
-    if (!cibleId && !cibleDifferee && creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
+    if (!cibleId && !cibleDifferee && creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))
+      && cibleRespecteCoutMax(carte, entite))) {
       return { ok: false, raison: 'cible' };
     }
   }
@@ -2448,7 +2604,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   placerDansEmplacement(duel, cote, entite, caseSacrifice >= 0 ? caseSacrifice : null);
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
   if (entite.protection) {
-    const couleur = ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre;
+    const couleur = labelCouleursProtection(entite.protection.contre);
     duel.log.push(entite.protection.toursRestants === Infinity
       ? `${entite.name} reçoit une protection permanente contre ${couleur}.`
       : `${entite.name} reçoit une protection contre ${couleur} pour ce tour et le prochain tour adverse.`);
@@ -2508,10 +2664,41 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
   // elle-même — l'exil du Susanoo, qui choisit pourtant dans les deux camps,
   // ne peut pas se retourner contre la créature qu'il vient de poser.
   if (cible.id === entite.id) return { ok: false, raison: 'cible' };
+  // Le Père des corbeaux : ses corbeaux ne soulèvent que les créatures de
+  // coût 3 ou moins — une cible trop lourde reste illégale, l'attente ouverte.
+  if (Number.isFinite(carte.arrivee?.coutMax)
+    && (duelCardById(cible.carteId)?.cost ?? 0) > carte.arrivee.coutMax) {
+    return { ok: false, raison: 'cible' };
+  }
   if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   duel.arriveeEnAttente = null;
   appliquer(duel, cote, carte.arrivee, cible.id, entite.id, cardColors(carte), 'capacite', carte.id);
   rafraichirAuras(duel);
+  rpgActionsEtat(duel);
+  return { ok: true, cible };
+}
+
+/**
+ * Résout l'attente de destruction ciblée (le Ghul des cendres) : le contrôleur
+ * du mort clique la créature adverse qui encaisse les dégâts. L'attente survit
+ * au changement de tour — une mort pendant le tour adverse attend que le
+ * joueur désigne — mais tombe d'elle-même si le champ adverse s'est vidé
+ * (ou s'est entièrement protégé) entre la mort et la désignation.
+ */
+export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
+  const attente = duel.destructionsEnAttente?.[0];
+  if (!attente || attente.cote !== cote) return { ok: false, raison: 'aucune-attente' };
+  const carte = duelCardById(attente.carteId);
+  const adv = autre(cote);
+  const legales = duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+  if (!legales.length) {
+    duel.destructionsEnAttente.shift();
+    return { ok: false, raison: 'aucune-cible' };
+  }
+  const cible = legales.find((entite) => entite.id === cibleId);
+  if (!cible) return { ok: false, raison: 'cible' };
+  duel.destructionsEnAttente.shift();
+  appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), null, attente.carteId);
   rpgActionsEtat(duel);
   return { ok: true, cible };
 }
@@ -2797,8 +2984,22 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     && duel.fenetreReponse
     && carte.instant;
   if (duel.tour !== cote && !fenetreEphémère) return { ok: false, raison: 'timing' };
-  if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  // Le lancement gratuit du Kraken : le coût de mana saute, le Prix en PV
+  // reste dû — et un contresort, qui ne vit qu'en réponse à une annonce,
+  // n'entre pas dans la faveur.
+  const lancementGratuit = duel.magieGratuite?.cote === cote && carte.effet.type !== 'contresort';
+  if (lancementGratuit) {
+    if ((carte.prixPv ?? 0) > 0 && camp.pv <= carte.prixPv) return { ok: false, raison: 'mana' };
+  } else if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (carte.effet.type === 'contresort') return contrerAnnonce(duel, cote, carte);
+  // Le Serpent du monde : protégé contre les magies et les sorcelleries —
+  // aucun sort ne peut le viser, quel que soit le camp du lanceur.
+  for (const idVise of [cibleId, cibleAllieeId]) {
+    if (!idVise || idVise === 'sorcier') continue;
+    const visee = [...duel.joueur.creatures, ...duel.sorcier.creatures]
+      .find((entite) => entite.id === idVise);
+    if (visee?.protectionSorts) return { ok: false, raison: 'protection' };
+  }
 
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
     if (cibleId === 'sorcier') {
@@ -2865,10 +3066,25 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
 
   if (cote === 'joueur' && !duel.annonce) {
     const contreIA = choisirContreIA(duel, carte);
-    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+    if (contreIA) {
+      // Même contrecarré, le sort gratuit a été lancé : la faveur du Kraken
+      // est consommée.
+      if (lancementGratuit) duel.magieGratuite = null;
+      return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+    }
   }
 
-  payer(duel, cote, carte);
+  if (lancementGratuit) {
+    // La faveur du Kraken : pas de mana — seul le Prix en PV, s'il existe.
+    if ((carte.prixPv ?? 0) > 0) {
+      camp.pv = Math.max(1, camp.pv - carte.prixPv);
+      duel.log.push(`${cote === 'joueur' ? 'Vous payez' : 'Le sorcier paie'} ${carte.prixPv} PV pour ${carte.name ?? 'la carte'}.`);
+    }
+    duel.magieGratuite = null;
+    duel.log.push(`${carte.name} est lancée sans payer son coût de mana (Kraken).`);
+  } else {
+    payer(duel, cote, carte);
+  }
   camp.main.splice(camp.main.indexOf(carteId), 1);
   const effet = carte.effet.type === 'degats'
     && carte.effet.cible === 'creature'
@@ -3275,6 +3491,17 @@ export function rpgLancerAttaque(
         bloqueur.id,
       );
     }
+    // Overkill (le Serpent du monde) : comme le Piétinement — la force qui
+    // dépasse ce qu'il faut pour terrasser les bloqueurs (PV et boucliers
+    // compris) continue sa course jusqu'au sorcier défenseur.
+    if (attaquant.overkill) {
+      const encaissable = bloqueurs.reduce((total, bloqueur) => total
+        + Math.max(0, bloqueur.pv + (bloqueur.bouclier ?? 0)), 0);
+      const exces = Math.max(0, forceCombat(attaquant) - encaissable);
+      if (exces > 0) {
+        coupsSorcier.push({ attaquantId: attaquant.id, amount: exces, overkill: attaquant.name });
+      }
+    }
     resume.paires.push([attaquant.name, ...bloqueurs.map((bloqueur) => bloqueur.name)]);
   }
 
@@ -3284,6 +3511,9 @@ export function rpgLancerAttaque(
     if (duel.brouillardCombat) continue;
     resume.frappeSorcier += coup.amount;
     rpgInfligerSorcier(duel, adv, coup.amount);
+    if (coup.overkill) {
+      duel.log.push(`Overkill : ${coup.overkill} perce les bloqueurs — ${coup.amount} dégâts au sorcier.`);
+    }
   }
 
   // Les montants normaux restent simultanés, mais une source éliminée par
@@ -3535,13 +3765,15 @@ export function rpgFinDeTour(duel) {
   // de terminer tant qu'une désignation est ouverte, mais le moteur ne laisse
   // jamais traîner l'attente d'un tour sur l'autre.
   duel.arriveeEnAttente = null;
+  // La faveur du Kraken non utilisée s'éteint avec le tour.
+  duel.magieGratuite = null;
   detruireEphemeres(duel);
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
       if (!(entite.protection?.toursRestants > 0)) continue;
       entite.protection.toursRestants -= 1;
       if (entite.protection.toursRestants <= 0) {
-        const couleur = ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre;
+        const couleur = labelCouleursProtection(entite.protection.contre);
         entite.protection = null;
         duel.log.push(`${entite.name} perd sa protection contre ${couleur}.`);
       }
