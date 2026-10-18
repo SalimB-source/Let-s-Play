@@ -20,11 +20,6 @@ export default function DzDevHicosoft() {
         <div className="dzdev-byline"><span>PORTRAIT DZ DEV Nº 01</span><span>HICOSOFT STUDIO</span></div>
       </header>
 
-      <figure className="dzdev-article-visual wrap">
-        <img src={`${base}hicosoft-studio-lets-play.jpg`} alt="Vignette officielle du reportage Let’s Play sur HicoSoft Studio, avec le logo HicoSoft et la mention Made in Algeria" />
-        <figcaption>La vignette officielle de l’épisode Let’s Play consacré au studio.</figcaption>
-      </figure>
-
       <article className="dzdev-story wrap">
         <p className="dzdev-story-lead">HicoSoft Studio est un studio de jeux vidéo indépendant basé à Alger. Son site présente trois pôles de production : le développement, le game design et l’art — de la programmation des systèmes à la création des mécaniques et de l’univers visuel.</p>
 
