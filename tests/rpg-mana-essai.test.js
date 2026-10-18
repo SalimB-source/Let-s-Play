@@ -47,7 +47,7 @@ const mulligans = (duel, indices = []) => {
 };
 const total = (camp) => Object.values(camp.manaMax).reduce((somme, quantite) => somme + quantite, 0);
 
-test('quatre decks de 30 cartes sans terrain et hors économie ; le format 40 cartes reste valide', () => {
+test('les quatre decks de démonstration partagent le format 30 cartes sans terrain', () => {
   assert.equal(RPG_MANA_ESSAI_DECKS.length, 4);
   assert.deepEqual(RPG_MANA_ESSAI_DECKS.map((deck) => deck.elements.length), [1, 2, 3, 1]);
   for (const deck of RPG_MANA_ESSAI_DECKS) {
@@ -58,7 +58,7 @@ test('quatre decks de 30 cartes sans terrain et hors économie ; le format 40 ca
     assert.ok(adversaireManaEssai(deck) !== deck);
   }
   assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE).ok, true);
-  assert.equal(rpgValiderDeck(mono.cardIds).ok, false);
+  assert.equal(rpgValiderDeck(mono.cardIds).ok, true);
   assert.equal(validerDeckManaEssai({ ...mono, cardIds: mono.cardIds.slice(1) }).ok, false);
   assert.equal(validerDeckManaEssai({ ...mono, cardIds: [...mono.cardIds.slice(1), 'desert'] }).ok, false);
   assert.equal(validerDeckManaEssai({ ...mono, cardIds: [...mono.cardIds.slice(1), 'trait-de-braise'] }).ok, false);

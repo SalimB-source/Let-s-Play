@@ -19,6 +19,10 @@ globalThis.document = dom.window.document;
 globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
 globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+// jsdom n’a pas de périphérique audio ; le parcours teste les gestes du duel.
+for (const methode of ['play', 'pause', 'load']) {
+  dom.window.HTMLMediaElement.prototype[methode] = () => methode === 'play' ? Promise.resolve() : undefined;
+}
 
 try {
   const { checkRpgTutorial, checkRpgCardGuide } = await import('../node_modules/.cache/rpg-tutorial/rpg-tutorial-smoke.js');

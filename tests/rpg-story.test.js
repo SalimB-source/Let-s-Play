@@ -44,16 +44,10 @@ test('chaque deck de campagne est un deck valide de 40 cartes', () => {
   assert.equal(deckHistoire('deck-inconnu'), null);
 });
 
-test('les decks de campagne mêlent les illustrations alternatives de Sable et de Neige', () => {
-  assert.ok(RPG_STORY_DECKS['grand-horloger'].includes('dunes-du-tenere'),
-    'le deck du Grand Horloger reprend les Dunes du Ténéré');
-  for (const deckId of ['gardes-du-fjord', 'meute-des-neiges', 'maitre-des-neuf-hivers']) {
-    const deck = RPG_STORY_DECKS[deckId];
-    assert.ok(deck.includes('glacier'), `${deckId} garde le Glacier classique`);
-    assert.ok(deck.includes('glacier-des-arches'), `${deckId} reprend aussi le Glacier des arches`);
-    assert.equal(deck.filter((id) => cardById(id)?.kind === 'terrain').length,
-      deck.filter((id) => cardById(id)?.element === 'neige' && cardById(id)?.kind === 'terrain').length,
-      `${deckId} ne mélange pas de couleur hors Neige`);
+test('les decks de campagne ne contiennent plus de terrain ni de variante', () => {
+  for (const [deckId, cartes] of Object.entries(RPG_STORY_DECKS)) {
+    assert.equal(cartes.length, 30, deckId);
+    assert.ok(cartes.every((id) => cardById(id)?.kind !== 'terrain'), deckId);
   }
 });
 

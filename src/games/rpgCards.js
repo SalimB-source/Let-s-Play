@@ -1074,30 +1074,51 @@ export function cardCopyLimit(card) {
   return CARD_UNIQUE_RARITIES.includes(card?.rarity) ? 1 : 2;
 }
 
-/** Valide un deck : 40 cartes, au moins 40 % de terrains, cartes mythiques
- *  limitées à un exemplaire, autres cartes non-terrain limitées à deux
- *  exemplaires. */
-export function rpgValiderDeck(deck) {
-  if (deck.length !== 40) return { ok: false, raison: `40 cartes exigées (${deck.length})` };
+/** Cartes conservées dans les archives, mais incompatibles avec le mana automatique. */
+export const RPG_CARTES_HORS_FORMAT = Object.freeze(['boussole-du-hoggar', 'djinn-du-souk']);
+export const carteJouableSansTerrain = (carte) => Boolean(carte && carte.kind !== 'terrain'
+  && !RPG_CARTES_HORS_FORMAT.includes(carte.id));
+
+/** Conversion déterministe des anciennes recettes. Ne modifie jamais la source.
+ * Les cartes ajoutées respectent l'identité et les quotas. Avec une collection,
+ * seules les cartes possédées peuvent compléter un ancien deck maison. */
+export function convertirDeckSansTerrain(ids, collection = null) {
+  const resultat = ids.filter((id) => carteJouableSansTerrain(cardById(id)));
+  const couleurs = [...new Set(resultat.flatMap((id) => cardColors(id)))];
+  if (!couleurs.length) couleurs.push('sable');
   const comptes = {};
-  let terrains = 0;
+  const retenues = resultat.filter((id) => {
+    comptes[id] = (comptes[id] ?? 0) + 1;
+    return comptes[id] <= cardCopyLimit(cardById(id));
+  }).slice(0, 30);
+  const candidats = RPG_DUEL_CARDS.filter((carte) => carteJouableSansTerrain(carte)
+    && cardColors(carte).every((c) => couleurs.includes(c))
+    && (!collection || collection.includes(carte.id)))
+    .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0) || a.id.localeCompare(b.id));
+  // D'abord les cartes de la recette, puis les renforts du catalogue.
+  const ordre = [...new Set([...retenues, ...candidats.map((c) => c.id)])];
+  for (const id of ordre) {
+    if (collection && !collection.includes(id)) continue;
+    while (retenues.length < 30 && retenues.filter((c) => c === id).length < cardCopyLimit(cardById(id))) retenues.push(id);
+    if (retenues.length === 30) break;
+  }
+  return retenues;
+}
+
+/** Format commun : trente cartes, zéro terrain, une à trois couleurs. */
+export function rpgValiderDeck(deck) {
+  if (!Array.isArray(deck) || deck.length !== 30) return { ok: false, raison: '30 cartes exigées' };
+  const comptes = {};
+  const couleurs = new Set();
   for (const id of deck) {
     const carte = cardById(id);
-    if (!carte) return { ok: false, raison: `carte inconnue : ${id}` };
+    if (!carteJouableSansTerrain(carte)) return { ok: false, raison: `carte hors format : ${id}` };
+    cardColors(carte).forEach((c) => couleurs.add(c));
     comptes[id] = (comptes[id] ?? 0) + 1;
-    if (carte.kind === 'terrain') terrains += 1;
-    const limite = cardCopyLimit(carte);
-    if (comptes[id] > limite) {
-      return {
-        ok: false,
-        raison: limite === 1
-          ? `${id} ${carte.rarity} en ${comptes[id]} exemplaires (1 max)`
-          : `${id} en ${comptes[id]} exemplaires (${limite} max)`,
-      };
-    }
+    if (comptes[id] > cardCopyLimit(carte)) return { ok: false, raison: `${id} ${carte.rarity} en ${comptes[id]} exemplaires (${cardCopyLimit(carte)} max)` };
   }
-  if (terrains < 0.4 * deck.length) return { ok: false, raison: `terrains ${Math.round((terrains / deck.length) * 100)} % (40 % min)` };
-  return { ok: true, terrains };
+  if (couleurs.size < 1 || couleurs.size > 3) return { ok: false, raison: '1 à 3 couleurs exigées' };
+  return { ok: true, terrains: 0 };
 }
 
 /**
@@ -2087,10 +2108,10 @@ export function rpgDraftOffer(rng, collection = []) {
  *
  * Chaque liste est le produit d'une **recette** (`rpgDeckRecipes.js`) passée au
  * **composeur** (`rpgDeckComposer.js`) avec le catalogue complet : identité
- * chromatique, quotas de terrains, de créatures, de sorts et d'armes, signature
+ * chromatique, quotas de créatures, de sorts et d'armes, signature
  * mécanique, puis les meilleures cartes restantes. Les six decks de départ
- * contiennent chacun une seule mythique et au plus quatre cartes non-terrain
- * rares distinctes (six pour le set du Soleil rouge) ; les autres mythiques et rares
+ * contiennent chacun trente cartes sans terrain, une seule mythique et un
+ * nombre de rares borné par leur recette ; les autres mythiques et rares
  * se découvrent dans les boosters.
  *
  * Les recettes vivent à part parce qu'elles sont lisibles : elles fixent les
@@ -2099,7 +2120,7 @@ export function rpgDraftOffer(rng, collection = []) {
  * `tests/rpg-decks-puissance.test.js` suivent le contrat.
  */
 export const CATALOGUE_DU_COMPOSEUR = {
-  cartes: RPG_DUEL_CARDS,
+  cartes: RPG_DUEL_CARDS.filter(carteJouableSansTerrain),
   couleursDe: cardColors,
   limiteDe: cardCopyLimit,
 };
@@ -2161,7 +2182,7 @@ export const RPG_DECKS = [
     terrain: 'petra',
     boxArt: 'feriel',
     archetype: 'Sable + Braise · deux couleurs, une même piste',
-    description: 'Deck hybride Sable + Braise : les terrains de Pétra paient les deux couleurs, tandis que le Djinn de foudre et le Vent rouge ouvrent la voie à Fériel, son unique mythique et spécialiste du Coup rapide. Butin et équipements du Désert complètent l’assaut ; les autres mythiques attendent dans les boosters.',
+    description: 'Deck hybride Sable + Braise : le mana automatique permet de choisir entre les deux couleurs, tandis que le Djinn de foudre et le Vent rouge ouvrent la voie à Fériel, son unique mythique et spécialiste du Coup rapide. Butin et équipements du Désert complètent l’assaut ; les autres mythiques attendent dans les boosters.',
     cardIds: RPG_DECK_HYBRIDE_BASE,
   },
   {

@@ -21,7 +21,7 @@ function armer(duel, cible) {
   return rpgLancerMagie(duel, 'joueur', 'sabre-maudit', cible.id);
 }
 
-test('le sabre reste à ouvrir au Souk et le deck garde sa montagne dédiée', () => {
+test('le sabre accompagne le starter sans terrain et reste à acquérir au Souk', () => {
   const sabre = cardById('sabre-maudit');
   assert.equal(sabre.typeLine, 'Arme — Sabre maudit');
   assert.equal(sabre.cost, 4);
@@ -29,10 +29,10 @@ test('le sabre reste à ouvrir au Souk et le deck garde sa montagne dédiée', (
   assert.deepEqual(sabre.effet, { type: 'arme', cible: 'creature-amie', atk: 4, def: -2, coupRapide: true });
   const deck = RPG_DECKS.find((d) => d.id === 'serment-du-soleil-rouge');
   assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
-  assert.equal(deck.cardIds.filter((id) => id === 'sabre-maudit').length, 0, 'la signature du starter réserve ses sept sorts');
+  assert.equal(deck.cardIds.filter((id) => id === 'sabre-maudit').length, 2, 'le starter de trente cartes inclut deux sabres');
   assert.equal(COLLECTION_DEPART.includes('sabre-maudit'), false);
   assert.ok(carteReveleePar('sabre-maudit'), 'le sabre est accessible dans un booster après sa révélation');
-  assert.equal(deck.cardIds.filter((id) => id === 'montagne-du-soleil-rouge').length, 8);
+  assert.equal(deck.cardIds.filter((id) => id === 'montagne-du-soleil-rouge').length, 0);
   assert.deepEqual(terrainManaColors('montagne-du-soleil-rouge'), ['braise']);
   assert.equal(cardById('montagne-du-soleil-rouge').varianteDe, 'montagne');
 });

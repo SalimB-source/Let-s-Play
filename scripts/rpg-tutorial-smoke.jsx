@@ -31,17 +31,11 @@ export async function checkRpgTutorial(assert) {
       RPG_TUTORIAL_OPENING_HAND, 'la main guidée est stable et contient les cartes annoncées');
     await click(nextInfoStep(), 'la commande de présentation de la main');
 
-    assert.equal(tutorialStep(), 'terrain', 'le guide encadre le terrain à poser');
-    assert.equal(container.querySelector('[data-tutorial-target="terrain-card"]')?.dataset.cardId, 'desert',
-      'la zone active pointe vers la carte Désert préparée dans la main');
-    await click(card('desert'), 'la carte Désert guidée');
-    await act(async () => { await wait(850); });
-    assert.equal(tutorialStep(), 'mana', 'poser le terrain fait avancer le guide vers la production de mana');
-    assert.ok(container.querySelector('.rpg-terrains--joueur [data-tutorial-target="mana-terrain"]'),
-      'le terrain posé devient la nouvelle zone encadrée');
-
-    await click(container.querySelector('[data-tutorial-target="mana-terrain"]'), 'le terrain de production de mana');
-    assert.equal(tutorialStep(), 'creature', 'engager le terrain fait avancer le guide vers la créature payable');
+    assert.equal(tutorialStep(), 'mana', 'le guide explique la réserve automatique');
+    assert.ok(container.querySelector('[data-tutorial-target="mana-track"]'), 'la réserve est encadrée');
+    assert.equal(container.querySelectorAll('.rpg-terrain--joueur').length, 0, 'aucun terrain à jouer');
+    await click(nextInfoStep(), 'la présentation du mana automatique');
+    assert.equal(tutorialStep(), 'creature', 'le guide passe à la créature');
     assert.equal(card('tislit-des-aures')?.getAttribute('data-jouable'), 'true',
       'le mana produit rend Tislit jouable');
     await click(card('tislit-des-aures'), 'la carte Tislit préparée');
@@ -53,6 +47,7 @@ export async function checkRpgTutorial(assert) {
     await click(nextInfoStep(), 'la commande de la règle du mal d’invocation');
     assert.equal(tutorialStep(), 'fin-tour', 'la règle suivante guide vers la fin du tour');
     await click(container.querySelector('[data-tutorial-target="end-turn"]'), 'la commande de fin du tour');
+    await act(async () => { await wait(700); });
     assert.equal(tutorialStep(), 'tour-adverse', 'le guide explique que le tour adverse commence');
     await act(async () => { await wait(2200); });
     assert.equal(tutorialStep(), 'attaque', 'le guide attend le retour effectif du tour avant d’expliquer l’attaque');
@@ -84,25 +79,19 @@ export async function checkRpgCardGuide(assert) {
     await click([...container.querySelectorAll('button')]
       .find((button) => button.textContent.includes('Cartes & effets')), 'l’entrée « Cartes & effets »');
     assert.equal(step(), 'card-guide-familles-de-cartes', 'le guide avancé commence par présenter les familles de cartes');
-    assert.deepEqual(exampleIds(), ['desert', 'tin-hinan'], 'les fiches affichent des exemples issus du catalogue réel');
+    assert.deepEqual(exampleIds(), ['tislit-des-aures', 'tin-hinan'], 'les fiches affichent des exemples issus du catalogue réel');
     assert.ok(container.querySelector('[data-card-id="tin-hinan"].rpg-card--mythique .rpg-card-guide__art img'),
       'l’exemple de Tin Hinan est une illustration mythique, éligible au vernis sans masquer son coût');
-    assert.equal(container.querySelector('[data-card-id="desert"] .rpg-card-guide__rules')?.textContent,
-      'Engagez : ajoutez un mana ⏳.', 'le guide imprime aussi l’icône Sable dans le texte du Désert');
-
+    assert.ok(container.querySelector('[data-card-id="tislit-des-aures"] .rpg-card-guide__rules'),
+      'la première fiche montre une créature du nouveau deck');
     await click(next(), 'la fiche suivante');
-    assert.equal(step(), 'card-guide-armes', 'le guide présente aussi les armes avant les terrains hybrides');
-    await click(next(), 'la fiche sur les terrains hybrides');
-    assert.equal(step(), 'card-guide-terrain-hybride', 'le parcours montre ensuite le terrain à deux couleurs');
-    assert.deepEqual(exampleIds(), ['petra', 'desert']);
-    assert.ok(container.querySelector('[data-card-id="petra"].rpg-card--frame-hybride-braise-sable:not(.rpg-card--frame-brillant)'),
-      'le guide montre le cadre bicolore diagonal de Pétra sans brillance');
-    const reglesPetra = container.querySelector('[data-card-id="petra"] .rpg-card-guide__rules');
-    assert.equal(reglesPetra?.textContent, 'Engagez : ajoutez un mana 🔥 ou ⏳.',
-      'le terrain hybride affiche les deux icônes en conservant le choix « ou »');
-    assert.deepEqual([...reglesPetra.querySelectorAll('.rpg-card-rules__mana[role="img"]')]
-      .map((icone) => icone.getAttribute('aria-label')), ['Braise', 'Sable'],
-    'les deux icônes du guide gardent un nom accessible');
+    assert.equal(step(), 'card-guide-armes');
+    await click(next(), 'la fiche sur le mana multicolore');
+    assert.equal(step(), 'card-guide-terrain-hybride', 'la fiche historique explique maintenant le choix de mana');
+    assert.deepEqual(exampleIds(), ['vent-rouge']);
+    assert.ok(container.querySelector('[data-card-id="vent-rouge"].rpg-card--frame-hybride-braise-sable'),
+      'le guide conserve un exemple hybride réellement jouable');
+    assert.equal(container.querySelector('[data-card-id="petra"]'), null, 'aucun terrain donné en exemple');
     await click(next(), 'la fiche après les terrains');
     assert.equal(step(), 'card-guide-arme-maudite', 'le guide montre aussi l’arme issue d’une magie');
     await click(next(), 'la fiche des magies');

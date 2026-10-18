@@ -6,9 +6,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'familles-de-cartes',
     section: 'Types de cartes',
-    cardIds: ['desert', 'tin-hinan'],
-    title: 'Quatre familles, trois rôles',
-    text: 'Le catalogue distingue terrains, créatures, héros et magies. Un terrain fournit du mana ; créatures et héros occupent le champ de bataille et combattent ; une magie produit son effet puis rejoint le cimetière. Un héros est donc une carte à part dans la collection, mais une créature en jeu.',
+    cardIds: ['tislit-des-aures', 'tin-hinan'],
+    title: 'Des cartes à jouer, aucun terrain',
+    text: 'Le deck contient 30 cartes sans terrain. Le mana augmente automatiquement de un par tour, jusqu’à dix ; créatures et héros occupent le champ de bataille et combattent ; une magie produit son effet puis rejoint le cimetière. Un héros est donc une carte à part dans la collection, mais une créature en jeu.',
   },
   {
     id: 'armes',
@@ -20,9 +20,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'terrain-hybride',
     section: 'Types de cartes',
-    cardIds: ['petra', 'desert'],
-    title: 'Un terrain peut offrir deux couleurs',
-    text: 'Pétra produit au choix un mana Braise ou Sable quand vous l’engagez. Le choix se fait à chaque activation ; elle ne produit qu’un mana et reste engagée jusqu’à son dégagement.',
+    cardIds: ['vent-rouge'],
+    title: 'Choisissez la couleur de votre nouveau mana',
+    text: 'Un deck contient une à trois couleurs. En multicolore, choisissez la couleur du mana gagné à chaque tour. Les manas déjà acquis gardent leur couleur et la réserve se recharge au début de votre tour.',
   },
   {
     id: 'arme-maudite',
@@ -219,12 +219,5 @@ export const RPG_CARD_LESSONS = Object.freeze([
     cardIds: ['sahir-des-braises'],
     title: 'Une capacité peut agir avant les dégâts de combat',
     text: 'Quand le Sahir attaque ou bloque, il inflige d’abord 2 dégâts à la créature qui le bloque ou qu’il bloque, avant les blessures de combat. Une capacité de combat peut donc changer l’issue de l’échange qui suit.',
-  },
-  {
-    id: 'terrain-detruit',
-    section: 'Capacités des créatures',
-    cardIds: ['djinn-du-souk'],
-    title: 'Une arrivée peut toucher les ressources',
-    text: 'Le Djinn du souk détruit un terrain adverse au hasard à son arrivée. Les terrains font partie du champ de bataille : certaines capacités peuvent donc réduire le mana disponible de l’autre camp.',
   },
 ]);
