@@ -793,7 +793,10 @@
    joueur part de la ligne vers le bas, le sorcier adverse vers le haut, en
    miroir ; la capsule du compteur se pose au bout libre de chaque jauge. */
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table {
-  --essai-col-h: min(172px, calc(50% - 38px));
+  --essai-piles-h: 40px;
+  /* La colonne laisse sous elle (au-dessus pour le sorcier) la place des
+     piles de cartes et de la capsule du compteur. */
+  --essai-col-h: min(172px, calc(50% - 16px - var(--essai-piles-h)));
   --essai-plaque-l: 78px;
   --essai-jauge-l: 30px;
 }
@@ -917,3 +920,86 @@
 }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--joueur .rpg-flux-track__reserve { top: calc(100% + 3px); bottom: auto; }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track--ennemi .rpg-flux-track__reserve { top: auto; bottom: calc(100% + 3px); }
+
+/* ── Mobile, table d'essai : paquet et cimetière au bout des colonnes ────────
+   Les deux piles de cartes (paquet, cimetière) réapparaissent en miniature,
+   au bout libre de chaque colonne, sous la plaque (au-dessus pour le sorcier,
+   en miroir) ; la capsule du compteur de mana occupe le même rang, sous la
+   jauge. Le nombre de cartes s'inscrit sur la pile : les lignes « Paquet » et
+   « Cimetière » de la plaque, redondantes, s'effacent ; « Main » reste. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.rpg-card-piles--player, .rpg-card-piles--opponent) {
+  display: flex;
+  grid-area: auto;
+  position: absolute;
+  left: var(--rpg-touch-pad, 6px);
+  right: auto;
+  width: var(--essai-plaque-l);
+  height: var(--essai-piles-h);
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  z-index: 3;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-card-piles--player {
+  top: calc(50% + 6px + var(--essai-col-h) + 4px);
+  bottom: auto;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-card-piles--opponent {
+  top: auto;
+  bottom: calc(50% + 6px + var(--essai-col-h) + 4px);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile {
+  position: relative;
+  min-width: 0;
+  padding: 3px;
+  gap: 0;
+  border-radius: 7px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile__stack,
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile__card {
+  width: 25px;
+  height: 34px;
+  border-width: 1px;
+  border-radius: 3px;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile__card--back:first-child { transform: translate(-2px, -2px) rotate(-5deg); }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile__card--back:nth-child(2) { transform: translate(-1px, -1px) rotate(-2deg); }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile b {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 1px 3px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, .78);
+  color: #ffe9b1;
+  font-size: 10px;
+  line-height: 1;
+  animation: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile small {
+  display: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones .rpg-mobile-zones {
+  display: none;
+}
+/* Les miniatures se montrent (le mobile les masque d'ordinaire). Le paquet
+   montre ses dos de cartes ; le cimetière montre sa dernière carte, ou un
+   emplacement en pointillés tant qu'il est vide — on ne le confond pas avec
+   le paquet. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile__stack {
+  display: block;
+  filter: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile--graveyard .rpg-card-pile__card--back:not(.rpg-card-pile__card--top) {
+  display: none;
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-card-piles--player, .rpg-card-piles--opponent) .rpg-card-pile--graveyard .rpg-card-pile__card--back.rpg-card-pile__card--top {
+  border: 1px dashed rgba(226, 190, 119, .6);
+  background: rgba(0, 0, 0, .35);
+  box-shadow: none;
+  transform: none;
+}

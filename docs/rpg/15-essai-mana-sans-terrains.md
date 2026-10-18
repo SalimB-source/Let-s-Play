@@ -53,3 +53,4 @@ Sur la table d'essai tactile, chaque sorcier a sa colonne contre la ligne de sé
 - la **plaque** est verticale : avatar, nom, zones (Main, Paquet, Cimetière, une par ligne) et goutte de PV empilés ;
 - la **jauge de mana** est dressée juste à sa droite, à la même hauteur (`--essai-col-h`), et **se remplit de bas en haut** : le premier mana acquis est en bas ;
 - la capsule du compteur se pose au bout libre de la jauge (sous celle du joueur, au-dessus de celle du sorcier).
+- le **paquet** et le **cimetière** réapparaissent en miniature au bout libre de chaque colonne, sous la plaque (au-dessus pour le sorcier), le nombre de cartes inscrit sur la pile ; le cimetière vide est un emplacement en pointillés, sinon il montre sa dernière carte. Les lignes « Paquet » et « Cimetière » de la plaque s'effacent (« Main » reste).
