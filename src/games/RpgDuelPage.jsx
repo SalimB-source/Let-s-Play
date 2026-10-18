@@ -118,6 +118,7 @@ import {
   rpgEngagerTerrain,
   rpgFermerFenetreReponse,
   rpgFinDeTour,
+  rpgConsommerPresentations,
   rpgJouerCreature,
   rpgLancerAttaque,
   rpgPeutAttaquer,
@@ -3642,6 +3643,30 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [impactEcran, setImpactEcran] = useState(null);
   const [animationsPioche, setAnimationsPioche] = useState([]);
   const instantanePiocheRef = useRef(null);
+  const [presentationsCartes, setPresentationsCartes] = useState([]);
+  const presentationDuelRef = useRef(null);
+  const transitionTourRef = useRef(false);
+  // Une pioche adverse n'entre jamais dans la file d'aperçus de ce joueur.
+  useEffect(() => {
+    if (presentationDuelRef.current !== duel || ecran !== 'partie') {
+      presentationDuelRef.current = duel;
+      transitionTourRef.current = false;
+      if (presentationsCartes.length) setPresentationsCartes([]);
+      if (duel) rpgConsommerPresentations(duel);
+      return;
+    }
+    if (!duel) return;
+    const nouvelles = rpgConsommerPresentations(duel)
+      .filter((event) => event.type === 'effet' || event.cote === 'joueur');
+    if (nouvelles.length) setPresentationsCartes((file) => [...file, ...nouvelles]);
+  });
+  const presentationCarte = presentationsCartes[0];
+  useEffect(() => {
+    if (!presentationCarte) return undefined;
+    const timer = window.setTimeout(() => setPresentationsCartes((file) => file.slice(1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [presentationCarte]);
+
   // Compteur de séquence pour les animations de pioche.
   const sequencePiocheRef = useRef(0);
   const carteOrigineVolRef = useRef(null);
@@ -4173,6 +4198,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (!animations.length) return;
     animations.forEach((a, idx) => { jouerSfx('card_draw', idx * 0.08); });
+    // Mesure dans le même repère écran : le départ suit le vrai paquet,
+    // y compris après rotation ou changement de taille de la table.
+    const table = tableRef.current;
+    const decks = table?.querySelectorAll('.rpg-card-pile--deck');
+    for (const side of ['joueur', 'sorcier']) {
+      const main = table?.querySelector(side === 'joueur' ? '.rpg-hand' : '.rpg-hidden-hand');
+      const deck = decks?.[side === 'joueur' ? 1 : 0];
+      if (!main || !deck) continue;
+      const depart = deck.getBoundingClientRect();
+      const arrivee = main.getBoundingClientRect();
+      main.style.setProperty('--rpg-draw-x', `${depart.left + depart.width / 2 - arrivee.left - arrivee.width / 2}px`);
+      main.style.setProperty('--rpg-draw-y', `${depart.top + depart.height / 2 - arrivee.top - arrivee.height / 2}px`);
+    }
     setAnimationsPioche((current) => [...current, ...animations].slice(-12));
     animations.forEach((animation) => {
       const timer = window.setTimeout(() => {
@@ -6360,7 +6398,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     };
 
     if (!rpgPeutRepondre(duel, 'sorcier')) {
-      fermerTour();
+      force();
+      later(fermerTour, 600);
       return;
     }
     force();
@@ -6387,8 +6426,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // passer. Sans magie rapide jouable en main, la fenêtre se referme d'elle-même.
   const passerFinTourSorcier = () => {
     if (duel.finDeTour?.cote !== 'sorcier') return;
-    if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
-    force();
+    if (transitionTourRef.current) return;
+    transitionTourRef.current = true;
+    later(() => {
+      transitionTourRef.current = false;
+      if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
+      force();
+    }, 600);
   };
 
   const finirTourSorcier = () => {
@@ -7644,6 +7688,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         </div>
 
+        {presentationCarte && (
+          <div className="rpg-auto-preview" aria-live="polite">
+            <HoverCardPreview
+              carte={cardById(presentationCarte.carteId)}
+              variante="fiche"
+              surface={presentationCarte.type === 'pioche' ? 'CARTE PIOCHÉE' : 'EFFET ACTIVÉ'}
+              style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+            />
+          </div>
+        )}
         {sortJoue && <SpellAnnouncement annonce={sortJoue} />}
         {apercuSurvol && !apercuMagie && !mulligan && !apercuAnnonceOuvert && (
           <HoverCardPreview
