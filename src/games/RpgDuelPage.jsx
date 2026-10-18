@@ -1,3 +1,4 @@
+import { convertirDeckSansTerrain, carteJouableSansTerrain } from './rpgCards.js';
 /**
  * Le Sablier — duel de cartes tactique.
  * Les tours gardent leur liberté d'une partie de cartes à collectionner :
@@ -105,6 +106,8 @@ import {
   filtresCouleurDecks,
 } from './rpgDeckFilter.js';
 import {
+  RPG_PV_JOUEUR,
+  RPG_PV_SORCIER_BASE,
   arriveeCiblePortee,
   rpgCibleAuto,
   rpgChoisirAttaquants,
@@ -555,6 +558,7 @@ export function FluxManaTrack({ camp, cote }) {
   return (
     <div
       className={`rpg-terrains rpg-terrains--${cote} rpg-flux-track rpg-flux-track--${cote}`}
+      data-tutorial-target={cote === 'joueur' ? 'mana-track' : undefined}
       data-mana-capacite={maximum}
       data-mana-disponible={disponible}
       role="status"
@@ -2034,13 +2038,19 @@ function SpellAnnouncement({ annonce }) {
   const carte = cardById(annonce?.carteId);
   if (!carte) return null;
   const contre = Boolean(annonce.contre);
+  // La vague d'un sort à écho (le Nuage de cendres) : au début du tour
+  // suivant de son lanceur, la carte se réaffiche en preview et le bandeau
+  // nomme la vague au lieu d'une magie qui partirait pour la première fois.
+  const vague = Boolean(annonce.vague);
   return (
     <section
-      className={`rpg-spell-played${contre ? ' rpg-spell-played--contre' : ''}`}
+      className={`rpg-spell-played${contre ? ' rpg-spell-played--contre' : ''}${vague ? ' rpg-spell-played--vague' : ''}`}
       role="status"
       aria-label={contre
         ? `Contre : ${carte.name} défait ${annonce.cible.nom}.`
-        : `Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
+        : vague
+          ? `Seconde vague : ${carte.name}. Cible : ${annonce.cible.nom}.`
+          : `Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
       <img
         className={`rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
@@ -2051,8 +2061,9 @@ function SpellAnnouncement({ annonce }) {
       <div className="rpg-spell-played__details">
         {/* Le sur-titre prend la teinte de la famille du sort annoncé. Un
             contre garde son or : sa règle est plus spécifique (voir
-            `rpg-battle.css`). */}
-        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : 'MAGIE JOUÉE'}</span>
+            `rpg-battle.css`). Une vague reprend la teinte du sort : elle est
+            le même sort qui retombe, pas une nouvelle magie. */}
+        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : vague ? 'SECONDE VAGUE' : 'MAGIE JOUÉE'}</span>
         <strong>{carte.name}</strong>
         <p>{carte.text}</p>
         <div className="rpg-spell-played__target">
@@ -2287,6 +2298,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
     ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection) : rpgValiderDeck(openDeck.cardIds))
     : { ok: false, raisons: ['Aucun deck ouvert.'] };
   const cartesCatalogue = RPG_DUEL_CARDS.filter((carte) => {
+    if (!carteJouableSansTerrain(carte)) return false;
     const colors = cardColors(carte);
     const couleurCorrespond = catalogueCouleur === 'toutes'
       || (catalogueCouleur === 'hybride' ? colors.length > 1 : colors.includes(catalogueCouleur));
@@ -2459,7 +2471,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               <div className="rpg-mode-menu__hero-copy">
                 <span className="rpg-mode-menu__eyebrow">
                   <span className="rpg-eyebrow-dot" />
-                  UN DUEL · DEUX DECKS · 40 CARTES
+                  UN DUEL · DEUX DECKS · 30 CARTES · SANS TERRAIN
                 </span>
                 <h2>Le sable se souvient.<br /><em>À vous d’écrire la suite.</em></h2>
                 <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes de Bab El. Chaque carte compte, chaque mana compte, chaque choix façonne votre victoire.</p>
@@ -2491,9 +2503,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </button>
                   </div>
                 </div>
-                <section className="rpg-flux-menu" aria-label="Essayer le mana sans terrains">
-                  <span className="rpg-flux-menu__eyebrow">LABORATOIRE · DUEL LIBRE SANS RÉCOMPENSE</span>
-                  <h3>Et si le mana remplaçait les terrains ?</h3>
+                <section className="rpg-flux-menu" aria-label="Les règles du Sablier">
+                  <span className="rpg-flux-menu__eyebrow">LES RÈGLES · TOUS LES DUELS</span>
+                  <h3>Le mana remplace les terrains.</h3>
                   <p>30 cartes à jouer, aucun terrain à piocher. Gagnez un mana coloré à chaque tour jusqu’à 10 ; choisissez sa couleur si votre deck en a plusieurs. Main de départ : 3 cartes, cinq créatures au plus par camp (la sixième demande un sacrifice) et cinq cartes en main au maximum en fin de tour.</p>
                   <div className="rpg-flux-menu__decks">
                     {RPG_MANA_ESSAI_DECKS.map((deck) => (
@@ -2504,7 +2516,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       </button>
                     ))}
                   </div>
-                  <small className="rpg-flux-menu__note">Essai isolé : vos decks, cartes, crédits et progression restent inchangés.</small>
+                  <small className="rpg-flux-menu__note">Ces règles s’appliquent aux duels libres, au tutoriel et à toute l’Histoire.</small>
                 </section>
               </div>
               {/* Le halo doré reste : simple lumière, pas un fond. */}
@@ -2994,7 +3006,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
           <main className="rpg-card-catalogue" aria-label="Catalogue complet des cartes">
             <header className="rpg-card-catalogue__header">
               <div>
-                <span className="rpg-mode-menu__eyebrow">COLLECTION COMPLÈTE · {RPG_DUEL_CARDS.length} CARTES</span>
+                <span className="rpg-mode-menu__eyebrow">COLLECTION COMPLÈTE · {RPG_DUEL_CARDS.filter(carteJouableSansTerrain).length} CARTES</span>
                 <h2>Catalogue</h2>
                 <p>Parcourez les créatures, héros, terrains, magies et armes de Bab El — cliquez une carte pour l’ouvrir en grand, illustration et effets.</p>
               </div>
@@ -3023,7 +3035,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 </select>
               </label>
               <p className="rpg-card-catalogue__count" aria-live="polite">
-                {cartesCatalogue.length} / {RPG_DUEL_CARDS.length} carte{RPG_DUEL_CARDS.length === 1 ? '' : 's'}
+                {cartesCatalogue.length} / {RPG_DUEL_CARDS.filter(carteJouableSansTerrain).length} carte{RPG_DUEL_CARDS.filter(carteJouableSansTerrain).length === 1 ? '' : 's'}
               </p>
             </div>
             {cartesCatalogue.length ? (
@@ -3390,7 +3402,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // son chemin habituel. Un duel libre n'avance jamais le récit par accident.
   useEffect(() => {
     const duelCourant = duelRef.current;
-    if (!duelCourant || duelCourant.modeMana === RPG_MODE_MANA_ESSAI || !histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
+    if (!duelCourant || !histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
     const session = sessionDuelRef.current;
     if (histoireVictoireMarqueeRef.current === session) return;
     histoireVictoireMarqueeRef.current = session;
@@ -3424,7 +3436,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // « Nouvelle partie » incrémente la session, et le duel suivant sera compté.
   useEffect(() => {
     const duelCourant = duelRef.current;
-    if (!duelCourant || duelCourant.modeMana === RPG_MODE_MANA_ESSAI || histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
+    if (!duelCourant || histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
     const session = sessionDuelRef.current;
     if (libreVictoireMarqueeRef.current === session) return;
     libreVictoireMarqueeRef.current = session;
@@ -3437,10 +3449,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // puis rejouée ne compte pas deux fois, puisque l'on émet l'écart entre les
   // dégâts cumulés et ceux déjà annoncés. Un duel neuf remet le compteur à son
   // état de départ sans rien annoncer.
+  // Le compteur vient du moteur (`degatsRecus`) : la vie peut dépasser 25 et
+  // le maximum suit le gain, l'écart au maximum ne dirait plus rien — seul le
+  // cumul des dégâts réellement encaisés compte.
   useEffect(() => {
     const duelCourant = duelRef.current;
     if (!duelCourant) return;
-    const cumules = Math.max(0, (duelCourant.sorcier.pvMax ?? 0) - duelCourant.sorcier.pv);
+    const cumules = Math.max(0, duelCourant.sorcier.degatsRecus ?? 0);
     const memo = degatsSorcierRef.current;
     if (memo.duel !== duelCourant) {
       degatsSorcierRef.current = { duel: duelCourant, annonces: cumules };
@@ -3524,10 +3539,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // les voir tout de suite, sans qu'on recharge la page.
     onCartesRangees: rafraichirCollection,
   });
-  // Les duels du laboratoire ne paient ni crédits, ni quêtes, ni trophées.
-  // Le témoin est celui du duel actif, pas le deck sélectionné dans l'atelier.
+  // Le mana sans terrain est commun à tous les duels : les récompenses
+  // et les quêtes ne sont plus exclues sur le seul critère du format.
   const noterEvenementDuel = (evenement) => {
-    if (duelRef.current?.modeMana === RPG_MODE_MANA_ESSAI) return;
     noterEvenementDuelReel(evenement);
   };
   const histoireVictoireMarqueeRef = useRef(null);
@@ -4119,21 +4133,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       void musiquePlateau?.start();
     }
     duelRef.current = rpgNouveauDuel({
-      joueurDeck: deckEssai?.cardIds ?? (modeTutoriel
+      joueurDeck: convertirDeckSansTerrain(deckEssai?.cardIds ?? (modeTutoriel
         ? RPG_TUTORIAL_PLAYER_DECK
-        : joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECK_JOUEUR_BASE),
-      sorcierDeck: adversaireEssai?.cardIds ?? (modeTutoriel
+        : joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECK_JOUEUR_BASE)),
+      sorcierDeck: convertirDeckSansTerrain(adversaireEssai?.cardIds ?? (modeTutoriel
         ? RPG_TUTORIAL_OPPONENT_DECK
-        : etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECK_SORCIER_BASE),
+        : etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECK_SORCIER_BASE)),
       sorcierPuissance: modeTutoriel ? 0 : etageCourant ? etageCourant.puissance : sorcierPuissance,
       sorcierIA: etageCourant ? etageCourant.ia : undefined,
-      modeMana: deckEssai ? RPG_MODE_MANA_ESSAI : null,
+      modeMana: RPG_MODE_MANA_ESSAI,
       joueurCouleurs: deckEssai?.elements,
       sorcierCouleurs: adversaireEssai?.elements,
       rng,
     });
     if (deckEssai) duelRef.current.essaiDeckId = deckEssai.id;
-    if (modeTutoriel) preparerDuelTutoriel(duelRef.current);
+    if (modeTutoriel) { preparerDuelTutoriel(duelRef.current); rpgDemarrerManaEssai(duelRef.current); }
     histoireVictoireMarqueeRef.current = null;
     campagneDuelRef.current = options.campagne ? {
       session: sessionDuelRef.current, etageId,
@@ -4955,7 +4969,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ?? decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
   const deckAdverseAffiche = (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(deckAdverseId) : null)
     ?? RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
-  const nomSorcierAdverse = etageHistoire?.nom ?? (tutorielActif ? 'Sorcier d’entraînement' : duel.modeMana === RPG_MODE_MANA_ESSAI ? 'Sorcier d’essai' : 'Ifrit al-Ahmar');
+  const nomSorcierAdverse = etageHistoire?.nom ?? (tutorielActif ? 'Sorcier d’entraînement' : duel.modeMana === RPG_MODE_MANA_ESSAI ? 'Sorcier adverse' : 'Ifrit al-Ahmar');
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
   const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
@@ -5185,6 +5199,43 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     duel.joueur.pv < instantane.pv
     || (duel.joueur.bouclier ?? 0) < instantane.bouclier
   );
+  // Une sorcellerie à écho (le Nuage de cendres) dont la promesse est venue
+  // d'écho au début de ce tour : `rpgFinDeTour` vient de la consommer. La
+  // promesse éteinte — plus consignée dans le registre de l'un des deux camps
+  // — fait revenir la carte en preview au centre de la table, et le bandeau
+  // nomme la vague : le sort se reconnaît à sa deuxième apparition, comme au
+  // premier lancer.
+  const annoncerEchosRetombes = (echosAvant) => {
+    if (rpgVainqueur(duel)) return;
+    const lanceur = duel.tour;
+    const promessesRestantes = new Set((duel.joueur.degatsEchos ?? [])
+      .concat(duel.sorcier.degatsEchos ?? []));
+    const retombes = echosAvant.filter((echo) =>
+      (echo.coteSource === lanceur || !echo.coteSource)
+      && (Number(echo.toursRestants) || 1) <= 1
+      && !promessesRestantes.has(echo));
+    // Plusieurs vagues dues en même temps : la preview est un seul battement,
+    // on la porte sur la première promesse qui nomme une carte.
+    const promesse = retombes.find((echo) => cardById(echo?.carteId)) ?? retombes[0];
+    const carte = cardById(promesse?.carteId);
+    if (!carte) return;
+    const coteVisee = lanceur === 'joueur' ? 'sorcier' : 'joueur';
+    const cibles = coteVisee === 'sorcier' ? duel.sorcier.creatures : duel.joueur.creatures;
+    const cibleDecrite = promesse.cible === 'sorcier'
+      ? {
+          nom: coteVisee === 'sorcier' ? 'Le sorcier' : 'Vous',
+          illustrationUrl: coteVisee === 'sorcier' ? portraitSorcierAdverse : undefined,
+          targetPlate: coteVisee,
+          targetIds: [],
+        }
+      : {
+          nom: coteVisee === 'sorcier' ? 'Toutes les créatures adverses' : 'Toutes vos créatures',
+          targetPlate: coteVisee === 'sorcier' ? 'sorcier' : null,
+          targetIds: cibles.map((entite) => entite.id),
+        };
+    annoncerMagie(carte, cibleDecrite, { vague: true });
+  };
+
   // Le tour qui s'ouvre peut porter un écho différé (Nuage de cendres) : les
   // blessures et les morts qu'il cause s'animent comme les autres, au lieu de
   // se contenter d'un chiffre qui change sur la carte.
@@ -5192,11 +5243,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const instantane = prendreInstantaneDegatsJoueur();
     const champAvantFinDeTour = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
+    // Le registre des échos avant de fermer le tour : la promesse que l'ouverture
+    // de ce tour résout se réaffiche en preview (`annoncerEchosRetombes`).
+    const echosAvantRetour = (duel.joueur.degatsEchos ?? [])
+      .concat(duel.sorcier.degatsEchos ?? []);
     rpgFinDeTour(duel);
     // Début de tour : le rail allume la phase le temps de la pioche.
     setDebutVisible(true);
     later(() => setDebutVisible(false), 800);
     animerModificationsChamp(champAvantFinDeTour, [], debutJournalDestructions);
+    annoncerEchosRetombes(echosAvantRetour);
     return joueurToucheDepuis(instantane);
   };
 
@@ -5531,7 +5587,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   // `contre` : la carte est un contresort (joué par le joueur ou par le sorcier)
   // qui défait la carte visée — le bandeau le dit au lieu de « Magie jouée ».
-  const annoncerMagie = (carte, cible, { contre = false, sonForce = null } = {}) => {
+  // `vague` : la promesse d'un sort à écho (le Nuage de cendres) retombe au
+  // début du tour suivant de son lanceur — la carte se réaffiche en preview,
+  // le son du sort reprend, et le bandeau nomme la vague.
+  const annoncerMagie = (carte, cible, { contre = false, vague = false, sonForce = null } = {}) => {
     if (contre) {
       jouerSfx('card_countered');
     } else {
@@ -5547,7 +5606,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
-    setSortJoue({ carteId: carte.id, cible, contre });
+    setSortJoue({ carteId: carte.id, cible, contre, vague });
     setApercuMagie(carte.id);
     timerApercuMagieRef.current = window.setTimeout(() => {
       timerApercuMagieRef.current = null;
@@ -7227,6 +7286,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
             <span className="rpg-wizard-plate__hp-value">{duel.sorcier.pv}</span>
+            {duel.sorcier.pvMax > RPG_PV_SORCIER_BASE && <span className="rpg-wizard-plate__hp-max">/{duel.sorcier.pvMax}</span>}
             {duel.sorcier.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.sorcier.bouclier}</span>}
             {soinSorcier && <span key={soinSorcier.token} className="rpg-soin-montant" aria-hidden="true">+{soinSorcier.montant}</span>}
           </span>
@@ -7596,6 +7656,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
             <span className="rpg-wizard-plate__hp-value">{duel.joueur.pv}</span>
+            {duel.joueur.pvMax > RPG_PV_JOUEUR && <span className="rpg-wizard-plate__hp-max">/{duel.joueur.pvMax}</span>}
             {duel.joueur.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.joueur.bouclier}</span>}
             {soinJoueur && <span key={soinJoueur.token} className="rpg-soin-montant" aria-hidden="true">+{soinJoueur.montant}</span>}
           </span>
@@ -8043,9 +8104,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 ? vainqueur === 'joueur'
                   ? `${etageHistoire.nom} ne tient plus son palier. La suite de la tour vous attend.`
                   : `${etageHistoire.nom} vous attend au même étage : chaque duel repart à zéro.`
-                : duel.modeMana === RPG_MODE_MANA_ESSAI
-                  ? 'Fin du duel d’essai : aucun crédit ni progrès enregistré. Rejouez ou changez de deck depuis le menu.'
-                  : vainqueur === 'joueur'
+                : vainqueur === 'joueur'
                     ? 'Bab El respire : le cycle tient encore un soir.'
                     : 'Le sable recouvre votre Nom. L’Astrolabe sonne pour quelqu’un d’autre.'}
             </p>
@@ -8069,7 +8128,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               </div>
             ) : (
               <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => nouvellePartie(duel.modeMana === RPG_MODE_MANA_ESSAI ? { etageId: null, essaiManaId: duel.essaiDeckId } : {})}>
-                {duel.modeMana === RPG_MODE_MANA_ESSAI ? 'Rejouer l’essai' : 'Nouvelle partie'}
+                {'Nouvelle partie'}
               </button>
             )}
           </div>

@@ -4,19 +4,18 @@
  */
 import { RPG_DECK_JOUEUR_BASE } from './rpgCards.js';
 
-export const RPG_TUTORIAL_PLAYER_DECK = RPG_DECK_JOUEUR_BASE;
-export const RPG_TUTORIAL_OPPONENT_DECK = Object.freeze(Array(40).fill('montagne'));
+export const RPG_TUTORIAL_PLAYER_DECK = [...RPG_DECK_JOUEUR_BASE];
+export const RPG_TUTORIAL_OPPONENT_DECK = Object.freeze([...RPG_DECK_JOUEUR_BASE]);
+export const RPG_TUTORIAL_OPPONENT_HAND = Object.freeze(['amani-des-ksour', 'cavalier-amazigh-du-desert', 'tempete-de-sable']);
 export const RPG_TUTORIAL_OPENING_HAND = Object.freeze([
-  'desert',
   'tislit-des-aures',
   'fennec-des-decombres',
   'chien-du-guet',
-  'tempete-de-sable',
 ]);
 
 /**
- * Le moteur conserve une vraie partie de 40 cartes ; on ne fait que remettre
- * cinq cartes connues en main pour que les étapes guidées soient toujours
+ * Le moteur conserve une partie de 30 cartes ; on ne fait que remettre
+ * trois cartes connues en main pour que les étapes guidées soient toujours
  * possibles. Le reste du paquet et le tirage de l'adversaire restent intacts.
  */
 export function preparerDuelTutoriel(duel) {
@@ -34,9 +33,12 @@ export function preparerDuelTutoriel(duel) {
   };
 
   replacerMain(duel.joueur, RPG_TUTORIAL_OPENING_HAND);
-  // La main adverse est aussi connue : elle ne contient que des terrains, donc
+  // La main adverse est aussi connue : elle ne contient que des magies coûteuses, donc
   // le sorcier ne peut ni lancer de sort ni attaquer pendant la démonstration.
-  replacerMain(duel.sorcier, Array(5).fill('montagne'));
+  replacerMain(duel.sorcier, RPG_TUTORIAL_OPPONENT_HAND);
+  // La première pioche adverse reste coûteuse, quel que soit le mélange.
+  const suivant = duel.sorcier.deck.findIndex((id) => id === 'dune-marchante');
+  if (suivant >= 0) duel.sorcier.deck.push(...duel.sorcier.deck.splice(suivant, 1));
   duel.mainDepart = { joueur: duel.joueur.main.length, sorcier: duel.sorcier.main.length };
   duel.mulliganFait = { joueur: true, sorcier: true };
   return duel;
@@ -59,26 +61,18 @@ export const RPG_TUTORIAL_STEPS = Object.freeze([
     target: '[data-tutorial-target="hand"]',
     eyebrow: 'ÉTAPE 1 · VOTRE MAIN',
     title: 'Vos cartes, vos options',
-    text: 'Votre main contient cinq cartes. Le coût et les symboles indiquent ce qu’il faut payer ; les cartes jouables s’allument d’un halo — bleu pour une créature ou un terrain, or pour une Magie Rapide, violet pour une Sorcellerie. L’exercice utilise une main préparée pour vous guider.',
-    nextLabel: 'Poser un terrain',
-    side: 'top',
-  },
-  {
-    id: 'terrain',
-    kind: 'action',
-    target: '[data-tutorial-target="terrain-card"]',
-    eyebrow: 'ÉTAPE 2 · TERRAIN',
-    title: 'Posez votre terrain',
-    text: 'Touchez la carte Désert encadrée pour la poser. Vous ne pouvez jouer qu’un seul terrain pendant votre tour.',
+    text: 'Votre main contient trois cartes. Le coût et les symboles indiquent ce qu’il faut payer ; les cartes jouables s’allument d’un halo — bleu pour une créature, or pour une Magie Rapide, violet pour une Sorcellerie. L’exercice utilise une main préparée pour vous guider.',
+    nextLabel: 'Comprendre le mana',
     side: 'top',
   },
   {
     id: 'mana',
-    kind: 'action',
-    target: '[data-tutorial-target="mana-terrain"]',
-    eyebrow: 'ÉTAPE 3 · MANA',
-    title: 'Produisez du mana',
-    text: 'Touchez le Désert posé pour l’engager : il produit un mana Sable. Un terrain engagé ne produit plus jusqu’à ce qu’il se dégage au prochain tour. Le jeu peut aussi engager vos terrains automatiquement pour payer une carte.',
+    kind: 'info',
+    target: '[data-tutorial-target="mana-track"]',
+    eyebrow: 'ÉTAPE 2 · MANA AUTOMATIQUE',
+    title: 'Un mana de plus à chaque tour',
+    text: 'Aucun terrain à poser ni à engager. Votre réserve se recharge à chaque tour et gagne un mana, jusqu’à dix. En mono-Sable, sa couleur est automatique ; avec plusieurs couleurs, vous choisissez la nouvelle couleur. Votre premier mana est déjà disponible.',
+    nextLabel: 'Jouer une créature',
     side: 'top',
   },
   {
@@ -106,7 +100,7 @@ export const RPG_TUTORIAL_STEPS = Object.freeze([
     target: '[data-tutorial-target="end-turn"]',
     eyebrow: 'ÉTAPE 5 · FIN DU TOUR',
     title: 'Passez la main',
-    text: 'Touchez « Fin du tour ». Le mana non dépensé disparaît ; au début de votre prochain tour, vos terrains se dégagent, vous piochez une carte et vos créatures deviennent prêtes.',
+    text: 'Touchez « Fin du tour ». Au prochain tour, votre réserve se recharge et gagne un mana, vous piochez une carte et vos créatures deviennent prêtes. En fin de tour, défaussez les cartes au-delà de cinq en main. Le champ accueille cinq créatures : en poser une sixième demande un sacrifice.',
     side: 'top',
   },
   {
@@ -115,7 +109,7 @@ export const RPG_TUTORIAL_STEPS = Object.freeze([
     target: '[data-tutorial-target="enemy-field"]',
     eyebrow: 'LE TOUR DU SORCIER',
     title: 'Observez son tour',
-    text: 'Le sorcier joue maintenant. Dans cette partie d’entraînement, il ne pose que des terrains afin que vous puissiez apprendre sans pression.',
+    text: 'Le sorcier joue maintenant. Dans cette partie d’entraînement, il attend de pouvoir lancer ses magies afin que vous puissiez apprendre sans pression.',
     side: 'bottom',
   },
   {
@@ -162,7 +156,7 @@ export const RPG_TUTORIAL_STEPS = Object.freeze([
     target: '[data-tutorial-target="player-field"]',
     eyebrow: 'BASES ACQUISES',
     title: 'À vous de jouer',
-    text: 'Vous connaissez les gestes essentiels : poser un terrain, produire du mana, jouer une créature, passer le tour et attaquer. La partie d’entraînement reste ouverte pour essayer librement.',
+    text: 'Vous connaissez les gestes essentiels : gérer votre mana automatique, jouer une créature, passer le tour et attaquer. La partie d’entraînement reste ouverte pour essayer librement.',
     nextLabel: 'Continuer la partie',
     side: 'top',
   },

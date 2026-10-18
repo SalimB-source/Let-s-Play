@@ -38,11 +38,11 @@ const annoncer = (duel, carteId) => {
 const contre = (duel, id) => rpgLancerMagie(duel, 'joueur', id);
 
 test('la Marée des abysses garde une mythique et ouvre les autres bêtes dans les boosters', () => {
-  assert.equal(RPG_DECK_MAREE_BASE.length, 40);
+  assert.equal(RPG_DECK_MAREE_BASE.length, 30);
   assert.equal(rpgValiderDeck(RPG_DECK_MAREE_BASE).ok, true);
-  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => cardById(id).kind === 'terrain').length, 16, '16 terrains Eau');
-  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'mer').length, 8, '8 Mer classiques');
-  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'lagune-des-salines').length, 8, '8 Lagunes des salines');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => cardById(id).kind === 'terrain').length, 0, 'aucun terrain Eau');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'mer').length, 0, 'aucune Mer à piocher');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'lagune-des-salines').length, 0, 'aucune Lagune à piocher');
   for (const id of ['kraken', 'leviathan', 'bakunawa', 'jormungandr']) {
     assert.equal(cardById(id).rarity, 'mythique', `${id} est mythique`);
     const exemplaires = RPG_DECK_MAREE_BASE.filter((x) => x === id).length;

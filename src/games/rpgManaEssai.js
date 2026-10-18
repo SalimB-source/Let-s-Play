@@ -1,7 +1,7 @@
 /**
- * Banc d'essai « mana sans terrains ». Ces trois paquets de démonstration sont
- * indépendants des decks enregistrés, de la collection et du Souk. Le format
- * historique (40 cartes avec terrains) n'est pas modifié par cette expérience.
+ * Règles du mana sans terrains et quatre paquets de démonstration.
+ * Les deux premiers reprennent les nouvelles recettes des decks de base.
+ * Le nom historique « essai » reste stable pour les états du moteur.
  */
 import {
   RPG_DECK_JOUEUR_BASE,
@@ -25,7 +25,6 @@ export const RPG_MANA_ESSAI_CARTES_EXCLUES = Object.freeze(['boussole-du-hoggar'
  *  le joueur choisit laquelle, l'IA sacrifie la plus frêle. */
 export const RPG_MANA_ESSAI_CHAMP_MAX = 5;
 
-const horsTerrains = (ids) => ids.filter((id) => cardById(id)?.kind !== 'terrain');
 const copies = (id, nombre) => Array(nombre).fill(id);
 
 /** Un départ souple, puis des cartes plus lourdes. Pas de Boussole ni de Djinn
@@ -38,11 +37,7 @@ export const RPG_MANA_ESSAI_DECKS = Object.freeze([
     elements: ['sable'],
     boxArt: 'fennec-des-decombres',
     description: 'Mono-Sable : le mana grandit sans choix de couleur.',
-    cardIds: [
-      ...horsTerrains(RPG_DECK_JOUEUR_BASE),
-      'tislit-des-aures', ...copies('guetteur-du-beffroi', 2),
-      'dune-marchante', ...copies('rempart-de-dunes', 2), 'scribe-de-la-liste',
-    ],
+    cardIds: [...RPG_DECK_JOUEUR_BASE],
   },
   {
     id: 'essai-mana-sable-braise',
@@ -51,11 +46,7 @@ export const RPG_MANA_ESSAI_DECKS = Object.freeze([
     elements: ['sable', 'braise'],
     boxArt: 'djinn-de-foudre',
     description: 'Sable + Braise : choisissez chaque tour la couleur de votre nouveau mana.',
-    cardIds: [
-      ...horsTerrains(RPG_DECK_HYBRIDE_BASE),
-      ...copies('tislit-des-aures', 2), ...copies('ashigaru-des-braises', 2),
-      'chien-du-guet', 'rapport-du-greffier', 'dune-marchante',
-    ],
+    cardIds: [...RPG_DECK_HYBRIDE_BASE],
   },
   {
     id: 'essai-mana-trois-couleurs',

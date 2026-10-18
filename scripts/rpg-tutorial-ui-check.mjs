@@ -26,7 +26,7 @@ assert.match(cardLessons, /terrain-hybride[\s\S]*?contresorts[\s\S]*?furie[\s\S]
 assert.match(page, /<RpgTutorialOverlay[\s\S]*?onNext=\{continuerTutoriel\}[\s\S]*?onClose=\{fermerTutoriel\}/u,
   'la partie affiche une fenêtre de tutoriel avec des commandes de progression et de fermeture');
 for (const target of [
-  'opponent-health', 'hand', 'terrain-card', 'mana-terrain', 'creature-card', 'played-creature',
+  'opponent-health', 'hand', 'mana-track', 'creature-card', 'played-creature',
   'end-turn', 'enemy-field', 'attack-all', 'confirm-attack', 'player-field',
 ]) {
   assert.ok(tutorial.includes(`data-tutorial-target=\"${target}\"`)

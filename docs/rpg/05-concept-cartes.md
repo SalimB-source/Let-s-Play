@@ -342,7 +342,10 @@ note sur le camp concerné et les liquide au tour suivant (`rpgFinDeTour`) :
   d'une table déserte attend le tour adverse ; si rien ne s'y trouve à son
   heure, l'écho se dissipe et le journal le dit. Sur plusieurs tours
   (`echo.tours`), chaque reprise de main du lanceur retire un tour à la
-  promesse.
+  promesse. La vague venue d'écho **se voit** : à l'ouverture du tour du
+  lanceur, la carte du sort se réaffiche en preview au centre de la table, et
+  le bandeau « SECONDE VAGUE » nomme la vague — le sort se reconnaît à sa
+  deuxième apparition, comme au premier lancer.
 
 ## 5. L’adversaire : un sorcier
 

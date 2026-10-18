@@ -488,8 +488,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
   // dédiée, variante du Glacier comprise (aucune ne partage le fichier d’une autre).
   const illustrationsNeige = RPG_DECK_NEIGE_BASE.filter((id, index, deck) => deck.indexOf(id) === index);
-  assert.equal(illustrationsNeige.length, 15,
-    'le deck Neige réunit les quinze cartes distinctes retenues par sa recette');
+  assert.equal(illustrationsNeige.length, 18,
+    'le deck Neige réunit les dix-huit cartes distinctes retenues par sa recette');
   for (const carteId of illustrationsNeige) {
     assert.equal(cardArtId(carteId), carteId,
       `${carteId} affiche sa propre illustration Neige`);
@@ -1476,8 +1476,8 @@ test('les terrains et leurs variantes gardent les mêmes couleurs, types et prod
     assert.equal(variante.cost, base.cost, `${varianteId} garde le coût nul`);
     assert.deepEqual(terrainManaColors(variante), terrainManaColors(base),
       `${varianteId} produit exactement le même mana que ${baseId}`);
-    assert.ok(RPG_DECKS.some((deck) => deck.cardIds.includes(varianteId)),
-      `${varianteId} est introduit dans un deck du catalogue`);
+    assert.ok(RPG_DECKS.every((deck) => !deck.cardIds.includes(varianteId)),
+      `${varianteId} reste archivé, hors des decks sans terrain`);
   }
 });
 
@@ -1881,6 +1881,27 @@ test('un écho de l’IA retombe après le tour du joueur, sur la table telle qu
   assert.deepEqual(duel.joueur.degatsEchos, [], 'la promesse est soldée');
 });
 
+test('la promesse d’écho garde sa référence tant qu’elle attend : la page distingue la vague venue d’écho', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'nuage-de-cendres');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'nuage-de-cendres').ok, true);
+  const promesse = duel.sorcier.degatsEchos[0];
+
+  // Le tour du joueur se ferme : la promesse est reportée, et le moteur la
+  // conserve sans la réécrire — même référence dans le registre. C’est ce qui
+  // permet à l’interface de distinguer « la vague attend encore » de « la
+  // vague vient d’écho » (elle a quitté le registre).
+  rpgFinDeTour(duel);
+  assert.equal(duel.sorcier.degatsEchos[0], promesse,
+    'la promesse reportée n’est pas réécrite : même référence au registre');
+
+  // L'ouverture du tour suivant du lanceur : la vague retombe, la promesse
+  // disparaît du registre — c'est elle que la page réaffiche en preview.
+  rpgFinDeTour(duel);
+  assert.deepEqual(duel.sorcier.degatsEchos, [], 'la vague venue d’écho ne laisse aucune promesse au registre');
+});
+
 test('les retouches du catalogue : Rapport du greffier à 3 manas, Déflection renommée', () => {
   assert.equal(cardById('rapport-du-greffier').cost, 3, 'le Rapport se paie trois manas');
   assert.deepEqual(cardById('rapport-du-greffier').effet, { type: 'pioche', amount: 2 },
@@ -1932,7 +1953,7 @@ test('un renfort de magie rapide qui s’évapore peut laisser une créature à 
   assert.equal(duel.joueur.creatures.includes(chien), false, 'la créature quitte la table avec son rempart');
 });
 
-test('capacité à l’arrivée : la Porteuse soigne son sorcier (plafonné)', () => {
+test('capacité à l’arrivée : la Porteuse soigne son sorcier, et la vie passe au-dessus de 25', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   duel.joueur.pv = RPG_PV_JOUEUR - 5;
@@ -1942,7 +1963,55 @@ test('capacité à l’arrivée : la Porteuse soigne son sorcier (plafonné)', (
   duel.joueur.pv = RPG_PV_JOUEUR - 1;
   donner(duel, 'joueur', 'porteuse-de-cruches');
   rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'le soin ne dépasse pas le maximum');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 2, 'le soin ne s’arrête plus à 25 PV');
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR + 2, 'le maximum suit la vie gagnée');
+});
+
+test('la vie peut dépasser 25 : la réserve s’élargit et ne fond pas avec les dégâts', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  // Un soin à pleine vie : la vie monte, le maximum avec elle.
+  donner(duel, 'joueur', 'porteuse-de-cruches');
+  rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 3, 'la vie dépasse 25');
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR + 3, 'le maximum suit la vie gagnée');
+  // Un coup encaissé ne touche pas au maximum : la réserve reste entière.
+  duel.joueur.pv = 10;
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR + 3, 'les dégâts ne fondent pas la réserve');
+  assert.equal(duel.joueur.pvMax - duel.joueur.pv, RPG_PV_JOUEUR - 7, 'l’écart reste la santé manquante');
+});
+
+test('le cœur pesé donne toute la vie : le Tribut fait passer le camp au-dessus de 25', () => {
+  const duel = duelDeBase();
+  duel.joueur.creatures.push({
+    id: 'tribut-test',
+    carteId: 'chacal-du-seuil',
+    name: 'Chacal du seuil',
+    atk: 1,
+    pv: 1,
+    pvMax: 1,
+    tribut: 2,
+    ready: true,
+    attaquee: false,
+    jeton: false,
+    armes: [],
+    emplacement: 0,
+  });
+  const res = rpgAttaquerSorcier(duel, 'joueur', 'tribut-test');
+  assert.equal(res.ok, true, JSON.stringify(res));
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 2, 'le Tribut porte la vie au-dessus de 25');
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR + 2, 'le maximum suit le gain');
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE - 1 - 2, 'le sorcier perd la frappe et le Tribut');
+  assert.equal(duel.sorcier.degatsRecus, 3, 'les dégâts réellement encaissés se comptent');
+});
+
+test('les dégâts encaissés se comptent : la magie compte pour la quête « le sorcier saigne »', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'eclair-du-marteau');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', 'sorcier').ok, true);
+  assert.equal(duel.sorcier.degatsRecus, 3, 'la magie compte pour la quête');
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE - 3);
 });
 
 test('la Veilleuse gagne son bouclier dès son arrivée et absorbe les premiers dégâts', () => {
@@ -2915,18 +2984,18 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
   assert.equal(empreintes.size, 27, 'les vingt-sept peintures Neige sont toutes différentes');
 });
 
-test('le Serment des Neuf Hivers est un deck mono-Neige : 17 terrains en deux arts, mythiques en un exemplaire', () => {
+test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes sans terrain, mythiques en un exemplaire', () => {
   const deck = RPG_DECKS.find(({ id }) => id === 'serment-des-neuf-hivers');
   assert.ok(deck, 'le deck Neige apparaît dans la sélection');
   assert.equal(deck.role, 'joueur');
   assert.equal(deck.element, 'neige');
   assert.equal(deck.terrain, 'glacier');
-  assert.equal(deck.cardIds, RPG_DECK_NEIGE_BASE, 'la sélection joue la liste de 40 cartes du deck');
+  assert.equal(deck.cardIds, RPG_DECK_NEIGE_BASE, 'la sélection joue la liste de 30 cartes du deck');
   const valide = rpgValiderDeck(deck.cardIds);
   assert.equal(valide.ok, true, valide.raison);
-  assert.equal(valide.terrains, 17, 'dix-sept terrains Neige, comme les autres decks mono');
-  assert.equal(deck.cardIds.filter((id) => id === 'glacier').length, 9);
-  assert.equal(deck.cardIds.filter((id) => id === 'glacier-des-arches').length, 8);
+  assert.equal(valide.terrains, 0, 'aucun terrain dans le format automatique');
+  assert.equal(deck.cardIds.filter((id) => id === 'glacier').length, 0);
+  assert.equal(deck.cardIds.filter((id) => id === 'glacier-des-arches').length, 0);
   for (const id of new Set(deck.cardIds)) {
     const carte = cardById(id);
     assert.deepEqual(cardColors(carte), ['neige'], `${id} reste dans l’identité Neige du deck`);
@@ -3065,7 +3134,10 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
       : undefined;
     assert.equal(rpgJouerCreature(duel, 'joueur', id, cibleExil).ok, true, `${figure} se pose`);
   }
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'le soin de la Dame est plafonné aux PV maximum');
+  // Le Festin a laissé le joueur à 20 PV : le soin de la Dame s’ajoute en
+  // entier (20 + 5) et n'est plus rogné par un plafond de 25.
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'le soin de la Dame s’ajoute en entier');
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR, 'le maximum ne bouge que si la vie le dépasse');
 
   // Le Père des corbeaux : Envol, et ses corbeaux exilent une petite créature.
   donner(duel, 'sorcier', 'chien-du-guet');
@@ -3121,13 +3193,13 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'anqa-des-braises').length, 0,
     'les Sentiers de cendre laissent les autres mythiques dans les boosters');
   for (const [deck, terrainsAttendus, creaturesAttendues, magiesAttendues, armesAttendues] of [
-    [RPG_DECK_JOUEUR_BASE, 17, 15, 4, 4],
-    [RPG_DECK_SORCIER_BASE, 18, 16, 6, 0],
-    [RPG_DECK_NEIGE_BASE, 17, 13, 9, 1],
+    [RPG_DECK_JOUEUR_BASE, 0, 18, 6, 6],
+    [RPG_DECK_SORCIER_BASE, 0, 21, 9, 0],
+    [RPG_DECK_NEIGE_BASE, 0, 17, 12, 1],
   ]) {
     const valide = rpgValiderDeck(deck);
     assert.equal(valide.ok, true, valide.raison);
-    assert.equal(deck.length, 40);
+    assert.equal(deck.length, 30);
     assert.equal(valide.terrains, terrainsAttendus);
     const comptes = {};
     for (const id of deck) {
@@ -3165,21 +3237,14 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   assert.ok(deckHybride, 'le deck hybride apparaît dans la sélection');
   assert.equal(deckHybride.role, 'joueur');
   assert.deepEqual(deckHybride.elements, ['sable', 'braise']);
-  assert.equal(deckHybride.cardIds, RPG_DECK_HYBRIDE_BASE, 'la sélection utilise le deck hybride de 40 cartes');
+  assert.equal(deckHybride.cardIds, RPG_DECK_HYBRIDE_BASE, 'la sélection utilise le deck hybride de 30 cartes');
   const valide = rpgValiderDeck(deckHybride.cardIds);
   assert.equal(valide.ok, true, valide.raison);
-  assert.equal(valide.terrains, 17);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'petra').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'petra-des-deux-sources').length, 2);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'desert').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'dunes-du-tenere').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'montagne').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'cretes-de-cendre').length, 3);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 13);
-  // Les quatre places d'armes servent les équipements de la signature ; Fériel
-  // reste l'unique mythique du deck hybride, tout le reste attend les boosters.
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 6);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'arme').length, 4);
+  assert.equal(valide.terrains, 0);
+  assert.ok(RPG_DECK_HYBRIDE_BASE.every((id) => cardById(id)?.kind !== 'terrain'));
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 16);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 8);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'arme').length, 6);
   for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.rarity === 'mythique')) {
     assert.ok(RPG_DECK_HYBRIDE_BASE.filter((id) => id === carte.id).length <= 1,
       `${carte.id} mythique apparaît au plus une fois dans le deck hybride`);
@@ -3197,25 +3262,27 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
     'le deck contient plusieurs cartes exigeant une source Braise et une source Sable');
 });
 
-test('le validateur rejette : pas 40 cartes, trop d’exemplaires, trop peu de terrains', () => {
-  assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE.slice(0, 39)).ok, false);
-  const tropDeCopies = [
-    ...Array(17).fill('desert'),
-    ...RPG_DECK_JOUEUR_BASE.filter((id) => id !== 'desert').slice(0, 19),
-    'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet',
-  ];
-  assert.equal(tropDeCopies.length, 40);
-  assert.equal(rpgValiderDeck(tropDeCopies).ok, false, '4 exemplaires d’une créature sont refusés');
-
+test('le validateur exige 30 cartes sans terrain, les quotas et une identité de trois couleurs au plus', () => {
+  assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE.slice(0, 29)).ok, false);
+  assert.equal(rpgValiderDeck([...RPG_DECK_JOUEUR_BASE, 'chien-du-guet']).ok, false);
+  const tropDeCopies = [...RPG_DECK_JOUEUR_BASE];
+  tropDeCopies[0] = 'chien-du-guet';
+  assert.equal(rpgValiderDeck(tropDeCopies).ok, false);
+  assert.match(rpgValiderDeck(tropDeCopies).raison, /chien-du-guet.*3 exemplaires/);
   const mythiqueEnDouble = [...RPG_DECK_HYBRIDE_BASE];
-  const emplacementDjinn = mythiqueEnDouble.indexOf('djinn-de-foudre');
-  mythiqueEnDouble[emplacementDjinn] = 'feriel';
-  const resultatMythique = rpgValiderDeck(mythiqueEnDouble);
-  assert.equal(resultatMythique.ok, false, 'deux exemplaires du même mythique sont refusés');
-  assert.match(resultatMythique.raison, /feriel mythique en 2 exemplaires \(1 max\)/);
-
-  const sansTerrains = Array.from({ length: 40 }, (_, index) => RPG_CREATURE_CARDS[index % RPG_CREATURE_CARDS.length].id);
-  assert.equal(rpgValiderDeck(sansTerrains).ok, false, '0 terrain = refus');
+  mythiqueEnDouble[mythiqueEnDouble.indexOf('djinn-de-foudre')] = 'feriel';
+  assert.equal(rpgValiderDeck(mythiqueEnDouble).ok, false);
+  assert.match(rpgValiderDeck(mythiqueEnDouble).raison, /feriel mythique en 2 exemplaires \(1 max\)/);
+  for (const id of ['desert', 'boussole-du-hoggar', 'djinn-du-souk', 'inconnue']) {
+    const cartes = [...RPG_DECK_JOUEUR_BASE];
+    cartes[0] = id;
+    assert.equal(rpgValiderDeck(cartes).ok, false, `${id} est hors format`);
+  }
+  const quatreCouleurs = [...RPG_DECK_HYBRIDE_BASE];
+  quatreCouleurs[0] = 'ressac';
+  quatreCouleurs[1] = 'loup-des-neiges';
+  assert.equal(rpgValiderDeck(quatreCouleurs).ok, false);
+  assert.match(rpgValiderDeck(quatreCouleurs).raison, /1 à 3 couleurs/);
 });
 
 test('Trait de braise coûte 2, est une magie rapide et inflige 3 dégâts à une créature ou un sorcier', () => {

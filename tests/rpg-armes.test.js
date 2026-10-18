@@ -114,7 +114,7 @@ test('le prototype compte cinq armes, une par élément, avec leur peinture', ()
 
 test('les decks du catalogue suivent leur quota d’armes sans dépasser une mythique', () => {
   const armesParDeck = {
-    'veilleurs-du-desert': ['sandales-de-tislit', 'licou-du-chien-de-sable', 'jitte-d-amayas', 'takouba-de-tin-hinan'],
+    'veilleurs-du-desert': ['sandales-de-tislit', 'licou-du-chien-de-sable', 'jitte-d-amayas', 'takouba-de-tin-hinan', 'harnais-du-mehari'],
     'cour-des-djinns': [],
     'sentiers-de-cendre': ['takouba-des-pistes', 'harnais-du-mehari', 'jitte-d-amayas', 'masque-du-guetteur'],
     'maree-des-abysses': ['baton-des-citernes'],
@@ -122,7 +122,7 @@ test('les decks du catalogue suivent leur quota d’armes sans dépasser une myt
     'serment-du-soleil-rouge': [],
   };
   for (const deck of RPG_DECKS) {
-    assert.equal(deck.cardIds.length, 40, `${deck.name} fait 40 cartes`);
+    assert.equal(deck.cardIds.length, 30, `${deck.name} fait 30 cartes`);
     assert.equal(rpgValiderDeck(deck.cardIds).ok, true, `${deck.name} reste valide`);
     const armes = [...new Set(deck.cardIds.filter((id) => armeById(id)))].sort();
     assert.deepEqual(armes, armesParDeck[deck.id].sort(), `${deck.name} respecte sa sélection d’armes`);
@@ -152,12 +152,12 @@ test('les armes entrent dans la collection comme les autres cartes', () => {
 test('le composeur remplit un quota d’armes comme les autres quotas', () => {
   const liste = composerDeck({
     identite: ['sable'],
-    terrains: [['desert', 37]],
+    terrains: [],
     creatures: 1,
     magies: 0,
     armes: 2,
   }, CATALOGUE_DU_COMPOSEUR);
-  assert.equal(liste.length, 40);
+  assert.equal(liste.length, 3);
   // Le Sable n'a plus une seule arme mais onze : les deux places vont aux
   // deux meilleures, la mythique du lot puis la Lame des ergs (la meilleure
   // rare depuis que la Jitte s'est simplifiée en +2/+1 et protection).
@@ -165,7 +165,7 @@ test('le composeur remplit un quota d’armes comme les autres quotas', () => {
     'la place de mythique va à la Takouba de Tin Hinan, seule mythique Sable');
   assert.equal(liste.filter((id) => id === 'lame-des-ergs').length, 1,
     'la seconde place va à la meilleure arme rare du Sable');
-  assert.equal(rpgValiderDeck(liste).ok, true);
+  assert.equal(rpgValiderDeck(liste).ok, false, 'ce mini-paquet teste les quotas, pas le format de trente cartes');
 });
 
 // ── L'attachement ───────────────────────────────────────────────────────────

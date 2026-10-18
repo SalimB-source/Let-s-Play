@@ -59,13 +59,13 @@ test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 ×
 test('le deck Soleil rouge est valide et concentre sa signature culturelle', () => {
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
-  assert.equal(deck.cardIds.filter((id) => cardById(id).kind === 'terrain').length, 16);
+  assert.equal(deck.cardIds.filter((id) => cardById(id).kind === 'terrain').length, 0);
   const signature = [
     'ashigaru-des-braises', 'braisier-du-souk', 'daimyo-du-soleil-rouge',
     'feux-de-kitsune', 'frappe-iaijutsu', 'hatamoto-des-cendres',
     'kagutsuchi-flamme-originelle', 'kenshi-de-la-forge', 'nuage-de-cendres',
     'onna-musha-des-cendres', 'ronin-du-soleil-rouge', 'samourai-du-torii',
-    'tengu-du-mont-ardent', 'trait-de-braise',
+    'tengu-du-mont-ardent', 'trait-de-braise', 'ghul-des-cendres', 'sabre-maudit',
   ];
   assert.deepEqual(
     [...new Set(deck.cardIds.filter((id) => cardById(id).kind !== 'terrain'))].sort(),
@@ -470,7 +470,7 @@ test('Susanoo reste hors du starter : 5/3 pour 6, Honneur 3 et exil à l’arriv
   const carte = cardById('susanoo');
   assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [6, 5, 3, 3]);
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
-  assert.equal(deck.cardIds.length, 40);
+  assert.equal(deck.cardIds.length, 30);
   assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 0, 'l’autre mythique attend les boosters');
   assert.equal(COLLECTION_DEPART.includes(carte.id), false);
   assert.equal(carteReveleePar(carte.id).etageId, 'sables-3');

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RPG_DUEL_CARDS, cardById } from '../src/games/rpgCards.js';
+import { RPG_DUEL_CARDS, cardById, convertirDeckSansTerrain } from '../src/games/rpgCards.js';
 import { collectionJoueur } from '../src/games/rpgCollection.js';
 import { fusionnerCollections } from '../src/games/rpgCollection.js';
 import {
@@ -58,15 +58,8 @@ const COLLECTION = collectionJoueur();
 
 /** Un deck maison valide de 40 cartes, entièrement dans la dotation (mono-Sable). */
 function deckValide(nom = 'Deck d\'essai', element = 'sable', id = nouvelIdDeckMaison()) {
-  const terrains = { sable: 'desert', braise: 'montagne', eau: 'mer' }[element] ?? 'desert';
-  const communes = COLLECTION.filter((idCarte) => {
-    const carte = cardById(idCarte);
-    return carte && carte.kind !== 'terrain' && carte.element === element && carte.rarity === 'commune';
-  }).slice(0, 12);
-  const cardIds = [...Array(16).fill(terrains)];
-  for (const idCarte of communes) {
-    if (cardIds.length < 40) cardIds.push(...Array(Math.min(2, 40 - cardIds.length)).fill(idCarte));
-  }
+  const depart = { sable: 'chien-du-guet', braise: 'ashigaru-des-braises', eau: 'porteuse-de-cruches' }[element];
+  const cardIds = convertirDeckSansTerrain([depart], COLLECTION);
   return normaliserDeckMaison({ id, nom, cardIds });
 }
 
@@ -83,7 +76,7 @@ test('un deck maison se normalise : nom tronqué, cartes inconnues retirées, co
   assert.ok(deck.maison, 'le deck se sait maison');
   assert.equal(deck.id, 'maison-abc');
   assert.equal(deck.nom, 'Mon deck');
-  assert.deepEqual(deck.cardIds, ['desert', 'desert', 'chien-du-guet']);
+  assert.deepEqual(deck.cardIds, ['chien-du-guet']);
   assert.equal(deck.boxArt, 'chien-du-guet');
   assert.equal(deck.element, 'sable', 'mono-Sable par ses cartes');
   assert.equal(deck.majLe, '2026-01-15T10:00:00.000Z');
@@ -219,7 +212,7 @@ test('peutAjouterCarte refuse l\'inconnu, le verrouillé et le dépassement de q
 test('rpgValiderDeckMaison liste les raisons de structure ET de collection', () => {
   const court = rpgValiderDeckMaison(['desert'], COLLECTION);
   assert.equal(court.ok, false);
-  assert.match(court.raisons[0], /40 cartes/);
+  assert.match(court.raisons[0], /30 cartes/);
   const verrouille = rpgValiderDeckMaison([...Array(40).fill('kraken')], COLLECTION);
   assert.equal(verrouille.ok, false);
   assert.ok(verrouille.raisons.some((raison) => raison.includes('hors collection')), 'les cartes non possédées sont nommées');
@@ -228,10 +221,11 @@ test('rpgValiderDeckMaison liste les raisons de structure ET de collection', () 
   assert.equal(deckMaisonEstSelectionnable(valide, COLLECTION), true);
   // Sans collection, seule la structure parle.
   assert.equal(deckMaisonEstSelectionnable(valide, null), true);
+  assert.equal(deckMaisonEstSelectionnable(valide, []), false, 'une collection vide ne possède aucune carte');
   assert.equal(deckMaisonEstSelectionnable(null, COLLECTION), false);
-  const avecKraken = { ...valide, cardIds: [...valide.cardIds.slice(0, 39), 'kraken'] };
+  const avecKraken = { ...valide, cardIds: [...valide.cardIds.slice(0, 29), 'kraken'] };
   assert.equal(deckMaisonEstSelectionnable(avecKraken, COLLECTION), false, 'une carte hors collection rend le deck injouable');
-  const avecKrakenPossede = { ...valide, cardIds: [...valide.cardIds.slice(0, 39), 'kraken'] };
+  const avecKrakenPossede = { ...valide, cardIds: [...valide.cardIds.slice(0, 29), 'kraken'] };
   assert.equal(
     deckMaisonEstSelectionnable(avecKrakenPossede, collectionJoueur({ acquis: { gel: true, cartes: ['kraken'] } })),
     true,
@@ -319,35 +313,28 @@ test('repartitionCouleurs compte cartes, pips et terrains par couleur, par prés
   assert.equal(eau.terrains, 2, 'les terrains sont comptés dans la couleur qu\'ils produisent');
 });
 
-test('completerEnTerrains remplit jusqu\'à 40 cartes au prorata des pips, avec des terrains possédés', () => {
-  const sorts = ['chien-du-guet', 'chien-du-guet', 'porteuse-de-cruches', 'porteuse-de-cruches'];
-  const resultat = completerEnTerrains(sorts, COLLECTION);
-  assert.equal(resultat.ajoutes, 36);
-  assert.equal(resultat.cardIds.length, 40);
-  assert.deepEqual(resultat.cardIds.slice(0, 4), sorts, 'les sorts restent, en tête, dans l\'ordre');
-  const comptes = resultat.cardIds.slice(4).reduce((acc, id) => ({ ...acc, [id]: (acc[id] ?? 0) + 1 }), {});
-  assert.deepEqual(comptes, { desert: 18, mer: 18 }, 'moitié Sable, moitié Eau');
-  assert.ok(resultat.cardIds.every((id) => COLLECTION.includes(id)), 'rien hors collection');
-  assert.equal(sorts.length, 4, 'la liste d\'origine n\'est pas mutée');
-  assert.equal(rpgValiderDeckMaison(resultat.cardIds, COLLECTION).ok, true, 'le deck complété est jouable');
+test('l’ancien complément en terrains ne modifie plus les cartes ni la collection', () => {
+  const cartes = ['chien-du-guet', 'porteuse-de-cruches'];
+  const resultat = completerEnTerrains(cartes, COLLECTION);
+  assert.deepEqual(resultat.cardIds, cartes);
+  assert.notEqual(resultat.cardIds, cartes);
+  assert.equal(resultat.ajoutes, 0);
+  assert.match(resultat.raison, /automatique/);
+  assert.deepEqual(completerEnTerrains([], []).cardIds, []);
 });
 
-test('completerEnTerrains : deck vide → Sable, deck plein → rien, parts entières aux plus forts restes', () => {
-  const vide = completerEnTerrains([], COLLECTION);
-  assert.equal(vide.ajoutes, 40);
-  assert.ok(vide.cardIds.every((id) => id === 'desert'), 'sans couleur, du Désert');
-  const plein = completerEnTerrains(Array(40).fill('desert'), COLLECTION);
-  assert.equal(plein.ajoutes, 0);
-  assert.match(plein.raison, /déjà plein/);
-  // Trois couleurs, 37 places : la somme des parts vaut exactement 37.
-  const trois = completerEnTerrains(['chien-du-guet', 'porteuse-de-cruches', 'djinn-du-souk'], COLLECTION);
-  assert.equal(trois.ajoutes, 37);
-  assert.equal(trois.cardIds.length, 40);
-  // Une couleur sans terrain possédé (Neige, hors dotation) est servie par les autres, sans planter.
-  const sansGlacier = COLLECTION.filter((id) => id !== 'glacier');
-  const neige = completerEnTerrains(['chien-du-guet'], sansGlacier);
-  assert.equal(neige.cardIds.length, 40);
-  assert.ok(!neige.cardIds.includes('glacier'));
-  // Sans collection fournie, tous les terrains du catalogue servent.
-  assert.equal(completerEnTerrains(['chien-du-guet'], null).ajoutes, 39);
+test('la migration maison retire uniquement les cartes hors format, sans fabriquer de cartes', () => {
+  const ancien = { id: 'maison-ancien', nom: 'Ancien', majLe: '2026-01-15T10:00:00.000Z',
+    cardIds: ['desert', 'boussole-du-hoggar', 'djinn-du-souk', 'chien-du-guet', 'chien-du-guet'] };
+  const avant = structuredClone(ancien);
+  const migre = normaliserDeckMaison(ancien);
+  assert.deepEqual(ancien, avant);
+  assert.deepEqual(migre.cardIds, ['chien-du-guet', 'chien-du-guet']);
+  assert.equal(migre.majLe, ancien.majLe);
+  assert.equal(deckMaisonEstSelectionnable(migre, COLLECTION), false, 'le brouillon doit être complété');
+  assert.deepEqual(normaliserDeckMaison(migre), migre, 'migration idempotente');
+  assert.equal(peutAjouterCarte('desert', [], COLLECTION).ok, false);
+  assert.equal(peutAjouterCarte('boussole-du-hoggar', [], COLLECTION).ok, false);
+  assert.equal(peutAjouterCarte('djinn-du-souk', [], null).ok, false);
+  assert.equal(peutAjouterCarte('chien-du-guet', Array(30).fill('tislit-des-aures'), COLLECTION).ok, false);
 });

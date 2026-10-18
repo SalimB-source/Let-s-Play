@@ -40,7 +40,7 @@ import {
  * et leurs plafonds (`mythiquesMax`, `raresMax`) : la rampe des Tours, où la
  * Garde du fjord n’ouvre pas avec les figures du Nord et où le Maître des Neuf
  * Hivers les aligne. Les listes restent valides comme celles du catalogue :
- * 40 cartes, au moins 40 % de terrains, mythiques à un exemplaire.
+ * 30 cartes sans terrain, mythiques à un exemplaire.
  */
 export const RPG_STORY_DECKS = {
   'cour-des-djinns': RPG_DECK_SORCIER_BASE,

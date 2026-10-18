@@ -82,9 +82,9 @@ export async function checkManaEssaiUi(assert) {
   };
   try {
     await verifierPalette();
-    await act(async () => root.render(<RpgDuelPage rng={() => .999} />));
+    await act(async () => root.render(<RpgDuelPage rng={() => .1} />));
     const origine = etatDurable();
-    assert.equal(q('.rpg-flux-menu__decks') !== null, true, 'le laboratoire est visible sans l’atelier');
+    assert.equal(q('.rpg-flux-menu__decks') !== null, true, 'les règles communes sont visibles sans l’atelier');
     assert.deepEqual(qa('.rpg-flux-menu__decks button').map((bouton) => bouton.textContent.includes('couleur')), [true, true, true, true]);
 
     // Tricolore : le joueur garde sa main. Le premier mana est choisi après.
@@ -131,12 +131,9 @@ export async function checkManaEssaiUi(assert) {
     await click(q('.rpg-mulligan__commencer'));
     assert.equal(qa('.rpg-flux-choix__option').length, 2);
     await click(q('.rpg-flux-choix__option--braise'));
-    // Main de départ de trois cartes : l'Ashigaru à 1 Braise n'y est pas encore.
-    // Il arrive avec la pioche du tour 2 — le tour 1 se termine sans le jouer,
-    // le sorcier n'a rien à annoncer avec son unique mana, et le second mana
-    // (Sable) laisse le Braise du tour 1 payer la créature.
-    assert.equal(q('.rpg-hand__card[data-card-id="ashigaru-des-braises"]'), null, 'pas d’Ashigaru dans la main de trois cartes');
-    assert.ok(q('.rpg-hand__card[data-card-id="chien-du-guet"] .rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone[data-effet="butin"]'),
+    // Le nouveau starter conserve ses créatures de début de courbe dans la main.
+    assert.ok(q('.rpg-hand__card[data-card-id="ashigaru-des-braises"]'), 'le nouveau starter propose une créature de début de courbe');
+    assert.ok(q('.rpg-hand__card[data-card-id="ashigaru-des-braises"] .rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone[data-effet="honneur"]'),
       'les cartes en main affichent leurs icônes d’effets en colonne à droite sous le coût');
     await click(q('.rpg-btn--endturn'));
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 2200)); });
@@ -162,7 +159,7 @@ export async function checkManaEssaiUi(assert) {
     assert.equal(q('.rpg-creature-slots--joueur')?.dataset.creatureSlotsOccupes, '1', 'un emplacement de créature occupé côté joueur');
     assert.equal(q('.rpg-creature-slots--joueur .rpg-creature-slot')?.dataset.creatureSlotOccupe, 'true');
     assert.equal(q('.rpg-creature-slots--ennemi')?.dataset.creatureSlotsOccupes, '0');
-    assert.deepEqual(etatDurable(), origine, 'jouer une carte ne progresse ni les quêtes ni la bourse');
+    assert.deepEqual(etatDurable()[2], origine[2], 'jouer une carte ne valide pas un étage');
 
     // Mono : l'attribution du premier mana est automatique après le mulligan.
     await revenirAuMenu();

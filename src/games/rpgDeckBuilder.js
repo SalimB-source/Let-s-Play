@@ -22,8 +22,8 @@
  */
 
 import {
+  carteJouableSansTerrain,
   RPG_ELEMENTS,
-  RPG_TERRAIN_CARDS,
   cardById,
   cardColorCost,
   cardColors,
@@ -36,8 +36,8 @@ import { fusionnerPortefeuilles, normaliserPortefeuille } from './rpgCredits.js'
 import { fusionnerQuetes, normaliserEtatQuetes } from './rpgQuetes.js';
 
 /** La taille d'un deck du Sablier, et la part minimale de terrains. */
-export const RPG_DECK_TAILLE = 40;
-export const RPG_DECK_PART_TERRAINS = 0.4;
+export const RPG_DECK_TAILLE = 30;
+export const RPG_DECK_PART_TERRAINS = 0;
 
 export const RPG_DECKS_MAISON_STORAGE_KEY = 'letsplay_sablier_decks_maison_v1';
 
@@ -91,8 +91,9 @@ export function maintenantIso() {
 
 /**
  * Un enregistrement de deck maison, ou `null`. Les identifiants de cartes
- * inconnus (carte retirée du catalogue, donnée tronquée) sont retirés : le
- * deck devient « incomplet », jamais cassé. L'état civil chromatique est
+ * inconnus et hors format (terrains, effets liés aux terrains) sont retirés : le
+ * deck devient « incomplet », jamais cassé. Aucune carte supplémentaire n’est
+ * ajoutée ni acquise automatiquement : le joueur complète son deck dans l’atelier. L'état civil chromatique est
  * recalculé à chaque lecture — l'affichage ne dépend jamais d'une donnée
  * périmée.
  */
@@ -102,7 +103,7 @@ export function normaliserDeckMaison(value) {
   if (!id) return null;
   const nomBrut = typeof value.nom === 'string' ? value.nom.trim().slice(0, RPG_DECK_NOM_MAX) : '';
   const cardIds = (Array.isArray(value.cardIds) ? value.cardIds : [])
-    .filter((idCarte) => typeof idCarte === 'string' && cardById(idCarte));
+    .filter((idCarte) => typeof idCarte === 'string' && carteJouableSansTerrain(cardById(idCarte)));
   const boxArt = typeof value.boxArt === 'string' && cardById(value.boxArt) ? value.boxArt : null;
   const couleurs = couleursDeckMaison(cardIds);
   return {
@@ -263,6 +264,8 @@ export function compteExemplaires(cardIds) {
 export function peutAjouterCarte(cardId, cardIds, collection = null) {
   const carte = cardById(cardId);
   if (!carte) return { ok: false, raison: 'Carte inconnue.' };
+  if (!carteJouableSansTerrain(carte)) return { ok: false, raison: 'Carte hors format : le mana est automatique, sans terrain.' };
+  if (cardIds.length >= RPG_DECK_TAILLE) return { ok: false, raison: 'Deck plein : 30 cartes au maximum.' };
   if (collection && !collection.includes(cardId)) {
     return { ok: false, raison: 'Carte verrouillée : elle se débloque dans les Tours de Bab El.' };
   }
@@ -340,69 +343,15 @@ export function repartitionCouleurs(cardIds) {
       || RPG_ELEMENTS.indexOf(a.couleur) - RPG_ELEMENTS.indexOf(b.couleur));
 }
 
-/**
- * « Compléter en terrains » — le geste d'Arena : remplir les emplacements
- * libres du deck avec des terrains **possédés**, au prorata des pips de
- * couleur exigés par les sorts (à défaut, des couleurs des cartes ; à défaut,
- * du Sable). Les terrains mono sont préférés ; un terrain bicolore possédé
- * sert de secours pour une couleur sans terrain mono.
- *
- * Rend `{ cardIds, ajoutes, raison }` : la liste complétée (une copie — la
- * liste d'origine n'est jamais mutée), le nombre de terrains ajoutés et, s'il
- * n'y a rien à ajouter, pourquoi. Ne retire jamais rien : si le deck compte
- * déjà trop de sorts pour laisser 40 % aux terrains, c'est la validation qui
- * le dira.
- */
+/** Compatibilité des anciens appelants : le format sans terrain ne complète
+ * plus la liste avec des sources de mana. Ne modifie jamais la source. */
 export function completerEnTerrains(cardIds, collection = null) {
-  const actuels = Array.isArray(cardIds) ? [...cardIds] : [];
-  const libres = RPG_DECK_TAILLE - actuels.length;
-  if (libres <= 0) return { cardIds: actuels, ajoutes: 0, raison: 'Le deck est déjà plein.' };
-
-  const possedes = Array.isArray(collection) && collection.length ? new Set(collection) : null;
-  const terrainsDisponibles = RPG_TERRAIN_CARDS.filter((terrain) => !possedes || possedes.has(terrain.id));
-  if (!terrainsDisponibles.length) {
-    return { cardIds: actuels, ajoutes: 0, raison: 'Aucun terrain dans votre collection.' };
-  }
-
-  // Les poids : pips exigés, sinon couleurs des cartes, sinon Sable.
-  const repartition = repartitionCouleurs(actuels);
-  let poids = repartition.filter((entree) => entree.pips > 0).map((entree) => [entree.couleur, entree.pips]);
-  if (!poids.length) poids = repartition.filter((entree) => entree.cartes > 0).map((entree) => [entree.couleur, entree.cartes]);
-  // Une couleur sans aucun terrain possédé ne peut pas être servie : on l'écarte.
-  const terrainPour = (couleur) => terrainsDisponibles.find((terrain) => terrainManaColors(terrain).length === 1 && terrainManaColors(terrain)[0] === couleur)
-    ?? terrainsDisponibles.find((terrain) => terrainManaColors(terrain).includes(couleur))
-    ?? null;
-  poids = poids.filter(([couleur]) => terrainPour(couleur));
-  if (!poids.length) {
-    const secours = terrainPour('sable') ?? terrainsDisponibles[0];
-    poids = [[terrainManaColors(secours)[0] ?? 'sable', 1]];
-  }
-
-  // Plus forts restes : la somme des parts vaut exactement `libres`.
-  const totalPoids = poids.reduce((somme, [, valeur]) => somme + valeur, 0);
-  const parts = poids.map(([couleur, valeur]) => {
-    const exact = (valeur / totalPoids) * libres;
-    return { couleur, entier: Math.floor(exact), reste: exact - Math.floor(exact) };
-  });
-  let distribues = parts.reduce((somme, part) => somme + part.entier, 0);
-  const parReste = [...parts].sort((a, b) => b.reste - a.reste
-    || RPG_ELEMENTS.indexOf(a.couleur) - RPG_ELEMENTS.indexOf(b.couleur));
-  for (let i = 0; distribues < libres; i = (i + 1) % parReste.length) {
-    parReste[i].entier += 1;
-    distribues += 1;
-  }
-
-  const ajouts = [];
-  for (const part of parts) {
-    const terrain = terrainPour(part.couleur);
-    for (let i = 0; i < part.entier; i += 1) ajouts.push(terrain.id);
-  }
-  return { cardIds: [...actuels, ...ajouts], ajoutes: ajouts.length, raison: null };
+  return { cardIds: [...cardIds], ajoutes: 0, raison: 'Le mana est automatique : aucun terrain à ajouter.' };
 }
 
 /**
- * Valide un deck maison : les règles du duel (`rpgValiderDeck` — 40 cartes,
- * terrains, quotas) **et** la collection : chaque carte doit être possédée.
+ * Valide un deck maison : les règles du duel (`rpgValiderDeck` — 30 cartes,
+ * sans terrain, quotas) **et** la collection : chaque carte doit être possédée.
  * Rend `{ ok, raisons: [] }` — les deux familles de raisons sont listées
  * ensemble, pour que la fiche explique tout d'un coup.
  */
@@ -410,7 +359,7 @@ export function rpgValiderDeckMaison(cardIds, collection = null) {
   const raisons = [];
   const structurelle = rpgValiderDeck(Array.isArray(cardIds) ? cardIds : []);
   if (!structurelle.ok) raisons.push(structurelle.raison);
-  if (Array.isArray(collection) && collection.length) {
+  if (Array.isArray(collection)) {
     const possedees = new Set(collection);
     const horsCollection = [...new Set((Array.isArray(cardIds) ? cardIds : []))].filter((id) => !possedees.has(id));
     if (horsCollection.length) {

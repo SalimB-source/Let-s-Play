@@ -1,3 +1,4 @@
+import { carteJouableSansTerrain } from './rpgCards.js';
 /**
  * L'atelier de deck — l'écran où le joueur compose un deck « maison ».
  *
@@ -12,7 +13,7 @@
  *     portent un cadenas et disent où se gagner ;
  *   - **au-dessus, une barre de filtres à bascules** : pips de couleur, coût
  *     (1 à 6, 7+), type, rareté, « possédées seulement », recherche, tri ;
- *   - **à droite, le panneau du deck** : son nom, le compteur « N / 40 », la
+ *   - **à droite, le panneau du deck** : son nom, le compteur « N / 30 », la
  *     **courbe de mana**, la répartition des couleurs, puis la liste par
  *     type (créatures, magies, terrains) en rangées compactes « pip · nom ·
  *     × N » ; et le geste d'Arena, **Compléter en terrains**.
@@ -52,7 +53,6 @@ import { SortSceau } from './rpgSortSignature.jsx';
 import { carteReveleePar, possedeCarte } from './rpgCollection.js';
 import {
   RPG_DECK_TAILLE,
-  completerEnTerrains,
   compteExemplaires,
   courbeDeMana,
   nouvelIdDeckMaison,
@@ -69,7 +69,6 @@ const TYPES = [
   { id: 'hero', label: 'Héros', court: 'Héros' },
   { id: 'magie', label: 'Magies', court: 'Magies' },
   { id: 'arme', label: 'Armes', court: 'Armes' },
-  { id: 'terrain', label: 'Terrains', court: 'Terr.' },
 ];
 const RARETES = Object.entries(CARD_RARITIES).map(([id, info]) => ({
   id, label: info.label, court: info.label.charAt(0), color: info.color,
@@ -85,7 +84,6 @@ const GROUPES = [
   { id: 'creature', label: 'Créatures', kinds: ['creature', 'hero'] },
   { id: 'magie', label: 'Magies', kinds: ['magie'] },
   { id: 'arme', label: 'Armes', kinds: ['arme'] },
-  { id: 'terrain', label: 'Terrains', kinds: ['terrain'] },
 ];
 
 const typeLabel = (carte) => (carte.kind === 'terrain' ? 'Terrain'
@@ -199,8 +197,6 @@ export function RpgDeckAtelier({
   const validation = useMemo(() => rpgValiderDeckMaison(cardIds, collection), [cardIds, collection]);
   const courbe = useMemo(() => courbeDeMana(cardIds), [cardIds]);
   const couleursDeck = useMemo(() => repartitionCouleurs(cardIds), [cardIds]);
-  const pourcentageTerrains = cardIds.length ? Math.round((stats.terrains / cardIds.length) * 100) : 0;
-  const terrainsMinimum = Math.ceil(RPG_DECK_TAILLE * 0.4);
   const cartesEmbleme = useMemo(
     () => [...new Set(cardIds)].filter((id) => cardById(id)?.kind !== 'terrain'),
     [cardIds],
@@ -211,6 +207,7 @@ export function RpgDeckAtelier({
   const cartesFiltrees = useMemo(() => {
     const recherche = filtres.recherche.trim().toLowerCase();
     const retenues = RPG_DUEL_CARDS.filter((carte) => {
+      if (!carteJouableSansTerrain(carte)) return false;
       const couleurs = cardColors(carte);
       if (filtres.couleurs.size && !couleurs.some((couleur) => filtres.couleurs.has(couleur))) return false;
       if (filtres.hybride && couleurs.length < 2) return false;
@@ -270,19 +267,6 @@ export function RpgDeckAtelier({
       if (position < 0) return actuels;
       return [...actuels.slice(0, position), ...actuels.slice(position + 1)];
     });
-  };
-
-  const completerTerrains = () => {
-    const resultat = completerEnTerrains(cardIds, collection);
-    if (!resultat.ajoutes) {
-      surSfx('erreur');
-      setMessage(resultat.raison ?? 'Rien à compléter.');
-      return;
-    }
-    surSfx('apparition');
-    setConfirmerVidage(false);
-    setCardIds(resultat.cardIds);
-    setMessage(`${resultat.ajoutes} terrain${resultat.ajoutes > 1 ? 's' : ''} ajouté${resultat.ajoutes > 1 ? 's' : ''} au prorata des couleurs du deck.`);
   };
 
   const vider = () => {
@@ -610,10 +594,7 @@ export function RpgDeckAtelier({
               </span>
             </div>
             <dl className="rpg-atelier__chiffres">
-              <div className={stats.terrains >= terrainsMinimum ? 'is-ok' : ''}>
-                <dt>Terrains</dt>
-                <dd aria-live="polite">{stats.terrains} terrains <small>· {pourcentageTerrains} % (40 % min)</small></dd>
-              </div>
+              <div className="is-ok"><dt>Mana</dt><dd>Automatique <small>· 1 par tour, 10 max</small></dd></div>
               <div><dt>Créatures</dt><dd>{stats.creatures}</dd></div>
               <div><dt>Magies</dt><dd>{stats.magies}</dd></div>
               <div><dt>Armes</dt><dd>{stats.armes}</dd></div>
@@ -651,7 +632,7 @@ export function RpgDeckAtelier({
                       <Pip couleur={entree.couleur} />
                       <span>{COULEUR_LABELS[entree.couleur]}</span>
                       <b>{entree.cartes}</b>
-                      <small>{entree.pips} pip{entree.pips > 1 ? 's' : ''} · {entree.terrains} terrain{entree.terrains > 1 ? 's' : ''}</small>
+                      <small>{entree.pips} symbole{entree.pips > 1 ? 's' : ''} coloré{entree.pips > 1 ? 's' : ''}</small>
                     </li>
                   ))}
                 </ul>
@@ -660,15 +641,6 @@ export function RpgDeckAtelier({
           </div>
 
           <div className="rpg-atelier__outils">
-            <button
-              type="button"
-              className="rpg-atelier__outil"
-              disabled={cardIds.length >= RPG_DECK_TAILLE}
-              title="Remplit les emplacements libres avec des terrains, au prorata des couleurs"
-              onClick={completerTerrains}
-            >
-              ⛰ Compléter en terrains
-            </button>
             <button
               type="button"
               className={`rpg-atelier__outil rpg-atelier__outil--danger${confirmerVidage ? ' is-armed' : ''}`}

@@ -44,13 +44,24 @@ import {
   RPG_MODE_MANA_ESSAI,
 } from './rpgManaEssai.js';
 
-/* Tout le monde part à 25 PV : le joueur comme chaque sorcier adverse. La
+/* Tout le monde PART à 25 PV : le joueur comme chaque sorcier adverse. La
  * puissance d'un étage du mode Histoire ne gonfle plus les PV (bonus à 0) —
  * elle reste affichée sur la fiche d'étage comme indice de difficulté, la
- * vraie difficulté venant du deck et du profil d'IA du sorcier. */
+ * vraie difficulté venant du deck et du profil d'IA du sorcier.
+ *
+ * Mais 25 n'est plus un PLAFOND : c'est un point de départ. Tout gain de vie
+ * (soin, Tribut, transfert) qui porte la vie au-dessus du maximum courant
+ * fait monter ce maximum : la réserve de vie du sorcier s'élargit et le
+ * gain est gardé. `pvMax` reste ainsi « la plus haute vie tenue » et l'écart
+ * `pvMax - pv` reste la santé manquante.
+ *
+ * `RPG_PV_PLAFOND` est la soupape de réglage : `null` = aucune limite (la
+ * réserve grossit sans borne), un nombre = la vie ne peut jamais dépasser
+ * ce plafond (40, 50… pour re-barrer le jeu sans toucher au moteur). */
 export const RPG_PV_JOUEUR = 25;
 export const RPG_PV_SORCIER_BASE = 25;
 export const RPG_PV_SORCIER_PAR_PUISSANCE = 0;
+export const RPG_PV_PLAFOND = null;
 export const RPG_MAIN_DEPART = 5;
 export const RPG_COULEURS = RPG_ELEMENTS;
 
@@ -164,10 +175,11 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
   const duel = {
     ...(essaiMana ? { modeMana: RPG_MODE_MANA_ESSAI, manaEssaiDemarre: false } : {}),
     tour: 'joueur',
-    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), ...(essaiMana ? etatManaEssai(identiteJoueur) : {}), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck, rng), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
+    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, degatsRecus: 0, mana: manaVide(), ...(essaiMana ? etatManaEssai(identiteJoueur) : {}), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck, rng), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
     sorcier: {
       pv: rpgSorcierPv(sorcierPuissance),
       pvMax: rpgSorcierPv(sorcierPuissance),
+      degatsRecus: 0,
       puissance: sorcierPuissance,
       ia: sorcierIA,
       mana: manaVide(),
@@ -262,11 +274,11 @@ export function rpgConsommerPresentations(duel) {
 }
 
 // Les soins, eux aussi hors de l'état sauvegardé : chaque gain de vie RÉEL —
-// borné au maximum, donc jamais nul — y laisse `{ cote, entityId, montant }`,
-// `entityId` nul quand c'est le sorcier lui-même qui regagne des PV. La page
-// en tire l'éclat vert et le son du soin, quelle que soit la source : magie,
-// arrivée, destruction, arme, Tribut ou transfert. Le journal observe sans
-// jamais rien décider : aucune règle ne le lit.
+// donc jamais nul — y laisse `{ cote, entityId, montant }`, `entityId` nul
+// quand c'est le sorcier lui-même qui regagne des PV. La page en tire l'éclat
+// vert et le son du soin, quelle que soit la source : magie, arrivée,
+// destruction, arme, Tribut ou transfert. Le journal observe sans jamais rien
+// décider : aucune règle ne le lit.
 const soinsParDuel = new WeakMap();
 function journaliserSoin(duel, cote, montant, entityId = null) {
   if (!(montant > 0)) return;
@@ -280,6 +292,30 @@ export function rpgConsommerSoins(duel) {
   const journal = soinsParDuel.get(duel) ?? [];
   soinsParDuel.delete(duel);
   return journal;
+}
+
+/**
+ * Un gain de vie sur le sorcier (soin, Tribut, transfert) : la vie monte
+ * TOUJOURS de la totalité du montant — 25 n'est plus un plafond — et le
+ * maximum suit : la réserve gagnée au-delà de la vie la plus haute jamais
+ * tenue est conservée (`pvMax` = la plus haute vie tenue, `pvMax - pv` = la
+ * santé manquante). `RPG_PV_PLAFOND`, s'il est réglé, borne la réserve.
+ * Renvoie le gain réellement appliqué (zéro si rien n'a été donné).
+ */
+export function rpgGagnerVie(duel, cote, montant) {
+  const camp = duel?.[cote];
+  if (!camp) return 0;
+  const n = Math.max(0, Number(montant) || 0);
+  if (!n) return 0;
+  const avant = camp.pv;
+  camp.pv += n;
+  const plafond = RPG_PV_PLAFOND ?? Infinity;
+  const max = Math.min(plafond, Math.max(camp.pvMax ?? camp.pv, camp.pv));
+  camp.pvMax = max;
+  if (camp.pv > max) camp.pv = max;   // la soupape de plafond rogne l'excédent
+  const gagne = camp.pv - avant;
+  journaliserSoin(duel, cote, gagne);
+  return gagne;
 }
 function presenterEffet(duel, cote, carteId) {
   if (duelCardById(carteId)?.kind === 'creature') {
@@ -793,6 +829,10 @@ function rpgInfligerSorcier(duel, cote, amount) {
   camp.bouclier = Math.max(0, (camp.bouclier ?? 0) - absorbes);
   const recus = degats - absorbes;
   camp.pv -= recus;
+  // Compteur des dégâts RÉELS encaissés : la vie perdue, bouclier dévoré
+  // mis à part. Il ne dépend plus de l'écart au maximum — la vie peut
+  // dépasser 25 et le maximum suit, l'écart ne dirait plus rien.
+  camp.degatsRecus = (camp.degatsRecus ?? 0) + recus;
   return { recus, absorbes };
 }
 
@@ -1420,19 +1460,19 @@ function declencherTributs(duel, cote, bilans) {
 
 /**
  * Le cœur pesé : le camp cible PERD `montant` PV (jamais des « dégâts » —
- * règle de direction §11), le camp source les GAGNE, borné au maximum de PV.
- * La perte peut éteindre un sorcier : `rpgVainqueur` lit les PV comme après
- * le combat.
+ * règle de direction §11), le camp source les GAGNE en entier : la vie peut
+ * dépasser 25, le maximum suit le gain (`rpgGagnerVie`). La perte peut
+ * éteindre un sorcier : `rpgVainqueur` lit les PV comme après le combat.
  */
 function transfertVie(duel, coteSource, montant) {
   const n = Math.max(0, Number(montant) || 0);
   if (!n) return { perdu: 0, gagne: 0 };
   const perdant = duel[autre(coteSource)];
-  const gagnant = duel[coteSource];
   perdant.pv -= n;
-  const gagne = Math.min(n, Math.max(0, (gagnant.pvMax ?? gagnant.pv) - gagnant.pv));
-  gagnant.pv += gagne;
-  journaliserSoin(duel, coteSource, gagne);
+  // La vie perdue par le cœur pesé est un dégât infligé : elle compte pour
+  // la quête « le sorcier saigne ».
+  perdant.degatsRecus = (perdant.degatsRecus ?? 0) + n;
+  const gagne = rpgGagnerVie(duel, coteSource, n);
   return { perdu: n, gagne };
 }
 
@@ -1658,9 +1698,9 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       return;
     }
     case 'soin': {
-      const pvAvant = duel[cote].pv;
-      duel[cote].pv = Math.min(duel[cote].pvMax, duel[cote].pv + (effet.amount ?? 0));
-      journaliserSoin(duel, cote, duel[cote].pv - pvAvant);
+      // La vie monte de la totalité du soin : elle peut dépasser 25, et le
+      // maximum suit (la réserve de vie s'élargit).
+      rpgGagnerVie(duel, cote, effet.amount ?? 0);
       return;
     }
     case 'soin-creatures': {

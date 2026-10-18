@@ -37,7 +37,7 @@
  * échantillonne dix mille ouvertures semées pour vérifier les taux.
  */
 
-import { RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardColors, cardRarityInfo } from './rpgCards.js';
+import { carteJouableSansTerrain, RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardColors, cardRarityInfo } from './rpgCards.js';
 import { COLLECTION_DEPART, RPG_REVELATIONS_PAR_ETAGE, cartesReveleesParEtage, collectionJoueur } from './rpgCollection.js';
 import { RPG_STORY_TOURS, etageHistoireParId, tousLesEtages } from './rpgStoryTours.js';
 import {
@@ -162,7 +162,7 @@ export function carteAuVivier(cardId, progression) {
  */
 export function cartesOuvertes(progression) {
   return RPG_DUEL_CARDS
-    .filter((carte) => !DEBUT.has(carte.id) && etageOuvre(carte.id, progression))
+    .filter((carte) => carteJouableSansTerrain(carte) && !DEBUT.has(carte.id) && etageOuvre(carte.id, progression))
     .map((carte) => carte.id);
 }
 
@@ -216,6 +216,7 @@ export function vivierRayon(rayonId, progression) {
   const ouvertes = cartesOuvertes(progression);
   const ids = new Set();
   for (const carte of RPG_DUEL_CARDS) {
+    if (!carteJouableSansTerrain(carte)) continue;
     if (!cardColors(carte).some((couleur) => autorisees.has(couleur))) continue;
     if (DEBUT.has(carte.id) || ouvertes.includes(carte.id)) ids.add(carte.id);
   }
