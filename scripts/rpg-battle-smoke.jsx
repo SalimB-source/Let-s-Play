@@ -1812,6 +1812,27 @@ export async function checkRpgBattle(assert) {
     'la créature posée pendant le tour du sorcier était bien là, à brûler');
   assert.equal(ennemisEnJeu().length, 0,
     'elle brûle la créature que le sorcier avait posée pendant son tour');
+  // La vague qui retombe réaffiche la carte en preview, comme au premier
+  // lancer : le sort se reconnaît à sa deuxième apparition, et le bandeau
+  // nomme la vague au lieu d'une magie qui partirait pour la première fois.
+  const apercuVague = [...nuageContainer.querySelectorAll('.rpg-hover-card-preview.is-spell-preview')]
+    .find((element) => (element.getAttribute('aria-label') ?? '').includes('Nuage de cendres'));
+  assert.ok(apercuVague, 'la carte du sort se réaffiche en preview pour sa seconde vague');
+  const bandeauVague = nuageContainer.querySelector('.rpg-spell-played--vague');
+  assert.ok(bandeauVague, 'le bandeau de la vague accompagne la preview');
+  assert.match(bandeauVague.querySelector('.rpg-spell-played__eyebrow')?.textContent ?? '', /SECONDE VAGUE/u,
+    'le bandeau nomme la vague au lieu d’une magie jouée');
+  assert.match(bandeauVague.querySelector('strong')?.textContent ?? '', /Nuage de cendres/u,
+    'le bandeau nomme la carte de la vague');
+  assert.match(bandeauVague.querySelector('.rpg-spell-played__target b')?.textContent ?? '',
+    /Toutes les créatures adverses/u, 'la vague vise la table adverse');
+  await act(async () => { await wait(1900); });
+  assert.equal([...nuageContainer.querySelectorAll('.rpg-hover-card-preview.is-spell-preview')]
+    .find((element) => (element.getAttribute('aria-label') ?? '').includes('Nuage de cendres')) ?? null, null,
+    'l’aperçu de la vague s’éteint après son battement, comme celui du premier lancer');
+  await act(async () => { await wait(1800); });
+  assert.equal(nuageContainer.querySelector('.rpg-spell-played--vague'), null,
+    'le bandeau de la vague s’éteint lui aussi');
   await act(async () => { nuageRoot.unmount(); });
   nuageContainer.remove();
 }

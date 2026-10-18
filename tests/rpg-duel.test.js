@@ -1843,6 +1843,27 @@ test('un écho de l’IA retombe après le tour du joueur, sur la table telle qu
   assert.deepEqual(duel.joueur.degatsEchos, [], 'la promesse est soldée');
 });
 
+test('la promesse d’écho garde sa référence tant qu’elle attend : la page distingue la vague venue d’écho', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'nuage-de-cendres');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'nuage-de-cendres').ok, true);
+  const promesse = duel.sorcier.degatsEchos[0];
+
+  // Le tour du joueur se ferme : la promesse est reportée, et le moteur la
+  // conserve sans la réécrire — même référence dans le registre. C’est ce qui
+  // permet à l’interface de distinguer « la vague attend encore » de « la
+  // vague vient d’écho » (elle a quitté le registre).
+  rpgFinDeTour(duel);
+  assert.equal(duel.sorcier.degatsEchos[0], promesse,
+    'la promesse reportée n’est pas réécrite : même référence au registre');
+
+  // L'ouverture du tour suivant du lanceur : la vague retombe, la promesse
+  // disparaît du registre — c'est elle que la page réaffiche en preview.
+  rpgFinDeTour(duel);
+  assert.deepEqual(duel.sorcier.degatsEchos, [], 'la vague venue d’écho ne laisse aucune promesse au registre');
+});
+
 test('les retouches du catalogue : Rapport du greffier à 3 manas, Déflection renommée', () => {
   assert.equal(cardById('rapport-du-greffier').cost, 3, 'le Rapport se paie trois manas');
   assert.deepEqual(cardById('rapport-du-greffier').effet, { type: 'pioche', amount: 2 },
