@@ -137,4 +137,11 @@ assert.match(styles, /\.rpg-card\.is-sacrifice-target\s*\{[^}]*animation:\s*rpg-
 // Main de départ de trois cartes et défausse de fin de tour au-delà de cinq.
 assert.match(page, /rpgPreparerDefausseFinDeTour\(duel, 'joueur'\)/,
   'la fin du tour ouvre la défausse obligatoire au-delà de cinq cartes');
+// Icônes d'effets en colonne à droite sur la table comme dans la main, dans tous les modes.
+assert.match(page, /iconesEffets = true/,
+  'les icônes d’effets sur la table sont activées par défaut dans tous les modes');
+assert.match(page, /<IconesCarte carte=\{carte\} className="rpg-card-icones--colonne rpg-card-icones--main" \/>/,
+  'les cartes en main affichent aussi leurs icônes d’effets en colonne à droite sous le coût');
+assert.match(styles, /\.rpg-battle \.rpg-hand__card \.rpg-card-icones\.rpg-card-icones--colonne\s*\{[^}]*top:\s*calc\(5% \+ var\(--rpg-card-marker-size, 28px\) \+ 4px\);[^}]*right:\s*6%;[^}]*flex-direction:\s*column;/s,
+  'dans la main, la colonne d’icônes d’effets se place à droite juste sous le disque de coût');
 console.log('Banc d’essai mana : interface, séquence du mulligan et isolation économique vérifiées.');

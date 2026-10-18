@@ -136,15 +136,21 @@ export async function checkManaEssaiUi(assert) {
     // le sorcier n'a rien à annoncer avec son unique mana, et le second mana
     // (Sable) laisse le Braise du tour 1 payer la créature.
     assert.equal(q('.rpg-hand__card[data-card-id="ashigaru-des-braises"]'), null, 'pas d’Ashigaru dans la main de trois cartes');
+    assert.ok(q('.rpg-hand__card[data-card-id="chien-du-guet"] .rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone[data-effet="butin"]'),
+      'les cartes en main affichent leurs icônes d’effets en colonne à droite sous le coût');
     await click(q('.rpg-btn--endturn'));
-    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 1600)); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 2200)); });
     assert.equal(qa('.rpg-flux-choix__option').length, 2, 'le tour 2 rouvre le choix du nouveau mana');
     await click(q('.rpg-flux-choix__option--sable'));
     const ashigaru = q('.rpg-hand__card[data-card-id="ashigaru-des-braises"]');
     assert.ok(ashigaru, 'la pioche du tour 2 a apporté la créature à 1 Braise');
+    assert.ok(ashigaru.querySelector('.rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone[data-effet="honneur"]'),
+      'l’Ashigaru en main porte son badge Honneur dans la colonne sous le coût');
     assert.equal(ashigaru.dataset.jouable, 'true', 'le mana Braise peut la payer');
     await click(ashigaru);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 850)); });
+    assert.ok(q('.card-row--equipe .rpg-card[data-card-id="ashigaru-des-braises"] .rpg-card-icones--colonne .rpg-card-icone[data-effet="honneur"]'),
+      'une fois posé, l’Ashigaru garde son badge Honneur en colonne sur la table');
     assert.equal(q('.rpg-flux-track--joueur')?.dataset.manaDisponible, '1', 'la carte dépense un des deux manas');
     assert.equal(q('.rpg-flux-track--joueur')?.dataset.manaCapacite, '2', 'les deux sources permanentes restent acquises');
     const orbeDepensee = q('.rpg-flux-track--joueur .rpg-flux-track__slot:first-child');
