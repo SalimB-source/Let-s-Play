@@ -78,7 +78,7 @@ const entries = {
     fallbackImage: 'https://freebox.cdn.scw.iliad.fr/large_protection_1080_3_cab7be9460.png',
     imageAlt: 'Visuel officiel Free mVPN accompagnant les nouveautés de filtrage, de pays et de widget',
     imageCredit: 'VISUEL OFFICIEL · FREE / ILIAD',
-    cover: 'FREE MVPN', title: 'FREE MVPN AJOUTE', accent: 'TROIS OPTIONS.',
+    cover: 'FREE MVPN', title: 'FREE MVPN', accent: 'GAGNE 3 OPTIONS.',
     dek: 'Free ajoute des niveaux de filtrage, le choix entre huit pays et un widget à son VPN mobile. Les restrictions au réseau Free en France métropolitaine restent importantes.',
     lead: 'Free fait évoluer mVPN ce jeudi 15 octobre. Selon le communiqué relayé par le Journal du Geek, trois nouveautés deviennent accessibles sur iOS et Android aux abonnés Forfait Free 5G+, Free Max et Série Free.',
     intro: 'Le service reste intégré au réseau mobile de l’opérateur. La mise à jour porte sur les réglages de protection, la destination de connexion et un accès plus rapide depuis l’écran d’accueil.',

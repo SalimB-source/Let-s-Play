@@ -5,13 +5,19 @@ import { baseUrl as base } from '../data';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
 // Les actus du jour générées par le robot rejoignent l’index de recherche.
 import { autoSearchEntries } from '../lib/autoNews';
-import { dailyNewsListing } from '../news/daily/2026-10-15';
+import { dailyNewsListing } from '../news/daily/2026-10-18';
 import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
 import { dailyNewsListing as dailyNewsListing20261014 } from '../news/daily/2026-10-14';
+import { dailyNewsListing as dailyNewsListing20261015 } from '../news/daily/2026-10-15';
+import { dailyNewsListing as dailyNewsListing20261016 } from '../news/daily/2026-10-16';
+import { dailyNewsListing as dailyNewsListing20261017 } from '../news/daily/2026-10-17';
 
 const news = [
   // Édition du 14.10.2026 et archives du 11.10.2026 : les mêmes titres et miniatures que les articles.
   ...dailyNewsListing.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
+  ...dailyNewsListing20261017.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
+  ...dailyNewsListing20261016.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
+  ...dailyNewsListing20261015.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
   ...dailyNewsListing20261014.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
   ...dailyNewsListing20261011.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
   // Actus du mercredi 07.10.2026 — gaming, cinéma & séries, tech.

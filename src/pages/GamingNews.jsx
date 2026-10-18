@@ -11,9 +11,12 @@ import { getArticleViews, normalizeArticleId, formatViews } from '../lib/article
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-15';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-18';
 import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
 import { dailyNewsListing as dailyNewsListing20261014 } from '../news/daily/2026-10-14';
+import { dailyNewsListing as dailyNewsListing20261015 } from '../news/daily/2026-10-15';
+import { dailyNewsListing as dailyNewsListing20261016 } from '../news/daily/2026-10-16';
+import { dailyNewsListing as dailyNewsListing20261017 } from '../news/daily/2026-10-17';
 
 // Visuels des cartes : les URLs absolues (images officielles hotlinkées) passent
 // telles quelles, les fichiers locaux du site prennent le préfixe du baseUrl ;
@@ -68,6 +71,9 @@ const FEATURED_COPY = {
 export const latestGamingStories = [
   // La nouvelle édition ouvre la liste ; les articles précédents sont conservés.
   ...dailyNewsListing.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
+  ...dailyNewsListing20261017.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
+  ...dailyNewsListing20261016.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
+  ...dailyNewsListing20261015.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
   ...dailyNewsListing20261014.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
   ...dailyNewsListing20261011.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
   { to: '/news/gta-6-cloud-pc-dementi-xbox', image: 'gta-6-cloud-pc-dementi-news.jpg', fallbackImage: 'gta-6-cloud-pc-dementi-news.svg', alt: 'GTA VI — plan officiel de Vice City sous les néons, Rockstar Games relayé par Gamekult', badge: 'XBOX · GTA 6', kicker: '07.10.2026 · GAMEKULT', title: 'GTA 6 SUR PC : LE DÉMENTI TOMBE.', excerpt: 'Pendant quatre heures cette nuit, l’espoir d’un GTA VI jouable sur PC via Xbox Cloud Gaming a enflammé les réseaux. Matthew Ball, Chief Strategy Officer de Xbox, a coupé court aux rumeurs : le jeu ne sera pas streamé sur PC et reste strictement sur consoles au lancement.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },

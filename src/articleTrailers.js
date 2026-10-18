@@ -73,6 +73,109 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // ---- Édition du dimanche 18.10.2026 --------------------------------------
+  // Titres et chaînes contrôlés sur les pages YouTube publiques le 18.10.2026.
+  // Gaming : la présentation officielle d'Ocarina of Time sur Switch 2 est la
+  // seule vidéo publiée par Nintendo sur le remake — aucune vidéo spécifique
+  // aux options d'affichage n'existe à cette date, et la note le dit.
+  // Cinéma : la nouvelle bande-annonce de Ramayana est celle du distributeur
+  // mondial, Sony Pictures Entertainment ; la première bande-annonce sert de
+  // contexte dans le sélecteur.
+  // Tech : aucune vidéo officielle (ANSSI, Cnaf ou organisations visées) ne
+  // documente la vague d'incidents du 17 octobre ; l'absence est explicitée.
+  'zelda-ocarina-of-time-switch-2-affichages-hud': {
+    label: 'ZELDA OCARINA OF TIME', meta: 'NINTENDO · SWITCH 2 · 5 NOVEMBRE 2026',
+    items: [
+      { id: '8v8eDMh1o3g', kind: 'trailer', title: 'The Legend of Zelda: Ocarina of Time – Overview Trailer – Nintendo Switch 2', channel: 'Nintendo of America', verified: '18.10.2026', note: 'Présentation officielle du remake publiée le 14 octobre 2026 : c’est la seule vidéo diffusée par Nintendo sur le jeu à la date du 18 octobre, aucune vidéo dédiée aux modes d’affichage Standard, Pro et Master n’ayant été publiée. Elle sert d’illustration à cet article.' },
+    ],
+    credit: 'Vidéo officielle : chaîne principale Nintendo of America, sur YouTube. The Legend of Zelda: Ocarina of Time sort le 5 novembre 2026, exclusivement sur Nintendo Switch 2.',
+  },
+  'peak-console-edition-crossplay-22-octobre': {
+    label: 'PEAK: CONSOLE EDITION', meta: 'AGGRO CRAB · LANDFALL · 22 OCTOBRE 2026',
+    items: [
+      { id: 'OsO0Dpt9OPs', kind: 'trailer', title: 'PEAK: Console Edition | Coming October 22nd', channel: 'Aggro Crab', verified: '18.10.2026', note: 'Annonce officielle publiée le 15 octobre 2026 : sortie le 22 octobre sur PlayStation 5, Xbox Series X|S et Nintendo Switch 2, avec crossplay, toutes les mises à jour de contenu et une édition physique en précommande.' },
+    ],
+    credit: 'Vidéo officielle : chaîne Aggro Crab (co-développeur de PEAK avec Landfall), sur YouTube.',
+  },
+  'cinema/ramayana-rise-of-a-legend-nouvelle-bande-annonce': {
+    label: 'RAMAYANA: RISE OF A LEGEND', meta: 'SONY PICTURES · 5 NOVEMBRE 2026',
+    items: [
+      { id: 'AYkPRN874m8', kind: 'trailer', title: 'RAMAYANA: RISE OF A LEGEND - NEW TRAILER', channel: 'Sony Pictures Entertainment', verified: '18.10.2026', note: 'Nouvelle bande-annonce publiée le 15 octobre 2026 : sortie mondiale le 5 novembre en salles, IMAX et formats premium, avec Ranbir Kapoor, Yash et Sai Pallavi.' },
+      { id: '1zip1rNaNYs', kind: 'trailer', title: 'RAMAYANA: RISE OF A LEGEND - Official Trailer', channel: 'Sony Pictures Entertainment', verified: '18.10.2026', note: 'Première bande-annonce officielle du film, publiée deux mois plus tôt par le même distributeur.' },
+      { id: 'djmh9ca-Ibg', kind: 'trailer', title: 'RAMAYANA: RISE OF A LEGEND - Offizieller Trailer (Deutsch)', channel: 'Sony Pictures Germany', verified: '18.10.2026', note: 'Version allemande de la bande-annonce, en anglais, publiée par Sony Pictures Germany.' },
+    ],
+    credit: 'Bandes-annonces officielles : chaînes Sony Pictures Entertainment et Sony Pictures Germany, sur YouTube. Film réalisé par Nitesh Tiwari, produit par Namit Malhotra (DNEG), musique de Hans Zimmer et A.R. Rahman.',
+  },
+  'tech/france-vague-cyberattaques-17-octobre': {
+    label: 'CYBERATTAQUES EN FRANCE', items: [],
+    pending: 'Aucune vidéo officielle consacrée à ces incidents n’a été publiée par l’ANSSI, la Cnaf ou les organisations visées dans les sources consultées (Journal du Coin, FrenchBreaches, Cyberattaque.org et Clubic, les 17 et 18 octobre 2026). Aucune analyse de youtubeur n’est présentée comme officielle : le lecteur reste vide et l’absence est dite.',
+  },
+
+  // ---- Édition du samedi 17.10.2026 ----------------------------------------
+  // Gaming : les deux vidéos de Total War: SHOGUN 2 - Complete Edition sont
+  // celles de la chaîne officielle Total War ; elles documentent ce que le
+  // studio présentait avant le retrait de la vente. Les « ensembles de succès »
+  // de Steam n'ont fait l'objet d'aucune vidéo officielle de Valve.
+  // Cinéma : la bande-annonce de la saison 2 de Daredevil: Born Again, publiée
+  // par Marvel Entertainment, illustre un article portant sur la saison 3 — la
+  // note le dit, aucune vidéo de la saison 3 n'existant à cette date.
+  'steam-ensembles-de-succes-beta': {
+    label: 'STEAM ACHIEVEMENT SETS', items: [],
+    pending: 'Aucune vidéo officielle consacrée aux ensembles de succès n’a été publiée par Valve dans les sources consultées (annonce officielle « Steam Achievement Sets Now in Beta » du 15 octobre 2026, notes de version du client Steam, documentation Steamworks, Engadget, The Verge et gaming.net). Les vidéos de youtubeurs qui présentent la bêta ne sont pas officielles : le lecteur reste vide et l’absence est dite.',
+  },
+  'total-war-shogun-2-complete-edition-retiree': {
+    label: 'TOTAL WAR: SHOGUN 2', meta: 'SEGA · CREATIVE ASSEMBLY / MATABOO',
+    items: [
+      { id: '7GhrQYfOPPw', kind: 'trailer', title: 'Total War: SHOGUN 2 - Complete Edition - Launch Trailer', channel: 'Total War', verified: '18.10.2026', note: 'Bande-annonce de lancement publiée le 13 octobre 2026, quatre jours avant le retrait de cette édition de la vente.' },
+      { id: 'IC72MSW09qI', kind: 'trailer', title: 'Total War: SHOGUN 2 - Complete Edition - Announce Trailer', channel: 'Total War', verified: '18.10.2026', note: 'Bande-annonce d’annonce de la Complete Edition, développée par The Creative Assembly avec le studio MATABOO.' },
+      { id: 'aV87N57Ud58', kind: 'replay', title: 'Total War: SHOGUN 2 - Complete Edition - Game Overview', channel: 'Total War', verified: '18.10.2026', note: 'Présentation détaillée des changements annoncés (interface modernisée, cinématiques retravaillées, localisation), soit les éléments les plus critiqués par les joueurs.' },
+    ],
+    credit: 'Vidéos officielles : chaîne principale Total War (SEGA / The Creative Assembly), sur YouTube.',
+  },
+  'cinema/daredevil-born-again-saison-3-finale': {
+    label: 'DAREDEVIL: BORN AGAIN', meta: 'MARVEL TELEVISION · DISNEY+',
+    items: [
+      { id: 'U1MqJBVn8Rk', kind: 'trailer', title: 'Daredevil: Born Again | Season 2 Trailer | Marvel Television | Disney+', channel: 'Marvel Entertainment', verified: '18.10.2026', note: 'Bande-annonce de la saison 2, disponible sur Disney+ depuis le 24 mars 2026. Aucune vidéo de la saison 3 n’ayant été publiée, elle illustre les déclarations de Brad Winderbaum sur la fin de la série.' },
+    ],
+    credit: 'Bande-annonce officielle : chaînes Marvel Entertainment et Disney Plus, sur YouTube.',
+  },
+  'tech/google-ai-overviews-liens-mis-en-avant': {
+    label: 'GOOGLE AI OVERVIEWS', items: [],
+    pending: 'Aucune vidéo officielle de Google ne présente spécifiquement ces changements dans les sources consultées (annonce de Hema Budaraju sur le blog The Keyword du 15 octobre 2026, messages de Nick Fox sur X, dépêche de l’AFP, analyses de Stratégies et Libération). Les analyses de référenceurs ne sont pas officielles : le lecteur reste vide et l’absence est dite.',
+  },
+
+  // ---- Édition du vendredi 16.10.2026 --------------------------------------
+  // Gaming : la bande-annonce de la campagne de Modern Warfare 4 est celle de
+  // la chaîne officielle Call of Duty ; le trailer de lancement de Beast of
+  // Reincarnation (4 août 2026) sert d’illustration à un article portant sur la
+  // fin du cycle de mises à jour — la note le dit.
+  // Cinéma : HBO n’a publié aucune image ni vidéo de la saison 5 de True
+  // Detective, encore au stade de l’annonce de distribution.
+  // Tech : Meta n’a publié ni vidéo ni communiqué visuel sur l’incident des
+  // Ray-Ban Meta.
+  'modern-warfare-4-campagne-acces-anticipe': {
+    label: 'CALL OF DUTY: MODERN WARFARE 4', meta: 'ACTIVISION · SORTIE LE 23 OCTOBRE 2026',
+    items: [
+      { id: 'yLFRQaQT0qM', kind: 'trailer', title: 'Call of Duty: Modern Warfare 4 - Official Campaign Trailer', channel: 'Call of Duty', verified: '18.10.2026', note: 'Bande-annonce officielle de la campagne publiée le 17 septembre 2026 : « De la Corée aux confins du globe, la Task Force 141 affronte une guerre sans frontières. »' },
+    ],
+    credit: 'Bande-annonce officielle : chaîne principale Call of Duty (Activision), sur YouTube.',
+  },
+  'beast-of-reincarnation-fin-cycle-mises-a-jour': {
+    label: 'BEAST OF REINCARNATION', meta: 'GAME FREAK · PS5 / XBOX / PC',
+    items: [
+      { id: 'YBAuVSnS0ls', kind: 'trailer', title: 'Beast of Reincarnation - Launch Trailer | PS5 Games', channel: 'PlayStation', verified: '18.10.2026', note: 'Bande-annonce de lancement publiée le 4 août 2026. Game Freak n’ayant diffusé aucune vidéo pour annoncer la fin de la phase de mises à jour rapprochées, elle sert d’illustration à cet article.' },
+    ],
+    credit: 'Bande-annonce officielle : chaîne principale PlayStation (Sony Interactive Entertainment), sur YouTube. Jeu développé par GAME FREAK inc.',
+  },
+  'cinema/true-detective-saison-5-cage-banderas': {
+    label: 'TRUE DETECTIVE SAISON 5', items: [],
+    pending: 'HBO n’a publié aucune bande-annonce, aucun teaser ni aucune image officielle de la saison 5 de True Detective dans les sources consultées (annonce de distribution du 16 octobre 2026 relayée par The Playlist et la presse spécialisée) : la saison n’entrera en tournage qu’en 2027. Les bandes-annonces des saisons précédentes ne sont pas intégrées, l’article portant sur une distribution et non sur une œuvre déjà filmée.',
+  },
+  'tech/ray-ban-meta-enregistrements-sans-consentement': {
+    label: 'RAY-BAN META', items: [],
+    pending: 'Meta n’a publié aucune vidéo ni démonstration officielle du correctif dans les sources consultées (enquête d’Ars Technica du 16 octobre 2026, signalement d’origine sur Reddit, reprises de TechRadar France et Frandroid). Les présentations produit des Ray-Ban Meta ne documentent pas cet incident : le lecteur reste vide et l’absence est dite.',
+  },
+
   // Édition du 15.10.2026 : chaînes et miniatures contrôlées sur les pages YouTube.
   // GTA VI : la bande-annonce de lancement publiée le jour même par Rockstar
   // Games. Titre et chaîne vérifiés via oEmbed le 15.10.2026 (« Grand Theft
