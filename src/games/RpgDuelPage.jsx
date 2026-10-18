@@ -8076,13 +8076,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onPointerLeave={sortirApercuSurvol}
           />
         )}
-        {apercuMagie && <div className="rpg-preview-backdrop rpg-preview-backdrop--magie" aria-hidden="true" />}
         {apercuMagie && (
-          <HoverCardPreview
-            carte={cardById(apercuMagie)}
-            style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
-            spellPlayed
-          />
+          <div className="rpg-spell-preview-layer">
+            <div className="rpg-preview-backdrop rpg-preview-backdrop--magie" aria-hidden="true" />
+            <HoverCardPreview
+              carte={cardById(apercuMagie)}
+              style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+              spellPlayed
+            />
+          </div>
         )}
 
         {confirmationSort && (

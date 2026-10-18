@@ -804,6 +804,11 @@ export async function checkRpgBattle(assert) {
   assert.ok(apercuMagieJouee
     && apercuMagieJouee.querySelector('.rpg-hover-card-preview__rules')?.textContent.includes('3 prochains dégâts'),
   'jouer une magie fait apparaître son aperçu concis avec son effet principal');
+  const coucheApercuMagie = apercuMagieJouee?.parentElement;
+  assert.ok(coucheApercuMagie?.classList.contains('rpg-spell-preview-layer'),
+    'le voile et la carte sont réunis dans leur propre couche d’empilement');
+  assert.equal(coucheApercuMagie?.querySelector('.rpg-preview-backdrop')?.nextElementSibling, apercuMagieJouee,
+    'la carte est une couche sœur du voile, placée après lui dans le même contexte');
   assert.match(container.querySelector('.rpg-spell-played__target')?.textContent ?? '', new RegExp(nomCibleParade),
     'l’annonce du sort nomme précisément la carte visée');
   assert.ok(cibleParade.classList.contains('is-spell-target'), 'la carte visée est mise en évidence');

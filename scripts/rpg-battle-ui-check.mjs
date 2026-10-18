@@ -5,6 +5,9 @@ import { JSDOM } from 'jsdom';
 
 // Vérification d'interface du duel : rendu jsdom, aperçu instantané au survol,
 // aperçu au clic/sur magie, Rapidité, commandes, cadres par élément et bloqueurs.
+const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+assert.match(mobileCss, /@supports \(height:\s*100svh\)\s*\{\s*\.rpg-battle--touch\.is-immersive \.card-table\s*\{[^}]*--duel-card:\s*clamp\(48px, 17svh, 100px\);[^}]*--rpg-touch-hand:\s*clamp\(84px, 28svh, 146px\);/s,
+  'en plein écran mobile, la table et la main utilisent une hauteur stable, indépendante des barres du navigateur');
 const previousEnv = process.env.NODE_ENV;
 await build({
   logLevel: 'error',
@@ -33,7 +36,6 @@ try {
 }
 
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
-const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
 const guideCss = readFileSync(new URL('../src/games/rpg-card-guide.css', import.meta.url), 'utf8');
 const atelierCss = readFileSync(new URL('../src/games/rpg-deck-atelier.css', import.meta.url), 'utf8');
 const { RPG_PLATEAUX } = await import('../src/games/rpgPlateaux.js');
@@ -195,8 +197,6 @@ assert.match(regleApercuMagie[1].trim(), /^z-index:\s*\d+;?$/,
   'l’aperçu de la magie lancée ne déclare que son empilement : ni liseré, ni halo, ni ombre, ni animation propre');
 assert.doesNotMatch(battleCss, /rpg-spell-card-preview|\.is-spell-preview[^{]*\{[^}]*(?:border|outline|box-shadow|background|filter|animation|scale|opacity)[\w-]*\s*:/s,
   'aucune autre règle ne décore l’aperçu de la magie lancée (il garde l’animation d’entrée de l’aperçu rapide)');
-assert.match(battlePage, /\{apercuMagie && \(\s*<HoverCardPreview\s+carte=\{cardById\(apercuMagie\)\}\s+style=\{\{ left: '50%', top: '50%', transform: 'translate\(-50%, -50%\)' \}\}\s+spellPlayed\s*\/>/,
-  'l’aperçu de la magie lancée réutilise le composant de l’aperçu rapide, posé au centre, sans style de décor en ligne');
 assert.match(battleCss, /\.rpg-hover-card-preview__details\s*\{[^}]*background:\s*rgba\(5, 8, 11, \.8\);/s,
   'seul le fond de l’encadré des infos reste pour la lisibilité');
 assert.match(battlePage, /function placerApercuSurvol\(rectangle, panneau\) \{[\s\S]*?panneau\?\.getBoundingClientRect\?\.\(\)/,
@@ -1292,7 +1292,9 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \{[^}]*width:\s*var
 assert.match(mobileCss, /--terrain-inset:\s*clamp\(44px, 8vw, 160px\);/,
   'la marge qui tient les terrains hors du cadre illustré est conservée telle quelle');
 assert.match(mobileCss, /--duel-card:\s*clamp\(48px, 17dvh, 100px\);/,
-  'la taille des cartes ne bouge pas : des cartes plus grandes en montreraient moins');
+  'hors plein écran, les cartes gardent leur échelle fluide sans en montrer moins');
+assert.match(mobileCss, /@supports \(height:\s*100svh\)\s*\{\s*\.rpg-battle--touch\.is-immersive \.card-table\s*\{[^}]*--duel-card:\s*clamp\(48px, 17svh, 100px\);[^}]*--rpg-touch-hand:\s*clamp\(84px, 28svh, 146px\);/s,
+  'en plein écran mobile, la table et la main utilisent une hauteur stable, indépendante des barres du navigateur');
 assert.match(mobileCss, /--rpg-field-gap:\s*max\(8px, calc\(var\(--duel-card\) \* \.22\)\);/,
   'les gouttières des lignes de jeu sont resserrées pour montrer plus de cartes');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*padding:\s*4px max\(8px, calc\(var\(--duel-card\) \* \.12\)\); gap:\s*var\(--rpg-field-gap\); overflow:\s*visible;/s,
