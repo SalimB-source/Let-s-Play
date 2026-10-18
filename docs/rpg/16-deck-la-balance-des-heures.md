@@ -51,8 +51,10 @@ Règles et frontières :
   `rpgLancerAttaque` / `rpgAttaquerSorcier` disent qui a frappé le sorcier —
   `declencherTributs` s'y branche à côté de `declencherButins`. Toucher une
   créature ne déclenche rien, comme le Butin ;
-- **gain borné au maximum de PV** (contrat du soin : au-delà, le surplus
-  s'évapore) ; **la perte, elle, peut tuer** le sorcier adverse ;
+- **gain entier** : 25 PV n'est plus un plafond, le gain est toujours au
+  complet et le **maximum suit** — la réserve de vie du sorcier s'élargit
+  (au-delà, le surplus s'évapore) ; **la perte, elle, peut tuer** le sorcier
+  adverse ;
 - **jamais écrit en « dégâts »** : la carte dit « perd/gagne des PV », donc la
   règle de direction §11 est intacte — les dégâts nus restent la langue de la
   Braise ;
@@ -78,7 +80,8 @@ Butin.
 
 Au-delà du mot-clé, le deck vit d'une ressource que le mode essai rend
 précieuse : **les PV comme monnaie**. Quand le mana pousse tout seul (+1 par
-tour), la vie est la seule contrainte réelle qui reste (25 PV fixes).
+tour), la vie est la seule contrainte réelle qui reste (25 PV de départ, un
+maximum qui suit les soins).
 
 - Toute dépense s'écrit **« Payez N PV »**, porté par un coût supplémentaire
   générique `prixPv: N` (voir §8) ;
@@ -382,7 +385,8 @@ automatiquement.
   *nourrit* le deck au lieu de le punir — variante « contrat à chaque
   sacrifice » réservée à la phase 2 ;
 - paquet de 30 + fatigue (1, 2, 3… PV) : le compte des feuillets presse la
-  fatigue sans en être le plan — le plan reste le Tribut et le clock de 25 PV.
+  fatigue sans en être le plan — le plan reste le Tribut et le clock des
+  25 PV de départ.
 
 ## 8. Ce que le moteur doit ajouter
 
@@ -396,8 +400,8 @@ automatiquement.
 2. **Effets** (`appliquer`, `rpgDuel.js`) :
    - `transfert: { amount, cible: 'sorcier' }` — le camp cible **perd** `amount`
      PV (peut tuer : même vérification de victoire que le combat), le camp
-     source **gagne** `amount`, borné à `pvMax` ; mot « dégâts » jamais utilisé
-     au journal ;
+     source **gagne** `amount` en entier (la vie peut dépasser 25, le maximum
+     suit) ; mot « dégâts » jamais utilisé au journal ;
    - `defausse-adverse` — un seul exemplaire, **l'adversaire choisit** sa
      défausse : le joueur reçoit l'écran de choix (chemin
      `defausseEnAttente`, camp adverse), l'IA garde sa meilleure carte ;
@@ -482,7 +486,7 @@ npm run build
 
 Les tests à étendre : `tests/rpg-mana-essai.test.js` (deck présent, 30 cartes,
 validateur), `tests/rpg-frames.test.js` (31 clés de cadre), un test
-`tests/rpg-tenebres.test.js` pour le Tribut (déclenchement, plafond de PV,
+`tests/rpg-tenebres.test.js` pour le Tribut (déclenchement, gain au-delà de 25,
 arme qui donne le mot-clé) et les nouveaux effets
 (`transfert`, `defausse-adverse`, `defaussePaquet`, `prixPv`).
 

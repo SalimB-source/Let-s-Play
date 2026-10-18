@@ -8155,3 +8155,66 @@ Vérification ciblée :
 ```sh
 node --test tests/rpg-decks-sans-terrains.test.js tests/rpg-decks-puissance.test.js tests/rpg-deck-choice.test.js tests/rpg-mana-essai.test.js
 ```
+
+## Le Sablier : la vie dépasse 25 — la réserve s’ouvre
+
+Le Sablier se jouait sur un **clock de 25 PV** : le joueur comme le sorcier
+adverse démarraient à 25, et surtout **25 était un plafond**. Tous les gains
+de vie du jeu — les soins (`arrivee: { type: 'soin' }`, `effet: { type: 'soin' }`),
+le **Tribut** des Ténèbres, le cœur pesé du set, lescapacités d’arrivée —
+passaient par le même bornage : `pv = min(pvMax, pv + montant)`. Reprendre
+une blessure au-delà de 25 était impossible, et la réserve que le Tribut
+promettait ne pouvait jamais se composer.
+
+**25 n'est plus un plafond : c'est un point de départ.** Un gain de vie porte
+la vie **au complet** — au-dessus de 25 s’il le faut — et **le maximum suit** :
+`pvMax` devient « la plus haute vie tenue », l’écart `pvMax - pv` reste la
+santé manquante, et la réserve gagnée ne s’évapore plus. Un sorcier blessé à
+23 puis soigné de 5 ne revient pas à 25 : il monte à 28, et 28 devient sa
+nouvelle pleine vie. La règle tient pour les deux camps et pour toutes les
+voies de gain.
+
+La soupape de réglage est **`RPG_PV_PLAFOND`** (`rpgDuel.js`) : `null` =
+aucune limite (le comportement livré), un nombre = la vie ne dépasse jamais
+ce plafond (40, 50…) pour re-barrer le jeu sans toucher au moteur.
+
+Deux conséquences qu’il fallait treaties avec la règle, pas après :
+
+- **la quête « le sorcier saigne »** (40 dégâts infligés) ne peut plus se
+  contenter de l’écart au maximum — la vie pouvant dépasser 25, l’écart ne
+  dirait plus rien. Le moteur compte désormais les **dégâts réellement
+  encaissés** (`camp.degatsRecus`, posé par `rpgInfligerSorcier` et par le
+  cœur pesé) ; le Prix en PV et la fatigue du mode essai n’en sont pas, ce
+  n’est pas du dégât infligé à l’adversaire ;
+- **l’IA** ne change pas de tête : elle soigne quand elle est blessée (le
+  barème `min(montant, manquePv)` de `rpgAI.js` ne change pas), elle ne
+  construit pas de réserve à pleine vie. Le joueur, lui, peut ouvrir la sienne
+  — c’est une décision, pas un accident.
+
+Sur la table, la plaque du sorcier et la vôtre affichent le maximum **quand
+il existe** : « 30/34 » plutôt qu’un « 30 » nu, pour que la réserve se lise.
+
+### Où vit le code
+
+- `src/games/rpgDuel.js` — `RPG_PV_PLAFOND` (la soupape), `rpgGagnerVie()`
+  (le gain entier, le maximum qui suit, le journal de soin) ; `appliquer()`
+  (cas `soin`) et `transfertVie()` passent par là ; `rpgInfligerSorcier()`
+  compte les dégâts encaissés ; `rpgNouveauDuel()` ouvre `degatsRecus` ;
+- `src/games/RpgDuelPage.jsx` — le compteur de la quête « le sorcier saigne »
+  lit `sorcier.degatsRecus` ; les deux plaques montrent le maximum quand il
+  dépasse le départ ;
+- `src/games/rpg-battle.css` — `.rpg-wizard-plate__hp-max`, le maximum en
+  petit caractère à côté du chiffre ;
+- `tests/rpg-duel.test.js` — la vie au-dessus de 25 (Porteuse, Dame), la
+  réserve qui ne fond pas avec les dégâts, le Tribut qui fait passer le camp
+  au-dessus de 25, le compteur de dégâts ;
+- `tests/rpg-soins.test.js` — le journal de soin note le gain **réel** (4 et
+  non 3), et un soin à pleine vie fait bien monter la vie.
+
+### Vérifications
+
+```bash
+npm run check:rpg      # ✓ — 659 tests : règles du duel, IA, soins, quêtes
+npm run check:rpg-soins # ✓ — le gain de vie s’illumine et se fait entendre
+npm run build          # ✓ — le bundle se construit
+```

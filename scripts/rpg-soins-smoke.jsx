@@ -2,7 +2,8 @@
 // voit : la plaque du sorcier soigné s'illumine (halo, voile, motes), son
 // « +N » monte du chiffre des PV, les bords de la table verdissent et la zone
 // d'état le dit. Une créature soignée porte le même éclat, son « +N » au cœur
-// de la carte. Un soin lancé à pleine vie ne montre rien et reste muet.
+// de la carte. Un soin ne se plafonne plus à 25 : il monte toujours, et la
+// réserve de vie s'ouvre.
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage, { TableCard } from '../src/games/RpgDuelPage.jsx';
@@ -109,6 +110,8 @@ async function scenarioDuel(assert, sons) {
 
     // ── 0. Au départ, rien ne brille ─────────────────────────────────────────
     assert.equal(pvJoueur(), RPG_PV_JOUEUR, 'le joueur commence à pleine vie');
+    assert.equal(plaqueJoueur()?.querySelector('.rpg-wizard-plate__hp-max'), null,
+      'à 25 PV, la plaque n’affiche aucun maximum : il n’y a pas encore de réserve');
     assert.equal(container.querySelector('.is-healing, .rpg-soin, .rpg-soin-ecran'), null,
       'aucun éclat de soin sur une table neuve');
     assert.equal(zonesEtat().length, 1, 'la table porte une zone d’état (lecteurs d’écran) pour les soins');
@@ -125,19 +128,19 @@ async function scenarioDuel(assert, sons) {
     assert.equal(container.querySelector('.is-healing'), null, 'des dégâts ne passent jamais pour un soin');
     assert.ok(!sons.includes('soin_vie') && !sons.includes('soin_vie_adverse'), 'aucun son de soin avant le premier soin');
 
-    // ── 2. L'Eau de la source rend 3 PV (plafond 25) : on le voit, on l'entend
+    // ── 2. L'Eau de la source rend 4 PV — la vie passe au-dessus de 25 ──────
     await jouerUneMer();
     const eau = carteEnMain('Eau de la source');
     await attendre(() => estJouable(carteEnMain('Eau de la source')), 'l’Eau de la source devient jouable au tour du joueur');
     sons.length = 0;
     await glisserSurTable(eau);
     await attendre(() => plaqueJoueur()?.classList.contains('is-healing'), 'la plaque du joueur s’illumine quand ses PV remontent');
-    assert.equal(pvJoueur(), RPG_PV_JOUEUR, 'le soin plafonne au maximum de PV (22 + 4 → 25)');
+    assert.equal(pvJoueur(), RPG_PV_JOUEUR + 1, 'le soin n’est plus plafonné (22 + 4 → 26)');
     const plaque = plaqueJoueur();
     assert.match(plaque.className, /\bis-healing--[ab]\b/, 'la plaque porte la variante qui rejoue le battement du chiffre');
-    assert.equal(plaque.dataset.soin, '3', 'la plaque note le vrai gain (3), pas la valeur imprimée (4)');
-    assert.equal(plaque.querySelector('.rpg-wizard-plate__pv .rpg-soin-montant')?.textContent, '+3',
-      'le « +3 » monte du chiffre des PV');
+    assert.equal(plaque.dataset.soin, '4', 'la plaque note le vrai gain (4)');
+    assert.equal(plaque.querySelector('.rpg-wizard-plate__pv .rpg-soin-montant')?.textContent, '+4',
+      'le « +4 » monte du chiffre des PV');
     const eclat = plaque.querySelector(':scope > .rpg-soin.rpg-soin--plaque');
     assert.ok(eclat, 'l’éclat du soin se pose par-dessus la plaque');
     assert.equal(eclat.getAttribute('aria-hidden'), 'true', 'l’éclat est décoratif');
@@ -147,7 +150,7 @@ async function scenarioDuel(assert, sons) {
     assert.equal(eclat.querySelectorAll('.rpg-soin__mote--croix').length, 3, 'dont trois petites croix, signe du soin');
     assert.ok(container.querySelector('.card-table > .rpg-soin-ecran'),
       'les bords de la table verdissent quand ce sont VOS PV qui remontent');
-    assert.match(zonesEtat()[0].textContent, /Vous regagnez 3 PV/, 'la zone d’état dit le soin aux lecteurs d’écran');
+    assert.match(zonesEtat()[0].textContent, /Vous regagnez 4 PV/, 'la zone d’état dit le soin aux lecteurs d’écran');
     assert.equal(plaqueSorcier()?.classList.contains('is-healing'), false, 'la plaque adverse reste éteinte');
     assert.ok(sons.includes('soin_vie'), 'le soin du joueur se fait entendre (soin_vie)');
     assert.equal(sons.filter((nom) => nom === 'soin_vie').length, 1, 'un seul carillon pour un seul soin');
@@ -161,7 +164,7 @@ async function scenarioDuel(assert, sons) {
       'halo, « +N » et voile d’écran quittent la table');
     assert.equal(zonesEtat()[0].textContent, '', 'la zone d’état se vide une fois le soin passé');
 
-    // ── 4. À pleine vie, la Porteuse ne soigne rien : ni éclat, ni son ────────
+    // ── 4. À pleine vie, la Porteuse ouvre la réserve : la vie dépasse 25 ────
     const porteuse = carteEnMain('Porteuse de cruches');
     assert.ok(estJouable(porteuse), 'la Porteuse de cruches est jouable avec les deux Mers restantes');
     sons.length = 0;
@@ -169,10 +172,11 @@ async function scenarioDuel(assert, sons) {
     await attendre(() => container.querySelector('.rpg-card--equipe[data-card-id="porteuse-de-cruches"]'),
       'la Porteuse arrive sur la table');
     await act(async () => { await wait(400); });
-    assert.equal(pvJoueur(), RPG_PV_JOUEUR, 'les PV restent au maximum');
-    assert.equal(container.querySelector('.is-healing, .rpg-soin, .rpg-soin-ecran'), null,
-      'un soin sans gain (pleine vie) n’allume aucun éclat');
-    assert.ok(!sons.includes('soin_vie') && !sons.includes('soin_vie_adverse'), 'ni aucun son de soin');
+    assert.equal(pvJoueur(), RPG_PV_JOUEUR + 4, 'pleine vie, la Porteuse (+3) fait grimper la vie : 26 → 29');
+    assert.equal(plaqueJoueur().dataset.soin, '3', 'la plaque note le gain de la Porteuse');
+    assert.equal(plaqueJoueur().querySelector('.rpg-wizard-plate__hp-max')?.textContent, '/29',
+      'la plaque annonce le maximum : la réserve se lit');
+    assert.ok(sons.includes('soin_vie'), 'le soin se fait entendre comme les autres');
   } finally {
     await act(async () => root.unmount());
     container.remove();

@@ -106,6 +106,8 @@ import {
   filtresCouleurDecks,
 } from './rpgDeckFilter.js';
 import {
+  RPG_PV_JOUEUR,
+  RPG_PV_SORCIER_BASE,
   arriveeCiblePortee,
   rpgCibleAuto,
   rpgChoisirAttaquants,
@@ -3437,10 +3439,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // puis rejouée ne compte pas deux fois, puisque l'on émet l'écart entre les
   // dégâts cumulés et ceux déjà annoncés. Un duel neuf remet le compteur à son
   // état de départ sans rien annoncer.
+  // Le compteur vient du moteur (`degatsRecus`) : la vie peut dépasser 25 et
+  // le maximum suit le gain, l'écart au maximum ne dirait plus rien — seul le
+  // cumul des dégâts réellement encaisés compte.
   useEffect(() => {
     const duelCourant = duelRef.current;
     if (!duelCourant) return;
-    const cumules = Math.max(0, (duelCourant.sorcier.pvMax ?? 0) - duelCourant.sorcier.pv);
+    const cumules = Math.max(0, duelCourant.sorcier.degatsRecus ?? 0);
     const memo = degatsSorcierRef.current;
     if (memo.duel !== duelCourant) {
       degatsSorcierRef.current = { duel: duelCourant, annonces: cumules };
@@ -7175,6 +7180,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
             <span className="rpg-wizard-plate__hp-value">{duel.sorcier.pv}</span>
+            {duel.sorcier.pvMax > RPG_PV_SORCIER_BASE && <span className="rpg-wizard-plate__hp-max">/{duel.sorcier.pvMax}</span>}
             {duel.sorcier.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.sorcier.bouclier}</span>}
             {soinSorcier && <span key={soinSorcier.token} className="rpg-soin-montant" aria-hidden="true">+{soinSorcier.montant}</span>}
           </span>
@@ -7538,6 +7544,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
             <span className="rpg-wizard-plate__hp-value">{duel.joueur.pv}</span>
+            {duel.joueur.pvMax > RPG_PV_JOUEUR && <span className="rpg-wizard-plate__hp-max">/{duel.joueur.pvMax}</span>}
             {duel.joueur.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.joueur.bouclier}</span>}
             {soinJoueur && <span key={soinJoueur.token} className="rpg-soin-montant" aria-hidden="true">+{soinJoueur.montant}</span>}
           </span>
