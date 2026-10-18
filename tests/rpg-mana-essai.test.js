@@ -47,9 +47,9 @@ const mulligans = (duel, indices = []) => {
 };
 const total = (camp) => Object.values(camp.manaMax).reduce((somme, quantite) => somme + quantite, 0);
 
-test('trois decks de 30 cartes sans terrain et hors économie ; le format 40 cartes reste valide', () => {
-  assert.equal(RPG_MANA_ESSAI_DECKS.length, 3);
-  assert.deepEqual(RPG_MANA_ESSAI_DECKS.map((deck) => deck.elements.length), [1, 2, 3]);
+test('quatre decks de 30 cartes sans terrain et hors économie ; le format 40 cartes reste valide', () => {
+  assert.equal(RPG_MANA_ESSAI_DECKS.length, 4);
+  assert.deepEqual(RPG_MANA_ESSAI_DECKS.map((deck) => deck.elements.length), [1, 2, 3, 1]);
   for (const deck of RPG_MANA_ESSAI_DECKS) {
     assert.equal(deck.cardIds.length, RPG_MANA_ESSAI_TAILLE);
     assert.deepEqual(validerDeckManaEssai(deck), { ok: true }, deck.name);
@@ -94,7 +94,7 @@ test('mana du tour 1 uniquement après les deux mulligans ; auto en mono, choix 
   assert.equal(rpgMulliganSorcier(duel, rng).ok, true);
   assert.equal(duel.joueur.main.length, 3, 'le mulligan conserve la main de trois cartes');
   assert.equal(rpgDemarrerManaEssai(duel).ok, true);
-  assert.deepEqual(duel.joueur.manaMax, { braise: 0, eau: 0, sable: 1, neige: 0 });
+  assert.deepEqual(duel.joueur.manaMax, { braise: 0, eau: 0, sable: 1, neige: 0, tenebres: 0 });
   assert.deepEqual(duel.joueur.manaSources, ['sable']);
   assert.equal(duel.joueur.mana.sable, 1);
   assert.equal(duel.joueur.deck.length, 27, 'aucune pioche supplémentaire au tour 1');
@@ -111,7 +111,7 @@ test('mana du tour 1 uniquement après les deux mulligans ; auto en mono, choix 
   assert.equal(rpgChoisirCouleurMana(multi, 'joueur', 'sable').ok, true);
   assert.equal(rpgChoisirCouleurMana(multi, 'joueur', 'braise').ok, false, 'un nouveau mana par tour');
 
-  // Neige n'est pas dans les trois decks du laboratoire, mais elle fonctionne
+  // Neige n'est pas dans les decks du laboratoire, mais elle fonctionne
   // aussi si un duel d'essai utilise cette identité : la quatrième teinte a un sens.
   const neige = rpgNouveauDuel({
     modeMana: RPG_MODE_MANA_ESSAI,
@@ -146,13 +146,13 @@ test('paiement des coûts colorés ; sources de chaque couleur conservées, surp
   assert.equal(duel.joueur.mana.sable, 1, 'la réserve est rechargée, pas augmentée des restes');
   assert.equal(rpgPeutPayer(duel.joueur, hybride), false, 'choix requis avant de jouer');
   assert.equal(rpgChoisirCouleurMana(duel, 'joueur', 'braise').ok, true);
-  assert.deepEqual(duel.joueur.manaMax, { braise: 1, eau: 0, sable: 1, neige: 0 });
+  assert.deepEqual(duel.joueur.manaMax, { braise: 1, eau: 0, sable: 1, neige: 0, tenebres: 0 });
   assert.deepEqual(duel.joueur.manaSources, ['sable', 'braise'], 'les orbes gardent l’ordre des choix, pas celui des couleurs');
   assert.equal(rpgPeutPayer(duel.joueur, hybride), true);
   duel.joueur.main.push('djinn-de-foudre');
   const pose = rpgJouerCreature(duel, 'joueur', 'djinn-de-foudre');
   assert.equal(pose.ok, true);
-  assert.deepEqual(duel.joueur.mana, { braise: 0, eau: 0, sable: 0, neige: 0 });
+  assert.deepEqual(duel.joueur.mana, { braise: 0, eau: 0, sable: 0, neige: 0, tenebres: 0 });
   assert.deepEqual(duel.joueur.manaSources, ['sable', 'braise'], 'dépenser assombrit mais ne supprime pas les orbes');
   rpgFinDeTour(duel);
   rpgFinDeTour(duel);
@@ -185,7 +185,7 @@ test('le générique dépense une autre couleur si possible, sans priver la cart
   braise.joueur.main.push('ghul-des-cendres', 'ashigaru-des-braises');
   assert.equal(rpgPeutPayer(braise.joueur, cardById('ghul-des-cendres')), true);
   assert.equal(rpgJouerCreature(braise, 'joueur', 'ghul-des-cendres').ok, true);
-  assert.deepEqual(braise.joueur.mana, { braise: 1, eau: 0, sable: 0, neige: 0 },
+  assert.deepEqual(braise.joueur.mana, { braise: 1, eau: 0, sable: 0, neige: 0, tenebres: 0 },
     'Ghul coûte un Braise et un générique : le Sable part avant le deuxième Braise');
   assert.deepEqual(braise.joueur.manaSources, ['braise', 'sable', 'braise'], 'les sources ne changent pas');
   assert.equal(rpgJouerCreature(braise, 'joueur', 'ashigaru-des-braises').ok, true,
@@ -196,7 +196,7 @@ test('le générique dépense une autre couleur si possible, sans priver la cart
   hybride.joueur.main.push('vent-rouge');
   assert.deepEqual(cardColorCost('vent-rouge'), { braise: 1, sable: 1 });
   assert.equal(rpgLancerMagie(hybride, 'joueur', 'vent-rouge').ok, true);
-  assert.deepEqual(hybride.joueur.mana, { braise: 1, eau: 0, sable: 0, neige: 0 },
+  assert.deepEqual(hybride.joueur.mana, { braise: 1, eau: 0, sable: 0, neige: 0, tenebres: 0 },
     'les deux pips hybrides sont payés, puis le générique utilise Eau');
 
   const sansAutreCouleur = commencer(bi);
@@ -211,7 +211,7 @@ test('le générique dépense une autre couleur si possible, sans priver la cart
   repartir(ia.sorcier, ['braise', 'sable', 'braise']);
   ia.sorcier.main.push('ghul-des-cendres');
   assert.equal(rpgJouerCreature(ia, 'sorcier', 'ghul-des-cendres').ok, true);
-  assert.deepEqual(ia.sorcier.mana, { braise: 1, eau: 0, sable: 0, neige: 0 },
+  assert.deepEqual(ia.sorcier.mana, { braise: 1, eau: 0, sable: 0, neige: 0, tenebres: 0 },
     'le sorcier paie lui aussi son générique avec une autre couleur');
 
   const classique = rpgNouveauDuel({ joueurDeck: ['ghul-des-cendres'], sorcierDeck: [], rng });

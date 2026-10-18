@@ -71,7 +71,7 @@ for (const [surface, regle] of [
 }
 
 // ── Le sceau : forme de famille et couleur de la carte ──────────────────────
-for (const couleur of ['braise', 'eau', 'sable', 'neige']) {
+for (const couleur of ['braise', 'eau', 'sable', 'neige', 'tenebres']) {
   const badge = battleCss.match(new RegExp(`\\.rpg-card-element-badge--${couleur}\\s*\\{([^}]*)\\}`))?.[1];
   const teintes = badge?.match(/radial-gradient\(circle at 34% 24%, (#[\da-f]+), (#[\da-f]+) 72%\)/)?.slice(1);
   const sceau = battleCss.match(new RegExp(`\\.rpg-sort-sceau--element-${couleur}\\s*\\{([^}]*)\\}`))?.[1];

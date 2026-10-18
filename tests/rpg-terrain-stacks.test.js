@@ -55,5 +55,5 @@ test('flexible terrains remain individual mana sources even inside one pile', ()
   group = groupTerrainStacks(duel.joueur.terrains)[0];
   assert.equal(group.terrain.id, 'b');
   assert.equal(rpgEngagerTerrain(duel, 'joueur', group.terrain.id, 'sable').ok, true);
-  assert.deepEqual(duel.joueur.mana, { braise: 1, eau: 0, sable: 1, neige: 0 });
+  assert.deepEqual(duel.joueur.mana, { braise: 1, eau: 0, sable: 1, neige: 0, tenebres: 0 });
 });

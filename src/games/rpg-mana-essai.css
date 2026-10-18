@@ -158,6 +158,7 @@
 .rpg-flux-track__slot--neige { --mana-color: #bbebfb; --mana-halo: #82cce6; }
 .rpg-flux-track__slot--eau { --mana-color: #78c5f1; --mana-halo: #a0e3ff; }
 .rpg-flux-track__slot--braise { --mana-color: #f28562; --mana-halo: #ffc195; }
+.rpg-flux-track__slot--tenebres { --mana-color: #a488e8; --mana-halo: #c3aef5; }
 .rpg-flux-track__slot.is-lit {
   color: var(--mana-color);
   filter: drop-shadow(0 0 3px var(--mana-halo));
@@ -227,6 +228,7 @@
 .rpg-flux-choix__option--braise { --mana-color: #ff9874; }
 .rpg-flux-choix__option--eau { --mana-color: #8bdafa; }
 .rpg-flux-choix__option--neige { --mana-color: #d2f2ff; }
+.rpg-flux-choix__option--tenebres { --mana-color: #b399f0; }
 .rpg-flux-choix__option > span { color: var(--mana-color); filter: drop-shadow(0 0 6px var(--mana-color)); }
 .rpg-flux-choix__option .rpg-emblem {
   display: block;

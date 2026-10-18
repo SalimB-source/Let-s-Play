@@ -808,7 +808,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   const camp = duel[cote];
   const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
   const manquePv = Math.max(0, (camp.pvMax ?? camp.pv) - camp.pv);
-  const cout = Math.max(0, carte.cost ?? 0);
+  // Le Prix en PV (set Ténèbres) : sous le seuil, la carte est injouable —
+  // le moteur la refuserait de toute façon (`rpgPeutPayer`).
+  if ((carte.prixPv ?? 0) > 0 && camp.pv <= carte.prixPv) return { score: 0, cibleId: null };
+  // Le même Prix alourdit le rendement : un PV manquant coûte toujours plus
+  // cher que du mana disponible.
+  const cout = Math.max(0, carte.cost ?? 0) + Math.max(0, Number(carte.prixPv) || 0) * 0.6;
 
   if (carte.kind === 'magie' || magieById(carte.id)) {
     const effet = carte.effet ?? {};
@@ -937,6 +942,28 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const score = (1.5 + camp.creatures.length * (1.5 + bonus)) * durable - cout * 0.2;
       return { score: score > 0 ? score : 0, cibleId: null };
     }
+    if (effet.type === 'transfert') {
+      // Le cœur pesé (set Ténèbres) : le PV adverse qui tombe vaut le PV
+      // gagné ; une mort de sorcier annoncée vaut le duel. La pioche de la
+      // Grande Pesée paie en sus.
+      const montant = Math.max(0, Number(effet.amount) || 0);
+      const pioche = Math.max(0, Number(effet.pioche) || 0);
+      const score = (montant >= pvAdv ? 100 : montant * 1.1) + pioche * 1.5 - cout * 0.2;
+      return { score, cibleId: null };
+    }
+    if (effet.type === 'defausse-adverse') {
+      // UNE carte, choisie par la victime — sur une main adverse vide, zéro.
+      const score = duel[adv].main.length ? 2.4 - cout * 0.2 : 0;
+      return { score, cibleId: null };
+    }
+    if (effet.type === 'defaussePaquet') {
+      // Les feuillets pressent la fatigue : deux fois plus utile quand le
+      // paquet adverse s'amincit (mode sans terrains).
+      const montant = Math.max(0, Number(effet.amount) || 0);
+      const reste = duel[adv].deck.length;
+      const score = montant * 0.9 * (reste <= 10 ? 2 : 1) - cout * 0.2;
+      return { score: score > 0 ? score : 0, cibleId: null };
+    }
     if (effet.type === 'bouclier' && effet.cible === 'creature-amie') {
       const cibleId = meilleureCibleAmie(duel, cote, carte);
       return cibleId ? { score: 2 + (effet.amount ?? 0) * 0.5, cibleId } : null;
@@ -963,6 +990,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     if (carte.donne?.furie) gain += 1 + carte.donne.furie * 0.7;
     if (carte.donne?.rapidite && !porteur?.rapidite) gain += 0.7;
     if (carte.donne?.coupRapide && !porteur?.coupRapide) gain += 2;
+    if (carte.donne?.tribut) gain += carte.donne.tribut * 0.9;
     if (carte.donne?.immunite && !estProtegee(porteur, carte.donne.immunite)) gain += 2;
     if (carte.declenche) gain += 2;
     // Les déclencheurs du porteur (lot du Sable) : ce que l'arme rapporte
@@ -1011,6 +1039,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       }
     }
     if (arrivee.type === 'soin') score += Math.min(arrivee.amount ?? 0, manquePv) * 0.8;
+    if (arrivee.type === 'transfert') score += Math.max(0, Number(arrivee.amount) || 0) * 1.1;
     if (arrivee.type === 'debuff' || arrivee.type === 'empeche-blocage') {
       // Le venin de la Vipère de verre, la lune dévorée de Bakunawa : la
       // victime se choisit — la plus grosse menace adverse que la protection
@@ -1099,6 +1128,8 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   if (!cibleId && moteur.arriveeCiblePortee(carte) && moteur.arriveeACibleLegale(duel, cote, carte)) {
     return { score: 0, cibleId: null };
   }
+  // Le Tribut (set Ténèbres) : un contact qui vaut des PV à chaque frappe.
+  if (carte.tribut) score += carte.tribut * 0.9;
   if (carte.destruction) score += 1;
   if (carte.honneur) score += carte.honneur * (duel[adv].creatures.length ? 0.8 : 0.3);
   if (carte.combat) score += 2;

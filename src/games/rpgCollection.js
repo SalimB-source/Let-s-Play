@@ -53,6 +53,9 @@ export const RPG_ACQUIS_STORAGE_KEY = 'letsplay_sablier_acquis_v1';
  */
 export const COLLECTION_DEPART = RPG_DUEL_CARDS
   .filter((carte) => carte.rarity === 'commune' || carte.rarity === 'inhabituelle')
+  // Le banc d'essai ne crédite rien (doc 16 §10) : Ténèbres ne rejoint ni la
+  // dotation ni les révélations tant que la phase 2 ne l'ouvre au classique.
+  .filter((carte) => carte.set !== 'balance-des-heures')
   .map((carte) => carte.id);
 
 /**

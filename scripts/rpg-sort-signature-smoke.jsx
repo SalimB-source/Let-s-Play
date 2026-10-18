@@ -251,8 +251,8 @@ export async function checkRpgSortSignature(assert) {
       }
     }
     assert.ok(sceaux >= 10, `catalogue : les deux familles de sorts se repèrent au sceau (${sceaux} vignettes)`);
-    assert.deepEqual([...elementsVus].sort(), ['braise', 'eau', 'neige', 'sable'],
-      'les sceaux couvrent les quatre couleurs de carte dans le catalogue');
+    assert.deepEqual([...elementsVus].sort(), ['braise', 'eau', 'neige', 'sable', 'tenebres'],
+      'les sceaux couvrent les cinq couleurs de carte dans le catalogue');
     const ventRouge = container.querySelector('.rpg-card-catalogue__card[data-card-id="vent-rouge"] .rpg-sort-sceau');
     assert.ok(ventRouge?.classList.contains('rpg-sort-sceau--sorcellerie')
       && ventRouge.classList.contains('rpg-sort-sceau--hybride'),

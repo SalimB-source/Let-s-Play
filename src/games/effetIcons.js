@@ -1,5 +1,5 @@
 /**
- * Le sprite des icônes d’effets du duel — les 21 symboles validés
+ * Le sprite des icônes d’effets du duel — les 24 symboles validés
  * (`preview-effets-icone.html`), monochromes, tracé 24×24, `stroke: currentColor`.
  *
  * Deux usages :
@@ -13,7 +13,7 @@
  * sont **interlinéaires** — l’icône précède la règle qu’elle annonce.
  */
 
-/** Les 21 symboles, à injecter une seule fois par page. */
+/** Les 24 symboles, à injecter une seule fois par page. */
 export const EFFETS_SPRITE = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-butin" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></symbol>
@@ -37,6 +37,9 @@ export const EFFETS_SPRITE = `
   <symbol id="i-recyclage" viewBox="0 0 24 24"><path d="M21 4v6h-6"/><path d="M3 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L21 8"/><path d="M21 15a9 9 0 0 1-14.9 3.4L3 16"/></symbol>
   <symbol id="i-reanimation" viewBox="0 0 24 24"><path d="M12 20V4"/><path d="M6 10l6-6 6 6"/><path d="M4 22h16"/></symbol>
   <symbol id="i-heures" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-tribut" viewBox="0 0 24 24"><path d="M4 8h16M12 8v11M8 21h8"/><path d="M4 8 1.5 13.5h5L4 8zm16 0-2.5 5.5h5L20 8z"/><path d="M12 5.4c0 0-2-1.4-2-2.7A1.1 1.1 0 0 1 12 2a1.1 1.1 0 0 1 2 .7c0 1.3-2 2.7-2 2.7z"/></symbol>
+  <symbol id="i-defausse" viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="14" rx="1.5"/><path d="M17 8v8m0 0-3-3m3 3 3-3"/><path d="M7 19h10"/></symbol>
+  <symbol id="i-paquet" viewBox="0 0 24 24"><rect x="5" y="3" width="12" height="9" rx="1.5"/><path d="M8 6.5h6M8 9h4"/><path d="M19 13v6m0 0-2.5-2.5M19 19l2.5-2.5"/></symbol>
 </svg>`.trim();
 
 /**
@@ -59,6 +62,11 @@ export const EFFET_ICONE = {
   aura: 'i-aura',
   resonance: 'i-resonance',
   honneur: 'i-honneur',
+  tribut: 'i-tribut',
+  defausse: 'i-defausse',
+  transfert: 'i-tribut',
+  'defausse-adverse': 'i-defausse',
+  defaussePaquet: 'i-paquet',
   pioche: 'i-pioche',
   'pioche-defausse': 'i-pioche',
   soin: 'i-soin',
@@ -129,6 +137,11 @@ export const EFFET_LIBELLES = {
   banniere: 'Bannière',
   resonance: 'Résonance',
   honneur: 'Honneur',
+  tribut: 'Tribut',
+  defausse: 'Défausse',
+  transfert: 'Transfert',
+  'defausse-adverse': 'Défausse adverse',
+  defaussePaquet: 'Défausse de paquet',
   pioche: 'Pioche',
   soin: 'Soin',
   degats: 'Dégâts',
@@ -172,6 +185,7 @@ export function pastillesPourCarte(carte) {
   if (carte.banniere) ajouter('banniere', 'Bannière');
   if (carte.honneur) ajouter('honneur', 'Honneur', Number(carte.honneur) || null);
   if (carte.butin) ajouter('butin', 'Butin');
+  if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
 
   // L’effet signé des sorts (et des arrivées qui se lisent d’un coup d’œil).
   const typeEffet = carte.effet?.type ?? carte.arrivee?.type;
@@ -183,6 +197,9 @@ export function pastillesPourCarte(carte) {
     'retour-main': ['retour-main', 'Rebond'],
     exil: ['exil', 'Exil'],
     'empeche-blocage': ['empeche-blocage', 'Blocage interdit'],
+    transfert: ['transfert', 'Transfert'],
+    'defausse-adverse': ['defausse-adverse', 'Défausse adverse'],
+    defaussePaquet: ['defaussePaquet', 'Défausse de paquet'],
   }[typeEffet];
   if (pastilleEffet) ajouter(...pastilleEffet);
   if (typeEffet === 'bouclier') {
@@ -204,6 +221,7 @@ const MOTIFS_LIGNE = [
   ['infiltration', /\binfiltration/iu],
   ['resonance', /\brésonance/iu],
   ['honneur', /\bhonneur\b/iu],
+  ['tribut', /\btribut\b/iu],
   ['contresort', /\bcontre(sort|z|s)\b/iu],
   ['reanimation', /\bréanimation|fait revenir|cimetière[^.]*en jeu/iu],
   ['recyclage', /\brecycl|cimetière[^.]*en main/iu],
@@ -215,6 +233,7 @@ const MOTIFS_LIGNE = [
   ['pioche', /\bpioch/iu],
   ['soin', /\bsoign|\bsoin\b/iu],
   ['degats', /\bd[ée]g[âa]ts|\binflige/iu],
+  ['defausse', /\bd[ée]fauss/iu],
 ];
 
 /**
@@ -267,6 +286,10 @@ export const EFFET_DEFINITIONS = {
   banniere: 'Tant qu’elle est en jeu, les créatures de sa tribu gagnent un bonus.',
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard.`,
   butin: 'Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
+  tribut: (n) => `Quand cette créature touche le sorcier adverse, il perd ${n ?? 'N'} PV et vous en gagnez ${n ?? 'N'}.`,
+  transfert: (n) => `Le sorcier adverse perd ${n ?? 'X'} PV et vous en gagnez ${n ?? 'X'}.`,
+  'defausse-adverse': 'L’adversaire défausse une carte : il en choisit une, sa moins utile.',
+  defaussePaquet: 'Les cartes du dessus du paquet adverse partent au cimetière.',
   contresort: 'Annule une carte annoncée par l’adversaire, avant qu’elle ne se résolve.',
   reanimation: 'Fait revenir en jeu une créature de votre cimetière.',
   recyclage: 'Renvoie une carte de votre cimetière dans votre main.',
@@ -288,6 +311,7 @@ const LIBELLES_IMPRIMES = [
   ['resonance', 'Résonance(?: samouraï)?'],
   ['honneur', 'Honneur(?: \\d+)?'],
   ['butin', 'Butin'],
+  ['tribut', 'Tribut(?: \\d+)?'],
   ['banniere', 'Bannière'],
   ['aura', 'Aura'],
   ['retour-main', 'Rebond'],
