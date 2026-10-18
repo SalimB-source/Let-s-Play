@@ -4,6 +4,23 @@ import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+assert.match(battleCss, /\.rpg-spell-preview-layer\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*108;[^}]*inset:\s*0;[^}]*isolation:\s*isolate;/s,
+  'le voile et la carte du sort partagent un contexte d’empilement isolé, attaché au plateau');
+assert.match(battleCss, /\.rpg-preview-backdrop\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*0;[^}]*inset:\s*0;[^}]*background:\s*rgba\(3, 2, 5, \.64\);/s,
+  'le voile sombre reste derrière la carte et n’est plus une couche fixe de viewport');
+assert.doesNotMatch(battleCss, /\.rpg-preview-backdrop\s*\{[^}]*backdrop-filter\s*:/s,
+  'le voile n’utilise pas de filtre de fond qui pourrait être recomposé au-dessus de la carte');
+assert.match(battleCss, /\.rpg-spell-preview-layer\s*>\s*\.rpg-hover-card-preview\.is-spell-preview\s*\{[^}]*position:\s*absolute;/s,
+  'la carte du sort est positionnée dans la même couche que son voile');
+assert.match(battlePage, /\{apercuMagie && \(\s*<div className="rpg-spell-preview-layer">\s*<div className="rpg-preview-backdrop rpg-preview-backdrop--magie" aria-hidden="true" \/>\s*<HoverCardPreview\s+carte=\{cardById\(apercuMagie\)\}[\s\S]*?style=\{\{ left: '50%', top: '50%', transform: 'translate\(-50%, -50%\)' \}\}\s+spellPlayed\s*\/>\s*<\/div>\s*\)\}/,
+  'l’aperçu de la magie réutilise le composant central, avec le voile comme frère et derrière lui');
+assert.match(battleCss, /\.rpg-card-peek\s*\{[^}]*position:\s*fixed;[^}]*isolation:\s*isolate;/s,
+  'les fiches de cartes ouvrent aussi leur propre contexte d’empilement');
+assert.match(battleCss, /\.rpg-card-peek__backdrop\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*0;/s,
+  'le voile de la fiche est une couche de fond explicite');
+assert.doesNotMatch(battleCss, /\.rpg-card-peek__backdrop\s*\{[^}]*backdrop-filter\s*:/s,
+  'le filtre de fond ne peut pas passer au-dessus de la fiche dans une WebView');
 assert.match(battleCss, /\.rpg-hover-card-preview__sceau,\s*\.rpg-hover-card-preview__sort,\s*\.rpg-mulligan__sceau,\s*\.rpg-mulligan__sort\s*\{[^}]*bottom:\s*var\(--rpg-card-element-marker-top,\s*5%\);[^}]*left:\s*var\(--rpg-card-element-marker-left,\s*6%\);[^}]*width:\s*var\(--rpg-card-marker-size,\s*38px\);/s,
   'dans l’aperçu des cartes et le mulligan, le sceau de Magie Rapide et de Sorcellerie s’aligne sur les mêmes marges et le même diamètre que la couleur de la carte');
 assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card__stat--atk,\s*\.rpg-hover-card-preview__face \.rpg-card__pt,\s*\.rpg-mulligan__card \.rpg-card__stat--atk,\s*\.rpg-mulligan__card \.rpg-card__pt\s*\{[^}]*background:\s*rgba\(0,\s*0,\s*0,\s*\.68\);[^}]*font:\s*900 calc\(var\(--rpg-card-marker-size,\s*38px\) \* \.62\)\/1\.15 Georgia, serif;/s,

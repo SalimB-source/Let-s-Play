@@ -88,11 +88,13 @@
    agrandir les cartes en réduirait le nombre. Les commandes tiennent dans
    `--rpg-touch-controls` (176 px au plus étroit) : boutons compacts de 32 px. */
 /* Cadres mobile/APK : bordures plus épaisses, safe-area respecté, touch 44px.
-   La **taille des cartes**, elle, ne bouge pas : `--duel-card` reste à
-   `clamp(48px, 17dvh, 100px)` (contrat `check:rpg-ui`). Le budget vertical de
-   la grille est exact : à 320 px de haut (568 × 320), 2 × (1,4 carte + 8) +
-   main 28dvh + 38 px de navigation + 24 px de gouttières = 319,9 px — la table
-   tient dans l'écran, rien n'est tronqué. Agrandir les cartes (+35 % un temps)
+   En fenêtre, `--duel-card` reste à `clamp(48px, 17dvh, 100px)` et la main à
+   `28dvh`. En plein écran immersif, le bloc ci-dessous passe sur `svh` : les
+   barres du navigateur ou du système peuvent faire varier `dvh` en cours de
+   partie, ce qui faisait respirer toute la grille sur téléphone.
+   Le budget vertical est exact : à 320 px de haut, 2 × (1,4 carte + 8) +
+   main 28dvh (28svh en immersif) + 38 px de navigation + 24 px de gouttières
+   = 319,9 px — la table tient dans l'écran, rien n'est tronqué. Agrandir les cartes (+35 % un temps)
    faisait déborder la grille : le bas du plateau sortait de l'écran et les
    piles de terrains dépassaient de leur rail. Les cartes de la main partagent
    `--duel-card` : à 4:5, elles remplissent la hauteur de la main — sans marge
@@ -137,6 +139,16 @@
   overflow: auto;
   overscroll-behavior: contain;
   background-blend-mode: normal;
+}
+/* `dvh` suit les barres mobiles qui apparaissent et disparaissent, et peut
+   donc redimensionner les cartes en plein duel. En mode immersif, on fixe
+   l'échelle sur la petite hauteur de viewport : elle ne bouge pas tant que le
+   navigateur reste ouvert, tout en gardant les proportions prévues. */
+@supports (height: 100svh) {
+  .rpg-battle--touch.is-immersive .card-table {
+    --duel-card: clamp(48px, 17svh, 100px);
+    --rpg-touch-hand: clamp(84px, 28svh, 146px);
+  }
 }
 .rpg-battle--touch .card-table > :is(.rpg-duel-nav, .rpg-wizard-plate, .rpg-card-piles, .rpg-terrains, .card-row, .rpg-bottombar, .rpg-hand-dock) {
   position: relative;
