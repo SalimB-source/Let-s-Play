@@ -54,15 +54,8 @@
 .rpg-mulligan__head .rpg-mulligan__mana-note { margin-top: 5px; color: #b9f0db; font-weight: 700; }
 
 /* Champ d'essai plein (cinq créatures) : la carte en attente de sacrifice
-   laisse la consigne dans la colonne d'actions, et la table s'allume de
-   créatures à choisir — la victime part au cimetière, la carte se pose. */
-.rpg-sacrifice-prompt {
-  color: #b9f0db;
-  font: 700 12px/1.35 var(--display, sans-serif);
-}
-@media (max-width: 700px) {
-  .rpg-sacrifice-prompt { flex: 1 1 100%; text-align: center; }
-}
+   affiche la consigne au centre de la table, et les créatures à choisir
+   s'allument — la victime part au cimetière, la carte se pose. */
 
 /* Dix places pour les symboles élémentaires : losange discret avant le gain,
    sablier/flamme/goutte/flocon lumineux une fois acquis, puis tamisés après
@@ -261,6 +254,9 @@
   /* Aucune marge intérieure propre : la rangée et les cinq cases partagent
      exactement la même grille, donc une carte posée tombe sur sa case. */
   padding: 0;
+}
+.rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-row--ennemi {
+  top: calc(15.5% - 48px);
 }
 .rpg-creature-slots {
   position: absolute;

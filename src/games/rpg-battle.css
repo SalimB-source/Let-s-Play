@@ -2815,8 +2815,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   transform: rotate(15deg) !important;
   transform-origin: center;
 }
-/* Une créature engagée garde sa lueur rouge pendant l'animation d'attaque ;
-   le halo s'éteint dès que cette phase visuelle se termine. */
+/* Une créature attaquante (dès sa déclaration et pendant l'animation d'attaque)
+   porte une lueur rouge vive. */
+.rpg-card.is-declared-attacker,
+.rpg-card.is-active.is-declared-attacker,
+.rpg-card.is-selected.is-declared-attacker {
+  outline: 3px solid rgba(255, 83, 76, .96);
+  outline-offset: 1px;
+  box-shadow:
+    0 0 0 2px rgba(255, 83, 76, .96),
+    0 0 20px 6px rgba(239, 49, 43, .78),
+    0 0 36px 10px rgba(222, 38, 34, .48),
+    0 12px 28px rgba(0, 0, 0, .65);
+}
 .rpg-card.is-attacked.fx-lunge {
   box-shadow:
     0 0 0 2px rgba(255, 83, 76, .96),
@@ -2927,8 +2938,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-spell-confirm__rules > span { display: block; }
 .rpg-spell-confirm__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
 
-/* Magie sur la pile : affiche le sort joué, sa cible et la liaison visuelle. */
+/* Magie sur la pile : masquée visuellement au profit de l'aperçu centré
+   (`.rpg-hover-card-preview.is-spell-preview`), tout en restant dans le DOM. */
 .rpg-spell-played {
+  display: none;
   position: absolute;
   z-index: 35;
   top: 12%;
@@ -3533,6 +3546,50 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     100% { opacity: 0; }
   }
 }
+.rpg-annonce-action {
+  position: absolute;
+  z-index: 46;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+  transition: transform 180ms ease;
+}
+.rpg-annonce-action.is-avec-annonce-tour {
+  transform: translateY(clamp(48px, 6.5vh, 66px));
+}
+.rpg-annonce-action__bandeau {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.2vw, 14px);
+  max-width: min(92vw, 760px);
+  margin: 0;
+  padding: clamp(9px, 1.1vh, 13px) clamp(16px, 2.2vw, 30px);
+  border: 1px solid rgba(255, 218, 94, .72);
+  border-radius: 999px;
+  background: rgba(8, 7, 13, .84);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  color: #ffe887;
+  animation: rpg-annonce-action-entree 220ms ease-out both;
+}
+.rpg-annonce-action__bandeau strong {
+  font: 800 clamp(14px, 1.55vw, 22px)/1.15 var(--display);
+  letter-spacing: .1em;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .8);
+}
+.rpg-annonce-action__bandeau.is-joueur {
+  border-color: rgba(255, 218, 94, .72);
+  color: #ffe887;
+}
+@keyframes rpg-annonce-action-entree {
+  0% { opacity: 0; transform: translateY(10px) scale(.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-annonce-action__bandeau { animation: none; }
+}
 
 @media (max-width: 620px) {
   .rpg-card--img .rpg-card__type,
@@ -3556,7 +3613,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   height: calc(24% + 96px);
   padding: 48px;
 }
-.card-row--ennemi { top: calc(19.5% - 48px); }
+.card-row--ennemi { top: calc(16.5% - 48px); }
 .card-row--equipe { top: calc(47.5% - 48px); }
 
 .rpg-hand {
@@ -3570,7 +3627,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     height: calc(26% + 64px);
     padding: 32px;
   }
-  .card-row--ennemi { top: calc(20% - 32px); }
+  .card-row--ennemi { top: calc(17% - 32px); }
   .card-row--equipe { top: calc(46% - 32px); }
   .rpg-hand {
     margin-top: -64px;
@@ -3728,20 +3785,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   min-width: 0;
   max-width: 100%;
   margin: 0;
-  padding: 4px 7px 4px 4px;
-  border: 1px solid rgba(123, 196, 238, .58);
-  border-radius: 6px;
+  padding: 6px 9px 6px 6px;
+  border: 1.5px solid rgba(123, 196, 238, .66);
+  border-radius: 7px;
   background: rgba(22, 40, 56, .78);
 }
 .rpg-hover-card-preview__weapon-art {
   position: relative;
   display: block;
-  flex: 0 0 48px;
-  width: 48px;
+  flex: 0 0 60px;
+  width: 60px;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border: 2px solid #adb9c1;
-  border-radius: 4px;
+  border: 3.5px solid #cfd9df;
+  border-radius: 5px;
   background: #212a30;
   box-shadow: 0 2px 4px rgba(0, 0, 0, .45);
 }
@@ -3809,8 +3866,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hover-card-preview__rules { font-size: 12px; }
   .rpg-hover-card-preview__cost b { font-size: 13px; }
   .rpg-hover-card-preview__cost small { font-size: 9px; }
-  .rpg-hover-card-preview__weapon { flex-basis: 100%; gap: 6px; }
-  .rpg-hover-card-preview__weapon-art { flex-basis: 38px; width: 38px; }
+  .rpg-hover-card-preview__weapon { flex-basis: 100%; gap: 7px; }
+  .rpg-hover-card-preview__weapon-art { flex-basis: 46px; width: 46px; border-width: 3px; }
   .rpg-hover-card-preview__weapon strong { font-size: 11px; }
   .rpg-hover-card-preview__weapon small { font-size: 9px; }
   .rpg-hover-card-preview__stats { font-size: 12px; }
@@ -3832,11 +3889,23 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
     max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 }
+.rpg-preview-backdrop {
+  position: fixed;
+  z-index: 108;
+  inset: 0;
+  background: rgba(3, 2, 5, .64);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+  animation: rpg-hover-preview-in .12s ease-out both;
+}
 .rpg-card-peek__backdrop {
   position: absolute;
   z-index: 0;
   inset: 0;
-  background: rgba(4, 3, 3, .78);
+  background: rgba(3, 2, 5, .86);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 .rpg-card-peek__panel {
   position: relative;
@@ -4365,7 +4434,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   100% { opacity: 0; transform: translateY(-48%) scaleY(.66); }
 }
 
-/* Les flèches de blocage se dessinent brièvement à leur affectation. */
+/* Les flèches d'attaque et de blocage se dessinent brièvement à leur affectation. */
+.rpg-attack-arrow__shaft,
+.rpg-attack-arrow__glow { animation: rpg-attack-arrow-in .22s ease-out both; }
+@keyframes rpg-attack-arrow-in { from { opacity: 0; } to { opacity: 1; } }
 .rpg-blocker-arrow__shaft { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: rpg-arrow-draw .42s ease-out forwards; }
 .rpg-blocker-arrow__glow { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: rpg-arrow-draw .42s ease-out forwards; }
 @keyframes rpg-arrow-draw { to { stroke-dashoffset: 0; } }
@@ -4382,6 +4454,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-destruction-fx,
   .rpg-card-destruction-fx::before,
   .rpg-card-destruction-fx::after,
+  .rpg-attack-arrow__shaft,
+  .rpg-attack-arrow__glow,
   .rpg-blocker-arrow__shaft,
   .rpg-blocker-arrow__glow { animation: none !important; transition: none !important; }
 }
@@ -6977,8 +7051,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   overflow: hidden;
   background: rgba(0, 0, 0, .46) !important;
   background-color: rgba(0, 0, 0, .46) !important;
-  backdrop-filter: none !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
   pointer-events: auto;
+}
+.rpg-annonce-sort::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(3, 2, 5, .36);
+  pointer-events: none;
 }
 .rpg-annonce-sort__panel {
   position: absolute;
@@ -7918,6 +8001,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    ══════════════════════════════════════════════════════════════════════════ */
 .rpg-battle {
   --rpg-arme-cadre: 5px;
+  --rpg-arme-cadre-apercu: 10px;
   --rpg-arme-cadre-fin: 3px;
   /* L'acier poli : des bandes sombres et claires en travers de l'anneau, ce
      qui le fait lire comme du métal plutôt que comme un trait de peinture.
@@ -7946,6 +8030,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100% !important;
   background-repeat: repeat, no-repeat !important;
   background-position: 0 0, 0 0 !important;
+}
+
+.rpg-hover-card-preview__face[class*="rpg-card--frame-arme"] {
+  border: var(--rpg-arme-cadre-apercu, 10px) solid transparent !important;
 }
 
 /* Les petites faces gardent proportionnellement le même filet : 2 px sur
@@ -8051,15 +8139,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   outline-offset: 2px;
   box-shadow: 0 0 0 5px rgba(255, 214, 25, .28), 0 0 24px rgba(255, 214, 25, .55);
 }
-.rpg-discard-prompt {
-  color: #ffe9a0;
-  font: 700 12px/1.35 var(--display, sans-serif);
-}
 .rpg-btn--discard-confirm {
   white-space: nowrap;
 }
 @media (max-width: 700px) {
-  .rpg-discard-prompt { flex: 1 1 100%; text-align: center; }
   .rpg-btn--discard-confirm { min-height: 40px; }
 }
 
@@ -8472,5 +8555,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 /* Les annonces automatiques restent lisibles au doigt sans voler les gestes. */
-.rpg-auto-preview { position: absolute; inset: 0; z-index: 180; pointer-events: none; }
+.rpg-auto-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 180;
+  background: rgba(3, 2, 5, .64);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+}
 .rpg-auto-preview .rpg-hover-card-preview { display: grid !important; pointer-events: none; }
