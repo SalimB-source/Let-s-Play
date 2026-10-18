@@ -73,4 +73,4 @@ assert.doesNotMatch(soinsCss, /@media[^{]*max-width/,
   'aucune requête de largeur : la feuille vaut pour tous les écrans');
 assert.doesNotMatch(soinsCss, /#72e6d0/i, 'le vert du soin ne reprend pas le cyan du ciblable');
 
-console.log('✓ Soins : chaque gain de vie réel illumine la plaque ou la créature soignée (halo, voile, motes, « +N »), verdit la table pour vos PV, se dit aux lecteurs d’écran et sonne une fois — rien à pleine vie');
+console.log('✓ Soins : chaque gain de vie réel illumine la plaque ou la créature soignée (halo, voile, motes, « +N »), verdit la table pour vos PV, se dit aux lecteurs d’écran et sonne une fois — la vie monte même au-dessus de 25');

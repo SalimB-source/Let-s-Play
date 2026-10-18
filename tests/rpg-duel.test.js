@@ -1894,7 +1894,7 @@ test('un renfort de magie rapide qui s’évapore peut laisser une créature à 
   assert.equal(duel.joueur.creatures.includes(chien), false, 'la créature quitte la table avec son rempart');
 });
 
-test('capacité à l’arrivée : la Porteuse soigne son sorcier (plafonné)', () => {
+test('capacité à l’arrivée : la Porteuse soigne son sorcier, et la vie passe au-dessus de 25', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   duel.joueur.pv = RPG_PV_JOUEUR - 5;
@@ -1904,7 +1904,55 @@ test('capacité à l’arrivée : la Porteuse soigne son sorcier (plafonné)', (
   duel.joueur.pv = RPG_PV_JOUEUR - 1;
   donner(duel, 'joueur', 'porteuse-de-cruches');
   rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'le soin ne dépasse pas le maximum');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 2, 'le soin ne s’arrête plus à 25 PV');
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR + 2, 'le maximum suit la vie gagnée');
+});
+
+test('la vie peut dépasser 25 : la réserve s’élargit et ne fond pas avec les dégâts', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  // Un soin à pleine vie : la vie monte, le maximum avec elle.
+  donner(duel, 'joueur', 'porteuse-de-cruches');
+  rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 3, 'la vie dépasse 25');
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR + 3, 'le maximum suit la vie gagnée');
+  // Un coup encaissé ne touche pas au maximum : la réserve reste entière.
+  duel.joueur.pv = 10;
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR + 3, 'les dégâts ne fondent pas la réserve');
+  assert.equal(duel.joueur.pvMax - duel.joueur.pv, RPG_PV_JOUEUR - 7, 'l’écart reste la santé manquante');
+});
+
+test('le cœur pesé donne toute la vie : le Tribut fait passer le camp au-dessus de 25', () => {
+  const duel = duelDeBase();
+  duel.joueur.creatures.push({
+    id: 'tribut-test',
+    carteId: 'chacal-du-seuil',
+    name: 'Chacal du seuil',
+    atk: 1,
+    pv: 1,
+    pvMax: 1,
+    tribut: 2,
+    ready: true,
+    attaquee: false,
+    jeton: false,
+    armes: [],
+    emplacement: 0,
+  });
+  const res = rpgAttaquerSorcier(duel, 'joueur', 'tribut-test');
+  assert.equal(res.ok, true, JSON.stringify(res));
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 2, 'le Tribut porte la vie au-dessus de 25');
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR + 2, 'le maximum suit le gain');
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE - 1 - 2, 'le sorcier perd la frappe et le Tribut');
+  assert.equal(duel.sorcier.degatsRecus, 3, 'les dégâts réellement encaissés se comptent');
+});
+
+test('les dégâts encaissés se comptent : la magie compte pour la quête « le sorcier saigne »', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'eclair-du-marteau');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', 'sorcier').ok, true);
+  assert.equal(duel.sorcier.degatsRecus, 3, 'la magie compte pour la quête');
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE - 3);
 });
 
 test('la Veilleuse gagne son bouclier dès son arrivée et absorbe les premiers dégâts', () => {
@@ -2823,7 +2871,10 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
     donner(duel, 'joueur', id);
     assert.equal(rpgJouerCreature(duel, 'joueur', id).ok, true, `${figure} se pose`);
   }
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'le soin de la Dame est plafonné aux PV maximum');
+  // Le Festin a laissé le joueur à 20 PV : le soin de la Dame s’ajoute en
+  // entier (20 + 5) et n'est plus rogné par un plafond de 25.
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'le soin de la Dame s’ajoute en entier');
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR, 'le maximum ne bouge que si la vie le dépasse');
 
   duel.joueur.deck = ['glacier', 'glacier', 'glacier'];
   donner(duel, 'joueur', 'pere-des-corbeaux');
