@@ -256,6 +256,27 @@ export function rpgConsommerPresentations(duel) {
   presentations.delete(duel);
   return file;
 }
+
+// Les soins, eux aussi hors de l'état sauvegardé : chaque gain de vie RÉEL —
+// borné au maximum, donc jamais nul — y laisse `{ cote, entityId, montant }`,
+// `entityId` nul quand c'est le sorcier lui-même qui regagne des PV. La page
+// en tire l'éclat vert et le son du soin, quelle que soit la source : magie,
+// arrivée, destruction, arme, Tribut ou transfert. Le journal observe sans
+// jamais rien décider : aucune règle ne le lit.
+const soinsParDuel = new WeakMap();
+function journaliserSoin(duel, cote, montant, entityId = null) {
+  if (!(montant > 0)) return;
+  const journal = soinsParDuel.get(duel) ?? [];
+  journal.push({ cote, entityId, montant });
+  soinsParDuel.set(duel, journal);
+}
+/** Les gains de vie survenus depuis le dernier relevé — le journal se vide. */
+export function rpgConsommerSoins(duel) {
+  if (!duel) return [];
+  const journal = soinsParDuel.get(duel) ?? [];
+  soinsParDuel.delete(duel);
+  return journal;
+}
 function presenterEffet(duel, cote, carteId) {
   if (duelCardById(carteId)?.kind === 'creature') {
     presenter(duel, { type: 'effet', cote, carteId });
@@ -1373,6 +1394,7 @@ function transfertVie(duel, coteSource, montant) {
   perdant.pv -= n;
   const gagne = Math.min(n, Math.max(0, (gagnant.pvMax ?? gagnant.pv) - gagnant.pv));
   gagnant.pv += gagne;
+  journaliserSoin(duel, coteSource, gagne);
   return { perdu: n, gagne };
 }
 
@@ -1592,13 +1614,18 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       duel.log.push(`${carte?.name ?? 'L’arme'} gagne ${nombre} compteur${nombre > 1 ? 's' : ''} de sable (${porteur.arme.compteurs} au total).`);
       return;
     }
-    case 'soin':
+    case 'soin': {
+      const pvAvant = duel[cote].pv;
       duel[cote].pv = Math.min(duel[cote].pvMax, duel[cote].pv + (effet.amount ?? 0));
+      journaliserSoin(duel, cote, duel[cote].pv - pvAvant);
       return;
+    }
     case 'soin-creatures':
       for (const entite of duel[cote].creatures) {
+        const pvAvant = entite.pv;
         entite.pv = Math.min(entite.pvMax, entite.pv + (effet.amount ?? 0));
         entite.def = Math.min(entite.pvMax, Math.max(entite.def, entite.pv));
+        journaliserSoin(duel, cote, entite.pv - pvAvant, entite.id);
       }
       return;
     case 'bouclier-lumiere': {

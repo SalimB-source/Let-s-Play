@@ -67,7 +67,7 @@ const bell = (note, at, dur, g = 0.5, options = {}) => ({ kind: 'bell', n: note,
 export const RPG_SFX_NAMES = Object.freeze([
   'apparition', 'victoire', 'defaite', 'whoosh', 'hit', 'heal', 'zone', 'bell', 'blip', 'explore', 'souffle',
   'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap', 'mana',
-  'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'bouclier',
+  'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'soin_vie', 'soin_vie_adverse', 'bouclier',
   'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
   'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'water_wave', 'card_countered', 'creature_return', 'block_impact', 'destruction_hit', 'page_turn', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
 ]);
@@ -218,6 +218,31 @@ export function rpgSfx(name) {
         tone('sine', 'C5', 0, 0.3, 0.15, { attack: 0.03, send: 0.18, pan: -0.12 }),
         tone('triangle', 'E5', 0.13, 0.34, 0.13, { filter: 2700, attack: 0.04, send: 0.22 }),
         bell('G5', 0.27, 0.82, 0.15, { send: 0.38, pan: 0.12 }),
+      ];
+    // Gain de vie de votre camp, quelle qu'en soit la source : un souffle
+    // clair qui s'ouvre vers l'aigu, une nappe qui monte d'une quinte, puis un
+    // arpège de cloches en ré majeur — la tonalité de la magie — qui s'élève de
+    // gauche à droite. L'exact contraire des impacts graves et descendants.
+    case 'soin_vie':
+      return [
+        noise(0, 0.78, 0.07, { filterType: 'bandpass', filter: 900, filterTo: 5200, q: 1.1, attack: 0.3, send: 0.42, pan: -0.12 }),
+        tone('sine', 'D4', 0, 0.72, 0.12, { slideTo: 'A4', attack: 0.12, filter: 1600, filterTo: 2800, send: 0.24 }),
+        tone('triangle', 'A4', 0.04, 0.7, 0.05, { slideTo: 'D5', attack: 0.16, filter: 2200, send: 0.3, pan: 0.1 }),
+        bell('D5', 0.08, 0.72, 0.14, { send: 0.4, pan: -0.26 }),
+        bell('F#5', 0.17, 0.74, 0.13, { send: 0.42, pan: -0.08 }),
+        bell('A5', 0.26, 0.82, 0.13, { send: 0.46, pan: 0.1 }),
+        bell('D6', 0.36, 1.15, 0.15, { send: 0.52, pan: 0.24 }),
+      ];
+    // Le même geste quand c'est l'adversaire qui se relève : une tierce plus
+    // bas, en si mineur (le relatif de ré), plus court et plus feutré — on
+    // l'entend sans le confondre avec le vôtre.
+    case 'soin_vie_adverse':
+      return [
+        noise(0, 0.7, 0.055, { filterType: 'bandpass', filter: 650, filterTo: 3000, q: 1.1, attack: 0.28, send: 0.38, pan: 0.12 }),
+        tone('sine', 'B3', 0, 0.68, 0.11, { slideTo: 'F#4', attack: 0.12, filter: 1200, filterTo: 2000, send: 0.22 }),
+        bell('B4', 0.08, 0.7, 0.12, { send: 0.38, pan: 0.24 }),
+        bell('D5', 0.18, 0.72, 0.11, { send: 0.4, pan: 0.08 }),
+        bell('F#5', 0.29, 1, 0.12, { send: 0.46, pan: -0.1 }),
       ];
     case 'bouclier':
       return [
