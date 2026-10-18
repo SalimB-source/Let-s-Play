@@ -13,6 +13,7 @@
  */
 
 import { RPG_SOLEIL_ROUGE_CREATURES, RPG_SOLEIL_ROUGE_JETONS, RPG_SOLEIL_ROUGE_MAGIES, RPG_SOLEIL_ROUGE_TERRAINS } from './rpgSoleilRouge.js';
+import { RPG_TENEBRES_ARMES, RPG_TENEBRES_CREATURES, RPG_TENEBRES_JETONS, RPG_TENEBRES_MAGIES } from './rpgTenebres.js';
 import { composerDeck } from './rpgDeckComposer.js';
 import { RPG_RECETTES_DECKS } from './rpgDeckRecipes.js';
 
@@ -31,12 +32,13 @@ export function cardRarityInfo(carte) {
 }
 
 /**
- * Les quatre éléments du duel, dans l'ordre canonique des couleurs : c'est
+ * Les cinq éléments du duel, dans l'ordre canonique des couleurs : c'est
  * cet ordre qui nomme les combinaisons bicolores et tricolores, quel que soit
  * l'ordre dans lequel une carte déclare ses couleurs. Braise, Eau et Sable
- * composent Bab El ; la Neige arrive avec le Serment des Neuf Hivers.
+ * composent Bab El ; la Neige arrive avec le Serment des Neuf Hivers ; les
+ * Ténèbres viennent avec La Balance des Heures (banc d'essai sans terrains).
  */
-export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige'];
+export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige', 'tenebres'];
 
 /** Une carte mythique emblématique par élément, pour illustrer les boosters du
  *  Souk. C'est une vitrine (son art existe dans `public/cards/`), pas un
@@ -48,6 +50,7 @@ export const MYTHIQUE_VITRINE_PAR_ELEMENT = Object.freeze({
   eau: 'kraken',
   sable: 'salem',
   neige: 'pere-des-corbeaux',
+  tenebres: 'la-devoreuse',
 });
 
 /**
@@ -61,24 +64,40 @@ export const MYTHIQUE_VITRINE_PAR_ELEMENT = Object.freeze({
  *
  * Exception : les armes gardent un cadre d'**acier métallique guilloché**
  * (`arme`), mais teinté dans la couleur de leur élément — acier de Braise,
- * d'Eau, de Sable ou de Neige.
+ * d'Eau, de Sable, de Neige ou de Ténèbres.
  */
 export const CARD_FRAME_COLORS = {
   braise: { label: 'Braise', color: '#e0412a' },
   eau: { label: 'Eau', color: '#3f9fe8' },
   sable: { label: 'Sable', color: '#d8bc86' },
   neige: { label: 'Neige', color: '#a9e0f5' },
+  tenebres: { label: 'Ténèbres', color: '#4b2e83' },
   'hybride-braise-eau': { label: 'Braise + Eau', color: '#a86ad6' },
   'hybride-braise-sable': { label: 'Braise + Sable', color: '#e2521f' },
   'hybride-braise-neige': { label: 'Braise + Neige', color: '#c98a86' },
+  'hybride-braise-tenebres': { label: 'Braise + Ténèbres', color: '#8f3a72' },
   'hybride-eau-sable': { label: 'Eau + Sable', color: '#7fd4c8' },
   'hybride-eau-neige': { label: 'Eau + Neige', color: '#8fd4ef' },
+  'hybride-eau-tenebres': { label: 'Eau + Ténèbres', color: '#6f6fd1' },
   'hybride-sable-neige': { label: 'Sable + Neige', color: '#dfeef0' },
+  'hybride-sable-tenebres': { label: 'Sable + Ténèbres', color: '#a98cbf' },
+  'hybride-neige-tenebres': { label: 'Neige + Ténèbres', color: '#9b8fd6' },
   'hybride-braise-eau-sable': { label: 'Braise + Eau + Sable', color: '#d8b45a' },
   'hybride-braise-eau-neige': { label: 'Braise + Eau + Neige', color: '#c9a6e0' },
+  'hybride-braise-eau-tenebres': { label: 'Braise + Eau + Ténèbres', color: '#8a5fb0' },
   'hybride-braise-sable-neige': { label: 'Braise + Sable + Neige', color: '#e8b98a' },
+  'hybride-braise-sable-tenebres': { label: 'Braise + Sable + Ténèbres', color: '#a4657e' },
+  'hybride-braise-neige-tenebres': { label: 'Braise + Neige + Ténèbres', color: '#9b6f9a' },
   'hybride-eau-sable-neige': { label: 'Eau + Sable + Neige', color: '#a8e2dc' },
+  'hybride-eau-sable-tenebres': { label: 'Eau + Sable + Ténèbres', color: '#7fa3b8' },
+  'hybride-eau-neige-tenebres': { label: 'Eau + Neige + Ténèbres', color: '#7f8fd4' },
+  'hybride-sable-neige-tenebres': { label: 'Sable + Neige + Ténèbres', color: '#a9a3c9' },
   'hybride-braise-eau-sable-neige': { label: 'Braise + Eau + Sable + Neige', color: '#e6d3a4' },
+  'hybride-braise-eau-sable-tenebres': { label: 'Braise + Eau + Sable + Ténèbres', color: '#a67fb0' },
+  'hybride-braise-eau-neige-tenebres': { label: 'Braise + Eau + Neige + Ténèbres', color: '#8f7fc4' },
+  'hybride-braise-sable-neige-tenebres': { label: 'Braise + Sable + Neige + Ténèbres', color: '#b08aa8' },
+  'hybride-eau-sable-neige-tenebres': { label: 'Eau + Sable + Neige + Ténèbres', color: '#8fb8c4' },
+  'hybride-braise-eau-sable-neige-tenebres': { label: 'Braise + Eau + Sable + Neige + Ténèbres', color: '#bda3c9' },
   /* Les cadres des armes : le même acier guilloché pour toutes, teinté dans
      la couleur de leur élément (les dégradés métalliques sont peints dans
      `rpg-battle.css`). La clé générique sert de repli. */
@@ -86,11 +105,12 @@ export const CARD_FRAME_COLORS = {
   'arme-eau': { label: 'Acier d’Eau', color: '#3f9fe8' },
   'arme-sable': { label: 'Acier de Sable', color: '#d8bc86' },
   'arme-neige': { label: 'Acier de Neige', color: '#a9e0f5' },
+  'arme-tenebres': { label: 'Acier de Ténèbres', color: '#4b2e83' },
   arme: { label: 'Acier des armes', color: '#9aa6b2' },
 };
 
-/** Clé de repli : les quatre couleurs, si une combinaison inconnue apparaissait. */
-const CARD_FRAME_FALLBACK_KEY = 'hybride-braise-eau-sable-neige';
+/** Clé de repli : les cinq couleurs, si une combinaison inconnue apparaissait. */
+const CARD_FRAME_FALLBACK_KEY = 'hybride-braise-eau-sable-neige-tenebres';
 
 /** Ordre canonique des couleurs : la clé d'une hybride ne dépend pas de l'ordre déclaré. */
 const CARD_FRAME_COLOR_ORDER = RPG_ELEMENTS;
@@ -264,6 +284,7 @@ export const CARD_KIND_LABELS = {
  */
 export const RPG_CREATURE_CARDS = [
   ...RPG_SOLEIL_ROUGE_CREATURES,
+  ...RPG_TENEBRES_CREATURES,
   {
     id: 'fennec-des-decombres',
     name: 'Fennec des décombres',
@@ -778,6 +799,7 @@ export const RPG_CREATURE_CARDS = [
  */
 export const RPG_JETON_CARDS = [
   ...RPG_SOLEIL_ROUGE_JETONS,
+  ...RPG_TENEBRES_JETONS,
   {
     id: 'chien-de-sable',
     name: 'Chien de sable',
@@ -1228,6 +1250,7 @@ export function terrainById(id) {
  */
 export const RPG_MAGIE_CARDS = [
   ...RPG_SOLEIL_ROUGE_MAGIES,
+  ...RPG_TENEBRES_MAGIES,
   {
     id: 'trait-de-braise',
     name: 'Trait de braise',
@@ -1671,6 +1694,7 @@ export const RPG_MAGIE_CARDS = [
  * permet de la jouer sans créature : elle crée son propre porteur.
  */
 export const RPG_ARME_CARDS = [
+  ...RPG_TENEBRES_ARMES,
   {
     id: 'takouba-des-pistes',
     name: 'Takouba des pistes',

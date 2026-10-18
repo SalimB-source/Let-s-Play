@@ -60,6 +60,7 @@ export function composerDeck(recette, catalogue) {
   } = recette ?? {};
 
   const dansIdentite = (carte) => {
+    if (carte?.set === 'balance-des-heures' && !identite.includes('tenebres')) return false;
     const couleurs = couleursDe(carte);
     return couleurs.length > 0 && couleurs.every((couleur) => identite.includes(couleur));
   };

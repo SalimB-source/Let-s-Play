@@ -73,7 +73,7 @@ assert.match(styles, /\.rpg-flux-choix__option:focus-visible\s*\{[^}]*background
   'le fond reste noir au survol');
 assert.doesNotMatch(styles, /--choix-(?:fond|survol):/, 'aucune couleur ne recolore le fond des choix');
 assert.doesNotMatch(page, /rpg-flux-choix__retour|<small>\+1 ·/, 'le choix se limite aux couleurs');
-for (const couleur of ['sable', 'neige', 'eau', 'braise']) {
+for (const couleur of ['sable', 'neige', 'eau', 'braise', 'tenebres']) {
   const optionCouleur = styles.match(new RegExp(`\\.rpg-flux-choix__option--${couleur}\\s*\\{[^}]*\\}`))?.[0] ?? '';
   assert.match(optionCouleur, /--mana-color:\s*#[0-9a-f]+;/,
     `l’icône ${couleur} garde sa couleur`);

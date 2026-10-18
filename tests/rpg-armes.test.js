@@ -81,9 +81,9 @@ const LOT_EQUIPEMENTS_SABLE = [
 ];
 const ARMES_PROTOTYPE = RPG_ARME_CARDS.filter((carte) => !LOT_EQUIPEMENTS_SABLE.includes(carte.id));
 
-test('le prototype compte quatre armes, une par élément, avec leur peinture', () => {
-  assert.equal(ARMES_PROTOTYPE.length, 4);
-  assert.deepEqual(ARMES_PROTOTYPE.map((carte) => carte.element).sort(), ['braise', 'eau', 'neige', 'sable']);
+test('le prototype compte cinq armes, une par élément, avec leur peinture', () => {
+  assert.equal(ARMES_PROTOTYPE.length, 5);
+  assert.deepEqual(ARMES_PROTOTYPE.map((carte) => carte.element).sort(), ['braise', 'eau', 'neige', 'sable', 'tenebres']);
   for (const carte of ARMES_PROTOTYPE) {
     assert.equal(carte.kind, 'arme', `${carte.id} est une arme`);
     assert.match(carte.typeLine, /^Arme — /, `${carte.id} affiche sa ligne de type`);

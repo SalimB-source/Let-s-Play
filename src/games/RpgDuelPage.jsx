@@ -180,9 +180,9 @@ import {
 import { SortSceau, SortSocle, classeLigneFamille } from './rpgSortSignature.jsx';
 
 const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
-const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', hybride: '🔥⏳' };
-const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', hybride: 'Sable + Braise' };
-const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', hybride: 'Hybride' };
+const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️', hybride: '🔥⏳' };
+const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Sable + Braise' };
+const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' };
 const CARD_ART_CACHE_VERSIONS = {
   'susanoo': 'susanoo-kaiga-couleurs-v1',
   'orochi': 'orochi-kaiga-vert-rouge-v2',
@@ -232,6 +232,8 @@ const CARD_ART_CACHE_VERSIONS = {
   'baton-des-citernes': 'baton-nihonga-vitrine-dehors-v2',
   'djinn-de-foudre': 'plein-art-foudre-v1',
   'sonneur-fele': 'plein-art-cloche-v1',
+  'dame-aux-ailes-d-or': 'nihonga-v1',
+  'lionne-du-midi-ardent': 'nihonga-v1',
   'brisure-de-verre': 'plein-art-verre-v2',
   'silence-decume': 'plein-art-bulle-v1',
   'parade-du-verre': 'plein-art-verre-v1',
@@ -306,6 +308,11 @@ function describeAnnouncedMagicTarget(carte, cibleId, duel, sorcierArtId, sorcie
   if (effet.type === 'soin' || effet.type === 'pioche' || carte.cibles?.includes('soi')) {
     return { nom: 'Le sorcier', illustrationId: sorcierArtId, illustrationUrl: sorcierPortraitUrl };
   }
+  // Le set Ténèbres : des sorts sans « créature ciblée », décrits pour ce
+  // qu'ils font à chacun des deux camps.
+  if (effet.type === 'transfert') return { nom: 'Vous et le sorcier' };
+  if (effet.type === 'defausse-adverse') return { nom: 'Votre main' };
+  if (effet.type === 'defaussePaquet') return { nom: 'Votre paquet' };
   if (effet.cible === 'creature') return { nom: 'Une créature ciblée' };
   return { nom: 'Champ de bataille' };
 }
@@ -2040,6 +2047,14 @@ const EMBLEMS = {
     <>
       <path d="M12 1.3 4.9 5.6v9.6L12 22.7l7.1-7.5V5.6z" />
       <path d="M12 1.3v21.4M4.9 5.6 12 11.8l7.1-6.2" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" />
+    </>
+  ),
+  // Ténèbres : la balance du jugement — poutre, plateaux et cœur pesé.
+  tenebres: (
+    <>
+      <path d="M4 7.6h16M12 7.6v11M7.5 21h9" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M4 7.6 1.4 13.4h5.2L4 7.6zm16 0-2.6 5.8h5.2L20 7.6z" />
+      <path d="M12 4.6c0 0-2.1-1.4-2.1-2.8a1.15 1.15 0 0 1 2.1-.58 1.15 1.15 0 0 1 2.1.58c0 1.4-2.1 2.8-2.1 2.8z" />
     </>
   ),
 };
@@ -5295,6 +5310,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (carte.effet?.cible === 'creature-amie') return { nom: 'Une créature alliée', targetIds: [] };
     if (carte.effet?.cible === 'creature') return { nom: 'Une créature adverse', targetIds: [] };
+    if (carte.effet?.type === 'transfert') return { nom: 'Les deux sorciers', targetPlate: 'sorcier', targetIds: [] };
+    if (carte.effet?.type === 'defausse-adverse') return { nom: 'La main du sorcier', targetPlate: 'sorcier', targetIds: [] };
+    if (carte.effet?.type === 'defaussePaquet') return { nom: 'Le paquet du sorcier', targetPlate: 'sorcier', targetIds: [] };
     return { nom: 'Le champ de bataille', targetIds: [] };
   };
 

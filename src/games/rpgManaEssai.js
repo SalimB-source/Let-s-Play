@@ -75,6 +75,26 @@ export const RPG_MANA_ESSAI_DECKS = Object.freeze([
       ...copies('vipere-de-verre', 2), 'sonneur-fele', 'lame-de-mer', 'jormungandr',
     ],
   },
+  {
+    id: 'essai-mana-tenebres',
+    name: 'La Balance des Heures',
+    element: 'tenebres',
+    elements: ['tenebres'],
+    boxArt: 'la-devoreuse',
+    description: 'Mono-Ténèbres : on paie sa vie, on reçoit la leur.',
+    cardIds: [
+      ...copies('chacal-du-seuil', 2), 'ouvrier-du-natron',
+      ...copies('papyrus', 2),
+      ...copies('gardienne-de-la-balance', 2), ...copies('scribe-des-feuillets', 2),
+      ...copies('pretre-de-la-bouche', 2), ...copies('nom-efface', 2),
+      ...copies('offrande-de-lin', 2),
+      ...copies('ureus-du-seuil', 2), ...copies('momie-de-lin', 2),
+      ...copies('ibis-des-comptes', 2), 'couveuse-de-shabtis',
+      'khopesh-d-or', ...copies('le-poids', 2),
+      'celle-qui-pese', 'les-feuillets', 'la-grande-pesee',
+      'la-devoreuse', 'celui-qui-juge',
+    ],
+  },
 ]);
 
 /** Validation propre au prototype, sans changer la règle des decks classiques. */

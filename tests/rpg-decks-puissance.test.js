@@ -221,6 +221,8 @@ test('chaque deck de départ mélange les quatre raretés et ne contient qu’un
 test('les cartes rares et mythiques qui restent hors des starters sont réservées au Souk', () => {
   for (const carte of RPG_DUEL_CARDS.filter((candidate) => ['rare', 'mythique'].includes(candidate.rarity))) {
     assert.equal(COLLECTION_DEPART.includes(carte.id), false, `${carte.id} n’est pas dans la dotation gratuite`);
+    // Banc d'essai (doc 16 §10) : Ténèbres n'entre pas encore au Souk.
+    if (carte.set === 'balance-des-heures') continue;
     assert.ok(carteReveleePar(carte.id), `${carte.id} est révélée puis ouvrable dans un booster`);
   }
 });

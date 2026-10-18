@@ -63,6 +63,19 @@ function valeurEffet(effet = {}) {
       const exces = effet.etSorcier ? effet.etSorcier * 1.25 : 0;
       return montant * facteur + echo * 0.9 + gel + exces;
     }
+    case 'transfert':
+      // Le cœur pesé (set Ténèbres) : N PV quittent l'adversaire pour revenir
+      // au camp — la valeur d'un dégât direct (1×) plus un demi-soin (0,5×),
+      // jamais nommée « dégâts ». La pioche enchaînée (Grande Pesée) paie en plus.
+      return montant * 1.5 + (Number(effet.pioche) || 0) * 1.5;
+    case 'defausse-adverse':
+      // UNE carte arrachée à une main adverse — la victime choisit, donc
+      // toujours sa moins utile : valeur d'un tempo lent, plafonnée.
+      return 2.4;
+    case 'defaussePaquet':
+      // Une carte du paquet adverse au cimetière : usure du paquet, et
+      // fatigue du mode sans terrains à terme.
+      return montant * 0.9;
     case 'soin':
       return montant * 0.5;
     case 'soin-creatures':
@@ -183,6 +196,7 @@ export function valeurCarte(carte) {
     if (carte.donne?.immunite) valeur += 2;
     if (carte.donne?.rapidite) valeur += 0.5;
     if (carte.donne?.coupRapide) valeur += 2;
+    if (carte.donne?.tribut) valeur += 1.6 * carte.donne.tribut;
     if (carte.declenche?.effet) valeur += valeurEffet(carte.declenche.effet);
     // Les déclencheurs du porteur (lot du Sable,
     // `docs/rpg/14-equipements-du-sable.md`) : ce que l'arme rapporte à
@@ -230,6 +244,9 @@ export function valeurCarte(carte) {
   // Butin (le set Sable) : chaque contact avec le sorcier adverse fait
   // piocher puis défausser — une carte qui creuse, jouée à chaque attaque.
   if (carte.butin) valeur += 1.2;
+  // Tribut (set Ténèbres) : chaque contact avec le sorcier adverse transfère
+  // des PV — pesé au même rythme que le Butin, un peu en dessous.
+  if (carte.tribut) valeur += 0.9 * carte.tribut;
   if (carte.arrivee) valeur += valeurEffet(carte.arrivee);
   // L'effet de destruction n'arrive que si la créature tombe : compté, mais
   // à 80 % — la mort n'est pas une garantie, et certaines tombent trop tard.
@@ -247,7 +264,9 @@ export function valeurCarte(carte) {
  */
 export function puissanceCarte(carte) {
   if (!carte || carte.kind === 'terrain') return 0;
-  const cout = Math.max(1.5, Number(carte.cost) || 1);
+  // Un Prix en PV (set Ténèbres) alourdit le vrai coût : à rendement égal,
+  // une carte qui se paie en vie vaut moins qu'une carte au mana seul.
+  const cout = Math.max(1.5, (Number(carte.cost) || 1) + (Number(carte.prixPv) || 0) * 0.6);
   return rangRarete(carte) * 10 + valeurCarte(carte) / cout;
 }
 

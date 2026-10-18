@@ -25,7 +25,12 @@ import {
   sauverCollectionDistante,
 } from '../src/games/rpgCollection.js';
 
-const idsCatalogue = () => RPG_DUEL_CARDS.map((carte) => carte.id).sort();
+// Hors champ de la collection : le banc d'essai Ténèbres (doc 16 §10) ne
+// s'obtient ni par la dotation ni par les révélations — pour l'instant.
+const idsCatalogue = () => RPG_DUEL_CARDS
+  .filter((carte) => carte.set !== 'balance-des-heures')
+  .map((carte) => carte.id)
+  .sort();
 
 /** Remplace `localStorage` le temps d'un test, puis le rétablit. */
 function avecStockage(stockage, test) {

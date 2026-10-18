@@ -1846,6 +1846,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font: 10px/1 "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
   text-shadow: 0 1px 1px rgba(255, 255, 255, .55);
 }
+.rpg-mana-cost--tenebres i { background: radial-gradient(circle at 35% 25%, #9a7ce0, #2e1a56 72%); }
 
 /* Le rond qui contient le coût prend la couleur de l'élément de la carte. */
 .rpg-mana-cost--braise {
@@ -1868,6 +1869,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #08202e;
   text-shadow: 0 1px 1px rgba(255, 255, 255, .7);
   filter: drop-shadow(0 0 2px rgba(150, 220, 255, .85));
+}
+.rpg-mana-cost--tenebres {
+  background: radial-gradient(circle at 35% 25%, #8f74d4, #241543 72%);
+  color: #f4eeff;
+  text-shadow: 0 1px 2px #000;
 }
 /* Le coût hybride partage son disque entre les éléments, comme le sceau des
    magies ; le chiffre clair reste lisible même sur la moitié Sable. */
@@ -4403,6 +4409,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-element-badge--eau { background: radial-gradient(circle at 34% 24%, #a5dcf5, #285e91 72%); }
 .rpg-card-element-badge--sable { background: radial-gradient(circle at 34% 24%, #f8e69d, #795613 72%); color: #281b05; text-shadow: 0 1px 1px rgba(255,255,255,.68); filter: drop-shadow(0 0 2px rgba(255, 215, 98, .8)); }
 .rpg-card-element-badge--neige { background: radial-gradient(circle at 34% 24%, #eefaff, #4a86ab 72%); color: #08202e; text-shadow: 0 1px 1px rgba(255, 255, 255, .7); filter: drop-shadow(0 0 2px rgba(150, 220, 255, .85)); }
+.rpg-card-element-badge--tenebres { background: radial-gradient(circle at 34% 24%, #9a7ce0, #241543 72%); }
 .rpg-card-element-badge--hybride {
   display: flex;
   width: var(--rpg-card-marker-size, 24px);
@@ -6616,6 +6623,53 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card--frame-hybride-braise-eau-sable-neige {
   --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #a9e0f5 75%);
 }
+/* Ténèbres : cinquième couleur du banc d'essai — chaque combinaison qui la
+   contient partage le cadre avec son violet de balance (doc 16). */
+.rpg-card--frame-hybride-braise-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #4b2e83 50%);
+}
+.rpg-card--frame-hybride-eau-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 50%, #4b2e83 50%);
+}
+.rpg-card--frame-hybride-sable-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #d8bc86 50%, #4b2e83 50%);
+}
+.rpg-card--frame-hybride-neige-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #a9e0f5 50%, #4b2e83 50%);
+}
+.rpg-card--frame-hybride-braise-eau-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #4b2e83 66.666%);
+}
+.rpg-card--frame-hybride-braise-sable-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #d8bc86 33.333% 66.666%, #4b2e83 66.666%);
+}
+.rpg-card--frame-hybride-braise-neige-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
+}
+.rpg-card--frame-hybride-eau-sable-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 33.333%, #d8bc86 33.333% 66.666%, #4b2e83 66.666%);
+}
+.rpg-card--frame-hybride-eau-neige-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
+}
+.rpg-card--frame-hybride-sable-neige-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #d8bc86 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
+}
+.rpg-card--frame-hybride-braise-eau-sable-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #4b2e83 75%);
+}
+.rpg-card--frame-hybride-braise-eau-neige-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #3f9fe8 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
+}
+.rpg-card--frame-hybride-braise-sable-neige-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #d8bc86 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
+}
+.rpg-card--frame-hybride-eau-sable-neige-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 25%, #d8bc86 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
+}
+.rpg-card--frame-hybride-braise-eau-sable-neige-tenebres {
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 20%, #3f9fe8 20% 40%, #d8bc86 40% 60%, #a9e0f5 60% 80%, #4b2e83 80%);
+}
 
 /* Mythique : le zellige de Bab El (une étoile à huit pointes) distingue la
    rareté sans remplacer la couleur de l'élément. Seules les mono-élément
@@ -6643,6 +6697,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card--mythique.rpg-card--frame-neige {
   --rpg-frame-gradient: linear-gradient(115deg, #35647d 0%, #a9e0f5 16%, #e4f8ff 30%, #83c5df 42%, #ffffff 54%, #b2e8fc 70%, #d5f3ff 84%, #35647d 100%);
   background-color: #35647d;
+}
+.rpg-card--mythique.rpg-card--frame-tenebres {
+  --rpg-frame-gradient: linear-gradient(115deg, #1c1233 0%, #4b2e83 16%, #8f74d4 30%, #3a2468 42%, #cbb8f5 54%, #5a3f9e 70%, #9b83e0 84%, #1c1233 100%);
+  background-color: #1c1233;
 }
 /* Le choix du mulligan repeint le cadre en jaune, même sur une hybride ou
    une mythique : priorité au repère de sélection sur ses couleurs fixes. */
@@ -6703,6 +6761,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card--frame-arme-neige {
   --rpg-frame-gradient: linear-gradient(115deg, #31566b 0%, #79b5cf 16%, #ffffff 31%, #5d93ad 46%, #eaf9ff 59%, #47758d 74%, #bfe8f7 88%, #31566b 100%);
   background-color: #47758d;
+}
+.rpg-card--frame-arme-tenebres {
+  --rpg-frame-gradient: linear-gradient(115deg, #191033 0%, #4b2e83 16%, #b39ae0 31%, #3a2468 46%, #ded2f7 59%, #2c1b56 74%, #7f63c4 88%, #191033 100%);
+  background-color: #2c1b56;
 }
 
 /* La plaque des armes n'est pas plus épaisse que les autres cadres : c'est
@@ -7444,6 +7506,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-sort-sceau--element-eau { --rpg-sort-sceau-clair: #a5dcf5; --rpg-sort-sceau-sombre: #285e91; --rpg-sort-sceau-encre: #fff9ea; --rpg-sort-sceau-halo: rgba(63, 159, 232, .8); }
 .rpg-sort-sceau--element-sable { --rpg-sort-sceau-clair: #f8e69d; --rpg-sort-sceau-sombre: #795613; --rpg-sort-sceau-encre: #281b05; --rpg-sort-sceau-halo: rgba(255, 215, 98, .8); }
 .rpg-sort-sceau--element-neige { --rpg-sort-sceau-clair: #eefaff; --rpg-sort-sceau-sombre: #4a86ab; --rpg-sort-sceau-encre: #08202e; --rpg-sort-sceau-halo: rgba(150, 220, 255, .85); }
+.rpg-sort-sceau--element-tenebres { --rpg-sort-sceau-clair: #9a7ce0; --rpg-sort-sceau-sombre: #241543; --rpg-sort-sceau-encre: #f4eeff; --rpg-sort-sceau-halo: rgba(143, 116, 212, .8); }
 .rpg-sort-sceau--hybride {
   --rpg-sort-sceau-fond: var(--rpg-sort-sceau-fond-hybride);
   --rpg-sort-sceau-clair: color-mix(in srgb, var(--rpg-sort-sceau-couleur) 52%, white);

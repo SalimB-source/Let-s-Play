@@ -22,7 +22,7 @@ export async function checkManaEssaiUi(assert) {
   const etatDurable = () => [RPG_BOURSE_STORAGE_KEY, RPG_QUETES_STORAGE_KEY, RPG_STORY_STORAGE_KEY]
     .map((cle) => window.localStorage.getItem(cle));
   // La présentation doit respecter les quatre couleurs et l'ordre des tours,
-  // même si les trois decks prédéfinis ne proposent pas encore de Neige.
+  // même si les decks prédéfinis ne proposent pas encore de Neige.
   const verifierPalette = async () => {
     const element = document.createElement('div');
     document.body.append(element);
@@ -56,7 +56,7 @@ export async function checkManaEssaiUi(assert) {
   const revenirAuMenu = async () => click(q('.rpg-duel-nav button'));
   const demarrer = async (index) => {
     const boutons = qa('.rpg-flux-menu__decks button');
-    assert.equal(boutons.length, 3, 'trois decks distincts accessibles depuis le menu');
+    assert.equal(boutons.length, 4, 'quatre decks distincts accessibles depuis le menu');
     await click(boutons[index]);
     const partie = q('[data-scene="duel"]');
     assert.equal(partie?.getAttribute('data-mode-mana'), 'essai');
@@ -85,7 +85,7 @@ export async function checkManaEssaiUi(assert) {
     await act(async () => root.render(<RpgDuelPage rng={() => .999} />));
     const origine = etatDurable();
     assert.equal(q('.rpg-flux-menu__decks') !== null, true, 'le laboratoire est visible sans l’atelier');
-    assert.deepEqual(qa('.rpg-flux-menu__decks button').map((bouton) => bouton.textContent.includes('couleur')), [true, true, true]);
+    assert.deepEqual(qa('.rpg-flux-menu__decks button').map((bouton) => bouton.textContent.includes('couleur')), [true, true, true, true]);
 
     // Tricolore : le joueur garde sa main. Le premier mana est choisi après.
     await demarrer(2);
@@ -170,7 +170,7 @@ export async function checkManaEssaiUi(assert) {
     assert.equal(qa('.rpg-flux-track--joueur .rpg-flux-track__slot.is-empty').length, 9);
     assert.equal(q('.card-table')?.hasAttribute('inert'), false);
     assert.deepEqual(etatDurable(), origine);
-    assert.equal(RPG_MANA_ESSAI_DECKS.length, 3);
+    assert.equal(RPG_MANA_ESSAI_DECKS.length, 4);
   } finally {
     await act(async () => root.unmount());
     container.remove();

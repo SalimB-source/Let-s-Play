@@ -44,9 +44,9 @@ const cardsSource = readFileSync(new URL('../src/games/rpgCards.js', import.meta
 const tableCardSource = battlePage.slice(battlePage.indexOf('function TableCard('), battlePage.indexOf('function HoverCardPreview('));
 const hoverPreviewSource = battlePage.slice(battlePage.indexOf('function HoverCardPreview('), battlePage.indexOf('function ConfirmationSort('));
 const confirmSortSource = battlePage.slice(battlePage.indexOf('function ConfirmationSort('), battlePage.indexOf('function SpellAnnouncement('));
-assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', hybride: '🔥⏳' \};/,
+assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️', hybride: '🔥⏳' \};/,
   'les éléments utilisent flamme, goutte d’eau, sablier, cristal de glace et repère bicolore');
-assert.match(battlePage, /FILTRE_COULEUR_LABELS = \{ toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', hybride: 'Hybride' \};/,
+assert.match(battlePage, /FILTRE_COULEUR_LABELS = \{ toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' \};/,
   'la puce de filtre Neige existe, à côté des trois couleurs historiques');
 assert.match(battleCss, /\.rpg-card-element-badge--sable\s*\{[^}]*drop-shadow\(0 0 2px rgba\(255, 215, 98, \.8\)\)/,
   'le sablier Sable est souligné par un halo doré pour rester lisible');
@@ -344,8 +344,8 @@ assert.match(battlePage, /function cardFrameStyle\(carte\)[\s\S]*?--rpg-frame-co
   'les cartes transmettent la couleur de leur élément à leur cadre');
 assert.doesNotMatch(battlePage, /rpg-card--rarity-/,
   'plus aucun cadre n’est piloté par la rareté');
-assert.match(cardsSource, /export const RPG_ELEMENTS = \['braise', 'eau', 'sable', 'neige'\];/,
-  'les quatre éléments sont déclarés une seule fois, dans l’ordre canonique des couleurs');
+assert.match(cardsSource, /export const RPG_ELEMENTS = \['braise', 'eau', 'sable', 'neige', 'tenebres'\];/,
+  'les cinq éléments sont déclarés une seule fois, dans l’ordre canonique des couleurs');
 assert.match(cardsSource, /export const CARD_FRAME_COLORS = \{\s*braise:[\s\S]*?eau:[\s\S]*?sable:[\s\S]*?neige:[\s\S]*?'hybride-braise-eau':[\s\S]*?'hybride-braise-sable':[\s\S]*?'hybride-braise-neige':[\s\S]*?'hybride-eau-sable':[\s\S]*?'hybride-eau-neige':[\s\S]*?'hybride-sable-neige':[\s\S]*?'hybride-braise-eau-sable':/,
   'le catalogue déclare un cadre pour chaque couleur et chaque combinaison, y compris celles qui n’existent pas encore');
 assert.match(cardsSource, /export function cardFrameColor\(carte\)\s*\{\s*return cardFrameInfo\(carte\)\.color;\s*\}/,
@@ -1301,8 +1301,8 @@ assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{
   'plus de masque ni de défilement horizontal autour des cartes posées');
 assert.match(mobileCss, /--rpg-field-card:\s*calc\(var\(--duel-card\) \* \.95\);/,
   'les cartes posées sur la table sont agrandies à 95 % de la main, toujours un peu sous elle');
-assert.match(mobileCss, /\.rpg-battle--touch \.card-row \.rpg-card \.rpg-card__title \.rpg-mana-cost \{ display: none; \}/,
-  'le coût ne s’imprime plus sur les cartes posées au doigt ; le bouton de capacité activée, hors du titre, garde son disque');
+assert.match(mobileCss, /\.rpg-battle \.card-row \.rpg-card \.rpg-card__title \.rpg-mana-cost \{ display: none; \}/,
+  'le coût ne s’imprime plus sur la carte posée, au doigt comme à la souris ; le bouton de capacité activée, hors du titre, garde son disque');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-row > :is\(\.rpg-card, \.rpg-card-stack\) \{[^}]*width:\s*clamp\(var\(--rpg-field-min\), calc\(\(100% - \(var\(--row-count\) - 1\) \* var\(--rpg-field-gap\)\) \/ var\(--row-count\)\), var\(--rpg-field-card\)\);/s,
   'les cartes posées partagent la largeur de leur rangée : le groupe tient toujours sans défiler');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-row:has\(> :nth-child\(2\)\) \{ --row-count: 2; \}/,

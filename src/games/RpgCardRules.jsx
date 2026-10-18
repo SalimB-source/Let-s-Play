@@ -8,6 +8,7 @@ const MANA_ICONS = {
   eau: { glyph: '💧', label: 'Eau' },
   sable: { glyph: '⏳', label: 'Sable' },
   neige: { glyph: '❄️', label: 'Neige' },
+  tenebres: { glyph: '⚖️', label: 'Ténèbres' },
 };
 
 /**

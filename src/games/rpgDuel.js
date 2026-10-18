@@ -105,10 +105,12 @@ function journaliserDestruction(duel, entite, sourceElements = []) {
   destructionsParDuel.set(duel, journal);
 }
 
-const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige' };
+const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
 const normaliserCouleurs = (couleurs) => [...new Set((Array.isArray(couleurs) ? couleurs.flat(Infinity) : [couleurs]).filter(Boolean))];
-const manaVide = () => ({ braise: 0, eau: 0, sable: 0, neige: 0 });
-const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + camp.mana[c], 0);
+const manaVide = () => ({ braise: 0, eau: 0, sable: 0, neige: 0, tenebres: 0 });
+// Tolère une réserve déclarée sans toutes les couleurs (objets de test,
+// paquets classiques) : une clé absente compte pour zéro, jamais NaN.
+const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + (Number(camp.mana[c]) || 0), 0);
 const totalCapaciteMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + (camp.manaMax?.[c] ?? 0), 0);
 
 /** Identité fixée au lancement du duel d'essai ; une pioche ne change jamais
@@ -417,6 +419,9 @@ function sourcesCouvrentPips(sources, coutCouleur) {
  *  une source distincte compatible. */
 export function rpgPeutPayer(camp, carte) {
   if (camp.manaChoixEnAttente) return false;
+  // Le Prix (set Ténèbres) : un coût supplémentaire en PV ne peut jamais
+  // faire descendre sous 1 — sinon la carte est refusée, rien n'est payé.
+  if ((carte.prixPv ?? 0) > 0 && camp.pv <= carte.prixPv) return false;
   const sources = sourcesManaDisponibles(camp);
   const cout = Math.max(0, carte.cost ?? 0);
   return sources.length >= cout && sourcesCouvrentPips(sources, cardColorCost(carte));
@@ -426,6 +431,12 @@ export function rpgPeutPayer(camp, carte) {
  *  terrains produisant plusieurs couleurs sont réservés aux pips qui en ont besoin. */
 function payer(duel, cote, carte) {
   const camp = duel[cote];
+  // Le Prix en PV se paie avec le mana : le contrôle de `rpgPeutPayer`
+  // garantit qu'il en reste au moins un après paiement.
+  if ((carte.prixPv ?? 0) > 0) {
+    camp.pv = Math.max(1, camp.pv - carte.prixPv);
+    duel.log.push(`${cote === 'joueur' ? 'Vous payez' : 'Le sorcier paie'} ${carte.prixPv} PV pour ${carte.name ?? 'la carte'}.`);
+  }
   let reste = Math.max(0, carte.cost ?? 0);
   const depenserSource = (couleur) => {
     if (camp.mana[couleur] > 0) {
@@ -459,8 +470,11 @@ function payer(duel, cote, carte) {
       ]
     : RPG_COULEURS;
   for (const couleur of prioriteGenerique) {
-    const pris = Math.min(camp.mana[couleur], reste);
-    camp.mana[couleur] -= pris;
+    // Une réserve sans cette couleur (objet partiel) ne produit ni NaN ni
+    // nouvelle clé : elle ne contribue tout simplement pas au paiement.
+    const dispo = Number.isFinite(camp.mana[couleur]) ? camp.mana[couleur] : 0;
+    const pris = Math.min(dispo, reste);
+    if (Number.isFinite(camp.mana[couleur])) camp.mana[couleur] -= pris;
     reste -= pris;
     if (!reste) return;
   }
@@ -784,6 +798,9 @@ function creerEntiteCreature(carte) {
     attaquee: false,
     resonance: 0,
     honneur: Math.max(0, Number(carte.honneur) || 0),
+    // Le Tribut (set Ténèbres) : transfert de vie au contact du sorcier
+    // adverse — `declencherTributs`, même voie de bilans que le Butin.
+    tribut: Math.max(0, Number(carte.tribut) || 0),
     // Gel (la Poigne de givre, le Verglas) : tours du contrôleur qui restent
     // à couvrir — la créature ni n'attaque ni ne bloque tant que c'est > 0.
     gelToursRestants: 0,
@@ -825,6 +842,7 @@ function attacherArme(duel, cote, entite, carteArme) {
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
+  if (carteArme.donne?.tribut) entite.tribut = (entite.tribut ?? 0) + carteArme.donne.tribut;
   if (carteArme.donne?.rapidite) {
     entite.rapidite = true;
     entite.ready = true;
@@ -847,6 +865,7 @@ function retirerArme(duel, cote, entite) {
     || Boolean(entite.infiltrationTour);
   if (carteArme.donne?.coupRapide) entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide);
   if (carteArme.donne?.rapidite) entite.rapidite = Boolean(duelCardById(entite.carteId)?.rapidite);
+  if (carteArme.donne?.tribut) entite.tribut = Math.max(0, Number(duelCardById(entite.carteId)?.tribut) || 0);
   duel[cote].cimetiere.push(carteArme.id);
   duel.log.push(`${entite.name} se sépare de ${carteArme.name} : l’arme rejoint le cimetière.`);
 }
@@ -1275,6 +1294,45 @@ function declencherButins(duel, cote, bilans) {
   return declenche;
 }
 
+/**
+ * Tribut (le set Ténèbres) : quand une créature dotée du mot-clé touche le
+ * sorcier adverse, il perd N PV et son contrôleur en gagne N — même chemin
+ * que le Butin : les bilans de combat disent qui a frappé le sorcier et pour
+ * combien. Jamais écrit en « dégâts » : la Braise garde les dégâts nus.
+ */
+function declencherTributs(duel, cote, bilans) {
+  let declenche = false;
+  for (const bilan of bilans) {
+    if (!(bilan.sorcier > 0)) continue;
+    const entite = duel[cote].creatures.find((candidate) => candidate.id === bilan.id);
+    const montant = entite?.tribut ?? 0;
+    if (!(montant > 0)) continue;
+    transfertVie(duel, cote, montant);
+    duel.log.push(`Tribut : ${entite.name} touche le sorcier — ${
+      cote === 'joueur' ? `le sorcier perd ${montant} PV, vous en gagnez ${montant}`
+        : `vous perdez ${montant} PV, le sorcier en gagne ${montant}`}.`);
+    declenche = true;
+  }
+  return declenche;
+}
+
+/**
+ * Le cœur pesé : le camp cible PERD `montant` PV (jamais des « dégâts » —
+ * règle de direction §11), le camp source les GAGNE, borné au maximum de PV.
+ * La perte peut éteindre un sorcier : `rpgVainqueur` lit les PV comme après
+ * le combat.
+ */
+function transfertVie(duel, coteSource, montant) {
+  const n = Math.max(0, Number(montant) || 0);
+  if (!n) return { perdu: 0, gagne: 0 };
+  const perdant = duel[autre(coteSource)];
+  const gagnant = duel[coteSource];
+  perdant.pv -= n;
+  const gagne = Math.min(n, Math.max(0, (gagnant.pvMax ?? gagnant.pv) - gagnant.pv));
+  gagnant.pv += gagne;
+  return { perdu: n, gagne };
+}
+
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut une
  *  entité du buff (le Colosse ne se buffe pas lui-même). */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
@@ -1321,6 +1379,44 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       porteur.def += effet.def ?? 0;
       if (effet.coupRapide) porteur.coupRapide = true;
       duel.log.push(`${(cardById(sourceCarteId)?.name ?? 'Une arme')} s’attache à ${porteur.name} : +${effet.atk}/${effet.def}, Coup rapide.`);
+      return;
+    }
+    case 'transfert': {
+      // Le cœur pesé (set Ténèbres) : le camp adverse perd des PV, le camp
+      // source en gagne — le transfert, jamais des « dégâts ». `pioche` en
+      // chaîne porte la Grande Pesée.
+      const montant = Math.max(0, Number(effet.amount) || 0);
+      if (!montant) return;
+      transfertVie(duel, cote, montant);
+      duel.log.push(`Transfert : ${adv === 'joueur' ? 'le joueur' : 'le sorcier'} perd ${montant} PV, ${cote === 'joueur' ? `vous en gagnez ${montant}` : `le sorcier en gagne ${montant}`}.`);
+      for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+      return;
+    }
+    case 'defausse-adverse': {
+      // Nom effacé : UNE carte, choisie par la victime — elle garde sa
+      // meilleure. Le sorcier tranche aussitôt (l'IA épargne son épargne),
+      // le joueur reçoit l'écran de défausse (`defausseEnAttente`).
+      const camp = duel[adv];
+      if (!camp.main.length) return;
+      const source = sourceCarteId ? (cardById(sourceCarteId)?.name ?? 'Nom effacé') : 'Nom effacé';
+      if (adv === 'joueur') {
+        duel.defausseEnAttente = { cote: 'joueur', restant: 1, sourceCarteId, motif: 'effet' };
+        duel.log.push(`${source} : une carte de votre main part au cimetière (choisissez laquelle).`);
+        return;
+      }
+      rpgDefausserCarte(duel, 'sorcier');
+      return;
+    }
+    case 'defaussePaquet': {
+      // Les feuillets : le dessus du paquet adverse part au cimetière —
+      // la fatigue (1, 2, 3… PV) fera le reste du travail.
+      const nombre = Math.max(0, Number(effet.amount) || 0);
+      const camp = duel[adv];
+      if (!nombre || !camp.deck.length) return;
+      const partie = camp.deck.splice(Math.max(0, camp.deck.length - nombre), nombre);
+      camp.cimetiere.push(...partie);
+      const noms = partie.map((id) => cardById(id)?.name ?? id).join(', ');
+      duel.log.push(`${partie.length} carte${partie.length > 1 ? 's' : ''} du paquet adverse au cimetière : ${noms}.`);
       return;
     }
     case 'pioche':
@@ -3088,11 +3184,14 @@ export function rpgLancerAttaque(
     sorcier: blessuresSorcier.get(id) ?? 0,
   })));
   // Butin : les créatures du Sable qui ont touché le sorcier piochent puis
-  // défaussent — même bilan, même fenêtre que les armes.
-  declencherButins(duel, cote, porteursDeclencheurs.map(({ id }) => ({
+  // défaussent — même bilan, même fenêtre que les armes. Tribut : même
+  // contact, même bilan, transfert de vie à la clé.
+  const bilansContact = porteursDeclencheurs.map(({ id }) => ({
     id,
     sorcier: blessuresSorcier.get(id) ?? 0,
-  })));
+  }));
+  declencherButins(duel, cote, bilansContact);
+  declencherTributs(duel, cote, bilansContact);
   // L’attaque est passée : le blocage forcé « lors de votre prochaine attaque »
   // (l’Appât de la meute) a été dépensé par celle-ci.
   for (const entite of duel[adv].creatures) {
@@ -3153,6 +3252,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
     sorcier: frappeSorcier,
   }]);
   declencherButins(duel, cote, [{ id: attaquant.id, sorcier: frappeSorcier }]);
+  declencherTributs(duel, cote, [{ id: attaquant.id, sorcier: frappeSorcier }]);
   rpgActionsEtat(duel);
   return { ok: true };
 }

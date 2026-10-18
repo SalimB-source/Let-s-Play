@@ -16,6 +16,7 @@ réactif de *Clair Obscur*.
 | [`12-decor-3d-table.md`](12-decor-3d-table.md) | Le **décor 3D de la table** : relief, lumière et particules Three.js sous les cartes, repli CSS |
 | [`13-souk-credits-quetes-boosters.md`](13-souk-credits-quetes-boosters.md) | Le **Souk** : crédits ◈, quêtes du jour, boosters — et les étages qui ne donnent plus de cartes mais les **révèlent** |
 | [`15-essai-mana-sans-terrains.md`](15-essai-mana-sans-terrains.md) | Banc d’essai de duel **sans cartes Terrain** : trois decks de 30 cartes, mana permanent jusqu’à dix, sans récompense ni migration |
+| [`16-deck-la-balance-des-heures.md`](16-deck-la-balance-des-heures.md) | Fiche de design du deck **Ténèbres** « La Balance des Heures » — l’Égypte pharaonique, le mot-clé **Tribut**, 30 cartes pour le banc d’essai |
 | [`11-bible-visuelle.md`](11-bible-visuelle.md) | Portraits canoniques, continuité des personnages, état de réalisation, sauvegarde et vérifications |
 
 ## La décision de conception
