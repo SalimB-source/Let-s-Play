@@ -1095,3 +1095,34 @@
 .rpg-battle .card-row .rpg-card .rpg-card-icone .rpg-effet-icone { width: 14cqw; height: 14cqw; }
 .rpg-battle .card-row .rpg-card .rpg-card__activation { top: 6cqw; right: 6cqw; padding: 3cqw 7cqw; border-width: 1cqw; }
 .rpg-battle .card-row .rpg-card .rpg-mana-cost i { width: 11cqw; height: 11cqw; font-size: 7cqw; }
+
+@media (max-width: 620px) {
+  .rpg-battle .rpg-hand__card .rpg-card-icones.rpg-card-icones--colonne {
+    top: calc(5% + var(--rpg-card-marker-size, 22px) + 2px);
+    gap: 2px;
+  }
+  .rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone {
+    min-width: 14px;
+    min-height: 14px;
+    padding: 1.5px;
+  }
+  .rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone .rpg-effet-icone {
+    width: 9px;
+    height: 9px;
+  }
+}
+
+.rpg-battle--touch .rpg-hand__card .rpg-card-icones.rpg-card-icones--colonne {
+  top: calc(5% + var(--rpg-card-marker-size, 22px) + 2px);
+  gap: 2px;
+}
+.rpg-battle--touch .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone {
+  min-width: 14px;
+  min-height: 14px;
+  padding: 1.5px;
+}
+.rpg-battle--touch .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone .rpg-effet-icone {
+  width: 9px;
+  height: 9px;
+}
+

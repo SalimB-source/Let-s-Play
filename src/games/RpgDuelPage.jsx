@@ -1112,7 +1112,7 @@ export function TableCard({
   tutorialTarget,
   onHoverCard,
   onLeaveHoverCard,
-  iconesEffets = false,
+  iconesEffets = true,
   caseEssai = null,
 }) {
   const carte = cardById(entite.carteId);
@@ -1301,11 +1301,11 @@ export function TableCard({
       <header className="rpg-card__title">
         <ManaCost carte={carte} compact showElement={false} />
       </header>
-      {/* Table d'essai sans terrains : les icônes d'effets de la créature se
-          rangent en colonne à la place du coût (qui ne s'imprime plus sur une
-          carte posée), sur le même axe. Si le coin est pris — losanges de
-          compteurs d'une hybride, bouton de capacité activée —, la colonne
-          descend pour les laisser lisibles. */}
+      {/* Sur la table, les icônes d'effets de la créature se rangent en colonne
+          à la place du coût (qui ne s'imprime plus sur une carte posée), sur le
+          même axe. Si le coin est pris — losanges de compteurs d'une hybride,
+          bouton de capacité activée —, la colonne descend pour les laisser
+          lisibles. */}
       {iconesEffets && (
         <IconesCarte
           carte={carte}
@@ -6993,7 +6993,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       cote="ennemi"
-                      iconesEffets={duel.modeMana === RPG_MODE_MANA_ESSAI}
                       caseEssai={casesEnnemi?.get(entite.id) ?? null}
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
@@ -7069,7 +7068,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       cote="joueur"
-                      iconesEffets={duel.modeMana === RPG_MODE_MANA_ESSAI}
                       caseEssai={casesJoueur?.get(entite.id) ?? null}
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
@@ -7652,6 +7650,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
                   </span>
+                  <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--main" />
                   {familleSort && <SortSceau carte={carte} className="rpg-hand__sceau rpg-hand__sort" />}
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>

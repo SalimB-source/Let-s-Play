@@ -474,7 +474,12 @@ export async function checkRpgBattle(assert) {
   'les cartes non-terrain affichent leur couleur à gauche');
   const fennecMain = visagesMain.find((carte) => carte.dataset.cardId === 'fennec-des-decombres');
   assert.equal(fennecMain?.querySelector('.rpg-card-rapidity, .rpg-card-evasion'), null,
-    'le Fennec n’affiche pas d’icône d’effet sur la carte en main');
+    'le Fennec n’affiche pas les anciennes icônes d’effet');
+  assert.deepEqual(
+    [...(fennecMain?.querySelectorAll('.rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone') ?? [])].map((el) => el.dataset.effet),
+    ['rapidite', 'butin'],
+    'le Fennec en main affiche ses icônes Rapidité et Butin en colonne sous le coût',
+  );
   assert.match(fennecMain?.getAttribute('aria-label') ?? '', /Rapidité.*attaquer le tour où elle arrive.*Butin.*touch/,
     'Rapidité et Butin restent annoncés de façon accessible');
   assert.equal(fennecMain?.hasAttribute('title'), false, 'la carte en main n’affiche plus d’aide au survol');
@@ -680,8 +685,11 @@ export async function checkRpgBattle(assert) {
   assert.ok(visageTable.classList.contains('fx-enter'), 'une créature nouvellement posée entre avec une courte animation');
   assert.equal(visageTable.hasAttribute('title'), false, 'une créature sur table n’affiche pas d’infobulle native');
   assert.equal(visageTable.querySelector('[title]'), null, 'les icônes sur la carte ne déclenchent pas d’infobulle native');
-  assert.equal(visageTable.querySelector('.rpg-card-icones--table'), null,
-    'les cartes en jeu n’affichent pas les icônes d’effets');
+  assert.deepEqual(
+    [...visageTable.querySelectorAll('.rpg-card-icones--colonne .rpg-card-icone')].map((el) => el.dataset.effet),
+    ['rapidite', 'butin'],
+    'les cartes en jeu affichent leurs icônes d’effets en colonne à droite',
+  );
   await act(async () => { envoyerSouris(visageTable, 'mouseover'); });
   const apercuFennecSurvol = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
   assert.ok(apercuFennecSurvol, 'le survol d’une créature en jeu ouvre immédiatement son aperçu');

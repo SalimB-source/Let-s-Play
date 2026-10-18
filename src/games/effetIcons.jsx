@@ -12,7 +12,7 @@
  *   `RpgCardRules.jsx`, qui s'appuie sur `iconePourLigne`).
  *
  * Accessibilité : les icônes doublent l'information, elles ne la remplacent
- * jamais — le libellé reste porté par le `title` du badge et le texte de
+ * jamais — le libellé reste porté par l'`aria-label` du groupe et le texte de
  * règle reste écrit à côté.
  */
 import { useId, useLayoutEffect, useRef, useState } from 'react';
@@ -192,7 +192,7 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
       aria-label={`Effets : ${pastilles.map(pastilleTexte).join(', ')}`}
     >
       {pastilles.map((pastille) => (
-        <span key={pastille.cle} className="rpg-card-icone" title={pastilleTexte(pastille)}>
+        <span key={pastille.cle} className="rpg-card-icone" data-effet={pastille.cle}>
           <EffetIcone cle={pastille.cle} size={12} />
           {pastille.valeur != null && <small>{pastille.valeur}</small>}
         </span>

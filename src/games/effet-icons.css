@@ -72,9 +72,36 @@
   color: #fff3d6;
 }
 
-/* La main : les statistiques sont plus basses, la rangée se pose juste au-dessus. */
+/* La main : en colonne verticale à droite sous le disque de coût, l'icône seule. */
 .rpg-card-icones--main {
   bottom: 34px;
+}
+
+.rpg-card-icones--colonne.rpg-card-icones--main {
+  top: calc(5% + var(--rpg-card-marker-size, 28px) + 4px);
+  right: 6%;
+  bottom: auto;
+  left: auto;
+  width: var(--rpg-card-marker-size, 28px);
+  max-width: none;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 3px;
+}
+
+.rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone {
+  justify-content: center;
+  min-width: 20px;
+  min-height: 20px;
+}
+
+.rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone:nth-child(n + 4) {
+  display: none;
+}
+
+.rpg-card-icones--colonne .rpg-card-icone small {
+  display: none;
 }
 
 /* Le catalogue : l'illustration finit plus bas, la rangée colle à son pied. */
