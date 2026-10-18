@@ -1082,9 +1082,10 @@
   padding: 0 10px;
 }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-hidden-hand__card {
-  width: clamp(30px, 10dvh, 46px);
-  height: calc(clamp(30px, 10dvh, 46px) * 1.3);
-  margin-left: calc(clamp(30px, 10dvh, 46px) * -.38);
+  --essai-main-adverse-l: clamp(36px, 12.5dvh, 58px);
+  width: var(--essai-main-adverse-l);
+  height: calc(var(--essai-main-adverse-l) * 1.3);
+  margin-left: calc(var(--essai-main-adverse-l) * -.38);
   border-width: 2px;
   border-radius: 5px;
   box-shadow: 0 4px 9px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(236, 199, 117, .62);
