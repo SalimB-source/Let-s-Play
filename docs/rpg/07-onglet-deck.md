@@ -37,8 +37,10 @@ Ouvrir un boîtier et le choisir sont deux gestes distincts :
 
 - **Qui est sélectionnable** : **tous les decks complets** — Veilleurs du Désert,
   Sentiers de cendre, la Cour des Djinns, **la Marée des abysses** (le deck
-  Eau, contres et bêtes marines) **et le Serment des Neuf Hivers** (le deck
-  Neige) (`deckEstSelectionnable` : 40 cartes qui tiennent les quotas de
+  Eau, contres et bêtes marines), **le Serment des Neuf Hivers** (le deck
+  Neige), **le Serment du Soleil rouge** (samouraïs et yōkai) **et La Balance
+  des Heures** (le deck Ténèbres, l'Égypte pharaonique)
+  (`deckEstSelectionnable` : 30 cartes qui tiennent les quotas de
   `rpgValiderDeck`). Le champ `role` de
   `RPG_DECKS` ne limite rien : il dit seulement quel camp tient le deck *par
   défaut* (`joueur` : decks de départ ; `adversaire` : le deck du sorcier). Un

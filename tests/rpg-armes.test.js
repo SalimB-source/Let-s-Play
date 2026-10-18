@@ -120,6 +120,7 @@ test('les decks du catalogue suivent leur quota d’armes sans dépasser une myt
     'maree-des-abysses': ['baton-des-citernes'],
     'serment-des-neuf-hivers': ['lance-de-givre'],
     'serment-du-soleil-rouge': [],
+    'balance-des-heures': ['khopesh-d-or'],
   };
   for (const deck of RPG_DECKS) {
     assert.equal(deck.cardIds.length, 30, `${deck.name} fait 30 cartes`);

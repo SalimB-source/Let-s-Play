@@ -2268,7 +2268,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const [atelier, setAtelier] = useState(null);
   const detailRef = useRef(null);
   const play = (n) => { try { onPlaySfx?.(n); } catch {} };
-  // L'étagère : les six decks du catalogue, puis les boîtiers maison.
+  // L'étagère : les sept decks du catalogue, puis les boîtiers maison.
   const decksTous = [...RPG_DECKS, ...decksMaison];
   const selectedDeck = decksTous.find((deck) => deck.id === selectedDeckId) ?? RPG_DECKS[0];
   const playerDeck = deckSeJoue(selectedDeck, collection) ? selectedDeck : deckParDefaut();

@@ -6,7 +6,7 @@
  * résolvent leurs effets avant de rejoindre le cimetière. Les fiches portent coût,
  * élément, rareté, ligne de type, texte de règle et illustration locale.
  *
- * Les six decks du jeu sont **composés** en fin de fichier : les recettes
+ * Les sept decks du jeu sont **composés** en fin de fichier : les recettes
  * (`rpgDeckRecipes.js`) disent l’identité, les quotas et la signature, et
  * `composerDeck` (`rpgDeckComposer.js`) y met les meilleures cartes du
  * catalogue, palier de rareté puis puissance (`rpgCardPower.js`).
@@ -1039,7 +1039,7 @@ export function duelCardById(id) {
 }
 
 /*
- * Les six decks du jeu sont composés en fin de fichier à partir de recettes
+ * Les sept decks du jeu sont composés en fin de fichier à partir de recettes
  * et du catalogue. Ils gardent leurs mécaniques de signature, une mythique
  * chacun et un quota global de rares ; le composeur complète les places restantes
  * par puissance. Le reste des cartes de ces paliers reste à obtenir au Souk.
@@ -2081,7 +2081,7 @@ export function rpgDraftOffer(rng, collection = []) {
  * Chaque liste est le produit d'une **recette** (`rpgDeckRecipes.js`) passée au
  * **composeur** (`rpgDeckComposer.js`) avec le catalogue complet : identité
  * chromatique, quotas de créatures, de sorts et d'armes, signature
- * mécanique, puis les meilleures cartes restantes. Les six decks de départ
+ * mécanique, puis les meilleures cartes restantes. Les sept decks de départ
  * contiennent chacun trente cartes sans terrain, une seule mythique et un
  * nombre de rares borné par leur recette ; les autres mythiques et rares
  * se découvrent dans les boosters.
@@ -2111,6 +2111,9 @@ export const RPG_DECK_MAREE_BASE = composerDeck(RPG_RECETTES_DECKS['maree-des-ab
 
 /** Serment des Neuf Hivers — Furie, Résonance et une figure mythique du Nord. */
 export const RPG_DECK_NEIGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-des-neuf-hivers'], CATALOGUE_DU_COMPOSEUR);
+
+/** La Balance des Heures — Prix, Tribut et morts qui déclenchent, avec La Dévoreuse comme seule mythique. */
+export const RPG_DECK_TENEBRES_BASE = composerDeck(RPG_RECETTES_DECKS['balance-des-heures'], CATALOGUE_DU_COMPOSEUR);
 
 /** Decks de départ. `boxArt` : l'illustration plein art (carte emblématique) imprimée
  *  sur le boîtier 3D de l'onglet Deck — un identifiant de `public/cards/`.
@@ -2192,5 +2195,17 @@ export const RPG_DECKS = [
     affrontement: 'Affrontez le Serment du Soleil rouge.',
     description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Samouraï du torii, le Tengu, le Kenshi et Kagutsuchi font résonner les Samouraïs, et le Daimyō lève des jetons qui grandissent en attaquant. Kagutsuchi est l’unique mythique du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
     cardIds: composerDeck(RPG_RECETTES_DECKS['serment-du-soleil-rouge'], CATALOGUE_DU_COMPOSEUR),
+  },
+  {
+    id: 'balance-des-heures',
+    name: 'La Balance des Heures',
+    role: 'joueur',
+    element: 'tenebres',
+    terrain: null,
+    boxArt: 'la-devoreuse',
+    archetype: 'Ténèbres · le Prix, le Tribut, la mort qui déclenche',
+    affrontement: 'Affrontez la Balance des Heures.',
+    description: 'Deck mono-Ténèbres de l’Égypte pharaonique : le Prix se paie en PV (Papyrus, La Grande Pesée), le Tribut transfère la vie au contact du sorcier (Chacal du seuil, Celui qui juge, le Khopesh d’or), et la mort déclenche — l’Ouvrier du natron, la Momie de lin, la Couveuse de shabtis et leurs serviteurs de lin. Nom effacé et Celle qui pèse vident la main adverse, Les feuillets raccourcissent son paquet, et La Dévoreuse — unique mythique du boîtier — exile la créature que la balance a condamnée. Le Passeur au masque de chacal, Le Maître des hiéroglyphes et La Dernière Pesée s’ouvrent dans les boosters.',
+    cardIds: RPG_DECK_TENEBRES_BASE,
   },
 ];

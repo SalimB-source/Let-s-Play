@@ -167,7 +167,7 @@ test('les meilleures cartes sont prises à leur maximum légal', () => {
 
 // ── 3. Les invariants du jeu ────────────────────────────────────────────────
 
-test('les six boîtiers du catalogue restent valides, illustrés et fidèles à leur couleur', () => {
+test('les boîtiers du catalogue restent valides, illustrés et fidèles à leur couleur', () => {
   for (const deck of RPG_DECKS) {
     const validation = rpgValiderDeck(deck.cardIds);
     assert.equal(validation.ok, true, `${deck.name} : ${validation.raison}`);
