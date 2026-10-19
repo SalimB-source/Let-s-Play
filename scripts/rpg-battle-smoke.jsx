@@ -633,6 +633,21 @@ export async function checkRpgBattle(assert) {
       assert.equal(creatureEnVol.isConnected, false, 'la carte volante quitte ensuite la main et rejoint le champ');
       const creatureArrivee = container.querySelector('.rpg-card--equipe[data-card-id="fennec-des-decombres"]');
       assert.ok(creatureArrivee, 'le Fennec apparaît au champ à la fin de son animation');
+      // L'arrivée en jeu est la cérémonie née pour les mythiques : la carte qui
+      // s'élève et retombe lourdement, avec son anneau et sa poussière. Une
+      // créature sans rang la reçoit aussi — mais sans que la table tremble.
+      const ceremonie = container.querySelector('.rpg-mythic-impact');
+      assert.ok(ceremonie, 'la créature posée reçoit son animation d’arrivée');
+      assert.ok(ceremonie.classList.contains('rpg-mythic-impact--pose'),
+        'une carte non mythique arrive avec le profil « pose », pas avec la pleine cérémonie');
+      assert.equal(creatureArrivee.classList.contains('rpg-card--mythique'), false,
+        'le Fennec n’est pas mythique : c’est bien l’arrivée des autres cartes qui est jouée');
+      assert.equal(ceremonie.querySelector('.rpg-mythic-impact__cracks'), null,
+        'une arrivée sans rang ne fend pas le sol');
+      assert.equal(ceremonie.querySelectorAll('.rpg-mythic-impact__ring').length, 1,
+        'un seul anneau de poussière, sans écho');
+      assert.equal(ceremonie.querySelectorAll('.rpg-mythic-impact__shadow').length, 1,
+        'l’ombre portée du choc est marquée sous la carte');
       creatureArriveeId = creatureArrivee.dataset.entityId;
       assert.ok(creatureArrivee.classList.contains('is-pret')
         && !creatureArrivee.classList.contains('is-summoning-sick'),
