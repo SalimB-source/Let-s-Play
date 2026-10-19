@@ -86,7 +86,8 @@ for (const nom of ['nappe', 'monte', 'onde', 'goutte']) {
 }
 // Aucune mise en page : les images clés ne touchent ni top/left, ni taille.
 const debutImages = css.indexOf('@keyframes rpg-tourbillon-eau-vie');
-const finImages = css.indexOf('Les flèches d');
+// Les images clés du tourbillon s'arrêtent au bloc suivant : la roue de feu.
+const finImages = css.indexOf('La roue de feu');
 assert.ok(debutImages > 0 && finImages > debutImages, 'les images clés du tourbillon forment un bloc');
 const imagesCles = css.slice(debutImages, finImages);
 assert.doesNotMatch(imagesCles, /(top|left|right|bottom|width|height|margin):/,
@@ -111,7 +112,7 @@ assert.match(css, /\.rpg-hand__card\s*\{[^}]*transition:\s*transform \.2s ease, 
   'elle reparaît en fondu quand le tourbillon se referme');
 assert.match(page, /const duree = 950;/, 'le tourbillon dure 950 ms avant de rendre la carte à la main');
 assert.match(page, /camp: entite\.camp \?\? 'joueur',/, 'l’instantané du champ connaît le camp de chaque carte');
-assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-tourbillon-eau,\s*\.rpg-tourbillon-eau \* \{ animation:\s*none !important; transition:\s*none !important; \}/,
+assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-tourbillon-eau,\s*\.rpg-tourbillon-eau \*(?:,\s*\.[^{]+)? \{ animation:\s*none !important; transition:\s*none !important; \}/,
   'en mouvement réduit, le tourbillon reste immobile');
 
 // ── 3. La page : quand le tourbillon se lève ───────────────────────────────

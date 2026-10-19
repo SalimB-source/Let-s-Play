@@ -27,6 +27,7 @@ import {
   rpgResonanceEnJeu,
   rpgResoudreDestructionCiblee,
   rpgDestructionsDepuis,
+  rpgDerniereBlessure,
   rpgOuvrirFenetreReponse,
   rpgPiocher,
   rpgPeutPayer,
@@ -1193,6 +1194,40 @@ test('le Ghul des cendres : son contrôleur désigne la créature frappée à sa
   const survivants = duel.joueur.creatures.filter((entite) => [chienJoueur.id, fennec.id].includes(entite.id));
   const totalApres = survivants.reduce((somme, entite) => somme + entite.pv, 0);
   assert.equal(totalApres, totalAvant - 1, 'une des deux créatures du joueur a pris le dégât');
+});
+
+test('le journal des blessures dit la couleur du coup et si la créature y a survécu', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'leviathan');
+  const leviathan = rpgJouerCreature(duel, 'sorcier', 'leviathan').entite;
+  const coups = rpgBlesserCreature(duel, 'sorcier', leviathan.id, 1, 'braise', null, 'magie');
+  assert.equal(coups.ok, true);
+  const blessure = rpgDerniereBlessure(duel, leviathan.id);
+  assert.deepEqual(blessure.elements, ['braise'], 'la roue de feu sait que le coup vient de la Braise');
+  assert.equal(blessure.mortelle, false, 'la créature a survécu : rien n’est détruit');
+  assert.equal(blessure.pvApres, leviathan.pv, 'le journal garde les points de vie d’après le coup');
+  assert.equal(blessure.bouclierApres, leviathan.bouclier ?? 0,
+    'la table compare cet état au champ pour ne pas rallumer une ancienne brûlure');
+  // Une blessure d'une autre couleur ne se déguise pas en feu.
+  rpgBlesserCreature(duel, 'sorcier', leviathan.id, 1, 'eau', null, 'magie');
+  assert.deepEqual(rpgDerniereBlessure(duel, leviathan.id).elements, ['eau'],
+    'la dernière blessure remplace la précédente : seul le coup neuf compte');
+  assert.equal(rpgDerniereBlessure(duel, 'entite-inconnue'), null,
+    'une créature jamais blessée n’a pas de blessure');
+});
+
+test('une blessure mortelle de la Braise est journalisée comme telle', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'fennec-des-decombres');
+  const fennec = rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres').entite;
+  rpgBlesserCreature(duel, 'sorcier', fennec.id, 9, 'braise', null, 'magie');
+  assert.equal(duel.sorcier.creatures.length, 0, 'le Fennec est détruit');
+  const blessure = rpgDerniereBlessure(duel, fennec.id);
+  assert.equal(blessure.mortelle, true,
+    'la table saura que la carte a quitté la table sous ce coup — pas par autre chose');
+  assert.deepEqual(blessure.elements, ['braise']);
 });
 
 test('le journal de destruction distingue la source immédiate et les capacités déclenchées', () => {

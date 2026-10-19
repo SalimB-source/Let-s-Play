@@ -4827,6 +4827,167 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   100% { translate: calc(-50% + var(--dx, 0px)) calc(-50% + var(--dy, 0px)); scale: .85; opacity: 0; }
 }
 
+/* ── La roue de feu : une créature mordue par la Braise ─────────────────────
+   Une magie, une sorcellerie ou l'effet d'une créature de Braise vient de
+   frapper : le pourtour de la carte s'embrase en un cercle qui tourne, des
+   langues de feu s'en détachent et des braises montent. Le calque ne dure
+   qu'un instant, ne capte rien et n'anime que `rotate`, `translate`, `scale`,
+   `opacity` et `filter` : la table ne bouge pas d'un pixel. */
+.rpg-roue-feu {
+  position: absolute;
+  z-index: 56;
+  transform: rotate(var(--rpg-fx-rotation, 0rad));
+  transform-origin: center;
+  pointer-events: none;
+  animation: rpg-roue-feu-vie .9s ease-out both;
+}
+
+/* La carte brûlée : elle reste dans le feu, s'embrase, puis se consume. */
+.rpg-roue-feu__carte {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--rpg-card-radius, 12px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .55);
+  animation: rpg-roue-feu-carte .9s ease-in both;
+}
+.rpg-roue-feu__carte > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* La lueur au sol : la chaleur monte avant les flammes. */
+.rpg-roue-feu__lueur {
+  position: absolute;
+  bottom: -10%;
+  left: 50%;
+  width: 128%;
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    rgba(255, 236, 176, .55),
+    rgba(255, 140, 40, .34) 44%,
+    rgba(150, 40, 10, 0) 74%);
+  animation: rpg-roue-feu-lueur .9s ease-out both;
+}
+
+/* La roue elle-même : un anneau de flammes qui tourne. */
+.rpg-roue-feu__cercle {
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    transparent 0 22%,
+    rgba(255, 132, 34, .35) 30%,
+    rgba(255, 214, 120, .95) 38%,
+    rgba(255, 98, 24, .55) 45%,
+    transparent 54%,
+    rgba(255, 190, 88, .8) 63%,
+    rgba(255, 96, 22, .4) 70%,
+    transparent 78%,
+    rgba(255, 236, 170, .9) 88%,
+    transparent 96%);
+  -webkit-mask: radial-gradient(closest-side, transparent 54%, #000 62%, #000 88%, transparent 96%);
+  mask: radial-gradient(closest-side, transparent 54%, #000 62%, #000 88%, transparent 96%);
+  filter: drop-shadow(0 0 10px rgba(255, 120, 30, .8));
+  animation:
+    rpg-roue-feu-tourne .9s cubic-bezier(.32, .06, .22, 1) both,
+    rpg-roue-feu-ronde .9s ease-out both;
+}
+.rpg-roue-feu__cercle--interne {
+  inset: -2%;
+  opacity: .75;
+  filter: drop-shadow(0 0 6px rgba(255, 96, 22, .75));
+  animation:
+    rpg-roue-feu-tourne-inverse .9s cubic-bezier(.32, .06, .22, 1) both,
+    rpg-roue-feu-ronde .9s ease-in both;
+}
+
+/* Les langues de feu, plantées tout autour du cercle. */
+.rpg-roue-feu__rayon {
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  rotate: var(--a, 0deg);
+}
+.rpg-roue-feu__rayon::before {
+  content: "";
+  position: absolute;
+  top: -4%;
+  left: 50%;
+  width: 21%;
+  height: 21%;
+  translate: -50% 0;
+  border-radius: 48% 48% 52% 52% / 30% 30% 70% 70%;
+  background: radial-gradient(58% 62% at 50% 78%, #fff6cd, #ffc247 40%, #f4561a 76%, rgba(170, 36, 8, 0));
+  filter: blur(.4px) drop-shadow(0 0 6px rgba(255, 110, 26, .85));
+  opacity: 0;
+  animation: rpg-roue-feu-langue .9s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Les braises arrachées à la roue. */
+.rpg-roue-feu__braise {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #fff3c0, #ffab33 55%, #e2431a);
+  box-shadow: 0 0 8px rgba(255, 140, 40, .9);
+  opacity: 0;
+  animation: rpg-roue-feu-braise .9s cubic-bezier(.25, .6, .3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes rpg-roue-feu-vie {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  76% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-roue-feu-carte {
+  0% { opacity: 1; scale: 1; filter: brightness(1) saturate(1) blur(0); }
+  38% { opacity: 1; scale: 1.01; filter: brightness(1.35) saturate(1.2) blur(0); }
+  100% { opacity: 0; translate: 0 -12px; scale: .86; filter: brightness(.7) saturate(.6) blur(4px); }
+}
+@keyframes rpg-roue-feu-tourne {
+  from { rotate: 0deg; }
+  to { rotate: 400deg; }
+}
+@keyframes rpg-roue-feu-tourne-inverse {
+  from { rotate: 40deg; }
+  to { rotate: -320deg; }
+}
+@keyframes rpg-roue-feu-ronde {
+  0% { scale: .55; opacity: 0; }
+  18% { opacity: 1; }
+  62% { scale: 1.02; opacity: .92; }
+  100% { scale: 1.12; opacity: 0; }
+}
+@keyframes rpg-roue-feu-langue {
+  0% { opacity: 0; scale: .4 .5; }
+  22% { opacity: 1; scale: 1 1.15; }
+  58% { opacity: .9; scale: .92 1.35; }
+  100% { opacity: 0; scale: .55 1.7; }
+}
+@keyframes rpg-roue-feu-lueur {
+  0% { scale: .5 .22; opacity: 0; }
+  26% { scale: .9 .34; opacity: .95; }
+  100% { scale: 1.25 .46; opacity: 0; }
+}
+@keyframes rpg-roue-feu-braise {
+  0% { translate: -50% -50%; scale: .5; opacity: 0; }
+  18% { opacity: 1; }
+  70% { opacity: .9; }
+  100% { translate: calc(-50% + var(--dx, 0px)) calc(-50% + var(--dy, 0px)); scale: .8; opacity: 0; }
+}
+
 /* Les flèches d'attaque et de blocage se dessinent brièvement à leur affectation. */
 .rpg-attack-arrow__shaft,
 .rpg-attack-arrow__glow { animation: rpg-attack-arrow-in .22s ease-out both; }
@@ -4848,7 +5009,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-destruction-fx::before,
   .rpg-card-destruction-fx::after,
   .rpg-tourbillon-eau,
-  .rpg-tourbillon-eau * { animation: none !important; transition: none !important; }
+  .rpg-tourbillon-eau *,
+  .rpg-roue-feu,
+  .rpg-roue-feu * { animation: none !important; transition: none !important; }
   .rpg-attack-arrow__shaft,
   .rpg-attack-arrow__glow,
   .rpg-blocker-arrow__shaft,

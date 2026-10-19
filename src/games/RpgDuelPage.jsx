@@ -141,6 +141,7 @@ import {
   rpgNombreDestructions,
   rpgDestructionsDepuis,
   rpgRenvoisEnMain,
+  rpgDerniereBlessure,
   rpgOuvrirFenetreReponse,
   rpgOuvrirFinDeTour,
   rpgPeutRepondre,
@@ -1222,6 +1223,10 @@ function EclatSoin({ montant = null, surCarte = false }) {
  * l'inclinaison de combat. Il s'efface de lui-même à la dernière image ; la
  * minuterie du parent n'est qu'un filet.
  */
+// La roue de feu dure juste assez pour que la conséquence attende : une carte
+// brûlée à mort ne s'en va qu'après elle.
+const DUREE_ROUE_FEU = 900;
+
 const GOUTTES_TOURBILLON = Object.freeze([
   { dx: -46, dy: -34, d: 0 },
   { dx: 42, dy: -52, d: 90 },
@@ -1270,6 +1275,79 @@ export function TourbillonEau({ effet, onTermine = null }) {
           key={goutte.d}
           className="rpg-tourbillon-eau__goutte"
           style={{ '--dx': `${goutte.dx}px`, '--dy': `${goutte.dy}px`, '--d': `${goutte.d}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * La roue de feu d'une créature brûlée par la Braise.
+ *
+ * Une magie, une sorcellerie ou l'effet d'une créature de Braise vient de
+ * mordre : autour de la carte s'allume un cercle de flammes qui tourne, des
+ * langues s'en détachent et quelques braises montent. Comme le tourbillon
+ * d'eau, le calque se pose sur l'emplacement mesuré avant l'action — mais la
+ * roue joue **avant** la conséquence : une créature qui meurt de ce coup ne
+ * s'en va qu'une fois la roue refermée, et sa carte reste visible dans le feu
+ * jusque-là. Rien n'est intercepté, rien ne bouge dans la mise en page.
+ */
+const RAYONS_ROUE_FEU = Object.freeze(
+  Array.from({ length: 9 }, (_, index) => ({ a: index * 40, d: index * 38 })),
+);
+const BRAISES_ROUE_FEU = Object.freeze([
+  { dx: -36, dy: -62, d: 0 },
+  { dx: 30, dy: -84, d: 80 },
+  { dx: -14, dy: -108, d: 160 },
+  { dx: 44, dy: -128, d: 230 },
+  { dx: 4, dy: -150, d: 310 },
+]);
+
+export function RoueDeFeu({ effet, onTermine = null }) {
+  const carte = effet.avecCarte ? cardById(effet.cardId) : null;
+  return (
+    <div
+      className="rpg-roue-feu"
+      data-rpg-burn-id={effet.entityId}
+      data-rpg-burn-fx="braise"
+      aria-hidden="true"
+      style={{
+        left: `${effet.left}px`,
+        top: `${effet.top}px`,
+        width: `${effet.width}px`,
+        height: `${effet.height}px`,
+        '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
+      }}
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget || event.pseudoElement) return;
+        onTermine?.(effet.effectId);
+      }}
+    >
+      {/* La carte brûlée reste dans le feu : elle ne s'efface qu'avec la roue,
+          puis son adieu de carte détruite prend le relais. */}
+      {carte && (
+        <span
+          className={`rpg-roue-feu__carte ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
+          style={cardFrameStyle(carte)}
+        >
+          <img src={cardArt(effet.cardId)} alt="" />
+        </span>
+      )}
+      <i className="rpg-roue-feu__lueur" />
+      <i className="rpg-roue-feu__cercle" />
+      <i className="rpg-roue-feu__cercle rpg-roue-feu__cercle--interne" />
+      {RAYONS_ROUE_FEU.map((rayon) => (
+        <i
+          key={rayon.a}
+          className="rpg-roue-feu__rayon"
+          style={{ '--a': `${rayon.a}deg`, '--d': `${rayon.d}ms` }}
+        />
+      ))}
+      {BRAISES_ROUE_FEU.map((braise) => (
+        <i
+          key={braise.d}
+          className="rpg-roue-feu__braise"
+          style={{ '--dx': `${braise.dx}px`, '--dy': `${braise.dy}px`, '--d': `${braise.d}ms` }}
         />
       ))}
     </div>
@@ -4055,6 +4133,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Les tourbillons d'eau des renvois en main : `{ entityId, cardId, left, top,
   // width, height, angle, effectId, expireA }`, le temps de l'effet seulement.
   const [tourbillonsEau, setTourbillonsEau] = useState([]);
+  // Les roues de feu des créatures brûlées par la Braise : `{ entityId, cardId,
+  // left, top, width, height, angle, avecCarte, effectId, expireA }`, le temps
+  // de l'effet seulement.
+  const [rouesFeu, setRouesFeu] = useState([]);
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
   const [animationsPioche, setAnimationsPioche] = useState([]);
@@ -4307,6 +4389,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(id);
   }, [tourbillonsEau]);
 
+  // Et pour les roues de feu : une flamme ne reste pas allumée sur une carte
+  // qui n'est plus là si la minuterie se perd.
+  useEffect(() => {
+    if (!rouesFeu.length) return undefined;
+    const derniere = Math.max(...rouesFeu.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setRouesFeu((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [rouesFeu]);
+
   // Retour d'arrière-plan : un téléphone qui met l'onglet en veille peut avaler
   // les minuteries d'animation. On rattrape alors à la main tout ce qui serait
   // resté figé — image de carte détruite, carte en vol, halos de combat — pour
@@ -4319,6 +4411,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return restants.length === current.length ? current : restants;
       });
       setTourbillonsEau((current) => {
+        const restants = nettoyerFantomes(current);
+        return restants.length === current.length ? current : restants;
+      });
+      setRouesFeu((current) => {
         const restants = nettoyerFantomes(current);
         return restants.length === current.length ? current : restants;
       });
@@ -4544,6 +4640,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setAnimationsEntites({});
     setCartesEnDestruction([]);
     setTourbillonsEau([]);
+    setRouesFeu([]);
     setCarteEnVol(null);
     setImpactEcran(null);
     effacerSoinsVisibles();
@@ -5778,6 +5875,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       && !renvoyees.has(entite.entityId));
     const mouvementReduit = animationsReduites();
     const disparues = mouvementReduit ? [] : cartesDisparues;
+    // La roue de feu : la dernière blessure d'une créature dit d'où vient le
+    // coup. La Braise l'allume — encore faut-il que l'état de la créature soit
+    // **encore** celui de cette blessure (jamais une ancienne brûlure), ou
+    // qu'elle ait quitté la table sous ce coup. Une attaque de créature ne
+    // passe pas par ce journal : elle ne lève pas de roue.
+    const brulees = new Map();
+    if (!mouvementReduit) {
+      for (const entite of avant) {
+        if (entite.isTerrain || renvoyees.has(entite.entityId)) continue;
+        const blessure = rpgDerniereBlessure(duel, entite.entityId);
+        if (!blessure || !blessure.elements.includes('braise')) continue;
+        const apres = vivants.get(entite.entityId);
+        const fraiche = apres
+          ? apres.pv === blessure.pvApres
+            && (apres.bouclier ?? 0) === blessure.bouclierApres
+          : blessure.mortelle;
+        if (fraiche) brulees.set(entite.entityId, entite);
+      }
+    }
     const evenementsDestruction = Number.isInteger(debutJournalDestructions)
       ? rpgDestructionsDepuis(duel, debutJournalDestructions)
       : [];
@@ -5806,13 +5922,46 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         // Date de péremption : l'image d'une carte détruite n'est qu'un adieu.
         // Trois voies la retirent (fin d'animation, minuterie, ménage), la
         // dernière servant de filet si l'onglet dort pendant l'animation.
-        expireA: Date.now() + duree + 400,
+        expireA: Date.now() + duree + 400 + (brulees.has(entite.entityId) ? DUREE_ROUE_FEU : 0),
       }));
-      setCartesEnDestruction((current) => [...nettoyerFantomes(current), ...effets]);
+      // Une carte brûlée par un effet attend que la roue ait fini de tourner :
+      // l'adieu vient **après** le geste, comme la main attend le tourbillon.
+      const retenues = effets.filter((effet) => brulees.has(effet.entityId));
+      const immediates = effets.filter((effet) => !brulees.has(effet.entityId));
+      if (immediates.length) {
+        setCartesEnDestruction((current) => [...nettoyerFantomes(current), ...immediates]);
+        programmerNettoyageVisuel(() => {
+          const ids = new Set(immediates.map((effect) => effect.effectId));
+          setCartesEnDestruction((current) => current.filter((effect) => !ids.has(effect.effectId)));
+        }, duree);
+      }
+      if (retenues.length) {
+        programmerNettoyageVisuel(() => {
+          setCartesEnDestruction((current) => [...nettoyerFantomes(current), ...retenues]);
+        }, DUREE_ROUE_FEU);
+        programmerNettoyageVisuel(() => {
+          const ids = new Set(retenues.map((effect) => effect.effectId));
+          setCartesEnDestruction((current) => current.filter((effect) => !ids.has(effect.effectId)));
+        }, DUREE_ROUE_FEU + duree);
+      }
+    }
+
+    // Les roues de feu : une par créature mordue par la Braise. La carte reste
+    // dans le feu quand elle quitte la table — son adieu prend le relais.
+    if (brulees.size) {
+      const token = ++sequenceAnimationRef.current;
+      const effetsFeu = [...brulees.values()].map((entite) => ({
+        ...entite,
+        token,
+        effectId: `feu-${token}-${entite.entityId}`,
+        avecCarte: !vivants.has(entite.entityId),
+        expireA: Date.now() + DUREE_ROUE_FEU + 400,
+      }));
+      setRouesFeu((current) => [...nettoyerFantomes(current), ...effetsFeu]);
       programmerNettoyageVisuel(() => {
-        const ids = new Set(effets.map((effect) => effect.effectId));
-        setCartesEnDestruction((current) => current.filter((effect) => !ids.has(effect.effectId)));
-      }, duree);
+        const ids = new Set(effetsFeu.map((effet) => effet.effectId));
+        setRouesFeu((current) => current.filter((effet) => !ids.has(effet.effectId)));
+      }, DUREE_ROUE_FEU);
     }
 
     // Renvoi en main : la créature quitte la table dans un tourbillon d'eau.
@@ -8116,6 +8265,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             </div>
           );
         })}
+
+        {/* Braise : la roue de feu tourne autour de la créature brûlée. */}
+        {rouesFeu.map((effet) => (
+          <RoueDeFeu
+            key={effet.effectId}
+            effet={effet}
+            onTermine={(effectId) => setRouesFeu((current) => current.filter((autre) => autre.effectId !== effectId))}
+          />
+        ))}
 
         {/* Renvoi en main : l'eau se referme là où la créature se tenait. */}
         {tourbillonsEau.map((effet) => (

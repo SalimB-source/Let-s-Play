@@ -98,6 +98,11 @@ const destructionsParDuel = new WeakMap();
 // soit l'action qui l'a renvoyée — une magie, le rebond d'une créature
 // (le Sonneur fêlé, le Léviathan) ou une riposte du sorcier.
 const renvoisParDuel = new WeakMap();
+// Les blessures infligées à une créature par un **effet** — magie, sorcellerie,
+// capacité ou arrivée — dans l'ordre où elles tombent. Le combat a son propre
+// chemin (simultané) et n'y figure pas : la table y lit la couleur de la
+// source pour allumer la roue de feu de la Braise.
+const blessuresParDuel = new WeakMap();
 // Hors de l’état JSON : les sauvegardes restent sérialisables et les tests
 // peuvent fournir un générateur déterministe. Une partie restaurée utilise Math.random.
 const hasardParDuel = new WeakMap();
@@ -116,6 +121,41 @@ export function rpgDestructionsDepuis(duel, position = 0) {
 /** Les créatures déjà renvoyées en main depuis le début du duel. */
 export function rpgRenvoisEnMain(duel) {
   return (renvoisParDuel.get(duel) ?? []).map((evenement) => ({ ...evenement }));
+}
+
+/**
+ * La dernière blessure d'une créature : `{ entityId, cote, elements, recus,
+ * absorbes, pvApres, bouclierApres, mortelle }`. `pvApres`/`bouclierApres`
+ * disent si l'état actuel de la créature est **encore** celui de cette
+ * blessure — la table n'allume donc la roue de feu que pour un coup qui vient
+ * de tomber, jamais pour une ancienne brûlure.
+ */
+export function rpgDerniereBlessure(duel, entityId) {
+  const journal = blessuresParDuel.get(duel);
+  if (!journal?.length) return null;
+  for (let i = journal.length - 1; i >= 0; i -= 1) {
+    if (journal[i].entityId === entityId) {
+      return { ...journal[i], elements: [...journal[i].elements] };
+    }
+  }
+  return null;
+}
+
+function journaliserBlessure(duel, cote, entite, blessure) {
+  const journal = blessuresParDuel.get(duel) ?? [];
+  journal.push({
+    entityId: entite.id,
+    cote,
+    elements: normaliserCouleurs(blessure.elements),
+    recus: blessure.recus,
+    absorbes: blessure.absorbes,
+    pvApres: entite.pv,
+    bouclierApres: entite.bouclier ?? 0,
+    // `mortelle` : la créature a **quitté la table** sous ce coup. Une Tenacité
+    // qui la sauve laisse donc `mortelle: false`, comme une blessure ordinaire.
+    mortelle: Boolean(blessure.mortelle),
+  });
+  blessuresParDuel.set(duel, journal);
 }
 
 function journaliserRenvoiEnMain(duel, cote, entite) {
@@ -2464,16 +2504,22 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   const recus = apresEsquive - absorbes;
   entite.pv -= recus;
   entite.def = Math.min(entite.def, Math.max(0, entite.pv));
+  const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
+  let mortelle = false;
   if (entite.pv <= 0) {
-    const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
     enterrer(duel, cote, entite, elements);
     // La Tenacité peut avoir sauvé la créature : elle a alors survécu à une
     // blessure, et la Furie s'applique comme pour n'importe quel survivant.
-    if (duel[cote].creatures.some((candidate) => candidate.id === entite.id)) {
-      appliquerFurie(duel, entite, recus);
-    }
+    mortelle = !duel[cote].creatures.some((candidate) => candidate.id === entite.id);
+    if (!mortelle) appliquerFurie(duel, entite, recus);
   } else {
     appliquerFurie(duel, entite, recus);
+  }
+  // Le journal dit d'où vient le coup — et si les points de vie actuels sont
+  // encore ceux de cette blessure : la table ne confond pas une brûlure neuve
+  // avec une ancienne, ni avec une attaque de créature.
+  if (apresEsquive > 0) {
+    journaliserBlessure(duel, cote, entite, { elements, recus, absorbes, mortelle });
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
