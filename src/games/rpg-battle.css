@@ -4736,6 +4736,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 
+/* Sur téléphone, le tremblement de toute la table fait bouger le cadre du jeu
+   sous les doigts. On garde les animations des cartes et le flash d'impact,
+   mais pas le déplacement global de l'arène. */
+@media (pointer: coarse) {
+  .card-table.rpg-screen-shake--a,
+  .card-table.rpg-screen-shake--b { animation: none !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card-table.rpg-screen-shake--a,
   .card-table.rpg-screen-shake--b,
