@@ -1171,7 +1171,9 @@
   width: 128px;
   aspect-ratio: 4 / 5;
   flex: none;
-  transition: transform .2s ease, box-shadow .2s ease;
+  /* L'opacité sert au retour en main : la carte attend que le tourbillon se
+     referme, puis reparaît en fondu. */
+  transition: transform .2s ease, box-shadow .2s ease, opacity .26s ease-out;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1213,6 +1215,15 @@
   --hand-fan-angle: calc(var(--hand-fan, 0) * var(--hand-fan-step));
   --hand-fan-spread: calc(var(--hand-fan, 0) * var(--hand-fan-spread-scale, 2%));
   --hand-fan-drop: min(calc(var(--hand-fan-arc, 0) * var(--hand-fan-arc-scale, .35%)), 9px);
+}
+
+/* Une carte renvoyée en main n'y rentre qu'après son tourbillon : sa place est
+   déjà tenue dans l'éventail (`visibility` seule ne suffirait pas, la carte
+   resterait cliquable), mais elle ne se montre pas encore. Quand le calque
+   d'eau s'efface, la classe part et la carte reparaît en fondu. */
+.rpg-hand__card.is-en-renvoi {
+  opacity: 0;
+  pointer-events: none;
 }
 
 
@@ -4705,6 +4716,24 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: rpg-tourbillon-eau-nappe .95s ease-out both;
 }
 
+/* La carte que l'eau emporte : elle reste à sa place, se soulève de quelques
+   pixels et se dissout dans la spirale. C'est elle qui fait le lien entre la
+   créature retirée de la table et la carte qui reparaîtra dans la main. */
+.rpg-tourbillon-eau__carte {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--rpg-card-radius, 12px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .55);
+  animation: rpg-tourbillon-eau-carte .95s ease-in both;
+}
+.rpg-tourbillon-eau__carte > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* La spirale : un anneau d'eau qui tourne sur lui-même en s'élevant. */
 .rpg-tourbillon-eau__spirale {
   position: absolute;
@@ -4765,6 +4794,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   10% { opacity: 1; }
   74% { opacity: 1; }
   100% { opacity: 0; }
+}
+@keyframes rpg-tourbillon-eau-carte {
+  0% { opacity: 1; translate: 0 0; scale: 1; filter: blur(0) saturate(1) hue-rotate(0deg); }
+  30% { opacity: 1; translate: 0 -5px; scale: 1.02; filter: blur(0) saturate(1.2) hue-rotate(-6deg); }
+  100% { opacity: 0; translate: 0 -20px; scale: .86; filter: blur(5px) saturate(.55) hue-rotate(-18deg); }
 }
 @keyframes rpg-tourbillon-eau-tourne {
   from { rotate: 0deg; }

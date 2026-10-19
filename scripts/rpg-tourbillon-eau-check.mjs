@@ -44,6 +44,12 @@ try {
   assert.match(style, /height:176px/, 'et sa hauteur');
   assert.match(style, /--rpg-fx-rotation:0\.26rad/, 'il en garde l’inclinaison de combat');
 
+  const carteEmportee = racine.querySelector('.rpg-tourbillon-eau__carte');
+  assert.ok(carteEmportee, 'la carte emportée reste visible dans le tourbillon');
+  assert.match(carteEmportee.querySelector('img')?.getAttribute('src') ?? '', /ressac/,
+    'c’est bien l’illustration de la créature renvoyée');
+  assert.ok([...carteEmportee.classList].some((classe) => classe.startsWith('rpg-card--frame-')),
+    'elle garde le cadre de sa couleur, comme sur la table');
   assert.ok(racine.querySelector('.rpg-tourbillon-eau__nappe'), 'une nappe d’eau se referme au sol');
   assert.ok(racine.querySelector('.rpg-tourbillon-eau__spirale'), 'une spirale tourne autour de la place');
   assert.equal(racine.querySelectorAll('.rpg-tourbillon-eau__anneau').length, 2,
@@ -54,8 +60,8 @@ try {
     && /--dy:-?\d+px/.test(goutte.getAttribute('style') ?? '')
     && /--d:\d+ms/.test(goutte.getAttribute('style') ?? '')),
   'chaque goutte part dans sa direction, avec son propre retard');
-  assert.equal(racine.children.length, 4 + gouttes.length,
-    'le calque ne contient que ses pièces d’eau');
+  assert.equal(racine.children.length, 5 + gouttes.length,
+    'le calque ne contient que ses pièces d’eau et la carte qu’il emporte');
 } finally {
   window.close();
 }
@@ -82,9 +88,28 @@ const debutImages = css.indexOf('@keyframes rpg-tourbillon-eau-vie');
 const finImages = css.indexOf('Les flèches d');
 assert.ok(debutImages > 0 && finImages > debutImages, 'les images clés du tourbillon forment un bloc');
 const imagesCles = css.slice(debutImages, finImages);
-assert.doesNotMatch(imagesCles, /(top|left|right|bottom|width|height|transform|filter|margin):/,
-  'le tourbillon n’anime que translate, rotate, scale et opacity');
+assert.doesNotMatch(imagesCles, /(top|left|right|bottom|width|height|margin):/,
+  'le tourbillon n’anime aucune propriété de mise en page : ni position, ni taille');
+assert.doesNotMatch(imagesCles, /transform:/,
+  'et il reste sur les propriétés composées, jamais `transform`');
 assert.match(css, /\.rpg-tourbillon-eau__anneau--deux\s*\{[^}]*animation-delay:\s*\.16s;/, 'les deux ondes sont décalées');
+assert.match(css, /\.rpg-tourbillon-eau__carte\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*animation:\s*rpg-tourbillon-eau-carte \.95s ease-in both;/s,
+  'la carte se soulève et se dissout dans la spirale');
+assert.match(css, /@keyframes rpg-tourbillon-eau-carte\s*\{\s*0% \{ opacity: 1;[^}]*\}\s*30%[\s\S]*?100% \{ opacity: 0;/,
+  'elle part nette et finit noyée');
+
+// ── 2 bis. L'ordre : l'eau d'abord, la main ensuite ────────────────────────
+// La carte renvoyée ne doit pas reparaître dans la main pendant le tourbillon.
+assert.match(page, /const cartesEnRenvoi = new Set\(\(tourbillonsEau \?\? \[\]\)\s*\n?\s*\.filter\(\(effet\) => effet\.camp !== 'sorcier'\)\s*\n?\s*\.map\(\(effet\) => effet\.cardId\)\);/s,
+  'la table sait quelles cartes l’eau ramène dans VOTRE main');
+assert.match(page, /cartesEnRenvoi\.has\(carteId\) \? 'is-en-renvoi' : ''/,
+  'leur emplacement de main les masque pendant le tourbillon');
+assert.match(css, /\.rpg-hand__card\.is-en-renvoi\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s,
+  'la carte attend, invisible et non cliquable, à sa place dans l’éventail');
+assert.match(css, /\.rpg-hand__card\s*\{[^}]*transition:\s*transform \.2s ease, box-shadow \.2s ease, opacity \.26s ease-out;/s,
+  'elle reparaît en fondu quand le tourbillon se referme');
+assert.match(page, /const duree = 950;/, 'le tourbillon dure 950 ms avant de rendre la carte à la main');
+assert.match(page, /camp: entite\.camp \?\? 'joueur',/, 'l’instantané du champ connaît le camp de chaque carte');
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-tourbillon-eau,\s*\.rpg-tourbillon-eau \* \{ animation:\s*none !important; transition:\s*none !important; \}/,
   'en mouvement réduit, le tourbillon reste immobile');
 
@@ -115,4 +140,4 @@ assert.match(page, /setTourbillonsEau\(\[\]\);/, 'quitter le duel efface les tou
 const appels = [...page.matchAll(/animerModificationsChamp\([\s\S]{0,240}?\.renvoiEntityId\]\)/g)];
 assert.ok(appels.length >= 3, `les renvois en main connus passent leur entité (reçu : ${appels.length})`);
 
-console.log('✓ Renvoi en main : la créature quitte la table dans un tourbillon d’eau — nappe au sol, spirale qui s’enroule en montant, deux ondes et cinq gouttes — posé sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page, silencieux en mouvement réduit et effacé en une seconde');
+console.log('✓ Renvoi en main : l’eau emporte la carte — nappe au sol, spirale qui s’enroule en montant, deux ondes, cinq gouttes, et la carte elle-même qui se dissout — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la créature quitte la table, l’eau joue, et la carte ne reparaît dans la main qu’une fois le tourbillon refermé (950 ms), silencieux en mouvement réduit');

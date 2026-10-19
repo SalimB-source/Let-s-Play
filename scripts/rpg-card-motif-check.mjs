@@ -132,13 +132,14 @@ const surfaces = [
   [duel, 'les piles de terrains', '${cardFrameClass(carte)} ${cardMotifClass(carte)}${groupe.available'],
   [duel, 'l’adieu d’une carte détruite', '${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}'],
   [duel, 'la carte en main', 'cardFrameClass(carte),\n                    cardMotifClass(carte),'],
+  [duel, 'la carte emportée par le tourbillon de renvoi', 'cardFrameClass(cardById(effet.cardId))} ${cardMotifClass(cardById(effet.cardId))}'],
   [guide, 'la fiche du guide', 'rpg-card-guide__example--${carte.kind} ${cardFrameClass(carte)} ${cardMotifClass(carte)}'],
   [atelier, 'la vignette de l’atelier', 'rpg-atelier__carte-art ${cardFrameClass(carte)} ${cardMotifClass(carte)}'],
 ];
 for (const [source, surface, attendu] of surfaces) {
   assert.ok(source.includes(attendu), `${surface} prend le motif de son type`);
 }
-assert.equal((duel.match(/cardMotifClass\(/g) ?? []).length, 11, 'les onze faces du duel portent le motif (dont la carte déchirée du sacrifice)');
+assert.equal((duel.match(/cardMotifClass\(/g) ?? []).length, 12, 'les douze faces du duel portent le motif (dont la carte déchirée du sacrifice et celle emportée par l’eau)');
 assert.equal((duel.match(/cardMotifClass\(carte\)/g) ?? []).length, 8, 'huit d’entre elles suivent la carte affichée');
 
 console.log('✓ Le cadre des magies rapides taille un losange, celui des sorcelleries grave l’étincelle de son sigle, celui des terrains ses strates : six images distinctes, les mythiques gardent leur zellige, les armes leur guilloché, et rien ne change d’épaisseur ni de couleur.');

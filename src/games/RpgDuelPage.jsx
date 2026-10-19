@@ -1250,6 +1250,16 @@ export function TourbillonEau({ effet, onTermine = null }) {
         onTermine?.(effet.effectId);
       }}
     >
+      {/* La carte elle-même, encore à sa place : l'eau l'enveloppe, la
+          soulève et la dissout — puis elle reparaîtra dans la main. */}
+      {effet.cardId && (
+        <span
+          className={`rpg-tourbillon-eau__carte ${cardFrameClass(cardById(effet.cardId))} ${cardMotifClass(cardById(effet.cardId))}`}
+          style={cardFrameStyle(cardById(effet.cardId))}
+        >
+          <img src={cardArt(effet.cardId)} alt="" />
+        </span>
+      )}
       <i className="rpg-tourbillon-eau__nappe" />
       <i className="rpg-tourbillon-eau__spirale" />
       <i className="rpg-tourbillon-eau__anneau rpg-tourbillon-eau__anneau--un" />
@@ -4614,6 +4624,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const duel = duelRef.current;
+  // Les cartes que l'eau ramène dans la main du joueur : elles restent hors de
+  // la main tant que le tourbillon joue — le geste se lit avant le résultat.
+  const cartesEnRenvoi = new Set((tourbillonsEau ?? [])
+    .filter((effet) => effet.camp !== 'sorcier')
+    .map((effet) => effet.cardId));
   useRpgMythicImpact(duel, ecran, tableRef, cardById, jouerSfx);
   const plateau = plateauParId(plateauId) ?? PLATEAU_PAR_DEFAUT;
   // La moitié haute de la table : le terrain du deck adverse. La table n'est
@@ -5685,17 +5700,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const elements = new Map([...(table?.querySelectorAll('[data-entity-id], [data-terrain-id]') ?? [])]
       .map((element) => [element.dataset.entityId ?? element.dataset.terrainId, element]));
     const cartesEnJeu = [
-      ...duel.joueur.creatures.map((entite) => ({ ...entite, isTerrain: false })),
-      ...duel.sorcier.creatures.map((entite) => ({ ...entite, isTerrain: false })),
+      ...duel.joueur.creatures.map((entite) => ({ ...entite, isTerrain: false, camp: 'joueur' })),
+      ...duel.sorcier.creatures.map((entite) => ({ ...entite, isTerrain: false, camp: 'sorcier' })),
       ...duel.joueur.terrains.map((terrain) => ({
         ...terrain,
         name: cardById(terrain.carteId)?.name ?? terrain.carteId,
         isTerrain: true,
+        camp: 'joueur',
       })),
       ...duel.sorcier.terrains.map((terrain) => ({
         ...terrain,
         name: cardById(terrain.carteId)?.name ?? terrain.carteId,
         isTerrain: true,
+        camp: 'sorcier',
       })),
     ];
     return cartesEnJeu.map((entite) => {
@@ -5721,6 +5738,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         cardId: entite.carteId,
         name: entite.name,
         isTerrain: entite.isTerrain,
+        // Le camp dit à qui la carte retourne : seule la vôtre doit attendre
+        // la fin du tourbillon avant de reparaître dans votre main.
+        camp: entite.camp ?? 'joueur',
         atk: entite.atk,
         def: entite.def,
         pv: entite.pv,
@@ -8556,6 +8576,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   onDragEnd={terminerGlisserCarte}
                   className={[
                     'rpg-hand__card rpg-hand__card--img',
+                    // Renvoyée en main : sa place est gardée, mais elle ne
+                    // reparaît qu'une fois le tourbillon refermé.
+                    cartesEnRenvoi.has(carteId) ? 'is-en-renvoi' : '',
                     estTerrain ? 'rpg-hand__card--terrain' : '',
                     `rpg-hand__card--type-${cardFrameType(carte)}`,
                     `rpg-hand__card--elem-${carte.element}`,
