@@ -2278,6 +2278,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // L'atelier : `null` (fermé), `{ mode: 'nouveau' }`, `{ mode: 'edition', id }`
   // ou `{ mode: 'copie', deck }` — partir d'un deck du catalogue pour l'adapter.
   const [atelier, setAtelier] = useState(null);
+  const [partieRapideOuverte, setPartieRapideOuverte] = useState(false);
+  const [partieRapideChoix, setPartieRapideChoix] = useState(null);
   const detailRef = useRef(null);
   const play = (n) => { try { onPlaySfx?.(n); } catch {} };
   // L'étagère : les sept decks du catalogue, puis les boîtiers maison.
@@ -2324,6 +2326,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .80) 0%, rgba(8, 7, 13, .58) 48%, rgba(8, 7, 13, .40) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
   // Quitter l'onglet Deck referme l'étagère et l'atelier : le prochain passage repart sans liste.
   useEffect(() => { if (screen !== 'decks') { setOpenDeckId(null); setAtelier(null); } }, [screen]);
+  useEffect(() => { if (screen !== 'jouer') setPartieRapideOuverte(false); }, [screen]);
+  useEffect(() => {
+    if (!partieRapideOuverte) return;
+    const onKey = (event) => { if (event.key === 'Escape') setPartieRapideOuverte(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [partieRapideOuverte]);
   // Quitter l'onglet Histoire referme la tour ouverte : le prochain passage sur
   // l'onglet retrouve la galerie des maquettes, jamais les étages d'emblée.
   useEffect(() => { if (screen !== 'histoire') setTourOuverteId(null); }, [screen]);
@@ -2506,11 +2515,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         <small>{RPG_TUTORIELS.length} leçons guidées · récompenses en <RpgCreditIcon /></small>
                       </span>
                     </button>
-                    <button type="button" className="rpg-menu-button rpg-menu-button--card-guide" onClick={() => { play('select'); onStartCardGuide?.(); }}>
-                      <span className="rpg-menu-button__icon">◇</span>
+                    <button type="button" className="rpg-menu-button rpg-menu-button--partie-rapide" onClick={() => { play('select'); setPartieRapideChoix(playerDeck?.id ?? decksTous.filter((deck) => deckSeJoue(deck, collection))[0]?.id ?? ''); setPartieRapideOuverte(true); }}>
+                      <span className="rpg-menu-button__icon">⚔</span>
                       <span className="rpg-menu-button__text">
-                        <strong>Cartes & effets</strong>
-                        <small>Guide complet des règles</small>
+                        <strong>Partie rapide</strong>
+                        <small>Choisir un deck et affronter l’ordinateur</small>
                       </span>
                     </button>
                   </div>
@@ -3262,6 +3271,86 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
         )}
         <footer className="rpg-mode-menu__footer"><span>LE SABLIER</span><span>STRATÉGIE · CRÉATURES · MAGIE</span></footer>
       </div>
+      {partieRapideOuverte && (
+        <div
+          className="rpg-partie-rapide__overlay"
+          role="presentation"
+          onClick={(event) => { if (event.target === event.currentTarget) setPartieRapideOuverte(false); }}
+          onKeyDown={(event) => { if (event.key === 'Escape') setPartieRapideOuverte(false); }}
+        >
+          <div
+            className="rpg-partie-rapide"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rpg-partie-rapide-title"
+            aria-describedby="rpg-partie-rapide-desc"
+            tabIndex={-1}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="rpg-partie-rapide__header">
+              <div>
+                <span className="rpg-mode-menu__eyebrow">PARTIE RAPIDE · CONTRE L’ORDINATEUR</span>
+                <h2 id="rpg-partie-rapide-title">Choisissez votre deck</h2>
+                <p id="rpg-partie-rapide-desc">Sélectionnez l’un de vos decks disponibles pour lancer immédiatement un duel contre l’ordinateur. Le sorcier jouera un deck adapté pour vous affronter.</p>
+              </div>
+              <button type="button" className="rpg-partie-rapide__close" aria-label="Fermer la fenêtre" onClick={() => setPartieRapideOuverte(false)}>✕</button>
+            </header>
+            <div className="rpg-partie-rapide__grid" role="list">
+              {(() => {
+                const decksJouables = decksTous.filter((deck) => deckSeJoue(deck, collection));
+                if (!decksJouables.length) {
+                  return <p className="rpg-partie-rapide__empty">Aucun deck disponible. Construisez un deck dans l’atelier pour débloquer une partie rapide.</p>;
+                }
+                return decksJouables.map((deck) => {
+                  const selectionne = partieRapideChoix === deck.id;
+                  const couleurLabel = deckColorLabel(deck);
+                  const total = deck.cardIds.length;
+                  const stats = deckStats(deck);
+                  return (
+                    <button
+                      key={deck.id}
+                      type="button"
+                      role="listitem"
+                      className={`rpg-partie-rapide__deck${selectionne ? ' is-selected' : ''}`}
+                      aria-pressed={selectionne}
+                      aria-label={`Deck ${deck.name} : ${couleurLabel}, ${total} cartes`}
+                      onClick={() => { play('menu'); setPartieRapideChoix(deck.id); }}
+                    >
+                      <span className="rpg-partie-rapide__deck-art" aria-hidden="true" style={{ backgroundImage: `url("${deckBoxArtUrl(deck)}")` }} />
+                      <span className="rpg-partie-rapide__deck-body">
+                        <strong className="rpg-partie-rapide__deck-name">{deck.name}</strong>
+                        <small className="rpg-partie-rapide__deck-couleur">{deckColorGlyph(deck)} {couleurLabel}</small>
+                        <span className="rpg-partie-rapide__deck-meta">{total} cartes · {stats.creatures} créatures · {stats.magies + stats.armes} sorts & armes</span>
+                        {deck.archetype && <span className="rpg-partie-rapide__deck-archetype">{deck.archetype}</span>}
+                      </span>
+                      {selectionne && <span className="rpg-partie-rapide__check" aria-hidden="true">✓</span>}
+                      {deck.id === selectedDeckId && <span className="rpg-partie-rapide__badge">Actuel</span>}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+            <footer className="rpg-partie-rapide__actions">
+              <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => setPartieRapideOuverte(false)}>Annuler</button>
+              <button
+                type="button"
+                className="rpg-btn rpg-btn--primary"
+                disabled={!partieRapideChoix || !decksTous.find((deck) => deck.id === partieRapideChoix && deckSeJoue(deck, collection))}
+                onClick={() => {
+                  const deck = decksTous.find((d) => d.id === partieRapideChoix);
+                  if (!deck || !deckSeJoue(deck, collection)) return;
+                  play('select');
+                  onSelectDeck(deck.id);
+                  onStartGame(deck.id);
+                  setPartieRapideOuverte(false);
+                }}
+              >
+                Lancer la partie
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
       {/* Partie en cours : le bouton de reprise flotte en bas au centre, visible
           sans défiler quel que soit l'onglet du menu. */}
       {hasGame && (
