@@ -5510,6 +5510,13 @@ là où il se passe.
 L'écran de rotation (« Le duel se joue en paysage ») reste : ce n'est pas une
 consigne de jeu mais une condition d'affichage, avec son bouton.
 
+Une seule consigne subsiste, et elle reste **minuscule** : la puce d'action
+(`.rpg-annonce-action`, `AnnonceActionJoueur`) qui, pendant une cible, une
+défausse ou un blocage, nomme le geste attendu au centre de la table. Texte de
+10 à 12 px, pastilles de 4 px, fond translucide et largeur plafonnée à 560 px :
+elle se glisse sur les cartes sans les masquer, là où la plaque de tour garde sa
+taille. Elle ne capte aucun geste et s'efface dès que l'attente est résolue.
+
 ### Où vit le code
 
 - `src/games/RpgDuelPage.jsx` — l'état `message` et ses **69 appels**
