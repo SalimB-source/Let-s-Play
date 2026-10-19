@@ -3952,6 +3952,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-hover-card-preview__stats { justify-content: flex-start; color: #ffe9a0; font-size: 18px; font-weight: 900; white-space: nowrap; }
 .rpg-hover-card-preview__stats span { color: #e1cb9c; }
+/* L'aperçu rapide est texte seul : sans l'illustration, l'encadré d'infos
+   prend toute la largeur du panneau — au survol comme sur le volet d'appui
+   long, qui restent plus étroits que la fiche. La fiche du catalogue,
+   l'annonce et les présentations centrées gardent leurs deux colonnes. */
+.rpg-hover-card-preview.rpg-hover-card-preview--texte-seul {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(420px, calc(100vw - 20px));
+}
+.rpg-card-peek .rpg-hover-card-preview.rpg-hover-card-preview--texte-seul {
+  width: min(420px, 100%);
+}
 @keyframes rpg-hover-preview-in { from { opacity: 0; } to { opacity: 1; } }
 
 @media (max-width: 560px) {

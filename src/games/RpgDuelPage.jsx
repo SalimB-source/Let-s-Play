@@ -1765,6 +1765,11 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
     </>
   );
+  // L'aperçu rapide — le survol à la souris comme l'appui long au doigt — ne
+  // montre plus l'illustration de la carte : seul l'encadré de texte (coût,
+  // mots-clés, effets) s'affiche. La fiche du catalogue, l'annonce et les
+  // présentations centrées (magie jouée, effet activé) gardent leur face.
+  const estApercuRapide = (variante === '' || variante === 'appui-long') && !spellPlayed;
   const face = (
     <div
       ref={faceRef}
@@ -1787,7 +1792,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   return (
     <aside
       ref={panelRef}
-      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}${interactif ? ' is-interactif' : ''}`}
+      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}${interactif ? ' is-interactif' : ''}${estApercuRapide ? ' rpg-hover-card-preview--texte-seul' : ''}`}
       onPointerEnter={onPointerEnter ?? undefined}
       onPointerLeave={onPointerLeave ?? undefined}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
@@ -1804,7 +1809,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
         </div>
       ) : (
         <>
-          {face}
+          {!estApercuRapide && face}
           <div className="rpg-hover-card-preview__details">{details}</div>
         </>
       )}
