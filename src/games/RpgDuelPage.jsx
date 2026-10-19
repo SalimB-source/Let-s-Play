@@ -1210,6 +1210,61 @@ function EclatSoin({ montant = null, surCarte = false }) {
   );
 }
 
+/**
+ * Le tourbillon d'eau d'un renvoi en main.
+ *
+ * Une magie ou un effet renvoie une créature dans la main de son propriétaire :
+ * la carte quitte la table, mais pas sans adieu. À sa place s'enroule une
+ * spirale d'eau qui monte et se dissout, deux ondes s'élargissent autour d'elle
+ * et quelques gouttes s'arrachent au courant. Le calque est décoratif, posé sur
+ * l'emplacement qu'occupait la carte (mesuré avant l'action) et il en garde
+ * l'inclinaison de combat. Il s'efface de lui-même à la dernière image ; la
+ * minuterie du parent n'est qu'un filet.
+ */
+const GOUTTES_TOURBILLON = Object.freeze([
+  { dx: -46, dy: -34, d: 0 },
+  { dx: 42, dy: -52, d: 90 },
+  { dx: -24, dy: -74, d: 170 },
+  { dx: 30, dy: -96, d: 250 },
+  { dx: 6, dy: -120, d: 330 },
+]);
+
+export function TourbillonEau({ effet, onTermine = null }) {
+  return (
+    <div
+      className="rpg-tourbillon-eau"
+      data-rpg-bounce-id={effet.entityId}
+      data-rpg-bounce-fx="eau"
+      aria-hidden="true"
+      style={{
+        left: `${effet.left}px`,
+        top: `${effet.top}px`,
+        width: `${effet.width}px`,
+        height: `${effet.height}px`,
+        '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
+      }}
+      // Comme l'adieu d'une carte détruite : on ignore les animations des
+      // enfants, qui se terminent avant le calque.
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget || event.pseudoElement) return;
+        onTermine?.(effet.effectId);
+      }}
+    >
+      <i className="rpg-tourbillon-eau__nappe" />
+      <i className="rpg-tourbillon-eau__spirale" />
+      <i className="rpg-tourbillon-eau__anneau rpg-tourbillon-eau__anneau--un" />
+      <i className="rpg-tourbillon-eau__anneau rpg-tourbillon-eau__anneau--deux" />
+      {GOUTTES_TOURBILLON.map((goutte) => (
+        <i
+          key={goutte.d}
+          className="rpg-tourbillon-eau__goutte"
+          style={{ '--dx': `${goutte.dx}px`, '--dy': `${goutte.dy}px`, '--d': `${goutte.d}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function TableCard({
   entite,
   cote,
@@ -3977,6 +4032,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, [recompenseTutoriel?.token]);
   const [animationsEntites, setAnimationsEntites] = useState({});
   const [cartesEnDestruction, setCartesEnDestruction] = useState([]);
+  // Les tourbillons d'eau des renvois en main : `{ entityId, cardId, left, top,
+  // width, height, angle, effectId, expireA }`, le temps de l'effet seulement.
+  const [tourbillonsEau, setTourbillonsEau] = useState([]);
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
   const [animationsPioche, setAnimationsPioche] = useState([]);
@@ -4213,6 +4271,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(id);
   }, [cartesEnDestruction]);
 
+  // Même chien de garde pour les tourbillons d'eau : un renvoi en main ne
+  // laisse jamais sa spirale figée sur la table si la minuterie se perd.
+  useEffect(() => {
+    if (!tourbillonsEau.length) return undefined;
+    const derniere = Math.max(...tourbillonsEau.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setTourbillonsEau((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [tourbillonsEau]);
+
   // Retour d'arrière-plan : un téléphone qui met l'onglet en veille peut avaler
   // les minuteries d'animation. On rattrape alors à la main tout ce qui serait
   // resté figé — image de carte détruite, carte en vol, halos de combat — pour
@@ -4221,6 +4289,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const rattraperAnimations = () => {
       if (document.visibilityState !== 'visible') return;
       setCartesEnDestruction((current) => {
+        const restants = nettoyerFantomes(current);
+        return restants.length === current.length ? current : restants;
+      });
+      setTourbillonsEau((current) => {
         const restants = nettoyerFantomes(current);
         return restants.length === current.length ? current : restants;
       });
@@ -4444,6 +4516,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setSortJoue(null);
     setAnimationsEntites({});
     setCartesEnDestruction([]);
+    setTourbillonsEau([]);
     setCarteEnVol(null);
     setImpactEcran(null);
     effacerSoinsVisibles();
@@ -5690,6 +5763,28 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       programmerNettoyageVisuel(() => {
         const ids = new Set(effets.map((effect) => effect.effectId));
         setCartesEnDestruction((current) => current.filter((effect) => !ids.has(effect.effectId)));
+      }, duree);
+    }
+
+    // Renvoi en main : la créature quitte la table dans un tourbillon d'eau.
+    // L'effet se pose sur la place qu'elle occupait — relevée avant l'action,
+    // comme pour l'adieu d'une carte détruite — et respecte le mouvement réduit.
+    const renvoyeesSurTable = mouvementReduit
+      ? []
+      : avant.filter((entite) => renvoyees.has(entite.entityId) && !entite.isTerrain);
+    if (renvoyeesSurTable.length) {
+      const token = ++sequenceAnimationRef.current;
+      const duree = 950;
+      const effets = renvoyeesSurTable.map((entite) => ({
+        ...entite,
+        token,
+        effectId: `eau-${token}-${entite.entityId}`,
+        expireA: Date.now() + duree + 400,
+      }));
+      setTourbillonsEau((current) => [...nettoyerFantomes(current), ...effets]);
+      programmerNettoyageVisuel(() => {
+        const ids = new Set(effets.map((effet) => effet.effectId));
+        setTourbillonsEau((current) => current.filter((effet) => !ids.has(effet.effectId)));
       }, duree);
     }
 
@@ -7942,6 +8037,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             </div>
           );
         })}
+
+        {/* Renvoi en main : l'eau se referme là où la créature se tenait. */}
+        {tourbillonsEau.map((effet) => (
+          <TourbillonEau
+            key={effet.effectId}
+            effet={effet}
+            onTermine={(effectId) => setTourbillonsEau((current) => current.filter((autre) => autre.effectId !== effectId))}
+          />
+        ))}
 
         {/* Déchirement du sacrifice : la carte désignée se fend en deux
             moitiés à son emplacement, AVANT que la nouvelle créature ne soit
