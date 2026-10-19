@@ -16,6 +16,7 @@ import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+const engine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 
 // ── 1. Le calque, rendu pour de vrai ───────────────────────────────────────
@@ -134,10 +135,23 @@ assert.match(page, /if \(!tourbillonsEau\.length\) return undefined;[\s\S]*?setT
   'un chien de garde retire les tourbillons périmés si la minuterie se perd');
 assert.match(page, /setTourbillonsEau\(\[\]\);/, 'quitter le duel efface les tourbillons en cours');
 
-// Le renvoi en main arrive par les effets du jeu, pas par une détection : les
-// chemins qui le connaissent — magie du joueur, riposte du sorcier, résolution
-// d'annonce — passent l'entité à `animerModificationsChamp`.
+// ── 4. Toutes les voies du renvoi, pas seulement la magie ──────────────────
+// Le moteur journalise chaque créature rendue à une main : la table n'a plus à
+// dépendre du chemin qui l'a fait — une magie, mais aussi le rebond d'une
+// créature (le Sonneur fêlé, le Léviathan), une riposte du sorcier.
+assert.match(engine, /export function rpgRenvoisEnMain\(duel\)/, 'le moteur publie le journal des renvois');
+assert.match(engine, /renvoisParDuel\.set\(duel, journal\)/, 'le journal vit hors de l’état sérialisé');
+const corpsRenvoi = engine.slice(engine.indexOf('function renvoyerEnMain('), engine.indexOf('/**', engine.indexOf('function renvoyerEnMain(')));
+assert.match(corpsRenvoi, /journaliserRenvoiEnMain\(duel, cote, presente\);\s*\n\s*duel\.log\.push\(`\$\{presente\.name\} retourne dans la main/,
+  'chaque créature rendue en main est journalisée, juste avant son retour');
+assert.ok(corpsRenvoi.indexOf('if (presente.jeton)') < corpsRenvoi.indexOf('journaliserRenvoiEnMain('),
+  'un jeton qui cesse d’exister n’est pas un renvoi : il garde son adieu de carte détruite');
+assert.match(page, /rpgRenvoisEnMain\(duel\)/, 'la table lit le journal du moteur');
+assert.match(animer, /const renvoyees = new Set\(\[\s*\n?\s*\.\.\.entitesRenvoyees\.filter\(Boolean\),\s*\n?\s*\.\.\.rpgRenvoisEnMain\(duel\)\.map\(\(evenement\) => evenement\.entityId\),\s*\n?\s*\]\);/s,
+  'le renvoi d’un effet de créature lève le même tourbillon que celui d’une magie');
+// Les chemins qui connaissent leur cible continuent de la passer : le journal
+// ne les remplace pas, il les complète.
 const appels = [...page.matchAll(/animerModificationsChamp\([\s\S]{0,240}?\.renvoiEntityId\]\)/g)];
 assert.ok(appels.length >= 3, `les renvois en main connus passent leur entité (reçu : ${appels.length})`);
 
-console.log('✓ Renvoi en main : l’eau emporte la carte — nappe au sol, spirale qui s’enroule en montant, deux ondes, cinq gouttes, et la carte elle-même qui se dissout — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la créature quitte la table, l’eau joue, et la carte ne reparaît dans la main qu’une fois le tourbillon refermé (950 ms), silencieux en mouvement réduit');
+console.log('✓ Renvoi en main : l’eau emporte la carte — nappe au sol, spirale qui s’enroule en montant, deux ondes, cinq gouttes, et la carte elle-même qui se dissout — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la créature quitte la table, l’eau joue, et la carte ne reparaît dans la main qu’une fois le tourbillon refermé (950 ms) — pour une magie comme pour le rebond d’une créature — silencieux en mouvement réduit');

@@ -71,7 +71,7 @@ import {
   cardCopyLimit,
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
-import { rpgLancerMagie } from '../src/games/rpgDuel.js';
+import { rpgLancerMagie, rpgRenvoisEnMain } from '../src/games/rpgDuel.js';
 import { choisirMulliganIA } from '../src/games/rpgAI.js';
 
 /** Main de départ générique, mélangée de façon fixe. */
@@ -2156,6 +2156,12 @@ test('Rebond : à son arrivée, le Sonneur fêlé renvoie la créature ciblée d
   assert.equal(duel.sorcier.creatures.length, 0, 'la Dune marchante quitte la table');
   assert.ok(duel.sorcier.main.includes('dune-marchante'), 'elle est renvoyée dans la main du sorcier');
   assert.equal(duel.sorcier.cimetiere.includes('dune-marchante'), false, 'elle ne va pas au cimetière');
+  // Un effet de créature vaut un sort : le journal des renvois doit nommer la
+  // créature, sinon la table lui donnerait un adieu de destruction au lieu du
+  // tourbillon d'eau (et la main la verrait revenir trop tôt).
+  const renvois = rpgRenvoisEnMain(duel);
+  assert.equal(renvois.length, 1, 'le rebond du Sonneur est journalisé');
+  assert.deepEqual(renvois[0], { entityId: dune.id, carteId: 'dune-marchante', cote: 'sorcier' });
 });
 
 test('chaque attaquant peut viser le sorcier : les bloqueurs sont choisis séparément', () => {

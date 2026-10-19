@@ -140,6 +140,7 @@ import {
   rpgNouveauDuel,
   rpgNombreDestructions,
   rpgDestructionsDepuis,
+  rpgRenvoisEnMain,
   rpgOuvrirFenetreReponse,
   rpgOuvrirFinDeTour,
   rpgPeutRepondre,
@@ -5763,7 +5764,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ...duel.joueur.terrains,
       ...duel.sorcier.terrains,
     ].map((entite) => [entite.id, entite]));
-    const renvoyees = new Set(entitesRenvoyees.filter(Boolean));
+    // Le journal du moteur dit quelles créatures sont retournées en main —
+    // y compris celles qu'un **effet de créature** (le rebond du Sonneur fêlé,
+    // le reflux du Léviathan) a renvoyées, sans que l'action le dise. Les
+    // seules entités qui comptent sont celles de l'instantané : une créature
+    // déjà rentrée en main n'est plus sur la table, elle ne peut donc pas
+    // disparaître deux fois.
+    const renvoyees = new Set([
+      ...entitesRenvoyees.filter(Boolean),
+      ...rpgRenvoisEnMain(duel).map((evenement) => evenement.entityId),
+    ]);
     const cartesDisparues = avant.filter((entite) => !vivants.has(entite.entityId)
       && !renvoyees.has(entite.entityId));
     const mouvementReduit = animationsReduites();

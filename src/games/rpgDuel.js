@@ -92,6 +92,12 @@ export const RPG_PHASES_LIBELLES = {
 };
 
 const destructionsParDuel = new WeakMap();
+// Les renvois en main, dans l'ordre où ils arrivent. Comme le journal des
+// destructions, il vit hors de l'état sérialisé : la table s'en sert pour
+// reconnaître une créature qui **quitte la table sans mourir**, quelle que
+// soit l'action qui l'a renvoyée — une magie, le rebond d'une créature
+// (le Sonneur fêlé, le Léviathan) ou une riposte du sorcier.
+const renvoisParDuel = new WeakMap();
 // Hors de l’état JSON : les sauvegardes restent sérialisables et les tests
 // peuvent fournir un générateur déterministe. Une partie restaurée utilise Math.random.
 const hasardParDuel = new WeakMap();
@@ -105,6 +111,17 @@ export function rpgDestructionsDepuis(duel, position = 0) {
   return (destructionsParDuel.get(duel) ?? [])
     .slice(Math.max(0, position))
     .map((evenement) => ({ ...evenement, sourceElements: [...evenement.sourceElements] }));
+}
+
+/** Les créatures déjà renvoyées en main depuis le début du duel. */
+export function rpgRenvoisEnMain(duel) {
+  return (renvoisParDuel.get(duel) ?? []).map((evenement) => ({ ...evenement }));
+}
+
+function journaliserRenvoiEnMain(duel, cote, entite) {
+  const journal = renvoisParDuel.get(duel) ?? [];
+  journal.push({ entityId: entite.id, carteId: entite.carteId, cote });
+  renvoisParDuel.set(duel, journal);
 }
 
 function journaliserDestruction(duel, entite, sourceElements = []) {
@@ -2211,6 +2228,7 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
     return true;
   }
   camp.main.push(presente.carteId);
+  journaliserRenvoiEnMain(duel, cote, presente);
   duel.log.push(`${presente.name} retourne dans la main de son propriétaire.`);
   rafraichirAuras(duel);
   return true;
