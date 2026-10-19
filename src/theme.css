@@ -1219,6 +1219,8 @@
 [data-theme='light'] .search-hero h1 em,
 [data-theme='light'] .featured-copy h2 em,
 [data-theme='light'] .featured-dossiers-head h2 em,
+[data-theme='light'] .short-review-head h2 em,
+[data-theme='light'] .short-review-score-value{text-shadow:none}
 [data-theme='light'] .manifesto-h2 span,
 [data-theme='light'] .latest h2 em,
 [data-theme='light'] .latest-tests-head h2 em,
@@ -1235,6 +1237,11 @@
 [data-theme='light'] .card-gaming .format-icon{color:var(--yellow-ink)}
 [data-theme='light'] .featured-player,
 [data-theme='light'] .featured-dossier-player,
+[data-theme='light'] .short-review-player,
+[data-theme='light'] .short-review-score{box-shadow:var(--shadow-md)}
+[data-theme='light'] .short-review-score{background:linear-gradient(140deg, rgba(34,211,238,.10), rgba(255,255,255,.5) 55%), var(--panel)}
+[data-theme='light'] .short-review-score-bar{background:rgba(35,32,70,.10)}
+[data-theme='light'] .short-review-points li::before{box-shadow:none}
 [data-theme='light'] .featured--ooredoo .featured-player,
 [data-theme='light'] .featured-dossier--ooredoo .featured-dossier-player,
 [data-theme='light'] .featured-dossier--djezzy .featured-dossier-player,

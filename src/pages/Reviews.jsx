@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { gameTests, scoreTier, scoreLabel } from '../reviewsData';
+import { scoreTier, scoreLabel } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
 import VideoModal from '../components/VideoModal';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
@@ -26,10 +26,27 @@ const reels = [
   { id: 'ZA_LYwNCpp0', label: 'REEL 04' },
 ];
 
+// Short review YouTube — le test en 90 s de Black Flag Resynced,
+// intégré avec son idée retranscrite en points et la note donnée
+// dans la vidéo (8.5/10).
+// https://www.youtube.com/shorts/WpurJcfnHHs
+const shortReviewVideo = {
+  id: 'WpurJcfnHHs',
+  href: 'https://www.youtube.com/shorts/WpurJcfnHHs',
+  title: 'Assassin’s Creed Black Flag Resynced — Let’s Play',
+  score: 8.5,
+};
+
+// Palier de la note → libellé affiché à côté du score.
+const shortTierLabel = (tier, labels) => (
+  tier === 'is-hit' ? labels.tierHit : tier === 'is-good' ? labels.tierGood : labels.tierMid
+);
+
 export default function Reviews(){
   const { t, lang } = useLanguage();
   const c = t.reviews.article;
   const d = t.reviews.dossiers;
+  const sr = t.reviews.shortReview;
   const tcl = tclFeature[lang] || tclFeature.fr;
   const [player, setPlayer] = useState(null);
   const openVideo = (e, test) => {
@@ -70,36 +87,43 @@ export default function Reviews(){
 
   return (
     <>
-      <section className="latest-tests wrap">
-        <div className="section-label"><span>{c.gridLabel}</span><span>{c.gridRange}</span></div>
-        <div className="latest-tests-head"><div><p className="eyebrow"><span className="live-dot" /> {c.gridEyebrow}</p><h2>{c.gridTitleA}<br/><em>{c.gridTitleB}</em></h2></div></div>
-        <div className="latest-tests-grid">
-          {gameTests.map((test) => (
-            <Link className="latest-test-card" to={test.route} key={test.slug}>
-              <div className="latest-test-image">
-                <img src={test.image} alt={test.alt} loading="lazy" />
-                <span className={`latest-test-score score-badge ${scoreTier(test.score)}`}>
-                  <b>{scoreLabel(test.score, lang)}</b><i>/10</i>
-                </span>
-                {test.video && (
-                  <span
-                    className="test-video-btn"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${c.watchVideo} — ${test.name}`}
-                    onClick={(e) => openVideo(e, test)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openVideo(e, test); }}
-                  >
-                    <i aria-hidden="true">▶</i> {c.videoShort}
-                  </span>
-                )}
+      {/* La grille « DERNIERS TESTS » (gameTests) est masquée pour
+          l'instant : le short review ouvre la page. */}
+
+      {/* Short review d'abord : le test en 90 s, transcrit, avec la note. */}
+      <section className="short-review-section wrap" id="short-review">
+        <div className="section-label"><span>{sr.label1}</span><span>{sr.label2}</span></div>
+        <div className="short-review-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> {sr.eyebrow}</p>
+            <h2>{sr.h2a}<br/><em>{sr.h2b}</em></h2>
+          </div>
+        </div>
+        <div className="short-review-grid">
+          <div className="short-review-player hud-frame">
+            <iframe src={youTubeEmbedUrl(shortReviewVideo.id)} title={shortReviewVideo.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+          </div>
+          <div className="short-review-copy">
+            <span className="short-review-meta">{sr.meta}</span>
+            <p className="short-review-kicker">{sr.kicker}</p>
+            <ul className="short-review-points">
+              {sr.points.map((point) => (
+                <li key={point.lead}><strong>{point.lead}</strong> {point.body}</li>
+              ))}
+            </ul>
+            <div className={`short-review-score tier-${scoreTier(shortReviewVideo.score)}`}>
+              <div className="short-review-score-top">
+                <span className="short-review-score-kicker">{sr.scoreKicker}</span>
+                <span className="short-review-score-tier">{shortTierLabel(scoreTier(shortReviewVideo.score), sr)}</span>
               </div>
-              <div className="latest-test-meta"><span>{test.date}</span><span>{test.platforms.split(' · ')[0]}{test.platforms.includes('·') ? ' +' : ''}</span></div>
-              <h3>{test.cardTitle}</h3>
-              <p>{test.excerpt}</p>
-              <span className="read-link">{c.readTest} <Arrow/></span>
-            </Link>
-          ))}
+              <div className="short-review-score-main">
+                <span className="short-review-score-value">{scoreLabel(shortReviewVideo.score, lang)}</span>
+                <span className="short-review-score-max">/10</span>
+              </div>
+              <div className="short-review-score-bar"><i style={{ width: `${shortReviewVideo.score * 10}%` }} /></div>
+            </div>
+            <a className="arrow-link" href={shortReviewVideo.href} target="_blank" rel="noreferrer">{sr.watch} <Arrow/></a>
+          </div>
         </div>
       </section>
 
