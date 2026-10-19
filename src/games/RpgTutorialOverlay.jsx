@@ -14,6 +14,18 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(value, Math.max(min, max)));
 }
 
+function overlapArea(leftRect, rightRect) {
+  const xOverlap = Math.max(
+    0,
+    Math.min(leftRect.left + leftRect.width, rightRect.left + rightRect.width) - Math.max(leftRect.left, rightRect.left),
+  );
+  const yOverlap = Math.max(
+    0,
+    Math.min(leftRect.top + leftRect.height, rightRect.top + rightRect.height) - Math.max(leftRect.top, rightRect.top),
+  );
+  return xOverlap * yOverlap;
+}
+
 /** Voile plein écran avec une fenêtre lumineuse autour de la cible de l'étape. */
 export default function RpgTutorialOverlay({
   step, stepIndex, totalSteps, onNext, onFinish, onClose,
@@ -24,18 +36,34 @@ export default function RpgTutorialOverlay({
   const [position, setPosition] = useState(null);
 
   useLayoutEffect(() => {
-    const target = step.target ? document.querySelector(step.target) : null;
+    let observedTarget = null;
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => update());
+    const resolveTarget = () => {
+      if (!step.target) return null;
+      const found = document.querySelector(step.target);
+      if (!found) return null;
+      // L'aperçu d'annonce occupe tout l'écran par son voile (.rpg-annonce-sort) :
+      // la fenêtre lumineuse encadre son contenu centré (la carte, sa fiche et
+      // ses commandes « Répondre » / « Laisser passer ») plutôt que le voile.
+      return found.querySelector?.('.rpg-hover-card-preview__layout') ?? found;
+    };
     const update = () => {
       const width = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1024);
       const height = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 768);
+      const target = resolveTarget();
+      if (observer && target !== observedTarget) {
+        if (observedTarget) observer.unobserve(observedTarget);
+        observedTarget = target;
+        if (observedTarget) observer.observe(observedTarget);
+      }
       if (!target?.getBoundingClientRect) {
         setSpotlight((current) => current === null ? current : null);
-        return;
+        return null;
       }
       const rect = target.getBoundingClientRect();
       if (!rect.width || !rect.height || rect.bottom <= 0 || rect.right <= 0 || rect.top >= height || rect.left >= width) {
         setSpotlight((current) => current === null ? current : null);
-        return;
+        return target;
       }
       const left = Math.max(0, rect.left - SPOTLIGHT_GUTTER);
       const top = Math.max(0, rect.top - SPOTLIGHT_GUTTER);
@@ -43,27 +71,31 @@ export default function RpgTutorialOverlay({
       const bottom = Math.min(height, rect.bottom + SPOTLIGHT_GUTTER);
       const measured = { left, top, width: right - left, height: bottom - top };
       setSpotlight((current) => almostSameRect(current, measured) ? current : measured);
+      return target;
     };
 
-    update();
+    const initialTarget = update();
     window.addEventListener('resize', update);
     window.addEventListener('orientationchange', update);
     window.addEventListener('scroll', update, true);
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
-    if (target && observer) observer.observe(target);
     // Certaines cibles n'existent qu'après une animation (la carte jouée qui
     // atterrit, l'aperçu d'annonce qui s'ouvre) : on guette leur apparition
     // plutôt que de laisser un voile plein écran jusqu'au clic suivant.
     const mutations = typeof MutationObserver === 'undefined' ? null : new MutationObserver(update);
-    mutations?.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-card-id', 'data-entity-id'] });
+    mutations?.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-card-id', 'data-entity-id', 'data-tutorial-target'],
+    });
     let frame = 0;
     let essais = 0;
     const retenter = () => {
-      update();
+      const found = update();
       essais += 1;
-      if (essais < 60) frame = window.requestAnimationFrame(retenter);
+      if (!found && essais < 60) frame = window.requestAnimationFrame(retenter);
     };
-    if (!target) frame = window.requestAnimationFrame(retenter);
+    if (!initialTarget) frame = window.requestAnimationFrame(retenter);
     return () => {
       window.removeEventListener('resize', update);
       window.removeEventListener('orientationchange', update);
@@ -120,15 +152,25 @@ export default function RpgTutorialOverlay({
         fits: spotlight.left - VIEWPORT_MARGIN >= panelWidth + POPUP_GAP,
       },
     };
+    const clampPanel = (candidate) => ({
+      left: clamp(candidate.left, VIEWPORT_MARGIN, width - panelWidth - VIEWPORT_MARGIN),
+      top: clamp(candidate.top, VIEWPORT_MARGIN, height - panelHeight - VIEWPORT_MARGIN),
+    });
     const side = sideOrder.find((candidate) => positions[candidate].fits);
-    const chosen = side ? positions[side] : {
-      left: (width - panelWidth) / 2,
-      top: clamp(spotlight.top + spotlight.height / 2 - panelHeight / 2, VIEWPORT_MARGIN, height - panelHeight - VIEWPORT_MARGIN),
-    };
-    const next = {
-      left: clamp(chosen.left, VIEWPORT_MARGIN, width - panelWidth - VIEWPORT_MARGIN),
-      top: clamp(chosen.top, VIEWPORT_MARGIN, height - panelHeight - VIEWPORT_MARGIN),
-    };
+    const chosen = side
+      ? positions[side]
+      : [
+        ...sideOrder.map((candidate) => clampPanel(positions[candidate])),
+        clampPanel({ left: VIEWPORT_MARGIN, top: VIEWPORT_MARGIN }),
+        clampPanel({ left: VIEWPORT_MARGIN, top: height - panelHeight - VIEWPORT_MARGIN }),
+        clampPanel({ left: width - panelWidth - VIEWPORT_MARGIN, top: VIEWPORT_MARGIN }),
+        clampPanel({ left: width - panelWidth - VIEWPORT_MARGIN, top: height - panelHeight - VIEWPORT_MARGIN }),
+      ].reduce((best, candidate) => {
+        const candidateOverlap = overlapArea({ ...candidate, width: panelWidth, height: panelHeight }, spotlight);
+        const bestOverlap = overlapArea({ ...best, width: panelWidth, height: panelHeight }, spotlight);
+        return candidateOverlap < bestOverlap ? candidate : best;
+      });
+    const next = clampPanel(chosen);
     setPosition((current) => current && Math.abs(current.left - next.left) < 1 && Math.abs(current.top - next.top) < 1
       ? current : next);
   }, [spotlight, step.id, step.side]);

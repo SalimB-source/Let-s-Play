@@ -31,11 +31,19 @@ assert.match(page, /<RpgTutorialOverlay[\s\S]*?rewardClaimed=/u,
 assert.match(page, /rpg-tutorial-reward-toast/u, 'la récompense encaissée apparaît dans un toast');
 assert.match(page, /reclamerTutoriel\(tutorielCourant\.id, tutorielCourant\.reward\)/u,
   'la fin de la leçon passe par la bourse');
+assert.match(page, /const terminerTutoriel = \(\) => \{[\s\S]*?reclamerTutoriel\(tutorielCourant\.id, tutorielCourant\.reward\)[\s\S]*?libererDuelPourLecture\(\);[\s\S]*?setEcran\('tutoriels'\);/u,
+  'terminer une leçon libère le duel et renvoie au menu des leçons');
+assert.match(page, /const fermerTutoriel = \(\) => \{[\s\S]*?libererDuelPourLecture\(\);[\s\S]*?setEcran\('tutoriels'\);/u,
+  'fermer une leçon quitte aussi la table de duel');
+assert.match(menu, /se termine dès son dernier écran[\s\S]*?son bonus de crédits n’est versé qu’une seule fois/u,
+  'le menu précise que chaque leçon se termine à la fin et que le bonus est unique');
 
 assert.match(overlay, /role="dialog"[\s\S]*?aria-modal="true"[\s\S]*?aria-labelledby="rpg-tutorial-title"/u,
   'l’encadré est un dialogue accessible avec titre annoncé');
 assert.match(overlay, /rpg-tutorial__spotlight[\s\S]*?spotlight\.width/u,
   'la fenêtre lumineuse suit les dimensions réelles de la cible');
+assert.match(overlay, /const resolveTarget = \(\) =>[\s\S]*?document\.querySelector\(step\.target\)[\s\S]*?\.rpg-hover-card-preview__layout[\s\S]*?const update = \(\) => \{[\s\S]*?const target = resolveTarget\(\);/u,
+  'la cible est recherchée à chaque mise à jour et encadre le bloc carte + actions de l’annonce');
 assert.match(overlay, /rpg-tutorial__target-guard/u,
   'les étapes explicatives bloquent les clics accidentels sur leur cible');
 assert.match(overlay, /step\.kind === 'action'/u, 'une étape d’action laisse la cible cliquable');

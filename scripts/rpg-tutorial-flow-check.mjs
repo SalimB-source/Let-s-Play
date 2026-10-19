@@ -26,14 +26,19 @@ for (const methode of ['play', 'pause', 'load']) {
 
 try {
   const {
-    checkRpgTutorial, checkRpgTutorialCombat, checkRpgTutorialEau, checkRpgCardGuide,
+    checkRpgTutorial,
+    checkRpgTutorialCombat,
+    checkRpgTutorialEau,
+    checkRpgTutorialAutresLecons,
+    checkRpgCardGuide,
   } = await import('../node_modules/.cache/rpg-tutorial/rpg-tutorial-smoke.js');
   await checkRpgTutorial(assert);
   await checkRpgTutorialCombat(assert);
   await checkRpgTutorialEau(assert);
+  await checkRpgTutorialAutresLecons(assert);
   await checkRpgCardGuide(assert);
 } finally {
   dom.window.close();
 }
 
-console.log('✓ Tutoriels du Sablier : choix des leçons, parcours débutant (attaque, arme, blocage), leçon Eau (annonce contredite) et guide des cartes');
+console.log('✓ Tutoriels du Sablier : choix des leçons, parcours complet des 5 leçons, fin de leçon sans laisser la partie ouverte, récompense unique et guide des cartes');

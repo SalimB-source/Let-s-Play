@@ -267,7 +267,7 @@ export const RPG_TUTORIELS = Object.freeze([
         text: 'Touchez maintenant Tislit : elle portera les Sandales. Une arme reste attachée à sa créature ; si le porteur meurt, l’arme rejoint le cimetière avec lui. Rapidité lui permettra d’attaquer immédiatement les prochains tours.',
         on: 'arme-equipee',
         cardId: 'sandales-de-tislit',
-        side: 'bottom',
+        side: 'top',
       },
       {
         id: 'arme-portee',
@@ -277,7 +277,7 @@ export const RPG_TUTORIELS = Object.freeze([
         title: 'L’arme suit sa créature',
         text: 'Les bonus de l’arme sont déjà comptés sur la carte du porteur : Tislit est maintenant 1/2 et possède Rapidité. Certaines armes ont aussi des déclencheurs : le Harnais du méhari produit du mana quand le porteur attaque, le Licou pioche quand le porteur meurt, la Takouba récompense chaque blessure infligée.',
         nextLabel: 'Laisser attaquer le sorcier',
-        side: 'bottom',
+        side: 'top',
       },
       {
         id: 'fin-tour-2',
@@ -310,7 +310,7 @@ export const RPG_TUTORIELS = Object.freeze([
         title: 'Désignez votre bloqueur',
         text: 'Touchez votre Chien du guet pour le sélectionner comme bloqueur. Une créature qui bloque s’arrête devant l’attaquant : les deux s’infligent leurs dégâts de combat, et les dégâts ne passent pas au sorcier.',
         on: 'bloqueur-selectionne',
-        side: 'bottom',
+        side: 'top',
       },
       {
         id: 'blocage-cible',
@@ -320,7 +320,7 @@ export const RPG_TUTORIELS = Object.freeze([
         title: 'Assignez le blocage',
         text: 'Touchez maintenant la créature attaquante pour lui opposer votre Chien du guet. Vous pouvez aussi glisser le bloqueur sur l’attaquant, à la souris comme au doigt. Un bloqueur ne participe qu’à un seul combat par tour.',
         on: 'bloqueur-assigne',
-        side: 'top',
+        side: 'bottom',
       },
       {
         id: 'blocage-confirmer',
@@ -373,7 +373,7 @@ export const RPG_TUTORIELS = Object.freeze([
     playerMana: { eau: 8 },
     opponentHand: ['lame-de-mer'],
     opponentDraws: ['leviathan', 'colosse-de-sel'],
-    opponentMana: { eau: 3 },
+    opponentMana: { eau: 1 },
     opponentDeckFill: 'leviathan',
     stagedOpponent: [{ cardId: 'vipere-de-verre', ready: false }],
     steps: [
@@ -490,7 +490,7 @@ export const RPG_TUTORIELS = Object.freeze([
         title: 'Une carte est sur la pile',
         text: 'Le sorcier annonce Lame de mer. La carte n’est pas encore résolue : son aperçu s’ouvre au-dessus de la table. Touchez « Répondre » pour refermer l’aperçu et rendre votre main accessible, puis choisissez votre contre.',
         on: 'annonce-repondue',
-        side: 'bottom',
+        side: 'left',
       },
       {
         id: 'contre-jouer',
@@ -541,10 +541,11 @@ export const RPG_TUTORIELS = Object.freeze([
     opponentDeckId: 'serment-du-soleil-rouge',
     opponentName: 'Sorcier du Soleil rouge',
     openingHand: ['chacal-du-seuil', 'pretre-de-la-bouche', 'papyrus', 'couveuse-de-shabtis'],
+    playerDraws: ['chacal-du-seuil', 'pretre-de-la-bouche'],
     playerMana: { tenebres: 8 },
     opponentHand: ['feux-de-kitsune'],
     opponentDraws: [],
-    opponentMana: { braise: 4 },
+    opponentMana: { braise: 3 },
     opponentDeckFill: 'kagutsuchi-flamme-originelle',
     steps: [
       {
@@ -690,7 +691,7 @@ export const RPG_TUTORIELS = Object.freeze([
         title: 'Un sort de zone arrive',
         text: 'Feux de kitsune est annoncé : 2 dégâts à toutes les créatures adverses. La Couveuse n’a que 2 points de défense. Touchez « Laisser passer » : le Chacal, le Prêtre et la Couveuse subissent 2 dégâts. Le Chacal et le Prêtre meurent ; la Couveuse aussi, et son effet de mort s’ouvre immédiatement.',
         on: 'annonce-passee',
-        side: 'bottom',
+        side: 'left',
       },
       {
         id: 'shabtis',
@@ -730,6 +731,7 @@ export const RPG_TUTORIELS = Object.freeze([
     opponentDeckId: 'cour-des-djinns',
     opponentName: 'Sorcier des djinns',
     openingHand: ['ashigaru-des-braises', 'samourai-du-torii', 'daimyo-du-soleil-rouge'],
+    playerDraws: ['ronin-du-soleil-rouge'],
     playerMana: { braise: 9 },
     opponentHand: ['nuage-de-cendres', 'feux-de-kitsune'],
     opponentDraws: [],
@@ -989,7 +991,7 @@ export const RPG_TUTORIELS = Object.freeze([
         title: 'Une créature hors du temps',
         text: 'La créature gelée porte un voile de givre. Elle ne peut ni attaquer ni bloquer, et n’inflige aucun dégât de combat. Le gel dure jusqu’à la fin de son prochain tour : il ne se contente pas de retarder une attaque, il annule un tour entier.',
         nextLabel: 'Laisser le loup attaquer',
-        side: 'top',
+        side: 'bottom',
       },
       {
         id: 'fin-tour-neige',
@@ -1020,7 +1022,7 @@ export const RPG_TUTORIELS = Object.freeze([
         title: 'Levez le bouclier',
         text: 'Touchez votre Guerrier au bouclier rond pour le sélectionner comme bloqueur. Il ne peut plus attaquer ce tour, mais il protège vos points de vie et prépare sa Furie.',
         on: 'bloqueur-selectionne',
-        side: 'bottom',
+        side: 'top',
       },
       {
         id: 'blocage-neige-cible',
@@ -1030,7 +1032,7 @@ export const RPG_TUTORIELS = Object.freeze([
         title: 'Opposez le loup',
         text: 'Touchez le Loup des neiges pour lui assigner le blocage du Guerrier. Le bouclier absorbera 1 des 4 dégâts, puis la Furie verra une blessure survécue.',
         on: 'bloqueur-assigne',
-        side: 'top',
+        side: 'bottom',
       },
       {
         id: 'blocage-neige-confirmer',

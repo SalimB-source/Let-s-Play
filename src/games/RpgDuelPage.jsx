@@ -3455,7 +3455,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // « Nouvelle partie » incrémente la session, et le duel suivant sera compté.
   useEffect(() => {
     const duelCourant = duelRef.current;
-    if (!duelCourant || histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
+    if (!duelCourant || histoireEtageId || tutorielActif || rpgVainqueur(duelCourant) !== 'joueur') return;
     const session = sessionDuelRef.current;
     if (libreVictoireMarqueeRef.current === session) return;
     libreVictoireMarqueeRef.current = session;
@@ -3736,12 +3736,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // comme la fiche ouverte d'un clic, et désarme les gestes en cours.
     setApercuAppui(null);
     setApercuCatalogue(null);
+    if (ecran !== 'partie' && tutorielActif) {
+      etapeTutorielIdRef.current = null;
+      setEtapeTutorielId(null);
+      libererDuelPourLecture();
+    }
     return () => {
       touchDragRef.current?.();
       touchDragRef.current = null;
       appuiLongRef.current?.();
       appuiLongRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ecran]);
   const clicApresGlisserBloqueurRef = useRef(null);
   const animationsVisuellesTimersRef = useRef([]);
@@ -3781,7 +3787,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       allerEtapeTutoriel(etapesTutoriel[index + 1].id);
     }
   };
-  const fermerTutoriel = () => { etapeTutorielIdRef.current = null; setEtapeTutorielId(null); };
+  const fermerTutoriel = () => {
+    etapeTutorielIdRef.current = null;
+    setEtapeTutorielId(null);
+    libererDuelPourLecture();
+    setEcran('tutoriels');
+  };
   const terminerTutoriel = () => {
     if (tutorielActif && tutorielCourant) {
       const gain = reclamerTutoriel(tutorielCourant.id, tutorielCourant.reward);
@@ -3789,6 +3800,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     etapeTutorielIdRef.current = null;
     setEtapeTutorielId(null);
+    libererDuelPourLecture();
+    setEcran('tutoriels');
   };
   useEffect(() => {
     if (!recompenseTutoriel) return undefined;
@@ -5057,6 +5070,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onChangeVolumeMusique={changerVolumeMusique}
           onToggleMusicMute={basculerVolumeMusique}
         />
+        {recompenseTutoriel && (
+          <div className="rpg-tutorial-reward-toast" role="status" aria-live="polite" key={recompenseTutoriel.token}>
+            <RpgCreditIcon />
+            <strong>Leçon terminée</strong>
+            <span>+{recompenseTutoriel.gain} crédits</span>
+          </div>
+        )}
         {apercuSurvol && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
@@ -5753,11 +5773,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
     setSortJoue({ carteId: carte.id, cible, contre, vague });
-    setApercuMagie(carte.id);
-    timerApercuMagieRef.current = window.setTimeout(() => {
-      timerApercuMagieRef.current = null;
-      setApercuMagie(null);
-    }, 1800);
+    if (!(tutorielActif && etapeTutorielIdRef.current)) {
+      setApercuMagie(carte.id);
+      timerApercuMagieRef.current = window.setTimeout(() => {
+        timerApercuMagieRef.current = null;
+        setApercuMagie(null);
+      }, 1800);
+    }
     timerSortRef.current = window.setTimeout(() => {
       timerSortRef.current = null;
       setSortJoue(null);
@@ -6123,6 +6145,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const carte = cardById(carteId);
     if (carteEnVol || sacrificeEnCours) return;
     if (!carte || !duel.joueur.main.includes(carteId)) return;
+    if (tutorielActif && etapeTutorielIdRef.current) {
+      const etape = etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
+      if (etape?.kind !== 'action' || !etape.cardId || etape.cardId !== carteId) {
+        jouerSfx('erreur');
+        force();
+        return;
+      }
+    }
     if (!peutJouerCarte(carte)) {
       jouerSfx('erreur');
       force();
@@ -6807,6 +6837,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       sorcierApresCombatRef.current = false;
       if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
       signalerTutoriel('fin-de-tour');
+      if (annoncerTutorielScripte()) {
+        setApercuAppui(null);
+        setApercuSurvol(null);
+      }
       force();
       later(() => {
         const champAvantIA = prendreInstantaneChamp();
@@ -6879,10 +6913,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // pile sans passer par l'IA, avec sa cible réelle. Le joueur la contre ou la
   // laisse passer comme n'importe quelle annonce ; la résolution paie.
   const annoncerTutorielScripte = () => {
-    if (!tutorielActif || duel.annonce) return false;
+    if (!tutorielActif) return false;
     const etape = etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
     const spec = etape?.scriptedAnnonce;
     if (!spec) return false;
+    if (duel.annonce) return duel.annonce.carteId === spec.cardId;
     const carte = cardById(spec.cardId);
     if (!carte || !duel.sorcier.main.includes(spec.cardId)) return false;
     if (!rpgPeutPayer(duel.sorcier, carte)) return false;
@@ -6908,7 +6943,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
-    const annonce = rpgSorcierAnnonceSuivante(duel, rng);
+    if (tutorielActif && etapeTutorielIdRef.current) {
+      const etape = etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
+      if (etape && etape.kind !== 'waiting') {
+        force();
+        return;
+      }
+    }
+    const annonce = (tutorielActif && etapeTutorielIdRef.current)
+      ? null
+      : rpgSorcierAnnonceSuivante(duel, rng);
     if (!annonce && sorcierApresCombatRef.current) {
       finirTourSorcier();
       return;
@@ -6947,9 +6991,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // les magies rapides de la main restent jouables.
   const repondreAAnnonce = () => {
     if (!duel.annonce) { jouerSfx('erreur'); return; }
+    if (tutorielActif && etapeTutoriel?.on === 'annonce-passee') {
+      jouerSfx('erreur');
+      return;
+    }
     setApercuSurvol(null);
-    setAnnonceApercueFermeePour(duel.annonce);
     signalerTutoriel('annonce-repondue', { cardId: duel.annonce.carteId });
+    setAnnonceApercueFermeePour(duel.annonce);
   };
 
   const rouvrirApercuAnnonce = () => {
@@ -6961,6 +7009,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // « Laisser passer » : la carte annoncée se résout (un contre du joueur peut la défaire).
   const laisserPasser = () => {
     if (!duel.annonce) { jouerSfx('erreur'); return; }
+    if (tutorielActif && etapeTutoriel && etapeTutoriel.on !== 'annonce-passee') {
+      jouerSfx('erreur');
+      return;
+    }
     const carteAnnoncee = cardById(duel.annonce.carteId);
     setApercuSurvol(null);
     jouerSfx('pass');
@@ -8009,6 +8061,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
                   data-tutorial-target={cibleTutoriel('pass-annonce') ? 'pass-annonce' : undefined}
                   aria-label={`Laisser passer ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
+                  disabled={Boolean(tutorielActif && etapeTutoriel && etapeTutoriel.on !== 'annonce-passee')}
                   onClick={laisserPasser}
                 >
                   <span aria-hidden="true">➜</span>
@@ -8059,6 +8112,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       className={`rpg-btn rpg-annonce-sort__respond${aReponseJouableEnMain ? ' is-response-available' : ''}`}
                       data-tutorial-target={cibleTutoriel('respond-annonce') ? 'respond-annonce' : undefined}
                       aria-label={`Répondre à ${carteAnnoncee?.name ?? 'la carte annoncée'} avec une magie rapide`}
+                      disabled={Boolean(tutorielActif && etapeTutoriel?.on === 'annonce-passee')}
                       onClick={repondreAAnnonce}
                     >
                       <span aria-hidden="true">✦</span>
@@ -8069,6 +8123,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       className="rpg-btn rpg-annonce-sort__pass"
                       data-tutorial-target={cibleTutoriel('pass-annonce') ? 'pass-annonce' : undefined}
                       aria-label={`Laisser passer ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
+                      disabled={Boolean(tutorielActif && etapeTutoriel && etapeTutoriel.on !== 'annonce-passee')}
                       onClick={laisserPasser}
                     >
                       <span aria-hidden="true">➜</span>

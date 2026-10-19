@@ -77,7 +77,7 @@ export default function RpgTutorialMenu({ tutoriels, termines = [], credits = 0,
       </div>
 
       <p className="rpg-tutoriels__hint">
-        Astuce : chaque leçon utilise le deck indiqué. Une fois son écran d’entraînement terminé, vous continuez la partie librement ou revenez au menu.
+        Astuce : chaque leçon utilise le deck indiqué et se termine dès son dernier écran. Vous pouvez rejouer une leçon autant de fois que vous le souhaitez ; son bonus de crédits n’est versé qu’une seule fois.
       </p>
     </main>
   );

@@ -135,6 +135,20 @@ export async function checkRpgTutorialCombat(assert) {
     await harnais.click(harnais.next(), 'le bilan du blocage');
     assert.equal(harnais.step(), 'termine');
     assert.ok(container.querySelector('.rpg-tutorial__reward')?.textContent.includes('120'));
+    await harnais.click(harnais.next(), 'Terminer le tutoriel');
+    assert.equal(Boolean(harnais.tuto()), false, 'terminer la leçon referme l’overlay du tutoriel');
+    assert.equal(Boolean(container.querySelector('.rpg-table')), false, 'terminer la leçon quitte la table de duel sans laisser la partie continuer');
+    assert.ok(container.querySelector('.rpg-tutoriels'), 'terminer la leçon ramène à l’écran des leçons');
+    assert.ok(container.querySelector('.rpg-tutorial-reward-toast')?.textContent.includes('+120 crédits'),
+      'le bandeau de récompense apparaît sur l’écran des leçons');
+    assert.equal(
+      container.querySelector('[data-tutorial-id="fondations-du-sablier"]')?.classList.contains('is-done'),
+      true,
+      'la leçon terminée est marquée comme complétée',
+    );
+    const bourseTexte = () => container.querySelector('.rpg-tutoriels__purse strong')?.textContent ?? '';
+    const soldeApresPremiereFois = bourseTexte();
+    assert.ok(soldeApresPremiereFois.includes('120'), 'la bourse affiche les 120 crédits gagnés');
   } finally {
     await act(async () => { harnais.root.unmount(); });
     container.remove();
@@ -145,6 +159,23 @@ export async function checkRpgTutorialEau(assert) {
   const container = document.createElement('div');
   document.body.appendChild(container);
   const harnais = monter(container);
+  const originalGetBoundingClientRect = window.Element.prototype.getBoundingClientRect;
+  const originalInnerWidth = window.innerWidth;
+  const originalInnerHeight = window.innerHeight;
+  Object.defineProperty(window, 'innerWidth', { value: 1746, configurable: true, writable: true });
+  Object.defineProperty(window, 'innerHeight', { value: 859, configurable: true, writable: true });
+  window.Element.prototype.getBoundingClientRect = function mockRect() {
+    if (this.classList?.contains('rpg-annonce-sort')) {
+      return { left: 0, top: 0, right: 1746, bottom: 859, width: 1746, height: 859 };
+    }
+    if (this.classList?.contains('rpg-hover-card-preview__layout')) {
+      return { left: 542, top: 233, right: 1204, bottom: 625, width: 662, height: 392 };
+    }
+    if (this.matches?.('[data-tutorial-target]')) {
+      return { left: 620, top: 680, right: 1120, bottom: 830, width: 500, height: 150 };
+    }
+    return originalGetBoundingClientRect.call(this);
+  };
   try {
     await act(async () => { harnais.root.render(<RpgDuelPage rng={() => 0.999} />); });
     await harnais.click([...container.querySelectorAll('button')]
@@ -175,12 +206,226 @@ export async function checkRpgTutorialEau(assert) {
     }
     assert.equal(harnais.step(), 'annonce-adverse', 'le sorcier annonce sa Lame de mer scénarisée');
     assert.ok(container.querySelector('[data-tutorial-target="spell-announcement"]'), 'la section d’annonce est encadrée');
+    const spotlight = container.querySelector('.rpg-tutorial__spotlight');
+    assert.ok(spotlight, 'la fenêtre lumineuse encadre l’aperçu d’annonce sans voile plein écran');
+    assert.equal(container.querySelector('.rpg-tutorial__shade--full'), null, 'le voile plein écran ne bloque pas le bouton Répondre');
+    assert.equal(spotlight.style.left, '534px', 'la fenêtre lumineuse encadre le bloc carte + fiche plutôt que tout l’écran');
+    assert.equal(spotlight.style.width, '678px', 'la largeur du cadre correspond au contenu centré de l’annonce');
+    const panel = container.querySelector('.rpg-tutorial__panel');
+    const panelLeft = Number.parseFloat(panel?.style.left ?? '0');
+    assert.ok(panelLeft + 390 <= 534, `le panneau du tutoriel (${panelLeft}px) se place à gauche sans recouvrir l’annonce`);
+    assert.equal(container.querySelector('.rpg-annonce-sort__pass')?.disabled, true, 'Laisser passer est désactivé quand la leçon demande de Répondre');
     await harnais.click(container.querySelector('.rpg-annonce-sort__respond'), 'Répondre');
     assert.equal(harnais.step(), 'contre-jouer', 'Répondre ouvre l’étape du contre');
+    assert.equal(container.querySelector('.rpg-annonce-sort__compact-pass')?.disabled, true, 'Laisser passer compact reste désactivé à l’étape du contre');
     await harnais.click(harnais.card('contresort-des-abimes'), 'le Contresort des abîmes');
-    await act(async () => { await wait(400); });
+    await act(async () => { await wait(1100); });
     assert.equal(harnais.step(), 'contre-info');
+    assert.equal(container.querySelector('.rpg-annonce-sort'), null, 'le sorcier n’annonce pas la Vipère de verre renvoyée en main pendant la fin de la leçon');
+    await harnais.click(harnais.next(), 'la règle des contre-sorts');
+    assert.equal(harnais.step(), 'termine');
+    await harnais.click(harnais.next(), 'Terminer le tutoriel Eau');
+    assert.equal(Boolean(container.querySelector('.rpg-table')), false, 'terminer la leçon Eau quitte la partie immédiatement');
+    assert.ok(container.querySelector('.rpg-tutoriels'), 'retour au menu des leçons après la leçon Eau');
+    const bourseAvantRejeu = container.querySelector('.rpg-tutoriels__purse strong')?.textContent;
+    assert.equal(
+      container.querySelector('[data-tutorial-id="maree-des-abysses"]')?.classList.contains('is-done'),
+      true,
+      'la leçon Eau est marquée terminée',
+    );
+    assert.ok(
+      container.querySelector('[data-tutorial-id="maree-des-abysses"]')?.textContent.includes('Récompense remportée'),
+      'la carte de leçon Eau indique que la récompense a déjà été remportée',
+    );
+
+    // Rejouer la même leçon Eau : le bonus de crédits ne doit pas être donné une seconde fois.
+    await harnais.click(container.querySelector('[data-tutorial-start="maree-des-abysses"]'), 'rejouer la leçon Eau');
+    await act(async () => { await wait(120); });
+    await avancerInfos(harnais, 'creature');
+    await harnais.click(harnais.card('porteuse-de-cruches'), 'la Porteuse de cruches (rejeu)');
+    await act(async () => { await wait(850); });
+    await avancerInfos(harnais, 'sorcellerie');
+    await harnais.click(harnais.card('eau-de-la-source'), 'l’Eau de la source (rejeu)');
+    await act(async () => { await wait(900); });
+    await harnais.click(harnais.next(), 'la règle de la sorcellerie (rejeu)');
+    await harnais.click(harnais.card('ressac'), 'Ressac (rejeu)');
+    await harnais.click(harnais.carteChamp('ennemi', 'vipere-de-verre'), 'la Vipère de verre (rejeu)');
+    await act(async () => { await wait(300); });
+    await harnais.click(harnais.next(), 'la règle de la magie rapide (rejeu)');
+    await harnais.click(container.querySelector('[data-tutorial-target="end-turn"]'), 'la fin du tour (rejeu)');
+    for (let i = 0; i < 24 && !container.querySelector('.rpg-annonce-sort__respond'); i += 1) {
+      await act(async () => { await wait(300); });
+    }
+    await harnais.click(container.querySelector('.rpg-annonce-sort__respond'), 'Répondre (rejeu)');
+    await harnais.click(harnais.card('contresort-des-abimes'), 'le Contresort des abîmes (rejeu)');
+    await act(async () => { await wait(1100); });
+    await harnais.click(harnais.next(), 'la règle des contre-sorts (rejeu)');
+    assert.equal(harnais.step(), 'termine');
+    await harnais.click(harnais.next(), 'Terminer le tutoriel Eau (rejeu)');
+    assert.equal(Boolean(container.querySelector('.rpg-table')), false, 'le rejeu quitte aussi la partie');
+    assert.equal(
+      container.querySelector('.rpg-tutoriels__purse strong')?.textContent,
+      bourseAvantRejeu,
+      'rejouer la leçon ne redonne aucun crédit supplémentaire',
+    );
   } finally {
+    window.Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, configurable: true, writable: true });
+    Object.defineProperty(window, 'innerHeight', { value: originalInnerHeight, configurable: true, writable: true });
+    await act(async () => { harnais.root.unmount(); });
+    container.remove();
+  }
+}
+
+export async function checkRpgTutorialAutresLecons(assert) {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const harnais = monter(container);
+  const originalGetBoundingClientRect = window.Element.prototype.getBoundingClientRect;
+  const originalInnerWidth = window.innerWidth;
+  const originalInnerHeight = window.innerHeight;
+  Object.defineProperty(window, 'innerWidth', { value: 1746, configurable: true, writable: true });
+  Object.defineProperty(window, 'innerHeight', { value: 859, configurable: true, writable: true });
+  window.Element.prototype.getBoundingClientRect = function mockRect() {
+    if (this.classList?.contains('rpg-annonce-sort')) {
+      return { left: 0, top: 0, right: 1746, bottom: 859, width: 1746, height: 859 };
+    }
+    if (this.classList?.contains('rpg-hover-card-preview__layout')) {
+      return { left: 542, top: 233, right: 1204, bottom: 625, width: 662, height: 392 };
+    }
+    if (this.matches?.('[data-tutorial-target]')) {
+      return { left: 620, top: 680, right: 1120, bottom: 830, width: 500, height: 150 };
+    }
+    return originalGetBoundingClientRect.call(this);
+  };
+  try {
+    await act(async () => { harnais.root.render(<RpgDuelPage rng={() => 0.999} />); });
+    await harnais.click([...container.querySelectorAll('button')]
+      .find((bouton) => bouton.textContent.includes('Apprendre à jouer')), 'l’entrée « Apprendre à jouer »');
+
+    // Leçon 3 : La Balance des Heures (Ténèbres)
+    await harnais.click(container.querySelector('[data-tutorial-start="balance-des-heures"]'), 'la leçon Ténèbres');
+    await act(async () => { await wait(120); });
+    await avancerInfos(harnais, 'creature-chacal');
+    await harnais.click(harnais.card('chacal-du-seuil'), 'le Chacal du seuil');
+    await act(async () => { await wait(850); });
+    assert.equal(harnais.step(), 'attaque-chacal');
+    await harnais.click(container.querySelector('[data-tutorial-target="attack-all"]'), 'Attaquer avec tous (Chacal)');
+    assert.equal(harnais.step(), 'confirmer-chacal');
+    await harnais.click(container.querySelector('[data-tutorial-target="confirm-attack"]'), 'Valider l’attaque (Chacal)');
+    assert.equal(harnais.step(), 'tribut');
+    await harnais.click(harnais.next(), 'la règle du Tribut');
+    assert.equal(harnais.step(), 'pretre');
+    await harnais.click(harnais.card('pretre-de-la-bouche'), 'le Prêtre de la bouche');
+    await act(async () => { await wait(850); });
+    assert.equal(harnais.step(), 'arrivee');
+    await harnais.click(harnais.next(), 'la règle de l’arrivée');
+    assert.equal(harnais.step(), 'prix');
+    await harnais.click(harnais.card('papyrus'), 'le Papyrus');
+    await act(async () => { await wait(900); });
+    assert.equal(harnais.step(), 'prix-info');
+    await harnais.click(harnais.next(), 'la règle du Prix');
+    assert.equal(harnais.step(), 'creature-couveuse');
+    await harnais.click(harnais.card('couveuse-de-shabtis'), 'la Couveuse de shabtis');
+    await act(async () => { await wait(850); });
+    assert.equal(harnais.step(), 'couveuse-info');
+    await harnais.click(harnais.next(), 'la règle du Dernier souffle');
+    assert.equal(harnais.step(), 'fin-tour-tenebres');
+    await harnais.click(container.querySelector('[data-tutorial-target="end-turn"]'), 'la fin du tour Ténèbres');
+    for (let i = 0; i < 24 && !container.querySelector('.rpg-annonce-sort__pass'); i += 1) {
+      await act(async () => { await wait(300); });
+    }
+    assert.equal(harnais.step(), 'annonce-tenebres');
+    assert.equal(Boolean(container.querySelector('.rpg-tutorial__shade--full')), false, 'pas de voile plein écran sur l’annonce Ténèbres');
+    assert.equal(container.querySelector('.rpg-annonce-sort__respond')?.disabled, true, 'Répondre est désactivé quand la leçon demande de Laisser passer');
+    await harnais.click(container.querySelector('.rpg-annonce-sort__pass'), 'Laisser passer');
+    for (let i = 0; i < 16 && harnais.step() !== 'shabtis'; i += 1) {
+      await act(async () => { await wait(250); });
+    }
+    assert.equal(harnais.step(), 'shabtis');
+    assert.ok(harnais.carteChamp('equipe', 'shabti'), 'les Shabtis sont apparus sur le champ allié');
+    await harnais.click(harnais.next(), 'le bilan des Shabtis');
+    assert.equal(harnais.step(), 'termine');
+    await harnais.click(harnais.next(), 'Terminer la leçon Ténèbres');
+    assert.equal(Boolean(container.querySelector('.rpg-table')), false, 'la leçon Ténèbres se termine sans laisser la partie ouverte');
+
+    // Leçon 4 : Le Serment du Soleil rouge (Samouraïs)
+    await harnais.click(container.querySelector('[data-tutorial-start="serment-du-soleil-rouge"]'), 'la leçon Soleil rouge');
+    await act(async () => { await wait(120); });
+    await avancerInfos(harnais, 'ashigaru');
+    await harnais.click(harnais.card('ashigaru-des-braises'), 'l’Ashigaru des braises');
+    await act(async () => { await wait(850); });
+    assert.equal(harnais.step(), 'torii');
+    await harnais.click(harnais.card('samourai-du-torii'), 'le Samouraï du torii');
+    await act(async () => { await wait(850); });
+    assert.equal(harnais.step(), 'resonance');
+    await harnais.click(harnais.next(), 'la règle de la Résonance');
+    assert.equal(harnais.step(), 'daimyo');
+    await harnais.click(harnais.card('daimyo-du-soleil-rouge'), 'le Daimyō du Soleil rouge');
+    await act(async () => { await wait(850); });
+    assert.equal(harnais.step(), 'banniere');
+    await harnais.click(harnais.next(), 'la règle de la Bannière');
+    assert.equal(harnais.step(), 'fin-tour-soleil');
+    await harnais.click(container.querySelector('[data-tutorial-target="end-turn"]'), 'la fin du tour Soleil rouge');
+    for (let i = 0; i < 24 && harnais.step() !== 'charge'; i += 1) {
+      await act(async () => { await wait(300); });
+    }
+    assert.equal(harnais.step(), 'charge');
+    await harnais.click(container.querySelector('[data-tutorial-target="attack-all"]'), 'Attaquer avec tous (Samouraïs)');
+    assert.equal(harnais.step(), 'confirmer-charge');
+    await harnais.click(container.querySelector('[data-tutorial-target="confirm-attack"]'), 'Valider l’attaque (Samouraïs)');
+    assert.equal(harnais.step(), 'impact');
+    await harnais.click(harnais.next(), 'le bilan de l’impact');
+    assert.equal(harnais.step(), 'termine');
+    await harnais.click(harnais.next(), 'Terminer la leçon Soleil rouge');
+    assert.equal(Boolean(container.querySelector('.rpg-table')), false, 'la leçon Soleil rouge se termine sans laisser la partie ouverte');
+
+    // Leçon 5 : Le Serment des Neuf Hivers (Neige)
+    await harnais.click(container.querySelector('[data-tutorial-start="serment-des-neuf-hivers"]'), 'la leçon Neige');
+    await act(async () => { await wait(120); });
+    await avancerInfos(harnais, 'guerrier');
+    await harnais.click(harnais.card('guerrier-au-bouclier-rond'), 'le Guerrier au bouclier rond');
+    await act(async () => { await wait(850); });
+    assert.equal(harnais.step(), 'bouclier');
+    await harnais.click(harnais.next(), 'la règle du Bouclier');
+    assert.equal(harnais.step(), 'valkyrie');
+    await harnais.click(harnais.card('valkyrie-au-corbeau'), 'la Valkyrie au corbeau');
+    await act(async () => { await wait(850); });
+    assert.equal(harnais.step(), 'resonance-neige');
+    await harnais.click(harnais.next(), 'la règle de l’Envol');
+    assert.equal(harnais.step(), 'poigne');
+    await harnais.click(harnais.card('poigne-de-givre'), 'la Poigne de givre');
+    assert.equal(harnais.step(), 'poigne-cible');
+    await harnais.click(harnais.carteChamp('ennemi', 'guerrier-au-bouclier-rond'), 'le Guerrier adverse');
+    await act(async () => { await wait(300); });
+    assert.equal(harnais.step(), 'gel');
+    await harnais.click(harnais.next(), 'la règle du Gel');
+    assert.equal(harnais.step(), 'fin-tour-neige');
+    await harnais.click(container.querySelector('[data-tutorial-target="end-turn"]'), 'la fin du tour Neige');
+    for (let i = 0; i < 24 && harnais.step() !== 'blocage-neige'; i += 1) {
+      await act(async () => { await wait(300); });
+    }
+    assert.equal(harnais.step(), 'blocage-neige');
+    await harnais.click(harnais.carteChamp('equipe', 'guerrier-au-bouclier-rond'), 'le Guerrier allié bloqueur');
+    assert.equal(harnais.step(), 'blocage-neige-cible');
+    await harnais.click(harnais.carteChamp('ennemi', 'loup-des-neiges'), 'le Loup des neiges attaquant');
+    assert.equal(harnais.step(), 'blocage-neige-confirmer');
+    await harnais.click(container.querySelector('[data-tutorial-target="resolve-combat"]'), 'Résoudre le combat Neige');
+    await act(async () => { await wait(300); });
+    assert.equal(harnais.step(), 'furie');
+    await harnais.click(harnais.next(), 'la règle de la Furie');
+    assert.equal(harnais.step(), 'termine');
+    await harnais.click(harnais.next(), 'Terminer la leçon Neige');
+    assert.equal(Boolean(container.querySelector('.rpg-table')), false, 'la leçon Neige se termine sans laisser la partie ouverte');
+    assert.equal(
+      container.querySelectorAll('.rpg-tutoriels__card.is-done').length,
+      5,
+      'les cinq leçons sont marquées terminées dans le menu',
+    );
+  } finally {
+    window.Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, configurable: true, writable: true });
+    Object.defineProperty(window, 'innerHeight', { value: originalInnerHeight, configurable: true, writable: true });
     await act(async () => { harnais.root.unmount(); });
     container.remove();
   }
