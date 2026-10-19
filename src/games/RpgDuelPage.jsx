@@ -1,4 +1,4 @@
-import { convertirDeckSansTerrain, carteJouableSansTerrain } from './rpgCards.js';
+import { convertirDeckSansTerrain } from './rpgCards.js';
 /**
  * Le Sablier — duel de cartes tactique.
  * Les tours gardent leur liberté d'une partie de cartes à collectionner :
@@ -2297,8 +2297,10 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const openValidation = openDeck
     ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection) : rpgValiderDeck(openDeck.cardIds))
     : { ok: false, raisons: ['Aucun deck ouvert.'] };
+  // Le Catalogue est une encyclopédie : il montre vraiment toutes les cartes,
+  // y compris les terrains et les cartes archivées hors du format de deck.
+  // L’atelier, lui, conserve son filtre de jouabilité.
   const cartesCatalogue = RPG_DUEL_CARDS.filter((carte) => {
-    if (!carteJouableSansTerrain(carte)) return false;
     const colors = cardColors(carte);
     const couleurCorrespond = catalogueCouleur === 'toutes'
       || (catalogueCouleur === 'hybride' ? colors.length > 1 : colors.includes(catalogueCouleur));
@@ -2941,7 +2943,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
           <main className="rpg-card-catalogue" aria-label="Catalogue complet des cartes">
             <header className="rpg-card-catalogue__header">
               <div>
-                <span className="rpg-mode-menu__eyebrow">COLLECTION COMPLÈTE · {RPG_DUEL_CARDS.filter(carteJouableSansTerrain).length} CARTES</span>
+                <span className="rpg-mode-menu__eyebrow">COLLECTION COMPLÈTE · {RPG_DUEL_CARDS.length} CARTES</span>
                 <h2>Catalogue</h2>
                 <p>Parcourez les créatures, héros, terrains, magies et armes de Bab El — cliquez une carte pour l’ouvrir en grand, illustration et effets.</p>
               </div>
@@ -2971,7 +2973,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 </select>
               </label>
               <p className="rpg-card-catalogue__count" aria-live="polite">
-                {cartesCatalogue.length} / {RPG_DUEL_CARDS.filter(carteJouableSansTerrain).length} carte{RPG_DUEL_CARDS.filter(carteJouableSansTerrain).length === 1 ? '' : 's'}
+                {cartesCatalogue.length} / {RPG_DUEL_CARDS.length} carte{RPG_DUEL_CARDS.length === 1 ? '' : 's'}
               </p>
             </div>
             {cartesCatalogue.length ? (

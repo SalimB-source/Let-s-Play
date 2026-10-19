@@ -4,7 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardHasShinyFrame, cardHybridGradient } from '../src/games/rpgCards.js';
+import { RPG_DECKS, RPG_DUEL_CARDS, RPG_TOUR_CARDS, cardById, cardFrameColor, cardFrameInfo, cardHasShinyFrame, cardHybridGradient } from '../src/games/rpgCards.js';
 import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 import { RPG_PV_JOUEUR, rpgSorcierPv } from '../src/games/rpgDuel.js';
 import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
@@ -182,6 +182,11 @@ export async function checkRpgBattle(assert) {
     'le catalogue présente toutes les créatures, tous les héros, terrains et magies');
   assert.equal(new Set([...container.querySelectorAll('.rpg-card-catalogue__card')].map((card) => card.dataset.cardId)).size,
     RPG_DUEL_CARDS.length, 'chaque carte apparaît une seule fois dans le catalogue');
+  for (const tour of RPG_TOUR_CARDS) {
+    const carteTour = container.querySelector(`.rpg-card-catalogue__card[data-card-id="${tour.id}"]`);
+    assert.ok(carteTour, `${tour.name} apparaît dans le catalogue des créatures`);
+    assert.match(carteTour.textContent, /Tour de défense/, `${tour.name} garde son type de défense lisible`);
+  }
   // Les textes de tous les terrains utilisent les mêmes icônes au catalogue
   // et dans l'aperçu, sans perdre le nom des couleurs pour les lecteurs d'écran.
   for (const [id, texte, labels] of [

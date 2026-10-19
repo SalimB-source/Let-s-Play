@@ -97,7 +97,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'abysses-4': ['jormungandr', 'boualem', 'brume-du-fjord', 'grand-voile-blanc'],
   // Tour du Fjord — le Serment au complet.
   'fjord-1': ['jarl-au-marteau-de-guerre', 'hurlement-du-blizzard', 'berserk-des-trois-hivers', 'defi-du-jarl'],
-  'fjord-2': ['valkyrie-des-glaces', 'geant-des-banquises', 'verglas', 'embuscade'],
+  'fjord-2': ['valkyrie-des-glaces', 'geant-des-banquises', 'verglas', 'embuscade', 'tour-de-neige'],
   'fjord-3': ['drakkar-a-tete-de-dragon', 'pere-des-corbeaux'],
   'fjord-4': ['maitre-du-marteau', 'dame-des-neuf-mondes', 'serpent-du-monde'],
 };

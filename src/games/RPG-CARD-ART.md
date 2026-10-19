@@ -48,6 +48,15 @@ jouables dans un deck.
 Une créature-jeton suit les règles communes de l'illustration : sujet unique et
 lisible même en vignette, cadre et statistiques superposés par l'interface.
 
+## Les Tours de défense
+
+Les cinq **Tours de défense** — Braise, Flots, Sable, Neige et Ténèbres — sont
+bien des cartes de créature jouables. Elles sont déclarées dans
+`RPG_TOUR_CARDS` (`rpgCards.js`), entrent dans `RPG_DUEL_CARDS` et sont donc
+visibles dans le Catalogue et dans l’atelier de deck. Elles ne doivent pas être
+rangées parmi les créatures-jetons : elles ont un coût, une rareté et leur
+propre illustration `public/cards/tour-*.jpg`.
+
 ## Variantes illustrées des terrains
 
 Chaque variante est une carte autonome à peinture dédiée, mais reprend strictement
@@ -71,15 +80,15 @@ cataloguée afin que le deck puisse réellement la jouer.
 ## État du set Neige
 
 Le **Serment des Neuf Hivers** (couleur Neige, cadre bleu clair `#a9e0f5`,
-badge ❄️) est entièrement peint : ses dix-neuf cartes originales — Glacier,
+badge ❄️) est entièrement peint : ses vingt cartes originales — Glacier,
 Guerrier au bouclier rond, Loup des neiges, Scalde des runes, Valkyrie au
 corbeau, Berserk des trois hivers, Jarl au marteau de guerre, Valkyrie des
-glaces, Géant des banquises, Drakkar à tête de dragon, Éclair du marteau, Mur
-de boucliers, Festin des vaillants, Brume du fjord, Hurlement du blizzard, le
-Père des corbeaux, le Maître du marteau, la Dame des neuf mondes et le Serpent
-du monde — ont leur plein art dédié dans `public/cards/`. Le Glacier possède
-aussi une seconde peinture jouable, **Glacier des arches**, qui partage sa
-production de Neige.
+glaces, Géant des banquises, Drakkar à tête de dragon, **Tour de Neige**, Éclair
+du marteau, Mur de boucliers, Festin des vaillants, Brume du fjord, Hurlement
+du blizzard, le Père des corbeaux, le Maître du marteau, la Dame des neuf
+mondes et le Serpent du monde — ont leur plein art dédié dans `public/cards/`.
+Le Glacier possède aussi une seconde peinture jouable, **Glacier des arches**,
+qui partage sa production de Neige.
 
 Les **figures du Nord** sont peintes comme des personnes, chacune avec son
 attribut, parce que leur sujet ne doit jamais se réduire à un objet :
