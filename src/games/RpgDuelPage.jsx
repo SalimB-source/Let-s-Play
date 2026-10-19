@@ -13,6 +13,7 @@ import './rpg-story.css';
 import './rpg-deckbox.css';
 import './rpg-mana-essai.css';
 import './rpg-soins.css';
+import useRpgMythicImpact from './useRpgMythicImpact.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
 import { isFullscreenShortcut } from './gameFullscreen.js';
@@ -4345,6 +4346,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const duel = duelRef.current;
+  useRpgMythicImpact(duel, ecran, tableRef, cardById, jouerSfx);
   const plateau = plateauParId(plateauId) ?? PLATEAU_PAR_DEFAUT;
   // La moitié haute de la table : le terrain du deck adverse. La table n'est
   // découpée que si les deux terrains diffèrent ; sinon, un seul tenant, sans
