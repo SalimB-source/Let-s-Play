@@ -12,12 +12,11 @@
  * avant d'afficher quoi que ce soit). Fermer l'onglet en plein retournement ne
  * coûte donc rien — et « Tout ranger » ne fait que refermer la cérémonie.
  *
- * Tactile d'abord : **Passer** révèle tout, et un appui sur une carte révèle la
- * suivante si l'on veut aller plus vite que le rythme. `prefers-reduced-motion`
- * remplace le retournement par une apparition franche.
+ * **Passer** termine la séquence à tout instant. `prefers-reduced-motion`
+ * présente immédiatement toutes les cartes, sans sortie ni flottement.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-souk.css';
 import { cardById, cardCost, cardFrameClass, cardRarityInfo, cardTypeLine } from './rpgCards.js';
 import { rayonParId } from './rpgBoosters.js';
@@ -25,15 +24,28 @@ import { creditsLisible } from './rpgCredits.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import { PastillesCarte } from './effetIcons.jsx';
 
+/** Une gravure vectorielle : pas de dépendance à la police emoji du mobile. */
+function RuneSablier() {
+  return (
+    <svg className="rpg-souk__rune-sablier" viewBox="0 0 48 64" aria-hidden="true" focusable="false">
+      <path d="M8 5h32M8 59h32M12 6v8c0 8 8 12 12 18-4 6-12 10-12 18v8M36 6v8c0 8-8 12-12 18 4 6 12 10 12 18v8" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="m16 17 8 12 8-12ZM15 53l9-12 9 12Z" fill="currentColor" opacity=".8" />
+      <path d="M24 33v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** Une carte, face visible : son art, son nom, sa rareté, et ce qu'elle a rendu. */
-function CarteRevelee({ detail, cardArt, index }) {
+function CarteRevelee({ detail, cardArt, index, visible = true }) {
   const carte = detail.carte ?? cardById(detail.id);
   if (!carte) return null;
   const rarete = cardRarityInfo(carte);
   return (
-    <li
+    <article
+      inert={!visible}
+      aria-hidden={!visible || undefined}
       className={`rpg-souk__carte ${cardFrameClass(carte)}${detail.doublon ? ' is-doublon' : ' is-nouvelle'}`}
-      data-souk-carte={carte.id}
+      data-souk-carte={visible ? carte.id : undefined}
       data-souk-carte-etat={detail.doublon ? 'doublon' : 'nouvelle'}
       data-souk-carte-remboursement={detail.remboursement}
       style={{ '--rang': index }}
@@ -56,27 +68,79 @@ function CarteRevelee({ detail, cardArt, index }) {
           </>
         ) : 'Nouvelle'}
       </p>
-    </li>
+    </article>
   );
 }
 
 export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPlaySfx }) {
   const cartes = Array.isArray(ouverture?.cartes) ? ouverture.cartes : [];
-  // Un coffret fait cinquante cartes : on ne les retourne pas une à une, on les
-  // pose. Le paquet, lui, se savoure.
+  // Le coffret se lit d'un seul coup ; seul le paquet a une chorégraphie.
   const une_a_une = cartes.length > 0 && cartes.length <= 6;
-  const [revelees, setRevelees] = useState(() => (une_a_une ? 0 : cartes.length));
+  const [mouvementReduit, setMouvementReduit] = useState(
+    () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches),
+  );
+  const [phase, setPhase] = useState(() => une_a_une && !mouvementReduit ? 'scelle' : 'termine');
+  const [revelees, setRevelees] = useState(() => phase === 'termine' ? cartes.length : 0);
+  const [passee, setPassee] = useState(false);
+  const sceneRef = useRef(null);
+  const paquetRef = useRef(null);
   const rayon = rayonParId(ouverture?.rayonId);
-  const titre = ouverture.coffret
+  const titre = ouverture?.coffret
     ? 'Le Coffret du Souk'
     : (rayon?.titre ?? 'Le paquet du Souk');
+  const vitrine = cardById(rayon?.vitrine ?? 'djinn-du-souk');
 
-  // Le rythme de la cérémonie : une carte toutes les 620 ms.
   useEffect(() => {
-    if (!une_a_une || revelees >= cartes.length) return undefined;
-    const battement = setTimeout(() => setRevelees((compte) => compte + 1), 620);
-    return () => clearTimeout(battement);
-  }, [une_a_une, revelees, cartes.length]);
+    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!media) return undefined;
+    const suivre = () => setMouvementReduit(media.matches);
+    suivre();
+    media.addEventListener?.('change', suivre);
+    return () => media.removeEventListener?.('change', suivre);
+  }, []);
+
+  // Timers annulés au démontage, à « Passer » et si le système réduit le mouvement.
+  useEffect(() => {
+    if (mouvementReduit) {
+      setRevelees(cartes.length);
+      setPhase('termine');
+      return undefined;
+    }
+    const suivante = { scelle: ['ouverture', 450], ouverture: ['sortie', 600], sortie: ['revelation', 1300] }[phase];
+    if (!suivante) return undefined;
+    const timer = setTimeout(() => setPhase(suivante[0]), suivante[1]);
+    return () => clearTimeout(timer);
+  }, [phase, mouvementReduit, cartes.length]);
+
+  useEffect(() => {
+    if (phase !== 'revelation') return undefined;
+    if (revelees >= cartes.length) {
+      // Le dernier retournement finit avant d'activer le rangement.
+      const timer = setTimeout(() => setPhase('termine'), 400);
+      return () => clearTimeout(timer);
+    }
+    const timer = setTimeout(() => setRevelees((compte) => compte + 1), revelees === 0 ? 30 : 220);
+    return () => clearTimeout(timer);
+  }, [phase, revelees, cartes.length]);
+
+  // Chaque carte part du vrai centre du sachet, même avec plusieurs lignes
+  // sur téléphone. Les wrappers séparent sortie, retournement et flottement.
+  useLayoutEffect(() => {
+    if (phase !== 'sortie') return undefined;
+    const placer = () => {
+      const paquet = paquetRef.current?.getBoundingClientRect();
+      if (!paquet) return;
+      sceneRef.current?.querySelectorAll('.rpg-souk__carte-place').forEach((place) => {
+        // offset* reste indépendant de la transformation animée en cours.
+        const scene = sceneRef.current.getBoundingClientRect();
+        place.style.setProperty('--depart-x', `${paquet.left + paquet.width / 2 - scene.left - place.offsetLeft - place.offsetWidth / 2}px`);
+        place.style.setProperty('--depart-y', `${paquet.top + paquet.height * .25 - scene.top - place.offsetTop - place.offsetHeight / 2}px`);
+      });
+    };
+    placer();
+    window.addEventListener('resize', placer);
+    return () => window.removeEventListener('resize', placer);
+  }, [phase]);
 
   // Le son suit la révélation : la pioche pour une carte, la victoire pour une
   // mythique — et rien pour les cartes qui ne sont pas encore retournées.
@@ -89,17 +153,19 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
   }, [revelees, cartes, onPlaySfx]);
 
   if (!ouverture) return null;
-  const toutRevele = revelees >= cartes.length;
+  const toutRevele = phase === 'termine';
   const total = ouverture.remboursement ?? 0;
 
-  /** Passer l'animation, ou la sauter d'un appui sur le fond. */
+  /** Passer termine immédiatement tous les mouvements d'entrée. */
   const toutReveler = () => {
     if (!toutRevele) onPlaySfx?.('select');
+    setPassee(true);
     setRevelees(cartes.length);
+    setPhase('termine');
   };
 
   return (
-    <div className="rpg-souk__ceremonie" data-souk-ceremonie data-souk-ceremonie-paquet={ouverture.paquets ?? 1}>
+    <div className={`rpg-souk__ceremonie${une_a_une ? ' is-paquet-anime' : ''}${passee ? ' is-passee' : ''}`} data-souk-ceremonie data-souk-phase={phase} data-souk-ceremonie-paquet={ouverture.paquets ?? 1}>
       <div className="rpg-souk__ceremonie-nappe" aria-hidden="true" />
       <section className="rpg-souk__ceremonie-corps" aria-label="Ouverture du booster">
         <header className="rpg-souk__ceremonie-tete">
@@ -114,17 +180,41 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
           </p>
         </header>
 
-        <ul className="rpg-souk__ceremonie-cartes" data-souk-ceremonie-revelees={revelees}>
-          {cartes.map((detail, index) => (
-            index < revelees
-              ? <CarteRevelee key={`${detail.id}-${index}`} detail={detail} cardArt={cardArt} index={index} />
-              : (
-                <li key={`${detail.id}-${index}`} className="rpg-souk__carte is-dos" data-souk-carte-dos={index} aria-hidden="true">
-                  <span className="rpg-souk__carte-dos-rune">⌛</span>
-                </li>
-              )
-          ))}
-        </ul>
+        <div className="rpg-souk__ouverture-scene" ref={sceneRef}>
+          {une_a_une && phase !== 'termine' && (
+            <div className="rpg-souk__sachet-ancre" ref={paquetRef} aria-hidden="true">
+              <div className="rpg-souk__sachet">
+                <div className="rpg-souk__sachet-lueur" />
+                <div className="rpg-souk__sachet-corps">
+                  {vitrine && <img src={cardArt(vitrine)} alt="" />}
+                  <span className="rpg-souk__sachet-marque">LE SOUK</span>
+                  <span className="rpg-souk__sachet-rune"><RuneSablier /></span>
+                  <span className="rpg-souk__sachet-legende">CINQ CARTES · UN DESTIN</span>
+                </div>
+                <div className="rpg-souk__sachet-languette"><span>LET’S PLAY · LE SOUK</span></div>
+                <div className="rpg-souk__sachet-eclats">
+                  {Array.from({ length: 10 }, (_, i) => <i key={i} style={{ '--eclat': i }} />)}
+                </div>
+              </div>
+            </div>
+          )}
+          <ul className="rpg-souk__ceremonie-cartes" data-souk-ceremonie-revelees={revelees}>
+            {cartes.map((detail, index) => (
+              <li key={`${detail.id}-${index}`} className="rpg-souk__carte-place" style={{ '--rang': index }}>
+                <div className="rpg-souk__carte-flotte">
+                  <div className={`rpg-souk__carte-retourne${index < revelees ? ' is-revelee' : ''}`}>
+                    <CarteRevelee detail={detail} cardArt={cardArt} index={index} visible={index < revelees} />
+                    <div className="rpg-souk__carte-verso" data-souk-carte-dos={index >= revelees ? index : undefined} aria-hidden="true">
+                      <span className="rpg-souk__carte-verso-cadre">
+                        <span>LE SOUK</span><b><RuneSablier /></b><span>LET’S PLAY</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <footer className="rpg-souk__ceremonie-pied">
           <p className="rpg-souk__ceremonie-bilan" role="status" data-souk-ceremonie-bilan={ouverture.nouvelles ?? 0}>
@@ -133,7 +223,8 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
                 {ouverture.nouvelles ?? 0} nouvelle{(ouverture.nouvelles ?? 0) > 1 ? 's' : ''}
                 {total ? <> {'·'} {total} <RpgCreditIcon /> rendus par les doublons</> : ''}
               </>
-            ) : `${revelees} / ${cartes.length} retournées`}
+            ) : phase === 'scelle' || phase === 'ouverture' ? 'Le sceau se brise…'
+              : phase === 'sortie' ? 'Le Souk dévoile ses trésors…' : `${revelees} / ${cartes.length} retournées`}
           </p>
           {!toutRevele && (
             <button type="button" className="rpg-menu-button" data-souk-ceremonie-passer onClick={toutReveler}>

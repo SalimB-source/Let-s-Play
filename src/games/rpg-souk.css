@@ -801,7 +801,7 @@
   inset: 0;
   z-index: 60;
   display: grid;
-  place-items: center;
+  place-items: safe center;
   padding: clamp(10px, 2vw, 26px);
   overflow: auto;
   overscroll-behavior: contain;
@@ -836,6 +836,9 @@
 .rpg-souk__carte {
   position: relative;
   display: grid;
+  /* L'art et le tampon ne s'étirent pas avec le texte des cartes voisines. */
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
   gap: 7px;
   padding: 8px;
   border: 1px solid rgba(235, 215, 176, .22);
@@ -846,12 +849,18 @@
 }
 .rpg-souk__carte.is-nouvelle { border-color: rgba(231, 191, 101, .6); }
 .rpg-souk__carte.is-doublon { opacity: .82; }
-.rpg-souk__carte-art img { display: block; width: 100%; height: auto; border-radius: 8px; }
-.rpg-souk__carte-corps { display: grid; gap: 3px; }
+/* Les fichiers source n'ont pas tous le même ratio (Léviathan notamment).
+   Le cadre impose le format commun, même avant le chargement de l'image. */
+.rpg-souk__carte-art { aspect-ratio: 176 / 238; min-width: 0; overflow: hidden; border-radius: 8px; }
+.rpg-souk__carte-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.rpg-souk__carte-corps { display: grid; align-content: start; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
 .rpg-souk__carte-rarete { color: #e8c77f; font: 800 8px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
 .rpg-souk__carte-corps h4 { margin: 0; font-size: 13px; line-height: 1.2; }
 .rpg-souk__carte-corps p { margin: 0; color: rgba(247, 237, 218, .58); font-size: 10.5px; line-height: 1.4; }
 .rpg-souk__carte-tampon {
+  box-sizing: border-box;
+  min-height: 32px;
+  align-content: center;
   margin: 0 !important;
   padding: 3px 6px;
   border-radius: 6px;
@@ -864,6 +873,7 @@
 }
 .rpg-souk__carte.is-doublon .rpg-souk__carte-tampon { background: rgba(235, 215, 176, .08); color: rgba(247, 237, 218, .6) !important; }
 .rpg-souk__carte.is-dos {
+  grid-template-rows: 1fr;
   min-height: 120px;
   place-items: center;
   border-color: rgba(235, 215, 176, .14);
@@ -1069,4 +1079,156 @@
   .rpg-souk__sceau-onde,
   .rpg-souk__sceau-etincelle { animation: none !important; }
   .rpg-souk__quete.is-terminee .rpg-souk__jauge-remplie::after { content: none; }
+}
+
+/* ── Ouverture du sachet : sortie → déploiement → retournement → suspension ──
+   Chaque mouvement a son wrapper : aucun transform n'écrase le précédent.
+   Le recto reste en place dès le départ pour éviter les sauts de grille. */
+.rpg-souk__ouverture-scene { position: relative; min-width: 0; isolation: isolate; }
+.rpg-souk__carte-place { position: relative; min-width: 0; display: grid; perspective: 1100px; }
+.rpg-souk__carte-flotte { display: grid; min-width: 0; }
+.rpg-souk__carte-retourne {
+  display: grid;
+  min-width: 0;
+  transform-style: preserve-3d;
+  transform: rotateY(180deg);
+  transition: transform .4s cubic-bezier(.2, .65, .3, 1);
+}
+.rpg-souk__carte-retourne.is-revelee { transform: rotateY(0); }
+.rpg-souk__carte-retourne > .rpg-souk__carte,
+.rpg-souk__carte-verso { grid-area: 1 / 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.rpg-souk__carte-retourne > .rpg-souk__carte { animation: none; transform: translateZ(.1px); }
+.rpg-souk__carte-verso {
+  display: grid;
+  padding: 10px;
+  border: 1px solid #bd9650;
+  border-radius: 12px;
+  transform: rotateY(180deg);
+  background:
+    radial-gradient(ellipse at 50% 40%, #65432188, transparent 65%),
+    repeating-linear-gradient(45deg, #39241d 0 7px, #2b1c19 7px 14px);
+  box-shadow: inset 0 0 24px #0009;
+}
+.rpg-souk__carte-verso-cadre {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  border: 1px solid #cba85b80; border-radius: 5px;
+  color: #efd392; font: 700 9px/1.4 var(--mono, monospace); letter-spacing: .22em;
+}
+.rpg-souk__rune-sablier { display: inline-block; width: 1em; height: 1.34em; vertical-align: middle; }
+.rpg-souk__carte-verso-cadre b { font-size: clamp(28px, 4vw, 48px); filter: sepia(1); }
+.is-paquet-anime[data-souk-phase='scelle'] .rpg-souk__carte-place,
+.is-paquet-anime[data-souk-phase='ouverture'] .rpg-souk__carte-place { opacity: 0; visibility: hidden; }
+.is-paquet-anime[data-souk-phase='sortie'] .rpg-souk__carte-place {
+  animation: rpg-souk-carte-sortie .94s cubic-bezier(.22, .7, .2, 1) both;
+  animation-delay: calc(var(--rang) * 80ms);
+}
+@keyframes rpg-souk-carte-sortie {
+  0% { opacity: 0; transform: translate(var(--depart-x, 0px), var(--depart-y, 0px)) scale(.24) rotate(-7deg); }
+  15% { opacity: 1; }
+  45% { opacity: 1; transform: translate(var(--depart-x, 0px), calc(var(--depart-y, 0px) - 120px)) scale(.4) rotate(calc((var(--rang) - 2) * 8deg)); }
+  100% { opacity: 1; transform: translate(0, 0) scale(1) rotate(0); }
+}
+.is-paquet-anime[data-souk-phase='revelation'] .rpg-souk__carte-flotte,
+.is-paquet-anime[data-souk-phase='termine']:not(.is-passee) .rpg-souk__carte-flotte {
+  animation: rpg-souk-carte-suspension 4.8s ease-in-out infinite;
+  animation-delay: calc(var(--rang) * -650ms);
+}
+@keyframes rpg-souk-carte-suspension {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+/* La mythique se distingue par une lumière locale, pas un voile sur son art. */
+.is-paquet-anime[data-souk-phase='revelation'] .is-revelee [data-souk-carte-rarete='mythique'] {
+  animation: rpg-souk-mythe-eveil .7s ease-out both;
+}
+@keyframes rpg-souk-mythe-eveil {
+  0% { color: #fff5cd; text-shadow: 0 0 16px #ffc75e; }
+  100% { color: #e8c77f; text-shadow: none; }
+}
+
+.rpg-souk__sachet-ancre {
+  position: absolute; left: 50%; top: min(50%, 190px); width: clamp(145px, 20vw, 200px); aspect-ratio: 1 / 1.48;
+  transform: translate(-50%, -50%); z-index: 5; pointer-events: none; perspective: 900px;
+}
+.rpg-souk__sachet {
+  position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
+  animation: rpg-souk-sachet-arrive .45s ease-out both;
+  filter: drop-shadow(0 20px 20px #0009);
+}
+@keyframes rpg-souk-sachet-arrive {
+  from { opacity: 0; transform: translateY(24px) rotateY(-25deg) rotateZ(-8deg) scale(.88); }
+  to { opacity: 1; transform: translateY(0) rotateY(-10deg) rotateZ(-4deg) scale(1); }
+}
+.rpg-souk__sachet-corps {
+  position: absolute; inset: 12% 0 0; overflow: hidden;
+  border: 1px solid #e8be6f; border-radius: 3px 3px 9px 9px;
+  background: linear-gradient(120deg, #c3974d, #342318 24%, #795228 72%, #d3ac5e);
+  box-shadow: inset -6px 0 0 #0005, inset 5px 0 0 #ffe7af33;
+}
+.rpg-souk__sachet-corps::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 22%, #ffe9b233 45%, transparent 65%);
+  border: 7px double #e3bd7566;
+}
+.rpg-souk__sachet-corps img { width: 100%; height: 100%; object-fit: cover; opacity: .65; }
+.rpg-souk__sachet-marque, .rpg-souk__sachet-legende, .rpg-souk__sachet-rune {
+  position: absolute; left: 0; right: 0; text-align: center; color: #ffe7af; text-shadow: 0 2px 5px #000;
+}
+.rpg-souk__sachet-marque { top: 10%; font-size: clamp(21px, 3vw, 30px); font-weight: 900; letter-spacing: .08em; }
+.rpg-souk__sachet-rune { top: 40%; font-size: 42px; filter: sepia(1); }
+.rpg-souk__sachet-legende { bottom: 10%; font: 800 8px/1.4 var(--mono, monospace); letter-spacing: .12em; }
+.rpg-souk__sachet-languette {
+  position: absolute; inset: 0 0 86%; display: grid; place-items: center;
+  border: 1px solid #f4d28c; border-radius: 5px 5px 0 0;
+  background: repeating-linear-gradient(90deg, #af7e38 0 3px, #d6b06c 3px 5px);
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 94% 100%, 87% 88%, 80% 100%, 73% 88%, 66% 100%, 59% 88%, 52% 100%, 45% 88%, 38% 100%, 31% 88%, 24% 100%, 17% 88%, 10% 100%, 0 88%);
+  transform-origin: 90% 100%;
+}
+.rpg-souk__sachet-languette span { font: 900 8px/1 var(--mono, monospace); letter-spacing: .15em; color: #362314; }
+[data-souk-phase='ouverture'] .rpg-souk__sachet-languette,
+[data-souk-phase='sortie'] .rpg-souk__sachet-languette,
+[data-souk-phase='revelation'] .rpg-souk__sachet-languette { animation: rpg-souk-sachet-dechire .6s ease-out both; }
+@keyframes rpg-souk-sachet-dechire {
+  25% { transform: translateY(-4px) rotateZ(5deg); }
+  100% { transform: translate(28px, -85px) rotateZ(24deg) rotateX(-45deg); opacity: 0; }
+}
+.rpg-souk__sachet-lueur {
+  position: absolute; inset: -45%; opacity: 0;
+  background: radial-gradient(ellipse, #ffdc8c66, #e8b84919 35%, transparent 65%);
+}
+[data-souk-phase='ouverture'] .rpg-souk__sachet-lueur { animation: rpg-souk-sachet-flash .6s ease-out both; }
+@keyframes rpg-souk-sachet-flash { 0%, 100% { opacity: 0; transform: scale(.6); } 35% { opacity: 1; transform: scale(1.2); } }
+.rpg-souk__sachet-eclats { position: absolute; top: 12%; left: 50%; }
+.rpg-souk__sachet-eclats i {
+  position: absolute; width: 3px; height: 7px; border-radius: 2px; background: #ffe6a3;
+  box-shadow: 0 0 6px #e8b55a; opacity: 0;
+}
+[data-souk-phase='ouverture'] .rpg-souk__sachet-eclats i { animation: rpg-souk-sachet-etincelle .6s ease-out both; }
+@keyframes rpg-souk-sachet-etincelle {
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(calc(var(--eclat) * 36deg)) translateY(-110px) rotate(90deg); }
+}
+[data-souk-phase='sortie'] .rpg-souk__sachet { animation: rpg-souk-sachet-disparait .7s .2s ease-in both; }
+[data-souk-phase='revelation'] .rpg-souk__sachet-ancre { visibility: hidden; }
+@keyframes rpg-souk-sachet-disparait {
+  from { opacity: 1; transform: rotateY(-10deg) rotateZ(-4deg); }
+  to { opacity: 0; transform: translateY(80px) rotateZ(12deg) scale(.8); }
+}
+.is-passee .rpg-souk__carte-retourne { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-souk__sachet-ancre { display: none; }
+  .rpg-souk__ceremonie .rpg-souk__carte-place,
+  .rpg-souk__ceremonie .rpg-souk__carte-flotte,
+  .rpg-souk__ceremonie [data-souk-carte-rarete] { animation: none !important; }
+  .rpg-souk__carte-retourne { transition: none; }
+}
+
+/* En portrait le paquet reste au-dessus de la ligne de flottaison ; les
+   actions restent accessibles pendant le déploiement des lignes suivantes. */
+@media (max-width: 640px) {
+  .rpg-souk__ceremonie-pied {
+    position: sticky; bottom: -1px; z-index: 10; padding: 10px 0;
+    background: linear-gradient(180deg, #161112ee, #100d0fff 25%);
+    border-top: 1px solid #e8c27133;
+  }
 }
