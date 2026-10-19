@@ -111,21 +111,26 @@ export async function checkRpgPreviewActions(assert) {
       'la ligne de type reste lisible sur la fiche d’une créature');
     assert.match(fiche().querySelector('.rpg-hover-card-preview__color').textContent, /Sable · Désert/u,
       'la fiche écrit la couleur comme la grille du catalogue');
-    // Les deux capacités du Fennec sont des mots-clés : elles se lisent en
-    // pastilles, et leur explication s'ouvre au survol de chaque pastille.
+    // Les deux capacités du Fennec sont des mots-clés : la fiche les nomme en
+    // pastilles ET écrit leur explication dessous — un aperçu ne se survole
+    // pas, et au doigt il se referme : une règle cachée derrière un geste ne
+    // se lit pas. Le Fennec n'a pas d'autre texte : sans ses pastilles
+    // dépliées, sa fiche n'afficherait que deux mots.
     const pastillesFiche = [...fiche().querySelectorAll('.rpg-hover-card-preview__pastilles .rpg-pastille')];
-    assert.deepEqual(pastillesFiche.map((pastille) => pastille.textContent), ['Rapidité', 'Butin'],
-      'les deux capacités du Fennec sont nommées en pastilles');
-    assert.match(pastillesFiche[1].getAttribute('aria-label') ?? '', /^Butin : Quand cette créature touche le sorcier adverse/u,
-      'chaque pastille porte ce que fait son effet');
+    assert.deepEqual(pastillesFiche.map((pastille) => pastille.querySelector('.rpg-pastille__libelle')?.textContent),
+      ['Rapidité', 'Butin'], 'les deux capacités du Fennec sont nommées en pastilles');
+    assert.deepEqual(pastillesFiche.map((pastille) => pastille.querySelector('.rpg-pastille__explication')?.textContent),
+      ['Cette créature peut attaquer le tour où elle arrive.',
+        'Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.'],
+      'chaque pastille dépliée écrit la règle de son mot-clé');
+    assert.equal(pastillesFiche[1].getAttribute('aria-label'), null,
+      'l’explication est du texte lu, pas une étiquette : elle ne passe pas deux fois');
+    assert.equal(fiche().querySelector('.rpg-hover-card-preview__pastilles .rpg-pastille[tabindex]'), null,
+      'rien n’attend un survol ni un focus : une fiche se lit d’emblée');
     assert.equal(fiche().querySelector('.rpg-hover-card-preview__rules'), null,
-      'les sections de mots-clés quittent le texte : rien ne se lit deux fois');
-    await act(async () => { pastillesFiche[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true })); });
-    assert.ok(fiche(), 'toucher une pastille ne referme pas la fiche');
-    assert.match(document.querySelector('.rpg-pastille-bulle[role="tooltip"]')?.textContent ?? '', /piochez une carte puis défaussez-en une/u,
-      'toucher une pastille ouvre la bulle de son effet');
-    await act(async () => { pastillesFiche[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true })); });
-    assert.equal(document.querySelector('.rpg-pastille-bulle'), null, 'un second toucher referme la bulle');
+      'les sections de mots-clés quittent le texte de règle : rien ne se lit deux fois');
+    assert.equal(document.querySelector('.rpg-pastille-bulle'), null,
+      'aucune bulle n’est ouverte : la fiche ne cache plus rien sous une pastille');
     assert.equal(fiche().querySelector('.rpg-hover-card-preview__face .rpg-card__stat--atk .rpg-stat-value')?.textContent, '3',
       'la fiche imprime l’attaque sur la carte');
     assert.equal(fiche().querySelector('.rpg-hover-card-preview__face .rpg-card__pt .rpg-stat-value')?.textContent, '1',

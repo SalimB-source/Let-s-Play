@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { cardById } from '../src/games/rpgCards.js';
+import { cardById, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 import {
   EFFETS_SPRITE,
   EFFET_ICONE,
@@ -87,4 +87,28 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   assert.equal(jarl.pastilles[0].description, 'La première fois qu’il est blessé et survit, le Jarl gagne +3/+3.');
 
   assert.deepEqual(effetsDetailles(cardById('desert')), { pastilles: [], texte: cardById('desert').text });
+});
+
+test('un aperçu rend lisible tout ce que la fiche imprime', () => {
+  // Dans un aperçu, les mots-clés deviennent des pastilles : le nom s’affiche
+  // dans la pastille, et son explication se déroule dessous (`deplier`) au lieu
+  // d’attendre un survol que la colonne de l’aperçu ne reçoit pas. Le texte de
+  // règle, lui, ne garde que ce qu’aucune pastille ne nomme. Ce qui est retiré
+  // de l’un doit donc se retrouver dans l’autre : pas un mot de la fiche ne
+  // disparaît de l’écran, sinon la carte ne se lit plus — c’est ce qui arrivait
+  // à dix-neuf fiches réduites à deux mots qu’il fallait survoler.
+  const mots = (texte) => new Set(String(texte).toLowerCase().match(/[a-z0-9à-ÿ]+/gu) ?? []);
+  const libelle = (pastille) => (pastille.valeur != null ? `${pastille.label} ${pastille.valeur}` : pastille.label);
+  for (const carte of RPG_DUEL_CARDS) {
+    if (carte.kind === 'terrain' || !carte.text || carte.text === '—') continue;
+    const { pastilles, texte } = effetsDetailles(carte);
+    const affiches = mots([
+      texte,
+      ...pastilles.map(libelle),
+      ...pastilles.map((pastille) => pastille.description),
+    ].filter(Boolean).join(' '));
+    for (const mot of mots(carte.text)) {
+      assert.ok(affiches.has(mot), `${carte.id} : « ${mot} » s’affiche nulle part dans son aperçu`);
+    }
+  }
 });

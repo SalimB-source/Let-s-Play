@@ -280,9 +280,11 @@ export function iconePourLigne(carte, ligne = '') {
   return null;
 }
 
-/* ── Ce que fait chaque effet : la bulle des pastilles ────────────────────────
-   Les pastilles d’un aperçu se lisent d’un coup d’œil ; le détail s’ouvre au
-   survol (ou au toucher). Le texte imprimé de la carte prime toujours : quand
+/* ── Ce que fait chaque effet : l’explication de la pastille ──────────────────
+   Dans un aperçu de carte la pastille se **déplie** : son détail s’écrit sous le
+   mot, parce que le volet ne se survole pas. Ailleurs (grille du catalogue,
+   guide), elle reste une puce et son détail s’ouvre au survol (ou au toucher).
+   Le texte imprimé de la carte prime toujours : quand
    la fiche écrit « Coup rapide — … », c’est cette phrase qui remplit la bulle.
    Le glossaire ci-dessous ne sert que lorsque la carte nomme le mot-clé sans
    l’expliquer (« Rapidité. ») ou ne le nomme pas du tout (Exil, Contresort…). */
@@ -389,12 +391,16 @@ export function definitionPastille(pastille) {
 /**
  * La lecture d’une fiche pour un aperçu : ses pastilles **avec ce qu’elles
  * font** (`description`), et le texte de règle qui reste une fois les
- * sections de mots-clés passées dans les bulles.
+ * sections de mots-clés passées aux pastilles.
+ *
+ * La `description` se lit là où la pastille se déplie — un aperçu de carte
+ * (`HoverCardPreview`) — et se survole là où elle reste une puce (grille du
+ * catalogue, guide, bulles du Souk) : `PastillesCarte` tranche, `effetIcons.jsx`.
  *
  * - « Coup rapide — Sélectionnée pour attaquer… » : la section court jusqu’à
  *   la fin de sa phrase (et des phrases qui la précisent, « Si vous ne
- *   désignez personne… ») ; elle devient la bulle de la pastille Coup rapide
- *   et quitte le texte ;
+ *   désignez personne… ») ; elle devient l’explication de la pastille Coup
+ *   rapide et quitte le texte ;
  * - « Rapidité. » : la pastille prend la définition du glossaire, le mot
  *   quitte le texte ;
  * - tout ce qui n’est pas une section de mot-clé (arrivées, morts, sorts…)

@@ -571,9 +571,13 @@ export async function checkRpgBattle(assert) {
   assert.equal(apercuFennecMain.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
     'l’aperçu au survol ne montre aucune icône d’effet');
   assert.deepEqual([...apercuFennecMain.querySelectorAll('.rpg-hover-card-preview__pastilles .rpg-pastille')].map((pastille) => pastille.textContent),
-    ['Rapidité', 'Butin'], 'l’aperçu nomme Rapidité et Butin chacune dans sa pastille');
+    ['RapiditéCette créature peut attaquer le tour où elle arrive.',
+      'ButinQuand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.'],
+    'l’aperçu nomme Rapidité et Butin dans leur pastille et y écrit aussi leur explication');
+  assert.equal(apercuFennecMain.querySelector('.rpg-pastille-bulle'), null,
+    'l’aperçu n’a rien à faire ouvrir : sa fiche se lit telle quelle');
   assert.equal(apercuFennecMain.querySelector('.rpg-hover-card-preview__rules'), null,
-    'leurs explications passent dans les bulles des pastilles, hors du texte');
+    'les explications sont écrites sous leurs mots-clés, hors du texte de règle — pas deux fois');
   await act(async () => { envoyerSouris(fennecMain, 'mouseout'); });
 
   // ── Cliquer le terrain le pose ; une seule étape d'annulation le restaure ─
@@ -629,6 +633,21 @@ export async function checkRpgBattle(assert) {
       assert.equal(creatureEnVol.isConnected, false, 'la carte volante quitte ensuite la main et rejoint le champ');
       const creatureArrivee = container.querySelector('.rpg-card--equipe[data-card-id="fennec-des-decombres"]');
       assert.ok(creatureArrivee, 'le Fennec apparaît au champ à la fin de son animation');
+      // L'arrivée en jeu est la cérémonie née pour les mythiques : la carte qui
+      // s'élève et retombe lourdement, avec son anneau et sa poussière. Une
+      // créature sans rang la reçoit aussi — mais sans que la table tremble.
+      const ceremonie = container.querySelector('.rpg-mythic-impact');
+      assert.ok(ceremonie, 'la créature posée reçoit son animation d’arrivée');
+      assert.ok(ceremonie.classList.contains('rpg-mythic-impact--pose'),
+        'une carte non mythique arrive avec le profil « pose », pas avec la pleine cérémonie');
+      assert.equal(creatureArrivee.classList.contains('rpg-card--mythique'), false,
+        'le Fennec n’est pas mythique : c’est bien l’arrivée des autres cartes qui est jouée');
+      assert.equal(ceremonie.querySelector('.rpg-mythic-impact__cracks'), null,
+        'une arrivée sans rang ne fend pas le sol');
+      assert.equal(ceremonie.querySelectorAll('.rpg-mythic-impact__ring').length, 1,
+        'un seul anneau de poussière, sans écho');
+      assert.equal(ceremonie.querySelectorAll('.rpg-mythic-impact__shadow').length, 1,
+        'l’ombre portée du choc est marquée sous la carte');
       creatureArriveeId = creatureArrivee.dataset.entityId;
       assert.ok(creatureArrivee.classList.contains('is-pret')
         && !creatureArrivee.classList.contains('is-summoning-sick'),
@@ -695,8 +714,12 @@ export async function checkRpgBattle(assert) {
   assert.ok(apercuFennecSurvol, 'le survol d’une créature en jeu ouvre immédiatement son aperçu');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
     'l’aperçu au survol n’affiche aucune icône d’effet');
-  assert.equal(apercuFennecSurvol.querySelectorAll('.rpg-hover-card-preview__pastilles .rpg-pastille--explicable').length, 2,
-    'l’aperçu au survol place Rapidité et Butin chacune dans une pastille qui s’explique au survol');
+  assert.equal(apercuFennecSurvol.querySelectorAll('.rpg-hover-card-preview__pastilles .rpg-pastille--depliee').length, 2,
+    'l’aperçu au survol écrit Rapidité et Butin chacun dans sa pastille dépliée, explication dessous');
+  assert.equal(apercuFennecSurvol.querySelectorAll('.rpg-hover-card-preview__pastilles .rpg-pastille--explicable').length, 0,
+    'l’aperçu ne renvoie plus à une bulle : sa colonne ne se survole pas');
+  assert.match(apercuFennecSurvol.querySelector('[data-pastille="rapidite"] .rpg-pastille__explication')?.textContent ?? '',
+    /peut attaquer le tour où elle arrive/u, 'la règle de Rapidité se lit sans geste');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__type'), null,
     'l’aperçu d’une créature n’imprime pas de ligne de type');
   assert.match(apercuFennecSurvol.getAttribute('aria-label') ?? '', /Fennec/,

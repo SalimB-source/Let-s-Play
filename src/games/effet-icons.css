@@ -125,17 +125,62 @@
   outline: none;
 }
 
-/* L'aperçu rapide du duel ne vole pas le survol aux cartes qu'il recouvre :
-   ses pastilles restent inertes tant qu'il n'est pas devenu lisible à la
-   souris (`is-interactif`). Les volets (appui long, fiche, annonce), eux, se
-   lisent pleinement. */
+/* ── La pastille dépliée : le mot ET sa règle, sans bulle à ouvrir ──────────
+   Un aperçu de carte ne peut rien demander au survol : son volet suit la
+   souris en `pointer-events: none` (il ne peut donc pas recevoir celui d'une
+   pastille) et, au doigt, un texte caché derrière un toucher n'est pas lu.
+   Dans une fiche, les mots-clés écrivent donc leur explication sous leur nom :
+   tout se lit d'emblée, et rien n'est écrit deux fois — les sections ainsi
+   données par la pastille quittent le texte de règle (`effetsDetailles`). */
+.rpg-pastilles--depliees {
+  display: grid;
+  gap: 5px;
+}
+
+.rpg-pastille--depliee {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 7px;
+  row-gap: 2px;
+  padding: 5px 9px;
+  border-radius: 9px;
+  white-space: normal;
+  cursor: default;
+}
+
+.rpg-pastille--depliee .rpg-effet-icone {
+  grid-area: 1 / 1;
+}
+
+.rpg-pastille__libelle {
+  grid-area: 1 / 2;
+  color: #ffeec2;
+  font-weight: 750;
+  letter-spacing: .02em;
+}
+
+/* L'explication prend l'encre du texte de règle : une pastille dépliée se lit
+   comme une ligne de règle dont le mot-clé serait en gras. Un mot-clé que ni la
+   fiche ni le glossaire ne détaillent reste sur sa ligne seule — sa règle,
+   quand elle existe, est écrite dans le bloc « Effets ». */
+.rpg-pastille__explication {
+  grid-area: 2 / 2;
+  color: #fff8e8;
+  font: 500 12.5px/1.45 Georgia, serif;
+}
+
+@media (max-width: 560px) {
+  .rpg-pastilles--depliees { gap: 4px; }
+  .rpg-pastille--depliee { padding: 4px 7px; column-gap: 6px; }
+}
+
+/* L'aperçu rapide du duel ne vole pas le survol aux cartes qu'il recouvre : ses
+   pastilles n'ont plus rien à ouvrir — leur explication est écrite sous le mot
+   — et restent donc inertes, y compris dans les volets lisibles (`is-interactif`,
+   appui long, fiche, annonce), où seule la colonne d'infos capte la souris. */
 .rpg-hover-card-preview .rpg-pastille { pointer-events: none; }
-/* Lisible, l'aperçu ne capte la souris que sur sa colonne d'infos : la face,
-   elle, reste transparente aux cartes qu'elle recouvre. */
-.rpg-hover-card-preview.is-interactif .rpg-hover-card-preview__details,
-.rpg-hover-card-preview.is-interactif .rpg-pastille,
-.rpg-card-peek .rpg-hover-card-preview .rpg-pastille,
-.rpg-hover-card-preview--annonce .rpg-pastille { pointer-events: auto; }
+.rpg-hover-card-preview.is-interactif .rpg-hover-card-preview__details { pointer-events: auto; }
 
 .rpg-pastille-bulle {
   position: fixed;

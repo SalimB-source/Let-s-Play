@@ -1695,10 +1695,11 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   // sa ligne de type prend la teinte de cette famille.
   const ligneFamille = classeLigneFamille(carte);
   const effet = carte.text && carte.text !== '—' ? carte.text : null;
-  // Les mots-clés passent en pastilles : leur explication s'ouvre au survol de
-  // la pastille (au toucher sur mobile), et quitte le texte de règle — il ne
-  // reste écrit que ce qu'aucune pastille ne nomme (arrivées, morts, sorts…).
-  // Le libellé accessible du panneau garde, lui, le texte entier.
+  // Les mots-clés passent en pastilles, et leur explication **s'écrit sous le
+  // mot** (`deplier`) : un aperçu ne peut pas la demander au survol — son volet
+  // ne reçoit pas la souris, et au doigt un texte qu'il faudrait toucher pour
+  // l'ouvrir n'est pas lu. Le texte de règle, lui, ne garde que ce qu'aucune
+  // pastille ne nomme (arrivées, morts, sorts…) : rien n'est écrit deux fois.
   const lecture = effetsDetailles(carte);
   const effets = cardEffectLines(lecture.texte);
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
@@ -1718,7 +1719,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       {estFiche && <span className="rpg-hover-card-preview__eyebrow">{surface ? `${surface} · ` : ''}{carteFamille(carte).toUpperCase()}</span>}
       {(variante === 'annonce' || estFiche) && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
       {(estFiche || !estCreature) && <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>}
-      <PastillesCarte carte={carte} pastilles={lecture.pastilles} className="rpg-hover-card-preview__pastilles" />
+      <PastillesCarte carte={carte} pastilles={lecture.pastilles} className="rpg-hover-card-preview__pastilles" deplier />
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
       {cibleAnnoncee && (
         <div className="rpg-spell-played__target rpg-hover-card-preview__target">
