@@ -3034,6 +3034,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <option value="eau">Eau</option>
                   <option value="sable">Sable · Désert</option>
                   <option value="neige">Neige · Glacier</option>
+                  <option value="tenebres">Ténèbres</option>
                   <option value="hybride">Hybrides · deux couleurs ou plus</option>
                 </select>
               </label>
