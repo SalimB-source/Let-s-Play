@@ -2,9 +2,10 @@
  * La cérémonie d'ouverture — les cinq cartes d'un paquet, retournées une à une.
  *
  * C'est le seul moment du Souk qui doit faire plaisir : les cartes se
- * retournent l'une après l'autre, la **rare en dernier** (c'est l'ordre du
- * tirage), chaque carte tamponnée **NOUVELLE** ou « déjà possédée → +45 ◈ »,
- * puis le total encaissé et le bouton **« Tout ranger dans la collection »**.
+ * retournent l'une après l'autre — trois communes ou inhabituelles, la **rare
+ * garantie**, puis la cinquième carte, celle qui peut être mythique —, chaque
+ * carte tamponnée **NOUVELLE** ou « déjà possédée → +45 ◈ », puis le total
+ * encaissé et le bouton **« Tout ranger dans la collection »**.
  *
  * Elle est montée par l'écran du Souk, jamais par la page : l'achat, lui, a
  * déjà eu lieu (`useSablierBourse.js` a débité le solde et rangé les cartes
@@ -66,6 +67,9 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
   const une_a_une = cartes.length > 0 && cartes.length <= 6;
   const [revelees, setRevelees] = useState(() => (une_a_une ? 0 : cartes.length));
   const rayon = rayonParId(ouverture?.rayonId);
+  const titre = ouverture.coffret
+    ? 'Le Coffret du Souk'
+    : (rayon?.titre ?? 'Le paquet du Souk');
 
   // Le rythme de la cérémonie : une carte toutes les 620 ms.
   useEffect(() => {
@@ -102,11 +106,11 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
           <span className="rpg-mode-menu__eyebrow">
             {ouverture.coffret ? `LE COFFRET · ${ouverture.paquets} PAQUETS` : 'LE PAQUET · 5 CARTES'}
           </span>
-          <h2>{rayon ? `Rayon ${rayon.nom}` : 'Le Souk'}</h2>
+          <h2>{titre}</h2>
           <p>
             {ouverture.coffret
               ? <> {creditsLisible(ouverture.prix)} <RpgCreditIcon /> — dix paquets, une mythique assurée.</>
-              : <> {creditsLisible(ouverture.prix)} <RpgCreditIcon /> — cinq cartes, la rare en dernier.</>}
+              : <> {creditsLisible(ouverture.prix)} <RpgCreditIcon /> — cinq cartes, une rare garantie, la mythique en dernière.</>}
           </p>
         </header>
 

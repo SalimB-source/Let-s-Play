@@ -1,5 +1,5 @@
 /**
- * Les rayons du Souk — boosters, viviers et tirages.
+ * Le comptoir du Souk — boosters, viviers et tirages.
  *
  * **Ce qu'un paquet a le droit de contenir** est la seule vraie question de ce
  * module. Depuis que les étages ne donnent plus de cartes mais les **révèlent**
@@ -9,21 +9,24 @@
  * > vivier quand l'étage qui la révèle est **vaincu**, ou quand c'est **la
  * > marche suivante** — l'étage précédent de sa tour est déjà conquis.
  *
- * **Le Souk ouvre à la première victoire** : avant elle, l'étagère est fermée
- * (les quêtes ne proposent alors pas la quête du comptoir). Ensuite, l'étagère
+ * **Le Souk ouvre à la première victoire** : avant elle, le comptoir est fermé
+ * (les quêtes ne proposent alors pas la quête du comptoir). Ensuite, le vivier
  * grandit à chaque marche — gagner `listes-1` ouvre les cartes de `listes-1` et
  * celles de `listes-2`, la marche suivante. Aucun paquet ne vend une carte du
- * Fjord avant que le joueur ait posé le pied dans le Fjord, et l'Eau n'arrive
- * qu'avec les citernes du Souk : cette règle unique tient les seuils du
- * dossier 13, sans garde de couleur séparée. La **dotation de départ** ne
- * compte pas dans les couleurs ouvertes — ses communes couvrent les quatre
- * couleurs et ouvriraient tout dès le premier duel ; elles remplissent les
- * paquets, elles ne les ouvrent pas.
+ * Fjord avant que le joueur ait posé le pied dans le Fjord.
  *
- * Le vivier garde **les communes et inhabituelles de la dotation** en plus des
- * cartes ouvertes : elles font le remplissage des paquets et paient des crédits
- * en doublon (`rpgCredits.js`). Sans elles, un paquet ne serait fait que de
- * rares, et les taux annoncés ne voudraient plus rien dire.
+ * **Un seul paquet, toutes les couleurs.** Le Souk ne vend plus un rayon par
+ * élément : son vivier réunit **toutes les cartes ouvertes**, quelles que soient
+ * leurs couleurs, et le tirage les mélange au hasard. Un paquet n'est jamais
+ * monochrome : si les cinq cartes tombent sur la même couleur, la dernière
+ * carte de la bande commune est échangée contre une carte d'une autre couleur
+ * **de la même rareté** — le mélange se voit sans déplacer les taux.
+ *
+ * **La rare est garantie.** La quatrième carte est toujours une rare tant que
+ * le vivier en garde une ; les mythiques, elles, ne peuvent sortir que de la
+ * cinquième carte (8 % par paquet, et la pitié les assure au plus tard au
+ * douzième). Un paquet contient donc au moins une rare, jamais « que des
+ * communes ».
  *
  * La **garantie des trois nouvelles** tient la promesse de compléter : les
  * doublons des trois premières places s'échangent contre des cartes neuves au
@@ -31,6 +34,11 @@
  * que le doublon, **une seule** place est promue. Sans cette promotion, les
  * dernières mythiques ne pourraient sortir que de la cinquième carte, et
  * compléter la collection prendrait des mois de quêtes — mesuré, pas supposé.
+ *
+ * Le vivier garde **les communes et inhabituelles de la dotation** en plus des
+ * cartes ouvertes : elles font le remplissage des paquets et paient des crédits
+ * en doublon (`rpgCredits.js`). Sans elles, un paquet ne serait fait que de
+ * rares, et les mythiques n'auraient plus rien de rare.
  *
  * Le tirage lui-même (`tirerCartes`) est **pur** : `rng` injectable, aucun
  * accès au stockage, aucune dépendance à React — `tests/rpg-boosters.test.js`
@@ -55,31 +63,65 @@ export const TAUX = Object.freeze({
   cartes: 5,
   /** Cartes 1 à 3 : la bande commune/inhabituelle. */
   communes: 0.88,
+  /** Carte 4 : toujours une rare tant que le vivier en garde une. */
+  rareGarantie: 1,
   /** Carte 5 : la chance de mythique, quand la pitié n'a pas déjà parlé. */
-  mythique: 0.2,
-  /** Carte 5 du grand étal : elle paie un peu mieux la curiosité. */
-  mythiqueSouk: 0.3,
-  /** Huit ouvertures sans mythique : la neuvième en contient une. */
-  pitie: 8,
-  /** Au moins trois cartes neuves par paquet, tant que le rayon en garde trois. */
+  mythique: 0.08,
+  /** Onze ouvertures sans mythique : la douzième en contient une (seuil 12). */
+  pitie: 12,
+  /** Au moins trois cartes neuves par paquet, tant que le vivier en garde trois. */
   nouvellesMin: 3,
 });
 
-/** Le coffret : dix paquets d'un même rayon, une mythique assurée. */
+/** Le coffret : dix paquets du comptoir, une mythique assurée. */
 export const COFFRET = Object.freeze({ taille: 10, remise: 0.1, mythiqueAssuree: true });
 
 /**
- * Les cinq étagères. `couleur: null` pour le grand étal (mélange des couleurs
- * ouvertes). Les prix sont ceux du dossier : une journée de jeu vaut deux
- * paquets environ, un peu moins sur le grand étal.
+ * Le comptoir du Souk : **un seul paquet**, toutes couleurs ouvertes. Le prix
+ * garde la promesse du dossier 13 — une journée de jeu vaut deux paquets.
+ * `vitrine` est l'illustration de la mythique montrée sur le sachet ; c'est
+ * un appât, pas un droit de tirage.
  */
 export const RAYONS = Object.freeze([
-  { id: 'braise', nom: 'Braise', couleur: 'braise', prix: 140, texte: 'La Montagne, ses samouraïs, ses yōkai et ses braises — ce que les tours ont rendu de rouge.' },
-  { id: 'sable', nom: 'Sable', couleur: 'sable', prix: 140, texte: 'Le Désert qui monte : ksour, fennecs, tempêtes et les figures qui tiennent les dunes.' },
-  { id: 'eau', nom: 'Eau', couleur: 'eau', prix: 160, texte: 'Ce que les citernes gardent du fond : contresorts, marées et bêtes des abysses.' },
-  { id: 'neige', nom: 'Neige', couleur: 'neige', prix: 160, texte: 'Le Serment des Neuf Hivers, livré depuis les stèles de glace du fjord.' },
-  { id: 'souk', nom: 'Souk', couleur: null, prix: 180, chanceMythique: TAUX.mythiqueSouk, texte: 'Le grand étal : toutes les couleurs déjà entrées dans la ville, et un peu plus de chances sur les mythiques.' },
+  {
+    id: 'souk',
+    nom: 'Souk',
+    titre: 'Le paquet du Souk',
+    couleur: null,
+    prix: 140,
+    vitrine: 'djinn-du-souk',
+    texte: 'Toutes les couleurs déjà entrées dans la ville, mélangées au hasard — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
+  },
 ]);
+
+/**
+ * Les rayons d'avant le mélange. Ils ne se vendent plus, mais le journal d'un
+ * appareil les reconnaît encore : une ouverture de Braise a bien eu lieu, et
+ * elle ne doit pas disparaître de la mémoire du joueur.
+ */
+const RAYONS_ANCIENS = Object.freeze([
+  { id: 'braise', nom: 'Braise' },
+  { id: 'sable', nom: 'Sable' },
+  { id: 'eau', nom: 'Eau' },
+  { id: 'neige', nom: 'Neige' },
+]);
+
+/** Le rayon réellement en vente (`null` : pas un rayon du comptoir). */
+function rayonActif(rayonId) {
+  return RAYONS.find((rayon) => rayon.id === rayonId) ?? null;
+}
+
+/** Le rayon par son identifiant — anciens rayons compris, pour le journal. */
+export function rayonParId(rayonId) {
+  return rayonActif(rayonId) ?? RAYONS_ANCIENS.find((rayon) => rayon.id === rayonId) ?? null;
+}
+
+/** Le prix d'un coffret de dix paquets : dix fois le paquet, remise déduite. */
+export function prixCoffret(rayonId) {
+  const rayon = rayonActif(rayonId);
+  if (!rayon) return null;
+  return Math.round(rayon.prix * COFFRET.taille * (1 - COFFRET.remise));
+}
 
 /** Rang de rareté : sert à n'échanger une carte que contre aussi rare ou plus rare. */
 const RANG_RARETE = Object.freeze({ commune: 0, inhabituelle: 1, rare: 2, mythique: 3 });
@@ -100,18 +142,6 @@ for (const { etage } of tousLesEtages()) {
 const DEBUT = new Set(COLLECTION_DEPART);
 
 const VAINCUS = (progression) => new Set(Array.isArray(progression?.etagesVaincus) ? progression.etagesVaincus : []);
-
-/** Le rayon par son identifiant (`null` si inconnu). */
-export function rayonParId(rayonId) {
-  return RAYONS.find((rayon) => rayon.id === rayonId) ?? null;
-}
-
-/** Le prix d'un coffret de dix paquets : dix fois le rayon, remise déduite. */
-export function prixCoffret(rayonId) {
-  const rayon = rayonParId(rayonId);
-  if (!rayon) return null;
-  return Math.round(rayon.prix * COFFRET.taille * (1 - COFFRET.remise));
-}
 
 /** Les tours entamées : celles où au moins un étage est vaincu. */
 export function toursEntamees(progression) {
@@ -190,51 +220,40 @@ export function couleursOuvertes(progression) {
   return couleurs;
 }
 
-/** La tour qui garde encore une couleur jamais ouverte (pour le message du Souk). */
-export function tourQuiGarde(couleur) {
-  const premiere = tousLesEtages()
-    .find(({ etage }) => cartesReveleesParEtage(etage.id).some((id) => cardColors(id).includes(couleur)));
-  return premiere?.tour ?? null;
-}
-
 /**
- * Le vivier d'un rayon : **toutes les cartes du catalogue** de sa couleur (ou des
- * quatre couleurs pour le grand étal). C'est le contenu des boosters : plus de
- * seuil d'étage, plus de carte « verrouillée » — un paquet peut contenir
- * n'importe quelle carte existante de l'élément. La dotation de départ reste
- * dans le vivier pour remplir les paquets de communes.
+ * Le vivier du comptoir : **toutes les couleurs à la fois** — les cartes que la
+ * ville a déjà ouvertes (un étage vaincu, ou la marche suivante), plus les
+ * communes et inhabituelles de la dotation qui remplissent les paquets. Un
+ * paquet peut donc contenir n'importe quelle carte ouverte, quelle que soit sa
+ * couleur : c'est le mélange qui fait le paquet.
  */
 export function vivierRayon(rayonId, progression) {
-  const rayon = rayonParId(rayonId);
+  const rayon = rayonActif(rayonId);
   if (!rayon) return [];
-  const couleurs = rayon.couleur ? [rayon.couleur] : [...RPG_ELEMENTS];
-  const autorisees = new Set(couleurs);
+  const autorisees = new Set(RPG_ELEMENTS);
   // Le vivier n'expose que ce que la ville possède déjà : la dotation de
   // départ, plus les cartes qu'un étage vaincu a révélées — jamais tout le
-  // catalogue de la couleur dès le premier jour (les mythiques attendent
-  // leur étage, sinon la pitié des boosters n'aurait aucun sens).
-  const ouvertes = cartesOuvertes(progression);
+  // catalogue dès le premier jour (les mythiques attendent leur étage, sinon
+  // la pitié des boosters n'aurait aucun sens).
+  const ouvertes = new Set(cartesOuvertes(progression));
   const ids = new Set();
   for (const carte of RPG_DUEL_CARDS) {
     if (!carteJouableSansTerrain(carte)) continue;
     if (!cardColors(carte).some((couleur) => autorisees.has(couleur))) continue;
-    if (DEBUT.has(carte.id) || ouvertes.includes(carte.id)) ids.add(carte.id);
+    if (DEBUT.has(carte.id) || ouvertes.has(carte.id)) ids.add(carte.id);
   }
   return [...ids];
 }
 
 /**
- * Le rayon est-il ouvert ? Sa couleur doit être **entrée dans la ville par une
- * carte ouverte** — c'est-à-dire révélée par un étage vaincu ou par la marche
- * suivante. La dotation de départ ne compte **pas** : ses communes couvrent les
- * quatre couleurs et ouvriraient tout dès le premier jour. Elles remplissent les
- * paquets, elles ne les ouvrent pas.
+ * Le comptoir est-il ouvert ? Il l'est dès que **la première victoire** a fait
+ * entrer une couleur dans la ville. La dotation de départ ne compte **pas** :
+ * ses communes couvrent toutes les couleurs et ouvriraient le Souk dès le
+ * premier duel. Elles remplissent les paquets, elles ne les ouvrent pas.
  */
 export function rayonOuvert(rayonId, progression) {
-  const rayon = rayonParId(rayonId);
-  if (!rayon) return false;
-  const couleurs = couleursOuvertes(progression);
-  return rayon.couleur ? couleurs.has(rayon.couleur) : couleurs.size > 0;
+  if (!rayonActif(rayonId)) return false;
+  return couleursOuvertes(progression).size > 0;
 }
 
 /** Répartition par rareté d'une liste d'identifiants. */
@@ -252,19 +271,18 @@ function parRarete(cardIds) {
  * L'état d'un rayon, prêt pour l'écran : vivier, cartes qui manquent, mythiques
  * disponibles, prix, prix du coffret, et la raison d'une fermeture.
  *
- *   - `'ferme'`  — la couleur n'est pas encore entrée dans la ville ;
+ *   - `'ferme'`  — le comptoir attend la première victoire ;
  *   - `'ouvert'` — il reste au moins une carte à rapporter ;
  *   - `'complet'` — le vivier est entièrement possédé (chaque carte paiera).
  */
 export function etatRayon(rayonId, progression, collection = null) {
-  const rayon = rayonParId(rayonId);
+  const rayon = rayonActif(rayonId);
   if (!rayon) return null;
   const vivier = vivierRayon(rayonId, progression);
   const possedees = new Set(collection ?? collectionJoueur({ progression }));
   const ouvert = rayonOuvert(rayonId, progression);
   const manquantes = vivier.filter((id) => !possedees.has(id));
   const mythiques = vivier.filter((id) => cardById(id)?.rarity === 'mythique');
-  const garde = rayon.couleur ? tourQuiGarde(rayon.couleur) : null;
   return {
     rayon,
     vivier,
@@ -275,7 +293,7 @@ export function etatRayon(rayonId, progression, collection = null) {
     prixCoffret: prixCoffret(rayonId),
     ouvert,
     complet: ouvert && manquantes.length === 0,
-    raison: ouvert ? null : (garde ? `La ${garde.nom} la garde encore.` : 'Aucune couleur n’est encore entrée dans la ville.'),
+    raison: ouvert ? null : 'Le Souk ouvrira à votre première victoire.',
   };
 }
 
@@ -284,23 +302,63 @@ export function etatRayons(progression, collection = null) {
   return RAYONS.map((rayon) => etatRayon(rayon.id, progression, collection));
 }
 
-/** Les rayons réellement achetables : ouverts (même complets, les doublons paient). */
+/** Les paquets réellement achetables : ouverts (même complets, les doublons paient). */
 export function rayonsOuverts(progression, collection = null) {
   return etatRayons(progression, collection).filter((etat) => etat.ouvert);
+}
+
+/**
+ * Un paquet n'est jamais monochrome. Si les cinq cartes sont tombées sur une
+ * seule couleur, la dernière place de la bande commune est échangée contre une
+ * carte d'une autre couleur **de la même rareté** : le mélange se voit, et les
+ * taux de rareté ne bougent pas. Si la carte remplacée était neuve, la
+ * remplaçante doit l'être aussi — la garantie des trois nouvelles tient.
+ */
+function diversifierCouleurs(cartes, bandes, possedees, rng) {
+  if (!Array.isArray(cartes) || cartes.length < 2) return cartes;
+  const couleurs = new Set();
+  for (const id of cartes) {
+    for (const couleur of cardColors(id)) couleurs.add(couleur);
+  }
+  if (couleurs.size !== 1) return cartes;
+  const [unique] = couleurs;
+  if (!unique) return cartes;
+  // Les trois premières places seulement : la rare garantie et la cinquième
+  // carte (la mythique) ne servent jamais à corriger la couleur.
+  for (let place = 2; place >= 0; place -= 1) {
+    const actuelle = cartes[place];
+    const carte = cardById(actuelle);
+    if (!carte) continue;
+    const bande = bandes[cardRarityInfo(carte).key] ?? [];
+    const candidates = bande.filter((id) => !cartes.includes(id) && !cardColors(id).includes(unique));
+    if (!candidates.length) continue;
+    const actuelleNouvelle = !possedees.has(actuelle);
+    const neuves = candidates.filter((id) => !possedees.has(id));
+    if (actuelleNouvelle && !neuves.length) continue;
+    const remplacant = tirerParmi(actuelleNouvelle ? neuves : candidates, rng);
+    if (remplacant) {
+      cartes[place] = remplacant;
+      return cartes;
+    }
+  }
+  return cartes;
 }
 
 /**
  * Tire les cinq cartes d'un paquet. Rend
  * `{ ok, raison, cartes, mythique, nouvelles, garantie }`.
  *
- * Trois temps : les bandes annoncées, la rare garantie, la carte 5 (mythique si
- * la pitié a parlé ou si le sort le veut). Puis la **garantie des nouvelles** :
- * tant que le joueur peut recevoir trois cartes neuves, un doublon des trois
- * premières places est échangé contre une carte neuve **au moins aussi rare**
- * (jamais l'inverse : un échange ne fait jamais perdre une mythique).
+ * Trois temps : les bandes annoncées (places 1 à 3), la **rare garantie**
+ * (place 4), puis la carte 5 — mythique si la pitié a parlé ou si le sort le
+ * veut (8 %). La place 4 ne peut jamais être mythique tant qu'une rare reste au
+ * vivier : un paquet contient donc toujours une rare. Puis la **garantie des
+ * nouvelles** : tant que le joueur peut recevoir trois cartes neuves, un
+ * doublon des trois premières places est échangé contre une carte neuve **au
+ * moins aussi rare** (jamais l'inverse : un échange ne fait jamais perdre une
+ * mythique). Enfin, la couleur : jamais un paquet monochrome.
  */
 export function tirerCartes({ rayonId, progression = null, collection = null, rng = Math.random, pitie = 0 } = {}) {
-  const rayon = rayonParId(rayonId);
+  const rayon = rayonActif(rayonId);
   if (!rayon) return { ok: false, raison: 'rayon-inconnu', cartes: [], mythique: false, nouvelles: 0, garantie: 0 };
   if (!rayonOuvert(rayonId, progression)) {
     return { ok: false, raison: 'rayon-ferme', cartes: [], mythique: false, nouvelles: 0, garantie: 0 };
@@ -328,13 +386,14 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
 
   const bandeCommune = rng() < TAUX.communes ? ['commune', 'inhabituelle'] : ['inhabituelle', 'commune'];
   for (let place = 0; place < 3; place += 1) placer([...bandeCommune, 'rare', 'mythique']);
-  placer(['rare', 'mythique', 'inhabituelle', 'commune']);
+  // La rare garantie : les mythiques ne sont là qu'en dernier recours, quand
+  // le vivier n'a plus une seule rare à offrir.
+  placer(['rare', 'inhabituelle', 'commune', 'mythique']);
 
   const seuilPitie = Math.max(1, Math.floor(TAUX.pitie));
-  const chanceMythique = rayon.chanceMythique ?? TAUX.mythique;
   const mythiqueAssuree = (Number(pitie) || 0) + 1 >= seuilPitie;
-  const viseMythique = bandes.mythique.length > 0 && (mythiqueAssuree || rng() < chanceMythique);
-  placer(viseMythique ? ['mythique', 'rare', 'inhabituelle', 'commune'] : ['rare', 'mythique', 'inhabituelle', 'commune']);
+  const viseMythique = bandes.mythique.length > 0 && (mythiqueAssuree || rng() < TAUX.mythique);
+  placer(viseMythique ? ['mythique', 'rare', 'inhabituelle', 'commune'] : ['rare', 'inhabituelle', 'commune', 'mythique']);
 
   const compteNouvelles = () => tirees.filter((id) => !possedees.has(id)).length;
   const disponiblesNeuves = vivier.filter((id) => !possedees.has(id)).length;
@@ -344,25 +403,29 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
     const actuelle = tirees[place];
     if (!actuelle || !possedees.has(actuelle)) continue;
     const rang = RANG_RARETE[cardRarityInfo(cardById(actuelle)).key] ?? 0;
-    const remplacant = ['rare', 'inhabituelle', 'commune']
+    const candidates = ['rare', 'inhabituelle', 'commune']
       .flatMap((bande) => (RANG_RARETE[bande] >= rang ? (bandes[bande] ?? []) : []))
-      .find((id) => !tirees.includes(id) && !possedees.has(id));
+      .filter((id) => !tirees.includes(id) && !possedees.has(id));
+    const remplacant = tirerParmi(candidates, rng);
     if (remplacant) {
       tirees[place] = remplacant;
       continue;
     }
     // Aucun équivalent à offrir : la seule carte neuve qui reste est plus rare
     // que le doublon. **Une** place peut alors être promue — la cinquième carte
-    // n'est plus le seul chemin vers une mythique, et la dernière mythique d'une
-    // couleur se laisse approcher en jours plutôt qu'en mois. Une seule : le
+    // n'est plus le seul chemin vers une mythique, et la dernière mythique
+    // ouverte se laisse approcher en jours plutôt qu'en mois. Une seule : le
     // paquet reste un paquet, pas une livraison.
     if (promotions >= 1) continue;
-    const promue = (bandes.mythique ?? []).find((id) => !tirees.includes(id) && !possedees.has(id));
+    const promues = (bandes.mythique ?? []).filter((id) => !tirees.includes(id) && !possedees.has(id));
+    const promue = tirerParmi(promues, rng);
     if (promue) {
       tirees[place] = promue;
       promotions += 1;
     }
   }
+
+  diversifierCouleurs(tirees, bandes, possedees, rng);
 
   return {
     ok: true,
@@ -398,7 +461,7 @@ function detaillerTirage(cartes, collection) {
  */
 export function ouvrirBooster({ portefeuille, rayonId, progression = null, collection = null, rng = Math.random } = {}) {
   const base = normaliserPortefeuille(portefeuille);
-  const rayon = rayonParId(rayonId);
+  const rayon = rayonActif(rayonId);
   if (!rayon) return { ok: false, raison: 'rayon-inconnu', portefeuille: base, prix: 0, tirage: null };
   const achat = depenserCredits(base, rayon.prix);
   if (!achat.ok) return { ok: false, raison: achat.raison, portefeuille: base, prix: rayon.prix, tirage: null };
@@ -430,14 +493,14 @@ export function ouvrirBooster({ portefeuille, rayonId, progression = null, colle
 }
 
 /**
- * Le coffret : dix paquets d'un même rayon pour le prix de neuf. Une mythique
- * est assurée sur l'ensemble (elle ne peut pas se cacher dans dix paquets quand
- * le vivier en garde une) — le paquet qui la porte est tiré avec la pitié
- * forcée, puis les suivants suivent la règle normale.
+ * Le coffret : dix paquets du comptoir pour le prix de neuf. Une mythique est
+ * assurée sur l'ensemble (elle ne peut pas se cacher dans dix paquets quand le
+ * vivier en garde une) — le paquet qui la porte est tiré avec la pitié forcée,
+ * puis les suivants suivent la règle normale.
  */
 export function ouvrirCoffret({ portefeuille, rayonId, progression = null, collection = null, rng = Math.random } = {}) {
   const base = normaliserPortefeuille(portefeuille);
-  const rayon = rayonParId(rayonId);
+  const rayon = rayonActif(rayonId);
   const prix = prixCoffret(rayonId);
   if (!rayon || prix === null) return { ok: false, raison: 'rayon-inconnu', portefeuille: base, prix: 0, paquets: [] };
   if (!rayonOuvert(rayonId, progression)) return { ok: false, raison: 'rayon-ferme', portefeuille: base, prix, paquets: [] };

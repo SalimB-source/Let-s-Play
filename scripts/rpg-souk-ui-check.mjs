@@ -78,7 +78,7 @@ for (const prop of [
 ]) {
   assert.ok(page.includes(prop), `la page passe ${prop} à l’écran`);
 }
-assert.match(page, /reclamerUneQuete, reclamerLeCachet,[\s\S]{0,80}acheterBooster, acheterCoffret, fermerOuverture/,
+assert.match(page, /reclamerUneQuete, reclamerTutoriel,[\s\S]{0,220}acheterBooster, acheterCoffret, fermerOuverture/,
   'les gestes — réclamation, achat, fermeture — viennent du hook de bourse, pas de l’écran');
 assert.match(page, /onCartesRangees: rafraichirCollection/, 'un achat rafraîchit la collection de l’atelier');
 
@@ -178,9 +178,11 @@ for (const regle of ['perspective:', 'transform-style: preserve-3d', 'translateZ
   'backface-visibility: hidden', 'rpg-souk-paquet-sway', 'rpg-souk-paquet-reflet']) {
   assert.ok(css.includes(regle), `le volume tient grâce à ${regle}`);
 }
-for (const teinte of ['braise', 'sable', 'eau', 'neige', 'souk']) {
-  assert.match(css, new RegExp(`\\.rpg-souk__rayon--${teinte}\\s*\\{`),
-    `le rayon ${teinte} a sa teinte de paquet`);
+assert.match(css, /\.rpg-souk__rayon--souk\s*\{/,
+  'le paquet du Souk garde sa teinte de laiton');
+for (const teinte of ['braise', 'sable', 'eau', 'neige']) {
+  assert.ok(!css.includes(`.rpg-souk__rayon--${teinte}`),
+    `la teinte ${teinte} est partie avec son rayon monochrome`);
 }
 assert.ok(!css.includes('rpg-souk__rayon-prix'),
   'le prix n’est plus écrit deux fois : l’étiquette du paquet suffit');
@@ -190,9 +192,9 @@ assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,600}rpg-sou
 // 9 bis. L'étagère passe juste sous les quêtes, tient sur trois colonnes, et
 // la semaine se lit en sept cartes cachetées.
 assert.ok(ecran.indexOf('aria-labelledby="souk-rayons-titre"') < ecran.indexOf('data-souk-cachet='),
-  'les rayons se trouvent juste sous les quêtes du jour');
+  'le comptoir se trouve juste sous les quêtes du jour');
 assert.match(css, /\.rpg-souk__rayons \{\s*display: grid;\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/,
-  'l’étagère se lit sur trois colonnes');
+  'l’étagère garde sa grille, même avec un seul paquet centré');
 assert.match(css, /@media \(max-width: 980px\) \{\s*\.rpg-souk__rayons \{ grid-template-columns: repeat\(2,/,
   'deux colonnes sur la tablette');
 assert.match(css, /@media \(max-width: 600px\) \{[\s\S]{0,120}\.rpg-souk__rayons \{ grid-template-columns: minmax\(0, 1fr\)/,
@@ -309,8 +311,9 @@ for (const geste of ['creature-invoquee', 'magie-lancee', 'arme-jouee', 'terrain
 }
 
 console.log('Le Souk (lots 3 à 5) est branché : sixième onglet, solde et pastille dessus,');
-console.log('trois quêtes réclamables, Cachet du cycle et de la semaine, cinq rayons dont le');
-console.log('paquet en volume est le bouton d’achat, la cérémonie d’ouverture, le journal des');
+console.log('trois quêtes réclamables, Cachet du cycle et de la semaine, un paquet du Souk');
+console.log('mélangé (une rare garantie, 8 % de mythique) dont le paquet en volume est le bouton');
+console.log('d’achat, la cérémonie d’ouverture, le journal des');
 console.log('ouvertures, et les cartes achetées qui entrent dans la collection. Le crédit y a');
 console.log('sa pièce — frappée or, une seule à l’écran, jamais deux fois le même dégradé.');
 console.log('Les quêtes du jour attendent aussi dans l’onglet Jouer, à droite du menu :');

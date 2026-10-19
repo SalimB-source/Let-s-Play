@@ -9,8 +9,9 @@
  *   2. **ce qui m'attend** — les trois quêtes du jour, une barre de progression
  *      chacune, leur récompense, et le bouton **Réclamer** — désactivé tant que
  *      l'objectif n'est pas atteint, et jamais muet sur ce qu'il reste à faire ;
- *   3. **ce que j'achète** — les rayons, juste sous les quêtes : cinq paquets
- *      sur trois colonnes, leur prix doré et l'appel du comptoir ;
+ *   3. **ce que j'achète** — le comptoir, juste sous les quêtes : un seul
+ *      paquet mélangé (toutes les couleurs ouvertes), son prix doré et
+ *      l'appel du coffret ;
  *   4. **le Cachet du cycle** et celui de la semaine, dont les sept jours se
  *      lisent en petites cartes cachetées au fil de la série.
  *
@@ -28,8 +29,8 @@ import {
   JOURS_DE_LA_SERIE, cachetDeLaSemaineDisponible, cachetDisponible,
   etapesDeLaSerie, joursAvantLeCachetDeLaSemaine, secondesAvantMinuit, vueDeLaQuete,
 } from './rpgQuetes.js';
-import { COFFRET, TAUX, etatRayons, rayonParId, tourQuiGarde } from './rpgBoosters.js';
-import { cardById, MYTHIQUE_VITRINE_PAR_ELEMENT } from './rpgCards.js';
+import { COFFRET, TAUX, etatRayons, rayonParId } from './rpgBoosters.js';
+import { cardById } from './rpgCards.js';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 
@@ -79,21 +80,22 @@ function useResteDuCycle() {
 }
 
 /**
- * La ligne de taux d'un rayon : ce qu'on y trouve, et la promesse des
- * mythiques. Le chiffre de pitié est celui du portefeuille — il ne se promet
- * que sur un rayon qui a encore une mythique à donner.
+ * La ligne de taux du comptoir : ce qu'on y trouve, ce qui est garanti, et la
+ * promesse des mythiques. Le chiffre de pitié est celui du portefeuille — il
+ * ne se promet que si le vivier garde encore une mythique à donner.
  */
 function ligneDeTaux(etat, portefeuille) {
-  const chance = Math.round((etat.rayon.chanceMythique ?? TAUX.mythique) * 100);
+  const chance = Math.round(TAUX.mythique * 100);
   const avant = paquetsAvantMythique(portefeuille, {
     aDesMythiques: etat.mythiques > 0,
     seuil: TAUX.pitie,
   });
   const morceaux = [
     `${TAUX.cartes} cartes`,
+    `${TAUX.rareGarantie} rare${TAUX.rareGarantie > 1 ? 's' : ''} garantie${TAUX.rareGarantie > 1 ? 's' : ''}`,
     etat.mythiques
       ? (avant === 0 ? 'mythique au prochain paquet' : `${chance} % de mythique · assurée dans ${avant}`)
-      : `aucune mythique ici`,
+      : 'aucune mythique au vivier',
   ];
   return morceaux.join(' · ');
 }
@@ -113,13 +115,10 @@ function Sceau({ actif }) {
   );
 }
 
-/** Le message d'un rayon fermé : qui le garde, et où l'ouvrir. */
+/** Le message du comptoir fermé : le Souk ouvre à la première victoire. */
 function raisonFermeture(etat) {
   if (etat.ouvert) return null;
-  const garde = etat.rayon.couleur ? tourQuiGarde(etat.rayon.couleur) : null;
-  return garde
-    ? `Fermé — la ${garde.nom} le garde encore. Montez sa tour pour l’ouvrir.`
-    : 'Fermé — aucune couleur n’est encore entrée dans la ville.';
+  return 'Fermé — le Souk ouvrira à votre première victoire.';
 }
 
 /** Une quête du jour : son palier, sa barre, sa récompense, son bouton. */
@@ -188,20 +187,20 @@ function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx, onCelebrate }) {
 }
 
 /**
- * Le paquet d'un rayon, en volume : un sachet scellé de la couleur de son
- * élément, avec ses deux sertissages, sa rune et son reflet qui glisse dessus.
+ * Le paquet du Souk, en volume : un sachet scellé au laiton du comptoir, avec
+ * ses deux sertissages, sa rune et son reflet qui glisse dessus.
  *
  * Le paquet **est** le bouton d'achat — c'est l'objet qu'on clique, pas une
  * ligne de commande à côté de lui. La scène 3D est décorative (`aria-hidden`),
- * le bouton porte un nom lisible (« Ouvrir le paquet Braise · 140 crédits ») et
- * se désactive avec son motif quand l'achat est refusé.
+ * le bouton porte un nom lisible (« Ouvrir le paquet du Souk · 140 crédits »)
+ * et se désactive avec son motif quand l'achat est refusé.
  */
-function PaquetDuRayon({ rayon, index, mythes, ferme, prix, refus, onOuvrir, cardArt }) {
-  const nom = `Ouvrir le paquet ${rayon.nom} · ${prix} crédits`;
-  // La vitrine montre la mythique de l'élément dès que le rayon en a une
-  // (ouvert ou fermé) : c'est l'appât du paquet, pas un droit de tirage. Le
-  // grand étal (couleur null) n'a pas de mythique unique à montrer.
-  const mythiqueId = MYTHIQUE_VITRINE_PAR_ELEMENT[rayon.couleur] ?? null;
+function PaquetDuRayon({ rayon, index, ferme, prix, refus, onOuvrir, cardArt }) {
+  const cible = rayon.couleur ? `le paquet ${rayon.nom}` : `le paquet du ${rayon.nom}`;
+  const nom = `Ouvrir ${cible} · ${prix} crédits`;
+  // La vitrine montre une mythique du vivier : c'est l'appât du paquet, pas un
+  // droit de tirage. Le paquet mélangé montre celle du Djinn du Souk.
+  const mythiqueId = rayon.vitrine ?? null;
   return (
     <button
       type="button"
@@ -223,7 +222,7 @@ function PaquetDuRayon({ rayon, index, mythes, ferme, prix, refus, onOuvrir, car
             <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dessous" />
             <span className={`rpg-souk__paquet-face rpg-souk__paquet-face--avant${mythiqueId ? ' has-carte' : ''}`}>
               {mythiqueId && cardArt && (
-                <img className="rpg-souk__paquet-carte" src={cardArt(mythiqueId)} alt={`Illustration de la carte mythique du rayon ${rayon.nom}`} loading="lazy" />
+                <img className="rpg-souk__paquet-carte" src={cardArt(mythiqueId)} alt={`Illustration de la carte mythique ${cardById(mythiqueId)?.name ?? 'du Souk'}`} loading="lazy" />
               )}
               <span className="rpg-souk__paquet-sertissage" />
               {mythiqueId && <span className="rpg-souk__paquet-voile" aria-hidden="true" />}
@@ -231,7 +230,7 @@ function PaquetDuRayon({ rayon, index, mythes, ferme, prix, refus, onOuvrir, car
               <span className="rpg-souk__paquet-nom">{rayon.nom}</span>
               <span className="rpg-souk__paquet-meta">
                 {TAUX.cartes} cartes
-                {mythes > 0 && <em>{mythes} mythique{mythes > 1 ? 's' : ''}</em>}
+                <em>{TAUX.rareGarantie} rare{TAUX.rareGarantie > 1 ? 's' : ''} garantie{TAUX.rareGarantie > 1 ? 's' : ''}</em>
               </span>
               <span className="rpg-souk__paquet-sertissage" />
               {mythiqueId && <span className="rpg-souk__paquet-mythique-tag" aria-hidden="true">Mythique</span>}
@@ -311,8 +310,8 @@ export default function RpgSouk({
   const liste = Array.isArray(quetes?.quetes) ? quetes.quetes : [];
   const prises = liste.filter((id) => vueDeLaQuete(quetes, id)?.reclamee).length;
   const cachet = cachetDisponible(quetes) ? 'disponible' : quetes?.cachet ? 'pris' : 'attente';
-  // L'étagère : les cinq rayons et ce qu'ils gardent. `etatRayons` est une
-  // lecture pure — elle ne réserve rien et ne débite rien.
+  // Le comptoir : un seul paquet, toutes les couleurs ouvertes. `etatRayons`
+  // est une lecture pure — elle ne réserve rien et ne débite rien.
   const rayons = etatRayons(progression, collection);
   const ouverts = rayons.filter((etat) => etat.ouvert).length;
   const semaine = cachetDeLaSemaineDisponible(quetes) ? 'disponible' : quetes?.semaine ? 'pris' : 'attente';
@@ -401,11 +400,11 @@ export default function RpgSouk({
 
       <section className="rpg-souk__section rpg-souk__section--rayons" aria-labelledby="souk-rayons-titre">
         <div className="rpg-souk__section-tete">
-          <h3 id="souk-rayons-titre">Les rayons</h3>
-          <p data-souk-rayons={ouverts > 0 ? 'ouverts' : 'fermes'}>
+          <h3 id="souk-rayons-titre">Les boosters</h3>
+          <p data-souk-rayons={ouverts > 0 ? 'ouvert' : 'ferme'}>
             {ouverts > 0
-              ? `${ouverts} rayon${ouverts > 1 ? 's' : ''} ouvert${ouverts > 1 ? 's' : ''} · le Souk suit les marches que vous avez montées`
-              : 'le Souk suivra les marches que vous montez'}
+              ? 'Toutes les couleurs entrées dans la ville, mélangées au hasard'
+              : 'Le comptoir ouvrira à votre première victoire'}
           </p>
         </div>
         <ul className="rpg-souk__rayons" data-souk-rayons-nombre={rayons.length}>
@@ -422,7 +421,7 @@ export default function RpgSouk({
                 data-souk-rayon-etat={ferme ? 'ferme' : refus ? 'sans-solde' : 'ouvert'}
               >
                 <header>
-                  <h4>{etat.rayon.nom}</h4>
+                  <h4>{etat.rayon.titre ?? etat.rayon.nom}</h4>
                   <span className="rpg-souk__rayon-etat" aria-hidden="true">
                     {etat.ouvert ? 'Ouvert' : 'Fermé'}
                   </span>
@@ -431,7 +430,6 @@ export default function RpgSouk({
                 <PaquetDuRayon
                   rayon={etat.rayon}
                   index={index}
-                  mythes={etat.mythiques}
                   ferme={Boolean(ferme)}
                   prix={etat.prix}
                   refus={refus}
@@ -441,7 +439,7 @@ export default function RpgSouk({
                 <p className="rpg-souk__rayon-taux" data-souk-rayon-taux>{ligneDeTaux(etat, portefeuille)}</p>
                 <p className="rpg-souk__rayon-reste" data-souk-rayon-reste={etat.nouvelles}>
                   {etat.complet
-                    ? `Aucune des ${etat.taille} cartes de ce rayon ne vous manque — les doublons y paient encore.`
+                    ? `Aucune des ${etat.taille} cartes du vivier ne vous manque — les doublons y paient encore.`
                     : `${etat.nouvelles} carte${etat.nouvelles > 1 ? 's' : ''} sur ${etat.taille} vous manque${etat.nouvelles > 1 ? 'nt' : ''} encore.`}
                 </p>
                 <footer>

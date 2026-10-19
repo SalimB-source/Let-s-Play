@@ -256,7 +256,7 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
   /** Le paquet : cinq cartes, le prix du rayon. */
   const acheterBooster = useCallback((rayonId) => acheter(rayonId, { coffret: false }), [acheter]);
 
-  /** Le coffret : dix paquets d'un même rayon, une mythique assurée. */
+  /** Le coffret : dix paquets du comptoir, une mythique assurée. */
   const acheterCoffret = useCallback((rayonId) => acheter(rayonId, { coffret: true }), [acheter]);
 
   /**
