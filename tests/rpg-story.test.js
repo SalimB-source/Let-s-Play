@@ -32,6 +32,7 @@ import {
   tourHistoireParId,
   tousLesEtages,
 } from '../src/games/rpgStoryTours.js';
+import { RPG_STORY_CAMPAIGN_MINIATURE } from '../src/games/rpgStoryScenes.js';
 
 // ── Données des tours ───────────────────────────────────────────────────────
 
@@ -181,6 +182,14 @@ test('chaque tour garde une peinture de repli livrée pour les appareils sans We
       `${tour.id} : la miniature ${tour.miniature} est livrée dans public/sablier-tours/`);
   }
   assert.equal(vus.size, RPG_STORY_TOURS.length, 'chaque tour a la sienne');
+});
+
+test('le mode histoire dispose de sa propre miniature dédiée livrée dans public/sablier-story/', () => {
+  assert.ok(RPG_STORY_CAMPAIGN_MINIATURE, 'miniature déclarée pour le mode histoire');
+  assert.ok(
+    existsSync(fileURLToPath(new URL(`../public/${RPG_STORY_CAMPAIGN_MINIATURE}`, import.meta.url))),
+    `${RPG_STORY_CAMPAIGN_MINIATURE} est livrée dans public/`,
+  );
 });
 
 test('les tours s’enchaînent étage par étage', () => {

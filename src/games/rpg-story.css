@@ -446,7 +446,26 @@
 .rpg-campaign__art { position: absolute; z-index: -2; inset: 0 0 0 20%; background-size: cover; background-position: 60% center; }
 .rpg-campaign::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #0d1720 0%, rgba(13, 23, 32, .96) 28%, rgba(13, 23, 32, .58) 65%, rgba(13, 23, 32, .12)), linear-gradient(0deg, rgba(10, 16, 23, .9), transparent 60%); }
 .rpg-campaign__copy { max-width: 650px; padding: clamp(24px, 4vw, 46px); }
-.rpg-campaign__copy h2 { margin: 18px 0; color: #f2eadb; font: 400 clamp(40px, 5.4vw, 70px)/.99 Georgia, 'Times New Roman', serif; letter-spacing: -.035em; }
+.rpg-campaign__header-row { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 6px; }
+.rpg-campaign__miniature {
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(229, 191, 105, .4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .45);
+  background: #0a0e17;
+  margin-top: 4px;
+}
+.rpg-campaign__miniature img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.rpg-campaign__header-text { min-width: 0; flex: 1; }
+.rpg-campaign__copy h2 { margin: 12px 0 16px; color: #f2eadb; font: 400 clamp(40px, 5.4vw, 70px)/.99 Georgia, 'Times New Roman', serif; letter-spacing: -.035em; }
 .rpg-campaign__copy h2 em { color: #dfc797; font-weight: 400; }
 .rpg-campaign__pitch { margin: 22px 0 10px; font: 400 20px/1.45 Georgia, serif; color: #f1e5d0; }
 .rpg-campaign__description { max-width: 43ch; margin: 0; font-size: 13px; line-height: 1.8; color: #c3c8cb; }
@@ -649,6 +668,8 @@
   .rpg-story-journal__scenes summary small { display: none; }
   .rpg-narrative__duel-stats > div { flex-wrap: wrap; gap: 8px; }
   .rpg-campaign__steps { grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); }
+  .rpg-campaign__header-row { gap: 12px; }
+  .rpg-campaign__miniature { flex: 0 0 58px; width: 58px; height: 58px; }
   .rpg-campaign__art { inset: 0; background-position: 65% center; }
   .rpg-campaign::after { background: linear-gradient(90deg, rgba(13, 23, 32, .96), rgba(13, 23, 32, .6)), linear-gradient(0deg, #0d1720, transparent); }
   .rpg-campaign__chapter { display: none; }

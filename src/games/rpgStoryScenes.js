@@ -1,8 +1,17 @@
 /** La Dernière Liste — Actes I à V. Données seules : aucun effet sur le duel. */
 export const RPG_STORY_CAMPAIGN_ID = 'derniere-liste';
 export const RPG_STORY_CAMPAIGN_TITLE = 'La Dernière Liste';
+export const RPG_STORY_CAMPAIGN_MINIATURE = 'sablier-story/mode-histoire.jpg';
 export const RPG_STORY_EPISODE_TITLE = 'Les absents';
 export const RPG_STORY_CAMPAIGN_FLOORS = Object.freeze(['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5']);
+
+export const RPG_STORY_CAMPAIGN = Object.freeze({
+  id: RPG_STORY_CAMPAIGN_ID,
+  titre: RPG_STORY_CAMPAIGN_TITLE,
+  miniature: RPG_STORY_CAMPAIGN_MINIATURE,
+  episode: RPG_STORY_EPISODE_TITLE,
+  floors: RPG_STORY_CAMPAIGN_FLOORS,
+});
 
 export const RPG_STORY_SURVIVANTS = Object.freeze([
   'Aïcha, l’institutrice', 'Nassim, le réparateur', 'Lila, la tisseuse',

@@ -2460,7 +2460,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   {/* Le bouton principal ouvre le mode Histoire (reprend ou débute
                       le récit) ; le duel rapide reste dispo via l'onglet Deck. */}
                   <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--histoire rpg-menu-button--glow" onClick={() => { play('select'); onContinueRecit?.(); }}>
-                    <span className="rpg-menu-button__icon">⌛</span>
+                    <span className="rpg-menu-button__thumb" aria-hidden="true">
+                      <img src={`${import.meta.env.BASE_URL}sablier-story/mode-histoire.jpg`} alt="" />
+                    </span>
                     <span className="rpg-menu-button__text">
                       <strong>Mode histoire</strong>
                       <small>La campagne des Tours de Bab El</small>

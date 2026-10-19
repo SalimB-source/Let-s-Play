@@ -130,7 +130,9 @@ déploie les malédictions, le Tribut et le jugement d'outre-tombe.
    ligne du nom d'étage) ; **sauvegarde** de la
    progression en localStorage (`letsplay_sablier_histoire_v2`, migration de la
    v1). Les scènes et décisions restent locales ; le compte synchronise les
-   decks et la collection, pas encore le récit.
+   decks et la collection, pas encore le récit. Le mode Histoire porte sa
+   propre **miniature dédiée** (`public/sablier-story/mode-histoire.jpg`)
+   affichée sur le bouton d'accueil et dans l'en-tête de la campagne.
 2. **Les données des tours** — `src/games/rpgStoryTours.js` (id, nom, miniature,
    fonction, deck, puissance, ia, note, et depuis la Neige `avatar` — la figure de
    l'étage sur la plaque du sorcier) : **sept tours, vingt-huit étages, seize decks**
