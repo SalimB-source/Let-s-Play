@@ -40,16 +40,11 @@
 
 .rpg-story__tours {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: 16px;
   align-items: start;
 }
 
-@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
-  .rpg-story__tours {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
 
 /* La galerie des tours : une maquette 3D par tour. Les étages restent masqués
    jusqu'au clic — la carte entière ouvre la page de la tour. */
