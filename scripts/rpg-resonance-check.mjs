@@ -86,16 +86,16 @@ assert.equal(cardById('valkyrie-des-glaces').resonance, 1,
 
 // Le rendu lit la carte, jamais `entite.resonance` (le bonus reçu, recalculé
 // par le moteur sur chaque créature de la famille).
-assert.match(duel, /\{carte\?\.resonance \? <AuraResonance phase=\{phaseResonance\(entite\)\} \/> : null\}/,
+assert.match(duel, /\{carte\?\.resonance \? <AuraOndes phase=\{phaseAura\(entite\)\} \/> : null\}/,
   'l’aura se décide sur la résonance imprimée de la carte');
-assert.doesNotMatch(duel, /entite\?\.resonance \? <AuraResonance/,
+assert.doesNotMatch(duel, /entite\?\.resonance \? <AuraOndes/,
   'une créature qui reçoit le bonus ne projette pas l’aura de la source');
 assert.match(duel, /carte\?\.resonance \? 'has-resonance' : '',/,
   'la carte porte la classe de l’aura, sur le même verdict');
 
 // ── 2. Le calque : décoratif, trois ondes, une phase par carte ──────────────
 const composant = duel.slice(
-  duel.indexOf('function AuraResonance'),
+  duel.indexOf('function AuraOndes'),
   duel.indexOf("/* ── Soins : l'éclat d'un gain de vie"),
 );
 assert.match(composant, /\{\[1, 2, 3\]\.map\(/, 'trois ondes naissent du cœur de la carte');
@@ -106,8 +106,8 @@ assert.doesNotMatch(composant, /<span className="rpg-card__resonance"[\s\S]*?>\s
   'le calque n’écrit aucun texte : rien à lire, rien à sélectionner');
 assert.match(duel, /function empreinteEntite\(entite\)[\s\S]*?empreinte \* 31[\s\S]*?% 9973;/,
   'la phase vient d’une empreinte stable de l’identifiant — pas d’un tirage au rendu');
-assert.match(duel, /function phaseResonance\(entite\)\s*\{\s*return \(empreinteEntite\(entite\) % 360\) \/ 100;/,
-  'l’aura de résonance lit cette empreinte commune, la même que le vol');
+assert.match(duel, /function phaseAura\(entite\)\s*\{\s*return \(empreinteEntite\(entite\) % 360\) \/ 100;/,
+  'l’aura de sonar lit cette empreinte commune, la même que le vol');
 
 // ── 3. La feuille : un débordement assumé, un bleu de sonar ─────────────────
 // Le bloc de la résonance, isolé du reste de la feuille (jusqu'à l'infiltration).
@@ -117,11 +117,11 @@ assert.ok(debut > 0, 'la feuille porte un bloc consacré à la résonance');
 assert.ok(fin > debut, 'le bloc de la résonance précède celui de l’infiltration, sans le recouvrir');
 const resonanceCss = battleCss.slice(debut, fin);
 
-assert.match(resonanceCss, /\.rpg-card\.has-resonance\s*\{[^}]*overflow:\s*clip;[^}]*overflow-clip-margin:\s*58px;/s,
-  'les ondes sortent du cadre, sans rendre la carte transparente');
-assert.match(resonanceCss, /\.rpg-card\.has-resonance > :is\(\.rpg-card__img, \.rpg-card__blood, \.rpg-card__frost\)\s*\{[^}]*border-radius:\s*inherit;/s,
+assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura\)\s*\{[^}]*overflow:\s*clip;[^}]*overflow-clip-margin:\s*58px;/s,
+  'les ondes sortent du cadre, sans rendre la carte transparente (résonance comme aura)');
+assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura\) > :is\(\.rpg-card__img, \.rpg-card__blood, \.rpg-card__frost\)\s*\{[^}]*border-radius:\s*inherit;/s,
   'une fois le débordement ouvert, les calques pleine face gardent l’arrondi');
-assert.match(resonanceCss, /\.rpg-card\.has-resonance \.rpg-card__img\s*\{[^}]*animation:\s*none !important;/s,
+assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura\) \.rpg-card__img\s*\{[^}]*animation:\s*none !important;/s,
   'le survol ne fait plus déborder l’illustration agrandie');
 assert.match(resonanceCss, /\.rpg-card__resonance\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*z-index:\s*1;[^}]*pointer-events:\s*none;/s,
   'le calque couvre la face, passe sous les repères de jeu et ne capte aucun geste');

@@ -1103,17 +1103,19 @@ function tirerHasardElectricite(aleatoire = Math.random) {
   };
 }
 
-/** Résonance : une aura bleue de sonar émane de la carte.
- *  Trois ondes concentriques partent du cœur de la face et s'élargissent
- *  au-delà du cadre en s'effaçant ; un liseré bleu ourle les bords. Le
- *  calque est purement décoratif (`aria-hidden`) : l'effet est déjà annoncé
- *  par l'icône et par la description lue de la carte. Les ondes sont
- *  décalées d'un tiers de cycle pour qu'une nouvelle vague parte toujours
- *  avant que la précédente ne s'éteigne. */
-function AuraResonance({ phase = 0 }) {
+/** L'aura de sonar : trois ondes concentriques partent du cœur de la face et
+ *  s'élargissent au-delà du cadre en s'effaçant, sur un liseré qui reste
+ *  allumé. `variante` ne change que la teinte — bleue pour la résonance,
+ *  jaune pour les cartes qui impriment une aura (la forge des Samouraïs, les
+ *  Ksour, le héros du sable). Le calque est purement décoratif
+ *  (`aria-hidden`) : l'effet est déjà annoncé par l'icône et par la
+ *  description lue de la carte. Les ondes sont décalées d'un tiers de cycle
+ *  pour qu'une nouvelle vague parte toujours avant que la précédente ne
+ *  s'éteigne. */
+function AuraOndes({ variante = 'resonance', phase = 0 }) {
   return (
     <span
-      className="rpg-card__resonance"
+      className={`rpg-card__resonance${variante === 'aura' ? ' rpg-card__resonance--aura' : ''}`}
       style={{ '--rpg-resonance-phase': `${(-phase).toFixed(2)}s` }}
       aria-hidden="true"
     >
@@ -1135,9 +1137,9 @@ function empreinteEntite(entite) {
   return empreinte;
 }
 
-/** Le décalage d'une aura de résonance, dans son cycle de 3,6 s : deux créatures
- *  à résonance ne battent jamais exactement à l'unisson. */
-function phaseResonance(entite) {
+/** Le décalage d'une aura de sonar, dans son cycle de 3,6 s : deux créatures
+ *  auréolées ne battent jamais exactement à l'unisson. */
+function phaseAura(entite) {
   return (empreinteEntite(entite) % 360) / 100;
 }
 
@@ -1462,6 +1464,7 @@ export function TableCard({
         entite.rapidite ? 'has-rapidite' : '',
         entite.infiltration ? 'has-infiltration' : '',
         carte?.resonance ? 'has-resonance' : '',
+        carte?.aura ? 'has-aura' : '',
         gelee ? 'is-frozen' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
@@ -1525,7 +1528,8 @@ export function TableCard({
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-      {carte?.resonance ? <AuraResonance phase={phaseResonance(entite)} /> : null}
+      {carte?.resonance ? <AuraOndes phase={phaseAura(entite)} /> : null}
+      {carte?.aura ? <AuraOndes variante="aura" phase={phaseAura(entite)} /> : null}
       {/* Envol : un souffle de lumière traverse lentement la face, comme une
           aile qui passe — décalé lui aussi par entité. */}
       {entite.envol && (

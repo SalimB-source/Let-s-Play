@@ -1,7 +1,7 @@
-// La carte à résonance rendue dans jsdom. La source imprime l'aura ; une
-// créature qui ne l'imprime pas — même si le moteur lui compte le bonus reçu —
-// n'affiche aucun calque. Rendu réel de `TableCard`, puis lectures du source et
-// de la feuille de style.
+// Les cartes à résonance et à aura, rendues dans jsdom. Seule la carte qui
+// imprime l'effet porte le calque ; celle qui ne fait que recevoir le bonus
+// n'affiche rien. Rendu réel de `TableCard`, puis lectures du source et de la
+// feuille de style.
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import RpgDuelPage, { TableCard } from '../src/games/RpgDuelPage.jsx';
@@ -27,6 +27,18 @@ export function rendreCartes() {
   const source = RPG_DUEL_CARDS.find((carte) => carte.id === 'valkyrie-au-corbeau');
   const neutre = RPG_DUEL_CARDS.find((carte) => carte.id === 'fennec-des-decombres');
   return {
+    // Les cartes qui impriment une aura portent le même sonar, en jaune ; la
+    // créature qui reçoit l'aura n'en projette rien.
+    aura: {
+      carte: RPG_DUEL_CARDS.find((carte) => carte.id === 'kenshi-de-la-forge'),
+      html: carteRendue('kenshi-de-la-forge'),
+    },
+    auraNeutre: {
+      // Le Fennec n'imprime ni aura ni résonance : lui compter une aura reçue
+      // ne doit rien allumer.
+      carte: RPG_DUEL_CARDS.find((carte) => carte.id === 'fennec-des-decombres'),
+      html: carteRendue('fennec-des-decombres', { aura: 2, auraParGroupe: { sable: 2 } }),
+    },
     source: { carte: source, html: carteRendue('valkyrie-au-corbeau') },
     // Le bonus reçu est recalculé par le moteur sur TOUTES les créatures de la
     // famille : `entite.resonance` vaut 1 ici, et pourtant l'aura reste éteinte.
