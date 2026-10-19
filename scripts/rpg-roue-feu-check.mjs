@@ -53,18 +53,17 @@ try {
   assert.ok(racine.querySelector('.rpg-roue-feu__lueur'), 'une lueur s’allume au sol');
   assert.equal(racine.querySelectorAll('.rpg-roue-feu__cercle').length, 2,
     'deux cercles de flammes tournent, en sens contraires');
-  const rayons = [...racine.querySelectorAll('.rpg-roue-feu__rayon')];
-  assert.ok(rayons.length >= 8, 'des langues de feu sont plantées tout autour');
-  assert.ok(rayons.every((rayon) => /--a:\d+deg/.test(rayon.getAttribute('style') ?? '')
-    && /--d:\d+ms/.test(rayon.getAttribute('style') ?? '')),
-  'chaque langue a son angle et son retard');
+  assert.equal(racine.querySelectorAll('.rpg-roue-feu__rayon').length, 0,
+    'aucune langue de feu : la roue reste un anneau');
+  assert.doesNotMatch(css, /\.rpg-roue-feu__rayon|@keyframes rpg-roue-feu-langue/,
+    'la feuille n’en garde ni la règle ni l’image clé');
   const braises = [...racine.querySelectorAll('.rpg-roue-feu__braise')];
   assert.ok(braises.length >= 3, 'quelques braises montent');
   assert.ok(braises.every((braise) => /--dx:-?\d+px/.test(braise.getAttribute('style') ?? '')
     && /--dy:-?\d+px/.test(braise.getAttribute('style') ?? '')
     && /--d:\d+ms/.test(braise.getAttribute('style') ?? '')),
   'chaque braise part dans sa direction, avec son propre retard');
-  assert.equal(racine.children.length, 4 + rayons.length + braises.length,
+  assert.equal(racine.children.length, 4 + braises.length,
     'le calque ne contient que ses pièces de feu et la carte qu’il consume');
 } finally {
   window.close();
@@ -99,10 +98,6 @@ assert.match(css, /\.rpg-roue-feu__cercle--interne\s*\{[^}]*rpg-roue-feu-tourne-
 assert.match(css, /@keyframes rpg-roue-feu-tourne\s*\{\s*from \{ rotate: 0deg; \}\s*to \{ rotate: 400deg; \}/,
   'plus d’un tour : la roue tourne vraiment');
 assert.match(css, /@keyframes rpg-roue-feu-tourne-inverse\s*\{\s*from \{ rotate: 40deg; \}\s*to \{ rotate: -320deg; \}/);
-assert.match(css, /\.rpg-roue-feu__rayon::before\s*\{[^}]*animation:\s*rpg-roue-feu-langue \.9s ease-out both;[^}]*animation-delay:\s*var\(--d, 0ms\);/s,
-  'chaque langue de feu s’allume à son heure');
-assert.match(css, /@keyframes rpg-roue-feu-langue\s*\{[\s\S]*100% \{ opacity: 0; scale: \.55 1\.7; \}/,
-  'les langues s’étirent en montant avant de s’éteindre');
 assert.match(css, /\.rpg-roue-feu__braise\s*\{[^}]*animation:\s*rpg-roue-feu-braise \.9s[^}]*animation-delay:\s*var\(--d, 0ms\);/s,
   'les braises montent avec leur retard');
 assert.match(css, /\.rpg-roue-feu__carte\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*animation:\s*rpg-roue-feu-carte \.9s ease-in both;/s,
@@ -159,4 +154,4 @@ assert.match(page, /\{rouesFeu\.map\(\(effet\) => \(\s*<RoueDeFeu\s+key=\{effet\
 assert.match(page, /onTermine=\{\(effectId\) => setRouesFeu\(\(current\) => current\.filter\(\(autre\) => autre\.effectId !== effectId\)\)\}/,
   'chacune s’éteint à sa dernière image');
 
-console.log('✓ Braise : la roue de feu s’allume autour de la créature mordue par une magie, une sorcellerie ou l’effet d’une créature de Braise — deux cercles qui tournent en sens contraires, neuf langues, cinq braises et une lueur au sol — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la carte brûlée reste dans le feu et son adieu de carte détruite n’arrive qu’une fois la roue refermée (900 ms), silencieuse en mouvement réduit');
+console.log('✓ Braise : la roue de feu s’allume autour de la créature mordue par une magie, une sorcellerie ou l’effet d’une créature de Braise — deux cercles qui tournent en sens contraires, cinq braises et une lueur au sol — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la carte brûlée reste dans le feu et son adieu de carte détruite n’arrive qu’une fois la roue refermée (900 ms), silencieuse en mouvement réduit');

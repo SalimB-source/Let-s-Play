@@ -975,31 +975,33 @@
    Elle n'anime que `translate`, `rotate` et `scale`, trois propriétés
    indépendantes de `transform` : l'inclinaison de combat, le survol et la
    carte active gardent la leur, et la rangée n'est jamais recalculée. La
-   durée vient de la carte (`--rpg-envol-duree`, 6,8 à 7,6 s selon
+   durée vient de la carte (`--rpg-envol-duree`, 4,8 à 5,5 s selon
    l'identifiant) : deux voisines ne montent jamais à l'unisson.
 
-   Le repos — carte levée de 6 px, ombre éloignée et lueur froide — reste
+   Le repos — carte levée de 14 px, ombre éloignée et lueur froide — reste
    lisible au doigt et sous mouvement réduit : c'est la hauteur qui parle,
-   même sans animation. Un souffle de lumière traverse ensuite la face, très
-   lentement, comme une aile qui passe. */
+   même sans animation. Un souffle de lumière traverse ensuite la face, comme
+   une aile qui passe. */
 .rpg-card.is-envol {
   z-index: 2;
   /* Le repos est le premier arrêt du cycle : la carte est levée d'emblée. */
-  translate: 0 -6px;
-  rotate: -0.5deg;
+  translate: 0 -14px;
+  rotate: -0.7deg;
   scale: 1;
   filter:
-    drop-shadow(0 17px 11px rgba(0, 0, 0, .42))
-    drop-shadow(0 0 9px rgba(185, 225, 255, .28));
-  animation: rpg-envol-levite var(--rpg-envol-duree, 7.2s) ease-in-out infinite;
+    drop-shadow(0 24px 16px rgba(0, 0, 0, .45))
+    drop-shadow(0 0 16px rgba(185, 225, 255, .34));
+  animation: rpg-envol-levite var(--rpg-envol-duree, 5.1s) ease-in-out infinite;
 }
 /* Le cycle se referme sur son premier arrêt : la boucle ne saccade pas, et
-   une reprise après une cinématique repart exactement du repos. */
+   une reprise après une cinématique repart exactement du repos. L'amplitude
+   est franche — neuf pixels de montée et un degré et demi de roulis : le vol
+   se lit d'un coup d'œil, même du coin de la table. */
 @keyframes rpg-envol-levite {
-  0%, 100% { translate: 0 -6px; rotate: -0.5deg; scale: 1; }
-  25% { translate: 1.6px -10px; rotate: 0.2deg; scale: 1.008; }
-  50% { translate: 0.4px -12.5px; rotate: 0.55deg; scale: 1.012; }
-  75% { translate: -1.4px -8.5px; rotate: -0.15deg; scale: 1.005; }
+  0%, 100% { translate: 0 -14px; rotate: -0.7deg; scale: 1; }
+  25% { translate: 2.4px -19px; rotate: 0.25deg; scale: 1.008; }
+  50% { translate: 0.6px -23px; rotate: 0.7deg; scale: 1.015; }
+  75% { translate: -2.2px -17.5px; rotate: -0.25deg; scale: 1.006; }
 }
 
 /* Le calque du souffle : posé sur la face, il ne couvre que l'illustration et
@@ -1034,7 +1036,7 @@
   transform: rotate(16deg) translateX(0);
   /* La phase (`--rpg-envol-phase`, négative) vient de l'identifiant de la
      créature : deux voisines ne sont jamais traversées ensemble. */
-  animation: rpg-envol-souffle 6.5s ease-in-out var(--rpg-envol-phase, 0s) infinite;
+  animation: rpg-envol-souffle 5.4s ease-in-out var(--rpg-envol-phase, 0s) infinite;
   will-change: transform, opacity;
 }
 /* Le souffle dort la moitié du cycle, puis glisse d'un bord à l'autre : une
@@ -4829,10 +4831,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* ── La roue de feu : une créature mordue par la Braise ─────────────────────
    Une magie, une sorcellerie ou l'effet d'une créature de Braise vient de
-   frapper : le pourtour de la carte s'embrase en un cercle qui tourne, des
-   langues de feu s'en détachent et des braises montent. Le calque ne dure
-   qu'un instant, ne capte rien et n'anime que `rotate`, `translate`, `scale`,
-   `opacity` et `filter` : la table ne bouge pas d'un pixel. */
+   frapper : le pourtour de la carte s'embrase en deux cercles qui tournent,
+   et des braises montent. Le calque ne dure qu'un instant, ne capte rien et
+   n'anime que `rotate`, `translate`, `scale`, `opacity` et `filter` : la table
+   ne bouge pas d'un pixel. */
 .rpg-roue-feu {
   position: absolute;
   z-index: 56;
@@ -4906,29 +4908,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     rpg-roue-feu-ronde .9s ease-in both;
 }
 
-/* Les langues de feu, plantées tout autour du cercle. */
-.rpg-roue-feu__rayon {
-  position: absolute;
-  inset: -6%;
-  border-radius: 50%;
-  rotate: var(--a, 0deg);
-}
-.rpg-roue-feu__rayon::before {
-  content: "";
-  position: absolute;
-  top: -4%;
-  left: 50%;
-  width: 21%;
-  height: 21%;
-  translate: -50% 0;
-  border-radius: 48% 48% 52% 52% / 30% 30% 70% 70%;
-  background: radial-gradient(58% 62% at 50% 78%, #fff6cd, #ffc247 40%, #f4561a 76%, rgba(170, 36, 8, 0));
-  filter: blur(.4px) drop-shadow(0 0 6px rgba(255, 110, 26, .85));
-  opacity: 0;
-  animation: rpg-roue-feu-langue .9s ease-out both;
-  animation-delay: var(--d, 0ms);
-}
-
 /* Les braises arrachées à la roue. */
 .rpg-roue-feu__braise {
   position: absolute;
@@ -4969,12 +4948,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   18% { opacity: 1; }
   62% { scale: 1.02; opacity: .92; }
   100% { scale: 1.12; opacity: 0; }
-}
-@keyframes rpg-roue-feu-langue {
-  0% { opacity: 0; scale: .4 .5; }
-  22% { opacity: 1; scale: 1 1.15; }
-  58% { opacity: .9; scale: .92 1.35; }
-  100% { opacity: 0; scale: .55 1.7; }
 }
 @keyframes rpg-roue-feu-lueur {
   0% { scale: .5 .22; opacity: 0; }

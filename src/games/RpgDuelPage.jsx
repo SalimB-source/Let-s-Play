@@ -1152,7 +1152,7 @@ function phaseResonance(entite) {
    geste, puis celle-ci reprend — de son point de départ, qui est aussi sa
    position de repos, donc sans saut.
 
-   Chaque créature reçoit sa propre durée (6,8 → 7,6 s, tirée de
+   Chaque créature reçoit sa propre durée (4,8 → 5,5 s, tirée de
    l'identifiant de l'entité) : deux voisines ne montent jamais à l'unisson,
    et elles se décalent d'elles-mêmes au fil du temps. */
 
@@ -1161,11 +1161,11 @@ const phaseVol = (entite) => (empreinteEntite(entite) % 1000) / 1000;
 
 /** La durée de la lévitation d'une créature, en secondes : jamais la même
  *  d'une carte à l'autre, pour qu'aucune rangée ne batte à l'unisson. */
-const dureeVol = (entite) => (6.8 + phaseVol(entite) * 0.8).toFixed(2);
+const dureeVol = (entite) => (4.8 + phaseVol(entite) * 0.7).toFixed(2);
 
 /** La durée du souffle qui traverse la face, en secondes — la feuille la répète
  *  dans son `animation` : les deux valeurs vont ensemble. */
-const SOUFFLE_ENVOL_DUREE = 6.5;
+const SOUFFLE_ENVOL_DUREE = 5.4;
 
 /* ── Soins : l'éclat d'un gain de vie ─────────────────────────────────────── */
 // Motes de lumière fixes (position, départ, taille, dérive) : le même éclat à
@@ -1285,16 +1285,13 @@ export function TourbillonEau({ effet, onTermine = null }) {
  * La roue de feu d'une créature brûlée par la Braise.
  *
  * Une magie, une sorcellerie ou l'effet d'une créature de Braise vient de
- * mordre : autour de la carte s'allume un cercle de flammes qui tourne, des
- * langues s'en détachent et quelques braises montent. Comme le tourbillon
- * d'eau, le calque se pose sur l'emplacement mesuré avant l'action — mais la
- * roue joue **avant** la conséquence : une créature qui meurt de ce coup ne
- * s'en va qu'une fois la roue refermée, et sa carte reste visible dans le feu
- * jusque-là. Rien n'est intercepté, rien ne bouge dans la mise en page.
+ * mordre : autour de la carte s'allument deux cercles de flammes qui tournent
+ * en sens contraires, et quelques braises montent. Comme le tourbillon d'eau,
+ * le calque se pose sur l'emplacement mesuré avant l'action — mais la roue
+ * joue **avant** la conséquence : une créature qui meurt de ce coup ne s'en va
+ * qu'une fois la roue refermée, et sa carte reste visible dans le feu jusque-là.
+ * Rien n'est intercepté, rien ne bouge dans la mise en page.
  */
-const RAYONS_ROUE_FEU = Object.freeze(
-  Array.from({ length: 9 }, (_, index) => ({ a: index * 40, d: index * 38 })),
-);
 const BRAISES_ROUE_FEU = Object.freeze([
   { dx: -36, dy: -62, d: 0 },
   { dx: 30, dy: -84, d: 80 },
@@ -1336,13 +1333,6 @@ export function RoueDeFeu({ effet, onTermine = null }) {
       <i className="rpg-roue-feu__lueur" />
       <i className="rpg-roue-feu__cercle" />
       <i className="rpg-roue-feu__cercle rpg-roue-feu__cercle--interne" />
-      {RAYONS_ROUE_FEU.map((rayon) => (
-        <i
-          key={rayon.a}
-          className="rpg-roue-feu__rayon"
-          style={{ '--a': `${rayon.a}deg`, '--d': `${rayon.d}ms` }}
-        />
-      ))}
       {BRAISES_ROUE_FEU.map((braise) => (
         <i
           key={braise.d}

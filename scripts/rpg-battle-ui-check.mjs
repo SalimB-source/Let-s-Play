@@ -161,7 +161,7 @@ assert.match(tableCardSource, /entite\.envol \? 'is-envol' : ''/,
   'les créatures qui possèdent Envol reçoivent leur état visuel sur la table');
 assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*translate:\s*0 -6px;[^}]*filter:[^}]*drop-shadow\(0 17px 11px rgba\(0, 0, 0, \.42\)\)/s,
   'une créature avec Envol flotte au-dessus du plateau avec une ombre plus profonde');
-assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*animation:\s*rpg-envol-levite var\(--rpg-envol-duree, 7\.2s\) ease-in-out infinite;/s,
+assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*animation:\s*rpg-envol-levite var\(--rpg-envol-duree, 5\.1s\) ease-in-out infinite;/s,
   'la lévitation est une animation CSS : une animation d’API masquerait l’arrivée et les cinématiques de combat');
 assert.match(battlePage, /const dureeVol = \(entite\) => \(6\.8 \+ phaseVol\(entite\) \* 0\.8\)\.toFixed\(2\);/,
   'chaque créature reçoit sa propre durée de lévitation, tirée de son identifiant');

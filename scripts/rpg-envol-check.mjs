@@ -52,8 +52,8 @@ for (const [nom, cas] of [['envol', rendu.envol], ['parArme', rendu.parArme]]) {
     // battent jamais à l'unisson, sans décalage de départ (donc sans saut).
     const styleCarte = racine.getAttribute('style') ?? '';
     const duree = Number(/--rpg-envol-duree:(\d+\.\d+)s/.exec(styleCarte)?.[1]);
-    assert.ok(duree >= 6.8 && duree <= 7.6,
-      `${nom} : la durée de lévitation tient entre 6,8 et 7,6 s (reçu ${duree})`);
+    assert.ok(duree >= 4.8 && duree <= 5.5,
+      `${nom} : la durée de lévitation tient entre 4,8 et 5,5 s (reçu ${duree})`);
     durees.push(duree);
     // Le souffle passe sous les repères : il est monté avant le titre et les
     // statistiques (donc avant les icônes et les valeurs ATQ/DEF).
@@ -104,7 +104,7 @@ assert.doesNotMatch(duel, /const VOL_ENVOL/,
   'le catalogue d’images du vol a disparu : le mouvement vit dans la feuille');
 assert.doesNotMatch(duel, /iterations: Infinity,/,
   'aucune boucle sans fin ne passe plus par l’API');
-assert.match(duel, /const dureeVol = \(entite\) => \(6\.8 \+ phaseVol\(entite\) \* 0\.8\)\.toFixed\(2\);/,
+assert.match(duel, /const dureeVol = \(entite\) => \(4\.8 \+ phaseVol\(entite\) \* 0\.7\)\.toFixed\(2\);/,
   'chaque créature tire sa durée de l’empreinte de son identifiant (6,8 → 7,6 s)');
 assert.match(duel, /'--rpg-envol-duree': `\$\{dureeVol\(entite\)\}s`/,
   'la durée part sur la carte en variable CSS');
@@ -120,14 +120,14 @@ assert.ok(debutCss > 0, 'la feuille porte un bloc consacré à l’Envol');
 assert.ok(finCss > debutCss, 'le bloc de l’Envol précède les états de survol');
 const envolCss = battleCss.slice(debutCss, finCss);
 
-assert.match(envolCss, /\.rpg-card\.is-envol\s*\{[^}]*z-index:\s*2;[^}]*translate:\s*0 -6px;[^}]*rotate:\s*-0\.5deg;[^}]*scale:\s*1;[^}]*animation:\s*rpg-envol-levite var\(--rpg-envol-duree, 7\.2s\) ease-in-out infinite;/s,
+assert.match(envolCss, /\.rpg-card\.is-envol\s*\{[^}]*z-index:\s*2;[^}]*translate:\s*0 -14px;[^}]*rotate:\s*-0\.7deg;[^}]*scale:\s*1;[^}]*animation:\s*rpg-envol-levite var\(--rpg-envol-duree, 5\.1s\) ease-in-out infinite;/s,
   'au repos la carte est levée et inclinée, et la lévitation est une animation CSS');
-assert.match(envolCss, /\.rpg-card\.is-envol\s*\{[^}]*drop-shadow\(0 17px 11px rgba\(0, 0, 0, \.42\)\)/s,
+assert.match(envolCss, /\.rpg-card\.is-envol\s*\{[^}]*drop-shadow\(0 24px 16px rgba\(0, 0, 0, \.45\)\)/s,
   'son ombre s’éloigne : la hauteur se lit même immobile');
-assert.match(envolCss, /@keyframes rpg-envol-levite\s*\{\s*0%, 100% \{ translate: 0 -6px; rotate: -0\.5deg; scale: 1; \}/,
+assert.match(envolCss, /@keyframes rpg-envol-levite\s*\{\s*0%, 100% \{ translate: 0 -14px; rotate: -0\.7deg; scale: 1; \}/,
   'le cycle se referme sur le repos : une reprise après une cinématique ne saute pas');
-assert.match(envolCss, /50% \{ translate: 0\.4px -12\.5px; rotate: 0\.55deg; scale: 1\.012; \}/,
-  'la carte monte, dérive, grossit d’un pour cent et s’incline au sommet');
+assert.match(envolCss, /50% \{ translate: 0\.6px -23px; rotate: 0\.7deg; scale: 1\.015; \}/,
+  'la carte monte de neuf pixels, dérive, grossit et s’incline au sommet — le vol se lit');
 const imagesCles = envolCss.slice(envolCss.indexOf('@keyframes rpg-envol-levite'));
 assert.doesNotMatch(imagesCles.slice(0, imagesCles.indexOf('}')), /(top|left|width|height|transform|filter):/,
   'la lévitation n’anime que translate, rotate et scale — pas la mise en page ni transform');
@@ -178,7 +178,7 @@ assert.ok(battleCss.indexOf('.rpg-card.fx-enter {') > battleCss.indexOf('.rpg-ca
   'les cinématiques restent déclarées après la lévitation');
 
 // Le souffle et le silence en mouvement réduit.
-assert.match(envolCss, /\.rpg-card__envol-souffle\s*\{[^}]*animation:\s*rpg-envol-souffle 6\.5s ease-in-out var\(--rpg-envol-phase, 0s\) infinite;/s,
+assert.match(envolCss, /\.rpg-card__envol-souffle\s*\{[^}]*animation:\s*rpg-envol-souffle 5\.4s ease-in-out var\(--rpg-envol-phase, 0s\) infinite;/s,
   'le souffle traverse la face sur son propre cycle, décalé par carte');
 assert.match(envolCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-card\.is-envol\s*\{\s*animation:\s*none;\s*\}/,
   'en mouvement réduit, la carte reste levée mais immobile');
@@ -202,4 +202,4 @@ assert.match(volCss, /100%\s*\{[^}]*translate3d\(var\(--rpg-flight-dx\), var\(--
 assert.match(battleCss, /\.rpg-card-flight\.is-flying\s*\{\s*animation:\s*rpg-card-flight-to-table \.68s/,
   'la durée du vol ne change pas : le moteur libère la carte sur ce métronome');
 
-console.log('✓ Envol : la créature lévite en CSS (translate, rotate, scale — 6,8 à 7,6 s selon l’entité) sans jamais masquer l’arrivée en jeu, le bond d’attaque, le blocage ou le coup : ces cinématiques remplacent l’animation le temps de leur geste et la lévitation reprend sur son repos, sans saut ; le souffle traverse la face, et tout se tait en mouvement réduit ; la carte jouée décolle, bombe et se pose en 0,68 s');
+console.log('✓ Envol : la créature lévite en CSS (translate, rotate, scale — 4,8 à 5,5 s selon l’entité) sans jamais masquer l’arrivée en jeu, le bond d’attaque, le blocage ou le coup : ces cinématiques remplacent l’animation le temps de leur geste et la lévitation reprend sur son repos, sans saut ; le souffle traverse la face, et tout se tait en mouvement réduit ; la carte jouée décolle, bombe et se pose en 0,68 s');
