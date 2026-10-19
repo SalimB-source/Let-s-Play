@@ -40,6 +40,8 @@
     "check:rpg-evenements": "node --test tests/rpg-evenements.test.js",
     "check:rpg-souk-branche": "node scripts/rpg-souk-bourse-check.mjs",
     "check:rpg-souk-ui": "node scripts/rpg-souk-ui-check.mjs",
+    "check:rpg-booster-layout": "node scripts/rpg-booster-layout-check.mjs",
+    "preview:rpg-booster": "node scripts/rpg-booster-layout-check.mjs --preview",
     "check:rpg-souk": "npm run check:rpg-hasard && npm run check:rpg-credits && npm run check:rpg-quetes && npm run check:rpg-boosters && npm run check:rpg-evenements && npm run check:rpg-souk-branche && npm run check:rpg-souk-ui",
     "check:rpg-tutorial": "node --test tests/rpg-tutorial.test.js && npm run check:rpg-tutorial-ui",
     "check:rpg-tutorial-ui": "node scripts/rpg-tutorial-ui-check.mjs && node scripts/rpg-tutorial-flow-check.mjs",
