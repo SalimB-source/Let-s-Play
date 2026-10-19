@@ -1371,6 +1371,68 @@ assert.match(mobileCss, /\.rpg-card-stack \{\s*border-radius: 12px;\s*box-shadow
   'les ombres décalées disent qu’il reste des exemplaires sous la carte, comme pour les terrains');
 assert.doesNotMatch(mobileCss, /\.rpg-card-stack > \.rpg-card \{[^}]*box-shadow/,
   'l’ombre de pile reste sur le bloc : la carte garde ses halos d’état (prête, ciblée, bloqueur)');
+// Une créature équipée (ou une pile) est un item flex de la rangée. Elle doit se
+// rétrécir comme les cartes seules dès que la rangée se remplit — sinon, en
+// plein écran, elle restait à sa taille pleine et paraissait plus grande.
+assert.match(battleCss, /@media \(min-width: 621px\) \{\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.card-row > \.rpg-card-stack \{[^}]*width: auto;[^}]*min-width: 0;[^}]*flex: 0 1 auto;\s*\}/s,
+  'sur grand écran, la créature armée et la pile suivent la largeur de leur carte et rétrécissent avec la rangée');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-row > \.rpg-card-stack > \.rpg-card \{\s*max-width: 100%;\s*\}/,
+  'la carte d’une pile se cale sur la largeur du bloc : elle réduit avec lui au lieu de déborder');
+assert.doesNotMatch(battleCss, /\.rpg-card-stack--arme \{[\s\S]{0,80}?flex: 0 0 max-content/,
+  'plus de `flex-shrink: 0` sur la créature armée : elle ne reste plus plus grande que ses voisines en plein écran');
+// Une créature équipée porte le cadre d'acier de son arme : plus de carte
+// d'arme glissée derrière elle.
+assert.match(battlePage, /armeCadre \? armeCadreClass\(armeCadre\) : cardFrameClass\(carte\)/,
+  'la créature équipée prend le cadre d’acier de son arme à la place de son cadre d’élément');
+assert.match(battlePage, /armeCadre \? 'is-arme-equipee' : ''/,
+  'la face jouée annonce son équipement par une classe, lisible au doigt comme à la souris');
+assert.match(battlePage, /\.\.\.cardFrameStyle\(armeCadre \?\? carte\)/,
+  'la couleur de cadre de la carte devient celle de l’arme portée');
+assert.doesNotMatch(battlePage, /PileArmee|rpg-card-stack__arme/,
+  'la carte d’arme ne se glisse plus derrière la créature : plus de pile d’équipement dans le DOM');
+assert.doesNotMatch(battleCss, /\.rpg-card-stack__arme/,
+  'la plaque d’arme n’a plus de style : le bloc a été retiré');
+// Le filet de la créature équipée est un calque intérieur, pas une bordure :
+// une bordure entrerait dans la base de rétrécissement de l’item flex et la
+// carte resterait plus large que ses voisines une fois la rangée remplie.
+assert.match(battleCss, /\.rpg-card\.is-arme-equipee \{\s*border: 0 !important;\s*background-image: none !important;\s*\}/,
+  'la face d’une créature équipée ne porte ni bordure ni fond de cadre : tout l’anneau est peint dans un calque');
+assert.match(battleCss, /\.rpg-card\.is-arme-equipee::before \{[^}]*mask-image: var\(--rpg-arme-ciselle\);[^}]*mask-size: 100% 100%;[^}]*\}/s,
+  'le cadre d’acier de l’arme est peint dans un calque découpé par le contour ciselé, sans toucher à la taille de la carte');
+// Le bord intérieur est ciselé : le masque est un SVG étiré avec la carte
+// (rectangle arrondi à l'extérieur, contour irrégulier à l'intérieur). Comme
+// les autres motifs de cadre, l'URI est décodée et relue par un analyseur XML.
+const ciselle = battleCss.match(/--rpg-arme-ciselle:\s*url\("([^"]+)"\)/);
+assert.ok(ciselle, 'le cadre de la créature équipée porte son contour ciselé');
+assert.match(ciselle[1], /^data:image\/svg\+xml,%3Csvg /,
+  'le contour ciselé est un SVG en ligne');
+const ciselleDom = new JSDOM('<!doctype html><body></body>');
+const ciselleDoc = new ciselleDom.window.DOMParser().parseFromString(
+  decodeURIComponent(ciselle[1].replace(/^data:image\/svg\+xml,/, '')), 'image/svg+xml');
+assert.equal(ciselleDoc.querySelector('parsererror'), null,
+  'le SVG du contour ciselé est bien formé une fois décodé');
+const cisellePath = ciselleDoc.querySelector('path');
+assert.ok(cisellePath, 'le contour ciselé est un seul tracé');
+assert.equal(cisellePath.getAttribute('fill-rule'), 'evenodd',
+  'le tracé du contour ciselé perce le centre (règle even-odd) : il découpe un anneau');
+assert.equal(ciselleDoc.querySelector('svg').getAttribute('preserveAspectRatio'), 'none',
+  'le contour ciselé est étiré avec la carte : ses facettes suivent sa taille');
+const ciselleBords = cisellePath.getAttribute('d').split('M').length - 2;
+assert.ok(ciselleBords >= 1, 'le tracé porte bien un contour intérieur distinct du rectangle arrondi');
+assert.ok((cisellePath.getAttribute('d').match(/L /g) ?? []).length >= 40,
+  'le bord intérieur est fait de nombreuses facettes, pas d’un trait lisse');
+ciselleDom.window.close();
+assert.doesNotMatch(battleCss, /\.rpg-card\.is-arme-equipee \{[^}]*border: var\(--rpg-arme-cadre/,
+  'la créature équipée ne prend pas la bordure des cartes d’arme : elle garderait la largeur de ses voisines');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-row \.rpg-card\.is-arme-equipee \{\s*--rpg-arme-cadre: var\(--rpg-arme-cadre-fin, 3px\);\s*\}/,
+  'au doigt, la créature équipée garde un filet d’acier fin — seule face de jeu à porter un cadre');
+// Le mulligan et le catalogue sont des faces du grand gabarit : le filet
+// d'une arme y suit l'épaisseur de sa propre face, pas la plaque de la main.
+assert.match(battleCss, /\.rpg-mulligan__card\[class\*="rpg-card--frame-arme"\],\s*\.rpg-card-catalogue__art\[class\*="rpg-card--frame-arme"\] \{\s*--rpg-arme-cadre: var\(--rpg-card-border-large, 6px\);\s*\}/s,
+  'au mulligan et au catalogue, le cadre d’une arme reprend l’épaisseur du grand gabarit');
+assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\[class\*="rpg-card--frame-arme"\][^{]*\{[^}]*border:\s*var\(--rpg-arme-cadre-fin/,
+  'le mulligan ne garde pas le filet fin des petites faces : sa bordure serait deux fois trop mince');
+
 assert.match(battlePage, /className="rpg-card-stack"[\s\S]{0,120}?style=\{cardFrameStyle\(cardById\(pile\.carteId\)\)\}/,
   'la pile reprend la couleur de cadre de sa carte pour ses ombres décalées');
 

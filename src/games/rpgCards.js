@@ -278,6 +278,23 @@ export const CARD_KIND_LABELS = {
 };
 
 /**
+ * Le cadre d'acier d'une arme, porté par la créature qu'elle équipe.
+ *
+ * Depuis que la carte d'arme ne se glisse plus derrière son porteur, c'est
+ * l'anneau de la créature qui dit l'équipement : elle reçoit la matière des
+ * armes (`rpg-card--frame-arme`) teintée par l'élément de son arme, comme la
+ * carte d'arme elle-même. On ne reprend pas `cardFrameClass`, qui ajoute la
+ * variante brillante des mythiques : le porteur n'est pas mythique, son cadre
+ * ne doit pas se mettre à respirer. Rend `''` pour une carte qui n'est pas
+ * une arme.
+ */
+export function armeCadreClass(carte) {
+  if (!carteEstArme(carte)) return '';
+  const couleur = cardColors(carte)[0];
+  return `rpg-card--frame-arme${couleur ? ` rpg-card--frame-arme-${couleur}` : ''}`;
+}
+
+/**
  * Les créatures du duel — façon Magic : un coût en sable, ⚔ l'attaque,
  * 🛡 la défense, et parfois une capacité À L'ARRIVÉE ou QUAND ELLES
  * MEURENT. Set jouable : créatures, héros, terrains et sorts composent les decks.
@@ -838,6 +855,96 @@ export const RPG_JETON_CARDS = [
   },
 ];
 
+/**
+ * Les Tours de défense sont de vraies créatures de collection : elles se
+ * piochent, se jouent et figurent dans le catalogue. Elles ne sont pas des
+ * jetons — aucune carte ne les crée directement — malgré leur ancienne place
+ * à côté des jetons.
+ */
+export const RPG_TOUR_CARDS = [
+  {
+    id: 'tour-de-braise',
+    name: 'Tour de Braise',
+    element: 'braise',
+    cost: 3,
+    atk: 0,
+    def: 5,
+    rarity: 'commune',
+    typeLine: 'Créature — Tour de défense',
+    art: 'tour-de-braise',
+    doitBloquer: true,
+    prioriteAttaqueRapide: true,
+    arrivee: { type: 'degats', amount: 1, cible: 'creature' },
+    text: 'Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : infligez 1 dégât à une créature adverse.',
+    flavor: 'Elle brûle ceux qui osent s’en approcher.',
+  },
+  {
+    id: 'tour-des-flots',
+    name: 'Tour des Flots',
+    element: 'eau',
+    cost: 3,
+    atk: 0,
+    def: 5,
+    rarity: 'commune',
+    typeLine: 'Créature — Tour de défense',
+    art: 'tour-des-flots',
+    doitBloquer: true,
+    prioriteAttaqueRapide: true,
+    arrivee: { type: 'soin', amount: 2 },
+    text: 'Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : vous récupérez 2 points de vie.',
+    flavor: 'Les vagues se brisent contre ses fondations sans fin.',
+  },
+  {
+    id: 'tour-de-sable',
+    name: 'Tour de Sable',
+    element: 'sable',
+    cost: 4,
+    atk: 1,
+    def: 6,
+    rarity: 'inhabituelle',
+    typeLine: 'Créature — Tour de défense',
+    art: 'tour-de-sable',
+    doitBloquer: true,
+    prioriteAttaqueRapide: true,
+    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
+    text: 'Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier de 1.',
+    flavor: 'Le désert lui-même se dresse en rempart.',
+  },
+  {
+    id: 'tour-de-neige',
+    name: 'Tour de Neige',
+    element: 'neige',
+    cost: 4,
+    atk: 0,
+    def: 6,
+    rarity: 'rare',
+    typeLine: 'Créature — Tour de défense',
+    art: 'tour-de-neige',
+    doitBloquer: true,
+    prioriteAttaqueRapide: true,
+    arrivee: { type: 'gel', cible: 'creature' },
+    text: 'Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : une créature adverse ciblée est gelée et ne peut pas attaquer ou bloquer jusqu’à la fin du prochain tour.',
+    flavor: 'Le froid l’enveloppe, et le temps s’arrête.',
+  },
+  {
+    id: 'tour-des-tenebres',
+    name: 'Tour des Ténèbres',
+    element: 'tenebres',
+    set: 'balance-des-heures',
+    cost: 5,
+    atk: 0,
+    def: 7,
+    rarity: 'mythique',
+    typeLine: 'Créature — Tour de défense',
+    art: 'tour-des-tenebres',
+    doitBloquer: true,
+    prioriteAttaqueRapide: true,
+    arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures', etSorcier: false },
+    text: 'Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : infligez 2 dégâts à toutes les créatures adverses.',
+    flavor: 'L’ombre qu’elle projette étouffe toute lumière.',
+  },
+];
+
 /** Retrouve une créature-jeton par son identifiant. */
 export function jetonById(id) {
   return RPG_JETON_CARDS.find((card) => card.id === id) ?? null;
@@ -845,6 +952,7 @@ export function jetonById(id) {
 
 export function creatureById(id) {
   return RPG_CREATURE_CARDS.find((card) => card.id === id)
+    ?? RPG_TOUR_CARDS.find((card) => card.id === id)
     ?? RPG_JETON_CARDS.find((card) => card.id === id)
     ?? null;
 }
@@ -1931,7 +2039,7 @@ export function armeById(id) {
 
 /** Le catalogue complet du duel, avec un type unifié pour les filtres d’interface. */
 export const RPG_DUEL_CARDS = [
-  ...RPG_CREATURE_CARDS.map((card) => ({ ...card, kind: 'creature' })),
+  ...[...RPG_CREATURE_CARDS, ...RPG_TOUR_CARDS].map((card) => ({ ...card, kind: 'creature' })),
   ...RPG_HERO_CARDS,
   ...RPG_TERRAIN_CARDS,
   ...RPG_MAGIE_CARDS,
@@ -2128,6 +2236,9 @@ export const RPG_DECK_MAREE_BASE = composerDeck(RPG_RECETTES_DECKS['maree-des-ab
 /** Serment des Neuf Hivers — Furie, Résonance et une figure mythique du Nord. */
 export const RPG_DECK_NEIGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-des-neuf-hivers'], CATALOGUE_DU_COMPOSEUR);
 
+/** Serment du Soleil rouge — Honneur, Résonance samouraï et le Daimyō. */
+export const RPG_DECK_SOLEIL_ROUGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-du-soleil-rouge'], CATALOGUE_DU_COMPOSEUR);
+
 /** La Balance des Heures — Prix, Tribut et morts qui déclenchent, avec La Dévoreuse comme seule mythique. */
 export const RPG_DECK_TENEBRES_BASE = composerDeck(RPG_RECETTES_DECKS['balance-des-heures'], CATALOGUE_DU_COMPOSEUR);
 
@@ -2210,7 +2321,7 @@ export const RPG_DECKS = [
     archetype: 'Braise · samouraïs et yōkai',
     affrontement: 'Affrontez le Serment du Soleil rouge.',
     description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Samouraï du torii, le Tengu, le Kenshi et Kagutsuchi font résonner les Samouraïs, et le Daimyō lève des jetons qui grandissent en attaquant. Kagutsuchi est l’unique mythique du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
-    cardIds: composerDeck(RPG_RECETTES_DECKS['serment-du-soleil-rouge'], CATALOGUE_DU_COMPOSEUR),
+    cardIds: RPG_DECK_SOLEIL_ROUGE_BASE,
   },
   {
     id: 'balance-des-heures',

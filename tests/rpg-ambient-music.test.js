@@ -20,9 +20,9 @@ import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
 import { RPG_PLATEAU_MUSIC_FILES, RPG_PLATEAUX_MUSICAUX } from '../src/games/rpgPlateauMusic.js';
 import { plateauParId } from '../src/games/rpgPlateaux.js';
 
-test('cinq ambiances, une par tour du mode Histoire', () => {
+test('ambiances, une par tour du mode Histoire', () => {
   const tourIds = RPG_STORY_TOURS.map((t) => t.id);
-  assert.equal(tourIds.length, 5, 'le mode Histoire doit compter cinq tours');
+  assert.equal(tourIds.length, RPG_STORY_TOURS.length, 'chaque tour a son ambiance');
   for (const id of tourIds) {
     assert.ok(RPG_AMBIENT_BPM[id], `BPM manquant pour la tour : ${id}`);
     assert.ok(RPG_AMBIENT_THEMES[id], `thème manquant pour la tour : ${id}`);
@@ -33,10 +33,10 @@ test('cinq ambiances, une par tour du mode Histoire', () => {
   }
 });
 
-test('supportedTours liste bien les cinq tours', () => {
+test('supportedTours liste bien toutes les tours', () => {
   const supported = RpgAmbientMusic.supportedTours();
   assert.ok(Array.isArray(supported));
-  assert.equal(supported.length, 5);
+  assert.equal(supported.length, RPG_STORY_TOURS.length);
   for (const { id } of RPG_STORY_TOURS) assert.ok(supported.includes(id), `tour absente : ${id}`);
 });
 
@@ -75,6 +75,8 @@ test('noms des ambiances reflètent bien chaque tour', () => {
   assert.match(RPG_AMBIENT_THEMES['tour-des-sables'].nom, /zénith|portail|sable/i);
   assert.match(RPG_AMBIENT_THEMES['tour-des-abysses'].nom, /cloche|fond|abîme/i);
   assert.match(RPG_AMBIENT_THEMES['tour-du-fjord'].nom, /hiver|fjord|glace|neige/i);
+  assert.match(RPG_AMBIENT_THEMES['tour-du-soleil-rouge'].nom, /soleil|katana|forge|samouraï|acier/i);
+  assert.match(RPG_AMBIENT_THEMES['tour-de-la-necropole'].nom, /nécropole|jugement|pesée|ombre|balance/i);
 });
 
 // La musique existe mais ne se fait entendre que si la page la joue : ce

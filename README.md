@@ -7645,11 +7645,11 @@ elles ne se touchent plus. Sur un 844 × 390, il reste 10,7 px d'air.
 **Les vignettes d'arme s'effacent au doigt.** `.rpg-card__weapons` empile des
 images de **22 × 28 px** à `right: 4px; bottom: 28px` : sur une face de 58 px de
 haut, ces vignettes occupaient 28 → 56 px du bas, donc le milieu de
-l'illustration **et** les repères du haut — et doublonnaient l'arme déjà glissée
-sous la créature (`.rpg-card-stack--arme`). Au doigt, la pile, la pastille du
-bonus et l'aperçu disent l'équipement ; la face reste entière. À la souris, les
-vignettes restent : sur une carte de 183 px de haut, elles ne croisent aucun
-repère.
+l'illustration **et** les repères du haut — et doublonnaient l'équipement déjà
+dit par le **cadre d'acier** de la créature (`.is-arme-equipee`). Au doigt, le
+cadre, la pastille du bonus et l'aperçu disent l'équipement ; la face reste
+entière. À la souris, les vignettes restent : sur une carte de 183 px de haut,
+elles ne croisent aucun repère.
 
 **Sous 45 px de large, la pastille s'efface.** Une face ne porte pas trois
 bandes : deux repères de 22 px en haut, le pied d'environ 16 px en bas, la

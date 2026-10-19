@@ -9,7 +9,8 @@
  *
  * Une créature équipée d'une arme ne se regroupe avec personne : son arme
  * fait partie de son état, deux exemplaires ne se confondent donc pas. Elle
- * forme sa propre pile, l'arme posée sous elle (voir `armesPortees`).
+ * forme sa propre pile d'exemplaires ; l'équipement, lui, se lit sur son
+ * cadre d'acier (voir `armesPortees`).
  */
 
 /**

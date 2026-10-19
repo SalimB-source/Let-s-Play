@@ -5866,6 +5866,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Améliorations des boutons du menu */
 .rpg-menu-button__icon { font-size: 18px; flex: none; }
+.rpg-menu-button__thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .32);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+  background: #090e16;
+}
+.rpg-menu-button__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .rpg-menu-button__text { display: grid; gap: 2px; text-align: left; }
 .rpg-menu-button__text strong { font-size: 13px; letter-spacing: .08em; }
 .rpg-menu-button__text small { text-transform: none; letter-spacing: 0; opacity: .75; font-weight: 400; font-family: Georgia, serif; font-size: 10px; }
@@ -8529,12 +8545,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background-color: transparent !important;
 }
 
-/* La plaque d'arme glissée derrière une créature en pile : même nature de
-   filet (la couleur de l'élément), donc même traitement. */
-.rpg-card-stack__arme {
-  border-width: 0 !important;
-}
-
 /* L'ombre décalée des piles était peinte avec `--rpg-frame-color` : c'est le
    cadre en double, un cran plus loin de la carte (mobile.css le dit déjà :
    « la couleur du cadre, au bord de la face : c'était le cadre, en double »).
@@ -8616,6 +8626,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border: var(--rpg-arme-cadre-apercu, 10px) solid transparent !important;
 }
 
+/* Le mulligan et le catalogue sont les deux faces du **grand gabarit** : leur
+   cadre vaut `--rpg-card-border-large` (≈ 9,6 à 12,8 px), pas la plaque de
+   5 px des cartes tenues en main. L'anneau d'une arme y suivait pourtant la
+   valeur de la main : sur une face de 180 à 270 px, son filet d'acier était
+   deux fois plus fin que celui des créatures posées à côté, et l'arme — la
+   seule carte à porter un anneau — paraissait ne pas en avoir. Il reprend
+   donc l'épaisseur de sa propre face : une seule épaisseur par gabarit,
+   arme ou non, comme partout ailleurs. La couleur et le guilloché ne
+   bougent pas. */
+.rpg-mulligan__card[class*="rpg-card--frame-arme"],
+.rpg-card-catalogue__art[class*="rpg-card--frame-arme"] {
+  --rpg-arme-cadre: var(--rpg-card-border-large, 6px);
+}
+
 /* Les petites faces gardent proportionnellement le même filet : 2 px sur
    43–96 px de large, 3 px y mangeraient le tiers de l'image. */
 .rpg-terrain[class*="rpg-card--frame-arme"],
@@ -8631,6 +8655,69 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100% !important;
   background-repeat: repeat, no-repeat !important;
   background-position: 0 0, 0 0 !important;
+}
+
+/* ── La créature équipée porte le cadre d'acier de son arme ─────────────────
+   C'est l'anneau qui dit l'équipement : la carte d'arme ne se glisse plus
+   derrière son porteur (plus de plaque, plus de pile d'équipement dans le
+   DOM), et la face jouée reprend la matière des cartes d'arme — l'acier gris
+   guilloché, exactement celui que la boutique pose sur les cartes d'arme
+   (`armeCadreClass`, `rpgCards.js`).
+
+   Le filet n'est **pas** une bordure, contrairement à la carte d'arme : une
+   bordure entre dans la base de rétrécissement de l'item flex (Chromium
+   compte le contenu, bordure déduite), si bien qu'une carte de 136 px
+   bordée de 5 px gardait deux pixels de plus que ses voisines une fois la
+   rangée remplie — la créature équipée paraissait encore plus grande, en
+   plus petit. Le filet est donc un **calque intérieur** (`::before`), et la
+   carte garde exactement la taille de ses voisines.
+
+   **Le bord intérieur est ciselé.** Le calque est découpé par un masque SVG
+   (`--rpg-arme-ciselle`) : un rectangle arrondi à l'extérieur, un contour
+   irrégulier à l'intérieur, fait de facettes et de quelques entailles — la
+   taille de la carte, comme un cadre de métal repoussé à la main. Le masque
+   est étiré avec la carte (`preserveAspectRatio='none'`, gabarit 4:5) : ses
+   facettes suivent donc la taille de la face. Le filet fait ≈ 4,5 % de la
+   largeur de la carte (5 px sur une carte de 112 px, 3 px sur une de 64 px
+   au doigt) — l'épaisseur commune des cadres du jeu.
+
+   Le reste de la règle des armes ne s'applique plus à la face : la bordure
+   et la matière de fond sont retirées, seul le calque porte l'acier et son
+   guilloché (`--rpg-frame-motif`, posé par la classe `rpg-card--frame-arme`
+   que la carte porte aussi).
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-card.is-arme-equipee {
+  border: 0 !important;
+  background-image: none !important;
+}
+.rpg-card.is-arme-equipee {
+  /* Le contour ciselé du cadre d'arme : rectangle arrondi moins un contour
+     irrégulier, dessiné dans un gabarit 4:5 et étiré avec la carte. */
+  --rpg-arme-ciselle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='250' viewBox='0 0 200 250' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M 14 0 H 186 Q 200 0 200 14 V 236 Q 200 250 186 250 H 14 Q 0 250 0 236 V 14 Q 0 0 14 0 Z M 9 10.8 L 21.1 9.5 L 33.3 9.3 L 45.4 8.2 L 57.5 11.7 L 69.7 8.8 L 81.8 8.3 L 93.9 7.6 L 106.1 9.4 L 118.2 7.1 L 130.3 7.7 L 142.5 11.3 L 154.6 8 L 166.7 5.5 L 178.9 7.3 L 191 10.7 L 190.5 21.9 L 191 34.8 L 193.5 47.7 L 189.9 60.6 L 194.1 73.4 L 194.1 86.3 L 192.4 99.2 L 188.3 112.1 L 191.7 125 L 192.3 137.9 L 191 150.8 L 191 163.7 L 193.2 176.6 L 192.7 189.4 L 189.3 202.3 L 190.4 215.2 L 193.9 228.1 L 192.6 241 L 178.9 240.5 L 166.7 241.3 L 154.6 245.1 L 142.5 238.7 L 130.3 241.2 L 118.2 242.1 L 106.1 244.2 L 93.9 238.3 L 81.8 241.7 L 69.7 243.7 L 57.5 244 L 45.4 237.9 L 33.3 239.5 L 21.1 242.7 L 9 239.3 L 9.5 228.1 L 9 215.2 L 5.4 202.3 L 9.2 189.4 L 5.6 176.6 L 8.3 163.7 L 10.6 150.8 L 11.7 137.9 L 10.5 125 L 7.9 112.1 L 7.4 99.2 L 10.7 86.3 L 8.1 73.4 L 7.3 60.6 L 8.7 47.7 L 7 34.8 L 8.1 21.9 L 7.4 9 Z'/%3E%3C/svg%3E");
+}
+.rpg-card.is-arme-equipee::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  background-image:
+    var(--rpg-frame-motif, none),
+    var(--rpg-arme-metal, linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd));
+  background-origin: border-box, border-box;
+  background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100%;
+  background-repeat: repeat, no-repeat;
+  pointer-events: none;
+  /* Le contour ciselé. Une seule couche : le masque découpe l'anneau et son
+     bord intérieur d'un seul geste (voir la description ci-dessus). */
+  -webkit-mask-image: var(--rpg-arme-ciselle);
+  mask-image: var(--rpg-arme-ciselle);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -9233,16 +9320,24 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card__brume-nappe { animation: none; }
 }
 
-/* Une créature équipée est enveloppée par `.rpg-card-stack--arme` pour afficher
-   l'arme glissée dessous. Sur grand écran, ce wrapper est lui-même un item flex
-   de la rangée : laisser sa largeur `auto` peut le faire dimensionner à partir
-   du contenu débordant de la plaque d'arme, et agrandir la créature en plein
-   écran. Le wrapper suit donc la largeur intrinsèque de la carte et ne se
-   rétrécit pas ; la plaque, positionnée en absolu, garde son débordement visuel. */
+/* Une créature équipée n'est plus enveloppée dans un bloc : elle reçoit le
+   cadre d'acier de son arme (`armeCadreClass`, `rpgCards.js`) et reste une
+   carte de la rangée comme les autres. C'est ce qui a supprimé d'un coup les
+   deux défauts de l'ancienne plaque glissée dessous : un wrapper dont la
+   largeur venait du contenu, et un `flex-shrink: 0` qui l'empêchait de
+   rétrécir avec ses voisines quand la rangée se remplissait (la créature
+   armée paraissait alors plus grande que les autres, plein écran). */
+
+/* Les piles d'exemplaires identiques restent des blocs de la rangée : leur
+   largeur ne vient pas de leur contenu et elles rétrécissent comme une carte. */
 @media (min-width: 621px) {
-  .rpg-battle:not(.rpg-battle--touch) .card-row > .rpg-card-stack--arme {
-    width: max-content;
-    flex: 0 0 max-content;
+  .rpg-battle:not(.rpg-battle--touch) .card-row > .rpg-card-stack {
+    width: auto;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  .rpg-battle:not(.rpg-battle--touch) .card-row > .rpg-card-stack > .rpg-card {
+    max-width: 100%;
   }
 }
 /* Les annonces automatiques restent lisibles au doigt sans voler les gestes. */

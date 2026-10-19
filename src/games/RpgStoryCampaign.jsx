@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { etapesRecitHistoire, resumeActesHistoire, resumeRecitHistoire } from './rpgStoryFlow.js';
-import { RPG_STORY_REGISTRES, acteHistoire, registresDebloques } from './rpgStoryScenes.js';
+import { RPG_STORY_CAMPAIGN_MINIATURE, RPG_STORY_REGISTRES, acteHistoire, registresDebloques } from './rpgStoryScenes.js';
 import { StoryPortrait, StoryStorageNotice } from './RpgStoryScene.jsx';
 
 /** Entrée narrative, sans remplacer la galerie des tours libres. */
@@ -19,7 +19,6 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
       setConfirmer(action);
     } else actions[action]?.();
   };
-  const tourImage = acteAffiche?.tourId ?? 'tour-des-listes';
   const figuresActe = acteAffiche.id === 'acte-2'
     ? ['salem', 'yamina', 'tarek']
     : acteAffiche.id === 'acte-3'
@@ -31,10 +30,17 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
           : ['salem', 'yamina', 'feriel'];
   return (
     <section className="rpg-campaign" aria-label="Campagne — La Dernière Liste">
-      <div className="rpg-campaign__art" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}sablier-tours/${tourImage}.jpg")` }} aria-hidden="true" />
+      <div className="rpg-campaign__art" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}${RPG_STORY_CAMPAIGN_MINIATURE}")` }} aria-hidden="true" />
       <div className="rpg-campaign__copy">
-        <span className="rpg-narrative__eyebrow">CAMPAGNE ILLUSTRÉE <span aria-hidden="true">/</span> {acteAffiche.id === 'acte-1' ? 'ÉPISODE 01' : `ACTE ${acteAffiche.romain} — ${acteAffiche.titre.toUpperCase()}`}</span>
-        <h2>La Dernière<br /><em>Liste.</em></h2>
+        <div className="rpg-campaign__header-row">
+          <span className="rpg-campaign__miniature" aria-hidden="true">
+            <img src={`${import.meta.env.BASE_URL}${RPG_STORY_CAMPAIGN_MINIATURE}`} alt="Miniature du Mode Histoire" />
+          </span>
+          <div className="rpg-campaign__header-text">
+            <span className="rpg-narrative__eyebrow">CAMPAGNE ILLUSTRÉE <span aria-hidden="true">/</span> {acteAffiche.id === 'acte-1' ? 'ÉPISODE 01' : `ACTE ${acteAffiche.romain} — ${acteAffiche.titre.toUpperCase()}`}</span>
+            <h2>La Dernière<br /><em>Liste.</em></h2>
+          </div>
+        </div>
         <p className="rpg-campaign__pitch">Ils sont douze. La Liste n’en compte aucun.</p>
         <p className="rpg-campaign__description">{acteAffiche.id === 'acte-1'
           ? 'Salem a sauvé des habitants que la Chambre a déjà effacés. Remontez jusqu’au Grand Horloger. Faites compter leurs noms.'

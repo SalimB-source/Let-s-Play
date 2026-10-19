@@ -1,4 +1,4 @@
-import { convertirDeckSansTerrain, carteJouableSansTerrain } from './rpgCards.js';
+import { convertirDeckSansTerrain } from './rpgCards.js';
 /**
  * Le Sablier — duel de cartes tactique.
  * Les tours gardent leur liberté d'une partie de cartes à collectionner :
@@ -172,6 +172,7 @@ import {
 } from './rpgDuel.js';
 import {
   cardRarityInfo,
+  armeCadreClass,
   cardFrameClass,
   cardMotifClass,
   cardFrameColor,
@@ -971,23 +972,6 @@ function CardStatIcon({ type }) {
 /** Face full art : couleur, coût, type et statistiques des créatures. */
 const BLOCKER_DRAG_TYPE = 'application/x-bab-el-blocker';
 
-/** Une créature équipée se présente comme une pile : son arme glisse sous elle,
- *  décalée vers le haut et la droite, comme une carte posée dessous. La pile
- *  ne change rien au jeu — la créature reste l'unique cible et la seule carte
- *  qui agit ; seul le bord de l'arme dit qu'elle est équipée. */
-function PileArmee({ armes = [], caseEssai = null, children }) {
-  const arme = cardById(armes[0]);
-  if (!arme) return children;
-  return (
-    <span className="rpg-card-stack rpg-card-stack--arme" style={caseEssai ? { '--case-essai': caseEssai } : undefined}>
-      <span className="rpg-card-stack__arme" aria-hidden="true" style={cardFrameStyle(arme)}>
-        <img src={cardArt(arme)} alt="" />
-      </span>
-      {children}
-    </span>
-  );
-}
-
 /** Rapidité : un arc électrique bleu court **sur le bord** de la carte.
  *  Le trait est un rectangle déformé par une turbulence dont la graine change
  *  par à-coups — l'arc ne se fige jamais. Deux passes : un halo bleu épais
@@ -1462,6 +1446,9 @@ export function TableCard({
   const nom = entite.name;
   const armeCarte = entite.arme ? cardById(entite.arme.carteId) : null;
   const armes = armesPortees(entite);
+  // L'arme qui donne son cadre à la créature : la première portée, comme la
+  // plaque d'arme d'autrefois, et `entite.arme` en secours.
+  const armeCadre = armes.map((id) => cardById(id)).find(Boolean) ?? armeCarte;
   const effetsArmesEquipees = cartesDesIds(armes).map(effetsAccordesParArme).filter(Boolean);
   const protectionActive = entite.protection?.toursRestants > 0;
   const protectionLabel = protectionActive
@@ -1536,7 +1523,10 @@ export function TableCard({
       className={[
         `rpg-card rpg-card--img rpg-card--elem-${carte?.element ?? 'sable'} rpg-card--type-${cardFrameType(carte)}`,
         cote === 'ennemi' ? 'rpg-card--ennemi' : 'rpg-card--equipe',
-        cardFrameClass(carte),
+        // Une créature équipée porte le cadre d'acier de son arme : c'est lui
+        // qui dit l'équipement, la carte d'arme ne se glisse plus dessous.
+        armeCadre ? armeCadreClass(armeCadre) : cardFrameClass(carte),
+        armeCadre ? 'is-arme-equipee' : '',
         cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         entite.envol ? 'is-envol' : '',
@@ -1578,7 +1568,8 @@ export function TableCard({
          (attaquant déclaré, créature engagée) la font pencher, et ils sont
          écrits dans la feuille (`data-combat-tilted`). */
       style={{
-        ...cardFrameStyle(carte),
+        // La créature équipée porte le cadre ciselé de son arme.
+        ...cardFrameStyle(armeCadre ?? carte),
         ...(caseEssai ? { '--case-essai': caseEssai } : {}),
         // Chaque créature avec Envol a sa propre durée de lévitation : la
         // feuille anime `translate`, `rotate` et `scale`, et cette durée lui
@@ -2561,16 +2552,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const [openDeckId, setOpenDeckId] = useState(null);
   const [deckCouleur, setDeckCouleur] = useState('toutes');
   const [confirmation, setConfirmation] = useState(null);
-  // Mode Histoire : la galerie des tours d'abord (`null`), la page d'une tour
-  // — ses étages dévoilés — ensuite. Le clic sur une maquette ouvre la tour.
-  const [tourOuverteId, setTourOuverteId] = useState(null);
-  // Mode Tours : galerie puis détail d'une tour sélectionnée.
+  // Mode Tours (Jeu Solo) : galerie puis détail d'une tour sélectionnée.
   const [tourLibreOuverteId, setTourLibreOuverteId] = useState(null);
   const [confirmerResetHistoire, setConfirmerResetHistoire] = useState(false);
   const [erreurResetHistoire, setErreurResetHistoire] = useState(false);
   const storyRef = useRef(null);
   const libreRef = useRef(null);
-  const derniereTourRef = useRef(null);
   const derniereTourLibreRef = useRef(null);
   // La suppression d'un deck maison se confirme en deux temps (jamais de `window.confirm`).
   const [suppressionEnCours, setSuppressionEnCours] = useState(false);
@@ -2610,16 +2597,15 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const openValidation = openDeck
     ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection) : rpgValiderDeck(openDeck.cardIds))
     : { ok: false, raisons: ['Aucun deck ouvert.'] };
+  // Le Catalogue est une encyclopédie : il montre vraiment toutes les cartes,
+  // y compris les terrains et les cartes archivées hors du format de deck.
+  // L’atelier, lui, conserve son filtre de jouabilité.
   const cartesCatalogue = RPG_DUEL_CARDS.filter((carte) => {
-    if (!carteJouableSansTerrain(carte)) return false;
     const colors = cardColors(carte);
     const couleurCorrespond = catalogueCouleur === 'toutes'
       || (catalogueCouleur === 'hybride' ? colors.length > 1 : colors.includes(catalogueCouleur));
     return couleurCorrespond && (catalogueType === 'tous' || carte.kind === catalogueType);
   });
-  // La tour ouverte dans le mode Histoire (page d'étages), ou null (galerie).
-  const tourOuverte = tourOuverteId ? tourHistoireParId(tourOuverteId) : null;
-  const resumeTourOuverte = tourOuverte ? resumeTourHistoire(tourOuverte.id, progressionHistoire) : null;
   // Voile noir volontairement léger : le keyart de Bab El reste lisible derrière
   // les menus, le côté gauche garde assez d'ombre pour porter les textes.
   const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .80) 0%, rgba(8, 7, 13, .58) 48%, rgba(8, 7, 13, .40) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
@@ -2632,10 +2618,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [partieRapideOuverte]);
-  // Quitter l'onglet Histoire referme la tour ouverte : le prochain passage sur
-  // l'onglet retrouve la galerie des maquettes, jamais les étages d'emblée.
-  useEffect(() => { if (screen !== 'histoire') setTourOuverteId(null); }, [screen]);
-  // Quitter l'onglet Tours referme la tour libre ouverte : la galerie réapparaît.
+  // Quitter l'onglet Tours / Jeu Solo referme la tour libre ouverte : la galerie réapparaît.
   useEffect(() => { if (screen !== 'tours') setTourLibreOuverteId(null); }, [screen]);
   // Scroll vers la tour libre ouverte comme pour le mode Histoire.
   useLayoutEffect(() => {
@@ -2646,27 +2629,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       detail?.scrollIntoView?.({ behavior: 'auto', block: 'start' });
       detail?.querySelector('.rpg-story__back')?.focus?.({ preventScroll: true });
     } else if (derniereTourLibreRef.current) {
-      const carte = libreRef.current?.querySelector(`[data-tour-libre="${derniereTourLibreRef.current}"]`);
+      const carte = libreRef.current?.querySelector(`[data-tour="${derniereTourLibreRef.current}"]`) || libreRef.current?.querySelector(`[data-tour-libre="${derniereTourLibreRef.current}"]`);
       carte?.focus?.({ preventScroll: true });
       carte?.scrollIntoView?.({ behavior: 'auto', block: 'nearest' });
     }
   }, [screen, tourLibreOuverteId]);
-  // Une tour choisie en bas de la galerie doit s'ouvrir depuis son sommet,
-  // pas conserver le défilement de la cinquième carte et couper sa maquette.
-  // Au retour, clavier et défilement retrouvent la carte que l'on consultait.
-  useLayoutEffect(() => {
-    if (screen !== 'histoire') { derniereTourRef.current = null; return; }
-    if (tourOuverteId) {
-      derniereTourRef.current = tourOuverteId;
-      const detail = storyRef.current?.querySelector('.rpg-story__detail');
-      detail?.scrollIntoView?.({ behavior: 'auto', block: 'start' });
-      detail?.querySelector('.rpg-story__back')?.focus?.({ preventScroll: true });
-    } else if (derniereTourRef.current) {
-      const carte = storyRef.current?.querySelector(`[data-tour="${derniereTourRef.current}"]`);
-      carte?.focus?.({ preventScroll: true });
-      carte?.scrollIntoView?.({ behavior: 'auto', block: 'nearest' });
-    }
-  }, [screen, tourOuverteId]);
   // Le rail « Vos decks » s'efface dès qu'un deck s'ouvre : le boîtier cliqué
   // disparaît avec lui et le focus se perdrait. On le repose sur la fiche dont
   // « ✕ Fermer le deck » est la sortie, puis on l'amène à l'écran.
@@ -2742,7 +2709,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               <span aria-hidden="true">⌛</span> Histoire
             </button>
             <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('tours'); }}>
-              <span aria-hidden="true">🗼</span> Tours
+              <span aria-hidden="true">🗼</span> Jeu Solo
             </button>
             <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('decks'); }}>
               <span aria-hidden="true">▤</span> Deck
@@ -2799,7 +2766,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   {/* Le bouton principal ouvre le mode Histoire (reprend ou débute
                       le récit) ; le duel rapide reste dispo via l'onglet Deck. */}
                   <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--histoire rpg-menu-button--glow" onClick={() => { play('select'); onContinueRecit?.(); }}>
-                    <span className="rpg-menu-button__icon">⌛</span>
+                    <span className="rpg-menu-button__thumb" aria-hidden="true">
+                      <img src={`${import.meta.env.BASE_URL}sablier-story/mode-histoire.jpg`} alt="" />
+                    </span>
                     <span className="rpg-menu-button__text">
                       <strong>Mode histoire</strong>
                       <small>La campagne des Tours de Bab El</small>
@@ -2855,7 +2824,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             />
           </main>
         ) : screen === 'tours' ? (
-          <main className="rpg-mode-menu__play rpg-mode-menu__play--full" ref={libreRef}>
+          <main className="rpg-mode-menu__play rpg-mode-menu__play--full rpg-story rpg-story--solo" ref={libreRef} aria-label="Jeu Solo — les Tours de Bab El">
             {tourLibreOuverteId ? (
               <div className="rpg-story__detail">
                 <button type="button" className="rpg-story__back" onClick={() => { play('menu'); setTourLibreOuverteId(null); }}>
@@ -2869,7 +2838,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       <header className="rpg-story-tour__header">
                         <RpgStoryTowerPreview tour={tourLibre} className="rpg-story-tour__banner" detail />
                         <div className="rpg-story-tour__heading">
-                          <span className="rpg-mode-menu__eyebrow">PARTIE LIBRE · {resumeLibre.vaincus} / {resumeLibre.total} ÉTAGES DÉBLAYÉS</span>
+                          <span className="rpg-mode-menu__eyebrow">JEU SOLO · {resumeLibre.vaincus} / {resumeLibre.total} ÉTAGES DÉBLAYÉS</span>
                           <h3>{tourLibre.nom}</h3>
                           <p>{tourLibre.resume}</p>
                         </div>
@@ -2911,11 +2880,26 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               <section className="rpg-free-tours">
                 <header className="rpg-free-tours__heading">
                   <div>
-                    <span className="rpg-mode-menu__eyebrow">LES TOURS DE BAB EL</span>
+                    <span className="rpg-mode-menu__eyebrow">JEU SOLO · LES TOURS DE BAB EL</span>
                     <h2>Choisissez votre défi</h2>
                     <p>Gravissez les tours étage par étage. Chaque victoire débloque l'étage suivant. Deck complet et PV pleins à chaque duel.</p>
                   </div>
+                  {!confirmerResetHistoire && (
+                    <button
+                      type="button"
+                      className="rpg-story__reset"
+                      onClick={() => { play('menu'); setErreurResetHistoire(false); setConfirmerResetHistoire(true); }}
+                    >
+                      Effacer la progression
+                    </button>
+                  )}
                 </header>
+                {confirmerResetHistoire && <div className="rpg-story__reset-confirm" role="group" aria-label="Confirmer l’effacement de la progression">
+                  {erreurResetHistoire && <p role="status">La progression n’a pas été effacée : impossible de conserver vos cartes sur cet appareil. Libérez de l’espace avant de réessayer.</p>}
+                  <p>Effacer les victoires d’étages sur cet appareil ? Les étages seront verrouillés de nouveau. Vos cartes et decks seront conservés.</p>
+                  <button type="button" className="rpg-narrative-button" onClick={() => { play('annuler'); const ok = onResetHistoire(); setErreurResetHistoire(!ok); if (ok) setConfirmerResetHistoire(false); }}>Confirmer l’effacement</button>
+                  <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
+                </div>}
                 <div className="rpg-story__tours">
                   {RPG_STORY_TOURS.map((tour) => {
                     const resume = resumeTourHistoire(tour.id, progressionHistoire);
@@ -2924,6 +2908,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         key={tour.id}
                         type="button"
                         className="rpg-story-tower"
+                        data-tour={tour.id}
                         data-tour-libre={tour.id}
                         onClick={() => { play('select'); setTourLibreOuverteId(tour.id); }}
                       >
@@ -2945,7 +2930,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             )}
           </main>
         ) : screen === 'histoire' ? (
-          <main ref={storyRef} className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
+          <main ref={storyRef} className="rpg-story" aria-label="Mode Histoire — La Dernière Liste">
             <RpgStoryCampaign
               recit={progressionHistoire.recit}
               etagesVaincus={progressionHistoire.etagesVaincus}
@@ -2956,12 +2941,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               sauvegardeOk={sauvegardeHistoireOk}
               duelEnCours={duelEnCours} campagneEnCours={campagneEnCours}
             />
-            <header className="rpg-story__free-heading">
-              <div>
-                <span className="rpg-mode-menu__eyebrow">LES TOURS DE BAB EL · TOURS LIBRES</span>
-                <h2>Gravissez les tours</h2>
-                <p>Chaque victoire débloque l’étage suivant. Deck complet et PV pleins à chaque duel.</p>
-              </div>
+            <div className="rpg-story__footer">
               {!confirmerResetHistoire && (
                 <button
                   type="button"
@@ -2971,85 +2951,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   Effacer la progression
                 </button>
               )}
-            </header>
-            {confirmerResetHistoire && <div className="rpg-story__reset-confirm" role="group" aria-label="Confirmer l’effacement de la progression">
-              {erreurResetHistoire && <p role="status">La progression n’a pas été effacée : impossible de conserver vos cartes sur cet appareil. Libérez de l’espace avant de réessayer.</p>}
-              <p>Effacer le récit et les victoires sur cet appareil ? Les étages seront verrouillés de nouveau. Vos cartes et decks seront conservés.</p>
-              <button type="button" className="rpg-narrative-button" onClick={() => { play('annuler'); const ok = onResetHistoire(); setErreurResetHistoire(!ok); if (ok) setConfirmerResetHistoire(false); }}>Confirmer l’effacement</button>
-              <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
-            </div>}
-            {tourOuverte ? (
-              <div className="rpg-story__detail">
-                <button type="button" className="rpg-story__back" onClick={() => { play('menu'); setTourOuverteId(null); }}>
-                  <span aria-hidden="true">←</span> Retour aux tours
-                </button>
-                <section key={tourOuverte.id} className="rpg-story-tour">
-                  <header className="rpg-story-tour__header">
-                    <RpgStoryTowerPreview tour={tourOuverte} className="rpg-story-tour__banner" detail />
-                    <div className="rpg-story-tour__heading">
-                      <span className="rpg-mode-menu__eyebrow">PARTIE LIBRE · {resumeTourOuverte.vaincus} / {resumeTourOuverte.total} ÉTAGES DÉBLAYÉS</span>
-                      <h3>{tourOuverte.nom}</h3>
-                      <p>{tourOuverte.resume}</p>
-                    </div>
-                  </header>
-                  <div className="rpg-story-tour__progress" aria-hidden="true">
-                    <span style={{ width: `${resumeTourOuverte.total ? (resumeTourOuverte.vaincus / resumeTourOuverte.total) * 100 : 0}%` }} />
-                  </div>
-                  <ul className="rpg-story-tour__floors">
-                    {tourOuverte.etages.map((etage, index) => {
-                      const vaincu = etageEstVaincu(progressionHistoire, etage.id);
-                      const debloque = etageEstDebloque(progressionHistoire, etage.id);
-                      return (
-                        <li key={etage.id}>
-                          <button
-                            type="button"
-                            className={`rpg-story-floor${vaincu ? ' is-cleared' : debloque ? ' is-next' : ''}`}
-                            disabled={!debloque}
-                            data-etage={etage.id}
-                            onClick={() => { play('select'); onStartEtage(etage.id); }}
-                          >
-                            <span className="rpg-story-floor__step" aria-hidden="true">{vaincu ? '✓' : index + 1}</span>
-                            <span className="rpg-story-floor__copy">
-                              <strong>{etage.nom}</strong>
-                              <small>{etage.note}</small>
-                            </span>
-                            <span className="rpg-story-floor__badge">
-                              {vaincu ? 'déblayé' : debloque ? `puissance ${etage.puissance}` : 'verrouillé'}
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              </div>
-            ) : (
-              <div className="rpg-story__tours">
-                {RPG_STORY_TOURS.map((tour) => {
-                  const resume = resumeTourHistoire(tour.id, progressionHistoire);
-                  return (
-                    <button
-                      key={tour.id}
-                      type="button"
-                      className="rpg-story-tower"
-                      data-tour={tour.id}
-                      onClick={() => { play('select'); setTourOuverteId(tour.id); }}
-                    >
-                      <RpgStoryTowerPreview tour={tour} className="rpg-story-tower__art" />
-                      <span className="rpg-story-tower__body">
-                        <span className="rpg-mode-menu__eyebrow">{resume.vaincus} / {resume.total} ÉTAGES DÉBLAYÉS</span>
-                        <strong className="rpg-story-tower__name">{tour.nom}</strong>
-                        <small className="rpg-story-tower__resume">{tour.resume}</small>
-                        <span className="rpg-story-tower__progress" aria-hidden="true">
-                          <span style={{ width: `${resume.total ? (resume.vaincus / resume.total) * 100 : 0}%` }} />
-                        </span>
-                        <span className="rpg-story-tower__cta">Voir les étages <span aria-hidden="true">→</span></span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+              {confirmerResetHistoire && <div className="rpg-story__reset-confirm" role="group" aria-label="Confirmer l’effacement de la progression">
+                {erreurResetHistoire && <p role="status">La progression n’a pas été effacée : impossible de conserver vos cartes sur cet appareil. Libérez de l’espace avant de réessayer.</p>}
+                <p>Effacer le récit et les victoires sur cet appareil ? Les étages seront verrouillés de nouveau. Vos cartes et decks seront conservés.</p>
+                <button type="button" className="rpg-narrative-button" onClick={() => { play('annuler'); const ok = onResetHistoire(); setErreurResetHistoire(!ok); if (ok) setConfirmerResetHistoire(false); }}>Confirmer l’effacement</button>
+                <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
+              </div>}
+            </div>
           </main>
         ) : screen === 'decks' ? (atelier ? (
           <main className="rpg-deck-catalog rpg-deck-catalog--atelier" aria-label="Atelier de deck">
@@ -3335,7 +3243,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
           <main className="rpg-card-catalogue" aria-label="Catalogue complet des cartes">
             <header className="rpg-card-catalogue__header">
               <div>
-                <span className="rpg-mode-menu__eyebrow">COLLECTION COMPLÈTE · {RPG_DUEL_CARDS.filter(carteJouableSansTerrain).length} CARTES</span>
+                <span className="rpg-mode-menu__eyebrow">COLLECTION COMPLÈTE · {RPG_DUEL_CARDS.length} CARTES</span>
                 <h2>Catalogue</h2>
                 <p>Parcourez les créatures, héros, terrains, magies et armes de Bab El — cliquez une carte pour l’ouvrir en grand, illustration et effets.</p>
               </div>
@@ -3365,7 +3273,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 </select>
               </label>
               <p className="rpg-card-catalogue__count" aria-live="polite">
-                {cartesCatalogue.length} / {RPG_DUEL_CARDS.filter(carteJouableSansTerrain).length} carte{RPG_DUEL_CARDS.filter(carteJouableSansTerrain).length === 1 ? '' : 's'}
+                {cartesCatalogue.length} / {RPG_DUEL_CARDS.length} carte{RPG_DUEL_CARDS.length === 1 ? '' : 's'}
               </p>
             </div>
             {cartesCatalogue.length ? (
@@ -8021,7 +7929,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             className={`rpg-duel-nav__menu${navMenuOuvert ? ' is-open' : ''}`}
             id="rpg-duel-nav-menu"
           >
-            <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran(histoireEtageId ? 'histoire' : 'jouer'); }}>Menu</button>
+            <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran(histoireEtageId ? (campagneDuelRef.current ? 'histoire' : 'tours') : 'jouer'); }}>Menu</button>
             <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran('decks'); }}>Deck</button>
             <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran('catalogue'); }}>Catalogue</button>
             <button
@@ -8277,7 +8185,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
-                    return <PileArmee key={entite.id} armes={armesPortees(entite)} caseEssai={casesEnnemi?.get(entite.id) ?? null}>{carte}</PileArmee>;
+                    return carte;
                   }
                   return (
                     <span
@@ -8360,7 +8268,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
-                    return <PileArmee key={entite.id} armes={armesPortees(entite)} caseEssai={casesJoueur?.get(entite.id) ?? null}>{carte}</PileArmee>;
+                    return carte;
                   }
                   return (
                     <span
@@ -9034,7 +8942,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 >
                   {vainqueur === 'joueur' ? 'Rejouer l’étage' : 'Recommencer l’étage'}
                 </button>
-                <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => setEcran('histoire')}>
+                <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => setEcran(campagneDuelRef.current ? 'histoire' : 'tours')}>
                   {vainqueur === 'joueur' && !etageSuivant ? 'Tour terminée — retour aux tours' : 'Retour aux tours'}
                 </button>
               </div>

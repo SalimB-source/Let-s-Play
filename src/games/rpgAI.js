@@ -453,9 +453,26 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
   const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
   const degatsAuVisage = attaquants.reduce((somme, entite) => somme + (entite.atk ?? 0), 0);
   if (degatsAuVisage >= pvAdv) return cibles;
+  
+  // Priorité aux Tours de défense : les créatures avec coupRapide doivent
+  // attaquer en priorité les créatures avec prioriteAttaqueRapide: true
+  const toursPrioritaires = duel[adv].creatures
+    .filter((entite) => entite.prioriteAttaqueRapide && !entite.attaquee)
+    .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
+  
   for (const attaquant of attaquants) {
     if (!attaquant.coupRapide) continue;
     const carte = duelCardById(attaquant.carteId);
+    
+    // Si une tour prioritaire est disponible, attaquer elle en priorité
+    if (toursPrioritaires.length > 0) {
+      const tourCiblee = toursPrioritaires[0];
+      if (peutBloquerAttaquant(attaquant, tourCiblee)) {
+        cibles[attaquant.id] = tourCiblee.id;
+        continue;
+      }
+    }
+    
     const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
       montant: attaquant.atk, sourceType: 'attaque', portee: 'combat', profil, rng,
     });
@@ -496,6 +513,20 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
 
   const libres = new Set(bloqueurs.map((entite) => entite.id));
   const bloqueurParId = (id) => bloqueurs.find((entite) => entite.id === id);
+  
+  // 0) Blocage forcé : les créatures avec doitBloquer: true DOIVENT bloquer
+  //    si elles le peuvent (et si elles ne sont pas déjà assignées)
+  const bloqueursForces = bloqueurs.filter((entite) => entite.doitBloquer);
+  for (const bloqueurForce of bloqueursForces) {
+    if (libres.has(bloqueurForce.id)) {
+      // Trouver le premier attaquant qu'il peut bloquer
+      const cible = attaquants.find((attaquant) => legal(attaquant, bloqueurForce));
+      if (cible) {
+        libres.delete(bloqueurForce.id);
+        affectations[cible.id] = [bloqueurForce.id];
+      }
+    }
+  }
 
   const parMenace = [...attaquants]
     .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0) || valeurEntite(b) - valeurEntite(a));
