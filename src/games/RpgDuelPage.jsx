@@ -168,6 +168,7 @@ import {
 } from './rpgDuel.js';
 import {
   cardRarityInfo,
+  armeCadreClass,
   cardFrameClass,
   cardMotifClass,
   cardFrameColor,
@@ -966,23 +967,6 @@ function CardStatIcon({ type }) {
 /** Face full art : couleur, coût, type et statistiques des créatures. */
 const BLOCKER_DRAG_TYPE = 'application/x-bab-el-blocker';
 
-/** Une créature équipée se présente comme une pile : son arme glisse sous elle,
- *  décalée vers le haut et la droite, comme une carte posée dessous. La pile
- *  ne change rien au jeu — la créature reste l'unique cible et la seule carte
- *  qui agit ; seul le bord de l'arme dit qu'elle est équipée. */
-function PileArmee({ armes = [], caseEssai = null, children }) {
-  const arme = cardById(armes[0]);
-  if (!arme) return children;
-  return (
-    <span className="rpg-card-stack rpg-card-stack--arme" style={caseEssai ? { '--case-essai': caseEssai } : undefined}>
-      <span className="rpg-card-stack__arme" aria-hidden="true" style={cardFrameStyle(arme)}>
-        <img src={cardArt(arme)} alt="" />
-      </span>
-      {children}
-    </span>
-  );
-}
-
 /** Rapidité : un arc électrique bleu court **sur le bord** de la carte.
  *  Le trait est un rectangle déformé par une turbulence dont la graine change
  *  par à-coups — l'arc ne se fige jamais. Deux passes : un halo bleu épais
@@ -1183,6 +1167,9 @@ export function TableCard({
   const nom = entite.name;
   const armeCarte = entite.arme ? cardById(entite.arme.carteId) : null;
   const armes = armesPortees(entite);
+  // L'arme qui donne son cadre à la créature : la première portée, comme la
+  // plaque d'arme d'autrefois, et `entite.arme` en secours.
+  const armeCadre = armes.map((id) => cardById(id)).find(Boolean) ?? armeCarte;
   const effetsArmesEquipees = cartesDesIds(armes).map(effetsAccordesParArme).filter(Boolean);
   const protectionActive = entite.protection?.toursRestants > 0;
   const protectionLabel = protectionActive
@@ -1272,7 +1259,10 @@ export function TableCard({
       className={[
         `rpg-card rpg-card--img rpg-card--elem-${carte?.element ?? 'sable'} rpg-card--type-${cardFrameType(carte)}`,
         cote === 'ennemi' ? 'rpg-card--ennemi' : 'rpg-card--equipe',
-        cardFrameClass(carte),
+        // Une créature équipée porte le cadre d'acier de son arme : c'est lui
+        // qui dit l'équipement, la carte d'arme ne se glisse plus dessous.
+        armeCadre ? armeCadreClass(armeCadre) : cardFrameClass(carte),
+        armeCadre ? 'is-arme-equipee' : '',
         cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         entite.envol ? 'is-envol' : '',
@@ -1307,7 +1297,7 @@ export function TableCard({
         // elle-même n'est pas animée, ses cinématiques `fx-*` restent libres.
         soin ? `is-healing is-healing--${varianteSoin(soin)}` : '',
       ].filter(Boolean).join(' ')}
-      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(carte), ...(caseEssai ? { '--case-essai': caseEssai } : {}) }}
+      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(armeCadre ?? carte), ...(caseEssai ? { '--case-essai': caseEssai } : {}) }}
       data-case-essai={caseEssai ?? undefined}
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}
@@ -7745,7 +7735,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
-                    return <PileArmee key={entite.id} armes={armesPortees(entite)} caseEssai={casesEnnemi?.get(entite.id) ?? null}>{carte}</PileArmee>;
+                    return carte;
                   }
                   return (
                     <span
@@ -7829,7 +7819,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
-                    return <PileArmee key={entite.id} armes={armesPortees(entite)} caseEssai={casesJoueur?.get(entite.id) ?? null}>{carte}</PileArmee>;
+                    return carte;
                   }
                   return (
                     <span
