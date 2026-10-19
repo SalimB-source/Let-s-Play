@@ -133,7 +133,7 @@ export async function checkRpgAmbientMusic(assert) {
   // --- Le menu reste silencieux : aucune tour, aucune boucle ---
   assert.equal(cumul.contextes, 0, 'le menu ne crée aucun contexte audio');
 
-  await click(buttons().find((button) => button.textContent.includes('Histoire')), 'entrée Histoire');
+  await click(buttons().find((button) => button.textContent.includes('Jeu Solo')), 'entrée Jeu Solo');
   await click(container.querySelector('.rpg-story-tower[data-tour="tour-des-listes"]'), 'ouverture de la Tour des Listes');
   const etages = () => [...container.querySelectorAll('.rpg-story-floor')];
   await click(etages().find((etage) => etage.getAttribute('data-etage') === 'listes-1'), 'étage listes-1');

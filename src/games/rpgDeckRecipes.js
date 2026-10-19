@@ -309,4 +309,126 @@ export const RPG_RECETTES_HISTOIRE = {
       ['anqa-des-braises', 1],
     ],
   },
+  /**
+   * Gardes du Soleil (Soleil 1) : les sentinelles de la palissade. Pique et
+   * garde prudente, l'Ashigaru et le Hatamoto bloquent en attendant les cendres.
+   */
+  'gardes-du-soleil': {
+    identite: ['braise'],
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
+    mythiquesMax: 0,
+    raresMax: 7,
+    signature: [
+      ['ashigaru-des-braises', 2],
+      ['hatamoto-des-cendres', 2],
+      ['ronin-du-soleil-rouge', 2],
+      ['samourai-du-torii', 2],
+      ['nuage-de-cendres', 2],
+    ],
+  },
+  /**
+   * Lames du Soleil (Soleil 2) : sabres errants sans maître. Course agressive
+   * au katana, frappe iaijutsu et feux de kitsune sans aucune hésitation.
+   */
+  'lames-du-soleil': {
+    identite: ['braise'],
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
+    mythiquesMax: 0,
+    raresMax: 7,
+    signature: [
+      ['ronin-du-soleil-rouge', 2],
+      ['onna-musha-des-cendres', 2],
+      ['kenshi-de-la-forge', 2],
+      ['frappe-iaijutsu', 2],
+      ['feux-de-kitsune', 2],
+      ['trait-de-braise', 2],
+    ],
+  },
+  /**
+   * Maître du Soleil rouge (Soleil 4) : le Daimyō au sommet du Mont Ardent.
+   * La bannière du seigneur, Kagutsuchi la flamme originelle, Kenshi et Tengu.
+   */
+  'maitre-du-soleil-rouge': {
+    identite: ['braise'],
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
+    mythiquesMax: 2,
+    raresMax: 8,
+    signature: [
+      ['daimyo-du-soleil-rouge', 1],
+      ['kagutsuchi-flamme-originelle', 1],
+      ['kenshi-de-la-forge', 2],
+      ['tengu-du-mont-ardent', 1],
+      ['oni-de-la-fournaise', 1],
+      ['serment-de-la-forge', 2],
+    ],
+  },
+  /**
+   * Momies de la Nécropole (Nécropole 1) : les embaumeurs du natron. Défense,
+   * momies de lin, shabtis et papyrus pour épuiser l'adversaire.
+   */
+  'momies-de-la-necropole': {
+    identite: ['tenebres'],
+    terrains: [],
+    creatures: 19,
+    magies: 10,
+    armes: 1,
+    mythiquesMax: 0,
+    raresMax: 4,
+    signature: [
+      ['momie-de-lin', 2],
+      ['ouvrier-du-natron', 2],
+      ['couveuse-de-shabtis', 2],
+      ['papyrus', 2],
+      ['le-poids', 2],
+    ],
+  },
+  /**
+   * Chacals du Seuil (Nécropole 2) : chasseurs des caveaux. Tribut vorace,
+   * morsure rapide au contact et Khopesh d'or pour voler les points de vie.
+   */
+  'chacals-du-seuil': {
+    identite: ['tenebres'],
+    terrains: [],
+    creatures: 19,
+    magies: 10,
+    armes: 1,
+    mythiquesMax: 0,
+    raresMax: 6,
+    signature: [
+      ['chacal-du-seuil', 2],
+      ['ureus-du-seuil', 2],
+      ['ibis-des-comptes', 2],
+      ['khopesh-d-or', 1],
+      ['nom-efface', 2],
+    ],
+  },
+  /**
+   * Juges de la Nécropole (Nécropole 4) : le tribunal d'ébène. La Dévoreuse
+   * exile ce que la balance condamne, avec Celui qui juge et La Dernière Pesée.
+   */
+  'juges-de-la-necropole': {
+    identite: ['tenebres'],
+    terrains: [],
+    creatures: 19,
+    magies: 10,
+    armes: 1,
+    mythiquesMax: 2,
+    raresMax: 8,
+    signature: [
+      ['la-devoreuse', 1],
+      ['celui-qui-juge', 1],
+      ['celle-qui-pese', 2],
+      ['khopesh-d-or', 1],
+      ['la-derniere-pesee', 1],
+    ],
+  },
 };

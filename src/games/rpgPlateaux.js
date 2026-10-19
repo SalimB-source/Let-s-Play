@@ -156,6 +156,12 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'gardes-du-fjord': 'fjord-des-neuf-hivers',
   'meute-des-neiges': 'fjord-des-neuf-hivers',
   'maitre-des-neuf-hivers': 'fjord-des-neuf-hivers',
+  'gardes-du-soleil': 'cour-de-l-empereur',
+  'lames-du-soleil': 'cour-de-l-empereur',
+  'maitre-du-soleil-rouge': 'cour-de-l-empereur',
+  'momies-de-la-necropole': 'table-des-heures',
+  'chacals-du-seuil': 'table-des-heures',
+  'juges-de-la-necropole': 'table-des-heures',
 };
 
 /** Le terrain d'une couleur de deck sans identité connue. */

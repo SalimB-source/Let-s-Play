@@ -66,6 +66,38 @@ autonome » (deck complet, PV pleins, rien de reporté).
   annoncé est une carte du catalogue et une peinture réellement livrée
   (`tests/rpg-story.test.js`).
 
+## La Tour du Soleil rouge — le Japon fantastique et la voie du sabre
+
+La sixième tour est le sanctuaire du deck **Serment du Soleil rouge** : elle
+donne aux samouraïs, yōkai et forgerons de la Braise une tour dédiée.
+
+| Étage | Sorcier | Deck | Profil IA | Note |
+| --- | --- | --- | --- | --- |
+| 1 | L’Avant-garde du Soleil | `gardes-du-soleil` (ashigaru, hatamoto, archers, bannière) | `normale` / `agressif` | pose la ligne d'attaque et teste les défenses |
+| 2 | Les Lames écarlates | `lames-du-soleil` (kenshis, ronins, jitte, souffle de feu) | `normale` / `equilibre` | coups rapides, ripostes et gestion de table |
+| 3 | Le Daimyō d’Amayas | `serment-du-soleil-rouge` (le deck Samouraï du catalogue) | `veilleur` / `agressif` | jetons grandissants et résurgence de Kagutsuchi |
+| 4 | Le Maître du Soleil rouge | `maitre-du-soleil-rouge` (Susanoo, Kagutsuchi, katana) | `veilleur` / `controle` | **boss** : les figures mythiques et le Kenshi légendaire |
+
+- Plateau attitré : **La Cour de l'Empereur** (`cour-de-l-empereur`).
+- Maquette 3D procédurale : pagode étagée aux toits recourbés, grand torii écarlate et bannières samouraï.
+- Ambiance sonore : synthèse koto/taiko pentatonique en mi mineur (`playSoleilRouge`).
+
+## La Tour de la Nécropole — les Ténèbres et la pesée des âmes
+
+La septième tour incarne l'antique nécropole de **La Balance des Heures** : elle
+déploie les malédictions, le Tribut et le jugement d'outre-tombe.
+
+| Étage | Sorcier | Deck | Profil IA | Note |
+| --- | --- | --- | --- | --- |
+| 1 | Les Veilleurs de basalte | `momies-de-la-necropole` (momies, scarabées, sarcophage) | `normale` / `prudent` | muraille défensive et régénération des dépouilles |
+| 2 | La Meute du Seuil | `chacals-du-seuil` (chacals du seuil, couveuses, tribut) | `normale` / `agressif` | rapidité, vol de vie et pression continue |
+| 3 | La Balance des Heures | `balance-des-heures` (le deck Ténèbres du catalogue) | `veilleur` / `controle` | défausse adverse, exils et réanimations |
+| 4 | Le Juge de la Nécropole | `juges-de-la-necropole` (Celui qui juge, Dernière Pesée) | `veilleur` / `controle` | **boss** : destruction de masse et sentence finale |
+
+- Plateau attitré : **La Table des Heures** (`table-des-heures`).
+- Maquette 3D procédurale : pylône monumental, obélisques veilleurs, colonnes de lotus et sarcophage de basalte.
+- Ambiance sonore : harpe modale phrygienne, percussions rituelles et basses profondes (`playNecropole`).
+
 ## Ce qui existe déjà (à brancher, pas à réinventer)
 
 - **Profils d'IA** : `rpgNouveauDuel({ sorcierIA: { niveau, style } })`.
@@ -101,8 +133,8 @@ autonome » (deck complet, PV pleins, rien de reporté).
    decks et la collection, pas encore le récit.
 2. **Les données des tours** — `src/games/rpgStoryTours.js` (id, nom, miniature,
    fonction, deck, puissance, ia, note, et depuis la Neige `avatar` — la figure de
-   l'étage sur la plaque du sorcier) : **cinq tours, vingt étages, dix decks**
-   (les archétypes existants et leurs variantes, tous à 40 cartes validées).
+   l'étage sur la plaque du sorcier) : **sept tours, vingt-huit étages, seize decks**
+   (les archétypes existants et leurs variantes, tous à 30 cartes sans terrain validées).
 3. **La règle de continuité entre étages** — **décision : piste A (simple) retenue
    pour l'instant**. Chaque étage est un duel autonome : deck complet, PV pleins,
    aucune ressource reportée ; seule la progression (étages déblayés) compte.

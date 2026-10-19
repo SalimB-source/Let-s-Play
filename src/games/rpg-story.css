@@ -95,6 +95,8 @@
 .rpg-story-stage[data-tower-model="tour-des-sables"] { --tower-glow: rgba(222, 161, 82, .28); }
 .rpg-story-stage[data-tower-model="tour-des-abysses"] { --tower-glow: rgba(48, 192, 199, .26); }
 .rpg-story-stage[data-tower-model="tour-du-fjord"] { --tower-glow: rgba(113, 180, 225, .25); }
+.rpg-story-stage[data-tower-model="tour-du-soleil-rouge"] { --tower-glow: rgba(232, 93, 67, .28); }
+.rpg-story-stage[data-tower-model="tour-de-la-necropole"] { --tower-glow: rgba(140, 110, 189, .28); }
 
 .rpg-story-stage__canvas,
 .rpg-story-stage__fallback {

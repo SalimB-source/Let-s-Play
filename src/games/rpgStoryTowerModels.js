@@ -14,6 +14,8 @@ export const RPG_STORY_TOWER_THEMES = Object.freeze({
   'tour-des-sables': Object.freeze({ stone: '#bd8752', dark: '#92633e', tile: '#926941', ground: '#9c774c', accent: '#ffd08a', fill: '#d4bfaa', particles: '#edbd70' }),
   'tour-des-abysses': Object.freeze({ stone: '#39777e', dark: '#234955', tile: '#216f99', ground: '#24464f', accent: '#70e7e3', fill: '#63bde3', particles: '#9bffff' }),
   'tour-du-fjord': Object.freeze({ stone: '#6e889e', dark: '#3e536b', tile: '#527eaa', ground: '#394e67', accent: '#acdfff', fill: '#8dbbff', particles: '#e7f7ff' }),
+  'tour-du-soleil-rouge': Object.freeze({ stone: '#8f2d22', dark: '#3a1410', tile: '#1f2d3d', ground: '#42322a', accent: '#e85d43', fill: '#ff9d7a', particles: '#ff6242' }),
+  'tour-de-la-necropole': Object.freeze({ stone: '#28232e', dark: '#17121c', tile: '#4a3866', ground: '#1f1b24', accent: '#e5b73e', fill: '#8c6ebd', particles: '#d4af37' }),
 });
 
 function randomFrom(seed) {
@@ -427,12 +429,99 @@ function buildFjord(k) {
   for (const x of [-0.54, 0.54]) k.cylinder(m.wood, x, 0.12, 0, 0.055, 0.33, 0.5, 8, boat);
 }
 
+function buildSoleilRouge(k) {
+  const { materials: m } = k;
+  k.feature('toits-recourbes'); k.feature('torii-ecarlate'); k.feature('bannieres-samourai');
+  for (let i = 0; i < 8; i += 1) {
+    const angle = i * Math.PI / 4;
+    k.rock(m.dark, Math.sin(angle) * 1.62, 0.38, Math.cos(angle) * 1.62, [0.45, 0.28 + (i % 3) * 0.12, 0.45], angle);
+  }
+  const tiers = [
+    { bottom: 0.35, width: 2.1, height: 1.35, roofW: 2.7 },
+    { bottom: 1.7, width: 1.65, height: 1.25, roofW: 2.2 },
+    { bottom: 2.95, width: 1.25, height: 1.15, roofW: 1.75 },
+    { bottom: 4.1, width: 0.88, height: 1.05, roofW: 1.35 },
+  ];
+  for (const { bottom, width, height, roofW } of tiers) {
+    k.box(m.stone, 0, bottom + height / 2, 0, width, height, width);
+    for (const dx of [-1, 1]) for (const dz of [-1, 1]) {
+      k.box(m.dark, dx * (width / 2 - 0.04), bottom + height / 2, dz * (width / 2 - 0.04), 0.1, height, 0.1);
+    }
+    k.box(m.dark, 0, bottom + 0.15, 0, width + 0.22, 0.08, width + 0.22);
+    for (let side = 0; side < 4; side += 1) {
+      const yaw = side * Math.PI / 2;
+      k.window(Math.sin(yaw) * (width / 2 + 0.015), bottom + height * 0.25, Math.cos(yaw) * (width / 2 + 0.015), width * 0.45, height * 0.55, yaw);
+    }
+    const roofY = bottom + height;
+    k.box(m.tile, 0, roofY + 0.06, 0, roofW, 0.1, roofW);
+    k.box(m.dark, 0, roofY + 0.14, 0, roofW * 0.82, 0.08, roofW * 0.82);
+    for (const dx of [-1, 1]) for (const dz of [-1, 1]) {
+      k.box(m.gold, dx * (roofW / 2 - 0.05), roofY + 0.16, dz * (roofW / 2 - 0.05), 0.14, 0.12, 0.14, Math.PI / 4);
+    }
+  }
+  const topY = 5.15;
+  k.cylinder(m.gold, 0, topY + 0.8, 0, 0.045, 1.6, 0.2, 12);
+  for (let r = 0; r < 5; r += 1) {
+    k.ring(m.gold, 0, topY + 0.4 + r * 0.2, 0, 0.16 - r * 0.018, 0.024);
+  }
+  k.sphere(m.gold, 0, topY + 1.65, 0, [0.1, 0.1, 0.1]);
+  const torii = k.group(0, 0.34, 1.45, 0);
+  k.cylinder(m.red, -0.48, 0.5, 0, 0.05, 1.0, 0.85, 8, torii);
+  k.cylinder(m.red, 0.48, 0.5, 0, 0.05, 1.0, 0.85, 8, torii);
+  k.box(m.red, 0, 0.95, 0, 1.3, 0.09, 0.1, 0, torii);
+  k.box(m.dark, 0, 1.02, 0, 1.4, 0.05, 0.13, 0, torii);
+  k.box(m.red, 0, 0.74, 0, 1.12, 0.06, 0.07, 0, torii);
+  for (const [x, z, yaw] of [[-1.25, 0.8, -0.3], [1.25, 0.8, 0.3]]) {
+    const banner = k.group(x, 0.34, z, yaw);
+    k.cylinder(m.wood, 0, 0.9, 0, 0.028, 1.8, 0.8, 8, banner);
+    k.cylinder(m.wood, 0.2, 1.72, 0, 0.02, 0.45, 1, 8, banner);
+    k.ribbon(m.red, 0.2, 1.15, 0, 0.32, 1.1, 0);
+  }
+}
+
+function buildNecropole(k) {
+  const { materials: m } = k;
+  k.feature('obelisques'); k.feature('colonnes-de-lotus'); k.feature('sarcophage');
+  k.box(m.dark, 0, 0.42, 0, 3.1, 0.24, 3.1);
+  for (const sign of [-1, 1]) {
+    k.box(m.stone, sign * 1.05, 1.4, 0, 1.25, 1.75, 1.75);
+    k.box(m.dark, sign * 1.05, 2.32, 0, 1.35, 0.12, 1.85);
+    k.box(m.gold, sign * 1.05, 2.42, 0, 1.45, 0.09, 1.95);
+  }
+  k.box(m.stone, 0, 2.05, 0, 0.86, 0.46, 1.6);
+  k.box(m.gold, 0, 2.32, 0, 0.95, 0.12, 1.7);
+  k.squareTier(2.46, 1.95, 1.45);
+  for (const sign of [-1, 1]) {
+    for (const z of [-0.6, 0, 0.6]) {
+      k.cylinder(m.stone, sign * 1.08, 3.18, z, 0.07, 1.35, 0.9, 12);
+      k.cylinder(m.gold, sign * 1.08, 3.88, z, 0.12, 0.15, 1.3, 12);
+    }
+  }
+  k.box(m.tile, 0, 3.86, 0, 1.7, 0.1, 1.7);
+  k.squareTier(3.91, 1.4, 1.25);
+  const pyraHeight = 1.35;
+  const pyra = k.geometry('pyramidion', () => new THREE.ConeGeometry(1, 1, 4));
+  k.mesh(pyra, m.gold, [0, 5.16 + pyraHeight / 2, 0], [0.82, pyraHeight, 0.82], [0, Math.PI / 4, 0]);
+  for (const x of [-1.15, 1.15]) {
+    const obY = 0.54;
+    k.box(m.dark, x, obY + 0.15, 1.35, 0.42, 0.3, 0.42);
+    k.cylinder(m.dark, x, obY + 1.25, 1.35, 0.14, 1.9, 0.65, 4);
+    k.mesh(pyra, m.gold, [x, obY + 2.32, 1.35], [0.15, 0.3, 0.15], [0, Math.PI / 4, 0]);
+  }
+  const sarco = k.group(0, 0.55, 1.3, 0);
+  k.box(m.dark, 0, 0.12, 0, 0.72, 0.22, 0.38, 0, sarco);
+  k.box(m.gold, 0, 0.25, 0, 0.76, 0.06, 0.42, 0, sarco);
+  k.cylinder(m.gold, 0, 0.32, 0, 0.16, 0.68, 1, 12, sarco);
+}
+
 const BUILDERS = {
   'tour-des-listes': buildLists,
   'tour-du-souk': buildSouk,
   'tour-des-sables': buildSands,
   'tour-des-abysses': buildAbysses,
   'tour-du-fjord': buildFjord,
+  'tour-du-soleil-rouge': buildSoleilRouge,
+  'tour-de-la-necropole': buildNecropole,
 };
 
 /** Une maquette autonome. L'identifiant inconnu ne produit pas une autre tour. */

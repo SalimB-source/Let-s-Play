@@ -123,6 +123,54 @@ test('la Tour du Fjord fait monter la Neige : quatre étages mono-Neige, boss co
   }
 });
 
+test('la Tour du Soleil rouge fait monter les Samouraïs : quatre étages mono-Braise, boss compris', () => {
+  const tour = tourHistoireParId('tour-du-soleil-rouge');
+  assert.ok(tour, 'la Tour du Soleil rouge fait partie de la campagne');
+  assert.match(tour.resume, /soleil|samouraï|ardent|écarlate/i);
+  assert.ok(tour.etages.length >= 4);
+
+  for (const etage of tour.etages) {
+    const deck = deckHistoire(etage.deck);
+    const validation = rpgValiderDeck(deck);
+    assert.equal(validation.ok, true, `${etage.id} : ${validation.raison}`);
+    for (const id of new Set(deck)) {
+      assert.deepEqual(cardColors(cardById(id)), ['braise'],
+        `${etage.id} reste mono-Braise (${id} fait exception)`);
+    }
+  }
+
+  const puissances = tour.etages.map((etage) => etage.puissance);
+  assert.deepEqual(puissances, [...puissances].sort((a, b) => a - b));
+  assert.equal(tour.etages.at(-1).ia.niveau, 'veilleur');
+
+  const boss = deckHistoire(tour.etages.at(-1).deck);
+  assert.ok(boss.includes('daimyo-du-soleil-rouge') && boss.includes('kagutsuchi-flamme-originelle'));
+});
+
+test('la Tour de la Nécropole fait peser les Ténèbres : quatre étages mono-Ténèbres, boss compris', () => {
+  const tour = tourHistoireParId('tour-de-la-necropole');
+  assert.ok(tour, 'la Tour de la Nécropole fait partie de la campagne');
+  assert.match(tour.resume, /nécropole|ténèbres|prix|tribut|lin/i);
+  assert.ok(tour.etages.length >= 4);
+
+  for (const etage of tour.etages) {
+    const deck = deckHistoire(etage.deck);
+    const validation = rpgValiderDeck(deck);
+    assert.equal(validation.ok, true, `${etage.id} : ${validation.raison}`);
+    for (const id of new Set(deck)) {
+      assert.deepEqual(cardColors(cardById(id)), ['tenebres'],
+        `${etage.id} reste mono-Ténèbres (${id} fait exception)`);
+    }
+  }
+
+  const puissances = tour.etages.map((etage) => etage.puissance);
+  assert.deepEqual(puissances, [...puissances].sort((a, b) => a - b));
+  assert.equal(tour.etages.at(-1).ia.niveau, 'veilleur');
+
+  const boss = deckHistoire(tour.etages.at(-1).deck);
+  assert.ok(boss.includes('la-devoreuse') && boss.includes('celui-qui-juge'));
+});
+
 test('chaque tour garde une peinture de repli livrée pour les appareils sans WebGL', () => {
   const vus = new Set();
   for (const tour of RPG_STORY_TOURS) {
