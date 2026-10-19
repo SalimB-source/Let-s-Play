@@ -71,9 +71,15 @@ function estProtegee(entite, couleurs) {
   const liste = [...new Set((Array.isArray(couleurs) ? couleurs.flat(Infinity) : [couleurs]).filter(Boolean))];
   // `contre` accepte une couleur seule ou une liste (la Lionne du midi ardent).
   const contre = [...new Set([entite?.protection?.contre].flat(Infinity).filter(Boolean))];
-  return Boolean(liste.length
-    && entite?.protection?.toursRestants > 0
-    && contre.some((couleur) => liste.includes(couleur)));
+  // L’Armure de cendres confère une immunité permanente tant qu’elle est
+  // portée : l’IA doit respecter la même protection que le moteur, notamment
+  // quand elle cherche un bloqueur contre son porteur.
+  const immunites = [...new Set([armeById(entite?.arme?.carteId)?.donne?.immunite]
+    .flat(Infinity).filter(Boolean))];
+  return Boolean(liste.length && (
+    (entite?.protection?.toursRestants > 0 && contre.some((couleur) => liste.includes(couleur)))
+    || immunites.some((couleur) => liste.includes(couleur))
+  ));
 }
 
 /** Gelée (la Poigne de givre, le Verglas) : ni attaque ni blocage. */
