@@ -41,7 +41,7 @@ const cartesDuLot = RPG_ARME_CARDS.filter((carte) => LOT.includes(carte.id));
 
 /** Un deck épais : les effets du lot piochent et lisent souvent. */
 const deckTest = () => Array.from({ length: 24 }, () => 'desert');
-const duelVide = () => rpgNouveauDuel({ joueurDeck: deckTest(), sorcierDeck: deckTest() });
+const duelVide = () => rpgNouveauDuel({ joueurDeck: deckTest(), sorcierDeck: deckTest(), rng: () => 0.5 });
 const donner = (duel, cote, id) => duel[cote].main.push(id);
 const manaPlein = (duel, cote) => { duel[cote].mana = { braise: 9, eau: 9, sable: 9, neige: 9 }; };
 const manaNul = (duel, cote) => { duel[cote].mana = { braise: 0, eau: 0, sable: 0, neige: 0 }; };
