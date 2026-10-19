@@ -930,6 +930,12 @@ function creerEntiteCreature(carte) {
     // jusqu'à la prochaine attaque du lanceur) ou 'tour' (il meurt avec le
     // tour en cours).
     blocageForce: null,
+    // Doit bloquer (Tours de défense) : cette créature doit bloquer chaque tour
+    // si possible, de manière permanente (pas comme blocageForce qui est temporaire).
+    doitBloquer: Boolean(carte.doitBloquer),
+    // Priorité d'attaque rapide (Tours de défense) : les créatures adverses
+    // avec Attaque rapide doivent attaquer cette tour en priorité.
+    prioriteAttaqueRapide: Boolean(carte.prioriteAttaqueRapide),
     // L'arme attachée (`{ carteId }`), ou null : une seule par créature.
     // Bonus et mot-clé sont déjà fondus dans les champs ci-dessus (atk, def,
     // pv, esquive, envol…) ; la fiche se relit par `armeById` quand il faut
@@ -3297,6 +3303,19 @@ export function rpgLancerAttaque(
     if (!candidats.length) continue;
     affectations[candidats[0].id] = [...(affectations[candidats[0].id] ?? []), force.id];
   }
+  // Blocage obligatoire (Tours de défense) : les créatures avec doitBloquer: true
+  // DOIVENT bloquer une créature attaquante si elles le peuvent.
+  const bloqueursObligatoires = bloqueursDisponibles.filter((entite) => entite.doitBloquer);
+  for (const bloqueurOblig of bloqueursObligatoires) {
+    const dejaAssigne = Object.values(affectations).some((idsBloqueurs) => idsBloqueurs.includes(bloqueurOblig.id));
+    if (dejaAssigne) continue;
+    const candidats = attaquants
+      .filter((attaque) => rpgPeutBloquerAttaquant(bloqueurOblig, attaque, frappeSurCreature(attaque))
+        && !rpgEstProtegee(attaque, cardColors(duelCardById(bloqueurOblig.carteId))))
+      .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
+    if (!candidats.length) continue;
+    affectations[candidats[0].id] = [...(affectations[candidats[0].id] ?? []), bloqueurOblig.id];
+  }
   const attaquantsDejaBloques = new Set((attaquantsBloques
     ?? Object.entries(affectations).filter(([, idsBloqueurs]) => idsBloqueurs.length).map(([id]) => id))
     .filter((id) => ids.includes(id)));
@@ -3319,6 +3338,21 @@ export function rpgLancerAttaque(
         return { ok: false, raison: 'protection' };
       }
       bloqueursUtilises.add(bloqueurId);
+    }
+  }
+
+  // Vérification des bloqueurs obligatoires (Tours de défense) : toutes les
+  // créatures avec doitBloquer: true DOIVENT avoir bloqué si elles le pouvaient
+  const bloqueursObligatoiresNonUtilises = bloqueursDisponibles
+    .filter((entite) => entite.doitBloquer && !bloqueursUtilises.has(entite.id));
+  for (const bloqueurOblig of bloqueursObligatoiresNonUtilises) {
+    // Vérifier s'il y avait au moins un attaquant qu'il pouvait bloquer
+    const avaitCible = attaquants.some(
+      (attaque) => rpgPeutBloquerAttaquant(bloqueurOblig, attaque, frappeSurCreature(attaque))
+        && !rpgEstProtegee(attaque, cardColors(duelCardById(bloqueurOblig.carteId)))
+    );
+    if (avaitCible) {
+      return { ok: false, raison: 'doit-bloquer' };
     }
   }
 
