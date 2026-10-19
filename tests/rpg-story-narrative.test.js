@@ -76,8 +76,12 @@ test('les personnages ont un portrait unique livré et commun aux scènes et aux
       assert.equal(portraitHistoire(personnage.id, '/base/', (id) => `carte:${id}`), `carte:${personnage.carte}`);
     }
   }
-  for (const decor of Object.values(RPG_STORY_DECORS)) {
-    assert.ok(existsSync(fileURLToPath(new URL(`../public/${decor.fichier}`, import.meta.url))));
+  for (const [idDecor, decor] of Object.entries(RPG_STORY_DECORS)) {
+    assert.match(decor.fichier, /^sablier-story\/(greffe|decor-[a-z]+)\.jpg$/, `${idDecor} : décor immersif à hauteur de regard`);
+    assert.ok(existsSync(fileURLToPath(new URL(`../public/${decor.fichier}`, import.meta.url))), idDecor);
+  }
+  for (const scene of RPG_STORY_ALL_SCENES) {
+    assert.ok(RPG_STORY_DECORS[scene.decor], `${scene.id} : décor valide (${scene.decor})`);
   }
   assert.equal(personnageEtage('listes-4'), 'feriel');
   assert.equal(personnageEtage('listes-5'), 'mahieddine');
@@ -110,8 +114,9 @@ test('tout personnage qui parle a son sprite détouré, livré et daté', () => 
   assert.equal(standHistoire('__proto__', '/'), null, 'un identifiant inconnu ne peut pas atteindre le prototype');
 });
 
-test('les sprites du casting portent bien un fond transparent', () => {
+test('les sprites du casting portent bien un fond transparent et une échelle unifiée à 900 px', () => {
   // Un sprite opaque trahirait un détourage raté (fond magenta resté collé).
+  // L’échelle est harmonisée à 900 px de haut en plan américain pour tous les personnages.
   for (const personnage of Object.values(RPG_STORY_CAST)) {
     if (!personnage.stand) continue;
     const chemin = fileURLToPath(new URL(`../public/${personnage.stand}`, import.meta.url));
@@ -119,6 +124,10 @@ test('les sprites du casting portent bien un fond transparent', () => {
     assert.equal(octets.subarray(0, 4).toString('ascii'), 'RIFF', `${personnage.id} : conteneur WebP`);
     assert.equal(octets.subarray(8, 12).toString('ascii'), 'WEBP', `${personnage.id} : conteneur WebP`);
     assert.ok(octets.includes(Buffer.from('ALPH')), `${personnage.id} : le sprite déclare un canal alpha`);
+    const largeur = octets.readUIntLE(24, 3) + 1;
+    const hauteur = octets.readUIntLE(27, 3) + 1;
+    assert.equal(hauteur, 900, `${personnage.id} : hauteur de sprite unifiée à 900 px`);
+    assert.ok(largeur >= 380, `${personnage.id} : largeur suffisante (${largeur} px) pour éviter tout sprite minuscule`);
   }
 });
 
@@ -145,6 +154,8 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
       const octets = readFileSync(fileURLToPath(new URL(`../public/${fichier}`, import.meta.url)));
       assert.equal(octets.subarray(0, 4).toString('ascii'), 'RIFF', `${personnage.id} (${situation}) : conteneur WebP`);
       assert.ok(octets.includes(Buffer.from('ALPH')), `${personnage.id} (${situation}) : fond transparent attendu`);
+      assert.equal(octets.readUIntLE(27, 3) + 1, 900, `${personnage.id} (${situation}) : hauteur unifiée à 900 px`);
+      assert.ok(octets.readUIntLE(24, 3) + 1 >= 380, `${personnage.id} (${situation}) : largeur harmonisée`);
       assert.equal(poseHistoire(personnage.id, situation, '/base/').split('?')[0], `/base/${fichier}`);
       assert.ok(situationsPoseHistoire(personnage.id).includes(situation));
     }

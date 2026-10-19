@@ -184,7 +184,7 @@ const scenesActe1 = [
     ],
   },
   {
-    id: 'listes-5-avant', acteId: 'acte-1', etageId: 'listes-5', moment: 'avant', titre: 'Le thé du Grand Horloger', lieu: 'La Tour des Listes · La Chambre des Heures', decor: 'greffe', figure: 'mahieddine',
+    id: 'listes-5-avant', acteId: 'acte-1', etageId: 'listes-5', moment: 'avant', titre: 'Le thé du Grand Horloger', lieu: 'La Tour des Listes · La Chambre des Heures', decor: 'tour', figure: 'mahieddine',
     resume: 'Mahieddine reconnaît le manque de places et assume l’ordre de classement. Salem et Yamina lui présentent une solution : l’atelier de Fériel peut accueillir les douze personnes. Le dernier duel décidera de la réouverture de leur dossier.',
     repliques: [
       { personnage: 'mahieddine', texte: 'Salem. Yamina. Le thé est encore chaud. Je sais pourquoi vous êtes venus.' },
@@ -212,7 +212,7 @@ const scenesActe1 = [
 
 const scenesActe2 = [
   {
-    id: 'souk-1-avant', acteId: 'acte-2', etageId: 'souk-1', moment: 'avant', titre: 'La rumeur des auvents', lieu: 'La Tour du Souk · Les étals suspendus', decor: 'atelier', figure: 'marchand',
+    id: 'souk-1-avant', acteId: 'acte-2', etageId: 'souk-1', moment: 'avant', titre: 'La rumeur des auvents', lieu: 'La Tour du Souk · Les étals suspendus', decor: 'souk', figure: 'marchand',
     resume: 'Les douze habitants dorment sous le toit de Fériel, mais le laissez-passer de Mahieddine mentionne d’autres convois jamais arrivés. Au Souk, le Marchand de sable détient les bordereaux de vivres des étages bas.',
     repliques: [
       { personnage: 'feriel', variantes: {
@@ -225,7 +225,7 @@ const scenesActe2 = [
     ],
   },
   {
-    id: 'souk-1-apres', acteId: 'acte-2', etageId: 'souk-1', moment: 'apres', titre: 'Des vivres pour des fantômes', lieu: 'La Tour du Souk · Comptoir des facteurs', decor: 'atelier', figure: 'marchand',
+    id: 'souk-1-apres', acteId: 'acte-2', etageId: 'souk-1', moment: 'apres', titre: 'Des vivres pour des fantômes', lieu: 'La Tour du Souk · Comptoir des facteurs', decor: 'souk', figure: 'marchand',
     resume: 'Le Marchand ouvre ses livres : les rations des quartiers rayés n’ont pas été annulées, elles ont été descendues vers les entrepôts des ksour.',
     repliques: [
       { personnage: 'marchand', texte: 'Vous avez l’œil. Ces caisses d’orge et d’huile n’ont jamais monté les escaliers. La Chambre les a fait livrer derrière les portes des ksour.' },
@@ -234,7 +234,7 @@ const scenesActe2 = [
     ],
   },
   {
-    id: 'souk-2-avant', acteId: 'acte-2', etageId: 'souk-2', moment: 'avant', titre: 'Les portes de pierre', lieu: 'La Tour du Souk · Seuil des ksour', decor: 'atelier', figure: 'amani',
+    id: 'souk-2-avant', acteId: 'acte-2', etageId: 'souk-2', moment: 'avant', titre: 'Les portes de pierre', lieu: 'La Tour du Souk · Seuil des ksour', decor: 'souk', figure: 'amani',
     resume: 'Amani, gardienne des ksour, protège les galeries de stockage où se réfugient d’anciens déplacés sans inscription. Elle refuse d’ouvrir avant d’avoir éprouvé Salem.',
     repliques: [
       { personnage: 'amani', texte: 'Halte. Derrière cette arche dorment des familles qui n’ont ni sursis ni tampon. Je ne laisse entrer aucun agent de la Chambre.' },
@@ -243,7 +243,7 @@ const scenesActe2 = [
     ],
   },
   {
-    id: 'souk-2-apres', acteId: 'acte-2', etageId: 'souk-2', moment: 'apres', titre: 'La route des cordes', lieu: 'La Tour du Souk · Galerie des greniers', decor: 'atelier', figure: 'amani',
+    id: 'souk-2-apres', acteId: 'acte-2', etageId: 'souk-2', moment: 'apres', titre: 'La route des cordes', lieu: 'La Tour du Souk · Galerie des greniers', decor: 'souk', figure: 'amani',
     resume: 'Amani reconnaît la démarche du groupe. Elle leur indique que les convois secrets prenaient la galerie du tournant, tenue par le Djinn des épices.',
     repliques: [
       { personnage: 'amani', texte: 'Vos cartes disent vrai. Dites à Aïcha que ses élèves lisent chaque soir sous nos lampes. Quant aux caisses de la Chambre, elles descendaient vers les citernes par le tournant aux épices.' },
@@ -252,7 +252,7 @@ const scenesActe2 = [
     ],
   },
   {
-    id: 'souk-3-avant', acteId: 'acte-2', etageId: 'souk-3', moment: 'avant', titre: 'La dette du tournant', lieu: 'La Tour du Souk · Carrefour des épices', decor: 'atelier', figure: 'djinn-souk',
+    id: 'souk-3-avant', acteId: 'acte-2', etageId: 'souk-3', moment: 'avant', titre: 'La dette du tournant', lieu: 'La Tour du Souk · Carrefour des épices', decor: 'souk', figure: 'djinn-souk',
     resume: 'Le Djinn du tournant détient les bons de transport signés par d’anciens porteurs. Il réclame un duel avant de céder les noms des témoins.',
     repliques: [
       { personnage: 'djinn-souk', texte: 'Du safran, du verre soufflé et des secrets d’administration ! Vous voilà enfin, les défenseurs des douze noms.' },
@@ -261,7 +261,7 @@ const scenesActe2 = [
     ],
   },
   {
-    id: 'souk-3-apres', acteId: 'acte-2', etageId: 'souk-3', moment: 'apres', titre: 'Le prix des témoins', lieu: 'La Tour du Souk · Carrefour des épices', decor: 'atelier', figure: 'djinn-souk', choix: 'dette-souk',
+    id: 'souk-3-apres', acteId: 'acte-2', etageId: 'souk-3', moment: 'apres', titre: 'Le prix des témoins', lieu: 'La Tour du Souk · Carrefour des épices', decor: 'souk', figure: 'djinn-souk', choix: 'dette-souk',
     resume: 'Le Djinn remet les bons de transport. Vous devez choisir comment libérer les porteurs de leur dette : partager les réserves de l’atelier ou dénoncer publiquement les faux bons de la Chambre.',
     repliques: [
       { personnage: 'djinn-souk', texte: 'Beau jeu ! Voilà vos bons. Mais si j’efface l’ardoise des porteurs, qui couvre ma perte devant la Doyenne ?' },
@@ -270,7 +270,7 @@ const scenesActe2 = [
     ],
   },
   {
-    id: 'souk-4-avant', acteId: 'acte-2', etageId: 'souk-4', moment: 'avant', titre: 'Celle qui a vu trois étages tomber', lieu: 'La Tour du Souk · La haute terrasse', decor: 'atelier', figure: 'reine-etals',
+    id: 'souk-4-avant', acteId: 'acte-2', etageId: 'souk-4', moment: 'avant', titre: 'Celle qui a vu trois étages tomber', lieu: 'La Tour du Souk · La haute terrasse', decor: 'souk', figure: 'reine-etals',
     resume: 'La Reine des étals garde l’ancienne écluse qui relie le Souk aux citernes englouties. Elle met Salem au défi de prouver que sa quête ne condamnera pas le Souk.',
     repliques: [
       { personnage: 'reine-etals', choixCle: 'dette-souk', variantes: {
@@ -282,7 +282,7 @@ const scenesActe2 = [
     ],
   },
   {
-    id: 'souk-4-apres', acteId: 'acte-2', etageId: 'souk-4', moment: 'apres', titre: 'La clef de l’écluse', lieu: 'La Tour du Souk · Escalier des citernes', decor: 'atelier', figure: 'reine-etals',
+    id: 'souk-4-apres', acteId: 'acte-2', etageId: 'souk-4', moment: 'apres', titre: 'La clef de l’écluse', lieu: 'La Tour du Souk · Escalier des citernes', decor: 'souk', figure: 'reine-etals',
     resume: 'La Reine des étals remet la clef de l’écluse et scelle l’alliance du Souk avec l’atelier de Fériel. La route vers la Tour des Abysses et Boualem est ouverte.',
     repliques: [
       { personnage: 'reine-etals', texte: 'Prenez la clef de bronze. Tant que le Souk tiendra debout, vos douze survivants auront du pain et des témoins.' },
@@ -553,7 +553,7 @@ export const RPG_STORY_ACTES = Object.freeze([
     resume: 'Remonter la piste des convois détournés à travers les trente étals suspendus et gagner l’accès à l’ancienne écluse.',
     etages: Object.freeze(['souk-1', 'souk-2', 'souk-3', 'souk-4']),
     choixId: 'dette-souk',
-    decor: 'atelier',
+    decor: 'souk',
     figureFin: 'reine-etals',
     epilogueTitre: 'Le Souk tient parole.\nL’écluse est ouverte.',
     epilogueLead: 'Les marchands protègent l’atelier de Fériel et la trappe de bronze s’ouvre vers les citernes basses.',

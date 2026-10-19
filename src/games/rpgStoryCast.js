@@ -85,7 +85,7 @@ export const RPG_STORY_OPPONENT_CAST = Object.freeze({
 });
 
 /** Une seule révision de cache pour toute la famille des sprites du récit. */
-export const STAND_REVISION = 'recit-stands-3';
+export const STAND_REVISION = 'recit-stands-4';
 
 export function personnageHistoire(id) {
   return Object.hasOwn(RPG_STORY_CAST, id) ? RPG_STORY_CAST[id] : RPG_STORY_CAST.narrateur;
@@ -96,7 +96,7 @@ export function portraitHistoire(id, baseUrl = '/', cardArt = null) {
   const personnage = personnageHistoire(id);
   if (!personnage.portrait) return null;
   if (personnage.carte && cardArt) return cardArt(personnage.carte);
-  return `${baseUrl}${personnage.portrait}?v=recit-listes-1`;
+  return `${baseUrl}${personnage.portrait}?v=recit-listes-2`;
 }
 
 /**
@@ -133,10 +133,12 @@ export function personnageEtage(etageId) {
 }
 
 export const RPG_STORY_DECORS = Object.freeze({
-  tour: Object.freeze({ fichier: 'sablier-tours/tour-des-listes.jpg', position: '50% 45%' }),
+  tour: Object.freeze({ fichier: 'sablier-story/decor-tour.jpg', position: '50% 50%' }),
   greffe: Object.freeze({ fichier: 'sablier-story/greffe.jpg', position: '50% 50%' }),
-  citerne: Object.freeze({ fichier: 'sablier-tours/tour-des-abysses.jpg', position: '50% 65%' }),
-  atelier: Object.freeze({ fichier: 'sablier-tours/tour-du-souk.jpg', position: '50% 55%' }),
-  fjord: Object.freeze({ fichier: 'sablier-tours/tour-du-fjord.jpg', position: '50% 45%' }),
-  sables: Object.freeze({ fichier: 'sablier-tours/tour-des-sables.jpg', position: '50% 48%' }),
+  atelier: Object.freeze({ fichier: 'sablier-story/decor-atelier.jpg', position: '50% 52%' }),
+  souk: Object.freeze({ fichier: 'sablier-story/decor-souk.jpg', position: '50% 50%' }),
+  citerne: Object.freeze({ fichier: 'sablier-story/decor-citerne.jpg', position: '50% 55%' }),
+  abysses: Object.freeze({ fichier: 'sablier-story/decor-citerne.jpg', position: '50% 55%' }),
+  fjord: Object.freeze({ fichier: 'sablier-story/decor-fjord.jpg', position: '50% 50%' }),
+  sables: Object.freeze({ fichier: 'sablier-story/decor-sables.jpg', position: '50% 52%' }),
 });

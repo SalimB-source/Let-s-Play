@@ -211,9 +211,14 @@ Trois pièges du détourage, tous traités par l'outil et vérifiés par
   de la page de briefing, fond dense des décisions, ombres portées des
   libellés. Le garde-fou `npm run check:rpg-story-ui` refuse le retour d'un
   dégradé sombre sur les couches de décor.
-- Décors : extérieur des Listes, greffe, citernes, atelier du Souk, fjord et
-  sables. Les miniatures existantes servent de vues d'ambiance ; le nouveau
-  greffe est vide.
+- Décors à hauteur d'homme (`public/sablier-story/`) : intérieur de la Tour des
+  Listes et Chambre des Heures (`decor-tour.jpg`), greffe des Listes
+  (`greffe.jpg`), maison et atelier de soufflage de Fériel (`decor-atelier.jpg`),
+  allée couverte de la Tour du Souk (`decor-souk.jpg`), citernes englouties des
+  Abysses (`decor-citerne.jpg`), salle gelée des Neuf Hivers (`decor-fjord.jpg`)
+  et dunes du Sahara devant le Portail de Bab El (`decor-sables.jpg`). Tous les
+  décors sont vides de personnages et composés à hauteur de regard derrière le
+  duo en plan américain (900 px de haut, échelle unifiée).
 - Pas de texte imprimé dans les images : les noms et répliques restent nets,
   sélectionnables et accessibles aux lecteurs d'écran.
 - Un changement d'interlocuteur remplace le sprite par **le sien** — et jamais

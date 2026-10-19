@@ -1,8 +1,12 @@
 # La Dernière Liste — illustrations canoniques
 
 Trois portraits IA générés une fois pour l’épisode I : `scribe.jpg`,
-`puisatier.jpg`, `mahieddine.jpg`. Le quatrième fichier, `greffe.jpg`, est un
-**décor sans personnages**, composé séparément derrière les dialogues.
+`puisatier.jpg`, `mahieddine.jpg`. Les décors à hauteur d’homme
+(`greffe.jpg`, `decor-tour.jpg`, `decor-atelier.jpg`, `decor-souk.jpg`,
+`decor-citerne.jpg`, `decor-fjord.jpg`, `decor-sables.jpg`) sont des
+**décors sans personnages**, composés séparément derrière les dialogues pour
+que l’on voie d’emblée si la scène se tient dans la tour, l’atelier, le souk,
+les citernes, la salle des Neuf Hivers ou le désert devant le portail.
 
 Le registre de référence est `src/games/rpgStoryCast.js`. Toutes les
 apparitions d’un personnage réutilisent son même fichier. Ne pas créer de
