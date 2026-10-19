@@ -56,6 +56,7 @@ import { appliquerEvenementDuel, compterReclamations } from './rpgEvenementsDuel
 import { ouvrirBooster, ouvrirCoffret } from './rpgBoosters.js';
 import { chargerAcquis, chargerCollectionDistante, collectionJoueur } from './rpgCollection.js';
 import { chargerDecksMaison, chargerSupprimesMaison, fusionnerEtatsSablier } from './rpgDeckBuilder.js';
+import { chargerProgressionHistoire, sauverProgressionHistoire } from './rpgStory.js';
 import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
 
 /** L'état local complet, tel qu'il vit sur l'appareil — les deux moitiés. */
@@ -67,6 +68,7 @@ function etatLocalComplet() {
     acquis: chargerAcquis(),
     bourse: chargerPortefeuille(),
     quetes: chargerEtatQuetes(),
+    histoire: chargerProgressionHistoire(),
   };
 }
 
@@ -157,6 +159,7 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
       const quetes = fusionnerQuetes(etatRef.current.quetes, fusion.etat.quetes).etat;
       if (!vivant) return;
       appliquer(bourse, quetes);
+      sauverProgressionHistoire(fusion.etat.histoire);
       setStatutSync('synchronise');
       sauverEtatSablier(compteId, { ...fusion.etat, bourse, quetes });
     })();

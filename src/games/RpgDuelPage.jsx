@@ -4239,9 +4239,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       appliquerManaInitialTutoriel(duelRef.current, tutoriel);
     }
     histoireVictoireMarqueeRef.current = null;
-    campagneDuelRef.current = options.campagne ? {
+    const campagnePrecedente = campagneDuelRef.current;
+    const campagneEffective = options.campagne ?? Boolean(
+      campagnePrecedente && etageId && campagnePrecedente.etageId === etageId,
+    );
+    campagneDuelRef.current = campagneEffective ? {
       session: sessionDuelRef.current, etageId,
-      curseur: progressionHistoireRef.current.recit?.curseur,
+      curseur: progressionHistoireRef.current.recit?.curseur ?? campagnePrecedente?.curseur,
     } : null;
     instantanePiocheRef.current = {
       joueur: { deck: duelRef.current.joueur.deck.length + duelRef.current.joueur.main.length, main: 0 },
