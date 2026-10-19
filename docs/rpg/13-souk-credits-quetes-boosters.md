@@ -177,7 +177,7 @@ neuf (il n'a rien à reprendre).
 | Les decks maison | 38 cartes puis les étages | la dotation, les acquis gelés, et **ce que l'on achète** |
 
 **Le prix de ce choix, assumé** : la collection n'est plus infinie — elle se
-boucle en **≈ 37 paquets**, soit ≈ 1 700 ◈ **nets** une fois les doublons
+boucle en **≈ 37 paquets**, soit ≈ 3 500 ◈ **nets** une fois les doublons
 réinvestis (mesuré sur 50 graines, une fois toutes les marches révélées). Au-delà,
 le Souk ne vend plus que des doublons remboursés — c'est précisément pourquoi le
 **lot 6** (un set dédié au Souk) devient la suite naturelle, et non un
@@ -190,14 +190,17 @@ rend des crédits au barème :
 
 | Rareté du doublon | Remboursement |
 | --- | --- |
-| Commune | 12 ◈ |
-| Inhabituelle | 20 ◈ |
-| Rare | 45 ◈ |
-| Mythique | 120 ◈ |
+| Commune | 6 ◈ |
+| Inhabituelle | 10 ◈ |
+| Rare | 22 ◈ |
+| Mythique | 60 ◈ |
 
-Un paquet à trois doublons rend donc de quoi repartir dans la boucle. C'est le
-seul mécanisme anti-frustration : on ne recycle pas en poussière, on recycle en
-crédits, parce que **le crédit est la seule monnaie du chantier**.
+Le barème est calibré pour qu'un doublon **adoucisse** la perte sans jamais la
+payer : même le pire paquet — trois inhabituelles, la rare garantie et la
+mythique, toutes déjà possédées — rend 112 ◈ pour 140 ◈. Un joueur dont la
+collection est complète ne peut donc pas s'enrichir en rachetant des paquets.
+C'est le seul mécanisme anti-frustration : on ne recycle pas en poussière, on
+recycle en crédits, parce que **le crédit est la seule monnaie du chantier**.
 
 ### D5 — La quête du jour est tirée par graine, jamais au hasard
 
@@ -241,9 +244,9 @@ Le **maximum théorique** d'une journée est donc **310 ◈** (quatre quêtes de
 70, 100 et la quête du comptoir à 60, plus le cachet). La **moyenne** tourne
 autour de **250 à 280 ◈** — les quatre quêtes sorties du tirage peuvent valoir
 moins, et une journée ratée ne se rattrape pas (D6). Le calibrage visé —
-**≈ 2,3 paquets par jour** — tient dans cette fourchette. Les **≈ 1 700 ◈
+**≈ 2,3 paquets par jour** — tient dans cette fourchette. Les **≈ 3 500 ◈
 nets** qui bouclent la collection (37 paquets, doublons réinvestis) représentent
-ainsi ≈ 6 journées de quêtes, crédits des étages compris.
+ainsi ≈ 12 journées de quêtes, crédits des étages compris.
 
 **Ce que la campagne entière rapporte** : 20 étages × 50 ◈ = **1 000 ◈**, soit
 sept paquets. Les Tours paient l'entrée au Souk, pas sa totalité — c'est la
@@ -518,7 +521,7 @@ de taux, ce qui manque encore au vivier, et le motif du refus (« Il manque
 140 ◈ », « le Souk ouvrira à votre première victoire »). L'ouverture est la
 seule chose qui reste à regarder : cinq cartes retournées une à une, la **rare
 garantie** en quatrième, la cinquième pour la mythique, tamponnées
-**Nouvelle** ou « déjà possédée · +45 ◈ », avec **Passer** pour les gens pressés
+**Nouvelle** ou « déjà possédée · +22 ◈ », avec **Passer** pour les gens pressés
 et **Tout ranger dans la collection** qui rend la main. Les cartes sont écrites
 sur l'appareil **avant** la cérémonie : fermer l'onglet au milieu d'un
 retournement ne coûte rien.
@@ -596,7 +599,7 @@ et rend des gestes, tout passe par `useSablierBourse`.
 
 **La cérémonie d'ouverture** : une nappe plein écran, les cinq cartes se
 retournent une à une (la rare garantie en quatrième, la cinquième pour la
-mythique), tampon **NOUVELLE** ou **déjà possédée → +45 ◈**, total encaissé,
+mythique), tampon **NOUVELLE** ou **déjà possédée → +22 ◈**, total encaissé,
 puis **« Tout ranger dans la collection »**
 qui pousse l'union et rend la main. Un bouton « Passer » saute l'animation.
 
@@ -616,7 +619,7 @@ achat refusé.
 | Ce qu'un étage donne après D9 | des crédits (50 ◈ au premier déblayage) et le récit ; ses cartes deviennent **achetables** |
 | Ce qu'un booster ajoute | de l'**avance** dans une tour déjà ouverte, du **choix**, et des **mythiques** hors boss |
 | Une journée de jeu | 250–310 ◈ ⇒ deux boosters, ≈ 10 cartes dont **6 neuves** quand le vivier suit |
-| Boucler la collection | **≈ 37 paquets** une fois toutes les marches révélées, ≈ **1 700 ◈ nets** (les doublons remboursent), soit ≈ 6 journées à 280 ◈/jour |
+| Boucler la collection | **≈ 37 paquets** une fois toutes les marches révélées, ≈ **3 500 ◈ nets** (les doublons remboursent), soit ≈ 12 journées à 280 ◈/jour |
 | Prix d'un coffret | 1 260 ◈ — quatre journées et demie, une mythique assurée |
 
 **Le Cachet de la semaine (lot 5) déplace la moyenne de 4 %** : +80 ◈ tous les
