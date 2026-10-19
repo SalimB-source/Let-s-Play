@@ -1297,16 +1297,71 @@ export function TourbillonEau({ effet, onTermine = null }) {
  * qu'une fois la roue refermée, et sa carte reste visible dans le feu jusque-là.
  * Rien n'est intercepté, rien ne bouge dans la mise en page.
  */
+/**
+ * Les langues de la roue : leur place autour de la face (unités de la carte,
+ * x de 0 à 100 de gauche à droite, y de 0 en haut à 100 en bas), leur taille
+ * et leur retard de battement. Le feu monte : les langues du bas sont les plus
+ * hautes, celles des flancs lèchent les bords, celles du haut dépassent le
+ * cadre. Les retards sont premiers entre eux, pour que deux langues voisines
+ * ne battent jamais ensemble.
+ */
+const LANGUES_ROUE_FEU = Object.freeze([
+  // Le bas : le foyer, les flammes les plus hautes.
+  { x: 8, y: 101, s: 1.05, d: 40, r: -7 },
+  { x: 22, y: 102, s: 1.32, d: 0, r: 4 },
+  { x: 37, y: 101, s: 1.15, d: 110, r: -3 },
+  { x: 50, y: 103, s: 1.5, d: 60, r: 2 },
+  { x: 63, y: 101, s: 1.18, d: 20, r: 6 },
+  { x: 77, y: 102, s: 1.36, d: 150, r: -5 },
+  { x: 91, y: 101, s: 1.02, d: 90, r: 3 },
+  // Les flancs : elles montent le long du cadre, penchées vers l'intérieur.
+  { x: 1, y: 88, s: 0.92, d: 70, r: 12 },
+  { x: 0, y: 68, s: 1.02, d: 170, r: 9 },
+  { x: 1, y: 48, s: 0.84, d: 30, r: 14 },
+  { x: 99, y: 88, s: 0.92, d: 120, r: -12 },
+  { x: 100, y: 68, s: 1.02, d: 10, r: -9 },
+  { x: 99, y: 48, s: 0.84, d: 160, r: -14 },
+  // Le haut : de petites langues qui lèchent le cadre.
+  { x: 14, y: 3, s: 0.68, d: 50, r: -8 },
+  { x: 34, y: 1, s: 0.78, d: 130, r: 5 },
+  { x: 50, y: 0, s: 0.88, d: 20, r: -2 },
+  { x: 66, y: 1, s: 0.76, d: 100, r: 7 },
+  { x: 86, y: 3, s: 0.66, d: 170, r: -6 },
+]);
+
+/**
+ * Le tracé d'une langue : une base large, une taille qui s'amincit, une pointe
+ * qui se recourbe et une encoche sur le flanc — deux langues qui se touchent,
+ * comme une flamme qui se dédouble. C'est ce tracé qui donne au feu son dessin
+ * net : le dégradé conique de l'ancienne roue ne montrait aucune flamme.
+ */
+const CHEMIN_LANGUE = 'M0 0C-4.6-1.4-7.2-5.4-6.6-9.8C-6.1-13.4-3.4-15.2-2.6-19.2C-1.4-17-0.2-16.4.6-14.4C2.4-17.4 3.2-20.4 2.4-23.4C5.6-19.4 7-14.2 6-9C5.2-4 3-.8 0 0Z';
+
+/** Les trois couches d'une langue : la braise rouge qui éclaire, la flamme
+ *  orange qui se voit, le cœur blanc qui brûle. Chacune bat à sa cadence. */
+const COUCHES_FLAMME = Object.freeze([
+  { nom: 'externe', dur: 620, retard: 0 },
+  { nom: 'moyenne', dur: 480, retard: 45 },
+  { nom: 'coeur', dur: 360, retard: 95 },
+]);
+
 const BRAISES_ROUE_FEU = Object.freeze([
-  { dx: -36, dy: -62, d: 0 },
-  { dx: 30, dy: -84, d: 80 },
-  { dx: -14, dy: -108, d: 160 },
-  { dx: 44, dy: -128, d: 230 },
-  { dx: 4, dy: -150, d: 310 },
+  { dx: -44, dy: -70, d: 0, t: 1 },
+  { dx: 26, dy: -96, d: 60, t: 0.7 },
+  { dx: -12, dy: -118, d: 140, t: 1.15 },
+  { dx: 47, dy: -140, d: 210, t: 0.85 },
+  { dx: 3, dy: -164, d: 280, t: 1.25 },
+  { dx: -34, dy: -146, d: 330, t: 0.6 },
+  { dx: 62, dy: -104, d: 90, t: 0.75 },
+  { dx: -60, dy: -104, d: 190, t: 0.9 },
+  { dx: 16, dy: -186, d: 360, t: 0.65 },
 ]);
 
 export function RoueDeFeu({ effet, onTermine = null }) {
   const carte = effet.avecCarte ? cardById(effet.cardId) : null;
+  // Un identifiant par roue : deux créatures brûlées dans le même geste ne
+  // partagent pas le tracé de leurs langues.
+  const idLangue = `rpg-langue-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   return (
     <div
       className="rpg-roue-feu"
@@ -1336,13 +1391,45 @@ export function RoueDeFeu({ effet, onTermine = null }) {
         </span>
       )}
       <i className="rpg-roue-feu__lueur" />
-      <i className="rpg-roue-feu__cercle" />
-      <i className="rpg-roue-feu__cercle rpg-roue-feu__cercle--interne" />
+      {/* Les flammes, dessinées : chaque langue est un tracé vectoriel en trois
+          couches (braise, flamme, cœur), posée autour de la face. */}
+      <svg
+        className="rpg-roue-feu__flammes"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <path id={idLangue} d={CHEMIN_LANGUE} />
+        </defs>
+        {LANGUES_ROUE_FEU.map((langue, index) => (
+          <g
+            key={index}
+            transform={`translate(${langue.x} ${langue.y}) scale(${langue.s}) rotate(${langue.r ?? 0})`}
+          >
+            {COUCHES_FLAMME.map((couche) => (
+              <g
+                key={couche.nom}
+                className={`rpg-roue-feu__flamme rpg-roue-feu__flamme--${couche.nom}`}
+                style={{ '--d': `${langue.d + couche.retard}ms`, '--dur': `${couche.dur}ms` }}
+              >
+                <use href={`#${idLangue}`} />
+              </g>
+            ))}
+          </g>
+        ))}
+      </svg>
       {BRAISES_ROUE_FEU.map((braise) => (
         <i
           key={braise.d}
           className="rpg-roue-feu__braise"
-          style={{ '--dx': `${braise.dx}px`, '--dy': `${braise.dy}px`, '--d': `${braise.d}ms` }}
+          style={{
+            '--dx': `${braise.dx}px`,
+            '--dy': `${braise.dy}px`,
+            '--d': `${braise.d}ms`,
+            '--taille': braise.t,
+          }}
         />
       ))}
     </div>

@@ -51,19 +51,49 @@ try {
   assert.ok([...carte.classList].some((classe) => classe.startsWith('rpg-card--frame-')),
     'elle garde le cadre de sa couleur, comme sur la table');
   assert.ok(racine.querySelector('.rpg-roue-feu__lueur'), 'une lueur s’allume au sol');
-  assert.equal(racine.querySelectorAll('.rpg-roue-feu__cercle').length, 2,
-    'deux cercles de flammes tournent, en sens contraires');
-  assert.equal(racine.querySelectorAll('.rpg-roue-feu__rayon').length, 0,
-    'aucune langue de feu : la roue reste un anneau');
-  assert.doesNotMatch(css, /\.rpg-roue-feu__rayon|@keyframes rpg-roue-feu-langue/,
-    'la feuille n’en garde ni la règle ni l’image clé');
+
+  // Les flammes sont dessinées : un calque SVG, un tracé de langue, et trois
+  // couches par langue — la braise rouge, la flamme orange, le cœur blanc.
+  const flammes = racine.querySelector('.rpg-roue-feu__flammes');
+  assert.ok(flammes, 'les flammes forment un calque SVG, pas un dégradé');
+  assert.equal(flammes.getAttribute('viewBox'), '0 0 100 100',
+    'le calque se mesure sur la face');
+  assert.equal(flammes.getAttribute('preserveAspectRatio'), 'none',
+    'la face étire le dessin à son ratio');
+  const trace = flammes.querySelector('defs path');
+  assert.ok(trace, 'un tracé de langue est défini une fois, puis réutilisé');
+  assert.match(trace.getAttribute('d') ?? '', /^M0 0C[\d.\-]+/,
+    'la langue part de sa base et se dessine en courbes');
+  assert.match(trace.getAttribute('d') ?? '', /Z$/,
+    'le tracé est fermé : une flamme pleine, pas un trait');
+  const couches = [...racine.querySelectorAll('.rpg-roue-feu__flamme')];
+  assert.equal(couches.length % 3, 0, 'chaque langue porte ses trois couches');
+  assert.ok(couches.length >= 45, 'au moins quinze langues autour de la carte');
+  for (const nom of ['externe', 'moyenne', 'coeur']) {
+    assert.equal(couches.filter((couche) => couche.classList.contains(`rpg-roue-feu__flamme--${nom}`)).length,
+      couches.length / 3, `la couche « ${nom} » est posée sur chaque langue`);
+  }
+  assert.equal(racine.querySelectorAll('.rpg-roue-feu__cercle').length, 0,
+    'plus de cercles en dégradé conique : ce n’étaient pas des flammes');
+  assert.equal(racine.querySelectorAll('use').length, couches.length,
+    'chaque couche réutilise le même tracé');
+  assert.ok(couches.every((couche) => /--d:\d+ms/.test(couche.getAttribute('style') ?? '')
+    && /--dur:\d+ms/.test(couche.getAttribute('style') ?? '')),
+  'chaque couche a sa cadence et son retard : deux langues ne battent jamais ensemble');
+  assert.ok(couches.some((couche) => /--d:(?!0ms)\d+ms/.test(couche.getAttribute('style') ?? '')),
+    'les retards sont réels, pas tous à zéro');
+  const groupes = [...flammes.querySelectorAll('svg > g, g')].slice(0, 3);
+  assert.ok(groupes.length, 'les langues sont placées par un transform de position');
+  assert.ok([...flammes.children].some((enfant) => enfant.tagName.toLowerCase() === 'g'
+    && /translate\([\d.]+ [\d.]+\) scale\([\d.]+\)/.test(enfant.getAttribute('transform') ?? '')),
+  'une langue se pose sur la face et prend sa taille');
   const braises = [...racine.querySelectorAll('.rpg-roue-feu__braise')];
   assert.ok(braises.length >= 3, 'quelques braises montent');
   assert.ok(braises.every((braise) => /--dx:-?\d+px/.test(braise.getAttribute('style') ?? '')
     && /--dy:-?\d+px/.test(braise.getAttribute('style') ?? '')
     && /--d:\d+ms/.test(braise.getAttribute('style') ?? '')),
   'chaque braise part dans sa direction, avec son propre retard');
-  assert.equal(racine.children.length, 4 + braises.length,
+  assert.equal(racine.children.length, 3 + braises.length,
     'le calque ne contient que ses pièces de feu et la carte qu’il consume');
 } finally {
   window.close();
@@ -88,16 +118,38 @@ assert.match(css, /\.rpg-roue-feu\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*
 assert.match(css, /\.rpg-roue-feu\s*\{[^}]*animation:\s*rpg-roue-feu-vie \.9s ease-out both;/s,
   'il vit neuf dixièmes de seconde, puis rend la table');
 
-const cercle = /\.rpg-roue-feu__cercle\s*\{([^}]*)\}/s.exec(css)?.[1] ?? '';
-assert.match(cercle, /conic-gradient\(from 0deg/, 'la roue est un dégradé conique');
-assert.match(cercle, /mask:\s*radial-gradient/, 'masquée en anneau : une roue, pas un disque');
-assert.match(cercle, /rpg-roue-feu-tourne \.9s/, 'elle tourne sur elle-même');
-assert.match(cercle, /rpg-roue-feu-ronde \.9s/, 'et s’ouvre en tournant');
-assert.match(css, /\.rpg-roue-feu__cercle--interne\s*\{[^}]*rpg-roue-feu-tourne-inverse \.9s/, 
-  'le cercle intérieur tourne en sens inverse');
-assert.match(css, /@keyframes rpg-roue-feu-tourne\s*\{\s*from \{ rotate: 0deg; \}\s*to \{ rotate: 400deg; \}/,
-  'plus d’un tour : la roue tourne vraiment');
-assert.match(css, /@keyframes rpg-roue-feu-tourne-inverse\s*\{\s*from \{ rotate: 40deg; \}\s*to \{ rotate: -320deg; \}/);
+// Les flammes : un calque SVG, trois couches, un battement qui dessine la langue.
+const flammesCss = /\.rpg-roue-feu__flammes\s*\{([^}]*)\}/s.exec(css)?.[1] ?? '';
+assert.match(flammesCss, /position:\s*absolute;[^}]*overflow:\s*visible;/, 
+  'les pointes dépassent du cadre, comme une flamme qui lèche au-delà');
+assert.match(flammesCss, /drop-shadow\(0 0 9px rgba\(255, 118, 26/, 
+  'un seul halo porte la lueur des dix-huit langues, pas dix-huit halos cumulés');
+const flammeCss = /\.rpg-roue-feu__flamme\s*\{([^}]*)\}/s.exec(css)?.[1] ?? '';
+assert.match(flammeCss, /transform-box:\s*fill-box;/, 
+  'chaque tracé bat dans sa propre boîte');
+assert.match(flammeCss, /transform-origin:\s*50% 100%;/, 
+  'la flamme jaillit de sa base, jamais de son centre');
+assert.match(flammeCss, /rpg-roue-feu-lingue var\(--dur, 480ms\) linear infinite/, 
+  'le battement est continu, à la cadence de la couche');
+assert.match(flammeCss, /animation-delay:\s*var\(--d, 0ms\);/, 
+  'chaque langue a son retard');
+assert.match(css, /\.rpg-roue-feu__flamme--externe\s*\{[^}]*--s0:\s*1\.12;[^}]*fill:\s*rgba\(226, 58, 10,[^}]*filter:\s*blur\(3\.6px\)/s,
+  'la braise extérieure est rouge et floue : c’est elle qui éclaire');
+assert.match(css, /\.rpg-roue-feu__flamme--moyenne\s*\{[^}]*--s0:\s*\.66;[^}]*fill:\s*rgba\(255, 154, 24,/s,
+  'la flamme orange est nette : c’est elle qu’on voit dessinée');
+assert.match(css, /\.rpg-roue-feu__flamme--coeur\s*\{[^}]*--s0:\s*\.26;[^}]*fill:\s*rgba\(255, 244, 205,/s,
+  'le cœur blanc brûle au centre');
+const blocRoue = css.slice(css.indexOf('.rpg-roue-feu {'), css.indexOf('Les flèches d'));
+assert.doesNotMatch(blocRoue, /rpg-roue-feu__cercle|conic-gradient\(from 0deg/,
+  'plus aucun anneau en dégradé conique : la roue est faite de langues');
+const lingue = /@keyframes rpg-roue-feu-lingue\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+assert.match(lingue, /18% \{[\s\S]*?scale\(calc\(var\(--s0\) \* 1\.02\)/, 
+  'la langue jaillit à 18 % du battement');
+assert.match(lingue, /38% \{[\s\S]*?skewX\(7deg\)/, 
+  'elle se couche d’un côté : c’est ce qui fait une flamme, pas un triangle');
+assert.match(lingue, /62% \{[\s\S]*?skewX\(-3deg\)/, 'puis de l’autre');
+assert.match(lingue, /100% \{[\s\S]*?scale\(calc\(var\(--s0\) \* \.5\), calc\(var\(--s0\) \* \.12\)\);[\s\S]*?opacity: 0;/,
+  'elle meurt en pointe, jamais en bloc');
 assert.match(css, /\.rpg-roue-feu__braise\s*\{[^}]*animation:\s*rpg-roue-feu-braise \.9s[^}]*animation-delay:\s*var\(--d, 0ms\);/s,
   'les braises montent avec leur retard');
 assert.match(css, /\.rpg-roue-feu__carte\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*animation:\s*rpg-roue-feu-carte \.9s ease-in both;/s,
@@ -112,8 +164,8 @@ assert.ok(debutImages > 0 && finImages > debutImages, 'les images clés de la ro
 const imagesCles = css.slice(debutImages, finImages);
 assert.doesNotMatch(imagesCles, /(top|left|right|bottom|width|height|margin):/,
   'la roue n’anime aucune propriété de mise en page : ni position, ni taille');
-assert.doesNotMatch(imagesCles, /transform:/,
-  'et elle reste sur les propriétés composées, jamais `transform`');
+assert.match(imagesCles, /transform: translateY\(/,
+  'chaque langue bat sur `transform`, dans sa propre boîte — le calque, lui, garde son inclinaison');
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-roue-feu,\s*\.rpg-roue-feu \* \{ animation:\s*none !important; transition:\s*none !important; \}/,
   'en mouvement réduit, la roue reste immobile');
 
@@ -168,4 +220,4 @@ assert.doesNotMatch(page, /jouerSfx\('page_turn'\)/,
 assert.match(page, /phaseDuelActive === 'attaque'[\s\S]{0,80}jouerSfx\('phase'\)/,
   'la déclaration d’attaque garde son repère sonore');
 
-console.log('✓ Braise : la roue de feu s’allume autour de la créature mordue par une magie, une sorcellerie ou l’effet d’une créature de Braise — deux cercles qui tournent en sens contraires, cinq braises et une lueur au sol — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la carte brûlée reste dans le feu et son adieu de carte détruite n’arrive qu’une fois la roue refermée (900 ms), silencieuse en mouvement réduit');
+console.log('✓ Braise : la roue de feu s’allume autour de la créature mordue — des langues de feu dessinées, en trois couches, qui battent chacune à sa cadence, une lueur au sol et neuf braises — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la carte brûlée reste dans le feu et son adieu de carte détruite n’arrive qu’une fois la roue refermée (900 ms), silencieuse en mouvement réduit');
