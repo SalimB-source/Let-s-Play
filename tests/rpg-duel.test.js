@@ -1023,6 +1023,57 @@ test('le Coup rapide frappe la créature désignée, et l’attaque s’arrête 
   ]);
 });
 
+test('le Coup rapide a 25 % de chances de rater une créature, mais touche toujours l’adversaire à 100 %', () => {
+  const cartesCoupRapide = RPG_DUEL_CARDS.filter((carte) => carte.coupRapide || carte.donne?.coupRapide || carte.effet?.coupRapide);
+  assert.ok(cartesCoupRapide.length >= 9);
+  for (const carte of cartesCoupRapide) {
+    assert.match(carte.text, /25\s*%/, `${carte.id} précise les 25 % de chances de rater`);
+    assert.match(carte.text, /100\s*%/, `${carte.id} précise les 100 % contre l’adversaire`);
+  }
+
+  // Jet < 0.25 : la frappe rapide contre une créature rate, l’attaque s’arrête là.
+  const duelRate = duelDeBase({ rng: () => 0.24 });
+  donnerMana(duelRate, 'joueur', 20);
+  donnerMana(duelRate, 'sorcier', 20);
+  donner(duelRate, 'joueur', 'feriel');
+  const ferielRate = rpgJouerCreature(duelRate, 'joueur', 'feriel').entite;
+  donner(duelRate, 'sorcier', 'fennec-des-decombres');
+  const fennecRate = rpgJouerCreature(duelRate, 'sorcier', 'fennec-des-decombres').entite;
+  const pvSorcierAvant = duelRate.sorcier.pv;
+  const resRate = rpgLancerAttaque(duelRate, 'joueur', [ferielRate.id], {}, null, null, { [ferielRate.id]: fennecRate.id });
+  assert.equal(resRate.ok, true);
+  assert.equal(resRate.resume.coupsRapides[0].rate, true, 'le jet sous 0.25 marque le Coup rapide comme raté');
+  assert.equal(resRate.resume.coupsRapides[0].degats, 0, 'aucun dégât infligé en cas d’échec');
+  assert.equal(fennecRate.pv, fennecRate.pvMax, 'la créature ciblée reste indemne');
+  assert.equal(duelRate.sorcier.pv, pvSorcierAvant, 'l’attaque s’arrête quand même : le sorcier ne prend rien');
+  assert.equal(ferielRate.attaquee, true, 'l’attaquant est engagé malgré le raté');
+  assert.ok(duelRate.log.some((ligne) => ligne.includes('rate son Coup rapide contre Fennec des décombres')));
+
+  // Jet >= 0.25 : la frappe rapide touche sa cible.
+  const duelTouche = duelDeBase({ rng: () => 0.25 });
+  donnerMana(duelTouche, 'joueur', 20);
+  donnerMana(duelTouche, 'sorcier', 20);
+  donner(duelTouche, 'joueur', 'feriel');
+  const ferielTouche = rpgJouerCreature(duelTouche, 'joueur', 'feriel').entite;
+  donner(duelTouche, 'sorcier', 'dune-marchante');
+  const duneTouche = rpgJouerCreature(duelTouche, 'sorcier', 'dune-marchante').entite;
+  const resTouche = rpgLancerAttaque(duelTouche, 'joueur', [ferielTouche.id], {}, null, null, { [ferielTouche.id]: duneTouche.id });
+  assert.equal(resTouche.ok, true);
+  assert.equal(resTouche.resume.coupsRapides[0].rate, undefined);
+  assert.equal(resTouche.resume.coupsRapides[0].degats, 3);
+  assert.equal(duneTouche.pv, duneTouche.pvMax - 3);
+
+  // Sans créature désignée (attaque contre l’adversaire) : 100 % de réussite même avec rng = 0.
+  const duelSorcier = duelDeBase({ rng: () => 0 });
+  donnerMana(duelSorcier, 'joueur', 20);
+  donner(duelSorcier, 'joueur', 'feriel');
+  const ferielSorcier = rpgJouerCreature(duelSorcier, 'joueur', 'feriel').entite;
+  const pvAdvAvant = duelSorcier.sorcier.pv;
+  const resSorcier = rpgLancerAttaque(duelSorcier, 'joueur', [ferielSorcier.id], {});
+  assert.equal(resSorcier.ok, true);
+  assert.equal(duelSorcier.sorcier.pv, pvAdvAvant - 3, 'l’attaque sur l’adversaire touche toujours à 100 %');
+});
+
 test('sans créature désignée, le Coup rapide attaque le sorcier comme n’importe quel attaquant', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
@@ -3764,3 +3815,16 @@ test('gel : animation, état persistant, accessibilité et résolution dans les 
   assert.equal((battlePage.match(/\{ attaqueDeclaree: true \}/g) ?? []).length, 2,
     'les deux camps résolvent une attaque déjà déclarée malgré un gel en réponse');
 });
+
+test('Coup rapide raté : affiche un texte « MISS » façon RPG au-dessus de la carte qui attaque', () => {
+  const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+  assert.match(battlePage, /className="rpg-card__miss" aria-hidden="true">\s*MISS\s*<\/span>/);
+  assert.match(battlePage, /miss \? 'is-miss' : ''/);
+  assert.match(battlePage, /data-miss=\{miss \? 'true' : undefined\}/);
+  assert.equal((battlePage.match(/declencherMissEntites\(attaquantsRates\)/g) ?? []).length, 2,
+    'le MISS est déclenché pour les attaquants des deux camps');
+  assert.match(battleCss, /\.rpg-card\.is-miss\s*\{[^}]*overflow:\s*visible/s);
+  assert.match(battleCss, /\.rpg-card__miss\s*\{[^}]*bottom:\s*calc\(100%\s*\+\s*6px\)[^}]*animation:\s*rpg-card-miss-pop/s);
+});
+

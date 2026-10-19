@@ -5,9 +5,9 @@
  */
 export const RPG_SOLEIL_ROUGE_SET_ID = 'serment-du-soleil-rouge';
 
-/** Communes/inhabituelles : 1 ; rares : 2 ; mythiques : 3. */
+/** Toutes les créatures du set qui portent Honneur ont Honneur 1. */
 export const RPG_HONNEUR_PAR_RARETE = Object.freeze({
-  commune: 1, inhabituelle: 1, rare: 2, mythique: 3,
+  commune: 1, inhabituelle: 1, rare: 1, mythique: 1,
 });
 
 const carte = (definition) => {
@@ -20,7 +20,7 @@ const carte = (definition) => {
     art: definition.id,
     ...(honneur ? {
       honneur,
-      text: [texte, `Honneur ${honneur} — Quand cette créature meurt, elle inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à une créature adverse choisie au hasard.`].filter(Boolean).join(' '),
+      text: [texte, `Honneur ${honneur} — Quand cette créature meurt, elle inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`].filter(Boolean).join(' '),
     } : {}),
   };
 };
@@ -118,11 +118,12 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'kagutsuchi-flamme-originelle', name: 'Kagutsuchi, Flamme originelle',
-    cost: 6, atk: 5, def: 5, rarity: 'mythique',
+    cost: 6, atk: 6, def: 5, rarity: 'mythique',
     typeLine: 'Créature légendaire — Kami · Feu',
+    coupRapide: true,
     resonance: 1,
     resonanceTribu: 'samourai',
-    text: 'Résonance samouraï — Tant que Kagutsuchi est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1.',
+    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Résonance samouraï — Tant que Kagutsuchi est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
   }),  // Trois samouraïs de plus : une recrue commune, une inhabituelle et un
   // daimyō rare. Leur type imprimé suffit à recevoir la Résonance samouraï.
@@ -164,7 +165,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
     effet: { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true },
-    text: 'Arme — Le porteur gagne +1/+0 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu.',
+    text: 'Arme — Le porteur gagne +1/+0 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix (25 % de chances de rater) — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement (100 % de chances de toucher l’adversaire). Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({
@@ -178,11 +179,11 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
   }),
   carte({
     id: 'feux-de-kitsune', name: 'Feux de kitsune',
-    kind: 'magie', cost: 4, rarity: 'rare',
+    kind: 'magie', cost: 5, rarity: 'rare',
     typeLine: 'Sorcellerie — Feu follet · Braise',
-    cibles: ['toutes'],
-    effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', echo: { amount: 1, tours: 1 } },
-    text: 'Inflige 2 dégâts à toutes les créatures adverses, puis 1 dégât supplémentaire au début de votre tour suivant.',
+    cibles: ['creature'],
+    effet: { type: 'degats', amount: 4, cible: 'creature' },
+    text: 'Sorcellerie — Inflige 4 blessures à une créature ciblée.',
     flavor: 'Ne suivez pas les lumières entre les cèdres : elles connaissent déjà votre chemin.',
   }),
   carte({

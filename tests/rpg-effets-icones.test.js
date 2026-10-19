@@ -26,8 +26,8 @@ test('le sprite porte les 25 symboles validés, un par effet', () => {
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Rapidité', 'Butin']);
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Furie 3']);
-  assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive 1', 'Honneur 2']);
-  assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Honneur 2']);
+  assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive 1', 'Honneur 1']);
+  assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Honneur 1']);
   assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['Protection Braise']);
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
   assert.deepEqual(pastillesDe('desert'), [], 'un terrain ne porte aucune pastille');

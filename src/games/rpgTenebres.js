@@ -112,7 +112,7 @@ export const RPG_TENEBRES_CREATURES = [
     rarity: 'inhabituelle',
     coupRapide: true,
     typeLine: 'Créature — Animal · Serpent royal',
-    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Il frappe avant que la main n’atteigne le seuil.',
   }),
   carte({
@@ -215,7 +215,7 @@ export const RPG_TENEBRES_CREATURES = [
     coupRapide: true,
     arrivee: { type: 'pioche', amount: 2 },
     typeLine: 'Créature légendaire — Greffier à tête d’ibis',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes.',
     flavor: 'Son calame note le verdict sans trembler, et le fleuve lui-même attend qu’il ait fini la ligne.',
   }),
   carte({
@@ -232,7 +232,7 @@ export const RPG_TENEBRES_CREATURES = [
     // Le midi plane au-dessus de la tombe : la nuit ne peut pas le saisir.
     protection: { contre: 'tenebres' },
     typeLine: 'Créature légendaire — Faucon solaire',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. Protection — Le Faucon est protégé contre les Ténèbres de façon permanente.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. Protection — Le Faucon est protégé contre les Ténèbres de façon permanente.',
     flavor: 'Son œil droit est le midi sur les dunes ; son œil gauche est la lampe dans la tombe.',
   }),
   carte({
