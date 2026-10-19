@@ -849,7 +849,15 @@ export const RPG_JETON_CARDS = [
     text: 'Un serpent des citernes appelé par le Bâton : 3/1, Rapidité, détruit à la fin du tour.',
     flavor: 'Il ne garde les citernes qu’une marée à la fois.',
   },
-  // ── Tours de défense : une par couleur ─────────────────────────────────────
+];
+
+/**
+ * Les Tours de défense sont de vraies créatures de collection : elles se
+ * piochent, se jouent et figurent dans le catalogue. Elles ne sont pas des
+ * jetons — aucune carte ne les crée directement — malgré leur ancienne place
+ * à côté des jetons.
+ */
+export const RPG_TOUR_CARDS = [
   {
     id: 'tour-de-braise',
     name: 'Tour de Braise',
@@ -918,6 +926,7 @@ export const RPG_JETON_CARDS = [
     id: 'tour-des-tenebres',
     name: 'Tour des Ténèbres',
     element: 'tenebres',
+    set: 'balance-des-heures',
     cost: 5,
     atk: 0,
     def: 7,
@@ -939,6 +948,7 @@ export function jetonById(id) {
 
 export function creatureById(id) {
   return RPG_CREATURE_CARDS.find((card) => card.id === id)
+    ?? RPG_TOUR_CARDS.find((card) => card.id === id)
     ?? RPG_JETON_CARDS.find((card) => card.id === id)
     ?? null;
 }
@@ -2025,7 +2035,7 @@ export function armeById(id) {
 
 /** Le catalogue complet du duel, avec un type unifié pour les filtres d’interface. */
 export const RPG_DUEL_CARDS = [
-  ...RPG_CREATURE_CARDS.map((card) => ({ ...card, kind: 'creature' })),
+  ...[...RPG_CREATURE_CARDS, ...RPG_TOUR_CARDS].map((card) => ({ ...card, kind: 'creature' })),
   ...RPG_HERO_CARDS,
   ...RPG_TERRAIN_CARDS,
   ...RPG_MAGIE_CARDS,

@@ -60,7 +60,7 @@ function stockageEnMemoire(donnees = new Map()) {
 // ── La dotation de départ ────────────────────────────────────────────────────
 
 test('la dotation de départ tient la règle : communes et inhabituelles, jamais de rare', () => {
-  assert.equal(COLLECTION_DEPART.length, 49, 'la dotation inclut l’ashigaru, le rōnin, le hatamoto, le Sonneur fêlé reclassé inhabituelle, la Montagne du Soleil rouge, la Takouba, les six communes et inhabituelles du lot d’équipements du Sable, le Faussoyeur des dunes et l’Écueil');
+  assert.equal(COLLECTION_DEPART.length, 52, 'la dotation inclut les trois Tours de défense communes ou inhabituelles, en plus des cartes de départ existantes');
   for (const id of COLLECTION_DEPART) {
     const carte = cardById(id);
     assert.ok(carte, `${id} existe au catalogue`);
@@ -70,6 +70,10 @@ test('la dotation de départ tient la règle : communes et inhabituelles, jamais
   // variantes communes appartiennent à tous.
   assert.equal(possedeCarte(COLLECTION_DEPART, 'petra'), false, 'Pétra se débloque');
   assert.equal(possedeCarte(COLLECTION_DEPART, 'petra-des-deux-sources'), false, 'la variante rare de Pétra se débloque aussi');
+  for (const tour of ['tour-de-braise', 'tour-des-flots', 'tour-de-sable']) {
+    assert.equal(possedeCarte(COLLECTION_DEPART, tour), true, `${tour} est une carte de collection dès le départ`);
+  }
+  assert.equal(possedeCarte(COLLECTION_DEPART, 'tour-de-neige'), false, 'la Tour de Neige se révèle au Fjord');
   for (const terrain of ['desert', 'dunes-du-tenere', 'mer', 'lagune-des-salines',
     'montagne', 'cretes-de-cendre', 'glacier', 'glacier-des-arches']) {
     assert.equal(possedeCarte(COLLECTION_DEPART, terrain), true, `${terrain} appartient à tous`);

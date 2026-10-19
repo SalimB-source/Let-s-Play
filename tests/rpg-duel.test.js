@@ -55,6 +55,7 @@ import {
   RPG_HERO_CARDS,
   RPG_MAGIE_CARDS,
   RPG_TERRAIN_CARDS,
+  RPG_TOUR_CARDS,
   RPG_DECKS,
   cardArtId,
   cardById,
@@ -69,6 +70,7 @@ import {
   RPG_DECK_TENEBRES_BASE,
   RPG_ELEMENTS,
   cardCopyLimit,
+  carteJouableSansTerrain,
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
 import { rpgLancerMagie } from '../src/games/rpgDuel.js';
@@ -189,6 +191,22 @@ test('le set de créatures existe : soixante-huit cartes façon TCG (coût, atta
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'chaque carte a un type parmi les quatre couleurs');
   }
   assert.equal(creatureById('djinn-du-souk').name, 'Djinn du souk');
+});
+
+test('les cinq Tours de défense appartiennent au catalogue et peuvent être jouées', () => {
+  assert.deepEqual(RPG_TOUR_CARDS.map((carte) => carte.id), [
+    'tour-de-braise', 'tour-des-flots', 'tour-de-sable', 'tour-de-neige', 'tour-des-tenebres',
+  ]);
+
+  for (const tour of RPG_TOUR_CARDS) {
+    const carteCatalogue = RPG_DUEL_CARDS.find((carte) => carte.id === tour.id);
+    assert.equal(carteCatalogue?.kind, 'creature', `${tour.name} est affichée parmi les créatures du catalogue`);
+    assert.equal(creatureById(tour.id)?.id, tour.id, `${tour.name} se résout comme une créature`);
+    assert.equal(carteJouableSansTerrain(carteCatalogue), true,
+      `${tour.name} est éligible au format et peut entrer dans un deck`);
+    assert.equal(cardCopyLimit(carteCatalogue), tour.rarity === 'mythique' ? 1 : 2,
+      `${tour.name} respecte la limite d’exemplaires de sa rareté`);
+  }
 });
 
 // ── Les capacités de clan du Nord : Furie et Résonance ─────────────────────
@@ -2925,13 +2943,13 @@ test('Embuscade : -2/-2 jamais sous 1/1, et toute la table adverse doit bloquer 
   }
 });
 
-test('le plein art du Serment est livré : les vingt-sept cartes Neige sont dédiées, aucune provisoire', () => {
+test('le plein art du Serment est livré : les vingt-huit cartes Neige sont dédiées, aucune provisoire', () => {
   // La liste des illustrations provisoires est vide : le deck Neige et sa
   // variante de Glacier sont entièrement peints.
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'terrain', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 27, 'vingt-sept cartes Neige au catalogue');
+  assert.equal(cartesNeige.length, 28, 'vingt-huit cartes Neige au catalogue, Tour de défense comprise');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['arme', 'creature', 'hero', 'magie', 'terrain'], 'le set Neige couvre les cinq types de cartes');
   for (const carte of cartesNeige) {
@@ -2982,7 +3000,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 27, 'les vingt-sept peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 28, 'les vingt-huit peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes sans terrain, mythiques en un exemplaire', () => {
