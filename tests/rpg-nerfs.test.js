@@ -57,6 +57,30 @@ test('Butin', () => {
 // ─── 3. TIN HINAN : Infiltration aux autres seulement, sans boost ────────────
 });
 
+test('Butin : deux créatures qui touchent le sorcier cumulent pioches et défausses', () => {
+  const duel = duelAvecMains(['chien-du-guet', 'chien-du-guet']);
+  duel.joueur.deck = ['pierre-du-seuil', 'pierre-du-seuil', 'pierre-du-seuil'];
+  for (const _ of [0, 1]) {
+    const pose = rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+    ok('pose du Chien du guet', pose.ok);
+  }
+  for (const entite of duel.joueur.creatures) entite.ready = true;
+  const mainAvant = duel.joueur.main.length;
+  const res = rpgLancerAttaque(duel, 'joueur',
+    duel.joueur.creatures.map((entite) => entite.id),
+    Object.fromEntries(duel.joueur.creatures.map((entite) => [entite.id, []])));
+  ok('combat ouvert', res.ok);
+  ok('les deux Butins se déclenchent',
+    duel.log.filter((l) => l.includes('Butin')).length === 2, JSON.stringify(duel.log.slice(-6)));
+  assert.equal(duel.joueur.main.length, mainAvant + 2, 'deux cartes piochées');
+  assert.equal(duel.defausseEnAttente?.restant, 2, 'les deux défausses se cumulent');
+  rpgDefausserCarte(duel, 'joueur');
+  assert.equal(duel.defausseEnAttente?.restant, 1, 'une seconde défausse reste due');
+  rpgDefausserCarte(duel, 'joueur');
+  assert.equal(duel.defausseEnAttente, null, 'la fenêtre est soldée');
+  assert.equal(duel.joueur.main.length, mainAvant, 'deux pioches, deux défausses');
+});
+
 test('Tin Hinan', () => {
 {
   const duel = duelAvecMains(['tin-hinan', 'chien-du-guet']);

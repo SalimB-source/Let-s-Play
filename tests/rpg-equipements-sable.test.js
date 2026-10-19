@@ -219,7 +219,7 @@ test('le Harnais du méhari rend un mana de sable à chaque attaque', () => {
 
 // ── Les déclencheurs de blessures ───────────────────────────────────────────
 
-test('le Masque du guetteur fait piocher deux cartes puis défausser, sur le sorcier', () => {
+test('le Masque du guetteur et le Butin se cumulent : deux pioches puis deux défausses', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet');
   equiper(duel, 'joueur', 'masque-du-guetteur', porteur);
@@ -228,10 +228,13 @@ test('le Masque du guetteur fait piocher deux cartes puis défausser, sur le sor
   const mainAvant = duel.joueur.main.length;
   rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
   assert.equal(duel.sorcier.pv, pvAvant - porteur.atk, 'le sorcier a été blessé');
-  assert.equal(duel.joueur.main.length, mainAvant + 2, 'deux cartes de butin');
-  assert.equal(duel.defausseEnAttente?.restant, 1, 'une carte à défausser');
+  assert.equal(duel.joueur.main.length, mainAvant + 2, 'deux cartes piochées : Butin et Masque');
+  assert.equal(duel.defausseEnAttente?.restant, 2, 'les deux défausses se cumulent');
+  rpgDefausserCarte(duel, 'joueur', 0);
+  assert.equal(duel.defausseEnAttente?.restant, 1, 'il reste la défausse du second effet');
   rpgDefausserCarte(duel, 'joueur', 0);
   assert.equal(duel.defausseEnAttente, null, 'la défausse est soldée');
+  assert.equal(duel.joueur.main.length, mainAvant, 'deux pioches, deux défausses : le Butin est complet');
 });
 
 test('bloqué, le Masque du guetteur ne se déclenche pas', () => {

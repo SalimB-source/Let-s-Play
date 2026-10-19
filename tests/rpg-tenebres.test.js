@@ -30,7 +30,9 @@ import {
   arriveeCiblePortee,
   rpgAttaquerSorcier,
   rpgDemarrerManaEssai,
+  rpgDefausserCarte,
   rpgFinDeTour,
+  rpgLancerAttaque,
   rpgLancerMagie,
   rpgJouerCreature,
   rpgJouerArme,
@@ -256,6 +258,56 @@ test('moteur : le Tribut transfère la vie au contact du sorcier', () => {
   assert.equal(duel.sorcier.pv, avant.sorcier - 1 - 1, 'la frappe d’attaque + le Tribut');
   assert.equal(duel.joueur.pv, avant.joueur + 1, 'le contrôleur reçoit les PV du Tribut');
   assert.ok(duel.log.some((ligne) => /Tribut :/u.test(ligne)), 'le journal nomme le Tribut');
+});
+
+test('moteur : deux Tributs qui touchent le sorcier au même combat se cumulent', () => {
+  const duel = nouveau();
+  installerMana(duel);
+  duel.joueur.pv = 18;
+  for (let i = 0; i < 2; i += 1) {
+    duel.joueur.creatures.push({
+      id: `chacal-${i}`,
+      carteId: 'chacal-du-seuil',
+      name: `Chacal ${i}`,
+      atk: 1,
+      pv: 1,
+      pvMax: 1,
+      def: 1,
+      tribut: 1,
+      ready: true,
+      attaquee: false,
+      jeton: false,
+      armes: [],
+      emplacement: i,
+    });
+  }
+  const avant = { joueur: duel.joueur.pv, sorcier: duel.sorcier.pv };
+  const res = rpgLancerAttaque(duel, 'joueur', ['chacal-0', 'chacal-1'], { 'chacal-0': [], 'chacal-1': [] });
+  assert.equal(res.ok, true, JSON.stringify(res));
+  assert.equal(duel.log.filter((ligne) => /Tribut :/u.test(ligne)).length, 2,
+    'chaque Chacal déclenche son propre Tribut');
+  assert.equal(duel.sorcier.pv, avant.sorcier - 2 - 2, 'deux frappes + deux Tributs');
+  assert.equal(duel.joueur.pv, avant.joueur + 2, 'les deux transferts de vie se cumulent');
+});
+
+test('moteur : deux « Nom effacé » cumulent leurs défausses pour le joueur', () => {
+  const duel = nouveau();
+  installerMana(duel);
+  duel.sorcier.main.push('nom-efface', 'nom-efface');
+  duel.sorcier.mana.tenebres = 50;
+  duel.sorcier.manaMax.tenebres = Math.max(duel.sorcier.manaMax.tenebres ?? 0, 50);
+  duel.tour = 'sorcier';
+  const mainAvant = duel.joueur.main.length;
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'nom-efface').ok, true);
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'nom-efface').ok, true);
+  assert.equal(duel.defausseEnAttente?.cote, 'joueur', 'l’écran de défausse est ouvert');
+  assert.equal(duel.defausseEnAttente?.restant, 2, 'les deux défausses se cumulent');
+  assert.equal(duel.joueur.main.length, mainAvant, 'rien n’est enlevé tant que le joueur n’a pas choisi');
+  rpgDefausserCarte(duel, 'joueur');
+  assert.equal(duel.defausseEnAttente?.restant, 1, 'il reste la défausse du second effacement');
+  rpgDefausserCarte(duel, 'joueur');
+  assert.equal(duel.defausseEnAttente, null, 'la fenêtre est soldée');
+  assert.equal(duel.joueur.main.length, mainAvant - 2, 'deux cartes sont bien parties');
 });
 
 

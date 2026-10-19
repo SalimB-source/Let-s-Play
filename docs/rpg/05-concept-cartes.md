@@ -585,6 +585,14 @@ contrôleur **pioche une carte puis en défausse une**.
   sorcier et pour combien, et `declencherButins` (`rpgDuel.js`) résout la
   pioche puis la défausse — la défausse passe par `defausseEnAttente`, comme
   toutes les défausses ;
+- les déclencheurs **se cumulent** : deux créatures à Butin qui touchent le
+  sorcier au même combat font piocher 2 puis défausser 2 — chaque source
+  garde son effet entier, les demandes de défausse s'ajoutent
+  (`ouvrirDefausseEnAttente`, `rpgDuel.js`). Même règle pour les autres
+  effets de contact : le Tribut du set Ténèbres transfère ses PV par
+  créature, les armes du Sable déclenchent chacune la leur, et deux
+  défausses d'effet dans la même fenêtre (deux « Nom effacé ») se cumulent
+  aussi ;
 - le mot-clé se lit sur la fiche (`butin: true`, `rpgCards.js`), et vaut
   **+1,2** dans la formule de puissance (`rpgCardPower.js`) ;
 - son icône est la **besace percée** (`#effet-butin` du sprite
