@@ -958,15 +958,68 @@
 /* États de la carte posée. */
 .rpg-card:hover { transform: rotate(0deg) translateY(-6px); }
 
-/* Envol : la créature quitte légèrement le plan de la table. La propriété
-   `translate` s'ajoute à l'inclinaison et aux animations de combat sans les
-   remplacer ; l'ombre claire marque l'espace sous la carte, même au toucher. */
+/* ── Envol : la créature lévite au-dessus de la table ────────────────────────
+   Le mouvement vit dans le JS (`translate`, `rotate`, `scale` animés un par
+   un), parce qu'il doit se composer avec l'inclinaison, le survol et les
+   cinématiques de combat qui tiennent `transform`. La feuille ne pose que
+   l'état de repos : la carte quitte le plan d'une demi-douzaine de pixels,
+   son ombre s'éloigne d'autant et prend une lueur froide — c'est la hauteur
+   qui se lit, même immobile et au doigt. Un souffle de lumière traverse
+   ensuite la face, très lentement, comme une aile qui passe. */
 .rpg-card.is-envol {
   z-index: 2;
   translate: 0 -6px;
   filter:
-    drop-shadow(0 11px 8px rgba(0, 0, 0, .38))
-    drop-shadow(0 0 8px rgba(185, 225, 255, .24));
+    drop-shadow(0 17px 11px rgba(0, 0, 0, .42))
+    drop-shadow(0 0 9px rgba(185, 225, 255, .28));
+}
+
+/* Le calque du souffle : posé sur la face, il ne couvre que l'illustration et
+   passe sous les repères de jeu (ATQ/DEF, pastille, icônes). */
+.rpg-card__envol {
+  position: absolute;
+  inset: 0;
+  /* Pas de `z-index` : le calque ne crée alors aucun groupe isolé, et son
+     souffle peut se fondre (`mix-blend-mode`) dans l'art de la carte peinte
+     dessous. Il reste sous les repères, qui portent `z-index: 1`. */
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.rpg-card__envol-souffle {
+  position: absolute;
+  top: -45%;
+  left: -78%;
+  width: 58%;
+  height: 190%;
+  border-radius: 50%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(206, 232, 255, .26) 44%,
+    rgba(255, 255, 255, .14) 57%,
+    transparent 100%
+  );
+  filter: blur(7px);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: rotate(16deg) translateX(0);
+  /* La phase (`--rpg-envol-phase`, négative) vient de l'identifiant de la
+     créature : deux voisines ne sont jamais traversées ensemble. */
+  animation: rpg-envol-souffle 6.5s ease-in-out var(--rpg-envol-phase, 0s) infinite;
+  will-change: transform, opacity;
+}
+/* Le souffle dort la moitié du cycle, puis glisse d'un bord à l'autre : une
+   aile qui passe, pas un clignotant. */
+@keyframes rpg-envol-souffle {
+  0%, 42% { opacity: 0; transform: rotate(16deg) translateX(0); }
+  52% { opacity: .85; }
+  78% { opacity: .45; }
+  100% { opacity: 0; transform: rotate(16deg) translateX(330%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Aucun vol, aucun souffle : la carte reste levée, immobile. */
+  .rpg-card__envol-souffle { animation: none; display: none; }
 }
 
 /* Sous la souris, l'illustration des créatures respire doucement. L'animation
@@ -4832,10 +4885,34 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   will-change: transform, filter;
 }
 .rpg-card-flight.is-flying { animation: rpg-card-flight-to-table .68s cubic-bezier(.18, .72, .3, 1) both; }
+/* Le vol d'une carte jouée, en trois temps. L'ÉLAN : elle se soulève de la
+   main et grossit un peu, comme pincée entre deux doigts. Le TRAJET : la
+   trajectoire bombe vers le haut — la carte passe au-dessus de la table, son
+   ombre s'en éloigne — et sa taille rejoint déjà celle de sa destination.
+   La POSE : elle se cale exactement sur son emplacement, à la taille du
+   plateau, sans rebond. La durée ne change pas (0,68 s) : elle est le
+   métronome du moteur, qui libère la carte à la fin du vol. */
 @keyframes rpg-card-flight-to-table {
-  0% { opacity: 1; transform: translate3d(0, 12px, 0) scale(.96); filter: brightness(1.16); }
-  12% { opacity: 1; transform: translate3d(0, 0, 0) scale(1.03); }
-  78% { opacity: 1; }
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 10px, 0) scale(.96);
+    filter: brightness(1.16);
+  }
+  14% {
+    opacity: 1;
+    transform: translate3d(0, -2px, 0) scale(1.035);
+    filter: brightness(1.2);
+  }
+  46% {
+    opacity: 1;
+    transform:
+      translate3d(calc(var(--rpg-flight-dx) * .46), calc(var(--rpg-flight-dy) * .46 - 34px), 0)
+      scale(
+        calc(1 + (var(--rpg-flight-scale-x) - 1) * .62),
+        calc(1 + (var(--rpg-flight-scale-y) - 1) * .62)
+      );
+    filter: brightness(1.14) drop-shadow(0 18px 16px rgba(0, 0, 0, .5));
+  }
   100% {
     opacity: 1;
     transform: translate3d(var(--rpg-flight-dx), var(--rpg-flight-dy), 0)

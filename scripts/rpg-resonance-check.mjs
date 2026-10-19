@@ -104,8 +104,10 @@ assert.match(composant, /rpg-card__resonance-onde--\$\{onde\}/,
 assert.match(composant, /--rpg-resonance-phase/, 'la phase de l’aura est posée par carte');
 assert.doesNotMatch(composant, /<span className="rpg-card__resonance"[\s\S]*?>\s*[A-Za-zÀ-ÿ]/,
   'le calque n’écrit aucun texte : rien à lire, rien à sélectionner');
-assert.match(duel, /function phaseResonance\(entite\)[\s\S]*?empreinte \* 31[\s\S]*?% 360\) \/ 100/,
+assert.match(duel, /function empreinteEntite\(entite\)[\s\S]*?empreinte \* 31[\s\S]*?% 9973;/,
   'la phase vient d’une empreinte stable de l’identifiant — pas d’un tirage au rendu');
+assert.match(duel, /function phaseResonance\(entite\)\s*\{\s*return \(empreinteEntite\(entite\) % 360\) \/ 100;/,
+  'l’aura de résonance lit cette empreinte commune, la même que le vol');
 
 // ── 3. La feuille : un débordement assumé, un bleu de sonar ─────────────────
 // Le bloc de la résonance, isolé du reste de la feuille (jusqu'à l'infiltration).

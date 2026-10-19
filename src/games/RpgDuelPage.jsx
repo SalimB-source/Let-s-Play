@@ -1122,17 +1122,51 @@ function AuraResonance({ phase = 0 }) {
   );
 }
 
-/** Le décalage d'une aura, tiré de l'identifiant de l'entité : deux créatures à
- *  résonance ne battent jamais exactement à l'unisson. La valeur reste dans le
- *  cycle des ondes (3,6 s), donc le rendu ne dépend que de l'identifiant. */
-function phaseResonance(entite) {
+/** L'empreinte stable d'une entité : même identifiant, même phase — jamais un
+ *  tirage au rendu. Elle désynchronise les auras et les vols des voisines. */
+function empreinteEntite(entite) {
   const cle = String(entite?.id ?? '');
   let empreinte = 0;
   for (let index = 0; index < cle.length; index += 1) {
     empreinte = (empreinte * 31 + cle.charCodeAt(index)) % 9973;
   }
-  return (empreinte % 360) / 100;
+  return empreinte;
 }
+
+/** Le décalage d'une aura de résonance, dans son cycle de 3,6 s : deux créatures
+ *  à résonance ne battent jamais exactement à l'unisson. */
+function phaseResonance(entite) {
+  return (empreinteEntite(entite) % 360) / 100;
+}
+
+/* ── Vol : la créature avec Envol lévite au-dessus de la table ───────────────
+   Trois propriétés de transformation INDÉPENDANTES de `transform` —
+   `translate`, `rotate`, `scale` — portent le vol : la carte monte et
+   descend, avance et recule d'un souffle, grossit d'un pour cent au sommet et
+   s'incline d'un demi-degré. L'inclinaison de la table (`--tilt`), le survol
+   et les cinématiques de combat gardent leur `transform`, et chaque propriété
+   se compose sur le compositeur : aucun recalcul de la rangée, aucun
+   repeint. Le vol est lent (7,2 s) pour lire comme une lévitation, et sa
+   phase vient de l'identifiant de l'entité : deux créatures voisines ne
+   montent jamais ensemble. */
+const VOL_ENVOL = Object.freeze({
+  duree: 7200,
+  // Le cycle se referme sur son premier arrêt : la boucle ne saccade pas.
+  images: Object.freeze([
+    { translate: '0px -5px', rotate: '-0.5deg', scale: 1 },
+    { translate: '1.6px -9px', rotate: '0.2deg', scale: 1.008 },
+    { translate: '0.4px -12.5px', rotate: '0.55deg', scale: 1.012 },
+    { translate: '-1.4px -8.5px', rotate: '-0.15deg', scale: 1.005 },
+    { translate: '0px -5px', rotate: '-0.5deg', scale: 1 },
+  ]),
+});
+
+/** La phase du vol (0 → 1), tirée de l'identifiant de l'entité. */
+const phaseVol = (entite) => (empreinteEntite(entite) % 1000) / 1000;
+
+/** La durée du souffle qui traverse la face, en secondes — la feuille la répète
+ *  dans son `animation` : les deux valeurs vont ensemble. */
+const SOUFFLE_ENVOL_DUREE = 6.5;
 
 /* ── Soins : l'éclat d'un gain de vie ─────────────────────────────────────── */
 // Motes de lumière fixes (position, départ, taille, dérive) : le même éclat à
@@ -1254,15 +1288,22 @@ export function TableCard({
     const mouvementReduit = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (!entite.envol || mouvementReduit || typeof element?.animate !== 'function') return undefined;
 
-    // Un léger va-et-vient sur `left` garde l'inclinaison, l'élévation et les
-    // animations CSS d'attaque indépendantes ; position:relative ne redistribue
-    // pas la place de la carte dans la rangée.
-    const balancement = element.animate(
-      [{ left: '-2px' }, { left: '2px' }],
-      { duration: 2800, direction: 'alternate', easing: 'ease-in-out', iterations: Infinity },
+    // Le vol ne touche ni `transform` ni la mise en page : `translate`, `rotate`
+    // et `scale` sont ses propres propriétés, composées sur le compositeur. La
+    // carte voisine ne bouge pas d'un pixel et les `fx-*` de combat restent
+    // libres. Un départ négatif plonge chaque carte au milieu de son cycle :
+    // deux créatures avec Envol ne lévitent jamais à l'unisson.
+    const vol = element.animate(
+      VOL_ENVOL.images,
+      {
+        duration: VOL_ENVOL.duree,
+        delay: -phaseVol(entite) * VOL_ENVOL.duree,
+        easing: 'ease-in-out',
+        iterations: Infinity,
+      },
     );
-    return () => balancement.cancel();
-  }, [entite.envol]);
+    return () => vol.cancel();
+  }, [entite.envol, entite.id]);
 
   const commencerGlisserBloqueur = (event) => {
     if (!canDragBlocker) {
@@ -1365,6 +1406,17 @@ export function TableCard({
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       {carte?.resonance ? <AuraResonance phase={phaseResonance(entite)} /> : null}
+      {/* Envol : un souffle de lumière traverse lentement la face, comme une
+          aile qui passe — décalé lui aussi par entité. */}
+      {entite.envol && (
+        <span
+          className="rpg-card__envol"
+          style={{ '--rpg-envol-phase': `${(-phaseVol(entite) * SOUFFLE_ENVOL_DUREE).toFixed(2)}s` }}
+          aria-hidden="true"
+        >
+          <span className="rpg-card__envol-souffle" />
+        </span>
+      )}
       {entite.rapidite && <ElectriciteRapidite />}
       {/* Infiltration : la carte devient une silhouette de brume — à demi
           transparente, traversée de nuages gris qui défilent. */}
