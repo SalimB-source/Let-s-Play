@@ -1454,8 +1454,8 @@ for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {
       `${carte.id} annonce sa Résonance de tribu sur sa face`);
   } else {
     assert.match(carte.typeLine, /valkyrie/i, `${carte.id} est une valkyrie`);
-    assert.match(carte.text, /Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent \+1\/\+1/,
-      `${carte.id} annonce sa Résonance de Neige sur sa face`);
+    assert.match(carte.text, /Résonance viking — Tant qu’elle est en jeu, toutes les créatures de type Viking de la table, dans les deux camps, gagnent \+1\/\+1/,
+      `${carte.id} annonce sa Résonance viking sur sa face`);
   }
 }
 

@@ -72,6 +72,7 @@ import {
   RPG_DECK_TENEBRES_BASE,
   RPG_ELEMENTS,
   cardCopyLimit,
+  cardReceivesResonance,
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
 import { rpgLancerMagie, rpgRenvoisEnMain } from '../src/games/rpgDuel.js';
@@ -255,85 +256,94 @@ test('la Furie des vikings : +X/+X une seule fois, à la première blessure surv
     'la blessure de combat enflamme la Furie 3 du Jarl neuf, une seule fois');
 });
 
-test('la Résonance des valkyries : +1/+1 à toutes les créatures Neige tant qu’elles sont en jeu', () => {
+test('la Résonance des valkyries suit le type imprimé : +1/+1 aux créatures Viking, dans les deux camps', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 40);
   donnerMana(duel, 'sorcier', 40);
 
   for (const id of ['valkyrie-au-corbeau', 'valkyrie-des-glaces']) {
-    assert.equal(cardById(id).resonance, 1, `${cardById(id).name} porte Résonance`);
-    assert.match(cardById(id).text, /Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent \+1\/\+1/);
+    const carte = cardById(id);
+    assert.equal(carte.resonance, 1, `${carte.name} porte Résonance`);
+    assert.equal(carte.resonanceTribu, 'viking', `${carte.name} la donne au type Viking`);
+    assert.match(carte.text, /Résonance viking — Tant qu’elle est en jeu, toutes les créatures de type Viking de la table, dans les deux camps, gagnent \+1\/\+1/);
+    // La Valkyrie est elle-même une Viking : sa propre Résonance la renforce,
+    // comme un Samouraï reçoit la sienne.
+    assert.equal(cardReceivesResonance(carte, 'viking'), true, `${carte.name} est de type Viking`);
   }
 
   // Sans valkyrie, aucune aura : le Loup est un 3/3.
   donner(duel, 'joueur', 'loup-des-neiges');
   const loup = rpgJouerCreature(duel, 'joueur', 'loup-des-neiges').entite;
-  assert.equal(rpgResonanceEnJeu(duel), 0);
+  assert.equal(rpgResonanceEnJeu(duel, 'viking'), 0);
   assert.deepEqual([loup.atk, loup.def, loup.pv], [3, 3, 3], 'pas de Résonance sans valkyrie');
 
-  // La valkyrie entre : elle est Neige, donc sa propre Résonance la renforce.
+  // La valkyrie entre : elle est Viking, donc sa propre Résonance la renforce.
   donner(duel, 'joueur', 'valkyrie-au-corbeau');
   const premiere = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').entite;
-  assert.equal(rpgResonanceEnJeu(duel), 1);
+  assert.equal(rpgResonanceEnJeu(duel, 'viking'), 1);
   assert.deepEqual([premiere.atk, premiere.def, premiere.pv], [4, 4, 4],
     'la Valkyrie 3/3 arrive en 4/4 : sa Résonance la renforce elle-même');
-  assert.deepEqual([loup.atk, loup.def, loup.pv], [4, 4, 4],
-    'le Loup gagne +1/+1 de Résonance');
+  assert.deepEqual([loup.atk, loup.def, loup.pv], [3, 3, 3],
+    'le Loup n’est pas de type Viking : la Résonance ne le touche pas');
 
-  // Une créature Neige qui arrive ensuite entre déjà renforcée.
+  // Une créature Viking qui arrive ensuite entre déjà renforcée.
   donner(duel, 'joueur', 'guerrier-au-bouclier-rond');
   const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond').entite;
   assert.deepEqual([guerrier.atk, guerrier.def], [2, 4], 'le Guerrier 1/3 entre en 2/4');
-  assert.equal(guerrier.bouclier, 1, 'la Résonance n’empêche pas le bouclier d’arrivée');
 
-  // La Neige du camp adverse en profite aussi : la Résonance est une aura de table.
-  donner(duel, 'sorcier', 'loup-des-neiges');
-  const loupSorcier = rpgJouerCreature(duel, 'sorcier', 'loup-des-neiges').entite;
-  assert.deepEqual([loupSorcier.atk, loupSorcier.def], [4, 4], 'la Neige d’en face est renforcée aussi');
+  // Les Vikings du camp adverse en profitent aussi : la Résonance est de table.
+  // Le Drakkar n'a pas de Furie : la mesure de l'aura reste nette.
+  donner(duel, 'sorcier', 'drakkar-a-tete-de-dragon');
+  const drakkarSorcier = rpgJouerCreature(duel, 'sorcier', 'drakkar-a-tete-de-dragon').entite;
+  assert.deepEqual([drakkarSorcier.atk, drakkarSorcier.def], [4, 7], 'le Drakkar d’en face est renforcé aussi');
+  assert.equal(rpgResonanceEnJeu(duel, 'neige'), 0, 'la Résonance ne compte plus par élément');
 
   // Une deuxième source double l’aura.
   donner(duel, 'joueur', 'valkyrie-au-corbeau');
   const seconde = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').entite;
-  assert.equal(rpgResonanceEnJeu(duel), 2);
+  assert.equal(rpgResonanceEnJeu(duel, 'viking'), 2);
   assert.deepEqual([seconde.atk, seconde.def], [5, 5], 'la deuxième Valkyrie 3/3 entre en 5/5');
   assert.deepEqual([premiere.atk, premiere.def], [5, 5], 'la première monte à 5/5');
-  assert.deepEqual([loup.atk, loup.def], [5, 5],
-    'deux valkyries : +2/+2 sur le Loup');
-  assert.deepEqual([loupSorcier.atk, loupSorcier.def], [5, 5], 'et +2/+2 pour le Loup d’en face');
+  assert.deepEqual([guerrier.atk, guerrier.def], [3, 5], 'deux valkyries : +2/+2 sur le Guerrier');
+  assert.deepEqual([drakkarSorcier.atk, drakkarSorcier.def], [5, 8], 'et +2/+2 pour le Drakkar d’en face');
+  assert.deepEqual([loup.atk, loup.def], [3, 3], 'le Loup reste hors de l’aura');
 
-  // Et une créature non-Neige reste hors de l’aura.
+  // Et une créature non-Viking reste hors de l’aura.
   donner(duel, 'joueur', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   assert.deepEqual([chien.atk, chien.def], [2, 2], 'le Chien du guet, Sable, ne reçoit rien');
 
   // La Furie et la Résonance se cumulent sans dériver.
-  donner(duel, 'joueur', 'jarl-au-marteau-de-guerre');
-  const jarl = rpgJouerCreature(duel, 'joueur', 'jarl-au-marteau-de-guerre').entite;
-  assert.deepEqual([jarl.atk, jarl.def], [5, 6], 'le Jarl 3/4 entre en 5/6 sous deux Résonances');
-  rpgBlesserCreature(duel, 'joueur', jarl.id, 1, 'braise');
-  assert.deepEqual([jarl.atk, jarl.def, jarl.pv], [8, 8, 8], 'sa Furie 3 s’ajoute au bonus de Résonance');
+  donner(duel, 'joueur', 'berserk-des-trois-hivers');
+  const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  assert.deepEqual([berserk.atk, berserk.def], [4, 6], 'le Berserk 2/4 entre en 4/6 sous deux Résonances');
+  rpgBlesserCreature(duel, 'joueur', berserk.id, 1, 'braise');
+  // La défense suit les PV (1 blessure) avant que la Furie n’ajoute +2/+2.
+  assert.deepEqual([berserk.atk, berserk.def, berserk.pv], [6, 7, 7], 'sa Furie 2 s’ajoute au bonus de Résonance');
 
-  // Perdre l’aura ne tue jamais : le Loup d’en face tombe à 1 PV.
-  assert.equal(rpgBlesserCreature(duel, 'sorcier', loupSorcier.id, 4, 'braise').recus, 4);
-  assert.equal(loupSorcier.pv, 1);
+  // Perdre l’aura ne tue jamais : le Drakkar d’en face tombe à 1 PV.
+  assert.equal(rpgBlesserCreature(duel, 'sorcier', drakkarSorcier.id, 7, 'braise').recus, 7);
+  assert.equal(drakkarSorcier.pv, 1);
 
   // La deuxième source meurt : l’aura retombe exactement, sans exécuter personne.
   assert.equal(rpgBlesserCreature(duel, 'joueur', seconde.id, 20, 'braise').ok, true);
-  assert.equal(rpgResonanceEnJeu(duel), 1);
-  assert.deepEqual([jarl.atk, jarl.def], [7, 7], 'perdre une source retire exactement +1/+1');
-  assert.deepEqual([loup.atk, loup.def], [4, 4]);
-  assert.equal(loupSorcier.pv, 1, 'le plancher de 1 PV empêche l’aura de tuer');
-  assert.equal(duel.sorcier.creatures.includes(loupSorcier), true);
+  assert.equal(rpgResonanceEnJeu(duel, 'viking'), 1);
+  assert.deepEqual([berserk.atk, berserk.def], [5, 6], 'perdre une source retire exactement +1/+1');
+  assert.deepEqual([guerrier.atk, guerrier.def], [2, 4]);
+  assert.equal(drakkarSorcier.pv, 1, 'le plancher de 1 PV empêche l’aura de tuer');
+  assert.equal(duel.sorcier.creatures.includes(drakkarSorcier), true);
 
   // Plus aucune valkyrie : la table revient au naturel, et tout le monde survit.
   assert.equal(rpgBlesserCreature(duel, 'joueur', loup.id, 100, 'braise').ok, true);
   assert.equal(rpgBlesserCreature(duel, 'joueur', premiere.id, 100, 'braise').ok, true);
-  assert.equal(rpgResonanceEnJeu(duel), 0, 'plus aucune valkyrie en jeu');
-  assert.deepEqual([jarl.atk, jarl.def], [6, 6], 'les bonus de Résonance sont tous rendus');
-  assert.equal(duel.joueur.creatures.includes(jarl), true, 'la fin de l’aura ne tue personne');
-  assert.equal(loupSorcier.pv, 1, 'sans aura, il reste à 1 PV au lieu de mourir');
-  assert.equal(duel.sorcier.creatures.includes(loupSorcier), true);
+  assert.equal(rpgResonanceEnJeu(duel, 'viking'), 0, 'plus aucune valkyrie en jeu');
+  assert.deepEqual([berserk.atk, berserk.def], [4, 5], 'les bonus de Résonance sont tous rendus');
+  assert.equal(duel.joueur.creatures.includes(berserk), true, 'la fin de l’aura ne tue personne');
+  assert.equal(drakkarSorcier.pv, 1, 'sans aura, il reste à 1 PV au lieu de mourir');
+  assert.equal(duel.sorcier.creatures.includes(drakkarSorcier), true);
+  assert.ok(duel.log.some((ligne) => ligne.startsWith('La Résonance viking')));
 });
+
 test('Anqa est une 4/4 Braise à 5 avec Envol qui revient après quatre tours', () => {
   const anqa = cardById('anqa-des-braises');
   assert.deepEqual({ element: anqa.element, cost: anqa.cost, atk: anqa.atk, def: anqa.def, rarity: anqa.rarity, envol: anqa.envol }, {
@@ -3086,13 +3096,14 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   donner(duel, 'sorcier', 'dune-marchante');
   const dune = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
 
-  // Valkyrie au corbeau : volante, avec sa Résonance Neige.
+  // Valkyrie au corbeau : volante, avec sa Résonance viking.
   donner(duel, 'joueur', 'loup-des-neiges');
   const loup = rpgJouerCreature(duel, 'joueur', 'loup-des-neiges').entite;
   donner(duel, 'joueur', 'valkyrie-au-corbeau');
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').entite;
   assert.equal(valkyrie.envol, true, 'la Valkyrie arrive avec Envol');
-  assert.equal(loup.atk, 4, 'le Loup profite de la Résonance de la Valkyrie');
+  assert.equal(valkyrie.atk, 4, 'la Valkyrie est de type Viking : elle reçoit sa propre Résonance');
+  assert.equal(loup.atk, 3, 'le Loup n’est pas Viking : la Résonance ne le touche pas');
   assert.equal(duel.sorcier.creatures.every((e) => rpgPeutBloquerAttaquant(e, valkyrie) === false), true,
     'aucune créature terrestre ne peut bloquer la Valkyrie');
 
@@ -3204,8 +3215,10 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   // Le Serpent du monde : protégé des magies, Overkill au combat.
   donner(duel, 'joueur', 'serpent-du-monde');
   const serpent = rpgJouerCreature(duel, 'joueur', 'serpent-du-monde').entite;
-  assert.deepEqual([serpent.atk, serpent.def], [8, 8],
-    'le Serpent 6/6 entre en 8/8 sous les deux Résonances du deck');
+  // Les deux Valkyries du deck donnent leur Résonance au type Viking : le
+  // Serpent n’en est pas, il entre à sa force imprimée.
+  assert.deepEqual([serpent.atk, serpent.def], [6, 6],
+    'le Serpent 6/6 entre à 6/6 : la Résonance viking ne touche que les Vikings');
   assert.equal(serpent.protectionSorts, true, 'protégé contre les magies et les sorcelleries');
   assert.equal(serpent.overkill, true, 'il porte Overkill');
   donner(duel, 'joueur', 'eclair-du-marteau');

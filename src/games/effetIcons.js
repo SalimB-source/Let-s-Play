@@ -186,7 +186,12 @@ export function pastillesPourCarte(carte) {
   if (carte.esquive) ajouter('esquive', 'Esquive', Number(carte.esquive) || null);
   if (carte.tenacite) ajouter('tenacite', 'Tenacité');
   if (carte.resonance) {
-    ajouter('resonance', carte.resonanceTribu === 'samourai' ? 'Résonance samouraï' : 'Résonance');
+    // La Résonance se nomme par le TYPE imprimé de la carte : « Résonance
+    // samouraï », « Résonance viking ».
+    const tribus = { samourai: 'samouraï', viking: 'viking' };
+    ajouter('resonance', carte.resonanceTribu
+      ? `Résonance ${tribus[carte.resonanceTribu] ?? carte.resonanceTribu}`
+      : 'Résonance');
   }
   if (carte.protection?.contre) {
     // Libellés accentués des couleurs (« Ténèbres », pas « Tenebres »).
@@ -331,7 +336,7 @@ const LIBELLES_IMPRIMES = [
   ['furie', 'Furie(?: \\d+)?'],
   ['esquive', 'Esquive(?: \\d+)?'],
   ['tenacite', 'T[ée]nacité'],
-  ['resonance', 'Résonance(?: samouraï)?'],
+  ['resonance', 'Résonance(?: samouraï|viking)?'],
   ['honneur', 'Honneur(?: \\d+)?'],
   ['butin', 'Butin'],
   ['tribut', 'Tribut(?: \\d+)?'],

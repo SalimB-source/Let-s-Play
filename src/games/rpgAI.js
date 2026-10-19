@@ -146,7 +146,7 @@ export function valeurEntite(entite) {
   // Furie : une seule flambée de +X/+X au premier sang survécu — une
   // créature déjà enflammée n'a plus rien à gagner.
   if (carte.furie && !entite?.furieDeclenchee) valeur += 1 + carte.furie * 0.7;
-  // Résonance : aura de table de la couleur de la source.
+  // Résonance : aura de table du type imprimé par la source.
   if (carte.resonance) valeur += 2 + carte.resonance * 2;
   // Bannière : chaque attaque d'un Samouraï du camp grandit l'attaquant pour de
   // bon — la source vaut plus que sa seule présence, elle récompense l'attaque.
@@ -1037,7 +1037,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   // Créature ou héros : le corps sur la table, les arrivées modulent.
   let score = 4 + cout * 0.8;
   // Les capacités de clan du Nord : un corps qui grandit sous les coups, ou
-  // une aura qui renforce toute la Neige déjà posée.
+  // une aura qui renforce tout le type déjà posé (Samouraï, Viking…).
   if (carte.furie) score += 0.8 + carte.furie * 0.7;
   if (carte.resonance) {
     const element = cardResonanceGroup(carte);

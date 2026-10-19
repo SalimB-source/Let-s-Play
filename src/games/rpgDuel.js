@@ -9,6 +9,7 @@
  */
 
 import {
+  RPG_DUEL_CARDS,
   RPG_ELEMENTS,
   armeById,
   cardById,
@@ -16,6 +17,7 @@ import {
   cardColors,
   cardResonanceGroup,
   cardReceivesResonance,
+  resonanceGroupLabel,
   duelCardById,
   jetonById,
   magieById,
@@ -106,7 +108,13 @@ const blessuresParDuel = new WeakMap();
 // Hors de l’état JSON : les sauvegardes restent sérialisables et les tests
 // peuvent fournir un générateur déterministe. Une partie restaurée utilise Math.random.
 const hasardParDuel = new WeakMap();
-const GROUPES_RESONANCE = [...RPG_ELEMENTS, 'samourai'];
+// Les groupes de Résonance sont les TYPES imprimés des cartes qui la portent
+// (Samouraï, Viking…), plus les éléments pour les rares sources qui en
+// dépendent encore. La liste se déduit du catalogue : une carte qui imprime la
+// Résonance s'y ajoute d'elle-même, sans table à tenir à la main.
+const GROUPES_RESONANCE = [...new Set(
+  [...RPG_ELEMENTS, ...RPG_DUEL_CARDS.filter((carte) => carte.resonance).map(cardResonanceGroup)],
+)];
 
 export function rpgNombreDestructions(duel) {
   return destructionsParDuel.get(duel)?.length ?? 0;
@@ -786,9 +794,9 @@ function appliquerAuraSable(duel, cote) {
  * qu'une créature qui entre ou qui meurt ne fasse pas dériver les statistiques
  * déjà cumulées par la Furie ou d'autres renforts. L'égide compte **par source** :
  * chaque Amani protège toutes les créatures sauf elle-même, donc une seconde
- * Amani double le bonus des autres et protège la première. L'égide ne franchit
- * jamais la ligne du camp adverse. La perdre ne tue jamais : au pire, 1 PV
- * (la règle de la Résonance).
+ * Amani double le bonus des autres et protège la première. Comme toute aura,
+ * l'égide ne franchit jamais la ligne du camp adverse. La perdre ne tue jamais :
+ * au pire, 1 PV (la règle de la Résonance).
  */
 function appliquerAuraAmani(duel, cote) {
   const camp = duel[cote];
@@ -866,11 +874,12 @@ function appliquerBannieresAttaque(duel, cote, attaquants = []) {
  * retombe au plancher de 0.
  */
 function appliquerAuraKenshi(duel) {
-  let sources = 0;
+  // Une aura ne franchit jamais la ligne du camp : les Kenshis d'un camp ne
+  // forgent que les Samouraïs de CE camp. Deux Kenshis du même camp se donnent
+  // +2/+0 l'un à l'autre ; ceux d'en face gardent leur propre forge.
   for (const cote of ['joueur', 'sorcier']) {
-    sources += duel[cote].creatures.filter((entite) => entite.carteId === 'kenshi-de-la-forge').length;
-  }
-  for (const cote of ['joueur', 'sorcier']) {
+    const sources = duel[cote].creatures
+      .filter((entite) => entite.carteId === 'kenshi-de-la-forge').length;
     for (const entite of duel[cote].creatures) {
       const siennes = sources - (entite.carteId === 'kenshi-de-la-forge' ? 1 : 0);
       const voulu = cardReceivesResonance(duelCardById(entite.carteId), 'samourai')
@@ -1203,18 +1212,21 @@ function majResonance(duel) {
       }
     }
   }
-  for (const element of renforcees) {
-    if (element === 'samourai') {
-      duel.log.push(`La Résonance samouraï renforce les Samouraïs : +${totaux[element]}/+${totaux[element]}.`);
-      continue;
-    }
-    const label = ELEMENT_LABELS[element];
-    duel.log.push(`La Résonance renforce la ${label} : +${totaux[element]}/+${totaux[element]} aux créatures ${label}.`);
+  // Le groupe est un type imprimé (Samouraï, Viking…) ou, à défaut, un
+  // élément : le journal nomme les créatures dans les deux cas.
+  const estElement = (groupe) => Boolean(ELEMENT_LABELS[groupe]);
+  for (const groupe of renforcees) {
+    const label = resonanceGroupLabel(groupe);
+    duel.log.push(estElement(groupe)
+      ? `La Résonance renforce la ${label} : +${totaux[groupe]}/+${totaux[groupe]} aux créatures ${label}.`
+      : `La Résonance ${label.toLowerCase()} renforce les créatures de type ${label} : +${totaux[groupe]}/+${totaux[groupe]}.`);
   }
-  for (const element of affaiblies) {
-    if (!renforcees.has(element)) duel.log.push(element === 'samourai'
-      ? 'La Résonance samouraï se tait : les Samouraïs perdent leur bonus.'
-      : `La Résonance se tait : les créatures ${ELEMENT_LABELS[element]} perdent leur bonus.`);
+  for (const groupe of affaiblies) {
+    if (renforcees.has(groupe)) continue;
+    const label = resonanceGroupLabel(groupe);
+    duel.log.push(estElement(groupe)
+      ? `La Résonance se tait : les créatures ${label} perdent leur bonus.`
+      : `La Résonance ${label.toLowerCase()} se tait : les créatures de type ${label} perdent leur bonus.`);
   }
 }
 

@@ -162,11 +162,11 @@ test('la Résonance samouraï se cumule dans les deux camps, sans toucher les au
   assert.deepEqual([adverse.atk, adverse.def], [5, 5]);
   assert.equal(kagutsuchi.resonance, 0, 'le Kami n’est pas de type Samouraï');
   jouer(duel, 'joueur', 'valkyrie-au-corbeau');
-  assert.equal(rpgResonanceEnJeu(duel), 1, 'l’API sans élément conserve la Neige');
-  assert.equal(neige.resonance, 1);
+  assert.equal(rpgResonanceEnJeu(duel, 'viking'), 1, 'la Valkyrie porte la Résonance viking');
+  assert.equal(neige.resonance, 0, 'la Résonance ne se compte plus par élément : le Loup n’est pas Viking');
   assert.equal(ami.resonance, 3, 'le Torii ne compte jamais sa propre source');
   for (const entite of exclus) assert.equal(entite.resonance, 0, entite.name);
-  assert.equal(rpgBonusResonance(duel, { kind: 'creature', element: 'neige', typeLine: 'Créature — Samouraï' }), 5, 'Neige et tribu se cumulent indépendamment');
+  assert.equal(rpgBonusResonance(duel, { kind: 'creature', element: 'neige', typeLine: 'Créature — Samouraï' }), 4, 'seule la tribu compte pour un Samouraï');
   assert.ok(duel.log.some((ligne) => ligne.startsWith('La Résonance samouraï')));
   assert.ok(!duel.log.some((ligne) => ligne.startsWith('La Résonance renforce la Braise')));
 });
@@ -729,15 +729,15 @@ test('la bannière déclenche aussi une attaque directe contre le sorcier', () =
   assert.deepEqual([daimyo.atk, daimyo.def], [4, 4]);
 });
 
-test('le Kenshi de la forge est un 1/2 à 3 qui forge les autres Samouraïs', () => {
+test('le Kenshi de la forge est un 1/2 à 3 qui forge les autres Samouraïs de son camp', () => {
   const carte = cardById('kenshi-de-la-forge');
   assert.deepEqual([carte.cost, carte.atk, carte.def, carte.rarity, carte.honneur], [3, 1, 2, 'rare', 2]);
   assert.match(carte.typeLine, /Samouraï/);
-  assert.deepEqual(carte.aura, { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true, camps: 'tous' });
-  assert.match(carte.text, /les autres créatures de type Samouraï de la table, dans les deux camps, gagnent \+2\/\+0/);
+  assert.deepEqual(carte.aura, { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true, camps: 'camp' });
+  assert.match(carte.text, /les autres créatures de type Samouraï de votre camp gagnent \+2\/\+0/);
   assert.ok(!carte.arrivee && !carte.destruction && !carte.resonance, 'l’aura est son seul texte de règle');
 
-  // L'aura est de table : les deux camps, comme la Résonance samouraï.
+  // Une aura ne franchit jamais la ligne du camp.
   const duel = duelTest();
   const kenshi = jouer(duel, 'joueur', 'kenshi-de-la-forge');
   const torii = jouer(duel, 'joueur', 'samourai-du-torii');
@@ -752,9 +752,9 @@ test('le Kenshi de la forge est un 1/2 à 3 qui forge les autres Samouraïs', ()
   // Le Torii : 2/2 d’imprimé, +1/+1 de la Résonance du Tengu (jamais la
   // sienne), +2/+0 de la forge.
   assert.deepEqual([torii.atk, torii.def], [5, 3]);
-  // Le rōnin adverse : 3/2, +2/+2 de Résonance et +2/+0 de forge — ni la
-  // Résonance ni la forge ne connaissent les camps.
-  assert.deepEqual([adverse.atk, adverse.def], [7, 4]);
+  // Le rōnin adverse : 3/2, +2/+2 de Résonance (elle, est de table) — la forge
+  // du Kenshi, elle, ne franchit pas la ligne du camp.
+  assert.deepEqual([adverse.atk, adverse.def], [5, 4]);
   assert.deepEqual([nonSamourai.atk, nonSamourai.def], [2, 2], 'un Chien n’est pas un Samouraï');
   assert.deepEqual([yokai.atk, yokai.def], [2, 2], 'un Tengu n’est pas un Samouraï');
   assert.ok(duel.log.some((ligne) => ligne.startsWith('La Résonance samouraï')));
@@ -765,15 +765,15 @@ test('la forge compte par source, se retire à l’exil et ne touche jamais la d
   const premier = jouer(duel, 'joueur', 'kenshi-de-la-forge');
   const ronin = jouer(duel, 'joueur', 'ronin-du-soleil-rouge');
   const onna = jouer(duel, 'sorcier', 'onna-musha-des-cendres');
-  assert.deepEqual([ronin.atk, ronin.def], [5, 2]);
-  assert.deepEqual([onna.atk, onna.def], [5, 3]);
-  // Un second Kenshi : chaque Samouraï en reçoit +2/+0 de plus, mais les deux
-  // Kenshis ne se donnent que l’un à l’autre (+2/+0 chacun, jamais +4).
+  assert.deepEqual([ronin.atk, ronin.def], [5, 2], 'la forge du Kenshi sert son camp');
+  assert.deepEqual([onna.atk, onna.def], [3, 3], 'la Samouraï d’en face ne reçoit rien');
+  // Un second Kenshi, dans l’autre camp : chacun forge les Samouraïs de SON
+  // camp. Les deux Kenshis ne se donnent rien — pas plus qu’ils ne cumulent.
   const second = jouer(duel, 'sorcier', 'kenshi-de-la-forge');
-  assert.deepEqual([ronin.atk, ronin.def], [7, 2], 'le rōnin cumule les deux forges');
-  assert.deepEqual([onna.atk, onna.def], [7, 3]);
-  assert.deepEqual([premier.atk, premier.def], [3, 2], 'chaque Kenshi ne reçoit que l’autre');
-  assert.deepEqual([second.atk, second.def], [3, 2]);
+  assert.deepEqual([ronin.atk, ronin.def], [5, 2], 'le rōnin ne reçoit pas la forge d’en face');
+  assert.deepEqual([onna.atk, onna.def], [5, 3], 'la Samouraï adverse reçoit la sienne');
+  assert.deepEqual([premier.atk, premier.def], [1, 2], 'un Kenshi seul dans son camp ne se forge pas');
+  assert.deepEqual([second.atk, second.def], [1, 2]);
   // On retire les sources par l'exil de Susanoo : l'exil n'est pas une mort,
   // ni Honneur, ni capacité de destruction ne se déclenchent — là où une
   // blessure ferait frapper l'Honneur 2 du Kenshi et brouillerait la mesure.
@@ -782,9 +782,9 @@ test('la forge compte par source, se retire à l’exil et ne touche jamais la d
     assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', cibleId).ok, true);
   };
   exiler(premier.id);
-  assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [5, 2, 2], 'la forge de l’absent est retirée');
-  assert.deepEqual([onna.atk, onna.def], [5, 3]);
-  assert.deepEqual([second.atk, second.def], [1, 2], 'le dernier Kenshi retombe à 1/2');
+  assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [3, 2, 2], 'la forge de l’absent est retirée');
+  assert.deepEqual([onna.atk, onna.def], [5, 3], 'celle d’en face reste en place');
+  assert.deepEqual([second.atk, second.def], [1, 2], 'le Kenshi adverse reste un 1/2');
   // Plus de forge du tout : les Samouraïs reviennent à leur force imprimée.
   exiler(second.id);
   assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [3, 2, 2]);
