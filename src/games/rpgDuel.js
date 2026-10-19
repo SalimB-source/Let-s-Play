@@ -2376,8 +2376,9 @@ function sacrifierCreature(duel, cote, entite) {
  * (le Kraken pioche, l'Ifrit frappe le sorcier) ; les dégâts à **une**
  * créature (le Ghul des cendres) demandent une cible, et c'est le contrôleur
  * du mort qui la désigne : l'IA choisit seule, le joueur passe par l'attente
- * `duel.destructionsEnAttente` — résolue d'office quand une seule créature
- * adverse est légale, par un clic sinon (`rpgResoudreDestructionCiblee`).
+ * `duel.destructionsEnAttente`. Le joueur désigne **toujours**, même quand une
+ * seule créature est légale — le jeu attend son clic —, et sans cible légale
+ * l'effet se dissipe.
  */
 function declencherCapaciteDestruction(duel, cote, carte, carteId) {
   const effet = carte.destruction;
@@ -2388,14 +2389,10 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId) {
   const adv = autre(cote);
   const legales = duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
   if (!legales.length) {
-    duel.log.push(`${carte.name} ne trouve aucune créature adverse à frapper.`);
+    duel.log.push(`${carte.name} se dissipe : aucune créature adverse à frapper.`);
     return;
   }
   const resoudre = (cibleId) => appliquer(duel, cote, effet, cibleId, null, cardColors(carte), null, carteId);
-  if (legales.length === 1) {
-    resoudre(legales[0].id);
-    return;
-  }
   if (cote === 'sorcier') {
     const choix = choisirCibleAutoIA(duel, cote, { ...carte, arrivee: effet });
     resoudre(legales.some((entite) => entite.id === choix) ? choix : legales[0].id);
@@ -2820,13 +2817,41 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
 }
 
 /**
+ * Fait tomber les attentes de destruction qui n'ont plus de cible : le champ
+ * adverse s'est vidé, ou s'est entièrement protégé, entre la mort et la
+ * désignation. L'effet se dissipe alors au lieu de retenir la partie ; la
+ * table appelle ce nettoyage avant de continuer, et le moteur le refait
+ * lui-même à chaque désignation.
+ */
+export function rpgDissiperDestructionsSansCible(duel) {
+  const attentes = duel.destructionsEnAttente;
+  if (!attentes?.length) return 0;
+  const restantes = [];
+  let dissipees = 0;
+  for (const attente of attentes) {
+    const carte = duelCardById(attente.carteId);
+    const legales = duel[autre(attente.cote)].creatures
+      .filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+    if (legales.length) {
+      restantes.push(attente);
+      continue;
+    }
+    dissipees += 1;
+    duel.log.push(`${carte?.name ?? 'La capacité'} se dissipe : aucune créature adverse à frapper.`);
+  }
+  duel.destructionsEnAttente = restantes;
+  return dissipees;
+}
+
+/**
  * Résout l'attente de destruction ciblée (le Ghul des cendres) : le contrôleur
- * du mort clique la créature adverse qui encaisse les dégâts. L'attente survit
- * au changement de tour — une mort pendant le tour adverse attend que le
- * joueur désigne — mais tombe d'elle-même si le champ adverse s'est vidé
- * (ou s'est entièrement protégé) entre la mort et la désignation.
+ * du mort clique la créature adverse qui encaisse les dégâts. La partie ne
+ * continue pas tant que ce clic n'est pas donné — la table bloque la fin de
+ * tour et le tour du sorcier. L'attente tombe d'elle-même si plus aucune
+ * créature n'est légale (voir `rpgDissiperDestructionsSansCible`).
  */
 export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
+  rpgDissiperDestructionsSansCible(duel);
   const attente = duel.destructionsEnAttente?.[0];
   if (!attente || attente.cote !== cote) return { ok: false, raison: 'aucune-attente' };
   const carte = duelCardById(attente.carteId);
@@ -3898,6 +3923,11 @@ export function rpgFinDeTour(duel) {
   // Un joueur multicolore doit investir son nouveau mana avant de pouvoir
   // quitter son tour. Ce garde-fou protège aussi les appels hors interface.
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[duel.tour].manaChoixEnAttente) return duel;
+  // Une destruction ciblée attend son clic : le tour ne se ferme pas avant
+  // elle, sinon le Ghul frapperait pendant le tour suivant — ou pas du tout.
+  // Une attente sans cible légale se dissipe d'abord : elle ne bloque rien.
+  rpgDissiperDestructionsSansCible(duel);
+  if (duel.destructionsEnAttente?.length) return duel;
   duel.phase = 'fin';
   duel.finDeTour = null;
   while (duel.defausseEnAttente?.restant > 0 && duel[duel.defausseEnAttente.cote]?.main.length) {

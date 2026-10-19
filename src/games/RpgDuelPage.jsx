@@ -155,6 +155,7 @@ import {
   rpgPoserTerrain,
   rpgResoudreArriveeCiblee,
   rpgResoudreDestructionCiblee,
+  rpgDissiperDestructionsSansCible,
   cibleRespecteCoutMax,
   rpgActiverArme,
   rpgActiverCapacite,
@@ -4169,6 +4170,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const sequenceAnimationRef = useRef(0);
   const [, setVersion] = useState(0);
   const force = () => setVersion((v) => v + 1);
+
+  // Une destruction ciblée qui n'a plus de cible légale — le champ adverse
+  // s'est vidé ou s'est entièrement protégé entre la mort et le clic — se
+  // dissipe d'elle-même : la partie ne reste jamais suspendue sur un choix
+  // impossible, et le tour du sorcier mis en pause reprend son cours.
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (!duelCourant?.destructionsEnAttente?.length) return;
+    if (!rpgDissiperDestructionsSansCible(duelCourant)) return;
+    force();
+    reprendreSorcier();
+  });
   // Hors tutoriel, le catalogue ne doit pas fournir d'étapes : le voile et
   // les signaux de progression resteraient branchés sur la leçon 1.
   const tutorielCourant = tutorielActif ? tutorielParId(tutorielId) : null;
@@ -4323,6 +4336,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [debutVisible, setDebutVisible] = useState(false);
   // Le sorcier est en deuxième phase principale (après son combat).
   const sorcierApresCombatRef = useRef(false);
+  // Le tour du sorcier s'arrête net quand le joueur doit désigner la créature
+  // frappée par son Ghul des cendres : la suite reprend après son clic.
+  const repriseSorcierRef = useRef(null);
   const [attaquants, setAttaquants] = useState([]);
   const [ciblesAttaque, setCiblesAttaque] = useState({});
   const [combatEntrant, setCombatEntrant] = useState(null);
@@ -5668,6 +5684,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .filter((entite) => !rpgEstProtegee(entite, cardColors(carteAttenteDestruction)))
       .map((entite) => entite.id)
     : []);
+  // Sans cible légale, l'effet se dissipe (l'effet ci-dessus s'en charge) : le
+  // bandeau ne s'accroche pas à un choix impossible.
+  const attenteDestructionVisible = attenteDestruction && idsCiblesDestruction.size > 0;
   const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort || fenetreFinTour);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
@@ -5870,6 +5889,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Le tour qui s'ouvre peut porter un écho différé (Nuage de cendres) : les
   // blessures et les morts qu'il cause s'animent comme les autres, au lieu de
   // se contenter d'un chiffre qui change sur la carte.
+  /**
+   * Le Ghul des cendres exige un clic avant que la partie continue : tant que
+   * l'attente de destruction est ouverte côté joueur, le tour du sorcier se met
+   * en pause et retient par où reprendre. Rend `true` quand il faut s'arrêter.
+   */
+  const pauseSiAttenteJoueur = (reprendre) => {
+    if (duel.destructionsEnAttente?.[0]?.cote !== 'joueur') return false;
+    repriseSorcierRef.current = reprendre;
+    force();
+    return true;
+  };
+
+  /** Relance la suite du tour du sorcier, mise en pause par une désignation. */
+  const reprendreSorcier = () => {
+    const reprendre = repriseSorcierRef.current;
+    repriseSorcierRef.current = null;
+    if (reprendre) later(reprendre, 400);
+  };
+
   const terminerTourEtDetecterDegatsJoueur = () => {
     const instantane = prendreInstantaneDegatsJoueur();
     const champAvantFinDeTour = prendreInstantaneChamp();
@@ -7039,6 +7077,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
       jouerSfx('select');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      reprendreSorcier();
       force();
       return;
     }
@@ -7376,6 +7415,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // rapide (il garde son mana d'un tour à l'autre) ; puis le tour se ferme.
   const finDuTour = () => {
     if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
+    // Le Ghul des cendres attend sa victime : le tour ne se ferme pas tant que
+    // le joueur n'a pas cliqué la créature qui encaisse.
+    if (duel.destructionsEnAttente?.[0]?.cote === 'joueur') { jouerSfx('erreur'); force(); return; }
     if (choixManaEssaiOuvert) { jouerSfx('erreur'); return; }
     if (sacrificeDemande || sacrificeEnCours || sacrificeEnCoursRef.current) { jouerSfx('erreur'); return; }
     // Mode sans terrains : plus de cinq cartes en main à la fin du tour ? Le
@@ -7452,6 +7494,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Fin de tour du sorcier : le joueur peut répondre par une magie rapide, ou
   // passer. Sans magie rapide jouable en main, la fenêtre se referme d'elle-même.
   const passerFinTourSorcier = () => {
+    if (pauseSiAttenteJoueur(passerFinTourSorcier)) return;
     if (duel.finDeTour?.cote !== 'sorcier') return;
     if (transitionTourRef.current) return;
     transitionTourRef.current = true;
@@ -7463,6 +7506,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const finirTourSorcier = () => {
+    if (pauseSiAttenteJoueur(finirTourSorcier)) return;
     sorcierApresCombatRef.current = false;
     if (rpgVainqueur(duel)) { force(); return; }
     rpgOuvrirFinDeTour(duel);
@@ -7477,6 +7521,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // annoncer des cartes, le joueur répond comme d'habitude), puis fin de tour.
   const apresCombatSorcier = () => {
     if (rpgVainqueur(duel)) { force(); return; }
+    // Le combat du sorcier vient peut-être de tuer votre Ghul : sa capacité
+    // attend votre clic, le sorcier reprendra ensuite.
+    if (pauseSiAttenteJoueur(apresCombatSorcier)) return;
     rpgDefinirPhase(duel, 'principale2');
     sorcierApresCombatRef.current = true;
     annoncerSuivantSorcier();
@@ -7510,6 +7557,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
+    if (pauseSiAttenteJoueur(annoncerSuivantSorcier)) return;
     if (annoncerTutorielScripte()) {
       setApercuAppui(null);
       setApercuSurvol(null);
@@ -7621,6 +7669,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
   const declarerAttaqueSorcier = () => {
+      if (pauseSiAttenteJoueur(declarerAttaqueSorcier)) return;
       // Une leçon de défense impose son assaut : les créatures déjà en scène
       // attaquent, même si l'IA estimerait l'échange défavorable.
       const etape = etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
@@ -7814,7 +7863,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               ? `Carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · ${duel.defausseEnAttente.restant} à défausser`
               : `Choisissez une carte à défausser (${duel.defausseEnAttente.restant})`,
         }
-        : attenteDestruction
+        : attenteDestructionVisible
           ? {
             cle: `destruction:${attenteDestruction.carteId}`,
             classe: 'rpg-target-prompt',

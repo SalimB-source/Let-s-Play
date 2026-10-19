@@ -27,6 +27,7 @@ import {
   rpgPeutBloquerAttaquant,
   rpgResonanceEnJeu,
   rpgResoudreDestructionCiblee,
+  rpgDissiperDestructionsSansCible,
   rpgDestructionsDepuis,
   rpgDerniereBlessure,
   rpgNombreBlessures,
@@ -1185,14 +1186,18 @@ test('le Ghul des cendres : son contrôleur désigne la créature frappée à sa
   assert.equal(dune.pv, pvDune - 1, 'la Dune encaisse le dégât choisi');
   assert.equal(duel.destructionsEnAttente.length, 0, 'l’attente est refermée');
 
-  // Une seule cible légale : la frappe se résout d'office, sans attente.
+  // Une seule cible légale : le joueur désigne quand même, la partie attend.
   rpgBlesserCreature(duel, 'sorcier', chien.id, 10, 'eau');
   donner(duel, 'joueur', 'ghul-des-cendres');
   const second = rpgJouerCreature(duel, 'joueur', 'ghul-des-cendres').entite;
   const pvDuneAvant = dune.pv;
   rpgBlesserCreature(duel, 'joueur', second.id, 1, 'eau');
-  assert.equal(duel.destructionsEnAttente.length, 0, 'une seule cible : aucune attente');
-  assert.equal(dune.pv, pvDuneAvant - 1, 'la Dune, seule cible légale, encaisse d’office');
+  assert.equal(duel.destructionsEnAttente.length, 1,
+    'une seule cible : le joueur doit tout de même la désigner');
+  assert.equal(dune.pv, pvDuneAvant, 'rien n’est frappé avant le clic');
+  assert.equal(rpgResoudreDestructionCiblee(duel, 'joueur', dune.id).ok, true);
+  assert.equal(dune.pv, pvDuneAvant - 1, 'la Dune, seule cible légale, encaisse le dégât');
+  assert.equal(duel.destructionsEnAttente.length, 0, 'l’attente est refermée');
 
   // Côté sorcier, l'IA choisit seule : jamais d'attente.
   donner(duel, 'joueur', 'chien-du-guet');
@@ -1207,6 +1212,39 @@ test('le Ghul des cendres : son contrôleur désigne la créature frappée à sa
   const survivants = duel.joueur.creatures.filter((entite) => [chienJoueur.id, fennec.id].includes(entite.id));
   const totalApres = survivants.reduce((somme, entite) => somme + entite.pv, 0);
   assert.equal(totalApres, totalAvant - 1, 'une des deux créatures du joueur a pris le dégât');
+});
+
+test('le Ghul retient la partie : pas de fin de tour avant la désignation, et l’effet se dissipe sans cible', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  donner(duel, 'sorcier', 'dune-marchante');
+  const dune = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
+  donner(duel, 'joueur', 'ghul-des-cendres');
+  const ghul = rpgJouerCreature(duel, 'joueur', 'ghul-des-cendres').entite;
+  rpgBlesserCreature(duel, 'joueur', ghul.id, 1, 'eau');
+  assert.equal(duel.destructionsEnAttente.length, 1, 'la désignation est ouverte');
+
+  // Le tour ne se ferme pas tant que le joueur n'a pas cliqué.
+  duel.tour = 'joueur';
+  duel.phase = 'principale2';
+  const avant = { ...duel.joueur.mana };
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'joueur', 'le tour ne passe pas tant que la cible manque');
+  assert.deepEqual(duel.joueur.mana, avant, 'rien n’est remis à zéro par une fermeture avortée');
+  assert.equal(duel.destructionsEnAttente.length, 1, 'l’attente reste ouverte');
+
+  // Plus aucune créature légale : l'effet se dissipe et la partie repart.
+  duel.sorcier.creatures = duel.sorcier.creatures.filter((entite) => entite.id !== chien.id);
+  dune.protection = { contre: 'braise', toursRestants: 1 };
+  assert.equal(rpgDissiperDestructionsSansCible(duel), 1, 'l’attente sans cible est dissipée');
+  assert.equal(duel.destructionsEnAttente.length, 0);
+  assert.ok(duel.log.some((ligne) => /se dissipe : aucune créature adverse/.test(ligne)),
+    'le journal dit que l’effet se dissipe');
+  rpgFinDeTour(duel);
+  assert.notEqual(duel.tour, 'joueur', 'le tour se ferme dès que l’attente n’a plus d’objet');
 });
 
 test('le journal des blessures dit la couleur du coup et si la créature y a survécu', () => {

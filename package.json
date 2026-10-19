@@ -60,6 +60,7 @@
     "check:rpg-motif": "node scripts/rpg-card-motif-check.mjs",
     "check:rpg-turn-banner": "node scripts/rpg-turn-banner-check.mjs",
     "check:rpg-ia-joue": "node scripts/rpg-ia-joue-check.mjs",
+    "check:rpg-destruction-ciblee": "node scripts/rpg-destruction-ciblee-check.mjs",
     "check:rpg-soins": "node --test tests/rpg-soins.test.js && node scripts/rpg-soins-check.mjs",
     "check:rpg-resonance": "node scripts/rpg-resonance-check.mjs",
     "check:rpg-aura": "node scripts/rpg-aura-check.mjs",
