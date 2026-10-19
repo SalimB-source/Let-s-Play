@@ -19,6 +19,7 @@ import {
   quetesAReclamer,
   quetesDisponibles,
   quetesDuJour,
+  etapesDeLaSerie,
   joursAvantLeCachetDeLaSemaine,
   reclamerCachetDeLaSemaine,
   reclamerCachetDuCycle,
@@ -279,6 +280,34 @@ test('la série ne se complète qu’au septième jour, et jamais deux fois', ()
   assert.equal(joursAvantLeCachetDeLaSemaine(six), 1, 'il en reste un à tenir');
   assert.equal(joursAvantLeCachetDeLaSemaine({ ...six, serie: 7 }), JOURS_DE_LA_SERIE,
     'le compte repart au jour suivant');
+});
+
+test('les sept cartes de la série reçoivent leur cachet, jour après jour', () => {
+  const vide = etapesDeLaSerie(etatQuetesVide());
+  assert.equal(vide.length, JOURS_DE_LA_SERIE, 'sept cartes, une par jour');
+  assert.ok(vide.every((etape) => !etape.atteint && !etape.aujourdhui),
+    'une série vide ne cachette aucun jour');
+  assert.deepEqual(vide.map((etape) => etape.jour), [1, 2, 3, 4, 5, 6, 7]);
+
+  const premier = etapesDeLaSerie({ ...etatQuetesVide(), jour: '2026-03-01', serie: 1 });
+  assert.deepEqual(premier.map((etape) => etape.atteint), [true, false, false, false, false, false, false],
+    'le premier jour est cacheté, les autres attendent');
+  assert.deepEqual(premier.map((etape) => etape.aujourdhui), [true, false, false, false, false, false, false],
+    'et c’est là que le joueur se tient');
+
+  const sept = etapesDeLaSerie({ ...etatQuetesVide(), jour: '2026-03-07', serie: 7 });
+  assert.ok(sept.every((etape) => etape.atteint), 'sept jours : les sept cachets, Cachet compris');
+  assert.ok(sept[6].aujourdhui, 'le septième est le jour courant');
+
+  const huit = etapesDeLaSerie({ ...etatQuetesVide(), jour: '2026-03-08', serie: 8 });
+  assert.deepEqual(huit.map((etape) => etape.atteint), [true, false, false, false, false, false, false],
+    'la semaine suivante repart au premier cachet');
+  assert.ok(huit[0].aujourdhui, 'et le jour courant est bien le premier');
+
+  const quatorze = etapesDeLaSerie({ ...etatQuetesVide(), jour: '2026-03-14', serie: 14 });
+  assert.ok(quatorze.every((etape) => etape.atteint), 'le quatorzième jour remplit la deuxième semaine');
+  assert.ok(etapesDeLaSerie({ serie: 'illisible' }).every((etape) => !etape.atteint),
+    'une série illisible ne cachette rien : pas de NaN à l’écran');
 });
 
 test('une série incomplète ne paie rien, même en trichant sur la série', () => {

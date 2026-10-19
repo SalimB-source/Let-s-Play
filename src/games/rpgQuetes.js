@@ -307,6 +307,28 @@ export function joursAvantLeCachetDeLaSemaine(etat) {
 }
 
 /**
+ * Les sept étapes de la série, telles qu'un écran les pose : une petite carte
+ * par jour, la dernière portant le Cachet.
+ *
+ * `atteint` dit que la série a déjà passé ce jour ; `aujourdhui` marque celui
+ * où le joueur se tient. La semaine se referme au septième jour et la suivante
+ * repart au premier — même arithmétique que `serieComplete`, lue une seule
+ * fois, ici : l'écran n'a pas à refaire la division.
+ *
+ * Une série vide ne pose aucun cachet (jour 1 compris) ; une série de sept,
+ * qu'il soit réclamé ou non, a les sept cachets de la semaine.
+ */
+export function etapesDeLaSerie(etat) {
+  const base = normaliserEtatQuetes(etat);
+  const parcourus = base.serie > 0 ? ((base.serie - 1) % JOURS_DE_LA_SERIE) + 1 : 0;
+  return Array.from({ length: JOURS_DE_LA_SERIE }, (_, index) => ({
+    jour: index + 1,
+    atteint: index < parcourus,
+    aujourdhui: index === parcourus - 1,
+  }));
+}
+
+/**
  * Réclame le Cachet de la semaine : sept jours d'affilée, une fois. Le
  * compteur de série, lui, ne bouge pas — c'est le jour suivant qui l'allonge.
  */
