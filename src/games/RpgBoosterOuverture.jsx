@@ -4,7 +4,7 @@
  * C'est le seul moment du Souk qui doit faire plaisir : les cartes se
  * retournent l'une après l'autre — trois communes ou inhabituelles, la **rare
  * garantie**, puis la cinquième carte, celle qui peut être mythique —, chaque
- * carte tamponnée **NOUVELLE** ou « déjà possédée → +45 ◈ », puis le total
+ * carte tamponnée **NOUVELLE** ou « déjà possédée → +22 ◈ », puis le total
  * encaissé et le bouton **« Tout ranger dans la collection »**.
  *
  * Elle est montée par l'écran du Souk, jamais par la page : l'achat, lui, a
@@ -47,6 +47,7 @@ function CarteRevelee({ detail, cardArt, index, visible = true }) {
       className={`rpg-souk__carte ${cardFrameClass(carte)}${detail.doublon ? ' is-doublon' : ' is-nouvelle'}`}
       data-souk-carte={visible ? carte.id : undefined}
       data-souk-carte-etat={detail.doublon ? 'doublon' : 'nouvelle'}
+      data-souk-carte-rarete={rarete.key}
       data-souk-carte-remboursement={detail.remboursement}
       style={{ '--rang': index }}
     >

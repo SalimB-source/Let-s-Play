@@ -28,8 +28,8 @@ window.renderBooster = (count) => root.render(React.createElement(RpgBoosterOuve
   onPlaySfx: (son) => window.sons.push(son),
   onFermer: () => { window.fermetures++; if (${preview}) root.render(null); },
   ouverture: {
-    prix: 140, nouvelles: 3, remboursement: 165, coffret: count > 5, paquets: count / 5,
-    cartes: Array.from({ length: count }, (_, i) => ({ id: ids[i % 5], doublon: i % 5 > 2, remboursement: 45 })),
+    prix: 140, nouvelles: 3, remboursement: 44, coffret: count > 5, paquets: count / 5,
+    cartes: Array.from({ length: count }, (_, i) => ({ id: ids[i % 5], doublon: i % 5 > 2, remboursement: 22 })),
   },
   cardArt: (card) => ${preview} ? '/cards/' + cardArtId(card) + '.jpg' : 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="176" height="' + (card.id === 'leviathan' ? 320 : 220) + '"><rect width="100%" height="100%" fill="#806535"/></svg>'),
 }));

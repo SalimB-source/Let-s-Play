@@ -40,12 +40,17 @@ export function creditsLisible(montant) {
 /** Le portefeuille de l'appareil : solde, cartes du Souk, compteurs d'ouverture. */
 export const RPG_BOURSE_STORAGE_KEY = 'letsplay_sablier_bourse_v1';
 
-/** Ce que rend une carte déjà possédée, par rareté (une mythique vaut presque un paquet). */
+/**
+ * Ce que rend une carte déjà possédée, par rareté. Un doublon **adoucit** la
+ * perte, il ne la paie jamais : même le pire paquet — trois inhabituelles, la
+ * rare garantie et la mythique, tous des doublons — rend 112 ◈ pour 140 ◈. On
+ * ne farme pas le comptoir en rachetant des paquets quand la collection est pleine.
+ */
 export const BAREME_DOUBLON = Object.freeze({
-  commune: 12,
-  inhabituelle: 20,
-  rare: 45,
-  mythique: 120,
+  commune: 6,
+  inhabituelle: 10,
+  rare: 22,
+  mythique: 60,
 });
 
 /**

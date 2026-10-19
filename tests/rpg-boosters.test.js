@@ -303,6 +303,32 @@ test('ouvrir un paquet débite le solde, range les cartes et rembourse les doubl
   for (const carte of tirage.tirage.details.filter((detail) => !detail.doublon)) assert.equal(carte.remboursement, 0);
 });
 
+test('un paquet de doublons n’enrichit jamais son acheteur', () => {
+  // Collection complète : les cinq cartes du paquet sont des doublons, c'est le
+  // mieux que le comptoir puisse rendre. Le solde doit pourtant toujours baisser.
+  const vivier = vivierRayon('souk', COMPLET);
+  let bourse = journalier(100000);
+  for (let graine = 1; graine <= 60; graine += 1) {
+    const avant = bourse.credits;
+    const achat = ouvrirBooster({
+      portefeuille: bourse,
+      rayonId: 'souk',
+      progression: COMPLET,
+      collection: vivier,
+      rng: rngSeme(graine),
+    });
+    assert.equal(achat.ok, true);
+    assert.ok(achat.portefeuille.credits < avant, `le paquet ${graine} ne doit pas rapporter de crédits`);
+    bourse = achat.portefeuille;
+  }
+  // La borne, écrite noir sur blanc : le pire paquet possible — trois
+  // inhabituelles, la rare garantie et la mythique en cinquième, toutes des
+  // doublons — rend 112 ◈ pour un paquet à 140 ◈. On ne farme pas le Souk.
+  const pire = BAREME_DOUBLON.inhabituelle * 3 + BAREME_DOUBLON.rare + BAREME_DOUBLON.mythique;
+  assert.equal(pire, 112);
+  assert.ok(pire < RAYONS[0].prix, 'un paquet entièrement fait de doublons ne rembourse jamais son prix');
+});
+
 test('sans solde, avant la première victoire ou sur un ancien rayon, l’achat ne touche à rien', () => {
   const pauvre = ouvrirBooster({ portefeuille: journalier(139), rayonId: 'souk', progression: jusqua('listes-1') });
   assert.equal(pauvre.ok, false);
