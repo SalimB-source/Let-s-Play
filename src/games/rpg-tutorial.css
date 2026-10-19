@@ -234,3 +234,293 @@
   .rpg-tutorial__instruction--waiting > span[aria-hidden='true'] { animation: none; }
   .rpg-tutorial__progress span { transition: none; }
 }
+
+/* ── Le choix des leçons ────────────────────────────────────────────────────
+   Un écran à part dans la coque du jeu : la grille des cinq tutoriels, chacun
+   porté par la couleur de son deck. Le décor reprend le sable sombre du menu
+   pour que l'onglet « Apprendre à jouer » reste un seuil, pas un catalogue. */
+.rpg-tutoriels {
+  position: relative;
+  z-index: 2;
+  width: min(1220px, 100%);
+  margin: 0 auto;
+  padding: clamp(18px, 3vw, 38px) clamp(16px, 3vw, 34px) 44px;
+  color: #f6ecd7;
+}
+.rpg-tutoriels__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: clamp(12px, 2vw, 26px);
+  margin-bottom: clamp(18px, 3vw, 32px);
+}
+.rpg-tutoriels__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid rgba(240, 221, 183, .28);
+  border-radius: 999px;
+  background: rgba(12, 12, 18, .58);
+  color: #eadbbc;
+  font: 800 9px/1.2 var(--mono, monospace);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rpg-tutoriels__back:hover,
+.rpg-tutoriels__back:focus-visible {
+  border-color: #f0ce7a;
+  background: rgba(58, 44, 26, .78);
+  color: #fff1c8;
+  outline: 2px solid rgba(240, 206, 122, .5);
+  outline-offset: 2px;
+}
+.rpg-tutoriels__eyebrow {
+  display: block;
+  color: #e9ca82;
+  font: 800 9px/1.4 var(--mono, monospace);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.rpg-tutoriels__heading h1 {
+  margin: 6px 0 8px;
+  color: #fff2d8;
+  font: 700 clamp(28px, 4vw, 46px)/1.02 Georgia, 'Times New Roman', serif;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+.rpg-tutoriels__heading p {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(246, 236, 215, .76);
+  font: 14px/1.6 Georgia, 'Times New Roman', serif;
+}
+.rpg-tutoriels__purse {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 108px;
+  padding: 10px 14px;
+  border: 1px solid rgba(238, 199, 111, .38);
+  border-radius: 14px;
+  background: rgba(18, 16, 22, .72);
+  color: #f4d995;
+  text-align: right;
+}
+.rpg-tutoriels__purse > span { grid-row: span 2; font-size: 17px; }
+.rpg-tutoriels__purse strong { font: 800 18px/1 var(--mono, monospace); }
+.rpg-tutoriels__purse small {
+  color: rgba(244, 217, 149, .6);
+  font: 800 7px/1.2 var(--mono, monospace);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.rpg-tutoriels__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr));
+  gap: clamp(12px, 1.6vw, 20px);
+}
+.rpg-tutoriels__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  overflow: hidden;
+  padding: 18px 18px 16px;
+  border: 1px solid color-mix(in srgb, var(--tuto-accent) 42%, transparent);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 88% 0, var(--tuto-fond), transparent 56%),
+    linear-gradient(160deg, rgba(26, 24, 29, .96), rgba(10, 10, 15, .97));
+  box-shadow: 0 18px 38px rgba(0, 0, 0, .3), inset 0 0 0 1px rgba(255, 255, 255, .025);
+}
+.rpg-tutoriels__card::after {
+  content: "";
+  position: absolute;
+  inset: auto -30% -52% 38%;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--tuto-fond), transparent 68%);
+  pointer-events: none;
+}
+.rpg-tutoriels__topline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+.rpg-tutoriels__index {
+  color: color-mix(in srgb, var(--tuto-accent) 80%, white);
+  font: 800 10px/1 var(--mono, monospace);
+  letter-spacing: .08em;
+}
+.rpg-tutoriels__niveau {
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--tuto-accent) 38%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--tuto-accent) 85%, white);
+  font: 800 7px/1.2 var(--mono, monospace);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.rpg-tutoriels__done {
+  margin-left: auto;
+  color: #bce6b8;
+  font: 800 8px/1.2 var(--mono, monospace);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.rpg-tutoriels__sigil {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin: 14px 0 10px;
+  border: 1px solid color-mix(in srgb, var(--tuto-accent) 48%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--tuto-fond) 60%, rgba(0, 0, 0, .32));
+  color: var(--tuto-accent);
+  font-size: 25px;
+  line-height: 1;
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--tuto-accent) 14%, transparent);
+}
+.rpg-tutoriels__element {
+  color: color-mix(in srgb, var(--tuto-accent) 78%, white);
+  font: 800 8px/1.35 var(--mono, monospace);
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.rpg-tutoriels__card h2 {
+  margin: 5px 0 8px;
+  color: #fff3dc;
+  font: 700 clamp(21px, 2.2vw, 27px)/1.06 Georgia, 'Times New Roman', serif;
+  letter-spacing: -.028em;
+  text-wrap: balance;
+}
+.rpg-tutoriels__tagline {
+  margin: 0 0 8px;
+  color: rgba(255, 244, 222, .86);
+  font: 600 12.5px/1.45 Georgia, 'Times New Roman', serif;
+}
+.rpg-tutoriels__description {
+  flex: 1;
+  margin: 0 0 14px;
+  color: rgba(240, 231, 214, .63);
+  font: 12px/1.55 Georgia, 'Times New Roman', serif;
+}
+.rpg-tutoriels__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 13px;
+}
+.rpg-tutoriels__meta > span {
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .035);
+  color: rgba(248, 236, 213, .72);
+  font: 800 7.5px/1.2 var(--mono, monospace);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.rpg-tutoriels__meta .rpg-tutoriels__reward {
+  border-color: color-mix(in srgb, var(--tuto-accent) 34%, transparent);
+  background: color-mix(in srgb, var(--tuto-fond) 86%, transparent);
+  color: var(--tuto-accent);
+}
+.rpg-tutoriels__meta .rpg-tutoriels__reward.is-claimed {
+  color: rgba(190, 230, 184, .7);
+  border-color: rgba(188, 230, 184, .22);
+  background: rgba(188, 230, 184, .05);
+}
+.rpg-tutoriels__start {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--tuto-accent) 60%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tuto-fond) 76%, rgba(20, 18, 24, .9));
+  color: color-mix(in srgb, var(--tuto-accent) 92%, white);
+  font: 800 10px/1.2 var(--mono, monospace);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rpg-tutoriels__start:hover,
+.rpg-tutoriels__start:focus-visible {
+  border-color: color-mix(in srgb, var(--tuto-accent) 90%, white);
+  background: color-mix(in srgb, var(--tuto-fond) 86%, rgba(40, 34, 26, .9));
+  outline: 2px solid color-mix(in srgb, var(--tuto-accent) 45%, transparent);
+  outline-offset: 2px;
+}
+.rpg-tutoriels__hint {
+  margin: 18px 0 0;
+  color: rgba(246, 236, 215, .48);
+  font: 11px/1.55 Georgia, 'Times New Roman', serif;
+  text-align: center;
+}
+.rpg-tutorial__reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 8px 11px;
+  border: 1px solid rgba(238, 199, 111, .36);
+  border-radius: 9px;
+  background: rgba(182, 124, 47, .12);
+  color: #f4d995;
+  font: 800 9px/1.3 var(--mono, monospace);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.rpg-tutorial__reward.is-claimed {
+  border-color: rgba(188, 230, 184, .25);
+  background: rgba(188, 230, 184, .06);
+  color: #bce6b8;
+}
+.rpg-tutorial-reward-toast {
+  position: fixed;
+  z-index: 10050;
+  left: 50%;
+  top: clamp(16px, 5vh, 56px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 17px;
+  border: 1px solid rgba(244, 217, 149, .6);
+  border-radius: 999px;
+  background: rgba(14, 12, 17, .94);
+  color: #fbe8b1;
+  font: 800 10px/1.2 var(--mono, monospace);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .45), 0 0 24px rgba(233, 192, 101, .18);
+  animation: rpg-tutorial-toast-in .28s ease-out;
+  pointer-events: none;
+}
+.rpg-tutorial-reward-toast strong { color: #ffe9a9; font-size: 14px; }
+@keyframes rpg-tutorial-toast-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (max-width: 760px) {
+  .rpg-tutoriels { padding: 14px 12px 34px; }
+  .rpg-tutoriels__header { grid-template-columns: 1fr auto; }
+  .rpg-tutoriels__back { grid-column: 1 / -1; justify-self: start; }
+  .rpg-tutoriels__heading h1 { font-size: clamp(26px, 8vw, 36px); }
+  .rpg-tutoriels__heading p { font-size: 12.5px; }
+  .rpg-tutoriels__grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-tutorial-reward-toast { animation: none; }
+}

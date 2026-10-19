@@ -25,11 +25,15 @@ for (const methode of ['play', 'pause', 'load']) {
 }
 
 try {
-  const { checkRpgTutorial, checkRpgCardGuide } = await import('../node_modules/.cache/rpg-tutorial/rpg-tutorial-smoke.js');
+  const {
+    checkRpgTutorial, checkRpgTutorialCombat, checkRpgTutorialEau, checkRpgCardGuide,
+  } = await import('../node_modules/.cache/rpg-tutorial/rpg-tutorial-smoke.js');
   await checkRpgTutorial(assert);
+  await checkRpgTutorialCombat(assert);
+  await checkRpgTutorialEau(assert);
   await checkRpgCardGuide(assert);
 } finally {
   dom.window.close();
 }
 
-console.log('✓ Tutoriels du Sablier : duel guidé jusqu’à la première attaque, puis fiches cartes/effets parcourues et fermées');
+console.log('✓ Tutoriels du Sablier : choix des leçons, parcours débutant (attaque, arme, blocage), leçon Eau (annonce contredite) et guide des cartes');
