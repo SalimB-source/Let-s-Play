@@ -17,6 +17,20 @@ test('the Braise sound applies to fire and hybrid spells and attacks', () => {
   assert.equal(rpgFireSoundFor('chien-du-guet', 'attack'), null);
 });
 
+test('une magie Braise ne sonne le feu que si elle brûle vraiment', () => {
+  // Les sorts de dégâts gardent le souffle.
+  assert.equal(rpgFireSoundFor('trait-de-braise', 'spell'), RPG_FIRE_SFX);
+  assert.equal(rpgFireSoundFor('frappe-iaijutsu', 'spell'), RPG_FIRE_SFX);
+  assert.equal(rpgFireSoundFor('feux-de-kitsune', 'spell'), RPG_FIRE_SFX);
+  assert.equal(rpgFireSoundFor('vent-rouge', 'spell'), RPG_FIRE_SFX,
+    'le sort hybride qui frappe garde le feu de sa moitié Braise');
+  // Une arme-sort, un renfort, une protection : le bruit commun des magies.
+  assert.equal(rpgFireSoundFor('sabre-maudit', 'spell'), null,
+    'le Sabre maudit attache une arme : il ne met pas le feu');
+  assert.equal(rpgFireSoundFor('serment-de-la-forge', 'spell'), null,
+    'un renfort de forge ne brûle rien');
+});
+
 test('each triggered ability of a Braise creature has the fire effect sound', () => {
   assert.equal(rpgFireSoundFor('ifrit-des-ergs', 'arrival'), null, 'l’Ifrit n’a plus d’effet d’arrivée');
   assert.equal(rpgFireSoundFor('ifrit-des-ergs', 'destruction'), RPG_FIRE_SFX);

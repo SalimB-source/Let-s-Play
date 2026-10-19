@@ -13,6 +13,14 @@ export const RPG_SWORD_SFX = 'sword';
 const CREATURE_KINDS = new Set(['creature', 'hero']);
 
 /**
+ * Les sorts de Braise qui **brûlent** : ceux qui infligent des dégâts ou rasent
+ * la table. Une magie Braise qui ne fait que renforcer, attacher une arme ou
+ * protéger garde le bruit commun des magies — jouer le Sabre maudit ou le
+ * Serment de la forge ne met pas le feu.
+ */
+const SORTS_DE_FEU = new Set(['degats', 'destruction-totale']);
+
+/**
  * Les seuls effets d'arrivée qui SONNENT comme le feu : ceux qui brûlent
  * réellement la table. Une carte Braise dont l'arrivée crée des jetons, exile,
  * pioche ou détruit un terrain n'a pas de souffle à elle — le Daimyō du Soleil
@@ -32,7 +40,7 @@ export function rpgFireSoundFor(cardOrId, action) {
 
   switch (action) {
     case 'spell':
-      return card.kind === 'magie' ? RPG_FIRE_SFX : null;
+      return card.kind === 'magie' && SORTS_DE_FEU.has(card.effet?.type) ? RPG_FIRE_SFX : null;
     case 'attack':
       return CREATURE_KINDS.has(card.kind) ? RPG_FIRE_SFX : null;
     case 'arrival':

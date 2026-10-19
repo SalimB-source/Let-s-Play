@@ -197,6 +197,10 @@ assert.doesNotMatch(blocEau, /cartesEnDestruction/,
 assert.match(page, /if \(!rouesFeu\.length\) return undefined;[\s\S]*?setRouesFeu\(\(current\) => nettoyerFantomes\(current\)\)/,
   'un chien de garde éteint les roues périmées si la minuterie se perd');
 assert.match(page, /setRouesFeu\(\[\]\);/, 'quitter le duel éteint les roues en cours');
+// Le sacrifice d'une créature déchire sa carte : il ne joue pas le feu, qui
+// restait allumé pour n'importe quelle couleur sacrifiée.
+assert.doesNotMatch(page, /jouerSfx\('flame_gust'\);\s*\n\s*const duree = animationsReduites\(\) \? 60 : 860;/,
+  'sacrifier une carte ne déclenche pas le souffle de feu');
 assert.match(page, /\{rouesFeu\.map\(\(effet\) => \(\s*<RoueDeFeu\s+key=\{effet\.effectId\}/s, 'elles sont rendues sur la table');
 assert.match(page, /onTermine=\{\(effectId\) => setRouesFeu\(\(current\) => current\.filter\(\(autre\) => autre\.effectId !== effectId\)\)\}/,
   'chacune s’éteint à sa dernière image');

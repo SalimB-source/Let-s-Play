@@ -6550,7 +6550,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const token = ++sequenceAnimationRef.current;
       setSacrificeFx({ ...instantane, token, effectId: `dechirement-${token}-${entite.id}` });
     }
-    jouerSfx('flame_gust');
+    // Le sacrifice déchire une carte : il n'a jamais eu de feu à lui. Le
+    // souffle restait allumé pour toute créature sacrifiée, quelle que soit sa
+    // couleur — c'est le bruit de la carte détruite qui reste.
+    jouerSfx('destruction');
     const duree = animationsReduites() ? 60 : 860;
     later(() => {
       const enCours = sacrificeEnCoursRef.current;
