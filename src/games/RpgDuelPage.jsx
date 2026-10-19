@@ -131,6 +131,7 @@ import {
   rpgFinDeTour,
   rpgConsommerPresentations,
   rpgConsommerSoins,
+  rpgConsommerJetsHonneur,
   rpgJouerCreature,
   rpgLancerAttaque,
   rpgPeutAttaquer,
@@ -1166,6 +1167,65 @@ const phaseVol = (entite) => (empreinteEntite(entite) % 1000) / 1000;
 /** La durée du souffle qui traverse la face, en secondes — la feuille la répète
  *  dans son `animation` : les deux valeurs vont ensemble. */
 const SOUFFLE_ENVOL_DUREE = 6.5;
+
+/* ── Honneur : la petite boule de feu ─────────────────────────────────────── */
+/** Durée du vol d'Honneur, minuterie de nettoyage comprise (ms). */
+export const RPG_JET_HONNEUR_DUREE = 950;
+
+/** Le trajet d'un jet : du centre de la carte morte au centre de la frappée,
+ *  en vecteur écran (y vers le bas), distance et angle en degrés — l'axe que
+ *  la feuille utilise pour tourner le conteneur de vol. */
+export function trajetJetHonneur(de, vers) {
+  const centre = (rect) => ({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+  const depart = centre(de);
+  const arrivee = centre(vers);
+  const dx = arrivee.x - depart.x;
+  const dy = arrivee.y - depart.y;
+  return {
+    depart,
+    arrivee,
+    dx,
+    dy,
+    distance: Math.hypot(dx, dy),
+    angle: Math.atan2(dy, dx) * (180 / Math.PI),
+  };
+}
+
+/**
+ * Une boule de feu qui part de la créature qui meurt vers la créature adverse
+ * frappée par l'Honneur. Le calque est ancré au CENTRE de la carte morte et
+ * n'a ni largeur ni hauteur : l'orbe voyage le long de l'axe calculé entre les
+ * deux cartes (`--rpg-jet-angle`, `--rpg-jet-distance`), son sillage derrière
+ * lui, et un éclat s'allume à l'arrivée, au centre de la cible. Purement
+ * décoratif (`aria-hidden`) : la phrase de l'Honneur est déjà dans le journal
+ * du duel, lue aux lecteurs d'écran.
+ */
+export function JetHonneur({ jet }) {
+  const { depart, dx, dy, distance, angle } = trajetJetHonneur(jet.de, jet.vers);
+  return (
+    <span
+      className="rpg-honneur-jet"
+      style={{
+        left: `${depart.x}px`,
+        top: `${depart.y}px`,
+        '--rpg-jet-angle': `${angle.toFixed(2)}deg`,
+        '--rpg-jet-distance': `${distance.toFixed(1)}px`,
+        '--rpg-jet-dx': `${dx.toFixed(1)}px`,
+        '--rpg-jet-dy': `${dy.toFixed(1)}px`,
+      }}
+      data-honneur-source={jet.entityId}
+      data-honneur-cible={jet.cibleId}
+      data-honneur-montant={jet.montant}
+      aria-hidden="true"
+    >
+      <span className="rpg-honneur-jet__vol">
+        <span className="rpg-honneur-jet__sillage" />
+        <span className="rpg-honneur-jet__orbe" />
+      </span>
+      <span className="rpg-honneur-jet__impact" />
+    </span>
+  );
+}
 
 /* ── Soins : l'éclat d'un gain de vie ─────────────────────────────────────── */
 // Motes de lumière fixes (position, départ, taille, dérive) : le même éclat à
@@ -4071,6 +4131,71 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   useEffect(() => () => soinsTimersRef.current.forEach((id) => window.clearTimeout(id)), []);
 
+  // ── Honneur : la boule de feu qui part de la créature qui meurt ───────────
+  // Le moteur note le trajet (`{ entityId, cibleId, montant }`,
+  // `rpgConsommerJetsHonneur`) au moment où l'Honneur trouve sa cible — juste
+  // avant la blessure, donc même une cible qui meurt à son tour laisse son
+  // trajet. La page relève le journal après le rendu et mesure les deux
+  // cartes : la morte n'est plus dans sa rangée, son image d'adieu
+  // (`.rpg-card-destruction-fx`) occupe la même place. Les positions connues
+  // sont mémorisées à chaque rendu (avant peinture), pour que le départ reste
+  // trouvable même quand la carte s'en va sans image d'adieu (mouvement
+  // réduit). Un seul bruitage par lot de jets.
+  const [jetsHonneur, setJetsHonneur] = useState([]);
+  const sequenceJetRef = useRef(0);
+  const jetsTimersRef = useRef([]);
+  const jetsDuelRef = useRef(null);
+  const rectsEntitesRef = useRef(new Map());
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined') return;
+    const noeuds = document.querySelectorAll('.rpg-card[data-entity-id], .rpg-card-destruction-fx[data-rpg-destroyed-id]');
+    noeuds.forEach((noeud) => {
+      const cle = noeud.dataset.entityId ?? noeud.dataset.rpgDestroyedId;
+      if (!cle) return;
+      const rect = noeud.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      rectsEntitesRef.current.set(cle, {
+        left: rect.left, top: rect.top, width: rect.width, height: rect.height,
+      });
+    });
+  });
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    const jets = rpgConsommerJetsHonneur(duelCourant);
+    if (jetsDuelRef.current !== duelCourant || ecran !== 'partie') {
+      jetsDuelRef.current = duelCourant;
+      return;
+    }
+    if (!jets.length) return;
+    const token = ++sequenceJetRef.current;
+    const effets = [];
+    jets.forEach((jet, index) => {
+      const de = rectsEntitesRef.current.get(jet.entityId);
+      const vers = rectsEntitesRef.current.get(jet.cibleId);
+      if (!de || !vers) return;
+      effets.push({ ...jet, token, id: `${token}-${index}`, de, vers });
+    });
+    if (!effets.length) return;
+    setJetsHonneur((courant) => [...courant, ...effets]);
+    jouerSfx('honneur_jet');
+    const ids = new Set(effets.map((effet) => effet.id));
+    const timer = window.setTimeout(() => {
+      jetsTimersRef.current = jetsTimersRef.current.filter((id) => id !== timer);
+      setJetsHonneur((courant) => {
+        const restants = courant.filter((jet) => !ids.has(jet.id));
+        return restants.length === courant.length ? courant : restants;
+      });
+    }, RPG_JET_HONNEUR_DUREE);
+    jetsTimersRef.current.push(timer);
+  });
+  const effacerJetsHonneur = () => {
+    jetsTimersRef.current.forEach((id) => window.clearTimeout(id));
+    jetsTimersRef.current = [];
+    rectsEntitesRef.current.clear();
+    setJetsHonneur((courant) => (courant.length ? [] : courant));
+  };
+  useEffect(() => () => jetsTimersRef.current.forEach((id) => window.clearTimeout(id)), []);
+
   // Compteur de séquence pour les animations de pioche.
   const sequencePiocheRef = useRef(0);
   const carteOrigineVolRef = useRef(null);
@@ -4246,6 +4371,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       });
       setAnimationsEntites((current) => (Object.keys(current).length ? {} : current));
       setSoinsVisibles((current) => (Object.keys(current).length ? {} : current));
+      // Une braise d'Honneur ne survit pas à un onglet endormi : son vol serait
+      // resté en l'air, figé au-dessus de la table au réveil.
+      setJetsHonneur((current) => (current.length ? [] : current));
       const action = actionVolRef.current;
       if (action) {
         if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
@@ -4468,6 +4596,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCarteEnVol(null);
     setImpactEcran(null);
     effacerSoinsVisibles();
+    effacerJetsHonneur();
     carteOrigineVolRef.current = null;
     carteCibleeHandIndexRef.current = null;
     actionVolRef.current = null;
@@ -7940,6 +8069,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             );
           }) : null}
         </div>
+
+        {jetsHonneur.map((jet) => <JetHonneur key={jet.id} jet={jet} />)}
 
         {cartesEnDestruction.map((effet) => {
           const carteDetruite = cardById(effet.cardId);

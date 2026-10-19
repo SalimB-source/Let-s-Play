@@ -69,7 +69,7 @@ export const RPG_SFX_NAMES = Object.freeze([
   'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap', 'mana',
   'mythic_impact', 'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'soin_vie', 'soin_vie_adverse', 'bouclier',
   'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
-  'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'water_wave', 'card_countered', 'creature_return', 'block_impact', 'destruction_hit', 'page_turn', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
+  'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'water_wave', 'card_countered', 'creature_return', 'block_impact', 'destruction_hit', 'page_turn', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover', 'honneur_jet',
 ]);
 
 /**
@@ -112,6 +112,17 @@ export function rpgSfx(name) {
       return [
         noise(0, 0.27, 0.23, { filterType: 'bandpass', filter: 6200, filterTo: 720, q: 0.65, attack: 0.01, send: 0.16, pan: -0.18 }),
         tone('sine', 'A4', 0, 0.24, 0.1, { slideTo: 'D3', filter: 1250, filterTo: 480, attack: 0.02, send: 0.12, pan: 0.15 }),
+      ];
+    // L'Honneur : une petite boule de feu quitte la créature qui meurt. Un
+    // souffle qui MONTE (le départ), un corps chaud qui file, puis une
+    // brûlure mate à l'arrivée — court, pour ne pas retarder le tour.
+    case 'honneur_jet':
+      return [
+        noise(0, 0.34, 0.18, { filterType: 'bandpass', filter: 900, filterTo: 3200, q: 0.8, attack: 0.03, send: 0.2, pan: -0.15 }),
+        tone('triangle', 'D3', 0.02, 0.42, 0.16, { slideTo: 'A4', filter: 1100, filterTo: 2600, attack: 0.03, send: 0.18 }),
+        tone('sine', 'A3', 0.05, 0.5, 0.12, { slideTo: 'E3', filter: 780, filterTo: 420, attack: 0.05, send: 0.14, pan: 0.12 }),
+        thud(0.36, 0.3, 0.42, { from: 140, to: 44, filter: 420, send: 0.14 }),
+        noise(0.36, 0.3, 0.16, { filterType: 'lowpass', filter: 2400, filterTo: 700, attack: 0.005, send: 0.16, pan: 0.18 }),
       ];
     case 'hit':
       return [

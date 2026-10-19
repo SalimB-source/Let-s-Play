@@ -294,6 +294,33 @@ export function rpgConsommerSoins(duel) {
   return journal;
 }
 
+// Les jets d'Honneur, hors de l'état sauvegardé eux aussi : quand une créature
+// meurt en trouvant une cible, le journal retient le trajet — la créature qui
+// meurt, la créature adverse frappée et les dégâts. La page en tire la petite
+// boule de feu qui part de l'une vers l'autre. Le journal observe : aucune
+// règle ne le lit, et il ne change jamais le hasard de la cible.
+const jetsHonneurParDuel = new WeakMap();
+function journaliserJetHonneur(duel, cote, entite, cible, montant) {
+  const journal = jetsHonneurParDuel.get(duel) ?? [];
+  journal.push({
+    cote,
+    entityId: entite.id,
+    carteId: entite.carteId,
+    cibleCote: autre(cote),
+    cibleId: cible.id,
+    cibleCarteId: cible.carteId,
+    montant,
+  });
+  jetsHonneurParDuel.set(duel, journal);
+}
+/** Les jets d'Honneur survenus depuis le dernier relevé — le journal se vide. */
+export function rpgConsommerJetsHonneur(duel) {
+  if (!duel) return [];
+  const journal = jetsHonneurParDuel.get(duel) ?? [];
+  jetsHonneurParDuel.delete(duel);
+  return journal;
+}
+
 /**
  * Un gain de vie sur le sorcier (soin, Tribut, transfert) : la vie monte
  * TOUJOURS de la totalité du montant — 25 n'est plus un plafond — et le
@@ -1169,6 +1196,9 @@ function declencherHonneur(duel, cote, entite) {
   const index = Math.min(cibles.length - 1, Math.max(0, Math.floor(rng() * cibles.length)));
   const cible = cibles[index];
   duel.log.push(`Honneur ${honneur} : ${entite.name} inflige ${honneur} dégâts à ${cible.name}, choisie au hasard.`);
+  // Le trajet est noté AVANT la blessure : la page le rejoue même si la cible
+  // meurt à son tour dans la même résolution (la boule de feu a bien volé).
+  journaliserJetHonneur(duel, cote, entite, cible, honneur);
   rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite');
 }
 
