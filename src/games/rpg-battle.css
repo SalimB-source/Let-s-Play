@@ -562,7 +562,11 @@
   outline: 2px solid #000;                   /* le liseré noir extérieur */
   box-shadow: 0 12px 28px rgba(0, 0, 0, .65), 0 2px 6px rgba(0, 0, 0, .5);
   cursor: pointer;
-  transform: rotate(var(--tilt, 0deg));
+  /* Une carte POSÉE sur la table est droite. L'éventail — et ses petites
+     inclinaisons — n'appartient qu'à la main (`--hand-fan`). Seuls les états
+     de combat penchent une créature : `data-combat-tilted` pour l'attaquant
+     déclaré. */
+  transform: none;
   transition: transform .35s ease, translate .35s ease, box-shadow .35s ease, filter .3s ease, opacity .3s ease;
 }
 
@@ -956,7 +960,7 @@
 }
 
 /* États de la carte posée. */
-.rpg-card:hover { transform: rotate(0deg) translateY(-6px); }
+.rpg-card:hover { transform: translateY(-6px); }
 
 /* ── Envol : la créature lévite au-dessus de la table ────────────────────────
    Le mouvement vit dans le JS (`translate`, `rotate`, `scale` animés un par
@@ -1044,7 +1048,7 @@
 }
 
 .rpg-card.is-active {
-  transform: rotate(0deg) translateY(-10px);
+  transform: translateY(-10px);
   box-shadow:
     0 0 0 2px var(--yellow),
     0 14px 30px rgba(0, 0, 0, .65),
@@ -1061,7 +1065,9 @@
 .rpg-card.is-down {
   filter: grayscale(1) brightness(.6);
   opacity: .55;
-  transform: rotate(calc(var(--tilt, 0deg) * 3)) translateY(8px);
+  /* Une carte tombée garde sa propre inclinaison de repos : elle n'emprunte
+     plus celle de l'éventail, qui n'existe que dans la main. */
+  transform: rotate(-7deg) translateY(8px);
   pointer-events: none;
 }
 

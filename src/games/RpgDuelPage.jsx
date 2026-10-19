@@ -194,7 +194,6 @@ import {
 // `rpgSortSignature.jsx`).
 import { SortSceau, SortSocle, classeLigneFamille } from './rpgSortSignature.jsx';
 
-const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
 const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️', hybride: '🔥⏳' };
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Sable + Braise' };
 const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' };
@@ -1143,8 +1142,8 @@ function phaseResonance(entite) {
    Trois propriétés de transformation INDÉPENDANTES de `transform` —
    `translate`, `rotate`, `scale` — portent le vol : la carte monte et
    descend, avance et recule d'un souffle, grossit d'un pour cent au sommet et
-   s'incline d'un demi-degré. L'inclinaison de la table (`--tilt`), le survol
-   et les cinématiques de combat gardent leur `transform`, et chaque propriété
+   s'incline d'un demi-degré. Le survol, l'inclinaison de combat et les
+   cinématiques gardent leur `transform`, et chaque propriété
    se compose sur le compositeur : aucun recalcul de la rangée, aucun
    repeint. Le vol est lent (7,2 s) pour lire comme une lévitation, et sa
    phase vient de l'identifiant de l'entité : deux créatures voisines ne
@@ -1225,7 +1224,6 @@ export function TableCard({
   coupRapideCible = false,
   declaredAttacker = false,
   onClick,
-  tilt,
   canDragBlocker = false,
   canReceiveBlocker = false,
   draggedBlocker = false,
@@ -1382,7 +1380,11 @@ export function TableCard({
         // elle-même n'est pas animée, ses cinématiques `fx-*` restent libres.
         soin ? `is-healing is-healing--${varianteSoin(soin)}` : '',
       ].filter(Boolean).join(' ')}
-      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(carte), ...(caseEssai ? { '--case-essai': caseEssai } : {}) }}
+      /* Une carte POSÉE sur la table est toujours droite : l'éventail et ses
+         inclinaisons n'appartiennent qu'à la main. Seuls les états de combat
+         (attaquant déclaré, créature engagée) la font pencher, et ils sont
+         écrits dans la feuille (`data-combat-tilted`). */
+      style={{ ...cardFrameStyle(carte), ...(caseEssai ? { '--case-essai': caseEssai } : {}) }}
       data-case-essai={caseEssai ?? undefined}
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}
@@ -7825,7 +7827,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       onAssignBlocker={assignerBloqueur}
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
-                      tilt={TILTS[i % TILTS.length]}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureEnnemie(entite)}
@@ -7909,7 +7910,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
                       playerTurn={tourDuJoueur}
-                      tilt={TILTS[(i + 2) % TILTS.length]}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureJoueur(entite)}
@@ -8445,7 +8445,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     enVol ? `rpg-card-flight is-flying${estTerrain ? ' rpg-card-flight--terrain' : ''}` : '',
                   ].filter(Boolean).join(' ')}
                   style={{
-                    '--tilt': `${TILTS[i % TILTS.length]}deg`,
                     '--hand-fan': eventail,
                     '--hand-fan-arc': eventail * eventail,
                     ...cardFrameStyle(carte),
