@@ -278,6 +278,23 @@ export const CARD_KIND_LABELS = {
 };
 
 /**
+ * Le cadre d'acier d'une arme, porté par la créature qu'elle équipe.
+ *
+ * Depuis que la carte d'arme ne se glisse plus derrière son porteur, c'est
+ * l'anneau de la créature qui dit l'équipement : elle reçoit la matière des
+ * armes (`rpg-card--frame-arme`) teintée par l'élément de son arme, comme la
+ * carte d'arme elle-même. On ne reprend pas `cardFrameClass`, qui ajoute la
+ * variante brillante des mythiques : le porteur n'est pas mythique, son cadre
+ * ne doit pas se mettre à respirer. Rend `''` pour une carte qui n'est pas
+ * une arme.
+ */
+export function armeCadreClass(carte) {
+  if (!carteEstArme(carte)) return '';
+  const couleur = cardColors(carte)[0];
+  return `rpg-card--frame-arme${couleur ? ` rpg-card--frame-arme-${couleur}` : ''}`;
+}
+
+/**
  * Les créatures du duel — façon Magic : un coût en sable, ⚔ l'attaque,
  * 🛡 la défense, et parfois une capacité À L'ARRIVÉE ou QUAND ELLES
  * MEURENT. Set jouable : créatures, héros, terrains et sorts composent les decks.
