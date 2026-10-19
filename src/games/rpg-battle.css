@@ -6871,17 +6871,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    dans l'anneau. Sans cette classe, la matière couvre toujours 100 % du cadre
    et la séparation diagonale des hybrides reste immobile. */
 .rpg-card--frame-brillant { --rpg-frame-material-size: 240% 100%; }
-.rpg-card.rpg-card--frame-brillant,
-.rpg-hand__card.rpg-card--frame-brillant,
-.rpg-terrain.rpg-card--frame-brillant,
-.rpg-hover-card-preview__face.rpg-card--frame-brillant,
-.rpg-spell-played__art.rpg-card--frame-brillant,
-.rpg-card-destruction-fx.rpg-card--frame-brillant,
-.rpg-card-pile__card--top.rpg-card--frame-brillant,
-.rpg-mulligan__card.rpg-card--frame-brillant,
-.rpg-card-catalogue__art.rpg-card--frame-brillant {
-  animation: rpg-frame-shine-sweep var(--rpg-frame-shine-duration, 3.2s) ease-in-out infinite alternate;
-}
+/* Le reflet du cadre n'est plus joué dans le duel : l'expérimentation « plus
+   aucun cadre » retire `background-image` à toutes ces faces, il n'y aurait
+   donc rien à balayer. Surtout, déclaré après les cinématiques, il leur volait
+   la propriété `animation` — une seule par élément — sur les cartes brillantes
+   et mythiques. Le reflet reste vivant dans l'atelier de deck et le guide, où
+   les anneaux sont toujours peints. */
 
 /* Hybrides : deux aplats francs, chacun la moitié de la diagonale.
    L'angle et les arrêts identiques sur toutes les faces dessinent la même
@@ -8149,6 +8144,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
    Pour revenir en arrière : supprimer ce bloc (et les deux jumeaux en fin de
    `rpg-deck-atelier.css` et de `rpg-card-guide.css`). Rien d'autre n'a bougé.
+
+   L'animation, elle, n'est PAS coupée : `animation: none !important` emportait
+   toutes les animations de la carte — l'arrivée en jeu, le bond d'attaque, le
+   choc de blocage et la lévitation de l'Envol. Le balayage brillant n'a de
+   toute façon plus d'anneau à parcourir : `background-image: none` le rend
+   invisible sans rien arrêter.
    ══════════════════════════════════════════════════════════════════════════ */
 .rpg-card[class*="rpg-card--frame-"],
 .rpg-hand__card[class*="rpg-card--frame-"],
@@ -8162,7 +8163,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-catalogue__art[class*="rpg-card--frame-"] {
   border-width: 0 !important;
   background-image: none !important;
-  animation: none !important;
 }
 
 /* La teinte de matière des mythiques et des armes (`#62180d`, l'acier…) ne

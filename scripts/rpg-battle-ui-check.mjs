@@ -638,8 +638,14 @@ assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*borde
 const shineRule = frameCss.slice(frameCss.indexOf('/* ── Cadres brillants'), frameCss.indexOf('/* Hybrides : deux aplats francs'));
 assert.match(shineRule, /\.rpg-card--frame-brillant\s*\{\s*--rpg-frame-material-size:\s*240% 100%;\s*\}/,
   'seuls les cadres mythiques mono utilisent une matière large pour leur reflet');
-assert.match(shineRule, /\.rpg-card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-hand__card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-terrain\.rpg-card--frame-brillant,[\s\S]*?\.rpg-mulligan__card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-card-catalogue__art\.rpg-card--frame-brillant\s*\{\s*animation:\s*rpg-frame-shine-sweep/s,
-  'un cadre brillant conserve son reflet dans le duel, le mulligan et le catalogue');
+// Le duel ne joue plus le reflet : ses faces n'ont plus d'anneau (expérimentation
+// « plus aucun cadre »), et cette animation, déclarée après les cinématiques,
+// leur volait la propriété `animation` sur les cartes brillantes et mythiques —
+// l'arrivée, le bond, le choc et la lévitation de l'Envol disparaissaient.
+assert.doesNotMatch(shineRule, /animation:\s*rpg-frame-shine-sweep/,
+  'le reflet d’un cadre brillant ne prend plus la propriété `animation` des cartes du duel');
+assert.match(shineRule, /\.rpg-card--frame-brillant\s*\{\s*--rpg-frame-material-size:\s*240% 100%;\s*\}/,
+  'la matière large du reflet reste déclarée pour les feuilles qui peignent encore l’anneau');
 assert.doesNotMatch(shineRule, /linear-gradient\(115deg|background-image/,
   'la mécanique du cadre brillant est partagée : chaque variante ne fournit que son dégradé');
 // Toute combinaison déclarée au catalogue doit exister en CSS : une future
@@ -910,8 +916,8 @@ assert.match(guideCss, /\.rpg-card-guide__cost\s*\{\s*position: absolute;\s*z-in
     'une mythique sélectionnée au mulligan garde son cadre jaune de sélection');
   cascade.window.close();
 }
-assert.match(frameCss, /animation:\s*rpg-frame-shine-sweep[^;]*\binfinite alternate;/,
-  'les reflets font des allers-retours, sans saut au retour du cycle');
+assert.doesNotMatch(frameCss, /\.rpg-card[\.\w-]*\s*\{\s*animation:\s*rpg-frame-shine-sweep/s,
+  'aucune face du duel ne porte le reflet : elles n’ont plus d’anneau');
 const shinePositions = [...frameCss.slice(frameCss.indexOf('@keyframes rpg-frame-shine-sweep'))
   .matchAll(/background-position:\s*0 0, 0 0,\s*(-?[\d.]+)%/g)].map((match) => Number(match[1]));
 assert.ok(shinePositions.length >= 2, 'le reflet est animé sur toute la largeur du cadre');

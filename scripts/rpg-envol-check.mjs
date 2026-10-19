@@ -160,6 +160,23 @@ assert.match(battleCss, /@keyframes rpg-card-arrive\s*\{\s*0% \{ opacity: 0; tra
 assert.match(battleCss, /@keyframes card-lunge-team \{ 40% \{ translate: 0 -52px; \} \}/,
   'le bond d’attaque anime translate');
 
+// ── 2 ter. Rien ne coupe les animations de la carte ────────────────────────
+// L'expérimentation « plus aucun cadre » retirait l'anneau ET, avec
+// `animation: none !important`, toutes les animations de la carte : arrivée,
+// bond, choc et lévitation. Elle ne doit plus toucher à `animation`.
+const blocCadres = battleCss.slice(battleCss.indexOf('EXPÉRIMENTATION — PLUS AUCUN CADRE'));
+assert.match(blocCadres, /border-width:\s*0 !important;/, 'l’expérimentation « plus aucun cadre » est toujours là');
+assert.match(blocCadres, /background-image:\s*none !important;/, 'elle retire bien la peinture de l’anneau');
+assert.doesNotMatch(blocCadres.slice(0, blocCadres.indexOf('/* La teinte de matière')),
+  /animation:\s*none !important;/,
+  'mais elle ne coupe plus les animations des cartes : la lévitation et les cinématiques vivent');
+// Le reflet des cadres brillants, déclaré plus bas que les cinématiques, volait
+// leur propriété `animation` aux cartes brillantes et mythiques.
+assert.doesNotMatch(battleCss, /\.rpg-card\.rpg-card--frame-brillant,/,
+  'le reflet du cadre ne prend plus l’animation de la carte du duel');
+assert.ok(battleCss.indexOf('.rpg-card.fx-enter {') > battleCss.indexOf('.rpg-card.is-envol {'),
+  'les cinématiques restent déclarées après la lévitation');
+
 // Le souffle et le silence en mouvement réduit.
 assert.match(envolCss, /\.rpg-card__envol-souffle\s*\{[^}]*animation:\s*rpg-envol-souffle 6\.5s ease-in-out var\(--rpg-envol-phase, 0s\) infinite;/s,
   'le souffle traverse la face sur son propre cycle, décalé par carte');
