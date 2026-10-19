@@ -67,7 +67,7 @@ const bell = (note, at, dur, g = 0.5, options = {}) => ({ kind: 'bell', n: note,
 export const RPG_SFX_NAMES = Object.freeze([
   'apparition', 'victoire', 'defaite', 'whoosh', 'hit', 'heal', 'zone', 'bell', 'blip', 'explore', 'souffle',
   'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap', 'mana',
-  'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'soin_vie', 'soin_vie_adverse', 'bouclier',
+  'mythic_impact', 'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'soin_vie', 'soin_vie_adverse', 'bouclier',
   'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
   'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'water_wave', 'card_countered', 'creature_return', 'block_impact', 'destruction_hit', 'page_turn', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
 ]);
@@ -80,6 +80,13 @@ export const RPG_SFX_NAMES = Object.freeze([
 export function rpgSfx(name) {
   switch (name) {
     // Arpège d'arrivée, souffle aspiré et éclat d'Astrolabe.
+    case 'mythic_impact':
+      return [
+        thud(0, 0.65, 0.85, { send: 0.28 }),
+        tone('sine', 'G2', 0, 0.55, 0.45, { slideTo: 'C1', send: 0.22 }),
+        noise(0, 0.12, 0.32, { filterType: 'lowpass', filter: 1300, filterTo: 180 }),
+        noise(0.04, 0.7, 0.18, { filterType: 'bandpass', filter: 650, filterTo: 120, send: 0.3 }),
+      ];
     case 'apparition':
       return [
         noise(0, 0.42, 0.13, { filterType: 'bandpass', filter: 1500, filterTo: 360, q: 0.8, attack: 0.035, send: 0.34, pan: -0.22 }),

@@ -1,0 +1,62 @@
+/* Local, non-interactive layers: no full-screen flash, no layout animation. */
+.rpg-mythic-impact {
+  position: absolute; width: 0; height: 0; z-index: 45;
+  pointer-events: none; color: #e9bb75;
+}
+.rpg-mythic-impact i { position: absolute; display: block; pointer-events: none; }
+.rpg-mythic-impact__shadow {
+  width: var(--impact-size); height: calc(var(--impact-size) * .65);
+  border-radius: 50%; background: radial-gradient(ellipse, #100c09b3, transparent 70%);
+  animation: mythic-shadow 850ms both;
+}
+.rpg-mythic-impact__ring {
+  width: calc(var(--impact-size) * 2.6); height: calc(var(--impact-size) * 1.5);
+  border: 2px solid #ebc28b99; border-radius: 50%;
+  box-shadow: inset 0 0 13px #e7b87650, 0 0 9px #f0c78440;
+  animation: mythic-ring 700ms 348ms cubic-bezier(.12,.6,.25,1) both;
+}
+.rpg-mythic-impact__ring--echo { animation-delay: 410ms; border-width: 1px; }
+.rpg-mythic-impact__cracks {
+  position: absolute; width: calc(var(--impact-size) * 3); height: calc(var(--impact-size) * 2.3);
+  overflow: visible; fill: none; stroke: #f4cd91; stroke-width: .8;
+  filter: drop-shadow(0 0 3px #e7aa59);
+  animation: mythic-cracks 950ms 348ms both;
+}
+.rpg-mythic-impact__dust {
+  width: 42px; height: 26px; border-radius: 50%;
+  background: radial-gradient(ellipse, #d2b28e66, #b1937130 35%, transparent 70%);
+  animation: mythic-dust 950ms var(--delay) cubic-bezier(.12,.6,.22,1) both;
+}
+.rpg-mythic-impact__debris {
+  width: 3px; height: 4px; border-radius: 1px; background: #c5a372;
+  animation: mythic-debris 650ms var(--delay) ease-out both;
+}
+@keyframes mythic-shadow {
+  0% { transform: translate(-50%,-50%) scale(.6); opacity: .3; }
+  41% { transform: translate(-50%,-50%) scale(1.2); opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity: 0; }
+}
+@keyframes mythic-ring {
+  0% { transform: translate(-50%,-50%) scale(.28); opacity: 0; }
+  8% { opacity: .85; }
+  100% { transform: translate(-50%,-50%) scale(1.3); opacity: 0; }
+}
+@keyframes mythic-cracks {
+  0% { transform: translate(-50%,-50%) scale(.85); opacity: 0; stroke-dasharray: 0 140; }
+  12% { opacity: .85; }
+  35% { stroke-dasharray: 140 140; opacity: .55; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity: 0; stroke-dasharray: 140 140; }
+}
+@keyframes mythic-dust {
+  0% { transform: translate(-50%,-50%) scale(.2); opacity: 0; }
+  12% { opacity: .8; }
+  100% { transform: translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(2); opacity: 0; }
+}
+@keyframes mythic-debris {
+  0% { transform: translate(0,0); opacity: 0; }
+  10% { opacity: .9; }
+  50% { transform: translate(var(--dx),calc(var(--dy) - 16px)) rotate(var(--spin)); opacity: .65; }
+  100% { transform: translate(var(--dx),var(--dy)) rotate(var(--spin)); opacity: 0; }
+}
+.rpg-mythic-impact.is-reduced { display: none; }
+@media (prefers-reduced-motion: reduce) { .rpg-mythic-impact { display: none; } }
