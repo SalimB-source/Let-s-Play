@@ -28,6 +28,8 @@ import {
   rpgResoudreDestructionCiblee,
   rpgDestructionsDepuis,
   rpgDerniereBlessure,
+  rpgNombreBlessures,
+  rpgBlessuresDepuis,
   rpgOuvrirFenetreReponse,
   rpgPiocher,
   rpgPeutPayer,
@@ -1215,6 +1217,13 @@ test('le journal des blessures dit la couleur du coup et si la créature y a sur
     'la dernière blessure remplace la précédente : seul le coup neuf compte');
   assert.equal(rpgDerniereBlessure(duel, 'entite-inconnue'), null,
     'une créature jamais blessée n’a pas de blessure');
+  // Le journal se lit par tranches : la table ne rejoue que les coups parus
+  // depuis sa dernière action animée — jamais une ancienne brûlure.
+  assert.equal(rpgNombreBlessures(duel), 2, 'deux blessures sont inscrites');
+  const depuisPremiere = rpgBlessuresDepuis(duel, 1);
+  assert.equal(depuisPremiere.length, 1, 'la seconde tranche ne contient que le second coup');
+  assert.deepEqual(depuisPremiere[0].elements, ['eau']);
+  assert.deepEqual(rpgBlessuresDepuis(duel, 2), [], 'plus rien après la dernière blessure');
 });
 
 test('une blessure mortelle de la Braise est journalisée comme telle', () => {

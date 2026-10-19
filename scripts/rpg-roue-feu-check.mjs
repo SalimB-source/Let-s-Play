@@ -131,12 +131,14 @@ assert.match(corpsBlessure, /mortelle = !duel\[cote\]\.creatures\.some\(\(candid
 
 // ── 4. La table : la roue s’allume et la conséquence attend ────────────────
 assert.match(page, /const DUREE_ROUE_FEU = 900;/, 'la roue dure 900 ms');
-assert.match(page, /const blessure = rpgDerniereBlessure\(duel, entite\.entityId\);/,
-  'la table lit la dernière blessure de la créature');
-assert.match(page, /if \(!blessure \|\| !blessure\.elements\.includes\('braise'\)\) continue;/,
+assert.match(page, /const blessuresNouvelles = rpgBlessuresDepuis\(duel, positionBlessures\);/,
+  'la table ne lit que les blessures parues depuis la dernière action animée');
+assert.match(page, /journalBlessuresRef\.current = \{ duel, position: rpgNombreBlessures\(duel\) \};/,
+  'elle avance la position du journal, action après action');
+assert.match(page, /if \(blessure\.elements\.includes\('braise'\)\) braiseParEntite\.set\(blessure\.entityId, blessure\);/,
   'seule la Braise allume la roue');
 assert.match(page, /apres\.pv === blessure\.pvApres\s*\n?\s*&& \(apres\.bouclier \?\? 0\) === blessure\.bouclierApres/s,
-  'une ancienne brûlure ne se rallume pas : l’état doit être celui du coup');
+  'un coup qui n’a pas laissé cet état ne rallume rien');
 assert.match(page, /: blessure\.mortelle;/, 'une créature qui a quitté la table sous ce coup compte comme brûlée');
 assert.match(page, /avecCarte: !vivants\.has\(entite\.entityId\),/,
   'la carte reste dans le feu quand elle quitte la table');
@@ -153,5 +155,13 @@ assert.match(page, /setRouesFeu\(\[\]\);/, 'quitter le duel éteint les roues en
 assert.match(page, /\{rouesFeu\.map\(\(effet\) => \(\s*<RoueDeFeu\s+key=\{effet\.effectId\}/s, 'elles sont rendues sur la table');
 assert.match(page, /onTermine=\{\(effectId\) => setRouesFeu\(\(current\) => current\.filter\(\(autre\) => autre\.effectId !== effectId\)\)\}/,
   'chacune s’éteint à sa dernière image');
+
+// ── 5. Les sons : un seul feu par geste, pas de page tournée sur l'attaque ──
+assert.match(page, /if \(nom === 'flame_gust'\) \{\s*\n\s*const maintenant = Date\.now\(\);\s*\n\s*if \(maintenant - dernierSonFeuRef\.current < 700\) return;/,
+  'un seul bruit de feu par geste : le sort qui tue sa cible ne le joue pas deux fois');
+assert.doesNotMatch(page, /jouerSfx\('page_turn'\)/,
+  'la fenêtre de blocage ne joue plus le bruit de page tournée quand une créature attaque');
+assert.match(page, /phaseDuelActive === 'attaque'[\s\S]{0,80}jouerSfx\('phase'\)/,
+  'la déclaration d’attaque garde son repère sonore');
 
 console.log('✓ Braise : la roue de feu s’allume autour de la créature mordue par une magie, une sorcellerie ou l’effet d’une créature de Braise — deux cercles qui tournent en sens contraires, cinq braises et une lueur au sol — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la carte brûlée reste dans le feu et son adieu de carte détruite n’arrive qu’une fois la roue refermée (900 ms), silencieuse en mouvement réduit');

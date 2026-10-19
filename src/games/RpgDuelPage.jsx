@@ -141,7 +141,8 @@ import {
   rpgNombreDestructions,
   rpgDestructionsDepuis,
   rpgRenvoisEnMain,
-  rpgDerniereBlessure,
+  rpgNombreBlessures,
+  rpgBlessuresDepuis,
   rpgOuvrirFenetreReponse,
   rpgOuvrirFinDeTour,
   rpgPeutRepondre,
@@ -3613,6 +3614,9 @@ function vientDunChampDeSaisie(cible) {
 function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impactEcran, jouerSfx }) {
   const prevVainqueurRef = useRef(null);
   const prevPhaseRef = useRef(null);
+  // La position du journal des blessures déjà animée : une brûlure ancienne ne
+  // rallume jamais la roue de feu sur une action qui ne la concerne pas.
+  const journalBlessuresRef = useRef({ duel: null, position: 0 });
   const prevDestructionCountRef = useRef(0);
   useEffect(() => {
     if (vainqueur && prevVainqueurRef.current !== vainqueur) {
@@ -3621,9 +3625,12 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
     prevVainqueurRef.current = vainqueur;
   }, [vainqueur]);
   useEffect(() => {
-    if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive) {
-      if (phaseDuelActive === 'attaque') jouerSfx('phase');
-      else if (phaseDuelActive === 'blocage') jouerSfx('page_turn');
+    // La déclaration d'attaque a son propre repère sonore. La fenêtre de
+    // blocage, elle, s'ouvre dans le même geste : aucun bruit de page tournée
+    // ne vient par-dessus le clic de l'attaquant.
+    if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive
+      && phaseDuelActive === 'attaque') {
+      jouerSfx('phase');
     }
     prevPhaseRef.current = phaseDuelActive;
   }, [phaseDuelActive]);
@@ -4004,7 +4011,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     return prochain;
   });
+  // Un seul bruit de feu par geste : un sort de Braise qui touche et tue sa
+  // cible ne joue pas `flame_gust` deux fois (le lancement, puis la
+  // destruction), et une attaque de Braise qui emporte un bloqueur n'ajoute
+  // pas un second souffle au sien.
+  const dernierSonFeuRef = useRef(0);
   const jouerSfx = (nom, delai = 0) => {
+    if (nom === 'flame_gust') {
+      const maintenant = Date.now();
+      if (maintenant - dernierSonFeuRef.current < 700) return;
+      dernierSonFeuRef.current = maintenant;
+    }
     try {
       const p = sfxRef.current;
       if (!p) return;
@@ -5844,6 +5861,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const animerModificationsChamp = (avant, attaquantsIds = [], debutJournalDestructions = null, entitesRenvoyees = []) => {
+    // Le journal des blessures avance à chaque action animée, même sans carte
+    // à l'écran : une brûlure non jouée ne doit pas se rallumer plus tard.
+    const positionBlessures = journalBlessuresRef.current.duel === duel
+      ? journalBlessuresRef.current.position
+      : 0;
+    const blessuresNouvelles = rpgBlessuresDepuis(duel, positionBlessures);
+    journalBlessuresRef.current = { duel, position: rpgNombreBlessures(duel) };
     if (!avant?.length) return;
     const vivants = new Map([
       ...duel.joueur.creatures,
@@ -5865,17 +5889,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       && !renvoyees.has(entite.entityId));
     const mouvementReduit = animationsReduites();
     const disparues = mouvementReduit ? [] : cartesDisparues;
-    // La roue de feu : la dernière blessure d'une créature dit d'où vient le
-    // coup. La Braise l'allume — encore faut-il que l'état de la créature soit
-    // **encore** celui de cette blessure (jamais une ancienne brûlure), ou
-    // qu'elle ait quitté la table sous ce coup. Une attaque de créature ne
-    // passe pas par ce journal : elle ne lève pas de roue.
+    // La roue de feu : seules les blessures **parues depuis la dernière action
+    // animée** comptent. Une brûlure ancienne reste dans le journal, mais elle
+    // ne rallume plus rien — sans quoi la moindre action de la créature (une
+    // attaque, par exemple) ferait rejouer le feu. La Braise allume la roue ;
+    // une attaque de créature, elle, passe par le combat simultané et n'écrit
+    // pas dans ce journal.
     const brulees = new Map();
     if (!mouvementReduit) {
+      const braiseParEntite = new Map();
+      for (const blessure of blessuresNouvelles) {
+        if (blessure.elements.includes('braise')) braiseParEntite.set(blessure.entityId, blessure);
+      }
       for (const entite of avant) {
         if (entite.isTerrain || renvoyees.has(entite.entityId)) continue;
-        const blessure = rpgDerniereBlessure(duel, entite.entityId);
-        if (!blessure || !blessure.elements.includes('braise')) continue;
+        const blessure = braiseParEntite.get(entite.entityId);
+        if (!blessure) continue;
         const apres = vivants.get(entite.entityId);
         const fraiche = apres
           ? apres.pv === blessure.pvApres

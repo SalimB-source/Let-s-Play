@@ -123,6 +123,18 @@ export function rpgRenvoisEnMain(duel) {
   return (renvoisParDuel.get(duel) ?? []).map((evenement) => ({ ...evenement }));
 }
 
+/** Combien de blessures d'effet le duel a encaissées depuis son début. */
+export function rpgNombreBlessures(duel) {
+  return blessuresParDuel.get(duel)?.length ?? 0;
+}
+
+/** Les blessures parues depuis une position du journal (0 : toutes). */
+export function rpgBlessuresDepuis(duel, position = 0) {
+  return (blessuresParDuel.get(duel) ?? [])
+    .slice(Math.max(0, position))
+    .map((evenement) => ({ ...evenement, elements: [...evenement.elements] }));
+}
+
 /**
  * La dernière blessure d'une créature : `{ entityId, cote, elements, recus,
  * absorbes, pvApres, bouclierApres, mortelle }`. `pvApres`/`bouclierApres`
