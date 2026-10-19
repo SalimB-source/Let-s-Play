@@ -6,9 +6,10 @@
  * créature : autour d'elle s'allume une roue de flammes qui tourne, des
  * langues s'en détachent et des braises montent. Comme le tourbillon d'eau, le
  * calque se pose sur l'emplacement mesuré avant l'action, ne capte rien et ne
- * touche pas la mise en page — mais il joue **avant** la conséquence : une
- * créature qui meurt de ce coup garde sa carte dans le feu, et son adieu de
- * carte détruite n'arrive qu'une fois la roue refermée.
+ * touche pas la mise en page. Rien n'est retardé : une créature qui meurt de ce
+ * coup reçoit son adieu **tout de suite**, et la roue finit de brûler
+ * l'emplacement qu'elle vient de quitter. Seul le tourbillon d'eau retient son
+ * renvoi.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -44,13 +45,9 @@ try {
   assert.match(style, /height:176px/, 'et sa hauteur');
   assert.match(style, /--rpg-fx-rotation:0\.26rad/, 'elle en garde l’inclinaison de combat');
 
-  const carte = racine.querySelector('.rpg-roue-feu__carte');
-  assert.ok(carte, 'la carte brûlée reste visible dans le feu');
-  assert.match(carte.querySelector('img')?.getAttribute('src') ?? '', /fennec-des-decombres/,
-    'c’est bien l’illustration de la créature mordue');
-  assert.ok([...carte.classList].some((classe) => classe.startsWith('rpg-card--frame-')),
-    'elle garde le cadre de sa couleur, comme sur la table');
   assert.ok(racine.querySelector('.rpg-roue-feu__lueur'), 'une lueur s’allume au sol');
+  assert.equal(racine.querySelector('img'), null,
+    'la roue ne redessine pas la carte : une morte a déjà commencé son adieu');
 
   // Les flammes sont dessinées : un calque SVG, un tracé de langue, et trois
   // couches par langue — la braise rouge, la flamme orange, le cœur blanc.
@@ -93,23 +90,10 @@ try {
     && /--dy:-?\d+px/.test(braise.getAttribute('style') ?? '')
     && /--d:\d+ms/.test(braise.getAttribute('style') ?? '')),
   'chaque braise part dans sa direction, avec son propre retard');
-  assert.equal(racine.children.length, 3 + braises.length,
-    'le calque ne contient que ses pièces de feu et la carte qu’il consume');
+  assert.equal(racine.children.length, 2 + braises.length,
+    'le calque ne contient que ses pièces de feu : la lueur, les flammes, les braises');
 } finally {
   window.close();
-}
-
-// Une créature qui survit à la brûlure est toujours sur la table : sa carte
-// n'est pas redessinée dans le calque.
-const { window: fenetreSurvivante } = new JSDOM(
-  `<!doctype html><html><body>${rendreRoue({ avecCarte: false })}</body></html>`,
-);
-try {
-  const survie = fenetreSurvivante.document.querySelector('.rpg-roue-feu');
-  assert.equal(survie?.querySelector('.rpg-roue-feu__carte') ?? null, null,
-    'une créature qui survit garde sa carte sur la table : le feu ne la double pas');
-} finally {
-  fenetreSurvivante.close();
 }
 
 // ── 2. La feuille : du feu, du mouvement composé ───────────────────────────
@@ -152,10 +136,8 @@ assert.match(lingue, /100% \{[\s\S]*?scale\(calc\(var\(--s0\) \* \.5\), calc\(va
   'elle meurt en pointe, jamais en bloc');
 assert.match(css, /\.rpg-roue-feu__braise\s*\{[^}]*animation:\s*rpg-roue-feu-braise \.9s[^}]*animation-delay:\s*var\(--d, 0ms\);/s,
   'les braises montent avec leur retard');
-assert.match(css, /\.rpg-roue-feu__carte\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*animation:\s*rpg-roue-feu-carte \.9s ease-in both;/s,
-  'la carte s’embrase et se consume dans la roue');
-assert.match(css, /@keyframes rpg-roue-feu-carte\s*\{\s*0% \{ opacity: 1;[^}]*\}\s*38%[\s\S]*?100% \{ opacity: 0;/,
-  'elle part nette, flambe, puis s’efface');
+assert.doesNotMatch(css, /rpg-roue-feu__carte|rpg-roue-feu-carte/,
+  'plus de copie de carte dans la roue : la carte détruite a son propre adieu');
 
 // Aucune mise en page : les images clés ne touchent ni top/left, ni taille.
 const debutImages = css.indexOf('@keyframes rpg-roue-feu-vie');
@@ -192,15 +174,26 @@ assert.match(page, /if \(blessure\.elements\.includes\('braise'\)\) braiseParEnt
 assert.match(page, /apres\.pv === blessure\.pvApres\s*\n?\s*&& \(apres\.bouclier \?\? 0\) === blessure\.bouclierApres/s,
   'un coup qui n’a pas laissé cet état ne rallume rien');
 assert.match(page, /: blessure\.mortelle;/, 'une créature qui a quitté la table sous ce coup compte comme brûlée');
-assert.match(page, /avecCarte: !vivants\.has\(entite\.entityId\),/,
-  'la carte reste dans le feu quand elle quitte la table');
+assert.doesNotMatch(page, /avecCarte/, 'la roue ne porte plus de carte : elle brûle l’emplacement');
 assert.match(page, /setRouesFeu\(\(current\) => \[\.\.\.nettoyerFantomes\(current\), \.\.\.effetsFeu\]\);/,
   'la roue rejoint la file des effets, en nettoyant les périmés');
 assert.match(page, /expireA: Date\.now\(\) \+ DUREE_ROUE_FEU \+ 400,/, 'elle porte sa date de péremption');
-assert.match(page, /const retenues = effets\.filter\(\(effet\) => brulees\.has\(effet\.entityId\)\);/, 
-  'une carte détruite par la Braise est retenue');
-assert.match(page, /programmerNettoyageVisuel\(\(\) => \{\s*\n\s*setCartesEnDestruction\(\(current\) => \[\.\.\.nettoyerFantomes\(current\), \.\.\.retenues\]\);\s*\n\s*\}, DUREE_ROUE_FEU\);/,
-  'elle ne reçoit son adieu qu’une fois la roue refermée');
+assert.doesNotMatch(page, /const retenues =|\bretenues\b/,
+  'aucune carte n’est retenue derrière la roue : la mort n’attend plus');
+assert.match(page, /expireA: Date\.now\(\) \+ duree \+ 400,\s*\n\s*\}\)\);\s*\n\s*\/\/ La mort ne se fait plus attendre/,
+  'la carte brûlée reçoit son adieu sans délai');
+assert.match(page, /setCartesEnDestruction\(\(current\) => \[\.\.\.nettoyerFantomes\(current\), \.\.\.effets\]\);\s*\n\s*programmerNettoyageVisuel/,
+  'toutes les cartes détruites, brûlées comprises, partent dans le même geste');
+// L'eau, elle, garde son attente : la créature reste sur la table pendant le
+// tourbillon, puis revient en main.
+const blocEau = page.slice(
+  page.indexOf("// Renvoi en main : la créature quitte la table"),
+  page.indexOf('const attaquants = new Set('),
+);
+assert.match(blocEau, /const duree = 950;/,
+  'le tourbillon d’eau dure toujours 950 ms avant que la carte rejoigne la main');
+assert.doesNotMatch(blocEau, /cartesEnDestruction/,
+  'un renvoi en main n’est pas une mort : rien n’y est détruit');
 assert.match(page, /if \(!rouesFeu\.length\) return undefined;[\s\S]*?setRouesFeu\(\(current\) => nettoyerFantomes\(current\)\)/,
   'un chien de garde éteint les roues périmées si la minuterie se perd');
 assert.match(page, /setRouesFeu\(\[\]\);/, 'quitter le duel éteint les roues en cours');
@@ -220,4 +213,4 @@ assert.doesNotMatch(page, /jouerSfx\('page_turn'\)/,
 assert.match(page, /phaseDuelActive === 'attaque'[\s\S]{0,80}jouerSfx\('phase'\)/,
   'la déclaration d’attaque garde son repère sonore');
 
-console.log('✓ Braise : la roue de feu s’allume autour de la créature mordue — des langues de feu dessinées, en trois couches, qui battent chacune à sa cadence, une lueur au sol et neuf braises — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la carte brûlée reste dans le feu et son adieu de carte détruite n’arrive qu’une fois la roue refermée (900 ms), silencieuse en mouvement réduit');
+console.log('✓ Braise : la roue de feu s’allume autour de la créature mordue — des langues de feu dessinées, en trois couches, qui battent chacune à sa cadence, une lueur au sol et neuf braises — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la roue dure 900 ms sans retenir la mort : la carte brûlée reçoit son adieu tout de suite, seul le renvoi en main attend son tourbillon, silencieuse en mouvement réduit');

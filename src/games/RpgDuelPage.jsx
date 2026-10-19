@@ -1358,7 +1358,6 @@ const BRAISES_ROUE_FEU = Object.freeze([
 ]);
 
 export function RoueDeFeu({ effet, onTermine = null }) {
-  const carte = effet.avecCarte ? cardById(effet.cardId) : null;
   // Un identifiant par roue : deux créatures brûlées dans le même geste ne
   // partagent pas le tracé de leurs langues.
   const idLangue = `rpg-langue-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
@@ -1380,16 +1379,6 @@ export function RoueDeFeu({ effet, onTermine = null }) {
         onTermine?.(effet.effectId);
       }}
     >
-      {/* La carte brûlée reste dans le feu : elle ne s'efface qu'avec la roue,
-          puis son adieu de carte détruite prend le relais. */}
-      {carte && (
-        <span
-          className={`rpg-roue-feu__carte ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
-          style={cardFrameStyle(carte)}
-        >
-          <img src={cardArt(effet.cardId)} alt="" />
-        </span>
-      )}
       <i className="rpg-roue-feu__lueur" />
       {/* Les flammes, dessinées : chaque langue est un tracé vectoriel en trois
           couches (braise, flamme, cœur), posée autour de la face. */}
@@ -4240,8 +4229,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // width, height, angle, effectId, expireA }`, le temps de l'effet seulement.
   const [tourbillonsEau, setTourbillonsEau] = useState([]);
   // Les roues de feu des créatures brûlées par la Braise : `{ entityId, cardId,
-  // left, top, width, height, angle, avecCarte, effectId, expireA }`, le temps
-  // de l'effet seulement.
+  // left, top, width, height, angle, effectId, expireA }`, le temps de l'effet
+  // seulement : la roue brûle l'emplacement, pas la carte.
   const [rouesFeu, setRouesFeu] = useState([]);
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
@@ -6044,39 +6033,27 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         // Date de péremption : l'image d'une carte détruite n'est qu'un adieu.
         // Trois voies la retirent (fin d'animation, minuterie, ménage), la
         // dernière servant de filet si l'onglet dort pendant l'animation.
-        expireA: Date.now() + duree + 400 + (brulees.has(entite.entityId) ? DUREE_ROUE_FEU : 0),
+        expireA: Date.now() + duree + 400,
       }));
-      // Une carte brûlée par un effet attend que la roue ait fini de tourner :
-      // l'adieu vient **après** le geste, comme la main attend le tourbillon.
-      const retenues = effets.filter((effet) => brulees.has(effet.entityId));
-      const immediates = effets.filter((effet) => !brulees.has(effet.entityId));
-      if (immediates.length) {
-        setCartesEnDestruction((current) => [...nettoyerFantomes(current), ...immediates]);
-        programmerNettoyageVisuel(() => {
-          const ids = new Set(immediates.map((effect) => effect.effectId));
-          setCartesEnDestruction((current) => current.filter((effect) => !ids.has(effect.effectId)));
-        }, duree);
-      }
-      if (retenues.length) {
-        programmerNettoyageVisuel(() => {
-          setCartesEnDestruction((current) => [...nettoyerFantomes(current), ...retenues]);
-        }, DUREE_ROUE_FEU);
-        programmerNettoyageVisuel(() => {
-          const ids = new Set(retenues.map((effect) => effect.effectId));
-          setCartesEnDestruction((current) => current.filter((effect) => !ids.has(effect.effectId)));
-        }, DUREE_ROUE_FEU + duree);
-      }
+      // La mort ne se fait plus attendre : la carte brûlée reçoit son adieu
+      // **tout de suite**, pendant que la roue finit de consumer l'emplacement
+      // qu'elle vient de quitter. Seul le tourbillon d'eau retient encore son
+      // renvoi (voir plus bas), parce qu'il emporte la carte en main.
+      setCartesEnDestruction((current) => [...nettoyerFantomes(current), ...effets]);
+      programmerNettoyageVisuel(() => {
+        const ids = new Set(effets.map((effect) => effect.effectId));
+        setCartesEnDestruction((current) => current.filter((effect) => !ids.has(effect.effectId)));
+      }, duree);
     }
 
-    // Les roues de feu : une par créature mordue par la Braise. La carte reste
-    // dans le feu quand elle quitte la table — son adieu prend le relais.
+    // Les roues de feu : une par créature mordue par la Braise. La roue brûle
+    // l'emplacement, pas la carte : celle qui meurt a déjà commencé son adieu.
     if (brulees.size) {
       const token = ++sequenceAnimationRef.current;
       const effetsFeu = [...brulees.values()].map((entite) => ({
         ...entite,
         token,
         effectId: `feu-${token}-${entite.entityId}`,
-        avecCarte: !vivants.has(entite.entityId),
         expireA: Date.now() + DUREE_ROUE_FEU + 400,
       }));
       setRouesFeu((current) => [...nettoyerFantomes(current), ...effetsFeu]);

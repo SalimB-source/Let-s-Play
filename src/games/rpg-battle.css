@@ -4850,22 +4850,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: rpg-roue-feu-vie .9s ease-out both;
 }
 
-/* La carte brûlée : elle reste dans le feu, s'embrase, puis se consume. */
-.rpg-roue-feu__carte {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  border-radius: var(--rpg-card-radius, 12px);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, .55);
-  animation: rpg-roue-feu-carte .9s ease-in both;
-}
-.rpg-roue-feu__carte > img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 /* La lueur au sol : la chaleur monte avant les flammes. */
 .rpg-roue-feu__lueur {
   position: absolute;
@@ -4952,11 +4936,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   8% { opacity: 1; }
   76% { opacity: 1; }
   100% { opacity: 0; }
-}
-@keyframes rpg-roue-feu-carte {
-  0% { opacity: 1; scale: 1; filter: brightness(1) saturate(1) blur(0); }
-  38% { opacity: 1; scale: 1.01; filter: brightness(1.35) saturate(1.2) blur(0); }
-  100% { opacity: 0; translate: 0 -12px; scale: .86; filter: brightness(.7) saturate(.6) blur(4px); }
 }
 /* Le battement d'une langue : elle jaillit, s'étire, se couche un instant d'un
    côté puis de l'autre, et meurt en pointe. Le `skew` est ce qui distingue une
