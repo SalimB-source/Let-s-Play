@@ -368,6 +368,32 @@ export function rpgDefausserCarte(duel, cote = 'joueur', indexOuCarteId = null) 
   return { ok: true, carteId };
 }
 
+/**
+ * Ouvre la fenêtre de défausse d'un camp — ou la PROLONGE si elle est déjà
+ * ouverte. Les effets d'une même fenêtre se CUMULENT : deux Butins qui
+ * touchent le sorcier, un Butin et le Masque du guetteur, deux « Nom effacé »…
+ * chaque déclencheur ajoute ses défausses aux précédentes au lieu d'écraser
+ * l'attente (`restant` perdait alors les demandes antérieures — deux Butins
+ * ne faisaient défausser qu'une seule carte). `motif` ('effet', 'fin-de-tour')
+ * habille l'écran de défausse ; omis, l'attente garde la forme historique
+ * `{ cote, restant, sourceCarteId }`.
+ */
+function ouvrirDefausseEnAttente(duel, cote, restant, sourceCarteId = null, motif = null) {
+  const n = Math.max(0, Math.floor(Number(restant) || 0));
+  const camp = duel?.[cote];
+  if (!n || !camp?.main.length) return duel?.defausseEnAttente ?? null;
+  const attente = duel.defausseEnAttente;
+  if (attente?.cote === cote && attente.restant > 0) {
+    // Même fenêtre : le total demandé ne dépasse jamais les cartes en main.
+    attente.restant = Math.min(attente.restant + n, camp.main.length);
+    return attente;
+  }
+  duel.defausseEnAttente = motif
+    ? { cote, restant: Math.min(n, camp.main.length), sourceCarteId, motif }
+    : { cote, restant: Math.min(n, camp.main.length), sourceCarteId };
+  return duel.defausseEnAttente;
+}
+
 /** Cartes à défausser en fin de tour dans le mode sans terrains : au-delà de
  * cinq cartes en main, l'excédent part au cimetière. Hors essai, aucune limite
  * de fin de tour ne s'applique (la main classique n'est pas plafonnée ici). */
@@ -1564,7 +1590,9 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       if (!camp.main.length) return;
       const source = sourceCarteId ? (cardById(sourceCarteId)?.name ?? 'Nom effacé') : 'Nom effacé';
       if (adv === 'joueur') {
-        duel.defausseEnAttente = { cote: 'joueur', restant: 1, sourceCarteId, motif: 'effet' };
+        // Deux « Nom effacé » dans la même fenêtre se cumulent : chacun prend
+        // sa carte, l'attente s'allonge au lieu de s'écraser.
+        ouvrirDefausseEnAttente(duel, 'joueur', 1, sourceCarteId, 'effet');
         duel.log.push(`${source} : une carte de votre main part au cimetière (choisissez laquelle).`);
         return;
       }
@@ -1600,17 +1628,15 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       if (cibleId !== null && cibleId !== undefined
         && (typeof cibleId === 'number' || duel[cote].main.includes(cibleId))) {
         rpgDefausserCarte(duel, cote, cibleId);
-        const restant = Math.min(aDefausser - 1, duel[cote].main.length);
-        if (restant > 0) {
-          duel.defausseEnAttente = { cote, restant, sourceCarteId };
-        }
+        // Cette défausse immédiate compte pour une de celles de l'effet ; les
+        // suivantes s'ajoutent à la fenêtre déjà ouverte (autre Butin, autre
+        // Masque du guetteur…) au lieu de l'écraser.
+        ouvrirDefausseEnAttente(duel, cote, aDefausser - 1, sourceCarteId);
         return;
       }
-      duel.defausseEnAttente = {
-        cote,
-        restant: Math.min(aDefausser, duel[cote].main.length),
-        sourceCarteId,
-      };
+      // Plusieurs déclencheurs dans la même fenêtre (deux Butins, un Butin et
+      // le Masque…) : les défausses se CUMULENT, une par effet.
+      ouvrirDefausseEnAttente(duel, cote, aDefausser, sourceCarteId);
       return;
     }
     case 'retour-main': {
