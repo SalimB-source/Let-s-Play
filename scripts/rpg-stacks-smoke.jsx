@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage, { TableCard } from '../src/games/RpgDuelPage.jsx';
-import { cardById, cardHybridGradient } from '../src/games/rpgCards.js';
+import { cardById, cardFrameColor, cardHybridGradient } from '../src/games/rpgCards.js';
 import { RPG_LONG_PRESS_MS } from '../src/games/rpgLongPress.js';
 import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
@@ -292,10 +292,10 @@ async function scenarioChampAdverse(assert) {
 }
 
 /**
- * Une créature équipée d'une arme est une pile : l'arme glisse sous elle, et
- * l'aperçu (survol, appui long) dit qu'elle est équipée et de quelle arme.
- * Joué une fois au doigt, une fois à la souris : la pile ne dépend pas de la
- * disposition.
+ * Une créature équipée d'une arme reçoit le cadre d'acier de son arme — la
+ * carte d'arme ne se glisse plus derrière elle — et l'aperçu (survol, appui
+ * long) dit de quelle arme il s'agit. Joué une fois au doigt, une fois à la
+ * souris : la carte ne dépend pas de la disposition.
  */
 async function scenarioCreatureArmee(assert, disposition) {
   const duel = creerDuel(assert, {});
@@ -325,23 +325,37 @@ async function scenarioCreatureArmee(assert, disposition) {
     await finDuTour();
     await click(hand('desert'), `[${disposition}] poser le troisième Désert`);
 
-    // ── Un Chien nu n'est pas une pile ─────────────────────────────────────
+    // ── Un Chien nu n'est pas équipé : aucun cadre d'acier ─────────────────
     const chien = camp('equipe', 'chien-du-guet')[0];
     assert.ok(chien, `[${disposition}] le Chien est sur le champ`);
-    assert.equal(chien.closest('.rpg-card-stack--arme'), null, `[${disposition}] un Chien nu n’est pas une pile armée`);
+    assert.equal(chien.classList.contains('is-arme-equipee'), false,
+      `[${disposition}] un Chien nu n’est pas marqué comme équipé`);
+    assert.equal(chien.className.includes('rpg-card--frame-arme'), false,
+      `[${disposition}] un Chien nu ne porte pas le cadre d’acier des armes`);
 
-    // ── La Takouba s'attache au Chien : le Chien devient une pile armée ────
+    // ── La Takouba s'attache au Chien : il reçoit le cadre d'acier ─────────
     await click(hand('takouba-des-pistes'), `[${disposition}] jouer la Takouba`);
     await click(camp('equipe', 'chien-du-guet')[0], `[${disposition}] attacher la Takouba au Chien`);
     const armee = camp('equipe', 'chien-du-guet')[0];
-    const pile = armee?.closest('.rpg-card-stack--arme') ?? null;
-    assert.ok(pile, `[${disposition}] le Chien équipé se présente comme une pile`);
-    assert.equal(pile.querySelectorAll('.rpg-card').length, 1, `[${disposition}] la pile ne compte qu’une créature`);
-    const dessous = pile.querySelector('.rpg-card-stack__arme');
-    assert.ok(dessous, `[${disposition}] l’arme glisse sous la créature`);
-    assert.ok(dessous.querySelector('img')?.getAttribute('src')?.includes('takouba-des-pistes'),
-      `[${disposition}] la pile montre l’illustration de l’arme`);
-    assert.equal(dessous.getAttribute('aria-hidden'), 'true', `[${disposition}] l’arme posée dessous reste décorative`);
+    assert.ok(armee, `[${disposition}] le Chien équipé reste sur le champ`);
+    assert.ok(armee.classList.contains('is-arme-equipee'),
+      `[${disposition}] le Chien équipé est marqué comme équipé`);
+    assert.ok(armee.classList.contains('rpg-card--frame-arme'),
+      `[${disposition}] le Chien équipé porte la matière d’acier des armes`);
+    assert.ok(armee.classList.contains('rpg-card--frame-arme-sable'),
+      `[${disposition}] l’acier du cadre prend la teinte de l’élément de l’arme`);
+    assert.equal(armee.className.includes('rpg-card--frame-sable'), false,
+      `[${disposition}] le cadre d’élément de la créature cède la place à celui de l’arme`);
+    assert.equal(armee.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(cardById('takouba-des-pistes')),
+      `[${disposition}] la couleur de cadre de la carte devient celle de l’arme`);
+    assert.equal(armee.closest('.rpg-card-stack--arme'), null,
+      `[${disposition}] la créature équipée n’est plus enveloppée dans une pile`);
+    assert.equal(armee.querySelector('.rpg-card-stack__arme'), null,
+      `[${disposition}] la carte d’arme ne se glisse plus derrière la créature`);
+    assert.equal(armee.previousElementSibling?.querySelector?.('.rpg-card-stack__arme'), null,
+      `[${disposition}] aucune plaque d’arme n’est posée avant la créature`);
+    assert.equal([...armee.querySelectorAll('img')].some((img) => img.getAttribute('src')?.includes('takouba-des-pistes')), false,
+      `[${disposition}] l’illustration de l’arme ne figure plus sur la face jouée`);
     assert.equal(armee.querySelector('.rpg-card__compteurs'), null,
       `[${disposition}] aucune pastille de compteur n’apparaît avant d’en gagner`);
     assert.doesNotMatch(armee.textContent, /Takouba des pistes|\+2\/\+0|Infiltration/u,
@@ -352,7 +366,7 @@ async function scenarioCreatureArmee(assert, disposition) {
       `[${disposition}] le libellé accessible indique le bonus et l’effet sans nommer l’arme`);
     assert.doesNotMatch(armee.getAttribute('aria-label'), /Takouba des pistes/u,
       `[${disposition}] le nom de l’arme n’est plus annoncé depuis la carte équipée`);
-    assert.equal(pile.querySelector('.rpg-card-stack__count'), null, `[${disposition}] une créature seule n’a pas de compteur ×N`);
+    assert.equal(armee.querySelector('.rpg-card-stack__count'), null, `[${disposition}] une créature seule n’a pas de compteur ×N`);
 
     // ── Survol : les bonus d'équipement rejoignent les effets en bleu ──────
     await survoler(armee);

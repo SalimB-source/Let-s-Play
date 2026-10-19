@@ -541,19 +541,34 @@ gabarit — est devenue l'épaisseur commune de toutes les faces (variables
 extérieure des cartes ; une arme se reconnaît donc à sa matière et à sa
 teinte, jamais à l'épaisseur de son cadre.
 L'Armure de cendres, mythique, perd le zellige mais
-garde son reflet animé sur l'acier.
+garde son reflet animé sur l'acier. L'épaisseur suit le gabarit de la face :
+5 px sur une carte de la main ou de la table, `--rpg-card-border-large`
+(≈ 10 à 13 px) sur les grandes faces du **mulligan** et du **catalogue**, qui
+portent le même anneau que leurs voisines — sans quoi le filet d'une arme,
+deux fois plus fin que le cadre des autres cartes à côté d'elle, semblait
+absent.
 
-**Créature armée = pile.** Une créature qui porte une arme se présente
-comme une **pile** sur la table, dans les deux camps et sur tous les
-formats : l'arme glisse sous elle, décalée vers le haut et la droite
-(`PileArmee` et `.rpg-card-stack--arme` dans `RpgDuelPage.jsx`,
-`.rpg-card-stack__arme` dans `rpg-mobile.css`). La pile ne change rien au
-jeu : la créature reste l'unique carte qui agit, et l'arme ne reçoit jamais
-le pointeur. Une créature armée ne se regroupe avec aucun homonyme
-(`groupEntitesParCarte`, `rpgCardStacks.js`) ; elle forme toujours sa propre
-pile, même au doigt. `armesPortees` lit à la fois l'arme du prototype
-(`entite.arme`) et l'arme de l'effet « arme » des magies (`entite.armes`,
-le Sabre maudit).
+**Créature armée = cadre d'acier.** Une créature qui porte une arme reçoit
+le **cadre métallique de son arme** : la matière d'acier gris des cartes
+d'arme, la même que sur la carte d'arme elle-même (`armeCadreClass`,
+`rpgCards.js`, posée par `TableCard` dans `RpgDuelPage.jsx`). C'est l'anneau qui dit l'équipement —
+la carte d'arme ne se glisse plus derrière la créature, il n'y a plus de
+plaque ni de pile d'équipement dans le DOM. La carte reste donc un
+emplacement ordinaire de la rangée, exactement de la taille de ses voisines.
+Son **bord intérieur est ciselé** : le filet n'est pas une bordure mais un
+calque découpé par un masque SVG (`--rpg-arme-ciselle`, `rpg-battle.css`) —
+rectangle arrondi à l'extérieur, contour irrégulier fait de facettes et de
+quelques entailles à l'intérieur, comme un cadre de métal repoussé à la
+main. Le masque est étiré avec la carte (`preserveAspectRatio="none"`), donc
+ses facettes suivent sa taille, et la carte garde exactement la largeur de
+ses voisines. Au doigt, où les faces de jeu n'ont pas de cadre, ce filet
+d'acier est la seule exception avec les cartes d'arme elles-mêmes
+(`rpg-mobile.css`) ; il y prend l'épaisseur des petites faces (3 px). Le
+cadre ne change rien au jeu : la créature reste l'unique carte qui agit. Une créature armée ne se
+regroupe avec aucun homonyme (`groupEntitesParCarte`, `rpgCardStacks.js`) ;
+elle forme toujours sa propre pile d'exemplaires, même au doigt.
+`armesPortees` lit à la fois l'arme du prototype (`entite.arme`) et l'arme
+de l'effet « arme » des magies (`entite.armes`, le Sabre maudit).
 
 **L'aperçu dit l'équipement.** Sur la carte posée, ni le texte d'effet ni
 le bonus d'attaque/défense de l'arme ne sont imprimés (et aucun infobulle

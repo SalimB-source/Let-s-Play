@@ -121,7 +121,7 @@ exception demandée).
 | Carte | Coût | ⚔/🛡 | Rareté | Ex. | Rôle |
 |---|---|---|---|---|---|
 | Chacal du seuil | 1 | 2/1 | commune | 2 | **Tribut 1**, **Rapidité** — pression dès l’arrivée |
-| Ouvrier du natron | 1 | 2/1 | commune | 1 | à sa mort : transfert 1 |
+| Ouvrier du natron | 1 | 1/1 | commune | 1 | à sa mort : transfert 1 |
 | Papyrus _(magie rapide)_ | 1 | — | commune | 2 | payez 2 PV : piochez 1 carte |
 | Gardienne de la balance | 2 | 0/3 | commune | 2 | à sa mort : vous gagnez 3 PV |
 | Scribe des feuillets | 2 | 2/1 | commune | 2 | à sa mort : 1 carte du paquet adverse au cimetière |
@@ -189,7 +189,7 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'ouvrier-du-natron', name: 'Ouvrier du natron',
-    cost: 1, atk: 2, def: 1, rarity: 'commune',
+    cost: 1, atk: 1, def: 1, rarity: 'commune',
     destruction: { type: 'transfert', amount: 1, cible: 'sorcier' },
     typeLine: 'Créature — Humain · Ouvrier',
     text: 'Quand Ouvrier du natron meurt, le sorcier adverse perd 1 PV et vous en gagnez 1.',
@@ -521,6 +521,9 @@ arme qui donne le mot-clé) et les nouveaux effets
 
 
 ## Révision des créatures — 18 octobre 2026
+
+> **19 octobre 2026 —** l’**Ouvrier du natron** passe de 2/1 à **1/1** ;
+> son coût, sa rareté et son déclenchement à la mort restent inchangés.
 
 Tribut est désormais réservé à **2 des 14 créatures de couleur Ténèbres**
 (contre 6 auparavant) : le Chacal du seuil pour démarrer et Celui qui juge

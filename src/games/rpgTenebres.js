@@ -59,7 +59,7 @@ export const RPG_TENEBRES_CREATURES = [
     id: 'ouvrier-du-natron',
     name: 'Ouvrier du natron',
     cost: 1,
-    atk: 2,
+    atk: 1,
     def: 1,
     rarity: 'commune',
     destruction: { type: 'transfert', amount: 1 },
