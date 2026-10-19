@@ -124,6 +124,15 @@ test('L’Erg du Sahara joue « Arabian Meditative Fantasy »', () => {
   assert.ok(existsSync(new URL(`../public/audio/${fichier}`, import.meta.url)), 'le MP3 doit être livré dans public/audio');
 });
 
+test('Les Ruines de Tipaza, plateau d’eau, jouent « Sorcerer of the Deep Tide »', () => {
+  const plateauId = 'ruines-de-tipaza';
+  const fichier = 'SorcererOfTheDeepTide.mp3';
+  assert.equal(plateauParId(plateauId)?.nom, 'Les Ruines de Tipaza');
+  assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), 'le plateau doit être traité comme musical');
+  assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], `/audio/${fichier}`);
+  assert.ok(existsSync(new URL(`../public/audio/${fichier}`, import.meta.url)), 'le MP3 doit être livré dans public/audio');
+});
+
 test('La Cour de l’Empereur joue « Way of the Bushido » et ses voix de geisha', () => {
   const plateauId = 'cour-de-l-empereur';
   const fichier = 'WayOfTheBushidoWithGeishaVocals.mp3';
