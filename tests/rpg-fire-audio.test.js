@@ -14,13 +14,26 @@ test('the Braise sound applies to fire and hybrid spells and attacks', () => {
 test('each triggered ability of a Braise creature has the fire effect sound', () => {
   assert.equal(rpgFireSoundFor('ifrit-des-ergs', 'arrival'), null, 'l’Ifrit n’a plus d’effet d’arrivée');
   assert.equal(rpgFireSoundFor('ifrit-des-ergs', 'destruction'), RPG_FIRE_SFX);
-  assert.equal(rpgFireSoundFor('sahir-des-braises', 'arrival'), RPG_FIRE_SFX);
   assert.equal(rpgFireSoundFor('sahir-des-braises', 'combat'), RPG_FIRE_SFX);
   assert.equal(rpgFireSoundFor('ghul-des-cendres', 'destruction'), RPG_FIRE_SFX);
   assert.equal(rpgFireSoundFor('anqa-des-braises', 'destruction'), RPG_FIRE_SFX);
   assert.equal(rpgFireSoundFor('sahir-des-braises', 'destruction'), null);
   assert.equal(rpgFireSoundFor('cavalier-amazigh-du-desert', 'arrival'), null);
   assert.equal(rpgFireSoundFor('unknown-card', 'arrival'), null);
+});
+
+test('only an arrival that burns plays the fire sound', () => {
+  // Une arrivée qui frappe : le souffle est à sa place.
+  assert.equal(rpgFireSoundFor('ifrit-al-ahmar', 'arrival'), RPG_FIRE_SFX);
+  assert.equal(rpgFireSoundFor('braisier-du-souk', 'arrival'), RPG_FIRE_SFX);
+  assert.equal(rpgFireSoundFor('lionne-du-midi-ardent', 'arrival'), RPG_FIRE_SFX);
+  // Une arrivée qui n’allume rien reste sur `card_place` : le Daimyō lève ses
+  // Samouraïs, le Djinn casse un terrain, le Sahir pioche, Susanoo exile.
+  assert.equal(rpgFireSoundFor('daimyo-du-soleil-rouge', 'arrival'), null,
+    'le Daimyō crée des jetons : pas de feu à son arrivée');
+  assert.equal(rpgFireSoundFor('djinn-du-souk', 'arrival'), null);
+  assert.equal(rpgFireSoundFor('sahir-des-braises', 'arrival'), null);
+  assert.equal(rpgFireSoundFor('susanoo', 'arrival'), null);
 });
 
 test('combat sound detects fire attackers and fire creature combat abilities on either side', () => {

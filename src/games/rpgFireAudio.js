@@ -10,6 +10,15 @@ export const RPG_FIRE_SFX = 'flame_gust';
 
 const CREATURE_KINDS = new Set(['creature', 'hero']);
 
+/**
+ * Les seuls effets d'arrivée qui SONNENT comme le feu : ceux qui brûlent
+ * réellement la table. Une carte Braise dont l'arrivée crée des jetons, exile,
+ * pioche ou détruit un terrain n'a pas de souffle à elle — le Daimyō du Soleil
+ * rouge lève ses Samouraïs, il ne met pas le feu ; c'est `card_place` qui
+ * l'annonce, comme pour toute créature posée.
+ */
+const ARRIVEES_DE_FEU = new Set(['degats']);
+
 function resolveCard(cardOrId) {
   return typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
 }
@@ -25,7 +34,7 @@ export function rpgFireSoundFor(cardOrId, action) {
     case 'attack':
       return CREATURE_KINDS.has(card.kind) ? RPG_FIRE_SFX : null;
     case 'arrival':
-      return CREATURE_KINDS.has(card.kind) && card.arrivee ? RPG_FIRE_SFX : null;
+      return CREATURE_KINDS.has(card.kind) && ARRIVEES_DE_FEU.has(card.arrivee?.type) ? RPG_FIRE_SFX : null;
     case 'combat':
       return CREATURE_KINDS.has(card.kind) && card.combat ? RPG_FIRE_SFX : null;
     case 'destruction':
