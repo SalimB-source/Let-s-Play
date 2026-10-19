@@ -3636,10 +3636,16 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   }, [phaseDuelActive]);
   useEffect(() => {
     if (cartesEnDestruction.length > prevDestructionCountRef.current) {
-      const nouvellesDestructions = cartesEnDestruction.slice(prevDestructionCountRef.current);
-      jouerSfx(nouvellesDestructions.some((effet) => effet.bruleeParBraise)
-        ? 'flame_gust'
-        : 'destruction_hit');
+      // Une carte que la roue de feu a consumée garde son adieu mais pas son
+      // bruit : le feu a déjà sonné au moment du coup (`flammeJouee`).
+      const nouvellesDestructions = cartesEnDestruction
+        .slice(prevDestructionCountRef.current)
+        .filter((effet) => !effet.flammeJouee);
+      if (nouvellesDestructions.length) {
+        jouerSfx(nouvellesDestructions.some((effet) => effet.bruleeParBraise)
+          ? 'flame_gust'
+          : 'destruction_hit');
+      }
     }
     prevDestructionCountRef.current = cartesEnDestruction.length;
   }, [cartesEnDestruction]);
@@ -5933,11 +5939,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (disparues.length) {
       const token = ++sequenceAnimationRef.current;
       const duree = disparues.some((entite) => entitesBrulees.has(entite.entityId)) ? 1050 : 760;
+      // Le souffle de feu du coup vient peut-être de sonner (le sort qui vient
+      // d'être lancé) : une carte consumée par la roue ne le rejoue pas.
+      const feuVientDeSonner = Date.now() - dernierSonFeuRef.current < 700;
       const effets = disparues.map((entite) => ({
         ...entite,
         token,
         effectId: `${token}-${entite.entityId}`,
         bruleeParBraise: entitesBrulees.has(entite.entityId),
+        flammeJouee: feuVientDeSonner && entitesBrulees.has(entite.entityId),
         // Date de péremption : l'image d'une carte détruite n'est qu'un adieu.
         // Trois voies la retirent (fin d'animation, minuterie, ménage), la
         // dernière servant de filet si l'onglet dort pendant l'animation.

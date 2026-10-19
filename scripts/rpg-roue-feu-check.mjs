@@ -159,6 +159,10 @@ assert.match(page, /onTermine=\{\(effectId\) => setRouesFeu\(\(current\) => curr
 // ── 5. Les sons : un seul feu par geste, pas de page tournée sur l'attaque ──
 assert.match(page, /if \(nom === 'flame_gust'\) \{\s*\n\s*const maintenant = Date\.now\(\);\s*\n\s*if \(maintenant - dernierSonFeuRef\.current < 700\) return;/,
   'un seul bruit de feu par geste : le sort qui tue sa cible ne le joue pas deux fois');
+assert.match(page, /const nouvellesDestructions = cartesEnDestruction\s*\n?\s*\.slice\(prevDestructionCountRef\.current\)\s*\n?\s*\.filter\(\(effet\) => !effet\.flammeJouee\);/s,
+  'une carte consumée par la roue garde son adieu mais ne rejoue pas le bruit du feu');
+assert.match(page, /flammeJouee: feuVientDeSonner && entitesBrulees\.has\(entite\.entityId\),/,
+  'le drapeau n’est posé que sur les cartes que la Braise a brûlées');
 assert.doesNotMatch(page, /jouerSfx\('page_turn'\)/,
   'la fenêtre de blocage ne joue plus le bruit de page tournée quand une créature attaque');
 assert.match(page, /phaseDuelActive === 'attaque'[\s\S]{0,80}jouerSfx\('phase'\)/,
