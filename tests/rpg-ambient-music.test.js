@@ -115,9 +115,9 @@ test('la page du duel joue la musique d’ambiance du mode Histoire sans doubler
     'le volume des sons du jeu pilote les bruitages');
 });
 
-test('La Cour de l’Empereur joue la piste de koto fournie', () => {
+test('La Cour de l’Empereur joue « Way of the Bushido » et ses voix de geisha', () => {
   const plateauId = 'cour-de-l-empereur';
-  const fichier = 'CinematicJapanKotoUnderscore.mp3';
+  const fichier = 'WayOfTheBushidoWithGeishaVocals.mp3';
   assert.equal(plateauParId(plateauId)?.nom, 'La Cour de l’Empereur');
   assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), 'le plateau doit être traité comme musical');
   assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], `/audio/${fichier}`);
