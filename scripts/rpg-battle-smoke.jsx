@@ -311,6 +311,8 @@ export async function checkRpgBattle(assert) {
   assert.match(tempeteCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /3 dégâts à toutes les créatures adverses/u,
     'la Tempête de sable annonce ses trois dégâts');
   const nuageCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="nuage-de-cendres"]');
+  assert.equal(nuageCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '5',
+    'le catalogue affiche le coût de cinq du Nuage de cendres');
   assert.match(nuageCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /puis 2 autres au début de votre tour suivant/u,
     'le Nuage de cendres annonce sa seconde vague pour le tour suivant du lanceur');
   const filtresCatalogue = [...container.querySelectorAll('.rpg-card-catalogue__filters select')];
@@ -1794,7 +1796,7 @@ export async function checkRpgBattle(assert) {
   const nuageRoot = createRoot(nuageContainer);
   await act(async () => {
     nuageRoot.render(<RpgDuelPage
-      joueurDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'nuage-de-cendres', 'montagne', 'montagne', 'montagne', 'montagne']}
+      joueurDeck={['desert', 'desert', 'desert', 'desert', 'nuage-de-cendres', 'montagne', 'montagne', 'montagne', 'montagne', 'montagne']}
       sorcierDeck={['desert', 'desert', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'desert', 'desert', 'desert', 'desert']}
       rng={() => 0.999}
     />);
@@ -1819,15 +1821,15 @@ export async function checkRpgBattle(assert) {
     await act(async () => { await wait(700); });
   };
 
-  // Trois tours de mana, puis le nuage : les deux Chiens 2/2 du sorcier en face.
-  for (let tour = 0; tour < 3; tour += 1) {
+  // Quatre tours de mana, puis le nuage : les Chiens 2/2 du sorcier en face.
+  for (let tour = 0; tour < 4; tour += 1) {
     await poserMontagne();
     await finirTourNuage();
   }
   assert.equal(ennemisEnJeu().length, 2, 'deux Chiens du guet attendent le nuage sur la table adverse');
   await poserMontagne();
   const nuageEnMain = nuageHand().find((card) => card.getAttribute('aria-label')?.includes('Nuage de cendres'));
-  assert.ok(nuageEnMain && estJouable(nuageEnMain), 'le Nuage se paie avec quatre Montagnes');
+  assert.ok(nuageEnMain && estJouable(nuageEnMain), 'le Nuage se paie avec cinq Montagnes');
   await act(async () => { nuageEnMain.click(); });
   const confirmerNuage = nuageContainer.querySelector('.rpg-spell-confirm .rpg-btn--primary');
   assert.ok(confirmerNuage, 'lancer le Nuage demande confirmation');

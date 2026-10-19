@@ -2078,6 +2078,7 @@ test('les retouches du catalogue : Rapport du greffier à 3 manas, Déflection r
     'le Rempart annonce son bonus borné au tour');
   assert.deepEqual(cardById('rempart-de-dunes').effet, { type: 'buff', atk: 0, def: 3, tours: 1 },
     'le moteur porte la durée du bonus');
+  assert.equal(cardById('nuage-de-cendres').cost, 5, 'le Nuage de cendres se paie cinq manas');
   assert.equal(cardById('nuage-de-cendres').effet.echo.amount, 2, 'le Nuage promet sa seconde vague');
 });
 
