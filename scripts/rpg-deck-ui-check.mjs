@@ -177,6 +177,10 @@ const atelierCardOverlay = atelierCss.match(/\.rpg-atelier__carte-art::after\s*\
 assert.ok(atelierCardOverlay, 'le voile des illustrations de l’atelier est défini');
 assert.doesNotMatch(atelierCardOverlay, /radial-gradient|conic-gradient|color-mix/,
   'les cartes de l’atelier n’ont plus de halo multicolore');
+assert.doesNotMatch(atelierCardOverlay, /rgba\(255, 255, 255|repeating-linear-gradient|--rpg-foil-/,
+  'les cartes de l’atelier n’ont plus de reflet ni de grain qui glissent sur l’illustration');
+assert.equal((atelierCardOverlay.match(/gradient\(/g) ?? []).length, 1,
+  'le voile des cartes de l’atelier n’a qu’une couche, celle de la lisibilité');
 assert.match(atelierCardOverlay, /linear-gradient\(0deg, rgba\(5, 4, 7, \.55\)/,
   'le voile sombre de lisibilité reste sous les noms des cartes');
 assert.equal((atelierSource.match(/data-card-id=/g) ?? []).length, 2,

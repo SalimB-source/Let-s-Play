@@ -7247,8 +7247,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    aucun cadre » retire `background-image` à toutes ces faces, il n'y aurait
    donc rien à balayer. Surtout, déclaré après les cinématiques, il leur volait
    la propriété `animation` — une seule par élément — sur les cartes brillantes
-   et mythiques. Le reflet reste vivant dans l'atelier de deck et le guide, où
-   les anneaux sont toujours peints. */
+   et mythiques. Le reflet ne vit plus que dans le guide : l'atelier de deck,
+   lui aussi passé à « plus aucun cadre », n'anime plus ses vignettes. */
 
 /* Hybrides : deux aplats francs, chacun la moitié de la diagonale.
    L'angle et les arrêts identiques sur toutes les faces dessinent la même
