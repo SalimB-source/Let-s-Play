@@ -142,6 +142,11 @@ export const RPG_PLATEAUX_PAR_DECK = {
   // L'Est : le Serment du Soleil rouge reçoit dans la cour de l'Empereur, le
   // grand parvis de gravier ratissé que garde le palais impérial.
   'serment-du-soleil-rouge': 'cour-de-l-empereur',
+  // Les Ténèbres : La Balance des Heures se bat sur la Table des Heures, la
+  // table d'origine de Bab El — étonnamment neutre pour un set qui parle de
+  // balance (doc 16 §9). Le plateau dédié « La Nécropole des dalles » viendra
+  // en phase 2.
+  'balance-des-heures': 'table-des-heures',
   // Campagne (clés de `RPG_STORY_DECKS`) : la Souffleuse tient la piste de
   // caravane du deck hybride dont elle vient ; le Grand Horloger, lui, reçoit
   // dans la salle haute de la Chambre, sur la table d'origine. Les quatre
@@ -159,6 +164,8 @@ export const RPG_PLATEAUX_PAR_COULEUR = {
   braise: 'table-des-heures',
   eau: 'ruines-de-tipaza',
   neige: 'fjord-des-neuf-hivers',
+  // Les Ténèbres retombent sur la table d'origine, comme le deck du catalogue.
+  tenebres: 'table-des-heures',
   hybride: 'caravane-de-gourara',
 };
 

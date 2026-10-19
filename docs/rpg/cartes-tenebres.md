@@ -55,6 +55,16 @@ Créé par la Couveuse de shabtis et les Momies de lin : 1/1, sans coût.
 
 Ce jeton est créé par des effets : ce n’est pas une carte à ajouter au deck.
 
+## Les decks qui les jouent
+
+- **Le banc d'essai** — `essai-mana-tenebres`, la liste des 30 cartes de la
+  fiche `16-deck-la-balance-des-heures.md` (§5).
+- **Le deck du catalogue** — « La Balance des Heures » (`balance-des-heures`,
+  onglet Deck) : 19 créatures · 10 magies · 1 arme, mono-Ténèbres, composé
+  par `rpgDeckComposer.js` autour du Prix, du Tribut et des morts qui
+  déclenchent. La Dévoreuse en est l'unique mythique ; Le Passeur, Le Maître
+  des hiéroglyphes et La Dernière Pesée attendent les boosters.
+
 ## Dernières modifications
 
 - **Uræus du seuil :** 2/1 pour 3 mana, avec Coup rapide à la place de Tribut.

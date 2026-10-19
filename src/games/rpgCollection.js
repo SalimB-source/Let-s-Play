@@ -25,7 +25,7 @@
  * 4. **Les apports du compte** — des cartes gagnées sur un autre appareil,
  *    mises en cache local (`chargerCollectionDistante`) et fusionnées.
  *
- * Les **decks du catalogue** (les six boîtiers de départ) ne consultent jamais
+ * Les **decks du catalogue** (les sept boîtiers de départ) ne consultent jamais
  * la collection : ce sont des decks préconstruits, jouables d'entrée de jeu.
  * Seuls les decks maison y sont tenus.
  *

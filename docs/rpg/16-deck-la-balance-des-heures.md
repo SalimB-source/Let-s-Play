@@ -1,11 +1,13 @@
 # 16 — Le deck « La Balance des Heures » (Ténèbres · civilisation égyptienne)
 
-**Statut : fiche de design pour validation — rien n'est encore codé.**
-Format cible : le **banc d'essai sans terrains** (`modeMana: 'essai'`,
+**Statut : le set, le banc d'essai et le deck du catalogue sont codés.**
+La fiche ci-dessous reste la référence de design. Le format cible d'origine —
+le **banc d'essai sans terrains** (`modeMana: 'essai'`,
 `15-essai-mana-sans-terrains.md`) — **30 cartes non-terrain**, main de départ 3,
 main max 5, mana +1 par tour jusqu'à 10, champ de 5 cases avec sacrifice de la
-sixième. Le format classique (40 cartes, terrains) récupérera la couleur dans
-une phase 2 (voir §10).
+sixième — est rejoint depuis par le **deck de collection** de l'étagère
+(§10.3 et « Le deck du catalogue » plus bas). Le format classique avec
+terrains (le Portail scellé) reste en phase 2.
 
 ## 1. Le parti pris : l'Égypte pharaonique
 
@@ -453,8 +455,11 @@ phase 2 — ouvrir Ténèbres au format classique — devra traiter, dans l'ordr
    couleur dominante → plateau, besoins de mana de l'IA ;
 2. le **terrain** — *Le Portail scellé* (mana ténèbres), plus une variante du
    style de *Pétra* pour l'hybride Sable + Ténèbres (« sacrifier et déterrer ») ;
-3. le **deck de collection** 40 cartes (recette `RPG_RECETTES_DECKS` +
-   `composerDeck`) et l'entrée Souk correspondante ;
+3. le **deck de collection** 30 cartes (recette `RPG_RECETTES_DECKS` +
+   `composerDeck`) — **codé** (voir « Le deck du catalogue » plus bas) — et
+   l'entrée Souk correspondante, **restant à faire** : les cartes Ténèbres ne
+   sont encore ni dans la dotation, ni dans les révélations
+   (`rpgCollection.js`, doc 16 §10 du test `rpg-decks-puissance`) ;
 4. les variantes réservées : contrat à chaque sacrifice (règle des 5 cases),
    seuil de vie (« si vous avez 10 PV ou moins… »), exil en sorcellerie
    (aujourd'hui réservé à l'arrivée, format Susanoo).
@@ -474,6 +479,30 @@ panthéon égyptien — toujours nommées **par leur attribut** (jamais le mot
 | **La Lionne du midi ardent** _(Sekhmet)_ | `lionne-du-midi-ardent` | Braise | 6 | 4/4 | **Rapidité**, **Protection Eau et Neige** (permanente) ; arrivée : 2 dégâts à toutes les créatures adverses |
 | **La Dame aux ailes d'or** _(Isis)_ | `dame-aux-ailes-d-or` | Sable | 5 | 3/5 | **Envol** ; arrivée : bouclier de lumière ; mort : vous gagnez 4 PV |
 | **Le Seigneur des mâchoires** _(Sobek)_ | `seigneur-des-machoires` | Eau | 6 | 6/6 | **Tenacité**, **Tribut 2** |
+
+## Le deck du catalogue (étagère, onglet Deck)
+
+En plus du banc d'essai, « La Balance des Heures » est un **boîtier de
+l'étagère**, jouable depuis le lancement comme les six autres (`RPG_DECKS`) :
+
+- **Recette** `balance-des-heures` (`rpgDeckRecipes.js`) : identité
+  mono-Ténèbres, **19 créatures · 10 magies · 1 arme**, `mythiquesTotalMax: 1`,
+  `raresTotalMax: 6` — La Dévoreuse est la mythique du boîtier ; les trois
+  autres mythiques du set restent aux boosters ;
+- **Signature** : le triptyque du set — le Prix (Papyrus, La Grande Pesée, Le
+  Poids), le Tribut (Chacal du seuil, Celui qui juge, le Khopesh d'or) et la
+  mort qui déclenche (Ouvrier du natron, Momie de lin, Couveuse de shabtis),
+  plus la défausse adverse (Nom effacé, Celle qui pèse) ;
+- **Remplissage** par `composerDeck` : les meilleures cartes Ténèbres restantes,
+  palier de rareté puis puissance, chacune à son maximum légal — le
+  contrôle `tests/rpg-decks-puissance.test.js` rejette toute carte laissée de
+  côté mieux classée qu'une carte retenue ;
+- **Plateau** : la Table des Heures (doc 16 §9), repli provisoire avant la
+  Nécropole des dalles ;
+- **Économie de collection** : comme les six autres boîtiers, ce deck ne
+  consulte jamais la collection — il est jouable d'entrée de jeu. Les cartes
+  Ténèbres restent hors dotation et hors boosters tant que l'entrée Souk
+  (§10.3) n'est pas faite.
 
 ## 12. Vérifier
 

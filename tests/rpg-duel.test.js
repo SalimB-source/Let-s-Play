@@ -66,6 +66,7 @@ import {
   RPG_DECK_HYBRIDE_BASE,
   RPG_ART_PROVISOIRE,
   RPG_DECK_NEIGE_BASE,
+  RPG_DECK_TENEBRES_BASE,
   RPG_ELEMENTS,
   cardCopyLimit,
   rpgValiderDeck,
@@ -3184,18 +3185,23 @@ test('le Glacier produit un mana Neige : payer une créature Neige engage ses te
 
 test('les decks de départ respectent les limites mythiques et le deck hybride reste valide', () => {
   assert.deepEqual(RPG_DECKS.map(({ id }) => id),
-    ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers', 'serment-du-soleil-rouge'],
-    'les six decks du catalogue, dont les deux cultures de Braise');
+    ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers', 'serment-du-soleil-rouge', 'balance-des-heures'],
+    'les sept decks du catalogue, dont les deux cultures de Braise et les Ténèbres');
   assert.equal(RPG_DECK_SORCIER_BASE.filter((id) => id === 'anqa-des-braises').length, 1,
     'la Cour des Djinns contient Anqa comme unique mythique');
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'feriel').length, 1,
     'les Sentiers de cendre contiennent Fériel comme unique mythique');
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'anqa-des-braises').length, 0,
     'les Sentiers de cendre laissent les autres mythiques dans les boosters');
+  assert.equal(RPG_DECK_TENEBRES_BASE.filter((id) => id === 'la-devoreuse').length, 1,
+    'la Balance des Heures contient La Dévoreuse comme unique mythique');
+  assert.equal(RPG_DECK_TENEBRES_BASE.filter((id) => id === 'la-derniere-pesee').length, 0,
+    'la Balance des Heures laisse La Dernière Pesée et les autres mythiques dans les boosters');
   for (const [deck, terrainsAttendus, creaturesAttendues, magiesAttendues, armesAttendues] of [
     [RPG_DECK_JOUEUR_BASE, 0, 18, 6, 6],
     [RPG_DECK_SORCIER_BASE, 0, 21, 9, 0],
     [RPG_DECK_NEIGE_BASE, 0, 17, 12, 1],
+    [RPG_DECK_TENEBRES_BASE, 0, 19, 10, 1],
   ]) {
     const valide = rpgValiderDeck(deck);
     assert.equal(valide.ok, true, valide.raison);
@@ -3223,6 +3229,7 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
     [RPG_DECK_JOUEUR_BASE, 'sable'],
     [RPG_DECK_SORCIER_BASE, 'braise'],
     [RPG_DECK_NEIGE_BASE, 'neige'],
+    [RPG_DECK_TENEBRES_BASE, 'tenebres'],
   ]) {
     for (const id of deck) {
       const carte = cardById(id);

@@ -171,6 +171,9 @@ test('chaque deck du catalogue impose un plateau connu', () => {
   assert.equal(plateauDeDeck('sentiers-de-cendre').plateau.id, 'caravane-de-gourara');
   assert.equal(plateauDeDeck('maree-des-abysses').plateau.id, 'ruines-de-tipaza');
   assert.equal(plateauDeDeck('serment-des-neuf-hivers').plateau.id, 'fjord-des-neuf-hivers');
+  // Les Ténèbres jouent sur la table d’origine (doc 16 §9) : la Balance des
+  // Heures y retrouve la Chambre des Heures, en attendant la Nécropole.
+  assert.equal(plateauDeDeck('balance-des-heures').plateau.id, 'table-des-heures');
 });
 
 test('chaque deck de la campagne impose un plateau connu', () => {
@@ -217,6 +220,10 @@ test('un paquet brut prend le terrain de sa couleur dominante', () => {
   // La quatrième couleur : la Neige prend la glace du fjord.
   assert.equal(couleurDominanteDeck(['glacier', 'glacier', 'loup-des-neiges']), 'neige');
   assert.equal(plateauDeDeck(Array(8).fill('glacier')).plateau.id, 'fjord-des-neuf-hivers');
+  // Les Ténèbres sans identité connue retombent sur la table d’origine.
+  assert.equal(couleurDominanteDeck(['chacal-du-seuil', 'chacal-du-seuil', 'papyrus']), 'tenebres');
+  assert.equal(plateauDeDeck(Array(8).fill('chacal-du-seuil')).plateau.id, 'table-des-heures');
+  assert.equal(plateauDeDeck(Array(8).fill('chacal-du-seuil')).motif, 'couleur');
   // Deux couleurs à égalité : le carrefour des pistes.
   assert.equal(couleurDominanteDeck(['desert', 'desert', 'mer', 'mer']), 'hybride');
   assert.equal(plateauDeDeck(['desert', 'desert', 'mer', 'mer']).plateau.id, 'caravane-de-gourara');

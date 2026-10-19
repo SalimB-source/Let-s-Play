@@ -27,7 +27,7 @@
  */
 
 /**
- * Les six boîtiers de l'étagère (onglet Deck). Chaque recette fixe les cartes
+ * Les sept boîtiers de l'étagère (onglet Deck). Chaque recette fixe les cartes
  * signature, une seule mythique et un nombre de rares adapté aux trente cartes jouables ; les autres cartes
  * de ces paliers restent à obtenir dans des boosters.
  */
@@ -165,6 +165,34 @@ export const RPG_RECETTES_DECKS = {
       ['daimyo-du-soleil-rouge', 1], ['kenshi-de-la-forge', 2],
       ['tengu-du-mont-ardent', 1], ['kagutsuchi-flamme-originelle', 1],
       ['trait-de-braise', 2], ['frappe-iaijutsu', 2], ['feux-de-kitsune', 2],
+    ],
+  },
+  /**
+   * La Balance des Heures — le premier boîtier Ténèbres, l'Égypte pharaonique
+   * en égyptien revival art déco. Sa signature porte le triptyque du set : le
+   * **Prix** (Papyrus, La Grande Pesée — payer des PV), le **Tribut**
+   * (Chacal du seuil, Celui qui juge, le Khopesh d'or — transférer la vie) et
+   * **la mort qui déclenche** (Ouvrier du natron, Momie de lin, la Couveuse et
+   * leurs shabtis). La défausse adverse (Nom effacé, Celle qui pèse) et le
+   * transfert du Poids complètent le plan ; La Dévoreuse, mythique du
+   * boîtier, exile ce que la balance a condamné. Les trois autres mythiques
+   * du set — Le Passeur au masque de chacal, Le Maître des hiéroglyphes et La
+   * Dernière Pesée — restent à ouvrir dans les boosters
+   * (fiche : `docs/rpg/16-deck-la-balance-des-heures.md`).
+   */
+  'balance-des-heures': {
+    identite: ['tenebres'],
+    terrains: [],
+    creatures: 19,
+    magies: 10,
+    armes: 1,
+    raresTotalMax: 6,
+    mythiquesTotalMax: 1,
+    signature: [
+      ['la-devoreuse', 1], ['chacal-du-seuil', 2], ['celui-qui-juge', 1],
+      ['khopesh-d-or', 1], ['momie-de-lin', 2], ['couveuse-de-shabtis', 1],
+      ['papyrus', 2], ['la-grande-pesee', 1], ['le-poids', 2],
+      ['nom-efface', 1], ['celle-qui-pese', 1], ['ouvrier-du-natron', 1],
     ],
   },
 };
