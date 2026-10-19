@@ -1432,6 +1432,8 @@ export function TableCard({
   actionFx = null,
   // `{ montant, token }` le temps de l'éclat d'un soin (`EclatSoin`), sinon null.
   soin = null,
+  // `{ token }` le temps d'afficher « MISS » au-dessus de l'attaquant qui rate son Coup rapide.
+  miss = null,
   playerTurn = false,
   activationDispo = false,
   onActiver = null,
@@ -1562,6 +1564,7 @@ export function TableCard({
         // L'éclat du soin vit dans ses propres calques (`EclatSoin`) : la carte
         // elle-même n'est pas animée, ses cinématiques `fx-*` restent libres.
         soin ? `is-healing is-healing--${varianteSoin(soin)}` : '',
+        miss ? 'is-miss' : '',
       ].filter(Boolean).join(' ')}
       /* Une carte POSÉE sur la table est toujours droite : l'éventail et ses
          inclinaisons n'appartiennent qu'à la main. Seuls les états de combat
@@ -1581,6 +1584,7 @@ export function TableCard({
       data-entity-id={entite.id}
       data-card-id={carte?.id}
       data-soin={soin ? soin.montant : undefined}
+      data-miss={miss ? 'true' : undefined}
       data-armes={armes.length ? armes.join(' ') : undefined}
       data-tutorial-target={tutorialTarget}
       draggable={canDragBlocker}
@@ -1594,7 +1598,7 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégâts à une créature adverse au hasard` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat et arrêter là son attaque, sinon elle attaque normalement' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 25 % de chance d’esquiver une attaque' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat avec 25 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 25 % de chance d’esquiver une attaque' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
@@ -1700,6 +1704,11 @@ export function TableCard({
           </span>
         </footer>
         {soin && <EclatSoin key={soin.token} montant={soin.montant} surCarte />}
+        {miss && (
+          <span key={miss.token} className="rpg-card__miss" aria-hidden="true">
+            MISS
+          </span>
+        )}
       </button>
   );
 }
@@ -4145,6 +4154,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(timer);
   }, [recompenseTutoriel?.token]);
   const [animationsEntites, setAnimationsEntites] = useState({});
+  const [missVisibles, setMissVisibles] = useState({});
+  const sequenceMissRef = useRef(0);
   const [cartesEnDestruction, setCartesEnDestruction] = useState([]);
   // Les tourbillons d'eau des renvois en main : `{ entityId, cardId, left, top,
   // width, height, angle, effectId, expireA }`, le temps de l'effet seulement.
@@ -4438,6 +4449,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return restants.length === current.length ? current : restants;
       });
       setAnimationsEntites((current) => (Object.keys(current).length ? {} : current));
+      setMissVisibles((current) => (Object.keys(current).length ? {} : current));
       setSoinsVisibles((current) => (Object.keys(current).length ? {} : current));
       const action = actionVolRef.current;
       if (action) {
@@ -5497,6 +5509,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .map((membre) => soinsVisibles[membre.id])
       .filter(Boolean)
       .reduce((meilleur, soin) => (!meilleur || soin.montant > meilleur.montant ? soin : meilleur), null));
+  const missDeCarte = (entite, pile, deployee) => missVisibles[entite.id]
+    ?? (deployee ? null : pile.entites
+      .map((membre) => missVisibles[membre.id])
+      .find(Boolean) ?? null);
   const etageHistoire = histoireEtageId ? etageHistoireParId(histoireEtageId)?.etage ?? null : null;
   const etageSuivant = histoireEtageId ? prochainEtage(histoireEtageId) : null;
   const tourDuJoueur = duel.tour === 'joueur' && !vainqueur;
@@ -5696,6 +5712,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const next = { ...current };
         entites.forEach((id) => { if (next[id]?.token === token) delete next[id]; });
         return next;
+      });
+    }, duree);
+  };
+
+  const declencherMissEntites = (ids = [], duree = 1400) => {
+    const cibles = [...new Set((ids ?? []).filter(Boolean))];
+    if (!cibles.length) return;
+    const token = ++sequenceMissRef.current;
+    setMissVisibles((courant) => ({
+      ...courant,
+      ...Object.fromEntries(cibles.map((id) => [id, { token }])),
+    }));
+    programmerNettoyageVisuel(() => {
+      setMissVisibles((courant) => {
+        const suivant = { ...courant };
+        cibles.forEach((id) => {
+          if (suivant[id]?.token === token) delete suivant[id];
+        });
+        return Object.keys(suivant).length === Object.keys(courant).length ? courant : suivant;
       });
     }, duree);
   };
@@ -7222,7 +7257,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     const frappeDirecte = res.resume.frappeSorcier > 0;
     const frappeCreature = res.resume.paires.length > 0
-      || res.resume.coupsRapides.some((coup) => !coup.annule);
+      || res.resume.coupsRapides.some((coup) => !coup.annule && !coup.rate);
+    const attaquantsRates = (res.resume.coupsRapides ?? [])
+      .filter((coup) => coup.rate)
+      .map((coup) => coup.attaquantId);
+    if (attaquantsRates.length) declencherMissEntites(attaquantsRates);
     jouerSfx('combat');
     if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
     if (frappeDirecte) jouerSfx(sonFrappeDirecte ?? 'degats', 0.18);
@@ -7297,7 +7336,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
 
     const frappeCreature = res.resume.paires.length > 0
-      || res.resume.coupsRapides.some((coup) => !coup.annule);
+      || res.resume.coupsRapides.some((coup) => !coup.annule && !coup.rate);
+    const attaquantsRates = (res.resume.coupsRapides ?? [])
+      .filter((coup) => coup.rate)
+      .map((coup) => coup.attaquantId);
+    if (attaquantsRates.length) declencherMissEntites(attaquantsRates);
     jouerSfx('combat');
     if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
     if (res.resume.frappeSorcier > 0) {
@@ -7450,7 +7493,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!carte || !duel.sorcier.main.includes(spec.cardId)) return false;
     if (!rpgPeutPayer(duel.sorcier, carte)) return false;
     const cibleId = spec.cible === 'creature-joueur'
-      ? duel.joueur.creatures[0]?.id ?? null
+      ? (spec.cibleCarteId
+        ? duel.joueur.creatures.find((entite) => entite.carteId === spec.cibleCarteId)?.id
+        : null) ?? duel.joueur.creatures[0]?.id ?? null
       : spec.cible === 'sorcier' ? 'sorcier' : null;
     if (spec.cible === 'creature-joueur' && !cibleId) return false;
     duel.annonce = { cote: 'sorcier', carteId: spec.cardId, cibleId, cibleAllieeId: null };
@@ -7679,6 +7724,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ...(bloqueurSelectionne ? [bloqueurSelectionne] : []),
     ...(cibleAttaqueEnCours ? [cibleAttaqueEnCours] : []),
     ...Object.keys(animationsEntites ?? {}),
+    ...Object.keys(missVisibles ?? {}),
   ]);
   // Au doigt, la clé identifie une pile ; sur grand écran, elle identifie
   // un exemplaire. Partager la clé carteId entre deux exemplaires laisserait
@@ -8179,6 +8225,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       onAssignBlocker={assignerBloqueur}
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
+                      miss={missDeCarte(entite, pile, deployee)}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureEnnemie(entite)}
@@ -8261,6 +8308,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       onEndBlockerDrag={terminerGlisserBloqueur}
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
+                      miss={missDeCarte(entite, pile, deployee)}
                       playerTurn={tourDuJoueur}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}

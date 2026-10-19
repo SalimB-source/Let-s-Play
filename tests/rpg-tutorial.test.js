@@ -147,10 +147,11 @@ test('la leçon Ténèbres montre le Tribut, le Prix et les jetons de mort', () 
   const pvAvantPapyrus = duel.joueur.pv;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'papyrus').ok, true);
   assert.equal(duel.joueur.pv, pvAvantPapyrus - 2, 'le Prix du Papyrus se paie en PV');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'couveuse-de-shabtis').ok, true);
+  const couveuse = rpgJouerCreature(duel, 'joueur', 'couveuse-de-shabtis');
+  assert.equal(couveuse.ok, true);
 
   rpgFinDeTour(duel);
-  duel.annonce = { cote: 'sorcier', carteId: 'feux-de-kitsune', cibleId: null, cibleAllieeId: null };
+  duel.annonce = { cote: 'sorcier', carteId: 'feux-de-kitsune', cibleId: couveuse.entite.id, cibleAllieeId: null };
   duel.fenetreReponse = true;
   assert.equal(rpgSorcierResoudreAnnonce(duel).ok, true);
   assert.equal(duel.joueur.creatures.filter((entite) => entite.carteId === 'shabti').length, 2,

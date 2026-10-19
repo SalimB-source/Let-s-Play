@@ -73,6 +73,7 @@ export const RPG_MAIN_DEPART = 5;
  */
 export const RPG_ESQUIVE_CHANCE = 0.25;
 export const RPG_COULEURS = RPG_ELEMENTS;
+export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.25;
 
 /**
  * Les six phases d'un tour, dans l'ordre. Le moteur les enregistre dans
@@ -1253,8 +1254,9 @@ function majResonance(duel) {
 }
 
 /** Honneur : une seule créature adverse vivante, choisie uniformément au
- * hasard. Protection et bouclier restent applicables ; ce sont des dégâts de
- * capacité, pas une attaque ni une magie. Sans créature adverse, aucun dégât. */
+ * hasard — ou le sorcier adverse s'il n'y a aucune créature adverse.
+ * Protection et bouclier restent applicables ; ce sont des dégâts de capacité,
+ * pas une attaque ni une magie. */
 function declencherHonneur(duel, cote, entite) {
   const carte = duelCardById(entite.carteId);
   const honneur = Math.max(0, Number(carte?.honneur) || 0);
@@ -1265,13 +1267,14 @@ function declencherHonneur(duel, cote, entite) {
   const adversaire = autre(cote);
   const cibles = duel[adversaire].creatures.filter((cible) => cible.pv > 0);
   if (!cibles.length) {
-    duel.log.push(`Honneur ${honneur} : ${entite.name} ne trouve aucune créature adverse.`);
+    rpgInfligerSorcier(duel, adversaire, honneur);
+    duel.log.push(`Honneur ${honneur} : ${entite.name} inflige ${honneur} dégât${honneur > 1 ? 's' : ''} au sorcier ${adversaire === 'joueur' ? 'joueur' : 'ennemi'}.`);
     return;
   }
   const rng = hasardParDuel.get(duel) ?? Math.random;
   const index = Math.min(cibles.length - 1, Math.max(0, Math.floor(rng() * cibles.length)));
   const cible = cibles[index];
-  duel.log.push(`Honneur ${honneur} : ${entite.name} inflige ${honneur} dégâts à ${cible.name}, choisie au hasard.`);
+  duel.log.push(`Honneur ${honneur} : ${entite.name} inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à ${cible.name}, choisie au hasard.`);
   rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite');
 }
 
@@ -3531,24 +3534,30 @@ export function rpgLancerAttaque(
   // sur une copie pour qu'une répartition invalide ne modifie jamais la partie.
   const degatsAvantCombat = [];
   // Le Coup rapide frappe AVANT les blessures de combat : la créature désignée à
-  // la déclaration encaisse les dégâts d'attaque, sans riposte. C'est un choix —
-  // et il coupe court : l'attaquant qui a frappé s'arrête là, il n'est ni
-  // bloqué, ni échangé, et ne touche pas le sorcier (`attaquantsArretes`).
+  // la déclaration encaisse les dégâts d'attaque, sans riposte, avec 25 % de
+  // chances de rater sa cible (alors qu'attaquer l'adversaire normalement touche
+  // à 100 %). C'est un choix — et il coupe court : l'attaquant qui a frappé
+  // s'arrête là, il n'est ni bloqué, ni échangé, et ne touche pas le sorcier
+  // (`attaquantsArretes`).
+  const rngCombat = hasardParDuel.get(duel) ?? Math.random;
   const frappesRapides = [];
   for (const attaquant of attaquants) {
     const cibleRapideId = ciblesRapides[attaquant.id];
     if (!cibleRapideId) continue;
     const cible = duel[adv].creatures.find((entite) => entite.id === cibleRapideId);
-    frappesRapides.push(cible
-      ? {
-        attaquantId: attaquant.id,
-        attaquant: attaquant.name,
-        cibleId: cible.id,
-        cible: cible.name,
-        degats: forceCombat(attaquant),
-      }
-      : { attaquantId: attaquant.id, attaquant: attaquant.name, cibleId: cibleRapideId, cible: null, degats: 0, annule: true });
-    if (!cible) continue;
+    const rate = Boolean(cible) && !estGelee(attaquant) && rngCombat() < RPG_COUP_RAPIDE_ECHEC_CHANCE;
+    frappesRapides.push(!cible
+      ? { attaquantId: attaquant.id, attaquant: attaquant.name, cibleId: cibleRapideId, cible: null, degats: 0, annule: true }
+      : rate
+        ? { attaquantId: attaquant.id, attaquant: attaquant.name, cibleId: cible.id, cible: cible.name, degats: 0, rate: true }
+        : {
+          attaquantId: attaquant.id,
+          attaquant: attaquant.name,
+          cibleId: cible.id,
+          cible: cible.name,
+          degats: forceCombat(attaquant),
+        });
+    if (!cible || rate) continue;
     degatsAvantCombat.push({
       cote: adv,
       entiteId: cible.id,
@@ -3725,7 +3734,9 @@ export function rpgLancerAttaque(
   for (const coup of resume.coupsRapides) {
     duel.log.push(coup.annule
       ? `${coup.attaquant} ne trouve plus sa cible : son Coup rapide est annulé.`
-      : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Coup rapide.`);
+      : coup.rate
+        ? `${coup.attaquant} rate son Coup rapide contre ${coup.cible}.`
+        : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Coup rapide.`);
   }
   duel.log.push(resume.paires.length || resume.coupsRapides.length
     ? `Combat : ${attaquants.length} attaquant(s), ${resume.paires.length} bloqué(s), ${resume.frappeSorcier} dégâts directs.`
@@ -3740,7 +3751,7 @@ export function rpgLancerAttaque(
   const ajouterBlessure = (carnet, id, montant) => carnet.set(id, (carnet.get(id) ?? 0) + Math.max(0, Number(montant) || 0));
   const blessuresCreatures = new Map();
   for (const frappe of frappesRapides) {
-    if (!frappe.annule) ajouterBlessure(blessuresCreatures, frappe.attaquantId, frappe.degats);
+    if (!frappe.annule && !frappe.rate) ajouterBlessure(blessuresCreatures, frappe.attaquantId, frappe.degats);
   }
   for (const coup of coupsNormaux) {
     if (coup.cote !== adv) continue;

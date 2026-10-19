@@ -617,7 +617,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'djinn-de-foudre',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Coup rapide — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Rapidité. Coup rapide — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
@@ -694,7 +694,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'berserk-des-trois-hivers',
     furie: 2,
     coupRapide: true,
-    text: 'Furie 2 — La première fois qu’il est blessé et survit, le Berserk gagne +2/+2. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Furie 2 — La première fois qu’il est blessé et survit, le Berserk gagne +2/+2. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Trois hivers de rage tenus dans un seul bras — et le sang ne fait que l’attiser.',
   },
   {
@@ -1019,7 +1019,7 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Coup rapide — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Rapidité. Coup rapide — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'Le verre se souvient du feu.',
   },
   {
@@ -1922,7 +1922,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { coupRapide: true },
-    text: 'Arme — Le porteur gagne +2/+0 et Coup rapide (déclaré attaquant, il peut frapper une créature adverse de votre choix : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement).',
+    text: 'Arme — Le porteur gagne +2/+0 et Coup rapide (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher).',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -2028,7 +2028,7 @@ export const RPG_ARME_CARDS = [
     donne: { coupRapide: true },
     porteurBlesseCreature: { type: 'pioche', amount: 1 },
     porteurBlesseSorcier: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },
-    text: 'Arme — Le porteur gagne +3/+2 et Coup rapide. Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
+    text: 'Arme — Le porteur gagne +3/+2 et Coup rapide (25 % de chances de rater contre une créature, 100 % contre l’adversaire). Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
     flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
 ];

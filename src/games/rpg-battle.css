@@ -9567,3 +9567,75 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-partie-rapide__overlay { animation: none; }
   .rpg-partie-rapide__deck { transition: none; }
 }
+
+/* ── Texte flottant « MISS » au-dessus de la créature qui rate son Coup rapide ── */
+.rpg-card.is-miss {
+  overflow: visible;
+  z-index: 8;
+}
+.rpg-card.is-miss > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) {
+  border-radius: inherit;
+}
+.rpg-card__miss {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  z-index: 12;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(12, 10, 16, .78);
+  border: 1px solid rgba(255, 224, 150, .55);
+  color: #fff6dc;
+  font-family: var(--display, Georgia, 'Times New Roman', serif);
+  font-size: clamp(13px, 18cqw, 22px);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: .12em;
+  line-height: 1.05;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow:
+    0 2px 0 #09080c,
+    0 -1px 0 #09080c,
+    1px 0 0 #09080c,
+    -1px 0 0 #09080c,
+    0 0 10px rgba(255, 196, 110, .75),
+    0 4px 12px rgba(0, 0, 0, .9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .65);
+  opacity: 0;
+  transform: translate(-50%, 6px) scale(.7);
+  animation: rpg-card-miss-pop 1.35s cubic-bezier(.2, .8, .28, 1) forwards;
+}
+@keyframes rpg-card-miss-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(.55);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, -2px) scale(1.18);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -6px) scale(1);
+  }
+  74% {
+    opacity: 1;
+    transform: translate(-50%, -14px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -26px) scale(.94);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card__miss {
+    animation-duration: 1.2s;
+    transform: translate(-50%, 0);
+  }
+  @keyframes rpg-card-miss-pop {
+    0%, 100% { opacity: 0; transform: translate(-50%, 0); }
+    15%, 78% { opacity: 1; transform: translate(-50%, 0); }
+  }
+}
+
