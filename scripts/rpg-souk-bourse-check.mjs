@@ -66,9 +66,9 @@ const emissions = {
   'duel-gagne': /noterEvenementDuel\(\{ type: 'duel-gagne', mode: 'histoire'/,
   'etage-deblaye': /noterEvenementDuel\(\{ type: 'etage-deblaye'/,
   'terrain-pose': /noterEvenementDuel\(\{ type: 'terrain-pose', cardId: carteId \}\)/,
-  'creature-invoquee': /noterEvenementDuel\(\{ type: 'creature-invoquee', cardId \}\)/,
-  'magie-lancee': /noterEvenementDuel\(\{ type: 'magie-lancee', cardId \}\)/,
-  'arme-jouee': /noterEvenementDuel\(\{ type: 'arme-jouee', cardId \}\)/,
+  'creature-invoquee': /noterEvenementDuel\(\{ type: 'creature-invoquee', cardId: carteId \}\)/,
+  'magie-lancee': /noterEvenementDuel\(\{ type: 'magie-lancee', cardId: carteId \}\)/,
+  'arme-jouee': /noterEvenementDuel\(\{ type: 'arme-jouee', cardId: carteId \}\)/,
   'carte-jouee': /noterEvenementDuel\(\{ type: 'carte-jouee', cardId/,
   'degats-infliges': /noterEvenementDuel\(\{ type: 'degats-infliges', montant \}\)/,
 };
@@ -95,8 +95,8 @@ assert.match(page, /const premiere = !etageEstVaincu\(progressionHistoireRef\.cu
   'le premier déblayage est lu AVANT d’enregistrer la victoire');
 assert.match(page, /if \(premiere\) noterEvenementDuel\(\{ type: 'etage-deblaye'/,
   '« etage-deblaye » ne tombe que sur un premier déblayage');
-assert.match(page, /duelCourant\.sorcier\.pvMax \?\? 0\) - duelCourant\.sorcier\.pv/,
-  'les dégâts se comptent sur les PV du sorcier, donc sur toutes leurs sources');
+assert.match(page, /duelCourant\.sorcier\.degatsRecus \?\? 0/,
+  'les dégâts se comptent sur le cumul des dégâts reçus, donc sur toutes leurs sources');
 assert.match(page, /degatsSorcierRef = useRef\(\{ duel: null, annonces: 0 \}\)/,
   'le compteur de dégâts repart à chaque duel');
 assert.match(evenements, /export const EVENEMENTS_PAYANTS = Object\.freeze\(\['duel-gagne'\]\)/,

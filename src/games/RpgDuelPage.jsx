@@ -77,6 +77,7 @@ import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
 import RpgSouk from './RpgSouk.jsx';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
+import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
 import { creditsLisible } from './rpgCredits.js';
 import {
@@ -2495,7 +2496,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       <span className="rpg-menu-button__icon">⌛</span>
                       <span className="rpg-menu-button__text">
                         <strong>Apprendre à jouer</strong>
-                        <small>{RPG_TUTORIELS.length} leçons guidées · récompenses en ◈</small>
+                        <small>{RPG_TUTORIELS.length} leçons guidées · récompenses en <RpgCreditIcon /></small>
                       </span>
                     </button>
                     <button type="button" className="rpg-menu-button rpg-menu-button--card-guide" onClick={() => { play('select'); onStartCardGuide?.(); }}>
@@ -8356,7 +8357,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       )}
       {recompenseTutoriel && (
         <div className="rpg-tutorial-reward-toast" role="status" aria-live="polite" key={recompenseTutoriel.token}>
-          <span aria-hidden="true">◈</span>
+          <RpgCreditIcon />
           <strong>Leçon terminée</strong>
           <span>+{recompenseTutoriel.gain} crédits</span>
         </div>

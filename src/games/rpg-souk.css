@@ -77,7 +77,7 @@
   background: rgba(15, 12, 15, .78);
   box-shadow: 0 12px 30px rgba(0, 0, 0, .22);
 }
-/* Les rayons ont leur propre cadre : l'étagère est le cœur du Souk, elle se
+/* Le comptoir a son propre cadre : c'est le cœur du Souk, il se
    détache du fond plutôt que de flotter dans une section comme les autres. */
 .rpg-souk__section--rayons {
   border-color: rgba(232, 194, 113, .3);
@@ -370,8 +370,8 @@
    (largeur × hauteur × épaisseur) sous une perspective, comme les boîtiers de
    deck (`rpg-deckbox.css`). Le paquet **est** le bouton d'achat — il se
    soulève au survol et au focus, et son reflet glisse sur le métal.
-   L'élément du rayon donne sa couleur (`--foil-*`) : chaque étagère a la
-   sienne, et le grand étal reste au laiton. */
+   Le comptoir n'a qu'un paquet : il reste au laiton du Souk (`--foil-*`).
+   Les teintes des anciens rayons monochromes sont parties avec eux. */
 
 .rpg-souk__rayon {
   --foil-1: #6b4a1d;
@@ -379,10 +379,6 @@
   --foil-ink: #ffe7af;
   --foil-shine: rgba(255, 233, 178, .5);
 }
-.rpg-souk__rayon--braise { --foil-1: #b4441f; --foil-2: #3a1410; --foil-ink: #ffd9bd; --foil-shine: rgba(255, 156, 96, .55); }
-.rpg-souk__rayon--sable { --foil-1: #a8802f; --foil-2: #33260f; --foil-ink: #ffeec2; --foil-shine: rgba(255, 221, 143, .55); }
-.rpg-souk__rayon--eau { --foil-1: #1f6c8c; --foil-2: #0d2431; --foil-ink: #d5f2ff; --foil-shine: rgba(126, 214, 248, .5); }
-.rpg-souk__rayon--neige { --foil-1: #4a83a3; --foil-2: #14303f; --foil-ink: #eaf8ff; --foil-shine: rgba(196, 236, 255, .6); }
 .rpg-souk__rayon--souk { --foil-1: #8a5a1e; --foil-2: #2b1f10; --foil-ink: #ffe7af; --foil-shine: rgba(255, 226, 160, .55); }
 
 .rpg-souk__paquet {
@@ -702,7 +698,7 @@
 .rpg-souk__rayon-refus .rpg-credit { font-size: 1.4em; }
 .rpg-souk__journal-notes .rpg-credit { font-size: 1.15em; }
 
-/* ── Les rayons : trois étagères de front, cinq paquets ──────────────────── */
+/* ── Le comptoir : un seul paquet, toutes les couleurs ───────────────────── */
 .rpg-souk__rayons {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -710,6 +706,12 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+/* Un seul paquet : il se pose au centre de l'étagère, assez large pour que le
+   sachet et son étiquette respirent — et il rétrécit avec l'écran. */
+.rpg-souk__rayons[data-souk-rayons-nombre="1"] {
+  grid-template-columns: minmax(0, 420px);
+  justify-content: center;
 }
 .rpg-souk__rayon {
   position: relative;

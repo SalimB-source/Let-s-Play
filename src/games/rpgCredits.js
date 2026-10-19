@@ -274,7 +274,7 @@ export function enregistrerOuverture(portefeuille, {
 
 /**
  * Combien de paquets avant la mythique assurée (`0` : le prochain en contient
- * une, la pitié a atteint son seuil). `null` quand le rayon n'a aucune mythique
+ * une, la pitié a atteint son seuil). `null` quand le comptoir n'a aucune mythique
  * à donner — la promesse ne s'affiche alors pas.
  */
 export function paquetsAvantMythique(portefeuille, { aDesMythiques = true, seuil = 8 } = {}) {
