@@ -1,0 +1,80 @@
+# Empaquetage de la coque PC — desktop/electron-builder.yml
+# ------------------------------------------------------------------
+# `npm run desktop:dist` (depuis la racine ou depuis desktop/) lit ce fichier.
+# Sortie : desktop/release/
+#   - le-sablier-de-bab-el-<version>-setup.exe    (installeur NSIS, x64)
+#   - le-sablier-de-bab-el-<version>-portable.exe (un seul fichier, sans install)
+#
+# Le paquet web (desktop/dist-web) n'est PAS mis dans l'archive app.asar :
+# `extraResources` le copie à côté, dans resources/app, où le serveur HTTP local
+# le lit comme de simples fichiers. Lire 100 Mo dans une archive à chaque
+# requête serait plus lent et plus fragile.
+
+appId: dz.letsplay.sablier
+productName: Le Sablier de Bab El
+copyright: Copyright © 2026 Let's Play — média algérien du jeu vidéo
+
+directories:
+  output: release
+  buildResources: build
+
+# Ce qui entre dans l'archive de l'application.
+files:
+  - main.js
+  - preload.cjs
+  - gpu.js
+  - local-server.js
+  - diagnostic.html
+  - offline.html
+  - package.json
+
+# Le jeu lui-même, hors archive.
+extraResources:
+  - from: dist-web
+    to: app
+    filter:
+      - '**/*'
+  # Lues au lancement pour l'icône de la fenêtre et de la barre des tâches.
+  - from: build/icon.ico
+    to: icon.ico
+  - from: build/icon.png
+    to: icon.png
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  # Assistant classique (« suivant, suivant ») plutôt que l'install en un clic :
+  # le joueur voit où le jeu s'installe et peut changer le dossier.
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Le Sablier de Bab El
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  artifactName: le-sablier-de-bab-el-${version}-setup.${ext}
+
+portable:
+  artifactName: le-sablier-de-bab-el-${version}-portable.${ext}
+
+linux:
+  icon: build/icon.png
+  category: Game
+  target:
+    - AppImage
+  artifactName: le-sablier-de-bab-el-${version}.${ext}
+
+# macOS : nécessite un runner macOS et une icône .icns (à générer si besoin —
+# `make-icon.mjs` produit le PNG source). La CI du dépôt ne construit que Windows.
+mac:
+  icon: build/icon.png
+  category: public.app-category.games
+  target:
+    - dmg

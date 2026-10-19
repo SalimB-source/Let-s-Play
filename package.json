@@ -131,7 +131,14 @@
     "check:city-rush-police-reaction": "node scripts/city-rush-police-lane-reaction-check.mjs --all",
     "check:city-rush-police-wreck": "node scripts/city-rush-police-wreck-check.mjs --all",
     "check:city-rush-rival-police": "node scripts/city-rush-rival-police-check.mjs --all && node scripts/city-rush-rival-police-check.mjs --all --leader-only",
-    "check:rpg-story-browser": "node scripts/rpg-story-browser-check.mjs"
+    "check:rpg-story-browser": "node scripts/rpg-story-browser-check.mjs",
+    "desktop:icon": "node desktop/make-icon.mjs",
+    "desktop:web": "node scripts/desktop-bundle.mjs",
+    "desktop:serve": "node desktop/local-server.js",
+    "desktop:setup": "npm --prefix desktop install",
+    "desktop:run": "npm --prefix desktop run start",
+    "desktop:dist": "npm --prefix desktop run dist",
+    "check:desktop": "node scripts/desktop-check.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",

@@ -1,0 +1,38 @@
+{
+  "$comment": [
+    "Ce que l'installeur PC embarque, hors du paquet web construit par Vite.",
+    "Règle : tout ce qui est listé ici part dans l'installeur ; le reste des",
+    "fichiers de public/ (actus, captures, vidéos, dossiers cinéma…) n'est PAS",
+    "copié. Le serveur local les relaiera depuis le site en ligne quand une",
+    "connexion existe (desktop/local-server.js), et leur absence ne casse rien",
+    "hors ligne : aucune de ces images n'apparaît dans le Sablier.",
+    "",
+    "Pour ajouter un dossier embarqué : l'ajouter à « dirs ». Pour un fichier :",
+    "« files » (nom exact) ou « globs » (motif, * = tout sauf /)."
+  ],
+  "dirs": [
+    "assets",
+    "cards",
+    "sablier-story",
+    "sablier-tours",
+    "audio",
+    "icons"
+  ],
+  "files": [
+    "index.html",
+    "404.html",
+    "favicon.ico",
+    "favicon-16x16.png",
+    "favicon-32x32.png",
+    "favicon-48x48.png",
+    "apple-touch-icon.png",
+    "card-table.jpg",
+    "dos-de-carte.jpg",
+    "lets-play-logo.png",
+    "lets-play-logo.jpg"
+  ],
+  "globs": [
+    "plateau-*.jpg",
+    "sablier-de-bab-el-*.jpg"
+  ]
+}

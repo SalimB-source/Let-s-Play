@@ -8225,3 +8225,37 @@ npm run check:rpg      # ✓ — 659 tests : règles du duel, IA, soins, quêtes
 npm run check:rpg-soins # ✓ — le gain de vie s’illumine et se fait entendre
 npm run build          # ✓ — le bundle se construit
 ```
+
+## Le Sablier : la version PC installable (coque Electron, carte graphique)
+
+Le duel a désormais sa version **installable sur PC**, pendant exact de l'APK
+Android (`android/`) : une coque **Electron** (`desktop/`) ouvre
+`/jeu/sablier-de-bab-el` dans une fenêtre dédiée, avec installeur Windows
+(`setup.exe`) et version portable. Tout est documenté dans
+[`desktop/README.md`](desktop/README.md) ; en résumé :
+
+- **Le jeu tourne sur la carte graphique.** La table 3D est dessinée en WebGL
+  (Three.js), traduit par ANGLE vers Direct3D 11 sous Windows. La coque pose au
+  démarrage les commutateurs qui empêchent Chromium de retomber sur un rendu
+  logiciel (`--ignore-gpu-blocklist`, `--enable-gpu-rasterization`,
+  `--use-angle=d3d11`, `desktop/gpu.js`), et le menu **Carte graphique → État de
+  la carte graphique…** affiche le renderer réellement utilisé, l'état de
+  `webgl`/`webgl2`/`compositing` et une sonde WebGL — de quoi prouver, ou
+  infirmer, que le GPU travaille.
+- **Un serveur local sert le jeu** (`desktop/local-server.js`, écoute seulement
+  sur `127.0.0.1`, port 4173) : routage `BrowserRouter` intact, `localStorage`
+  des decks sur une origine stable, contexte sûr pour l'audio et les appels.
+  Le paquet embarqué est **élagué** (`desktop/bundle-assets.json`) : cartes,
+  plateaux, musiques, décor du mode histoire et sons partent dans
+  l'installeur ; actus, captures et vidéos restent en ligne, relayées par le
+  serveur quand une connexion existe.
+- **Hors ligne**, le duel contre l'IA, l'atelier de decks, la collection et le
+  mode histoire fonctionnent ; compte, duels à distance et souk attendent le
+  retour de la connexion (Supabase).
+- Commandes : `npm run desktop:web` (paquet élagué), `npm run desktop:setup`,
+  `npm run desktop:run` (lancer sans installer), `npm run desktop:dist`
+  (produire les `.exe`, sur Windows), `npm run desktop:serve` (tester le paquet
+  dans un navigateur), `npm run check:desktop` (20 vérifications sans Electron).
+- CI : `.github/workflows/desktop-windows.yml` — vérifications sur Ubuntu, puis
+  build Windows et GitHub Release sur le tag `desktop` (l'exécutable n'est pas
+  committé : ~180 Mo par build).
