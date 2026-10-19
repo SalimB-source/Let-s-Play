@@ -32,6 +32,8 @@ export const RPG_AMBIENT_BPM = Object.freeze({
   'tour-des-sables': 70,   // très lent, solennel, fin des choses
   'tour-des-abysses': 66,  // immersion sous l'eau, tempo flottant
   'tour-du-fjord': 84,     // vent du nord, pas cadencé d'une garde
+  'tour-du-soleil-rouge': 88, // martial, koto et braises du mont ardent
+  'tour-de-la-necropole': 64, // funéraire, sistre et murmure des tombes
 });
 export const RPG_AMBIENT_DEFAULT_BPM = 78;
 
@@ -110,6 +112,22 @@ const FJORD_CHORDS = Object.freeze([
   Object.freeze({ root: 43, intervals: Object.freeze([0, 3, 7, 10]) }), // Gm7
 ]);
 
+// Tour du Soleil rouge : mode japonais Insen martial — Dm · Bb · Gm · A(b9).
+const SOLEIL_CHORDS = Object.freeze([
+  Object.freeze({ root: 50, intervals: Object.freeze([0, 1, 7, 12]) }), // D insen
+  Object.freeze({ root: 46, intervals: Object.freeze([0, 4, 7, 12]) }), // Bb
+  Object.freeze({ root: 43, intervals: Object.freeze([0, 3, 7, 10]) }), // Gm
+  Object.freeze({ root: 45, intervals: Object.freeze([0, 4, 7, 13]) }), // A(b9)
+]);
+
+// Tour de la Nécropole : phrygien dominant égyptien, solennel et funéraire — E · F · Am · B7.
+const NECROPOLE_CHORDS = Object.freeze([
+  Object.freeze({ root: 40, intervals: Object.freeze([0, 4, 7, 11]) }), // Emaj7
+  Object.freeze({ root: 41, intervals: Object.freeze([0, 3, 7, 10]) }), // Fm
+  Object.freeze({ root: 45, intervals: Object.freeze([0, 3, 7, 12]) }), // Am
+  Object.freeze({ root: 47, intervals: Object.freeze([0, 4, 7, 10]) }), // B7
+]);
+
 // ── Mélodies d'ambiance (quelques notes éparses, jamais envahissantes) ─
 // Elles n'entrent qu'aux mesures 5-8 pour que le début de boucle serve
 // d'intro, et elles restent clairsemées (max une note tous les 2 temps).
@@ -147,6 +165,20 @@ const FJORD_LEAD = Object.freeze([
   Object.freeze([null, null, 69, null, null, 67, null, null]),
   Object.freeze([null, 64, null, 62, null, null, 65, null]),
   Object.freeze([null, null, null, 60, null, null, null, 57]),
+]);
+
+const SOLEIL_LEAD = Object.freeze([
+  Object.freeze([null, 62, null, 63, null, null, 67, null]),
+  Object.freeze([null, 69, null, null, 70, null, 69, null]),
+  Object.freeze([null, 67, null, 63, null, null, null, 62]),
+  Object.freeze([null, 63, null, null, 62, null, null, null]),
+]);
+
+const NECROPOLE_LEAD = Object.freeze([
+  Object.freeze([null, 52, null, 53, null, null, 56, null]),
+  Object.freeze([null, 57, null, null, 56, null, 53, null]),
+  Object.freeze([null, 52, null, 53, null, null, null, 52]),
+  Object.freeze([null, 50, null, null, 52, null, null, null]),
 ]);
 
 // ── Classe principale ─────────────────────────────────────────────────
@@ -425,6 +457,8 @@ export class RpgAmbientMusic {
       case 'tour-des-sables':  this.playSables(step, time); return;
       case 'tour-des-abysses': this.playAbysses(step, time); return;
       case 'tour-du-fjord':    this.playFjord(step, time); return;
+      case 'tour-du-soleil-rouge': this.playSoleilRouge(step, time); return;
+      case 'tour-de-la-necropole': this.playNecropole(step, time); return;
       default:                 this.playListes(step, time); return;
     }
   }
@@ -770,6 +804,108 @@ export class RpgAmbientMusic {
       }
     }
   }
+
+  // ── Tour du Soleil rouge : koto, taiko martial et braises ─────────
+  playSoleilRouge(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = SOLEIL_CHORDS[Math.floor(bar / 2) % SOLEIL_CHORDS.length];
+    const stepLength = 60 / RPG_AMBIENT_BPM['tour-du-soleil-rouge'] / 4;
+
+    // Nappe et souffle de braises / vent de cendre du volcan
+    if (beat === 0) {
+      [0, 7].forEach((off) => {
+        this.tone(midiToFrequency(chord.root - 12 + off), time, stepLength * STEPS_PER_BAR * 2,
+          'triangle', 0.05, { filter: 420, attack: 0.8, destination: this.droneBus });
+      });
+      this.filteredNoise(time, stepLength * STEPS_PER_BAR * 2, 0.035, {
+        type: 'bandpass', frequency: 1600, q: 2.2, attack: 0.5, destination: this.droneBus,
+      });
+    }
+
+    // Taiko drum sur les temps 1 et 3 (beat 0 et 8)
+    if (beat === 0 || beat === 8) {
+      this.tone(68, time, 0.22, 'sine', 0.26, { filter: 220, attack: 0.005 });
+      this.tone(135, time, 0.08, 'triangle', 0.12, { filter: 450, attack: 0.003 });
+    }
+
+    // Claquement de bois (hyōshigi) sur le contretemps
+    if (beat === 4 || beat === 12) {
+      this.tone(880, time, 0.04, 'triangle', 0.04, { filter: 2400, attack: 0.002 });
+      this.filteredNoise(time, 0.04, 0.03, { type: 'highpass', frequency: 3200, q: 3, attack: 0.002 });
+    }
+
+    // Pincement de koto / shamisen
+    if (beat % 4 === 2) {
+      const kotoNote = chord.root + chord.intervals[(beat / 2) % chord.intervals.length];
+      this.tone(midiToFrequency(kotoNote), time, 0.25, 'triangle', 0.06, {
+        filter: 1800, filterTo: 600, attack: 0.004,
+      });
+    }
+
+    // Mélodie de flûte / koto aux mesures 5-8
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = SOLEIL_LEAD[(bar - 4) % SOLEIL_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 2.2, 'sine', 0.06, {
+          filter: 1600, attack: 0.12, destination: this.musicBus,
+        });
+        this.tone(midiToFrequency(note + 12), time + 0.03, stepLength * 1.5, 'triangle', 0.025, {
+          filter: 2200, attack: 0.08,
+        });
+      }
+    }
+  }
+
+  // ── Tour de la Nécropole : funéraire, sistre et murmure des tombes ─
+  playNecropole(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = NECROPOLE_CHORDS[Math.floor(bar / 2) % NECROPOLE_CHORDS.length];
+    const stepLength = 60 / RPG_AMBIENT_BPM['tour-de-la-necropole'] / 4;
+
+    // Bourdon funéraire très grave et résonance de crypte
+    if (beat === 0) {
+      this.tone(midiToFrequency(chord.root - 12), time, stepLength * STEPS_PER_BAR * 2,
+        'sine', 0.07, { filter: 180, attack: 1.2, destination: this.droneBus });
+      this.tone(midiToFrequency(chord.root - 5), time, stepLength * STEPS_PER_BAR * 2,
+        'triangle', 0.04, { filter: 320, attack: 1.0, destination: this.droneBus });
+      // Souffle d'air froid des catacombes
+      this.filteredNoise(time, stepLength * STEPS_PER_BAR * 2, 0.03, {
+        type: 'lowpass', frequency: 450, q: 1.5, attack: 1.5, destination: this.droneBus,
+      });
+    }
+
+    // Frappe sourde de sarcophage sur le premier temps
+    if (beat === 0) {
+      this.tone(48, time, 0.35, 'sine', 0.22, { filter: 140, attack: 0.01 });
+    }
+
+    // Tintement de cloche d'obsidienne toutes les 2 mesures
+    if (beat === 0 && bar % 2 === 0) {
+      this.bell(chord.root + 12, time, stepLength * 6, 0.05);
+    }
+
+    // Shimmer de sistre (percussion de métal léger des prêtresses)
+    if (beat === 4 || beat === 12) {
+      this.filteredNoise(time, 0.08, 0.035, {
+        type: 'highpass', frequency: 5000, q: 2.5, attack: 0.003, destination: this.musicBus,
+      });
+    }
+
+    // Mélodie pharaonique envoûtante aux mesures 5-8
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = NECROPOLE_LEAD[(bar - 4) % NECROPOLE_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 2.5, 'triangle', 0.05, {
+          filter: 1200, filterTo: 550, attack: 0.22, destination: this.musicBus,
+        });
+        this.tone(midiToFrequency(note + 7), time + 0.04, stepLength * 1.8, 'sine', 0.02, {
+          filter: 1400, attack: 0.18,
+        });
+      }
+    }
+  }
 }
 
 /** Mapping pratique : tourId → { bpm, nom } (utile pour les tests et l'UI). */
@@ -798,6 +934,16 @@ export const RPG_AMBIENT_THEMES = Object.freeze({
     nom: 'Neuf hivers de mémoire et de glace',
     bpm: RPG_AMBIENT_BPM['tour-du-fjord'],
     ambiance: 'Tambour de boucliers, cor du nord et complainte des scaldes — le serment des neiges.',
+  }),
+  'tour-du-soleil-rouge': Object.freeze({
+    nom: 'L’acier du Soleil rouge',
+    bpm: RPG_AMBIENT_BPM['tour-du-soleil-rouge'],
+    ambiance: 'Koto martial, tambours taiko et souffle du mont ardent — la forteresse des samouraïs.',
+  }),
+  'tour-de-la-necropole': Object.freeze({
+    nom: 'Le jugement de la nécropole',
+    bpm: RPG_AMBIENT_BPM['tour-de-la-necropole'],
+    ambiance: 'Sistre funéraire, cloches de bronze et murmure des tombes — la balance des heures.',
   }),
 });
 

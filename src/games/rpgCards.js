@@ -2129,6 +2129,9 @@ export const RPG_DECK_MAREE_BASE = composerDeck(RPG_RECETTES_DECKS['maree-des-ab
 /** Serment des Neuf Hivers — Furie, Résonance et une figure mythique du Nord. */
 export const RPG_DECK_NEIGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-des-neuf-hivers'], CATALOGUE_DU_COMPOSEUR);
 
+/** Serment du Soleil rouge — Honneur, Résonance samouraï et le Daimyō. */
+export const RPG_DECK_SOLEIL_ROUGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-du-soleil-rouge'], CATALOGUE_DU_COMPOSEUR);
+
 /** La Balance des Heures — Prix, Tribut et morts qui déclenchent, avec La Dévoreuse comme seule mythique. */
 export const RPG_DECK_TENEBRES_BASE = composerDeck(RPG_RECETTES_DECKS['balance-des-heures'], CATALOGUE_DU_COMPOSEUR);
 
@@ -2211,7 +2214,7 @@ export const RPG_DECKS = [
     archetype: 'Braise · samouraïs et yōkai',
     affrontement: 'Affrontez le Serment du Soleil rouge.',
     description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Samouraï du torii, le Tengu, le Kenshi et Kagutsuchi font résonner les Samouraïs, et le Daimyō lève des jetons qui grandissent en attaquant. Kagutsuchi est l’unique mythique du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
-    cardIds: composerDeck(RPG_RECETTES_DECKS['serment-du-soleil-rouge'], CATALOGUE_DU_COMPOSEUR),
+    cardIds: RPG_DECK_SOLEIL_ROUGE_BASE,
   },
   {
     id: 'balance-des-heures',

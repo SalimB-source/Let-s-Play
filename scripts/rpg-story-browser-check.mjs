@@ -39,7 +39,6 @@ try {
     const lire = () => page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RPG_STORY_STORAGE_KEY);
     const ouvrir = async () => {
       await page.getByRole('button', { name: 'Histoire', exact: true }).click();
-      assert.equal(await page.locator('.rpg-story-tower').count(), 5, 'les tours restent libres');
       await page.locator('[data-story-campaign]').click();
       await page.locator('.rpg-narrative').waitFor();
     };

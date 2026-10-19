@@ -5425,6 +5425,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Améliorations des boutons du menu */
 .rpg-menu-button__icon { font-size: 18px; flex: none; }
+.rpg-menu-button__thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .32);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+  background: #090e16;
+}
+.rpg-menu-button__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .rpg-menu-button__text { display: grid; gap: 2px; text-align: left; }
 .rpg-menu-button__text strong { font-size: 13px; letter-spacing: .08em; }
 .rpg-menu-button__text small { text-transform: none; letter-spacing: 0; opacity: .75; font-weight: 400; font-family: Georgia, serif; font-size: 10px; }

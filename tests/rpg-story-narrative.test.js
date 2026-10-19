@@ -390,13 +390,17 @@ test('les cinq paliers et pièces du dossier suivent l’avancement réel sans r
 
 test('les cinq actes couvrent les vingt duels des cinq tours, neuf registres et les trois fins du Portail', () => {
   const tousLesEtages = RPG_STORY_TOURS.flatMap((tour) => tour.etages.map((etage) => etage.id));
+  const etagesCampagne = RPG_STORY_ACTES.flatMap((acte) => acte.etages);
+  const etagesToursCampagne = RPG_STORY_TOURS
+    .filter((tour) => RPG_STORY_ACTES.some((acte) => acte.tourId === tour.id))
+    .flatMap((tour) => tour.etages.map((etage) => etage.id));
   assert.equal(RPG_STORY_ACTES.length, 5);
   assert.equal(RPG_STORY_ALL_SCENES.length, 40);
   assert.equal(Object.keys(RPG_STORY_CHOICES).length, 5);
-  assert.equal(RPG_STORY_ACTES.flatMap((acte) => acte.etages).length, 20);
+  assert.equal(etagesCampagne.length, 20);
   assert.deepEqual(
-    new Set(RPG_STORY_ACTES.flatMap((acte) => acte.etages)),
-    new Set(tousLesEtages),
+    new Set(etagesCampagne),
+    new Set(etagesToursCampagne),
   );
 
   function parcourirCampagneComplete(choixParQuestion) {
