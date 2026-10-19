@@ -2173,9 +2173,18 @@ function ConfirmationSort({ carte, onConfirmer, onAnnuler }) {
   );
 }
 
-function SpellAnnouncement({ annonce }) {
+/**
+ * La fiche compacte d'une magie qui vient d'être jouée.
+ *
+ * Côté joueur, elle se pose au-dessus de son paquet et de son cimetière, dans
+ * le turquoise de la magie. Côté sorcier (`camp="sorcier"`), elle se pose
+ * au-dessus de SES piles et prend le rouge de l'adversaire : on lit d'un coup
+ * d'œil qui a lancé le sort, sans quitter la table des yeux.
+ */
+function SpellAnnouncement({ annonce, camp = 'joueur' }) {
   const carte = cardById(annonce?.carteId);
   if (!carte) return null;
+  const sorcier = camp === 'sorcier';
   const contre = Boolean(annonce.contre);
   // La vague d'un sort à écho (le Nuage de cendres) : au début du tour
   // suivant de son lanceur, la carte se réaffiche en preview et le bandeau
@@ -2183,13 +2192,13 @@ function SpellAnnouncement({ annonce }) {
   const vague = Boolean(annonce.vague);
   return (
     <section
-      className={`rpg-spell-played${contre ? ' rpg-spell-played--contre' : ''}${vague ? ' rpg-spell-played--vague' : ''}`}
+      className={`rpg-spell-played${sorcier ? ' rpg-spell-played--sorcier' : ''}${contre ? ' rpg-spell-played--contre' : ''}${vague ? ' rpg-spell-played--vague' : ''}`}
       role="status"
       aria-label={contre
         ? `Contre : ${carte.name} défait ${annonce.cible.nom}.`
         : vague
           ? `Seconde vague : ${carte.name}. Cible : ${annonce.cible.nom}.`
-          : `Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
+          : `${sorcier ? 'Magie du sorcier' : 'Magie jouée'} : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
       <img
         className={`rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
@@ -2202,7 +2211,7 @@ function SpellAnnouncement({ annonce }) {
             contre garde son or : sa règle est plus spécifique (voir
             `rpg-battle.css`). Une vague reprend la teinte du sort : elle est
             le même sort qui retombe, pas une nouvelle magie. */}
-        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : vague ? 'SECONDE VAGUE' : 'MAGIE JOUÉE'}</span>
+        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : vague ? 'SECONDE VAGUE' : sorcier ? 'SORT DU SORCIER' : 'MAGIE JOUÉE'}</span>
         <strong>{carte.name}</strong>
         <p>{carte.text}</p>
         <div className="rpg-spell-played__target">
@@ -4219,6 +4228,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [surZoneDepot, setSurZoneDepot] = useState(false);
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
   const [sortJoue, setSortJoue] = useState(null);
+  // Le sort du sorcier : sa fiche se pose au-dessus de ses piles, bordée de
+  // rouge. Même vie que celle du joueur, mais son propre minuteur — les deux
+  // camps peuvent lancer un sort dans la même seconde.
+  const [sortJoueSorcier, setSortJoueSorcier] = useState(null);
   // Piles de cartes homonymes (tactile) : les groupes que le joueur a dépliés.
   const [pilesDeployees, setPilesDeployees] = useState(() => new Set());
   // Bandeau d'ouverture de tour : `{ camp, token }` tant qu'il est affiché,
@@ -4232,6 +4245,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const clicApresGlisserRef = useRef(false);
   const annulationRef = useRef(null);
   const timerSortRef = useRef(null);
+  const timerSortSorcierRef = useRef(null);
   const timersRef = useRef([]);
   // Chaque partie a son numéro. Les minuteries du tour du sorcier (annonces,
   // attaque, animations) le portent : une partie relancée — ou quittée puis
@@ -4256,6 +4270,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     timersRef.current.forEach((id) => window.clearTimeout(id));
     animationsVisuellesTimersRef.current.forEach((id) => window.clearTimeout(id));
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
+    if (timerSortSorcierRef.current) window.clearTimeout(timerSortSorcierRef.current);
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerImpactRef.current) window.clearTimeout(timerImpactRef.current);
   }, []);
@@ -4514,6 +4529,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setSurZoneDepot(false);
     setAnnulationDisponible(false);
     setSortJoue(null);
+    setSortJoueSorcier(null);
     setAnimationsEntites({});
     setCartesEnDestruction([]);
     setTourbillonsEau([]);
@@ -4531,6 +4547,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     animationsVisuellesTimersRef.current = [];
     annulationRef.current = null;
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
+    if (timerSortSorcierRef.current) window.clearTimeout(timerSortSorcierRef.current);
     carteGlisseeRef.current = null;
     clicApresGlisserRef.current = false;
     jouerSfx('apparition');
@@ -5174,6 +5191,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // — donc muette (`pointer-events: none`) — au retour du duel.
     timerVolRef.current = null;
     timerSortRef.current = null;
+    timerSortSorcierRef.current = null;
     setCarteEnVol(null);
     carteOrigineVolRef.current = null;
     setCarteGlissee(null);
@@ -5637,7 +5655,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           targetPlate: coteVisee === 'sorcier' ? 'sorcier' : null,
           targetIds: cibles.map((entite) => entite.id),
         };
-    annoncerMagie(carte, cibleDecrite, { vague: true });
+    // L'écho retombe chez qui l'a lancé : sa fiche se pose de son côté.
+    annoncerMagie(carte, cibleDecrite, { vague: true, camp: lanceur === 'sorcier' ? 'sorcier' : 'joueur' });
   };
 
   // Le tour qui s'ouvre peut porter un écho différé (Nuage de cendres) : les
@@ -6014,7 +6033,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // `vague` : la promesse d'un sort à écho (le Nuage de cendres) retombe au
   // début du tour suivant de son lanceur — la carte se réaffiche en preview,
   // le son du sort reprend, et le bandeau nomme la vague.
-  const annoncerMagie = (carte, cible, { contre = false, vague = false, sonForce = null } = {}) => {
+  // `camp` : la fiche se pose chez qui a lancé le sort — la vôtre au-dessus de
+  // vos piles (turquoise), celle du sorcier au-dessus des siennes (rouge).
+  const annoncerMagie = (carte, cible, { contre = false, vague = false, sonForce = null, camp = 'joueur' } = {}) => {
     if (contre) {
       jouerSfx('card_countered');
     } else {
@@ -6028,25 +6049,40 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ?? (carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
       jouerSfx(son);
     }
-    if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
-    setSortJoue({ carteId: carte.id, cible, contre, vague });
+    // Chaque camp a sa fiche et son minuteur : deux sorts dans la même seconde
+    // ne se volent pas la place.
+    const poserFiche = camp === 'sorcier' ? setSortJoueSorcier : setSortJoue;
+    const minuteur = camp === 'sorcier' ? timerSortSorcierRef : timerSortRef;
+    if (minuteur.current) window.clearTimeout(minuteur.current);
+    poserFiche({
+      carteId: carte.id,
+      cible: cible ?? { nom: 'Champ de bataille', targetPlate: null, targetIds: [] },
+      contre,
+      vague,
+    });
     // Le sort joué ne s'ouvre plus en aperçu plein cadre : sa fiche compacte
-    // (`.rpg-spell-played`) se pose juste au-dessus du paquet et du cimetière,
+    // (`.rpg-spell-played`) se pose juste au-dessus des piles de son lanceur,
     // la carte en petit et son texte à côté — la table reste lisible.
-    timerSortRef.current = window.setTimeout(() => {
-      timerSortRef.current = null;
-      setSortJoue(null);
+    minuteur.current = window.setTimeout(() => {
+      minuteur.current = null;
+      poserFiche(null);
     }, 3600);
   };
 
-  // Le sorcier contre une carte du joueur : sa carte de contre s'affiche,
-  // ciblant la carte défaite. Sans ce bandeau, la carte du joueur disparaissait
-  // sans qu'on sache qui l'avait arrêtée ni avec quoi.
+  /** Le sort du sorcier : même fiche, de son côté, cerclée de rouge. */
+  const annoncerMagieSorcier = (carte, cible, options = {}) => {
+    if (!carte) return;
+    annoncerMagie(carte, cible, { ...options, camp: 'sorcier' });
+  };
+
+  // Le sorcier contre une carte du joueur : sa carte de contre s'affiche au
+  // dessus de SES piles, ciblant la carte défaite. Sans ce bandeau, la carte du
+  // joueur disparaissait sans qu'on sache qui l'avait arrêtée ni avec quoi.
   const annoncerContreSorcier = (res) => {
     const contre = cardById(res.carteContre);
     if (!contre) return;
     const contree = cardById(res.carteContree);
-    annoncerMagie(contre, {
+    annoncerMagieSorcier(contre, {
       nom: contree?.name ?? 'Votre carte',
       illustrationId: contree?.id,
       targetPlate: null,
@@ -7120,6 +7156,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         jouerSfx(reponse.renvoiMain
           ? 'creature_return'
           : rpgWaterSoundFor(carte, 'spell') ?? rpgFireSoundFor(carte, 'spell') ?? 'magie');
+        annoncerMagieSorcier(carte, describeAnnouncedMagicTarget(
+          carte, reponse.cibleId ?? null, duel, sorcierArtId, portraitSorcierAdverse,
+        ));
         animerModificationsChamp(champAvant, [], debutJournalDestructions,
           [reponse.renvoiEntityId]);
         if (joueurToucheDepuis(degatsAvant)) declencherImpactEcran('received');
@@ -7267,6 +7306,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     const carteAnnoncee = cardById(duel.annonce.carteId);
+    // La cible est décrite AVANT la résolution : elle efface l'annonce.
+    const cibleAnnoncee = describeAnnouncedMagicTarget(
+      carteAnnoncee, duel.annonce.cibleId, duel, sorcierArtId, portraitSorcierAdverse,
+    );
     setApercuSurvol(null);
     jouerSfx('pass');
     const champAvant = prendreInstantaneChamp();
@@ -7285,6 +7328,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       declencherImpactEcran('received');
     }
     if (res.ok) signalerTutoriel('annonce-passee', { cardId: carteAnnoncee?.id });
+    // Une magie annoncée qui se résout se lit au-dessus des piles du sorcier.
+    // Une créature ou une arme annoncée, elle, reste une carte posée : rien à
+    // annoncer dans la zone des sorts.
+    if (res.ok && carteAnnoncee?.kind === 'magie') annoncerMagieSorcier(carteAnnoncee, cibleAnnoncee);
     animerModificationsChamp(champAvant, [], debutJournalDestructions,
       [res.renvoiEntityId]);
     force();
@@ -7776,6 +7823,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <FaceDownHand count={duel.sorcier.main.length} drawAnimations={piochesSorcier} />
 
         <div className="rpg-card-piles rpg-card-piles--opponent" aria-label="Zones du sorcier">
+          {/* Le sort du sorcier se lit au-dessus de SES piles, cerclé de rouge. */}
+          {sortJoueSorcier && <SpellAnnouncement annonce={sortJoueSorcier} camp="sorcier" />}
           <CardPile count={duel.sorcier.deck.length} label="Paquet" variant="deck" drawing={piochesSorcier.length > 0} drawToken={tokenPiocheSorcier} />
           <CardPile
             count={duel.sorcier.cimetiere.length}

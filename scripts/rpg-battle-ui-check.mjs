@@ -1492,7 +1492,7 @@ assert.match(battlePage, /annoncerMagie\(carte, cibleDecrite, \{ vague: true \}\
   'la vague retombe avec la preview et le bandeau du sort, marqués « vague »');
 assert.match(battlePage, /setSortJoue\(\{ carteId: carte\.id, cible, contre, vague \}\);/,
   'l’état du bandeau porte le drapeau vague jusqu’au rendu');
-assert.match(battlePage, /contre \? 'CONTRE DU SORCIER' : vague \? 'SECONDE VAGUE' : 'MAGIE JOUÉE'/,
+assert.match(battlePage, /contre \? 'CONTRE DU SORCIER' : vague \? 'SECONDE VAGUE' : sorcier \? 'SORT DU SORCIER' : 'MAGIE JOUÉE'/,
   'le bandeau nomme la seconde vague au lieu d’une magie jouée');
 assert.match(battleCss, /\.rpg-spell-played--vague\s*\{[^}]*border-color:\s*rgba\(255, 158, 100, \.9\);/s,
   'la vague a sa teinte braise, entre la magie neuve (turquoise) et le contre (or)');

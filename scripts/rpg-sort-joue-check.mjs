@@ -34,8 +34,8 @@ assert.doesNotMatch(css, /\.card-table\[data-apercu-carte\][^{]*spell/s,
 assert.match(page,
   /<div className="rpg-card-piles rpg-card-piles--player" aria-label="Vos zones de cartes">\s*\{[^}]*\}\s*\{sortJoue && <SpellAnnouncement annonce=\{sortJoue\} \/>\}/s,
   'la fiche est enfant des piles du joueur : elle suit le cimetière et le paquet à tous les formats');
-assert.equal((page.match(/<SpellAnnouncement /g) ?? []).length, 1,
-  'la fiche n’est rendue qu’une fois, dans les piles');
+assert.equal((page.match(/<SpellAnnouncement /g) ?? []).length, 2,
+  'la fiche n’est rendue qu’une fois par camp : la vôtre dans vos piles, celle du sorcier dans les siennes');
 
 const bloc = css.slice(css.indexOf('.rpg-spell-played {'), css.indexOf('.rpg-spell-played--contre'));
 assert.ok(bloc.length > 0, 'la feuille porte la fiche du sort');
@@ -60,16 +60,62 @@ assert.match(css, /\.rpg-spell-played__details > p \{[^}]*-webkit-line-clamp:\s*
   'le texte du sort se lit sur deux lignes');
 
 // ── 3. Elle s'efface et rend la table ──────────────────────────────────────
-assert.match(page, /setSortJoue\(\{ carteId: carte\.id, cible, contre, vague \}\);/,
-  'le sort joué ouvre la fiche');
-assert.match(page, /timerSortRef\.current = window\.setTimeout\(\(\) => \{\s*timerSortRef\.current = null;\s*setSortJoue\(null\);\s*\}, 3600\);/s,
+assert.match(page, /const poserFiche = camp === 'sorcier' \? setSortJoueSorcier : setSortJoue;/,
+  'le sort joué ouvre la fiche du camp qui l’a lancé');
+assert.match(page, /const minuteur = camp === 'sorcier' \? timerSortSorcierRef : timerSortRef;/,
+  'chaque camp garde son minuteur');
+assert.match(page, /poserFiche\(\{[\s\S]{0,200}?carteId: carte\.id,[\s\S]{0,120}?contre,\s*vague,\s*\}\);/,
+  'la fiche porte la carte, sa cible, le contre et la vague');
+assert.match(page, /minuteur\.current = window\.setTimeout\(\(\) => \{\s*minuteur\.current = null;\s*poserFiche\(null\);\s*\}, 3600\);/s,
   'la fiche s’efface seule au bout de 3,6 s');
-assert.match(page, /if \(timerSortRef\.current\) window\.clearTimeout\(timerSortRef\.current\);\s*setSortJoue\(\{/s,
-  'un second sort remplace le premier : jamais deux fiches empilées');
+assert.match(page, /if \(minuteur\.current\) window\.clearTimeout\(minuteur\.current\);/,
+  'un second sort du même camp remplace le premier : jamais deux fiches empilées');
+
+// ── 4. Le sort du sorcier : la même fiche, de son côté, en rouge ───────────
+assert.match(page, /function SpellAnnouncement\(\{ annonce, camp = 'joueur' \}\)/,
+  'la fiche connaît le camp du lanceur');
+assert.match(page, /const sorcier = camp === 'sorcier';/);
+assert.match(page, /\$\{sorcier \? ' rpg-spell-played--sorcier' : ''\}/, 'elle reçoit sa variante sorcier');
+assert.match(page, /sorcier \? 'SORT DU SORCIER' : 'MAGIE JOUÉE'/,
+  'le sur-titre nomme le lanceur');
+assert.match(page, /\$\{sorcier \? 'Magie du sorcier' : 'Magie jouée'\} : \$\{carte\.name\}/,
+  'et le libellé lu par les lecteurs d’écran');
+
+assert.match(page, /const \[sortJoueSorcier, setSortJoueSorcier\] = useState\(null\);/,
+  'la table garde la fiche du sorcier à part de la vôtre');
+assert.match(page, /const annoncerMagie = \(carte, cible, \{ contre = false, vague = false, sonForce = null, camp = 'joueur' \} = \{\}\) => \{/,
+  'l’annonce connaît le camp du lanceur');
+assert.match(page, /const annoncerMagieSorcier = \(carte, cible, options = \{\}\) => \{\s*if \(!carte\) return;\s*annoncerMagie\(carte, cible, \{ \.\.\.options, camp: 'sorcier' \}\);/s,
+  'elle passe par la même annonce, avec le camp du sorcier');
+assert.match(page, /<div className="rpg-card-piles rpg-card-piles--opponent" aria-label="Zones du sorcier">\s*\{[^}]*\}\s*\{sortJoueSorcier && <SpellAnnouncement annonce=\{sortJoueSorcier\} camp="sorcier" \/>\}/s,
+  'elle se pose dans SES piles : au-dessus de son cimetière et de son paquet');
+
+// Les trois moments où le sorcier lance un sort.
+assert.match(page, /const reponse = rpgSorcierMagieRapide\(duel, rng\);[\s\S]{0,700}?annoncerMagieSorcier\(carte, describeAnnouncedMagicTarget\(/,
+  'sa magie rapide s’annonce chez lui');
+assert.match(page, /if \(res\.ok && carteAnnoncee\?\.kind === 'magie'\) annoncerMagieSorcier\(carteAnnoncee, cibleAnnoncee\);/,
+  'une magie annoncée qui se résout aussi — une créature ou une arme annoncée, non');
+assert.match(page, /annoncerMagieSorcier\(contre, \{[\s\S]{0,220}?\}, \{ contre: true \}\);/,
+  'et son contresort, qui vous défait une carte');
+
+assert.match(page, /annoncerMagie\(carte, cibleDecrite, \{ vague: true, camp: lanceur === 'sorcier' \? 'sorcier' : 'joueur' \}\);/,
+  'une seconde vague se pose chez son lanceur, pas chez vous');
+
+// La feuille : un anneau rouge, et une place qui ne se rogne pas.
+assert.match(css, /\.rpg-spell-played--sorcier\s*\{[^}]*right:\s*0;[^}]*left:\s*auto;[^}]*border-color:\s*rgba\(255, 118, 92, \.92\);/s,
+  'la fiche du sorcier s’aligne à droite de ses piles et prend un anneau rouge');
+assert.match(css, /\.rpg-spell-played--sorcier\s*\{[^}]*box-shadow:[^}]*rgba\(255, 84, 60, \.32\)/s,
+  'la lueur qui l’accompagne est rouge elle aussi');
+assert.match(css, /\.rpg-spell-played--sorcier \.rpg-spell-played__art \{[^}]*border-color:\s*#ff7a60;/s,
+  'la vignette de la carte est cerclée du même rouge');
+assert.match(css, /\.rpg-spell-played--sorcier \.rpg-spell-played__eyebrow \{ color:\s*#ff9d86; \}/,
+  'le sur-titre prend la teinte du camp');
+assert.match(css, /@media \(max-height: 800px\) \{\s*\.rpg-spell-played--sorcier \{\s*top: 0;\s*right: calc\(100% \+ 10px\);\s*bottom: auto;\s*\}\s*\}/s,
+  'sur une table basse, elle passe à côté de ses piles plutôt que d’être rognée');
 
 // Au doigt, rien ne masquait la fiche (elle n'est pas un aperçu de survol) :
 // la règle qui cachait les aperçus n'a plus d'exception à porter.
 assert.doesNotMatch(css, /@media \(pointer: coarse\)[\s\S]{0,4000}?rpg-spell-played\s*\{\s*display:/,
   'la fiche n’a pas besoin d’échapper au masquage des aperçus de survol');
 
-console.log('✓ Magie jouée : plus d’aperçu plein cadre ni de voile — la fiche compacte se pose juste au-dessus du cimetière et du paquet, petite carte à gauche et texte à droite, décorative et éphémère (3,6 s), sans jamais flouter la table');
+console.log('✓ Magie jouée : plus d’aperçu plein cadre ni de voile — la fiche compacte se pose juste au-dessus du cimetière et du paquet, petite carte à gauche et texte à droite, décorative et éphémère (3,6 s), sans jamais flouter la table ; le sorcier a la même, au-dessus de SES piles, cerclée de rouge');

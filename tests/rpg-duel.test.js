@@ -3656,6 +3656,8 @@ test('fenêtre de fin de tour : le sorcier IA joue sa magie rapide, et jamais un
   const res = rpgSorcierMagieRapide(duel);
   assert.equal(res?.ok, true);
   assert.equal(res.carteId, 'trait-de-braise');
+  assert.equal(res.cibleId, dune.id,
+    'la cible revient avec le résultat : la fiche du sorcier dit ce que le sort a frappé');
   assert.ok(duel.sorcier.cimetiere.includes('trait-de-braise'));
   assert.ok(dune.pv < dune.pvMax || !duel.joueur.creatures.includes(dune), 'la magie a frappé');
 });

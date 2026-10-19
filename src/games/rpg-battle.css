@@ -3123,6 +3123,44 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-color: rgba(255, 158, 100, .9);
   box-shadow: 0 12px 30px rgba(0, 0, 0, .65), 0 0 18px rgba(255, 140, 80, .3), inset 0 1px rgba(255, 255, 255, .1);
 }
+/* Le sort du sorcier : même fiche, posée au-dessus de SES piles et cerclée de
+   rouge. Le rouge est celui de l'adversaire partout dans le duel (sa plaque,
+   la lueur de visée) : on sait qui a lancé le sort sans lire une ligne. Le
+   contre et la seconde vague gardent leur sur-titre, mais l'anneau reste rouge
+   — c'est le camp du lanceur qui parle d'abord. */
+.rpg-spell-played--sorcier {
+  right: 0;
+  left: auto;
+  grid-template-columns: 46px minmax(0, 1fr);
+  min-height: 74px;
+  padding: 6px 10px 6px 6px;
+  border-color: rgba(255, 118, 92, .92);
+  background: linear-gradient(120deg, rgba(38, 12, 12, .96), rgba(20, 10, 11, .95));
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .65), 0 0 18px rgba(255, 84, 60, .32), inset 0 1px rgba(255, 255, 255, .1);
+}
+.rpg-spell-played--sorcier .rpg-spell-played__art {
+  width: 46px;
+  height: 58px;
+  border-color: #ff7a60;
+}
+.rpg-spell-played--sorcier .rpg-spell-played__eyebrow { color: #ff9d86; }
+.rpg-spell-played--sorcier.rpg-spell-played--contre .rpg-spell-played__eyebrow { color: #ffd27a; }
+.rpg-spell-played--sorcier .rpg-spell-played__details > strong { color: #ffd9c9; }
+.rpg-spell-played--sorcier .rpg-spell-played__details > p { color: rgba(255, 236, 228, .8); }
+.rpg-spell-played--sorcier .rpg-spell-played__target small { color: #ffb4a0; }
+.rpg-spell-played--sorcier .rpg-spell-played__target > img { border-color: rgba(255, 180, 160, .8); }
+.rpg-spell-played--sorcier .rpg-spell-played__target-mark { border-color: rgba(255, 180, 160, .7); color: #ffc0ad; }
+/* Les piles du sorcier vivent près du bord haut : sur une table basse, la fiche
+   n'aurait pas la place de tenir au-dessus d'elles. Elle passe alors à leur
+   gauche, alignée sur leur sommet — toujours à côté de son deck, jamais
+   rognée par la table. */
+@media (max-height: 800px) {
+  .rpg-spell-played--sorcier {
+    top: 0;
+    right: calc(100% + 10px);
+    bottom: auto;
+  }
+}
 .rpg-spell-played__art {
   display: block;
   width: 58px;

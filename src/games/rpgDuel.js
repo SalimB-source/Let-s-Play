@@ -3755,7 +3755,11 @@ export function rpgSorcierMagieRapide(duel, rng = Math.random) {
   const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng, seulementInstants: true });
   if (!coup) return null;
   const res = rpgLancerMagie(duel, 'sorcier', coup.carteId, coup.cibleId);
-  return res.ok ? { ...res, carteId: coup.carteId } : null;
+  // La cible repart avec le résultat : la page en a besoin pour dire, au-dessus
+  // des piles du sorcier, ce que le sort vient de frapper.
+  return res.ok
+    ? { ...res, carteId: coup.carteId, cibleId: coup.cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null }
+    : null;
 }
 
 /** Détruit les créatures éphémères (`detruireFinDuTour`) : elles ne
