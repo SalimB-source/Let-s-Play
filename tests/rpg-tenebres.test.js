@@ -397,6 +397,25 @@ test('moteur : le Chacal du seuil 2/1 attaque dès son arrivée avec Rapidité e
   assert.equal(duel.joueur.pv, 21);
 });
 
+test('l’Ouvrier du natron est une 1/1 pour 1 mana et transfère 1 PV à sa mort', () => {
+  const carte = cardById('ouvrier-du-natron');
+  assert.equal(carte.cost, 1);
+  assert.equal(carte.atk, 1);
+  assert.equal(carte.def, 1);
+  assert.deepEqual(carte.destruction, { type: 'transfert', amount: 1 });
+  const duel = nouveau();
+  installerMana(duel);
+  duel.joueur.pv = 20;
+  const ouvrier = poserTenebres(duel, 'ouvrier-du-natron');
+  assert.equal(ouvrier.atk, 1);
+  assert.equal(ouvrier.pv, 1);
+  const adverse = duel.sorcier.pv;
+  rpgBlesserCreature(duel, 'joueur', ouvrier.id, 1);
+  assert.ok(!duel.joueur.creatures.some((c) => c.id === ouvrier.id), 'l’Ouvrier est au cimetière');
+  assert.equal(duel.sorcier.pv, adverse - 1, 'le sorcier adverse perd 1 PV');
+  assert.equal(duel.joueur.pv, 21, 'vous en gagnez 1');
+});
+
 test('l’Ibis des comptes gagne Envol et conserve son arrivée de pioche-défausse', () => {
   const carte = cardById('ibis-des-comptes');
   assert.equal(carte.envol, true);
