@@ -38,6 +38,7 @@ import {
   crediterCredits,
   fusionnerPortefeuilles,
   normaliserPortefeuille,
+  reclamerRecompenseTutoriel,
   sauverPortefeuille,
 } from './rpgCredits.js';
 import {
@@ -282,6 +283,18 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     return resultat.credits;
   }, [appliquer, pousser]);
 
+  /** La récompense d'un tutoriel : versée une seule fois, puis retenue dans
+   *  `bourse.tutoriels` (la fusion entre appareils en fait l'union). Rend le
+   *  gain réellement encaissé, `0` si la leçon était déjà payée. */
+  const reclamerTutoriel = useCallback((tutorielId, montant) => {
+    const avant = etatRef.current;
+    const resultat = reclamerRecompenseTutoriel(avant.bourse, tutorielId, montant);
+    if (!resultat.ok) return 0;
+    appliquer(resultat.portefeuille, avant.quetes);
+    pousser();
+    return resultat.gain;
+  }, [appliquer, pousser]);
+
   /** Le Cachet du cycle : +80 ◈ une fois les trois quêtes du jour réclamées. */
   const reclamerLeCachet = useCallback(() => {
     const avant = etatRef.current;
@@ -300,6 +313,7 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     statutSync,
     noterEvenementDuel,
     reclamerUneQuete,
+    reclamerTutoriel,
     reclamerLeCachet,
     reclamerLeCachetDeLaSemaine,
     acheterBooster,

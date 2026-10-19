@@ -1,103 +1,212 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  RPG_PV_SORCIER_BASE,
   rpgDemarrerManaEssai,
   rpgFinDeTour,
+  rpgJouerArme,
   rpgJouerCreature,
   rpgLancerAttaque,
+  rpgLancerMagie,
   rpgNouveauDuel,
+  rpgOuvrirFenetreReponse,
   rpgPeutMulligan,
-  rpgPoserTerrain,
+  rpgSorcierResoudreAnnonce,
 } from '../src/games/rpgDuel.js';
-import { RPG_DECK_JOUEUR_BASE, cardById } from '../src/games/rpgCards.js';
+import { RPG_DECKS, cardById } from '../src/games/rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
-import { RPG_CARD_LESSONS } from '../src/games/rpgCardLessons.js';
+import { portefeuilleVide, reclamerRecompenseTutoriel } from '../src/games/rpgCredits.js';
 import {
+  RPG_TUTORIELS,
+  appliquerManaInitialTutoriel,
+  cartesDeLaLecon,
   preparerDuelTutoriel,
-  RPG_TUTORIAL_OPPONENT_HAND,
-  RPG_TUTORIAL_OPENING_HAND,
-  RPG_TUTORIAL_OPPONENT_DECK,
-  RPG_TUTORIAL_STEPS,
+  preparerEtapeTutoriel,
+  tutorielParId,
 } from '../src/games/rpgTutorial.js';
 
-function nouveauDuelTutoriel() {
+const deckDe = (id) => RPG_DECKS.find((deck) => deck.id === id)?.cardIds ?? [];
+
+function duelDeLecon(tutoriel) {
   const duel = rpgNouveauDuel({
-    joueurDeck: RPG_DECK_JOUEUR_BASE,
-    sorcierDeck: RPG_TUTORIAL_OPPONENT_DECK,
+    joueurDeck: deckDe(tutoriel.deckId),
+    sorcierDeck: deckDe(tutoriel.opponentDeckId),
     sorcierPuissance: 0,
     modeMana: RPG_MODE_MANA_ESSAI,
     rng: () => 0.37,
   });
-  preparerDuelTutoriel(duel);
+  preparerDuelTutoriel(duel, tutoriel);
   assert.equal(rpgDemarrerManaEssai(duel).ok, true);
+  appliquerManaInitialTutoriel(duel, tutoriel);
   return duel;
 }
 
-test('le tutoriel prépare une main stable sans réduire les decks ni ouvrir le mulligan', () => {
-  const duel = nouveauDuelTutoriel();
-
-  assert.deepEqual(duel.joueur.main, RPG_TUTORIAL_OPENING_HAND);
-  assert.equal(duel.joueur.deck.length, 27);
-  assert.equal(duel.sorcier.main.length, 3);
-  assert.deepEqual(duel.sorcier.main, RPG_TUTORIAL_OPPONENT_HAND);
-  assert.equal(duel.sorcier.deck.length, 27);
-  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE);
-  assert.equal(rpgPeutMulligan(duel, 'joueur'), false);
-  assert.equal(rpgPeutMulligan(duel, 'sorcier'), false);
-});
-
-test('la partie guidée joue un tour complet : mana automatique, créature puis attaque', () => {
-  const duel = nouveauDuelTutoriel();
-
-  assert.deepEqual(duel.joueur.terrains, []);
-  assert.equal(rpgPoserTerrain(duel, 'joueur', 'desert').ok, false);
-  assert.equal(duel.joueur.mana.sable, 1);
-
-  const pose = rpgJouerCreature(duel, 'joueur', 'tislit-des-aures');
-  assert.equal(pose.ok, true);
-  assert.equal(pose.entite.ready, false, 'Tislit ne peut pas attaquer le tour où elle arrive');
-  assert.equal(duel.joueur.mana.sable, 0, 'le mana produit paie son coût');
-
-  rpgFinDeTour(duel);
-  assert.equal(duel.tour, 'sorcier');
-  rpgFinDeTour(duel);
-  assert.equal(duel.tour, 'joueur');
-  assert.equal(pose.entite.ready, true, 'la créature devient prête au début du tour suivant');
-  assert.equal(duel.joueur.mana.sable, 2, 'le mana se recharge et augmente au tour suivant');
-
-  const pvAvant = duel.sorcier.pv;
-  const attaque = rpgLancerAttaque(duel, 'joueur', [pose.entite.id]);
-  assert.equal(attaque.ok, true);
-  assert.equal(attaque.resume.frappeSorcier, pose.entite.atk);
-  assert.equal(duel.sorcier.pv, pvAvant - pose.entite.atk);
-});
-
-test('le parcours explique les règles et pointe vers les zones réellement jouées', () => {
-  const ids = RPG_TUTORIAL_STEPS.map((step) => step.id);
-  assert.deepEqual(ids, [
-    'bienvenue', 'main', 'mana', 'creature', 'invocation', 'fin-tour',
-    'tour-adverse', 'attaque', 'confirmer-attaque', 'combat', 'magies', 'termine',
+test('le menu propose cinq leçons, une par deck, chacune récompensée', () => {
+  assert.deepEqual(RPG_TUTORIELS.map((tutoriel) => tutoriel.id), [
+    'fondations-du-sablier',
+    'maree-des-abysses',
+    'balance-des-heures',
+    'serment-du-soleil-rouge',
+    'serment-des-neuf-hivers',
   ]);
-  assert.ok(RPG_TUTORIAL_STEPS.every((step) => step.target?.startsWith('[data-tutorial-target=')));
-  assert.ok(RPG_TUTORIAL_STEPS.some((step) => /mal d’invocation/u.test(`${step.title} ${step.text}`)));
-  assert.ok(RPG_TUTORIAL_STEPS.some((step) => /bloqueur/u.test(step.text)));
-  assert.ok(RPG_TUTORIAL_STEPS.some((step) => /rituel/u.test(step.text) && /éphémère/u.test(step.text)));
-});
-
-test('le guide avancé couvre les familles de cartes et référence des exemples du catalogue', () => {
-  assert.ok(RPG_CARD_LESSONS.length >= 18, 'le guide couvre un éventail de notions au-delà du tour débutant');
-  assert.deepEqual([...new Set(RPG_CARD_LESSONS.map((lesson) => lesson.section))], [
-    'Types de cartes', 'Magies', 'Capacités des créatures',
+  assert.deepEqual(RPG_TUTORIELS.map((tutoriel) => tutoriel.deckId), [
+    'veilleurs-du-desert',
+    'maree-des-abysses',
+    'balance-des-heures',
+    'serment-du-soleil-rouge',
+    'serment-des-neuf-hivers',
   ]);
-  assert.ok(RPG_CARD_LESSONS.every((lesson) => lesson.cardIds.length > 0
-    && lesson.cardIds.every((cardId) => cardById(cardId))), 'chaque fiche s’appuie sur une carte existante');
-  for (const id of [
-    'familles-de-cartes', 'terrain-hybride', 'rituel-ephemere', 'cible-ou-zone',
-    'contresorts', 'arrivee-en-jeu', 'creatures-jetons', 'capacite-de-destruction', 'rapidite-et-esquive',
-    'envol', 'protection', 'capacite-de-boualem', 'furie', 'auras-et-resonance',
-    'coup-rapide', 'capacite-de-combat',
-  ]) {
-    assert.ok(RPG_CARD_LESSONS.some((lesson) => lesson.id === id), `la fiche « ${id} » est présente`);
+  for (const tutoriel of RPG_TUTORIELS) {
+    assert.ok(tutoriel.reward > 0, `${tutoriel.id} paie ses crédits`);
+    assert.ok(tutoriel.steps.length >= 13, `${tutoriel.id} est une vraie leçon`);
+    assert.equal(new Set(tutoriel.steps.map((etape) => etape.id)).size, tutoriel.steps.length,
+      `${tutoriel.id} n'utilise pas deux fois le même identifiant d'étape`);
+    assert.ok(tutoriel.steps.every((etape) => etape.title && etape.text),
+      `${tutoriel.id} explique chaque étape`);
+    assert.equal(tutoriel.steps.at(-1).kind, 'complete', `${tutoriel.id} se termine par un bilan`);
+    assert.ok(RPG_DECKS.some((deck) => deck.id === tutoriel.opponentDeckId));
   }
+  assert.equal(tutorielParId('inconnu').id, RPG_TUTORIELS[0].id);
+});
+
+test('chaque carte manipulée existe et chaque annonce scénarisée est en main adverse', () => {
+  for (const tutoriel of RPG_TUTORIELS) {
+    for (const cardId of cartesDeLaLecon(tutoriel)) {
+      assert.ok(cardById(cardId), `${tutoriel.id} référence une carte inconnue : ${cardId}`);
+    }
+    for (const etape of tutoriel.steps) {
+      if (!etape.scriptedAnnonce) continue;
+      assert.ok(tutoriel.opponentHand.includes(etape.scriptedAnnonce.cardId),
+        `${tutoriel.id}/${etape.id} annonce une carte absente de la main du sorcier`);
+    }
+    assert.ok(cartesDeLaLecon(tutoriel).length >= tutoriel.openingHand.length);
+  }
+});
+
+test('la préparation installe la main, le mana et la scène de chaque leçon', () => {
+  for (const tutoriel of RPG_TUTORIELS) {
+    const duel = duelDeLecon(tutoriel);
+    assert.deepEqual(duel.joueur.main, tutoriel.openingHand, `${tutoriel.id} : main exacte`);
+    assert.equal(rpgPeutMulligan(duel, 'joueur'), false, `${tutoriel.id} : pas de mulligan`);
+    assert.equal(duel.sorcier.main.length, tutoriel.opponentHand.length, `${tutoriel.id} : main adverse`);
+    const manaAttendu = tutoriel.playerMana ?? { [RPG_DECKS.find((deck) => deck.id === tutoriel.deckId).element]: 1 };
+    for (const [couleur, montant] of Object.entries(manaAttendu)) {
+      assert.equal(duel.joueur.mana[couleur], montant, `${tutoriel.id} : mana ${couleur}`);
+    }
+    for (const scene of tutoriel.stagedOpponent ?? []) {
+      assert.ok(duel.sorcier.creatures.some((entite) => entite.carteId === scene.cardId),
+        `${tutoriel.id} : ${scene.cardId} est en scène`);
+    }
+  }
+});
+
+test('la leçon Eau joue une sorcellerie, une magie rapide puis un contre', () => {
+  const tutoriel = tutorielParId('maree-des-abysses');
+  const duel = duelDeLecon(tutoriel);
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').ok, true);
+  assert.equal(duel.joueur.pv, 28, 'la Porteuse rend 3 PV');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'eau-de-la-source').ok, true);
+  assert.equal(duel.joueur.pv, 32, 'la sorcellerie rend 4 PV');
+  const vipere = duel.sorcier.creatures[0];
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'ressac', vipere.id).ok, true);
+  assert.equal(duel.sorcier.creatures.length, 0, 'Ressac renvoie la Vipère en main');
+  assert.equal(duel.joueur.mana.eau, 4, 'les trois sorts ont coûté quatre manas');
+
+  rpgFinDeTour(duel);
+  duel.annonce = { cote: 'sorcier', carteId: 'lame-de-mer', cibleId: duel.joueur.creatures[0].id, cibleAllieeId: null };
+  duel.fenetreReponse = true;
+  const contre = rpgLancerMagie(duel, 'joueur', 'contresort-des-abimes');
+  assert.equal(contre.ok, true);
+  assert.equal(contre.contre, true, 'le Contresort défait l’annonce');
+  assert.equal(duel.annonce, null);
+  assert.ok(duel.sorcier.cimetiere.includes('lame-de-mer'), 'la carte contredite paie puis va au cimetière');
+  assert.equal(duel.joueur.creatures[0].pv, 3, 'la Lame de mer n’a pas résolu son effet');
+});
+
+test('la leçon Ténèbres montre le Tribut, le Prix et les jetons de mort', () => {
+  const tutoriel = tutorielParId('balance-des-heures');
+  const duel = duelDeLecon(tutoriel);
+  const chacal = rpgJouerCreature(duel, 'joueur', 'chacal-du-seuil');
+  assert.equal(chacal.ok, true);
+  assert.equal(chacal.entite.ready, true, 'Rapidité : le Chacal attaque tout de suite');
+  rpgOuvrirFenetreReponse(duel, 'joueur');
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [chacal.entite.id], null, null, null, {}, { attaqueDeclaree: true }).ok, true);
+  assert.equal(duel.sorcier.pv, 22, '2 dégâts de combat + 1 de Tribut');
+  assert.equal(duel.joueur.pv, 26, 'le Tribut rend 1 PV au joueur');
+
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'pretre-de-la-bouche').ok, true);
+  assert.equal(duel.joueur.pv, 27);
+  const pvAvantPapyrus = duel.joueur.pv;
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'papyrus').ok, true);
+  assert.equal(duel.joueur.pv, pvAvantPapyrus - 2, 'le Prix du Papyrus se paie en PV');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'couveuse-de-shabtis').ok, true);
+
+  rpgFinDeTour(duel);
+  duel.annonce = { cote: 'sorcier', carteId: 'feux-de-kitsune', cibleId: null, cibleAllieeId: null };
+  duel.fenetreReponse = true;
+  assert.equal(rpgSorcierResoudreAnnonce(duel).ok, true);
+  assert.equal(duel.joueur.creatures.filter((entite) => entite.carteId === 'shabti').length, 2,
+    'la Couveuse laisse deux Shabti');
+});
+
+test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', () => {
+  const tutoriel = tutorielParId('serment-du-soleil-rouge');
+  const duel = duelDeLecon(tutoriel);
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'ashigaru-des-braises').ok, true);
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'samourai-du-torii').ok, true);
+  const ashigaru = duel.joueur.creatures.find((entite) => entite.carteId === 'ashigaru-des-braises');
+  assert.equal(ashigaru.atk, 2);
+  assert.equal(ashigaru.pv, 2, 'la Résonance du torii renforce l’Ashigaru');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'daimyo-du-soleil-rouge').ok, true);
+  assert.equal(duel.joueur.creatures.length, 5, 'le Daimyō crée deux jetons : cinq créatures, la limite');
+  assert.equal(duel.joueur.mana.braise, 0, 'les trois poses coûtent exactement neuf manas');
+
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
+  const ids = duel.joueur.creatures.filter((entite) => entite.ready && !entite.attaquee).map((entite) => entite.id);
+  assert.equal(ids.length, 5);
+  const pvAvant = duel.sorcier.pv;
+  rpgOuvrirFenetreReponse(duel, 'joueur');
+  assert.equal(rpgLancerAttaque(duel, 'joueur', ids, null, null, null, {}, { attaqueDeclaree: true }).ok, true);
+  assert.ok(duel.sorcier.pv < pvAvant);
+  assert.deepEqual(duel.joueur.creatures.map((entite) => entite.atk), [3, 3, 5, 3, 3],
+    'la Bannière grandit chaque Samouraï qui attaque');
+});
+
+test('la leçon Neige gèle un adversaire et déclenche la Furie du bloqueur', () => {
+  const tutoriel = tutorielParId('serment-des-neuf-hivers');
+  const duel = duelDeLecon(tutoriel);
+  const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond');
+  assert.equal(guerrier.ok, true);
+  assert.equal(guerrier.entite.bouclier, 1, 'le Guerrier arrive avec un bouclier 1');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').ok, true);
+  assert.equal(guerrier.entite.atk, 2, 'la Résonance Neige renforce le Guerrier');
+  assert.equal(guerrier.entite.pv, 4);
+  const ennemi = duel.sorcier.creatures.find((entite) => entite.carteId === 'guerrier-au-bouclier-rond');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', ennemi.id).ok, true);
+  assert.ok(ennemi.gelToursRestants > 0, 'la Poigne gèle même à travers le bouclier');
+  assert.equal(ennemi.bouclier, 0);
+
+  rpgFinDeTour(duel);
+  const loup = duel.sorcier.creatures.find((entite) => entite.carteId === 'loup-des-neiges');
+  assert.equal(loup.atk, 4, 'le Loup profite aussi de la Résonance');
+  assert.equal(rpgLancerAttaque(duel, 'sorcier', [loup.id], { [loup.id]: [guerrier.entite.id] }, null,
+    [loup.id], {}, { attaqueDeclaree: true }).ok, true);
+  assert.equal(guerrier.entite.furieDeclenchee, true, 'la Furie se déclenche après la blessure survivie');
+  assert.equal(guerrier.entite.atk, 3);
+  assert.equal(guerrier.entite.pvMax, 5);
+  assert.equal(duel.joueur.pv, 25, 'aucun dégât ne passe au joueur');
+});
+
+test('la récompense d’un tutoriel n’est versée qu’une fois', () => {
+  const tutoriel = RPG_TUTORIELS[1];
+  const premier = reclamerRecompenseTutoriel(portefeuilleVide(), tutoriel.id, tutoriel.reward);
+  assert.equal(premier.ok, true);
+  assert.equal(premier.gain, tutoriel.reward);
+  assert.deepEqual(premier.portefeuille.tutoriels, [tutoriel.id]);
+  const second = reclamerRecompenseTutoriel(premier.portefeuille, tutoriel.id, tutoriel.reward);
+  assert.equal(second.ok, false);
+  assert.equal(second.raison, 'deja-reclame');
+  assert.equal(second.gain, 0);
+  const autre = reclamerRecompenseTutoriel(second.portefeuille, RPG_TUTORIELS[2].id, 150);
+  assert.equal(autre.gain, 150, 'une autre leçon reste payable');
 });

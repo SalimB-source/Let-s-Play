@@ -15,7 +15,10 @@ function clamp(value, min, max) {
 }
 
 /** Voile plein écran avec une fenêtre lumineuse autour de la cible de l'étape. */
-export default function RpgTutorialOverlay({ step, stepIndex, totalSteps, onNext, onFinish, onClose }) {
+export default function RpgTutorialOverlay({
+  step, stepIndex, totalSteps, onNext, onFinish, onClose,
+  tutorialName = 'LE SABLIER · TUTORIEL', reward = 0, rewardClaimed = false,
+}) {
   const panelRef = useRef(null);
   const [spotlight, setSpotlight] = useState(null);
   const [position, setPosition] = useState(null);
@@ -48,11 +51,26 @@ export default function RpgTutorialOverlay({ step, stepIndex, totalSteps, onNext
     window.addEventListener('scroll', update, true);
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
     if (target && observer) observer.observe(target);
+    // Certaines cibles n'existent qu'après une animation (la carte jouée qui
+    // atterrit, l'aperçu d'annonce qui s'ouvre) : on guette leur apparition
+    // plutôt que de laisser un voile plein écran jusqu'au clic suivant.
+    const mutations = typeof MutationObserver === 'undefined' ? null : new MutationObserver(update);
+    mutations?.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-card-id', 'data-entity-id'] });
+    let frame = 0;
+    let essais = 0;
+    const retenter = () => {
+      update();
+      essais += 1;
+      if (essais < 60) frame = window.requestAnimationFrame(retenter);
+    };
+    if (!target) frame = window.requestAnimationFrame(retenter);
     return () => {
       window.removeEventListener('resize', update);
       window.removeEventListener('orientationchange', update);
       window.removeEventListener('scroll', update, true);
       observer?.disconnect();
+      mutations?.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
     };
   }, [step.id, step.target]);
 
@@ -157,7 +175,7 @@ export default function RpgTutorialOverlay({ step, stepIndex, totalSteps, onNext
       >
         <header className="rpg-tutorial__header">
           <div className="rpg-tutorial__step-label">
-            <span>LE SABLIER · TUTORIEL</span>
+            <span>{tutorialName}</span>
             <span className="rpg-tutorial__counter">{stepIndex + 1} / {totalSteps}</span>
           </div>
           <button type="button" className="rpg-tutorial__close" onClick={onClose} aria-label="Fermer le tutoriel">
@@ -170,6 +188,12 @@ export default function RpgTutorialOverlay({ step, stepIndex, totalSteps, onNext
         <p className="rpg-tutorial__eyebrow">{step.eyebrow}</p>
         <h2 id="rpg-tutorial-title">{step.title}</h2>
         <p id="rpg-tutorial-description" className="rpg-tutorial__copy">{step.text}</p>
+        {step.kind === 'complete' && reward > 0 && (
+          <p className={`rpg-tutorial__reward${rewardClaimed ? ' is-claimed' : ''}`} role="status">
+            <span aria-hidden="true">◈</span>
+            {rewardClaimed ? `Récompense déjà remportée (${reward} crédits)` : `Récompense de la leçon : +${reward} crédits`}
+          </p>
+        )}
         <footer className="rpg-tutorial__footer">
           {step.kind === 'action' && (
             <p className="rpg-tutorial__instruction"><span aria-hidden="true">⌖</span> Touchez la zone encadrée pour continuer.</p>

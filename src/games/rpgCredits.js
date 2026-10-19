@@ -69,9 +69,11 @@ export const GAINS = Object.freeze({
   cachetDeLaSemaine: 80,
 });
 
-/** Le portefeuille d'un joueur neuf. */
+/** Le portefeuille d'un joueur neuf. `tutoriels` retient les leçons dont la
+ *  récompense a déjà été encaissée : une leçon se rejoue, mais ne se paie
+ *  qu'une fois. */
 export function portefeuilleVide() {
-  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], majLe: null };
+  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], tutoriels: [], majLe: null };
 }
 
 /** Entier positif ou nul, quelle que soit l'entrée (chaîne, `NaN`, négatif). */
@@ -94,8 +96,20 @@ export function normaliserPortefeuille(value) {
     ouvertures: entierPositif(brut.ouvertures),
     pitie: entierPositif(brut.pitie),
     journal: normaliserJournal(brut.journal),
+    tutoriels: normaliserTutoriels(brut.tutoriels),
     majLe: typeof brut.majLe === 'string' ? brut.majLe : null,
   };
+}
+
+/**
+ * Les identifiants de leçons déjà payées : des chaînes non vides, sans
+ * doublon. La mémoire reste petite et tolérante aux anciennes sauvegardes
+ * (qui n'avaient pas le champ).
+ */
+export function normaliserTutoriels(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((id) => typeof id === 'string' && id.trim()).map((id) => id.trim()))]
+    .slice(0, 40);
 }
 
 /**
@@ -191,6 +205,26 @@ export function crediterCredits(portefeuille, montant) {
 }
 
 /**
+ * Encaisse la récompense d'un tutoriel. Une leçon ne paie qu'une fois :
+ * `tutoriels` porte les identifiants déjà réglés, et la fusion entre appareils
+ * en fait l'union. Rend `{ ok, portefeuille, gain, raison }`.
+ */
+export function reclamerRecompenseTutoriel(portefeuille, tutorielId, montant) {
+  const base = normaliserPortefeuille(portefeuille);
+  const id = typeof tutorielId === 'string' ? tutorielId.trim() : '';
+  if (!id) return { ok: false, raison: 'tutoriel-inconnu', portefeuille: base, gain: 0 };
+  if (base.tutoriels.includes(id)) return { ok: false, raison: 'deja-reclame', portefeuille: base, gain: 0 };
+  const paiement = crediterCredits(base, montant);
+  if (!paiement.gain) return { ok: false, raison: 'montant-invalide', portefeuille: base, gain: 0 };
+  return {
+    ok: true,
+    raison: null,
+    gain: paiement.gain,
+    portefeuille: { ...paiement.portefeuille, tutoriels: [...base.tutoriels, id] },
+  };
+}
+
+/**
  * Dépense un montant. Rend `{ ok, portefeuille, raison }` : `'solde-insuffisant'`
  * quand il manque des crédits, `'montant-invalide'` pour un prix nul ou négatif.
  * Un refus rend le portefeuille normalisé, jamais amputé.
@@ -267,6 +301,7 @@ export function fusionnerPortefeuilles(local, distant) {
     // Les deux journaux, du plus récent au plus ancien : `normaliserJournal`
     // trie et borne, donc deux appareils ne peuvent pas faire enfler la mémoire.
     journal: normaliserJournal([...ici.journal, ...la.journal]),
+    tutoriels: normaliserTutoriels([...ici.tutoriels, ...la.tutoriels]),
     majLe: (ici.majLe ?? '') >= (la.majLe ?? '') ? ici.majLe : la.majLe,
   };
   const modifie = JSON.stringify(fusion) !== JSON.stringify(ici);

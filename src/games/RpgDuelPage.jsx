@@ -69,6 +69,7 @@ import RpgCardRules from './RpgCardRules.jsx';
 import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
 import { effetsDetailles } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
+import RpgTutorialMenu from './RpgTutorialMenu.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
 import RpgTableScene3D from './RpgTableScene3D.jsx';
 import { readRpgTable3dPref, writeRpgTable3dPref } from './rpgTableSceneThemes.js';
@@ -79,10 +80,13 @@ import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
 import { creditsLisible } from './rpgCredits.js';
 import {
+  appliquerManaInitialTutoriel,
   preparerDuelTutoriel,
+  preparerEtapeTutoriel,
+  RPG_TUTORIELS,
   RPG_TUTORIAL_OPPONENT_DECK,
   RPG_TUTORIAL_PLAYER_DECK,
-  RPG_TUTORIAL_STEPS,
+  tutorielParId,
 } from './rpgTutorial.js';
 import {
   chargerDeckChoisi,
@@ -2487,11 +2491,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     <span className="rpg-menu-button__arrow" aria-hidden="true">→</span>
                   </button>
                   <div className="rpg-mode-menu__secondary-actions">
-                    <button type="button" className="rpg-menu-button rpg-menu-button--tutorial" onClick={() => { play('select'); onStartTutorial?.(); }}>
+                    <button type="button" className="rpg-menu-button rpg-menu-button--tutorial" onClick={() => { play('select'); onChangeScreen('tutoriels'); }}>
                       <span className="rpg-menu-button__icon">⌛</span>
                       <span className="rpg-menu-button__text">
                         <strong>Apprendre à jouer</strong>
-                        <small>Partie guidée en 5 étapes</small>
+                        <small>{RPG_TUTORIELS.length} leçons guidées · récompenses en ◈</small>
                       </span>
                     </button>
                     <button type="button" className="rpg-menu-button rpg-menu-button--card-guide" onClick={() => { play('select'); onStartCardGuide?.(); }}>
@@ -2974,7 +2978,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               </section>
             )}
           </main>
-        )) : screen === 'guide' ? (
+        )) : screen === 'tutoriels' ? (
+          <RpgTutorialMenu
+            tutoriels={RPG_TUTORIELS}
+            termines={portefeuille?.tutoriels ?? []}
+            credits={credits}
+            onStart={(tutorielId) => onStartTutorial?.(tutorielId)}
+            onExit={() => onChangeScreen('jouer')}
+            onPlaySfx={play}
+          />
+        ) : screen === 'guide' ? (
           <RpgCardGuide
             cardArt={cardArt}
             hasGame={hasGame}
@@ -3341,7 +3354,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const [ecran, setEcran] = useState('jouer');
   const [tutorielActif, setTutorielActif] = useState(false);
+  const [tutorielId, setTutorielId] = useState(null);
   const [etapeTutorielId, setEtapeTutorielId] = useState(null);
+  // La récompense affichée après la dernière étape (le temps d'un toast).
+  const [recompenseTutoriel, setRecompenseTutoriel] = useState(null);
   const landscapeRef = useRef(null);
   // La coque du jeu (`.rpg-battle`) : menu, catalogues et duel partagent le même
   // élément — React garde le nœud d'un écran à l'autre —, donc le plein écran
@@ -3531,7 +3547,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // est fermé — y compris au tout premier rendu.
   const {
     credits, aReclamer: soukAReclamer, quetes: quetesSouk, bourse: portefeuilleSouk,
-    noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerLeCachet, reclamerLeCachetDeLaSemaine,
+    noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerTutoriel,
+    reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, fermerOuverture, ouverture: ouvertureSouk,
   } = useSablierBourse({
     progression: progressionHistoireRef.current,
@@ -3720,17 +3737,53 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const sequenceAnimationRef = useRef(0);
   const [, setVersion] = useState(0);
   const force = () => setVersion((v) => v + 1);
-  const avancerTutoriel = (etapeActuelle, etapeSuivante) => {
-    if (tutorielActif && etapeTutorielId === etapeActuelle) setEtapeTutorielId(etapeSuivante);
+  // Hors tutoriel, le catalogue ne doit pas fournir d'étapes : le voile et
+  // les signaux de progression resteraient branchés sur la leçon 1.
+  const tutorielCourant = tutorielActif ? tutorielParId(tutorielId) : null;
+  const etapesTutoriel = tutorielCourant?.steps ?? [];
+  // Les minuteries du tour adverse rappellent des fonctions créées au rendu
+  // précédent : elles liraient un `etapeTutorielId` périmé et manqueraient
+  // l'étape qui vient d'être affichée. Le ref donne toujours l'étape courante.
+  const etapeTutorielIdRef = useRef(etapeTutorielId);
+  useLayoutEffect(() => { etapeTutorielIdRef.current = etapeTutorielId; }, [etapeTutorielId]);
+  /** Change d'étape en gardant le ref synchrone : les minuteries du tour
+   *  adverse lisent toujours l'étape affichée. */
+  const allerEtapeTutoriel = (id) => {
+    etapeTutorielIdRef.current = id;
+    setEtapeTutorielId(id);
+  };
+  /** Fait avancer l'étape courante si elle écoute cet événement de jeu. */
+  const signalerTutoriel = (evenement, details = {}) => {
+    const etapeCourante = etapeTutorielIdRef.current;
+    if (!tutorielActif || !etapeCourante) return;
+    const index = etapesTutoriel.findIndex((step) => step.id === etapeCourante);
+    if (index < 0) return;
+    const etape = etapesTutoriel[index];
+    const evenements = Array.isArray(etape.on) ? etape.on : etape.on ? [etape.on] : [];
+    if (!evenements.includes(evenement)) return;
+    if (etape.cardId && etape.cardId !== details.cardId) return;
+    if (index < etapesTutoriel.length - 1) allerEtapeTutoriel(etapesTutoriel[index + 1].id);
   };
   const continuerTutoriel = () => {
-    const index = RPG_TUTORIAL_STEPS.findIndex((step) => step.id === etapeTutorielId);
-    if (index >= 0 && index < RPG_TUTORIAL_STEPS.length - 1) {
-      setEtapeTutorielId(RPG_TUTORIAL_STEPS[index + 1].id);
+    const index = etapesTutoriel.findIndex((step) => step.id === etapeTutorielIdRef.current);
+    if (index >= 0 && index < etapesTutoriel.length - 1) {
+      allerEtapeTutoriel(etapesTutoriel[index + 1].id);
     }
   };
-  const fermerTutoriel = () => setEtapeTutorielId(null);
-  const terminerTutoriel = () => setEtapeTutorielId(null);
+  const fermerTutoriel = () => { etapeTutorielIdRef.current = null; setEtapeTutorielId(null); };
+  const terminerTutoriel = () => {
+    if (tutorielActif && tutorielCourant) {
+      const gain = reclamerTutoriel(tutorielCourant.id, tutorielCourant.reward);
+      if (gain > 0) setRecompenseTutoriel({ gain, token: Date.now() });
+    }
+    etapeTutorielIdRef.current = null;
+    setEtapeTutorielId(null);
+  };
+  useEffect(() => {
+    if (!recompenseTutoriel) return undefined;
+    const timer = window.setTimeout(() => setRecompenseTutoriel(null), 4200);
+    return () => window.clearTimeout(timer);
+  }, [recompenseTutoriel?.token]);
   const [animationsEntites, setAnimationsEntites] = useState({});
   const [cartesEnDestruction, setCartesEnDestruction] = useState([]);
   const [carteEnVol, setCarteEnVol] = useState(null);
@@ -4090,20 +4143,28 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // une attaque du sorcier encore en vol atterrissait sur la table neuve.
     sessionDuelRef.current += 1;
     annulerMinuteriesDuTour();
-    const modeTutoriel = options.tutoriel === true;
+    const tutoriel = options.tutoriel === true ? tutorielParId(options.tutorielId) : null;
+    const modeTutoriel = Boolean(tutoriel);
     const deckEssai = deckManaEssaiParId(options.essaiManaId);
     const adversaireEssai = deckEssai ? adversaireManaEssai(deckEssai) : null;
     const etageId = deckEssai ? null : options.etageId !== undefined ? options.etageId : histoireEtageId;
     const etageCourant = etageId ? etageHistoireParId(etageId)?.etage ?? null : null;
-    const deckChoisiId = modeTutoriel ? 'veilleurs-du-desert' : options.deckId ?? deckSelectionneId;
-    const deckJoueurSelectionne = decksTous.find((deck) => deck.id === deckChoisiId && deckSeJoue(deck, collection));
+    const deckChoisiId = modeTutoriel ? tutoriel.deckId : options.deckId ?? deckSelectionneId;
+    // Les leçons prêtent leur deck : il ne dépend pas de la collection du
+    // joueur. Le plateau et les couleurs se lisent donc dans le catalogue.
+    const deckTutorielJoueur = modeTutoriel ? RPG_DECKS.find((deck) => deck.id === tutoriel.deckId) ?? null : null;
+    const deckTutorielAdverse = modeTutoriel ? RPG_DECKS.find((deck) => deck.id === tutoriel.opponentDeckId) ?? null : null;
+    const deckJoueurSelectionne = modeTutoriel
+      ? deckTutorielJoueur
+      : decksTous.find((deck) => deck.id === deckChoisiId && deckSeJoue(deck, collection));
     // Duel libre : le sorcier joue la Cour des Djinns, ou un autre deck si le joueur joue déjà la Cour.
     // Dans le tutoriel, son paquet de Montagnes est volontairement passif.
     const deckAdverse = modeTutoriel || etageCourant || sorcierDeck || deckEssai ? null : deckAdversePour(deckJoueurSelectionne);
     setTutorielActif(modeTutoriel);
-    setEtapeTutorielId(modeTutoriel ? 'bienvenue' : null);
-    setDeckDuelId(deckEssai?.id ?? (modeTutoriel ? deckJoueurSelectionne?.id ?? 'veilleurs-du-desert' : joueurDeck ? null : deckJoueurSelectionne?.id ?? null));
-    setDeckAdverseId(adversaireEssai?.id ?? deckAdverse?.id ?? null);
+    setTutorielId(modeTutoriel ? tutoriel.id : null);
+    allerEtapeTutoriel(modeTutoriel ? tutoriel.steps[0]?.id ?? null : null);
+    setDeckDuelId(deckEssai?.id ?? (modeTutoriel ? deckTutorielJoueur?.id ?? null : joueurDeck ? null : deckJoueurSelectionne?.id ?? null));
+    setDeckAdverseId(adversaireEssai?.id ?? deckAdverse?.id ?? deckTutorielAdverse?.id ?? null);
     // Chaque camp joue sur son terrain : la moitié basse de la table porte le
     // plateau du deck du joueur (y compris dans l'essai mana), la moitié haute
     // celui du deck adverse — même terrain des deux côtés, et la table reste
@@ -4117,7 +4178,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const resolutionPlateaux = resoudrePlateauxDuDuel({
       deckJoueur: deckEssai ?? (modeTutoriel ? deckJoueurSelectionne : joueurDeck ?? deckJoueurSelectionne),
       deckAdverse: adversaireEssai ?? (modeTutoriel
-        ? RPG_TUTORIAL_OPPONENT_DECK
+        ? deckTutorielAdverse
         : etageCourant ? etageCourant.deck : sorcierDeck ?? deckAdverse),
       rng,
       variantesFantaisistes: variantesPlateaux,
@@ -4134,10 +4195,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     duelRef.current = rpgNouveauDuel({
       joueurDeck: convertirDeckSansTerrain(deckEssai?.cardIds ?? (modeTutoriel
-        ? RPG_TUTORIAL_PLAYER_DECK
+        ? deckTutorielJoueur?.cardIds ?? RPG_TUTORIAL_PLAYER_DECK
         : joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECK_JOUEUR_BASE)),
       sorcierDeck: convertirDeckSansTerrain(adversaireEssai?.cardIds ?? (modeTutoriel
-        ? RPG_TUTORIAL_OPPONENT_DECK
+        ? deckTutorielAdverse?.cardIds ?? RPG_TUTORIAL_OPPONENT_DECK
         : etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECK_SORCIER_BASE)),
       sorcierPuissance: modeTutoriel ? 0 : etageCourant ? etageCourant.puissance : sorcierPuissance,
       sorcierIA: etageCourant ? etageCourant.ia : undefined,
@@ -4147,7 +4208,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       rng,
     });
     if (deckEssai) duelRef.current.essaiDeckId = deckEssai.id;
-    if (modeTutoriel) { preparerDuelTutoriel(duelRef.current); rpgDemarrerManaEssai(duelRef.current); }
+    if (modeTutoriel) {
+      preparerDuelTutoriel(duelRef.current, tutoriel);
+      rpgDemarrerManaEssai(duelRef.current);
+      appliquerManaInitialTutoriel(duelRef.current, tutoriel);
+    }
     histoireVictoireMarqueeRef.current = null;
     campagneDuelRef.current = options.campagne ? {
       session: sessionDuelRef.current, etageId,
@@ -4312,10 +4377,45 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(minuterie);
   }, [campDuTour, ecran, voletMulliganOuvert, duelTermine]);
 
+  // Une étape d'attente se referme toute seule quand la table offre ce qu'elle
+  // attend : le tour revient au joueur, l'assaut adverse est déclaré. Aucune
+  // étape ne doit rester bloquée sur un état déjà passé (le joueur ne pourrait
+  // plus avancer). « Le tour revient » suppose d'avoir vu celui du sorcier :
+  // au moment où l'étape s'affiche, le clic de fin de tour n'a pas encore
+  // basculé le camp.
+  const observationTutorielRef = useRef({ id: null, tourSorcier: false });
   useEffect(() => {
-    if (!tutorielActif || etapeTutorielId !== 'tour-adverse' || !duel || duel.tour !== 'joueur' || duel.annonce || combatEntrant) return;
-    setEtapeTutorielId('attaque');
+    if (!tutorielActif || !duel) return;
+    const index = etapesTutoriel.findIndex((step) => step.id === etapeTutorielId);
+    const etape = index >= 0 ? etapesTutoriel[index] : null;
+    if (!etape || etape.kind !== 'waiting') return;
+    const observation = observationTutorielRef.current;
+    if (observation.id !== etapeTutorielId) {
+      observation.id = etapeTutorielId;
+      observation.tourSorcier = false;
+    }
+    if (duel.tour === 'sorcier') observation.tourSorcier = true;
+    const condition = etape.waitFor === 'tour-joueur'
+      ? duel.tour === 'joueur' && observation.tourSorcier && !duel.annonce && !combatEntrant
+      : etape.waitFor === 'annonce'
+        ? Boolean(duel.annonce)
+        : etape.waitFor === 'combat-adverse'
+          ? combatEntrant?.coteAttaquant === 'sorcier'
+          : etape.waitFor === 'combat-joueur'
+            ? combatEntrant?.coteAttaquant === 'joueur'
+            : false;
+    if (condition && index < etapesTutoriel.length - 1) allerEtapeTutoriel(etapesTutoriel[index + 1].id);
   }, [tutorielActif, etapeTutorielId, duel?.tour, duel?.annonce, combatEntrant]);
+  // Certaines étapes préparent leur scène en arrivant (la créature que le
+  // sorcier envoie pour la leçon de blocage). L'appel est idempotent.
+  useEffect(() => {
+    if (!tutorielActif || !duelRef.current) return;
+    const etape = etapesTutoriel.find((step) => step.id === etapeTutorielId);
+    if (!etape?.prepare) return;
+    const creees = preparerEtapeTutoriel(duelRef.current, etape);
+    if (creees.length) force();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorielActif, etapeTutorielId, duel?.tour]);
   useLayoutEffect(() => {
     if (!duel) return;
     const instantaneActuel = {
@@ -4759,11 +4859,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     sfxRef.current?.unlock();
   };
 
-  const demarrerTutoriel = () => {
+  const demarrerTutoriel = (tutorielIdChoisi) => {
+    const tutoriel = tutorielParId(tutorielIdChoisi);
     unlockSfx();
     jouerSfx('select');
     setHistoireEtageId(null);
-    nouvellePartie({ etageId: null, tutoriel: true, deckId: 'veilleurs-du-desert' });
+    setTutorielId(tutoriel.id);
+    nouvellePartie({ etageId: null, tutoriel: true, tutorielId: tutoriel.id, deckId: tutoriel.deckId });
     reprendrePartie();
     sfxRef.current?.unlock();
   };
@@ -4963,13 +5065,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const mulliganOuvert = Boolean(mulligan);
   const choixManaEssaiOuvert = duel.modeMana === RPG_MODE_MANA_ESSAI
     && Boolean(duel.joueur.manaChoixEnAttente) && !mulliganOuvert && !vainqueur;
-  const etapeTutoriel = RPG_TUTORIAL_STEPS.find((step) => step.id === etapeTutorielId) ?? null;
-  const indexEtapeTutoriel = etapeTutoriel ? RPG_TUTORIAL_STEPS.findIndex((step) => step.id === etapeTutoriel.id) : -1;
+  const etapeTutoriel = etapesTutoriel.find((step) => step.id === etapeTutorielId) ?? null;
+  const indexEtapeTutoriel = etapeTutoriel ? etapesTutoriel.findIndex((step) => step.id === etapeTutoriel.id) : -1;
+  /** Vrai si l'étape courante encadre cette zone du plateau. Évite de figer
+   *  une liste d'identifiants d'étapes dans le rendu. */
+  const cibleTutoriel = (nom) => Boolean(tutorielActif
+    && etapeTutoriel?.target?.includes(`data-tutorial-target="${nom}"`));
   const deckJoueurAffiche = (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(duel.essaiDeckId) : null)
+    ?? (tutorielActif ? RPG_DECKS.find((deck) => deck.id === tutorielCourant?.deckId) : null)
     ?? decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
   const deckAdverseAffiche = (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(deckAdverseId) : null)
+    ?? (tutorielActif ? RPG_DECKS.find((deck) => deck.id === tutorielCourant?.opponentDeckId) : null)
     ?? RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
-  const nomSorcierAdverse = etageHistoire?.nom ?? (tutorielActif ? 'Sorcier d’entraînement' : duel.modeMana === RPG_MODE_MANA_ESSAI ? 'Sorcier adverse' : 'Ifrit al-Ahmar');
+  const nomSorcierAdverse = etageHistoire?.nom ?? (tutorielActif
+    ? tutorielCourant?.opponentName ?? 'Sorcier d’entraînement'
+    : duel.modeMana === RPG_MODE_MANA_ESSAI ? 'Sorcier adverse' : 'Ifrit al-Ahmar');
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
   const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
@@ -5492,7 +5602,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.ok) {
       conserverAnnulation(etatAvantAction);
       jouerSfx('card_place');
-      avancerTutoriel('terrain', 'mana');
     } else { jouerSfx('erreur'); }
     force();
     // Le Souk est prévenu **après** le rendu du plateau : `noterEvenementDuel`
@@ -5514,7 +5623,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.ok) {
       if (etatAvantAction) conserverAnnulation(etatAvantAction);
       jouerSfx('terrain_tap');
-      avancerTutoriel('mana', 'creature');
     } else { jouerSfx('erreur'); }
     force();
   };
@@ -5658,6 +5766,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       invaliderAnnulation();
       annoncerMagie(carte, cibleDecrite, { contre: true });
       setCibleEnCours(null);
+      signalerTutoriel('contre-lance', { cardId: carteId });
+      signalerTutoriel('magie-lancee', { cardId: carteId });
       force();
       later(annoncerSuivantSorcier, 900);
       return;
@@ -5671,6 +5781,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         sonForce: res.renvoiMain ? 'creature_return' : null,
       });
       setCibleEnCours(null);
+      signalerTutoriel('magie-lancee', { cardId: carteId });
       lancee = true;
       if (reponseActive && combatEntrant?.coteAttaquant === 'joueur') {
         const attaquantsVivants = combatEntrant.attaquants
@@ -5766,7 +5877,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       jouerSfx('card_place');
       const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
-      avancerTutoriel('creature', 'invocation');
+      signalerTutoriel('creature-jouee', { cardId: carteId, entiteId: res.entite?.id });
       // La créature attend sa victime : la table s'allume, la main est close.
       if (res.arriveeEnAttente) setCibleEnCours(carteId);
     }
@@ -5838,6 +5949,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       jouerSfx('card_place');
+      signalerTutoriel('arme-equipee', { cardId: carteId, entiteId: cibleId });
     } else {
       jouerSfx('erreur');
     }
@@ -5919,6 +6031,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (reponseApresBlocage && !carte.instant) return;
     if (!monTour && !peutRepondre) return;
     if (carte.kind === 'arme') {
+      signalerTutoriel('arme-choisie', { cardId: carteId });
       // On désigne la créature alliée qui portera l'arme. Une arme vivante
       // n'a besoin de personne : jouée la table vide, elle crée son porteur
       // et s'y attache.
@@ -5932,6 +6045,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (carte.kind === 'magie') {
+      signalerTutoriel('magie-choisie', { cardId: carteId });
       const cible = targetMode(carte);
       if (cible) {
         setCibleAllieeMagie(null);
@@ -6064,6 +6178,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (carte.kind === 'magie' && peutJouerCarte(carte)) {
+      // En leçon, la carte part directement : le voile encadre déjà la main et
+      // la fenêtre de confirmation viendrait s'interposer sous lui.
+      if (tutorielActif) {
+        jouerCarteDepuisMain(carteId, handIndex);
+        return;
+      }
       setConfirmationSort({ carteId, handIndex });
       return;
     }
@@ -6225,6 +6345,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       } else {
         jouerSfx('block_impact');
         setBloqueurSelectionne(entite.id);
+        signalerTutoriel('bloqueur-selectionne', { entiteId: entite.id });
       }
       force();
       return;
@@ -6242,6 +6363,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       if (rpgPeutAttaquer(entite)) {
         setAttaquants([entite.id]);
         setCiblesAttaque({});
+        signalerTutoriel('attaque-declaree', { entiteId: entite.id });
       } else {
         setAttaquants([]);
         setCiblesAttaque({});
@@ -6375,7 +6497,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!ids.length || attaqueJouee) { jouerSfx('erreur'); return; }
     jouerSfx('attackers_confirm');
     setPhase(true);
-    avancerTutoriel('attaque', 'confirmer-attaque');
+    signalerTutoriel('attaque-declaree', { entites: ids });
     setAttaquants(ids);
     setCiblesAttaque({});
     force();
@@ -6459,6 +6581,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         repartitions: recalculerRepartitions(courant.attaquants, blocages),
       };
     });
+    if (!retireDeCetteAttaque) signalerTutoriel('bloqueur-assigne', { attaquantId, bloqueurId });
     animerEntites([attaquantId, bloqueurId], retireDeCetteAttaque ? 'unblock' : 'block', 700);
   };
 
@@ -6523,6 +6646,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCombatEntrant(null);
     setCibleEnCours(null);
     if (frappeDirecte) declencherImpactEcran('received');
+    signalerTutoriel('combat-adverse-resolu', { attaquants: attaquantsVivants });
     apresCombatSorcier();
     force();
   };
@@ -6601,7 +6725,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     rpgFermerFenetreReponse(duel);
     setCombatEntrant(null);
     setCibleEnCours(null);
-    avancerTutoriel('confirmer-attaque', 'combat');
+    signalerTutoriel('attaque-confirmee', { entites: attaquantsVivants });
     force();
   };
 
@@ -6644,7 +6768,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       if (rpgVainqueur(duel)) { force(); return; }
       sorcierApresCombatRef.current = false;
       if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
-      avancerTutoriel('fin-tour', 'tour-adverse');
+      signalerTutoriel('fin-de-tour');
       force();
       later(() => {
         const champAvantIA = prendreInstantaneChamp();
@@ -6713,9 +6837,36 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     annoncerSuivantSorcier();
   };
 
+  // Une leçon peut scénariser l'annonce du sorcier : la carte est posée sur la
+  // pile sans passer par l'IA, avec sa cible réelle. Le joueur la contre ou la
+  // laisse passer comme n'importe quelle annonce ; la résolution paie.
+  const annoncerTutorielScripte = () => {
+    if (!tutorielActif || duel.annonce) return false;
+    const etape = etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
+    const spec = etape?.scriptedAnnonce;
+    if (!spec) return false;
+    const carte = cardById(spec.cardId);
+    if (!carte || !duel.sorcier.main.includes(spec.cardId)) return false;
+    if (!rpgPeutPayer(duel.sorcier, carte)) return false;
+    const cibleId = spec.cible === 'creature-joueur'
+      ? duel.joueur.creatures[0]?.id ?? null
+      : spec.cible === 'sorcier' ? 'sorcier' : null;
+    if (spec.cible === 'creature-joueur' && !cibleId) return false;
+    duel.annonce = { cote: 'sorcier', carteId: spec.cardId, cibleId, cibleAllieeId: null };
+    duel.fenetreReponse = true;
+    duel.log.push(`Le sorcier annonce ${carte.name}.`);
+    return true;
+  };
+
   // Le sorcier annonce sa carte suivante. Le joueur répond avec une magie rapide, ou laisse passer.
   const annoncerSuivantSorcier = () => {
     if (rpgVainqueur(duel)) {
+      force();
+      return;
+    }
+    if (annoncerTutorielScripte()) {
+      setApercuAppui(null);
+      setApercuSurvol(null);
       force();
       return;
     }
@@ -6760,6 +6911,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!duel.annonce) { jouerSfx('erreur'); return; }
     setApercuSurvol(null);
     setAnnonceApercueFermeePour(duel.annonce);
+    signalerTutoriel('annonce-repondue', { cardId: duel.annonce.carteId });
   };
 
   const rouvrirApercuAnnonce = () => {
@@ -6789,6 +6941,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.ok && joueurToucheDepuis(degatsJoueurAvantResolution)) {
       declencherImpactEcran('received');
     }
+    if (res.ok) signalerTutoriel('annonce-passee', { cardId: carteAnnoncee?.id });
     animerModificationsChamp(champAvant, [], debutJournalDestructions,
       [res.renvoiEntityId]);
     force();
@@ -6797,7 +6950,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
   const declarerAttaqueSorcier = () => {
-      const ids = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
+      // Une leçon de défense impose son assaut : les créatures déjà en scène
+      // attaquent, même si l'IA estimerait l'échange défavorable.
+      const etape = etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
+      const forces = etape?.forceOpponentAttack
+        ? duel.sorcier.creatures.filter(rpgPeutAttaquer).map((entite) => entite.id)
+        : [];
+      const ids = forces.length
+        ? forces
+        : rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
       if (!ids.length) {
         finirTourSorcier();
         return;
@@ -7273,7 +7434,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
 
         <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
-          data-tutorial-target={tutorielActif && ['bienvenue', 'combat'].includes(etapeTutorielId) ? 'opponent-health' : undefined}
+          data-tutorial-target={cibleTutoriel('opponent-health') ? 'opponent-health' : undefined}
           data-soin={soinSorcier ? soinSorcier.montant : undefined}
           title="Le sorcier adverse">
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={portraitSorcierAdverse} data-personnage={personnageSorcier ?? undefined} alt="" /></span>
@@ -7329,7 +7490,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         )}
 
         <div className="card-row card-row--ennemi" aria-label="Champ du sorcier"
-          data-tutorial-target={tutorielActif && etapeTutorielId === 'tour-adverse' ? 'enemy-field' : undefined}>
+          data-tutorial-target={cibleTutoriel('enemy-field') ? 'enemy-field' : undefined}>
           {duel.modeMana === RPG_MODE_MANA_ESSAI && <CreatureSlots camp={duel.sorcier} cote="ennemi" />}
           {duel.sorcier.creatures.length ? campEnnemi.piles.map((pile) => {
             const cle = clePile('ennemi', pile.carteId);
@@ -7409,7 +7570,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           }) : null}
         </div>
         <div className="card-row card-row--equipe" aria-label="Votre champ de bataille"
-          data-tutorial-target={tutorielActif && etapeTutorielId === 'termine' ? 'player-field' : undefined}>
+          data-tutorial-target={cibleTutoriel('player-field') ? 'player-field' : undefined}>
           {duel.modeMana === RPG_MODE_MANA_ESSAI && <CreatureSlots camp={duel.joueur} cote="joueur" />}
           {duel.joueur.creatures.length ? campJoueur.piles.map((pile) => {
             const cle = clePile('joueur', pile.carteId);
@@ -7461,9 +7622,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
                       playerTurn={tourDuJoueur}
-                      tutorialTarget={tutorielActif && etapeTutorielId === 'invocation' && entite.carteId === 'tislit-des-aures'
-                        ? 'played-creature'
-                        : undefined}
                       tilt={TILTS[(i + 2) % TILTS.length]}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
@@ -7648,7 +7806,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
 
         <div className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' || annonceViseVotrePlate ? ' is-spell-target' : ''}${classeSoinPlaque(soinJoueur)}`} title="Vous"
-          data-soin={soinJoueur ? soinJoueur.montant : undefined}>
+          data-soin={soinJoueur ? soinJoueur.montant : undefined}
+          data-tutorial-target={cibleTutoriel('player-health') ? 'player-health' : undefined}>
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" aria-hidden="true"><img src={cardArt('tin-hinan')} alt="" /></span>
           <span className="rpg-wizard-plate__profile-name">{nomProfilJoueur}</span>
           <span className="rpg-wizard-plate__identity"><strong>VOUS</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
@@ -7677,7 +7836,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 {phase && (
                   <>
                     <button type="button" className="rpg-btn rpg-btn--attaque rpg-btn--confirmer-attaque"
-                      data-tutorial-target={tutorielActif && etapeTutorielId === 'confirmer-attaque' ? 'confirm-attack' : undefined}
+                      data-tutorial-target={cibleTutoriel('confirm-attack') ? 'confirm-attack' : undefined}
                       disabled={!attaquants.length} onClick={() => lancerAttaque()}>
                       <CombatActionIcon type="confirm" /> Confirmer l’attaque ({attaquants.length})
                     </button>
@@ -7690,6 +7849,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   <button
                     type="button"
                     className="rpg-btn rpg-btn--attaque rpg-btn--resolve-combat"
+                    data-tutorial-target={cibleTutoriel('resolve-combat') ? 'resolve-combat' : undefined}
                     onClick={resoudreCombat}
                     disabled={!repartitionValide}
                   >
@@ -7798,6 +7958,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 <button
                   type="button"
                   className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
+                  data-tutorial-target={cibleTutoriel('pass-annonce') ? 'pass-annonce' : undefined}
                   aria-label={`Laisser passer ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
                   onClick={laisserPasser}
                 >
@@ -7832,6 +7993,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {apercuAnnonceOuvert && (
           <section
             className="rpg-annonce-sort"
+            data-tutorial-target={cibleTutoriel('spell-announcement') ? 'spell-announcement' : undefined}
             role="status"
             aria-live="polite"
             aria-label={`Le sorcier annonce ${carteAnnoncee?.name ?? 'une carte'}${cibleAnnoncee ? `. Cible : ${cibleAnnoncee.nom}` : ''}.`}
@@ -7846,6 +8008,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     <button
                       type="button"
                       className={`rpg-btn rpg-annonce-sort__respond${aReponseJouableEnMain ? ' is-response-available' : ''}`}
+                      data-tutorial-target={cibleTutoriel('respond-annonce') ? 'respond-annonce' : undefined}
                       aria-label={`Répondre à ${carteAnnoncee?.name ?? 'la carte annoncée'} avec une magie rapide`}
                       onClick={repondreAAnnonce}
                     >
@@ -7855,6 +8018,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     <button
                       type="button"
                       className="rpg-btn rpg-annonce-sort__pass"
+                      data-tutorial-target={cibleTutoriel('pass-annonce') ? 'pass-annonce' : undefined}
                       aria-label={`Laisser passer ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
                       onClick={laisserPasser}
                     >
@@ -7880,7 +8044,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   <button
                     type="button"
                     className={`rpg-btn rpg-btn--attaque rpg-btn--attaque-tous${attaqueJouee ? ' is-jouee' : ''}`}
-                    data-tutorial-target={tutorielActif && etapeTutorielId === 'attaque' ? 'attack-all' : undefined}
+                    data-tutorial-target={cibleTutoriel('attack-all') ? 'attack-all' : undefined}
                     disabled={!monTour || attaqueJouee || !prets.length || Boolean(combatEntrant) || Boolean(sacrificeEnCours) || defausseOuverte}
                     onClick={declarerAttaqueAvecTous}
                   >
@@ -7898,7 +8062,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               </button>
             )}
             <button type="button" className="rpg-btn rpg-btn--endturn"
-              data-tutorial-target={tutorielActif && etapeTutorielId === 'fin-tour' ? 'end-turn' : undefined}
+              data-tutorial-target={cibleTutoriel('end-turn') ? 'end-turn' : undefined}
               onClick={finDuTour}
               disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || Boolean(sacrificeEnCours) || mulliganOuvert || choixManaEssaiOuvert}>
               ⧗ Fin du tour
@@ -7910,7 +8074,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           className={`rpg-hand-dock${combatEntrant || fenetreSort || fenetreFinTour ? ' is-open' : ''}`}
           aria-label="Votre main"
           inert={apercuAnnonceOuvert ? true : undefined}
-          data-tutorial-target={tutorielActif && ['main', 'magies'].includes(etapeTutorielId) ? 'hand' : undefined}
+          data-tutorial-target={cibleTutoriel('hand') ? 'hand' : undefined}
         >
           <div className="rpg-hand" style={{ '--hand-count': Math.max(1, groupesMain.length) }}>
             {groupesMain.map((groupe, position) => {
@@ -8190,12 +8354,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         </div>
       )}
+      {recompenseTutoriel && (
+        <div className="rpg-tutorial-reward-toast" role="status" aria-live="polite" key={recompenseTutoriel.token}>
+          <span aria-hidden="true">◈</span>
+          <strong>Leçon terminée</strong>
+          <span>+{recompenseTutoriel.gain} crédits</span>
+        </div>
+      )}
       {tutorielActif && etapeTutoriel && !viewport.portrait && !mulliganOuvert && (
         <RpgTutorialOverlay
           key={etapeTutoriel.id}
           step={etapeTutoriel}
           stepIndex={indexEtapeTutoriel}
-          totalSteps={RPG_TUTORIAL_STEPS.length}
+          totalSteps={etapesTutoriel.length}
+          tutorialName={tutorielCourant?.name ?? 'LE SABLIER · TUTORIEL'}
+          reward={tutorielCourant?.reward ?? 0}
+          rewardClaimed={Boolean(portefeuilleSouk?.tutoriels?.includes(tutorielCourant?.id))}
           onNext={continuerTutoriel}
           onFinish={terminerTutoriel}
           onClose={fermerTutoriel}
