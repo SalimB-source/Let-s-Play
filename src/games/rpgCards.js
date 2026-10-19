@@ -1521,7 +1521,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Sihr de braise',
     art: 'nuage-de-cendres',
-    cost: 4,
+    cost: 5,
     rarity: 'rare',
     cibles: ['toutes'],
     // Le nuage ne se dissipe pas à la première bourrasque : `echo` est la
