@@ -1,6 +1,6 @@
 # Le Sablier — Les cartes Ténèbres
 
-Version du 18 octobre 2026, après révision des effets et passage de l’Uræus du seuil à **2/1**.
+Version du 19 octobre 2026, après révision des effets, passage de l’Uræus du seuil à **2/1** et de l’Ouvrier du natron à **1/1**.
 
 **22 cartes jouables : 14 créatures, 7 magies et 1 arme**, plus le jeton Shabti. Les figures du même set appartenant aux autres couleurs ne sont pas incluses.
 
@@ -11,7 +11,7 @@ Le coût est indiqué en mana. ATQ/DEF désigne l’attaque et la défense de ba
 | Carte | Coût | ATQ/DEF | Rareté | Effet |
 |---|---:|:---:|---|---|
 | **Chacal du seuil** | 1 | 1/2 | commune | Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. Rapidité — Peut attaquer le tour où il arrive. |
-| **Ouvrier du natron** | 1 | 2/1 | commune | Quand Ouvrier du natron meurt, le sorcier adverse perd 1 PV et vous en gagnez 1. |
+| **Ouvrier du natron** | 1 | 1/1 | commune | Quand Ouvrier du natron meurt, le sorcier adverse perd 1 PV et vous en gagnez 1. |
 | **Gardienne de la balance** | 2 | 1/3 | commune | Quand Gardienne de la balance meurt, vous gagnez 2 PV. |
 | **Scribe des feuillets** | 2 | 2/1 | commune | Quand Scribe des feuillets meurt, la carte du dessus du paquet adverse part au cimetière. |
 | **Prêtre de la bouche** | 2 | 2/2 | inhabituelle | Quand Prêtre de la bouche arrive : le sorcier adverse perd 1 PV et vous en gagnez 1. |
