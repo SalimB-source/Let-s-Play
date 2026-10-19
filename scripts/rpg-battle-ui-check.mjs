@@ -161,11 +161,13 @@ assert.match(tableCardSource, /entite\.envol \? 'is-envol' : ''/,
   'les créatures qui possèdent Envol reçoivent leur état visuel sur la table');
 assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*translate:\s*0 -6px;[^}]*filter:[^}]*drop-shadow\(0 17px 11px rgba\(0, 0, 0, \.42\)\)/s,
   'une créature avec Envol flotte au-dessus du plateau avec une ombre plus profonde');
-assert.match(tableCardSource, /element\.animate\(\s*VOL_ENVOL\.images,/s,
-  'les créatures avec Envol jouent le vol du catalogue — translate, rotate et scale, jamais la mise en page');
-assert.match(battlePage, /const VOL_ENVOL = Object\.freeze\(\{\s*duree: 7200,/,
-  'le vol est une lévitation lente de 7,2 s, désynchronisée par entité');
-assert.match(tableCardSource, /matchMedia\?\.\('\(prefers-reduced-motion: reduce\)'\)/,
+assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*animation:\s*rpg-envol-levite var\(--rpg-envol-duree, 7\.2s\) ease-in-out infinite;/s,
+  'la lévitation est une animation CSS : une animation d’API masquerait l’arrivée et les cinématiques de combat');
+assert.match(battlePage, /const dureeVol = \(entite\) => \(6\.8 \+ phaseVol\(entite\) \* 0\.8\)\.toFixed\(2\);/,
+  'chaque créature reçoit sa propre durée de lévitation, tirée de son identifiant');
+assert.doesNotMatch(tableCardSource, /element\.animate\(/,
+  'plus aucune animation d’API sur la carte de la table : les cinématiques CSS gardent la main');
+assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.rpg-card\.is-envol \{ animation: none; \}/,
   'le vol s’arrête si le joueur préfère limiter les mouvements');
 assert.match(battlePage, /onMouseEnter=\{\(event\) => afficherApercuSurvol\(carte, event\)\}/,
   'les cartes affichent leur aperçu dès l’entrée de la souris');

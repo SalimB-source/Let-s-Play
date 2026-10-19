@@ -34,6 +34,7 @@ const carteDom = (html) => {
 };
 
 const phases = [];
+const durees = [];
 for (const [nom, cas] of [['envol', rendu.envol], ['parArme', rendu.parArme]]) {
   const { dom, racine } = carteDom(cas.html);
   try {
@@ -47,6 +48,13 @@ for (const [nom, cas] of [['envol', rendu.envol], ['parArme', rendu.parArme]]) {
     const phase = calque.getAttribute('style') ?? '';
     assert.match(phase, /--rpg-envol-phase:-?\d+\.\d+s/, `${nom} : la phase est posée par carte`);
     phases.push(phase);
+    // La lévitation, elle, reçoit sa DURÉE sur la carte : deux voisines ne
+    // battent jamais à l'unisson, sans décalage de départ (donc sans saut).
+    const styleCarte = racine.getAttribute('style') ?? '';
+    const duree = Number(/--rpg-envol-duree:(\d+\.\d+)s/.exec(styleCarte)?.[1]);
+    assert.ok(duree >= 6.8 && duree <= 7.6,
+      `${nom} : la durée de lévitation tient entre 6,8 et 7,6 s (reçu ${duree})`);
+    durees.push(duree);
     // Le souffle passe sous les repères : il est monté avant le titre et les
     // statistiques (donc avant les icônes et les valeurs ATQ/DEF).
     const enfants = [...racine.children];
@@ -75,62 +83,90 @@ assert.notEqual(phaseDe(rendu.envol.html), phaseDe(rendu.envolVoisine.html),
   'deux créatures avec Envol ont des phases différentes : elles ne montent jamais ensemble');
 assert.equal(phaseDe(rendu.envol.html), phaseDe(rendreCartesEnvol().envol.html),
   'la même entité garde toujours sa phase — pas de tirage au rendu');
+const dureeDe = (html) => Number(/--rpg-envol-duree:(\d+\.\d+)s/.exec(html)?.[1]);
+assert.notEqual(dureeDe(rendu.envol.html), dureeDe(rendu.envolVoisine.html),
+  'et des durées différentes : deux lévitations voisines se décalent d’elles-mêmes');
+assert.equal(dureeDe(rendu.envol.html), dureeDe(rendreCartesEnvol().envol.html),
+  'la durée est stable pour une même entité');
 
-// ── 1. Le source : trois propriétés composées, jamais la mise en page ───────
+// ── 1. Le source : une lévitation CSS, pas une animation d'API ─────────────
+// C'est la règle qui répare le masquage : une animation Web Animations passe
+// devant toutes les animations CSS du même élément. L'arrivée en jeu, le bond
+// d'attaque et le choc de blocage animent `translate`/`scale` ; une
+// lévitation jouée par l'API les effaçait. Elle est donc en CSS.
 const lire = (nom) => readFileSync(new URL(`../src/games/${nom}`, import.meta.url), 'utf8');
 const duel = lire('RpgDuelPage.jsx');
 const battleCss = lire('rpg-battle.css');
 
-assert.match(duel, /const VOL_ENVOL = Object\.freeze\(\{\s*duree: 7200,/,
-  'le vol dure 7,2 s : une lévitation, pas un tressautement');
-const images = duel.slice(duel.indexOf('const VOL_ENVOL'), duel.indexOf('/** La phase du vol'));
-for (const propriete of ['translate', 'rotate', 'scale']) {
-  assert.match(images, new RegExp(`\\{ [^}]*${propriete}:`),
-    `le vol anime \`${propriete}\``);
-}
-assert.doesNotMatch(images, /\b(left|top|width|height|margin|transform):/,
-  'le vol ne touche ni la mise en page ni `transform` (l’inclinaison et le combat gardent la leur)');
-assert.match(duel, /element\.animate\(\s*VOL_ENVOL\.images,/,
-  'la carte joue le vol du catalogue');
-assert.match(duel, /delay: -phaseVol\(entite\) \* VOL_ENVOL\.duree,/,
-  'un départ négatif plonge chaque carte au milieu de son cycle');
-assert.match(duel, /iterations: Infinity,/,
-  'le vol ne s’arrête pas au bout d’un cycle');
+assert.doesNotMatch(duel, /element\.animate\(\s*VOL_ENVOL/,
+  'la lévitation n’est plus jouée par Web Animations');
+assert.doesNotMatch(duel, /const VOL_ENVOL/,
+  'le catalogue d’images du vol a disparu : le mouvement vit dans la feuille');
+assert.doesNotMatch(duel, /iterations: Infinity,/,
+  'aucune boucle sans fin ne passe plus par l’API');
+assert.match(duel, /const dureeVol = \(entite\) => \(6\.8 \+ phaseVol\(entite\) \* 0\.8\)\.toFixed\(2\);/,
+  'chaque créature tire sa durée de l’empreinte de son identifiant (6,8 → 7,6 s)');
+assert.match(duel, /'--rpg-envol-duree': `\$\{dureeVol\(entite\)\}s`/,
+  'la durée part sur la carte en variable CSS');
 assert.match(duel, /const phaseVol = \(entite\) => \(empreinteEntite\(entite\) % 1000\) \/ 1000;/,
-  'la phase du vol vient de l’empreinte stable de l’entité');
-assert.match(duel, /function empreinteEntite\(entite\)[\s\S]*?empreinte \* 31[\s\S]*?% 9973;/,
-  'l’empreinte est calculée une fois, sans hasard au rendu');
-assert.match(duel, /if \(!entite\.envol \|\| mouvementReduit \|\| typeof element\?\.animate !== 'function'\) return undefined;/,
-  'sans Envol, en mouvement réduit ou sans Web Animations, le vol ne démarre pas');
-assert.match(duel, /return \(\) => vol\.cancel\(\);/,
-  'quitter la table (ou perdre l’Envol) arrête le vol proprement');
-assert.doesNotMatch(duel, /\{ left: '-2px' \}, \{ left: '2px' \}/,
-  'l’ancien va-et-vient sur `left` — une animation de mise en page — a disparu');
+  'la phase du souffle vient toujours de cette empreinte stable');
+assert.match(duel, /entite\.envol \? 'is-envol' : '',/,
+  'la carte porte la classe qui lévite');
 
-// ── 2. La feuille : hauteur au repos, souffle, silence en mouvement réduit ──
-const debut = battleCss.indexOf('/* ── Envol : la créature lévite au-dessus de la table');
-const fin = battleCss.indexOf("/* Sous la souris, l'illustration des créatures respire");
-assert.ok(debut > 0, 'la feuille porte un bloc consacré à l’Envol');
-assert.ok(fin > debut, 'le bloc de l’Envol précède les états de survol');
-const envolCss = battleCss.slice(debut, fin);
+// ── 2. La feuille : lévitation, et cinématiques qui la remplacent ──────────
+const debutCss = battleCss.indexOf('/* ── Envol : la créature lévite au-dessus de la table');
+const finCss = battleCss.indexOf("/* Sous la souris, l'illustration des créatures respire");
+assert.ok(debutCss > 0, 'la feuille porte un bloc consacré à l’Envol');
+assert.ok(finCss > debutCss, 'le bloc de l’Envol précède les états de survol');
+const envolCss = battleCss.slice(debutCss, finCss);
 
-assert.match(envolCss, /\.rpg-card\.is-envol\s*\{[^}]*z-index:\s*2;[^}]*translate:\s*0 -6px;[^}]*drop-shadow\(0 17px 11px rgba\(0, 0, 0, \.42\)\)/s,
-  'au repos la carte est levée, son ombre s’éloigne et prend une lueur froide');
-assert.match(envolCss, /\.rpg-card__envol\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*overflow:\s*hidden;[^}]*border-radius:\s*inherit;[^}]*pointer-events:\s*none;/s,
-  'le souffle couvre la face, garde l’arrondi et ne capte aucun geste');
-assert.doesNotMatch(envolCss, /\.rpg-card__envol\s*\{[^}]*\n\s*z-index:/s,
-  'le calque ne crée pas de groupe isolé : le souffle peut se fondre dans l’art');
-assert.match(envolCss, /\.rpg-card__envol-souffle\s*\{[^}]*mix-blend-mode:\s*screen;[^}]*animation:\s*rpg-envol-souffle 6\.5s ease-in-out var\(--rpg-envol-phase, 0s\) infinite;/s,
+assert.match(envolCss, /\.rpg-card\.is-envol\s*\{[^}]*z-index:\s*2;[^}]*translate:\s*0 -6px;[^}]*rotate:\s*-0\.5deg;[^}]*scale:\s*1;[^}]*animation:\s*rpg-envol-levite var\(--rpg-envol-duree, 7\.2s\) ease-in-out infinite;/s,
+  'au repos la carte est levée et inclinée, et la lévitation est une animation CSS');
+assert.match(envolCss, /\.rpg-card\.is-envol\s*\{[^}]*drop-shadow\(0 17px 11px rgba\(0, 0, 0, \.42\)\)/s,
+  'son ombre s’éloigne : la hauteur se lit même immobile');
+assert.match(envolCss, /@keyframes rpg-envol-levite\s*\{\s*0%, 100% \{ translate: 0 -6px; rotate: -0\.5deg; scale: 1; \}/,
+  'le cycle se referme sur le repos : une reprise après une cinématique ne saute pas');
+assert.match(envolCss, /50% \{ translate: 0\.4px -12\.5px; rotate: 0\.55deg; scale: 1\.012; \}/,
+  'la carte monte, dérive, grossit d’un pour cent et s’incline au sommet');
+const imagesCles = envolCss.slice(envolCss.indexOf('@keyframes rpg-envol-levite'));
+assert.doesNotMatch(imagesCles.slice(0, imagesCles.indexOf('}')), /(top|left|width|height|transform|filter):/,
+  'la lévitation n’anime que translate, rotate et scale — pas la mise en page ni transform');
+assert.equal((battleCss.match(/@keyframes rpg-envol-levite/g) ?? []).length, 1,
+  'un seul cycle de lévitation dans la feuille');
+
+// ── 2 bis. L'arrivée, le bond, le blocage, le coup : déclarés APRÈS ─────────
+// Une seule propriété `animation` par élément : la règle qui doit jouer est la
+// plus spécifique, puis la plus basse dans la feuille. Toutes ces
+// cinématiques doivent donc venir après `.rpg-card.is-envol`, avec au moins
+// deux classes pour l'emporter.
+const positionEnvol = battleCss.indexOf('.rpg-card.is-envol {');
+assert.ok(positionEnvol > 0);
+const cinematiques = {
+  'l’arrivée en jeu': /\.rpg-card\.fx-enter\s*\{\s*animation:\s*rpg-card-arrive/,
+  'le bond d’attaque': /\.rpg-card--equipe\.fx-lunge\s*\{\s*animation:\s*card-lunge-team/,
+  'le bond adverse': /\.rpg-card--ennemi\.fx-lunge\s*\{\s*animation:\s*card-lunge-foe/,
+  'le choc de blocage': /\.rpg-card\.fx-block,\s*\.rpg-card\.fx-unblock\s*\{\s*animation:\s*rpg-block-impact/,
+  'le coup encaissé': /\.rpg-card\.fx-hit\s*\{\s*animation:\s*rpg-hit/,
+  'la lueur dorée': /\.rpg-card\.fx-glow\s*\{\s*animation:\s*rpg-glow/,
+};
+for (const [nom, motif] of Object.entries(cinematiques)) {
+  const correspondance = motif.exec(battleCss);
+  assert.ok(correspondance, `${nom} : la règle existe et remplace l’animation de la carte`);
+  assert.ok(correspondance.index > positionEnvol,
+    `${nom} : déclarée après la lévitation, elle la remplace le temps de son geste`);
+}
+assert.match(battleCss, /@keyframes rpg-card-arrive\s*\{\s*0% \{ opacity: 0; translate: 0 24px; scale: \.82;/,
+  'l’arrivée monte, grossit et s’éclaire : elle anime bien translate et scale');
+assert.match(battleCss, /@keyframes card-lunge-team \{ 40% \{ translate: 0 -52px; \} \}/,
+  'le bond d’attaque anime translate');
+
+// Le souffle et le silence en mouvement réduit.
+assert.match(envolCss, /\.rpg-card__envol-souffle\s*\{[^}]*animation:\s*rpg-envol-souffle 6\.5s ease-in-out var\(--rpg-envol-phase, 0s\) infinite;/s,
   'le souffle traverse la face sur son propre cycle, décalé par carte');
-assert.match(envolCss, /@keyframes rpg-envol-souffle\s*\{[\s\S]*?translateX\(330%\)/,
-  'le souffle glisse d’un bord à l’autre');
-const imagesCles = envolCss.slice(envolCss.indexOf('@keyframes rpg-envol-souffle'));
-assert.doesNotMatch(imagesCles.slice(0, imagesCles.indexOf('}')), /(top|left|width|height|filter|background):/,
-  'le souffle n’anime que `transform` et `opacity`');
-assert.equal((battleCss.match(/@keyframes rpg-envol-souffle/g) ?? []).length, 1,
-  'la table ne déclare qu’un seul cycle de souffle');
+assert.match(envolCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-card\.is-envol\s*\{\s*animation:\s*none;\s*\}/,
+  'en mouvement réduit, la carte reste levée mais immobile');
 assert.match(envolCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-card__envol-souffle\s*\{\s*animation:\s*none;\s*display:\s*none;/,
-  'en mouvement réduit, la carte reste levée mais immobile, sans souffle');
+  'et le souffle disparaît');
 assert.doesNotMatch(envolCss, /@media[^{]*max-width/,
   'aucune requête de largeur : le vol vaut pour tous les écrans');
 
@@ -149,4 +185,4 @@ assert.match(volCss, /100%\s*\{[^}]*translate3d\(var\(--rpg-flight-dx\), var\(--
 assert.match(battleCss, /\.rpg-card-flight\.is-flying\s*\{\s*animation:\s*rpg-card-flight-to-table \.68s/,
   'la durée du vol ne change pas : le moteur libère la carte sur ce métronome');
 
-console.log('✓ Envol : la créature lévite — monte, dérive, grossit d’un pour cent et s’incline d’un demi-degré sur 7,2 s — sans toucher la mise en page ni `transform`, un souffle de lumière traverse sa face, chaque carte a sa phase, et tout se tait en mouvement réduit ; la carte jouée, elle, décolle de la main, bombe au-dessus de la table et se pose exactement sur son emplacement, en 0,68 s comme avant');
+console.log('✓ Envol : la créature lévite en CSS (translate, rotate, scale — 6,8 à 7,6 s selon l’entité) sans jamais masquer l’arrivée en jeu, le bond d’attaque, le blocage ou le coup : ces cinématiques remplacent l’animation le temps de leur geste et la lévitation reprend sur son repos, sans saut ; le souffle traverse la face, et tout se tait en mouvement réduit ; la carte jouée décolle, bombe et se pose en 0,68 s');

@@ -1139,29 +1139,27 @@ function phaseResonance(entite) {
 }
 
 /* ── Vol : la créature avec Envol lévite au-dessus de la table ───────────────
-   Trois propriétés de transformation INDÉPENDANTES de `transform` —
-   `translate`, `rotate`, `scale` — portent le vol : la carte monte et
-   descend, avance et recule d'un souffle, grossit d'un pour cent au sommet et
-   s'incline d'un demi-degré. Le survol, l'inclinaison de combat et les
-   cinématiques gardent leur `transform`, et chaque propriété
-   se compose sur le compositeur : aucun recalcul de la rangée, aucun
-   repeint. Le vol est lent (7,2 s) pour lire comme une lévitation, et sa
-   phase vient de l'identifiant de l'entité : deux créatures voisines ne
-   montent jamais ensemble. */
-const VOL_ENVOL = Object.freeze({
-  duree: 7200,
-  // Le cycle se referme sur son premier arrêt : la boucle ne saccade pas.
-  images: Object.freeze([
-    { translate: '0px -5px', rotate: '-0.5deg', scale: 1 },
-    { translate: '1.6px -9px', rotate: '0.2deg', scale: 1.008 },
-    { translate: '0.4px -12.5px', rotate: '0.55deg', scale: 1.012 },
-    { translate: '-1.4px -8.5px', rotate: '-0.15deg', scale: 1.005 },
-    { translate: '0px -5px', rotate: '-0.5deg', scale: 1 },
-  ]),
-});
+   La lévitation est une animation CSS (`rpg-envol-levite`, voir
+   `rpg-battle.css`) sur les trois propriétés de transformation indépendantes
+   de `transform` : `translate`, `rotate`, `scale`. Elle n'est PAS jouée par
+   Web Animations : une animation d'API passe devant TOUTES les animations CSS
+   du même élément — elle masquait l'arrivée en jeu (`fx-enter`), le bond
+   d'attaque (`fx-lunge`) et le choc de blocage (`fx-block`), qui animent
+   justement `translate` et `scale`. En CSS, ces cinématiques sont déclarées
+   plus bas dans la feuille : elles remplacent la lévitation le temps de leur
+   geste, puis celle-ci reprend — de son point de départ, qui est aussi sa
+   position de repos, donc sans saut.
 
-/** La phase du vol (0 → 1), tirée de l'identifiant de l'entité. */
+   Chaque créature reçoit sa propre durée (6,8 → 7,6 s, tirée de
+   l'identifiant de l'entité) : deux voisines ne montent jamais à l'unisson,
+   et elles se décalent d'elles-mêmes au fil du temps. */
+
+/** La phase d'une créature avec Envol (0 → 1), tirée de son identifiant. */
 const phaseVol = (entite) => (empreinteEntite(entite) % 1000) / 1000;
+
+/** La durée de la lévitation d'une créature, en secondes : jamais la même
+ *  d'une carte à l'autre, pour qu'aucune rangée ne batte à l'unisson. */
+const dureeVol = (entite) => (6.8 + phaseVol(entite) * 0.8).toFixed(2);
 
 /** La durée du souffle qui traverse la face, en secondes — la feuille la répète
  *  dans son `animation` : les deux valeurs vont ensemble. */
@@ -1281,28 +1279,6 @@ export function TableCard({
     return () => window.clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    const element = cardRef.current;
-    const mouvementReduit = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (!entite.envol || mouvementReduit || typeof element?.animate !== 'function') return undefined;
-
-    // Le vol ne touche ni `transform` ni la mise en page : `translate`, `rotate`
-    // et `scale` sont ses propres propriétés, composées sur le compositeur. La
-    // carte voisine ne bouge pas d'un pixel et les `fx-*` de combat restent
-    // libres. Un départ négatif plonge chaque carte au milieu de son cycle :
-    // deux créatures avec Envol ne lévitent jamais à l'unisson.
-    const vol = element.animate(
-      VOL_ENVOL.images,
-      {
-        duration: VOL_ENVOL.duree,
-        delay: -phaseVol(entite) * VOL_ENVOL.duree,
-        easing: 'ease-in-out',
-        iterations: Infinity,
-      },
-    );
-    return () => vol.cancel();
-  }, [entite.envol, entite.id]);
-
   const commencerGlisserBloqueur = (event) => {
     if (!canDragBlocker) {
       event.preventDefault();
@@ -1384,7 +1360,14 @@ export function TableCard({
          inclinaisons n'appartiennent qu'à la main. Seuls les états de combat
          (attaquant déclaré, créature engagée) la font pencher, et ils sont
          écrits dans la feuille (`data-combat-tilted`). */
-      style={{ ...cardFrameStyle(carte), ...(caseEssai ? { '--case-essai': caseEssai } : {}) }}
+      style={{
+        ...cardFrameStyle(carte),
+        ...(caseEssai ? { '--case-essai': caseEssai } : {}),
+        // Chaque créature avec Envol a sa propre durée de lévitation : la
+        // feuille anime `translate`, `rotate` et `scale`, et cette durée lui
+        // suffit pour que deux voisines ne battent jamais ensemble.
+        ...(entite.envol ? { '--rpg-envol-duree': `${dureeVol(entite)}s` } : {}),
+      }}
       data-case-essai={caseEssai ?? undefined}
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}

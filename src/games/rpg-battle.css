@@ -963,19 +963,43 @@
 .rpg-card:hover { transform: translateY(-6px); }
 
 /* ── Envol : la créature lévite au-dessus de la table ────────────────────────
-   Le mouvement vit dans le JS (`translate`, `rotate`, `scale` animés un par
-   un), parce qu'il doit se composer avec l'inclinaison, le survol et les
-   cinématiques de combat qui tiennent `transform`. La feuille ne pose que
-   l'état de repos : la carte quitte le plan d'une demi-douzaine de pixels,
-   son ombre s'éloigne d'autant et prend une lueur froide — c'est la hauteur
-   qui se lit, même immobile et au doigt. Un souffle de lumière traverse
-   ensuite la face, très lentement, comme une aile qui passe. */
+   La lévitation est une animation CSS, pas une animation d'API : une
+   animation Web Animations passe devant TOUTES les animations CSS du même
+   élément et masquait donc l'arrivée en jeu (`fx-enter`), le bond d'attaque
+   (`fx-lunge`) et le choc de blocage (`fx-block`), qui animent justement
+   `translate` et `scale`. Ici, ces cinématiques — déclarées plus bas dans
+   cette feuille — remplacent la lévitation le temps de leur geste, puis
+   celle-ci reprend. Son premier arrêt est sa position de repos : la reprise
+   ne saute pas.
+
+   Elle n'anime que `translate`, `rotate` et `scale`, trois propriétés
+   indépendantes de `transform` : l'inclinaison de combat, le survol et la
+   carte active gardent la leur, et la rangée n'est jamais recalculée. La
+   durée vient de la carte (`--rpg-envol-duree`, 6,8 à 7,6 s selon
+   l'identifiant) : deux voisines ne montent jamais à l'unisson.
+
+   Le repos — carte levée de 6 px, ombre éloignée et lueur froide — reste
+   lisible au doigt et sous mouvement réduit : c'est la hauteur qui parle,
+   même sans animation. Un souffle de lumière traverse ensuite la face, très
+   lentement, comme une aile qui passe. */
 .rpg-card.is-envol {
   z-index: 2;
+  /* Le repos est le premier arrêt du cycle : la carte est levée d'emblée. */
   translate: 0 -6px;
+  rotate: -0.5deg;
+  scale: 1;
   filter:
     drop-shadow(0 17px 11px rgba(0, 0, 0, .42))
     drop-shadow(0 0 9px rgba(185, 225, 255, .28));
+  animation: rpg-envol-levite var(--rpg-envol-duree, 7.2s) ease-in-out infinite;
+}
+/* Le cycle se referme sur son premier arrêt : la boucle ne saccade pas, et
+   une reprise après une cinématique repart exactement du repos. */
+@keyframes rpg-envol-levite {
+  0%, 100% { translate: 0 -6px; rotate: -0.5deg; scale: 1; }
+  25% { translate: 1.6px -10px; rotate: 0.2deg; scale: 1.008; }
+  50% { translate: 0.4px -12.5px; rotate: 0.55deg; scale: 1.012; }
+  75% { translate: -1.4px -8.5px; rotate: -0.15deg; scale: 1.005; }
 }
 
 /* Le calque du souffle : posé sur la face, il ne couvre que l'illustration et
@@ -1023,6 +1047,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   /* Aucun vol, aucun souffle : la carte reste levée, immobile. */
+  .rpg-card.is-envol { animation: none; }
   .rpg-card__envol-souffle { animation: none; display: none; }
 }
 
@@ -1078,14 +1103,18 @@
 @keyframes card-lunge-team { 40% { translate: 0 -52px; } }
 @keyframes card-lunge-foe { 40% { translate: 0 52px; } }
 
-.fx-hit { animation: rpg-hit .45s steps(2, start); }
+/* `.rpg-card.` en tête : ces deux cinématiques doivent remplacer l'animation
+   de lévitation d'une créature avec Envol, comme l'arrivée et le bond — une
+   seule `animation` par élément, et c'est la règle la plus spécifique puis la
+   plus basse dans la feuille qui l'emporte. */
+.rpg-card.fx-hit { animation: rpg-hit .45s steps(2, start); }
 
 @keyframes rpg-hit {
   25%, 75% { filter: brightness(2.8) saturate(0); opacity: .35; }
   50% { opacity: 1; }
 }
 
-.fx-glow { animation: rpg-glow .7s ease; }
+.rpg-card.fx-glow { animation: rpg-glow .7s ease; }
 
 @keyframes rpg-glow { 30% { filter: drop-shadow(0 0 16px #ffd619) brightness(1.6); } }
 
