@@ -3614,9 +3614,6 @@ function vientDunChampDeSaisie(cible) {
 function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impactEcran, jouerSfx }) {
   const prevVainqueurRef = useRef(null);
   const prevPhaseRef = useRef(null);
-  // La position du journal des blessures déjà animée : une brûlure ancienne ne
-  // rallume jamais la roue de feu sur une action qui ne la concerne pas.
-  const journalBlessuresRef = useRef({ duel: null, position: 0 });
   const prevDestructionCountRef = useRef(0);
   useEffect(() => {
     if (vainqueur && prevVainqueurRef.current !== vainqueur) {
@@ -4022,6 +4019,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // destruction), et une attaque de Braise qui emporte un bloqueur n'ajoute
   // pas un second souffle au sien.
   const dernierSonFeuRef = useRef(0);
+  // La position du journal des blessures déjà animée : une brûlure ancienne ne
+  // rallume jamais la roue de feu sur une action qui ne la concerne pas.
+  const journalBlessuresRef = useRef({ duel: null, position: 0 });
   const jouerSfx = (nom, delai = 0) => {
     if (nom === 'flame_gust') {
       const maintenant = Date.now();
