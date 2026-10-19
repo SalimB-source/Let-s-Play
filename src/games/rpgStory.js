@@ -19,6 +19,27 @@ import { normaliserRecitHistoire } from './rpgStoryFlow.js';
 export const RPG_STORY_LEGACY_STORAGE_KEY = 'letsplay_sablier_histoire_v1';
 export const RPG_STORY_STORAGE_KEY = 'letsplay_sablier_histoire_v2';
 
+const ecouteursProgression = new Set();
+
+/** Abonne un écouteur aux écritures locales de progression Histoire. */
+export function abonnerProgressionHistoire(ecouteur) {
+  if (typeof ecouteur !== 'function') return () => {};
+  ecouteursProgression.add(ecouteur);
+  return () => {
+    ecouteursProgression.delete(ecouteur);
+  };
+}
+
+function notifierProgressionHistoire(progression) {
+  for (const ecouteur of ecouteursProgression) {
+    try {
+      ecouteur(progression);
+    } catch {
+      // Un écouteur défaillant ne doit jamais bloquer la sauvegarde.
+    }
+  }
+}
+
 /** État vide : rien n'est encore déblayé. */
 export function progressionHistoireVide() {
   return { version: 2, etagesVaincus: [], recit: null };
@@ -100,23 +121,84 @@ export function chargerProgressionHistoire() {
   return progressionHistoireVide();
 }
 
+function rangCurseurRecit(recit) {
+  if (!recit?.curseur) return { vues: -1, sousEtape: 0, replique: 0, resume: 0, choix: 0 };
+  const vues = Array.isArray(recit.scenesVues) ? recit.scenesVues.length : 0;
+  const { curseur } = recit;
+  const sousEtape = curseur.type === 'scene' ? 2 : curseur.type === 'duel' ? 1 : 0;
+  const replique = curseur.type === 'scene' ? (curseur.replique ?? 0) : 0;
+  const resume = curseur.type === 'scene' && curseur.resume ? 1 : 0;
+  const choix = recit.choix && typeof recit.choix === 'object' ? Object.keys(recit.choix).length : 0;
+  return { vues, sousEtape, replique, resume, choix };
+}
+
+function comparerRecitsHistoire(recitA, recitB) {
+  const a = rangCurseurRecit(recitA);
+  const b = rangCurseurRecit(recitB);
+  if (a.vues !== b.vues) return a.vues - b.vues;
+  if (a.sousEtape !== b.sousEtape) return a.sousEtape - b.sousEtape;
+  if (a.replique !== b.replique) return a.replique - b.replique;
+  if (a.resume !== b.resume) return a.resume - b.resume;
+  return a.choix - b.choix;
+}
+
+/**
+ * Fusion monotone de la progression Histoire locale et distante :
+ * - union des `etagesVaincus` ;
+ * - conservation du récit le plus avancé, avec union des `scenesVues` et des `choix`.
+ */
+export function fusionnerProgressionHistoire(local, distant) {
+  const localNorm = normaliserProgressionHistoire(local);
+  const distantNorm = normaliserProgressionHistoire(distant);
+  const etagesVaincus = [...new Set([...distantNorm.etagesVaincus, ...localNorm.etagesVaincus])];
+
+  let recit = null;
+  if (localNorm.recit && !distantNorm.recit) {
+    recit = normaliserRecitHistoire(localNorm.recit, etagesVaincus);
+  } else if (!localNorm.recit && distantNorm.recit) {
+    recit = normaliserRecitHistoire(distantNorm.recit, etagesVaincus);
+  } else if (localNorm.recit && distantNorm.recit) {
+    const localPlusAvance = comparerRecitsHistoire(localNorm.recit, distantNorm.recit) >= 0;
+    const principal = localPlusAvance ? localNorm.recit : distantNorm.recit;
+    const secondaire = localPlusAvance ? distantNorm.recit : localNorm.recit;
+    recit = normaliserRecitHistoire({
+      campagneId: principal.campagneId,
+      curseur: principal.curseur,
+      scenesVues: [...new Set([...(secondaire.scenesVues ?? []), ...(principal.scenesVues ?? [])])],
+      choix: { ...(secondaire.choix ?? {}), ...(principal.choix ?? {}) },
+    }, etagesVaincus);
+  }
+
+  const progression = normaliserProgressionHistoire({ version: 2, etagesVaincus, recit });
+  const modifie = JSON.stringify(progression) !== JSON.stringify(distantNorm);
+  return { progression, modifie };
+}
+
 /** Enregistre la progression de l'appareil (silencieux si le stockage manque). */
 export function sauverProgressionHistoire(progression) {
+  const normalisee = normaliserProgressionHistoire(progression);
   const stockage = browserStorage();
-  if (!stockage) return false;
+  if (!stockage) {
+    notifierProgressionHistoire(normalisee);
+    return false;
+  }
   try {
-    stockage.setItem(RPG_STORY_STORAGE_KEY, JSON.stringify(normaliserProgressionHistoire(progression)));
+    stockage.setItem(RPG_STORY_STORAGE_KEY, JSON.stringify(normalisee));
+    notifierProgressionHistoire(normalisee);
     return true;
   } catch {
+    notifierProgressionHistoire(normalisee);
     return false;
   }
 }
 
 /** Efface la progression de l'appareil. */
 export function reinitialiserProgressionHistoire() {
+  const vide = progressionHistoireVide();
   const stockage = browserStorage();
   for (const cle of [RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY]) {
     try { stockage?.removeItem(cle); } catch { /* stockage indisponible */ }
   }
-  return progressionHistoireVide();
+  notifierProgressionHistoire(vide);
+  return vide;
 }

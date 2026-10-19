@@ -903,6 +903,9 @@
   position: fixed;
   bottom: calc(-1 * var(--rpg-story-debord));
   z-index: 4;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
   width: clamp(300px, 38vw, 640px);
   margin: 0;
   pointer-events: none;
@@ -924,8 +927,10 @@
    la hauteur réellement visible du navigateur mobile. */
 .rpg-narrative__stand-img {
   display: block;
-  width: 100%;
-  height: auto;
+  width: auto;
+  max-width: none;
+  height: calc(100vh + var(--rpg-story-debord) - var(--rpg-story-tete));
+  height: calc(100dvh + var(--rpg-story-debord) - var(--rpg-story-tete));
   max-height: calc(100vh + var(--rpg-story-debord) - var(--rpg-story-tete));
   max-height: calc(100dvh + var(--rpg-story-debord) - var(--rpg-story-tete));
   object-fit: contain;
@@ -1081,6 +1086,9 @@
   .rpg-narrative__stand:last-child { left: auto; right: auto; }
   .rpg-narrative__stand:only-child { left: auto; right: auto; margin: 0 auto; }
   .rpg-narrative__stand-img {
+    max-width: none;
+    height: clamp(240px, 44vh, 400px);
+    height: clamp(240px, 44dvh, 400px);
     max-height: clamp(240px, 44vh, 400px);
     max-height: clamp(240px, 44dvh, 400px);
   }
@@ -1109,6 +1117,9 @@
   .rpg-narrative__stand:last-child { left: auto; right: auto; }
   .rpg-narrative__stand:only-child { left: auto; right: auto; margin: 0 auto; }
   .rpg-narrative__stand-img {
+    max-width: none;
+    height: clamp(230px, 43vh, 380px);
+    height: clamp(230px, 43dvh, 380px);
     max-height: clamp(230px, 43vh, 380px);
     max-height: clamp(230px, 43dvh, 380px);
   }
@@ -1153,6 +1164,9 @@
   .rpg-narrative__stand:last-child { right: -1.5%; left: auto; }
   .rpg-narrative__stand:only-child { left: 0; right: auto; margin: 0; }
   .rpg-narrative__stand-img {
+    max-width: none;
+    height: calc(100vh + var(--rpg-story-debord) - 54px);
+    height: calc(100dvh + var(--rpg-story-debord) - 54px);
     max-height: calc(100vh + var(--rpg-story-debord) - 54px);
     max-height: calc(100dvh + var(--rpg-story-debord) - 54px);
   }

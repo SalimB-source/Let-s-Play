@@ -35,6 +35,7 @@ import { cartesOuvertes } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
 import { chargerPortefeuille, sauverPortefeuille } from './rpgCredits.js';
 import { chargerEtatQuetes, sauverEtatQuetes } from './rpgQuetes.js';
+import { chargerProgressionHistoire, sauverProgressionHistoire } from './rpgStory.js';
 import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
 
 /** L'identifiant du compte Sablier actif, ou `null` (hors provider, déconnecté, profil de démonstration). */
@@ -65,6 +66,7 @@ function etatLocalActuel(acquis) {
     acquis,
     bourse: chargerPortefeuille(),
     quetes: chargerEtatQuetes(),
+    histoire: chargerProgressionHistoire(),
   };
 }
 
@@ -124,6 +126,7 @@ export function useDecksSablier() {
       // l'a recomposée, pour que l'autre hook la voie.
       sauverPortefeuille(fusion.etat.bourse);
       sauverEtatQuetes(fusion.etat.quetes);
+      sauverProgressionHistoire(fusion.etat.histoire);
       // Les acquis du compte rejoignent ceux de l'appareil (union, gel
       // compris) : un autre appareil peut porter des cartes que celui-ci n'a
       // pas encore vues.

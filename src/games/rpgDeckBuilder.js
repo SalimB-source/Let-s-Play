@@ -34,6 +34,7 @@ import {
 import { fusionnerAcquisitions, fusionnerCollections, normaliserAcquis, normaliserCollection } from './rpgCollection.js';
 import { fusionnerPortefeuilles, normaliserPortefeuille } from './rpgCredits.js';
 import { fusionnerQuetes, normaliserEtatQuetes } from './rpgQuetes.js';
+import { fusionnerProgressionHistoire, normaliserProgressionHistoire } from './rpgStory.js';
 
 /** La taille d'un deck du Sablier, et la part minimale de terrains. */
 export const RPG_DECK_TAILLE = 30;
@@ -438,15 +439,17 @@ export function fusionnerEtatsSablier({ local = casierMaisonVide(), distant = nu
   // ranger côte à côte dans l'état du compte.
   const bourse = fusionnerPortefeuilles(local?.bourse, distant?.bourse).portefeuille;
   const quetes = fusionnerQuetes(local?.quetes, distant?.quetes).etat;
+  const histoire = fusionnerProgressionHistoire(local?.histoire, distant?.histoire).progression;
   const casier = { decks, supprimes };
-  const etat = { decks, supprimes, collection, acquis, bourse, quetes, majLe: maintenantIso() };
-  const modifie = JSON.stringify({ decks, supprimes, collection, acquis, bourse, quetes }) !== JSON.stringify({
+  const etat = { decks, supprimes, collection, acquis, bourse, quetes, histoire, majLe: maintenantIso() };
+  const modifie = JSON.stringify({ decks, supprimes, collection, acquis, bourse, quetes, histoire }) !== JSON.stringify({
     decks: decksLocaux,
     supprimes: pierresLocales,
     collection: normaliserCollection(local?.collection),
     acquis: normaliserAcquis(local?.acquis),
     bourse: normaliserPortefeuille(local?.bourse),
     quetes: normaliserEtatQuetes(local?.quetes),
+    histoire: normaliserProgressionHistoire(local?.histoire),
   });
   return { casier, etat, modifie };
 }

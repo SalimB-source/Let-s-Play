@@ -338,3 +338,41 @@ test('la migration maison retire uniquement les cartes hors format, sans fabriqu
   assert.equal(peutAjouterCarte('djinn-du-souk', [], null).ok, false);
   assert.equal(peutAjouterCarte('chien-du-guet', Array(30).fill('tislit-des-aures'), COLLECTION).ok, false);
 });
+
+test('fusionnerEtatsSablier synchronise la progression du mode Histoire (étages et récit)', () => {
+  const local = {
+    decks: [],
+    supprimes: [],
+    histoire: {
+      version: 2,
+      etagesVaincus: ['listes-1'],
+      recit: {
+        campagneId: 'derniere-liste',
+        curseur: { type: 'scene', id: 'listes-1-avant', replique: 1, resume: false },
+        scenesVues: [],
+        choix: {},
+      },
+    },
+  };
+  const distant = {
+    decks: [],
+    supprimes: [],
+    histoire: {
+      version: 2,
+      etagesVaincus: ['listes-1', 'listes-2'],
+      recit: {
+        campagneId: 'derniere-liste',
+        curseur: { type: 'scene', id: 'listes-3-avant', replique: 0, resume: false },
+        scenesVues: ['listes-1-avant', 'listes-1-apres', 'listes-2-avant', 'listes-2-apres'],
+        choix: { 'diffusion-liste': 'publique' },
+      },
+    },
+  };
+
+  const fusion = fusionnerEtatsSablier({ local, distant });
+  assert.deepEqual(fusion.etat.histoire.etagesVaincus, ['listes-1', 'listes-2']);
+  assert.deepEqual(fusion.etat.histoire.recit.curseur, { type: 'scene', id: 'listes-3-avant', replique: 0, resume: false });
+  assert.deepEqual(fusion.etat.histoire.recit.choix, { 'diffusion-liste': 'publique' });
+  assert.equal(fusion.modifie, true);
+});
+

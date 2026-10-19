@@ -7,7 +7,7 @@ import { collectionJoueur } from '../src/games/rpgCollection.js';
 import { RPG_STORY_CAST, RPG_STORY_DECORS, SITUATIONS_POSE_HISTOIRE, personnageEtage, personnageHistoire, portraitHistoire, poseHistoire, situationsPoseHistoire, standHistoire } from '../src/games/rpgStoryCast.js';
 import { RPG_STORY_ACTES, RPG_STORY_ALL_SCENES, RPG_STORY_CAMPAIGN_FLOORS, RPG_STORY_CHOICES, RPG_STORY_REGISTRES, RPG_STORY_SCENES, RPG_STORY_SURVIVANTS, RPG_STORY_LIST_CHOICE, registresDebloques, sceneHistoire, statutSurvivantsHistoire, texteEpilogueActe, texteRegistre, texteReplique } from '../src/games/rpgStoryScenes.js';
 import { acteCourantRecit, etapesRecitHistoire, recitHistoireVide, resumeActesHistoire, normaliserRecitHistoire, transitionRecitHistoire, resumeRecitHistoire } from '../src/games/rpgStoryFlow.js';
-import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY, progressionHistoireVide, normaliserProgressionHistoire, marquerEtageVaincu, chargerProgressionHistoire, sauverProgressionHistoire, reinitialiserProgressionHistoire } from '../src/games/rpgStory.js';
+import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY, abonnerProgressionHistoire, progressionHistoireVide, normaliserProgressionHistoire, marquerEtageVaincu, fusionnerProgressionHistoire, chargerProgressionHistoire, sauverProgressionHistoire, reinitialiserProgressionHistoire } from '../src/games/rpgStory.js';
 import { RPG_STORY_TOURS, etageHistoireParId } from '../src/games/rpgStoryTours.js';
 
 function agir(recit, type, extra = {}, victoires = RPG_STORY_CAMPAIGN_FLOORS) {
@@ -76,8 +76,12 @@ test('les personnages ont un portrait unique livré et commun aux scènes et aux
       assert.equal(portraitHistoire(personnage.id, '/base/', (id) => `carte:${id}`), `carte:${personnage.carte}`);
     }
   }
-  for (const decor of Object.values(RPG_STORY_DECORS)) {
-    assert.ok(existsSync(fileURLToPath(new URL(`../public/${decor.fichier}`, import.meta.url))));
+  for (const [idDecor, decor] of Object.entries(RPG_STORY_DECORS)) {
+    assert.match(decor.fichier, /^sablier-story\/(greffe|decor-[a-z]+)\.jpg$/, `${idDecor} : décor immersif à hauteur de regard`);
+    assert.ok(existsSync(fileURLToPath(new URL(`../public/${decor.fichier}`, import.meta.url))), idDecor);
+  }
+  for (const scene of RPG_STORY_ALL_SCENES) {
+    assert.ok(RPG_STORY_DECORS[scene.decor], `${scene.id} : décor valide (${scene.decor})`);
   }
   assert.equal(personnageEtage('listes-4'), 'feriel');
   assert.equal(personnageEtage('listes-5'), 'mahieddine');
@@ -110,8 +114,9 @@ test('tout personnage qui parle a son sprite détouré, livré et daté', () => 
   assert.equal(standHistoire('__proto__', '/'), null, 'un identifiant inconnu ne peut pas atteindre le prototype');
 });
 
-test('les sprites du casting portent bien un fond transparent', () => {
+test('les sprites du casting portent bien un fond transparent et une échelle unifiée à 900 px', () => {
   // Un sprite opaque trahirait un détourage raté (fond magenta resté collé).
+  // L’échelle est harmonisée à 900 px de haut en plan américain pour tous les personnages.
   for (const personnage of Object.values(RPG_STORY_CAST)) {
     if (!personnage.stand) continue;
     const chemin = fileURLToPath(new URL(`../public/${personnage.stand}`, import.meta.url));
@@ -119,6 +124,10 @@ test('les sprites du casting portent bien un fond transparent', () => {
     assert.equal(octets.subarray(0, 4).toString('ascii'), 'RIFF', `${personnage.id} : conteneur WebP`);
     assert.equal(octets.subarray(8, 12).toString('ascii'), 'WEBP', `${personnage.id} : conteneur WebP`);
     assert.ok(octets.includes(Buffer.from('ALPH')), `${personnage.id} : le sprite déclare un canal alpha`);
+    const largeur = octets.readUIntLE(24, 3) + 1;
+    const hauteur = octets.readUIntLE(27, 3) + 1;
+    assert.equal(hauteur, 900, `${personnage.id} : hauteur de sprite unifiée à 900 px`);
+    assert.ok(largeur >= 380, `${personnage.id} : largeur suffisante (${largeur} px) pour éviter tout sprite minuscule`);
   }
 });
 
@@ -145,6 +154,8 @@ test('les poses alternatives suivent la situation et livrent leur propre sprite'
       const octets = readFileSync(fileURLToPath(new URL(`../public/${fichier}`, import.meta.url)));
       assert.equal(octets.subarray(0, 4).toString('ascii'), 'RIFF', `${personnage.id} (${situation}) : conteneur WebP`);
       assert.ok(octets.includes(Buffer.from('ALPH')), `${personnage.id} (${situation}) : fond transparent attendu`);
+      assert.equal(octets.readUIntLE(27, 3) + 1, 900, `${personnage.id} (${situation}) : hauteur unifiée à 900 px`);
+      assert.ok(octets.readUIntLE(24, 3) + 1 >= 380, `${personnage.id} (${situation}) : largeur harmonisée`);
       assert.equal(poseHistoire(personnage.id, situation, '/base/').split('?')[0], `/base/${fichier}`);
       assert.ok(situationsPoseHistoire(personnage.id).includes(situation));
     }
@@ -456,3 +467,45 @@ test('les cinq actes couvrent les vingt duels des cinq tours, neuf registres et 
     }
   }
 });
+
+test('fusionnerProgressionHistoire conserve le récit le plus avancé et unit les étages vaincus', () => {
+  const debut = {
+    version: 2,
+    etagesVaincus: ['listes-1'],
+    recit: {
+      ...recitHistoireVide(),
+      curseur: { type: 'scene', id: 'listes-1-avant', replique: 2, resume: false },
+    },
+  };
+  const plusAvance = {
+    version: 2,
+    etagesVaincus: ['listes-1', 'listes-2'],
+    recit: agir(jusquAuChoix(), 'choisir', { optionId: 'publique' }),
+  };
+
+  const versLocal = fusionnerProgressionHistoire(debut, plusAvance);
+  assert.deepEqual(versLocal.progression.etagesVaincus, ['listes-1', 'listes-2']);
+  assert.deepEqual(versLocal.progression.recit, plusAvance.recit);
+  assert.equal(versLocal.modifie, false, 'distant déjà à jour');
+
+  const versDistant = fusionnerProgressionHistoire(plusAvance, debut);
+  assert.deepEqual(versDistant.progression.etagesVaincus, ['listes-1', 'listes-2']);
+  assert.deepEqual(versDistant.progression.recit, plusAvance.recit);
+  assert.equal(versDistant.modifie, true, 'le local est plus avancé que le serveur');
+});
+
+test('abonnerProgressionHistoire notifie les écouteurs lors de la sauvegarde et de la réinitialisation', () => avecStockage(() => {
+  const evenements = [];
+  const desabonner = abonnerProgressionHistoire((prog) => evenements.push(prog));
+  try {
+    const etat = marquerEtageVaincu(progressionHistoireVide(), 'listes-1');
+    sauverProgressionHistoire(etat);
+    reinitialiserProgressionHistoire();
+    assert.equal(evenements.length, 2);
+    assert.deepEqual(evenements[0].etagesVaincus, ['listes-1']);
+    assert.deepEqual(evenements[1], progressionHistoireVide());
+  } finally {
+    desabonner();
+  }
+}));
+

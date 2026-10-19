@@ -28,7 +28,7 @@ export async function checkRpgStoryNarrative(assert) {
   const mount = async (joueurDeck = Array(5).fill('trait-de-braise')) => {
     await unmount();
     root = createRoot(container);
-    await act(async () => root.render(<StrictMode><RpgDuelPage joueurDeck={joueurDeck} rng={() => 0.999} /></StrictMode>));
+    await act(async () => root.render(<StrictMode><RpgDuelPage joueurDeck={joueurDeck} rng={() => 0} /></StrictMode>));
   };
   const histoire = async () => click([...container.querySelectorAll('.rpg-mode-menu__switch button')].find((b) => b.textContent.includes('Histoire')));
   const ouvrirCampagne = async () => { await histoire(); await click(query('[data-story-campaign]')); };
@@ -219,6 +219,7 @@ export async function checkRpgStoryNarrative(assert) {
     await ouvrirCampagne();
     await resumerEtContinuer();
     await click(query('[data-story-start-duel]'));
+    await passerMulligan(container, click);
     await click(query('.rpg-btn--endturn'));
     await act(async () => { await wait(1100); });
     // La fenêtre de réponse n'existe que si l'annonce adverse est encore
