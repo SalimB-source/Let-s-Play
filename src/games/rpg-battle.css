@@ -47,6 +47,9 @@
    épais) ; les deux autres suivent le `vw` et tombent d'eux-mêmes à leur
    plancher. */
 .rpg-battle {
+  /* Flou du plateau derrière une carte consultée (appui long, fiche, sort joué) :
+     assez pour que le décor s'efface, assez peu pour qu'on le devine encore. */
+  --rpg-plateau-flou: 3px;
   --rpg-card-border: clamp(7.2px, 0.768vw, 9.6px);
   --rpg-card-border-large: clamp(9.6px, 1.088vw, 12.8px);
   --rpg-card-border-small: clamp(6.4px, 0.544vw, 6.8px);
@@ -2339,6 +2342,60 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background: linear-gradient(135deg, #ffe9a0, #d9b45b);
   border: 1px solid rgba(20, 12, 4, .6);
   box-shadow: 0 0 10px rgba(217, 180, 91, .5);
+}
+
+/* ── Le plateau derrière une carte consultée ─────────────────────────────────
+   Une carte ouverte en grand — l'appui long d'une seconde, la fiche d'un clic
+   au catalogue ou d'un clic droit, le sort qui vient d'être joué — pose déjà
+   son voile sombre : le plateau, lui, passe au flou léger pour lui laisser le
+   focus. La carte consultée reste nette (`data-apercu-source`), le voile et la
+   fiche ne sont jamais floutés, et le chrome de la table — barre de navigation,
+   rail de tour, invites — garde son encre lisible.
+
+   Rien au survol de la souris : cet aperçu-là s'ouvre et se referme au passage
+   du curseur, la table clignoterait à chaque carte effleurée. L'effet activé
+   (`.rpg-auto-preview`) garde son propre voile flouté.
+
+   Pas de `backdrop-filter` ici : une WebView peut recomposer cette couche
+   **par-dessus** la carte (voir `.rpg-preview-backdrop`). Le flou est donc
+   porté par les éléments du plateau eux-mêmes.
+
+   La peinture du plateau ne peut pas être floutée depuis `.card-table` — un
+   `filter` sur la table emporterait l'aperçu avec elle — d'où le calque jumeau
+   `.rpg-plateau-fond` : il reprend la peinture par `background-image: inherit`,
+   reste transparent au repos et ne la remplace que le temps de l'aperçu. Il
+   déborde légèrement (`scale`) pour que le flou ne mange pas les bords de la
+   table en y laissant reparaître la peinture nette. */
+.rpg-plateau-fond {
+  position: absolute;
+  z-index: -3;
+  inset: 0;
+  /* La couleur de repli du plateau, elle aussi : le calque couvre la peinture
+     nette dès la première image, même avant que la peinture n'arrive. */
+  background-color: inherit;
+  background-image: inherit;
+  background-position: center;
+  background-size: cover;
+  opacity: 0;
+  transform: scale(1.04);
+  pointer-events: none;
+  transition: opacity .18s ease-out;
+}
+.card-table[data-apercu-carte] .rpg-plateau-fond { opacity: 1; }
+.card-table[data-apercu-carte] .rpg-plateau-fond,
+.card-table[data-apercu-carte] .rpg-plateau-moitie,
+.card-table[data-apercu-carte] .rpg-plateau-lisere,
+.card-table[data-apercu-carte] .rpg-table-3d,
+.card-table[data-apercu-carte] .rpg-hidden-hand__card,
+.card-table[data-apercu-carte] .rpg-card-pile__card--back,
+.card-table[data-apercu-carte] .rpg-wizard-plate,
+.card-table[data-apercu-carte] [data-card-id]:not([data-apercu-source]) {
+  filter: blur(var(--rpg-plateau-flou, 3px));
+}
+/* La Cour de l'Empereur double sa peinture en `::before`, agrandie : c'est ce
+   calque-là qu'on voit, il doit passer au flou avec les autres. */
+.card-table[data-apercu-carte].card-table--plateau-cour-de-l-empereur::before {
+  filter: blur(var(--rpg-plateau-flou, 3px));
 }
 
 /* ── Le chrome de la table : chaque texte porte son propre fond ──────────────
