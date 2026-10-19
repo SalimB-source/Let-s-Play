@@ -137,7 +137,12 @@
   grid-template-areas: ". opponent nav" "enemy-mana enemy controls" "mana allies controls" "player hand controls";
   gap: 4px 8px;
   padding: var(--rpg-touch-pad);
-  overflow: auto;
+  /* La table ne défile jamais : le calque `.rpg-plateau-fond` (agrandi de 4 %
+     pour le flou de l'aperçu) déborde de 2 % de chaque côté, et ce débordement
+     ouvrait un glissement horizontal de 8 à 20 px sur le duel. `clip` coupe au
+     même bord sans créer de zone de défilement ; `hidden` sert de repli. */
+  overflow: hidden;
+  overflow: clip;
   overscroll-behavior: contain;
   background-blend-mode: normal;
 }
