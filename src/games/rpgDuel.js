@@ -9,6 +9,7 @@
  */
 
 import {
+  RPG_DUEL_CARDS,
   RPG_ELEMENTS,
   armeById,
   cardById,
@@ -16,6 +17,7 @@ import {
   cardColors,
   cardResonanceGroup,
   cardReceivesResonance,
+  resonanceGroupLabel,
   duelCardById,
   jetonById,
   magieById,
@@ -63,6 +65,13 @@ export const RPG_PV_SORCIER_BASE = 25;
 export const RPG_PV_SORCIER_PAR_PUISSANCE = 0;
 export const RPG_PV_PLAFOND = null;
 export const RPG_MAIN_DEPART = 5;
+/**
+ * Esquive : une créature qui l'imprime (ou dont l'arme la donne) échappe à
+ * **25 % des attaques** — l'attaque entière est annulée, pas diminuée. Les
+ * magies et les capacités ne sont jamais esquivées. Le tirage vient du hasard
+ * du duel (`hasardParDuel`), donc une même partie reste reproductible.
+ */
+export const RPG_ESQUIVE_CHANCE = 0.25;
 export const RPG_COULEURS = RPG_ELEMENTS;
 export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.25;
 
@@ -93,10 +102,27 @@ export const RPG_PHASES_LIBELLES = {
 };
 
 const destructionsParDuel = new WeakMap();
+// Les renvois en main, dans l'ordre où ils arrivent. Comme le journal des
+// destructions, il vit hors de l'état sérialisé : la table s'en sert pour
+// reconnaître une créature qui **quitte la table sans mourir**, quelle que
+// soit l'action qui l'a renvoyée — une magie, le rebond d'une créature
+// (le Sonneur fêlé, le Léviathan) ou une riposte du sorcier.
+const renvoisParDuel = new WeakMap();
+// Les blessures infligées à une créature par un **effet** — magie, sorcellerie,
+// capacité ou arrivée — dans l'ordre où elles tombent. Le combat a son propre
+// chemin (simultané) et n'y figure pas : la table y lit la couleur de la
+// source pour allumer la roue de feu de la Braise.
+const blessuresParDuel = new WeakMap();
 // Hors de l’état JSON : les sauvegardes restent sérialisables et les tests
 // peuvent fournir un générateur déterministe. Une partie restaurée utilise Math.random.
 const hasardParDuel = new WeakMap();
-const GROUPES_RESONANCE = [...RPG_ELEMENTS, 'samourai'];
+// Les groupes de Résonance sont les TYPES imprimés des cartes qui la portent
+// (Samouraï, Viking…), plus les éléments pour les rares sources qui en
+// dépendent encore. La liste se déduit du catalogue : une carte qui imprime la
+// Résonance s'y ajoute d'elle-même, sans table à tenir à la main.
+const GROUPES_RESONANCE = [...new Set(
+  [...RPG_ELEMENTS, ...RPG_DUEL_CARDS.filter((carte) => carte.resonance).map(cardResonanceGroup)],
+)];
 
 export function rpgNombreDestructions(duel) {
   return destructionsParDuel.get(duel)?.length ?? 0;
@@ -106,6 +132,64 @@ export function rpgDestructionsDepuis(duel, position = 0) {
   return (destructionsParDuel.get(duel) ?? [])
     .slice(Math.max(0, position))
     .map((evenement) => ({ ...evenement, sourceElements: [...evenement.sourceElements] }));
+}
+
+/** Les créatures déjà renvoyées en main depuis le début du duel. */
+export function rpgRenvoisEnMain(duel) {
+  return (renvoisParDuel.get(duel) ?? []).map((evenement) => ({ ...evenement }));
+}
+
+/** Combien de blessures d'effet le duel a encaissées depuis son début. */
+export function rpgNombreBlessures(duel) {
+  return blessuresParDuel.get(duel)?.length ?? 0;
+}
+
+/** Les blessures parues depuis une position du journal (0 : toutes). */
+export function rpgBlessuresDepuis(duel, position = 0) {
+  return (blessuresParDuel.get(duel) ?? [])
+    .slice(Math.max(0, position))
+    .map((evenement) => ({ ...evenement, elements: [...evenement.elements] }));
+}
+
+/**
+ * La dernière blessure d'une créature : `{ entityId, cote, elements, recus,
+ * absorbes, pvApres, bouclierApres, mortelle }`. `pvApres`/`bouclierApres`
+ * disent si l'état actuel de la créature est **encore** celui de cette
+ * blessure — la table n'allume donc la roue de feu que pour un coup qui vient
+ * de tomber, jamais pour une ancienne brûlure.
+ */
+export function rpgDerniereBlessure(duel, entityId) {
+  const journal = blessuresParDuel.get(duel);
+  if (!journal?.length) return null;
+  for (let i = journal.length - 1; i >= 0; i -= 1) {
+    if (journal[i].entityId === entityId) {
+      return { ...journal[i], elements: [...journal[i].elements] };
+    }
+  }
+  return null;
+}
+
+function journaliserBlessure(duel, cote, entite, blessure) {
+  const journal = blessuresParDuel.get(duel) ?? [];
+  journal.push({
+    entityId: entite.id,
+    cote,
+    elements: normaliserCouleurs(blessure.elements),
+    recus: blessure.recus,
+    absorbes: blessure.absorbes,
+    pvApres: entite.pv,
+    bouclierApres: entite.bouclier ?? 0,
+    // `mortelle` : la créature a **quitté la table** sous ce coup. Une Tenacité
+    // qui la sauve laisse donc `mortelle: false`, comme une blessure ordinaire.
+    mortelle: Boolean(blessure.mortelle),
+  });
+  blessuresParDuel.set(duel, journal);
+}
+
+function journaliserRenvoiEnMain(duel, cote, entite) {
+  const journal = renvoisParDuel.get(duel) ?? [];
+  journal.push({ entityId: entite.id, carteId: entite.carteId, cote });
+  renvoisParDuel.set(duel, journal);
 }
 
 function journaliserDestruction(duel, entite, sourceElements = []) {
@@ -161,6 +245,15 @@ function melangerDeck(deck, rng = Math.random) {
     [d[i], d[j]] = [d[j], d[i]];
   }
   return d;
+}
+
+/**
+ * Change le générateur d'un duel déjà créé — les tests forcent ainsi une
+ * esquive réussie ou manquée sans dépendre du hasard.
+ */
+export function rpgReglerHasard(duel, rng = Math.random) {
+  hasardParDuel.set(duel, typeof rng === 'function' ? rng : Math.random);
+  return duel;
 }
 
 /**
@@ -718,9 +811,9 @@ function appliquerAuraSable(duel, cote) {
  * qu'une créature qui entre ou qui meurt ne fasse pas dériver les statistiques
  * déjà cumulées par la Furie ou d'autres renforts. L'égide compte **par source** :
  * chaque Amani protège toutes les créatures sauf elle-même, donc une seconde
- * Amani double le bonus des autres et protège la première. L'égide ne franchit
- * jamais la ligne du camp adverse. La perdre ne tue jamais : au pire, 1 PV
- * (la règle de la Résonance).
+ * Amani double le bonus des autres et protège la première. Comme toute aura,
+ * l'égide ne franchit jamais la ligne du camp adverse. La perdre ne tue jamais :
+ * au pire, 1 PV (la règle de la Résonance).
  */
 function appliquerAuraAmani(duel, cote) {
   const camp = duel[cote];
@@ -783,13 +876,13 @@ function appliquerBannieresAttaque(duel, cote, attaquants = []) {
 
 /**
  * Kenshi de la forge — l'aura de forge : tant qu'il est en jeu, **les autres**
- * créatures de type Samouraï gagnent +2/+0. Comme la Résonance samouraï, elle
+ * créatures de type Samouraï gagnent +1/+0. Comme la Résonance samouraï, elle
  * est **de table** : elle profite aux deux camps et à toutes les couleurs ; le
  * type se lit sur la ligne de type imprimée (`cardReceivesResonance`).
  *
  * Le Kenshi ne se forge pas lui-même — il dit « les autres » : il ne reçoit que
  * l'aura de ses confrères, s'il y en a d'autres. Deux Kenshis se donnent donc
- * +2/+0 l'un à l'autre et +4/+0 au reste des Samouraïs.
+ * +1/+0 l'un à l'autre et +2/+0 au reste des Samouraïs.
  *
  * Chaque entité ne retient que l'écart appliqué (`auraKenshiBonus`), même
  * contrat que l'aura Sable et l'égide d'Amani : une arrivée ou une mort ne fait
@@ -798,15 +891,16 @@ function appliquerBannieresAttaque(duel, cote, attaquants = []) {
  * retombe au plancher de 0.
  */
 function appliquerAuraKenshi(duel) {
-  let sources = 0;
+  // Une aura ne franchit jamais la ligne du camp : les Kenshis d'un camp ne
+  // forgent que les Samouraïs de CE camp. Deux Kenshis du même camp se donnent
+  // +1/+0 l'un à l'autre ; ceux d'en face gardent leur propre forge.
   for (const cote of ['joueur', 'sorcier']) {
-    sources += duel[cote].creatures.filter((entite) => entite.carteId === 'kenshi-de-la-forge').length;
-  }
-  for (const cote of ['joueur', 'sorcier']) {
+    const sources = duel[cote].creatures
+      .filter((entite) => entite.carteId === 'kenshi-de-la-forge').length;
     for (const entite of duel[cote].creatures) {
       const siennes = sources - (entite.carteId === 'kenshi-de-la-forge' ? 1 : 0);
       const voulu = cardReceivesResonance(duelCardById(entite.carteId), 'samourai')
-        ? Math.max(0, 2 * siennes)
+        ? Math.max(0, siennes)
         : 0;
       const delta = voulu - (entite.auraKenshiBonus ?? 0);
       if (!delta) continue;
@@ -884,7 +978,7 @@ function creerEntiteCreature(carte) {
     auraSableBonus: 0,
     auraAmaniBonus: 0,
     boualemContresortDisponible: carte.id === 'boualem',
-    esquive: Math.max(0, carte.esquive ?? 0),
+    esquive: Boolean(carte.esquive),
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
     envol: Boolean(carte.envol),
@@ -965,7 +1059,7 @@ function attacherArme(duel, cote, entite, carteArme) {
   entite.pvMax = (entite.pvMax ?? entite.def) + (carteArme.bonus?.def ?? 0);
   entite.def += carteArme.bonus?.def ?? 0;
   entite.pv += carteArme.bonus?.def ?? 0;
-  if (carteArme.donne?.esquive) entite.esquive = (entite.esquive ?? 0) + carteArme.donne.esquive;
+  if (carteArme.donne?.esquive) entite.esquive = true;
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
@@ -991,7 +1085,7 @@ function retirerArme(duel, cote, entite) {
   entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) - (carteArme.bonus?.def ?? 0));
   entite.def = Math.max(1, entite.def - (carteArme.bonus?.def ?? 0));
   entite.pv = Math.max(1, Math.min(entite.pv, entite.pvMax));
-  if (carteArme.donne?.esquive) entite.esquive = Math.max(0, (entite.esquive ?? 0) - carteArme.donne.esquive);
+  if (carteArme.donne?.esquive) entite.esquive = Boolean(duelCardById(entite.carteId)?.esquive);
   if (carteArme.donne?.envol) entite.envol = Boolean(duelCardById(entite.carteId)?.envol);
   if (carteArme.donne?.infiltration) entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
     || Boolean(entite.infiltrationTour);
@@ -1141,18 +1235,21 @@ function majResonance(duel) {
       }
     }
   }
-  for (const element of renforcees) {
-    if (element === 'samourai') {
-      duel.log.push(`La Résonance samouraï renforce les Samouraïs : +${totaux[element]}/+${totaux[element]}.`);
-      continue;
-    }
-    const label = ELEMENT_LABELS[element];
-    duel.log.push(`La Résonance renforce la ${label} : +${totaux[element]}/+${totaux[element]} aux créatures ${label}.`);
+  // Le groupe est un type imprimé (Samouraï, Viking…) ou, à défaut, un
+  // élément : le journal nomme les créatures dans les deux cas.
+  const estElement = (groupe) => Boolean(ELEMENT_LABELS[groupe]);
+  for (const groupe of renforcees) {
+    const label = resonanceGroupLabel(groupe);
+    duel.log.push(estElement(groupe)
+      ? `La Résonance renforce la ${label} : +${totaux[groupe]}/+${totaux[groupe]} aux créatures ${label}.`
+      : `La Résonance ${label.toLowerCase()} renforce les créatures de type ${label} : +${totaux[groupe]}/+${totaux[groupe]}.`);
   }
-  for (const element of affaiblies) {
-    if (!renforcees.has(element)) duel.log.push(element === 'samourai'
-      ? 'La Résonance samouraï se tait : les Samouraïs perdent leur bonus.'
-      : `La Résonance se tait : les créatures ${ELEMENT_LABELS[element]} perdent leur bonus.`);
+  for (const groupe of affaiblies) {
+    if (renforcees.has(groupe)) continue;
+    const label = resonanceGroupLabel(groupe);
+    duel.log.push(estElement(groupe)
+      ? `La Résonance se tait : les créatures ${label} perdent leur bonus.`
+      : `La Résonance ${label.toLowerCase()} se tait : les créatures de type ${label} perdent leur bonus.`);
   }
 }
 
@@ -1181,6 +1278,17 @@ function declencherHonneur(duel, cote, entite) {
   rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite');
 }
 
+/**
+ * L'Esquive se tente **une fois par attaque** : 25 % de chance que le coup ne
+ * porte pas du tout. Les magies et les capacités ne sont pas concernées — le
+ * mot-clé dit « une attaque », et la carte le dit aussi.
+ */
+function esquiveAttaque(duel, entite, sourceType) {
+  if (sourceType !== 'attaque' || !entite?.esquive) return false;
+  const rng = hasardParDuel.get(duel) ?? Math.random;
+  return rng() < RPG_ESQUIVE_CHANCE;
+}
+
 /** Applique les blessures d’un effet de combat simultanément avant de résoudre
  *  les capacités de destruction des créatures. */
 function appliquerDegatsDeCombatSimultanes(duel, coups) {
@@ -1198,12 +1306,12 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       entite.bouclierLumiere = false;
       continue;
     }
+    if (esquiveAttaque(duel, entite, coup.sourceType)) {
+      duel.log.push(`${entite.name} esquive l’attaque.`);
+      continue;
+    }
     const degats = Math.max(0, Number(coup.amount) || 0);
-    const esquive = coup.sourceType === 'attaque' || coup.sourceType === 'magie'
-      ? Math.min(degats, Math.max(0, entite.esquive ?? 0))
-      : 0;
-    const apresEsquive = degats - esquive;
-    if (apresEsquive <= 0) continue;
+    if (degats <= 0) continue;
     const cle = `${coup.cote}:${entite.id}`;
     const blessure = blessures.get(cle) ?? {
       cote: coup.cote,
@@ -1211,7 +1319,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       montant: 0,
       sourceElements: [],
     };
-    blessure.montant += apresEsquive;
+    blessure.montant += degats;
     blessure.sourceElements.push(...normaliserCouleurs(coup.sourceElement));
     blessures.set(cle, blessure);
   }
@@ -2220,6 +2328,7 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
     return true;
   }
   camp.main.push(presente.carteId);
+  journaliserRenvoiEnMain(duel, cote, presente);
   duel.log.push(`${presente.name} retourne dans la main de son propriétaire.`);
   rafraichirAuras(duel);
   return true;
@@ -2276,8 +2385,9 @@ function sacrifierCreature(duel, cote, entite) {
  * (le Kraken pioche, l'Ifrit frappe le sorcier) ; les dégâts à **une**
  * créature (le Ghul des cendres) demandent une cible, et c'est le contrôleur
  * du mort qui la désigne : l'IA choisit seule, le joueur passe par l'attente
- * `duel.destructionsEnAttente` — résolue d'office quand une seule créature
- * adverse est légale, par un clic sinon (`rpgResoudreDestructionCiblee`).
+ * `duel.destructionsEnAttente`. Le joueur désigne **toujours**, même quand une
+ * seule créature est légale — le jeu attend son clic —, et sans cible légale
+ * l'effet se dissipe.
  */
 function declencherCapaciteDestruction(duel, cote, carte, carteId) {
   const effet = carte.destruction;
@@ -2288,14 +2398,10 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId) {
   const adv = autre(cote);
   const legales = duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
   if (!legales.length) {
-    duel.log.push(`${carte.name} ne trouve aucune créature adverse à frapper.`);
+    duel.log.push(`${carte.name} se dissipe : aucune créature adverse à frapper.`);
     return;
   }
   const resoudre = (cibleId) => appliquer(duel, cote, effet, cibleId, null, cardColors(carte), null, carteId);
-  if (legales.length === 1) {
-    resoudre(legales[0].id);
-    return;
-  }
   if (cote === 'sorcier') {
     const choix = choisirCibleAutoIA(duel, cote, { ...carte, arrivee: effet });
     resoudre(legales.some((entite) => entite.id === choix) ? choix : legales[0].id);
@@ -2445,30 +2551,36 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
     entite.bouclierLumiere = false;
     return { ok: true, recus: 0, absorbes: 0, bouclierLumiere: true };
   }
-  const degats = Math.max(0, amount);
-  const esquive = sourceType === 'attaque' || sourceType === 'magie'
-    ? Math.min(degats, Math.max(0, entite.esquive ?? 0))
-    : 0;
-  const apresEsquive = degats - esquive;
+  if (esquiveAttaque(duel, entite, sourceType)) {
+    duel.log.push(`${entite.name} esquive l’attaque.`);
+    return { ok: true, recus: 0, absorbes: 0, esquive: true };
+  }
+  const apresEsquive = Math.max(0, amount);
   const absorbes = Math.min(entite.bouclier ?? 0, apresEsquive);
   entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
   const recus = apresEsquive - absorbes;
   entite.pv -= recus;
   entite.def = Math.min(entite.def, Math.max(0, entite.pv));
+  const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
+  let mortelle = false;
   if (entite.pv <= 0) {
-    const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
     enterrer(duel, cote, entite, elements);
     // La Tenacité peut avoir sauvé la créature : elle a alors survécu à une
     // blessure, et la Furie s'applique comme pour n'importe quel survivant.
-    if (duel[cote].creatures.some((candidate) => candidate.id === entite.id)) {
-      appliquerFurie(duel, entite, recus);
-    }
+    mortelle = !duel[cote].creatures.some((candidate) => candidate.id === entite.id);
+    if (!mortelle) appliquerFurie(duel, entite, recus);
   } else {
     appliquerFurie(duel, entite, recus);
   }
+  // Le journal dit d'où vient le coup — et si les points de vie actuels sont
+  // encore ceux de cette blessure : la table ne confond pas une brûlure neuve
+  // avec une ancienne, ni avec une attaque de créature.
+  if (apresEsquive > 0) {
+    journaliserBlessure(duel, cote, entite, { elements, recus, absorbes, mortelle });
+  }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
-  return { ok: true, recus, absorbes, esquives: esquive };
+  return { ok: true, recus, absorbes, esquive: false };
 }
 
 /**
@@ -2714,13 +2826,41 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
 }
 
 /**
+ * Fait tomber les attentes de destruction qui n'ont plus de cible : le champ
+ * adverse s'est vidé, ou s'est entièrement protégé, entre la mort et la
+ * désignation. L'effet se dissipe alors au lieu de retenir la partie ; la
+ * table appelle ce nettoyage avant de continuer, et le moteur le refait
+ * lui-même à chaque désignation.
+ */
+export function rpgDissiperDestructionsSansCible(duel) {
+  const attentes = duel.destructionsEnAttente;
+  if (!attentes?.length) return 0;
+  const restantes = [];
+  let dissipees = 0;
+  for (const attente of attentes) {
+    const carte = duelCardById(attente.carteId);
+    const legales = duel[autre(attente.cote)].creatures
+      .filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+    if (legales.length) {
+      restantes.push(attente);
+      continue;
+    }
+    dissipees += 1;
+    duel.log.push(`${carte?.name ?? 'La capacité'} se dissipe : aucune créature adverse à frapper.`);
+  }
+  duel.destructionsEnAttente = restantes;
+  return dissipees;
+}
+
+/**
  * Résout l'attente de destruction ciblée (le Ghul des cendres) : le contrôleur
- * du mort clique la créature adverse qui encaisse les dégâts. L'attente survit
- * au changement de tour — une mort pendant le tour adverse attend que le
- * joueur désigne — mais tombe d'elle-même si le champ adverse s'est vidé
- * (ou s'est entièrement protégé) entre la mort et la désignation.
+ * du mort clique la créature adverse qui encaisse les dégâts. La partie ne
+ * continue pas tant que ce clic n'est pas donné — la table bloque la fin de
+ * tour et le tour du sorcier. L'attente tombe d'elle-même si plus aucune
+ * créature n'est légale (voir `rpgDissiperDestructionsSansCible`).
  */
 export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
+  rpgDissiperDestructionsSansCible(duel);
   const attente = duel.destructionsEnAttente?.[0];
   if (!attente || attente.cote !== cote) return { ok: false, raison: 'aucune-attente' };
   const carte = duelCardById(attente.carteId);
@@ -3800,7 +3940,11 @@ export function rpgSorcierMagieRapide(duel, rng = Math.random) {
   const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng, seulementInstants: true });
   if (!coup) return null;
   const res = rpgLancerMagie(duel, 'sorcier', coup.carteId, coup.cibleId);
-  return res.ok ? { ...res, carteId: coup.carteId } : null;
+  // La cible repart avec le résultat : la page en a besoin pour dire, au-dessus
+  // des piles du sorcier, ce que le sort vient de frapper.
+  return res.ok
+    ? { ...res, carteId: coup.carteId, cibleId: coup.cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null }
+    : null;
 }
 
 /** Détruit les créatures éphémères (`detruireFinDuTour`) : elles ne
@@ -3824,6 +3968,11 @@ export function rpgFinDeTour(duel) {
   // Un joueur multicolore doit investir son nouveau mana avant de pouvoir
   // quitter son tour. Ce garde-fou protège aussi les appels hors interface.
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[duel.tour].manaChoixEnAttente) return duel;
+  // Une destruction ciblée attend son clic : le tour ne se ferme pas avant
+  // elle, sinon le Ghul frapperait pendant le tour suivant — ou pas du tout.
+  // Une attente sans cible légale se dissipe d'abord : elle ne bloque rien.
+  rpgDissiperDestructionsSansCible(duel);
+  if (duel.destructionsEnAttente?.length) return duel;
   duel.phase = 'fin';
   duel.finDeTour = null;
   while (duel.defausseEnAttente?.restant > 0 && duel[duel.defausseEnAttente.cote]?.main.length) {

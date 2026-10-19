@@ -209,7 +209,7 @@ test('à son arrivée, le Bâton appelle un serpent 3/1 avec Rapidité — et ne
   equiper(duel, 'joueur', 'baton-des-citernes', dune);
   assert.equal(dune.atk, 3, 'le porteur gagne +1 d’attaque');
   assert.equal(dune.pv, 6, 'le +2 de défense grandit les PV');
-  assert.equal(dune.esquive, 0, 'le Bâton ne donne plus l’Esquive');
+  assert.equal(dune.esquive, false, 'le Bâton ne donne plus l’Esquive');
   const appeles = serpents(duel, 'joueur');
   assert.equal(appeles.length, 1, 'un serpent naît de l’arrivée du Bâton');
   assert.equal(appeles[0].atk, 3);

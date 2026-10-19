@@ -61,7 +61,7 @@ import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { clampRpgVolume, RpgAudioPlayer } from './rpgAudio.js';
-import { rpgCombatFireSound, rpgFireSoundFor } from './rpgFireAudio.js';
+import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
@@ -140,6 +140,9 @@ import {
   rpgNouveauDuel,
   rpgNombreDestructions,
   rpgDestructionsDepuis,
+  rpgRenvoisEnMain,
+  rpgNombreBlessures,
+  rpgBlessuresDepuis,
   rpgOuvrirFenetreReponse,
   rpgOuvrirFinDeTour,
   rpgPeutRepondre,
@@ -152,6 +155,7 @@ import {
   rpgPoserTerrain,
   rpgResoudreArriveeCiblee,
   rpgResoudreDestructionCiblee,
+  rpgDissiperDestructionsSansCible,
   cibleRespecteCoutMax,
   rpgActiverArme,
   rpgActiverCapacite,
@@ -186,6 +190,8 @@ import {
   cardArtId,
   cardById,
   cardTypeLine,
+  cardResonanceGroup,
+  resonanceGroupLabel,
   armeById,
   magieFamille,
   rpgValiderDeck,
@@ -195,7 +201,6 @@ import {
 // `rpgSortSignature.jsx`).
 import { SortSceau, SortSocle, classeLigneFamille } from './rpgSortSignature.jsx';
 
-const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
 const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️', hybride: '🔥⏳' };
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Sable + Braise' };
 const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' };
@@ -837,7 +842,7 @@ function effetsAccordesParArme(arme) {
   if (donne.rapidite) effets.push('Rapidité');
   if (donne.envol) effets.push('Envol');
   if (donne.coupRapide) effets.push('Coup rapide');
-  if (donne.esquive) effets.push(`Esquive ${donne.esquive}`);
+  if (donne.esquive) effets.push('Esquive');
   if (donne.immunite) effets.push(`Immunité contre ${ELEMENT_LABELS[donne.immunite] ?? donne.immunite}`);
   if (donne.furie) effets.push(`Furie ${donne.furie}`);
   return `Bonus d’équipement : ${bonusArmeTexte(arme)}${effets.length ? ` · ${effets.join(' · ')}` : ''}`;
@@ -1085,6 +1090,73 @@ function tirerHasardElectricite(aleatoire = Math.random) {
   };
 }
 
+/** L'aura de sonar : trois ondes concentriques partent du cœur de la face et
+ *  s'élargissent au-delà du cadre en s'effaçant, sur un liseré qui reste
+ *  allumé. `variante` ne change que la teinte — bleue pour la résonance,
+ *  jaune pour les cartes qui impriment une aura (la forge des Samouraïs, les
+ *  Ksour, le héros du sable). Le calque est purement décoratif
+ *  (`aria-hidden`) : l'effet est déjà annoncé par l'icône et par la
+ *  description lue de la carte. Les ondes sont décalées d'un tiers de cycle
+ *  pour qu'une nouvelle vague parte toujours avant que la précédente ne
+ *  s'éteigne. */
+function AuraOndes({ variante = 'resonance', phase = 0 }) {
+  return (
+    <span
+      className={`rpg-card__resonance${variante === 'aura' ? ' rpg-card__resonance--aura' : ''}`}
+      style={{ '--rpg-resonance-phase': `${(-phase).toFixed(2)}s` }}
+      aria-hidden="true"
+    >
+      {[1, 2, 3].map((onde) => (
+        <i key={onde} className={`rpg-card__resonance-onde rpg-card__resonance-onde--${onde}`} />
+      ))}
+    </span>
+  );
+}
+
+/** L'empreinte stable d'une entité : même identifiant, même phase — jamais un
+ *  tirage au rendu. Elle désynchronise les auras et les vols des voisines. */
+function empreinteEntite(entite) {
+  const cle = String(entite?.id ?? '');
+  let empreinte = 0;
+  for (let index = 0; index < cle.length; index += 1) {
+    empreinte = (empreinte * 31 + cle.charCodeAt(index)) % 9973;
+  }
+  return empreinte;
+}
+
+/** Le décalage d'une aura de sonar, dans son cycle de 3,6 s : deux créatures
+ *  auréolées ne battent jamais exactement à l'unisson. */
+function phaseAura(entite) {
+  return (empreinteEntite(entite) % 360) / 100;
+}
+
+/* ── Vol : la créature avec Envol lévite au-dessus de la table ───────────────
+   La lévitation est une animation CSS (`rpg-envol-levite`, voir
+   `rpg-battle.css`) sur les trois propriétés de transformation indépendantes
+   de `transform` : `translate`, `rotate`, `scale`. Elle n'est PAS jouée par
+   Web Animations : une animation d'API passe devant TOUTES les animations CSS
+   du même élément — elle masquait l'arrivée en jeu (`fx-enter`), le bond
+   d'attaque (`fx-lunge`) et le choc de blocage (`fx-block`), qui animent
+   justement `translate` et `scale`. En CSS, ces cinématiques sont déclarées
+   plus bas dans la feuille : elles remplacent la lévitation le temps de leur
+   geste, puis celle-ci reprend — de son point de départ, qui est aussi sa
+   position de repos, donc sans saut.
+
+   Chaque créature reçoit sa propre durée (4,8 → 5,5 s, tirée de
+   l'identifiant de l'entité) : deux voisines ne montent jamais à l'unisson,
+   et elles se décalent d'elles-mêmes au fil du temps. */
+
+/** La phase d'une créature avec Envol (0 → 1), tirée de son identifiant. */
+const phaseVol = (entite) => (empreinteEntite(entite) % 1000) / 1000;
+
+/** La durée de la lévitation d'une créature, en secondes : jamais la même
+ *  d'une carte à l'autre, pour qu'aucune rangée ne batte à l'unisson. */
+const dureeVol = (entite) => (4.8 + phaseVol(entite) * 0.7).toFixed(2);
+
+/** La durée du souffle qui traverse la face, en secondes — la feuille la répète
+ *  dans son `animation` : les deux valeurs vont ensemble. */
+const SOUFFLE_ENVOL_DUREE = 5.4;
+
 /* ── Soins : l'éclat d'un gain de vie ─────────────────────────────────────── */
 // Motes de lumière fixes (position, départ, taille, dérive) : le même éclat à
 // chaque soin, sans hasard au rendu. Trois sont de petites croix — le signe du
@@ -1130,6 +1202,214 @@ function EclatSoin({ montant = null, surCarte = false }) {
   );
 }
 
+/**
+ * Le tourbillon d'eau d'un renvoi en main.
+ *
+ * Une magie ou un effet renvoie une créature dans la main de son propriétaire :
+ * la carte quitte la table, mais pas sans adieu. À sa place s'enroule une
+ * spirale d'eau qui monte et se dissout, deux ondes s'élargissent autour d'elle
+ * et quelques gouttes s'arrachent au courant. Le calque est décoratif, posé sur
+ * l'emplacement qu'occupait la carte (mesuré avant l'action) et il en garde
+ * l'inclinaison de combat. Il s'efface de lui-même à la dernière image ; la
+ * minuterie du parent n'est qu'un filet.
+ */
+// La roue de feu dure juste assez pour que la conséquence attende : une carte
+// brûlée à mort ne s'en va qu'après elle.
+const DUREE_ROUE_FEU = 900;
+
+const GOUTTES_TOURBILLON = Object.freeze([
+  { dx: -46, dy: -34, d: 0 },
+  { dx: 42, dy: -52, d: 90 },
+  { dx: -24, dy: -74, d: 170 },
+  { dx: 30, dy: -96, d: 250 },
+  { dx: 6, dy: -120, d: 330 },
+]);
+
+export function TourbillonEau({ effet, onTermine = null }) {
+  return (
+    <div
+      className="rpg-tourbillon-eau"
+      data-rpg-bounce-id={effet.entityId}
+      data-rpg-bounce-fx="eau"
+      aria-hidden="true"
+      style={{
+        left: `${effet.left}px`,
+        top: `${effet.top}px`,
+        width: `${effet.width}px`,
+        height: `${effet.height}px`,
+        '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
+      }}
+      // Comme l'adieu d'une carte détruite : on ignore les animations des
+      // enfants, qui se terminent avant le calque.
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget || event.pseudoElement) return;
+        onTermine?.(effet.effectId);
+      }}
+    >
+      {/* La carte elle-même, encore à sa place : l'eau l'enveloppe, la
+          soulève et la dissout — puis elle reparaîtra dans la main. */}
+      {effet.cardId && (
+        <span
+          className={`rpg-tourbillon-eau__carte ${cardFrameClass(cardById(effet.cardId))} ${cardMotifClass(cardById(effet.cardId))}`}
+          style={cardFrameStyle(cardById(effet.cardId))}
+        >
+          <img src={cardArt(effet.cardId)} alt="" />
+        </span>
+      )}
+      <i className="rpg-tourbillon-eau__nappe" />
+      <i className="rpg-tourbillon-eau__spirale" />
+      <i className="rpg-tourbillon-eau__anneau rpg-tourbillon-eau__anneau--un" />
+      <i className="rpg-tourbillon-eau__anneau rpg-tourbillon-eau__anneau--deux" />
+      {GOUTTES_TOURBILLON.map((goutte) => (
+        <i
+          key={goutte.d}
+          className="rpg-tourbillon-eau__goutte"
+          style={{ '--dx': `${goutte.dx}px`, '--dy': `${goutte.dy}px`, '--d': `${goutte.d}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * La roue de feu d'une créature brûlée par la Braise.
+ *
+ * Une magie, une sorcellerie ou l'effet d'une créature de Braise vient de
+ * mordre : autour de la carte s'allument deux cercles de flammes qui tournent
+ * en sens contraires, et quelques braises montent. Comme le tourbillon d'eau,
+ * le calque se pose sur l'emplacement mesuré avant l'action — mais la roue
+ * joue **avant** la conséquence : une créature qui meurt de ce coup ne s'en va
+ * qu'une fois la roue refermée, et sa carte reste visible dans le feu jusque-là.
+ * Rien n'est intercepté, rien ne bouge dans la mise en page.
+ */
+/**
+ * Les langues de la roue : leur place autour de la face (unités de la carte,
+ * x de 0 à 100 de gauche à droite, y de 0 en haut à 100 en bas), leur taille
+ * et leur retard de battement. Le feu monte : les langues du bas sont les plus
+ * hautes, celles des flancs lèchent les bords, celles du haut dépassent le
+ * cadre. Les retards sont premiers entre eux, pour que deux langues voisines
+ * ne battent jamais ensemble.
+ */
+const LANGUES_ROUE_FEU = Object.freeze([
+  // Le bas : le foyer, les flammes les plus hautes.
+  { x: 8, y: 101, s: 1.05, d: 40, r: -7 },
+  { x: 22, y: 102, s: 1.32, d: 0, r: 4 },
+  { x: 37, y: 101, s: 1.15, d: 110, r: -3 },
+  { x: 50, y: 103, s: 1.5, d: 60, r: 2 },
+  { x: 63, y: 101, s: 1.18, d: 20, r: 6 },
+  { x: 77, y: 102, s: 1.36, d: 150, r: -5 },
+  { x: 91, y: 101, s: 1.02, d: 90, r: 3 },
+  // Les flancs : elles montent le long du cadre, penchées vers l'intérieur.
+  { x: 1, y: 88, s: 0.92, d: 70, r: 12 },
+  { x: 0, y: 68, s: 1.02, d: 170, r: 9 },
+  { x: 1, y: 48, s: 0.84, d: 30, r: 14 },
+  { x: 99, y: 88, s: 0.92, d: 120, r: -12 },
+  { x: 100, y: 68, s: 1.02, d: 10, r: -9 },
+  { x: 99, y: 48, s: 0.84, d: 160, r: -14 },
+  // Le haut : de petites langues qui lèchent le cadre.
+  { x: 14, y: 3, s: 0.68, d: 50, r: -8 },
+  { x: 34, y: 1, s: 0.78, d: 130, r: 5 },
+  { x: 50, y: 0, s: 0.88, d: 20, r: -2 },
+  { x: 66, y: 1, s: 0.76, d: 100, r: 7 },
+  { x: 86, y: 3, s: 0.66, d: 170, r: -6 },
+]);
+
+/**
+ * Le tracé d'une langue : une base large, une taille qui s'amincit, une pointe
+ * qui se recourbe et une encoche sur le flanc — deux langues qui se touchent,
+ * comme une flamme qui se dédouble. C'est ce tracé qui donne au feu son dessin
+ * net : le dégradé conique de l'ancienne roue ne montrait aucune flamme.
+ */
+const CHEMIN_LANGUE = 'M0 0C-4.6-1.4-7.2-5.4-6.6-9.8C-6.1-13.4-3.4-15.2-2.6-19.2C-1.4-17-0.2-16.4.6-14.4C2.4-17.4 3.2-20.4 2.4-23.4C5.6-19.4 7-14.2 6-9C5.2-4 3-.8 0 0Z';
+
+/** Les trois couches d'une langue : la braise rouge qui éclaire, la flamme
+ *  orange qui se voit, le cœur blanc qui brûle. Chacune bat à sa cadence. */
+const COUCHES_FLAMME = Object.freeze([
+  { nom: 'externe', dur: 620, retard: 0 },
+  { nom: 'moyenne', dur: 480, retard: 45 },
+  { nom: 'coeur', dur: 360, retard: 95 },
+]);
+
+const BRAISES_ROUE_FEU = Object.freeze([
+  { dx: -44, dy: -70, d: 0, t: 1 },
+  { dx: 26, dy: -96, d: 60, t: 0.7 },
+  { dx: -12, dy: -118, d: 140, t: 1.15 },
+  { dx: 47, dy: -140, d: 210, t: 0.85 },
+  { dx: 3, dy: -164, d: 280, t: 1.25 },
+  { dx: -34, dy: -146, d: 330, t: 0.6 },
+  { dx: 62, dy: -104, d: 90, t: 0.75 },
+  { dx: -60, dy: -104, d: 190, t: 0.9 },
+  { dx: 16, dy: -186, d: 360, t: 0.65 },
+]);
+
+export function RoueDeFeu({ effet, onTermine = null }) {
+  // Un identifiant par roue : deux créatures brûlées dans le même geste ne
+  // partagent pas le tracé de leurs langues.
+  const idLangue = `rpg-langue-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  return (
+    <div
+      className="rpg-roue-feu"
+      data-rpg-burn-id={effet.entityId}
+      data-rpg-burn-fx="braise"
+      aria-hidden="true"
+      style={{
+        left: `${effet.left}px`,
+        top: `${effet.top}px`,
+        width: `${effet.width}px`,
+        height: `${effet.height}px`,
+        '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
+      }}
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget || event.pseudoElement) return;
+        onTermine?.(effet.effectId);
+      }}
+    >
+      <i className="rpg-roue-feu__lueur" />
+      {/* Les flammes, dessinées : chaque langue est un tracé vectoriel en trois
+          couches (braise, flamme, cœur), posée autour de la face. */}
+      <svg
+        className="rpg-roue-feu__flammes"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <path id={idLangue} d={CHEMIN_LANGUE} />
+        </defs>
+        {LANGUES_ROUE_FEU.map((langue, index) => (
+          <g
+            key={index}
+            transform={`translate(${langue.x} ${langue.y}) scale(${langue.s}) rotate(${langue.r ?? 0})`}
+          >
+            {COUCHES_FLAMME.map((couche) => (
+              <g
+                key={couche.nom}
+                className={`rpg-roue-feu__flamme rpg-roue-feu__flamme--${couche.nom}`}
+                style={{ '--d': `${langue.d + couche.retard}ms`, '--dur': `${couche.dur}ms` }}
+              >
+                <use href={`#${idLangue}`} />
+              </g>
+            ))}
+          </g>
+        ))}
+      </svg>
+      {BRAISES_ROUE_FEU.map((braise) => (
+        <i
+          key={braise.d}
+          className="rpg-roue-feu__braise"
+          style={{
+            '--dx': `${braise.dx}px`,
+            '--dy': `${braise.dy}px`,
+            '--d': `${braise.d}ms`,
+            '--taille': braise.t,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function TableCard({
   entite,
   cote,
@@ -1142,7 +1422,6 @@ export function TableCard({
   coupRapideCible = false,
   declaredAttacker = false,
   onClick,
-  tilt,
   canDragBlocker = false,
   canReceiveBlocker = false,
   draggedBlocker = false,
@@ -1205,21 +1484,6 @@ export function TableCard({
     return () => window.clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    const element = cardRef.current;
-    const mouvementReduit = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (!entite.envol || mouvementReduit || typeof element?.animate !== 'function') return undefined;
-
-    // Un léger va-et-vient sur `left` garde l'inclinaison, l'élévation et les
-    // animations CSS d'attaque indépendantes ; position:relative ne redistribue
-    // pas la place de la carte dans la rangée.
-    const balancement = element.animate(
-      [{ left: '-2px' }, { left: '2px' }],
-      { duration: 2800, direction: 'alternate', easing: 'ease-in-out', iterations: Infinity },
-    );
-    return () => balancement.cancel();
-  }, [entite.envol]);
-
   const commencerGlisserBloqueur = (event) => {
     if (!canDragBlocker) {
       event.preventDefault();
@@ -1270,6 +1534,8 @@ export function TableCard({
         entite.envol ? 'is-envol' : '',
         entite.rapidite ? 'has-rapidite' : '',
         entite.infiltration ? 'has-infiltration' : '',
+        carte?.resonance ? 'has-resonance' : '',
+        carte?.aura ? 'has-aura' : '',
         gelee ? 'is-frozen' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
@@ -1300,7 +1566,19 @@ export function TableCard({
         soin ? `is-healing is-healing--${varianteSoin(soin)}` : '',
         miss ? 'is-miss' : '',
       ].filter(Boolean).join(' ')}
-      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(armeCadre ?? carte), ...(caseEssai ? { '--case-essai': caseEssai } : {}) }}
+      /* Une carte POSÉE sur la table est toujours droite : l'éventail et ses
+         inclinaisons n'appartiennent qu'à la main. Seuls les états de combat
+         (attaquant déclaré, créature engagée) la font pencher, et ils sont
+         écrits dans la feuille (`data-combat-tilted`). */
+      style={{
+        // La créature équipée porte le cadre ciselé de son arme.
+        ...cardFrameStyle(armeCadre ?? carte),
+        ...(caseEssai ? { '--case-essai': caseEssai } : {}),
+        // Chaque créature avec Envol a sa propre durée de lévitation : la
+        // feuille anime `translate`, `rotate` et `scale`, et cette durée lui
+        // suffit pour que deux voisines ne battent jamais ensemble.
+        ...(entite.envol ? { '--rpg-envol-duree': `${dureeVol(entite)}s` } : {}),
+      }}
       data-case-essai={caseEssai ?? undefined}
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}
@@ -1320,10 +1598,23 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, ${carte.resonanceTribu === 'samourai' ? `résonance samouraï : seules les ${carte.resonanceExclutSource ? 'autres ' : ''}créatures de type Samouraï` : `résonance : toutes les créatures ${ELEMENT_LABELS[carte.element]}`} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type Samouraï des deux camps gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat avec 25 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat avec 25 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 25 % de chance d’esquiver une attaque' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+      {carte?.resonance ? <AuraOndes phase={phaseAura(entite)} /> : null}
+      {carte?.aura ? <AuraOndes variante="aura" phase={phaseAura(entite)} /> : null}
+      {/* Envol : un souffle de lumière traverse lentement la face, comme une
+          aile qui passe — décalé lui aussi par entité. */}
+      {entite.envol && (
+        <span
+          className="rpg-card__envol"
+          style={{ '--rpg-envol-phase': `${(-phaseVol(entite) * SOUFFLE_ENVOL_DUREE).toFixed(2)}s` }}
+          aria-hidden="true"
+        >
+          <span className="rpg-card__envol-souffle" />
+        </span>
+      )}
       {entite.rapidite && <ElectriciteRapidite />}
       {/* Infiltration : la carte devient une silhouette de brume — à demi
           transparente, traversée de nuages gris qui défilent. */}
@@ -1599,7 +1890,7 @@ function useLumiereCartes() {
   }, []);
 }
 
-function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null }) {
+function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null }) {
   const faceRef = useRef(null);
   const carteId = carte?.id ?? null;
 
@@ -1768,7 +2059,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   // montre plus l'illustration de la carte : seul l'encadré de texte (coût,
   // mots-clés, effets) s'affiche. La fiche du catalogue, l'annonce et les
   // présentations centrées (magie jouée, effet activé) gardent leur face.
-  const estApercuRapide = (variante === '' || variante === 'appui-long') && !spellPlayed;
+  const estApercuRapide = variante === '' || variante === 'appui-long';
   const face = (
     <div
       ref={faceRef}
@@ -1791,7 +2082,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   return (
     <aside
       ref={panelRef}
-      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}${interactif ? ' is-interactif' : ''}${estApercuRapide ? ' rpg-hover-card-preview--texte-seul' : ''}`}
+      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${interactif ? ' is-interactif' : ''}${estApercuRapide ? ' rpg-hover-card-preview--texte-seul' : ''}`}
       onPointerEnter={onPointerEnter ?? undefined}
       onPointerLeave={onPointerLeave ?? undefined}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
@@ -2045,9 +2336,18 @@ function ConfirmationSort({ carte, onConfirmer, onAnnuler }) {
   );
 }
 
-function SpellAnnouncement({ annonce }) {
+/**
+ * La fiche compacte d'une magie qui vient d'être jouée.
+ *
+ * Côté joueur, elle se pose au-dessus de son paquet et de son cimetière, dans
+ * le turquoise de la magie. Côté sorcier (`camp="sorcier"`), elle se pose
+ * au-dessus de SES piles et prend le rouge de l'adversaire : on lit d'un coup
+ * d'œil qui a lancé le sort, sans quitter la table des yeux.
+ */
+function SpellAnnouncement({ annonce, camp = 'joueur' }) {
   const carte = cardById(annonce?.carteId);
   if (!carte) return null;
+  const sorcier = camp === 'sorcier';
   const contre = Boolean(annonce.contre);
   // La vague d'un sort à écho (le Nuage de cendres) : au début du tour
   // suivant de son lanceur, la carte se réaffiche en preview et le bandeau
@@ -2055,13 +2355,13 @@ function SpellAnnouncement({ annonce }) {
   const vague = Boolean(annonce.vague);
   return (
     <section
-      className={`rpg-spell-played${contre ? ' rpg-spell-played--contre' : ''}${vague ? ' rpg-spell-played--vague' : ''}`}
+      className={`rpg-spell-played${sorcier ? ' rpg-spell-played--sorcier' : ''}${contre ? ' rpg-spell-played--contre' : ''}${vague ? ' rpg-spell-played--vague' : ''}`}
       role="status"
       aria-label={contre
         ? `Contre : ${carte.name} défait ${annonce.cible.nom}.`
         : vague
           ? `Seconde vague : ${carte.name}. Cible : ${annonce.cible.nom}.`
-          : `Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
+          : `${sorcier ? 'Magie du sorcier' : 'Magie jouée'} : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
       <img
         className={`rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
@@ -2074,7 +2374,7 @@ function SpellAnnouncement({ annonce }) {
             contre garde son or : sa règle est plus spécifique (voir
             `rpg-battle.css`). Une vague reprend la teinte du sort : elle est
             le même sort qui retombe, pas une nouvelle magie. */}
-        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : vague ? 'SECONDE VAGUE' : 'MAGIE JOUÉE'}</span>
+        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : vague ? 'SECONDE VAGUE' : sorcier ? 'SORT DU SORCIER' : 'MAGIE JOUÉE'}</span>
         <strong>{carte.name}</strong>
         <p>{carte.text}</p>
         <div className="rpg-spell-played__target">
@@ -3322,18 +3622,27 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
     prevVainqueurRef.current = vainqueur;
   }, [vainqueur]);
   useEffect(() => {
-    if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive) {
-      if (phaseDuelActive === 'attaque') jouerSfx('phase');
-      else if (phaseDuelActive === 'blocage') jouerSfx('page_turn');
+    // La déclaration d'attaque a son propre repère sonore. La fenêtre de
+    // blocage, elle, s'ouvre dans le même geste : aucun bruit de page tournée
+    // ne vient par-dessus le clic de l'attaquant.
+    if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive
+      && phaseDuelActive === 'attaque') {
+      jouerSfx('phase');
     }
     prevPhaseRef.current = phaseDuelActive;
   }, [phaseDuelActive]);
   useEffect(() => {
     if (cartesEnDestruction.length > prevDestructionCountRef.current) {
-      const nouvellesDestructions = cartesEnDestruction.slice(prevDestructionCountRef.current);
-      jouerSfx(nouvellesDestructions.some((effet) => effet.bruleeParBraise)
-        ? 'flame_gust'
-        : 'destruction_hit');
+      // Une carte que la roue de feu a consumée garde son adieu mais pas son
+      // bruit : le feu a déjà sonné au moment du coup (`flammeJouee`).
+      const nouvellesDestructions = cartesEnDestruction
+        .slice(prevDestructionCountRef.current)
+        .filter((effet) => !effet.flammeJouee);
+      if (nouvellesDestructions.length) {
+        jouerSfx(nouvellesDestructions.some((effet) => effet.bruleeParBraise)
+          ? 'flame_gust'
+          : 'destruction_hit');
+      }
     }
     prevDestructionCountRef.current = cartesEnDestruction.length;
   }, [cartesEnDestruction]);
@@ -3705,7 +4014,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     return prochain;
   });
+  // Un seul bruit de feu par geste : un sort de Braise qui touche et tue sa
+  // cible ne joue pas `flame_gust` deux fois (le lancement, puis la
+  // destruction), et une attaque de Braise qui emporte un bloqueur n'ajoute
+  // pas un second souffle au sien.
+  const dernierSonFeuRef = useRef(0);
+  // La position du journal des blessures déjà animée : une brûlure ancienne ne
+  // rallume jamais la roue de feu sur une action qui ne la concerne pas.
+  const journalBlessuresRef = useRef({ duel: null, position: 0 });
   const jouerSfx = (nom, delai = 0) => {
+    if (nom === 'flame_gust') {
+      const maintenant = Date.now();
+      if (maintenant - dernierSonFeuRef.current < 700) return;
+      dernierSonFeuRef.current = maintenant;
+    }
     try {
       const p = sfxRef.current;
       if (!p) return;
@@ -3765,6 +4087,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const sequenceAnimationRef = useRef(0);
   const [, setVersion] = useState(0);
   const force = () => setVersion((v) => v + 1);
+
+  // Une destruction ciblée qui n'a plus de cible légale — le champ adverse
+  // s'est vidé ou s'est entièrement protégé entre la mort et le clic — se
+  // dissipe d'elle-même : la partie ne reste jamais suspendue sur un choix
+  // impossible, et le tour du sorcier mis en pause reprend son cours.
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (!duelCourant?.destructionsEnAttente?.length) return;
+    if (!rpgDissiperDestructionsSansCible(duelCourant)) return;
+    force();
+    reprendreSorcier();
+  });
   // Hors tutoriel, le catalogue ne doit pas fournir d'étapes : le voile et
   // les signaux de progression resteraient branchés sur la leçon 1.
   const tutorielCourant = tutorielActif ? tutorielParId(tutorielId) : null;
@@ -3823,6 +4157,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [missVisibles, setMissVisibles] = useState({});
   const sequenceMissRef = useRef(0);
   const [cartesEnDestruction, setCartesEnDestruction] = useState([]);
+  // Les tourbillons d'eau des renvois en main : `{ entityId, cardId, left, top,
+  // width, height, angle, effectId, expireA }`, le temps de l'effet seulement.
+  const [tourbillonsEau, setTourbillonsEau] = useState([]);
+  // Les roues de feu des créatures brûlées par la Braise : `{ entityId, cardId,
+  // left, top, width, height, angle, effectId, expireA }`, le temps de l'effet
+  // seulement : la roue brûle l'emplacement, pas la carte.
+  const [rouesFeu, setRouesFeu] = useState([]);
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
   const [animationsPioche, setAnimationsPioche] = useState([]);
@@ -3914,6 +4255,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [debutVisible, setDebutVisible] = useState(false);
   // Le sorcier est en deuxième phase principale (après son combat).
   const sorcierApresCombatRef = useRef(false);
+  // Le tour du sorcier s'arrête net quand le joueur doit désigner la créature
+  // frappée par son Ghul des cendres : la suite reprend après son clic.
+  const repriseSorcierRef = useRef(null);
   const [attaquants, setAttaquants] = useState([]);
   const [ciblesAttaque, setCiblesAttaque] = useState({});
   const [combatEntrant, setCombatEntrant] = useState(null);
@@ -4007,7 +4351,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [surZoneDepot, setSurZoneDepot] = useState(false);
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
   const [sortJoue, setSortJoue] = useState(null);
-  const [apercuMagie, setApercuMagie] = useState(null);
+  // Le sort du sorcier : sa fiche se pose au-dessus de ses piles, bordée de
+  // rouge. Même vie que celle du joueur, mais son propre minuteur — les deux
+  // camps peuvent lancer un sort dans la même seconde.
+  const [sortJoueSorcier, setSortJoueSorcier] = useState(null);
   // Piles de cartes homonymes (tactile) : les groupes que le joueur a dépliés.
   const [pilesDeployees, setPilesDeployees] = useState(() => new Set());
   // Bandeau d'ouverture de tour : `{ camp, token }` tant qu'il est affiché,
@@ -4021,7 +4368,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const clicApresGlisserRef = useRef(false);
   const annulationRef = useRef(null);
   const timerSortRef = useRef(null);
-  const timerApercuMagieRef = useRef(null);
+  const timerSortSorcierRef = useRef(null);
   const timersRef = useRef([]);
   // Chaque partie a son numéro. Les minuteries du tour du sorcier (annonces,
   // attaque, animations) le portent : une partie relancée — ou quittée puis
@@ -4046,7 +4393,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     timersRef.current.forEach((id) => window.clearTimeout(id));
     animationsVisuellesTimersRef.current.forEach((id) => window.clearTimeout(id));
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
-    if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
+    if (timerSortSorcierRef.current) window.clearTimeout(timerSortSorcierRef.current);
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerImpactRef.current) window.clearTimeout(timerImpactRef.current);
   }, []);
@@ -4062,6 +4409,26 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(id);
   }, [cartesEnDestruction]);
 
+  // Même chien de garde pour les tourbillons d'eau : un renvoi en main ne
+  // laisse jamais sa spirale figée sur la table si la minuterie se perd.
+  useEffect(() => {
+    if (!tourbillonsEau.length) return undefined;
+    const derniere = Math.max(...tourbillonsEau.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setTourbillonsEau((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [tourbillonsEau]);
+
+  // Et pour les roues de feu : une flamme ne reste pas allumée sur une carte
+  // qui n'est plus là si la minuterie se perd.
+  useEffect(() => {
+    if (!rouesFeu.length) return undefined;
+    const derniere = Math.max(...rouesFeu.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setRouesFeu((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [rouesFeu]);
+
   // Retour d'arrière-plan : un téléphone qui met l'onglet en veille peut avaler
   // les minuteries d'animation. On rattrape alors à la main tout ce qui serait
   // resté figé — image de carte détruite, carte en vol, halos de combat — pour
@@ -4070,6 +4437,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const rattraperAnimations = () => {
       if (document.visibilityState !== 'visible') return;
       setCartesEnDestruction((current) => {
+        const restants = nettoyerFantomes(current);
+        return restants.length === current.length ? current : restants;
+      });
+      setTourbillonsEau((current) => {
+        const restants = nettoyerFantomes(current);
+        return restants.length === current.length ? current : restants;
+      });
+      setRouesFeu((current) => {
         const restants = nettoyerFantomes(current);
         return restants.length === current.length ? current : restants;
       });
@@ -4292,9 +4667,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setSurZoneDepot(false);
     setAnnulationDisponible(false);
     setSortJoue(null);
-    setApercuMagie(null);
+    setSortJoueSorcier(null);
     setAnimationsEntites({});
     setCartesEnDestruction([]);
+    setTourbillonsEau([]);
+    setRouesFeu([]);
     setCarteEnVol(null);
     setImpactEcran(null);
     effacerSoinsVisibles();
@@ -4309,8 +4686,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     animationsVisuellesTimersRef.current = [];
     annulationRef.current = null;
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
-    if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
-    timerApercuMagieRef.current = null;
+    if (timerSortSorcierRef.current) window.clearTimeout(timerSortSorcierRef.current);
     carteGlisseeRef.current = null;
     clicApresGlisserRef.current = false;
     jouerSfx('apparition');
@@ -4377,6 +4753,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const duel = duelRef.current;
+  // Les cartes que l'eau ramène dans la main du joueur : elles restent hors de
+  // la main tant que le tourbillon joue — le geste se lit avant le résultat.
+  const cartesEnRenvoi = new Set((tourbillonsEau ?? [])
+    .filter((effet) => effet.camp !== 'sorcier')
+    .map((effet) => effet.cardId));
   useRpgMythicImpact(duel, ecran, tableRef, cardById, jouerSfx);
   const plateau = plateauParId(plateauId) ?? PLATEAU_PAR_DEFAUT;
   // La moitié haute de la table : le terrain du deck adverse. La table n'est
@@ -4387,13 +4768,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const plateauDecoupe = plateauAdverse.id !== plateau.id;
   const decor3dVisible = decor3dActif && !plateauDecoupe;
   // Le plateau passe au flou léger derrière un aperçu qui pose un voile sombre :
-  // la fiche ouverte d'un appui long, d'un clic au catalogue ou d'un clic droit,
-  // et le sort qui vient d'être joué. Rien au survol de la souris : cet aperçu-là
-  // s'ouvre et se referme au passage du curseur, la table resterait à clignoter
-  // au moindre effleurement ; et l'effet activé porte déjà son propre voile
-  // flouté (`.rpg-auto-preview`). La valeur nomme la surface, pour que la feuille
-  // de style et les contrôles sachent de quel aperçu il s'agit.
-  const apercuCarte = (apercuAppui || apercuCatalogue) ? 'fiche' : apercuMagie ? 'magie' : null;
+  // la fiche ouverte d'un appui long, d'un clic au catalogue ou d'un clic droit.
+  // Rien au survol de la souris : cet aperçu-là s'ouvre et se referme au passage
+  // du curseur, la table resterait à clignoter au moindre effleurement ; et
+  // l'effet activé porte déjà son propre voile flouté (`.rpg-auto-preview`).
+  // Le sort joué n'est plus un aperçu : sa fiche compacte se glisse au-dessus
+  // des piles sans voiler la table, qui reste donc nette.
+  const apercuCarte = (apercuAppui || apercuCatalogue) ? 'fiche' : null;
   // Bandeau d'ouverture de tour : chaque bascule de `duel.tour` — le tour du
   // joueur rendu, celui du sorcier rendu, une partie neuve, une reprise —
   // annonce 1,5 s en grand le camp qui prend la main, puis s'efface.
@@ -4949,13 +5330,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     actionVolRef.current = null;
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
-    if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
     // Aucun état de geste ne survit au départ pour la lecture : un vol de carte
     // ou un glisser laissé en arrière rendrait la table `is-card-flight-active`
     // — donc muette (`pointer-events: none`) — au retour du duel.
     timerVolRef.current = null;
     timerSortRef.current = null;
-    timerApercuMagieRef.current = null;
+    timerSortSorcierRef.current = null;
     setCarteEnVol(null);
     carteOrigineVolRef.current = null;
     setCarteGlissee(null);
@@ -5228,6 +5608,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .filter((entite) => !rpgEstProtegee(entite, cardColors(carteAttenteDestruction)))
       .map((entite) => entite.id)
     : []);
+  // Sans cible légale, l'effet se dissipe (l'effet ci-dessus s'en charge) : le
+  // bandeau ne s'accroche pas à un choix impossible.
+  const attenteDestructionVisible = attenteDestruction && idsCiblesDestruction.size > 0;
   const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort || fenetreFinTour);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
@@ -5442,12 +5825,32 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           targetPlate: coteVisee === 'sorcier' ? 'sorcier' : null,
           targetIds: cibles.map((entite) => entite.id),
         };
-    annoncerMagie(carte, cibleDecrite, { vague: true });
+    // L'écho retombe chez qui l'a lancé : sa fiche se pose de son côté.
+    annoncerMagie(carte, cibleDecrite, { vague: true, camp: lanceur === 'sorcier' ? 'sorcier' : 'joueur' });
   };
 
   // Le tour qui s'ouvre peut porter un écho différé (Nuage de cendres) : les
   // blessures et les morts qu'il cause s'animent comme les autres, au lieu de
   // se contenter d'un chiffre qui change sur la carte.
+  /**
+   * Le Ghul des cendres exige un clic avant que la partie continue : tant que
+   * l'attente de destruction est ouverte côté joueur, le tour du sorcier se met
+   * en pause et retient par où reprendre. Rend `true` quand il faut s'arrêter.
+   */
+  const pauseSiAttenteJoueur = (reprendre) => {
+    if (duel.destructionsEnAttente?.[0]?.cote !== 'joueur') return false;
+    repriseSorcierRef.current = reprendre;
+    force();
+    return true;
+  };
+
+  /** Relance la suite du tour du sorcier, mise en pause par une désignation. */
+  const reprendreSorcier = () => {
+    const reprendre = repriseSorcierRef.current;
+    repriseSorcierRef.current = null;
+    if (reprendre) later(reprendre, 400);
+  };
+
   const terminerTourEtDetecterDegatsJoueur = () => {
     const instantane = prendreInstantaneDegatsJoueur();
     const champAvantFinDeTour = prendreInstantaneChamp();
@@ -5471,17 +5874,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const elements = new Map([...(table?.querySelectorAll('[data-entity-id], [data-terrain-id]') ?? [])]
       .map((element) => [element.dataset.entityId ?? element.dataset.terrainId, element]));
     const cartesEnJeu = [
-      ...duel.joueur.creatures.map((entite) => ({ ...entite, isTerrain: false })),
-      ...duel.sorcier.creatures.map((entite) => ({ ...entite, isTerrain: false })),
+      ...duel.joueur.creatures.map((entite) => ({ ...entite, isTerrain: false, camp: 'joueur' })),
+      ...duel.sorcier.creatures.map((entite) => ({ ...entite, isTerrain: false, camp: 'sorcier' })),
       ...duel.joueur.terrains.map((terrain) => ({
         ...terrain,
         name: cardById(terrain.carteId)?.name ?? terrain.carteId,
         isTerrain: true,
+        camp: 'joueur',
       })),
       ...duel.sorcier.terrains.map((terrain) => ({
         ...terrain,
         name: cardById(terrain.carteId)?.name ?? terrain.carteId,
         isTerrain: true,
+        camp: 'sorcier',
       })),
     ];
     return cartesEnJeu.map((entite) => {
@@ -5507,6 +5912,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         cardId: entite.carteId,
         name: entite.name,
         isTerrain: entite.isTerrain,
+        // Le camp dit à qui la carte retourne : seule la vôtre doit attendre
+        // la fin du tourbillon avant de reparaître dans votre main.
+        camp: entite.camp ?? 'joueur',
         atk: entite.atk,
         def: entite.def,
         pv: entite.pv,
@@ -5522,6 +5930,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const animerModificationsChamp = (avant, attaquantsIds = [], debutJournalDestructions = null, entitesRenvoyees = []) => {
+    // Le journal des blessures avance à chaque action animée, même sans carte
+    // à l'écran : une brûlure non jouée ne doit pas se rallumer plus tard.
+    const positionBlessures = journalBlessuresRef.current.duel === duel
+      ? journalBlessuresRef.current.position
+      : 0;
+    const blessuresNouvelles = rpgBlessuresDepuis(duel, positionBlessures);
+    journalBlessuresRef.current = { duel, position: rpgNombreBlessures(duel) };
     if (!avant?.length) return;
     const vivants = new Map([
       ...duel.joueur.creatures,
@@ -5529,11 +5944,44 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ...duel.joueur.terrains,
       ...duel.sorcier.terrains,
     ].map((entite) => [entite.id, entite]));
-    const renvoyees = new Set(entitesRenvoyees.filter(Boolean));
+    // Le journal du moteur dit quelles créatures sont retournées en main —
+    // y compris celles qu'un **effet de créature** (le rebond du Sonneur fêlé,
+    // le reflux du Léviathan) a renvoyées, sans que l'action le dise. Les
+    // seules entités qui comptent sont celles de l'instantané : une créature
+    // déjà rentrée en main n'est plus sur la table, elle ne peut donc pas
+    // disparaître deux fois.
+    const renvoyees = new Set([
+      ...entitesRenvoyees.filter(Boolean),
+      ...rpgRenvoisEnMain(duel).map((evenement) => evenement.entityId),
+    ]);
     const cartesDisparues = avant.filter((entite) => !vivants.has(entite.entityId)
       && !renvoyees.has(entite.entityId));
     const mouvementReduit = animationsReduites();
     const disparues = mouvementReduit ? [] : cartesDisparues;
+    // La roue de feu : seules les blessures **parues depuis la dernière action
+    // animée** comptent. Une brûlure ancienne reste dans le journal, mais elle
+    // ne rallume plus rien — sans quoi la moindre action de la créature (une
+    // attaque, par exemple) ferait rejouer le feu. La Braise allume la roue ;
+    // une attaque de créature, elle, passe par le combat simultané et n'écrit
+    // pas dans ce journal.
+    const brulees = new Map();
+    if (!mouvementReduit) {
+      const braiseParEntite = new Map();
+      for (const blessure of blessuresNouvelles) {
+        if (blessure.elements.includes('braise')) braiseParEntite.set(blessure.entityId, blessure);
+      }
+      for (const entite of avant) {
+        if (entite.isTerrain || renvoyees.has(entite.entityId)) continue;
+        const blessure = braiseParEntite.get(entite.entityId);
+        if (!blessure) continue;
+        const apres = vivants.get(entite.entityId);
+        const fraiche = apres
+          ? apres.pv === blessure.pvApres
+            && (apres.bouclier ?? 0) === blessure.bouclierApres
+          : blessure.mortelle;
+        if (fraiche) brulees.set(entite.entityId, entite);
+      }
+    }
     const evenementsDestruction = Number.isInteger(debutJournalDestructions)
       ? rpgDestructionsDepuis(duel, debutJournalDestructions)
       : [];
@@ -5554,20 +6002,67 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (disparues.length) {
       const token = ++sequenceAnimationRef.current;
       const duree = disparues.some((entite) => entitesBrulees.has(entite.entityId)) ? 1050 : 760;
+      // Le souffle de feu du coup vient peut-être de sonner (le sort qui vient
+      // d'être lancé) : une carte consumée par la roue ne le rejoue pas.
+      const feuVientDeSonner = Date.now() - dernierSonFeuRef.current < 700;
       const effets = disparues.map((entite) => ({
         ...entite,
         token,
         effectId: `${token}-${entite.entityId}`,
         bruleeParBraise: entitesBrulees.has(entite.entityId),
+        flammeJouee: feuVientDeSonner && entitesBrulees.has(entite.entityId),
         // Date de péremption : l'image d'une carte détruite n'est qu'un adieu.
         // Trois voies la retirent (fin d'animation, minuterie, ménage), la
         // dernière servant de filet si l'onglet dort pendant l'animation.
         expireA: Date.now() + duree + 400,
       }));
+      // La mort ne se fait plus attendre : la carte brûlée reçoit son adieu
+      // **tout de suite**, pendant que la roue finit de consumer l'emplacement
+      // qu'elle vient de quitter. Seul le tourbillon d'eau retient encore son
+      // renvoi (voir plus bas), parce qu'il emporte la carte en main.
       setCartesEnDestruction((current) => [...nettoyerFantomes(current), ...effets]);
       programmerNettoyageVisuel(() => {
         const ids = new Set(effets.map((effect) => effect.effectId));
         setCartesEnDestruction((current) => current.filter((effect) => !ids.has(effect.effectId)));
+      }, duree);
+    }
+
+    // Les roues de feu : une par créature mordue par la Braise. La roue brûle
+    // l'emplacement, pas la carte : celle qui meurt a déjà commencé son adieu.
+    if (brulees.size) {
+      const token = ++sequenceAnimationRef.current;
+      const effetsFeu = [...brulees.values()].map((entite) => ({
+        ...entite,
+        token,
+        effectId: `feu-${token}-${entite.entityId}`,
+        expireA: Date.now() + DUREE_ROUE_FEU + 400,
+      }));
+      setRouesFeu((current) => [...nettoyerFantomes(current), ...effetsFeu]);
+      programmerNettoyageVisuel(() => {
+        const ids = new Set(effetsFeu.map((effet) => effet.effectId));
+        setRouesFeu((current) => current.filter((effet) => !ids.has(effet.effectId)));
+      }, DUREE_ROUE_FEU);
+    }
+
+    // Renvoi en main : la créature quitte la table dans un tourbillon d'eau.
+    // L'effet se pose sur la place qu'elle occupait — relevée avant l'action,
+    // comme pour l'adieu d'une carte détruite — et respecte le mouvement réduit.
+    const renvoyeesSurTable = mouvementReduit
+      ? []
+      : avant.filter((entite) => renvoyees.has(entite.entityId) && !entite.isTerrain);
+    if (renvoyeesSurTable.length) {
+      const token = ++sequenceAnimationRef.current;
+      const duree = 950;
+      const effets = renvoyeesSurTable.map((entite) => ({
+        ...entite,
+        token,
+        effectId: `eau-${token}-${entite.entityId}`,
+        expireA: Date.now() + duree + 400,
+      }));
+      setTourbillonsEau((current) => [...nettoyerFantomes(current), ...effets]);
+      programmerNettoyageVisuel(() => {
+        const ids = new Set(effets.map((effet) => effet.effectId));
+        setTourbillonsEau((current) => current.filter((effet) => !ids.has(effet.effectId)));
       }, duree);
     }
 
@@ -5797,7 +6292,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // `vague` : la promesse d'un sort à écho (le Nuage de cendres) retombe au
   // début du tour suivant de son lanceur — la carte se réaffiche en preview,
   // le son du sort reprend, et le bandeau nomme la vague.
-  const annoncerMagie = (carte, cible, { contre = false, vague = false, sonForce = null } = {}) => {
+  // `camp` : la fiche se pose chez qui a lancé le sort — la vôtre au-dessus de
+  // vos piles (turquoise), celle du sorcier au-dessus des siennes (rouge).
+  const annoncerMagie = (carte, cible, { contre = false, vague = false, sonForce = null, camp = 'joueur' } = {}) => {
     if (contre) {
       jouerSfx('card_countered');
     } else {
@@ -5811,30 +6308,40 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ?? (carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
       jouerSfx(son);
     }
-    if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
-    if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
-    setSortJoue({ carteId: carte.id, cible, contre, vague });
-    if (!(tutorielActif && etapeTutorielIdRef.current)) {
-      setApercuMagie(carte.id);
-      timerApercuMagieRef.current = window.setTimeout(() => {
-        timerApercuMagieRef.current = null;
-        setApercuMagie(null);
-      }, 1800);
-    }
-    timerSortRef.current = window.setTimeout(() => {
-      timerSortRef.current = null;
-      setSortJoue(null);
+    // Chaque camp a sa fiche et son minuteur : deux sorts dans la même seconde
+    // ne se volent pas la place.
+    const poserFiche = camp === 'sorcier' ? setSortJoueSorcier : setSortJoue;
+    const minuteur = camp === 'sorcier' ? timerSortSorcierRef : timerSortRef;
+    if (minuteur.current) window.clearTimeout(minuteur.current);
+    poserFiche({
+      carteId: carte.id,
+      cible: cible ?? { nom: 'Champ de bataille', targetPlate: null, targetIds: [] },
+      contre,
+      vague,
+    });
+    // Le sort joué ne s'ouvre plus en aperçu plein cadre : sa fiche compacte
+    // (`.rpg-spell-played`) se pose juste au-dessus des piles de son lanceur,
+    // la carte en petit et son texte à côté — la table reste lisible.
+    minuteur.current = window.setTimeout(() => {
+      minuteur.current = null;
+      poserFiche(null);
     }, 3600);
   };
 
-  // Le sorcier contre une carte du joueur : sa carte de contre s'affiche,
-  // ciblant la carte défaite. Sans ce bandeau, la carte du joueur disparaissait
-  // sans qu'on sache qui l'avait arrêtée ni avec quoi.
+  /** Le sort du sorcier : même fiche, de son côté, cerclée de rouge. */
+  const annoncerMagieSorcier = (carte, cible, options = {}) => {
+    if (!carte) return;
+    annoncerMagie(carte, cible, { ...options, camp: 'sorcier' });
+  };
+
+  // Le sorcier contre une carte du joueur : sa carte de contre s'affiche au
+  // dessus de SES piles, ciblant la carte défaite. Sans ce bandeau, la carte du
+  // joueur disparaissait sans qu'on sache qui l'avait arrêtée ni avec quoi.
   const annoncerContreSorcier = (res) => {
     const contre = cardById(res.carteContre);
     if (!contre) return;
     const contree = cardById(res.carteContree);
-    annoncerMagie(contre, {
+    annoncerMagieSorcier(contre, {
       nom: contree?.name ?? 'Votre carte',
       illustrationId: contree?.id,
       targetPlate: null,
@@ -6024,7 +6531,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const token = ++sequenceAnimationRef.current;
       setSacrificeFx({ ...instantane, token, effectId: `dechirement-${token}-${entite.id}` });
     }
-    jouerSfx('flame_gust');
+    // Le sacrifice déchire une carte : il n'a jamais eu de feu à lui. Le
+    // souffle restait allumé pour toute créature sacrifiée, quelle que soit sa
+    // couleur — c'est le bruit de la carte détruite qui reste.
+    jouerSfx('destruction');
     const duree = animationsReduites() ? 60 : 860;
     later(() => {
       const enCours = sacrificeEnCoursRef.current;
@@ -6510,6 +7020,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
       jouerSfx('select');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      reprendreSorcier();
       force();
       return;
     }
@@ -6724,8 +7235,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const blocages = Object.fromEntries(Object.entries(combatEntrant.blocages)
       .filter(([id]) => vivants.has(id))
       .map(([id, idsBloqueurs]) => [id, combatEntrant.ciblesAttaque?.[id] ? [] : idsBloqueurs]));
-    const sonAttaqueBraise = rpgCombatFireSound(duel, attaquantsVivants, blocages);
-    const sonFrappeDirecteBraise = rpgCombatFireSound(duel, attaquantsVivants);
+    const sonAttaque = rpgCombatSound(duel, attaquantsVivants, blocages);
+    const sonFrappeDirecte = rpgCombatSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -6752,8 +7263,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .map((coup) => coup.attaquantId);
     if (attaquantsRates.length) declencherMissEntites(attaquantsRates);
     jouerSfx('combat');
-    if (frappeCreature) jouerSfx(sonAttaqueBraise ?? 'player_attack_hit', 0.015);
-    if (frappeDirecte) jouerSfx(sonFrappeDirecteBraise ?? 'degats', 0.18);
+    if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
+    if (frappeDirecte) jouerSfx(sonFrappeDirecte ?? 'degats', 0.18);
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     rpgFermerFenetreReponse(duel);
     setCombatEntrant(null);
@@ -6803,8 +7314,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const attaquantsBloques = (combat.attaquantsBloques
       ?? combat.attaquants.filter((id) => combat.blocages[id]?.length))
       .filter((id) => attaquantsVivants.includes(id));
-    const sonAttaqueBraise = rpgCombatFireSound(duel, attaquantsVivants, blocages);
-    const sonFrappeDirecteBraise = rpgCombatFireSound(duel, attaquantsVivants);
+    const sonAttaque = rpgCombatSound(duel, attaquantsVivants, blocages);
+    const sonFrappeDirecte = rpgCombatSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -6831,9 +7342,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .map((coup) => coup.attaquantId);
     if (attaquantsRates.length) declencherMissEntites(attaquantsRates);
     jouerSfx('combat');
-    if (frappeCreature) jouerSfx(sonAttaqueBraise ?? 'player_attack_hit', 0.015);
+    if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
     if (res.resume.frappeSorcier > 0) {
-      jouerSfx(sonFrappeDirecteBraise ?? 'player_attack_hit', 0.18);
+      jouerSfx(sonFrappeDirecte ?? 'player_attack_hit', 0.18);
     } else if (!frappeCreature) {
       jouerSfx('block_impact', 0.2);
     }
@@ -6855,6 +7366,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // rapide (il garde son mana d'un tour à l'autre) ; puis le tour se ferme.
   const finDuTour = () => {
     if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
+    // Le Ghul des cendres attend sa victime : le tour ne se ferme pas tant que
+    // le joueur n'a pas cliqué la créature qui encaisse.
+    if (duel.destructionsEnAttente?.[0]?.cote === 'joueur') { jouerSfx('erreur'); force(); return; }
     if (choixManaEssaiOuvert) { jouerSfx('erreur'); return; }
     if (sacrificeDemande || sacrificeEnCours || sacrificeEnCoursRef.current) { jouerSfx('erreur'); return; }
     // Mode sans terrains : plus de cinq cartes en main à la fin du tour ? Le
@@ -6916,6 +7430,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         jouerSfx(reponse.renvoiMain
           ? 'creature_return'
           : rpgWaterSoundFor(carte, 'spell') ?? rpgFireSoundFor(carte, 'spell') ?? 'magie');
+        annoncerMagieSorcier(carte, describeAnnouncedMagicTarget(
+          carte, reponse.cibleId ?? null, duel, sorcierArtId, portraitSorcierAdverse,
+        ));
         animerModificationsChamp(champAvant, [], debutJournalDestructions,
           [reponse.renvoiEntityId]);
         if (joueurToucheDepuis(degatsAvant)) declencherImpactEcran('received');
@@ -6928,6 +7445,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Fin de tour du sorcier : le joueur peut répondre par une magie rapide, ou
   // passer. Sans magie rapide jouable en main, la fenêtre se referme d'elle-même.
   const passerFinTourSorcier = () => {
+    if (pauseSiAttenteJoueur(passerFinTourSorcier)) return;
     if (duel.finDeTour?.cote !== 'sorcier') return;
     if (transitionTourRef.current) return;
     transitionTourRef.current = true;
@@ -6939,6 +7457,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const finirTourSorcier = () => {
+    if (pauseSiAttenteJoueur(finirTourSorcier)) return;
     sorcierApresCombatRef.current = false;
     if (rpgVainqueur(duel)) { force(); return; }
     rpgOuvrirFinDeTour(duel);
@@ -6953,6 +7472,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // annoncer des cartes, le joueur répond comme d'habitude), puis fin de tour.
   const apresCombatSorcier = () => {
     if (rpgVainqueur(duel)) { force(); return; }
+    // Le combat du sorcier vient peut-être de tuer votre Ghul : sa capacité
+    // attend votre clic, le sorcier reprendra ensuite.
+    if (pauseSiAttenteJoueur(apresCombatSorcier)) return;
     rpgDefinirPhase(duel, 'principale2');
     sorcierApresCombatRef.current = true;
     annoncerSuivantSorcier();
@@ -6988,6 +7510,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
+    if (pauseSiAttenteJoueur(annoncerSuivantSorcier)) return;
     if (annoncerTutorielScripte()) {
       setApercuAppui(null);
       setApercuSurvol(null);
@@ -7065,6 +7588,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     const carteAnnoncee = cardById(duel.annonce.carteId);
+    // La cible est décrite AVANT la résolution : elle efface l'annonce.
+    const cibleAnnoncee = describeAnnouncedMagicTarget(
+      carteAnnoncee, duel.annonce.cibleId, duel, sorcierArtId, portraitSorcierAdverse,
+    );
     setApercuSurvol(null);
     jouerSfx('pass');
     const champAvant = prendreInstantaneChamp();
@@ -7083,6 +7610,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       declencherImpactEcran('received');
     }
     if (res.ok) signalerTutoriel('annonce-passee', { cardId: carteAnnoncee?.id });
+    // Une magie annoncée qui se résout se lit au-dessus des piles du sorcier.
+    // Une créature ou une arme annoncée, elle, reste une carte posée : rien à
+    // annoncer dans la zone des sorts.
+    if (res.ok && carteAnnoncee?.kind === 'magie') annoncerMagieSorcier(carteAnnoncee, cibleAnnoncee);
     animerModificationsChamp(champAvant, [], debutJournalDestructions,
       [res.renvoiEntityId]);
     force();
@@ -7091,6 +7622,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
   const declarerAttaqueSorcier = () => {
+      if (pauseSiAttenteJoueur(declarerAttaqueSorcier)) return;
       // Une leçon de défense impose son assaut : les créatures déjà en scène
       // attaquent, même si l'IA estimerait l'échange défavorable.
       const etape = etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
@@ -7285,7 +7817,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               ? `Carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · ${duel.defausseEnAttente.restant} à défausser`
               : `Choisissez une carte à défausser (${duel.defausseEnAttente.restant})`,
         }
-        : attenteDestruction
+        : attenteDestructionVisible
           ? {
             cle: `destruction:${attenteDestruction.carteId}`,
             classe: 'rpg-target-prompt',
@@ -7575,6 +8107,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <FaceDownHand count={duel.sorcier.main.length} drawAnimations={piochesSorcier} />
 
         <div className="rpg-card-piles rpg-card-piles--opponent" aria-label="Zones du sorcier">
+          {/* Le sort du sorcier se lit au-dessus de SES piles, cerclé de rouge. */}
+          {sortJoueSorcier && <SpellAnnouncement annonce={sortJoueSorcier} camp="sorcier" />}
           <CardPile count={duel.sorcier.deck.length} label="Paquet" variant="deck" drawing={piochesSorcier.length > 0} drawToken={tokenPiocheSorcier} />
           <CardPile
             count={duel.sorcier.cimetiere.length}
@@ -7692,7 +8226,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
                       miss={missDeCarte(entite, pile, deployee)}
-                      tilt={TILTS[i % TILTS.length]}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureEnnemie(entite)}
@@ -7777,7 +8310,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       soin={soinDeCarte(entite, pile, deployee)}
                       miss={missDeCarte(entite, pile, deployee)}
                       playerTurn={tourDuJoueur}
-                      tilt={TILTS[(i + 2) % TILTS.length]}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureJoueur(entite)}
@@ -7840,6 +8372,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             </div>
           );
         })}
+
+        {/* Braise : la roue de feu tourne autour de la créature brûlée. */}
+        {rouesFeu.map((effet) => (
+          <RoueDeFeu
+            key={effet.effectId}
+            effet={effet}
+            onTermine={(effectId) => setRouesFeu((current) => current.filter((autre) => autre.effectId !== effectId))}
+          />
+        ))}
+
+        {/* Renvoi en main : l'eau se referme là où la créature se tenait. */}
+        {tourbillonsEau.map((effet) => (
+          <TourbillonEau
+            key={effet.effectId}
+            effet={effet}
+            onTermine={(effectId) => setTourbillonsEau((current) => current.filter((autre) => autre.effectId !== effectId))}
+          />
+        ))}
 
         {/* Déchirement du sacrifice : la carte désignée se fend en deux
             moitiés à son emplacement, AVANT que la nouvelle créature ne soit
@@ -7949,6 +8499,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         )}
 
         <div className="rpg-card-piles rpg-card-piles--player" aria-label="Vos zones de cartes">
+          {/* La magie qui vient d'être jouée se lit ici, juste au-dessus du
+              cimetière et du paquet : petite carte à gauche, texte à côté. */}
+          {sortJoue && <SpellAnnouncement annonce={sortJoue} />}
           <CardPile
             count={duel.joueur.cimetiere.length}
             label="Cimetière"
@@ -8298,6 +8851,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   onDragEnd={terminerGlisserCarte}
                   className={[
                     'rpg-hand__card rpg-hand__card--img',
+                    // Renvoyée en main : sa place est gardée, mais elle ne
+                    // reparaît qu'une fois le tourbillon refermé.
+                    cartesEnRenvoi.has(carteId) ? 'is-en-renvoi' : '',
                     estTerrain ? 'rpg-hand__card--terrain' : '',
                     `rpg-hand__card--type-${cardFrameType(carte)}`,
                     `rpg-hand__card--elem-${carte.element}`,
@@ -8313,7 +8869,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     enVol ? `rpg-card-flight is-flying${estTerrain ? ' rpg-card-flight--terrain' : ''}` : '',
                   ].filter(Boolean).join(' ')}
                   style={{
-                    '--tilt': `${TILTS[i % TILTS.length]}deg`,
                     '--hand-fan': eventail,
                     '--hand-fan-arc': eventail * eventail,
                     ...cardFrameStyle(carte),
@@ -8386,8 +8941,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             />
           </div>
         )}
-        {sortJoue && <SpellAnnouncement annonce={sortJoue} />}
-        {apercuSurvol && !apercuMagie && !mulligan && !apercuAnnonceOuvert && (
+        {apercuSurvol && !mulligan && !apercuAnnonceOuvert && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             armes={cartesDesIds(apercuSurvol.armesIds)}
@@ -8397,16 +8951,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onPointerEnter={entrerApercuSurvol}
             onPointerLeave={sortirApercuSurvol}
           />
-        )}
-        {apercuMagie && (
-          <div className="rpg-spell-preview-layer">
-            <div className="rpg-preview-backdrop rpg-preview-backdrop--magie" aria-hidden="true" />
-            <HoverCardPreview
-              carte={cardById(apercuMagie)}
-              style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
-              spellPlayed
-            />
-          </div>
         )}
 
         {confirmationSort && (

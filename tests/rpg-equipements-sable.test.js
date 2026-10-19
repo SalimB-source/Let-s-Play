@@ -25,6 +25,7 @@ import {
   rpgPeutActiverArme,
   rpgPeutBloquerAttaquant,
   rpgLancerAttaque,
+  rpgReglerHasard,
   rpgBlesserCreature,
   rpgDefausserCarte,
   rpgSorcierActiverArmes,
@@ -116,14 +117,24 @@ test('les Sandales de Tislit donnent la Rapidité : un jeton équipé frappe le 
   assert.equal(porteur.def, 2 + 1, '+0/+1');
 });
 
-test('la Cuirasse de sel donne +0/+3 et Esquive 1', () => {
+test('la Cuirasse de sel donne +0/+3 et Esquive : 25 % des attaques sont annulées', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'cuirasse-de-sel', porteur);
   assert.equal(porteur.def, 5);
-  assert.equal(porteur.esquive, 1);
+  assert.equal(porteur.esquive, true, 'l’arme donne le mot-clé, sans chiffre');
+
+  // Jet forcé sous le seuil : l’attaque entière est esquivée.
+  rpgReglerHasard(duel, () => 0.1);
+  const attaquant = poser(duel, 'sorcier', 'chien-du-guet');
+  rendrePret(duel, attaquant);
+  const res = rpgLancerAttaque(duel, 'sorcier', [attaquant.id], { [attaquant.id]: [porteur.id] });
+  assert.equal(res.ok, true);
+  assert.equal(porteur.pv, 5, 'l’attaque esquivée ne laisse aucun dégât sur 5 de défense');
+
+  // Une magie n’est jamais esquivée : 3 dégâts passent.
   rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'braise', null, 'magie');
-  assert.equal(porteur.pv, 3, '3 dégâts moins 1 d’Esquive sur 5 de défense');
+  assert.equal(porteur.pv, 2, 'la magie retire ses 3 points, sans Esquive');
 });
 
 test('le Javelot du beffroi donne le Coup rapide, que le remplacement retire', () => {

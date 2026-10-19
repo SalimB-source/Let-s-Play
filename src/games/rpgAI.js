@@ -93,13 +93,16 @@ function peutBloquerAttaquant(bloqueur, attaquant, frappePrecoce = false) {
   return !attaquant.envol || Boolean(bloqueur.envol);
 }
 
-/** Dégâts effectifs après Esquive (l’esquive ne s’applique qu’aux attaques et magies). */
+/**
+ * Dégâts effectifs après Esquive : une attaque a 25 % de chance d'être
+ * entièrement esquivée, soit 75 % de ses dégâts en espérance. Les magies et
+ * les capacités ne s'esquivent pas.
+ */
 export function degatsApresEsquive(entite, montant, sourceType = 'attaque') {
   const degats = Math.max(0, Number(montant) || 0);
-  const esquive = sourceType === 'attaque' || sourceType === 'magie'
-    ? Math.min(degats, Math.max(0, entite.esquive ?? 0))
-    : 0;
-  return degats - esquive;
+  return entite?.esquive && sourceType === 'attaque'
+    ? degats * (1 - moteur.RPG_ESQUIVE_CHANCE)
+    : degats;
 }
 
 /**
@@ -137,7 +140,7 @@ export function valeurEntite(entite) {
   let valeur = (entite?.atk ?? 0) * 1.3
     + Math.max(0, entite?.pv ?? entite?.def ?? 0) * 1.1
     + (entite?.bouclier ?? 0) * 1.1
-    + (entite?.esquive ?? 0) * 1.6
+    + (entite?.esquive ? 1.6 : 0)
     + Math.max(0, carte.cost ?? 0) * 0.4;
   if (entite?.envol) valeur += 2.5;
   if (entite?.coupRapide) valeur += 2;
@@ -146,7 +149,7 @@ export function valeurEntite(entite) {
   // Furie : une seule flambée de +X/+X au premier sang survécu — une
   // créature déjà enflammée n'a plus rien à gagner.
   if (carte.furie && !entite?.furieDeclenchee) valeur += 1 + carte.furie * 0.7;
-  // Résonance : aura de table de la couleur de la source.
+  // Résonance : aura de table du type imprimé par la source.
   if (carte.resonance) valeur += 2 + carte.resonance * 2;
   // Bannière : chaque attaque d'un Samouraï du camp grandit l'attaquant pour de
   // bon — la source vaut plus que sa seule présence, elle récompense l'attaque.
@@ -382,7 +385,7 @@ function meilleureCibleArme(duel, cote, carte) {
     .map((entite) => {
       let score = valeurEntite(entite);
       if (carte.donne?.envol && entite.envol) score -= 3;
-      if (carte.donne?.esquive && (entite.esquive ?? 0) > 0) score -= 1;
+      if (carte.donne?.esquive && entite.esquive) score -= 1;
       if (carte.donne?.coupRapide && entite.coupRapide) score -= 3;
       if (carte.donne?.rapidite && entite.rapidite) score -= 1;
       return { entite, score };
@@ -843,7 +846,7 @@ function entiteDeSecours(carte, duel = null) {
     pv: (carte.def ?? 0) + resonance,
     pvMax: (carte.def ?? 0) + resonance,
     bouclier: 0,
-    esquive: Math.max(0, carte.esquive ?? 0),
+    esquive: Boolean(carte.esquive),
     protection: null,
   };
 }
@@ -1041,7 +1044,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     // dépenser de plus que la carte.
     let gain = (carte.bonus?.atk ?? 0) * 1.3 + (carte.bonus?.def ?? 0);
     if (!porteur) gain += 2.5;
-    if (carte.donne?.esquive) gain += carte.donne.esquive * 1.5;
+    if (carte.donne?.esquive) gain += 1.5;
     if (carte.donne?.envol && !porteur?.envol) gain += 2.5;
     if (carte.donne?.infiltration && !porteur?.infiltration) gain += 2.5;
     if (carte.donne?.furie) gain += 1 + carte.donne.furie * 0.7;
@@ -1068,7 +1071,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   // Créature ou héros : le corps sur la table, les arrivées modulent.
   let score = 4 + cout * 0.8;
   // Les capacités de clan du Nord : un corps qui grandit sous les coups, ou
-  // une aura qui renforce toute la Neige déjà posée.
+  // une aura qui renforce tout le type déjà posé (Samouraï, Viking…).
   if (carte.furie) score += 0.8 + carte.furie * 0.7;
   if (carte.resonance) {
     const element = cardResonanceGroup(carte);

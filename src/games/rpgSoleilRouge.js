@@ -97,7 +97,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'onna-musha-des-cendres', name: 'Onna-musha des cendres',
     cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
-    esquive: 1, text: 'Esquive 1 — Réduit de 1 les dégâts reçus de chaque attaque ou magie (minimum 0).',
+    esquive: true,
+    text: 'Esquive — 25 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({
@@ -138,10 +139,11 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'kenshi-de-la-forge', name: 'Kenshi de la forge',
     cost: 3, atk: 1, def: 2, rarity: 'rare',
     typeLine: 'Créature — Humain · Samouraï',
-    // L'aura de forge : +2/+0 aux AUTRES Samouraïs de la table, dans les deux
-    // camps — le petit corps est le prix de l'aura (voir `appliquerAuraKenshi`).
-    aura: { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true, camps: 'tous' },
-    text: 'Tant qu’il est en jeu, les autres créatures de type Samouraï de la table, dans les deux camps, gagnent +2/+0.',
+    // L'aura de forge : +1/+0 aux AUTRES Samouraïs de SON camp — une aura ne
+    // franchit jamais la ligne du camp adverse (voir `appliquerAuraKenshi`).
+    // Le petit corps est le prix de l'aura.
+    aura: { type: 'buff-tribu', tribu: 'samourai', atk: 1, def: 0, saufSoi: true, camps: 'camp' },
+    text: 'Tant qu’il est en jeu, les autres créatures de type Samouraï de votre camp gagnent +1/+0.',
     flavor: 'Il a appris à tenir l’acier avant de savoir tenir une lame.',
   }),
   carte({

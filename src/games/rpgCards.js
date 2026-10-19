@@ -499,7 +499,7 @@ export const RPG_CREATURE_CARDS = [
     // gagnent +0/+2 (le moteur la tient dans `appliquerAuraAmani`). L'égide se
     // cumule par Amani présente : une seconde Amani double le bonus, et les
     // Amani se protègent l'une l'autre.
-    aura: { type: 'buff-autres', atk: 0, def: 2 },
+    aura: { type: 'buff-autres', atk: 0, def: 2, camps: 'camp' },
     text: 'Tant qu’Amani est en jeu, vos autres créatures gagnent +0/+2.',
     flavor: 'Les portes de pierre tiennent parce que quelqu’un veille.',
   },
@@ -673,11 +673,14 @@ export const RPG_CREATURE_CARDS = [
     cost: 4,
     atk: 3, def: 3,
     rarity: 'rare',
-    typeLine: 'Créature — Valkyrie',
+    // Valkyrie viking : son type la fait recevoir sa propre Résonance, comme
+    // un Samouraï reçoit la sienne.
+    typeLine: 'Créature — Valkyrie viking',
     art: 'valkyrie-au-corbeau',
     resonance: 1,
+    resonanceTribu: 'viking',
     envol: true,
-    text: 'Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent +1/+1. Envol — Ne peut être bloquée que par une créature avec Envol.',
+    text: 'Résonance viking — Tant qu’elle est en jeu, toutes les créatures de type Viking de la table, dans les deux camps, gagnent +1/+1. Envol — Ne peut être bloquée que par une créature avec Envol.',
     flavor: 'Le corbeau tourne une fois, puis la mêlée se souvient de son nom.',
   },
   {
@@ -714,12 +717,13 @@ export const RPG_CREATURE_CARDS = [
     cost: 5,
     atk: 4, def: 4,
     rarity: 'rare',
-    typeLine: 'Créature — Valkyrie',
+    typeLine: 'Créature — Valkyrie viking',
     art: 'valkyrie-des-glaces',
     resonance: 1,
+    resonanceTribu: 'viking',
     envol: true,
     arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent +1/+1. Envol — Ne peut être bloquée que par une créature avec Envol. Quand elle arrive : choisissez une créature adverse — sa lance de givre lui inflige 2 dégâts.',
+    text: 'Résonance viking — Tant qu’elle est en jeu, toutes les créatures de type Viking de la table, dans les deux camps, gagnent +1/+1. Envol — Ne peut être bloquée que par une créature avec Envol. Quand elle arrive : choisissez une créature adverse — sa lance de givre lui inflige 2 dégâts.',
     flavor: 'Elle choisit qui monte, et qui reste dans la neige.',
   },
   {
@@ -1029,7 +1033,7 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
-    aura: { type: 'buff-element', element: 'sable', atk: 1, def: 1 },
+    aura: { type: 'buff-element', element: 'sable', atk: 1, def: 1, camps: 'camp' },
     arrivee: { type: 'jetons', jeton: 'chien-de-sable', nombre: 2 },
     text: 'Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 avec Rapidité sans coût. Tant que Tarek est en jeu, vos créatures Sable gagnent +1/+1.',
     flavor: 'Il frappe avec ce qu’il porte.',
@@ -1904,8 +1908,8 @@ export const RPG_ARME_CARDS = [
     cost: 2,
     rarity: 'commune',
     bonus: { atk: 0, def: 3 },
-    donne: { esquive: 1 },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive 1 (réduit de 1 les dégâts reçus de chaque attaque ou magie).',
+    donne: { esquive: true },
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque).',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {
@@ -2089,9 +2093,21 @@ export function cardHybridGradient(cardOrId) {
   return `linear-gradient(135deg, ${bandes.join(', ')})`;
 }
 
-/** Groupe renforcé par une source de Résonance : tribu ou élément. */
+/** Groupe renforcé par une source de Résonance. Le groupe est le **type
+ *  imprimé** sur la carte (`resonanceTribu`, ex. « samourai », « viking ») :
+ *  la Résonance ne se lit ni sur le nom, ni sur la couleur. L'élément reste
+ *  accepté en secours pour une carte dont le type ne dirait rien. */
 export function cardResonanceGroup(card) {
   return card?.resonanceTribu ?? card?.resonanceElement ?? card?.element;
+}
+
+/** Libellé d'un groupe de Résonance, tel qu'il se lit dans les journaux et les
+ *  descriptions : le nom d'un élément, ou le type imprimé au singulier. */
+export function resonanceGroupLabel(group) {
+  const elements = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
+  if (elements[group]) return elements[group];
+  const tribus = { samourai: 'Samouraï', viking: 'Viking' };
+  return tribus[group] ?? String(group ?? '').charAt(0).toUpperCase() + String(group ?? '').slice(1);
 }
 
 /** Une résonance tribale suit le TYPE imprimé, jamais le nom ni la couleur. */

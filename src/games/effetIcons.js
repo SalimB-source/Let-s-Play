@@ -183,10 +183,15 @@ export function pastillesPourCarte(carte) {
   if (carte.coupRapide) ajouter('coupRapide', 'Coup rapide');
   if (carte.overkill) ajouter('overkill', 'Overkill');
   if (carte.furie) ajouter('furie', 'Furie', Number(carte.furie) || null);
-  if (carte.esquive) ajouter('esquive', 'Esquive', Number(carte.esquive) || null);
+  if (carte.esquive) ajouter('esquive', 'Esquive', null);
   if (carte.tenacite) ajouter('tenacite', 'Tenacité');
   if (carte.resonance) {
-    ajouter('resonance', carte.resonanceTribu === 'samourai' ? 'Résonance samouraï' : 'Résonance');
+    // La Résonance se nomme par le TYPE imprimé de la carte : « Résonance
+    // samouraï », « Résonance viking ».
+    const tribus = { samourai: 'samouraï', viking: 'viking' };
+    ajouter('resonance', carte.resonanceTribu
+      ? `Résonance ${tribus[carte.resonanceTribu] ?? carte.resonanceTribu}`
+      : 'Résonance');
   }
   if (carte.protection?.contre) {
     // Libellés accentués des couleurs (« Ténèbres », pas « Tenebres »).
@@ -296,7 +301,7 @@ export const EFFET_DEFINITIONS = {
   rapidite: 'Peut attaquer le tour où elle arrive.',
   coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
   furie: (n) => `La première fois qu’elle est blessée et survit, elle gagne +${n ?? 'X'}/+${n ?? 'X'}.`,
-  esquive: (n) => `Réduit de ${n ?? 'X'} les dégâts reçus de chaque attaque ou magie (minimum 0).`,
+  esquive: () => '25 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
   tenacite: 'Une fois par partie, si elle doit être détruite, elle survit avec 1 point de défense.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
@@ -329,9 +334,9 @@ const LIBELLES_IMPRIMES = [
   ['infiltration', 'Infiltration'],
   ['rapidite', 'Rapidité'],
   ['furie', 'Furie(?: \\d+)?'],
-  ['esquive', 'Esquive(?: \\d+)?'],
+  ['esquive', 'Esquive'],
   ['tenacite', 'T[ée]nacité'],
-  ['resonance', 'Résonance(?: samouraï)?'],
+  ['resonance', 'Résonance(?: samouraï|viking)?'],
   ['honneur', 'Honneur(?: \\d+)?'],
   ['butin', 'Butin'],
   ['tribut', 'Tribut(?: \\d+)?'],

@@ -11,7 +11,7 @@ Honneur compris).
 | Tengu du mont ardent | 4 mana 4/2 | **4 mana 2/2** | 3,92 → 3,27 |
 | Samouraï du torii | 3 mana 2/3 | **3 mana 1/3** | 3,87 → 3,43 |
 | Kenshi de la forge | 3 mana 1/3 | **3 mana 1/2** | 2,93 → 2,60 |
-| Onna-musha des cendres | 4 mana 3/3 | **4 mana 3/3 + Esquive 1** *(effet alternatif — buff)* | 2,23 → 2,60 |
+| Onna-musha des cendres | 4 mana 3/3 | **4 mana 3/3 + Esquive** *(effet alternatif — buff)* | 2,23 → 2,60 |
 | Feux de kitsune | 3 mana | **4 mana** (écho conservé) | 1,57 → 1,18 |
 | Sabre maudit | +5/-2 · Coup rapide | **+4/-2** · Coup rapide conservé | 1,20 → 1,00 |
 | Ashigaru, Hatamoto, Rōnin, Daimyō, Oni, Cavalier, Kagutsuchi, Orochi | — | inchangés | dans la bande |
@@ -86,18 +86,22 @@ Toutes les fiches ci-dessous sont à coller dans **`src/games/rpgSoleilRouge.js`
   }),
 ```
 
-## 5. Onna-musha des cendres — 4 mana 3/3 + Esquive 1 *(effet alternatif : buff)*
+## 5. Onna-musha des cendres — 4 mana 3/3 + Esquive *(effet alternatif : buff)*
 
-**Changement :** ajout de `esquive: 1` et de sa ligne de texte (la naginata
-défend — elle esquive le premier souffle de chaque coup). L’Honneur 2 est
-toujours recollé par l’helper `carte()`.
+**Changement :** ajout d’`esquive` et de sa ligne de texte (la naginata
+défend — elle esquive parfois le coup entier). L’Honneur 2 est toujours recollé
+par l’helper `carte()`.
+
+*Révision (demande 24) :* l’Esquive ne retire plus 1 dégât par coup, elle donne
+**25 % de chance d’esquiver une attaque** — le coup ne porte pas du tout, et les
+magies ne s’esquivent jamais. Le champ est un booléen, sans chiffre.
 
 ```js
   carte({
     id: 'onna-musha-des-cendres', name: 'Onna-musha des cendres',
-    cost: 4, atk: 3, def: 3, rarity: 'rare', esquive: 1,
+    cost: 4, atk: 3, def: 3, rarity: 'rare', esquive: true,
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
-    text: 'Esquive 1 — Réduit de 1 les dégâts reçus de chaque attaque ou magie (minimum 0).',
+    text: 'Esquive — 25 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
 ```

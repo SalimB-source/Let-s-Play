@@ -5,24 +5,23 @@ import { JSDOM } from 'jsdom';
 
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
-assert.match(battleCss, /\.rpg-spell-preview-layer\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*108;[^}]*inset:\s*0;[^}]*isolation:\s*isolate;/s,
-  'le voile et la carte du sort partagent un contexte d’empilement isolé, attaché au plateau');
-assert.match(battleCss, /\.rpg-preview-backdrop\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*0;[^}]*inset:\s*0;[^}]*background:\s*rgba\(3, 2, 5, \.64\);/s,
-  'le voile sombre reste derrière la carte et n’est plus une couche fixe de viewport');
-assert.doesNotMatch(battleCss, /\.rpg-preview-backdrop\s*\{[^}]*backdrop-filter\s*:/s,
-  'le voile n’utilise pas de filtre de fond qui pourrait être recomposé au-dessus de la carte');
-assert.match(battleCss, /\.rpg-spell-preview-layer\s*>\s*\.rpg-hover-card-preview\.is-spell-preview\s*\{[^}]*position:\s*absolute;/s,
-  'la carte du sort est positionnée dans la même couche que son voile');
-// Régression PR 879 : la couche isolée ne suffisait pas — au doigt,
-// `@media (pointer: coarse)` masque tous les aperçus de survol
-// (`display: none`), et jsdom ne résout ni les media queries ni la cascade,
-// donc les contrôles d’empilement passaient pendant que la carte restait
-// invisible sur téléphone (voile sombre seul). L’aperçu d’une magie jouée
-// doit explicitement échapper à ce masquage, comme le volet d’appui long.
-assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-spell-preview-layer \.rpg-hover-card-preview \{ display: grid; \}/,
-  'au doigt, l’aperçu de la magie jouée échappe au masquage des aperçus de survol et reste visible sur son voile');
-assert.match(battlePage, /\{apercuMagie && \(\s*<div className="rpg-spell-preview-layer">\s*<div className="rpg-preview-backdrop rpg-preview-backdrop--magie" aria-hidden="true" \/>\s*<HoverCardPreview\s+carte=\{cardById\(apercuMagie\)\}[\s\S]*?style=\{\{ left: '50%', top: '50%', transform: 'translate\(-50%, -50%\)' \}\}\s+spellPlayed\s*\/>\s*<\/div>\s*\)\}/,
-  'l’aperçu de la magie réutilise le composant central, avec le voile comme frère et derrière lui');
+// La magie jouée n'ouvre plus d'aperçu plein cadre : plus de couche, plus de
+// voile, plus de carte centrale. Sa fiche compacte vit dans le flux des piles
+// du joueur et se pose juste au-dessus d'elles — la table reste nette.
+assert.doesNotMatch(battleCss, /\.rpg-spell-preview-layer|\.rpg-preview-backdrop|is-spell-preview/,
+  'ni couche d’aperçu, ni voile, ni carte centrale pour un sort joué');
+assert.doesNotMatch(battlePage, /apercuMagie|spellPlayed|rpg-spell-preview-layer/,
+  'la page n’ouvre plus aucun aperçu au lancement d’une magie');
+assert.match(battleCss, /\.rpg-spell-played\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*calc\(100% \+ 10px\);[^}]*left:\s*0;[^}]*grid-template-columns:\s*58px minmax\(0, 1fr\);/s,
+  'la fiche du sort se pose au-dessus de ses piles, petite carte à gauche et texte à côté');
+assert.match(battleCss, /\.rpg-spell-played\s*\{[^}]*width:\s*min\(360px, calc\(100vw - 40px\)\);/s,
+  'sa largeur se mesure au viewport, pas à la largeur des piles qui la portent');
+assert.match(battleCss, /\.rpg-spell-played\s*\{[^}]*pointer-events:\s*none;/s,
+  'la fiche ne capte aucun geste : la table reste jouable dessous');
+assert.match(battlePage, /<div className="rpg-card-piles rpg-card-piles--player" aria-label="Vos zones de cartes">\s*\{[^}]*\}\s*\{sortJoue && <SpellAnnouncement annonce=\{sortJoue\} \/>\}/s,
+  'la fiche est rendue dans les piles du joueur : elle suit le cimetière et le paquet à tous les formats');
+assert.match(battlePage, /\{apercuSurvol && !mulligan && !apercuAnnonceOuvert && \(/,
+  'le survol garde ses aperçus, sans exclusivité à céder à un sort joué');
 assert.match(battleCss, /\.rpg-card-peek\s*\{[^}]*position:\s*fixed;[^}]*isolation:\s*isolate;/s,
   'les fiches de cartes ouvrent aussi leur propre contexte d’empilement');
 assert.match(battleCss, /\.rpg-card-peek__backdrop\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*0;/s,

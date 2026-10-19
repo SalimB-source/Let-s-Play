@@ -619,7 +619,7 @@ contrôleur **pioche une carte puis en défausse une**.
   qu'aucune règle ne se lise deux fois.
 
 Porteurs (set Sable) : **Fennec des décombres** (2 mana 3/1, Rapidité + Butin —
-son Esquive 1 a été rendue au Butin), **Chien du guet** (2 mana 2/2), **Faussoyeur des dunes**
+son Esquive a été rendue au Butin), **Chien du guet** (2 mana 2/2), **Faussoyeur des dunes**
 (3 mana 2/2, nouveau — à son arrivée : renvoyez une créature de votre
 cimetière en main). Butin et réanimation/récupération portent ensemble
 l'identité du Sable : **il prend, il revend, il ressuscite**.

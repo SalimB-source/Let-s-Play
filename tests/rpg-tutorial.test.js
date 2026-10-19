@@ -189,7 +189,7 @@ test('la leçon Neige gèle un adversaire et déclenche la Furie du bloqueur', (
   assert.equal(guerrier.ok, true);
   assert.equal(guerrier.entite.bouclier, 1, 'le Guerrier arrive avec un bouclier 1');
   assert.equal(rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').ok, true);
-  assert.equal(guerrier.entite.atk, 2, 'la Résonance Neige renforce le Guerrier');
+  assert.equal(guerrier.entite.atk, 2, 'la Résonance viking renforce le Guerrier, qui est Viking');
   assert.equal(guerrier.entite.pv, 4);
   const ennemi = duel.sorcier.creatures.find((entite) => entite.carteId === 'guerrier-au-bouclier-rond');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', ennemi.id).ok, true);
@@ -198,7 +198,7 @@ test('la leçon Neige gèle un adversaire et déclenche la Furie du bloqueur', (
 
   rpgFinDeTour(duel);
   const loup = duel.sorcier.creatures.find((entite) => entite.carteId === 'loup-des-neiges');
-  assert.equal(loup.atk, 4, 'le Loup profite aussi de la Résonance');
+  assert.equal(loup.atk, 3, 'le Loup n’est pas Viking : la Résonance ne le touche pas');
   assert.equal(rpgLancerAttaque(duel, 'sorcier', [loup.id], { [loup.id]: [guerrier.entite.id] }, null,
     [loup.id], {}, { attaqueDeclaree: true }).ok, true);
   assert.equal(guerrier.entite.furieDeclenchee, true, 'la Furie se déclenche après la blessure survivie');

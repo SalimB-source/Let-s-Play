@@ -159,12 +159,16 @@ assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-ca
   'le flottement des créatures respecte la préférence de mouvement réduit');
 assert.match(tableCardSource, /entite\.envol \? 'is-envol' : ''/,
   'les créatures qui possèdent Envol reçoivent leur état visuel sur la table');
-assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*translate:\s*0 -6px;[^}]*filter:[^}]*drop-shadow\(0 11px 8px rgba\(0, 0, 0, \.38\)\)/s,
+assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*translate:\s*0 -6px;[^}]*filter:[^}]*drop-shadow\(0 17px 11px rgba\(0, 0, 0, \.42\)\)/s,
   'une créature avec Envol flotte au-dessus du plateau avec une ombre plus profonde');
-assert.match(tableCardSource, /element\.animate\(\s*\[\{ left: '-2px' \}, \{ left: '2px' \}\]/s,
-  'les créatures avec Envol se balancent doucement de gauche à droite sans déplacer les cartes voisines');
-assert.match(tableCardSource, /matchMedia\?\.\('\(prefers-reduced-motion: reduce\)'\)/,
-  'le balancement latéral s’arrête si le joueur préfère limiter les mouvements');
+assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*animation:\s*rpg-envol-levite var\(--rpg-envol-duree, 5\.1s\) ease-in-out infinite;/s,
+  'la lévitation est une animation CSS : une animation d’API masquerait l’arrivée et les cinématiques de combat');
+assert.match(battlePage, /const dureeVol = \(entite\) => \(6\.8 \+ phaseVol\(entite\) \* 0\.8\)\.toFixed\(2\);/,
+  'chaque créature reçoit sa propre durée de lévitation, tirée de son identifiant');
+assert.doesNotMatch(tableCardSource, /element\.animate\(/,
+  'plus aucune animation d’API sur la carte de la table : les cinématiques CSS gardent la main');
+assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.rpg-card\.is-envol \{ animation: none; \}/,
+  'le vol s’arrête si le joueur préfère limiter les mouvements');
 assert.match(battlePage, /onMouseEnter=\{\(event\) => afficherApercuSurvol\(carte, event\)\}/,
   'les cartes affichent leur aperçu dès l’entrée de la souris');
 assert.match(battlePage, /const cliquerCarteMain = \(carteId, handIndex\) => \{[\s\S]*?jouerCarteDepuisMain\(carteId, handIndex\)/,
@@ -377,7 +381,7 @@ const attaqueEnnemie = battlePage.slice(battlePage.indexOf('const resoudreAttaqu
 const attaqueJoueur = battlePage.slice(battlePage.indexOf('const resoudreAttaqueJoueur = (combat = combatEntrant) => {'),
   battlePage.indexOf('const resoudreCombat ='));
 for (const [source, camp] of [[attaqueEnnemie, 'ennemi'], [attaqueJoueur, 'joueur']]) {
-  assert.match(source, /const sonAttaqueBraise = rpgCombatFireSound\(duel, attaquantsVivants, blocages\);[\s\S]*?if \(frappeCreature\) jouerSfx\(sonAttaqueBraise \?\? 'player_attack_hit', 0\.015\);/,
+  assert.match(source, /const sonAttaque = rpgCombatSound\(duel, attaquantsVivants, blocages\);[\s\S]*?if \(frappeCreature\) jouerSfx\(sonAttaque \?\? 'player_attack_hit', 0\.015\);/,
     `un blocage résolu côté ${camp} conserve l’impact d’attaque, ou son équivalent Braise`);
 }
 assert.match(battlePage, /if \(res\.resume\.frappeSorcier > 0\) declencherImpactEcran\('dealt'\)/,
@@ -634,8 +638,14 @@ assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*borde
 const shineRule = frameCss.slice(frameCss.indexOf('/* ── Cadres brillants'), frameCss.indexOf('/* Hybrides : deux aplats francs'));
 assert.match(shineRule, /\.rpg-card--frame-brillant\s*\{\s*--rpg-frame-material-size:\s*240% 100%;\s*\}/,
   'seuls les cadres mythiques mono utilisent une matière large pour leur reflet');
-assert.match(shineRule, /\.rpg-card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-hand__card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-terrain\.rpg-card--frame-brillant,[\s\S]*?\.rpg-mulligan__card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-card-catalogue__art\.rpg-card--frame-brillant\s*\{\s*animation:\s*rpg-frame-shine-sweep/s,
-  'un cadre brillant conserve son reflet dans le duel, le mulligan et le catalogue');
+// Le duel ne joue plus le reflet : ses faces n'ont plus d'anneau (expérimentation
+// « plus aucun cadre »), et cette animation, déclarée après les cinématiques,
+// leur volait la propriété `animation` sur les cartes brillantes et mythiques —
+// l'arrivée, le bond, le choc et la lévitation de l'Envol disparaissaient.
+assert.doesNotMatch(shineRule, /animation:\s*rpg-frame-shine-sweep/,
+  'le reflet d’un cadre brillant ne prend plus la propriété `animation` des cartes du duel');
+assert.match(shineRule, /\.rpg-card--frame-brillant\s*\{\s*--rpg-frame-material-size:\s*240% 100%;\s*\}/,
+  'la matière large du reflet reste déclarée pour les feuilles qui peignent encore l’anneau');
 assert.doesNotMatch(shineRule, /linear-gradient\(115deg|background-image/,
   'la mécanique du cadre brillant est partagée : chaque variante ne fournit que son dégradé');
 // Toute combinaison déclarée au catalogue doit exister en CSS : une future
@@ -906,8 +916,8 @@ assert.match(guideCss, /\.rpg-card-guide__cost\s*\{\s*position: absolute;\s*z-in
     'une mythique sélectionnée au mulligan garde son cadre jaune de sélection');
   cascade.window.close();
 }
-assert.match(frameCss, /animation:\s*rpg-frame-shine-sweep[^;]*\binfinite alternate;/,
-  'les reflets font des allers-retours, sans saut au retour du cycle');
+assert.doesNotMatch(frameCss, /\.rpg-card[\.\w-]*\s*\{\s*animation:\s*rpg-frame-shine-sweep/s,
+  'aucune face du duel ne porte le reflet : elles n’ont plus d’anneau');
 const shinePositions = [...frameCss.slice(frameCss.indexOf('@keyframes rpg-frame-shine-sweep'))
   .matchAll(/background-position:\s*0 0, 0 0,\s*(-?[\d.]+)%/g)].map((match) => Number(match[1]));
 assert.ok(shinePositions.length >= 2, 'le reflet est animé sur toute la largeur du cadre');
@@ -1506,8 +1516,8 @@ for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {
       `${carte.id} annonce sa Résonance de tribu sur sa face`);
   } else {
     assert.match(carte.typeLine, /valkyrie/i, `${carte.id} est une valkyrie`);
-    assert.match(carte.text, /Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent \+1\/\+1/,
-      `${carte.id} annonce sa Résonance de Neige sur sa face`);
+    assert.match(carte.text, /Résonance viking — Tant qu’elle est en jeu, toutes les créatures de type Viking de la table, dans les deux camps, gagnent \+1\/\+1/,
+      `${carte.id} annonce sa Résonance viking sur sa face`);
   }
 }
 
@@ -1544,7 +1554,7 @@ assert.match(battlePage, /annoncerMagie\(carte, cibleDecrite, \{ vague: true \}\
   'la vague retombe avec la preview et le bandeau du sort, marqués « vague »');
 assert.match(battlePage, /setSortJoue\(\{ carteId: carte\.id, cible, contre, vague \}\);/,
   'l’état du bandeau porte le drapeau vague jusqu’au rendu');
-assert.match(battlePage, /contre \? 'CONTRE DU SORCIER' : vague \? 'SECONDE VAGUE' : 'MAGIE JOUÉE'/,
+assert.match(battlePage, /contre \? 'CONTRE DU SORCIER' : vague \? 'SECONDE VAGUE' : sorcier \? 'SORT DU SORCIER' : 'MAGIE JOUÉE'/,
   'le bandeau nomme la seconde vague au lieu d’une magie jouée');
 assert.match(battleCss, /\.rpg-spell-played--vague\s*\{[^}]*border-color:\s*rgba\(255, 158, 100, \.9\);/s,
   'la vague a sa teinte braise, entre la magie neuve (turquoise) et le contre (or)');

@@ -827,16 +827,19 @@ export async function checkRpgBattle(assert) {
   await act(async () => { cibleParade.click(); });
   assert.match(container.querySelector('.rpg-log')?.textContent ?? '', /Vous lancez Parade de verre/,
     'la carte ciblée se résout en réponse, et le journal en garde la trace');
-  assert.ok(container.querySelector('.rpg-spell-played'), 'la magie résolue s’affiche sur la table');
-  const apercuMagieJouee = container.querySelector('.rpg-hover-card-preview.is-spell-preview');
-  assert.ok(apercuMagieJouee
-    && apercuMagieJouee.querySelector('.rpg-hover-card-preview__rules')?.textContent.includes('3 prochains dégâts'),
-  'jouer une magie fait apparaître son aperçu concis avec son effet principal');
-  const coucheApercuMagie = apercuMagieJouee?.parentElement;
-  assert.ok(coucheApercuMagie?.classList.contains('rpg-spell-preview-layer'),
-    'le voile et la carte sont réunis dans leur propre couche d’empilement');
-  assert.equal(coucheApercuMagie?.querySelector('.rpg-preview-backdrop')?.nextElementSibling, apercuMagieJouee,
-    'la carte est une couche sœur du voile, placée après lui dans le même contexte');
+  // La magie jouée n'ouvre plus d'aperçu : elle se lit dans une fiche compacte,
+  // juste au-dessus du cimetière et du paquet, sans voiler la table.
+  const ficheSort = container.querySelector('.rpg-spell-played');
+  assert.ok(ficheSort, 'la magie résolue s’affiche sur la table');
+  assert.ok(ficheSort.querySelector('.rpg-spell-played__art')
+    && ficheSort.querySelector('.rpg-spell-played__details > p')?.textContent.includes('3 prochains dégâts'),
+  'la fiche du sort montre la carte en petit et son texte à côté');
+  assert.ok(ficheSort.parentElement?.classList.contains('rpg-card-piles--player'),
+    'elle se pose juste au-dessus du cimetière et du paquet du joueur');
+  assert.equal(container.querySelector('.rpg-spell-preview-layer'), null,
+    'jouer une magie n’ouvre plus la couche d’aperçu plein cadre');
+  assert.equal(container.querySelector('.rpg-hover-card-preview.is-spell-preview'), null,
+    'et la carte du sort ne s’affiche plus en grand au centre');
   assert.match(container.querySelector('.rpg-spell-played__target')?.textContent ?? '', new RegExp(nomCibleParade),
     'l’annonce du sort nomme précisément la carte visée');
   assert.ok(cibleParade.classList.contains('is-spell-target'), 'la carte visée est mise en évidence');

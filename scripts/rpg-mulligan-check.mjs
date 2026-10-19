@@ -164,7 +164,7 @@ assert.match(battlePage, /<SortSceau carte=\{carte\} className="rpg-mulligan__sc
 // ── Pas d'aperçu rapide au survol dans le mulligan ──────────────────────────
 assert.doesNotMatch(mulliganPanel, /onMouseEnter=|onMouseLeave=|HoverCardPreview/,
   'le survol d’une carte du mulligan n’ouvre plus d’aperçu rapide');
-assert.match(battlePage, /\{apercuSurvol && !apercuMagie && !mulligan && !apercuAnnonceOuvert && \(/,
+assert.match(battlePage, /\{apercuSurvol && !mulligan && !apercuAnnonceOuvert && \(/,
   'la table n’ouvre aucun aperçu rapide tant que le mulligan est ouvert');
 assert.doesNotMatch(mulliganPanel, /aria-hidden="true">\s*\{(effets|nouvelle)/,
   'aucun texte d’effet ni drapeau d’état n’est rendu sur la carte');
