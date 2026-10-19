@@ -3719,7 +3719,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // la table du duel) et le mot du sur-titre : l'écran qui a ouvert la fiche.
   const [apercuCatalogueArmes, setApercuCatalogueArmes] = useState([]);
   const [apercuCatalogueSurface, setApercuCatalogueSurface] = useState('CATALOGUE');
+  // La carte consultée (appui long ou fiche) garde le focus pendant que le
+  // plateau passe au flou derrière elle : on retient l'élément sur lequel le
+  // geste a été fait, et un effet y pose `data-apercu-source`, que la feuille
+  // de style exclut du flou. Un simple attribut du DOM plutôt qu'une prop : la
+  // carte peut être en main, sur la table, dans un rail de terrains ou sur le
+  // dessus d'une pile — la marquer par l'état obligerait à la faire descendre
+  // dans chacun de ces composants.
   const appuiLongRef = useRef(null);
+  const carteSourceApercuRef = useRef(null);
   useEffect(() => {
     // Changer d'écran (menu, deck, catalogue, duel) referme l'aperçu au doigt
     // comme la fiche ouverte d'un clic, et désarme les gestes en cours.
@@ -4343,6 +4351,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const plateauAdverse = plateauParId(plateauAdverseId) ?? plateau;
   const plateauDecoupe = plateauAdverse.id !== plateau.id;
   const decor3dVisible = decor3dActif && !plateauDecoupe;
+  // Le plateau passe au flou léger derrière un aperçu qui pose un voile sombre :
+  // la fiche ouverte d'un appui long, d'un clic au catalogue ou d'un clic droit,
+  // et le sort qui vient d'être joué. Rien au survol de la souris : cet aperçu-là
+  // s'ouvre et se referme au passage du curseur, la table resterait à clignoter
+  // au moindre effleurement ; et l'effet activé porte déjà son propre voile
+  // flouté (`.rpg-auto-preview`). La valeur nomme la surface, pour que la feuille
+  // de style et les contrôles sachent de quel aperçu il s'agit.
+  const apercuCarte = (apercuAppui || apercuCatalogue) ? 'fiche' : apercuMagie ? 'magie' : null;
   // Bandeau d'ouverture de tour : chaque bascule de `duel.tour` — le tour du
   // joueur rendu, celui du sorcier rendu, une partie neuve, une reprise —
   // annonce 1,5 s en grand le camp qui prend la main, puis s'efface.
@@ -4706,6 +4722,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const fermerApercuAppui = () => {
     annulerAppuiLong();
     jouerSfx('annuler');
+    carteSourceApercuRef.current = null;
     setApercuAppui(null);
   };
   /** Un seul geste pour toute la page : toute carte affichée porte un
@@ -4731,6 +4748,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         masquerApercuSurvol();
         unlockSfx();
         jouerSfx('hover');
+        // Le plateau se floute derrière la carte, pas elle : on retient l'élément.
+        carteSourceApercuRef.current = hote;
         setApercuAppuiArmes(armesDeLaCarte);
         setApercuAppui(carte.id);
       },
@@ -4739,6 +4758,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // ── La fiche du catalogue : la carte cliquée s'ouvre en grand ─────────────
   const fermerApercuCatalogue = () => {
     jouerSfx('annuler');
+    carteSourceApercuRef.current = null;
     setApercuCatalogue(null);
   };
   /** Le jeu est une surface de lecture : cliquer ou cliquer droit une carte
@@ -4798,11 +4818,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const hote = event.target?.closest?.('[data-card-id]');
     const carte = cardById(hote?.dataset?.cardId);
     if (!hote || !carte) return;
+    // Le plateau se floute derrière la carte, pas elle : on retient l'élément.
+    carteSourceApercuRef.current = hote;
     ouvrirApercuCatalogue(carte, {
       armes: (hote.dataset.armes ?? '').split(' ').filter(Boolean),
       surface: SURFACE_FICHE[ecran] ?? 'LE SABLIER',
     });
   };
+  // Le plateau se floute derrière la carte consultée, elle seule reste nette :
+  // `data-apercu-source` est posé sur l'élément qui a ouvert l'aperçu — en main,
+  // sur la table, dans un rail de terrains ou sur le dessus d'une pile — et
+  // retiré dès que l'aperçu se referme. La feuille de style exclut cette carte
+  // du flou (`rpg-battle.css`, « Le plateau derrière une carte consultée »).
+  useEffect(() => {
+    const hote = carteSourceApercuRef.current;
+    if (!hote || !(apercuAppui || apercuCatalogue)) return undefined;
+    hote.setAttribute('data-apercu-source', '');
+    return () => hote.removeAttribute('data-apercu-source');
+  }, [apercuAppui, apercuCatalogue]);
+
   // En portrait, l'écran de rotation reprend la main : plus rien à consulter.
   useEffect(() => {
     if (viewport.portrait && apercuAppui) fermerApercuAppui();
@@ -7247,6 +7281,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         data-screen-impact-token={impactEcran?.token ?? undefined}
         data-plateau-joueur={plateau.id}
         data-plateau-adversaire={plateauAdverse.id}
+        data-apercu-carte={apercuCarte ?? undefined}
         aria-busy={carteEnVol ? 'true' : undefined}
         style={{ backgroundImage: `url(${import.meta.env.BASE_URL}${plateau.fichier})` }}
         aria-label={plateauDecoupe
@@ -7257,6 +7292,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         onDragLeave={quitterZoneDepot}
         onDrop={deposerCarteSurTable}
       >
+        {/* Le jumeau de la peinture : le flou d'un aperçu ne peut pas être posé
+            sur `.card-table` (il emporterait l'aperçu lui-même), ni sur sa
+            `background-image`. Ce calque en reprend donc la peinture par
+            `background-image: inherit` — transparent au repos, il ne remplace le
+            décor que le temps de l'aperçu, flou (voir `rpg-battle.css`).
+            `aria-hidden` : il ne montre rien que la table ne montre déjà. */}
+        <span className="rpg-plateau-fond" aria-hidden="true" />
         {/* La table découpée : chaque moitié est la peinture plein cadre de son
             camp, rognée à sa moitié par `clip-path` (voir `rpg-battle.css`) —
             même échelle que la table pleine, jonction au centre soulignée d'un
@@ -7277,7 +7319,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <div className="rpg-plateau-lisere" aria-hidden="true" />
           </>
         )}
-        <RpgTableScene3D plateau={plateau} enabled={decor3dVisible} paused={Boolean(carteGlissee || carteEnVol || bloqueurGlisse)} />
+        {/* Le décor 3D se met en pause sous un aperçu : il est flou comme le
+            reste du plateau, et un canvas animé ne vaut pas la peine d'être
+            recomposé flou à chaque image derrière un voile. */}
+        <RpgTableScene3D plateau={plateau} enabled={decor3dVisible} paused={Boolean(carteGlissee || carteEnVol || bloqueurGlisse || apercuCarte)} />
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
           <strong>LE SABLIER</strong>
           {tutorielActif && <span className="rpg-duel-nav__tutorial">PARTIE D’ENTRAÎNEMENT</span>}
