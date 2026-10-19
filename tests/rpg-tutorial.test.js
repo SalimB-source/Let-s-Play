@@ -96,6 +96,14 @@ test('la préparation installe la main, le mana et la scène de chaque leçon', 
       assert.ok(duel.sorcier.creatures.some((entite) => entite.carteId === scene.cardId),
         `${tutoriel.id} : ${scene.cardId} est en scène`);
     }
+    for (const step of tutoriel.steps) {
+      if (step.target?.startsWith('.card-row--equipe ')) {
+        assert.equal(step.side, 'top', `${tutoriel.id}/${step.id} : une carte alliée place le panneau au-dessus`);
+      }
+      if (step.target?.startsWith('.card-row--ennemi ')) {
+        assert.equal(step.side, 'bottom', `${tutoriel.id}/${step.id} : une carte ennemie place le panneau en dessous`);
+      }
+    }
   }
 });
 
@@ -119,6 +127,7 @@ test('la leçon Eau joue une sorcellerie, une magie rapide puis un contre', () =
   assert.equal(contre.contre, true, 'le Contresort défait l’annonce');
   assert.equal(duel.annonce, null);
   assert.ok(duel.sorcier.cimetiere.includes('lame-de-mer'), 'la carte contredite paie puis va au cimetière');
+  assert.equal(duel.sorcier.mana.eau, 0, 'le sorcier n’a plus de mana pour annoncer la Vipère renvoyée en main');
   assert.equal(duel.joueur.creatures[0].pv, 3, 'la Lame de mer n’a pas résolu son effet');
 });
 
