@@ -859,13 +859,13 @@ function appliquerBannieresAttaque(duel, cote, attaquants = []) {
 
 /**
  * Kenshi de la forge — l'aura de forge : tant qu'il est en jeu, **les autres**
- * créatures de type Samouraï gagnent +2/+0. Comme la Résonance samouraï, elle
+ * créatures de type Samouraï gagnent +1/+0. Comme la Résonance samouraï, elle
  * est **de table** : elle profite aux deux camps et à toutes les couleurs ; le
  * type se lit sur la ligne de type imprimée (`cardReceivesResonance`).
  *
  * Le Kenshi ne se forge pas lui-même — il dit « les autres » : il ne reçoit que
  * l'aura de ses confrères, s'il y en a d'autres. Deux Kenshis se donnent donc
- * +2/+0 l'un à l'autre et +4/+0 au reste des Samouraïs.
+ * +1/+0 l'un à l'autre et +2/+0 au reste des Samouraïs.
  *
  * Chaque entité ne retient que l'écart appliqué (`auraKenshiBonus`), même
  * contrat que l'aura Sable et l'égide d'Amani : une arrivée ou une mort ne fait
@@ -876,14 +876,14 @@ function appliquerBannieresAttaque(duel, cote, attaquants = []) {
 function appliquerAuraKenshi(duel) {
   // Une aura ne franchit jamais la ligne du camp : les Kenshis d'un camp ne
   // forgent que les Samouraïs de CE camp. Deux Kenshis du même camp se donnent
-  // +2/+0 l'un à l'autre ; ceux d'en face gardent leur propre forge.
+  // +1/+0 l'un à l'autre ; ceux d'en face gardent leur propre forge.
   for (const cote of ['joueur', 'sorcier']) {
     const sources = duel[cote].creatures
       .filter((entite) => entite.carteId === 'kenshi-de-la-forge').length;
     for (const entite of duel[cote].creatures) {
       const siennes = sources - (entite.carteId === 'kenshi-de-la-forge' ? 1 : 0);
       const voulu = cardReceivesResonance(duelCardById(entite.carteId), 'samourai')
-        ? Math.max(0, 2 * siennes)
+        ? Math.max(0, siennes)
         : 0;
       const delta = voulu - (entite.auraKenshiBonus ?? 0);
       if (!delta) continue;

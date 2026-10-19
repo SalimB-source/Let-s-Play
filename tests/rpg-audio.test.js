@@ -35,6 +35,17 @@ test('le blocage fait entendre un choc métallique de lames', () => {
     'deux résonances décalées font tinter les épées qui s’entrechoquent');
 });
 
+test('la frappe d’un Samouraï a son propre bruit d’acier', () => {
+  assert.ok(RPG_SFX_NAMES.includes('sword'), 'la lame est déclarée parmi les bruitages du duel');
+  const sword = rpgSfx('sword');
+  assert.ok(sword.some((event) => event.kind === 'noise' && event.filterType === 'highpass'),
+    'le souffle de la lame fend l’air');
+  assert.ok(sword.filter((event) => event.kind === 'bell').length >= 2,
+    'l’acier tinte, deux résonances décalées');
+  assert.notDeepEqual(sword, rpgSfx('choc_lames'),
+    'la frappe n’est pas le choc de deux lames qui se rencontrent');
+});
+
 test('toutes les séquences ont des notes, départs, durées et gains valides', () => {
   for (const name of RPG_SFX_NAMES) {
     for (const event of rpgSfx(name)) {

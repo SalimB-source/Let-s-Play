@@ -7,6 +7,8 @@
 import { cardById, cardColors } from './rpgCards.js';
 
 export const RPG_FIRE_SFX = 'flame_gust';
+/** La frappe d'un Samouraï : l'acier, pas le feu. */
+export const RPG_SWORD_SFX = 'sword';
 
 const CREATURE_KINDS = new Set(['creature', 'hero']);
 
@@ -45,11 +47,22 @@ export function rpgFireSoundFor(cardOrId, action) {
 }
 
 /**
- * Le son d'un combat est Braise si l'un des attaquants est une créature Braise,
- * ou si une capacité de combat d'une créature Braise (attaquante ou bloqueuse)
- * se déclenche.
+ * Un Samouraï frappe à la lame. Le type se lit sur la ligne **imprimée**, comme
+ * la Résonance : un yōkai qui porte la Résonance samouraï (le Tengu, Kagutsuchi)
+ * n'est pas un Samouraï et garde le souffle de sa couleur.
  */
-export function rpgCombatFireSound(duel, attackerIds = [], blockersByAttacker = {}) {
+export function carteFrappeALaLame(cardOrId) {
+  const card = resolveCard(cardOrId);
+  if (!card || !CREATURE_KINDS.has(card.kind)) return false;
+  return /Samouraï/.test(card.typeLine ?? '');
+}
+
+/**
+ * Le son d'un combat : l'acier quand l'attaquant est un Samouraï, sinon la
+ * Braise si l'un des attaquants est une créature Braise, ou si une capacité de
+ * combat d'une créature Braise (attaquante ou bloqueuse) se déclenche.
+ */
+export function rpgCombatSound(duel, attackerIds = [], blockersByAttacker = {}) {
   const creatures = new Map([
     ...(duel?.joueur?.creatures ?? []),
     ...(duel?.sorcier?.creatures ?? []),
@@ -58,6 +71,10 @@ export function rpgCombatFireSound(duel, attackerIds = [], blockersByAttacker = 
     Array.isArray(ids) ? ids : []
   )));
 
+  for (const id of attackerIds) {
+    const card = cardById(creatures.get(id)?.carteId);
+    if (carteFrappeALaLame(card)) return RPG_SWORD_SFX;
+  }
   for (const id of attackerIds) {
     const card = cardById(creatures.get(id)?.carteId);
     if (rpgFireSoundFor(card, 'attack') || rpgFireSoundFor(card, 'combat')) {

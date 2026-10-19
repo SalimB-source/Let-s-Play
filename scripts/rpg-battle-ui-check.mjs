@@ -381,7 +381,7 @@ const attaqueEnnemie = battlePage.slice(battlePage.indexOf('const resoudreAttaqu
 const attaqueJoueur = battlePage.slice(battlePage.indexOf('const resoudreAttaqueJoueur = (combat = combatEntrant) => {'),
   battlePage.indexOf('const resoudreCombat ='));
 for (const [source, camp] of [[attaqueEnnemie, 'ennemi'], [attaqueJoueur, 'joueur']]) {
-  assert.match(source, /const sonAttaqueBraise = rpgCombatFireSound\(duel, attaquantsVivants, blocages\);[\s\S]*?if \(frappeCreature\) jouerSfx\(sonAttaqueBraise \?\? 'player_attack_hit', 0\.015\);/,
+  assert.match(source, /const sonAttaque = rpgCombatSound\(duel, attaquantsVivants, blocages\);[\s\S]*?if \(frappeCreature\) jouerSfx\(sonAttaque \?\? 'player_attack_hit', 0\.015\);/,
     `un blocage résolu côté ${camp} conserve l’impact d’attaque, ou son équivalent Braise`);
 }
 assert.match(battlePage, /if \(res\.resume\.frappeSorcier > 0\) declencherImpactEcran\('dealt'\)/,

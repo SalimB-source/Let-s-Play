@@ -68,7 +68,7 @@ export const RPG_SFX_NAMES = Object.freeze([
   'apparition', 'victoire', 'defaite', 'whoosh', 'hit', 'heal', 'zone', 'bell', 'blip', 'explore', 'souffle',
   'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap', 'mana',
   'mythic_impact', 'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'soin_vie', 'soin_vie_adverse', 'bouclier',
-  'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
+  'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'sword', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
   'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'water_wave', 'card_countered', 'creature_return', 'block_impact', 'destruction_hit', 'page_turn', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
 ]);
 
@@ -303,6 +303,17 @@ export function rpgSfx(name) {
         thud(0, 0.19, 0.59, { from: 148, to: 48, filter: 500, send: 0.08 }),
         tone('triangle', 'G4', 0.045, 0.18, 0.13, { slideTo: 'D4', filter: 1600, attack: 0.008, send: 0.14 }),
         noise(0, 0.12, 0.12, { filterType: 'bandpass', filter: 2250, filterTo: 620, q: 0.8, attack: 0.003, send: 0.1 }),
+      ];
+    // Une frappe de Samouraï : la lame fend l'air (souffle filtré), mord
+    // (corps sourd très bref) et tinte (deux résonances d'acier). Rien à voir
+    // avec le souffle du feu : c'est l'acier qui parle, pas la Braise.
+    case 'sword':
+      return [
+        noise(0, 0.24, 0.2, { filterType: 'highpass', filter: 5400, filterTo: 900, attack: 0.004, send: 0.12, pan: -0.16 }),
+        tone('sawtooth', 'A4', 0.008, 0.19, 0.1, { slideTo: 'A3', filter: 3400, filterTo: 700, attack: 0.005, send: 0.1, pan: 0.1 }),
+        bell('E6', 0.05, 0.52, 0.13, { send: 0.3, pan: 0.18 }),
+        bell('A5', 0.082, 0.36, 0.09, { send: 0.24, pan: -0.1 }),
+        thud(0.02, 0.14, 0.3, { from: 170, to: 70, filter: 800, send: 0.06 }),
       ];
     case 'coup_rapide':
       return [

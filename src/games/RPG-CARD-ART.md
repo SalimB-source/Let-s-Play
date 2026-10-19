@@ -196,10 +196,10 @@ illustration, version `soleil-rouge-kaiga-couleurs-v7` —, et la refonte
 n’ajoute aucune carte au catalogue : le jeton vit hors de `RPG_DUEL_CARDS`,
 comme les chiens de sable.
 
-Le **Kenshi de la forge** a, lui, reçu l'**aura de forge** : 1/3 au lieu de 2/4,
-et « tant qu'il est en jeu, les autres créatures de type Samouraï de la table,
-dans les deux camps, gagnent +2/+0 » — l'aura ne touche jamais la défense, donc
-la perdre ne peut pas tuer. Sa peinture ne change pas (le forgeron frappant une
+Le **Kenshi de la forge** a, lui, reçu l'**aura de forge** : 1/2 au lieu de 2/4,
+et « tant qu'il est en jeu, les autres créatures de type Samouraï de votre camp
+gagnent +1/+0 » — l'aura ne touche jamais la défense, donc la perdre ne peut pas
+tuer. Sa peinture ne change pas (le forgeron frappant une
 lame en fusion reste son illustration, version `soleil-rouge-kaiga-couleurs-v7`) :
 c'est bien lui qui forge les autres, y compris les Samouraïs du camp adverse,
 comme le veut le texte imprimé.

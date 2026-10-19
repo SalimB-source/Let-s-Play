@@ -61,7 +61,7 @@ import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { clampRpgVolume, RpgAudioPlayer } from './rpgAudio.js';
-import { rpgCombatFireSound, rpgFireSoundFor } from './rpgFireAudio.js';
+import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
@@ -7250,8 +7250,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const blocages = Object.fromEntries(Object.entries(combatEntrant.blocages)
       .filter(([id]) => vivants.has(id))
       .map(([id, idsBloqueurs]) => [id, combatEntrant.ciblesAttaque?.[id] ? [] : idsBloqueurs]));
-    const sonAttaqueBraise = rpgCombatFireSound(duel, attaquantsVivants, blocages);
-    const sonFrappeDirecteBraise = rpgCombatFireSound(duel, attaquantsVivants);
+    const sonAttaque = rpgCombatSound(duel, attaquantsVivants, blocages);
+    const sonFrappeDirecte = rpgCombatSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -7274,8 +7274,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const frappeCreature = res.resume.paires.length > 0
       || res.resume.coupsRapides.some((coup) => !coup.annule);
     jouerSfx('combat');
-    if (frappeCreature) jouerSfx(sonAttaqueBraise ?? 'player_attack_hit', 0.015);
-    if (frappeDirecte) jouerSfx(sonFrappeDirecteBraise ?? 'degats', 0.18);
+    if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
+    if (frappeDirecte) jouerSfx(sonFrappeDirecte ?? 'degats', 0.18);
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     rpgFermerFenetreReponse(duel);
     setCombatEntrant(null);
@@ -7325,8 +7325,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const attaquantsBloques = (combat.attaquantsBloques
       ?? combat.attaquants.filter((id) => combat.blocages[id]?.length))
       .filter((id) => attaquantsVivants.includes(id));
-    const sonAttaqueBraise = rpgCombatFireSound(duel, attaquantsVivants, blocages);
-    const sonFrappeDirecteBraise = rpgCombatFireSound(duel, attaquantsVivants);
+    const sonAttaque = rpgCombatSound(duel, attaquantsVivants, blocages);
+    const sonFrappeDirecte = rpgCombatSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -7349,9 +7349,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const frappeCreature = res.resume.paires.length > 0
       || res.resume.coupsRapides.some((coup) => !coup.annule);
     jouerSfx('combat');
-    if (frappeCreature) jouerSfx(sonAttaqueBraise ?? 'player_attack_hit', 0.015);
+    if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
     if (res.resume.frappeSorcier > 0) {
-      jouerSfx(sonFrappeDirecteBraise ?? 'player_attack_hit', 0.18);
+      jouerSfx(sonFrappeDirecte ?? 'player_attack_hit', 0.18);
     } else if (!frappeCreature) {
       jouerSfx('block_impact', 0.2);
     }
