@@ -8612,6 +8612,93 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card__electricite { animation: none; }
 }
 
+/* ── Résonance : une aura bleue de sonar émane de la carte ───────────────────
+   Une créature qui porte la résonance — celle qui donne le bonus comme le
+   Samouraï du torii — projette trois ondes concentriques : elles naissent au
+   cœur de la face, dépassent le cadre et s'effacent en grandissant, comme un
+   ping de sonar. Un liseré bleu ourle la carte et son pourtour reste éclairé
+   une fois les ondes éteintes, pour que la source se repère d'un coup d'œil
+   même sans mouvement.
+
+   Comme l'électricité de la Rapidité, l'aura DÉBORDE : `overflow: clip` avec
+   une marge de 58 px laisse les ondes sortir du cadre sans rendre la carte
+   transparente (l'image, elle, garde l'arrondi). Le survol ne fait plus
+   respirer l'illustration sur ces cartes : son agrandissement de 4 % sortirait
+   du cadre que l'on vient d'ouvrir. Les ondes sont montées sur `transform` et
+   `opacity` seulement — aucun repaint du reste de la table.
+
+   La phase est décalée par carte (`--rpg-resonance-phase`, tirée de
+   l'identifiant de l'entité) : deux créatures à résonance ne battent jamais à
+   l'unisson. Le mouvement réduit fige les trois ondes en couronnes immobiles. */
+.rpg-card.has-resonance {
+  overflow: clip;
+  overflow-clip-margin: 58px;
+}
+/* Les calques pleine face gardent l'arrondi de la carte maintenant que le
+   débordement est ouvert (le fond, les taches de sang, le givre). */
+.rpg-card.has-resonance > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) {
+  border-radius: inherit;
+}
+.rpg-card.has-resonance .rpg-card__img {
+  animation: none !important;
+}
+
+.rpg-card__resonance {
+  /* Le bleu du sonar : la teinte commune aux deux tribus à résonance. */
+  --rpg-resonance-teinte: 96, 178, 255;
+  position: absolute;
+  inset: 0;
+  /* Au-dessus de l'illustration, sous les repères de jeu (ATQ/DEF, pastille,
+     icônes) : les ondes traversent l'art mais ne masquent jamais une valeur. */
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 52%,
+    rgba(120, 190, 255, .04) 32%,
+    rgba(70, 150, 255, .17) 100%
+  );
+  box-shadow:
+    inset 0 0 16px rgba(96, 178, 255, .28),
+    0 0 14px rgba(70, 150, 255, .34);
+}
+
+.rpg-card__resonance-onde {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(96, 178, 255, .9);
+  border-radius: 50%;
+  box-shadow:
+    0 0 10px rgba(70, 160, 255, .6),
+    inset 0 0 10px rgba(120, 200, 255, .5);
+  opacity: 0;
+  transform: scale(.6);
+  transform-origin: center;
+  will-change: transform, opacity;
+  animation: rpg-resonance-onde 3.6s cubic-bezier(.25, .55, .3, 1) infinite;
+  animation-delay: calc(var(--rpg-resonance-phase, 0s) + var(--rpg-resonance-retard, 0s));
+}
+.rpg-card__resonance-onde--1 { --rpg-resonance-retard: 0s; }
+.rpg-card__resonance-onde--2 { --rpg-resonance-retard: -1.2s; }
+.rpg-card__resonance-onde--3 { --rpg-resonance-retard: -2.4s; }
+
+@keyframes rpg-resonance-onde {
+  0% { opacity: 0; transform: scale(.6); }
+  16% { opacity: .9; }
+  60% { opacity: .42; }
+  100% { opacity: 0; transform: scale(1.42); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Pas de pulsation : trois couronnes fixes disent l'aura sans mouvement. */
+  .rpg-card__resonance-onde {
+    animation: none;
+  }
+  .rpg-card__resonance-onde--1 { opacity: .42; transform: scale(.78); }
+  .rpg-card__resonance-onde--2 { opacity: .26; transform: scale(1.02); }
+  .rpg-card__resonance-onde--3 { opacity: .15; transform: scale(1.26); }
+}
+
 /* ── Infiltration : la carte brumeuse et transparente ────────────────────────
    Une créature qui ne peut pas être bloquée se fond dans le décor : la face
    devient translucide (la table transparaît), l'illustration pâlit et se

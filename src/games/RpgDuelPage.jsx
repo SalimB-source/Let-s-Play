@@ -1101,6 +1101,39 @@ function tirerHasardElectricite(aleatoire = Math.random) {
   };
 }
 
+/** Résonance : une aura bleue de sonar émane de la carte.
+ *  Trois ondes concentriques partent du cœur de la face et s'élargissent
+ *  au-delà du cadre en s'effaçant ; un liseré bleu ourle les bords. Le
+ *  calque est purement décoratif (`aria-hidden`) : l'effet est déjà annoncé
+ *  par l'icône et par la description lue de la carte. Les ondes sont
+ *  décalées d'un tiers de cycle pour qu'une nouvelle vague parte toujours
+ *  avant que la précédente ne s'éteigne. */
+function AuraResonance({ phase = 0 }) {
+  return (
+    <span
+      className="rpg-card__resonance"
+      style={{ '--rpg-resonance-phase': `${(-phase).toFixed(2)}s` }}
+      aria-hidden="true"
+    >
+      {[1, 2, 3].map((onde) => (
+        <i key={onde} className={`rpg-card__resonance-onde rpg-card__resonance-onde--${onde}`} />
+      ))}
+    </span>
+  );
+}
+
+/** Le décalage d'une aura, tiré de l'identifiant de l'entité : deux créatures à
+ *  résonance ne battent jamais exactement à l'unisson. La valeur reste dans le
+ *  cycle des ondes (3,6 s), donc le rendu ne dépend que de l'identifiant. */
+function phaseResonance(entite) {
+  const cle = String(entite?.id ?? '');
+  let empreinte = 0;
+  for (let index = 0; index < cle.length; index += 1) {
+    empreinte = (empreinte * 31 + cle.charCodeAt(index)) % 9973;
+  }
+  return (empreinte % 360) / 100;
+}
+
 /* ── Soins : l'éclat d'un gain de vie ─────────────────────────────────────── */
 // Motes de lumière fixes (position, départ, taille, dérive) : le même éclat à
 // chaque soin, sans hasard au rendu. Trois sont de petites croix — le signe du
@@ -1278,6 +1311,7 @@ export function TableCard({
         entite.envol ? 'is-envol' : '',
         entite.rapidite ? 'has-rapidite' : '',
         entite.infiltration ? 'has-infiltration' : '',
+        carte?.resonance ? 'has-resonance' : '',
         gelee ? 'is-frozen' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
@@ -1330,6 +1364,7 @@ export function TableCard({
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+      {carte?.resonance ? <AuraResonance phase={phaseResonance(entite)} /> : null}
       {entite.rapidite && <ElectriciteRapidite />}
       {/* Infiltration : la carte devient une silhouette de brume — à demi
           transparente, traversée de nuages gris qui défilent. */}
