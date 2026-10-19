@@ -596,7 +596,12 @@ contrôleur **pioche une carte puis en défausse une**.
 - le mot-clé se lit sur la fiche (`butin: true`, `rpgCards.js`), et vaut
   **+1,2** dans la formule de puissance (`rpgCardPower.js`) ;
 - son icône est la **besace percée** (`#effet-butin` du sprite
-  `preview-effets-icone.html`), pastille sous la ligne de type.
+  `preview-effets-icone.html`), pastille sous la ligne de type. Dans un aperçu
+  de carte, la pastille se **déplie** — `deplier`, `effetIcons.jsx` — et écrit la
+  règle du mot-clé sous le mot : une explication qui attendrait un survol n'y
+  serait jamais lue (le volet ne reçoit pas la souris, et au doigt il se
+  referme) ; la section correspondante quitte alors le texte de règle, pour
+  qu'aucune règle ne se lise deux fois.
 
 Porteurs (set Sable) : **Fennec des décombres** (2 mana 3/1, Rapidité + Butin —
 son Esquive 1 a été rendue au Butin), **Chien du guet** (2 mana 2/2), **Faussoyeur des dunes**

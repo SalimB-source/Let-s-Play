@@ -5,7 +5,8 @@
  * `<EffetsSprite />` ; ensuite chaque icône n'est qu'un `<use>` sans coût.
  * Deux grammaires, comme sur la preview validée :
  * - les **pastilles** (`<PastillesCarte />`) : les mots-clés passifs d'une
- *   fiche, icône + libellé, sous la ligne de type ;
+ *   fiche, icône + libellé, sous la ligne de type — et, dans un aperçu
+ *   (`deplier`), le libellé suivi de son explication écrite dessous ;
  * - les **badges** (`<IconesCarte />`) : l'icône seule, posée sur les faces
  *   de cartes (table, main, catalogue) où il n'y a pas la place du mot ;
  * - l'**interlignage** : une icône devant chaque ligne de règle (voir
@@ -101,36 +102,47 @@ function BulleEffet({ id, ancre, titre, description }) {
  * Une pastille qui s'explique : survolée (ou touchée, ou atteinte au clavier),
  * elle ouvre la bulle de ce que fait son effet. Le toucher ne traverse pas :
  * il n'ouvre ni ne referme la fiche qui l'accueille.
+ *
+ * `deplier` écrit l'explication **sous le mot** au lieu de la garder dans une
+ * bulle. C'est ce que veulent les aperçus de cartes : leur volet ne reçoit pas
+ * la souris (`pointer-events: none`) et, au doigt, un texte qu'il faudrait
+ * toucher pour lire n'est pas lu — une carte réduite à ses mots-clés sans une
+ * ligne pour les expliquer ne se lit pas. Le mot et sa règle restent un seul
+ * bloc : rien n'est écrit deux fois, mais plus rien n'est caché.
  */
-export function PastilleEffet({ pastille }) {
+export function PastilleEffet({ pastille, deplier = false }) {
   const id = useId();
   const ancreRef = useRef(null);
   const [survolee, setSurvolee] = useState(false);
   const [epinglee, setEpinglee] = useState(false);
   const texte = pastilleTexte(pastille);
-  const ouverte = Boolean(pastille.description) && (survolee || epinglee);
+  const explication = pastille.description ? String(pastille.description) : '';
+  const ouverte = !deplier && Boolean(explication) && (survolee || epinglee);
   return (
     <span
       ref={ancreRef}
-      className={`rpg-pastille${pastille.description ? ' rpg-pastille--explicable' : ''}${ouverte ? ' is-ouverte' : ''}`}
+      className={`rpg-pastille${deplier ? ' rpg-pastille--depliee' : `${explication ? ' rpg-pastille--explicable' : ''}${ouverte ? ' is-ouverte' : ''}`}`}
       role="listitem"
-      tabIndex={pastille.description ? 0 : undefined}
+      tabIndex={!deplier && explication ? 0 : undefined}
       aria-describedby={ouverte ? id : undefined}
-      aria-label={pastille.description ? `${texte} : ${pastille.description}` : undefined}
+      // Dépliée, la pastille porte déjà son explication dans le texte : pas
+      // d'`aria-label` qui la ferait lire deux fois par un lecteur d'écran.
+      aria-label={!deplier && explication ? `${texte} : ${explication}` : undefined}
       data-pastille={pastille.cle}
       // La souris ouvre au survol ; le doigt, lui, ouvre et referme d'un toucher
-      // (son survol émulé ne doit pas laisser la bulle collée).
-      onPointerEnter={(event) => { if (event.pointerType === 'mouse') setSurvolee(true); }}
-      onPointerLeave={(event) => { if (event.pointerType === 'mouse') { setSurvolee(false); setEpinglee(false); } }}
-      onFocus={(event) => { if (event.currentTarget.matches?.(':focus-visible')) setSurvolee(true); }}
-      onBlur={() => { setSurvolee(false); setEpinglee(false); }}
-      onPointerDown={(event) => event.stopPropagation()}
-      onClick={(event) => {
+      // (son survol émulé ne doit pas laisser la bulle collée). Rien de tout ça
+      // quand l'explication est déjà écrite sous le mot.
+      onPointerEnter={deplier ? undefined : (event) => { if (event.pointerType === 'mouse') setSurvolee(true); }}
+      onPointerLeave={deplier ? undefined : (event) => { if (event.pointerType === 'mouse') { setSurvolee(false); setEpinglee(false); } }}
+      onFocus={deplier ? undefined : (event) => { if (event.currentTarget.matches?.(':focus-visible')) setSurvolee(true); }}
+      onBlur={deplier ? undefined : () => { setSurvolee(false); setEpinglee(false); }}
+      onPointerDown={deplier ? undefined : (event) => event.stopPropagation()}
+      onClick={deplier ? undefined : (event) => {
         event.stopPropagation();
         event.preventDefault();
         setEpinglee((valeur) => !valeur);
       }}
-      onKeyDown={(event) => {
+      onKeyDown={deplier ? undefined : (event) => {
         if (event.key === 'Escape' && ouverte) {
           event.stopPropagation();
           setSurvolee(false);
@@ -139,8 +151,13 @@ export function PastilleEffet({ pastille }) {
       }}
     >
       <EffetIcone cle={pastille.cle} size={13} />
-      {texte}
-      {ouverte && <BulleEffet id={id} ancre={ancreRef.current} titre={texte} description={pastille.description} />}
+      {deplier && explication ? (
+        <>
+          <span className="rpg-pastille__libelle">{texte}</span>
+          <span className="rpg-pastille__explication">{explication}</span>
+        </>
+      ) : texte}
+      {ouverte && <BulleEffet id={id} ancre={ancreRef.current} titre={texte} description={explication} />}
     </span>
   );
 }
@@ -151,13 +168,20 @@ export function PastilleEffet({ pastille }) {
  * pastille dit ce qu'elle fait au survol — le texte imprimé de la carte
  * d'abord, le glossaire à défaut (`effetsDetailles`). `pastilles` permet de
  * passer une lecture déjà faite (l'aperçu s'en sert aussi pour son texte).
+ * `deplier` les fait passer en lignes mot + explication, sans bulle à ouvrir.
  */
-export function PastillesCarte({ carte, pastilles: lues = null, className = '' }) {
+export function PastillesCarte({ carte, pastilles: lues = null, className = '', deplier = false }) {
   const pastilles = lues ?? effetsDetailles(carte).pastilles;
   if (!pastilles.length) return null;
   return (
-    <span className={`rpg-pastilles${className ? ` ${className}` : ''}`} role="list" aria-label="Mots-clés et effets">
-      {pastilles.map((pastille) => <PastilleEffet key={pastille.cle} pastille={pastille} />)}
+    <span
+      className={`rpg-pastilles${deplier ? ' rpg-pastilles--depliees' : ''}${className ? ` ${className}` : ''}`}
+      role="list"
+      aria-label="Mots-clés et effets"
+    >
+      {pastilles.map((pastille) => (
+        <PastilleEffet key={pastille.cle} pastille={pastille} deplier={deplier} />
+      ))}
     </span>
   );
 }
