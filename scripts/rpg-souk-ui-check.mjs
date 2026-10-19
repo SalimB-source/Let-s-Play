@@ -187,6 +187,31 @@ assert.ok(!css.includes('rpg-souk__rayon-prix'),
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,600}rpg-souk__paquet-scene \{ animation: none; \}/,
   'et le balancement se coupe pour qui le demande');
 
+// 9 bis. L'étagère passe juste sous les quêtes, tient sur trois colonnes, et
+// la semaine se lit en sept cartes cachetées.
+assert.ok(ecran.indexOf('aria-labelledby="souk-rayons-titre"') < ecran.indexOf('data-souk-cachet='),
+  'les rayons se trouvent juste sous les quêtes du jour');
+assert.match(css, /\.rpg-souk__rayons \{\s*display: grid;\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/,
+  'l’étagère se lit sur trois colonnes');
+assert.match(css, /@media \(max-width: 980px\) \{\s*\.rpg-souk__rayons \{ grid-template-columns: repeat\(2,/,
+  'deux colonnes sur la tablette');
+assert.match(css, /@media \(max-width: 600px\) \{[\s\S]{0,120}\.rpg-souk__rayons \{ grid-template-columns: minmax\(0, 1fr\)/,
+  'une seule colonne sur le téléphone');
+// Le prix est plus gros qu'avant (15 px mini), doré, et son reflet le balaie.
+assert.match(css, /\.rpg-souk__paquet-prix \{[^}]*font: 800 clamp\(15px, 1\.45vw, 19px\)/, 'le prix a doublé de taille');
+assert.match(css, /\.rpg-souk__prix-valeur \{[^}]*font-size: 1\.2em/, 'et le montant pèse plus lourd que le geste');
+assert.match(css, /@keyframes rpg-souk-prix-brille/, 'l’étiquette est balayée par un reflet');
+assert.match(css, /@keyframes rpg-souk-prix-appel/, 'et elle respire quand l’achat est possible');
+assert.match(ecranCode, /etapesDeLaSerie\(quetes\)/, 'les sept cartes viennent des règles de la série');
+assert.match(ecranCode, /data-souk-semaine-jour=\{etape\.jour\}/, 'chaque carte porte son jour');
+assert.match(ecranCode, /data-souk-semaine-jour-etat=\{etape\.atteint \? 'atteint' : 'attente'\}/,
+  'et son cachet se lit dans le DOM');
+assert.match(ecranCode, /rpg-souk__jour-sceau/, 'le cachet du jour est dessiné');
+assert.match(css, /\.rpg-souk__jour\.is-atteint \.rpg-souk__jour-sceau \{ opacity: 1;/, 'il n’apparaît que sur un jour atteint');
+assert.match(css, /\.rpg-souk__jour\.is-aujourdhui/, 'le jour courant est marqué');
+assert.ok(!/serie % [0-9]|serie % JOURS/.test(ecranCode),
+  'l’écran ne refait toujours pas l’arithmétique de la série');
+
 // 10. Le crédit a une pièce, et une seule façon de l'écrire à l'écran.
 const piece = lire('src/games/RpgCreditIcon.jsx');
 assert.match(piece, /export default function RpgCreditIcon/, 'la pièce est son propre composant');
@@ -198,12 +223,12 @@ for (const ecranDuSouk of ['RpgSouk.jsx', 'RpgBoosterOuverture.jsx', 'RpgDuelPag
   const code = sansCommentaires(lire(`src/games/${ecranDuSouk}`));
   assert.ok(!code.includes('◈'), `${ecranDuSouk} n’écrit plus le losange à l’écran`);
 }
-assert.match(page, /<RpgCreditIcon className="rpg-mode-menu__souk-piece" \/>/,
+assert.match(page, /<RpgMarketIcon className="rpg-mode-menu__souk-piece" \/>/,
   'l’onglet du Souk porte la pièce');
 assert.match(page, /creditsLisible\(credits\)/, 'et son solde s’écrit avec l’espace fine, comme au Souk');
 assert.match(ecran, /<RpgCreditIcon anime \/>/, 'le grand solde porte la pièce qui respire');
 for (const montant of ['rpg-souk__recompense', 'rpg-souk__paquet-prix', 'rpg-souk__rayon-refus', 'rpg-souk__journal-notes']) {
-  assert.match(ecran, new RegExp(`${montant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]{0,260}<RpgCreditIcon`),
+  assert.match(ecran, new RegExp(`${montant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]{0,520}<RpgCreditIcon`),
     `la pièce est dans ${montant}`);
 }
 assert.match(credits, /export function creditsLisible/, 'le format des montants vit avec les règles');

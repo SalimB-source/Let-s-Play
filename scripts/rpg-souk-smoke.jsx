@@ -202,6 +202,29 @@ export async function checkRpgSoukEcran(assert) {
       'un rayon gardé affiche un paquet éteint');
     assert.equal(noeud('[data-souk-attente]'), null, 'rien à réclamer : pas de bandeau');
 
+    // ── Les sept cartes de la série : la première porte déjà son cachet ─────
+    const sections = [...document.querySelectorAll('[data-souk] > section')];
+    const rangQuetes = sections.findIndex((section) => section.querySelector('#souk-quetes-titre'));
+    const rangRayons = sections.findIndex((section) => section.querySelector('#souk-rayons-titre'));
+    assert.equal(rangRayons, rangQuetes + 1,
+      'les rayons suivent immédiatement les quêtes du jour');
+    const cartesSerie = [...document.querySelectorAll('[data-souk-semaine-jour]')];
+    assert.equal(cartesSerie.length, 7, 'la série se lit en sept petites cartes');
+    const serie = Number(donnee('[data-souk-semaine]', 'soukSerie'));
+    assert.ok(serie >= 1, 'le premier jour a ouvert la série');
+    assert.equal(cartesSerie.filter((carte) => carte.dataset.soukSemaineJourEtat === 'atteint').length,
+      Math.min(serie, 7), 'autant de cachets que de jours tenus');
+    assert.equal(cartesSerie.filter((carte) => carte.classList.contains('is-aujourdhui')).length, 1,
+      'un seul jour est marqué comme celui du joueur');
+    assert.ok(noeud('[data-souk-semaine-jour="1"] .rpg-souk__jour-sceau'),
+      'le premier jour porte son cachet');
+    assert.ok(noeud('[data-souk-semaine-jour="7"] .rpg-souk__jour-gain .rpg-credit'),
+      'la septième carte annonce le Cachet, pièce comprise');
+    for (const carte of cartesSerie) {
+      assert.match(carte.getAttribute('aria-label') ?? '', /^Jour [1-7] sur 7/,
+        'chaque carte se nomme pour qui ne la voit pas');
+    }
+
     // ── La pièce du crédit : frappée, décorative, et elle respire ───────────
     const piece = noeud('[data-souk-solde] .rpg-credit');
     assert.ok(piece, 'le solde est frappé de la pièce, plus écrit d’un losange de texte');
