@@ -1672,7 +1672,7 @@ function useLumiereCartes() {
   }, []);
 }
 
-function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null }) {
+function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null }) {
   const faceRef = useRef(null);
   const carteId = carte?.id ?? null;
 
@@ -1841,7 +1841,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   // montre plus l'illustration de la carte : seul l'encadré de texte (coût,
   // mots-clés, effets) s'affiche. La fiche du catalogue, l'annonce et les
   // présentations centrées (magie jouée, effet activé) gardent leur face.
-  const estApercuRapide = (variante === '' || variante === 'appui-long') && !spellPlayed;
+  const estApercuRapide = variante === '' || variante === 'appui-long';
   const face = (
     <div
       ref={faceRef}
@@ -1864,7 +1864,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   return (
     <aside
       ref={panelRef}
-      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}${interactif ? ' is-interactif' : ''}${estApercuRapide ? ' rpg-hover-card-preview--texte-seul' : ''}`}
+      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${interactif ? ' is-interactif' : ''}${estApercuRapide ? ' rpg-hover-card-preview--texte-seul' : ''}`}
       onPointerEnter={onPointerEnter ?? undefined}
       onPointerLeave={onPointerLeave ?? undefined}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
@@ -4161,7 +4161,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [surZoneDepot, setSurZoneDepot] = useState(false);
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
   const [sortJoue, setSortJoue] = useState(null);
-  const [apercuMagie, setApercuMagie] = useState(null);
   // Piles de cartes homonymes (tactile) : les groupes que le joueur a dépliés.
   const [pilesDeployees, setPilesDeployees] = useState(() => new Set());
   // Bandeau d'ouverture de tour : `{ camp, token }` tant qu'il est affiché,
@@ -4175,7 +4174,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const clicApresGlisserRef = useRef(false);
   const annulationRef = useRef(null);
   const timerSortRef = useRef(null);
-  const timerApercuMagieRef = useRef(null);
   const timersRef = useRef([]);
   // Chaque partie a son numéro. Les minuteries du tour du sorcier (annonces,
   // attaque, animations) le portent : une partie relancée — ou quittée puis
@@ -4200,7 +4198,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     timersRef.current.forEach((id) => window.clearTimeout(id));
     animationsVisuellesTimersRef.current.forEach((id) => window.clearTimeout(id));
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
-    if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerImpactRef.current) window.clearTimeout(timerImpactRef.current);
   }, []);
@@ -4445,7 +4442,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setSurZoneDepot(false);
     setAnnulationDisponible(false);
     setSortJoue(null);
-    setApercuMagie(null);
     setAnimationsEntites({});
     setCartesEnDestruction([]);
     setCarteEnVol(null);
@@ -4462,8 +4458,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     animationsVisuellesTimersRef.current = [];
     annulationRef.current = null;
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
-    if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
-    timerApercuMagieRef.current = null;
     carteGlisseeRef.current = null;
     clicApresGlisserRef.current = false;
     jouerSfx('apparition');
@@ -4540,13 +4534,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const plateauDecoupe = plateauAdverse.id !== plateau.id;
   const decor3dVisible = decor3dActif && !plateauDecoupe;
   // Le plateau passe au flou léger derrière un aperçu qui pose un voile sombre :
-  // la fiche ouverte d'un appui long, d'un clic au catalogue ou d'un clic droit,
-  // et le sort qui vient d'être joué. Rien au survol de la souris : cet aperçu-là
-  // s'ouvre et se referme au passage du curseur, la table resterait à clignoter
-  // au moindre effleurement ; et l'effet activé porte déjà son propre voile
-  // flouté (`.rpg-auto-preview`). La valeur nomme la surface, pour que la feuille
-  // de style et les contrôles sachent de quel aperçu il s'agit.
-  const apercuCarte = (apercuAppui || apercuCatalogue) ? 'fiche' : apercuMagie ? 'magie' : null;
+  // la fiche ouverte d'un appui long, d'un clic au catalogue ou d'un clic droit.
+  // Rien au survol de la souris : cet aperçu-là s'ouvre et se referme au passage
+  // du curseur, la table resterait à clignoter au moindre effleurement ; et
+  // l'effet activé porte déjà son propre voile flouté (`.rpg-auto-preview`).
+  // Le sort joué n'est plus un aperçu : sa fiche compacte se glisse au-dessus
+  // des piles sans voiler la table, qui reste donc nette.
+  const apercuCarte = (apercuAppui || apercuCatalogue) ? 'fiche' : null;
   // Bandeau d'ouverture de tour : chaque bascule de `duel.tour` — le tour du
   // joueur rendu, celui du sorcier rendu, une partie neuve, une reprise —
   // annonce 1,5 s en grand le camp qui prend la main, puis s'efface.
@@ -5102,13 +5096,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     actionVolRef.current = null;
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
-    if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
     // Aucun état de geste ne survit au départ pour la lecture : un vol de carte
     // ou un glisser laissé en arrière rendrait la table `is-card-flight-active`
     // — donc muette (`pointer-events: none`) — au retour du duel.
     timerVolRef.current = null;
     timerSortRef.current = null;
-    timerApercuMagieRef.current = null;
     setCarteEnVol(null);
     carteOrigineVolRef.current = null;
     setCarteGlissee(null);
@@ -5942,15 +5934,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       jouerSfx(son);
     }
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
-    if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
     setSortJoue({ carteId: carte.id, cible, contre, vague });
-    if (!(tutorielActif && etapeTutorielIdRef.current)) {
-      setApercuMagie(carte.id);
-      timerApercuMagieRef.current = window.setTimeout(() => {
-        timerApercuMagieRef.current = null;
-        setApercuMagie(null);
-      }, 1800);
-    }
+    // Le sort joué ne s'ouvre plus en aperçu plein cadre : sa fiche compacte
+    // (`.rpg-spell-played`) se pose juste au-dessus du paquet et du cimetière,
+    // la carte en petit et son texte à côté — la table reste lisible.
     timerSortRef.current = window.setTimeout(() => {
       timerSortRef.current = null;
       setSortJoue(null);
@@ -8064,6 +8051,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         )}
 
         <div className="rpg-card-piles rpg-card-piles--player" aria-label="Vos zones de cartes">
+          {/* La magie qui vient d'être jouée se lit ici, juste au-dessus du
+              cimetière et du paquet : petite carte à gauche, texte à côté. */}
+          {sortJoue && <SpellAnnouncement annonce={sortJoue} />}
           <CardPile
             count={duel.joueur.cimetiere.length}
             label="Cimetière"
@@ -8500,8 +8490,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             />
           </div>
         )}
-        {sortJoue && <SpellAnnouncement annonce={sortJoue} />}
-        {apercuSurvol && !apercuMagie && !mulligan && !apercuAnnonceOuvert && (
+        {apercuSurvol && !mulligan && !apercuAnnonceOuvert && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             armes={cartesDesIds(apercuSurvol.armesIds)}
@@ -8511,16 +8500,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onPointerEnter={entrerApercuSurvol}
             onPointerLeave={sortirApercuSurvol}
           />
-        )}
-        {apercuMagie && (
-          <div className="rpg-spell-preview-layer">
-            <div className="rpg-preview-backdrop rpg-preview-backdrop--magie" aria-hidden="true" />
-            <HoverCardPreview
-              carte={cardById(apercuMagie)}
-              style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
-              spellPlayed
-            />
-          </div>
         )}
 
         {confirmationSort && (

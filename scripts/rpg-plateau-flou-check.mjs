@@ -25,14 +25,15 @@ assert.match(battleCss, /\.card-table\[data-apercu-carte\][^{]*\.rpg-table-3d[^{
   'le décor 3D de la table passe au flou avec la peinture');
 assert.match(battleCss, /\.card-table\[data-apercu-carte\]\.card-table--plateau-cour-de-l-empereur::before\s*\{[^}]*filter:\s*blur\(var\(--rpg-plateau-flou,\s*3px\)\);/s,
   'la Cour de l’Empereur, qui double sa peinture en ::before, se floute comme les autres plateaux');
-// Le voile sombre de la fiche et celui du sort joué ne sont jamais floutés : le
-// flou ne touche que le décor qu'ils couvrent.
-assert.doesNotMatch(battleCss, /\.card-table\[data-apercu-carte\][^{]*rpg-preview-backdrop/s,
-  'le voile de l’aperçu n’est jamais flouté : c’est lui qui couvre le plateau');
+// Le voile sombre de la fiche n'est jamais flouté : le flou ne touche que le
+// décor qu'il couvre. Une magie jouée n'a plus de voile ni d'aperçu : sa fiche
+// compacte se pose au-dessus des piles sans toucher à la netteté de la table.
+assert.equal(/rpg-preview-backdrop/.test(battleCss), false,
+  'plus aucun voile d’aperçu de sort dans la feuille');
 
 // ── La page : quand l'aperçu est ouvert, la table le dit ─────────────────────
-assert.match(battlePage, /const apercuCarte = \(apercuAppui \|\| apercuCatalogue\) \? 'fiche' : apercuMagie \? 'magie' : null;/,
-  'seuls les aperçus à voile sombre — la fiche et le sort joué — floutent le plateau, pas l’aperçu furtif du survol');
+assert.match(battlePage, /const apercuCarte = \(apercuAppui \|\| apercuCatalogue\) \? 'fiche' : null;/,
+  'seule la fiche — le seul aperçu à voile sombre — floute le plateau, pas l’aperçu furtif du survol ni la fiche de sort');
 assert.match(battlePage, /data-apercu-carte=\{apercuCarte \?\? undefined\}/,
   'la table porte l’aperçu ouvert, pour que la feuille de style sache flouter le plateau');
 assert.match(battlePage, /<span className="rpg-plateau-fond" aria-hidden="true" \/>/,
