@@ -47,7 +47,7 @@ meilleures raisons d'attaquer.
 | # | Carte | Rareté | Coût | Bonus | L'idée |
 |---|---|---|---|---|---|
 | 1 | Sandales de Tislit | commune | 1 | +0/+1 | Rapidité |
-| 2 | Cuirasse de sel | commune | 2 | +0/+3 | Esquive 1 |
+| 2 | Cuirasse de sel | commune | 2 | +0/+3 | Esquive (25 %) |
 | 3 | Javelot du beffroi | commune | 2 | +2/+0 | Coup rapide |
 | 4 | Licou du chien de sable | inhabituelle | 1 | **+1/−1** | Quand le porteur meurt : piochez 2 |
 | 5 | Boussole du Hoggar | inhabituelle | 2 | +1/+1 | Attaque → lit le dessus du deck, garde les terrains |
@@ -77,15 +77,17 @@ arrivée de Tarek.
 
 ### 2. Cuirasse de sel — commune — 2
 
-> **Arme — Armure.** Le porteur gagne +0/+3 et **Esquive 1**.
+> **Arme — Armure.** Le porteur gagne +0/+3 et **Esquive**.
 >
 > *« Le sel tient mieux que le fer quand le fer chauffe. »*
 
-`donne: { esquive: 1 }`. Aucune brique moteur (`attacherArme` additionne déjà
-l'Esquive). La première **armure** Sable : le pendant défensif de la Takouba des
-pistes, qui rend une Amani des ksour (2/5) ou une Dune marchante (2/5) quasi
-intuable au combat — et donne enfin une cible d'équipement aux créatures à
-forte défense du Sable, qui n'avaient rien à porter.
+`donne: { esquive: true }`. Aucune brique moteur (`attacherArme` pose déjà le
+mot-clé). **Esquive** donne **25 % de chance d'esquiver une attaque** : le coup
+ne porte pas du tout ; les magies et les capacités, elles, ne s'esquivent
+jamais. La première **armure** Sable : le pendant défensif de la Takouba des
+pistes, qui rend une Amani des ksour (2/5) ou une Dune marchante (2/5) très
+difficile à tuer au combat — et donne enfin une cible d'équipement aux créatures
+à forte défense du Sable, qui n'avaient rien à porter.
 
 ### 3. Javelot du beffroi — commune — 2
 
@@ -312,7 +314,7 @@ qui se joue la table vide sans rien désigner.
 
 - **Collier du fennec** (rare, 3, +1/+1) — *Basilisk Collar* : **Contact
   mortel** (toute blessure infligée par le porteur détruit la créature
-  blessée) + Esquive 1. Mécanique nouvelle, énorme sur une créature
+  blessée) + Esquive (25 %). Mécanique nouvelle, énorme sur une créature
   Infiltrable ; à réserver pour une extension.
 - **Cape de la dune** (inhabituelle, 2, +1/+1) — *Trailblazer's Boots* : le
   porteur gagne Infiltration **tant que vous contrôlez un Désert**. La

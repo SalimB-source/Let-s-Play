@@ -21,6 +21,7 @@ import {
   rpgMulligan,
   rpgMulliganSorcier,
   rpgNouveauDuel,
+  rpgReglerHasard,
   rpgPeutMulligan,
   rpgNombreDestructions,
   rpgPeutBloquerAttaquant,
@@ -1477,11 +1478,14 @@ test('Sahir : les boucliers préservent les bloqueurs pour le partage', () => {
   sahir.ready = true;
   bloqueurs[0].bouclier = 2;
   const pvEsquive = bloqueurs[0].pv;
+  // Jet d'esquive manqué (au-dessus du seuil de 25 %) : l'Onna-musha encaisse
+  // la blessure normale, que le test veut voir passer.
+  rpgReglerHasard(duel, () => 0.9);
   const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], { [sahir.id]: bloqueurs.map(b => b.id) });
   assert.equal(res.ok, true);
   assert.deepEqual(res.resume.repartitions[sahir.id], Object.fromEntries(bloqueurs.map(b => [b.id, 1])));
   assert.equal(bloqueurs[0].bouclier, 0);
-  assert.equal(bloqueurs[0].pv, pvEsquive, 'le bouclier absorbe la capacité et l’esquive la blessure normale');
+  assert.equal(bloqueurs[0].pv, pvEsquive - 1, 'le bouclier absorbe la capacité, la blessure normale passe');
   assert.equal(bloqueurs[1].pv, 3);
 });
 
@@ -2149,52 +2153,57 @@ test('le Djinn coûte 5, est 3/3 et détruit au hasard un terrain adverse à son
   assert.match(duel.log.at(-1), /Djinn du souk détruit le terrain adverse Désert/);
 });
 
-test('Esquive 1 réduit les attaques et les magies, mais pas les capacités d’arrivée', () => {
+test('Esquive : 25 % des attaques sont annulées entièrement — jamais une magie', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'onna-musha-des-cendres');
   const esquiveuse = rpgJouerCreature(duel, 'joueur', 'onna-musha-des-cendres').entite;
-  donner(duel, 'sorcier', 'porteuse-de-cruches');
-  const porteuse = rpgJouerCreature(duel, 'sorcier', 'porteuse-de-cruches').entite;
+  donner(duel, 'sorcier', 'ashigaru-des-braises'); // 1/1 : un point d’attaque
+  const porteuse = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
   porteuse.ready = true;
+  assert.equal(esquiveuse.esquive, true, 'l’Onna-musha imprime Esquive, sans chiffre');
 
+  // Jet forcé sous le seuil : l’attaque ne porte pas du tout.
+  rpgReglerHasard(duel, () => 0.1);
   const combat = rpgLancerAttaque(duel, 'sorcier', [porteuse.id], { [porteuse.id]: [esquiveuse.id] });
   assert.equal(combat.ok, true);
-  assert.equal(esquiveuse.pv, 3, 'Esquive 1 annule le point d’attaque de la Porteuse');
-  assert.ok(duel.joueur.creatures.includes(esquiveuse), 'l’Onna-musha survit au dégât évité');
+  assert.equal(esquiveuse.pv, 3, 'l’attaque esquivée est annulée en entier'); 
+  assert.ok(duel.log.some((ligne) => /esquive l’attaque/.test(ligne)), 'le journal nomme l’esquive');
+  assert.ok(duel.joueur.creatures.includes(esquiveuse), 'l’Onna-musha survit sans une égratignure');
   assert.ok(!duel.sorcier.creatures.includes(porteuse), 'elle riposte normalement au bloqueur');
 
+  // Les magies ne s’esquivent jamais : les 3 dégâts du Trait de braise passent.
   duel.tour = 'sorcier';
   donner(duel, 'sorcier', 'trait-de-braise');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', esquiveuse.id).ok, true);
-  assert.equal(esquiveuse.pv, 1, 'Esquive 1 retranche 1 aux 3 dégâts de la magie');
-
-  donner(duel, 'sorcier', 'braisier-du-souk');
-  assert.equal(rpgJouerCreature(duel, 'sorcier', 'braisier-du-souk').ok, true);
-  assert.equal(esquiveuse.pv, 0,
-    'un dégât d’arrivée n’est ni une attaque ni une magie : pas d’esquive, le point passe et l’achève');
+  assert.equal(esquiveuse.pv, 0, 'une magie n’est pas une attaque : elle frappe toujours');
 });
 
-test('Esquive 1 se calcule séparément pour chacun des dégâts d’un combat', () => {
+test('Esquive : le jet se tente pour chaque attaquant d’un combat', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'onna-musha-des-cendres');
   const esquiveuse = rpgJouerCreature(duel, 'joueur', 'onna-musha-des-cendres').entite;
   esquiveuse.ready = true;
-  donner(duel, 'sorcier', 'porteuse-de-cruches');
-  donner(duel, 'sorcier', 'porteuse-de-cruches');
-  const premierePorteuse = rpgJouerCreature(duel, 'sorcier', 'porteuse-de-cruches').entite;
-  const secondePorteuse = rpgJouerCreature(duel, 'sorcier', 'porteuse-de-cruches').entite;
+  donner(duel, 'sorcier', 'ashigaru-des-braises');
+  donner(duel, 'sorcier', 'ashigaru-des-braises');
+  const premierePorteuse = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
+  const secondePorteuse = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
 
+  // Premier coup esquivé, second coup encaissé : deux jets indépendants.
+  const jets = [0.1, 0.9];
+  rpgReglerHasard(duel, () => (jets.length ? jets.shift() : 0.9));
   const combat = rpgLancerAttaque(duel, 'joueur', [esquiveuse.id], {
     [esquiveuse.id]: [premierePorteuse.id, secondePorteuse.id],
   });
   assert.equal(combat.ok, true);
-  assert.equal(esquiveuse.pv, 3,
-    'les deux bloqueuses infligent 1 chacune, toutes deux annulées séparément par Esquive 1');
-  assert.ok(duel.joueur.creatures.includes(esquiveuse), 'l’Onna-musha ne prend aucun dégât cumulé du combat');
+  assert.equal(esquiveuse.pv, 2,
+    'un coup sur deux est esquivé : l’Ashigaru non esquivé passe son point');
+  assert.equal(duel.log.filter((ligne) => /esquive l’attaque/.test(ligne)).length, 1,
+    'un seul des deux coups est annulé');
+  assert.ok(duel.joueur.creatures.includes(esquiveuse), 'l’Onna-musha tient la table');
 });
 
 test('Rebond : à son arrivée, le Sonneur fêlé renvoie la créature ciblée dans la main de son propriétaire', () => {
@@ -2926,7 +2935,7 @@ test('Verglas : 1 dégât et gel de masse sur la table adverse', () => {
   donnerMana(duel, 'joueur', 8);
   donnerMana(duel, 'sorcier', 8);
   donner(duel, 'sorcier', 'colosse-de-sel'); // 6/6
-  donner(duel, 'sorcier', 'onna-musha-des-cendres'); // 3/3, Esquive 1
+  donner(duel, 'sorcier', 'onna-musha-des-cendres'); // 3/3, Esquive
   const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
   const fennec = rpgJouerCreature(duel, 'sorcier', 'onna-musha-des-cendres').entite;
   colosse.ready = true;
@@ -2934,7 +2943,7 @@ test('Verglas : 1 dégât et gel de masse sur la table adverse', () => {
   donner(duel, 'joueur', 'verglas');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'verglas').ok, true);
   assert.equal(colosse.pv, 5, 'le Colosse prend le dégât de grêle');
-  assert.equal(fennec.pv, 3, 'l’Esquive de l’Onna-musha absorbe le dégât de magie');
+  assert.equal(fennec.pv, 2, 'l’Esquive ne couvre pas les magies : le dégât de grêle passe');
   assert.ok(colosse.gelToursRestants > 0 && fennec.gelToursRestants > 0,
     'toute la table adverse est gelée');
   assert.equal(rpgLancerAttaque(duel, 'sorcier', [colosse.id, fennec.id], {}).raison, 'pas-pret',

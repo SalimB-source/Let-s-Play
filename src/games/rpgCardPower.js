@@ -196,7 +196,7 @@ export function valeurCarte(carte) {
     let valeur = 1.3 * (carte.bonus?.atk ?? 0) + (carte.bonus?.def ?? 0);
     if (carte.donne?.envol) valeur += 2.5;
     if (carte.donne?.infiltration) valeur += 2.5;
-    if (carte.donne?.esquive) valeur += 1.5 * carte.donne.esquive;
+    if (carte.donne?.esquive) valeur += 1.5;
     if (carte.donne?.furie) valeur += 1 + 0.7 * carte.donne.furie;
     if (carte.donne?.immunite) valeur += 2;
     // Une protection de couleur permanente (la Jitte d'Amayas) : ni ciblage ni
@@ -239,7 +239,7 @@ export function valeurCarte(carte) {
   if (carte.infiltration) valeur += 2.5;
   if (carte.coupRapide) valeur += 2;
   if (carte.rapidite) valeur += 0.5;
-  if (carte.esquive) valeur += 1.5 * carte.esquive;
+  if (carte.esquive) valeur += 1.5;
   if (carte.protection) valeur += 1.5;
   if (carte.furie) valeur += 1 + 0.7 * carte.furie;
   if (carte.resonance) valeur += 2 + 2 * carte.resonance;

@@ -7883,7 +7883,7 @@ Le volet JSDOM de `scripts/rpg-battle-ui-check.mjs` casse toujours **avant** ces
 assertions, à HEAD comme ici, sur des données de cartes plus récentes que le
 harnais (`le catalogue affiche les nouvelles statistiques 3/1 de Fériel` — le
 catalogue donne 4/3 — puis `le coût de quatre de l'Anqa`, qui en affiche 5),
-comme `scripts/rpg-preview-check.mjs` (`Esquive 1` attendue sur le Butin) et
+comme `scripts/rpg-preview-check.mjs` (`Esquive` attendue sur le Butin) et
 `scripts/rpg-mulligan-check.mjs` : `git stash` vérifié, ces trois-là échouent sur
 l'arbre propre. Les quinze assertions du volet « foil » ont donc été rejouées
 dans un harnais temporaire qui lit le même fichier : **15/15**. Un passage de

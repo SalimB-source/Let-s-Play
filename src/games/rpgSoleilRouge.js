@@ -97,7 +97,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'onna-musha-des-cendres', name: 'Onna-musha des cendres',
     cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
-    esquive: 1, text: 'Esquive 1 — Réduit de 1 les dégâts reçus de chaque attaque ou magie (minimum 0).',
+    esquive: true,
+    text: 'Esquive — 25 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({

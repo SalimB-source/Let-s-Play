@@ -110,11 +110,11 @@ test('les dix créatures suivent Honneur par rareté, sans anciens effets disper
     // Deux arrivées dans le set : l'exil de Susanoo et les deux Samouraïs du
     // Daimyō. La bannière du Daimyō est un déclenché d'attaque, pas un des
     // « anciens effets dispersés » que le set a retirés (ni combat, ni esquive
-    // sauf l'Esquive 1 assumée de l'Onna-musha).
+    // sauf l'Esquive assumée de l'Onna-musha).
     if (!['susanoo', 'daimyo-du-soleil-rouge'].includes(carte.id)) assert.equal(carte.arrivee, undefined);
     if (carte.id !== 'orochi') assert.equal(carte.destruction, undefined);
     assert.equal(carte.combat, undefined);
-    assert.equal(carte.esquive, carte.id === 'onna-musha-des-cendres' ? 1 : undefined, carte.id);
+    assert.equal(carte.esquive, carte.id === 'onna-musha-des-cendres' ? true : undefined, carte.id);
   }
   assert.equal(cardById('tengu-du-mont-ardent').resonance, 1);
   assert.equal(cardById('kagutsuchi-flamme-originelle').resonance, 1);
@@ -241,10 +241,10 @@ test('les dégâts d’Honneur respectent bouclier et protection, mais pas Esqui
   const mort2 = jouer(autre, 'joueur', 'samourai-du-torii');
   const cible = jouer(autre, 'sorcier', 'colosse-de-sel');
   cible.bouclier = 1;
-  cible.esquive = 3;
+  cible.esquive = true;
   rpgBlesserCreature(autre, 'joueur', mort2.id, 20, 'eau');
   assert.equal(cible.bouclier, 0);
-  assert.equal(cible.def, 5, 'capacité : Esquive n’intervient pas (6 − 1 du reste)');
+  assert.equal(cible.def, 5, 'capacité : Esquive ne se déclenche pas (6 − 1 du reste)');
 });
 
 test('Honneur peut provoquer une chaîne de morts sans se déclencher deux fois', () => {

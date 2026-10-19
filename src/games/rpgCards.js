@@ -1800,8 +1800,8 @@ export const RPG_ARME_CARDS = [
     cost: 2,
     rarity: 'commune',
     bonus: { atk: 0, def: 3 },
-    donne: { esquive: 1 },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive 1 (réduit de 1 les dégâts reçus de chaque attaque ou magie).',
+    donne: { esquive: true },
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque).',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {

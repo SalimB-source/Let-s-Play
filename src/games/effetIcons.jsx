@@ -202,7 +202,7 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
     if (entite.envol && !carte?.envol) ajouter('envol', 'Envol');
     if (entite.coupRapide && !carte?.coupRapide) ajouter('coupRapide', 'Coup rapide');
     if (entite.rapidite && !carte?.rapidite) ajouter('rapidite', 'Rapidité');
-    if (entite.esquive) ajouter('esquive', 'Esquive', Number(entite.esquive) || null);
+    if (entite.esquive) ajouter('esquive', 'Esquive', null);
     if (entite.bouclier) ajouter('bouclier', 'Bouclier', Number(entite.bouclier) || null);
     if (entite.protection?.toursRestants > 0 || entite.protection?.permanente) {
       ajouter('protection', 'Protection');

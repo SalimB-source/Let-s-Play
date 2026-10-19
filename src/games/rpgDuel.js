@@ -65,6 +65,13 @@ export const RPG_PV_SORCIER_BASE = 25;
 export const RPG_PV_SORCIER_PAR_PUISSANCE = 0;
 export const RPG_PV_PLAFOND = null;
 export const RPG_MAIN_DEPART = 5;
+/**
+ * Esquive : une créature qui l'imprime (ou dont l'arme la donne) échappe à
+ * **25 % des attaques** — l'attaque entière est annulée, pas diminuée. Les
+ * magies et les capacités ne sont jamais esquivées. Le tirage vient du hasard
+ * du duel (`hasardParDuel`), donc une même partie reste reproductible.
+ */
+export const RPG_ESQUIVE_CHANCE = 0.25;
 export const RPG_COULEURS = RPG_ELEMENTS;
 
 /**
@@ -237,6 +244,15 @@ function melangerDeck(deck, rng = Math.random) {
     [d[i], d[j]] = [d[j], d[i]];
   }
   return d;
+}
+
+/**
+ * Change le générateur d'un duel déjà créé — les tests forcent ainsi une
+ * esquive réussie ou manquée sans dépendre du hasard.
+ */
+export function rpgReglerHasard(duel, rng = Math.random) {
+  hasardParDuel.set(duel, typeof rng === 'function' ? rng : Math.random);
+  return duel;
 }
 
 /**
@@ -961,7 +977,7 @@ function creerEntiteCreature(carte) {
     auraSableBonus: 0,
     auraAmaniBonus: 0,
     boualemContresortDisponible: carte.id === 'boualem',
-    esquive: Math.max(0, carte.esquive ?? 0),
+    esquive: Boolean(carte.esquive),
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
     envol: Boolean(carte.envol),
@@ -1036,7 +1052,7 @@ function attacherArme(duel, cote, entite, carteArme) {
   entite.pvMax = (entite.pvMax ?? entite.def) + (carteArme.bonus?.def ?? 0);
   entite.def += carteArme.bonus?.def ?? 0;
   entite.pv += carteArme.bonus?.def ?? 0;
-  if (carteArme.donne?.esquive) entite.esquive = (entite.esquive ?? 0) + carteArme.donne.esquive;
+  if (carteArme.donne?.esquive) entite.esquive = true;
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
@@ -1062,7 +1078,7 @@ function retirerArme(duel, cote, entite) {
   entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) - (carteArme.bonus?.def ?? 0));
   entite.def = Math.max(1, entite.def - (carteArme.bonus?.def ?? 0));
   entite.pv = Math.max(1, Math.min(entite.pv, entite.pvMax));
-  if (carteArme.donne?.esquive) entite.esquive = Math.max(0, (entite.esquive ?? 0) - carteArme.donne.esquive);
+  if (carteArme.donne?.esquive) entite.esquive = Boolean(duelCardById(entite.carteId)?.esquive);
   if (carteArme.donne?.envol) entite.envol = Boolean(duelCardById(entite.carteId)?.envol);
   if (carteArme.donne?.infiltration) entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
     || Boolean(entite.infiltrationTour);
@@ -1253,6 +1269,17 @@ function declencherHonneur(duel, cote, entite) {
   rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite');
 }
 
+/**
+ * L'Esquive se tente **une fois par attaque** : 25 % de chance que le coup ne
+ * porte pas du tout. Les magies et les capacités ne sont pas concernées — le
+ * mot-clé dit « une attaque », et la carte le dit aussi.
+ */
+function esquiveAttaque(duel, entite, sourceType) {
+  if (sourceType !== 'attaque' || !entite?.esquive) return false;
+  const rng = hasardParDuel.get(duel) ?? Math.random;
+  return rng() < RPG_ESQUIVE_CHANCE;
+}
+
 /** Applique les blessures d’un effet de combat simultanément avant de résoudre
  *  les capacités de destruction des créatures. */
 function appliquerDegatsDeCombatSimultanes(duel, coups) {
@@ -1270,12 +1297,12 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       entite.bouclierLumiere = false;
       continue;
     }
+    if (esquiveAttaque(duel, entite, coup.sourceType)) {
+      duel.log.push(`${entite.name} esquive l’attaque.`);
+      continue;
+    }
     const degats = Math.max(0, Number(coup.amount) || 0);
-    const esquive = coup.sourceType === 'attaque' || coup.sourceType === 'magie'
-      ? Math.min(degats, Math.max(0, entite.esquive ?? 0))
-      : 0;
-    const apresEsquive = degats - esquive;
-    if (apresEsquive <= 0) continue;
+    if (degats <= 0) continue;
     const cle = `${coup.cote}:${entite.id}`;
     const blessure = blessures.get(cle) ?? {
       cote: coup.cote,
@@ -1283,7 +1310,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       montant: 0,
       sourceElements: [],
     };
-    blessure.montant += apresEsquive;
+    blessure.montant += degats;
     blessure.sourceElements.push(...normaliserCouleurs(coup.sourceElement));
     blessures.set(cle, blessure);
   }
@@ -2518,11 +2545,11 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
     entite.bouclierLumiere = false;
     return { ok: true, recus: 0, absorbes: 0, bouclierLumiere: true };
   }
-  const degats = Math.max(0, amount);
-  const esquive = sourceType === 'attaque' || sourceType === 'magie'
-    ? Math.min(degats, Math.max(0, entite.esquive ?? 0))
-    : 0;
-  const apresEsquive = degats - esquive;
+  if (esquiveAttaque(duel, entite, sourceType)) {
+    duel.log.push(`${entite.name} esquive l’attaque.`);
+    return { ok: true, recus: 0, absorbes: 0, esquive: true };
+  }
+  const apresEsquive = Math.max(0, amount);
   const absorbes = Math.min(entite.bouclier ?? 0, apresEsquive);
   entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
   const recus = apresEsquive - absorbes;
@@ -2547,7 +2574,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
-  return { ok: true, recus, absorbes, esquives: esquive };
+  return { ok: true, recus, absorbes, esquive: false };
 }
 
 /**
