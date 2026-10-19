@@ -88,7 +88,7 @@ assert.match(page, /const annoncerMagie = \(carte, cible, \{ contre = false, vag
 assert.match(page, /const annoncerMagieSorcier = \(carte, cible, options = \{\}\) => \{\s*if \(!carte\) return;\s*annoncerMagie\(carte, cible, \{ \.\.\.options, camp: 'sorcier' \}\);/s,
   'elle passe par la même annonce, avec le camp du sorcier');
 assert.match(page, /<div className="rpg-card-piles rpg-card-piles--opponent" aria-label="Zones du sorcier">\s*\{[^}]*\}\s*\{sortJoueSorcier && <SpellAnnouncement annonce=\{sortJoueSorcier\} camp="sorcier" \/>\}/s,
-  'elle se pose dans SES piles : au-dessus de son cimetière et de son paquet');
+  'elle se pose dans SES piles : sous son cimetière et son paquet');
 
 // Les trois moments où le sorcier lance un sort.
 assert.match(page, /const reponse = rpgSorcierMagieRapide\(duel, rng\);[\s\S]{0,700}?annoncerMagieSorcier\(carte, describeAnnouncedMagicTarget\(/,
@@ -102,20 +102,22 @@ assert.match(page, /annoncerMagie\(carte, cibleDecrite, \{ vague: true, camp: la
   'une seconde vague se pose chez son lanceur, pas chez vous');
 
 // La feuille : un anneau rouge, et une place qui ne se rogne pas.
-assert.match(css, /\.rpg-spell-played--sorcier\s*\{[^}]*right:\s*0;[^}]*left:\s*auto;[^}]*border-color:\s*rgba\(255, 118, 92, \.92\);/s,
-  'la fiche du sorcier s’aligne à droite de ses piles et prend un anneau rouge');
+assert.match(css, /\.rpg-spell-played--sorcier\s*\{[^}]*top:\s*calc\(100% \+ 8px\);[^}]*right:\s*0;[^}]*bottom:\s*auto;[^}]*left:\s*auto;[^}]*border-color:\s*rgba\(255, 118, 92, \.92\);/s,
+  'la fiche du sorcier se glisse sous ses piles, entre son deck et le rail du tour, et prend un anneau rouge');
+assert.match(css, /\.rpg-spell-played--sorcier\s*\{[^}]*bottom:\s*auto;/s,
+  'elle ne remonte plus au-dessus de son paquet');
 assert.match(css, /\.rpg-spell-played--sorcier\s*\{[^}]*box-shadow:[^}]*rgba\(255, 84, 60, \.32\)/s,
   'la lueur qui l’accompagne est rouge elle aussi');
 assert.match(css, /\.rpg-spell-played--sorcier \.rpg-spell-played__art \{[^}]*border-color:\s*#ff7a60;/s,
   'la vignette de la carte est cerclée du même rouge');
 assert.match(css, /\.rpg-spell-played--sorcier \.rpg-spell-played__eyebrow \{ color:\s*#ff9d86; \}/,
   'le sur-titre prend la teinte du camp');
-assert.match(css, /@media \(max-height: 800px\) \{\s*\.rpg-spell-played--sorcier \{\s*top: 0;\s*right: calc\(100% \+ 10px\);\s*bottom: auto;\s*\}\s*\}/s,
-  'sur une table basse, elle passe à côté de ses piles plutôt que d’être rognée');
+assert.doesNotMatch(css, /@media \(max-height: 800px\) \{\s*\.rpg-spell-played--sorcier/s,
+  'aucune table basse ne renvoie la fiche au-dessus ou à côté de son deck : elle reste sous les piles');
 
 // Au doigt, rien ne masquait la fiche (elle n'est pas un aperçu de survol) :
 // la règle qui cachait les aperçus n'a plus d'exception à porter.
 assert.doesNotMatch(css, /@media \(pointer: coarse\)[\s\S]{0,4000}?rpg-spell-played\s*\{\s*display:/,
   'la fiche n’a pas besoin d’échapper au masquage des aperçus de survol');
 
-console.log('✓ Magie jouée : plus d’aperçu plein cadre ni de voile — la fiche compacte se pose juste au-dessus du cimetière et du paquet, petite carte à gauche et texte à droite, décorative et éphémère (3,6 s), sans jamais flouter la table ; le sorcier a la même, au-dessus de SES piles, cerclée de rouge');
+console.log('✓ Magie jouée : plus d’aperçu plein cadre ni de voile — la fiche compacte se pose juste au-dessus du cimetière et du paquet, petite carte à gauche et texte à droite, décorative et éphémère (3,6 s), sans jamais flouter la table ; le sorcier a la même, glissée sous SES piles entre son deck et le rail du tour, cerclée de rouge');
