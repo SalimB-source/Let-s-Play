@@ -70,6 +70,10 @@ test('le remboursement des doublons suit le barème, carte inconnue comprise', (
   assert.equal(creditsDeDoublons(undefined), 0);
   const trois = creditsDeDoublons(['tarek', 'tarek', 'cavalier-amazigh-du-desert']);
   assert.equal(trois, BAREME_DOUBLON.mythique * 2 + BAREME_DOUBLON.rare);
+  // Le barème est écrit noir sur blanc : un doublon adoucit la perte, il ne la
+  // paie jamais (la borne « un paquet de doublons reste déficitaire » vit dans
+  // `rpg-boosters.test.js`, avec le prix du paquet sous la main).
+  assert.deepEqual(BAREME_DOUBLON, { commune: 6, inhabituelle: 10, rare: 22, mythique: 60 });
   for (const [rarete, montant] of Object.entries(BAREME_DOUBLON)) {
     assert.ok(montant > 0, `le barème paie la ${rarete}`);
   }

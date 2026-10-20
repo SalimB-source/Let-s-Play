@@ -20,6 +20,7 @@ import {
   choisirCarteIA,
   furieGagnee,
   rpgProfilIA,
+  rpgDelaiReflexionIA,
   resultatBlocage,
   valeurEntite,
   RPG_NIVEAUX_IA,
@@ -221,6 +222,37 @@ test('les profils IA se normalisent et couvrent niveaux et styles', () => {
   assert.equal(casse.style, 'equilibre');
   assert.ok(rpgProfilIA({ niveau: 'recit' }).tauxErreur > 0);
   assert.equal(rpgProfilIA({ niveau: 'veilleur' }).prescience, true);
+  assert.equal(rpgProfilIA({ niveau: 'normale' }).profondeur, 2);
+  assert.equal(rpgProfilIA({ niveau: 'veilleur' }).profondeur, 3);
+  assert.ok(rpgProfilIA({ niveau: 'veilleur' }).largeur > rpgProfilIA({ niveau: 'normale' }).largeur);
+});
+
+test('le Veilleur réfléchit plus longtemps quand le plateau et sa main sont chargés', () => {
+  const duel = duelNu({ sorcierIA: { niveau: 'veilleur' } });
+  const delaiSimple = rpgDelaiReflexionIA(duel);
+  duel.sorcier.main.push('fennec-des-decombres', 'trait-de-braise');
+  duel.sorcier.creatures.push({ id: 'a', carteId: 'chien-du-guet', atk: 2, pv: 2, def: 2 });
+  duel.joueur.creatures.push({ id: 'b', carteId: 'dune-marchante', atk: 2, pv: 5, def: 5 });
+  assert.ok(rpgDelaiReflexionIA(duel) > delaiSimple);
+  const duelNormal = duelNu({ sorcierIA: { niveau: 'normale' } });
+  assert.ok(delaiSimple > rpgDelaiReflexionIA(duelNormal));
+});
+
+test('la recherche tactique simule ses coups sans modifier le duel réel', () => {
+  const duel = duelNu({ sorcierIA: { niveau: 'veilleur', style: 'equilibre' } });
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'fennec-des-decombres');
+  donner(duel, 'sorcier', 'trait-de-braise');
+  donner(duel, 'sorcier', 'dune-marchante');
+  donner(duel, 'joueur', 'chien-du-guet');
+  donnerMana(duel, 'joueur', 20);
+  rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  const avantRecherche = structuredClone(duel);
+
+  const coup = choisirCarteIA(duel, 'sorcier');
+  assert.ok(coup, 'le Veilleur trouve un coup jouable');
+  assert.deepEqual(duel, avantRecherche, 'les simulations n’altèrent ni la main ni le plateau réels');
 });
 
 test('le niveau Récit se trompe, la Normale joue le bon blocage', () => {

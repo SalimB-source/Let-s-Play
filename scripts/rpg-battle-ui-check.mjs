@@ -6,9 +6,9 @@ import { JSDOM } from 'jsdom';
 // Vérification d'interface du duel : rendu jsdom, aperçu instantané au survol,
 // aperçu au clic/sur magie, Rapidité, commandes, cadres par élément et bloqueurs.
 const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
-assert.match(mobileCss, /@supports \(height:\s*100svh\)\s*\{\s*\.rpg-battle--touch \.card-table\s*\{[^}]*--duel-card:\s*clamp\(48px, 17svh, 100px\);[^}]*--rpg-touch-hand:\s*clamp\(84px, 28svh, 146px\);/s,
-  'au doigt, la table et la main utilisent une hauteur stable, indépendante des barres du navigateur — plein écran ou non');
-assert.doesNotMatch(mobileCss, /\.rpg-battle--touch\.is-immersive \.card-table\s*\{[^}]*--duel-card:\s*clamp\(48px, 17svh/s,
+assert.match(mobileCss, /@supports \(height:\s*100svh\)\s*\{\s*\.rpg-battle--touch \.card-table\s*\{[^}]*--duel-card:\s*clamp\(44px, 15\.55svh, 104px\);/s,
+  'au doigt, la carte garde 15,55 % de la hauteur — la carte du PC (140 px sur 900) — sur une hauteur stable, indépendante des barres du navigateur');
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch\.is-immersive \.card-table\s*\{[^}]*--duel-card:\s*clamp\(44px, 15\.55svh/s,
   'l’échelle stable n’est plus réservée au plein écran immersif : la coque du duel est toujours une couche fixe plein viewport, et le plein écran natif peut se refermer en pleine partie');
 const previousEnv = process.env.NODE_ENV;
 await build({
@@ -1295,19 +1295,21 @@ assert.match(cardStacks, /export function groupEntitesParCarte\(entites = \[\]\)
 assert.match(cardStacks, /pile\.indices\.push\(index\);/,
   'chaque pile garde les index réels de la main : le jeu vise toujours un exemplaire précis');
 
-assert.match(mobileCss, /grid-template-columns:\s*calc\(clamp\(116px, 16vw, 190px\) \+ var\(--terrain-inset\)\) minmax\(0, 1fr\) var\(--rpg-touch-controls\);/,
-  'la colonne centrale du duel tactile est élargie : les deux rails latéraux rendent de la place');
-assert.match(mobileCss, /--rpg-touch-controls:\s*clamp\(176px, 23vw, 280px\);/,
-  'la colonne des commandes tactiles est resserrée, et le rail du tour s’y aligne');
+assert.match(mobileCss, /grid-template-columns:\s*var\(--rpg-touch-left\) minmax\(0, 1fr\) var\(--rpg-touch-controls\);/,
+  'la grille tactile reprend les trois colonnes du PC : identité et terrains à gauche, champs au centre, tour et commandes à droite');
+assert.match(mobileCss, /grid-template-areas:\s*"coin nav nav"\s*"enemy-mana enemy controls"\s*"mana allies controls"\s*"hand hand hand";/,
+  'la table au doigt suit la composition du PC : la navigation en haut, les plaques et leurs terrains à gauche, les deux champs au centre, la main sur toute la largeur');
+assert.match(mobileCss, /--rpg-touch-controls:\s*min\(calc\(var\(--duel-card\) \* 2\.47\), 23vw\);/,
+  'la colonne des commandes fait 2,47 cartes — la largeur du rail du PC (330 px pour une carte de 140), plafonnée à 23 % de la largeur — et le rail du tour s’y aligne');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \{[^}]*width:\s*var\(--rpg-touch-controls\);/s,
   'le rail du tour prend exactement la largeur de la colonne des commandes');
-assert.match(mobileCss, /--terrain-inset:\s*clamp\(44px, 8vw, 160px\);/,
-  'la marge qui tient les terrains hors du cadre illustré est conservée telle quelle');
-assert.match(mobileCss, /--duel-card:\s*clamp\(48px, 17dvh, 100px\);/,
-  'sans `svh`, les cartes gardent leur échelle fluide en repli, sans en montrer moins');
+assert.match(mobileCss, /--terrain-inset:\s*clamp\(24px, 4\.2vw, 160px\);/,
+  'la marge qui tient les terrains hors du cadre illustré suit le cadre peint (4,2 % de la largeur)');
+assert.match(mobileCss, /--duel-card:\s*clamp\(44px, 15\.55dvh, 104px\);/,
+  'sans `svh`, les cartes gardent la proportion du PC en repli, sans en montrer moins');
 assert.match(mobileCss, /@supports \(height:\s*100svh\)\s*\{\s*\.rpg-battle--touch \.card-table\s*\{[^}]*--duel-card:\s*clamp\(48px, 17svh, 100px\);[^}]*--rpg-touch-hand:\s*clamp\(84px, 28svh, 146px\);/s,
   'au doigt, la table et la main utilisent une hauteur stable, indépendante des barres du navigateur — plein écran ou non');
-assert.match(mobileCss, /--rpg-field-gap:\s*max\(8px, calc\(var\(--duel-card\) \* \.22\)\);/,
+assert.match(mobileCss, /--rpg-field-gap:\s*max\(6px, calc\(var\(--duel-card\) \* \.16\)\);/,
   'les gouttières des lignes de jeu sont resserrées pour montrer plus de cartes');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*padding:\s*4px max\(8px, calc\(var\(--duel-card\) \* \.12\)\); gap:\s*var\(--rpg-field-gap\); overflow:\s*visible;/s,
   'les champs de bataille tactiles ne recadrent plus leurs cartes : aucune zone de défilement');
@@ -1340,20 +1342,20 @@ assert.match(battleCss, /\.rpg-hand-dock \{[^}]*padding:\s*8px 0 5px;/s,
 assert.match(battleCss, /\.rpg-hand \{[^}]*max-width:\s*100vw;[^}]*padding:\s*46px 0 50px;/s,
   'la main occupe toute la largeur de la table, sans marge ni recadrage');
 // Le rail du tour, au doigt : même colonne centrale, à l'échelle du téléphone.
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \{[^}]*top:\s*calc\(var\(--rpg-touch-pad\) \+ var\(--rpg-touch-nav\)\);[^}]*bottom:\s*calc\(var\(--rpg-touch-pad\) \+ var\(--rpg-touch-hand\)\);[^}]*margin-block:\s*auto;[^}]*left:\s*auto;[^}]*right:\s*max\(6px, env\(safe-area-inset-right, 0px\)\);/s,
-  'au doigt, le rail du tour se centre entre la navigation et la main, à l’échelle du téléphone');
-assert.match(mobileCss, /\.rpg-battle--touch \.card-table \{[^}]*--rpg-touch-nav:\s*38px;[^}]*--rpg-touch-hand:\s*clamp\(84px, 28dvh, 146px\);[^}]*grid-template-rows:\s*var\(--rpg-touch-nav\)[\s\S]*?var\(--rpg-touch-hand\);/s,
-  'la grille tactile et le rail du tour partagent les mêmes repères de rangée');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \{[^}]*top:\s*auto;[^}]*bottom:\s*calc\(var\(--rpg-touch-hand\) \+ var\(--rpg-touch-combat\) \+ var\(--rpg-touch-pad\) \* 2 \+ var\(--rpg-touch-gap\)\);[^}]*margin-block:\s*0;[^}]*left:\s*auto;[^}]*right:\s*max\(6px, env\(safe-area-inset-right, 0px\)\);/s,
+  'au doigt, le rail du tour se cale juste au-dessus de la rangée de combat, au-dessus de la main — la colonne du PC');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table \{[^}]*--rpg-touch-nav:\s*clamp\(38px, calc\(var\(--duel-card\) \* \.62\), 52px\);[^}]*--rpg-touch-hand:\s*calc\(var\(--duel-card\) \* 1\.38 \+ env\(safe-area-inset-bottom, 0px\)\);[^}]*grid-template-rows:\s*var\(--rpg-touch-nav\)[\s\S]*?var\(--rpg-touch-hand\);/s,
+  'la grille tactile et le rail du tour partagent les mêmes repères de rangée : la navigation (0,62 carte) et la main (1,38 carte), comme le PC');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-track \{[^}]*flex-direction:\s*row;[^}]*background:\s*rgba\(8, 7, 9, \.62\);/s,
   'au doigt aussi, les phases forment la rangée d’icônes orange du PC, dans sa capsule sombre');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-step__icon \{[^}]*width:\s*26px;[^}]*height:\s*26px;/s,
-  'les icônes de phase du rail tactile restent lisibles sans envahir la table');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-step__icon \{[^}]*width:\s*clamp\(20px, calc\(var\(--duel-card\) \* \.34\), 30px\);[^}]*height:\s*clamp\(20px, calc\(var\(--duel-card\) \* \.34\), 30px\);/s,
+  'les icônes de phase du rail tactile suivent la carte (0,34) sans envahir la table');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-step__label \{[^}]*clip-path:\s*inset\(50%\);/s,
   'comme sur PC, les noms de phase sont masqués à l’écran mais restent accessibles');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-btn \{[^}]*min-height:\s*32px;/s,
   'les boutons du rail de droite sont compacts au doigt');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-actions__row \.rpg-btn \{[^}]*min-height:\s*32px;/s,
-  'les commandes de combat de droite sont compactes au doigt');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-actions__row \.rpg-btn \{[^}]*min-height:\s*var\(--rpg-touch-combat, 32px\);/s,
+  'les commandes de combat de droite suivent la rangée de combat du PC, avec le plancher tactile de 32 px');
 assert.match(mobileCss, /\.card-row > \.rpg-card:first-child,\s*\.card-row > \.rpg-card-stack:first-child,\s*\.card-row > \.rpg-card-stack__toggle:first-child \{ margin-inline-start: auto; \}/,
   'les piles et leur puce ×N participent au centrage du groupe de cartes');
 

@@ -58,6 +58,7 @@ import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
+import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { clampRpgVolume, RpgAudioPlayer } from './rpgAudio.js';
@@ -2438,6 +2439,43 @@ function AnnonceTour({ annonce }) {
   );
 }
 
+/** Petit journal visuel du duel : les échanges et morts récents, avec les
+ * cartes impliquées — dans l’esprit du journal de combat de MTG Arena. */
+function CombatFeed({ events = [] }) {
+  if (!events.length) return null;
+  const recentes = events.slice(-4).reverse();
+  return (
+    <aside className="rpg-combat-feed" aria-label="Journal des actions du duel">
+      <div className="rpg-combat-feed__heading"><span aria-hidden="true">⚔</span><strong>Journal du duel</strong></div>
+      <ol className="rpg-combat-feed__list" aria-live="polite" aria-relevant="additions">
+        {recentes.map((event) => {
+          const killers = event.killers ?? [];
+          return (
+            <li className={`rpg-combat-feed__event${event.type === 'hit' ? ' is-hit' : ' is-death'}`} key={event.id}>
+              <div className="rpg-combat-feed__participants">
+                {killers.length ? killers.slice(0, 2).map((killer) => (
+                  <span className="rpg-combat-feed__card" key={killer.id} title={killer.name}>
+                    <img src={cardArt(killer.carteId)} alt="" />
+                    <span>{killer.name}</span>
+                  </span>
+                )) : <span className="rpg-combat-feed__cause">Effet de jeu</span>}
+                <span className="rpg-combat-feed__arrow" aria-hidden="true">➜</span>
+                <span className="rpg-combat-feed__card rpg-combat-feed__card--victim" title={event.victim.name}>
+                  <img src={cardArt(event.victim.carteId)} alt="" />
+                  <span>{event.victim.name}</span>
+                </span>
+                {event.type === 'death'
+                  ? <span className="rpg-combat-feed__skull" aria-label="détruite">☠</span>
+                  : <span className="rpg-combat-feed__damage" aria-label={`${event.amount} dégâts`}>−{event.amount}</span>}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </aside>
+  );
+}
+
 /* ── Boîtier de deck en 3D (onglet Deck) ──────────────────────────────────────
    Décor pur : le clic est porté par le bouton voisin (voir `GameModeMenu`), et le
    nom du deck y figure en clair — tout ce qui est dessiné ici est `aria-hidden`. */
@@ -4614,7 +4652,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ? deckTutorielAdverse?.cardIds ?? RPG_TUTORIAL_OPPONENT_DECK
         : etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECK_SORCIER_BASE)),
       sorcierPuissance: modeTutoriel ? 0 : etageCourant ? etageCourant.puissance : sorcierPuissance,
-      sorcierIA: etageCourant ? etageCourant.ia : undefined,
+      // En duel libre, le sorcier joue désormais au niveau Veilleur : il
+      // anticipe plusieurs coups au lieu de s'arrêter au meilleur score local.
+      // Les étages gardent leur profil progressif ; le tutoriel conserve son
+      // profil par défaut et n'est pas forcé au niveau Veilleur.
+      sorcierIA: etageCourant ? etageCourant.ia : modeTutoriel ? undefined : { niveau: 'veilleur', style: 'equilibre' },
       modeMana: RPG_MODE_MANA_ESSAI,
       joueurCouleurs: deckEssai?.elements,
       sorcierCouleurs: adversaireEssai?.elements,
@@ -4753,6 +4795,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const duel = duelRef.current;
+  const delaiReflexionSorcier = () => rpgDelaiReflexionIA(duel, 'sorcier');
   // Les cartes que l'eau ramène dans la main du joueur : elles restent hors de
   // la main tant que le tourbillon joue — le geste se lit avant le résultat.
   const cartesEnRenvoi = new Set((tourbillonsEau ?? [])
@@ -4896,96 +4939,68 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       timersRef.current.push(timer);
     });
   }, [duel, duel?.joueur.deck.length, duel?.joueur.main.length, duel?.sorcier.deck.length, duel?.sorcier.main.length]);
-  // Mobile, table d'essai : chaque plaque se pose contre la ligne de séparation
-  // du plateau (le joueur dessous, le sorcier dessus) et sa jauge de mana la
-  // suit de l'autre côté. La hauteur réelle des plaques (qui varie selon
-  // l'écran) est publiée en variables CSS.
+  // Mobile, table d'essai : chaque plaque ouvre la colonne de gauche, sa jauge
+  // de mana se range derrière elle, dans la même rangée de grille. Publier la
+  // hauteur réelle mesurée des deux — la plaque (`--rpg-plaque-*-h`) et la
+  // place qui reste pour la jauge (`--rpg-jauge-*-h`) — laisse la colonne
+  // s'ajuster d'elle-même : une plaque plus haute parce que les zones de
+  // cartes passent sur deux lignes rétrécit sa jauge au lieu de la faire
+  // déborder sur le camp d'en face.
   const essaiTactile = Boolean(duel && viewport.mobile && duel.modeMana === RPG_MODE_MANA_ESSAI);
   useLayoutEffect(() => {
     const table = tableRef.current;
     if (!essaiTactile || !table) return undefined;
-    const plaques = [
-      [table.querySelector('.rpg-wizard-plate--joueur'), '--rpg-plaque-joueur-h'],
-      [table.querySelector('.rpg-wizard-plate--ennemi'), '--rpg-plaque-ennemi-h'],
-    ].filter(([plaque]) => plaque);
-    if (!plaques.length) return undefined;
-    const publier = () => plaques.forEach(([plaque, variable]) => table.style.setProperty(variable, `${plaque.offsetHeight}px`));
-    publier();
-    if (typeof ResizeObserver !== 'function') return undefined;
-    const observateur = new ResizeObserver(publier);
-    plaques.forEach(([plaque]) => observateur.observe(plaque));
-    return () => observateur.disconnect();
-  }, [essaiTactile]);
-  // Mobile, table d'essai : les emplacements des deux camps se placent à la
-  // même distance du milieu du plateau (50 % de la table, là où passent la
-  // ligne de séparation et la jonction des plaques) — le sorcier au-dessus,
-  // le joueur en dessous. L'écart visé (4 % de la hauteur, 10 à 28 px) se
-  // réduit si la main du joueur ou le haut de la rangée adverse manquent de
-  // place. Les rangées glissent par `top` (variables CSS), sans changer la
-  // grille.
-  // Mobile, table d'essai : les boutons de tour passent juste sous la ligne du
-  // milieu, et les commandes de combat (« Résoudre le combat »…) juste en
-  // dessous d'eux. Leur hauteur réelle (une ou deux rangées selon le bouton
-  // d'annulation) est publiée en variable CSS.
-  useLayoutEffect(() => {
-    const table = tableRef.current;
-    const actions = table?.querySelector('.rpg-turn-rail .rpg-actions__turn');
-    if (!essaiTactile || !table || !actions) return undefined;
-    const publier = () => table.style.setProperty('--rpg-actions-tour-h', `${actions.offsetHeight}px`);
-    publier();
-    if (typeof ResizeObserver !== 'function') return undefined;
-    const observateur = new ResizeObserver(publier);
-    observateur.observe(actions);
-    return () => observateur.disconnect();
-  }, [essaiTactile]);
-  const decalagesRangeesRef = useRef({ ennemi: 0, equipe: 0 });
-  useLayoutEffect(() => {
-    const table = tableRef.current;
-    const rangeeEnnemi = table?.querySelector('.card-row--ennemi');
-    const rangeeEquipe = table?.querySelector('.card-row--equipe');
-    if (!essaiTactile || !table || !rangeeEnnemi || !rangeeEquipe) return undefined;
+    const camps = [
+      { plaque: table.querySelector('.rpg-wizard-plate--ennemi'), rangee: table.querySelector('.card-row--ennemi'), suffixe: 'ennemi' },
+      { plaque: table.querySelector('.rpg-wizard-plate--joueur'), rangee: table.querySelector('.card-row--equipe'), suffixe: 'joueur' },
+    ].filter(({ plaque, rangee }) => plaque && rangee);
+    if (!camps.length) return undefined;
     const publier = () => {
-      const appliques = decalagesRangeesRef.current;
-      const boiteTable = table.getBoundingClientRect();
-      const caseEnnemi = rangeeEnnemi.querySelector('.rpg-creature-slot');
-      const caseEquipe = rangeeEquipe.querySelector('.rpg-creature-slot');
-      if (!caseEnnemi || !caseEquipe) return;
-      // Positions « naturelles » (sans le glissement déjà appliqué), relatives à la table.
-      const basEnnemi = caseEnnemi.getBoundingClientRect().bottom - boiteTable.top - appliques.ennemi;
-      const hautRangeeEnnemi = rangeeEnnemi.getBoundingClientRect().top - boiteTable.top - appliques.ennemi;
-      const hautEquipe = caseEquipe.getBoundingClientRect().top - boiteTable.top - appliques.equipe;
-      const main = table.querySelector('.rpg-hand-dock .rpg-hand__card') ?? table.querySelector('.rpg-hand-dock');
-      const hautMain = main ? main.getBoundingClientRect().top - boiteTable.top : boiteTable.height;
-      const milieu = boiteTable.height / 2;
-      const ecartVise = Math.min(28, Math.max(10, boiteTable.height * 0.04));
-      const ecartEquipe = Math.min(
-        ecartVise,
-        hautMain - 4 - caseEquipe.offsetHeight - milieu,
-      );
-      const ecartEnnemiVise = Math.min(46, Math.max(22, boiteTable.height * 0.08));
-      const ecartEnnemi = Math.min(
-        ecartEnnemiVise,
-        milieu - hautRangeeEnnemi - caseEnnemi.offsetHeight,
-      );
-      const ennemi = Math.round(milieu - ecartEnnemi - basEnnemi);
-      const equipe = Math.round(milieu + ecartEquipe - hautEquipe);
-      if (ennemi === appliques.ennemi && equipe === appliques.equipe) return;
-      decalagesRangeesRef.current = { ennemi, equipe };
-      table.style.setProperty('--rpg-ennemis-decalage', `${ennemi}px`);
-      table.style.setProperty('--rpg-allies-decalage', `${equipe}px`);
+      // Le bord droit des plaques : la barre de réponse du sorcier s'y accroche
+      // au lieu de les recouvrir (elle occupe toute la largeur restante,
+      // au-dessus de la main).
+      const joueur = camps.find(({ suffixe }) => suffixe === 'joueur') ?? camps[0];
+      table.style.setProperty('--rpg-plaque-droite', `${Math.round(joueur.plaque.getBoundingClientRect().right)}px`);
+      for (const { plaque, rangee, suffixe } of camps) {
+        const hauteurPlaque = plaque.offsetHeight;
+        table.style.setProperty(`--rpg-plaque-${suffixe}-h`, `${hauteurPlaque}px`);
+        // La rangée de jeu du camp donne la hauteur de la cellule de grille :
+        // ce qui reste sous (ou au-dessus de) la plaque revient à la jauge.
+        const place = Math.max(0, Math.round(rangee.getBoundingClientRect().height - hauteurPlaque - 1));
+        table.style.setProperty(`--rpg-jauge-${suffixe}-h`, `${place}px`);
+      }
     };
     publier();
     if (typeof ResizeObserver !== 'function') return undefined;
     const observateur = new ResizeObserver(publier);
-    [table, rangeeEnnemi, rangeeEquipe].forEach((element) => observateur.observe(element));
+    camps.forEach(({ plaque, rangee }) => {
+      observateur.observe(plaque);
+      observateur.observe(rangee);
+    });
     return () => {
       observateur.disconnect();
-      decalagesRangeesRef.current = { ennemi: 0, equipe: 0 };
-      table.style.removeProperty('--rpg-ennemis-decalage');
-      table.style.removeProperty('--rpg-allies-decalage');
+      table.style.removeProperty('--rpg-plaque-droite');
     };
   }, [essaiTactile]);
-
+  // Toucher : la barre de combat ferme la colonne de droite, juste au-dessus
+  // de la main, et sa hauteur varie d'une à trois commandes empilées
+  // (« Confirmer l'attaque », « Annuler l'attaque », « Résoudre le combat »…).
+  // Sa hauteur réelle est publiée en variable CSS : le rail du tour s'ancre
+  // juste au-dessus d'elle, sans jamais la recouvrir ni passer sous la main.
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    const controles = table?.querySelector('.rpg-bottombar');
+    if (!viewport.mobile || !table || !controles) return undefined;
+    const publier = () => table.style.setProperty('--rpg-controles-h', `${controles.offsetHeight}px`);
+    publier();
+    if (typeof ResizeObserver !== 'function') return undefined;
+    const observateur = new ResizeObserver(publier);
+    observateur.observe(controles);
+    return () => {
+      observateur.disconnect();
+      table.style.removeProperty('--rpg-controles-h');
+    };
+  }, [viewport.mobile, duel]);
   useLayoutEffect(() => {
     if (!duel) return;
     const terrains = tableRef.current?.querySelector('.rpg-terrains--joueur');
@@ -5523,6 +5538,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Tant que le volet de mulligan est ouvert, la table attend : rien ne se
   // joue, rien ne s'engage, et le tour ne peut pas être rendu.
   const mulliganOuvert = Boolean(mulligan);
+  const sorcierReflechit = Boolean(!vainqueur && !tutorielActif && duel.tour === 'sorcier'
+    && !duel.annonce && !combatEntrant && !duel.finDeTour && !duel.magieGratuite
+    && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length
+    && !duel.defausseEnAttente && !mulliganOuvert);
   const choixManaEssaiOuvert = duel.modeMana === RPG_MODE_MANA_ESSAI
     && Boolean(duel.joueur.manaChoixEnAttente) && !mulliganOuvert && !vainqueur;
   const etapeTutoriel = etapesTutoriel.find((step) => step.id === etapeTutorielId) ?? null;
@@ -6377,7 +6396,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       signalerTutoriel('contre-lance', { cardId: carteId });
       signalerTutoriel('magie-lancee', { cardId: carteId });
       force();
-      later(annoncerSuivantSorcier, 900);
+      later(annoncerSuivantSorcier, delaiReflexionSorcier());
       return;
     }
     if (res.ok) {
@@ -7411,7 +7430,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         rpgSorcierPrepareTerrain(duel);
         animerModificationsChamp(champAvantIA, [], debutJournalDestructions);
         annoncerSuivantSorcier();
-      }, 700);
+      }, Math.max(700, delaiReflexionSorcier()));
     };
 
     if (!rpgPeutRepondre(duel, 'sorcier')) {
@@ -7477,7 +7496,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (pauseSiAttenteJoueur(apresCombatSorcier)) return;
     rpgDefinirPhase(duel, 'principale2');
     sorcierApresCombatRef.current = true;
-    annoncerSuivantSorcier();
+    later(annoncerSuivantSorcier, delaiReflexionSorcier());
   };
 
   // Une leçon peut scénariser l'annonce du sorcier : la carte est posée sur la
@@ -7544,7 +7563,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         animerModificationsChamp(champAvantActivation, [], debutJournalActivation);
         if (armesActivees) jouerSfx('apparition');
         force();
-        later(declarerAttaqueSorcier, 900);
+        later(declarerAttaqueSorcier, delaiReflexionSorcier());
         return;
       }
       declarerAttaqueSorcier();
@@ -7617,7 +7636,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     animerModificationsChamp(champAvant, [], debutJournalDestructions,
       [res.renvoiEntityId]);
     force();
-    later(annoncerSuivantSorcier, 900);
+    later(annoncerSuivantSorcier, delaiReflexionSorcier());
   };
 
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
@@ -7932,6 +7951,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         onDragLeave={quitterZoneDepot}
         onDrop={deposerCarteSurTable}
       >
+        <CombatFeed events={duel.combatFeed} />
         {/* Le jumeau de la peinture : le flou d'un aperçu ne peut pas être posé
             sur `.card-table` (il emporterait l'aperçu lui-même), ni sur sa
             `background-image`. Ce calque en reprend donc la peinture par
@@ -8090,6 +8110,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             centre de la table pendant 1,5 s, puis s'efface (`AnnonceTour`). */}
         <AnnonceTour annonce={annonceTour} />
         <AnnonceActionJoueur invite={inviteActionJoueur} decalee={Boolean(annonceTour)} />
+        {sorcierReflechit && <span className="sr-only" role="status" aria-live="polite">Le sorcier réfléchit à son prochain coup.</span>}
 
         {/* Soins : quand VOS PV remontent, les bords de la table s'éclairent
             d'un vert doux — le pendant du voile rouge des coups reçus. La zone
@@ -8139,6 +8160,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             {soinSorcier && <span key={soinSorcier.token} className="rpg-soin-montant" aria-hidden="true">+{soinSorcier.montant}</span>}
           </span>
           <WizardManaCounters mana={duel.sorcier.mana} />
+          {sorcierReflechit && <span className="rpg-wizard-plate__thinking" aria-hidden="true"><i /> Le sorcier réfléchit…</span>}
           <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.sorcier.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {duel.sorcier.deck.length}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.sorcier.cimetiere.length}</span></span></span>
           {soinSorcier && <EclatSoin key={soinSorcier.token} />}
         </button>

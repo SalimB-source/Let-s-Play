@@ -397,6 +397,21 @@ test('l’Armure de cendres donne +3/+3, la Rapidité et l’immunité contre la
   assert.equal(chien.pv, chien.pvMax - 2, 'une magie d’Eau, elle, le blesse');
 });
 
+test('une créature Braise ne peut pas bloquer le porteur de l’Armure de cendres', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'armure-de-cendres', porteur);
+  const ghul = poser(duel, 'sorcier', 'ghul-des-cendres');
+  duel.sorcier.pv = 4; // l’IA voudrait normalement sacrifier le Ghul pour éviter les 5 dégâts létaux
+
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [porteur.id]), {},
+    'l’IA ne propose pas le Ghul Braise comme bloqueur contre le porteur immunisé');
+  const attaque = rpgLancerAttaque(duel, 'joueur', [porteur.id], null);
+  assert.equal(attaque.ok, true, 'l’attaque automatique ne se retrouve pas bloquée illégalement');
+  assert.equal(attaque.resume.frappeSorcier, 5, 'les 5 dégâts passent au sorcier');
+  assert.equal(ghul.pv, 1, 'le Ghul reste intact puisque l’Armure l’empêche de bloquer');
+});
+
 test('remplacer l’Armure retire son immunité : la Braise mord de nouveau', () => {
   const duel = duelVide();
   const chien = poser(duel, 'joueur', 'chien-du-guet');

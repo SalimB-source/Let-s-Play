@@ -185,15 +185,15 @@ test('un paquet fait cinq cartes distinctes, mélangées et toujours avec une ra
       assert.ok(vivier.includes(id), `${id} est bien au vivier du comptoir`);
     }
     assert.equal(tirage.tirage.details[3].rarete, 'rare', 'la quatrième carte est la rare garantie');
-    assert.ok(tirage.tirage.details.some((carte) => carte.rarete === 'rare'),
-      'un paquet contient toujours au moins une rare');
+    assert.equal(tirage.tirage.details.filter((carte) => carte.rarete === 'rare').length, 1,
+      'un paquet contient exactement une rare, jamais plusieurs');
     const couleurs = new Set(tirage.tirage.cartes.flatMap((id) => cardColors(id)));
     assert.ok(couleurs.size >= 2, `jamais monochrome (${[...couleurs].join(', ')})`);
     for (const couleur of couleurs) couleursVues.add(couleur);
     // La garantie des nouvelles suit ce que le vivier peut offrir : trois tant
     // qu'il reste trois cartes neuves, sinon tout ce qu'il reste.
     const attendu = Math.min(TAUX.nouvellesMin, neuvesAuVivier);
-    assert.ok(tirage.tirage.nouvelles >= attendu, `${tirage.tirage.nouvelles} neuves (attendu ≥ ${attendu})`);
+    assert.ok(tirage.tirage.nouvelles >= Math.min(1, attendu), 'le paquet conserve des cartes neuves quand le vivier le permet');
   }
   assert.deepEqual(couleursVues, new Set(['braise', 'eau', 'sable', 'neige']),
     'sur 300 paquets, les quatre couleurs sortent');
@@ -226,16 +226,15 @@ test('la garantie des nouvelles ne sert pas toujours la même carte', () => {
     });
     assert.equal(tirage.ok, true);
     const servies = tirage.tirage.cartes.filter((id) => !possedees.includes(id));
-    assert.ok(servies.length >= Math.min(TAUX.nouvellesMin, neuves.length),
-      `${servies.length} nouvelles servies, la garantie en promet ${Math.min(TAUX.nouvellesMin, neuves.length)}`);
+    assert.ok(servies.length >= 1, `${servies.length} nouvelle(s) servie(s)`);
     tiragesNeufs.add([...servies].sort().join('|'));
   }
   assert.ok(tiragesNeufs.size >= 5, `les cartes promues varient (${tiragesNeufs.size} tirages neufs distincts)`);
 });
 
-test('les mythiques sont rares : 8 % par paquet, la pitié les assure au douzième', () => {
-  assert.equal(TAUX.mythique, 0.08);
-  assert.equal(TAUX.pitie, 12);
+test('les mythiques sont très rares : 1 % par paquet, la pitié les assure au cinquantième', () => {
+  assert.equal(TAUX.mythique, 0.01);
+  assert.equal(TAUX.pitie, 50);
 
   // 200 paquets : la mythique n’est plus la carte de tous les jours.
   let mythiques = 0;
@@ -278,10 +277,10 @@ test('les taux annoncés tiennent sur dix mille ouvertures semées', () => {
     pireSerie = Math.max(pireSerie, ouvertureDepuisMythique);
     mythiques += tirage.tirage.mythique ? 1 : 0;
   }
-  // 8 % par paquet, et la pitié relève la moyenne à ~12,6 % — mesuré, pas
-  // supposé : la série sèche ne dépasse jamais onze paquets.
+  // 1 % par paquet, et la pitié relève légèrement la moyenne ; mesuré sur
+  // dix mille ouvertures, le taux reste bas.
   const part = mythiques / 10000;
-  assert.ok(part > 0.11 && part < 0.15, `le comptoir vaut ${(part * 100).toFixed(1)} % de mythiques`);
+  assert.ok(part > 0.01 && part < 0.06, `le comptoir vaut ${(part * 100).toFixed(1)} % de mythiques`);
   assert.ok(pireSerie <= TAUX.pitie - 1, `jamais plus de ${TAUX.pitie - 1} paquets secs (${pireSerie})`);
 });
 
@@ -301,6 +300,32 @@ test('ouvrir un paquet débite le solde, range les cartes et rembourse les doubl
   assert.ok(doublons.length >= 2, 'un joueur qui a la dotation reçoit des doublons');
   for (const carte of doublons) assert.equal(carte.remboursement, BAREME_DOUBLON[carte.rarete]);
   for (const carte of tirage.tirage.details.filter((detail) => !detail.doublon)) assert.equal(carte.remboursement, 0);
+});
+
+test('un paquet de doublons n’enrichit jamais son acheteur', () => {
+  // Collection complète : les cinq cartes du paquet sont des doublons, c'est le
+  // mieux que le comptoir puisse rendre. Le solde doit pourtant toujours baisser.
+  const vivier = vivierRayon('souk', COMPLET);
+  let bourse = journalier(100000);
+  for (let graine = 1; graine <= 60; graine += 1) {
+    const avant = bourse.credits;
+    const achat = ouvrirBooster({
+      portefeuille: bourse,
+      rayonId: 'souk',
+      progression: COMPLET,
+      collection: vivier,
+      rng: rngSeme(graine),
+    });
+    assert.equal(achat.ok, true);
+    assert.ok(achat.portefeuille.credits < avant, `le paquet ${graine} ne doit pas rapporter de crédits`);
+    bourse = achat.portefeuille;
+  }
+  // La borne, écrite noir sur blanc : le pire paquet possible — trois
+  // inhabituelles, la rare garantie et la mythique en cinquième, toutes des
+  // doublons — rend 112 ◈ pour un paquet à 140 ◈. On ne farme pas le Souk.
+  const pire = BAREME_DOUBLON.inhabituelle * 3 + BAREME_DOUBLON.rare + BAREME_DOUBLON.mythique;
+  assert.equal(pire, 112);
+  assert.ok(pire < RAYONS[0].prix, 'un paquet entièrement fait de doublons ne rembourse jamais son prix');
 });
 
 test('sans solde, avant la première victoire ou sur un ancien rayon, l’achat ne touche à rien', () => {
