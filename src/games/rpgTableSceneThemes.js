@@ -179,6 +179,33 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     particles: motes({ count: 64, color: '#f7cfd8', size: 0.05, opacity: 0.72, vx: 0.16, vy: -0.1, sway: 0.24, swayHz: 0.22, z: 1.1, zSpread: 0.7 }),
     overlay: { kind: 'ombre', color: '#4a3550', opacity: 0.12, speed: 0.012, scale: 2.2 },
   }),
+  // La Nécropole des dalles : le plein jour du désert, un soleil de midi qui
+  // tombe d'aplomb, la réverbération blanche du calcaire et la poussière en
+  // suspension. Aucune lampe : c'est le ciel qui éclaire. Aucun objet 3D — les
+  // vases canopes, le khopesh, la balance de Maât et les shabtis sont peints,
+  // et la dalle lisse du cercle se suffit à elle-même.
+  'necropole-des-dalles': theme({
+    ambient: '#fff8e6', key: '#fff2cc', keyIntensity: 0.52, ambientIntensity: 0.6,
+    keyDirection: [0.15, 0.98, 1], relief: 1.6, roughness: 0.92,
+    particles: motes({ count: 58, color: '#fff3cf', size: 0.028, opacity: 0.5, vx: 0.07, vy: 0.05, sway: 0.08, swayHz: 0.18, z: 0.7, zSpread: 0.5 }),
+    overlay: { kind: 'ombre', color: '#c08a4a', opacity: 0.1, speed: 0.006, scale: 2.6 },
+  }),
+  // Le Palais du Pharaon : un intérieur, la lumière chaude des lampes et des
+  // deux braseros posés aux angles bas, la pierre polie qui renvoie l'or des
+  // incrustations, et une fine poussière en suspension. Aucun objet 3D : les
+  // marches, le trône, les colonnes de lotus, les éventails et les braseros
+  // sont peints — le dallage nu du centre se suffit à lui-même.
+  'palais-du-pharaon': theme({
+    ambient: '#fff3dc', key: '#ffd79a', keyIntensity: 0.5, ambientIntensity: 0.58,
+    keyDirection: [-0.35, 0.75, 1], relief: 1.15, roughness: 0.4,
+    lights: [
+      // Les deux braseros sont peints en bas du cadre : les lampes les suivent.
+      light({ color: '#ffb35e', intensity: 2.2, distance: 4.6, x: -0.78, y: -0.82, z: 0.8, flicker: 0.26 }),
+      light({ color: '#ffb35e', intensity: 2.2, distance: 4.6, x: 0.78, y: -0.82, z: 0.8, flicker: 0.26 }),
+    ],
+    particles: motes({ count: 46, color: '#ffe6b8', size: 0.024, opacity: 0.45, vx: 0.04, vy: 0.03, sway: 0.1, swayHz: 0.18, z: 1 }),
+    overlay: { kind: 'ombre', color: '#3a2a12', opacity: 0.12, speed: 0.007, scale: 2 },
+  }),
   // Le sable vitrifié : éclats de verre, deux lumières qui glissent.
   'desert-de-verre': theme({
     key: '#fff0cf', keyIntensity: 0.46, relief: 1.2, roughness: 0.3,

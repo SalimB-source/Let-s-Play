@@ -20,17 +20,26 @@ changent pas.
   braises, éclats de verre.
 - **Parallaxe** : la caméra respire et suit la souris (jamais le doigt).
 
-Les neuf plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
+Les onze plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
 inconnu retombe sur celle de la Table des Heures.
 
-Deux plateaux ne posent aucun objet 3D et gardent leur peinture telle quelle : la
-Table des Heures (le bois gravé de Bab El) et la **Cour de l'Empereur**, la
+Quatre plateaux ne posent aucun objet 3D et gardent leur peinture telle quelle :
+la Table des Heures (le bois gravé de Bab El), la **Cour de l'Empereur**, la
 peinture japonaise du deck du Serment du Soleil rouge. Sur une peinture plate —
 encre, à-plats et pinceau — les accessoires dessinés (les portes du palais, les
 galeries, le tambour, les bannières, le bassin, les pins et les cerisiers) sont
 plus justes laissés au trait ; l'ambiance seule anime la scène : les deux
 lanternes de pierre qui vacillent aux bords, et les pétales de cerisier qui
-tombent en dérivant.
+tombent en dérivant. Les deux terrains des Ténèbres suivent la même règle : la
+peinture de la **Nécropole des dalles** (le désert en plein jour, vases
+canopes, khopesh, balance de Maât) et celle du **Palais du Pharaon** (le
+dallage d'albâtre, le trône, les colonnes de lotus) sont plates — vues de
+dessus, comme les autres fonds —, et leurs accessoires restent peints. Ce sont
+les lumières qui jouent : sur les dalles, le soleil de midi tombe d'aplomb, la
+réverbération blanchit le calcaire et la poussière reste en suspension ; dans
+la salle du trône, deux braseros chauds vacillent aux angles, l'albâtre polis
+renvoie l'or des incrustations et la poussière flotte, sous un voile d'ombre
+léger.
 
 ## Objets 3D posés sur le plateau
 
