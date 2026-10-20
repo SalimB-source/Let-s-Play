@@ -120,12 +120,22 @@ jobs:
           done
           exit 1
 
+      - name: Contenu de release/ (tailles réelles)
+        shell: bash
+        run: |
+          ls -la desktop/release
+          du -sh desktop/release/* 2>/dev/null | sort -h
+          for f in desktop/release/*.exe; do
+            echo "::notice::$(basename "$f") = $(( $(stat -c%s "$f") / 1048576 )) Mo"
+          done
+
       - name: Artefacts de run
         uses: actions/upload-artifact@v4
         with:
           name: sablier-pc-windows
           path: |
-            desktop/release/*.exe
+            desktop/release/le-sablier-de-bab-el-*-setup.exe
+            desktop/release/le-sablier-de-bab-el-*-portable.exe
           retention-days: 90
           if-no-files-found: error
 
