@@ -590,7 +590,7 @@ tone-mapping ici »), alors que la piste, les cristaux et les cavaliers passent 
 le tone-mapping ACES du moteur. Un *bloom* ou un étalonnage en fin de chaîne
 obligerait à reprendre une à une toutes ces couleurs — c'est-à-dire à refaire le
 désert. La lumière est donc **peinte**, comme au temps des sprites : un dégradé
-radial (128 px) reçoit la couleur du cristal et s'ajoute à le projet isolé `desktop/pack`
+radial (128 px) reçoit la couleur du cristal et s'ajoute à la scène
 (`blending: AdditiveBlending`), sans écrire de profondeur — un halo ne cache
 jamais la piste et ne change ni la difficulté ni la lisibilité.
 
@@ -924,24 +924,24 @@ derrière elle.
   (`position: absolute; inset: 0; pointer-events: none`) : les grilles à zones
   nommées des menus (`stepper / copy / modes / story / actions / foot`) n'ont pas
   bougé d'une ligne, et un clic sur une voiture part en course comme avant.
-- **Sans WebGL** (vieux appareil, contexte perdu, bac à sable de test), le projet isolé `desktop/pack`
+- **Sans WebGL** (vieux appareil, contexte perdu, bac à sable de test), la scène
   se retire et la photo du modèle prend le relais dans la même baie : l'écran de
   préparation reste complet.
 - **Batterie.** La boucle de rendu se met en pause quand l'onglet est caché ou
-  que le projet isolé `desktop/pack` sort de l'écran ; matériaux, géométries et le contexte WebGL sont
+  que la scène sort de l'écran ; matériaux, géométries et le contexte WebGL sont
   rendus à la fermeture (changement de voiture, départ en course, démontage).
 
 ### Où vit le code
 
-- `src/games/ViceCityGarageStage.jsx` — le projet isolé `desktop/pack` three.js (cabine, plateau,
+- `src/games/ViceCityGarageStage.jsx` — la scène three.js (cabine, plateau,
   lumières, poussières, boucle de rendu, repli sans WebGL) ;
 - `src/games/vice-city-rush-garage.css` — la couche de fond, le voile de
   contraste, le cadre de baie, la plaque du garage et la carte en aperçu ;
   importée en dernier par la page, elle surcharge la mise en page de préparation
   sans toucher aux feuilles déjà vérifiées ;
-- `src/games/ViceCityRushPage.jsx` — le projet isolé `desktop/pack` montée dans le hub, la plaque, et
+- `src/games/ViceCityRushPage.jsx` — la scène montée dans le hub, la plaque, et
   l'état `previewCarId` (survol / focus clavier) qui choisit le modèle monté ;
-- `scripts/vice-city-garage-3d-scene-check.mjs` — la vérification de le projet isolé `desktop/pack`
+- `scripts/vice-city-garage-3d-scene-check.mjs` — la vérification de la scène
   (avec `vice-city-garage-3d-scene-smoke.jsx`, `vice-city-garage-3d-three-stub.mjs`
   et `vice-city-garage-3d-fake-renderer.mjs`).
 
@@ -949,12 +949,12 @@ derrière elle.
 
 ```bash
 npm run check:city-rush-garage-3d         # la page dans jsdom, scène de garage doublée
-npm run check:city-rush-garage-3d-scene   # le projet isolé `desktop/pack` three.js, renderer factice
+npm run check:city-rush-garage-3d-scene   # la scène three.js, renderer factice
 ```
 
 jsdom n'a pas de WebGL : la vérification monte la vraie page et prouve au passage
 que le repli photo fonctionne. Elle lit ensuite les feuilles de style pour tenir
-les invariants — le projet isolé `desktop/pack` reste hors flux (`position: absolute`, `z-index: 0`,
+les invariants — la scène reste hors flux (`position: absolute`, `z-index: 0`,
 `pointer-events: none`), les menus passent devant (`position: relative`,
 `z-index: 1`), les zones nommées des grilles sont intactes — et regarde la page
 monter l'étape garage, la plaque annoncer la voiture, le focus clavier la faire
@@ -962,7 +962,7 @@ tourner au modèle visé (APERÇU) sans lancer la course, et le tap sur une voit
 offerte partir au compte à rebours.
 
 `check:city-rush-garage-3d-scene` va plus loin : `three` y est remplacé par une
-doublure dont le renderer est factice, donc **le projet isolé `desktop/pack` se construit pour de
+doublure dont le renderer est factice, donc **la scène se construit pour de
 vrai** sans GPU. Elle inspecte alors la cabine (88 maillages, six lumières,
 poussières), la voiture modélisée, le plateau qui tourne, la caméra qui reste
 dans la cabine, et le cadrage : part de la largeur occupée par le plateau,
@@ -1110,7 +1110,7 @@ et le dernier tour durait 21 s.
   ne ressuscite pas une épave. **Quand la recherche retombe à zéro, la poursuite
   est abandonnée** : les berlines qui chassaient le joueur reprennent une
   conduite normale, à l'allure du trafic, dans leur voie — plus de tir, plus de
-  barrage, plus de mire —, puis quittent le projet isolé `desktop/pack` une fois distancées ; il faut
+  barrage, plus de mire —, puis quittent la scène une fois distancées ; il faut
   une nouvelle provocation pour qu'une escouade reparte. Au-dessus de trois
   étoiles, elle continue au niveau réduit, et les dispositifs suivent le
   niveau : la herse reste montée à quatre étoiles, les SUV d'interception
@@ -1262,7 +1262,7 @@ et le dernier tour durait 21 s.
   (`CITY_RUSH_POLICE_WRECK_*`, nœuds `police-wreck` et `police-wreck-fire`).
   La carcasse reste **visible et en feu** tout l'incendie
   (`CITY_RUSH_POLICE_WRECK_BURN_SECONDS`), tant qu'elle est dans le cadre, puis
-  quitte le projet isolé `desktop/pack` une fois consumée ; au-delà de
+  quitte la scène une fois consumée ; au-delà de
   `CITY_RUSH_POLICE_WRECK_MAX` épaves suivies, la plus ancienne — la plus loin
   derrière — cède son modèle. Le maillage de la berline appartient à son agonie
   jusqu'au bout : sa relève, retenue pendant le tête-à-queue
@@ -1325,7 +1325,7 @@ et le dernier tour durait 21 s.
   `cityRushSuvChargeSpeed`). La charge est annoncée à 300 m
   (`CITY_RUSH_SUV_CHARGE_ALERT_RANGE`, effet `police-suv-charge` — l'effet est
   bien émis, mais **plus rien ne s'écrit à l'écran** : le SUV qui arrive face à
-  soi se lit dans le projet isolé `desktop/pack`) ; à moins de 150 m
+  soi se lit dans la scène) ; à moins de 150 m
   (`CITY_RUSH_SUV_CHARGE_LOCK_RANGE`), le SUV **verrouille la voie du pilote**
   (`cityRushSuvChargeLocked`) et se rabat dessus à **3,4 m/s**
   (`CITY_RUSH_SUV_CHARGE_LATERAL_RATE`, `cityRushSuvChargeStep`) — doubler ne
@@ -1410,7 +1410,7 @@ et le dernier tour durait 21 s.
   pétarade de pneus et explosion, s'immobilise, puis la course se clôt sur une
   **épave** — dernier du classement, `COQUE DÉTRUITE · COURSE PERDUE`
   (`CITY_RUSH_WRECK_SECONDS`, `CITY_RUSH_WRECK_SPIN_TURNS`). Une fois l'épave
-  en toupie, la ligne d'arrivée d'un rival ne clôt plus la course : le projet isolé `desktop/pack` va
+  en toupie, la ligne d'arrivée d'un rival ne clôt plus la course : la scène va
   au bout de ses 3,2 s, c'est `updateWreck` qui signe la défaite
   (`CITY_RUSH_PLAYER_DAMAGE`, `CITY_RUSH_PLAYER_HEALTH_CRITICAL`,
   `CITY_RUSH_POLICE_COLLISION_COOLDOWN`).
@@ -1555,7 +1555,7 @@ et le dernier tour durait 21 s.
   `cityRushOncomingImpactX(startX, elapsed, width, driveSide)` renvoie la voiture
   vers le **bord extérieur de son sens** — à droite à Londres et sur la C1 — et
   l'effet `traffic-impact` porte `pushDirection: 'right'` — la poussée se lit
-  dans le projet isolé `desktop/pack`, plus aucun bandeau ne l'écrit. Le pilote automatique du smoke et le test des
+  dans la scène, plus aucun bandeau ne l'écrit. Le pilote automatique du smoke et le test des
   règles lisent tous deux `cityRushLaneConfig`, plus aucune voie n'est codée en
   dur. Trois tests tiennent la bascule : « London and the Shutō C1 drive on the
   left… » (`tests/city-rush-rules.test.js`), « the driving side is painted by
@@ -2050,7 +2050,7 @@ Deux choses ont suivi ce désaccord :
   celui du carrousel d’icônes, puis celui du logo — avaient été dessinés pour
   une photo figée. Posés sur la vitrine 3D, ils ne protégeaient plus rien et
   mangeaient la salle. `InkSplat` est sorti de `ViceCityRushMainMenu`, et la
-  règle vaut pour tout ce qui se poserait sur le projet isolé `desktop/pack` : pas d’encre par-dessus,
+  règle vaut pour tout ce qui se poserait sur la scène : pas d’encre par-dessus,
   des ombres portées et un dégradé.
 - **la peau du hub a été passée sur les neuf feuilles du jeu** : les jetons
   `--cr-*` de `vice-city-rush.css` portent les encres et les rayons,
@@ -2066,7 +2066,7 @@ npm run theme:city-rush-ink   # codemod : rabat les encres, rayons, polices et p
 npm run check:city-rush-ink   # le contrat : aucune couleur ni aucun rayon de l'ancienne peau ne revient
 ```
 
-Le décor de l'écran-titre est le projet isolé `desktop/pack` de garage elle-même, remontée dans son
+Le décor de l'écran-titre est la scène de garage elle-même, remontée dans son
 cadrage « vitrine » : le plateau tournant, la baie d'atelier, la voiture — mais
 `pointer-events: none` de bout en bout (la feuille du garage rend le canvas
 réactif au regard ; `vice-city-rush-menu.css` le lui reprend), et la photo du
@@ -4813,7 +4813,7 @@ les dossiers et les tests à la fois, puisque tout passe par le même composant
   au-dessus de la navigation, de la barre de lecture, de la fenêtre sociale et
   des succès, sous les appels) et met les lecteurs vidéo de la page en pause à
   l'ouverture, comme le lecteur modal des tests — règle « une seule vidéo à la
-  fois ». Côté thème, le voile et le projet isolé `desktop/pack` restent sombres dans les deux
+  fois ». Côté thème, le voile et la scène restent sombres dans les deux
   thèmes (section 8 de `theme.css`) tandis que l'en-tête et le pied sont des
   surfaces : en thème clair, ils passent à l'encre sombre et le jaune de marque
   à `--yellow-ink`.
