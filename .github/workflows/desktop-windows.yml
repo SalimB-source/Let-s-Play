@@ -95,11 +95,10 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          # Tout le début du log, tel quel : le message d'erreur de rolldown
-          # utilise des cadres dessinés que aucun motif grep ne capturerait.
-          sed -n '1,60p' bundle.log | while IFS= read -r l; do
-            echo "::error::${l:0:300}"
-          done
+          # Le log complet en base64 dans une annotation : ni cadres dessinés,
+          # ni ANSI, ni retours chariot ne peuvent casser le transport, et
+          # l'annotation se relit via l'API GitHub.
+          echo "::error::LOG64 $(base64 -w0 bundle.log | head -c 20000)"
           exit 1
 
       - name: Taille du paquet
