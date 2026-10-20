@@ -28,7 +28,6 @@ import {
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import {
   RPG_MANA_ESSAI_CHAMP_MAX,
-  RPG_MANA_ESSAI_DECKS,
   RPG_MANA_ESSAI_MAIN_MAX,
   RPG_MANA_ESSAI_MAX,
   RPG_MODE_MANA_ESSAI,
@@ -3028,21 +3027,19 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         <small>Choisir un deck et affronter l’ordinateur</small>
                       </span>
                     </button>
+                    <a className="rpg-menu-button rpg-menu-button--en-ligne" href={`${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi`} onClick={() => play('select')}>
+                      <span className="rpg-menu-button__icon" aria-hidden="true">⚑</span>
+                      <span className="rpg-menu-button__text">
+                        <strong>Duel en ligne</strong>
+                        <small>Défier un ami par lien, ou entrer un code</small>
+                      </span>
+                    </a>
                   </div>
                 </div>
                 <section className="rpg-flux-menu" aria-label="Les règles du Sablier">
                   <span className="rpg-flux-menu__eyebrow">LES RÈGLES · TOUS LES DUELS</span>
                   <h3>Le mana remplace les terrains.</h3>
                   <p>30 cartes à jouer, aucun terrain à piocher. Gagnez un mana coloré à chaque tour jusqu’à 10 ; choisissez sa couleur si votre deck en a plusieurs. Main de départ : 3 cartes, cinq créatures au plus par camp (la sixième demande un sacrifice) et cinq cartes en main au maximum en fin de tour.</p>
-                  <div className="rpg-flux-menu__decks">
-                    {RPG_MANA_ESSAI_DECKS.map((deck) => (
-                      <button key={deck.id} type="button" onClick={() => { play('select'); onStartManaEssai(deck.id); }}>
-                        <span className="rpg-flux-menu__emblems" aria-hidden="true">{deck.elements.map((couleur) => ELEMENT_GLYPHS[couleur]).join(' ')}</span>
-                        <strong>{deck.elements.length} couleur{deck.elements.length > 1 ? 's' : ''}</strong>
-                        <small>{deck.name}</small>
-                      </button>
-                    ))}
-                  </div>
                   <small className="rpg-flux-menu__note">Ces règles s’appliquent aux duels libres, au tutoriel et à toute l’Histoire.</small>
                 </section>
               </div>

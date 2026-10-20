@@ -37,6 +37,7 @@ import { RPG_MODE_MANA_ESSAI } from '../games/rpgManaEssai.js';
 import { rngSeme } from '../games/rpgHasard.js';
 import {
   RPG_PVP_HORLOGES,
+  RPG_PVP_VERSION,
   rpgPvpAppliquer,
   rpgPvpAutreCote,
   rpgPvpBrancherHasard,
@@ -476,6 +477,12 @@ export function creerArbitre({
   return async function arbitrer(request) {
     try {
       if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
+      // Sonde de mise en service : elle ne demande pas de compte et ne révèle
+      // rien — c'est ce qu'on ouvre dans un navigateur pour vérifier que la
+      // fonction est bien déployée (docs/rpg/17-pvp-multijoueur.md §8.9).
+      if (request.method === 'GET') {
+        return reponse(200, { ok: true, service: 'sablier-duel', version: RPG_PVP_VERSION });
+      }
       if (request.method !== 'POST') return refus(405, 'methode');
 
       const { corps, erreur } = await lireCorps(request);

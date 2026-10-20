@@ -148,8 +148,11 @@ test('l’arbitre refuse tout sans jeton, hors POST, ou pour une action inconnue
   }));
   assert.equal(mauvaisJeton.status, 401);
 
-  const enGet = await monde.arbitre(new Request('https://x.test/', { method: 'GET' }));
-  assert.equal(enGet.status, 405);
+  // GET = sonde de mise en service : 200 sans jeton, et sans le moindre état.
+  const sonde = await monde.arbitre(new Request('https://x.test/', { method: 'GET' }));
+  assert.equal(sonde.status, 200);
+  assert.deepEqual(await sonde.json(), { ok: true, service: 'sablier-duel', version: 1 });
+  assert.equal((await monde.arbitre(new Request('https://x.test/', { method: 'DELETE' }))).status, 405);
 
   assert.equal((await api(monde, HOTE, { action: 'pirater' })).status, 400);
   assert.equal((await api(monde, HOTE, { action: 'etat', code: 'ZZZZ' })).raison, 'code-invalide');

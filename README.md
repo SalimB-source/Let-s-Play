@@ -8437,7 +8437,7 @@ si une main contient encore des terrains.
   15,55 %, navigation 0,62 carte, main 1,38 carte), les plaques et jauges de la
   colonne de gauche, les deux champs au milieu, les cases sous les cartes
   posées, la jauge à deux rangées de cinq losanges, le mulligan à trois cartes ;
-- `scripts/rpg-battle-ui-check.mjs`, `scripts/rpg-mana-essai-check.mjs` — les
+- `scripts/rpg-battle-ui-check.mjs` — les
   assertions statiques de la nouvelle grille et des jauges ;
 - `docs/rpg/mobile-layout.md` — la composition et le tableau des proportions.
 

@@ -319,26 +319,38 @@ seule l'invitation en a besoin et `direct_messages` est déjà publié.
 
 ---
 
-## 7. L'écran, en pratique
+## 7. L'écran, en pratique (livré)
 
-- **Entrée** : une troisième action dans l'écran d'entrée ou le menu du duel —
-  « Duel en ligne ». Pas un quatrième écran d'accueil : le jeu a déjà
-  « PC / navigateur », il ne faut pas empiler les portes.
-- **Salon d'invitation** : choix du deck (les decks maison existent déjà), mode
-  direct / correspondance, liste d'amis avec pastille de présence.
-- **Pendant** : bandeau « À toi de jouer » / « À Yasmine — 00:47 », journal
-  nommé, bouton « Abandonner » discret (deux clics, il ne doit pas être à côté
-  de « Fin de tour »).
-- **Fin** : résultat, delta de note si classé, `[ Revanche ]` et
-  `[ Partager le lien ]`. Le message de résultat part dans le fil existant.
-- **États d'erreur à soigner** : lien expiré, duel déjà terminé, joueur qui
-  s'invite lui-même, versions de client différentes.
+Trois surfaces, toutes branchées sur l'arbitre :
 
-Chargement : la carte du message et le salon ne doivent **pas** importer
-`RpgDuelPage` (chunk de ~740 Ko). L'écran d'invitation est léger ; le duel reste
-un `lazy()`.
+| Surface | Fichier | Rôle |
+| --- | --- | --- |
+| **Entrée** | `RpgDuelPage.jsx` (menu) | le bouton « Duel en ligne », à côté de « Partie rapide » — c'est un lien simple, donc la page continue de se monter hors routeur dans les vérifications jsdom |
+| **Salon** | `RpgPvpSalon.jsx` + `rpg-pvp.css` | `/jeu/sablier-de-bab-el/defi` (créer, défier un ami, entrer un code) et `/…/defi/:code` (attendre, rejoindre) |
+| **Plateau** | `RpgPvpBoard.jsx` | mulligan, choix du mana, main, créatures, combat, journal, fin de partie |
 
----
+Décisions d'écran qui méritent d'être connues :
+
+- **Le plateau en ligne est un écran dédié**, pas le duel solo : le solo garde
+  son moteur local et ses 9 500 lignes intactes. Le plateau PvP n'a **aucun
+  moteur** — il affiche la vue de l'arbitre et transforme chaque geste en
+  intention. Aucune divergence possible entre ce que je vois et ce que le
+  serveur juge, ce qu'une intégration optimiste aurait provoqué sur les
+  pioches (le hasard du serveur n'est pas celui du navigateur).
+- Le salon **sonde l'arbitre toutes les 2 s** pendant l'attente et quand ce
+  n'est pas mon tour, 10 s onglet caché, et pas du tout sur un écran figé
+  (défi refusé, expiré, terminé).
+- La **carte de défi** de la messagerie (`RpgPvpCarte.jsx`) ne contient que le
+  code et le mode. Son statut s'obtient au salon : un message ne peut pas
+  annoncer une partie qui n'existe pas.
+- Le **banc d'essai « sans terrains » a été retiré du menu** : ces règles sont
+  désormais celles de tous les duels, il n'y avait plus rien à « tester ».
+  `scripts/rpg-mana-essai-smoke.jsx` (qui pilotait ce banc) disparaît avec
+  lui ; les règles restent vérifiées par `tests/rpg-mana-essai.test.js`.
+
+Chargement : la carte de défi et le salon n'importent **pas** `RpgDuelPage`
+(chunk de ~740 Ko) — `main.jsx` charge le salon en `lazy`, et la carte est un
+composant de quelques dizaines de lignes.
 
 ## 8. Où tourne l'arbitre : Vercel, GitHub, Cloudflare ou Supabase
 
@@ -564,10 +576,12 @@ déjà testé en Node (`node --test`, sans réseau).
    est idempotent — le rejouer ne perd ni duel ni joueur.
 3. **Déploiement** : pousser sur la branche reliée à Vercel. `vercel.json` n'a
    rien à changer (le repli SPA exclut déjà `/api/*`).
-4. **Vérifier** : `curl -X POST https://<domaine>/api/sablier-duel -H
-   'content-type: application/json' -d '{"action":"etat"}'` doit répondre
-   `401 connexion` — c'est la preuve que la route tourne et que le corps est lu.
-   Un `503` indique l'étape 1, un `500` la clé ou le schéma.
+4. **Vérifier** : ouvrir `https://<domaine>/api/sablier-duel` dans un
+   navigateur. La sonde répond `{"ok":true,"service":"sablier-duel","version":1}`
+   sans compte et sans révéler d'état. Un `503` signale l'étape 1 (variables
+   absentes), un `500` la clé ou le schéma non appliqué. Pour tester une action :
+   `curl -X POST …-H 'content-type: application/json' -d '{"action":"etat"}'`
+   doit répondre `401 connexion`.
 5. **En local** : `npm run dev` (Vite) ne sert pas `api/`. Pour jouer un duel
    de bout en bout sur sa machine, `npx vercel dev` sert le site **et** la
    fonction, avec les mêmes variables dans `.env.local`.
@@ -627,14 +641,21 @@ allée-retour de la carte d'invitation en jsdom (P2), expiration et double envoi
 | `src/server/sablierArbitre.js` | **l'arbitre** : `Request` → `Response`, magasin et authentification injectés, aucune fuite d'état |
 | `api/sablier-duel.js` | l'enveloppe Vercel : magasin Supabase (clé service), JWT vérifié, `503` propre si non configuré |
 | `src/games/rpgPvpApi.js` | le client : `ouvrirDefi`, `rejoindreDefi`, `etatDefi`, `jouerIntention`, `refuserDefi`, `abandonnerDefi`, `lienDefi` |
+| `src/games/rpgPvpSalon.js` | décisions du salon sans DOM : écran à montrer, qui peut rejoindre, résultat, texte et payload du défi |
+| `src/games/RpgPvpSalon.jsx` | salon : création par lien, défi nominatif (message + carte), saisie de code, attente, sondage |
+| `src/games/RpgPvpBoard.jsx` | plateau PvP sans moteur : la vue de l'arbitre, rien d'autre |
+| `src/games/RpgPvpCarte.jsx` | la carte « Défi du Sablier » dans la messagerie |
+| `src/games/rpg-pvp.css` | styles du salon, du plateau et de la carte (téléphone inclus) |
+| `tests/rpg-pvp-salon.test.js` | 8 tests du salon et de la carte |
 | `tests/sablier-arbitre.test.js` | 14 tests de bout en bout contre un magasin en mémoire : usurpation, seq périmé, fuite de main, carte posée, horloge, abandon |
 | `supabase/rpg-pvp.sql` | tables des duels, journal d'actions, file d'attente, classement, RLS fermée sur l'état, RPC de file, purge, colonnes `kind`/`payload` des messages |
 | `package.json` | `npm run check:rpg-pvp` (35 tests) et `npm run check:sablier-arbitre` |
 
-**Le serveur est complet, l'écran ne l'utilise pas encore** : le jeu solo est
-inchangé, et `/api/sablier-duel` répond `503` tant que les deux variables
-d'environnement ne sont pas posées (§8.9). L'étape suivante (P1bis) est de
-brancher `RpgDuelPage` sur `rpgPvpVue`.
+**Le PvP est jouable de bout en bout dans le dépôt** : salon → invitation →
+partie → fin → (revanche à faire, P3). Le jeu solo est inchangé. Il ne reste
+qu'à poser les deux variables d'environnement (§8.9) ; dans l'intervalle,
+`GET /api/sablier-duel` répond `503` et le salon affiche son écran de
+connexion, sans casser le reste du site.
 
 ---
 

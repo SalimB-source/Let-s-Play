@@ -1,3 +1,4 @@
+import RpgPvpCarte from '../games/RpgPvpCarte.jsx';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fill } from '../friends/friendsCopy';
@@ -734,6 +735,9 @@ export function ThreadView({
                 <li className={`messages-bubble-row${message.mine ? ' is-mine' : ''}`}>
                   <div className="messages-bubble-wrap">
                     <p className={`messages-bubble${message.mine ? ' is-mine' : ''}`}>{message.body}</p>
+                    {/* Un défi du Sablier est un message typé : la carte
+                        renvoie vers le salon, qui seul connaît son statut. */}
+                    {message.kind === 'defi-sablier' && <RpgPvpCarte message={message} />}
                     {message.mine && (
                       <button
                         type="button"
