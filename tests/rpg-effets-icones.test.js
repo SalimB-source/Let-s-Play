@@ -86,7 +86,6 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   const jarl = effetsDetailles(cardById('jarl-au-marteau-de-guerre'));
   assert.equal(jarl.pastilles[0].description, 'La première fois qu’il est blessé et survit, le Jarl gagne +3/+3.');
 
-  assert.deepEqual(effetsDetailles(cardById('desert')), { pastilles: [], texte: cardById('desert').text });
 });
 
 test('un aperçu rend lisible tout ce que la fiche imprime', () => {

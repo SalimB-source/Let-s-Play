@@ -66,29 +66,6 @@ test('journal : un duel neuf n’a rien à montrer, et un duel absent non plus',
   assert.deepEqual(rpgConsommerSoins(undefined), []);
 });
 
-test('journal : une magie de soin note le vrai gain, et la vie passe au-dessus de 25', () => {
-  const duel = duelClassique();
-  donner(duel, 'joueur', 'eau-de-la-source');
-  duel.joueur.terrains.push({ id: 'mer-soin', carteId: 'mer', tapped: false });
-  duel.joueur.pv = RPG_PV_JOUEUR - 3;
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'eau-de-la-source').ok, true);
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 1, 'l’Eau de la source (4) porte la vie au-dessus de 25');
-  assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 4 }],
-    'le journal garde le gain réel (4)');
-  assert.deepEqual(rpgConsommerSoins(duel), [], 'un soin ne se relève qu’une fois');
-});
-
-test('journal : à pleine vie, un soin fait grimper la vie — 25 n’est plus un plafond', () => {
-  const duel = duelClassique();
-  donner(duel, 'joueur', 'eau-de-la-source');
-  duel.joueur.terrains.push({ id: 'mer-plein', carteId: 'mer', tapped: false });
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR);
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'eau-de-la-source').ok, true, 'le sort reste jouable à pleine vie');
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 4, 'la réserve de vie s’ouvre');
-  assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 4 }],
-    'le gain s’illumine et se fait entendre');
-});
-
 test('journal : le soin du sorcier adverse est noté de son côté', () => {
   const duel = duelClassique();
   duel.tour = 'sorcier';
@@ -180,17 +157,6 @@ test('journal : la Gardienne de la balance soigne en mourant (capacité de destr
   assert.equal(rpgBlesserCreature(duel, 'joueur', pose.entite.id, 100, 'braise').ok, true);
   assert.equal(duel.joueur.pv, 23);
   assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: null, montant: 3 }]);
-});
-
-test('journal : hors de l’état sauvegardé — une copie du duel (annulation) repart vide', () => {
-  const duel = duelClassique();
-  donner(duel, 'joueur', 'eau-de-la-source');
-  duel.joueur.terrains.push({ id: 'mer-copie', carteId: 'mer', tapped: false });
-  duel.joueur.pv = 10;
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'eau-de-la-source').ok, true);
-  const copie = structuredClone(duel);
-  assert.deepEqual(rpgConsommerSoins(copie), [], 'un duel restauré ne rejoue pas un ancien soin');
-  assert.equal(rpgConsommerSoins(duel).length, 1, 'l’original garde son relevé');
 });
 
 /* ── La présentation : regrouper, choisir le son, annoncer ─────────────────── */

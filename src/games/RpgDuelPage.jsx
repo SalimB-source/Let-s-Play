@@ -234,7 +234,6 @@ const CARD_ART_CACHE_VERSIONS = {
   'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
   'serment-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
   'pere-des-corbeaux': 'odin-photoreal-v1',
-  'djinn-du-souk': 'munch-impressionniste-v3',
   'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
   'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
   'anqa-des-braises': 'anqa-des-braises-huile-v1',
@@ -5839,7 +5838,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     : (
       deckAdverseAffiche.boxArt
       ?? deckAdverseAffiche.cardIds.find((id) => cardById(id)?.kind !== 'terrain')
-      ?? 'djinn-du-souk'
+      ?? 'ifrit-des-ergs'
     );
   const personnageSorcier = personnageEtage(histoireEtageId);
   const portraitSorcierAdverse = (personnageSorcier && portraitHistoire(personnageSorcier, import.meta.env.BASE_URL, cardArt))
@@ -6548,7 +6547,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // `check:rpg-preview` : `rpgJouerCreature` rendait `ok: true` et la créature
     // n'apparaissait qu'à la macrotâche suivante).
     if (res.ok) {
-      noterEvenementDuel({ type: 'terrain-pose', cardId: carteId });
       noterEvenementDuel({ type: 'carte-jouee', cardId: carteId });
     }
   };

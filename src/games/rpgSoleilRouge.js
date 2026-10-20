@@ -199,18 +199,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
   }),
 ];
 
-export const RPG_SOLEIL_ROUGE_TERRAINS = [
-  carte({
-    id: 'montagne-du-soleil-rouge', name: 'Montagne du Soleil rouge',
-    kind: 'terrain', cost: 0, rarity: 'commune', varianteDe: 'montagne',
-    typeLine: 'Terrain — Montagne',
-    text: 'Engagez : ajoutez un mana Braise.',
-    flavor: 'Sous le soleil rouge, la pierre garde le feu des anciens serments.',
-  }),
-];
-
 export const RPG_SOLEIL_ROUGE_CARDS = [
   ...RPG_SOLEIL_ROUGE_CREATURES,
   ...RPG_SOLEIL_ROUGE_MAGIES,
-  ...RPG_SOLEIL_ROUGE_TERRAINS,
 ];

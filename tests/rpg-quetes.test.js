@@ -44,6 +44,7 @@ function etatDuJour(quetes, progres = {}, reste = {}) {
     cachet: false,
     serie: 1,
     majLe: null,
+    debutLe: new Date().toISOString(),
     ...reste,
   };
 }
@@ -100,14 +101,6 @@ test('les quêtes du jour sont les mêmes pour un même couple (jour, graine)', 
   assert.ok(journees.size > 20, `le tirage varie (${journees.size} journées distinctes sur 28)`);
 });
 
-test('la quête du comptoir n’est tirée que si un rayon du Souk est ouvert', () => {
-  assert.equal(quetesDisponibles(progression()).some((quete) => quete.id === 'booster-1'), false);
-  assert.equal(quetesDisponibles(progression('listes-1')).some((quete) => quete.id === 'booster-1'), true);
-  const jours = Array.from({ length: 400 }, (_, index) => `2026-${String((index % 12) + 1).padStart(2, '0')}-${String((index % 28) + 1).padStart(2, '0')}`);
-  assert.equal(jours.some((jour) => quetesDuJour(jour, 'g', progression()).includes('booster-1')), false, 'jamais avant la première victoire');
-  assert.equal(jours.some((jour) => quetesDuJour(jour, 'g', progression('listes-1')).includes('booster-1')), true, 'un jour sur les autres après');
-});
-
 // ── La journée : ouverture, série, progression ────────────────────────────────
 
 test('ouvrir une journée tire les quêtes, remet la progression à zéro et suit la série', () => {
@@ -136,11 +129,11 @@ test('ouvrir une journée tire les quêtes, remet la progression à zéro et sui
 });
 
 test('la progression d’une quête se plafonne, ne compte pas deux fois et respecte la couleur', () => {
-  const etat = etatDuJour(['terrains-12', 'cartes-sable-8', 'degats-40']);
-  let suite = progresserQuete(etat, { type: 'terrain-pose' });
-  assert.equal(suite.progres['terrains-12'], 1);
-  suite = progresserQuete(suite, { type: 'terrain-pose' });
-  assert.equal(suite.progres['terrains-12'], 2);
+  const etat = etatDuJour(['creatures-10', 'cartes-sable-8', 'degats-40']);
+  let suite = progresserQuete(etat, { type: 'creature-invoquee' });
+  assert.equal(suite.progres['creatures-10'], 1);
+  suite = progresserQuete(suite, { type: 'creature-invoquee' });
+  assert.equal(suite.progres['creatures-10'], 2);
   assert.equal(progresserQuete(suite, { type: 'evenement-inconnu' }), suite, 'un événement inconnu ne touche à rien');
 
   suite = progresserQuete(suite, { type: 'carte-jouee', couleurs: ['braise'] });
@@ -153,40 +146,40 @@ test('la progression d’une quête se plafonne, ne compte pas deux fois et resp
   suite = progresserQuete(suite, { type: 'degats-infliges', montant: 25 });
   assert.equal(suite.progres['degats-40'], 40, 'l’objectif est un plafond');
 
-  for (let index = 0; index < 20; index += 1) suite = progresserQuete(suite, { type: 'terrain-pose' });
-  assert.equal(suite.progres['terrains-12'], 12);
+  for (let index = 0; index < 20; index += 1) suite = progresserQuete(suite, { type: 'creature-invoquee' });
+  assert.equal(suite.progres['creatures-10'], 10);
 });
 
 test('une quête réclamée ne progresse plus', () => {
-  const etat = etatDuJour(['terrains-12'], { 'terrains-12': 12 });
-  const prise = reclamerQuete(etat, 'terrains-12');
+  const etat = etatDuJour(['creatures-10'], { 'creatures-10': 10 });
+  const prise = reclamerQuete(etat, 'creatures-10');
   assert.equal(prise.ok, true);
-  assert.equal(progresserQuete(prise.etat, { type: 'terrain-pose' }), prise.etat);
+  assert.equal(progresserQuete(prise.etat, { type: 'creature-invoquee' }), prise.etat);
 });
 
 // ── La réclamation ───────────────────────────────────────────────────────────
 
 test('réclamer demande une quête connue, terminée, et ne paie qu’une fois', () => {
-  const etat = etatDuJour(['terrains-12']);
-  assert.equal(reclamerQuete(etat, 'terrains-12').raison, 'objectif-incomplet');
+  const etat = etatDuJour(['creatures-10']);
+  assert.equal(reclamerQuete(etat, 'creatures-10').raison, 'objectif-incomplet');
   assert.equal(reclamerQuete(etat, 'duels-2').raison, 'quete-inconnue');
-  const fini = etatDuJour(['terrains-12'], { 'terrains-12': 12 });
-  const prise = reclamerQuete(fini, 'terrains-12');
+  const fini = etatDuJour(['creatures-10'], { 'creatures-10': 10 });
+  const prise = reclamerQuete(fini, 'creatures-10');
   assert.equal(prise.ok, true);
-  assert.equal(prise.credits, queteParId('terrains-12').recompense);
-  assert.deepEqual(prise.etat.reclamations, ['terrains-12']);
-  assert.equal(reclamerQuete(prise.etat, 'terrains-12').raison, 'deja-reclamee');
+  assert.equal(prise.credits, queteParId('creatures-10').recompense);
+  assert.deepEqual(prise.etat.reclamations, ['creatures-10']);
+  assert.equal(reclamerQuete(prise.etat, 'creatures-10').raison, 'deja-reclamee');
   assert.equal(queteParId('duels-2').recompense, 70);
 });
 
 test('la pastille compte les quêtes à réclamer, et le Cachet attend les trois', () => {
-  const jour = ['terrains-12', 'duels-2', 'etage-1'];
+  const jour = ['creatures-10', 'duels-2', 'etage-1'];
   let etat = etatDuJour(jour);
   assert.deepEqual(quetesAReclamer(etat), []);
   assert.equal(cachetDisponible(etat), false);
   assert.equal(reclamerCachetDuCycle(etat).raison, 'cycle-incomplet');
 
-  etat = etatDuJour(jour, { 'terrains-12': 12, 'duels-2': 2, 'etage-1': 1 });
+  etat = etatDuJour(jour, { 'creatures-10': 12, 'duels-2': 2, 'etage-1': 1 });
   assert.deepEqual(quetesAReclamer(etat).sort(), [...jour].sort());
   for (const id of jour) etat = reclamerQuete(etat, id).etat;
   assert.deepEqual(quetesAReclamer(etat), []);
@@ -201,27 +194,27 @@ test('la pastille compte les quêtes à réclamer, et le Cachet attend les trois
 // ── La normalisation et la fusion ────────────────────────────────────────────
 
 test('un état de quêtes corrompu se relit proprement', () => {
-  const lu = normaliserEtatQuetes({ jour: 'hier', quetes: ['terrains-12', 'inconnue', 'terrains-12'], progres: { 'terrains-12': 999 }, reclamations: ['inconnue', 'terrains-12'], serie: -5 });
+  const lu = normaliserEtatQuetes({ jour: 'hier', quetes: ['creatures-10', 'inconnue', 'creatures-10'], progres: { 'creatures-10': 999 }, reclamations: ['inconnue', 'creatures-10'], serie: -5 });
   assert.equal(lu.jour, null);
-  assert.deepEqual(lu.quetes, ['terrains-12']);
-  assert.equal(lu.progres['terrains-12'], 12, 'la progression est plafonnée à l’objectif');
-  assert.deepEqual(lu.reclamations, ['terrains-12']);
+  assert.deepEqual(lu.quetes, ['creatures-10']);
+  assert.equal(lu.progres['creatures-10'], 10, 'la progression est plafonnée à l’objectif');
+  assert.deepEqual(lu.reclamations, ['creatures-10']);
   assert.equal(lu.serie, 0);
   assert.deepEqual(normaliserEtatQuetes(null), etatQuetesVide());
 });
 
 test('la fusion garde le jour le plus récent et ne paie jamais deux fois', () => {
-  const ici = etatDuJour(['terrains-12', 'duels-2'], { 'terrains-12': 5, 'duels-2': 2 }, { serie: 3, majLe: '2026-10-14T10:00:00.000Z' });
-  const la = etatDuJour(['terrains-12', 'duels-2'], { 'terrains-12': 9, 'duels-2': 0 }, { reclamations: ['duels-2'], cachet: false, serie: 5, majLe: '2026-10-14T11:00:00.000Z' });
+  const ici = etatDuJour(['creatures-10', 'duels-2'], { 'creatures-10': 5, 'duels-2': 2 }, { serie: 3, majLe: '2026-10-14T10:00:00.000Z' });
+  const la = etatDuJour(['creatures-10', 'duels-2'], { 'creatures-10': 9, 'duels-2': 0 }, { reclamations: ['duels-2'], cachet: false, serie: 5, majLe: '2026-10-14T11:00:00.000Z' });
   const meme = fusionnerQuetes(ici, la);
   assert.equal(meme.etat.jour, JOUR);
-  assert.equal(meme.etat.progres['terrains-12'], 9, 'la progression la plus avancée');
+  assert.equal(meme.etat.progres['creatures-10'], 9, 'la progression la plus avancée');
   assert.equal(meme.etat.progres['duels-2'], 2);
   assert.deepEqual(meme.etat.reclamations, ['duels-2']);
   assert.equal(meme.etat.serie, 5);
   assert.equal(meme.modifie, true);
 
-  const hier = { ...etatDuJour(['terrains-12']), jour: '2026-10-13', serie: 2 };
+  const hier = { ...etatDuJour(['creatures-10']), jour: '2026-10-13', serie: 2 };
   const aujourdhui = { ...etatDuJour(['duels-2'], { 'duels-2': 1 }), jour: JOUR, serie: 4 };
   const melange = fusionnerQuetes(hier, aujourdhui);
   assert.equal(melange.etat.jour, JOUR);

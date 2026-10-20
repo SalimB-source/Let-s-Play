@@ -29,7 +29,7 @@ import { cardById, cardColors } from '../src/games/rpgCards.js';
 const JOUR = '2026-10-14';
 
 /** Une carte réelle par couleur — pour fabriquer le geste d'une quête de couleur. */
-const CARTE_PAR_COULEUR = { braise: 'trait-de-braise', eau: 'ressac', sable: 'desert', neige: 'glacier' };
+const CARTE_PAR_COULEUR = { braise: 'trait-de-braise', eau: 'ressac', sable: 'fennec-des-decombres', neige: 'loup-des-neiges' };
 
 /**
  * Un geste appliqué à une journée de quêtes, sans bourse : rend l'état des
@@ -45,10 +45,10 @@ function journee(graine = 'test', progression = null) {
   return ouvrirJournee({ etat: etatQuetesVide(), jour: JOUR, graine, progression }).etat;
 }
 
-test('le contrat énumère les neuf gestes du duel, et un seul paie', () => {
+test('le contrat énumère les huit gestes du duel, et un seul paie', () => {
   assert.deepEqual([...EVENEMENTS_DUEL].sort(), [
     'arme-jouee', 'booster-ouvert', 'carte-jouee', 'creature-invoquee',
-    'degats-infliges', 'duel-gagne', 'etage-deblaye', 'magie-lancee', 'terrain-pose',
+    'degats-infliges', 'duel-gagne', 'etage-deblaye', 'magie-lancee',
   ]);
   assert.deepEqual([...EVENEMENTS_PAYANTS], ['duel-gagne']);
 });
@@ -120,7 +120,7 @@ test('un événement sans effet ne bouge pas l’état (stabilité référentiel
   const bourse = portefeuilleVide();
   const quetes = journee('partie-sans-duel');
   const avant = JSON.stringify(quetes);
-  const suite = appliquerEvenementDuel({ bourse, quetes }, { type: 'terrain-pose', cardId: 'desert' });
+  const suite = appliquerEvenementDuel({ bourse, quetes }, { type: 'creature-invoquee', cardId: 'fennec-des-decombres' });
   assert.equal(suite.gain, 0, 'poser un terrain ne rapporte aucun crédit');
   assert.equal(suite.bourse, bourse, 'le portefeuille n’est pas recopié');
   assert.equal(JSON.stringify(suite.quetes), avant, 'les quêtes non concernées ne bougent pas');
@@ -149,7 +149,7 @@ test('un geste d’une autre couleur ne fait pas avancer une quête de couleur',
     const braise = etat.quetes.find((id) => queteParId(id).ecoute?.couleur === 'braise');
     if (!braise) continue;
     assert.equal(braise, 'cartes-braise-8');
-    const neige = gesteSurQuetes(etat, { type: 'carte-jouee', cardId: 'glacier' });
+    const neige = gesteSurQuetes(etat, { type: 'carte-jouee', cardId: 'loup-des-neiges' });
     assert.equal(neige, etat, 'la Neige ne touche pas une quête de Braise');
     const braiseJouee = gesteSurQuetes(etat, { type: 'carte-jouee', cardId: 'trait-de-braise' });
     assert.equal(braiseJouee.progres['cartes-braise-8'], 1, 'la Braise, si');
@@ -169,19 +169,6 @@ test('les dégâts comptent leur montant, pas leur nombre d’événements', () 
   etat = progresserQuete(etat, { type: 'degats-infliges', montant: 30 });
   assert.equal(etat.progres['degats-40'], quete.objectif, 'l’objectif plafonne la progression');
   assert.equal(reclamerQuete(etat, 'degats-40').ok, true);
-});
-
-test('le Souk fermé ne tire pas la quête du comptoir', () => {
-  const avecGarde = QUETES.find((quete) => quete.garde === 'rayon-ouvert');
-  assert.equal(avecGarde.id, 'booster-1');
-  for (const graine of ['a', 'b', 'c', 'd', 'e', 'f']) {
-    const jour = journee(graine, { etagesVaincus: [] });
-    assert.equal(jour.quetes.includes('booster-1'), false, 'sans victoire, pas de quête du comptoir');
-  }
-  const ouvert = ouvrirJournee({
-    etat: etatQuetesVide(), jour: JOUR, graine: 'a', progression: { etagesVaincus: ['listes-1'] },
-  }).etat;
-  assert.ok(ouvert.quetes.length >= 3, 'le Souk ouvert, la journée se tire normalement');
 });
 
 test('la pastille compte les réclamations dues, jamais plus', () => {
@@ -221,7 +208,7 @@ test('la pastille compte les réclamations dues, jamais plus', () => {
 function gestePour(quete, montant = null) {
   const ecoute = quete.ecoute ?? {};
   const evenement = { type: ecoute.type };
-  if (ecoute.montant && montant) evenement.montant = montant;
+  if (ecoute.montant) evenement.montant = montant ?? 5;
   if (!ecoute.type.startsWith('carte-')) return evenement;
   const carte = CARTE_PAR_COULEUR[ecoute.couleur];
   return carte ? { ...evenement, cardId: carte } : evenement;

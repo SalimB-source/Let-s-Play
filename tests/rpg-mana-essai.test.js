@@ -54,7 +54,6 @@ test('les quatre decks de démonstration partagent le format 30 cartes sans terr
     assert.equal(deck.cardIds.length, RPG_MANA_ESSAI_TAILLE);
     assert.deepEqual(validerDeckManaEssai(deck), { ok: true }, deck.name);
     assert.ok(deck.cardIds.every((id) => cardById(id)?.kind !== 'terrain'));
-    assert.equal(deck.cardIds.filter((id) => id === 'djinn-du-souk' || id === 'boussole-du-hoggar').length, 0);
     assert.ok(adversaireManaEssai(deck) !== deck);
   }
   assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE).ok, true);
@@ -62,16 +61,11 @@ test('les quatre decks de démonstration partagent le format 30 cartes sans terr
   assert.equal(validerDeckManaEssai({ ...mono, cardIds: mono.cardIds.slice(1) }).ok, false);
   assert.equal(validerDeckManaEssai({ ...mono, cardIds: [...mono.cardIds.slice(1), 'desert'] }).ok, false);
   assert.equal(validerDeckManaEssai({ ...mono, cardIds: [...mono.cardIds.slice(1), 'trait-de-braise'] }).ok, false);
-  assert.match(validerDeckManaEssai({ ...mono, cardIds: [...mono.cardIds.slice(1), 'boussole-du-hoggar'] }).raison, /effet lié aux terrains/);
-  assert.match(validerDeckManaEssai({ ...bi, cardIds: [...bi.cardIds.slice(1), 'djinn-du-souk'] }).raison, /effet lié aux terrains/);
-  for (const carteId of ['boussole-du-hoggar', 'djinn-du-souk']) {
-    assert.throws(() => rpgNouveauDuel({
-      modeMana: RPG_MODE_MANA_ESSAI,
-      joueurDeck: [...mono.cardIds.slice(1), carteId],
-      sorcierDeck: mono.cardIds,
-      joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng,
-    }), /effet lié aux terrains/, `le moteur interdit ${carteId} même hors des decks de démonstration`);
-  }
+  // Le Djinn du souk et la Boussole du Hoggar sont retirés du jeu : ce sont des cartes inconnues.
+  assert.equal(cardById('boussole-du-hoggar'), null);
+  assert.equal(cardById('djinn-du-souk'), null);
+  assert.equal(validerDeckManaEssai({ ...mono, cardIds: [...mono.cardIds.slice(1), 'boussole-du-hoggar'] }).ok, false);
+  assert.equal(validerDeckManaEssai({ ...bi, cardIds: [...bi.cardIds.slice(1), 'djinn-du-souk'] }).ok, false);
 });
 
 test('mana du tour 1 uniquement après les deux mulligans ; auto en mono, choix explicite en multi', () => {

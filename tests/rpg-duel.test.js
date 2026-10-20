@@ -188,11 +188,11 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
   assert.equal(new Set(RPG_DUEL_CARDS.map((carte) => carte.id)).size, RPG_DUEL_CARDS.length,
     'le catalogue réunit les cartes sans doublon');
   assert.deepEqual(new Set(RPG_DUEL_CARDS.map((carte) => carte.kind)),
-    new Set(['creature', 'hero', 'terrain', 'magie', 'arme']));
+    new Set(['creature', 'hero', 'magie', 'arme']));
 });
 
-test('le set de créatures existe : soixante-huit cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 68);
+test('le set de créatures existe : soixante-sept cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 67, 'le Djinn du souk est retiré du jeu');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -200,7 +200,7 @@ test('le set de créatures existe : soixante-huit cartes façon TCG (coût, atta
     assert.ok(Object.hasOwn(CARD_RARITIES, carte.rarity), 'chaque carte a une rareté connue');
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'chaque carte a un type parmi les quatre couleurs');
   }
-  assert.equal(creatureById('djinn-du-souk').name, 'Djinn du souk');
+  assert.equal(creatureById('djinn-du-souk'), null, 'le Djinn du souk n’existe plus');
 });
 
 test('les cinq Tours de défense appartiennent au catalogue et peuvent être jouées', () => {
@@ -492,10 +492,6 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
 
   assert.equal(cardArtId('tempete-de-sable'), 'tempete-de-sable',
     'Tempête de sable utilise bien l’illustration du tourbillon');
-  assert.equal(cardArtId('desert'), 'desert', 'le nouveau terrain utilise l’illustration du Désert');
-  assert.equal(cardById('desert').name, 'Désert', 'la carte Plaines est remplacée par le Désert');
-  assert.notEqual(cardArtId('tempete-de-sable'), cardArtId('desert'),
-    'la tempête ne reprend pas l’illustration du Désert');
   assert.equal(cardArtId('rempart-de-dunes'), 'rempart-de-dunes',
     'Rempart de dunes utilise sa nouvelle illustration protectrice');
   assert.notEqual(cardArtId('rempart-de-dunes'), cardArtId('dune-marchante'),
@@ -1760,36 +1756,6 @@ test('Sahir : les destructions en chaîne précèdent aussi le partage', () => {
   assert.equal(duel.sorcier.pv, pvSorcier);
 });
 
-test('les terrains et leurs variantes gardent les mêmes couleurs, types et productions de mana', () => {
-  assert.equal(RPG_TERRAIN_CARDS.length, 11);
-  assert.deepEqual(RPG_TERRAIN_CARDS.map((t) => t.id).sort(), [
-    'cretes-de-cendre', 'desert', 'dunes-du-tenere', 'glacier', 'glacier-des-arches',
-    'lagune-des-salines', 'mer', 'montagne', 'montagne-du-soleil-rouge', 'petra', 'petra-des-deux-sources',
-  ]);
-  assert.equal(RPG_TERRAIN_CARDS.find((t) => t.id === 'glacier').element, 'neige');
-  assert.deepEqual(terrainManaColors('glacier'), ['neige']);
-  assert.equal(RPG_TERRAIN_CARDS.find((t) => t.id === 'montagne').element, 'braise');
-  assert.equal(RPG_TERRAIN_CARDS.find((t) => t.id === 'mer').element, 'eau');
-  assert.equal(RPG_TERRAIN_CARDS.find((t) => t.id === 'desert').element, 'sable');
-  assert.equal(cardById('petra').element, 'hybride');
-  assert.deepEqual(cardColors('petra'), ['sable', 'braise']);
-  assert.deepEqual(terrainManaColors('petra'), ['braise', 'sable']);
-
-  for (const [varianteId, baseId] of VARIANTES_TERRAIN) {
-    const variante = cardById(varianteId);
-    const base = cardById(baseId);
-    assert.equal(variante.varianteDe, baseId, `${varianteId} référence son terrain d’origine`);
-    assert.equal(cardArtId(variante), varianteId, `${varianteId} possède son art dédié`);
-    assert.equal(variante.kind, 'terrain');
-    assert.equal(variante.typeLine, base.typeLine, `${varianteId} garde la même ligne de type`);
-    assert.equal(variante.cost, base.cost, `${varianteId} garde le coût nul`);
-    assert.deepEqual(terrainManaColors(variante), terrainManaColors(base),
-      `${varianteId} produit exactement le même mana que ${baseId}`);
-    assert.ok(RPG_DECKS.every((deck) => !deck.cardIds.includes(varianteId)),
-      `${varianteId} reste archivé, hors des decks sans terrain`);
-  }
-});
-
 test('les créatures du Désert attaquent : Amayas protège des Ténèbres en permanence, la protection temporaire expire', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 5);
@@ -1879,73 +1845,6 @@ test('le sorcier ennemi démarre aux mêmes PV que le joueur, quelle que soit sa
   assert.equal(duel.sorcier.pvMax, RPG_PV_SORCIER_BASE);
 });
 
-test('on pose un terrain par tour, et l’engager donne son mana', () => {
-  const duel = duelDeBase();
-  donner(duel, 'joueur', 'desert');
-  donner(duel, 'joueur', 'mer');
-  assert.equal(rpgPoserTerrain(duel, 'joueur', 'desert').ok, true);
-  assert.equal(rpgPoserTerrain(duel, 'joueur', 'mer').ok, false, 'un seul terrain par tour');
-  assert.equal(duel.joueur.terrains.length, 1);
-  const terrain = duel.joueur.terrains[0];
-  assert.equal(rpgEngagerTerrain(duel, 'joueur', terrain.id).ok, true);
-  assert.equal(rpgMana(duel.joueur).sable, 1, 'le Désert produit un mana sable');
-  assert.equal(rpgEngagerTerrain(duel, 'joueur', terrain.id).ok, false, 'déjà engagé');
-});
-
-test('payer une créature : le total ET un mana de sa couleur', () => {
-  const duel = duelDeBase();
-  donner(duel, 'joueur', 'djinn-du-souk'); // coût 5, dont 1 braise
-  duel.joueur.mana = { braise: 0, eau: 5, sable: 5, neige: 0 };
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'djinn-du-souk').ok, false,
-    '10 mana mais aucun braise : le Djinn ne sort pas');
-  duel.joueur.mana = { braise: 1, eau: 4, sable: 0, neige: 0 };
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'djinn-du-souk').ok, true, '1 braise + 4 : payé');
-  assert.equal(rpgMana(duel.joueur).total, 0, 'le mana est dépensé');
-});
-
-test('les terrains dégagés rendent une carte jouable et paient automatiquement le coût', () => {
-  const duel = duelDeBase();
-  donner(duel, 'joueur', 'chien-du-guet'); // 2, dont 1 sable
-  const montagne = { id: 'auto-braise', carteId: 'montagne', tapped: false };
-  const mer = { id: 'auto-eau', carteId: 'mer', tapped: false };
-  duel.joueur.terrains.push(montagne, mer);
-
-  assert.equal(rpgPeutPayer(duel.joueur, creatureById('chien-du-guet')), false,
-    'deux terrains ne suffisent pas si aucun ne produit le sable requis');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'chien-du-guet').raison, 'mana');
-  assert.equal(montagne.tapped || mer.tapped, false, 'un paiement refusé ne touche pas aux terrains');
-
-  mer.carteId = 'desert';
-  assert.equal(rpgPeutPayer(duel.joueur, creatureById('chien-du-guet')), true,
-    'les deux terrains disponibles couvrent le coût et la couleur');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'chien-du-guet').ok, true);
-  assert.equal(montagne.tapped, true, 'le terrain générique est engagé automatiquement');
-  assert.equal(mer.tapped, true, 'le terrain sable est engagé automatiquement');
-  assert.equal(rpgMana(duel.joueur).total, 0, 'les terrains produisent puis dépensent leur mana immédiatement');
-});
-
-test('Pétra permet de choisir manuellement Braise ou Sable en s’engageant', () => {
-  const duelBraise = duelDeBase();
-  donner(duelBraise, 'joueur', 'petra');
-  assert.equal(rpgPoserTerrain(duelBraise, 'joueur', 'petra').ok, true);
-  const petraBraise = duelBraise.joueur.terrains[0];
-  assert.deepEqual(terrainManaColors('petra'), ['braise', 'sable']);
-  assert.deepEqual(rpgEngagerTerrain(duelBraise, 'joueur', petraBraise.id, 'braise'), { ok: true, couleur: 'braise' });
-  assert.equal(rpgMana(duelBraise.joueur).braise, 1);
-  assert.equal(petraBraise.tapped, true);
-
-  const duelSable = duelDeBase();
-  donner(duelSable, 'joueur', 'petra');
-  rpgPoserTerrain(duelSable, 'joueur', 'petra');
-  const petraSable = duelSable.joueur.terrains[0];
-  assert.equal(rpgEngagerTerrain(duelSable, 'joueur', petraSable.id, 'eau').raison, 'couleur',
-    'Pétra refuse une couleur qu’elle ne produit pas sans s’engager');
-  assert.equal(petraSable.tapped, false);
-  assert.deepEqual(rpgEngagerTerrain(duelSable, 'joueur', petraSable.id, 'sable'), { ok: true, couleur: 'sable' });
-  assert.equal(rpgMana(duelSable.joueur).sable, 1);
-  assert.equal(rpgEngagerTerrain(duelSable, 'joueur', petraSable.id, 'eau').raison, 'deja-engage');
-});
-
 test('un coût hybride exige une source Braise et une source Sable', () => {
   const djinn = cardById('djinn-de-foudre');
   const sort = cardById('vent-rouge');
@@ -1968,34 +1867,6 @@ test('un coût hybride exige une source Braise et une source Sable', () => {
   assert.equal(rpgPeutPayer(camp, djinn), false, 'deux Sables ne remplacent pas le pip Braise');
   camp.mana = { braise: 1, eau: 0, sable: 1, neige: 0 };
   assert.equal(rpgPeutPayer(camp, djinn), true, 'une source de chaque couleur suffit pour le Djinn de foudre');
-});
-
-test('Pétra et un Désert peuvent couvrir les deux pips hybrides du Djinn de foudre', () => {
-  const duel = duelDeBase();
-  donner(duel, 'joueur', 'djinn-de-foudre');
-  const petra = { id: 'hybride-petra', carteId: 'petra', tapped: false };
-  const desertA = { id: 'hybride-sable-a', carteId: 'desert', tapped: false };
-  duel.joueur.terrains.push(petra, desertA);
-  assert.equal(rpgPeutPayer(duel.joueur, cardById('djinn-de-foudre')), true,
-    'Pétra peut réserver Braise et le Désert couvre Sable');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'djinn-de-foudre').ok, true);
-  assert.ok(petra.tapped && desertA.tapped, 'les deux sources sont engagées automatiquement');
-  assert.equal(rpgMana(duel.joueur).total, 0, 'les deux manas sont dépensés');
-});
-
-test('une magie se paie elle aussi en engageant automatiquement ses terrains', () => {
-  const duel = duelDeBase();
-  donner(duel, 'joueur', 'eau-de-la-source');
-  duel.joueur.pv = RPG_PV_JOUEUR - 10;
-  const terrain = { id: 'mer-auto-sort', carteId: 'mer', tapped: false };
-  duel.joueur.terrains.push(terrain);
-
-  assert.equal(rpgPeutPayer(duel.joueur, { cost: 1, element: 'eau' }), true,
-    'une source eau dégagée suffit à rendre la sorcellerie jouable');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'eau-de-la-source').ok, true);
-  assert.equal(terrain.tapped, true, 'la mer s’engage quand le sort est lancé');
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 6, 'le sort se résout après son paiement');
-  assert.equal(rpgMana(duel.joueur).total, 0);
 });
 
 test('poser une créature sans mana échoue, avec mana elle entre en jeu', () => {
@@ -2370,40 +2241,6 @@ test('capacité à l’arrivée : le Colosse buffe vos autres créatures', () =>
   assert.equal(colosse.atk, 6, 'lui-même n’est pas buffé');
 });
 
-test('le Djinn coûte 5, est 3/3 et détruit au hasard un terrain adverse à son arrivée', () => {
-  const carte = cardById('djinn-du-souk');
-  assert.deepEqual({ cost: carte.cost, atk: carte.atk, def: carte.def }, { cost: 5, atk: 3, def: 3 });
-  assert.deepEqual(carte.arrivee, { type: 'detruire-terrain-aleatoire' });
-  assert.match(carte.text, /terrain adverse au hasard/i);
-
-  const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 20);
-  donner(duel, 'joueur', 'djinn-du-souk');
-  duel.sorcier.terrains.push(
-    { id: 'terrain-petra', carteId: 'petra', tapped: false },
-    { id: 'terrain-desert', carteId: 'desert', tapped: true },
-  );
-  const debutDestruction = rpgNombreDestructions(duel);
-  const randomOriginal = Math.random;
-  let pose;
-  Math.random = () => 0.99;
-  try {
-    pose = rpgJouerCreature(duel, 'joueur', 'djinn-du-souk');
-  } finally {
-    Math.random = randomOriginal;
-  }
-
-  assert.equal(pose.ok, true);
-  assert.deepEqual(duel.sorcier.terrains.map((terrain) => terrain.carteId), ['petra'],
-    'le tirage aléatoire choisi retire bien le Désert, qu’il soit engagé ou non');
-  assert.equal(duel.sorcier.cimetiere.at(-1), 'desert', 'le terrain détruit rejoint le cimetière de son propriétaire');
-  assert.deepEqual(rpgDestructionsDepuis(duel, debutDestruction), [
-    { entityId: 'terrain-desert', sourceElements: ['braise'] },
-  ], 'la destruction est attribuée au Djinn Braise pour déclencher l’animation de brûlure');
-  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE, 'la nouvelle capacité ne blesse plus le sorcier adverse');
-  assert.match(duel.log.at(-1), /Djinn du souk détruit le terrain adverse Désert/);
-});
-
 test('Esquive : 25 % des attaques sont annulées entièrement — jamais une magie', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
@@ -2511,43 +2348,6 @@ test('combat de créatures : dégâts mutuels, la plus fragile casse', () => {
   rpgAttaquerCreature(duel, 'sorcier', chien.id, duel.joueur.creatures[0].id);
   assert.equal(duel.sorcier.creatures.length, 0, 'le chien meurt (2 ≥ 2)');
   assert.equal(duel.joueur.creatures[0].pv, 2, 'la dune encaisse 2');
-});
-
-test('début de tour : on dégage ses terrains, le mana repart de zéro, pioche 1', () => {
-  const duel = duelDeBase();
-  donner(duel, 'sorcier', 'desert');
-  rpgPoserTerrain(duel, 'sorcier', 'desert');
-  rpgEngagerTerrain(duel, 'sorcier', duel.sorcier.terrains[0].id);
-  assert.equal(duel.sorcier.terrains[0].tapped, true);
-  const mainAvant = duel.sorcier.main.length;
-  rpgFinDeTour(duel);
-  assert.equal(duel.tour, 'sorcier');
-  assert.equal(duel.sorcier.terrains[0].tapped, false, 'les terrains dégagent');
-  assert.equal(rpgMana(duel.sorcier).total, 0, 'le mana non dépensé s’est évaporé');
-  assert.equal(duel.sorcier.terrainPose, false, 'un nouveau terrain peut être posé');
-  assert.equal(duel.sorcier.main.length, mainAvant + 1);
-});
-
-test('le sorcier IA joue son tour : terrain, mana, créature, puis attaque', () => {
-  const duel = rpgNouveauDuel({
-    joueurDeck: ['dune-marchante', 'dune-marchante', 'dune-marchante', 'dune-marchante', 'dune-marchante', 'dune-marchante'],
-    sorcierDeck: ['chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet'],
-    rng: () => 0.2,
-  });
-  // Deux Désert déjà en jeu (tours précédents) : l'IA les engage et paie.
-  duel.sorcier.terrains.push(
-    { id: 't1', carteId: 'desert', tapped: false },
-    { id: 't2', carteId: 'desert', tapped: false },
-  );
-  donner(duel, 'sorcier', 'chien-du-guet');
-  rpgTourSorcierIA(duel, () => 0);
-  assert.equal(duel.sorcier.creatures.length, 1, '2 mana sable : un chien posé');
-  assert.equal(rpgMana(duel.sorcier).total, 0, 'le mana a payé le chien');
-  rpgFinDeTour(duel);
-  rpgFinDeTour(duel);
-  const pvAvant = duel.joueur.pv;
-  rpgTourSorcierIA(duel, () => 0);
-  assert.equal(duel.joueur.pv, pvAvant - 2, 'le chien prêt frappe le joueur');
 });
 
 test('les héros sont des cartes du paquet, pas de la main de départ', () => {
@@ -3296,15 +3096,15 @@ test('Embuscade : -2/-2 jamais sous 1/1, et toute la table adverse doit bloquer 
   }
 });
 
-test('le plein art du Serment est livré : les trente cartes Neige sont dédiées, aucune provisoire', () => {
+test('le plein art du Serment est livré : les vingt-huit cartes Neige sont dédiées, aucune provisoire', () => {
   // La liste des illustrations provisoires est vide : le deck Neige et sa
   // variante de Glacier sont entièrement peints.
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
-  const fiches = ['creature', 'hero', 'magie', 'terrain', 'arme'];
+  const fiches = ['creature', 'hero', 'magie', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 30, 'trente cartes Neige au catalogue, Tour de défense comprise');
+  assert.equal(cartesNeige.length, 28, 'vingt-huit cartes Neige au catalogue, sans le Glacier ni sa variante');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
-    ['arme', 'creature', 'hero', 'magie', 'terrain'], 'le set Neige couvre les cinq types de cartes');
+    ['arme', 'creature', 'hero', 'magie'], 'le set Neige couvre les quatre types de cartes jouables');
   for (const carte of cartesNeige) {
     assert.ok(fiches.includes(carte.kind), `${carte.id} est une carte jouable du set Neige`);
     assert.equal(cardArtId(carte), carte.id, `${carte.id} affiche son illustration dédiée`);
@@ -3353,10 +3153,10 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 30, 'les trente peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 28, 'les vingt-huit peintures Neige sont toutes différentes');
 });
 
-test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes sans terrain, mythiques en un exemplaire', () => {
+test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes, sans terrain, mythiques en un exemplaire', () => {
   const deck = RPG_DECKS.find(({ id }) => id === 'serment-des-neuf-hivers');
   assert.ok(deck, 'le deck Neige apparaît dans la sélection');
   assert.equal(deck.role, 'joueur');
@@ -3378,7 +3178,6 @@ test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes sans terrain
   assert.deepEqual(Object.keys(CARD_RARITIES), ['commune', 'inhabituelle', 'rare', 'mythique'], 'pas de rareté « épique »');
   assert.equal(cardCopyLimit(cardById('valkyrie-des-glaces')), 2);
   assert.equal(cardCopyLimit(cardById('maitre-du-marteau')), 1);
-  assert.equal(cardCopyLimit(cardById('glacier')), Infinity, 'les terrains restent illimités');
   assert.equal(cardCopyLimit(cardById('loup-des-neiges')), 2);
   const mythiqueEnDouble = [...RPG_DECK_NEIGE_BASE];
   const placeDuLoup = mythiqueEnDouble.lastIndexOf('loup-des-neiges');
@@ -3535,26 +3334,6 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   donner(duel, 'joueur', 'eclair-du-marteau');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', serpent.id).raison, 'protection',
     'aucun sort ne peut le viser — pas même les vôtres');
-});
-
-test('le Glacier produit un mana Neige : payer une créature Neige engage ses terrains', () => {
-  const duel = duelDeBase();
-  duel.joueur.main = ['glacier', 'guerrier-au-bouclier-rond'];
-  duel.joueur.terrains = [];
-  duel.joueur.mana = { braise: 0, eau: 0, sable: 0, neige: 0 };
-  duel.joueur.terrainPose = false;
-  assert.equal(rpgPoserTerrain(duel, 'joueur', 'glacier').ok, true);
-  assert.equal(rpgEngagerTerrain(duel, 'joueur', duel.joueur.terrains[0].id, 'neige').ok, true);
-  assert.equal(rpgMana(duel.joueur).neige, 1, 'le Glacier ajoute bien un mana Neige');
-  duel.joueur.main.push('guerrier-au-bouclier-rond');
-  duel.joueur.terrains.push({ id: 'glacier-bis', carteId: 'glacier', tapped: false });
-  assert.equal(rpgPeutPayer(duel.joueur, cardById('guerrier-au-bouclier-rond')), true,
-    'deux sources Neige paient le Guerrier à deux manas');
-  const pose = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond');
-  assert.equal(pose.ok, true);
-  assert.equal(pose.entite.bouclier, 1, 'son arrivée lui donne un bouclier de 1');
-  assert.equal(pose.entite.element, undefined, 'l’entité ne porte pas d’élément : la carte le porte');
-  assert.equal(cardById('guerrier-au-bouclier-rond').element, 'neige');
 });
 
 test('les decks de départ respectent les limites mythiques et le deck hybride reste valide', () => {
@@ -3860,35 +3639,6 @@ test('mulligan : sans main de départ, rien n’est proposé', () => {
   assert.equal(rpgPeutMulligan(duel, 'joueur'), false, 'pas de main, pas de mulligan');
 });
 
-test('mulligan du sorcier : une main sans source part au tapis, une main jouable se garde', () => {
-  const duel = rpgNouveauDuel({
-    joueurDeck: Array(10).fill('desert'),
-    sorcierDeck: Array(5).fill('desert'),
-    rng: () => 0.5,
-  });
-  duel.sorcier.main = ['chien-du-guet', 'fennec-des-decombres', 'djinn-du-souk', 'dune-marchante', 'colosse-de-sel'];
-  duel.sorcier.deck = ['desert', 'desert', 'desert', 'desert'];
-  assert.deepEqual(choisirMulliganIA(duel, 'sorcier'), [0, 1, 2, 3, 4],
-    'aucune source de mana en main : il renvoie tout ce qui ne se paie pas');
-
-  const { ecartees, piochees } = rpgMulliganSorcier(duel, () => 0.5);
-  assert.equal(ecartees.length, 5, 'l’échange a bien lieu');
-  assert.equal(piochees.length, 5, 'autant de cartes reviennent');
-  assert.equal(duel.sorcier.main.length, 5, 'la main du sorcier garde cinq cartes');
-  assert.ok(duel.sorcier.main.includes('desert'), 'et trouve enfin de quoi payer');
-  assert.match(duel.log.at(-1), /^Le sorcier écarte .*, Colosse de sel et pioche 5 cartes\.$/,
-    'le journal nomme ce que le sorcier a renvoyé');
-
-  const solide = rpgNouveauDuel({
-    joueurDeck: Array(10).fill('desert'),
-    sorcierDeck: Array(9).fill('desert'),
-    rng: () => 0.999,
-  });
-  solide.sorcier.main = ['desert', 'chien-du-guet', 'fennec-des-decombres', 'dune-marchante', 'desert'];
-  assert.deepEqual(choisirMulliganIA(solide, 'sorcier'), [], 'une source et une carte à jouer : on garde');
-  assert.deepEqual(rpgMulliganSorcier(solide, () => 0.999).ecartees, [], 'et le moteur ne touche à rien');
-});
-
 test('mulligan du sorcier : il ne renvoie rien quand le paquet ne peut pas mieux faire', () => {
   const aSec = rpgNouveauDuel({
     joueurDeck: Array(10).fill('desert'),
@@ -3941,29 +3691,6 @@ test('début de tour : la pioche se fait à l’ouverture du tour, puis on entre
   assert.equal(duel.tour, 'joueur');
   assert.equal(duel.joueur.main.length, main + 1, 'une carte piochée au début du tour');
   assert.equal(duel.phase, 'principale');
-});
-
-test('deuxième phase principale : après le combat on rejoue créatures, magies et terrain — un seul terrain par tour', () => {
-  const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 10);
-  donner(duel, 'joueur', 'chien-du-guet');
-  const attaquant = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
-  attaquant.ready = true;
-  assert.equal(duel.phase, 'principale');
-
-  assert.equal(rpgLancerAttaque(duel, 'joueur', [attaquant.id]).ok, true);
-  assert.equal(duel.phase, 'principale2', 'le combat résolu ouvre la deuxième phase principale');
-  assert.equal(attaquant.attaquee, true, 'les créatures qui ont attaqué restent engagées');
-
-  donner(duel, 'joueur', 'fennec-des-decombres');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').ok, true, 'une créature se pose en deuxième principale');
-  donner(duel, 'joueur', 'trait-de-braise');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', 'sorcier').raison ?? 'ok', 'ok', 'une magie se lance en deuxième principale');
-  donner(duel, 'joueur', 'desert');
-  donner(duel, 'joueur', 'desert');
-  assert.equal(rpgPoserTerrain(duel, 'joueur', 'desert').ok, true, 'un terrain se pose en deuxième principale');
-  assert.equal(rpgPoserTerrain(duel, 'joueur', 'desert').ok, false, 'mais le terrain reste unique pour tout le tour');
-  assert.equal(attaquant.attaquee, true, 'le attaquant reste engagé jusqu’à son prochain tour');
 });
 
 test('fin de tour : l’adversaire peut jouer une magie rapide, pas une sorcellerie', () => {

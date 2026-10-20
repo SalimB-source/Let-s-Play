@@ -281,36 +281,34 @@ test('la collection fusionne en union, les pierres se plafonnent, `modifie` dit 
 
 // ── Le panneau du deck, façon Arena : courbe, couleurs, « Compléter en terrains » ─────────
 
-test('courbeDeMana répartit les sorts par coût (1 à 6, puis 7+), sans les terrains', () => {
+test('courbeDeMana répartit les sorts par coût (1 à 6, puis 7+), sans les cartes inconnues', () => {
   const vide = courbeDeMana([]);
   assert.equal(vide.paliers.length, 7);
   assert.deepEqual(vide.paliers.map((palier) => palier.label), ['1', '2', '3', '4', '5', '6', '7+']);
   assert.equal(vide.max, 0);
   assert.equal(vide.moyenne, 0);
-  const deck = ['chien-du-guet', 'chien-du-guet', 'djinn-du-souk', 'desert', 'desert', 'inconnue-xyz'];
+  const deck = ['chien-du-guet', 'chien-du-guet', 'fennec-des-decombres', 'inconnue-xyz'];
   const courbe = courbeDeMana(deck);
-  assert.equal(courbe.nonTerrains, 3, 'terrains et cartes inconnues ne comptent pas');
-  assert.equal(courbe.paliers.find((palier) => palier.cout === 2).nombre, 2);
-  assert.equal(courbe.paliers.find((palier) => palier.cout === cardById('djinn-du-souk').cost).nombre, 1);
-  assert.equal(courbe.max, 2);
-  assert.equal(courbe.moyenne, Math.round(((2 + 2 + cardById('djinn-du-souk').cost) / 3) * 10) / 10);
+  assert.equal(courbe.nonTerrains, 3, 'les cartes inconnues ne comptent pas');
+  const coutFennec = cardById('fennec-des-decombres').cost;
+  assert.equal(courbe.paliers.find((palier) => palier.cout === 2).nombre, coutFennec === 2 ? 3 : 2);
+  if (coutFennec !== 2) assert.equal(courbe.paliers.find((palier) => palier.cout === coutFennec).nombre, 1);
+  assert.equal(courbe.max, coutFennec === 2 ? 3 : 2, 'le palier le plus garni compte ses cartes');
+  assert.equal(courbe.moyenne, Math.round(((2 + 2 + coutFennec) / 3) * 10) / 10);
   // Les coûts de 7 et plus se rejoignent au dernier palier.
   const grosCout = RPG_DUEL_CARDS.find((carte) => carte.kind !== 'terrain' && carte.cost >= 7);
   assert.ok(grosCout, 'le catalogue a au moins une carte à 7+');
   assert.equal(courbeDeMana([grosCout.id]).paliers.at(-1).nombre, 1);
 });
 
-test('repartitionCouleurs compte cartes, pips et terrains par couleur, par présence décroissante', () => {
+test('repartitionCouleurs compte cartes et pips par couleur, par présence décroissante', () => {
   assert.deepEqual(repartitionCouleurs([]), []);
-  const deck = ['chien-du-guet', 'chien-du-guet', 'porteuse-de-cruches', 'desert', 'mer', 'mer'];
+  const deck = ['chien-du-guet', 'chien-du-guet', 'porteuse-de-cruches'];
   const repartition = repartitionCouleurs(deck);
-  assert.deepEqual(repartition.map((entree) => entree.couleur), ['sable', 'eau'], 'le Sable d\'abord : deux cartes contre une');
+  assert.equal(repartition[0].couleur, 'sable', 'le Sable d\'abord : deux cartes');
   const sable = repartition.find((entree) => entree.couleur === 'sable');
   assert.equal(sable.cartes, 2);
   assert.equal(sable.pips, 2, 'une carte mono exige un pip de sa couleur');
-  assert.equal(sable.terrains, 1);
-  const eau = repartition.find((entree) => entree.couleur === 'eau');
-  assert.equal(eau.terrains, 2, 'les terrains sont comptés dans la couleur qu\'ils produisent');
 });
 
 test('l’ancien complément en terrains ne modifie plus les cartes ni la collection', () => {

@@ -327,22 +327,22 @@ test('toutes les correspondances de decks pointent vers un plateau livré', () =
 // ── Un deck sans identité parle par sa couleur dominante ────────────────────
 
 test('un paquet brut prend le terrain de sa couleur dominante', () => {
-  assert.equal(couleurDominanteDeck(['desert', 'desert', 'chien-du-guet']), 'sable');
-  assert.equal(plateauDeDeck(['desert', 'desert', 'chien-du-guet']).plateau.id, 'erg-du-sahara');
-  assert.equal(plateauDeDeck(Array(8).fill('montagne')).plateau.id, 'table-des-heures');
-  assert.equal(plateauDeDeck(Array(8).fill('mer')).plateau.id, 'ruines-de-tipaza');
+  assert.equal(couleurDominanteDeck(['chien-du-guet', 'chien-du-guet', 'chien-du-guet']), 'sable');
+  assert.equal(plateauDeDeck(['chien-du-guet', 'chien-du-guet', 'chien-du-guet']).plateau.id, 'erg-du-sahara');
+  assert.equal(plateauDeDeck(Array(8).fill('trait-de-braise')).plateau.id, 'table-des-heures');
+  assert.equal(plateauDeDeck(Array(8).fill('ressac')).plateau.id, 'ruines-de-tipaza');
   // La quatrième couleur : la Neige prend la glace du fjord.
-  assert.equal(couleurDominanteDeck(['glacier', 'glacier', 'loup-des-neiges']), 'neige');
-  assert.equal(plateauDeDeck(Array(8).fill('glacier')).plateau.id, 'fjord-des-neuf-hivers');
+  assert.equal(couleurDominanteDeck(['loup-des-neiges', 'loup-des-neiges', 'loup-des-neiges']), 'neige');
+  assert.equal(plateauDeDeck(Array(8).fill('loup-des-neiges')).plateau.id, 'fjord-des-neuf-hivers');
   // La cinquième couleur : les Ténèbres prennent les dalles de la Nécropole.
   assert.equal(couleurDominanteDeck(['chacal-du-seuil', 'chacal-du-seuil', 'papyrus']), 'tenebres');
   assert.equal(plateauDeDeck(Array(8).fill('chacal-du-seuil')).plateau.id, 'necropole-des-dalles');
   assert.equal(plateauDeDeck(Array(8).fill('chacal-du-seuil')).motif, 'couleur');
   // Deux couleurs à égalité : le carrefour des pistes.
-  assert.equal(couleurDominanteDeck(['desert', 'desert', 'mer', 'mer']), 'hybride');
-  assert.equal(plateauDeDeck(['desert', 'desert', 'mer', 'mer']).plateau.id, 'caravane-de-gourara');
+  assert.equal(couleurDominanteDeck(['chien-du-guet', 'chien-du-guet', 'ressac', 'ressac']), 'hybride');
+  assert.equal(plateauDeDeck(['chien-du-guet', 'chien-du-guet', 'ressac', 'ressac']).plateau.id, 'caravane-de-gourara');
   // La majorité l’emporte sur les cartes isolées d’une autre couleur.
-  const sable = ['desert', 'desert', 'desert', 'chien-du-guet', 'fennec-des-decombres', 'mer'];
+  const sable = ['chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'fennec-des-decombres', 'ressac'];
   assert.equal(couleurDominanteDeck(sable), 'sable');
   assert.equal(plateauDeDeck(sable).motif, 'couleur');
 });
@@ -446,7 +446,7 @@ test('un camp muet laisse la place au deck de l’autre', () => {
     .plateau.id, 'ruines-de-tipaza');
   assert.equal(tirerPlateauDuDuel({ deckJoueur: null, deckAdverse: 'maree-des-abysses', rng: () => 0.1 })
     .camp, 'adversaire');
-  assert.equal(tirerPlateauDuDuel({ deckJoueur: ['desert', 'desert', 'desert'], deckAdverse: null, rng: () => 0.9 })
+  assert.equal(tirerPlateauDuDuel({ deckJoueur: ['chien-du-guet', 'chien-du-guet', 'chien-du-guet'], deckAdverse: null, rng: () => 0.9 })
     .plateau.id, 'erg-du-sahara');
   assert.equal(tirerPlateauDuDuel({ rng: () => 0.9 }).plateau.id, RPG_PLATEAU_DE_REPLI);
 });
