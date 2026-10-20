@@ -107,6 +107,10 @@ const PLEIN_ART_45 = [
   // la face comme le reste de la collection.
   'poigne-de-givre', 'grand-voile-blanc', 'appat-de-la-meute',
   'verglas', 'defi-du-jarl', 'embuscade',
+  // Le Grand Hiver et la Hache de la banquise, les deux dernières cartes du
+  // Serment : la première en huile, la seconde dans la dérogation
+  // photoréaliste des armes, toutes deux au ratio de la face.
+  'grand-hiver', 'hache-de-la-banquise',
   // Les créatures-jetons de Tarek : deux chiens de sable peints dans la
   // palette de son illustration, livrés eux aussi au format de la face.
   'chien-de-sable',
@@ -2976,7 +2980,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et magies rapides de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 39);
+  assert.equal(RPG_MAGIE_CARDS.length, 40);
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les cinq couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);
@@ -3203,6 +3207,51 @@ test('Verglas : 1 dégât et gel de masse sur la table adverse', () => {
     'plus personne ne part à l’attaque');
 });
 
+test('Le Grand Hiver : 1 dégât à toutes les créatures, les deux camps compris, pour 2 manas', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 8);
+  donnerMana(duel, 'sorcier', 8);
+  const griffe = cardById('grand-hiver');
+  assert.equal(griffe.cost, 2, 'le sort coûte 2 manas');
+  assert.equal(griffe.element, 'neige');
+  assert.equal(griffe.instant, undefined, 'c’est une sorcellerie, pas une magie rapide');
+  assert.deepEqual(griffe.effet, { type: 'degats', amount: 1, cible: 'toutes-autres' });
+
+  donner(duel, 'sorcier', 'colosse-de-sel'); // 6/6
+  donner(duel, 'sorcier', 'tislit-des-aures'); // 1/1
+  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  const tislit = rpgJouerCreature(duel, 'sorcier', 'tislit-des-aures').entite;
+  donner(duel, 'joueur', 'dune-marchante'); // 2/4
+  donner(duel, 'joueur', 'tislit-des-aures'); // 1/1
+  const dune = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
+  const tislitAlliee = rpgJouerCreature(duel, 'joueur', 'tislit-des-aures').entite;
+
+  donner(duel, 'joueur', 'grand-hiver');
+  const manaAvant = Object.values(duel.joueur.mana).reduce((total, n) => total + n, 0);
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'grand-hiver').ok, true);
+  assert.equal(Object.values(duel.joueur.mana).reduce((total, n) => total + n, 0), manaAvant - 2,
+    'les 2 manas sont payés');
+  assert.equal(colosse.pv, 5, 'le Colosse adverse encaisse');
+  assert.equal(dune.pv, 3, 'la Dune alliée encaisse aussi : l’hiver ne choisit pas son camp');
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === tislit.id), false,
+    'la créature adverse 1/1 meurt');
+  assert.equal(duel.joueur.creatures.some((entite) => entite.id === tislitAlliee.id), false,
+    'la créature alliée 1/1 meurt de la même vague');
+  assert.equal(duel.joueur.cimetiere.includes('grand-hiver'), true, 'la sorcellerie rejoint le cimetière');
+  // Un bouclier garde ses droits, comme contre tout dégât.
+  const duel2 = duelDeBase();
+  donnerMana(duel2, 'joueur', 8);
+  donnerMana(duel2, 'sorcier', 8);
+  donner(duel2, 'sorcier', 'guerrier-au-bouclier-rond'); // 2/2, bouclier 1
+  const guerrier = rpgJouerCreature(duel2, 'sorcier', 'guerrier-au-bouclier-rond').entite;
+  assert.equal(guerrier.bouclier, 1);
+  const pvGuerrier = guerrier.pv;
+  donner(duel2, 'joueur', 'grand-hiver');
+  assert.equal(rpgLancerMagie(duel2, 'joueur', 'grand-hiver').ok, true);
+  assert.equal(guerrier.bouclier, 0, 'le bouclier absorbe la vague');
+  assert.equal(guerrier.pv, pvGuerrier, 'et la créature ne perd aucun PV');
+});
+
 test('Défi du Jarl : le champion allié se bat avec la créature adverse ciblée', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 5);
@@ -3247,13 +3296,13 @@ test('Embuscade : -2/-2 jamais sous 1/1, et toute la table adverse doit bloquer 
   }
 });
 
-test('le plein art du Serment est livré : les vingt-huit cartes Neige sont dédiées, aucune provisoire', () => {
+test('le plein art du Serment est livré : les trente cartes Neige sont dédiées, aucune provisoire', () => {
   // La liste des illustrations provisoires est vide : le deck Neige et sa
   // variante de Glacier sont entièrement peints.
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'terrain', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 28, 'vingt-huit cartes Neige au catalogue, Tour de défense comprise');
+  assert.equal(cartesNeige.length, 30, 'trente cartes Neige au catalogue, Tour de défense comprise');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['arme', 'creature', 'hero', 'magie', 'terrain'], 'le set Neige couvre les cinq types de cartes');
   for (const carte of cartesNeige) {
@@ -3304,7 +3353,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 28, 'les vingt-huit peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 30, 'les trente peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes sans terrain, mythiques en un exemplaire', () => {

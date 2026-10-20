@@ -348,6 +348,10 @@ function describeAnnouncedMagicTarget(carte, cibleId, duel, sorcierArtId, sorcie
   if (entite) return { nom: entite.name, illustrationId: entite.carteId };
 
   if (effet.type === 'destruction-totale') return { nom: 'Toutes les créatures des deux camps' };
+  // Le Grand Hiver : la vague ne choisit pas son camp, la fiche le dit.
+  if (effet.type === 'degats' && effet.cible === 'toutes-autres') {
+    return { nom: 'Toutes les créatures des deux camps' };
+  }
   if (effet.cible === 'toutes-creatures') return { nom: 'Toutes vos créatures' };
   if (effet.type === 'buff') return { nom: 'Toutes les créatures du sorcier' };
   if (effet.type === 'contresort') return { nom: 'La carte annoncée' };
@@ -876,6 +880,7 @@ function effetsAccordesParArme(arme) {
   if (donne.esquive) effets.push('Esquive');
   if (donne.immunite) effets.push(`Immunité contre ${ELEMENT_LABELS[donne.immunite] ?? donne.immunite}`);
   if (donne.furie) effets.push(`Furie ${donne.furie}`);
+  if (donne.bouclier) effets.push(`Bouclier ${donne.bouclier}`);
   return `Bonus d’équipement : ${bonusArmeTexte(arme)}${effets.length ? ` · ${effets.join(' · ')}` : ''}`;
 }
 
@@ -6611,6 +6616,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       };
     }
     if (carte.effet?.type === 'destruction-totale') {
+      return { nom: 'Toutes les créatures des deux camps',
+        targetIds: [...duel.joueur.creatures, ...duel.sorcier.creatures].map((entite) => entite.id) };
+    }
+    if (carte.effet?.type === 'degats' && carte.effet.cible === 'toutes-autres') {
       return { nom: 'Toutes les créatures des deux camps',
         targetIds: [...duel.joueur.creatures, ...duel.sorcier.creatures].map((entite) => entite.id) };
     }

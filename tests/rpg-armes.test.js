@@ -81,9 +81,10 @@ const LOT_EQUIPEMENTS_SABLE = [
 ];
 const ARMES_PROTOTYPE = RPG_ARME_CARDS.filter((carte) => !LOT_EQUIPEMENTS_SABLE.includes(carte.id));
 
-test('le prototype compte cinq armes, une par élément, avec leur peinture', () => {
-  assert.equal(ARMES_PROTOTYPE.length, 5);
-  assert.deepEqual(ARMES_PROTOTYPE.map((carte) => carte.element).sort(), ['braise', 'eau', 'neige', 'sable', 'tenebres']);
+test('le prototype compte six armes, une par élément (la Neige en porte deux), avec leur peinture', () => {
+  assert.equal(ARMES_PROTOTYPE.length, 6);
+  assert.deepEqual(ARMES_PROTOTYPE.map((carte) => carte.element).sort(),
+    ['braise', 'eau', 'neige', 'neige', 'sable', 'tenebres']);
   for (const carte of ARMES_PROTOTYPE) {
     assert.equal(carte.kind, 'arme', `${carte.id} est une arme`);
     assert.match(carte.typeLine, /^Arme — /, `${carte.id} affiche sa ligne de type`);
@@ -110,6 +111,13 @@ test('le prototype compte cinq armes, une par élément, avec leur peinture', ()
   assert.deepEqual(armeById('armure-de-cendres').bonus, { atk: 3, def: 3 });
   assert.equal(armeById('armure-de-cendres').donne.immunite, 'braise');
   assert.equal(armeById('armure-de-cendres').donne.rapidite, true);
+  // La Hache de la banquise : le forfait d'attachement et le bouclier de l'arme.
+  const hache = armeById('hache-de-la-banquise');
+  assert.equal(hache.cost, 3);
+  assert.equal(hache.element, 'neige');
+  assert.deepEqual(hache.bonus, { atk: 2, def: 0 });
+  assert.equal(hache.blessurePorteur, 1, 'l’arme mord son porteur en s’attachant');
+  assert.equal(hache.donne.bouclier, 1, 'et lui laisse un bouclier de 1');
 });
 
 test('les decks du catalogue suivent leur quota d’armes sans dépasser une mythique', () => {
@@ -523,4 +531,61 @@ test('le sorcier joue son arme par la fenêtre d’annonce, comme ses autres car
   assert.equal(ghul.arme.carteId, 'takouba-des-pistes');
   assert.equal(ghul.atk, 3, 'le Ghul porte la Takouba : 1 + 2');
   assert.equal(ghul.pv, 1, 'et +0 de défense : toujours 1 PV');
+});
+
+// ── La Hache de la banquise : le prix de l'attachement ─────────────────────
+
+test('la Hache de la banquise mord son porteur (1 dégât) puis le renforce de +2/+0 et d’un bouclier de 1', () => {
+  const duel = duelVide();
+  const dune = poser(duel, 'joueur', 'dune-marchante'); // 2/4
+  equiper(duel, 'joueur', 'hache-de-la-banquise', dune);
+  assert.equal(dune.atk, 4, '2 + 2 d’attaque');
+  assert.equal(dune.def, 3, 'la Hache ne change pas la défense : la morsure, elle, suit les PV');
+  assert.equal(dune.pv, 3, 'elle a d’abord mordu son porteur : 4 − 1');
+  assert.equal(dune.pvMax, 4, 'la morsure est une blessure, pas une amputation du maximum');
+  assert.equal(dune.bouclier, 1, 'et le bouclier de l’arme reste sur le porteur');
+  assert.equal(dune.arme.carteId, 'hache-de-la-banquise');
+  // Le bouclier absorbe la première blessure de la créature.
+  rpgBlesserCreature(duel, 'joueur', dune.id, 2, 'braise', null, 'magie');
+  assert.equal(dune.bouclier, 0, 'le bouclier a dévoré 1 point');
+  assert.equal(dune.pv, 2, 'le reste passe : 3 − 1');
+});
+
+test('le bouclier de la Hache part avec l’arme, pas la morsure', () => {
+  const duel = duelVide();
+  const dune = poser(duel, 'joueur', 'dune-marchante');
+  equiper(duel, 'joueur', 'hache-de-la-banquise', dune);
+  assert.equal(dune.bouclier, 1);
+  equiper(duel, 'joueur', 'takouba-des-pistes', dune); // la Hache tombe au cimetière
+  assert.equal(dune.bouclier, 0, 'sans la Hache, plus de bouclier');
+  assert.equal(dune.atk, 4, '2 de la Dune + 2 de la Takouba, la Hache est repartie');
+  assert.equal(dune.pv, 3, 'la blessure de la morsure, elle, ne se soigne pas');
+  assert.ok(duel.joueur.cimetiere.includes('hache-de-la-banquise'));
+});
+
+test('un porteur qui succombe à la morsure ne porte rien : l’arme tombe avec lui', () => {
+  const duel = duelVide();
+  const ghul = poser(duel, 'joueur', 'ghul-des-cendres'); // 2/1
+  assert.equal(ghul.pv, 1);
+  donner(duel, 'joueur', 'hache-de-la-banquise');
+  manaPlein(duel, 'joueur');
+  const res = rpgJouerArme(duel, 'joueur', 'hache-de-la-banquise', ghul.id);
+  assert.equal(res.ok, true, 'l’attachement a bien eu lieu — puis la morsure a suivi');
+  assert.equal(duel.joueur.creatures.length, 0, 'le porteur meurt de la morsure');
+  assert.ok(duel.joueur.cimetiere.includes('ghul-des-cendres'));
+  assert.ok(duel.joueur.cimetiere.includes('hache-de-la-banquise'),
+    'l’arme rejoint le cimetière avec le porteur qu’elle a tué');
+  assert.equal(duel.joueur.main.includes('hache-de-la-banquise'), false, 'elle a quitté la main');
+});
+
+test('l’IA ne confie pas la Hache à un porteur qui mourrait de sa morsure', () => {
+  const duel = duelVide();
+  const ghul = poser(duel, 'sorcier', 'ghul-des-cendres'); // 2/1
+  duel.tour = 'sorcier';
+  donner(duel, 'sorcier', 'hache-de-la-banquise');
+  manaPlein(duel, 'sorcier');
+  const choix = choisirCarteIA(duel, 'sorcier', () => 0.5);
+  assert.equal(choix?.carteId === 'hache-de-la-banquise' ? choix.cibleId : null, null,
+    'aucune cible : le Ghul ne survivrait pas au dégât de l’attachement');
+  assert.equal(ghul.pv, 1, 'et personne n’a été blessé');
 });
