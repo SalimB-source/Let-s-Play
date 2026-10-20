@@ -162,14 +162,16 @@ test('La Cour de l’Empereur choisit au hasard entre ses deux pistes japonaises
   assert.equal(lecteur.musicFile, fichiers[1], 'un autre tirage peut choisir Cherry Blossom Strings');
 });
 
-test('les deux plateaux enneigés proposent aléatoirement les pistes Viking Howl', () => {
-  const fichiers = ['/Viking Howl.mp3', '/Viking Howl (Take 2).mp3'];
+test('les deux plateaux enneigés proposent aléatoirement les pistes Viking Howl et « full-track »', () => {
+  const fichiers = ['/Viking Howl.mp3', '/Viking Howl (Take 2).mp3', '/audio/full-track.mp3'];
   for (const plateauId of ['fjord-des-neuf-hivers', 'iles-celestes']) {
     assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), `${plateauId} doit avoir une musique dédiée`);
     assert.deepEqual(RPG_PLATEAU_MUSIC_FILES[plateauId], fichiers);
   }
+  assert.ok(existsSync(new URL('../public/audio/full-track.mp3', import.meta.url)),
+    'la piste complète doit être livrée dans public/audio');
 
-  const tirages = [0, 0.99, 0.5];
+  const tirages = [0, 0.5, 0.99];
   const lecteur = new RpgPlateauMusic(() => tirages.shift());
   lecteur.setPlateau('fjord-des-neuf-hivers', { reroll: true });
   assert.equal(lecteur.musicFile, fichiers[0], 'le premier tirage choisit Viking Howl');
@@ -178,7 +180,7 @@ test('les deux plateaux enneigés proposent aléatoirement les pistes Viking How
   lecteur.setPlateau('fjord-des-neuf-hivers', { reroll: true });
   assert.equal(lecteur.musicFile, fichiers[1], 'une nouvelle partie peut tirer Take 2');
   lecteur.setPlateau('iles-celestes');
-  assert.equal(lecteur.musicFile, fichiers[1], 'la variante neige utilise le même tirage aléatoire');
+  assert.equal(lecteur.musicFile, fichiers[2], 'la variante neige peut aussi tirer la piste complète');
 });
 
 // ── Le lecteur fait-il vraiment du son ? ─────────────────────────────

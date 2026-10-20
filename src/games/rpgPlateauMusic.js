@@ -11,6 +11,8 @@ const RPG_AUDIO_BASE = `${RPG_PUBLIC_BASE}audio/`;
 const RPG_SNOW_MUSIC_FILES = Object.freeze([
   `${RPG_PUBLIC_BASE}Viking Howl.mp3`,
   `${RPG_PUBLIC_BASE}Viking Howl (Take 2).mp3`,
+  // La piste complète livrée dans public/audio entre dans le même tirage.
+  `${RPG_AUDIO_BASE}full-track.mp3`,
 ]);
 const RPG_JAPANESE_MUSIC_FILES = Object.freeze([
   `${RPG_AUDIO_BASE}WayOfTheBushidoWithGeishaVocals.mp3`,
@@ -24,8 +26,9 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   'ruines-de-tipaza': `${RPG_AUDIO_BASE}SorcererOfTheDeepTide.mp3`,
   'abysses-phosphorescentes': `${RPG_AUDIO_BASE}deep-sea-underwater-ambience.mp3`,
   'desert-de-verre': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
-  // Le Fjord et son double, les Îles Célestes, partagent deux pistes vikings.
-  // Le lecteur en choisit une au lancement de chaque duel enneigé.
+  // Le Fjord et son double, les Îles Célestes, partagent trois pistes : les
+  // deux prises vikings et la piste complète. Le lecteur en choisit une au
+  // lancement de chaque duel enneigé.
   'fjord-des-neuf-hivers': RPG_SNOW_MUSIC_FILES,
   // La Cour alterne le thème Bushido existant et la nouvelle piste des cerisiers.
   'cour-de-l-empereur': RPG_JAPANESE_MUSIC_FILES,
