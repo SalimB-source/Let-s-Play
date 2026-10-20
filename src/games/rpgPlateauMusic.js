@@ -6,24 +6,49 @@
  * existante (ou le silence en duel libre).
  */
 
-const RPG_AUDIO_BASE = `${import.meta.env?.BASE_URL ?? '/'}audio/`;
+const RPG_PUBLIC_BASE = import.meta.env?.BASE_URL ?? '/';
+const RPG_AUDIO_BASE = `${RPG_PUBLIC_BASE}audio/`;
+const RPG_SNOW_MUSIC_FILES = Object.freeze([
+  `${RPG_PUBLIC_BASE}Viking Howl.mp3`,
+  `${RPG_PUBLIC_BASE}Viking Howl (Take 2).mp3`,
+]);
+const RPG_JAPANESE_MUSIC_FILES = Object.freeze([
+  `${RPG_AUDIO_BASE}WayOfTheBushidoWithGeishaVocals.mp3`,
+  `${RPG_PUBLIC_BASE}CherryBlossomStrings(Extended).mp3`,
+]);
+
 export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
-  'table-des-heures': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
+  'table-des-heures': `${RPG_PUBLIC_BASE}Acoustic Guitar Solo (Cover).mp3`,
   'erg-du-sahara': `${RPG_AUDIO_BASE}ArabianMeditativeFantasyCover.mp3`,
   'caravane-de-gourara': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
   'ruines-de-tipaza': `${RPG_AUDIO_BASE}SorcererOfTheDeepTide.mp3`,
   'abysses-phosphorescentes': `${RPG_AUDIO_BASE}deep-sea-underwater-ambience.mp3`,
   'desert-de-verre': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
-  'fjord-des-neuf-hivers': `${RPG_AUDIO_BASE}full-track.mp3`,
-  'cour-de-l-empereur': `${RPG_AUDIO_BASE}WayOfTheBushidoWithGeishaVocals.mp3`,
-  'iles-celestes': `${RPG_AUDIO_BASE}full-track.mp3`,
+  // Le Fjord et son double, les Îles Célestes, partagent deux pistes vikings.
+  // Le lecteur en choisit une au lancement de chaque duel enneigé.
+  'fjord-des-neuf-hivers': RPG_SNOW_MUSIC_FILES,
+  // La Cour alterne le thème Bushido existant et la nouvelle piste des cerisiers.
+  'cour-de-l-empereur': RPG_JAPANESE_MUSIC_FILES,
+  'iles-celestes': RPG_SNOW_MUSIC_FILES,
 });
 export const RPG_PLATEAUX_MUSICAUX = Object.freeze(new Set(Object.keys(RPG_PLATEAU_MUSIC_FILES)));
 
 const BASE_PLATEAU_VOLUME = 0.16;
 
+function choisirFichierMusique(fichiers, rng) {
+  if (!Array.isArray(fichiers)) return fichiers ?? null;
+  if (fichiers.length === 0) return null;
+
+  const tirage = Number(rng());
+  const borne = Number.isFinite(tirage)
+    ? Math.min(Math.max(tirage, 0), 1 - Number.EPSILON)
+    : 0;
+  return fichiers[Math.floor(borne * fichiers.length)] ?? fichiers[0];
+}
+
 export class RpgPlateauMusic {
-  constructor() {
+  constructor(rng = Math.random) {
+    this.rng = typeof rng === 'function' ? rng : Math.random;
     this.plateauId = null;
     this.musicFile = null;
     this.audio = null;
@@ -38,10 +63,16 @@ export class RpgPlateauMusic {
     return Math.max(0, Math.min(1, BASE_PLATEAU_VOLUME * this.volume));
   }
 
-  setPlateau(plateauId) {
+  /**
+   * Sélectionne une piste à l'arrivée sur un plateau. `reroll` est utilisé
+   * au lancement d'une nouvelle partie : les appels d'effet et de reprise
+   * gardent ensuite la même piste pendant tout le duel.
+   */
+  setPlateau(plateauId, { reroll = false } = {}) {
     const next = RPG_PLATEAUX_MUSICAUX.has(plateauId) ? plateauId : null;
-    const nextFile = next ? RPG_PLATEAU_MUSIC_FILES[next] : null;
-    if (next === this.plateauId && nextFile === this.musicFile) return;
+    if (next === this.plateauId && !reroll) return;
+
+    const nextFile = next ? choisirFichierMusique(RPG_PLATEAU_MUSIC_FILES[next], this.rng) : null;
     this.plateauId = next;
     this.musicFile = nextFile;
     if (this.audio) {
@@ -53,7 +84,7 @@ export class RpgPlateauMusic {
   }
 
   async start() {
-    if (!this.plateauId || typeof window === 'undefined') return;
+    if (!this.plateauId || !this.musicFile || typeof window === 'undefined') return;
     if (!this.audio) {
       this.audio = new window.Audio(this.musicFile);
       this.audio.loop = true;

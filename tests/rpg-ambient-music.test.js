@@ -17,7 +17,7 @@ import {
   RpgAmbientMusic,
 } from '../src/games/rpgAmbientMusic.js';
 import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
-import { RPG_PLATEAU_MUSIC_FILES, RPG_PLATEAUX_MUSICAUX } from '../src/games/rpgPlateauMusic.js';
+import { RpgPlateauMusic, RPG_PLATEAU_MUSIC_FILES, RPG_PLATEAUX_MUSICAUX } from '../src/games/rpgPlateauMusic.js';
 import { plateauParId } from '../src/games/rpgPlateaux.js';
 
 test('ambiances, une par tour du mode Histoire', () => {
@@ -93,8 +93,8 @@ test('la page du duel joue la musique d’ambiance du mode Histoire sans doubler
     'la tour de l’étage en cours commande la boucle');
   assert.match(page, /RPG_PLATEAUX_MUSICAUX\.has\(plateauId\)/,
     'la page connaît les plateaux qui ont leur propre musique');
-  assert.match(page, /musiquePlateau\?\.setPlateau\(plateau\.id\)/,
-    'le lecteur reçoit le plateau choisi dans la fonction de lancement');
+  assert.match(page, /musiquePlateau\?\.setPlateau\(plateau\.id,\s*\{\s*reroll:\s*true\s*\}\)/,
+    'le lecteur reçoit le plateau choisi et tire une nouvelle piste au sort au lancement');
   assert.match(page, /if \(modeLibre && sonActif && RPG_PLATEAUX_MUSICAUX\.has\(plateau\.id\)\) \{\s*void musiquePlateau\?\.start\(\);/,
     'la piste du plateau démarre dans le geste du duel libre, uniquement s’il est musical');
   assert.match(page, /tourHistoireId && sonActif && !plateauMusical\) musique\.start\(\)/,
@@ -117,6 +117,13 @@ test('la page du duel joue la musique d’ambiance du mode Histoire sans doubler
     'le volume des sons du jeu pilote les bruitages');
 });
 
+test('La Table des Heures, plateau de base aux bougies, joue « Acoustic Guitar Solo (Cover) »', () => {
+  const plateauId = 'table-des-heures';
+  assert.equal(plateauParId(plateauId)?.nom, 'La Table des Heures');
+  assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), 'le plateau de base doit être traité comme musical');
+  assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], '/Acoustic Guitar Solo (Cover).mp3');
+});
+
 test('L’Erg du Sahara joue « Arabian Meditative Fantasy »', () => {
   const plateauId = 'erg-du-sahara';
   const fichier = 'ArabianMeditativeFantasyCover.mp3';
@@ -135,13 +142,43 @@ test('Les Ruines de Tipaza, plateau d’eau, jouent « Sorcerer of the Deep Tide
   assert.ok(existsSync(new URL(`../public/audio/${fichier}`, import.meta.url)), 'le MP3 doit être livré dans public/audio');
 });
 
-test('La Cour de l’Empereur joue « Way of the Bushido » et ses voix de geisha', () => {
+test('La Cour de l’Empereur choisit au hasard entre ses deux pistes japonaises', () => {
   const plateauId = 'cour-de-l-empereur';
-  const fichier = 'WayOfTheBushidoWithGeishaVocals.mp3';
+  const fichiers = [
+    '/audio/WayOfTheBushidoWithGeishaVocals.mp3',
+    '/CherryBlossomStrings(Extended).mp3',
+  ];
   assert.equal(plateauParId(plateauId)?.nom, 'La Cour de l’Empereur');
   assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), 'le plateau doit être traité comme musical');
-  assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], `/audio/${fichier}`);
-  assert.ok(existsSync(new URL(`../public/audio/${fichier}`, import.meta.url)), 'le MP3 doit être livré dans public/audio');
+  assert.deepEqual(RPG_PLATEAU_MUSIC_FILES[plateauId], fichiers);
+  assert.ok(existsSync(new URL('../public/audio/WayOfTheBushidoWithGeishaVocals.mp3', import.meta.url)),
+    'la piste Bushido existante est conservée');
+
+  const tirages = [0, 0.99];
+  const lecteur = new RpgPlateauMusic(() => tirages.shift());
+  lecteur.setPlateau(plateauId, { reroll: true });
+  assert.equal(lecteur.musicFile, fichiers[0], 'un tirage peut choisir la piste Bushido existante');
+  lecteur.setPlateau(plateauId, { reroll: true });
+  assert.equal(lecteur.musicFile, fichiers[1], 'un autre tirage peut choisir Cherry Blossom Strings');
+});
+
+test('les deux plateaux enneigés proposent aléatoirement les pistes Viking Howl', () => {
+  const fichiers = ['/Viking Howl.mp3', '/Viking Howl (Take 2).mp3'];
+  for (const plateauId of ['fjord-des-neuf-hivers', 'iles-celestes']) {
+    assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), `${plateauId} doit avoir une musique dédiée`);
+    assert.deepEqual(RPG_PLATEAU_MUSIC_FILES[plateauId], fichiers);
+  }
+
+  const tirages = [0, 0.99, 0.5];
+  const lecteur = new RpgPlateauMusic(() => tirages.shift());
+  lecteur.setPlateau('fjord-des-neuf-hivers', { reroll: true });
+  assert.equal(lecteur.musicFile, fichiers[0], 'le premier tirage choisit Viking Howl');
+  lecteur.setPlateau('fjord-des-neuf-hivers');
+  assert.equal(lecteur.musicFile, fichiers[0], 'les mises à jour du duel gardent la même piste');
+  lecteur.setPlateau('fjord-des-neuf-hivers', { reroll: true });
+  assert.equal(lecteur.musicFile, fichiers[1], 'une nouvelle partie peut tirer Take 2');
+  lecteur.setPlateau('iles-celestes');
+  assert.equal(lecteur.musicFile, fichiers[1], 'la variante neige utilise le même tirage aléatoire');
 });
 
 // ── Le lecteur fait-il vraiment du son ? ─────────────────────────────
