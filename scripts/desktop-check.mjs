@@ -185,6 +185,14 @@ const builder = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'u
 assert.match(builder, /from:\s*\.\.\/dist-web/);
 assert.match(builder, /to:\s*app/);
 assert.ok(builder.includes('app-icons/icon.ico'), 'icône Windows absente de la config');
+assert.match(builder, /provider:\s*github[\s\S]*owner:\s*SalimB-source[\s\S]*repo:\s*Let-s-Play/,
+  'electron-updater doit cibler la Release GitHub du dépôt');
+const desktopPackage = JSON.parse(readFileSync(join(RACINE, 'desktop', 'package.json'), 'utf8'));
+assert.ok(desktopPackage.dependencies?.['electron-updater'], 'electron-updater doit être une dépendance runtime');
+assert.match(principal, /autoUpdater\.checkForUpdates\(\)/);
+assert.match(principal, /autoUpdater\.quitAndInstall\(\)/);
+assert.match(principal, /update-downloaded/);
+ok('electron-updater : fournisseur GitHub configuré, vérification et installation intégrées');
 ok('electron-builder : paquet web hors asar (resources/app), icône présente');
 
 const regles = JSON.parse(readFileSync(join(RACINE, 'desktop', 'bundle-assets.json'), 'utf8'));
@@ -205,7 +213,11 @@ assert.match(bundle, /devDependencies: \{ electron: electronVersion \}/,
   'pack/package.json doit épingler la version exacte d’Electron');
 assert.match(bundle, /node_modules', 'electron', 'package\.json'/,
   'la version épinglée doit venir de l’Electron réellement installé');
-ok('projet d’empaquetage isolé desktop/pack (aucun node_modules → asar léger)');
+assert.match(bundle, /dependencies: \{ 'electron-updater': paquetCoque\.dependencies/,
+  'electron-updater doit être inclus dans le projet empaqueté');
+assert.match(bundle, /--omit=dev/,
+  'seules les dépendances runtime doivent être installées dans le projet isolé');
+ok('projet d’empaquetage isolé desktop/pack (runtime updater inclus, Electron de build exclu)');
 
 const icones = ['desktop/app-icons/icon.ico', 'desktop/app-icons/icon.png'];
 for (const fichier of icones) {

@@ -13,6 +13,14 @@
 appId: dz.letsplay.sablier
 productName: Le Sablier de Bab El
 
+# electron-updater lit la métadonnée latest.yml et l'installateur (NSIS) sur la
+# Release publique `desktop` du dépôt. Le workflow les publie avec les .blockmap.
+publish:
+  - provider: github
+    owner: SalimB-source
+    repo: Let-s-Play
+    releaseType: release
+
 # LZMA solide : sans cela l'installeur pèse ~640 Mo, les binaires Electron étant
 # mal comprimés par le mode normal. Le build est plus lent, le téléchargement
 # beaucoup plus court.

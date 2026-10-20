@@ -12,6 +12,11 @@ portable sans installation, et — le point central — un rendu 3D qui passe pa
 - Cible : Windows 10/11 x64 (Linux et macOS possibles en local, non produits par la CI)
 - Sortie : `desktop/release/` (`le-sablier-de-bab-el-<version>-setup.exe`,
   `le-sablier-de-bab-el-<version>-portable.exe`)
+- Mise à jour automatique : `electron-updater` vérifie la Release GitHub `desktop`
+  au démarrage et depuis **Aide → Rechercher une mise à jour…**. L'installeur
+  Windows télécharge la nouvelle version en arrière-plan, puis propose de
+  redémarrer pour l'installer (ou l'installe à la prochaine fermeture). La
+  version portable reste à mettre à jour en téléchargeant son nouvel `.exe`.
 - Poids réel mesuré en CI : **~215 Mo par installeur** (dont ~117 Mo de jeu :
   cartes, plateaux, musiques ; le reste est le runtime Electron compressé).
   L'archive `app.asar` ne contient que la coque (~100 Ko) : l'empaquetage se
@@ -165,7 +170,14 @@ redirection locale (la connexion par mot de passe, elle, fonctionne sans cela).
    empaquetage) ;
 2. `installeur` (windows-latest) : paquet élagué, `electron-builder`, artefacts
    de run, puis — sur `main` seulement — GitHub Release sur le tag `desktop`
-   (lien de téléchargement permanent, remplacé à chaque build).
+   (lien de téléchargement permanent, remplacé à chaque build). La Release
+   contient `latest.yml` et les `.blockmap` nécessaires à `electron-updater`.
+
+Pour une nouvelle publication destinée aux installations existantes, incrémentez
+`desktop/package.json` et `desktop/package-lock.json` (champ `version`) avant le
+merge sur `main` : le mécanisme compare les versions sémantiques et n'installe
+pas deux builds portant la même version. L'update automatique concerne
+l'installateur Windows NSIS ; le portable se met à jour par remplacement manuel.
 
 L'exécutable **n'est pas committé** sur la branche (≈ 180 Mo par build) : le
 téléchargement passe par la Release, contrairement à l'APK Android qui, lui, est
