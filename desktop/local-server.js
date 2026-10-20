@@ -109,6 +109,7 @@ export async function startLocalServer({
   distDir,
   remoteOrigin = DEFAULT_REMOTE_ORIGIN,
   port = DEFAULT_PORT,
+  host = HOST,
   log = () => {},
   getStatus = () => ({}),
 } = {}) {
@@ -129,7 +130,7 @@ export async function startLocalServer({
   });
 
   async function traiter(req, res) {
-    const url = new URL(req.url, `http://${HOST}`);
+    const url = new URL(req.url, `http://${host}`);
     const chemin = decodeURIComponent(url.pathname);
 
     // Point d'état pour le panneau de diagnostic et les vérifications.
@@ -178,8 +179,8 @@ export async function startLocalServer({
 
   // Le port demandé peut être pris (deux installations, un `vite preview` qui
   // tourne déjà) : on essaie le port demandé, puis le système choisit.
-  const portUtilise = await ecouter(serveur, port);
-  const origin = `http://${HOST}:${portUtilise}`;
+  const portUtilise = await ecouter(serveur, port, host);
+  const origin = `http://${host === '0.0.0.0' ? '127.0.0.1' : host}:${portUtilise}`;
 
   return {
     port: portUtilise,
@@ -190,15 +191,15 @@ export async function startLocalServer({
 }
 
 /** Tente `port`, puis un port libre si celui-là est occupé. */
-function ecouter(serveur, port) {
+function ecouter(serveur, port, host) {
   return new Promise((fin, echec) => {
     serveur.once('error', (erreur) => {
       if (erreur?.code !== 'EADDRINUSE') return echec(erreur);
       serveur.once('error', echec);
-      serveur.listen(0, HOST, () => fin(serveur.address().port));
+      serveur.listen(0, host, () => fin(serveur.address().port));
       return undefined;
     });
-    serveur.listen(port, HOST, () => fin(serveur.address().port));
+    serveur.listen(port, host, () => fin(serveur.address().port));
   });
 }
 
@@ -325,14 +326,19 @@ if (lanceSeul) {
   const defaut = [join(import.meta.dirname, 'dist-web'), join(import.meta.dirname, 'app')]
     .find((dossier) => existsSync(join(dossier, 'index.html')));
   const paquet = resolve(process.argv[3] || defaut || join(import.meta.dirname, 'dist-web'));
+  // `LETSPLAY_HOST=0.0.0.0` ouvre l'aperçu au réseau (aperçu live du sandbox,
+  // test depuis un autre appareil). Sans cela : boucle locale seulement.
+  const hote = process.env.LETSPLAY_HOST || HOST;
   startLocalServer({
     distDir: paquet,
     port: portDemande,
+    host: hote,
     remoteOrigin: process.env.LETSPLAY_REMOTE_ORIGIN ?? DEFAULT_REMOTE_ORIGIN,
     log: (message) => console.log(message),
   }).then((serveur) => {
-    console.log(`Sablier de Bab El — paquet local servi sur ${serveur.origin}`);
+    console.log(`Sablier de Bab El — paquet local servi sur ${serveur.origin} (hôtesse : ${hote})`);
     console.log(`Jeu : ${serveur.url(ROUTE_RACINE)}`);
+    if (hote !== HOST) console.log('Écoute ouverte au réseau : ne jamais lancer ainsi depuis la coque.');
     console.log('Ctrl+C pour arrêter.');
   }).catch((erreur) => {
     console.error(erreur?.message || erreur);

@@ -189,14 +189,14 @@ const FICHIERS_SCENE = [
   'diagnostic.html', 'offline.html',
 ];
 rmSync(SCENE, { recursive: true, force: true });
-mkdirSync(join(SCENE, 'build'), { recursive: true });
+mkdirSync(join(SCENE, 'app-icons'), { recursive: true });
 for (const fichier of FICHIERS_SCENE) {
   copyFileSync(join(RACINE, 'desktop', fichier), join(SCENE, fichier));
 }
 // La config et les icônes voyagent avec le projet isolé.
 copyFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), join(SCENE, 'electron-builder.yml'));
 for (const icone of ['icon.ico', 'icon.png']) {
-  copyFileSync(join(RACINE, 'desktop', 'build', icone), join(SCENE, 'build', icone));
+  copyFileSync(join(RACINE, 'desktop', 'app-icons', icone), join(SCENE, 'app-icons', icone));
 }
 const paquetCoque = JSON.parse(readFileSync(join(RACINE, 'desktop', 'package.json'), 'utf8'));
 

@@ -184,7 +184,7 @@ console.log('4. Empaquetage');
 const builder = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'utf8');
 assert.match(builder, /from:\s*\.\.\/dist-web/);
 assert.match(builder, /to:\s*app/);
-assert.ok(builder.includes('build/icon.ico'), 'icône Windows absente de la config');
+assert.ok(builder.includes('app-icons/icon.ico'), 'icône Windows absente de la config');
 ok('electron-builder : paquet web hors asar (resources/app), icône présente');
 
 const regles = JSON.parse(readFileSync(join(RACINE, 'desktop', 'bundle-assets.json'), 'utf8'));
@@ -207,11 +207,11 @@ assert.match(bundle, /node_modules', 'electron', 'package\.json'/,
   'la version épinglée doit venir de l’Electron réellement installé');
 ok('projet d’empaquetage isolé desktop/pack (aucun node_modules → asar léger)');
 
-const icones = ['desktop/build/icon.ico', 'desktop/build/icon.png'];
+const icones = ['desktop/app-icons/icon.ico', 'desktop/app-icons/icon.png'];
 for (const fichier of icones) {
   assert.ok(readFileSync(join(RACINE, fichier)).length > 1000, `${fichier} absent ou vide`);
 }
-const ico = readFileSync(join(RACINE, 'desktop/build/icon.ico'));
+const ico = readFileSync(join(RACINE, 'desktop/app-icons/icon.ico'));
 assert.equal(ico.readUInt16LE(2), 1, 'icon.ico n’est pas une icône');
 assert.ok(ico.readUInt16LE(4) >= 4, 'icon.ico a trop peu de tailles');
 ok('icon.ico / icon.png présents et valides');

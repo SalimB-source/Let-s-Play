@@ -26,7 +26,9 @@ copyright: Copyright © 2026 Let's Play — média algérien du jeu vidéo
 # desktop/ lui-même). Les chemins ci-dessous sont relatifs à pack/.
 directories:
   output: ../release
-  buildResources: build
+  # Dossier hors des noms exclus des snapshots de l'environnement de dev
+  # (« build » en fait partie) : les icônes vivent dans app-icons/.
+  buildResources: app-icons
 
 # Le binaire Electron vient du cache d'electron-builder (téléchargé une fois par
 # runner) : la version exacte est lue dans pack/package.json par le bundle.
@@ -34,7 +36,7 @@ directories:
 # pack/ ne contient que l'exécutable ; on exclut les outils de build eux-mêmes.
 files:
   - '**/*'
-  - '!build{,/**/*}'
+  - '!app-icons{,/**/*}'
   - '!electron-builder.yml'
 
 # Le jeu lui-même, hors archive.
@@ -44,13 +46,13 @@ extraResources:
     filter:
       - '**/*'
   # Lues au lancement pour l'icône de la fenêtre et de la barre des tâches.
-  - from: build/icon.ico
+  - from: app-icons/icon.ico
     to: icon.ico
-  - from: build/icon.png
+  - from: app-icons/icon.png
     to: icon.png
 
 win:
-  icon: build/icon.ico
+  icon: app-icons/icon.ico
   target:
     - target: nsis
       arch: [x64]
@@ -66,15 +68,15 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Le Sablier de Bab El
-  installerIcon: build/icon.ico
-  uninstallerIcon: build/icon.ico
+  installerIcon: app-icons/icon.ico
+  uninstallerIcon: app-icons/icon.ico
   artifactName: le-sablier-de-bab-el-${version}-setup.${ext}
 
 portable:
   artifactName: le-sablier-de-bab-el-${version}-portable.${ext}
 
 linux:
-  icon: build/icon.png
+  icon: app-icons/icon.png
   category: Game
   target:
     - AppImage
@@ -83,7 +85,7 @@ linux:
 # macOS : nécessite un runner macOS et une icône .icns (à générer si besoin —
 # `make-icon.mjs` produit le PNG source). La CI du dépôt ne construit que Windows.
 mac:
-  icon: build/icon.png
+  icon: app-icons/icon.png
   category: public.app-category.games
   target:
     - dmg

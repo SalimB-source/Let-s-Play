@@ -152,9 +152,9 @@ function creerFenetre() {
     autoHideMenuBar: true,
     show: false,
     // L'icône vit dans les ressources (hors asar) une fois installée, voir
-    // extraResources ; en développement, dans desktop/build/.
+    // extraResources ; en développement, dans desktop/app-icons/.
     icon: join(
-      app.isPackaged ? process.resourcesPath : join(import.meta.dirname, 'build'),
+      app.isPackaged ? process.resourcesPath : join(import.meta.dirname, 'app-icons'),
       process.platform === 'win32' ? 'icon.ico' : 'icon.png',
     ),
     webPreferences: {

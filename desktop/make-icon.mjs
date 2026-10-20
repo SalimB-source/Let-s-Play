@@ -5,8 +5,8 @@
  * Dessine l'icône du Sablier de Bab El (un sablier d'or sur fond de nuit) et
  * écrit les deux formats dont `electron-builder` a besoin :
  *
- *   - `desktop/build/icon.png`  (512 × 512, Linux + source des autres tailles) ;
- *   - `desktop/build/icon.ico`  (16, 24, 32, 48, 64, 128 en BMP 32 bits +
+ *   - `desktop/app-icons/icon.png`  (512 × 512, Linux + source des autres) ;
+ *   - `desktop/app-icons/icon.ico`  (16, 24, 32, 48, 64, 128 en BMP 32 bits +
  *                                256 en PNG compressé — le format attendu par
  *                                l'explorateur et la barre des tâches Windows).
  *
@@ -27,7 +27,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ICI = dirname(fileURLToPath(import.meta.url));
-const SORTIE = join(ICI, 'build');
+const SORTIE = join(ICI, 'app-icons');
 
 const SUPER = 2048;        // taille du rendu
 const BASE = 1024;         // taille maîtresse après réduction

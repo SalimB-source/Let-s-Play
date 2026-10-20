@@ -18,10 +18,12 @@ import './rpg-entry-choice.css';
  * L'écran s'efface de lui-même quand il n'a rien à proposer :
  *   - dans la coque PC (`window.letsPlayDesktop`) : le jeu EST déjà la version
  *     installée, remettre un mur devant serait absurde ;
- *   - dans l'APK Android (`window.LetsPlayAndroid`) et sur téléphone
- *     (`pointer: coarse`) : l'installeur vise Windows, on ne barre pas la route
- *     du joueur mobile ;
+ *   - dans l'APK Android (`window.LetsPlayAndroid`) : l'app EST déjà le jeu ;
  *   - si le joueur a coché « retenir ce choix » sur cet appareil.
+ *
+ * Sur téléphone l'écran reste : une seule colonne, et la note « Windows 10/11 »
+ * sous le bouton de téléchargement. Un joueur mobile qui ne veut voir que le
+ * jeu coche « retenir » une fois pour toutes.
  */
 
 const RpgDuelPage = lazy(() => import('./RpgDuelPage'));
@@ -42,9 +44,6 @@ export function ecranInutile(win = typeof window === 'undefined' ? undefined : w
   if (!win) return false;                       // rendu sans DOM : on montre l'écran
   if (win.letsPlayDesktop) return true;         // déjà dans la version installée
   if (win.LetsPlayAndroid) return true;         // APK : le jeu web est l'app
-  try {
-    if (win.matchMedia?.('(pointer: coarse), (max-width: 820px)').matches) return true;
-  } catch { /* matchMedia absent : on garde l'écran */ }
   try {
     return win.localStorage?.getItem(ENTREE_CHOIX_CLE) === 'jeu';
   } catch {

@@ -64,10 +64,11 @@ ok('asset au nom fixe publié par la CI, bouton et lien Release cohérents');
 console.log('4. L’écran s’efface quand il n’a rien à proposer');
 assert.match(entree, /win\.letsPlayDesktop/, 'la coque PC doit sauter l’écran');
 assert.match(entree, /win\.LetsPlayAndroid/, 'l’APK Android doit sauter l’écran');
-assert.match(entree, /\(pointer: coarse\), \(max-width: 820px\)/, 'le téléphone doit sauter l’écran');
+assert.doesNotMatch(entree, /pointer: coarse/,
+  'le téléphone ne doit plus sauter l’écran : les deux portes s’affichent partout hors coque/APK');
 assert.match(entree, /ENTREE_CHOIX_CLE = 'letsplay_sablier_entree_v1'/, 'clé du choix retenu absente');
 assert.match(entree, /localStorage\.setItem\(ENTREE_CHOIX_CLE, 'jeu'\)/, 'le choix retenu n’est pas écrit');
-ok('coque PC, APK, téléphone et choix retenu entrent directement dans le duel');
+ok('coque PC, APK et choix retenu entrent directement ; téléphone inclus, en une colonne');
 
 console.log('5. Styles');
 const styles = lire('src/games/rpg-entry-choice.css');
