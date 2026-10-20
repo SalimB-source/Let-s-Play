@@ -268,12 +268,18 @@ const CARD_ART_CACHE_VERSIONS = {
   'maree-contraire': 'deflection-ultrason-v1',
   ressac: 'djinn-tourbillon-v1',
   'courant-de-retour': 'djinn-tourbillon-v1',
-  // Illustrations alternatives « furie » — créatures entachées de sang et
-  // en colère, affichées quand la créature a déclenché sa Furie.
-  'guerrier-au-bouclier-rond-furie': 'peintures-definitives-v3',
-  'berserk-des-trois-hivers-furie': 'peintures-definitives-v3',
-  'jarl-au-marteau-de-guerre-furie': 'peintures-definitives-v3',
-  'maitre-du-marteau-furie': 'maitre-du-marteau-furie-v1',
+  // Les quatre porteurs de Furie ont été repeints en photoréaliste fantaisiste :
+  // chaque face intacte a son double ensanglanté, armure ou casque brisé et
+  // visage en furie. On date les huit images ensemble pour qu’aucun cache ne
+  // resserve les anciennes huiles sous les mêmes noms de fichiers.
+  'guerrier-au-bouclier-rond': 'furie-photorealiste-v1',
+  'berserk-des-trois-hivers': 'furie-photorealiste-v1',
+  'jarl-au-marteau-de-guerre': 'furie-photorealiste-v1',
+  'maitre-du-marteau': 'furie-photorealiste-v1',
+  'guerrier-au-bouclier-rond-furie': 'furie-photorealiste-v1',
+  'berserk-des-trois-hivers-furie': 'furie-photorealiste-v1',
+  'jarl-au-marteau-de-guerre-furie': 'furie-photorealiste-v1',
+  'maitre-du-marteau-furie': 'furie-photorealiste-v1',
 };
 /**
  * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la
@@ -1160,6 +1166,16 @@ function AuraOndes({ variante = 'resonance', phase = 0 }) {
   );
 }
 
+/** La vignette rouge de la Furie déclenchée : un voile écarlate qui serre
+ *  les bords de la face et pulse doucement, comme un pouls de rage. Même
+ *  calque sur la carte posée et dans sa preview — le changement de visuel
+ *  se reconnaît des deux côtés. Purement décoratif (`aria-hidden`) : l'état
+ *  est annoncé par l'icône Furie, la ligne « Furie déclenchée » de l'aperçu
+ *  et les descriptions lues des cartes. */
+function VignetteFurie() {
+  return <span className="rpg-furie-vignette" aria-hidden="true" />;
+}
+
 /** L'empreinte stable d'une entité : même identifiant, même phase — jamais un
  *  tirage au rendu. Elle désynchronise les auras et les vols des voisines. */
 function empreinteEntite(entite) {
@@ -1743,6 +1759,7 @@ export function TableCard({
         rpgPeutAttaquer(entite) ? 'is-pret' : '',
         malInvocation ? 'is-summoning-sick' : '',
         blessee ? 'is-wounded' : '',
+        entite.furieDeclenchee ? 'is-furie' : '',
         canTarget ? 'is-ciblable' : '',
         sacrificeTarget ? 'is-sacrifice-target' : '',
         spellTarget ? 'is-spell-target' : '',
@@ -1804,6 +1821,7 @@ export function TableCard({
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={entite.furieDeclenchee ? cardArtFurie(carte) : cardArt(carte)} alt="" aria-hidden="true" />
+      {entite.furieDeclenchee && <VignetteFurie />}
       {carte?.resonance ? <AuraOndes phase={phaseAura(entite)} /> : null}
       {carte?.aura ? <AuraOndes variante="aura" phase={phaseAura(entite)} /> : null}
       {/* Envol : un souffle de lumière traverse lentement la face, comme une
@@ -2288,6 +2306,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       aria-hidden="true"
     >
       <img src={estEnFurie ? cardArtFurie(carte) : cardArt(carte)} alt="" />
+      {estEnFurie && <VignetteFurie />}
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
       <SortSceau carte={carte} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" />

@@ -332,6 +332,30 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
 - **Serpent des citernes** (`serpent-des-citernes.jpg`) — le jeton évoqué
   par le Bâton : serpent verdâtre dressé dans la citerne moussue.
 
+## Dérogation : les quatre porteurs de Furie en photoréaliste (octobre 2026)
+
+Les quatre cartes Neige qui portent le mot-clé **Furie** — **Guerrier au
+bouclier rond**, **Berserk des trois hivers**, **Jarl au marteau de guerre** et
+**Maître du marteau** — dérogent elles aussi à l’huile de la collection :
+elles sont livrées en **photoréaliste fantaisiste**. Chacune possède deux
+pleins arts 1024×1280, sans texte, logo, cadre ni interface dessinée :
+`<identifiant>.jpg` pour la créature intacte et `<identifiant>-furie.jpg`
+pour son état déclenché.
+
+La version Furie n’est pas une seconde composition : elle reprend **la même
+image** — même pose, même cadrage, même arrière-plan — seulement marquée par
+le combat : sang, dégâts de bataille, armure ou casque partiellement brisé
+lorsque la face intacte en porte un, équipement, pelisse ou cape déchirés
+dans le cas contraire, et visage passé en furie. Les huit fichiers portent
+la révision de cache commune `furie-photorealiste-v1`.
+
+En jeu, la Furie déclenchée affiche la peinture alternative pleine page,
+sans cadre, sur la table comme dans la preview ; une **vignette rouge
+animée** serre alors les bords de la face des deux côtés (elle devient
+statique si les mouvements réduits sont demandés). Les faces intactes
+rejoignent le garde-fou `PLEIN_ART_45`, et `check:rpg-furie-preview` mesure
+les huit fichiers tout en rendant les deux états.
+
 ## Dérogation : les équipements du Sable en nihonga coloré (octobre 2026)
 
 Les dix cartes du **lot d'équipements du Sable** (`docs/rpg/14-equipements-du-sable.md`)

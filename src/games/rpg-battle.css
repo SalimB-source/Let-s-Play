@@ -5430,6 +5430,35 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   opacity: .82;
   pointer-events: none;
 }
+
+/* Furie déclenchée : une vignette rouge pulse sur les bords de la face —
+   le sang qui monte aux yeux de la créature. Le centre reste libre pour
+   l'illustration, et le calque passe sous les repères de jeu (pastille,
+   coût, ATQ/DÉF portent des z-index supérieurs ou viennent après lui).
+   Même calque sur la table et dans la preview (`VignetteFurie`). */
+.rpg-furie-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at center, transparent 46%, rgba(122, 8, 18, .24) 74%, rgba(214, 32, 42, .58) 100%);
+  box-shadow: inset 0 0 18px rgba(190, 18, 28, .55), inset 0 0 44px rgba(92, 4, 12, .52);
+  pointer-events: none;
+  animation: rpg-furie-vignette 1.55s ease-in-out infinite alternate;
+}
+@keyframes rpg-furie-vignette {
+  from {
+    opacity: .55;
+    box-shadow: inset 0 0 13px rgba(190, 18, 28, .42), inset 0 0 34px rgba(92, 4, 12, .42);
+  }
+  to {
+    opacity: 1;
+    box-shadow: inset 0 0 24px rgba(225, 35, 45, .68), inset 0 0 60px rgba(105, 5, 14, .62);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-furie-vignette { animation: none; opacity: .82; }
+}
 .rpg-card.is-wounded .rpg-card__pt,
 .rpg-card.is-attacked.is-wounded .rpg-card__pt {
   border-color: #8c2027;

@@ -123,6 +123,11 @@ const PLEIN_ART_45 = [
   // La refonte du Père des corbeaux (Odin photoréaliste) est livrée elle
   // aussi au ratio exact de la face.
   'pere-des-corbeaux',
+  // Les quatre porteurs de Furie, repeints en photoréaliste fantaisiste :
+  // leurs faces intactes rejoignent le garde-fou du ratio de la face (leurs
+  // doubles `*-furie.jpg` sont mesurés par `check:rpg-furie-preview`).
+  'guerrier-au-bouclier-rond', 'berserk-des-trois-hivers',
+  'jarl-au-marteau-de-guerre', 'maitre-du-marteau',
   // Les héros repeints en nihonga sur feuille d’or : livrés eux aussi au
   // ratio exact de la face, désormais contrôlé comme le reste.
   'salem', 'yamina', 'feriel', 'tarek', 'boualem',

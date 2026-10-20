@@ -9,6 +9,11 @@
  * La carte posée étiquette donc son état (`data-furie-*`, comme ses armes
  * en `data-armes`), chaque geste de consultation le transmet, et l'aperçu
  * rapide, d'ordinaire texte seul, rend sa face à la créature en Furie.
+ *
+ * Les quatre porteurs de Furie sont livrés en photoréaliste fantaisiste :
+ * la face intacte et son double ensanglanté partagent le format 4:5 de la
+ * carte et une même révision de cache. Une vignette rouge animée serre les
+ * bords de la créature déclenchée, sur la table comme dans sa preview.
  */
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -18,6 +23,29 @@ import { RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+
+const REVISION_PHOTOREALISTE = 'furie-photorealiste-v1';
+const CARTES_PHOTOREALISTES = [
+  'guerrier-au-bouclier-rond',
+  'berserk-des-trois-hivers',
+  'jarl-au-marteau-de-guerre',
+  'maitre-du-marteau',
+];
+
+/** Largeur et hauteur d'un JPEG, lues dans son en-tête SOF. */
+function dimensionsJpeg(url) {
+  const octets = readFileSync(url);
+  if (octets[0] !== 0xff || octets[1] !== 0xd8) throw new Error(`${url} n’est pas un JPEG`);
+  for (let i = 2; i + 9 < octets.length;) {
+    if (octets[i] !== 0xff) { i += 1; continue; }
+    const balise = octets[i + 1];
+    const estSof = balise >= 0xc0 && balise <= 0xcf
+      && ![0xc4, 0xc8, 0xcc].includes(balise);
+    if (estSof) return [octets.readUInt16BE(i + 7), octets.readUInt16BE(i + 5)];
+    i += 2 + octets.readUInt16BE(i + 2);
+  }
+  throw new Error(`dimensions introuvables dans ${url}`);
+}
 
 // ── 1. Les aperçus, rendus pour de vrai ─────────────────────────────────────
 const previousEnv = process.env.NODE_ENV;
@@ -44,10 +72,14 @@ try {
   assert.ok(faceNormale, 'la fiche du Jarl intact montre sa face');
   assert.match(faceNormale.querySelector('img').getAttribute('src') ?? '', /cards\/jarl-au-marteau-de-guerre\.jpg/,
     'avant la blessure, la preview garde la peinture normale');
+  assert.match(faceNormale.querySelector('img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre\\.jpg\\?v=${REVISION_PHOTOREALISTE}`),
+    'sous sa révision photoréaliste, pour écarter l’ancien visuel du cache');
   assert.ok(aUnCadre(faceNormale), 'et son cadre d’élément');
   assert.deepEqual(statsDe(normal), ['3', '4'], 'les statistiques imprimées restent celles de la carte neuve');
   assert.equal(normal.querySelector('.rpg-hover-card-preview__furie'), null,
     'aucune Furie n’est annoncée tant qu’elle ne s’est pas enflammée');
+  assert.equal(normal.querySelector('.rpg-furie-vignette'), null,
+    'et aucune vignette rouge ne voile la carte intacte');
 
   const furie = cas('furie-catalogue');
   const racineFurie = furie.querySelector('.rpg-hover-card-preview');
@@ -55,8 +87,13 @@ try {
   assert.ok(faceFurie, 'la fiche du Jarl en Furie montre sa face');
   assert.match(faceFurie.querySelector('img').getAttribute('src') ?? '', /cards\/jarl-au-marteau-de-guerre-furie\.jpg/,
     'la preview affiche la peinture furie, celle de la table');
+  assert.match(faceFurie.querySelector('img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre-furie\\.jpg\\?v=${REVISION_PHOTOREALISTE}`),
+    'et cette peinture est elle aussi datée contre les caches');
   assert.ok(faceFurie.classList.contains('is-furie'), 'la face se nomme en Furie');
   assert.equal(faceFurie.getAttribute('data-furie-declenchee'), 'true', 'et expose son état');
+  const vignetteFurie = faceFurie.querySelector('.rpg-furie-vignette');
+  assert.ok(vignetteFurie, 'la vignette rouge de la Furie voile les bords de la face');
+  assert.equal(vignetteFurie.getAttribute('aria-hidden'), 'true', 'pure décoration : rien à lire dessus');
   assert.equal(aUnCadre(faceFurie), false, 'aucune classe de cadre ne rogne la peinture pleine page');
   assert.ok(racineFurie.classList.contains('rpg-hover-card-preview--furie'),
     'le panneau entier quitte le cadre de la carte intacte');
@@ -80,7 +117,25 @@ try {
     assert.match(faceRapide?.querySelector('img').getAttribute('src') ?? '', /-furie\.jpg/,
       `${nom} : le changement de visuel se voit dès la preview`);
     assert.deepEqual(statsDe(rapideFurie), ['6', '6'], `${nom} : avec les statistiques du moment`);
+    assert.ok(faceRapide?.querySelector('.rpg-furie-vignette'), `${nom} : la vignette rouge pulse aussi dans la preview rapide`);
   }
+
+  const carteTableNormale = cas('normal-table').querySelector('.rpg-card');
+  assert.ok(carteTableNormale, 'le Jarl intact se rend aussi sur la table');
+  assert.equal(carteTableNormale.classList.contains('is-furie'), false,
+    'sans la classe Furie tant que la blessure n’a pas enflammé la créature');
+  assert.match(carteTableNormale.querySelector('.rpg-card__img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre\\.jpg\\?v=${REVISION_PHOTOREALISTE}`),
+    'la table montre le nouveau visuel intact, sous sa révision');
+  assert.equal(carteTableNormale.querySelector('.rpg-furie-vignette'), null,
+    'et ses bords restent libres de toute vignette rouge');
+
+  const carteTableFurie = cas('furie-table').querySelector('.rpg-card');
+  assert.ok(carteTableFurie, 'le Jarl déclenché se rend sur la table');
+  assert.ok(carteTableFurie.classList.contains('is-furie'), 'la carte posée se nomme en Furie');
+  assert.match(carteTableFurie.querySelector('.rpg-card__img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre-furie\\.jpg\\?v=${REVISION_PHOTOREALISTE}`),
+    'avec son double ensanglanté, daté comme dans la preview');
+  assert.ok(carteTableFurie.querySelector('.rpg-furie-vignette'),
+    'la vignette rouge pulse donc aussi sur la créature posée');
 } finally {
   window.close();
 }
@@ -92,6 +147,24 @@ for (const carte of cartesFurie) {
   const artId = carte.art ?? carte.id;
   assert.ok(existsSync(new URL(`../public/cards/${artId}-furie.jpg`, import.meta.url)),
     `${carte.id} a sa peinture furie (${artId}-furie.jpg)`);
+}
+
+// Les huit visuels photoréalistes validés sont livrés au format exact de la
+// face, et leurs URL sont datées : une peinture remplacée sous le même nom
+// de fichier ne doit jamais revenir d'un cache sous son ancien visage.
+for (const carteId of CARTES_PHOTOREALISTES) {
+  const carte = cartesFurie.find((candidate) => candidate.id === carteId);
+  assert.ok(carte, `${carteId} fait partie des cartes à Furie du catalogue`);
+  const artId = carte.art ?? carte.id;
+  assert.equal(artId, carteId, `${carteId} affiche son illustration dédiée`);
+  for (const illustration of [artId, `${artId}-furie`]) {
+    const url = new URL(`../public/cards/${illustration}.jpg`, import.meta.url);
+    assert.ok(existsSync(url), `${illustration}.jpg est livré avec le jeu`);
+    assert.deepEqual(dimensionsJpeg(url), [1024, 1280],
+      `${illustration}.jpg est au format exact 4:5 de la face`);
+    assert.match(page, new RegExp(`'${illustration}': '${REVISION_PHOTOREALISTE}'`),
+      `${illustration}.jpg est daté dans l’URL sous ${REVISION_PHOTOREALISTE}`);
+  }
 }
 
 // ── 3. La table étiquette, les gestes transmettent, la feuille dénude ──────
@@ -119,5 +192,19 @@ assert.match(css, /\.rpg-hover-card-preview__face\.is-furie\s*\{\s*border-width:
   'la feuille retire tout anneau à la face Furie de la preview');
 assert.match(css, /\.rpg-hover-card-preview__furie\s*\{/,
   'l’état Furie a sa ligne dans les détails');
+assert.match(page, /function VignetteFurie\(\) \{\s*return <span className="rpg-furie-vignette" aria-hidden="true" \/>;\s*\}/,
+  'la vignette rouge est un calque décoratif partagé, sans texte à lire');
+assert.match(page, /entite\.furieDeclenchee \? 'is-furie' : ''/,
+  'la carte posée nomme son état Furie dans ses classes');
+assert.match(page, /\{entite\.furieDeclenchee && <VignetteFurie \/>\}/,
+  'et reçoit la vignette dès que la Furie est déclenchée');
+assert.match(page, /\{estEnFurie && <VignetteFurie \/>\}/,
+  'la preview reçoit le même voile écarlate');
+assert.match(css, /\.rpg-furie-vignette \{[^}]*background: radial-gradient\([^;]*rgba\(214, 32, 42, \.58\)[^}]*pointer-events: none;[^}]*animation: rpg-furie-vignette 1\.55s ease-in-out infinite alternate;/s,
+  'la feuille serre un halo rouge non interactif sur les bords et le fait pulser');
+assert.match(css, /@keyframes rpg-furie-vignette \{\s*from \{\s*opacity: \.55;[\s\S]*?to \{\s*opacity: 1;/,
+  'le pouls de la vignette respire entre ses deux intensités');
+assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-furie-vignette \{ animation: none; opacity: \.82; \}\s*\}/,
+  'les mouvements réduits figent la vignette sans la faire disparaître');
 
-console.log('✓ Furie en preview : la créature enflammée se consulte sous sa peinture furie pleine page, sans cadre, avec ses statistiques du moment — au survol, à l’appui long et sur la fiche du clic droit ; la carte intacte garde son aperçu d’avant.');
+console.log('✓ Furie photoréaliste en jeu : les quatre porteurs ont leur face intacte et leur double ensanglanté en 1024×1280, datés contre les caches ; la créature déclenchée porte sa peinture furie pleine page et sa vignette rouge animée sur la table comme dans la preview, avec ses statistiques du moment.');
