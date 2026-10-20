@@ -199,6 +199,27 @@ for (const icone of ['icon.ico', 'icon.png']) {
   copyFileSync(join(RACINE, 'desktop', 'build', icone), join(SCENE, 'build', icone));
 }
 const paquetCoque = JSON.parse(readFileSync(join(RACINE, 'desktop', 'package.json'), 'utf8'));
+
+// Version d'Electron ÉPINGLÉE : electron-builder télécharge des binaires par
+// version exacte et refuse un intervalle (« ^44.9.0 ») quand le projet
+// d'empaquetage n'a pas de node_modules. On lit la version réellement installée
+// dans desktop/, sinon celle du lockfile.
+let electronVersion = '';
+try {
+  electronVersion = JSON.parse(
+    readFileSync(join(RACINE, 'desktop', 'node_modules', 'electron', 'package.json'), 'utf8'),
+  ).version || '';
+} catch { /* electron pas installé localement */ }
+if (!electronVersion) {
+  try {
+    const lock = JSON.parse(readFileSync(join(RACINE, 'desktop', 'package-lock.json'), 'utf8'));
+    electronVersion = lock.packages?.['node_modules/electron']?.version || '';
+  } catch { /* pas de lock */ }
+}
+if (!electronVersion) {
+  console.error('[desktop] version d’Electron introuvable (node_modules et lock absents).');
+  process.exit(1);
+}
 writeFileSync(join(SCENE, 'package.json'), `${JSON.stringify({
   name: paquetCoque.name,
   productName: paquetCoque.productName,
@@ -210,6 +231,8 @@ writeFileSync(join(SCENE, 'package.json'), `${JSON.stringify({
   author: paquetCoque.author,
   license: paquetCoque.license,
   homepage: paquetCoque.homepage,
+  // Version exacte : electron-builder refuse un intervalle sans node_modules.
+  devDependencies: { electron: electronVersion },
 }, null, 2)}
 `);
 console.log(`[desktop] projet d'empaquetage isolé : ${SCENE} (${FICHIERS_SCENE.length + 3} fichiers)`);
