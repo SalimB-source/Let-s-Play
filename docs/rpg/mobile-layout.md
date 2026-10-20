@@ -12,7 +12,7 @@ Le plateau conserve les illustrations originales de Bab El, avec une organisatio
 - identités et compteurs flottants ;
 - **menu hamburger du duel (`.rpg-duel-nav`)** : sur écran tactile, la barre de navigation du duel reprend la **capsule sombre du PC** — même fond translucide, même rayon, posée à droite de la rangée de navigation — et n'y laisse qu'un bouton hamburger agrandi (`.rpg-duel-nav__burger`, icône `26 px`, panneau `.rpg-duel-nav__menu` à `min-width: 240px`) regroupant `Menu`, `Deck`, `Catalogue`, l'onglet `Paramètres` (qui abrite l'option `3D` ainsi que le contrôle du volume des `Sons du jeu` et des `Musiques`) et le plein écran. Le menu principal du Sablier dispose également d'un onglet `⚙ Paramètres` ;
 - main en bas : **une carte = une cible**, jamais deux cartes sous le même doigt — la rangée partage sa largeur entre ses emplacements (les cartes rétrécissent ensemble, `flex: 1 1 0; min-width: 0`) et **ne recadre rien** (`overflow: visible`, aucun masque) : aucune carte n’est coupée sur les côtés, la pioche qui glisse depuis la gauche (`rpg-player-card-draw`) entre à découvert et les compteurs ×N ne sont pas rognés. À la souris, la même rangée s’ouvre en **éventail** (angle, écart et descente en arc portés par `--hand-fan`, voir le `README.md`) ; au doigt, les repères de l’éventail sont remis à zéro — la règle « une carte = une cible » interdit tout recouvrement. Au doigt toujours, la **pastille de couleur** de la main est réduite (16 px, filet de 1,5 px) pour laisser l'illustration respirer, pendant que le disque de coût garde le diamètre commun de 22 px ;
-- commandes « Attaquer avec tous », confirmation/annulation de l’attaque, annulation de la dernière action et fin du tour regroupées côte à côte sur le plateau, selon la phase ; **« Confirmer l’attaque » et « Résoudre le combat » portent leur propre aplat clair** (bleu glacé, or) et leur halo, au doigt comme à la souris : ce sont les commandes principales, elles ne prennent plus le fond sombre des commandes en retrait (`rpg-mobile.css`, voir « Le Sablier : la main en éventail… » dans le `README.md`) ;
+- commandes « Attaquer avec tous », confirmation/annulation de l’attaque, annulation de la dernière action et fin du tour regroupées sur le plateau, selon la phase — **côte à côte à la souris, empilées au doigt sur toute la largeur de la colonne du tour**, chacune haute de 44 px au moins (voir « Au doigt, des cibles pleines » ci-dessous) ; **« Confirmer l’attaque » et « Résoudre le combat » portent leur propre aplat clair** (bleu glacé, or) et leur halo, au doigt comme à la souris : ce sont les commandes principales, elles ne prennent plus le fond sombre des commandes en retrait (`rpg-mobile.css`, voir « Le Sablier : la main en éventail… » dans le `README.md`) ;
 - progression des phases immédiatement au-dessus des commandes, **comme sur PC** : une rangée de six icônes orange (début, principale, attaque, blocage, deuxième principale, fin) dans une capsule sombre translucide, la phase actuelle allumée, **l'attaque du tour marquée d'une coche une fois consommée** — une seule phase d'attaque par tour, voir « Le Sablier : le Coup rapide est un choix… » dans le `README.md` —, les noms gardés pour les lecteurs d'écran. Les six pastilles se partagent la largeur du rail (plafonnées à 0,34 carte) : sur un 568 × 320 elles se resserrent au lieu de se chevaucher ;
 - colonne de droite (rail du tour et commandes) à **2,47 cartes de large** — la largeur du rail du PC (330 px pour une carte de 140) — plafonnée à 23 % de la largeur (`--rpg-touch-controls: min(calc(var(--duel-card) * 2.47), 23vw)`), les deux commandes de combat faisant 44 px de haut (0,55 carte, cible tactile) ;
 - cartes posées sur la table un peu plus petites que celles de la main (`--rpg-field-card` = 95 % de `--duel-card` — agrandies depuis 85 % pour lire les créatures en jeu), **sans masque ni zone de défilement** autour d'elles : la largeur des cartes se partage entre les emplacements de la rangée (`--row-count`, compté en CSS par `:has(> :nth-child(N))`) jusqu'à un plancher de 40 px, puis elles se chevauchent plutôt que de déborder. **Leur coût ne s'imprime plus sur la face** : une créature en jeu n'a plus rien à payer — la pastille de couleur, les compteurs et ATQ/DEF suffisent. Le disque reste dans le DOM et son montant dans le `aria-label` de la carte, et il garde les autres faces (main, mulligan, aperçus, catalogue) ; le disque de neige du bouton de capacité activée, hors du titre, reste visible ;
@@ -110,7 +110,10 @@ compteur, posés contre sa plaque, deux rangées de cinq — la colonne de gauch
 du téléphone est plus étroite que celle du PC, les losanges y restent lisibles
 au lieu de dix points de 8 px. La jauge et la plaque partagent la même cellule
 de grille : la plaque s'aligne au bord extérieur, la jauge se cale derrière elle
-à la hauteur réelle de la plaque (`--rpg-plaque-*-h`), publiée par la page.
+à la hauteur réelle de la plaque (`--rpg-plaque-*-h`), publiée par la page, et
+**se borne à la place qui reste** dans la rangée (`--rpg-jauge-*-h`) : ses deux
+rangées de cinq losanges se resserrent plutôt que de déborder sur le camp
+d'en face quand la plaque s'offre une ligne de plus.
 
 Le reste vient des **piles de cartes homonymes**, au doigt seulement (`empilerCartes = viewport.mobile`) :
 
@@ -124,6 +127,60 @@ Le reste vient des **piles de cartes homonymes**, au doigt seulement (`empilerCa
 - à la souris et sur grand écran, **rien ne change** : une carte = un emplacement, et le DOM de la main est exactement celui d'origine.
 
 Le regroupement est une présentation : chaque exemplaire reste une instance distincte dans le moteur, avec son index réel en main (le vol de carte, la pioche et le paiement visent l'exemplaire concerné). `src/games/rpgCardStacks.js` porte les deux fonctions pures (`groupCartesMain`, `groupEntitesParCarte`), `src/games/rpg-mobile.css` la présentation (`.rpg-hand__pile`, `.rpg-card-stack`, `.rpg-card-stack__count`, `.rpg-card-stack__toggle`).
+
+## Au doigt, des cibles pleines : les commandes du tour et la réponse au sorcier
+
+Une commande peut être parfaitement dimensionnée et rester **intouchable** :
+mesurée à 844 × 390, la colonne d'actions du coin inférieur droit passait sous
+la main du joueur (`z-index: 42`), et le centre de « Laisser passer »
+répondait `.rpg-hand` — le doigt touchait une carte, pas le bouton. Trois
+règles règlent le problème.
+
+**Les commandes du tour s'empilent.** « Attaquer avec tous (0) » et « Fin du
+tour » occupaient deux demi-colonnes de 73 px, où le premier tenait sur trois
+lignes ; ils prennent maintenant toute la largeur du rail, 44 px de haut
+chacun (`--rpg-touch-combat`, 0,55 carte). La `grid-column: 2` du PC est remise
+à `auto` : sans ça, une colonne implicite réapparaissait et les deux boutons se
+serraient de nouveau côte à côte.
+
+**La colonne se mesure.** La barre de combat ferme la colonne juste au-dessus
+de la main ; sa hauteur varie d'une à trois commandes empilées
+(« Confirmer l'attaque », « Annuler l'attaque », « Résoudre le combat »…). La
+page publie sa hauteur réelle (`--rpg-controles-h`, `ResizeObserver`) et le rail
+du tour s'ancre dessus : il ne recouvre jamais la barre et ne passe jamais sous
+la main. Sur un écran très court (≤ 360 px de haut), les commandes de combat
+passent sur deux colonnes et « Attaquer avec tous » s'efface pendant une
+attaque — le rail garde « Fin du tour » dans la colonne ; au besoin, il se
+borne à la hauteur libre et défile au lieu de sortir par le haut.
+
+**La réponse au sorcier quitte la colonne.** Le panneau compact
+(`.rpg-annonce-sort__compact`, « Laisser passer » / « Voir l'aperçu », et sa
+variante « Fin du tour du sorcier → Passer ») était posé dans la colonne de
+droite, sous la main. Il devient une **barre fixe juste au-dessus de la main**,
+au-dessus de tout le reste (`z-index: 60`), qui part du **bord droit de la
+plaque du joueur** (`--rpg-plaque-droite`, publiée elle aussi) : le profil et
+la vie restent lisibles pendant qu'on choisit. Ses commandes font 48 px de haut
+au moins et la largeur de leur texte (« Laisser passer » : 153 × 50 à
+844 × 390, atteint au centre). Le rail du tour s'ancre au-dessus de la barre
+(`--rpg-barre-reponse-h`, 64 px) au lieu de passer dessous.
+
+## Le profil au doigt : le nom en deux lignes, les zones entières
+
+La plaque du sorcier reprend la pastille du PC — avatar à gauche, nom au
+milieu, vie à droite — à l'échelle du téléphone, avec trois retouches :
+
+- **le nom tient sur deux lignes** (« LE » / « SORCIER ») au lieu d'être coupé
+  en « LE SOR… » : la colonne du nom ne fait que 31 px sur un 568 × 320, la
+  place laissée par la goutte de vie. L'avatar descend à 0,48 carte et la
+  goutte à 0,62 pour lui rendre de la largeur ;
+- **les zones (Main · Paquet · Cimetière) passent à la ligne entre deux
+  compteurs** au lieu d'être tronquées à l'ellipse : chaque compteur est une
+  unité insécable (« Main · 3 » ne se coupe jamais), le point de séparation du
+  PC s'efface et l'écart suffit. Deux lignes de zones tiennent dans la plaque,
+  et la jauge de mana se resserre derrière elle ;
+- **la vie garde la goutte de sang**, élargie si la réserve s'affiche
+  (« 25/34 ») : `min-width` de 0,62 carte, hauteur identique, chiffre à 0,32
+  carte, maximum en exposant dans la goutte.
 
 ## Le menu hamburger du duel
 
@@ -158,7 +215,7 @@ npm run build
 
 - Tests purs : moteur, audio, gestes (glisser-déposer **et appui long** : `tests/rpg-long-press.test.js`), piles de terrains (paiement, production individuelle, dégagement, restauration), piles de cartes homonymes (`tests/rpg-card-stacks.test.js` : ordre, index réels, carte de tête, camps séparés) et cycle de vie de l’orientation — y compris les refus, les promesses tardives, l’attente du plein écran de la page avant le verrou de paysage et le rattrapage du verrou quand le plein écran arrive après l’attente.
 - Tests React/jsdom : le menu hamburger du duel (`npm run check:rpg-duel-nav` : fermé au départ, ouvert sur `is-open` après l’appui, panneau fixé au viewport, sans `backdrop-filter`, défilement vertical, six commandes, fermeture hors barre et ouverture du mode Deck), bandeau d’ouverture de tour (`npm run check:rpg-turn-banner` : « Votre tour » au joueur, « Tour de l’adversaire » au sorcier, 1,5 s chronométrée, muet pendant le mulligan et sur un duel terminé, toujours éteint après un aller-retour par le menu), clic-jeu direct, confirmation des magies, mana insuffisant, limite de terrain, annulation, sélection d’attaque, annulation, confirmation, interdiction d’attaquer deux fois, terrain engagé, aperçu par appui long (catalogue, main, créature en jeu, et le créateur de deck : bibliothèque, bouton « + », ligne du deck en cours, bouton « − ») qui ne joue rien et n’ajoute ni ne retire aucune carte, et — dans `scripts/rpg-stacks-smoke.jsx` — les piles homonymes des deux camps : compteur ×N, tête de pile, dépliage au toucher et automatique, blocage assigné depuis une pile repliée, pioche qui remplit la pile sans l’élargir. `scripts/rpg-battle-ui-check.mjs` vérifie la **petite carte d'arme** dans l'aperçu, la ligne bleue d'effet, l'absence de bonus et de texte d'arme sur la face jouée, et les **losanges chiffrés sous la couleur des monos ou sous le coût des hybrides** (Heures et sable, lisibles même au doigt sur une carte étroite). `scripts/rpg-stacks-smoke.jsx` vérifie aussi leur mise à jour et leur disparition à zéro. `npm run check:rpg-hybrid-cost` vérifie les moitiés de couleur communes aux coûts et sceaux, ainsi que les médaillons de la bibliothèque et du deck dans l’atelier ; le guide montre Vent rouge avec le même disque et le même sceau (`check:rpg-tutorial-ui`). `scripts/rpg-fullscreen-smoke.jsx` joue de son côté le plein écran de la page réelle : ouverture dans la page sans aucune demande au montage, bouton du menu qui demande le natif sur la coque (et le referme), geste ordinaire et lancement à la souris qui ne demandent rien, et — pointeur grossier installé (téléphone, tablette, application) — lancement du duel qui demande le natif dans le geste sur le même nœud d’un écran à l’autre, le démontage refermant le tout.
-- Tests Chromium : repli portrait, plateaux 568×320, 667×375, 844×390 et 1024×768 sans recouvrement des zones, **proportions du PC** (carte de la main à 15,55 % de la hauteur, navigation à 0,62 carte, main à 1,38 carte, plaques et jauges dans la colonne de gauche, champs de même hauteur qui se rejoignent au milieu), cases des cinq emplacements sous chaque carte posée (1, 3 et 5 cartes), commandes côte à côte ; actions directes au toucher ; retour au menu. La main y est mesurée carte par carte — **aucun recouvrement**, chaque carte visible répondant au doigt en son centre, largeur ≥ 34 px, première carte atteignable — puis remplie de huit cartes factices dont chacune est touchée après avoir été amenée dans le champ : 8/8. La main de départ compte trois cartes (`RPG_MANA_ESSAI_MAIN_DEPART`) : le mulligan en présente trois, 4:5, entières et touchables. Le parcours des piles de terrains n’est plus proposé par l’interface ; le check le rejoue seulement si une main en contient. Le voile n’existe plus : `check:rpg-ui` interdit `--rpg-plateau-voile`, `.card-table::before` et les vignettes par plateau, et exige les capsules qui les remplacent.
+- Tests Chromium : repli portrait, plateaux 568×320, 667×375, 844×390 et 1024×768 sans recouvrement des zones, **proportions du PC** (carte de la main à 15,55 % de la hauteur, navigation à 0,62 carte, main à 1,38 carte, plaques et jauges dans la colonne de gauche, champs de même hauteur qui se rejoignent au milieu), cases des cinq emplacements sous chaque carte posée (1, 3 et 5 cartes), **commandes du tour empilées sur la largeur du rail, 44 px de haut, atteintes au centre** (`elementFromPoint`) à 844 × 390 et 568 × 320, barre de combat au-dessus de la main et rail ancré dessus ; actions directes au toucher ; retour au menu. La main y est mesurée carte par carte — **aucun recouvrement**, chaque carte visible répondant au doigt en son centre, largeur ≥ 34 px, première carte atteignable — puis remplie de huit cartes factices dont chacune est touchée après avoir été amenée dans le champ : 8/8. La main de départ compte trois cartes (`RPG_MANA_ESSAI_MAIN_DEPART`) : le mulligan en présente trois, 4:5, entières et touchables. Le parcours des piles de terrains n’est plus proposé par l’interface ; le check le rejoue seulement si une main en contient. Le voile n’existe plus : `check:rpg-ui` interdit `--rpg-plateau-voile`, `.card-table::before` et les vignettes par plateau, et exige les capsules qui les remplacent.
 
 Variables facultatives : `RPG_URL`, `CHROMIUM_EXECUTABLE_PATH` et `RPG_SCREENSHOT` (capture du plateau).
 

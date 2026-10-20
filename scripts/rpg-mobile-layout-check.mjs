@@ -77,8 +77,22 @@ try {
     });
     assert.ok(result.rail.left >= result.areas[2].left - 1 && result.table.right - result.rail.right <= 20,
       `${width}: les phases sont dans la colonne de droite`);
-    assert.ok(Math.abs(result.attackAll.top - result.endTurn.top) <= 1 && result.attackAll.right <= result.endTurn.left,
-      `${width}: attaque générale et fin du tour sont côte à côte`);
+    // Les deux commandes du tour s'empilent sur toute la largeur du rail : au
+    // doigt, deux demi-colonnes de 73 px ne laissaient pas viser « Attaquer
+    // avec tous (0) », coupé sur trois lignes.
+    assert.ok(Math.abs(result.attackAll.left - result.rail.left) <= 1
+      && Math.abs(result.attackAll.right - result.rail.right) <= 1
+      && Math.abs(result.endTurn.left - result.rail.left) <= 1
+      && Math.abs(result.endTurn.right - result.rail.right) <= 1,
+      `${width}: attaque générale et fin du tour prennent la largeur du rail`);
+    assert.ok(result.endTurn.top >= result.attackAll.bottom + 1
+      && result.attackAll.bottom <= result.areas[2].bottom,
+      `${width}: attaque générale et fin du tour s'empilent dans la colonne de droite`);
+    // La cible tactile pleine (44 px) : c'est la hauteur du doigt, pas celle
+    // d'une souris. Le centre des commandes est vérifié plus bas, une fois le
+    // volet de mulligan refermé (il couvre la table pendant ces mesures).
+    assert.ok(result.attackAll.height >= 44 && result.endTurn.height >= 44,
+      `${width}: chaque commande du tour offre 44 px de haut (${result.attackAll.height.toFixed(0)} et ${result.endTurn.height.toFixed(0)})`);
     // La main : une carte = une cible. Les cartes ne se recouvrent jamais — le
     // doigt qui touche une carte joue celle-là — et toute carte visible dans la
     // rangée répond en son centre. Si la main déborde (plancher tactile atteint :
@@ -118,8 +132,9 @@ try {
     assert.ok(main.premiereVisible, `${width}: la première carte de la main reste atteignable`);
     assert.ok(result.rail.top >= result.table.top - 1 && result.rail.bottom <= result.hand.top + 1,
       `${width}: le rail du tour tient dans la bande de jeu, au-dessus de la main`);
-    assert.ok(result.phases.height > 0 && result.phases.bottom <= result.endTurn.y && result.endTurn.y - result.phases.bottom <= 10,
-      `${width}: phases sit immediately above the end-turn button, inside the rail`);
+    assert.ok(result.phases.height > 0 && result.phases.bottom <= result.attackAll.top
+      && result.attackAll.top - result.phases.bottom <= 10,
+      `${width}: phases sit immediately above the turn commands, inside the rail`);
     assert.ok(result.endTurn.left >= result.rail.left - 1 && result.endTurn.right <= result.rail.right + 1,
       `${width}: Fin du tour prend la largeur du rail du tour`);
     assert.ok(result.attackAll.width >= 32 && result.attackAll.left >= result.areas[2].left - 1
@@ -173,8 +188,10 @@ try {
       }
     }
     assert.ok(result.card.top >= result.hand.top - 1 && result.card.bottom <= result.hand.bottom + 1, `${width}: hand cards are not clipped vertically`);
-    // Boutons de droite compacts (32 px), mais encore au doigt.
-    assert.ok(result.endTurn.height >= 32 && result.endTurn.height <= 40, `${width}: compact, touch-sized end-turn button (${result.endTurn.height})`);
+    // Fin du tour garde la hauteur pleine du rail : un bouton de 32 px se
+    // rate au pouce, quelle que soit la taille de l'écran.
+    assert.ok(result.endTurn.height >= 44 && result.endTurn.height <= 60,
+      `${width}: Fin du tour garde une cible de doigt (${result.endTurn.height.toFixed(0)} px)`);
     // Les phases, comme sur PC : une rangée d'icônes, noms masqués à l'écran.
     const phases = await page.evaluate(() => {
       const icons = [...document.querySelectorAll('.rpg-turn-rail .rpg-phase-step__icon')].map((icon) => icon.getBoundingClientRect());
@@ -368,6 +385,43 @@ try {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.getByRole('button', { name: /Garder cette main/i }).click();
   await page.locator('.rpg-mulligan').waitFor({ state: 'detached' });
+  // ── Les commandes du tour, doigt dessus ───────────────────────────────────
+  // Une commande peut être parfaitement dimensionnée et rester intouchable :
+  // la main du joueur (z-index 42) remontait devant la colonne d'actions, et
+  // le centre de « Laisser passer » répondait `.rpg-hand`. On vérifie donc le
+  // point sous le doigt, pas seulement la boîte du bouton.
+  for (const [width, height] of [[844, 390], [568, 320]]) {
+    await page.setViewportSize({ width, height });
+    await page.waitForTimeout(260);
+    const cibles = await page.evaluate(() => [...document.querySelectorAll('.rpg-turn-rail .rpg-btn')]
+      .filter((bouton) => bouton.getBoundingClientRect().width > 0)
+      .map((bouton) => {
+        const boite = bouton.getBoundingClientRect();
+        const dessous = document.elementFromPoint(boite.left + boite.width / 2, boite.top + boite.height / 2);
+        return {
+          libelle: bouton.getAttribute('aria-label') || bouton.textContent.trim(),
+          hauteur: boite.height,
+          atteint: dessous === bouton || bouton.contains(dessous),
+          parDessus: dessous?.className?.toString().slice(0, 40) ?? '',
+        };
+      }));
+    cibles.forEach(({ libelle, hauteur, atteint, parDessus }) => {
+      assert.ok(atteint, `${width}: « ${libelle} » répond au doigt en son centre (recouvert par ${parDessus || 'rien'})`);
+      assert.ok(hauteur >= 44, `${width}: « ${libelle} » offre 44 px de haut (${hauteur.toFixed(0)})`);
+    });
+    // La barre de combat ferme la colonne juste au-dessus de la main : elle ne
+    // se glisse ni sous les cartes, ni sur le rail du tour.
+    const colonne = await page.evaluate(() => {
+      const boite = (selector) => document.querySelector(selector)?.getBoundingClientRect().toJSON() ?? null;
+      return { rail: boite('.rpg-turn-rail'), controls: boite('.rpg-bottombar'), hand: boite('.rpg-hand') };
+    });
+    assert.ok(colonne.controls.bottom <= colonne.hand.top + 1,
+      `${width}: la barre de combat reste au-dessus de la main`);
+    assert.ok(colonne.rail.bottom <= colonne.controls.top + 1,
+      `${width}: le rail du tour s'ancre au-dessus de la barre de combat`);
+  }
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.waitForTimeout(260);
   // Le menu hamburger du duel : au doigt, la barre ne montre que lui. Un appui
   // déplie ses commandes — les trois modes (Menu, Deck, Catalogue) et les
   // trois réglages — dans un panneau sous la barre, au-dessus de la table.

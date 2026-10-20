@@ -551,20 +551,30 @@
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--ennemi {
   grid-area: enemy-mana;
   align-self: start;
-  margin-block-start: calc(var(--rpg-plaque-ennemi-h, 40px) + 3px);
+  margin-block-start: calc(var(--rpg-plaque-ennemi-h, 40px) + 1px);
 }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--joueur {
   grid-area: mana;
   align-self: end;
-  margin-block-end: calc(var(--rpg-plaque-joueur-h, 40px) + 3px);
+  margin-block-end: calc(var(--rpg-plaque-joueur-h, 40px) + 1px);
 }
 /* La barre : la capsule du PC, à l'échelle du téléphone. Le compteur à gauche,
    les dix losanges à droite, sur deux rangées de cinq. */
+/* La place laissée par la plaque dans sa rangée de jeu (`--rpg-jauge-*-h`,
+   publiée par la page) borne la jauge : ses deux rangées de cinq losanges se
+   resserrent si la plaque s'est offert une ligne de plus. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--ennemi {
+  max-height: var(--rpg-jauge-ennemi-h, none);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--joueur {
+  max-height: var(--rpg-jauge-joueur-h, none);
+}
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track__bar {
   position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
+  box-sizing: border-box;
   padding: 3px 4px;
   border-radius: 999px;
 }
@@ -584,10 +594,21 @@
   align-items: center;
   gap: 1px;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
 }
+/* Le losange est carré ; sa taille suit la place laissée par la plaque (deux
+   rangées de cinq plus les gouttières, dans `--rpg-jauge-*-h`) : quand la
+   plaque s'offre une ligne de plus, la jauge se resserre au lieu de déborder
+   sur le camp d'en face. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--ennemi { --jauge-dispo: var(--rpg-jauge-ennemi-h, 52px); }
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track--joueur { --jauge-dispo: var(--rpg-jauge-joueur-h, 52px); }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track__slot {
   width: 100%;
   max-width: none;
+  max-height: min(22px, calc((var(--jauge-dispo) - 8px) / 2));
+  aspect-ratio: 1;
+  justify-self: center;
   min-height: 0;
   font-size: clamp(7px, calc(var(--duel-card) * .14), 12px);
 }
@@ -624,7 +645,7 @@
   margin: 0;
   margin-inline-start: calc(var(--terrain-inset) * .35);
   margin-inline-end: 0;
-  padding: 3px 6px 4px;
+  padding: 2px 7px 3px;
   box-sizing: border-box;
   gap: 1px 4px;
   grid-template-columns: var(--rpg-plate-avatar) minmax(0, 1fr) auto;
@@ -646,38 +667,47 @@
   min-width: 0;
   text-align: left;
 }
+/* Le nom tient sur deux lignes plutôt que d'être coupé en « LE SOR… » : la
+   colonne du nom n'est large que de ce que la goutte de vie laisse. */
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__identity strong {
+  display: -webkit-box;
   justify-self: start;
   overflow: hidden;
-  font-size: clamp(9px, calc(var(--duel-card) * .15), 12px);
-  letter-spacing: .05em;
+  font-size: clamp(8.5px, calc(var(--duel-card) * .155), 12.5px);
+  letter-spacing: .02em;
+  line-height: 1.05;
   text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones {
-  display: block;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: .85em;
   grid-column: 1 / -1;
   grid-row: 2;
   align-self: start;
   min-width: 0;
-  margin-top: 1px;
+  max-height: 2.6em;
+  margin-top: 2px;
   overflow: hidden;
-  font-size: clamp(6.5px, calc(var(--duel-card) * .112), 9px);
-  line-height: 1.2;
-  letter-spacing: 0;
+  font-size: clamp(7.5px, calc(var(--duel-card) * .13), 9.5px);
+  line-height: 1.3;
+  letter-spacing: .01em;
   text-align: left;
   white-space: nowrap;
-  text-overflow: ellipsis;
 }
 /* Les deux camps lisent leurs zones de la même façon — main, paquet,
-   cimetière —, sur une ligne qui se tronque plutôt que de faire grandir la
-   plaque. */
+   cimetière —, sur une ligne qui passe à la suivante entre deux compteurs
+   plutôt que de se tronquer. */
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zones .rpg-mobile-zones {
-  display: inline;
+  display: contents;
 }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__zone-sep {
-  display: inline;
+  display: none;
 }
 
 /* ── Les PV dans une goutte de sang ────────────────────────────────────────
@@ -698,11 +728,12 @@
   justify-content: center;
   gap: 0;
   box-sizing: border-box;
-  width: clamp(26px, calc(var(--duel-card) * .62), 46px);
-  height: clamp(26px, calc(var(--duel-card) * .62), 46px);
+  width: auto;
+  min-width: clamp(28px, calc(var(--duel-card) * .62), 46px);
+  height: clamp(28px, calc(var(--duel-card) * .62), 46px);
   margin: 0;
-  padding: 0;
-  border-radius: 50%;
+  padding: 0 6px;
+  border-radius: 999px;
   background:
     radial-gradient(circle at 32% 26%, rgba(255, 196, 186, .85) 0 7%, rgba(255, 120, 110, .35) 16%, transparent 34%),
     radial-gradient(circle at 50% 42%, #c4161c 0%, #8e0a12 52%, #4f0208 86%, #2c0004 100%);
@@ -713,8 +744,10 @@
     0 3px 6px rgba(0, 0, 0, .7),
     0 0 9px rgba(190, 20, 30, .45);
   color: #fff3ee;
-  font: 800 clamp(13px, calc(var(--duel-card) * .3), 21px)/1 Georgia, serif;
+  font: 800 clamp(15px, calc(var(--duel-card) * .32), 22px)/1 Georgia, serif;
   text-shadow: 0 1px 0 #3a0006, 0 2px 4px rgba(0, 0, 0, .8);
+  white-space: nowrap;
+  gap: 0;
 }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__hp-icon {
   display: none;
@@ -725,6 +758,15 @@
   padding: 0;
   line-height: 1;
   font-variant-numeric: lining-nums tabular-nums;
+}
+/* La réserve (« /34 ») se lit dans la goutte, plus petite et remontée : le
+   nombre de vie reste le centre optique du rond. */
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__hp-max {
+  align-self: flex-start;
+  margin: 4px 0 0 1px;
+  color: #ffd9a6;
+  font: 800 clamp(7px, calc(var(--duel-card) * .13), 10px)/1 var(--mono, monospace);
+  vertical-align: baseline;
 }
 /* Le bouclier éventuel se range en petite capsule sous la goutte. */
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__shield-value {

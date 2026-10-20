@@ -356,50 +356,95 @@
   justify-self: stretch;
   margin-inline-start: calc(var(--terrain-inset) * .35);
   margin-inline-end: 0;
-  gap: 1px 5px;
-  padding: 3px 7px 4px;
+  align-content: center;
+  gap: 0 4px;
+  padding: 2px 4px 3px;
   border-radius: calc(var(--duel-card) * .2);
-  color: #ffefcb;
+  color: #fff2d2;
   text-shadow: 0 2px 3px #000;
   text-align: left;
   box-sizing: border-box;
-  --rpg-plate-avatar: clamp(22px, calc(var(--duel-card) * .42), 40px);
+  /* L'avatar du PC (42 px pour une plaque de 204) : au doigt il garde un peu
+     moins de la moitié d'une carte, pour laisser au nom du sorcier la place de
+     tenir en entier. */
+  --rpg-plate-avatar: clamp(24px, calc(var(--duel-card) * .48), 42px);
 }
 .rpg-battle--touch .rpg-wizard-plate__avatar {
   grid-column: 1;
+  /* L'avatar occupe la première rangée seule : la ligne des zones court sous
+     lui, sur toute la largeur — elle ne passe jamais dessous. */
   grid-row: 1;
+  align-self: center;
   width: var(--rpg-plate-avatar);
   height: var(--rpg-plate-avatar);
-  border-width: 1px;
+  border-width: 2px;
   border-color: #d8b975;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .55);
 }
-.rpg-battle--touch .rpg-wizard-plate__identity { grid-column: 2; grid-row: 1; min-width: 0; }
+/* Le nom et les zones forment un bloc serré, centré en hauteur : le nom juste
+   au-dessus de la ligne des zones, comme la pastille du PC (nom, puis vie). */
+.rpg-battle--touch .rpg-wizard-plate__identity {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  min-width: 0;
+}
+/* Le nom du sorcier tient sur deux lignes plutôt que d'être coupé : sur un
+   écran de 568 px, la colonne du nom ne fait que 31 px, assez pour « LE » et
+   « SORCIER » l'un sous l'autre, pas pour les neuf lettres de front. La
+   rangée garde sa hauteur — deux lignes de nom restent plus courtes que
+   l'avatar. */
 .rpg-battle--touch .rpg-wizard-plate__identity strong {
-  font-size: clamp(9px, calc(var(--duel-card) * .15), 12px);
-  letter-spacing: .06em;
-  line-height: 1.1;
+  display: -webkit-box;
+  overflow: hidden;
+  color: #fff6de;
+  font-size: clamp(8.5px, calc(var(--duel-card) * .155), 12.5px);
+  letter-spacing: .02em;
+  line-height: 1.05;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 .rpg-battle--touch .rpg-wizard-plate__identity small,
 .rpg-battle--touch .rpg-wizard-plate__sable { display: none; }
+/* La vie : un nombre franc, à l'échelle de la carte (0,32), dans la goutte de
+   sang qui s'élargit si la réserve s'affiche (« 25/34 »). */
 .rpg-battle--touch .rpg-wizard-plate__pv {
   grid-column: 3;
-  grid-row: 1;
+  grid-row: 1 / -1;
   align-self: center;
-  font-size: clamp(14px, calc(var(--duel-card) * .3), 27px);
+  font-size: clamp(15px, calc(var(--duel-card) * .32), 28px);
   line-height: 1;
 }
+/* Les zones (main, paquet, cimetière) tiennent sur deux lignes, sous l'avatar
+   et le nom, sur toute la largeur de la plaque : chaque compteur reste entier
+   (« Main · 3 » ne se coupe pas au milieu), la ligne passe à la suivante entre
+   deux compteurs, et le point de séparation du PC s'efface — l'écart suffit.
+   Une plaque qui grandit ainsi reste dans sa rangée : la jauge de mana se
+   range derrière elle, à sa hauteur mesurée. */
 .rpg-battle--touch .rpg-wizard-plate__zones {
   grid-column: 1 / -1;
   grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: .85em;
+  row-gap: 0;
   min-width: 0;
-  margin-top: 1px;
-  font-size: clamp(6.5px, calc(var(--duel-card) * .112), 9px);
-  line-height: 1.2;
-  letter-spacing: 0;
-  white-space: nowrap;
+  max-height: 2.6em;
+  margin-top: 2px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: clamp(7.5px, calc(var(--duel-card) * .13), 9.5px);
+  line-height: 1.3;
+  letter-spacing: .01em;
+  white-space: nowrap;
 }
+/* Le compteur est l'unité qui passe à la ligne : « Main · 3 » ne se coupe
+   jamais entre le mot et son nombre. */
+.rpg-battle--touch .rpg-wizard-plate__zone { white-space: nowrap; }
+.rpg-battle--touch .rpg-mobile-zones { display: contents; }
+.rpg-battle--touch .rpg-wizard-plate__zone-sep { display: none; }
 /* Les deux camps partagent la même pastille : ni l'un ni l'autre ne déplace
    ses PV — la lecture est la même en haut et en bas de la table. */
 .rpg-battle--touch .rpg-wizard-plate--joueur { grid-template-columns: var(--rpg-plate-avatar) minmax(0, 1fr) auto; }
@@ -507,9 +552,11 @@
   flex-direction: column;
   justify-content: flex-end;
   align-self: end;
-  /* La rangée de combat ferme la colonne : sa hauteur est celle d'un bouton
-     tactile, et le rail du tour s'ancre juste au-dessus (même repère). */
-  height: var(--rpg-touch-combat);
+  /* La rangée de combat ferme la colonne : sa hauteur est celle de ses
+     commandes — une à trois, empilées — et le rail du tour s'ancre juste
+     au-dessus d'elle (`--rpg-controles-h`, publiée par la page). */
+  height: auto;
+  min-height: var(--rpg-touch-combat);
   gap: 0;
   padding: 0 max(2px, env(safe-area-inset-right, 0px)) 0 0;
   overflow: visible;
@@ -517,6 +564,77 @@
 }
 .rpg-battle--touch .rpg-turn-indicator { min-height: 22px; padding: 3px 5px; background: #18120c66; box-shadow: none; }
 .rpg-battle--touch .rpg-turn-indicator strong { font-size: 9px; letter-spacing: .02em; }
+/* ── La réponse au sorcier : une barre au-dessus de la main ─────────────────
+   « Laisser passer » et « Répondre » vivaient dans le panneau compact du PC,
+   posé dans la colonne de droite : sur un téléphone, la barre débordait de sa
+   colonne juste sous la main, dont les cartes (z-index 42) recouvraient le
+   bouton — mesuré à 844 × 390, le centre de « Laisser passer » répondait à
+   `.rpg-hand`, pas au bouton. La réponse devient donc une **barre posée
+   juste au-dessus de la main**, au-dessus de tout le reste : elle part du
+   bord droit de la plaque du joueur — le profil et la vie restent lisibles —
+   et va jusqu'au bord de l'écran. Le libellé à gauche, les deux commandes à
+   droite, chacune de 48 px de haut et de la largeur de son texte. La colonne
+   de droite ne peint plus ce panneau : elle ne fait que le contenir. */
+.rpg-battle--touch .rpg-bottombar:has(.rpg-annonce-sort__compact) { z-index: 60; }
+/* La barre a une hauteur fixe : le rail du tour s'ancre au-dessus d'elle
+   (`--rpg-barre-reponse-h`), sans dépendre de la longueur du nom annoncé. */
+.rpg-battle--touch .card-table:has(.rpg-annonce-sort__compact) { --rpg-barre-reponse-h: 64px; }
+.rpg-battle--touch .rpg-annonce-sort__compact {
+  position: fixed;
+  height: 64px;
+  box-sizing: border-box;
+  z-index: 60;
+  /* Elle commence au bord droit de la plaque du joueur (`--rpg-plaque-droite`,
+     publiée par la page) : la vie et le profil restent lisibles pendant qu'on
+     choisit de répondre ou de laisser passer. */
+  left: calc(var(--rpg-plaque-droite, 0px) + 10px);
+  right: max(6px, env(safe-area-inset-right, 0px));
+  bottom: calc(var(--rpg-touch-hand) + var(--rpg-touch-pad));
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "label preview pass";
+  align-items: stretch;
+  gap: 6px;
+  padding: 6px;
+  border-radius: calc(var(--duel-card) * .22);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .55);
+}
+.rpg-battle--touch .rpg-annonce-sort__compact-label {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 1px;
+  text-align: left;
+}
+.rpg-battle--touch .rpg-annonce-sort__compact-label b {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: clamp(12px, calc(var(--duel-card) * .21), 15px);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rpg-battle--touch .rpg-annonce-sort__compact-preview,
+.rpg-battle--touch .rpg-annonce-sort__compact-pass {
+  width: auto;
+  min-width: max(96px, calc(var(--duel-card) * 1.6));
+  min-height: max(48px, calc(var(--rpg-touch-combat) + 4px));
+  padding: 8px 12px;
+  font-size: clamp(11px, calc(var(--duel-card) * .19), 14px);
+  white-space: nowrap;
+}
+.rpg-battle--touch .rpg-annonce-sort__compact-pass { grid-area: pass; }
+.rpg-battle--touch .rpg-fin-tour {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "label pass";
+}
+/* La fiche ouverte garde ses deux commandes : elles restent des cibles
+   pleines, même sur un écran court. */
+.rpg-battle--touch .rpg-annonce-sort__respond,
+.rpg-battle--touch .rpg-annonce-sort__pass {
+  min-height: 48px;
+  padding: 8px 12px;
+  font-size: clamp(11px, calc(var(--duel-card) * .19), 14px);
+}
 .rpg-battle--touch .rpg-bottombar .rpg-log { display: none; }
 .rpg-battle--touch .rpg-bottombar .rpg-actions { display: grid; gap: 5px; }
 /* Le rail du tour : ancré au bas de la colonne de droite, juste au-dessus de
@@ -525,7 +643,15 @@
    boîte. Sa largeur est celle de la colonne, comme sur PC. */
 .rpg-battle--touch .rpg-turn-rail {
   top: auto;
-  bottom: calc(var(--rpg-touch-hand) + var(--rpg-touch-combat) + var(--rpg-touch-pad) * 2 + var(--rpg-touch-gap));
+  bottom: calc(var(--rpg-touch-hand) + max(var(--rpg-controles-h, var(--rpg-touch-combat)), var(--rpg-barre-reponse-h, 0px)) + var(--rpg-touch-pad) * 2 + var(--rpg-touch-gap));
+  /* Trois commandes de combat empilées sur un écran de 320 px ne laissent plus
+     de place au rail : il se borne à la hauteur libre (sous la navigation) et
+     défile plutôt que de sortir par le haut de la table. */
+  max-height: calc(100% - var(--rpg-touch-nav) - var(--rpg-touch-hand)
+    - max(var(--rpg-controles-h, var(--rpg-touch-combat)), var(--rpg-barre-reponse-h, 0px))
+    - var(--rpg-touch-pad) * 3 - var(--rpg-touch-gap));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   height: max-content;
   margin-block: 0;
   gap: 3px;
@@ -534,6 +660,12 @@
   width: var(--rpg-touch-controls);
   max-width: none;
   transform: none;
+}
+/* Pendant une attaque, la barre de combat prend jusqu'à trois rangées : le
+   rail abandonne alors l'indicateur de tour et les phases (du décor) pour
+   garder ses deux commandes dans la colonne, au-dessus de la main. */
+.rpg-battle--touch .card-table:has(.rpg-actions__combat > .rpg-btn:nth-child(2)) .rpg-turn-rail :is(.rpg-turn-indicator, .rpg-phase-track) {
+  display: none;
 }
 .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator { min-height: 18px; gap: 4px; padding: 1px 6px; border-radius: 999px; }
 .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator__lamp { width: 6px; height: 6px; }
@@ -603,30 +735,61 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.rpg-battle--touch .rpg-turn-rail .rpg-actions__turn { gap: 3px; }
-/* Boutons de droite compacts : la cible tactile de 32 px, le texte du rail du
-   PC (0,16 carte) ramené à un plancher lisible. */
+/* Les commandes du tour s'empilent sur toute la largeur du rail : chacune
+   fait la cible tactile pleine (0,55 carte, 44 px au moins) au lieu de deux
+   moitiés de 73 px où « Attaquer avec tous (0) » tenait sur trois lignes. */
+.rpg-battle--touch .rpg-turn-rail .rpg-actions__turn {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+/* Le PC range « Fin du tour » dans la seconde colonne (`grid-column: 2`) : au
+   doigt, la colonne unique doit reprendre la main, sinon une colonne implicite
+   réapparaît et les deux boutons se serrent côte à côte. */
+.rpg-battle--touch .rpg-turn-rail .rpg-btn,
+.rpg-battle--touch .rpg-turn-rail .rpg-btn--undo,
+.rpg-battle--touch .rpg-turn-rail .rpg-btn--endturn { grid-column: auto; }
 .rpg-battle--touch .rpg-turn-rail .rpg-btn {
   min-width: 0;
-  min-height: 32px;
-  padding: 2px 4px;
-  font-size: clamp(9px, calc(var(--duel-card) * .15), 12px);
-  line-height: 1.1;
+  min-height: var(--rpg-touch-combat, 44px);
+  padding: 5px 7px;
+  font-size: clamp(10px, calc(var(--duel-card) * .17), 13px);
+  line-height: 1.15;
   text-align: center;
 }
 .rpg-battle--touch .rpg-turn-rail .rpg-btn--endturn {
-  min-height: 32px;
-  padding: 2px 5px;
-  font-size: clamp(9.5px, calc(var(--duel-card) * .16), 12.5px);
+  min-height: var(--rpg-touch-combat, 44px);
+  padding: 5px 8px;
+  font-size: clamp(10.5px, calc(var(--duel-card) * .18), 14px);
   white-space: normal;
 }
-/* Les commandes contextuelles restent en bas de la colonne de droite. */
+/* Les commandes contextuelles restent en bas de la colonne de droite,
+   empilées sur toute sa largeur : « Confirmer l'attaque (2) » et « Annuler
+   l'attaque » font chacun 44 px de haut et deux lignes de texte au lieu de
+   trois sur une demi-colonne. Sur les écrans très courts (320 px de haut),
+   elles passent sur deux colonnes pour rendre une rangée au tour. */
 .rpg-battle--touch .rpg-bottombar .rpg-actions__row {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-flow: row;
   gap: 4px;
   align-items: stretch;
+}
+.rpg-battle--touch .rpg-bottombar .rpg-actions__row .rpg-btn {
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 6px;
+  font-size: clamp(10px, calc(var(--duel-card) * .17), 13px);
+  line-height: 1.15;
+  white-space: normal;
+}
+@media (max-height: 360px) {
+  .rpg-battle--touch .rpg-bottombar .rpg-actions__row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rpg-battle--touch .rpg-bottombar .rpg-actions__combat > .rpg-btn:only-child { grid-column: 1 / -1; }
+  /* Une attaque est déjà en cours : « Attaquer avec tous » n'a plus d'objet et
+     laisse sa rangée au rail, qui garde « Fin du tour » au-dessus de la main. */
+  .rpg-battle--touch .card-table:has(.rpg-actions__combat > .rpg-btn:nth-child(2)) .rpg-turn-rail .rpg-btn--attaque-tous {
+    display: none;
+  }
 }
 .rpg-battle--touch .rpg-bottombar .rpg-actions__combat { display: contents; }
 .rpg-battle--touch .rpg-actions__row .rpg-btn {
@@ -661,7 +824,10 @@
   box-shadow: 0 6px 16px rgba(0, 0, 0, .38);
 }
 .rpg-battle--touch .card-table > .rpg-wizard-plate {
-  padding: 3px 7px 4px;
+  /* La pastille est serrée : ce qu'elle contient (avatar, nom, vie, zones)
+     porte déjà ses propres marges, et chaque pixel rendu à la plaque est un
+     pixel que la jauge de mana peut occuper dans la colonne de gauche. */
+  padding: 2px 7px 3px;
   border: 1px solid rgba(226, 190, 119, .34);
   border-radius: calc(var(--duel-card) * .2);
   background: linear-gradient(180deg, rgba(9, 7, 6, .66), rgba(7, 7, 11, .58));
@@ -745,7 +911,7 @@
 .rpg-battle--touch .rpg-annonce-sort__pass,
 .rpg-battle--touch .rpg-annonce-sort__respond,
 .rpg-battle--touch .rpg-annonce-sort__compact-preview,
-.rpg-battle--touch .rpg-annonce-sort__compact-pass { min-height: 44px; }
+.rpg-battle--touch .rpg-annonce-sort__compact-pass { min-height: max(48px, calc(var(--rpg-touch-combat) + 4px)); }
 
 /* Un seul emplacement visuel par type de terrain. Une carte seule reste sans
    fausse épaisseur ni compteur ; les doublons forment une pile. Les terrains
