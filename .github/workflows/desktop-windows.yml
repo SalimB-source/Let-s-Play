@@ -168,7 +168,9 @@ jobs:
             ls -la desktop/stage 2>/dev/null || echo 'stage ABSENT'
             echo '```'
           } > report.md
-          NUM=$(gh pr view --json number -q .number 2>/dev/null || true)
+          # Checkout en HEAD détaché : `gh pr view` ne sait pas retrouver la
+          # branche ; on cherche la PR par sa tête via l'API.
+          NUM=$(gh api "repos/$GITHUB_REPOSITORY/pulls?head=$GITHUB_REPOSITORY:$GITHUB_REF_NAME&state=open" -q '.[0].number' 2>/dev/null || true)
           if [ -n "$NUM" ]; then
             gh pr comment "$NUM" --body-file report.md
           else

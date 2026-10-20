@@ -12,6 +12,12 @@ portable sans installation, et — le point central — un rendu 3D qui passe pa
 - Cible : Windows 10/11 x64 (Linux et macOS possibles en local, non produits par la CI)
 - Sortie : `desktop/release/` (`le-sablier-de-bab-el-<version>-setup.exe`,
   `le-sablier-de-bab-el-<version>-portable.exe`)
+- Poids réel mesuré en CI : **~215 Mo par installeur** (dont ~117 Mo de jeu :
+  cartes, plateaux, musiques ; le reste est le runtime Electron compressé).
+  L'archive `app.asar` ne contient que la coque (~100 Ko) : l'empaquetage se
+  fait depuis un projet isolé `desktop/pack/` assemblé par
+  `scripts/desktop-bundle.mjs`, sans aucun `node_modules` — sans cela
+  electron-builder gonfle l'asar de centaines de Mo (729 Mo vus en CI).
 
 ## Depuis le site : l'écran d'entrée
 
