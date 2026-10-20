@@ -42,7 +42,7 @@ Bonne nouvelle : le dépôt est déjà prêt pour ça, presque par accident.
 | --- | --- |
 | Un moteur sans DOM, importable en Node | `src/games/rpgDuel.js` est du calcul pur, testé en Node (`npm run check:rpg`) |
 | Un état sérialisable | un duel neuf fait **~2 Ko de JSON** (mesuré), sans fonction ni classe |
-| Un déploiement serveur | `api/` est déjà servi par Vercel (`api/youtube-live.js`) |
+| Un déploiement serveur | `api/` est déjà servi par Vercel (`api/youtube-live.js`) — mais Supabase Edge Functions ou Cloudflare font le même travail, voir §8 |
 | Une base et des comptes | Supabase, `profiles`, `auth.uid()`, RLS partout |
 | Des messages et des amis | `src/messages/*`, `src/friends/*`, realtime sur `direct_messages` |
 
@@ -283,7 +283,7 @@ contrôle du tour et du camp.
 Une limite assumée en v1 : **le défenseur ne choisit pas encore ses bloqueurs**,
 le moteur les assigne. L'échange « déclaration / blocage » suppose de suspendre
 une attaque entre deux camps, ce qui est un chantier dans le moteur lui-même —
-à traiter en P3 (§8), pas à improviser dans le protocole.
+à traiter en P3 (§9), pas à improviser dans le protocole.
 
 ### 6.3 Horloges et abandon
 
@@ -327,12 +327,218 @@ un `lazy()`.
 
 ---
 
-## 8. Découpage proposé
+## 8. Où tourne l'arbitre : Vercel, GitHub, Cloudflare ou Supabase
+
+### 8.1 GitHub ne peut pas le faire, et ce n'est pas une question de goût
+
+GitHub héberge déjà trois choses dans ce projet : le code, la release de
+l'installeur PC (`tag desktop`), et un miroir du site sur GitHub Pages
+(`.github/workflows/deploy.yml`). Aucune des trois ne peut tenir le rôle
+d'arbitre :
+
+1. **Pages ne sert que des fichiers statiques.** Pas de fonction, pas de
+   secret, pas de clé service. Or l'arbitre doit détenir la seule copie vraie
+   de la partie : si le code tourne dans le navigateur, l'état est lisible par
+   le joueur, et il n'y a plus de main secrète (§1).
+2. **Actions n'est pas un serveur.** Les workflows se déclenchent sur `push`,
+   `cron` (5 minutes minimum) ou à la main ; ils ne répondent pas à une requête
+   HTTP entrante. On ne peut pas y brancher un duel.
+3. **Pages a un plafond de bande passante** (≈100 Go/mois en usage raisonnable)
+   et interdit l'usage commercial — ce n'est pas grave pour un miroir, c'est
+   disqualifiant comme hébergement principal d'un site à partenaires.
+
+Donc oui : il faut **un** endroit où du code serveur s'exécute. La bonne
+nouvelle, c'est qu'il en existe déjà un dans la pile — et même deux.
+
+### 8.2 Vercel : le chemin zéro effort (recommandé pour commencer)
+
+**Pourquoi c'est déjà le bon choix aujourd'hui, sans rien décider :**
+
+- `api/` existe et est déployé (`api/youtube-live.js`) ;
+- `vercel.json` fait déjà le repli SPA **en excluant `/api/*`** — une nouvelle
+  route serveur n'a rien à configurer ;
+- la coque Android pointe sur `let-s-play-nu.vercel.app`
+  (`android/.../MainActivity.java`, `SITE_HOST`) ;
+- le README documente l'intégration Supabase ↔ Vercel et les URLs de
+  redirection OAuth qui vont avec ;
+- 4,5 Mo de charge utile maximum par requête : notre état fait ~2 Ko.
+
+**Limites du plan Hobby (2026)** : 1 M d'invocations de fonction par mois,
+4 h de CPU actif, 100 Go de transfert, 300 s de durée maximale. Pour un duel
+tour par tour, c'est large — voir le calcul d'invocations en §8.6.
+
+**Deux points de vigilance**, tous les deux réglables :
+
+- **La région.** Une fonction Vercel tourne dans une seule région (iad1 par
+  défaut). Pour un arbitre, la latence qui compte n'est pas celle du joueur
+  mais celle de **Postgres** : régler la région de la fonction sur celle du
+  projet Supabase, sinon chaque action paie deux fois le trajet
+  transatlantique.
+- **Hobby est réservé à un usage personnel non commercial** (politique
+  d'usage raisonnable de Vercel). Un site de média avec des partenaires est
+  à la limite ; c'est un argument de plus pour la §8.3 si le jeu décolle.
+
+### 8.3 Supabase Edge Functions : l'arbitre à côté de la base
+
+C'est l'option qui demande **le moins de décisions** : aucun fournisseur de
+plus, les secrets (URL, clé service) sont déjà dans le projet, le SQL et le
+code vivent dans le même dépôt, et la fonction tourne **dans la région de la
+base** — donc un aller-retour Postgres de quelques millisecondes par action.
+
+```
+supabase/functions/sablier-duel/index.ts   →  import ... from '../../../src/games/rpgPvp.js'
+```
+
+Le moteur est **portable tel quel** : graphe ESM pur, 11 modules, 461 Ko de
+source, aucun `node:` , aucun `process.env`, aucun `window`/`document`
+(vérifié : seuls les modules audio touchent au DOM, et l'arbitre ne les
+importe pas). Deno l'exécute sans adaptation.
+
+**Limites (2026)** : 2 s de CPU par requête, 150 s de durée murale (Free),
+500 000 invocations/mois gratuites, 256 Mo de mémoire, 20 Mo de bundle.
+
+**Ce que ça coûte, mesuré sur ce dépôt** (Node 22, même moteur V8) :
+
+| Mesure | Valeur |
+| --- | --- |
+| Une action de duel rejouée par l'arbitre (`rpgPvpAppliquer`) | **0,025 ms** |
+| Une vue filtrée et retournée (`rpgPvpVue`) | **0,020 ms** |
+| Chargement complet du moteur (parse + évaluation) | ~22 ms, **une fois par instance** |
+
+Autrement dit : 2 s de CPU, c'est 80 000 actions de marge. Le seul coût réel
+est le **démarrage à froid** (~100–300 ms en Deno selon la région), absorbé par
+le pool d'instances.
+
+Bonus : `supabase.functions.invoke` envoie le JWT de l'utilisateur, la fonction
+le vérifie localement — **aucun CORS à configurer**, contrairement à un
+arbitre sur un autre domaine.
+
+### 8.4 Cloudflare Workers + Pages : viable, et meilleur pour la suite
+
+**Le moteur y tourne aussi**, et c'est mesurable : même graphe ESM pur, aucun
+API Node ; Wrangler le bundle depuis `src/games/rpgPvp.js`. Bundle bien en
+dessous des 3 Mo (limite Free) une fois compressé.
+
+**Le fameux plafond de 10 ms de CPU du plan gratuit ne nous concerne pas.**
+C'est la limite qu'on cite toujours ; ici une action coûte **0,025 ms**, soit
+400 fois moins. Même en ajoutant la sérialisation JSON de l'état (~2 Ko) et le
+temps d'écriture, on reste très loin du plafond. Les vrais chiffres (2026) :
+100 000 requêtes/jour et 10 ms de CPU par requête en gratuit ; 5 $/mois pour
+supprimer le plafond quotidien et monter le CPU à 5 minutes.
+
+**Les vraies objections, elles, sont ailleurs :**
+
+1. **La distance à Postgres.** Un Worker s'exécute là où est l'utilisateur ;
+   la partie, elle, vit dans le projet Supabase, dans une région fixe. Chaque
+   action fait donc un ou deux allers-retours vers la base : depuis Alger vers
+   une région européenne, 40–80 ms par trajet, alors que le calcul, lui, dure
+   0,025 ms. Pour ce jeu, **le goulot est la base, pas le CPU** — l'argument
+   « edge » ne joue donc pas. Correctif : `Smart Placement` de Cloudflare (le
+   Worker se replace près de la base — c'est-à-dire qu'on renonce justement à
+   l'avantage edge) ou un Worker épinglé sur une seule région.
+2. **Il faut écrire la plomberie** : `wrangler.toml`, secrets, `_routes.json`
+   ou `_redirects` pour que `/jeu/*` retombe sur `index.html` sans avaler
+   `/api/*`, et un workflow de déploiement en plus de `deploy.yml`. Une
+   demi-journée, pas un chantier.
+3. **Le site et la coque Android restent sur Vercel** (`SITE_HOST` dans
+   `MainActivity.java`) : migrer seulement l'arbitre crée deux domaines à
+   maintenir ; migrer tout le site est un autre projet.
+
+**Là où Cloudflare gagne vraiment, c'est la suite** : les **Durable Objects**
+donnent un objet unique et cohérent par duel, avec WebSockets — exactement ce
+qu'il faut pour un mode temps réel (salon d'attente vivant, spectateurs,
+tournois, présence). Sur Vercel ou Supabase Edge, le temps réel passerait par
+Supabase Realtime (déjà payé, 2 M de messages/mois en gratuit). C'est un
+argument pour P5, pas pour l'arbitre tour par tour de P1.
+
+### 8.5 Comparaison
+
+| | Vercel (déjà là) | Supabase Edge | Cloudflare Workers |
+| --- | --- | --- | --- |
+| Effort de mise en route | **nul** | petit (une fonction, CI) | moyen (Wrangler, routes, CI) |
+| Proximité de Postgres | à régler | **native** | Smart Placement |
+| Budget CPU par requête | 300 s | 2 s | 10 ms (Free) — 400× de marge |
+| Quota gratuit | 1 M d'invocations/mois | 500 k/mois | 100 k/jour |
+| Fournisseurs en plus | 1 (déjà) | **0** | 1 (+ Pages) |
+| Usage commercial en gratuit | non (Hobby) | oui | oui |
+| Temps réel futur | Supabase Realtime | Supabase Realtime | **Durable Objects** |
+
+**Verdict.** Aujourd'hui : **Vercel**, parce que la route existe déjà et que le
+premier duel ne doit pas attendre une migration. Ensuite, si l'objectif est de
+simplifier : **Supabase Edge Functions**, l'arbitre collé à la base, zéro
+fournisseur de plus. Cloudflare devient le bon choix le jour où l'on veut du
+**vrai temps réel** — pas avant. Dans tous les cas, c'est **le même fichier**
+`src/games/rpgPvp.js` qui tourne : rien dans ce dossier n'est lié à un
+hébergeur.
+
+### 8.6 Ce qui coûtera plus cher que l'hébergeur : les requêtes
+
+L'architecture interroge l'arbitre toutes les 2 s quand ce n'est pas son tour
+(§6.4). Une partie de 10 minutes, c'est environ 150 lectures par joueur, donc
+**~300 invocations par partie**. Traduit en quotas gratuits :
+
+| Hébergeur | Quota | Parties par mois (ordre de grandeur) |
+| --- | --- | --- |
+| Vercel Hobby | 1 M d'invocations | ~3 000 |
+| Supabase Edge | 500 k | ~1 600 |
+| Cloudflare Free | 100 k/jour | ~10 000 (mais plafond quotidien) |
+
+Si ce plafond devient la contrainte, trois leviers, dans l'ordre :
+
+1. **Descendre la fréquence** : 2 s quand l'onglet est visible, 10 s quand il
+   est caché (`document.visibilityState`), et pas de sondage du tout pour les
+   parties `async` ;
+2. **Pousser au lieu de tirer** : `realtime.broadcast` de Supabase (2 M de
+   messages/mois en gratuit) depuis l'arbitre vers un canal privé — le client
+   écoute au lieu de demander ;
+3. **Regrouper** : une seule invocation renvoie l'état ET la liste des défis
+   en attente.
+
+### 8.7 Et si je ne veux aucun hébergeur de plus ?
+
+Alors la réponse est **Supabase Edge Functions** : c'est déjà dans la pile,
+déjà payé (plan gratuit : 500 k invocations, 500 Mo de base, 2 M de messages
+Realtime), et l'arbitre y est mieux placé qu'ailleurs puisqu'il parle à la base
+en quelques millisecondes. Vercel peut rester ce qu'il est aujourd'hui — le
+site — sans jamais connaître le PvP.
+
+### 8.8 Le même arbitre, trois enveloppes
+
+Le cœur ne change pas — seul le fichier d'entrée change de forme.
+
+```js
+// api/sablier-duel.js  (Vercel)
+import { arbitrer } from '../src/server/sablierArbitre.js';
+export default async function handler(req, res) {
+  const { status, body } = await arbitrer({ method: req.method, headers: req.headers, body: req.body });
+  res.status(status).json(body);
+}
+```
+
+```ts
+// supabase/functions/sablier-duel/index.ts  (Supabase Edge, Deno)
+import { arbitrer } from '../../../src/server/sablierArbitre.js';
+Deno.serve((req) => arbitrer(req));
+```
+
+```js
+// worker/sablier-duel.js  (Cloudflare, avec wrangler.toml + _routes.json)
+import { arbitrer } from '../src/server/sablierArbitre.js';
+export default { fetch: (req, env) => arbitrer(req, env) };
+```
+
+`src/server/sablierArbitre.js` (P1) contiendra la logique commune : vérifier le
+JWT, lire le duel, `rpgPvpAppliquer`, écrire, répondre `rpgPvpVue`. Il prend une
+`Request` web standard et rend une `Response` — c'est la seule forme que les
+trois plateformes comprennent, et c'est aussi celle qu'on peut tester en Node
+(`node --test`) sans rien déployer.
+
+## 9. Découpage proposé
 
 | Étape | Contenu | Durée | Critère de sortie |
 | --- | --- | --- | --- |
 | **P0 — socle** | `rpgPvp.js` + tests + SQL (ce commit) | fait | `npm run check:rpg-pvp` vert (20 tests) |
-| **P1 — arbitre** | `api/sablier-duel.js`, actions de base, duel `live` jouable par code | 4–6 j | deux comptes terminent un duel réel |
+| **P1 — arbitre** | `src/server/sablierArbitre.js` + une enveloppe (`api/sablier-duel.js` sur Vercel, voir §8), actions de base, duel `live` jouable par code | 4–6 j | deux comptes terminent un duel réel |
 | **P2 — messagerie** | `kind='defi-sablier'`, carte cliquable, refus, expiration, lien profond | 3–4 j | un défi reçu dans la messagerie se joue en 2 clics |
 | **P3 — confort** | correspondance (`async`), rappels, blocage des bloqueurs, revanche, abandon | 3–5 j | un duel `async` se termine sur 3 jours |
 | **P4 — file** | `rpg_sablier_file`, repli IA 15 s, classement Elo | 3–5 j | un joueur trouve un adversaire en < 30 s (ou l'IA) |
@@ -344,7 +550,7 @@ allée-retour de la carte d'invitation en jsdom (P2), expiration et double envoi
 
 ---
 
-## 9. Les pièges
+## 10. Les pièges
 
 1. **Ne jamais envoyer `etat`**, même « pour déboguer ». Un `console.log` de
    l'état côté client est une fuite.
@@ -365,7 +571,7 @@ allée-retour de la carte d'invitation en jsdom (P2), expiration et double envoi
 
 ---
 
-## 10. Ce qui existe dans ce commit
+## 11. Ce qui existe dans ce commit
 
 | Fichier | Rôle |
 | --- | --- |
@@ -381,7 +587,7 @@ L'étape suivante (P1) est d'écrire l'arbitre et de brancher
 
 ---
 
-## 11. Les décisions qui restent à prendre
+## 12. Les décisions qui restent à prendre
 
 1. **Direct ou correspondance par défaut ?** Le jeu penche pour la
    correspondance ; l'invitation, elle, doit proposer les deux au moment de
