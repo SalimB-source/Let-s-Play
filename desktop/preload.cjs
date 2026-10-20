@@ -37,4 +37,6 @@ contextBridge.exposeInMainWorld('letsPlayDesktop', {
   ouvrirDiagnostic: () => ipcRenderer.invoke('desktop:ouvrir-diagnostic'),
   /** Ouvrir le rapport `chrome://gpu` de Chromium. */
   ouvrirRapportChromium: () => ipcRenderer.invoke('desktop:ouvrir-rapport-chromium'),
+  /** Ouvrir une URL dans le navigateur du PC (site Let's Play, inscription…). */
+  ouvrirExterne: (url) => ipcRenderer.invoke('desktop:ouvrir-externe', url),
 });

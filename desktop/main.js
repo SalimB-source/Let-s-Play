@@ -555,6 +555,15 @@ ipcMain.handle('desktop:ouvrir-rapport-chromium', () => {
   return true;
 });
 
+/** Ouvrir une URL externe (inscription sur le site) dans le navigateur du PC. */
+ipcMain.handle('desktop:ouvrir-externe', (_e, url) => {
+  if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+    shell.openExternal(url);
+    return true;
+  }
+  return false;
+});
+
 app.on('window-all-closed', async () => {
   if (process.platform !== 'darwin') {
     try { await serveurLocal?.close(); } catch { /* déjà fermé */ }
