@@ -12,6 +12,11 @@
 
 appId: dz.letsplay.sablier
 productName: Le Sablier de Bab El
+
+# LZMA solide : sans cela l'installeur pèse ~640 Mo, les binaires Electron étant
+# mal comprimés par le mode normal. Le build est plus lent, le téléchargement
+# beaucoup plus court.
+compression: maximum
 copyright: Copyright © 2026 Let's Play — média algérien du jeu vidéo
 
 directories:

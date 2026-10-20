@@ -13,6 +13,25 @@ portable sans installation, et — le point central — un rendu 3D qui passe pa
 - Sortie : `desktop/release/` (`le-sablier-de-bab-el-<version>-setup.exe`,
   `le-sablier-de-bab-el-<version>-portable.exe`)
 
+## Depuis le site : l'écran d'entrée
+
+Sur `/jeu/sablier-de-bab-el`, le site montre d'abord un **écran d'entrée**
+(`src/games/RpgEntryChoice.jsx`) avec deux portes :
+
+1. **« Télécharger pour Windows »** — lien direct vers l'asset au nom fixe
+   `le-sablier-de-bab-el-setup.exe` de la Release `desktop` (le workflow publie
+   une copie au nom fixe à chaque build : le lien du site ne casse jamais au
+   changement de version). La version et le poids de l'installeur s'affichent
+   sous le bouton, lus sur l'API publique des releases ;
+2. **« Jouer dans le navigateur »** — monte le duel, qui reste un chunk
+   paresseux : rien des ~740 Ko de `RpgDuelPage` n'est téléchargé avant ce clic.
+
+L'écran s'efface de lui-même quand il n'a rien à proposer : dans la coque PC
+(`window.letsPlayDesktop`), dans l'APK (`window.LetsPlayAndroid`), sur téléphone
+(`pointer: coarse` / ≤ 820 px), ou si le joueur a coché « retenir ce choix »
+(`localStorage` : `letsplay_sablier_entree_v1`). Vérifié par
+`npm run check:rpg-entry-choice`.
+
 ## Comment ça tourne
 
 ```

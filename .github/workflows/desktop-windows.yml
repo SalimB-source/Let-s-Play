@@ -140,7 +140,7 @@ jobs:
           path: |
             desktop/release/le-sablier-de-bab-el-*-setup.exe
             desktop/release/le-sablier-de-bab-el-*-portable.exe
-          retention-days: 90
+          retention-days: 30
           if-no-files-found: error
 
       # Release permanente sur le tag « desktop » (main seulement) : le lien de
@@ -152,8 +152,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd desktop/release
-          FICHIERS=$(ls *.exe)
           VERSION=$(node -p "require('../../desktop/package.json').version")
+          # Copies au nom FIXE : l'écran d'entrée du site (/jeu/sablier-de-bab-el)
+          # pointe vers …/download/desktop/le-sablier-de-bab-el-setup.exe, un lien
+          # qui doit survivre aux changements de version. Les noms versionnés
+          # restent publiés à côté, pour archiver.
+          cp "le-sablier-de-bab-el-${VERSION}-setup.exe" le-sablier-de-bab-el-setup.exe
+          cp "le-sablier-de-bab-el-${VERSION}-portable.exe" le-sablier-de-bab-el-portable.exe
+          FICHIERS=$(ls *.exe)
           {
             echo "Version PC installable du Sablier de Bab El, le jeu de cartes de Let's Play."
             echo ""

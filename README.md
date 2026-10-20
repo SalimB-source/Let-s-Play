@@ -8258,4 +8258,11 @@ Android (`android/`) : une coque **Electron** (`desktop/`) ouvre
   dans un navigateur), `npm run check:desktop` (20 vérifications sans Electron).
 - CI : `.github/workflows/desktop-windows.yml` — vérifications sur Ubuntu, puis
   build Windows et GitHub Release sur le tag `desktop` (l'exécutable n'est pas
-  committé : ~180 Mo par build).
+  committé). La Release publie aussi des copies au nom fixe
+  (`le-sablier-de-bab-el-setup.exe`) : ce sont elles que le site fait télécharger.
+- **Écran d'entrée du jeu** : sur `/jeu/sablier-de-bab-el`, le site propose
+  d'abord « Télécharger pour Windows » ou « Jouer dans le navigateur »
+  (`src/games/RpgEntryChoice.jsx`). Le duel reste paresseux tant que le choix
+  n'est pas fait ; l'écran disparaît dans la coque PC, dans l'APK, sur
+  téléphone, ou quand le choix « navigateur » est retenu sur l'appareil.
+  `npm run check:rpg-entry-choice`.
