@@ -65,10 +65,13 @@ jobs:
     runs-on: windows-latest
     # Mêmes valeurs publiques que le déploiement web (voir deploy.yml) : sans
     # elles l'installeur se construit quand même, mais le compte et les duels
-    # en ligne y resteront indisponibles (jeu hors ligne intact).
+    # en ligne y resteront indisponibles (jeu hors ligne intact). La site key
+    # Turnstile alimente le widget anti-robot de l'écran de connexion PC — sans
+    # elle, ce dernier reste bloqué sur captchaNotConfigured.
     env:
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || vars.SUPABASE_URL || secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || vars.SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
+      VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY || secrets.VITE_TURNSTILE_SITE_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -89,6 +92,11 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          if [ -z "$VITE_TURNSTILE_SITE_KEY" ]; then
+            echo "::warning title=Protection anti-bot absente du build PC::VITE_TURNSTILE_SITE_KEY non définie (Settings → Secrets and variables → Actions → Variables) : l'écran de connexion restera bloqué sur captchaNotConfigured."
+          else
+            echo "Protection anti-bot Turnstile intégrée au build PC."
+          fi
           npm run desktop:web 2>&1 | tee bundle.log
 
       # Les logs de run ne sont pas toujours consultables : en cas d'échec, les

@@ -16,6 +16,7 @@ const auth = read('src', 'pages', 'Auth.jsx');
 const protection = read('src', 'components', 'SignupProtection.jsx');
 const supabase = read('src', 'lib', 'supabase.js');
 const workflow = read('.github', 'workflows', 'deploy.yml');
+const desktopWorkflow = read('.github', 'workflows', 'desktop-windows.yml');
 const readme = read('README.md');
 
 const checks = [
@@ -31,6 +32,8 @@ const checks = [
   ['le widget expire et efface le jeton', protection.includes("'expired-callback'") && protection.includes("onTokenChangeRef.current?.('')")],
   ['la variable publique est lue au build', supabase.includes('VITE_TURNSTILE_SITE_KEY')],
   ['Pages transmet la variable publique', workflow.includes('VITE_TURNSTILE_SITE_KEY')],
+  ['le build PC transmet la variable publique', desktopWorkflow.includes('VITE_TURNSTILE_SITE_KEY')],
+  ['l’écran de connexion PC verrouille son bouton sans site key', read('src', 'games', 'RpgDesktopLogin.jsx').includes('captchaRequiredForBuild && (!turnstileSiteKey || !captchaToken)')],
   ['la documentation rappelle la configuration serveur Supabase', readme.includes('Authentication → CAPTCHA')],
 ];
 
