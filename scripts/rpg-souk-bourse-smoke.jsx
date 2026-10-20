@@ -59,11 +59,11 @@ export async function checkRpgSouk(assert) {
     assert.ok(queteParId(bourse.quetes.quetes[0]), 'les quêtes du jour sont de vraies quêtes du pool');
 
     // ── Poser des cartes ne paie rien mais fait avancer les quêtes ──────────
-    await act(async () => bourse.noterEvenementDuel({ type: 'terrain-pose', cardId: 'desert' }));
-    assert.equal(solde(), 0, 'poser un terrain ne rapporte aucun crédit');
+    await act(async () => bourse.noterEvenementDuel({ type: 'creature-invoquee', cardId: 'desert' }));
+    assert.equal(solde(), 0, 'invoquer une créature ne rapporte aucun crédit');
     const progres = bourse.quetes.progres;
-    assert.ok(Object.values(progres).some((valeur) => valeur > 0) || !bourse.quetes.quetes.includes('terrains-12'),
-      'la journée a bien enregistré le terrain si elle l’écoutait');
+    assert.ok(Object.values(progres).some((valeur) => valeur > 0) || !bourse.quetes.quetes.includes('creatures-10'),
+      'la journée a bien enregistré la créature si elle l’écoutait');
 
     // ── Un duel libre gagné paie 8 ◈ ────────────────────────────────────────
     // Les montants sont écrits en clair : c'est le contrat public du dossier 13,

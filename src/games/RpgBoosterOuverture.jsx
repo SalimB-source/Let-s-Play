@@ -89,7 +89,7 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
   const titre = ouverture?.coffret
     ? 'Le Coffret du Souk'
     : (rayon?.titre ?? 'Le paquet du Souk');
-  const vitrine = cardById(rayon?.vitrine ?? 'djinn-du-souk');
+  const vitrine = cardById(rayon?.vitrine ?? 'ifrit-des-ergs');
 
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');

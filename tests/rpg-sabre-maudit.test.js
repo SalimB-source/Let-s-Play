@@ -32,9 +32,6 @@ test('le sabre accompagne le starter sans terrain et reste à acquérir au Souk'
   assert.equal(deck.cardIds.filter((id) => id === 'sabre-maudit').length, 2, 'le starter de trente cartes inclut deux sabres');
   assert.equal(COLLECTION_DEPART.includes('sabre-maudit'), false);
   assert.ok(carteReveleePar('sabre-maudit'), 'le sabre est accessible dans un booster après sa révélation');
-  assert.equal(deck.cardIds.filter((id) => id === 'montagne-du-soleil-rouge').length, 0);
-  assert.deepEqual(terrainManaColors('montagne-du-soleil-rouge'), ['braise']);
-  assert.equal(cardById('montagne-du-soleil-rouge').varianteDe, 'montagne');
 });
 
 test('l’arme applique +1/+0, reste attachée et persiste entre les tours', () => {

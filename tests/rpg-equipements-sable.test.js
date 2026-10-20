@@ -32,10 +32,10 @@ import {
 } from '../src/games/rpgDuel.js';
 import { RPG_ARME_CARDS, RPG_DUEL_CARDS, armeById, cardById } from '../src/games/rpgCards.js';
 
-/** Les dix cartes du lot, dans l'ordre du catalogue. */
+/** Les neuf cartes du lot, dans l'ordre du catalogue (la Boussole est retirée avec les terrains). */
 const LOT = [
   'sandales-de-tislit', 'cuirasse-de-sel', 'javelot-du-beffroi',
-  'licou-du-chien-de-sable', 'boussole-du-hoggar', 'harnais-du-mehari',
+  'licou-du-chien-de-sable', 'harnais-du-mehari',
   'masque-du-guetteur', 'jitte-d-amayas', 'lame-des-ergs', 'takouba-de-tin-hinan',
 ];
 const cartesDuLot = RPG_ARME_CARDS.filter((carte) => LOT.includes(carte.id));
@@ -79,8 +79,8 @@ const equiper = (duel, cote, armeId, entite = null) => {
 
 // ── Le catalogue ────────────────────────────────────────────────────────────
 
-test('le lot compte dix équipements de Sable, tous peints', () => {
-  assert.equal(cartesDuLot.length, 10);
+test('le lot compte neuf équipements de Sable, tous peints', () => {
+  assert.equal(cartesDuLot.length, 9);
   for (const carte of cartesDuLot) {
     assert.equal(carte.element, 'sable', `${carte.id} est une carte de Sable`);
     assert.equal(carte.kind, 'arme', `${carte.id} est une arme`);
@@ -96,10 +96,10 @@ test('le lot compte dix équipements de Sable, tous peints', () => {
   }
 });
 
-test('le lot s’étage par rareté : trois communes, trois inhabituelles, trois rares, une mythique', () => {
+test('le lot s’étage par rareté : trois communes, deux inhabituelles, trois rares, une mythique', () => {
   const compter = (rarete) => cartesDuLot.filter((carte) => carte.rarity === rarete).length;
   assert.equal(compter('commune'), 3);
-  assert.equal(compter('inhabituelle'), 3);
+  assert.equal(compter('inhabituelle'), 2);
   assert.equal(compter('rare'), 3);
   assert.equal(compter('mythique'), 1);
   assert.equal(armeById('takouba-de-tin-hinan').rarity, 'mythique');
@@ -186,33 +186,6 @@ test('un renvoi en main n’est pas une mort : le Licou ne pioche pas', () => {
 });
 
 // ── Les déclencheurs d'attaque ──────────────────────────────────────────────
-
-test('la Boussole du Hoggar lit le dessus du deck à chaque attaque', () => {
-  const duel = duelVide();
-  // Porteur sans Butin : la pioche d'attaque doit venir de la Boussole seule.
-  const porteur = poser(duel, 'joueur', 'dune-marchante');
-  equiper(duel, 'joueur', 'boussole-du-hoggar', porteur);
-
-  // Un terrain sur le dessus : il est révélé et rejoint la main.
-  rendrePret(duel, porteur);
-  duel.joueur.deck[duel.joueur.deck.length - 1] = 'dunes-du-tenere';
-  const deckAvant = duel.joueur.deck.length;
-  const mainAvant = duel.joueur.main.length;
-  const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
-  assert.equal(res.ok, true, 'l’attaque passe');
-  assert.equal(duel.joueur.main.length, mainAvant + 1, 'le terrain rejoint la main');
-  assert.equal(duel.joueur.deck.length, deckAvant - 1, 'il a quitté le deck');
-  assert.ok(duel.joueur.main.includes('dunes-du-tenere'));
-
-  // Autre chose qu'un terrain : la carte reste en place et n'est pas nommée.
-  rendrePret(duel, porteur);
-  duel.joueur.deck[duel.joueur.deck.length - 1] = 'fennec-des-decombres';
-  const deckApres = duel.joueur.deck.length;
-  rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
-  assert.equal(duel.joueur.deck.length, deckApres, 'le deck ne bouge pas');
-  assert.ok(duel.log.some((ligne) => ligne.includes('ce n’est pas un terrain')),
-    'le journal ne dit pas ce qu’il a vu');
-});
 
 test('le Harnais du méhari rend un mana de sable à chaque attaque', () => {
   const duel = duelVide();

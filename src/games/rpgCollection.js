@@ -80,13 +80,14 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'listes-2': ['braisier-du-souk'],
   'listes-3': ['amani-des-ksour', 'tempete-de-sable', 'masque-du-guetteur'],
   // Pétra et sa peinture alternative se débloquent ensemble à l’étage 4.
-  'listes-4': ['petra', 'petra-des-deux-sources'],
+  // Pétra était un terrain : retirée avec les terrains.
+  'listes-4': [],
   'listes-5': ['sahir-des-braises', 'nuage-de-cendres', 'tarek', 'armure-de-cendres'],
   // Tour du Souk — le feu se complète ; les citernes de la Gardienne rendent
   // les premières cartes d'Eau.
   'souk-1': ['vent-rouge', 'samourai-du-torii'],
   'souk-2': ['salem', 'vipere-de-verre', 'kenshi-de-la-forge'],
-  'souk-3': ['djinn-du-souk', 'parade-du-verre', 'frappe-iaijutsu'],
+  'souk-3': ['parade-du-verre', 'frappe-iaijutsu'],
   'souk-4': ['ifrit-al-ahmar', 'feriel', 'colosse-de-sel', 'daimyo-du-soleil-rouge'],
   // Tour des Sables — le sommet du Sable/Braise, l'Eau se précise.
   'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation'],

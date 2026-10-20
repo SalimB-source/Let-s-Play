@@ -144,16 +144,22 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
 
   // Le jour se referme tout seul : au retour sur l'onglet, la journée courante
   // est réouverte (nouveau tirage, compteurs à zéro) — la série, elle, continue.
+  // Les quêtes non terminées échues après 24 h sont retirées au passage, et une
+  // minuterie le vérifie pendant que l'onglet reste ouvert.
   useEffect(() => {
-    const surReveil = () => {
+    const verifier = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       const journee = ouvrirJournee({ etat: etatRef.current.quetes, graine: chargerGraine(compteId), progression });
-      if (!journee.nouveau) return;
+      if (!journee.nouveau && !journee.retirees?.length) return;
       appliquer(etatRef.current.bourse, journee.etat);
       pousser();
     };
-    document?.addEventListener?.('visibilitychange', surReveil);
-    return () => document?.removeEventListener?.('visibilitychange', surReveil);
+    document?.addEventListener?.('visibilitychange', verifier);
+    const minuterie = typeof setInterval === 'function' ? setInterval(verifier, 60000) : null;
+    return () => {
+      document?.removeEventListener?.('visibilitychange', verifier);
+      if (minuterie) clearInterval(minuterie);
+    };
   }, [progression, appliquer, pousser, compteId]);
 
   // À la connexion (et à chaque retour de connexion), la fusion compte ↔ appareil.

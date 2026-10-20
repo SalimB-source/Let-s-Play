@@ -87,10 +87,28 @@ export const RAYONS = Object.freeze([
     id: 'souk',
     nom: 'Souk',
     titre: 'Le paquet du Souk',
-    couleur: null,
+    couleur: ['sable', 'braise'],
     prix: 140,
-    vitrine: 'djinn-du-souk',
-    texte: 'Toutes les couleurs déjà entrées dans la ville, mélangées au hasard — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
+    vitrine: 'ifrit-des-ergs',
+    texte: 'Les cartes Sable et Braise — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
+  },
+  {
+    id: 'banquise',
+    nom: 'Banquise',
+    titre: 'Le paquet de la Banquise',
+    couleur: ['neige', 'tenebres'],
+    prix: 140,
+    vitrine: 'pere-des-corbeaux',
+    texte: 'Les cartes Neige et Ténèbres — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
+  },
+  {
+    id: 'citerne',
+    nom: 'Citerne',
+    titre: 'Le paquet de la Citerne',
+    couleur: ['eau', 'braise'],
+    prix: 140,
+    vitrine: 'kraken',
+    texte: 'Les cartes Eau et Braise — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
   },
 ]);
 
@@ -179,10 +197,18 @@ function etageOuvre(cardId, progression) {
  * départ toujours ; sinon, l'étage qui la révèle doit être vaincu **ou** être
  * l'étage suivant d'une tour déjà entamée.
  */
-export function carteAuVivier(cardId, progression) {
-  if (!cardById(cardId)) return false;
-  if (DEBUT.has(cardId)) return true;
-  return etageOuvre(cardId, progression);
+export function carteAuVivier(cardId) {
+  // Plus de condition de progression : toute carte jouable du catalogue est
+  // au vivier de son paquet, dès la première ouverture.
+  return carteJouableSansTerrain(cardById(cardId));
+}
+
+/** Le paquet qui vend une carte : le premier rayon qui porte sa couleur principale. */
+function rayonDeCarte(carte) {
+  const couleur = cardColors(carte)[0];
+  // Repli : une carte sans couleur reconnue rejoint le premier paquet, jamais
+  // ne disparaît du comptoir (les futures cartes entrent donc toujours quelque part).
+  return RAYONS.find((rayon) => rayon.couleur.includes(couleur))?.id ?? RAYONS[0].id;
 }
 
 /**
@@ -227,22 +253,14 @@ export function couleursOuvertes(progression) {
  * paquet peut donc contenir n'importe quelle carte ouverte, quelle que soit sa
  * couleur : c'est le mélange qui fait le paquet.
  */
-export function vivierRayon(rayonId, progression) {
+export function vivierRayon(rayonId) {
   const rayon = rayonActif(rayonId);
   if (!rayon) return [];
-  const autorisees = new Set(RPG_ELEMENTS);
-  // Le vivier n'expose que ce que la ville possède déjà : la dotation de
-  // départ, plus les cartes qu'un étage vaincu a révélées — jamais tout le
-  // catalogue dès le premier jour (les mythiques attendent leur étage, sinon
-  // la pitié des boosters n'aurait aucun sens).
-  const ouvertes = new Set(cartesOuvertes(progression));
-  const ids = new Set();
-  for (const carte of RPG_DUEL_CARDS) {
-    if (!carteJouableSansTerrain(carte)) continue;
-    if (!cardColors(carte).some((couleur) => autorisees.has(couleur))) continue;
-    if (DEBUT.has(carte.id) || ouvertes.has(carte.id)) ids.add(carte.id);
-  }
-  return [...ids];
+  // Chaque carte jouable est vendue dans un seul paquet : les cartes sont
+  // réparties entre les rayons, sans condition de victoire.
+  return RPG_DUEL_CARDS
+    .filter((carte) => carteJouableSansTerrain(carte) && rayonDeCarte(carte) === rayon.id)
+    .map((carte) => carte.id);
 }
 
 /**
@@ -251,9 +269,9 @@ export function vivierRayon(rayonId, progression) {
  * ses communes couvrent toutes les couleurs et ouvriraient le Souk dès le
  * premier duel. Elles remplissent les paquets, elles ne les ouvrent pas.
  */
-export function rayonOuvert(rayonId, progression) {
-  if (!rayonActif(rayonId)) return false;
-  return couleursOuvertes(progression).size > 0;
+export function rayonOuvert(rayonId) {
+  // Les paquets sont en vente dès le départ : aucune victoire n'est requise.
+  return Boolean(rayonActif(rayonId));
 }
 
 /** Répartition par rareté d'une liste d'identifiants. */

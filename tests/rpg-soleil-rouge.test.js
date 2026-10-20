@@ -32,8 +32,8 @@ function sort(duel, id, cible) {
 // Les trois cartes de soutien ajoutées (hatamoto, kenshi, daimyō) forment désormais la charpente du starter.
 const SAMOURAIS_AJOUTES = ['hatamoto-des-cendres', 'kenshi-de-la-forge', 'daimyo-du-soleil-rouge'];
 
-test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 × 1280 et collectionnables', () => {
-  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 18);
+test('Soleil rouge : dix-sept cartes mono-Braise uniques, illustrées en 1024 × 1280 et collectionnables', () => {
+  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 17, 'le terrain Braise du Soleil rouge est retiré');
   const empreintes = new Set();
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
     assert.equal(cardById(carte.id).set, RPG_SOLEIL_ROUGE_SET_ID);
@@ -53,7 +53,7 @@ test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 ×
     }
     assert.deepEqual(dimensions, [1024, 1280], carte.id);
   }
-  assert.equal(empreintes.size, 18, 'une illustration dédiée par carte');
+  assert.equal(empreintes.size, 17, 'une illustration dédiée par carte');
 });
 
 test('le deck Soleil rouge est valide et concentre sa signature culturelle', () => {
