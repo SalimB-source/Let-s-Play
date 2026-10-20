@@ -8225,3 +8225,96 @@ npm run check:rpg      # ✓ — 659 tests : règles du duel, IA, soins, quêtes
 npm run check:rpg-soins # ✓ — le gain de vie s’illumine et se fait entendre
 npm run build          # ✓ — le bundle se construit
 ```
+
+## Le Sablier : la table au doigt reprend la composition du PC
+
+Le duel tactile avait sa propre composition : un duel en miroir autour de la
+ligne de séparation, les deux plaques collées au milieu, les jauges de mana
+glissées dessous, les terrains dans des rails latéraux. La version PC, elle,
+tient en trois colonnes — la plaque du sorcier et ses terrains à gauche, les
+deux champs au centre, la colonne du tour et des commandes à droite — avec la
+main sur toute la largeur et la navigation en capsule en haut à droite.
+
+**Le téléphone reprend maintenant cette composition, à son échelle.** Une seule
+mesure commande tout : la largeur d'une carte de la main, `--duel-card`, qui
+vaut `clamp(44px, 15.55svh, 104px)` — les 140 px du PC sur 900 px de haut, soit
+15,55 % de la hauteur. Tout le reste s'exprime en fractions de cette carte :
+la plaque d'un sorcier fait 2 cartes de large, sa jauge 2,6 au plus, une carte
+posée 95 % d'une carte de la main, la bande de la main 1,38 carte de haut, la
+rangée de navigation 0,62 carte, la colonne des commandes 2,47 cartes (la
+largeur du rail du PC : 330 px pour 140) et une commande de combat 0,55 carte.
+Seuls deux planchers restent en pixels — 44 px pour les cibles tactiles, 9 px
+pour les textes —, et ils ne mordent qu'aux plus petits formats.
+
+La grille tactile est donc, littéralement, celle du PC :
+
+```
+"coin      nav      nav"
+"enemy-mana enemy    controls"
+"mana      allies   controls"
+"hand      hand     hand"
+```
+
+La plaque et la jauge d'un même camp partagent une cellule : la plaque s'aligne
+au bord extérieur, la jauge se cale derrière elle à la hauteur réelle de la
+plaque (`--rpg-plaque-*-h`, publiée par la page) — une plaque qui grandit
+pousse sa jauge au lieu de la recouvrir. Les deux champs se partagent la
+hauteur restante à parts égales et se rejoignent au milieu de la table ; leurs
+cinq cases gardent la largeur d'une carte posée, et une carte jouée tombe dans
+sa case, sans défilement. La capsule du PC redevient une capsule : le hamburger
+du duel garde son fond sombre translucide, son rayon et son ombre.
+
+**Pourquoi la composition ne prenait pas.** `rpg-mana-essai.css` est importée
+après `rpg-mobile.css` et portait une soixantaine de règles
+`.rpg-battle--touch` : elles posaient les deux plaques en `position: absolute`
+à `top: calc(50% + 6px)`, miroir du duel à terrains, et écrasaient la grille.
+Le duel par défaut étant un duel sans terrains (`RPG_MODE_MANA_ESSAI`), c'est
+cette feuille qui gagnait à l'écran. Les règles tactiles de la table d'essai
+sont désormais écrites dans la même grille : plaque et jauge du sorcier dans
+`enemy-mana`, celles du joueur dans `mana`, les cinq cases dans les rangées
+centrales. `check:rpg-mobile` vérifie les positions réelles à 568 × 320,
+667 × 375, 844 × 390 et 1024 × 768 — sur un 844 × 390 : colonne de gauche
+144 px, champs 509 px, commandes 150 px, main 84 px de haut pour une carte de
+61 px.
+
+**Le mulligan suit la main.** Le duel sans terrains distribue trois cartes
+(`RPG_MANA_ESSAI_MAIN_DEPART`) : le volet en présente trois, 4:5, entières et
+touchables, et le check le vérifie aux trois formats. Le parcours des piles de
+terrains — poser, engager, empiler deux terrains identiques, glisser une carte
+sur le champ — n'est plus proposé par l'interface : le check ne le rejoue que
+si une main contient encore des terrains.
+
+### Où vit le code
+
+- `src/games/rpg-mobile.css` — la grille tactile (`grid-template-areas`,
+  `grid-template-columns`, `--rpg-touch-*`), les plaques en pastille du PC, la
+  capsule de navigation, le rail du tour ancré au-dessus de la rangée de
+  combat, les icônes de phase qui se partagent la largeur du rail et les
+  boutons de combat à 0,55 carte ;
+- `src/games/rpg-mana-essai.css` — le bloc `.rpg-battle--touch` : jauge et
+  plaque dans une même cellule, jauge en deux rangées de cinq losanges, PV dans
+  la goutte de sang à l'échelle de la carte, cinq cases à la largeur d'une
+  carte posée ;
+- `scripts/rpg-mobile-layout-check.mjs` — les proportions du PC (carte à
+  15,55 %, navigation 0,62 carte, main 1,38 carte), les plaques et jauges de la
+  colonne de gauche, les deux champs au milieu, les cases sous les cartes
+  posées, la jauge à deux rangées de cinq losanges, le mulligan à trois cartes ;
+- `scripts/rpg-battle-ui-check.mjs`, `scripts/rpg-mana-essai-check.mjs` — les
+  assertions statiques de la nouvelle grille et des jauges ;
+- `docs/rpg/mobile-layout.md` — la composition et le tableau des proportions.
+
+### Vérifications
+
+```bash
+npm run check:rpg       # ✓ — 717 tests, les règles du duel ne changent pas
+npm run check:rpg-mobile # ✓ — 568×320, 667×375, 844×390, 1024×768
+npm run build           # ✓ — le bundle se construit
+```
+
+`check:rpg-mobile` lit les règles réelles dans Chromium : proportions de la
+carte, de la navigation et de la main à chaque format, plaques et jauges dans
+la colonne de gauche, champs de même hauteur joints au milieu, cartes posées
+dans leurs cases (1, 3 et 5), commandes côte à côte, main mesurée carte par
+carte. `check:rpg-ui` garde une assertion de catalogue antérieure à cette
+retouche (statistiques de Fériel), rouge sur `main` comme ici ; les assertions
+de la présentation tactile, elles, passent.
