@@ -80,13 +80,14 @@ cataloguée afin que le deck puisse réellement la jouer.
 ## État du set Neige
 
 Le **Serment des Neuf Hivers** (couleur Neige, cadre bleu clair `#a9e0f5`,
-badge ❄️) est entièrement peint : ses vingt cartes originales — Glacier,
+badge ❄️) est entièrement peint : ses vingt-deux cartes originales — Glacier,
 Guerrier au bouclier rond, Loup des neiges, Scalde des runes, Valkyrie au
 corbeau, Berserk des trois hivers, Jarl au marteau de guerre, Valkyrie des
 glaces, Géant des banquises, Drakkar à tête de dragon, **Tour de Neige**, Éclair
 du marteau, Mur de boucliers, Festin des vaillants, Brume du fjord, Hurlement
 du blizzard, le Père des corbeaux, le Maître du marteau, la Dame des neuf
-mondes et le Serpent du monde — ont leur plein art dédié dans `public/cards/`.
+mondes, le Serpent du monde, **Le Grand Hiver** et la **Hache de la
+banquise** — ont leur plein art dédié dans `public/cards/`.
 Le Glacier possède aussi une seconde peinture jouable, **Glacier des arches**,
 qui partage sa production de Neige.
 
@@ -106,6 +107,19 @@ attribut, parce que leur sujet ne doit jamais se réduire à un objet :
   tranchant sur l’huile du reste de la collection ;
 - la **Dame des neuf mondes** — une femme au foyer de bois, le fil à la main ;
 - le **Serpent du monde** — le corps en anneau qui entoure les eaux.
+
+### Les deux dernières cartes du Serment (octobre 2026)
+
+- **Le Grand Hiver** (`grand-hiver.jpg`) — sorcellerie Neige à 2 manas : 1 dégât
+  à toutes les créatures, les deux camps compris. Peinture à l'huile dans la
+  direction générale de la collection : deux bandes de guerriers du fjord
+  saisis par le même mur de neige, aucun camp épargné.
+- **Hache de la banquise** (`hache-de-la-banquise.jpg`) — arme Neige à 3 manas :
+  elle inflige 1 dégât à son porteur en s'attachant, puis il gagne +2/+0 et un
+  bouclier de 1. Comme les autres armes du prototype, elle suit la
+  **dérogation photoréaliste** documentée plus bas : le porteur tient l'arme
+  en pleine action, l'arme entièrement dans le cadre, pointe et pommeau
+  dégagés.
 
 ## État des sept magies reprises en plein art 4:5
 
@@ -312,7 +326,8 @@ Susanoo se débloque à `sables-3`.
 
 ## Dérogation : deux armes et le serpent en photoréaliste (octobre 2026)
 
-Deux armes du prototype (`takouba-des-pistes`, `lance-de-givre`) et le jeton
+Trois armes du prototype (`takouba-des-pistes`, `lance-de-givre`,
+`hache-de-la-banquise`) et le jeton
 `serpent-des-citernes` dérogent **volontairement** à la direction
 « huile sur toile » ci-dessus :
 elles sont livrées en **rendu photoréaliste fantaisiste** (photo de cinéma,

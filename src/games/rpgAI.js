@@ -348,6 +348,8 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
       .sort((a, b) => menace(b) - menace(a))[0]?.id ?? null;
   }
   if (carte?.effet?.type === 'degats') {
+    // Le Grand Hiver frappe les deux tables : il ne désigne personne.
+    if (carte.effet.cible === 'toutes-autres') return null;
     return meilleuresOptionsOffensives(duel, cote, carte, {
       montant: carte.effet.amount ?? 0,
       sourceType: 'magie',
@@ -391,8 +393,12 @@ export function choisirChampionDuelIA(duel, cote, cibleId = null) {
  */
 function meilleureCibleArme(duel, cote, carte) {
   const couleurs = cardColors(carte);
+  // Une arme qui blesse son porteur en s'attachant (la Hache de la banquise)
+  // ne se confie pas à un mourant : le porteur doit survivre à la morsure.
+  const morsure = Math.max(0, Number(carte?.blessurePorteur) || 0);
   const candidates = duel[cote].creatures
-    .filter((entite) => !entite.mur && !entite.arme && !estProtegee(entite, couleurs));
+    .filter((entite) => !entite.mur && !entite.arme && !estProtegee(entite, couleurs)
+      && (entite.pv ?? 0) > morsure);
   // Une arme qui CONDAMNE son porteur (le Licou du chien de sable, +1/−1)
   // ne cherche pas le meilleur bras : elle cherche le moins regrettable —
   // un jeton, un mourant — puisque la pioche est le but et le porteur le
@@ -959,6 +965,19 @@ function scoreCarte(duel, cote, carte, profil, rng) {
           + (effet.gel ? duel[adv].creatures.length * 1.2 : 0);
         return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
       }
+      if (effet.cible === 'toutes-autres') {
+        // Le Grand Hiver : la vague frappe les DEUX tables. Le sorcier compte
+        // donc ce qu'il détruit chez l'adversaire, MOINS ce qu'il perd chez
+        // lui — il ne la lance que si le compte penche de son côté.
+        const valeurTable = (campVise) => duel[campVise].creatures.reduce((total, entite) => {
+          if (estProtegee(entite, cardColors(carte))) return total;
+          const recus = degatsApresEsquive(entite, montant, 'magie');
+          if (recus <= 0) return total;
+          return total + (meurtSous(entite, montant, 'magie') ? valeurEntite(entite) : 1.2);
+        }, 0);
+        const gain = valeurTable(adv) - valeurTable(cote);
+        return { score: gain > 0 ? 3 + gain - cout * 0.3 : 0, cibleId: null };
+      }
       const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
         montant, sourceType: 'magie', portee: effet.cible, profil, rng,
       });
@@ -1114,6 +1133,11 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     if (carte.donne?.coupRapide && !porteur?.coupRapide) gain += 2;
     if (carte.donne?.tribut) gain += carte.donne.tribut * 0.9;
     if (carte.donne?.immunite && !estProtegee(porteur, carte.donne.immunite)) gain += 2;
+    // Le bouclier que l'arme pose sur son porteur, et la morsure qu'elle lui
+    // fait payer d'abord (la Hache de la banquise) : le second se retranche
+    // du premier, sans jamais rendre la carte absurde à jouer.
+    if (carte.donne?.bouclier) gain += carte.donne.bouclier * 0.8;
+    if (carte.blessurePorteur) gain -= carte.blessurePorteur * 0.6;
     if (carte.declenche) gain += 2;
     // Les déclencheurs du porteur (lot du Sable) : ce que l'arme rapporte
     // chaque tour, au-delà des chiffres qu'elle affiche.

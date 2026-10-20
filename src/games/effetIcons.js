@@ -208,6 +208,10 @@ export function pastillesPourCarte(carte) {
   if (carte.honneur) ajouter('honneur', 'Honneur', Number(carte.honneur) || null);
   if (carte.butin) ajouter('butin', 'Butin');
   if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
+  // Une arme peut accorder un bouclier à son porteur (la Hache de la
+  // banquise) : la pastille se lit sur la fiche de l'arme comme sur celle
+  // d'une créature qui arrive avec un bouclier.
+  if (carte.donne?.bouclier) ajouter('bouclier', 'Bouclier', Number(carte.donne.bouclier) || null);
   if (carte.porteurMeurt?.type === 'reanimation-porteur') ajouter('reanimation', 'Réanimation');
 
   // L’effet signé des sorts (et des arrivées qui se lisent d’un coup d’œil).

@@ -1722,6 +1722,25 @@ export const RPG_MAGIE_CARDS = [
     text: 'Sorcellerie — Les créatures adverses gagnent -2/-2 (jamais sous 1/1) et doivent bloquer si elles le peuvent ce tour.',
     flavor: 'Le cercle se referme ; plus aucun bouclier ne reste à l’écart.',
   },
+  // ── Le Grand Hiver : le froid qui ne choisit pas son camp ───────────────
+  // `cible: 'toutes-autres'` frappe la table ENTIÈRE — les deux camps, sans
+  // exception ni source épargnée. C'est la leçon du Serment : un hiver ne
+  // demande pas de quel côté du fjord on se bat. Le sort tue les petites
+  // créatures des deux camps ; il ne se lance que quand ce compte-là penche.
+  {
+    id: 'grand-hiver',
+    name: 'Le Grand Hiver',
+    element: 'neige',
+    kind: 'magie',
+    typeLine: 'Sorcellerie — Neige',
+    art: 'grand-hiver',
+    cost: 2,
+    rarity: 'rare',
+    cibles: ['toutes'],
+    effet: { type: 'degats', amount: 1, cible: 'toutes-autres' },
+    text: 'Sorcellerie — 1 dégât à toutes les créatures, les vôtres comprises.',
+    flavor: 'Le froid ne demande jamais de quel camp vous êtes.',
+  },
   // ── Contresorts (deck Marée des abysses) ───────────────────────────────
   // Un contresort répond à l'annonce du sorcier : il annule la carte annoncée.
   {
@@ -1826,6 +1845,12 @@ export const RPG_MAGIE_CARDS = [
  * `porteurBlesseSorcier` / `porteurBlesse` (quand il inflige des blessures de
  * combat), `porteurMeurt` (quand il meurt, arme comprise). `armeVivante`
  * permet de la jouer sans créature : elle crée son propre porteur.
+ *
+ * **Le prix de l'attachement** — `blessurePorteur` : l'arme blesse la créature
+ * au moment où elle s'attache (la Hache de la banquise, 1 dégât), avant ses
+ * propres bonus. Un porteur qui succombe à cette morsure ne porte rien :
+ * l'arme tombe au cimetière avec lui. Et `donne.bouclier` accorde au porteur
+ * un bouclier qui suit l'arme — il s'en va si l'arme est remplacée.
  */
 export const RPG_ARME_CARDS = [
   ...RPG_TENEBRES_ARMES,
@@ -1884,6 +1909,24 @@ export const RPG_ARME_CARDS = [
     donne: { envol: true },
     text: 'Arme — Le porteur gagne +3/+1 et Envol.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
+  },
+  {
+    id: 'hache-de-la-banquise',
+    name: 'Hache de la banquise',
+    element: 'neige',
+    kind: 'arme',
+    typeLine: 'Arme — Hache',
+    cost: 3,
+    rarity: 'commune',
+    bonus: { atk: 2, def: 0 },
+    // Le prix de l'acier de glace : `blessurePorteur` mord la créature AU
+    // MOMENT de l'attachement, avant que le bouclier de l'arme ne soit posé —
+    // la morsure ne s'absorbe donc pas elle-même. Le bouclier (`donne.bouclier`),
+    // lui, suit l'arme : il part avec elle si le porteur en change.
+    blessurePorteur: 1,
+    donne: { bouclier: 1 },
+    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0 et un bouclier de 1.',
+    flavor: 'Le manche de glace mord la main avant de mordre l’ennemi.',
   },
 
   // ── Le lot des Veilleurs : dix équipements du Sable ────────────────────

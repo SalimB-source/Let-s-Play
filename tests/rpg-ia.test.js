@@ -491,3 +491,38 @@ test('Bakunawa et Faiseur de passage : la lune et le passage se choisissent auss
   assert.equal(rpgSorcierResoudreAnnonce(duel2).ok, true, 'le Faiseur se résout');
   assert.equal(allie.infiltration, true, 'l’allié passe sans être bloqué');
 });
+
+test('Le Grand Hiver : le sorcier ne le lance que si le compte des pertes penche de son côté', () => {
+  // Deux 1/1 chez le joueur, un Colosse chez le sorcier : la vague tue pour
+  // lui et ne lui coûte qu'une blessure — il la lance, sans désigner de cible.
+  const duel = duelNu();
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'joueur', 9);
+  donnerMana(duel, 'sorcier', 9);
+  for (let i = 0; i < 2; i += 1) {
+    donner(duel, 'joueur', 'tislit-des-aures');
+    rpgJouerCreature(duel, 'joueur', 'tislit-des-aures');
+  }
+  donner(duel, 'sorcier', 'colosse-de-sel');
+  rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel');
+  donner(duel, 'sorcier', 'grand-hiver');
+  const choix = choisirCarteIA(duel, 'sorcier', () => 0.5);
+  assert.equal(choix?.carteId, 'grand-hiver');
+  assert.equal(choix.cibleId, null, 'un sort qui frappe les deux tables ne désigne personne');
+
+  // L'inverse : deux 1/1 chez le sorcier, une grosse créature chez le joueur.
+  // Il perdrait plus qu'il ne gagnerait — la carte reste en main.
+  const duel2 = duelNu();
+  duel2.tour = 'sorcier';
+  donnerMana(duel2, 'joueur', 9);
+  donnerMana(duel2, 'sorcier', 9);
+  donner(duel2, 'joueur', 'colosse-de-sel');
+  rpgJouerCreature(duel2, 'joueur', 'colosse-de-sel');
+  for (let i = 0; i < 2; i += 1) {
+    donner(duel2, 'sorcier', 'tislit-des-aures');
+    rpgJouerCreature(duel2, 'sorcier', 'tislit-des-aures');
+  }
+  donner(duel2, 'sorcier', 'grand-hiver');
+  assert.equal(choisirCarteIA(duel2, 'sorcier', () => 0.5), null,
+    'le sorcier ne sacrifie pas sa propre table pour un dégât');
+});

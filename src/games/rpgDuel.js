@@ -1074,6 +1074,11 @@ function attacherArme(duel, cote, entite, carteArme) {
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
   if (carteArme.donne?.tribut) entite.tribut = (entite.tribut ?? 0) + carteArme.donne.tribut;
+  // Le bouclier de l'arme (la Hache de la banquise) : il vit sur le porteur,
+  // mais il vient de l'arme — `retirerArme` le reprend avec elle.
+  if (carteArme.donne?.bouclier) {
+    entite.bouclier = (entite.bouclier ?? 0) + carteArme.donne.bouclier;
+  }
   // La Jitte d'Amayas : l'arme couvre son porteur d'une protection de couleur
   // permanente (tant qu'elle est attachée), comme celle imprimée de Tiziri.
   if (carteArme.donne?.protection) {
@@ -1102,6 +1107,12 @@ function retirerArme(duel, cote, entite) {
   if (carteArme.donne?.coupRapide) entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide);
   if (carteArme.donne?.rapidite) entite.rapidite = Boolean(duelCardById(entite.carteId)?.rapidite);
   if (carteArme.donne?.tribut) entite.tribut = Math.max(0, Number(duelCardById(entite.carteId)?.tribut) || 0);
+  // Le bouclier de l'arme s'en va avec elle (jamais sous zéro : il a pu être
+  // entamé par des blessures). Un bouclier accordé par une autre source — un
+  // sort, une capacité d'arrivée — reste, lui, sur la créature.
+  if (carteArme.donne?.bouclier) {
+    entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - carteArme.donne.bouclier);
+  }
   if (carteArme.donne?.protection) {
     // L'arme partie, la protection retombe à celle imprimée sur la fiche.
     const impression = duelCardById(entite.carteId)?.protection;
@@ -2965,6 +2976,22 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
     }, null, null, cardColors(carte), null, carte.id);
     cible = camp.creatures[camp.creatures.length - 1] ?? null;
     if (!cible) return { ok: false, raison: 'cible' };
+  }
+  // Le prix de l'attachement (la Hache de la banquise) : l'arme mord son
+  // porteur AVANT de lui donner quoi que ce soit — le bouclier qu'elle
+  // accorde ne saurait donc absorber sa propre morsure. Un porteur qui
+  // succombe ne porte rien : l'arme tombe au cimetière avec lui, comme si
+  // son porteur était mort en la prenant.
+  if (Math.max(0, Number(carte.blessurePorteur) || 0) > 0) {
+    const morsure = Math.max(0, Number(carte.blessurePorteur) || 0);
+    duel.log.push(`${carte.name} mord ${cible.name} en s’attachant (${morsure} dégât${morsure > 1 ? 's' : ''}).`);
+    rpgBlesserCreature(duel, cote, cible.id, morsure, carte.element, null, 'capacite', carte.id);
+    if (!camp.creatures.some((entite) => entite.id === cible.id)) {
+      camp.cimetiere.push(carte.id);
+      duel.log.push(`${carte.name} emporte son porteur : l’arme tombe au cimetière.`);
+      rpgActionsEtat(duel);
+      return { ok: true, entite: null };
+    }
   }
   attacherArme(duel, cote, cible, carte);
   const bonus = `+${carte.bonus?.atk ?? 0}/+${carte.bonus?.def ?? 0}`;
