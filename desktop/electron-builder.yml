@@ -22,16 +22,14 @@ copyright: Copyright © 2026 Let's Play — média algérien du jeu vidéo
 directories:
   output: release
   buildResources: build
+  # L'application empaquetée est la SCÈNE minimale assemblée par
+  # scripts/desktop-bundle.mjs (sept fichiers, aucun node_modules) : l'asar
+  # reste de quelques dizaines de Ko quoi que fasse electron-builder.
+  app: stage
 
-# Ce qui entre dans l'archive de l'application.
+# La scène ne contient que l'exécutable : pas de filtre à appliquer.
 files:
-  - main.js
-  - preload.cjs
-  - gpu.js
-  - local-server.js
-  - diagnostic.html
-  - offline.html
-  - package.json
+  - '**/*'
 
 # Le jeu lui-même, hors archive.
 extraResources:

@@ -27,7 +27,8 @@
 
 import { spawnSync } from 'node:child_process';
 import {
-  existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync,
+  copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync,
+  writeFileSync,
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -172,6 +173,41 @@ writeFileSync(join(PAQUET, 'desktop-manifest.json'), `${JSON.stringify({
   octets: apresOctets,
   supabase: aSupabase ? 'configure' : 'absent (jeu jouable hors ligne, compte et duels en ligne indisponibles)',
 }, null, 2)}\n`);
+
+// ---------------------------------------------------------------------------
+// 4) Scène de packaging : une application minimale et propre
+// ---------------------------------------------------------------------------
+// electron-builder empaquette « le dossier app » tel qu'il le comprend ; y
+// laisser traîner node_modules/ (Electron téléchargé inclus), dist-web/ ou
+// release/ gonfle l'asar de centaines de Mo (vu en CI : app.asar.unpacked à
+// 729 Mo). On assemble donc `desktop/stage/` : les sept fichiers d'exécution,
+// rien d'autre, avec un package.json sans dépendances. L'asar final pèse
+// quelques dizaines de Ko, et le jeu voyage à côté, dans resources/app.
+const SCENE = join(RACINE, 'desktop', 'stage');
+const FICHIERS_SCENE = [
+  'main.js', 'preload.cjs', 'gpu.js', 'local-server.js',
+  'diagnostic.html', 'offline.html',
+];
+rmSync(SCENE, { recursive: true, force: true });
+mkdirSync(SCENE, { recursive: true });
+for (const fichier of FICHIERS_SCENE) {
+  copyFileSync(join(RACINE, 'desktop', fichier), join(SCENE, fichier));
+}
+const paquetCoque = JSON.parse(readFileSync(join(RACINE, 'desktop', 'package.json'), 'utf8'));
+writeFileSync(join(SCENE, 'package.json'), `${JSON.stringify({
+  name: paquetCoque.name,
+  productName: paquetCoque.productName,
+  version: paquetCoque.version,
+  description: paquetCoque.description,
+  main: 'main.js',
+  type: 'module',
+  private: true,
+  author: paquetCoque.author,
+  license: paquetCoque.license,
+  homepage: paquetCoque.homepage,
+}, null, 2)}
+`);
+console.log(`[desktop] scène de packaging : ${SCENE} (${FICHIERS_SCENE.length + 1} fichiers)`);
 
 // ---------------------------------------------------------------------------
 // Compte rendu

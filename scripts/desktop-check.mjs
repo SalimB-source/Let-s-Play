@@ -193,6 +193,14 @@ for (const dossier of ['assets', 'cards', 'sablier-story', 'sablier-tours', 'aud
 }
 ok('bundle-assets.json : cartes, plateaux, sons et décor du Sablier embarqués');
 
+const builderYml = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'utf8');
+assert.match(builderYml, /app:\s*stage/, 'electron-builder doit empaqueter la scène minimaliste');
+const bundle = readFileSync(join(RACINE, 'scripts', 'desktop-bundle.mjs'), 'utf8');
+for (const fichier of ['main.js', 'preload.cjs', 'gpu.js', 'local-server.js', 'diagnostic.html', 'offline.html']) {
+  assert.ok(bundle.includes(`'${fichier}'`), `la scène doit contenir ${fichier}`);
+}
+ok('scène de packaging minimale (asar léger, jeu dans resources/app)');
+
 const icones = ['desktop/build/icon.ico', 'desktop/build/icon.png'];
 for (const fichier of icones) {
   assert.ok(readFileSync(join(RACINE, fichier)).length > 1000, `${fichier} absent ou vide`);
