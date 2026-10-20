@@ -65,6 +65,15 @@ function estEmbarque(relatif, regles) {
   return globs.some((re) => re.test(relatif));
 }
 
+/**
+ * Supprime un fichier ou un dossier en réessayant : sous Windows, l'antivirus
+ * (Defender) scanne les fichiers que Vite vient d'écrire et peut les verrouiller
+ * quelques dizaines de millisecondes — sans retry, l'élagage mourrait en EPERM.
+ */
+function supprimer(chemin) {
+  rmSync(chemin, { recursive: true, force: true, maxRetries: 6, retryDelay: 250 });
+}
+
 /** Taille lisible d'un dossier ou d'un fichier. */
 function tailleLisible(octets) {
   if (octets >= 1024 ** 3) return `${(octets / 1024 ** 3).toFixed(2)} Go`;
@@ -112,7 +121,7 @@ if (!garderTout) {
     if (estEmbarque(relatif, regles)) continue;
     const chemin = join(PAQUET, relatif);
     supprimeOctets += statSync(chemin).size;
-    rmSync(chemin);
+    supprimer(chemin);
     supprimes += 1;
   }
   // Vide les dossiers devenus vides (news-auto/, videos/…).
@@ -121,7 +130,7 @@ if (!garderTout) {
       if (!entree.isDirectory()) continue;
       const chemin = join(dossier, entree.name);
       viderDossiers(chemin);
-      if (readdirSync(chemin).length === 0) rmSync(chemin, { recursive: true });
+      if (readdirSync(chemin).length === 0) supprimer(chemin);
     }
   };
   viderDossiers(PAQUET);

@@ -83,14 +83,41 @@ jobs:
         run: npm --prefix desktop install
 
       - name: Paquet web élagué
-        run: npm run desktop:web
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run desktop:web 2>&1 | tee bundle.log
+
+      # Les logs de run ne sont pas toujours consultables : en cas d'échec, les
+      # lignes utiles sont recopiées en annotations de check-run (lisibles via
+      # l'API, et affichées sur l'onglet Checks de la PR).
+      - name: Diagnostic paquet (échec)
+        if: failure()
+        shell: bash
+        run: |
+          grep -nE "error|Error|ERROR|EPERM|EBUSY|ENOENT|throw|Caused|at file" bundle.log | head -40 | while IFS= read -r l; do
+            echo "::error::${l:0:400}"
+          done
+          exit 1
 
       - name: Taille du paquet
         shell: bash
         run: du -sh desktop/dist-web || true
 
       - name: Installeur + version portable
-        run: npm run desktop:dist
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run desktop:dist 2>&1 | tee builder.log
+
+      - name: Diagnostic installeur (échec)
+        if: failure()
+        shell: bash
+        run: |
+          grep -nE "error|Error|ERROR|ERR_|failed|Failed|cannot|Cannot" builder.log | head -40 | while IFS= read -r l; do
+            echo "::error::${l:0:400}"
+          done
+          exit 1
 
       - name: Artefacts de run
         uses: actions/upload-artifact@v4
