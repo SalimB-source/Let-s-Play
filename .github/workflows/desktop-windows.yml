@@ -33,6 +33,8 @@ on:
 
 permissions:
   contents: write
+  # Le step « Rapport de tailles en PR » commente la pull request.
+  pull-requests: write
 
 concurrency:
   group: desktop-windows
@@ -137,6 +139,8 @@ jobs:
       # tailles part en commentaire de la pull request, lisible via l'API.
       - name: Rapport de tailles en PR
         if: github.event_name == 'push'
+        # Un échec de commentaire ne doit jamais priver le run de ses artefacts.
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
