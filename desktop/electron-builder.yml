@@ -28,9 +28,8 @@ directories:
   output: ../release
   buildResources: build
 
-# Binaire Electron déjà téléchargé par `npm --prefix desktop install` : évite un
-# second téléchargement de ~110 Mo à chaque build CI.
-electronDist: ../node_modules/electron/dist
+# Le binaire Electron vient du cache d'electron-builder (téléchargé une fois par
+# runner) : la version exacte est lue dans pack/package.json par le bundle.
 
 # pack/ ne contient que l'exécutable ; on exclut les outils de build eux-mêmes.
 files:

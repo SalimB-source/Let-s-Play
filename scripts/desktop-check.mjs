@@ -194,13 +194,17 @@ for (const dossier of ['assets', 'cards', 'sablier-story', 'sablier-tours', 'aud
 ok('bundle-assets.json : cartes, plateaux, sons et décor du Sablier embarqués');
 
 const builderYml = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'utf8');
-assert.match(builderYml, /electronDist:\s*\.\.\/node_modules\/electron\/dist/,
-  'le binaire Electron doit venir du node_modules de desktop/, pas d’un second téléchargement');
 assert.match(builderYml, /output:\s*\.\.\/release/, 'la sortie doit rester desktop/release');
+assert.doesNotMatch(builderYml, /electronDist/,
+  'electronDist casse la CI quand node_modules/electron/dist n’est pas extrait');
 const bundle = readFileSync(join(RACINE, 'scripts', 'desktop-bundle.mjs'), 'utf8');
 for (const fichier of ['main.js', 'preload.cjs', 'gpu.js', 'local-server.js', 'diagnostic.html', 'offline.html']) {
-  assert.ok(bundle.includes(`'${fichier}'`), `la scène doit contenir ${fichier}`);
+  assert.ok(bundle.includes(`'${fichier}'`), `le projet isolé doit contenir ${fichier}`);
 }
+assert.match(bundle, /devDependencies: \{ electron: electronVersion \}/,
+  'pack/package.json doit épingler la version exacte d’Electron');
+assert.match(bundle, /node_modules', 'electron', 'package\.json'/,
+  'la version épinglée doit venir de l’Electron réellement installé');
 ok('projet d’empaquetage isolé desktop/pack (aucun node_modules → asar léger)');
 
 const icones = ['desktop/build/icon.ico', 'desktop/build/icon.png'];
