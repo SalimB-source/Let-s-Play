@@ -25,6 +25,7 @@
 import { cardById, cardRarityInfo } from './rpgCards.js';
 import { rayonParId } from './rpgBoosters.js';
 import { normaliserCollection } from './rpgCollection.js';
+import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 
 /**
  * Les crédits s'écrivent avec une espace fine insécable tous les trois chiffres :
@@ -314,11 +315,7 @@ export function fusionnerPortefeuilles(local, distant) {
 }
 
 function browserStorage() {
-  try {
-    return globalThis.window?.localStorage || globalThis.localStorage || null;
-  } catch {
-    return null;
-  }
+  return stockageProgression();
 }
 
 /** Le portefeuille de l'appareil (vide si le stockage manque ou ment). */
@@ -326,7 +323,7 @@ export function chargerPortefeuille() {
   const stockage = browserStorage();
   if (!stockage) return portefeuilleVide();
   try {
-    return normaliserPortefeuille(JSON.parse(stockage.getItem(RPG_BOURSE_STORAGE_KEY) ?? 'null'));
+    return normaliserPortefeuille(JSON.parse(lireProgression(RPG_BOURSE_STORAGE_KEY, stockage) ?? 'null'));
   } catch {
     return portefeuilleVide();
   }
@@ -336,10 +333,9 @@ export function chargerPortefeuille() {
 export function sauverPortefeuille(portefeuille) {
   const stockage = browserStorage();
   if (!stockage) return false;
-  try {
-    stockage.setItem(RPG_BOURSE_STORAGE_KEY, JSON.stringify(normaliserPortefeuille(portefeuille)));
-    return true;
-  } catch {
-    return false;
-  }
+  return ecrireProgression(
+    RPG_BOURSE_STORAGE_KEY,
+    JSON.stringify(normaliserPortefeuille(portefeuille)),
+    stockage,
+  );
 }

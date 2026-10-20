@@ -1699,6 +1699,12 @@ begin
   grant select, insert, update on public.mirage_rush_progress to authenticated;
   revoke all on public.vice_city_rush_progress from public, anon;
   grant select, insert, update on public.vice_city_rush_progress to authenticated;
+  -- Decks, collection, bourse, quêtes et histoire du Sablier : sa propre ligne
+  -- seulement (RLS). Sans ce grant, le client reçoit « permission denied » et
+  -- le jeu continue en silence sur son cache local : la progression ne part
+  -- jamais dans Supabase, ni sur le site ni dans l'app PC.
+  revoke all on public.rpg_sablier_progress from public, anon;
+  grant select, insert, update on public.rpg_sablier_progress to authenticated;
   grant select on public.comments to anon, authenticated;
   grant insert, delete, update on public.comments to authenticated;
   -- Groupes et fils communautaires : lecture publique, écriture réservée aux comptes (RLS).
@@ -1707,6 +1713,7 @@ begin
   grant select on public.community_comments to anon, authenticated;
   grant insert, delete on public.community_comments to authenticated;
   -- Progression des succès : accès à sa propre ligne seulement (RLS).
+  revoke all on public.player_progress from public, anon;
   grant select, insert, update, delete on public.player_progress to authenticated;
   -- Amis : uniquement les relations dont on fait partie (RLS).
   grant select, insert, update, delete on public.friendships to authenticated;
@@ -2323,6 +2330,15 @@ from (
       case when exists (select 1 from pg_trigger t
                         where t.tgrelid = to_regclass('public.comment_reports')
                           and t.tgname = 'comment_reports_hide_reported')
+           then 'OK' else 'MANQUANT' end)
+ , (51, 'progression du Sablier privée par compte (RLS + grant authenticated)',
+      case when to_regclass('public.rpg_sablier_progress') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.rpg_sablier_progress'))
+            and has_table_privilege('authenticated', 'public.rpg_sablier_progress', 'select')
+            and has_table_privilege('authenticated', 'public.rpg_sablier_progress', 'insert')
+            and has_table_privilege('authenticated', 'public.rpg_sablier_progress', 'update')
+            and to_regrole('anon') is not null
+            and not has_table_privilege('anon', 'public.rpg_sablier_progress', 'select')
            then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

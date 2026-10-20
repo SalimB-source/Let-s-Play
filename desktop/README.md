@@ -161,6 +161,39 @@ vers `http://127.0.0.1:4173/auth`. Ajoutez `http://127.0.0.1:4173/**` dans
 **Supabase → Authentication → Redirect URLs**, sinon ces deux flux refusent la
 redirection locale (la connexion par mot de passe, elle, fonctionne sans cela).
 
+### La progression appartient au compte, pas au PC
+
+Le jeu enregistre la progression du joueur dans Supabase — une ligne privée par
+compte (`rpg_sablier_progress`, `player_progress`, `quiz_progress`,
+`mirage_rush_progress`, `vice_city_rush_progress`) — exactement comme le site :
+la version PC n'a pas de sauvegarde « à elle ». Le dossier de données
+d'Electron ne contient qu'un **cache de travail par compte**
+(`letsplay_sablier_*:user:<id>`, voir `src/lib/progressionScope.js`), qui sert
+à jouer hors ligne et n'est jamais lu par un autre compte.
+
+Ce que cela change pour l'exploitation :
+
+- deux joueurs qui se connectent tour à tour sur le même PC (ou deux
+  installations côte à côte) ne partagent **aucune** progression ;
+- une partie jouée hors ligne (ou sur « Mode hors ligne » de l'écran de
+  connexion) est reprise une seule fois par le compte à la première connexion,
+  puis poussée dans sa ligne Supabase ;
+- la progression suit le joueur entre le PC, le navigateur et l'APK : elle
+  n'est pas attachée à l'origine `127.0.0.1`, donc elle survit à un changement
+  de port, à une réinstallation ou à un autre ordinateur.
+
+Sans `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` au build, l'écran de
+connexion l'annonce (« authentification non configurée ») et le jeu reste
+jouable hors ligne : dans ce cas seulement, la progression ne quitte pas le PC
+(voir `desktop-manifest.json`, qui indique si le paquet embarque les clés).
+
+Si la progression ne se synchronise pas alors que la connexion fonctionne,
+vérifier les droits d'API : `supabase/progression-par-joueur.sql` (Supabase →
+SQL Editor) garantit la RLS **et** le `grant` du rôle `authenticated` sur
+`rpg_sablier_progress` et les autres tables de progression. Le bandeau de
+synchronisation du Souk et du menu (`synchronise` / `attente` / `horsligne`)
+dit ce que le jeu a réussi à faire.
+
 ## Ce que la CI produit
 
 `.github/workflows/desktop-windows.yml` :
@@ -204,9 +237,11 @@ assez petit pour vivre dans `android/dist/`.
 - macOS : il faut une icône `.icns` et un runner macOS ; la CI ne produit que
   Windows. Le code de la coque est multiplateforme.
 - Deux installations lancées en même temps : la seconde prend un port libre et
-  donc une origine différente — elle ne partage pas le `localStorage` de la
-  première.
+  donc une origine différente — le cache de travail n'est pas partagé. La
+  progression, elle, suit le compte : elle se retrouve à la connexion
+  (`rpg_sablier_progress`).
 - Hors ligne, tout ce qui vient de Supabase (compte, duels à distance, souk
   partagé) est indisponible ; le duel contre l'IA, l'atelier de decks, la
-  collection et le mode histoire fonctionnent, la progression étant d'abord
-  locale (`rpgSablierRemote.js` synchronise au retour de la connexion).
+  collection et le mode histoire fonctionnent, la progression s'écrivant dans
+  le cache du compte puis rejoignant Supabase au retour de la connexion
+  (`rpgSablierRemote.js`).

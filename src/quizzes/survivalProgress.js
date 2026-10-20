@@ -2,6 +2,8 @@
  * Meilleur score local du Survival — indépendant des quizz classiques, de leur
  * classement partagé et de la progression/achievements par niveau.
  */
+import { ecrireProgression, effacerProgression, lireProgression } from '../lib/progressionScope.js';
+
 export const SURVIVAL_BEST_KEY = 'letsplay_quiz_survival_best_v2';
 const LEGACY_SURVIVAL_BEST_KEYS = ['letsplay_quiz_survival_best_v1'];
 
@@ -20,10 +22,8 @@ export function readSurvivalBest() {
     if (typeof window === 'undefined') return null;
     // Survival is a quiz mode too: do not carry its old device record across
     // the global quiz reset.
-    for (const legacy of LEGACY_SURVIVAL_BEST_KEYS) {
-      try { window.localStorage.removeItem(legacy); } catch (error) {}
-    }
-    return normaliseRun(JSON.parse(window.localStorage.getItem(SURVIVAL_BEST_KEY) || 'null'));
+    for (const legacy of LEGACY_SURVIVAL_BEST_KEYS) effacerProgression(legacy);
+    return normaliseRun(JSON.parse(lireProgression(SURVIVAL_BEST_KEY) || 'null'));
   } catch (error) {
     return null;
   }
@@ -42,13 +42,9 @@ export function recordSurvivalRun(run) {
     || (candidate.points === current.points && candidate.correct > current.correct);
   const best = isRecord ? candidate : current;
   if (isRecord) {
-    try {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(SURVIVAL_BEST_KEY, JSON.stringify(candidate));
-      }
-    } catch (error) {
-      // Le run reste jouable : le score affiché en mémoire n'est pas perdu.
-    }
+    // Record du joueur (clé `:user:<id>` pour un compte) : le run reste jouable
+    // même si le stockage refuse l'écriture, le score vit alors en mémoire.
+    ecrireProgression(SURVIVAL_BEST_KEY, JSON.stringify(candidate));
   }
   return { best, isRecord };
 }

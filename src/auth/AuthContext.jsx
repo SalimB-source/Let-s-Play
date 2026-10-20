@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { supabase } from '../lib/supabase';
 import { DEMO_PROFILES, DEFAULT_DEMO_KEY } from './demoProfiles';
 import { syncDemoCommentsForUser } from '../lib/comments';
+import { definirProprietaireProgression } from '../lib/progressionScope';
 
 export const AuthContext = createContext(null);
 const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
@@ -131,6 +132,14 @@ export function AuthProvider({ children, initialSession = null }) {
   };
 
   const activeUser = session?.user || demoUser || null;
+
+  // Portée du stockage de progression : le compte connecté, jamais l'appareil.
+  // Posée ici — donc avant le rendu des pages de jeu — les clés
+  // `letsplay_sablier_*`, `letsplay_quiz_*` et les records se rangent sous
+  // `…:user:<id>` : deux joueurs sur le même PC (ou la même installation)
+  // ne lisent jamais la progression l'un de l'autre. Les profils de
+  // démonstration restent des visiteurs : `session?.user` est nul pour eux.
+  definirProprietaireProgression(session?.user?.id ?? null);
 
   const value = useMemo(() => ({
     session,

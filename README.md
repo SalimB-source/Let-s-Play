@@ -4142,6 +4142,88 @@ Editor du projet Supabase (le script est relançable sans risque).
   la navbar, et garde-fous de source pour que le mode initial continue de suivre
   l'URL — y compris quand le pop-up est déjà ouvert.
 
+## Progression des jeux : un compte, un joueur
+
+La progression des jeux appartient au **joueur**, pas à l'appareil : elle est
+enregistrée dans Supabase, dans une ligne privée par compte (RLS stricte —
+personne ne lit ni n'écrit la ligne d'un autre). Le navigateur, le téléphone
+(APK) et **l'app PC installée** (`desktop/`) partagent les mêmes tables : un
+joueur retrouve sa partie d'une machine à l'autre, et deux comptes sur le même
+ordinateur ne se mélangent jamais.
+
+| Jeu | Table Supabase (une ligne par compte) | Ce qu'elle porte |
+|---|---|---|
+| Succès, XP, niveau | `public.player_progress` | état complet des succès, `level` et `xp` dénormalisés |
+| Le Sablier de Bab El | `public.rpg_sablier_progress` | histoire et récit, decks maison, collection, acquis, bourse (◈), quêtes du jour, `majLe` |
+| Mirage Rush | `public.mirage_rush_progress` | XP, niveau, skins possédés, or, cartes ouvertes |
+| Vice City Rush | `public.vice_city_rush_progress` | billets verts, garage, parcours, Histoire, tournois |
+| Quizz | `public.quiz_progress` (+ `quiz_attempts` pour les scores) | paliers terminés (Facile → Confirmé → Expert) |
+
+### La copie locale n'est qu'un cache par compte
+
+Le jeu se joue hors ligne (c'est le principe de la coque PC) : chaque module
+garde donc une **copie de travail** dans `localStorage`. Cette copie est
+suffixée par l'identifiant du compte — `letsplay_sablier_bourse_v1` pour un
+visiteur, `letsplay_sablier_bourse_v1:user:<id>` pour un compte connecté (voir
+`src/lib/progressionScope.js`) — comme le faisaient déjà Mirage Rush
+(`progressionStorageKey`) et Vice City Rush (`cityRushStorageKey`).
+
+Conséquences, vérifiées par `tests/progression-scope.test.js` :
+
+- un visiteur qui se connecte pour la première fois **reprend** sa partie : sa
+  copie invité est adoptée par le compte, une seule fois ;
+- un autre compte sur le même appareil (PC familial, cybercafé, bureau)
+  **ne voit rien** de la progression du précédent ;
+- à la connexion, la copie du compte (`public.*`) est fusionnée avec le cache
+  local — la fusion est monotone (union des cartes et des étages, maximum du
+  solde) : rien ne disparaît parce qu'un appareil est en retard ;
+- un compte neuf démarre à zéro, puis sa première partie crée sa ligne serveur.
+
+Les préférences d'appareil (volume, caméra, mode de conduite, décor du
+plateau, nom du trophée, choix d'entrée PC/navigateur) restent, elles,
+volontairement locales : elles décrivent la machine, pas le joueur.
+
+### À appliquer une fois sur le projet Supabase
+
+`supabase/progression-par-joueur.sql` — à coller dans **Supabase → SQL
+Editor**. Le script est idempotent (le rejouer ne supprime rien) et couvre les
+cinq tables ci-dessus : création si elles manquent, RLS active, et surtout les
+**droits d'API du rôle `authenticated`**. Un `grant` manquant est le piège
+silencieux : le client reçoit `permission denied`, le jeu continue sans erreur
+visible sur son cache local, et la progression ne part jamais dans Supabase.
+Le fichier se termine par un tableau de contrôle (« OK » partout).
+
+Le schéma complet (`supabase/schema.sql`) pose désormais ces droits lui aussi,
+et son contrôle final vérifie la ligne « progression du Sablier privée par
+compte (RLS + grant authenticated) ».
+
+Vérification automatique : `npm run check:progression` — la portée par compte
+côté client (`tests/progression-scope.test.js`) **et**, dans un vrai PostgreSQL
+(PGlite), les droits et la RLS (`tests/progression-per-player-db.test.js`) :
+un joueur écrit sa ligne, un autre ne la lit ni ne la modifie, un visiteur n'a
+aucun accès.
+
+### L'app PC
+
+Rien à faire côté jeu : `desktop/` embarque le même paquet web
+(`scripts/desktop-bundle.mjs`), donc les mêmes modules de synchronisation. Deux
+points d'exploitation :
+
+- le build doit recevoir `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY`
+  (voir `.env.example` ; la CI de `desktop-windows.yml` les lit dans les
+  variables du dépôt). **Sans elles, l'installeur se construit quand même,
+  mais la connexion — donc la sauvegarde serveur — est indisponible** et la
+  progression reste sur le PC ;
+- l'écran de connexion PC (`RpgDesktopLogin.jsx`) se ferme sur « Mode hors
+  ligne » : le joueur peut continuer à jouer, la progression s'écrit dans son
+  cache, et rejoint Supabase à la première connexion (la même reprise unique
+  que pour un visiteur web).
+
+Vérification : se connecter dans l'app PC, jouer une partie (un duel, un achat
+au Souk), puis ouvrir le site dans un navigateur avec le même compte — la
+partie est là, et `supabase` → Table Editor → `rpg_sablier_progress` montre la
+ligne du compte avec un `updated_at` récent.
+
 ## Quizz gaming, cinéma & pop culture et quizz du jour
 
 Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et

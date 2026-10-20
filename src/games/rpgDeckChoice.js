@@ -17,6 +17,7 @@
 
 import { RPG_DECKS, rpgValiderDeck } from './rpgCards.js';
 import { deckMaisonEstSelectionnable, deckMaisonParId } from './rpgDeckBuilder.js';
+import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 
 export const RPG_DECK_STORAGE_KEY = 'letsplay_sablier_deck_v1';
 
@@ -73,11 +74,7 @@ export function normaliserDeckChoisi(value, decksMaison = [], collection = null)
 }
 
 function browserStorage() {
-  try {
-    return globalThis.window?.localStorage || globalThis.localStorage || null;
-  } catch {
-    return null;
-  }
+  return stockageProgression();
 }
 
 /** Charge le deck choisi sur cet appareil ; `null` s'il n'y en a pas (ou plus de valide). */
@@ -85,7 +82,7 @@ export function chargerDeckChoisi(decksMaison = [], collection = null) {
   const stockage = browserStorage();
   if (!stockage) return null;
   try {
-    return normaliserDeckChoisi(JSON.parse(stockage.getItem(RPG_DECK_STORAGE_KEY) ?? 'null'), decksMaison, collection);
+    return normaliserDeckChoisi(JSON.parse(lireProgression(RPG_DECK_STORAGE_KEY, stockage) ?? 'null'), decksMaison, collection);
   } catch {
     return null;
   }
@@ -100,10 +97,5 @@ export function sauverDeckChoisi(deckId, decksMaison = [], collection = null) {
   if (!estDeckJouable(deckId, decksMaison, collection)) return false;
   const stockage = browserStorage();
   if (!stockage) return false;
-  try {
-    stockage.setItem(RPG_DECK_STORAGE_KEY, JSON.stringify({ deckId }));
-    return true;
-  } catch {
-    return false;
-  }
+  return ecrireProgression(RPG_DECK_STORAGE_KEY, JSON.stringify({ deckId }), stockage);
 }
