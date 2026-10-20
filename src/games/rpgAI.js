@@ -392,7 +392,7 @@ export function choisirChampionDuelIA(duel, cote, cibleId = null) {
 function meilleureCibleArme(duel, cote, carte) {
   const couleurs = cardColors(carte);
   const candidates = duel[cote].creatures
-    .filter((entite) => !entite.arme && !estProtegee(entite, couleurs));
+    .filter((entite) => !entite.mur && !entite.arme && !estProtegee(entite, couleurs));
   // Une arme qui CONDAMNE son porteur (le Licou du chien de sable, +1/−1)
   // ne cherche pas le meilleur bras : elle cherche le moins regrettable —
   // un jeton, un mourant — puisque la pioche est le but et le porteur le
