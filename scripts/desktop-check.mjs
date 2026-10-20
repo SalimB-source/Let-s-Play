@@ -147,11 +147,18 @@ ok('aucune lecture hors du paquet (../, %2e%2e, %2f)');
   ok('point d’état /__desktop/status');
 }
 {
-  // HEAD doit répondre sans corps mais avec la taille.
+  // HEAD doit répondre sans corps mais avec la taille, et Range sert les plages MP3 en boucle.
   const { reponse } = await lire('/cards/boualem.jpg', { method: 'HEAD' });
   assert.equal(reponse.status, 200);
   assert.equal(reponse.headers.get('content-length'), '4');
-  ok('HEAD renvoie la taille sans corps');
+  assert.equal(reponse.headers.get('accept-ranges'), 'bytes');
+  const { reponse: partielle, corps: octetsPartiels } = await lire('/cards/boualem.jpg', {
+    headers: { range: 'bytes=1-2' },
+  });
+  assert.equal(partielle.status, 206);
+  assert.equal(partielle.headers.get('content-range'), 'bytes 1-2/4');
+  assert.deepEqual([...new Uint8Array(octetsPartiels)], [0xd8, 0xff]);
+  ok('HEAD renvoie la taille sans corps et Range répond en 206 Partial Content');
 }
 await serveur.close();
 rmSync(paquet, { recursive: true, force: true });

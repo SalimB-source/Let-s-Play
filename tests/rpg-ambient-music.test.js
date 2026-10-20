@@ -17,7 +17,15 @@ import {
   RpgAmbientMusic,
 } from '../src/games/rpgAmbientMusic.js';
 import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
-import { RpgPlateauMusic, RPG_PLATEAU_MUSIC_FILES, RPG_PLATEAUX_MUSICAUX } from '../src/games/rpgPlateauMusic.js';
+import {
+  RPG_MAIN_THEME_FILE,
+  RpgMainThemeMusic,
+  RpgPlateauMusic,
+  RPG_PLATEAU_MUSIC_FILES,
+  RPG_PLATEAUX_MUSICAUX,
+  deposerThemePrincipal,
+  reprendreThemePrincipal,
+} from '../src/games/rpgPlateauMusic.js';
 import { plateauParId } from '../src/games/rpgPlateaux.js';
 
 test('ambiances, une par tour du mode Histoire', () => {
@@ -113,8 +121,120 @@ test('la page du duel joue la musique d’ambiance du mode Histoire sans doubler
     'le volume des musiques pilote l’ambiance des tours');
   assert.match(page, /musiquePlateauRef\.current\?\.setVolume\(volumeMusique\)/,
     'le volume des musiques pilote aussi les pistes des plateaux');
+  assert.match(page, /musiqueThemeRef\.current\?\.setVolume\(volumeMusique\)/,
+    'le volume des musiques pilote le thème principal hors parties');
+  assert.match(page, /if \(ecran !== 'partie' && sonActif\) void musiqueTheme\.start\(\);\s*else musiqueTheme\.stop\(\);/,
+    'le thème principal tourne hors parties et s’efface en partie');
   assert.match(page, /sfxRef\.current\?\.setVolume\(volumeSfx\)/,
     'le volume des sons du jeu pilote les bruitages');
+});
+
+test('le thème principal hors parties utilise « Desert Solitude with Percussion.mp3 » dans public/', () => {
+  assert.equal(RPG_MAIN_THEME_FILE, '/Desert Solitude with Percussion.mp3');
+  assert.ok(
+    existsSync(new URL('../public/Desert Solitude with Percussion.mp3', import.meta.url)),
+    'Desert Solitude with Percussion.mp3 doit être présent dans public/',
+  );
+});
+
+test('RpgMainThemeMusic boucle hors parties, déverrouille sur geste et s’arrête sans fuite', async () => {
+  const precedentWindow = globalThis.window;
+  const ecouteurs = new Map();
+  let bloquerAutoplay = true;
+  let resoudrePlayDiffere = null;
+
+  class FauxHtmlAudio {
+    constructor(src) {
+      this.src = src;
+      this.loop = false;
+      this.preload = 'none';
+      this.volume = 1;
+      this.muted = false;
+      this.paused = true;
+      this.currentTime = 0;
+      this.lectures = 0;
+    }
+    play() {
+      this.lectures += 1;
+      if (resoudrePlayDiffere) {
+        return new Promise((resolve) => {
+          const suite = resoudrePlayDiffere;
+          suite(() => {
+            this.paused = false;
+            resolve();
+          });
+        });
+      }
+      if (bloquerAutoplay) return Promise.reject(new Error('NotAllowedError'));
+      this.paused = false;
+      return Promise.resolve();
+    }
+    pause() { this.paused = true; }
+    removeAttribute() { this.src = ''; }
+    load() {}
+  }
+
+  globalThis.window = {
+    location: { href: 'http://localhost/' },
+    Audio: FauxHtmlAudio,
+    addEventListener(type, fn) {
+      if (!ecouteurs.has(type)) ecouteurs.set(type, new Set());
+      ecouteurs.get(type).add(fn);
+    },
+    removeEventListener(type, fn) {
+      ecouteurs.get(type)?.delete(fn);
+    },
+  };
+
+  try {
+    const lecteur = new RpgMainThemeMusic();
+    await lecteur.start();
+    assert.equal(lecteur.running, false, 'bloqué avant un geste joueur, le lecteur attend');
+    assert.equal(lecteur.audio.loop, true, 'le thème principal tourne en boucle');
+    assert.ok((ecouteurs.get('pointerdown')?.size ?? 0) === 1, 'un écouteur de geste est armé');
+
+    // Premier geste utilisateur : déverrouille et lance le thème principal
+    bloquerAutoplay = false;
+    for (const fn of [...(ecouteurs.get('pointerdown') ?? [])]) fn();
+    await new Promise((r) => setTimeout(r, 0));
+    assert.equal(lecteur.running, true, 'le thème démarre au premier geste');
+    assert.equal(lecteur.audio.paused, false);
+    assert.equal(ecouteurs.get('pointerdown')?.size ?? 0, 0, 'l’écouteur de geste est désarmé une fois lancé');
+
+    // Changement d’onglet (pause / reprise sans remettre currentTime à zéro)
+    lecteur.audio.currentTime = 42;
+    lecteur.pause();
+    assert.equal(lecteur.paused, true);
+    assert.equal(lecteur.audio.paused, true);
+    assert.equal(lecteur.audio.currentTime, 42, 'la pause préserve la position de lecture');
+    lecteur.resume();
+    await new Promise((r) => setTimeout(r, 0));
+    assert.equal(lecteur.paused, false);
+    assert.equal(lecteur.audio.paused, false);
+
+    // Garde contre la course asynchrone : stop() appelé pendant un play() en vol
+    lecteur.stop();
+    assert.equal(lecteur.audio.currentTime, 0);
+    let terminerPlay = null;
+    resoudrePlayDiffere = (done) => { terminerPlay = done; };
+    const promesseStart = lecteur.start();
+    lecteur.stop();
+    terminerPlay();
+    await promesseStart;
+    assert.equal(lecteur.running, false, 'stop() gagne toujours sur un play() en cours');
+    assert.equal(lecteur.audio.paused, true, 'aucune fuite du thème principal dans une partie');
+
+    // Relais sans coupure entre écran d’entrée et page du jeu
+    resoudrePlayDiffere = null;
+    deposerThemePrincipal(lecteur);
+    assert.equal(reprendreThemePrincipal(), lecteur);
+    assert.equal(reprendreThemePrincipal(), null);
+
+    lecteur.destroy();
+    assert.equal(lecteur.audio, null);
+  } finally {
+    globalThis.window = precedentWindow;
+  }
 });
 
 test('La Table des Heures, plateau de base aux bougies, joue « Acoustic Guitar Solo (Cover) »', () => {
@@ -122,6 +242,7 @@ test('La Table des Heures, plateau de base aux bougies, joue « Acoustic Guitar 
   assert.equal(plateauParId(plateauId)?.nom, 'La Table des Heures');
   assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), 'le plateau de base doit être traité comme musical');
   assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], '/Acoustic Guitar Solo (Cover).mp3');
+  assert.ok(existsSync(new URL('../public/Acoustic Guitar Solo (Cover).mp3', import.meta.url)));
 });
 
 test('L’Erg du Sahara joue « Arabian Meditative Fantasy »', () => {
@@ -153,6 +274,8 @@ test('La Cour de l’Empereur choisit au hasard entre ses deux pistes japonaises
   assert.deepEqual(RPG_PLATEAU_MUSIC_FILES[plateauId], fichiers);
   assert.ok(existsSync(new URL('../public/audio/WayOfTheBushidoWithGeishaVocals.mp3', import.meta.url)),
     'la piste Bushido existante est conservée');
+  assert.ok(existsSync(new URL('../public/CherryBlossomStrings(Extended).mp3', import.meta.url)),
+    'la piste Cherry Blossom Strings est livrée dans public/');
 
   const tirages = [0, 0.99];
   const lecteur = new RpgPlateauMusic(() => tirages.shift());
@@ -164,6 +287,8 @@ test('La Cour de l’Empereur choisit au hasard entre ses deux pistes japonaises
 
 test('les deux plateaux enneigés proposent aléatoirement les pistes Viking Howl', () => {
   const fichiers = ['/Viking Howl.mp3', '/Viking Howl (Take 2).mp3'];
+  assert.ok(existsSync(new URL('../public/Viking Howl.mp3', import.meta.url)));
+  assert.ok(existsSync(new URL('../public/Viking Howl (Take 2).mp3', import.meta.url)));
   for (const plateauId of ['fjord-des-neuf-hivers', 'iles-celestes']) {
     assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), `${plateauId} doit avoir une musique dédiée`);
     assert.deepEqual(RPG_PLATEAU_MUSIC_FILES[plateauId], fichiers);

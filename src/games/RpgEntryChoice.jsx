@@ -1,6 +1,12 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import './rpg-entry-choice.css';
 import RpgDesktopLogin from './RpgDesktopLogin.jsx';
+import {
+  RpgMainThemeMusic,
+  deposerThemePrincipal,
+  lirePreferencesSonoresRpg,
+  reprendreThemePrincipal,
+} from './rpgPlateauMusic.js';
 
 /**
  * Écran d'entrée du Sablier de Bab El — src/games/RpgEntryChoice.jsx
@@ -74,6 +80,33 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
   const [retenir, setRetenir] = useState(false);
   const [meta, setMeta] = useState(null);
   const [estWindows, setEstWindows] = useState(true);
+  const themeRef = useRef(null);
+
+  useEffect(() => () => {
+    reprendreThemePrincipal()?.destroy();
+  }, []);
+
+  useEffect(() => {
+    if (!montreEcran) return undefined;
+    const { sonActif, volumeMusique } = lirePreferencesSonoresRpg();
+    const theme = reprendreThemePrincipal() ?? new RpgMainThemeMusic();
+    theme.setVolume(volumeMusique);
+    theme.setMuted(!sonActif);
+    themeRef.current = theme;
+    if (sonActif) void theme.start();
+    const surVisibilite = () => {
+      if (document.hidden) theme.pause();
+      else if (sonActif) theme.resume();
+    };
+    document.addEventListener('visibilitychange', surVisibilite);
+    return () => {
+      document.removeEventListener('visibilitychange', surVisibilite);
+      if (themeRef.current === theme) {
+        theme.destroy();
+        themeRef.current = null;
+      }
+    };
+  }, [montreEcran]);
 
   useEffect(() => {
     setEstWindows(/Windows/i.test(navigator.userAgent || ''));
@@ -109,6 +142,13 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
   const jouerAuNavigateur = () => {
     if (retenir) {
       try { window.localStorage.setItem(ENTREE_CHOIX_CLE, 'jeu'); } catch { /* navigation privée */ }
+    }
+    const theme = themeRef.current;
+    if (theme) {
+      themeRef.current = null;
+      const { sonActif } = lirePreferencesSonoresRpg();
+      if (sonActif) void theme.start();
+      deposerThemePrincipal(theme);
     }
     setMontreEcran(false);
   };

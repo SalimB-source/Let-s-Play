@@ -60,7 +60,12 @@ import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
 import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
-import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
+import {
+  RpgMainThemeMusic,
+  RpgPlateauMusic,
+  RPG_PLATEAUX_MUSICAUX,
+  reprendreThemePrincipal,
+} from './rpgPlateauMusic.js';
 import { clampRpgVolume, RpgAudioPlayer } from './rpgAudio.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
@@ -3641,7 +3646,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     <div className="rpg-settings__volume-head">
                       <label htmlFor="rpg-settings-music-volume" className="rpg-settings__volume-label">
                         <strong>Musiques</strong>
-                        <small>Thèmes des plateaux et ambiances des tours de l’Histoire</small>
+                        <small>Thème principal, musiques des plateaux et ambiances des tours de l’Histoire</small>
                       </label>
                       <div className="rpg-settings__volume-actions">
                         <button
@@ -4009,6 +4014,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     landscapeRef.current?.enter({ fullscreen: false });
   };
   const reprendrePartie = () => {
+    musiqueThemeRef.current?.stop();
     demanderPleinEcranEtPaysage();
     setEcran('partie');
   };
@@ -4084,6 +4090,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // (`rpgAmbientMusic.js`), tandis que les bruitages tactiles (`rpgAudio.js`)
   // restent disponibles dans tous les duels. Les deux lecteurs partagent le
   // même réglage et sont libérés au démontage.
+  const musiqueThemeRef = useRef(null);
   const musiqueRef = useRef(null);
   const musiquePlateauRef = useRef(null);
   const sfxRef = useRef(null);
@@ -4104,10 +4111,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     writeRpgVolumePref(RPG_MUSIC_VOLUME_KEY, volumeMusique);
     if (volumeMusique > 0) dernierVolumeMusiqueRef.current = volumeMusique;
+    musiqueThemeRef.current?.setVolume(volumeMusique);
     musiqueRef.current?.setVolume(volumeMusique);
     musiquePlateauRef.current?.setVolume(volumeMusique);
   }, [volumeMusique]);
   useEffect(() => {
+    musiqueThemeRef.current = reprendreThemePrincipal() ?? new RpgMainThemeMusic();
+    musiqueThemeRef.current.setVolume(volumeMusique);
+    musiqueThemeRef.current.setMuted(!sonActif);
     musiqueRef.current = new RpgAmbientMusic();
     musiqueRef.current.setVolume(volumeMusique);
     musiqueRef.current.setMuted(!sonActif);
@@ -4118,6 +4129,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     sfxRef.current.setVolume(volumeSfx);
     sfxRef.current.setMuted(!sonActif);
     return () => {
+      musiqueThemeRef.current?.destroy();
+      musiqueThemeRef.current = null;
       musiqueRef.current?.destroy();
       musiqueRef.current = null;
       musiquePlateauRef.current?.destroy();
@@ -4128,6 +4141,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, []);
   useEffect(() => {
     sfxRef.current?.setMuted(!sonActif);
+    musiqueThemeRef.current?.setMuted(!sonActif);
     musiqueRef.current?.setMuted(!sonActif);
     musiquePlateauRef.current?.setMuted(!sonActif);
   }, [sonActif]);
@@ -4166,10 +4180,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       : null;
   useEffect(() => { musiqueRef.current?.setTour(tourHistoireId); }, [tourHistoireId]);
   useEffect(() => {
+    const musiqueTheme = musiqueThemeRef.current;
+    if (!musiqueTheme) return;
+    if (ecran !== 'partie' && sonActif) void musiqueTheme.start();
+    else musiqueTheme.stop();
+  }, [ecran, sonActif]);
+  useEffect(() => {
     const musique = musiqueRef.current;
     if (!musique) return;
     const plateauMusical = RPG_PLATEAUX_MUSICAUX.has(plateauId);
-    if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif && !plateauMusical) musique.start();
+    if (ecran === 'partie' && tourHistoireId && sonActif && !plateauMusical) musique.start();
     else musique.stop();
   }, [ecran, lectureHistoire, tourHistoireId, plateauId, sonActif]);
   useEffect(() => {
@@ -4183,10 +4203,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // au retour, elle reprend où le duel en est.
   useEffect(() => {
     const surVisibilite = () => {
+      const musiqueTheme = musiqueThemeRef.current;
+      if (musiqueTheme) {
+        if (document.hidden) musiqueTheme.pause();
+        else if (ecran !== 'partie' && sonActif) musiqueTheme.resume();
+      }
       const musique = musiqueRef.current;
       if (musique) {
         if (document.hidden) musique.pause();
-        else if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif && !RPG_PLATEAUX_MUSICAUX.has(plateauId)) musique.resume();
+        else if (ecran === 'partie' && tourHistoireId && sonActif && !RPG_PLATEAUX_MUSICAUX.has(plateauId)) musique.resume();
       }
       const musiquePlateau = musiquePlateauRef.current;
       if (musiquePlateau) {
@@ -4199,8 +4224,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, [ecran, lectureHistoire, tourHistoireId, plateauId, sonActif]);
   const basculerSon = () => setSonActif((actif) => {
     const prochain = !actif;
-    if (prochain && (ecran === 'partie' || lectureHistoire) && tourHistoireId) {
-      musiqueRef.current?.start();
+    if (prochain) {
+      if (ecran === 'partie') {
+        if (tourHistoireId) musiqueRef.current?.start();
+        if (RPG_PLATEAUX_MUSICAUX.has(plateauId)) void musiquePlateauRef.current?.start();
+      } else {
+        void musiqueThemeRef.current?.start();
+      }
     }
     return prochain;
   });
@@ -5451,18 +5481,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (viewport.portrait && apercuAppui) fermerApercuAppui();
   }, [viewport.portrait, apercuAppui]);
 
-  // « M » coupe ou rend la musique d'ambiance, comme sur la course.
+  // « M » coupe ou rend la musique (en partie comme hors parties).
   useEffect(() => {
-    if (ecran !== 'partie') return undefined;
     const surTouche = (event) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
       const cible = event.target?.tagName;
-      if (cible === 'INPUT' || cible === 'TEXTAREA' || cible === 'SELECT') return;
+      if (cible === 'INPUT' || cible === 'TEXTAREA' || cible === 'SELECT' || event.target?.isContentEditable) return;
       if (event.key?.toLowerCase() !== 'm') return;
       basculerSon();
     };
     window.addEventListener('keydown', surTouche);
     return () => window.removeEventListener('keydown', surTouche);
-  }, [ecran]);
+  }, [ecran, tourHistoireId, plateauId]);
 
   const demarrerEtage = (etageId, { campagne = false } = {}) => {
     if (!etageEstDebloque(progressionHistoireRef.current, etageId)) return;
@@ -5545,8 +5575,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const sonLecture = () => {
     unlockSfx();
-    musiqueRef.current?.setTour('tour-des-listes');
-    if (sonActif) musiqueRef.current?.start();
+    if (sonActif) void musiqueThemeRef.current?.start();
   };
   const continuerCampagne = () => {
     // Un duel encore en mémoire se reprend normalement depuis le menu.
