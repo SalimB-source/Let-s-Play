@@ -35,6 +35,7 @@ import {
   rpgPvpNommerLog,
   rpgPvpPeutAgir,
   rpgPvpResultat,
+  rpgPvpRng,
   rpgPvpHorloge,
   rpgPvpVue,
 } from '../src/games/rpgPvp.js';
@@ -251,4 +252,28 @@ test('l’horloge d’un tour live expire, celle d’un défi asynchrone rappell
   assert.equal(abandon.expire, true);
 
   assert.deepEqual(rpgPvpHorloge('live', 0, maintenant), { echeance: null, restant: null, expire: false, rappel: false });
+});
+
+test('le hasard est reprenable à l’identique après un aller-retour de sauvegarde', () => {
+  const duel = partieNeuve(31);
+  rpgPvpBrancherHasard(duel, 777);
+  const rng = rpgPvpRng(duel);
+  const troisPremiers = [rng(), rng(), rng()];
+  assert.equal(duel.hasard.compteur, 3);
+
+  // Sauvegarde puis rechargement : la suite reprend au 4e tirage, pas au début.
+  const recharge = JSON.parse(JSON.stringify(duel));
+  rpgPvpBrancherHasard(recharge);
+  assert.equal(recharge.hasard.compteur, 3);
+
+  const suiteOriginale = [0, 1, 2].map(() => rpgPvpRng(duel)());
+  const suiteRechargee = [0, 1, 2].map(() => rpgPvpRng(recharge)());
+  assert.deepEqual(suiteRechargee, suiteOriginale);
+  assert.equal(duel.hasard.compteur, recharge.hasard.compteur);
+  // Et deux branches tirées du même point donnent la même chose.
+  const clone = { ...JSON.parse(JSON.stringify(duel)) };
+  rpgPvpBrancherHasard(clone);
+  assert.equal(rpgPvpRng(clone)(), rpgPvpRng(duel)());
+  assert.equal(troisPremiers.length, 3);
+  assert.notDeepEqual(troisPremiers, suiteOriginale, 'la suite avance bien');
 });

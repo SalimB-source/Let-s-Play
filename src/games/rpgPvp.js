@@ -40,7 +40,7 @@ import {
   rpgPeutMulligan,
   rpgReglerHasard,
 } from './rpgDuel.js';
-import { rngSeme } from './rpgHasard.js';
+import { graineNumerique, rngSeme } from './rpgHasard.js';
 
 /** Version du protocole : deux clients de versions différentes refusent de s'affronter. */
 export const RPG_PVP_VERSION = 1;
@@ -172,12 +172,17 @@ export function rpgPvpPeutAgir(duel, cote, intention = null) {
   }
   if (intention?.type === 'conceder') return { ok: true, raison: null };
   if (!RPG_PVP_INTENTIONS.includes(intention?.type)) return { ok: false, raison: 'intention-inconnue' };
+  // Avant les deux mulligans, seule la main de départ s'échange : aucune carte
+  // ne se joue, et les deux camps peuvent échanger **dans n'importe quel
+  // ordre** — exiger l'ordre du tour obligerait l'invité à attendre que l'hôte
+  // ait cliqué, alors qu'aucun des deux ne « joue » encore.
+  const mulligansFaits = duel.mulliganFait?.joueur && duel.mulliganFait?.sorcier;
+  if (!mulligansFaits) {
+    if (intention.type !== 'mulligan') return { ok: false, raison: 'mulligan' };
+    return { ok: true, raison: null };
+  }
   const actif = rpgPvpCoteActif(duel);
   if (actif !== cote) return { ok: false, raison: 'pas-votre-tour' };
-  // Avant les deux mulligans, seule la main de départ s'échange : aucune carte
-  // ne se joue (règle du moteur, on la reflète côté protocole).
-  const mulligansFaits = duel.mulliganFait?.joueur && duel.mulliganFait?.sorcier;
-  if (!mulligansFaits && intention.type !== 'mulligan') return { ok: false, raison: 'mulligan' };
   return { ok: true, raison: null };
 }
 
@@ -439,12 +444,15 @@ export function rpgPvpBrancherHasard(duel, graine = duel?.hasard?.graine ?? 1) {
   const depart = Number.isFinite(Number(graine)) ? Number(graine) >>> 0 : 1;
   let compteur = Number(duel.hasard?.compteur) || 0;
   duel.hasard = { graine: depart, compteur };
-  const generer = rngSeme(depart + compteur);
+  // Tirage n° `compteur` = générateur amorcé par l'empreinte de (graine, n).
+  // Chaque tirage est donc INDÉPENDANT de l'historique : recharger la partie
+  // depuis la base reprend exactement la même suite, sans avoir à rejouer les
+  // tirages précédents. C'est ce qui rend une partie auditable (même graine +
+  // même journal d'actions = même partie, §9 de docs/rpg/17-pvp-multijoueur.md).
   const rng = () => {
-    const valeur = generer();
     compteur += 1;
     duel.hasard.compteur = compteur;
-    return valeur;
+    return rngSeme(graineNumerique(`${depart}:${compteur}`))();
   };
   hasardParDuel.set(duel, rng);
   return rpgReglerHasard(duel, rng);

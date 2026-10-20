@@ -260,18 +260,31 @@ Points de conception :
 
 ### 6.1 L'API de l'arbitre
 
+`POST /api/sablier-duel`, en-tête `authorization: Bearer <jwt Supabase>`.
+
 | Action | Corps | Réponse |
 | --- | --- | --- |
-| `ouvrir` | `{ deck }` | crée un duel (code, siège `joueur`, état initial) |
-| `rejoindre` | `{ code, deck }` | siège `sorcier`, état initialisé |
-| `etat` | `{ code }` | `rpgPvpVue(etat, siege)` + `seq` + échéance |
-| `jouer` | `{ code, seq, intention }` | nouvelle vue, ou `{ refusee, raison }` |
-| `refuser` / `abandonner` | `{ code }` | statut à jour |
-| `revanche` | `{ code }` | nouveau duel, mêmes decks, couleurs inversées |
+| `ouvrir` | `{ deck, visibilite?: 'amis'\|'lien', invite_id?, mode?: 'live'\|'async' }` | `{ code, siege: 'joueur', statut: 'invitation' }` |
+| `rejoindre` | `{ code, deck }` | vue du siège `sorcier`, état initialisé |
+| `etat` | `{ code }` | `rpgPvpVue(etat, siege)` + `seq` + échéance + noms |
+| `jouer` | `{ code, seq, intention }` | nouvelle vue, ou `{ ok: false, raison }` |
+| `refuser` | `{ code }` | statut `refusee` (invité qui refuse, hôte qui annule) |
+| `abandonner` | `{ code }` | statut `terminee`, `gagnant_id` à l'autre camp |
 
-`seq` est le garde-fou anti-rejeu : le serveur n'accepte que `seq + 1` et
-retourne `409` sinon. Le journal (`rpg_sablier_duel_actions`) donne l'audit et
-permet de rejouer une partie à partir de la graine.
+Les codes d'erreur sont stables et affichables tels quels : `connexion` (401),
+`pas-participant` (403), `invitation-nominale` (403), `duel-inconnu` (404),
+`sequence` (409), `partie-close` (409), `invitation-en-attente` (409), puis les
+refus du moteur (`pas-votre-tour`, `mulligan`, `mana`, `cible`…).
+
+`revanche` n'existe pas encore (P3) : elle se compose côté client avec deux
+`ouvrir`, ce qui suffit et évite un cas de plus dans l'arbitre.
+
+`seq` est le garde-fou anti-rejeu **et** anti-double-clic : l'arbitre n'écrit
+que si la ligne porte encore le `seq` lu (`update … where seq = $attendu`). Un
+second onglet, un double-clic ou un rejeu réseau reçoit `409 sequence` avec la
+vue à jour, et ne peut donc pas jouer deux fois la même carte. Le journal
+(`rpg_sablier_duel_actions`) donne l'audit et permet de rejouer une partie à
+partir de la graine.
 
 ### 6.2 Les intentions couvertes
 
@@ -527,18 +540,51 @@ import { arbitrer } from '../src/server/sablierArbitre.js';
 export default { fetch: (req, env) => arbitrer(req, env) };
 ```
 
-`src/server/sablierArbitre.js` (P1) contiendra la logique commune : vérifier le
-JWT, lire le duel, `rpgPvpAppliquer`, écrire, répondre `rpgPvpVue`. Il prend une
-`Request` web standard et rend une `Response` — c'est la seule forme que les
-trois plateformes comprennent, et c'est aussi celle qu'on peut tester en Node
-(`node --test`) sans rien déployer.
+`src/server/sablierArbitre.js` **existe** et exporte `creerArbitre({ magasin,
+authentifier, maintenant?, hasard? })` → `(Request) => Promise<Response>`.
+L'enveloppe Vercel (`api/sablier-duel.js`) est écrite : elle traduit la requête
+Node, fournit le magasin Supabase et vérifie le JWT. Les deux autres enveloppes
+sont des fichiers de cinq lignes à créer le jour où l'on migre — le cœur est
+déjà testé en Node (`node --test`, sans réseau).
+
+### 8.9 Mise en service sur Vercel
+
+1. **Variables d'environnement** (Projet → Settings → Environment Variables,
+   Production *et* Preview) :
+
+   | Variable | Valeur | Secrète |
+   | --- | --- | --- |
+   | `SUPABASE_URL` | l'URL du projet (ou `VITE_SUPABASE_URL`, déjà utilisée au build) | non |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Settings → API → `service_role` | **oui** |
+
+   Sans elles, `/api/sablier-duel` répond `503 arbitre-indisponible` : le site
+   reste debout, le PvP est simplement hors service. La clé service ne doit
+   **jamais** être préfixée `VITE_` (elle partirait dans le bundle client).
+2. **Schéma** : exécuter `supabase/rpg-pvp.sql` après `schema.sql`. Le script
+   est idempotent — le rejouer ne perd ni duel ni joueur.
+3. **Déploiement** : pousser sur la branche reliée à Vercel. `vercel.json` n'a
+   rien à changer (le repli SPA exclut déjà `/api/*`).
+4. **Vérifier** : `curl -X POST https://<domaine>/api/sablier-duel -H
+   'content-type: application/json' -d '{"action":"etat"}'` doit répondre
+   `401 connexion` — c'est la preuve que la route tourne et que le corps est lu.
+   Un `503` indique l'étape 1, un `500` la clé ou le schéma.
+5. **En local** : `npm run dev` (Vite) ne sert pas `api/`. Pour jouer un duel
+   de bout en bout sur sa machine, `npx vercel dev` sert le site **et** la
+   fonction, avec les mêmes variables dans `.env.local`.
+
+**Note d'exploitation.** L'arbitre détient la clé service : c'est la fonction
+la plus sensible du dépôt. Elle ne journalise jamais d'état de duel (ni dans
+`console.log`, ni dans une trace d'erreur) et ne renvoie au client que
+`rpgPvpVue`. Toute modification doit préserver ces deux règles ; les tests les
+vérifient (`aucune réponse ne contient la main…`).
 
 ## 9. Découpage proposé
 
 | Étape | Contenu | Durée | Critère de sortie |
 | --- | --- | --- | --- |
-| **P0 — socle** | `rpgPvp.js` + tests + SQL (ce commit) | fait | `npm run check:rpg-pvp` vert (20 tests) |
-| **P1 — arbitre** | `src/server/sablierArbitre.js` + une enveloppe (`api/sablier-duel.js` sur Vercel, voir §8), actions de base, duel `live` jouable par code | 4–6 j | deux comptes terminent un duel réel |
+| **P0 — socle** | `rpgPvp.js` + tests + SQL | **fait** | `npm run check:rpg-pvp` vert |
+| **P1 — arbitre** | `src/server/sablierArbitre.js` + `api/sablier-duel.js` + `src/games/rpgPvpApi.js` : ouverture, invitation, mulligans, mana, tours, cartes, abandon, horloge, journal | **fait** (35 tests) | deux comptes **terminent** un duel réel |
+| **P1bis — écran** | brancher `RpgDuelPage` sur la vue de l'arbitre (props `vue` + `siege`), écran de salon, lien `/defi/:code` | 3–4 j | un duel se joue à la souris, sans console |
 | **P2 — messagerie** | `kind='defi-sablier'`, carte cliquable, refus, expiration, lien profond | 3–4 j | un défi reçu dans la messagerie se joue en 2 clics |
 | **P3 — confort** | correspondance (`async`), rappels, blocage des bloqueurs, revanche, abandon | 3–5 j | un duel `async` se termine sur 3 jours |
 | **P4 — file** | `rpg_sablier_file`, repli IA 15 s, classement Elo | 3–5 j | un joueur trouve un adversaire en < 30 s (ou l'IA) |
@@ -578,12 +624,17 @@ allée-retour de la carte d'invitation en jsdom (P2), expiration et double envoi
 | `src/games/rpgPvp.js` | protocole : codes et liens, tour actif, vue filtrée et retournée, application atomique des intentions, résultat, journal nommé, horloges, hasard persisté |
 | `tests/rpg-pvp.test.js` | 13 tests de protocole : fuite de main, retournement, atomicité, tour, abandon, hasard, horloge |
 | `tests/rpg-pvp-db.test.js` | 7 tests sur le vrai schéma (PGlite) : RLS fermée, appariement de la file, invitation unique, messages typés, purge |
+| `src/server/sablierArbitre.js` | **l'arbitre** : `Request` → `Response`, magasin et authentification injectés, aucune fuite d'état |
+| `api/sablier-duel.js` | l'enveloppe Vercel : magasin Supabase (clé service), JWT vérifié, `503` propre si non configuré |
+| `src/games/rpgPvpApi.js` | le client : `ouvrirDefi`, `rejoindreDefi`, `etatDefi`, `jouerIntention`, `refuserDefi`, `abandonnerDefi`, `lienDefi` |
+| `tests/sablier-arbitre.test.js` | 14 tests de bout en bout contre un magasin en mémoire : usurpation, seq périmé, fuite de main, carte posée, horloge, abandon |
 | `supabase/rpg-pvp.sql` | tables des duels, journal d'actions, file d'attente, classement, RLS fermée sur l'état, RPC de file, purge, colonnes `kind`/`payload` des messages |
-| `package.json` | `npm run check:rpg-pvp` |
+| `package.json` | `npm run check:rpg-pvp` (35 tests) et `npm run check:sablier-arbitre` |
 
-Rien de tout cela n'est branché sur une route : le jeu actuel est inchangé.
-L'étape suivante (P1) est d'écrire l'arbitre et de brancher
-`RpgDuelPage` sur `rpgPvpVue`.
+**Le serveur est complet, l'écran ne l'utilise pas encore** : le jeu solo est
+inchangé, et `/api/sablier-duel` répond `503` tant que les deux variables
+d'environnement ne sont pas posées (§8.9). L'étape suivante (P1bis) est de
+brancher `RpgDuelPage` sur `rpgPvpVue`.
 
 ---
 
