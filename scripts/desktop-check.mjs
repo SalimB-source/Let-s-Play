@@ -182,7 +182,7 @@ ok('vite.config.js : mode DESKTOP=1, base /, sortie desktop/dist-web');
 // ---------------------------------------------------------------------------
 console.log('4. Empaquetage');
 const builder = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'utf8');
-assert.match(builder, /from:\s*dist-web/);
+assert.match(builder, /from:\s*\.\.\/dist-web/);
 assert.match(builder, /to:\s*app/);
 assert.ok(builder.includes('build/icon.ico'), 'icône Windows absente de la config');
 ok('electron-builder : paquet web hors asar (resources/app), icône présente');
@@ -194,12 +194,14 @@ for (const dossier of ['assets', 'cards', 'sablier-story', 'sablier-tours', 'aud
 ok('bundle-assets.json : cartes, plateaux, sons et décor du Sablier embarqués');
 
 const builderYml = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'utf8');
-assert.match(builderYml, /app:\s*stage/, 'electron-builder doit empaqueter la scène minimaliste');
+assert.match(builderYml, /electronDist:\s*\.\.\/node_modules\/electron\/dist/,
+  'le binaire Electron doit venir du node_modules de desktop/, pas d’un second téléchargement');
+assert.match(builderYml, /output:\s*\.\.\/release/, 'la sortie doit rester desktop/release');
 const bundle = readFileSync(join(RACINE, 'scripts', 'desktop-bundle.mjs'), 'utf8');
 for (const fichier of ['main.js', 'preload.cjs', 'gpu.js', 'local-server.js', 'diagnostic.html', 'offline.html']) {
   assert.ok(bundle.includes(`'${fichier}'`), `la scène doit contenir ${fichier}`);
 }
-ok('scène de packaging minimale (asar léger, jeu dans resources/app)');
+ok('projet d’empaquetage isolé desktop/pack (aucun node_modules → asar léger)');
 
 const icones = ['desktop/build/icon.ico', 'desktop/build/icon.png'];
 for (const fichier of icones) {

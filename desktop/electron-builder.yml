@@ -19,21 +19,28 @@ productName: Le Sablier de Bab El
 compression: maximum
 copyright: Copyright © 2026 Let's Play — média algérien du jeu vidéo
 
+# Ce fichier est COPIÉ dans desktop/pack/ par scripts/desktop-bundle.mjs, et
+# electron-builder tourne avec `--project pack` : le projet d'empaquetage ne
+# contient alors AUCUN node_modules, ce qui retire toute chance de voir l'asar
+# gonfler (la CI a montré un app.asar.unpacked de 729 Mo quand le projet était
+# desktop/ lui-même). Les chemins ci-dessous sont relatifs à pack/.
 directories:
-  output: release
+  output: ../release
   buildResources: build
-  # L'application empaquetée est la SCÈNE minimale assemblée par
-  # scripts/desktop-bundle.mjs (sept fichiers, aucun node_modules) : l'asar
-  # reste de quelques dizaines de Ko quoi que fasse electron-builder.
-  app: stage
 
-# La scène ne contient que l'exécutable : pas de filtre à appliquer.
+# Binaire Electron déjà téléchargé par `npm --prefix desktop install` : évite un
+# second téléchargement de ~110 Mo à chaque build CI.
+electronDist: ../node_modules/electron/dist
+
+# pack/ ne contient que l'exécutable ; on exclut les outils de build eux-mêmes.
 files:
   - '**/*'
+  - '!build{,/**/*}'
+  - '!electron-builder.yml'
 
 # Le jeu lui-même, hors archive.
 extraResources:
-  - from: dist-web
+  - from: ../dist-web
     to: app
     filter:
       - '**/*'

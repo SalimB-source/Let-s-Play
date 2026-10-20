@@ -183,15 +183,20 @@ writeFileSync(join(PAQUET, 'desktop-manifest.json'), `${JSON.stringify({
 // 729 Mo). On assemble donc `desktop/stage/` : les sept fichiers d'exécution,
 // rien d'autre, avec un package.json sans dépendances. L'asar final pèse
 // quelques dizaines de Ko, et le jeu voyage à côté, dans resources/app.
-const SCENE = join(RACINE, 'desktop', 'stage');
+const SCENE = join(RACINE, 'desktop', 'pack');
 const FICHIERS_SCENE = [
   'main.js', 'preload.cjs', 'gpu.js', 'local-server.js',
   'diagnostic.html', 'offline.html',
 ];
 rmSync(SCENE, { recursive: true, force: true });
-mkdirSync(SCENE, { recursive: true });
+mkdirSync(join(SCENE, 'build'), { recursive: true });
 for (const fichier of FICHIERS_SCENE) {
   copyFileSync(join(RACINE, 'desktop', fichier), join(SCENE, fichier));
+}
+// La config et les icônes voyagent avec le projet isolé.
+copyFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), join(SCENE, 'electron-builder.yml'));
+for (const icone of ['icon.ico', 'icon.png']) {
+  copyFileSync(join(RACINE, 'desktop', 'build', icone), join(SCENE, 'build', icone));
 }
 const paquetCoque = JSON.parse(readFileSync(join(RACINE, 'desktop', 'package.json'), 'utf8'));
 writeFileSync(join(SCENE, 'package.json'), `${JSON.stringify({
@@ -207,7 +212,7 @@ writeFileSync(join(SCENE, 'package.json'), `${JSON.stringify({
   homepage: paquetCoque.homepage,
 }, null, 2)}
 `);
-console.log(`[desktop] scène de packaging : ${SCENE} (${FICHIERS_SCENE.length + 1} fichiers)`);
+console.log(`[desktop] projet d'empaquetage isolé : ${SCENE} (${FICHIERS_SCENE.length + 3} fichiers)`);
 
 // ---------------------------------------------------------------------------
 // Compte rendu

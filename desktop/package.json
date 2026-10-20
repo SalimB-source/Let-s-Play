@@ -20,8 +20,8 @@
     "icon": "node make-icon.mjs",
     "serve": "node local-server.js",
     "start": "electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder --publish never"
+    "pack": "electron-builder --project pack --dir",
+    "dist": "electron-builder --project pack --publish never"
   },
   "devDependencies": {
     "electron": "^44.9.0",

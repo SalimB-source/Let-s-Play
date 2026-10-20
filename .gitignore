@@ -24,4 +24,4 @@ __pycache__/
 # Coque PC (desktop/) — paquet web construit et sorties d’electron-builder
 desktop/dist-web/
 desktop/release/
-desktop/stage/
+desktop/pack/
