@@ -65,8 +65,10 @@ try {
   const menu = doc.querySelector('#menu-tactile');
   const burger = doc.querySelector('.rpg-duel-nav__burger');
   const styleNav = cascade.window.getComputedStyle(nav);
-  assert.ok(['transparent', 'rgba(0, 0, 0, 0)'].includes(styleNav.backgroundColor) && styleNav.backgroundImage === 'none',
-    'au doigt, le conteneur du menu hamburger est sans fond');
+  assert.equal(styleNav.backgroundColor, 'rgba(10, 9, 13, 0.84)',
+    'au doigt, le conteneur du menu hamburger garde sa capsule sombre translucide');
+  assert.equal(styleNav.backgroundImage, 'none',
+    'la capsule du menu hamburger ne peint pas d’image de fond');
   const styleBurger = cascade.window.getComputedStyle(burger);
   assert.equal(styleBurger.minWidth, '48px', 'le bouton hamburger est agrandi');
   assert.equal(styleBurger.fontSize, '26px', 'l’icône du bouton hamburger est agrandie');

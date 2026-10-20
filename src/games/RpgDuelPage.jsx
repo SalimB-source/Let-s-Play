@@ -2750,7 +2750,7 @@ function writeRpgVolumePref(key, value) {
   try { window.localStorage.setItem(key, String(clampRpgVolume(value))); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -3677,6 +3677,38 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   </div>
                 </div>
               </section>
+              {desktopMode && desktopAccount && onSignOut && (
+                <section className="rpg-settings__card rpg-settings__account" aria-label="Compte Let's Play">
+                  <div className="rpg-settings__card-head">
+                    <div>
+                      <span className="rpg-settings__eyebrow">COMPTE PC</span>
+                      <h3>Compte connecté</h3>
+                    </div>
+                    <span className="rpg-settings__status is-on">Actif</span>
+                  </div>
+                  <p className="rpg-settings__desc">
+                    Session ouverte avec{' '}
+                    <strong>
+                      {desktopAccount.user_metadata?.gamertag
+                        || desktopAccount.user_metadata?.fullName
+                        || desktopAccount.user_metadata?.full_name
+                        || desktopAccount.email
+                        || 'votre compte Let’s Play'}
+                    </strong>.
+                    {' '}Votre progression synchronisée reste liée à ce compte.
+                  </p>
+                  <button
+                    type="button"
+                    className="rpg-settings__signout"
+                    onClick={async () => {
+                      play('menu');
+                      try { await onSignOut(); } catch { /* la session locale est déjà coupée */ }
+                    }}
+                  >
+                    <span aria-hidden="true">⏻</span> Se déconnecter
+                  </button>
+                </section>
+              )}
             </div>
           </main>
         )}
@@ -5689,6 +5721,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           volumeMusique={volumeMusique}
           onChangeVolumeMusique={changerVolumeMusique}
           onToggleMusicMute={basculerVolumeMusique}
+          desktopMode={typeof window !== 'undefined' && Boolean(window.letsPlayDesktop)}
+          desktopAccount={authContext?.session?.user ?? null}
+          onSignOut={authContext?.signOut}
         />
         {recompenseTutoriel && (
           <div className="rpg-tutorial-reward-toast" role="status" aria-live="polite" key={recompenseTutoriel.token}>
