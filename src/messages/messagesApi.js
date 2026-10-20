@@ -30,7 +30,7 @@ import { demoReplyFor, seedDemoThreadState } from './demoThreads';
 export const MESSAGES_TABLE = 'direct_messages';
 export const BLOCKS_TABLE = 'message_blocks';
 export const REPORTS_TABLE = 'message_reports';
-const MESSAGE_COLUMNS = 'id, conversation_key, sender_id, recipient_id, body, created_at, read_at';
+const MESSAGE_COLUMNS = 'id, conversation_key, sender_id, recipient_id, body, created_at, read_at, kind, payload';
 
 /** Longueur maximale d'un message (contrainte SQL identique). */
 export const MESSAGE_MAX_LENGTH = 1000;
@@ -182,6 +182,10 @@ export function normalizeMessage(row, uid) {
     key: row.conversation_key || conversationKey(uid, peerId),
     mine,
     body: String(row.body ?? ''),
+    // Un message typé (défi du Sablier) : la carte se dessine à partir de
+    // `payload`, jamais d'une URL devinée dans le texte.
+    kind: typeof row.kind === 'string' ? row.kind : 'texte',
+    payload: row.payload && typeof row.payload === 'object' ? row.payload : null,
     createdAt: row.created_at || null,
     read: Boolean(row.read_at),
   };
@@ -431,12 +435,26 @@ export async function fetchThread(uid, peerId, limit = 100) {
   return (data || []).reverse();
 }
 
-/** Envoie un message ; renvoie la ligne créée par le serveur. */
-export async function sendMessage(uid, peerId, body) {
+/**
+ * Envoie un message ; renvoie la ligne créée par le serveur.
+ *
+ * `extra` porte les messages **typés** (`{ kind: 'defi-sablier', payload }`,
+ * voir docs/rpg/17-pvp-multijoueur.md §4.1). Le corps reste une phrase
+ * lisible : un client qui ne connaît pas `kind` affiche un message correct.
+ * Une valeur de `kind` inconnue est refusée par la contrainte SQL, on la
+ * laisse remonter telle quelle.
+ */
+export async function sendMessage(uid, peerId, body, extra = {}) {
   if (!supabase) throw new Error('Supabase is not configured');
+  const kind = typeof extra?.kind === 'string' && extra.kind !== 'texte' ? extra.kind : null;
+  const ligne = {
+    recipient_id: peerId,
+    body: prepareBody(body),
+    ...(kind ? { kind, payload: extra.payload ?? null } : {}),
+  };
   const { data, error } = await supabase
     .from(MESSAGES_TABLE)
-    .insert({ recipient_id: peerId, body: prepareBody(body) })
+    .insert(ligne)
     .select(MESSAGE_COLUMNS)
     .single();
   if (error) throw error;
