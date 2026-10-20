@@ -123,8 +123,12 @@ jobs:
       - name: Contenu de release/ (tailles réelles)
         shell: bash
         run: |
-          ls -la desktop/release
-          du -sh desktop/release/* 2>/dev/null | sort -h
+          mo() { echo "::notice::$1 = $(( $(du -sk "$2" | cut -f1) / 1024 )) Mo"; }
+          mo "dist-web (paquet jeu)" desktop/dist-web
+          mo "win-unpacked (app dépliée)" desktop/release/win-unpacked
+          mo "resources/app (jeu)" desktop/release/win-unpacked/resources/app
+          mo "resources/app.asar" desktop/release/win-unpacked/resources/app.asar
+          for d in desktop/release/win-unpacked/*; do mo "win-unpacked/$(basename "$d")" "$d"; done
           for f in desktop/release/*.exe; do
             echo "::notice::$(basename "$f") = $(( $(stat -c%s "$f") / 1048576 )) Mo"
           done
