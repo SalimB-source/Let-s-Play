@@ -574,6 +574,22 @@ déjà testé en Node (`node --test`, sans réseau).
    **jamais** être préfixée `VITE_` (elle partirait dans le bundle client).
 2. **Schéma** : exécuter `supabase/rpg-pvp.sql` après `schema.sql`. Le script
    est idempotent — le rejouer ne perd ni duel ni joueur.
+
+   Sur une base qui a connu l'**ancienne messagerie vocale**, la colonne
+   `direct_messages.kind` existe déjà avec ses propres valeurs (`'voice'`,
+   `'text'`) et sa contrainte `direct_messages_kind_check`. Le script retire
+   donc la contrainte **avant** de ramener à `'texte'` tout `kind` qu'il ne
+   connaît pas, puis la repose : sans cet ordre, l'ajout échoue sur
+   `ERROR: 23514: check constraint "direct_messages_kind_check" … is violated
+   by some row` — une erreur qui ne dit ni combien de lignes ni lesquelles.
+   Le journal du script annonce le nombre de messages normalisés
+   (`NOTICE: Let's Play : 37 message(s) ramené(s) à kind = 'texte'`).
+   Rien n'est perdu : le `body` reste affiché tel quel. Les messages vocaux,
+   eux, n'ont plus de lecteur ; si le NOTICE en signale beaucoup, lancer
+   d'abord `supabase/remove-voice-messages.sql` (optionnel, définitif), ou
+   supprimer les `kind = 'voice'` avant de relancer `rpg-pvp.sql`.
+   Le cas est couvert par `tests/rpg-pvp-db.test.js` (« une messagerie héritée
+   ne bloque plus le schéma PvP »), qui rejoue exactement cet état.
 3. **Déploiement** : pousser sur la branche reliée à Vercel. `vercel.json` n'a
    rien à changer (le repli SPA exclut déjà `/api/*`).
 4. **Vérifier** : ouvrir `https://<domaine>/api/sablier-duel` dans un

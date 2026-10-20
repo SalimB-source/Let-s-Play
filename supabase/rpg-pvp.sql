@@ -21,8 +21,41 @@ alter table public.direct_messages
   add column if not exists kind text not null default 'texte',
   add column if not exists payload jsonb;
 
+-- L'ancienne contrainte tombe AVANT toute correction de données. Une base
+-- issue de la messagerie vocale a son propre `direct_messages_kind_check`
+-- (autour de 'text' / 'voice') : normaliser une valeur pendant qu'il est
+-- encore là le violerait à son tour.
 alter table public.direct_messages
   drop constraint if exists direct_messages_kind_check;
+
+-- Les messages écrits avant ce script peuvent porter un `kind` que la liste
+-- ci-dessous ignore ('voice', 'text'…). Sans cette remise à plat, l'ajout de
+-- la contrainte échoue sur
+--   ERROR: 23514: check constraint "direct_messages_kind_check" of relation
+--   "direct_messages" is violated by some row
+-- — une erreur qui ne dit ni combien de lignes ni lesquelles sont en cause.
+-- On ramène tout l'inconnu à 'texte' : le `body` reste affiché tel quel,
+-- aucun message n'est perdu, et le journal du script annonce le compte.
+do $$
+declare
+  ramenees integer;
+begin
+  update public.direct_messages
+     set kind = 'texte'
+   where kind is null
+      or kind not in ('texte', 'defi-sablier', 'defi-sablier-resultat');
+  get diagnostics ramenees = row_count;
+  if ramenees > 0 then
+    raise notice 'Let''s Play : % message(s) ramené(s) à kind = ''texte''.', ramenees;
+  end if;
+end $$;
+
+-- La colonne héritée peut être nullable ou avoir un défaut d'une autre
+-- époque : le code la lit comme toujours présente et toujours renseignée.
+alter table public.direct_messages
+  alter column kind set default 'texte',
+  alter column kind set not null;
+
 alter table public.direct_messages
   add constraint direct_messages_kind_check
   check (kind in ('texte', 'defi-sablier', 'defi-sablier-resultat'));
