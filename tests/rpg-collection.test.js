@@ -25,10 +25,9 @@ import {
   sauverCollectionDistante,
 } from '../src/games/rpgCollection.js';
 
-// Hors champ de la collection : le banc d'essai Ténèbres (doc 16 §10) ne
-// s'obtient ni par la dotation ni par les révélations — pour l'instant.
+// La collection couvre tout le catalogue : la Balance des Heures est désormais
+// au Souk via la Nécropole, la dotation exclut toujours ses communes.
 const idsCatalogue = () => RPG_DUEL_CARDS
-  .filter((carte) => carte.set !== 'balance-des-heures')
   .map((carte) => carte.id)
   .sort();
 

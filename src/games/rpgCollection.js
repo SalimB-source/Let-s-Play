@@ -54,8 +54,9 @@ export const RPG_ACQUIS_STORAGE_KEY = 'letsplay_sablier_acquis_v1';
  */
 export const COLLECTION_DEPART = RPG_DUEL_CARDS
   .filter((carte) => carte.rarity === 'commune' || carte.rarity === 'inhabituelle')
-  // Le banc d'essai ne crédite rien (doc 16 §10) : Ténèbres ne rejoint ni la
-  // dotation ni les révélations tant que la phase 2 ne l'ouvre au classique.
+  // Ténèbres : la dotation ne s'applique qu'aux quatre couleurs historiques.
+  // Les communes/inhabituelles Ténèbres (Chacal, Ouvrier, Papyrus…) restent
+  // à ouvrir dans les boosters, même si leur rareté est « commune ».
   .filter((carte) => carte.set !== 'balance-des-heures')
   .map((carte) => carte.id);
 
@@ -67,7 +68,8 @@ export const COLLECTION_DEPART = RPG_DUEL_CARDS
  * joueur reçoit. Répartition : les tours du bas (Listes, Souk, Sables)
  * découvrent le Sable et la Braise, avec les premières eaux glissées par les
  * citernes du Souk ; les Abysses découvrent leurs bêtes marines et les
- * premières cartes de Neige ; le Fjord découvre les figures du Nord.
+ * premières cartes de Neige ; le Fjord découvre les figures du Nord ; la
+ * Nécropole révèle les Ténèbres — la Balance des Heures.
  */
 export const RPG_REVELATIONS_PAR_ETAGE = {
   // Tour des Listes — Sable et Braise, l'apprentissage. Chaque étage ne
@@ -101,6 +103,14 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'fjord-2': ['valkyrie-des-glaces', 'geant-des-banquises', 'verglas', 'embuscade', 'tour-de-neige'],
   'fjord-3': ['drakkar-a-tete-de-dragon', 'pere-des-corbeaux'],
   'fjord-4': ['maitre-du-marteau', 'dame-des-neuf-mondes', 'serpent-du-monde'],
+  // Tour de la Nécropole — la Balance des Heures (Ténèbres).
+  // Les communes ouvrent en bas, les rares au milieu, les mythiques au sommet.
+  // Les quatre figures cross-éléments (Faucon, Lionne, Dame, Seigneur) montent
+  // avec leurs mythiques tenebres — elles sont du même set.
+  'necropole-1': ['chacal-du-seuil', 'ouvrier-du-natron', 'papyrus', 'gardienne-de-la-balance', 'scribe-des-feuillets'],
+  'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'nom-efface', 'offrande-de-lin'],
+  'necropole-3': ['couveuse-de-shabtis', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets'],
+  'necropole-4': ['la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres'],
 };
 
 /** Ne garde que des identifiants de cartes connus, sans doublon, ordre préservé. */
