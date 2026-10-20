@@ -26,7 +26,8 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain, shell, session } from 'electron';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { autoUpdater } from 'electron-updater';
+import pkgUpdater from 'electron-updater';
+const { autoUpdater } = pkgUpdater;
 
 import { gpuSwitches, interpreterEtatGpu, qualifierRenderer, DIAGNOSTIC_INTRO } from './gpu.js';
 import { startLocalServer, DEFAULT_PORT, DEFAULT_REMOTE_ORIGIN } from './local-server.js';
