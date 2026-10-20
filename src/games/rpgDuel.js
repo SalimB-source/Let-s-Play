@@ -1025,6 +1025,8 @@ function creerEntiteCreature(carte) {
     // jusqu'à la prochaine attaque du lanceur) ou 'tour' (il meurt avec le
     // tour en cours).
     blocageForce: null,
+    // Mur (Tours de défense) : ne peut ni attaquer ni être équipée.
+    mur: Boolean(carte.mur),
     // Doit bloquer (Tours de défense) : cette créature doit bloquer chaque tour
     // si possible, de manière permanente (pas comme blocageForce qui est temporaire).
     doitBloquer: Boolean(carte.doitBloquer),
@@ -1053,6 +1055,7 @@ function armeCarteDe(entite) {
  * cimetière du même camp.
  */
 function attacherArme(duel, cote, entite, carteArme) {
+  if (entite.mur) return;
   if (entite.arme) retirerArme(duel, cote, entite);
   entite.arme = { carteId: carteArme.id };
   entite.atk += carteArme.bonus?.atk ?? 0;
@@ -2898,6 +2901,7 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
   // alors exigé ; la création du jeton n'a pas de cible, Boualem ne peut pas
   // la contrer, et l'arme s'attache au dernier jeton arrivé.
   if (!cible && !carte.armeVivante) return { ok: false, raison: 'cible' };
+  if (cible && cible.mur) return { ok: false, raison: 'mur' };
   if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (cote === 'joueur' && !duel.annonce) {
@@ -2996,9 +3000,10 @@ export function rpgModesArme(duel, cote, entiteId) {
 }
 
 // Gelé (Poigne de givre, Verglas) : la créature ni n'attaque ni ne bloque.
+// Mur (Tours de défense) : ne peut jamais attaquer, même prête.
 const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
 export const rpgPeutAttaquer = (entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite)
-  && !(entite.empecheAttaqueToursRestants > 0);
+  && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur;
 const pret = rpgPeutAttaquer;
 // Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
