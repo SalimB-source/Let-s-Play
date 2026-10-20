@@ -480,19 +480,22 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
   if (degatsAuVisage >= pvAdv) return cibles;
   
   // Priorité aux Tours de défense : les créatures avec coupRapide doivent
-  // attaquer en priorité les créatures avec prioriteAttaqueRapide: true
+  // attaquer en priorité les créatures avec prioriteAttaqueRapide: true,
+  // mais seulement si la frappe apporte une vraie valeur (kill ou menace majeure).
   const toursPrioritaires = duel[adv].creatures
     .filter((entite) => entite.prioriteAttaqueRapide && !entite.attaquee)
     .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
-  
+
   for (const attaquant of attaquants) {
     if (!attaquant.coupRapide) continue;
     const carte = duelCardById(attaquant.carteId);
-    
-    // Si une tour prioritaire est disponible, attaquer elle en priorité
+
+    // Tour prioritaire : seulement si on la tue ou si on n'a rien de mieux à faire.
+    // Attaquer une Tour 0/5 avec 3 d'attaque sans la tuer gaspille la frappe.
     if (toursPrioritaires.length > 0) {
       const tourCiblee = toursPrioritaires[0];
-      if (peutBloquerAttaquant(attaquant, tourCiblee)) {
+      if (meurtSous(tourCiblee, attaquant.atk, 'attaque')) {
+        // On tue la Tour : priorité absolue, même si d'autres cibles valent plus.
         cibles[attaquant.id] = tourCiblee.id;
         continue;
       }
@@ -523,12 +526,14 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
 export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], ciblesAttaque = {}, options = {}) {
   const coteDefense = autre(coteAttaquant);
   const { profil, rng } = optionsIA(duel, coteDefense, options);
-  // Un attaquant rapide qui frappe une créature n'attaque plus : son attaque
-  // s'arrête sur sa frappe, personne ne se met en travers, et il ne touche pas
-  // le sorcier — il ne pèse donc ni dans la menace, ni dans les blocages.
   const ids = [...new Set(attaquantIds ?? [])];
+  // Un attaquant rapide qui frappe une créature n'attaque plus : son attaque
+  // s'arrête sur sa frappe — rien à bloquer.
   const attaquants = duel[coteAttaquant].creatures
-    .filter((entite) => ids.includes(entite.id) && !ciblesAttaque?.[entite.id]);
+    .filter((entite) => ids.includes(entite.id) && !ciblesAttaque?.[entite.id])
+    // Les attaquants à 0 d'attaque n'ont rien à arrêter : les ignorer évite de
+    // gaspiller un bloqueur pour 0 dégât (Porteuse 0/3, etc.).
+    .filter((entite) => (entite.atk ?? 0) > 0);
   const bloqueurs = duel[coteDefense].creatures.filter((entite) => entite && !entite.attaquee && !estGelee(entite));
   const affectations = {};
   if (!attaquants.length || !bloqueurs.length) return affectations;
@@ -538,13 +543,11 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
 
   const libres = new Set(bloqueurs.map((entite) => entite.id));
   const bloqueurParId = (id) => bloqueurs.find((entite) => entite.id === id);
-  
+
   // 0) Blocage forcé : les créatures avec doitBloquer: true DOIVENT bloquer
-  //    si elles le peuvent (et si elles ne sont pas déjà assignées)
   const bloqueursForces = bloqueurs.filter((entite) => entite.doitBloquer);
   for (const bloqueurForce of bloqueursForces) {
     if (libres.has(bloqueurForce.id)) {
-      // Trouver le premier attaquant qu'il peut bloquer
       const cible = attaquants.find((attaquant) => legal(attaquant, bloqueurForce));
       if (cible) {
         libres.delete(bloqueurForce.id);
@@ -559,42 +562,41 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
     .filter((entite) => !(affectations[entite.id] ?? []).length)
     .reduce((somme, entite) => somme + (entite.atk ?? 0), 0);
   const pvDefense = () => Math.max(0, duel[coteDefense].pv ?? 0) + (duel[coteDefense].bouclier ?? 0);
-  const menaceTotale = attaquants.reduce((somme, entite) => somme + (entite.atk ?? 0), 0);
-  // Sous pression (l'adversaire cogne fort), chaque dégât évité vaut presque
-  // une pointe de valeur : on interpose plus volontiers, chump compris.
-  const sousPression = menaceTotale >= pvDefense() * 0.5;
-  const facteurVie = sousPression ? 1.25 : 0.4;
 
   const scoreBlocage = (attaquant, bloqueur) => {
     const { attaquantMeurt, bloqueurMeurt, attaquantFurie, bloqueurFurie } = resultatBlocage(attaquant, bloqueur);
     const degatsEvites = Math.min(attaquant.atk ?? 0, pvDefense());
     const degatsRecus = degatsApresEsquive(bloqueur, attaquant.atk ?? 0, 'attaque');
-    // La Furie pèse dans la balance : entamer un viking sans le tuer le
-    // nourrit ; survivre blessé de notre côté, au contraire, nous grandit.
-    const furie = bloqueurFurie * 0.9 - attaquantFurie * 1.2;
-    if (attaquantMeurt && !bloqueurMeurt) return 20 + valeurEntite(attaquant) + degatsEvites * facteurVie + furie;
+    const furie = bloqueurFurie * 0.9 - attaquantFurie * 1.6;
+    // 1) On tue sans mourir : toujours excellent.
+    if (attaquantMeurt && !bloqueurMeurt) return 20 + valeurEntite(attaquant) + degatsEvites * 0.15 + furie;
     if (attaquantMeurt && bloqueurMeurt) {
       const ecart = valeurEntite(attaquant) - valeurEntite(bloqueur);
-      if (ecart >= 0) return 10 + ecart + degatsEvites * facteurVie * 0.6 + furie;
-      return -5 + ecart + degatsEvites * (sousPression ? 0.5 : 0.15) + furie;
+      if (ecart >= -0.7) return 8 + ecart + degatsEvites * 0.08 + furie;
+      return -Infinity;
     }
+    // 2) Les deux survivent : on érode l'attaquant et on évite des dégâts.
+    //    Rentable si ça ne nourrit pas une Furie adverse dévastatrice.
     if (!attaquantMeurt && !bloqueurMeurt) {
-      // On l’écroule sans le tuer : utile seulement si ça coûte peu.
-      return degatsEvites * facteurVie * 0.6 - degatsRecus * 0.4 + furie;
+      // Nourrir une Furie 3 du Jarl (+3/+3) est catastrophique : on ne s'y frotte pas.
+      if (attaquantFurie >= 2) return -Infinity;
+      // Érosion utile : on inflige des dégâts sans mourir, et on évite la frappe au visage.
+      return degatsEvites * 0.35 - degatsRecus * 0.18 + furie;
     }
-    // Chump : on meurt sans le tuer — on encaisse quand même le coup est plus
-    // lourd que ce que la créature vaut, surtout sous pression.
-    return degatsEvites * facteurVie - valeurEntite(bloqueur) * 0.9 + furie;
+    // 3) Chump pur (bloqueur meurt, attaquant survit) : jamais en phase normale — réservé à l'urgence létale.
+    return -Infinity;
   };
-  const seuil = profil.style === 'agressif' ? -1 : profil.style === 'prudent' ? 2 : 0;
+  // Seuil plus strict : on ne bloque que les bons échanges. Un échange
+  // douteux reste en réserve pour la phase de survie.
+  const seuil = profil.style === 'agressif' ? -0.6 : profil.style === 'prudent' ? 0.8 : 0;
 
-  // 1) Échanges bons ou acceptables, du plus gros attaquant au plus petit.
+  // 1) Échanges favorables — du plus gros attaquant au plus petit.
   for (const attaquant of parMenace) {
     const candidats = [...libres]
       .map(bloqueurParId)
       .filter((bloqueur) => legal(attaquant, bloqueur))
       .map((bloqueur) => ({ bloqueur, score: scoreBlocage(attaquant, bloqueur) }))
-      .filter((candidat) => candidat.score > seuil)
+      .filter((candidat) => Number.isFinite(candidat.score) && candidat.score > seuil)
       .sort((a, b) => b.score - a.score);
     if (!candidats.length) continue;
     if (profil.tauxErreur > 0 && rng() < profil.tauxErreur) continue;
@@ -603,18 +605,38 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
     affectations[attaquant.id] = [choisi.id];
   }
 
-  // 2) Si la partie se perd sans blocage, on interpose quand même —
-  //    d’abord le bloqueur le moins précieux qui encaisse le coup.
-  if (menaceRestante() >= pvDefense()) {
+  // 2) Urgence vitale : si les dégâts non bloqués nous tuent, on interpose
+  //    le minimum — et on choisit les corps les moins précieux, jetons d'abord.
+  //    La vie n'a de prix que quand elle évite la mort.
+  if (menaceRestante() >= pvDefense() && pvDefense() > 0) {
+    // Bloquer les plus grosses menaces d'abord évite de gaspiller un jeton sur un 1/1 pendant qu'un 6/6 passe.
     for (const attaquant of parMenace) {
       if (menaceRestante() < pvDefense()) break;
       if ((affectations[attaquant.id] ?? []).length) continue;
       const candidats = [...libres]
         .map(bloqueurParId)
         .filter((bloqueur) => legal(attaquant, bloqueur))
-        .sort((a, b) => valeurEntite(a) - valeurEntite(b));
+        .sort((a, b) => {
+          // Jetons d'abord, puis valeur la plus faible, puis défense la plus faible
+          const jetonA = a.jeton ? 0 : 1;
+          const jetonB = b.jeton ? 0 : 1;
+          if (jetonA !== jetonB) return jetonA - jetonB;
+          const vA = valeurEntite(a);
+          const vB = valeurEntite(b);
+          if (vA !== vB) return vA - vB;
+          return (a.pv ?? 0) - (b.pv ?? 0);
+        });
       if (!candidats.length) continue;
+      // Ne jamais sacrifier une créature dont la valeur dépasse de loin les dégâts évités
+      // sauf si c'est le dernier rempart avant la mort.
       const choisi = candidats[0];
+      const degatsSauves = attaquant.atk ?? 0;
+      // Si on est à 1 PV, n'importe quel bloqueur vaut le coup ; à 10 PV, sacrifier une mythique pour 2 dégâts est absurde.
+      const valeurLimite = pvDefense() <= 5 ? Infinity : pvDefense() <= 10 ? 6 : 4;
+      if (valeurEntite(choisi) > degatsSauves * 1.2 && valeurEntite(choisi) > valeurLimite && menaceRestante() - degatsSauves >= pvDefense()) {
+        // On pourrait sacrifier une autre créature moins chère si on en a — mais si c'est la seule, on la sacrifie quand même pour survivre.
+        if (candidats.length > 1) continue;
+      }
       libres.delete(choisi.id);
       affectations[attaquant.id] = [choisi.id];
     }
@@ -626,6 +648,18 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
 
 function attaquantsPrets(duel, cote) {
   return duel[cote].creatures.filter(moteur.rpgPeutAttaquer);
+}
+
+/**
+ * Une attaque à 0 n'a aucun sens sauf si son arme porte un déclencheur qui
+ * part à l'attaque (Boussole du Hoggar, Harnais du méhari) — même un 0/3
+ * peut alors rapporter une carte ou un mana.
+ */
+function peutAttaquerUtile(entite) {
+  const atk = Number(entite?.atk) || 0;
+  if (atk > 0) return true;
+  const arme = armeById(entite?.arme?.carteId);
+  return Boolean(arme?.porteurAttaque);
 }
 
 /**
@@ -664,7 +698,10 @@ function degatsGarantis(duel, cote, prets) {
  */
 export function choisirAttaquantsIA(duel, cote, options = {}) {
   const { profil } = optionsIA(duel, cote, options);
-  const prets = attaquantsPrets(duel, cote);
+  const pretsBruts = attaquantsPrets(duel, cote);
+  // Jamais d'attaque à 0 sans déclencheur — la Porteuse 0/3, une Tour 0/5 ne
+  // frappent pas : elles se tapent pour rien et ne bloquent plus ensuite.
+  const prets = pretsBruts.filter(peutAttaquerUtile);
   if (!prets.length) return [];
   const adv = autre(cote);
   const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
