@@ -69,7 +69,7 @@ export const RPG_SFX_NAMES = Object.freeze([
   'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap', 'mana',
   'mythic_impact', 'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'soin_vie', 'soin_vie_adverse', 'bouclier',
   'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'sword', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
-  'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'water_wave', 'card_countered', 'creature_return', 'block_impact', 'destruction_hit', 'page_turn', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
+  'contresort', 'foudre_marteau', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'water_wave', 'card_countered', 'creature_return', 'block_impact', 'destruction_hit', 'page_turn', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
 ]);
 
 /**
@@ -331,6 +331,22 @@ export function rpgSfx(name) {
       ];
 
     // ── Magie & contre ───────────────────────────────────────────────
+    // L'Éclair du marteau : la charge monte pendant que le marteau tombe
+    // (un grésillement qui s'aiguise, une nappe qui se tend), le ciel craque
+    // à l'instant de l'impact — 0,26 s, là où la cinématique frappe — puis
+    // le tonnerre roule et les arcs finissent de crépiter. Le craquement est
+    // bref et filtré haut : c'est la foudre qui claque, pas un coup de poing.
+    case 'foudre_marteau':
+      return [
+        noise(0, 0.26, 0.09, { filterType: 'bandpass', filter: 2400, filterTo: 6800, q: 1.4, attack: 0.05, send: 0.18, pan: -0.14 }),
+        tone('sine', 'A3', 0, 0.26, 0.08, { slideTo: 'A5', filter: 1800, filterTo: 3400, attack: 0.08, send: 0.14, pan: 0.1 }),
+        noise(0.26, 0.09, 0.5, { filterType: 'highpass', filter: 3200, filterTo: 1400, attack: 0.001, send: 0.22 }),
+        thud(0.26, 0.5, 0.8, { from: 175, to: 30, filter: 360, send: 0.24 }),
+        tone('sawtooth', 'G1', 0.27, 0.62, 0.15, { slideTo: 'D1', filter: 300, filterTo: 120, attack: 0.01, send: 0.26, pan: -0.08 }),
+        noise(0.28, 0.55, 0.16, { filterType: 'lowpass', filter: 1600, filterTo: 160, attack: 0.004, send: 0.28 }),
+        noise(0.34, 0.4, 0.07, { filterType: 'bandpass', filter: 5200, filterTo: 2600, q: 1.6, attack: 0.01, send: 0.2, pan: 0.16 }),
+        bell('E6', 0.29, 0.4, 0.08, { send: 0.3, pan: 0.12 }),
+      ];
     case 'contresort':
       return [
         bell('D6', 0, 0.76, 0.22, { send: 0.44, pan: 0.08 }),

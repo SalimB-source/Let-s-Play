@@ -123,7 +123,7 @@ assert.match(css, /\.rpg-roue-feu__flamme--moyenne\s*\{[^}]*--s0:\s*\.66;[^}]*fi
   'la flamme orange est nette : c’est elle qu’on voit dessinée');
 assert.match(css, /\.rpg-roue-feu__flamme--coeur\s*\{[^}]*--s0:\s*\.26;[^}]*fill:\s*rgba\(255, 244, 205,/s,
   'le cœur blanc brûle au centre');
-const blocRoue = css.slice(css.indexOf('.rpg-roue-feu {'), css.indexOf('Les flèches d'));
+const blocRoue = css.slice(css.indexOf('.rpg-roue-feu {'), css.indexOf("/* ── L'Éclair du marteau"));
 assert.doesNotMatch(blocRoue, /rpg-roue-feu__cercle|conic-gradient\(from 0deg/,
   'plus aucun anneau en dégradé conique : la roue est faite de langues');
 const lingue = /@keyframes rpg-roue-feu-lingue\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
@@ -141,14 +141,16 @@ assert.doesNotMatch(css, /rpg-roue-feu__carte|rpg-roue-feu-carte/,
 
 // Aucune mise en page : les images clés ne touchent ni top/left, ni taille.
 const debutImages = css.indexOf('@keyframes rpg-roue-feu-vie');
-const finImages = css.indexOf('Les flèches d');
+// Le bloc de la roue s'achève où commence la section suivante — la foudre
+// de l'Éclair du marteau, insérée depuis entre la roue et les flèches.
+const finImages = css.indexOf("/* ── L'Éclair du marteau");
 assert.ok(debutImages > 0 && finImages > debutImages, 'les images clés de la roue forment un bloc');
 const imagesCles = css.slice(debutImages, finImages);
 assert.doesNotMatch(imagesCles, /(top|left|right|bottom|width|height|margin):/,
   'la roue n’anime aucune propriété de mise en page : ni position, ni taille');
 assert.match(imagesCles, /transform: translateY\(/,
   'chaque langue bat sur `transform`, dans sa propre boîte — le calque, lui, garde son inclinaison');
-assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-roue-feu,\s*\.rpg-roue-feu \* \{ animation:\s*none !important; transition:\s*none !important; \}/,
+assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-roue-feu,\s*\.rpg-roue-feu \*,[\s\S]*?\{ animation:\s*none !important; transition:\s*none !important; \}/,
   'en mouvement réduit, la roue reste immobile');
 
 // ── 3. Le moteur : qui a été brûlé, et par quoi ────────────────────────────

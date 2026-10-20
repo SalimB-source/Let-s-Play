@@ -64,6 +64,7 @@ import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { clampRpgVolume, RpgAudioPlayer } from './rpgAudio.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
+import { blessureDuMarteau, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
@@ -1218,6 +1219,9 @@ function EclatSoin({ montant = null, surCarte = false }) {
 // brûlée à mort ne s'en va qu'après elle.
 const DUREE_ROUE_FEU = 900;
 
+// La foudre du marteau : la chute, l'impact, puis les arcs qui s'éteignent.
+const DUREE_ECLAIR_MARTEAU = 950;
+
 const GOUTTES_TOURBILLON = Object.freeze([
   { dx: -46, dy: -34, d: 0 },
   { dx: 42, dy: -52, d: 90 },
@@ -1411,6 +1415,153 @@ export function RoueDeFeu({ effet, onTermine = null }) {
   );
 }
 
+/**
+ * La foudre de l'Éclair du marteau sur une créature touchée.
+ *
+ * Le ciel se fend au-dessus de la carte : un marteau de guerre sombre tombe
+ * en diagonale, tête la première, l'éclair principal le relie au ciel et
+ * frappe au même instant — flash, onde au sol, étincelles, fissures qui
+ * courent sous la carte — puis le marteau rebondit et se dissout pendant que
+ * des arcs résiduels rampent encore sur les bords. La créature, elle, encaisse
+ * la secousse (`fx-foudre`) : les deux cinématiques partent ensemble et
+ * l'impact tombe au même tiers de chacune.
+ *
+ * Comme la roue de feu, le calque se pose sur l'emplacement mesuré avant
+ * l'action, garde l'inclinaison de la carte, ne capte rien et ne déplace
+ * rien : une créature tuée par le marteau reçoit son adieu en dessous pendant
+ * que la foudre finit de tomber là où elle se tenait.
+ */
+/** Le tracé de l'éclair principal : il descend du ciel — hors de la face,
+ *  le calque SVG déborde — en zigzags serrés jusqu'au point d'impact
+ *  (50, 30), là où la tête du marteau s'abat. */
+const CHEMIN_ECLAIR_PRINCIPAL = 'M64-72L55-44L61-41L50-14L57-10L47 12L53 16L50 30';
+/** La décharge traverse la créature et gagne le sol sous la carte. */
+const CHEMIN_ECLAIR_DECHARGE = 'M50 30L47 52L53 66L48 84L51 100';
+/** Les fourches : des éclairs secondaires qui se détachent du principal. */
+const CHEMINS_ECLAIR_FOURCHES = Object.freeze([
+  'M50-14L38-4L43-1L30 10',
+  'M47 12L36 20L40 24L29 34',
+  'M53 16L64 24L60 28L71 38',
+]);
+/** Les fissures : la table se fend sous la carte, comme le sol de
+ *  l'illustration — elles vivent un peu plus longtemps que l'éclair. */
+const CHEMINS_ECLAIR_FISSURES = Object.freeze([
+  'M51 100L40 105L29 103L20 108',
+  'M51 100L63 106L75 104L84 109',
+  'M51 100L49 108L54 115',
+]);
+/** Les arcs résiduels : de courts zigzags posés sur les bords de la face.
+ *  Chacun clignote à son retard (`--d`) — l'électricité rampe, elle ne
+ *  s'allume jamais partout à la fois. */
+const ARCS_ECLAIR_MARTEAU = Object.freeze([
+  { d: 'M4 18L10 12L7 7L14 2', retard: 330 },
+  { d: 'M96 30L90 38L95 44L89 52', retard: 410 },
+  { d: 'M3 58L10 64L5 70L12 77', retard: 470 },
+  { d: 'M30 97L38 91L44 96L52 90', retard: 540 },
+  { d: 'M84 4L89 11L83 15L90 21', retard: 380 },
+]);
+/** Les étincelles arrachées à l'impact : direction, retard, taille et
+ *  inclinaison de la traînée — elles partent en gerbe et retombent. */
+const ETINCELLES_MARTEAU = Object.freeze([
+  { dx: -58, dy: -30, d: 260, t: 1, r: -58 },
+  { dx: 44, dy: -38, d: 280, t: 0.8, r: 48 },
+  { dx: -38, dy: 18, d: 300, t: 0.9, r: -104 },
+  { dx: 62, dy: 10, d: 330, t: 1.1, r: 82 },
+  { dx: 12, dy: -64, d: 290, t: 0.7, r: 8 },
+  { dx: -70, dy: 26, d: 370, t: 0.85, r: -112 },
+  { dx: 28, dy: 44, d: 350, t: 1, r: 124 },
+  { dx: -16, dy: 58, d: 390, t: 0.75, r: 168 },
+  { dx: -44, dy: -52, d: 320, t: 0.65, r: -38 },
+  { dx: 70, dy: 38, d: 410, t: 0.95, r: 112 },
+]);
+
+export function EclairDuMarteau({ effet, onTermine = null }) {
+  return (
+    <div
+      className="rpg-eclair-marteau"
+      data-rpg-foudre-id={effet.entityId}
+      data-rpg-foudre-fx="eclair-du-marteau"
+      aria-hidden="true"
+      style={{
+        left: `${effet.left}px`,
+        top: `${effet.top}px`,
+        width: `${effet.width}px`,
+        height: `${effet.height}px`,
+        '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
+      }}
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget || event.pseudoElement) return;
+        onTermine?.(effet.effectId);
+      }}
+    >
+      <i className="rpg-eclair-marteau__flash" />
+      <i className="rpg-eclair-marteau__onde" />
+      {/* Le ciel fendu, le marteau et les arcs, dessinés : un seul calque SVG
+          posé sur la face, qui déborde vers le haut d'où tombe le coup. */}
+      <svg
+        className="rpg-eclair-marteau__ciel"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        focusable="false"
+      >
+        {/* L'éclair principal et la décharge, en deux couches : le halo bleu
+            qui éclaire, le cœur blanc qui se voit — comme les langues de feu. */}
+        <path className="rpg-eclair-marteau__eclair rpg-eclair-marteau__eclair--halo" d={CHEMIN_ECLAIR_PRINCIPAL} />
+        <path className="rpg-eclair-marteau__eclair rpg-eclair-marteau__eclair--coeur" d={CHEMIN_ECLAIR_PRINCIPAL} />
+        <path className="rpg-eclair-marteau__eclair rpg-eclair-marteau__eclair--halo" d={CHEMIN_ECLAIR_DECHARGE} />
+        <path className="rpg-eclair-marteau__eclair rpg-eclair-marteau__eclair--coeur" d={CHEMIN_ECLAIR_DECHARGE} />
+        {CHEMINS_ECLAIR_FOURCHES.map((chemin) => (
+          <path key={chemin} className="rpg-eclair-marteau__fourche" d={chemin} />
+        ))}
+        {CHEMINS_ECLAIR_FISSURES.map((chemin) => (
+          <path key={chemin} className="rpg-eclair-marteau__fissure" d={chemin} />
+        ))}
+        {ARCS_ECLAIR_MARTEAU.map((arc) => (
+          <path
+            key={arc.d}
+            className="rpg-eclair-marteau__arc"
+            d={arc.d}
+            style={{ '--d': `${arc.retard}ms` }}
+          />
+        ))}
+        {/* Le marteau : le groupe extérieur pose la tête sur le point
+            d'impact, manche levé en diagonale comme sur l'illustration ;
+            le groupe intérieur porte la chute, le rebond et la dissolution. */}
+        <g transform="translate(50 30) rotate(36)">
+          <g className="rpg-eclair-marteau__marteau">
+            <rect className="rpg-eclair-marteau__manche" x="-2.4" y="-34" width="4.8" height="29" rx="2" />
+            <rect className="rpg-eclair-marteau__anneau" x="-2.8" y="-27" width="5.6" height="1.7" />
+            <rect className="rpg-eclair-marteau__anneau" x="-2.8" y="-20" width="5.6" height="1.7" />
+            <rect className="rpg-eclair-marteau__anneau" x="-2.8" y="-13" width="5.6" height="1.7" />
+            <circle className="rpg-eclair-marteau__pommeau" cx="0" cy="-36.5" r="4.1" />
+            <rect className="rpg-eclair-marteau__joue" x="-18.4" y="-5.4" width="4.4" height="10.8" rx="1.4" />
+            <rect className="rpg-eclair-marteau__joue" x="14" y="-5.4" width="4.4" height="10.8" rx="1.4" />
+            <rect className="rpg-eclair-marteau__tete" x="-15" y="-7" width="30" height="14" rx="1.8" />
+            <rect className="rpg-eclair-marteau__plaque" x="-9" y="-10" width="18" height="3.6" rx="1.2" />
+            <path className="rpg-eclair-marteau__rune" d="M-8 2.6L-2-3L1 .8L7-2.4" />
+            <path className="rpg-eclair-marteau__arc-mini" d="M-16 8L-11 12L-14 15" />
+            <path className="rpg-eclair-marteau__arc-mini" d="M15 8L11 13L14 16" />
+          </g>
+        </g>
+      </svg>
+      {ETINCELLES_MARTEAU.map((etincelle) => (
+        <i
+          key={etincelle.d}
+          className="rpg-eclair-marteau__etincelle"
+          style={{
+            '--dx': `${etincelle.dx}px`,
+            '--dy': `${etincelle.dy}px`,
+            '--d': `${etincelle.d}ms`,
+            '--taille': etincelle.t,
+            '--r': `${etincelle.r}deg`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function TableCard({
   entite,
   cote,
@@ -1559,6 +1710,7 @@ export function TableCard({
         entreeEnCours ? 'fx-enter' : '',
         actionFx?.type === 'attack' ? 'fx-lunge' : '',
         actionFx?.type === 'hit' ? 'fx-hit' : '',
+        actionFx?.type === 'foudre' ? 'fx-foudre' : '', 
         actionFx?.type === 'glow' ? 'fx-glow' : '',
         actionFx?.type === 'block' ? 'fx-block' : '',
         actionFx?.type === 'unblock' ? 'fx-unblock' : '',
@@ -4057,6 +4209,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // destruction), et une attaque de Braise qui emporte un bloqueur n'ajoute
   // pas un second souffle au sien.
   const dernierSonFeuRef = useRef(0);
+  // Même garde pour le tonnerre du marteau : l'annonce résolue du sorcier
+  // sonne son sort, puis sa fiche le réannonce — un seul coup de foudre.
+  const dernierSonFoudreRef = useRef(0);
   // La position du journal des blessures déjà animée : une brûlure ancienne ne
   // rallume jamais la roue de feu sur une action qui ne la concerne pas.
   const journalBlessuresRef = useRef({ duel: null, position: 0 });
@@ -4065,6 +4220,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const maintenant = Date.now();
       if (maintenant - dernierSonFeuRef.current < 700) return;
       dernierSonFeuRef.current = maintenant;
+    }
+    if (nom === 'foudre_marteau') {
+      const maintenant = Date.now();
+      if (maintenant - dernierSonFoudreRef.current < 700) return;
+      dernierSonFoudreRef.current = maintenant;
     }
     try {
       const p = sfxRef.current;
@@ -4202,6 +4362,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // left, top, width, height, angle, effectId, expireA }`, le temps de l'effet
   // seulement : la roue brûle l'emplacement, pas la carte.
   const [rouesFeu, setRouesFeu] = useState([]);
+  // Les foudres de l'Éclair du marteau : même relève d'emplacement que la
+  // roue, le temps que le marteau tombe et que ses arcs s'éteignent.
+  const [eclairsMarteau, setEclairsMarteau] = useState([]);
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
   const [animationsPioche, setAnimationsPioche] = useState([]);
@@ -4467,6 +4630,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(id);
   }, [rouesFeu]);
 
+  // Même chien de garde pour les foudres du marteau : aucun marteau ne reste
+  // suspendu au-dessus de la table si la minuterie se perd.
+  useEffect(() => {
+    if (!eclairsMarteau.length) return undefined;
+    const derniere = Math.max(...eclairsMarteau.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setEclairsMarteau((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [eclairsMarteau]);
+
   // Retour d'arrière-plan : un téléphone qui met l'onglet en veille peut avaler
   // les minuteries d'animation. On rattrape alors à la main tout ce qui serait
   // resté figé — image de carte détruite, carte en vol, halos de combat — pour
@@ -4483,6 +4656,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return restants.length === current.length ? current : restants;
       });
       setRouesFeu((current) => {
+        const restants = nettoyerFantomes(current);
+        return restants.length === current.length ? current : restants;
+      });
+      setEclairsMarteau((current) => {
         const restants = nettoyerFantomes(current);
         return restants.length === current.length ? current : restants;
       });
@@ -4714,6 +4891,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCartesEnDestruction([]);
     setTourbillonsEau([]);
     setRouesFeu([]);
+    setEclairsMarteau([]);
     setCarteEnVol(null);
     setImpactEcran(null);
     effacerSoinsVisibles();
@@ -6001,6 +6179,32 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         if (fraiche) brulees.set(entite.entityId, entite);
       }
     }
+    // La foudre du marteau : la couleur ne suffit pas — plein de Neige
+    // blesse sans faire tomber le ciel — c'est la carte du coup que le
+    // journal nomme (`blessureDuMarteau`). Même règle de fraîcheur que la
+    // Braise : seule la blessure qui vient de tomber allume l'éclair, et la
+    // créature tuée par le marteau le voit tomber sur son emplacement.
+    const idsFoudroyees = new Set(blessuresNouvelles
+      .filter((blessure) => blessureDuMarteau(blessure))
+      .map((blessure) => blessure.entityId));
+    const foudroyees = new Map();
+    if (!mouvementReduit && idsFoudroyees.size) {
+      const marteauParEntite = new Map();
+      for (const blessure of blessuresNouvelles) {
+        if (blessureDuMarteau(blessure)) marteauParEntite.set(blessure.entityId, blessure);
+      }
+      for (const entite of avant) {
+        if (entite.isTerrain || renvoyees.has(entite.entityId)) continue;
+        const blessure = marteauParEntite.get(entite.entityId);
+        if (!blessure) continue;
+        const apres = vivants.get(entite.entityId);
+        const fraiche = apres
+          ? apres.pv === blessure.pvApres
+            && (apres.bouclier ?? 0) === blessure.bouclierApres
+          : blessure.mortelle;
+        if (fraiche) foudroyees.set(entite.entityId, entite);
+      }
+    }
     const evenementsDestruction = Number.isInteger(debutJournalDestructions)
       ? rpgDestructionsDepuis(duel, debutJournalDestructions)
       : [];
@@ -6020,7 +6224,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (mouvementReduit && entitesBrulees.size) jouerSfx('flame_gust');
     if (disparues.length) {
       const token = ++sequenceAnimationRef.current;
-      const duree = disparues.some((entite) => entitesBrulees.has(entite.entityId)) ? 1050 : 760;
+      const duree = disparues.some((entite) => entitesBrulees.has(entite.entityId)) ? 1050
+        : disparues.some((entite) => foudroyees.has(entite.entityId)) ? DUREE_ECLAIR_MARTEAU
+          : 760;
       // Le souffle de feu du coup vient peut-être de sonner (le sort qui vient
       // d'être lancé) : une carte consumée par la roue ne le rejoue pas.
       const feuVientDeSonner = Date.now() - dernierSonFeuRef.current < 700;
@@ -6063,6 +6269,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }, DUREE_ROUE_FEU);
     }
 
+    // La foudre du marteau : une par créature que l'Éclair du marteau vient
+    // de toucher. Comme la roue, elle tombe sur l'emplacement relevé avant
+    // l'action — la créature tuée a déjà commencé son adieu en dessous.
+    if (foudroyees.size) {
+      const token = ++sequenceAnimationRef.current;
+      const effetsFoudre = [...foudroyees.values()].map((entite) => ({
+        ...entite,
+        token,
+        effectId: `foudre-${token}-${entite.entityId}`,
+        expireA: Date.now() + DUREE_ECLAIR_MARTEAU + 400,
+      }));
+      setEclairsMarteau((current) => [...nettoyerFantomes(current), ...effetsFoudre]);
+      programmerNettoyageVisuel(() => {
+        const ids = new Set(effetsFoudre.map((effet) => effet.effectId));
+        setEclairsMarteau((current) => current.filter((effet) => !ids.has(effet.effectId)));
+      }, DUREE_ECLAIR_MARTEAU);
+    }
+
     // Renvoi en main : la créature quitte la table dans un tourbillon d'eau.
     // L'effet se pose sur la place qu'elle occupait — relevée avant l'action,
     // comme pour l'adieu d'une carte détruite — et respecte le mouvement réduit.
@@ -6088,6 +6312,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const attaquants = new Set(attaquantsIds);
     const attaquesVivantes = attaquantsIds.filter((id) => vivants.has(id));
     const touches = [];
+    // La survivante du marteau ne clignote pas comme un coup ordinaire :
+    // elle encaisse la secousse de la foudre, synchronisée avec le calque.
+    const secoueesParFoudre = [];
     const renforcees = [];
     const statsAugmentees = [];
     avant.forEach((entite) => {
@@ -6101,7 +6328,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         && (apres.pvMax ?? null) === entite.pvMax
         && (apres.bouclier ?? 0) === entite.bouclier;
       if (apres.pv < entite.pv || (apres.bouclier ?? 0) < entite.bouclier || apres.def < entite.def) {
-        if (!attaquants.has(entite.entityId)) touches.push(entite.entityId);
+        if (!attaquants.has(entite.entityId)) {
+          if (idsFoudroyees.has(entite.entityId)) secoueesParFoudre.push(entite.entityId);
+          else touches.push(entite.entityId);
+        }
       } else if (!soinPur && (apres.pv > entite.pv || (apres.bouclier ?? 0) > entite.bouclier || apres.atk > entite.atk || apres.def > entite.def)) {
         renforcees.push(entite.entityId);
         if (apres.atk > entite.atk || apres.def > entite.def) statsAugmentees.push(entite.entityId);
@@ -6109,6 +6339,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     });
     animerEntites(attaquesVivantes, 'attack', 650);
     animerEntites(touches, 'hit', 620);
+    animerEntites(secoueesParFoudre, 'foudre', DUREE_ECLAIR_MARTEAU);
     animerEntites(renforcees, 'glow', 1100, statsAugmentees);
   };
 
@@ -6322,6 +6553,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // journal des soins) — jamais deux carillons pour un seul geste, et
       // rien de plus qu'une magie s'il est lancé à pleine vie.
       const son = sonForce
+        ?? rpgFoudreSoundFor(carte, 'spell')
         ?? rpgWaterSoundFor(carte, 'spell')
         ?? rpgFireSoundFor(carte, 'spell')
         ?? (carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
@@ -7303,7 +7535,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const debutJournalReponse = rpgNombreDestructions(duel);
       const reponse = rpgSorcierMagieRapide(duel, rng);
       if (reponse) {
-        jouerSfx(rpgWaterSoundFor(cardById(reponse.carteId), 'spell')
+        jouerSfx(rpgFoudreSoundFor(cardById(reponse.carteId), 'spell')
+          ?? rpgWaterSoundFor(cardById(reponse.carteId), 'spell')
           ?? rpgFireSoundFor(cardById(reponse.carteId), 'spell')
           ?? 'magie');
         animerModificationsChamp(champAvantReponse, [], debutJournalReponse);
@@ -7448,7 +7681,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const carte = cardById(reponse.carteId);
         jouerSfx(reponse.renvoiMain
           ? 'creature_return'
-          : rpgWaterSoundFor(carte, 'spell') ?? rpgFireSoundFor(carte, 'spell') ?? 'magie');
+          : rpgFoudreSoundFor(carte, 'spell') ?? rpgWaterSoundFor(carte, 'spell') ?? rpgFireSoundFor(carte, 'spell') ?? 'magie');
         annoncerMagieSorcier(carte, describeAnnouncedMagicTarget(
           carte, reponse.cibleId ?? null, duel, sorcierArtId, portraitSorcierAdverse,
         ));
@@ -7620,7 +7853,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.ok) {
       const sonEffetBraise = res.renvoiMain
         ? 'creature_return'
-        : rpgWaterSoundFor(carteAnnoncee, 'spell')
+        : rpgFoudreSoundFor(carteAnnoncee, 'spell')
+          ?? rpgWaterSoundFor(carteAnnoncee, 'spell')
           ?? rpgFireSoundFor(carteAnnoncee, 'spell')
           ?? rpgFireSoundFor(carteAnnoncee, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
@@ -8401,6 +8635,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             key={effet.effectId}
             effet={effet}
             onTermine={(effectId) => setRouesFeu((current) => current.filter((autre) => autre.effectId !== effectId))}
+          />
+        ))}
+
+        {/* Éclair du marteau : la foudre tombe sur la créature touchée. */}
+        {eclairsMarteau.map((effet) => (
+          <EclairDuMarteau
+            key={effet.effectId}
+            effet={effet}
+            onTermine={(effectId) => setEclairsMarteau((current) => current.filter((autre) => autre.effectId !== effectId))}
           />
         ))}
 

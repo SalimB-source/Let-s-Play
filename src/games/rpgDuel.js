@@ -152,11 +152,14 @@ export function rpgBlessuresDepuis(duel, position = 0) {
 }
 
 /**
- * La dernière blessure d'une créature : `{ entityId, cote, elements, recus,
- * absorbes, pvApres, bouclierApres, mortelle }`. `pvApres`/`bouclierApres`
- * disent si l'état actuel de la créature est **encore** celui de cette
- * blessure — la table n'allume donc la roue de feu que pour un coup qui vient
- * de tomber, jamais pour une ancienne brûlure.
+ * La dernière blessure d'une créature : `{ entityId, cote, elements,
+ * sourceCarteId, recus, absorbes, pvApres, bouclierApres, mortelle }`.
+ * `pvApres`/`bouclierApres` disent si l'état actuel de la créature est
+ * **encore** celui de cette blessure — la table n'allume donc la roue de feu
+ * que pour un coup qui vient de tomber, jamais pour une ancienne brûlure.
+ * `sourceCarteId` nomme la carte du coup quand le moteur la connaît (une
+ * magie lancée) : l'Éclair du marteau se reconnaît ainsi parmi les autres
+ * blessures de Neige, et sa foudre ne tombe que pour lui.
  */
 export function rpgDerniereBlessure(duel, entityId) {
   const journal = blessuresParDuel.get(duel);
@@ -175,6 +178,9 @@ function journaliserBlessure(duel, cote, entite, blessure) {
     entityId: entite.id,
     cote,
     elements: normaliserCouleurs(blessure.elements),
+    // La carte du coup, quand elle est connue : la couleur suffit à la roue
+    // de feu, mais la foudre du marteau exige de nommer sa carte.
+    sourceCarteId: blessure.sourceCarteId ?? null,
     recus: blessure.recus,
     absorbes: blessure.absorbes,
     pvApres: entite.pv,
@@ -2106,7 +2112,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // créature touchée tire son propre jet — le même hasard que le duel.
       const rngGel = hasardParDuel.get(duel) ?? Math.random;
       for (const cible of cibles) {
-        rpgBlesserCreature(duel, adv, cible.id, effet.amount ?? 0, sourceElement, null, sourceType);
+        rpgBlesserCreature(duel, adv, cible.id, effet.amount ?? 0, sourceElement, null, sourceType, sourceCarteId);
         // Le gel (`gel`) accompagne les dégâts — la Poigne de givre, le
         // Verglas. La créature tuée n'a rien à figer ; la survivante ne
         // rejoindra ni l'attaque ni le blocage avant la fin de son prochain tour.
@@ -2570,8 +2576,10 @@ export function rpgActionsEtat(duel) {
   return retirees;
 }
 
-/** Dégâts sur une créature : à 0 défense, elle meurt (capacité comprise). */
-export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null) {
+/** Dégâts sur une créature : à 0 défense, elle meurt (capacité comprise).
+ *  `sourceCarteId` ne sert qu'au journal des blessures : la table y reconnaît
+ *  le coup qui mérite sa propre cinématique (l'Éclair du marteau). */
+export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null, sourceCarteId = null) {
   const entite = duel[cote].creatures.find((e) => e.id === entiteId);
   if (!entite) return { ok: false, raison: 'absente' };
   if (rpgEstProtegee(entite, sourceElement)) {
@@ -2610,7 +2618,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   // encore ceux de cette blessure : la table ne confond pas une brûlure neuve
   // avec une ancienne, ni avec une attaque de créature.
   if (apresEsquive > 0) {
-    journaliserBlessure(duel, cote, entite, { elements, recus, absorbes, mortelle });
+    journaliserBlessure(duel, cote, entite, { elements, sourceCarteId, recus, absorbes, mortelle });
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
