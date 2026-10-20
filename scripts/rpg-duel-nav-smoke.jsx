@@ -58,8 +58,17 @@ export async function checkRpgDuelNav(assert) {
       .find((bouton) => bouton.textContent.includes('Paramètres'));
     assert.ok(settingsHorsPartie, 'le menu principal expose Paramètres avant une partie');
     await click(settingsHorsPartie);
-    const ecranSettingsHorsPartie = node.querySelector('.rpg-settings');
+    let ecranSettingsHorsPartie = node.querySelector('.rpg-settings');
     assert.ok(ecranSettingsHorsPartie, 'l’onglet ouvre son écran hors partie');
+    assert.equal(node.querySelector('.rpg-card-catalogue'), null,
+      'Paramètres affiche son propre écran, sans rendre le Catalogue en arrière-plan');
+    const ongletCatalogue = [...node.querySelectorAll('.rpg-mode-menu__switch button')]
+      .find((bouton) => bouton.textContent.includes('Catalogue'));
+    assert.ok(ongletCatalogue, 'le menu principal expose Catalogue');
+    await click(ongletCatalogue);
+    assert.ok(node.querySelector('.rpg-card-catalogue'), 'le catalogue reste visible depuis son propre onglet');
+    await click(settingsHorsPartie);
+    ecranSettingsHorsPartie = node.querySelector('.rpg-settings');
     const decorHorsPartie = ecranSettingsHorsPartie.querySelector('.rpg-settings__decor3d');
     const sonHorsPartie = ecranSettingsHorsPartie.querySelector('.rpg-settings__mute-all');
     assert.ok(decorHorsPartie && sonHorsPartie, 'les réglages 3D et son sont disponibles hors partie');
@@ -122,6 +131,11 @@ export async function checkRpgDuelNav(assert) {
     assert.ok(panneauParametres.querySelector('.rpg-duel-nav__slider--sfx'), 'le contrôle du volume des sons du jeu est dans Paramètres');
     assert.ok(panneauParametres.querySelector('.rpg-duel-nav__slider--music'), 'le contrôle du volume des musiques est dans Paramètres');
     assert.ok(panneauParametres.querySelector('.rpg-duel-nav__sound'), 'la coupure générale du son est dans Paramètres');
+    const boutonDeconnexionEnPartie = panneauParametres.querySelector('.rpg-duel-nav__signout');
+    assert.ok(boutonDeconnexionEnPartie, 'Paramètres dans le duel PC contient aussi la déconnexion');
+    await click(boutonDeconnexionEnPartie);
+    await settle();
+    assert.equal(deconnexions, 2, 'le panneau Paramètres du duel appelle la déconnexion du compte');
 
     // Le premier geste hors de la barre referme le panneau (le fond de table
     // est un `pointerdown` comme un autre).

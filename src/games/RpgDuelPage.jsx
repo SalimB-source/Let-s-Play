@@ -646,6 +646,12 @@ function profileNameFallback(user) {
   return candidates.find((value) => typeof value === 'string' && value.trim())?.trim() || 'Vous';
 }
 
+function desktopAccountName(user) {
+  const metadata = user?.user_metadata ?? {};
+  const candidates = [metadata.gamertag, metadata.fullName, metadata.full_name, metadata.display_name, user?.email];
+  return candidates.find((value) => typeof value === 'string' && value.trim())?.trim() || 'Joueur';
+}
+
 function CardElementBadge({ carte }) {
   if (!carte?.element || carte.kind === 'terrain') return null;
   // Comme le disque de coût : les couleurs affichées sont celles du coût de la
@@ -2772,6 +2778,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const [partieRapideChoix, setPartieRapideChoix] = useState(null);
   const detailRef = useRef(null);
   const play = (n) => { try { onPlaySfx?.(n); } catch {} };
+  const compteDesktopLabel = desktopAccountName(desktopAccount);
+  const deconnecterCompteDesktop = async () => {
+    play('menu');
+    try { await onSignOut?.(); } catch { /* la session locale est déjà coupée */ }
+  };
   // L'étagère : les sept decks du catalogue, puis les boîtiers maison.
   const decksTous = [...RPG_DECKS, ...decksMaison];
   const selectedDeck = decksTous.find((deck) => deck.id === selectedDeckId) ?? RPG_DECKS[0];
@@ -3443,7 +3454,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
           />
-        ) : (
+        ) : screen === 'catalogue' ? (
           <main className="rpg-card-catalogue" aria-label="Catalogue complet des cartes">
             <header className="rpg-card-catalogue__header">
               <div>
@@ -3551,7 +3562,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               <p className="rpg-card-catalogue__empty">Aucune carte ne correspond à ces filtres.</p>
             )}
           </main>
-        )}
+        ) : null}
         {screen === 'parametres' && (
           <main className="rpg-settings" aria-label="Paramètres du jeu">
             <div className="rpg-settings__header">
@@ -3688,22 +3699,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   </div>
                   <p className="rpg-settings__desc">
                     Session ouverte avec{' '}
-                    <strong>
-                      {desktopAccount.user_metadata?.gamertag
-                        || desktopAccount.user_metadata?.fullName
-                        || desktopAccount.user_metadata?.full_name
-                        || desktopAccount.email
-                        || 'votre compte Let’s Play'}
-                    </strong>.
+                    <strong>{compteDesktopLabel}</strong>.
                     {' '}Votre progression synchronisée reste liée à ce compte.
                   </p>
                   <button
                     type="button"
                     className="rpg-settings__signout"
-                    onClick={async () => {
-                      play('menu');
-                      try { await onSignOut(); } catch { /* la session locale est déjà coupée */ }
-                    }}
+                    onClick={deconnecterCompteDesktop}
                   >
                     <span aria-hidden="true">⏻</span> Se déconnecter
                   </button>
@@ -3886,6 +3888,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useLumiereCartes();
   const authContext = useContext(AuthContext);
   const authUser = authContext?.user ?? null;
+  const desktopMode = typeof window !== 'undefined' && Boolean(window.letsPlayDesktop);
+  const desktopAccount = authContext?.session?.user ?? null;
+  const onSignOut = authContext?.signOut;
   const [nomProfilJoueur, setNomProfilJoueur] = useState(() => profileNameFallback(authUser));
   useEffect(() => {
     let vivant = true;
@@ -5721,9 +5726,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           volumeMusique={volumeMusique}
           onChangeVolumeMusique={changerVolumeMusique}
           onToggleMusicMute={basculerVolumeMusique}
-          desktopMode={typeof window !== 'undefined' && Boolean(window.letsPlayDesktop)}
-          desktopAccount={authContext?.session?.user ?? null}
-          onSignOut={authContext?.signOut}
+          desktopMode={desktopMode}
+          desktopAccount={desktopAccount}
+          onSignOut={onSignOut}
         />
         {recompenseTutoriel && (
           <div className="rpg-tutorial-reward-toast" role="status" aria-live="polite" key={recompenseTutoriel.token}>
@@ -8375,6 +8380,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
                 <span className="rpg-duel-nav__sound-state">{sonActif ? 'Son activé' : 'Son coupé'}</span>
               </button>
+              {desktopMode && desktopAccount && onSignOut && (
+                <div className="rpg-duel-nav__account">
+                  <p className="rpg-duel-nav__account-label">
+                    Compte PC · <strong>{desktopAccountName(desktopAccount)}</strong>
+                  </p>
+                  <button
+                    type="button"
+                    className="rpg-duel-nav__signout rpg-settings__signout"
+                    onClick={async () => {
+                      try { await onSignOut(); } catch { /* la session locale est déjà coupée */ }
+                    }}
+                  >
+                    <span aria-hidden="true">⏻</span> Se déconnecter
+                  </button>
+                </div>
+              )}
             </div>
             <button
               type="button"
