@@ -1708,8 +1708,8 @@ export function TableCard({
         cote === 'ennemi' ? 'rpg-card--ennemi' : 'rpg-card--equipe',
         // Une créature équipée porte le cadre d'acier de son arme : c'est lui
         // qui dit l'équipement, la carte d'arme ne se glisse plus dessous.
-        armeCadre ? armeCadreClass(armeCadre) : cardFrameClass(carte),
-        armeCadre ? 'is-arme-equipee' : '',
+        armeCadre && !entite.furieDeclenchee ? armeCadreClass(armeCadre) : entite.furieDeclenchee ? '' : cardFrameClass(carte),
+        armeCadre && !entite.furieDeclenchee ? 'is-arme-equipee' : '',
         cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         entite.envol ? 'is-envol' : '',
@@ -1753,8 +1753,9 @@ export function TableCard({
          (attaquant déclaré, créature engagée) la font pencher, et ils sont
          écrits dans la feuille (`data-combat-tilted`). */
       style={{
-        // La créature équipée porte le cadre ciselé de son arme.
-        ...cardFrameStyle(armeCadre ?? carte),
+        // Quand la créature est en furie, l'illustration occupe tout l'espace :
+        // aucun cadre ni bordure ne vient rogner la peinture pleine page.
+        ...(entite.furieDeclenchee ? {} : cardFrameStyle(armeCadre ?? carte)),
         ...(caseEssai ? { '--case-essai': caseEssai } : {}),
         // Chaque créature avec Envol a sa propre durée de lévitation : la
         // feuille anime `translate`, `rotate` et `scale`, et cette durée lui
