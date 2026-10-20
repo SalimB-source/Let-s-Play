@@ -69,6 +69,7 @@ function poserCreatureSurChamp(duel, cote, cardId, { ready = false } = {}) {
   if (!carte || !camp) return null;
   const mainAvant = camp.main;
   const manaAvant = { ...camp.mana };
+  const choixManaAvant = camp.manaChoixEnAttente;
   // Le coût est payé puis remboursé : la scène de leçon n'a pas à vider la
   // réserve du camp qui la reçoit.
   const cout = Number(carte.cost) || 0;
@@ -77,9 +78,13 @@ function poserCreatureSurChamp(duel, cote, cardId, { ready = false } = {}) {
     : [carte.element].filter(Boolean);
   for (const couleur of couleurs) camp.mana[couleur] = Math.max(camp.mana[couleur] ?? 0, cout);
   camp.main = [cardId];
+  // Une scène peut précéder le choix du mana d’essai : ce choix appartient
+  // toujours à l’interaction suivante, pas à la mise en place silencieuse.
+  camp.manaChoixEnAttente = false;
   const res = rpgJouerCreature(duel, cote, cardId, null, { cibleDifferee: true });
   camp.main = mainAvant;
   camp.mana = manaAvant;
+  camp.manaChoixEnAttente = choixManaAvant;
   if (!res.ok) return null;
   if (res.entite) {
     res.entite.ready = ready;
@@ -884,8 +889,8 @@ export const RPG_TUTORIELS = Object.freeze([
     deckName: 'Serment des Neuf Hivers',
     element: 'neige',
     reward: 150,
-    tagline: 'Boucliers, Résonance, gel et Furie : survivre pour mieux frapper.',
-    description: 'Le deck Neige apprend la patience du Nord : le Guerrier arrive avec un bouclier, la Valkyrie au corbeau renforce les créatures de type Viking, la Poigne de givre immobilise un adversaire, et la Furie transforme une blessure survécue en croissance. Une leçon de défense et de contre-attaque.',
+    tagline: 'Boucliers, appel viking, gel et Furie : survivre pour mieux frapper.',
+    description: 'Le deck Neige apprend la patience du Nord : le Guerrier arrive avec un bouclier, la Valkyrie au corbeau appelle au hasard une carte Viking du deck, la Poigne de givre immobilise un adversaire, et la Furie aiguise l’attaque d’une créature tant que sa défense reste sous sa DEF de base. Une leçon de défense et de contre-attaque.',
     opponentDeckId: 'serment-des-neuf-hivers',
     opponentName: 'Sorcier du fjord',
     openingHand: ['guerrier-au-bouclier-rond', 'valkyrie-au-corbeau', 'poigne-de-givre'],
@@ -898,6 +903,9 @@ export const RPG_TUTORIELS = Object.freeze([
       { cardId: 'guerrier-au-bouclier-rond', ready: false },
       { cardId: 'loup-des-neiges', ready: false },
     ],
+    stagedPlayer: [
+      { cardId: 'berserk-des-trois-hivers', ready: false },
+    ],
     steps: [
       {
         id: 'bienvenue',
@@ -905,7 +913,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="opponent-health"]',
         eyebrow: 'SERMENT DES NEUF HIVERS · OBJECTIF',
         title: 'Survivre au premier hiver',
-        text: 'Le Nord ne gagne pas en frappant le premier : il encaisse, gèle, puis revient plus fort. Cette leçon montre les boucliers, la Résonance viking, le gel et la Furie. Votre réserve est préparée à dix manas pour la démonstration.',
+        text: 'Le Nord ne gagne pas en frappant le premier : il encaisse, appelle ses renforts, gèle, puis revient plus fort. Cette leçon montre les boucliers, l’appel viking de la Valkyrie au corbeau, le gel et la Furie. Votre réserve est préparée à dix manas pour la démonstration.',
         nextLabel: 'Lire la main',
         side: 'bottom',
       },
@@ -915,7 +923,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'ÉTAPE 1 · TROIS RÉPONSES',
         title: 'Lire la main du Nord',
-        text: 'Le Guerrier au bouclier rond arrive avec un bouclier 1 et porte Furie 1. La Valkyrie au corbeau donne +1/+1 aux créatures de type Viking, alliées comme adverses. La Poigne de givre inflige 2 dégâts et gèle une créature adverse. Deux créatures adverses sont déjà en face.',
+        text: 'Le Guerrier au bouclier rond arrive avec un bouclier 1 et porte Furie 1. La Valkyrie au corbeau est une 3/4 avec Envol : à son arrivée, une carte de type Viking tirée au hasard de votre deck rejoindra votre main. La Poigne de givre inflige 2 dégâts et gèle une créature adverse. Votre Berserk des trois hivers, Furie 2, attend déjà sur votre ligne ; deux créatures adverses sont en face.',
         nextLabel: 'Poser le Guerrier',
         side: 'top',
       },
@@ -944,20 +952,20 @@ export const RPG_TUTORIELS = Object.freeze([
         id: 'valkyrie',
         kind: 'action',
         target: '.rpg-hand__card[data-card-id="valkyrie-au-corbeau"]',
-        eyebrow: 'ÉTAPE 3 · RÉSONANCE',
+        eyebrow: 'ÉTAPE 3 · L’APPEL DU CORBEAU',
         title: 'La Valkyrie au corbeau',
-        text: 'Touchez la Valkyrie au corbeau, quatre manas. Sa Résonance donne +1/+1 aux créatures de type Viking de la table : votre Guerrier passe 2/4, le Guerrier adverse aussi. Le Loup des neiges, qui n’est pas de type Viking, reste 3/3.',
+        text: 'Touchez la Valkyrie au corbeau, cinq manas. Cette 3/4 avec Envol ne renforce pas la table : à son arrivée, une carte de type Viking choisie au hasard parmi celles encore dans votre deck rejoint votre main.',
         on: 'creature-jouee',
         cardId: 'valkyrie-au-corbeau',
         side: 'top',
       },
       {
-        id: 'resonance-neige',
+        id: 'appel-viking',
         kind: 'info',
-        target: '[data-tutorial-target="player-field"]',
-        eyebrow: 'RÈGLE · RÉSONANCE VIKING',
+        target: '[data-tutorial-target="hand"]',
+        eyebrow: 'RÈGLE · PIOCHE VIKING',
         title: 'Le type imprimé décide',
-        text: 'Le Guerrier est passé de 1/3 à 2/4 grâce à la Valkyrie ; le Guerrier adverse aussi. Le Loup des neiges, lui, reste 3/3 : la Résonance de la Valkyrie ne vise que les créatures de type Viking, pas tout ce qui est Neige. Elle s’applique aux deux camps, et deux Valkyries additionnent leurs bonus.',
+        text: 'Regardez votre main : un renfort viking vient d’y arriver. Le moteur choisit au hasard parmi les cartes dont la ligne de type contient « Viking » et qui restent dans le deck. Le Loup des neiges, de type Loup, et les sorts Neige ne peuvent pas être tirés ainsi ; s’il ne reste aucun Viking, l’arrivée ne fait pas piocher. Gardez ce renfort pour un tour prochain.',
         nextLabel: 'Geler un adversaire',
         side: 'top',
       },
@@ -978,7 +986,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--ennemi .rpg-card[data-card-id="guerrier-au-bouclier-rond"]',
         eyebrow: 'ÉTAPE 5 · CIBLE',
         title: 'Figez le guerrier adverse',
-        text: 'Touchez le Guerrier au bouclier rond adverse. Son propre bouclier absorbe 1 des 2 dégâts, mais le gel s’applique quand même : il passera son prochain tour sans pouvoir attaquer ni bloquer. Le Loup, lui, reste libre de charger.',
+        text: 'Touchez le Guerrier au bouclier rond adverse. Son propre bouclier absorbe 1 des 2 dégâts : il reste à 2 de défense, sous sa DEF de base de 3, donc sa Furie s’allume. Le gel s’applique quand même et il ne pourra ni attaquer ni bloquer. Le Loup, lui, reste libre de charger.',
         on: 'magie-lancee',
         cardId: 'poigne-de-givre',
         side: 'bottom',
@@ -999,7 +1007,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="end-turn"]',
         eyebrow: 'ÉTAPE 6 · LE LOUP',
         title: 'Attendez l’assaut',
-        text: 'Terminez le tour. Le guerrier adverse est gelé, mais un Loup des neiges va attaquer. Préparez votre Guerrier : c’est le moment de bloquer et de déclencher la Furie.',
+        text: 'Terminez le tour. Le guerrier adverse est gelé, mais un Loup des neiges va attaquer. Préparez votre Berserk : c’est le moment de bloquer et de déclencher sa Furie.',
         on: 'fin-de-tour',
         side: 'top',
       },
@@ -1011,16 +1019,16 @@ export const RPG_TUTORIELS = Object.freeze([
         forceOpponentAttack: true,
         eyebrow: 'PHASE DE BLOCAGE',
         title: 'Le loup charge',
-        text: 'Le Loup des neiges attaque, porté à 4/4 par la Résonance de la Valkyrie. Votre Guerrier est 2/4 avec un bouclier 1. Assignez-le comme bloqueur : le bouclier absorbera 1 dégât, il survivra au reste, et sa Furie le fera grandir.',
+        text: 'Le Loup des neiges attaque en 2/2. Votre Berserk est 1/4, avec Furie 2. Assignez-le comme bloqueur : les 2 dégâts le laisseront à 2 de défense, sous sa DEF de base de 4, et sa Furie lui donnera +2/+0 pour la contre-attaque.',
         side: 'bottom',
       },
       {
         id: 'blocage-neige',
         kind: 'action',
-        target: '.card-row--equipe .rpg-card[data-card-id="guerrier-au-bouclier-rond"]',
-        eyebrow: 'ÉTAPE 7 · LE REMPART',
-        title: 'Levez le bouclier',
-        text: 'Touchez votre Guerrier au bouclier rond pour le sélectionner comme bloqueur. Il ne peut plus attaquer ce tour, mais il protège vos points de vie et prépare sa Furie.',
+        target: '.card-row--equipe .rpg-card[data-card-id="berserk-des-trois-hivers"]',
+        eyebrow: 'ÉTAPE 7 · LE BERSERK',
+        title: 'Envoyez le Berserk',
+        text: 'Touchez votre Berserk des trois hivers pour le sélectionner comme bloqueur. Il protège vos points de vie ; la blessure du Loup le fera passer sous sa DEF de base et allumera sa Furie.',
         on: 'bloqueur-selectionne',
         side: 'top',
       },
@@ -1030,7 +1038,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--ennemi .rpg-card[data-card-id="loup-des-neiges"]',
         eyebrow: 'ÉTAPE 8 · L’ASSIGNATION',
         title: 'Opposez le loup',
-        text: 'Touchez le Loup des neiges pour lui assigner le blocage du Guerrier. Le bouclier absorbera 1 des 4 dégâts, puis la Furie verra une blessure survécue.',
+        text: 'Touchez le Loup des neiges pour lui assigner le blocage du Berserk. Les 2 dégâts laisseront le Berserk à 2 de défense, sous sa DEF de base de 4.',
         on: 'bloqueur-assigne',
         side: 'bottom',
       },
@@ -1040,17 +1048,17 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="resolve-combat"]',
         eyebrow: 'ÉTAPE 9 · LA FURIE',
         title: 'Résolvez le combat',
-        text: 'Touchez « Résoudre le combat ». Le Loup inflige 4, le bouclier en absorbe 1 : le Guerrier encaisse 3 et survit avec 1 PV. Sa Furie 1 se déclenche : il gagne +1/+1 et devient 3/5 pour le reste de la partie.',
+        text: 'Touchez « Résoudre le combat ». Le Loup inflige 2 au Berserk, qui lui rend 1 : les deux survivent, blessés sous leur DEF de base. La Furie 2 du Berserk porte son attaque à 3 ; celle du Loup s’allume aussi. Vos points de vie, eux, restent intacts.',
         on: 'combat-adverse-resolu',
         side: 'top',
       },
       {
         id: 'furie',
         kind: 'info',
-        target: '.card-row--equipe .rpg-card[data-card-id="guerrier-au-bouclier-rond"]',
+        target: '.card-row--equipe .rpg-card[data-card-id="berserk-des-trois-hivers"]',
         eyebrow: 'RÈGLE · FURIE',
-        title: 'Blessé, donc plus fort',
-        text: 'La Furie ne se déclenche qu’une fois, la première fois que la créature est blessée et survit. Les dégâts entièrement absorbés par un bouclier ne comptent pas comme une blessure — ici, 3 PV sont bien passés. La créature grandit définitivement : la prochaine fois, elle frappera plus fort et encaissera davantage.',
+        title: 'Sous la DEF de base',
+        text: 'Le seuil de Furie est la DEF de base imprimée du Berserk : 4. À 2, il gagne +2/+0 et frappe désormais à 3. Si un soin le ramène à 4, ce bonus retombe ; une nouvelle chute sous 4 pourra le rallumer. Le Loup, à 1 sous sa DEF de base de 2, a lui aussi gagné le +1 de sa Furie.',
         nextLabel: 'Terminer la leçon',
         side: 'top',
       },
@@ -1060,7 +1068,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="player-field"]',
         eyebrow: 'HIVER SURVÉCU',
         title: 'Le Nord se souvient',
-        text: 'Bouclier, Résonance Neige, gel et Furie : vous savez maintenant défendre un tour, geler une menace et transformer une blessure en force. Le Serment des Neuf Hivers ne craint pas le premier coup ; il attend le second.',
+        text: 'Bouclier, appel viking, gel et Furie : vous savez maintenant défendre un tour, appeler un renfort, geler une menace et transformer une blessure en contre-attaque. Le Serment des Neuf Hivers ne craint pas le premier coup ; il attend le second.',
         nextLabel: 'Terminer le tutoriel',
         side: 'top',
       },

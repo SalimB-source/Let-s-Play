@@ -21,6 +21,7 @@ import {
   armeById,
   cardColorCost,
   cardColors,
+  cardHasPrintedType,
   cardResonanceGroup,
   cardReceivesResonance,
   duelCardById,
@@ -140,13 +141,19 @@ export function blessureNette(entite, montant, sourceType = 'attaque') {
   return Math.max(0, apresEsquive - Math.max(0, entite?.bouclier ?? 0));
 }
 
-/** Furie gagnée par une créature blessée qui survit — une seule fois (0 sans
- *  Furie, sans blessure, ou si la Furie s'est déjà enflammée).
- *  La Furie peut venir de la créature elle-même ou de l'arme qu'elle porte. */
+/** Furie **nouvellement** gagnée par une créature blessée qui survit : le coup
+ *  doit la faire passer sous sa DEF de base imprimée, et une Furie déjà active
+ *  ne se regagne pas. Elle peut venir de la créature elle-même ou de son arme. */
 export function furieGagnee(entite, degatsRecus) {
-  const furie = Math.max(0, Number(duelCardById(entite?.carteId)?.furie) || 0)
+  const carte = duelCardById(entite?.carteId);
+  const furie = Math.max(0, Number(carte?.furie) || 0)
     + Math.max(0, Number(armeById(entite?.arme?.carteId)?.donne?.furie) || 0);
-  return furie > 0 && (degatsRecus ?? 0) > 0 && !entite?.furieDeclenchee ? furie : 0;
+  const degats = Math.max(0, Number(degatsRecus) || 0);
+  const pv = Number(entite?.pv ?? entite?.def) || 0;
+  const defenseDeBase = Number(carte?.def ?? entite?.pvMax ?? entite?.def ?? pv) || 0;
+  const pvApres = pv - degats;
+  return furie > 0 && degats > 0 && !entite?.furieDeclenchee
+    && pvApres > 0 && pvApres < defenseDeBase ? furie : 0;
 }
 
 /** L’entité meurt-elle sous un coup de ce type (bouclier compris) ?
@@ -171,9 +178,11 @@ export function valeurEntite(entite) {
   if (entite?.coupRapide) valeur += 2;
   if (entite?.rapidite) valeur += 0.5;
   if (entite?.protection) valeur += 1.5;
-  // Furie : une seule flambée de +X/+X au premier sang survécu — une
-  // créature déjà enflammée n'a plus rien à gagner.
-  if (carte.furie && !entite?.furieDeclenchee) valeur += 1 + carte.furie * 0.7;
+  if (entite?.overkill || carte.overkill) valeur += 1.2;
+  // Furie : +X/+0 tant que la défense reste sous la DEF de base. Active, le bonus
+  // est déjà dans l'attaque ; inactive, il reste un gain latent — y compris
+  // après un soin qui l'a éteinte.
+  if (carte.furie && !entite?.furieDeclenchee) valeur += 0.7 + carte.furie * 0.55;
   // Résonance : aura de table du type imprimé par la source.
   if (carte.resonance) valeur += 2 + carte.resonance * 2;
   // Bannière : chaque attaque d'un Samouraï du camp grandit l'attaquant pour de
@@ -187,6 +196,15 @@ export function valeurEntite(entite) {
   // de l'entité (envol, esquive lus plus haut) ; seul le déclenché s'ajoute.
   if (entite?.arme && armeById(entite.arme.carteId)?.declenche) valeur += 1.5;
   return valeur;
+}
+
+/** Force d'Overkill qui traverse un bloqueur : ce qui dépasse ses PV et son
+ *  bouclier continue jusqu'au sorcier, comme dans le moteur. */
+function excesOverkill(attaquant, bloqueur) {
+  if (!attaquant?.overkill || !bloqueur) return 0;
+  const encaissable = Math.max(0, (Number(bloqueur.pv ?? bloqueur.def) || 0)
+    + Math.max(0, Number(bloqueur.bouclier) || 0));
+  return Math.max(0, (Number(attaquant.atk) || 0) - encaissable);
 }
 
 /** Dégâts « préalables » d’une capacité (type Sahir) — nuls sans capacité. */
@@ -565,7 +583,12 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
 
   const scoreBlocage = (attaquant, bloqueur) => {
     const { attaquantMeurt, bloqueurMeurt, attaquantFurie, bloqueurFurie } = resultatBlocage(attaquant, bloqueur);
-    const degatsEvites = Math.min(attaquant.atk ?? 0, pvDefense());
+    // Bloquer un Overkill n'épargne que la part absorbée par le bloqueur :
+    // l'excédent frappera quand même le sorcier.
+    const degatsEvites = Math.min(
+      Math.max(0, (attaquant.atk ?? 0) - excesOverkill(attaquant, bloqueur)),
+      pvDefense(),
+    );
     const degatsRecus = degatsApresEsquive(bloqueur, attaquant.atk ?? 0, 'attaque');
     const furie = bloqueurFurie * 0.9 - attaquantFurie * 1.6;
     // 1) On tue sans mourir : toujours excellent.
@@ -578,7 +601,7 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
     // 2) Les deux survivent : on érode l'attaquant et on évite des dégâts.
     //    Rentable si ça ne nourrit pas une Furie adverse dévastatrice.
     if (!attaquantMeurt && !bloqueurMeurt) {
-      // Nourrir une Furie 3 du Jarl (+3/+3) est catastrophique : on ne s'y frotte pas.
+      // Nourrir la Furie 3 du Jarl (+3/+0 tant qu'il reste blessé) reste très coûteux.
       if (attaquantFurie >= 2) return -Infinity;
       // Érosion utile : on inflige des dégâts sans mourir, et on évite la frappe au visage.
       return degatsEvites * 0.35 - degatsRecus * 0.18 + furie;
@@ -737,6 +760,7 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
         face += attaquant.atk ?? 0;
         continue;
       }
+      face += excesOverkill(attaquant, bloqueur);
       const echange = resultatBlocage(attaquant, bloqueur);
       if (echange.attaquantMeurt) notrePerte += valeurEntite(attaquant);
       else notreFurie += echange.attaquantFurie * 0.8;
@@ -953,10 +977,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         const echo = echoMontant > 0
           ? (duel[adv].creatures.length - tues.length) * echoMontant * 0.35
           : 0;
+        const chanceGel = Math.min(1, Math.max(0, Number(effet.gelChance) || 0));
         const gain = tues.reduce((somme, entite) => somme + valeurEntite(entite), 0) + blessees.length * 1.2 + echo
-          // Le gel de zone (le Verglas) fige toute la table adverse en plus
-          // de la blessure : un tour entier de leur attaque en moins.
-          + (effet.gel ? duel[adv].creatures.length * 1.2 : 0);
+          // Le gel de zone fige les survivantes en plus de la blessure : un
+          // tour entier de leur attaque en moins, payé à sa probabilité —
+          // 25 % pour la Brume du fjord, une chance sur deux pour le Hurlement.
+          + (effet.gel ? duel[adv].creatures.length * 1.2 : blessees.length * chanceGel * 1.2);
         return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
       }
       const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
@@ -1059,7 +1085,8 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       // que d'être brûlé. Un bonus déclaré avec `tours` ne dépasse pas le tour
       // en cours — il ne développe pas la table et ne vaut que pour l’échange.
       if (!camp.creatures.length) return { score: 0, cibleId: null };
-      const bonus = (effet.atk ?? 0) * 0.8 + (effet.def ?? 0) * 0.4;
+      const bonus = (effet.atk ?? 0) * 0.8 + (effet.def ?? 0) * 0.4
+        + (effet.overkill ? 1.1 : 0);
       const durable = Number(effet.tours) > 0 ? 0.5 : 1;
       const score = (1.5 + camp.creatures.length * (1.5 + bonus)) * durable - cout * 0.2;
       return { score: score > 0 ? score : 0, cibleId: null };
@@ -1148,7 +1175,14 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   let cibleId = null;
   const arrivee = carte.arrivee;
   if (arrivee) {
-    if (arrivee.type === 'pioche') score += 2 + (camp.main.length <= 3 ? 2 : 0);
+    if (arrivee.type === 'pioche') {
+      if (arrivee.tribu) {
+        const resteUneCarteDuType = camp.deck.some((carteId) => cardHasPrintedType(carteId, arrivee.tribu));
+        score += resteUneCarteDuType ? 2.5 + (camp.main.length <= 3 ? 2 : 0) : 0;
+      } else {
+        score += 2 + (camp.main.length <= 3 ? 2 : 0);
+      }
+    }
     if (arrivee.type === 'pioche-defausse') {
       const net = Math.max(0, (arrivee.pioche ?? 0) - (arrivee.defausse ?? 0));
       score += 1 + net * 1.5 + (camp.main.length <= 3 ? 2 : 0);

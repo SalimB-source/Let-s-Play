@@ -19,6 +19,7 @@
  *
  * Les plafonds globaux (`mythiquesTotalMax`, `raresTotalMax`) contrôlent la
  * collection de raretés des decks de départ et comptent toutes les familles.
+ * `finisseursMax` peut aussi borner les exemplaires à cinq manas ou plus.
  * Les plafonds facultatifs de campagne (`mythiquesMax`, `raresMax`) restent
  * comptés par famille : ils règlent la rampe des Tours sans laisser de place vide.
  *
@@ -124,8 +125,9 @@ export const RPG_RECETTES_DECKS = {
     ],
   },
   /**
-   * Le Serment des Neuf Hivers associe Furie et Résonance aux tours de gel,
-   * au brouillard de combat et à la Lance de givre. Le Maître du marteau est
+   * Le Serment des Neuf Hivers associe la Furie et l'appel viking de la
+   * Valkyrie au corbeau aux tours de gel, au brouillard de combat et à la
+   * Lance de givre. Le Maître du marteau est
    * son unique mythique ; les autres figures du Nord se gagnent au Souk.
    */
   'serment-des-neuf-hivers': {
@@ -136,6 +138,7 @@ export const RPG_RECETTES_DECKS = {
     armes: 1,
     raresTotalMax: 10,
     mythiquesTotalMax: 1,
+    finisseursMax: 8,
     signature: [
       ['eclair-du-marteau', 2], ['festin-des-vaillants', 2],
       ['guerrier-au-bouclier-rond', 2], ['loup-des-neiges', 2],

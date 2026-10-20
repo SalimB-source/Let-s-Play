@@ -1486,10 +1486,12 @@ assert.match(battlePage,
 assert.match(battlePage, /cards\/\$\{artId\}\.jpg\$\{revision \? `\?v=\$\{revision\}` : ''\}/,
   'l’URL de l’illustration porte bien le paramètre de version');
 
-// ── Les capacités de clan du Nord : Furie des vikings, Résonance des valkyries.
+// ── Les capacités de clan du Nord : Furie des vikings, Résonance samouraï.
 const { RPG_DECK_NEIGE_BASE, RPG_DUEL_CARDS } = await import('../src/games/rpgCards.js');
-assert.match(duelEngine, /entite\.atk \+= furie;[\s\S]*?duel\.log\.push\(`\$\{entite\.name\} entre en furie : \+\$\{furie\}\/\+\$\{furie\}\.`\)/,
-  'le moteur applique et journalise la Furie d’une créature blessée qui survit');
+assert.match(duelEngine, /const defenseBase = Math\.max\(0, Number\(carte\?\.def\) \|\| 0\);[\s\S]*?duel\.log\.push\(`\$\{entite\.name\} entre en furie : \+\$\{furie\}\/\+0\.`\)/,
+  'le moteur synchronise et journalise la Furie +X/+0 sous la DEF de base');
+assert.match(duelEngine, /duel\.log\.push\(`\$\{entite\.name\} retrouve sa DEF de base : la furie retombe\.`\)/,
+  'et retire ce seul bonus quand la créature retrouve sa DEF de base');
 assert.match(duelEngine, /export function rpgResonanceEnJeu\(duel(?:, element = 'neige')?\)/,
   'la Résonance en jeu se compte sur toute la table, par élément et pour les deux camps');
 assert.match(duelEngine, /const groupes = GROUPES_RESONANCE\.filter\(\(groupe\) => cardReceivesResonance\(duelCardById\(entite\.carteId\), groupe\)\);[\s\S]*?entite\.pv = Math\.max\(1, entite\.pv \+ delta\)/,
@@ -1503,31 +1505,42 @@ assert.ok(jarl && jarl.element === 'neige' && jarl.furie === 3,
   'le Jarl au marteau de guerre porte la Furie 3 du set Neige');
 assert.ok(RPG_DECK_NEIGE_BASE.includes('jarl-au-marteau-de-guerre'),
   'le Serment des Neuf Hivers aligne le Jarl');
-// La Furie est nordique : des vikings, et le Maître du marteau — un héros du
-// Nord, qui la porte sans la ligne de type « viking ». Depuis que la Furie ne
-// se déclenche qu'une fois, chaque face l'annonce « La première fois ».
+// La Furie est nordique : trois vikings, le Maître du marteau et le Loup des
+// neiges. Les faces nomment sobrement « Furie X. » : la règle complète vit
+// dans la pastille et les leçons, pas dans un pavé imprimé sur la carte.
 for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.furie)) {
-  assert.ok(/viking/i.test(carte.typeLine) || carte.kind === 'hero',
-    `${carte.id} est un viking ou un héros du Nord`);
-  assert.match(carte.text, new RegExp(`Furie ${carte.furie} — La première fois qu’il est blessé et survit`),
+  assert.equal(carte.element, 'neige', `${carte.id} appartient au set Neige`);
+  assert.match(carte.text, new RegExp(`(?:^|\\. )Furie ${carte.furie}\\.`),
     `${carte.id} annonce sa Furie sur sa face`);
+  assert.doesNotMatch(carte.text, /première fois|gagne \+\d+\/\+\d+/,
+    `${carte.id} ne récite plus l’ancienne Furie unique en +X/+X`);
 }
 for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {
-  if (carte.resonanceTribu === 'samourai') {
-    assert.match(carte.text, /Résonance samouraï — Tant (?:qu’il|que Kagutsuchi) est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent \+1\/\+1/,
-      `${carte.id} annonce sa Résonance de tribu sur sa face`);
-  } else {
-    assert.match(carte.typeLine, /valkyrie/i, `${carte.id} est une valkyrie`);
-    assert.match(carte.text, /Résonance viking — Tant qu’elle est en jeu, toutes les créatures de type Viking de la table, dans les deux camps, gagnent \+1\/\+1/,
-      `${carte.id} annonce sa Résonance viking sur sa face`);
-  }
+  assert.equal(carte.resonanceTribu, 'samourai',
+    `${carte.id} : la Résonance du catalogue est désormais uniquement samouraï`);
+  assert.match(carte.text, /Résonance samouraï — Tant (?:qu’il|que Kagutsuchi) est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent \+1\/\+1/,
+    `${carte.id} annonce sa Résonance de tribu sur sa face`);
 }
+assert.equal(RPG_DUEL_CARDS.some((carte) => carte.resonanceTribu === 'viking' || /Résonance viking/.test(carte.text ?? '')), false,
+  'aucune carte n’affiche encore de Résonance viking');
+const valkyrieCorbeau = RPG_DUEL_CARDS.find((carte) => carte.id === 'valkyrie-au-corbeau');
+assert.ok(valkyrieCorbeau?.cost === 5 && valkyrieCorbeau.atk === 3 && valkyrieCorbeau.def === 4,
+  'la Valkyrie au corbeau est une 3/4 pour cinq manas');
+assert.match(valkyrieCorbeau.text, /piochez une carte de type Viking au hasard dans votre deck/,
+  'sa face annonce la pioche tribale aléatoire');
+const brumeFjord = RPG_DUEL_CARDS.find((carte) => carte.id === 'brume-du-fjord');
+assert.equal(brumeFjord?.touteZone?.gelChance, 0.25,
+  'Brume du fjord gèle chaque survivante avec une probabilité de 25 %');
+assert.match(brumeFjord.text, /25 % de chances de la geler/,
+  'la face de Brume affiche ce taux sans ambiguïté');
+assert.match(battlePage, /'brume-du-fjord': 'brume-soldats-geles-v1'/,
+  'la nouvelle peinture des soldats gelés dans la brume est datée contre les caches');
 
 // ── Retouches du catalogue : bonus borné, écho, coût et peintures reprises ─
 // Ces quatre règles vivent dans le moteur, pas dans le texte des cartes : le
 // garde-fou vérifie les deux extrémités (octroi + effacement, promesse + chute).
-assert.match(duelEngine, /const temporaire = Number\(effet\.tours\) > 0;[\s\S]*?carnet\.push\(\{ entiteId: entite\.id, atk: bonusAttaque, def: bonusDefense, tour: duel\.tour \}\)/,
-  'un bonus déclaré avec `tours` est accordé puis consigné dans le carnet du camp, daté du tour qui le voit jouer');
+assert.match(duelEngine, /const temporaire = Number\(effet\.tours\) > 0;[\s\S]*?carnet\.push\(\{ entiteId: entite\.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, tour: duel\.tour \}\)/,
+  'un bonus déclaré avec `tours` — Overkill prêté compris — est accordé puis consigné dans le carnet du camp');
 assert.match(duelEngine, /annulerBonusTemporaires\(duel, duel\.tour\);[\s\S]*?duel\.tour = autre\(duel\.tour\)/,
   'les renforts du tour qui se termine s’effacent avant que l’autre camp ne commence');
 assert.match(duelEngine, /if \(entry\.tour && entry\.tour !== tourFerme\) \{\s*restants\.push\(entry\);/,
@@ -1617,7 +1630,7 @@ console.log(
   + 'rail du tour remonté au milieu de la table — indicateur et « Fin du tour » doré en colonne à la verticale du centre; sur PC, six phases en icônes seules orange à l’horizontale sur fond foncé transparent, même rangée d’icônes au doigt, boutons de droite compacts —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, fond foncé commun aux boutons Annuler, Attaquer avec tous, Confirmer et Annuler l’attaque sur PC, icônes de phase orange agrandies sur PC, sur PC, plaques sombres, compactes et arrondies : cadre doré pour le joueur, cuivré pour l’adversaire; portrait à gauche, nom du profil ou du sorcier au-dessus des PV, tactile préservé, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
   + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, les Ruines de Tipaza, le Fjord des Neuf Hivers) attribués selon le deck — la Braise rejoint la Table des Heures après le retrait du plateau des Brûlés —; peintures visibles sans voile, capsules sombres pour la lisibilité; plaques PC compactes en capsule, cadre doré joueur et cuivré adversaire, nom du profil et d’Ifrit al-Ahmar affichés, nom d’étage conservé, tactile préservé, '
-  + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
+  + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie du Nord (+X/+0 tant que la défense reste sous sa DEF de base, journalisée dans le duel et pesée par l’IA), Valkyrie au corbeau 3/4 qui pioche un Viking au hasard, Brume du fjord qui gèle à 25 %, et Résonance samouraï (+1/+1 aux créatures de type Samouraï de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
   + 'retouches du catalogue Eau et Sable : Rapport du greffier à trois manas, Rempart de dunes en +0/+3 borné au tour (le carnet du camp l’efface à la fin du tour, et une créature réduite à zéro par ce retrait tombe), Nuage de cendres dont la seconde vague reste suspendue jusqu’au tour suivant de son lanceur — elle brûle ce que le sorcier a posé entre-temps, même si la première vague avait vidé la table, et se dissipe en le disant si rien ne s’y trouve —, Tempête de sable à trois dégâts, Marée contraire devenue Déflection, et sept magies peintes en plein art 4:5 sur leur propre fichier, '
   + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, éventail de la souris (angle, ouverture latérale et descente en arc, carte survolée qui se soulève dans son axe, mise à zéro au doigt), main du sorcier agrandie à la taille d’une carte, colonne des actions sous le rail et commandes du combat en aplat clair qui respire, régression de la magie rapide qui élimine le dernier attaquant pendant la réponse.'
 );

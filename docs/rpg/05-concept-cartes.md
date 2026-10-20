@@ -154,31 +154,31 @@ lancé depuis la main, elle n'a pas à se poser avant de désigner.
 
 ### Les capacités de clan du Nord
 
-Deux capacités appartiennent au set **Neige** et à lui seul ; elles se lisent
-sur la carte (`furie`, `resonance`) et le moteur les applique sans table
-d'effets supplémentaires.
+La Furie appartient au set **Neige** et à lui seul ; elle se lit sur la carte
+(`furie`) et le moteur l'applique sans table d'effets supplémentaires. Les
+valkyries n'émettent plus de Résonance viking.
 
-- **Furie X** (les vikings : Guerrier au bouclier rond 1, Berserk des trois
-  hivers 2, Jarl au marteau de guerre 3) — « Chaque fois qu'elle est blessée et
-  survit, la créature gagne +X/+X. » Une attaque **entièrement absorbée par un
-  bouclier n'est pas une blessure** : la Furie attend le premier sang. Elle
-  frappe **une seule fois par échange**, même quand la créature encaisse comme
-  attaquante et comme bloqueuse dans le même combat, et **jamais une créature
-  qui meurt** : c'est une récompense de survie, pas un baroud d'honneur. Le
-  bonus porte sur l'attaque, la défense et les points de vie présents et
-  maximum : une créature furieuse reste entamée sous son nouveau plafond.
-- **Résonance** (les valkyries : Valkyrie au corbeau et Valkyrie des glaces) —
-  « Tant qu'elle est en jeu, **toutes** les créatures Neige de la table
-  gagnent +1/+1. » L'aura est de table : elle profite aux deux camps, à la
-  valkyrie elle-même, et se cumule si deux sources sont en jeu. Chaque entité
-  retient sa part (`entite.resonance`), si bien qu'une source qui entre ou qui
-  meurt n'ajoute ou ne retire que son écart — les bonus déjà gagnés par la
-  Furie ne dérivent jamais. Perdre l'aura ne peut pas tuer : les points de vie
-  et la défense retombent au plancher de 1.
+- **Furie X** (Guerrier au bouclier rond et Loup des neiges 1, Berserk des
+  trois hivers 2, Jarl au marteau de guerre et Maître du marteau 3) — un état
+  continu : tant que la défense actuelle d'une créature vivante est sous sa
+  **DEF de base** — la défense imprimée de sa carte, sans les renforts ni les
+  auras — elle gagne **+X/+0**. Ces renforts peuvent donc absorber une
+  blessure sans la faire passer sous le seuil. Le bonus d'attaque est compté
+  à part : dès que la créature retrouve sa DEF de base, il est retiré sans
+  toucher aux autres renforts,
+  puis une nouvelle chute sous le seuil peut le rallumer. Une attaque
+  entièrement absorbée par un bouclier ne fait pas passer sous le seuil, et
+  une créature qui meurt n'entre pas en Furie.
+- **L'appel du corbeau** (Valkyrie au corbeau, 5 mana, 3/4, Envol) — à son
+  arrivée, son contrôleur pioche une carte dont la ligne de type contient
+  **Viking**, choisie uniformément au hasard parmi les exemplaires encore
+  dans son deck. Le type imprimé décide : un Loup des neiges (type Loup) et
+  les sorts Neige ne sont pas éligibles. S'il ne reste aucun Viking dans le
+  deck, l'arrivée ne fait pas piocher de carte de remplacement.
 
-Les deux capacités se cumulent, et les vikings comme les valkyries gardent
-leurs capacités propres (Coup rapide du Berserk, Envol et arrivée des
-valkyries, arrivées du Guerrier et du Jarl).
+Les créatures du Nord gardent leurs capacités propres (Coup rapide du
+Berserk, Envol des valkyries, bouclier d'arrivée du Guerrier, soin d'arrivée
+de la Valkyrie des glaces).
 
 Deux règles encadrent ces attaques. **Une seule phase d'attaque par tour**, et
 par camp : une fois le combat déclaré et résolu, il n'y en a pas de second avant

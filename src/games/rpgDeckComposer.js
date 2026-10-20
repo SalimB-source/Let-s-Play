@@ -11,11 +11,14 @@
  * la puissance (`rpgCardPower.js`), chaque carte prise à son maximum légal
  * (une mythique en un exemplaire, les autres jusqu'à deux).
  *
- * Trois garde-fous :
+ * Quatre garde-fous :
  *
  *   - **Les plafonds globaux.** Une recette peut fixer `mythiquesTotalMax` et
  *     `raresTotalMax` pour borner le nombre de cartes distinctes de ces paliers
  *     dans l'ensemble du deck. Ils comptent la signature et ne cèdent jamais.
+ *   - **Le plafond de courbe.** `finisseursMax` borne les exemplaires à cinq
+ *     manas ou plus, signature comprise, pour qu'un remplissage par puissance
+ *     ne transforme pas un deck en main de finisseurs.
  *   - **Les plafonds du Récit.** `mythiquesMax` et `raresMax` restent des
  *     plafonds par famille pour les paquets de campagne ; ils gardent la rampe
  *     des Tours sans qu'un sort rare soit écarté par une créature rare.
@@ -56,7 +59,7 @@ export function composerDeck(recette, catalogue) {
   const {
     identite = [], terrains = [], creatures = 0, magies = 0, armes = 0,
     signature = [], mythiquesMax = Infinity, raresMax = Infinity,
-    mythiquesTotalMax = Infinity, raresTotalMax = Infinity,
+    mythiquesTotalMax = Infinity, raresTotalMax = Infinity, finisseursMax = Infinity,
   } = recette ?? {};
 
   const dansIdentite = (carte) => {
@@ -76,6 +79,11 @@ export function composerDeck(recette, catalogue) {
       return carte?.rarity === rarete && (!seau || seauDe(carte) === seau);
     }).length;
 
+  /** Les exemplaires à cinq manas ou plus déjà posés, toutes familles confondues. */
+  const nombreFinisseurs = () => [...comptes.entries()].reduce((total, [id, copies]) => (
+    (carteParId.get(id)?.cost ?? 0) >= 5 ? total + copies : total
+  ), 0);
+
   /** Les plafonds globaux sont durs, y compris pour la signature et la passe de secours. */
   const depassePlafondGlobal = (carte) => {
     if (!carte || comptes.has(carte.id)) return false;
@@ -91,7 +99,10 @@ export function composerDeck(recette, catalogue) {
     const limite = limiteDe(carte);
     const deja = comptes.get(carte.id) ?? 0;
     const place = quotas[seau] - choisis[seau].length;
-    const copies = Math.max(0, Math.min(nombre - deja, limite - deja, place));
+    const placeFinisseur = (carte.cost ?? 0) >= 5
+      ? Math.max(0, finisseursMax - nombreFinisseurs())
+      : Infinity;
+    const copies = Math.max(0, Math.min(nombre - deja, limite - deja, place, placeFinisseur));
     for (let i = 0; i < copies; i += 1) choisis[seau].push(carte.id);
     if (copies > 0 || deja > 0) comptes.set(carte.id, deja + copies);
     return copies;

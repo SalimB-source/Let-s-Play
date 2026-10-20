@@ -15,6 +15,7 @@ import {
   cardById,
   cardColorCost,
   cardColors,
+  cardHasPrintedType,
   cardResonanceGroup,
   cardReceivesResonance,
   resonanceGroupLabel,
@@ -429,6 +430,31 @@ export function rpgPiocher(duel, cote) {
   const camp = duel[cote];
   if (!camp.deck.length) return null;
   const carte = camp.deck.pop();
+  camp.main.push(carte);
+  presenter(duel, { type: 'pioche', cote, carteId: carte });
+  return carte;
+}
+
+/**
+ * Pioche une carte d'un type imprimé donné, choisie uniformément au hasard
+ * parmi les exemplaires encore dans le deck. Ce n'est pas une pioche du
+ * dessus suivie d'un tri : s'il ne reste aucune carte du type demandé, rien
+ * ne rejoint la main. Le reste du deck garde son ordre.
+ */
+function piocherCarteDeType(duel, cote, type) {
+  const camp = duel?.[cote];
+  if (!camp?.deck?.length || !type) return null;
+  const candidates = [];
+  camp.deck.forEach((carteId, index) => {
+    if (cardHasPrintedType(carteId, type)) candidates.push(index);
+  });
+  if (!candidates.length) return null;
+  const rng = hasardParDuel.get(duel) ?? Math.random;
+  const choix = Math.min(
+    candidates.length - 1,
+    Math.max(0, Math.floor(rng() * candidates.length)),
+  );
+  const [carte] = camp.deck.splice(candidates[choix], 1);
   camp.main.push(carte);
   presenter(duel, { type: 'pioche', cote, carteId: carte });
   return carte;
@@ -932,6 +958,10 @@ function rafraichirAuras(duel) {
   appliquerAuraAmani(duel, 'sorcier');
   appliquerAuraKenshi(duel);
   majResonance(duel);
+  // La Furie suit l'écart entre la défense actuelle et la DEF de base
+  // imprimée : une aura qui déplace les PV peut donc aussi l'allumer ou
+  // l'éteindre, même sans changer ce seuil.
+  synchroniserFuries(duel);
 }
 
 /** Protection temporaire contre les effets et les créatures d'une couleur
@@ -990,9 +1020,17 @@ function creerEntiteCreature(carte) {
     coupRapide: Boolean(carte.coupRapide),
     envol: Boolean(carte.envol),
     infiltration: Boolean(carte.infiltration),
+    // Furie : l'état visible et la seule part d'attaque qu'il a ajoutée. Le
+    // bonus est compté à part pour pouvoir le retirer sans toucher aux
+    // autres renforts quand la créature retrouve sa DEF de base.
+    furieDeclenchee: false,
+    furieBonusAtk: 0,
     // Overkill (le Serpent du monde) : comme le Piétinement — bloqué, il fait
     // passer au sorcier défenseur la force qui dépasse ses bloqueurs.
+    // `overkillTemporaire` compte les prêts encore actifs (le Mur de
+    // boucliers) sans écraser l'Overkill imprimé ou celui d'une arme.
     overkill: Boolean(carte.overkill),
+    overkillTemporaire: 0,
     // Protection contre les magies rapides et les sorcelleries (le Serpent du
     // monde) : aucun sort ne peut la cibler ni la blesser — les capacités,
     // armes et attaques passent normalement.
@@ -1192,29 +1230,65 @@ function armeDePorteurMort(duel, cote, entite) {
   };
 }
 
-/**
- * Furie — capacité des vikings : une créature **blessée qui survit** gagne
- * +X/+X (X = la furie imprimée sur la carte) — une seule fois. La première
- * blessure survivée l'enflamme ; les suivantes ne la grandissent plus. Les
- * blessures d'un même échange ne font donc jamais double effet, et une
- * attaque entièrement absorbée par un bouclier n'est pas une blessure : la
- * furie attend le premier sang. Renvoyée en main puis rejouée, la carte
- * revient avec sa Furie neuve : la flambée appartient à la présence en jeu.
- */
-function appliquerFurie(duel, entite, degatsRecus) {
-  const furie = Math.max(0, Number(duelCardById(entite.carteId)?.furie) || 0)
+/** Furie portée par une créature : la valeur de sa carte, plus celle que
+ *  l'arme tenue peut lui prêter. Une seule lecture pour le moteur et ses
+ *  synchronisations après un changement d'équipement. */
+function furieTotale(entite) {
+  return Math.max(0, Number(duelCardById(entite.carteId)?.furie) || 0)
     + Math.max(0, Number(armeCarteDe(entite)?.donne?.furie) || 0);
-  if (!furie || degatsRecus <= 0 || entite.furieDeclenchee) return;
-  entite.furieDeclenchee = true;
-  entite.atk += furie;
-  entite.pvMax = (entite.pvMax ?? entite.def) + furie;
-  entite.def += furie;
-  entite.pv += furie;
-  duel.log.push(`${entite.name} entre en furie : +${furie}/+${furie}.`);
+}
+
+/**
+ * Furie — état réversible, pas flambée unique : tant que la défense actuelle
+ * d'une créature vivante est **sous sa DEF de base** (la défense imprimée de
+ * sa carte, sans les renforts ni les auras), elle gagne +X/+0. Dès qu'un
+ * soin — ou tout autre changement de statistiques — la ramène à cette DEF de
+ * base, seul le bonus compté dans `furieBonusAtk` repart ; une nouvelle chute
+ * sous le seuil le rallume. Un coup entièrement absorbé ne fait pas passer
+ * sous le seuil. Renvoyée en main puis rejouée, la carte revient à sa DEF de
+ * base et donc hors de Furie.
+ */
+function synchroniserFurieEntite(duel, entite) {
+  if (!entite) return false;
+  const furie = furieTotale(entite);
+  let bonus = Number(entite.furieBonusAtk);
+  // Présence ancienne ou fixture antérieure au compteur : l'état visible dit
+  // si le bonus est déjà compris dans l'attaque affichée.
+  if (!Number.isFinite(bonus)) bonus = entite.furieDeclenchee ? furie : 0;
+  bonus = Math.max(0, bonus);
+  const pv = Number(entite.pv) || 0;
+  const defenseDeBase = Math.max(
+    0,
+    Number(duelCardById(entite.carteId)?.def ?? entite.pvMax ?? entite.def) || 0,
+  );
+  const active = furie > 0 && pv > 0 && defenseDeBase > 0 && pv < defenseDeBase;
+  const voulu = active ? furie : 0;
+  const delta = voulu - bonus;
+  const etaitActive = Boolean(entite.furieDeclenchee);
+  entite.furieBonusAtk = voulu;
+  entite.furieDeclenchee = active;
+  if (delta) entite.atk = Math.max(0, (Number(entite.atk) || 0) + delta);
+  if (duel && pv > 0 && active && !etaitActive) {
+    duel.log.push(`${entite.name} entre en furie : +${furie}/+0.`);
+  } else if (duel && pv > 0 && !active && etaitActive) {
+    duel.log.push(`${entite.name} retrouve sa DEF de base : la furie retombe.`);
+  }
+  return active;
+}
+
+function synchroniserFuries(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) synchroniserFurieEntite(duel, entite);
+  }
+}
+
+function appliquerFurie(duel, entite, degatsRecus) {
+  if (!(degatsRecus > 0)) return;
+  synchroniserFurieEntite(duel, entite);
 }
 
 /** Total des sources d'un groupe de Résonance (élément ou tribu), dans les
- * deux camps. Le défaut Neige conserve l'API des valkyries. */
+ * deux camps. Le défaut Neige conserve l'ancienne signature de l'API. */
 export function rpgResonanceEnJeu(duel, element = 'neige') {
   let total = 0;
   for (const cote of ['joueur', 'sorcier']) {
@@ -1392,9 +1466,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       furieuses.push({ entite, recus, cote, sources: blessure.sources });
     }
   }
-  // La furie s'embrase après les blessures, une seule fois par présence : les
-  // blessures d'un même échange ne font jamais double effet, et une créature
-  // morte ne s'énerve pas. Le journal reprend aussi les frappes qui n'ont pas
+  // La Furie se synchronise après les blessures cumulées de l'échange : les
+  // coups simultanés ne font jamais double effet, et une créature morte ne
+  // s'énerve pas. Le journal reprend aussi les frappes qui n'ont pas
   // été létales : le flux ne se limite donc pas aux créatures détruites.
   for (const { entite, recus, cote, sources } of furieuses) {
     appliquerFurie(duel, entite, recus);
@@ -1580,6 +1654,17 @@ function annulerBonusTemporaires(duel, tourFerme) {
       entite.def = Math.min(entite.def, Math.max(0, entite.pv));
       // Le Tribut prêté par l'Offrande de lin repart avec le renfort.
       if (entry.tribut) entite.tribut = Math.max(0, (entite.tribut ?? 0) - entry.tribut);
+      // L'Overkill prêté par le Mur de boucliers repart aussi, sans éteindre
+      // celui de la carte ni celui d'une arme encore tenue.
+      if (entry.overkill) {
+        entite.overkillTemporaire = Math.max(
+          0,
+          (entite.overkillTemporaire ?? entry.overkill) - entry.overkill,
+        );
+        entite.overkill = Boolean(duelCardById(entite.carteId)?.overkill)
+          || Boolean(armeCarteDe(entite)?.donne?.overkill)
+          || entite.overkillTemporaire > 0;
+      }
       effaces.push(entite.name);
     }
     camp.bonusTemporaires = restants;
@@ -1799,9 +1884,26 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       duel.log.push(`${partie.length} carte${partie.length > 1 ? 's' : ''} du paquet adverse au cimetière : ${noms}.`);
       return;
     }
-    case 'pioche':
-      for (let i = 0; i < (effet.amount ?? 1); i += 1) rpgPiocher(duel, cote);
+    case 'pioche': {
+      const nombre = Math.max(0, Math.floor(Number(effet.amount ?? 1) || 0));
+      if (!effet.tribu) {
+        for (let i = 0; i < nombre; i += 1) rpgPiocher(duel, cote);
+        return;
+      }
+      // La Valkyrie au corbeau : le hasard choisit parmi les cartes du type
+      // demandé encore dans le deck, pas parmi tout le paquet.
+      let piochees = 0;
+      for (let i = 0; i < nombre; i += 1) {
+        if (!piocherCarteDeType(duel, cote, effet.tribu)) break;
+        piochees += 1;
+      }
+      const source = cardById(sourceCarteId)?.name ?? 'La capacité';
+      const label = resonanceGroupLabel(effet.tribu);
+      duel.log.push(piochees
+        ? `${source} : ${piochees} carte${piochees > 1 ? 's' : ''} de type ${label} tirée${piochees > 1 ? 's' : ''} au hasard du deck rejoint${piochees > 1 ? 'ent' : ''} la main.`
+        : `${source} ne trouve aucune carte de type ${label} dans le deck.`);
       return;
+    }
     case 'pioche-defausse': {
       const pioche = Math.max(0, Number(effet.pioche ?? effet.amount) || 0);
       const aDefausser = Math.max(0, Number(effet.defausse) || 0);
@@ -1923,6 +2025,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.pv = Math.min(entite.pvMax, entite.pv + (effet.amount ?? 0));
         entite.def = Math.min(entite.pvMax, Math.max(entite.def, entite.pv));
         journaliserSoin(duel, cote, entite.pv - pvAvant, entite.id);
+        // Le soin peut refermer la blessure qui tenait la Furie allumée.
+        synchroniserFurieEntite(duel, entite);
       }
       // `etJoueur` (Yamina) : le même soin s'étend au sorcier du camp —
       // les créatures d'abord, puis leur maître.
@@ -2015,6 +2119,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // chaque créature touchée gagne Tribut X, rendu avec le bonus quand le
       // carnet s'efface à la fin du tour.
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
+      const bonusOverkill = effet.overkill ? 1 : 0;
       for (const entite of ciblesBuff) {
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
@@ -2023,7 +2128,11 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.def = Math.max(plancher, entite.def + bonusDefense);
         entite.pv = Math.max(plancher, entite.pv + bonusDefense);
         if (bonusTribut) entite.tribut = (entite.tribut ?? 0) + bonusTribut;
-        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, tour: duel.tour });
+        if (bonusOverkill) {
+          entite.overkill = true;
+          if (temporaire) entite.overkillTemporaire = (entite.overkillTemporaire ?? 0) + bonusOverkill;
+        }
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, tour: duel.tour });
         // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
         // et la mort est attribuée à la couleur de la source, pour le journal.
         if (!(entite.pv > 0) && plancher <= 0) {
@@ -2607,6 +2716,9 @@ export function rpgActionsEtat(duel) {
     }
     if (!uneMorte) break;
   }
+  // Filet de sécurité pour les soins et changements de statistiques qui ne
+  // passent ni par une blessure ni par un rafraîchissement d'auras.
+  synchroniserFuries(duel);
   return retirees;
 }
 

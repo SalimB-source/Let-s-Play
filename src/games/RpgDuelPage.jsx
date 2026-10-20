@@ -268,10 +268,10 @@ const CARD_ART_CACHE_VERSIONS = {
   'maree-contraire': 'deflection-ultrason-v1',
   ressac: 'djinn-tourbillon-v1',
   'courant-de-retour': 'djinn-tourbillon-v1',
-  // Les quatre porteurs de Furie ont été repeints en photoréaliste fantaisiste :
-  // chaque face intacte a son double ensanglanté, armure ou casque brisé et
-  // visage en furie. On date les huit images ensemble pour qu’aucun cache ne
-  // resserve les anciennes huiles sous les mêmes noms de fichiers.
+  // Les quatre porteurs humains de Furie ont été repeints en photoréaliste
+  // fantaisiste : chaque face intacte a son double ensanglanté, armure ou
+  // casque brisé et visage en furie. On date les huit images ensemble pour
+  // qu’aucun cache ne resserve les anciennes huiles sous les mêmes noms.
   'guerrier-au-bouclier-rond': 'furie-photorealiste-v1',
   'berserk-des-trois-hivers': 'furie-photorealiste-v1',
   'jarl-au-marteau-de-guerre': 'furie-photorealiste-v1',
@@ -280,6 +280,15 @@ const CARD_ART_CACHE_VERSIONS = {
   'berserk-des-trois-hivers-furie': 'furie-photorealiste-v1',
   'jarl-au-marteau-de-guerre-furie': 'furie-photorealiste-v1',
   'maitre-du-marteau-furie': 'furie-photorealiste-v1',
+  // Le Loup garde, lui, la peinture à l’huile de sa meute : même composition,
+  // chef ensanglanté et crocs dehors dans l’état Furie.
+  'loup-des-neiges-furie': 'loup-furie-huile-v1',
+  // Repeints sous leurs anciens noms : charge frontale pour le Mur, marteau
+  // seul foudroyé au-dessus du fjord pour l’Éclair, soldats gelés dans la
+  // brume pour la Brume du fjord.
+  'mur-de-boucliers': 'mur-boucliers-charge-v1',
+  'eclair-du-marteau': 'eclair-marteau-fjord-v1',
+  'brume-du-fjord': 'brume-soldats-geles-v1',
 };
 /**
  * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la
@@ -298,9 +307,9 @@ const cardArt = (id) => {
   return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
 };
 /**
- * Illustration « furie » d'une créature : quand une créature dotée du
- * mot-clé Furie a été blessée et a survie (entite.furieDeclenchee === true),
- * on affiche sa peinture alternative entachée de sang et en colère.
+ * Illustration « furie » d'une créature : tant que son état Furie est actif
+ * (`entite.furieDeclenchee === true`), on affiche sa peinture alternative
+ * entachée de sang et en colère ; dès qu'il retombe, la face normale revient.
  * Retourne l'URL de l'image `public/cards/<id>-furie.jpg` avec sa révision
  * de cache, ou l'illustration normale si aucune peinture furie n'existe.
  */
@@ -2301,16 +2310,16 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
-  // Une créature dont la Furie s'est enflammée ne se consulte pas sous sa
-  // peinture d'avant la blessure : l'aperçu montre le visuel qu'elle porte
-  // sur la table — illustration « furie » pleine page, sans cadre — et les
-  // statistiques qu'elle a gagnées. Sans statistiques transmises, le bonus
-  // imprimé de la Furie sert de repli.
+  // Une créature en Furie ne se consulte pas sous sa peinture d'avant la
+  // blessure : l'aperçu montre le visuel qu'elle porte sur la table —
+  // illustration « furie » pleine page, sans cadre — et ses statistiques du
+  // moment. Sans statistiques transmises, seule l'attaque reçoit le bonus
+  // imprimé : la Furie ne donne aucune défense.
   const estEnFurie = estCreature && Boolean(furieDeclenchee);
   const bonusFurie = Math.max(0, Number(carte.furie) || 0);
   const statFurie = (valeur, repli) => (valeur == null || valeur === '' || !Number.isFinite(Number(valeur)) ? repli : Number(valeur));
   const attaqueAffichee = estEnFurie ? statFurie(statsFurie?.atk, (carte.atk ?? 0) + bonusFurie) : carte.atk;
-  const defenseAffichee = estEnFurie ? statFurie(statsFurie?.def, (carte.def ?? 0) + bonusFurie) : carte.def;
+  const defenseAffichee = estEnFurie ? statFurie(statsFurie?.def, carte.def ?? 0) : carte.def;
   // La même signature que celle de la main : la face de l'aperçu — survol,
   // appui long, fiche du catalogue, annonce — porte le socle de la famille, et
   // sa ligne de type prend la teinte de cette famille.

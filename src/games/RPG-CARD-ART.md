@@ -90,6 +90,14 @@ mondes et le Serpent du monde — ont leur plein art dédié dans `public/cards/
 Le Glacier possède aussi une seconde peinture jouable, **Glacier des arches**,
 qui partage sa production de Neige.
 
+Quatre visuels ont été repris en 1024×1280 : **Éclair du marteau** (le marteau
+seul, foudroyé au-dessus d’un fjord de glace), **Mur de boucliers** (la charge
+frontale d’un mur de boucliers ronds peints), **Brume du fjord** (des soldats
+vikings couverts de givre qui marchent en file dans un brouillard glacial,
+les silhouettes arrière presque effacées) et l’état Furie du **Loup des
+neiges** (`loup-des-neiges-furie.jpg`, même meute et même composition que la
+peinture intacte, chef ensanglanté et crocs dehors).
+
 Les **figures du Nord** sont peintes comme des personnes, chacune avec son
 attribut, parce que leur sujet ne doit jamais se réduire à un objet :
 
@@ -332,9 +340,9 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
 - **Serpent des citernes** (`serpent-des-citernes.jpg`) — le jeton évoqué
   par le Bâton : serpent verdâtre dressé dans la citerne moussue.
 
-## Dérogation : les quatre porteurs de Furie en photoréaliste (octobre 2026)
+## Dérogation : les quatre porteurs humains de Furie en photoréaliste (octobre 2026)
 
-Les quatre cartes Neige qui portent le mot-clé **Furie** — **Guerrier au
+Les quatre cartes humaines Neige qui portent le mot-clé **Furie** — **Guerrier au
 bouclier rond**, **Berserk des trois hivers**, **Jarl au marteau de guerre** et
 **Maître du marteau** — dérogent elles aussi à l’huile de la collection :
 elles sont livrées en **photoréaliste fantaisiste**. Chacune possède deux
@@ -349,12 +357,19 @@ lorsque la face intacte en porte un, équipement, pelisse ou cape déchirés
 dans le cas contraire, et visage passé en furie. Les huit fichiers portent
 la révision de cache commune `furie-photorealiste-v1`.
 
-En jeu, la Furie déclenchée affiche la peinture alternative pleine page,
-sans cadre, sur la table comme dans la preview ; une **vignette rouge
-animée** serre alors les bords de la face des deux côtés (elle devient
-statique si les mouvements réduits sont demandés). Les faces intactes
-rejoignent le garde-fou `PLEIN_ART_45`, et `check:rpg-furie-preview` mesure
-les huit fichiers tout en rendant les deux états.
+Le **Loup des neiges**, cinquième porteur de Furie, ne suit pas cette
+dérogation : sa face intacte reste l’huile d’origine et son état Furie la
+reprend trait pour trait — même meute au couchant, même cadrage — avec le
+chef de meute ensanglanté, blessé à l’épaule et à la patte, babines retroussées
+(`loup-des-neiges-furie.jpg`, 1024×1280, révision `loup-furie-huile-v1`).
+
+En jeu, tant que la Furie est active, la peinture alternative pleine page
+s’affiche sans cadre, sur la table comme dans la preview ; une **vignette
+rouge animée** serre alors les bords de la face des deux côtés (elle devient
+statique si les mouvements réduits sont demandés). Quand l’état retombe, la
+face intacte et son cadre reviennent. Les faces intactes rejoignent le
+garde-fou `PLEIN_ART_45`, et `check:rpg-furie-preview` mesure les fichiers
+des cinq porteurs tout en rendant les deux états.
 
 ## Dérogation : les équipements du Sable en nihonga coloré (octobre 2026)
 

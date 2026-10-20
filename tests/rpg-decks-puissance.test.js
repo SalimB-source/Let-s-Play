@@ -298,4 +298,23 @@ test('le composeur garde la signature, remplit au maximum et ne laisse pas de pl
     'la mythique restante entre la première');
   assert.equal(listeSansLaCarte.filter((id) => id === 'rare-forte').length, 2,
     'la rare prend les places restantes, jusqu’au quota');
+
+  // Le plafond de courbe compte les exemplaires, signature comprise : la
+  // mythique à six manas épuise l’unique place de finisseur, donc la rare à
+  // cinq manas reste dehors malgré sa puissance supérieure.
+  const catalogueAvecFinisseur = {
+    ...catalogueDeTest,
+    cartes: [...cartes, fabriquer('finisseur-rare', 'rare', 5, 9, 9)],
+  };
+  const recetteBorne = {
+    ...recette,
+    terrains: [['terrain-sable', 36]],
+    creatures: 3,
+    finisseursMax: 1,
+  };
+  const listeBornee = composerDeck(recetteBorne, catalogueAvecFinisseur);
+  assert.equal(listeBornee.length, 40, 'le plafond de courbe ne laisse aucune place vide');
+  assert.equal(listeBornee.filter((id) => id === 'faible-mythique').length, 1);
+  assert.equal(listeBornee.filter((id) => id === 'finisseur-rare').length, 0,
+    'aucun second exemplaire à cinq manas ou plus ne passe le plafond');
 });

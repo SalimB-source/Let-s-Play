@@ -181,13 +181,17 @@ export function pastillesPourCarte(carte) {
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Coup rapide');
-  if (carte.overkill) ajouter('overkill', 'Overkill');
+  // L'Overkill peut être imprimé, prêté par une arme, ou accordé par un sort
+  // (le Mur de boucliers) : la pastille suit l'effet, pas seulement la fiche.
+  if (carte.overkill || carte.effet?.overkill || carte.arrivee?.overkill || carte.donne?.overkill) {
+    ajouter('overkill', 'Overkill');
+  }
   if (carte.furie) ajouter('furie', 'Furie', Number(carte.furie) || null);
   if (carte.esquive) ajouter('esquive', 'Esquive', null);
   if (carte.tenacite) ajouter('tenacite', 'Tenacité');
   if (carte.resonance) {
-    // La Résonance se nomme par le TYPE imprimé de la carte : « Résonance
-    // samouraï », « Résonance viking ».
+    // La Résonance se nomme par le TYPE imprimé de la carte : aujourd’hui,
+    // « Résonance samouraï ».
     const tribus = { samourai: 'samouraï', viking: 'viking' };
     ajouter('resonance', carte.resonanceTribu
       ? `Résonance ${tribus[carte.resonanceTribu] ?? carte.resonanceTribu}`
@@ -300,7 +304,8 @@ export const EFFET_DEFINITIONS = {
   infiltration: 'Ne peut pas être bloquée.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
-  furie: (n) => `La première fois qu’elle est blessée et survit, elle gagne +${n ?? 'X'}/+${n ?? 'X'}.`,
+  furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
+  overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
   esquive: () => '25 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
   tenacite: 'Une fois par partie, si elle doit être détruite, elle survit avec 1 point de défense.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',

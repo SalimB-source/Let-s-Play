@@ -2,18 +2,19 @@
  * La Furie se voit dans la preview de la carte.
  * node scripts/rpg-furie-preview-check.mjs
  *
- * Quand une créature avec Furie est blessée et survit, elle change de
- * visuel sur la table : peinture « furie » pleine page, sans cadre, et
- * statistiques grandies. Sa preview — survol, appui long, fiche du clic
+ * Tant qu'une créature avec Furie reste sous sa DEF de base, elle change
+ * de visuel sur la table : peinture « furie » pleine page, sans cadre, et
+ * attaque renforcée (+X/+0). Sa preview — survol, appui long, fiche du clic
  * droit — doit montrer ce même visuel, pas la carte d'avant la blessure.
  * La carte posée étiquette donc son état (`data-furie-*`, comme ses armes
  * en `data-armes`), chaque geste de consultation le transmet, et l'aperçu
  * rapide, d'ordinaire texte seul, rend sa face à la créature en Furie.
  *
- * Les quatre porteurs de Furie sont livrés en photoréaliste fantaisiste :
+ * Les quatre porteurs humains sont livrés en photoréaliste fantaisiste :
  * la face intacte et son double ensanglanté partagent le format 4:5 de la
- * carte et une même révision de cache. Une vignette rouge animée serre les
- * bords de la créature déclenchée, sur la table comme dans sa preview.
+ * carte et une même révision de cache. Le Loup des neiges garde son huile :
+ * même meute, chef ensanglanté. Une vignette rouge animée serre les bords de
+ * la créature en Furie, sur la table comme dans sa preview.
  */
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -23,8 +24,10 @@ import { RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+const glossaire = readFileSync(new URL('../src/games/effetIcons.js', import.meta.url), 'utf8');
 
 const REVISION_PHOTOREALISTE = 'furie-photorealiste-v1';
+const REVISION_LOUP_FURIE = 'loup-furie-huile-v1';
 const CARTES_PHOTOREALISTES = [
   'guerrier-au-bouclier-rond',
   'berserk-des-trois-hivers',
@@ -75,9 +78,9 @@ try {
   assert.match(faceNormale.querySelector('img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre\\.jpg\\?v=${REVISION_PHOTOREALISTE}`),
     'sous sa révision photoréaliste, pour écarter l’ancien visuel du cache');
   assert.ok(aUnCadre(faceNormale), 'et son cadre d’élément');
-  assert.deepEqual(statsDe(normal), ['3', '4'], 'les statistiques imprimées restent celles de la carte neuve');
+  assert.deepEqual(statsDe(normal), ['2', '5'], 'les statistiques imprimées restent celles de la carte neuve');
   assert.equal(normal.querySelector('.rpg-hover-card-preview__furie'), null,
-    'aucune Furie n’est annoncée tant qu’elle ne s’est pas enflammée');
+    'aucune Furie n’est annoncée tant que ses PV atteignent sa DEF de base');
   assert.equal(normal.querySelector('.rpg-furie-vignette'), null,
     'et aucune vignette rouge ne voile la carte intacte');
 
@@ -97,10 +100,10 @@ try {
   assert.equal(aUnCadre(faceFurie), false, 'aucune classe de cadre ne rogne la peinture pleine page');
   assert.ok(racineFurie.classList.contains('rpg-hover-card-preview--furie'),
     'le panneau entier quitte le cadre de la carte intacte');
-  assert.deepEqual(statsDe(furie), ['6', '6'], 'la face imprime les statistiques gagnées par la Furie');
-  assert.match(furie.querySelector('.rpg-hover-card-preview__furie')?.textContent ?? '', /Furie déclenchée — 6\/6/,
+  assert.deepEqual(statsDe(furie), ['5', '4'], 'la face imprime +3/+0 : seule l’attaque a grandi');
+  assert.match(furie.querySelector('.rpg-hover-card-preview__furie')?.textContent ?? '', /Furie déclenchée — 5\/4/,
     'les détails nomment l’état et ses statistiques du moment');
-  assert.match(racineFurie.getAttribute('aria-label') ?? '', /Furie déclenchée, attaque 6, défense 6/,
+  assert.match(racineFurie.getAttribute('aria-label') ?? '', /Furie déclenchée, attaque 5, défense 4/,
     'la lecture accessible suit le même visuel');
 
   const rapideNormal = cas('normal-rapide').querySelector('.rpg-hover-card-preview');
@@ -116,7 +119,7 @@ try {
     const faceRapide = rapideFurie.querySelector('.rpg-hover-card-preview__face');
     assert.match(faceRapide?.querySelector('img').getAttribute('src') ?? '', /-furie\.jpg/,
       `${nom} : le changement de visuel se voit dès la preview`);
-    assert.deepEqual(statsDe(rapideFurie), ['6', '6'], `${nom} : avec les statistiques du moment`);
+    assert.deepEqual(statsDe(rapideFurie), ['5', '4'], `${nom} : avec les statistiques du moment`);
     assert.ok(faceRapide?.querySelector('.rpg-furie-vignette'), `${nom} : la vignette rouge pulse aussi dans la preview rapide`);
   }
 
@@ -136,13 +139,31 @@ try {
     'avec son double ensanglanté, daté comme dans la preview');
   assert.ok(carteTableFurie.querySelector('.rpg-furie-vignette'),
     'la vignette rouge pulse donc aussi sur la créature posée');
+
+  const loupTableNormal = cas('loup-normal-table').querySelector('.rpg-card');
+  assert.ok(loupTableNormal, 'le Loup intact se rend sur la table');
+  assert.equal(loupTableNormal.classList.contains('is-furie'), false,
+    'à sa DEF de base, il garde sa face ordinaire');
+  assert.match(loupTableNormal.querySelector('.rpg-card__img').getAttribute('src') ?? '', /cards\/loup-des-neiges\.jpg\?v=peintures-definitives-v3/,
+    'avec l’huile intacte de la meute, datée par le set Neige');
+
+  const loupTableFurie = cas('loup-furie-table').querySelector('.rpg-card');
+  assert.ok(loupTableFurie, 'le Loup blessé se rend sur la table');
+  assert.ok(loupTableFurie.classList.contains('is-furie'), 'sa Furie 1 est active sous sa DEF de base');
+  assert.equal(loupTableFurie.getAttribute('data-furie-atk'), '3', 'le Loup passe de 2 à 3 d’attaque');
+  assert.equal(loupTableFurie.getAttribute('data-furie-def'), '1', 'sans gagner le moindre point de défense');
+  assert.ok((loupTableFurie.querySelector('.rpg-card__img').getAttribute('src') ?? '')
+    .includes(`loup-des-neiges-furie.jpg?v=${REVISION_LOUP_FURIE}`),
+    'avec le chef de meute ensanglanté, sous sa révision dédiée');
+  assert.ok(loupTableFurie.querySelector('.rpg-furie-vignette'),
+    'la vignette rouge serre aussi la meute en Furie');
 } finally {
   window.close();
 }
 
 // ── 2. Chaque carte à Furie a sa peinture alternative ──────────────────────
 const cartesFurie = RPG_DUEL_CARDS.filter((carte) => carte.furie);
-assert.ok(cartesFurie.length >= 4, 'le catalogue compte ses cartes à Furie');
+assert.equal(cartesFurie.length, 5, 'quatre humains et le Loup portent la Furie');
 for (const carte of cartesFurie) {
   const artId = carte.art ?? carte.id;
   assert.ok(existsSync(new URL(`../public/cards/${artId}-furie.jpg`, import.meta.url)),
@@ -167,7 +188,19 @@ for (const carteId of CARTES_PHOTOREALISTES) {
   }
 }
 
+// Le Loup ne rejoint pas la dérogation photoréaliste, mais son double
+// ensanglanté est livré au même format exact et daté séparément.
+const loupFurie = new URL('../public/cards/loup-des-neiges-furie.jpg', import.meta.url);
+assert.deepEqual(dimensionsJpeg(loupFurie), [1024, 1280],
+  'loup-des-neiges-furie.jpg est au format exact 4:5 de la face');
+assert.match(page, new RegExp(`'loup-des-neiges-furie': '${REVISION_LOUP_FURIE}'`),
+  `loup-des-neiges-furie.jpg est daté dans l’URL sous ${REVISION_LOUP_FURIE}`);
+
 // ── 3. La table étiquette, les gestes transmettent, la feuille dénude ──────
+assert.match(glossaire, /Tant que sa défense actuelle est inférieure à sa DEF de base/,
+  'le glossaire compare les PV à la DEF imprimée, pas au plafond renforcé');
+assert.doesNotMatch(page, /défense pleine|sous son plein/,
+  'aucune règle visible ne parle encore de défense pleine');
 assert.match(page, /data-furie-declenchee=\{entite\.furieDeclenchee \? 'true' : undefined\}/,
   'la créature posée étiquette sa Furie déclenchée');
 assert.match(page, /data-furie-atk=\{entite\.furieDeclenchee \? entite\.atk : undefined\}[\s\S]*?data-furie-def=\{entite\.furieDeclenchee \? entite\.pv : undefined\}/,
@@ -207,4 +240,4 @@ assert.match(css, /@keyframes rpg-furie-vignette \{\s*from \{\s*opacity: \.55;[\
 assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-furie-vignette \{ animation: none; opacity: \.82; \}\s*\}/,
   'les mouvements réduits figent la vignette sans la faire disparaître');
 
-console.log('✓ Furie photoréaliste en jeu : les quatre porteurs ont leur face intacte et leur double ensanglanté en 1024×1280, datés contre les caches ; la créature déclenchée porte sa peinture furie pleine page et sa vignette rouge animée sur la table comme dans la preview, avec ses statistiques du moment.');
+console.log('✓ Furie en jeu : les quatre humains photoréalistes et le Loup en huile ont leur double ensanglanté en 1024×1280, datés contre les caches ; tant que l’état est actif, la peinture furie pleine page et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');

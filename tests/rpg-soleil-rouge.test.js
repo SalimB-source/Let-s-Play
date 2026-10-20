@@ -166,8 +166,8 @@ test('la Résonance samouraï se cumule dans les deux camps, sans toucher les au
   assert.deepEqual([adverse.atk, adverse.def], [5, 5]);
   assert.equal(kagutsuchi.resonance, 0, 'le Kami n’est pas de type Samouraï');
   jouer(duel, 'joueur', 'valkyrie-au-corbeau');
-  assert.equal(rpgResonanceEnJeu(duel, 'viking'), 1, 'la Valkyrie porte la Résonance viking');
-  assert.equal(neige.resonance, 0, 'la Résonance ne se compte plus par élément : le Loup n’est pas Viking');
+  assert.equal(rpgResonanceEnJeu(duel, 'viking'), 0, 'la Valkyrie ne porte plus de Résonance viking');
+  assert.equal(neige.resonance, 0, 'la Neige ne reçoit aucune Résonance dans ce duel');
   assert.equal(ami.resonance, 3, 'le Torii ne compte jamais sa propre source');
   for (const entite of exclus) assert.equal(entite.resonance, 0, entite.name);
   assert.equal(rpgBonusResonance(duel, { kind: 'creature', element: 'neige', typeLine: 'Créature — Samouraï' }), 4, 'seule la tribu compte pour un Samouraï');
@@ -695,15 +695,16 @@ test('la bannière arme la frappe du tour dans l’échange, pas seulement sur l
   jouer(duel, 'joueur', 'daimyo-du-soleil-rouge');
   const ronin = jouer(duel, 'joueur', 'ronin-du-soleil-rouge');
   // Un 3/4 neutre : ni Samouraï (la bannière du camp d’en face ne le touche
-  // pas), ni Honneur — il meurt à 4 dégâts (l’attaque armée), il survivrait à 3.
-  const bloqueur = jouer(duel, 'sorcier', 'jarl-au-marteau-de-guerre');
+  // pas), ni Honneur, ni Furie — il meurt à 4 dégâts (l’attaque armée), il
+  // survivrait à 3.
+  const bloqueur = jouer(duel, 'sorcier', 'boualem');
   assert.deepEqual([bloqueur.atk, bloqueur.def], [3, 4]);
   const pvSorcier = duel.sorcier.pv;
   const res = rpgLancerAttaque(duel, 'joueur', [ronin.id], { [ronin.id]: [bloqueur.id] });
   assert.equal(res.ok, true);
   assert.equal(res.resume.repartitions[ronin.id][bloqueur.id], 4, 'la bannière compte dans le partage');
   assert.equal(duel.sorcier.creatures.some((entite) => entite.id === bloqueur.id), false,
-    '4 dégâts sur une 4/4 : le bloqueur tombe, là où 3 ne l’auraient pas tué');
+    '4 dégâts sur un 3/4 : le bloqueur tombe, là où 3 ne l’auraient pas tué');
   assert.equal(res.resume.frappeSorcier, 0, 'l’attaque était bloquée : aucun dégât de combat direct');
   assert.equal(duel.sorcier.pv, pvSorcier - 1, 'sans survivant adverse, Honneur 1 du rōnin mort touche le sorcier');
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === ronin.id), false,

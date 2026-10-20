@@ -26,6 +26,11 @@ test('le sprite porte les 25 symboles validés, un par effet', () => {
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Rapidité', 'Butin']);
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Furie 3']);
+  assert.deepEqual(pastillesDe('loup-des-neiges'), ['Furie 1']);
+  assert.deepEqual(pastillesDe('valkyrie-des-glaces'), ['Envol', 'Protection Braise'],
+    'Envol et Protection, sans aucune Résonance');
+  assert.deepEqual(pastillesDe('valkyrie-au-corbeau'), ['Envol'],
+    'la Valkyrie au corbeau ne porte plus de pastille Résonance');
   assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive', 'Honneur 1']);
   assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Honneur 1']);
   assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['Protection Braise']);
@@ -37,6 +42,8 @@ test('les pastilles nomment l’effet signé des sorts', () => {
   assert.deepEqual(pastillesDe('ecueil'), ['Contresort']);
   assert.deepEqual(pastillesDe('reanimation'), ['Réanimation']);
   assert.deepEqual(pastillesDe('bakunawa'), ['Blocage interdit']);
+  assert.deepEqual(pastillesDe('mur-de-boucliers'), ['Overkill'],
+    'un sort qui prête Overkill porte la pastille du mot-clé accordé');
 });
 
 test('l’icône d’une ligne de règle est celle que la phrase annonce', () => {
@@ -48,6 +55,10 @@ test('l’icône d’une ligne de règle est celle que la phrase annonce', () =>
   const ecueil = cardById('ecueil');
   assert.equal(iconePourLigne(ecueil, ecueil.text), 'contresort',
     '« Magie Rapide » nomme la famille du sort, pas le mot-clé Rapidité');
+
+  const corbeau = cardById('valkyrie-au-corbeau');
+  assert.equal(iconePourLigne(corbeau, 'Quand elle arrive : piochez une carte de type Viking au hasard dans votre deck.'), 'pioche',
+    'l’arrivée de la Valkyrie se lit comme une pioche');
 
   const maitre = cardById('maitre-du-marteau');
   assert.equal(iconePourLigne(maitre, 'Quand il arrive, son marteau inflige 2 dégâts à toutes les créatures adverses.'), 'degats');
@@ -84,7 +95,22 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
     'une pastille qui ne nomme pas la phrase ne la cache pas');
 
   const jarl = effetsDetailles(cardById('jarl-au-marteau-de-guerre'));
-  assert.equal(jarl.pastilles[0].description, 'La première fois qu’il est blessé et survit, le Jarl gagne +3/+3.');
+  assert.equal(jarl.pastilles[0].description,
+    'Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +3/+0.',
+    'la fiche dit seulement « Furie 3. » : la pastille explique l’état, en une phrase');
+  assert.equal(jarl.texte, '', 'le mot-clé sobre ne laisse aucun pavé de règle sur la face');
+
+  const corbeau = effetsDetailles(cardById('valkyrie-au-corbeau'));
+  assert.deepEqual(corbeau.pastilles.map((pastille) => pastille.label), ['Envol']);
+  assert.equal(corbeau.texte,
+    'Quand elle arrive : piochez une carte de type Viking au hasard dans votre deck.',
+    'la pioche tribale d’arrivée reste écrite dans l’aperçu');
+
+  const mur = effetsDetailles(cardById('mur-de-boucliers'));
+  assert.equal(mur.pastilles.find((pastille) => pastille.cle === 'overkill').description,
+    'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.');
+  assert.equal(mur.texte, cardById('mur-de-boucliers').text,
+    'la portée collective et la durée restent écrites sur le sort');
 
   assert.deepEqual(effetsDetailles(cardById('desert')), { pastilles: [], texte: cardById('desert').text });
 });
