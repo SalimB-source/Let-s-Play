@@ -246,7 +246,7 @@ function LoginForm({ onOffline }) {
             <button
               type="submit"
               className="rpg-desktop-login__btn rpg-desktop-login__btn--primary"
-              disabled={busy || (captchaRequiredForBuild && captchaActive && !captchaToken)}
+              disabled={busy || (captchaRequiredForBuild && (!turnstileSiteKey || !captchaToken))}
             >
               {busy && <span className="rpg-desktop-login__spinner" aria-hidden="true" />}
               {busy ? 'Connexion…' : 'Se connecter'}
