@@ -1,0 +1,91 @@
+# Empaquetage de la coque PC — desktop/electron-builder.yml
+# ------------------------------------------------------------------
+# `npm run desktop:dist` (depuis la racine ou depuis desktop/) lit ce fichier.
+# Sortie : desktop/release/
+#   - le-sablier-de-bab-el-<version>-setup.exe    (installeur NSIS, x64)
+#   - le-sablier-de-bab-el-<version>-portable.exe (un seul fichier, sans install)
+#
+# Le paquet web (desktop/dist-web) n'est PAS mis dans l'archive app.asar :
+# `extraResources` le copie à côté, dans resources/app, où le serveur HTTP local
+# le lit comme de simples fichiers. Lire 100 Mo dans une archive à chaque
+# requête serait plus lent et plus fragile.
+
+appId: dz.letsplay.sablier
+productName: Le Sablier de Bab El
+
+# LZMA solide : sans cela l'installeur pèse ~640 Mo, les binaires Electron étant
+# mal comprimés par le mode normal. Le build est plus lent, le téléchargement
+# beaucoup plus court.
+compression: maximum
+copyright: Copyright © 2026 Let's Play — média algérien du jeu vidéo
+
+# Ce fichier est COPIÉ dans desktop/pack/ par scripts/desktop-bundle.mjs, et
+# electron-builder tourne avec `--project pack` : le projet d'empaquetage ne
+# contient alors AUCUN node_modules, ce qui retire toute chance de voir l'asar
+# gonfler (la CI a montré un app.asar.unpacked de 729 Mo quand le projet était
+# desktop/ lui-même). Les chemins ci-dessous sont relatifs à pack/.
+directories:
+  output: ../release
+  # Dossier hors des noms exclus des snapshots de l'environnement de dev
+  # (« build » en fait partie) : les icônes vivent dans app-icons/.
+  buildResources: app-icons
+
+# Le binaire Electron vient du cache d'electron-builder (téléchargé une fois par
+# runner) : la version exacte est lue dans pack/package.json par le bundle.
+
+# pack/ ne contient que l'exécutable ; on exclut les outils de build eux-mêmes.
+files:
+  - '**/*'
+  - '!app-icons{,/**/*}'
+  - '!electron-builder.yml'
+
+# Le jeu lui-même, hors archive.
+extraResources:
+  - from: ../dist-web
+    to: app
+    filter:
+      - '**/*'
+  # Lues au lancement pour l'icône de la fenêtre et de la barre des tâches.
+  - from: app-icons/icon.ico
+    to: icon.ico
+  - from: app-icons/icon.png
+    to: icon.png
+
+win:
+  icon: app-icons/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  # Assistant classique (« suivant, suivant ») plutôt que l'install en un clic :
+  # le joueur voit où le jeu s'installe et peut changer le dossier.
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Le Sablier de Bab El
+  installerIcon: app-icons/icon.ico
+  uninstallerIcon: app-icons/icon.ico
+  artifactName: le-sablier-de-bab-el-${version}-setup.${ext}
+
+portable:
+  artifactName: le-sablier-de-bab-el-${version}-portable.${ext}
+
+linux:
+  icon: app-icons/icon.png
+  category: Game
+  target:
+    - AppImage
+  artifactName: le-sablier-de-bab-el-${version}.${ext}
+
+# macOS : nécessite un runner macOS et une icône .icns (à générer si besoin —
+# `make-icon.mjs` produit le PNG source). La CI du dépôt ne construit que Windows.
+mac:
+  icon: app-icons/icon.png
+  category: public.app-category.games
+  target:
+    - dmg

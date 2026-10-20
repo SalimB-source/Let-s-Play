@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Le Sablier de Bab El — hors ligne</title>
+    <!--
+      Page d'attente affichée quand la fenêtre ne peut pas charger le jeu.
+      En mode « paquet local » cela ne devrait jamais arriver (le jeu est servi
+      par la coque elle-même) : on la voit en mode « site en ligne », sans
+      connexion ou si le site est momentanément injoignable.
+    -->
+    <style>
+      :root { color-scheme: dark; --fond:#05060f; --or:#e8b75c; --sourdine:#9aa0c3; --bord:#232842; }
+      body {
+        margin: 0; min-height: 100vh; display: grid; place-items: center;
+        background: radial-gradient(900px 420px at 50% -10%, #171a38 0%, var(--fond) 62%);
+        color: #e8eaf6; font: 16px/1.65 "Segoe UI", system-ui, sans-serif; text-align: center;
+      }
+      main { max-width: 620px; padding: 40px 28px; }
+      .sablier { font-size: 54px; line-height: 1; margin-bottom: 18px; }
+      h1 { margin: 0 0 10px; font-size: 24px; }
+      p { color: var(--sourdine); margin: 0 0 8px; }
+      code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; color: #cdd2f5; word-break: break-all; }
+      .barre { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
+      button {
+        background: linear-gradient(180deg,#2a2350,#171230); color: #fff8e6; border: 1px solid var(--or);
+        border-radius: 12px; padding: 11px 20px; font: inherit; font-weight: 600; cursor: pointer;
+      }
+      button.secondaire { background: #0d1020; border-color: var(--bord); color: var(--sourdine); font-weight: 500; }
+      button:hover { filter: brightness(1.15); }
+      .compteur { margin-top: 20px; font-size: 13px; color: var(--sourdine); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="sablier">⏳</div>
+      <h1>Le duel n’a pas pu être chargé</h1>
+      <p id="explication">Cette version de l’application ouvre le site Let’s Play en ligne :
+        sans connexion, la table ne peut pas être dressée.</p>
+      <p>Vérifiez votre connexion puis réessayez. La partie en cours n’est pas perdue :
+        vos decks et votre progression sont enregistrés sur cet ordinateur.</p>
+      <p class="compteur">Cible : <code id="cible">—</code></p>
+      <div class="barre">
+        <button id="reessayer">Réessayer</button>
+        <button class="secondaire" id="diagnostic">État de la carte graphique</button>
+      </div>
+    </main>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const pont = window.letsPlayDesktop;
+      const cible = params.get('cible');
+      if (cible) document.getElementById('cible').textContent = cible;
+      if (params.get('mode') === 'local') {
+        document.getElementById('explication').textContent =
+          'Le paquet local n’a pas pu être servi. Relancez l’application ; si l’écran revient, '
+          + 'ouvrez le rapport graphique ci-dessous et transmettez-le.';
+      }
+
+      const compteur = document.querySelector('.compteur');
+      const bouton = document.getElementById('reessayer');
+      const auto = document.createElement('span');
+      auto.textContent = ' · nouvelle tentative automatique toutes les 15 s';
+      compteur.appendChild(auto);
+
+      async function reessayer() {
+        bouton.disabled = true;
+        bouton.textContent = 'Connexion…';
+        await pont?.allerAuJeu?.();
+        setTimeout(() => { bouton.disabled = false; bouton.textContent = 'Réessayer'; }, 2500);
+      }
+
+      bouton.addEventListener('click', reessayer);
+      document.getElementById('diagnostic').addEventListener('click', () => pont?.ouvrirDiagnostic?.());
+
+      // Nouvelle tentative seule toutes les 15 s : une connexion qui revient
+      // (Wi-Fi de la box, partage mobile) rouvre le duel sans clic.
+      setInterval(() => {
+        secondes += 15;
+        compteur.textContent = `Cible : ${cible || '—'} · nouvelle tentative dans ${Math.max(0, 15 - (secondes % 15))} s`;
+      }, 1000);
+      setInterval(reessayer, 15000);
+    </script>
+  </body>
+</html>

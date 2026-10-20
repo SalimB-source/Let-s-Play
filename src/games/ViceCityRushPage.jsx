@@ -8,7 +8,7 @@ import CityRushComic from './CityRushComic';
 import CityRushRaceList from './CityRushRaceList';
 import CityRushHealthBar from './CityRushHealthBar';
 import CityRushSpeedometer from './CityRushSpeedometer';
-import CityRushTutorial from './CityRushTutorial';
+import CityRushTutorialView from './CityRushTutorialView';
 import { CITY_RUSH_TUTORIAL_DURATION_SECONDS, CITY_RUSH_TUTORIAL_STEPS } from './cityRushTutorial';
 import FullscreenIcon from './FullscreenIcon';
 import {
@@ -3438,7 +3438,7 @@ export default function ViceCityRushPage() {
               </div>
             )}
             {tutorialMode && phase !== 'finished' && (
-              <CityRushTutorial
+              <CityRushTutorialView
                 inGame
                 visible={tutorialGuideOpen && (phase === 'playing' || phase === 'paused')}
                 coursePhase={phase}

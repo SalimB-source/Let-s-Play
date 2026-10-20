@@ -1,0 +1,224 @@
+# Construit l'installeur Windows du Sablier de Bab El (coque PC, desktop/).
+#
+# Deux jobs :
+#   - `verifs`     : les 20 vérifications de la coque (GPU, serveur local,
+#                    isolation) sur Linux — rapides, et bloquantes ;
+#   - `installeur` : sur windows-latest, paquet web élagué + electron-builder →
+#                    `le-sablier-de-bab-el-<version>-setup.exe` et `-portable.exe`.
+#
+# Publication, comme pour l'APK (android-apk.yml) :
+#   - artefacts de run (rétention 90 jours) ;
+#   - GitHub Release sur le tag « desktop », remplacée à chaque build de main :
+#     lien de téléchargement permanent pour les joueurs.
+#
+# Contrairement à l'APK, l'exécutable N'EST PAS committé sur la branche :
+# ~180 Mo par build saturerait le dépôt. Le téléchargement passe par la Release.
+#
+# Lancement manuel : onglet Actions → « Installeur PC (Windows) » → Run workflow.
+
+name: Installeur PC (Windows)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'arena/**'
+    paths:
+      - 'desktop/**'
+      - 'scripts/desktop-bundle.mjs'
+      - 'scripts/desktop-check.mjs'
+      - 'vite.config.js'
+      - '.github/workflows/desktop-windows.yml'
+
+permissions:
+  contents: write
+  # Le step « Rapport de tailles en PR » commente la pull request.
+  pull-requests: write
+
+concurrency:
+  group: desktop-windows
+  cancel-in-progress: true
+
+jobs:
+  verifs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Vérifications de la coque
+        run: npm run check:desktop
+
+  installeur:
+    needs: verifs
+    runs-on: windows-latest
+    # Mêmes valeurs publiques que le déploiement web (voir deploy.yml) : sans
+    # elles l'installeur se construit quand même, mais le compte et les duels
+    # en ligne y resteront indisponibles (jeu hors ligne intact).
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || vars.SUPABASE_URL || secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || vars.SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dépendances du site
+        run: npm ci
+
+      - name: Dépendances de la coque (Electron, electron-builder)
+        run: npm --prefix desktop install
+
+      - name: Paquet web élagué
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run desktop:web 2>&1 | tee bundle.log
+
+      # Les logs de run ne sont pas toujours consultables : en cas d'échec, les
+      # lignes utiles sont recopiées en annotations de check-run (lisibles via
+      # l'API, et affichées sur l'onglet Checks de la PR).
+      - name: Diagnostic paquet (échec)
+        if: failure()
+        shell: bash
+        run: |
+          # Le log complet en base64 dans une annotation : ni cadres dessinés,
+          # ni ANSI, ni retours chariot ne peuvent casser le transport, et
+          # l'annotation se relit via l'API GitHub.
+          echo "::error::LOG64 $(base64 -w0 bundle.log | head -c 20000)"
+          exit 1
+
+      - name: Taille du paquet
+        shell: bash
+        run: du -sh desktop/dist-web || true
+
+      - name: Installeur + version portable
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run desktop:dist 2>&1 | tee builder.log
+
+      - name: Diagnostic installeur (échec)
+        if: failure()
+        shell: bash
+        run: |
+          grep -nE "error|Error|ERROR|ERR_|failed|Failed|cannot|Cannot" builder.log | head -40 | while IFS= read -r l; do
+            echo "::error::${l:0:400}"
+          done
+          exit 1
+
+      - name: Contenu de release/ (tailles réelles)
+        shell: bash
+        run: |
+          mo() { echo "::notice::$1 = $(( $(du -sk "$2" | cut -f1) / 1024 )) Mo"; }
+          mo "dist-web (paquet jeu)" desktop/dist-web
+          mo "win-unpacked (app dépliée)" desktop/release/win-unpacked
+          mo "resources/app (jeu)" desktop/release/win-unpacked/resources/app
+          mo "resources/app.asar" desktop/release/win-unpacked/resources/app.asar
+          for d in desktop/release/win-unpacked/*; do mo "win-unpacked/$(basename "$d")" "$d"; done
+          for f in desktop/release/*.exe; do
+            echo "::notice::$(basename "$f") = $(( $(stat -c%s "$f") / 1048576 )) Mo"
+          done
+
+      # Les annotations de step sont plafonnées à 10 : le rapport complet des
+      # tailles part en commentaire de la pull request, lisible via l'API.
+      - name: Rapport de tailles en PR
+        if: github.event_name == 'push'
+        # Un échec de commentaire ne doit jamais priver le run de ses artefacts.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          {
+            echo "Rapport de build du $(date -u '+%F %T UTC') — commit \`${GITHUB_SHA::7}\`"
+            echo
+            echo '```'
+            du -sh desktop/dist-web desktop/release/win-unpacked 2>/dev/null
+            echo '-- win-unpacked (1er niveau) --'
+            du -sh desktop/release/win-unpacked/* 2>/dev/null | sort -h
+            echo '-- resources --'
+            du -sh desktop/release/win-unpacked/resources/* 2>/dev/null | sort -h
+            echo '-- app.asar (contenu) --'
+            du -sh desktop/release/win-unpacked/resources/app/* 2>/dev/null | sort -h | tail -6
+            echo '-- installeurs --'
+            ls -la desktop/release/*.exe
+            echo '-- asar.unpacked (plus gros entrants) --'
+            du -sh desktop/release/win-unpacked/resources/app.asar.unpacked/* 2>/dev/null | sort -h | tail -8
+            echo '-- liste asar (30 premières entrées) --'
+            node -e "try{const a=require('@electron/asar');console.log(a.listPackage('desktop/release/win-unpacked/resources/app.asar',{recursive:false}).join('\n'))}catch(e){console.log('asar illisible : '+e.message)}" 2>/dev/null || true
+            echo '-- config effective --'
+            cat desktop/release/builder-effective-config.yaml 2>/dev/null || cat desktop/release/builder-debug.yml 2>/dev/null || ls desktop/release
+            echo '-- scène --'
+            ls -la desktop/stage 2>/dev/null || echo 'stage ABSENT'
+            echo '```'
+          } > report.md
+          # Checkout en HEAD détaché : `gh pr view` ne sait pas retrouver la
+          # branche ; on cherche la PR par sa tête via l'API.
+          NUM=$(gh api "repos/$GITHUB_REPOSITORY/pulls?head=$GITHUB_REPOSITORY:$GITHUB_REF_NAME&state=open" -q '.[0].number' 2>/dev/null || true)
+          if [ -n "$NUM" ]; then
+            gh pr comment "$NUM" --body-file report.md
+          else
+            echo "Pas de PR ouverte pour cette branche : rapport non commenté."
+            cat report.md
+          fi
+
+      - name: Artefacts de run
+        uses: actions/upload-artifact@v4
+        with:
+          name: sablier-pc-windows
+          path: |
+            desktop/release/le-sablier-de-bab-el-*-setup.exe
+            desktop/release/le-sablier-de-bab-el-*-portable.exe
+          retention-days: 30
+          if-no-files-found: error
+
+      # Release permanente sur le tag « desktop » (main seulement) : le lien de
+      # téléchargement des joueurs ne change jamais, le contenu est remplacé.
+      - name: Publier la GitHub Release
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd desktop/release
+          VERSION=$(node -p "require('../../desktop/package.json').version")
+          # Copies au nom FIXE : l'écran d'entrée du site (/jeu/sablier-de-bab-el)
+          # pointe vers …/download/desktop/le-sablier-de-bab-el-setup.exe, un lien
+          # qui doit survivre aux changements de version. Les noms versionnés
+          # restent publiés à côté, pour archiver.
+          cp "le-sablier-de-bab-el-${VERSION}-setup.exe" le-sablier-de-bab-el-setup.exe
+          cp "le-sablier-de-bab-el-${VERSION}-portable.exe" le-sablier-de-bab-el-portable.exe
+          FICHIERS=$(ls *.exe)
+          {
+            echo "Version PC installable du Sablier de Bab El, le jeu de cartes de Let's Play."
+            echo ""
+            echo "**Installation** : télécharge \`le-sablier-de-bab-el-${VERSION}-setup.exe\`, lance-le,"
+            echo "puis ouvre le jeu depuis le menu Démarrer ou le raccourci du bureau."
+            echo "Le paquet sans installation (\`-portable.exe\`) se lance d'un double-clic, sans rien écrire ailleurs."
+            echo ""
+            echo "**Carte graphique** : le rendu 3D passe par la carte du PC (WebGL → ANGLE/D3D11)."
+            echo "Menu « Carte graphique → État de la carte graphique… » pour vérifier quel GPU travaille."
+            echo ""
+            echo "- **Version** : ${VERSION}"
+            echo "- **Commit** : ${GITHUB_SHA::7}"
+          } > notes.md
+          gh release delete desktop --yes --cleanup-tag 2>/dev/null || true
+          git push origin :refs/tags/desktop 2>/dev/null || true
+          gh release create desktop $FICHIERS --title "Le Sablier de Bab El pour PC — v${VERSION}" --notes-file notes.md
+          echo "Release publiée : $FICHIERS"

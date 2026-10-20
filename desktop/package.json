@@ -1,0 +1,30 @@
+{
+  "name": "le-sablier-de-bab-el",
+  "productName": "Le Sablier de Bab El",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Version PC installable du Sablier de Bab El, le jeu de cartes de Let's Play : paquet web embarqué, rendu 3D WebGL accéléré par la carte graphique, installeur Windows signé par le dépôt.",
+  "main": "main.js",
+  "type": "module",
+  "author": {
+    "name": "Let's Play",
+    "url": "https://salimb-source.github.io/Let-s-Play/"
+  },
+  "license": "UNLICENSED",
+  "homepage": "https://salimb-source.github.io/Let-s-Play/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SalimB-source/Let-s-Play.git"
+  },
+  "scripts": {
+    "icon": "node make-icon.mjs",
+    "serve": "node local-server.js",
+    "start": "electron .",
+    "pack": "electron-builder --project pack --dir",
+    "dist": "electron-builder --project pack --publish never"
+  },
+  "devDependencies": {
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3"
+  }
+}

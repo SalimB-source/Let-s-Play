@@ -1,0 +1,164 @@
+/*
+ * Écran d'entrée du Sablier — src/games/rpg-entry-choice.css
+ * ----------------------------------------------------------
+ * Le même keyart de Bab El que le menu du duel (`RpgDuelPage.jsx`), voilé pour
+ * porter deux grandes options : l'installeur Windows et le navigateur.
+ * Deux colonnes sur ordinateur, une seule sous 720 px — mais l'écran ne se
+ * montre de toute façon pas sur téléphone (`pointer: coarse`).
+ */
+
+.rpg-entry-choice {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 32px 18px 44px;
+  background:
+    linear-gradient(105deg, rgba(5, 6, 15, 0.92) 0%, rgba(5, 6, 15, 0.78) 46%, rgba(5, 6, 15, 0.55) 100%),
+    url('../../public/sablier-de-bab-el-keyart.jpg') center / cover no-repeat fixed;
+  background-color: #05060f;
+  color: #e8eaf6;
+}
+
+.rpg-entry-choice__carte {
+  width: min(880px, 100%);
+  display: grid;
+  gap: 18px;
+  justify-items: start;
+}
+
+.rpg-entry-choice__surtitre {
+  margin: 0;
+  font: 600 12px/1.4 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #e8b75c;
+}
+
+.rpg-entry-choice__titre {
+  margin: 0;
+  font: 800 clamp(30px, 6vw, 52px)/1.05 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1px;
+  text-shadow: 0 4px 26px rgba(0, 0, 0, 0.65);
+}
+
+.rpg-entry-choice__accroche {
+  margin: 0;
+  max-width: 62ch;
+  color: #c7cbe8;
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+
+.rpg-entry-choice__choix {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.rpg-entry-choice__option {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 20px 20px 18px;
+  border-radius: 16px;
+  border: 1px solid #2b3155;
+  background: linear-gradient(180deg, rgba(19, 23, 48, 0.92), rgba(9, 11, 26, 0.92));
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+.rpg-entry-choice__option:hover,
+.rpg-entry-choice__option:focus-visible {
+  border-color: #e8b75c;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  outline: none;
+}
+
+.rpg-entry-choice__option--pc {
+  border-color: rgba(232, 183, 92, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(232, 183, 92, 0.18);
+}
+
+.rpg-entry-choice__logo {
+  width: 30px;
+  height: 30px;
+  color: #e8b75c;
+}
+
+.rpg-entry-choice__option-titre {
+  font: 700 19px/1.25 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 0.4px;
+}
+
+.rpg-entry-choice__option-texte {
+  color: #aeb3d6;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.rpg-entry-choice__option-meta {
+  margin-top: 2px;
+  font: 600 12px/1.4 ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  color: #8f96c0;
+}
+
+.rpg-entry-choice__retenir {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  color: #aeb3d6;
+  font-size: 13.5px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.rpg-entry-choice__retenir input {
+  margin-top: 2px;
+  accent-color: #e8b75c;
+  width: 15px;
+  height: 15px;
+}
+
+.rpg-entry-choice__pied {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #8f96c0;
+}
+
+.rpg-entry-choice__pied a {
+  color: #cdd2f5;
+  text-decoration-color: rgba(232, 183, 92, 0.6);
+  text-underline-offset: 3px;
+}
+
+.rpg-entry-choice__note {
+  color: #aeb3d6;
+}
+
+.rpg-entry-choice__chargement {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+  color: #aeb3d6;
+  font: 600 14px/1.4 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .rpg-entry-choice__choix {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rpg-entry-choice {
+    background-attachment: scroll;
+  }
+}

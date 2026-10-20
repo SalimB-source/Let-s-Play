@@ -11,7 +11,7 @@ import {
 } from '../src/games/cityRushTutorial.js';
 
 const pageSource = readFileSync(new URL('../src/games/ViceCityRushPage.jsx', import.meta.url), 'utf8');
-const componentSource = readFileSync(new URL('../src/games/CityRushTutorial.jsx', import.meta.url), 'utf8');
+const componentSource = readFileSync(new URL('../src/games/CityRushTutorialView.jsx', import.meta.url), 'utf8');
 const worldSource = readFileSync(new URL('../src/games/ViceCityWorld.jsx', import.meta.url), 'utf8');
 const tutorialCss = readFileSync(new URL('../src/games/city-rush-tutorial.css', import.meta.url), 'utf8');
 
@@ -74,7 +74,7 @@ test('le moteur joue la démonstration tout seul et le coach suit la leçon en c
   assert.match(pageSource, /racers\.filter\(\(racer\) => racer\.isPlayer\)/);
   assert.match(pageSource, /onTutorial=\{tutorialEvent\}/);
   assert.match(pageSource, /function tutorialEvent\(event\)[\s\S]*event\.type === 'lesson-complete'/);
-  assert.match(pageSource, /<CityRushTutorial\s+inGame\s+visible=\{tutorialGuideOpen/);
+  assert.match(pageSource, /<CityRushTutorialView\s+inGame\s+visible=\{tutorialGuideOpen/);
   assert.match(pageSource, /lessonIndex=\{tutorialLive\.index\}/);
   assert.match(pageSource, /tutorial: tutorialMode/);
   assert.match(pageSource, /else if \(!tutorialMode\)/);
