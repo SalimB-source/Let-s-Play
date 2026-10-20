@@ -9677,3 +9677,112 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 
+
+/* Journal de combat compact, façon flux d’événements de TCG : il reste dans
+   l’angle inférieur gauche de la table et ne gêne jamais les gestes de jeu. */
+.rpg-combat-feed {
+  position: absolute;
+  z-index: 80;
+  left: clamp(8px, 1.4vw, 20px);
+  bottom: clamp(10px, 2.2vh, 24px);
+  width: min(286px, 31vw);
+  max-height: 154px;
+  overflow: hidden;
+  padding: 8px 10px 7px;
+  border: 1px solid rgba(218, 181, 111, .4);
+  border-radius: 9px;
+  color: #f4e7cb;
+  background: linear-gradient(135deg, rgba(19, 15, 17, .91), rgba(35, 25, 19, .82));
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .38), inset 0 1px rgba(255, 238, 197, .08);
+  backdrop-filter: blur(7px);
+  pointer-events: none;
+}
+.rpg-combat-feed__heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 5px;
+  color: #d9b978;
+  font: 700 9px/1.2 'Cinzel', Georgia, serif;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.rpg-combat-feed__heading > span { font-size: 12px; }
+.rpg-combat-feed__list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rpg-combat-feed__event {
+  min-width: 0;
+  padding-top: 4px;
+  border-top: 1px solid rgba(224, 198, 151, .12);
+  animation: rpg-combat-feed-in .28s ease-out both;
+}
+.rpg-combat-feed__participants {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+}
+.rpg-combat-feed__card {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  color: #f4ead8;
+  font: 600 10px/1.1 system-ui, sans-serif;
+}
+.rpg-combat-feed__card img {
+  width: 23px;
+  height: 29px;
+  flex: none;
+  border: 1px solid rgba(229, 194, 128, .66);
+  border-radius: 3px;
+  background: #211a18;
+  object-fit: cover;
+}
+.rpg-combat-feed__card span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.rpg-combat-feed__arrow { flex: none; color: #dfbd7f; font-size: 14px; }
+.rpg-combat-feed__skull { flex: none; color: #e69576; font-size: 14px; text-shadow: 0 0 8px rgba(193, 79, 54, .5); }
+.rpg-combat-feed__cause { color: #c9b89d; font: 600 9px/1.2 system-ui, sans-serif; }
+@keyframes rpg-combat-feed-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 800px) {
+  .rpg-combat-feed {
+    left: 6px;
+    bottom: max(7px, env(safe-area-inset-bottom));
+    width: min(220px, 55vw);
+    max-height: 112px;
+    padding: 6px 7px;
+  }
+  .rpg-combat-feed__heading { margin-bottom: 3px; font-size: 8px; }
+  .rpg-combat-feed__list { gap: 2px; }
+  .rpg-combat-feed__event { padding-top: 2px; }
+  .rpg-combat-feed__participants { gap: 3px; }
+  .rpg-combat-feed__card { gap: 3px; font-size: 8px; }
+  .rpg-combat-feed__card img { width: 18px; height: 23px; }
+  .rpg-combat-feed__arrow, .rpg-combat-feed__skull { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-combat-feed__event { animation: none; }
+}
+.rpg-combat-feed__damage {
+  flex: none;
+  color: #f1c579;
+  font: 800 10px/1 system-ui, sans-serif;
+  text-shadow: 0 0 7px rgba(230, 145, 70, .55);
+}
+@media (max-width: 800px) {
+  .rpg-combat-feed__damage { font-size: 9px; }
+}

@@ -2878,6 +2878,12 @@ test('un bloqueur ne peut arrêter qu’un seul attaquant ; les autres frappent 
   assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 2);
   assert.equal(duel.joueur.creatures.length, 0, 'Chien contre Chien : les deux sont détruits');
   assert.equal(duel.joueur.cimetiere.at(-1), 'chien-du-guet');
+  assert.deepEqual(duel.combatFeed.map(({ victim, killers }) => [
+    victim.name, killers.map(({ name }) => name),
+  ]), [
+    ['Chien du guet', ['Chien du guet']],
+    ['Chien du guet', ['Chien du guet']],
+  ], 'le journal garde les deux éliminations et relie chaque victime à son combattant');
 });
 
 test('plusieurs bloqueurs défendent un attaquant et la force est répartie avant les dégâts mutuels', () => {
