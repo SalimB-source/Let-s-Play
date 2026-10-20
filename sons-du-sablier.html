@@ -186,7 +186,7 @@
       dans <code>public/</code> en même temps ; cette page suit les nouveaux chemins.
     </div>
     <div class="note">
-      <b>Sources :</b> <code>src/games/rpgAudio.js</code> (13 bruitages : le survol synthétisé + 12 échantillons),
+      <b>Sources :</b> <code>src/games/rpgAudio.js</code> (16 bruitages : le survol synthétisé + 15 échantillons — <code>hit.wav</code> partagé par les deux coups),
       <code>src/games/rpgPlateauMusic.js</code> (musiques de plateaux),
       <code>src/games/rpgAmbientMusic.js</code> (7 ambiances des Tours),
       <code>src/games/rpgFireAudio.js</code> · <code>rpgWaterAudio.js</code> · <code>rpgFoudreAudio.js</code>
@@ -333,6 +333,10 @@ const ECHANTILLONS = [
     desc: 'Le journal et le récit tournent une page.' },
   { nom: 'Fanfare de victoire', fichier: './src/games/assets/victory-trumpets.mp3', code: 'victoire · victory-trumpets.mp3',
     desc: 'Victory Trumpets — les trompettes du duel gagné.' },
+  { nom: 'Musique de défaite', fichier: './src/games/assets/game-lost.mp3', code: 'defaite · game-lost.mp3',
+    desc: 'Game Lost — la mélodie du duel perdu.' },
+  { nom: 'Coup blessant', fichier: './src/games/assets/hit.wav', code: 'degats · degats_sorcier · hit.wav',
+    desc: 'Le coup sec quand des PV tombent — même son pour les deux camps.' },
 ];
 const le = $('#liste-echantillons');
 ECHANTILLONS.forEach(e => le.appendChild(carteAudio({ plateau: e.nom, ...e })));

@@ -21,7 +21,7 @@ test('hz : le la de référence et ses voisins', () => {
 test('le catalogue se résume au survol et aux onze échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
     'attackers_confirm', 'block_impact', 'card_countered', 'card_draw', 'card_place',
-    'creature_return', 'destruction_hit', 'flame_gust', 'hover', 'page_turn',
+    'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'hover', 'page_turn',
     'player_attack_hit', 'victoire', 'water_wave',
   ].sort(), 'le son du duel = la synthèse du survol + les échantillons de la table');
   for (const name of RPG_SFX_NAMES) {
@@ -38,13 +38,22 @@ test('la victoire est la fanfare fournie, livrée avec le jeu', () => {
     'Victory Trumpets voyage dans src/games/assets');
 });
 
+test('la défaite et les coups blessants jouent les fichiers fournis', () => {
+  assert.deepEqual(rpgSfx('defaite'), [{ kind: 'sample', at: 0, dur: 4.493, g: 1 }]);
+  assert.deepEqual(rpgSfx('degats'), [{ kind: 'sample', at: 0, dur: 0.625, g: 1 }]);
+  assert.deepEqual(rpgSfx('degats_sorcier'), [{ kind: 'sample', at: 0, dur: 0.625, g: 1 }],
+    'le même coup sec sert la blessure du joueur et celle du sorcier adverse');
+  assert.ok(existsSync(new URL('../src/games/assets/game-lost.mp3', import.meta.url)));
+  assert.ok(existsSync(new URL('../src/games/assets/hit.wav', import.meta.url)));
+});
+
 test('toutes les synthèses retirées restent muettes — le survol est la seule survivante', () => {
   const retires = [
-    'apparition', 'defaite', 'whoosh', 'hit', 'heal', 'zone', 'bell', 'blip',
+    'apparition', 'whoosh', 'hit', 'heal', 'zone', 'bell', 'blip',
     'explore', 'souffle', 'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap',
     'mana', 'mythic_impact', 'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long',
     'soin_vie', 'soin_vie_adverse', 'bouclier', 'attaque_declaree', 'attaque_confirmee',
-    'blocage', 'choc_lames', 'sword', 'combat', 'degats', 'degats_sorcier', 'coup_rapide',
+    'blocage', 'choc_lames', 'sword', 'combat', 'coup_rapide',
     'impact', 'contresort', 'foudre_marteau', 'menu', 'select', 'erreur', 'pile', 'annuler',
   ];
   for (const name of retires) {
