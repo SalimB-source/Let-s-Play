@@ -4234,13 +4234,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     return prochain;
   });
-  // Un seul bruit de feu par geste : un sort de Braise qui touche et tue sa
-  // cible ne joue pas `flame_gust` deux fois (le lancement, puis la
-  // destruction), et une attaque de Braise qui emporte un bloqueur n'ajoute
-  // pas un second souffle au sien.
+  // Un seul bruit de feu par geste : un sort ou un effet de Braise qui blesse
+  // puis tue sa cible ne joue pas `flame_gust` deux fois (le lancement, puis
+  // la destruction). Le souffle n'appartient d'ailleurs qu'aux blessures —
+  // les attaques de créatures partagent toutes `player_attack_hit`.
   const dernierSonFeuRef = useRef(0);
-  // Même garde pour le tonnerre du marteau : l'annonce résolue du sorcier
-  // sonne son sort, puis sa fiche le réannonce — un seul coup de foudre.
+  // Même garde pour `foudre_marteau`, devenu silencieux avec le retrait du
+  // catalogue synthétique : le test ne coûte rien si le tonnerre revenait.
   const dernierSonFoudreRef = useRef(0);
   // La position du journal des blessures déjà animée : une brûlure ancienne ne
   // rallume jamais la roue de feu sur une action qui ne la concerne pas.

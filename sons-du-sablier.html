@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Le Sablier — Salle d'écoute · répertoire des sons</title>
+<style>
+  :root{
+    --bg:#150e07; --bg2:#1f160b; --card:#241a0d; --card2:#2c2011;
+    --or:#d9a441; --or-clair:#ffd87a; --sable:#c9b18a; --encre:#efe3cc;
+    --brun:#6b4a22; --bordure:#3d2c16; --accent:#e8b84b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; color:var(--encre);
+    font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(217,164,65,.14), transparent 60%),
+      radial-gradient(900px 500px at 90% 110%, rgba(217,164,65,.08), transparent 60%),
+      linear-gradient(180deg, var(--bg) 0%, #0e0a05 100%);
+  }
+  header{
+    position:sticky; top:0; z-index:10; padding:16px 20px;
+    background:linear-gradient(180deg, rgba(21,14,7,.97), rgba(21,14,7,.86));
+    border-bottom:1px solid var(--bordure); backdrop-filter:blur(6px);
+  }
+  .titre{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  h1{font-size:22px; margin:0; letter-spacing:.4px}
+  h1 em{color:var(--or-clair); font-style:normal}
+  .sablier{font-size:26px; filter:drop-shadow(0 0 8px rgba(217,164,65,.5))}
+  .sous-titre{margin:6px 0 0; color:var(--sable); font-size:13px; max-width:900px; line-height:1.5}
+  .barre{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px}
+  .btn{
+    appearance:none; border:1px solid var(--or); color:var(--or-clair);
+    background:linear-gradient(180deg, rgba(217,164,65,.14), rgba(217,164,65,.05));
+    padding:8px 14px; border-radius:9px; cursor:pointer; font-size:14px; font-weight:600;
+  }
+  .btn:hover{background:rgba(217,164,65,.24)}
+  .btn:disabled{opacity:.45; cursor:default}
+  .vol{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--sable)}
+  .vol input{accent-color:var(--or)}
+  main{max-width:1120px; margin:0 auto; padding:22px 20px 80px}
+  section{margin:30px 0}
+  h2{
+    font-size:17px; color:var(--or-clair); margin:0 0 4px;
+    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+    border-bottom:1px solid var(--bordure); padding-bottom:8px;
+  }
+  h2 .compte{font-size:12px; color:var(--sable); font-weight:400}
+  .intro{color:var(--sable); font-size:13px; margin:8px 0 14px; line-height:1.55; max-width:940px}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(310px, 1fr)); gap:12px}
+  .card{
+    background:linear-gradient(180deg, var(--card), var(--card2));
+    border:1px solid var(--bordure); border-radius:12px; padding:14px 14px 12px;
+  }
+  .card h3{margin:0 0 3px; font-size:15px; color:var(--encre)}
+  .card .meta{font-size:11.5px; color:var(--or); margin-bottom:6px}
+  .card .desc{font-size:12.5px; color:var(--sable); line-height:1.5; margin:0 0 10px}
+  .card audio{width:100%; height:38px; display:block}
+  .carte-groupe{display:flex; flex-direction:column; gap:8px}
+  .toc{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px}
+  .toc a{
+    font-size:12.5px; color:var(--or-clair); text-decoration:none; padding:6px 11px;
+    border:1px solid var(--bordure); border-radius:20px; background:rgba(217,164,65,.07);
+  }
+  .toc a:hover{border-color:var(--or)}
+  .sfx-groupe{margin:16px 0}
+  .sfx-groupe h4{margin:0 0 8px; font-size:13.5px; color:var(--or); letter-spacing:.4px}
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .sfx{
+    border:1px solid var(--bordure); background:linear-gradient(180deg, var(--card), var(--card2));
+    color:var(--encre); border-radius:9px; padding:8px 11px; cursor:pointer; font-size:12.5px;
+    display:flex; align-items:center; gap:8px; transition:border-color .15s, transform .05s;
+  }
+  .sfx:hover{border-color:var(--or)}
+  .sfx:active{transform:scale(.97)}
+  .sfx .play-ico{color:var(--or-clair); font-size:11px}
+  .sfx .nom-code{display:block; color:var(--brun); font-size:10px; font-family:ui-monospace, monospace}
+  .sfx.en-lecture{border-color:var(--or-clair); box-shadow:0 0 0 1px var(--or-clair), 0 0 14px rgba(217,164,65,.35)}
+  .tour-card{position:relative}
+  .tour-card .lecture{position:absolute; top:12px; right:12px; font-size:11px; color:var(--or-clair); display:none}
+  .tour-card.en-lecture{border-color:var(--or-clair)}
+  .tour-card.en-lecture .lecture{display:inline}
+  .tour-btns{display:flex; gap:8px}
+  .mini{
+    appearance:none; border:1px solid var(--or); border-radius:8px; color:var(--or-clair);
+    background:rgba(217,164,65,.1); padding:6px 12px; cursor:pointer; font-size:12.5px; font-weight:600;
+  }
+  .mini:hover{background:rgba(217,164,65,.22)}
+  .alerte{font-size:11.5px; color:#e6a; ;}
+  .note{
+    font-size:12px; color:var(--sable); border:1px dashed var(--bordure); border-radius:10px;
+    padding:10px 12px; margin-top:10px; line-height:1.55; background:rgba(217,164,65,.04);
+  }
+  .note b{color:var(--or-clair)}
+  code{font-size:11px; color:#e8d9b8; background:rgba(0,0,0,.35); padding:1px 5px; border-radius:5px}
+  footer{color:var(--brun); font-size:11.5px; text-align:center; padding:26px 10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="titre">
+    <span class="sablier">⏳</span>
+    <h1>Le Sablier — <em>Salle d'écoute</em></h1>
+    <span id="total-global" class="compte"></span>
+  </div>
+  <p class="sous-titre">
+    Répertoire complet de la bande-son du jeu : musiques de plateaux (fichiers), échantillons
+    WAV/MP3 — les seuls bruitages encore joués par le duel, plus le bip de survol, dernier son
+    synthétisé conservé — et les sept ambiances des Tours de Bab El (<code>rpgAmbientMusic.js</code>).
+    Cliquez pour écouter — la synthèse se réveille au premier geste, comme en jeu.
+  </p>
+  <nav class="toc">
+    <a href="#musiques">♪ Musiques de plateaux</a>
+    <a href="#autres-pistes">+ Pistes du dépôt</a>
+    <a href="#ambiances">🏰 Ambiances des 7 Tours</a>
+    <a href="#echantillons">▶ Échantillons (fichiers)</a>
+    <a href="#synthese">✦ Survol — dernier son synthétisé</a>
+    <a href="#annexe">⚠ Annexe</a>
+  </nav>
+  <div class="barre">
+    <button class="btn" id="stop-tout">■ Tout arrêter</button>
+    <span class="vol">Volume synthèse &amp; ambiances <input id="volume" type="range" min="0" max="100" value="100"></span>
+    <span id="statut" style="font-size:12px;color:var(--sable)"></span>
+  </div>
+</header>
+
+<main>
+  <section id="musiques">
+    <h2>♪ Musiques de plateaux <span class="compte" id="compte-musiques"></span></h2>
+    <p class="intro">
+      Jouées en boucle sur le plateau correspondant pendant les duels
+      (source : <code>src/games/rpgPlateauMusic.js</code>). Le choix du plateau dépend du deck —
+      et les plateaux à plusieurs pistes en tirent une au hasard à chaque duel.
+    </p>
+    <div class="grid" id="liste-musiques"></div>
+  </section>
+
+  <section id="autres-pistes">
+    <h2>⊕ Pistes présentes dans le dépôt, non branchées <span class="compte" id="compte-autres"></span></h2>
+    <p class="intro">Fichiers livrés à la racine du dépôt ou dans <code>public/audio/</code> mais
+    non référencées par le code du jeu à ce jour.</p>
+    <div class="grid" id="liste-autres"></div>
+  </section>
+
+  <section id="ambiances">
+    <h2>🏰 Ambiances des Tours de Bab El <span class="compte">7 boucles · mode Histoire</span></h2>
+    <p class="intro">
+      Une boucle de 8 mesures par tour, entièrement synthétisée en WebAudio — aucun fichier
+      (<code>src/games/rpgAmbientMusic.js</code>). En jeu, elles tournent doucement sous les
+      bruitages ; ici le niveau est remonté pour l'écoute. Attention, quelques secondes de mise
+      en place à la clôture de boucle : attendez un instant à l'appui.
+    </p>
+    <div class="grid" id="liste-ambiances"></div>
+  </section>
+
+  <section id="echantillons">
+    <h2>▶ Échantillons des bruitages <span class="compte" id="compte-echantillons"></span></h2>
+    <p class="intro">
+      Les seuls bruitages du duel livrés sous forme de fichiers
+      (<code>src/games/assets/</code>, lus par <code>RpgAudioPlayer</code>) — cartes, impacts,
+      souffles élémentaires. Le catalogue synthétique a été retiré du jeu : l'interface ne
+      conserve que le léger bip de survol (section suivante), tout le reste est muet.
+    </p>
+    <div class="grid" id="liste-echantillons"></div>
+  </section>
+
+  <section id="synthese">
+    <h2>✦ Bruitage synthétisé — le survol <span class="compte" id="compte-synthese"></span></h2>
+    <p class="intro">
+      Le jeu ne conserve qu'un seul bruitage synthétisé en WebAudio : l'effleurement de survol de
+      l'interface. Toutes les autres séquences de <code>rpgSfx()</code> ont été retirées — les actions
+      sonnent via les échantillons ci-dessus, ou se taisent en attendant de nouveaux fichiers.
+    </p>
+    <div id="liste-synthese"></div>
+  </section>
+
+  <section id="annexe">
+    <h2>⚠ Annexe</h2>
+    <div class="grid" id="liste-annexe"></div>
+    <div class="note">
+      <b>✔ Incohérence résolue :</b> « Cherry Blossom Strings (Extended) » a été déplacée dans
+      <code>public/</code> et renommée <code>CherryBlossomStrings(Extended).mp3</code> — exactement
+      le nom que <code>rpgPlateauMusic.js</code> référençait toujours. L'ancien tirage 404 de la Cour
+      de l'Empereur joue désormais la vraie piste. Les autres musiques de plateaux ont été déplacées
+      dans <code>public/</code> en même temps ; cette page suit les nouveaux chemins.
+    </div>
+    <div class="note">
+      <b>Sources :</b> <code>src/games/rpgAudio.js</code> (12 bruitages : le survol synthétisé + 11 échantillons),
+      <code>src/games/rpgPlateauMusic.js</code> (musiques de plateaux),
+      <code>src/games/rpgAmbientMusic.js</code> (7 ambiances des Tours),
+      <code>src/games/rpgFireAudio.js</code> · <code>rpgWaterAudio.js</code> · <code>rpgFoudreAudio.js</code>
+      (routage élémentaire : souffle de feu réservé aux sorts et effets qui blessent, Eau → vague,
+      attaques de créatures → frappe commune ; l'acier du Samouraï et le tonnerre du marteau ont été
+      retirés avec le catalogue synthétique).
+    </div>
+  </section>
+</main>
+
+<footer>Le Sablier de Bab El · Let's Play — inventaire d'écoute (le seul bruitage synthétisé restant, identique au jeu)</footer>
+
+<script type="module">
+import { RpgAudioPlayer, rpgSfx, RPG_SFX_NAMES } from './src/games/rpgAudio.js';
+import { RpgAmbientMusic, RPG_AMBIENT_THEMES } from './src/games/rpgAmbientMusic.js';
+
+const $ = (sel) => document.querySelector(sel);
+const statut = $('#statut');
+
+/* ── 1 · Musiques de plateaux ─────────────────────────────────────── */
+const MUSIQUES = [
+  { plateau: 'La Table des Heures', fichier: './public/Acoustic Guitar Solo (Cover).mp3',
+    code: 'Acoustic Guitar Solo (Cover).mp3',
+    desc: 'Guitare solo — la table d’origine de Bab El : Veilleurs du Désert, Cour des Djinns, Balance des Heures, Grand Horloger.' },
+  { plateau: 'L’Erg du Sahara', fichier: './public/audio/ArabianMeditativeFantasyCover.mp3',
+    code: 'audio/ArabianMeditativeFantasyCover.mp3',
+    desc: 'Méditative arabe — le grand désert, plateau des decks Sable.' },
+  { plateau: 'La Caravane de Gourara · le Désert de Verre', fichier: './public/audio/arabian-travel.mp3',
+    code: 'audio/arabian-travel.mp3',
+    desc: 'Voyage caravanier — la piste des foggaras et sa variante vitrifiée.' },
+  { plateau: 'Les Ruines de Tipaza', fichier: './public/audio/SorcererOfTheDeepTide.mp3',
+    code: 'audio/SorcererOfTheDeepTide.mp3',
+    desc: 'Sorcier des marées — la ville romaine au bord de la mer, plateau des decks Eau.' },
+  { plateau: 'Les Abysses Phosphorescentes', fichier: './public/audio/deep-sea-underwater-ambience.mp3',
+    code: 'audio/deep-sea-underwater-ambience.mp3',
+    desc: 'Ambiance sous-marine — la faille luminescente, variante des Ruines.' },
+];
+
+const AUTRES = [
+  { plateau: 'Le Fjord des Neuf Hivers · les Îles Célestes', fichier: './public/Viking Howl.mp3',
+    code: 'Viking Howl.mp3', desc: 'Piste viking n°1 — tirée au hasard parmi 3 pistes à chaque duel enneigé.', branche: true },
+  { plateau: 'Le Fjord des Neuf Hivers · les Îles Célestes', fichier: './public/Viking Howl (Take 2).mp3',
+    code: 'Viking Howl (Take 2).mp3', desc: 'Piste viking n°2 (autre prise) — tirage à 3.', branche: true },
+  { plateau: 'Le Fjord des Neuf Hivers · les Îles Célestes', fichier: './public/audio/full-track.mp3',
+    code: 'audio/full-track.mp3', desc: 'Piste complète — piste n°3 (nouvellement branchée), tirée au hasard avec les deux Viking Howl.', branche: true },
+  { plateau: 'La Cour de l’Empereur', fichier: './public/audio/WayOfTheBushidoWithGeishaVocals.mp3',
+    code: 'audio/WayOfTheBushidoWithGeishaVocals.mp3', desc: 'Voie du bushido et voix de geisha — tirée au hasard avec la piste des cerisiers.', branche: true },
+  { plateau: 'La Cour de l’Empereur', fichier: './public/CherryBlossomStrings(Extended).mp3',
+    code: 'CherryBlossomStrings(Extended).mp3', desc: 'Cordes des cerisiers — 2ᵉ piste de la Cour, tirée au hasard avec Bushido.', branche: true },
+  { plateau: 'Thème principal (hors parties)', fichier: './public/Desert Solitude with Percussion.mp3',
+    code: 'Desert Solitude with Percussion.mp3', desc: 'Solitude du désert avec percussions — le thème qui tourne en boucle hors des duels.', branche: true, meta: 'Boucle hors parties · ' },
+];
+
+/* Sépare les pistes branchées aux plateaux (les Vikings & bushido vivent dans les
+   tableaux multi-pistes du jeu) : on les ajoute aux deux premières sections. */
+function carteAudio(item, extraMeta = '') {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <h3>${item.plateau}</h3>
+    <div class="meta">${extraMeta}🎵 ${item.code}</div>
+    <p class="desc">${item.desc}</p>
+    <audio controls preload="metadata" src="${encodeURI(item.fichier)}"></audio>`;
+  return card;
+}
+const lm = $('#liste-musiques');
+MUSIQUES.forEach(m => lm.appendChild(carteAudio(m)));
+AUTRES.filter(a => a.branche).forEach(a => lm.appendChild(carteAudio(a, a.meta ?? 'Tirage au lancement · ')));
+$('#compte-musiques').textContent = `${lm.children.length} pistes · 8 plateaux couverts + le thème principal`;
+
+const la = $('#liste-autres');
+AUTRES.filter(a => !a.branche).forEach(a => la.appendChild(carteAudio(a, '')));
+$('#compte-autres').textContent = `${la.children.length} pistes`;
+
+/* ── 2 · Ambiances des Tours ──────────────────────────────────────── */
+const TOURS = [
+  { id: 'tour-des-listes',      titre: '1 · La Tour des Listes' },
+  { id: 'tour-du-souk',         titre: '2 · La Tour du Souk' },
+  { id: 'tour-des-sables',      titre: '3 · La Tour des Sables' },
+  { id: 'tour-des-abysses',     titre: '4 · La Tour des Abysses' },
+  { id: 'tour-du-fjord',        titre: '5 · La Tour du Fjord' },
+  { id: 'tour-du-soleil-rouge', titre: '6 · La Tour du Soleil rouge' },
+  { id: 'tour-de-la-necropole', titre: '7 · La Tour de la Nécropole' },
+];
+const ambient = new RpgAmbientMusic();
+let tourEnCours = null;
+
+const listeAmb = $('#liste-ambiances');
+TOURS.forEach(({ id, titre }) => {
+  const theme = RPG_AMBIENT_THEMES[id];
+  const card = document.createElement('div');
+  card.className = 'card tour-card';
+  card.dataset.tour = id;
+  card.innerHTML = `
+    <span class="lecture">● en écoute…</span>
+    <h3>${titre}</h3>
+    <div class="meta">${theme.bpm} BPM · « ${theme.nom} »</div>
+    <p class="desc">${theme.ambiance}</p>
+    <div class="tour-btns">
+      <button class="mini jouer">▶ Écouter</button>
+      <button class="mini arreter">■ Stop</button>
+    </div>`;
+  card.querySelector('.jouer').addEventListener('click', async () => {
+    ambient.setTour(id);
+    await ambient.start();
+    if (ambient.musicBus) ambient.musicBus.gain.value = 0.55;   // niveau relevé pour l’écoute
+    if (ambient.droneBus) ambient.droneBus.gain.value = 0.32;
+    ambient.setVolume(volumeGlobal);
+    tourEnCours = id;
+    document.querySelectorAll('.tour-card').forEach(c => c.classList.toggle('en-lecture', c.dataset.tour === id));
+    statut.textContent = `Ambiance : ${titre}`;
+  });
+  card.querySelector('.arreter').addEventListener('click', () => {
+    ambient.stop(); tourEnCours = null;
+    document.querySelectorAll('.tour-card').forEach(c => c.classList.remove('en-lecture'));
+    statut.textContent = '';
+  });
+  listeAmb.appendChild(card);
+});
+
+/* ── 3 · Échantillons ─────────────────────────────────────────────── */
+const ECHANTILLONS = [
+  { nom: 'Pose d’une carte', fichier: './src/games/assets/card-place.wav', code: 'card_place · card-place.wav',
+    desc: 'La carte se pose sur la table.' },
+  { nom: 'Pioche', fichier: './src/games/assets/card-draw.wav', code: 'card_draw · card-draw.wav',
+    desc: 'Une carte quitte le paquet vers la main.' },
+  { nom: 'Attaquants confirmés', fichier: './src/games/assets/attackers-confirm.mp3', code: 'attackers_confirm · attackers-confirm.mp3',
+    desc: 'La vague d’attaque est validée.' },
+  { nom: 'Coup d’attaque du joueur', fichier: './src/games/assets/player-attack-hit.wav', code: 'player_attack_hit · player-attack-hit.wav',
+    desc: 'La frappe du joueur qui touche.' },
+  { nom: 'Souffle de Braise', fichier: './src/games/assets/flame-gust.wav', code: 'flame_gust · flame-gust.wav',
+    desc: 'Le vent de feu des sorts, attaques et capacités Braise.' },
+  { nom: 'Vague d’Eau', fichier: './src/games/assets/water-wave.wav', code: 'water_wave · water-wave.wav',
+    desc: 'Le ressac des magies Eau.' },
+  { nom: 'Carte contrée', fichier: './src/games/assets/card-countered.wav', code: 'card_countered · card-countered.wav',
+    desc: 'Un contresort vient d’annuler la carte.' },
+  { nom: 'Créature renvoyée', fichier: './src/games/assets/creature-return.wav', code: 'creature_return · creature-return.wav',
+    desc: 'Renvoi en main (Ressac, Courant de retour…).' },
+  { nom: 'Impact de blocage', fichier: './src/games/assets/block-impact.mp3', code: 'block_impact · block-impact.mp3',
+    desc: 'Le choc du bloqueur.' },
+  { nom: 'Coup de destruction', fichier: './src/games/assets/destruction-hit.mp3', code: 'destruction_hit · destruction-hit.mp3',
+    desc: 'La carte détruite s’effondre.' },
+  { nom: 'Page tournée', fichier: './src/games/assets/page-turn.mp3', code: 'page_turn · page-turn.mp3',
+    desc: 'Le journal et le récit tournent une page.' },
+];
+const le = $('#liste-echantillons');
+ECHANTILLONS.forEach(e => le.appendChild(carteAudio({ plateau: e.nom, ...e })));
+$('#compte-echantillons').textContent = `${le.children.length} fichiers`;
+
+/* Annexe : le cri du cowboy appartient à Mirage Rush, pas au Sablier. */
+const lane = $('#liste-annexe');
+lane.appendChild(carteAudio({
+  plateau: 'Cri du cowboy « hey-haa » — Mirage Rush (hors Sablier)',
+  fichier: './src/games/assets/cowboy-hey-haa.mp3', code: 'cowboy-hey-haa.mp3 → arcadeAudio.js',
+  desc: 'Jeu Mirage Rush : cri de victoire tous les 5 ramassages consécutifs. Listé ici car il partage le dossier d’assets du Sablier.',
+}));
+
+/* ── 4 · Bruitages synthétisés ────────────────────────────────────── */
+const player = new RpgAudioPlayer();
+const SAMPLE_KINDS = new Set(ECHANTILLONS.map(e => e.code.split(' ')[0]));
+const EST_ECHANTILLON = (name) => rpgSfx(name)?.[0]?.kind === 'sample';
+
+const GROUPES = [
+  { titre: 'Interface — le seul son encore synthétisé', items: [
+    ['hover', 'Survol', 'carte survolée — dernier bruitage WebAudio du jeu'],
+  ]},
+];
+
+let compteSynth = 0;
+const ls = $('#liste-synthese');
+GROUPES.forEach(({ titre, items }) => {
+  const groupe = document.createElement('div');
+  groupe.className = 'sfx-groupe';
+  groupe.innerHTML = `<h4>${titre}</h4>`;
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  items.forEach(([name, label, desc]) => {
+    if (!RPG_SFX_NAMES.includes(name) || EST_ECHANTILLON(name)) return;
+    compteSynth += 1;
+    const chip = document.createElement('button');
+    chip.className = 'sfx';
+    chip.title = desc;
+    chip.innerHTML = `<span class="play-ico">▶</span><span>${label}<span class="nom-code">${name}</span></span>`;
+    chip.addEventListener('click', () => {
+      player.unlock();
+      player.setMuted(false);
+      player.setVolume(volumeGlobal);
+      player.play(name);
+      chip.classList.add('en-lecture');
+      window.setTimeout(() => chip.classList.remove('en-lecture'), 900);
+      statut.textContent = `Bruitage : ${label}`;
+    });
+    chips.appendChild(chip);
+  });
+  groupe.appendChild(chips);
+  ls.appendChild(groupe);
+});
+$('#compte-synthese').textContent = `${compteSynth} séquence conservée`;
+
+/* ── Contrôles globaux ────────────────────────────────────────────── */
+let volumeGlobal = 1;
+$('#volume').addEventListener('input', (e) => {
+  volumeGlobal = Number(e.target.value) / 100;
+  player.setVolume(volumeGlobal);
+  ambient.setVolume(volumeGlobal);
+});
+$('#stop-tout').addEventListener('click', () => {
+  ambient.stop(); tourEnCours = null;
+  document.querySelectorAll('.tour-card').forEach(c => c.classList.remove('en-lecture'));
+  document.querySelectorAll('audio').forEach(a => { a.pause(); });
+  player.setVolume(0.0001); window.setTimeout(() => player.setVolume(volumeGlobal), 60);
+  statut.textContent = 'Tout est arrêté.';
+});
+
+const total = MUSIQUES.length + AUTRES.length + 7 + ECHANTILLONS.length + compteSynth;
+$('#total-global').textContent = `${total} sons indexés`;
+// Première interaction : réveille le contexte WebAudio (comme en jeu).
+window.addEventListener('pointerdown', () => player.unlock(), { once: true });
+window.addEventListener('keydown', () => player.unlock(), { once: true });
+</script>
+</body>
+</html>

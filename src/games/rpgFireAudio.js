@@ -1,27 +1,32 @@
 /**
- * Routing des bruitages Braise du Sablier.
- * Les sons dépendent de l'origine de l'action : une attaque, un sort ou une
- * capacité de créature Braise doit conserver son identité sonore, y compris
- * pour les cartes hybrides.
+ * Routing du bruitage de feu du Sablier.
+ *
+ * `flame_gust` est réservé aux sorts et effets qui BLESSENT une créature ou
+ * un joueur : les sorts de dégâts et la table rase, les arrivées qui
+ * frappent, les capacités de combat qui blessent la créature combattue et
+ * les effets de mort qui infligent des dégâts. Une Braise qui ne blesse pas
+ * (renfort, jetons, pioche, retour parmi les siens…) ne met pas le feu.
+ *
+ * Les attaques de créatures, elles, ne brûlent pas : toutes les frappes —
+ * le Samouraï comme l'Ifrit — partagent `player_attack_hit`, le même
+ * échantillon joué par la page quand aucun effet ne s'ajoute au combat.
  */
 import { cardById, cardColors } from './rpgCards.js';
 
 export const RPG_FIRE_SFX = 'flame_gust';
-/** La frappe d'un Samouraï : l'acier, pas le feu. */
-export const RPG_SWORD_SFX = 'sword';
 
 const CREATURE_KINDS = new Set(['creature', 'hero']);
 
 /**
- * Les sorts de Braise qui **brûlent** : ceux qui infligent des dégâts ou rasent
- * la table. Une magie Braise qui ne fait que renforcer, attacher une arme ou
- * protéger garde le bruit commun des magies — jouer le Sabre maudit ou le
- * Serment de la forge ne met pas le feu.
+ * Les sorts de Braise qui **blessent** : ceux qui infligent des dégâts ou
+ * rasent la table. Une magie Braise qui ne fait que renforcer, attacher une
+ * arme ou protéger ne met pas le feu — jouer le Sabre maudit ou le Serment
+ * de la forge ne blesse rien.
  */
 const SORTS_DE_FEU = new Set(['degats', 'destruction-totale']);
 
 /**
- * Les seuls effets d'arrivée qui SONNENT comme le feu : ceux qui brûlent
+ * Les seuls effets d'arrivée qui SONNENT comme le feu : ceux qui blessent
  * réellement la table. Une carte Braise dont l'arrivée crée des jetons, exile,
  * pioche ou détruit un terrain n'a pas de souffle à elle — le Daimyō du Soleil
  * rouge lève ses Samouraïs, il ne met pas le feu ; c'est `card_place` qui
@@ -29,11 +34,28 @@ const SORTS_DE_FEU = new Set(['degats', 'destruction-totale']);
  */
 const ARRIVEES_DE_FEU = new Set(['degats']);
 
+/**
+ * Les capacités de combat qui blessent la créature combattue — le Sahir des
+ * braises pique la créature qu'il touche. Le contact seul ne suffit pas.
+ */
+const COMBATS_DE_FEU = new Set(['degats-creature-combattue']);
+
+/**
+ * Les effets de mort qui blessent : le Ghul et l'Ifrit brûlent une dernière
+ * fois en tombant. L'Anqa, qui revient après quatre tours sans blesser
+ * personne, s'envole en silence.
+ */
+const MORTS_DE_FEU = new Set(['degats']);
+
 function resolveCard(cardOrId) {
   return typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
 }
 
-/** Retourne le bruitage Braise associé à un type d'action, sinon `null`. */
+/**
+ * Le souffle du feu, seulement quand l'action blesse une créature ou un
+ * joueur. `attack` ne sonne jamais ici — les frappes de créatures gardent
+ * toutes `player_attack_hit`.
+ */
 export function rpgFireSoundFor(cardOrId, action) {
   const card = resolveCard(cardOrId);
   if (!card || !cardColors(card).includes('braise')) return null;
@@ -41,34 +63,22 @@ export function rpgFireSoundFor(cardOrId, action) {
   switch (action) {
     case 'spell':
       return card.kind === 'magie' && SORTS_DE_FEU.has(card.effet?.type) ? RPG_FIRE_SFX : null;
-    case 'attack':
-      return CREATURE_KINDS.has(card.kind) ? RPG_FIRE_SFX : null;
     case 'arrival':
       return CREATURE_KINDS.has(card.kind) && ARRIVEES_DE_FEU.has(card.arrivee?.type) ? RPG_FIRE_SFX : null;
     case 'combat':
-      return CREATURE_KINDS.has(card.kind) && card.combat ? RPG_FIRE_SFX : null;
+      return CREATURE_KINDS.has(card.kind) && COMBATS_DE_FEU.has(card.combat?.type) ? RPG_FIRE_SFX : null;
     case 'destruction':
-      return CREATURE_KINDS.has(card.kind) && (card.destruction || card.honneur) ? RPG_FIRE_SFX : null;
+      return CREATURE_KINDS.has(card.kind) && MORTS_DE_FEU.has(card.destruction?.type) ? RPG_FIRE_SFX : null;
     default:
       return null;
   }
 }
 
 /**
- * Un Samouraï frappe à la lame. Le type se lit sur la ligne **imprimée**, comme
- * la Résonance : un yōkai qui porte la Résonance samouraï (le Tengu, Kagutsuchi)
- * n'est pas un Samouraï et garde le souffle de sa couleur.
- */
-export function carteFrappeALaLame(cardOrId) {
-  const card = resolveCard(cardOrId);
-  if (!card || !CREATURE_KINDS.has(card.kind)) return false;
-  return /Samouraï/.test(card.typeLine ?? '');
-}
-
-/**
- * Le son d'un combat : l'acier quand l'attaquant est un Samouraï, sinon la
- * Braise si l'un des attaquants est une créature Braise, ou si une capacité de
- * combat d'une créature Braise (attaquante ou bloqueuse) se déclenche.
+ * Le son d'un combat : le souffle uniquement si une capacité de combat qui
+ * blesse (attaquante ou bloqueuse) se déclenche ; `null` sinon — la page
+ * joue alors `player_attack_hit`, le coup de frappe commun à toutes les
+ * créatures.
  */
 export function rpgCombatSound(duel, attackerIds = [], blockersByAttacker = {}) {
   const creatures = new Map([
@@ -80,18 +90,10 @@ export function rpgCombatSound(duel, attackerIds = [], blockersByAttacker = {}) 
   )));
 
   for (const id of attackerIds) {
-    const card = cardById(creatures.get(id)?.carteId);
-    if (carteFrappeALaLame(card)) return RPG_SWORD_SFX;
-  }
-  for (const id of attackerIds) {
-    const card = cardById(creatures.get(id)?.carteId);
-    if (rpgFireSoundFor(card, 'attack') || rpgFireSoundFor(card, 'combat')) {
-      return RPG_FIRE_SFX;
-    }
+    if (rpgFireSoundFor(cardById(creatures.get(id)?.carteId), 'combat')) return RPG_FIRE_SFX;
   }
   for (const id of blockers) {
-    const card = cardById(creatures.get(id)?.carteId);
-    if (rpgFireSoundFor(card, 'combat')) return RPG_FIRE_SFX;
+    if (rpgFireSoundFor(cardById(creatures.get(id)?.carteId), 'combat')) return RPG_FIRE_SFX;
   }
   return null;
 }

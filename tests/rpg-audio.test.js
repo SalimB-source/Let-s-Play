@@ -1,7 +1,8 @@
 /**
  * Couche pure des bruitages + lecteur WebAudio sans carte son réelle.
- * Les séquences restent vérifiables en Node ; le faux AudioContext vérifie
- * aussi la chaîne de synthèse, de réverbération et de limitation.
+ * Le catalogue est réduit aux échantillons fournis et au seul bip de survol :
+ * les anciennes synthèses ont été retirées du jeu, et les tests vérifient
+ * autant ce qui reste que ce qui doit rester muet.
  */
 
 import test from 'node:test';
@@ -16,8 +17,12 @@ test('hz : le la de référence et ses voisins', () => {
   assert.equal(hz('nimportequoi'), 0);
 });
 
-test('chaque action de jeu a une séquence, l’inconnu se tait', () => {
-  assert.ok(RPG_SFX_NAMES.length >= 35, 'le catalogue couvre le duel, les cartes et l’interface');
+test('le catalogue se résume au survol et aux onze échantillons fournis', () => {
+  assert.deepEqual([...RPG_SFX_NAMES].sort(), [
+    'attackers_confirm', 'block_impact', 'card_countered', 'card_draw', 'card_place',
+    'creature_return', 'destruction_hit', 'flame_gust', 'hover', 'page_turn',
+    'player_attack_hit', 'water_wave',
+  ].sort(), 'le son du duel = la synthèse du survol + les échantillons de la table');
   for (const name of RPG_SFX_NAMES) {
     const sequence = rpgSfx(name);
     assert.ok(Array.isArray(sequence) && sequence.length > 0, `séquence manquante : ${name}`);
@@ -25,28 +30,27 @@ test('chaque action de jeu a une séquence, l’inconnu se tait', () => {
   assert.equal(rpgSfx('silence-total'), null);
 });
 
-test('le blocage fait entendre un choc métallique de lames', () => {
-  assert.ok(RPG_SFX_NAMES.includes('choc_lames'), 'le choc de lames est déclaré parmi les bruitages du duel');
-  const clash = rpgSfx('choc_lames');
-  assert.ok(clash.some((event) => event.kind === 'thud'), 'un impact bref ancre le choc');
-  assert.ok(clash.some((event) => event.kind === 'noise' && event.filterType === 'bandpass'),
-    'un bruit métallique filtré donne l’attaque de la lame');
-  assert.ok(clash.filter((event) => event.kind === 'bell').length >= 2,
-    'deux résonances décalées font tinter les épées qui s’entrechoquent');
+test('toutes les synthèses retirées restent muettes — le survol est la seule survivante', () => {
+  const retires = [
+    'apparition', 'victoire', 'defaite', 'whoosh', 'hit', 'heal', 'zone', 'bell', 'blip',
+    'explore', 'souffle', 'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap',
+    'mana', 'mythic_impact', 'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long',
+    'soin_vie', 'soin_vie_adverse', 'bouclier', 'attaque_declaree', 'attaque_confirmee',
+    'blocage', 'choc_lames', 'sword', 'combat', 'degats', 'degats_sorcier', 'coup_rapide',
+    'impact', 'contresort', 'foudre_marteau', 'menu', 'select', 'erreur', 'pile', 'annuler',
+  ];
+  for (const name of retires) {
+    assert.ok(!RPG_SFX_NAMES.includes(name), `${name} n'est plus déclaré au catalogue`);
+    assert.equal(rpgSfx(name), null, `${name} se joue en silence`);
+  }
+  // Le seul son encore synthétisé : un effleurement de survol, court et filtré.
+  const survol = rpgSfx('hover');
+  assert.ok(survol, 'le survol reste au catalogue');
+  assert.ok(survol.every((event) => event.kind === 'tone'));
+  assert.ok(survol.every((event) => event.dur <= 0.1), 'le survol reste un frémissement');
 });
 
-test('la frappe d’un Samouraï a son propre bruit d’acier', () => {
-  assert.ok(RPG_SFX_NAMES.includes('sword'), 'la lame est déclarée parmi les bruitages du duel');
-  const sword = rpgSfx('sword');
-  assert.ok(sword.some((event) => event.kind === 'noise' && event.filterType === 'highpass'),
-    'le souffle de la lame fend l’air');
-  assert.ok(sword.filter((event) => event.kind === 'bell').length >= 2,
-    'l’acier tinte, deux résonances décalées');
-  assert.notDeepEqual(sword, rpgSfx('choc_lames'),
-    'la frappe n’est pas le choc de deux lames qui se rencontrent');
-});
-
-test('toutes les séquences ont des notes, départs, durées et gains valides', () => {
+test('toutes les séquences ont des départs, durées et gains valides', () => {
   for (const name of RPG_SFX_NAMES) {
     for (const event of rpgSfx(name)) {
       assert.ok(event.at >= 0, `${name} : départ négatif`);
@@ -64,27 +68,9 @@ test('toutes les séquences ont des notes, départs, durées et gains valides', 
   }
 });
 
-test('la palette est feutrée plutôt que chiptune, avec des glissés et des couches spatiales', () => {
-  for (const name of RPG_SFX_NAMES) {
-    for (const event of rpgSfx(name)) {
-      if (event.kind === 'tone') assert.notEqual(event.w, 'square', `${name} : éviter le bip carré brut`);
-    }
-  }
-  assert.ok(rpgSfx('whoosh').some((event) => event.filterTo), 'un whoosh module son filtre');
-  assert.ok(rpgSfx('apparition').some((event) => event.slideTo), 'l’apparition fait glisser une hauteur');
-  assert.ok(rpgSfx('victoire').some((event) => event.pan > 0), 'les effets donnent une largeur stéréo');
-});
-
-test('l’apparition monte, la fanfare finit plus haut et la défaite redescend', () => {
-  const apparition = rpgSfx('apparition').filter((event) => event.kind === 'tone');
-  assert.ok(hz(apparition.at(-1).n) > hz(apparition[0].n), 'l’apparition doit se conclure en hauteur');
-
-  const victoire = rpgSfx('victoire').filter((event) => event.kind === 'tone');
-  assert.ok(hz(victoire.at(-1).n) > hz(victoire[0].n), 'la fanfare doit finir plus haut');
-
-  const defaite = rpgSfx('defaite').map((event) => hz(event.n));
-  for (let index = 1; index < defaite.length; index += 1) {
-    assert.ok(defaite[index] < defaite[index - 1], 'la défaite doit descendre');
+test('le survol reste feutré plutôt que chiptune', () => {
+  for (const event of rpgSfx('hover')) {
+    if (event.kind === 'tone') assert.notEqual(event.w, 'square', 'jamais de bip carré brut');
   }
 });
 
@@ -162,7 +148,7 @@ class FakeAudioContext {
 const originalWindow = globalThis.window;
 test.after(() => { globalThis.window = originalWindow; });
 
-test('le lecteur construit la chaîne moderne, joue les événements et respecte le mute', () => {
+test('le lecteur construit la chaîne moderne, joue le survol et respecte le mute', () => {
   globalThis.window = { AudioContext: FakeAudioContext };
   const player = new RpgAudioPlayer();
   player.setMuted(true);
@@ -175,16 +161,17 @@ test('le lecteur construit la chaîne moderne, joue les événements et respecte
   assert.equal(player.master.gain.value, 0.0001, 'le choix muet posé avant le déverrouillage est conservé');
 
   player.setMuted(false);
-  player.play('apparition', 0.05);
+  player.play('hover', 0.05);
   for (const name of RPG_SFX_NAMES) player.play(name);
-  assert.ok(context.counters.oscillators > 0, 'les notes et partiels sont planifiés');
-  assert.ok(context.counters.sources > 0, 'le souffle est planifié');
-  assert.ok(context.counters.filters > 0, 'les matières passent par des filtres');
-  assert.ok(context.counters.panners > 0, 'les éléments stéréo sont panoramiqués');
+  assert.ok(context.counters.oscillators > 0, 'le survol est planifié');
+  assert.ok(context.counters.filters > 0, 'sa matière passe par un filtre');
+  // Les échantillons passent par leurs éléments <audio>, absents du faux
+  // navigateur : aucune synthèse de bruit ne subsiste dans le catalogue.
+  assert.equal(context.counters.sources, 0, 'aucune source de bruit n’est planifiée');
 
   const beforeMute = { ...context.counters };
   player.setMuted(true);
-  player.play('victoire');
+  player.play('hover');
   player.play('son-inconnu');
   assert.deepEqual(context.counters, beforeMute, 'muet ou inconnu : aucun nœud supplémentaire');
 
@@ -198,9 +185,9 @@ test('lecteur sans navigateur ou sans WebAudio : il reste muet sans planter', ()
   const player = new RpgAudioPlayer();
   player.unlock();
   assert.equal(player.ctx, null);
-  player.play('apparition');
+  player.play('hover');
   player.setMuted(true);
-  player.play('victoire');
+  player.play('flame_gust');
   player.destroy();
   assert.ok(true);
 });
@@ -215,8 +202,7 @@ test('setVolume ajuste le gain des sons du jeu et coupe la lecture à zéro', ()
 
   const beforeZero = { ...player.ctx.counters };
   player.setVolume(0);
-  player.play('victoire');
+  player.play('hover');
   assert.deepEqual(player.ctx.counters, beforeZero, 'à volume 0, aucun oscillateur supplémentaire n’est planifié');
   player.destroy();
 });
-
