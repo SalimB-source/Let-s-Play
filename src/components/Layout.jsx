@@ -400,6 +400,19 @@ export default function Layout({ children }) {
     ? `${t.nav.profile}, ${profileName}, ${t.nav.levelShort} ${profileLevel}`
     : `${t.nav.profile}, ${t.nav.login}`;
 
+  // Coque PC : pas de site, uniquement le jeu. Le Sablier tourne dans sa
+  // fenêtre Electron (window.letsPlayDesktop) — on masque toute la chrome
+  // Let's Play (nav, footer, actus) pour ne laisser que la table.
+  const isDesktopApp = typeof window !== 'undefined' && Boolean(window.letsPlayDesktop);
+  if (isDesktopApp) {
+    return (
+      <>
+        <SEO />
+        <main>{children}</main>
+      </>
+    );
+  }
+
   const navClass = [
     'nav',
     scrolled ? 'scrolled' : '',
