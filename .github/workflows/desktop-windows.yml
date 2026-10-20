@@ -133,6 +133,37 @@ jobs:
             echo "::notice::$(basename "$f") = $(( $(stat -c%s "$f") / 1048576 )) Mo"
           done
 
+      # Les annotations de step sont plafonnées à 10 : le rapport complet des
+      # tailles part en commentaire de la pull request, lisible via l'API.
+      - name: Rapport de tailles en PR
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          {
+            echo "Rapport de build du $(date -u '+%F %T UTC') — commit \`${GITHUB_SHA::7}\`"
+            echo
+            echo '```'
+            du -sh desktop/dist-web desktop/release/win-unpacked 2>/dev/null
+            echo '-- win-unpacked (1er niveau) --'
+            du -sh desktop/release/win-unpacked/* 2>/dev/null | sort -h
+            echo '-- resources --'
+            du -sh desktop/release/win-unpacked/resources/* 2>/dev/null | sort -h
+            echo '-- app.asar (contenu) --'
+            du -sh desktop/release/win-unpacked/resources/app/* 2>/dev/null | sort -h | tail -6
+            echo '-- installeurs --'
+            ls -la desktop/release/*.exe
+            echo '```'
+          } > report.md
+          NUM=$(gh pr view --json number -q .number 2>/dev/null || true)
+          if [ -n "$NUM" ]; then
+            gh pr comment "$NUM" --body-file report.md
+          else
+            echo "Pas de PR ouverte pour cette branche : rapport non commenté."
+            cat report.md
+          fi
+
       - name: Artefacts de run
         uses: actions/upload-artifact@v4
         with:
