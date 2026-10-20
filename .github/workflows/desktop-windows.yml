@@ -9,7 +9,8 @@
 # Publication, comme pour l'APK (android-apk.yml) :
 #   - artefacts de run (rétention 90 jours) ;
 #   - GitHub Release sur le tag « desktop », remplacée à chaque build de main :
-#     lien de téléchargement permanent pour les joueurs.
+#     lien de téléchargement permanent et métadonnées latest.yml/.blockmap pour
+#     electron-updater.
 #
 # Contrairement à l'APK, l'exécutable N'EST PAS committé sur la branche :
 # ~180 Mo par build saturerait le dépôt. Le téléchargement passe par la Release.
@@ -122,6 +123,14 @@ jobs:
           done
           exit 1
 
+      - name: Vérifier les métadonnées electron-updater
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./desktop/package.json').version")
+          test -s "desktop/release/le-sablier-de-bab-el-${VERSION}-setup.exe.blockmap"
+          test -s desktop/release/latest.yml
+          node --input-type=module -e "import fs from 'node:fs'; const v=process.argv[1], y=fs.readFileSync('desktop/release/latest.yml','utf8'); if(!y.includes('version: ' + v) || !y.includes('le-sablier-de-bab-el-' + v + '-setup.exe')) throw new Error('latest.yml ne référence pas l\u2019installeur v' + v); console.log('latest.yml prêt pour v' + v);" "$VERSION"
+
       - name: Contenu de release/ (tailles réelles)
         shell: bash
         run: |
@@ -184,7 +193,9 @@ jobs:
           name: sablier-pc-windows
           path: |
             desktop/release/le-sablier-de-bab-el-*-setup.exe
+            desktop/release/le-sablier-de-bab-el-*-setup.exe.blockmap
             desktop/release/le-sablier-de-bab-el-*-portable.exe
+            desktop/release/latest.yml
           retention-days: 30
           if-no-files-found: error
 
@@ -204,7 +215,7 @@ jobs:
           # restent publiés à côté, pour archiver.
           cp "le-sablier-de-bab-el-${VERSION}-setup.exe" le-sablier-de-bab-el-setup.exe
           cp "le-sablier-de-bab-el-${VERSION}-portable.exe" le-sablier-de-bab-el-portable.exe
-          FICHIERS=$(ls *.exe)
+          FICHIERS=$(ls *.exe *.blockmap latest*.yml)
           {
             echo "Version PC installable du Sablier de Bab El, le jeu de cartes de Let's Play."
             echo ""
@@ -214,6 +225,9 @@ jobs:
             echo ""
             echo "**Carte graphique** : le rendu 3D passe par la carte du PC (WebGL → ANGLE/D3D11)."
             echo "Menu « Carte graphique → État de la carte graphique… » pour vérifier quel GPU travaille."
+            echo ""
+            echo "**Mises à jour** : l'installeur Windows vérifie cette Release au démarrage."
+            echo "Le portable reste à mettre à jour en téléchargeant son nouvel exécutable."
             echo ""
             echo "- **Version** : ${VERSION}"
             echo "- **Commit** : ${GITHUB_SHA::7}"

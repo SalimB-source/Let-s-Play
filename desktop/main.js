@@ -26,6 +26,7 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain, shell, session } from 'electron';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { autoUpdater } from 'electron-updater';
 
 import { gpuSwitches, interpreterEtatGpu, qualifierRenderer, DIAGNOSTIC_INTRO } from './gpu.js';
 import { startLocalServer, DEFAULT_PORT, DEFAULT_REMOTE_ORIGIN } from './local-server.js';
@@ -83,6 +84,9 @@ let fenetrePrincipale = null;
 let serveurLocal = null;
 let mode = 'online';
 let urlJeu = `${REMOTE_ORIGIN}${ROUTE_JEU}`;
+let verificationMajManuelle = false;
+let verificationMajEnCours = false;
+let telechargementMajEnCours = false;
 
 async function demarrer() {
   if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
@@ -114,6 +118,7 @@ async function demarrer() {
 
   creerFenetre();
   construireMenu();
+  configurerMiseAJour();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) creerFenetre();
@@ -253,6 +258,116 @@ function memoriserEtatFenetre() {
 }
 
 // ---------------------------------------------------------------------------
+// Mises à jour (installateur Windows publié sur la Release GitHub `desktop`)
+// ---------------------------------------------------------------------------
+function afficherDialogue(options) {
+  return fenetrePrincipale
+    ? dialog.showMessageBox(fenetrePrincipale, options)
+    : dialog.showMessageBox(options);
+}
+
+function signalerErreurMaj(erreur) {
+  verificationMajEnCours = false;
+  const erreurVisible = verificationMajManuelle || telechargementMajEnCours;
+  verificationMajManuelle = false;
+  telechargementMajEnCours = false;
+  console.error('[desktop:update] échec :', erreur);
+  if (erreurVisible) {
+    afficherDialogue({
+      type: 'error',
+      title: 'Mise à jour impossible',
+      message: 'La recherche ou le téléchargement de la mise à jour a échoué.',
+      detail: `${erreur?.message || erreur}\n\nVérifiez votre connexion Internet et réessayez.`,
+      buttons: ['OK'],
+    });
+  }
+}
+
+function configurerMiseAJour() {
+  // Le build de développement, le portable (sans installation) et les autres
+  // plateformes ne doivent pas télécharger l'installateur NSIS.
+  if (!app.isPackaged || process.platform !== 'win32' || process.env.PORTABLE_EXECUTABLE_DIR) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowPrerelease = false;
+
+  autoUpdater.on('checking-for-update', () => {
+    verificationMajEnCours = true;
+    console.log('[desktop:update] vérification de la Release GitHub…');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    // Garder le verrou de vérification pendant le téléchargement : un second
+    // checkForUpdates() simultané est rejeté par electron-updater.
+    telechargementMajEnCours = true;
+    verificationMajManuelle = false;
+    console.log(`[desktop:update] v${info.version} disponible, téléchargement automatique…`);
+    afficherDialogue({
+      type: 'info',
+      title: 'Mise à jour disponible',
+      message: `La version ${info.version} du Sablier de Bab El est disponible.`,
+      detail: 'Elle est en cours de téléchargement en arrière-plan. Le jeu reste utilisable pendant le téléchargement.',
+      buttons: ['Continuer'],
+      defaultId: 0,
+    });
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    console.log(`[desktop:update] téléchargement ${Math.round(progress.percent)} %`);
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    verificationMajEnCours = false;
+    console.log(`[desktop:update] application à jour (v${info.version})`);
+    if (verificationMajManuelle) {
+      verificationMajManuelle = false;
+      afficherDialogue({
+        type: 'info',
+        title: 'Aucune mise à jour',
+        message: 'Le Sablier de Bab El est déjà à jour.',
+        detail: `Version installée : ${app.getVersion()}`,
+        buttons: ['OK'],
+      });
+    }
+  });
+
+  autoUpdater.on('update-downloaded', async (info) => {
+    verificationMajEnCours = false;
+    telechargementMajEnCours = false;
+    console.log(`[desktop:update] v${info.version} téléchargée, prête à installer`);
+    const { response } = await afficherDialogue({
+      type: 'info',
+      title: 'Mise à jour prête',
+      message: `La version ${info.version} a été téléchargée.`,
+      detail: 'Installez-la maintenant, ou continuez à jouer : elle s’installera à la fermeture de l’application.',
+      buttons: ['Redémarrer et installer', 'Plus tard'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (response === 0) autoUpdater.quitAndInstall();
+  });
+
+  autoUpdater.on('error', signalerErreurMaj);
+
+  // Une vérification au démarrage, différée pour laisser la fenêtre s'ouvrir.
+  const temporisateur = setTimeout(() => lancerVerificationMaj(false), 8000);
+  temporisateur.unref?.();
+}
+
+function lancerVerificationMaj(manuelle) {
+  if (!app.isPackaged || process.platform !== 'win32' || process.env.PORTABLE_EXECUTABLE_DIR || verificationMajEnCours) return;
+  verificationMajManuelle = manuelle;
+  verificationMajEnCours = true;
+  try {
+    const resultat = autoUpdater.checkForUpdates();
+    resultat?.catch(signalerErreurMaj);
+  } catch (erreur) {
+    signalerErreurMaj(erreur);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Menu
 // ---------------------------------------------------------------------------
 function construireMenu() {
@@ -309,6 +424,22 @@ function construireMenu() {
     {
       label: 'Aide',
       submenu: [
+        {
+          label: 'Rechercher une mise à jour…',
+          click: () => {
+            if (!app.isPackaged || process.platform !== 'win32' || process.env.PORTABLE_EXECUTABLE_DIR) {
+              afficherDialogue({
+                type: 'info',
+                title: 'Mises à jour',
+                message: 'La mise à jour automatique est disponible dans la version Windows installée.',
+                buttons: ['OK'],
+              });
+              return;
+            }
+            if (verificationMajEnCours) return;
+            lancerVerificationMaj(true);
+          },
+        },
         { label: 'Le site Let’s Play (navigateur)', click: () => shell.openExternal(REMOTE_ORIGIN) },
         { label: 'Dépôt du projet', click: () => shell.openExternal('https://github.com/SalimB-source/Let-s-Play') },
         { type: 'separator' },

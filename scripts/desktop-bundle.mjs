@@ -233,9 +233,22 @@ writeFileSync(join(SCENE, 'package.json'), `${JSON.stringify({
   homepage: paquetCoque.homepage,
   // Version exacte : electron-builder refuse un intervalle sans node_modules.
   devDependencies: { electron: electronVersion },
+  // L'updater est une dépendance d'exécution (contrairement à electron-builder).
+  dependencies: { 'electron-updater': paquetCoque.dependencies?.['electron-updater'] },
 }, null, 2)}
 `);
-console.log(`[desktop] projet d'empaquetage isolé : ${SCENE} (${FICHIERS_SCENE.length + 3} fichiers)`);
+
+// Le projet isolé reçoit uniquement les dépendances de production. Ne jamais
+// copier desktop/node_modules : il contient le runtime Electron et les outils
+// de build, ce qui ferait grossir l'asar de centaines de Mo.
+const npmInstall = spawnSync('npm', [
+  'install', '--prefix', SCENE, '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund',
+], { stdio: 'inherit', shell: process.platform === 'win32' });
+if (npmInstall.status !== 0) {
+  console.error('[desktop] installation des dépendances runtime dans desktop/pack impossible.');
+  process.exit(npmInstall.status ?? 1);
+}
+console.log(`[desktop] projet d'empaquetage isolé : ${SCENE} (${FICHIERS_SCENE.length + 3} fichiers + electron-updater)`);
 
 // ---------------------------------------------------------------------------
 // Compte rendu
