@@ -10,8 +10,8 @@
  * porter le sien) :
  *  - niveau : 'recit' | 'normale' | 'veilleur'
  *      · récit    → se trompe volontairement (cibles et blocages approximatifs)
- *      · normale  → joue les meilleures options des heuristiques
- *      · veilleur → calcule en plus les lignes létales et garde son burn pour conclure
+ *      · normale  → anticipe un coup et compare les séquences avec le moteur
+ *      · veilleur → explore plus de réponses, anticipe trois coups, cherche le létal et garde son burn
  *  - style  : 'agressif' | 'equilibre' | 'prudent' | 'controle'
  *      · biaise attaques, blocages, priorité du burn et du contrôle du plateau.
  */
@@ -50,7 +50,26 @@ export function rpgProfilIA(ia = null) {
     tauxErreur: niveau === 'recit' ? 0.4 : 0,
     /** Le niveau Veilleur calcule les lignes létales et ménage son burn. */
     prescience: niveau === 'veilleur',
+    /** Le niveau Normal anticipe un coup ; le Veilleur prépare une séquence de trois. */
+    profondeur: niveau === 'veilleur' ? 3 : niveau === 'normale' ? 2 : 0,
+    /** Largeur bornée : plus fort en Veilleur, sans bloquer le navigateur. */
+    largeur: niveau === 'veilleur' ? 4 : niveau === 'normale' ? 3 : 1,
   };
+}
+
+/**
+ * Durée visible de réflexion, variable selon la difficulté et la complexité
+ * du plateau. Le temps laisse aussi lire les cartes déjà jouées : le niveau
+ * Veilleur prend davantage de recul que l'Initiation.
+ */
+export function rpgDelaiReflexionIA(duel, cote = 'sorcier') {
+  const profil = rpgProfilIA(duel?.[cote]?.ia ?? null);
+  const base = profil.niveau === 'veilleur' ? 1120 : profil.niveau === 'normale' ? 760 : 480;
+  const adversaire = autre(cote);
+  const creatures = (duel?.[cote]?.creatures?.length ?? 0)
+    + (duel?.[adversaire]?.creatures?.length ?? 0);
+  const cartesEnMain = Math.min(5, duel?.[cote]?.main?.length ?? 0);
+  return Math.min(1550, base + Math.min(300, creatures * 42 + cartesEnMain * 18));
 }
 
 const optionsIA = (duel, cote, options = {}) => ({
@@ -1203,17 +1222,10 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   return { score, cibleId };
 }
 
-/**
- * Le prochain coup du sorcier : la carte la plus utile avec sa cible, ou
- * null quand il n’a rien d’intéressant à faire (il garde alors son mana).
- * Les kills de créatures passent avant le développement, le développement
- * avant le burn inutile, et les renforts arrivent quand le plateau est garni.
- */
-export function choisirCarteIA(duel, cote, options = {}) {
+/** Coups actuellement jouables, ordonnés par l'heuristique historique. */
+function candidatsCartesIA(duel, cote, options = {}) {
   const { profil, rng } = optionsIA(duel, cote, options);
   const camp = duel[cote];
-  // `exclus` : des cartes que l'appelant écarte (une carte injouable, que
-  // l'IA proposerait encore à l'annoncer sans fin).
   const exclus = options.exclus ?? new Set();
   const candidats = [];
   for (const carteId of camp.main) {
@@ -1233,12 +1245,119 @@ export function choisirCarteIA(duel, cote, options = {}) {
       score: evaluation.score + (profil.style === 'controle' && carte.kind === 'magie' ? 0.5 : 0),
     });
   }
+  return candidats.sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Copie isolée du duel pour essayer un coup sans toucher à la vraie partie.
+ * Les états du moteur sont des données simples ; `structuredClone` conserve
+ * aussi les propriétés optionnelles, avec un repli pour les WebView anciens.
+ */
+function copierDuelPourRecherche(duel) {
+  if (typeof globalThis.structuredClone === 'function') return globalThis.structuredClone(duel);
+  return JSON.parse(JSON.stringify(duel));
+}
+
+/** Applique un candidat dans une copie en passant par les vraies règles. */
+function simulerCoupCarte(duel, cote, coup) {
+  try {
+    const simulation = copierDuelPourRecherche(duel);
+    moteur.rpgReglerHasard(simulation, () => 0.5);
+    let resultat;
+    if (armeById(coup.carteId)) {
+      resultat = moteur.rpgJouerArme(simulation, cote, coup.carteId, coup.cibleId);
+    } else if (duelCardById(coup.carteId)) {
+      resultat = moteur.rpgJouerCreature(simulation, cote, coup.carteId, coup.cibleId);
+    } else if (magieById(coup.carteId)) {
+      resultat = moteur.rpgLancerMagie(
+        simulation, cote, coup.carteId, coup.cibleId, coup.cibleAllieeId,
+      );
+    }
+    return resultat?.ok ? simulation : null;
+  } catch {
+    // Un effet qui ne peut pas être simulé ne doit jamais bloquer le vrai tour.
+    return null;
+  }
+}
+
+/**
+ * Valeur publique d'une position : vie, table, terrains, main (en nombre de
+ * cartes) et mana encore disponible. Le contenu de la main adverse n'est
+ * jamais consulté : l'IA ne s'accorde pas de connaissance cachée.
+ */
+function evaluerPositionIA(duel, cote) {
+  const vainqueur = moteur.rpgVainqueur(duel);
+  if (vainqueur === cote) return 100000;
+  if (vainqueur && vainqueur !== 'egalite') return -100000;
+  if (vainqueur === 'egalite') return 0;
+
+  const valeurCamp = (camp) => {
+    const poidsVie = camp.pv <= 7 ? 1.45 : 1.1;
+    const vie = (camp.pv ?? 0) * poidsVie + (camp.bouclier ?? 0) * 0.8;
+    const creatures = (camp.creatures ?? []).reduce((total, entite) => {
+      const tempo = entite.ready && !entite.attaquee && !estGelee(entite)
+        && !(entite.empecheAttaqueToursRestants > 0)
+        ? Math.max(0, entite.atk ?? 0) * 0.12
+        : 0;
+      return total + valeurEntite(entite) + tempo;
+    }, 0);
+    const terrains = (camp.terrains ?? []).length * 1.15;
+    const cartes = Math.min(12, camp.main?.length ?? 0) * 1.35;
+    const mana = RPG_ELEMENTS.reduce((total, couleur) => total + (camp.mana?.[couleur] ?? 0), 0) * 0.1;
+    return vie + creatures + terrains + cartes + mana;
+  };
+
+  return valeurCamp(duel[cote]) - valeurCamp(duel[autre(cote)]);
+}
+
+/** Recherche bornée des meilleurs coups de la phase principale. */
+function rechercherMeilleureSuite(duel, cote, profil, profondeur, rng) {
+  const valeurActuelle = evaluerPositionIA(duel, cote);
+  let meilleur = { valeur: valeurActuelle, coup: null };
+  if (profondeur <= 0 || Math.abs(valeurActuelle) >= 100000) return meilleur;
+
+  const optionsRecherche = {
+    ia: { niveau: profil.niveau, style: profil.style },
+    rng,
+    exclus: new Set(),
+  };
+  const candidats = candidatsCartesIA(duel, cote, optionsRecherche)
+    .slice(0, profil.largeur);
+  for (const coup of candidats) {
+    const simulation = simulerCoupCarte(duel, cote, coup);
+    if (!simulation) continue;
+    const suite = rechercherMeilleureSuite(
+      simulation, cote, profil, profondeur - 1, rng,
+    );
+    // Le score initial départage les positions très proches sans remplacer
+    // l'évaluation réelle du plateau par une simple somme de bonus heuristiques.
+    const departage = Math.min(0.25, Math.max(0, coup.score) * 0.0025);
+    const valeur = suite.valeur + departage;
+    if (valeur > meilleur.valeur) meilleur = { valeur, coup };
+  }
+  return meilleur;
+}
+
+/**
+ * Le prochain coup du sorcier : la carte la plus utile avec sa cible, ou
+ * null quand il n’a rien d’intéressant à faire. Les niveaux Normale et
+ * Veilleur simulent en plus plusieurs séquences courtes avec les vraies règles
+ * du moteur ; le Veilleur explore plus de réponses et deux coups à l'avance.
+ */
+export function choisirCarteIA(duel, cote, options = {}) {
+  const { profil, rng } = optionsIA(duel, cote, options);
+  const candidats = candidatsCartesIA(duel, cote, options);
   if (!candidats.length) return null;
-  candidats.sort((a, b) => b.score - a.score);
   if (profil.tauxErreur > 0 && candidats.length > 1 && rng() < profil.tauxErreur) {
     return candidats[Math.floor(rng() * candidats.length)];
   }
-  return candidats[0];
+  // Une magie rapide se choisit en réponse immédiate : pas de planification de
+  // phase principale, le joueur attend déjà la réponse du sorcier.
+  if (!profil.profondeur || options.seulementInstants) return candidats[0];
+  const plan = rechercherMeilleureSuite(duel, cote, profil, profil.profondeur, rng);
+  // Si un effet personnalisé refuse la simulation, l'heuristique éprouvée
+  // garde toujours la main et la partie continue normalement.
+  return plan.coup ?? candidats[0];
 }
 
 /**

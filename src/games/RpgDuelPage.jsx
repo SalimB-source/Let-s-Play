@@ -58,6 +58,7 @@ import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
+import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { clampRpgVolume, RpgAudioPlayer } from './rpgAudio.js';
@@ -4614,7 +4615,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ? deckTutorielAdverse?.cardIds ?? RPG_TUTORIAL_OPPONENT_DECK
         : etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECK_SORCIER_BASE)),
       sorcierPuissance: modeTutoriel ? 0 : etageCourant ? etageCourant.puissance : sorcierPuissance,
-      sorcierIA: etageCourant ? etageCourant.ia : undefined,
+      // En duel libre, le sorcier joue désormais au niveau Veilleur : il
+      // anticipe plusieurs coups au lieu de s'arrêter au meilleur score local.
+      // Les étages gardent leur profil progressif ; le tutoriel conserve son
+      // profil par défaut et n'est pas forcé au niveau Veilleur.
+      sorcierIA: etageCourant ? etageCourant.ia : modeTutoriel ? undefined : { niveau: 'veilleur', style: 'equilibre' },
       modeMana: RPG_MODE_MANA_ESSAI,
       joueurCouleurs: deckEssai?.elements,
       sorcierCouleurs: adversaireEssai?.elements,
@@ -4753,6 +4758,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const duel = duelRef.current;
+  const delaiReflexionSorcier = () => rpgDelaiReflexionIA(duel, 'sorcier');
   // Les cartes que l'eau ramène dans la main du joueur : elles restent hors de
   // la main tant que le tourbillon joue — le geste se lit avant le résultat.
   const cartesEnRenvoi = new Set((tourbillonsEau ?? [])
@@ -5523,6 +5529,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Tant que le volet de mulligan est ouvert, la table attend : rien ne se
   // joue, rien ne s'engage, et le tour ne peut pas être rendu.
   const mulliganOuvert = Boolean(mulligan);
+  const sorcierReflechit = Boolean(!vainqueur && !tutorielActif && duel.tour === 'sorcier'
+    && !duel.annonce && !combatEntrant && !duel.finDeTour && !duel.magieGratuite
+    && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length
+    && !duel.defausseEnAttente && !mulliganOuvert);
   const choixManaEssaiOuvert = duel.modeMana === RPG_MODE_MANA_ESSAI
     && Boolean(duel.joueur.manaChoixEnAttente) && !mulliganOuvert && !vainqueur;
   const etapeTutoriel = etapesTutoriel.find((step) => step.id === etapeTutorielId) ?? null;
@@ -6377,7 +6387,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       signalerTutoriel('contre-lance', { cardId: carteId });
       signalerTutoriel('magie-lancee', { cardId: carteId });
       force();
-      later(annoncerSuivantSorcier, 900);
+      later(annoncerSuivantSorcier, delaiReflexionSorcier());
       return;
     }
     if (res.ok) {
@@ -7411,7 +7421,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         rpgSorcierPrepareTerrain(duel);
         animerModificationsChamp(champAvantIA, [], debutJournalDestructions);
         annoncerSuivantSorcier();
-      }, 700);
+      }, Math.max(700, delaiReflexionSorcier()));
     };
 
     if (!rpgPeutRepondre(duel, 'sorcier')) {
@@ -7477,7 +7487,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (pauseSiAttenteJoueur(apresCombatSorcier)) return;
     rpgDefinirPhase(duel, 'principale2');
     sorcierApresCombatRef.current = true;
-    annoncerSuivantSorcier();
+    later(annoncerSuivantSorcier, delaiReflexionSorcier());
   };
 
   // Une leçon peut scénariser l'annonce du sorcier : la carte est posée sur la
@@ -7544,7 +7554,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         animerModificationsChamp(champAvantActivation, [], debutJournalActivation);
         if (armesActivees) jouerSfx('apparition');
         force();
-        later(declarerAttaqueSorcier, 900);
+        later(declarerAttaqueSorcier, delaiReflexionSorcier());
         return;
       }
       declarerAttaqueSorcier();
@@ -7617,7 +7627,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     animerModificationsChamp(champAvant, [], debutJournalDestructions,
       [res.renvoiEntityId]);
     force();
-    later(annoncerSuivantSorcier, 900);
+    later(annoncerSuivantSorcier, delaiReflexionSorcier());
   };
 
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
@@ -8090,6 +8100,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             centre de la table pendant 1,5 s, puis s'efface (`AnnonceTour`). */}
         <AnnonceTour annonce={annonceTour} />
         <AnnonceActionJoueur invite={inviteActionJoueur} decalee={Boolean(annonceTour)} />
+        {sorcierReflechit && <span className="sr-only" role="status" aria-live="polite">Le sorcier réfléchit à son prochain coup.</span>}
 
         {/* Soins : quand VOS PV remontent, les bords de la table s'éclairent
             d'un vert doux — le pendant du voile rouge des coups reçus. La zone
@@ -8139,6 +8150,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             {soinSorcier && <span key={soinSorcier.token} className="rpg-soin-montant" aria-hidden="true">+{soinSorcier.montant}</span>}
           </span>
           <WizardManaCounters mana={duel.sorcier.mana} />
+          {sorcierReflechit && <span className="rpg-wizard-plate__thinking" aria-hidden="true"><i /> Le sorcier réfléchit…</span>}
           <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.sorcier.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {duel.sorcier.deck.length}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.sorcier.cimetiere.length}</span></span></span>
           {soinSorcier && <EclatSoin key={soinSorcier.token} />}
         </button>
