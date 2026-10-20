@@ -194,6 +194,88 @@ test('les messages typés : un défi est un message, une valeur inconnue est ref
   await assert.rejects(() => insert('defi-invente'), (err) => err.code === '23514');
 });
 
+test('une messagerie héritée (kind = voice) ne bloque plus le schéma PvP', async () => {
+  // Rejoue la mise en service réelle : une base qui a connu la messagerie
+  // vocale, avec sa colonne `kind` et sa contrainte ('text','voice'), puis
+  // `rpg-pvp.sql`. C'est exactement l'état qui a produit en production
+  //   ERROR: 23514: check constraint "direct_messages_kind_check" of relation
+  //   "direct_messages" is violated by some row
+  const ancienne = new PGlite();
+  try {
+    await ancienne.exec(SUPABASE_STUBS);
+    await ancienne.exec(await readFile(SCHEMA_URL, 'utf8'));
+    await ancienne.exec(`
+      alter table public.direct_messages
+        add column kind text not null default 'text';
+      alter table public.direct_messages
+        add constraint direct_messages_kind_check check (kind in ('text', 'voice'));
+    `);
+    const { rows: joueurs } = await ancienne.query(
+      `insert into auth.users (email) values ('vieux@test.local'), ('ami@test.local') returning id`,
+    );
+    // On n'écrit qu'à un ami : la demande croisée est la façon normale de
+    // créer l'amitié (trigger `prepare_friendship`), pas un statut forcé.
+    await ancienne.query(
+      `insert into public.friendships (requester_id, addressee_id) values ($1, $2), ($2, $1)`,
+      [joueurs[0].id, joueurs[1].id],
+    );
+    // Le message vocal était sans texte : le trigger « corps non vide » de la
+    // version actuelle refuserait de l'insérer, d'où les triggers coupés le
+    // temps de reconstituer les données telles qu'elles sont en base.
+    await ancienne.exec('alter table public.direct_messages disable trigger user');
+    await ancienne.query(
+      `insert into public.direct_messages (conversation_key, sender_id, recipient_id, body, kind)
+       values ('k', $1, $2, 'bonjour', 'text'), ('k', $2, $1, '', 'voice')`,
+      [joueurs[0].id, joueurs[1].id],
+    );
+    await ancienne.exec('alter table public.direct_messages enable trigger user');
+
+    const sql = await readFile(PVP_URL, 'utf8');
+    await ancienne.exec(sql);
+
+    const { rows } = await ancienne.query(
+      'select body, kind from public.direct_messages order by body',
+    );
+    assert.deepEqual(rows, [
+      { body: '', kind: 'texte' },
+      { body: 'bonjour', kind: 'texte' },
+    ], 'un kind inconnu redevient « texte » : le body reste lisible');
+
+    // La colonne est propre : défaut posé, plus de null possible.
+    const { rows: [colonne] } = await ancienne.query(
+      `select is_nullable, column_default from information_schema.columns
+        where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'kind'`,
+    );
+    assert.equal(colonne.is_nullable, 'NO');
+    assert.match(colonne.column_default, /texte/);
+
+    // Le script est rejouable : une deuxième exécution ne casse rien et ne
+    // « renorme » pas les messages de défi déjà écrits.
+    await ancienne.query(
+      `insert into public.direct_messages (conversation_key, sender_id, recipient_id, body, kind, payload)
+       values ('k', $1, $2, 'Yasmine te défie', 'defi-sablier', '{"code":"ABCDEF12"}'::jsonb)`,
+      [joueurs[0].id, joueurs[1].id],
+    );
+    await ancienne.exec(sql);
+    const { rows: apres } = await ancienne.query(
+      `select count(*)::int as n from public.direct_messages where kind = 'defi-sablier'`,
+    );
+    assert.equal(apres[0].n, 1, 'un défi déjà typé survit à une réexécution');
+
+    // Et la contrainte protège de nouveau : un kind inventé est refusé.
+    await assert.rejects(
+      () => ancienne.query(
+        `insert into public.direct_messages (conversation_key, sender_id, recipient_id, body, kind)
+         values ('k', $1, $2, 'x', 'voice')`,
+        [joueurs[0].id, joueurs[1].id],
+      ),
+      (err) => err.code === '23514',
+    );
+  } finally {
+    await ancienne.close();
+  }
+});
+
 test('la purge expire les invitations et nettoie les parties de correspondance', async () => {
   const hote = await newUser('vieux');
   await db.query(
