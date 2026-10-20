@@ -46,14 +46,33 @@ npm run check:rpg-ui          # fumigènes de l'interface (mulligan, mana, navig
 npm run build
 ```
 
-### Mobile : plaque et jauge à la verticale
+### Mobile : la colonne de gauche, comme sur PC
 
-Sur la table d'essai tactile, chaque sorcier a sa colonne contre la ligne de séparation du plateau (le joueur dessous, le sorcier adverse au-dessus, en miroir) :
+Sur la table d'essai tactile, chaque sorcier a sa **colonne** dans la rangée de
+son camp, contre le bord gauche de la table (le sorcier adverse en haut, le
+joueur en bas), et la composition reprend celle du PC :
 
-- la **plaque** est verticale : avatar, nom, zones (Main, Paquet, Cimetière, une par ligne) et goutte de PV empilés ;
-- la **jauge de mana** est dressée juste à sa droite, à la même hauteur (`--essai-col-h`), et **se remplit de bas en haut** : le premier mana acquis est en bas ;
-- la capsule du compteur se pose au bout libre de la jauge (sous celle du joueur, au-dessus de celle du sorcier).
-- le **paquet** et le **cimetière** réapparaissent en miniature au bout libre de chaque colonne, sous la plaque (au-dessus pour le sorcier), le nombre de cartes inscrit sur la pile ; le cimetière vide est un emplacement en pointillés, sinon il montre sa dernière carte. Les lignes « Paquet » et « Cimetière » de la plaque s'effacent (« Main » reste).
-- les **emplacements des deux camps** se placent **à la même distance du milieu** du plateau (50 % de la table) : le sorcier au-dessus, le joueur en dessous. L'écart visé vaut 4 % de la hauteur (10 à 28 px) et se réduit si la main du joueur manque de place ; les rangées glissent par `top` (`--rpg-ennemis-decalage`, `--rpg-allies-decalage`, mesurés).
-- la **colonne de droite** s'organise autour du milieu : les **phases** (indicateur de tour et pastilles) juste au-dessus de la ligne, **« Attaquer avec tous » et « Fin du tour »** juste en dessous, puis les commandes de combat (**« Résoudre le combat »**, « Confirmer l'attaque »…) sous ces boutons (`--rpg-actions-tour-h`, mesuré).
-- la **main du sorcier** se montre **face cachée** en haut de l'écran, en éventail compact centré au-dessus de son champ (sept dos au plus, comme sur PC ; le nombre exact reste sur sa plaque).
+- la **plaque** est une pastille horizontale : avatar à gauche, **nom** au
+  milieu (sur deux lignes si la colonne est étroite — « LE » / « SORCIER »),
+  **goutte de vie** à droite (élargie si la réserve s'affiche), et la ligne des
+  **zones** (Main · Paquet · Cimetière) sous l'avatar et le nom, qui passe à la
+  ligne entre deux compteurs plutôt que d'être tronquée ;
+- la **jauge de mana** se range dans la même cellule de grille, derrière la
+  plaque, à sa hauteur mesurée (`--rpg-plaque-*-h`) et dans la place qui reste
+  (`--rpg-jauge-*-h`) : deux rangées de cinq losanges qui se resserrent si la
+  plaque grandit ;
+- la **capsule du compteur** (1/1, 0/0) ouvre la jauge, du côté de la plaque ;
+- les **cinq cases** de chaque camp gardent la largeur d'une carte posée et
+  s'alignent au bas de la rangée : une carte jouée tombe dans sa case.
+
+La **colonne de droite** garde le tour : l'indicateur et les phases en haut,
+puis **« Attaquer avec tous » et « Fin du tour » empilés sur toute la largeur
+du rail** (44 px chacun), et les **commandes de combat** sous eux, dans la
+barre qui ferme la colonne au-dessus de la main. La hauteur de cette barre est
+publiée (`--rpg-controles-h`) et le rail s'ancre dessus ; la réponse au
+sorcier (« Laisser passer », « Passer ») est une barre posée au-dessus de la
+main, du bord droit de la plaque au bord de l'écran.
+
+La **main du sorcier** se montre **face cachée**, en éventail compact centré
+au-dessus de son champ (sept dos au plus, comme sur PC ; le nombre exact reste
+sur sa plaque).

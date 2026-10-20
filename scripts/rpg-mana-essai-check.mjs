@@ -89,12 +89,12 @@ assert.match(styles, /\.rpg-flux-track__slot\.is-spent\s*\{[^}]*grayscale/s,
   'les icônes dépensées restent visibles mais assombries');
 assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]:not\(\.rpg-battle--touch\) \.card-table > \.rpg-flux-track--joueur\s*\{\s*top:\s*calc\(67% \+ 64px\);[^}]*left:\s*14px;/s,
   'sur ordinateur, le mana du joueur suit sa plaque comme celui du sorcier');
-assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table > \.rpg-flux-track--joueur\s*\{\s*grid-area:\s*player;[^}]*align-self:\s*start;/s,
-  'au doigt, la barre de mana du joueur se pose au-dessus de son nom');
+assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table > \.rpg-flux-track--joueur\s*\{\s*grid-area:\s*mana;[^}]*align-self:\s*end;/s,
+  'au doigt, la barre de mana du joueur se pose juste au-dessus de sa plaque, dans la colonne de gauche du PC');
 assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table > \.rpg-flux-track--ennemi\s*\{\s*grid-area:\s*enemy-mana;[^}]*align-self:\s*start;/s,
   'au doigt, la barre de mana du sorcier se pose au-dessus de son nom');
-assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table > \.rpg-wizard-plate--ennemi\s*\{\s*grid-area:\s*enemy-mana;[^}]*align-self:\s*end;/s,
-  'au doigt, le nom et les PV du sorcier adverse prennent la colonne de gauche, comme le joueur');
+assert.match(styles, /\.rpg-battle\[data-mode-mana="essai"\]\.rpg-battle--touch \.card-table > \.rpg-wizard-plate--ennemi\s*\{\s*grid-area:\s*enemy-mana;[^}]*align-self:\s*start;/s,
+  'au doigt, le nom et les PV du sorcier adverse prennent le haut de la colonne de gauche, comme sur PC');
 assert.match(page, /const noterEvenementDuel = \(evenement\) => \{\s*noterEvenementDuelReel\(evenement\);/,
   'les duels sans terrain transmettent les événements aux quêtes et à la bourse');
 assert.match(page, /onClick=\{\(\) => nouvellePartie\(duel\.modeMana === RPG_MODE_MANA_ESSAI \? \{ etageId: null, essaiManaId: duel\.essaiDeckId \} : \{\}\)\}/,

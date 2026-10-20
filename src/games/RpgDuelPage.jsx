@@ -4902,96 +4902,68 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       timersRef.current.push(timer);
     });
   }, [duel, duel?.joueur.deck.length, duel?.joueur.main.length, duel?.sorcier.deck.length, duel?.sorcier.main.length]);
-  // Mobile, table d'essai : chaque plaque se pose contre la ligne de séparation
-  // du plateau (le joueur dessous, le sorcier dessus) et sa jauge de mana la
-  // suit de l'autre côté. La hauteur réelle des plaques (qui varie selon
-  // l'écran) est publiée en variables CSS.
+  // Mobile, table d'essai : chaque plaque ouvre la colonne de gauche, sa jauge
+  // de mana se range derrière elle, dans la même rangée de grille. Publier la
+  // hauteur réelle mesurée des deux — la plaque (`--rpg-plaque-*-h`) et la
+  // place qui reste pour la jauge (`--rpg-jauge-*-h`) — laisse la colonne
+  // s'ajuster d'elle-même : une plaque plus haute parce que les zones de
+  // cartes passent sur deux lignes rétrécit sa jauge au lieu de la faire
+  // déborder sur le camp d'en face.
   const essaiTactile = Boolean(duel && viewport.mobile && duel.modeMana === RPG_MODE_MANA_ESSAI);
   useLayoutEffect(() => {
     const table = tableRef.current;
     if (!essaiTactile || !table) return undefined;
-    const plaques = [
-      [table.querySelector('.rpg-wizard-plate--joueur'), '--rpg-plaque-joueur-h'],
-      [table.querySelector('.rpg-wizard-plate--ennemi'), '--rpg-plaque-ennemi-h'],
-    ].filter(([plaque]) => plaque);
-    if (!plaques.length) return undefined;
-    const publier = () => plaques.forEach(([plaque, variable]) => table.style.setProperty(variable, `${plaque.offsetHeight}px`));
-    publier();
-    if (typeof ResizeObserver !== 'function') return undefined;
-    const observateur = new ResizeObserver(publier);
-    plaques.forEach(([plaque]) => observateur.observe(plaque));
-    return () => observateur.disconnect();
-  }, [essaiTactile]);
-  // Mobile, table d'essai : les emplacements des deux camps se placent à la
-  // même distance du milieu du plateau (50 % de la table, là où passent la
-  // ligne de séparation et la jonction des plaques) — le sorcier au-dessus,
-  // le joueur en dessous. L'écart visé (4 % de la hauteur, 10 à 28 px) se
-  // réduit si la main du joueur ou le haut de la rangée adverse manquent de
-  // place. Les rangées glissent par `top` (variables CSS), sans changer la
-  // grille.
-  // Mobile, table d'essai : les boutons de tour passent juste sous la ligne du
-  // milieu, et les commandes de combat (« Résoudre le combat »…) juste en
-  // dessous d'eux. Leur hauteur réelle (une ou deux rangées selon le bouton
-  // d'annulation) est publiée en variable CSS.
-  useLayoutEffect(() => {
-    const table = tableRef.current;
-    const actions = table?.querySelector('.rpg-turn-rail .rpg-actions__turn');
-    if (!essaiTactile || !table || !actions) return undefined;
-    const publier = () => table.style.setProperty('--rpg-actions-tour-h', `${actions.offsetHeight}px`);
-    publier();
-    if (typeof ResizeObserver !== 'function') return undefined;
-    const observateur = new ResizeObserver(publier);
-    observateur.observe(actions);
-    return () => observateur.disconnect();
-  }, [essaiTactile]);
-  const decalagesRangeesRef = useRef({ ennemi: 0, equipe: 0 });
-  useLayoutEffect(() => {
-    const table = tableRef.current;
-    const rangeeEnnemi = table?.querySelector('.card-row--ennemi');
-    const rangeeEquipe = table?.querySelector('.card-row--equipe');
-    if (!essaiTactile || !table || !rangeeEnnemi || !rangeeEquipe) return undefined;
+    const camps = [
+      { plaque: table.querySelector('.rpg-wizard-plate--ennemi'), rangee: table.querySelector('.card-row--ennemi'), suffixe: 'ennemi' },
+      { plaque: table.querySelector('.rpg-wizard-plate--joueur'), rangee: table.querySelector('.card-row--equipe'), suffixe: 'joueur' },
+    ].filter(({ plaque, rangee }) => plaque && rangee);
+    if (!camps.length) return undefined;
     const publier = () => {
-      const appliques = decalagesRangeesRef.current;
-      const boiteTable = table.getBoundingClientRect();
-      const caseEnnemi = rangeeEnnemi.querySelector('.rpg-creature-slot');
-      const caseEquipe = rangeeEquipe.querySelector('.rpg-creature-slot');
-      if (!caseEnnemi || !caseEquipe) return;
-      // Positions « naturelles » (sans le glissement déjà appliqué), relatives à la table.
-      const basEnnemi = caseEnnemi.getBoundingClientRect().bottom - boiteTable.top - appliques.ennemi;
-      const hautRangeeEnnemi = rangeeEnnemi.getBoundingClientRect().top - boiteTable.top - appliques.ennemi;
-      const hautEquipe = caseEquipe.getBoundingClientRect().top - boiteTable.top - appliques.equipe;
-      const main = table.querySelector('.rpg-hand-dock .rpg-hand__card') ?? table.querySelector('.rpg-hand-dock');
-      const hautMain = main ? main.getBoundingClientRect().top - boiteTable.top : boiteTable.height;
-      const milieu = boiteTable.height / 2;
-      const ecartVise = Math.min(28, Math.max(10, boiteTable.height * 0.04));
-      const ecartEquipe = Math.min(
-        ecartVise,
-        hautMain - 4 - caseEquipe.offsetHeight - milieu,
-      );
-      const ecartEnnemiVise = Math.min(46, Math.max(22, boiteTable.height * 0.08));
-      const ecartEnnemi = Math.min(
-        ecartEnnemiVise,
-        milieu - hautRangeeEnnemi - caseEnnemi.offsetHeight,
-      );
-      const ennemi = Math.round(milieu - ecartEnnemi - basEnnemi);
-      const equipe = Math.round(milieu + ecartEquipe - hautEquipe);
-      if (ennemi === appliques.ennemi && equipe === appliques.equipe) return;
-      decalagesRangeesRef.current = { ennemi, equipe };
-      table.style.setProperty('--rpg-ennemis-decalage', `${ennemi}px`);
-      table.style.setProperty('--rpg-allies-decalage', `${equipe}px`);
+      // Le bord droit des plaques : la barre de réponse du sorcier s'y accroche
+      // au lieu de les recouvrir (elle occupe toute la largeur restante,
+      // au-dessus de la main).
+      const joueur = camps.find(({ suffixe }) => suffixe === 'joueur') ?? camps[0];
+      table.style.setProperty('--rpg-plaque-droite', `${Math.round(joueur.plaque.getBoundingClientRect().right)}px`);
+      for (const { plaque, rangee, suffixe } of camps) {
+        const hauteurPlaque = plaque.offsetHeight;
+        table.style.setProperty(`--rpg-plaque-${suffixe}-h`, `${hauteurPlaque}px`);
+        // La rangée de jeu du camp donne la hauteur de la cellule de grille :
+        // ce qui reste sous (ou au-dessus de) la plaque revient à la jauge.
+        const place = Math.max(0, Math.round(rangee.getBoundingClientRect().height - hauteurPlaque - 1));
+        table.style.setProperty(`--rpg-jauge-${suffixe}-h`, `${place}px`);
+      }
     };
     publier();
     if (typeof ResizeObserver !== 'function') return undefined;
     const observateur = new ResizeObserver(publier);
-    [table, rangeeEnnemi, rangeeEquipe].forEach((element) => observateur.observe(element));
+    camps.forEach(({ plaque, rangee }) => {
+      observateur.observe(plaque);
+      observateur.observe(rangee);
+    });
     return () => {
       observateur.disconnect();
-      decalagesRangeesRef.current = { ennemi: 0, equipe: 0 };
-      table.style.removeProperty('--rpg-ennemis-decalage');
-      table.style.removeProperty('--rpg-allies-decalage');
+      table.style.removeProperty('--rpg-plaque-droite');
     };
   }, [essaiTactile]);
-
+  // Toucher : la barre de combat ferme la colonne de droite, juste au-dessus
+  // de la main, et sa hauteur varie d'une à trois commandes empilées
+  // (« Confirmer l'attaque », « Annuler l'attaque », « Résoudre le combat »…).
+  // Sa hauteur réelle est publiée en variable CSS : le rail du tour s'ancre
+  // juste au-dessus d'elle, sans jamais la recouvrir ni passer sous la main.
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    const controles = table?.querySelector('.rpg-bottombar');
+    if (!viewport.mobile || !table || !controles) return undefined;
+    const publier = () => table.style.setProperty('--rpg-controles-h', `${controles.offsetHeight}px`);
+    publier();
+    if (typeof ResizeObserver !== 'function') return undefined;
+    const observateur = new ResizeObserver(publier);
+    observateur.observe(controles);
+    return () => {
+      observateur.disconnect();
+      table.style.removeProperty('--rpg-controles-h');
+    };
+  }, [viewport.mobile, duel]);
   useLayoutEffect(() => {
     if (!duel) return;
     const terrains = tableRef.current?.querySelector('.rpg-terrains--joueur');
