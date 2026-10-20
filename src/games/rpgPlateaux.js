@@ -14,9 +14,9 @@
  *    sans identité connue (paquet brut passé en prop, deck maison) retombe sur
  *    la **couleur dominante de ses cartes** : Sable → l'Erg, Braise → la Table
  *    des Heures, Eau → les Ruines de Tipaza, Neige → le Fjord des Neuf
- *    Hivers, deux couleurs à égalité → la Caravane de Gourara, le carrefour des
- *    pistes. Sans rien de lisible, c'est la Table des Heures, la table
- *    d'origine de Bab El.
+ *    Hivers, Ténèbres → la Nécropole des dalles, deux couleurs à égalité → la
+ *    Caravane de Gourara, le carrefour des pistes. Sans rien de lisible, c'est
+ *    la Table des Heures, la table d'origine de Bab El.
  * 2. **Chaque camp joue sur son terrain.** La table est découpée en deux
  *    moitiés (`resoudrePlateauxDuDuel`) : la moitié haute porte le plateau du
  *    deck adverse, la moitié basse celui du deck du joueur — chacun se bat
@@ -37,9 +37,10 @@
  * partie l'autorise (`variantesFantaisistes`), un tirage par camp peut échanger
  * le terrain imposé contre sa version fantaisiste — l'Erg contre le Désert de
  * Verre, les Ruines contre les Abysses Phosphorescentes, le Fjord contre les
- * Îles Célestes. Les trois autres — la piste caravanière, la Table des Heures
- * (la table d'origine, que les Cavernes de Cristal ont quittée) et la
- * Cour de l'Empereur — restent uniques. Le
+ * Îles Célestes. Les cinq autres — la piste caravanière, la Table des Heures
+ * (la table d'origine, que les Cavernes de Cristal ont quittée), la
+ * Cour de l'Empereur et les deux terrains des Ténèbres, la Nécropole des
+ * dalles et les Palais du Pharaon — restent uniques. Le
  * motif et le camp ne bougent pas : ils disent toujours quel deck a imposé le
  * terrain.
  *
@@ -98,6 +99,24 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-cour-de-l-empereur.jpg',
     resume: 'Une peinture japonaise : le grand parvis de gravier ratissé et ses cercles concentriques, vide au milieu, que gardent la véranda du trône aux tuiles turquoise et ses colonnes vermillon, les galeries couvertes des bords, les portes du palais, les lanternes de pierre, le tambour laqué, les bannières impériales, le bassin à l’eau claire, les pins et les cerisiers en fleurs. Le milieu de la cour reste vide : c’est là que les cartes se posent.',
   },
+  // Les deux terrains des Ténèbres : le plateau du désert égyptien, dehors, et
+  // la salle du trône du palais, dedans. Le set `balance-des-heures` (doc 16)
+  // tient le premier ; le second reçoit le tribunal de la Nécropole, qui juge
+  // devant le trône du Pharaon.
+  {
+    id: 'necropole-des-dalles',
+    nom: 'La Nécropole des dalles',
+    lieu: 'Le plateau du désert égyptien, au pied des pyramides, à midi',
+    fichier: 'plateau-necropole-des-dalles.jpg',
+    resume: 'Un décor entièrement extérieur, vu de dessus en plein jour : le plateau de calcaire blanchi par le soleil, fendu et à demi ensablé, et, au centre, le grand cercle de pierre, vide, cerclé d’hiéroglyphes et de plumes de Maât. Deux pyramides se dressent sur le plateau, à gauche, une troisième à droite, toutes vues d’en haut — base carrée, arêtes au centre, ombre portée sur le sable. Le reste du plateau est laissé nu : seuls quelques objets posés dans les deux angles du haut — la balance et sa plume contre le cœur, le khopesh d’or, deux vases canopes et un shabti de faïence —, et le Nil turquoise qui longe le bas du cadre, avec ses roseaux et ses palmeraies.',
+  },
+  {
+    id: 'palais-du-pharaon',
+    nom: 'Le Palais du Pharaon',
+    lieu: 'Memphis, la salle du trône du palais, derrière la grande cour',
+    fichier: 'plateau-palais-du-pharaon.jpg',
+    resume: 'Un intérieur, vu de dessus : le dallage d’albâtre et de granit, encadré de bandes d’or, de lapis et de turquoise, et le grand disque de granit noir, vide, qu’entoure une frise de pétales de lotus. Très peu d’objets, tous aux bords : en bas, les marches d’albâtre et le trône doré, vus du dessus ; à gauche et à droite, les colonnes à chapiteau de lotus qui sortent du cadre ; dans les deux angles bas, un brasero de bronze et un éventail de plumes d’autruche. Le centre reste nu : c’est là que les cartes se posent.',
+  },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
   {
@@ -142,11 +161,11 @@ export const RPG_PLATEAUX_PAR_DECK = {
   // L'Est : le Serment du Soleil rouge reçoit dans la cour de l'Empereur, le
   // grand parvis de gravier ratissé que garde le palais impérial.
   'serment-du-soleil-rouge': 'cour-de-l-empereur',
-  // Les Ténèbres : La Balance des Heures se bat sur la Table des Heures, la
-  // table d'origine de Bab El — étonnamment neutre pour un set qui parle de
-  // balance (doc 16 §9). Le plateau dédié « La Nécropole des dalles » viendra
-  // en phase 2.
-  'balance-des-heures': 'table-des-heures',
+  // Les Ténèbres ont désormais leurs deux terrains : le dehors du set
+  // `balance-des-heures` (la Nécropole des dalles, le plateau du désert) et le
+  // dedans du palais (Le Palais du Pharaon), où siège le tribunal de la
+  // Nécropole — le jugement se rend devant le trône.
+  'balance-des-heures': 'necropole-des-dalles',
   // Campagne (clés de `RPG_STORY_DECKS`) : la Souffleuse tient la piste de
   // caravane du deck hybride dont elle vient ; le Grand Horloger, lui, reçoit
   // dans la salle haute de la Chambre, sur la table d'origine. Les quatre
@@ -159,9 +178,12 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'gardes-du-soleil': 'cour-de-l-empereur',
   'lames-du-soleil': 'cour-de-l-empereur',
   'maitre-du-soleil-rouge': 'cour-de-l-empereur',
-  'momies-de-la-necropole': 'table-des-heures',
-  'chacals-du-seuil': 'table-des-heures',
-  'juges-de-la-necropole': 'table-des-heures',
+  // La Tour de la Nécropole : les trois premières cryptes s'ouvrent sur les
+  // dalles du Nil, en plein jour ; le tribunal du sommet siège dans la salle du
+  // trône du Pharaon, le seuil où se rend la sentence.
+  'momies-de-la-necropole': 'necropole-des-dalles',
+  'chacals-du-seuil': 'necropole-des-dalles',
+  'juges-de-la-necropole': 'palais-du-pharaon',
 };
 
 /** Le terrain d'une couleur de deck sans identité connue. */
@@ -170,8 +192,10 @@ export const RPG_PLATEAUX_PAR_COULEUR = {
   braise: 'table-des-heures',
   eau: 'ruines-de-tipaza',
   neige: 'fjord-des-neuf-hivers',
-  // Les Ténèbres retombent sur la table d'origine, comme le deck du catalogue.
-  tenebres: 'table-des-heures',
+  // Les Ténèbres ont leur terrain : la Nécropole des dalles, le set égyptien
+  // du catalogue. Le Palais du Pharaon restent au deck qui les revendique
+  // (le tribunal de la Nécropole), pas à la couleur.
+  tenebres: 'necropole-des-dalles',
   hybride: 'caravane-de-gourara',
 };
 

@@ -94,7 +94,12 @@ déploie les malédictions, le Tribut et le jugement d'outre-tombe.
 | 3 | La Balance des Heures | `balance-des-heures` (le deck Ténèbres du catalogue) | `veilleur` / `controle` | défausse adverse, exils et réanimations |
 | 4 | Le Juge de la Nécropole | `juges-de-la-necropole` (Celui qui juge, Dernière Pesée) | `veilleur` / `controle` | **boss** : destruction de masse et sentence finale |
 
-- Plateau attitré : **La Table des Heures** (`table-des-heures`).
+- Plateaux attitrés : **La Nécropole des dalles** (`necropole-des-dalles`) pour
+  les trois premières cryptes — le plateau du désert en plein jour, le cercle
+  d'hiéroglyphes et les pyramides dressées sur le plateau, deux à gauche et une
+  à droite —, et **Le Palais du Pharaon** (`palais-du-pharaon`) pour le
+  tribunal du sommet : le jugement se rend dans la salle du trône, sur le
+  dallage d'albâtre, devant le trône et les colonnes de lotus.
 - Maquette 3D procédurale : pylône monumental, obélisques veilleurs, colonnes de lotus et sarcophage de basalte.
 - Ambiance sonore : harpe modale phrygienne, percussions rituelles et basses profondes (`playNecropole`).
 

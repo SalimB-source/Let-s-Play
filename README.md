@@ -5440,7 +5440,8 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   du Sahara, la Cour des Djinns sur la Table des Heures, les Sentiers de cendre
   sur la piste de la Caravane de Gourara, la Marée des abysses dans les Ruines
   de Tipaza, le Serment des Neuf Hivers sur la glace du Fjord, le Serment du
-  Soleil rouge dans la cour de son sanctuaire japonais. Les decks
+  Soleil rouge dans la cour de son sanctuaire japonais, la Balance des Heures
+  sur les dalles de la Nécropole. Les decks
   de campagne ont leur entrée aussi — la Souffleuse de verre tient la piste de
   caravane, le Grand Horloger reçoit dans la salle haute de la Chambre sur la
   Table des Heures, et les quatre étages de la Tour du Fjord (la Garde, la
@@ -5449,9 +5450,18 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 - **Un paquet inconnu parle par sa couleur.** Un deck sans identité — paquet
   brut passé en prop à la page, deck maison — prend le terrain de sa **couleur
   dominante** : Sable → l'Erg, Braise → la Table des Heures, Eau → Tipaza,
-  Neige → le Fjord, deux couleurs à égalité → la Caravane de Gourara, le
-  carrefour des pistes. Rien de lisible : la Table des Heures, la table
-  d'origine.
+  Neige → le Fjord, Ténèbres → la Nécropole des dalles, deux couleurs à
+  égalité → la Caravane de Gourara, le carrefour des pistes. Rien de lisible :
+  la Table des Heures, la table d'origine.
+- **Les Ténèbres ont leurs deux terrains.** La Balance des Heures et les trois
+  premières cryptes de la Tour de la Nécropole se battent sur **la Nécropole
+  des dalles** — le plateau du désert, au pied des pyramides, en plein
+  soleil. Le tribunal du sommet (`juges-de-la-necropole`) siège au **Palais du
+  Pharaon**, dans la salle du trône — le dedans après le dehors, le dallage
+  d'albâtre, le trône et les colonnes de lotus, sans rien qui encombre le
+  centre. Aucun des deux n'a encore de piste musicale dédiée : la Tour de la
+  Nécropole garde son ambiance, le duel libre reste silencieux sur ces deux
+  tables.
 - **La Terre de Damnation a été retirée.** La Cour des Djinns et les paquets
   de Braise se jouent désormais sur la Table des Heures.
 - **Le sable désigne qui impose son terrain.** Au lancement du duel, un tirage
@@ -5493,6 +5503,8 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 | `public/plateau-desert-de-verre.jpg` | **Le Désert de Verre** (double de l'Erg) | le sable vitrifié ambré et aigue-marine, l'anneau de cristal pilé, les roses de verre, l'astrolabe, l'outre et la corde. |
 | `public/plateau-abysses-phosphorescentes.jpg` | **Les Abysses Phosphorescentes** (double des Ruines) | le sable pâle sous l'eau claire, l'anneau de coquillages, les coraux, les colonnes tombées, les amphores et la raie manta. |
 | `public/plateau-iles-celestes.jpg` | **Les Îles Célestes** (double du Fjord) | le lac de glace polie où danse l'aurore, l'anneau gravé, les sapins, les rochers, la lanterne et la corde. |
+| `public/plateau-necropole-des-dalles.jpg` | **La Nécropole des dalles** (le plateau du désert, au pied des pyramides) | **décor entièrement extérieur, vu de dessus en plein jour** : le plateau de calcaire blanchi et, au centre, le grand cercle vide cerclé d'hiéroglyphes, **deux pyramides sur le plateau, à gauche, et une à droite**, vues d'en haut avec leur ombre portée, le reste du plateau laissé nu ; quelques objets seulement dans les deux angles du haut — la balance et sa plume contre le cœur, le khopesh d'or, deux canopes et un shabti —, et le **Nil turquoise qui longe le bas du cadre**. |
+| `public/plateau-palais-du-pharaon.jpg` | **Le Palais du Pharaon** (Memphis, la salle du trône) | **l'intérieur du palais, vu de dessus** : le dallage d'albâtre et de granit encadré d'or, de lapis et de turquoise, et le grand disque de granit noir, vide, qu'entoure une frise de pétales de lotus. Très peu d'objets, tous aux bords : les marches d'albâtre et le trône doré en bas, les colonnes à chapiteau de lotus à gauche et à droite, un brasero de bronze et un éventail de plumes d'autruche dans les angles bas. Le centre reste nu : c'est là que les cartes se posent. |
 | `public/plateau-cour-de-l-empereur.jpg` | **La Cour de l'Empereur** (Kyō) | la peinture japonaise du palais : le grand parvis de gravier ratissé et ses cercles concentriques, vide au milieu, que gardent la véranda du trône aux tuiles turquoise et ses colonnes vermillon, les galeries couvertes des bords, les portes, les lanternes de pierre, le tambour laqué, les bannières impériales, le bassin à l'eau claire et les cerisiers en fleurs. Le milieu de la cour reste vide : c'est là que les cartes se posent. |
 
 ### Où vit le code
@@ -5519,7 +5531,8 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   haut du cadre, sur 255 : **Erg du Sahara 142**, **Cour de l'Empereur 127**, **Ruines de Tipaza 118**, Caravane de Gourara 102, Table des Heures 54).
 - `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
   `public/plateau-fjord-des-neuf-hivers.jpg`, `public/plateau-ruines-de-tipaza.jpg`,
-  `public/plateau-cour-de-l-empereur.jpg`
+  `public/plateau-cour-de-l-empereur.jpg`, `public/plateau-necropole-des-dalles.jpg`,
+  `public/plateau-palais-du-pharaon.jpg`
   — les fonds, 4K (3840×2560) : des peintures vues de dessus, sans texte
   ni interface dessinée — l'interface du jeu se superpose (règle de
   `src/games/RPG-CARD-ART.md`). Le centre de chaque tableau est volontairement
@@ -5530,6 +5543,7 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 ```bash
 npm run check:rpg            # règles + les tests des plateaux (catalogue, tirage, ambiances 3D)
 npm run check:rpg-sanctuaire # la page montée dans jsdom : le deck du Soleil rouge ouvre sa partie sur l'estampe du sanctuaire
+npm run check:rpg-tenebres   # la page montée dans jsdom : la Balance des Heures ouvre sur les dalles de la Nécropole, le tribunal siège au Palais du Pharaon
 npm run check:rpg-ui         # la page montée dans jsdom : aucun sélecteur de plateau au menu, terrain imposé par le deck, lisibilité sans voile comprise
 ```
 
