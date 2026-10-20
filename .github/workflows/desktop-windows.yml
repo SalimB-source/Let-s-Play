@@ -158,6 +158,14 @@ jobs:
             du -sh desktop/release/win-unpacked/resources/app/* 2>/dev/null | sort -h | tail -6
             echo '-- installeurs --'
             ls -la desktop/release/*.exe
+            echo '-- asar.unpacked (plus gros entrants) --'
+            du -sh desktop/release/win-unpacked/resources/app.asar.unpacked/* 2>/dev/null | sort -h | tail -8
+            echo '-- liste asar (30 premières entrées) --'
+            node -e "try{const a=require('@electron/asar');console.log(a.listPackage('desktop/release/win-unpacked/resources/app.asar',{recursive:false}).join('\n'))}catch(e){console.log('asar illisible : '+e.message)}" 2>/dev/null || true
+            echo '-- config effective --'
+            cat desktop/release/builder-effective-config.yaml 2>/dev/null || cat desktop/release/builder-debug.yml 2>/dev/null || ls desktop/release
+            echo '-- scène --'
+            ls -la desktop/stage 2>/dev/null || echo 'stage ABSENT'
             echo '```'
           } > report.md
           NUM=$(gh pr view --json number -q .number 2>/dev/null || true)
