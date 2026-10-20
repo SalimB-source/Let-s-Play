@@ -2393,6 +2393,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-iles-celestes {
   background-color: #50636b;
 }
+/* Les deux terrains des Ténèbres : le calcaire en plein soleil de la Nécropole
+   et l'albâtre chaud de la salle du trône du Palais. */
+.card-table--plateau-necropole-des-dalles {
+  background-color: #cbb389;
+}
+.card-table--plateau-palais-du-pharaon {
+  background-color: #d9c4a0;
+}
 
 /* ── La table découpée : un terrain par camp ─────────────────────────────────
    Quand les deux decks imposent des terrains différents (`resoudrePlateauxDuDuel`
@@ -2427,6 +2435,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-plateau-moitie--plateau-desert-de-verre { background-color: #9aa48a; }
 .rpg-plateau-moitie--plateau-abysses-phosphorescentes { background-color: #adc1b8; }
 .rpg-plateau-moitie--plateau-iles-celestes { background-color: #50636b; }
+.rpg-plateau-moitie--plateau-necropole-des-dalles { background-color: #cbb389; }
+.rpg-plateau-moitie--plateau-palais-du-pharaon { background-color: #d9c4a0; }
 
 /* Le liseré de la jonction : la ligne médiane du champ de bataille, entre les
    deux territoires. Un filet doré qui naît et meurt aux bords, bordé d'ombre

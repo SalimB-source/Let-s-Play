@@ -54,11 +54,18 @@ export function casierMaisonVide() {
   return { decks: [], supprimes: [] };
 }
 
+/** Compteur du module : deux decks créés dans la même milliseconde se suivent. */
+let compteurIdDeckMaison = 0;
+
 /** Identifiant neuf et imprévisible pour un deck maison. */
 export function nouvelIdDeckMaison() {
   const temps = Date.now().toString(36);
+  compteurIdDeckMaison = (compteurIdDeckMaison + 1) % 1296;
   const alea = Math.floor(Math.random() * 1296).toString(36).padStart(2, '0');
-  return `maison-${temps}${alea}`;
+  // L'aléa garde l'imprévisibilité ; le compteur garantit deux identifiants
+  // distincts pour deux decks créés dans la même milliseconde (douze boîtiers
+  // d'affilée, par exemple), sans quoi le second écraserait le premier.
+  return `maison-${temps}${alea}${compteurIdDeckMaison.toString(36)}`;
 }
 
 /**

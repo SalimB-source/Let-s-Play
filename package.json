@@ -50,6 +50,7 @@
     "check:rpg-mobile": "node scripts/rpg-mobile-layout-check.mjs",
     "check:rpg-duel-nav": "node scripts/rpg-duel-nav-check.mjs",
     "check:rpg-sanctuaire": "node scripts/rpg-plateau-japon-check.mjs",
+    "check:rpg-tenebres": "node scripts/rpg-plateau-tenebres-check.mjs",
     "check:rpg-fullscreen": "node scripts/rpg-fullscreen-check.mjs",
     "check:rpg-ghosts": "node scripts/rpg-ghost-check.mjs",
     "check:rpg-entry-choice": "node scripts/rpg-entry-choice-check.mjs",

@@ -1055,6 +1055,17 @@ assert.match(battleCss, /\.card-table--plateau-cour-de-l-empereur\s*\{[^}]*backg
   'le parvis de la cour a sa propre couleur de repli');
 assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*background-color:/s,
   'la pierre des ruines a sa propre couleur de repli');
+// Les Ténèbres : deux terrains, le désert du Nil et la salle du trône.
+assert.match(plateauxSource, /id: 'necropole-des-dalles'[\s\S]*?fichier: 'plateau-necropole-des-dalles\.jpg'/,
+  'la Nécropole des dalles est un plateau déclaré, avec sa peinture égyptienne dans public/');
+assert.match(plateauxSource, /id: 'palais-du-pharaon'[\s\S]*?fichier: 'plateau-palais-du-pharaon\.jpg'/,
+  'Le Palais du Pharaon est un plateau déclaré, avec son intérieur dans public/');
+assert.match(plateauxSource, /'balance-des-heures': 'necropole-des-dalles'/,
+  'la Balance des Heures se bat sur les dalles de la Nécropole');
+assert.match(plateauxSource, /'juges-de-la-necropole': 'palais-du-pharaon'/,
+  'le tribunal de la Nécropole siège au Palais du Pharaon');
+assert.match(plateauxSource, /tenebres: 'necropole-des-dalles'/,
+  'un paquet Ténèbres sans identité prend les dalles, pas la table d’origine');
 
 // ── Contrôles PC et plaques : tactile inchangé ───────────────────────────
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-hand\s*\{[^}]*width:\s*100%;[^}]*overflow:\s*visible;[^}]*pointer-events:\s*none;[^}]*mask-image:\s*none;[^}]*-webkit-mask-image:\s*none;/s,
