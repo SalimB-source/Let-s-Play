@@ -65,10 +65,10 @@ export const TAUX = Object.freeze({
   communes: 0.88,
   /** Carte 4 : toujours une rare tant que le vivier en garde une. */
   rareGarantie: 1,
-  /** Carte 5 : la chance de mythique, quand la pitié n'a pas déjà parlé. */
-  mythique: 0.08,
-  /** Onze ouvertures sans mythique : la douzième en contient une (seuil 12). */
-  pitie: 12,
+  /** Carte 5 : une chance infime de mythique, quand la pitié n'a pas parlé. */
+  mythique: 0.01,
+  /** Quarante-neuf ouvertures sans mythique : la cinquantième en contient une. */
+  pitie: 50,
   /** Au moins trois cartes neuves par paquet, tant que le vivier en garde trois. */
   nouvellesMin: 3,
 });
@@ -385,25 +385,25 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
   };
 
   const bandeCommune = rng() < TAUX.communes ? ['commune', 'inhabituelle'] : ['inhabituelle', 'commune'];
-  for (let place = 0; place < 3; place += 1) placer([...bandeCommune, 'rare', 'mythique']);
-  // La rare garantie : les mythiques ne sont là qu'en dernier recours, quand
-  // le vivier n'a plus une seule rare à offrir.
+  // Les trois premières places restent communes ou inhabituelles : jamais
+  // plusieurs rares dans un même paquet.
+  for (let place = 0; place < 3; place += 1) placer(bandeCommune);
+  // Une seule rare garantie, en quatrième place.
   placer(['rare', 'inhabituelle', 'commune', 'mythique']);
 
   const seuilPitie = Math.max(1, Math.floor(TAUX.pitie));
   const mythiqueAssuree = (Number(pitie) || 0) + 1 >= seuilPitie;
   const viseMythique = bandes.mythique.length > 0 && (mythiqueAssuree || rng() < TAUX.mythique);
-  placer(viseMythique ? ['mythique', 'rare', 'inhabituelle', 'commune'] : ['rare', 'inhabituelle', 'commune', 'mythique']);
+  placer(viseMythique ? ['mythique', 'inhabituelle', 'commune', 'rare'] : ['inhabituelle', 'commune', 'rare', 'mythique']);
 
   const compteNouvelles = () => tirees.filter((id) => !possedees.has(id)).length;
   const disponiblesNeuves = vivier.filter((id) => !possedees.has(id)).length;
   const garantie = Math.min(TAUX.nouvellesMin, disponiblesNeuves);
-  let promotions = 0;
   for (let place = 0; place < 3 && compteNouvelles() < garantie; place += 1) {
     const actuelle = tirees[place];
     if (!actuelle || !possedees.has(actuelle)) continue;
     const rang = RANG_RARETE[cardRarityInfo(cardById(actuelle)).key] ?? 0;
-    const candidates = ['rare', 'inhabituelle', 'commune']
+    const candidates = ['inhabituelle', 'commune']
       .flatMap((bande) => (RANG_RARETE[bande] >= rang ? (bandes[bande] ?? []) : []))
       .filter((id) => !tirees.includes(id) && !possedees.has(id));
     const remplacant = tirerParmi(candidates, rng);
@@ -411,18 +411,8 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
       tirees[place] = remplacant;
       continue;
     }
-    // Aucun équivalent à offrir : la seule carte neuve qui reste est plus rare
-    // que le doublon. **Une** place peut alors être promue — la cinquième carte
-    // n'est plus le seul chemin vers une mythique, et la dernière mythique
-    // ouverte se laisse approcher en jours plutôt qu'en mois. Une seule : le
-    // paquet reste un paquet, pas une livraison.
-    if (promotions >= 1) continue;
-    const promues = (bandes.mythique ?? []).filter((id) => !tirees.includes(id) && !possedees.has(id));
-    const promue = tirerParmi(promues, rng);
-    if (promue) {
-      tirees[place] = promue;
-      promotions += 1;
-    }
+    // Pas de promotion vers une rareté supérieure : la garantie de cartes
+    // neuves ne doit jamais contourner les taux de rareté.
   }
 
   diversifierCouleurs(tirees, bandes, possedees, rng);
