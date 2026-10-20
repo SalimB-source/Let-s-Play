@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
-import { AuthContext, useAuth } from '../auth/AuthContext';
-import { supabase, supabaseConfigStatus } from '../lib/supabase';
+import { AuthContext } from '../auth/AuthContext';
+import { supabase, supabaseConfigStatus, turnstileSiteKey } from '../lib/supabase';
 import { describeAuthError } from '../lib/authErrors';
+import SignupProtection from '../components/SignupProtection';
 import './rpg-desktop-login.css';
 
 /**
@@ -14,6 +15,11 @@ import './rpg-desktop-login.css';
  * (main.js :: setWindowOpenHandler → shell.openExternal).
  *
  * Hors coque PC, ce composant est transparent : il rend ses enfants tels quels.
+ *
+ * CAPTCHA : quand Supabase a la protection Turnstile activée, le site exige
+ * un token à l'inscription/connexion. La coque embarque le même widget
+ * (VITE_TURNSTILE_SITE_KEY) que le site ; sans clé le message
+ * captchaNotConfigured s'affiche, exactement comme sur /auth.
  */
 
 const SITE_INSCRIPTION_URL = 'https://let-s-play-nu.vercel.app/register';
@@ -77,6 +83,14 @@ function LoginForm({ onOffline }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
+  const handleCaptchaToken = useCallback((token) => setCaptchaToken(token || ''), []);
+
+  // Même règle que Auth.jsx : en prod on est fail-closed si CAPTCHA activé côté Supabase
+  // mais clé manquante côté build. En dev sans clé on reste utilisable.
+  const captchaRequiredForBuild = Boolean(turnstileSiteKey) || Boolean(import.meta.env?.PROD);
+  const captchaActive = Boolean(turnstileSiteKey);
 
   const t = {
     errNetwork: 'Impossible de joindre le serveur — vérifiez votre connexion Internet.',
@@ -85,6 +99,12 @@ function LoginForm({ onOffline }) {
     errRateLimited: 'Trop de tentatives — patiente quelques minutes.',
     errProviderDisabled: 'Connexion indisponible côté serveur.',
     captchaError: 'Vérification anti-robot échouée.',
+    captchaLabel: 'VÉRIFICATION DE SÉCURITÉ',
+    captchaInstructions: 'Complète la vérification avant de continuer.',
+    captchaLoading: 'Chargement de la vérification…',
+    captchaErrorLabel: 'La vérification n’a pas pu charger. Désactive les bloqueurs ou réessaie.',
+    captchaNotConfigured: 'La protection anti-robot n’est pas configurée pour cette installation. Ajoute VITE_TURNSTILE_SITE_KEY et reconstruis.',
+    captchaRequired: 'Complète la vérification pour continuer.',
     unavailable: 'Authentification non configurée sur cette installation.',
   };
   const fallback = 'Une erreur est survenue. Réessaie.';
@@ -103,13 +123,27 @@ function LoginForm({ onOffline }) {
       setError(t.unavailable);
       return;
     }
+    if (captchaRequiredForBuild && !turnstileSiteKey) {
+      setError(t.captchaNotConfigured);
+      return;
+    }
+    if (captchaRequiredForBuild && captchaActive && !captchaToken) {
+      setError(t.captchaRequired);
+      return;
+    }
 
     setBusy(true);
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: mail,
         password,
+        options: {
+          ...(captchaToken ? { captchaToken } : {}),
+        },
       });
+      // Token single-use : on le jette après chaque tentative
+      setCaptchaToken('');
+      setCaptchaResetSignal((v) => v + 1);
       if (signInError) {
         setError(describeAuthError(signInError, t, fallback));
       } else {
@@ -117,11 +151,13 @@ function LoginForm({ onOffline }) {
         // AuthContext mettra à jour la session → le gate disparaît
       }
     } catch (e) {
+      setCaptchaToken('');
+      setCaptchaResetSignal((v) => v + 1);
       setError(describeAuthError(e, t, fallback));
     } finally {
       setBusy(false);
     }
-  }, [email, password]);
+  }, [email, password, captchaToken, captchaRequiredForBuild, captchaActive]);
 
   const nonConfigure = !supabaseConfigStatus.configured;
 
@@ -188,6 +224,21 @@ function LoginForm({ onOffline }) {
             </span>
           </label>
 
+          {captchaActive && (
+            <SignupProtection
+              siteKey={turnstileSiteKey}
+              label={t.captchaLabel}
+              instructions={t.captchaInstructions}
+              loadingLabel={t.captchaLoading}
+              errorLabel={t.captchaErrorLabel}
+              resetSignal={captchaResetSignal}
+              onTokenChange={handleCaptchaToken}
+            />
+          )}
+          {captchaRequiredForBuild && !turnstileSiteKey && (
+            <p className="rpg-desktop-login__error" role="alert">{t.captchaNotConfigured}</p>
+          )}
+
           {error && <p className="rpg-desktop-login__error" role="alert">{error}</p>}
           {info && <p className="rpg-desktop-login__info" role="status">{info}</p>}
 
@@ -195,7 +246,7 @@ function LoginForm({ onOffline }) {
             <button
               type="submit"
               className="rpg-desktop-login__btn rpg-desktop-login__btn--primary"
-              disabled={busy}
+              disabled={busy || (captchaRequiredForBuild && captchaActive && !captchaToken)}
             >
               {busy && <span className="rpg-desktop-login__spinner" aria-hidden="true" />}
               {busy ? 'Connexion…' : 'Se connecter'}

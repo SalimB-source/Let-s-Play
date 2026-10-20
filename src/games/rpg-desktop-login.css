@@ -260,6 +260,29 @@
   line-height: 1.6;
 }
 
+/* CAPTCHA Turnstile dans la carte sombre */
+.rpg-desktop-login .auth-protection {
+  border-radius: 10px;
+  border-color: #2b3155;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 14px;
+}
+.rpg-desktop-login .auth-protection-label {
+  color: #e8b75c;
+  font: 600 11px/1.4 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1.2px;
+}
+.rpg-desktop-login .auth-protection-hint,
+.rpg-desktop-login .auth-protection-status {
+  color: #aeb3d6;
+}
+.rpg-desktop-login .auth-protection-status-error {
+  color: #fecaca;
+}
+.rpg-desktop-login .auth-turnstile {
+  min-height: 65px;
+}
+
 .rpg-desktop-login__spinner {
   width: 18px;
   height: 18px;
