@@ -202,7 +202,7 @@ function TutorialKeys({ step }) {
   );
 }
 
-export default function CityRushTutorial({
+export default function CityRushTutorialView({
   inGame = true,
   visible = true,
   coursePhase = 'playing',

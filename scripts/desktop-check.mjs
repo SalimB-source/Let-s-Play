@@ -17,7 +17,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -201,6 +201,70 @@ const ico = readFileSync(join(RACINE, 'desktop/build/icon.ico'));
 assert.equal(ico.readUInt16LE(2), 1, 'icon.ico n’est pas une icône');
 assert.ok(ico.readUInt16LE(4) >= 4, 'icon.ico a trop peu de tailles');
 ok('icon.ico / icon.png présents et valides');
+
+// ---------------------------------------------------------------------------
+// 5) Collisions de casse : le piège qui casse les build Windows
+// ---------------------------------------------------------------------------
+// Sous Windows, le système de fichiers est insensible à la casse : un import
+// SANS extension `./CityRushTutorial` y résout `cityRushTutorial.js` quand les
+// deux fichiers coexistent (Linux, lui, prend le `.jsx`, qui seul possède
+// l'export par défaut). Le build ne casse alors que sur Windows, loin des yeux.
+// On détecte la configuration, et on n'échoue que si un import sans extension
+// vise effectivement ce radical — des fichiers homonymes jamais importés sans
+// extension (ou toujours avec) ne sont pas un danger.
+console.log('5. Collisions de casse (piège Windows)');
+
+const EXT_MODULES = ['.js', '.jsx', '.ts', '.tsx'];
+
+function listerSous(dossier, prefixe = '') {
+  const sortie = [];
+  for (const entree of readdirSync(join(dossier, prefixe), { withFileTypes: true })) {
+    if (entree.name === 'node_modules' || entree.name.startsWith('.')) continue;
+    const relatif = prefixe ? `${prefixe}/${entree.name}` : entree.name;
+    if (entree.isDirectory()) sortie.push(...listerSous(dossier, relatif));
+    else sortie.push(relatif);
+  }
+  return sortie;
+}
+
+/** radical (nom sans extension) minusculé → fichiers qui le portent. */
+const groupes = new Map();
+for (const racineSrc of ['src', 'scripts']) {
+  for (const relatif of listerSous(join(RACINE, racineSrc))) {
+    const base = relatif.split('/').pop();
+    const ext = EXT_MODULES.find((e) => base.endsWith(e));
+    if (!ext) continue;
+    const cle = `${racineSrc}/${relatif.slice(0, relatif.length - base.length)}${base.slice(0, -ext.length)}`.toLowerCase();
+    const groupe = groupes.get(cle) || [];
+    groupe.push(`${racineSrc}/${relatif}`);
+    groupes.set(cle, groupe);
+  }
+}
+
+/** Contenu de tous les modules, pour chercher les imports sans extension. */
+const sources = [];
+for (const racineSrc of ['src', 'scripts']) {
+  for (const relatif of listerSous(join(RACINE, racineSrc))) {
+    sources.push([`${racineSrc}/${relatif}`, readFileSync(join(RACINE, racineSrc, relatif), 'utf8')]);
+  }
+}
+
+let collisionsActives = 0;
+for (const [cle, fichiers] of groupes) {
+  if (fichiers.length < 2) continue;
+  const radical = cle.split('/').pop();
+  // Import sans extension : le radical suivi directement du guillemet fermant
+  // (un import avec extension, `./x.jsx`, a un point avant le guillemet).
+  const motif = new RegExp(`from\\s+['"][^'"]*\\b${radical}['"]`, 'i');
+  const touches = sources.filter(([, contenu]) => motif.test(contenu)).map(([nom]) => nom);
+  if (!touches.length) continue;
+  collisionsActives += 1;
+  console.error(`  ✗ ${fichiers.join(' et ')} ne diffèrent que par la casse,`);
+  console.error(`    et ${touches.join(', ')} importe « ${radical} » sans extension :`);
+  console.error('    sous Windows, cet import résoudrait le mauvais fichier. Renommez l’un des deux.');
+}
+assert.equal(collisionsActives, 0, 'collision de casse visée par un import sans extension');
+ok('aucun import sans extension ne vise deux fichiers de même casse');
 
 console.log('');
 console.log(`check:desktop — ${reussites} vérifications, aucune en échec.`);
