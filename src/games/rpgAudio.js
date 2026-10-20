@@ -2,7 +2,8 @@
  * Signature sonore — « Le Sablier ».
  *
  * Les bruitages du jeu sont les échantillons fournis (cartes, frappes, souffle
- * du feu, vagues, contres, renvois, chocs, pages) lus sous forme de fichiers.
+ * du feu, vagues, contres, renvois, chocs, pages, fanfare de victoire) lus
+ * sous forme de fichiers.
  * Le seul son encore synthétisé en WebAudio est l'effleurement de survol de
  * l'interface : tout le reste du catalogue synthétique a été retiré, et les
  * noms inconnus de `rpgSfx` restent silencieux.
@@ -35,6 +36,7 @@ const CREATURE_RETURN_SAMPLE_URL = new URL('./assets/creature-return.wav', impor
 const BLOCK_IMPACT_SAMPLE_URL = new URL('./assets/block-impact.mp3', import.meta.url);
 const DESTRUCTION_HIT_SAMPLE_URL = new URL('./assets/destruction-hit.mp3', import.meta.url);
 const PAGE_TURN_SAMPLE_URL = new URL('./assets/page-turn.mp3', import.meta.url);
+const VICTORY_TRUMPETS_SAMPLE_URL = new URL('./assets/victory-trumpets.mp3', import.meta.url);
 const CARD_PLACE_VOLUME = 0.62;
 const CARD_DRAW_VOLUME = 0.52;
 const ATTACKERS_CONFIRM_VOLUME = 0.58;
@@ -46,6 +48,7 @@ const CREATURE_RETURN_VOLUME = 0.58;
 const BLOCK_IMPACT_VOLUME = 0.58;
 const DESTRUCTION_HIT_VOLUME = 0.6;
 const PAGE_TURN_VOLUME = 0.5;
+const VICTORY_TRUMPETS_VOLUME = 0.6;
 
 /** « A4 » → 440 Hz ; accepte # et b. */
 export function hz(note) {
@@ -83,6 +86,7 @@ const RPG_SFX_TABLE = {
   block_impact: [{ kind: 'sample', at: 0, dur: 0.967, g: 1 }],
   destruction_hit: [{ kind: 'sample', at: 0, dur: 1.698, g: 1 }],
   page_turn: [{ kind: 'sample', at: 0, dur: 1.097, g: 1 }],
+  victoire: [{ kind: 'sample', at: 0, dur: 4.624, g: 1 }],
 };
 
 /** Toutes les séquences nommées sont jouables par le lecteur et couvertes par les tests. */
@@ -141,6 +145,7 @@ export class RpgAudioPlayer {
     this.blockImpactAudio = null;
     this.destructionHitAudio = null;
     this.pageTurnAudio = null;
+    this.victoryTrumpetsAudio = null;
     const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
     if (typeof AudioCtor === 'function') {
       try {
@@ -177,6 +182,9 @@ export class RpgAudioPlayer {
         this.pageTurnAudio = new AudioCtor(PAGE_TURN_SAMPLE_URL.href);
         this.pageTurnAudio.preload = 'auto';
         this.pageTurnAudio.volume = PAGE_TURN_VOLUME;
+        this.victoryTrumpetsAudio = new AudioCtor(VICTORY_TRUMPETS_SAMPLE_URL.href);
+        this.victoryTrumpetsAudio.preload = 'auto';
+        this.victoryTrumpetsAudio.volume = VICTORY_TRUMPETS_VOLUME;
       } catch { /* l’échantillon reste optionnel si Audio n’est pas disponible */ }
     }
   }
@@ -276,6 +284,7 @@ export class RpgAudioPlayer {
       [this.blockImpactAudio, BLOCK_IMPACT_VOLUME],
       [this.destructionHitAudio, DESTRUCTION_HIT_VOLUME],
       [this.pageTurnAudio, PAGE_TURN_VOLUME],
+      [this.victoryTrumpetsAudio, VICTORY_TRUMPETS_VOLUME],
     ];
     for (const [audio, base] of samples) {
       if (!audio) continue;
@@ -306,7 +315,7 @@ export class RpgAudioPlayer {
 
   play(name, delay = 0) {
     if (!this.ctx || !this.master || this.muted || this.volume <= 0) return;
-    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn') {
+    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire') {
       const sample = name === 'card_place'
         ? this.cardPlaceAudio
         : name === 'card_draw' ? this.cardDrawAudio
@@ -317,7 +326,7 @@ export class RpgAudioPlayer {
                 : name === 'card_countered' ? this.cardCounteredAudio
                 : name === 'creature_return' ? this.creatureReturnAudio
                 : name === 'block_impact' ? this.blockImpactAudio
-                  : name === 'destruction_hit' ? this.destructionHitAudio : this.pageTurnAudio;
+                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : this.victoryTrumpetsAudio;
       if (!sample) return;
       try {
         sample.currentTime = 0;
@@ -585,6 +594,14 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.pageTurnAudio = null;
+    if (this.victoryTrumpetsAudio) {
+      try {
+        this.victoryTrumpetsAudio.pause?.();
+        this.victoryTrumpetsAudio.removeAttribute?.('src');
+        this.victoryTrumpetsAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.victoryTrumpetsAudio = null;
     if (context && typeof context.close === 'function') {
       try { context.close(); } catch { /* Contexte déjà fermé. */ }
     }
