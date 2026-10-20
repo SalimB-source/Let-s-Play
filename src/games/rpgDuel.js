@@ -307,6 +307,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     // Mulligan : chaque camp a droit à UN échange, avant le premier tour.
     mulliganFait: { joueur: false, sorcier: false },
     log: [],
+    combatFeed: [],
   };
   hasardParDuel.set(duel, rng);
   // Mode sans terrains : main de départ réduite à trois cartes. Le mode
@@ -1321,9 +1322,16 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       entite,
       montant: 0,
       sourceElements: [],
+      sources: [],
     };
     blessure.montant += degats;
     blessure.sourceElements.push(...normaliserCouleurs(coup.sourceElement));
+    const source = coup.sourceCote && coup.sourceId
+      ? duel[coup.sourceCote]?.creatures.find((candidate) => candidate.id === coup.sourceId)
+      : null;
+    if (source && !blessure.sources.some((candidate) => candidate.id === source.id)) {
+      blessure.sources.push({ id: source.id, name: source.name, carteId: source.carteId, cote: coup.sourceCote });
+    }
     blessures.set(cle, blessure);
   }
 
@@ -1341,15 +1349,30 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
         cote,
         entite,
         sourceElements: blessure.sourceElements,
+        sources: blessure.sources,
       });
     } else {
-      furieuses.push({ entite, recus });
+      furieuses.push({ entite, recus, cote, sources: blessure.sources });
     }
   }
   // La furie s'embrase après les blessures, une seule fois par présence : les
   // blessures d'un même échange ne font jamais double effet, et une créature
-  // morte ne s'énerve pas.
-  for (const { entite, recus } of furieuses) appliquerFurie(duel, entite, recus);
+  // morte ne s'énerve pas. Le journal reprend aussi les frappes qui n'ont pas
+  // été létales : le flux ne se limite donc pas aux créatures détruites.
+  for (const { entite, recus, cote, sources } of furieuses) {
+    appliquerFurie(duel, entite, recus);
+    if (recus > 0 && sources?.length) {
+      duel.combatFeed = duel.combatFeed ?? [];
+      duel.combatFeed.push({
+        id: `${entite.id}:hit:${duel.log.length}`,
+        type: 'hit',
+        amount: recus,
+        victim: { id: entite.id, name: entite.name, carteId: entite.carteId, cote },
+        killers: sources,
+      });
+      duel.combatFeed = duel.combatFeed.slice(-12);
+    }
+  }
 
   // Retire d’abord toutes les victimes : une capacité de destruction ne peut
   // donc empêcher l’autre combattant d’infliger les dégâts déjà calculés.
@@ -1361,6 +1384,14 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     camp.cimetiere.push(mort.entite.carteId);
     detacherArmes(duel, mort.cote, mort.entite);
     duel.log.push(`${mort.entite.name} est détruite et rejoint le cimetière.`);
+    duel.combatFeed = duel.combatFeed ?? [];
+    duel.combatFeed.push({
+      id: `${mort.entite.id}:${duel.log.length}`,
+      type: 'death',
+      victim: { id: mort.entite.id, name: mort.entite.name, carteId: mort.entite.carteId, cote: mort.cote },
+      killers: mort.sources ?? [],
+    });
+    duel.combatFeed = duel.combatFeed.slice(-12);
   }
   for (const mort of mortes) {
     mort.declencherArme?.();
@@ -3052,12 +3083,14 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
     coupsNormaux.push({
       cote: autre(cote), entiteId: cible.id, amount: attaquant.atk,
       sourceElement: couleursAttaquant, sourceType: 'attaque',
+      sourceCote: cote, sourceId: attaquant.id,
     });
   }
   if (duel[autre(cote)].creatures.some((entite) => entite.id === cible.id)) {
     coupsNormaux.push({
       cote, entiteId: attaquant.id, amount: cible.atk,
       sourceElement: couleursCible, sourceType: 'attaque',
+      sourceCote: autre(cote), sourceId: cible.id,
     });
   }
   appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
@@ -3569,6 +3602,7 @@ export function rpgLancerAttaque(
       amount: forceCombat(attaquant),
       sourceElement: cardColors(duelCardById(attaquant.carteId)),
       sourceType: 'attaque',
+      sourceCote: cote, sourceId: attaquant.id,
     });
   }
   // Les attaquants dont la frappe a trouvé sa cible : leur attaque s'arrête sur
@@ -3734,7 +3768,7 @@ export function rpgLancerAttaque(
   // une capacité préalable ne peut plus infliger ses blessures de combat.
   const coupsNormaux = degatsCombat
     .filter((coup) => duel[coup.coteSource].creatures.some((entite) => entite.id === coup.sourceId))
-    .map(({ coteSource, sourceId, ...coup }) => coup);
+    .map(({ coteSource, sourceId, ...coup }) => ({ ...coup, sourceCote: coteSource, sourceId }));
   appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
   for (const coup of resume.coupsRapides) {
     duel.log.push(coup.annule

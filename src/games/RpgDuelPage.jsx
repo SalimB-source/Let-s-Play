@@ -2439,6 +2439,43 @@ function AnnonceTour({ annonce }) {
   );
 }
 
+/** Petit journal visuel du duel : les échanges et morts récents, avec les
+ * cartes impliquées — dans l’esprit du journal de combat de MTG Arena. */
+function CombatFeed({ events = [] }) {
+  if (!events.length) return null;
+  const recentes = events.slice(-4).reverse();
+  return (
+    <aside className="rpg-combat-feed" aria-label="Journal des actions du duel">
+      <div className="rpg-combat-feed__heading"><span aria-hidden="true">⚔</span><strong>Journal du duel</strong></div>
+      <ol className="rpg-combat-feed__list" aria-live="polite" aria-relevant="additions">
+        {recentes.map((event) => {
+          const killers = event.killers ?? [];
+          return (
+            <li className={`rpg-combat-feed__event${event.type === 'hit' ? ' is-hit' : ' is-death'}`} key={event.id}>
+              <div className="rpg-combat-feed__participants">
+                {killers.length ? killers.slice(0, 2).map((killer) => (
+                  <span className="rpg-combat-feed__card" key={killer.id} title={killer.name}>
+                    <img src={cardArt(killer.carteId)} alt="" />
+                    <span>{killer.name}</span>
+                  </span>
+                )) : <span className="rpg-combat-feed__cause">Effet de jeu</span>}
+                <span className="rpg-combat-feed__arrow" aria-hidden="true">➜</span>
+                <span className="rpg-combat-feed__card rpg-combat-feed__card--victim" title={event.victim.name}>
+                  <img src={cardArt(event.victim.carteId)} alt="" />
+                  <span>{event.victim.name}</span>
+                </span>
+                {event.type === 'death'
+                  ? <span className="rpg-combat-feed__skull" aria-label="détruite">☠</span>
+                  : <span className="rpg-combat-feed__damage" aria-label={`${event.amount} dégâts`}>−{event.amount}</span>}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </aside>
+  );
+}
+
 /* ── Boîtier de deck en 3D (onglet Deck) ──────────────────────────────────────
    Décor pur : le clic est porté par le bouton voisin (voir `GameModeMenu`), et le
    nom du deck y figure en clair — tout ce qui est dessiné ici est `aria-hidden`. */
@@ -7914,6 +7951,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         onDragLeave={quitterZoneDepot}
         onDrop={deposerCarteSurTable}
       >
+        <CombatFeed events={duel.combatFeed} />
         {/* Le jumeau de la peinture : le flou d'un aperçu ne peut pas être posé
             sur `.card-table` (il emporterait l'aperçu lui-même), ni sur sa
             `background-image`. Ce calque en reprend donc la peinture par
