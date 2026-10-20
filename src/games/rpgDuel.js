@@ -1350,6 +1350,10 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     const recus = montant - absorbes;
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
+    // Comme pour les blessures isolées, Tenacité refuse la destruction
+    // AVANT le retrait des victimes et les capacités de mort. Les coups ont
+    // déjà été cumulés : plusieurs bloqueurs ne la dépensent qu'une fois.
+    if (entite.pv <= 0) sauverParTenacite(duel, entite);
     if (entite.pv <= 0) {
       mortes.push({
         cote,
@@ -2393,19 +2397,22 @@ export function rpgSacrifierCreature(duel, cote, entiteId) {
   return { ok: true, entite, carteId: entite.carteId };
 }
 
+/** Refuse une destruction, sans déclencher de sortie de table. Partagé par
+ * les blessures isolées et simultanées pour conserver les mêmes survivants. */
+function sauverParTenacite(duel, entite) {
+  // Seule cette présence en jeu dépense Tenacité : renvoyée en main puis
+  // rejouée, la carte retrouve son effet. Sacrifice et exil la contournent.
+  if (!entite.tenaciteDisponible) return false;
+  entite.tenaciteDisponible = false;
+  entite.pv = 1;
+  entite.def = 1;
+  duel.log.push(`Tenacité : ${entite.name} refuse la destruction — il lui reste 1 point de défense.`);
+  return true;
+}
+
 /** Retire une créature morte, puis déclenche sa capacité de destruction. */
 function enterrer(duel, cote, entite, sourceElements = [], declenchements = null) {
-  // Tenacité : la destruction est refusée une fois — la créature survit et il
-  // lui reste 1 point de défense. Aucune capacité de destruction ne se
-  // déclenche : elle n'a pas été détruite. Seule cette présence en jeu la
-  // dépense : renvoyée en main puis rejouée, la carte revient avec sa Tenacité.
-  if (entite.tenaciteDisponible) {
-    entite.tenaciteDisponible = false;
-    entite.pv = 1;
-    entite.def = 1;
-    duel.log.push(`Tenacité : ${entite.name} refuse la destruction — il lui reste 1 point de défense.`);
-    return;
-  }
+  if (sauverParTenacite(duel, entite)) return;
   rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.', declenchements);
 }
 
