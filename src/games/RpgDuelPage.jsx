@@ -4640,7 +4640,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // `play()` doit partir directement du geste qui lance le duel : un effet
     // React différé peut être refusé par la politique d'autoplay du navigateur.
     const musiquePlateau = musiquePlateauRef.current;
-    musiquePlateau?.setPlateau(plateau.id);
+    musiquePlateau?.setPlateau(plateau.id, { reroll: true });
     if (modeLibre && sonActif && RPG_PLATEAUX_MUSICAUX.has(plateau.id)) {
       void musiquePlateau?.start();
     }
