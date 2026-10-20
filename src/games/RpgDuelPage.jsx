@@ -894,6 +894,7 @@ function effetsAccordesParArme(arme) {
   if (donne.infiltration) effets.push('Infiltration (ne peut pas être bloquée)');
   if (donne.rapidite) effets.push('Rapidité');
   if (donne.envol) effets.push('Envol');
+  if (donne.bouclier) effets.push(`Bouclier ${donne.bouclier}`);
   if (donne.coupRapide) effets.push('Coup rapide');
   if (donne.esquive) effets.push('Esquive');
   if (donne.immunite) effets.push(`Immunité contre ${ELEMENT_LABELS[donne.immunite] ?? donne.immunite}`);
@@ -1174,6 +1175,88 @@ function AuraOndes({ variante = 'resonance', phase = 0 }) {
  *  et les descriptions lues des cartes. */
 function VignetteFurie() {
   return <span className="rpg-furie-vignette" aria-hidden="true" />;
+}
+
+/* ── Bouclier : l'égide qui veille, puis le choc qu'elle encaisse ──────────
+   Tant qu'un bouclier est en place, la face est cerclée d'une égide glacée :
+   un liseré lumineux, un reflet qui balaie l'illustration et un écu à peine
+   dessiné en son cœur. Quand un coup l'entame, un second calque rejoue le
+   choc — flash, anneaux, écu qui se tend puis se fissure, éclats qui
+   s'arrachent — même si le bouclier vient de tomber à zéro : c'est
+   précisément ce moment-là qu'il faut voir. Tout est décoratif
+   (`aria-hidden`) : la valeur du bouclier vit dans son icône et dans la
+   description lue de la carte. */
+const DUREE_IMPACT_BOUCLIER = 850;
+const ECLATS_BOUCLIER = Object.freeze([
+  { dx: -52, dy: -42, r: -42, d: 30 },
+  { dx: 48, dy: -56, r: 36, d: 70 },
+  { dx: -62, dy: 18, r: 58, d: 105 },
+  { dx: 60, dy: 28, r: -64, d: 45 },
+  { dx: -30, dy: 58, r: 24, d: 125 },
+  { dx: 34, dy: 62, r: -28, d: 90 },
+]);
+
+/** L'écu dessiné au cœur de l'égide — le même tracé veille et encaisse. */
+function EcuBouclier({ fissure = false }) {
+  return (
+    <svg className="rpg-bouclier__ecu" viewBox="0 0 48 56" focusable="false" aria-hidden="true">
+      <path className="rpg-bouclier__ecu-corps" d="M24 3 42 9v16c0 12-7.5 21.5-18 28C13.5 46.5 6 37 6 25V9Z" />
+      <path className="rpg-bouclier__ecu-ligne" d="M24 9l12 4v12c0 8.5-5 15.5-12 21-7-5.5-12-12.5-12-21V13Z" />
+      <path className="rpg-bouclier__ecu-rune" d="M24 16v18M16 25h16" />
+      {fissure && (
+        <>
+          <path className="rpg-bouclier__ecu-fissure" d="M25 7l-4 10 6 5-5 9 4 7-3 10" />
+          <path className="rpg-bouclier__ecu-fissure" d="M21 17l-8 5M27 22l8 4M22 31l-7 7" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+/** Le bouclier en place : il se forme en entrant, puis veille en pulsant. */
+function EgideBouclier({ montant = 0, lumiere = false }) {
+  return (
+    <span
+      className={`rpg-bouclier-egide${lumiere ? ' rpg-bouclier-egide--lumiere' : ''}`}
+      data-bouclier={lumiere ? 'lumiere' : montant}
+      aria-hidden="true"
+    >
+      <span className="rpg-bouclier-egide__reflet" />
+      <EcuBouclier />
+    </span>
+  );
+}
+
+/** Le choc d'un bouclier qui vient d'absorber : il survit à sa propre chute
+ *  le temps de l'animation, porté par l'état éphémère de la page. */
+function ImpactBouclier({ montant = 0, restant = 0, lumiere = false }) {
+  const brise = lumiere || restant <= 0;
+  return (
+    <span
+      className={`rpg-bouclier-impact${lumiere ? ' rpg-bouclier-impact--lumiere' : ''}${brise ? ' is-brise' : ''}`}
+      data-bouclier-absorbe={montant || undefined}
+      data-bouclier-restant={restant}
+      data-bouclier-lumiere={lumiere ? 'true' : undefined}
+      aria-hidden="true"
+    >
+      <span className="rpg-bouclier-impact__flash" />
+      <span className="rpg-bouclier-impact__anneau rpg-bouclier-impact__anneau--a" />
+      <span className="rpg-bouclier-impact__anneau rpg-bouclier-impact__anneau--b" />
+      <EcuBouclier fissure={brise} />
+      {ECLATS_BOUCLIER.map((eclat) => (
+        <i
+          key={`${eclat.dx}-${eclat.dy}`}
+          className="rpg-bouclier-impact__eclat"
+          style={{
+            '--dx': `${eclat.dx}px`,
+            '--dy': `${eclat.dy}px`,
+            '--r': `${eclat.r}deg`,
+            '--d': `${eclat.d}ms`,
+          }}
+        />
+      ))}
+    </span>
+  );
 }
 
 /** L'empreinte stable d'une entité : même identifiant, même phase — jamais un
@@ -1647,6 +1730,9 @@ export function TableCard({
   soin = null,
   // `{ token }` le temps d'afficher « MISS » au-dessus de l'attaquant qui rate son Coup rapide.
   miss = null,
+  // `{ montant, restant, lumiere, token }` le temps du choc d'un bouclier qui
+  // vient d'absorber un coup (`ImpactBouclier`), sinon null.
+  bouclierFx = null,
   playerTurn = false,
   activationDispo = false,
   onActiver = null,
@@ -1747,6 +1833,8 @@ export function TableCard({
         entite.envol ? 'is-envol' : '',
         entite.rapidite ? 'has-rapidite' : '',
         entite.infiltration ? 'has-infiltration' : '',
+        (entite.bouclier ?? 0) > 0 || entite.bouclierLumiere ? 'has-bouclier' : '',
+        entite.bouclierLumiere ? 'has-bouclier-lumiere' : '',
         carte?.resonance ? 'has-resonance' : '',
         carte?.aura ? 'has-aura' : '',
         gelee ? 'is-frozen' : '',
@@ -1801,6 +1889,8 @@ export function TableCard({
       data-card-id={carte?.id}
       data-soin={soin ? soin.montant : undefined}
       data-miss={miss ? 'true' : undefined}
+      data-bouclier={(entite.bouclier ?? 0) > 0 ? entite.bouclier : undefined}
+      data-bouclier-lumiere={entite.bouclierLumiere ? 'true' : undefined}
       data-armes={armes.length ? armes.join(' ') : undefined}
       data-furie-declenchee={entite.furieDeclenchee ? 'true' : undefined}
       data-furie-atk={entite.furieDeclenchee ? entite.atk : undefined}
@@ -1822,6 +1912,9 @@ export function TableCard({
     >
       <img className="rpg-card__img" src={entite.furieDeclenchee ? cardArtFurie(carte) : cardArt(carte)} alt="" aria-hidden="true" />
       {entite.furieDeclenchee && <VignetteFurie />}
+      {((entite.bouclier ?? 0) > 0 || entite.bouclierLumiere) && (
+        <EgideBouclier montant={entite.bouclier ?? 0} lumiere={Boolean(entite.bouclierLumiere)} />
+      )}
       {carte?.resonance ? <AuraOndes phase={phaseAura(entite)} /> : null}
       {carte?.aura ? <AuraOndes variante="aura" phase={phaseAura(entite)} /> : null}
       {/* Envol : un souffle de lumière traverse lentement la face, comme une
@@ -1924,6 +2017,14 @@ export function TableCard({
           </span>
         </footer>
         {soin && <EclatSoin key={soin.token} montant={soin.montant} surCarte />}
+        {bouclierFx && (
+          <ImpactBouclier
+            key={bouclierFx.token}
+            montant={bouclierFx.montant}
+            restant={bouclierFx.restant}
+            lumiere={Boolean(bouclierFx.lumiere)}
+          />
+        )}
         {miss && (
           <span key={miss.token} className="rpg-card__miss" aria-hidden="true">
             MISS
@@ -4503,6 +4604,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [animationsEntites, setAnimationsEntites] = useState({});
   const [missVisibles, setMissVisibles] = useState({});
   const sequenceMissRef = useRef(0);
+  // Les chocs de bouclier en cours : `{ [entityId]: { montant, restant,
+  // lumiere, token } }` le temps d'`ImpactBouclier` — assez longtemps pour
+  // voir l'égide encaisser (et, à zéro, se briser) avant de s'effacer.
+  const [boucliersVisibles, setBoucliersVisibles] = useState({});
+  const sequenceBouclierRef = useRef(0);
   const [cartesEnDestruction, setCartesEnDestruction] = useState([]);
   // Les tourbillons d'eau des renvois en main : `{ entityId, cardId, left, top,
   // width, height, angle, effectId, expireA }`, le temps de l'effet seulement.
@@ -5874,6 +5980,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ?? (deployee ? null : pile.entites
       .map((membre) => missVisibles[membre.id])
       .find(Boolean) ?? null);
+  // Même relève pour le choc d'un bouclier : la tête d'une pile repliée
+  // porte l'impact de l'exemplaire caché qui vient d'encaisser.
+  const bouclierDeCarte = (entite, pile, deployee) => boucliersVisibles[entite.id]
+    ?? (deployee ? null : pile.entites
+      .map((membre) => boucliersVisibles[membre.id])
+      .find(Boolean) ?? null);
   const etageHistoire = histoireEtageId ? etageHistoireParId(histoireEtageId)?.etage ?? null : null;
   const etageSuivant = histoireEtageId ? prochainEtage(histoireEtageId) : null;
   const tourDuJoueur = duel.tour === 'joueur' && !vainqueur;
@@ -6100,6 +6212,34 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, duree);
   };
 
+  /** Allume le choc des boucliers qui viennent d'absorber (`ImpactBouclier`) :
+   *  un calque à part des cinématiques `fx-*`, pour qu'un attaquant garde son
+   *  bond — et une créature foudroyée sa secousse — pendant que son égide
+   *  encaisse. Le token fait repartir l'animation à chaque nouveau choc. */
+  const declencherImpactsBouclier = (impacts = [], duree = DUREE_IMPACT_BOUCLIER) => {
+    const cibles = (impacts ?? []).filter((impact) => impact?.id);
+    if (!cibles.length) return;
+    const token = ++sequenceBouclierRef.current;
+    setBoucliersVisibles((courant) => ({
+      ...courant,
+      ...Object.fromEntries(cibles.map((impact) => [impact.id, {
+        montant: Math.max(0, impact.montant ?? 0),
+        restant: Math.max(0, impact.restant ?? 0),
+        lumiere: Boolean(impact.lumiere),
+        token,
+      }])),
+    }));
+    programmerNettoyageVisuel(() => {
+      setBoucliersVisibles((courant) => {
+        const suivant = { ...courant };
+        cibles.forEach((impact) => {
+          if (suivant[impact.id]?.token === token) delete suivant[impact.id];
+        });
+        return Object.keys(suivant).length === Object.keys(courant).length ? courant : suivant;
+      });
+    }, duree);
+  };
+
   const demarrerVolCarte = (carte, handIndex, resoudreAction) => {
     if (!carte || !resoudreAction) return;
     const origine = carteOrigineVolRef.current;
@@ -6285,6 +6425,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         pv: entite.pv,
         pvMax: entite.pvMax ?? null,
         bouclier: entite.bouclier ?? 0,
+        bouclierLumiere: Boolean(entite.bouclierLumiere),
+        armeId: entite.arme?.carteId ?? null,
         left: centerX - width / 2,
         top: centerY - height / 2,
         width,
@@ -6485,27 +6627,48 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const secoueesParFoudre = [];
     const renforcees = [];
     const statsAugmentees = [];
+    const impactsBouclier = [];
     avant.forEach((entite) => {
       const apres = vivants.get(entite.entityId);
       if (!apres || entite.isTerrain) return;
+      const bouclierAvant = entite.bouclier ?? 0;
+      const bouclierApres = apres.bouclier ?? 0;
+      const absorbesParBouclier = Math.max(0, bouclierAvant - bouclierApres);
+      const lumiereAbsorbee = Boolean(entite.bouclierLumiere && !apres.bouclierLumiere);
+      const toucheeAuxPv = apres.pv < entite.pv || apres.def < entite.def;
+      // Un bouclier qui baisse parce que l'arme qui le portait vient d'être
+      // remplacée (la Lance de givre) n'a encaissé aucun coup : son reliquat
+      // est simplement reparti avec l'arme, sans choc à montrer.
+      const armeChangee = (apres.arme?.carteId ?? null) !== (entite.armeId ?? null);
+      if (!mouvementReduit && (lumiereAbsorbee || (absorbesParBouclier > 0 && !armeChangee))) {
+        impactsBouclier.push({
+          id: entite.entityId,
+          montant: absorbesParBouclier,
+          restant: bouclierApres,
+          lumiere: lumiereAbsorbee,
+        });
+      }
       // Un soin pur — les PV remontent vers un maximum inchangé, rien d'autre
       // ne bouge — a sa propre cinématique (`EclatSoin`, relevé du journal des
       // soins) : il ne rejoue pas, en plus, la lueur dorée des renforts.
       const soinPur = apres.pv > entite.pv
         && apres.atk === entite.atk
         && (apres.pvMax ?? null) === entite.pvMax
-        && (apres.bouclier ?? 0) === entite.bouclier;
-      if (apres.pv < entite.pv || (apres.bouclier ?? 0) < entite.bouclier || apres.def < entite.def) {
+        && bouclierApres === bouclierAvant;
+      if (toucheeAuxPv || absorbesParBouclier > 0 || lumiereAbsorbee) {
         if (!attaquants.has(entite.entityId)) {
           if (idsFoudroyees.has(entite.entityId)) secoueesParFoudre.push(entite.entityId);
-          else touches.push(entite.entityId);
+          // Entièrement absorbé, le coup ne fait pas clignoter la créature :
+          // c'est l'égide qui encaisse — et qui le montre (`ImpactBouclier`).
+          else if (toucheeAuxPv) touches.push(entite.entityId);
         }
-      } else if (!soinPur && (apres.pv > entite.pv || (apres.bouclier ?? 0) > entite.bouclier || apres.atk > entite.atk || apres.def > entite.def)) {
+      } else if (!soinPur && (apres.pv > entite.pv || bouclierApres > bouclierAvant || apres.atk > entite.atk || apres.def > entite.def)) {
         renforcees.push(entite.entityId);
         if (apres.atk > entite.atk || apres.def > entite.def) statsAugmentees.push(entite.entityId);
       }
     });
     animerEntites(attaquesVivantes, 'attack', 650);
+    declencherImpactsBouclier(impactsBouclier);
     animerEntites(touches, 'hit', 620);
     animerEntites(secoueesParFoudre, 'foudre', DUREE_ECLAIR_MARTEAU);
     animerEntites(renforcees, 'glow', 1100, statsAugmentees);
@@ -8146,6 +8309,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ...(cibleAttaqueEnCours ? [cibleAttaqueEnCours] : []),
     ...Object.keys(animationsEntites ?? {}),
     ...Object.keys(missVisibles ?? {}),
+    ...Object.keys(boucliersVisibles ?? {}),
   ]);
   // Au doigt, la clé identifie une pile ; sur grand écran, elle identifie
   // un exemplaire. Partager la clé carteId entre deux exemplaires laisserait
@@ -8666,6 +8830,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
                       miss={missDeCarte(entite, pile, deployee)}
+                      bouclierFx={bouclierDeCarte(entite, pile, deployee)}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureEnnemie(entite)}
@@ -8749,6 +8914,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
                       miss={missDeCarte(entite, pile, deployee)}
+                      bouclierFx={bouclierDeCarte(entite, pile, deployee)}
                       playerTurn={tourDuJoueur}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}

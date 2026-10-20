@@ -1054,6 +1054,22 @@ function armeCarteDe(entite) {
 }
 
 /**
+ * Fait encaisser un montant par le bouclier d'une créature et rend ce qui a
+ * été absorbé. Le point encore porté par une arme (`entite.arme.bouclier`,
+ * la Lance de givre) encaisse en premier : quand l'arme tombera, seul ce
+ * reliquat-là repartira avec elle — un bouclier venu d'un sort ou d'une
+ * arrivée ne peut donc pas être volé par un simple changement d'arme.
+ */
+function absorberBouclier(entite, montant) {
+  const absorbes = Math.min(entite.bouclier ?? 0, Math.max(0, montant));
+  entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
+  if (entite.arme?.bouclier) {
+    entite.arme.bouclier = Math.max(0, entite.arme.bouclier - absorbes);
+  }
+  return absorbes;
+}
+
+/**
  * Attache une arme à une créature : le bonus et le mot-clé donné se fondent
  * dans ses champs, comme une aura permanente mais personnelle. Le +défense
  * grandit PV max et PV présents du même montant (la créature se tient mieux
@@ -1069,6 +1085,14 @@ function attacherArme(duel, cote, entite, carteArme) {
   entite.pvMax = (entite.pvMax ?? entite.def) + (carteArme.bonus?.def ?? 0);
   entite.def += carteArme.bonus?.def ?? 0;
   entite.pv += carteArme.bonus?.def ?? 0;
+  // Le bouclier donné par l'arme (la Lance de givre) rejoint la réserve qui
+  // absorbera les prochains dégâts ; sa part encore intacte vit sur l'arme
+  // elle-même pour repartir avec elle si elle est remplacée.
+  const bouclierDonne = Math.max(0, Math.floor(Number(carteArme.donne?.bouclier) || 0));
+  if (bouclierDonne) {
+    entite.arme.bouclier = bouclierDonne;
+    entite.bouclier = (entite.bouclier ?? 0) + bouclierDonne;
+  }
   if (carteArme.donne?.esquive) entite.esquive = true;
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
@@ -1089,12 +1113,16 @@ function attacherArme(duel, cote, entite, carteArme) {
  *  mot-clé repartent, l'arme rejoint le cimetière de son camp. */
 function retirerArme(duel, cote, entite) {
   const carteArme = armeCarteDe(entite);
+  const bouclierRestant = Math.max(0, Number(entite.arme?.bouclier) || 0);
   entite.arme = null;
   if (!carteArme) return;
   entite.atk = Math.max(0, entite.atk - (carteArme.bonus?.atk ?? 0));
   entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) - (carteArme.bonus?.def ?? 0));
   entite.def = Math.max(1, entite.def - (carteArme.bonus?.def ?? 0));
   entite.pv = Math.max(1, Math.min(entite.pv, entite.pvMax));
+  if (bouclierRestant) {
+    entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - bouclierRestant);
+  }
   if (carteArme.donne?.esquive) entite.esquive = Boolean(duelCardById(entite.carteId)?.esquive);
   if (carteArme.donne?.envol) entite.envol = Boolean(duelCardById(entite.carteId)?.envol);
   if (carteArme.donne?.infiltration) entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
@@ -1345,8 +1373,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   const furieuses = [];
   for (const blessure of blessures.values()) {
     const { entite, montant, cote } = blessure;
-    const absorbes = Math.min(entite.bouclier ?? 0, montant);
-    entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
+    const absorbes = absorberBouclier(entite, montant);
     const recus = montant - absorbes;
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
@@ -2605,8 +2632,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
     return { ok: true, recus: 0, absorbes: 0, esquive: true };
   }
   const apresEsquive = Math.max(0, amount);
-  const absorbes = Math.min(entite.bouclier ?? 0, apresEsquive);
-  entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
+  const absorbes = absorberBouclier(entite, apresEsquive);
   const recus = apresEsquive - absorbes;
   entite.pv -= recus;
   entite.def = Math.min(entite.def, Math.max(0, entite.pv));

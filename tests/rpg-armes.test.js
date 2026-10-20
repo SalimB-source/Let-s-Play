@@ -104,8 +104,10 @@ test('le prototype compte cinq armes, une par élément, avec leur peinture', ()
   assert.equal(armeById('takouba-des-pistes').donne.infiltration, true);
   assert.equal(armeById('baton-des-citernes').arrivee.jeton, 'serpent-des-citernes');
   assert.equal(armeById('baton-des-citernes').activation.cout, 3);
-  assert.deepEqual(armeById('lance-de-givre').bonus, { atk: 3, def: 1 });
+  assert.deepEqual(armeById('lance-de-givre').bonus, { atk: 1, def: 1 });
   assert.equal(armeById('lance-de-givre').donne.envol, true);
+  assert.equal(armeById('lance-de-givre').donne.bouclier, 1);
+  assert.match(armeById('lance-de-givre').text, /\+1\/\+1, Envol et un bouclier de 1/);
   assert.equal(armeById('armure-de-cendres').rarity, 'mythique');
   assert.deepEqual(armeById('armure-de-cendres').bonus, { atk: 3, def: 3 });
   assert.equal(armeById('armure-de-cendres').donne.immunite, 'braise');
@@ -267,13 +269,24 @@ test('activer le Bâton pour 3 manas appelle un autre serpent — jamais hors de
 /** Reste-t-il de quoi payer la moindre chose ? (mana du joueur épuisé ou non). */
 const rpgPeutPayerMana = (duel) => Object.values(duel.joueur.mana).some((n) => n > 0);
 
-test('la Lance de givre donne Envol au porteur, dans les deux sens du blocage', () => {
+test('la Lance de givre donne +1/+1, Envol et un bouclier de 1 au porteur, dans les deux sens du blocage', () => {
   const duel = duelVide();
-  const chien = poser(duel, 'joueur', 'chien-du-guet');
+  const chien = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   const anqa = poser(duel, 'sorcier', 'anqa-des-braises'); // volante de naissance
   assert.equal(rpgPeutBloquerAttaquant(chien, anqa), false, 'au sol, il ne bloque pas une volante');
   equiper(duel, 'joueur', 'lance-de-givre', chien);
+  assert.equal(chien.atk, 3, '2 + 1 d’attaque');
+  assert.equal(chien.def, 3, '2 + 1 de défense');
+  assert.equal(chien.pv, 3, 'le +1 de défense grandit aussi les PV présents');
   assert.equal(chien.envol, true);
+  assert.equal(chien.bouclier, 1, 'la Lance dresse son bouclier de 1');
+  assert.equal(chien.arme.bouclier, 1, 'et ce point encore intact reste rattaché à l’arme');
+  const coupAbsorbe = rpgBlesserCreature(duel, 'joueur', chien.id, 1, 'eau', null, 'magie');
+  assert.equal(coupAbsorbe.absorbes, 1, 'le prochain dégât est absorbé');
+  assert.equal(coupAbsorbe.recus, 0);
+  assert.equal(chien.bouclier, 0, 'le bouclier est consommé');
+  assert.equal(chien.arme.bouclier, 0, 'sa part portée par la Lance aussi');
+  assert.equal(chien.pv, 3, 'les PV du porteur n’ont pas été entamés');
   assert.equal(rpgPeutBloquerAttaquant(chien, anqa), true, 'porteur de la Lance, il bloque les volantes');
   assert.equal(rpgPeutBloquerAttaquant(anqa, chien), true);
   const dune = poser(duel, 'sorcier', 'dune-marchante');
@@ -320,14 +333,41 @@ test('une seconde arme envoie la première au cimetière et retire son bonus', (
   const duel = duelVide();
   const chien = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'takouba-des-pistes', chien); // → 4/2
-  equiper(duel, 'joueur', 'lance-de-givre', chien); // +3/+1 et Envol, la Takouba tombe
+  equiper(duel, 'joueur', 'lance-de-givre', chien); // +1/+1, Envol et Bouclier 1, la Takouba tombe
   assert.equal(chien.arme.carteId, 'lance-de-givre');
-  assert.equal(chien.atk, 5, 'le +2 de la Takouba est parti, le +3 de la Lance est là');
+  assert.equal(chien.atk, 3, 'le +2 de la Takouba est parti, le +1 de la Lance est là');
   assert.equal(chien.pv, 3);
   assert.equal(chien.envol, true);
+  assert.equal(chien.bouclier, 1, 'la Lance dresse son bouclier en s’attachant');
+  assert.equal(chien.arme.bouclier, 1);
   assert.ok(duel.joueur.cimetiere.includes('takouba-des-pistes'),
     'l’ancienne arme est au cimetière, pas en main');
   assert.equal(duel.joueur.main.includes('takouba-des-pistes'), false);
+});
+
+test('le bouclier de la Lance repart avec elle, sans voler celui d’un autre effet', () => {
+  const duel = duelVide();
+  const chien = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'lance-de-givre', chien);
+  assert.equal(chien.bouclier, 1);
+
+  equiper(duel, 'joueur', 'takouba-des-pistes', chien);
+  assert.equal(chien.bouclier, 0, 'le point encore intact repart avec la Lance remplacée');
+  assert.equal(chien.envol, false, 'Envol repart avec elle aussi');
+
+  equiper(duel, 'joueur', 'lance-de-givre', chien);
+  donner(duel, 'joueur', 'parade-du-verre');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'parade-du-verre', chien.id).ok, true);
+  assert.equal(chien.bouclier, 4, 'le point de la Lance s’ajoute aux 3 de la Parade');
+
+  rpgBlesserCreature(duel, 'joueur', chien.id, 1, 'eau', null, 'magie');
+  assert.equal(chien.bouclier, 3, 'un point a été absorbé');
+  assert.equal(chien.arme.bouclier, 0, 'le point de la Lance encaisse le premier');
+
+  equiper(duel, 'joueur', 'baton-des-citernes', chien);
+  assert.equal(chien.bouclier, 3, 'les 3 points de la Parade restent : changer d’arme ne les vole pas');
+  assert.equal(chien.arme.carteId, 'baton-des-citernes');
 });
 
 test('la protection contre la couleur de l’arme refuse l’attachement', () => {

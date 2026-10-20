@@ -5459,6 +5459,200 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce) {
   .rpg-furie-vignette { animation: none; opacity: .82; }
 }
+
+/* Bouclier en place : une égide de glace veille sur la face. Le centre reste
+   presque libre pour l'illustration ; le liseré et le reflet qui traverse
+   disent la protection sans imprimer un second cadre opaque. Le bouclier de
+   lumière reprend la même grammaire, en or pâle. Les deux calques passent
+   sous les repères de jeu, qui viennent après eux ou portent un z-index
+   supérieur. */
+.rpg-bouclier-egide,
+.rpg-bouclier-impact {
+  --rpg-bouclier-teinte: 142, 224, 255;
+  --rpg-bouclier-coeur: #eafaff;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.rpg-bouclier-egide--lumiere,
+.rpg-bouclier-impact--lumiere {
+  --rpg-bouclier-teinte: 255, 222, 130;
+  --rpg-bouclier-coeur: #fff7d6;
+}
+.rpg-bouclier-egide {
+  z-index: 2;
+  overflow: hidden;
+  border: 2px solid rgba(var(--rpg-bouclier-teinte), .74);
+  background: radial-gradient(ellipse at center, transparent 48%, rgba(var(--rpg-bouclier-teinte), .10) 78%, rgba(var(--rpg-bouclier-teinte), .24) 100%);
+  box-shadow:
+    inset 0 0 18px rgba(var(--rpg-bouclier-teinte), .42),
+    inset 0 0 46px rgba(var(--rpg-bouclier-teinte), .18),
+    0 0 16px rgba(var(--rpg-bouclier-teinte), .34);
+  animation: rpg-bouclier-entre .55s cubic-bezier(.2, .8, .3, 1.18) both;
+}
+.rpg-bouclier-egide__reflet {
+  position: absolute;
+  inset: -12% -72%;
+  background: linear-gradient(100deg, transparent 42%, rgba(255, 255, 255, .17) 50%, transparent 58%);
+  translate: -58% 0;
+  animation: rpg-bouclier-reflet 3.1s ease-in-out infinite;
+}
+.rpg-bouclier__ecu {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 42%;
+  max-height: 54%;
+  translate: -50% -50%;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 7px rgba(var(--rpg-bouclier-teinte), .72));
+}
+.rpg-bouclier-egide .rpg-bouclier__ecu {
+  opacity: .34;
+  animation: rpg-bouclier-veille 2.6s ease-in-out infinite alternate;
+}
+.rpg-bouclier__ecu-corps {
+  fill: rgba(var(--rpg-bouclier-teinte), .12);
+  stroke: rgba(234, 250, 255, .82);
+  stroke-width: 1.7;
+}
+.rpg-bouclier__ecu-ligne {
+  stroke: rgba(var(--rpg-bouclier-teinte), .78);
+  stroke-width: 1.1;
+}
+.rpg-bouclier__ecu-rune {
+  stroke: var(--rpg-bouclier-coeur);
+  stroke-width: 1.5;
+}
+@keyframes rpg-bouclier-entre {
+  from { opacity: 0; scale: .94; }
+  55% { opacity: 1; scale: 1.025; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes rpg-bouclier-reflet {
+  0%, 18% { translate: -58% 0; }
+  58%, 100% { translate: 58% 0; }
+}
+@keyframes rpg-bouclier-veille {
+  from { opacity: .24; scale: .96; }
+  to { opacity: .44; scale: 1.045; }
+}
+
+/* Le choc encaissé : l'égide claque, deux ondes s'ouvrent, l'écu se cabre.
+   Si le bouclier tombe à zéro (ou si c'est un bouclier de lumière touché),
+   il se fissure et perd ses éclats avant de s'effacer. */
+.rpg-bouclier-impact {
+  z-index: 12;
+  overflow: hidden;
+  border: 3px solid rgba(var(--rpg-bouclier-teinte), .88);
+  box-shadow:
+    inset 0 0 24px rgba(var(--rpg-bouclier-teinte), .52),
+    0 0 22px rgba(var(--rpg-bouclier-teinte), .55);
+  animation: rpg-bouclier-impact-vie .85s ease-out both;
+}
+.rpg-bouclier-impact__flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 48%, rgba(255, 255, 255, .88), rgba(var(--rpg-bouclier-teinte), .48) 34%, transparent 72%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: rpg-bouclier-impact-flash .42s ease-out both;
+}
+.rpg-bouclier-impact__anneau {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: 3px solid rgba(var(--rpg-bouclier-teinte), .9);
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(var(--rpg-bouclier-teinte), .62), inset 0 0 12px rgba(255, 255, 255, .42);
+  opacity: 0;
+  animation: rpg-bouclier-impact-onde .78s cubic-bezier(.18, .62, .32, 1) both;
+}
+.rpg-bouclier-impact__anneau--b { animation-delay: .12s; }
+.rpg-bouclier-impact .rpg-bouclier__ecu {
+  opacity: .94;
+  animation: rpg-bouclier-impact-ecu .85s ease-out both;
+}
+.rpg-bouclier-impact.is-brise .rpg-bouclier__ecu {
+  animation-name: rpg-bouclier-impact-brise;
+}
+.rpg-bouclier__ecu-fissure {
+  stroke: #ffffff;
+  stroke-width: 1.35;
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: rpg-bouclier-fissure .42s ease-out .18s both;
+}
+.rpg-bouclier-impact__eclat {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 13px;
+  clip-path: polygon(50% 0, 92% 38%, 66% 100%, 20% 78%, 6% 28%);
+  background: linear-gradient(160deg, #ffffff, rgba(var(--rpg-bouclier-teinte), .92) 58%, rgba(var(--rpg-bouclier-teinte), .34));
+  box-shadow: 0 0 7px rgba(var(--rpg-bouclier-teinte), .72);
+  opacity: 0;
+  animation: rpg-bouclier-eclat .66s ease-out calc(.12s + var(--d, 0ms)) both;
+}
+@keyframes rpg-bouclier-impact-vie {
+  0% { opacity: 0; scale: .98; }
+  12%, 68% { opacity: 1; }
+  100% { opacity: 0; scale: 1.015; }
+}
+@keyframes rpg-bouclier-impact-flash {
+  0% { opacity: 0; }
+  16% { opacity: .95; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-bouclier-impact-onde {
+  0% { opacity: .95; scale: .42; }
+  100% { opacity: 0; scale: 2.75; }
+}
+@keyframes rpg-bouclier-impact-ecu {
+  0% { opacity: 0; scale: .72; }
+  18% { opacity: 1; scale: 1.13; }
+  34% { scale: .97; }
+  50% { scale: 1.035; }
+  100% { opacity: 0; scale: 1.08; }
+}
+@keyframes rpg-bouclier-impact-brise {
+  0% { opacity: 0; scale: .72; rotate: 0deg; }
+  16% { opacity: 1; scale: 1.14; rotate: -1.5deg; }
+  30% { scale: .98; rotate: 1.6deg; }
+  44% { scale: 1.04; rotate: -1deg; }
+  100% { opacity: 0; scale: 1.16; rotate: 2deg; }
+}
+@keyframes rpg-bouclier-fissure {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes rpg-bouclier-eclat {
+  0% { opacity: 0; translate: -50% -50%; rotate: 0deg; scale: .35; }
+  14% { opacity: 1; }
+  100% {
+    opacity: 0;
+    translate: calc(-50% + var(--dx, 0px)) calc(-50% + var(--dy, 0px));
+    rotate: var(--r, 0deg);
+    scale: .22;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-bouclier-egide,
+  .rpg-bouclier-egide *,
+  .rpg-bouclier-impact,
+  .rpg-bouclier-impact * { animation: none !important; }
+  .rpg-bouclier-egide { opacity: .88; }
+  .rpg-bouclier-egide__reflet { display: none; }
+  .rpg-bouclier-egide .rpg-bouclier__ecu { opacity: .34; }
+  .rpg-bouclier-impact { display: none; }
+}
 .rpg-card.is-wounded .rpg-card__pt,
 .rpg-card.is-attacked.is-wounded .rpg-card__pt {
   border-color: #8c2027;

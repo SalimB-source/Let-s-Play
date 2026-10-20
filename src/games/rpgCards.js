@@ -1880,9 +1880,9 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Lance',
     cost: 3,
     rarity: 'rare',
-    bonus: { atk: 3, def: 1 },
-    donne: { envol: true },
-    text: 'Arme — Le porteur gagne +3/+1 et Envol.',
+    bonus: { atk: 1, def: 1 },
+    donne: { envol: true, bouclier: 1 },
+    text: 'Arme — Le porteur gagne +1/+1, Envol et un bouclier de 1.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
 

@@ -1108,6 +1108,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     if (!porteur) gain += 2.5;
     if (carte.donne?.esquive) gain += 1.5;
     if (carte.donne?.envol && !porteur?.envol) gain += 2.5;
+    if (carte.donne?.bouclier) gain += Math.max(0, Number(carte.donne.bouclier) || 0) * 0.9;
     if (carte.donne?.infiltration && !porteur?.infiltration) gain += 2.5;
     if (carte.donne?.furie) gain += 1 + carte.donne.furie * 0.7;
     if (carte.donne?.rapidite && !porteur?.rapidite) gain += 0.7;

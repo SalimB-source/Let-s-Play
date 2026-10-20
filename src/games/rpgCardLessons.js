@@ -64,7 +64,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['parade-du-verre', 'salem'],
     title: 'Un bouclier absorbe les dégâts',
-    text: 'La Parade de verre protège une créature alliée contre ses trois prochains dégâts, quelle que soit leur provenance. Le bouclier de lumière de Salem est différent : il le protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie le touche.',
+    text: 'La Parade de verre protège une créature alliée contre ses trois prochains dégâts, quelle que soit leur provenance. Le bouclier de lumière de Salem est différent : il le protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie le touche. Sur la table, une égide animée cerne la créature protégée ; quand elle encaisse, l’écu claque — et se fissure si le bouclier tombe.',
   },
   {
     id: 'degats-et-gel',

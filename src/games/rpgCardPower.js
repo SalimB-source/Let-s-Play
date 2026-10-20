@@ -195,6 +195,7 @@ export function valeurCarte(carte) {
     // déclenché de combat, lu comme un effet de dégâts ordinaire.
     let valeur = 1.3 * (carte.bonus?.atk ?? 0) + (carte.bonus?.def ?? 0);
     if (carte.donne?.envol) valeur += 2.5;
+    if (carte.donne?.bouclier) valeur += 0.7 * Math.max(0, Number(carte.donne.bouclier) || 0);
     if (carte.donne?.infiltration) valeur += 2.5;
     if (carte.donne?.esquive) valeur += 1.5;
     if (carte.donne?.furie) valeur += 1 + 0.7 * carte.donne.furie;

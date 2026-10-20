@@ -509,7 +509,7 @@ Quatre armes forment le prototype — une par élément, des effets **mixtes
 |---|---|---|---|
 | Takouba des pistes | Sable (commune) | 3 | **+2/+0 et Infiltration** : le porteur ne peut pas être bloqué, par personne — l'arme de départ, offerte dès la première collection, est devenue une arme d'assaut pur (aucune défense ajoutée). |
 | Bâton des citernes | Eau (rare) | 4 | +1/+2 ; à son arrivée et pour **3 manas** (capacité activée au tour du contrôleur) : un jeton **Serpent des citernes** 3/1 Rapidité, **détruit à la fin du tour** de sa création. |
-| Lance de givre | Neige (rare) | 3 | **+3/+1 et Envol** au porteur. |
+| Lance de givre | Neige (rare) | 3 | **+1/+1, Envol et un bouclier de 1** au porteur, tant que la Lance reste attachée ; le point de bouclier non absorbé repart avec elle si elle est remplacée. |
 | Armure de cendres | Braise (**mythique**, unique dans un deck) | 4 | **+3/+3, Rapidité** et **immunité contre la Braise** : le porteur ne peut pas être ciblé par la Braise et n'en reçoit aucun dégât (protection pilotée par `rpgEstProtegee`). |
 
 Le serpent des citernes est le deuxième jeton du catalogue
