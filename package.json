@@ -71,6 +71,7 @@
     "check:rpg-tourbillon-eau": "node scripts/rpg-tourbillon-eau-check.mjs",
     "check:rpg-roue-feu": "node scripts/rpg-roue-feu-check.mjs",
     "check:rpg-eclair-marteau": "node scripts/rpg-eclair-marteau-check.mjs",
+    "check:rpg-furie-preview": "node scripts/rpg-furie-preview-check.mjs",
     "check:rpg-table-droite": "node scripts/rpg-table-droite-check.mjs",
     "check:rpg-story-ui": "node scripts/rpg-story-ui-check.mjs && node scripts/rpg-story-narrative-check.mjs",
     "check:rpg-lecture": "node --test tests/rpg-story-lecture.test.js",

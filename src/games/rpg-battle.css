@@ -3949,6 +3949,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 3px 10px rgba(0, 0, 0, .25);
 }
 .rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* La Furie déclenchée, dans la preview comme sur la table : la peinture
+   alternative occupe toute la face, aucun anneau ne la rogne. */
+.rpg-hover-card-preview__face.is-furie {
+  border-width: 0;
+  background-image: none;
+}
 /* Les statistiques sont imprimées sur la face comme sur une carte posée :
    mêmes pastilles dorée/acier et mêmes icônes vectorielles que le plateau.
    Même bande aussi : deux rectangles côte à côte qui prennent toute la
@@ -4146,6 +4152,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-hover-card-preview__stats { justify-content: flex-start; color: #ffe9a0; font-size: 18px; font-weight: 900; white-space: nowrap; }
 .rpg-hover-card-preview__stats span { color: #e1cb9c; }
+.rpg-hover-card-preview__furie {
+  margin: 0;
+  color: #ffb59a;
+  font: 800 12px/1.35 var(--sans, system-ui, sans-serif);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
 /* L'aperçu rapide est texte seul : sans l'illustration, l'encadré d'infos
    prend toute la largeur du panneau — au survol comme sur le volet d'appui
    long, qui restent plus étroits que la fiche. La fiche du catalogue,

@@ -843,6 +843,22 @@ function cartesDesIds(ids = []) {
   return ids.map((id) => cardById(id)).filter(Boolean);
 }
 
+/** L'état Furie porté par une face de créature posée, lu sur son hôte DOM :
+ *  la table écrit `data-furie-*` sur la carte, comme elle écrit déjà ses
+ *  armes (`data-armes`). Les aperçus ouverts par un geste générique — appui
+ *  long, clic droit — n'ont pas l'entité sous la main : ils lisent donc la
+ *  même étiquette, avec les statistiques du moment, pour montrer la peinture
+ *  que la créature porte réellement. Hors Furie déclenchée : `null`. */
+function etatFurieDepuisHote(hote) {
+  if (hote?.dataset?.furieDeclenchee !== 'true') return null;
+  const atk = Number(hote.dataset.furieAtk);
+  const def = Number(hote.dataset.furieDef);
+  return {
+    atk: Number.isFinite(atk) ? atk : null,
+    def: Number.isFinite(def) ? def : null,
+  };
+}
+
 /** Le mot du sur-titre de la fiche : l'écran qui l'a ouverte — la table du
  *  duel, le catalogue — ou le jeu lui-même pour les autres (deck, guide,
  *  récit), que le clic droit ouvre aussi. */
@@ -1769,6 +1785,9 @@ export function TableCard({
       data-soin={soin ? soin.montant : undefined}
       data-miss={miss ? 'true' : undefined}
       data-armes={armes.length ? armes.join(' ') : undefined}
+      data-furie-declenchee={entite.furieDeclenchee ? 'true' : undefined}
+      data-furie-atk={entite.furieDeclenchee ? entite.atk : undefined}
+      data-furie-def={entite.furieDeclenchee ? entite.pv : undefined}
       data-tutorial-target={tutorialTarget}
       draggable={canDragBlocker}
       onClick={onClick}
@@ -2073,7 +2092,7 @@ function useLumiereCartes() {
   }, []);
 }
 
-function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null }) {
+export function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], furieDeclenchee = false, statsFurie = null, surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null }) {
   const faceRef = useRef(null);
   const carteId = carte?.id ?? null;
 
@@ -2163,6 +2182,16 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
+  // Une créature dont la Furie s'est enflammée ne se consulte pas sous sa
+  // peinture d'avant la blessure : l'aperçu montre le visuel qu'elle porte
+  // sur la table — illustration « furie » pleine page, sans cadre — et les
+  // statistiques qu'elle a gagnées. Sans statistiques transmises, le bonus
+  // imprimé de la Furie sert de repli.
+  const estEnFurie = estCreature && Boolean(furieDeclenchee);
+  const bonusFurie = Math.max(0, Number(carte.furie) || 0);
+  const statFurie = (valeur, repli) => (valeur == null || valeur === '' || !Number.isFinite(Number(valeur)) ? repli : Number(valeur));
+  const attaqueAffichee = estEnFurie ? statFurie(statsFurie?.atk, (carte.atk ?? 0) + bonusFurie) : carte.atk;
+  const defenseAffichee = estEnFurie ? statFurie(statsFurie?.def, (carte.def ?? 0) + bonusFurie) : carte.def;
   // La même signature que celle de la main : la face de l'aperçu — survol,
   // appui long, fiche du catalogue, annonce — porte le socle de la famille, et
   // sa ligne de type prend la teinte de cette famille.
@@ -2194,6 +2223,11 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
       {(estFiche || !estCreature) && <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>}
       <PastillesCarte carte={carte} pastilles={lecture.pastilles} className="rpg-hover-card-preview__pastilles" deplier />
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
+      {estEnFurie && (
+        <p className="rpg-hover-card-preview__furie" data-furie-declenchee="true">
+          Furie déclenchée — {attaqueAffichee}/{defenseAffichee}
+        </p>
+      )}
       {cibleAnnoncee && (
         <div className="rpg-spell-played__target rpg-hover-card-preview__target">
           {(cibleAnnoncee.illustrationUrl || cibleAnnoncee.illustrationId)
@@ -2240,24 +2274,27 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
   );
   // L'aperçu rapide — le survol à la souris comme l'appui long au doigt — ne
   // montre plus l'illustration de la carte : seul l'encadré de texte (coût,
-  // mots-clés, effets) s'affiche. La fiche du catalogue, l'annonce et les
-  // présentations centrées (magie jouée, effet activé) gardent leur face.
-  const estApercuRapide = variante === '' || variante === 'appui-long';
+  // mots-clés, effets) s'affiche. Exception : une Furie déclenchée a changé
+  // de peinture, et ce changement doit se voir dès la preview — sa face
+  // revient donc, comme sur la fiche. La fiche du catalogue, l'annonce et
+  // les présentations centrées (magie jouée, effet activé) gardent la leur.
+  const estApercuRapide = (variante === '' || variante === 'appui-long') && !estEnFurie;
   const face = (
     <div
       ref={faceRef}
-      className={`rpg-hover-card-preview__face ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
-      style={cardFrameStyle(carte)}
+      className={`rpg-hover-card-preview__face ${estEnFurie ? 'is-furie' : cardFrameClass(carte)} ${cardMotifClass(carte)}`}
+      style={estEnFurie ? undefined : cardFrameStyle(carte)}
+      data-furie-declenchee={estEnFurie ? 'true' : undefined}
       aria-hidden="true"
     >
-      <img src={cardArt(carte)} alt="" />
+      <img src={estEnFurie ? cardArtFurie(carte) : cardArt(carte)} alt="" />
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
       <SortSceau carte={carte} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" />
       {estCreature && (
-        <footer className="rpg-card__foot" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
-          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
-          <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
+        <footer className="rpg-card__foot" aria-label={`Attaque ${attaqueAffichee}, défense ${defenseAffichee}`}>
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
+          <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{defenseAffichee}</span></span>
         </footer>
       )}
     </div>
@@ -2265,12 +2302,12 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
   return (
     <aside
       ref={panelRef}
-      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${interactif ? ' is-interactif' : ''}${estApercuRapide ? ' rpg-hover-card-preview--texte-seul' : ''}`}
+      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${estEnFurie ? 'rpg-hover-card-preview--furie' : cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${interactif ? ' is-interactif' : ''}${estApercuRapide ? ' rpg-hover-card-preview--texte-seul' : ''}`}
       onPointerEnter={onPointerEnter ?? undefined}
       onPointerLeave={onPointerLeave ?? undefined}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
-      style={{ ...style, ...cardFrameStyle(carte) }}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${cibleLabel}`}
+      style={{ ...style, ...(estEnFurie ? {} : cardFrameStyle(carte)) }}
     >
       {variante === 'annonce' ? (
         <div className="rpg-hover-card-preview__layout">
@@ -2294,7 +2331,7 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
  * que le survol de la souris, posé sur un volet sombre qui l'isole du plateau.
  * N'importe quel toucher — le volet ou le bouton — le referme. L'appui long ne
  * joue jamais la carte : c'est une consultation, pas une action. */
-function ApercuCarteAppuiLong({ carte, armes = [], onFermer }) {
+function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, statsFurie = null, onFermer }) {
   const boutonFermerRef = useRef(null);
   // Le focus arrive sur « Fermer l'aperçu » sans faire défiler la page :
   // un `scroll` même minuscule interromptrait un appui long encore en cours —
@@ -2314,7 +2351,7 @@ function ApercuCarteAppuiLong({ carte, armes = [], onFermer }) {
     >
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__panel">
-        <HoverCardPreview carte={carte} armes={armes} variante="appui-long" />
+        <HoverCardPreview carte={carte} armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} variante="appui-long" />
       </div>
       <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
         Fermer l’aperçu
@@ -2340,7 +2377,7 @@ function ApercuCarteAppuiLong({ carte, armes = [], onFermer }) {
  *
  * `surface` est le mot du sur-titre — l'écran qui a ouvert la fiche ; `armes`
  * sont celles que porte la créature ouverte, quand le duel les connaît. */
-function ApercuCarteCatalogue({ carte, armes = [], surface = 'CATALOGUE', onFermer }) {
+function ApercuCarteCatalogue({ carte, armes = [], furieDeclenchee = false, statsFurie = null, surface = 'CATALOGUE', onFermer }) {
   const boutonFermerRef = useRef(null);
   // Le focus va au bouton Fermer sans faire défiler la grille : le catalogue
   // reste où le joueur l'avait laissé, et Échap referme depuis là.
@@ -2359,7 +2396,7 @@ function ApercuCarteCatalogue({ carte, armes = [], surface = 'CATALOGUE', onFerm
     >
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__panel">
-        <HoverCardPreview carte={carte} variante="catalogue" armes={armes} surface={surface} />
+        <HoverCardPreview carte={carte} variante="catalogue" armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} surface={surface} />
       </div>
       <div className="rpg-card-peek__bar">
         <button
@@ -4331,6 +4368,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [apercuAppui, setApercuAppui] = useState(null);
   // Armes portées par la créature pressée (vides pour toute autre carte).
   const [apercuAppuiArmes, setApercuAppuiArmes] = useState([]);
+  // La Furie déclenchée de la créature pressée, avec ses statistiques du
+  // moment (`null` partout ailleurs) : sa preview montre sa peinture furie.
+  const [apercuAppuiFurie, setApercuAppuiFurie] = useState(null);
   // La fiche : là où le doigt tient une seconde, la souris **clique** — au
   // catalogue depuis toujours, et par un clic droit partout ailleurs dans le
   // jeu : la carte s'ouvre en grand, illustration et effets, sans être jouée.
@@ -4339,6 +4379,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // la table du duel) et le mot du sur-titre : l'écran qui a ouvert la fiche.
   const [apercuCatalogueArmes, setApercuCatalogueArmes] = useState([]);
   const [apercuCatalogueSurface, setApercuCatalogueSurface] = useState('CATALOGUE');
+  // Même état Furie pour la fiche ouverte d'un clic droit sur la table.
+  const [apercuCatalogueFurie, setApercuCatalogueFurie] = useState(null);
   // La carte consultée (appui long ou fiche) garde le focus pendant que le
   // plateau passe au flou derrière elle : on retient l'élément sur lequel le
   // geste a été fait, et un effet y pose `data-apercu-source`, que la feuille
@@ -4352,7 +4394,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Changer d'écran (menu, deck, catalogue, duel) referme l'aperçu au doigt
     // comme la fiche ouverte d'un clic, et désarme les gestes en cours.
     setApercuAppui(null);
+    setApercuAppuiFurie(null);
     setApercuCatalogue(null);
+    setApercuCatalogueFurie(null);
     if (ecran !== 'partie' && tutorielActif) {
       etapeTutorielIdRef.current = null;
       setEtapeTutorielId(null);
@@ -5279,7 +5323,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const rectangle = event.currentTarget.getBoundingClientRect();
     const minuteurs = minuteursSurvolRef.current;
     const actuel = apercuSurvolRef.current;
-    const memeCarte = actuel?.carteId === carte.id;
+    const entiteId = event.currentTarget.dataset.entityId ?? null;
+    const furie = etatFurieDepuisHote(event.currentTarget);
+    // Deux exemplaires de la même carte ne partagent pas leur preview : une
+    // créature en Furie (ou équipée) n'hérite pas de l'aperçu de sa jumelle.
+    const memeCarte = actuel?.carteId === carte.id && (actuel?.entiteId ?? null) === entiteId;
     // En chemin vers la colonne d'infos de l'aperçu (ou dedans), les cartes
     // traversées ne le remplacent pas.
     if (!memeCarte && (couloirSurvolRef.current || dansApercuRef.current) && actuel) return;
@@ -5288,21 +5336,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     couloirSurvolRef.current = null;
     // Retour sur la carte déjà ouverte (après un passage sur son aperçu, ou
     // parce que la carte soulevée a glissé sous la souris) : l'aperçu reste
-    // lisible, sans rejouer le son ; il ne suit que si la carte a bougé.
+    // lisible, sans rejouer le son ; il suit la carte si elle a bougé et
+    // rafraîchit ce qu'elle porte — armes, et Furie si elle s'est enflammée.
     if (memeCarte) {
-      if (actuel.rectangle?.left !== rectangle.left || actuel.rectangle?.top !== rectangle.top) {
-        setApercuSurvol((courant) => (courant?.carteId === carte.id ? {
-          ...courant,
-          rectangle: {
-            left: rectangle.left,
-            right: rectangle.right,
-            top: rectangle.top,
-            bottom: rectangle.bottom,
-            width: rectangle.width,
-            height: rectangle.height,
-          },
-        } : courant));
-      }
+      setApercuSurvol((courant) => (courant?.carteId === carte.id && (courant.entiteId ?? null) === entiteId ? {
+        ...courant,
+        armesIds: armes,
+        furie,
+        rectangle: {
+          left: rectangle.left,
+          right: rectangle.right,
+          top: rectangle.top,
+          bottom: rectangle.bottom,
+          width: rectangle.width,
+          height: rectangle.height,
+        },
+      } : courant));
       return;
     }
     window.clearTimeout(minuteurs.lisible);
@@ -5314,7 +5363,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // d'après sa boîte réelle, avant la première peinture.
     setApercuSurvol({
       carteId: carte.id,
+      entiteId,
       armesIds: armes,
+      furie,
       rectangle: {
         left: rectangle.left,
         right: rectangle.right,
@@ -5418,6 +5469,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     annulerAppuiLong();
     jouerSfx('annuler');
     carteSourceApercuRef.current = null;
+    setApercuAppuiFurie(null);
     setApercuAppui(null);
   };
   /** Un seul geste pour toute la page : toute carte affichée porte un
@@ -5433,6 +5485,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!peutDemarrerAppuiLong(event)) return;
     annulerAppuiLong();
     const armesDeLaCarte = (hote.dataset.armes ?? '').split(' ').filter(Boolean);
+    const furieDeLaCarte = etatFurieDepuisHote(hote);
     appuiLongRef.current = startRpgLongPress(event, {
       source: hote,
       onTrigger: () => {
@@ -5446,6 +5499,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         // Le plateau se floute derrière la carte, pas elle : on retient l'élément.
         carteSourceApercuRef.current = hote;
         setApercuAppuiArmes(armesDeLaCarte);
+        setApercuAppuiFurie(furieDeLaCarte);
         setApercuAppui(carte.id);
       },
     });
@@ -5454,6 +5508,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const fermerApercuCatalogue = () => {
     jouerSfx('annuler');
     carteSourceApercuRef.current = null;
+    setApercuCatalogueFurie(null);
     setApercuCatalogue(null);
   };
   /** Le jeu est une surface de lecture : cliquer ou cliquer droit une carte
@@ -5465,13 +5520,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * flèches, ni compteur, ni pas de page. Pour lire une autre carte, on ouvre
    * la sienne. `armes` dit ce que porte la créature ouverte (duel), `surface`
    * le mot du sur-titre : l'écran qui a ouvert la fiche. */
-  const ouvrirApercuCatalogue = (carte, { armes = [], surface = 'CATALOGUE' } = {}) => {
+  const ouvrirApercuCatalogue = (carte, { armes = [], furie = null, surface = 'CATALOGUE' } = {}) => {
     if (!carte) return;
     annulerAppuiLong();
     masquerApercuSurvol();
     unlockSfx();
     jouerSfx('hover');
     setApercuCatalogueArmes(armes);
+    setApercuCatalogueFurie(furie);
     setApercuCatalogueSurface(surface);
     setApercuCatalogue(carte.id);
   };
@@ -5517,6 +5573,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     carteSourceApercuRef.current = hote;
     ouvrirApercuCatalogue(carte, {
       armes: (hote.dataset.armes ?? '').split(' ').filter(Boolean),
+      furie: etatFurieDepuisHote(hote),
       surface: SURFACE_FICHE[ecran] ?? 'LE SABLIER',
     });
   };
@@ -5759,6 +5816,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {apercuSurvol && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
+            furieDeclenchee={Boolean(apercuSurvol.furie)}
+            statsFurie={apercuSurvol.furie}
             style={apercuSurvol.style}
             panelRef={panelRef}
             interactif={Boolean(apercuSurvol.interactif)}
@@ -5766,11 +5825,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onPointerLeave={sortirApercuSurvol}
           />
         )}
-        {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
+        {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} furieDeclenchee={Boolean(apercuAppuiFurie)} statsFurie={apercuAppuiFurie} onFermer={fermerApercuAppui} />}
         {apercuCatalogue && (
           <ApercuCarteCatalogue
             carte={cardById(apercuCatalogue)}
             armes={cartesDesIds(apercuCatalogueArmes)}
+            furieDeclenchee={Boolean(apercuCatalogueFurie)}
+            statsFurie={apercuCatalogueFurie}
             surface={apercuCatalogueSurface}
             onFermer={fermerApercuCatalogue}
           />
@@ -9314,6 +9375,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             armes={cartesDesIds(apercuSurvol.armesIds)}
+            furieDeclenchee={Boolean(apercuSurvol.furie)}
+            statsFurie={apercuSurvol.furie}
             style={apercuSurvol.style}
             panelRef={panelRef}
             interactif={Boolean(apercuSurvol.interactif)}
@@ -9446,13 +9509,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onClose={fermerTutoriel}
         />
       )}
-      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} onFermer={fermerApercuAppui} />}
+      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} furieDeclenchee={Boolean(apercuAppuiFurie)} statsFurie={apercuAppuiFurie} onFermer={fermerApercuAppui} />}
       {/* La même fiche que le catalogue : le clic droit l'ouvre sur la table,
           en main, sur les terrains ou sur une pile — sans rien jouer. */}
       {apercuCatalogue && (
         <ApercuCarteCatalogue
           carte={cardById(apercuCatalogue)}
           armes={cartesDesIds(apercuCatalogueArmes)}
+          furieDeclenchee={Boolean(apercuCatalogueFurie)}
+          statsFurie={apercuCatalogueFurie}
           surface={apercuCatalogueSurface}
           onFermer={fermerApercuCatalogue}
         />
