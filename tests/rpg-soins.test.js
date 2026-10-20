@@ -24,7 +24,7 @@ import {
   regrouperSoins,
   sonDuSoin,
 } from '../src/games/rpgSoins.js';
-import { RPG_SFX_NAMES, hz, rpgSfx } from '../src/games/rpgAudio.js';
+import { RPG_SFX_NAMES, rpgSfx } from '../src/games/rpgAudio.js';
 
 /* ── Le journal des soins du moteur ──────────────────────────────────────────
    Chaque gain de vie RÉEL laisse `{ cote, entityId, montant }` — l'éclat vert
@@ -254,38 +254,14 @@ test('présentation : l’éclat dure le temps de ses animations', () => {
 
 /* ── Les sons du soin ─────────────────────────────────────────────────────── */
 
-test('sons : soin_vie et soin_vie_adverse sont au catalogue', () => {
-  assert.ok(RPG_SFX_NAMES.includes(RPG_SOIN_SFX));
-  assert.ok(RPG_SFX_NAMES.includes(RPG_SOIN_ADVERSE_SFX));
-  assert.ok(RPG_SFX_NAMES.includes('soin_long'), 'l’ancien son reste au catalogue');
-});
-
-const cloches = (nom) => rpgSfx(nom).filter((event) => event.kind === 'bell').sort((a, b) => a.at - b.at);
-
-test('sons : le soin du joueur monte — un arpège de cloches ascendant, de gauche à droite', () => {
-  const sequence = rpgSfx(RPG_SOIN_SFX);
-  const arpege = cloches(RPG_SOIN_SFX);
-  assert.ok(arpege.length >= 4, 'au moins quatre cloches');
-  for (let i = 1; i < arpege.length; i += 1) {
-    assert.ok(hz(arpege[i].n) > hz(arpege[i - 1].n), 'chaque cloche sonne plus haut que la précédente');
-    assert.ok(arpege[i].pan > arpege[i - 1].pan, 'l’arpège traverse la stéréo de gauche à droite');
+test('sons : le carillon de soin a quitté le catalogue, le routage reste en place', () => {
+  assert.equal(RPG_SOIN_SFX, 'soin_vie');
+  assert.equal(RPG_SOIN_ADVERSE_SFX, 'soin_vie_adverse');
+  for (const nom of [RPG_SOIN_SFX, RPG_SOIN_ADVERSE_SFX, 'soin_long']) {
+    assert.ok(!RPG_SFX_NAMES.includes(nom), `${nom} n’est plus déclaré`);
+    assert.equal(rpgSfx(nom), null, `${nom} se joue en silence`);
   }
-  assert.ok(sequence.some((event) => event.kind === 'noise' && event.filterTo > event.filter),
-    'un souffle qui s’ouvre vers l’aigu');
-  assert.ok(sequence.some((event) => event.kind === 'tone' && hz(event.slideTo) > hz(event.n)),
-    'une nappe qui glisse vers le haut');
-  assert.ok(!sequence.some((event) => event.kind === 'thud'), 'aucun impact grave : un soin n’est pas un coup');
-});
-
-test('sons : le soin adverse est le même geste, plus grave et plus discret', () => {
-  const joueur = cloches(RPG_SOIN_SFX);
-  const adverse = cloches(RPG_SOIN_ADVERSE_SFX);
-  assert.ok(adverse.length >= 3 && adverse.length < joueur.length, 'moins de cloches');
-  for (let i = 1; i < adverse.length; i += 1) {
-    assert.ok(hz(adverse[i].n) > hz(adverse[i - 1].n), 'l’arpège adverse monte lui aussi');
-  }
-  assert.ok(hz(adverse[0].n) < hz(joueur[0].n), 'il part plus bas');
-  assert.ok(hz(adverse.at(-1).n) < hz(joueur.at(-1).n), 'il culmine plus bas');
-  const crete = (nom) => Math.max(...rpgSfx(nom).map((event) => event.g));
-  assert.ok(crete(RPG_SOIN_ADVERSE_SFX) < crete(RPG_SOIN_SFX), 'il sonne moins fort');
+  // Le lot de soins continue de router ses noms de bruitage : le jour où un
+  // échantillon de soin est fourni, seul le catalogue aura à le déclarer.
+  assert.equal(sonDuSoin([{ cote: 'joueur', entityId: null, montant: 3 }]), RPG_SOIN_SFX);
 });

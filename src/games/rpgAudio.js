@@ -1,10 +1,11 @@
 /**
  * Signature sonore — « Le Sablier ».
  *
- * Les sons restent synthétisés en WebAudio (aucun asset, aucun téléchargement),
- * mais la palette quitte les bips rétro : transitoires feutrés, glissés de
- * hauteur, cloches à partiels et une réverbération courte donnent aux cartes,
- * au métal et au sable une présence plus cinématique.
+ * Les bruitages du jeu sont les échantillons fournis (cartes, frappes, souffle
+ * du feu, vagues, contres, renvois, chocs, pages) lus sous forme de fichiers.
+ * Le seul son encore synthétisé en WebAudio est l'effleurement de survol de
+ * l'interface : tout le reste du catalogue synthétique a été retiré, et les
+ * noms inconnus de `rpgSfx` restent silencieux.
  *
  * Deux couches :
  *  - `hz()` et `rpgSfx()` décrivent des événements purs, faciles à tester ;
@@ -59,362 +60,42 @@ export function hz(note) {
 const tone = (wave, note, at, dur, g = 0.5, options = {}) => ({
   kind: 'tone', w: wave, n: note, wave, note, at, dur, g, ...options,
 });
-const thud = (at, dur, g = 0.7, options = {}) => ({ kind: 'thud', at, dur, g, ...options });
-const noise = (at, dur, g = 0.4, options = {}) => ({ kind: 'noise', at, dur, g, ...options });
-const bell = (note, at, dur, g = 0.5, options = {}) => ({ kind: 'bell', n: note, note, at, dur, g, ...options });
-
-/** Toutes les séquences nommées sont jouables par le lecteur et couvertes par les tests. */
-export const RPG_SFX_NAMES = Object.freeze([
-  'apparition', 'victoire', 'defaite', 'whoosh', 'hit', 'heal', 'zone', 'bell', 'blip', 'explore', 'souffle',
-  'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap', 'mana',
-  'mythic_impact', 'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'soin_vie', 'soin_vie_adverse', 'bouclier',
-  'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'sword', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
-  'contresort', 'foudre_marteau', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'water_wave', 'card_countered', 'creature_return', 'block_impact', 'destruction_hit', 'page_turn', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
-]);
 
 /**
- * Séquences des actions du duel. Les options sont des nuances de synthèse :
- * `slideTo` fait glisser la note, `filter` façonne sa matière, `pan` ouvre la
- * stéréo et `send` dose la réverbération. Aucun son n'est un bip carré brut.
+ * Le catalogue du duel : les onze échantillons fournis plus le seul bruitage
+ * encore synthétisé, le survol. Les entrées `sample` documentent la durée et
+ * le gain de chaque fichier ; leur lecture passe par les éléments `<audio>`
+ * de `RpgAudioPlayer`.
+ */
+const RPG_SFX_TABLE = {
+  // Interface : le dernier son synthétisé du jeu — un effleurement de survol.
+  hover: [tone('sine', 'A4', 0, 0.055, 0.055, { attack: 0.003, filter: 1700, send: 0.035 })],
+
+  // Les échantillons fournis, dans `src/games/assets/`.
+  card_place: [{ kind: 'sample', at: 0, dur: 0.608, g: 1 }],
+  card_draw: [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }],
+  attackers_confirm: [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }],
+  player_attack_hit: [{ kind: 'sample', at: 0, dur: 0.666, g: 1 }],
+  flame_gust: [{ kind: 'sample', at: 0, dur: 2.287, g: 1 }],
+  water_wave: [{ kind: 'sample', at: 0, dur: 2.691, g: 1 }],
+  card_countered: [{ kind: 'sample', at: 0, dur: 1.602, g: 1 }],
+  creature_return: [{ kind: 'sample', at: 0, dur: 1.585, g: 1 }],
+  block_impact: [{ kind: 'sample', at: 0, dur: 0.967, g: 1 }],
+  destruction_hit: [{ kind: 'sample', at: 0, dur: 1.698, g: 1 }],
+  page_turn: [{ kind: 'sample', at: 0, dur: 1.097, g: 1 }],
+};
+
+/** Toutes les séquences nommées sont jouables par le lecteur et couvertes par les tests. */
+export const RPG_SFX_NAMES = Object.freeze(Object.keys(RPG_SFX_TABLE));
+
+/**
+ * Les événements d'un bruitage, clonés à la demande. Les options restent des
+ * nuances de synthèse (`filter`, `attack`, `send`) pour le seul son encore
+ * généré — le survol. Tout nom inconnu renvoie `null` : le jeu se tait.
  */
 export function rpgSfx(name) {
-  switch (name) {
-    // Arpège d'arrivée, souffle aspiré et éclat d'Astrolabe.
-    case 'mythic_impact':
-      return [
-        thud(0, 0.65, 0.85, { send: 0.28 }),
-        tone('sine', 'G2', 0, 0.55, 0.45, { slideTo: 'C1', send: 0.22 }),
-        noise(0, 0.12, 0.32, { filterType: 'lowpass', filter: 1300, filterTo: 180 }),
-        noise(0.04, 0.7, 0.18, { filterType: 'bandpass', filter: 650, filterTo: 120, send: 0.3 }),
-      ];
-    case 'apparition':
-      return [
-        noise(0, 0.42, 0.13, { filterType: 'bandpass', filter: 1500, filterTo: 360, q: 0.8, attack: 0.035, send: 0.34, pan: -0.22 }),
-        tone('sine', 'D3', 0, 0.55, 0.2, { slideTo: 'D4', filter: 1100, filterTo: 1800, attack: 0.045, send: 0.24 }),
-        tone('triangle', 'A4', 0.14, 0.46, 0.13, { filter: 2600, filterTo: 3800, attack: 0.035, pan: 0.12 }),
-        bell('D5', 0.26, 0.95, 0.22, { send: 0.42, pan: 0.18 }),
-      ];
-    case 'victoire':
-      return [
-        tone('triangle', 'C4', 0, 0.42, 0.19, { attack: 0.025, filter: 1900, send: 0.18, pan: -0.12 }),
-        tone('sine', 'E4', 0.045, 0.44, 0.15, { attack: 0.03, send: 0.2 }),
-        tone('triangle', 'G4', 0.12, 0.5, 0.16, { attack: 0.03, filter: 2500, send: 0.23, pan: 0.12 }),
-        tone('sine', 'C5', 0.2, 0.66, 0.16, { attack: 0.035, send: 0.27 }),
-        bell('G5', 0.28, 1.15, 0.22, { send: 0.44, pan: 0.12 }),
-      ];
-    case 'defaite':
-      return [
-        tone('sine', 'A4', 0, 0.48, 0.22, { slideTo: 'G4', filter: 1500, attack: 0.09, send: 0.2 }),
-        tone('triangle', 'F4', 0.28, 0.55, 0.19, { slideTo: 'E4', filter: 1050, attack: 0.1, send: 0.18 }),
-        tone('sine', 'D4', 0.58, 0.8, 0.2, { slideTo: 'C4', filter: 850, attack: 0.12, send: 0.24 }),
-      ];
-    case 'whoosh':
-      return [
-        noise(0, 0.27, 0.23, { filterType: 'bandpass', filter: 6200, filterTo: 720, q: 0.65, attack: 0.01, send: 0.16, pan: -0.18 }),
-        tone('sine', 'A4', 0, 0.24, 0.1, { slideTo: 'D3', filter: 1250, filterTo: 480, attack: 0.02, send: 0.12, pan: 0.15 }),
-      ];
-    case 'hit':
-      return [
-        thud(0, 0.23, 0.72, { from: 150, to: 42, filter: 460, send: 0.09 }),
-        noise(0, 0.11, 0.2, { filterType: 'lowpass', filter: 3400, filterTo: 850, attack: 0.002, send: 0.08 }),
-      ];
-    case 'heal':
-      return [
-        tone('sine', 'C5', 0, 0.34, 0.16, { slideTo: 'E5', attack: 0.035, send: 0.26, pan: -0.12 }),
-        bell('E5', 0.12, 0.78, 0.16, { send: 0.38, pan: 0.08 }),
-        tone('triangle', 'G5', 0.25, 0.46, 0.12, { filter: 3000, attack: 0.045, send: 0.27, pan: 0.14 }),
-      ];
-    case 'zone':
-      return [
-        thud(0, 0.38, 0.66, { from: 125, to: 34, filter: 360, send: 0.13 }),
-        tone('sawtooth', 'A2', 0.015, 0.42, 0.12, { slideTo: 'E2', filter: 520, filterTo: 220, attack: 0.04, send: 0.17 }),
-        noise(0.015, 0.31, 0.17, { filterType: 'lowpass', filter: 2200, filterTo: 420, attack: 0.012, send: 0.18, pan: 0.08 }),
-        bell('E5', 0.1, 0.72, 0.08, { send: 0.42, pan: -0.12 }),
-      ];
-    case 'bell':
-      return [bell('A5', 0, 1.1, 0.36, { send: 0.46 }), bell('E5', 0.025, 0.9, 0.17, { send: 0.4, pan: 0.08 })];
-    case 'blip':
-      return [tone('sine', 'B4', 0, 0.085, 0.13, { attack: 0.003, filter: 2100, send: 0.05 })];
-    case 'explore':
-      return [
-        tone('triangle', 'G4', 0, 0.22, 0.16, { filter: 1800, attack: 0.025, send: 0.18, pan: -0.1 }),
-        tone('sine', 'A4', 0.15, 0.24, 0.15, { attack: 0.03, send: 0.2 }),
-        bell('D5', 0.3, 0.62, 0.15, { send: 0.34, pan: 0.12 }),
-      ];
-    case 'souffle':
-      return [noise(0, 0.38, 0.24, { filterType: 'bandpass', filter: 2800, filterTo: 620, q: 0.7, attack: 0.08, send: 0.25, pan: -0.12 })];
-
-    // ── Plateau & tours ──────────────────────────────────────────────
-    case 'tour':
-      return [
-        bell('C6', 0, 0.92, 0.22, { send: 0.4, pan: 0.08 }),
-        tone('triangle', 'G4', 0.025, 0.4, 0.14, { filter: 1700, attack: 0.045, send: 0.18, pan: -0.08 }),
-      ];
-    case 'phase':
-      return [
-        tone('sine', 'G4', 0, 0.12, 0.15, { attack: 0.004, filter: 1500, send: 0.08 }),
-        tone('triangle', 'D5', 0.075, 0.17, 0.13, { attack: 0.008, filter: 2100, send: 0.1, pan: 0.08 }),
-      ];
-    case 'annonce':
-      return [
-        tone('triangle', 'D4', 0, 0.16, 0.15, { filter: 1700, send: 0.12, pan: -0.12 }),
-        tone('triangle', 'A4', 0.075, 0.19, 0.14, { filter: 2200, send: 0.14 }),
-        tone('sine', 'D5', 0.16, 0.32, 0.13, { send: 0.18, pan: 0.12 }),
-        bell('A5', 0.2, 0.66, 0.13, { send: 0.36 }),
-      ];
-    case 'pass':
-      return [
-        noise(0, 0.2, 0.14, { filterType: 'lowpass', filter: 1800, filterTo: 320, attack: 0.015, send: 0.12 }),
-        tone('sine', 'A3', 0, 0.32, 0.14, { slideTo: 'E3', filter: 600, attack: 0.06, send: 0.16 }),
-      ];
-
-    // ── Mana & terrains ──────────────────────────────────────────────
-    case 'terrain_pose':
-      return [
-        thud(0, 0.24, 0.56, { from: 108, to: 43, filter: 390, send: 0.1 }),
-        tone('sine', 'C3', 0.02, 0.38, 0.19, { slideTo: 'G3', attack: 0.045, filter: 620, send: 0.2, pan: -0.08 }),
-        noise(0.01, 0.16, 0.11, { filterType: 'lowpass', filter: 1500, filterTo: 500, attack: 0.004, send: 0.1, pan: 0.08 }),
-      ];
-    case 'terrain_tap':
-      return [
-        tone('sine', 'B4', 0, 0.1, 0.12, { attack: 0.003, filter: 2100, send: 0.08 }),
-        tone('triangle', 'E3', 0, 0.2, 0.17, { filter: 740, attack: 0.015, send: 0.12, pan: -0.08 }),
-      ];
-    case 'mana':
-      return [
-        tone('sine', 'A3', 0, 0.2, 0.16, { slideTo: 'E4', attack: 0.025, filter: 1100, send: 0.16 }),
-        bell('A5', 0.075, 0.48, 0.1, { send: 0.32, pan: 0.1 }),
-      ];
-
-    // ── Cartes ───────────────────────────────────────────────────────
-    case 'creature':
-      return [
-        noise(0, 0.16, 0.16, { filterType: 'lowpass', filter: 2100, filterTo: 760, attack: 0.008, send: 0.12, pan: -0.12 }),
-        thud(0.025, 0.28, 0.44, { from: 118, to: 39, filter: 410, send: 0.1 }),
-        tone('triangle', 'C4', 0.07, 0.2, 0.15, { filter: 1400, send: 0.12 }),
-        tone('sine', 'G4', 0.2, 0.42, 0.13, { filter: 2100, attack: 0.03, send: 0.2, pan: 0.12 }),
-      ];
-    case 'magie':
-      return [
-        noise(0, 0.24, 0.1, { filterType: 'bandpass', filter: 3600, filterTo: 900, q: 0.8, attack: 0.03, send: 0.2, pan: -0.16 }),
-        bell('D5', 0.025, 0.86, 0.2, { send: 0.4 }),
-        tone('sine', 'A4', 0.11, 0.37, 0.15, { slideTo: 'D5', attack: 0.04, send: 0.22, pan: 0.14 }),
-        tone('triangle', 'F#5', 0.2, 0.4, 0.11, { filter: 2600, attack: 0.045, send: 0.3 }),
-      ];
-    case 'pioche':
-      return [
-        noise(0, 0.11, 0.12, { filterType: 'bandpass', filter: 3000, filterTo: 1200, q: 1.1, attack: 0.003, send: 0.08, pan: -0.1 }),
-        tone('triangle', 'G5', 0, 0.1, 0.12, { attack: 0.004, filter: 2800, send: 0.08 }),
-        tone('sine', 'D6', 0.06, 0.18, 0.1, { attack: 0.006, send: 0.14, pan: 0.1 }),
-      ];
-    case 'destruction':
-      return [
-        noise(0, 0.39, 0.25, { filterType: 'lowpass', filter: 2600, filterTo: 360, attack: 0.008, send: 0.2 }),
-        thud(0.045, 0.3, 0.54, { from: 122, to: 34, filter: 380, send: 0.14 }),
-        tone('sawtooth', 'G2', 0.02, 0.34, 0.12, { slideTo: 'D2', filter: 390, filterTo: 180, attack: 0.02, send: 0.16, pan: 0.1 }),
-      ];
-    case 'burn':
-      return [
-        thud(0, 0.27, 0.48, { from: 125, to: 38, filter: 410, send: 0.12 }),
-        tone('sawtooth', 'A2', 0.015, 0.42, 0.12, { slideTo: 'E2', filter: 660, filterTo: 230, attack: 0.025, send: 0.16 }),
-        noise(0.025, 0.42, 0.2, { filterType: 'bandpass', filter: 1450, filterTo: 420, q: 0.7, attack: 0.02, send: 0.2, pan: 0.14 }),
-        tone('triangle', 'E3', 0.09, 0.25, 0.08, { slideTo: 'C3', filter: 650, attack: 0.03, send: 0.12, pan: -0.12 }),
-      ];
-    case 'soin_long':
-      return [
-        tone('sine', 'C5', 0, 0.3, 0.15, { attack: 0.03, send: 0.18, pan: -0.12 }),
-        tone('triangle', 'E5', 0.13, 0.34, 0.13, { filter: 2700, attack: 0.04, send: 0.22 }),
-        bell('G5', 0.27, 0.82, 0.15, { send: 0.38, pan: 0.12 }),
-      ];
-    // Gain de vie de votre camp, quelle qu'en soit la source : un souffle
-    // clair qui s'ouvre vers l'aigu, une nappe qui monte d'une quinte, puis un
-    // arpège de cloches en ré majeur — la tonalité de la magie — qui s'élève de
-    // gauche à droite. L'exact contraire des impacts graves et descendants.
-    case 'soin_vie':
-      return [
-        noise(0, 0.78, 0.07, { filterType: 'bandpass', filter: 900, filterTo: 5200, q: 1.1, attack: 0.3, send: 0.42, pan: -0.12 }),
-        tone('sine', 'D4', 0, 0.72, 0.12, { slideTo: 'A4', attack: 0.12, filter: 1600, filterTo: 2800, send: 0.24 }),
-        tone('triangle', 'A4', 0.04, 0.7, 0.05, { slideTo: 'D5', attack: 0.16, filter: 2200, send: 0.3, pan: 0.1 }),
-        bell('D5', 0.08, 0.72, 0.14, { send: 0.4, pan: -0.26 }),
-        bell('F#5', 0.17, 0.74, 0.13, { send: 0.42, pan: -0.08 }),
-        bell('A5', 0.26, 0.82, 0.13, { send: 0.46, pan: 0.1 }),
-        bell('D6', 0.36, 1.15, 0.15, { send: 0.52, pan: 0.24 }),
-      ];
-    // Le même geste quand c'est l'adversaire qui se relève : une tierce plus
-    // bas, en si mineur (le relatif de ré), plus court et plus feutré — on
-    // l'entend sans le confondre avec le vôtre.
-    case 'soin_vie_adverse':
-      return [
-        noise(0, 0.7, 0.055, { filterType: 'bandpass', filter: 650, filterTo: 3000, q: 1.1, attack: 0.28, send: 0.38, pan: 0.12 }),
-        tone('sine', 'B3', 0, 0.68, 0.11, { slideTo: 'F#4', attack: 0.12, filter: 1200, filterTo: 2000, send: 0.22 }),
-        bell('B4', 0.08, 0.7, 0.12, { send: 0.38, pan: 0.24 }),
-        bell('D5', 0.18, 0.72, 0.11, { send: 0.4, pan: 0.08 }),
-        bell('F#5', 0.29, 1, 0.12, { send: 0.46, pan: -0.1 }),
-      ];
-    case 'bouclier':
-      return [
-        tone('sine', 'C4', 0, 0.44, 0.16, { filter: 900, attack: 0.035, send: 0.2 }),
-        bell('E5', 0.03, 1.02, 0.2, { send: 0.42, pan: 0.1 }),
-        tone('triangle', 'G5', 0.12, 0.36, 0.09, { filter: 3100, attack: 0.04, send: 0.3, pan: -0.12 }),
-      ];
-
-    // ── Combat ───────────────────────────────────────────────────────
-    case 'attaque_declaree':
-      return [
-        noise(0, 0.16, 0.13, { filterType: 'bandpass', filter: 3100, filterTo: 900, attack: 0.01, send: 0.1, pan: -0.14 }),
-        tone('triangle', 'C4', 0.02, 0.17, 0.16, { slideTo: 'E4', filter: 1500, attack: 0.02, send: 0.14 }),
-        tone('sine', 'G4', 0.105, 0.2, 0.13, { attack: 0.02, send: 0.16, pan: 0.12 }),
-      ];
-    case 'attaque_confirmee':
-      return [
-        thud(0, 0.23, 0.66, { from: 160, to: 43, filter: 480, send: 0.1 }),
-        noise(0.012, 0.19, 0.19, { filterType: 'lowpass', filter: 3100, filterTo: 680, attack: 0.002, send: 0.1 }),
-        tone('triangle', 'C5', 0.035, 0.19, 0.16, { slideTo: 'G4', filter: 2100, attack: 0.005, send: 0.14 }),
-      ];
-    case 'blocage':
-      return [
-        thud(0, 0.17, 0.53, { from: 180, to: 78, filter: 650, send: 0.08 }),
-        noise(0.004, 0.11, 0.1, { filterType: 'bandpass', filter: 2100, filterTo: 950, q: 1.5, attack: 0.003, send: 0.12 }),
-        bell('E5', 0.035, 0.38, 0.11, { send: 0.27, pan: 0.08 }),
-      ];
-    case 'choc_lames':
-      return [
-        thud(0, 0.14, 0.31, { from: 220, to: 96, filter: 920, send: 0.05 }),
-        noise(0, 0.12, 0.22, { filterType: 'bandpass', filter: 5200, filterTo: 1450, q: 1.25, attack: 0.001, send: 0.16, pan: -0.12 }),
-        tone('sawtooth', 'D5', 0.002, 0.16, 0.1, { filter: 3100, filterTo: 1250, attack: 0.002, send: 0.12, pan: -0.12 }),
-        bell('A5', 0.006, 0.42, 0.16, { send: 0.31, pan: 0.11 }),
-        bell('D6', 0.024, 0.34, 0.09, { send: 0.26, pan: -0.08 }),
-      ];
-    case 'combat':
-      return [
-        thud(0, 0.32, 0.75, { from: 178, to: 37, filter: 430, send: 0.13 }),
-        tone('sawtooth', 'A2', 0.02, 0.3, 0.14, { slideTo: 'E2', filter: 520, filterTo: 210, attack: 0.012, send: 0.15 }),
-        noise(0.015, 0.27, 0.22, { filterType: 'lowpass', filter: 3100, filterTo: 420, attack: 0.005, send: 0.15 }),
-        tone('triangle', 'E4', 0.09, 0.2, 0.12, { slideTo: 'C4', filter: 1800, send: 0.12, pan: 0.12 }),
-      ];
-    case 'degats':
-      return [
-        thud(0, 0.2, 0.65, { from: 145, to: 45, filter: 440, send: 0.08 }),
-        noise(0, 0.12, 0.13, { filterType: 'lowpass', filter: 2700, filterTo: 500, attack: 0.002, send: 0.08 }),
-        tone('sine', 'C3', 0, 0.22, 0.14, { slideTo: 'G2', filter: 560, attack: 0.004, send: 0.11 }),
-      ];
-    case 'degats_sorcier':
-      return [
-        thud(0, 0.19, 0.59, { from: 148, to: 48, filter: 500, send: 0.08 }),
-        tone('triangle', 'G4', 0.045, 0.18, 0.13, { slideTo: 'D4', filter: 1600, attack: 0.008, send: 0.14 }),
-        noise(0, 0.12, 0.12, { filterType: 'bandpass', filter: 2250, filterTo: 620, q: 0.8, attack: 0.003, send: 0.1 }),
-      ];
-    // Une frappe de Samouraï : la lame fend l'air (souffle filtré), mord
-    // (corps sourd très bref) et tinte (deux résonances d'acier). Rien à voir
-    // avec le souffle du feu : c'est l'acier qui parle, pas la Braise.
-    case 'sword':
-      return [
-        noise(0, 0.24, 0.2, { filterType: 'highpass', filter: 5400, filterTo: 900, attack: 0.004, send: 0.12, pan: -0.16 }),
-        tone('sawtooth', 'A4', 0.008, 0.19, 0.1, { slideTo: 'A3', filter: 3400, filterTo: 700, attack: 0.005, send: 0.1, pan: 0.1 }),
-        bell('E6', 0.05, 0.52, 0.13, { send: 0.3, pan: 0.18 }),
-        bell('A5', 0.082, 0.36, 0.09, { send: 0.24, pan: -0.1 }),
-        thud(0.02, 0.14, 0.3, { from: 170, to: 70, filter: 800, send: 0.06 }),
-      ];
-    case 'coup_rapide':
-      return [
-        noise(0, 0.14, 0.14, { filterType: 'highpass', filter: 2800, filterTo: 800, attack: 0.003, send: 0.08, pan: -0.18 }),
-        tone('triangle', 'E5', 0, 0.1, 0.14, { filter: 2800, attack: 0.003, send: 0.08 }),
-        tone('sine', 'G5', 0.055, 0.11, 0.12, { attack: 0.004, send: 0.1, pan: 0.08 }),
-        bell('B5', 0.1, 0.34, 0.1, { send: 0.22, pan: 0.18 }),
-      ];
-    case 'impact':
-      return [
-        thud(0, 0.39, 0.78, { from: 190, to: 32, filter: 370, send: 0.15 }),
-        tone('sawtooth', 'G1', 0.02, 0.4, 0.14, { slideTo: 'D1', filter: 320, filterTo: 150, attack: 0.012, send: 0.17 }),
-        noise(0.018, 0.34, 0.24, { filterType: 'lowpass', filter: 3700, filterTo: 350, attack: 0.003, send: 0.18, pan: -0.08 }),
-        bell('C4', 0.045, 0.65, 0.12, { send: 0.33, pan: 0.12 }),
-      ];
-
-    // ── Magie & contre ───────────────────────────────────────────────
-    // L'Éclair du marteau : la charge monte pendant que le marteau tombe
-    // (un grésillement qui s'aiguise, une nappe qui se tend), le ciel craque
-    // à l'instant de l'impact — 0,26 s, là où la cinématique frappe — puis
-    // le tonnerre roule et les arcs finissent de crépiter. Le craquement est
-    // bref et filtré haut : c'est la foudre qui claque, pas un coup de poing.
-    case 'foudre_marteau':
-      return [
-        noise(0, 0.26, 0.09, { filterType: 'bandpass', filter: 2400, filterTo: 6800, q: 1.4, attack: 0.05, send: 0.18, pan: -0.14 }),
-        tone('sine', 'A3', 0, 0.26, 0.08, { slideTo: 'A5', filter: 1800, filterTo: 3400, attack: 0.08, send: 0.14, pan: 0.1 }),
-        noise(0.26, 0.09, 0.5, { filterType: 'highpass', filter: 3200, filterTo: 1400, attack: 0.001, send: 0.22 }),
-        thud(0.26, 0.5, 0.8, { from: 175, to: 30, filter: 360, send: 0.24 }),
-        tone('sawtooth', 'G1', 0.27, 0.62, 0.15, { slideTo: 'D1', filter: 300, filterTo: 120, attack: 0.01, send: 0.26, pan: -0.08 }),
-        noise(0.28, 0.55, 0.16, { filterType: 'lowpass', filter: 1600, filterTo: 160, attack: 0.004, send: 0.28 }),
-        noise(0.34, 0.4, 0.07, { filterType: 'bandpass', filter: 5200, filterTo: 2600, q: 1.6, attack: 0.01, send: 0.2, pan: 0.16 }),
-        bell('E6', 0.29, 0.4, 0.08, { send: 0.3, pan: 0.12 }),
-      ];
-    case 'contresort':
-      return [
-        bell('D6', 0, 0.76, 0.22, { send: 0.44, pan: 0.08 }),
-        noise(0.045, 0.2, 0.12, { filterType: 'bandpass', filter: 4800, filterTo: 850, q: 0.8, attack: 0.015, send: 0.2, pan: -0.18 }),
-        tone('sine', 'A4', 0.1, 0.19, 0.13, { slideTo: 'E4', attack: 0.018, filter: 1600, send: 0.16 }),
-        tone('triangle', 'D4', 0.22, 0.24, 0.12, { slideTo: 'A3', filter: 1050, attack: 0.025, send: 0.18, pan: 0.12 }),
-      ];
-    case 'card_place':
-      // L’échantillon réel est lu par RpgAudioPlayer, cette entrée documente
-      // néanmoins l’action dans le catalogue commun des bruitages.
-      return [{ kind: 'sample', at: 0, dur: 0.608, g: 1 }];
-    case 'card_draw':
-      return [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }];
-    case 'attackers_confirm':
-      return [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }];
-    case 'player_attack_hit':
-      return [{ kind: 'sample', at: 0, dur: 0.666, g: 1 }];
-    case 'flame_gust':
-      return [{ kind: 'sample', at: 0, dur: 2.287, g: 1 }];
-    case 'water_wave':
-      return [{ kind: 'sample', at: 0, dur: 2.691, g: 1 }];
-    case 'card_countered':
-      return [{ kind: 'sample', at: 0, dur: 1.602, g: 1 }];
-    case 'creature_return':
-      return [{ kind: 'sample', at: 0, dur: 1.585, g: 1 }];
-    case 'block_impact':
-      return [{ kind: 'sample', at: 0, dur: 0.967, g: 1 }];
-    case 'destruction_hit':
-      return [{ kind: 'sample', at: 0, dur: 1.698, g: 1 }];
-    case 'page_turn':
-      return [{ kind: 'sample', at: 0, dur: 1.097, g: 1 }];
-
-    // ── Interface : retours courts, feutrés et distincts ─────────────
-    case 'menu':
-      return [
-        tone('sine', 'D5', 0, 0.1, 0.1, { attack: 0.004, filter: 2100, send: 0.07, pan: -0.08 }),
-        tone('triangle', 'A5', 0.045, 0.13, 0.08, { attack: 0.006, filter: 2800, send: 0.1, pan: 0.08 }),
-      ];
-    case 'select':
-      return [
-        tone('triangle', 'D4', 0, 0.16, 0.13, { filter: 1600, attack: 0.012, send: 0.1, pan: -0.08 }),
-        tone('sine', 'A4', 0.07, 0.18, 0.11, { attack: 0.015, send: 0.12 }),
-        bell('D5', 0.14, 0.36, 0.1, { send: 0.23, pan: 0.08 }),
-      ];
-    case 'erreur':
-      return [
-        tone('triangle', 'D3', 0, 0.19, 0.19, { slideTo: 'C#3', filter: 700, attack: 0.008, send: 0.08 }),
-        tone('sine', 'A2', 0.12, 0.26, 0.14, { slideTo: 'G2', filter: 500, attack: 0.012, send: 0.08 }),
-        thud(0.01, 0.16, 0.29, { from: 92, to: 48, filter: 370, send: 0.05 }),
-      ];
-    case 'pile':
-      return [
-        noise(0, 0.09, 0.1, { filterType: 'bandpass', filter: 2800, filterTo: 1050, q: 1.2, attack: 0.002, send: 0.06, pan: -0.08 }),
-        tone('sine', 'A4', 0.025, 0.09, 0.09, { attack: 0.004, filter: 1800, send: 0.06 }),
-        tone('triangle', 'D5', 0.075, 0.12, 0.08, { attack: 0.005, filter: 2200, send: 0.08, pan: 0.08 }),
-      ];
-    case 'annuler':
-      return [
-        noise(0, 0.12, 0.1, { filterType: 'lowpass', filter: 1900, filterTo: 600, attack: 0.008, send: 0.08, pan: 0.1 }),
-        tone('sine', 'A4', 0, 0.15, 0.1, { slideTo: 'F4', filter: 1500, send: 0.08 }),
-        tone('triangle', 'D4', 0.1, 0.21, 0.1, { filter: 950, attack: 0.02, send: 0.12, pan: -0.08 }),
-      ];
-    case 'hover':
-      return [tone('sine', 'A4', 0, 0.055, 0.055, { attack: 0.003, filter: 1700, send: 0.035 })];
-
-    default:
-      return null;
-  }
+  const sequence = RPG_SFX_TABLE[name];
+  return sequence ? sequence.map((event) => ({ ...event })) : null;
 }
 
 function makeReverbImpulse(context) {
