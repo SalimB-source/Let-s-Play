@@ -1357,6 +1357,50 @@ test('une blessure mortelle de la Braise est journalisée comme telle', () => {
   assert.deepEqual(blessure.elements, ['braise']);
 });
 
+test('le journal des blessures nomme la carte du coup : l’Éclair du marteau se reconnaît', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+
+  // La créature que le marteau touche sans la tuer.
+  donner(duel, 'sorcier', 'leviathan');
+  const leviathan = rpgJouerCreature(duel, 'sorcier', 'leviathan').entite;
+  const pvAvant = leviathan.pv;
+  donner(duel, 'joueur', 'eclair-du-marteau');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', leviathan.id).ok, true);
+  assert.equal(leviathan.pv, pvAvant - 3, 'le marteau inflige ses 3 dégâts');
+  const blessureMarteau = rpgDerniereBlessure(duel, leviathan.id);
+  assert.equal(blessureMarteau.sourceCarteId, 'eclair-du-marteau',
+    'la table saura faire tomber la foudre sur cette créature — et sur elle seule');
+  assert.deepEqual(blessureMarteau.elements, ['neige']);
+  assert.equal(blessureMarteau.mortelle, false);
+
+  // Un autre sort de Neige nomme sa propre carte : pas de marteau pour lui.
+  donner(duel, 'sorcier', 'dune-marchante');
+  const dune = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
+  donner(duel, 'joueur', 'poigne-de-givre');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', dune.id).ok, true);
+  assert.equal(rpgDerniereBlessure(duel, dune.id).sourceCarteId, 'poigne-de-givre',
+    'la Poigne de givre ne se déguise pas en Éclair du marteau');
+
+  // Un coup direct, sans carte lancée, reste anonyme.
+  rpgBlesserCreature(duel, 'sorcier', leviathan.id, 1, 'neige', null, 'capacite');
+  assert.equal(rpgDerniereBlessure(duel, leviathan.id).sourceCarteId, null,
+    'une capacité ne fait pas tomber le marteau');
+
+  // La créature que le marteau tue : la foudre tombera sur son emplacement.
+  donner(duel, 'sorcier', 'fennec-des-decombres');
+  const fennec = rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres').entite;
+  donner(duel, 'joueur', 'eclair-du-marteau');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', fennec.id).ok, true);
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === fennec.id), false,
+    'le Fennec ne survit pas au marteau');
+  const blessureMortelle = rpgDerniereBlessure(duel, fennec.id);
+  assert.equal(blessureMortelle.sourceCarteId, 'eclair-du-marteau');
+  assert.equal(blessureMortelle.mortelle, true,
+    'la table fera tomber la foudre là où la créature se tenait');
+});
+
 test('le journal de destruction distingue la source immédiate et les capacités déclenchées', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
