@@ -1,9 +1,24 @@
-# 08 — Musiques d'ambiance du mode Histoire
+# 08 — Musiques et ambiances du Sablier
 
-Chacune des cinq **Tours de Bab El** dispose de sa propre boucle musicale
+## Thème principal hors parties
+
+Hors des parties (`ecran !== 'partie'` : écran d'accueil, menus, atelier de
+decks, catalogue, Souk, récit, journal, paramètres…), le thème principal du jeu
+**`public/Desert Solitude with Percussion.mp3`** (`RPG_MAIN_THEME_FILE` /
+`RpgMainThemeMusic` dans `src/games/rpgPlateauMusic.js`) tourne en boucle et
+suit le réglage général du son (`sonActif`) ainsi que le curseur de volume des
+musiques (`volumeMusique`). Dès qu'une partie démarre (`ecran === 'partie'`), il
+s'interrompt immédiatement au profit de la musique du plateau ou de la tour,
+puis reprend au retour dans les menus.
+
+## Musiques d'ambiance des plateaux et des tours
+
+En partie (`ecran === 'partie'`), chaque plateau dispose de sa piste MP3 dédiée
+(`RpgPlateauMusic`), complétée par les boucles synthétisées en WebAudio des
+Tours de Bab El (`src/games/rpgAmbientMusic.js`).
+
+Chacune des **Tours de Bab El** dispose de sa propre boucle musicale
 d'ambiance, intégralement **synthétisée en WebAudio** (`src/games/rpgAmbientMusic.js`).
-Aucun fichier audio n'est chargé : zéro poids dans le bundle, aucune latence,
-silence impossible au premier geste joueur.
 
 La classe `RpgAmbientMusic` suit le même contrat de cycle de vie que la bande-son
 de *Vice City Rush* (`cityRushAudio.js`) :

@@ -1,8 +1,14 @@
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useEffect, useCallback, useContext, useRef } from 'react';
 import { AuthContext } from '../auth/AuthContext';
 import { supabase, supabaseConfigStatus, turnstileSiteKey } from '../lib/supabase';
 import { describeAuthError } from '../lib/authErrors';
 import SignupProtection from '../components/SignupProtection';
+import {
+  RpgMainThemeMusic,
+  deposerThemePrincipal,
+  lirePreferencesSonoresRpg,
+  reprendreThemePrincipal,
+} from './rpgPlateauMusic.js';
 import './rpg-desktop-login.css';
 
 /**
@@ -297,6 +303,8 @@ function LoginForm({ onOffline }) {
 
 export default function RpgDesktopLogin({ children }) {
   const [horsLigne, setHorsLigne] = useState(false);
+  const monteRef = useRef(true);
+  const themeRef = useRef(null);
 
   // Hors coque PC (navigateur, APK) : aucun gate
   const [estDesktop, setEstDesktop] = useState(() => estDansCoqueDesktop());
@@ -308,11 +316,51 @@ export default function RpgDesktopLogin({ children }) {
     }
   }, [estDesktop]);
 
+  useEffect(() => {
+    monteRef.current = true;
+    return () => {
+      monteRef.current = false;
+      themeRef.current?.destroy();
+      themeRef.current = null;
+      reprendreThemePrincipal()?.destroy();
+    };
+  }, []);
+
   // Lecture défensive du contexte d'auth : hors provider (tests jsdom), pas de gate
   let auth = null;
-  try { auth = useContext(AuthContext); } catch { return children; }
+  try { auth = useContext(AuthContext); } catch { auth = null; }
+  const session = auth?.session;
+  const user = auth?.user;
+  const loading = auth?.loading;
+  const isDemo = auth?.isDemo;
+  const connecte = Boolean(session?.user) || (Boolean(user) && !isDemo && Boolean(session));
+  const estConnecte = Boolean(session?.user) || connecte;
+  const afficheConnexion = Boolean(auth && estDesktop && !horsLigne && !loading && !estConnecte);
+
+  useEffect(() => {
+    if (!afficheConnexion) return undefined;
+    const { sonActif, volumeMusique } = lirePreferencesSonoresRpg();
+    const theme = reprendreThemePrincipal() ?? new RpgMainThemeMusic();
+    theme.setVolume(volumeMusique);
+    theme.setMuted(!sonActif);
+    themeRef.current = theme;
+    if (sonActif) void theme.start();
+    const surVisibilite = () => {
+      if (document.hidden) theme.pause();
+      else if (sonActif) theme.resume();
+    };
+    document.addEventListener('visibilitychange', surVisibilite);
+    return () => {
+      document.removeEventListener('visibilitychange', surVisibilite);
+      if (themeRef.current === theme) {
+        themeRef.current = null;
+        if (monteRef.current) deposerThemePrincipal(theme);
+        else theme.destroy();
+      }
+    };
+  }, [afficheConnexion]);
+
   if (!auth) return children;
-  const { session, user, loading, isDemo } = auth;
 
   // Non-desktop : laisser passer
   if (!estDesktop) return children;
@@ -334,13 +382,6 @@ export default function RpgDesktopLogin({ children }) {
   if (loading) {
     return <div className="rpg-desktop-login__chargement">Chargement du compte…</div>;
   }
-
-  // Connecté avec un vrai compte Supabase → laisser entrer
-  // isDemo = true signifie qu'on n'a qu'un profil démo (pas de session Supabase) → pas considéré connecté sur PC
-  const connecte = Boolean(session?.user) || (Boolean(user) && !isDemo && Boolean(session));
-  // Alternative : certains builds utilisent session seule
-  const connecteStrict = Boolean(session?.user);
-  const estConnecte = connecteStrict || connecte;
 
   if (estConnecte) {
     return (

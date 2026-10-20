@@ -251,6 +251,39 @@ function servirFichier(res, req, fichier, chemin, { cache } = {}) {
     res.writeHead(404);
     return res.end();
   }
+  entetes['accept-ranges'] = 'bytes';
+
+  const plage = req.headers?.range;
+  if (typeof plage === 'string' && plage.startsWith('bytes=') && taille > 0) {
+    const correspondance = /^bytes=(\d*)-(\d*)$/.exec(plage.trim());
+    if (!correspondance || (!correspondance[1] && !correspondance[2])) {
+      res.writeHead(416, { ...entetes, 'content-range': `bytes */${taille}` });
+      return res.end();
+    }
+    const debut = correspondance[1]
+      ? Number.parseInt(correspondance[1], 10)
+      : Math.max(0, taille - Number.parseInt(correspondance[2], 10));
+    const finDemandee = correspondance[1] && correspondance[2]
+      ? Number.parseInt(correspondance[2], 10)
+      : taille - 1;
+    const fin = Math.min(finDemandee, taille - 1);
+    if (!Number.isFinite(debut) || !Number.isFinite(fin) || debut >= taille || debut > fin) {
+      res.writeHead(416, { ...entetes, 'content-range': `bytes */${taille}` });
+      return res.end();
+    }
+    entetes['content-range'] = `bytes ${debut}-${fin}/${taille}`;
+    entetes['content-length'] = String(fin - debut + 1);
+    if (req.method === 'HEAD') {
+      res.writeHead(206, entetes);
+      return res.end();
+    }
+    res.writeHead(206, entetes);
+    const fluxPartiel = createReadStream(fichier, { start: debut, end: fin });
+    fluxPartiel.on('error', () => res.destroy());
+    fluxPartiel.pipe(res);
+    return undefined;
+  }
+
   entetes['content-length'] = String(taille);
 
   if (req.method === 'HEAD') {

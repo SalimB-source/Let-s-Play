@@ -147,6 +147,7 @@ const attendus = [
   'plateau-erg-du-sahara.jpg',
   'sablier-story/mode-histoire.jpg',
   'audio/arabian-travel.mp3',
+  'Desert Solitude with Percussion.mp3',
 ];
 const manquants = attendus.filter((f) => !apres.includes(f));
 if (manquants.length) {
