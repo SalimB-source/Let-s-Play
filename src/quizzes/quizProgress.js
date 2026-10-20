@@ -25,6 +25,7 @@
  */
 import { QUIZ_LEVELS } from './levels.js';
 import { supabase } from '../lib/supabase.js';
+import { ecrireProgression, effacerProgression, lireProgression } from '../lib/progressionScope.js';
 
 /** Clé du stockage local : niveaux terminés, par quizz. */
 export const LEVELS_KEY = 'letsplay_quiz_levels_v2';
@@ -102,10 +103,8 @@ export function readLocalProgress() {
     // The old key contains completions from before the global reset. Never
     // merge it back into the new progression: doing so would immediately
     // re-lock every quiz for a returning visitor.
-    for (const legacy of LEGACY_LEVELS_KEYS) {
-      try { window.localStorage.removeItem(legacy); } catch (e) {}
-    }
-    const raw = JSON.parse(window.localStorage.getItem(LEVELS_KEY) || '{}');
+    for (const legacy of LEGACY_LEVELS_KEYS) effacerProgression(legacy);
+    const raw = JSON.parse(lireProgression(LEVELS_KEY) || '{}');
     return raw && typeof raw === 'object' ? raw : {};
   } catch (e) {
     return {};
@@ -113,9 +112,9 @@ export function readLocalProgress() {
 }
 
 export function saveLocalProgress(progress) {
-  try {
-    if (typeof window !== 'undefined') window.localStorage.setItem(LEVELS_KEY, JSON.stringify(progress));
-  } catch (e) { /* stockage indisponible : la progression reste en mémoire */ }
+  // Clé du joueur : `…:user:<id>` pour un compte, la clé invité sinon. La
+  // progression d'un compte ne s'affiche jamais sur celui du voisin.
+  ecrireProgression(LEVELS_KEY, JSON.stringify(progress));
   return progress;
 }
 

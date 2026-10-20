@@ -130,8 +130,8 @@ test('le vivier du comptoir réunit toutes les couleurs ouvertes', () => {
     assert.ok(!cardById(id).terrain, `${id} est jouable sans terrain`);
     for (const couleur of cardColors(id)) couleurs.add(couleur);
   }
-  assert.deepEqual(new Set([...couleurs]), new Set(['braise', 'eau', 'sable', 'neige']),
-    'les quatre couleurs de l’Histoire sont servies');
+  assert.deepEqual(new Set([...couleurs]), new Set(['braise', 'eau', 'sable', 'neige', 'tenebres']),
+    'les cinq couleurs de l’Histoire sont servies');
   assert.ok(bandes.commune.length > 0, 'des communes pour le remplissage');
   assert.ok(bandes.rare.length > 0, 'des rares pour la garantie');
   assert.ok(bandes.mythique.length > 0, 'des mythiques pour la cinquième carte');
@@ -195,8 +195,8 @@ test('un paquet fait cinq cartes distinctes, mélangées et toujours avec une ra
     const attendu = Math.min(TAUX.nouvellesMin, neuvesAuVivier);
     assert.ok(tirage.tirage.nouvelles >= Math.min(1, attendu), 'le paquet conserve des cartes neuves quand le vivier le permet');
   }
-  assert.deepEqual(couleursVues, new Set(['braise', 'eau', 'sable', 'neige']),
-    'sur 300 paquets, les quatre couleurs sortent');
+  assert.deepEqual(couleursVues, new Set(['braise', 'eau', 'sable', 'neige', 'tenebres']),
+    'sur 300 paquets, les cinq couleurs sortent');
 });
 
 test('la garantie des nouvelles ne sert pas toujours la même carte', () => {

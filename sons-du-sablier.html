@@ -179,11 +179,11 @@
     <h2>⚠ Annexe</h2>
     <div class="grid" id="liste-annexe"></div>
     <div class="note">
-      <b>⚠ Incohérence repérée dans le code du jeu :</b>
-      <code>rpgPlateauMusic.js</code> référence la piste <code>CherryBlossomStrings(Extended).mp3</code>
-      <b>sans espaces</b>, alors que le fichier livré s'appelle
-      <code>Cherry Blossom Strings (Extended).mp3</code> — en l'état, ce tirage de la Cour de
-      l'Empereur pointe vers un fichier inexistant (404 en jeu). Le lecteur ci-dessus lit le vrai fichier.
+      <b>✔ Incohérence résolue :</b> « Cherry Blossom Strings (Extended) » a été déplacée dans
+      <code>public/</code> et renommée <code>CherryBlossomStrings(Extended).mp3</code> — exactement
+      le nom que <code>rpgPlateauMusic.js</code> référençait toujours. L'ancien tirage 404 de la Cour
+      de l'Empereur joue désormais la vraie piste. Les autres musiques de plateaux ont été déplacées
+      dans <code>public/</code> en même temps ; cette page suit les nouveaux chemins.
     </div>
     <div class="note">
       <b>Sources :</b> <code>src/games/rpgAudio.js</code> (12 bruitages : le survol synthétisé + 11 échantillons),
@@ -208,7 +208,7 @@ const statut = $('#statut');
 
 /* ── 1 · Musiques de plateaux ─────────────────────────────────────── */
 const MUSIQUES = [
-  { plateau: 'La Table des Heures', fichier: './Acoustic Guitar Solo (Cover).mp3',
+  { plateau: 'La Table des Heures', fichier: './public/Acoustic Guitar Solo (Cover).mp3',
     code: 'Acoustic Guitar Solo (Cover).mp3',
     desc: 'Guitare solo — la table d’origine de Bab El : Veilleurs du Désert, Cour des Djinns, Balance des Heures, Grand Horloger.' },
   { plateau: 'L’Erg du Sahara', fichier: './public/audio/ArabianMeditativeFantasyCover.mp3',
@@ -226,18 +226,18 @@ const MUSIQUES = [
 ];
 
 const AUTRES = [
-  { plateau: 'Le Fjord des Neuf Hivers · les Îles Célestes', fichier: './Viking Howl.mp3',
+  { plateau: 'Le Fjord des Neuf Hivers · les Îles Célestes', fichier: './public/Viking Howl.mp3',
     code: 'Viking Howl.mp3', desc: 'Piste viking n°1 — tirée au hasard parmi 3 pistes à chaque duel enneigé.', branche: true },
-  { plateau: 'Le Fjord des Neuf Hivers · les Îles Célestes', fichier: './Viking Howl (Take 2).mp3',
+  { plateau: 'Le Fjord des Neuf Hivers · les Îles Célestes', fichier: './public/Viking Howl (Take 2).mp3',
     code: 'Viking Howl (Take 2).mp3', desc: 'Piste viking n°2 (autre prise) — tirage à 3.', branche: true },
   { plateau: 'Le Fjord des Neuf Hivers · les Îles Célestes', fichier: './public/audio/full-track.mp3',
     code: 'audio/full-track.mp3', desc: 'Piste complète — piste n°3 (nouvellement branchée), tirée au hasard avec les deux Viking Howl.', branche: true },
   { plateau: 'La Cour de l’Empereur', fichier: './public/audio/WayOfTheBushidoWithGeishaVocals.mp3',
     code: 'audio/WayOfTheBushidoWithGeishaVocals.mp3', desc: 'Voie du bushido et voix de geisha — tirée au hasard avec la piste des cerisiers.', branche: true },
-  { plateau: 'La Cour de l’Empereur (⚠ voir note en bas)', fichier: './Cherry Blossom Strings (Extended).mp3',
-    code: 'Cherry Blossom Strings (Extended).mp3', desc: 'Cordes des cerisiers — 2ᵉ piste prévue pour la Cour (nom de fichier incohérent dans le code, cf. note).', branche: true },
-  { plateau: '(non utilisée en jeu)', fichier: './Desert Solitude with Percussion.mp3',
-    code: 'Desert Solitude with Percussion.mp3', desc: 'Solitude du désert avec percussions — présente à la racine du dépôt, non référencée.', branche: false },
+  { plateau: 'La Cour de l’Empereur', fichier: './public/CherryBlossomStrings(Extended).mp3',
+    code: 'CherryBlossomStrings(Extended).mp3', desc: 'Cordes des cerisiers — 2ᵉ piste de la Cour, tirée au hasard avec Bushido.', branche: true },
+  { plateau: 'Thème principal (hors parties)', fichier: './public/Desert Solitude with Percussion.mp3',
+    code: 'Desert Solitude with Percussion.mp3', desc: 'Solitude du désert avec percussions — le thème qui tourne en boucle hors des duels.', branche: true, meta: 'Boucle hors parties · ' },
 ];
 
 /* Sépare les pistes branchées aux plateaux (les Vikings & bushido vivent dans les
@@ -254,8 +254,8 @@ function carteAudio(item, extraMeta = '') {
 }
 const lm = $('#liste-musiques');
 MUSIQUES.forEach(m => lm.appendChild(carteAudio(m)));
-AUTRES.filter(a => a.branche).forEach(a => lm.appendChild(carteAudio(a, 'Tirage au lancement · ')));
-$('#compte-musiques').textContent = `${lm.children.length} pistes · 8 plateaux couverts`;
+AUTRES.filter(a => a.branche).forEach(a => lm.appendChild(carteAudio(a, a.meta ?? 'Tirage au lancement · ')));
+$('#compte-musiques').textContent = `${lm.children.length} pistes · 8 plateaux couverts + le thème principal`;
 
 const la = $('#liste-autres');
 AUTRES.filter(a => !a.branche).forEach(a => la.appendChild(carteAudio(a, '')));

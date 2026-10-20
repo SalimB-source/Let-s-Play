@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { ecrireProgression, lireProgression } from '../lib/progressionScope';
 import { useAchievementAction } from '../achievements/AchievementContext';
 import MirageWorld from './MirageWorld';
 import MiragePowerIcon from './MiragePowerIcon';
@@ -44,13 +45,15 @@ const EMPTY_HUD = {
   anyPowerReady: false,
 };
 
+// Record du joueur (clé `:user:<id>`) : le meilleur score suit le compte
+// connecté, pas l'appareil.
 function readBest() {
-  try { return Math.max(0, Number(window.localStorage.getItem(BEST_KEY)) || 0); }
+  try { return Math.max(0, Number(lireProgression(BEST_KEY)) || 0); }
   catch { return 0; }
 }
 
 function writeBest(score) {
-  try { window.localStorage.setItem(BEST_KEY, String(score)); } catch {}
+  ecrireProgression(BEST_KEY, String(score));
 }
 
 function readRiderName() {

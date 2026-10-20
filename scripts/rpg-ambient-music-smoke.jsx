@@ -19,8 +19,31 @@ function installerFauxAudio(window) {
     sources: 0,
     gains: [],
     dernier: null,
+    pistesHtml: [],
     get noeuds() { return cumul.oscillateurs + cumul.sources; },
   };
+  class FauxElementAudio {
+    constructor(src = '') {
+      this.src = src;
+      this.loop = false;
+      this.preload = 'none';
+      this.volume = 1;
+      this.muted = false;
+      this.paused = true;
+      this.currentTime = 0;
+      this.lectures = 0;
+      cumul.pistesHtml.push(this);
+    }
+    play() {
+      this.paused = false;
+      this.lectures += 1;
+      return Promise.resolve();
+    }
+    pause() { this.paused = true; }
+    removeAttribute(nom) { if (nom === 'src') this.src = ''; }
+    load() {}
+  }
+  window.Audio = FauxElementAudio;
   const gain = () => {
     const noeud = {
       gain: {
@@ -130,15 +153,23 @@ export async function checkRpgAmbientMusic(assert) {
     await act(async () => { await wait(ms); });
   };
 
-  // --- Le menu reste silencieux : aucune tour, aucune boucle ---
-  assert.equal(cumul.contextes, 0, 'le menu ne crée aucun contexte audio');
+  // --- Hors parties : le thème principal MP3 tourne en boucle, sans contexte WebAudio ---
+  assert.equal(cumul.contextes, 0, 'le menu ne crée aucun contexte WebAudio');
+  const pisteTheme = cumul.pistesHtml.find((piste) => piste.src.includes('Desert Solitude with Percussion.mp3'));
+  assert.ok(pisteTheme, 'le lecteur du thème principal charge Desert Solitude with Percussion.mp3');
+  assert.equal(pisteTheme.loop, true, 'le thème principal est configuré en boucle');
+  assert.equal(pisteTheme.paused, false, 'le thème principal tourne dès l’arrivée hors parties');
+  const lecturesThemeInitiales = pisteTheme.lectures;
 
   await click(buttons().find((button) => button.textContent.includes('Jeu Solo')), 'entrée Jeu Solo');
+  assert.equal(pisteTheme.paused, false, 'changer d’écran dans les menus garde le thème principal en lecture');
+  assert.equal(pisteTheme.lectures, lecturesThemeInitiales, 'naviguer hors parties ne relance pas la piste depuis le début');
   await click(container.querySelector('.rpg-story-tower[data-tour="tour-des-listes"]'), 'ouverture de la Tour des Listes');
   const etages = () => [...container.querySelectorAll('.rpg-story-floor')];
   await click(etages().find((etage) => etage.getAttribute('data-etage') === 'listes-1'), 'étage listes-1');
 
-  // --- L'étage lancé fait jouer la boucle de sa tour ---
+  // --- L'étage lancé coupe le thème principal et fait jouer la musique de partie ---
+  assert.equal(pisteTheme.paused, true, 'lancer une partie arrête aussitôt le thème principal');
   await laisserJouer(900);
   assert.equal(cumul.contextes, 2, 'le jeu sépare le contexte des bruitages de celui de la musique');
   const contexteMusique = cumul.contextesCrees[1];
@@ -154,6 +185,7 @@ export async function checkRpgAmbientMusic(assert) {
   await click(boutonSon(), 'coupure du son');
   assert.equal(boutonSon().getAttribute('aria-pressed'), 'false', 'le bouton annonce le son coupé');
   assert.ok(contexteMusique.gains[0].gain.cibles.at(-1) < 0.01, 'le volume général est ramené à zéro');
+  assert.equal(pisteTheme.paused, true, 'le thème principal reste arrêté pendant la partie');
   const apresCoupure = noeudsMusique();
   await laisserJouer(500);
   assert.equal(noeudsMusique(), apresCoupure, 'plus aucun son n’est planifié une fois la musique coupée');
@@ -164,14 +196,17 @@ export async function checkRpgAmbientMusic(assert) {
   assert.equal(boutonSon().getAttribute('aria-pressed'), 'true', 'le bouton annonce le son rendu');
   assert.ok(noeudsMusique() > apresCoupure, 'la boucle reprend quand le son revient');
   assert.ok(contexteMusique.gains[0].gain.cibles.at(-1) > 0.5, 'le volume général est rendu');
+  assert.equal(pisteTheme.paused, true, 'rendre le son en pleine partie ne relance pas le thème hors parties');
 
-  // --- Rentrer au menu arrête la musique ---
+  // --- Rentrer au menu arrête la musique de partie et relance le thème principal ---
   await click(buttons().find((button) => button.textContent.trim() === 'Menu'), 'bouton Menu');
   const auMenu = noeudsMusique();
   await laisserJouer(500);
-  assert.equal(noeudsMusique(), auMenu, 'rentrer au menu arrête la musique');
+  assert.equal(noeudsMusique(), auMenu, 'rentrer au menu arrête la musique de la partie');
+  assert.equal(pisteTheme.paused, false, 'rentrer hors partie relance le thème principal');
 
-  // --- Le démontage ferme les deux contextes audio ---
+  // --- Le démontage ferme les deux contextes audio et arrête le thème principal ---
   await act(async () => { root.unmount(); });
   assert.ok(cumul.contextesCrees.every((context) => context.ferme), 'quitter la page ferme les deux lecteurs audio');
+  assert.equal(pisteTheme.paused, true, 'quitter la page arrête et nettoie le thème principal');
 }

@@ -33,6 +33,7 @@
   ],
   "globs": [
     "plateau-*.jpg",
-    "sablier-de-bab-el-*.jpg"
+    "sablier-de-bab-el-*.jpg",
+    "*.mp3"
   ]
 }

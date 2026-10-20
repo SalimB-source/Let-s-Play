@@ -759,6 +759,101 @@ test('le Maître du marteau : 5/5 Furie 3, 2 dégâts à l’arrivée, et Tenaci
     'la seconde destruction l’emporte');
 });
 
+for (const carteId of ['maitre-du-marteau', 'seigneur-des-machoires']) {
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const role of ['attaquant', 'bloqueur']) {
+      test(`Tenacité en combat simultané : ${carteId}, ${cote}, ${role}`, () => {
+        const duel = duelDeBase();
+        const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
+        for (const camp of [cote, adv]) donnerMana(duel, camp, 50);
+        donner(duel, cote, carteId);
+        const tenace = rpgJouerCreature(duel, cote, carteId).entite;
+        donner(duel, adv, 'chien-du-guet');
+        const adversaire = rpgJouerCreature(duel, adv, 'chien-du-guet').entite;
+        adversaire.atk = 20;
+        adversaire.pv = adversaire.def = adversaire.pvMax = 30;
+        const attaquant = role === 'attaquant' ? tenace : adversaire;
+        const bloqueur = role === 'attaquant' ? adversaire : tenace;
+        const coteAttaque = role === 'attaquant' ? cote : adv;
+        const forceInitiale = tenace.atk;
+        const debut = rpgNombreDestructions(duel);
+        const combattre = () => {
+          attaquant.ready = true;
+          attaquant.attaquee = false;
+          duel.attaqueJouee = null;
+          return rpgLancerAttaque(duel, coteAttaque, [attaquant.id], {
+            [attaquant.id]: [bloqueur.id],
+          });
+        };
+
+        assert.equal(combattre().ok, true);
+        assert.equal(duel[cote].creatures.includes(tenace), true);
+        assert.equal(tenace.tenaciteDisponible, false);
+        const furie = cardById(carteId).furie ?? 0;
+        assert.deepEqual([tenace.atk, tenace.def, tenace.pv],
+          [forceInitiale + furie, 1 + furie, 1 + furie],
+          'Tenacité sauve le porteur, puis sa Furie éventuelle se déclenche');
+        assert.equal(adversaire.pv, 30 - forceInitiale,
+          'la riposte utilise la force avant Furie : les dégâts restent simultanés');
+        assert.equal(duel[cote].cimetiere.includes(carteId), false);
+        assert.equal(rpgNombreDestructions(duel), debut);
+        assert.ok(duel.combatFeed.some((entry) => entry.type === 'hit' && entry.victim.id === tenace.id));
+        assert.equal(duel.combatFeed.some((entry) => entry.type === 'death' && entry.victim.id === tenace.id), false);
+
+        assert.equal(combattre().ok, true);
+        assert.equal(duel[cote].creatures.includes(tenace), false,
+          'la seconde blessure létale détruit le porteur');
+        assert.equal(duel[cote].cimetiere.filter((id) => id === carteId).length, 1);
+        assert.equal(rpgNombreDestructions(duel), debut + 1);
+      });
+    }
+  }
+}
+
+test('Tenacité absorbe un échange létal direct pour les deux combattants', () => {
+  const duel = duelDeBase();
+  const combattants = ['joueur', 'sorcier'].map((cote) => {
+    donnerMana(duel, cote, 50);
+    donner(duel, cote, 'seigneur-des-machoires');
+    return rpgJouerCreature(duel, cote, 'seigneur-des-machoires').entite;
+  });
+  const [attaquant, cible] = combattants;
+  attaquant.ready = true;
+  const debut = rpgNombreDestructions(duel);
+  assert.equal(rpgAttaquerCreature(duel, 'joueur', attaquant.id, cible.id).ok, true);
+  for (const [index, cote] of ['joueur', 'sorcier'].entries()) {
+    assert.equal(duel[cote].creatures.includes(combattants[index]), true);
+    assert.equal(combattants[index].pv, 1);
+    assert.equal(combattants[index].tenaciteDisponible, false);
+    assert.equal(duel[cote].cimetiere.includes('seigneur-des-machoires'), false);
+  }
+  assert.equal(rpgNombreDestructions(duel), debut);
+});
+
+test('Tenacité ne se dépense qu’une fois face à plusieurs bloqueurs simultanés', () => {
+  const duel = duelDeBase();
+  for (const cote of ['joueur', 'sorcier']) donnerMana(duel, cote, 50);
+  donner(duel, 'joueur', 'maitre-du-marteau');
+  const maitre = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau').entite;
+  const bloqueurs = Array.from({ length: 2 }, () => {
+    donner(duel, 'sorcier', 'chien-du-guet');
+    const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+    bloqueur.atk = 4;
+    return bloqueur;
+  });
+  maitre.ready = true;
+  const debut = rpgNombreDestructions(duel);
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [maitre.id], {
+    [maitre.id]: bloqueurs.map((entite) => entite.id),
+  }).ok, true);
+  assert.equal(duel.joueur.creatures.includes(maitre), true);
+  assert.deepEqual([maitre.atk, maitre.def, maitre.pv], [8, 4, 4]);
+  assert.equal(maitre.tenaciteDisponible, false);
+  assert.equal(duel.sorcier.creatures.length, 0, 'les deux bloqueurs meurent dans le même échange');
+  assert.equal(rpgNombreDestructions(duel), debut + 2);
+  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Tenacité :')).length, 1);
+});
+
 test('Amani est une 2/5 à 4 dont l’égide donne +0/+2 aux autres créatures de son camp', () => {
   const carte = cardById('amani-des-ksour');
   assert.deepEqual({ cost: carte.cost, atk: carte.atk, def: carte.def, rarity: carte.rarity }, {

@@ -35,6 +35,7 @@ import { fusionnerAcquisitions, fusionnerCollections, normaliserAcquis, normalis
 import { fusionnerPortefeuilles, normaliserPortefeuille } from './rpgCredits.js';
 import { fusionnerQuetes, normaliserEtatQuetes } from './rpgQuetes.js';
 import { fusionnerProgressionHistoire, normaliserProgressionHistoire } from './rpgStory.js';
+import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 
 /** La taille d'un deck du Sablier, et la part minimale de terrains. */
 export const RPG_DECK_TAILLE = 30;
@@ -157,11 +158,7 @@ export function normaliserSupprimesMaison(value) {
 }
 
 function browserStorage() {
-  try {
-    return globalThis.window?.localStorage || globalThis.localStorage || null;
-  } catch {
-    return null;
-  }
+  return stockageProgression();
 }
 
 /** Charge le casier maison de l'appareil (casier vide s'il est absent ou illisible). */
@@ -169,7 +166,7 @@ export function chargerCasierMaison() {
   const stockage = browserStorage();
   if (!stockage) return casierMaisonVide();
   try {
-    const brut = JSON.parse(stockage.getItem(RPG_DECKS_MAISON_STORAGE_KEY) ?? 'null');
+    const brut = JSON.parse(lireProgression(RPG_DECKS_MAISON_STORAGE_KEY, stockage) ?? 'null');
     return { decks: normaliserDecksMaison(brut), supprimes: normaliserSupprimesMaison(brut) };
   } catch {
     return casierMaisonVide();
@@ -180,15 +177,10 @@ export function chargerCasierMaison() {
 export function sauverCasierMaison(casier) {
   const stockage = browserStorage();
   if (!stockage) return false;
-  try {
-    stockage.setItem(RPG_DECKS_MAISON_STORAGE_KEY, JSON.stringify({
-      decks: normaliserDecksMaison(casier),
-      supprimes: normaliserSupprimesMaison(casier),
-    }));
-    return true;
-  } catch {
-    return false;
-  }
+  return ecrireProgression(RPG_DECKS_MAISON_STORAGE_KEY, JSON.stringify({
+    decks: normaliserDecksMaison(casier),
+    supprimes: normaliserSupprimesMaison(casier),
+  }), stockage);
 }
 
 /** Les decks maison de l'appareil. */

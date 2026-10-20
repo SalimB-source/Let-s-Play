@@ -97,6 +97,18 @@ export function useDecksSablier() {
   const [statutSync, setStatutSync] = useState('local');
   const compteId = compteSablierActif();
   const supprimesRef = useRef(chargerSupprimesMaison());
+  // Changement de joueur — session restaurée, connexion, déconnexion, autre
+  // compte sur la même machine : l'état en mémoire appartenait au précédent.
+  // On relit la copie du joueur courant (clé `:user:<id>`, voir
+  // `lib/progressionScope.js`) AVANT la première écriture.
+  useEffect(() => {
+    const suivis = figerAcquisitions();
+    acquisRef.current = suivis;
+    supprimesRef.current = chargerSupprimesMaison();
+    setAcquis(suivis);
+    setDecksMaison(chargerDecksMaison());
+    setCollection(collectionDeLAppareil(suivis));
+  }, [compteId]);
   // Le gel est écrit sur l'appareil dès qu'il change (silencieux s'il n'y a
   // pas de stockage : le jeu reste jouable, la migration se refera).
   useEffect(() => { sauverAcquis(acquis); }, [acquis]);
@@ -113,7 +125,16 @@ export function useDecksSablier() {
       const { state, source } = await chargerEtatSablier(compteId);
       if (!vivant) return;
       if (!state) {
-        setStatutSync(source === 'unavailable' ? 'horsligne' : 'local');
+        if (source === 'unavailable') {
+          setStatutSync('horsligne');
+          return;
+        }
+        // Compte sans copie serveur (première connexion sur cet appareil) : la
+        // copie locale du joueur devient sa ligne Supabase, une seule fois.
+        // L'écran n'annonce « synchronisé » que si l'écriture a eu lieu.
+        const enregistre = await sauverEtatSablier(compteId, etatLocalActuel(acquisRef.current));
+        if (!vivant) return;
+        setStatutSync(enregistre ? 'synchronise' : 'horsligne');
         return;
       }
       const fusion = fusionnerEtatsSablier({ local: etatLocalActuel(acquisRef.current), distant: state });

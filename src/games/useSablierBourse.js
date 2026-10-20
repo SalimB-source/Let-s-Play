@@ -81,9 +81,9 @@ function etatLocalComplet() {
  * `progression` sert aux quêtes qui exigent une garde — « ouvrir le comptoir »
  * ne se tire pas tant que le Souk est fermé.
  */
-function etatInitial(progression) {
+function etatInitial(progression, compteId = null) {
   const bourse = chargerPortefeuille();
-  const journee = ouvrirJournee({ etat: chargerEtatQuetes(), graine: chargerGraine(), progression });
+  const journee = ouvrirJournee({ etat: chargerEtatQuetes(), graine: chargerGraine(compteId), progression });
   sauverEtatQuetes(journee.etat);
   return { bourse, quetes: journee.etat };
 }
@@ -91,8 +91,10 @@ function etatInitial(progression) {
 /** Statuts de synchronisation : `'local'`, `'attente'`, `'synchronise'`, `'horsligne'`. */
 export function useSablierBourse({ progression = null, rng = Math.random, onCartesRangees = null } = {}) {
   const authContext = useContext(AuthContext);
-  const compteId = authContext?.user?.id ?? null;
-  const [etat, setEtat] = useState(() => etatInitial(progression));
+  // Un profil de démonstration n'est pas un compte : rien à synchroniser, et
+  // il reste sur les clés invité de l'appareil.
+  const compteId = authContext && !authContext.isDemo ? (authContext.user?.id ?? null) : null;
+  const [etat, setEtat] = useState(() => etatInitial(progression, compteId));
   const [statutSync, setStatutSync] = useState('local');
   // L'état courant, lisible depuis les rappels sans les recréer à chaque rendu.
   const etatRef = useRef(etat);
@@ -107,6 +109,23 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
   const [ouverture, setOuverture] = useState(null);
   const rngRef = useRef(rng);
   rngRef.current = rng;
+
+  // Changement de joueur (session restaurée, connexion, déconnexion, autre
+  // compte sur la même machine) : le solde et les quêtes en mémoire
+  // appartenaient au précédent. On relit la copie du joueur courant — la clé
+  // de stockage porte son compte (voir `lib/progressionScope.js`) — avant
+  // toute écriture, pour ne jamais verser l'état d'un joueur à un autre.
+  useEffect(() => {
+    const journee = ouvrirJournee({
+      etat: chargerEtatQuetes(),
+      graine: chargerGraine(compteId),
+      progression: progressionRef.current,
+    });
+    const relu = { bourse: chargerPortefeuille(), quetes: journee.etat };
+    sauverEtatQuetes(journee.etat);
+    etatRef.current = relu;
+    setEtat(relu);
+  }, [compteId]);
 
   /** Écrit une paire (bourse, quêtes) : stockage d'abord, écran ensuite, compte en dernier. */
   const appliquer = useCallback((bourse, quetes) => {
@@ -128,14 +147,14 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
   useEffect(() => {
     const surReveil = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      const journee = ouvrirJournee({ etat: etatRef.current.quetes, graine: chargerGraine(), progression });
+      const journee = ouvrirJournee({ etat: etatRef.current.quetes, graine: chargerGraine(compteId), progression });
       if (!journee.nouveau) return;
       appliquer(etatRef.current.bourse, journee.etat);
       pousser();
     };
     document?.addEventListener?.('visibilitychange', surReveil);
     return () => document?.removeEventListener?.('visibilitychange', surReveil);
-  }, [progression, appliquer, pousser]);
+  }, [progression, appliquer, pousser, compteId]);
 
   // À la connexion (et à chaque retour de connexion), la fusion compte ↔ appareil.
   useEffect(() => {
@@ -148,15 +167,29 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     (async () => {
       const { state, source } = await chargerEtatSablier(compteId);
       if (!vivant) return;
-      if (source === 'unavailable' || !state) {
-        setStatutSync(source === 'unavailable' ? 'horsligne' : 'local');
+      if (source === 'unavailable') {
+        setStatutSync('horsligne');
+        return;
+      }
+      if (!state) {
+        // Compte sans copie serveur (première connexion sur cet appareil) : sa
+        // copie locale devient la référence du compte, une seule fois. Le
+        // statut ne ment pas : si l'écriture échoue (table absente, droits
+        // manquants), l'écran annonce « hors ligne » plutôt que « synchronisé ».
+        const local = etatLocalComplet();
+        appliquer(local.bourse, local.quetes);
+        const enregistre = await sauverEtatSablier(compteId, local);
+        if (!vivant) return;
+        setStatutSync(enregistre ? 'synchronise' : 'horsligne');
         return;
       }
       // Le compte et l'appareil, moitié par moitié : l'économie n'écrase jamais
       // les decks, ni l'inverse — `fusionnerEtatsSablier` les range ensemble.
+      // Les deux côtés sont relus sur le stockage du joueur courant, jamais sur
+      // une valeur en mémoire héritée d'un autre compte.
       const fusion = fusionnerEtatsSablier({ local: etatLocalComplet(), distant: state });
-      const bourse = fusionnerPortefeuilles(etatRef.current.bourse, fusion.etat.bourse).portefeuille;
-      const quetes = fusionnerQuetes(etatRef.current.quetes, fusion.etat.quetes).etat;
+      const bourse = fusionnerPortefeuilles(chargerPortefeuille(), fusion.etat.bourse).portefeuille;
+      const quetes = fusionnerQuetes(chargerEtatQuetes(), fusion.etat.quetes).etat;
       if (!vivant) return;
       appliquer(bourse, quetes);
       sauverProgressionHistoire(fusion.etat.histoire);
@@ -277,14 +310,14 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
   const reclamerLeCachetDeLaSemaine = useCallback(() => {
     const avant = etatRef.current;
     const serie = ouvrirJournee({
-      etat: avant.quetes, graine: chargerGraine(), progression: progressionRef.current,
+      etat: avant.quetes, graine: chargerGraine(compteId), progression: progressionRef.current,
     }).etat.serie;
     const resultat = reclamerCachetDeLaSemaine({ etat: avant.quetes, serie });
     if (!resultat.ok) return 0;
     appliquer(crediterCredits(avant.bourse, resultat.credits).portefeuille, resultat.etat);
     pousser();
     return resultat.credits;
-  }, [appliquer, pousser]);
+  }, [appliquer, pousser, compteId]);
 
   /** La récompense d'un tutoriel : versée une seule fois, puis retenue dans
    *  `bourse.tutoriels` (la fusion entre appareils en fait l'union). Rend le

@@ -22,6 +22,7 @@
  * zéro globale au lieu de les laisser réapparaître sur la grille.
  */
 import { supabase } from '../lib/supabase';
+import { ecrireProgression, effacerProgression, lireProgression } from '../lib/progressionScope';
 
 const BEST_KEY = 'letsplay_quiz_best_v3';
 const LEGACY_BEST_KEYS = ['letsplay_quiz_best_v1', 'letsplay_quiz_best_v2'];
@@ -94,10 +95,8 @@ export function readLocalBests() {
   try {
     if (typeof window === 'undefined') return {};
     // Nettoyage des anciennes clés pour forcer la remise à zéro demandée.
-    for (const legacy of LEGACY_BEST_KEYS) {
-      try { window.localStorage.removeItem(legacy); } catch (e) {}
-    }
-    const raw = JSON.parse(window.localStorage.getItem(BEST_KEY) || '{}');
+    for (const legacy of LEGACY_BEST_KEYS) effacerProgression(legacy);
+    const raw = JSON.parse(lireProgression(BEST_KEY) || '{}');
     return raw && typeof raw === 'object' ? raw : {};
   } catch (e) {
     return {};
@@ -122,7 +121,7 @@ export function writeLocalBest(quizId, score, total, points = 0, level = null) {
       || points > currentPoints
       || (points === currentPoints && score > current.score);
     if (better) bests[key] = { score, total, points, level: level || null };
-    window.localStorage.setItem(BEST_KEY, JSON.stringify(bests));
+    ecrireProgression(BEST_KEY, JSON.stringify(bests));
   } catch (e) { /* stockage indisponible : le score reste en mémoire de session */ }
 }
 

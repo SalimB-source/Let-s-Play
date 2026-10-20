@@ -49,6 +49,7 @@ import {
   withUpgradedCityRushStory,
 } from './cityRushProgress';
 import { fetchViceCityProgress, saveViceCityProgress, viceCityApiEnabled } from './viceCityApi';
+import { ecrireProgression, lireProgression } from '../lib/progressionScope';
 import {
   CITY_RUSH_CARS,
   CITY_RUSH_SHOWCASE_CAR,
@@ -349,16 +350,18 @@ const EMPTY_HUD = {
   suvCharges: [],
 };
 
+// Meilleurs temps du joueur (clé `:user:<id>`) : ils suivent le compte
+// connecté, jamais l'appareil — deux joueurs sur le même PC ne les partagent pas.
 function readBests() {
   try {
-    const value = JSON.parse(window.localStorage.getItem(BEST_KEY) || '{}');
+    const value = JSON.parse(lireProgression(BEST_KEY) || '{}');
     return value && typeof value === 'object' ? value : {};
   } catch {
     return {};
   }
 }
 function writeBests(value) {
-  try { window.localStorage.setItem(BEST_KEY, JSON.stringify(value)); } catch {}
+  ecrireProgression(BEST_KEY, JSON.stringify(value));
 }
 function readSoundPref() {
   try { return window.localStorage.getItem(SOUND_KEY) !== 'off'; } catch { return true; }

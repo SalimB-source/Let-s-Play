@@ -313,6 +313,10 @@ export function rayonsOuverts(progression, collection = null) {
  * carte d'une autre couleur **de la même rareté** : le mélange se voit, et les
  * taux de rareté ne bougent pas. Si la carte remplacée était neuve, la
  * remplaçante doit l'être aussi — la garantie des trois nouvelles tient.
+ * Les Ténèbres (nouvelles communes non-dotées) tombaient en mono car tous les
+ * remplaçants non-Ténèbres de la même rareté étaient déjà possédés : la
+ * garantie stricte bloquait l'échange. On autorise alors un doublon si la
+ * garantie reste tenue.
  */
 function diversifierCouleurs(cartes, bandes, possedees, rng) {
   if (!Array.isArray(cartes) || cartes.length < 2) return cartes;
@@ -323,6 +327,17 @@ function diversifierCouleurs(cartes, bandes, possedees, rng) {
   if (couleurs.size !== 1) return cartes;
   const [unique] = couleurs;
   if (!unique) return cartes;
+  const nouvellesActuelles = cartes.filter((id) => !possedees.has(id)).length;
+  const disponiblesNeuves = (() => {
+    // Compte les nouvelles restantes hors paquet (pour la garantie)
+    let total = 0;
+    // On ne connaît pas le vivier ici, mais le test de garantie peut être
+    // approximé par : on garde au moins 3 nouvelles si possible.
+    // Le plus simple : on calcule la garantie comme min(3, nouvellesActuelles + autres neuves possibles)
+    // Pour diversifier, on n'autorise la perte d'une nouvelle que si on reste >= 3
+    // ou qu'on n'avait pas 3 au départ.
+    return null;
+  })();
   // Les trois premières places seulement : la rare garantie et la cinquième
   // carte (la mythique) ne servent jamais à corriger la couleur.
   for (let place = 2; place >= 0; place -= 1) {
@@ -334,7 +349,18 @@ function diversifierCouleurs(cartes, bandes, possedees, rng) {
     if (!candidates.length) continue;
     const actuelleNouvelle = !possedees.has(actuelle);
     const neuves = candidates.filter((id) => !possedees.has(id));
-    if (actuelleNouvelle && !neuves.length) continue;
+    if (actuelleNouvelle && !neuves.length) {
+      // Ténèbres : toutes les communes non-Ténèbres sont déjà possédées (dotation).
+      // On autorise le doublon si on ne passe pas sous la garantie.
+      const garantie = Math.min(3, nouvellesActuelles);
+      if (nouvellesActuelles - 1 < garantie) continue;
+      const remplacant = tirerParmi(candidates, rng);
+      if (remplacant) {
+        cartes[place] = remplacant;
+        return cartes;
+      }
+      continue;
+    }
     const remplacant = tirerParmi(actuelleNouvelle ? neuves : candidates, rng);
     if (remplacant) {
       cartes[place] = remplacant;
