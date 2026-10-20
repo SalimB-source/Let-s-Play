@@ -13,6 +13,12 @@
  */
 
 import { etageHistoireParId, etagePrecedent, tourHistoireParId, tousLesEtages } from './rpgStoryTours.js';
+import {
+  ecrireProgression,
+  effacerProgression,
+  lireProgression,
+  stockageProgression,
+} from '../lib/progressionScope.js';
 
 import { normaliserRecitHistoire } from './rpgStoryFlow.js';
 
@@ -95,11 +101,7 @@ export function resumeTourHistoire(tourId, progression) {
 }
 
 function browserStorage() {
-  try {
-    return globalThis.window?.localStorage || globalThis.localStorage || null;
-  } catch {
-    return null;
-  }
+  return stockageProgression();
 }
 
 /** Charge la v2, puis la v1 si nécessaire. L'original v1 reste un secours.
@@ -109,7 +111,9 @@ export function chargerProgressionHistoire() {
   if (!stockage) return progressionHistoireVide();
   for (const cle of [RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY]) {
     try {
-      const value = JSON.parse(stockage.getItem(cle) ?? 'null');
+      // Chaque joueur a sa clé (`:user:<id>`) : sur un même appareil — le PC
+      // de la maison, la coque installée — deux comptes ne partagent rien.
+      const value = JSON.parse(lireProgression(cle, stockage) ?? 'null');
       if (!value || typeof value !== 'object' || !Array.isArray(value.etagesVaincus)) continue;
       if (cle === RPG_STORY_STORAGE_KEY && value.version !== 2) continue;
       return normaliserProgressionHistoire(cle === RPG_STORY_LEGACY_STORAGE_KEY
@@ -177,19 +181,9 @@ export function fusionnerProgressionHistoire(local, distant) {
 /** Enregistre la progression de l'appareil (silencieux si le stockage manque). */
 export function sauverProgressionHistoire(progression) {
   const normalisee = normaliserProgressionHistoire(progression);
-  const stockage = browserStorage();
-  if (!stockage) {
-    notifierProgressionHistoire(normalisee);
-    return false;
-  }
-  try {
-    stockage.setItem(RPG_STORY_STORAGE_KEY, JSON.stringify(normalisee));
-    notifierProgressionHistoire(normalisee);
-    return true;
-  } catch {
-    notifierProgressionHistoire(normalisee);
-    return false;
-  }
+  const ecrit = ecrireProgression(RPG_STORY_STORAGE_KEY, JSON.stringify(normalisee));
+  notifierProgressionHistoire(normalisee);
+  return ecrit;
 }
 
 /** Efface la progression de l'appareil. */
@@ -197,7 +191,7 @@ export function reinitialiserProgressionHistoire() {
   const vide = progressionHistoireVide();
   const stockage = browserStorage();
   for (const cle of [RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY]) {
-    try { stockage?.removeItem(cle); } catch { /* stockage indisponible */ }
+    effacerProgression(cle, stockage ?? undefined);
   }
   notifierProgressionHistoire(vide);
   return vide;

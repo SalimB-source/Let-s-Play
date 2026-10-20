@@ -53,6 +53,15 @@ export function useRpgStory() {
   const progressionRef = useRef(progression);
   const [sauvegardeOk, setSauvegardeOk] = useState(true);
 
+  // Changement de joueur : la progression en mémoire appartenait au précédent.
+  // Chaque joueur a sa clé (`:user:<id>`), donc la relecture suffit à repartir
+  // sur SA campagne — et l'écriture suivante ne peut plus viser un autre compte.
+  useEffect(() => {
+    const locale = chargerProgressionHistoire();
+    progressionRef.current = locale;
+    setProgression(locale);
+  }, [compteId]);
+
   useEffect(() => {
     const synchroniser = (prochaine) => {
       const normalisee = normaliserProgressionHistoire(prochaine ?? chargerProgressionHistoire());

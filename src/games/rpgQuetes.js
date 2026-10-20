@@ -27,6 +27,7 @@
 import { GAINS } from './rpgCredits.js';
 import { rayonsOuverts } from './rpgBoosters.js';
 import { rngSeme, graineNumerique, tirerParmi } from './rpgHasard.js';
+import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 
 /** L'état des quêtes de l'appareil. */
 export const RPG_QUETES_STORAGE_KEY = 'letsplay_sablier_quetes_v1';
@@ -419,11 +420,7 @@ export function fusionnerQuetes(local, distant) {
 }
 
 function browserStorage() {
-  try {
-    return globalThis.window?.localStorage || globalThis.localStorage || null;
-  } catch {
-    return null;
-  }
+  return stockageProgression();
 }
 
 /** L'état des quêtes de l'appareil (vide si le stockage manque ou ment). */
@@ -431,7 +428,7 @@ export function chargerEtatQuetes() {
   const stockage = browserStorage();
   if (!stockage) return etatQuetesVide();
   try {
-    return normaliserEtatQuetes(JSON.parse(stockage.getItem(RPG_QUETES_STORAGE_KEY) ?? 'null'));
+    return normaliserEtatQuetes(JSON.parse(lireProgression(RPG_QUETES_STORAGE_KEY, stockage) ?? 'null'));
   } catch {
     return etatQuetesVide();
   }
@@ -441,12 +438,7 @@ export function chargerEtatQuetes() {
 export function sauverEtatQuetes(etat) {
   const stockage = browserStorage();
   if (!stockage) return false;
-  try {
-    stockage.setItem(RPG_QUETES_STORAGE_KEY, JSON.stringify(normaliserEtatQuetes(etat)));
-    return true;
-  } catch {
-    return false;
-  }
+  return ecrireProgression(RPG_QUETES_STORAGE_KEY, JSON.stringify(normaliserEtatQuetes(etat)), stockage);
 }
 
 /**
@@ -456,14 +448,24 @@ export function sauverEtatQuetes(etat) {
  */
 export const RPG_GRAINE_STORAGE_KEY = 'letsplay_sablier_graine_v1';
 
-export function chargerGraine() {
+/**
+ * Graine du tirage quotidien.
+ *
+ * Un compte connecté passe son identifiant : la graine en dérive, donc le
+ * même joueur retrouve **les mêmes quêtes du jour** sur son PC, son téléphone
+ * et le navigateur — sans rien stocker ni synchroniser. Un visiteur garde la
+ * graine de l'appareil, créée une fois.
+ */
+export function chargerGraine(compteId = null) {
+  const compte = typeof compteId === 'string' ? compteId.trim() : '';
+  if (compte) return `compte-${compte}`;
   const stockage = browserStorage();
   if (!stockage) return 'sans-compte';
   try {
-    const existante = stockage.getItem(RPG_GRAINE_STORAGE_KEY);
+    const existante = lireProgression(RPG_GRAINE_STORAGE_KEY, stockage);
     if (existante) return existante;
     const graine = `appareil-${Math.floor(Math.random() * 1e9).toString(36)}`;
-    stockage.setItem(RPG_GRAINE_STORAGE_KEY, graine);
+    ecrireProgression(RPG_GRAINE_STORAGE_KEY, graine, stockage);
     return graine;
   } catch {
     return 'sans-compte';

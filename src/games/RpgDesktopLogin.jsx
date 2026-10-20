@@ -371,7 +371,7 @@ export default function RpgDesktopLogin({ children }) {
       <>
         {children}
         <div className="rpg-desktop-compte" role="note">
-          <span>Mode hors ligne — progression locale uniquement</span>
+          <span>Mode hors ligne — la progression rejoindra ton compte à la prochaine connexion</span>
           <button type="button" className="rpg-desktop-compte__btn" onClick={() => setHorsLigne(false)}>Se connecter</button>
         </div>
       </>

@@ -36,6 +36,7 @@
 
 import { RPG_DUEL_CARDS, cardById, cardCopyLimit } from './rpgCards.js';
 import { chargerProgressionHistoire } from './rpgStory.js';
+import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 import { etageHistoireParId } from './rpgStoryTours.js';
 
 /** Cache local des apports du compte (cartes gagnées sur un autre appareil). */
@@ -259,11 +260,7 @@ export function exemplairesPossedables(collection, cardId) {
 }
 
 function browserStorage() {
-  try {
-    return globalThis.window?.localStorage || globalThis.localStorage || null;
-  } catch {
-    return null;
-  }
+  return stockageProgression();
 }
 
 /** Les acquis de l'appareil (vides si le stockage manque ou ment). */
@@ -271,7 +268,7 @@ export function chargerAcquis() {
   const stockage = browserStorage();
   if (!stockage) return acquisVide();
   try {
-    return normaliserAcquis(JSON.parse(stockage.getItem(RPG_ACQUIS_STORAGE_KEY) ?? 'null'));
+    return normaliserAcquis(JSON.parse(lireProgression(RPG_ACQUIS_STORAGE_KEY, stockage) ?? 'null'));
   } catch {
     return acquisVide();
   }
@@ -281,12 +278,7 @@ export function chargerAcquis() {
 export function sauverAcquis(acquis) {
   const stockage = browserStorage();
   if (!stockage) return false;
-  try {
-    stockage.setItem(RPG_ACQUIS_STORAGE_KEY, JSON.stringify(normaliserAcquis(acquis)));
-    return true;
-  } catch {
-    return false;
-  }
+  return ecrireProgression(RPG_ACQUIS_STORAGE_KEY, JSON.stringify(normaliserAcquis(acquis)), stockage);
 }
 
 /** Les apports du compte mis en cache sur cet appareil (liste vide sinon). */
@@ -294,7 +286,7 @@ export function chargerCollectionDistante() {
   const stockage = browserStorage();
   if (!stockage) return [];
   try {
-    return normaliserCollection(JSON.parse(stockage.getItem(RPG_COLLECTION_STORAGE_KEY) ?? 'null')?.cartes);
+    return normaliserCollection(JSON.parse(lireProgression(RPG_COLLECTION_STORAGE_KEY, stockage) ?? 'null')?.cartes);
   } catch {
     return [];
   }
@@ -304,10 +296,9 @@ export function chargerCollectionDistante() {
 export function sauverCollectionDistante(cartes) {
   const stockage = browserStorage();
   if (!stockage) return false;
-  try {
-    stockage.setItem(RPG_COLLECTION_STORAGE_KEY, JSON.stringify({ cartes: normaliserCollection(cartes) }));
-    return true;
-  } catch {
-    return false;
-  }
+  return ecrireProgression(
+    RPG_COLLECTION_STORAGE_KEY,
+    JSON.stringify({ cartes: normaliserCollection(cartes) }),
+    stockage,
+  );
 }

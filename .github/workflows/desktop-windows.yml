@@ -92,6 +92,13 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          # Sans clés Supabase, la coque reste jouable mais la progression ne
+          # quitte pas le PC (pas de compte, donc pas de sauvegarde serveur).
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::warning title=Progression PC non synchronisée::VITE_SUPABASE_URL et/ou VITE_SUPABASE_PUBLISHABLE_KEY absentes de ce build : l'écran de connexion PC restera indisponible et la progression des joueurs restera sur leur ordinateur (aucune ligne dans player_progress / rpg_sablier_progress). Ajoutez les variables du dépôt (Settings → Secrets and variables → Actions → Variables), puis relancez le build."
+          else
+            echo "Supabase configuré pour ce build PC : la progression suit le compte."
+          fi
           if [ -z "$VITE_TURNSTILE_SITE_KEY" ]; then
             echo "::warning title=Protection anti-bot absente du build PC::VITE_TURNSTILE_SITE_KEY non définie (Settings → Secrets and variables → Actions → Variables) : l'écran de connexion restera bloqué sur captchaNotConfigured."
           else
