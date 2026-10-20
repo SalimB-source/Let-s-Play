@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import './rpg-entry-choice.css';
+import RpgDesktopLogin from './RpgDesktopLogin.jsx';
 
 /**
  * Écran d'entrée du Sablier de Bab El — src/games/RpgEntryChoice.jsx
@@ -97,9 +98,11 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
 
   if (!montreEcran) {
     return (
-      <Suspense fallback={<div className="rpg-entry-choice__chargement" role="status">Chargement du duel…</div>}>
-        <RpgDuelPage variantesPlateaux={variantesPlateaux} />
-      </Suspense>
+      <RpgDesktopLogin>
+        <Suspense fallback={<div className="rpg-entry-choice__chargement" role="status">Chargement du duel…</div>}>
+          <RpgDuelPage variantesPlateaux={variantesPlateaux} />
+        </Suspense>
+      </RpgDesktopLogin>
     );
   }
 
