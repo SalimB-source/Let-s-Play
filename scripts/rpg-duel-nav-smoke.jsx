@@ -3,8 +3,9 @@
  *
  * La barre du duel au doigt : `rpg-mobile.css` replie ses six commandes dans
  * un seul bouton hamburger et ne déplie le panneau que sur `.is-open`. Ce
- * scénario monte la page réelle avec un pointeur grossier, lance un duel et
- * joue le geste :
+ * scénario monte la page réelle avec un pointeur grossier. Avant de lancer un
+ * duel, il vérifie aussi que Paramètres et la déconnexion PC sont utilisables
+ * depuis le menu principal ; il joue ensuite le geste :
  *
  *   1. le hamburger s'affiche, le panneau reste replié et `aria-expanded` est
  *      à `false` ;
@@ -18,6 +19,7 @@
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { AuthContext } from '../src/auth/AuthContext.jsx';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
@@ -29,9 +31,58 @@ export async function checkRpgDuelNav(assert) {
   const root = createRoot(node);
   const click = (element) => act(async () => { element.click(); });
   const settle = (ms = 20) => act(async () => { await sleep(ms); });
+  let deconnexions = 0;
+  const comptePc = {
+    id: 'compte-pc-test',
+    email: 'joueur@example.com',
+    user_metadata: { gamertag: 'Joueur PC' },
+  };
   try {
-    await act(async () => root.render(<RpgDuelPage rng={() => 0.999} />));
+    window.letsPlayDesktop = {};
+    await act(async () => root.render(
+      <AuthContext.Provider value={{
+        user: comptePc,
+        session: { user: comptePc },
+        isDemo: false,
+        signOut: async () => { deconnexions += 1; },
+      }}>
+        <RpgDuelPage rng={() => 0.999} />
+      </AuthContext.Provider>,
+    ));
     await settle();
+
+    // Paramètres doit être disponible depuis le menu, avant qu'aucune partie ne
+    // soit lancée : l'écran et ses commandes ne dépendent pas du duel.
+    assert.equal(node.querySelector('.rpg-battle')?.dataset.scene, 'menu', 'le test commence hors partie');
+    const settingsHorsPartie = [...node.querySelectorAll('.rpg-mode-menu__switch button')]
+      .find((bouton) => bouton.textContent.includes('Paramètres'));
+    assert.ok(settingsHorsPartie, 'le menu principal expose Paramètres avant une partie');
+    await click(settingsHorsPartie);
+    const ecranSettingsHorsPartie = node.querySelector('.rpg-settings');
+    assert.ok(ecranSettingsHorsPartie, 'l’onglet ouvre son écran hors partie');
+    const decorHorsPartie = ecranSettingsHorsPartie.querySelector('.rpg-settings__decor3d');
+    const sonHorsPartie = ecranSettingsHorsPartie.querySelector('.rpg-settings__mute-all');
+    assert.ok(decorHorsPartie && sonHorsPartie, 'les réglages 3D et son sont disponibles hors partie');
+    const decorAvant = decorHorsPartie.getAttribute('aria-pressed');
+    await click(decorHorsPartie);
+    assert.notEqual(decorHorsPartie.getAttribute('aria-pressed'), decorAvant, 'le réglage 3D réagit hors partie');
+    const sonAvant = sonHorsPartie.getAttribute('aria-pressed');
+    await click(sonHorsPartie);
+    assert.notEqual(sonHorsPartie.getAttribute('aria-pressed'), sonAvant, 'le réglage audio réagit hors partie');
+    await click(sonHorsPartie);
+    await click(decorHorsPartie);
+
+    const carteCompte = ecranSettingsHorsPartie.querySelector('.rpg-settings__account');
+    assert.ok(carteCompte, 'la version PC affiche les actions de compte dans Paramètres');
+    const boutonDeconnexion = carteCompte.querySelector('.rpg-settings__signout');
+    assert.ok(boutonDeconnexion, 'Paramètres PC contient le bouton Se déconnecter');
+    await click(boutonDeconnexion);
+    await settle();
+    assert.equal(deconnexions, 1, 'le bouton appelle la déconnexion du compte');
+
+    const ongletJouer = [...node.querySelectorAll('.rpg-mode-menu__switch button')]
+      .find((bouton) => bouton.textContent.includes('Jouer'));
+    await click(ongletJouer);
     await lancerDuelDepuisMenu(node, click);
     await passerMulligan(node, click);
     await settle(50);

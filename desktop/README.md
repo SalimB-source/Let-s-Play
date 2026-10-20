@@ -161,6 +161,12 @@ vers `http://127.0.0.1:4173/auth`. Ajoutez `http://127.0.0.1:4173/**` dans
 **Supabase → Authentication → Redirect URLs**, sinon ces deux flux refusent la
 redirection locale (la connexion par mot de passe, elle, fonctionne sans cela).
 
+Les réglages restent accessibles depuis l'onglet **Paramètres** du menu
+principal, même avant de lancer un duel. On y retrouve les options 3D et audio ;
+quand un compte est connecté, la même page propose aussi **Se déconnecter**.
+Cela ferme la session et ramène à l'écran de connexion sans supprimer la
+progression du compte.
+
 ### La progression appartient au compte, pas au PC
 
 Le jeu enregistre la progression du joueur dans Supabase — une ligne privée par
