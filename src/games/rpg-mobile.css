@@ -1378,6 +1378,14 @@
   top: calc(5% + 19cqw + var(--rpg-card-counter-size) * .21 + 4px);
   left: calc(6% + (19cqw - var(--rpg-card-counter-size)) / 2);
 }
+/* La cale d'une hybride : son losange se range sous les DEUX pastilles
+   empilées (19cqw chacune, 1.5cqw d'écart), pas sous le repère commun de
+   27cqw. Spécificité égale à la règle ci-dessus, qui l'attraperait sinon
+   comme un compteur de carte mono — celle-ci vient après, elle gagne. */
+.rpg-battle .card-row .rpg-card .rpg-card__compteurs.rpg-card__compteurs--cale {
+  top: calc(5% + 19cqw * 2 + 1.5cqw + var(--rpg-card-counter-size) * .21 + 4px);
+  left: calc(6% + (19cqw - var(--rpg-card-counter-size)) / 2);
+}
 .rpg-battle .card-row .rpg-card .rpg-card__stat--atk,
 .rpg-battle .card-row .rpg-card .rpg-card__pt {
   min-width: 0;

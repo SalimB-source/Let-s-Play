@@ -927,6 +927,41 @@ function targetMode(carte) {
   return null;
 }
 
+/**
+ * La portée de la désignation EN COURS, attentes du moteur comprises.
+ *
+ * `targetMode` lit la carte : une arme s'attache à un allié, un sort de dégâts
+ * vise l'adversaire. Mais la carte n'est pas toujours ce qu'on est en train de
+ * désigner : le **Grappin d'abordage**, une fois ACCROCHÉ, ouvre une attente de
+ * prise en cale (`duel.arriveeEnAttente.abordage`) alors que le porteur est
+ * déjà choisi. La carte source reste une arme — la relire comme un
+ * attachement rallumait les alliés et redemandait « une créature alliée à
+ * équiper » : le clic sur la créature adverse visée était refusé, la prise
+ * impossible à résoudre. C'est l'attente qui donne la portée, pas la fiche.
+ *
+ * Le site de Bimini et le Défi du Jarl gardent la leur : leurs deux temps
+ * (la case, puis la créature ; le champion, puis l'adversaire) restent décrits
+ * ici, à côté de `targetMode`.
+ */
+export function porteeCibleEnCours({
+  carte = null,
+  attenteAbordage = false,
+  attenteSiteBimini = false,
+  cibleAllieeMagie = null,
+} = {}) {
+  if (attenteSiteBimini) return 'allie';
+  // Le Grappin accroché : la cale attend une proie ADVERSE. Seule une arme qui
+  // MORD (`abordage` fixe ou dynamique) ouvre ce second temps ; les autres
+  // gardent leur porteur allié même si une attente traîne encore.
+  const armeQuiMord = carteEstArme(carte)
+    && (Number.isFinite(carte?.abordage) || Boolean(carte?.abordageDynamique));
+  if (attenteAbordage && armeQuiMord) return 'ennemi';
+  if (carte?.effet?.type === 'combat' && carte?.effet?.sourceCible === 'creature-amie') {
+    return cibleAllieeMagie ? 'ennemi' : 'allie';
+  }
+  return targetMode(carte);
+}
+
 function FaceDownHand({ count, drawAnimations = [] }) {
   const visible = Math.min(count, 7);
   return (
@@ -2040,8 +2075,10 @@ export function TableCard({
       {/* Les losanges de compteurs sont sous la couleur d'une carte mono,
           sous le coût d'une hybride (ses deux pastilles occupent la gauche).
           Ceux de la Jitte restent sur l'arme dans le moteur ; sa créature
-          porteuse les montre ici, sans texte ni bonus d'arme. */}
-      {(entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0) || entite.enCale) && (
+          porteuse les montre ici, sans texte ni bonus d'arme.
+          La cale, elle, ne suit pas ce partage : le prisonnier se lit SOUS les
+          couleurs, sur une hybride aussi (voir le losange ⛓ juste après). */}
+      {(entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0) || (entite.enCale && !hybride)) && (
         <span className={`rpg-card__compteurs${hybride ? ' rpg-card__compteurs--hybride' : ''}`} aria-hidden="true">
           {entite.heures?.restants > 0 && (
             <span className="rpg-card__compteur rpg-card__compteur--heures" data-compteur="heures">
@@ -2053,7 +2090,7 @@ export function TableCard({
               <span>{entite.arme.compteurs}</span>
             </span>
           )}
-          {entite.enCale && (
+          {entite.enCale && !hybride && (
             <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
               <span>⛓</span>
             </span>
@@ -2067,6 +2104,16 @@ export function TableCard({
               <span>🎭</span>
             </span>
           )}
+        </span>
+      )}
+      {/* La cale d'une créature hybride : son bloc de couleur empile deux
+          pastilles à gauche, et le losange ⛓ se range dessous — le prisonnier
+          se lit avec les couleurs de son capteur, jamais avec son coût. */}
+      {entite.enCale && hybride && (
+        <span className="rpg-card__compteurs rpg-card__compteurs--cale" aria-hidden="true">
+          <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
+            <span>⛓</span>
+          </span>
         </span>
       )}
       <header className="rpg-card__title">
@@ -6588,11 +6635,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const attenteSiteBimini = duel.siteEnAttente?.cote === 'joueur'
     && duel.siteEnAttente?.recompense === 'bimini';
-  const modeCible = attenteSiteBimini
-    ? 'allie'
-    : (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
-      ? (cibleAllieeMagie ? 'ennemi' : 'allie')
-      : targetMode(carteCiblee);
+  const modeCible = porteeCibleEnCours({
+    carte: carteCiblee,
+    attenteAbordage,
+    attenteSiteBimini,
+    cibleAllieeMagie,
+  });
   const ciblesCoupRapideLegales = (attaquant, cote = 'joueur') => {
     const carte = cardById(attaquant?.carteId);
     if (!attaquant?.coupRapide) return [];
@@ -9098,19 +9146,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           }
         : cibleEnCours
           ? {
-            cle: `cible:${cibleEnCours}:${cibleAllieeMagie ?? '1'}`,
+            cle: `cible:${cibleEnCours}:${cibleAllieeMagie ?? '1'}:${attenteAbordage ? 'abordage' : 'cible'}`,
             classe: 'rpg-target-prompt',
-            texte: carteEstArme(carteCiblee)
-              ? `Choisissez une créature alliée à équiper avec ${carteCiblee.name}`
-              : (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
-                ? (cibleAllieeMagie
-                  ? 'Choisissez la créature adverse à affronter'
-                  : `Choisissez votre créature pour ${carteCiblee.name}`)
-                : modeCible === 'allie'
-                  ? `Choisissez une créature alliée pour ${carteCiblee?.name ?? 'cet effet'}`
-                  : modeCible === 'ennemi'
-                    ? `Choisissez une cible adverse pour ${carteCiblee?.name ?? 'cet effet'}`
-                    : `Choisissez une cible pour ${carteCiblee?.name ?? 'cet effet'}`,
+            // L'arme ACCROCHÉE ne demande plus de porteur : le Grappin a mordu,
+            // reste à désigner sa prise — une créature adverse, au seuil de
+            // l'attente. L'invite d'équipement ne revient donc que tant que
+            // l'arme attend encore son porteur.
+            texte: attenteAbordage && carteEstArme(carteCiblee)
+              ? `${carteCiblee.name} accroché — choisissez la créature adverse à prendre en cale (coût ${duel.arriveeEnAttente?.abordage} ou moins)`
+              : carteEstArme(carteCiblee)
+                ? `Choisissez une créature alliée à équiper avec ${carteCiblee.name}`
+                : (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
+                  ? (cibleAllieeMagie
+                    ? 'Choisissez la créature adverse à affronter'
+                    : `Choisissez votre créature pour ${carteCiblee.name}`)
+                  : modeCible === 'allie'
+                    ? `Choisissez une créature alliée pour ${carteCiblee?.name ?? 'cet effet'}`
+                    : modeCible === 'ennemi'
+                      ? `Choisissez une cible adverse pour ${carteCiblee?.name ?? 'cet effet'}`
+                      : `Choisissez une cible pour ${carteCiblee?.name ?? 'cet effet'}`,
           }
           : cibleArmeEnCours
             ? {

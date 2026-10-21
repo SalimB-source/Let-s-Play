@@ -606,7 +606,9 @@ aux boosters, comme le font les six autres boîtiers.
    par défaut). La créature prisonnière quitte `camp.creatures` et vit dans la
    fiche du capteur, **face visible** : mini-carte dans l’aperçu du capteur
    (même rendu que les armes portées), losange compteur sous le repère de
-   couleur, annonce au lecteur d’écran. Rien ne se déclenche, aucune aura ne
+   couleur — sous les deux pastilles empilées d’une carte hybride, comme sur
+   une mono : le losange ⛓ ne rejoint jamais les compteurs alignés sous le
+   coût —, annonce au lecteur d’écran. Rien ne se déclenche, aucune aura ne
    l’atteint.
 3. **La prise** — branchée sur **l’arrivée en jeu** (`rpgJouerCreature`,
    après la résolution de l’`arrivee`) : la créature adverse désignée de coût
@@ -618,6 +620,14 @@ aux boosters, comme le font les six autres boîtiers.
    choisit la prize la plus précieuse. Les boucliers ne comptent plus (la
    prise ne blesse pas) ; jetons, figures et Tenacité restent insaisissables ;
    les compteurs `rpgNombreDestructions` ne bougent pas.
+   **Le second temps se lit sur l’attente, pas sur la fiche** : le Grappin
+   accroché garde `cibleEnCours` sur sa carte d’arme — une fiche qui dit
+   « arme », donc « créature alliée ». La portée vient de
+   `porteeCibleEnCours` (`RpgDuelPage`) : tant que `arriveeEnAttente.abordage`
+   porte l’arme, la table ne laisse désigner que les prises adverses, et
+   l’invite annonce « accroché — choisissez la créature adverse à prendre en
+   cale ». Sans cela, la page redemandait un porteur allié et refusait la proie
+   pourtant allumée (`check:rpg-cale`).
 4. **La rançon** — `rpgRanconner(duel, cote, entiteId)` : coût imprimé du
    prisonnier, **paiement générique** (aucun pip — `rpgPeutPayerRancon`,
    voisin de `rpgPeutPayer`), légal partout où une Magie Rapide peut partir
