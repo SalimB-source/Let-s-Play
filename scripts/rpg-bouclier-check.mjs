@@ -206,9 +206,11 @@ const apercuDom = (html) => {
       'le libellé de l’aperçu ne repose pas sur la seule couleur');
     const pastille = racine.querySelector('.rpg-pastille[data-pastille="bouclier"]');
     assert.ok(pastille, 'la pastille Bouclier est rendue');
-    assert.ok(pastille.classList.contains('is-epuisee'), 'icône, mot et explication du Bouclier sont grisés');
-    assert.match(pastille.textContent, /Absorbe le prochain dégât/,
-      'son explication reste écrite sous le mot, en gris');
+    assert.ok(pastille.classList.contains('is-epuisee'), 'icône et mot du Bouclier sont grisés');
+    assert.equal(pastille.textContent, 'Bouclier 1',
+      'le mot seul reste écrit : l’aperçu n’écrit plus d’explication sous le mot-clé');
+    assert.equal(pastille.getAttribute('aria-label'), null,
+      'la pastille ne nomme que son mot-clé, grisé avec le reste');
     const furie = racine.querySelector('.rpg-pastille[data-pastille="furie"]');
     assert.ok(furie, 'la Furie du Guerrier reste rendue');
     assert.equal(furie.classList.contains('is-epuisee'), false, 'seul le Bouclier est grisé');
@@ -227,8 +229,9 @@ const apercuDom = (html) => {
     assert.match(racine.getAttribute('aria-label') ?? '', /Tenacité déjà utilisée/);
     const tenacite = racine.querySelector('.rpg-pastille[data-pastille="tenacite"]');
     assert.ok(tenacite, 'la pastille Tenacité est rendue');
-    assert.ok(tenacite.classList.contains('is-epuisee'), 'icône, mot et règle de la Tenacité sont grisés');
-    assert.match(tenacite.textContent, /Une fois par partie/);
+    assert.ok(tenacite.classList.contains('is-epuisee'), 'icône et mot de la Tenacité sont grisés');
+    assert.equal(tenacite.textContent, 'Tenacité',
+      'le mot seul, sans explication écrite dessous');
     for (const cle of ['overkill', 'furie']) {
       const pastille = racine.querySelector(`.rpg-pastille[data-pastille="${cle}"]`);
       assert.ok(pastille, `${cle} reste rendu`);
@@ -317,8 +320,8 @@ assert.match(page, /if \(!mouvementReduit && \(lumiereAbsorbee \|\| \(absorbesPa
   'la page ne déclenche pas l’impact quand le mouvement est réduit');
 assert.match(iconesCss, /\.rpg-pastille\.is-epuisee \{[\s\S]*?color: #a9a9a9;[\s\S]*?filter: grayscale\(1\);/,
   'une pastille dépensée passe entièrement au gris');
-assert.match(iconesCss, /\.rpg-pastille\.is-epuisee \.rpg-pastille__explication \{[\s\S]*?color: #b8b8b8;/,
-  'son explication aussi');
+assert.doesNotMatch(iconesCss, /\.rpg-pastille__explication/,
+  'plus aucune explication ne se déplie sous une pastille');
 assert.match(iconesCss, /\.rpg-card-icone\.is-epuisee \{[\s\S]*?filter: grayscale\(1\);/,
   'le badge de la face suit le même état');
 assert.match(reglesCss, /\.rpg-card-rules__ligne--epuisee \{[\s\S]*?color: #a9a9a9;[\s\S]*?filter: grayscale\(1\);/,
