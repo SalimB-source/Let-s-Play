@@ -7,10 +7,9 @@
  * ravisseur : elle dépasse par le haut et la droite, inclinée, assombrie,
  * derrière les chaînes, son nom en haut de la carte visible sur la bande qui
  * dépasse — le bouton du capteur la recouvre, on ne lit d'elle que ce qui
- * dépasse. Dans la FICHE du capteur (clic droit, appui), les deux créatures
- * sont EMPILÉES en perspective, tournées vers la gauche : la prisonnière
- * derrière, fortement inclinée et décalée à gauche, le capteur devant,
- * légèrement incliné. Décoratif partout : rien à cliquer, tout se lit déjà
+ * dépasse. Dans la FICHE du capteur (clic droit), la créature détenue apparaît
+ * en petite carte dans la description, comme une carte équipée ; la face du
+ * capteur reste seule. Décoratif partout : rien à cliquer, tout se lit déjà
  * dans l'aria du capteur ; sans prise, le DOM reste celui d'avant.
  */
 import assert from 'node:assert/strict';
@@ -70,36 +69,32 @@ assert.equal(docLibre.querySelector('.rpg-card__prisonniere'), null,
 assert.equal(docLibre.querySelector('[data-compteur="cale"]'), null,
   'sans prise en cale, pas de losange ⛓ non plus');
 
-// ── 3. La fiche du capteur : les deux créatures empilées en perspective ────
+// ── 3. La fiche du capteur : une seule face, captive en petite carte ───────
 const docFiche = documentDe(rendu.fiche.html);
-const empile = docFiche.querySelector('.rpg-hover-card-preview__empile--caale');
-assert.ok(empile, 'la fiche du capteur empile les deux créatures');
-const faces = [...empile.querySelectorAll(':scope > .rpg-hover-card-preview__face')];
-assert.equal(faces.length, 2, 'deux faces dans la pile : la prisonnière et le capteur');
-const facePrisonniere = faces[0];
-const faceCapteur = faces[1];
-assert.ok(facePrisonniere.classList.contains('rpg-hover-card-preview__face--prisonniere'),
-  'la face de derrière est celle de la prisonnière');
-assert.equal(facePrisonniere.getAttribute('aria-hidden'), 'true',
-  'la face détenue est décorative dans la fiche');
-assert.equal(facePrisonniere.getAttribute('data-prisonniere'), 'fennec-des-decombres',
-  'la face de derrière porte la détenue');
-assert.match(facePrisonniere.querySelector('img')?.getAttribute('src') ?? '',
+const empile = docFiche.querySelector('.rpg-hover-card-preview__empile');
+assert.ok(empile, 'la fiche garde son wrapper de face');
+assert.equal(empile.querySelectorAll(':scope > .rpg-hover-card-preview__face').length, 1,
+  'la face du capteur est seule : la captive n’est plus empilée en grand');
+assert.equal(empile.querySelector('.rpg-hover-card-preview__face--prisonniere'), null,
+  'aucune face de grande taille pour la prisonnière');
+const mini = docFiche.querySelector('[data-creature-en-cale="fennec-des-decombres"]');
+assert.ok(mini, 'la description contient la petite carte captive');
+assert.match(mini.querySelector('img')?.getAttribute('src') ?? '',
   /\/cards\/fennec-des-decombres\.jpg(\?|$)/,
-  'la fiche montre la peinture de la détenue');
-assert.equal(facePrisonniere.querySelector('.rpg-hover-card-preview__prison-nom')?.textContent,
-  'Fennec des décombres', 'le nom de la détenue est imprimé sur sa face');
-assert.ok(facePrisonniere.querySelector('.rpg-hover-card-preview__prison-chaine')?.textContent.includes('⛓'),
-  'les chaînes barrent la face détenue');
-assert.ok(!faceCapteur.classList.contains('rpg-hover-card-preview__face--prisonniere'),
-  'la face de devant est celle du capteur');
+  'la petite carte montre la peinture de la détenue');
+assert.equal(mini.querySelector('strong')?.textContent, 'Fennec des décombres',
+  'la petite carte nomme la détenue');
+assert.equal(mini.querySelector('.rpg-hover-card-preview__prisonniere-label')?.textContent, 'En cale',
+  'la description indique que la créature est en cale');
+assert.ok(mini.querySelector('figcaption small:not(.rpg-hover-card-preview__prisonniere-label)'),
+  'la petite carte conserve aussi le texte de la créature');
 assert.match(docFiche.querySelector('.rpg-hover-card-preview')?.getAttribute('aria-label') ?? '',
   /détient Fennec des décombres en sa cale/,
   'l’aria de la fiche dit la détention');
 
 const docFicheLibre = documentDe(rendu.ficheLibre.html);
-assert.equal(docFicheLibre.querySelector('.rpg-hover-card-preview__empile--caale'), null,
-  'sans prisonnière, la fiche n’empile rien');
+assert.equal(docFicheLibre.querySelector('[data-creature-en-cale]'), null,
+  'sans prisonnière, aucun petit encart de cale');
 assert.equal(docFicheLibre.querySelectorAll('.rpg-hover-card-preview__face').length, 1,
   'sans prisonnière, la fiche montre une seule face');
 
@@ -117,18 +112,13 @@ assert.match(css, /@keyframes rpg-prisonniere-arrivee/, 'la carte détenue anime
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card__prisonniere \{\s*animation: none;/,
   'en mouvement réduit, la carte détenue apparaît sans animation');
 
-const blocFiche = css.slice(css.indexOf('.rpg-hover-card-preview__empile'), css.indexOf('.rpg-hover-card-preview__face {'));
-assert.match(blocFiche, /\.rpg-hover-card-preview__empile--caale \{\s*perspective:/,
-  'la pile de la fiche vit en perspective');
-assert.match(blocFiche, /\.rpg-hover-card-preview__empile--caale > \.rpg-hover-card-preview__face\.rpg-hover-card-preview__face--prisonniere \{\s*position:\s*absolute;/,
-  'le positionnement de la captive est prioritaire sur celui des faces génériques');
-assert.match(blocFiche, /transform:\s*rotateY\(-26deg\) translateX\(-6%\)/,
-  'la prisonnière est tournée vers la gauche et décalée à gauche');
-assert.match(blocFiche, /:not\(\.rpg-hover-card-preview__face--prisonniere\) \{\s*position:\s*relative;\s*z-index:\s*1;\s*transform:\s*rotateY\(-8deg\)/,
-  'le capteur devant reste lisible, incliné vers la gauche lui aussi');
-assert.match(blocFiche, /filter:\s*brightness\(\.72\)/, 'la prisonnière est assombrie : elle est détenue');
+const blocFiche = css.slice(css.indexOf('.rpg-hover-card-preview__prisonniere {'), css.indexOf('.rpg-hover-card-preview__face {'));
+assert.match(blocFiche, /border-color:\s*rgba\(127, 212, 200, \.72\)/,
+  'la petite carte captive se distingue avec son liseré turquoise');
+assert.match(blocFiche, /figcaption > \.rpg-hover-card-preview__prisonniere-label/,
+  'la petite carte porte son libellé « En cale »');
 
-console.log('✓ La prisonnière se glisse DERRIÈRE son capteur — et la fiche empile les deux créatures, en perspective vers la gauche.');
+console.log('✓ La prisonnière se glisse derrière son capteur sur la table ; dans la fiche, elle apparaît en petite carte dans la description.');
 
 // ── 5. La cascade réelle : une seule hauteur de carte, pas deux lignes ─────
 // Les assertions de source ci-dessus ne détectent pas une règle générique
@@ -163,48 +153,36 @@ if (process.argv.includes('--browser')) {
               <div class="rpg-card-peek__bar"><button>Fermer la fiche</button></div>
             </div>
           </main></body></html>`);
-        const layout = await page.locator('.rpg-hover-card-preview__empile').evaluate((pile) => {
-          const capteur = pile.querySelector('.rpg-hover-card-preview__face:not(.rpg-hover-card-preview__face--prisonniere)');
-          const prisonniere = pile.querySelector('.rpg-hover-card-preview__face--prisonniere');
-          const face = (node) => ({
-            ...node.getBoundingClientRect().toJSON(),
-            position: getComputedStyle(node).position,
-            zIndex: Number(getComputedStyle(node).zIndex),
-            topLayout: node.offsetTop,
-            heightLayout: node.offsetHeight,
-            translationX: new DOMMatrixReadOnly(getComputedStyle(node).transform).m41,
-            rotationY: new DOMMatrixReadOnly(getComputedStyle(node).transform).m13,
-          });
+        const layout = await page.locator('.rpg-hover-card-preview__empile').evaluate((faceWrapper) => {
+          const face = faceWrapper.querySelector('.rpg-hover-card-preview__face');
+          const miniature = document.querySelector('[data-creature-en-cale]');
+          const details = document.querySelector('.rpg-hover-card-preview__details');
           return {
-            height: pile.offsetHeight,
-            nombreFaces: pile.children.length,
-            capteur: face(capteur),
-            prisonniere: prisonniere ? face(prisonniere) : null,
+            wrapperHeight: faceWrapper.offsetHeight,
+            nombreFaces: faceWrapper.querySelectorAll('.rpg-hover-card-preview__face').length,
+            faceHeight: face.offsetHeight,
+            details: details.getBoundingClientRect().toJSON(),
+            miniature: miniature ? miniature.getBoundingClientRect().toJSON() : null,
           };
         });
         const label = `${width}×${height} ${touch ? 'tactile' : 'souris'}, ${nom}`;
-        assert.ok(layout.capteur.heightLayout > 0, `${label} : la face reste visible`);
-        assert.ok(Math.abs(layout.height - layout.capteur.heightLayout) <= 1,
-          `${label} : la pile ne mesure qu’une hauteur de carte, jamais deux`);
-        assert.equal(layout.nombreFaces, avecPrisonniere ? 2 : 1, `${label} : le bon nombre de faces`);
-        assert.equal(layout.capteur.position, 'relative', `${label} : le capteur donne sa hauteur à la pile`);
+        assert.ok(layout.faceHeight > 0, `${label} : la face reste visible`);
+        assert.ok(Math.abs(layout.wrapperHeight - layout.faceHeight) <= 1,
+          `${label} : le wrapper conserve exactement une seule face`);
+        assert.equal(layout.nombreFaces, 1, `${label} : aucune grande face de captive`);
+        assert.equal(Boolean(layout.miniature), avecPrisonniere,
+          `${label} : la petite carte apparaît uniquement si la cale est pleine`);
         if (avecPrisonniere) {
-          const { capteur, prisonniere } = layout;
-          assert.equal(prisonniere.position, 'absolute', `${label} : la prisonnière reste hors du flux`);
-          assert.equal(prisonniere.topLayout, capteur.topLayout, `${label} : les deux faces partagent la même ligne`);
-          const largeurCommune = Math.min(capteur.right, prisonniere.right) - Math.max(capteur.left, prisonniere.left);
-          const hauteurCommune = Math.min(capteur.bottom, prisonniere.bottom) - Math.max(capteur.top, prisonniere.top);
-          assert.ok(largeurCommune > Math.min(capteur.width, prisonniere.width) * .8,
-            `${label} : les cartes se recouvrent en largeur`);
-          assert.ok(hauteurCommune > Math.min(capteur.height, prisonniere.height) * .8,
-            `${label} : les cartes se recouvrent en hauteur, pas l’une sous l’autre`);
-          assert.ok(prisonniere.zIndex < capteur.zIndex, `${label} : la captive reste derrière le capteur`);
-          assert.ok(prisonniere.translationX < -1 && prisonniere.rotationY > .1,
-            `${label} : son décalage et son inclinaison résistent aux règles 3D génériques`);
+          assert.ok(layout.miniature.width > 0 && layout.miniature.height > 0,
+            `${label} : la petite carte est visible`);
+          assert.ok(layout.miniature.width < layout.details.width,
+            `${label} : la captive reste une vignette dans la description`);
+          assert.ok(layout.miniature.top >= layout.details.top && layout.miniature.bottom <= layout.details.bottom,
+            `${label} : la petite carte reste dans le bloc description`);
         }
       }
       await context.close();
-      console.log(`✓ ${width}×${height} : cartes superposées avec Abordage ; fiche simple inchangée sans captive.`);
+      console.log(`✓ ${width}×${height} : une face et sa petite carte de captive dans la description ; fiche simple sans captive.`);
     }
   } finally {
     await browser.close();
