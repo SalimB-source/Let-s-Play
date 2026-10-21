@@ -288,6 +288,39 @@ test('chaque deck du catalogue impose un plateau connu', () => {
   // Les Ténèbres ont leur terrain : la Balance des Heures, le set égyptien,
   // se bat sur les dalles de la Nécropole (doc 16 §9).
   assert.equal(plateauDeDeck('balance-des-heures').plateau.id, 'necropole-des-dalles');
+  // Les Lettres de Marque embarquent sur leur propre navire pirate.
+  assert.equal(plateauDeDeck('lettres-de-marque').plateau.id, 'navire-pirate');
+});
+
+test('le navire pirate est livré en 4K 3:2 et sert de terrain aux Lettres de Marque', () => {
+  const navire = plateauParId('navire-pirate');
+  assert.ok(navire, 'Le Navire Pirate fait partie des plateaux');
+  assert.equal(navire.fichier, 'plateau-navire-pirate.jpg');
+  assert.match(navire.nom, /Navire Pirate/i);
+  assert.match(navire.lieu, /mer|pont|galion/i);
+  for (const motif of ['90°', 'rose des vents', 'canons', 'coffre au trésor', 'carte marine', 'longue-vue', 'fanaux', 'turquoise']) {
+    assert.match(navire.resume, new RegExp(motif, 'i'), `le résumé du navire pirate mentionne ${motif}`);
+  }
+  const taille = tailleJpeg(new URL(`../public/${navire.fichier}`, import.meta.url));
+  assert.deepEqual(taille, { width: 3840, height: 2560 }, 'fond livré en 4K au ratio 3:2');
+  assert.equal(RPG_PLATEAUX_PAR_DECK['lettres-de-marque'], 'navire-pirate');
+  assert.equal(RPG_PLATEAUX_PAR_DECK['essai-mana-lettres-de-marque'], 'navire-pirate');
+  assert.equal(plateauDeDeck('essai-mana-lettres-de-marque').plateau.id, 'navire-pirate');
+  // Un paquet maison construit autour des cartes corsaires rejoint aussi le navire.
+  const paquetCorsaire = RPG_DECKS.find(({ id }) => id === 'lettres-de-marque').cardIds;
+  assert.equal(plateauDeDeck(paquetCorsaire).plateau.id, 'navire-pirate');
+  assert.equal(varianteFantaisisteDe('navire-pirate'), null, 'le navire pirate est un terrain unique');
+  let appels = 0;
+  const resolution = resoudrePlateauxDuDuel({
+    deckJoueur: 'lettres-de-marque',
+    deckAdverse: 'cour-des-djinns',
+    variantesFantaisistes: true,
+    rng: () => { appels += 1; return 0.9; },
+  });
+  assert.equal(resolution.joueur.plateau.id, 'navire-pirate');
+  assert.equal(resolution.adversaire.plateau.id, 'table-des-heures');
+  assert.equal(resolution.decouper, true);
+  assert.equal(appels, 0, 'aucun tirage consommé pour deux terrains uniques');
 });
 
 test('chaque deck de la campagne impose un plateau connu', () => {

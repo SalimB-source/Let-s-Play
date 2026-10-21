@@ -39,6 +39,7 @@ const PAGE_TURN_SAMPLE_URL = new URL('./assets/page-turn.mp3', import.meta.url);
 const VICTORY_TRUMPETS_SAMPLE_URL = new URL('./assets/victory-trumpets.mp3', import.meta.url);
 const GAME_LOST_SAMPLE_URL = new URL('./assets/game-lost.mp3', import.meta.url);
 const HIT_SAMPLE_URL = new URL('./assets/hit.wav', import.meta.url);
+const PIRATE_AHOY_SAMPLE_URL = new URL('./assets/pirate-ahoy.mp3', import.meta.url);
 const CARD_PLACE_VOLUME = 0.62;
 const CARD_DRAW_VOLUME = 0.52;
 const ATTACKERS_CONFIRM_VOLUME = 0.58;
@@ -53,6 +54,10 @@ const PAGE_TURN_VOLUME = 0.5;
 const VICTORY_TRUMPETS_VOLUME = 0.6;
 const GAME_LOST_VOLUME = 0.6;
 const HIT_VOLUME = 0.62;
+const PIRATE_AHOY_VOLUME = 0.62;
+
+/** Le cri pirate (« Ahoy ! ») joué lorsqu'une créature avec Abordage kidnappe une créature en cale. */
+export const RPG_ABORDAGE_SFX = 'abordage';
 
 /** « A4 » → 440 Hz ; accepte # et b. */
 export function hz(note) {
@@ -95,6 +100,8 @@ const RPG_SFX_TABLE = {
   // Le même coup sec sert la blessure des deux camps.
   degats: [{ kind: 'sample', at: 0, dur: 0.625, g: 1 }],
   degats_sorcier: [{ kind: 'sample', at: 0, dur: 0.625, g: 1 }],
+  // Prise en cale par Abordage : « Ahoy ! » (Cartoon Pirate Voice - Ahoy.mp3).
+  abordage: [{ kind: 'sample', at: 0, dur: 1.411, g: 1 }],
 };
 
 /** Toutes les séquences nommées sont jouables par le lecteur et couvertes par les tests. */
@@ -156,6 +163,7 @@ export class RpgAudioPlayer {
     this.victoryTrumpetsAudio = null;
     this.gameLostAudio = null;
     this.hitAudio = null;
+    this.pirateAhoyAudio = null;
     const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
     if (typeof AudioCtor === 'function') {
       try {
@@ -201,6 +209,9 @@ export class RpgAudioPlayer {
         this.hitAudio = new AudioCtor(HIT_SAMPLE_URL.href);
         this.hitAudio.preload = 'auto';
         this.hitAudio.volume = HIT_VOLUME;
+        this.pirateAhoyAudio = new AudioCtor(PIRATE_AHOY_SAMPLE_URL.href);
+        this.pirateAhoyAudio.preload = 'auto';
+        this.pirateAhoyAudio.volume = PIRATE_AHOY_VOLUME;
       } catch { /* l’échantillon reste optionnel si Audio n’est pas disponible */ }
     }
   }
@@ -303,6 +314,7 @@ export class RpgAudioPlayer {
       [this.victoryTrumpetsAudio, VICTORY_TRUMPETS_VOLUME],
       [this.gameLostAudio, GAME_LOST_VOLUME],
       [this.hitAudio, HIT_VOLUME],
+      [this.pirateAhoyAudio, PIRATE_AHOY_VOLUME],
     ];
     for (const [audio, base] of samples) {
       if (!audio) continue;
@@ -333,7 +345,7 @@ export class RpgAudioPlayer {
 
   play(name, delay = 0) {
     if (!this.ctx || !this.master || this.muted || this.volume <= 0) return;
-    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier') {
+    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier' || name === 'abordage') {
       const sample = name === 'card_place'
         ? this.cardPlaceAudio
         : name === 'card_draw' ? this.cardDrawAudio
@@ -344,7 +356,7 @@ export class RpgAudioPlayer {
                 : name === 'card_countered' ? this.cardCounteredAudio
                 : name === 'creature_return' ? this.creatureReturnAudio
                 : name === 'block_impact' ? this.blockImpactAudio
-                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryTrumpetsAudio : name === 'defaite' ? this.gameLostAudio : this.hitAudio;
+                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryTrumpetsAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.pirateAhoyAudio : this.hitAudio;
       if (!sample) return;
       try {
         sample.currentTime = 0;
@@ -636,6 +648,14 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.hitAudio = null;
+    if (this.pirateAhoyAudio) {
+      try {
+        this.pirateAhoyAudio.pause?.();
+        this.pirateAhoyAudio.removeAttribute?.('src');
+        this.pirateAhoyAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.pirateAhoyAudio = null;
     if (context && typeof context.close === 'function') {
       try { context.close(); } catch { /* Contexte déjà fermé. */ }
     }

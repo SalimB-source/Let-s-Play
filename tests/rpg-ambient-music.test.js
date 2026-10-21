@@ -254,6 +254,56 @@ test('L’Erg du Sahara joue « Arabian Meditative Fantasy »', () => {
   assert.ok(existsSync(new URL(`../public/audio/${fichier}`, import.meta.url)), 'le MP3 doit être livré dans public/audio');
 });
 
+test('Le Navire Pirate joue la piste dédiée « stepanbel_pirates_main-01.mp3 » en boucle', async () => {
+  const plateauId = 'navire-pirate';
+  const fichier = 'stepanbel_pirates_main-01.mp3';
+  const urlDisque = new URL(`../public/audio/${fichier}`, import.meta.url);
+  assert.equal(plateauParId(plateauId)?.nom, 'Le Navire Pirate');
+  assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), 'le navire pirate doit être enregistré comme plateau musical');
+  assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], `/audio/${fichier}`);
+  assert.ok(existsSync(urlDisque), 'stepanbel_pirates_main-01.mp3 doit être livré dans public/audio/');
+  assert.equal(readFileSync(urlDisque).length, 3049104, 'le fichier MP3 pirate d’origine est conservé intact');
+
+  const precedentWindow = globalThis.window;
+  class FauxAudioPirate {
+    constructor(src) {
+      this.src = src;
+      this.loop = false;
+      this.preload = 'none';
+      this.volume = 1;
+      this.muted = false;
+      this.paused = true;
+      this.currentTime = 0;
+    }
+    play() {
+      this.paused = false;
+      return Promise.resolve();
+    }
+    pause() { this.paused = true; }
+    removeAttribute() { this.src = ''; }
+    load() {}
+  }
+  globalThis.window = { location: { href: 'http://localhost/' }, Audio: FauxAudioPirate };
+  try {
+    const lecteur = new RpgPlateauMusic();
+    lecteur.setPlateau(plateauId, { reroll: true });
+    assert.equal(lecteur.musicFile, `/audio/${fichier}`);
+    await lecteur.start();
+    assert.equal(lecteur.running, true);
+    assert.equal(lecteur.audio.loop, true);
+    assert.equal(lecteur.audio.src, `/audio/${fichier}`);
+    lecteur.pause();
+    assert.equal(lecteur.paused, true);
+    lecteur.resume();
+    await new Promise((r) => setTimeout(r, 0));
+    assert.equal(lecteur.paused, false);
+    lecteur.destroy();
+    assert.equal(lecteur.audio, null);
+  } finally {
+    globalThis.window = precedentWindow;
+  }
+});
+
 test('Les Ruines de Tipaza, plateau d’eau, jouent « Sorcerer of the Deep Tide »', () => {
   const plateauId = 'ruines-de-tipaza';
   const fichier = 'SorcererOfTheDeepTide.mp3';

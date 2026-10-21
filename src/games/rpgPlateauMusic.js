@@ -28,6 +28,7 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   'erg-du-sahara': `${RPG_AUDIO_BASE}ArabianMeditativeFantasyCover.mp3`,
   'caravane-de-gourara': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
   'ruines-de-tipaza': `${RPG_AUDIO_BASE}SorcererOfTheDeepTide.mp3`,
+  'navire-pirate': `${RPG_AUDIO_BASE}stepanbel_pirates_main-01.mp3`,
   'abysses-phosphorescentes': `${RPG_AUDIO_BASE}deep-sea-underwater-ambience.mp3`,
   'desert-de-verre': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
   // Le Fjord et son double, les Îles Célestes, partagent trois pistes : les
@@ -158,10 +159,11 @@ export class RpgMainThemeMusic {
     const token = ++this.playToken;
     try {
       await this.audio.play();
-      if (token !== this.playToken || !this.wanted || this.paused) {
+      if (!this.wanted || this.paused) {
         this.audio?.pause();
         return;
       }
+      if (token !== this.playToken) return;
       this.running = true;
       this.paused = false;
       this.disarmGestureUnlock();
@@ -259,6 +261,7 @@ export class RpgPlateauMusic {
     this.plateauId = null;
     this.musicFile = null;
     this.audio = null;
+    this.wanted = false;
     this.running = false;
     this.paused = false;
     this.muted = false;
@@ -283,6 +286,7 @@ export class RpgPlateauMusic {
     const nextFile = next ? choisirFichierMusique(RPG_PLATEAU_MUSIC_FILES[next], this.rng) : null;
     this.plateauId = next;
     this.musicFile = nextFile;
+    this.wanted = false;
     this.playToken += 1;
     if (this.audio) {
       this.audio.pause();
@@ -294,6 +298,8 @@ export class RpgPlateauMusic {
 
   async start() {
     if (!this.plateauId || !this.musicFile || typeof window === 'undefined' || typeof window.Audio !== 'function') return;
+    this.wanted = true;
+    this.paused = false;
     if (!this.audio) {
       this.audio = new window.Audio(this.musicFile);
       this.audio.loop = true;
@@ -304,13 +310,15 @@ export class RpgPlateauMusic {
     }
     this.audio.volume = this.effectiveVolume();
     this.audio.muted = this.muted || this.volume <= 0;
+    if (this.running && this.audio.paused === false) return;
     const token = ++this.playToken;
     try {
       await this.audio.play();
-      if (token !== this.playToken || this.paused) {
+      if (!this.wanted || this.paused) {
         this.audio?.pause();
         return;
       }
+      if (token !== this.playToken) return;
       this.running = true;
       this.paused = false;
     } catch {
@@ -319,6 +327,7 @@ export class RpgPlateauMusic {
   }
 
   stop() {
+    this.wanted = false;
     this.playToken += 1;
     this.audio?.pause();
     if (this.audio) this.audio.currentTime = 0;

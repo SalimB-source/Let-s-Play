@@ -41,6 +41,17 @@ test('la cour de l’Empereur garde sa peinture : des pétales, aucun objet 3D',
   assert.ok(theme.keyDirection[0] > 0 && theme.keyDirection[1] > 0, ' lumière du matin');
 });
 
+test('le navire pirate éclaire son pont par quatre fanaux d’angle et ses embruns marins', () => {
+  const plateau = plateauParId('navire-pirate');
+  const theme = tableSceneTheme(plateau.id);
+  assert.deepEqual(theme.objets, []);
+  assert.equal(theme.plaque, null);
+  assert.equal(tablePlaqueFile(plateau), 'plateau-navire-pirate.jpg');
+  assert.equal(theme.lights.length, 4, 'les quatre fanaux peints aux angles scintillent en 3D');
+  assert.ok(theme.lights.every((lamp) => lamp.flicker > 0), 'chaque fanal vacille légèrement');
+  assert.ok(theme.particles.vx > 0, 'la brise du large pousse les embruns le long du pont');
+});
+
 test('chaque plateau du catalogue a son décor 3D, et seulement eux', () => {
   assert.deepEqual(plateauxSansDecor3d(), []);
   assert.deepEqual(Object.keys(RPG_TABLE_SCENE_THEMES).sort(), RPG_PLATEAUX.map((plateau) => plateau.id).sort());

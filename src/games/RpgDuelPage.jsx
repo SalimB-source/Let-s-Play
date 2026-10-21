@@ -66,7 +66,7 @@ import {
   RPG_PLATEAUX_MUSICAUX,
   reprendreThemePrincipal,
 } from './rpgPlateauMusic.js';
-import { clampRpgVolume, RpgAudioPlayer } from './rpgAudio.js';
+import { clampRpgVolume, RPG_ABORDAGE_SFX, RpgAudioPlayer } from './rpgAudio.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import { blessureDuMarteau, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
@@ -138,6 +138,7 @@ import {
   rpgFermerFenetreReponse,
   rpgFinDeTour,
   rpgConsommerPresentations,
+  rpgConsommerPrisesEnCale,
   rpgConsommerSoins,
   rpgJouerCreature,
   rpgAppliquerBannieresAttaque,
@@ -149,6 +150,7 @@ import {
   rpgNouveauDuel,
   rpgNombreDestructions,
   rpgDestructionsDepuis,
+  rpgPrisesEnCale,
   rpgRenvoisEnMain,
   rpgNombreBlessures,
   rpgBlessuresDepuis,
@@ -4027,10 +4029,12 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   useEffect(() => {
     if (cartesEnDestruction.length > prevDestructionCountRef.current) {
       // Une carte que la roue de feu a consumée garde son adieu mais pas son
-      // bruit : le feu a déjà sonné au moment du coup (`flammeJouee`).
+      // bruit : le feu a déjà sonné au moment du coup (`flammeJouee`). Une
+      // créature prise en cale par Abordage rejoint son capteur par la chaîne
+      // sans jamais mourir : c'est « Ahoy ! » qui sonne, pas la destruction.
       const nouvellesDestructions = cartesEnDestruction
         .slice(prevDestructionCountRef.current)
-        .filter((effet) => !effet.flammeJouee);
+        .filter((effet) => !effet.flammeJouee && !effet.priseEnCale && !effet.abordage);
       if (nouvellesDestructions.length) {
         jouerSfx(nouvellesDestructions.some((effet) => effet.bruleeParBraise)
           ? 'flame_gust'
@@ -4134,12 +4138,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!modePvp || !pvp?.vue) return;
     // Résout les plateaux thématiques et musiques à partir des decks publics.
     const deckJ = (pvp.decks?.joueur?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.joueur.id) : null)
+      ?? (pvp.decks?.joueur?.cardIds?.length ? { id: pvp.decks.joueur.id ?? 'pvp-joueur', elements: pvp.vue.joueur?.couleurs, cardIds: pvp.decks.joueur.cardIds } : null)
       ?? (pvp.vue.joueur?.couleurs?.length ? { id: 'pvp-joueur', elements: pvp.vue.joueur.couleurs, cardIds: [] } : null);
     const deckS = (pvp.decks?.sorcier?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.sorcier.id) : null)
+      ?? (pvp.decks?.sorcier?.cardIds?.length ? { id: pvp.decks.sorcier.id ?? 'pvp-sorcier', elements: pvp.vue.sorcier?.couleurs, cardIds: pvp.decks.sorcier.cardIds } : null)
       ?? (pvp.vue.sorcier?.couleurs?.length ? { id: 'pvp-sorcier', elements: pvp.vue.sorcier.couleurs, cardIds: [] } : null);
     const plateaux = resoudrePlateauxDuDuel({ deckJoueur: deckJ, deckAdverse: deckS, variantesFantaisistes: variantesPlateaux });
-    if (plateaux?.joueur?.id) setPlateauId((actuel) => (actuel === plateaux.joueur.id ? actuel : plateaux.joueur.id));
-    if (plateaux?.adverse?.id) setPlateauAdverseId((actuel) => (actuel === plateaux.adverse.id ? actuel : plateaux.adverse.id));
+    const prochainPlateauJoueurId = plateaux?.joueur?.plateau?.id;
+    const prochainPlateauAdverseId = plateaux?.adversaire?.plateau?.id;
+    if (prochainPlateauJoueurId) setPlateauId((actuel) => (actuel === prochainPlateauJoueurId ? actuel : prochainPlateauJoueurId));
+    if (prochainPlateauAdverseId) setPlateauAdverseId((actuel) => (actuel === prochainPlateauAdverseId ? actuel : prochainPlateauAdverseId));
 
     const entrant = structuredClone(pvp.vue);
     if (entrant.phase === 'blocage' && entrant.combatDeclare?.cote === 'sorcier') {
@@ -4599,10 +4607,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     try { sfxRef.current?.unlock(); } catch { /* ignore */ }
   };
   const duelRef = useRef(null);
-  // Le duel courant se lit **ici**, avant tout effet qui le consulte : une
-  // déclaration plus bas laissait un `useEffect` lire `duel` avant son initialisation
-  // (`Cannot access 'duel' before initialization`) et la page ne se rendait plus.
-  const duel = duelRef.current;
   const tableRef = useRef(null);
   const touchDragRef = useRef(null);
   // Aperçu au doigt : sur écran tactile le survol n'existe pas, un appui long
@@ -4762,15 +4766,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const transitionTourRef = useRef(false);
   // Une pioche adverse n'entre jamais dans la file d'aperçus de ce joueur.
   useEffect(() => {
-    if (presentationDuelRef.current !== duel || ecran !== 'partie') {
-      presentationDuelRef.current = duel;
+    const duelCourant = duelRef.current;
+    if (presentationDuelRef.current !== duelCourant || ecran !== 'partie') {
+      presentationDuelRef.current = duelCourant;
       transitionTourRef.current = false;
       if (presentationsCartes.length) setPresentationsCartes([]);
-      if (duel) rpgConsommerPresentations(duel);
+      if (duelCourant) rpgConsommerPresentations(duelCourant);
       return;
     }
-    if (!duel) return;
-    const nouvelles = rpgConsommerPresentations(duel)
+    if (!duelCourant) return;
+    const nouvelles = rpgConsommerPresentations(duelCourant)
       .filter((event) => event.type === 'effet');
     if (nouvelles.length) setPresentationsCartes((file) => [...file, ...nouvelles]);
   });
@@ -4830,6 +4835,32 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   useEffect(() => () => soinsTimersRef.current.forEach((id) => window.clearTimeout(id)), []);
 
+  // ── Abordage : chaque créature kidnappée en cale déclenche le cri pirate ───
+  const prisesDuelRef = useRef(null);
+  const prisesPvpIdsRef = useRef({ code: null, ids: new Set() });
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    const prisesLocales = rpgConsommerPrisesEnCale(duelCourant);
+    if (modePvp) {
+      const codePvp = pvp?.code ?? '';
+      const prisesFeed = (Array.isArray(duelCourant?.combatFeed) ? duelCourant.combatFeed : [])
+        .filter((evenement) => evenement?.type === 'prise' && evenement.id);
+      if (prisesPvpIdsRef.current.code !== codePvp || ecran !== 'partie') {
+        prisesPvpIdsRef.current = { code: codePvp, ids: new Set(prisesFeed.map((e) => e.id)) };
+        return;
+      }
+      const nouvelles = prisesFeed.filter((e) => !prisesPvpIdsRef.current.ids.has(e.id));
+      for (const e of nouvelles) prisesPvpIdsRef.current.ids.add(e.id);
+      if (nouvelles.length || prisesLocales.length) jouerSfx(RPG_ABORDAGE_SFX);
+      return;
+    }
+    if (prisesDuelRef.current !== duelCourant || ecran !== 'partie') {
+      prisesDuelRef.current = duelCourant;
+      return;
+    }
+    if (prisesLocales.length) jouerSfx(RPG_ABORDAGE_SFX);
+  });
+
   // Compteur de séquence pour les animations de pioche.
   const sequencePiocheRef = useRef(0);
   const carteOrigineVolRef = useRef(null);
@@ -4856,9 +4887,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Quand Bimini retire sa dernière Heure, la cible se choisit directement
   // sur les créatures alliées du champ, comme une arrivée différée.
   useEffect(() => {
-    if (duel?.siteEnAttente?.cote !== 'joueur') return;
+    if (duelRef.current?.siteEnAttente?.cote !== 'joueur') return;
     setCibleEnCours((courante) => courante ?? 'source-de-bimini');
-  }, [duel?.siteEnAttente, duel?.tour]);
+  }, [duelRef.current?.siteEnAttente, duelRef.current?.tour]);
   // Le Défi du Jarl : après avoir désigné votre champion, il reste la créature
   // adverse à choisir — ce champ garde le champion entre les deux clics.
   const [cibleAllieeMagie, setCibleAllieeMagie] = useState(null);
@@ -5421,6 +5452,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
+  const duel = duelRef.current;
   const delaiReflexionSorcier = () => rpgDelaiReflexionIA(duel, 'sorcier');
   // Les cartes que l'eau ramène dans la main du joueur : elles restent hors de
   // la main tant que le tourbillon joue — le geste se lit avant le résultat.
@@ -6780,9 +6812,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const cartesDisparues = avant.filter((entite) => !vivants.has(entite.entityId)
       && !renvoyees.has(entite.entityId));
     // Une prise n'est pas une mort : son fantôme rejoint le capteur par la chaîne.
-    const prises = new Map((duel.combatFeed ?? [])
-      .filter((evenement) => evenement.type === 'prise')
-      .map((evenement) => [evenement.victim.id, evenement.killers[0]?.id]));
+    const prises = new Map([
+      ...rpgPrisesEnCale(duel).map((evenement) => [evenement.entityId, evenement.capteurId]),
+      ...(duel.combatFeed ?? [])
+        .filter((evenement) => evenement.type === 'prise')
+        .map((evenement) => [evenement.victim.id, evenement.killers[0]?.id]),
+    ]);
     const mouvementReduit = animationsReduites();
     const disparues = mouvementReduit ? [] : cartesDisparues;
     // La roue de feu : seules les blessures **parues depuis la dernière action
@@ -6882,6 +6917,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             : null;
         return ({
         ...entite,
+        priseEnCale: Boolean(capteurId),
         abordage: capteurId && destination ? {
           dx: destination.x - entite.left - entite.width / 2,
           dy: destination.y - entite.top - entite.height / 2,
