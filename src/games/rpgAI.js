@@ -88,6 +88,9 @@ function horsDAtteinteDuSort(entite, carte) {
 
 /** Version locale du test de protection (pur, sans dépendance au moteur). */
 function estProtegee(entite, couleurs) {
+  // Les Sites partagent les emplacements du champ, jamais les règles de
+  // créature : aucune cible, aucun échange ni équipement.
+  if (duelCardById(entite?.carteId)?.kind === 'site') return true;
   const liste = [...new Set((Array.isArray(couleurs) ? couleurs.flat(Infinity) : [couleurs]).filter(Boolean))];
   // `contre` accepte une couleur seule ou une liste (la Lionne du midi ardent).
   const contre = [...new Set([entite?.protection?.contre].flat(Infinity).filter(Boolean))];
@@ -139,6 +142,7 @@ function estGelee(entite) {
  *  s'arrêter — personne ne se met en travers de cette frappe-là. */
 function peutBloquerAttaquant(bloqueur, attaquant, frappePrecoce = false) {
   if (!bloqueur || !attaquant) return false;
+  if ([bloqueur, attaquant].some((entite) => duelCardById(entite?.carteId)?.kind === 'site')) return false;
   if (frappePrecoce) return false;
   if (attaquant.infiltration) return false;
   return !attaquant.envol || Boolean(bloqueur.envol);
@@ -197,7 +201,8 @@ function meurtSous(entite, montant, sourceType = 'attaque') {
  *  (`empecheBlocageToursRestants`) — la même porte que `peutBloquer` du
  *  moteur. L'oublier fait refuser l'attaque entière (`raison: 'bloqueur'`). */
 function peutBloquerEntite(entite) {
-  return Boolean(entite) && !entite.attaquee && !estGelee(entite)
+  return Boolean(entite) && duelCardById(entite?.carteId)?.kind !== 'site'
+    && !entite.attaquee && !estGelee(entite)
     && !(entite.empecheBlocageToursRestants > 0);
 }
 
@@ -1444,6 +1449,16 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     if (carte.arrivee?.type === 'jetons') gain += 2.5;
     if (carte.activation) gain += 2;
     return { score: 3 + gain - cout * 0.2, cibleId };
+  }
+
+  if (carte.kind === 'site') {
+    // Un Site paie aujourd'hui une récompense différée. Bimini vaut son soin,
+    // son +3/+3 et ses protections ; un trésor vaut les cartes qu'il révélera.
+    const attente = Math.max(1, Number(carte.site?.compteurs) || 1);
+    const valeurFinale = carte.site?.recompense === 'bimini'
+      ? (camp.creatures.some((entite) => duelCardById(entite.carteId)?.kind !== 'site') ? 11 : 5)
+      : Math.max(0, Number(carte.site?.pioche) || 0) * 3.2;
+    return { score: Math.max(0.5, valeurFinale - attente * 0.8 - cout * 0.25), cibleId: null };
   }
 
   // Créature ou héros : le corps sur la table, les arrivées modulent.

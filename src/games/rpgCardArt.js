@@ -9,7 +9,19 @@
 
 import { cardArtId, cardById } from './rpgCards.js';
 
+const CARD_ART_BASE_URL = import.meta.env?.BASE_URL ?? '/';
+
 const CARD_ART_CACHE_VERSIONS = {
+  // Lettres de Marque : les Sites changent de peinture à chaque Heure.
+  'la-vengeance-de-la-reine-anne': 'pirates-v1',
+  'le-chasseur-d-ocracoke': 'pirates-v1',
+  'source-de-bimini': 'pirates-v1',
+  'source-de-bimini-2': 'pirates-v1',
+  'source-de-bimini-1': 'pirates-v1',
+  'source-de-bimini-0': 'pirates-v1',
+  'le-tresor-de-lima': 'pirates-v2',
+  'le-tresor-de-lima-1': 'pirates-v2',
+  'le-tresor-de-lima-0': 'pirates-v2',
   'susanoo': 'susanoo-kaiga-couleurs-v1',
   'orochi': 'orochi-kaiga-vert-rouge-v2',
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
@@ -104,8 +116,25 @@ export const cardArt = (id) => {
   const artId = cardArtId(id);
   const revision = CARD_ART_CACHE_VERSIONS[artId]
     ?? (cardById(artId)?.element === 'neige' ? SET_NEIGE_ART_VERSION : undefined);
-  return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
+  return `${CARD_ART_BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
 };
+
+/**
+ * Illustration d'une entité posée. Un Site peut fournir une suite d'arts
+ * indexée par ses compteurs d'Heures : Bimini révèle ainsi une nouvelle
+ * profondeur de la grotte à chaque retrait. Les autres cartes conservent leur
+ * illustration imprimée habituelle.
+ */
+export const cardArtEntite = (entite) => {
+  const carte = cardById(entite?.carteId);
+  if (!carte) return '';
+  if (carte.kind === 'site' && carte.site?.arts) {
+    const restants = Math.max(0, Math.trunc(Number(entite?.heures?.restants) || 0));
+    return cardArt(carte.site.arts[restants] ?? carte.art ?? carte.id);
+  }
+  return cardArt(carte);
+};
+
 /**
  * Illustration « furie » d'une créature : tant que son état Furie est actif
  * (`entite.furieDeclenchee === true`), on affiche sa peinture alternative
@@ -116,5 +145,5 @@ export const cardArt = (id) => {
 export const cardArtFurie = (id) => {
   const artId = `${cardArtId(id)}-furie`;
   const revision = CARD_ART_CACHE_VERSIONS[artId];
-  return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
+  return `${CARD_ART_BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
 };

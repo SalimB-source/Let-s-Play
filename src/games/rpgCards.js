@@ -248,7 +248,7 @@ export const RPG_CARD_MOTIFS = {
 
 /** La clé de motif d'une carte, ou `null` si son type porte la résille commune. */
 export function motifCarte(carte) {
-  if (carte?.kind === 'terrain') return 'terrain';
+  if (carte?.kind === 'terrain' || carte?.kind === 'site') return 'terrain';
   const famille = magieFamille(carte);
   if (famille === 'rapide') return 'losange';
   if (famille === 'sorcellerie') return 'etincelle';
@@ -319,6 +319,7 @@ export const CARD_KIND_LABELS = {
   magie: 'Sort',
   soin: 'Soin',
   statut: 'Utilité',
+  site: 'Site',
 };
 
 /**
@@ -1975,7 +1976,7 @@ export function armeById(id) {
 
 /** Le catalogue complet du duel, avec un type unifié pour les filtres d’interface. */
 export const RPG_DUEL_CARDS = [
-  ...[...RPG_CREATURE_CARDS, ...RPG_TOUR_CARDS].map((card) => ({ ...card, kind: 'creature' })),
+  ...[...RPG_CREATURE_CARDS, ...RPG_TOUR_CARDS].map((card) => ({ ...card, kind: card.kind ?? 'creature' })),
   ...RPG_HERO_CARDS,
   ...RPG_TERRAIN_CARDS,
   ...RPG_MAGIE_CARDS,
@@ -2059,7 +2060,7 @@ export function cardHasPrintedType(cardOrId, type) {
 /** Une résonance tribale suit le TYPE imprimé, jamais le nom ni la couleur. */
 export function cardReceivesResonance(cardOrId, group) {
   const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
-  if (!card || ['terrain', 'magie'].includes(card.kind)) return false;
+  if (!card || ['terrain', 'magie', 'site'].includes(card.kind)) return false;
   if (RPG_ELEMENTS.includes(group)) return cardColors(card).includes(group);
   return cardHasPrintedType(card, group);
 }

@@ -203,11 +203,11 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
   assert.equal(new Set(RPG_DUEL_CARDS.map((carte) => carte.id)).size, RPG_DUEL_CARDS.length,
     'le catalogue réunit les cartes sans doublon');
   assert.deepEqual(new Set(RPG_DUEL_CARDS.map((carte) => carte.kind)),
-    new Set(['creature', 'hero', 'magie', 'arme']));
+    new Set(['creature', 'hero', 'magie', 'arme', 'site']));
 });
 
-test('le set de créatures existe : soixante-dix-huit cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 78, 'le Djinn du souk est retiré du jeu, les Lettres de Marque ajoutent onze cartes, la Barbe Noire compris');
+test('le set de permanents existe : quatre-vingt-une fiches façon TCG (dont deux Sites)', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 81, 'les Lettres de Marque ajoutent la Vengeance, le Chasseur et deux Sites persistants');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
