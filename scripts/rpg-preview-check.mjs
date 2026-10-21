@@ -12,6 +12,10 @@ assert.doesNotMatch(battleCss, /\.rpg-spell-preview-layer|\.rpg-preview-backdrop
   'ni couche d’aperçu, ni voile, ni carte centrale pour un sort joué');
 assert.doesNotMatch(battlePage, /apercuMagie|spellPlayed|rpg-spell-preview-layer/,
   'la page n’ouvre plus aucun aperçu au lancement d’une magie');
+assert.match(battlePage, /data-creature-en-cale=\{prisonniereCarte\.id\}[\s\S]*?cardArt\(prisonniereCarte\)[\s\S]*?prisonniereCarte\.name/,
+  'la créature capturée par Abordage apparaît en petite carte dans les détails');
+assert.doesNotMatch(battlePage, /rpg-hover-card-preview__face--prisonniere|rpg-hover-card-preview__prison-nom|rpg-hover-card-preview__prison-chaine/,
+  'la captive n’est plus empilée en grand sur la face de la créature avec Abordage');
 assert.match(battleCss, /\.rpg-spell-played\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*calc\(100% \+ 10px\);[^}]*left:\s*0;[^}]*grid-template-columns:\s*58px minmax\(0, 1fr\);/s,
   'la fiche du sort se pose au-dessus de ses piles, petite carte à gauche et texte à côté');
 assert.match(battleCss, /\.rpg-spell-played\s*\{[^}]*width:\s*min\(360px, calc\(100vw - 40px\)\);/s,

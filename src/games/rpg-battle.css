@@ -4054,57 +4054,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: none;
   animation: rpg-hover-preview-in .08s ease-out both;
 }
-/* La fiche d'un capteur d'Abordage empile les DEUX créatures : la
-   prisonnière derrière, tournée vers la gauche et décalée à gauche, le
-   capteur devant, incliné vers la gauche lui aussi — la pile se lit en
-   perspective, la détention d'un coup d'œil. Sans prisonnière, l'empilement
-   est invisible : une carte, une face, comme toujours. */
+/* La captive d'Abordage partage le format compact des cartes équipées, avec
+   un liseré turquoise pour la distinguer de l'arme portée. */
 .rpg-hover-card-preview__empile {
   position: relative;
   display: grid;
 }
-.rpg-hover-card-preview__empile--caale {
-  perspective: 1100px;
+.rpg-hover-card-preview__prisonniere {
+  border-color: rgba(127, 212, 200, .72);
+  background: rgba(18, 51, 45, .78);
 }
-.rpg-hover-card-preview__empile--caale > .rpg-hover-card-preview__face:not(.rpg-hover-card-preview__face--prisonniere) {
-  position: relative;
-  z-index: 1;
-  transform: rotateY(-8deg);
+.rpg-hover-card-preview__prisonniere figcaption > .rpg-hover-card-preview__prisonniere-label {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  color: #9de7d7;
+  font: 800 8px/1.1 var(--mono, monospace);
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
-/* La pile et les deux classes de face gardent la priorité sur la position
-   relative et le transform 3D génériques définis plus bas : la captive reste
-   superposée au capteur, sans créer une deuxième ligne dans la grille. */
-.rpg-hover-card-preview__empile--caale > .rpg-hover-card-preview__face.rpg-hover-card-preview__face--prisonniere {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  transform: rotateY(-26deg) translateX(-6%) translateY(-2%);
-  filter: brightness(.72) saturate(.85);
-}
-.rpg-hover-card-preview__prison-nom {
-  position: absolute;
-  left: 7%;
-  right: 7%;
-  bottom: 4.5%;
-  padding: 3px 6px;
-  border-radius: 4px;
-  background: rgba(18, 51, 45, .94);
-  border: 1px solid rgba(127, 212, 200, .75);
+.rpg-hover-card-preview__prisonniere figcaption > small:not(.rpg-hover-card-preview__prisonniere-label) {
   color: #d8fff5;
-  font: 700 clamp(10px, 1.4vw, 13px)/1.3 var(--display, sans-serif);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.rpg-hover-card-preview__prison-chaine {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: rgba(216, 255, 245, .95);
-  font: 900 clamp(22px, 3vw, 34px)/1 var(--display, sans-serif);
-  text-shadow: 0 2px 6px #000, 0 0 10px rgba(0, 0, 0, .85);
 }
 .rpg-hover-card-preview__face {
   --rpg-card-element-marker-top: 5%;
@@ -4544,8 +4514,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     justify-items: center;
     gap: 12px;
   }
-  /* Dimensionner la pile, pas ses faces à 100 % : le wrapper centré garde
-     ainsi sa largeur sur petit écran et les deux cartes le même gabarit. */
+  /* Dimensionner le wrapper de la face : il garde sa largeur centrée sur
+     petit écran sans modifier le gabarit de la carte. */
   .rpg-card-peek--catalogue .rpg-hover-card-preview__empile { width: min(100%, 320px, 56dvh); }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__details { width: 100%; }
 }

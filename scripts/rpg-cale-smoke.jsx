@@ -1,9 +1,8 @@
 // La carte prisonnière de la cale (Abordage), rendue réellement par
 // `TableCard` et par la fiche `HoverCardPreview`.
 // Sur la table, la prisonnière se glisse DERRIÈRE son capteur ; dans la
-// fiche du capteur, les deux créatures sont empilées en perspective,
-// tournées vers la gauche. Une créature sans cale n'a ni pile ni fiche
-// empilée.
+// fiche du capteur, elle apparaît en petite carte dans la description. Une
+// créature sans cale n'a ni petite carte captive ni face supplémentaire.
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import RpgDuelPage, { TableCard, HoverCardPreview } from '../src/games/RpgDuelPage.jsx';
@@ -33,8 +32,8 @@ export function rendreCales() {
     capitaineEnnemi: { html: rendre('cotre-de-course', capitaineCotre, 'ennemi') },
     // Le même Cotre, cale vide : le DOM reste celui d'avant, une carte = un bouton.
     libre: { html: rendre('cotre-de-course') },
-    // La fiche du capteur (clic droit sur la table) : les deux créatures
-    // empilées, la prisonnière derrière, en perspective tournée vers la gauche.
+    // La fiche du capteur (clic droit sur la table) : une petite carte captive
+    // dans les détails, et une seule face principale.
     fiche: {
       html: renderToStaticMarkup(
         <HoverCardPreview
@@ -44,7 +43,7 @@ export function rendreCales() {
         />,
       ),
     },
-    // La même fiche sans prisonnière : une seule face, aucun empilement.
+    // La même fiche sans prisonnière : une seule face, aucun encart de cale.
     ficheLibre: {
       html: renderToStaticMarkup(
         <HoverCardPreview carte={cotre} variante="catalogue" />,

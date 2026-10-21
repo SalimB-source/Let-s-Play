@@ -2338,6 +2338,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // bleu, sans répéter le nom, avant les propres lignes de la créature.
   const armesEquipees = estCreature ? armes.filter(Boolean) : [];
   const effetsArmesEquipees = armesEquipees.map(effetsAccordesParArme).filter(Boolean);
+  const prisonniereCarte = prisonniere && prisonniere.id !== carte.id ? prisonniere : null;
   const details = (
     <>
       {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
@@ -2381,6 +2382,24 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           ))}
         </div>
       )}
+      {prisonniereCarte && (
+        <div className="rpg-hover-card-preview__weapons" role="group" aria-label="Créature en cale">
+          <figure
+            className="rpg-hover-card-preview__weapon rpg-hover-card-preview__prisonniere"
+            data-creature-en-cale={prisonniereCarte.id}
+          >
+            <span className="rpg-hover-card-preview__weapon-art" aria-hidden="true">
+              <img src={cardArt(prisonniereCarte)} alt="" />
+              <span className="rpg-hover-card-preview__weapon-cost">{prisonniereCarte.cost}</span>
+            </span>
+            <figcaption>
+              <small className="rpg-hover-card-preview__prisonniere-label">En cale</small>
+              <strong>{prisonniereCarte.name}</strong>
+              {prisonniereCarte.text && prisonniereCarte.text !== '—' && <small>{prisonniereCarte.text}</small>}
+            </figcaption>
+          </figure>
+        </div>
+      )}
       {(effets.length > 0 || effetsArmesEquipees.length > 0) && (
         <div className="rpg-hover-card-preview__rules" aria-label="Effets">
           {/* La ligne bleue de l'équipement passe en tête : elle dit ce que le
@@ -2416,26 +2435,10 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // revient donc, comme sur la fiche. La fiche du catalogue, l'annonce et
   // les présentations centrées (magie jouée, effet activé) gardent la leur.
   const estApercuRapide = (variante === '' || variante === 'appui-long') && !estEnFurie;
-  // La fiche d'un capteur (Abordage) empile les DEUX créatures : la
-  // prisonnière derrière, tournée vers la gauche, le capteur devant, légèrement
-  // incliné lui aussi — la pile se lit en perspective, la détention d'un coup
-  // d'œil. Survol et appui long (texte seul) n'empilent rien.
-  const prisonniereCarte = prisonniere && prisonniere.id !== carte.id ? prisonniere : null;
+  // L'Abordage se lit dans les détails : la créature captive est montrée en
+  // vignette, comme une arme portée, sans doubler la face principale.
   const face = (
-    <div className={`rpg-hover-card-preview__empile${prisonniereCarte ? ' rpg-hover-card-preview__empile--caale' : ''}`}>
-      {prisonniereCarte && (
-        <div
-          className={`rpg-hover-card-preview__face rpg-hover-card-preview__face--prisonniere ${cardFrameClass(prisonniereCarte)} ${cardMotifClass(prisonniereCarte)}`}
-          style={cardFrameStyle(prisonniereCarte)}
-          data-prisonniere={prisonniereCarte.id}
-          aria-hidden="true"
-        >
-          <img src={cardArt(prisonniereCarte)} alt="" />
-          <CardElementBadge carte={prisonniereCarte} />
-          <span className="rpg-hover-card-preview__prison-nom">{prisonniereCarte.name}</span>
-          <span className="rpg-hover-card-preview__prison-chaine" aria-hidden="true">⛓</span>
-        </div>
-      )}
+    <div className="rpg-hover-card-preview__empile">
     <div
       ref={faceRef}
       className={`rpg-hover-card-preview__face ${estEnFurie ? 'is-furie' : cardFrameClass(carte)} ${cardMotifClass(carte)}`}
