@@ -1,5 +1,7 @@
 # 17 — Le set « Les Lettres de Marque » (Sable + Eau · l’âge de la course)
 
+> **Révision** — Le Brûlot est devenu une carte **Braise** ; il a quitté le boîtier *Les Lettres de Marque* et le paquet d’essai (remplacé par la Mousse des galiotes dans la signature, et par la Porteuse de cruches au banc d’essai). Le deck est désormais strictement Sable + Eau ; le Brûlot reste dans le set, à ouvrir dans les boosters.
+
 **Statut : implémenté, avec extension Sites persistants.** Ce document conserve
 le parti pris historique, la mécanique signature, les garde-fous et les fiches
 de référence. La Vengeance de la reine Anne, le Chasseur d’Ocracoke, la Source
@@ -545,13 +547,13 @@ Entrée à ajouter dans `RPG_MANA_ESSAI_DECKS` (`src/games/rpgManaEssai.js`) :
   id: 'essai-mana-lettres-de-marque',
   name: 'Les Lettres de Marque',
   element: 'hybride',
-  // Sable + Eau, plus la flamme du Brûlot : la seule carte Braise du paquet.
+  // Sable + Eau, sans flamme : le Brûlot, devenu Braise, a quitté le paquet.
   elements: ['sable', 'eau', 'braise'],
   boxArt: 'la-barbe-rousse',
-  description: 'Sable + Eau, la flamme du Brûlot : la course amollit, l’abordage emporte, la cale ne se rachète pas.',
+  description: 'Sable + Eau : la course amollit, l’abordage emporte, la cale ne se rachète pas.',
   cardIds: [
     ...copies('mousse-des-galiotes', 2), ...copies('rais-de-la-galiote', 2),
-    ...copies('pilote-de-la-carreira', 2), ...copies('le-brulot', 2),
+    ...copies('pilote-de-la-carreira', 2), ...copies('porteuse-de-cruches', 2),
     ...copies('tercio-de-cuivre', 2), ...copies('cotre-de-course', 2),
     ...copies('le-renegat', 2), 'negociant-des-ranscons',
     'galion-de-la-flotte', 'la-barbe-rousse',
@@ -602,7 +604,7 @@ Recette `lettres-de-marque` (`rpgDeckRecipes.js`), dans la continuité de
   mythiquesTotalMax: 1,
   signature: [
     ['rais-de-la-galiote', 2], ['cotre-de-course', 2], ['le-renegat', 2],
-    ['tercio-de-cuivre', 2], ['pilote-de-la-carreira', 2], ['le-brulot', 2],
+    ['tercio-de-cuivre', 2], ['pilote-de-la-carreira', 2], ['mousse-des-galiotes', 2],
     ['negociant-des-ranscons', 1], ['galion-de-la-flotte', 1],
     ['la-vengeance-de-la-reine-anne', 1], ['la-barbe-rousse', 1],
     ['sonneur-fele', 1],

@@ -8,8 +8,9 @@
  *
  *   - `identite`  : la ou les couleurs du **vivier de remplissage** — aucune
  *                   carte hors de là n'entre par lui, jamais (un mono-Sable
- *                   reste cent pour cent Sable) ; la signature, elle, peut
- *                   poser une exception assumée (le Brûlot, Braise) ;
+ *                   reste cent pour cent Sable) ; la signature, elle, pourrait
+ *                   poser une exception assumée, mais aucun deck de l'étagère
+ *                   n'en use aujourd'hui ;
  *   - `terrains`  : liste vide ; le mana est désormais automatique ;
  *   - `creatures` : les places de créatures et de héros ;
  *   - `magies`    : les places de sorts ;
@@ -206,18 +207,17 @@ export const RPG_RECETTES_DECKS = {
    * — le set Piraterie hybride Sable + Eau de l'âge de la course. La signature
    * pose l'équipage de la Régence : l'Abordage prend (Raïs, Cotre, Lettre de
    * marque ; le Grand Débarquement arme les cales pleines), la prise paie (Négociant), la Cargaison
-   * assure (Galion) et le Brûlot embrase la créature qui le détruit. Le
+   * assure (Galion) et la Mousse des galiotes hisse la voile dès le premier
+   * mana. Le
    * Hollandais volant — vaisseau fantôme au Coup rapide et à l'Abordage 3 —
    * hante la flotte en second grand voilier, aux côtés du Galion. L'Eau qui
    * amollit la prise vient du catalogue (Sonneur fêlé, Ressac, Lame de mer,
    * Bâton des citernes) ; le remplissage choisit les meilleures cartes
    * Sable + Eau.
    *
-   * Exception assumée : le Brûlot est **Braise**, la seule flamme de la
-   * flotte. Sa carte est posée par la **signature** — que le composeur ne
-   * filtre pas par l'identité — tandis que le vivier de remplissage reste
-   * Sable + Eau : le deck joue bien trois couleurs, mais une seule carte de
-   * Braise. Le deck déclare donc `elements: ['sable', 'eau', 'braise']`.
+   * Le Brûlot, devenu **Braise** (la seule flamme du set), a quitté le
+   * boîtier : il reste à ouvrir dans les boosters. La flotte est donc
+   * strictement Sable + Eau, et le deck déclare `elements: ['sable', 'eau']`.
    */
   'lettres-de-marque': {
     identite: ['sable', 'eau'],
@@ -229,7 +229,7 @@ export const RPG_RECETTES_DECKS = {
     mythiquesTotalMax: 1,
     signature: [
       ['rais-de-la-galiote', 2], ['cotre-de-course', 2], ['le-renegat', 2],
-      ['tercio-de-cuivre', 2], ['pilote-de-la-carreira', 2], ['le-brulot', 2],
+      ['tercio-de-cuivre', 2], ['pilote-de-la-carreira', 2], ['mousse-des-galiotes', 2],
       ['negociant-des-ranscons', 1], ['galion-de-la-flotte', 1],
       ['la-vengeance-de-la-reine-anne', 1], ['la-barbe-rousse', 1],
       ['sonneur-fele', 1],
