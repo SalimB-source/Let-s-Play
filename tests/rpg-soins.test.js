@@ -106,6 +106,31 @@ test('journal : Yamina soigne ses créatures blessées — chacune la sienne, et
     'seule la créature réellement soignée s’illumine');
 });
 
+test('journal : la Valkyrie des glaces soigne à son arrivée, y compris par la pose différée de la table', () => {
+  for (const cote of ['joueur', 'sorcier']) {
+    const duel = duelClassique();
+    duel.tour = cote;
+    donnerMana(duel, cote, 12);
+    donner(duel, cote, 'chien-du-guet');
+    const chien = rpgJouerCreature(duel, cote, 'chien-du-guet').entite;
+    assert.equal(rpgBlesserCreature(duel, cote, chien.id, 1, 'braise').ok, true);
+    assert.deepEqual([chien.pv, chien.def, chien.pvMax], [1, 1, 2]);
+    rpgConsommerSoins(duel);
+    donnerMana(duel, cote, 12);
+    donner(duel, cote, 'valkyrie-des-glaces');
+    // `cibleDifferee: true` est exactement la voie de pose de l'interface :
+    // le soin collectif ne désigne rien, il doit donc se résoudre avec la pose.
+    const pose = rpgJouerCreature(duel, cote, 'valkyrie-des-glaces', null, { cibleDifferee: true });
+    assert.equal(pose.ok, true);
+    assert.equal(pose.arriveeEnAttente, undefined, 'le soin collectif n’attend aucune cible');
+    assert.deepEqual([chien.pv, chien.def, chien.pvMax], [2, 2, 2],
+      `${cote} : la créature blessée regagne ses PV et sa défense affichée`);
+    assert.deepEqual(rpgConsommerSoins(duel), [{ cote, entityId: chien.id, montant: 1 }]);
+    assert.ok(duel.log.includes('Valkyrie des glaces : Chien du guet +1.'),
+      'le journal nomme le soin réellement appliqué');
+  }
+});
+
 test('journal : Le Poids (transfert) note les PV gagnés par le lanceur', () => {
   const duel = duelTenebres();
   duel.joueur.main.push('le-poids');

@@ -12,7 +12,7 @@ import {
   rpgPeutMulligan,
   rpgSorcierResoudreAnnonce,
 } from '../src/games/rpgDuel.js';
-import { RPG_DECKS, cardById } from '../src/games/rpgCards.js';
+import { RPG_DECKS, cardById, cardHasPrintedType } from '../src/games/rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 import { portefeuilleVide, reclamerRecompenseTutoriel } from '../src/games/rpgCredits.js';
 import {
@@ -182,28 +182,58 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
     'la Bannière grandit chaque Samouraï qui attaque');
 });
 
-test('la leçon Neige gèle un adversaire et déclenche la Furie du bloqueur', () => {
+test('la leçon Neige appelle un Viking, gèle un adversaire et active deux Furies', () => {
   const tutoriel = tutorielParId('serment-des-neuf-hivers');
+  assert.ok(tutoriel.steps.some((etape) => etape.id === 'appel-viking'),
+    'la leçon nomme la nouvelle arrivée de la Valkyrie');
   const duel = duelDeLecon(tutoriel);
   const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond');
   assert.equal(guerrier.ok, true);
   assert.equal(guerrier.entite.bouclier, 1, 'le Guerrier arrive avec un bouclier 1');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').ok, true);
-  assert.equal(guerrier.entite.atk, 2, 'la Résonance viking renforce le Guerrier, qui est Viking');
-  assert.equal(guerrier.entite.pv, 4);
+  const mainAvantValkyrie = duel.joueur.main.length;
+  const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau');
+  assert.equal(valkyrie.ok, true);
+  assert.deepEqual([valkyrie.entite.atk, valkyrie.entite.def, valkyrie.entite.pv], [3, 4, 4]);
+  assert.deepEqual(
+    [guerrier.entite.atk, guerrier.entite.pv, guerrier.entite.pvMax, guerrier.entite.resonance],
+    [1, 3, 3, 0],
+    'la Valkyrie ne porte plus de Résonance : le Guerrier reste une 1/3',
+  );
+  assert.equal(duel.joueur.main.length, mainAvantValkyrie,
+    'poser la Valkyrie et piocher son arrivée laisse le même nombre de cartes en main');
+  assert.equal(cardHasPrintedType(cardById(duel.joueur.main.at(-1)), 'viking'), true,
+    'la carte amenée par la Valkyrie porte le type Viking');
+
   const ennemi = duel.sorcier.creatures.find((entite) => entite.carteId === 'guerrier-au-bouclier-rond');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', ennemi.id).ok, true);
   assert.ok(ennemi.gelToursRestants > 0, 'la Poigne gèle même à travers le bouclier');
   assert.equal(ennemi.bouclier, 0);
+  assert.deepEqual(
+    [ennemi.atk, ennemi.pv, ennemi.pvMax, ennemi.furieDeclenchee],
+    [3, 2, 3, true],
+    'sa Furie 2 est active sous sa DEF de base 3 — mais le gel le tient hors du combat',
+  );
+  assert.equal(duel.joueur.mana.neige, 0, 'les trois cartes de la leçon consomment les dix manas');
 
+  preparerEtapeTutoriel(duel, tutoriel.steps.find((etape) => etape.id === 'furie'));
+  const berserk = duel.joueur.creatures.find((entite) => entite.carteId === 'berserk-des-trois-hivers');
+  assert.deepEqual([berserk.atk, berserk.def, berserk.pv], [1, 5, 5],
+    'la leçon installe le Berserk 1/5 comme défenseur de la riposte');
   rpgFinDeTour(duel);
   const loup = duel.sorcier.creatures.find((entite) => entite.carteId === 'loup-des-neiges');
-  assert.equal(loup.atk, 3, 'le Loup n’est pas Viking : la Résonance ne le touche pas');
-  assert.equal(rpgLancerAttaque(duel, 'sorcier', [loup.id], { [loup.id]: [guerrier.entite.id] }, null,
+  assert.deepEqual([loup.atk, loup.def, loup.pv], [2, 2, 2]);
+  assert.equal(rpgLancerAttaque(duel, 'sorcier', [loup.id], { [loup.id]: [berserk.id] }, null,
     [loup.id], {}, { attaqueDeclaree: true }).ok, true);
-  assert.equal(guerrier.entite.furieDeclenchee, true, 'la Furie se déclenche après la blessure survivie');
-  assert.equal(guerrier.entite.atk, 3);
-  assert.equal(guerrier.entite.pvMax, 5);
+  assert.deepEqual(
+    [berserk.furieDeclenchee, berserk.furieBonusAtk, berserk.atk, berserk.pv, berserk.pvMax],
+    [true, 2, 3, 3, 5],
+    'le Berserk tombe à 3 PV : sa Furie 2 lui donne +2/+0',
+  );
+  assert.deepEqual(
+    [duel.sorcier.creatures.includes(loup), loup.furieDeclenchee, loup.furieBonusAtk, loup.atk, loup.pv],
+    [true, true, 1, 3, 1],
+    'le Loup survit à 1 PV et sa propre Furie 1 s’active',
+  );
   assert.equal(duel.joueur.pv, 25, 'aucun dégât ne passe au joueur');
 });
 

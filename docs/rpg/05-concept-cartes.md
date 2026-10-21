@@ -221,37 +221,43 @@ manque du moteur (`arriveeCiblePortee`), pas de l'IA.
 
 ### Les capacités de clan du Nord
 
-Deux capacités appartiennent au set **Neige** et à lui seul ; elles se lisent
-sur la carte (`furie`, `resonance`) et le moteur les applique sans table
-d'effets supplémentaires.
+La Furie appartient au set **Neige** et à lui seul ; elle se lit sur la carte
+(`furie`) et le moteur l'applique sans table d'effets supplémentaires. Les
+valkyries n'émettent plus de Résonance viking.
 
-- **Furie X** (les vikings : Guerrier au bouclier rond 1, Berserk des trois
-  hivers 2, Jarl au marteau de guerre 3) — « Chaque fois qu'elle est blessée et
-  survit, la créature gagne +X/+X. » Une attaque **entièrement absorbée par un
-  bouclier n'est pas une blessure** : la Furie attend le premier sang. Elle
-  frappe **une seule fois par échange**, même quand la créature encaisse comme
-  attaquante et comme bloqueuse dans le même combat, et **jamais une créature
-  qui meurt** : c'est une récompense de survie, pas un baroud d'honneur. Le
-  bonus porte sur l'attaque, la défense et les points de vie présents et
-  maximum : une créature furieuse reste entamée sous son nouveau plafond.
-- **Résonance** (les valkyries : Valkyrie au corbeau et Valkyrie des glaces) —
-  « Tant qu'elle est en jeu, **toutes** les créatures Neige de la table
-  gagnent +1/+1. » L'aura est de table : elle profite aux deux camps, à la
-  valkyrie elle-même, et se cumule si deux sources sont en jeu. Chaque entité
-  retient sa part (`entite.resonance`), si bien qu'une source qui entre ou qui
-  meurt n'ajoute ou ne retire que son écart — les bonus déjà gagnés par la
-  Furie ne dérivent jamais. Perdre l'aura ne peut pas tuer : les points de vie
-  et la défense retombent au plancher de 1.
+- **Furie X** (Loup des neiges 1, Guerrier au bouclier rond et Berserk des
+  trois hivers 2, Jarl au marteau de guerre et Maître du marteau 3) — un état
+  continu : tant que la défense actuelle d'une créature vivante est sous sa
+  **DEF de base** — la défense imprimée de sa carte, sans les renforts ni les
+  auras — elle gagne **+X/+0**. Ces renforts peuvent donc absorber une
+  blessure sans la faire passer sous le seuil. Le bonus d'attaque est compté
+  à part : dès que la créature retrouve sa DEF de base, il est retiré sans
+  toucher aux autres renforts,
+  puis une nouvelle chute sous le seuil peut le rallumer. Une attaque
+  entièrement absorbée par un bouclier ne fait pas passer sous le seuil, et
+  une créature qui meurt n'entre pas en Furie.
+- **L'appel du corbeau** (Valkyrie au corbeau, 5 mana, 3/4, Envol) — à son
+  arrivée, son contrôleur pioche une carte dont la ligne de type contient
+  **Viking**, choisie uniformément au hasard parmi les exemplaires encore
+  dans son deck. Le type imprimé décide : un Loup des neiges (type Loup) et
+  les sorts Neige ne sont pas éligibles. S'il ne reste aucun Viking dans le
+  deck, l'arrivée ne fait pas piocher de carte de remplacement.
+- **Provocation** (Berserk des trois hivers, 4 mana, 1/5, Furie 2) — quand
+  le Berserk attaque, le défenseur doit lui assigner au moins un bloqueur
+  légal si un tel blocage est possible. S'il y a plusieurs provocateurs et
+  trop peu de bloqueurs, l'affectation doit couvrir le plus grand nombre de
+  provocateurs qu'un appariement légal permet ; sans bloqueur légal,
+  l'attaque peut passer.
 
-Les deux capacités se cumulent, et les vikings comme les valkyries gardent
-leurs capacités propres (Coup rapide du Berserk, Envol et arrivée des
-valkyries, arrivées du Guerrier et du Jarl).
+Les créatures du Nord gardent leurs capacités propres (Provocation du
+Berserk, Envol des valkyries, bouclier d'arrivée du Guerrier, soin d'arrivée
+de la Valkyrie des glaces).
 
 Deux règles encadrent ces attaques. **Une seule phase d'attaque par tour**, et
 par camp : une fois le combat déclaré et résolu, il n'y en a pas de second avant
 le tour suivant (`duel.attaqueJouee`, posé par `rpgLancerAttaque` sur une
 déclaration acceptée et remis à `null` par `rpgFinDeTour`). Et **Coup rapide**
-(Fériel, le Djinn de foudre, le Berserk, et les armes qui le donnent) : déclaré
+(Fériel, le Djinn de foudre, et les armes qui le donnent) : déclaré
 attaquant, le porteur **peut** frapper une créature adverse de votre choix —
 elle encaisse ses dégâts, sans riposte, avant les blessures de combat, et
 **son attaque s'arrête là** : ni blocage, ni échange, ni dégâts au sorcier.
@@ -606,7 +612,7 @@ Quatre armes forment le prototype — une par élément, des effets **mixtes
 |---|---|---|---|
 | Takouba des pistes | Sable (commune) | 3 | **+2/+0 et Infiltration** : le porteur ne peut pas être bloqué, par personne — l'arme de départ, offerte dès la première collection, est devenue une arme d'assaut pur (aucune défense ajoutée). |
 | Bâton des citernes | Eau (rare) | 4 | +1/+2 ; à son arrivée et pour **3 manas** (capacité activée au tour du contrôleur) : un jeton **Serpent des citernes** 3/1 Rapidité, **détruit à la fin du tour** de sa création. |
-| Lance de givre | Neige (rare) | 3 | **+3/+1 et Envol** au porteur. |
+| Lance de givre | Neige (rare) | 3 | **+1/−1 et Envol** au porteur, tant que la Lance reste attachée ; elle ne donne aucun bouclier. |
 | Armure de cendres | Braise (**mythique**, unique dans un deck) | 4 | **+3/+3, Rapidité** et **immunité contre la Braise** : le porteur ne peut pas être ciblé par la Braise et n'en reçoit aucun dégât (protection pilotée par `rpgEstProtegee`). |
 
 Le serpent des citernes est le deuxième jeton du catalogue

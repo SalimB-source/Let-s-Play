@@ -125,7 +125,7 @@ for (const [source, nom] of [[duel, 'le duel'], [guide, 'le guide des cartes'], 
 const surfaces = [
   [duel, 'la carte du dessus d’une pile', '${cardFrameClass(carteDuDessus)} ${cardMotifClass(carteDuDessus)}'],
   [duel, 'la carte posée sur la table', 'cardFrameClass(carte),\n        cardMotifClass(carte),'],
-  [duel, 'la face de l’aperçu rapide', 'rpg-hover-card-preview__face ${cardFrameClass(carte)} ${cardMotifClass(carte)}'],
+  [duel, 'la face de l’aperçu rapide', "rpg-hover-card-preview__face ${estEnFurie ? 'is-furie' : cardFrameClass(carte)} ${cardMotifClass(carte)}"],
   [duel, 'la carte du mulligan', '`rpg-mulligan__card--elem-${carte.element}`,\n        cardFrameClass(carte),\n        cardMotifClass(carte),'],
   [duel, 'la vignette d’un sort joué', 'rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}'],
   [duel, 'la vignette du catalogue', 'rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}'],

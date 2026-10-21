@@ -74,7 +74,7 @@ import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
-import { effetsDetailles } from './effetIcons.js';
+import { effetsDetailles, effetsEpuisesPourEntite } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgTutorialMenu from './RpgTutorialMenu.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
@@ -121,6 +121,7 @@ import {
   RPG_PV_JOUEUR,
   RPG_PV_SORCIER_BASE,
   arriveeCiblePortee,
+  arriveeConsulteDeck,
   rpgCibleAuto,
   rpgChoisirAttaquants,
   rpgContreJouable,
@@ -138,6 +139,7 @@ import {
   rpgConsommerPresentations,
   rpgConsommerSoins,
   rpgJouerCreature,
+  rpgAppliquerBannieresAttaque,
   rpgLancerAttaque,
   rpgPeutAttaquer,
   rpgLancerMagie,
@@ -156,6 +158,8 @@ import {
   rpgEmplacementsChamp,
   rpgEstProtegee,
   rpgPeutBloquerAttaquant,
+  rpgBlocageForceValide,
+  rpgProvocationValide,
   rpgPeutMulligan,
   rpgPeutPayer,
   rpgPoserTerrain,
@@ -268,12 +272,30 @@ const CARD_ART_CACHE_VERSIONS = {
   'maree-contraire': 'deflection-ultrason-v1',
   ressac: 'djinn-tourbillon-v1',
   'courant-de-retour': 'djinn-tourbillon-v1',
-  // Illustrations alternatives « furie » — créatures entachées de sang et
-  // en colère, affichées quand la créature a déclenché sa Furie.
-  'guerrier-au-bouclier-rond-furie': 'peintures-definitives-v3',
-  'berserk-des-trois-hivers-furie': 'peintures-definitives-v3',
-  'jarl-au-marteau-de-guerre-furie': 'peintures-definitives-v3',
-  'maitre-du-marteau-furie': 'maitre-du-marteau-furie-v1',
+  // Les quatre porteurs humains de Furie ont été repeints en photoréaliste
+  // fantaisiste : chaque face intacte a son double ensanglanté, armure ou
+  // casque brisé et visage en furie. On date les huit images ensemble pour
+  // qu’aucun cache ne resserve les anciennes huiles sous les mêmes noms.
+  'guerrier-au-bouclier-rond': 'furie-photorealiste-v1',
+  // La face de base du Berserk a depuis été repeinte seule : même visage et
+  // même rendu photoréaliste que son double, mais avant la Furie — debout,
+  // calme et sans aucune trace de sang. Le double garde la révision commune.
+  'berserk-des-trois-hivers': 'berserk-meme-visage-sans-sang-v1',
+  'jarl-au-marteau-de-guerre': 'furie-photorealiste-v1',
+  'maitre-du-marteau': 'furie-photorealiste-v1',
+  'guerrier-au-bouclier-rond-furie': 'furie-photorealiste-v1',
+  'berserk-des-trois-hivers-furie': 'furie-photorealiste-v1',
+  'jarl-au-marteau-de-guerre-furie': 'furie-photorealiste-v1',
+  'maitre-du-marteau-furie': 'furie-photorealiste-v1',
+  // Le Loup garde, lui, la peinture à l’huile de sa meute : même composition,
+  // chef ensanglanté et crocs dehors dans l’état Furie.
+  'loup-des-neiges-furie': 'loup-furie-huile-v1',
+  // Repeints sous leurs anciens noms : charge frontale pour le Mur, marteau
+  // seul foudroyé au-dessus du fjord pour l’Éclair, soldats gelés dans la
+  // brume pour la Brume du fjord.
+  'mur-de-boucliers': 'mur-boucliers-charge-v1',
+  'eclair-du-marteau': 'eclair-marteau-fjord-v1',
+  'brume-du-fjord': 'brume-personnes-gelees-v2',
 };
 /**
  * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la
@@ -292,9 +314,9 @@ const cardArt = (id) => {
   return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
 };
 /**
- * Illustration « furie » d'une créature : quand une créature dotée du
- * mot-clé Furie a été blessée et a survie (entite.furieDeclenchee === true),
- * on affiche sa peinture alternative entachée de sang et en colère.
+ * Illustration « furie » d'une créature : tant que son état Furie est actif
+ * (`entite.furieDeclenchee === true`), on affiche sa peinture alternative
+ * entachée de sang et en colère ; dès qu'il retombe, la face normale revient.
  * Retourne l'URL de l'image `public/cards/<id>-furie.jpg` avec sa révision
  * de cache, ou l'illustration normale si aucune peinture furie n'existe.
  */
@@ -847,6 +869,31 @@ function cartesDesIds(ids = []) {
   return ids.map((id) => cardById(id)).filter(Boolean);
 }
 
+/** L'état Furie porté par une face de créature posée, lu sur son hôte DOM :
+ *  la table écrit `data-furie-*` sur la carte, comme elle écrit déjà ses
+ *  armes (`data-armes`). Les aperçus ouverts par un geste générique — appui
+ *  long, clic droit — n'ont pas l'entité sous la main : ils lisent donc la
+ *  même étiquette, avec les statistiques du moment, pour montrer la peinture
+ *  que la créature porte réellement. Hors Furie déclenchée : `null`. */
+function etatFurieDepuisHote(hote) {
+  if (hote?.dataset?.furieDeclenchee !== 'true') return null;
+  const atk = Number(hote.dataset.furieAtk);
+  const def = Number(hote.dataset.furieDef);
+  return {
+    atk: Number.isFinite(atk) ? atk : null,
+    def: Number.isFinite(def) ? def : null,
+  };
+}
+
+/** Les effets déjà dépensés d'une créature posée (Tenacité, Bouclier), lus
+ *  sur la même étiquette DOM que sa Furie pour traverser survol, appui long
+ *  et clic droit. Hors de la table, l'étiquette est absente : rien n'est grisé. */
+function effetsEpuisesDepuisHote(hote) {
+  return String(hote?.dataset?.effetsEpuises ?? '')
+    .split(/\s+/)
+    .filter((cle) => cle === 'tenacite' || cle === 'bouclier');
+}
+
 /** Le mot du sur-titre de la fiche : l'écran qui l'a ouverte — la table du
  *  duel, le catalogue — ou le jeu lui-même pour les autres (deck, guide,
  *  récit), que le clic droit ouvre aussi. */
@@ -876,6 +923,7 @@ function effetsAccordesParArme(arme) {
   if (donne.infiltration) effets.push('Infiltration (ne peut pas être bloquée)');
   if (donne.rapidite) effets.push('Rapidité');
   if (donne.envol) effets.push('Envol');
+  if (donne.bouclier) effets.push(`Bouclier ${donne.bouclier}`);
   if (donne.coupRapide) effets.push('Coup rapide');
   if (donne.esquive) effets.push('Esquive');
   if (donne.immunite) effets.push(`Immunité contre ${ELEMENT_LABELS[donne.immunite] ?? donne.immunite}`);
@@ -1149,6 +1197,98 @@ function AuraOndes({ variante = 'resonance', phase = 0 }) {
   );
 }
 
+/** La vignette rouge de la Furie déclenchée : un voile écarlate qui serre
+ *  les bords de la face et pulse doucement, comme un pouls de rage. Même
+ *  calque sur la carte posée et dans sa preview — le changement de visuel
+ *  se reconnaît des deux côtés. Purement décoratif (`aria-hidden`) : l'état
+ *  est annoncé par l'icône Furie, la ligne « Furie déclenchée » de l'aperçu
+ *  et les descriptions lues des cartes. */
+function VignetteFurie() {
+  return <span className="rpg-furie-vignette" aria-hidden="true" />;
+}
+
+/* ── Bouclier : l'égide qui veille, puis le choc qu'elle encaisse ──────────
+   Tant qu'un bouclier est en place, la face est cerclée d'une égide glacée :
+   un liseré lumineux, un reflet qui balaie l'illustration et un écu à peine
+   dessiné en son cœur. Quand un coup l'entame, un second calque rejoue le
+   choc — flash, anneaux, écu qui se tend puis se fissure, éclats qui
+   s'arrachent — même si le bouclier vient de tomber à zéro : c'est
+   précisément ce moment-là qu'il faut voir. Tout est décoratif
+   (`aria-hidden`) : la valeur du bouclier vit dans son icône et dans la
+   description lue de la carte. */
+const DUREE_IMPACT_BOUCLIER = 850;
+const ECLATS_BOUCLIER = Object.freeze([
+  { dx: -52, dy: -42, r: -42, d: 30 },
+  { dx: 48, dy: -56, r: 36, d: 70 },
+  { dx: -62, dy: 18, r: 58, d: 105 },
+  { dx: 60, dy: 28, r: -64, d: 45 },
+  { dx: -30, dy: 58, r: 24, d: 125 },
+  { dx: 34, dy: 62, r: -28, d: 90 },
+]);
+
+/** L'écu dessiné au cœur de l'égide — le même tracé veille et encaisse. */
+function EcuBouclier({ fissure = false }) {
+  return (
+    <svg className="rpg-bouclier__ecu" viewBox="0 0 48 56" focusable="false" aria-hidden="true">
+      <path className="rpg-bouclier__ecu-corps" d="M24 3 42 9v16c0 12-7.5 21.5-18 28C13.5 46.5 6 37 6 25V9Z" />
+      <path className="rpg-bouclier__ecu-ligne" d="M24 9l12 4v12c0 8.5-5 15.5-12 21-7-5.5-12-12.5-12-21V13Z" />
+      <path className="rpg-bouclier__ecu-rune" d="M24 16v18M16 25h16" />
+      {fissure && (
+        <>
+          <path className="rpg-bouclier__ecu-fissure" d="M25 7l-4 10 6 5-5 9 4 7-3 10" />
+          <path className="rpg-bouclier__ecu-fissure" d="M21 17l-8 5M27 22l8 4M22 31l-7 7" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+/** Le bouclier en place : il se forme en entrant, puis veille en pulsant. */
+function EgideBouclier({ montant = 0, lumiere = false }) {
+  return (
+    <span
+      className={`rpg-bouclier-egide${lumiere ? ' rpg-bouclier-egide--lumiere' : ''}`}
+      data-bouclier={lumiere ? 'lumiere' : montant}
+      aria-hidden="true"
+    >
+      <span className="rpg-bouclier-egide__reflet" />
+      <EcuBouclier />
+    </span>
+  );
+}
+
+/** Le choc d'un bouclier qui vient d'absorber : il survit à sa propre chute
+ *  le temps de l'animation, porté par l'état éphémère de la page. */
+function ImpactBouclier({ montant = 0, restant = 0, lumiere = false }) {
+  const brise = lumiere || restant <= 0;
+  return (
+    <span
+      className={`rpg-bouclier-impact${lumiere ? ' rpg-bouclier-impact--lumiere' : ''}${brise ? ' is-brise' : ''}`}
+      data-bouclier-absorbe={montant || undefined}
+      data-bouclier-restant={restant}
+      data-bouclier-lumiere={lumiere ? 'true' : undefined}
+      aria-hidden="true"
+    >
+      <span className="rpg-bouclier-impact__flash" />
+      <span className="rpg-bouclier-impact__anneau rpg-bouclier-impact__anneau--a" />
+      <span className="rpg-bouclier-impact__anneau rpg-bouclier-impact__anneau--b" />
+      <EcuBouclier fissure={brise} />
+      {ECLATS_BOUCLIER.map((eclat) => (
+        <i
+          key={`${eclat.dx}-${eclat.dy}`}
+          className="rpg-bouclier-impact__eclat"
+          style={{
+            '--dx': `${eclat.dx}px`,
+            '--dy': `${eclat.dy}px`,
+            '--r': `${eclat.r}deg`,
+            '--d': `${eclat.d}ms`,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
 /** L'empreinte stable d'une entité : même identifiant, même phase — jamais un
  *  tirage au rendu. Elle désynchronise les auras et les vols des voisines. */
 function empreinteEntite(entite) {
@@ -1253,7 +1393,7 @@ function EclatSoin({ montant = null, surCarte = false }) {
 // brûlée à mort ne s'en va qu'après elle.
 const DUREE_ROUE_FEU = 900;
 
-// La foudre du marteau : la chute, l'impact, puis les arcs qui s'éteignent.
+// La foudre du marteau : l'impact, puis les arcs qui s'éteignent.
 const DUREE_ECLAIR_MARTEAU = 950;
 
 const GOUTTES_TOURBILLON = Object.freeze([
@@ -1452,22 +1592,20 @@ export function RoueDeFeu({ effet, onTermine = null }) {
 /**
  * La foudre de l'Éclair du marteau sur une créature touchée.
  *
- * Le ciel se fend au-dessus de la carte : un marteau de guerre sombre tombe
- * en diagonale, tête la première, l'éclair principal le relie au ciel et
- * frappe au même instant — flash, onde au sol, étincelles, fissures qui
- * courent sous la carte — puis le marteau rebondit et se dissout pendant que
- * des arcs résiduels rampent encore sur les bords. La créature, elle, encaisse
- * la secousse (`fx-foudre`) : les deux cinématiques partent ensemble et
- * l'impact tombe au même tiers de chacune.
+ * Le ciel se fend au-dessus de la carte : l'éclair principal descend du ciel
+ * et frappe — flash, onde au sol, étincelles, fissures qui courent sous la
+ * carte — puis des arcs résiduels rampent encore sur les bords. La créature,
+ * elle, encaisse la secousse (`fx-foudre`) : les deux cinématiques partent
+ * ensemble et l'impact tombe au même tiers de chacune.
  *
  * Comme la roue de feu, le calque se pose sur l'emplacement mesuré avant
  * l'action, garde l'inclinaison de la carte, ne capte rien et ne déplace
- * rien : une créature tuée par le marteau reçoit son adieu en dessous pendant
- * que la foudre finit de tomber là où elle se tenait.
+ * rien : une créature tuée par la foudre reçoit son adieu en dessous pendant
+ * que l'éclair finit de tomber là où elle se tenait.
  */
 /** Le tracé de l'éclair principal : il descend du ciel — hors de la face,
  *  le calque SVG déborde — en zigzags serrés jusqu'au point d'impact
- *  (50, 30), là où la tête du marteau s'abat. */
+ *  (50, 30). */
 const CHEMIN_ECLAIR_PRINCIPAL = 'M64-72L55-44L61-41L50-14L57-10L47 12L53 16L50 30';
 /** La décharge traverse la créature et gagne le sol sous la carte. */
 const CHEMIN_ECLAIR_DECHARGE = 'M50 30L47 52L53 66L48 84L51 100';
@@ -1530,8 +1668,8 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
     >
       <i className="rpg-eclair-marteau__flash" />
       <i className="rpg-eclair-marteau__onde" />
-      {/* Le ciel fendu, le marteau et les arcs, dessinés : un seul calque SVG
-          posé sur la face, qui déborde vers le haut d'où tombe le coup. */}
+      {/* Le ciel fendu et les arcs, dessinés : un seul calque SVG posé sur
+          la face, qui déborde vers le haut d'où tombe la foudre. */}
       <svg
         className="rpg-eclair-marteau__ciel"
         viewBox="0 0 100 100"
@@ -1559,25 +1697,6 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
             style={{ '--d': `${arc.retard}ms` }}
           />
         ))}
-        {/* Le marteau : le groupe extérieur pose la tête sur le point
-            d'impact, manche levé en diagonale comme sur l'illustration ;
-            le groupe intérieur porte la chute, le rebond et la dissolution. */}
-        <g transform="translate(50 30) rotate(36)">
-          <g className="rpg-eclair-marteau__marteau">
-            <rect className="rpg-eclair-marteau__manche" x="-2.4" y="-34" width="4.8" height="29" rx="2" />
-            <rect className="rpg-eclair-marteau__anneau" x="-2.8" y="-27" width="5.6" height="1.7" />
-            <rect className="rpg-eclair-marteau__anneau" x="-2.8" y="-20" width="5.6" height="1.7" />
-            <rect className="rpg-eclair-marteau__anneau" x="-2.8" y="-13" width="5.6" height="1.7" />
-            <circle className="rpg-eclair-marteau__pommeau" cx="0" cy="-36.5" r="4.1" />
-            <rect className="rpg-eclair-marteau__joue" x="-18.4" y="-5.4" width="4.4" height="10.8" rx="1.4" />
-            <rect className="rpg-eclair-marteau__joue" x="14" y="-5.4" width="4.4" height="10.8" rx="1.4" />
-            <rect className="rpg-eclair-marteau__tete" x="-15" y="-7" width="30" height="14" rx="1.8" />
-            <rect className="rpg-eclair-marteau__plaque" x="-9" y="-10" width="18" height="3.6" rx="1.2" />
-            <path className="rpg-eclair-marteau__rune" d="M-8 2.6L-2-3L1 .8L7-2.4" />
-            <path className="rpg-eclair-marteau__arc-mini" d="M-16 8L-11 12L-14 15" />
-            <path className="rpg-eclair-marteau__arc-mini" d="M15 8L11 13L14 16" />
-          </g>
-        </g>
       </svg>
       {ETINCELLES_MARTEAU.map((etincelle) => (
         <i
@@ -1620,6 +1739,9 @@ export function TableCard({
   soin = null,
   // `{ token }` le temps d'afficher « MISS » au-dessus de l'attaquant qui rate son Coup rapide.
   miss = null,
+  // `{ montant, restant, lumiere, token }` le temps du choc d'un bouclier qui
+  // vient d'absorber un coup (`ImpactBouclier`), sinon null.
+  bouclierFx = null,
   playerTurn = false,
   activationDispo = false,
   onActiver = null,
@@ -1638,6 +1760,7 @@ export function TableCard({
   // plaque d'arme d'autrefois, et `entite.arme` en secours.
   const armeCadre = armes.map((id) => cardById(id)).find(Boolean) ?? armeCarte;
   const effetsArmesEquipees = cartesDesIds(armes).map(effetsAccordesParArme).filter(Boolean);
+  const effetsEpuises = effetsEpuisesPourEntite(carte, entite);
   const protectionActive = entite.protection?.toursRestants > 0;
   const protectionLabel = protectionActive
     ? [entite.protection.contre].flat(Infinity).filter(Boolean)
@@ -1720,6 +1843,8 @@ export function TableCard({
         entite.envol ? 'is-envol' : '',
         entite.rapidite ? 'has-rapidite' : '',
         entite.infiltration ? 'has-infiltration' : '',
+        (entite.bouclier ?? 0) > 0 || entite.bouclierLumiere ? 'has-bouclier' : '',
+        entite.bouclierLumiere ? 'has-bouclier-lumiere' : '',
         carte?.resonance ? 'has-resonance' : '',
         carte?.aura ? 'has-aura' : '',
         gelee ? 'is-frozen' : '',
@@ -1732,6 +1857,7 @@ export function TableCard({
         rpgPeutAttaquer(entite) ? 'is-pret' : '',
         malInvocation ? 'is-summoning-sick' : '',
         blessee ? 'is-wounded' : '',
+        entite.furieDeclenchee ? 'is-furie' : '',
         canTarget ? 'is-ciblable' : '',
         sacrificeTarget ? 'is-sacrifice-target' : '',
         spellTarget ? 'is-spell-target' : '',
@@ -1773,7 +1899,13 @@ export function TableCard({
       data-card-id={carte?.id}
       data-soin={soin ? soin.montant : undefined}
       data-miss={miss ? 'true' : undefined}
+      data-bouclier={(entite.bouclier ?? 0) > 0 ? entite.bouclier : undefined}
+      data-bouclier-lumiere={entite.bouclierLumiere ? 'true' : undefined}
       data-armes={armes.length ? armes.join(' ') : undefined}
+      data-furie-declenchee={entite.furieDeclenchee ? 'true' : undefined}
+      data-furie-atk={entite.furieDeclenchee ? entite.atk : undefined}
+      data-furie-def={entite.furieDeclenchee ? entite.pv : undefined}
+      data-effets-epuises={effetsEpuises.length ? effetsEpuises.join(' ') : undefined}
       data-tutorial-target={tutorialTarget}
       draggable={canDragBlocker}
       onClick={onClick}
@@ -1786,10 +1918,14 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat avec 25 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 25 % de chance d’esquiver une attaque' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat avec 25 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${entite.provocation ? ', Provocation : quand elle attaque, elle doit être bloquée par au moins une créature si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 25 % de chance d’esquiver une attaque' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={entite.furieDeclenchee ? cardArtFurie(carte) : cardArt(carte)} alt="" aria-hidden="true" />
+      {entite.furieDeclenchee && <VignetteFurie />}
+      {((entite.bouclier ?? 0) > 0 || entite.bouclierLumiere) && (
+        <EgideBouclier montant={entite.bouclier ?? 0} lumiere={Boolean(entite.bouclierLumiere)} />
+      )}
       {carte?.resonance ? <AuraOndes phase={phaseAura(entite)} /> : null}
       {carte?.aura ? <AuraOndes variante="aura" phase={phaseAura(entite)} /> : null}
       {/* Envol : un souffle de lumière traverse lentement la face, comme une
@@ -1816,9 +1952,6 @@ export function TableCard({
       {gelee && <span className="rpg-card__frost" aria-hidden="true">
         <span className="rpg-card__frost-crystals" />
         <span className="rpg-card__frozen-label">❄ Gelée</span>
-      </span>}
-      {!!entite.armes?.length && <span className="rpg-card__weapons" title="Arme équipée" aria-hidden="true">
-        {entite.armes.map((id, index) => <img key={`${id}-${index}`} src={cardArt(id)} alt="" />)}
       </span>}
       <CardElementBadge carte={carte} />
       {/* Les losanges de compteurs sont sous la couleur d'une carte mono,
@@ -1892,6 +2025,14 @@ export function TableCard({
           </span>
         </footer>
         {soin && <EclatSoin key={soin.token} montant={soin.montant} surCarte />}
+        {bouclierFx && (
+          <ImpactBouclier
+            key={bouclierFx.token}
+            montant={bouclierFx.montant}
+            restant={bouclierFx.restant}
+            lumiere={Boolean(bouclierFx.lumiere)}
+          />
+        )}
         {miss && (
           <span key={miss.token} className="rpg-card__miss" aria-hidden="true">
             MISS
@@ -2078,7 +2219,7 @@ function useLumiereCartes() {
   }, []);
 }
 
-function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null }) {
+export function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null }) {
   const faceRef = useRef(null);
   const carteId = carte?.id ?? null;
 
@@ -2168,6 +2309,16 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
+  // Une créature en Furie ne se consulte pas sous sa peinture d'avant la
+  // blessure : l'aperçu montre le visuel qu'elle porte sur la table —
+  // illustration « furie » pleine page, sans cadre — et ses statistiques du
+  // moment. Sans statistiques transmises, seule l'attaque reçoit le bonus
+  // imprimé : la Furie ne donne aucune défense.
+  const estEnFurie = estCreature && Boolean(furieDeclenchee);
+  const bonusFurie = Math.max(0, Number(carte.furie) || 0);
+  const statFurie = (valeur, repli) => (valeur == null || valeur === '' || !Number.isFinite(Number(valeur)) ? repli : Number(valeur));
+  const attaqueAffichee = estEnFurie ? statFurie(statsFurie?.atk, (carte.atk ?? 0) + bonusFurie) : carte.atk;
+  const defenseAffichee = estEnFurie ? statFurie(statsFurie?.def, carte.def ?? 0) : carte.def;
   // La même signature que celle de la main : la face de l'aperçu — survol,
   // appui long, fiche du catalogue, annonce — porte le socle de la famille, et
   // sa ligne de type prend la teinte de cette famille.
@@ -2180,6 +2331,12 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
   // pastille ne nomme (arrivées, morts, sorts…) : rien n'est écrit deux fois.
   const lecture = effetsDetailles(carte);
   const effets = cardEffectLines(lecture.texte);
+  const effetsEpuisesActifs = [...new Set(effetsEpuises ?? [])]
+    .filter((cle) => cle === 'tenacite' || cle === 'bouclier');
+  const mentionsEffetsEpuises = [
+    effetsEpuisesActifs.includes('tenacite') && 'Tenacité déjà utilisée',
+    effetsEpuisesActifs.includes('bouclier') && 'Bouclier tombé',
+  ].filter(Boolean);
   // La modification chiffrée que la carte inflige (-2/-2 pour la Lame de mer).
   const modifCarte = modificationStats(carte);
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
@@ -2199,8 +2356,19 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
       {estFiche && <span className="rpg-hover-card-preview__eyebrow">{surface ? `${surface} · ` : ''}{carteFamille(carte).toUpperCase()}</span>}
       {(variante === 'annonce' || estFiche) && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
       {(estFiche || !estCreature) && <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>}
-      <PastillesCarte carte={carte} pastilles={lecture.pastilles} className="rpg-hover-card-preview__pastilles" deplier />
+      <PastillesCarte
+        carte={carte}
+        pastilles={lecture.pastilles}
+        className="rpg-hover-card-preview__pastilles"
+        deplier
+        effetsEpuises={effetsEpuisesActifs}
+      />
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
+      {estEnFurie && (
+        <p className="rpg-hover-card-preview__furie" data-furie-declenchee="true">
+          Furie déclenchée — {attaqueAffichee}/{defenseAffichee}
+        </p>
+      )}
       {cibleAnnoncee && (
         <div className="rpg-spell-played__target rpg-hover-card-preview__target">
           {(cibleAnnoncee.illustrationUrl || cibleAnnoncee.illustrationId)
@@ -2239,7 +2407,11 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
               {ligne}
             </span>
           ))}
-          {effets.map((ligne, index) => <span key={`${index}-${ligne}`}><RpgCardRules carte={carte} text={ligne} /></span>)}
+          {effets.map((ligne, index) => (
+            <span key={`${index}-${ligne}`}>
+              <RpgCardRules carte={carte} text={ligne} effetsEpuises={effetsEpuisesActifs} />
+            </span>
+          ))}
         </div>
       )}
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
@@ -2252,24 +2424,28 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
   );
   // L'aperçu rapide — le survol à la souris comme l'appui long au doigt — ne
   // montre plus l'illustration de la carte : seul l'encadré de texte (coût,
-  // mots-clés, effets) s'affiche. La fiche du catalogue, l'annonce et les
-  // présentations centrées (magie jouée, effet activé) gardent leur face.
-  const estApercuRapide = variante === '' || variante === 'appui-long';
+  // mots-clés, effets) s'affiche. Exception : une Furie déclenchée a changé
+  // de peinture, et ce changement doit se voir dès la preview — sa face
+  // revient donc, comme sur la fiche. La fiche du catalogue, l'annonce et
+  // les présentations centrées (magie jouée, effet activé) gardent la leur.
+  const estApercuRapide = (variante === '' || variante === 'appui-long') && !estEnFurie;
   const face = (
     <div
       ref={faceRef}
-      className={`rpg-hover-card-preview__face ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
-      style={cardFrameStyle(carte)}
+      className={`rpg-hover-card-preview__face ${estEnFurie ? 'is-furie' : cardFrameClass(carte)} ${cardMotifClass(carte)}`}
+      style={estEnFurie ? undefined : cardFrameStyle(carte)}
+      data-furie-declenchee={estEnFurie ? 'true' : undefined}
       aria-hidden="true"
     >
-      <img src={cardArt(carte)} alt="" />
+      <img src={estEnFurie ? cardArtFurie(carte) : cardArt(carte)} alt="" />
+      {estEnFurie && <VignetteFurie />}
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
       <SortSceau carte={carte} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" />
       {estCreature && (
-        <footer className="rpg-card__foot" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
-          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
-          <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
+        <footer className="rpg-card__foot" aria-label={`Attaque ${attaqueAffichee}, défense ${defenseAffichee}`}>
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
+          <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{defenseAffichee}</span></span>
         </footer>
       )}
     </div>
@@ -2277,12 +2453,13 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
   return (
     <aside
       ref={panelRef}
-      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${interactif ? ' is-interactif' : ''}${estApercuRapide ? ' rpg-hover-card-preview--texte-seul' : ''}`}
+      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${estEnFurie ? 'rpg-hover-card-preview--furie' : cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${interactif ? ' is-interactif' : ''}${estApercuRapide ? ' rpg-hover-card-preview--texte-seul' : ''}`}
       onPointerEnter={onPointerEnter ?? undefined}
       onPointerLeave={onPointerLeave ?? undefined}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${modifCarte && !carteEstArme(carte) ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${cibleLabel}`}
-      style={{ ...style, ...cardFrameStyle(carte) }}
+      data-effets-epuises={effetsEpuisesActifs.length ? effetsEpuisesActifs.join(' ') : undefined}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${modifCarte && !carteEstArme(carte) ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${cibleLabel}`}
+      style={{ ...style, ...(estEnFurie ? {} : cardFrameStyle(carte)) }}
     >
       {variante === 'annonce' ? (
         <div className="rpg-hover-card-preview__layout">
@@ -2306,7 +2483,7 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
  * que le survol de la souris, posé sur un volet sombre qui l'isole du plateau.
  * N'importe quel toucher — le volet ou le bouton — le referme. L'appui long ne
  * joue jamais la carte : c'est une consultation, pas une action. */
-function ApercuCarteAppuiLong({ carte, armes = [], onFermer }) {
+function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], onFermer }) {
   const boutonFermerRef = useRef(null);
   // Le focus arrive sur « Fermer l'aperçu » sans faire défiler la page :
   // un `scroll` même minuscule interromptrait un appui long encore en cours —
@@ -2326,7 +2503,7 @@ function ApercuCarteAppuiLong({ carte, armes = [], onFermer }) {
     >
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__panel">
-        <HoverCardPreview carte={carte} armes={armes} variante="appui-long" />
+        <HoverCardPreview carte={carte} armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} effetsEpuises={effetsEpuises} variante="appui-long" />
       </div>
       <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
         Fermer l’aperçu
@@ -2352,7 +2529,7 @@ function ApercuCarteAppuiLong({ carte, armes = [], onFermer }) {
  *
  * `surface` est le mot du sur-titre — l'écran qui a ouvert la fiche ; `armes`
  * sont celles que porte la créature ouverte, quand le duel les connaît. */
-function ApercuCarteCatalogue({ carte, armes = [], surface = 'CATALOGUE', onFermer }) {
+function ApercuCarteCatalogue({ carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], surface = 'CATALOGUE', onFermer }) {
   const boutonFermerRef = useRef(null);
   // Le focus va au bouton Fermer sans faire défiler la grille : le catalogue
   // reste où le joueur l'avait laissé, et Échap referme depuis là.
@@ -2371,7 +2548,7 @@ function ApercuCarteCatalogue({ carte, armes = [], surface = 'CATALOGUE', onFerm
     >
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__panel">
-        <HoverCardPreview carte={carte} variante="catalogue" armes={armes} surface={surface} />
+        <HoverCardPreview carte={carte} variante="catalogue" armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} effetsEpuises={effetsEpuises} surface={surface} />
       </div>
       <div className="rpg-card-peek__bar">
         <button
@@ -4341,6 +4518,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [apercuAppui, setApercuAppui] = useState(null);
   // Armes portées par la créature pressée (vides pour toute autre carte).
   const [apercuAppuiArmes, setApercuAppuiArmes] = useState([]);
+  // La Furie déclenchée de la créature pressée, avec ses statistiques du
+  // moment (`null` partout ailleurs) : sa preview montre sa peinture furie.
+  const [apercuAppuiFurie, setApercuAppuiFurie] = useState(null);
+  // Tenacité/Bouclier déjà dépensés par la créature pressée : sa preview les grise.
+  const [apercuAppuiEffetsEpuises, setApercuAppuiEffetsEpuises] = useState([]);
   // La fiche : là où le doigt tient une seconde, la souris **clique** — au
   // catalogue depuis toujours, et par un clic droit partout ailleurs dans le
   // jeu : la carte s'ouvre en grand, illustration et effets, sans être jouée.
@@ -4349,6 +4531,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // la table du duel) et le mot du sur-titre : l'écran qui a ouvert la fiche.
   const [apercuCatalogueArmes, setApercuCatalogueArmes] = useState([]);
   const [apercuCatalogueSurface, setApercuCatalogueSurface] = useState('CATALOGUE');
+  // Même état Furie pour la fiche ouverte d'un clic droit sur la table.
+  const [apercuCatalogueFurie, setApercuCatalogueFurie] = useState(null);
+  // Même grisaille des effets dépensés pour cette fiche.
+  const [apercuCatalogueEffetsEpuises, setApercuCatalogueEffetsEpuises] = useState([]);
   // La carte consultée (appui long ou fiche) garde le focus pendant que le
   // plateau passe au flou derrière elle : on retient l'élément sur lequel le
   // geste a été fait, et un effet y pose `data-apercu-source`, que la feuille
@@ -4362,7 +4548,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Changer d'écran (menu, deck, catalogue, duel) referme l'aperçu au doigt
     // comme la fiche ouverte d'un clic, et désarme les gestes en cours.
     setApercuAppui(null);
+    setApercuAppuiFurie(null);
+    setApercuAppuiEffetsEpuises([]);
     setApercuCatalogue(null);
+    setApercuCatalogueFurie(null);
+    setApercuCatalogueEffetsEpuises([]);
     if (ecran !== 'partie' && tutorielActif) {
       etapeTutorielIdRef.current = null;
       setEtapeTutorielId(null);
@@ -4450,6 +4640,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [animationsEntites, setAnimationsEntites] = useState({});
   const [missVisibles, setMissVisibles] = useState({});
   const sequenceMissRef = useRef(0);
+  // Les chocs de bouclier en cours : `{ [entityId]: { montant, restant,
+  // lumiere, token } }` le temps d'`ImpactBouclier` — assez longtemps pour
+  // voir l'égide encaisser (et, à zéro, se briser) avant de s'effacer.
+  const [boucliersVisibles, setBoucliersVisibles] = useState({});
+  const sequenceBouclierRef = useRef(0);
   const [cartesEnDestruction, setCartesEnDestruction] = useState([]);
   // Les tourbillons d'eau des renvois en main : `{ entityId, cardId, left, top,
   // width, height, angle, effectId, expireA }`, le temps de l'effet seulement.
@@ -4459,7 +4654,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // seulement : la roue brûle l'emplacement, pas la carte.
   const [rouesFeu, setRouesFeu] = useState([]);
   // Les foudres de l'Éclair du marteau : même relève d'emplacement que la
-  // roue, le temps que le marteau tombe et que ses arcs s'éteignent.
+  // roue, le temps que l'éclair tombe et que ses arcs s'éteignent.
   const [eclairsMarteau, setEclairsMarteau] = useState([]);
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
@@ -4726,7 +4921,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(id);
   }, [rouesFeu]);
 
-  // Même chien de garde pour les foudres du marteau : aucun marteau ne reste
+  // Même chien de garde pour les foudres du marteau : aucun éclair ne reste
   // suspendu au-dessus de la table si la minuterie se perd.
   useEffect(() => {
     if (!eclairsMarteau.length) return undefined;
@@ -5289,7 +5484,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const rectangle = event.currentTarget.getBoundingClientRect();
     const minuteurs = minuteursSurvolRef.current;
     const actuel = apercuSurvolRef.current;
-    const memeCarte = actuel?.carteId === carte.id;
+    const entiteId = event.currentTarget.dataset.entityId ?? null;
+    const furie = etatFurieDepuisHote(event.currentTarget);
+    const effetsEpuises = effetsEpuisesDepuisHote(event.currentTarget);
+    // Deux exemplaires de la même carte ne partagent pas leur preview : une
+    // créature en Furie (ou équipée) n'hérite pas de l'aperçu de sa jumelle.
+    const memeCarte = actuel?.carteId === carte.id && (actuel?.entiteId ?? null) === entiteId;
     // En chemin vers la colonne d'infos de l'aperçu (ou dedans), les cartes
     // traversées ne le remplacent pas.
     if (!memeCarte && (couloirSurvolRef.current || dansApercuRef.current) && actuel) return;
@@ -5298,21 +5498,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     couloirSurvolRef.current = null;
     // Retour sur la carte déjà ouverte (après un passage sur son aperçu, ou
     // parce que la carte soulevée a glissé sous la souris) : l'aperçu reste
-    // lisible, sans rejouer le son ; il ne suit que si la carte a bougé.
+    // lisible, sans rejouer le son ; il suit la carte si elle a bougé et
+    // rafraîchit ce qu'elle porte — armes, et Furie si elle s'est enflammée.
     if (memeCarte) {
-      if (actuel.rectangle?.left !== rectangle.left || actuel.rectangle?.top !== rectangle.top) {
-        setApercuSurvol((courant) => (courant?.carteId === carte.id ? {
-          ...courant,
-          rectangle: {
-            left: rectangle.left,
-            right: rectangle.right,
-            top: rectangle.top,
-            bottom: rectangle.bottom,
-            width: rectangle.width,
-            height: rectangle.height,
-          },
-        } : courant));
-      }
+      setApercuSurvol((courant) => (courant?.carteId === carte.id && (courant.entiteId ?? null) === entiteId ? {
+        ...courant,
+        armesIds: armes,
+        furie,
+        effetsEpuises,
+        rectangle: {
+          left: rectangle.left,
+          right: rectangle.right,
+          top: rectangle.top,
+          bottom: rectangle.bottom,
+          width: rectangle.width,
+          height: rectangle.height,
+        },
+      } : courant));
       return;
     }
     window.clearTimeout(minuteurs.lisible);
@@ -5324,7 +5526,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // d'après sa boîte réelle, avant la première peinture.
     setApercuSurvol({
       carteId: carte.id,
+      entiteId,
       armesIds: armes,
+      furie,
+      effetsEpuises,
       rectangle: {
         left: rectangle.left,
         right: rectangle.right,
@@ -5428,6 +5633,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     annulerAppuiLong();
     jouerSfx('annuler');
     carteSourceApercuRef.current = null;
+    setApercuAppuiFurie(null);
+    setApercuAppuiEffetsEpuises([]);
     setApercuAppui(null);
   };
   /** Un seul geste pour toute la page : toute carte affichée porte un
@@ -5443,6 +5650,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!peutDemarrerAppuiLong(event)) return;
     annulerAppuiLong();
     const armesDeLaCarte = (hote.dataset.armes ?? '').split(' ').filter(Boolean);
+    const furieDeLaCarte = etatFurieDepuisHote(hote);
+    const effetsEpuisesDeLaCarte = effetsEpuisesDepuisHote(hote);
     appuiLongRef.current = startRpgLongPress(event, {
       source: hote,
       onTrigger: () => {
@@ -5456,6 +5665,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         // Le plateau se floute derrière la carte, pas elle : on retient l'élément.
         carteSourceApercuRef.current = hote;
         setApercuAppuiArmes(armesDeLaCarte);
+        setApercuAppuiFurie(furieDeLaCarte);
+        setApercuAppuiEffetsEpuises(effetsEpuisesDeLaCarte);
         setApercuAppui(carte.id);
       },
     });
@@ -5464,6 +5675,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const fermerApercuCatalogue = () => {
     jouerSfx('annuler');
     carteSourceApercuRef.current = null;
+    setApercuCatalogueFurie(null);
+    setApercuCatalogueEffetsEpuises([]);
     setApercuCatalogue(null);
   };
   /** Le jeu est une surface de lecture : cliquer ou cliquer droit une carte
@@ -5475,13 +5688,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * flèches, ni compteur, ni pas de page. Pour lire une autre carte, on ouvre
    * la sienne. `armes` dit ce que porte la créature ouverte (duel), `surface`
    * le mot du sur-titre : l'écran qui a ouvert la fiche. */
-  const ouvrirApercuCatalogue = (carte, { armes = [], surface = 'CATALOGUE' } = {}) => {
+  const ouvrirApercuCatalogue = (carte, { armes = [], furie = null, effetsEpuises = [], surface = 'CATALOGUE' } = {}) => {
     if (!carte) return;
     annulerAppuiLong();
     masquerApercuSurvol();
     unlockSfx();
     jouerSfx('hover');
     setApercuCatalogueArmes(armes);
+    setApercuCatalogueFurie(furie);
+    setApercuCatalogueEffetsEpuises(effetsEpuises);
     setApercuCatalogueSurface(surface);
     setApercuCatalogue(carte.id);
   };
@@ -5527,6 +5742,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     carteSourceApercuRef.current = hote;
     ouvrirApercuCatalogue(carte, {
       armes: (hote.dataset.armes ?? '').split(' ').filter(Boolean),
+      furie: etatFurieDepuisHote(hote),
+      effetsEpuises: effetsEpuisesDepuisHote(hote),
       surface: SURFACE_FICHE[ecran] ?? 'LE SABLIER',
     });
   };
@@ -5769,6 +5986,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {apercuSurvol && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
+            furieDeclenchee={Boolean(apercuSurvol.furie)}
+            statsFurie={apercuSurvol.furie}
+            effetsEpuises={apercuSurvol.effetsEpuises ?? []}
             style={apercuSurvol.style}
             panelRef={panelRef}
             interactif={Boolean(apercuSurvol.interactif)}
@@ -5776,11 +5996,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onPointerLeave={sortirApercuSurvol}
           />
         )}
-        {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
+        {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} furieDeclenchee={Boolean(apercuAppuiFurie)} statsFurie={apercuAppuiFurie} effetsEpuises={apercuAppuiEffetsEpuises} onFermer={fermerApercuAppui} />}
         {apercuCatalogue && (
           <ApercuCarteCatalogue
             carte={cardById(apercuCatalogue)}
             armes={cartesDesIds(apercuCatalogueArmes)}
+            furieDeclenchee={Boolean(apercuCatalogueFurie)}
+            statsFurie={apercuCatalogueFurie}
+            effetsEpuises={apercuCatalogueEffetsEpuises}
             surface={apercuCatalogueSurface}
             onFermer={fermerApercuCatalogue}
           />
@@ -5803,6 +6026,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const missDeCarte = (entite, pile, deployee) => missVisibles[entite.id]
     ?? (deployee ? null : pile.entites
       .map((membre) => missVisibles[membre.id])
+      .find(Boolean) ?? null);
+  // Même relève pour le choc d'un bouclier : la tête d'une pile repliée
+  // porte l'impact de l'exemplaire caché qui vient d'encaisser.
+  const bouclierDeCarte = (entite, pile, deployee) => boucliersVisibles[entite.id]
+    ?? (deployee ? null : pile.entites
+      .map((membre) => boucliersVisibles[membre.id])
       .find(Boolean) ?? null);
   const etageHistoire = histoireEtageId ? etageHistoireParId(histoireEtageId)?.etage ?? null : null;
   const etageSuivant = histoireEtageId ? prochainEtage(histoireEtageId) : null;
@@ -5981,7 +6210,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .reduce((total, amount) => total + Number(amount || 0), 0);
     return somme === attaquant.atk;
   });
-
+  const provocationValide = !combatEntrant || rpgProvocationValide(
+    duel,
+    combatEntrant.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier',
+    combatEntrant.attaquants,
+    combatEntrant.blocages,
+    combatEntrant.ciblesAttaque ?? {},
+  );
+  const blocageForceValide = !combatEntrant || rpgBlocageForceValide(
+    duel,
+    combatEntrant.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier',
+    combatEntrant.attaquants,
+    combatEntrant.blocages,
+    combatEntrant.ciblesAttaque ?? {},
+  );
 
 
 
@@ -6024,6 +6266,34 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const suivant = { ...courant };
         cibles.forEach((id) => {
           if (suivant[id]?.token === token) delete suivant[id];
+        });
+        return Object.keys(suivant).length === Object.keys(courant).length ? courant : suivant;
+      });
+    }, duree);
+  };
+
+  /** Allume le choc des boucliers qui viennent d'absorber (`ImpactBouclier`) :
+   *  un calque à part des cinématiques `fx-*`, pour qu'un attaquant garde son
+   *  bond — et une créature foudroyée sa secousse — pendant que son égide
+   *  encaisse. Le token fait repartir l'animation à chaque nouveau choc. */
+  const declencherImpactsBouclier = (impacts = [], duree = DUREE_IMPACT_BOUCLIER) => {
+    const cibles = (impacts ?? []).filter((impact) => impact?.id);
+    if (!cibles.length) return;
+    const token = ++sequenceBouclierRef.current;
+    setBoucliersVisibles((courant) => ({
+      ...courant,
+      ...Object.fromEntries(cibles.map((impact) => [impact.id, {
+        montant: Math.max(0, impact.montant ?? 0),
+        restant: Math.max(0, impact.restant ?? 0),
+        lumiere: Boolean(impact.lumiere),
+        token,
+      }])),
+    }));
+    programmerNettoyageVisuel(() => {
+      setBoucliersVisibles((courant) => {
+        const suivant = { ...courant };
+        cibles.forEach((impact) => {
+          if (suivant[impact.id]?.token === token) delete suivant[impact.id];
         });
         return Object.keys(suivant).length === Object.keys(courant).length ? courant : suivant;
       });
@@ -6215,6 +6485,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         pv: entite.pv,
         pvMax: entite.pvMax ?? null,
         bouclier: entite.bouclier ?? 0,
+        bouclierLumiere: Boolean(entite.bouclierLumiere),
+        armeId: entite.arme?.carteId ?? null,
         left: centerX - width / 2,
         top: centerY - height / 2,
         width,
@@ -6415,27 +6687,48 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const secoueesParFoudre = [];
     const renforcees = [];
     const statsAugmentees = [];
+    const impactsBouclier = [];
     avant.forEach((entite) => {
       const apres = vivants.get(entite.entityId);
       if (!apres || entite.isTerrain) return;
+      const bouclierAvant = entite.bouclier ?? 0;
+      const bouclierApres = apres.bouclier ?? 0;
+      const absorbesParBouclier = Math.max(0, bouclierAvant - bouclierApres);
+      const lumiereAbsorbee = Boolean(entite.bouclierLumiere && !apres.bouclierLumiere);
+      const toucheeAuxPv = apres.pv < entite.pv || apres.def < entite.def;
+      // Un bouclier qui baisse parce que l'arme qui le portait vient d'être
+      // remplacée n'a encaissé aucun coup : son reliquat
+      // est simplement reparti avec l'arme, sans choc à montrer.
+      const armeChangee = (apres.arme?.carteId ?? null) !== (entite.armeId ?? null);
+      if (!mouvementReduit && (lumiereAbsorbee || (absorbesParBouclier > 0 && !armeChangee))) {
+        impactsBouclier.push({
+          id: entite.entityId,
+          montant: absorbesParBouclier,
+          restant: bouclierApres,
+          lumiere: lumiereAbsorbee,
+        });
+      }
       // Un soin pur — les PV remontent vers un maximum inchangé, rien d'autre
       // ne bouge — a sa propre cinématique (`EclatSoin`, relevé du journal des
       // soins) : il ne rejoue pas, en plus, la lueur dorée des renforts.
       const soinPur = apres.pv > entite.pv
         && apres.atk === entite.atk
         && (apres.pvMax ?? null) === entite.pvMax
-        && (apres.bouclier ?? 0) === entite.bouclier;
-      if (apres.pv < entite.pv || (apres.bouclier ?? 0) < entite.bouclier || apres.def < entite.def) {
+        && bouclierApres === bouclierAvant;
+      if (toucheeAuxPv || absorbesParBouclier > 0 || lumiereAbsorbee) {
         if (!attaquants.has(entite.entityId)) {
           if (idsFoudroyees.has(entite.entityId)) secoueesParFoudre.push(entite.entityId);
-          else touches.push(entite.entityId);
+          // Entièrement absorbé, le coup ne fait pas clignoter la créature :
+          // c'est l'égide qui encaisse — et qui le montre (`ImpactBouclier`).
+          else if (toucheeAuxPv) touches.push(entite.entityId);
         }
-      } else if (!soinPur && (apres.pv > entite.pv || (apres.bouclier ?? 0) > entite.bouclier || apres.atk > entite.atk || apres.def > entite.def)) {
+      } else if (!soinPur && (apres.pv > entite.pv || bouclierApres > bouclierAvant || apres.atk > entite.atk || apres.def > entite.def)) {
         renforcees.push(entite.entityId);
         if (apres.atk > entite.atk || apres.def > entite.def) statsAugmentees.push(entite.entityId);
       }
     });
     animerEntites(attaquesVivantes, 'attack', 650);
+    declencherImpactsBouclier(impactsBouclier);
     animerEntites(touches, 'hit', 620);
     animerEntites(secoueesParFoudre, 'foudre', DUREE_ECLAIR_MARTEAU);
     animerEntites(renforcees, 'glow', 1100, statsAugmentees);
@@ -6829,7 +7122,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       annoncerContreSorcier(res);
     } else if (res.ok) {
-      conserverAnnulation(etatAvantAction);
+      // Une arrivée qui pioche ou fouille le deck a déjà montré/déplacé des
+      // cartes : la pose devient irréversible, comme un sort résolu.
+      if (arriveeConsulteDeck(carte) && !res.arriveeEnAttente) invaliderAnnulation();
+      else conserverAnnulation(etatAvantAction);
       // La créature sacrifiée a déjà eu son animation de déchirement : pas de
       // second fantôme de destruction pour elle.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
@@ -7203,6 +7499,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return true;
       }
       setCibleEnCours(null);
+      if (arriveeConsulteDeck(carteSource)) invaliderAnnulation();
       jouerSfx(carteSource.arrivee?.type === 'retour-main' ? 'creature_return' : 'select');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       force();
@@ -7439,6 +7736,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!rpgOuvrirFenetreReponse(duel, 'joueur')) {
       return;
     }
+    // Les attaquants sont désormais déclarés : une bannière (celle du Daimyō)
+    // grandit ses Samouraïs tout de suite, avant même que le sorcier choisisse
+    // ses bloqueurs. La résolution saura ne pas la déclencher une seconde fois.
+    const bannieresAppliquees = rpgAppliquerBannieresAttaque(duel, 'joueur', ids);
     const blocages = rpgChoisirBloqueurs(duel, 'joueur', ids, ciblesFinales);
     const attaquantsBloques = Object.entries(blocages)
       .filter(([, bloqueurs]) => bloqueurs.length > 0)
@@ -7450,6 +7751,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       attaquantsBloques,
       repartitions: {},
       ciblesAttaque: ciblesFinales,
+      bannieresAppliquees,
     };
     invaliderAnnulation();
     setPhase(false);
@@ -7600,7 +7902,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       null,
       Object.fromEntries(Object.entries(combatEntrant.ciblesAttaque ?? {})
         .filter(([id]) => attaquantsVivants.includes(id))),
-      { attaqueDeclaree: true },
+      {
+        attaqueDeclaree: true,
+        bannieresAppliquees: Boolean(combatEntrant.bannieresAppliquees),
+      },
     );
     if (!res.ok) {
       jouerSfx('erreur');
@@ -7680,7 +7985,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       attaquantsBloques,
       Object.fromEntries(Object.entries(combat.ciblesAttaque ?? {})
         .filter(([id]) => attaquantsVivants.includes(id))),
-      { attaqueDeclaree: true },
+      {
+        attaqueDeclaree: true,
+        bannieresAppliquees: Boolean(combat.bannieresAppliquees),
+      },
     );
     if (!res.ok) {
       jouerSfx('erreur');
@@ -7992,6 +8300,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
       rpgDefinirPhase(duel, 'attaque');
       rpgOuvrirFenetreReponse(duel);
+      // Déclaration verrouillée : la bannière grandit ses Samouraïs avant que
+      // le joueur ne voie l'assaut et choisisse ses bloqueurs.
+      const bannieresAppliquees = rpgAppliquerBannieresAttaque(duel, 'sorcier', ids);
       const ciblesRapides = rpgCiblesAttaqueRapide(duel, 'sorcier', ids);
       setCombatEntrant({
         coteAttaquant: 'sorcier',
@@ -7999,6 +8310,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         blocages: {},
         repartitions: {},
         ciblesAttaque: ciblesRapides,
+        bannieresAppliquees,
       });
       force();
   };
@@ -8079,6 +8391,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ...(cibleAttaqueEnCours ? [cibleAttaqueEnCours] : []),
     ...Object.keys(animationsEntites ?? {}),
     ...Object.keys(missVisibles ?? {}),
+    ...Object.keys(boucliersVisibles ?? {}),
   ]);
   // Au doigt, la clé identifie une pile ; sur grand écran, elle identifie
   // un exemplaire. Partager la clé carteId entre deux exemplaires laisserait
@@ -8219,13 +8532,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 }
                 : (combatEntrant && reponseActive)
                   ? {
-                    cle: `combat:${combatEntrant.coteAttaquant}:${bloqueurSelectionne ?? 'aucun'}`,
+                    cle: `combat:${combatEntrant.coteAttaquant}:${bloqueurSelectionne ?? 'aucun'}:${blocageForceValide ? 'force-ok' : 'force'}:${provocationValide ? 'provocation-ok' : 'provocation'}`,
                     classe: 'rpg-combat-prompt',
                     texte: combatEntrant.coteAttaquant === 'joueur'
                       ? 'Blocages déclarés — jouez un sort rapide ou acceptez les blocages'
-                      : bloqueurSelectionne
-                        ? 'Choisissez la créature attaquante à bloquer'
-                        : 'Choisissez vos bloqueurs ou résolvez le combat',
+                      : !blocageForceValide
+                        ? 'Blocage forcé — assignez chaque créature marquée à un attaquant qu’elle peut bloquer'
+                        : !provocationValide
+                          ? 'Provocation — assignez au moins un bloqueur à l’attaquant provoquant'
+                          : bloqueurSelectionne
+                            ? 'Choisissez la créature attaquante à bloquer'
+                            : 'Choisissez vos bloqueurs ou résolvez le combat',
                   }
                   : (monTour && phase && !combatEntrant)
                     ? {
@@ -8599,6 +8916,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
                       miss={missDeCarte(entite, pile, deployee)}
+                      bouclierFx={bouclierDeCarte(entite, pile, deployee)}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       onClick={() => cliquerCreatureEnnemie(entite)}
@@ -8682,6 +9000,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
                       miss={missDeCarte(entite, pile, deployee)}
+                      bouclierFx={bouclierDeCarte(entite, pile, deployee)}
                       playerTurn={tourDuJoueur}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
@@ -8941,7 +9260,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     className="rpg-btn rpg-btn--attaque rpg-btn--resolve-combat"
                     data-tutorial-target={cibleTutoriel('resolve-combat') ? 'resolve-combat' : undefined}
                     onClick={resoudreCombat}
-                    disabled={!repartitionValide}
+                    disabled={!repartitionValide || !blocageForceValide || !provocationValide}
+                    title={!blocageForceValide
+                      ? 'Blocage forcé : assignez chaque créature marquée à un attaquant qu’elle peut légalement bloquer'
+                      : !provocationValide
+                        ? 'Provocation : assignez au moins un bloqueur légal à chaque attaquant qui peut être bloqué'
+                        : undefined}
                   >
                     {combatEntrant.coteAttaquant === 'joueur' ? '✓ Accepter les blocages' : '⚔ Résoudre le combat'}
                   </button>
@@ -9345,6 +9669,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             armes={cartesDesIds(apercuSurvol.armesIds)}
+            furieDeclenchee={Boolean(apercuSurvol.furie)}
+            statsFurie={apercuSurvol.furie}
+            effetsEpuises={apercuSurvol.effetsEpuises ?? []}
             style={apercuSurvol.style}
             panelRef={panelRef}
             interactif={Boolean(apercuSurvol.interactif)}
@@ -9477,13 +9804,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onClose={fermerTutoriel}
         />
       )}
-      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} onFermer={fermerApercuAppui} />}
+      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} furieDeclenchee={Boolean(apercuAppuiFurie)} statsFurie={apercuAppuiFurie} effetsEpuises={apercuAppuiEffetsEpuises} onFermer={fermerApercuAppui} />}
       {/* La même fiche que le catalogue : le clic droit l'ouvre sur la table,
           en main, sur les terrains ou sur une pile — sans rien jouer. */}
       {apercuCatalogue && (
         <ApercuCarteCatalogue
           carte={cardById(apercuCatalogue)}
           armes={cartesDesIds(apercuCatalogueArmes)}
+          furieDeclenchee={Boolean(apercuCatalogueFurie)}
+          statsFurie={apercuCatalogueFurie}
+          effetsEpuises={apercuCatalogueEffetsEpuises}
           surface={apercuCatalogueSurface}
           onFermer={fermerApercuCatalogue}
         />

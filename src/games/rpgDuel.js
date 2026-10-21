@@ -15,6 +15,7 @@ import {
   cardById,
   cardColorCost,
   cardColors,
+  cardHasPrintedType,
   cardResonanceGroup,
   cardReceivesResonance,
   resonanceGroupLabel,
@@ -429,6 +430,31 @@ export function rpgPiocher(duel, cote) {
   const camp = duel[cote];
   if (!camp.deck.length) return null;
   const carte = camp.deck.pop();
+  camp.main.push(carte);
+  presenter(duel, { type: 'pioche', cote, carteId: carte });
+  return carte;
+}
+
+/**
+ * Pioche une carte d'un type imprimé donné, choisie uniformément au hasard
+ * parmi les exemplaires encore dans le deck. Ce n'est pas une pioche du
+ * dessus suivie d'un tri : s'il ne reste aucune carte du type demandé, rien
+ * ne rejoint la main. Le reste du deck garde son ordre.
+ */
+function piocherCarteDeType(duel, cote, type) {
+  const camp = duel?.[cote];
+  if (!camp?.deck?.length || !type) return null;
+  const candidates = [];
+  camp.deck.forEach((carteId, index) => {
+    if (cardHasPrintedType(carteId, type)) candidates.push(index);
+  });
+  if (!candidates.length) return null;
+  const rng = hasardParDuel.get(duel) ?? Math.random;
+  const choix = Math.min(
+    candidates.length - 1,
+    Math.max(0, Math.floor(rng() * candidates.length)),
+  );
+  const [carte] = camp.deck.splice(candidates[choix], 1);
   camp.main.push(carte);
   presenter(duel, { type: 'pioche', cote, carteId: carte });
   return carte;
@@ -882,6 +908,28 @@ function appliquerBannieresAttaque(duel, cote, attaquants = []) {
 }
 
 /**
+ * Déclare le déclenchement des bannières pour une attaque dont les attaquants
+ * viennent d'être verrouillés. L'interface l'appelle à la déclaration même —
+ * avant le choix des bloqueurs et avant les réponses rapides — pour que les
+ * statistiques visibles pendant tout le combat soient déjà celles du Samouraï
+ * grandi. `rpgLancerAttaque` reçoit ensuite `bannieresAppliquees: true` et ne
+ * rejoue pas le déclenchement au moment des blessures.
+ *
+ * Le retour dit seulement si la déclaration est recevable ; sans bannière en
+ * jeu, l'appel réussit et ne change rien.
+ */
+export function rpgAppliquerBannieresAttaque(duel, cote, attaquantIds = []) {
+  const camp = duel?.[cote];
+  if (!camp || duel.attaqueJouee === cote) return false;
+  const ids = [...new Set(attaquantIds)];
+  if (!ids.length) return false;
+  const attaquants = ids.map((id) => camp.creatures.find((entite) => entite.id === id));
+  if (attaquants.some((entite) => !entite || !rpgPeutAttaquer(entite))) return false;
+  appliquerBannieresAttaque(duel, cote, attaquants);
+  return true;
+}
+
+/**
  * Kenshi de la forge — l'aura de forge : tant qu'il est en jeu, **les autres**
  * créatures de type Samouraï gagnent +1/+0. Comme la Résonance samouraï, elle
  * est **de table** : elle profite aux deux camps et à toutes les couleurs ; le
@@ -932,6 +980,10 @@ function rafraichirAuras(duel) {
   appliquerAuraAmani(duel, 'sorcier');
   appliquerAuraKenshi(duel);
   majResonance(duel);
+  // La Furie suit l'écart entre la défense actuelle et la DEF de base
+  // imprimée : une aura qui déplace les PV peut donc aussi l'allumer ou
+  // l'éteindre, même sans changer ce seuil.
+  synchroniserFuries(duel);
 }
 
 /** Protection temporaire contre les effets et les créatures d'une couleur
@@ -982,17 +1034,29 @@ function creerEntiteCreature(carte) {
     pvMax: carte.def,
     bouclier: 0,
     bouclierLumiere: false,
+    // Un bouclier déjà tombé reste lisible dans l'aperçu (pastille et texte
+    // grisés) jusqu'à ce qu'un nouveau bouclier le remplace.
+    bouclierEpuise: false,
     auraSableBonus: 0,
     auraAmaniBonus: 0,
     boualemContresortDisponible: carte.id === 'boualem',
     esquive: Boolean(carte.esquive),
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
+    provocation: Boolean(carte.provocation),
     envol: Boolean(carte.envol),
     infiltration: Boolean(carte.infiltration),
+    // Furie : l'état visible et la seule part d'attaque qu'il a ajoutée. Le
+    // bonus est compté à part pour pouvoir le retirer sans toucher aux
+    // autres renforts quand la créature retrouve sa DEF de base.
+    furieDeclenchee: false,
+    furieBonusAtk: 0,
     // Overkill (le Serpent du monde) : comme le Piétinement — bloqué, il fait
     // passer au sorcier défenseur la force qui dépasse ses bloqueurs.
+    // `overkillTemporaire` compte les prêts encore actifs (le Mur de
+    // boucliers) sans écraser l'Overkill imprimé ou celui d'une arme.
     overkill: Boolean(carte.overkill),
+    overkillTemporaire: 0,
     // Protection contre les magies rapides et les sorcelleries (le Serpent du
     // monde) : aucun sort ne peut la cibler ni la blesser — les capacités,
     // armes et attaques passent normalement.
@@ -1034,6 +1098,9 @@ function creerEntiteCreature(carte) {
     blocageForce: null,
     // Mur (Tours de défense) : ne peut ni attaquer ni être équipée.
     mur: Boolean(carte.mur),
+    // Interdiction d'attaquer seule (le Drakkar) : à la différence d'un Mur,
+    // la créature peut toujours bloquer et porter une arme.
+    nePeutPasAttaquer: Boolean(carte.nePeutPasAttaquer),
     // Doit bloquer (Tours de défense) : cette créature doit bloquer chaque tour
     // si possible, de manière permanente (pas comme blocageForce qui est temporaire).
     doitBloquer: Boolean(carte.doitBloquer),
@@ -1054,6 +1121,25 @@ function armeCarteDe(entite) {
 }
 
 /**
+ * Fait encaisser un montant par le bouclier d'une créature et rend ce qui a
+ * été absorbé. Le point encore porté par une arme (`entite.arme.bouclier`)
+ * encaisse en premier : quand l'arme tombera, seul ce
+ * reliquat-là repartira avec elle — un bouclier venu d'un sort ou d'une
+ * arrivée ne peut donc pas être volé par un simple changement d'arme.
+ */
+function absorberBouclier(entite, montant) {
+  const absorbes = Math.min(entite.bouclier ?? 0, Math.max(0, montant));
+  entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
+  if (absorbes > 0 && entite.bouclier === 0 && !entite.bouclierLumiere) {
+    entite.bouclierEpuise = true;
+  }
+  if (entite.arme?.bouclier) {
+    entite.arme.bouclier = Math.max(0, entite.arme.bouclier - absorbes);
+  }
+  return absorbes;
+}
+
+/**
  * Attache une arme à une créature : le bonus et le mot-clé donné se fondent
  * dans ses champs, comme une aura permanente mais personnelle. Le +défense
  * grandit PV max et PV présents du même montant (la créature se tient mieux
@@ -1069,16 +1155,20 @@ function attacherArme(duel, cote, entite, carteArme) {
   entite.pvMax = (entite.pvMax ?? entite.def) + (carteArme.bonus?.def ?? 0);
   entite.def += carteArme.bonus?.def ?? 0;
   entite.pv += carteArme.bonus?.def ?? 0;
+  // Un bouclier éventuellement donné par l'arme rejoint la réserve qui
+  // absorbera les prochains dégâts ; sa part encore intacte vit sur l'arme
+  // elle-même pour repartir avec elle si elle est remplacée.
+  const bouclierDonne = Math.max(0, Math.floor(Number(carteArme.donne?.bouclier) || 0));
+  if (bouclierDonne) {
+    entite.arme.bouclier = bouclierDonne;
+    entite.bouclier = (entite.bouclier ?? 0) + bouclierDonne;
+    entite.bouclierEpuise = false;
+  }
   if (carteArme.donne?.esquive) entite.esquive = true;
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
   if (carteArme.donne?.tribut) entite.tribut = (entite.tribut ?? 0) + carteArme.donne.tribut;
-  // Le bouclier de l'arme (la Hache de la banquise) : il vit sur le porteur,
-  // mais il vient de l'arme — `retirerArme` le reprend avec elle.
-  if (carteArme.donne?.bouclier) {
-    entite.bouclier = (entite.bouclier ?? 0) + carteArme.donne.bouclier;
-  }
   // La Jitte d'Amayas : l'arme couvre son porteur d'une protection de couleur
   // permanente (tant qu'elle est attachée), comme celle imprimée de Tiziri.
   if (carteArme.donne?.protection) {
@@ -1094,12 +1184,16 @@ function attacherArme(duel, cote, entite, carteArme) {
  *  mot-clé repartent, l'arme rejoint le cimetière de son camp. */
 function retirerArme(duel, cote, entite) {
   const carteArme = armeCarteDe(entite);
+  const bouclierRestant = Math.max(0, Number(entite.arme?.bouclier) || 0);
   entite.arme = null;
   if (!carteArme) return;
   entite.atk = Math.max(0, entite.atk - (carteArme.bonus?.atk ?? 0));
   entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) - (carteArme.bonus?.def ?? 0));
   entite.def = Math.max(1, entite.def - (carteArme.bonus?.def ?? 0));
   entite.pv = Math.max(1, Math.min(entite.pv, entite.pvMax));
+  if (bouclierRestant) {
+    entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - bouclierRestant);
+  }
   if (carteArme.donne?.esquive) entite.esquive = Boolean(duelCardById(entite.carteId)?.esquive);
   if (carteArme.donne?.envol) entite.envol = Boolean(duelCardById(entite.carteId)?.envol);
   if (carteArme.donne?.infiltration) entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
@@ -1107,12 +1201,6 @@ function retirerArme(duel, cote, entite) {
   if (carteArme.donne?.coupRapide) entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide);
   if (carteArme.donne?.rapidite) entite.rapidite = Boolean(duelCardById(entite.carteId)?.rapidite);
   if (carteArme.donne?.tribut) entite.tribut = Math.max(0, Number(duelCardById(entite.carteId)?.tribut) || 0);
-  // Le bouclier de l'arme s'en va avec elle (jamais sous zéro : il a pu être
-  // entamé par des blessures). Un bouclier accordé par une autre source — un
-  // sort, une capacité d'arrivée — reste, lui, sur la créature.
-  if (carteArme.donne?.bouclier) {
-    entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - carteArme.donne.bouclier);
-  }
   if (carteArme.donne?.protection) {
     // L'arme partie, la protection retombe à celle imprimée sur la fiche.
     const impression = duelCardById(entite.carteId)?.protection;
@@ -1176,29 +1264,65 @@ function armeDePorteurMort(duel, cote, entite) {
   };
 }
 
-/**
- * Furie — capacité des vikings : une créature **blessée qui survit** gagne
- * +X/+X (X = la furie imprimée sur la carte) — une seule fois. La première
- * blessure survivée l'enflamme ; les suivantes ne la grandissent plus. Les
- * blessures d'un même échange ne font donc jamais double effet, et une
- * attaque entièrement absorbée par un bouclier n'est pas une blessure : la
- * furie attend le premier sang. Renvoyée en main puis rejouée, la carte
- * revient avec sa Furie neuve : la flambée appartient à la présence en jeu.
- */
-function appliquerFurie(duel, entite, degatsRecus) {
-  const furie = Math.max(0, Number(duelCardById(entite.carteId)?.furie) || 0)
+/** Furie portée par une créature : la valeur de sa carte, plus celle que
+ *  l'arme tenue peut lui prêter. Une seule lecture pour le moteur et ses
+ *  synchronisations après un changement d'équipement. */
+function furieTotale(entite) {
+  return Math.max(0, Number(duelCardById(entite.carteId)?.furie) || 0)
     + Math.max(0, Number(armeCarteDe(entite)?.donne?.furie) || 0);
-  if (!furie || degatsRecus <= 0 || entite.furieDeclenchee) return;
-  entite.furieDeclenchee = true;
-  entite.atk += furie;
-  entite.pvMax = (entite.pvMax ?? entite.def) + furie;
-  entite.def += furie;
-  entite.pv += furie;
-  duel.log.push(`${entite.name} entre en furie : +${furie}/+${furie}.`);
+}
+
+/**
+ * Furie — état réversible, pas flambée unique : tant que la défense actuelle
+ * d'une créature vivante est **sous sa DEF de base** (la défense imprimée de
+ * sa carte, sans les renforts ni les auras), elle gagne +X/+0. Dès qu'un
+ * soin — ou tout autre changement de statistiques — la ramène à cette DEF de
+ * base, seul le bonus compté dans `furieBonusAtk` repart ; une nouvelle chute
+ * sous le seuil le rallume. Un coup entièrement absorbé ne fait pas passer
+ * sous le seuil. Renvoyée en main puis rejouée, la carte revient à sa DEF de
+ * base et donc hors de Furie.
+ */
+function synchroniserFurieEntite(duel, entite) {
+  if (!entite) return false;
+  const furie = furieTotale(entite);
+  let bonus = Number(entite.furieBonusAtk);
+  // Présence ancienne ou fixture antérieure au compteur : l'état visible dit
+  // si le bonus est déjà compris dans l'attaque affichée.
+  if (!Number.isFinite(bonus)) bonus = entite.furieDeclenchee ? furie : 0;
+  bonus = Math.max(0, bonus);
+  const pv = Number(entite.pv) || 0;
+  const defenseDeBase = Math.max(
+    0,
+    Number(duelCardById(entite.carteId)?.def ?? entite.pvMax ?? entite.def) || 0,
+  );
+  const active = furie > 0 && pv > 0 && defenseDeBase > 0 && pv < defenseDeBase;
+  const voulu = active ? furie : 0;
+  const delta = voulu - bonus;
+  const etaitActive = Boolean(entite.furieDeclenchee);
+  entite.furieBonusAtk = voulu;
+  entite.furieDeclenchee = active;
+  if (delta) entite.atk = Math.max(0, (Number(entite.atk) || 0) + delta);
+  if (duel && pv > 0 && active && !etaitActive) {
+    duel.log.push(`${entite.name} entre en furie : +${furie}/+0.`);
+  } else if (duel && pv > 0 && !active && etaitActive) {
+    duel.log.push(`${entite.name} retrouve sa DEF de base : la furie retombe.`);
+  }
+  return active;
+}
+
+function synchroniserFuries(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) synchroniserFurieEntite(duel, entite);
+  }
+}
+
+function appliquerFurie(duel, entite, degatsRecus) {
+  if (!(degatsRecus > 0)) return;
+  synchroniserFurieEntite(duel, entite);
 }
 
 /** Total des sources d'un groupe de Résonance (élément ou tribu), dans les
- * deux camps. Le défaut Neige conserve l'API des valkyries. */
+ * deux camps. Le défaut Neige conserve l'ancienne signature de l'API. */
 export function rpgResonanceEnJeu(duel, element = 'neige') {
   let total = 0;
   for (const cote of ['joueur', 'sorcier']) {
@@ -1315,7 +1439,7 @@ function esquiveAttaque(duel, entite, sourceType) {
  *  les capacités de destruction des créatures. */
 function appliquerDegatsDeCombatSimultanes(duel, coups) {
   const blessures = new Map();
-  for (const coup of coups) {
+  for (const [indexCoup, coup] of coups.entries()) {
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
     // Le Serpent du monde : protégé contre les magies — la vague d'un sort
@@ -1326,6 +1450,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     if (duel.brouillardCombat && coup.sourceType === 'attaque') continue;
     if (entite.bouclierLumiere && (coup.sourceType === 'attaque' || coup.sourceType === 'magie')) {
       entite.bouclierLumiere = false;
+      if (!(entite.bouclier > 0)) entite.bouclierEpuise = true;
       continue;
     }
     if (esquiveAttaque(duel, entite, coup.sourceType)) {
@@ -1339,10 +1464,17 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       cote: coup.cote,
       entite,
       montant: 0,
+      coups: [],
       sourceElements: [],
       sources: [],
     };
     blessure.montant += degats;
+    blessure.coups.push({
+      amount: degats,
+      sourceKey: coup.sourceCote && coup.sourceId
+        ? `${coup.sourceCote}:${coup.sourceId}`
+        : `coup:${indexCoup}`,
+    });
     blessure.sourceElements.push(...normaliserCouleurs(coup.sourceElement));
     const source = coup.sourceCote && coup.sourceId
       ? duel[coup.sourceCote]?.creatures.find((candidate) => candidate.id === coup.sourceId)
@@ -1357,14 +1489,17 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   const furieuses = [];
   for (const blessure of blessures.values()) {
     const { entite, montant, cote } = blessure;
-    const absorbes = Math.min(entite.bouclier ?? 0, montant);
-    entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
-    const recus = montant - absorbes;
+    let recus = 0;
+    for (const coupRecu of blessure.coups ?? [{ amount: montant, sourceKey: 'unique' }]) {
+      const absorbes = absorberBouclier(entite, coupRecu.amount);
+      recus += coupRecu.amount - absorbes;
+    }
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
     // Les coups ont déjà été cumulés : une créature à 0 PV meurt une seule
     // fois, quels que soient le nombre d'attaquants et de bloqueurs. Tenacité
-    // ne refuse plus la mort — elle programme seulement un retour.
+    // ne refuse plus la mort — elle programme seulement un retour au prochain
+    // tour du camp (voir `programmerRetourTenacite`).
     if (entite.pv <= 0) {
       mortes.push({
         cote,
@@ -1376,9 +1511,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       furieuses.push({ entite, recus, cote, sources: blessure.sources });
     }
   }
-  // La furie s'embrase après les blessures, une seule fois par présence : les
-  // blessures d'un même échange ne font jamais double effet, et une créature
-  // morte ne s'énerve pas. Le journal reprend aussi les frappes qui n'ont pas
+  // La Furie se synchronise après les blessures cumulées de l'échange : les
+  // coups simultanés ne font jamais double effet, et une créature morte ne
+  // s'énerve pas. Le journal reprend aussi les frappes qui n'ont pas
   // été létales : le flux ne se limite donc pas aux créatures détruites.
   for (const { entite, recus, cote, sources } of furieuses) {
     appliquerFurie(duel, entite, recus);
@@ -1567,6 +1702,17 @@ function annulerBonusTemporaires(duel, tourFerme) {
       entite.def = Math.min(entite.def, Math.max(0, entite.pv));
       // Le Tribut prêté par l'Offrande de lin repart avec le renfort.
       if (entry.tribut) entite.tribut = Math.max(0, (entite.tribut ?? 0) - entry.tribut);
+      // L'Overkill prêté par le Mur de boucliers repart aussi, sans éteindre
+      // celui de la carte ni celui d'une arme encore tenue.
+      if (entry.overkill) {
+        entite.overkillTemporaire = Math.max(
+          0,
+          (entite.overkillTemporaire ?? entry.overkill) - entry.overkill,
+        );
+        entite.overkill = Boolean(duelCardById(entite.carteId)?.overkill)
+          || Boolean(armeCarteDe(entite)?.donne?.overkill)
+          || entite.overkillTemporaire > 0;
+      }
       effaces.push(entite.name);
     }
     camp.bonusTemporaires = restants;
@@ -1786,9 +1932,26 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       duel.log.push(`${partie.length} carte${partie.length > 1 ? 's' : ''} du paquet adverse au cimetière : ${noms}.`);
       return;
     }
-    case 'pioche':
-      for (let i = 0; i < (effet.amount ?? 1); i += 1) rpgPiocher(duel, cote);
+    case 'pioche': {
+      const nombre = Math.max(0, Math.floor(Number(effet.amount ?? 1) || 0));
+      if (!effet.tribu) {
+        for (let i = 0; i < nombre; i += 1) rpgPiocher(duel, cote);
+        return;
+      }
+      // La Valkyrie au corbeau : le hasard choisit parmi les cartes du type
+      // demandé encore dans le deck, pas parmi tout le paquet.
+      let piochees = 0;
+      for (let i = 0; i < nombre; i += 1) {
+        if (!piocherCarteDeType(duel, cote, effet.tribu)) break;
+        piochees += 1;
+      }
+      const source = cardById(sourceCarteId)?.name ?? 'La capacité';
+      const label = resonanceGroupLabel(effet.tribu);
+      duel.log.push(piochees
+        ? `${source} : ${piochees} carte${piochees > 1 ? 's' : ''} de type ${label} tirée${piochees > 1 ? 's' : ''} au hasard du deck rejoint${piochees > 1 ? 'ent' : ''} la main.`
+        : `${source} ne trouve aucune carte de type ${label} dans le deck.`);
       return;
+    }
     case 'pioche-defausse': {
       const pioche = Math.max(0, Number(effet.pioche ?? effet.amount) || 0);
       const aDefausser = Math.max(0, Number(effet.defausse) || 0);
@@ -1905,11 +2068,35 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       return;
     }
     case 'soin-creatures': {
+      const montant = Math.max(0, Number(effet.amount) || 0);
+      const soins = [];
       for (const entite of duel[cote].creatures) {
-        const pvAvant = entite.pv;
-        entite.pv = Math.min(entite.pvMax, entite.pv + (effet.amount ?? 0));
-        entite.def = Math.min(entite.pvMax, Math.max(entite.def, entite.pv));
-        journaliserSoin(duel, cote, entite.pv - pvAvant, entite.id);
+        const pvAvant = Number(entite.pv) || 0;
+        // Un état restauré ou construit par un scénario peut avoir perdu son
+        // plafond : il se relit alors sur la défense actuelle ou imprimée,
+        // plutôt que de laisser le soin se perdre dans un `NaN`.
+        const plafondDeclare = Number(entite.pvMax);
+        const plafond = Number.isFinite(plafondDeclare)
+          ? plafondDeclare
+          : Math.max(
+            pvAvant,
+            Number(entite.def) || 0,
+            Number(duelCardById(entite.carteId)?.def) || 0,
+          );
+        entite.pvMax = plafond;
+        entite.pv = Math.min(plafond, pvAvant + montant);
+        entite.def = Math.min(plafond, Math.max(Number(entite.def) || 0, entite.pv));
+        const gagne = entite.pv - pvAvant;
+        if (gagne > 0) {
+          journaliserSoin(duel, cote, gagne, entite.id);
+          soins.push(`${entite.name} +${gagne}`);
+        }
+        // Le soin peut refermer la blessure qui tenait la Furie allumée.
+        synchroniserFurieEntite(duel, entite);
+      }
+      if (soins.length) {
+        const source = sourceCarteId ? cardById(sourceCarteId)?.name : null;
+        duel.log.push(`${source ?? 'Soin'} : ${soins.join(', ')}.`);
       }
       // `etJoueur` (Yamina) : le même soin s'étend au sorcier du camp —
       // les créatures d'abord, puis leur maître.
@@ -1922,7 +2109,10 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     }
     case 'bouclier-lumiere': {
       const entite = duel[cote].creatures.find((candidate) => candidate.id === sauf);
-      if (entite) entite.bouclierLumiere = true;
+      if (entite) {
+        entite.bouclierLumiere = true;
+        entite.bouclierEpuise = false;
+      }
       return;
     }
     case 'bouclier': {
@@ -1930,6 +2120,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         const entite = duel[cote].creatures.find((e) => e.id === cibleId);
         if (entite && !rpgEstProtegee(entite, sourceElement)) {
           entite.bouclier = (entite.bouclier ?? 0) + (effet.amount ?? 0);
+          if (entite.bouclier > 0) entite.bouclierEpuise = false;
         }
       } else {
         duel[cote].bouclier = (duel[cote].bouclier ?? 0) + (effet.amount ?? 0);
@@ -2002,6 +2193,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // chaque créature touchée gagne Tribut X, rendu avec le bonus quand le
       // carnet s'efface à la fin du tour.
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
+      const bonusOverkill = effet.overkill ? 1 : 0;
       for (const entite of ciblesBuff) {
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
@@ -2010,7 +2202,11 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.def = Math.max(plancher, entite.def + bonusDefense);
         entite.pv = Math.max(plancher, entite.pv + bonusDefense);
         if (bonusTribut) entite.tribut = (entite.tribut ?? 0) + bonusTribut;
-        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, tour: duel.tour });
+        if (bonusOverkill) {
+          entite.overkill = true;
+          if (temporaire) entite.overkillTemporaire = (entite.overkillTemporaire ?? 0) + bonusOverkill;
+        }
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, tour: duel.tour });
         // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
         // et la mort est attribuée à la couleur de la source, pour le journal.
         if (!(entite.pv > 0) && plancher <= 0) {
@@ -2619,6 +2815,9 @@ export function rpgActionsEtat(duel) {
     }
     if (!uneMorte) break;
   }
+  // Filet de sécurité pour les soins et changements de statistiques qui ne
+  // passent ni par une blessure ni par un rafraîchissement d'auras.
+  synchroniserFuries(duel);
   return retirees;
 }
 
@@ -2637,6 +2836,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   }
   if (entite.bouclierLumiere && (sourceType === 'attaque' || sourceType === 'magie')) {
     entite.bouclierLumiere = false;
+    if (!(entite.bouclier > 0)) entite.bouclierEpuise = true;
     return { ok: true, recus: 0, absorbes: 0, bouclierLumiere: true };
   }
   if (esquiveAttaque(duel, entite, sourceType)) {
@@ -2644,8 +2844,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
     return { ok: true, recus: 0, absorbes: 0, esquive: true };
   }
   const apresEsquive = Math.max(0, amount);
-  const absorbes = Math.min(entite.bouclier ?? 0, apresEsquive);
-  entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
+  const absorbes = absorberBouclier(entite, apresEsquive);
   const recus = apresEsquive - absorbes;
   entite.pv -= recus;
   entite.def = Math.min(entite.def, Math.max(0, entite.pv));
@@ -2699,6 +2898,26 @@ export function arriveeCiblePortee(carte) {
   if (arrivee.type === 'debuff' || arrivee.type === 'empeche-blocage') return 'ennemi';
   if (arrivee.type === 'donne') return 'allie';
   return null;
+}
+
+/**
+ * L'arrivée consulte-t-elle le deck **immédiatement** — pioche, pioche puis
+ * défausse, ou recherche/pioche ciblée par type ? Une telle pose révèle ou
+ * déplace des cartes du paquet : l'interface ne doit plus proposer de
+ * l'annuler comme un simple geste réversible. Les effets différés (les
+ * compteurs d'Heures du Guetteur, par exemple) ne consultent encore rien à
+ * la pose et ne sont donc pas comptés ici.
+ */
+export function arriveeConsulteDeck(carte) {
+  const arrivee = carte?.arrivee;
+  if (!arrivee) return false;
+  const type = String(arrivee.type ?? '');
+  return type.startsWith('pioche')
+    || type.startsWith('recherche')
+    || type === 'tuteur'
+    || Number(arrivee.pioche) > 0
+    || Number(arrivee.recherche) > 0
+    || Boolean(arrivee.rechercheDeck);
 }
 
 /** Les camps qu'une arrivée peut viser, dans l'ordre où on les propose. */
@@ -3022,7 +3241,11 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
     }
   }
   attacherArme(duel, cote, cible, carte);
-  const bonus = `+${carte.bonus?.atk ?? 0}/+${carte.bonus?.def ?? 0}`;
+  const bonusSigne = (valeur) => {
+    const nombre = Number(valeur) || 0;
+    return nombre < 0 ? `−${Math.abs(nombre)}` : `+${nombre}`;
+  };
+  const bonus = `${bonusSigne(carte.bonus?.atk)}/${bonusSigne(carte.bonus?.def)}`;
   duel.log.push(porteurCree
     ? `${carte.name} fait naître son propre porteur et s’attache à ${cible.name} (${bonus}).`
     : `${cote === 'joueur' ? 'Vous attachez' : 'Le sorcier attache'} ${carte.name} à ${cible.name} (${bonus}).`);
@@ -3101,10 +3324,11 @@ export function rpgModesArme(duel, cote, entiteId) {
 }
 
 // Gelé (Poigne de givre, Verglas) : la créature ni n'attaque ni ne bloque.
-// Mur (Tours de défense) : ne peut jamais attaquer, même prête.
+// Mur (Tours de défense) et `nePeutPasAttaquer` (le Drakkar) : ne peuvent
+// jamais attaquer, même prêts — seul le Mur interdit aussi l'équipement.
 const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
 export const rpgPeutAttaquer = (entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite)
-  && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur;
+  && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur && !entite.nePeutPasAttaquer;
 const pret = rpgPeutAttaquer;
 // Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
@@ -3126,6 +3350,121 @@ export function rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide = fals
   if (frappeRapide) return false;
   if (attaquant.infiltration) return false;
   return !attaquant.envol || Boolean(bloqueur.envol);
+}
+
+/**
+ * Provocation : chaque attaquant qui la porte doit recevoir au moins un
+ * bloqueur, dans la limite de ce que les blocages légaux permettent.
+ *
+ * La limite compte : avec deux provocateurs et un seul défenseur capable de
+ * les arrêter, exiger les deux rendrait le combat insoluble. On compare donc
+ * les provocateurs réellement bloqués au plus grand appariement possible
+ * entre provocateurs et bloqueurs légaux (un bloqueur ne compte qu'une fois).
+ * Un provocateur dont la frappe rapide a choisi une créature n'attaque plus
+ * le sorcier : rien ne peut ni ne doit le bloquer.
+ */
+export function rpgProvocationValide(
+  duel,
+  cote,
+  attaquantIds = [],
+  blocages = {},
+  ciblesAttaque = {},
+) {
+  if (!duel?.[cote] || !duel?.[autre(cote)]) return true;
+  const adv = autre(cote);
+  const ids = [...new Set(attaquantIds ?? [])];
+  const attaquants = duel[cote].creatures.filter((entite) => ids.includes(entite.id));
+  const frappeSurCreature = (attaquant) => Boolean(ciblesAttaque?.[attaquant?.id]
+    && duel[adv].creatures.some((entite) => entite.id === ciblesAttaque[attaquant.id]));
+  const provocateurs = attaquants.filter((entite) => entite.provocation && !frappeSurCreature(entite));
+  if (!provocateurs.length) return true;
+
+  const bloqueurs = duel[adv].creatures.filter(peutBloquer);
+  const bloqueurParId = new Map(bloqueurs.map((entite) => [entite.id, entite]));
+  const legal = (bloqueur, attaquant) => Boolean(bloqueur)
+    && rpgPeutBloquerAttaquant(bloqueur, attaquant, false)
+    && !rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)));
+
+  // Provocateurs effectivement couverts par l'affectation proposée. Un même
+  // bloqueur écrit deux fois ne peut pas couvrir deux attaquants.
+  const bloqueursComptes = new Set();
+  let provocateursBloques = 0;
+  for (const attaquant of provocateurs) {
+    const idsBloqueurs = blocages?.[attaquant.id] ?? [];
+    const liste = Array.isArray(idsBloqueurs) ? idsBloqueurs : [idsBloqueurs];
+    const bloqueurLegal = liste
+      .map((id) => bloqueurParId.get(id))
+      .find((bloqueur) => bloqueur && !bloqueursComptes.has(bloqueur.id) && legal(bloqueur, attaquant));
+    if (bloqueurLegal) {
+      bloqueursComptes.add(bloqueurLegal.id);
+      provocateursBloques += 1;
+    }
+  }
+
+  // Plus grand nombre de provocateurs qu'une affectation légale peut couvrir.
+  const bloqueurAssigneA = new Map();
+  const essayer = (attaquant, dejaVus) => {
+    for (const bloqueur of bloqueurs) {
+      if (dejaVus.has(bloqueur.id) || !legal(bloqueur, attaquant)) continue;
+      dejaVus.add(bloqueur.id);
+      const occupant = bloqueurAssigneA.get(bloqueur.id);
+      if (!occupant || essayer(occupant, dejaVus)) {
+        bloqueurAssigneA.set(bloqueur.id, attaquant);
+        return true;
+      }
+    }
+    return false;
+  };
+  let maximumPossible = 0;
+  for (const attaquant of provocateurs) {
+    if (essayer(attaquant, new Set())) maximumPossible += 1;
+  }
+  return provocateursBloques >= maximumPossible;
+}
+
+/**
+ * Blocage forcé (l'Appât de la meute, l'Embuscade) : le défenseur doit
+ * **déclarer** chaque créature marquée par le camp attaquant, en l'assignant
+ * à un attaquant qu'elle peut légalement bloquer. Le moteur ne complète pas
+ * l'affectation à sa place : sans cette déclaration, le combat n'est pas
+ * recevable. Une créature marquée qui n'a aucun blocage légal (Envol,
+ * Infiltration, Protection, frappe de Coup rapide déjà dirigée contre une
+ * créature…) n'a évidemment rien à déclarer.
+ */
+export function rpgBlocageForceValide(
+  duel,
+  cote,
+  attaquantIds = [],
+  blocages = {},
+  ciblesAttaque = {},
+) {
+  if (!duel?.[cote] || !duel?.[autre(cote)]) return true;
+  const adv = autre(cote);
+  const ids = [...new Set(attaquantIds ?? [])];
+  const attaquants = duel[cote].creatures.filter((entite) => ids.includes(entite.id));
+  const frappeSurCreature = (attaquant) => Boolean(ciblesAttaque?.[attaquant?.id]
+    && duel[adv].creatures.some((entite) => entite.id === ciblesAttaque[attaquant.id]));
+  const assignations = new Map();
+  for (const attaquant of attaquants) {
+    const idsBloqueurs = blocages?.[attaquant.id] ?? [];
+    const liste = Array.isArray(idsBloqueurs) ? idsBloqueurs : [idsBloqueurs];
+    for (const bloqueurId of liste) {
+      if (bloqueurId && !assignations.has(bloqueurId)) assignations.set(bloqueurId, attaquant);
+    }
+  }
+  const legal = (bloqueur, attaquant) => Boolean(bloqueur && attaquant)
+    && !frappeSurCreature(attaquant)
+    && rpgPeutBloquerAttaquant(bloqueur, attaquant, false)
+    && !rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)));
+  const forces = duel[adv].creatures
+    .filter((entite) => peutBloquer(entite) && entite.blocageForce?.par === cote);
+  for (const bloqueurForce of forces) {
+    const ciblesLegales = attaquants.filter((attaquant) => legal(bloqueurForce, attaquant));
+    if (!ciblesLegales.length) continue;
+    const attaquantAssigne = assignations.get(bloqueurForce.id);
+    if (!attaquantAssigne || !legal(bloqueurForce, attaquantAssigne)) return false;
+  }
+  return true;
 }
 
 /** Combat entre créatures : dégâts mutuels et capacités liées au combat. */
@@ -3481,7 +3820,7 @@ export function rpgLancerAttaque(
   repartitions = null,
   attaquantsBloques = null,
   ciblesAttaque = null,
-  { attaqueDeclaree = false } = {},
+  { attaqueDeclaree = false, bannieresAppliquees = false } = {},
 ) {
   const adv = autre(cote);
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[cote]?.manaChoixEnAttente) {
@@ -3540,30 +3879,24 @@ export function rpgLancerAttaque(
       attaquantId,
       Array.isArray(idsBloqueurs) ? idsBloqueurs : idsBloqueurs ? [idsBloqueurs] : [],
     ]));
-  // Blocage forcé (l’Appât de la meute, l’Embuscade) : chaque créature marquée
-  // par ce camp doit bloquer si elle le peut — le marqueur part à la prochaine
-  // attaque du lanceur (« si elle le peut » : sans blocage légal, elle est libre).
-  const forces = bloqueursDisponibles.filter((entite) => entite.blocageForce?.par === cote);
-  for (const force of forces) {
-    const dejaAssigne = Object.values(affectations).some((idsBloqueurs) => idsBloqueurs.includes(force.id));
-    if (dejaAssigne) continue;
-    const candidats = attaquants
-      .filter((attaque) => rpgPeutBloquerAttaquant(force, attaque, frappeSurCreature(attaque))
-        && !rpgEstProtegee(attaque, cardColors(duelCardById(force.carteId))))
-      .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
-    if (!candidats.length) continue;
-    affectations[candidats[0].id] = [...(affectations[candidats[0].id] ?? []), force.id];
-  }
+  // Blocage forcé (l’Appât de la meute, l’Embuscade) : l’affectation doit
+  // déjà déclarer chaque créature marquée qui a un blocage légal. Le moteur
+  // valide cette déclaration plus bas, sans assigner le bloqueur à la place
+  // du défenseur.
   // Blocage obligatoire (Tours de défense) : les créatures avec doitBloquer: true
   // DOIVENT bloquer une créature attaquante si elles le peuvent.
-  const bloqueursObligatoires = bloqueursDisponibles.filter((entite) => entite.doitBloquer);
+  // Une créature à la fois « doit bloquer » et marquée par l’Appât ne profite
+  // pas de cette assignation permanente : le marqueur exige sa déclaration.
+  const bloqueursObligatoires = bloqueursDisponibles.filter((entite) => entite.doitBloquer
+    && entite.blocageForce?.par !== cote);
   for (const bloqueurOblig of bloqueursObligatoires) {
     const dejaAssigne = Object.values(affectations).some((idsBloqueurs) => idsBloqueurs.includes(bloqueurOblig.id));
     if (dejaAssigne) continue;
     const candidats = attaquants
       .filter((attaque) => rpgPeutBloquerAttaquant(bloqueurOblig, attaque, frappeSurCreature(attaque))
         && !rpgEstProtegee(attaque, cardColors(duelCardById(bloqueurOblig.carteId))))
-      .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
+      .sort((a, b) => Number(Boolean(b.provocation)) - Number(Boolean(a.provocation))
+        || (b.atk ?? 0) - (a.atk ?? 0));
     if (!candidats.length) continue;
     affectations[candidats[0].id] = [...(affectations[candidats[0].id] ?? []), bloqueurOblig.id];
   }
@@ -3607,6 +3940,18 @@ export function rpgLancerAttaque(
     }
   }
 
+  // Blocage forcé : le défenseur doit avoir déclaré chaque bloqueur marqué
+  // qui pouvait légalement s'interposer.
+  if (!rpgBlocageForceValide(duel, cote, ids, affectations, ciblesRapides)) {
+    return { ok: false, raison: 'blocage-force' };
+  }
+
+  // Provocation : l'affectation doit couvrir autant de provocateurs qu'une
+  // répartition légale des bloqueurs disponibles le permet.
+  if (!rpgProvocationValide(duel, cote, ids, affectations, ciblesRapides)) {
+    return { ok: false, raison: 'provocation' };
+  }
+
   // La déclaration est légale : la bannière du Daimyō (et de tout porteur du
   // même déclenché) grandit chaque Samouraï engagé AVANT que les blessures ne
   // soient calculées — le partage et la frappe du tour lisent donc la force
@@ -3635,7 +3980,11 @@ export function rpgLancerAttaque(
     }
     duel.log.length = avantBanniere[0].journal;
   };
-  appliquerBannieresAttaque(duel, cote, attaquants);
+  // Une résolution précédée d'une vraie déclaration a déjà reçu la bannière
+  // au verrouillage des attaquants (`rpgAppliquerBannieresAttaque`) : elle ne
+  // se déclenche pas une seconde fois ici. Les appels directs la reçoivent
+  // toujours avant les blessures.
+  if (!bannieresAppliquees) appliquerBannieresAttaque(duel, cote, attaquants);
 
   // Les capacités déclenchées par les blocages précèdent même le partage des
   // blessures. Prévoir aussi les destructions en chaîne, boucliers et protections
@@ -3921,6 +4270,11 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   } else if (cibleCreatureId) {
     return { ok: false, raison: 'cible' };
   }
+  // Ce raccourci suppose une attaque non bloquée : un bloqueur forcé capable
+  // de s'interposer doit d'abord être déclaré dans un vrai combat.
+  if (!rpgBlocageForceValide(duel, cote, [entiteId], { [entiteId]: [] }, {})) {
+    return { ok: false, raison: 'blocage-force' };
+  }
   // L'attaque directe est une attaque comme une autre : la bannière grandit
   // l'attaquant avant sa frappe. Le Coup rapide, plus haut, est passé par
   // `rpgLancerAttaque` et a déjà reçu son déclenchement.
@@ -4009,8 +4363,11 @@ function resoudreRetoursProgrammes(duel) {
       if (retour.tenacite) {
         // Renaissance de Tenacité : un point de défense, et plus aucune
         // Tenacité — la carte a dépensé sa seule renaissance de la partie.
+        // Le plafond de vie reste la défense imprimée : un soin peut rendre à
+        // la créature sa vie (et donc sa défense), sans lui rendre Tenacité.
         entite.tenaciteDisponible = false;
-        entite.pv = entite.def = entite.pvMax = 1;
+        entite.pv = 1;
+        entite.def = 1;
         duel.log.push(`Tenacité : ${carte.name} revient en jeu avec 1 point de défense.`);
       } else {
         duel.log.push(`${carte.name} renaît et revient en jeu.`);
@@ -4392,8 +4749,10 @@ export function rpgTourSorcierIA(duel, rng = Math.random) {
   const joue = rpgTourSorcierPreparationIA(duel, rng);
   const attaquants = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
   if (attaquants.length) {
+    const bannieresAppliquees = rpgAppliquerBannieresAttaque(duel, 'sorcier', attaquants);
     const ciblesAttaque = rpgCiblesAttaqueRapide(duel, 'sorcier', attaquants, { ia: duel.sorcier.ia, rng });
-    rpgLancerAttaque(duel, 'sorcier', attaquants, null, null, null, ciblesAttaque);
+    rpgLancerAttaque(duel, 'sorcier', attaquants, null, null, null, ciblesAttaque,
+      { bannieresAppliquees });
   }
   return joue;
 }

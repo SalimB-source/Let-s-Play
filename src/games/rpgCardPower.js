@@ -12,7 +12,7 @@
  *    la rareté dit ce que la carte vaut à la table.
  * 2. **La puissance** (`puissanceCarte`) départage les cartes d'un même
  *    palier : les chiffres (⚔ attaque, 🛡 défense), les capacités imprimées
- *    (envol, coup rapide, furie, résonance, esquive, protection, rapidité),
+ *    (envol, coup rapide, furie, overkill, résonance, esquive, protection, rapidité),
  *    les effets d'arrivée et le texte du sort — rapportés à ce que la carte
  *    coûte en mana. Une carte chère doit être plus forte qu'une carte bon
  *    marché pour la dépasser.
@@ -57,8 +57,10 @@ function valeurEffet(effet = {}) {
           : 1.25;
       const echo = Number(effet.echo?.amount) || 0;
       // Le gel qui accompagne les dégâts (la Poigne de givre, le Verglas)
-      // vaut un retrait de tempo en plus de la blessure.
-      const gel = effet.gel ? 1.5 : 0;
+      // vaut un retrait de tempo en plus de la blessure ; un gel probabiliste
+      // (la Brume du fjord, le Hurlement) se paie à son espérance.
+      const chanceGel = Math.min(1, Math.max(0, Number(effet.gelChance) || 0));
+      const gel = effet.gel ? 1.5 : chanceGel * 1.5;
       // `etSorcier` : le feu qui déborde de la table jusqu'au visage (le
       // Braisier du souk) se paie au même taux qu'un sort de dégâts direct.
       const exces = effet.etSorcier ? effet.etSorcier * 1.25 : 0;
@@ -82,7 +84,10 @@ function valeurEffet(effet = {}) {
     case 'soin-creatures':
       return montant * 0.65;
     case 'pioche':
-      return montant * 1.5;
+      // Une pioche tribale garantit une carte du type cherché s'il en reste
+      // dans le deck : elle vaut davantage qu'une pioche aveugle, sans valoir
+      // un choix libre dans tout le paquet.
+      return montant * (effet.tribu ? 2.1 : 1.5);
     case 'pioche-defausse':
       return (Number(effet.pioche) || 0) * 1.2 - (Number(effet.defausse) || 0) * 0.4;
     case 'bouclier':
@@ -104,7 +109,7 @@ function valeurEffet(effet = {}) {
       if (effet.cible === 'creatures-adverses' || atk < 0 || def < 0) {
         return Math.abs(atk) * 0.8 + Math.abs(def) * 0.6 + (effet.blocageForce ? 1 : 0) + 0.5;
       }
-      return atk * 0.8 + def * 0.6;
+      return atk * 0.8 + def * 0.6 + (effet.overkill ? 1.2 : 0);
     }
     case 'debuff': {
       // Le venin de la Vipère : les chiffres retirés valent comme un débuff
@@ -195,9 +200,11 @@ export function valeurCarte(carte) {
     // déclenché de combat, lu comme un effet de dégâts ordinaire.
     let valeur = 1.3 * (carte.bonus?.atk ?? 0) + (carte.bonus?.def ?? 0);
     if (carte.donne?.envol) valeur += 2.5;
+    if (carte.donne?.bouclier) valeur += 0.7 * Math.max(0, Number(carte.donne.bouclier) || 0);
     if (carte.donne?.infiltration) valeur += 2.5;
     if (carte.donne?.esquive) valeur += 1.5;
-    if (carte.donne?.furie) valeur += 1 + 0.7 * carte.donne.furie;
+    if (carte.donne?.furie) valeur += 0.7 + 0.55 * carte.donne.furie;
+    if (carte.donne?.overkill) valeur += 1.2;
     if (carte.donne?.immunite) valeur += 2;
     // Une protection de couleur permanente (la Jitte d'Amayas) : ni ciblage ni
     // blessure de cette couleur tant que l'arme tient — au prix d'une immunité.
@@ -244,10 +251,17 @@ export function valeurCarte(carte) {
   if (carte.envol) valeur += 2.5;
   if (carte.infiltration) valeur += 2.5;
   if (carte.coupRapide) valeur += 2;
+  // Provocation détourne un bloqueur vers ce corps et ouvre la voie aux
+  // autres attaquants : une pression tactique, sans valoir l'Infiltration.
+  if (carte.provocation) valeur += 1;
+  // Une créature qui ne peut pas attaquer garde sa force en blocage, mais
+  // ne menace jamais directement le sorcier adverse.
+  if (carte.nePeutPasAttaquer) valeur -= 0.5 * Math.max(0, Number(carte.atk) || 0);
   if (carte.rapidite) valeur += 0.5;
   if (carte.esquive) valeur += 1.5;
   if (carte.protection) valeur += 1.5;
-  if (carte.furie) valeur += 1 + 0.7 * carte.furie;
+  if (carte.furie) valeur += 0.7 + 0.55 * carte.furie;
+  if (carte.overkill) valeur += 1.5;
   if (carte.resonance) valeur += 2 + 2 * carte.resonance;
   if (carte.honneur) valeur += carte.honneur;
   if (carte.combat) valeur += 2;

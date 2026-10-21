@@ -1,6 +1,6 @@
 import { terrainManaColors } from './rpgCards.js';
 import { iconePourLigne } from './effetIcons.js';
-import { EffetIcone } from './effetIcons.jsx';
+import { IconeLigneRegle } from './effetIcons.jsx';
 import './rpg-card-rules.css';
 
 const MANA_ICONS = {
@@ -21,16 +21,27 @@ const MANA_ICONS = {
  *   L'icône double l'information, elle ne la remplace pas : le texte reste
  *   entier à côté.
  */
-export default function RpgCardRules({ carte, text = carte?.text }) {
+export default function RpgCardRules({ carte, text = carte?.text, effetsEpuises = [] }) {
   if (!text || text === '—') return 'Aucune capacité.';
   if (carte?.kind !== 'terrain') {
     const cle = iconePourLigne(carte, text);
     if (!cle) return text;
-    return (
+    const epuise = new Set(effetsEpuises ?? []).has(cle);
+    const contenu = (
       <>
-        <EffetIcone cle={cle} size={14} className="rpg-effet-icone--ligne" />
+        <IconeLigneRegle carte={carte} ligne={text} epuise={epuise} />
         {text}
       </>
+    );
+    if (!epuise) return contenu;
+    return (
+      <span
+        className="rpg-card-rules__ligne--epuisee"
+        data-effet={cle}
+        data-effet-epuise="true"
+      >
+        {contenu}
+      </span>
     );
   }
 

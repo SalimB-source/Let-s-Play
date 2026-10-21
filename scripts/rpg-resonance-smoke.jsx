@@ -24,7 +24,7 @@ const carteRendue = (carteId, entite = {}) => {
 };
 
 export function rendreCartes() {
-  const source = RPG_DUEL_CARDS.find((carte) => carte.id === 'valkyrie-au-corbeau');
+  const source = RPG_DUEL_CARDS.find((carte) => carte.id === 'samourai-du-torii');
   const neutre = RPG_DUEL_CARDS.find((carte) => carte.id === 'fennec-des-decombres');
   return {
     // Les cartes qui impriment une aura portent le même sonar, en jaune ; la
@@ -39,12 +39,20 @@ export function rendreCartes() {
       carte: RPG_DUEL_CARDS.find((carte) => carte.id === 'fennec-des-decombres'),
       html: carteRendue('fennec-des-decombres', { aura: 2, auraParGroupe: { sable: 2 } }),
     },
-    source: { carte: source, html: carteRendue('valkyrie-au-corbeau') },
+    source: { carte: source, html: carteRendue('samourai-du-torii') },
+    corbeau: {
+      carte: RPG_DUEL_CARDS.find((carte) => carte.id === 'valkyrie-au-corbeau'),
+      html: carteRendue('valkyrie-au-corbeau'),
+    },
+    glaces: {
+      carte: RPG_DUEL_CARDS.find((carte) => carte.id === 'valkyrie-des-glaces'),
+      html: carteRendue('valkyrie-des-glaces'),
+    },
     // Le bonus reçu est recalculé par le moteur sur TOUTES les créatures de la
     // famille : `entite.resonance` vaut 1 ici, et pourtant l'aura reste éteinte.
     neutre: {
       carte: neutre,
-      html: carteRendue('fennec-des-decombres', { resonance: 1, resonanceParGroupe: { neige: 1 } }),
+      html: carteRendue('fennec-des-decombres', { resonance: 1, resonanceParGroupe: { samourai: 1 } }),
     },
   };
 }
