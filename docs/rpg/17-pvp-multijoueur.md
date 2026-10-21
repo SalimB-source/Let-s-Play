@@ -340,6 +340,15 @@ Décisions d'écran qui méritent d'être connues :
 - Le salon **sonde l'arbitre toutes les 2 s** pendant l'attente et quand ce
   n'est pas mon tour, 10 s onglet caché, et pas du tout sur un écran figé
   (défi refusé, expiré, terminé).
+- **Un lien collé à la main s'ouvre au clic.** La messagerie affichait le
+  `body` en texte brut : un joueur qui envoyait « viens, on joue ici
+  https://…/defi/AB12CD34 » obligeait l'autre à sélectionner l'URL puis à la
+  coller dans la barre d'adresse. `src/messages/liensTexte.js` découpe le
+  message (http(s) et `www.` seulement, ponctuation de fin de phrase et
+  parenthèses non appariées retirées) et la bulle rend des ancres
+  `target="_blank" rel="noopener noreferrer"`. Rien n'est interprété : les
+  schémas `javascript:` / `data:` restent du texte, et le contenu du message
+  n'est jamais inséré comme HTML.
 - La **carte de défi** de la messagerie (`RpgPvpCarte.jsx`) ne contient que le
   code et le mode. Son statut s'obtient au salon : un message ne peut pas
   annoncer une partie qui n'existe pas.
@@ -663,6 +672,7 @@ allée-retour de la carte d'invitation en jsdom (P2), expiration et double envoi
 | `src/games/RpgPvpCarte.jsx` | la carte « Défi du Sablier » dans la messagerie |
 | `src/games/rpg-pvp.css` | styles du salon, du plateau et de la carte (téléphone inclus) |
 | `tests/rpg-pvp-salon.test.js` | 8 tests du salon et de la carte |
+| `src/messages/liensTexte.js` | découpage d'un message en texte et liens (pur, sans React) — `tests/messages-liens.test.js` |
 | `tests/sablier-arbitre.test.js` | 14 tests de bout en bout contre un magasin en mémoire : usurpation, seq périmé, fuite de main, carte posée, horloge, abandon |
 | `supabase/rpg-pvp.sql` | tables des duels, journal d'actions, file d'attente, classement, RLS fermée sur l'état, RPC de file, purge, colonnes `kind`/`payload` des messages |
 | `package.json` | `npm run check:rpg-pvp` (35 tests) et `npm run check:sablier-arbitre` |
