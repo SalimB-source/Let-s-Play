@@ -317,8 +317,8 @@ export function valeurCarte(carte) {
   // des PV — pesé au même rythme que le Butin, un peu en dessous.
   if (carte.tribut) valeur += 0.9 * carte.tribut;
   // Abordage (set Lettres de Marque) : la capture à L'ARRIVÉE — un retrait de
-  // table garanti à la pose, que la Rançon peut défaire, entre le Butin et
-  // l'Envol.
+  // table garanti à la pose, qu'un exil ou un renvoi peut défaire, entre le
+  // Butin et l'Envol.
   if (carte.abordage) valeur += 1.5;
   // Les Deux Visages (La Barbe Noire) : l'autre visage vaut un second corps —
   // la muraille quand la frappe manque, la frappe quand le mur s'effondre.
@@ -329,9 +329,9 @@ export function valeurCarte(carte) {
   // Cargaison (set Lettres de Marque) : l'assurance du convoi — la pioche ne
   // joue qu'à la mort ou à la prise, donc sous le prix d'une pioche sèche.
   if (carte.cargaison) valeur += 0.9 * carte.cargaison;
-  // Le déclencheur de rançon (le Négociant) : une carte par rançon payée,
-  // des deux côtés de la mer — un rendement incertain, un prix modéré.
-  if (carte.declencheRancon) valeur += 1.2 * carte.declencheRancon;
+  // Le déclencheur de prise (le Négociant) : une carte par créature mise en
+  // cale, des deux côtés de la mer — un rendement incertain, un prix modéré.
+  if (carte.declenchePrise) valeur += 1.2 * carte.declenchePrise;
   if (carte.arrivee) valeur += valeurEffet(carte.arrivee);
   // L'effet de destruction n'arrive que si la créature tombe : compté, mais
   // à 80 % — la mort n'est pas une garantie, et certaines tombent trop tard.

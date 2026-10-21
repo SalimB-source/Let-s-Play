@@ -92,7 +92,7 @@ export const RPG_MANA_ESSAI_DECKS = Object.freeze([
     element: 'hybride',
     elements: ['sable', 'eau'],
     boxArt: 'la-barbe-rousse',
-    description: 'Sable + Eau : la course amollit, l’abordage emporte, la rançon paie.',
+    description: 'Sable + Eau : la course amollit, l’abordage emporte, la cale ne se rachète pas.',
     cardIds: [
       ...copies('mousse-des-galiotes', 2), ...copies('rais-de-la-galiote', 2),
       ...copies('pilote-de-la-carreira', 2), ...copies('le-brulot', 2),

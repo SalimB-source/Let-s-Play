@@ -5,13 +5,13 @@ import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 import { RPG_ABORDAGE_SFX, RPG_SFX_NAMES, RpgAudioPlayer, rpgSfx } from '../src/games/rpgAudio.js';
 import {
+  rpgBlesserCreature,
   rpgConsommerPrisesEnCale,
   rpgJouerArme,
   rpgJouerCreature,
   rpgLancerMagie,
   rpgNouveauDuel,
   rpgPrisesEnCale,
-  rpgRanconner,
   rpgResoudreArriveeCiblee,
 } from '../src/games/rpgDuel.js';
 
@@ -130,10 +130,12 @@ test('le journal des prises en cale ne sonne que lorsqu’une créature est rée
   assert.deepEqual(rpgConsommerPrisesEnCale(duel), [], 'le journal audio est consommé une seule fois');
   assert.equal(rpgPrisesEnCale(duel).length, 1, 'l’historique de la table reste intact');
 
-  // 3. Payer la rançon ne rejoue pas le cri d'abordage.
+  // 3. Faire quitter la table au capteur ne rejoue pas le cri d'abordage : le
+  //    son appartient à la prise, pas à l'ouverture de la cale.
   duel.tour = 'sorcier';
-  assert.equal(rpgRanconner(duel, 'sorcier', pose.entite.id).ok, true);
-  assert.deepEqual(rpgConsommerPrisesEnCale(duel), [], 'la rançon ne sonne pas comme un kidnapping');
+  assert.equal(rpgBlesserCreature(duel, 'joueur', pose.entite.id, 99).ok, true);
+  assert.ok(!pose.entite.enCale, 'la cale du Cotre s’est ouverte');
+  assert.deepEqual(rpgConsommerPrisesEnCale(duel), [], 'l’ouverture de cale ne sonne pas comme un kidnapping');
 });
 
 test('l’IA sorcier, la Lettre de marque et le Grappin d’abordage déclenchent aussi la prise', () => {

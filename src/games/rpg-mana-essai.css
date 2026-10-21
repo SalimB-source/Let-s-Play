@@ -299,16 +299,17 @@
 .rpg-creature-slot.is-occupied .rpg-creature-slot__numero { opacity: .35; }
 .rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card,
 .rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card-stack,
+.rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card-prison,
 .rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card-stack__toggle { position: relative; z-index: 1; }
 /* Une carte ne déborde jamais de sa case : elle se cale sur la largeur de sa
    colonne, même quand la fenêtre rétrécit. */
-.rpg-battle[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack) {
+.rpg-battle[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
   max-width: 100%;
 }
 /* Au doigt, la rangée est une grille de cinq colonnes (et non une rangée
    flexible) : la carte garde la largeur d'une case, et la marge négative qui
    comprimait les voisines dans une rangée flexible disparaît. */
-.rpg-battle--touch[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack) {
+.rpg-battle--touch[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
   width: min(100%, var(--rpg-field-card, 142px));
 }
 .rpg-battle--touch[data-mode-mana="essai"] .card-row > * + * {
@@ -496,7 +497,7 @@
    dans la colonne de sa case (`--case-essai`, 1 à 5), quel que soit son rang
    dans la rangée. Une case vidée par une mort reste vide au milieu de la
    table : les autres créatures ne glissent pas pour prendre sa place. */
-.rpg-battle[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack) {
+.rpg-battle[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
   grid-column: var(--case-essai, auto);
   grid-row: 1;
 }
@@ -797,7 +798,7 @@
   column-gap: max(6px, calc(var(--duel-card, 64px) * .12));
   min-height: calc(var(--rpg-field-card, var(--duel-card, 64px)) * 1.25 + 8px);
 }
-.rpg-battle--touch[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack) {
+.rpg-battle--touch[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
   width: min(100%, var(--rpg-field-card, 142px));
 }
 .rpg-battle--touch[data-mode-mana="essai"] .card-row > * + * {

@@ -360,7 +360,7 @@
 }
 .rpg-card__compteur--cale {
   /* La cale du corsaire : cuivre de la chaîne sur bois sombre — le prisonnier
-     est détenu face visible, la rançon le lit au dos du losange. */
+     est détenu face visible, le losange dit la prise. */
   border-color: #7fd4c8;
   background: linear-gradient(145deg, #2e6e63, #12332d);
 }
@@ -384,9 +384,19 @@
 .rpg-card-prison {
   position: relative;
   display: grid;
+  /* Le wrapper n'est qu'un calque : dans une rangée, il tient la place d'une
+     carte et se laisse comprimer comme elle. Sans ces trois lignes, la
+     créature qui détient une cale gardait sa largeur nominale (jusqu'à 198 px
+     sur grand écran) alors que ses voisines se rangeaient dans leur case ou
+     rétrécissaient : elle paraissait plus grande qu'elles, plein écran
+     compris. La face intérieure est bornée à la boîte du wrapper. */
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 auto;
 }
 .rpg-card-prison > .rpg-card {
   z-index: 1;
+  max-width: 100%;
 }
 .rpg-card__prisonniere {
   position: absolute;

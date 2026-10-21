@@ -192,7 +192,7 @@ assert.match(blocPile, /top:\s*-9%/, 'elle dépasse du capteur par le haut');
 assert.match(blocPile, /left:\s*8%/, 'et par la droite');
 assert.match(blocPile, /z-index:\s*0/, 'elle vit SOUS le bouton du capteur');
 assert.match(css, /\.rpg-card-prison > \.rpg-card \{\s*z-index:\s*1;/, 'le capteur la recouvre');
-assert.match(blocPile, /pointer-events:\s*none/, 'rien à cliquer : la rançon reste au bouton d’action');
+assert.match(blocPile, /pointer-events:\s*none/, 'rien à cliquer : la détenue est décorative, la cale se lit sur le capteur');
 assert.match(blocPile, /transform:\s*rotate\(2\.6deg\)/, 'la carte détenue arrive inclinée, glissée derrière');
 assert.match(css, /@keyframes rpg-prisonniere-arrivee/, 'la carte détenue anime son arrivée derrière le capteur');
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card__prisonniere \{\s*animation: none;/,
@@ -203,6 +203,33 @@ assert.match(blocFiche, /border-color:\s*rgba\(127, 212, 200, \.72\)/,
   'la petite carte captive se distingue avec son liseré turquoise');
 assert.match(blocFiche, /figcaption > \.rpg-hover-card-preview__prisonniere-label/,
   'la petite carte porte son libellé « En cale »');
+
+// ── 4 bis. Le wrapper de prison est une CARTE de la rangée ─────────────────
+// Il n'y a qu'un wrapper par capteur : s'il manque aux règles qui mesurent les
+// enfants de la rangée, le capteur garde la largeur nominale du PC pendant que
+// ses voisines se partagent la rangée — il paraît deux fois trop grand en
+// plein écran, et la grille des cinq cases le place au hasard.
+const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+assert.match(mobileCss,
+  /\.rpg-battle--touch \.card-row > :is\(\.rpg-card, \.rpg-card-stack, \.rpg-card-prison\) \{/,
+  'au doigt, le capteur se partage la rangée comme une carte');
+assert.match(mobileCss,
+  /\.card-row \.rpg-card-prison > \.rpg-card[^{]*\{ width: 100%; \}/,
+  'la face du capteur prend la largeur que la rangée donne au wrapper');
+assert.match(mobileCss,
+  /\.card-row > \.rpg-card-prison:first-child/,
+  'un capteur seul dans sa rangée se centre comme une carte');
+const essaiCss = readFileSync(new URL('../src/games/rpg-mana-essai.css', import.meta.url), 'utf8');
+assert.match(essaiCss,
+  /\[data-mode-mana="essai"\] \.card-row > :is\(\.rpg-card, \.rpg-card-stack, \.rpg-card-prison\) \{\s*grid-column: var\(--case-essai, auto\);/,
+  'dans la grille des cinq cases, le capteur tombe dans sa case');
+assert.match(css, /\.rpg-card-prison \{[^}]*min-width: 0;[^}]*max-width: 100%;/,
+  'le wrapper se laisse comprimer comme une carte');
+assert.match(css, /\.rpg-card-prison > \.rpg-card \{[^}]*max-width: 100%;/,
+  'la face ne déborde jamais de la boîte du wrapper');
+assert.match(pageSource,
+  /className="rpg-card-prison"\s*\n\s*style=\{caseEssai \? \{ '--case-essai': caseEssai \} : undefined\}/,
+  'la case du mode sans terrains est posée sur le wrapper comme sur la carte');
 
 // Le losange ⛓ sous les couleurs : la règle commune part du haut de la carte
 // plus la hauteur du bloc de couleur, et le bloc hybride compte ses DEUX

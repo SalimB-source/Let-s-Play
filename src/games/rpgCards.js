@@ -2187,7 +2187,7 @@ export const RPG_DECK_SOLEIL_ROUGE_BASE = composerDeck(RPG_RECETTES_DECKS['serme
 /** La Balance des Heures — Prix, Tribut et morts qui déclenchent, avec La Dévoreuse comme seule mythique. */
 export const RPG_DECK_TENEBRES_BASE = composerDeck(RPG_RECETTES_DECKS['balance-des-heures'], CATALOGUE_DU_COMPOSEUR);
 
-/** Les Lettres de Marque — Abordage, Cale, Rançon et Cargaison, avec La Barbe-Rousse comme seule mythique. */
+/** Les Lettres de Marque — Abordage, Cale et Cargaison, avec La Barbe-Rousse comme seule mythique. */
 export const RPG_DECK_LETTRES_DE_MARQUE_BASE = composerDeck(RPG_RECETTES_DECKS['lettres-de-marque'], CATALOGUE_DU_COMPOSEUR);
 
 /** Decks de départ. `boxArt` : l'illustration plein art (carte emblématique) imprimée
@@ -2291,9 +2291,9 @@ export const RPG_DECKS = [
     elements: ['sable', 'eau'],
     terrain: null,
     boxArt: 'la-barbe-rousse',
-    archetype: 'Sable + Eau · l’Abordage, la Cale, la Rançon',
+    archetype: 'Sable + Eau · l’Abordage, la Cale, la Cargaison',
     affrontement: 'Affrontez les lettres de marque de la Régence.',
-    description: 'Deck hybride Sable + Eau de l’âge de la course : à l’arrivée en jeu, l’Abordage prend la créature adverse ciblée de coût inférieur au sien en cale (Raïs de la galiote, Cotre de course, La Barbe-Rousse — et la Lettre de marque arme toutes les arrivées du tour), la Rançon la rend à son prix imprimé, et la Cargaison du Galion paie l’assurance du convoi. Le Brûlot renvoie son tueur en main, le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque deux Corsaires. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste s’ouvrent dans les boosters.',
+    description: 'Deck hybride Sable + Eau de l’âge de la course : à l’arrivée en jeu, l’Abordage prend la créature adverse ciblée de coût inférieur au sien en cale (Raïs de la galiote, Cotre de course, La Barbe-Rousse — et la Lettre de marque arme toutes les arrivées du tour) ; la cale ne se rachète pas, il faut détruire ou faire quitter la table au capteur pour récupérer sa créature, et la Cargaison du Galion paie l’assurance du convoi. Le Brûlot renvoie son tueur en main, le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque deux Corsaires. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste s’ouvrent dans les boosters.',
     cardIds: RPG_DECK_LETTRES_DE_MARQUE_BASE,
   },
 ];

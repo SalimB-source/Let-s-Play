@@ -4,15 +4,18 @@
  * L'Abordage prend sa cible À L'ARRIVÉE du capteur : quand la créature
  * accoste, la créature adverse ciblée de coût ≤ seuil (le coût du capteur
  * moins un) rejoint sa cale au lieu d'être détruite. La Cale la détient face
- * visible, une seule place ; la Rançon la rend au prix imprimé ; la Cargaison
- * paie l'assurance du convoi. Ces contrôles suivent la liste du doc 18 §12.10 :
+ * visible, une seule place ; il n'y a **pas** de rachat — la détenue ne revient
+ * qu'en faisant quitter la table au capteur ; la Cargaison paie l'assurance du
+ * convoi. Ces contrôles suivent la liste du doc 18 §12.10 :
  * la prise se fait à l'arrivée et remplace la destruction sans rien
- * déclencher, une seule place, la rançon paie et rend, la cale s'ouvre à
- * toute sortie de table, Tenacité et figures refusent la cale (les boucliers,
+ * déclencher, une seule place, la cale ne se rachète pas, la cale s'ouvre à
+ * toute sortie de table — EN JEU quand le capteur meurt (statistiques de la
+ * prise, aucun effet d'arrivée), en main sinon —, Tenacité et figures
+ * refusent la cale (les boucliers,
  * eux, ne comptent plus : la prise ne blesse pas), jetons et effets créés ne
  * prennent rien, le sceau de la Lettre arme les arrivées du tour puis expire
  * mais la cale reste, Cargaison paie à la mort et à la prise, le Brûlot
- * renvoie son tueur, et l'IA du sorcier rançonne — et choisit sa prize.
+ * renvoie son tueur, et l'IA du sorcier choisit sa prize.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,10 +29,7 @@ import {
   rpgAttaquerCreature,
   rpgJouerArme,
   rpgFinDeTour,
-  rpgRanconner,
-  rpgPeutRanconner,
-  rpgPriXRancon,
-  rpgSorcierRanconnerIA,
+  rpgTourSorcierPreparationIA,
   rpgNombreDestructions,
   rpgSacrifierCreature,
   rpgResoudreArriveeCiblee,
@@ -38,6 +38,7 @@ import {
   rpgPeutAttaquer,
   rpgCoutEntite,
 } from '../src/games/rpgDuel.js';
+import * as moteurDuel from '../src/games/rpgDuel.js';
 import {
   RPG_DECKS,
   RPG_DECK_LETTRES_DE_MARQUE_BASE,
@@ -110,7 +111,7 @@ test('la prise se fait à l’arrivée : rien ne se déclenche, ni compteur, ni 
   const { rais, cible } = priseDeBase(duel);
   assert.ok(rais.enCale, 'le Raïs détient sa victime dès son arrivée');
   assert.equal(rais.enCale.carteId, 'mousse-des-galiotes');
-  assert.equal(rais.enCale.cost, 1, 'le prix de la rançon est le coût imprimé');
+  assert.equal(rais.enCale.entite.name, 'Mousse des galiotes', 'la cale garde la présence prise');
   assert.equal(duel.sorcier.creatures.includes(cible), false, 'la prisonnière a quitté la table');
   assert.equal(duel.sorcier.cimetiere.includes('mousse-des-galiotes'), false, 'elle n’est pas au cimetière');
   assert.equal(duel.joueur.creatures.includes(rais), true, 'le capteur tient la table');
@@ -277,32 +278,62 @@ test('une seule place en cale : le Grappin ne reprend pas sur un porteur déjà 
   assert.equal(secondRais.enCale?.carteId, 'mousse-des-galiotes', 'l’autre cale s’est remplie');
 });
 
-test('la rançon paie le coût imprimé en manas libres et rend la créature en main', () => {
+test('la cale ne se rachète pas : seul un départ de table du capteur libère la détenue', () => {
   const duel = duelVide();
   const { rais } = priseDeBase(duel);
-  duel.tour = 'joueur';
-  assert.equal(rpgPeutRanconner(duel, 'sorcier', rais.id), false, 'pas de rançon pendant le tour adverse');
+  // Le moteur ne connaît plus de rachat : aucun export de rançon ne subsiste.
+  for (const nom of ['rpgRanconner', 'rpgPeutRanconner', 'rpgPriXRancon', 'rpgSorcierRanconnerIA']) {
+    assert.equal(nom in moteurDuel, false, `${nom} a disparu du moteur : le rachat n’existe plus`);
+  }
+  // Le propriétaire a beau avoir du mana plein et son tour, la cale reste fermée.
   duel.tour = 'sorcier';
-  duel.sorcier.mana = { sable: 1, eau: 1, braise: 0 };
-  const mainAvant = duel.sorcier.main.length;
-  const res = rpgRanconner(duel, 'sorcier', rais.id);
-  assert.equal(res.ok, true);
-  assert.equal(res.prix, 1, 'le prix de la Mousse est son coût imprimé');
-  assert.equal(res.carteId, 'mousse-des-galiotes');
-  assert.equal(rais.enCale, null, 'la cale est vide');
-  assert.equal(duel.sorcier.main.length, mainAvant + 1, 'la créature revient en main');
-  assert.ok(duel.sorcier.main.includes('mousse-des-galiotes'));
-  assert.equal(duel.sorcier.mana.sable + duel.sorcier.mana.eau, 1, 'un mana a été payé, libre de couleur');
-  // La fenêtre de la Magie Rapide : en réponse à une annonce, la rançon part.
-  duel.tour = 'joueur';
-  duel.annonce = { cote: 'joueur', carteId: 'lettre-de-marque' };
-  duel.sorcier.mana = { sable: 1, eau: 1, braise: 0 };
-  assert.equal(rpgPeutRanconner(duel, 'sorcier', rais.id), false, 'plus de prisonnier : rien à payer');
-  duel.annonce = null;
+  mana(duel, 'sorcier', 10);
+  duel.finDeTour = { cote: 'joueur' };
+  assert.ok(rais.enCale, 'la Mousse reste détenue tant que le Raïs tient la table');
+  assert.equal(duel.sorcier.creatures.length, 0, 'aucune créature ne revient d’elle-même');
+  assert.equal(duel.sorcier.main.includes('mousse-des-galiotes'), false, 'et rien n’arrive en main');
+  duel.finDeTour = null;
 });
 
-test('la cale s’ouvre à toute sortie de table : mort, renvoi, exil, sacrifice', () => {
-  // Mort au combat du capteur.
+test('la mort du capteur rend la détenue EN JEU, avec ses statistiques de prise et sans effet d’arrivée', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 10);
+  mana(duel, 'sorcier', 10);
+  // Tislit des aures (1/1, arrivée : piochez une carte) est la proie du Raïs.
+  donner(duel, 'sorcier', 'tislit-des-aures');
+  const tislit = jouer(duel, 'sorcier', 'tislit-des-aures').entite;
+  // Elle a grandi avant la prise : ce sont CES chiffres que la cale garde.
+  tislit.atk = 3;
+  tislit.def = 4;
+  tislit.pvMax = 4;
+  tislit.pv = 4;
+  const deckApresArrivee = duel.sorcier.deck.length;
+  donner(duel, 'joueur', 'rais-de-la-galiote');
+  const rais = jouer(duel, 'joueur', 'rais-de-la-galiote', tislit.id).entite;
+  assert.equal(rais.enCale?.carteId, 'tislit-des-aures', 'la prise se fait à l’arrivée');
+  assert.equal(duel.sorcier.creatures.includes(tislit), false, 'la détenue quitte le champ');
+
+  // Le Raïs meurt au combat : sa cale s’ouvre et la détenue revient sur le champ.
+  donner(duel, 'sorcier', 'salem');
+  const salem = jouer(duel, 'sorcier', 'salem').entite;
+  pret(salem);
+  rpgAttaquerCreature(duel, 'sorcier', salem.id, rais.id);
+  assert.equal(duel.joueur.creatures.includes(rais), false, 'le capteur est mort');
+  const revenue = duel.sorcier.creatures.find((entite) => entite.carteId === 'tislit-des-aures');
+  assert.ok(revenue, 'la détenue revient en jeu, pas en main');
+  assert.equal(revenue.atk, 3, 'l’attaque de la prise est rendue');
+  assert.equal(revenue.def, 4, 'la défense de la prise aussi');
+  assert.equal(revenue.pv, 4, 'avec ses points de vie d’avant la cale');
+  assert.equal(duel.sorcier.main.includes('tislit-des-aures'), false, 'elle ne repasse pas en main');
+  assert.equal(duel.sorcier.cimetiere.includes('tislit-des-aures'), false, 'elle n’est pas au cimetière non plus');
+  assert.equal(duel.sorcier.deck.length, deckApresArrivee, 'aucun effet d’arrivée ne se rejoue');
+  assert.equal(revenue.ready, false, 'mal d’invocation : le retour n’offre pas d’attaque gratuite');
+  assert.match(duel.log.at(-2) ?? duel.log.at(-1) ?? '', /revient en jeu avec 3\/4/,
+    'le journal dit le retour et ses chiffres');
+});
+
+test('la cale s’ouvre à toute sortie de table : mort et sacrifice en jeu, renvoi et exil en main', () => {
+  // Mort au combat du capteur : la détenue revient EN JEU.
   const mort = duelVide();
   const { rais: raisMort } = priseDeBase(mort);
   donner(mort, 'sorcier', 'salem');
@@ -310,7 +341,9 @@ test('la cale s’ouvre à toute sortie de table : mort, renvoi, exil, sacrifice
   pret(salem);
   rpgAttaquerCreature(mort, 'sorcier', salem.id, raisMort.id);
   assert.equal(mort.joueur.creatures.includes(raisMort), false, 'le capteur est mort');
-  assert.ok(mort.sorcier.main.includes('mousse-des-galiotes'), 'sa cale s’est ouverte vers la main adverse');
+  assert.ok(mort.sorcier.creatures.some((entite) => entite.carteId === 'mousse-des-galiotes'),
+    'sa cale s’est ouverte en jeu, chez son propriétaire');
+  assert.equal(mort.sorcier.main.includes('mousse-des-galiotes'), false, 'pas en main : le capteur a coulé');
 
   // Renvoi en main du capteur (le Sonneur fêlé rebondit le Raïs).
   const renvoi = duelVide();
@@ -329,12 +362,26 @@ test('la cale s’ouvre à toute sortie de table : mort, renvoi, exil, sacrifice
   assert.ok((exil.joueur.exil ?? []).includes('rais-de-la-galiote'), 'le capteur est exilé');
   assert.ok(exil.sorcier.main.includes('mousse-des-galiotes'), 'même l’au-delà paie ses dettes');
 
-  // Sacrifice du capteur (mode essai).
+  // Sacrifice du capteur (mode essai) : c’est une mort, la détenue revient en jeu.
   const sacrifice = duelEssai();
   const { rais: raisSacrifice } = priseDeBase(sacrifice);
   const res = rpgSacrifierCreature(sacrifice, 'joueur', raisSacrifice.id);
   assert.equal(res.ok, true);
-  assert.ok(sacrifice.sorcier.main.includes('mousse-des-galiotes'), 'le sacrifice du capteur ouvre la cale');
+  assert.ok(sacrifice.sorcier.creatures.some((entite) => entite.carteId === 'mousse-des-galiotes'),
+    'le sacrifice du capteur ouvre la cale en jeu');
+
+  // Champ plein chez le propriétaire : pas de place, la carte repart en main.
+  const plein = duelEssai();
+  const { rais: raisPlein } = priseDeBase(plein);
+  mana(plein, 'sorcier', 20);
+  for (const id of ['ouvrier-du-natron', 'chacal-du-seuil', 'ashigaru-des-braises', 'scribe-des-feuillets', 'loup-des-neiges']) {
+    donner(plein, 'sorcier', id);
+    assert.equal(jouer(plein, 'sorcier', id).ok, true, `le sorcier pose ${id}`);
+  }
+  assert.equal(plein.sorcier.creatures.length, 5, 'les cinq cases du sorcier sont prises');
+  assert.equal(rpgSacrifierCreature(plein, 'joueur', raisPlein.id).ok, true);
+  assert.ok(plein.sorcier.main.includes('mousse-des-galiotes'),
+    'sans place libre, la détenue retourne en main au lieu de déborder du champ');
 });
 
 test('la capture d’un capteur ouvre sa propre cale : la prisonnière du prisonnier s’échappe', () => {
@@ -678,36 +725,31 @@ test('le Grappin (4 manas) alourdit son porteur de 1, puis active Abordage selon
   assert.equal(seul.arriveeEnAttente ?? null, null, 'table adverse vide : le crochet mord dans l’eau');
 });
 
-test('le Négociant des rançons encaisse sa commission à chaque rançon', () => {
+test('le Négociant des prises encaisse sa commission à chaque créature mise en cale', () => {
   const duel = duelVide();
   duel.joueur.deck = ['fennec-des-decombres', 'fennec-des-decombres'];
   mana(duel, 'joueur', 10);
   mana(duel, 'sorcier', 10);
   // Le Négociant du joueur regarde la mer ; le Raïs du sorcier ARRIVE et
-  // prend la Mousse du joueur (coût 1 ≤ seuil 1).
+  // prend la Mousse du joueur (coût 1 ≤ seuil 1) : la commission tombe à la
+  // prise, sans rien payer.
   donner(duel, 'joueur', 'negociant-des-ranscons');
   jouer(duel, 'joueur', 'negociant-des-ranscons');
   donner(duel, 'joueur', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'joueur', 'mousse-des-galiotes').entite;
+  const deckAvant = duel.joueur.deck.length;
   donner(duel, 'sorcier', 'rais-de-la-galiote');
   const rais = jouer(duel, 'sorcier', 'rais-de-la-galiote', mousse.id).entite;
   assert.ok(rais.enCale, 'le Raïs du sorcier détient la Mousse du joueur');
-  duel.tour = 'joueur';
-  duel.joueur.mana = { sable: 3, eau: 3, braise: 0 };
-  const deckAvant = duel.joueur.deck.length;
-  const res = rpgRanconner(duel, 'joueur', rais.id);
-  assert.equal(res.ok, true, 'le joueur rachète sa Mousse');
-  assert.equal(duel.joueur.deck.length, deckAvant - 1, 'le Négociant a pioché sa commission');
+  assert.equal(duel.joueur.deck.length, deckAvant - 1, 'le Négociant a pioché sa commission à la prise');
 });
 
-test('l’IA du sorcier choisit sa prize et rançonne ce qu’elle peut payer', () => {
-  // La prize : le sorcier pose son Cotre (Abordage 2) sans désigner — le
-  // moteur lui choisit la prise la plus précieuse parmi les légales.
+test('l’IA du sorcier choisit sa prise la plus précieuse parmi les légales', () => {
   const prise = duelVide();
   mana(prise, 'joueur', 10);
   mana(prise, 'sorcier', 10);
   donner(prise, 'joueur', 'mousse-des-galiotes');
-  const mousse = jouer(prise, 'joueur', 'mousse-des-galiotes').entite;
+  jouer(prise, 'joueur', 'mousse-des-galiotes');
   donner(prise, 'joueur', 'le-brulot');
   const brulot = jouer(prise, 'joueur', 'le-brulot').entite;
   donner(prise, 'joueur', 'tercio-de-cuivre');
@@ -718,24 +760,11 @@ test('l’IA du sorcier choisit sa prize et rançonne ce qu’elle peut payer', 
     'l’auto-pick a pris le Brûlot (coût 2), pas la Mousse (coût 1) ni le Tercio (coût 3, hors seuil)');
   assert.equal(prise.joueur.creatures.includes(brulot), false);
   assert.equal(prise.joueur.creatures.includes(tercio), true, 'le Tercio coûteux reste sur la table');
+});
 
-  // La rançon : le Raïs du joueur détient la Mousse du sorcier (prix 1).
-  const duel = duelVide();
-  const { rais } = priseDeBase(duel);
-  assert.ok(rais.enCale?.carteId === 'mousse-des-galiotes', 'le Raïs détient la Mousse');
-  duel.tour = 'sorcier';
-  duel.sorcier.mana = { sable: 0, eau: 0, braise: 0 };
-  assert.deepEqual(rpgSorcierRanconnerIA(duel), [], 'sans mana, pas de rançon');
-  assert.ok(rais.enCale, 'la Mousse reste détenue');
-  duel.sorcier.mana = { sable: 4, eau: 4, braise: 0 };
-  const rachetees = rpgSorcierRanconnerIA(duel);
-  assert.equal(rachetees.length, 1);
-  assert.equal(rachetees[0].carteId, 'mousse-des-galiotes');
-  assert.equal(rais.enCale, null, 'la cale est vide');
-  assert.ok(duel.sorcier.main.includes('mousse-des-galiotes'), 'la Mousse revient en main du sorcier');
-
-  // Une prise trop chère (le Galion, prix 5) : sept manas ne suffisent pas au
-  // tempo que l’IA s’impose (prix + 3) — elle attend un pactole.
+test('rien ne rend une prise trop chère : même riche, l’IA ne rachète plus la cale adverse', () => {
+  // La disparition de la rançon vaut aussi pour l'IA : sa préparation de tour
+  // ne paie plus rien pour récupérer une créature détenue.
   const cher = duelVide();
   mana(cher, 'joueur', 10);
   mana(cher, 'sorcier', 10);
@@ -744,16 +773,11 @@ test('l’IA du sorcier choisit sa prize et rançonne ce qu’elle peut payer', 
   donner(cher, 'joueur', 'la-barbe-rousse');
   const amirale = jouer(cher, 'joueur', 'la-barbe-rousse', galion.id).entite;
   assert.equal(amirale.enCale?.carteId, 'galion-de-la-flotte', 'le Galion est détenu');
-  assert.equal(rpgPriXRancon(amirale), 5, 'le prix du Galion est son coût imprimé');
   cher.tour = 'sorcier';
-  cher.sorcier.mana = { sable: 3, eau: 4, braise: 0 };
-  assert.deepEqual(rpgSorcierRanconnerIA(cher), [], 'sept manas pour huit exigés : le sorcier garde son tempo');
-  assert.ok(amirale.enCale, 'le Galion croupit en cale');
-  cher.sorcier.mana = { sable: 6, eau: 6, braise: 0 };
-  const rachetes = rpgSorcierRanconnerIA(cher);
-  assert.equal(rachetes.length, 1, 'la mer assez généreuse, il paie');
-  assert.equal(rachetes[0].carteId, 'galion-de-la-flotte');
-  assert.ok(cher.sorcier.main.includes('galion-de-la-flotte'));
+  mana(cher, 'sorcier', 10);
+  rpgTourSorcierPreparationIA(cher);
+  assert.ok(amirale.enCale, 'le Galion croupit en cale : l’IA ne rachète pas');
+  assert.equal(cher.sorcier.main.includes('galion-de-la-flotte'), false, 'rien ne revient en main');
 });
 
 test('La Barbe Noire change de visage au début de chaque tour — et ne se prend jamais en cale', () => {
@@ -860,7 +884,7 @@ test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles
   }
 });
 
-test('les valeurs du set se paient au barème : Abordage, Cargaison, Rançon, pastilles et icônes', () => {
+test('les valeurs du set se paient au barème : Abordage, Cargaison, Prise, pastilles et icônes', () => {
   const rais = cardById('rais-de-la-galiote');
   assert.ok(puissanceCarte(rais) > puissanceCarte({ ...rais, abordage: false }),
     'l’Abordage vaut son prix au barème');
@@ -868,7 +892,7 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Rançon, pa
   assert.ok(puissanceCarte(galion) > puissanceCarte({ ...galion, cargaison: 0 }),
     'la Cargaison assure le convoi au barème');
   const negociant = cardById('negociant-des-ranscons');
-  assert.ok(puissanceCarte(negociant) > puissanceCarte({ ...negociant, declencheRancon: 0 }),
+  assert.ok(puissanceCarte(negociant) > puissanceCarte({ ...negociant, declenchePrise: 0 }),
     'la commission du Négociant compte');
   const lettre = cardById('lettre-de-marque');
   assert.ok(puissanceCarte(lettre) > 0, 'le sceau des arrivées vaut son prix au barème');
@@ -883,7 +907,7 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Rançon, pa
     'le Chasseur porte la pastille de sa Traque');
   assert.ok(libellesPastilles('le-grand-debarquement').includes('Overkill'),
     'le Grand Débarquement annonce l’Overkill sur sa face');
-  assert.deepEqual(libellesPastilles('negociant-des-ranscons'), ['Rançon 1'], 'le Négociant porte la pastille Rançon');
+  assert.deepEqual(libellesPastilles('negociant-des-ranscons'), ['Prise 1'], 'le Négociant porte la pastille Prise');
   assert.ok(libellesPastilles('grappin-d-abordage').includes('Abordage'),
     'le Grappin porte la pastille Abordage — dynamique, sans chiffre imprimé');
   assert.deepEqual(libellesPastilles('tercio-de-cuivre'), ['Coup rapide'],
@@ -926,8 +950,9 @@ test('La légende du Hollandais volant (ex-Vengeance) : 2/4 avec Coup rapide, +2
   assert.equal(hollandais.atk, 4, 'la cale comble donne +2 attaque');
   assert.equal(hollandais.butin, true, 'la cale comble donne Butin');
 
-  duel.finDeTour = { cote: 'joueur' };
-  assert.equal(rpgRanconner(duel, 'sorcier', hollandais.id).ok, true);
+  // La cale ne se rachète pas : il faut tuer le Hollandais pour que la Mousse
+  // quitte sa cale — et comme la mort rend en jeu, elle n'arrive pas en main.
+  assert.equal(rpgBlesserCreature(duel, 'joueur', hollandais.id, 99).ok, true);
   assert.equal(hollandais.enCale, null);
   assert.equal(hollandais.atk, 2, 'le bonus disparaît avec la prisonnière');
   assert.equal(hollandais.butin, false, 'le Butin conditionnel disparaît lui aussi');
