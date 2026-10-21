@@ -7888,7 +7888,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // désigner sa victime, on referme l'attente ouverte à la pose — la carte
     // n'est plus en main, il n'y a donc pas de vol à relancer. L'attente peut
     // être une désignation d'arrivée OU une prize d'Abordage (`attente.abordage`,
-    // créature accostante ou porteur du Grappin).
+    // créature accostante ou porteur du Grappin). Quand l'attente porte à la
+    // fois les deux (Lettre de marque + créature avec arrivée ciblée), un
+    // effet est résolu par clic : tant que l'autre reste en attente, la table
+    // garde sa désignation ouverte.
     if ((arriveeCiblePortee(carteSource) || Number.isFinite(duel.arriveeEnAttente?.abordage))
       && duel.arriveeEnAttente?.carteId === cibleEnCours) {
       const champAvantAction = prendreInstantaneChamp();
@@ -7901,7 +7904,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return true;
       }
       if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-arrivee', cibleId: entite.id });
-      setCibleEnCours(null);
+      // L'attente peut subsister pour l'autre effet (ex. Abordage après une
+      // cible d'arrivée, ou l'inverse) : on garde la cible en cours pour le
+      // prochain clic, sinon on la lève.
+      if (!duel.arriveeEnAttente) setCibleEnCours(null);
       if (arriveeConsulteDeck(carteSource)) invaliderAnnulation();
       jouerSfx(carteSource.arrivee?.type === 'retour-main' ? 'creature_return' : 'select');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
