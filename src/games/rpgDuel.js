@@ -149,6 +149,44 @@ export function rpgRenvoisEnMain(duel) {
   return (renvoisParDuel.get(duel) ?? []).map((evenement) => ({ ...evenement }));
 }
 
+// Les prises en cale par Abordage : hors de l'état JSON, comme les renvois et
+// les soins. Deux rôles : `prisesEnCaleParDuel` garde l'historique du duel pour
+// que la table ne traite jamais une créature kidnappée comme une carte détruite
+// (`destruction_hit`), et `prisesAudioParDuel` livre à chaque rendu les prises
+// toutes fraîches pour déclencher le cri pirate (`abordage`).
+const prisesEnCaleParDuel = new WeakMap();
+const prisesAudioParDuel = new WeakMap();
+
+/** Les créatures déjà prises en cale depuis le début du duel. */
+export function rpgPrisesEnCale(duel) {
+  return (prisesEnCaleParDuel.get(duel) ?? []).map((evenement) => ({ ...evenement }));
+}
+
+/** Les prises en cale survenues depuis le dernier relevé — le journal se vide. */
+export function rpgConsommerPrisesEnCale(duel) {
+  if (!duel) return [];
+  const journal = prisesAudioParDuel.get(duel) ?? [];
+  prisesAudioParDuel.delete(duel);
+  return journal;
+}
+
+function journaliserPriseEnCale(duel, capteur, coteCapteur, victime, coteVictime) {
+  const evenement = {
+    entityId: victime.id,
+    carteId: victime.carteId,
+    cote: coteVictime,
+    capteurId: capteur.id,
+    capteurCarteId: capteur.carteId,
+    coteCapteur,
+  };
+  const historique = prisesEnCaleParDuel.get(duel) ?? [];
+  historique.push(evenement);
+  prisesEnCaleParDuel.set(duel, historique);
+  const frais = prisesAudioParDuel.get(duel) ?? [];
+  frais.push({ ...evenement });
+  prisesAudioParDuel.set(duel, frais);
+}
+
 /** Combien de blessures d'effet le duel a encaissées depuis son début. */
 export function rpgNombreBlessures(duel) {
   return blessuresParDuel.get(duel)?.length ?? 0;
@@ -2043,6 +2081,7 @@ function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictim
     .filter((candidate) => candidate.id !== victime.id);
   detacherArmes(duel, coteVictimeEffective, victime);
   armeAuCimetiere(duel, coteVictimeEffective, victime);
+  journaliserPriseEnCale(duel, capteur, coteCapteur, victime, coteVictimeEffective);
   duel.log.push(`${capteur.name} prend ${victime.name} en cale — détenue, pas détruite.`);
   duel.combatFeed = duel.combatFeed ?? [];
   duel.combatFeed.push({

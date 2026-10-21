@@ -12,3 +12,13 @@ correctly on both root and subpath deployments.
 The clip fires on every fifth consecutive player pickup (all stages/modes).
 Missing a row or hitting an obstacle resets this vocal streak, independently
 of the existing scoring combo. Muting stops the cry and music together.
+
+# Le Sablier — pirate boarding cry (`pirate-ahoy.mp3`)
+
+`pirate-ahoy.mp3` is `Cartoon Pirate Voice - Ahoy.mp3` supplied by the user,
+moved byte-for-byte with no re-encoding or modification (MP3, 44.1 kHz,
+approximately 1.411 seconds).
+
+Played via `RpgAudioPlayer` (`abordage`) whenever a creature with Abordage
+kidnaps an opposing creature into its hold (`prendreEnCale`).
+

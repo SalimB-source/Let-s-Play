@@ -18,9 +18,9 @@ test('hz : le la de référence et ses voisins', () => {
   assert.equal(hz('nimportequoi'), 0);
 });
 
-test('le catalogue se résume au survol et aux onze échantillons fournis', () => {
+test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
-    'attackers_confirm', 'block_impact', 'card_countered', 'card_draw', 'card_place',
+    'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw', 'card_place',
     'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'hover', 'page_turn',
     'player_attack_hit', 'victoire', 'water_wave',
   ].sort(), 'le son du duel = la synthèse du survol + les échantillons de la table');
@@ -29,6 +29,13 @@ test('le catalogue se résume au survol et aux onze échantillons fournis', () =
     assert.ok(Array.isArray(sequence) && sequence.length > 0, `séquence manquante : ${name}`);
   }
   assert.equal(rpgSfx('silence-total'), null);
+});
+
+test('l’abordage joue la voix pirate « Ahoy ! » fournie, livrée avec le jeu', () => {
+  assert.ok(RPG_SFX_NAMES.includes('abordage'));
+  assert.deepEqual(rpgSfx('abordage'), [{ kind: 'sample', at: 0, dur: 1.411, g: 1 }]);
+  assert.ok(existsSync(new URL('../src/games/assets/pirate-ahoy.mp3', import.meta.url)),
+    'Cartoon Pirate Voice - Ahoy.mp3 voyage dans src/games/assets/pirate-ahoy.mp3');
 });
 
 test('la victoire est la fanfare fournie, livrée avec le jeu', () => {
