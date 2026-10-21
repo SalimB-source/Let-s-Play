@@ -6580,8 +6580,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const carteSource = cibleEnCours ? cardById(cibleEnCours) : null;
     if (!carteSource || !Number.isFinite(seuil)) return false;
     const carteVisee = cardById(entite?.carteId);
-    return !entite?.jeton
-      && carteVisee?.kind !== 'hero'
+    return carteVisee?.kind !== 'hero'
       && !carteVisee?.insaisissable
       && !entite?.tenaciteDisponible
       && !rpgEstProtegee(entite, cardColors(carteSource))
