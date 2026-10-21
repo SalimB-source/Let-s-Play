@@ -26,6 +26,9 @@ const salon = read('../src/games/RpgPvpSalon.jsx');
 const battleCss = read('../src/games/rpg-battle.css');
 const pvpCss = read('../src/games/rpg-pvp.css');
 const tutorialCss = read('../src/games/rpg-tutorial.css');
+const soukCss = read('../src/games/rpg-souk.css');
+const deckBox = read('../src/games/RpgDeckBox.jsx');
+const cardArt = read('../src/games/rpgCardArt.js');
 
 /* ----------------------------- le balisage ------------------------------- */
 
@@ -77,6 +80,18 @@ assert.doesNotMatch(
   salon,
   /<main className="rpg-pvp rpg-pvp--duel"[\s\S]{0,40}<Cadre/,
   'le plateau du duel garde son propre cadre (il ne s’emboîte pas deux fois)',
+);
+
+// Le jeu couvre l'écran : une sortie vers les jeux vit dans la barre du Sablier.
+assert.match(
+  page,
+  /className="rpg-mode-menu__quitter"[\s\S]{0,200}href=\{`\$\{import\.meta\.env\.BASE_URL\}jeu`\}/,
+  'la barre des onglets porte une sortie vers les jeux (le jeu masque le menu du site)',
+);
+assert.match(
+  page,
+  /Sélectionner\{'\\u00a0'\}/,
+  'la phrase du Deck pose ses espaces insécables en JSX, sans les afficher en clair',
 );
 
 /* ------------------------------ les styles ------------------------------- */
@@ -210,8 +225,117 @@ try {
   tel.window.close();
 }
 
+/* ----------------- le cadre plein écran des six autres onglets ------------ */
+
+// Une seule scène : l'artwork se tamise derrière le contenu de tous les onglets
+// sauf « Jouer », qui reste le tableau de bord d'entrée.
+assert.match(
+  battleCss,
+  /\.rpg-mode-menu:not\(\.rpg-mode-menu--jouer\)::after \{\s*content: '';\s*position: fixed;\s*inset: 0;\s*z-index: -1;/,
+  'les onglets autres que Jouer tamisent l’artwork derrière leur contenu',
+);
+
+// La même gouttière partout : chaque écran garde sa colonne, pas sa marge.
+const regleGouttiere = battleCss.match(/\.rpg-mode-menu--histoire \.rpg-story,[\s\S]*?\n\}/);
+assert.ok(regleGouttiere, 'la gouttière des onglets est posée par une règle commune');
+for (const ecran of [
+  'rpg-mode-menu--histoire .rpg-story',
+  'rpg-mode-menu--tours .rpg-story',
+  'rpg-mode-menu--decks .rpg-deck-catalog',
+  'rpg-mode-menu--catalogue .rpg-card-catalogue',
+  'rpg-mode-menu--parametres .rpg-settings',
+  'rpg-mode-menu--souk .rpg-souk',
+]) {
+  assert.ok(regleGouttiere[0].includes(ecran), `l’onglet ${ecran.split('--')[1].split(' ')[0]} prend la gouttière commune`);
+}
+assert.match(
+  regleGouttiere[0],
+  /padding:\s*clamp\(14px, 2\.1vw, 26px\)\s*clamp\(14px, 3\.8vw, 56px\)\s*clamp\(24px, 4\.2vh, 46px\);/,
+  '14 px de marge au téléphone, 56 px au plus large, et le même retrait sous la barre',
+);
+
+// Dans l'onglet, la barre de modes remplace le « ← Menu » du Souk.
+assert.match(
+  battleCss,
+  /\.rpg-mode-menu--souk \.rpg-souk__retour \{ display: none; \}/,
+  'le Souk ne répète pas son retour au menu quand il vit dans les onglets',
+);
+assert.match(
+  soukCss,
+  /\.rpg-souk__retour \{/,
+  'la page du Souk seule garde son bouton de retour',
+);
+
+/* ------------- les coffrets du Deck servent aussi au duel en ligne -------- */
+
+// Un seul coffret pour tout le jeu : le module partagé, importé des deux côtés.
+for (const nom of ['DeckBox', 'ElementEmblem', 'deckBoxArtUrl', 'deckColorModifier', 'inclinerBoitier', 'redresserBoitier']) {
+  assert.match(deckBox, new RegExp(`export function ${nom}\\(`), `le module des coffrets exporte ${nom}`);
+}
+assert.match(deckBox, /import '\.\/rpg-deckbox\.css';/, 'le coffret emporte sa feuille de style partout où il est monté');
+assert.match(cardArt, /export const cardArt = \(id\) =>/, 'les URL d’illustration vivent dans un module partagé');
+assert.match(
+  page,
+  /} from '\.\/RpgDeckBox\.jsx';/,
+  'l’onglet Deck importe les coffrets au lieu de les redéfinir',
+);
+assert.doesNotMatch(page, /function DeckBox\(/, 'le coffret n’est plus dupliqué dans la page du duel');
+assert.doesNotMatch(page, /function ElementEmblem\(/, 'les emblèmes non plus');
+assert.match(
+  salon,
+  /import \{ DeckBox, deckColorModifier, inclinerBoitier, redresserBoitier \} from '\.\/RpgDeckBox\.jsx';/,
+  'le salon du duel en ligne monte les mêmes coffrets',
+);
+assert.match(
+  salon,
+  /<DeckBox deck=\{deck\} index=\{index\} size="shelf" \/>/,
+  'chaque deck du salon est un boîtier 3D',
+);
+assert.doesNotMatch(salon, /rpg-pvp-deck__entete/, 'l’ancienne grille de cartes plates a disparu du salon');
+assert.match(
+  salon,
+  /onPointerMove=\{inclinerBoitier\}[\s\S]{0,80}onPointerLeave=\{redresserBoitier\}/,
+  'le boîtier du salon se tourne vers le curseur comme sur l’étagère',
+);
+assert.match(pvpCss, /\.rpg-pvp-decks \{[^}]*display: flex;[^}]*justify-content: center;/,
+  'l’étagère du salon se centre, quel que soit le nombre de decks');
+assert.match(pvpCss, /\.rpg-pvp-deckbox\.is-selected \{/, 'le coffret choisi s’allume d’un liseré');
+assert.doesNotMatch(pvpCss, /\.rpg-pvp-deck \{/, 'les règles de l’ancienne carte plate sont retirées');
+
+const cadre = new JSDOM(`<!doctype html><html><head><style>${battleCss}\n${soukCss}</style></head><body>
+  <section class="rpg-mode-menu rpg-mode-menu--souk"><div class="rpg-mode-menu__content">
+    <header class="rpg-mode-menu__header">
+      <div class="rpg-mode-menu__brand"><h1>Le Sablier</h1></div>
+      <button type="button" class="rpg-mode-menu__fullscreen"><svg viewBox="0 0 24 24"></svg></button>
+      <a class="rpg-mode-menu__quitter" href="/jeu" aria-label="Quitter le Sablier"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></a>
+    </header>
+    <main class="rpg-souk">
+      <header class="rpg-souk__header">
+        <div class="rpg-souk__titre"><h2>Le Souk</h2></div>
+        <button type="button" class="rpg-menu-button rpg-souk__retour">← Menu</button>
+      </header>
+    </main>
+  </div></section>
+</body></html>`, { pretendToBeVisual: true });
+
+try {
+  const styleCadre = (selector) => cadre.window.getComputedStyle(cadre.window.document.querySelector(selector));
+  const quitter = styleCadre('.rpg-mode-menu__quitter');
+  assert.equal(quitter.display, 'inline-flex', 'la sortie du Sablier est une pastille alignée sur le plein écran');
+  assert.equal(quitter.borderRadius, '50%', 'ronde comme le bouton plein écran');
+  assert.equal(quitter.minWidth, '38px', '38 px de côté, la taille du bouton voisin');
+  assert.equal(quitter.marginLeft, '8px', 'elle se détache du bouton plein écran');
+  assert.equal(quitter.order, '2', 'elle reste sur la ligne du titre, après le plein écran');
+  assert.equal(styleCadre('.rpg-souk__retour').display, 'none',
+    'dans l’onglet, le retour au menu du Souk disparaît (la barre d’onglets le remplace)');
+} finally {
+  cadre.window.close();
+}
+
 console.log(
   'check:rpg-accueil ✓ — l’onglet Jouer range ses quatre portes en grille (récit et duel en ligne en tête), '
-  + 'la barre des sept onglets passe sur deux rangées au téléphone, et le salon en ligne vit dans le cadre plein écran du jeu.',
+  + 'la barre des sept onglets passe sur deux rangées au téléphone, le salon en ligne vit dans le cadre plein écran du jeu, '
+  + 'et les six autres onglets reprennent cette même scène : artwork tamisé, gouttière unique, retour au menu rangé. '
+  + 'Le salon choisit son deck sur les coffrets du menu.',
 );
 process.exit(0);

@@ -223,73 +223,40 @@ body.rpg-pvp-lock { overflow: hidden; }
   color: var(--pvp-sable);
 }
 
-/* Le choix du deck : une pastille de couleur par élément, une coche sur la
-   carte retenue. */
+/* Le choix du deck : les coffrets de l'onglet Deck, en étagère centrée.
+   Même objet, mêmes couleurs, même inclinaison au curseur que dans le menu —
+   le joueur reconnaît son boîtier au lieu d'apprendre une seconde grille. Le
+   boîtier choisi s'allume d'un liseré de laiton et sa légende passe au doré. */
 .rpg-pvp-decks {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px 6px;
   margin: 0;
-  padding: 0;
+  padding: 2px 0 6px;
   list-style: none;
 }
-.rpg-pvp-deck {
-  position: relative;
-  display: grid;
-  align-content: space-between;
-  gap: 9px;
-  width: 100%;
-  min-height: 82px;
-  padding: 11px 12px;
-  text-align: left;
-  border-radius: 13px;
-  border: 1px solid rgba(244, 239, 228, .16);
-  background: rgba(255, 255, 255, .035);
-  color: inherit;
-  cursor: pointer;
-  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+.rpg-pvp-deckbox {
+  width: clamp(104px, 23%, 132px);
+  padding: 8px 4px 9px;
 }
-.rpg-pvp-deck:hover,
-.rpg-pvp-deck:focus-visible {
-  border-color: rgba(233, 196, 106, .55);
-  background: rgba(233, 196, 106, .07);
-  outline: none;
+/* Le boîtier garde sa perspective mais pas la taille de l'étagère du menu :
+   dans un panneau de salon, quatre coffrets de front tiennent sur deux rangées. */
+.rpg-pvp-deckbox .rpg-deckbox { --bw: clamp(82px, 6.2vw, 106px); }
+.rpg-pvp-deckbox .rpg-deck-choice__text { gap: 3px; padding: 0 2px 2px; }
+.rpg-pvp-deckbox .rpg-deck-choice__text strong { font-size: 13.5px; }
+.rpg-pvp-deckbox .rpg-deck-choice__text em { font-size: 9.5px; color: rgba(244, 231, 207, .66); }
+.rpg-pvp-deckbox .rpg-deck-choice__cta { color: rgba(244, 239, 228, .62); font-size: 9.5px; letter-spacing: .06em; }
+.rpg-pvp-deckbox:hover .rpg-deck-choice__cta { color: #f2d79b; }
+.rpg-pvp-deckbox.is-selected {
+  border-color: rgba(233, 196, 106, .7);
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 216, 143, .14), rgba(255, 216, 143, 0) 70%);
+  box-shadow: inset 0 0 0 1px rgba(233, 196, 106, .3), 0 12px 26px rgba(0, 0, 0, .3);
 }
-.rpg-pvp-deck__entete { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.rpg-pvp-deck strong { font: 700 13.5px/1.25 system-ui, sans-serif; color: #f8eedb; }
-.rpg-pvp-deck__coche {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #e9c46a;
-  color: #241a06;
-  font-size: 11px;
-  font-weight: 800;
-}
-.rpg-pvp-deck__pied { display: flex; align-items: center; gap: 7px; }
-.rpg-pvp-deck small { font-size: 11px; color: rgba(244, 239, 228, .6); }
-.rpg-pvp-deck__couleurs { display: inline-flex; gap: 3px; }
-.rpg-pvp-deck__couleur {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, .4);
-  box-shadow: inset 0 1px rgba(255, 255, 255, .35);
-}
-.rpg-pvp-deck__couleur--braise { background: #e2703a; }
-.rpg-pvp-deck__couleur--eau { background: #5aa9e6; }
-.rpg-pvp-deck__couleur--sable { background: #e9c46a; }
-.rpg-pvp-deck__couleur--neige { background: #cfe8f5; }
-.rpg-pvp-deck__couleur--tenebres { background: #8b7bb8; }
-.rpg-pvp-deck.is-selected {
-  border-color: var(--pvp-or);
-  background: rgba(233, 196, 106, .12);
-  box-shadow: 0 0 0 1px rgba(233, 196, 106, .4) inset, 0 10px 24px rgba(0, 0, 0, .28);
-}
-.rpg-pvp-deck:disabled { opacity: .6; cursor: not-allowed; }
+.rpg-pvp-deckbox.is-selected .rpg-deck-choice__cta { color: #ffe6ab; }
+.rpg-pvp-deckbox .rpg-deck-choice__button:disabled { cursor: not-allowed; }
+.rpg-pvp-deckbox:has(.rpg-deck-choice__button:disabled) { opacity: .55; }
 
 /* La cadence : deux cartes-options plutôt que deux lignes de radio nues. */
 .rpg-pvp__mode { display: grid; gap: 8px; margin: 0; }
@@ -593,8 +560,9 @@ body.rpg-pvp-lock { overflow: hidden; }
   .rpg-pvp { padding: 18px 12px 56px; }
   .rpg-pvp__header { margin-bottom: 18px; }
   .rpg-pvp__panneau { gap: 12px; padding: 15px; border-radius: 16px; }
-  .rpg-pvp-decks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .rpg-pvp-deck { min-height: 74px; }
+  /* Trois coffrets de front : les sept decks tiennent en trois rangées. */
+  .rpg-pvp-deckbox { width: clamp(94px, 29%, 124px); }
+  .rpg-pvp-deckbox .rpg-deckbox { --bw: clamp(66px, 20vw, 82px); }
   .rpg-pvp-page__barre { min-height: 50px; padding: 7px 12px; }
   .rpg-pvp-page__retour { min-height: 34px; padding: 0 11px; font-size: 11px; }
   .rpg-pvp-page__code { padding: 6px 10px; font-size: 11px; }
@@ -606,7 +574,8 @@ body.rpg-pvp-lock { overflow: hidden; }
 }
 
 @media (max-width: 380px) {
-  .rpg-pvp-decks { grid-template-columns: minmax(0, 1fr); }
+  .rpg-pvp-deckbox { width: clamp(88px, 31%, 116px); }
+  .rpg-pvp-deckbox .rpg-deckbox { --bw: clamp(70px, 19vw, 88px); }
   .rpg-pvp-page__statut { display: none; }
 }
 

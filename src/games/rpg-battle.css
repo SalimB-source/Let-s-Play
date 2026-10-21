@@ -10457,3 +10457,92 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   flex-direction: column;
   justify-content: flex-start;
 }
+
+/* ── Le cadre plein écran des onglets ───────────────────────────────────────
+   Le duel en ligne a donné le ton : une scène sombre qui occupe toute la
+   fenêtre, sa barre collée en haut, le contenu posé dessus. Les six autres
+   onglets reprennent la même scène. Jusqu'ici chacun composait sa propre
+   page : le Catalogue et les Paramètres collaient aux bords de l'écran, le
+   Souk flottait au-dessus de l'illustration, et la marge changeait d'un
+   onglet à l'autre. Ici, deux règles seulement : l'artwork se tamise derrière
+   le contenu, et partout la même gouttière, du téléphone au grand écran.
+   Le Jouer garde son tableau de bord tel quel — c'est la porte d'entrée. */
+.rpg-mode-menu:not(.rpg-mode-menu--jouer)::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% -8%, rgba(64, 46, 30, .4), transparent 62%),
+    linear-gradient(180deg, rgba(8, 8, 11, .84), rgba(8, 8, 11, .93) 40%, rgba(6, 6, 8, .97));
+}
+/* Une seule gouttière pour toute la maison : 14 px au téléphone, 56 px au
+   plus large, et le même retrait sous la barre d'onglets. Chaque écran garde
+   sa propre largeur de colonne (Souk 1220, Histoire 1180, Paramètres 980). */
+.rpg-mode-menu--histoire .rpg-story,
+.rpg-mode-menu--tours .rpg-story,
+.rpg-mode-menu--decks .rpg-deck-catalog,
+.rpg-mode-menu--catalogue .rpg-card-catalogue,
+.rpg-mode-menu--parametres .rpg-settings,
+.rpg-mode-menu--souk .rpg-souk,
+.rpg-mode-menu--guide .rpg-card-guide,
+.rpg-mode-menu--tutoriels .rpg-tutoriels {
+  padding:
+    clamp(14px, 2.1vw, 26px)
+    clamp(14px, 3.8vw, 56px)
+    clamp(24px, 4.2vh, 46px);
+}
+/* Dans les onglets, la barre de modes dit déjà où l'on est : le « ← Menu »
+   du Souk n'y ramenait qu'à l'onglet voisin et poussait le titre d'une
+   rangée sur le téléphone. Il reste en place sur la page du Souk seule. */
+.rpg-mode-menu--souk .rpg-souk__retour { display: none; }
+
+/* Sortie du Sablier : le jeu couvre tout l'écran, barre du site comprise.
+   La pastille vit donc dans la barre du Sablier, à droite, et reprend le
+   gabarit du bouton plein écran pour que les deux s'alignent. */
+.rpg-mode-menu__quitter {
+  order: 2;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  min-height: 38px;
+  margin-left: 8px;
+  padding: 8px;
+  border: 1px solid rgba(240, 221, 183, .22);
+  border-radius: 50%;
+  background: rgba(12, 10, 13, .7);
+  color: rgba(247, 237, 220, .74);
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(10px);
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+.rpg-mode-menu__quitter svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+}
+.rpg-mode-menu__quitter:hover,
+.rpg-mode-menu__quitter:focus-visible {
+  border-color: rgba(231, 191, 101, .48);
+  background: linear-gradient(135deg, rgba(201, 150, 57, .26), rgba(111, 69, 34, .22));
+  color: #ffe7af;
+  outline: none;
+}
+@media (max-width: 700px) {
+  .rpg-mode-menu__quitter { min-width: 34px; min-height: 34px; margin-left: 6px; padding: 7px; }
+  .rpg-mode-menu__quitter svg { width: 14px; height: 14px; }
+}
+/* Sur un téléphone étroit, deux filtres côte à côte rognent « Toutes les
+   couleurs ». Ils passent l'un sous l'autre : deux rangées lisibles plutôt
+   qu'un libellé coupé. */
+@media (max-width: 460px) {
+  .rpg-card-catalogue__filters label { flex: 1 1 100%; }
+}

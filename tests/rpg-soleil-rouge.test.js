@@ -339,7 +339,7 @@ test('les feux de kitsune coûtent 5 et infligent 4 blessures à une créature c
 
 
 test('les quinze illustrations du set et leurs refontes ont une version de cache', () => {
-  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  const page = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
     const versionsSpecifiques = {
       'susanoo': 'susanoo-kaiga-couleurs-v1',

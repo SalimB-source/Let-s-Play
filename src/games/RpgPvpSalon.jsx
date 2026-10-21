@@ -6,6 +6,7 @@ import { useFriends } from '../friends/FriendsContext';
 import { sendMessage } from '../messages/messagesApi';
 import { RPG_DECKS } from './rpgCards.js';
 import { deckColors } from './rpgDeckFilter.js';
+import { DeckBox, deckColorModifier, inclinerBoitier, redresserBoitier } from './RpgDeckBox.jsx';
 import {
   abandonnerDefi,
   cadenceSondage,
@@ -93,31 +94,40 @@ function Cadre({ code = '', retour = null, compact = false, children }) {
   );
 }
 
+/**
+ * Le choix du deck — les mêmes coffrets que l'onglet Deck.
+ * -------------------------------------------------------
+ * Un seul objet à reconnaître d'un écran à l'autre : le boîtier 3D de
+ * `RpgDeckBox.jsx`, avec sa couleur, ses emblèmes et son inclinaison au
+ * curseur. Le clic sur le boîtier *choisit* le deck (là où l'onglet Deck
+ * l'ouvre) : c'est le seul geste du salon, et `aria-pressed` le dit.
+ */
 function SelecteurDeck({ decks, valeur, onChange, desactive }) {
   return (
     <ul className="rpg-pvp-decks" role="list">
-      {decks.map((deck) => {
+      {decks.map((deck, index) => {
         const choisie = valeur === deck.id;
         return (
-          <li key={deck.id}>
+          <li
+            key={deck.id}
+            className={`rpg-deck-choice rpg-pvp-deckbox rpg-deck-choice--${deckColorModifier(deck)}${choisie ? ' is-selected' : ''}`}
+            onPointerMove={inclinerBoitier}
+            onPointerLeave={redresserBoitier}
+          >
+            <DeckBox deck={deck} index={index} size="shelf" />
             <button
               type="button"
-              className={`rpg-pvp-deck${choisie ? ' is-selected' : ''}`}
+              className="rpg-deck-choice__button"
               aria-pressed={choisie}
               disabled={desactive}
               onClick={() => onChange(deck.id)}
             >
-              <span className="rpg-pvp-deck__entete">
+              <span className="rpg-deck-choice__text">
                 <strong>{deck.name}</strong>
-                {choisie && <span className="rpg-pvp-deck__coche" aria-hidden="true">✓</span>}
-              </span>
-              <span className="rpg-pvp-deck__pied">
-                <span className="rpg-pvp-deck__couleurs" aria-hidden="true">
-                  {deckColors(deck).map((couleur) => (
-                    <i key={couleur} className={`rpg-pvp-deck__couleur rpg-pvp-deck__couleur--${couleur}`} />
-                  ))}
+                <em>{couleursDuDeck(deck) || 'Catalogue'}</em>
+                <span className="rpg-deck-choice__meta">
+                  <span className="rpg-deck-choice__cta">{choisie ? '✓ Choisi' : 'Choisir'}</span>
                 </span>
-                <small>{couleursDuDeck(deck) || 'Catalogue'}</small>
               </span>
             </button>
           </li>

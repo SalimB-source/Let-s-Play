@@ -326,7 +326,7 @@ Trois surfaces, toutes branchées sur l'arbitre :
 | Surface | Fichier | Rôle |
 | --- | --- | --- |
 | **Entrée** | `RpgDuelPage.jsx` (menu) | le bouton « Duel en ligne », deuxième porte de l’onglet Jouer à côté de « Mode histoire » — c'est un lien simple, donc la page continue de se monter hors routeur dans les vérifications jsdom |
-| **Salon** | `RpgPvpSalon.jsx` + `rpg-pvp.css` | `/jeu/sablier-de-bab-el/defi` (créer, défier un ami, entrer un code) et `/…/defi/:code` (attendre, rejoindre) |
+| **Salon** | `RpgPvpSalon.jsx` + `rpg-pvp.css` (+ `RpgDeckBox.jsx`) | `/jeu/sablier-de-bab-el/defi` (créer, défier un ami, entrer un code) et `/…/defi/:code` (attendre, rejoindre) |
 | **Plateau** | `RpgPvpBoard.jsx` | mulligan, choix du mana, main, créatures, combat, journal, fin de partie |
 
 Décisions d'écran qui méritent d'être connues :
@@ -341,6 +341,22 @@ Décisions d'écran qui méritent d'être connues :
 - **Le salon se lit en trois temps sur ordinateur** (deck et cadence à gauche,
   « créer » puis « rejoindre » à droite), en une seule colonne numérotée sur
   téléphone.
+- **Le deck se choisit sur des coffrets, pas sur des cartes plates.**
+  `SelecteurDeck` monte le `DeckBox` de `src/games/RpgDeckBox.jsx` : le même
+  boîtier 3D que l'onglet Deck (art sur la face avant, emblèmes d'élément,
+  inclinaison au curseur `inclinerBoitier`), avec sa couleur de deck. Un clic
+  choisit le deck — `aria-pressed` et la légende « Choisi » le disent — et le
+  boîtier retenu s'allume d'un liseré de laiton. Le module est partagé avec
+  `RpgDuelPage.jsx` (extrait du menu, avec `src/games/rpgCardArt.js` pour les
+  URL d'illustration) : aucune copie du coffret à maintenir.
+- **Les six autres onglets du Sablier vivent dans la même scène.** Le Jouer
+  reste le tableau de bord d'entrée ; Histoire, Jeu Solo, Deck, Souk,
+  Catalogue, Paramètres (et le Guide, les Tutoriels) reçoivent l'artwork
+  tamisé, la même gouttière (14 px au téléphone, 56 px au plus large) et un
+  retrait identique sous la barre d'onglets. Dans l'onglet, le « ← Menu » du
+  Souk disparaît — la barre d'onglets le remplace — et une pastille de sortie
+  (`rpg-mode-menu__quitter`) ramène aux jeux, puisque le Sablier couvre la
+  barre du site. `npm run check:rpg-accueil` vérifie ces règles.
 - **Le plateau en ligne est un écran dédié**, pas le duel solo : le solo garde
   son moteur local et ses 9 500 lignes intactes. Le plateau PvP n'a **aucun
   moteur** — il affiche la vue de l'arbitre et transforme chaque geste en

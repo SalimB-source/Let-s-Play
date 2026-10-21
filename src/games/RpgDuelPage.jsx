@@ -212,119 +212,19 @@ import {
 // dans son propre module : l'atelier de decks la partage (voir
 // `rpgSortSignature.jsx`).
 import { SortSceau, SortSocle, classeLigneFamille } from './rpgSortSignature.jsx';
+import { cardArt, cardArtFurie } from './rpgCardArt.js';
+import {
+  DeckBox,
+  ElementEmblem,
+  deckBoxArtUrl,
+  deckColorModifier,
+  inclinerBoitier,
+  redresserBoitier,
+} from './RpgDeckBox.jsx';
 
 const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️', hybride: '🔥⏳' };
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Sable + Braise' };
 const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' };
-const CARD_ART_CACHE_VERSIONS = {
-  'susanoo': 'susanoo-kaiga-couleurs-v1',
-  'orochi': 'orochi-kaiga-vert-rouge-v2',
-  'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
-  'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
-  'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
-  'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
-  'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
-  // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
-  'ashigaru-des-braises': 'soleil-rouge-kaiga-couleurs-v7',
-  'ronin-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
-  'samourai-du-torii': 'soleil-rouge-kaiga-couleurs-v7',
-  'onna-musha-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
-  'hatamoto-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
-  'kenshi-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
-  'daimyo-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
-  'tengu-du-mont-ardent': 'soleil-rouge-kaiga-couleurs-v7',
-  'oni-de-la-fournaise': 'soleil-rouge-kaiga-couleurs-v7',
-  'kagutsuchi-flamme-originelle': 'soleil-rouge-kaiga-couleurs-v7',
-  'frappe-iaijutsu': 'iaijutsu-kaiga-couleurs-sans-jambes-v10',
-  'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
-  'serment-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
-  'pere-des-corbeaux': 'odin-photoreal-v1',
-  'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
-  'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
-  'anqa-des-braises': 'anqa-des-braises-huile-v1',
-  // Les cinq héros du récit ont été **repeints en nihonga** (pigments
-  // minéraux sur feuille d’or) avec une palette algérienne — indigo touareg,
-  // safran, henné, vert émeraude, turquoise et or. Mêmes noms de fichiers,
-  // mêmes visages et mêmes accessoires : on date donc les cinq images d’un
-  // seul geste pour qu’aucun cache ne resserve les huiles précédentes.
-  feriel: 'heros-nihonga-algerien-v1',
-  salem: 'heros-nihonga-algerien-v1',
-  yamina: 'heros-nihonga-algerien-v1',
-  tarek: 'heros-nihonga-algerien-v1',
-  boualem: 'heros-nihonga-algerien-v1',
-  // Le Serpent du monde garde la facture nihonga, mais sa composition est
-  // repensée : un serpent unique et anatomiquement cohérent encercle le globe.
-  // Sa révision dédiée l’emporte sur celle du set Neige.
-  'serpent-du-monde': 'serpent-terre-nihonga-v1',
-  // L'Armure de cendres quitte le lot photoréaliste : son dessin d'origine
-  // est conservé trait pour trait et simplement repeint en nihonga.
-  'armure-de-cendres': 'armure-nihonga-v1',
-  // Le Bâton des citernes quitte le lot photoréaliste à son tour : le bâton
-  // seul derrière la glace d'une vitrine, les serpents dehors.
-  'baton-des-citernes': 'baton-nihonga-vitrine-dehors-v2',
-  'djinn-de-foudre': 'plein-art-foudre-v1',
-  'sonneur-fele': 'plein-art-cloche-v1',
-  'dame-aux-ailes-d-or': 'nihonga-v1',
-  'lionne-du-midi-ardent': 'nihonga-v1',
-  'brisure-de-verre': 'plein-art-verre-v2',
-  'silence-decume': 'plein-art-bulle-v1',
-  'parade-du-verre': 'plein-art-verre-v1',
-  'maree-contraire': 'deflection-ultrason-v1',
-  ressac: 'djinn-tourbillon-v1',
-  'courant-de-retour': 'djinn-tourbillon-v1',
-  // Les quatre porteurs humains de Furie ont été repeints en photoréaliste
-  // fantaisiste : chaque face intacte a son double ensanglanté, armure ou
-  // casque brisé et visage en furie. On date les huit images ensemble pour
-  // qu’aucun cache ne resserve les anciennes huiles sous les mêmes noms.
-  'guerrier-au-bouclier-rond': 'furie-photorealiste-v1',
-  // La face de base du Berserk a depuis été repeinte seule : même visage et
-  // même rendu photoréaliste que son double, mais avant la Furie — debout,
-  // calme et sans aucune trace de sang. Le double garde la révision commune.
-  'berserk-des-trois-hivers': 'berserk-meme-visage-sans-sang-v1',
-  'jarl-au-marteau-de-guerre': 'furie-photorealiste-v1',
-  'maitre-du-marteau': 'furie-photorealiste-v1',
-  'guerrier-au-bouclier-rond-furie': 'furie-photorealiste-v1',
-  'berserk-des-trois-hivers-furie': 'furie-photorealiste-v1',
-  'jarl-au-marteau-de-guerre-furie': 'furie-photorealiste-v1',
-  'maitre-du-marteau-furie': 'furie-photorealiste-v1',
-  // Le Loup garde, lui, la peinture à l’huile de sa meute : même composition,
-  // chef ensanglanté et crocs dehors dans l’état Furie.
-  'loup-des-neiges-furie': 'loup-furie-huile-v1',
-  // Repeints sous leurs anciens noms : charge frontale pour le Mur, marteau
-  // seul foudroyé au-dessus du fjord pour l’Éclair, soldats gelés dans la
-  // brume pour la Brume du fjord.
-  'mur-de-boucliers': 'mur-boucliers-charge-v1',
-  'eclair-du-marteau': 'eclair-marteau-fjord-v1',
-  'brume-du-fjord': 'brume-personnes-gelees-v2',
-};
-/**
- * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la
- * place aux peintures définitives **sous les mêmes noms de fichiers**, et deux
- * figures (le Maître du marteau, le Père des corbeaux) ont ensuite été
- * repeintes. On date donc ses images : le `?v=` change l'URL, si bien qu'aucun
- * cache — celui du navigateur comme celui d'un intermédiaire — ne peut plus
- * resservir une ancienne peinture sous le nom d'une nouvelle. Incrémenter la
- * version à chaque repeint du set.
- */
-const SET_NEIGE_ART_VERSION = 'peintures-definitives-v3';
-const cardArt = (id) => {
-  const artId = cardArtId(id);
-  const revision = CARD_ART_CACHE_VERSIONS[artId]
-    ?? (cardById(artId)?.element === 'neige' ? SET_NEIGE_ART_VERSION : undefined);
-  return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
-};
-/**
- * Illustration « furie » d'une créature : tant que son état Furie est actif
- * (`entite.furieDeclenchee === true`), on affiche sa peinture alternative
- * entachée de sang et en colère ; dès qu'il retombe, la face normale revient.
- * Retourne l'URL de l'image `public/cards/<id>-furie.jpg` avec sa révision
- * de cache, ou l'illustration normale si aucune peinture furie n'existe.
- */
-const cardArtFurie = (id) => {
-  const artId = `${cardArtId(id)}-furie`;
-  const revision = CARD_ART_CACHE_VERSIONS[artId];
-  return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
-};
 /**
  * Le dos commun à toutes les cartes du duel : la rune du Sablier gravée à l'or
  * sur le rouge sombre de la table. Il habille le paquet, le dessus de la pioche
@@ -404,11 +304,6 @@ function deckColorLabel(deck) {
 
 function deckColorGlyph(deck) {
   return deckColors(deck).map((couleur) => ELEMENT_GLYPHS[couleur] ?? '◇').join('\u00a0');
-}
-
-function deckColorModifier(deck) {
-  const colors = deckColors(deck);
-  return colors.length > 1 ? 'hybride' : colors[0] ?? 'neutre';
 }
 
 function mesurerRectangle(element, fallbackWidth = 128, fallbackHeight = 160) {
@@ -2879,90 +2774,6 @@ function CombatFeed({ events = [] }) {
   );
 }
 
-/* ── Boîtier de deck en 3D (onglet Deck) ──────────────────────────────────────
-   Décor pur : le clic est porté par le bouton voisin (voir `GameModeMenu`), et le
-   nom du deck y figure en clair — tout ce qui est dessiné ici est `aria-hidden`. */
-const EMBLEMS = {
-  sable: <><path d="M6 2.6h12v2.1H6zM6 19.3h12v2.1H6z" /><path d="M7.7 4.7h8.6c0 3.5-2.5 5-3.3 7.3.8 2.3 3.3 3.8 3.3 7.3H7.7c0-3.5 2.5-5 3.3-7.3-.8-2.3-3.3-3.8-3.3-7.3z" /></>,
-  braise: <path d="M12.6 1.6c.2 2.7 1.6 3.9 3 5.5 1.7 1.9 3.2 3.9 3.2 6.7a6.8 6.8 0 0 1-13.6 0c0-2.6 1.3-4.3 2.6-5.7.2 1.6.9 2.5 1.9 2.9C9.3 7.8 10.1 4.2 12.6 1.6z" />,
-  eau: <path d="M12 2.6c3.5 4.3 6 7.4 6 10.9a6 6 0 0 1-12 0c0-3.5 2.5-6.6 6-10.9z" />,
-  // Neige : un cristal de glace taillé — prisme hexagonal et ses arêtes.
-  neige: (
-    <>
-      <path d="M12 1.3 4.9 5.6v9.6L12 22.7l7.1-7.5V5.6z" />
-      <path d="M12 1.3v21.4M4.9 5.6 12 11.8l7.1-6.2" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" />
-    </>
-  ),
-  // Ténèbres : la balance du jugement — poutre, plateaux et cœur pesé.
-  tenebres: (
-    <>
-      <path d="M4 7.6h16M12 7.6v11M7.5 21h9" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <path d="M4 7.6 1.4 13.4h5.2L4 7.6zm16 0-2.6 5.8h5.2L20 7.6z" />
-      <path d="M12 4.6c0 0-2.1-1.4-2.1-2.8a1.15 1.15 0 0 1 2.1-.58 1.15 1.15 0 0 1 2.1.58c0 1.4-2.1 2.8-2.1 2.8z" />
-    </>
-  ),
-};
-
-function ElementEmblem({ element }) {
-  return <svg className={`rpg-emblem rpg-emblem--${element}`} viewBox="0 0 24 24" aria-hidden="true" focusable="false">{EMBLEMS[element] ?? EMBLEMS.sable}</svg>;
-}
-
-/** Illustration imprimée sur le boîtier : `boxArt` du deck, sinon sa première carte non-terrain. */
-function deckBoxArtUrl(deck) {
-  const fallbackId = deck?.cardIds.find((id) => cardById(id)?.kind !== 'terrain') ?? deck?.cardIds[0];
-  const artId = deck?.boxArt ?? fallbackId;
-  return artId ? cardArt(artId) : '';
-}
-
-/** `size` : « shelf » (étagère, grand), « mini » (colonne de gauche) ou « showcase » (en-tête du deck ouvert). */
-function DeckBox({ deck, index = 0, size = 'shelf' }) {
-  const modifier = deckColorModifier(deck);
-  const emblems = deckColors(deck);
-  const medals = emblems.map((couleur) => <span className="rpg-deckbox__medal" key={couleur}><ElementEmblem element={couleur} /></span>);
-  return (
-    <span className={`rpg-deckbox rpg-deckbox--${size} rpg-deckbox--${modifier}`} style={{ '--i': index }} aria-hidden="true">
-      <span className="rpg-deckbox__shadow" />
-      <span className="rpg-deckbox__sway">
-        <span className="rpg-deckbox__body">
-          <span className="rpg-deckbox__face rpg-deckbox__face--back"><span className="rpg-deckbox__crest"><ElementEmblem element={emblems[0]} /></span></span>
-          <span className="rpg-deckbox__face rpg-deckbox__face--bottom" />
-          <span className="rpg-deckbox__face rpg-deckbox__face--right"><span className="rpg-deckbox__medals">{medals}</span></span>
-          <span className="rpg-deckbox__face rpg-deckbox__face--top" />
-          <span className="rpg-deckbox__face rpg-deckbox__face--left">
-            <span className="rpg-deckbox__medals">{medals}</span>
-            <span className="rpg-deckbox__title">{deck.name}</span>
-            <span className="rpg-deckbox__count">{deck.cardIds.length}</span>
-          </span>
-          <span className="rpg-deckbox__face rpg-deckbox__face--front">
-            <span className="rpg-deckbox__art" style={{ backgroundImage: `url("${deckBoxArtUrl(deck)}")` }} />
-            <span className="rpg-deckbox__lid"><span className="rpg-deckbox__medals">{medals}</span></span>
-            <span className="rpg-deckbox__latch" />
-            <span className="rpg-deckbox__plate">{deck.name}</span>
-            <span className="rpg-deckbox__gloss" />
-          </span>
-        </span>
-      </span>
-    </span>
-  );
-}
-
-/** Le boîtier se tourne vers le curseur (souris seulement : au doigt, on laisse la page défiler). */
-function inclinerBoitier(event) {
-  if (event.pointerType !== 'mouse') return;
-  const boitier = event.currentTarget.querySelector('.rpg-deckbox');
-  if (!boitier) return;
-  const zone = event.currentTarget.getBoundingClientRect();
-  const x = (event.clientX - zone.left) / (zone.width || 1) - 0.5;
-  const y = (event.clientY - zone.top) / (zone.height || 1) - 0.5;
-  boitier.style.setProperty('--ry', `${(16 + x * 52).toFixed(1)}deg`);
-  boitier.style.setProperty('--rx', `${(-9 - y * 18).toFixed(1)}deg`);
-}
-
-function redresserBoitier(event) {
-  const boitier = event.currentTarget.querySelector('.rpg-deckbox');
-  boitier?.style.removeProperty('--ry');
-  boitier?.style.removeProperty('--rx');
-}
 
 /** La table posée avant le premier tirage, et le repli si un identifiant se perd. */
 const PLATEAU_PAR_DEFAUT = plateauDeRepli();
@@ -3156,6 +2967,21 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
           >
             <FullscreenIcon exit={Boolean(fullscreen)} className="rpg-fullscreen-icon" />
           </button>
+          {/* Le jeu couvre tout l'écran, barre du site comprise : sans cette
+              sortie, on ne quittait le Sablier qu'avec le bouton « retour » du
+              navigateur. Un lien simple (pas de routeur) : la page se monte
+              aussi hors `<BrowserRouter>` dans les vérifications jsdom. */}
+          <a
+            className="rpg-mode-menu__quitter"
+            href={`${import.meta.env.BASE_URL}jeu`}
+            onClick={() => play('menu')}
+            title="Quitter le Sablier — retour aux jeux"
+            aria-label="Quitter le Sablier — retour aux jeux"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </a>
           <nav className="rpg-mode-menu__switch" aria-label="Modes de jeu">
             <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
               <span aria-hidden="true">⚔</span> Jouer
@@ -3454,7 +3280,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               <div className="rpg-deck-catalog__intro">
                 <span className="rpg-mode-menu__eyebrow">COLLECTION</span>
                 <h2>Vos decks</h2>
-                <p>Cliquez un boîtier pour voir ses cartes ; «\u00a0Sélectionner\u00a0» le retient pour vos prochaines parties. Le boîtier « Nouveau deck » ouvre l’atelier.</p>
+                <p>Cliquez un boîtier pour voir ses cartes ; «{'\u00a0'}Sélectionner{'\u00a0'}» le retient pour vos prochaines parties. Le boîtier « Nouveau deck » ouvre l’atelier.</p>
                 <p className="rpg-deck-catalog__sync" role="status">
                   {statutSync === 'synchronise'
                     ? '☁ Synchronisé avec votre compte'
