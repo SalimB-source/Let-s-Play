@@ -152,7 +152,10 @@ import {
   rpgBlessuresDepuis,
   rpgOuvrirFenetreReponse,
   rpgOuvrirFinDeTour,
+  rpgPeutRanconner,
   rpgPeutRepondre,
+  rpgPriXRancon,
+  rpgRanconner,
   rpgSorcierMagieRapide,
   rpgEmplacementsChamp,
   rpgEstProtegee,
@@ -1785,7 +1788,7 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat avec 25 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 25 % de chance d’esquiver une attaque' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${carte?.honneur ? `, honneur ${carte.honneur} : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura de forge : les autres créatures de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${carte?.butin ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${entite.abordage ? ', Abordage : ses blessures de combat prennent la créature adverse vaincue en cale au lieu de la détruire' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name}, rançon ${rpgPriXRancon(entite)} manas — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat avec 25 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 25 % de chance d’esquiver une attaque' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur la créature` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={entite.furieDeclenchee ? cardArtFurie(carte) : cardArt(carte)} alt="" aria-hidden="true" />
@@ -1824,7 +1827,7 @@ export function TableCard({
           sous le coût d'une hybride (ses deux pastilles occupent la gauche).
           Ceux de la Jitte restent sur l'arme dans le moteur ; sa créature
           porteuse les montre ici, sans texte ni bonus d'arme. */}
-      {(entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0)) && (
+      {(entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0) || entite.enCale) && (
         <span className={`rpg-card__compteurs${hybride ? ' rpg-card__compteurs--hybride' : ''}`} aria-hidden="true">
           {entite.heures?.restants > 0 && (
             <span className="rpg-card__compteur rpg-card__compteur--heures" data-compteur="heures">
@@ -1834,6 +1837,11 @@ export function TableCard({
           {armeCarte && entite.arme?.compteurs > 0 && (
             <span className="rpg-card__compteur rpg-card__compteur--sable" data-compteur="sable">
               <span>{entite.arme.compteurs}</span>
+            </span>
+          )}
+          {entite.enCale && (
+            <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
+              <span>⛓</span>
             </span>
           )}
         </span>
@@ -2637,7 +2645,7 @@ function CombatFeed({ events = [] }) {
         {recentes.map((event) => {
           const killers = event.killers ?? [];
           return (
-            <li className={`rpg-combat-feed__event${event.type === 'hit' ? ' is-hit' : ' is-death'}`} key={event.id}>
+            <li className={`rpg-combat-feed__event${event.type === 'hit' ? ' is-hit' : event.type === 'prise' ? ' is-prise' : ' is-death'}`} key={event.id}>
               <div className="rpg-combat-feed__participants">
                 {killers.length ? killers.slice(0, 2).map((killer) => (
                   <span className="rpg-combat-feed__card" key={killer.id} title={killer.name}>
@@ -2652,7 +2660,9 @@ function CombatFeed({ events = [] }) {
                 </span>
                 {event.type === 'death'
                   ? <span className="rpg-combat-feed__skull" aria-label="détruite">☠</span>
-                  : <span className="rpg-combat-feed__damage" aria-label={`${event.amount} dégâts`}>−{event.amount}</span>}
+                  : event.type === 'prise'
+                    ? <span className="rpg-combat-feed__skull" aria-label="prise en cale">⛓</span>
+                    : <span className="rpg-combat-feed__damage" aria-label={`${event.amount} dégâts`}>−{event.amount}</span>}
               </div>
             </li>
           );
@@ -6923,6 +6933,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
   };
 
+  /** La rançon (set Lettres de Marque) : payer le prix imprimé du prisonnier
+   *  détenu par un capteur adverse — la créature revient en main. Elle part
+   *  comme une Magie Rapide : propre tour, réponse à une annonce, fin de tour
+   *  adverse ; `rpgPeutRanconner` tient la fenêtre et le mana. */
+  const ranconner = (entite) => {
+    const etatAvantAction = JSON.stringify(duel);
+    const res = rpgRanconner(duel, 'joueur', entite.id);
+    if (res.ok) {
+      conserverAnnulation(etatAvantAction);
+      jouerSfx('card_draw', 0.05);
+    } else {
+      jouerSfx('erreur');
+    }
+    force();
+  };
+
   /** Capacité activée d'une arme portée (le Bâton des citernes, et les trois
    *  modes de la Jitte d’Amayas payés en compteurs de sable) : même patron que
    *  les autres actions payées — instantané d'annulation pris avant, animation
@@ -8978,6 +9004,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     Renoncer
                   </button>
                 )}
+                {!mulliganOuvert && duel.sorcier.creatures
+                  .filter((entite) => entite.enCale && rpgPeutRanconner(duel, 'joueur', entite.id))
+                  .map((entite) => (
+                    <button
+                      key={`rancon-${entite.id}`}
+                      type="button"
+                      className="rpg-btn rpg-btn--activation"
+                      aria-label={`Payer la rançon de ${entite.enCale.name}, détenue par ${entite.name}, pour ${rpgPriXRancon(entite)} manas — elle revient en main`}
+                      onClick={() => ranconner(entite)}
+                    >
+                      ⛓ Rançon · {entite.enCale.name} ({rpgPriXRancon(entite)})
+                    </button>
+                  ))}
                 {monTour && !phase && !combatEntrant && !cibleEnCours && !defausseOuverte && duel.joueur.creatures
                   .filter((entite) => armeById(entite.arme?.carteId ?? '')?.activation)
                   .flatMap((entite) => {

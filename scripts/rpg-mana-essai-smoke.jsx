@@ -56,7 +56,7 @@ export async function checkManaEssaiUi(assert) {
   const revenirAuMenu = async () => click(q('.rpg-duel-nav button'));
   const demarrer = async (index) => {
     const boutons = qa('.rpg-flux-menu__decks button');
-    assert.equal(boutons.length, 4, 'quatre decks distincts accessibles depuis le menu');
+    assert.equal(boutons.length, 5, 'cinq decks distincts accessibles depuis le menu');
     await click(boutons[index]);
     const partie = q('[data-scene="duel"]');
     assert.equal(partie?.getAttribute('data-mode-mana'), 'essai');
@@ -85,7 +85,7 @@ export async function checkManaEssaiUi(assert) {
     await act(async () => root.render(<RpgDuelPage rng={() => .1} />));
     const origine = etatDurable();
     assert.equal(q('.rpg-flux-menu__decks') !== null, true, 'les règles communes sont visibles sans l’atelier');
-    assert.deepEqual(qa('.rpg-flux-menu__decks button').map((bouton) => bouton.textContent.includes('couleur')), [true, true, true, true]);
+    assert.deepEqual(qa('.rpg-flux-menu__decks button').map((bouton) => bouton.textContent.includes('couleur')), [true, true, true, true, true]);
 
     // Tricolore : le joueur garde sa main. Le premier mana est choisi après.
     await demarrer(2);
@@ -124,31 +124,45 @@ export async function checkManaEssaiUi(assert) {
     // Bicolore : l'étape de résultat du mulligan doit être fermée d'abord.
     await revenirAuMenu();
     await demarrer(1);
+    // Les trois cartes de départ repartent : l’échange ramène le Hatamoto des
+    // cendres (Honneur 1) et l’Ashigaru des braises, et la pioche du tour 2
+    // rend le second exemplaire de l’Ashigaru.
     await click(q('.rpg-mulligan__card[data-mulligan-index="0"]'));
+    await click(q('.rpg-mulligan__card[data-mulligan-index="1"]'));
+    await click(q('.rpg-mulligan__card[data-mulligan-index="2"]'));
     await click(q('.rpg-mulligan__valider'));
     assert.equal(q('.rpg-mulligan--resultat') !== null, true, 'l’échange montre la nouvelle main');
     assert.equal(q('.rpg-flux-choix'), null, 'pas de mana sous le résultat du mulligan');
     await click(q('.rpg-mulligan__commencer'));
     assert.equal(qa('.rpg-flux-choix__option').length, 2);
     await click(q('.rpg-flux-choix__option--braise'));
-    // Le nouveau starter conserve ses créatures de début de courbe dans la main.
-    assert.ok(q('.rpg-hand__card[data-card-id="ashigaru-des-braises"]'), 'le nouveau starter propose une créature de début de courbe');
-    assert.ok(q('.rpg-hand__card[data-card-id="ashigaru-des-braises"] .rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone[data-effet="honneur"]'),
+    // La nouvelle main porte ses icônes d’effets : le Hatamoto des cendres
+    // garde son Honneur en colonne à droite sous le coût.
+    assert.ok(q('.rpg-hand__card[data-card-id="hatamoto-des-cendres"]'), 'l’échange a ramené le Hatamoto des cendres');
+    assert.ok(q('.rpg-hand__card[data-card-id="hatamoto-des-cendres"] .rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone[data-effet="honneur"]'),
       'les cartes en main affichent leurs icônes d’effets en colonne à droite sous le coût');
     await click(q('.rpg-btn--endturn'));
-    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 2200)); });
+    // La fin de tour ouvre la fenêtre de réponse, puis le sorcier joue son
+    // tour ; sa propre fin de tour rouvre une fenêtre que la main sans magie
+    // rapide referme d'elle-même. On laisse le temps courir, et on passe la
+    // main au cas où la fenêtre tiendrait encore.
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 2600)); });
+    const passerFinTour = q('.rpg-fin-tour button');
+    if (passerFinTour) await click(passerFinTour);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 900)); });
     assert.equal(qa('.rpg-flux-choix__option').length, 2, 'le tour 2 rouvre le choix du nouveau mana');
     await click(q('.rpg-flux-choix__option--sable'));
     const ashigaru = q('.rpg-hand__card[data-card-id="ashigaru-des-braises"]');
-    assert.ok(ashigaru, 'la pioche du tour 2 a apporté la créature à 1 Braise');
-    assert.ok(ashigaru.querySelector('.rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone[data-effet="honneur"]'),
-      'l’Ashigaru en main porte son badge Honneur dans la colonne sous le coût');
-    assert.equal(ashigaru.dataset.jouable, 'true', 'le mana Braise peut la payer');
-    await click(ashigaru);
+    assert.ok(ashigaru, 'la pioche du tour 2 a rendu la créature à 1 Braise');
+    // Le Hatamoto (coût 2 générique) part en jeu : les deux sources payent.
+    const hatamoto = q('.rpg-hand__card[data-card-id="hatamoto-des-cendres"]');
+    assert.ok(hatamoto, 'le Hatamoto attend en main');
+    assert.equal(hatamoto.dataset.jouable, 'true', 'les deux sources peuvent le payer');
+    await click(hatamoto);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 850)); });
-    assert.ok(q('.card-row--equipe .rpg-card[data-card-id="ashigaru-des-braises"] .rpg-card-icones--colonne .rpg-card-icone[data-effet="honneur"]'),
-      'une fois posé, l’Ashigaru garde son badge Honneur en colonne sur la table');
-    assert.equal(q('.rpg-flux-track--joueur')?.dataset.manaDisponible, '1', 'la carte dépense un des deux manas');
+    assert.ok(q('.card-row--equipe .rpg-card[data-card-id="hatamoto-des-cendres"] .rpg-card-icones--colonne .rpg-card-icone[data-effet="honneur"]'),
+      'une fois posé, le Hatamoto garde son badge Honneur en colonne sur la table');
+    assert.equal(q('.rpg-flux-track--joueur')?.dataset.manaDisponible, '0', 'la carte dépense les deux manas');
     assert.equal(q('.rpg-flux-track--joueur')?.dataset.manaCapacite, '2', 'les deux sources permanentes restent acquises');
     const orbeDepensee = q('.rpg-flux-track--joueur .rpg-flux-track__slot:first-child');
     assert.equal(orbeDepensee?.dataset.manaEtat, 'depense', 'l’icône s’assombrit après paiement');
@@ -162,7 +176,11 @@ export async function checkManaEssaiUi(assert) {
     assert.deepEqual(etatDurable()[2], origine[2], 'jouer une carte ne valide pas un étage');
 
     // Mono : l'attribution du premier mana est automatique après le mulligan.
+    // La partie bicolore a déjà fait avancer la quête du jour (poser une carte
+    // Braise compte) : la référence se prend ici, aucune carte n'étant jouée
+    // dans ce passage — ni économie ni histoire ne bougent.
     await revenirAuMenu();
+    const origineMono = etatDurable();
     await demarrer(0);
     await click(q('.rpg-mulligan__valider'));
     assert.equal(q('.rpg-flux-choix'), null, 'pas de dialogue de choix en mono-couleur');
@@ -172,8 +190,8 @@ export async function checkManaEssaiUi(assert) {
     assert.ok(q('.rpg-flux-track--joueur .rpg-flux-track__slot:first-child')?.classList.contains('rpg-flux-track__slot--sable'));
     assert.equal(qa('.rpg-flux-track--joueur .rpg-flux-track__slot.is-empty').length, 9);
     assert.equal(q('.card-table')?.hasAttribute('inert'), false);
-    assert.deepEqual(etatDurable(), origine);
-    assert.equal(RPG_MANA_ESSAI_DECKS.length, 4);
+    assert.deepEqual(etatDurable(), origineMono);
+    assert.equal(RPG_MANA_ESSAI_DECKS.length, 5);
   } finally {
     await act(async () => root.unmount());
     container.remove();

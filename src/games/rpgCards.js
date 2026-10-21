@@ -14,6 +14,12 @@
 
 import { RPG_SOLEIL_ROUGE_CREATURES, RPG_SOLEIL_ROUGE_JETONS, RPG_SOLEIL_ROUGE_MAGIES } from './rpgSoleilRouge.js';
 import { RPG_TENEBRES_ARMES, RPG_TENEBRES_CREATURES, RPG_TENEBRES_JETONS, RPG_TENEBRES_MAGIES } from './rpgTenebres.js';
+import {
+  RPG_LETTRES_DE_MARQUE_ARMES,
+  RPG_LETTRES_DE_MARQUE_CREATURES,
+  RPG_LETTRES_DE_MARQUE_JETONS,
+  RPG_LETTRES_DE_MARQUE_MAGIES,
+} from './rpgLettresDeMarque.js';
 import { composerDeck } from './rpgDeckComposer.js';
 import { RPG_RECETTES_DECKS } from './rpgDeckRecipes.js';
 
@@ -302,6 +308,7 @@ export function armeCadreClass(carte) {
 export const RPG_CREATURE_CARDS = [
   ...RPG_SOLEIL_ROUGE_CREATURES,
   ...RPG_TENEBRES_CREATURES,
+  ...RPG_LETTRES_DE_MARQUE_CREATURES,
   {
     id: 'fennec-des-decombres',
     name: 'Fennec des décombres',
@@ -807,6 +814,7 @@ export const RPG_CREATURE_CARDS = [
 export const RPG_JETON_CARDS = [
   ...RPG_SOLEIL_ROUGE_JETONS,
   ...RPG_TENEBRES_JETONS,
+  ...RPG_LETTRES_DE_MARQUE_JETONS,
   {
     id: 'chien-de-sable',
     name: 'Chien de sable',
@@ -1241,6 +1249,7 @@ export function terrainById(id) {
 export const RPG_MAGIE_CARDS = [
   ...RPG_SOLEIL_ROUGE_MAGIES,
   ...RPG_TENEBRES_MAGIES,
+  ...RPG_LETTRES_DE_MARQUE_MAGIES,
   {
     id: 'trait-de-braise',
     name: 'Trait de braise',
@@ -1710,6 +1719,7 @@ export const RPG_MAGIE_CARDS = [
  */
 export const RPG_ARME_CARDS = [
   ...RPG_TENEBRES_ARMES,
+  ...RPG_LETTRES_DE_MARQUE_ARMES,
   {
     id: 'takouba-des-pistes',
     name: 'Takouba des pistes',
@@ -2131,6 +2141,9 @@ export const RPG_DECK_SOLEIL_ROUGE_BASE = composerDeck(RPG_RECETTES_DECKS['serme
 /** La Balance des Heures — Prix, Tribut et morts qui déclenchent, avec La Dévoreuse comme seule mythique. */
 export const RPG_DECK_TENEBRES_BASE = composerDeck(RPG_RECETTES_DECKS['balance-des-heures'], CATALOGUE_DU_COMPOSEUR);
 
+/** Les Lettres de Marque — Abordage, Cale, Rançon et Cargaison, avec La Barbe-Rousse comme seule mythique. */
+export const RPG_DECK_LETTRES_DE_MARQUE_BASE = composerDeck(RPG_RECETTES_DECKS['lettres-de-marque'], CATALOGUE_DU_COMPOSEUR);
+
 /** Decks de départ. `boxArt` : l'illustration plein art (carte emblématique) imprimée
  *  sur le boîtier 3D de l'onglet Deck — un identifiant de `public/cards/`.
  *  `role` : le camp que le deck tient par défaut — `joueur` (deck de départ du joueur) ou
@@ -2223,5 +2236,18 @@ export const RPG_DECKS = [
     affrontement: 'Affrontez la Balance des Heures.',
     description: 'Deck mono-Ténèbres de l’Égypte pharaonique : le Prix se paie en PV (Papyrus, La Grande Pesée), le Tribut transfère la vie au contact du sorcier (Chacal du seuil, Celui qui juge, le Khopesh d’or), et la mort déclenche — l’Ouvrier du natron, la Momie de lin, la Couveuse de shabtis et leurs serviteurs de lin. Nom effacé et Celle qui pèse vident la main adverse, Les feuillets raccourcissent son paquet, et La Dévoreuse — unique mythique du boîtier — exile la créature que la balance a condamnée. Le Passeur au masque de chacal, Le Maître des hiéroglyphes et La Dernière Pesée s’ouvrent dans les boosters.',
     cardIds: RPG_DECK_TENEBRES_BASE,
+  },
+  {
+    id: 'lettres-de-marque',
+    name: 'Les Lettres de Marque',
+    role: 'joueur',
+    element: 'hybride',
+    elements: ['sable', 'eau'],
+    terrain: null,
+    boxArt: 'la-barbe-rousse',
+    archetype: 'Sable + Eau · l’Abordage, la Cale, la Rançon',
+    affrontement: 'Affrontez les lettres de marque de la Régence.',
+    description: 'Deck hybride Sable + Eau de l’âge de la course : l’Abordage prend la créature vaincue en cale au lieu de la détruire (Raïs de la galiote, Cotre de course, Lettre de marque), la Rançon la rend à son prix imprimé, et la Cargaison du Galion paie l’assurance du convoi. Le Brûlot renvoie son tueur en main, le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque deux Corsaires. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste s’ouvrent dans les boosters.',
+    cardIds: RPG_DECK_LETTRES_DE_MARQUE_BASE,
   },
 ];

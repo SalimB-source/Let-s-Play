@@ -73,6 +73,7 @@ import {
   RPG_ART_PROVISOIRE,
   RPG_DECK_NEIGE_BASE,
   RPG_DECK_TENEBRES_BASE,
+  RPG_DECK_LETTRES_DE_MARQUE_BASE,
   RPG_ELEMENTS,
   cardCopyLimit,
   cardReceivesResonance,
@@ -191,8 +192,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'magie', 'arme']));
 });
 
-test('le set de créatures existe : soixante-sept cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 67, 'le Djinn du souk est retiré du jeu');
+test('le set de créatures existe : soixante-dix-sept cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 77, 'le Djinn du souk est retiré du jeu, les Lettres de Marque ajoutent dix cartes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -2780,7 +2781,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et magies rapides de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 40);
+  assert.equal(RPG_MAGIE_CARDS.length, 44);
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les cinq couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);
@@ -3338,8 +3339,8 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
 
 test('les decks de départ respectent les limites mythiques et le deck hybride reste valide', () => {
   assert.deepEqual(RPG_DECKS.map(({ id }) => id),
-    ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers', 'serment-du-soleil-rouge', 'balance-des-heures'],
-    'les sept decks du catalogue, dont les deux cultures de Braise et les Ténèbres');
+    ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers', 'serment-du-soleil-rouge', 'balance-des-heures', 'lettres-de-marque'],
+    'les huit decks du catalogue, dont les deux cultures de Braise, les Ténèbres et la Régence');
   assert.equal(RPG_DECK_SORCIER_BASE.filter((id) => id === 'anqa-des-braises').length, 1,
     'la Cour des Djinns contient Anqa comme unique mythique');
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'feriel').length, 1,
@@ -3350,11 +3351,14 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
     'la Balance des Heures contient La Dévoreuse comme unique mythique');
   assert.equal(RPG_DECK_TENEBRES_BASE.filter((id) => id === 'la-derniere-pesee').length, 0,
     'la Balance des Heures laisse La Dernière Pesée et les autres mythiques dans les boosters');
+  assert.equal(RPG_DECK_LETTRES_DE_MARQUE_BASE.filter((id) => id === 'la-barbe-rousse').length, 1,
+    'les Lettres de Marque contiennent La Barbe-Rousse comme unique mythique');
   for (const [deck, terrainsAttendus, creaturesAttendues, magiesAttendues, armesAttendues] of [
     [RPG_DECK_JOUEUR_BASE, 0, 18, 6, 6],
     [RPG_DECK_SORCIER_BASE, 0, 21, 9, 0],
     [RPG_DECK_NEIGE_BASE, 0, 17, 12, 1],
     [RPG_DECK_TENEBRES_BASE, 0, 19, 10, 1],
+    [RPG_DECK_LETTRES_DE_MARQUE_BASE, 0, 19, 9, 2],
   ]) {
     const valide = rpgValiderDeck(deck);
     assert.equal(valide.ok, true, valide.raison);

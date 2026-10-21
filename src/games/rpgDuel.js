@@ -1023,6 +1023,18 @@ function creerEntiteCreature(carte) {
     // Le Tribut (set Ténèbres) : transfert de vie au contact du sorcier
     // adverse — `declencherTributs`, même voie de bilans que le Butin.
     tribut: Math.max(0, Number(carte.tribut) || 0),
+    // L'Abordage (set Lettres de Marque) : les blessures de combat que cette
+    // créature inflige prennent la victime en cale au lieu de la détruire.
+    // `true` imprimé, prêté par une arme (`donne.abordage`) ou pour un tour
+    // (Lettre de marque — le carnet des renforts le reprend à la fin du tour).
+    abordage: Boolean(carte.abordage),
+    // La cale du capteur : `{ carteId, name, cost }` — la créature adverse
+    // prise vive, détenue face visible, une seule place, `null` si vide. La
+    // prisonnière ne figure plus dans `camp.creatures` : sa case est libre.
+    enCale: null,
+    // La Cargaison (set Lettres de Marque) : combien de cartes le propriétaire
+    // pioche quand cette créature meurt ou est prise en cale.
+    cargaison: Math.max(0, Number(carte.cargaison) || 0),
     // Gel (la Poigne de givre, le Verglas) : tours du contrôleur qui restent
     // à couvrir — la créature ni n'attaque ni ne bloque tant que c'est > 0.
     gelToursRestants: 0,
@@ -1074,6 +1086,7 @@ function attacherArme(duel, cote, entite, carteArme) {
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
   if (carteArme.donne?.tribut) entite.tribut = (entite.tribut ?? 0) + carteArme.donne.tribut;
+  if (carteArme.donne?.abordage) entite.abordage = true;
   // Le bouclier de l'arme (la Hache de la banquise) : il vit sur le porteur,
   // mais il vient de l'arme — `retirerArme` le reprend avec elle.
   if (carteArme.donne?.bouclier) {
@@ -1340,6 +1353,11 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       montant: 0,
       sourceElements: [],
       sources: [],
+      // Les sources des blessures d'ATTAQUE seules : l'Abordage ne prend
+      // qu'une victime du combat (sourceType 'attaque') — jamais une victime
+      // de la capacité duel du Cavalier ni d'un sort, qui passent par la même
+      // fonction (set Lettres de Marque, doc 17 §4).
+      attaqueSources: [],
     };
     blessure.montant += degats;
     blessure.sourceElements.push(...normaliserCouleurs(coup.sourceElement));
@@ -1348,6 +1366,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       : null;
     if (source && !blessure.sources.some((candidate) => candidate.id === source.id)) {
       blessure.sources.push({ id: source.id, name: source.name, carteId: source.carteId, cote: coup.sourceCote });
+      if (coup.sourceType === 'attaque') {
+        blessure.attaqueSources.push({ id: source.id, name: source.name, carteId: source.carteId, cote: coup.sourceCote });
+      }
     }
     blessures.set(cle, blessure);
   }
@@ -1371,6 +1392,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
         entite,
         sourceElements: blessure.sourceElements,
         sources: blessure.sources,
+        attaqueSources: blessure.attaqueSources,
       });
     } else {
       furieuses.push({ entite, recus, cote, sources: blessure.sources });
@@ -1395,10 +1417,45 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     }
   }
 
+  // L'Abordage (set Lettres de Marque) : une victime des blessures de combat
+  // peut être prise en cale par l'une des créatures vivantes qui l'ont
+  // frappée — À LA PLACE de la destruction. Le choix se fait avant de retirer
+  // qui que ce soit : un capteur mort dans le même échange ne prend rien, et
+  // chaque capteur vivant ne prend qu'une prisonnière (une seule place en
+  // cale). Un jeton n'a pas de carte à détenir, et les figures légendaires
+  // (`kind === 'hero'`) ne se prennent pas : on les tue, on ne les vend pas.
+  const mortsIds = new Set(mortes.map((mort) => mort.entite.id));
+  const capteursPris = new Set();
+  const prises = new Map();
+  for (const mort of mortes) {
+    if (mort.entite.jeton) continue;
+    if (duelCardById(mort.entite.carteId)?.kind === 'hero') continue;
+    for (const source of mort.attaqueSources ?? []) {
+      if (source.cote === mort.cote) continue;
+      if (mortsIds.has(source.id) || capteursPris.has(source.id)) continue;
+      const capteur = duel[source.cote]?.creatures.find((candidate) => candidate.id === source.id);
+      if (!capteur || !(capteur.pv > 0)) continue;
+      if (!capteur.abordage || capteur.enCale) continue;
+      capteursPris.add(capteur.id);
+      prises.set(mort.entite.id, { capteur, source });
+      break;
+    }
+  }
+
   // Retire d’abord toutes les victimes : une capacité de destruction ne peut
   // donc empêcher l’autre combattant d’infliger les dégâts déjà calculés.
   for (const mort of mortes) {
     const camp = duel[mort.cote];
+    // La prise en cale remplace le cimetière : la victime ne meurt pas, elle
+    // ne déclenche rien (ni journal des destructions, ni Honneur, ni capacité
+    // de mort) — elle quitte la table par la cale du capteur.
+    const prise = prises.get(mort.entite.id);
+    if (prise && prendreEnCale(duel, prise.capteur, mort.entite, prise.source, mort.cote)) {
+      mort.priseEnCale = true;
+      continue;
+    }
+    // Un capteur qui meurt en combat rend sa cale, comme à toute sortie de table.
+    ouvrirCale(duel, mort.cote, mort.entite);
     journaliserDestruction(duel, mort.entite, mort.sourceElements);
     mort.declencherArme = armeDePorteurMort(duel, mort.cote, mort.entite);
     camp.creatures = camp.creatures.filter((candidate) => candidate.id !== mort.entite.id);
@@ -1415,12 +1472,30 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     duel.combatFeed = duel.combatFeed.slice(-12);
   }
   for (const mort of mortes) {
+    if (mort.priseEnCale) continue;
     mort.declencherArme?.();
     const carte = duelCardById(mort.entite.carteId);
     if (carte?.destruction) {
       declencherCapaciteDestruction(duel, mort.cote, carte, mort.entite.carteId);
     }
     declencherHonneur(duel, mort.cote, mort.entite);
+  }
+  // Le Brûlot (renvoi-tueur) : mort en combat, il renvoie l'une des créatures
+  // qui l'ont tué dans la main de son propriétaire. Mort par magie ou par
+  // capacité, rien ne se déclenche : seul le tueur de combat est connu —
+  // `declencherCapaciteDestruction` passe bien par ici, son effet 'renvoi-tueur'
+  // est un no-op ailleurs.
+  for (const mort of mortes) {
+    if (mort.priseEnCale) continue;
+    if (duelCardById(mort.entite.carteId)?.destruction?.type !== 'renvoi-tueur') continue;
+    for (const source of mort.sources ?? []) {
+      if (mortsIds.has(source.id)) continue;
+      const tueur = duel[source.cote]?.creatures.find((candidate) => candidate.id === source.id);
+      if (!tueur) continue;
+      duel.log.push(`${mort.entite.name} embrase son pont : ${tueur.name} est renvoyée dans la main de son propriétaire.`);
+      renvoyerEnMain(duel, source.cote, tueur, cardColors(duelCardById(mort.entite.carteId)));
+      break;
+    }
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
@@ -1564,6 +1639,11 @@ function annulerBonusTemporaires(duel, tourFerme) {
       entite.def = Math.min(entite.def, Math.max(0, entite.pv));
       // Le Tribut prêté par l'Offrande de lin repart avec le renfort.
       if (entry.tribut) entite.tribut = Math.max(0, (entite.tribut ?? 0) - entry.tribut);
+      // L'Abordage prêté par la Lettre de marque ou le Grand Débarquement
+      // repart lui aussi : il ne reste que l'imprimé de la fiche et celui de
+      // l'arme portée (le Grappin) — la cale, elle, ne se vide jamais d'elle-même.
+      if (entry.abordage) entite.abordage = Boolean(duelCardById(entite.carteId)?.abordage)
+        || Boolean(armeCarteDe(entite)?.donne?.abordage);
       effaces.push(entite.name);
     }
     camp.bonusTemporaires = restants;
@@ -1656,6 +1736,176 @@ function declencherTributs(duel, cote, bilans) {
   return declenche;
 }
 
+/* ── La cale des corsaires (set Lettres de Marque, doc 17) ────────────────────
+   L'Abordage prend la créature vaincue en cale au lieu de la détruire ; la
+   cale la détient face visible (une seule place par capteur) ; la Rançon la
+   rend à son propriétaire au prix imprimé, en manas libres ; toute sortie de
+   table du capteur — mort, sacrifice, renvoi, exil, ou sa propre capture —
+   ouvre la cale gratuitement vers la main du propriétaire. */
+
+/**
+ * Le prix affiché d'une rançon : le coût imprimé du prisonnier, jamais
+ * gratuit — la Chambre ne rend rien pour rien.
+ */
+export function rpgPriXRancon(entite) {
+  return Math.max(1, Number(entite?.enCale?.cost) || 1);
+}
+
+/**
+ * La créature adverse vaincue quitte la table par la cale du capteur. Elle
+ * libère sa case, perd tout (ses armes tombent au cimetière, comme un mort)
+ * et ne déclenche RIEN — ni journal des destructions, ni Honneur, ni capacité
+ * de mort, ni quêtes. Sa propre cale, si elle en tenait une, s'ouvre d'abord :
+ * quitter la table ouvre toujours.
+ */
+function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictime = null) {
+  if (!capteur || capteur.enCale) return false;
+  const coteCapteur = duel.joueur.creatures.some((candidate) => candidate.id === capteur.id)
+    ? 'joueur' : 'sorcier';
+  const coteVictimeEffective = coteVictime ?? autre(coteCapteur);
+  ouvrirCale(duel, coteVictimeEffective, victime);
+  capteur.enCale = {
+    carteId: victime.carteId,
+    name: victime.name,
+    cost: Math.max(1, Number(duelCardById(victime.carteId)?.cost) || 1),
+  };
+  duel[coteVictimeEffective].creatures = duel[coteVictimeEffective].creatures
+    .filter((candidate) => candidate.id !== victime.id);
+  detacherArmes(duel, coteVictimeEffective, victime);
+  armeAuCimetiere(duel, coteVictimeEffective, victime);
+  duel.log.push(`${capteur.name} prend ${victime.name} en cale — détenue, pas détruite.`);
+  duel.combatFeed = duel.combatFeed ?? [];
+  duel.combatFeed.push({
+    id: `${victime.id}:prise:${duel.log.length}`,
+    type: 'prise',
+    victim: { id: victime.id, name: victime.name, carteId: victime.carteId, cote: coteVictimeEffective },
+    killers: [sourceSnapshot ?? { id: capteur.id, name: capteur.name, carteId: capteur.carteId, cote: coteCapteur }],
+  });
+  duel.combatFeed = duel.combatFeed.slice(-12);
+  // La Cargaison paie aussi à la prise : le convoi est assuré contre la capture.
+  declencherCargaison(duel, coteVictimeEffective, victime);
+  // Le Grappin d'abordage (`priseEnCale`) : chaque prise vaut son pesant de soins.
+  const carteArme = armeCarteDe(capteur);
+  if (carteArme?.priseEnCale) {
+    appliquer(duel, coteCapteur, carteArme.priseEnCale, null, capteur.id,
+      cardColors(carteArme), 'capacite', carteArme.id);
+  }
+  return true;
+}
+
+/**
+ * La cale d'un capteur s'ouvre : le prisonnier retourne dans la main de son
+ * propriétaire (le camp opposé à celui du capteur). Appelée à TOUTE sortie de
+ * table du capteur — destruction, sacrifice, renvoi en main, exil, capture —
+ * et jamais autrement : la cale ne se vide pas d'elle-même.
+ */
+function ouvrirCale(duel, cote, entite) {
+  const cale = entite?.enCale;
+  if (!cale) return false;
+  entite.enCale = null;
+  duel[autre(cote)].main.push(cale.carteId);
+  duel.log.push(`La cale de ${entite.name} s’ouvre : ${cale.name} retourne dans la main de son propriétaire.`);
+  return true;
+}
+
+/**
+ * Cargaison N : quand la créature meurt OU est prise en cale, son propriétaire
+ * pioche N cartes — l'assurance du convoi. Même chemin de pioche que le
+ * Kraken (`pioche`), jamais écrit en dégâts (règle de direction §11).
+ */
+function declencherCargaison(duel, coteProprietaire, entite) {
+  const carte = duelCardById(entite.carteId);
+  const n = Math.max(0, Number(carte?.cargaison) || 0);
+  if (!n) return false;
+  appliquer(duel, coteProprietaire, { type: 'pioche', amount: n },
+    null, null, cardColors(carte), 'capacite', carte.id);
+  duel.log.push(`Cargaison : ${entite.name} paie son assurance — ${
+    coteProprietaire === 'joueur' ? 'vous piochez' : 'le sorcier pioche'} ${n} carte${n > 1 ? 's' : ''}.`);
+  return true;
+}
+
+/** Le déclencheur `rancon` (le Négociant des rançons) : chaque fois qu'une
+ *  créature est rançonnée — par qui que ce soit —, le contrôleur de chaque
+ *  Négociant en jeu pioche une carte : la commission se paie des deux côtés
+ *  de la mer. */
+function declencherRancons(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      const carte = duelCardById(entite.carteId);
+      const n = Math.max(0, Number(carte?.declencheRancon) || 0);
+      if (!n) continue;
+      appliquer(duel, cote, { type: 'pioche', amount: n },
+        null, null, cardColors(carte), 'capacite', carte.id);
+      duel.log.push(`Rançon : ${entite.name} encaisse sa commission — ${
+        cote === 'joueur' ? 'vous piochez' : 'le sorcier pioche'} ${n} carte${n > 1 ? 's' : ''}.`);
+    }
+  }
+}
+
+/**
+ * La fenêtre de la rançon : elle part comme une Magie Rapide — pendant son
+ * propre tour, en réponse à une carte annoncée, ou pendant la fenêtre de fin
+ * de tour adverse. Pas pendant le choix de couleur du mana.
+ */
+function fenetreRanconOuverte(duel, cote) {
+  if (duel[cote]?.manaChoixEnAttente) return false;
+  return duel.tour === cote || Boolean(duel.annonce) || Boolean(duel.finDeTour);
+}
+
+/** Le camp peut-il rançonner le prisonnier détenu par cette créature adverse ? */
+export function rpgPeutRanconner(duel, cote, entiteId) {
+  const camp = duel?.[cote];
+  const entite = duel?.[autre(cote)]?.creatures.find((candidate) => candidate.id === entiteId);
+  if (!camp || !entite?.enCale) return false;
+  if (!fenetreRanconOuverte(duel, cote)) return false;
+  return rpgPeutPayer(camp, { cost: rpgPriXRancon(entite), colorCost: {} });
+}
+
+/**
+ * Paie la rançon : le coût imprimé du prisonnier, en manas libres (aucun pip
+ * coloré). Le prisonnier revient dans la main de son propriétaire — pas sur
+ * la table — et l'événement `rancon` déclenche les Négociants des deux camps.
+ */
+export function rpgRanconner(duel, cote, entiteId) {
+  const entite = duel?.[autre(cote)]?.creatures.find((candidate) => candidate.id === entiteId);
+  if (!entite?.enCale) return { ok: false, raison: 'aucune-cale' };
+  if (!fenetreRanconOuverte(duel, cote)) return { ok: false, raison: 'fenetre' };
+  const prix = rpgPriXRancon(entite);
+  if (!rpgPeutPayer(duel[cote], { cost: prix, colorCost: {} })) return { ok: false, raison: 'mana' };
+  payer(duel, cote, { cost: prix, colorCost: {} });
+  const prisonnier = entite.enCale;
+  entite.enCale = null;
+  duel[cote].main.push(prisonnier.carteId);
+  duel.log.push(`${cote === 'joueur' ? 'Vous payez' : 'Le sorcier paie'} la rançon de ${prisonnier.name} (${prix} mana${prix > 1 ? 's' : ''}) — elle revient en main.`);
+  declencherRancons(duel);
+  rafraichirAuras(duel);
+  rpgActionsEtat(duel);
+  return { ok: true, carteId: prisonnier.carteId, prix };
+}
+
+/**
+ * L'IA du sorcier face à la cale : rançonner ce qu'elle peut payer tant que
+ * le prix reste honnête — la créature revient en main, prête à être rejouée
+ * le même tour (la préparation de l'IA passe après). Sinon, ne rien faire :
+ * tuer le capteur ouvre la cale, et c'est au combat de s'en charger.
+ */
+export function rpgSorcierRanconnerIA(duel) {
+  const rachetees = [];
+  const captives = duel.joueur.creatures
+    .filter((entite) => entite.enCale)
+    .sort((a, b) => rpgPriXRancon(a) - rpgPriXRancon(b));
+  for (const capteur of captives) {
+    if (!rpgPeutRanconner(duel, 'sorcier', capteur.id)) continue;
+    const prix = rpgPriXRancon(capteur);
+    // Heuristique : le sorcier garde son tempo — il ne vide pas sa réserve
+    // pour une rançon de plus de 3 manas, sauf si la mer est généreuse.
+    if (prix > 3 && sourcesManaDisponibles(duel.sorcier).length < prix + 3) continue;
+    const res = rpgRanconner(duel, 'sorcier', capteur.id);
+    if (res.ok) rachetees.push(res);
+  }
+  return rachetees;
+}
+
 /**
  * Le cœur pesé : le camp cible PERD `montant` PV (jamais des « dégâts » —
  * règle de direction §11), le camp source les GAGNE en entier : la vie peut
@@ -1718,6 +1968,9 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         if (Number.isFinite(effet.coutMax)
           && (duelCardById(victime.carteId)?.cost ?? 0) > effet.coutMax) return;
         duel[campCible].creatures = duel[campCible].creatures.filter((entite) => entite.id !== victime.id);
+        // Toute sortie de table ouvre la cale (set Lettres de Marque) : même
+        // retirée de la partie, la créature rend son prisonnier.
+        ouvrirCale(duel, campCible, victime);
         detacherArmes(duel, campCible, victime);
         armeAuCimetiere(duel, campCible, victime);
         if (!victime.jeton) {
@@ -1997,8 +2250,10 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
           && !rpgEstProtegee(entite, sourceElement) && !horsSort(entite));
       // `tribut` (l'Offrande de lin) : le renfort porte aussi le mot-clé —
       // chaque créature touchée gagne Tribut X, rendu avec le bonus quand le
-      // carnet s'efface à la fin du tour.
+      // carnet s'efface à la fin du tour. `donne.abordage` (le Grand
+      // Débarquement) suit le même contrat pour l'Abordage.
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
+      const donneAbordage = Boolean(effet.donne?.abordage);
       for (const entite of ciblesBuff) {
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
@@ -2007,7 +2262,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.def = Math.max(plancher, entite.def + bonusDefense);
         entite.pv = Math.max(plancher, entite.pv + bonusDefense);
         if (bonusTribut) entite.tribut = (entite.tribut ?? 0) + bonusTribut;
-        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, tour: duel.tour });
+        if (donneAbordage) entite.abordage = true;
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, abordage: donneAbordage, tour: duel.tour });
         // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
         // et la mort est attribuée à la couleur de la source, pour le journal.
         if (!(entite.pv > 0) && plancher <= 0) {
@@ -2332,14 +2588,36 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     case 'donne': {
       // Le Faiseur de passage : un mot-clé prêté à une créature alliée pour
       // le tour (`donne: { infiltration: true }` — le passage est ouvert).
-      const entite = duel[cote].creatures.find((candidate) => candidate.id === cibleId);
-      if (!entite) return;
-      if (effet.donne?.infiltration) {
-        entite.infiltration = true;
-        entite.infiltrationTour = true;
-        duel.log.push(`${entite.name} gagne Infiltration jusqu’à la fin du tour.`);
+      // `cible: 'toutes-alliees'` (la Lettre de marque) prête le mot-clé à
+      // tout le camp d'un coup : le sceau de la Chancellerie couvre l'assaut.
+      const cibleEquipe = effet.cible === 'toutes-alliees';
+      const ciblesDonne = cibleEquipe
+        ? duel[cote].creatures.slice()
+        : [duel[cote].creatures.find((candidate) => candidate.id === cibleId)].filter(Boolean);
+      if (!ciblesDonne.length) return;
+      let abordages = 0;
+      for (const entite of ciblesDonne) {
+        if (effet.donne?.infiltration) {
+          entite.infiltration = true;
+          entite.infiltrationTour = true;
+          duel.log.push(`${entite.name} gagne Infiltration jusqu’à la fin du tour.`);
+        }
+        if (effet.donne?.rapidite) entite.ready = true;
+        // L'Abordage prêté (la Lettre de marque) vit jusqu'à la fin du tour :
+        // le carnet des renforts le reprend, comme le Tribut de l'Offrande —
+        // la cale déjà prise, elle, reste pleine (doc 17 §12.10).
+        if (effet.donne?.abordage && !entite.abordage) {
+          entite.abordage = true;
+          abordages += 1;
+          if (Number(effet.tours) > 0) {
+            const carnet = (duel[cote].bonusTemporaires ??= []);
+            carnet.push({ entiteId: entite.id, atk: 0, def: 0, abordage: true, tour: duel.tour });
+          }
+        }
       }
-      if (effet.donne?.rapidite) entite.ready = true;
+      if (abordages) {
+        duel.log.push(`${abordages} créature${abordages > 1 ? 's' : ''} ${abordages > 1 ? 'gagnent' : 'gagne'} Abordage jusqu’à la fin du tour.`);
+      }
       return;
     }
     default:
@@ -2374,6 +2652,10 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
   detacherArmes(duel, cote, presente);
   // Une arme, elle, ne suit pas son porteur en main : elle tombe au cimetière.
   armeAuCimetiere(duel, cote, presente);
+  // Le capteur renvoyé en main rend sa cale : le prisonnier repart lui aussi
+  // en main, du côté de son propriétaire — deux cartes en main pour le prix
+  // d'un renvoi, c'est le risque du corsaire.
+  ouvrirCale(duel, cote, presente);
   // Une créature-jeton n'a pas de carte à renvoyer : elle **cesse d'exister**,
   // comme un jeton de table qui quitte le champ de bataille. Sans cette règle,
   // un chien de sable de Tarek deviendrait une carte gratuite et rejouable.
@@ -2473,6 +2755,10 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId) {
 
 /** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
 function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null) {
+  // Le mort qui tenait une cale la rend : toute sortie de table ouvre la
+  // cale, et la Cargaison du mort paie son assurance.
+  ouvrirCale(duel, cote, entite);
+  declencherCargaison(duel, cote, entite);
   journaliserDestruction(duel, entite, sourceElements);
   const declencherArme = armeDePorteurMort(duel, cote, entite);
   const camp = duel[cote];
@@ -4330,6 +4616,9 @@ export function rpgSorcierActiverCapacitesIA(duel, rng = Math.random) {
 
 export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
   const joue = [];
+  // Les rançons d'abord : la créature rachetée revient en main avant que
+  // l'IA n'annonce ses cartes — elle peut la rejouer dans la foulée.
+  rpgSorcierRanconnerIA(duel);
   rpgSorcierPrepareTerrain(duel);
   // Sans interface, chaque carte annoncée est résolue aussitôt (pas de réponse du joueur).
   let garde = 12;

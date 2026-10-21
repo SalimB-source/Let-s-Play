@@ -1,5 +1,5 @@
 /**
- * Règles du mana sans terrains et quatre paquets de démonstration.
+ * Règles du mana sans terrains et cinq paquets de démonstration.
  * Les deux premiers reprennent les nouvelles recettes des decks de base.
  * Le nom historique « essai » reste stable pour les états du moteur.
  */
@@ -84,6 +84,26 @@ export const RPG_MANA_ESSAI_DECKS = Object.freeze([
       'khopesh-d-or', ...copies('le-poids', 2),
       'celle-qui-pese', 'les-feuillets', 'la-grande-pesee',
       'la-devoreuse', 'celui-qui-juge',
+    ],
+  },
+  {
+    id: 'essai-mana-lettres-de-marque',
+    name: 'Les Lettres de Marque',
+    element: 'hybride',
+    elements: ['sable', 'eau'],
+    boxArt: 'la-barbe-rousse',
+    description: 'Sable + Eau : la course amollit, l’abordage emporte, la rançon paie.',
+    cardIds: [
+      ...copies('mousse-des-galiotes', 2), ...copies('rais-de-la-galiote', 2),
+      ...copies('pilote-de-la-carreira', 2), ...copies('le-brulot', 2),
+      ...copies('tercio-de-cuivre', 2), ...copies('cotre-de-course', 2),
+      ...copies('le-renegat', 2), 'negociant-des-ranscons',
+      'galion-de-la-flotte', 'la-barbe-rousse',
+      ...copies('sonneur-fele', 2),
+      ...copies('lettre-de-marque', 2), ...copies('haut-fond', 2),
+      'le-routier', 'le-grand-debarquement',
+      ...copies('lame-de-mer', 2), 'ressac',
+      'grappin-d-abordage', 'baton-des-citernes',
     ],
   },
 ]);

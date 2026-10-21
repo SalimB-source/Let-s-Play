@@ -8,12 +8,22 @@ import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Les decks du scénario : les cinq premières cartes ouvrent la main. */
-const DECK_JOUER = ['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'djinn-de-foudre', 'fennec-des-descombres', 'desert'];
-// Le sorcier a de quoi jouer à son premier tour (un Désert et Tislit, la
-// créature à 1 mana) : son tour reste ouvert sur son annonce, le temps de
-// vérifier que le bandeau vit sa seconde et demie sans être remplacé.
-const DECK_SORCIER = ['desert', 'tislit-des-aures', 'desert', 'desert', 'desert', 'tislit-des-aures', 'desert', 'desert', 'desert', 'desert'];
+/** Les decks du scénario : depuis le mana automatique, la main de départ
+ *  compte trois cartes et les paquets ne portent plus de terrains — des
+ *  créatures mono-Sable suffisent, et le mono allume le mana tout seul. */
+const DECK_JOUER = ['chien-du-guet', 'fennec-des-decombres', 'tiziri-du-djurdjura', 'faiseur-de-passage'];
+// Le sorcier ouvre sur deux Chacals du seuil (1 mana, Rapidité) : il en pose
+// un, attaque aussitôt, et la table attend la résolution du combat — son tour
+// reste ouvert, le temps de vérifier que le bandeau vit sa seconde et demie
+// sans être remplacé. Trente cartes sans remplissage : la pioche tire par la
+// fin du paquet, les Chacals ferment donc la liste.
+const DECK_SORCIER = [
+  ...['papyrus', 'ouvrier-du-natron', 'nom-efface', 'gardienne-de-la-balance',
+    'scribe-des-feuillets', 'pretre-de-la-bouche', 'offrande-de-lin', 'ureus-du-seuil',
+    'momie-de-lin', 'ibis-des-comptes', 'couveuse-de-shabtis', 'khopesh-d-or',
+    'le-poids', 'celle-qui-pese'].flatMap((id) => [id, id]),
+  'chacal-du-seuil', 'chacal-du-seuil',
+];
 
 export async function checkRpgTurnBanner(assert) {
   const container = document.createElement('div');
@@ -67,14 +77,18 @@ export async function checkRpgTurnBanner(assert) {
   assert.equal(bandeau(), null, 'après 1,8 s, le bandeau du joueur s’est effacé');
 
   // ── 3. Le tour rendu au sorcier : « Tour de l’adversaire » ─────────────────
+  // La fin de tour ouvre d’abord la fenêtre de réponse (le sorcier peut jouer
+  // une magie rapide) : sans réponse possible, la main bascule après un
+  // battement — le bandeau suit la bascule, pas le clic.
   await cliquer(bouton('Fin du tour'), 'le bouton de fin de tour est là');
-  assert.equal(texte(), 'Tour de l’adversaire', 'la main passée au sorcier s’annonce aussitôt');
+  await act(async () => { await wait(900); });
+  assert.equal(texte(), 'Tour de l’adversaire', 'la main passée au sorcier s’annonce aussitôt après la fenêtre');
   assert.equal(camp(), 'sorcier', 'le bandeau du sorcier porte sa teinte (is-sorcier)');
   await act(async () => { await wait(900); });
   assert.equal(camp(), 'sorcier', 'après 0,9 s, le bandeau du sorcier est toujours là');
   await act(async () => { await wait(700); });
   assert.equal(camp(), null,
-    'après 1,6 s, le bandeau du sorcier s’est effacé — même annonce en cours sur la table');
+    'après 1,6 s de plus, le bandeau du sorcier s’est effacé — même annonce en cours sur la table');
 
   // ── 4. Un aller-retour par le menu ne rejoue pas le bandeau ────────────────
   await cliquer(bouton('Menu'), 'le bouton de menu est là');

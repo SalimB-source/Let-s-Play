@@ -41,6 +41,8 @@ export const EFFETS_SPRITE = `
   <symbol id="i-overkill" viewBox="0 0 24 24"><path d="M2.5 12h12"/><path d="M10.5 7.5 15 12l-4.5 4.5"/><path d="M18.5 3.5V9"/><path d="M18.5 15v5.5"/><path d="M15 12h6.5"/></symbol>
   <symbol id="i-defausse" viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="14" rx="1.5"/><path d="M17 8v8m0 0-3-3m3 3 3-3"/><path d="M7 19h10"/></symbol>
   <symbol id="i-paquet" viewBox="0 0 24 24"><rect x="5" y="3" width="12" height="9" rx="1.5"/><path d="M8 6.5h6M8 9h4"/><path d="M19 13v6m0 0-2.5-2.5M19 19l2.5-2.5"/></symbol>
+  <symbol id="i-abordage" viewBox="0 0 24 24"><path d="M12 3v10.5"/><path d="M8.5 6h7"/><path d="M12 13.5c-2.5 0-4.5-2-4.5-4.5V6"/><path d="M12 13.5c2.5 0 4.5-2 4.5-4.5V6"/></symbol>
+  <symbol id="i-cargaison" viewBox="0 0 24 24"><path d="M6.5 9V7.5a5.5 5.5 0 0 1 11 0V9"/><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M9 9v11M15 9v11"/><path d="M12 13v3"/></symbol>
 </svg>`.trim();
 
 /**
@@ -50,6 +52,10 @@ export const EFFETS_SPRITE = `
  */
 export const EFFET_ICONE = {
   butin: 'i-butin',
+  abordage: 'i-abordage',
+  cargaison: 'i-cargaison',
+  rancon: 'i-abordage',
+  cale: 'i-cargaison',
   furie: 'i-furie',
   esquive: 'i-esquive',
   envol: 'i-envol',
@@ -110,6 +116,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
 export const MOTS_CLES_PASTILLES = [
   'envol', 'infiltration', 'rapidite', 'coupRapide', 'overkill', 'furie', 'esquive',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'bouclier', 'aura', 'honneur', 'butin',
+  'abordage', 'cargaison',
 ];
 
 /** Les pastilles d’une carte, en HTML — `carte` = fiche `rpgCards.js`. */
@@ -128,6 +135,11 @@ export function pastillesCarte(carte, { size = 15, classe = 'rpg-chip' } = {}) {
 /** Le libellé français de chaque clé d’icône. */
 export const EFFET_LIBELLES = {
   butin: 'Butin',
+  abordage: 'Abordage',
+  cargaison: 'Cargaison',
+  rancon: 'Rançon',
+  cale: 'Cale',
+  furie: 'Furie',
   furie: 'Furie',
   esquive: 'Esquive',
   envol: 'Envol',
@@ -208,6 +220,11 @@ export function pastillesPourCarte(carte) {
   if (carte.honneur) ajouter('honneur', 'Honneur', Number(carte.honneur) || null);
   if (carte.butin) ajouter('butin', 'Butin');
   if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
+  // Les Lettres de Marque : l'Abordage imprime (ou prêté par le Grappin),
+  // la Cargaison du convoi, et le déclencheur de rançon du Négociant.
+  if (carte.abordage || carte.donne?.abordage) ajouter('abordage', 'Abordage');
+  if (carte.cargaison) ajouter('cargaison', 'Cargaison', Number(carte.cargaison) || null);
+  if (carte.declencheRancon) ajouter('rancon', 'Rançon', Number(carte.declencheRancon) || null);
   // Une arme peut accorder un bouclier à son porteur (la Hache de la
   // banquise) : la pastille se lit sur la fiche de l'arme comme sur celle
   // d'une créature qui arrive avec un bouclier.
@@ -240,6 +257,10 @@ export function pastillesPourCarte(carte) {
 /** Les motifs qui font reconnaître une ligne de règle, dans le texte français. */
 const MOTIFS_LIGNE = [
   ['butin', /\bbutin\b/iu],
+  ['abordage', /\babordage\b/iu],
+  ['cargaison', /\bcargaison\b/iu],
+  ['rancon', /\bran[çc]ons?\b/iu],
+  ['cale', /\bcale\b/iu],
   ['furie', /\bfurie\b/iu],
   ['esquive', /\besquive/iu],
   ['envol', /\benvol\b/iu],
@@ -317,6 +338,10 @@ export const EFFET_DEFINITIONS = {
   banniere: 'Tant qu’elle est en jeu, les créatures de sa tribu gagnent un bonus.',
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`,
   butin: 'Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
+  abordage: 'Quand ses blessures de combat détruiraient une créature adverse, celle-ci est prise en cale — détenue face visible, une seule place — au lieu d’être détruite : elle ne déclenche rien. Son propriétaire peut la racheter en main au prix imprimé, et la cale s’ouvre quand le capteur quitte la table.',
+  cargaison: (n) => `Quand cette créature meurt ou est prise en cale, son propriétaire pioche ${n ?? 'N'} carte${n > 1 ? 's' : ''} : le convoi est assuré.`,
+  rancon: (n) => `Chaque fois qu’une créature est rançonnée, vous piochez ${n ?? 1} carte${n > 1 ? 's' : ''} : la commission du négociant.`,
+  cale: 'La créature détenue par ce capteur. Son propriétaire peut la rançonner au prix imprimé, en manas libres ; la cale s’ouvre quand le capteur quitte la table.',
   tribut: (n) => `Quand cette créature touche le sorcier adverse, il perd ${n ?? 'N'} PV et vous en gagnez ${n ?? 'N'}.`,
   transfert: (n) => `Le sorcier adverse perd ${n ?? 'X'} PV et vous en gagnez ${n ?? 'X'}.`,
   'defausse-adverse': 'L’adversaire défausse une carte : il en choisit une, sa moins utile.',
@@ -344,6 +369,8 @@ const LIBELLES_IMPRIMES = [
   ['honneur', 'Honneur(?: \\d+)?'],
   ['butin', 'Butin'],
   ['tribut', 'Tribut(?: \\d+)?'],
+  ['abordage', 'Abordage'],
+  ['cargaison', 'Cargaison(?: \\d+)?'],
   ['banniere', 'Bannière'],
   ['aura', 'Aura'],
   ['retour-main', 'Rebond'],

@@ -143,7 +143,8 @@ test('La Balance des Heures tient dans le banc d’essai', () => {
   assert.equal(deck.cardIds.length, 30);
   assert.deepEqual(deck.elements, ['tenebres']);
   assert.deepEqual(validerDeckManaEssai(deck), { ok: true }, deck.name);
-  assert.equal(adversaireManaEssai(deck).id, RPG_MANA_ESSAI_DECKS[0].id, 'la rotation fait le tour des quatre decks');
+  assert.equal(adversaireManaEssai(deck).id, 'essai-mana-lettres-de-marque',
+    'la rotation enchaîne sur le deck des Lettres de Marque, cinquième du banc');
 });
 
 const rng = () => 0.5;

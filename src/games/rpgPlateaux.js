@@ -166,6 +166,10 @@ export const RPG_PLATEAUX_PAR_DECK = {
   // dedans du palais (Le Palais du Pharaon), où siège le tribunal de la
   // Nécropole — le jugement se rend devant le trône.
   'balance-des-heures': 'necropole-des-dalles',
+  // Les Lettres de Marque se battent sur la côte : les Ruines de Tipaza, les
+  // quais antiques que la mer reprend — le monde des corsaires de la Régence
+  // avant que Les Quais de Cuivre (doc 17 §13) n'aient leur propre plateau.
+  'lettres-de-marque': 'ruines-de-tipaza',
   // Campagne (clés de `RPG_STORY_DECKS`) : la Souffleuse tient la piste de
   // caravane du deck hybride dont elle vient ; le Grand Horloger, lui, reçoit
   // dans la salle haute de la Chambre, sur la table d'origine. Les quatre
