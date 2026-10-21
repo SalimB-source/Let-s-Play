@@ -2288,12 +2288,15 @@ export const RPG_DECKS = [
     name: 'Les Lettres de Marque',
     role: 'joueur',
     element: 'hybride',
-    elements: ['sable', 'eau'],
+    // La flotte est Sable + Eau ; le Brûlot y ajoute la seule flamme du set
+    // (Braise), posée par la signature de la recette hors du vivier de
+    // remplissage — le deck joue donc bien trois couleurs.
+    elements: ['sable', 'eau', 'braise'],
     terrain: null,
     boxArt: 'la-barbe-rousse',
-    archetype: 'Sable + Eau · l’Abordage, la Cale, la Rançon',
+    archetype: 'Sable + Eau · l’Abordage, la Cale, la Rançon — et la flamme du Brûlot',
     affrontement: 'Affrontez les lettres de marque de la Régence.',
-    description: 'Deck hybride Sable + Eau de l’âge de la course : à l’arrivée en jeu, l’Abordage prend la créature adverse ciblée de coût inférieur au sien en cale (Raïs de la galiote, Cotre de course, La Barbe-Rousse — et la Lettre de marque arme toutes les arrivées du tour), la Rançon la rend à son prix imprimé, et la Cargaison du Galion paie l’assurance du convoi. Le Brûlot renvoie son tueur en main, le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque deux Corsaires. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste s’ouvrent dans les boosters.',
+    description: 'Deck hybride Sable + Eau de l’âge de la course : à l’arrivée en jeu, l’Abordage prend la créature adverse ciblée de coût inférieur au sien en cale (Raïs de la galiote, Cotre de course, La Barbe-Rousse — et la Lettre de marque arme toutes les arrivées du tour), la Rançon la rend à son prix imprimé, et la Cargaison du Galion paie l’assurance du convoi. Le Brûlot, seule flamme de la flotte, embrase la créature qui le détruit ; le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque deux Corsaires. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste s’ouvrent dans les boosters.',
     cardIds: RPG_DECK_LETTRES_DE_MARQUE_BASE,
   },
 ];

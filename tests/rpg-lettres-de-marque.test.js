@@ -12,7 +12,7 @@
  * eux, ne comptent plus : la prise ne blesse pas), jetons et effets créés ne
  * prennent rien, le sceau de la Lettre arme les arrivées du tour puis expire
  * mais la cale reste, Cargaison paie à la mort et à la prise, le Brûlot
- * renvoie son tueur, et l'IA du sorcier rançonne — et choisit sa prize.
+ * embrase son tueur, et l'IA du sorcier rançonne — et choisit sa prize.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -595,8 +595,8 @@ test('Cargaison paie à la mort ET à la prise : le convoi est assuré', () => {
   assert.equal(mort.sorcier.main.length, mainAvant2 + 2, 'la Cargaison paie aussi à la mort');
 });
 
-test('Le Brûlot renvoie son tueur en combat — jamais par magie, jamais capturé', () => {
-  // Morte en combat : le tueur repart en main.
+test('Le Brûlot embrase la créature qui le détruit en combat — jamais par magie', () => {
+  // Morte en combat : le tueur survivant encaisse 2 dégâts.
   const duel = duelVide();
   mana(duel, 'joueur', 10);
   mana(duel, 'sorcier', 10);
@@ -607,8 +607,51 @@ test('Le Brûlot renvoie son tueur en combat — jamais par magie, jamais captur
   pret(tercio);
   rpgAttaquerCreature(duel, 'joueur', tercio.id, brulot.id);
   assert.equal(duel.sorcier.cimetiere.includes('le-brulot'), true, 'le Brûlot est mort');
-  assert.equal(duel.joueur.creatures.includes(tercio), false, 'son tueur a été renvoyé');
-  assert.ok(duel.joueur.main.includes('tercio-de-cuivre'), 'le tueur est revenu en main');
+  assert.equal(duel.joueur.creatures.includes(tercio), true, 'son tueur survit à l’échange');
+  assert.equal(tercio.pv, 1, 'le Tercio 1/4 a pris 1 au combat et 2 à l’explosion');
+
+  // Un tueur qui tombe avec lui n'a pas à être embrasé : la Vipère 3/1 meurt
+  // du seul retour de combat, et l'explosion n'a plus de cible.
+  const double = duelVide();
+  mana(double, 'joueur', 10);
+  mana(double, 'sorcier', 10);
+  donner(double, 'joueur', 'vipere-de-verre');
+  const vipere = jouer(double, 'joueur', 'vipere-de-verre').entite;
+  donner(double, 'sorcier', 'le-brulot');
+  const brulotDouble = jouer(double, 'sorcier', 'le-brulot').entite;
+  pret(vipere);
+  rpgAttaquerCreature(double, 'joueur', vipere.id, brulotDouble.id);
+  assert.equal(double.sorcier.cimetiere.includes('le-brulot'), true);
+  assert.equal(double.joueur.cimetiere.includes('vipere-de-verre'), true, 'la Vipère meurt du retour de combat');
+
+  // La capacité de combat (le Sahir frappe avant les coups normaux) nomme
+  // elle aussi son auteur : le Brûlot qu’elle tue embrase le Sahir.
+  const capacite = duelVide();
+  mana(capacite, 'joueur', 12);
+  mana(capacite, 'sorcier', 12);
+  donner(capacite, 'joueur', 'sahir-des-braises');
+  const sahir = jouer(capacite, 'joueur', 'sahir-des-braises').entite;
+  donner(capacite, 'sorcier', 'le-brulot');
+  const brulotCapacite = jouer(capacite, 'sorcier', 'le-brulot').entite;
+  pret(sahir);
+  rpgAttaquerCreature(capacite, 'joueur', sahir.id, brulotCapacite.id);
+  assert.equal(capacite.sorcier.cimetiere.includes('le-brulot'), true, 'la capacité tue le Brûlot');
+  assert.equal(sahir.pv, 1, 'le Sahir 2/3 encaisse les 2 dégâts de l’explosion');
+
+  // Protégée contre la Braise, la Valkyrie des glaces ne sent rien : le
+  // Brûlot est désormais une créature Braise, sa frappe comme son explosion
+  // s'écrasent sur la protection.
+  const protegee = duelVide();
+  mana(protegee, 'joueur', 12);
+  mana(protegee, 'sorcier', 12);
+  donner(protegee, 'joueur', 'valkyrie-des-glaces');
+  const valkyrie = jouer(protegee, 'joueur', 'valkyrie-des-glaces').entite;
+  donner(protegee, 'sorcier', 'le-brulot');
+  const brulotProtege = jouer(protegee, 'sorcier', 'le-brulot').entite;
+  pret(valkyrie);
+  rpgAttaquerCreature(protegee, 'joueur', valkyrie.id, brulotProtege.id);
+  assert.equal(protegee.sorcier.cimetiere.includes('le-brulot'), true);
+  assert.equal(valkyrie.pv, 5, 'ni la frappe du Brûlot ni l’explosion ne passent la protection');
 
   // Morte par magie : le tueur est inconnu, rien ne se déclenche.
   const magie = duelVide();
@@ -622,10 +665,11 @@ test('Le Brûlot renvoie son tueur en combat — jamais par magie, jamais captur
   donner(magie, 'joueur', 'trait-de-braise');
   assert.equal(rpgLancerMagie(magie, 'joueur', 'trait-de-braise', brulot2.id).ok, true);
   assert.equal(magie.sorcier.cimetiere.includes('le-brulot'), true);
-  assert.equal(magie.joueur.creatures.includes(tercio2), true, 'tué par sort : le Tercio reste en jeu');
+  assert.equal(magie.joueur.creatures.includes(tercio2), true, 'tué par sort : le Tercio reste intact');
+  assert.equal(tercio2.pv, 4, 'aucune explosion hors combat');
 
   // Capturé par l'Abordage à l'arrivée : la prise remplace la mort, le
-  // capteur n'a rien tuu — le Brûlot (coût 2) part en la cale du Cotre (2).
+  // capteur n'a rien tué — le Brûlot (coût 2) part en la cale du Cotre (2).
   const capture = duelVide();
   mana(capture, 'joueur', 10);
   mana(capture, 'sorcier', 10);
@@ -634,7 +678,8 @@ test('Le Brûlot renvoie son tueur en combat — jamais par magie, jamais captur
   donner(capture, 'joueur', 'cotre-de-course');
   const cotre = jouer(capture, 'joueur', 'cotre-de-course', brulot3.id).entite;
   assert.equal(cotre.enCale?.carteId, 'le-brulot', 'le Brûlot est pris en cale');
-  assert.equal(capture.joueur.creatures.includes(cotre), true, 'son capteur n’a pas été renvoyé : rien n’est mort');
+  assert.equal(capture.joueur.creatures.includes(cotre), true, 'son capteur n’a pas été embrasé : rien n’est mort');
+  assert.equal(cotre.pv, 1, 'le Cotre garde ses 1 PV');
 });
 
 test('le Grappin (4 manas) alourdit son porteur de 1, puis active Abordage selon son coût augmenté', () => {
@@ -817,11 +862,14 @@ test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles
   const essai = deckManaEssaiParId('essai-mana-lettres-de-marque');
   assert.ok(essai, 'le cinquième deck d’essai existe');
   assert.equal(essai.cardIds.length, 30);
-  assert.deepEqual(essai.elements, ['sable', 'eau']);
+  assert.deepEqual(essai.elements, ['sable', 'eau', 'braise'],
+    'Sable + Eau, plus la flamme du Brûlot');
   assert.deepEqual(validerDeckManaEssai(essai), { ok: true });
   assert.equal(essai.cardIds.filter((id) => id === 'la-barbe-rousse').length, 1, 'une seule mythique');
-  assert.ok(essai.cardIds.every((id) => cardColors(cardById(id)).every((couleur) => ['sable', 'eau'].includes(couleur))),
-    'toutes les cartes sont Sable, Eau ou les deux');
+  assert.ok(essai.cardIds.every((id) => cardColors(cardById(id)).every((couleur) => ['sable', 'eau', 'braise'].includes(couleur))),
+    'toutes les cartes sont Sable, Eau, ou Braise pour le seul Brûlot');
+  assert.equal(essai.cardIds.filter((id) => cardColors(cardById(id)).includes('braise')).length, 2,
+    'seul le Brûlot apporte la Braise, en deux exemplaires');
   assert.equal(RPG_MANA_ESSAI_DECKS.length, 5, 'le banc d’essai compte cinq paquets');
 
   // Le boîtier de l'étagère : composé par sa recette, pas écrit à la main.
@@ -836,10 +884,15 @@ test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles
   for (const id of boitier.cardIds) {
     const carte = cardById(id);
     familles[carte.kind === 'magie' ? 'magie' : carte.kind === 'arme' ? 'arme' : 'creature'] += 1;
-    assert.ok(cardColors(carte).every((couleur) => ['sable', 'eau'].includes(couleur)), `${id} tient l’identité Sable + Eau`);
+    // Le Brûlot est l'exception assumée : la seule flamme (Braise) de la
+    // flotte, posée par la signature hors du vivier Sable + Eau.
+    const couleursAutorisees = carte.id === 'le-brulot' ? ['sable', 'eau', 'braise'] : ['sable', 'eau'];
+    assert.ok(cardColors(carte).every((couleur) => couleursAutorisees.includes(couleur)), `${id} tient l’identité Sable + Eau`);
   }
   assert.deepEqual(familles, { creature: 19, magie: 9, arme: 0 + 2 }, '19 créatures, 9 magies, 2 armes');
   assert.equal(boitier.cardIds.filter((id) => id === 'la-barbe-rousse').length, 1, 'La Barbe-Rousse est l’unique mythique');
+  assert.equal(boitier.cardIds.filter((id) => id === 'le-brulot').length, 2, 'le Brûlot reste la flamme de la flotte');
+  assert.deepEqual(cardColors(cardById('le-brulot')), ['braise'], 'le Brûlot est une créature Braise');
   assert.equal(boitier.boxArt, 'la-barbe-rousse');
   assert.ok(existsSync(art('la-barbe-rousse')), 'l’illustration du boîtier est livrée');
 

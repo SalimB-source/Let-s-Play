@@ -49,7 +49,8 @@ const total = (camp) => Object.values(camp.manaMax).reduce((somme, quantite) => 
 
 test('les cinq decks de démonstration partagent le format 30 cartes sans terrain', () => {
   assert.equal(RPG_MANA_ESSAI_DECKS.length, 5);
-  assert.deepEqual(RPG_MANA_ESSAI_DECKS.map((deck) => deck.elements.length), [1, 2, 3, 1, 2]);
+  // Le dernier paquet est Sable + Eau, plus la flamme du Brûlot (Braise).
+  assert.deepEqual(RPG_MANA_ESSAI_DECKS.map((deck) => deck.elements.length), [1, 2, 3, 1, 3]);
   for (const deck of RPG_MANA_ESSAI_DECKS) {
     assert.equal(deck.cardIds.length, RPG_MANA_ESSAI_TAILLE);
     assert.deepEqual(validerDeckManaEssai(deck), { ok: true }, deck.name);

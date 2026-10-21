@@ -6,8 +6,10 @@
  * **les meilleures cartes de l'identité, palier de rareté puis puissance**
  * (`rpgCardPower.js`). Une recette tient donc en cinq lignes :
  *
- *   - `identite`  : la ou les couleurs du deck — aucune carte hors de là
- *                   n'entre, jamais (un mono-Sable reste cent pour cent Sable) ;
+ *   - `identite`  : la ou les couleurs du **vivier de remplissage** — aucune
+ *                   carte hors de là n'entre par lui, jamais (un mono-Sable
+ *                   reste cent pour cent Sable) ; la signature, elle, peut
+ *                   poser une exception assumée (le Brûlot, Braise) ;
  *   - `terrains`  : liste vide ; le mana est désormais automatique ;
  *   - `creatures` : les places de créatures et de héros ;
  *   - `magies`    : les places de sorts ;
@@ -204,11 +206,18 @@ export const RPG_RECETTES_DECKS = {
    * — le set Piraterie hybride Sable + Eau de l'âge de la course. La signature
    * pose l'équipage de la Régence : l'Abordage prend (Raïs, Cotre, Lettre de
    * marque ; le Grand Débarquement arme les cales pleines), la Rançon rend (Négociant), la Cargaison
-   * assure (Galion) et le Brûlot renvoie son tueur. Le Hollandais volant —
-   * vaisseau fantôme au Coup rapide et à l'Abordage 3 — hante la flotte en
-   * second grand voilier, aux côtés du Galion. L'Eau qui amollit la
-   * prise vient du catalogue (Sonneur fêlé, Ressac, Lame de mer, Bâton des
-   * citernes) ; le remplissage choisit les meilleures cartes Sable + Eau.
+   * assure (Galion) et le Brûlot embrase la créature qui le détruit. Le
+   * Hollandais volant — vaisseau fantôme au Coup rapide et à l'Abordage 3 —
+   * hante la flotte en second grand voilier, aux côtés du Galion. L'Eau qui
+   * amollit la prise vient du catalogue (Sonneur fêlé, Ressac, Lame de mer,
+   * Bâton des citernes) ; le remplissage choisit les meilleures cartes
+   * Sable + Eau.
+   *
+   * Exception assumée : le Brûlot est **Braise**, la seule flamme de la
+   * flotte. Sa carte est posée par la **signature** — que le composeur ne
+   * filtre pas par l'identité — tandis que le vivier de remplissage reste
+   * Sable + Eau : le deck joue bien trois couleurs, mais une seule carte de
+   * Braise. Le deck déclare donc `elements: ['sable', 'eau', 'braise']`.
    */
   'lettres-de-marque': {
     identite: ['sable', 'eau'],

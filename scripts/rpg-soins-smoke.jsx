@@ -18,7 +18,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // départ tient l'Eau de la source (soin 4), la Porteuse de cruches (arrivée :
 // soin 3) et une Vipère de verre qui restera en main — le mana pousse tout
 // seul, plus besoin de poser des terrains.
-const REMPLISSAGE_EAU = ['haut-fond', 'ressac', 'pilote-de-la-carreira', 'le-brulot', 'lame-de-mer', 'ecueil', 'silence-decume', 'sonneur-fele', 'veilleuse-des-citernes', 'contresort-des-abimes', 'tour-des-flots'].flatMap((id) => [id, id]);
+const REMPLISSAGE_EAU = ['haut-fond', 'ressac', 'pilote-de-la-carreira', 'courant-de-retour', 'lame-de-mer', 'ecueil', 'silence-decume', 'sonneur-fele', 'veilleuse-des-citernes', 'contresort-des-abimes', 'tour-des-flots'].flatMap((id) => [id, id]);
 const DECK_JOUEUR = ['parade-du-verre', 'brisure-de-verre', ...REMPLISSAGE_EAU, 'kraken', 'leviathan', 'jormungandr', 'vipere-de-verre', 'porteuse-de-cruches', 'eau-de-la-source'];
 // Trente cartes mono-Braise : la main du sorcier tient le Trait de braise
 // (3 dégâts) et deux créatures hors de prix — dès son deuxième tour, le

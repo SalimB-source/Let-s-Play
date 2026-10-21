@@ -6,7 +6,8 @@
  * Régence d’Alger. Identité de jeu : l’**Abordage** (prendre sans tuer), la
  * **Cale** (détenir, face visible), la **Rançon** (racheter au prix imprimé)
  * et la **Cargaison** (le convoi assuré). Jamais de dégâts nus (règle de
- * direction §11 du doc 17) : la course prend, elle ne brûle pas.
+ * direction §11 du doc 17) : la course prend, elle ne brûle pas — sauf le
+ * Brûlot, la seule flamme du set, qui embrase la créature qui le détruit.
  *
  * Le moteur lit quatre nouveaux marqueurs de fiche :
  *   - `abordage: N` — QUAND la créature arrive en jeu, la créature adverse
@@ -17,8 +18,9 @@
  *     son propriétaire pioche N cartes ;
  *   - `declencheRancon: 1` — quand une créature est rançonnée, le contrôleur
  *     de celle-ci pioche une carte (le Négociant) ;
- *   - `destruction: { type: 'renvoi-tueur' }` — morte en combat, la créature
- *     renvoie l’un de ses tueurs en main (Le Brûlot — la mort par magie ne
+ *   - `destruction: { type: 'degats-tueur', amount: N }` — morte en combat, la
+ *     créature embrase son tueur : N dégâts à l’une des créatures qui l’ont
+ *     détruite et qui a survécu à l’échange (Le Brûlot — la mort par magie ne
  *     déclenche rien, le tueur de combat seul est connu).
  *
  * Et cinq contrats d’effet étendus : `arriveesAbordage: true` sur un effet
@@ -121,14 +123,14 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
   carte({
     id: 'le-brulot',
     name: 'Le Brûlot',
-    element: 'eau',
+    element: 'braise',
     cost: 2,
     atk: 1,
     def: 1,
     rarity: 'commune',
-    destruction: { type: 'renvoi-tueur' },
+    destruction: { type: 'degats-tueur', amount: 2 },
     typeLine: 'Créature — Navire · Brûlot',
-    text: 'Quand Le Brûlot meurt en combat, la créature qui l’a détruit est renvoyée dans la main de son propriétaire.',
+    text: 'Quand Le Brûlot meurt en combat, il inflige 2 dégâts à la créature qui l’a détruit.',
     flavor: 'Une voile, une mèche, une promesse.',
   }),
   carte({
