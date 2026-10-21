@@ -1389,6 +1389,64 @@ export function TourbillonEau({ effet, onTermine = null }) {
 }
 
 /**
+ * Cercle magique d'un sacrifice : une créature rendue au sable.
+ *
+ * Quand le plateau est plein et qu'une créature est sacrifiée pour faire
+ * place à la nouvelle, un cercle de runes s'allume à son emplacement :
+ * halo qui pulse, anneaux qui tournent en sens contraires, glyphes qui
+ * apparaissent et étincelles qui montent. Le calque reprend la place et
+ * l'inclinaison de la créature sacrifiée, ne capte aucun geste et ne
+ * recalcule aucune mise en page. Il vit le temps de la déchirure
+ * (piloté par le timer de `sacrificeFx`) puis s'efface avant que la
+ * nouvelle créature ne soit posée.
+ */
+export function CercleMagique({ effet, onTermine = null }) {
+  return (
+    <div
+      className="rpg-cercle-magique"
+      data-rpg-sacrifice-id={effet.entityId}
+      aria-hidden="true"
+      style={{
+        left: `${effet.left}px`,
+        top: `${effet.top}px`,
+        width: `${effet.width}px`,
+        height: `${effet.height}px`,
+        '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
+      }}
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget || event.pseudoElement) return;
+        onTermine?.(effet.effectId);
+      }}
+    >
+      {/* Halo central qui pulse. */}
+      <span className="rpg-cercle-magique__soleil" />
+      {/* Anneaux de runes qui tournent en sens contraires. */}
+      <span className="rpg-cercle-magique__anneau rpg-cercle-magique__anneau--externe" />
+      <span className="rpg-cercle-magique__anneau rpg-cercle-magique__anneau--interne" />
+      {/* Glyphes disposés sur le cercle, chacun à son angle et son retard. */}
+      <span className="rpg-cercle-magique__glyphe" style={{ '--r': '0deg', '--d': '120ms' }} />
+      <span className="rpg-cercle-magique__glyphe" style={{ '--r': '72deg', '--d': '240ms' }} />
+      <span className="rpg-cercle-magique__glyphe" style={{ '--r': '144deg', '--d': '360ms' }} />
+      <span className="rpg-cercle-magique__glyphe" style={{ '--r': '216deg', '--d': '480ms' }} />
+      <span className="rpg-cercle-magique__glyphe" style={{ '--r': '288deg', '--d': '600ms' }} />
+      {/* Étincelles qui s'élèvent du cercle. */}
+      { [0, 1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className="rpg-cercle-magique__etincelle"
+          style={{
+            '--i': i,
+            '--d': `${700 + i * 110}ms`,
+            '--tx': `${(i % 2 === 0 ? -1 : 1) * (14 + i * 6)}px`,
+            '--ty': `-${26 + i * 10}px`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
  * La roue de feu d'une créature brûlée par la Braise.
  *
  * Une magie, une sorcellerie ou l'effet d'une créature de Braise vient de
@@ -9698,6 +9756,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             </span>
             <b aria-hidden="true">{sacrificeFx.name}</b>
           </div>
+        )}
+
+        {/* Cercle magique du sacrifice : runes et halo au pied de la créature
+            sacrifiée, le temps de la déchirure. */}
+        {sacrificeFx && (
+          <CercleMagique
+            effet={{
+              entityId: sacrificeFx.entityId,
+              effectId: sacrificeFx.effectId,
+              left: sacrificeFx.left,
+              top: sacrificeFx.top,
+              width: sacrificeFx.width,
+              height: sacrificeFx.height,
+              angle: sacrificeFx.angle,
+            }}
+          />
         )}
 
         {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
