@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import './rpg-pvp.css';
 import { useAuth } from '../auth/AuthContext';
 import { useFriends } from '../friends/FriendsContext';
@@ -51,30 +51,78 @@ const COULEURS_LISIBLES = {
   braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres',
 };
 
-function nomDuDeck(deck) {
-  if (!deck) return 'Deck du catalogue';
-  const couleurs = deckColors(deck).map((couleur) => COULEURS_LISIBLES[couleur] ?? couleur).join(' · ');
-  return couleurs ? `${deck.name} — ${couleurs}` : deck.name;
+/** « Sable · Braise » — la ligne de couleurs d'un deck, lisible telle quelle. */
+function couleursDuDeck(deck) {
+  if (!deck) return '';
+  return deckColors(deck).map((couleur) => COULEURS_LISIBLES[couleur] ?? couleur).join(' · ');
+}
+
+/** Le key art de Bab El sous un voile sombre : le même décor que le hub du
+ *  jeu, pour que le salon ne ressemble pas à une page du site. */
+const FOND_EN_LIGNE = `linear-gradient(105deg, rgba(7, 6, 12, .93) 0%, rgba(7, 6, 12, .8) 46%, rgba(7, 6, 12, .64) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
+
+/**
+ * Le cadre plein écran du Sablier en ligne.
+ * -----------------------------------------
+ * Le jeu est une couche `fixed` (z-index 1500) qui passe par-dessus la barre
+ * du site ; le salon en ligne prend la même place, avec son propre liseré de
+ * retour vers le hub. Le contenu défile dedans (`overscroll-behavior` coupe la
+ * chaîne vers la page du site, verrouillée par `body.rpg-pvp-lock`).
+ */
+function Cadre({ code = '', retour = null, compact = false, children }) {
+  return (
+    <div className={`rpg-pvp-page${compact ? ' rpg-pvp-page--compact' : ''}`} style={{ backgroundImage: FOND_EN_LIGNE }}>
+      <header className="rpg-pvp-page__barre">
+        <Link
+          className="rpg-pvp-page__retour"
+          to={retour?.href ?? '/jeu/sablier-de-bab-el'}
+        >
+          <span aria-hidden="true">←</span> {retour?.libelle ?? 'Le Sablier'}
+        </Link>
+        {code ? (
+          <span className="rpg-pvp-page__code" title="Code du défi">{code}</span>
+        ) : (
+          <span className="rpg-pvp-page__statut">
+            <span className="rpg-pvp-page__point" aria-hidden="true" />
+            Duel en ligne
+          </span>
+        )}
+      </header>
+      <div className="rpg-pvp-page__contenu">{children}</div>
+    </div>
+  );
 }
 
 function SelecteurDeck({ decks, valeur, onChange, desactive }) {
   return (
     <ul className="rpg-pvp-decks" role="list">
-      {decks.map((deck) => (
-        <li key={deck.id}>
-          <button
-            type="button"
-            role="listitem"
-            className={`rpg-pvp-deck${valeur === deck.id ? ' is-selected' : ''}`}
-            aria-pressed={valeur === deck.id}
-            disabled={desactive}
-            onClick={() => onChange(deck.id)}
-          >
-            <strong>{deck.name}</strong>
-            <small>{nomDuDeck({ ...deck, name: '' }).replace(' — ', '') || 'Catalogue'}</small>
-          </button>
-        </li>
-      ))}
+      {decks.map((deck) => {
+        const choisie = valeur === deck.id;
+        return (
+          <li key={deck.id}>
+            <button
+              type="button"
+              className={`rpg-pvp-deck${choisie ? ' is-selected' : ''}`}
+              aria-pressed={choisie}
+              disabled={desactive}
+              onClick={() => onChange(deck.id)}
+            >
+              <span className="rpg-pvp-deck__entete">
+                <strong>{deck.name}</strong>
+                {choisie && <span className="rpg-pvp-deck__coche" aria-hidden="true">✓</span>}
+              </span>
+              <span className="rpg-pvp-deck__pied">
+                <span className="rpg-pvp-deck__couleurs" aria-hidden="true">
+                  {deckColors(deck).map((couleur) => (
+                    <i key={couleur} className={`rpg-pvp-deck__couleur rpg-pvp-deck__couleur--${couleur}`} />
+                  ))}
+                </span>
+                <small>{couleursDuDeck(deck) || 'Catalogue'}</small>
+              </span>
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -141,6 +189,12 @@ export default function RpgPvpSalon() {
     const timer = setInterval(() => setMaintenant(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [vue?.echeance]);
+
+  // Le cadre est plein écran : la page du site ne doit pas défiler derrière.
+  useEffect(() => {
+    document.body.classList.add('rpg-pvp-lock');
+    return () => document.body.classList.remove('rpg-pvp-lock');
+  }, []);
 
   /* -------------------------------- actions ------------------------------- */
 
@@ -215,171 +269,187 @@ export default function RpgPvpSalon() {
 
   if (ecran === 'connexion') {
     return (
-      <main className="rpg-pvp">
-        <h1>Duel en ligne</h1>
-        <p className="rpg-pvp__lead">Le Sablier en ligne demande un compte : c’est lui qui garde ta main secrète.</p>
-        <a className="rpg-pvp__cta" href={`${import.meta.env.BASE_URL}auth`}>Se connecter pour jouer</a>
-      </main>
+      <Cadre>
+        <main className="rpg-pvp rpg-pvp--connexion">
+          <header className="rpg-pvp__header">
+            <p className="rpg-pvp__eyebrow">LE SABLIER · EN LIGNE</p>
+            <h1>Duel en ligne</h1>
+            <p className="rpg-pvp__lead">
+              Le Sablier en ligne demande un compte : c’est lui qui garde ta main secrète.
+            </p>
+          </header>
+          <a className="rpg-pvp__cta" href={`${import.meta.env.BASE_URL}auth`}>Se connecter pour jouer</a>
+        </main>
+      </Cadre>
     );
   }
 
   // Partie en cours : le plateau prend tout l'écran du jeu.
   if (vue?.ok && (vue.statut === 'en_cours' || vue.statut === 'terminee') && vue.etat) {
     return (
-      <RpgPvpBoard
-        vue={vue.etat}
-        siege={vue.siege}
-        code={vue.code}
-        statut={vue.statut}
-        seq={vue.seq}
-        noms={vue.noms}
-        gagnantId={vue.gagnant_id}
-        finRaison={vue.fin_raison}
-        resultat={resultatSalon(vue, uid)}
-        occupe={busy}
-        onIntention={jouer}
-        onAbandon={() => agir(() => abandonnerDefi(code))}
-        onQuitter={() => navigate(cheminSalon())}
-      />
+      <Cadre code={code} retour={{ href: cheminSalon(), libelle: 'Salon' }} compact>
+        <RpgPvpBoard
+          vue={vue.etat}
+          siege={vue.siege}
+          code={vue.code}
+          statut={vue.statut}
+          seq={vue.seq}
+          noms={vue.noms}
+          gagnantId={vue.gagnant_id}
+          finRaison={vue.fin_raison}
+          resultat={resultatSalon(vue, uid)}
+          occupe={busy}
+          onIntention={jouer}
+          onAbandon={() => agir(() => abandonnerDefi(code))}
+          onQuitter={() => navigate(cheminSalon())}
+        />
+      </Cadre>
     );
   }
 
   return (
-    <main className="rpg-pvp">
-      <header className="rpg-pvp__header">
-        <p className="rpg-pvp__eyebrow">LE SABLIER · EN LIGNE</p>
-        <h1>{code ? 'Salon du défi' : 'Duel en ligne'}</h1>
-        <p className="rpg-pvp__lead">
-          {ecran === 'accueil'
-            ? 'Défie un ami avec un lien, ou rejoins un défi avec son code. Le duel se joue quand vous êtes deux.'
-            : (SALON_TEXTES[ecran] ?? SALON_TEXTES.erreur)}
-        </p>
-      </header>
+    <Cadre code={code}>
+      <main className="rpg-pvp">
+        <header className="rpg-pvp__header">
+          <p className="rpg-pvp__eyebrow">LE SABLIER · EN LIGNE</p>
+          <h1>{code ? 'Salon du défi' : 'Duel en ligne'}</h1>
+          <p className="rpg-pvp__lead">
+            {ecran === 'accueil'
+              ? 'Défie un ami avec un lien, ou rejoins un défi avec son code. Le duel se joue quand vous êtes deux.'
+              : (SALON_TEXTES[ecran] ?? SALON_TEXTES.erreur)}
+          </p>
+        </header>
 
-      {erreur && (
-        <p className="rpg-pvp__erreur" role="alert">
-          {erreur === 'copie' ? 'Le presse-papiers est indisponible : copie le code à la main.'
-            : erreur === 'code-invalide' ? 'Un code fait 8 caractères (chiffres et lettres A–F).'
-              : erreur === 'deck-non-possede' ? 'Ce deck contient des cartes que tu ne possèdes pas encore.'
-                : erreur === 'pas-amis' ? 'Les défis nominatifs sont réservés aux amis — envoie plutôt un lien.'
-                  : erreur === 'invitation-en-attente' ? 'Tu as déjà un défi en attente avec ce joueur.'
-                    : `Action refusée : ${erreur}.`}
-        </p>
-      )}
+        {erreur && (
+          <p className="rpg-pvp__erreur" role="alert">
+            {erreur === 'copie' ? 'Le presse-papiers est indisponible : copie le code à la main.'
+              : erreur === 'code-invalide' ? 'Un code fait 8 caractères (chiffres et lettres A–F).'
+                : erreur === 'deck-non-possede' ? 'Ce deck contient des cartes que tu ne possèdes pas encore.'
+                  : erreur === 'pas-amis' ? 'Les défis nominatifs sont réservés aux amis — envoie plutôt un lien.'
+                    : erreur === 'invitation-en-attente' ? 'Tu as déjà un défi en attente avec ce joueur.'
+                      : `Action refusée : ${erreur}.`}
+          </p>
+        )}
 
-      {ecran === 'inconnu' || ecran === 'refuse' || ecran === 'expire' ? (
-        <div className="rpg-pvp__panneau">
-          <a className="rpg-pvp__cta" href={cheminSalon()}>Créer un nouveau défi</a>
-        </div>
-      ) : null}
-
-      {ecran === 'chargement' ? <p className="rpg-pvp__note" aria-busy="true">Ouverture du salon…</p> : null}
-
-      {(ecran === 'attente' || ecran === 'a-rejoindre') && (
-        <div className="rpg-pvp__panneau">
-          <div className="rpg-pvp__code">
-            <span>Code du défi</span>
-            <strong>{code}</strong>
-          </div>
-          {ecran === 'attente' ? (
-            <>
-              <p className="rpg-pvp__note">
-                En attente de ton adversaire… Partage le lien, ou envoie-le par la messagerie.
-              </p>
-              <div className="rpg-pvp__actions">
-                <button type="button" className="rpg-pvp__cta" onClick={copier}>
-                  {copie ? 'Lien copié ✓' : 'Copier le lien du défi'}
-                </button>
-                <button type="button" className="rpg-pvp__ghost" onClick={() => agir(() => refuserDefi(code))} disabled={busy}>
-                  Annuler le défi
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <h2>Choisis ton deck</h2>
-              <SelecteurDeck decks={decks} valeur={deckId} onChange={setDeckId} desactive={busy} />
-              <button type="button" className="rpg-pvp__cta" onClick={rejoindre} disabled={busy || !deck}>
-                Rejoindre le duel
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
-      {ecran === 'termine' && (
-        <div className="rpg-pvp__panneau">
-          <p className="rpg-pvp__note">{SALON_TEXTES.termine}</p>
-          <a className="rpg-pvp__cta" href={cheminSalon()}>Nouveau défi</a>
-        </div>
-      )}
-
-      {!code && ecran !== 'connexion' && (
-        <>
+        {ecran === 'inconnu' || ecran === 'refuse' || ecran === 'expire' ? (
           <div className="rpg-pvp__panneau">
-            <h2>1. Ton deck</h2>
-            <SelecteurDeck decks={decks} valeur={deckId} onChange={setDeckId} desactive={busy} />
-            <div className="rpg-pvp__mode">
-              <label>
-                <input type="radio" name="pvp-mode" checked={mode === 'live'} onChange={() => setMode('live')} />
-                <span><strong>Direct</strong> — les deux joueurs sont là, 90 s par tour</span>
-              </label>
-              <label>
-                <input type="radio" name="pvp-mode" checked={mode === 'async'} onChange={() => setMode('async')} />
-                <span><strong>À la correspondance</strong> — chacun joue quand il peut</span>
-              </label>
+            <a className="rpg-pvp__cta" href={cheminSalon()}>Créer un nouveau défi</a>
+          </div>
+        ) : null}
+
+        {ecran === 'chargement' ? <p className="rpg-pvp__note" aria-busy="true">Ouverture du salon…</p> : null}
+
+        {(ecran === 'attente' || ecran === 'a-rejoindre') && (
+          <div className="rpg-pvp__panneau">
+            <div className="rpg-pvp__code">
+              <span>Code du défi</span>
+              <strong>{code}</strong>
             </div>
-          </div>
-
-          <div className="rpg-pvp__panneau">
-            <h2>2. Créer un défi</h2>
-            <button type="button" className="rpg-pvp__cta" onClick={() => creerDefi('lien')} disabled={busy || !deck}>
-              Créer un lien de défi
-            </button>
-            <p className="rpg-pvp__note">
-              Le lien marche partout : messagerie du site, WhatsApp, Discord. Le premier à l’ouvrir prend la place.
-            </p>
-            {friends.length > 0 && (
-              <div className="rpg-pvp__amis">
-                <label htmlFor="pvp-ami">Défier un ami directement</label>
-                <select id="pvp-ami" value={amiId} onChange={(event) => setAmiId(event.target.value)}>
-                  <option value="">Choisir un ami…</option>
-                  {friends.map((ami) => (
-                    <option key={ami.id} value={ami.id}>{ami.name}{ami.online ? ' · en ligne' : ''}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="rpg-pvp__ghost"
-                  onClick={() => creerDefi('amis')}
-                  disabled={busy || !amiId || !deck}
-                >
-                  Envoyer l’invitation
+            {ecran === 'attente' ? (
+              <>
+                <p className="rpg-pvp__note" role="status">
+                  En attente de ton adversaire… Partage le lien, ou envoie-le par la messagerie.
+                </p>
+                <div className="rpg-pvp__actions">
+                  <button type="button" className="rpg-pvp__cta" onClick={copier}>
+                    {copie ? 'Lien copié ✓' : 'Copier le lien du défi'}
+                  </button>
+                  <button type="button" className="rpg-pvp__ghost" onClick={() => agir(() => refuserDefi(code))} disabled={busy}>
+                    Annuler le défi
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2>Choisis ton deck</h2>
+                <SelecteurDeck decks={decks} valeur={deckId} onChange={setDeckId} desactive={busy} />
+                <button type="button" className="rpg-pvp__cta" onClick={rejoindre} disabled={busy || !deck}>
+                  Rejoindre le duel
                 </button>
-              </div>
+              </>
             )}
           </div>
+        )}
 
+        {ecran === 'termine' && (
           <div className="rpg-pvp__panneau">
-            <h2>3. Rejoindre avec un code</h2>
-            <form className="rpg-pvp__form" onSubmit={entrerCode}>
-              <input
-                value={saisie}
-                onChange={(event) => setSaisie(event.target.value.toUpperCase().slice(0, 8))}
-                placeholder="AB12CD34"
-                aria-label="Code du défi (8 caractères)"
-                autoComplete="off"
-                spellCheck="false"
-              />
-              <button type="submit" className="rpg-pvp__cta">Rejoindre</button>
-            </form>
+            <p className="rpg-pvp__note">{SALON_TEXTES.termine}</p>
+            <a className="rpg-pvp__cta" href={cheminSalon()}>Nouveau défi</a>
           </div>
-        </>
-      )}
+        )}
 
-      {code && vue?.echeance && ecran === 'en-cours' && (
-        <p className="rpg-pvp__note">Temps restant : {tempsRestant(vue.echeance, maintenant)}</p>
-      )}
-    </main>
+        {ecran === 'accueil' && (
+          <div className="rpg-pvp__grille">
+            <section className="rpg-pvp__panneau" aria-labelledby="pvp-etape-deck">
+              <h2 id="pvp-etape-deck"><span className="rpg-pvp__etape" aria-hidden="true">1</span> Ton deck</h2>
+              <SelecteurDeck decks={decks} valeur={deckId} onChange={setDeckId} desactive={busy} />
+              <div className="rpg-pvp__mode" role="radiogroup" aria-label="Cadence de la partie">
+                <label className={`rpg-pvp__mode-option${mode === 'live' ? ' is-active' : ''}`}>
+                  <input type="radio" name="pvp-mode" checked={mode === 'live'} onChange={() => setMode('live')} />
+                  <span className="rpg-pvp__mode-titre">Direct</span>
+                  <span className="rpg-pvp__mode-desc">Les deux joueurs sont là, 90 s par tour.</span>
+                </label>
+                <label className={`rpg-pvp__mode-option${mode === 'async' ? ' is-active' : ''}`}>
+                  <input type="radio" name="pvp-mode" checked={mode === 'async'} onChange={() => setMode('async')} />
+                  <span className="rpg-pvp__mode-titre">À la correspondance</span>
+                  <span className="rpg-pvp__mode-desc">Chacun joue quand il peut, sans pendule.</span>
+                </label>
+              </div>
+            </section>
+
+            <div className="rpg-pvp__colonne">
+              <section className="rpg-pvp__panneau" aria-labelledby="pvp-etape-creer">
+                <h2 id="pvp-etape-creer"><span className="rpg-pvp__etape" aria-hidden="true">2</span> Créer un défi</h2>
+                <button type="button" className="rpg-pvp__cta rpg-pvp__cta--large" onClick={() => creerDefi('lien')} disabled={busy || !deck}>
+                  Créer un lien de défi
+                </button>
+                <p className="rpg-pvp__note">
+                  Le lien marche partout : messagerie du site, WhatsApp, Discord. Le premier à l’ouvrir prend la place.
+                </p>
+                {friends.length > 0 && (
+                  <div className="rpg-pvp__amis">
+                    <label htmlFor="pvp-ami">Défier un ami directement</label>
+                    <select id="pvp-ami" value={amiId} onChange={(event) => setAmiId(event.target.value)}>
+                      <option value="">Choisir un ami…</option>
+                      {friends.map((ami) => (
+                        <option key={ami.id} value={ami.id}>{ami.name}{ami.online ? ' · en ligne' : ''}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="rpg-pvp__ghost"
+                      onClick={() => creerDefi('amis')}
+                      disabled={busy || !amiId || !deck}
+                    >
+                      Envoyer l’invitation
+                    </button>
+                  </div>
+                )}
+              </section>
+
+              <section className="rpg-pvp__panneau" aria-labelledby="pvp-etape-rejoindre">
+                <h2 id="pvp-etape-rejoindre"><span className="rpg-pvp__etape" aria-hidden="true">3</span> Rejoindre avec un code</h2>
+                <form className="rpg-pvp__form" onSubmit={entrerCode}>
+                  <input
+                    value={saisie}
+                    onChange={(event) => setSaisie(event.target.value.toUpperCase().slice(0, 8))}
+                    placeholder="AB12CD34"
+                    aria-label="Code du défi (8 caractères)"
+                    autoComplete="off"
+                    spellCheck="false"
+                  />
+                  <button type="submit" className="rpg-pvp__cta">Rejoindre</button>
+                </form>
+                <p className="rpg-pvp__note">Le code à huit caractères du défi que tu as reçu, dans le salon ou par message.</p>
+              </section>
+            </div>
+          </div>
+        )}
+
+        {code && vue?.echeance && ecran === 'en-cours' && (
+          <p className="rpg-pvp__note">Temps restant : {tempsRestant(vue.echeance, maintenant)}</p>
+        )}
+      </main>
+    </Cadre>
   );
 }

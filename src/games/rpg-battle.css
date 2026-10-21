@@ -9017,6 +9017,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    de les laisser déborder. */
 @media (min-width: 821px) and (max-width: 1100px) {
  .rpg-mode-menu__header { flex-wrap: wrap; }
+ /* La barre passe sur deux rangées : sans cela, la marque restait collée au
+    bouton plein écran, au milieu de l'écran, au lieu de rester à gauche. */
+ .rpg-mode-menu__brand { margin-right: auto; }
  .rpg-mode-menu__switch { order: 3; width: calc(100% + clamp(14px, 4.6vw, 74px) * 2); flex: 0 0 calc(100% + clamp(14px, 4.6vw, 74px) * 2); min-width: 0; margin: 0 calc(clamp(14px, 4.6vw, 74px) * -1); padding: 0 clamp(10px, 1.6vw, 18px); border-top: 1px solid rgba(255,255,255,.08); overflow-x: auto; scrollbar-width: none; }
  .rpg-mode-menu__switch::-webkit-scrollbar { display: none; }
  .rpg-mode-menu__switch button, .rpg-mode-menu__switch button.rpg-mode-menu__souk { flex: 1 0 auto; min-height: 46px; padding: 0 clamp(9px, 1.4vw, 16px); }
@@ -10299,4 +10302,158 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 @media (max-width: 800px) {
   .rpg-combat-feed__damage { font-size: 9px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ACCUEIL DU SABLIER — LES QUATRE PORTES
+   ──────────────────────────────────────────────────────────────────────────
+   L'onglet Jouer empilait quatre boutons de formats différents : « Duel en
+   ligne », seul sous la paire tutoriel / partie rapide, ressemblait à un
+   oubli. Les actions forment désormais une grille de cartes :
+
+     récit  |  duel en ligne     ← les deux entrées de tête
+     partie rapide | tutoriel    ← les deux raccourcis
+
+   Chaque carte partage la même hauteur et la même largeur. Le duel en ligne
+   prend le laiton du jeu (texte sombre) et une pastille verte « en ligne » ;
+   la partie rapide perd son aplat orange — trop bruyant à côté du bleu du
+   récit — et garde une lisière braise.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-mode-menu__hero-actions > .rpg-menu-button {
+  min-height: 68px;
+  justify-content: flex-start;
+}
+.rpg-mode-menu__secondary-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 2px;
+}
+.rpg-mode-menu__secondary-actions .rpg-menu-button { min-height: 62px; }
+
+/* Le duel en ligne : laiton plein, la couleur des actions principales du hub. */
+.rpg-menu-button--en-ligne {
+  position: relative;
+  border-color: #f2d79a;
+  background: linear-gradient(135deg, #e8c676, #bb8135);
+  color: #241a06;
+  box-shadow: 0 10px 26px rgba(197, 139, 53, .22), inset 0 1px rgba(255, 246, 220, .5);
+}
+/* L'icône des portes : un trait de 36 px dans un médaillon, dessiné par
+   `IconePorte` — jamais un emoji, qui ne se dessine pas partout. */
+.rpg-mode-menu__hero-actions .rpg-menu-button__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+  color: currentColor;
+}
+.rpg-mode-menu__hero-actions .rpg-menu-button__icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rpg-menu-button--en-ligne .rpg-menu-button__icon {
+  background: rgba(36, 26, 6, .16);
+  color: #2a1d07;
+}
+.rpg-menu-button--partie-rapide .rpg-menu-button__icon {
+  background: rgba(232, 106, 44, .16);
+  color: #ffb37a;
+}
+.rpg-menu-button--en-ligne .rpg-menu-button__text small { color: #46320f; opacity: .88; }
+.rpg-menu-button--en-ligne:hover,
+.rpg-menu-button--en-ligne:focus-visible {
+  border-color: #ffe9b8;
+  background: linear-gradient(135deg, #f7dca4, #d79f4d);
+  color: #1c130b;
+  box-shadow: 0 12px 30px rgba(197, 139, 53, .3), inset 0 1px rgba(255, 250, 235, .6);
+}
+/* Pastille « en ligne » : vivante, mais immobile si le joueur a réduit les
+   animations. */
+.rpg-menu-button__live {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: #3f6b2c;
+  box-shadow: 0 0 0 3px rgba(63, 107, 44, .18);
+  vertical-align: .06em;
+  animation: rpg-en-ligne-pulse 1.8s ease-in-out infinite;
+}
+@keyframes rpg-en-ligne-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .45; transform: scale(.82); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-menu-button__live { animation: none; }
+}
+
+/* Partie rapide : une carte sombre ourlée de braise, pas un aplat orange. */
+.rpg-menu-button--partie-rapide {
+  border-color: rgba(232, 106, 44, .5);
+  background: rgba(30, 17, 11, .8);
+  color: #ffd9b8;
+  box-shadow: none;
+}
+.rpg-menu-button--partie-rapide .rpg-menu-button__icon { color: #ff9a5c; }
+.rpg-menu-button--partie-rapide:hover,
+.rpg-menu-button--partie-rapide:focus-visible {
+  border-color: #ffb86a;
+  background: rgba(96, 44, 20, .86);
+  color: #fff3e5;
+}
+
+/* ── Téléphone : les sept onglets du Sablier tiennent sur deux rangées ─────
+   En une seule rangée, la barre défilait horizontalement sans indice : sur un
+   écran de 390 px, « Paramètres » restait hors champ. Les onglets passent sur
+   deux rangées pleine largeur (4 + 3) : plus rien à faire glisser, chaque
+   mode visible d'un coup d'œil. Au-delà de 700 px, tout tient sur une ligne et
+   la règle ne s'applique plus. */
+@media (max-width: 700px) {
+  .rpg-mode-menu__switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 0 6px 3px;
+    overflow: visible;
+  }
+  .rpg-mode-menu__switch button,
+  .rpg-mode-menu__switch button.rpg-mode-menu__souk {
+    flex: 1 1 calc(25% - 6px);
+    min-width: 0;
+    min-height: 42px;
+    padding: 0 4px;
+    gap: 4px;
+    font-size: 10px;
+  }
+  .rpg-mode-menu__switch button span { font-size: 11px; }
+  .rpg-mode-menu__header { min-height: 52px; }
+  .rpg-mode-menu__brand { min-height: 52px; }
+  .rpg-mode-menu__brand::before { width: 28px; height: 28px; font-size: 17px; }
+  .rpg-mode-menu__brand h1 { font-size: 21px; }
+  .rpg-mode-menu__fullscreen { min-height: 34px; min-width: 34px; padding: 7px; }
+}
+
+/* Le héros épouse son contenu. Étiré sur la hauteur de la colonne des quêtes,
+   il devenait un grand cadre au tiers vide dès que l'écran était haut (tablette
+   en portrait, 900 px) : le vide se voyait autant à l'intérieur qu'à côté. Ici
+   la carte s'arrête sous les règles, et c'est le décor de la page qui occupe la
+   place restante. Le bloc se tient en haut : le regard entre par l'eyebrow et
+   descend titre → portes → règles d'un trait. */
+.rpg-mode-menu__play { align-items: start; }
+.rpg-mode-menu__hero { min-height: 0; align-items: flex-start; }
+.rpg-mode-menu__hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }

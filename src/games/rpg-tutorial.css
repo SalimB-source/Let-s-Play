@@ -177,9 +177,23 @@
 }
 @keyframes rpg-tutorial-spinner { to { transform: rotate(360deg); } }
 
-/* Une seconde entrée, clairement distincte du duel libre. */
-.rpg-mode-menu__hero-actions { display: grid; justify-items: start; gap: 10px; }
+/* Les quatre portes du Sablier : deux entrées de tête (le récit, le duel en
+   ligne) et deux raccourcis (partie rapide, tutoriel). Une grille 2 × 2, pour
+   que chaque carte ait la même largeur — et plus de bouton orphelin.
+   Les couleurs des cartes vivent dans `rpg-battle.css`. */
+.rpg-mode-menu__hero-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(660px, 100%);
+  justify-items: stretch;
+  align-items: stretch;
+}
 .rpg-mode-menu__hero-actions .rpg-menu-button--tutorial { margin-top: 0; }
+/* Téléphone : une seule colonne, les quatre cartes à pleine largeur. */
+@media (max-width: 620px) {
+  .rpg-mode-menu__hero-actions { grid-template-columns: minmax(0, 1fr); }
+}
 .rpg-menu-button--tutorial {
   min-width: min(270px, 100%);
   margin-top: 12px;

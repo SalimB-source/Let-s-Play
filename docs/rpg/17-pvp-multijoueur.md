@@ -325,12 +325,22 @@ Trois surfaces, toutes branchées sur l'arbitre :
 
 | Surface | Fichier | Rôle |
 | --- | --- | --- |
-| **Entrée** | `RpgDuelPage.jsx` (menu) | le bouton « Duel en ligne », à côté de « Partie rapide » — c'est un lien simple, donc la page continue de se monter hors routeur dans les vérifications jsdom |
+| **Entrée** | `RpgDuelPage.jsx` (menu) | le bouton « Duel en ligne », deuxième porte de l’onglet Jouer à côté de « Mode histoire » — c'est un lien simple, donc la page continue de se monter hors routeur dans les vérifications jsdom |
 | **Salon** | `RpgPvpSalon.jsx` + `rpg-pvp.css` | `/jeu/sablier-de-bab-el/defi` (créer, défier un ami, entrer un code) et `/…/defi/:code` (attendre, rejoindre) |
 | **Plateau** | `RpgPvpBoard.jsx` | mulligan, choix du mana, main, créatures, combat, journal, fin de partie |
 
 Décisions d'écran qui méritent d'être connues :
 
+- **Le salon et le plateau vivent dans le même cadre plein écran** que le jeu
+  (`Cadre` dans `RpgPvpSalon.jsx`, `.rpg-pvp-page`) : couche `fixed` à
+  `z-index: 1500` — au-dessus de la barre fixe du site, comme `rpg-battle` —,
+  key art de Bab El sous un voile sombre, liseré « ← Le Sablier » et code du
+  défi en tête. `body.rpg-pvp-lock` empêche la page du site de défiler
+  derrière. Sans ce cadre, le titre du salon passait sous la barre de
+  navigation du site.
+- **Le salon se lit en trois temps sur ordinateur** (deck et cadence à gauche,
+  « créer » puis « rejoindre » à droite), en une seule colonne numérotée sur
+  téléphone.
 - **Le plateau en ligne est un écran dédié**, pas le duel solo : le solo garde
   son moteur local et ses 9 500 lignes intactes. Le plateau PvP n'a **aucun
   moteur** — il affiche la vue de l'arbitre et transforme chaque geste en
@@ -667,15 +677,16 @@ allée-retour de la carte d'invitation en jsdom (P2), expiration et double envoi
 | `api/sablier-duel.js` | l'enveloppe Vercel : magasin Supabase (clé service), JWT vérifié, `503` propre si non configuré |
 | `src/games/rpgPvpApi.js` | le client : `ouvrirDefi`, `rejoindreDefi`, `etatDefi`, `jouerIntention`, `refuserDefi`, `abandonnerDefi`, `lienDefi` |
 | `src/games/rpgPvpSalon.js` | décisions du salon sans DOM : écran à montrer, qui peut rejoindre, résultat, texte et payload du défi |
-| `src/games/RpgPvpSalon.jsx` | salon : création par lien, défi nominatif (message + carte), saisie de code, attente, sondage |
+| `src/games/RpgPvpSalon.jsx` | salon : création par lien, défi nominatif (message + carte), saisie de code, attente, sondage — dans le cadre plein écran du jeu (`Cadre`, liseré de retour vers le hub, key art de Bab El) |
 | `src/games/RpgPvpBoard.jsx` | plateau PvP sans moteur : la vue de l'arbitre, rien d'autre |
 | `src/games/RpgPvpCarte.jsx` | la carte « Défi du Sablier » dans la messagerie |
-| `src/games/rpg-pvp.css` | styles du salon, du plateau et de la carte (téléphone inclus) |
+| `src/games/rpg-pvp.css` | styles du cadre, du salon (grille deck / créer / rejoindre dès 900 px), du plateau et de la carte (téléphone inclus) |
 | `tests/rpg-pvp-salon.test.js` | 8 tests du salon et de la carte |
 | `src/messages/liensTexte.js` | découpage d'un message en texte et liens (pur, sans React) — `tests/messages-liens.test.js` |
 | `tests/sablier-arbitre.test.js` | 14 tests de bout en bout contre un magasin en mémoire : usurpation, seq périmé, fuite de main, carte posée, horloge, abandon |
 | `supabase/rpg-pvp.sql` | tables des duels, journal d'actions, file d'attente, classement, RLS fermée sur l'état, RPC de file, purge, colonnes `kind`/`payload` des messages |
-| `package.json` | `npm run check:rpg-pvp` (35 tests) et `npm run check:sablier-arbitre` |
+| `scripts/rpg-accueil-check.mjs` | `npm run check:rpg-accueil` : les quatre portes de l’onglet Jouer, la barre d’onglets sur deux rangées au téléphone, le cadre plein écran du salon |
+| `package.json` | `npm run check:rpg-pvp` (35 tests), `npm run check:sablier-arbitre` et `npm run check:rpg-accueil` |
 
 **Le PvP est jouable de bout en bout dans le dépôt** : salon → invitation →
 partie → fin → (revanche à faire, P3). Le jeu solo est inchangé. Il ne reste

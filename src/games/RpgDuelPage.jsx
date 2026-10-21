@@ -734,6 +734,38 @@ function CombatActionIcon({ type }) {
   );
 }
 
+/**
+ * Les trois portes dessinées du menu Jouer (duel en ligne, partie rapide,
+ * tutoriel). Un trait plutôt qu'un glyphe : `⚔`, `⚑` et `⌛` tombent en carré
+ * vide sur les systèmes sans police d'émoji, et se colorent chacun à leur façon
+ * — ici, l'icône prend la couleur du texte du bouton, comme les autres traits
+ * du jeu (`CombatActionIcon`).
+ */
+function IconePorte({ nom }) {
+  const trace = nom === 'en-ligne' ? (
+    <>
+      {/* Le fanion du défi, planté dans le sable. */}
+      <path d="M6.5 21V3.5" />
+      <path d="M6.5 4.5h11.5l-3 4.5 3 4.5H6.5" />
+    </>
+  ) : nom === 'partie-rapide' ? (
+    <>
+      {/* L'éclair : la partie démarre tout de suite. */}
+      <path d="M13.5 3 5 13.5h5.5L10 21l8.5-10.5H13l.5-7.5Z" />
+    </>
+  ) : (
+    <>
+      <path d="M7.5 3h9M7.5 21h9" />
+      <path d="M9 3v3.4c0 1.5 3 2.7 3 5.6s-3 4.1-3 5.6V21M15 3v3.4c0 1.5-3 2.7-3 5.6s3 4.1 3 5.6V21" />
+    </>
+  );
+  return (
+    <span className="rpg-menu-button__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">{trace}</svg>
+    </span>
+  );
+}
+
 // Les six phases d'un tour (voir RPG_PHASES dans rpgDuel.js). `label` est le nom
 // court ; `title` le nom complet, lu par les lecteurs d'écran et au survol.
 const RPG_PHASE_STEPS = [
@@ -3186,8 +3218,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <h2>Le sable se souvient.<br /><em>À vous d’écrire la suite.</em></h2>
                 <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes de Bab El. Chaque carte compte, chaque mana compte, chaque choix façonne votre victoire.</p>
                 <div className="rpg-mode-menu__hero-actions">
-                  {/* Le bouton principal ouvre le mode Histoire (reprend ou débute
-                      le récit) ; le duel rapide reste dispo via l'onglet Deck. */}
+                  {/* Deux entrées de tête — le récit et le duel en ligne — puis
+                      deux raccourcis (partie rapide, tutoriel). La grille 2 × 2
+                      remplace l'ancien empilement : le duel en ligne n'est plus
+                      un troisième bouton orphelin sous une paire, et il passe
+                      au même rang que le mode Histoire. */}
                   <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--histoire rpg-menu-button--glow" onClick={() => { play('select'); onContinueRecit?.(); }}>
                     <span className="rpg-menu-button__thumb" aria-hidden="true">
                       <img src={`${import.meta.env.BASE_URL}sablier-story/mode-histoire.jpg`} alt="" />
@@ -3198,28 +3233,33 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </span>
                     <span className="rpg-menu-button__arrow" aria-hidden="true">→</span>
                   </button>
+                  <a className="rpg-menu-button rpg-menu-button--en-ligne" href={`${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi`} onClick={() => play('select')}>
+                    <IconePorte nom="en-ligne" />
+                    <span className="rpg-menu-button__text">
+                      <strong>
+                        Duel en ligne
+                        <span className="rpg-menu-button__live" aria-hidden="true" />
+                        <span className="sr-only">(en ligne)</span>
+                      </strong>
+                      <small>Défier un ami par lien, ou entrer un code</small>
+                    </span>
+                    <span className="rpg-menu-button__arrow" aria-hidden="true">→</span>
+                  </a>
                   <div className="rpg-mode-menu__secondary-actions">
-                    <button type="button" className="rpg-menu-button rpg-menu-button--tutorial" onClick={() => { play('select'); onChangeScreen('tutoriels'); }}>
-                      <span className="rpg-menu-button__icon">⌛</span>
-                      <span className="rpg-menu-button__text">
-                        <strong>Apprendre à jouer</strong>
-                        <small>{RPG_TUTORIELS.length} leçons guidées · récompenses en <RpgCreditIcon /></small>
-                      </span>
-                    </button>
                     <button type="button" className="rpg-menu-button rpg-menu-button--partie-rapide" onClick={() => { play('select'); setPartieRapideChoix(playerDeck?.id ?? decksTous.filter((deck) => deckSeJoue(deck, collection))[0]?.id ?? ''); setPartieRapideOuverte(true); }}>
-                      <span className="rpg-menu-button__icon">⚔</span>
+                      <IconePorte nom="partie-rapide" />
                       <span className="rpg-menu-button__text">
                         <strong>Partie rapide</strong>
                         <small>Choisir un deck et affronter l’ordinateur</small>
                       </span>
                     </button>
-                    <a className="rpg-menu-button rpg-menu-button--en-ligne" href={`${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi`} onClick={() => play('select')}>
-                      <span className="rpg-menu-button__icon" aria-hidden="true">⚑</span>
+                    <button type="button" className="rpg-menu-button rpg-menu-button--tutorial" onClick={() => { play('select'); onChangeScreen('tutoriels'); }}>
+                      <IconePorte nom="tutoriels" />
                       <span className="rpg-menu-button__text">
-                        <strong>Duel en ligne</strong>
-                        <small>Défier un ami par lien, ou entrer un code</small>
+                        <strong>Apprendre à jouer</strong>
+                        <small>{RPG_TUTORIELS.length} leçons guidées · récompenses en <RpgCreditIcon /></small>
                       </span>
-                    </a>
+                    </button>
                   </div>
                 </div>
                 <section className="rpg-flux-menu" aria-label="Les règles du Sablier">
