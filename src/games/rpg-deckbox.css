@@ -482,11 +482,34 @@
   .rpg-deck-catalog--closed .rpg-deck-filter__chip { padding: 6px 13px; }
 }
 
-/* ── Étagère fermée : aucun deck ouvert, donc aucune liste de cartes ─────────── */
-.rpg-deck-catalog--closed { grid-template-columns: minmax(0, 1fr); }
-.rpg-deck-catalog--closed .rpg-deck-catalog__rail { gap: clamp(10px, 1.9vh, 20px); padding: clamp(14px, 2.6vh, 28px) clamp(18px, 3vw, 30px); }
-.rpg-deck-catalog--closed .rpg-deck-catalog__intro { max-width: 760px; margin: 0 auto; text-align: center; }
+/* ── Étagère fermée : aucun deck ouvert, donc aucune liste de cartes ───────────
+   CORRECTION « toute la longueur » : l’étagère doit s’étaler sur 100% de la page,
+   pas rester coincée à 0.78fr à gauche. Le rail passe en pleine largeur. */
+.rpg-mode-menu--decks .rpg-deck-catalog--closed,
+.rpg-deck-catalog--closed {
+  width: 100%;
+  max-width: none;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch;
+}
+.rpg-mode-menu--decks .rpg-deck-catalog--closed .rpg-deck-catalog__rail,
+.rpg-deck-catalog--closed .rpg-deck-catalog__rail {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
+  align-self: stretch;
+  gap: clamp(10px, 1.9vh, 20px);
+  padding: clamp(14px, 2.6vh, 28px) clamp(18px, 3vw, 30px);
+}
+.rpg-deck-catalog--closed .rpg-deck-catalog__intro { max-width: 960px; margin: 0 auto; text-align: center; }
 .rpg-deck-catalog--closed .rpg-deck-catalog__status { justify-content: center; align-self: center; max-width: 100%; text-align: center; }
+/* Étirement vertical : le rail remplit la hauteur disponible pour ne pas laisser
+   un vide sombre à droite/en dessous. */
+.rpg-mode-menu--decks .rpg-deck-catalog--closed .rpg-deck-catalog__rail {
+  min-height: calc(100vh - 160px);
+  flex: 1 1 auto;
+}
 /* Boîtiers auto-ajustés : la grille place autant de colonnes que la largeur
    le permet, chaque colonne gardant au moins la largeur réelle d'un boîtier
    (~196–215 px une fois la marge de rotation comptée). Avec cinq colonnes
