@@ -234,16 +234,16 @@ reste posé, avec son illustration finale.
 | Cotre de course | **Sable + Eau** | 3 | 3/1 | inhabituelle | **Rapidité + Abordage 2** — l’éclaireur qui monte le premier |
 | Le Renégat | **Sable + Eau** | 3 | 3/2 | inhabituelle | **Rapidité + Butin** — l’Anglais sous pavillon d’Alger |
 | Négociant des rançons | Sable | 3 | 2/3 | rare | chaque rançon payée adverse : **piochez 1** |
-| Galion de la flotte | **Sable + Eau** | 5 | 3/6 | rare | **Cargaison 2** — le trésor assuré |
-| La Vengeance de la reine Anne | **Sable + Eau** | 4 | 2/5 | rare | **Abordage 3** ; cale occupée : +2/+0 et **Butin** |
-| Le Chasseur d’Ocracoke | **Sable + Eau** | 6 | 4/6 | **mythique** | Rapidité, Coup rapide, Insaisissable ; **Prime** contre la course |
+| Galion de la flotte | **Sable + Eau** | 5 | 2/5 | rare | **Coup rapide**, **Abordage 4**, **Cargaison 2** — le trésor assuré qui prend aussi à l’abordage |
+| La légende du Hollandais volant *(jadis « La Vengeance de la reine Anne » — même identifiant)* | **Sable + Eau** | 4 | 2/4 | rare | **Coup rapide**, **Abordage 3** ; cale occupée : +2/+0 et **Butin** — vaisseau fantôme bleu translucent |
+| Le Chasseur d’Ocracoke | **Sable + Eau** | 6 | 3/6 | **mythique** | Rapidité, Coup rapide ; **Traque** (+3/+0 contre Abordage/Butin/cale occupée) et **Prime** contre la course — plus d’Insaisissable |
 | La Source de Bimini | **Eau + Sable** | 3 | — | **mythique** | **Site**, 3 Heures ; soin total, +3/+3, Protection contre les sorts et Tenacité |
 | Le Trésor de Lima | **Sable + Eau** | 2 | — | rare | **Site**, 2 Heures ; piochez 2 cartes |
 | La Barbe-Rousse | **Sable + Eau** | 6 | 4/5 | **mythique** | **Abordage 5** ; arrivée : **2 jetons Corsaire** 2/1 |
 | Lettre de marque | **Sable + Eau** | 2 | — | commune (sorcellerie) | jusqu’à la fin du tour, vos créatures **qui arrivent** gagnent **Abordage** (seuil : leur coût − 1) |
 | Haut-fond | Eau | 1 | — | commune (magie rapide) | créature adverse : **−1/−2 jusqu’à la fin du tour** |
 | Le Routier | Eau | 3 | — | inhabituelle (sorcellerie) | **piochez 2, défaussez 1** |
-| Le Grand Débarquement | **Sable + Eau** | 5 | — | rare (sorcellerie) | vos créatures gagnent **+1/+0** jusqu’à la fin du tour, et **celles qui arrivent** ont **Abordage** (seuil : leur coût − 1) |
+| Le Grand Débarquement | **Sable + Eau** | 5 | — | rare (sorcellerie) | jusqu’à la fin du tour, chacune de vos créatures **qui détient une créature en sa cale** gagne **+2/+2 et Overkill** (`caleOccupeeSeulement`) |
 | Grappin d’abordage | Sable | 2 | +1/+1 | rare (arme) | à l’attachement : **prise d’une créature adverse de coût ≤ 1** ; à chaque prise : **2 PV** |
 | *Corsaire* (jeton) | Sable | 0 | 2/1 | — | créé par La Barbe-Rousse ; pas d’Abordage (un jeton ne se joue pas depuis la main) |
 
@@ -696,10 +696,10 @@ par leur nom — la saveur porte l’histoire. Toutes hors recette du boîtier
 | **Le Chien de la Reine** | Eau | 5 | 4/3 | **Rapidité, Butin** ; arrivée : piochez 1 carte |
 | **L’Invincible** | Sable | 6 | 3/8 | **Cargaison 3** ; arrivée : bouclier de 2 |
 | **Celle qui tient le Routier** | Eau | 4 | 2/3 | **Envol** ; arrivée : piochez 2 cartes puis défaussez 1 |
-| **La Barbe Noire, les deux visages** | Sable/Eau | 5 | 2/7 | **Provocation, Abordage 4, Deux Visages, insaisissable** |
+| **La Barbe Noire, les deux visages** | **Ténèbres** | 5 | 2/7 | **Provocation, Abordage 4, Deux Visages, insaisissable** — carte 100 % Ténèbres (mana de Ténèbres ; jouable dans les decks des Ténèbres, plus dans le Sable + Eau des Lettres) |
 
-**La Barbe Noire** (la carte du dédoublement, révélée au sommet des Sables
-avec la Barbe-Rousse — `sables-3`) porte la mécanique signature du personnage
+**La Barbe Noire** (la carte du dédoublement, devenue carte 100 % Ténèbres
+et révélée au sommet de la Nécropole — `necropole-4`) porte la mécanique signature du personnage
 historique : Thatch l’homme d’affaires, la légende qui nouait des mèches
 brûlantes dans sa barbe pour effrayer les équipages.
 

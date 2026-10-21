@@ -101,7 +101,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit',
     'negociant-des-ranscons', 'galion-de-la-flotte', 'le-grand-debarquement', 'grappin-d-abordage',
     'la-vengeance-de-la-reine-anne', 'le-tresor-de-lima'],
-  'sables-3': ['anqa-des-braises', 'tin-hinan', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse', 'la-barbe-noire', 'le-chasseur-d-ocracoke', 'source-de-bimini'],
+  'sables-3': ['anqa-des-braises', 'tin-hinan', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse', 'le-chasseur-d-ocracoke', 'source-de-bimini'],
   // Tour des Abysses — les bêtes marines ; ce qui remonte du fond est gelé :
   // les premières cartes de Neige précèdent la tour du Fjord.
   'abysses-1': ['kraken', 'baton-des-citernes'],
@@ -122,7 +122,9 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'necropole-1': ['chacal-du-seuil', 'ouvrier-du-natron', 'papyrus', 'gardienne-de-la-balance', 'scribe-des-feuillets'],
   'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'nom-efface', 'offrande-de-lin'],
   'necropole-3': ['khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets'],
-  'necropole-4': ['la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres'],
+  // La Barbe Noire, devenue carte 100 % Ténèbres, se révèle au sommet de la
+  // Nécropole avec les mythiques des Ténèbres — plus aux Sables.
+  'necropole-4': ['la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres', 'la-barbe-noire'],
 };
 
 /** Ne garde que des identifiants de cartes connus, sans doublon, ordre préservé. */

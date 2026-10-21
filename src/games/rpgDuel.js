@@ -1180,7 +1180,7 @@ function creerEntiteCreature(carte) {
     // prise vive, détenue face visible, une seule place, `null` si vide. La
     // prisonnière ne figure plus dans `camp.creatures` : sa case est libre.
     enCale: null,
-    // Bonus conditionnel d'une cale occupée (la Vengeance). Le delta est
+    // Bonus conditionnel d'une cale occupée (le Hollandais volant). Le delta est
     // mémorisé séparément afin de disparaître sans effacer les autres buffs.
     caleCombleBonusAtk: 0,
     butin: Boolean(carte.butin),
@@ -1548,6 +1548,29 @@ function declencherHonneur(duel, cote, entite) {
 }
 
 /**
+ * Une proie du Chasseur d’Ocracoke : une créature de la course — Abordage
+ * imprimé, Butin (imprimé ou prêté par une cale pleine) ou une cale occupée.
+ * La Prime la lit à sa mort, la Traque la lit au moment de frapper.
+ */
+function estProieDuChasseur(entite) {
+  if (!entite) return false;
+  const carte = duelCardById(entite.carteId);
+  return Boolean(carte?.abordage
+    || (entite.butin ?? carte?.butin)
+    || entite.enCale);
+}
+
+/**
+ * La Traque du Chasseur (`traquePirates` sur la fiche) : +N/+0 contre une
+ * proie de la course, pour ce combat seulement — jamais contre le sorcier,
+ * jamais en bloquant. `0` partout ailleurs.
+ */
+function bonusTraquePirates(attaquant, cible) {
+  const bonus = Math.max(0, Number(duelCardById(attaquant?.carteId)?.traquePirates) || 0);
+  return bonus > 0 && estProieDuChasseur(cible) ? bonus : 0;
+}
+
+/**
  * L'Esquive se tente **une fois par attaque** : 25 % de chance que le coup ne
  * porte pas du tout. Les magies et les capacités ne sont pas concernées — le
  * mot-clé dit « une attaque », et la carte le dit aussi.
@@ -1669,12 +1692,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   // donc empêcher l’autre combattant d’infliger les dégâts déjà calculés.
   for (const mort of mortes) {
     const camp = duel[mort.cote];
-    const carteVictime = duelCardById(mort.entite.carteId);
     // La Prime lit la victime avant que sa mort n'ouvre sa cale et n'éteigne
     // un éventuel Butin conditionnel.
-    mort.donnePrime = Boolean(carteVictime?.abordage
-      || (mort.entite.butin ?? carteVictime?.butin)
-      || mort.entite.enCale);
+    mort.donnePrime = estProieDuChasseur(mort.entite);
     // Un capteur qui meurt en combat rend sa cale, comme à toute sortie de table.
     ouvrirCale(duel, mort.cote, mort.entite);
     journaliserDestruction(duel, mort.entite, mort.sourceElements);
@@ -2623,7 +2643,10 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       const ciblesBuff = effet.cible === 'porteur'
         ? campCible.creatures.filter((entite) => entite.id === sauf && !rpgEstProtegee(entite, sourceElement))
         : campCible.creatures.filter((entite) => entite.id !== sauf
-          && !rpgEstProtegee(entite, sourceElement) && !horsSort(entite));
+          && !rpgEstProtegee(entite, sourceElement) && !horsSort(entite)
+          // Le Grand Débarquement ne renforce que les cales pleines : une
+          // créature sans prise à bord ne débarque personne.
+          && (!effet.caleOccupeeSeulement || Boolean(entite.enCale)));
       // `tribut` (l'Offrande de lin) : le renfort porte aussi le mot-clé —
       // chaque créature touchée gagne Tribut X, rendu avec le bonus quand le
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
@@ -2655,8 +2678,15 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       if (forces) {
         duel.log.push(`${forces} créature${forces > 1 ? 's adverses doivent' : ' adverse doit'} bloquer si ${forces > 1 ? 'elles le peuvent' : 'elle le peut'} ${effet.blocageForce === 'tour' ? 'ce tour' : 'lors de votre prochaine attaque'}.`);
       }
-      // Le Grand Débarquement arme aussi les arrivées : jusqu'à la fin du
-      // tour, chaque créature que le camp pose accoste en prenant (seuil
+      // Les cales pleines du Grand Débarquement se lisent au journal : qui
+      // détient une prise débarque en force, les autres regardent.
+      if (effet.caleOccupeeSeulement) {
+        duel.log.push(ciblesBuff.length
+          ? `Les cales pleines débarquent : ${ciblesBuff.map((entite) => entite.name).join(', ')} gagne${ciblesBuff.length > 1 ? 'nt' : ''} +${effet.atk ?? 0}/+${effet.def ?? 0}${bonusOverkill ? ' et Overkill' : ''}${temporaire ? ' jusqu’à la fin du tour' : ''}.`
+          : 'Aucune cale n’est occupée : personne ne débarque.');
+      }
+      // Un buff peut armer aussi les arrivées : jusqu'à la fin du tour,
+      // chaque créature que le camp pose accoste en prenant (seuil
       // coût − 1, le même barème que l'imprimé — voir `seuilAbordage`).
       if (effet.arriveesAbordage) {
         duel[cote].abordageDesArrivees = true;
@@ -3558,7 +3588,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     // (`cibleDifferee`) et qu'il reste une cible légale, l'arrivée attend son
     // tour — la créature est en jeu, le duel retient ce qu'il reste à désigner,
     // et `rpgResoudreArriveeCiblee` appliquera l'effet sur la cible choisie.
-    // Quand la Lettre de marque (ou le Grand Débarquement) arme aussi les
+    // Quand la Lettre de marque arme aussi les
     // arrivées, l'attente porte à la fois la cible d'arrivée et le seuil
     // d'Abordage : les deux seront résolus l'un après l'autre.
     if (cibleDifferee && !cibleId && arriveeACibleLegale(duel, cote, carte)) {
@@ -3587,7 +3617,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // créatures meulent et meurent ensemble : la prise n'y trouvait jamais son
   // compte). La créature adverse de coût ≤ seuil désignée rejoint sa cale ;
   // le seuil suit le barème de l'imprimé — coût du capteur − 1 — que la Lettre
-  // de marque et le Grand Débarquement étendent aux arrivées sans imprimé
+  // de marque étend aux arrivées sans imprimé
   // (`camp.abordageDesArrivees`). Seules les créatures **jouées depuis la
   // main** accostent : les jetons créés par effet ne prennent rien.
   const seuilAbordageArrivee = seuilAbordage(carte, camp);
@@ -4068,12 +4098,16 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
 
   const coupsNormaux = [];
+  // La Traque du Chasseur paie aussi dans ce duel de créatures : il y
+  // « attaque » bel et bien sa cible.
+  const traque = bonusTraquePirates(attaquant, cible);
   if (duel[cote].creatures.some((entite) => entite.id === attaquant.id)) {
     coupsNormaux.push({
-      cote: autre(cote), entiteId: cible.id, amount: attaquant.atk,
+      cote: autre(cote), entiteId: cible.id, amount: attaquant.atk + traque,
       sourceElement: couleursAttaquant, sourceType: 'attaque',
       sourceCote: cote, sourceId: attaquant.id,
     });
+    if (traque > 0) duel.log.push(`Traque : ${attaquant.name} gagne +${traque}/+0 contre ${cible.name} pour ce combat.`);
   }
   if (duel[autre(cote)].creatures.some((entite) => entite.id === cible.id)) {
     coupsNormaux.push({
@@ -4644,6 +4678,9 @@ export function rpgLancerAttaque(
     if (!cibleRapideId) continue;
     const cible = duel[adv].creatures.find((entite) => entite.id === cibleRapideId);
     const rate = Boolean(cible) && !estGelee(attaquant) && rngCombat() < RPG_COUP_RAPIDE_ECHEC_CHANCE;
+    // La Traque du Chasseur : sa frappe rapide contre une proie de la course
+    // porte le +N/+0 — un attaquant gelé, lui, ne frappe de toute façon pas.
+    const traque = cible && !estGelee(attaquant) ? bonusTraquePirates(attaquant, cible) : 0;
     frappesRapides.push(!cible
       ? { attaquantId: attaquant.id, attaquant: attaquant.name, cibleId: cibleRapideId, cible: null, degats: 0, annule: true }
       : rate
@@ -4653,13 +4690,14 @@ export function rpgLancerAttaque(
           attaquant: attaquant.name,
           cibleId: cible.id,
           cible: cible.name,
-          degats: forceCombat(attaquant),
+          degats: forceCombat(attaquant) + traque,
+          traque,
         });
     if (!cible || rate) continue;
     degatsAvantCombat.push({
       cote: adv,
       entiteId: cible.id,
-      amount: forceCombat(attaquant),
+      amount: forceCombat(attaquant) + traque,
       sourceElement: cardColors(duelCardById(attaquant.carteId)),
       sourceType: 'attaque',
       sourceCote: cote, sourceId: attaquant.id,
@@ -4754,6 +4792,9 @@ export function rpgLancerAttaque(
   duel.attaqueJouee = cote;
   // Appliquer réellement cette étape une seule fois, avant les blessures normales.
   appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
+  // La Traque du Chasseur, côté combat bloqué : ses frappes contre les proies
+  // de la course portent le bonus — noté ici, journalisé après l’échange.
+  const traquesCombat = [];
   for (const attaquant of attaquants) {
     attaquant.attaquee = true;
     if (!duel[cote].creatures.some((entite) => entite.id === attaquant.id)) continue;
@@ -4799,13 +4840,34 @@ export function rpgLancerAttaque(
         bloqueur.id,
       );
     }
+    // La Traque : le +N/+0 s’ajoute aux blessures portées à la première
+    // proie qui bloque — la répartition déclarée (qui partage la force
+    // imprimée) reste donc valide, le bonus frappe en sus, simultané au
+    // reste du combat.
+    const proieTraquee = estGelee(attaquant)
+      ? null
+      : bloqueurs.find((bloqueur) => bonusTraquePirates(attaquant, bloqueur) > 0);
+    const bonusTraque = proieTraquee ? bonusTraquePirates(attaquant, proieTraquee) : 0;
+    if (proieTraquee && bonusTraque > 0) {
+      enregistrerDegatsCombat(
+        degatsCombat,
+        adv,
+        proieTraquee.id,
+        bonusTraque,
+        couleursAttaquant,
+        'attaque',
+        cote,
+        attaquant.id,
+      );
+      traquesCombat.push({ attaquant: attaquant.name, cible: proieTraquee.name, bonus: bonusTraque });
+    }
     // Overkill (le Serpent du monde) : comme le Piétinement — la force qui
     // dépasse ce qu'il faut pour terrasser les bloqueurs (PV et boucliers
     // compris) continue sa course jusqu'au sorcier défenseur.
     if (attaquant.overkill) {
       const encaissable = bloqueurs.reduce((total, bloqueur) => total
         + Math.max(0, bloqueur.pv + (bloqueur.bouclier ?? 0)), 0);
-      const exces = Math.max(0, forceCombat(attaquant) - encaissable);
+      const exces = Math.max(0, forceCombat(attaquant) + bonusTraque - encaissable);
       if (exces > 0) {
         coupsSorcier.push({ attaquantId: attaquant.id, amount: exces, overkill: attaquant.name });
       }
@@ -4835,7 +4897,10 @@ export function rpgLancerAttaque(
       ? `${coup.attaquant} ne trouve plus sa cible : son Coup rapide est annulé.`
       : coup.rate
         ? `${coup.attaquant} rate son Coup rapide contre ${coup.cible}.`
-        : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Coup rapide.`);
+        : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Coup rapide${coup.traque ? ` (Traque +${coup.traque}/+0)` : ''}.`);
+  }
+  for (const traque of traquesCombat) {
+    duel.log.push(`Traque : ${traque.attaquant} gagne +${traque.bonus}/+0 contre ${traque.cible} pour ce combat.`);
   }
   duel.log.push(resume.paires.length || resume.coupsRapides.length
     ? `Combat : ${attaquants.length} attaquant(s), ${resume.paires.length} bloqué(s), ${resume.frappeSorcier} dégâts directs.`
@@ -5204,7 +5269,7 @@ export function rpgFinDeTour(duel) {
   // de terminer tant qu'une désignation est ouverte, mais le moteur ne laisse
   // jamais traîner l'attente d'un tour sur l'autre.
   duel.arriveeEnAttente = null;
-  // Le sceau des arrivées (Lettre de marque, Grand Débarquement) expire
+  // Le sceau des arrivées (Lettre de marque) expire
   // avec le tour qui l'a vu naître : les poses suivantes n'accostent plus.
   duel[duel.tour].abordageDesArrivees = false;
   // La faveur du Kraken non utilisée s'éteint avec le tour.

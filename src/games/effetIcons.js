@@ -91,6 +91,8 @@ export const EFFET_ICONE = {
   envol: 'i-envol',
   rapidite: 'i-rapidite',
   coupRapide: 'i-coup-rapide',
+  traque: 'i-coup-rapide',
+  traquePirates: 'i-coup-rapide',
   provocation: 'i-provocation',
   tenacite: 'i-tenacite',
   infiltration: 'i-infiltration',
@@ -145,7 +147,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  * (type de combat d’abord, puis les protections et l’honneur).
  */
 export const MOTS_CLES_PASTILLES = [
-  'envol', 'infiltration', 'rapidite', 'coupRapide', 'provocation', 'overkill', 'furie', 'esquive',
+  'envol', 'infiltration', 'rapidite', 'coupRapide', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'bouclier', 'aura', 'honneur', 'butin',
   'abordage', 'visages', 'cargaison',
 ];
@@ -186,6 +188,8 @@ export const EFFET_LIBELLES = {
   envol: 'Envol',
   rapidite: 'Rapidité',
   coupRapide: 'Coup rapide',
+  traque: 'Traque',
+  traquePirates: 'Traque',
   provocation: 'Provocation',
   tenacite: 'Tenacité',
   infiltration: 'Infiltration',
@@ -237,6 +241,7 @@ export function pastillesPourCarte(carte) {
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Coup rapide');
+  if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
   if (carte.provocation) ajouter('provocation', 'Provocation');
   // L'Overkill peut être imprimé, prêté par une arme, ou accordé par un sort
   // (le Mur de boucliers) : la pastille suit l'effet, pas seulement la fiche.
@@ -346,6 +351,7 @@ export function effetsEpuisesPourEntite(carte, entite) {
 
 /** Les motifs qui font reconnaître une ligne de règle, dans le texte français. */
 const MOTIFS_LIGNE = [
+  ['traque', /\btraque\b/iu],
   ['butin', /\bbutin\b/iu],
   ['abordage', /\babordage\b/iu],
   ['visages', /\bdeux visages\b/iu],
@@ -485,6 +491,7 @@ export const EFFET_DEFINITIONS = {
   infiltration: 'Ne peut pas être bloquée.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+  traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,
   provocation: 'Quand elle attaque, elle doit être bloquée par au moins une créature si un blocage légal est possible.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
@@ -524,6 +531,7 @@ export const EFFET_DEFINITIONS = {
 /** Les libellés tels qu’ils s’impriment en tête de phrase sur les fiches. */
 const LIBELLES_IMPRIMES = [
   ['coupRapide', 'Coup rapide'],
+  ['traque', 'Traque'],
   ['provocation', 'Provocation'],
   ['overkill', 'Overkill'],
   ['envol', 'Envol'],

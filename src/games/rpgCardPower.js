@@ -109,8 +109,11 @@ function valeurEffet(effet = {}) {
       if (effet.cible === 'creatures-adverses' || atk < 0 || def < 0) {
         return Math.abs(atk) * 0.8 + Math.abs(def) * 0.6 + (effet.blocageForce ? 1 : 0) + 0.5;
       }
-      return atk * 0.8 + def * 0.6 + (effet.overkill ? 1.2 : 0)
+      const plein = atk * 0.8 + def * 0.6 + (effet.overkill ? 1.2 : 0)
         + (effet.arriveesAbordage ? 1.5 : 0);
+      // Le Grand Débarquement ne renforce que les cales pleines : le renfort
+      // ne tient que si la course a déjà pris — rabais pour conditionnel.
+      return effet.caleOccupeeSeulement ? plein * 0.7 : plein;
     }
     case 'arrivees-abordage':
       // La Lettre de marque : chaque créature du reste du tour accoste en
@@ -279,6 +282,9 @@ export function valeurCarte(carte) {
   if (carte.envol) valeur += 2.5;
   if (carte.infiltration) valeur += 2.5;
   if (carte.coupRapide) valeur += 2;
+  // La Traque du Chasseur : +N/+0 contre les seules proies de la course —
+  // un tiers de la force brute, elle ne frappe pas à tous les combats.
+  if (carte.traquePirates) valeur += 0.4 * carte.traquePirates;
   // Provocation détourne un bloqueur vers ce corps et ouvre la voie aux
   // autres attaquants : une pression tactique, sans valoir l'Infiltration.
   if (carte.provocation) valeur += 1;

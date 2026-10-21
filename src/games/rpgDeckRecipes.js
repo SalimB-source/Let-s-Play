@@ -203,7 +203,7 @@ export const RPG_RECETTES_DECKS = {
    * Les Lettres de Marque (fiche : `docs/rpg/18-deck-les-lettres-de-marque.md`)
    * — le set Piraterie hybride Sable + Eau de l'âge de la course. La signature
    * pose l'équipage de la Régence : l'Abordage prend (Raïs, Cotre, Lettre de
-   * marque, Grand Débarquement), la Rançon rend (Négociant), la Cargaison
+   * marque ; le Grand Débarquement arme les cales pleines), la Rançon rend (Négociant), la Cargaison
    * assure (Galion) et le Brûlot renvoie son tueur. L'Eau qui amollit la
    * prise vient du catalogue (Sonneur fêlé, Ressac, Lame de mer, Bâton des
    * citernes) ; le remplissage choisit les meilleures cartes Sable + Eau.

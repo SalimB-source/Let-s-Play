@@ -21,12 +21,21 @@
  *     renvoie l’un de ses tueurs en main (Le Brûlot — la mort par magie ne
  *     déclenche rien, le tueur de combat seul est connu).
  *
- * Et trois contrats d’effet étendus : `arriveesAbordage: true` sur un effet
- * (la Lettre de marque en propre, le Grand Débarquement sur son buff) drape
- * `camp.abordageDesArrivees` — jusqu’à la fin du tour, chaque créature que le
- * camp joue accoste avec Abordage au seuil « coût − 1 » —, `abordage: 1` sur
- * une arme (le Grappin : la prise se fait à l’attachement, `attacherArme`),
- * et `priseEnCale` sur une arme (la prime de soins du Grappin).
+ * Et quatre contrats d’effet étendus : `arriveesAbordage: true` sur un effet
+ * (la Lettre de marque en propre) drape `camp.abordageDesArrivees` — jusqu’à
+ * la fin du tour, chaque créature que le camp joue accoste avec Abordage au
+ * seuil « coût − 1 » —, `caleOccupeeSeulement: true` sur un buff (le Grand
+ * Débarquement : seules les créatures qui détiennent une prise en cale sont
+ * renforcées), `abordage: 1` sur une arme (le Grappin : la prise se fait à
+ * l’attachement, `attacherArme`), et `priseEnCale` sur une arme (la prime de
+ * soins du Grappin).
+ *
+ * Et le marqueur du Chasseur d’Ocracoke :
+ *   - `traquePirates: N` — la Traque : quand le Chasseur attaque une créature
+ *     avec Abordage, Butin ou une cale occupée, il gagne +N/+0 contre elle
+ *     pour ce combat (Coup rapide, combat bloqué et duel de créatures —
+ *     jamais contre le sorcier) ; sa Prime (`primeChasseur`) paie en sus la
+ *     destruction d’une telle proie.
  *
  * Deux marqueurs de plus pour La Barbe Noire (la carte du dédoublement) :
  *   - `alternance: { visages: [...] }` — Les Deux Visages : elle arrive sous
@@ -181,29 +190,35 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     colors: ['sable', 'eau'],
     colorCost: { sable: 1, eau: 1 },
     cost: 5,
-    atk: 3,
-    def: 6,
+    atk: 2,
+    def: 5,
     rarity: 'rare',
+    coupRapide: true,
+    abordage: 4,
     cargaison: 2,
     typeLine: 'Créature — Navire · Galion',
-    text: 'Cargaison 2 — Quand le Galion meurt ou est pris en cale, piochez deux cartes.',
+    text: 'Coup rapide — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (25 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Abordage 4 — quand le Galion arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Cargaison 2 — Quand le Galion meurt ou est pris en cale, piochez deux cartes.',
     flavor: 'L’argent voyage en convoi ; le roi voyage en prière.',
   }),
+  // L’identifiant historique demeure (collections et decks sauvegardés) :
+  // la carte jadis nommée « La Vengeance de la reine Anne » est devenue le
+  // vaisseau fantôme bleu translucent de la légende.
   carte({
     id: 'la-vengeance-de-la-reine-anne',
-    name: 'La Vengeance de la reine Anne',
+    name: 'La légende du Hollandais volant',
     element: 'sable',
     colors: ['sable', 'eau'],
     colorCost: { sable: 1, eau: 1 },
     cost: 4,
     atk: 2,
-    def: 5,
+    def: 4,
     rarity: 'rare',
+    coupRapide: true,
     abordage: 3,
     caleComble: { atk: 2, butin: true },
-    typeLine: 'Créature légendaire — Navire · Frégate pirate',
-    text: 'Abordage 3 — quand la Vengeance arrive en jeu, la créature adverse ciblée de coût 3 ou moins est prise en sa cale. Tant que sa cale est occupée, la Vengeance gagne +2/+0 et Butin.',
-    flavor: 'Son pavillon noir ne promet pas la mort : il vient reprendre ce que la mer lui doit.',
+    typeLine: 'Créature légendaire — Navire · Vaisseau fantôme',
+    text: 'Coup rapide — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (25 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Abordage 3 — quand le Hollandais arrive en jeu, la créature adverse ciblée de coût 3 ou moins est prise en sa cale. Tant que sa cale est occupée, le Hollandais gagne +2/+0 et Butin.',
+    flavor: 'Il ne cherche plus un port : il embarque ceux que la mer a oublié de rendre.',
   }),
   carte({
     id: 'le-chasseur-d-ocracoke',
@@ -212,15 +227,15 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     colors: ['sable', 'eau'],
     colorCost: { sable: 1, eau: 1 },
     cost: 6,
-    atk: 4,
+    atk: 3,
     def: 6,
     rarity: 'mythique',
     rapidite: true,
     coupRapide: true,
-    insaisissable: true,
+    traquePirates: 3,
     primeChasseur: true,
     typeLine: 'Créature légendaire — Humain · Chasseur de pirates',
-    text: 'Rapidité. Coup rapide — quand il frappe une créature avant le combat, il a 25 % de chances de rater ; il touche à 100 % contre l’adversaire. Insaisissable. Prime — quand le Chasseur détruit une créature avec Abordage, Butin ou une cale occupée, piochez une carte.',
+    text: 'Rapidité. Coup rapide — quand il frappe une créature avant le combat, il a 25 % de chances de rater ; il touche à 100 % contre l’adversaire. Traque — quand le Chasseur attaque une créature avec Abordage, Butin ou une cale occupée, il gagne +3/+0 contre elle pour ce combat. Prime — quand le Chasseur détruit une créature avec Abordage, Butin ou une cale occupée, piochez une carte.',
     flavor: 'Dans les brumes d’Ocracoke, il reconnaît un pirate au silence qui précède son tir.',
   }),
   carte({
@@ -275,7 +290,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
   }),
   carte({
     id: 'la-barbe-rousse',
-    name: 'La Barbe-Rousse, amirale des deux mers',
+    name: 'La Barbe-Rousse, amiral des deux mers',
     element: 'sable',
     colors: ['sable', 'eau'],
     colorCost: { sable: 1, eau: 1 },
@@ -285,16 +300,20 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     rarity: 'mythique',
     abordage: 5,
     arrivee: { type: 'jetons', jeton: 'corsaire', nombre: 2 },
-    typeLine: 'Créature légendaire — Amirale des deux mers',
+    typeLine: 'Créature légendaire — Amiral des deux mers',
     text: 'Abordage 5 — quand La Barbe-Rousse arrive en jeu, la créature adverse ciblée de coût 5 ou moins est prise en sa cale : elle ne déclenche rien. Quand La Barbe-Rousse arrive : créez deux jetons Corsaire 2/1.',
     flavor: 'Alger lui doit ses remparts ; les deux mers lui doivent le reste.',
   }),
+  // La Barbe Noire est une carte 100 % Ténèbres : née dans le set Piraterie
+  // (son Abordage, sa cale), elle se paie en mana de Ténèbres et se joue dans
+  // les decks dont l’identité inclut les Ténèbres — plus dans les paquets
+  // Sable + Eau des Lettres de Marque (voir le portillon de `rpgDeckComposer`).
   carte({
     id: 'la-barbe-noire',
     name: 'La Barbe Noire, les deux visages',
-    element: 'sable',
-    colors: ['sable', 'eau'],
-    colorCost: { sable: 1, eau: 1 },
+    element: 'tenebres',
+    colors: ['tenebres'],
+    colorCost: { tenebres: 1 },
     cost: 5,
     atk: 2,
     def: 7,
@@ -368,8 +387,8 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     rarity: 'rare',
     typeLine: 'Sorcellerie — Assaut · Sable + Eau',
     cibles: ['soi'],
-    effet: { type: 'buff', atk: 1, def: 0, arriveesAbordage: true, cible: 'toutes-alliees', tours: 1 },
-    text: 'Jusqu’à la fin du tour, vos créatures gagnent +1/+0 et celles qui arrivent en jeu ont Abordage — chacune au seuil de son coût moins un.',
+    effet: { type: 'buff', atk: 2, def: 2, overkill: true, caleOccupeeSeulement: true, cible: 'toutes-alliees', tours: 1 },
+    text: 'Jusqu’à la fin du tour, chacune de vos créatures qui détient une créature en sa cale gagne +2/+2 et Overkill.',
     flavor: 'Ce jour-là, tout le quai monta à l’assaut — jusqu’aux lapins de la cale.',
   }),
 ];

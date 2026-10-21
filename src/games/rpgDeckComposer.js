@@ -64,12 +64,19 @@ export function composerDeck(recette, catalogue) {
 
   const dansIdentite = (carte) => {
     if (carte?.set === 'balance-des-heures' && !identite.includes('tenebres')) return false;
+    const couleurs = couleursDe(carte);
     // Les lettres de marque (set Piraterie, doc 17) restent à bord des decks
     // qui embarquent les DEUX couleurs de la course : Sable et Eau. Les
     // paquets prototypes gardent ainsi leur sélection d'armes et de cartes.
-    if (carte?.set === 'lettres-de-marque'
-      && !(identite.includes('sable') && identite.includes('eau'))) return false;
-    const couleurs = couleursDe(carte);
+    // Exception : La Barbe Noire, carte 100 % Ténèbres du set, embarque dans
+    // les decks des Ténèbres — son Abordage navigue alors sous leur bannière.
+    if (carte?.set === 'lettres-de-marque') {
+      const course = identite.includes('sable') && identite.includes('eau');
+      const tenebresPures = couleurs.length > 0
+        && couleurs.every((couleur) => couleur === 'tenebres')
+        && identite.includes('tenebres');
+      if (!course && !tenebresPures) return false;
+    }
     return couleurs.length > 0 && couleurs.every((couleur) => identite.includes(couleur));
   };
   const vivier = (cartes ?? []).filter((carte) => carte.kind !== 'terrain' && dansIdentite(carte));

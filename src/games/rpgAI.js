@@ -606,7 +606,14 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
     });
     if (!meilleure?.cibleId || meilleure.cibleId === 'sorcier') continue;
     const proie = duel[adv].creatures.find((entite) => entite.id === meilleure.cibleId);
-    if (proie && meurtSous(proie, attaquant.atk, 'attaque')) cibles[attaquant.id] = proie.id;
+    // La Traque : contre une proie de la course (Abordage, Butin, cale
+    // occupée), la frappe du Chasseur porte son +N/+0 — l’IA le compte avant
+    // de décider si le coup tue.
+    const traque = Math.max(0, Number(carte?.traquePirates) || 0);
+    const estProie = Boolean(proie && (duelCardById(proie.carteId)?.abordage
+      || (proie.butin ?? duelCardById(proie.carteId)?.butin) || proie.enCale));
+    const forceFrappe = attaquant.atk + (estProie ? traque : 0);
+    if (proie && meurtSous(proie, forceFrappe, 'attaque')) cibles[attaquant.id] = proie.id;
   }
   return cibles;
 }
@@ -1366,11 +1373,16 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       // Rien à renforcer sans créature en jeu : le sort reste en main plutôt
       // que d'être brûlé. Un bonus déclaré avec `tours` ne dépasse pas le tour
       // en cours — il ne développe pas la table et ne vaut que pour l’échange.
-      if (!camp.creatures.length) return { score: 0, cibleId: null };
+      // Le Grand Débarquement ne compte que ses cales pleines : sans prise à
+      // bord, il ne vaut rien et reste en main.
+      const renforcees = effet.caleOccupeeSeulement
+        ? camp.creatures.filter((entite) => entite.enCale)
+        : camp.creatures;
+      if (!renforcees.length) return { score: 0, cibleId: null };
       const bonus = (effet.atk ?? 0) * 0.8 + (effet.def ?? 0) * 0.4
         + (effet.overkill ? 1.1 : 0);
       const durable = Number(effet.tours) > 0 ? 0.5 : 1;
-      const score = (1.5 + camp.creatures.length * (1.5 + bonus)) * durable - cout * 0.2;
+      const score = (1.5 + renforcees.length * (1.5 + bonus)) * durable - cout * 0.2;
       return { score: score > 0 ? score : 0, cibleId: null };
     }
     if (effet.type === 'transfert') {
