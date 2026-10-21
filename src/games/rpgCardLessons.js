@@ -168,8 +168,8 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'tenacite',
     section: 'Capacités des créatures',
     cardIds: ['maitre-du-marteau'],
-    title: 'Tenacité refuse une seule destruction',
-    text: 'Le Maître du marteau a Tenacité : une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense. La première destruction est donc annulée — aucune capacité de destruction ne se déclenche — mais la suivante l’emportera. Dans un même combat, deux bloqueurs qui portent ensemble le coup fatal comptent comme deux coups : le second l’achève. Seule la présence en jeu la dépense : renvoyé en main puis rejoué, le Maître retrouve sa Tenacité. Relevé à 1 point de défense, il est sous sa DEF de base de 5 : sa Furie 3 s’allume aussitôt et lui donne +3/+0 tant qu’il reste sous ce seuil.',
+    title: 'Tenacité ramène la créature au tour suivant',
+    text: 'Le Maître du marteau a Tenacité : une fois par partie, quand il meurt — détruit par une blessure, un sort ou même un sacrifice — sa carte revient en jeu au début du prochain tour de son camp, avec 1 point de défense. Sa mort est bien réelle : il rejoint le cimetière, les déclenchements de mort (capacité de destruction, Honneur, arme du porteur) ont lieu, sa Furie ne s’allume pas — on ne s’énerve pas en mourant — et il perd tout ce qu’il avait gagné sur la table. La renaissance, elle, est une présence neuve, sans Tenacité : une seconde mort est définitive pour cette présence. (Comme pour la Furie et le reste du moteur, une carte repassée en main puis rejouée recommence sa vie de présence en jeu — c’est la renaissance qui est dépensée, pas la carte.) Seul l’exil, qui retire la carte de la partie, empêche le retour — et si le champ de bataille est plein, le Maître attend une place libre avant de revenir.',
   },
   {
     id: 'protection',

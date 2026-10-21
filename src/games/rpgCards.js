@@ -1132,7 +1132,7 @@ export const RPG_HERO_CARDS = [
     furie: 3,
     overkill: true,
     tenacite: true,
-    text: 'Furie 3. Overkill. Tenacité — Une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense.',
+    text: 'Furie 3. Overkill. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense.',
     flavor: 'Le tonnerre n’est pas un bruit : c’est un rendez-vous — et son marteau, lui, retrouve toujours sa main.',
   },
   {

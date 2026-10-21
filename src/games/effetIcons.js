@@ -460,7 +460,7 @@ export const EFFET_DEFINITIONS = {
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
   esquive: () => '25 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
-  tenacite: 'Une fois par partie, si elle doit être détruite, elle survit avec 1 point de défense.',
+  tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
   bouclier: (n) => {

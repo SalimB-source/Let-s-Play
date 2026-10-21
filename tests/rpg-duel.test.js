@@ -938,7 +938,7 @@ test('le Maître du marteau : 5/5 Furie 3, Overkill et Tenacité, sans dégâts 
   assert.equal(carte.tenacite, true);
   assert.match(carte.text, /^Furie 3\. Overkill\./);
   assert.doesNotMatch(carte.text, /première fois|gagne \+3\/\+3|inflige 2 dégâts/);
-  assert.match(carte.text, /Tenacité — Une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense/);
+  assert.match(carte.text, /Tenacité — Une fois par partie, quand il meurt \(sauf exilé\), il revient en jeu au début de votre prochain tour avec 1 point de défense/);
 
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
@@ -956,56 +956,105 @@ test('le Maître du marteau : 5/5 Furie 3, Overkill et Tenacité, sans dégâts 
   assert.equal(dune.pv, 4, 'la Dune 2/4 aussi');
   assert.equal(maitre.overkill, true, 'l’entité porte l’Overkill imprimé');
 
-  // Tenacité : la destruction est refusée — le Maître se relève à 1 de
-  // défense, donc sous sa DEF de base de 5, et sa Furie 3 s’allume aussitôt.
+  // Tenacité : le Maître meurt pour de bon — cimetière, déclenchements de mort
+  // et aucune Furie — mais sa carte est promise au prochain tour du joueur.
   const debut = rpgNombreDestructions(duel);
   assert.equal(rpgBlesserCreature(duel, 'joueur', maitre.id, 20, 'braise').ok, true);
-  assert.equal(duel.joueur.creatures.includes(maitre), true,
-    'le Maître survit à la destruction');
-  assert.equal(maitre.tenaciteDisponible, false, 'la Tenacité est dépensée');
-  assert.deepEqual(
-    [maitre.atk, maitre.def, maitre.pv, maitre.pvMax, maitre.furieDeclenchee, maitre.furieBonusAtk],
-    [8, 1, 1, 5, true, 3],
-    'Tenacité le relève à 1 de défense, puis Furie 3 : +3/+0 seulement',
-  );
-  assert.equal(rpgNombreDestructions(duel), debut,
-    'survivre n’est pas mourir : aucune capacité de destruction ne se déclenche');
+  assert.equal(duel.joueur.creatures.includes(maitre), false, 'la mort n’est plus refusée');
+  assert.ok(duel.joueur.cimetiere.includes('maitre-du-marteau'));
+  assert.equal(rpgNombreDestructions(duel), debut + 1, 'la destruction a bien eu lieu');
+  assert.equal(maitre.furieDeclenchee, false, 'une morte ne s’allume pas de Furie');
+  assert.deepEqual(duel.joueur.retoursProgrammes, [
+    { carteId: 'maitre-du-marteau', toursRestants: 2, tenacite: true },
+  ], 'il est mort pendant son tour : il revient au tour suivant du joueur');
 
-  // Renvoyé en main puis rejoué : le renvoi ne compte pas, la Tenacité revient.
-  duel.joueur.creatures = duel.joueur.creatures.filter((e) => e.id !== maitre.id);
-  duel.joueur.main.push('maitre-du-marteau');
-  const rejoue = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau').entite;
-  assert.equal(rejoue.tenaciteDisponible, true,
-    'rejoué, le Maître retrouve sa Tenacité');
-  assert.equal(rpgBlesserCreature(duel, 'joueur', rejoue.id, 20, 'braise').ok, true);
-  assert.equal(duel.joueur.creatures.includes(rejoue), true,
-    'il survit de nouveau — le renvoi en main ne compte pas');
-  assert.deepEqual(
-    [rejoue.atk, rejoue.def, rejoue.pv, rejoue.pvMax, rejoue.furieDeclenchee, rejoue.furieBonusAtk],
-    [8, 1, 1, 5, true, 3],
-    'même scénario : Tenacité le relève à 1, puis Furie 3 en +3/+0',
-  );
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'sorcier');
+  assert.equal(duel.joueur.retoursProgrammes[0].toursRestants, 1,
+    'il reste au cimetière pendant le tour du sorcier');
+  assert.equal(duel.joueur.creatures.some((entite) => entite.carteId === 'maitre-du-marteau'), false);
+
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'joueur');
+  const revenu = duel.joueur.creatures.find((entite) => entite.carteId === 'maitre-du-marteau');
+  assert.ok(revenu, 'Tenacité le ramène en jeu au début du prochain tour du joueur');
+  assert.notEqual(revenu.id, maitre.id, 'c’est une présence neuve');
+  assert.deepEqual([revenu.def, revenu.pv, revenu.pvMax], [1, 1, 5],
+    'il revient avec 1 point de défense, sa vie pleine restant à restaurer');
+  assert.equal(revenu.tenaciteDisponible, false, 'la renaissance de la partie est dépensée');
+  assert.equal(revenu.ready, false, 'il revient avec le mal d’invocation');
+  assert.equal(duel.joueur.cimetiere.includes('maitre-du-marteau'), false);
+  assert.deepEqual(duel.joueur.retoursProgrammes, []);
+  // Revenu à 1 PV, donc sous sa DEF de base de 5 : sa Furie 3 s’allume pour
+  // +3/+0 seulement — la Furie du Sablier ne touche jamais la défense.
+  assert.deepEqual([revenu.atk, revenu.furieDeclenchee, revenu.furieBonusAtk], [8, true, 3],
+    'la présence revenue retrouve sa Furie : +3/+0 tant qu’elle reste sous sa DEF de base');
 
   // Un soin partiel ne suffit pas à éteindre l’état : à 3 PV sur 5, le
   // Maître reste en Furie. Une blessure de plus ne cumule pas son bonus.
+  donnerMana(duel, 'joueur', 20); // le mana du tour a été remis à zéro au changement de tour
   donner(duel, 'joueur', 'valkyrie-des-glaces');
-  rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces').ok, true);
   assert.deepEqual(
-    [rejoue.atk, rejoue.def, rejoue.pv, rejoue.pvMax, rejoue.furieDeclenchee, rejoue.furieBonusAtk],
+    [revenu.atk, revenu.def, revenu.pv, revenu.pvMax, revenu.furieDeclenchee, revenu.furieBonusAtk],
     [8, 3, 3, 5, true, 3],
     'soigné de 2 sans retrouver sa DEF de base, il garde exactement le même bonus',
   );
-  assert.equal(rpgBlesserCreature(duel, 'joueur', rejoue.id, 1, 'braise').recus, 1);
+  assert.equal(rpgBlesserCreature(duel, 'joueur', revenu.id, 1, 'braise').recus, 1);
   assert.deepEqual(
-    [rejoue.atk, rejoue.def, rejoue.pv, rejoue.pvMax, rejoue.furieBonusAtk],
+    [revenu.atk, revenu.def, revenu.pv, revenu.pvMax, revenu.furieBonusAtk],
     [8, 2, 2, 5, 3],
     'déjà active, la Furie ne se regagne pas',
   );
 
-  // Mais pas deux fois sans repasser par la main.
-  assert.equal(rpgBlesserCreature(duel, 'joueur', rejoue.id, 20, 'braise').ok, true);
-  assert.equal(duel.joueur.creatures.includes(rejoue), false,
-    'la seconde destruction l’emporte');
+  // Seconde mort : la Tenacité n’a plus rien à promettre.
+  assert.equal(rpgBlesserCreature(duel, 'joueur', revenu.id, 20, 'braise').ok, true);
+  assert.equal(duel.joueur.creatures.includes(revenu), false);
+  assert.deepEqual(duel.joueur.retoursProgrammes, [],
+    'une seule renaissance par partie : la seconde mort est définitive');
+});
+
+test('Tenacité : le retour dépend du camp dont le tour commence', () => {
+  const duel = duelDeBase();
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'maitre-du-marteau');
+  const maitre = rpgJouerCreature(duel, 'sorcier', 'maitre-du-marteau').entite;
+  // Le sorcier tue lui-même son Maître pendant SON tour : le retour attend le
+  // prochain tour du sorcier, donc deux changements de tour.
+  assert.equal(rpgBlesserCreature(duel, 'sorcier', maitre.id, 20, 'braise').ok, true);
+  assert.deepEqual(duel.sorcier.retoursProgrammes, [
+    { carteId: 'maitre-du-marteau', toursRestants: 2, tenacite: true },
+  ]);
+
+  // Une créature tenace tuée pendant le tour adverse revient dès le prochain
+  // tour de son camp : un seul changement de tour.
+  const autre = duelDeBase();
+  autre.tour = 'sorcier';
+  donnerMana(autre, 'joueur', 20);
+  donner(autre, 'joueur', 'maitre-du-marteau');
+  const sien = rpgJouerCreature(autre, 'joueur', 'maitre-du-marteau').entite;
+  assert.equal(rpgBlesserCreature(autre, 'joueur', sien.id, 20, 'braise').ok, true);
+  assert.deepEqual(autre.joueur.retoursProgrammes, [
+    { carteId: 'maitre-du-marteau', toursRestants: 1, tenacite: true },
+  ], 'mort pendant le tour du sorcier : le prochain tour du joueur arrive tout de suite');
+  rpgFinDeTour(autre);
+  assert.equal(autre.tour, 'joueur');
+  assert.ok(autre.joueur.creatures.some((entite) => entite.carteId === 'maitre-du-marteau'));
+});
+
+test('Tenacité : l’exil ne ramène jamais la créature', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'maitre-du-marteau');
+  const maitre = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau').entite;
+  donner(duel, 'sorcier', 'la-devoreuse');
+  const devoreuse = rpgJouerCreature(duel, 'sorcier', 'la-devoreuse', maitre.id).entite;
+  assert.ok(devoreuse);
+  assert.equal(duel.joueur.creatures.some((entite) => entite.id === maitre.id), false);
+  assert.ok(duel.joueur.exil.includes('maitre-du-marteau'), 'la carte est retirée de la partie');
+  assert.deepEqual(duel.joueur.retoursProgrammes, [], 'l’exil ne programme aucune renaissance');
 });
 
 test('le Jarl et le Maître du marteau percent avec leur Overkill imprimé', () => {
@@ -1054,42 +1103,38 @@ for (const carteId of ['maitre-du-marteau', 'seigneur-des-machoires']) {
         const coteAttaque = role === 'attaquant' ? cote : adv;
         const forceInitiale = tenace.atk;
         const debut = rpgNombreDestructions(duel);
-        const combattre = () => {
-          attaquant.ready = true;
-          attaquant.attaquee = false;
-          duel.attaqueJouee = null;
-          return rpgLancerAttaque(duel, coteAttaque, [attaquant.id], {
-            [attaquant.id]: [bloqueur.id],
-          });
-        };
+        attaquant.ready = true;
+        attaquant.attaquee = false;
+        duel.attaqueJouee = null;
 
-        assert.equal(combattre().ok, true);
-        assert.equal(duel[cote].creatures.includes(tenace), true);
-        assert.equal(tenace.tenaciteDisponible, false);
-        const furie = cardById(carteId).furie ?? 0;
-        assert.deepEqual([tenace.atk, tenace.def, tenace.pv],
-          [forceInitiale + furie, 1, 1],
-          'Tenacité sauve le porteur ; sa Furie éventuelle ne donne que de l’attaque');
-        assert.equal(tenace.furieDeclenchee, furie > 0);
-        assert.equal(tenace.furieBonusAtk, furie);
-        assert.equal(adversaire.pv, 30 - forceInitiale,
-          'la riposte utilise la force avant Furie : les dégâts restent simultanés');
-        assert.equal(duel[cote].cimetiere.includes(carteId), false);
-        assert.equal(rpgNombreDestructions(duel), debut);
-        assert.ok(duel.combatFeed.some((entry) => entry.type === 'hit' && entry.victim.id === tenace.id));
-        assert.equal(duel.combatFeed.some((entry) => entry.type === 'death' && entry.victim.id === tenace.id), false);
-
-        assert.equal(combattre().ok, true);
-        assert.equal(duel[cote].creatures.includes(tenace), false,
-          'la seconde blessure létale détruit le porteur');
+        assert.equal(rpgLancerAttaque(duel, coteAttaque, [attaquant.id], {
+          [attaquant.id]: [bloqueur.id],
+        }).ok, true);
+        // La Tenacité ne refuse plus la destruction : le porteur meurt.
+        assert.equal(duel[cote].creatures.includes(tenace), false);
         assert.equal(duel[cote].cimetiere.filter((id) => id === carteId).length, 1);
         assert.equal(rpgNombreDestructions(duel), debut + 1);
+        assert.equal(tenace.furieDeclenchee, false,
+          'la Furie ne s’allume pas : il est mort avant de survivre');
+        // Sa renaissance est promise au prochain tour de son camp : deux crans
+        // s’il est tombé pendant son tour, un seul sinon.
+        assert.deepEqual(duel[cote].retoursProgrammes, [{
+          carteId,
+          toursRestants: duel.tour === cote ? 2 : 1,
+          tenacite: true,
+        }]);
+        // L’adversaire, lui, encaisse la force avant Furie — les dégâts
+        // restent simultanés.
+        assert.equal(adversaire.pv, 30 - forceInitiale);
+        assert.equal(duel[adv].creatures.includes(adversaire), true);
+        assert.ok(duel.combatFeed.some((entry) => entry.type === 'death' && entry.victim.id === tenace.id));
+        assert.equal(duel.combatFeed.some((entry) => entry.type === 'hit' && entry.victim.id === tenace.id), false);
       });
     }
   }
 }
 
-test('Tenacité absorbe un échange létal direct pour les deux combattants', () => {
+test('Tenacité : un échange létal direct emporte les deux combattants tenaces', () => {
   const duel = duelDeBase();
   const combattants = ['joueur', 'sorcier'].map((cote) => {
     donnerMana(duel, cote, 50);
@@ -1101,12 +1146,16 @@ test('Tenacité absorbe un échange létal direct pour les deux combattants', ()
   const debut = rpgNombreDestructions(duel);
   assert.equal(rpgAttaquerCreature(duel, 'joueur', attaquant.id, cible.id).ok, true);
   for (const [index, cote] of ['joueur', 'sorcier'].entries()) {
-    assert.equal(duel[cote].creatures.includes(combattants[index]), true);
-    assert.equal(combattants[index].pv, 1);
-    assert.equal(combattants[index].tenaciteDisponible, false);
-    assert.equal(duel[cote].cimetiere.includes('seigneur-des-machoires'), false);
+    assert.equal(duel[cote].creatures.includes(combattants[index]), false,
+      'les 6/6 s’entretuent : la Tenacité ne refuse plus la mort');
+    assert.equal(duel[cote].cimetiere.includes('seigneur-des-machoires'), true);
+    assert.deepEqual(duel[cote].retoursProgrammes, [{
+      carteId: 'seigneur-des-machoires',
+      toursRestants: duel.tour === cote ? 2 : 1,
+      tenacite: true,
+    }], 'chacun promet sa renaissance');
   }
-  assert.equal(rpgNombreDestructions(duel), debut);
+  assert.equal(rpgNombreDestructions(duel), debut + 2);
 });
 
 test('Tenacité ne sauve pas d’un coup fatal porté par deux bloqueurs', () => {
@@ -1125,21 +1174,14 @@ test('Tenacité ne sauve pas d’un coup fatal porté par deux bloqueurs', () =>
   assert.equal(rpgLancerAttaque(duel, 'joueur', [maitre.id], {
     [maitre.id]: bloqueurs.map((entite) => entite.id),
   }).ok, true);
-  assert.equal(duel.joueur.creatures.includes(maitre), false,
-    'le premier bloqueur dépense Tenacité, le second achève le Maître');
-  assert.deepEqual(
-    [maitre.atk, maitre.def, maitre.pv, maitre.pvMax, maitre.furieDeclenchee, maitre.furieBonusAtk],
-    [5, 0, -3, 5, false, 0],
-    'une créature achevée dans l’échange ne déclenche pas sa Furie',
-  );
-  assert.equal(maitre.tenaciteDisponible, false, 'Tenacité a bien été dépensée');
-  assert.equal(duel.joueur.cimetiere.includes('maitre-du-marteau'), true);
-  assert.equal(duel.sorcier.creatures.length, 0, 'les deux bloqueurs meurent dans le même échange simultané');
+  assert.equal(duel.joueur.creatures.includes(maitre), false, 'les 8 blessures l’emportent');
+  assert.equal(maitre.tenaciteDisponible, true, 'la Tenacité n’a pas été consommée : la mort a eu lieu');
+  assert.equal(duel.sorcier.creatures.length, 0, 'les deux bloqueurs meurent dans le même échange');
   assert.equal(rpgNombreDestructions(duel), debut + 3);
-  assert.deepEqual(
-    duel.log.filter((ligne) => ligne.startsWith('Tenacité :')),
-    ['Tenacité : LE MAÎTRE DU MARTEAU refuse un premier coup fatal, mais un second coup l’achève.'],
-  );
+  assert.deepEqual(duel.joueur.retoursProgrammes, [
+    { carteId: 'maitre-du-marteau', toursRestants: 2, tenacite: true },
+  ], 'un seul retour promis, malgré les deux bloqueurs');
+  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Tenacité :')).length, 1);
 });
 
 test('Amani est une 2/5 à 4 dont l’égide donne +0/+2 aux autres créatures de son camp', () => {

@@ -186,8 +186,8 @@ function journaliserBlessure(duel, cote, entite, blessure) {
     absorbes: blessure.absorbes,
     pvApres: entite.pv,
     bouclierApres: entite.bouclier ?? 0,
-    // `mortelle` : la créature a **quitté la table** sous ce coup. Une Tenacité
-    // qui la sauve laisse donc `mortelle: false`, comme une blessure ordinaire.
+    // `mortelle` : la créature a **quitté la table** sous ce coup. Une
+    // Tenacité programmée ne change rien ici : la mort a bien eu lieu.
     mortelle: Boolean(blessure.mortelle),
   });
   blessuresParDuel.set(duel, journal);
@@ -1231,8 +1231,9 @@ function armeAuCimetiere(duel, cote, entite) {
  * porte, son déclencheur `porteurMeurt` part — le Licou du chien de sable
  * pioche alors ses deux cartes. Comme à Magic, seule la mort compte : un
  * renvoi en main ou un exil emportent l'arme sans rien déclencher
- * (`renvoyerEnMain`, `case 'exil'`), et la Tenacité, qui refuse la
- * destruction, ne déclenche rien du tout.
+ * (`renvoyerEnMain`, `case 'exil'`). La Tenacité, elle, laisse la mort se
+ * produire : le porteur meurt et son arme tombe comme pour toute autre
+ * créature.
  */
 function armeDePorteurMort(duel, cote, entite) {
   const carteArme = armeCarteDe(entite);
@@ -1489,27 +1490,16 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   for (const blessure of blessures.values()) {
     const { entite, montant, cote } = blessure;
     let recus = 0;
-    const sourcesAyantBlesse = new Set();
     for (const coupRecu of blessure.coups ?? [{ amount: montant, sourceKey: 'unique' }]) {
       const absorbes = absorberBouclier(entite, coupRecu.amount);
-      const recusCoup = coupRecu.amount - absorbes;
-      recus += recusCoup;
-      if (recusCoup > 0) sourcesAyantBlesse.add(coupRecu.sourceKey);
+      recus += coupRecu.amount - absorbes;
     }
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
-    // Tenacité refuse la destruction AVANT le retrait des victimes et les
-    // capacités de mort, mais elle ne tient qu'un seul coup fatal : si deux
-    // sources distinctes (deux bloqueurs, typiquement) portent ensemble le
-    // coup mortel, la première dépense Tenacité et l'autre achève la cible.
-    if (entite.pv <= 0) {
-      if (entite.tenaciteDisponible && sourcesAyantBlesse.size > 1) {
-        entite.tenaciteDisponible = false;
-        duel.log.push(`Tenacité : ${entite.name} refuse un premier coup fatal, mais un second coup l’achève.`);
-      } else {
-        sauverParTenacite(duel, entite);
-      }
-    }
+    // Les coups ont déjà été cumulés : une créature à 0 PV meurt une seule
+    // fois, quels que soient le nombre d'attaquants et de bloqueurs. Tenacité
+    // ne refuse plus la mort — elle programme seulement un retour au prochain
+    // tour du camp (voir `programmerRetourTenacite`).
     if (entite.pv <= 0) {
       mortes.push({
         cote,
@@ -1550,6 +1540,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     camp.cimetiere.push(mort.entite.carteId);
     detacherArmes(duel, mort.cote, mort.entite);
     duel.log.push(`${mort.entite.name} est détruite et rejoint le cimetière.`);
+    // Une créature tenace tombe comme les autres : sa renaissance est promise
+    // au prochain tour de son camp, comme pour une blessure isolée.
+    programmerRetourTenacite(duel, mort.cote, mort.entite);
     duel.combatFeed = duel.combatFeed ?? [];
     duel.combatFeed.push({
       id: `${mort.entite.id}:${duel.log.length}`,
@@ -2599,8 +2592,9 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
  * Sacrifice consenti du mode sans terrains : une créature du camp quitte le
  * plateau pour le cimetière afin de libérer l'un des cinq emplacements. C'est
  * une vraie destruction — armes détachées au cimetière, capacité de
- * destruction et honneur déclenchés — mais la Tenacité ne peut pas la refuser :
- * le sacrifice est un choix, pas une blessure.
+ * destruction et honneur déclenchés. Une créature tenace meurt donc pour de
+ * bon : seule sa renaissance (Tenacité) lui rendra une présence au tour
+ * suivant.
  */
 export function rpgSacrifierCreature(duel, cote, entiteId) {
   if (duel?.modeMana !== RPG_MODE_MANA_ESSAI) return { ok: false, raison: 'mode' };
@@ -2614,31 +2608,50 @@ export function rpgSacrifierCreature(duel, cote, entiteId) {
   return { ok: true, entite, carteId: entite.carteId };
 }
 
-/** Refuse une destruction, sans déclencher de sortie de table. Partagé par
- * les blessures isolées et simultanées pour conserver les mêmes survivants. */
-function sauverParTenacite(duel, entite) {
-  // Seule cette présence en jeu dépense Tenacité : renvoyée en main puis
-  // rejouée, la carte retrouve son effet. Sacrifice et exil la contournent.
-  if (!entite.tenaciteDisponible) return false;
-  entite.tenaciteDisponible = false;
-  entite.pv = 1;
-  entite.def = 1;
-  duel.log.push(`Tenacité : ${entite.name} refuse la destruction — il lui reste 1 point de défense.`);
-  return true;
+/**
+ * Tenacité — la renaissance, au prochain tour du camp qui contrôle la carte.
+ * Une fois par partie, une créature tenace **meurt** normalement (cimetière,
+ * arme au cimetière, capacité de mort et honneur déclenchés : rien n'est
+ * refusé) mais sa carte est promise à un retour au début du prochain tour de
+ * son contrôleur, avec 1 point de défense.
+ *
+ * Le compteur de `retoursProgrammes` tombe à **chaque** changement de tour,
+ * pour les deux camps : deux crans si le mourant tombe pendant son propre
+ * tour, un seul s'il tombe pendant celui de l'adversaire. Dans les deux cas,
+ * il revient au début du prochain tour de son camp.
+ *
+ * L'exil ne programme rien : la carte est retirée de la partie et n'a plus de
+ * cimetière d'où revenir (`case 'exil'` ne passe pas par ici). La renaissance
+ * elle-même est une présence neuve, **sans** Tenacité : la renaissance est
+ * dépensée, et une seconde mort est définitive pour cette présence — comme
+ * pour la Furie, une carte repassée en main puis rejouée repart, elle, d'une
+ * présence neuve.
+ */
+function programmerRetourTenacite(duel, cote, entite) {
+  // Seule une vraie carte le peut : un jeton n'a pas de Tenacité, et sa mort
+  // ne laisse aucune carte au cimetière où la retrouver.
+  if (!entite?.tenaciteDisponible || entite.jeton) return;
+  const camp = duel[cote];
+  camp.retoursProgrammes ??= [];
+  camp.retoursProgrammes.push({
+    carteId: entite.carteId,
+    toursRestants: duel.tour === cote ? 2 : 1,
+    tenacite: true,
+  });
+  duel.log.push(`Tenacité : ${entite.name} reviendra en jeu au prochain tour de son camp avec 1 point de défense.`);
 }
 
 /** Retire une créature morte, puis déclenche sa capacité de destruction. */
 function enterrer(duel, cote, entite, sourceElements = [], declenchements = null) {
-  if (sauverParTenacite(duel, entite)) return;
   rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.', declenchements);
 }
 
 /**
  * Sacrifice : la créature quitte la table **par la volonté de son camp** — le
  * prix d'une pose quand le champ des cinq places est plein (mode essai). Comme
- * une destruction, elle rejoint le cimetière et déclenche sa capacité de
- * « quand elle meurt » ; mais la Tenacité ne s'applique pas : ce n'est pas une
- * destruction évitable, c'est un don.
+ * une destruction, elle meurt pour de bon : elle rejoint le cimetière et
+ * déclenche sa capacité de « quand elle meurt ». Une créature tenace profite
+ * donc, elle aussi, du retour promis au prochain tour de son camp.
  */
 function sacrifierCreature(duel, cote, entite) {
   rejoindreCimetiere(duel, cote, entite, [], 'est sacrifiée et rejoint le cimetière.');
@@ -2686,6 +2699,11 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
   camp.cimetiere.push(entite.carteId);
   detacherArmes(duel, cote, entite);
   duel.log.push(`${entite.name} ${libelle}`);
+  // Tenacité : la mort est réelle, mais la carte est promise à un retour au
+  // prochain tour de son camp. Programmée avant les déclenchements de mort :
+  // une réanimation immédiate (le Khopesh) retirera la carte du cimetière et
+  // le retour programmé se dissipera faute de carte à reprendre.
+  programmerRetourTenacite(duel, cote, entite);
   const declencher = () => {
     declencherArme?.();
     const carte = duelCardById(entite.carteId);
@@ -2833,11 +2851,11 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
   let mortelle = false;
   if (entite.pv <= 0) {
+    // À 0 PV la créature meurt vraiment : Tenacité ne refuse plus la
+    // destruction, elle promet seulement une renaissance au prochain tour.
+    // Une morte ne s'enflamme donc jamais de Furie.
     enterrer(duel, cote, entite, elements);
-    // La Tenacité peut avoir sauvé la créature : elle a alors survécu à une
-    // blessure, et la Furie s'applique comme pour n'importe quel survivant.
-    mortelle = !duel[cote].creatures.some((candidate) => candidate.id === entite.id);
-    if (!mortelle) appliquerFurie(duel, entite, recus);
+    mortelle = true;
   } else {
     appliquerFurie(duel, entite, recus);
   }
@@ -4310,7 +4328,14 @@ function resoudreHeures(duel) {
   }
 }
 
-/** Fait avancer d’un tour les cartes promises à revenir et les remet en jeu. */
+/**
+ * Fait avancer d’un tour les cartes promises à revenir et les remet en jeu.
+ * Deux origines : la capacité de mort « retour-apres-tours » (l'Anqa) et la
+ * **Tenacité**, dont la carte revient avec `tenacite: true` — un point de
+ * défense et plus aucune renaissance pour la partie. Une carte qui n'est plus
+ * au cimetière (relevée entre-temps par le Khopesh, par exemple) ne revient
+ * pas : le retour se dissipe sans doublon.
+ */
 function resoudreRetoursProgrammes(duel) {
   for (const cote of ['joueur', 'sorcier']) {
     const camp = duel[cote];
@@ -4335,9 +4360,20 @@ function resoudreRetoursProgrammes(duel) {
       }
       camp.cimetiere.splice(indexCimetiere, 1);
       const entite = creerEntiteCreature(carte);
+      if (retour.tenacite) {
+        // Renaissance de Tenacité : un point de défense, et plus aucune
+        // Tenacité — la carte a dépensé sa seule renaissance de la partie.
+        // Le plafond de vie reste la défense imprimée : un soin peut rendre à
+        // la créature sa vie (et donc sa défense), sans lui rendre Tenacité.
+        entite.tenaciteDisponible = false;
+        entite.pv = 1;
+        entite.def = 1;
+        duel.log.push(`Tenacité : ${carte.name} revient en jeu avec 1 point de défense.`);
+      } else {
+        duel.log.push(`${carte.name} renaît et revient en jeu.`);
+      }
       camp.creatures.push(entite);
       placerDansEmplacement(duel, cote, entite);
-      duel.log.push(`${carte.name} renaît et revient en jeu.`);
       if (carte.arrivee) {
         const cibleArrivee = rpgCibleAuto(duel, cote, carte);
         appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte), 'capacite', carte.id);
