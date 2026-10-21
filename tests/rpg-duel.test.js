@@ -467,7 +467,9 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et quatre pein
   // Les quatre nouvelles images sont livrées au format exact de la face et
   // datées dans l’URL : Mur, Éclair et Brume remplacent d’anciens fichiers de
   // même nom, le Loup furieux est un nouvel état de sa peinture d’origine.
-  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  // Les versions de cache vivent dans `rpgCardArt.js` depuis que le coffret du
+  // salon et l'onglet Deck partagent les mêmes URL d'illustration.
+  const page = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   for (const [art, revision] of [
     ['loup-des-neiges-furie', 'loup-furie-huile-v1'],
     ['mur-de-boucliers', 'mur-boucliers-charge-v1'],

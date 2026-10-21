@@ -183,7 +183,21 @@ déploie les malédictions, le Tribut et le jugement d'outre-tombe.
      bords, halo désincrusté, bords adoucis) — mêmes visages, même style de
      peinture, aucun recolorage. À gauche l'hôte de la scène (`scene.figure`),
      à droite celui qui parle, ou son interlocuteur attitré quand l'hôte
-     parle ; celui qui parle est en pleine lumière, l'autre dans l'ombre. Le
+     parle ; celui qui parle est en pleine lumière, l'autre dans l'ombre. Ces
+     bords ne sont pas figés : `placerPlateauHistoire()` rend `[{ id, miroir }]`
+     et échange les deux places quand les regards peints les tourneraient vers
+     le **même** bord de l'écran ; si l'échange ne suffit pas (deux figures
+     peintes du même côté, comme Amaní et Yamina), la seconde est retournée
+     (`miroir: true`, `scale: -1 1` via `[data-miroir="oui"]`). Personne ne
+     tourne le dos à son interlocuteur, personne ne regarde le bord de l'écran
+     pendant qu'on lui parle. `REGARDS_PEINTS` recense les quinze figures
+     franchement de trois quarts — `feriel`, `reine-etals`, `nageuse`,
+     `devoreur`, `dernier-fennec`, `marchand`, `boualem`, `djinn-souk` vers la
+     gauche de leur peinture ; `sonneur`, `horloger-zenith`, `meute-neiges`,
+     `salem`, `guetteur`, `yamina`, `amani` vers la droite ; les autres sont
+     frontales et tiennent indifféremment l'un ou l'autre bord. Sans cette
+     règle, Fériel placée à gauche fixait le bord de l'écran pendant que Salem
+     la regardait : les deux semblaient regarder dans la même direction. Le
      champ `stand` du registre `rpgStoryCast.js` porte les sprites et
      `standHistoire()` les résout ; les personnages des actes suivants, encore
      sans sprite, retombent sur le portrait encadré (même placement).
@@ -237,6 +251,21 @@ déploie les malédictions, le Tribut et le jugement d'outre-tombe.
      remontée du portrait encadré et les trois mises en scène y sont vérifiés),
      `npm run check:rpg-story-browser` (vrai navigateur : les personnages
      restent largement visibles au-dessus de la boîte sur 320–1440 px).
+6. **L'affiche de la campagne, et son livre (octobre 2026)** —
+   `RpgStoryCampaign.jsx`. Sous le titre : la promesse, puis **le livre des
+   actes**. Ce n'est plus une grille de cartes : les actes **atteints** sont
+   les onglets verticaux du volume (`[data-campaign-act]`, `aria-pressed`,
+   libellé `Acte {romain}` seulement — le titre vit dans `aria-label`), et une
+   **double page** les ouvre (`[data-campaign-page]`) : à gauche l'acte
+   (`Acte N · statut`, titre, résumé, trois portraits), à droite ses paliers
+   (`[data-campaign-step]` avec leur statut). Le livre s'ouvre sur l'acte en
+   cours ; cliquer un autre onglet pose un aperçu et **tourne la feuille**
+   (`is-tournee`, `@keyframes rpg-campaign-feuille`, 720 ms), les pages
+   rejouant leur entrée à chaque acte. Cliquer l'acte en cours revient à lui.
+   Aucun acte non atteint n'a d'onglet ; le bouton de reprise, le badge et
+   `[data-story-next-act]` restent hors du livre. En `prefers-reduced-motion`
+   la feuille n'apparaît pas et la page change sans animation ; sous 699 px le
+   livre passe en une colonne, onglets à plat sous la page.
 
 ## Ce qu'il reste à construire
 

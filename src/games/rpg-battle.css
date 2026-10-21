@@ -8943,7 +8943,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__switch button span { color: #e9b94d; }
 .rpg-mode-menu__switch button.is-active { border: 0; border-bottom: 3px solid #f17c27; background: linear-gradient(0deg, #f17c271c, transparent); color: #fff2dc; }
 .rpg-mode-menu__fullscreen { order: 2; min-height: 38px; min-width: 38px; margin-left: 9px; padding: 8px; border-radius: 50%; }
-.rpg-mode-menu__play { grid-template-columns: minmax(0, 1.65fr) minmax(270px, .8fr); gap: 14px; align-items: stretch; }
+/* Le tableau de bord du Jouer garde sa colonne de quêtes ; les écrans pleine
+   largeur (`--full`, Jeu Solo) reprennent la leur — sans ce garde-fou, la
+   règle du hub écrasait `.rpg-mode-menu__play--full` et laissait les tours
+   dans une colonne de 700 px, une seconde colonne vide à côté. */
+.rpg-mode-menu__play:not(.rpg-mode-menu__play--full) { grid-template-columns: minmax(0, 1.65fr) minmax(270px, .8fr); gap: 14px; align-items: stretch; }
 .rpg-mode-menu__hero { min-height: clamp(420px, 57vh, 620px); align-items: end; border: 1px solid #d0b4774a; border-radius: 9px; background: linear-gradient(0deg, rgba(5,6,7,.94), rgba(5,6,7,.55) 32%, transparent 72%), radial-gradient(ellipse at 45% 34%, #9c6c3661, transparent 58%), linear-gradient(135deg, #1b2427, #443328 52%, #121416); box-shadow: 0 18px 45px #0008; }
 .rpg-mode-menu__hero::before { content: '✦'; position: absolute; display: block; inset: 8% 7% auto auto; color: #f5d083; font-size: clamp(100px, 18vw, 230px); opacity: .24; text-shadow: 0 0 50px #eaaa49; }
 .rpg-mode-menu__hero-copy { position: relative; z-index: 2; width: min(720px, 100%); padding: clamp(22px, 3vw, 42px); }
@@ -8996,7 +9000,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__switch button.is-active::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 3px; background: linear-gradient(90deg, #ffb34a, #f05c1d); box-shadow: 0 0 10px #ff802b; }
 .rpg-mode-menu__switch button.rpg-mode-menu__souk .rpg-mode-menu__bourse-solde { color: #f4d48f; font-size: 11px; }
 .rpg-mode-menu__switch button.rpg-mode-menu__souk .rpg-mode-menu__bourse-pastille { color: #fff6e3; }
-.rpg-mode-menu__play { width: min(1480px, 100%); margin: 0 auto; padding: clamp(24px, 4vh, 42px) clamp(18px, 4.6vw, 74px) 0; grid-template-columns: minmax(0, 1.8fr) minmax(280px, .9fr); gap: clamp(14px, 1.6vw, 24px); }
+.rpg-mode-menu__play:not(.rpg-mode-menu__play--full) { width: min(1480px, 100%); margin: 0 auto; padding: clamp(24px, 4vh, 42px) clamp(18px, 4.6vw, 74px) 0; grid-template-columns: minmax(0, 1.8fr) minmax(280px, .9fr); gap: clamp(14px, 1.6vw, 24px); }
 .rpg-mode-menu__hero { min-height: clamp(430px, 60vh, 680px); }
 @media (max-width: 820px) {
  .rpg-mode-menu__header { flex-wrap: wrap; padding: 0 14px; }
@@ -9024,6 +9028,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    de les laisser déborder. */
 @media (min-width: 821px) and (max-width: 1100px) {
  .rpg-mode-menu__header { flex-wrap: wrap; }
+ /* La barre passe sur deux rangées : sans cela, la marque restait collée au
+    bouton plein écran, au milieu de l'écran, au lieu de rester à gauche. */
+ .rpg-mode-menu__brand { margin-right: auto; }
  .rpg-mode-menu__switch { order: 3; width: calc(100% + clamp(14px, 4.6vw, 74px) * 2); flex: 0 0 calc(100% + clamp(14px, 4.6vw, 74px) * 2); min-width: 0; margin: 0 calc(clamp(14px, 4.6vw, 74px) * -1); padding: 0 clamp(10px, 1.6vw, 18px); border-top: 1px solid rgba(255,255,255,.08); overflow-x: auto; scrollbar-width: none; }
  .rpg-mode-menu__switch::-webkit-scrollbar { display: none; }
  .rpg-mode-menu__switch button, .rpg-mode-menu__switch button.rpg-mode-menu__souk { flex: 1 0 auto; min-height: 46px; padding: 0 clamp(9px, 1.4vw, 16px); }
@@ -10306,4 +10313,247 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 @media (max-width: 800px) {
   .rpg-combat-feed__damage { font-size: 9px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ACCUEIL DU SABLIER — LES QUATRE PORTES
+   ──────────────────────────────────────────────────────────────────────────
+   L'onglet Jouer empilait quatre boutons de formats différents : « Duel en
+   ligne », seul sous la paire tutoriel / partie rapide, ressemblait à un
+   oubli. Les actions forment désormais une grille de cartes :
+
+     récit  |  duel en ligne     ← les deux entrées de tête
+     partie rapide | tutoriel    ← les deux raccourcis
+
+   Chaque carte partage la même hauteur et la même largeur. Le duel en ligne
+   prend le laiton du jeu (texte sombre) et une pastille verte « en ligne » ;
+   la partie rapide perd son aplat orange — trop bruyant à côté du bleu du
+   récit — et garde une lisière braise.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-mode-menu__hero-actions > .rpg-menu-button {
+  min-height: 68px;
+  justify-content: flex-start;
+}
+.rpg-mode-menu__secondary-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 2px;
+}
+.rpg-mode-menu__secondary-actions .rpg-menu-button { min-height: 62px; }
+
+/* Le duel en ligne : laiton plein, la couleur des actions principales du hub. */
+.rpg-menu-button--en-ligne {
+  position: relative;
+  border-color: #f2d79a;
+  background: linear-gradient(135deg, #e8c676, #bb8135);
+  color: #241a06;
+  box-shadow: 0 10px 26px rgba(197, 139, 53, .22), inset 0 1px rgba(255, 246, 220, .5);
+}
+/* L'icône des portes : un trait de 36 px dans un médaillon, dessiné par
+   `IconePorte` — jamais un emoji, qui ne se dessine pas partout. */
+.rpg-mode-menu__hero-actions .rpg-menu-button__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+  color: currentColor;
+}
+.rpg-mode-menu__hero-actions .rpg-menu-button__icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rpg-menu-button--en-ligne .rpg-menu-button__icon {
+  background: rgba(36, 26, 6, .16);
+  color: #2a1d07;
+}
+.rpg-menu-button--partie-rapide .rpg-menu-button__icon {
+  background: rgba(232, 106, 44, .16);
+  color: #ffb37a;
+}
+.rpg-menu-button--en-ligne .rpg-menu-button__text small { color: #46320f; opacity: .88; }
+.rpg-menu-button--en-ligne:hover,
+.rpg-menu-button--en-ligne:focus-visible {
+  border-color: #ffe9b8;
+  background: linear-gradient(135deg, #f7dca4, #d79f4d);
+  color: #1c130b;
+  box-shadow: 0 12px 30px rgba(197, 139, 53, .3), inset 0 1px rgba(255, 250, 235, .6);
+}
+/* Pastille « en ligne » : vivante, mais immobile si le joueur a réduit les
+   animations. */
+.rpg-menu-button__live {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: #3f6b2c;
+  box-shadow: 0 0 0 3px rgba(63, 107, 44, .18);
+  vertical-align: .06em;
+  animation: rpg-en-ligne-pulse 1.8s ease-in-out infinite;
+}
+@keyframes rpg-en-ligne-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .45; transform: scale(.82); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-menu-button__live { animation: none; }
+}
+
+/* Partie rapide : une carte sombre ourlée de braise, pas un aplat orange. */
+.rpg-menu-button--partie-rapide {
+  border-color: rgba(232, 106, 44, .5);
+  background: rgba(30, 17, 11, .8);
+  color: #ffd9b8;
+  box-shadow: none;
+}
+.rpg-menu-button--partie-rapide .rpg-menu-button__icon { color: #ff9a5c; }
+.rpg-menu-button--partie-rapide:hover,
+.rpg-menu-button--partie-rapide:focus-visible {
+  border-color: #ffb86a;
+  background: rgba(96, 44, 20, .86);
+  color: #fff3e5;
+}
+
+/* ── Téléphone : les sept onglets du Sablier tiennent sur deux rangées ─────
+   En une seule rangée, la barre défilait horizontalement sans indice : sur un
+   écran de 390 px, « Paramètres » restait hors champ. Les onglets passent sur
+   deux rangées pleine largeur (4 + 3) : plus rien à faire glisser, chaque
+   mode visible d'un coup d'œil. Au-delà de 700 px, tout tient sur une ligne et
+   la règle ne s'applique plus. */
+@media (max-width: 700px) {
+  .rpg-mode-menu__switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 0 6px 3px;
+    overflow: visible;
+  }
+  .rpg-mode-menu__switch button,
+  .rpg-mode-menu__switch button.rpg-mode-menu__souk {
+    flex: 1 1 calc(25% - 6px);
+    min-width: 0;
+    min-height: 42px;
+    padding: 0 4px;
+    gap: 4px;
+    font-size: 10px;
+  }
+  .rpg-mode-menu__switch button span { font-size: 11px; }
+  .rpg-mode-menu__header { min-height: 52px; }
+  .rpg-mode-menu__brand { min-height: 52px; }
+  .rpg-mode-menu__brand::before { width: 28px; height: 28px; font-size: 17px; }
+  .rpg-mode-menu__brand h1 { font-size: 21px; }
+  .rpg-mode-menu__fullscreen { min-height: 34px; min-width: 34px; padding: 7px; }
+}
+
+/* Le héros épouse son contenu. Étiré sur la hauteur de la colonne des quêtes,
+   il devenait un grand cadre au tiers vide dès que l'écran était haut (tablette
+   en portrait, 900 px) : le vide se voyait autant à l'intérieur qu'à côté. Ici
+   la carte s'arrête sous les règles, et c'est le décor de la page qui occupe la
+   place restante. Le bloc se tient en haut : le regard entre par l'eyebrow et
+   descend titre → portes → règles d'un trait. */
+.rpg-mode-menu__play { align-items: start; }
+.rpg-mode-menu__hero { min-height: 0; align-items: flex-start; }
+.rpg-mode-menu__hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* ── Le cadre plein écran des onglets ───────────────────────────────────────
+   Le duel en ligne a donné le ton : une scène sombre qui occupe toute la
+   fenêtre, sa barre collée en haut, le contenu posé dessus. Les six autres
+   onglets reprennent la même scène. Jusqu'ici chacun composait sa propre
+   page : le Catalogue et les Paramètres collaient aux bords de l'écran, le
+   Souk flottait au-dessus de l'illustration, et la marge changeait d'un
+   onglet à l'autre. Ici, deux règles seulement : l'artwork se tamise derrière
+   le contenu, et partout la même gouttière, du téléphone au grand écran.
+   Le Jouer garde son tableau de bord tel quel — c'est la porte d'entrée. */
+.rpg-mode-menu:not(.rpg-mode-menu--jouer)::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% -8%, rgba(64, 46, 30, .4), transparent 62%),
+    linear-gradient(180deg, rgba(8, 8, 11, .84), rgba(8, 8, 11, .93) 40%, rgba(6, 6, 8, .97));
+}
+/* Une seule gouttière pour toute la maison : 14 px au téléphone, 56 px au
+   plus large, et le même retrait sous la barre d'onglets. Chaque écran garde
+   sa propre largeur de colonne (Souk 1220, Histoire 1180, Paramètres 980). */
+.rpg-mode-menu--histoire .rpg-story,
+.rpg-mode-menu--tours .rpg-story,
+.rpg-mode-menu--decks .rpg-deck-catalog,
+.rpg-mode-menu--catalogue .rpg-card-catalogue,
+.rpg-mode-menu--parametres .rpg-settings,
+.rpg-mode-menu--souk .rpg-souk,
+.rpg-mode-menu--guide .rpg-card-guide,
+.rpg-mode-menu--tutoriels .rpg-tutoriels {
+  padding:
+    clamp(14px, 2.1vw, 26px)
+    clamp(14px, 3.8vw, 56px)
+    clamp(24px, 4.2vh, 46px);
+}
+/* Dans les onglets, la barre de modes dit déjà où l'on est : le « ← Menu »
+   du Souk n'y ramenait qu'à l'onglet voisin et poussait le titre d'une
+   rangée sur le téléphone. Il reste en place sur la page du Souk seule. */
+.rpg-mode-menu--souk .rpg-souk__retour { display: none; }
+
+/* Sortie du Sablier : le jeu couvre tout l'écran, barre du site comprise.
+   La pastille vit donc dans la barre du Sablier, à droite, et reprend le
+   gabarit du bouton plein écran pour que les deux s'alignent. */
+.rpg-mode-menu__quitter {
+  order: 2;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  min-height: 38px;
+  margin-left: 8px;
+  padding: 8px;
+  border: 1px solid rgba(240, 221, 183, .22);
+  border-radius: 50%;
+  background: rgba(12, 10, 13, .7);
+  color: rgba(247, 237, 220, .74);
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(10px);
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+.rpg-mode-menu__quitter svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+}
+.rpg-mode-menu__quitter:hover,
+.rpg-mode-menu__quitter:focus-visible {
+  border-color: rgba(231, 191, 101, .48);
+  background: linear-gradient(135deg, rgba(201, 150, 57, .26), rgba(111, 69, 34, .22));
+  color: #ffe7af;
+  outline: none;
+}
+@media (max-width: 700px) {
+  .rpg-mode-menu__quitter { min-width: 34px; min-height: 34px; margin-left: 6px; padding: 7px; }
+  .rpg-mode-menu__quitter svg { width: 14px; height: 14px; }
+}
+/* Sur un téléphone étroit, deux filtres côte à côte rognent « Toutes les
+   couleurs ». Ils passent l'un sous l'autre : deux rangées lisibles plutôt
+   qu'un libellé coupé. */
+@media (max-width: 460px) {
+  .rpg-card-catalogue__filters label { flex: 1 1 100%; }
 }

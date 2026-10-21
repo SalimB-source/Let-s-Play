@@ -38,9 +38,13 @@
 .rpg-story__reset:hover,
 .rpg-story__reset:focus-visible { color: #fca5a5; border-color: #fca5a5; outline: none; }
 
+/* Les tours de Bab El : quatre de front sur ordinateur — l'écran du Jeu Solo
+   occupe toute la largeur, et sept tours tiennent ainsi en deux rangées au
+   lieu de quatre. La colonne se resserre d'elle-même : trois tours sur un
+   portable, deux sur une tablette, une seule au téléphone. */
 .rpg-story__tours {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
   gap: 16px;
   align-items: start;
 }
@@ -146,6 +150,14 @@
   gap: 6px;
   padding: 14px 16px 14px;
 }
+/* Sur une rangée de quatre, les résumés n'ont pas la même longueur : sans ce
+   socle, la barre de progression et « Voir les étages » dansaient d'une carte à
+   l'autre. Les quatre cartes prennent la hauteur de la plus haute et le pied
+   s'aligne en bas. */
+.rpg-story-tower { height: 100%; }
+.rpg-story-tower__body { flex: 1; grid-template-rows: auto auto 1fr auto auto; align-content: start; }
+.rpg-story-tower__progress { align-self: end; }
+.rpg-story-tower__cta { align-self: end; margin-top: 2px; }
 
 .rpg-story-tower__name {
   font-family: var(--font-gaming);
@@ -409,6 +421,13 @@
 .rpg-story-portrait { display: block; width: 100%; height: 100%; object-fit: cover; }
 .rpg-narrative__eyebrow { margin: 0; color: #d9bf88; font: 600 10px/1.6 var(--mono, monospace); letter-spacing: .17em; }
 .rpg-narrative__eyebrow > span { margin: 0 12px; color: #a38f6c; }
+.rpg-narrative__eyebrow > .rpg-campaign__episode { margin: 0; white-space: nowrap; color: inherit; }
+/* Au téléphone, le surtitre tient sur deux lignes voulues : la campagne, puis
+   l'épisode — sans barre oblique orpheline en fin de ligne. */
+@media (max-width: 699px) {
+  .rpg-campaign__header-text .rpg-narrative__eyebrow > span[aria-hidden="true"] { display: none; }
+  .rpg-campaign__header-text .rpg-narrative__eyebrow > .rpg-campaign__episode { display: block; margin-top: 2px; }
+}
 .rpg-narrative-button {
   display: inline-flex;
   align-items: center;
@@ -442,7 +461,7 @@
 .rpg-campaign { position: relative; isolation: isolate; overflow: hidden; min-width: 0; border: 1px solid #645840; color: #eee6d8; background: #101a22; }
 .rpg-campaign__art { position: absolute; z-index: -2; inset: 0 0 0 20%; background-size: cover; background-position: 60% center; }
 .rpg-campaign::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #0d1720 0%, rgba(13, 23, 32, .96) 28%, rgba(13, 23, 32, .58) 65%, rgba(13, 23, 32, .12)), linear-gradient(0deg, rgba(10, 16, 23, .9), transparent 60%); }
-.rpg-campaign__copy { max-width: 650px; padding: clamp(24px, 4vw, 46px); }
+.rpg-campaign__copy { max-width: 700px; padding: clamp(24px, 4vw, 46px); }
 .rpg-campaign__header-row { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 6px; }
 .rpg-campaign__miniature {
   flex: 0 0 88px;
@@ -469,24 +488,180 @@
 .rpg-campaign__cast { display: flex; align-items: center; margin: 23px 0 18px; }
 .rpg-campaign__cast img { flex: 0 0 38px; width: 38px; height: 46px; margin-right: 7px; border: 1px solid #887751; object-fit: cover; }
 .rpg-campaign__cast > span { max-width: 25ch; margin-left: 7px; color: #d7cbb6; font: 500 10px/1.7 var(--mono, monospace); }
-.rpg-campaign__acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 6px; list-style: none; padding: 0; margin: 0 0 10px; }
-.rpg-campaign__act { display: flex; border: 1px solid rgba(196, 173, 126, .2); border-radius: 3px; background: rgba(11, 18, 25, .6); min-width: 0; }
-.rpg-campaign__act.is-termine { border-color: rgba(146, 176, 155, .45); background: rgba(42, 68, 54, .22); }
-.rpg-campaign__act.is-current { border-color: #dfc797; background: rgba(217, 191, 136, .16); }
-.rpg-campaign__act-btn { flex: 1; display: grid; gap: 2px; padding: 7px 9px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; min-width: 0; }
-.rpg-campaign__act-num { color: #d9bf88; font: 600 9px/1.3 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
-.rpg-campaign__act strong { color: #eee4d2; font-size: 11px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
-.rpg-campaign__steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; list-style: none; padding: 0; margin: 0 0 22px; }
-.rpg-campaign__step { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid rgba(196, 173, 126, .24); border-radius: 3px; background: rgba(12, 20, 28, .68); min-width: 0; }
-.rpg-campaign__step.is-termine { border-color: rgba(146, 176, 155, .55); background: rgba(42, 68, 54, .28); }
-.rpg-campaign__step.is-en-cours { border-color: #dfc797; background: rgba(217, 191, 136, .14); }
-.rpg-campaign__step-num { flex: 0 0 24px; width: 24px; height: 24px; display: grid; place-content: center; border: 1px solid rgba(217, 191, 136, .45); border-radius: 50%; color: #dfc797; font: 600 10px/1 var(--mono, monospace); }
-.rpg-campaign__step.is-termine .rpg-campaign__step-num { border-color: #92b09b; color: #cfe3d4; background: rgba(146, 176, 155, .2); }
+/* ── Le livre des actes ────────────────────────────────────────────────────
+   Les actes ne sont plus des pastilles posées sous le texte : ce sont les
+   onglets d'un livre ouvert sur l'affiche. Chaque onglet ouvre la double page
+   de son acte — le récit à gauche, les paliers à droite — et la feuille se
+   tourne d'un acte à l'autre. Les pages sont de papier, l'encre y est sombre ;
+   le reste de l'affiche garde sa nuit et son or. */
+.rpg-campaign__livre { position: relative; margin: 22px 0 26px; padding-right: clamp(26px, 3vw, 34px); perspective: 1400px; }
+.rpg-campaign__volume { position: relative; }
+.rpg-campaign__acts {
+  position: absolute;
+  z-index: 3;
+  top: 20px;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: clamp(26px, 3vw, 34px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rpg-campaign__act { display: flex; }
+.rpg-campaign__act-btn {
+  width: 100%;
+  padding: 11px 0;
+  border: 1px solid #8a7448;
+  border-right: 0;
+  border-radius: 4px 0 0 4px;
+  background: linear-gradient(90deg, #17140f, #2b2417);
+  color: #cdb98d;
+  font: 600 9px/1 var(--mono, monospace);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+.rpg-campaign__act-btn:hover { color: #f3dfb0; border-color: #cdb98d; }
+.rpg-campaign__act.is-termine .rpg-campaign__act-btn { color: #a9c4b2; border-color: #5d7a68; }
+.rpg-campaign__act.is-current .rpg-campaign__act-btn {
+  color: #3a2f1e;
+  background: linear-gradient(90deg, #e8dabb, #f2e8d2);
+  border-color: #bda878;
+}
+.rpg-campaign__pages {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 268px;
+  border: 1px solid #bda878;
+  border-radius: 3px;
+  background: #ecdfc2;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .42);
+  overflow: hidden;
+}
+/* L'épaisseur du livre : la tranche des feuilles sous la couverture. */
+.rpg-campaign__volume::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -6px;
+  left: 0;
+  height: 6px;
+  border-radius: 0 0 3px 3px;
+  background: repeating-linear-gradient(180deg, #dccca8 0 1px, #c3b088 1px 2px);
+  box-shadow: 0 7px 14px rgba(0, 0, 0, .35);
+}
+/* La pliure : deux feuilles qui se rejoignent au centre du volume. */
+.rpg-campaign__pages::before {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 34px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg,
+    rgba(120, 94, 52, 0) 0%,
+    rgba(120, 94, 52, .22) 40%,
+    rgba(92, 70, 36, .36) 50%,
+    rgba(120, 94, 52, .22) 60%,
+    rgba(120, 94, 52, 0) 100%);
+  pointer-events: none;
+}
+.rpg-campaign__page {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 17px 20px 16px;
+  color: #33291b;
+}
+.rpg-campaign__page--gauche { background: linear-gradient(170deg, #f1e6cd, #e7d8b8); }
+.rpg-campaign__page--droite { background: linear-gradient(170deg, #eee2c6, #e3d4b2); border-left: 1px solid rgba(120, 94, 52, .24); }
+.rpg-campaign__page-eyebrow { color: #8a6a37; font: 600 9px/1.4 var(--mono, monospace); letter-spacing: .18em; text-transform: uppercase; }
+.rpg-campaign__page-titre { margin: 0; color: #2c2316; font: 400 clamp(19px, 2vw, 24px)/1.12 Georgia, 'Times New Roman', serif; letter-spacing: -.01em; }
+/* Dans le livre, la description est de l'encre sur du papier : elle change de
+   couleur et prend toute la page au lieu de rester sur la nuit de l'affiche. */
+.rpg-campaign__livre .rpg-campaign__description { max-width: none; margin: 0; color: #4a3c27; font-size: 12px; line-height: 1.62; }
+.rpg-campaign__livre .rpg-campaign__cast { flex-wrap: wrap; row-gap: 6px; margin: auto 0 0; }
+.rpg-campaign__livre .rpg-campaign__cast img { border-color: rgba(90, 68, 34, .55); }
+.rpg-campaign__livre .rpg-campaign__cast > span {
+  flex: 1 1 100%;
+  max-width: none;
+  margin: 2px 0 0;
+  color: #6d5a3a;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.rpg-campaign__steps { display: grid; grid-template-columns: 1fr; gap: 5px; list-style: none; padding: 0; margin: 0; }
+.rpg-campaign__step { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid rgba(120, 94, 52, .28); border-radius: 2px; background: rgba(255, 255, 255, .22); min-width: 0; }
+.rpg-campaign__step.is-termine { border-color: rgba(63, 107, 79, .45); background: rgba(63, 107, 79, .1); }
+.rpg-campaign__step.is-en-cours { border-color: rgba(138, 100, 32, .55); background: rgba(178, 138, 60, .16); }
+.rpg-campaign__step-num { flex: 0 0 24px; width: 24px; height: 24px; display: grid; place-content: center; border: 1px solid rgba(113, 84, 42, .5); border-radius: 50%; color: #6f5527; font: 600 10px/1 var(--mono, monospace); }
+.rpg-campaign__step.is-termine .rpg-campaign__step-num { border-color: #3f6b4f; color: #2f5940; background: rgba(63, 107, 79, .12); }
 .rpg-campaign__step-body { display: grid; gap: 2px; min-width: 0; }
-.rpg-campaign__step-body strong { color: #f0e6d2; font-size: 11px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
-.rpg-campaign__step-body small { color: #b7c2c6; font-size: 10px; line-height: 1.25; }
-.rpg-campaign__step.is-termine .rpg-campaign__step-body small { color: #a9c4b2; }
-.rpg-campaign__step.is-en-cours .rpg-campaign__step-body small { color: #f2ddaf; }
+.rpg-campaign__step-body strong { color: #33291b; font-size: 11px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.rpg-campaign__step-body small { color: #6f5f42; font-size: 10px; line-height: 1.25; }
+.rpg-campaign__step.is-termine .rpg-campaign__step-body small { color: #3f6b4f; }
+.rpg-campaign__step.is-en-cours .rpg-campaign__step-body small { color: #8a6420; }
+/* La feuille qui se tourne : elle se lève depuis la pliure, retombe sur la
+   page de droite, puis s'efface — les deux pages sont déjà celle de l'acte
+   choisi dessous. */
+.rpg-campaign__feuille {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 50%;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, rgba(120, 94, 52, .2) 0%, rgba(247, 239, 220, .93) 9%, #f3e9d3 32%, #e6d8ba 100%);
+  box-shadow: -14px 0 30px rgba(48, 32, 10, .35);
+  transform-origin: left center;
+  opacity: 0;
+  pointer-events: none;
+}
+.rpg-campaign__livre.is-tournee .rpg-campaign__feuille { animation: rpg-campaign-feuille .66s cubic-bezier(.3, .05, .25, 1) both; }
+.rpg-campaign__livre.is-tournee .rpg-campaign__pages { animation: rpg-campaign-page .5s ease both; }
+@keyframes rpg-campaign-feuille {
+  0% { opacity: 0; transform: rotateY(-104deg); }
+  14% { opacity: 1; }
+  64% { opacity: 1; transform: rotateY(0deg); }
+  100% { opacity: 0; transform: rotateY(0deg); }
+}
+@keyframes rpg-campaign-page { from { opacity: .62; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-campaign__livre.is-tournee .rpg-campaign__feuille,
+  .rpg-campaign__livre.is-tournee .rpg-campaign__pages { animation: none; }
+  .rpg-campaign__feuille { display: none; }
+}
+/* Au téléphone, le livre se lit à plat : les onglets passent au-dessus de la
+   page et les deux pages s'empilent — le récit, puis les paliers. */
+@media (max-width: 699px) {
+  .rpg-campaign__livre { padding-right: 0; }
+  .rpg-campaign__acts { position: static; flex-direction: row; width: auto; margin-bottom: 0; }
+  .rpg-campaign__act { flex: 1; }
+  .rpg-campaign__act-btn {
+    writing-mode: horizontal-tb;
+    transform: none;
+    padding: 9px 6px;
+    border-right: 1px solid #8a7448;
+    border-bottom: 0;
+    border-radius: 4px 4px 0 0;
+  }
+  .rpg-campaign__pages { grid-template-columns: 1fr; min-height: 0; border-radius: 0 3px 3px 3px; }
+  .rpg-campaign__page--droite { border-left: 0; border-top: 1px solid rgba(120, 94, 52, .24); }
+  .rpg-campaign__pages::before { display: none; }
+  .rpg-campaign__feuille { display: none; }
+}
 .rpg-campaign__actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .rpg-campaign__resume { color: #b8c5c6; font-size: 12px; margin: 14px 0 4px; }
 .rpg-campaign__restart { background: none; border: 0; min-height: 44px; padding: 8px 0; color: #c9bc9f; text-decoration: underline; text-underline-offset: 3px; font: inherit; font-size: 11px; cursor: pointer; }
@@ -961,6 +1136,10 @@
 /* Un changement de situation change la pose : la silhouette se recompose au
    lieu de sauter. `key` est posé sur l'image, l'animation rejoue donc à chaque
    nouvelle pose — et jamais sur la pose de référence. */
+/* Une figure peinte tournée vers l'extérieur est retournée d'un miroir : le
+   `scale` CSS reste indépendant du `transform` des animations (entrée, pose),
+   qui écraseraient un `scaleX(-1)` posé dans `transform`. */
+.rpg-narrative__stand-img[data-miroir="oui"] { scale: -1 1; }
 .rpg-narrative__stand-img[data-pose] { animation: rpg-story-repose .52s ease both; }
 @keyframes rpg-story-repose {
   from { opacity: .4; transform: translateY(7px) scale(.994); }

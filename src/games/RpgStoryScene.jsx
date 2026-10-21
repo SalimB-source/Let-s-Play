@@ -12,7 +12,7 @@ import {
   preferencesLecture,
   sauverPreferencesLecture,
 } from './rpgStoryLecture.js';
-import { personnageEtage, personnageHistoire, portraitHistoire, poseHistoire, standHistoire, RPG_STORY_DECORS } from './rpgStoryCast.js';
+import { personnageEtage, personnageHistoire, placerPlateauHistoire, portraitHistoire, poseHistoire, standHistoire, RPG_STORY_DECORS } from './rpgStoryCast.js';
 import {
   RPG_STORY_ALL_SCENES,
   acteHistoire,
@@ -71,7 +71,7 @@ export function StoryHeader({ onExit, onJournal, sonActif, onToggleSound }) {
  * **et** quand le fichier ne se décode pas : jamais de carré cassé, jamais de
  * fond de détourage visible dans la scène.
  */
-export function StoryStand({ personnageId, situation = null, cardArt }) {
+export function StoryStand({ personnageId, situation = null, cardArt, miroir = false }) {
   const personnage = personnageHistoire(personnageId);
   const stand = poseHistoire(personnageId, situation, BASE);
   const pose = situation && personnage.poses?.[situation] ? situation : null;
@@ -86,6 +86,7 @@ export function StoryStand({ personnageId, situation = null, cardArt }) {
   return (
     <img key={stand} className="rpg-narrative__stand-img" src={stand} alt=""
       data-personnage={personnageId} data-pose={pose ?? undefined}
+      data-miroir={miroir ? 'oui' : undefined}
       loading="eager" draggable="false" onError={() => setIllisible(true)} />
   );
 }
@@ -351,13 +352,16 @@ export default function RpgStoryScene({
   const standActif = !scene ? null
     : curseurActif.resume ? scene.figure
       : ligne?.personnage && ligne.personnage !== 'narrateur' ? ligne.personnage : scene.figure;
-  const plateauScene = scene ? (() => {
+  // L'ordre du récit (l'hôte, puis celui qui parle) donne les deux figures du
+  // plan ; `placerPlateauHistoire` les échange si leurs regards peints les
+  // tourneraient tous les deux vers le même bord de l'écran.
+  const plateauScene = scene ? placerPlateauHistoire((() => {
     const presents = [...new Set([scene.figure, ...scene.repliques.map((item) => item.personnage)])]
       .filter((id) => id !== 'narrateur' && (portraitHistoire(id, BASE, cardArt) || standHistoire(id, BASE)));
     const actif = presents.includes(standActif) ? standActif : scene.figure;
     const interlocuteur = presents.find((id) => id !== actif) ?? actif;
-    return [...new Set(actif === scene.figure ? [scene.figure, interlocuteur] : [scene.figure, actif])].slice(0, 2);
-  })() : [];
+    return actif === scene.figure ? [scene.figure, interlocuteur] : [scene.figure, actif];
+  })()) : [];
   const flecheSuite = Boolean(scene && (machine.termine || !machineActive) && !derniere);
   // La situation du plateau : une décision posée au lecteur, le dernier
   // échange d'une scène d'avant-duel (on se met en garde), ou celui d'une
@@ -378,7 +382,7 @@ export default function RpgStoryScene({
       {scene ? (
         <main className="rpg-narrative__scene" style={{ '--rpg-story-speaker': personnage.couleur }}>
           <div className="rpg-narrative__cartouche">
-            <p className="rpg-narrative__eyebrow">{acte.chapitre} <span aria-hidden="true">/</span> {acte.titre.toUpperCase()}</p>
+            <p className="rpg-narrative__eyebrow">ACTE {acte.romain} <span aria-hidden="true">/</span> {acte.titre.toUpperCase()}</p>
             <div key={cleScene} className="rpg-narrative__entete">
               <p className="rpg-narrative__location">{sceneIntroDuel ? `${scene.lieu} · Relecture d’introduction` : scene.lieu}</p>
               <h1>{scene.titre}</h1>
@@ -400,14 +404,14 @@ export default function RpgStoryScene({
           </div>
           <div className="rpg-narrative__fenetre" aria-hidden="true">
             <div className="rpg-narrative__plateau">
-              {plateauScene.map((id) => {
+              {plateauScene.map(({ id, miroir }) => {
                 const figurant = personnageHistoire(id);
                 const stand = standHistoire(id, BASE);
                 return (
                   <div key={id} data-personnage-stand={id}
                     className={`rpg-narrative__stand${id === standActif ? ' rpg-narrative__stand--actif' : ''}${stand ? ' rpg-narrative__stand--decoupe' : ''}`}
                     style={{ '--stand-couleur': figurant.couleur }}>
-                    <StoryStand personnageId={id} situation={situationPose} cardArt={cardArt} />
+                    <StoryStand personnageId={id} situation={situationPose} cardArt={cardArt} miroir={miroir} />
                   </div>
                 );
               })}
@@ -504,11 +508,11 @@ export default function RpgStoryScene({
             <figcaption><span>{personnage.nom}</span><small>{personnage.fonction}</small></figcaption>
           </figure>
           <div className="rpg-narrative__page">
-            <p className="rpg-narrative__eyebrow">{acte.chapitre} <span aria-hidden="true">/</span> {acte.titre.toUpperCase()}</p>
+            <p className="rpg-narrative__eyebrow">ACTE {acte.romain} <span aria-hidden="true">/</span> {acte.titre.toUpperCase()}</p>
             <div ref={lectureRef} tabIndex={-1} className="rpg-narrative__reading" aria-label="Texte du récit">
               {curseur.type === 'duel' ? (
                 <>
-                  <p className="rpg-narrative__location">{acte.tourNom} · Duel {acte.etages.indexOf(etageId) + 1} sur {acte.etages.length}</p>
+                  <p className="rpg-narrative__location">{acte.lieu} · Duel {acte.etages.indexOf(etageId) + 1} sur {acte.etages.length}</p>
                   <h1>Un droit à défendre.</h1>
                   <p className="rpg-narrative__lead">Affrontez {etage?.nom}. Une victoire ouvre la suite du récit.</p>
                   {etage?.note && <p className="rpg-narrative__tactic" data-story-tactic>{etage.note}</p>}

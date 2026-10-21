@@ -6,45 +6,173 @@
  * lisibles sur téléphone en une seule colonne.
  */
 
+/* ── Le cadre immersif du duel en ligne ────────────────────────────────────
+   Le jeu du Sablier est une couche plein écran (`rpg-battle.css`, z-index
+   1500). Le duel en ligne prend la même place : la barre du site passe
+   dessous, le key art de Bab El porte la page, et le liseré « ← Le Sablier »
+   ramène au hub. Sans ce cadre, le titre du salon se glissait sous la barre
+   fixe du site — 24 px de retrait pour une île de 80 px. */
+.rpg-pvp-page {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background-color: #08070d;
+  background-position: center top;
+  background-size: cover;
+  color: #f4efe4;
+  scrollbar-color: rgba(226, 187, 111, .5) rgba(15, 13, 16, .6);
+}
+/* La page derrière (articles, pied de site) ne défile plus pendant la partie. */
+body.rpg-pvp-lock { overflow: hidden; }
+.rpg-pvp-page__barre {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px clamp(12px, 3.4vw, 34px);
+  border-bottom: 1px solid rgba(240, 220, 178, .16);
+  background: linear-gradient(180deg, rgba(12, 11, 15, .94), rgba(12, 11, 15, .78));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.rpg-pvp-page__retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(240, 220, 178, .26);
+  border-radius: 999px;
+  background: rgba(10, 9, 13, .62);
+  color: #f1e3c4;
+  font: 700 12px/1 system-ui, sans-serif;
+  letter-spacing: .04em;
+  text-decoration: none;
+}
+.rpg-pvp-page__retour:hover,
+.rpg-pvp-page__retour:focus-visible { border-color: #e9c46a; color: #ffe7af; outline: none; }
+.rpg-pvp-page__statut {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(244, 239, 228, .72);
+  font: 700 10px/1 var(--mono, monospace);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.rpg-pvp-page__point {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7fce6a;
+  box-shadow: 0 0 0 3px rgba(127, 206, 106, .16);
+}
+.rpg-pvp-page__code {
+  padding: 7px 13px;
+  border: 1px solid rgba(233, 196, 106, .5);
+  border-radius: 999px;
+  background: rgba(233, 196, 106, .12);
+  color: #f6e3b4;
+  font: 700 12px/1 var(--mono, monospace);
+  letter-spacing: .2em;
+}
+.rpg-pvp-page__contenu { min-height: calc(100% - 56px); }
+
+/* ── Le salon ────────────────────────────────────────────────────────────── */
+
 .rpg-pvp {
   --pvp-or: #e9c46a;
   --pvp-sable: #f6e3b4;
   --pvp-fond: rgba(12, 10, 8, .82);
+  --pvp-ligne: rgba(233, 196, 106, .22);
+  width: 100%;
+  max-width: 1120px;
   margin: 0 auto;
-  max-width: 1080px;
-  padding: 24px 16px 64px;
+  padding: clamp(22px, 4vw, 44px) clamp(14px, 3.4vw, 34px) 76px;
   color: #f4efe4;
 }
 
-.rpg-pvp__header { margin-bottom: 20px; }
+.rpg-pvp__header { max-width: 720px; margin: 0 0 clamp(20px, 3vw, 30px); }
 .rpg-pvp__eyebrow {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-size: 11px;
   letter-spacing: .18em;
   text-transform: uppercase;
   color: var(--pvp-or);
 }
-.rpg-pvp h1 { margin: 0 0 8px; font-size: clamp(24px, 4vw, 38px); line-height: 1.1; }
-.rpg-pvp h2 { margin: 0 0 12px; font-size: 17px; letter-spacing: .02em; }
-.rpg-pvp__lead { margin: 0; max-width: 60ch; color: rgba(244, 239, 228, .82); }
-.rpg-pvp__note { margin: 10px 0 0; font-size: 13px; color: rgba(244, 239, 228, .66); }
+.rpg-pvp h1 {
+  margin: 0 0 10px;
+  color: #fff2d8;
+  font: 800 clamp(30px, 4.6vw, 48px)/1.05 Georgia, 'Times New Roman', serif;
+  letter-spacing: -.02em;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, .75);
+}
+.rpg-pvp h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff1d5;
+  font: 700 18px/1.2 Georgia, serif;
+}
+.rpg-pvp__lead {
+  margin: 0;
+  max-width: 58ch;
+  color: rgba(244, 239, 228, .82);
+  font: 14px/1.6 system-ui, sans-serif;
+}
+.rpg-pvp__note { margin: 0; font-size: 12.5px; line-height: 1.5; color: rgba(244, 239, 228, .62); }
 .rpg-pvp__erreur {
-  margin: 12px 0;
-  padding: 10px 12px;
-  border-radius: 10px;
+  margin: 0 0 16px;
+  padding: 11px 13px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 122, 122, .5);
   background: rgba(120, 24, 24, .28);
   font-size: 14px;
 }
 
+/* Les panneaux : verre sombre, liseré de laiton, un seul rythme de retrait. */
 .rpg-pvp__panneau {
-  margin-top: 18px;
-  padding: 18px;
-  border-radius: 16px;
-  border: 1px solid rgba(233, 196, 106, .22);
-  background: var(--pvp-fond);
-  backdrop-filter: blur(6px);
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: clamp(16px, 2.2vw, 24px);
+  border: 1px solid var(--pvp-ligne);
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(24, 20, 15, .9), rgba(10, 9, 12, .92));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .38), inset 0 1px rgba(255, 244, 220, .06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
+/* Le numéro d'étape, posé comme un jeton de jeu. */
+.rpg-pvp__etape {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(233, 196, 106, .55);
+  border-radius: 50%;
+  background: rgba(233, 196, 106, .14);
+  color: var(--pvp-sable);
+  font: 800 13px/1 Georgia, serif;
+}
+
+/* Deux colonnes sur ordinateur : le deck à gauche, les façons de lancer la
+   partie à droite. Sur téléphone, une seule colonne, dans l'ordre 1 → 2 → 3. */
+.rpg-pvp__grille {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(300px, .82fr);
+  gap: clamp(14px, 2vw, 22px);
+  align-items: start;
+}
+.rpg-pvp__colonne { display: grid; gap: clamp(14px, 2vw, 22px); }
 
 .rpg-pvp__cta,
 .rpg-pvp__ghost {
@@ -52,35 +180,39 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 0 18px;
+  min-height: 46px;
+  padding: 0 20px;
   border-radius: 12px;
-  font-weight: 700;
-  font-size: 15px;
+  font: 700 14px/1.1 system-ui, sans-serif;
   text-decoration: none;
   cursor: pointer;
 }
 .rpg-pvp__cta {
-  border: 1px solid rgba(233, 196, 106, .8);
+  border: 1px solid #f2d79a;
   background: linear-gradient(180deg, #f0cf82, #d9ae4e);
   color: #241a06;
+  box-shadow: 0 10px 24px rgba(197, 139, 53, .22);
 }
+.rpg-pvp__cta:hover,
+.rpg-pvp__cta:focus-visible { background: linear-gradient(180deg, #ffdfa0, #e8bc5c); color: #1c130b; outline: none; }
 .rpg-pvp__cta:disabled { opacity: .55; cursor: not-allowed; }
+.rpg-pvp__cta--large { width: 100%; min-height: 52px; font-size: 15px; }
 .rpg-pvp__ghost {
-  border: 1px solid rgba(244, 239, 228, .3);
+  border: 1px solid rgba(244, 239, 228, .26);
   background: transparent;
   color: inherit;
 }
+.rpg-pvp__ghost:hover,
+.rpg-pvp__ghost:focus-visible { border-color: rgba(233, 196, 106, .7); color: #ffe7af; outline: none; }
 .rpg-pvp__ghost:disabled { opacity: .5; cursor: not-allowed; }
 .rpg-pvp__ghost--danger { border-color: rgba(255, 122, 122, .45); color: #ffb4b4; }
-.rpg-pvp__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.rpg-pvp__actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .rpg-pvp__code {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  margin-bottom: 8px;
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: .12em;
   text-transform: uppercase;
   color: rgba(244, 239, 228, .6);
@@ -91,40 +223,60 @@
   color: var(--pvp-sable);
 }
 
+/* Le choix du deck : les coffrets de l'onglet Deck, en étagère centrée.
+   Même objet, mêmes couleurs, même inclinaison au curseur que dans le menu —
+   le joueur reconnaît son boîtier au lieu d'apprendre une seconde grille. Le
+   boîtier choisi s'allume d'un liseré de laiton et sa légende passe au doré. */
 .rpg-pvp-decks {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px 6px;
   margin: 0;
-  padding: 0;
+  padding: 2px 0 6px;
   list-style: none;
 }
-.rpg-pvp-deck {
-  width: 100%;
-  min-height: 64px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  text-align: left;
-  border-radius: 12px;
-  border: 1px solid rgba(244, 239, 228, .18);
-  background: rgba(255, 255, 255, .04);
-  color: inherit;
-  cursor: pointer;
+.rpg-pvp-deckbox {
+  width: clamp(104px, 23%, 132px);
+  padding: 8px 4px 9px;
 }
-.rpg-pvp-deck strong { font-size: 14px; }
-.rpg-pvp-deck small { font-size: 12px; color: rgba(244, 239, 228, .62); }
-.rpg-pvp-deck.is-selected {
-  border-color: var(--pvp-or);
-  box-shadow: 0 0 0 1px rgba(233, 196, 106, .5) inset;
-  background: rgba(233, 196, 106, .12);
+/* Le boîtier garde sa perspective mais pas la taille de l'étagère du menu :
+   dans un panneau de salon, quatre coffrets de front tiennent sur deux rangées. */
+.rpg-pvp-deckbox .rpg-deckbox { --bw: clamp(82px, 6.2vw, 106px); }
+.rpg-pvp-deckbox .rpg-deck-choice__text { gap: 3px; padding: 0 2px 2px; }
+.rpg-pvp-deckbox .rpg-deck-choice__text strong { font-size: 13.5px; }
+.rpg-pvp-deckbox .rpg-deck-choice__text em { font-size: 9.5px; color: rgba(244, 231, 207, .66); }
+.rpg-pvp-deckbox .rpg-deck-choice__cta { color: rgba(244, 239, 228, .62); font-size: 9.5px; letter-spacing: .06em; }
+.rpg-pvp-deckbox:hover .rpg-deck-choice__cta { color: #f2d79b; }
+.rpg-pvp-deckbox.is-selected {
+  border-color: rgba(233, 196, 106, .7);
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 216, 143, .14), rgba(255, 216, 143, 0) 70%);
+  box-shadow: inset 0 0 0 1px rgba(233, 196, 106, .3), 0 12px 26px rgba(0, 0, 0, .3);
 }
-.rpg-pvp-deck:disabled { opacity: .6; cursor: not-allowed; }
+.rpg-pvp-deckbox.is-selected .rpg-deck-choice__cta { color: #ffe6ab; }
+.rpg-pvp-deckbox .rpg-deck-choice__button:disabled { cursor: not-allowed; }
+.rpg-pvp-deckbox:has(.rpg-deck-choice__button:disabled) { opacity: .55; }
 
-.rpg-pvp__mode { display: grid; gap: 8px; margin: 16px 0 4px; }
-.rpg-pvp__mode label { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
-.rpg-pvp__mode span { color: rgba(244, 239, 228, .8); }
+/* La cadence : deux cartes-options plutôt que deux lignes de radio nues. */
+.rpg-pvp__mode { display: grid; gap: 8px; margin: 0; }
+.rpg-pvp__mode-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: baseline;
+  padding: 11px 13px;
+  border: 1px solid rgba(244, 239, 228, .16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .03);
+  cursor: pointer;
+  transition: border-color .16s ease, background .16s ease;
+}
+.rpg-pvp__mode-option:hover { border-color: rgba(233, 196, 106, .35); }
+.rpg-pvp__mode-option input { grid-row: span 2; align-self: center; accent-color: var(--pvp-or); }
+.rpg-pvp__mode-titre { font: 700 13.5px/1.2 system-ui, sans-serif; color: #f6ead2; }
+.rpg-pvp__mode-desc { font-size: 12px; line-height: 1.4; color: rgba(244, 239, 228, .64); }
+.rpg-pvp__mode-option.is-active { border-color: rgba(233, 196, 106, .7); background: rgba(233, 196, 106, .1); }
 
 .rpg-pvp__amis,
 .rpg-pvp__form {
@@ -132,21 +284,24 @@
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin-top: 14px;
+  margin: 0;
 }
-.rpg-pvp__amis label { font-size: 13px; color: rgba(244, 239, 228, .7); }
+.rpg-pvp__amis { display: grid; align-items: stretch; }
+.rpg-pvp__amis label { font-size: 12.5px; color: rgba(244, 239, 228, .7); }
 .rpg-pvp__amis select,
 .rpg-pvp__form input {
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 12px;
-  border-radius: 10px;
+  border-radius: 11px;
   border: 1px solid rgba(244, 239, 228, .22);
-  background: rgba(0, 0, 0, .35);
+  background: rgba(0, 0, 0, .38);
   color: inherit;
   font-size: 15px;
 }
+.rpg-pvp__amis select:focus-visible,
+.rpg-pvp__form input:focus-visible { border-color: var(--pvp-or); outline: none; }
 .rpg-pvp__form input {
-  flex: 1 1 160px;
+  flex: 1 1 170px;
   letter-spacing: .3em;
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
@@ -395,10 +550,42 @@
   word-break: break-all;
 }
 
+/* ── Écrans étroits ──────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  /* Une seule colonne : le deck d'abord, puis créer, puis rejoindre. */
+  .rpg-pvp__grille { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (max-width: 640px) {
-  .rpg-pvp { padding: 16px 12px 48px; }
+  .rpg-pvp { padding: 18px 12px 56px; }
+  .rpg-pvp__header { margin-bottom: 18px; }
+  .rpg-pvp__panneau { gap: 12px; padding: 15px; border-radius: 16px; }
+  /* Trois coffrets de front : les sept decks tiennent en trois rangées. */
+  .rpg-pvp-deckbox { width: clamp(94px, 29%, 124px); }
+  .rpg-pvp-deckbox .rpg-deckbox { --bw: clamp(66px, 20vw, 82px); }
+  .rpg-pvp-page__barre { min-height: 50px; padding: 7px 12px; }
+  .rpg-pvp-page__retour { min-height: 34px; padding: 0 11px; font-size: 11px; }
+  .rpg-pvp-page__code { padding: 6px 10px; font-size: 11px; }
+  .rpg-pvp-page__contenu { min-height: calc(100% - 50px); }
   .rpg-pvp-duel__entete { grid-template-columns: 1fr; text-align: left; }
   .rpg-pvp-duel__camp--moi { align-items: flex-start; text-align: left; }
   .rpg-pvp-duel__tour { order: -1; align-items: flex-start; }
   .rpg-pvp-carte-main { width: 116px; }
+}
+
+@media (max-width: 380px) {
+  .rpg-pvp-deckbox { width: clamp(88px, 31%, 116px); }
+  .rpg-pvp-deckbox .rpg-deckbox { --bw: clamp(70px, 19vw, 88px); }
+  .rpg-pvp-page__statut { display: none; }
+}
+
+/* Sur le plateau, le cadre se fait oublier : la partie a besoin de chaque
+   pixel, la barre de retour ne garde qu'une rangée de 44 px (36 px sur un
+   téléphone en paysage, où elle cesse d'être collante). */
+.rpg-pvp-page--compact .rpg-pvp-page__barre { min-height: 44px; padding: 4px 12px; }
+.rpg-pvp-page--compact .rpg-pvp-page__retour { min-height: 32px; padding: 0 11px; font-size: 11px; }
+.rpg-pvp-page--compact .rpg-pvp-page__code { padding: 5px 10px; font-size: 11px; }
+.rpg-pvp-page--compact .rpg-pvp-page__contenu { min-height: calc(100% - 44px); }
+@media (max-height: 480px) {
+  .rpg-pvp-page--compact .rpg-pvp-page__barre { position: static; min-height: 36px; }
 }

@@ -1,0 +1,120 @@
+/**
+ * L'illustration des cartes du Sablier — un seul endroit pour les URL.
+ * -------------------------------------------------------------------
+ * `cardArt(id)` donne le chemin de la peinture d'une carte, `cardArtFurie(id)`
+ * celui de sa face « furie ». Le module vit à part parce que le coffret de
+ * deck (`RpgDeckBox.jsx`) et le salon du duel en ligne peignent les mêmes
+ * images que le menu : une seule révision de cache, décidée ici.
+ */
+
+import { cardArtId, cardById } from './rpgCards.js';
+
+const CARD_ART_CACHE_VERSIONS = {
+  'susanoo': 'susanoo-kaiga-couleurs-v1',
+  'orochi': 'orochi-kaiga-vert-rouge-v2',
+  'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
+  'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
+  'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
+  'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
+  'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
+  // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
+  'ashigaru-des-braises': 'soleil-rouge-kaiga-couleurs-v7',
+  'ronin-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
+  'samourai-du-torii': 'soleil-rouge-kaiga-couleurs-v7',
+  'onna-musha-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
+  'hatamoto-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
+  'kenshi-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
+  'daimyo-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
+  'tengu-du-mont-ardent': 'soleil-rouge-kaiga-couleurs-v7',
+  'oni-de-la-fournaise': 'soleil-rouge-kaiga-couleurs-v7',
+  'kagutsuchi-flamme-originelle': 'soleil-rouge-kaiga-couleurs-v7',
+  'frappe-iaijutsu': 'iaijutsu-kaiga-couleurs-sans-jambes-v10',
+  'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
+  'serment-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
+  'pere-des-corbeaux': 'odin-photoreal-v1',
+  'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
+  'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
+  'anqa-des-braises': 'anqa-des-braises-huile-v1',
+  // Les cinq héros du récit ont été **repeints en nihonga** (pigments
+  // minéraux sur feuille d’or) avec une palette algérienne — indigo touareg,
+  // safran, henné, vert émeraude, turquoise et or. Mêmes noms de fichiers,
+  // mêmes visages et mêmes accessoires : on date donc les cinq images d’un
+  // seul geste pour qu’aucun cache ne resserve les huiles précédentes.
+  feriel: 'heros-nihonga-algerien-v1',
+  salem: 'heros-nihonga-algerien-v1',
+  yamina: 'heros-nihonga-algerien-v1',
+  tarek: 'heros-nihonga-algerien-v1',
+  boualem: 'heros-nihonga-algerien-v1',
+  // Le Serpent du monde garde la facture nihonga, mais sa composition est
+  // repensée : un serpent unique et anatomiquement cohérent encercle le globe.
+  // Sa révision dédiée l’emporte sur celle du set Neige.
+  'serpent-du-monde': 'serpent-terre-nihonga-v1',
+  // L'Armure de cendres quitte le lot photoréaliste : son dessin d'origine
+  // est conservé trait pour trait et simplement repeint en nihonga.
+  'armure-de-cendres': 'armure-nihonga-v1',
+  // Le Bâton des citernes quitte le lot photoréaliste à son tour : le bâton
+  // seul derrière la glace d'une vitrine, les serpents dehors.
+  'baton-des-citernes': 'baton-nihonga-vitrine-dehors-v2',
+  'djinn-de-foudre': 'plein-art-foudre-v1',
+  'sonneur-fele': 'plein-art-cloche-v1',
+  'dame-aux-ailes-d-or': 'nihonga-v1',
+  'lionne-du-midi-ardent': 'nihonga-v1',
+  'brisure-de-verre': 'plein-art-verre-v2',
+  'silence-decume': 'plein-art-bulle-v1',
+  'parade-du-verre': 'plein-art-verre-v1',
+  'maree-contraire': 'deflection-ultrason-v1',
+  ressac: 'djinn-tourbillon-v1',
+  'courant-de-retour': 'djinn-tourbillon-v1',
+  // Les quatre porteurs humains de Furie ont été repeints en photoréaliste
+  // fantaisiste : chaque face intacte a son double ensanglanté, armure ou
+  // casque brisé et visage en furie. On date les huit images ensemble pour
+  // qu’aucun cache ne resserve les anciennes huiles sous les mêmes noms.
+  'guerrier-au-bouclier-rond': 'furie-photorealiste-v1',
+  // La face de base du Berserk a depuis été repeinte seule : même visage et
+  // même rendu photoréaliste que son double, mais avant la Furie — debout,
+  // calme et sans aucune trace de sang. Le double garde la révision commune.
+  'berserk-des-trois-hivers': 'berserk-meme-visage-sans-sang-v1',
+  'jarl-au-marteau-de-guerre': 'furie-photorealiste-v1',
+  'maitre-du-marteau': 'furie-photorealiste-v1',
+  'guerrier-au-bouclier-rond-furie': 'furie-photorealiste-v1',
+  'berserk-des-trois-hivers-furie': 'furie-photorealiste-v1',
+  'jarl-au-marteau-de-guerre-furie': 'furie-photorealiste-v1',
+  'maitre-du-marteau-furie': 'furie-photorealiste-v1',
+  // Le Loup garde, lui, la peinture à l’huile de sa meute : même composition,
+  // chef ensanglanté et crocs dehors dans l’état Furie.
+  'loup-des-neiges-furie': 'loup-furie-huile-v1',
+  // Repeints sous leurs anciens noms : charge frontale pour le Mur, marteau
+  // seul foudroyé au-dessus du fjord pour l’Éclair, soldats gelés dans la
+  // brume pour la Brume du fjord.
+  'mur-de-boucliers': 'mur-boucliers-charge-v1',
+  'eclair-du-marteau': 'eclair-marteau-fjord-v1',
+  'brume-du-fjord': 'brume-personnes-gelees-v2',
+};
+/**
+ * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la
+ * place aux peintures définitives **sous les mêmes noms de fichiers**, et deux
+ * figures (le Maître du marteau, le Père des corbeaux) ont ensuite été
+ * repeintes. On date donc ses images : le `?v=` change l'URL, si bien qu'aucun
+ * cache — celui du navigateur comme celui d'un intermédiaire — ne peut plus
+ * resservir une ancienne peinture sous le nom d'une nouvelle. Incrémenter la
+ * version à chaque repeint du set.
+ */
+const SET_NEIGE_ART_VERSION = 'peintures-definitives-v3';
+export const cardArt = (id) => {
+  const artId = cardArtId(id);
+  const revision = CARD_ART_CACHE_VERSIONS[artId]
+    ?? (cardById(artId)?.element === 'neige' ? SET_NEIGE_ART_VERSION : undefined);
+  return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
+};
+/**
+ * Illustration « furie » d'une créature : tant que son état Furie est actif
+ * (`entite.furieDeclenchee === true`), on affiche sa peinture alternative
+ * entachée de sang et en colère ; dès qu'il retombe, la face normale revient.
+ * Retourne l'URL de l'image `public/cards/<id>-furie.jpg` avec sa révision
+ * de cache, ou l'illustration normale si aucune peinture furie n'existe.
+ */
+export const cardArtFurie = (id) => {
+  const artId = `${cardArtId(id)}-furie`;
+  const revision = CARD_ART_CACHE_VERSIONS[artId];
+  return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
+};

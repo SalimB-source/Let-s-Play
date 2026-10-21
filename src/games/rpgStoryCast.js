@@ -84,6 +84,56 @@ export const RPG_STORY_OPPONENT_CAST = Object.freeze({
   'sables-3': 'horloger-zenith',
 });
 
+/**
+ * Le côté vers lequel la **peinture** regarde. La plupart des figures sont
+ * frontales — elles tiennent indifféremment l'un ou l'autre bord du plan. Une
+ * poignée est dessinée de trois quarts : posées du mauvais côté, elles fixent
+ * le bord de l'écran au lieu d'interpeller leur interlocuteur, et les deux
+ * personnages semblent regarder dans la même direction.
+ * On ne recense donc que les figures franchement tournées.
+ */
+const REGARDS_PEINTS = Object.freeze({
+  // Tournées vers la gauche de l'image : elles appartiennent au bord droit.
+  boualem: 'gauche',
+  'dernier-fennec': 'gauche',
+  devoreur: 'gauche',
+  'djinn-souk': 'gauche',
+  feriel: 'gauche',
+  marchand: 'gauche',
+  nageuse: 'gauche',
+  'reine-etals': 'gauche',
+  // Tournées vers la droite de l'image : elles appartiennent au bord gauche.
+  amani: 'droite',
+  guetteur: 'droite',
+  'horloger-zenith': 'droite',
+  'meute-neiges': 'droite',
+  salem: 'droite',
+  sonneur: 'droite',
+  yamina: 'droite',
+});
+
+/** Le côté vers lequel regarde la peinture d'un personnage, ou null (frontal). */
+export function regardHistoire(id) {
+  return Object.hasOwn(REGARDS_PEINTS, id) ? REGARDS_PEINTS[id] : null;
+}
+
+/**
+ * Le plan du plateau : au plus deux figures, de gauche à droite. L'ordre du
+ * récit (l'hôte puis celui qui parle) est conservé **sauf** quand il met les
+ * deux regards du même bord : on échange alors les places. Une figure qui
+ * regarde encore vers l'extérieur est retournée (`miroir`), pour qu'aucune ne
+ * tourne le dos à son interlocuteur.
+ */
+export function placerPlateauHistoire(ids = []) {
+  const figures = [...new Set(ids)].slice(0, 2);
+  if (figures.length < 2) return figures.map((id) => ({ id, miroir: false }));
+  const exterieur = (id, bord) => (regardHistoire(id) === bord ? 1 : 0);
+  const rangs = (gauche, droite) => exterieur(gauche, 'gauche') + exterieur(droite, 'droite');
+  const [a, b] = figures;
+  const ordre = rangs(a, b) > rangs(b, a) ? [b, a] : [a, b];
+  return ordre.map((id, index) => ({ id, miroir: regardHistoire(id) === (index === 0 ? 'gauche' : 'droite') }));
+}
+
 /** Une seule révision de cache pour toute la famille des sprites du récit. */
 export const STAND_REVISION = 'recit-stands-4';
 
