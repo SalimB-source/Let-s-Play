@@ -122,8 +122,10 @@ export function composerDeck(recette, catalogue) {
 
   // 1. La signature : les cartes d'archétype du deck, posées avant tout.
   // Elle n'est pas filtrée par `dansIdentite` : c'est le canal prévu pour une
-  // exception assumée — le Brûlot, carte Braise du set Sable + Eau, reste à
-  // bord de la flotte par sa signature, sans ouvrir le vivier à la Braise.
+  // éventuelle exception assumée (une carte hors identité posée par la
+  // signature, sans ouvrir le vivier à sa couleur). Aucun deck de l'étagère
+  // n'en use aujourd'hui : le Brûlot, devenu Braise, a quitté les Lettres de
+  // Marque.
   for (const entree of signature) {
     const [id, nombre] = Array.isArray(entree) ? entree : [entree, 1];
     poser(carteParId.get(id), nombre);

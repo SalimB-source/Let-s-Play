@@ -2288,15 +2288,14 @@ export const RPG_DECKS = [
     name: 'Les Lettres de Marque',
     role: 'joueur',
     element: 'hybride',
-    // La flotte est Sable + Eau ; le Brûlot y ajoute la seule flamme du set
-    // (Braise), posée par la signature de la recette hors du vivier de
-    // remplissage — le deck joue donc bien trois couleurs.
-    elements: ['sable', 'eau', 'braise'],
+    // La flotte est Sable + Eau. Le Brûlot, devenu Braise, a quitté le
+    // boîtier : il s'ouvre dans les boosters.
+    elements: ['sable', 'eau'],
     terrain: null,
     boxArt: 'la-barbe-rousse',
-    archetype: 'Sable + Eau · l’Abordage, la Cale, la Cargaison — et la flamme du Brûlot',
+    archetype: 'Sable + Eau · l’Abordage, la Cale, la Cargaison',
     affrontement: 'Affrontez les lettres de marque de la Régence.',
-    description: 'Deck hybride Sable + Eau de l’âge de la course : à l’arrivée en jeu, l’Abordage prend la créature adverse ciblée de coût inférieur au sien en cale (Raïs de la galiote, Cotre de course, La Barbe-Rousse — et la Lettre de marque arme toutes les arrivées du tour) ; la cale ne se rachète pas, il faut détruire ou faire quitter la table au capteur pour récupérer sa créature, et la Cargaison du Galion paie l’assurance du convoi. Le Brûlot, seule flamme de la flotte, embrase la créature qui le détruit ; le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque deux Corsaires. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste s’ouvrent dans les boosters.',
+    description: 'Deck hybride Sable + Eau de l’âge de la course : à l’arrivée en jeu, l’Abordage prend la créature adverse ciblée de coût inférieur au sien en cale (Raïs de la galiote, Cotre de course, La Barbe-Rousse — et la Lettre de marque arme toutes les arrivées du tour) ; la cale ne se rachète pas, il faut détruire ou faire quitter la table au capteur pour récupérer sa créature, et la Cargaison du Galion paie l’assurance du convoi. La Mousse des galiotes hisse la voile dès le premier mana ; le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque deux Corsaires. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste et le Brûlot — la seule flamme du set, devenu Braise — s’ouvrent dans les boosters.',
     cardIds: RPG_DECK_LETTRES_DE_MARQUE_BASE,
   },
 ];
