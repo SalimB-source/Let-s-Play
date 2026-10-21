@@ -556,7 +556,7 @@ test('La Dernière Pesée libère tout le champ avant les déclenchements de mor
   assert.ok(duel.joueur.creatures.every((c) => c.carteId === 'shabti' && c.pv === 1));
 });
 
-test('La Dernière Pesée respecte Tenacité et les protections du Sablier', () => {
+test('La Dernière Pesée tue les créatures tenaces et épargne les protections', () => {
   const duel = nouveau();
   installerMana(duel);
   const tenace = poserTenebres(duel, 'chacal-du-seuil');
@@ -564,12 +564,15 @@ test('La Dernière Pesée respecte Tenacité et les protections du Sablier', () 
   const protege = poserTenebres(duel, 'chacal-du-seuil');
   protege.protection = { contre: 'tenebres', toursRestants: 2 };
   assert.equal(lancerDernierePesee(duel).ok, true);
-  assert.ok(duel.joueur.creatures.includes(tenace));
-  assert.equal(tenace.pv, 1);
-  assert.equal(tenace.tenaciteDisponible, false);
-  assert.ok(duel.joueur.creatures.includes(protege));
-  assert.equal(lancerDernierePesee(duel).ok, true);
+  // Tenacité ne refuse plus la destruction : la vague l'emporte, mais sa carte
+  // est promise à un retour au prochain tour du joueur.
   assert.ok(!duel.joueur.creatures.includes(tenace));
+  assert.ok(duel.joueur.cimetiere.includes('chacal-du-seuil'));
+  assert.equal(duel.joueur.retoursProgrammes.filter((retour) => retour.tenacite).length, 1,
+    'un seul retour promis pour la créature tenace');
+  // La protection de couleur, elle, écarte toujours la vague.
+  assert.ok(duel.joueur.creatures.includes(protege));
+  assert.equal(protege.pv, 1);
 });
 
 test('La Dernière Pesée exige son tour et son mana, mais aucune cible', () => {
@@ -722,15 +725,36 @@ test('Khopesh : le porteur revient après combat ou destruction totale, jamais l
   }
 });
 
-test('Khopesh : Tenacité ne déclenche pas le retour ; le sacrifice le déclenche', () => {
+test('Khopesh : un porteur tenace meurt, le Khopesh le relève et le retour de Tenacité se dissipe', () => {
   const duel = nouveau();
   installerMana(duel);
   const porteur = poserTenebres(duel, 'chacal-du-seuil');
   equiperKhopesh(duel, porteur);
   porteur.tenaciteDisponible = true;
   rpgBlesserCreature(duel, 'joueur', porteur.id, 10);
-  assert.ok(duel.joueur.creatures.includes(porteur));
-  assert.ok(porteur.arme);
+  // Tenacité ne refuse plus la mort : le porteur tombe et sa renaissance est
+  // programmée ; mais le Khopesh relève aussitôt la carte, qui n'est donc plus
+  // au cimetière — le retour promis se dissipe au prochain tour.
+  assert.equal(duel.joueur.creatures.some((c) => c.id === porteur.id), false);
+  assert.equal(duel.joueur.creatures[0].carteId, 'chacal-du-seuil');
+  assert.notEqual(duel.joueur.creatures[0].id, porteur.id);
+  assert.equal(duel.joueur.creatures[0].pv, 1);
+  assert.deepEqual(duel.joueur.retoursProgrammes.map((retour) => retour.tenacite), [true]);
+  rpgFinDeTour(duel);
+  assert.deepEqual(duel.joueur.retoursProgrammes.map((retour) => retour.tenacite), [true],
+    'le retour attend le tour du joueur');
+  rpgFinDeTour(duel);
+  assert.deepEqual(duel.joueur.retoursProgrammes, [],
+    'la carte a déjà été relevée par le Khopesh : rien à reprendre au cimetière');
+  assert.equal(duel.joueur.creatures.filter((c) => c.carteId === 'chacal-du-seuil').length, 1,
+    'une seule présence, pas de doublon');
+});
+
+test('Khopesh : le sacrifice du porteur le réanime', () => {
+  const duel = nouveau();
+  installerMana(duel);
+  const porteur = poserTenebres(duel, 'chacal-du-seuil');
+  equiperKhopesh(duel, porteur);
   assert.equal(rpgSacrifierCreature(duel, 'joueur', porteur.id).ok, true);
   assert.equal(duel.joueur.creatures[0].carteId, 'chacal-du-seuil');
   assert.notEqual(duel.joueur.creatures[0].id, porteur.id);

@@ -571,8 +571,9 @@ rôles et leur résolution, sans remplacer les parties d’équilibrage.
 Destruction réelle, pas des dégâts ni un exil : les créatures des deux camps
 rejoignent le cimetière, leurs armes suivent les règles ordinaires et les
 capacités de mort se déclenchent après le retrait des victimes. Les Shabtis
-créés par ces morts ne sont pas détruits par la même vague. Tenacité et les
-protections contre Ténèbres restent applicables selon les règles du Sablier ;
+créés par ces morts ne sont pas détruits par la même vague. Une créature tenace
+meurt comme les autres et ne revient qu'au prochain tour de son camp, avec
+1 point de défense ; les protections contre Ténèbres, elles, écartent la vague ;
 les boucliers qui absorbent les dégâts ne préviennent pas cette destruction.
 
 La carte rejoint le catalogue et la galerie, sans modifier la liste de

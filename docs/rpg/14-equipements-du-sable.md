@@ -132,9 +132,10 @@ déclencheur.
 **Brique moteur** : un déclencheur « quand le porteur meurt ». Le point
 d'accroche existe — `enterrer()` appelle `armeAuCimetiere()` **avant** de
 déclencher `carte.destruction`. Il suffit d'y lire `carteArme.porteurMeurt` et
-de l'`appliquer` avec le camp du porteur. À noter : la **Tenacité** et l'exil
-doivent, logiquement, ne pas le déclencher (la créature n'est pas « morte » au
-sens du cimetière).
+de l'`appliquer` avec le camp du porteur. À noter : l'exil ne le déclenche pas
+(la créature n'entre pas au cimetière), tandis que la **Tenacité** le laisse
+partir normalement — la créature meurt pour de bon, seule sa carte revient plus
+tard.
 
 ### 5. Boussole du Hoggar — inhabituelle — 2
 

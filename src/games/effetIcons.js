@@ -324,7 +324,7 @@ export const EFFET_DEFINITIONS = {
   coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
   furie: (n) => `La première fois qu’elle est blessée et survit, elle gagne +${n ?? 'X'}/+${n ?? 'X'}.`,
   esquive: () => '25 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
-  tenacite: 'Une fois par partie, si elle doit être détruite, elle survit avec 1 point de défense.',
+  tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
   bouclier: (n) => {

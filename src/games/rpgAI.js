@@ -176,11 +176,11 @@ export function furieGagnee(entite, degatsRecus) {
 
 /** L’entité meurt-elle sous un coup de ce type (bouclier compris) ?
  *  Le moteur tue à 0 PV : dégâts ≥ PV + bouclier, pas strictement plus.
- *  La **Tenacité** (le Seigneur des mâchoires, le Maître du marteau) refuse
- *  une destruction par partie : tant qu'elle est disponible, un coup létal
- *  laisse la créature à 1 point de défense — elle ne meurt donc pas ici. */
+ *  La **Tenacité** (le Seigneur des mâchoires, le Maître du marteau) ne
+ *  refuse plus la destruction : la créature meurt ici comme une autre, et ne
+ *  revient qu'au tour suivant, avec 1 point de défense. L'IA peut donc tuer
+ *  une créature tenace sans se tromper — le corps perdu n'est pas sauvé. */
 function meurtSous(entite, montant, sourceType = 'attaque') {
-  if (entite?.tenaciteDisponible) return false;
   return degatsApresEsquive(entite, montant, sourceType)
     >= (entite.bouclier ?? 0) + Math.max(0, entite.pv ?? 0);
 }
@@ -209,9 +209,10 @@ export function valeurEntite(entite) {
   if (entite?.coupRapide) valeur += 2;
   if (entite?.rapidite) valeur += 0.5;
   if (entite?.protection) valeur += 1.5;
-  // Tenacité : une destruction refusée, c'est un corps qui survit un tour de
-  // plus dans l'échange — elle vaut plus que ses PV affichés.
-  if (entite?.tenaciteDisponible) valeur += 2;
+  // Tenacité : la créature meurt bien, mais sa carte revient au tour suivant
+  // avec 1 point de défense — un corps gratuit vaut un peu plus que ses PV
+  // affichés, sans valoir une créature qui refuse la destruction.
+  if (entite?.tenaciteDisponible) valeur += 1;
   // Bouclier de lumière (la Dame aux ailes d'or, Salem) : la prochaine attaque
   // ou magie ne passe pas — un rempart d'un coup, à ne pas sous-estimer.
   if (entite?.bouclierLumiere) valeur += 2;
@@ -1055,11 +1056,13 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     const effet = carte.effet ?? {};
     if (effet.type === 'destruction-totale') {
       // La protection de couleur et le Serpent du monde (protégé des magies)
-      // écartent la vague : la créature survit sans rien encaisser.
+      // écartent la vague : la créature survit sans rien encaisser. Une
+      // créature tenace meurt bien, mais revient au tour suivant avec 1 point
+      // de défense : la vague vaut donc un peu moins contre elle.
       const pertes = (c) => duel[c].creatures
         .filter((entite) => !estProtegee(entite, cardColors(carte)) && !horsDAtteinteDuSort(entite, carte))
         .reduce((somme, entite) => somme + valeurEntite(entite)
-          * (entite.tenaciteDisponible ? 0.25 : 1), 0);
+          * (entite.tenaciteDisponible ? 0.7 : 1), 0);
       const gain = pertes(adv) - pertes(cote);
       return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
     }

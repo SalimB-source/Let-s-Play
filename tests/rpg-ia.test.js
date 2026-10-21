@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   RPG_PV_JOUEUR,
   rpgActiverCapacite,
+  rpgBlesserCreature,
   rpgChoisirAttaquants,
   rpgChoisirBloqueurs,
   rpgCibleAuto,
@@ -764,19 +765,22 @@ test('le Grand Voile blanc : l’IA n’attaque pas pour rien', () => {
     'le voile levé, la frappe repart');
 });
 
-test('Tenacité : l’IA sait que la créature survit une fois à 1 PV', () => {
+test('Tenacité : l’IA sait que la créature meurt et revient au tour suivant', () => {
   const tenace = {
     id: 'tenace', carteId: 'seigneur-des-machoires', name: 'Seigneur des mâchoires',
     atk: 6, def: 6, pv: 4, pvMax: 6, bouclier: 0, esquive: 0, tenaciteDisponible: true,
   };
-  // L’Ifrit 5/4 frappe 5 sur 4 PV : sans Tenacité le Seigneur meurt.
+  // L’Ifrit 5/4 frappe 5 sur 4 PV : la Tenacité ne refuse plus la destruction.
+  // Le Seigneur meurt, et l’Ifrit meurt de la riposte — un échange létal net.
   assert.deepEqual(resultatBlocage(ifritBraise(), tenace),
-    { attaquantMeurt: true, bloqueurMeurt: false, attaquantFurie: 0, bloqueurFurie: 0 },
-    'Tenacité : le Seigneur survit à 1 PV et tue l’Ifrit en retour');
-  // Tenacité déjà dépensée : la même frappe l’emporte.
-  assert.equal(resultatBlocage(ifritBraise(), { ...tenace, tenaciteDisponible: false }).bloqueurMeurt, true);
+    { attaquantMeurt: true, bloqueurMeurt: true, attaquantFurie: 0, bloqueurFurie: 0 },
+    'Tenacité ne trompe plus l’IA : les deux combattants meurent');
+  // Une créature tenace vaut quand même un peu plus qu'une créature nue : sa
+  // carte revient au tour suivant avec 1 point de défense.
+  assert.ok(valeurEntite(tenace) > valeurEntite({ ...tenace, tenaciteDisponible: false }),
+    'la renaissance promise garde une valeur tactique');
 
-  // Sur la table : l’IA bloque avec lui, le moteur le laisse à 1 PV.
+  // Sur la table : le Seigneur meurt en bloquant, sa carte promet son retour.
   const duel = duelNu();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -786,10 +790,16 @@ test('Tenacité : l’IA sait que la créature survit une fois à 1 PV', () => {
   donner(duel, 'sorcier', 'seigneur-des-machoires');
   const seigneur = rpgJouerCreature(duel, 'sorcier', 'seigneur-des-machoires').entite;
   Object.assign(seigneur, { pv: 4, def: 4 });
-  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [ifrit.id]),
-    { [ifrit.id]: [seigneur.id] }, 'l’IA interpose le Tenace : il ne peut pas mourir de ce coup-là');
-  assert.equal(rpgLancerAttaque(duel, 'joueur', [ifrit.id], { [ifrit.id]: [seigneur.id] }).ok, true);
-  assert.equal(seigneur.pv, 1, 'Tenacité : 1 point de défense restant');
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [ifrit.id]), {},
+    'l’IA ne sacrifie plus son 6/6 pour un simple échange : la Tenacité ne le sauve plus');
+  // La mort, elle, est bien réelle — et la carte promet son retour au prochain
+  // tour de son camp (le sorcier, tué pendant le tour du joueur).
+  assert.equal(rpgBlesserCreature(duel, 'sorcier', seigneur.id, 10, 'braise').ok, true);
+  assert.equal(duel.sorcier.creatures.includes(seigneur), false, 'le Seigneur meurt');
+  assert.ok(duel.sorcier.cimetiere.includes('seigneur-des-machoires'));
+  assert.deepEqual(duel.sorcier.retoursProgrammes, [{
+    carteId: 'seigneur-des-machoires', toursRestants: 1, tenacite: true,
+  }], 'sa renaissance est promise au prochain tour du sorcier');
 });
 
 test('le Bouclier de lumière avale la première attaque, l’IA le sait', () => {

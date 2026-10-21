@@ -1133,7 +1133,7 @@ export const RPG_HERO_CARDS = [
     arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
     furie: 3,
     tenacite: true,
-    text: 'Quand il arrive : son marteau tombe — 2 dégâts à toutes les créatures adverses. Furie 3 — La première fois qu’il est blessé et survit, le Maître gagne +3/+3. Tenacité — Une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense.',
+    text: 'Quand il arrive : son marteau tombe — 2 dégâts à toutes les créatures adverses. Furie 3 — La première fois qu’il est blessé et survit, le Maître gagne +3/+3. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense.',
     flavor: 'Le tonnerre n’est pas un bruit : c’est un rendez-vous — et son marteau, lui, retrouve toujours sa main.',
   },
   {
