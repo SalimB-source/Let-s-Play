@@ -44,6 +44,7 @@ import {
   rpgVainqueur,
   rpgActionsEtat,
   rpgContreJouable,
+  rpgSortACibleValide,
   rpgActiverCapacite,
   RPG_PHASES,
   RPG_PHASES_LIBELLES,
@@ -4088,6 +4089,53 @@ test('un contre n’est jouable que face à une annonce adverse qu’il peut vis
   // Sa propre annonce ne se contre pas.
   duel.annonce = { cote: 'joueur', carteId: 'trait-de-braise' };
   assert.equal(rpgContreJouable(duel, 'joueur', silence), false);
+});
+
+test('un sort sans cible valide n’est pas jouable (donc pas de lueur en main)', () => {
+  const duel = duelDeBase();
+  const lameDeMer = cardById('lame-de-mer'); // -2/-2 à une créature adverse
+  const parade = cardById('parade-du-verre'); // bouclier sur une créature alliée
+  const defi = cardById('defi-du-jarl'); // un champion allié contre une créature adverse
+  const trait = cardById('trait-de-braise'); // créature adverse OU le sorcier
+  const tempete = cardById('tempete-de-sable'); // toutes les créatures, ne désigne rien
+  const reanimation = cardById('reanimation'); // désigne au cimetière
+  const chien = cardById('chien-du-guet');
+
+  // Table vide : les sorts qui désignent une créature n'ont pas de cible.
+  assert.equal(rpgSortACibleValide(duel, 'joueur', lameDeMer), false, 'aucune créature adverse à affaiblir');
+  assert.equal(rpgSortACibleValide(duel, 'joueur', parade), false, 'aucune créature alliée à protéger');
+  assert.equal(rpgSortACibleValide(duel, 'joueur', defi), false, 'il manque les deux champions du Défi');
+  assert.equal(rpgSortACibleValide(duel, 'joueur', reanimation), false, 'aucune créature au cimetière');
+  // Ceux qui ne désignent aucune créature restent toujours lançables.
+  assert.equal(rpgSortACibleValide(duel, 'joueur', trait), true, 'le sorcier adverse reste une cible');
+  assert.equal(rpgSortACibleValide(duel, 'joueur', tempete), true, 'un sort de zone ne désigne personne');
+  assert.equal(rpgSortACibleValide(duel, 'joueur', chien), true, 'une carte qui n’est pas un sort reste jouable');
+
+  // Une créature adverse ouvre les sorts offensifs, pas le bouclier allié —
+  // et le Défi exige toujours son champion allié.
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
+  assert.equal(rpgSortACibleValide(duel, 'joueur', lameDeMer), true);
+  assert.equal(rpgSortACibleValide(duel, 'joueur', parade), false, 'une créature adverse ne protège pas les siennes');
+  assert.equal(rpgSortACibleValide(duel, 'joueur', defi), false, 'toujours pas de champion allié');
+
+  // Une créature alliée ouvre le bouclier et complète le Défi.
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  assert.equal(rpgSortACibleValide(duel, 'joueur', parade), true);
+  assert.equal(rpgSortACibleValide(duel, 'joueur', defi), true);
+
+  // Le Serpent du monde, seule créature adverse, n’est la cible de rien :
+  // aucun sort ne peut le viser.
+  duel.sorcier.creatures = [{ id: 'serpent-test', carteId: 'serpent-du-monde', protectionSorts: true }];
+  assert.equal(rpgSortACibleValide(duel, 'joueur', lameDeMer), false, 'le Serpent échappe à tous les sorts');
+  assert.equal(rpgSortACibleValide(duel, 'joueur', defi), false);
+
+  // La Réanimation s’allume dès qu’une créature attend au cimetière.
+  duel.joueur.cimetiere.push('chien-du-guet');
+  assert.equal(rpgSortACibleValide(duel, 'joueur', reanimation), true);
 });
 
 /* ── Le mulligan : la main de départ s'échange une fois, à carte égale ─────── */

@@ -126,6 +126,7 @@ import {
   rpgCibleAuto,
   rpgChoisirAttaquants,
   rpgContreJouable,
+  rpgSortACibleValide,
   rpgDefinirPhase,
   rpgChoisirBloqueurs,
   rpgCiblesAttaqueRapide,
@@ -7096,6 +7097,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Un contre sans annonce à contrer n'est pas jouable : l'allumer enfermait
     // le joueur dans une confirmation qui ne menait à rien.
     if (!rpgContreJouable(duel, 'joueur', carte)) return false;
+    // Un sort sans cible valide n'est pas jouable non plus : pas de créature
+    // adverse à frapper, pas d'alliée à protéger, pas de champion pour le
+    // Défi… Le moteur refuserait le lancement, donc pas de lueur (classe
+    // `is-playable`), pas de clic, pas de glisser-déposer.
+    if (carte.kind === 'magie' && !rpgSortACibleValide(duel, 'joueur', carte)) return false;
     if (reponseApresBlocage && !carte.instant) return false;
     if (carte.kind === 'terrain') return monTour && !reponseApresBlocage && !duel.joueur.terrainPose;
     // Une arme sans créature alliée à équiper reste éteinte dans la main —
@@ -7681,14 +7687,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const cible = targetMode(carte);
       if (cible) {
         setCibleAllieeMagie(null);
-        const duelDejarl = carte.effet?.type === 'combat' && carte.effet?.sourceCible === 'creature-amie';
-        const aUneCible = cible === 'ennemi'
-          ? duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))) || carte.cibles?.includes('sorcier')
-          : duel.joueur.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))
-            // Le Défi du Jarl exige les deux champions : sans adversaire en
-            // face, le duel ne commence même pas.
-            && (!duelDejarl || duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))));
-        if (aUneCible) setCibleEnCours(carteId);
+        // Même verdict que le halo de la main (`rpgSortACibleValide`, via
+        // `peutJouerCarte`) : sans cible légale — protégée, insaisissable par
+        // les sorts, ou champion manquant pour le Défi du Jarl — la
+        // désignation ne s'ouvre pas.
+        if (rpgSortACibleValide(duel, 'joueur', carte)) setCibleEnCours(carteId);
         force();
         return;
       }

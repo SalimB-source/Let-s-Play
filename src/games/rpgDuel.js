@@ -4126,6 +4126,67 @@ export function rpgContreJouable(duel, cote, carte) {
   return Boolean(visee && contreCorrespond(carte.effet, visee));
 }
 
+/** Une créature peut-elle être désignée par ce sort ? Même porte que le
+ *  lancement (`rpgLancerMagie`) et que l'allumage des cibles sur la table :
+ *  pas un Site, pas protégée contre la couleur du sort, et jamais le Serpent
+ *  du monde, qu'aucune magie ne peut viser. */
+function entiteCiblableParSort(entite, carte) {
+  return Boolean(entite)
+    && !rpgEstProtegee(entite, cardColors(carte))
+    && !entite.protectionSorts;
+}
+
+/**
+ * Ce sort a-t-il, là, tout de suite, de quoi se lancer ?
+ *
+ * Un sort qui désigne une créature — dégâts ou malus sur une adverse, bouclier
+ * ou renvoi sur une alliée, les deux champions du Défi du Jarl — n'a aucune
+ * cible valide quand la table ne porte aucune créature qu'il peut légalement
+ * viser : le moteur refuserait le lancement (`raison: 'cible'`), donc la main
+ * ne doit pas l'allumer. C'est l'équivalent, pour les cibles, de
+ * `rpgContreJouable` pour les contres : sans ça, le joueur tape une carte
+ * illuminée, confirme, et rien ne se passe.
+ *
+ * Les sorts qui ne désignent rien (zone, pioche, soin du sorcier, dégâts
+ * adressés au sorcier adverse…) gardent toujours une cible valide : ils se
+ * lancent quelle que soit la table. La Réanimation, elle, désigne au
+ * cimetière : sans créature à y relever, elle n'a pas de cible non plus.
+ *
+ * @returns {boolean} vrai si la carte n'est pas un sort, ou si elle a au
+ *   moins une cible légale maintenant.
+ */
+export function rpgSortACibleValide(duel, cote, carte) {
+  if (carte?.kind !== 'magie') return true;
+  if (carte.effet?.type === 'contresort') return rpgContreJouable(duel, cote, carte);
+  if (carte.effet?.type === 'reanimation') {
+    return duel[cote].cimetiere.some((id) => {
+      const carteAuCimetiere = duelCardById(id);
+      return Boolean(carteAuCimetiere) && !magieById(id) && !armeById(id)
+        && carteAuCimetiere.kind !== 'terrain';
+    });
+  }
+  const adv = autre(cote);
+  const aCibleAlliee = duel[cote].creatures.some((entite) => entiteCiblableParSort(entite, carte));
+  const aCibleEnnemie = duel[adv].creatures.some((entite) => entiteCiblableParSort(entite, carte));
+  // Le Défi du Jarl désigne deux créatures : sans champion des deux côtés,
+  // le duel n'a pas lieu.
+  if (carte.effet?.type === 'combat' && carte.effet?.sourceCible === 'creature-amie') {
+    return aCibleAlliee && aCibleEnnemie;
+  }
+  if (carte.effet?.type === 'degats' && carte.effet?.cible === 'creature') {
+    // Certains sorts peuvent aussi frapper le sorcier adverse directement.
+    return aCibleEnnemie || Boolean(carte.cibles?.includes('sorcier'));
+  }
+  if (['debuff', 'empeche-blocage', 'blocage-force'].includes(carte.effet?.type)) return aCibleEnnemie;
+  if (carte.effet?.type === 'retour-main') {
+    return carte.effet.cible === 'creature-amie' ? aCibleAlliee : aCibleEnnemie;
+  }
+  if (['bouclier', 'arme'].includes(carte.effet?.type) && carte.effet?.cible === 'creature-amie') return aCibleAlliee;
+  if (carte.effet?.cible === 'creature-amie') return aCibleAlliee;
+  if (carte.effet?.cible === 'creature') return aCibleEnnemie;
+  return true;
+}
+
 /** Contrer : répond à une annonce adverse (ou à la carte du joueur que l'IA contre).
  * La carte visée et le contre paient tous deux leur coût, puis vont au cimetière
  * sans résoudre l'effet de la carte visée (Déflection fait aussi piocher).
@@ -5044,12 +5105,14 @@ export function rpgOuvrirFinDeTour(duel) {
 }
 
 /** Le camp a-t-il en main une magie rapide qu'il peut jouer maintenant ?
- *  (Un contre n'a rien à contrer en fin de tour : il ne compte pas.) */
+ *  (Un contre n'a rien à contrer en fin de tour : il ne compte pas — et un
+ *  sort sans cible valide non plus.) */
 export function rpgPeutRepondre(duel, cote) {
   return duel[cote].main.some((id) => {
     const carte = magieById(id);
     return Boolean(carte?.instant
       && rpgContreJouable(duel, cote, carte)
+      && rpgSortACibleValide(duel, cote, carte)
       && rpgPeutPayer(duel[cote], carte));
   });
 }
