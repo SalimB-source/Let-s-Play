@@ -438,10 +438,19 @@ automatiquement.
   `public/cards/`, une par identifiant, **aucun partage d'illustration au sein
   du deck** (garde-fou du catalogue + `tests/rpg-duel.test.js`) ;
 - direction : `src/games/RPG-CARD-ART.md` ;
-- plateau : la couleur dominante `tenebres` n'a pas de mapping — repli
-  provisoire sur `table-des-heures` (la table d'origine de Bab El, étonnamment
-  neutre pour un set qui parle de balance) ; plateau dédié « La Nécropole des
-  dalles » (4K 3:2, sans texte) en phase 2.
+- plateau : **La Nécropole des dalles** (`necropole-des-dalles`,
+  `public/plateau-necropole-des-dalles.jpg`, 4K 3:2, sans texte, **vu de
+  dessus** comme l'Erg et Tipaza) — un décor **entièrement extérieur, en plein
+  jour** : le plateau de calcaire blanchi par le soleil, le grand cercle
+  d'hiéroglyphes vide au milieu, **deux pyramides dressées sur le plateau, à gauche, et une à droite**, vues d'en haut avec leur ombre portée, le reste
+  du plateau laissé nu et quelques objets seulement — la balance de Maât, le
+  khopesh, deux canopes et un shabti — dans les deux angles du haut, avec le
+  Nil turquoise qui longe le bas du cadre. C'est aussi le terrain de la couleur dominante `tenebres`. Le
+  second plateau des Ténèbres, **Le Palais du Pharaon**
+  (`palais-du-pharaon`, `public/plateau-palais-du-pharaon.jpg`), appartient au
+  tribunal de la Nécropole (`juges-de-la-necropole`) : **l'intérieur** de la
+  salle du trône, le dallage d'albâtre et de granit, le trône doré et les
+  colonnes de lotus, avec peu d'objets et le centre laissé nu.
 
 ## 10. Frontière & phase 2 (la 5ᵉ couleur canonique)
 
@@ -497,8 +506,8 @@ l'étagère**, jouable depuis le lancement comme les six autres (`RPG_DECKS`) :
   palier de rareté puis puissance, chacune à son maximum légal — le
   contrôle `tests/rpg-decks-puissance.test.js` rejette toute carte laissée de
   côté mieux classée qu'une carte retenue ;
-- **Plateau** : la Table des Heures (doc 16 §9), repli provisoire avant la
-  Nécropole des dalles ;
+- **Plateau** : la Nécropole des dalles (doc 16 §9) — le deck se bat enfin chez
+  lui ;
 - **Économie de collection** : comme les six autres boîtiers, ce deck ne
   consulte jamais la collection — il est jouable d'entrée de jeu. Les cartes
   Ténèbres restent hors dotation et hors boosters tant que l'entrée Souk

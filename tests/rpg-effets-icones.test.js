@@ -2,7 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { cardById, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
+import {
+  cardById,
+  libelleModificationStats,
+  modificationStats,
+  RPG_DUEL_CARDS,
+} from '../src/games/rpgCards.js';
 import {
   EFFETS_SPRITE,
   EFFET_ICONE,
@@ -15,6 +20,7 @@ import {
   iconePourLigne,
   effetsDetailles,
   effetsEpuisesPourEntite,
+  definitionPastille,
 } from '../src/games/effetIcons.js';
 
 const pastillesDe = (id) => pastillesPourCarte(cardById(id))
@@ -69,8 +75,8 @@ test('les pastilles nomment l’effet signé des sorts', () => {
   assert.deepEqual(pastillesDe('ecueil'), ['Contresort']);
   assert.deepEqual(pastillesDe('reanimation'), ['Réanimation']);
   assert.deepEqual(pastillesDe('bakunawa'), ['Blocage interdit']);
-  assert.deepEqual(pastillesDe('mur-de-boucliers'), ['Overkill'],
-    'un sort qui prête Overkill porte la pastille du mot-clé accordé');
+  assert.deepEqual(pastillesDe('mur-de-boucliers'), ['Overkill', 'Renfort +2/0'],
+    'un sort qui prête Overkill porte le mot-clé accordé et son effet chiffré');
 });
 
 test('Tenacité et Bouclier ne se grisent qu’une fois dépensés sur la table', () => {
@@ -227,7 +233,6 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   assert.equal(mur.texte, cardById('mur-de-boucliers').text,
     'la portée collective et la durée restent écrites sur le sort');
 
-  assert.deepEqual(effetsDetailles(cardById('desert')), { pastilles: [], texte: cardById('desert').text });
 });
 
 test('la Protection élémentaire colore un bouclier par élément, le Sable gardant son encre', () => {
@@ -305,4 +310,43 @@ test('un aperçu rend lisible tout ce que la fiche imprime', () => {
       assert.ok(affiches.has(mot), `${carte.id} : « ${mot} » s’affiche nulle part dans son aperçu`);
     }
   }
+});
+
+// ── L'effet chiffré d'un sort : « -2/-2 » écrit sur la carte ────────────────
+
+test('les cartes qui modifient les statistiques affichent leur chiffre', () => {
+  // Sans cette pastille, le -2/-2 de la Lame de mer ne vivait que dans sa
+  // phrase de règle — et une face de carte n'imprime pas la règle.
+  assert.deepEqual(pastillesDe('lame-de-mer'), ['Affaiblissement -2/-2']);
+  assert.deepEqual(pastillesDe('embuscade'), ['Affaiblissement -2/-2'],
+    'l’Embuscade rabote toute la table adverse de -2/-2');
+  assert.deepEqual(pastillesDe('vipere-de-verre'), ['Affaiblissement -2/0'],
+    'la vipère ne retire que de l’attaque : la défense reste à 0');
+  assert.deepEqual(pastillesDe('colosse-de-sel'), ['Renfort +1/+1'],
+    'une arrivée qui renforce s’écrit en positif');
+  assert.deepEqual(pastillesDe('lame-de-mer').length, pastillesPourCarte(cardById('lame-de-mer')).length,
+    'une seule pastille par carte');
+});
+
+test('la pastille chiffrée explique le malus, statistique par statistique', () => {
+  const lire = (id) => definitionPastille(pastillesPourCarte(cardById(id))[0]);
+  assert.equal(lire('lame-de-mer'),
+    'La cible perd 2 en attaque et 2 en défense. Si sa défense tombe à 0, elle est détruite.');
+  assert.equal(lire('vipere-de-verre'),
+    'La cible perd 2 en attaque. Si sa défense tombe à 0, elle est détruite.',
+    'la vipère ne dit pas qu’elle retire de la défense');
+  assert.equal(lire('colosse-de-sel'), 'La cible gagne 1 en attaque et 1 en défense.');
+});
+
+test('le chiffre de la carte se lit aussi hors des pastilles', () => {
+  const modif = (id) => modificationStats(cardById(id));
+  assert.deepEqual(modif('lame-de-mer'), { atk: -2, def: -2 });
+  assert.deepEqual(modif('vipere-de-verre'), { atk: -2, def: 0 });
+  assert.equal(libelleModificationStats(cardById('lame-de-mer')), '-2/-2');
+  assert.equal(libelleModificationStats(cardById('colosse-de-sel')), '+1/+1');
+  // Une arme garde son bonus de porteur : pas de doublon chiffré.
+  assert.equal(modif('khopesh-d-or'), null);
+  assert.equal(libelleModificationStats(cardById('khopesh-d-or')), null);
+  // Un sort qui ne touche pas aux statistiques n’écrit rien.
+  assert.equal(libelleModificationStats(cardById('trait-de-braise')), null);
 });

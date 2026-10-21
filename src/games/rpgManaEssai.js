@@ -19,7 +19,7 @@ export const RPG_MANA_ESSAI_MAX = 10;
 export const RPG_MANA_ESSAI_MAIN_DEPART = 3;
 /** Taille de main maximale à la fin d'un tour : l'excédent est défaussé. */
 export const RPG_MANA_ESSAI_MAIN_MAX = 5;
-export const RPG_MANA_ESSAI_CARTES_EXCLUES = Object.freeze(['boussole-du-hoggar', 'djinn-du-souk']);
+export const RPG_MANA_ESSAI_CARTES_EXCLUES = Object.freeze([]);
 /** Le champ de bataille accueille cinq créatures, dessinées en cinq
  *  emplacements de chaque côté du plateau : la sixième exige un sacrifice —
  *  le joueur choisit laquelle, l'IA sacrifie la plus frêle. */

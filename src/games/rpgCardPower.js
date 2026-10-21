@@ -212,6 +212,12 @@ export function valeurCarte(carte) {
     if (carte.donne?.rapidite) valeur += 0.5;
     if (carte.donne?.coupRapide) valeur += 2;
     if (carte.donne?.tribut) valeur += 1.6 * carte.donne.tribut;
+    // L'arme qui pose un bouclier sur son porteur (la Hache de la banquise) :
+    // il absorbe les premières blessures, au prix d'un bouclier de sort.
+    if (carte.donne?.bouclier) valeur += 0.7 * carte.donne.bouclier;
+    // Le prix de l'attachement : l'arme qui blesse son porteur vaut moins,
+    // d'autant plus que la morsure est profonde.
+    if (carte.blessurePorteur) valeur -= 1.2 * carte.blessurePorteur;
     if (carte.declenche?.effet) valeur += valeurEffet(carte.declenche.effet);
     // Les déclencheurs du porteur (lot du Sable,
     // `docs/rpg/14-equipements-du-sable.md`) : ce que l'arme rapporte à

@@ -3206,6 +3206,22 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
     cible = camp.creatures[camp.creatures.length - 1] ?? null;
     if (!cible) return { ok: false, raison: 'cible' };
   }
+  // Le prix de l'attachement (la Hache de la banquise) : l'arme mord son
+  // porteur AVANT de lui donner quoi que ce soit — le bouclier qu'elle
+  // accorde ne saurait donc absorber sa propre morsure. Un porteur qui
+  // succombe ne porte rien : l'arme tombe au cimetière avec lui, comme si
+  // son porteur était mort en la prenant.
+  if (Math.max(0, Number(carte.blessurePorteur) || 0) > 0) {
+    const morsure = Math.max(0, Number(carte.blessurePorteur) || 0);
+    duel.log.push(`${carte.name} mord ${cible.name} en s’attachant (${morsure} dégât${morsure > 1 ? 's' : ''}).`);
+    rpgBlesserCreature(duel, cote, cible.id, morsure, carte.element, null, 'capacite', carte.id);
+    if (!camp.creatures.some((entite) => entite.id === cible.id)) {
+      camp.cimetiere.push(carte.id);
+      duel.log.push(`${carte.name} emporte son porteur : l’arme tombe au cimetière.`);
+      rpgActionsEtat(duel);
+      return { ok: true, entite: null };
+    }
+  }
   attacherArme(duel, cote, cible, carte);
   const bonusSigne = (valeur) => {
     const nombre = Number(valeur) || 0;

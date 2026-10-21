@@ -3,7 +3,7 @@ import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
 import { RPG_CARD_LESSONS } from './rpgCardLessons.js';
-import { bonusArme, cardById, cardColorCost, cardColors, cardFrameClass, cardFrameColor, cardHybridGradient, cardMotifClass, cardTypeLine, carteEstArme } from './rpgCards.js';
+import { bonusArme, cardById, cardColorCost, cardColors, cardFrameClass, cardFrameColor, cardHybridGradient, cardMotifClass, cardTypeLine, carteEstArme, libelleModificationStats, modificationStats } from './rpgCards.js';
 // Le jeton des familles de sorts : le guide enseigne la face des cartes, il
 // montre donc le repère tel que le duel le pose (voir `rpgSortSignature.jsx`).
 import { SortSceau } from './rpgSortSignature.jsx';
@@ -26,6 +26,11 @@ function GuideCard({ carte, cardArt }) {
   const exigencesCout = Object.entries(cardColorCost(carte))
     .map(([color, n]) => `${n} ${ELEMENT_LABELS[color] ?? color}`).join(' et ');
   const estCreature = ['creature', 'hero'].includes(carte.kind);
+  // Le chiffre qu'une carte inflige aux statistiques (-2/-2 pour la Lame de
+  // mer) : il s'écrit dans la fiche, comme les statistiques d'une créature.
+  const modifStats = estCreature || carteEstArme(carte) ? null : modificationStats(carte);
+  const libelleModif = modifStats ? libelleModificationStats(carte) : null;
+  const [modifAtk, modifDef] = libelleModif ? libelleModif.split('/') : [];
   const labelElement = colors.map((color) => `${ELEMENT_MARKS[color] ?? '◇'} ${ELEMENT_LABELS[color] ?? color}`).join(' · ');
 
   return (
@@ -50,6 +55,16 @@ function GuideCard({ carte, cardArt }) {
         <PastillesCarte carte={carte} className="rpg-card-guide__pastilles" />
         {estCreature && <p className="rpg-card-guide__stats">⚔ {carte.atk} · 🛡 {carte.def}</p>}
         {carteEstArme(carte) && <p className="rpg-card-guide__stats">Porteur : ⚔ {signeBonus(bonusArme(carte)?.atk)} · 🛡 {signeBonus(bonusArme(carte)?.def)}</p>}
+        {/* L'effet chiffré d'un sort : la Lame de mer affiche -2/-2, sans quoi
+            le nombre ne se lisait que dans sa phrase de règle. */}
+        {libelleModif && (
+          <p
+            className={`rpg-card-guide__stats rpg-card-guide__stats--modif${modifStats.atk < 0 || modifStats.def < 0 ? ' is-malus' : ' is-bonus'}`}
+            aria-label={`Effet sur les statistiques : ${libelleModif}`}
+          >
+            Statistiques : ⚔ {modifAtk} · 🛡 {modifDef}
+          </p>
+        )}
         <p className="rpg-card-guide__rules"><RpgCardRules carte={carte} /></p>
       </div>
     </article>

@@ -104,7 +104,6 @@ function Sonde({ surPret, sons }) {
 }
 
 const KIND_PAR_TYPE = {
-  'terrain-pose': 'terrain',
   'creature-invoquee': 'creature',
   'magie-lancee': 'magie',
   'arme-jouee': 'arme',

@@ -19,7 +19,23 @@ import {
 import { RPG_DECKS } from '../src/games/rpgCards.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
 
+
+/** La taille d'un JPEG sans dépendance : le premier marqueur SOFn. */
+const tailleJpeg = (fichier) => {
+  const data = readFileSync(fichier);
+  for (let i = 2; i < data.length;) {
+    if (data[i] !== 0xff) { i += 1; continue; }
+    const marqueur = data[i + 1];
+    if (marqueur >= 0xc0 && marqueur <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marqueur)) {
+      return { height: data.readUInt16BE(i + 5), width: data.readUInt16BE(i + 7) };
+    }
+    i += 2 + data.readUInt16BE(i + 2);
+  }
+  return null;
+};
+
 // ── Le catalogue des plateaux ───────────────────────────────────────────────
+
 
 test('chaque plateau a un identifiant unique, un nom et un fichier livré', () => {
   const vus = new Set();
@@ -123,6 +139,104 @@ test('la cour de l’Empereur est livrée comme plateau de plein droit', () => {
   }).plateau.id, 'erg-du-sahara');
 });
 
+test('les deux plateaux des Ténèbres sont livrés : le désert du Nil et le palais du Pharaon', () => {
+  const necropole = plateauParId('necropole-des-dalles');
+  assert.ok(necropole, 'la Nécropole des dalles fait partie des plateaux');
+  assert.match(necropole.nom, /Nécropole/i);
+  assert.match(necropole.fichier, /\.jpg$/);
+  // L’Égypte : le Nil, les pyramides, le cercle d’hiéroglyphes, la pesée des âmes.
+  for (const motif of ['Nil', 'pyramides', 'hiéroglyphes', 'canopes', 'shabti']) {
+    assert.match(necropole.resume, new RegExp(motif, 'i'), `le résumé nomme ${motif}`);
+  }
+  // Le décor est **entièrement extérieur et en plein jour** : pas de temple,
+  // pas de nuit. Le résumé le dit, et le lieu aussi.
+  assert.match(necropole.resume, /extérieur/i, 'le résumé annonce un décor extérieur');
+  assert.match(necropole.resume, /plein jour|zénith/i, 'le résumé annonce le plein jour');
+  assert.doesNotMatch(necropole.resume, /basalte|nuit|lune|torche|temple|parapet/i,
+    'ni basalte de nuit, ni temple, ni parapet : le plateau est dehors, au soleil');
+  assert.match(necropole.lieu, /désert/i);
+  assert.match(necropole.lieu, /midi|jour/i);
+  // Les pyramides sont **sur le plateau**, vues d'en haut — pas à l'horizon.
+  assert.match(necropole.resume, /pyramides[^.]*sur le plateau|sur le plateau[^.]*pyramides/i,
+    'les pyramides sont posées sur le plateau, pas au loin');
+  assert.match(necropole.resume, /d’en haut|d.en haut/i, 'et vues de dessus');
+  assert.match(necropole.resume, /deux pyramides[^.]*gauche/i, 'deux pyramides à gauche');
+  assert.match(necropole.resume, /une[^.]*droite/i, 'et une à droite');
+  // Le centre du plateau reste vide : c'est la zone des cartes.
+  assert.match(necropole.resume, /au centre[^.]*cercle[^.]*vide|cercle[^.]*vide/i,
+    'le cercle du centre est vide');
+  // Le Nil longe le bas du cadre.
+  assert.match(necropole.resume, /Nil[^.]*bas du cadre/i, 'le Nil est en bas');
+  // Le décor est allégé : quelques objets nommés, pas un inventaire.
+  assert.doesNotMatch(necropole.resume, /natron|bandelettes|scarabée/i,
+    'le plateau allégé ne garde que quelques objets');
+  assert.equal(necropole.fichier, 'plateau-necropole-des-dalles.jpg');
+
+  const palais = plateauParId('palais-du-pharaon');
+  assert.ok(palais, 'Le Palais du Pharaon fait partie des plateaux');
+  assert.match(palais.nom, /Palais du Pharaon/);
+  assert.match(palais.fichier, /\.jpg$/);
+  // Un **intérieur** : le dallage, le trône, les colonnes de lotus, les
+  // braseros. Rien de l'extérieur ni de Babylone.
+  assert.match(palais.resume, /intérieur/i, 'le résumé annonce un intérieur');
+  for (const motif of ['dallage', 'trône', 'colonnes', 'lotus', 'brasero', 'éventail']) {
+    assert.match(palais.resume, new RegExp(motif, 'i'), `le résumé nomme ${motif}`);
+  }
+  assert.doesNotMatch(palais.resume, /ciel|nuage|horizon|extérieur|dehors/i,
+    'aucun morceau de ciel : le palais est une salle');
+  assert.match(palais.lieu, /salle du trône/i);
+  // Le centre reste nu, et le décor est allégé : peu d'objets, tous aux bords.
+  assert.match(palais.resume, /centre reste nu/i, 'le centre du plateau reste vide');
+  assert.match(palais.resume, /peu d’objets|peu d.objets/i, 'le résumé annonce peu d’objets');
+  assert.match(palais.resume, /aux bords/i, 'rangés aux bords du plateau');
+  // Deux fonds distincts, livrés en 3:2 dans public/.
+  assert.notEqual(necropole.fichier, palais.fichier);
+  assert.equal(new Set(RPG_PLATEAUX.map((plateau) => plateau.fichier)).size, RPG_PLATEAUX.length,
+    'les deux nouveaux plateaux ne réutilisent le fond d’aucun autre');
+  // L'ancien plateau de Babylone a bien quitté le jeu, fond compris.
+  assert.equal(plateauParId('sceaux-de-babylone'), null, 'Babylone n’est plus un plateau');
+  assert.ok(!RPG_PLATEAUX.some(({ fichier }) => /babylone/.test(fichier)));
+  assert.equal(existsSync(new URL('../public/plateau-sceaux-de-babylone.jpg', import.meta.url)), false,
+    'le fond de Babylone n’est plus livré');
+  // Livrés comme les autres : 4K au ratio 3:2 (3840×2560), sans texte.
+  for (const plateau of [necropole, palais]) {
+    const taille = tailleJpeg(new URL(`../public/${plateau.fichier}`, import.meta.url));
+    assert.deepEqual(taille, { width: 3840, height: 2560 }, `${plateau.id} : fond 4K 3:2`);
+  }
+  // Chacun a son deck : le set égyptien pour les dalles, le tribunal de la
+  // Nécropole pour la salle du trône.
+  assert.equal(RPG_PLATEAUX_PAR_DECK['balance-des-heures'], 'necropole-des-dalles');
+  assert.equal(RPG_PLATEAUX_PAR_DECK['juges-de-la-necropole'], 'palais-du-pharaon');
+  assert.equal(plateauDeDeck('juges-de-la-necropole').motif, 'deck');
+  assert.equal(plateauDeDeck('juges-de-la-necropole').plateau.id, 'palais-du-pharaon');
+  // La couleur Ténèbres retombe sur les dalles, pas sur le palais.
+  assert.equal(RPG_PLATEAUX_PAR_COULEUR.tenebres, 'necropole-des-dalles');
+  // Les étages de la Tour de la Nécropole se répartissent entre les deux.
+  for (const cle of ['momies-de-la-necropole', 'chacals-du-seuil']) {
+    assert.equal(plateauDeDeck(cle).plateau.id, 'necropole-des-dalles', `${cle} se bat sur les dalles`);
+  }
+  // Aucun des deux n’a de double merveilleux : le second tirage n’est jamais
+  // consommé quand ils imposent le terrain.
+  for (const id of ['necropole-des-dalles', 'palais-du-pharaon']) {
+    assert.equal(varianteFantaisisteDe(id), null, `${id} reste unique`);
+  }
+  let appels = 0;
+  const tirage = tirerPlateauDuDuel({
+    deckJoueur: 'balance-des-heures', deckAdverse: 'juges-de-la-necropole',
+    variantesFantaisistes: true, rng: () => { appels += 1; return 0.9; },
+  });
+  assert.equal(tirage.plateau.id, 'palais-du-pharaon');
+  assert.equal(tirage.variante, false);
+  assert.equal(appels, 1, 'un terrain sans double ne consomme pas le second tirage');
+  // Deux decks des Ténèbres : la table se découpe entre le désert et le palais.
+  const resolution = resoudrePlateauxDuDuel({
+    deckJoueur: 'balance-des-heures', deckAdverse: 'juges-de-la-necropole',
+  });
+  assert.equal(resolution.joueur.plateau.id, 'necropole-des-dalles');
+  assert.equal(resolution.adversaire.plateau.id, 'palais-du-pharaon');
+  assert.equal(resolution.decouper, true, 'les deux terrains des Ténèbres se partagent la table');
+});
+
 // ── Le joueur ne choisit plus son plateau ───────────────────────────────────
 
 test('le choix de plateau a disparu : ni verrou, ni pastille aléatoire, ni sauvegarde', () => {
@@ -171,9 +285,9 @@ test('chaque deck du catalogue impose un plateau connu', () => {
   assert.equal(plateauDeDeck('sentiers-de-cendre').plateau.id, 'caravane-de-gourara');
   assert.equal(plateauDeDeck('maree-des-abysses').plateau.id, 'ruines-de-tipaza');
   assert.equal(plateauDeDeck('serment-des-neuf-hivers').plateau.id, 'fjord-des-neuf-hivers');
-  // Les Ténèbres jouent sur la table d’origine (doc 16 §9) : la Balance des
-  // Heures y retrouve la Chambre des Heures, en attendant la Nécropole.
-  assert.equal(plateauDeDeck('balance-des-heures').plateau.id, 'table-des-heures');
+  // Les Ténèbres ont leur terrain : la Balance des Heures, le set égyptien,
+  // se bat sur les dalles de la Nécropole (doc 16 §9).
+  assert.equal(plateauDeDeck('balance-des-heures').plateau.id, 'necropole-des-dalles');
 });
 
 test('chaque deck de la campagne impose un plateau connu', () => {
@@ -213,22 +327,22 @@ test('toutes les correspondances de decks pointent vers un plateau livré', () =
 // ── Un deck sans identité parle par sa couleur dominante ────────────────────
 
 test('un paquet brut prend le terrain de sa couleur dominante', () => {
-  assert.equal(couleurDominanteDeck(['desert', 'desert', 'chien-du-guet']), 'sable');
-  assert.equal(plateauDeDeck(['desert', 'desert', 'chien-du-guet']).plateau.id, 'erg-du-sahara');
-  assert.equal(plateauDeDeck(Array(8).fill('montagne')).plateau.id, 'table-des-heures');
-  assert.equal(plateauDeDeck(Array(8).fill('mer')).plateau.id, 'ruines-de-tipaza');
+  assert.equal(couleurDominanteDeck(['chien-du-guet', 'chien-du-guet', 'chien-du-guet']), 'sable');
+  assert.equal(plateauDeDeck(['chien-du-guet', 'chien-du-guet', 'chien-du-guet']).plateau.id, 'erg-du-sahara');
+  assert.equal(plateauDeDeck(Array(8).fill('trait-de-braise')).plateau.id, 'table-des-heures');
+  assert.equal(plateauDeDeck(Array(8).fill('ressac')).plateau.id, 'ruines-de-tipaza');
   // La quatrième couleur : la Neige prend la glace du fjord.
-  assert.equal(couleurDominanteDeck(['glacier', 'glacier', 'loup-des-neiges']), 'neige');
-  assert.equal(plateauDeDeck(Array(8).fill('glacier')).plateau.id, 'fjord-des-neuf-hivers');
-  // Les Ténèbres sans identité connue retombent sur la table d’origine.
+  assert.equal(couleurDominanteDeck(['loup-des-neiges', 'loup-des-neiges', 'loup-des-neiges']), 'neige');
+  assert.equal(plateauDeDeck(Array(8).fill('loup-des-neiges')).plateau.id, 'fjord-des-neuf-hivers');
+  // La cinquième couleur : les Ténèbres prennent les dalles de la Nécropole.
   assert.equal(couleurDominanteDeck(['chacal-du-seuil', 'chacal-du-seuil', 'papyrus']), 'tenebres');
-  assert.equal(plateauDeDeck(Array(8).fill('chacal-du-seuil')).plateau.id, 'table-des-heures');
+  assert.equal(plateauDeDeck(Array(8).fill('chacal-du-seuil')).plateau.id, 'necropole-des-dalles');
   assert.equal(plateauDeDeck(Array(8).fill('chacal-du-seuil')).motif, 'couleur');
   // Deux couleurs à égalité : le carrefour des pistes.
-  assert.equal(couleurDominanteDeck(['desert', 'desert', 'mer', 'mer']), 'hybride');
-  assert.equal(plateauDeDeck(['desert', 'desert', 'mer', 'mer']).plateau.id, 'caravane-de-gourara');
+  assert.equal(couleurDominanteDeck(['chien-du-guet', 'chien-du-guet', 'ressac', 'ressac']), 'hybride');
+  assert.equal(plateauDeDeck(['chien-du-guet', 'chien-du-guet', 'ressac', 'ressac']).plateau.id, 'caravane-de-gourara');
   // La majorité l’emporte sur les cartes isolées d’une autre couleur.
-  const sable = ['desert', 'desert', 'desert', 'chien-du-guet', 'fennec-des-decombres', 'mer'];
+  const sable = ['chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'fennec-des-decombres', 'ressac'];
   assert.equal(couleurDominanteDeck(sable), 'sable');
   assert.equal(plateauDeDeck(sable).motif, 'couleur');
 });
@@ -332,7 +446,7 @@ test('un camp muet laisse la place au deck de l’autre', () => {
     .plateau.id, 'ruines-de-tipaza');
   assert.equal(tirerPlateauDuDuel({ deckJoueur: null, deckAdverse: 'maree-des-abysses', rng: () => 0.1 })
     .camp, 'adversaire');
-  assert.equal(tirerPlateauDuDuel({ deckJoueur: ['desert', 'desert', 'desert'], deckAdverse: null, rng: () => 0.9 })
+  assert.equal(tirerPlateauDuDuel({ deckJoueur: ['chien-du-guet', 'chien-du-guet', 'chien-du-guet'], deckAdverse: null, rng: () => 0.9 })
     .plateau.id, 'erg-du-sahara');
   assert.equal(tirerPlateauDuDuel({ rng: () => 0.9 }).plateau.id, RPG_PLATEAU_DE_REPLI);
 });
@@ -356,7 +470,7 @@ const rngSequentiel = (valeurs) => {
   return () => valeurs[Math.min(appel++, valeurs.length - 1)];
 };
 
-test('chaque terrain classique a son double merveilleux, sauf la piste caravanière et la table d’origine', () => {
+test('chaque terrain classique a son double merveilleux, sauf la piste caravanière, la table d’origine et les Ténèbres', () => {
   assert.deepEqual(RPG_PLATEAUX_VARIANTES_FANTAISISTES, {
     'erg-du-sahara': 'desert-de-verre',
     'ruines-de-tipaza': 'abysses-phosphorescentes',
@@ -371,7 +485,8 @@ test('chaque terrain classique a son double merveilleux, sauf la piste caravani�
     assert.notEqual(variante.fichier, classique.fichier, `${varianteId} a son propre fond 4K`);
     assert.equal(varianteFantaisisteDe(variante), null, 'une variante n’a pas de double au second degré');
   }
-  for (const sansDouble of ['caravane-de-gourara', 'table-des-heures', 'cavernes-de-cristal', 'plateau-inconnu', null, 42]) {
+  for (const sansDouble of ['caravane-de-gourara', 'table-des-heures', 'necropole-des-dalles',
+    'palais-du-pharaon', 'cavernes-de-cristal', 'plateau-inconnu', null, 42]) {
     assert.equal(varianteFantaisisteDe(sansDouble), null, `${String(sansDouble)} reste unique`);
   }
   // Le plateau retiré (les Cavernes de Cristal) ne fait plus partie du catalogue.

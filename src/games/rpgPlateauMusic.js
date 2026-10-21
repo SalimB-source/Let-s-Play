@@ -37,6 +37,10 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   // La Cour alterne le thème Bushido existant et la nouvelle piste des cerisiers.
   'cour-de-l-empereur': RPG_JAPANESE_MUSIC_FILES,
   'iles-celestes': RPG_SNOW_MUSIC_FILES,
+  // Les deux terrains des Ténèbres — la Nécropole des dalles et le Palais du
+  // Pharaon — n'ont pas encore de piste dédiée : dans la Tour de la Nécropole,
+  // la boucle d'ambiance de la tour prend le relais (`RpgAmbientMusic`) ; en
+  // duel libre, la table reste silencieuse jusqu'à ce qu'une piste soit livrée.
 });
 export const RPG_PLATEAUX_MUSICAUX = Object.freeze(new Set(Object.keys(RPG_PLATEAU_MUSIC_FILES)));
 

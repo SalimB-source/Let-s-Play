@@ -12,7 +12,7 @@
  * catalogue, palier de rareté puis puissance (`rpgCardPower.js`).
  */
 
-import { RPG_SOLEIL_ROUGE_CREATURES, RPG_SOLEIL_ROUGE_JETONS, RPG_SOLEIL_ROUGE_MAGIES, RPG_SOLEIL_ROUGE_TERRAINS } from './rpgSoleilRouge.js';
+import { RPG_SOLEIL_ROUGE_CREATURES, RPG_SOLEIL_ROUGE_JETONS, RPG_SOLEIL_ROUGE_MAGIES } from './rpgSoleilRouge.js';
 import { RPG_TENEBRES_ARMES, RPG_TENEBRES_CREATURES, RPG_TENEBRES_JETONS, RPG_TENEBRES_MAGIES } from './rpgTenebres.js';
 import { composerDeck } from './rpgDeckComposer.js';
 import { RPG_RECETTES_DECKS } from './rpgDeckRecipes.js';
@@ -46,7 +46,7 @@ export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige', 'tenebres'];
  *  d'ouvrir le paquet. Les identifiants pointent vers des illustrations
  *  présentes. */
 export const MYTHIQUE_VITRINE_PAR_ELEMENT = Object.freeze({
-  braise: 'djinn-du-souk',
+  braise: 'ifrit-des-ergs',
   eau: 'kraken',
   sable: 'salem',
   neige: 'pere-des-corbeaux',
@@ -131,6 +131,44 @@ export function bonusArme(carte) {
   if (carte?.kind === 'arme') return carte.bonus ?? { atk: 0, def: 0 };
   if (carteEstArme(carte)) return { atk: carte.effet.atk ?? 0, def: carte.effet.def ?? 0 };
   return null;
+}
+
+/** Un nombre signé pour l'affichage d'un changement de statistique :
+ *  « +2 », « -2 », « 0 » — jamais « +-2 ». */
+export function signeStat(valeur = 0) {
+  const nombre = Number.isFinite(Number(valeur)) ? Number(valeur) : 0;
+  return nombre > 0 ? `+${nombre}` : `${nombre}`;
+}
+
+/**
+ * La modification d'attaque et de défense qu'une carte inflige à sa cible
+ * (`{ atk, def }`), ou `null` quand elle n'en inflige aucune.
+ *
+ * C'est ce que la face d'une carte doit montrer pour qu'on lise son effet
+ * d'un coup d'œil, comme les armes affichent le bonus de leur porteur : la
+ * **Lame de mer** écrit `-2/-2`, l'**Embuscade** `-2/-2` sur toute la table
+ * adverse, la vipère de verre `-2/0`, le Colosse `+1/+1` à son arrivée. Sans
+ * ce calcul, ces nombres ne vivaient que dans la ligne de règle — et les
+ * faces de cartes n'impriment pas la règle.
+ *
+ * Les armes sont exclues : elles ont déjà leur bonus de porteur (`bonusArme`),
+ * et les répéter ferait lire deux fois le même chiffre.
+ */
+export function modificationStats(carte) {
+  if (!carte || carteEstArme(carte)) return null;
+  const source = carte.effet ?? carte.arrivee ?? null;
+  if (!source || !['buff', 'debuff'].includes(source.type)) return null;
+  const atk = Number(source.atk) || 0;
+  const def = Number(source.def) || 0;
+  if (!atk && !def) return null;
+  return { atk, def };
+}
+
+/** « -2/-2 », « +1/+1 » : la modification telle qu'elle s'écrit sur la carte. */
+export function libelleModificationStats(carte) {
+  const modif = modificationStats(carte);
+  if (!modif) return null;
+  return `${signeStat(modif.atk)}/${signeStat(modif.def)}`;
 }
 
 /**
@@ -417,19 +455,6 @@ export const RPG_CREATURE_CARDS = [
     arrivee: { type: 'buff', atk: 1, def: 1 },
     text: 'Quand le Colosse arrive : vos autres créatures gagnent +1/+1.',
     flavor: 'La mer est partie. Son sel est resté debout.',
-  },
-  {
-    id: 'djinn-du-souk',
-    name: 'Djinn du souk',
-    element: 'braise',
-    cost: 5,
-    atk: 3, def: 3,
-    rarity: 'mythique',
-    typeLine: 'Créature — Djinn',
-    art: 'djinn-du-souk',
-    arrivee: { type: 'detruire-terrain-aleatoire' },
-    text: 'Quand le Djinn arrive : il détruit un terrain adverse au hasard.',
-    flavor: 'Il vendait des épices. Il a gardé le feu.',
   },
   {
     id: 'veilleuse-des-citernes',
@@ -1187,7 +1212,7 @@ export function cardCopyLimit(card) {
 }
 
 /** Cartes conservées dans les archives, mais incompatibles avec le mana automatique. */
-export const RPG_CARTES_HORS_FORMAT = Object.freeze(['boussole-du-hoggar', 'djinn-du-souk']);
+export const RPG_CARTES_HORS_FORMAT = Object.freeze([]);
 export const carteJouableSansTerrain = (carte) => Boolean(carte && carte.kind !== 'terrain'
   && !RPG_CARTES_HORS_FORMAT.includes(carte.id));
 
@@ -1238,139 +1263,8 @@ export function rpgValiderDeck(deck) {
  * produire un mana de leur couleur. Montagne → braise, Mer → eau,
  * Désert → sable.
  */
-export const RPG_TERRAIN_CARDS = [
-  ...RPG_SOLEIL_ROUGE_TERRAINS,
-  {
-    id: 'montagne',
-    name: 'Montagne',
-    element: 'braise',
-    kind: 'terrain',
-    art: 'montagne',
-    typeLine: 'Terrain — Montagne',
-    rarity: 'commune',
-    cost: 0,
-    text: 'Engagez : ajoutez un mana braise.',
-    flavor: 'La braise dort sous la roche.',
-  },
-  {
-    id: 'mer',
-    name: 'Mer',
-    element: 'eau',
-    kind: 'terrain',
-    typeLine: 'Terrain — Mer',
-    rarity: 'commune',
-    cost: 0,
-    text: 'Engagez : ajoutez un mana eau.',
-    flavor: 'Derrière la dune, elle attend encore.',
-  },
-  {
-    id: 'desert',
-    name: 'Désert',
-    element: 'sable',
-    kind: 'terrain',
-    typeLine: 'Terrain — Désert',
-    rarity: 'commune',
-    cost: 0,
-    text: 'Engagez : ajoutez un mana sable.',
-    flavor: 'Le vent grave des pistes dans l’or des dunes.',
-  },
-  {
-    id: 'petra',
-    name: 'Pétra',
-    element: 'hybride',
-    colors: ['sable', 'braise'],
-    manaColors: ['braise', 'sable'],
-    kind: 'terrain',
-    art: 'petra',
-    typeLine: 'Terrain — Cité',
-    rarity: 'rare',
-    cost: 0,
-    text: 'Engagez : ajoutez un mana Braise ou Sable.',
-    flavor: 'Dans la roche rose, les pistes se croisent.',
-  },
-  {
-    id: 'glacier',
-    name: 'Glacier',
-    element: 'neige',
-    kind: 'terrain',
-    art: 'glacier',
-    typeLine: 'Terrain — Glacier',
-    rarity: 'commune',
-    cost: 0,
-    text: 'Engagez : ajoutez un mana Neige.',
-    flavor: 'Sous la glace, le temps dort debout.',
-  },
-  // Variantes illustrées : elles reprennent exactement le type, le coût et la
-  // production de mana de leur terrain d’origine. `varianteDe` sert de lien
-  // éditorial et ne change aucune règle du duel.
-  {
-    id: 'dunes-du-tenere',
-    name: 'Dunes du Ténéré',
-    element: 'sable',
-    kind: 'terrain',
-    art: 'dunes-du-tenere',
-    varianteDe: 'desert',
-    typeLine: 'Terrain — Désert',
-    rarity: 'commune',
-    cost: 0,
-    text: 'Engagez : ajoutez un mana sable.',
-    flavor: 'Les pistes s’effacent ; le voyage, jamais.',
-  },
-  {
-    id: 'cretes-de-cendre',
-    name: 'Crêtes de cendre',
-    element: 'braise',
-    kind: 'terrain',
-    art: 'cretes-de-cendre',
-    varianteDe: 'montagne',
-    typeLine: 'Terrain — Montagne',
-    rarity: 'commune',
-    cost: 0,
-    text: 'Engagez : ajoutez un mana braise.',
-    flavor: 'Le volcan se tait ; la pierre garde sa chaleur.',
-  },
-  {
-    id: 'lagune-des-salines',
-    name: 'Lagune des salines',
-    element: 'eau',
-    kind: 'terrain',
-    art: 'lagune-des-salines',
-    varianteDe: 'mer',
-    typeLine: 'Terrain — Mer',
-    rarity: 'commune',
-    cost: 0,
-    text: 'Engagez : ajoutez un mana eau.',
-    flavor: 'La lagune garde le ciel après le départ du soleil.',
-  },
-  {
-    id: 'petra-des-deux-sources',
-    name: 'Pétra des deux sources',
-    element: 'hybride',
-    colors: ['sable', 'braise'],
-    manaColors: ['braise', 'sable'],
-    kind: 'terrain',
-    art: 'petra-des-deux-sources',
-    varianteDe: 'petra',
-    typeLine: 'Terrain — Cité',
-    rarity: 'rare',
-    cost: 0,
-    text: 'Engagez : ajoutez un mana Braise ou Sable.',
-    flavor: 'Deux reflets, une seule piste dans la roche rose.',
-  },
-  {
-    id: 'glacier-des-arches',
-    name: 'Glacier des arches',
-    element: 'neige',
-    kind: 'terrain',
-    art: 'glacier-des-arches',
-    varianteDe: 'glacier',
-    typeLine: 'Terrain — Glacier',
-    rarity: 'commune',
-    cost: 0,
-    text: 'Engagez : ajoutez un mana Neige.',
-    flavor: 'La glace ouvre une porte sur les hivers enfouis.',
-  },
-];
+/** Les terrains sont retirés du jeu : plus aucune carte de ce type. */
+export const RPG_TERRAIN_CARDS = Object.freeze([]);
 
 export function terrainById(id) {
   return RPG_TERRAIN_CARDS.find((card) => card.id === id) ?? null;
@@ -1721,6 +1615,25 @@ export const RPG_MAGIE_CARDS = [
     text: 'Sorcellerie — Les créatures adverses gagnent -2/-2 (jamais sous 1/1) et doivent bloquer si elles le peuvent ce tour.',
     flavor: 'Le cercle se referme ; plus aucun bouclier ne reste à l’écart.',
   },
+  // ── Le Grand Hiver : le froid qui ne choisit pas son camp ───────────────
+  // `cible: 'toutes-autres'` frappe la table ENTIÈRE — les deux camps, sans
+  // exception ni source épargnée. C'est la leçon du Serment : un hiver ne
+  // demande pas de quel côté du fjord on se bat. Le sort tue les petites
+  // créatures des deux camps ; il ne se lance que quand ce compte-là penche.
+  {
+    id: 'grand-hiver',
+    name: 'Le Grand Hiver',
+    element: 'neige',
+    kind: 'magie',
+    typeLine: 'Sorcellerie — Neige',
+    art: 'grand-hiver',
+    cost: 2,
+    rarity: 'rare',
+    cibles: ['toutes'],
+    effet: { type: 'degats', amount: 1, cible: 'toutes-autres' },
+    text: 'Sorcellerie — 1 dégât à toutes les créatures, les vôtres comprises.',
+    flavor: 'Le froid ne demande jamais de quel camp vous êtes.',
+  },
   // ── Contresorts (deck Marée des abysses) ───────────────────────────────
   // Un contresort répond à l'annonce du sorcier : il annule la carte annoncée.
   {
@@ -1825,6 +1738,12 @@ export const RPG_MAGIE_CARDS = [
  * `porteurBlesseSorcier` / `porteurBlesse` (quand il inflige des blessures de
  * combat), `porteurMeurt` (quand il meurt, arme comprise). `armeVivante`
  * permet de la jouer sans créature : elle crée son propre porteur.
+ *
+ * **Le prix de l'attachement** — `blessurePorteur` : l'arme blesse la créature
+ * au moment où elle s'attache (la Hache de la banquise, 1 dégât), avant ses
+ * propres bonus. Un porteur qui succombe à cette morsure ne porte rien :
+ * l'arme tombe au cimetière avec lui. Et `donne.bouclier` accorde au porteur
+ * un bouclier qui suit l'arme — il s'en va si l'arme est remplacée.
  */
 export const RPG_ARME_CARDS = [
   ...RPG_TENEBRES_ARMES,
@@ -1883,6 +1802,24 @@ export const RPG_ARME_CARDS = [
     donne: { envol: true },
     text: 'Arme — Le porteur gagne +1/−1 et Envol.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
+  },
+  {
+    id: 'hache-de-la-banquise',
+    name: 'Hache de la banquise',
+    element: 'neige',
+    kind: 'arme',
+    typeLine: 'Arme — Hache',
+    cost: 3,
+    rarity: 'commune',
+    bonus: { atk: 2, def: 0 },
+    // Le prix de l'acier de glace : `blessurePorteur` mord la créature AU
+    // MOMENT de l'attachement, avant que le bouclier de l'arme ne soit posé —
+    // la morsure ne s'absorbe donc pas elle-même. Le bouclier (`donne.bouclier`),
+    // lui, suit l'arme : il part avec elle si le porteur en change.
+    blessurePorteur: 1,
+    donne: { bouclier: 1 },
+    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0 et un bouclier de 1.',
+    flavor: 'Le manche de glace mord la main avant de mordre l’ennemi.',
   },
 
   // ── Le lot des Veilleurs : dix équipements du Sable ────────────────────
@@ -1945,21 +1882,6 @@ export const RPG_ARME_CARDS = [
     porteurMeurt: { type: 'pioche', amount: 2 },
     text: 'Arme — Le porteur gagne +1/−1. Quand le porteur meurt, piochez deux cartes.',
     flavor: 'Il tirait bien. Il tire encore, d’une certaine façon.',
-  },
-  {
-    id: 'boussole-du-hoggar',
-    name: 'Boussole du Hoggar',
-    element: 'sable',
-    kind: 'arme',
-    typeLine: 'Arme — Boussole',
-    cost: 2,
-    rarity: 'inhabituelle',
-    bonus: { atk: 1, def: 1 },
-    // L'Explorer's Scope, traduit en « le désert se lit » : le terrain va en
-    // main, jamais posé — la règle « un terrain par tour » reste intacte.
-    porteurAttaque: { type: 'regarder-dessus', si: 'terrain' },
-    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur attaque : regardez la première carte de votre deck ; si c’est un terrain, révélez-le et ajoutez-le à votre main.',
-    flavor: 'Amayas ne cherche pas l’eau. Il se souvient de l’endroit.',
   },
   {
     id: 'harnais-du-mehari',

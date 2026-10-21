@@ -16,12 +16,9 @@ function duelAvecMains(joueurIds = [], sorcierIds = []) {
   const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [] });
   duel.joueur.main = [...joueurIds];
   duel.sorcier.main = [...sorcierIds];
-  // Terrains factices : assez pour payer tout ce que les tests jouent.
-  const terrains = ['desert', 'montagne', 'mer', 'glacier'];
-  for (let i = 0; i < 12; i += 1) {
-    const carteId = terrains[i % terrains.length];
-    duel.joueur.terrains.push({ id: `t-j-${i}`, carteId, tapped: false });
-    duel.sorcier.terrains.push({ id: `t-s-${i}`, carteId, tapped: false });
+  // Le mana classique vient des terrains posés, retirés du jeu : on remplit la\n  // réserve directement, assez pour payer tout ce que les tests jouent.
+  for (const camp of [duel.joueur, duel.sorcier]) {
+    camp.mana = { braise: 12, eau: 12, sable: 12, neige: 12, tenebres: 12 };
   }
   return duel;
 }

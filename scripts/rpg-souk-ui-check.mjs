@@ -305,7 +305,7 @@ assert.match(pageCode, /noterEvenementDuel\(\{ type: 'arme-jouee', cardId: carte
 // Et le Souk est prévenu **après** le rendu du plateau : un état de bourse mis à
 // jour avant `force()` fait passer le rendu du champ en tâche de fond (le
 // plateau montrait l'ancien état juste après le clic).
-for (const geste of ['creature-invoquee', 'magie-lancee', 'arme-jouee', 'terrain-pose']) {
+for (const geste of ['creature-invoquee', 'magie-lancee', 'arme-jouee']) {
   assert.match(pageCode, new RegExp(`force\\(\\)[\\s\\S]{0,700}noterEvenementDuel\\(\\{ type: '${geste}'`),
     `« ${geste} » est raconté après le rendu du plateau`);
 }

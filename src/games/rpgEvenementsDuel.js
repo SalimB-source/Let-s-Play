@@ -9,7 +9,7 @@
  * sans monter un seul composant.
  *
  * Un événement est `{ type, ... }`. Les champs **dérivables** le sont ici, pas
- * au point d'appel : un terrain posé s'annonce `{ type: 'terrain-pose', cardId }`
+ * au point d'appel : une carte jouée s'annonce `{ type: 'carte-jouee', cardId }`
  * et c'est ce module qui lit la carte pour en tirer ses couleurs. Un seul
  * endroit connaît le catalogue, donc un seul endroit peut se tromper.
  *
@@ -19,7 +19,7 @@
  * | --- | --- |
  * | `duel-gagne` | **le seul qui paie** : 50 ◈ au premier déblayage d'un étage, 10 ◈ pour un étage rejoué, 8 ◈ pour un duel libre |
  * | `etage-deblaye` | ne paie rien (le duel a déjà payé) : sert à la quête du palier suivant |
- * | `terrain-pose`, `creature-invoquee`, `magie-lancee`, `arme-jouee` | ne paient rien : font avancer les quêtes du jour |
+ * | `creature-invoquee`, `magie-lancee`, `arme-jouee` | ne paient rien : font avancer les quêtes du jour |
  * | `carte-jouee` | l'union des quatre précédents, portée avec ses `couleurs` |
  * | `degats-infliges` | ne paie rien : fait avancer « le sorcier saigne » du **montant** |
  * | `booster-ouvert` | ne paie rien ici : le prix et le remboursement des doublons appartiennent à `rpgBoosters.js` |
@@ -41,7 +41,6 @@ import { cachetDeLaSemaineDisponible, cachetDisponible, progresserQuete, quetesA
 export const EVENEMENTS_DUEL = Object.freeze([
   'duel-gagne',
   'etage-deblaye',
-  'terrain-pose',
   'creature-invoquee',
   'magie-lancee',
   'arme-jouee',

@@ -162,7 +162,7 @@ export const RPG_STORY_TOURS = [
         nom: 'Le Djinn du tournant',
         fonction: 'Rouleur d’épices',
         deck: 'cour-des-djinns',
-        avatar: 'djinn-du-souk',
+        avatar: null,
         puissance: 4,
         ia: { niveau: 'normale', style: 'agressif' },
         note: 'Il vendait des épices. Il a gardé le feu, et l’habitude d’ouvrir les hostilités.',

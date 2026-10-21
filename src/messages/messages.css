@@ -394,6 +394,24 @@
 }
 .messages-bubble-wrap .messages-bubble { max-width: 100%; }
 
+/* Un lien dans une bulle s'ouvre au clic (défi du Sablier, vidéo, article).
+   Il reste lisible sur les deux fonds : le cyan du site pour les bulles
+   reçues, blanc souligné sur la bulle envoyée (dégradé cyan → violet). */
+.messages-bubble .messages-lien {
+  color: var(--cyan, #22d3ee);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  overflow-wrap: anywhere;
+}
+.messages-bubble.is-mine .messages-lien { color: #fff; }
+.messages-bubble .messages-lien:hover { text-decoration-thickness: 2px; }
+.messages-bubble .messages-lien:focus-visible {
+  outline: 2px solid var(--cyan, #22d3ee);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
 .messages-bubble-delete {
   width: 22px;
   height: 22px;

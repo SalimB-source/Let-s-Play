@@ -9,6 +9,9 @@
  *    doublon ; les erreurs du trigger sont reconnues ; les suggestions de la
  *    bulle d'ouverture couvrent les quatre états du fil (vide, reçu en
  *    question, reçu au calme, envoyé) dans les trois langues.
+ *    Les liens d'une bulle sont vérifiés au rendu : une URL http(s) devient
+ *    une ancre (`target="_blank"`, `rel="noopener noreferrer"`), un schéma
+ *    dangereux (`javascript:`) reste du texte.
  * 2. Aperçu de démonstration : les discussions de départ ne citent que des
  *    amis existants, jamais soi-même ; il y a des non-lus et des discussions
  *    lues ; les réponses scriptées sont déterministes ; les messages scriptés
@@ -475,6 +478,24 @@ try {
   check('discussion : pseudo en majuscules', thread.includes('NOVA PIXEL') && !thread.includes('nova pixel'));
   check('discussion : lien profil libellé en majuscules', threadRaw.includes(`${t.profile} — NOVA PIXEL`));
   check('discussion : message du fil intact', thread.includes('Salut !'));
+  // Un lien collé dans une bulle s'ouvre au clic — c'est ainsi qu'un défi du
+  // Sablier envoyé « à la main » arrive à son destinataire. Le rendu doit
+  // porter une vraie ancre, ouverte dans un nouvel onglet et sans accès à
+  // `window.opener`.
+  const lien = 'https://let-s-play.vercel.app/jeu/sablier-de-bab-el/defi/AB12CD34';
+  const lienRaw = renderThreadView(mixed, {
+    lang: 'fr',
+    messages: [
+      { id: 'l1', body: 'Viens, on joue ici ' + lien, mine: false, createdAt: '2026-01-01T10:00:00Z', read: true },
+      { id: 'l2', body: 'javascript:alert(1)', mine: true, createdAt: '2026-01-01T10:01:00Z', read: true },
+    ],
+  });
+  check('lien dans une bulle : ancre rendue', lienRaw.includes(`href="${lien}"`));
+  check('lien dans une bulle : nouvel onglet, sans opener',
+    lienRaw.includes('target="_blank"') && lienRaw.includes('rel="noopener noreferrer"'));
+  check('lien dans une bulle : la classe de style est posée', lienRaw.includes('class="messages-lien"'));
+  check('lien dans une bulle : le texte reste lisible', strip(lienRaw).includes('Viens, on joue ici ' + lien));
+  check('schéma dangereux : aucune ancre', !lienRaw.includes('href="javascript:'));
   check('discussion : champ de saisie et bouton d’envoi', threadRaw.includes('messages-composer') && threadRaw.includes(`aria-label="${t.send}"`));
   check('discussion : bulle de suggestions à l’ouverture', threadRaw.includes('messages-suggest') && threadRaw.includes(`aria-label="${t.suggestGroup}"`));
   check('discussion : trois suggestions proposées', (threadRaw.match(/messages-suggest-chip/g) || []).length, 3);

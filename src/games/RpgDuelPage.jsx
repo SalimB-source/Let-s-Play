@@ -28,7 +28,6 @@ import {
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import {
   RPG_MANA_ESSAI_CHAMP_MAX,
-  RPG_MANA_ESSAI_DECKS,
   RPG_MANA_ESSAI_MAIN_MAX,
   RPG_MANA_ESSAI_MAX,
   RPG_MODE_MANA_ESSAI,
@@ -205,7 +204,9 @@ import {
   resonanceGroupLabel,
   armeById,
   magieFamille,
+  modificationStats,
   rpgValiderDeck,
+  signeStat,
 } from './rpgCards.js';
 // La signature des deux familles de sorts — sceau, socle, ligne teintée — vit
 // dans son propre module : l'atelier de decks la partage (voir
@@ -238,7 +239,6 @@ const CARD_ART_CACHE_VERSIONS = {
   'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
   'serment-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
   'pere-des-corbeaux': 'odin-photoreal-v1',
-  'djinn-du-souk': 'munch-impressionniste-v3',
   'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
   'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
   'anqa-des-braises': 'anqa-des-braises-huile-v1',
@@ -370,6 +370,10 @@ function describeAnnouncedMagicTarget(carte, cibleId, duel, sorcierArtId, sorcie
   if (entite) return { nom: entite.name, illustrationId: entite.carteId };
 
   if (effet.type === 'destruction-totale') return { nom: 'Toutes les créatures des deux camps' };
+  // Le Grand Hiver : la vague ne choisit pas son camp, la fiche le dit.
+  if (effet.type === 'degats' && effet.cible === 'toutes-autres') {
+    return { nom: 'Toutes les créatures des deux camps' };
+  }
   if (effet.cible === 'toutes-creatures') return { nom: 'Toutes vos créatures' };
   if (effet.type === 'buff') return { nom: 'Toutes les créatures du sorcier' };
   if (effet.type === 'contresort') return { nom: 'La carte annoncée' };
@@ -924,6 +928,7 @@ function effetsAccordesParArme(arme) {
   if (donne.esquive) effets.push('Esquive');
   if (donne.immunite) effets.push(`Immunité contre ${ELEMENT_LABELS[donne.immunite] ?? donne.immunite}`);
   if (donne.furie) effets.push(`Furie ${donne.furie}`);
+  if (donne.bouclier) effets.push(`Bouclier ${donne.bouclier}`);
   return `Bonus d’équipement : ${bonusArmeTexte(arme)}${effets.length ? ` · ${effets.join(' · ')}` : ''}`;
 }
 
@@ -2332,6 +2337,8 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
     effetsEpuisesActifs.includes('tenacite') && 'Tenacité déjà utilisée',
     effetsEpuisesActifs.includes('bouclier') && 'Bouclier tombé',
   ].filter(Boolean);
+  // La modification chiffrée que la carte inflige (-2/-2 pour la Lame de mer).
+  const modifCarte = modificationStats(carte);
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
   const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
   // La fiche du catalogue : la carte ouverte d'un clic, en grand. Elle se lit
@@ -2408,6 +2415,11 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
         </div>
       )}
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
+      {modifCarte && !carteEstArme(carte) && (
+        <p className={`rpg-hover-card-preview__stats rpg-hover-card-preview__stats--modif${modifCarte.atk < 0 || modifCarte.def < 0 ? ' is-malus' : ' is-bonus'}`}>
+          Statistiques : {signeStat(modifCarte.atk)} ⚔ <span>·</span> {signeStat(modifCarte.def)} 🛡
+        </p>
+      )}
     </>
   );
   // L'aperçu rapide — le survol à la souris comme l'appui long au doigt — ne
@@ -2446,7 +2458,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       onPointerLeave={onPointerLeave ?? undefined}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
       data-effets-epuises={effetsEpuisesActifs.length ? effetsEpuisesActifs.join(' ') : undefined}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${cibleLabel}`}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${modifCarte && !carteEstArme(carte) ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${cibleLabel}`}
       style={{ ...style, ...(estEnFurie ? {} : cardFrameStyle(carte)) }}
     >
       {variante === 'annonce' ? (
@@ -3201,21 +3213,19 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         <small>Choisir un deck et affronter l’ordinateur</small>
                       </span>
                     </button>
+                    <a className="rpg-menu-button rpg-menu-button--en-ligne" href={`${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi`} onClick={() => play('select')}>
+                      <span className="rpg-menu-button__icon" aria-hidden="true">⚑</span>
+                      <span className="rpg-menu-button__text">
+                        <strong>Duel en ligne</strong>
+                        <small>Défier un ami par lien, ou entrer un code</small>
+                      </span>
+                    </a>
                   </div>
                 </div>
                 <section className="rpg-flux-menu" aria-label="Les règles du Sablier">
                   <span className="rpg-flux-menu__eyebrow">LES RÈGLES · TOUS LES DUELS</span>
                   <h3>Le mana remplace les terrains.</h3>
                   <p>30 cartes à jouer, aucun terrain à piocher. Gagnez un mana coloré à chaque tour jusqu’à 10 ; choisissez sa couleur si votre deck en a plusieurs. Main de départ : 3 cartes, cinq créatures au plus par camp (la sixième demande un sacrifice) et cinq cartes en main au maximum en fin de tour.</p>
-                  <div className="rpg-flux-menu__decks">
-                    {RPG_MANA_ESSAI_DECKS.map((deck) => (
-                      <button key={deck.id} type="button" onClick={() => { play('select'); onStartManaEssai(deck.id); }}>
-                        <span className="rpg-flux-menu__emblems" aria-hidden="true">{deck.elements.map((couleur) => ELEMENT_GLYPHS[couleur]).join(' ')}</span>
-                        <strong>{deck.elements.length} couleur{deck.elements.length > 1 ? 's' : ''}</strong>
-                        <small>{deck.name}</small>
-                      </button>
-                    ))}
-                  </div>
                   <small className="rpg-flux-menu__note">Ces règles s’appliquent aux duels libres, au tutoriel et à toute l’Histoire.</small>
                 </section>
               </div>
@@ -6063,7 +6073,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     : (
       deckAdverseAffiche.boxArt
       ?? deckAdverseAffiche.cardIds.find((id) => cardById(id)?.kind !== 'terrain')
-      ?? 'djinn-du-souk'
+      ?? 'ifrit-des-ergs'
     );
   const personnageSorcier = personnageEtage(histoireEtageId);
   const portraitSorcierAdverse = (personnageSorcier && portraitHistoire(personnageSorcier, import.meta.env.BASE_URL, cardArt))
@@ -6836,7 +6846,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // `check:rpg-preview` : `rpgJouerCreature` rendait `ok: true` et la créature
     // n'apparaissait qu'à la macrotâche suivante).
     if (res.ok) {
-      noterEvenementDuel({ type: 'terrain-pose', cardId: carteId });
       noterEvenementDuel({ type: 'carte-jouee', cardId: carteId });
     }
   };
@@ -6904,6 +6913,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       };
     }
     if (carte.effet?.type === 'destruction-totale') {
+      return { nom: 'Toutes les créatures des deux camps',
+        targetIds: [...duel.joueur.creatures, ...duel.sorcier.creatures].map((entite) => entite.id) };
+    }
+    if (carte.effet?.type === 'degats' && carte.effet.cible === 'toutes-autres') {
       return { nom: 'Toutes les créatures des deux camps',
         targetIds: [...duel.joueur.creatures, ...duel.sorcier.creatures].map((entite) => entite.id) };
     }
@@ -9505,6 +9518,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // dans `rpg-battle.css`). Les créatures, elles, se lisent à leurs
               // statistiques, et les terrains gardent leur ligne.
               const familleSort = magieFamille(carte);
+              // Le chiffre de l'effet (-2/-2 pour la Lame de mer, +1/+1 pour
+              // une arrivée qui renforce) : il se pose sur la face, comme les
+              // statistiques d'une créature ou le bonus d'une arme.
+              const modifCarte = modificationStats(carte);
               const peutRepondre = reponseActive && carte.instant;
               // Une seule règle pour le halo de jouabilité — bleu pour ce qui se
               // pose, la teinte de la famille pour un sort (voir « La lueur de
@@ -9599,6 +9616,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     <span className="rpg-hand__stats" aria-label={`Porteur : ${signeBonus(bonusArme(carte)?.atk)} attaque, ${signeBonus(bonusArme(carte)?.def)} défense`}>
                       <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.atk)}</span></span>
                       <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.def)}</span></span>
+                    </span>
+                  )}
+                  {/* Le chiffre de l'effet, sur la face : la Lame de mer écrit
+                      -2/-2 dans la même plaque que les statistiques des
+                      créatures et le bonus des armes. Sans elle, le nombre ne
+                      vivait que dans la règle imprimée — que la face d'une
+                      carte en main n'affiche pas. */}
+                  {modifCarte && !estCreature && !carteEstArme(carte) && (
+                    <span
+                      className={`rpg-hand__stats rpg-hand__stats--modif${modifCarte.atk < 0 || modifCarte.def < 0 ? ' is-malus' : ' is-bonus'}`}
+                      aria-label={`Effet sur les statistiques : ${signeStat(modifCarte.atk)} attaque, ${signeStat(modifCarte.def)} défense`}
+                    >
+                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{signeStat(modifCarte.atk)}</span></span>
+                      <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{signeStat(modifCarte.def)}</span></span>
                     </span>
                   )}
                 </button>
