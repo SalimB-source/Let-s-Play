@@ -245,6 +245,12 @@ export function valeurCarte(carte) {
   if (carte.envol) valeur += 2.5;
   if (carte.infiltration) valeur += 2.5;
   if (carte.coupRapide) valeur += 2;
+  // Provocation détourne un bloqueur vers ce corps et ouvre la voie aux
+  // autres attaquants : une pression tactique, sans valoir l'Infiltration.
+  if (carte.provocation) valeur += 1;
+  // Une créature qui ne peut pas attaquer garde sa force en blocage, mais
+  // ne menace jamais directement le sorcier adverse.
+  if (carte.nePeutPasAttaquer) valeur -= 0.5 * Math.max(0, Number(carte.atk) || 0);
   if (carte.rapidite) valeur += 0.5;
   if (carte.esquive) valeur += 1.5;
   if (carte.protection) valeur += 1.5;

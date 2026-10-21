@@ -7,7 +7,7 @@ import { RPG_SOLEIL_ROUGE_CARDS, RPG_SOLEIL_ROUGE_SET_ID } from '../src/games/rp
 import { RPG_DECKS, cardById, cardColors, cardReceivesResonance, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
-import { rpgNouveauDuel, rpgJouerArme, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgAttaquerSorcier, rpgResonanceEnJeu, rpgBonusResonance, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerArme, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgAttaquerSorcier, rpgResonanceEnJeu, rpgBonusResonance, rpgAppliquerBannieresAttaque, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
 
 function duelTest(rng = () => 0.5) {
   const duel = rpgNouveauDuel({
@@ -643,6 +643,31 @@ test('la bannière du Daimyō grandit chaque Samouraï qui attaque, et lui-même
   nouveauTour('joueur');
   assert.equal(rpgLancerAttaque(duel, 'joueur', [daimyo.id], { [daimyo.id]: [] }).ok, true);
   assert.deepEqual([daimyo.atk, daimyo.def], [4, 4]);
+});
+
+test('la bannière tombe dès la déclaration verrouillée, sans repasser à la résolution', () => {
+  const duel = duelTest();
+  jouer(duel, 'joueur', 'daimyo-du-soleil-rouge');
+  const ronin = jouer(duel, 'joueur', 'ronin-du-soleil-rouge');
+  const pvSorcier = duel.sorcier.pv;
+  assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [3, 2, 2]);
+
+  // C'est le geste de l'interface quand les attaquants sont confirmés : le
+  // renfort est visible avant les bloqueurs, alors qu'aucune blessure n'a
+  // encore été infligée et que l'attaquant n'est pas encore engagé.
+  assert.equal(rpgAppliquerBannieresAttaque(duel, 'joueur', [ronin.id]), true);
+  assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [4, 3, 3],
+    'le +1/+1 est déjà là à la déclaration');
+  assert.equal(ronin.attaquee, false, 'la déclaration ne résout pas encore le combat');
+  assert.equal(duel.sorcier.pv, pvSorcier);
+
+  assert.equal(rpgLancerAttaque(
+    duel, 'joueur', [ronin.id], { [ronin.id]: [] }, null, null, {},
+    { attaqueDeclaree: true, bannieresAppliquees: true },
+  ).ok, true);
+  assert.equal(duel.sorcier.pv, pvSorcier - 4, 'la frappe utilise la force déjà grandie');
+  assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [4, 3, 3],
+    'la résolution ne déclenche pas la bannière une seconde fois');
 });
 
 test('la bannière s’applique à chaque attaque et reste acquise quand le Daimyō part', () => {

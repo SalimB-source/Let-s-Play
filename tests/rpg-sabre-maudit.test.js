@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { cardById, RPG_DECKS, terrainManaColors, rpgValiderDeck } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 import { choisirCarteIA, choisirCiblesRapidesIA } from '../src/games/rpgAI.js';
@@ -163,4 +164,22 @@ test('le sabre porte le cadre d’acier des armes, comme les autres armes', asyn
   assert.equal(carteEstArme(byId('samourai-du-torii')), false);
   assert.equal(bonusArme(byId('samourai-du-torii')), null);
   assert.match(sabre.text, /^Arme — Le porteur gagne \+1\/\+0/, 'texte au format des autres armes');
+});
+
+test('équipé, le Sabre ne se dessine plus en miniature sur son porteur', () => {
+  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  const batailleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+  const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+
+  // Le Sabre vit dans `entite.armes` : l'ancienne rangée `.rpg-card__weapons`
+  // en faisait une carte de 22 × 28 px collée sur la créature. Elle a disparu
+  // de toutes les surfaces ; l'équipement se lit au cadre d'acier du porteur.
+  assert.doesNotMatch(page, /rpg-card__weapons/);
+  assert.doesNotMatch(batailleCss, /\.rpg-card__weapons\b/);
+  assert.doesNotMatch(mobileCss, /\.rpg-card__weapons\b/);
+  assert.match(page, /is-arme-equipee/, 'le cadre d’acier signale toujours l’équipement');
+  assert.match(page, /data-armes=\{armes\.length \? armes\.join\(' '\) : undefined\}/,
+    'les armes portées restent transmises aux aperçus');
+  assert.match(page, /rpg-hover-card-preview__weapons/,
+    'la carte du Sabre reste lisible dans l’aperçu du porteur');
 });

@@ -158,7 +158,7 @@ La Furie appartient au set **Neige** et à lui seul ; elle se lit sur la carte
 (`furie`) et le moteur l'applique sans table d'effets supplémentaires. Les
 valkyries n'émettent plus de Résonance viking.
 
-- **Furie X** (Guerrier au bouclier rond et Loup des neiges 1, Berserk des
+- **Furie X** (Loup des neiges 1, Guerrier au bouclier rond et Berserk des
   trois hivers 2, Jarl au marteau de guerre et Maître du marteau 3) — un état
   continu : tant que la défense actuelle d'une créature vivante est sous sa
   **DEF de base** — la défense imprimée de sa carte, sans les renforts ni les
@@ -175,8 +175,14 @@ valkyries n'émettent plus de Résonance viking.
   dans son deck. Le type imprimé décide : un Loup des neiges (type Loup) et
   les sorts Neige ne sont pas éligibles. S'il ne reste aucun Viking dans le
   deck, l'arrivée ne fait pas piocher de carte de remplacement.
+- **Provocation** (Berserk des trois hivers, 4 mana, 1/5, Furie 2) — quand
+  le Berserk attaque, le défenseur doit lui assigner au moins un bloqueur
+  légal si un tel blocage est possible. S'il y a plusieurs provocateurs et
+  trop peu de bloqueurs, l'affectation doit couvrir le plus grand nombre de
+  provocateurs qu'un appariement légal permet ; sans bloqueur légal,
+  l'attaque peut passer.
 
-Les créatures du Nord gardent leurs capacités propres (Coup rapide du
+Les créatures du Nord gardent leurs capacités propres (Provocation du
 Berserk, Envol des valkyries, bouclier d'arrivée du Guerrier, soin d'arrivée
 de la Valkyrie des glaces).
 
@@ -184,7 +190,7 @@ Deux règles encadrent ces attaques. **Une seule phase d'attaque par tour**, et
 par camp : une fois le combat déclaré et résolu, il n'y en a pas de second avant
 le tour suivant (`duel.attaqueJouee`, posé par `rpgLancerAttaque` sur une
 déclaration acceptée et remis à `null` par `rpgFinDeTour`). Et **Coup rapide**
-(Fériel, le Djinn de foudre, le Berserk, et les armes qui le donnent) : déclaré
+(Fériel, le Djinn de foudre, et les armes qui le donnent) : déclaré
 attaquant, le porteur **peut** frapper une créature adverse de votre choix —
 elle encaisse ses dégâts, sans riposte, avant les blessures de combat, et
 **son attaque s'arrête là** : ni blocage, ni échange, ni dégâts au sorcier.
@@ -509,7 +515,7 @@ Quatre armes forment le prototype — une par élément, des effets **mixtes
 |---|---|---|---|
 | Takouba des pistes | Sable (commune) | 3 | **+2/+0 et Infiltration** : le porteur ne peut pas être bloqué, par personne — l'arme de départ, offerte dès la première collection, est devenue une arme d'assaut pur (aucune défense ajoutée). |
 | Bâton des citernes | Eau (rare) | 4 | +1/+2 ; à son arrivée et pour **3 manas** (capacité activée au tour du contrôleur) : un jeton **Serpent des citernes** 3/1 Rapidité, **détruit à la fin du tour** de sa création. |
-| Lance de givre | Neige (rare) | 3 | **+1/+1, Envol et un bouclier de 1** au porteur, tant que la Lance reste attachée ; le point de bouclier non absorbé repart avec elle si elle est remplacée. |
+| Lance de givre | Neige (rare) | 3 | **+1/−1 et Envol** au porteur, tant que la Lance reste attachée ; elle ne donne aucun bouclier. |
 | Armure de cendres | Braise (**mythique**, unique dans un deck) | 4 | **+3/+3, Rapidité** et **immunité contre la Braise** : le porteur ne peut pas être ciblé par la Braise et n'en reçoit aucun dégât (protection pilotée par `rpgEstProtegee`). |
 
 Le serpent des citernes est le deuxième jeton du catalogue

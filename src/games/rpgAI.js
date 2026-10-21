@@ -176,6 +176,10 @@ export function valeurEntite(entite) {
     + Math.max(0, carte.cost ?? 0) * 0.4;
   if (entite?.envol) valeur += 2.5;
   if (entite?.coupRapide) valeur += 2;
+  if (entite?.provocation || carte.provocation) valeur += 0.8;
+  if (entite?.nePeutPasAttaquer || carte.nePeutPasAttaquer) {
+    valeur -= 0.5 * Math.max(0, Number(entite?.atk) || 0);
+  }
   if (entite?.rapidite) valeur += 0.5;
   if (entite?.protection) valeur += 1.5;
   if (entite?.overkill || carte.overkill) valeur += 1.2;
@@ -268,7 +272,7 @@ function ciblesLegales(duel, cote, carte, portee) {
 function meilleuresOptionsOffensives(duel, cote, carte, { montant, sourceType, portee, profil, rng }) {
   const adv = autre(cote);
   const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
-  const prets = duel[cote].creatures.filter((entite) => entite && entite.ready && !entite.attaquee);
+  const prets = duel[cote].creatures.filter((entite) => moteur.rpgPeutAttaquer(entite));
   const options = [];
   for (const entite of ciblesLegales(duel, cote, carte, portee)) {
     const kill = montant != null && meurtSous(entite, montant, sourceType);
@@ -411,13 +415,14 @@ function meilleureCibleArme(duel, cote, carte) {
   const couleurs = cardColors(carte);
   const candidates = duel[cote].creatures
     .filter((entite) => !entite.mur && !entite.arme && !estProtegee(entite, couleurs));
-  // Une arme qui CONDAMNE son porteur (le Licou du chien de sable, +1/−1)
-  // ne cherche pas le meilleur bras : elle cherche le moins regrettable —
-  // un jeton, un mourant — puisque la pioche est le but et le porteur le
-  // prix. Sans condamné sous la main, elle retombe sur la logique ordinaire.
-  const tuePorteur = (carte?.bonus?.def ?? 0) < 0;
-  if (tuePorteur) {
-    const condamnees = candidates.filter((entite) => (entite.pv ?? 0) + (carte.bonus?.def ?? 0) <= 0);
+  // Une arme à défense négative dont la mort du porteur déclenche un gain
+  // (le Licou du chien de sable, +1/−1) ne cherche pas le meilleur bras :
+  // elle cherche le moins regrettable — un jeton, un mourant — puisque la
+  // pioche est le but et le porteur le prix. La Lance de givre, elle aussi
+  // à +1/−1, n'a pas ce déclencheur : tuer son porteur serait une perte sèche.
+  const malusDef = Math.min(0, Number(carte?.bonus?.def) || 0);
+  if (malusDef < 0 && carte?.porteurMeurt) {
+    const condamnees = candidates.filter((entite) => (entite.pv ?? 0) + malusDef <= 0);
     if (condamnees.length) {
       return condamnees
         .map((entite) => ({ entite, score: valeurEntite(entite) + (entite.jeton ? -6 : 0) }))
@@ -425,12 +430,15 @@ function meilleureCibleArme(duel, cote, carte) {
     }
   }
   return candidates
+    .filter((entite) => malusDef >= 0 || carte?.porteurMeurt || (entite.pv ?? 0) + malusDef > 0)
     .map((entite) => {
       let score = valeurEntite(entite);
       if (carte.donne?.envol && entite.envol) score -= 3;
       if (carte.donne?.esquive && entite.esquive) score -= 1;
       if (carte.donne?.coupRapide && entite.coupRapide) score -= 3;
       if (carte.donne?.rapidite && entite.rapidite) score -= 1;
+      // À malus égal, un porteur encore solide perd moins qu'un mourant.
+      if (malusDef < 0) score += Math.min(3, Math.max(0, (entite.pv ?? 0) + malusDef)) * 0.25;
       return { entite, score };
     })
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
@@ -550,9 +558,11 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   const attaquants = duel[coteAttaquant].creatures
     .filter((entite) => ids.includes(entite.id) && !ciblesAttaque?.[entite.id])
     // Les attaquants à 0 d'attaque n'ont rien à arrêter : les ignorer évite de
-    // gaspiller un bloqueur pour 0 dégât (Porteuse 0/3, etc.).
-    .filter((entite) => (entite.atk ?? 0) > 0);
-  const bloqueurs = duel[coteDefense].creatures.filter((entite) => entite && !entite.attaquee && !estGelee(entite));
+    // gaspiller un bloqueur pour 0 dégât (Porteuse 0/3, etc.). Provocation
+    // fait exception : même réduite à 0, elle réclame son bloqueur légal.
+    .filter((entite) => (entite.atk ?? 0) > 0 || entite.provocation);
+  const bloqueurs = duel[coteDefense].creatures.filter((entite) => entite && !entite.attaquee
+    && !estGelee(entite) && !(entite.empecheBlocageToursRestants > 0));
   const affectations = {};
   if (!attaquants.length || !bloqueurs.length) return affectations;
 
@@ -562,15 +572,25 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   const libres = new Set(bloqueurs.map((entite) => entite.id));
   const bloqueurParId = (id) => bloqueurs.find((entite) => entite.id === id);
 
-  // 0) Blocage forcé : les créatures avec doitBloquer: true DOIVENT bloquer
+  // 0) Blocage forcé : les créatures avec doitBloquer: true DOIVENT bloquer.
+  // Elles servent d'abord un provocateur encore découvert, en commençant par
+  // celui qui a le moins de bloqueurs légaux : un bloqueur contraint ne doit
+  // pas prendre la seule place capable d'arrêter un autre provocateur.
   const bloqueursForces = bloqueurs.filter((entite) => entite.doitBloquer);
+  const nombreBloqueursLegaux = (attaquant) => [...libres]
+    .filter((id) => legal(attaquant, bloqueurParId(id)))
+    .length;
   for (const bloqueurForce of bloqueursForces) {
-    if (libres.has(bloqueurForce.id)) {
-      const cible = attaquants.find((attaquant) => legal(attaquant, bloqueurForce));
-      if (cible) {
-        libres.delete(bloqueurForce.id);
-        affectations[cible.id] = [bloqueurForce.id];
-      }
+    if (!libres.has(bloqueurForce.id)) continue;
+    const ciblesLegales = attaquants.filter((attaquant) => legal(attaquant, bloqueurForce));
+    const cible = ciblesLegales
+      .filter((attaquant) => attaquant.provocation && !(affectations[attaquant.id] ?? []).length)
+      .sort((a, b) => nombreBloqueursLegaux(a) - nombreBloqueursLegaux(b))[0]
+      ?? ciblesLegales.find((attaquant) => !(affectations[attaquant.id] ?? []).length)
+      ?? ciblesLegales[0];
+    if (cible) {
+      libres.delete(bloqueurForce.id);
+      affectations[cible.id] = [...(affectations[cible.id] ?? []), bloqueurForce.id];
     }
   }
 
@@ -613,8 +633,62 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   // douteux reste en réserve pour la phase de survie.
   const seuil = profil.style === 'agressif' ? -0.6 : profil.style === 'prudent' ? 0.8 : 0;
 
+  // 0bis) Provocation : ce n'est pas un choix tactique. Chaque provocateur
+  // encore découvert doit recevoir un bloqueur légal, dans la limite du
+  // plus grand appariement possible — le meilleur échange disponible s'il
+  // existe, sinon le corps le moins précieux. L'appariement maximal évite
+  // qu'un choix localement séduisant consomme le seul bloqueur capable
+  // d'arrêter un autre provocateur. Le taux d'erreur du niveau Récit ne
+  // peut pas rendre l'attaque illégale.
+  const provocateursRestants = attaquants
+    .filter((entite) => entite.provocation && !(affectations[entite.id] ?? []).length);
+  if (provocateursRestants.length) {
+    const candidatsParAttaquant = new Map(provocateursRestants.map((attaquant) => {
+      const candidats = [...libres]
+        .map(bloqueurParId)
+        .filter((bloqueur) => legal(attaquant, bloqueur))
+        .map((bloqueur) => ({ bloqueur, score: scoreBlocage(attaquant, bloqueur) }))
+        .sort((a, b) => {
+          const aFini = Number.isFinite(a.score);
+          const bFini = Number.isFinite(b.score);
+          if (aFini !== bFini) return aFini ? -1 : 1;
+          if (aFini && bFini && a.score !== b.score) return b.score - a.score;
+          const jetonA = a.bloqueur.jeton ? 0 : 1;
+          const jetonB = b.bloqueur.jeton ? 0 : 1;
+          if (jetonA !== jetonB) return jetonA - jetonB;
+          return valeurEntite(a.bloqueur) - valeurEntite(b.bloqueur)
+            || (a.bloqueur.pv ?? 0) - (b.bloqueur.pv ?? 0);
+        })
+        .map(({ bloqueur }) => bloqueur);
+      return [attaquant.id, candidats];
+    }));
+    const parRareteDesBloqueurs = [...provocateursRestants]
+      .sort((a, b) => candidatsParAttaquant.get(a.id).length - candidatsParAttaquant.get(b.id).length);
+    const bloqueurAssigneA = new Map();
+    const essayerAppariement = (attaquant, dejaVus) => {
+      for (const bloqueur of candidatsParAttaquant.get(attaquant.id) ?? []) {
+        if (dejaVus.has(bloqueur.id)) continue;
+        dejaVus.add(bloqueur.id);
+        const occupant = bloqueurAssigneA.get(bloqueur.id);
+        if (!occupant || essayerAppariement(occupant, dejaVus)) {
+          bloqueurAssigneA.set(bloqueur.id, attaquant);
+          return true;
+        }
+      }
+      return false;
+    };
+    for (const attaquant of parRareteDesBloqueurs) {
+      essayerAppariement(attaquant, new Set());
+    }
+    for (const [bloqueurId, attaquant] of bloqueurAssigneA) {
+      libres.delete(bloqueurId);
+      affectations[attaquant.id] = [...(affectations[attaquant.id] ?? []), bloqueurId];
+    }
+  }
+
   // 1) Échanges favorables — du plus gros attaquant au plus petit.
   for (const attaquant of parMenace) {
+    if ((affectations[attaquant.id] ?? []).length) continue;
     const candidats = [...libres]
       .map(bloqueurParId)
       .filter((bloqueur) => legal(attaquant, bloqueur))
@@ -1012,6 +1086,29 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const soin = Math.min(effet.amount ?? 0, manquePv);
       return { score: soin > 0 ? 1 + soin * 1.1 - cout * 0.2 : 0, cibleId: null };
     }
+    if (effet.type === 'soin-creatures') {
+      // Le Festin des vaillants : un petit soin pour toute la table. Il ne
+      // vaut son mana que si plusieurs blessures se referment réellement ;
+      // refermer celle qui entretient une Furie alliée coûte son bonus.
+      const montant = Math.max(0, Number(effet.amount) || 0);
+      let totalSoin = 0;
+      let creaturesSoignees = 0;
+      let furiesEteintes = 0;
+      for (const entite of camp.creatures) {
+        const soin = Math.min(montant, Math.max(0, (entite.pvMax ?? entite.pv ?? 0) - (entite.pv ?? 0)));
+        if (!soin) continue;
+        totalSoin += soin;
+        creaturesSoignees += 1;
+        const defenseDeBase = Number(duelCardById(entite.carteId)?.def ?? entite.pvMax ?? entite.def) || 0;
+        if (entite.furieDeclenchee && defenseDeBase > 0 && (entite.pv ?? 0) + soin >= defenseDeBase) {
+          furiesEteintes += 1;
+        }
+      }
+      const soinJoueur = Math.min(Math.max(0, Number(effet.etJoueur) || 0), manquePv);
+      const score = totalSoin * 0.9 + creaturesSoignees * 0.25 + soinJoueur * 0.7
+        - furiesEteintes * 1.4 - cout * 0.35 - 0.4;
+      return { score: totalSoin + soinJoueur > 0 ? score : 0, cibleId: null };
+    }
     if (effet.type === 'pioche') {
       return { score: 3 + (camp.main.length <= 3 ? 3 : 0) - cout * 0.2, cibleId: null };
     }
@@ -1061,7 +1158,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       // Le Grand Voile blanc : il ne vaut que contre une attaque qui se
       // prépare — plus l'adversaire lève de force, plus le voile est cher.
       const menaceAttaque = duel[adv].creatures
-        .filter((entite) => entite.ready && !entite.attaquee && !estGelee(entite))
+        .filter((entite) => moteur.rpgPeutAttaquer(entite))
         .reduce((somme, entite) => somme + (entite.atk ?? 0), 0);
       const enDanger = menaceAttaque >= (camp.pv ?? 0) * 0.5;
       return {
@@ -1373,8 +1470,7 @@ function evaluerPositionIA(duel, cote) {
     const poidsVie = camp.pv <= 7 ? 1.45 : 1.1;
     const vie = (camp.pv ?? 0) * poidsVie + (camp.bouclier ?? 0) * 0.8;
     const creatures = (camp.creatures ?? []).reduce((total, entite) => {
-      const tempo = entite.ready && !entite.attaquee && !estGelee(entite)
-        && !(entite.empecheAttaqueToursRestants > 0)
+      const tempo = moteur.rpgPeutAttaquer(entite)
         ? Math.max(0, entite.atk ?? 0) * 0.12
         : 0;
       return total + valeurEntite(entite) + tempo;

@@ -354,8 +354,13 @@ La version Furie n’est pas une seconde composition : elle reprend **la même
 image** — même pose, même cadrage, même arrière-plan — seulement marquée par
 le combat : sang, dégâts de bataille, armure ou casque partiellement brisé
 lorsque la face intacte en porte un, équipement, pelisse ou cape déchirés
-dans le cas contraire, et visage passé en furie. Les huit fichiers portent
-la révision de cache commune `furie-photorealiste-v1`.
+dans le cas contraire, et visage passé en furie. Le **Berserk des trois
+hivers** fait exception pour sa seule face intacte : assis et détendu sur un
+rocher, hache propre plantée dans la neige, il ne porte **aucune trace de
+sang** ; son double Furie conserve la charge ensanglantée, avec le même
+personnage et la même peau de loup. Sept fichiers portent la révision
+commune `furie-photorealiste-v1` ; cette face de base repeinte porte sa
+révision dédiée `berserk-assis-sans-sang-v1`.
 
 Le **Loup des neiges**, cinquième porteur de Furie, ne suit pas cette
 dérogation : sa face intacte reste l’huile d’origine et son état Furie la

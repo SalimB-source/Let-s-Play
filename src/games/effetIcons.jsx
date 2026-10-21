@@ -1,7 +1,7 @@
 /**
  * Les icônes d'effets en React — le pendant vivant d'`effetIcons.js`.
  *
- * Le sprite (21 symboles validés) s'injecte **une fois** par surface avec
+ * Le sprite (26 symboles validés) s'injecte **une fois** par surface avec
  * `<EffetsSprite />` ; ensuite chaque icône n'est qu'un `<use>` sans coût.
  * Deux grammaires, comme sur la preview validée :
  * - les **pastilles** (`<PastillesCarte />`) : les mots-clés passifs d'une
@@ -18,10 +18,19 @@
  */
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { EFFETS_SPRITE, EFFET_ICONE, effetsDetailles, pastillesPourCarte, iconePourLigne } from './effetIcons.js';
+import {
+  EFFETS_SPRITE,
+  EFFET_ICONE,
+  couleurProtection,
+  couleursProtectionCarte,
+  effetsDetailles,
+  effetsEpuisesPourEntite,
+  pastillesPourCarte,
+  iconePourLigne,
+} from './effetIcons.js';
 import './effet-icons.css';
 
-/** Le sprite des 21 symboles, à monter une fois par écran (menu, duel, guide). */
+/** Le sprite des 26 symboles, à monter une fois par écran (menu, duel, guide). */
 export function EffetsSprite() {
   // Le contenu est une constante du module — aucun texte venu de l'extérieur.
   return (
@@ -34,7 +43,7 @@ export function EffetsSprite() {
 }
 
 /** Une icône du sprite : `<EffetIcone cle="butin" />` ou `cle="i-butin"`. */
-export function EffetIcone({ cle, size = 14, className = '' }) {
+export function EffetIcone({ cle, size = 14, className = '', style = undefined, protectionContre = undefined }) {
   if (!cle) return null;
   const id = cle.startsWith('i-') ? cle : (EFFET_ICONE[cle] ?? 'i-degats');
   return (
@@ -48,10 +57,38 @@ export function EffetIcone({ cle, size = 14, className = '' }) {
       strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
+      style={style}
+      data-protection-contre={protectionContre}
       aria-hidden="true"
     >
       <use href={`#${id}`} />
     </svg>
+  );
+}
+
+/**
+ * L'icône d'une pastille. Une Protection élémentaire se teinte de l'élément
+ * qu'elle repousse ; une Protection double montre donc deux boucliers, un
+ * par couleur. Le Sable n'a pas de teinte propre : son icône garde l'or.
+ */
+function IconePastille({ pastille, size = 13 }) {
+  const contres = pastille.cle === 'protection' ? (pastille.contres ?? []) : [];
+  if (!contres.length) return <EffetIcone cle={pastille.cle} size={size} />;
+  return (
+    <span className="rpg-protection-icones">
+      {contres.map((contre) => {
+        const couleur = couleurProtection(contre);
+        return (
+          <EffetIcone
+            key={contre}
+            cle="protection"
+            size={size}
+            protectionContre={contre}
+            style={couleur ? { color: couleur } : undefined}
+          />
+        );
+      })}
+    </span>
   );
 }
 
@@ -110,7 +147,7 @@ function BulleEffet({ id, ancre, titre, description }) {
  * ligne pour les expliquer ne se lit pas. Le mot et sa règle restent un seul
  * bloc : rien n'est écrit deux fois, mais plus rien n'est caché.
  */
-export function PastilleEffet({ pastille, deplier = false }) {
+export function PastilleEffet({ pastille, deplier = false, epuise = false }) {
   const id = useId();
   const ancreRef = useRef(null);
   const [survolee, setSurvolee] = useState(false);
@@ -118,17 +155,24 @@ export function PastilleEffet({ pastille, deplier = false }) {
   const texte = pastilleTexte(pastille);
   const explication = pastille.description ? String(pastille.description) : '';
   const ouverte = !deplier && Boolean(explication) && (survolee || epinglee);
+  const mentionEpuise = pastille.cle === 'tenacite'
+    ? 'déjà utilisée'
+    : pastille.cle === 'bouclier' ? 'tombé' : 'déjà utilisé';
   return (
     <span
       ref={ancreRef}
-      className={`rpg-pastille${deplier ? ' rpg-pastille--depliee' : `${explication ? ' rpg-pastille--explicable' : ''}${ouverte ? ' is-ouverte' : ''}`}`}
+      className={`rpg-pastille${epuise ? ' is-epuisee' : ''}${deplier ? ' rpg-pastille--depliee' : `${explication ? ' rpg-pastille--explicable' : ''}${ouverte ? ' is-ouverte' : ''}`}`}
       role="listitem"
       tabIndex={!deplier && explication ? 0 : undefined}
       aria-describedby={ouverte ? id : undefined}
       // Dépliée, la pastille porte déjà son explication dans le texte : pas
       // d'`aria-label` qui la ferait lire deux fois par un lecteur d'écran.
-      aria-label={!deplier && explication ? `${texte} : ${explication}` : undefined}
+      aria-label={!deplier && explication
+        ? `${texte}${epuise ? ` — ${mentionEpuise}` : ''} : ${explication}`
+        : undefined}
       data-pastille={pastille.cle}
+      data-effet-epuise={epuise ? 'true' : undefined}
+      data-protection-contre={pastille.contres?.length ? pastille.contres.join(' ') : undefined}
       // La souris ouvre au survol ; le doigt, lui, ouvre et referme d'un toucher
       // (son survol émulé ne doit pas laisser la bulle collée). Rien de tout ça
       // quand l'explication est déjà écrite sous le mot.
@@ -150,7 +194,7 @@ export function PastilleEffet({ pastille, deplier = false }) {
         }
       }}
     >
-      <EffetIcone cle={pastille.cle} size={13} />
+      <IconePastille pastille={pastille} size={13} />
       {deplier && explication ? (
         <>
           <span className="rpg-pastille__libelle">{texte}</span>
@@ -170,8 +214,15 @@ export function PastilleEffet({ pastille, deplier = false }) {
  * passer une lecture déjà faite (l'aperçu s'en sert aussi pour son texte).
  * `deplier` les fait passer en lignes mot + explication, sans bulle à ouvrir.
  */
-export function PastillesCarte({ carte, pastilles: lues = null, className = '', deplier = false }) {
+export function PastillesCarte({
+  carte,
+  pastilles: lues = null,
+  className = '',
+  deplier = false,
+  effetsEpuises = [],
+}) {
   const pastilles = lues ?? effetsDetailles(carte).pastilles;
+  const epuises = new Set(effetsEpuises ?? []);
   if (!pastilles.length) return null;
   return (
     <span
@@ -180,7 +231,12 @@ export function PastillesCarte({ carte, pastilles: lues = null, className = '', 
       aria-label="Mots-clés et effets"
     >
       {pastilles.map((pastille) => (
-        <PastilleEffet key={pastille.cle} pastille={pastille} deplier={deplier} />
+        <PastilleEffet
+          key={pastille.cle}
+          pastille={pastille}
+          deplier={deplier}
+          epuise={epuises.has(pastille.cle)}
+        />
       ))}
     </span>
   );
@@ -193,32 +249,50 @@ export function PastillesCarte({ carte, pastilles: lues = null, className = '', 
  */
 export function IconesCarte({ carte, entite = null, className = '' }) {
   const pastilles = pastillesPourCarte(carte);
-  const ajouter = (cle, label, valeur = null) => {
+  const ajouter = (cle, label, valeur = null, details = {}) => {
     if (!cle || pastilles.some((pastille) => pastille.cle === cle)) return;
-    pastilles.push({ cle, icone: EFFET_ICONE[cle] ?? 'i-degats', label, valeur });
+    pastilles.push({ cle, icone: EFFET_ICONE[cle] ?? 'i-degats', label, valeur, ...details });
   };
   if (entite) {
     if (entite.infiltration) ajouter('infiltration', 'Infiltration');
     if (entite.envol && !carte?.envol) ajouter('envol', 'Envol');
     if (entite.coupRapide && !carte?.coupRapide) ajouter('coupRapide', 'Coup rapide');
+    if (entite.provocation) ajouter('provocation', 'Provocation');
     if (entite.rapidite && !carte?.rapidite) ajouter('rapidite', 'Rapidité');
     if (entite.overkill) ajouter('overkill', 'Overkill');
     if (entite.esquive) ajouter('esquive', 'Esquive', null);
     if (entite.bouclier) ajouter('bouclier', 'Bouclier', Number(entite.bouclier) || null);
     if (entite.protection?.toursRestants > 0 || entite.protection?.permanente) {
-      ajouter('protection', 'Protection');
+      const contres = [...new Set([entite.protection?.contre].flat(Infinity).filter(Boolean))];
+      const labels = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
+      const label = contres.length
+        ? `Protection ${contres.map((contre) => labels[contre] ?? contre).join(' et ')}`
+        : 'Protection';
+      ajouter('protection', label, null, { contres });
     }
     if (entite.tenaciteDisponible) ajouter('tenacite', 'Tenacité');
   }
+  const epuises = new Set(effetsEpuisesPourEntite(carte, entite));
+  const texteBadge = (pastille) => (
+    `${pastilleTexte(pastille)}${epuises.has(pastille.cle)
+      ? (pastille.cle === 'tenacite' ? ' (déjà utilisée)' : ' (tombé)')
+      : ''}`
+  );
   if (!pastilles.length) return null;
   return (
     <span
       className={`rpg-card-icones${className ? ` ${className}` : ''}`}
-      aria-label={`Effets : ${pastilles.map(pastilleTexte).join(', ')}`}
+      aria-label={`Effets : ${pastilles.map(texteBadge).join(', ')}`}
     >
       {pastilles.map((pastille) => (
-        <span key={pastille.cle} className="rpg-card-icone" data-effet={pastille.cle}>
-          <EffetIcone cle={pastille.cle} size={12} />
+        <span
+          key={pastille.cle}
+          className={`rpg-card-icone${epuises.has(pastille.cle) ? ' is-epuisee' : ''}`}
+          data-effet={pastille.cle}
+          data-effet-epuise={epuises.has(pastille.cle) ? 'true' : undefined}
+          data-protection-contre={pastille.contres?.length ? pastille.contres.join(' ') : undefined}
+        >
+          <IconePastille pastille={pastille} size={12} />
           {pastille.valeur != null && <small>{pastille.valeur}</small>}
         </span>
       ))}
@@ -227,8 +301,31 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
 }
 
 /** L'icône qui précède une ligne de règle (ou rien, si la ligne n'en porte pas). */
-export function IconeLigneRegle({ carte, ligne }) {
+export function IconeLigneRegle({ carte, ligne, epuise = false }) {
   const cle = iconePourLigne(carte, ligne);
   if (!cle) return null;
-  return <EffetIcone cle={cle} size={14} className="rpg-effet-icone--ligne" />;
+  const classeIcone = `rpg-effet-icone--ligne${epuise ? ' is-epuisee' : ''}`;
+  if (cle === 'protection') {
+    const contres = couleursProtectionCarte(carte);
+    if (contres.length) {
+      return (
+        <span className="rpg-protection-icones rpg-protection-icones--ligne">
+          {contres.map((contre) => {
+            const couleur = couleurProtection(contre);
+            return (
+              <EffetIcone
+                key={contre}
+                cle="protection"
+                size={14}
+                className={classeIcone}
+                protectionContre={contre}
+                style={couleur ? { color: couleur } : undefined}
+              />
+            );
+          })}
+        </span>
+      );
+    }
+  }
+  return <EffetIcone cle={cle} size={14} className={classeIcone} />;
 }

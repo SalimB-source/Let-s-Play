@@ -210,15 +210,15 @@ test('la leçon Neige appelle un Viking, gèle un adversaire et active deux Furi
   assert.equal(ennemi.bouclier, 0);
   assert.deepEqual(
     [ennemi.atk, ennemi.pv, ennemi.pvMax, ennemi.furieDeclenchee],
-    [2, 2, 3, true],
-    'sa Furie 1 est active sous sa DEF de base 3 — mais le gel le tient hors du combat',
+    [3, 2, 3, true],
+    'sa Furie 2 est active sous sa DEF de base 3 — mais le gel le tient hors du combat',
   );
   assert.equal(duel.joueur.mana.neige, 0, 'les trois cartes de la leçon consomment les dix manas');
 
   preparerEtapeTutoriel(duel, tutoriel.steps.find((etape) => etape.id === 'furie'));
   const berserk = duel.joueur.creatures.find((entite) => entite.carteId === 'berserk-des-trois-hivers');
-  assert.deepEqual([berserk.atk, berserk.def, berserk.pv], [1, 4, 4],
-    'la leçon installe le Berserk 1/4 comme défenseur de la riposte');
+  assert.deepEqual([berserk.atk, berserk.def, berserk.pv], [1, 5, 5],
+    'la leçon installe le Berserk 1/5 comme défenseur de la riposte');
   rpgFinDeTour(duel);
   const loup = duel.sorcier.creatures.find((entite) => entite.carteId === 'loup-des-neiges');
   assert.deepEqual([loup.atk, loup.def, loup.pv], [2, 2, 2]);
@@ -226,8 +226,8 @@ test('la leçon Neige appelle un Viking, gèle un adversaire et active deux Furi
     [loup.id], {}, { attaqueDeclaree: true }).ok, true);
   assert.deepEqual(
     [berserk.furieDeclenchee, berserk.furieBonusAtk, berserk.atk, berserk.pv, berserk.pvMax],
-    [true, 2, 3, 2, 4],
-    'le Berserk tombe à 2 PV : sa Furie 2 lui donne +2/+0',
+    [true, 2, 3, 3, 5],
+    'le Berserk tombe à 3 PV : sa Furie 2 lui donne +2/+0',
   );
   assert.deepEqual(
     [duel.sorcier.creatures.includes(loup), loup.furieDeclenchee, loup.furieBonusAtk, loup.atk, loup.pv],

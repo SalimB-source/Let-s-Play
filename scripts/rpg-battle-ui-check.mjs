@@ -1614,8 +1614,14 @@ assert.match(mobileCss, /\.rpg-card--img \.rpg-card__foot,\s*\.rpg-hand__card--i
   'le pied garde son bas mesuré, y compris hors disposition tactile (repli à 3 %)');
 assert.match(battleCss, /--rpg-card-counter-size:\s*clamp\(10px, calc\(var\(--rpg-card-marker-size, 26px\) \* \.58\), 18px\);/,
   'le petit losange suit la largeur réelle du repère de couleur, même au doigt');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-card__weapons\s*\{\s*display:\s*none;\s*\}/,
-  'au doigt, les vignettes d’arme ne doublonnent plus la face : l’arme est sous la créature');
+assert.doesNotMatch(battlePage, /rpg-card__weapons/,
+  'aucune vignette de carte d’arme ne recouvre la face d’une créature équipée');
+assert.doesNotMatch(battleCss, /\.rpg-card__weapons\b/,
+  'la miniature d’arme sur la face n’a plus de style');
+assert.doesNotMatch(mobileCss, /\.rpg-card__weapons\b/,
+  'la miniature d’arme sur la face n’existe plus au doigt non plus');
+assert.match(battlePage, /is-arme-equipee/,
+  'l’équipement reste signalé par le cadre d’acier de la créature');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-row \.rpg-card\s*\{\s*container-type:\s*inline-size;\s*\}/,
   'une carte posée au doigt est un conteneur de requête : sa largeur vient de sa rangée');
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-card__compteurs\s*\{[^}]*display:\s*none/,

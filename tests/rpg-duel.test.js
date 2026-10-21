@@ -24,7 +24,9 @@ import {
   rpgReglerHasard,
   rpgPeutMulligan,
   rpgNombreDestructions,
+  rpgPeutAttaquer,
   rpgPeutBloquerAttaquant,
+  rpgProvocationValide,
   rpgResonanceEnJeu,
   rpgResoudreDestructionCiblee,
   rpgDissiperDestructionsSansCible,
@@ -232,11 +234,11 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   donnerMana(duel, 'joueur', 40);
   donnerMana(duel, 'sorcier', 40);
 
-  // Furie du catalogue : 1 pour le Guerrier et le Loup, 2 pour le Berserk,
+  // Furie du catalogue : 1 pour le Loup, 2 pour le Guerrier et le Berserk,
   // 3 pour le Jarl et pour le Maître du marteau. Les faces se contentent de
   // « Furie X. » : aucune ne récite la règle de soin et de réactivation.
   for (const [id, furie] of [
-    ['guerrier-au-bouclier-rond', 1],
+    ['guerrier-au-bouclier-rond', 2],
     ['loup-des-neiges', 1],
     ['berserk-des-trois-hivers', 2],
     ['jarl-au-marteau-de-guerre', 3],
@@ -255,7 +257,9 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   donner(duel, 'joueur', 'guerrier-au-bouclier-rond');
   const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond').entite;
   assert.equal(guerrier.bouclier, 1);
+  assert.equal(guerrier.bouclierEpuise, false, 'le bouclier accordé n’est pas encore dépensé');
   assert.equal(rpgBlesserCreature(duel, 'joueur', guerrier.id, 1, 'braise').recus, 0);
+  assert.equal(guerrier.bouclierEpuise, true, 'son dernier point absorbé, le bouclier est tombé');
   assert.deepEqual(
     [guerrier.atk, guerrier.def, guerrier.pv, guerrier.pvMax, guerrier.furieDeclenchee, guerrier.furieBonusAtk],
     [1, 3, 3, 3, false, 0],
@@ -266,12 +270,12 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   assert.equal(rpgBlesserCreature(duel, 'joueur', guerrier.id, 2, 'braise').recus, 2);
   assert.deepEqual(
     [guerrier.atk, guerrier.def, guerrier.pv, guerrier.pvMax, guerrier.furieDeclenchee, guerrier.furieBonusAtk],
-    [2, 1, 1, 3, true, 1],
-    'Furie 1 : +1/+0, sans rendre de PV',
+    [3, 1, 1, 3, true, 2],
+    'Furie 2 : +2/+0, sans rendre de PV',
   );
 
   // Le soin d’arrivée de la Valkyrie des glaces referme exactement la
-  // blessure : le Guerrier retrouve sa DEF de base et rend son +1.
+  // blessure : le Guerrier retrouve sa DEF de base et rend son +2.
   donner(duel, 'joueur', 'valkyrie-des-glaces');
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces').entite;
   assert.deepEqual([valkyrie.atk, valkyrie.def, valkyrie.pv, valkyrie.pvMax], [5, 5, 5, 5]);
@@ -286,11 +290,11 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   rpgBlesserCreature(duel, 'joueur', guerrier.id, 1, 'braise');
   assert.deepEqual(
     [guerrier.atk, guerrier.pv, guerrier.pvMax, guerrier.furieDeclenchee, guerrier.furieBonusAtk],
-    [2, 2, 3, true, 1],
+    [3, 2, 3, true, 2],
     'la Furie peut revenir après avoir été soignée',
   );
   assert.equal(
-    duel.log.filter((ligne) => ligne === 'Guerrier au bouclier rond entre en furie : +1/+0.').length,
+    duel.log.filter((ligne) => ligne === 'Guerrier au bouclier rond entre en furie : +2/+0.').length,
     2,
     'les deux entrées en Furie sont journalisées',
   );
@@ -365,15 +369,51 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et quatre pein
 
   const berserk = cardById('berserk-des-trois-hivers');
   assert.deepEqual(
-    { cost: berserk.cost, atk: berserk.atk, def: berserk.def, furie: berserk.furie, coupRapide: berserk.coupRapide },
-    { cost: 4, atk: 1, def: 4, furie: 2, coupRapide: true },
+    {
+      cost: berserk.cost, atk: berserk.atk, def: berserk.def, furie: berserk.furie,
+      provocation: berserk.provocation, coupRapide: berserk.coupRapide,
+    },
+    { cost: 4, atk: 1, def: 5, furie: 2, provocation: true, coupRapide: undefined },
+    'le Berserk devient 1/5 : Provocation remplace Coup rapide',
   );
+  assert.match(berserk.text, /Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible/);
 
   const jarl = cardById('jarl-au-marteau-de-guerre');
   assert.deepEqual(
-    { cost: jarl.cost, atk: jarl.atk, def: jarl.def, furie: jarl.furie, text: jarl.text },
-    { cost: 5, atk: 2, def: 5, furie: 3, text: 'Furie 3.' },
+    { cost: jarl.cost, atk: jarl.atk, def: jarl.def, furie: jarl.furie, overkill: jarl.overkill, text: jarl.text },
+    { cost: 5, atk: 2, def: 5, furie: 3, overkill: true, text: 'Furie 3. Overkill.' },
   );
+
+  const drakkar = cardById('drakkar-a-tete-de-dragon');
+  assert.deepEqual(
+    {
+      cost: drakkar.cost, atk: drakkar.atk, def: drakkar.def,
+      nePeutPasAttaquer: drakkar.nePeutPasAttaquer, destruction: drakkar.destruction,
+    },
+    {
+      cost: 5, atk: 2, def: 6, nePeutPasAttaquer: true,
+      destruction: { type: 'pioche', amount: 1 },
+    },
+    'le Drakkar devient un 2/6 qui ne peut pas attaquer et ne rend qu’une carte',
+  );
+
+  const scalde = cardById('scalde-des-runes');
+  assert.deepEqual([scalde.cost, scalde.atk, scalde.def], [3, 1, 2],
+    'le Scalde des runes devient 1/2');
+
+  const festin = cardById('festin-des-vaillants');
+  assert.deepEqual(
+    { cost: festin.cost, effet: festin.effet, text: festin.text },
+    {
+      cost: 3,
+      effet: { type: 'soin-creatures', amount: 1 },
+      text: 'Soignez chacune de vos créatures de 1.',
+    },
+    'le Festin soigne les créatures alliées au lieu du sorcier',
+  );
+
+  assert.equal(cardById('mur-de-boucliers').cost, 5,
+    'le Mur de boucliers coûte désormais 5');
 
   const valkyrie = cardById('valkyrie-des-glaces');
   assert.deepEqual(
@@ -462,7 +502,7 @@ test('la Valkyrie au corbeau pioche un Viking au hasard du deck, sans aucune Ré
   donner(duel, 'sorcier', 'drakkar-a-tete-de-dragon');
   const drakkar = rpgJouerCreature(duel, 'sorcier', 'drakkar-a-tete-de-dragon').entite;
   assert.deepEqual([guerrier.atk, guerrier.def, guerrier.pv], [1, 3, 3]);
-  assert.deepEqual([drakkar.atk, drakkar.def, drakkar.pv], [3, 6, 6]);
+  assert.deepEqual([drakkar.atk, drakkar.def, drakkar.pv], [2, 6, 6]);
 
   // Deux candidats seulement : le Guerrier et le Jarl. Le Loup, la Brume et
   // le Scalde restent hors du tirage malgré leur couleur Neige.
@@ -487,7 +527,7 @@ test('la Valkyrie au corbeau pioche un Viking au hasard du deck, sans aucune Ré
     'loup-des-neiges', 'brume-du-fjord', 'jarl-au-marteau-de-guerre', 'scalde-des-runes',
   ], 'seul l’exemplaire tiré quitte le deck ; l’ordre du reste ne change pas');
   assert.deepEqual([guerrier.atk, guerrier.def, guerrier.pv], [1, 3, 3], 'aucun bonus allié');
-  assert.deepEqual([drakkar.atk, drakkar.def, drakkar.pv], [3, 6, 6], 'aucun bonus adverse');
+  assert.deepEqual([drakkar.atk, drakkar.def, drakkar.pv], [2, 6, 6], 'aucun bonus adverse');
   assert.equal(rpgResonanceEnJeu(duel, 'viking'), 0);
   assert.equal(duel.log.some((ligne) => ligne.startsWith('La Résonance viking')), false);
   assert.ok(duel.log.includes(
@@ -851,13 +891,14 @@ test('le Père des corbeaux : 5/5 à 6 avec Envol, et ses corbeaux exilent une c
     'le Kraken, lui, reste en jeu');
 });
 
-test('le Maître du marteau : 5/5 Furie 3, 2 dégâts à l’arrivée, et Tenacité', () => {
+test('le Maître du marteau : 5/5 Furie 3, Overkill et Tenacité, sans dégâts d’arrivée', () => {
   const carte = cardById('maitre-du-marteau');
   assert.deepEqual([carte.atk, carte.def, carte.furie], [5, 5, 3], '5/5 avec Furie 3');
-  assert.equal(carte.arrivee.amount, 2, 'son marteau tombe : 2 dégâts');
+  assert.equal(carte.arrivee, undefined, 'son arrivée ne blesse plus les créatures adverses');
+  assert.equal(carte.overkill, true, 'Overkill remplace les dégâts d’arrivée');
   assert.equal(carte.tenacite, true);
-  assert.match(carte.text, /\. Furie 3\./);
-  assert.doesNotMatch(carte.text, /première fois|gagne \+3\/\+3/);
+  assert.match(carte.text, /^Furie 3\. Overkill\./);
+  assert.doesNotMatch(carte.text, /première fois|gagne \+3\/\+3|inflige 2 dégâts/);
   assert.match(carte.text, /Tenacité — Une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense/);
 
   const duel = duelDeBase();
@@ -870,9 +911,11 @@ test('le Maître du marteau : 5/5 Furie 3, 2 dégâts à l’arrivée, et Tenaci
 
   donner(duel, 'joueur', 'maitre-du-marteau');
   const maitre = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau').entite;
-  assert.equal(duel.sorcier.creatures.includes(chien), false,
-    'le marteau brise le Chien 2/2');
-  assert.equal(dune.pv, 2, 'la Dune 2/4 encaisse les 2 dégâts');
+  assert.equal(duel.sorcier.creatures.includes(chien), true,
+    'sans dégâts d’arrivée, le Chien 2/2 reste en jeu');
+  assert.equal(chien.pv, 2, 'le Chien est intact');
+  assert.equal(dune.pv, 4, 'la Dune 2/4 aussi');
+  assert.equal(maitre.overkill, true, 'l’entité porte l’Overkill imprimé');
 
   // Tenacité : la destruction est refusée — le Maître se relève à 1 de
   // défense, donc sous sa DEF de base de 5, et sa Furie 3 s’allume aussitôt.
@@ -924,6 +967,34 @@ test('le Maître du marteau : 5/5 Furie 3, 2 dégâts à l’arrivée, et Tenaci
   assert.equal(rpgBlesserCreature(duel, 'joueur', rejoue.id, 20, 'braise').ok, true);
   assert.equal(duel.joueur.creatures.includes(rejoue), false,
     'la seconde destruction l’emporte');
+});
+
+test('le Jarl et le Maître du marteau percent avec leur Overkill imprimé', () => {
+  for (const carteId of ['jarl-au-marteau-de-guerre', 'maitre-du-marteau']) {
+    const duel = duelDeBase();
+    donnerMana(duel, 'joueur', 30);
+    donnerMana(duel, 'sorcier', 30);
+    donner(duel, 'joueur', carteId);
+    const attaquant = rpgJouerCreature(duel, 'joueur', carteId).entite;
+    assert.equal(attaquant.overkill, true, `${carteId} entre avec Overkill`);
+    donner(duel, 'sorcier', 'chien-du-guet');
+    const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+    // Le bloqueur absorbe exactement un point de moins que la force de
+    // l'attaquant et ne le blesse pas : seul l'excédent doit passer.
+    Object.assign(bloqueur, {
+      atk: 0,
+      pv: attaquant.atk - 1,
+      def: attaquant.atk - 1,
+      pvMax: attaquant.atk - 1,
+    });
+    attaquant.ready = true;
+    const pvSorcier = duel.sorcier.pv;
+    const attaque = rpgLancerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: [bloqueur.id] });
+    assert.equal(attaque.ok, true, `${carteId} attaque`);
+    assert.equal(attaque.resume.frappeSorcier, 1, `${carteId} : l’excédent perce`);
+    assert.equal(duel.sorcier.pv, pvSorcier - 1);
+    assert.equal(duel.sorcier.creatures.includes(bloqueur), false);
+  }
 });
 
 for (const carteId of ['maitre-du-marteau', 'seigneur-des-machoires']) {
@@ -1249,8 +1320,8 @@ test('les deux combattants meurent bien simultanément avant les effets de destr
   assert.equal(pose.ok, true);
   assert.ok(!duel.joueur.creatures.includes(pose.entite), 'les 4 dégâts du Drakkar détruisent le Cavalier');
   assert.ok(!duel.sorcier.creatures.includes(drakkar), 'les 4 dégâts du Cavalier détruisent le Drakkar');
-  assert.equal(duel.sorcier.main.length, mainAvant + 2,
-    'la capacité de destruction du Drakkar se résout ensuite et fait piocher 2 cartes');
+  assert.equal(duel.sorcier.main.length, mainAvant + 1,
+    'la capacité de destruction du Drakkar se résout ensuite et fait piocher une carte');
   assert.deepEqual(rpgDestructionsDepuis(duel, debut), [
     { entityId: drakkar.id, sourceElements: ['sable'] },
     { entityId: pose.entite.id, sourceElements: ['neige'] },
@@ -1397,28 +1468,27 @@ test('un Coup rapide qui ne frappe personne est bloqué comme n’importe quel a
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  donner(duel, 'joueur', 'berserk-des-trois-hivers');
-  const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  donner(duel, 'joueur', 'feriel');
+  const feriel = rpgJouerCreature(duel, 'joueur', 'feriel').entite;
   donner(duel, 'sorcier', 'chien-du-guet');
   const vise = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
   donner(duel, 'sorcier', 'chien-du-guet');
   const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-  // Corps de test : le bloqueur (0 ATQ) absorbe le combat sans blesser le
-  // Berserk — pas de Furie en vue.
+  // Corps de test : le bloqueur (0 ATQ) absorbe le combat sans blesser Fériel.
   Object.assign(vise, { pv: 5, def: 5, pvMax: 5 });
   Object.assign(bloqueur, { atk: 0, pv: 1, def: 1, pvMax: 1 });
-  berserk.ready = true;
+  feriel.ready = true;
 
   const pvSorcier = duel.sorcier.pv;
-  const res = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [bloqueur.id] }, null, null, {});
+  const res = rpgLancerAttaque(duel, 'joueur', [feriel.id], { [feriel.id]: [bloqueur.id] }, null, null, {});
   assert.equal(res.ok, true);
   assert.equal(vise.pv, 5, 'aucune frappe rapide : la créature écartée reste intacte');
   assert.equal(duel.sorcier.creatures.includes(bloqueur), false,
-    'le combat normal a lieu : le bloqueur meurt sous le dégât de combat du Berserk 1/4');
-  assert.equal(berserk.pv, 4, 'le bloqueur blessant à 0, le Berserk sort indemne — pas de Furie');
-  assert.equal(duel.sorcier.pv, pvSorcier, 'bloqué, il ne touche pas les PV du sorcier');
+    'le combat normal a lieu : le bloqueur meurt sous les dégâts de combat de Fériel');
+  assert.equal(feriel.pv, 2, 'le bloqueur blessant à 0, Fériel sort indemne');
+  assert.equal(duel.sorcier.pv, pvSorcier, 'bloquée, elle ne touche pas les PV du sorcier');
   assert.equal(res.resume.frappeSorcier, 0);
-  assert.deepEqual(res.resume.paires, [[berserk.name, bloqueur.name]],
+  assert.deepEqual(res.resume.paires, [[feriel.name, bloqueur.name]],
     'le blocage est compté dans le résumé du combat');
 });
 
@@ -1426,19 +1496,81 @@ test('la frappe du Coup rapide n’est pas bloquable : l’attaquant s’arrête
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  donner(duel, 'joueur', 'berserk-des-trois-hivers');
-  const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  donner(duel, 'joueur', 'feriel');
+  const feriel = rpgJouerCreature(duel, 'joueur', 'feriel').entite;
   donner(duel, 'sorcier', 'chien-du-guet');
   const vise = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
   const bloqueur = vise;
-  berserk.ready = true;
+  feriel.ready = true;
 
-  assert.equal(rpgPeutBloquerAttaquant(bloqueur, berserk, true), false,
+  assert.equal(rpgPeutBloquerAttaquant(bloqueur, feriel, true), false,
     'la frappe rapide ne laisse rien à bloquer');
-  assert.equal(rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [bloqueur.id] }, null, null,
-    { [berserk.id]: vise.id }).raison, 'blocage',
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [feriel.id], { [feriel.id]: [bloqueur.id] }, null, null,
+    { [feriel.id]: vise.id }).raison, 'blocage',
     'désigner une proie et un bloqueur est contradictoire, la déclaration est refusée');
-  assert.equal(berserk.attaquee, false, 'un refus ne consomme rien — ni l’attaque, ni la phase');
+  assert.equal(feriel.attaquee, false, 'un refus ne consomme rien — ni l’attaque, ni la phase');
+});
+
+test('Provocation : l’IA réserve le seul bloqueur capable d’arrêter le provocateur volant', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'joueur', 'berserk-des-trois-hivers');
+  const auSol = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  donner(duel, 'joueur', 'berserk-des-trois-hivers');
+  const volant = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  volant.envol = true; // même provocateur, mais seul un bloqueur volant peut l'arrêter
+  donner(duel, 'sorcier', 'anqa-des-braises');
+  const bloqueurVolant = rpgJouerCreature(duel, 'sorcier', 'anqa-des-braises').entite;
+  bloqueurVolant.jeton = true; // le choix le plus tentant pour le Berserk au sol
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const bloqueurAuSol = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+
+  const blocages = rpgChoisirBloqueurs(duel, 'joueur', [auSol.id, volant.id]);
+  assert.deepEqual(blocages[volant.id], [bloqueurVolant.id],
+    'le bloqueur volant est réservé au seul attaquant qu’il peut arrêter');
+  assert.deepEqual(blocages[auSol.id], [bloqueurAuSol.id],
+    'le bloqueur terrestre couvre l’autre provocateur');
+  assert.equal(rpgProvocationValide(duel, 'joueur', [auSol.id, volant.id], blocages), true);
+  assert.equal(rpgProvocationValide(
+    duel, 'joueur', [auSol.id, volant.id], { [auSol.id]: [bloqueurVolant.id] },
+  ), false, 'utiliser le bloqueur volant au sol laisserait le provocateur volant découvert alors qu’un appariement complet existe');
+});
+
+test('Provocation : sans bloqueur légal, l’attaque peut passer', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'berserk-des-trois-hivers');
+  const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  berserk.envol = true;
+  berserk.ready = true;
+  donner(duel, 'sorcier', 'chien-du-guet');
+  rpgJouerCreature(duel, 'sorcier', 'chien-du-guet'); // terrestre : aucun blocage légal du volant
+
+  assert.equal(rpgProvocationValide(duel, 'joueur', [berserk.id], {}), true,
+    '« si possible » ne crée pas un bloqueur volant inexistant');
+  const pvSorcier = duel.sorcier.pv;
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [berserk.id], {}).ok, true);
+  assert.equal(duel.sorcier.pv, pvSorcier - 1);
+});
+
+test('Provocation : deux provocateurs pour un seul bloqueur n’exigent que le maximum possible', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'joueur', 'berserk-des-trois-hivers');
+  const premier = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  donner(duel, 'joueur', 'berserk-des-trois-hivers');
+  const second = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+
+  assert.equal(rpgProvocationValide(duel, 'joueur', [premier.id, second.id], {}), false,
+    'le seul bloqueur disponible doit tout de même s’interposer');
+  assert.equal(rpgProvocationValide(
+    duel, 'joueur', [premier.id, second.id], { [premier.id]: [bloqueur.id] },
+  ), true, 'un bloqueur ne peut pas couvrir deux provocateurs : le maximum possible suffit');
 });
 
 test('l’IA abat d’un Coup rapide la créature qu’elle peut tuer, et son attaque s’arrête', () => {
@@ -1712,7 +1844,13 @@ test('les dégâts d’arrivée Braise attribuent la destruction à la créature
   donner(duel, 'joueur', 'braisier-du-souk');
 
   const debutArrivee = rpgNombreDestructions(duel);
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'braisier-du-souk').ok, true);
+  const poseBraisier = rpgJouerCreature(duel, 'joueur', 'braisier-du-souk');
+  assert.equal(poseBraisier.ok, true);
+  assert.deepEqual(
+    [poseBraisier.entite.atk, poseBraisier.entite.def, poseBraisier.entite.pv],
+    [1, 1, 1],
+    'le Braisier du souk entre désormais en 1/1',
+  );
   assert.deepEqual(rpgDestructionsDepuis(duel, debutArrivee), [
     { entityId: fennec.id, sourceElements: ['braise'] },
   ], 'le dégât d’arrivée du Braisier est reconnu comme source Braise');
@@ -2923,6 +3061,7 @@ test('le Rempart de dunes se joue désormais en réponse, comme toute magie rapi
 
 test('le Mur de boucliers donne +1/+0 et Overkill jusqu’à la fin du tour', () => {
   const carte = cardById('mur-de-boucliers');
+  assert.equal(carte.cost, 5, 'le Mur de boucliers coûte 5');
   assert.deepEqual(carte.effet, { type: 'buff', atk: 1, def: 0, overkill: true, tours: 1 });
   assert.equal(carte.text, 'Vos créatures gagnent +1/+0 et Overkill jusqu’à la fin du tour.');
 
@@ -3326,14 +3465,17 @@ test('Parade et Trait de braise sont des magies rapides de réponse; le bouclier
   const parade = rpgLancerMagie(duel, 'joueur', 'parade-du-verre', chien.id);
   assert.equal(parade.ok, true);
   assert.equal(chien.bouclier, 3);
+  assert.equal(chien.bouclierEpuise, false);
   assert.ok(duel.joueur.cimetiere.includes('parade-du-verre'), 'la Parade résolue va au cimetière');
 
   const premierCoup = rpgBlesserCreature(duel, 'joueur', chien.id, 2);
   assert.equal(premierCoup.absorbes, 2);
   assert.equal(chien.pv, 2, 'les premiers dégâts ne traversent pas le bouclier');
+  assert.equal(chien.bouclierEpuise, false, 'il reste un point : le bouclier tient encore');
   rpgBlesserCreature(duel, 'joueur', chien.id, 2);
   assert.equal(chien.pv, 1, 'le point de bouclier restant absorbe un dégât');
   assert.equal(chien.bouclier, 0);
+  assert.equal(chien.bouclierEpuise, true, 'le dernier point absorbé marque le bouclier tombé');
 });
 
 test('Parade de verre ne se lance pas si sa créature cible est absente', () => {
@@ -3642,37 +3784,54 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(duel.log.some((ligne) => ligne.includes('est gelée : ni attaque ni blocage')), true,
     'le journal annonce le gel');
 
-  // Drakkar : il ne pioche plus à l'arrivée — son naufrage fait piocher deux cartes.
+  // Drakkar : 2/6, il ne peut pas attaquer — mais il peut encore bloquer —
+  // et son naufrage ne fait plus piocher qu'une carte.
   duel.joueur.deck = ['glacier', 'glacier'];
   donner(duel, 'joueur', 'drakkar-a-tete-de-dragon');
   const mainAvant = duel.joueur.main.length;
   const drakkar = rpgJouerCreature(duel, 'joueur', 'drakkar-a-tete-de-dragon').entite;
+  assert.deepEqual([drakkar.atk, drakkar.def, drakkar.pv], [2, 6, 6]);
+  assert.equal(drakkar.nePeutPasAttaquer, true);
+  drakkar.ready = true;
+  assert.equal(rpgPeutAttaquer(drakkar), false, 'même prêt, le Drakkar ne peut pas attaquer');
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [drakkar.id], {}).ok, false,
+    'le moteur refuse son attaque');
+  assert.equal(rpgPeutBloquerAttaquant(drakkar, dune), true,
+    'l’interdiction d’attaquer ne l’empêche pas de bloquer');
   assert.equal(duel.joueur.main.length, mainAvant - 1, 'le Drakkar entre en jeu sans faire piocher');
   rpgBlesserCreature(duel, 'joueur', drakkar.id, 10, 'braise');
-  assert.equal(duel.joueur.main.length, mainAvant + 1,
-    'le Drakkar détruit fait piocher deux cartes');
+  assert.equal(duel.joueur.main.length, mainAvant,
+    'le Drakkar détruit fait piocher une seule carte');
 
-  // Berserk : Coup rapide — son unique point d’attaque suffit à abattre le
-  // Fennec 3/1 choisi, sans riposte possible, et son attaque s’arrête là.
+  // Berserk : Provocation — son attaque ne peut pas partir sans bloqueur
+  // tant qu'un blocage légal est possible. Le Fennec 3/1 s'interpose donc :
+  // il tombe sous le point du Berserk, mais ses 3 dégâts allument sa Furie.
   donner(duel, 'sorcier', 'fennec-des-decombres');
   rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres');
   const fennec = duel.sorcier.creatures.at(-1);
   donner(duel, 'joueur', 'berserk-des-trois-hivers');
   const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
-  assert.equal(cardById('berserk-des-trois-hivers').coupRapide, true);
+  assert.equal(cardById('berserk-des-trois-hivers').coupRapide, undefined,
+    'Coup rapide a quitté la fiche');
+  assert.equal(berserk.provocation, true, 'l’entité porte Provocation');
   berserk.ready = true;
   const pvSorcierAvantBerserk = duel.sorcier.pv;
-  const attaque = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [] }, null, null, { [berserk.id]: fennec.id });
-  assert.equal(attaque.ok, true, 'le Coup rapide accepte une cible choisie');
-  assert.equal(duel.sorcier.creatures.includes(fennec), false, 'le Fennec 3/1 tombe sous le Coup rapide à 1');
+  const sansBloqueur = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [] });
+  assert.equal(sansBloqueur.ok, false, 'sans bloqueur, la déclaration est refusée');
+  assert.equal(sansBloqueur.raison, 'provocation');
+  assert.equal(berserk.attaquee, false, 'le refus ne consomme pas son attaque');
+  const attaque = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [fennec.id] });
+  assert.equal(attaque.ok, true, 'avec un bloqueur légal, l’attaque se résout');
+  assert.equal(duel.sorcier.creatures.includes(fennec), false,
+    'le Fennec 3/1 tombe sous le point de combat du Berserk');
   assert.deepEqual(
-    [berserk.atk, berserk.def, berserk.pv, berserk.pvMax, berserk.furieDeclenchee],
-    [1, 4, 4, 4, false],
-    'sans Résonance, le Berserk reste à ses statistiques imprimées 1/4 et n’encaisse aucune riposte',
+    [berserk.atk, berserk.def, berserk.pv, berserk.pvMax, berserk.furieDeclenchee, berserk.furieBonusAtk],
+    [3, 2, 2, 5, true, 2],
+    'les 3 dégâts du bloqueur laissent le Berserk 1/5 à 2 PV : Furie 2 porte son attaque à 3',
   );
   assert.equal(attaque.resume.frappeSorcier, 0);
   assert.equal(duel.sorcier.pv, pvSorcierAvantBerserk,
-    'l’attaque s’arrête sur la frappe : le sorcier ne prend rien');
+    'bloqué, le Berserk ne touche pas le sorcier');
 
   // Magies : sorcelleries et magies rapides.
   donner(duel, 'joueur', 'mur-de-boucliers');
@@ -3693,8 +3852,20 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
 
   donner(duel, 'joueur', 'festin-des-vaillants');
   duel.joueur.pv = RPG_PV_JOUEUR - 10;
+  const pvBerserkAvantFestin = berserk.pv;
+  const pvDuneAvantFestin = dune.pv;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'festin-des-vaillants').ok, true);
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 5, 'le Festin rend 5 points de vie');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 10,
+    'le Festin ne soigne plus le sorcier qui le lance');
+  assert.equal(berserk.pv, pvBerserkAvantFestin + 1,
+    'chaque créature alliée blessée récupère 1 PV');
+  assert.deepEqual(
+    [berserk.furieDeclenchee, berserk.furieBonusAtk],
+    [true, 2],
+    'à 3 PV, toujours sous sa DEF de base 5, le Berserk reste en Furie',
+  );
+  assert.equal(loup.pv, loup.pvMax, 'les créatures intactes restent plafonnées à leurs PV max');
+  assert.equal(dune.pv, pvDuneAvantFestin, 'les créatures adverses ne sont pas soignées');
 
   donner(duel, 'sorcier', 'dune-marchante');
   const dune2 = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
@@ -3708,6 +3879,9 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(duel.sorcier.pv, pvSorcierAvantEclair - 3, 'l’Éclair du marteau peut frapper le sorcier');
 
   // Les quatre figures du Nord : exil, balayage, soin et le grand Serpent.
+  // On replace le joueur à 20 PV pour isoler le soin de la Dame du Festin,
+  // qui ne rend plus de vie au sorcier.
+  duel.joueur.pv = RPG_PV_JOUEUR - 5;
   for (const [id, figure] of [['pere-des-corbeaux', 'Le Père des corbeaux'], ['maitre-du-marteau', 'Le Maître du marteau'], ['dame-des-neuf-mondes', 'La Dame des neuf mondes']]) {
     const carte = cardById(id);
     assert.equal(carte.kind, 'hero', `${figure} est un héros`);
@@ -3720,8 +3894,8 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
       : undefined;
     assert.equal(rpgJouerCreature(duel, 'joueur', id, cibleExil).ok, true, `${figure} se pose`);
   }
-  // Le Festin a laissé le joueur à 20 PV : le soin de la Dame s’ajoute en
-  // entier (20 + 5) et n'est plus rogné par un plafond de 25.
+  // Le joueur a été remis à 20 PV : le soin de la Dame s’ajoute en entier
+  // (20 + 5) et n'est plus rogné par un plafond de 25.
   assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'le soin de la Dame s’ajoute en entier');
   assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR, 'le maximum ne bouge que si la vie le dépasse');
 
@@ -4348,7 +4522,7 @@ test('gel : animation, état persistant, accessibilité et résolution dans les 
   assert.match(battlePage, /gelée : ne peut ni attaquer ni bloquer/);
   assert.match(battleCss, /\.rpg-card__frost\s*\{[^}]*pointer-events:\s*none;[^}]*animation:\s*rpg-freeze-spread/s);
   assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card__frost, \.rpg-card__frost-crystals \{ animation: none;/);
-  assert.equal((battlePage.match(/\{ attaqueDeclaree: true \}/g) ?? []).length, 2,
+  assert.equal((battlePage.match(/attaqueDeclaree: true,/g) ?? []).length, 2,
     'les deux camps résolvent une attaque déjà déclarée malgré un gel en réponse');
 });
 

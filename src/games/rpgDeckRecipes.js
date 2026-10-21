@@ -143,6 +143,7 @@ export const RPG_RECETTES_DECKS = {
       ['eclair-du-marteau', 2], ['festin-des-vaillants', 2],
       ['guerrier-au-bouclier-rond', 2], ['loup-des-neiges', 2],
       ['jarl-au-marteau-de-guerre', 1], ['valkyrie-des-glaces', 1], ['maitre-du-marteau', 1],
+      ['drakkar-a-tete-de-dragon', 1],
       ['poigne-de-givre', 1], ['appat-de-la-meute', 1],
       ['grand-voile-blanc', 1], ['mur-de-boucliers', 1], ['lance-de-givre', 1],
     ],

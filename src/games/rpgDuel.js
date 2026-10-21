@@ -908,6 +908,28 @@ function appliquerBannieresAttaque(duel, cote, attaquants = []) {
 }
 
 /**
+ * Déclare le déclenchement des bannières pour une attaque dont les attaquants
+ * viennent d'être verrouillés. L'interface l'appelle à la déclaration même —
+ * avant le choix des bloqueurs et avant les réponses rapides — pour que les
+ * statistiques visibles pendant tout le combat soient déjà celles du Samouraï
+ * grandi. `rpgLancerAttaque` reçoit ensuite `bannieresAppliquees: true` et ne
+ * rejoue pas le déclenchement au moment des blessures.
+ *
+ * Le retour dit seulement si la déclaration est recevable ; sans bannière en
+ * jeu, l'appel réussit et ne change rien.
+ */
+export function rpgAppliquerBannieresAttaque(duel, cote, attaquantIds = []) {
+  const camp = duel?.[cote];
+  if (!camp || duel.attaqueJouee === cote) return false;
+  const ids = [...new Set(attaquantIds)];
+  if (!ids.length) return false;
+  const attaquants = ids.map((id) => camp.creatures.find((entite) => entite.id === id));
+  if (attaquants.some((entite) => !entite || !rpgPeutAttaquer(entite))) return false;
+  appliquerBannieresAttaque(duel, cote, attaquants);
+  return true;
+}
+
+/**
  * Kenshi de la forge — l'aura de forge : tant qu'il est en jeu, **les autres**
  * créatures de type Samouraï gagnent +1/+0. Comme la Résonance samouraï, elle
  * est **de table** : elle profite aux deux camps et à toutes les couleurs ; le
@@ -1012,12 +1034,16 @@ function creerEntiteCreature(carte) {
     pvMax: carte.def,
     bouclier: 0,
     bouclierLumiere: false,
+    // Un bouclier déjà tombé reste lisible dans l'aperçu (pastille et texte
+    // grisés) jusqu'à ce qu'un nouveau bouclier le remplace.
+    bouclierEpuise: false,
     auraSableBonus: 0,
     auraAmaniBonus: 0,
     boualemContresortDisponible: carte.id === 'boualem',
     esquive: Boolean(carte.esquive),
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
+    provocation: Boolean(carte.provocation),
     envol: Boolean(carte.envol),
     infiltration: Boolean(carte.infiltration),
     // Furie : l'état visible et la seule part d'attaque qu'il a ajoutée. Le
@@ -1072,6 +1098,9 @@ function creerEntiteCreature(carte) {
     blocageForce: null,
     // Mur (Tours de défense) : ne peut ni attaquer ni être équipée.
     mur: Boolean(carte.mur),
+    // Interdiction d'attaquer seule (le Drakkar) : à la différence d'un Mur,
+    // la créature peut toujours bloquer et porter une arme.
+    nePeutPasAttaquer: Boolean(carte.nePeutPasAttaquer),
     // Doit bloquer (Tours de défense) : cette créature doit bloquer chaque tour
     // si possible, de manière permanente (pas comme blocageForce qui est temporaire).
     doitBloquer: Boolean(carte.doitBloquer),
@@ -1093,14 +1122,17 @@ function armeCarteDe(entite) {
 
 /**
  * Fait encaisser un montant par le bouclier d'une créature et rend ce qui a
- * été absorbé. Le point encore porté par une arme (`entite.arme.bouclier`,
- * la Lance de givre) encaisse en premier : quand l'arme tombera, seul ce
+ * été absorbé. Le point encore porté par une arme (`entite.arme.bouclier`)
+ * encaisse en premier : quand l'arme tombera, seul ce
  * reliquat-là repartira avec elle — un bouclier venu d'un sort ou d'une
  * arrivée ne peut donc pas être volé par un simple changement d'arme.
  */
 function absorberBouclier(entite, montant) {
   const absorbes = Math.min(entite.bouclier ?? 0, Math.max(0, montant));
   entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
+  if (absorbes > 0 && entite.bouclier === 0 && !entite.bouclierLumiere) {
+    entite.bouclierEpuise = true;
+  }
   if (entite.arme?.bouclier) {
     entite.arme.bouclier = Math.max(0, entite.arme.bouclier - absorbes);
   }
@@ -1123,13 +1155,14 @@ function attacherArme(duel, cote, entite, carteArme) {
   entite.pvMax = (entite.pvMax ?? entite.def) + (carteArme.bonus?.def ?? 0);
   entite.def += carteArme.bonus?.def ?? 0;
   entite.pv += carteArme.bonus?.def ?? 0;
-  // Le bouclier donné par l'arme (la Lance de givre) rejoint la réserve qui
+  // Un bouclier éventuellement donné par l'arme rejoint la réserve qui
   // absorbera les prochains dégâts ; sa part encore intacte vit sur l'arme
   // elle-même pour repartir avec elle si elle est remplacée.
   const bouclierDonne = Math.max(0, Math.floor(Number(carteArme.donne?.bouclier) || 0));
   if (bouclierDonne) {
     entite.arme.bouclier = bouclierDonne;
     entite.bouclier = (entite.bouclier ?? 0) + bouclierDonne;
+    entite.bouclierEpuise = false;
   }
   if (carteArme.donne?.esquive) entite.esquive = true;
   if (carteArme.donne?.envol) entite.envol = true;
@@ -1416,6 +1449,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     if (duel.brouillardCombat && coup.sourceType === 'attaque') continue;
     if (entite.bouclierLumiere && (coup.sourceType === 'attaque' || coup.sourceType === 'magie')) {
       entite.bouclierLumiere = false;
+      if (!(entite.bouclier > 0)) entite.bouclierEpuise = true;
       continue;
     }
     if (esquiveAttaque(duel, entite, coup.sourceType)) {
@@ -2039,7 +2073,10 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     }
     case 'bouclier-lumiere': {
       const entite = duel[cote].creatures.find((candidate) => candidate.id === sauf);
-      if (entite) entite.bouclierLumiere = true;
+      if (entite) {
+        entite.bouclierLumiere = true;
+        entite.bouclierEpuise = false;
+      }
       return;
     }
     case 'bouclier': {
@@ -2047,6 +2084,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         const entite = duel[cote].creatures.find((e) => e.id === cibleId);
         if (entite && !rpgEstProtegee(entite, sourceElement)) {
           entite.bouclier = (entite.bouclier ?? 0) + (effet.amount ?? 0);
+          if (entite.bouclier > 0) entite.bouclierEpuise = false;
         }
       } else {
         duel[cote].bouclier = (duel[cote].bouclier ?? 0) + (effet.amount ?? 0);
@@ -2737,6 +2775,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   }
   if (entite.bouclierLumiere && (sourceType === 'attaque' || sourceType === 'magie')) {
     entite.bouclierLumiere = false;
+    if (!(entite.bouclier > 0)) entite.bouclierEpuise = true;
     return { ok: true, recus: 0, absorbes: 0, bouclierLumiere: true };
   }
   if (esquiveAttaque(duel, entite, sourceType)) {
@@ -3105,7 +3144,11 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
     if (!cible) return { ok: false, raison: 'cible' };
   }
   attacherArme(duel, cote, cible, carte);
-  const bonus = `+${carte.bonus?.atk ?? 0}/+${carte.bonus?.def ?? 0}`;
+  const bonusSigne = (valeur) => {
+    const nombre = Number(valeur) || 0;
+    return nombre < 0 ? `−${Math.abs(nombre)}` : `+${nombre}`;
+  };
+  const bonus = `${bonusSigne(carte.bonus?.atk)}/${bonusSigne(carte.bonus?.def)}`;
   duel.log.push(porteurCree
     ? `${carte.name} fait naître son propre porteur et s’attache à ${cible.name} (${bonus}).`
     : `${cote === 'joueur' ? 'Vous attachez' : 'Le sorcier attache'} ${carte.name} à ${cible.name} (${bonus}).`);
@@ -3184,10 +3227,11 @@ export function rpgModesArme(duel, cote, entiteId) {
 }
 
 // Gelé (Poigne de givre, Verglas) : la créature ni n'attaque ni ne bloque.
-// Mur (Tours de défense) : ne peut jamais attaquer, même prête.
+// Mur (Tours de défense) et `nePeutPasAttaquer` (le Drakkar) : ne peuvent
+// jamais attaquer, même prêts — seul le Mur interdit aussi l'équipement.
 const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
 export const rpgPeutAttaquer = (entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite)
-  && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur;
+  && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur && !entite.nePeutPasAttaquer;
 const pret = rpgPeutAttaquer;
 // Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
@@ -3209,6 +3253,76 @@ export function rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide = fals
   if (frappeRapide) return false;
   if (attaquant.infiltration) return false;
   return !attaquant.envol || Boolean(bloqueur.envol);
+}
+
+/**
+ * Provocation : chaque attaquant qui la porte doit recevoir au moins un
+ * bloqueur, dans la limite de ce que les blocages légaux permettent.
+ *
+ * La limite compte : avec deux provocateurs et un seul défenseur capable de
+ * les arrêter, exiger les deux rendrait le combat insoluble. On compare donc
+ * les provocateurs réellement bloqués au plus grand appariement possible
+ * entre provocateurs et bloqueurs légaux (un bloqueur ne compte qu'une fois).
+ * Un provocateur dont la frappe rapide a choisi une créature n'attaque plus
+ * le sorcier : rien ne peut ni ne doit le bloquer.
+ */
+export function rpgProvocationValide(
+  duel,
+  cote,
+  attaquantIds = [],
+  blocages = {},
+  ciblesAttaque = {},
+) {
+  if (!duel?.[cote] || !duel?.[autre(cote)]) return true;
+  const adv = autre(cote);
+  const ids = [...new Set(attaquantIds ?? [])];
+  const attaquants = duel[cote].creatures.filter((entite) => ids.includes(entite.id));
+  const frappeSurCreature = (attaquant) => Boolean(ciblesAttaque?.[attaquant?.id]
+    && duel[adv].creatures.some((entite) => entite.id === ciblesAttaque[attaquant.id]));
+  const provocateurs = attaquants.filter((entite) => entite.provocation && !frappeSurCreature(entite));
+  if (!provocateurs.length) return true;
+
+  const bloqueurs = duel[adv].creatures.filter(peutBloquer);
+  const bloqueurParId = new Map(bloqueurs.map((entite) => [entite.id, entite]));
+  const legal = (bloqueur, attaquant) => Boolean(bloqueur)
+    && rpgPeutBloquerAttaquant(bloqueur, attaquant, false)
+    && !rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)));
+
+  // Provocateurs effectivement couverts par l'affectation proposée. Un même
+  // bloqueur écrit deux fois ne peut pas couvrir deux attaquants.
+  const bloqueursComptes = new Set();
+  let provocateursBloques = 0;
+  for (const attaquant of provocateurs) {
+    const idsBloqueurs = blocages?.[attaquant.id] ?? [];
+    const liste = Array.isArray(idsBloqueurs) ? idsBloqueurs : [idsBloqueurs];
+    const bloqueurLegal = liste
+      .map((id) => bloqueurParId.get(id))
+      .find((bloqueur) => bloqueur && !bloqueursComptes.has(bloqueur.id) && legal(bloqueur, attaquant));
+    if (bloqueurLegal) {
+      bloqueursComptes.add(bloqueurLegal.id);
+      provocateursBloques += 1;
+    }
+  }
+
+  // Plus grand nombre de provocateurs qu'une affectation légale peut couvrir.
+  const bloqueurAssigneA = new Map();
+  const essayer = (attaquant, dejaVus) => {
+    for (const bloqueur of bloqueurs) {
+      if (dejaVus.has(bloqueur.id) || !legal(bloqueur, attaquant)) continue;
+      dejaVus.add(bloqueur.id);
+      const occupant = bloqueurAssigneA.get(bloqueur.id);
+      if (!occupant || essayer(occupant, dejaVus)) {
+        bloqueurAssigneA.set(bloqueur.id, attaquant);
+        return true;
+      }
+    }
+    return false;
+  };
+  let maximumPossible = 0;
+  for (const attaquant of provocateurs) {
+    if (essayer(attaquant, new Set())) maximumPossible += 1;
+  }
+  return provocateursBloques >= maximumPossible;
 }
 
 /** Combat entre créatures : dégâts mutuels et capacités liées au combat. */
@@ -3564,7 +3678,7 @@ export function rpgLancerAttaque(
   repartitions = null,
   attaquantsBloques = null,
   ciblesAttaque = null,
-  { attaqueDeclaree = false } = {},
+  { attaqueDeclaree = false, bannieresAppliquees = false } = {},
 ) {
   const adv = autre(cote);
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[cote]?.manaChoixEnAttente) {
@@ -3633,7 +3747,10 @@ export function rpgLancerAttaque(
     const candidats = attaquants
       .filter((attaque) => rpgPeutBloquerAttaquant(force, attaque, frappeSurCreature(attaque))
         && !rpgEstProtegee(attaque, cardColors(duelCardById(force.carteId))))
-      .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
+      // Un bloqueur déjà contraint sert d'abord la Provocation, elle aussi
+      // obligatoire, avant de se placer devant la plus grosse menace libre.
+      .sort((a, b) => Number(Boolean(b.provocation)) - Number(Boolean(a.provocation))
+        || (b.atk ?? 0) - (a.atk ?? 0));
     if (!candidats.length) continue;
     affectations[candidats[0].id] = [...(affectations[candidats[0].id] ?? []), force.id];
   }
@@ -3646,7 +3763,8 @@ export function rpgLancerAttaque(
     const candidats = attaquants
       .filter((attaque) => rpgPeutBloquerAttaquant(bloqueurOblig, attaque, frappeSurCreature(attaque))
         && !rpgEstProtegee(attaque, cardColors(duelCardById(bloqueurOblig.carteId))))
-      .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
+      .sort((a, b) => Number(Boolean(b.provocation)) - Number(Boolean(a.provocation))
+        || (b.atk ?? 0) - (a.atk ?? 0));
     if (!candidats.length) continue;
     affectations[candidats[0].id] = [...(affectations[candidats[0].id] ?? []), bloqueurOblig.id];
   }
@@ -3690,6 +3808,12 @@ export function rpgLancerAttaque(
     }
   }
 
+  // Provocation : l'affectation doit couvrir autant de provocateurs qu'une
+  // répartition légale des bloqueurs disponibles le permet.
+  if (!rpgProvocationValide(duel, cote, ids, affectations, ciblesRapides)) {
+    return { ok: false, raison: 'provocation' };
+  }
+
   // La déclaration est légale : la bannière du Daimyō (et de tout porteur du
   // même déclenché) grandit chaque Samouraï engagé AVANT que les blessures ne
   // soient calculées — le partage et la frappe du tour lisent donc la force
@@ -3718,7 +3842,11 @@ export function rpgLancerAttaque(
     }
     duel.log.length = avantBanniere[0].journal;
   };
-  appliquerBannieresAttaque(duel, cote, attaquants);
+  // Une résolution précédée d'une vraie déclaration a déjà reçu la bannière
+  // au verrouillage des attaquants (`rpgAppliquerBannieresAttaque`) : elle ne
+  // se déclenche pas une seconde fois ici. Les appels directs la reçoivent
+  // toujours avant les blessures.
+  if (!bannieresAppliquees) appliquerBannieresAttaque(duel, cote, attaquants);
 
   // Les capacités déclenchées par les blocages précèdent même le partage des
   // blessures. Prévoir aussi les destructions en chaîne, boucliers et protections
@@ -4460,8 +4588,10 @@ export function rpgTourSorcierIA(duel, rng = Math.random) {
   const joue = rpgTourSorcierPreparationIA(duel, rng);
   const attaquants = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
   if (attaquants.length) {
+    const bannieresAppliquees = rpgAppliquerBannieresAttaque(duel, 'sorcier', attaquants);
     const ciblesAttaque = rpgCiblesAttaqueRapide(duel, 'sorcier', attaquants, { ia: duel.sorcier.ia, rng });
-    rpgLancerAttaque(duel, 'sorcier', attaquants, null, null, null, ciblesAttaque);
+    rpgLancerAttaque(duel, 'sorcier', attaquants, null, null, null, ciblesAttaque,
+      { bannieresAppliquees });
   }
   return joue;
 }

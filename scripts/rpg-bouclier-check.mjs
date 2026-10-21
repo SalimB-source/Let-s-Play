@@ -2,17 +2,18 @@
  * Le Bouclier se voit, veille, puis encaisse.
  * node scripts/rpg-bouclier-check.mjs
  *
- * La Lance de givre donne désormais +1/+1, Envol et un bouclier de 1. Ce
- * point de bouclier vit sur l'arme tant qu'il n'est pas absorbé : il encaisse
- * en premier et son reliquat repart avec la Lance si elle est remplacée,
- * sans jamais voler un bouclier venu d'ailleurs.
+ * Les boucliers actuels viennent des arrivées (le Guerrier au bouclier rond),
+ * des sorts (la Parade de verre) et des boucliers de lumière (Salem). La Lance
+ * de givre ne donne plus de bouclier : elle donne +1/−1 et Envol.
  *
  * Sur la table, une égide animée cerne toute créature protégée — glacée pour
  * un bouclier ordinaire, dorée pour un bouclier de lumière. Quand un coup
  * est absorbé, un impact séparé rejoue le choc : l'écu se cabre, et il se
- * fissure en perdant ses éclats si le bouclier tombe à zéro. Entièrement
- * absorbé, le coup ne déclenche plus le clignotement de blessure ; en
- * mouvement réduit, l'égide reste lisible mais immobile et l'impact se tait.
+ * fissure en perdant ses éclats si le bouclier tombe à zéro. Une fois tombé,
+ * son icône et tout son texte se grisent dans l'aperçu, comme la Tenacité
+ * déjà déclenchée du Maître du marteau. Entièrement absorbé, le coup ne
+ * déclenche plus le clignotement de blessure ; en mouvement réduit, l'égide
+ * reste lisible mais immobile et l'impact se tait.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -23,16 +24,17 @@ import { armeById } from '../src/games/rpgCards.js';
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const moteur = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+const iconesCss = readFileSync(new URL('../src/games/effet-icons.css', import.meta.url), 'utf8');
+const reglesCss = readFileSync(new URL('../src/games/rpg-card-rules.css', import.meta.url), 'utf8');
 
-// ── 1. La nouvelle Lance de givre, telle qu'imprimée ────────────────────────
+// ── 1. La Lance de givre actuelle : +1/−1 et Envol, sans bouclier ───────────
 const lance = armeById('lance-de-givre');
 assert.ok(lance, 'la Lance de givre est bien au catalogue des armes');
-assert.deepEqual(lance.bonus, { atk: 1, def: 1 }, 'elle donne exactement +1/+1');
+assert.deepEqual(lance.bonus, { atk: 1, def: -1 }, 'elle donne exactement +1/−1');
 assert.equal(lance.donne?.envol, true, 'elle donne Envol');
-assert.equal(lance.donne?.bouclier, 1, 'et un bouclier de 1');
-assert.match(lance.text, /\+1\/\+1, Envol et un bouclier de 1/,
-  'son texte annonce les trois dons, sans retour au +3/+1');
-assert.doesNotMatch(lance.text, /\+3\/\+1/, 'l’ancienne Lance a bien disparu');
+assert.equal(lance.donne?.bouclier, undefined, 'elle ne donne aucun bouclier');
+assert.match(lance.text, /\+1\/−1 et Envol/, 'son texte annonce ses deux dons');
+assert.doesNotMatch(lance.text, /bouclier/i, 'aucun bouclier dans son texte');
 
 // ── 2. Les états visuels, rendus pour de vrai ───────────────────────────────
 const previousEnv = process.env.NODE_ENV;
@@ -43,11 +45,16 @@ await build({
 if (previousEnv === undefined) delete process.env.NODE_ENV;
 else process.env.NODE_ENV = previousEnv;
 
-const { rendreCartesBouclier } = await import('../node_modules/.cache/rpg-bouclier/rpg-bouclier-smoke.js');
+const { rendreCartesBouclier, rendreApercusEffetsEpuises } = await import('../node_modules/.cache/rpg-bouclier/rpg-bouclier-smoke.js');
 const rendu = rendreCartesBouclier();
+const apercus = rendreApercusEffetsEpuises();
 const carteDom = (html) => {
   const dom = new JSDOM(`<!doctype html><html><body>${html}</body></html>`);
   return { dom, racine: dom.window.document.querySelector('.rpg-card') };
+};
+const apercuDom = (html) => {
+  const dom = new JSDOM(`<!doctype html><html><body>${html}</body></html>`);
+  return { dom, racine: dom.window.document.querySelector('.rpg-hover-card-preview') };
 };
 
 {
@@ -63,12 +70,12 @@ const carteDom = (html) => {
 }
 
 {
-  const { dom, racine } = carteDom(rendu.lance);
+  const { dom, racine } = carteDom(rendu.guerrier);
   try {
-    assert.ok(racine.classList.contains('has-bouclier'), 'la porteuse de la Lance nomme son bouclier');
+    assert.ok(racine.classList.contains('has-bouclier'), 'le Guerrier nomme son bouclier');
     assert.equal(racine.getAttribute('data-bouclier'), '1', 'la carte expose le point encore en place');
-    assert.equal(racine.getAttribute('data-armes'), 'lance-de-givre', 'la Lance équipe bien la créature');
-    assert.match(racine.getAttribute('aria-label') ?? '', /Bouclier 1/, 'la description lue nomme le bouclier de 1');
+    assert.equal(racine.getAttribute('data-effets-epuises'), null, 'un bouclier debout n’est pas épuisé');
+    assert.match(racine.getAttribute('aria-label') ?? '', /bouclier 1/i, 'la description lue nomme le bouclier de 1');
     const egide = racine.querySelector('.rpg-bouclier-egide');
     assert.ok(egide, 'l’égide animée cerne la créature protégée');
     assert.equal(egide.getAttribute('data-bouclier'), '1', 'le calque porte la valeur encore debout');
@@ -77,7 +84,9 @@ const carteDom = (html) => {
       'aucun reflet rotatif ne tourne autour de la face');
     assert.ok(egide.querySelector('.rpg-bouclier-egide__reflet'), 'un reflet balaie l’égide');
     assert.ok(egide.querySelector('.rpg-bouclier__ecu'), 'un écu veille au cœur de la carte');
-    assert.ok(racine.querySelector('.rpg-card-icone[data-effet="bouclier"]'), 'l’icône Bouclier reste affichée');
+    const badge = racine.querySelector('.rpg-card-icone[data-effet="bouclier"]');
+    assert.ok(badge, 'l’icône Bouclier reste affichée');
+    assert.equal(badge.classList.contains('is-epuisee'), false, 'et pleine couleur tant qu’il tient');
     assert.equal(racine.querySelector('.rpg-bouclier-impact'), null, 'aucun choc tant qu’aucun coup n’est encaissé');
     const enfants = [...racine.children];
     assert.ok(enfants.indexOf(egide) < enfants.indexOf(racine.querySelector('.rpg-card__title')),
@@ -90,9 +99,27 @@ const carteDom = (html) => {
 }
 
 {
+  const { dom, racine } = carteDom(rendu.lanceSansBouclier);
+  try {
+    assert.equal(racine.getAttribute('data-armes'), 'lance-de-givre', 'la Lance équipe bien la créature');
+    assert.equal(racine.classList.contains('has-bouclier'), false, 'mais elle ne dresse aucun état de bouclier');
+    assert.equal(racine.getAttribute('data-bouclier'), null, 'aucun point de bouclier exposé');
+    assert.equal(racine.querySelector('.rpg-bouclier-egide'), null, 'aucune égide pour la Lance');
+    assert.equal(racine.querySelector('.rpg-card-icone[data-effet="bouclier"]'), null,
+      'et aucune icône Bouclier prêtée par l’arme');
+    assert.ok(racine.querySelector('.rpg-card-icone[data-effet="envol"]'), 'l’Envol donné, lui, est bien là');
+  } finally {
+    dom.window.close();
+  }
+}
+
+{
   const { dom, racine } = carteDom(rendu.impactPartiel);
   try {
     assert.ok(racine.querySelector('.rpg-bouclier-egide'), 'le bouclier entamé continue de veiller');
+    const badge = racine.querySelector('.rpg-card-icone[data-effet="bouclier"]');
+    assert.ok(badge, 'son icône reste affichée');
+    assert.equal(badge.classList.contains('is-epuisee'), false, 'il reste des points : pas de grisaille');
     const impact = racine.querySelector('.rpg-bouclier-impact');
     assert.ok(impact, 'le choc absorbé est rendu par-dessus la face');
     assert.equal(impact.classList.contains('is-brise'), false, 'deux points restent : l’écu ne se brise pas');
@@ -109,8 +136,16 @@ const carteDom = (html) => {
 {
   const { dom, racine } = carteDom(rendu.impactBrise);
   try {
-    assert.equal(racine.getAttribute('data-bouclier'), null, 'le point de la Lance est bien tombé');
+    assert.equal(racine.getAttribute('data-bouclier'), null, 'le point du Guerrier est bien tombé');
+    assert.equal(racine.getAttribute('data-effets-epuises'), 'bouclier',
+      'la carte posée transmet son bouclier dépensé aux aperçus');
+    assert.match(racine.getAttribute('aria-label') ?? '', /bouclier tombé/i,
+      'la description lue dit le bouclier tombé');
     assert.equal(racine.querySelector('.rpg-bouclier-egide'), null, 'l’égide persistante a disparu');
+    const badge = racine.querySelector('.rpg-card-icone[data-effet="bouclier"]');
+    assert.ok(badge, 'l’icône Bouclier reste lisible sur la face');
+    assert.ok(badge.classList.contains('is-epuisee'), 'mais grisée, puisque le bouclier est tombé');
+    assert.equal(badge.getAttribute('data-effet-epuise'), 'true');
     const impact = racine.querySelector('.rpg-bouclier-impact');
     assert.ok(impact, 'le choc qui a brisé le bouclier survit à sa chute le temps de l’animation');
     assert.ok(impact.classList.contains('is-brise'), 'à zéro, l’impact joue la rupture');
@@ -127,6 +162,7 @@ const carteDom = (html) => {
   const { dom, racine } = carteDom(rendu.lumiere);
   try {
     assert.equal(racine.getAttribute('data-bouclier-lumiere'), 'true', 'Salem expose son bouclier de lumière');
+    assert.equal(racine.getAttribute('data-effets-epuises'), null, 'intact, il n’est pas épuisé');
     const egide = racine.querySelector('.rpg-bouclier-egide--lumiere');
     assert.ok(egide, 'la même égide veille, dans sa teinte dorée');
     assert.equal(egide.getAttribute('data-bouclier'), 'lumiere', 'le calque se distingue du bouclier chiffré');
@@ -138,6 +174,8 @@ const carteDom = (html) => {
 {
   const { dom, racine } = carteDom(rendu.lumiereTouchee);
   try {
+    assert.equal(racine.getAttribute('data-effets-epuises'), 'bouclier',
+      'le bouclier de lumière touché est transmis comme dépensé');
     assert.equal(racine.querySelector('.rpg-bouclier-egide'), null, 'le bouclier de lumière touché ne veille plus');
     const impact = racine.querySelector('.rpg-bouclier-impact--lumiere');
     assert.ok(impact, 'mais son choc lumineux est encore rendu');
@@ -148,17 +186,84 @@ const carteDom = (html) => {
   }
 }
 
-// ── 3. Le moteur : le point vit sur l'arme, encaisse, puis repart ───────────
-assert.match(moteur, /function absorberBouclier\(entite, montant\) \{[\s\S]*?entite\.arme\.bouclier = Math\.max\(0, entite\.arme\.bouclier - absorbes\);/,
-  'un seul absorbeur fait payer d’abord la part portée par l’arme');
-assert.match(moteur, /const bouclierDonne = Math\.max\(0, Math\.floor\(Number\(carteArme\.donne\?\.bouclier\) \|\| 0\)\);[\s\S]*?entite\.arme\.bouclier = bouclierDonne;[\s\S]*?entite\.bouclier = \(entite\.bouclier \?\? 0\) \+ bouclierDonne;/,
-  'l’attachement dresse le bouclier donné et garde sa part sur l’arme');
-assert.match(moteur, /const bouclierRestant = Math\.max\(0, Number\(entite\.arme\?\.bouclier\) \|\| 0\);[\s\S]*?entite\.bouclier = Math\.max\(0, \(entite\.bouclier \?\? 0\) - bouclierRestant\);/,
-  'le retrait ne reprend que le reliquat de l’arme, rien d’autre');
+// ── 3. Les aperçus : icône et texte entiers se grisent une fois dépensés ───
+{
+  const { dom, racine } = apercuDom(apercus.guerrierActif);
+  try {
+    assert.ok(racine, 'l’aperçu du Guerrier se rend');
+    assert.equal(racine.getAttribute('data-effets-epuises'), null, 'rien n’est dépensé hors table');
+    assert.equal(racine.querySelector('.is-epuisee'), null, 'aucune grisaille sur une fiche neuve');
+  } finally {
+    dom.window.close();
+  }
+}
+
+{
+  const { dom, racine } = apercuDom(apercus.guerrierEpuise);
+  try {
+    assert.equal(racine.getAttribute('data-effets-epuises'), 'bouclier');
+    assert.match(racine.getAttribute('aria-label') ?? '', /Bouclier tombé/,
+      'le libellé de l’aperçu ne repose pas sur la seule couleur');
+    const pastille = racine.querySelector('.rpg-pastille[data-pastille="bouclier"]');
+    assert.ok(pastille, 'la pastille Bouclier est rendue');
+    assert.ok(pastille.classList.contains('is-epuisee'), 'icône, mot et explication du Bouclier sont grisés');
+    assert.match(pastille.textContent, /Absorbe le prochain dégât/,
+      'son explication reste écrite sous le mot, en gris');
+    const furie = racine.querySelector('.rpg-pastille[data-pastille="furie"]');
+    assert.ok(furie, 'la Furie du Guerrier reste rendue');
+    assert.equal(furie.classList.contains('is-epuisee'), false, 'seul le Bouclier est grisé');
+    const ligne = racine.querySelector('.rpg-card-rules__ligne--epuisee[data-effet="bouclier"]');
+    assert.ok(ligne, 'la ligne de règle du bouclier est grisée avec son icône');
+    assert.match(ligne.textContent, /reçoit un bouclier de 1/);
+  } finally {
+    dom.window.close();
+  }
+}
+
+{
+  const { dom, racine } = apercuDom(apercus.maitreEpuise);
+  try {
+    assert.equal(racine.getAttribute('data-effets-epuises'), 'tenacite');
+    assert.match(racine.getAttribute('aria-label') ?? '', /Tenacité déjà utilisée/);
+    const tenacite = racine.querySelector('.rpg-pastille[data-pastille="tenacite"]');
+    assert.ok(tenacite, 'la pastille Tenacité est rendue');
+    assert.ok(tenacite.classList.contains('is-epuisee'), 'icône, mot et règle de la Tenacité sont grisés');
+    assert.match(tenacite.textContent, /Une fois par partie/);
+    for (const cle of ['overkill', 'furie']) {
+      const pastille = racine.querySelector(`.rpg-pastille[data-pastille="${cle}"]`);
+      assert.ok(pastille, `${cle} reste rendu`);
+      assert.equal(pastille.classList.contains('is-epuisee'), false, `${cle} garde sa couleur`);
+    }
+  } finally {
+    dom.window.close();
+  }
+}
+
+{
+  const { dom, racine } = apercuDom(apercus.salemEpuise);
+  try {
+    assert.equal(racine.getAttribute('data-effets-epuises'), 'bouclier');
+    const lignes = racine.querySelectorAll('.rpg-card-rules__ligne--epuisee[data-effet="bouclier"]');
+    assert.equal(lignes.length, 2, 'les deux phrases du bouclier de lumière se grisent');
+    assert.match([...lignes].map((ligne) => ligne.textContent).join(' '), /bouclier de lumière/);
+  } finally {
+    dom.window.close();
+  }
+}
+
+// ── 4. Le moteur : un absorbeur unique et un « tombé » explicite ───────────
+assert.match(moteur, /function absorberBouclier\(entite, montant\) \{[\s\S]*?if \(absorbes > 0 && entite\.bouclier === 0 && !entite\.bouclierLumiere\) \{\s*entite\.bouclierEpuise = true;/,
+  'le dernier point absorbé marque le bouclier comme tombé');
+assert.match(moteur, /case 'bouclier-lumiere': \{[\s\S]*?entite\.bouclierLumiere = true;\s*entite\.bouclierEpuise = false;/,
+  'accorder un bouclier de lumière réarme l’état');
+assert.match(moteur, /case 'bouclier': \{[\s\S]*?entite\.bouclier = \(entite\.bouclier \?\? 0\) \+ \(effet\.amount \?\? 0\);[\s\S]*?if \(entite\.bouclier > 0\) entite\.bouclierEpuise = false;/,
+  'accorder un bouclier chiffré réarme l’état');
+assert.equal([...moteur.matchAll(/if \(!\(entite\.bouclier > 0\)\) entite\.bouclierEpuise = true;/g)].length, 2,
+  'les deux chemins qui touchent un bouclier de lumière marquent sa chute');
 assert.equal([...moteur.matchAll(/const absorbes = absorberBouclier\(entite,/g)].length, 2,
   'le combat simultané et la blessure directe passent par le même absorbeur');
 
-// ── 4. La page : avant/après, deux rangées, piles repliées ─────────────────
+// ── 5. La page : avant/après, deux rangées, piles repliées, aperçus ────────
 assert.match(page, /const DUREE_IMPACT_BOUCLIER = 850;/, 'l’impact a sa durée propre, lisible');
 assert.match(page, /function EgideBouclier\(/, 'l’égide persistante a son composant');
 assert.match(page, /function ImpactBouclier\(/, 'le choc éphémère aussi');
@@ -177,10 +282,16 @@ assert.match(page, /const bouclierDeCarte = \(entite, pile, deployee\) => boucli
   'la tête d’une pile repliée porte le choc d’un exemplaire caché');
 assert.match(page, /\.\.\.Object\.keys\(boucliersVisibles \?\? \{\}\)/,
   'l’impact compte dans les actions encore en cours sur la carte');
-assert.match(page, /if \(donne\.bouclier\) effets\.push\(`Bouclier \$\{donne\.bouclier\}`\);/,
-  'les aperçus nomment le bouclier accordé par l’arme');
+assert.match(page, /data-effets-epuises=\{effetsEpuises\.length \? effetsEpuises\.join\(' '\) : undefined\}/,
+  'la carte posée étiquette ses effets dépensés pour les gestes d’aperçu');
+assert.equal([...page.matchAll(/effetsEpuisesDepuisHote\(/g)].length, 4,
+  'survol, appui long et clic droit lisent la même étiquette (plus sa définition)');
+assert.match(page, /<PastillesCarte[\s\S]*?effetsEpuises=\{effetsEpuisesActifs\}/,
+  'l’aperçu transmet l’épuisement à ses pastilles');
+assert.match(page, /<RpgCardRules carte=\{carte\} text=\{ligne\} effetsEpuises=\{effetsEpuisesActifs\} \/>/,
+  'et à chacune de ses lignes de règle');
 
-// ── 5. La feuille : reflet, choc, rupture, mouvement réduit ────────────────
+// ── 6. Les feuilles : reflet, choc, rupture, grisaille, mouvement réduit ──
 assert.match(css, /\.rpg-bouclier-egide,\s*\.rpg-bouclier-impact \{[\s\S]*?pointer-events: none;/,
   'l’égide et son impact sont des calques non interactifs');
 assert.match(css, /\.rpg-bouclier-egide \{[\s\S]*?z-index: 2;[\s\S]*?animation: rpg-bouclier-entre/,
@@ -204,5 +315,13 @@ assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.rpg-bou
   'les mouvements réduits gardent l’égide, immobile, et taisent le choc');
 assert.match(page, /if \(!mouvementReduit && \(lumiereAbsorbee \|\| \(absorbesParBouclier > 0 && !armeChangee\)\)\)/,
   'la page ne déclenche pas l’impact quand le mouvement est réduit');
+assert.match(iconesCss, /\.rpg-pastille\.is-epuisee \{[\s\S]*?color: #a9a9a9;[\s\S]*?filter: grayscale\(1\);/,
+  'une pastille dépensée passe entièrement au gris');
+assert.match(iconesCss, /\.rpg-pastille\.is-epuisee \.rpg-pastille__explication \{[\s\S]*?color: #b8b8b8;/,
+  'son explication aussi');
+assert.match(iconesCss, /\.rpg-card-icone\.is-epuisee \{[\s\S]*?filter: grayscale\(1\);/,
+  'le badge de la face suit le même état');
+assert.match(reglesCss, /\.rpg-card-rules__ligne--epuisee \{[\s\S]*?color: #a9a9a9;[\s\S]*?filter: grayscale\(1\);/,
+  'la ligne de règle dépensée se grise entièrement');
 
-console.log('✓ Bouclier animé : la Lance de givre donne +1/+1, Envol et Bouclier 1 ; le point encaisse et repart proprement avec l’arme, l’égide glacée (ou dorée) veille sur la table, et son choc — fissuré quand elle tombe — se voit même à zéro.');
+console.log('✓ Bouclier animé : la Lance de givre donne +1/−1 et Envol sans bouclier ; les boucliers du Guerrier, de la Parade et de Salem veillent et encaissent, puis leur icône et leur texte se grisent dans l’aperçu une fois tombés — comme la Tenacité déjà utilisée.');
