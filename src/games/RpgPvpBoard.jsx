@@ -106,6 +106,7 @@ export default function RpgPvpBoard({
   occupe = false, onIntention, onAbandon, onQuitter,
 }) {
   const [selection, setSelection] = useState(null);
+  const [carteEnAttente, setCarteEnAttente] = useState(null);
   const [message, setMessage] = useState(null);
   // Cartes écartées au mulligan : état déclaré ici, jamais dans une branche
   // conditionnelle (règle des hooks).
@@ -127,18 +128,44 @@ export default function RpgPvpBoard({
     [mesCreatures],
   );
 
-  const envoyer = async (intention) => {
+  const envoyer = async (intention, { silencieuxSurCible = false } = {}) => {
     setMessage(null);
     const reponse = await onIntention(intention);
-    if (reponse && reponse.ok === false) setMessage(`Action refusée : ${reponse.raison}.`);
-    if (reponse?.ok !== false) setSelection(null);
+    if (reponse && reponse.ok === false) {
+      if (!(silencieuxSurCible && reponse.raison === 'cible')) {
+        setMessage(`Action refusée : ${reponse.raison}.`);
+      }
+    }
+    if (reponse?.ok !== false) {
+      setSelection(null);
+      setCarteEnAttente(null);
+    }
     return reponse;
   };
 
-  const jouerCarte = (carteId) => envoyer({ type: 'jouer-carte', carteId });
+  const jouerCarte = async (carteId, cibleId = null) => {
+    const intention = cibleId
+      ? { type: 'jouer-carte', carteId, cibleId }
+      : { type: 'jouer-carte', carteId };
+    const reponse = await envoyer(intention, { silencieuxSurCible: !cibleId });
+    if (!cibleId && reponse?.ok === false && reponse.raison === 'cible') {
+      setSelection(null);
+      setCarteEnAttente(carteId);
+      setMessage('Choisis une cible sur le plateau (créature ou adversaire) pour jouer cette carte.');
+    }
+    return reponse;
+  };
 
-  const attaquer = async (entiteId) => {
-    const reponse = await envoyer({ type: 'attaquer', attaquants: [entiteId] });
+  const attaquer = async (entiteId, cibleCreatureId = null) => {
+    const attaquant = mesCreatures.find((entite) => entite.id === entiteId);
+    const intention = {
+      type: 'attaquer',
+      attaquants: [entiteId],
+      ...(cibleCreatureId && attaquant?.coupRapide
+        ? { ciblesAttaque: { [entiteId]: cibleCreatureId } }
+        : {}),
+    };
+    const reponse = await envoyer(intention);
     if (reponse?.ok === false && reponse.raison === 'cible') {
       setMessage('Cette créature doit désigner une cible : choisis une créature adverse.');
     }
@@ -266,7 +293,17 @@ export default function RpgPvpBoard({
               key={entite.id}
               entite={entite}
               desactive={occupe}
-              onClick={() => attaquer(selection ?? entite.id)}
+              onClick={() => {
+                if (carteEnAttente) {
+                  jouerCarte(carteEnAttente, entite.id);
+                  return;
+                }
+                if (selection) {
+                  attaquer(selection, entite.id);
+                  return;
+                }
+                setMessage('Sélectionne d’abord une de tes créatures ou une carte ciblée.');
+              }}
             />
           ))
           : <p className="rpg-pvp__note">Aucune créature en face.</p>}
@@ -288,6 +325,10 @@ export default function RpgPvpBoard({
               selection={selection === entite.id}
               desactive={occupe || !monTour}
               onClick={() => {
+                if (carteEnAttente) {
+                  jouerCarte(carteEnAttente, entite.id);
+                  return;
+                }
                 if (selection === entite.id) { setSelection(null); return; }
                 if (entite.ready && !entite.attaquee) { setSelection(entite.id); setMessage(ETAPES.attaquer); }
               }}
@@ -296,17 +337,32 @@ export default function RpgPvpBoard({
           : <p className="rpg-pvp__note">Ton plateau est vide.</p>}
       </section>
 
-      {selection && monTour && (
+      {(selection || carteEnAttente) && monTour && (
         <div className="rpg-pvp-duel__cible">
+          {carteEnAttente ? (
+            <button
+              type="button"
+              className="rpg-pvp__cta"
+              disabled={occupe}
+              onClick={() => jouerCarte(carteEnAttente, 'sorcier')}
+            >
+              Viser {nomAdverse}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="rpg-pvp__cta"
+              disabled={occupe}
+              onClick={() => attaquer(selection)}
+            >
+              Attaquer {nomAdverse} directement
+            </button>
+          )}
           <button
             type="button"
-            className="rpg-pvp__cta"
-            disabled={occupe}
-            onClick={() => attaquer(selection)}
+            className="rpg-pvp__ghost"
+            onClick={() => { setSelection(null); setCarteEnAttente(null); setMessage(null); }}
           >
-            Attaquer {nomAdverse} directement
-          </button>
-          <button type="button" className="rpg-pvp__ghost" onClick={() => { setSelection(null); setMessage(null); }}>
             Annuler
           </button>
         </div>

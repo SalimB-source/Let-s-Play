@@ -145,6 +145,47 @@ export async function startLocalServer({
       });
     }
 
+    // Relais des routes d'API (/api/*, ex. /api/sablier-duel) vers le serveur en ligne.
+    if (chemin.startsWith('/api/')) {
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, {
+          'access-control-allow-origin': '*',
+          'access-control-allow-methods': 'GET, POST, OPTIONS',
+          'access-control-allow-headers': 'authorization, content-type, apikey, x-client-info',
+        });
+        return res.end();
+      }
+      if (!remoteOrigin) {
+        return repondreJson(res, 503, { ok: false, raison: 'arbitre-indisponible' });
+      }
+      const morceaux = [];
+      for await (const morceau of req) {
+        morceaux.push(typeof morceau === 'string' ? Buffer.from(morceau) : morceau);
+      }
+      const corps = Buffer.concat(morceaux);
+      const cibleApi = `${remoteOrigin.replace(/\/+$/, '')}${chemin}${url.search || ''}`;
+      try {
+        const entetesApi = {};
+        if (req.headers['content-type']) entetesApi['content-type'] = String(req.headers['content-type']);
+        if (req.headers.authorization) entetesApi.authorization = String(req.headers.authorization);
+        const rep = await fetch(cibleApi, {
+          method: req.method,
+          headers: entetesApi,
+          body: req.method === 'GET' || req.method === 'HEAD' ? undefined : corps,
+          signal: AbortSignal.timeout(15000),
+        });
+        const texte = await rep.text();
+        res.writeHead(rep.status, {
+          'content-type': rep.headers.get('content-type') || 'application/json; charset=utf-8',
+          'cache-control': 'no-store',
+        });
+        return res.end(texte);
+      } catch (erreur) {
+        log(`[desktop] relais API impossible pour ${chemin} : ${erreur?.message || erreur}`);
+        return repondreJson(res, 503, { ok: false, raison: 'arbitre-indisponible' });
+      }
+    }
+
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.writeHead(405, { allow: 'GET, HEAD' });
       return res.end();

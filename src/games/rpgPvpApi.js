@@ -17,6 +17,36 @@ import { RPG_PVP_CHEMIN, rpgPvpLienDefi } from './rpgPvp.js';
 /** Route de l'arbitre (déployée par Vercel, exclue du repli SPA). */
 export const SABLIER_API = '/api/sablier-duel';
 
+/** Route de secours Vercel (utile depuis GitHub Pages ou le client PC). */
+export const SABLIER_API_DISTANT = 'https://let-s-play-nu.vercel.app/api/sablier-duel';
+
+/**
+ * Ordonne les routes possibles de l'arbitre :
+ *   1. la route locale `/api/sablier-duel` (hors GitHub Pages statique) ;
+ *   2. la fonction Edge Supabase (`.../functions/v1/sablier-duel`) du projet ;
+ *   3. l'origine Vercel de production.
+ */
+export function routesArbitre() {
+  const routes = [];
+  const hote = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
+  const origine = typeof window !== 'undefined' ? (window.location?.origin || '') : '';
+  if (!/\.github\.io$/i.test(hote)) {
+    routes.push(SABLIER_API);
+  }
+  const urlSupabase = (
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL)
+    || supabase?.supabaseUrl
+    || ''
+  ).trim().replace(/\/$/, '');
+  if (urlSupabase) {
+    routes.push(`${urlSupabase}/functions/v1/sablier-duel`);
+  }
+  if (!origine || !SABLIER_API_DISTANT.startsWith(origine)) {
+    routes.push(SABLIER_API_DISTANT);
+  }
+  return routes.length ? routes : [SABLIER_API];
+}
+
 /**
  * Le PvP est-il branchable ? Il faut un compte Supabase (pour le jeton) ; la
  * disponibilité réelle du serveur se découvre au premier appel
@@ -62,18 +92,39 @@ async function appeler(corps) {
   if (!supabase) return { ok: false, raison: 'hors-ligne' };
   const acces = await jeton();
   if (!acces) return { ok: false, raison: 'connexion' };
-  try {
-    const requete = await fetch(SABLIER_API, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${acces}` },
-      body: JSON.stringify(corps),
-    });
-    const donnees = await requete.json().catch(() => null);
-    if (!donnees || typeof donnees !== 'object') return { ok: false, raison: 'reponse', status: requete.status };
-    return requete.ok && donnees.ok ? donnees : { ok: false, ...donnees, status: requete.status };
-  } catch {
-    return { ok: false, raison: 'reseau' };
+  const cibles = routesArbitre();
+  let derniereErreur = { ok: false, raison: 'reseau' };
+
+  for (const url of cibles) {
+    try {
+      const requete = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${acces}` },
+        body: JSON.stringify(corps),
+      });
+      const donnees = await requete.json().catch(() => null);
+      if (!donnees || typeof donnees !== 'object') {
+        derniereErreur = { ok: false, raison: 'reponse', status: requete.status };
+        continue;
+      }
+      if (requete.ok && donnees.ok) return donnees;
+      const echec = { ok: false, ...donnees, status: requete.status };
+      // Une réponse métier de l'arbitre (coup illégal, duel inconnu, invitation
+      // déjà ouverte…) est définitive : inutile d'interroger les routes de secours.
+      if (
+        donnees.raison
+        && donnees.raison !== 'arbitre-indisponible'
+        && donnees.raison !== 'interne'
+        && donnees.raison !== 'methode'
+      ) {
+        return echec;
+      }
+      derniereErreur = echec;
+    } catch {
+      derniereErreur = { ok: false, raison: 'reseau' };
+    }
   }
+  return derniereErreur;
 }
 
 /** Crée un défi. `visibilite: 'amis'` exige `inviteId` ; `'lien'` ouvre le défi à qui a le code. */

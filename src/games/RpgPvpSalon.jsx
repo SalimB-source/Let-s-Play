@@ -168,6 +168,16 @@ export default function RpgPvpSalon() {
 
   /* ------------------------------- chargement ------------------------------ */
 
+  useEffect(() => {
+    const prochain = String(codeParam ?? '').toUpperCase();
+    setCode(prochain);
+    if (!prochain) {
+      setVue(null);
+      setErreur(null);
+      setChargement(false);
+    }
+  }, [codeParam]);
+
   const charger = useCallback(async (silencieux = false) => {
     if (!code || !uid) return;
     if (!silencieux) setChargement(true);
@@ -235,19 +245,22 @@ export default function RpgPvpSalon() {
       inviteId: visibilite === 'amis' ? amiId : null,
       mode,
     });
-    if (!reponse.ok) return reponse;
+    const reprise = !reponse.ok && reponse.raison === 'invitation-en-attente' && reponse.code
+      ? { ...reponse, ok: true }
+      : reponse;
+    if (!reprise.ok) return reprise;
     // Le défi nominatif part aussi dans la messagerie : la carte cliquable.
     if (visibilite === 'amis' && amiId && uid) {
-      const payload = payloadDefi({ code: reponse.code, mode, deckNom: deck.name });
+      const payload = payloadDefi({ code: reprise.code, mode: reprise.mode ?? mode, deckNom: deck.name });
       try {
-        await sendMessage(uid, amiId, messageDefi({ nom: user?.name ?? 'Un joueur', mode }), {
+        await sendMessage(uid, amiId, messageDefi({ nom: user?.name ?? 'Un joueur', mode: reprise.mode ?? mode }), {
           kind: 'defi-sablier',
           payload,
         });
       } catch { /* le défi existe : le lien reste copiable même si le message échoue */ }
     }
-    if (visibilite === 'lien') navigate(cheminDefi(reponse.code));
-    return reponse;
+    navigate(cheminDefi(reprise.code));
+    return reprise;
   });
 
   const rejoindre = () => agir(async () => {
@@ -258,7 +271,9 @@ export default function RpgPvpSalon() {
   const jouer = (intention) => agir(() => jouerIntention({ code, seq: vue?.seq ?? 0, intention }));
 
   const copier = async () => {
-    const lien = lienDefi(code, typeof window === 'undefined' ? '' : window.location.origin);
+    const prefixeBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+    const origine = typeof window === 'undefined' ? '' : `${window.location.origin}${prefixeBase}`;
+    const lien = lienDefi(code, origine);
     try {
       await navigator.clipboard.writeText(`${messageDefi({ nom: user?.name ?? 'Un joueur', mode: vue?.mode ?? mode })}\n${lien}`);
       setCopie(true);
@@ -318,7 +333,7 @@ export default function RpgPvpSalon() {
   }
 
   return (
-    <Cadre code={code}>
+    <Cadre code={code} retour={code ? { href: cheminSalon(), libelle: 'Salon' } : null}>
       <main className="rpg-pvp">
         <header className="rpg-pvp__header">
           <p className="rpg-pvp__eyebrow">LE SABLIER · EN LIGNE</p>
@@ -337,13 +352,14 @@ export default function RpgPvpSalon() {
                 : erreur === 'deck-non-possede' ? 'Ce deck contient des cartes que tu ne possèdes pas encore.'
                   : erreur === 'pas-amis' ? 'Les défis nominatifs sont réservés aux amis — envoie plutôt un lien.'
                     : erreur === 'invitation-en-attente' ? 'Tu as déjà un défi en attente avec ce joueur.'
-                      : `Action refusée : ${erreur}.`}
+                      : erreur === 'arbitre-indisponible' || erreur === 'reseau' || erreur === 'reponse' ? 'Le serveur d’arbitrage est momentanément injoignable. Réessaie dans un instant.'
+                        : `Action refusée : ${erreur}.`}
           </p>
         )}
 
         {ecran === 'inconnu' || ecran === 'refuse' || ecran === 'expire' ? (
           <div className="rpg-pvp__panneau">
-            <a className="rpg-pvp__cta" href={cheminSalon()}>Créer un nouveau défi</a>
+            <Link className="rpg-pvp__cta" to={cheminSalon()}>Créer un nouveau défi</Link>
           </div>
         ) : null}
 
@@ -384,7 +400,7 @@ export default function RpgPvpSalon() {
         {ecran === 'termine' && (
           <div className="rpg-pvp__panneau">
             <p className="rpg-pvp__note">{SALON_TEXTES.termine}</p>
-            <a className="rpg-pvp__cta" href={cheminSalon()}>Nouveau défi</a>
+            <Link className="rpg-pvp__cta" to={cheminSalon()}>Nouveau défi</Link>
           </div>
         )}
 

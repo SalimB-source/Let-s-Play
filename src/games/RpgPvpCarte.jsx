@@ -1,6 +1,7 @@
+import { Link } from 'react-router-dom';
 import './rpg-pvp.css';
 import { invitationDepuisMessage } from './rpgPvpSalon.js';
-import { lienDefi } from './rpgPvpApi.js';
+import { cheminDefi, lienDefi } from './rpgPvpApi.js';
 
 /**
  * La carte d'un défi du Sablier, dans la messagerie.
@@ -13,7 +14,9 @@ import { lienDefi } from './rpgPvpApi.js';
 export default function RpgPvpCarte({ message }) {
   const invitation = invitationDepuisMessage(message);
   if (!invitation) return null;
-  const href = lienDefi(invitation.code, typeof window === 'undefined' ? '' : window.location.origin);
+  const prefixeBase = (import.meta.env?.BASE_URL || '/').replace(/\/+$/, '');
+  const origine = typeof window === 'undefined' ? '' : `${window.location.origin}${prefixeBase}`;
+  const href = lienDefi(invitation.code, origine);
   return (
     <div className="rpg-pvp-carte">
       <p className="rpg-pvp-carte__eyebrow">DÉFI DU SABLIER</p>
@@ -22,7 +25,7 @@ export default function RpgPvpCarte({ message }) {
         {invitation.mode === 'async' ? 'À la correspondance' : 'En direct'}
         {invitation.deckNom ? ` · ${invitation.deckNom}` : ''}
       </p>
-      <a className="rpg-pvp-carte__cta" href={href}>Rejoindre le duel</a>
+      <Link className="rpg-pvp-carte__cta" to={cheminDefi(invitation.code)}>Rejoindre le duel</Link>
       <span className="rpg-pvp-carte__lien">{href}</span>
     </div>
   );

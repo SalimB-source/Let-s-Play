@@ -191,13 +191,22 @@ export function creerArbitre({
   }
 
   /** Charge un duel et vérifie que `uid` en est l'un des deux joueurs. */
-  async function duelDuJoueur(code, uid) {
+  async function duelDuJoueur(code, uid, { autoriserInvitationOuverte = false } = {}) {
     const propre = rpgPvpCode(code);
     if (!propre) return { erreur: refus(400, 'code-invalide') };
     const duel = await magasin.duelParCode(propre);
     if (!duel) return { erreur: refus(404, 'duel-inconnu') };
-    const siege = duel.hote_id === uid ? 'joueur' : duel.invite_id === uid ? 'sorcier' : null;
-    if (!siege) return { erreur: refus(403, 'pas-participant') };
+    const siege = duel.hote_id === uid
+      ? 'joueur'
+      : (duel.invite_id === uid && duel.statut !== 'invitation' ? 'sorcier' : null);
+    if (!siege) {
+      const peutVoirInvitation = autoriserInvitationOuverte
+        && (
+          (duel.statut === 'invitation' && (!duel.invite_id || duel.invite_id === uid))
+          || ((duel.statut === 'expiree' || duel.statut === 'refusee') && (!duel.invite_id || duel.invite_id === uid))
+        );
+      if (!peutVoirInvitation) return { erreur: refus(403, 'pas-participant') };
+    }
     return { duel, siege };
   }
 
@@ -216,12 +225,18 @@ export function creerArbitre({
       joueur: (await magasin.nomDe(duel.hote_id)) || 'Hôte',
       sorcier: duel.invite_id ? (await magasin.nomDe(duel.invite_id)) || 'Invité' : 'Invité',
     };
+    const departInvitation = Date.parse(duel.dernier_coup || '');
+    const expireLe = Number.isFinite(departInvitation)
+      ? new Date(departInvitation + RPG_PVP_HORLOGES.invitation).toISOString()
+      : null;
     const corps = {
       ok: true,
       code: duel.code,
       siege,
       statut: duel.statut,
       mode: duel.mode,
+      visibilite: duel.visibilite ?? (duel.invite_id ? 'amis' : 'lien'),
+      expire_le: expireLe,
       seq: duel.seq,
       echeance: duel.echeance,
       gagnant_id: duel.gagnant_id ?? null,
@@ -320,8 +335,24 @@ export function creerArbitre({
         await magasin.insererDuel(ligne);
       } catch (error) {
         // Index unique `rpg_sablier_duels_une_invitation_idx` : une invitation
-        // en attente par couple. On le dit clairement au lieu d'un 500.
-        if (/duplicate|unique/i.test(String(error?.message))) return refus(409, 'invitation-en-attente');
+        // en attente par couple. On le dit clairement au lieu d'un 500, et on
+        // joint le code existant s'il est disponible pour rouvrir le défi.
+        if (/duplicate|unique/i.test(String(error?.message))) {
+          const existant = invite && typeof magasin.invitationEnAttente === 'function'
+            ? await magasin.invitationEnAttente(joueur.id, invite)
+            : null;
+          const departExistant = Date.parse(existant?.dernier_coup || '');
+          return refus(409, 'invitation-en-attente', existant?.code ? {
+            code: existant.code,
+            statut: existant.statut ?? 'invitation',
+            siege: 'joueur',
+            mode: existant.mode ?? mode,
+            visibilite: existant.visibilite ?? visibilite,
+            expire_le: Number.isFinite(departExistant)
+              ? new Date(departExistant + RPG_PVP_HORLOGES.invitation).toISOString()
+              : null,
+          } : {});
+        }
         throw error;
       }
       return reponse(201, {
@@ -371,7 +402,7 @@ export function creerArbitre({
     },
 
     async etat(joueur, corps) {
-      const vu = await duelDuJoueur(corps.code, joueur.id);
+      const vu = await duelDuJoueur(corps.code, joueur.id, { autoriserInvitationOuverte: true });
       if (vu.erreur) return vu.erreur;
       let duel = vu.duel;
       if (duel.statut === 'invitation'
@@ -441,7 +472,7 @@ export function creerArbitre({
     },
 
     async refuser(joueur, corps) {
-      const vu = await duelDuJoueur(corps.code, joueur.id);
+      const vu = await duelDuJoueur(corps.code, joueur.id, { autoriserInvitationOuverte: true });
       if (vu.erreur) return vu.erreur;
       if (vu.duel.statut !== 'invitation') return refus(409, 'partie-close');
       const maj = await magasin.mettreAJourDuel(vu.duel.code, vu.duel.seq ?? 0, {

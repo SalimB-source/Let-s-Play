@@ -31,10 +31,40 @@ const supabaseAnonKey = pickEnv(
 // jamais écraser le dist/ du déploiement web. Lancé par DESKTOP=1.
 const desktopBuild = process.env.DESKTOP === '1';
 
+function sablierArbitreVitePlugin() {
+  const middleware = async (req, res, next) => {
+    const url = (req.url || '').split('?')[0];
+    if (url !== '/api/sablier-duel' && url !== '/Let-s-Play/api/sablier-duel') {
+      next();
+      return;
+    }
+    if (typeof res.status !== 'function') {
+      res.status = (code) => {
+        res.statusCode = code;
+        return res;
+      };
+    }
+    const { default: handler } = await import('./api/sablier-duel.js');
+    await handler(req, res);
+  };
+  return {
+    name: 'sablier-arbitre-local',
+    configureServer(server) {
+      server.middlewares.use(middleware);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(middleware);
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), sablierArbitreVitePlugin()],
   base: desktopBuild || process.env.VERCEL ? '/' : '/Let-s-Play/',
   server: {
+    allowedHosts: true,
+  },
+  preview: {
     allowedHosts: true,
   },
   define: {
