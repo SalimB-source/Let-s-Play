@@ -41,6 +41,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-reanimation" viewBox="0 0 24 24"><path d="M12 20V4"/><path d="M6 10l6-6 6 6"/><path d="M4 22h16"/></symbol>
   <symbol id="i-heures" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
   <symbol id="i-tribut" viewBox="0 0 24 24"><path d="M4 8h16M12 8v11M8 21h8"/><path d="M4 8 1.5 13.5h5L4 8zm16 0-2.5 5.5h5L20 8z"/><path d="M12 5.4c0 0-2-1.4-2-2.7A1.1 1.1 0 0 1 12 2a1.1 1.1 0 0 1 2 .7c0 1.3-2 2.7-2 2.7z"/></symbol>
+  <symbol id="i-transfert" viewBox="0 0 24 24"><path d="M3.5 8.5h13.5"/><path d="M13.5 5.5 17 8.5l-3.5 3"/><path d="M20.5 15.5H7"/><path d="M10.5 12.5 7 15.5l3.5 3"/></symbol>
   <symbol id="i-overkill" viewBox="0 0 24 24"><path d="M2.5 12h12"/><path d="M10.5 7.5 15 12l-4.5 4.5"/><path d="M18.5 3.5V9"/><path d="M18.5 15v5.5"/><path d="M15 12h6.5"/></symbol>
   <symbol id="i-defausse" viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="14" rx="1.5"/><path d="M17 8v8m0 0-3-3m3 3 3-3"/><path d="M7 19h10"/></symbol>
   <symbol id="i-paquet" viewBox="0 0 24 24"><rect x="5" y="3" width="12" height="9" rx="1.5"/><path d="M8 6.5h6M8 9h4"/><path d="M19 13v6m0 0-2.5-2.5M19 19l2.5-2.5"/></symbol>
@@ -101,7 +102,7 @@ export const EFFET_ICONE = {
   honneur: 'i-honneur',
   tribut: 'i-tribut',
   defausse: 'i-defausse',
-  transfert: 'i-tribut',
+  transfert: 'i-transfert',
   'defausse-adverse': 'i-defausse',
   defaussePaquet: 'i-paquet',
   pioche: 'i-pioche',

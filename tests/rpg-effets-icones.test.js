@@ -26,13 +26,20 @@ import {
 const pastillesDe = (id) => pastillesPourCarte(cardById(id))
   .map((pastille) => (pastille.valeur != null ? `${pastille.label} ${pastille.valeur}` : pastille.label));
 
-test('le sprite porte les 28 symboles validés, un par effet', () => {
+test('le sprite porte les 29 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
-  assert.equal(symboles.length, 28);
+  assert.equal(symboles.length, 29);
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
     assert.ok(symboles.includes(icone), `${icone} est dans le sprite`);
   }
   assert.equal(effetIcon('butin').includes('<use href="#i-butin"/>'), true);
+  assert.equal(EFFET_ICONE.transfert, 'i-transfert');
+  assert.notEqual(EFFET_ICONE.transfert, EFFET_ICONE.tribut,
+    'le Transfert a sa propre icône, distincte de la balance du Tribut');
+  assert.equal(effetIcon('transfert').includes('<use href="#i-transfert"/>'), true);
+  const transfert = EFFETS_SPRITE.match(/<symbol id="i-transfert"[^>]*>(.*?)<\/symbol>/)?.[1] ?? '';
+  assert.ok(transfert.includes('M3.5 8.5h13.5') && transfert.includes('M20.5 15.5H7'),
+    'le Transfert dessine deux flèches opposées : la vie passe d’un sorcier à l’autre');
   assert.equal(effetIcon('furie').includes('<use href="#i-furie"/>'), true);
   assert.equal(effetIcon('provocation').includes('<use href="#i-provocation"/>'), true);
   const provocation = EFFETS_SPRITE.match(/<symbol id="i-provocation"[^>]*>(.*?)<\/symbol>/)?.[1] ?? '';

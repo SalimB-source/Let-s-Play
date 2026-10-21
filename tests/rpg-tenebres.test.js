@@ -130,6 +130,8 @@ test('les pastilles et les lignes de règle lisent le Tribut et la défausse', (
   assert.ok(pastillesDe('le-poids').includes('Transfert'));
   assert.ok([...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].some((m) => m[1] === 'i-tribut'));
   assert.equal(effetIcon('tribut').includes('#i-tribut'), true);
+  assert.equal(effetIcon('transfert').includes('#i-transfert'), true,
+    'Le Poids (transfert) porte son icône propre, pas celle du Tribut');
   assert.equal(iconePourLigne(cardById('chacal-du-seuil'), cardById('chacal-du-seuil').text), 'tribut',
     '« Tribut 1 — … » ouvre la ligne : son icône passe avant toute autre');
   assert.equal(iconePourLigne(cardById('nom-efface'), cardById('nom-efface').text), 'defausse');
