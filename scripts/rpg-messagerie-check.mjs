@@ -89,6 +89,8 @@ assert.match(duelPage, /<RpgMessagerieBouton\s+variante="duel"/,
   'la barre du duel porte le bouton Messagerie');
 assert.match(salon, /<RpgMessagerieBouton variante="salon" \/>/,
   'le salon du duel en ligne porte le bouton Messagerie');
+assert.match(salon, /import RpgMessagerieBouton from '\.\/RpgMessagerieBouton\.jsx';/,
+  'le bouton Messagerie utilisé par le salon est importé (pas de ReferenceError au chargement)');
 assert.match(salon, /className="rpg-pvp-page__outils"/,
   'le bouton du salon vit dans le liseré, à côté du code du défi');
 
