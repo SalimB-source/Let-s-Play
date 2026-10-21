@@ -94,15 +94,22 @@ export const RPG_STORY_OPPONENT_CAST = Object.freeze({
  */
 const REGARDS_PEINTS = Object.freeze({
   // Tournées vers la gauche de l'image : elles appartiennent au bord droit.
+  boualem: 'gauche',
   'dernier-fennec': 'gauche',
   devoreur: 'gauche',
+  'djinn-souk': 'gauche',
   feriel: 'gauche',
+  marchand: 'gauche',
   nageuse: 'gauche',
   'reine-etals': 'gauche',
   // Tournées vers la droite de l'image : elles appartiennent au bord gauche.
+  amani: 'droite',
+  guetteur: 'droite',
   'horloger-zenith': 'droite',
   'meute-neiges': 'droite',
+  salem: 'droite',
   sonneur: 'droite',
+  yamina: 'droite',
 });
 
 /** Le côté vers lequel regarde la peinture d'un personnage, ou null (frontal). */
@@ -113,16 +120,18 @@ export function regardHistoire(id) {
 /**
  * Le plan du plateau : au plus deux figures, de gauche à droite. L'ordre du
  * récit (l'hôte puis celui qui parle) est conservé **sauf** quand il met les
- * deux regards du même bord : si l'une des deux figures regarde vers
- * l'extérieur, on échange les places et les deux se font face.
+ * deux regards du même bord : on échange alors les places. Une figure qui
+ * regarde encore vers l'extérieur est retournée (`miroir`), pour qu'aucune ne
+ * tourne le dos à son interlocuteur.
  */
 export function placerPlateauHistoire(ids = []) {
   const figures = [...new Set(ids)].slice(0, 2);
-  if (figures.length < 2) return figures;
+  if (figures.length < 2) return figures.map((id) => ({ id, miroir: false }));
   const exterieur = (id, bord) => (regardHistoire(id) === bord ? 1 : 0);
   const rangs = (gauche, droite) => exterieur(gauche, 'gauche') + exterieur(droite, 'droite');
   const [a, b] = figures;
-  return rangs(a, b) > rangs(b, a) ? [b, a] : figures;
+  const ordre = rangs(a, b) > rangs(b, a) ? [b, a] : [a, b];
+  return ordre.map((id, index) => ({ id, miroir: regardHistoire(id) === (index === 0 ? 'gauche' : 'droite') }));
 }
 
 /** Une seule révision de cache pour toute la famille des sprites du récit. */

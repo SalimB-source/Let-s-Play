@@ -71,7 +71,7 @@ export function StoryHeader({ onExit, onJournal, sonActif, onToggleSound }) {
  * **et** quand le fichier ne se décode pas : jamais de carré cassé, jamais de
  * fond de détourage visible dans la scène.
  */
-export function StoryStand({ personnageId, situation = null, cardArt }) {
+export function StoryStand({ personnageId, situation = null, cardArt, miroir = false }) {
   const personnage = personnageHistoire(personnageId);
   const stand = poseHistoire(personnageId, situation, BASE);
   const pose = situation && personnage.poses?.[situation] ? situation : null;
@@ -86,6 +86,7 @@ export function StoryStand({ personnageId, situation = null, cardArt }) {
   return (
     <img key={stand} className="rpg-narrative__stand-img" src={stand} alt=""
       data-personnage={personnageId} data-pose={pose ?? undefined}
+      data-miroir={miroir ? 'oui' : undefined}
       loading="eager" draggable="false" onError={() => setIllisible(true)} />
   );
 }
@@ -403,14 +404,14 @@ export default function RpgStoryScene({
           </div>
           <div className="rpg-narrative__fenetre" aria-hidden="true">
             <div className="rpg-narrative__plateau">
-              {plateauScene.map((id) => {
+              {plateauScene.map(({ id, miroir }) => {
                 const figurant = personnageHistoire(id);
                 const stand = standHistoire(id, BASE);
                 return (
                   <div key={id} data-personnage-stand={id}
                     className={`rpg-narrative__stand${id === standActif ? ' rpg-narrative__stand--actif' : ''}${stand ? ' rpg-narrative__stand--decoupe' : ''}`}
                     style={{ '--stand-couleur': figurant.couleur }}>
-                    <StoryStand personnageId={id} situation={situationPose} cardArt={cardArt} />
+                    <StoryStand personnageId={id} situation={situationPose} cardArt={cardArt} miroir={miroir} />
                   </div>
                 );
               })}

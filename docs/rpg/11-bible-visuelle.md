@@ -115,12 +115,21 @@ du halo, plume légère, WebP à fond transparent, 900 px de haut au plus).
 - Une nouvelle passe de détourage incrémente la révision `?v=` de
   `standHistoire()` : aucun cache ne peut resservir l'ancienne image.
 - **Le bord d'une figure suit son regard peint.** `REGARDS_PEINTS`
-  (`rpgStoryCast.js`) note les sprites qui ne sont pas frontaux ; `placerPlateauHistoire()`
-  place ceux qui regardent vers la gauche de l'image au bord **droit** du plan,
-  et inversement — deux figures tournées du même côté fixeraient sinon le même
-  bord de l'écran au lieu de se faire face. Une figure frontale n'a pas de
-  regard déclaré : elle garde l'ordre du récit (l'hôte à gauche, celui qui
-  parle à droite).
+  (`rpgStoryCast.js`) note les quinze sprites qui ne sont pas frontaux —
+  **vers la gauche** de leur peinture : `boualem`, `dernier-fennec`,
+  `devoreur`, `djinn-souk`, `feriel`, `marchand`, `nageuse`, `reine-etals` ;
+  **vers la droite** : `amani`, `guetteur`, `horloger-zenith`, `meute-neiges`,
+  `salem`, `sonneur`, `yamina`. Les autres sont frontaux et n'ont pas de regard
+  déclaré : ils gardent l'ordre du récit (l'hôte à gauche, celui qui parle à
+  droite).
+- **Le placement retourne, il ne réordonne pas tout.** `placerPlateauHistoire()`
+  rend `[{ id, miroir }]` : il échange les deux bords quand les regards peints
+  se tourneraient vers le **même** bord, et quand l'échange ne suffit pas —
+  deux figures peintes du même côté, par exemple Amaní et Yamina, toutes deux
+  tournées vers la droite — la seconde est **retournée** (`miroir: true`,
+  rendu par `[data-miroir="oui"]` en `scale: -1 1`, jamais `scaleX(-1)` dans le
+  `transform` : les images-clés de pose en sont propriétaires). Les deux
+  figures se font alors face ; aucune ne donne le dos au lecteur.
 
 ## Les poses selon la situation
 

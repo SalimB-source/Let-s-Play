@@ -361,6 +361,11 @@ export async function checkRpgStoryPoses(assert) {
     assert.match(sprite('salem').getAttribute('src'), /stand-salem\.webp/, 'en cours de scène, la pose de référence');
     assert.equal(sprite('salem').dataset.pose, undefined, 'hors situation, aucune variante déclarée');
     assert.equal(query('.rpg-narrative__plateau [data-pose]'), null, 'le plateau entier reste sur les poses de référence');
+    // Salem regarde vers la droite de sa peinture : à gauche, il fait face au
+    // Guetteur. Le Guetteur, lui, regarde aussi vers la droite — à droite du
+    // plan il tournerait le dos à Salem : il est retourné.
+    assert.equal(sprite('salem').dataset.miroir, undefined, 'Salem, à gauche, regarde vers le centre');
+    assert.equal(sprite('guetteur').dataset.miroir, 'oui', 'le Guetteur est retourné pour faire face');
 
     // 2. Dernier échange d'une scène d'avant-duel : on se met en garde.
     poserEtat({ type: 'scene', id: 'listes-1-avant', replique: dernier('listes-1-avant'), resume: false });
@@ -428,11 +433,47 @@ export async function checkRpgStoryPoses(assert) {
       { etagesVaincus: etatRegard.etages, scenesVues: etatRegard.recit.scenesVues, choix: etatRegard.recit.choix });
     await ouvrir();
     assert.deepEqual(plateau(), ['salem', 'feriel'], 'Fériel passe à droite pour faire face à Salem');
-    assert.deepEqual(placerPlateauHistoire(['feriel', 'salem']), ['salem', 'feriel']);
-    assert.deepEqual(placerPlateauHistoire(['salem', 'feriel']), ['salem', 'feriel'], 'déjà en face, le plan ne bouge plus');
-    assert.deepEqual(placerPlateauHistoire(['salem', 'guetteur']), ['salem', 'guetteur'], 'deux figures frontales gardent l’ordre du récit');
-    assert.deepEqual(placerPlateauHistoire(['boualem', 'sonneur']), ['sonneur', 'boualem'], 'le Sonneur regarde à droite : il passe à gauche');
-    assert.deepEqual(placerPlateauHistoire(['nageuse', 'salem']), ['salem', 'nageuse'], 'la Nageuse regarde à gauche : elle passe à droite');
+    assert.equal(sprite('feriel').dataset.miroir, undefined, 'Fériel, à droite, regarde vers le centre');
+    const noms = (plan) => plan.map((figure) => figure.id);
+    const retournes = (plan) => plan.filter((figure) => figure.miroir).map((figure) => figure.id);
+    assert.deepEqual(noms(placerPlateauHistoire(['feriel', 'salem'])), ['salem', 'feriel']);
+    assert.deepEqual(retournes(placerPlateauHistoire(['feriel', 'salem'])), [], 'deux regards opposés : personne n’est retourné');
+    assert.deepEqual(noms(placerPlateauHistoire(['salem', 'feriel'])), ['salem', 'feriel'], 'déjà en face, le plan ne bouge plus');
+    // Deux figures tournées du même côté : l'échange ne suffit pas, la figure
+    // restée du côté extérieur est retournée d'un miroir.
+    assert.deepEqual(noms(placerPlateauHistoire(['salem', 'guetteur'])), ['salem', 'guetteur']);
+    assert.deepEqual(retournes(placerPlateauHistoire(['salem', 'guetteur'])), ['guetteur']);
+    assert.deepEqual(noms(placerPlateauHistoire(['marchand', 'feriel'])), ['marchand', 'feriel']);
+    assert.deepEqual(retournes(placerPlateauHistoire(['marchand', 'feriel'])), ['marchand']);
+    assert.deepEqual(noms(placerPlateauHistoire(['amani', 'yamina'])), ['amani', 'yamina'], 'deux regards du même bord : l’ordre du récit reste');
+    assert.deepEqual(retournes(placerPlateauHistoire(['amani', 'yamina'])), ['yamina'], 'Yamina, à droite, est retournée vers le centre');
+    assert.deepEqual(noms(placerPlateauHistoire(['boualem', 'sonneur'])), ['sonneur', 'boualem'], 'le Sonneur regarde à droite : il passe à gauche');
+    assert.deepEqual(noms(placerPlateauHistoire(['nageuse', 'salem'])), ['salem', 'nageuse'], 'la Nageuse regarde à gauche : elle passe à droite');
+    assert.deepEqual(placerPlateauHistoire(['scribe']), [{ id: 'scribe', miroir: false }], 'une figure seule n’est pas retournée');
+
+    // 8. Le livre des actes : les actes atteints sont les onglets du livre, et
+    //    le clic ouvre leur double page — le récit à gauche, les paliers à
+    //    droite. La feuille se tourne, aucun acte à venir n'a d'onglet.
+    const etatLivre = avancerJusqua('souk-2-avant');
+    poserEtat({ type: 'scene', id: 'souk-2-avant', replique: 0, resume: false },
+      { etagesVaincus: etatLivre.etages, scenesVues: etatLivre.recit.scenesVues, choix: etatLivre.recit.choix });
+    if (root) await act(async () => root.unmount());
+    root = createRoot(container);
+    await act(async () => root.render(<RpgDuelPage />));
+    await act(async () => [...container.querySelectorAll('.rpg-mode-menu__switch button')]
+      .find((b) => b.textContent.includes('Histoire')).click());
+    assert.ok(query('[data-campaign-livre]'), 'les actes sont montés en livre');
+    assert.equal(container.querySelectorAll('[data-campaign-act]').length, 2, 'le livre n’a que les actes atteints');
+    assert.equal(query('[data-campaign-page]').dataset.campaignPage, 'acte-2', 'le livre s’ouvre sur l’acte en cours');
+    assert.equal(query('.rpg-campaign__page-titre').textContent, 'Le prix d’un nom');
+    assert.equal(query('[data-campaign-act="acte-2"] .rpg-campaign__act-btn').getAttribute('aria-pressed'), 'true');
+    assert.equal(query('[data-campaign-act="acte-3"]'), null, 'aucun onglet pour l’acte non atteint');
+    await act(async () => query('[data-campaign-act="acte-1"] .rpg-campaign__act-btn').click());
+    assert.ok(query('[data-campaign-livre]').className.includes('is-tournee'), 'la feuille se tourne');
+    assert.equal(query('[data-campaign-page]').dataset.campaignPage, 'acte-1', 'le clic ouvre la page de l’acte I');
+    assert.equal(query('.rpg-campaign__page-titre').textContent, 'Les absents');
+    assert.equal(query('[data-campaign-act="acte-1"] .rpg-campaign__act-btn').getAttribute('aria-pressed'), 'true');
+    assert.equal(query('[data-campaign-act="acte-2"] .rpg-campaign__act-btn').getAttribute('aria-pressed'), 'false');
   } finally {
     if (root) await act(async () => root.unmount());
     container.remove();
