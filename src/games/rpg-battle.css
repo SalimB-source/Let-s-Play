@@ -3734,20 +3734,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hand__stat--atk { background: rgba(114, 47, 26, .9); }
 .rpg-hand__stat--def { background: rgba(34, 73, 91, .92); }
 
-/* Le chiffre d'un effet de sort, posé sur la face comme les statistiques d'une
-   créature : « -2/-2 » pour la Lame de mer, « +1/+1 » pour un renfort. Le malus
-   prend la teinte du débuff, le bonus celle du renfort — sans quoi les deux
-   se liraient comme les statistiques d'un corps qui n'existe pas encore. */
-.rpg-hand__stats--modif.is-malus .rpg-hand__stat {
-  border-color: rgba(120, 30, 30, .9);
-  background: rgba(96, 26, 34, .92);
-  color: #ffd9d2;
-}
-.rpg-hand__stats--modif.is-bonus .rpg-hand__stat {
-  border-color: rgba(24, 94, 66, .9);
-  background: rgba(20, 84, 60, .92);
-  color: #d8ffe9;
-}
+/* Une magie ne porte plus de plaque de statistiques sur sa face en main —
+   ni ses propres chiffres (-2/-2), ni rien d'autre : le nombre vit dans la
+   règle imprimée et l'aperçu au survol. Seules les créatures et les armes
+   gardent leurs losanges. */
 
 /* Indicateur compact du tour, placé dans la barre d'actions plutôt qu'en séparation centrale. */
 .rpg-turn-indicator {
