@@ -5,7 +5,7 @@ import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { cardById } from '../src/games/rpgCards.js';
 import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY } from '../src/games/rpgStory.js';
 import { RPG_STORY_DECKS, RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
-import { RPG_STORY_CAMPAIGN_FLOORS, acteSuivantHistoire, questionChoix, sceneHistoire } from '../src/games/rpgStoryScenes.js';
+import { RPG_STORY_ACTES, RPG_STORY_CAMPAIGN_FLOORS, acteSuivantHistoire, questionChoix, sceneHistoire, texteEpilogueActe } from '../src/games/rpgStoryScenes.js';
 import { recitHistoireVide, transitionRecitHistoire } from '../src/games/rpgStoryFlow.js';
 import { collectionJoueur, chargerCollectionDistante, revelationsDepuisEtages } from '../src/games/rpgCollection.js';
 import { RPG_PV_JOUEUR } from '../src/games/rpgDuel.js';
@@ -193,8 +193,17 @@ export async function checkRpgStoryNarrative(assert) {
 
     const cartesAvantEffacement = collectionJoueur();
     await click(query('.rpg-narrative__back'));
-    assert.equal(container.querySelectorAll('[data-campaign-act]').length, 5, 'l’affiche présente les cinq actes de la campagne');
+    // La campagne se découvre : à la fin de l'Acte I, l'affiche ne montre que
+    // les actes atteints — les quatre suivants n'ont pas encore de titre.
+    assert.equal(container.querySelectorAll('[data-campaign-act]').length, 1, 'l’affiche ne montre que les actes atteints');
+    assert.equal(query('[data-campaign-act="acte-2"]'), null, 'l’Acte II n’est pas encore annoncé');
     assert.equal(query('[data-campaign-act="acte-1"]')?.dataset.actStatus, 'termine');
+    // Un acte atteint doit pouvoir se présenter : sans ces deux champs, l'affiche
+    // affichait « undefined · undefined. » et l'épilogue « Acte II terminé · undefined ».
+    for (const acte of RPG_STORY_ACTES.filter((item) => item.id !== 'acte-1')) {
+      assert.ok(acte.resume && acte.lieu, `l’acte ${acte.romain} a un résumé et un lieu`);
+      assert.doesNotMatch(texteEpilogueActe(acte.id, {})?.lieu ?? '', /undefined/, `l’épilogue de l’acte ${acte.romain} nomme son lieu`);
+    }
     await click(bouton('Effacer la progression'));
     await click(bouton('Annuler'));
     assert.equal(lire().recit.curseur.type, 'fin', 'annuler l’effacement ne change rien');

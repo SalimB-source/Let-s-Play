@@ -482,6 +482,9 @@
 .rpg-campaign__cast img { flex: 0 0 38px; width: 38px; height: 46px; margin-right: 7px; border: 1px solid #887751; object-fit: cover; }
 .rpg-campaign__cast > span { max-width: 25ch; margin-left: 7px; color: #d7cbb6; font: 500 10px/1.7 var(--mono, monospace); }
 .rpg-campaign__acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 6px; list-style: none; padding: 0; margin: 0 0 10px; }
+/* Un seul acte atteint : sa pastille garde la taille d'une pastille au lieu
+   de s'étirer sur toute la colonne de l'affiche. */
+.rpg-campaign__acts:has(> .rpg-campaign__act:only-child) { grid-template-columns: minmax(105px, 240px); }
 .rpg-campaign__act { display: flex; border: 1px solid rgba(196, 173, 126, .2); border-radius: 3px; background: rgba(11, 18, 25, .6); min-width: 0; }
 .rpg-campaign__act.is-termine { border-color: rgba(146, 176, 155, .45); background: rgba(42, 68, 54, .22); }
 .rpg-campaign__act.is-current { border-color: #dfc797; background: rgba(217, 191, 136, .16); }

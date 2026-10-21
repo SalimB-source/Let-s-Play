@@ -659,7 +659,7 @@ export function texteEpilogueActe(acteId, choix = {}) {
   const acte = acteHistoire(acteId) ?? acteHistoire('acte-1');
   if (acteId === 'acte-2') {
     return {
-      lieu: `Acte II terminé · ${acte.tourNom}`,
+      lieu: `Acte II terminé · ${acte.lieu}`,
       titre: acte.epilogueTitre,
       chapeau: acte.epilogueLead,
       conclusion: choix['dette-souk'] === 'denoncer'
@@ -670,7 +670,7 @@ export function texteEpilogueActe(acteId, choix = {}) {
   }
   if (acteId === 'acte-3') {
     return {
-      lieu: `Acte III terminé · ${acte.tourNom}`,
+      lieu: `Acte III terminé · ${acte.lieu}`,
       titre: acte.epilogueTitre,
       chapeau: acte.epilogueLead,
       conclusion: choix['aveu-boualem'] === 'exiger-temoignage'
@@ -681,7 +681,7 @@ export function texteEpilogueActe(acteId, choix = {}) {
   }
   if (acteId === 'acte-4') {
     return {
-      lieu: `Acte IV terminé · ${acte.tourNom}`,
+      lieu: `Acte IV terminé · ${acte.lieu}`,
       titre: acte.epilogueTitre,
       chapeau: acte.epilogueLead,
       conclusion: choix['serment-archives'] === 'sceller'

@@ -9,8 +9,13 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
   const [acteApercuId, setActeApercuId] = useState(null);
   const resume = resumeRecitHistoire(recit);
   const actes = resumeActesHistoire(recit);
-  const acteAfficheId = acteApercuId ?? resume.acteId;
-  const acteAffiche = acteHistoire(acteAfficheId) ?? resume.acte;
+  // La campagne se découvre : seuls les actes atteints figurent sur l'affiche.
+  // Tant que la première scène n'est pas ouverte, c'est l'Acte I — celui qui
+  // commence — et chaque acte suivant apparaît quand le récit y entre.
+  // Les actes à venir ne sont plus annoncés par leur titre : ils se révèlent.
+  const actesAtteints = actes.slice(0, Math.max(1, actes.findIndex((acte) => acte.id === resume.acteId) + 1));
+  const acteApercu = actesAtteints.some((acte) => acte.id === acteApercuId) ? acteApercuId : null;
+  const acteAffiche = acteHistoire(acteApercu ?? resume.acteId) ?? resume.acte;
   const etapes = etapesRecitHistoire(recit, etagesVaincus, acteAffiche.id);
   const registres = registresDebloques(recit);
   const actions = { reprendre: onContinue, journal: onJournal, recommencer: onRestart };
@@ -44,13 +49,13 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
         <p className="rpg-campaign__pitch">Ils sont douze. La Liste n’en compte aucun.</p>
         <p className="rpg-campaign__description">{acteAffiche.id === 'acte-1'
           ? 'Salem a sauvé des habitants que la Chambre a déjà effacés. Remontez jusqu’au Grand Horloger. Faites compter leurs noms.'
-          : `${acteAffiche.accroche} · ${acteAffiche.tourNom}.`}</p>
+          : acteAffiche.resume}</p>
         <div className="rpg-campaign__cast" aria-label="Personnages de l’acte">
           {figuresActe.map((id) => <StoryPortrait key={id} personnageId={id} cardArt={cardArt} />)}
           <span>20 duels · 5 actes · vos choix · aucun chronomètre</span>
         </div>
-        <ol className="rpg-campaign__acts" aria-label="Actes de la campagne">
-          {actes.map((acte) => (
+        <ol className="rpg-campaign__acts" aria-label="Actes atteints de la campagne">
+          {actesAtteints.map((acte) => (
             <li
               key={acte.id}
               className={`rpg-campaign__act is-${acte.statut}${acte.id === acteAffiche.id ? ' is-current' : ''}`}
