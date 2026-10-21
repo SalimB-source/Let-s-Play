@@ -205,7 +205,7 @@ export const RPG_RECETTES_DECKS = {
    * Les Lettres de Marque (fiche : `docs/rpg/18-deck-les-lettres-de-marque.md`)
    * — le set Piraterie hybride Sable + Eau de l'âge de la course. La signature
    * pose l'équipage de la Régence : l'Abordage prend (Raïs, Cotre, Lettre de
-   * marque ; le Grand Débarquement arme les cales pleines), la Rançon rend (Négociant), la Cargaison
+   * marque ; le Grand Débarquement arme les cales pleines), la prise paie (Négociant), la Cargaison
    * assure (Galion) et le Brûlot embrase la créature qui le détruit. Le
    * Hollandais volant — vaisseau fantôme au Coup rapide et à l'Abordage 3 —
    * hante la flotte en second grand voilier, aux côtés du Galion. L'Eau qui

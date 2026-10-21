@@ -4,10 +4,11 @@
  * Inspiration : l’âge de la course (XVIe–XVIIe) — convois espagnols et
  * portugais, corsaires anglais et barbaresques, et la maison algérienne de la
  * Régence d’Alger. Identité de jeu : l’**Abordage** (prendre sans tuer), la
- * **Cale** (détenir, face visible), la **Rançon** (racheter au prix imprimé)
- * et la **Cargaison** (le convoi assuré). Jamais de dégâts nus (règle de
- * direction §11 du doc 17) : la course prend, elle ne brûle pas — sauf le
- * Brûlot, la seule flamme du set, qui embrase la créature qui le détruit.
+ * **Cale** (détenir, face visible — on ne rend une prise qu’en faisant quitter
+ * la table au capteur) et la **Cargaison** (le convoi assuré). Jamais de
+ * dégâts nus (règle de direction §11 du doc 17) : la course prend, elle ne
+ * brûle pas — sauf le Brûlot, la seule flamme du set, qui embrase la créature
+ * qui le détruit.
  *
  * Le moteur lit quatre nouveaux marqueurs de fiche :
  *   - `abordage: N` — QUAND la créature arrive en jeu, la créature adverse
@@ -16,8 +17,8 @@
  *     le barème « coût du capteur − 1 » ;
  *   - `cargaison: N` — quand cette créature meurt **ou** est prise en cale,
  *     son propriétaire pioche N cartes ;
- *   - `declencheRancon: 1` — quand une créature est rançonnée, le contrôleur
- *     de celle-ci pioche une carte (le Négociant) ;
+ *   - `declenchePrise: 1` — quand une créature est prise en cale, le
+ *     contrôleur de celle-ci pioche une carte (le Négociant) ;
  *   - `destruction: { type: 'degats-tueur', amount: N }` — morte en combat, la
  *     créature embrase son tueur : N dégâts à l’une des créatures qui l’ont
  *     détruite et qui a survécu à l’échange (Le Brûlot — la mort par magie ne
@@ -104,7 +105,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     rarity: 'commune',
     abordage: 1,
     typeLine: 'Créature — Humain · Raïs',
-    text: 'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale (face visible) : elle ne déclenche rien. Rançon — son propriétaire peut la reprendre en main en payant son coût en manas, à tout moment où il pourrait jouer une Magie Rapide. La cale s’ouvre quand le Raïs quitte la table.',
+    text: 'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale (face visible) : elle ne déclenche rien. La cale s’ouvre quand le Raïs quitte la table : détruit, il rend la détenue EN JEU, avec l’attaque et la défense qu’elle avait à la prise et sans effet d’arrivée ; exilé ou renvoyé en main, il la rend en main.',
     flavor: 'Il ne coule jamais ce qu’il peut vendre.',
   }),
   carte({
@@ -179,14 +180,14 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
   }),
   carte({
     id: 'negociant-des-ranscons',
-    name: 'Négociant des rançons',
+    name: 'Négociant des prises',
     cost: 3,
     atk: 2,
     def: 3,
     rarity: 'rare',
-    declencheRancon: 1,
+    declenchePrise: 1,
     typeLine: 'Créature — Humain · Négociant',
-    text: 'Chaque fois qu’une créature est rançonnée, piochez une carte.',
+    text: 'Chaque fois qu’une créature est prise en cale, piochez une carte.',
     flavor: 'Il ne vend pas les captifs. Il vend la signature qui les rend.',
   }),
   carte({

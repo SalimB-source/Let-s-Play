@@ -46,7 +46,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-defausse" viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="14" rx="1.5"/><path d="M17 8v8m0 0-3-3m3 3 3-3"/><path d="M7 19h10"/></symbol>
   <symbol id="i-paquet" viewBox="0 0 24 24"><rect x="5" y="3" width="12" height="9" rx="1.5"/><path d="M8 6.5h6M8 9h4"/><path d="M19 13v6m0 0-2.5-2.5M19 19l2.5-2.5"/></symbol>
   <symbol id="i-visages" viewBox="0 0 24 24"><path d="M11 3.5C8 3.5 5.8 5.6 5.8 8.2c0 2 1.4 3.3 1.4 3.3s-1.7 1.6-1.7 4.3c0 2.6 2.4 4.7 5.5 4.7"/><path d="M13 3.5c3 0 5.2 2.1 5.2 4.7 0 2-1.4 3.3-1.4 3.3s1.7 1.6 1.7 4.3c0 2.6-2.4 4.7-5.5 4.7"/><path d="M8.2 8.2h1.6M14.2 8.2h1.6"/></symbol>
-  <symbol id="i-abordage" viewBox="0 0 24 24"><path d="M12 3.2c-3.8 0-6.6 2.9-6.6 6.6 0 1.8.7 2.9 1.8 3.7v2.4h9.6v-2.4c1.1-.8 1.8-1.9 1.8-3.7 0-3.7-2.8-6.6-6.6-6.6z"/><path d="M8.8 18.4v1.7a1.5 1.5 0 0 0 1.5 1.5h3.4a1.5 1.5 0 0 0 1.5-1.5v-1.7"/><path d="M12 18.4v3.2"/><circle cx="9.4" cy="10.2" r="1.5"/><circle cx="14.6" cy="10.2" r="1.5"/><path d="m12 12.2-1 2h2z"/><path d="M3.6 20.4 8 16"/><path d="M3.9 16.3 7.7 20.1"/><path d="M20.4 3.6 16 8"/><path d="M20.1 7.7 16.3 3.9"/></symbol>
+  <symbol id="i-abordage" viewBox="0 0 24 24"><circle cx="12" cy="9.6" r="6.5"/><path d="M9.4 15.9v2.4c0 .9.7 1.6 1.6 1.6h2c.9 0 1.6-.7 1.6-1.6v-2.4"/><circle cx="9.5" cy="9.4" r="1.5"/><circle cx="14.5" cy="9.4" r="1.5"/><path d="M3.1 20.9 8.6 15.4"/><path d="M2.29 20.09 3.91 21.71"/><path d="M7.79 14.59 9.41 16.21"/><path d="M15.4 15.4 20.9 20.9"/><path d="M16.21 14.59 14.59 16.21"/><path d="M21.71 20.09 20.09 21.71"/><path d="M3.1 3.1 8.6 8.6"/><path d="M3.91 2.29 2.29 3.91"/><path d="M9.41 7.79 7.79 9.41"/><path d="M15.4 8.6 20.9 3.1"/><path d="M14.59 7.79 16.21 9.41"/><path d="M20.09 2.29 21.71 3.91"/></symbol>
   <symbol id="i-cargaison" viewBox="0 0 24 24"><path d="M6.5 9V7.5a5.5 5.5 0 0 1 11 0V9"/><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M9 9v11M15 9v11"/><path d="M12 13v3"/></symbol>
 </svg>`.trim();
 
@@ -84,7 +84,7 @@ export const EFFET_ICONE = {
   abordage: 'i-abordage',
   visages: 'i-visages',
   cargaison: 'i-cargaison',
-  rancon: 'i-abordage',
+  prise: 'i-abordage',
   cale: 'i-cargaison',
   furie: 'i-furie',
   esquive: 'i-esquive',
@@ -180,7 +180,7 @@ export const EFFET_LIBELLES = {
   abordage: 'Abordage',
   visages: 'Deux Visages',
   cargaison: 'Cargaison',
-  rancon: 'Rançon',
+  prise: 'Prise',
   cale: 'Cale',
   furie: 'Furie',
   furie: 'Furie',
@@ -277,7 +277,7 @@ export function pastillesPourCarte(carte) {
   if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
   // Les Lettres de Marque : l'Abordage imprimé (créature au seuil « coût − 1 »,
   // Grappin à l'attachement — la pastille porte le seuil), la Cargaison du
-  // convoi, et le déclencheur de rançon du Négociant.
+  // convoi, et le déclencheur de prise du Négociant.
   if (carte.abordage) ajouter('abordage', 'Abordage', Number.isFinite(carte.abordage) ? carte.abordage : null);
   // Le Grappin dynamique : son seuil se lit sur le porteur, pas sur la fiche —
   // la pastille nomme le mot-clé sans chiffre.
@@ -285,7 +285,7 @@ export function pastillesPourCarte(carte) {
   // Les Deux Visages (La Barbe Noire) : le mot-clé du dédoublement.
   if (carte.alternance) ajouter('visages', 'Deux Visages');
   if (carte.cargaison) ajouter('cargaison', 'Cargaison', Number(carte.cargaison) || null);
-  if (carte.declencheRancon) ajouter('rancon', 'Rançon', Number(carte.declencheRancon) || null);
+  if (carte.declenchePrise) ajouter('prise', 'Prise', Number(carte.declenchePrise) || null);
   // Une arme peut accorder un bouclier à son porteur (la Hache de la
   // banquise) : la pastille se lit sur la fiche de l'arme comme sur celle
   // d'une créature qui arrive avec un bouclier.
@@ -364,7 +364,7 @@ const MOTIFS_LIGNE = [
   ['abordage', /\babordage\b/iu],
   ['visages', /\bdeux visages\b/iu],
   ['cargaison', /\bcargaison\b/iu],
-  ['rancon', /\bran[çc]ons?\b/iu],
+  ['prise', /\bprises? en cale\b/iu],
   ['cale', /\bcale\b/iu],
   ['furie', /\bfurie\b/iu],
   ['esquive', /\besquive/iu],
@@ -515,11 +515,11 @@ export const EFFET_DEFINITIONS = {
   banniere: 'Tant qu’elle est en jeu, les créatures de sa tribu gagnent un bonus.',
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`,
   butin: 'Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
-  abordage: (n) => `Quand cette créature arrive en jeu, la créature adverse ciblée de coût ${n ?? 'N'} ou moins est prise en sa cale — détenue face visible, une seule place — au lieu d’être détruite : elle ne déclenche rien. Son propriétaire peut la racheter en main au prix imprimé, et la cale s’ouvre quand le capteur quitte la table.`,
+  abordage: (n) => `Quand cette créature arrive en jeu, la créature adverse ciblée de coût ${n ?? 'N'} ou moins est prise en sa cale — détenue face visible, une seule place — au lieu d’être détruite : elle ne déclenche rien. Son propriétaire peut la racheter en main au prix imprimé ; si le capteur meurt, elle revient en jeu avec l’attaque et la défense qu’elle avait à la prise, sans effet d’arrivée — renvoyé ou exilé, il la rend en main.`,
   visages: 'Au début de chacun des tours de son camp, cette créature change de visage : la légende frappe, l’homme tient le rempart. Ses blessures la suivent d’un visage à l’autre, et changer de visage ne la tue jamais.',
   cargaison: (n) => `Quand cette créature meurt ou est prise en cale, son propriétaire pioche ${n ?? 'N'} carte${n > 1 ? 's' : ''} : le convoi est assuré.`,
-  rancon: (n) => `Chaque fois qu’une créature est rançonnée, vous piochez ${n ?? 1} carte${n > 1 ? 's' : ''} : la commission du négociant.`,
-  cale: 'La créature détenue par ce capteur. Son propriétaire peut la rançonner au prix imprimé, en manas libres ; la cale s’ouvre quand le capteur quitte la table.',
+  prise: (n) => `Chaque fois qu’une créature est prise en cale, vous piochez ${n ?? 1} carte${n > 1 ? 's' : ''} : la commission du négociant.`,
+  cale: 'La créature détenue par ce capteur. Elle ne se rachète pas : il faut détruire le capteur (elle revient alors en jeu avec ses statistiques de prise, sans effet d’arrivée), ou l’exiler, ou le renvoyer en main (elle revient en main).',
   tribut: (n) => `Quand cette créature touche le sorcier adverse, il perd ${n ?? 'N'} PV et vous en gagnez ${n ?? 'N'}.`,
   transfert: (n) => `Le sorcier adverse perd ${n ?? 'X'} PV et vous en gagnez ${n ?? 'X'}.`,
   'defausse-adverse': 'L’adversaire défausse une carte : il en choisit une, sa moins utile.',

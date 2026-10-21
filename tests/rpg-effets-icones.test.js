@@ -63,24 +63,38 @@ test('le sprite porte les 30 symboles validés, un par effet', () => {
     'le nasal central du casque viking est dans le sprite');
   assert.equal(furie.includes('M7 4c2.6 4.4 3.2 10.6 1.2 16'), false,
     'l’ancien dessin de Furie a disparu');
-  // L'Abordage : un crâne de mort pirate — boîte crânienne, deux orbites,
-  // mâchoire dentelée et os croisés aux deux coins, pas une ancre.
+  // L'Abordage : un CRÂNE SIMPLE et deux OS qui forment un X derrière lui.
+  // Le crâne est une tête ronde (un cercle), deux orbites et une mâchoire
+  // courte ; pas de nez, pas de dents, pas d'os aux quatre coins.
   const abordage = EFFETS_SPRITE.match(/<symbol id="i-abordage"[^>]*>(.*?)<\/symbol>/)?.[1] ?? '';
-  assert.ok(abordage.includes('M12 3.2c-3.8 0-6.6 2.9-6.6 6.6'),
-    'l’Abordage dessine une boîte crânienne');
-  assert.equal((abordage.match(/<circle/g) ?? []).length, 2,
-    'le crâne a ses deux orbites');
-  assert.ok(abordage.includes('M8.8 18.4v1.7a1.5 1.5 0 0 0 1.5 1.5h3.4'),
-    'la mâchoire du crâne est dessinée sous la face');
-  assert.ok(abordage.includes('M12 18.4v3.2'), 'la mâchoire est fendue en deux dents');
-  assert.ok(abordage.includes('M3.6 20.4 8 16') && abordage.includes('M20.4 3.6 16 8'),
-    'les deux os croisés du pavillon pirate entourent le crâne');
-  assert.equal(abordage.includes('M12 3v10.5'), false,
-    'l’ancienne ancre de l’Abordage a disparu');
-  assert.equal(abordage.includes('<path d="M8.5 6h7"/>'), false,
-    'la vergue de l’ancre ne reste pas dans le crâne');
-  assert.equal(EFFET_ICONE.rancon, 'i-abordage',
-    'la Rançon garde le crâne du pirate : c’est la même prise, payée');
+  assert.ok(abordage.includes('<circle cx="12" cy="9.6" r="6.5"/>'),
+    'le crâne de l’Abordage est une tête ronde et simple');
+  assert.equal((abordage.match(/<circle/g) ?? []).length, 3,
+    'deux orbites seulement avec la tête — rien de plus');
+  assert.ok(abordage.includes('<circle cx="9.5" cy="9.4" r="1.5"/>')
+    && abordage.includes('<circle cx="14.5" cy="9.4" r="1.5"/>'),
+  'les deux orbites du crâne sont là');
+  assert.ok(abordage.includes('M9.4 15.9v2.4c0 .9.7 1.6 1.6 1.6h2c.9 0 1.6-.7 1.6-1.6v-2.4'),
+    'la mâchoire courte est dessinée sous la tête');
+  // Le X : quatre bras qui partent des coins ; chaque bout porte son petit
+  // renflement d'os, perpendiculaire à la tige.
+  assert.ok(abordage.includes('M3.1 20.9 8.6 15.4') && abordage.includes('M15.4 15.4 20.9 20.9'),
+    'les deux os croisés forment un X, du bas-gauche au haut-droit et retour');
+  assert.ok(abordage.includes('M3.1 3.1 8.6 8.6') && abordage.includes('M15.4 8.6 20.9 3.1'),
+    'les deux autres bras du X montent vers les coins hauts');
+  // 13 tracés : la mâchoire, les quatre tiges du X et les huit bouts d'os
+  // (un renflement perpendiculaire à chaque extrémité).
+  assert.equal((abordage.match(/<path/g) ?? []).length, 1 + 4 + 8,
+    'la mâchoire, les quatre bras du X et un bout d’os à chaque extrémité');
+  assert.equal((abordage.match(/<path d="M3\.1 20\.9/g) ?? []).length, 1,
+    'chaque bras n’a qu’une tige');
+  assert.equal(abordage.includes('m12 12.2'), false, 'plus de nez en goutte');
+  assert.equal(abordage.includes('m12 13.4'), false, 'l’ancien nez du crâne détaillé a disparu');
+  assert.equal(abordage.includes('M12 3v10.5'), false, 'l’ancre d’origine ne revient pas');
+  assert.equal(abordage.includes('M12 18.4v3.2'), false,
+    'la mâchoire dentelée du crâne précédent a disparu');
+  assert.equal(EFFET_ICONE.prise, 'i-abordage',
+    'la Prise garde le crâne du pirate : la cale et l’Abordage sont la même prise');
 });
 
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
