@@ -10551,7 +10551,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    sa propre largeur de colonne (Souk 1220, Histoire 1180, Paramètres 980). */
 .rpg-mode-menu--histoire .rpg-story,
 .rpg-mode-menu--tours .rpg-story,
-.rpg-mode-menu--decks .rpg-deck-catalog,
 .rpg-mode-menu--catalogue .rpg-card-catalogue,
 .rpg-mode-menu--parametres .rpg-settings,
 .rpg-mode-menu--souk .rpg-souk,
@@ -10561,6 +10560,29 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     clamp(14px, 2.1vw, 26px)
     clamp(14px, 3.8vw, 56px)
     clamp(24px, 4.2vh, 46px);
+}
+/* Decks : pleine largeur — le rail s’étale sur 100% de la page.
+   Sans cette règle, le rail restait en 0.78fr à gauche avec un vide à droite. */
+.rpg-mode-menu--decks .rpg-deck-catalog {
+  width: 100%;
+  max-width: none;
+  /* Gouttière verticale gardée, mais horizontale supprimée pour le plein large */
+  padding:
+    clamp(14px, 2.1vw, 26px)
+    0
+    clamp(24px, 4.2vh, 46px);
+}
+.rpg-mode-menu--decks .rpg-deck-catalog--closed {
+  width: 100%;
+  max-width: none;
+}
+/* Le rail devient la section pleine largeur : sans coins arrondis latéraux,
+   il touche les bords gauche/droite de la fenêtre. */
+.rpg-mode-menu--decks .rpg-deck-catalog--closed .rpg-deck-catalog__rail {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  width: 100%;
 }
 /* Dans les onglets, la barre de modes dit déjà où l'on est : le « ← Menu »
    du Souk n'y ramenait qu'à l'onglet voisin et poussait le titre d'une
