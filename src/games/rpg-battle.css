@@ -10699,3 +10699,49 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 460px) {
   .rpg-card-catalogue__filters label { flex: 1 1 100%; }
 }
+
+/* Abordage : lancer les maillons, accrocher, puis ramener la prise en cale. */
+.rpg-abordage-chaine {
+  position: absolute;
+  height: 16px;
+  margin-top: -8px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 46;
+  transform-origin: 0 50%;
+  clip-path: inset(-8px 100% -8px -8px);
+  animation: rpg-abordage-chaine 1400ms linear forwards;
+  filter: drop-shadow(0 2px 2px #000b);
+}
+.rpg-abordage-chaine line { fill: none; stroke-linecap: round; }
+.rpg-abordage-chaine__ombre { stroke: #302b24; stroke-width: 8; }
+.rpg-abordage-chaine__maillons {
+  stroke: #dcc496;
+  stroke-width: 5;
+  stroke-dasharray: 7 5;
+}
+.rpg-card-destruction-fx.is-abordage {
+  animation: rpg-abordage-prise 1400ms ease-in-out forwards;
+}
+.rpg-card-destruction-fx.is-abordage::before { display: none; }
+@keyframes rpg-abordage-chaine {
+  0% { clip-path: inset(-8px 100% -8px -8px); opacity: 1; }
+  28%, 40% { clip-path: inset(-8px 0% -8px -8px); opacity: 1; }
+  88% { clip-path: inset(-8px 100% -8px -8px); opacity: 1; }
+  100% { clip-path: inset(-8px 100% -8px -8px); opacity: 0; }
+}
+@keyframes rpg-abordage-prise {
+  0%, 38% { transform: rotate(var(--rpg-fx-rotation)); opacity: 1; }
+  88% {
+    transform: translate(var(--rpg-abordage-x), var(--rpg-abordage-y)) scale(.25) rotate(var(--rpg-fx-rotation));
+    opacity: .85;
+  }
+  100% {
+    transform: translate(var(--rpg-abordage-x), var(--rpg-abordage-y)) scale(.05);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-abordage-chaine { display: none; }
+  .rpg-card-destruction-fx.is-abordage { animation: none; opacity: 0; }
+}
