@@ -10,6 +10,7 @@ import {
   rpgEstProtegee,
   rpgJouerCreature,
   rpgLancerAttaque,
+  rpgLancerMagie,
   rpgNouveauDuel,
   rpgSorcierAnnonceSuivante,
   rpgSorcierResoudreAnnonce,
@@ -709,4 +710,179 @@ test('une table protégée contre sa couleur n’empêche pas une créature d’
   assert.equal(choix?.carteId, 'cavalier-amazigh-du-desert',
     'le Cavalier entre en jeu sans cible plutôt que de rester en main');
   assert.equal(choix.cibleId ?? null, null, 'aucune créature protégée n’est désignée');
+});
+
+// ── Les autres mécaniques du moteur dans la tête du sorcier ─────────────────
+
+test('le venin anti-blocage retire le bloqueur de la liste de l’IA', () => {
+  // La Vipère de verre et la lune de Bakunawa laissent la créature en vie mais
+  // lui interdisent de bloquer (`empecheBlocageToursRestants`). La proposer
+  // quand même fait refuser l’attaque entière par le moteur (`raison:
+  // 'bloqueur'`) : le joueur perdait son tour de frappe.
+  const duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  chien.ready = true;
+  donner(duel, 'sorcier', 'colosse-de-sel');
+  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  colosse.ready = false;
+  colosse.empecheBlocageToursRestants = 2; // mordu, la défense s'éteint
+
+  // Un 6/6 tuerait le Chien sans mourir : sans l’interdit, l’IA le poserait.
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [chien.id]), {},
+    'un bloqueur empoisonné n’est jamais proposé');
+  const res = rpgLancerAttaque(duel, 'joueur', [chien.id],
+    rpgChoisirBloqueurs(duel, 'joueur', [chien.id]));
+  assert.equal(res.ok, true, 'l’attaque reste légale — le tour de frappe n’est pas perdu');
+  assert.equal(duel.sorcier.pv, RPG_PV_JOUEUR - 2, 'les 2 dégâts passent');
+
+  // Le venin expire : la même créature bloque de nouveau.
+  colosse.empecheBlocageToursRestants = 0;
+  duel.tour = 'joueur';
+  chien.ready = true;
+  chien.attaquee = false;
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [chien.id]),
+    { [chien.id]: [colosse.id] }, 'sans venin, le 6/6 bloque à nouveau');
+});
+
+test('le Grand Voile blanc : l’IA n’attaque pas pour rien', () => {
+  const duel = duelNu();
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'ifrit-des-ergs');
+  const ifrit = rpgJouerCreature(duel, 'sorcier', 'ifrit-des-ergs').entite;
+  ifrit.ready = true;
+  duel.brouillardCombat = true; // « aucune créature n’inflige de dégâts de combat ce tour »
+
+  assert.deepEqual(rpgChoisirAttaquants(duel, 'sorcier'), [],
+    'aucun dégât de combat ne passerait : l’Ifrit reste prêt');
+  duel.brouillardCombat = false;
+  assert.deepEqual(rpgChoisirAttaquants(duel, 'sorcier'), [ifrit.id],
+    'le voile levé, la frappe repart');
+});
+
+test('Tenacité : l’IA sait que la créature survit une fois à 1 PV', () => {
+  const tenace = {
+    id: 'tenace', carteId: 'seigneur-des-machoires', name: 'Seigneur des mâchoires',
+    atk: 6, def: 6, pv: 4, pvMax: 6, bouclier: 0, esquive: 0, tenaciteDisponible: true,
+  };
+  // L’Ifrit 5/4 frappe 5 sur 4 PV : sans Tenacité le Seigneur meurt.
+  assert.deepEqual(resultatBlocage(ifritBraise(), tenace),
+    { attaquantMeurt: true, bloqueurMeurt: false, attaquantFurie: 0, bloqueurFurie: 0 },
+    'Tenacité : le Seigneur survit à 1 PV et tue l’Ifrit en retour');
+  // Tenacité déjà dépensée : la même frappe l’emporte.
+  assert.equal(resultatBlocage(ifritBraise(), { ...tenace, tenaciteDisponible: false }).bloqueurMeurt, true);
+
+  // Sur la table : l’IA bloque avec lui, le moteur le laisse à 1 PV.
+  const duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'ifrit-des-ergs');
+  const ifrit = rpgJouerCreature(duel, 'joueur', 'ifrit-des-ergs').entite;
+  ifrit.ready = true;
+  donner(duel, 'sorcier', 'seigneur-des-machoires');
+  const seigneur = rpgJouerCreature(duel, 'sorcier', 'seigneur-des-machoires').entite;
+  Object.assign(seigneur, { pv: 4, def: 4 });
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [ifrit.id]),
+    { [ifrit.id]: [seigneur.id] }, 'l’IA interpose le Tenace : il ne peut pas mourir de ce coup-là');
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [ifrit.id], { [ifrit.id]: [seigneur.id] }).ok, true);
+  assert.equal(seigneur.pv, 1, 'Tenacité : 1 point de défense restant');
+});
+
+test('le Bouclier de lumière avale la première attaque, l’IA le sait', () => {
+  const dame = {
+    id: 'dame', carteId: 'dame-aux-ailes-d-or', name: 'La Dame aux ailes d’or',
+    atk: 3, def: 5, pv: 5, pvMax: 5, bouclier: 0, esquive: 0, bouclierLumiere: true,
+  };
+  // 5 dégâts sur 5 PV tueraient la Dame — le bouclier les absorbe.
+  assert.deepEqual(resultatBlocage(ifritBraise(), dame),
+    { attaquantMeurt: false, bloqueurMeurt: false, attaquantFurie: 0, bloqueurFurie: 0 },
+    'le bouclier de lumière éteint la frappe de l’Ifrit');
+  assert.equal(resultatBlocage(ifritBraise(), { ...dame, bouclierLumiere: false }).bloqueurMeurt, true,
+    'bouclier éteint, la même frappe l’emporte');
+});
+
+test('Overkill : le Serpent du monde compte l’excédent qui perce le bloqueur', () => {
+  // Le Serpent 6/6 contre un bloqueur 2/2 qui le retient : 4 dégâts filent
+  // jusqu’au sorcier. Moteur et IA doivent être d’accord.
+  const duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'serpent-du-monde');
+  const serpent = rpgJouerCreature(duel, 'joueur', 'serpent-du-monde').entite;
+  serpent.ready = true;
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  chien.ready = false;
+  assert.equal(serpent.overkill, true, 'le Serpent du monde a bien Overkill');
+
+  // Le blocage est forcé (une Tour doit bloquer) : le Chien 2/2 est interposé.
+  const res = rpgLancerAttaque(duel, 'joueur', [serpent.id], { [serpent.id]: [chien.id] });
+  assert.equal(res.ok, true);
+  assert.equal(res.resume.frappeSorcier, 4, 'l’excédent perce : 4 dégâts au sorcier');
+  assert.equal(duel.sorcier.pv, RPG_PV_JOUEUR - 4);
+});
+
+test('la Lame de mer est jouée : elle tue ce qu’elle fait tomber sous 1', () => {
+  const duel = duelNu();
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  // Le Colosse arrive d’abord (son +1/+1 ne touche donc pas le Chien), puis
+  // le Chien 2/2 — la Lame de mer le fait tomber à 0/0, elle est détruite.
+  donner(duel, 'joueur', 'colosse-de-sel'); // 6/6 → 4/4 : survit
+  rpgJouerCreature(duel, 'joueur', 'colosse-de-sel');
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  assert.deepEqual([chien.atk, chien.pv], [2, 2], 'le Chien arrive intact');
+  donner(duel, 'sorcier', 'lame-de-mer');
+
+  const choix = choisirCarteIA(duel, 'sorcier');
+  assert.equal(choix?.carteId, 'lame-de-mer', 'l’IA joue enfin sa Lame de mer');
+  assert.equal(choix.cibleId, chien.id, 'elle vise la créature qu’elle détruit, pas le Colosse');
+
+  // Le moteur confirme le calcul : le Chien tombe, le Colosse survit.
+  const res = rpgLancerMagie(duel, 'sorcier', 'lame-de-mer', choix.cibleId);
+  assert.equal(res.ok, true, 'la Lame de mer se lance sur la cible annoncée');
+  assert.equal(duel.joueur.creatures.some((entite) => entite.id === chien.id), false,
+    'la victime est détruite à 0 PV');
+});
+
+test('la Réanimation ramène le mort qui vaut son mana', () => {
+  const duel = duelNu();
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'sorcier', 20);
+  duel.sorcier.cimetiere.push('colosse-de-sel');
+  donner(duel, 'sorcier', 'reanimation');
+  assert.equal(choisirCarteIA(duel, 'sorcier')?.carteId, 'reanimation',
+    'un 6/6 au cimetière justifie la Réanimation');
+
+  // Cimetière vide de créature : la carte ne se joue pas.
+  const duel2 = duelNu();
+  duel2.tour = 'sorcier';
+  donnerMana(duel2, 'sorcier', 20);
+  duel2.sorcier.cimetiere.push('trait-de-braise'); // une magie, pas une créature
+  donner(duel2, 'sorcier', 'reanimation');
+  assert.equal(choisirCarteIA(duel2, 'sorcier'), null,
+    'aucune créature au cimetière : rien à ramener');
+});
+
+test('l’Appât de la meute : l’IA anticipe le blocage obligatoire', () => {
+  const duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'ifrit-des-ergs');
+  const ifrit = rpgJouerCreature(duel, 'joueur', 'ifrit-des-ergs').entite;
+  ifrit.ready = true;
+  donner(duel, 'sorcier', 'dune-marchante');
+  const dune = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
+  dune.ready = false;
+  // Marquée par l’Appât : elle DOIT bloquer la prochaine attaque du lanceur,
+  // même si l’échange est mauvais pour elle.
+  dune.blocageForce = { par: 'joueur' };
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [ifrit.id]),
+    { [ifrit.id]: [dune.id] }, 'le blocage forcé est compté dans la simulation');
 });

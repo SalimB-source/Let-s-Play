@@ -195,6 +195,30 @@ payer :
 Vérifications : `tests/rpg-ia.test.js`, section « Protection : l’IA respecte
 l’écran de couleur ».
 
+### Les autres mécaniques que l'IA lit
+
+Le même audit que la protection, passé sur tout le moteur : ces règles sont
+désormais dans les évaluations de `rpgAI.js`, et chacune a son test.
+
+| Mécanique | Règle du moteur | Ce que l'IA en fait |
+| --- | --- | --- |
+| **Venin anti-blocage** | `empecheBlocageToursRestants` (Vipère de verre, Bakunawa) : la créature reste en jeu mais ne bloque plus | Le bloqueur marqué sort de la liste (`peutBloquerEntite`). Avant, l'IA le proposait : le moteur refusait l'attaque entière (`raison: 'bloqueur'`) et **le joueur perdait son tour de frappe**. |
+| **Grand Voile blanc** | `duel.brouillardCombat` : aucun dégât de combat ce tour, des deux côtés | Aucun attaquant n'est déclaré (sauf un porteur d'arme à déclencheur d'attaque), aucun bloqueur posé : la frappe est gardée pour le tour suivant. |
+| **Tenacité** | Une destruction refusée par partie, la créature survit à 1 de défense | `meurtSous` la considère increvable tant qu'elle est disponible : elle vaut +2 dans `valeurEntite` et l'IA n'hésite plus à bloquer avec elle. |
+| **Bouclier de lumière** | La première attaque ou magie ne touche pas (Dame aux ailes d'or, Salem) | Il avale la frappe dans `resultatBlocage` ; une magie de dégâts qui le vise ne compte plus comme un kill. |
+| **Overkill** | L'excédent de force qui dépasse les bloqueurs perce jusqu'au sorcier (Serpent du monde) | Compté des deux côtés : en attaque (dégâts au visage) et en défense (ce qu'un petit bloqueur ne retient pas). |
+| **Blocage obligatoire** | `doitBloquer` (Tours) et `blocageForce` (Appât de la meute, Embuscade) | Anticipé dans la simulation, sur le plus gros attaquant, comme le moteur. |
+| **Butin** | Toucher le sorcier pioche puis défausse | +0,8 de valeur sur le porteur. |
+| **Débuff ciblé** | `-X/-Y`, la victime meurt si ses PV tombent à 0 (Lame de mer) | La carte est enfin jouée : l'IA choisit la victime qu'elle **détruit**, sinon la plus grosse menace rabotée. |
+| **Réanimation** | Ramène la dernière créature du cimetière | Évaluée au corps qu'elle ramène : jamais payée pour une magicienne ou un cimetière vide. |
+| **Auras** | Tarek, Amani, Kenshi : la carte grandit les AUTRES corps | Valorisée selon la table déjà posée, pas selon ses seuls chiffres. |
+| **Arrivées** | `soin-creatures` (Yamina), `heures` (Guetteur), `bouclier-lumiere`, `recyclage`, `reanimation`, `defausse-adverse` | Chacune a maintenant son bonus ; auparavant la créature n'était jouée que pour son corps. |
+
+Ce qui reste volontairement hors du modèle : `prixPv` et les effets sans carte
+au catalogue (`sable`, `regarder-dessus`, `compteurs-arme`) ; et l'arrivée
+`gel` de la **Tour de neige**, qui ne désigne pas encore sa cible — c'est un
+manque du moteur (`arriveeCiblePortee`), pas de l'IA.
+
 ### Les capacités de clan du Nord
 
 Deux capacités appartiennent au set **Neige** et à lui seul ; elles se lisent

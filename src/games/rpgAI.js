@@ -175,10 +175,23 @@ export function furieGagnee(entite, degatsRecus) {
 }
 
 /** L’entité meurt-elle sous un coup de ce type (bouclier compris) ?
- *  Le moteur tue à 0 PV : dégâts ≥ PV + bouclier, pas strictement plus. */
+ *  Le moteur tue à 0 PV : dégâts ≥ PV + bouclier, pas strictement plus.
+ *  La **Tenacité** (le Seigneur des mâchoires, le Maître du marteau) refuse
+ *  une destruction par partie : tant qu'elle est disponible, un coup létal
+ *  laisse la créature à 1 point de défense — elle ne meurt donc pas ici. */
 function meurtSous(entite, montant, sourceType = 'attaque') {
+  if (entite?.tenaciteDisponible) return false;
   return degatsApresEsquive(entite, montant, sourceType)
     >= (entite.bouclier ?? 0) + Math.max(0, entite.pv ?? 0);
+}
+
+/** Une créature peut-elle bloquer ? Ni engagée, ni gelée, ni privée de sa
+ *  défense par le venin de la Vipère ou la lune de Bakunawa
+ *  (`empecheBlocageToursRestants`) — la même porte que `peutBloquer` du
+ *  moteur. L'oublier fait refuser l'attaque entière (`raison: 'bloqueur'`). */
+function peutBloquerEntite(entite) {
+  return Boolean(entite) && !entite.attaquee && !estGelee(entite)
+    && !(entite.empecheBlocageToursRestants > 0);
 }
 
 /**
@@ -196,6 +209,12 @@ export function valeurEntite(entite) {
   if (entite?.coupRapide) valeur += 2;
   if (entite?.rapidite) valeur += 0.5;
   if (entite?.protection) valeur += 1.5;
+  // Tenacité : une destruction refusée, c'est un corps qui survit un tour de
+  // plus dans l'échange — elle vaut plus que ses PV affichés.
+  if (entite?.tenaciteDisponible) valeur += 2;
+  // Bouclier de lumière (la Dame aux ailes d'or, Salem) : la prochaine attaque
+  // ou magie ne passe pas — un rempart d'un coup, à ne pas sous-estimer.
+  if (entite?.bouclierLumiere) valeur += 2;
   // Furie : une seule flambée de +X/+X au premier sang survécu — une
   // créature déjà enflammée n'a plus rien à gagner.
   if (carte.furie && !entite?.furieDeclenchee) valeur += 1 + carte.furie * 0.7;
@@ -207,6 +226,8 @@ export function valeurEntite(entite) {
   if (carte.arrivee) valeur += 1.5;
   if (carte.destruction) valeur += 1;
   if (carte.honneur) valeur += carte.honneur;
+  // Butin (le Chien du guet) : chaque touche au sorcier rapporte une carte.
+  if (carte.butin) valeur += 0.8;
   if (carte.combat) valeur += 2;
   // L'arme portée : bonus et mot-clé sont déjà dans les chiffres et les champs
   // de l'entité (envol, esquive lus plus haut) ; seul le déclenché s'ajoute.
@@ -242,10 +263,16 @@ export function resultatBlocage(attaquant, bloqueur) {
   let attaquantMeurt = !attaquantVit;
   let bloqueurMeurt = !bloqueurVit;
   if (attaquantVit && bloqueurVit) {
-    attaquantMeurt = meurtSousCouleurs(attaquant, bloqueur.atk, couleursB, 'attaque');
-    bloqueurMeurt = meurtSousCouleurs(bloqueur, attaquant.atk, couleursA, 'attaque');
-    blessureA += blessureSousCouleurs(attaquant, bloqueur.atk, couleursB, 'attaque');
-    blessureB += blessureSousCouleurs(bloqueur, attaquant.atk, couleursA, 'attaque');
+    // Bouclier de lumière (la Dame aux ailes d'or, Salem) : la PREMIÈRE attaque
+    // ou magie ne touche pas — elle éteint le bouclier à sa place. Un coup de
+    // capacité, lui, passe outre. Le bouclier du bloqueur avale donc la frappe
+    // de l'attaquant, celui de l'attaquant avale la riposte.
+    const forceAttaquant = bloqueur?.bouclierLumiere ? 0 : (attaquant.atk ?? 0);
+    const forceBloqueur = attaquant?.bouclierLumiere ? 0 : (bloqueur.atk ?? 0);
+    attaquantMeurt = meurtSousCouleurs(attaquant, forceBloqueur, couleursB, 'attaque');
+    bloqueurMeurt = meurtSousCouleurs(bloqueur, forceAttaquant, couleursA, 'attaque');
+    blessureA += blessureSousCouleurs(attaquant, forceBloqueur, couleursB, 'attaque');
+    blessureB += blessureSousCouleurs(bloqueur, forceAttaquant, couleursA, 'attaque');
   }
   return {
     attaquantMeurt,
@@ -575,8 +602,12 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
     // Les attaquants à 0 d'attaque n'ont rien à arrêter : les ignorer évite de
     // gaspiller un bloqueur pour 0 dégât (Porteuse 0/3, etc.).
     .filter((entite) => (entite.atk ?? 0) > 0);
-  const bloqueurs = duel[coteDefense].creatures.filter((entite) => entite && !entite.attaquee && !estGelee(entite));
+  const bloqueurs = duel[coteDefense].creatures.filter(peutBloquerEntite);
   const affectations = {};
+  // Le Grand Voile blanc annule TOUS les dégâts de combat de ce tour : bloquer
+  // n'évite plus rien, et interposer un corps ne le protège de rien. L'IA
+  // garde ses bloqueurs en réserve.
+  if (duel.brouillardCombat) return affectations;
   if (!attaquants.length || !bloqueurs.length) return affectations;
 
   const legal = (attaquant, bloqueur) => peutBloquerAttaquant(bloqueur, attaquant)
@@ -585,11 +616,18 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   const libres = new Set(bloqueurs.map((entite) => entite.id));
   const bloqueurParId = (id) => bloqueurs.find((entite) => entite.id === id);
 
-  // 0) Blocage forcé : les créatures avec doitBloquer: true DOIVENT bloquer
-  const bloqueursForces = bloqueurs.filter((entite) => entite.doitBloquer);
+  // 0) Blocage obligatoire : les Tours de défense (`doitBloquer`) doivent
+  //    bloquer si elles le peuvent, et une créature marquée par l'Appât de la
+  //    meute ou l'Embuscade (`blocageForce.par` = camp attaquant) aussi — le
+  //    moteur les assigne d'office. Les anticiper évite de croire qu'un
+  //    attaquant passera librement. Le moteur vise le plus gros attaquant.
+  const bloqueursForces = bloqueurs
+    .filter((entite) => entite.doitBloquer || entite.blocageForce?.par === coteAttaquant);
   for (const bloqueurForce of bloqueursForces) {
     if (libres.has(bloqueurForce.id)) {
-      const cible = attaquants.find((attaquant) => legal(attaquant, bloqueurForce));
+      const cible = attaquants
+        .filter((attaquant) => legal(attaquant, bloqueurForce))
+        .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0))[0];
       if (cible) {
         libres.delete(bloqueurForce.id);
         affectations[cible.id] = [bloqueurForce.id];
@@ -606,13 +644,19 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
 
   const scoreBlocage = (attaquant, bloqueur) => {
     const { attaquantMeurt, bloqueurMeurt, attaquantFurie, bloqueurFurie } = resultatBlocage(attaquant, bloqueur);
-    const degatsEvites = Math.min(attaquant.atk ?? 0, pvDefense());
     // Protection : un bloqueur protégé contre la couleur de l'attaquant
     // encaisse tout sans une égratignure. Il arrête l'attaque gratuitement et
     // ne peut pas mourir de cet échange — l'IA ne laisse jamais passer une
     // telle aubaine, quel que soit son seuil d'agressivité.
     const bloqueurImmunise = estProtegee(bloqueur, couleursEntite(attaquant));
     const degatsRecus = degatsSubis(bloqueur, attaquant.atk ?? 0, couleursEntite(attaquant), 'attaque');
+    // Overkill (le Serpent du monde) : la force qui dépasse de quoi terrasser
+    // les bloqueurs poursuit sa course jusqu'au sorcier. Interposer un petit
+    // corps n'évite donc pas tout — on ne compte que les dégâts retenus.
+    const fuite = attaquant.overkill
+      ? Math.max(0, (attaquant.atk ?? 0) - Math.max(0, (bloqueur.pv ?? 0) + (bloqueur.bouclier ?? 0)))
+      : 0;
+    const degatsEvites = Math.max(0, Math.min(attaquant.atk ?? 0, pvDefense()) - fuite);
     const furie = bloqueurFurie * 0.9 - attaquantFurie * 1.6;
     if (bloqueurImmunise) {
       return (attaquantMeurt ? 24 : 14) + degatsEvites * 0.15 + furie;
@@ -720,7 +764,7 @@ function peutAttaquerUtile(entite) {
  */
 function degatsGarantis(duel, cote, prets) {
   const adv = autre(cote);
-  const bloqueurs = duel[adv].creatures.filter((entite) => entite && !entite.attaquee && !estGelee(entite));
+  const bloqueurs = duel[adv].creatures.filter(peutBloquerEntite);
   const bloquablePar = (attaquant) => bloqueurs.some((bloqueur) => peutBloquerAttaquant(bloqueur, attaquant)
     && !estProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId))));
   const bloquables = prets.filter(bloquablePar)
@@ -754,6 +798,16 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
   if (!prets.length) return [];
   const adv = autre(cote);
   const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
+
+  // Le Grand Voile blanc : aucun dégât de combat ce tour, ni sur les créatures
+  // ni sur le sorcier. Attaquer n'y perce rien et engage les créatures pour
+  // rien — seul un déclencheur « quand le porteur attaque » rapporte encore
+  // quelque chose. L'IA garde son tour de frappe.
+  if (duel.brouillardCombat) {
+    return prets
+      .filter((entite) => Boolean(armeById(entite?.arme?.carteId)?.porteurAttaque))
+      .map((entite) => entite.id);
+  }
 
   // Létal garanti : on envoie tout, même dans des échanges — conclure prime.
   if (degatsGarantis(duel, cote, prets) >= pvAdv) return prets.map((entite) => entite.id);
@@ -795,6 +849,12 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
       const couleursAttaquant = couleursEntite(attaquant);
       if (estProtegee(bloqueur, couleursAttaquant)) {
         gaspillage += 1.2 + degatsSubis(attaquant, bloqueur.atk, couleursEntite(bloqueur), 'attaque') * 0.25;
+      }
+      // Overkill (le Serpent du monde) : l'excédent perce les bloqueurs et
+      // frappe le sorcier — mais seulement si l'attaquant survit à l'échange.
+      if (attaquant.overkill && !echange.attaquantMeurt) {
+        face += Math.max(0, (attaquant.atk ?? 0)
+          - Math.max(0, (bloqueur.pv ?? 0) + (bloqueur.bouclier ?? 0)));
       }
       if (echange.attaquantMeurt) notrePerte += valeurEntite(attaquant);
       else notreFurie += echange.attaquantFurie * 0.8;
@@ -1087,6 +1147,45 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const score = tempo + controle + (effet.pioche ?? 0) * 2 - cout * 0.3;
       return { score: score > 0 ? score : 0, cibleId };
     }
+    if (effet.type === 'debuff') {
+      // La Lame de mer (-2/-2) : elle tue ce qu'elle fait tomber sous 1 point
+      // de défense (le moteur enterre la victime à 0 PV), sinon elle rabote la
+      // menace — attaque et réserve de vie comprises. Une carte qui ne ferait
+      // que griffer une grosse créature reste en main.
+      const plancher = Number.isFinite(effet.minimum) ? effet.minimum : 0;
+      const retraitAtk = Number(effet.atk) || 0;
+      const retraitDef = Number(effet.def) || 0;
+      const options = ciblesLegales(duel, cote, carte, 'creature').map((entite) => {
+        const tue = plancher <= 0 && (entite.pv ?? 0) + retraitDef <= 0;
+        const apres = {
+          ...entite,
+          atk: Math.max(plancher, (entite.atk ?? 0) + retraitAtk),
+          pv: Math.max(plancher, (entite.pv ?? 0) + retraitDef),
+        };
+        const gain = tue ? 5 + valeurEntite(entite) : menace(entite) - menace(apres);
+        const paralysie = (effet.empecheAttaque ? 1.5 : 0) + (effet.empecheBlocage ? 1 : 0);
+        return { cibleId: entite.id, kill: tue, score: gain + paralysie };
+      }).filter((option) => option.score > 0)
+        .sort((a, b) => b.score - a.score);
+      if (!options.length) return null;
+      const meilleure = options[0];
+      const score = (meilleure.kill ? 5 + valeurEntite(
+        duel[adv].creatures.find((entite) => entite.id === meilleure.cibleId),
+      ) : meilleure.score * 0.8) - cout * 0.2;
+      return { score: score > 0 ? score : 0, cibleId: meilleure.cibleId };
+    }
+    if (effet.type === 'reanimation') {
+      // La Réanimation ramène la DERNIÈRE créature du cimetière (le moteur) :
+      // elle ne se paie que si ce corps-là vaut son mana.
+      const derniere = [...camp.cimetiere].reverse().find((id) => {
+        const defunte = duelCardById(id);
+        return Boolean(defunte) && !magieById(id) && !armeById(id) && defunte.kind !== 'terrain';
+      });
+      if (!derniere) return null;
+      const valeur = valeurEntite(entiteDeSecours(duelCardById(derniere), duel));
+      const score = 1.5 + valeur - cout * 0.2;
+      return { score: score > 0 ? score : 0, cibleId: null };
+    }
     if (effet.type === 'combat' && effet.sourceCible === 'creature-amie') {
       // Le Défi du Jarl : un duel à deux cibles. Sans champion, rien à jouer ;
       // le combat ne vaut que s'il tue leur menace sans y laisser la nôtre.
@@ -1224,6 +1323,13 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   // Les capacités de clan du Nord : un corps qui grandit sous les coups, ou
   // une aura qui renforce tout le type déjà posé (Samouraï, Viking…).
   if (carte.furie) score += 0.8 + carte.furie * 0.7;
+  if (carte.aura) {
+    // Tarek, Amani, Kenshi : l'aura ne grandit que les AUTRES corps — sa
+    // valeur suit donc la table déjà posée, pas les chiffres de la carte.
+    const force = Math.max(0, Number(carte.aura.atk) || 0) * 0.8
+      + Math.max(0, Number(carte.aura.def) || 0) * 0.6;
+    score += 1.5 + camp.creatures.length * force;
+  }
   if (carte.resonance) {
     const element = cardResonanceGroup(carte);
     const alliees = duel[cote].creatures
@@ -1344,6 +1450,35 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       if (carte.banniere) score += 2;
     }
     if (arrivee.type === 'bouclier') score += 1.5;
+    if (arrivee.type === 'bouclier-lumiere') {
+      // La Dame aux ailes d'or, Salem : un rempart qui avale la prochaine
+      // attaque ou magie — il protège un corps qu'on veut garder.
+      score += 2.5;
+    }
+    if (arrivee.type === 'soin-creatures') {
+      // Yamina : chaque alliée récupère ses PV manquants, le sorcier aussi.
+      const soins = camp.creatures.reduce((total, entite) => total
+        + Math.min(arrivee.amount ?? 0,
+          Math.max(0, (entite.pvMax ?? entite.pv ?? 0) - (entite.pv ?? 0))), 0);
+      score += soins * 0.6 + Math.min(arrivee.etJoueur ?? 0, manquePv) * 0.8;
+    }
+    if (arrivee.type === 'heures') {
+      // Le Guetteur du beffroi : un compte à rebours dont la sonnerie frappe
+      // le sorcier adverse et pioche — ça vaut un petit bonus, pas plus.
+      score += 1 + Math.max(0, Number(arrivee.compteurs) || 0) * 0.3;
+    }
+    if (arrivee.type === 'recyclage') score += 1.5 + (camp.main.length <= 3 ? 1 : 0);
+    if (arrivee.type === 'defausse-adverse') score += duel[adv].main.length ? 1.2 : 0;
+    if (arrivee.type === 'reanimation') {
+      const derniere = [...camp.cimetiere].reverse().find((id) => {
+        const defunte = duelCardById(id);
+        return Boolean(defunte) && !magieById(id) && !armeById(id) && defunte.kind !== 'terrain';
+      });
+      if (derniere) {
+        score += valeurEntite(entiteDeSecours(duelCardById(derniere), duel))
+          - valeurEntite(entiteDeSecours(carte, duel));
+      }
+    }
     if (arrivee.type === 'retour-apres-tours') score += 2;
     if (arrivee.type === 'detruire-terrain-aleatoire') score += duel[adv].terrains.length ? 3 : 0;
   }
