@@ -487,13 +487,16 @@
 .rpg-deck-catalog--closed .rpg-deck-catalog__rail { gap: clamp(10px, 1.9vh, 20px); padding: clamp(14px, 2.6vh, 28px) clamp(18px, 3vw, 30px); }
 .rpg-deck-catalog--closed .rpg-deck-catalog__intro { max-width: 760px; margin: 0 auto; text-align: center; }
 .rpg-deck-catalog--closed .rpg-deck-catalog__status { justify-content: center; align-self: center; max-width: 100%; text-align: center; }
-/* Cinq boîtiers de front sur un grand écran : l'atelier et les sept decks
-   tiennent sur deux rangées. La grille remplace le flex-wrap — il laissait la
-   dernière rangée se centrer sur un nombre variable de colonnes, et chaque
-   carte gardait sa largeur propre au lieu de remplir la sienne. */
+/* Boîtiers auto-ajustés : la grille place autant de colonnes que la largeur
+   le permet, chaque colonne gardant au moins la largeur réelle d'un boîtier
+   (~196–215 px une fois la marge de rotation comptée). Avec cinq colonnes
+   fixes, les écrans de 1200–1400 px serraient les boîtiers les uns contre les
+   autres (effet « compressé ») ; l'auto-fit descend à quatre colonnes dès
+   qu'il n'y a plus la place, sans jamais presser un boîtier dans une colonne
+   trop étroite. */
 .rpg-deck-catalog--closed .rpg-deck-catalog__choices {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   align-items: stretch;
   justify-items: center;
   gap: clamp(12px, 1.8vw, 26px) clamp(8px, 1.5vw, 20px);
