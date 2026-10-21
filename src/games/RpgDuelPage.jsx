@@ -1703,6 +1703,10 @@ export function TableCard({
   const visageActuel = entite.visage != null
     ? carte?.alternance?.visages?.[entite.visage] ?? null
     : null;
+  // La prisonnière de la cale (Abordage) : sa fiche, pour la mini-face qui
+  // se glisse sous le coin du capteur — on voit QUI est détenu, pas
+  // seulement un losange de chaîne.
+  const prisonniereCarte = entite.enCale ? cardById(entite.enCale.carteId) : null;
   // La valeur imprimée reste le point neutre : chaque statistique peut ainsi
   // signaler séparément un bonus (bleu clair) ou un malus (rouge). Pour la
   // défense, on compare la valeur réellement montrée — les PV restants.
@@ -1919,6 +1923,21 @@ export function TableCard({
               <span>🎭</span>
             </span>
           )}
+        </span>
+      )}
+      {/* La prisonnière de la cale : sa mini-face dépasse du coin du capteur,
+          derrière les chaînes — la carte détenue se VOIT sur la table, son
+          nom au bas de la miniature. Décorative (la cale se lit dans l'aria
+          du capteur, se paie par le bouton de rançon) : rien à cliquer. */}
+      {entite.enCale && prisonniereCarte && (
+        <span
+          className="rpg-card__prisonniere"
+          aria-hidden="true"
+          data-prisonniere={entite.enCale.carteId}
+        >
+          <img className="rpg-card__prisonniere-art" src={cardArt(prisonniereCarte)} alt="" />
+          <span className="rpg-card__prisonniere-nom">{entite.enCale.name}</span>
+          <span className="rpg-card__prisonniere-chaine">⛓</span>
         </span>
       )}
       <header className="rpg-card__title">
@@ -9468,10 +9487,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // dans `rpg-battle.css`). Les créatures, elles, se lisent à leurs
               // statistiques, et les terrains gardent leur ligne.
               const familleSort = magieFamille(carte);
-              // Le chiffre de l'effet (-2/-2 pour la Lame de mer, +1/+1 pour
-              // une arrivée qui renforce) : il se pose sur la face, comme les
-              // statistiques d'une créature ou le bonus d'une arme.
-              const modifCarte = modificationStats(carte);
               const peutRepondre = reponseActive && carte.instant;
               // Une seule règle pour le halo de jouabilité — bleu pour ce qui se
               // pose, la teinte de la famille pour un sort (voir « La lueur de
@@ -9568,20 +9583,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.def)}</span></span>
                     </span>
                   )}
-                  {/* Le chiffre de l'effet, sur la face : la Lame de mer écrit
-                      -2/-2 dans la même plaque que les statistiques des
-                      créatures et le bonus des armes. Sans elle, le nombre ne
-                      vivait que dans la règle imprimée — que la face d'une
-                      carte en main n'affiche pas. */}
-                  {modifCarte && !estCreature && !carteEstArme(carte) && (
-                    <span
-                      className={`rpg-hand__stats rpg-hand__stats--modif${modifCarte.atk < 0 || modifCarte.def < 0 ? ' is-malus' : ' is-bonus'}`}
-                      aria-label={`Effet sur les statistiques : ${signeStat(modifCarte.atk)} attaque, ${signeStat(modifCarte.def)} défense`}
-                    >
-                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{signeStat(modifCarte.atk)}</span></span>
-                      <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{signeStat(modifCarte.def)}</span></span>
-                    </span>
-                  )}
+                  {/* Une magie n'a pas de corps : sa face en main ne porte
+                      AUCUNE plaque de statistiques, pas même le chiffre de son
+                      effet (-2/-2 de la Lame de mer, -1/-2 du Haut-fond). Le
+                      nombre vit dans la règle imprimée, l'aperçu au survol et
+                      le sceau de famille — pas sur la carte. */}
                 </button>
                 {exemplaires > 1 && (
                   <span className="rpg-hand__pile-count" aria-hidden="true">×{exemplaires}</span>

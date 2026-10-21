@@ -366,6 +366,66 @@
 }
 .rpg-card__compteur--visage > span { color: #f4e3b2; }
 
+/* La prisonnière de la cale (Abordage) : sa mini-face se glisse sous le coin
+   du capteur et DÉPASSE du cadre — inclinée, assombrie, derrière les chaînes,
+   son nom au bas de la miniature. On voit qui est détenu, la rançon reste au
+   bouton d'action. Décorative : pointer-events none, aria-hidden, la cale se
+   lit dans l'aria du capteur. Elle passe SOUS le bouton de capacité activée
+   (z-index 4) et les losanges de compteurs (z-index 5). */
+.rpg-card__prisonniere {
+  position: absolute;
+  z-index: 3;
+  top: -15%;
+  right: -8%;
+  width: 46%;
+  aspect-ratio: 4 / 5;
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid #7fd4c8;
+  border-radius: 3px;
+  background: #12332d;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .75);
+  transform: rotate(-9deg);
+  overflow: hidden;
+  pointer-events: none;
+  animation: rpg-prisonniere-arrivee .5s cubic-bezier(.2, 1.35, .4, 1) both;
+}
+.rpg-card__prisonniere-art {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  object-fit: cover;
+  filter: saturate(.8) brightness(.82);
+}
+.rpg-card__prisonniere-nom {
+  flex: none;
+  max-width: 100%;
+  padding: 1px 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #d8fff5;
+  background: rgba(18, 51, 45, .95);
+  font: 700 clamp(4.5px, 1vw, 8.5px)/1.3 var(--display, sans-serif);
+  text-align: center;
+}
+.rpg-card__prisonniere-chaine {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(216, 255, 245, .92);
+  font: 900 clamp(10px, 2.2vw, 19px)/1 var(--display, sans-serif);
+  text-shadow: 0 1px 3px #000, 0 0 6px rgba(0, 0, 0, .8);
+}
+@keyframes rpg-prisonniere-arrivee {
+  from { transform: rotate(-24deg) translateY(-16%) scale(.55); opacity: 0; }
+  to   { transform: rotate(-9deg) translateY(0) scale(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card__prisonniere { animation: none; }
+}
+
 /* Fin du tour : la grande pastille dorée du Sablier, bien visible sur la table. */
 .rpg-btn--endturn {
   min-height: 48px;
@@ -3734,20 +3794,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hand__stat--atk { background: rgba(114, 47, 26, .9); }
 .rpg-hand__stat--def { background: rgba(34, 73, 91, .92); }
 
-/* Le chiffre d'un effet de sort, posé sur la face comme les statistiques d'une
-   créature : « -2/-2 » pour la Lame de mer, « +1/+1 » pour un renfort. Le malus
-   prend la teinte du débuff, le bonus celle du renfort — sans quoi les deux
-   se liraient comme les statistiques d'un corps qui n'existe pas encore. */
-.rpg-hand__stats--modif.is-malus .rpg-hand__stat {
-  border-color: rgba(120, 30, 30, .9);
-  background: rgba(96, 26, 34, .92);
-  color: #ffd9d2;
-}
-.rpg-hand__stats--modif.is-bonus .rpg-hand__stat {
-  border-color: rgba(24, 94, 66, .9);
-  background: rgba(20, 84, 60, .92);
-  color: #d8ffe9;
-}
+/* Une magie ne porte plus de plaque de statistiques sur sa face en main —
+   ni ses propres chiffres (-2/-2), ni rien d'autre : le nombre vit dans la
+   règle imprimée et l'aperçu au survol. Seules les créatures et les armes
+   gardent leurs losanges. */
 
 /* Indicateur compact du tour, placé dans la barre d'actions plutôt qu'en séparation centrale. */
 .rpg-turn-indicator {

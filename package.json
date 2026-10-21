@@ -71,6 +71,7 @@
     "check:rpg-resonance": "node scripts/rpg-resonance-check.mjs",
     "check:rpg-aura": "node scripts/rpg-aura-check.mjs",
     "check:rpg-envol": "node scripts/rpg-envol-check.mjs",
+    "check:rpg-cale": "node scripts/rpg-cale-check.mjs",
     "check:rpg-sort-joue": "node scripts/rpg-sort-joue-check.mjs",
     "check:rpg-tourbillon-eau": "node scripts/rpg-tourbillon-eau-check.mjs",
     "check:rpg-roue-feu": "node scripts/rpg-roue-feu-check.mjs",
