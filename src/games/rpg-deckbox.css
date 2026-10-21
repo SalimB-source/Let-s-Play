@@ -487,14 +487,31 @@
 .rpg-deck-catalog--closed .rpg-deck-catalog__rail { gap: clamp(10px, 1.9vh, 20px); padding: clamp(14px, 2.6vh, 28px) clamp(18px, 3vw, 30px); }
 .rpg-deck-catalog--closed .rpg-deck-catalog__intro { max-width: 760px; margin: 0 auto; text-align: center; }
 .rpg-deck-catalog--closed .rpg-deck-catalog__status { justify-content: center; align-self: center; max-width: 100%; text-align: center; }
+/* Cinq boîtiers de front sur un grand écran : l'atelier et les sept decks
+   tiennent sur deux rangées. La grille remplace le flex-wrap — il laissait la
+   dernière rangée se centrer sur un nombre variable de colonnes, et chaque
+   carte gardait sa largeur propre au lieu de remplir la sienne. */
 .rpg-deck-catalog--closed .rpg-deck-catalog__choices {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: center;
-  gap: clamp(8px, 2.4vw, 32px);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+  justify-items: center;
+  gap: clamp(12px, 1.8vw, 26px) clamp(8px, 1.5vw, 20px);
 }
-.rpg-deck-catalog--closed .rpg-deck-choice { width: clamp(150px, 21vw, 240px); padding: 10px 8px 12px; }
+.rpg-deck-catalog--closed .rpg-deck-choice { width: 100%; height: 100%; padding: 10px 6px 12px; }
+/* Les cartes d'une rangée prennent la hauteur de la plus haute : le bouton
+   « Sélectionner » reste posé en bas, au même niveau d'un boîtier à l'autre. */
+.rpg-deck-catalog--closed .rpg-deck-choice__select { margin-top: auto; }
+.rpg-deck-catalog--closed .rpg-deck-choice__text { padding-bottom: 10px; }
+@media (max-width: 1199px) {
+  .rpg-deck-catalog--closed .rpg-deck-catalog__choices { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 959px) {
+  .rpg-deck-catalog--closed .rpg-deck-catalog__choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 699px) {
+  .rpg-deck-catalog--closed .rpg-deck-catalog__choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 /* ── Deck ouvert : boîtiers réduits à gauche, fiche et liste à droite ───────── */
 .rpg-deck-catalog--open .rpg-deck-catalog__choices { display: grid; gap: 8px; }
@@ -573,7 +590,7 @@
   .rpg-deck-filter__chips { gap: 4px; }
   .rpg-deck-filter__chip { gap: 4px; padding: 6px 8px; font-size: 9px; letter-spacing: .04em; }
   .rpg-deck-catalog--closed .rpg-deck-catalog__choices { gap: 4px; }
-  .rpg-deck-catalog--closed .rpg-deck-choice { width: calc(50% - 4px); padding: 8px 4px 10px; }
+  .rpg-deck-catalog--closed .rpg-deck-choice { width: 100%; padding: 8px 4px 10px; }
   .rpg-deck-detail__header .rpg-deckbox { margin-left: -6px; }
 }
 /* Écran large mais peu haut (portable) : l'aide cède la place, les boutons restent visibles. */
@@ -583,7 +600,7 @@
 /* Téléphone en paysage : peu de hauteur, on rapproche et on réduit l'étagère. */
 @media (max-height: 480px) and (orientation: landscape) {
   .rpg-deckbox--shelf { --bw: 96px; }
-  .rpg-deck-catalog--closed .rpg-deck-choice { width: clamp(132px, 22vw, 200px); }
+  .rpg-deck-catalog--closed .rpg-deck-choice { width: 100%; }
   .rpg-deck-catalog--closed .rpg-deck-catalog__intro p { display: none; }
 }
 
@@ -621,9 +638,11 @@
 .rpg-deck-choice--neuf {
   position: relative;
   display: grid;
+  align-content: center;
   justify-items: center;
-  gap: 6px;
-  padding: 14px 8px 10px;
+  gap: clamp(8px, 1vw, 14px);
+  height: 100%;
+  padding: 16px 10px 18px;
   border: 1px dashed rgba(235, 194, 106, .45);
   border-radius: 12px;
   background: radial-gradient(ellipse at 50% 30%, rgba(255, 226, 160, .07), rgba(255, 226, 160, 0) 70%);
@@ -634,20 +653,24 @@
 
 .rpg-deck-choice--neuf:hover { border-color: rgba(235, 194, 106, .8); }
 
+/* Le caisson « Nouveau deck » prend la taille d'un vrai boîtier : même
+   hauteur de carte, et un couvercle assez large pour se lire comme le huitième
+   coffret de l'étagère plutôt que comme une vignette. */
 .rpg-deck-choice--neuf .rpg-deck-choice__neuf-crate {
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 40px;
-  border: 1px solid rgba(235, 194, 106, .5);
-  border-radius: 7px;
+  width: 72%;
+  max-width: 176px;
+  aspect-ratio: 1 / 1.4;
+  border: 1px dashed rgba(235, 194, 106, .55);
+  border-radius: 12px;
   background: linear-gradient(180deg, rgba(30, 27, 40, .9), rgba(16, 14, 24, .9));
-  box-shadow: inset 0 3px 0 rgba(240, 217, 148, .18), 0 4px 10px rgba(0, 0, 0, .4);
+  box-shadow: inset 0 4px 0 rgba(240, 217, 148, .18), 0 8px 18px rgba(0, 0, 0, .45);
 }
 
 .rpg-deck-choice--neuf .rpg-deck-choice__neuf-crate b {
   color: #f0d994;
-  font: 800 22px/1 var(--mono, monospace);
+  font: 800 clamp(26px, 3vw, 46px)/1 var(--mono, monospace);
 }
 
 .rpg-deck-choice--neuf:disabled { opacity: .45; cursor: not-allowed; }

@@ -28,6 +28,7 @@ const pvpCss = read('../src/games/rpg-pvp.css');
 const tutorialCss = read('../src/games/rpg-tutorial.css');
 const soukCss = read('../src/games/rpg-souk.css');
 const storyCss = read('../src/games/rpg-story.css');
+const deckCss = read('../src/games/rpg-deckbox.css');
 const deckBox = read('../src/games/RpgDeckBox.jsx');
 const cardArt = read('../src/games/rpgCardArt.js');
 
@@ -324,6 +325,23 @@ assert.match(
   storyCss,
   /\.rpg-story-tower__cta \{ align-self: end;/,
   'sur une rangée de quatre, les pieds de carte s’alignent en bas',
+);
+
+// L'étagère du Deck : cinq boîtiers de front, et l'atelier à la même taille.
+assert.match(
+  deckCss,
+  /\.rpg-deck-catalog--closed \.rpg-deck-catalog__choices \{\s*display: grid;\s*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/,
+  'l’étagère du Deck range les coffrets sur cinq colonnes',
+);
+assert.match(
+  deckCss,
+  /\.rpg-deck-catalog--closed \.rpg-deck-choice \{ width: 100%; height: 100%;/,
+  'chaque carte remplit sa colonne et prend la hauteur de la rangée',
+);
+assert.match(
+  deckCss,
+  /\.rpg-deck-choice--neuf \{[^}]*height: 100%;/,
+  'la carte « Nouveau deck » a la taille des autres cartes',
 );
 
 const cadre = new JSDOM(`<!doctype html><html><head><style>${battleCss}\n${soukCss}</style></head><body>
