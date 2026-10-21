@@ -152,6 +152,73 @@ Le choix de la cible pendant la phase du sorcier (une Magie Rapide qui renvoie
 une créature, par exemple) garde son cours d'origine : là, la carte est un sort
 lancé depuis la main, elle n'a pas à se poser avant de désigner.
 
+### La protection : un écran de couleur, pour l'IA comme pour le joueur
+
+Une créature **protégée contre une couleur** — Tiziri et la Braise, Amayas et
+les Ténèbres, l'Armure de cendres portée — est intouchable par **tout ce qui
+vient de cette couleur** : `rpgEstProtegee(entite, couleursSource)` est la
+seule porte d'entrée, et le moteur l'applique partout de la même façon.
+
+- **Dégâts** : attaque, capacité d'arrivée, magie et vague de zone sont
+  annulés (`rpgBlesserCreature`, `appliquerDegatsDeCombatSimultanes`) ; le gel
+  de couleur est annulé de la même façon.
+- **Ciblage** : un sort ne peut pas la désigner (`rpgLancerMagie` répond
+  `protection`), pas plus qu'un renvoi en main, une marque de venin ou un
+  équipement. Le **Serpent du monde** étend cet écran à toutes les magies
+  (`protectionSorts`), même en zone.
+- **Blocage** : une créature protégée contre la couleur de l'attaquant
+  **arrête son attaque sans une égratignure** — elle encaisse zéro et survit
+  toujours. Inversement, la protection de l'attaquant interdit à une créature
+  de cette couleur de le bloquer (`raison: 'protection'`).
+
+L'IA lit les protections avec la même règle, et pas seulement au moment de
+payer :
+
+- `resultatBlocage` simule l'échange **avec** les couleurs des deux cartes :
+  un bloqueur protégé ne meurt pas de ce coup-là, un attaquant protégé ne
+  subit aucune riposte ;
+- un blocage **gratuit** (la bloqueuse ne peut pas mourir de cet échange) se
+  prend toujours, quel que soit le profil ;
+- une attaque qui s'arrêterait sur un mur protégé — aucune percée, aucune
+  blessure rendue, et notre créature entamée pour rien — est comptée comme un
+  **gaspillage** (`choisirAttaquantsIA`) : l'IA garde son attaquant au camp ;
+- une vague de zone ne compte que les créatures que la protection laisse
+  toucher : un Vent rouge sur une table protégée contre la Braise reste en
+  main (`scoreCarte`) ;
+- aucune cible désignée chez l'adversaire n'est protégée contre la couleur de
+  la carte (`candidatsCartesIA`) : la carte n'est jamais annoncée pour être
+  refusée par le moteur — un refus couperait le tour du sorcier ;
+- une table entièrement protégée ne bloque pas le développement : le Cavalier
+  entre en jeu **sans frapper** (l'arrivée ne désigne plus personne) au lieu de
+  rester en main.
+
+Vérifications : `tests/rpg-ia.test.js`, section « Protection : l’IA respecte
+l’écran de couleur ».
+
+### Les autres mécaniques que l'IA lit
+
+Le même audit que la protection, passé sur tout le moteur : ces règles sont
+désormais dans les évaluations de `rpgAI.js`, et chacune a son test.
+
+| Mécanique | Règle du moteur | Ce que l'IA en fait |
+| --- | --- | --- |
+| **Venin anti-blocage** | `empecheBlocageToursRestants` (Vipère de verre, Bakunawa) : la créature reste en jeu mais ne bloque plus | Le bloqueur marqué sort de la liste (`peutBloquerEntite`). Avant, l'IA le proposait : le moteur refusait l'attaque entière (`raison: 'bloqueur'`) et **le joueur perdait son tour de frappe**. |
+| **Grand Voile blanc** | `duel.brouillardCombat` : aucun dégât de combat ce tour, des deux côtés | Aucun attaquant n'est déclaré (sauf un porteur d'arme à déclencheur d'attaque), aucun bloqueur posé : la frappe est gardée pour le tour suivant. |
+| **Tenacité** | Une destruction refusée par partie, la créature survit à 1 de défense | `meurtSous` la considère increvable tant qu'elle est disponible : elle vaut +2 dans `valeurEntite` et l'IA n'hésite plus à bloquer avec elle. |
+| **Bouclier de lumière** | La première attaque ou magie ne touche pas (Dame aux ailes d'or, Salem) | Il avale la frappe dans `resultatBlocage` ; une magie de dégâts qui le vise ne compte plus comme un kill. |
+| **Overkill** | L'excédent de force qui dépasse les bloqueurs perce jusqu'au sorcier (Serpent du monde) | Compté des deux côtés : en attaque (dégâts au visage) et en défense (ce qu'un petit bloqueur ne retient pas). |
+| **Blocage obligatoire** | `doitBloquer` (Tours) et `blocageForce` (Appât de la meute, Embuscade) | Anticipé dans la simulation, sur le plus gros attaquant, comme le moteur. |
+| **Butin** | Toucher le sorcier pioche puis défausse | +0,8 de valeur sur le porteur. |
+| **Débuff ciblé** | `-X/-Y`, la victime meurt si ses PV tombent à 0 (Lame de mer) | La carte est enfin jouée : l'IA choisit la victime qu'elle **détruit**, sinon la plus grosse menace rabotée. |
+| **Réanimation** | Ramène la dernière créature du cimetière | Évaluée au corps qu'elle ramène : jamais payée pour une magicienne ou un cimetière vide. |
+| **Auras** | Tarek, Amani, Kenshi : la carte grandit les AUTRES corps | Valorisée selon la table déjà posée, pas selon ses seuls chiffres. |
+| **Arrivées** | `soin-creatures` (Yamina), `heures` (Guetteur), `bouclier-lumiere`, `recyclage`, `reanimation`, `defausse-adverse` | Chacune a maintenant son bonus ; auparavant la créature n'était jouée que pour son corps. |
+
+Ce qui reste volontairement hors du modèle : `prixPv` et les effets sans carte
+au catalogue (`sable`, `regarder-dessus`, `compteurs-arme`) ; et l'arrivée
+`gel` de la **Tour de neige**, qui ne désigne pas encore sa cible — c'est un
+manque du moteur (`arriveeCiblePortee`), pas de l'IA.
+
 ### Les capacités de clan du Nord
 
 Deux capacités appartiennent au set **Neige** et à lui seul ; elles se lisent
@@ -376,6 +443,36 @@ celle de la carte — Braise rouge, Eau bleue, Sable doré, Neige glacée ; une
 carte hybride partage le sceau entre ses éléments. Le bandeau de famille et
 la lueur de carte jouable gardent, eux, leur teinte de famille (or pour la
 Magie Rapide, améthyste pour la Sorcellerie).
+
+### Le chiffre d'un effet s'écrit sur la carte
+
+Une carte qui **change les statistiques** d'une créature porte son chiffre sur
+sa face, dans la même plaque que les statistiques d'un corps ou le bonus d'un
+porteur : la **Lame de mer** affiche `⚔ -2 🛡 -2`, l'**Embuscade** aussi (elle
+rabote toute la table adverse), la **Vipère de verre** `⚔ -2 🛡 0`, la
+**Brisure de verre** `-1/-1`, et les renforts **+1/+1**, **+2/+1**, `+0/+3`,
+**+2/+2** en teinte de bonus. Sans ce chiffre, le nombre ne vivait que dans la
+phrase de règle — or une face de carte n'imprime pas la règle, et « donne
+-2/-2 » se lisait donc seulement en ouvrant la fiche.
+
+- la source du chiffre est unique — `modificationStats(carte)` et
+  `libelleModificationStats(carte)` (`rpgCards.js`) lisent `effet` **ou**
+  `arrivee` (`buff` / `debuff`) et écrivent `-2/-2`, `+1/+1`, jamais `+-2` ;
+- la même valeur devient une pastille (`pastillesPourCarte`,
+  `effetIcons.js`) : « Affaiblissement -2/-2 » sur le sprite `i-degats`,
+  « Renfort +1/+1 » sur `i-aura` — donc aussi dans l'aperçu déplié du Souk et
+  du guide, où chaque pastille écrit sa règle : « La cible perd 2 en attaque
+  et 2 en défense. Si sa défense tombe à 0, elle est détruite. » La vipère ne
+  cite que l'attaque qu'elle retire ;
+- les **armes** sont exclues du calcul : leur bonus de porteur (`bonusArme`)
+  s'affiche déjà, et deux chiffres pour la même chose se contrediraient ;
+- les créatures en main gardent leurs propres statistiques : la modification
+  d'une arrivée (Vipère de verre, Colosse de sel) se lit sur la pastille et
+  dans la règle, pas à la place du `atk/def` du corps ;
+- l'atelier de decks écrit le même libellé dans sa ligne compacte
+  (` · -2/-2` derrière le type), et les lecteurs d'écran reçoivent la valeur
+  (« Effet sur les statistiques : -2 attaque, -2 défense ») sur la carte en
+  main comme sur l'aperçu.
 
 ## 7. Les contres (deck Marée des abysses)
 

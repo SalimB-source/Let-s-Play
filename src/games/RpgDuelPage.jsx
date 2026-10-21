@@ -200,7 +200,9 @@ import {
   resonanceGroupLabel,
   armeById,
   magieFamille,
+  modificationStats,
   rpgValiderDeck,
+  signeStat,
 } from './rpgCards.js';
 // La signature des deux familles de sorts — sceau, socle, ligne teintée — vit
 // dans son propre module : l'atelier de decks la partage (voir
@@ -2178,6 +2180,8 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
   // pastille ne nomme (arrivées, morts, sorts…) : rien n'est écrit deux fois.
   const lecture = effetsDetailles(carte);
   const effets = cardEffectLines(lecture.texte);
+  // La modification chiffrée que la carte inflige (-2/-2 pour la Lame de mer).
+  const modifCarte = modificationStats(carte);
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
   const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
   // La fiche du catalogue : la carte ouverte d'un clic, en grand. Elle se lit
@@ -2239,6 +2243,11 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
         </div>
       )}
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
+      {modifCarte && !carteEstArme(carte) && (
+        <p className={`rpg-hover-card-preview__stats rpg-hover-card-preview__stats--modif${modifCarte.atk < 0 || modifCarte.def < 0 ? ' is-malus' : ' is-bonus'}`}>
+          Statistiques : {signeStat(modifCarte.atk)} ⚔ <span>·</span> {signeStat(modifCarte.def)} 🛡
+        </p>
+      )}
     </>
   );
   // L'aperçu rapide — le survol à la souris comme l'appui long au doigt — ne
@@ -2272,7 +2281,7 @@ function HoverCardPreview({ carte, style = null, variante = '', cible = null, co
       onPointerEnter={onPointerEnter ?? undefined}
       onPointerLeave={onPointerLeave ?? undefined}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${modifCarte && !carteEstArme(carte) ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${cibleLabel}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
     >
       {variante === 'annonce' ? (
@@ -9185,6 +9194,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // dans `rpg-battle.css`). Les créatures, elles, se lisent à leurs
               // statistiques, et les terrains gardent leur ligne.
               const familleSort = magieFamille(carte);
+              // Le chiffre de l'effet (-2/-2 pour la Lame de mer, +1/+1 pour
+              // une arrivée qui renforce) : il se pose sur la face, comme les
+              // statistiques d'une créature ou le bonus d'une arme.
+              const modifCarte = modificationStats(carte);
               const peutRepondre = reponseActive && carte.instant;
               // Une seule règle pour le halo de jouabilité — bleu pour ce qui se
               // pose, la teinte de la famille pour un sort (voir « La lueur de
@@ -9279,6 +9292,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     <span className="rpg-hand__stats" aria-label={`Porteur : ${signeBonus(bonusArme(carte)?.atk)} attaque, ${signeBonus(bonusArme(carte)?.def)} défense`}>
                       <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.atk)}</span></span>
                       <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.def)}</span></span>
+                    </span>
+                  )}
+                  {/* Le chiffre de l'effet, sur la face : la Lame de mer écrit
+                      -2/-2 dans la même plaque que les statistiques des
+                      créatures et le bonus des armes. Sans elle, le nombre ne
+                      vivait que dans la règle imprimée — que la face d'une
+                      carte en main n'affiche pas. */}
+                  {modifCarte && !estCreature && !carteEstArme(carte) && (
+                    <span
+                      className={`rpg-hand__stats rpg-hand__stats--modif${modifCarte.atk < 0 || modifCarte.def < 0 ? ' is-malus' : ' is-bonus'}`}
+                      aria-label={`Effet sur les statistiques : ${signeStat(modifCarte.atk)} attaque, ${signeStat(modifCarte.def)} défense`}
+                    >
+                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{signeStat(modifCarte.atk)}</span></span>
+                      <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{signeStat(modifCarte.def)}</span></span>
                     </span>
                   )}
                 </button>

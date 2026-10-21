@@ -45,6 +45,7 @@ import {
   cardHybridGradient,
   cardMotifClass,
   cardTypeLine,
+  libelleModificationStats,
   terrainManaColors,
 } from './rpgCards.js';
 // Le sceau des familles de sorts : l'atelier feuillette la collection entière,
@@ -680,7 +681,7 @@ export function RpgDeckAtelier({
                         : <Cout carte={carte} />}
                       <span className="rpg-atelier__ligne-nom">
                         <strong>{carte.name}</strong>
-                        <small>{typeLabel(carte)}{['creature', 'hero'].includes(carte.kind) ? ` · ${carte.atk}/${carte.def}` : carteEstArme(carte) ? ` · ${signeBonus(bonusArme(carte)?.atk)}/${signeBonus(bonusArme(carte)?.def)}` : ''}</small>
+                        <small>{typeLabel(carte)}{['creature', 'hero'].includes(carte.kind) ? ` · ${carte.atk}/${carte.def}` : carteEstArme(carte) ? ` · ${signeBonus(bonusArme(carte)?.atk)}/${signeBonus(bonusArme(carte)?.def)}` : libelleModificationStats(carte) ? ` · ${libelleModificationStats(carte)}` : ''}</small>
                       </span>
                       <span className="rpg-atelier__ligne-compte">
                         <button

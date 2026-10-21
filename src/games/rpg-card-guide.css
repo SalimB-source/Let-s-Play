@@ -167,6 +167,10 @@
   color: #f0d18d;
   font: 800 10px/1.25 var(--mono, monospace);
 }
+/* L'effet chiffré d'une carte dans le guide : malus en rouge de débuff,
+   bonus en vert de renfort — la même langue que la plaque de la main. */
+.rpg-card-guide__stats--modif.is-malus { color: #ffb4a6; }
+.rpg-card-guide__stats--modif.is-bonus { color: #a9f0c8; }
 .rpg-card-guide__rules {
   margin: 7px 0 0;
   color: rgba(249, 241, 224, .78);

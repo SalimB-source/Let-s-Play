@@ -13,6 +13,8 @@
  * sont **interlinéaires** — l’icône précède la règle qu’elle annonce.
  */
 
+import { libelleModificationStats, modificationStats } from './rpgCards.js';
+
 /** Les 25 symboles, à injecter une seule fois par page. */
 export const EFFETS_SPRITE = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -156,6 +158,8 @@ export const EFFET_LIBELLES = {
   recyclage: 'Recyclage',
   reanimation: 'Réanimation',
   heures: 'Heures',
+  buff: 'Renfort',
+  debuff: 'Affaiblissement',
   'empeche-blocage': 'Blocage interdit',
   exil: 'Exil',
   'destruction-totale': 'Destruction totale',
@@ -232,6 +236,20 @@ export function pastillesPourCarte(carte) {
   if (pastilleEffet) ajouter(...pastilleEffet);
   if (typeEffet === 'bouclier') {
     ajouter('bouclier', 'Bouclier', Number(carte.effet?.amount ?? carte.arrivee?.amount) || null);
+  }
+
+  // La modification de statistiques, écrite en clair : « Lame de mer » porte
+  // « Affaiblissement -2/-2 », l'Embuscade autant, le Colosse « Renfort
+  // +1/+1 ». Sans elle, le chiffre ne se lisait que dans la règle imprimée —
+  // que les faces de cartes n'affichent pas.
+  const modif = modificationStats(carte);
+  if (modif) {
+    const cle = modif.atk < 0 || modif.def < 0 ? 'debuff' : 'buff';
+    ajouter(cle, EFFET_LIBELLES[cle], libelleModificationStats(carte));
+    // Les deux chiffres restent lisibles séparément : la bulle écrit « perd 2
+    // en attaque » plutôt que de répéter un « -2/0 » trompeur en défense.
+    const pastille = pastilles.find((candidate) => candidate.cle === cle);
+    if (pastille) pastille.stats = modif;
   }
 
   return pastilles;
@@ -329,6 +347,8 @@ export const EFFET_DEFINITIONS = {
   'destruction-totale': 'Détruit les créatures des deux camps, sans infliger de dégâts. Les capacités de mort se déclenchent.',
   exil: 'Retire une créature de la partie : elle ne va pas au cimetière.',
   'empeche-blocage': 'La créature visée ne peut pas bloquer pendant la durée indiquée.',
+  debuff: (valeur) => `La créature visée encaisse un malus de ${valeur ?? '-X/-X'} : son attaque frappe moins fort et sa réserve de vie fond. Si sa défense tombe à 0, elle est détruite.`,
+  buff: (valeur) => `La cible gagne un bonus de ${valeur ?? '+X/+X'} en attaque et en défense.`,
 };
 
 /** Les libellés tels qu’ils s’impriment en tête de phrase sur les fiches. */
@@ -388,6 +408,21 @@ const cleDuLibelle = (libelle) => LIBELLES_IMPRIMES
 
 /** La définition générique d’une pastille (valeur et couleur comprises). */
 export function definitionPastille(pastille) {
+  if (pastille.cle === 'debuff' || pastille.cle === 'buff') {
+    // Un malus se lit par ce qu'il retire, statistique par statistique : la
+    // vipère (-2/0) ne touche pas la défense, et la bulle ne doit pas le dire.
+    const stats = pastille.stats ?? {};
+    const atk = Math.abs(Number(stats.atk) || 0);
+    const def = Math.abs(Number(stats.def) || 0);
+    const genre = pastille.cle === 'debuff' ? 'perd' : 'gagne';
+    const morceaux = [atk ? `${atk} en attaque` : null, def ? `${def} en défense` : null].filter(Boolean);
+    const regle = morceaux.length
+      ? `La cible ${genre} ${morceaux.join(' et ')}.`
+      : EFFET_DEFINITIONS[pastille.cle](pastille.valeur ?? null);
+    return pastille.cle === 'debuff'
+      ? `${regle} Si sa défense tombe à 0, elle est détruite.`
+      : regle;
+  }
   const definition = EFFET_DEFINITIONS[pastille?.cle];
   if (typeof definition !== 'function') return definition ?? '';
   if (pastille.cle === 'protection') {

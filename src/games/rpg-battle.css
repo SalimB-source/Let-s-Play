@@ -3719,6 +3719,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hand__stat--atk { background: rgba(114, 47, 26, .9); }
 .rpg-hand__stat--def { background: rgba(34, 73, 91, .92); }
 
+/* Le chiffre d'un effet de sort, posé sur la face comme les statistiques d'une
+   créature : « -2/-2 » pour la Lame de mer, « +1/+1 » pour un renfort. Le malus
+   prend la teinte du débuff, le bonus celle du renfort — sans quoi les deux
+   se liraient comme les statistiques d'un corps qui n'existe pas encore. */
+.rpg-hand__stats--modif.is-malus .rpg-hand__stat {
+  border-color: rgba(120, 30, 30, .9);
+  background: rgba(96, 26, 34, .92);
+  color: #ffd9d2;
+}
+.rpg-hand__stats--modif.is-bonus .rpg-hand__stat {
+  border-color: rgba(24, 94, 66, .9);
+  background: rgba(20, 84, 60, .92);
+  color: #d8ffe9;
+}
+
 /* Indicateur compact du tour, placé dans la barre d'actions plutôt qu'en séparation centrale. */
 .rpg-turn-indicator {
   display: inline-flex;
@@ -4156,6 +4171,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-hover-card-preview__stats { justify-content: flex-start; color: #ffe9a0; font-size: 18px; font-weight: 900; white-space: nowrap; }
 .rpg-hover-card-preview__stats span { color: #e1cb9c; }
+/* L'effet chiffré d'un sort dans l'aperçu : la même plaque que le bonus d'une
+   arme, teintée selon qu'elle retire ou qu'elle donne. */
+.rpg-hover-card-preview__stats--modif.is-malus { color: #ffb4a6; }
+.rpg-hover-card-preview__stats--modif.is-bonus { color: #a9f0c8; }
 /* L'aperçu rapide est texte seul : sans l'illustration, l'encadré d'infos
    prend toute la largeur du panneau — au survol comme sur le volet d'appui
    long, qui restent plus étroits que la fiche. La fiche du catalogue,
