@@ -246,7 +246,7 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, var(--essai-colonne)));
   justify-content: center;
-  column-gap: clamp(6px, .7vw, 10px);
+  column-gap: clamp(10px, 1vw, 16px);
   justify-items: center;
   align-items: end;
   /* Même plateau vide, la rangée garde la hauteur d'une carte : les cinq
@@ -795,7 +795,7 @@
    d'une carte même vide. */
 .rpg-battle--touch[data-mode-mana="essai"] .card-table > .card-row {
   --essai-colonne: calc(var(--rpg-field-card, var(--duel-card, 64px)) + 4px);
-  column-gap: max(6px, calc(var(--duel-card, 64px) * .12));
+  column-gap: max(8px, calc(var(--duel-card, 64px) * .16));
   min-height: calc(var(--rpg-field-card, var(--duel-card, 64px)) * 1.25 + 8px);
 }
 .rpg-battle--touch[data-mode-mana="essai"] .card-row > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
