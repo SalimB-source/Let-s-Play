@@ -80,14 +80,22 @@ function Cadre({ code = '', retour = null, compact = false, children }) {
         >
           <span aria-hidden="true">←</span> {retour?.libelle ?? 'Le Sablier'}
         </Link>
-        {code ? (
-          <span className="rpg-pvp-page__code" title="Code du défi">{code}</span>
-        ) : (
-          <span className="rpg-pvp-page__statut">
-            <span className="rpg-pvp-page__point" aria-hidden="true" />
-            Duel en ligne
-          </span>
-        )}
+        {/* La messagerie, dans la barre du salon : c’est par elle que les
+            défis se lancent et se reçoivent. Elle reste joignable pendant
+            l’attente d’un adversaire comme pendant le duel — la fenêtre
+            sociale se pose au-dessus du jeu sur cette route
+            (`social-dock--sablier`). */}
+        <span className="rpg-pvp-page__outils">
+          <RpgMessagerieBouton variante="salon" />
+          {code ? (
+            <span className="rpg-pvp-page__code" title="Code du défi">{code}</span>
+          ) : (
+            <span className="rpg-pvp-page__statut">
+              <span className="rpg-pvp-page__point" aria-hidden="true" />
+              Duel en ligne
+            </span>
+          )}
+        </span>
       </header>
       <div className="rpg-pvp-page__contenu">{children}</div>
     </div>

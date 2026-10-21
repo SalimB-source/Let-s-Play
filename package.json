@@ -51,6 +51,7 @@
     "check:rpg-card-markers": "node scripts/rpg-card-markers-check.mjs",
     "check:rpg-mobile": "node scripts/rpg-mobile-layout-check.mjs",
     "check:rpg-duel-nav": "node scripts/rpg-duel-nav-check.mjs",
+    "check:rpg-messagerie": "node scripts/rpg-messagerie-check.mjs",
     "check:rpg-accueil": "node scripts/rpg-accueil-check.mjs",
     "check:rpg-sanctuaire": "node scripts/rpg-plateau-japon-check.mjs",
     "check:rpg-tenebres": "node scripts/rpg-plateau-tenebres-check.mjs",

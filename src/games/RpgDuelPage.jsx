@@ -16,6 +16,7 @@ import './rpg-soins.css';
 import useRpgMythicImpact from './useRpgMythicImpact.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
+import RpgMessagerieBouton from './RpgMessagerieBouton.jsx';
 import { isFullscreenShortcut } from './gameFullscreen.js';
 import useGameFullscreen from './useGameFullscreen.js';
 import { AuthContext } from '../auth/AuthContext';
@@ -3026,6 +3027,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <h1>Le <span>Sablier</span></h1>
             <p>Les portes de la ville attendent leur prochain gardien.</p>
           </div>
+          {/* La messagerie Let’s Play, dans le jeu : c’est par elle que les
+              défis du duel en ligne se lancent et se reçoivent (la carte
+              « Défi du Sablier » des discussions) — elle doit donc être
+              atteignable sans quitter la table, pastille des non-lus
+              comprise. La fenêtre sociale se pose au-dessus du jeu sur cette
+              route (voir `social-dock--sablier`). */}
+          <RpgMessagerieBouton variante="menu" onActivate={() => play('menu')} />
           <button
             type="button"
             className={`rpg-mode-menu__fullscreen${fullscreen ? ' is-on' : ''}`}
@@ -8735,6 +8743,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 </div>
               )}
             </div>
+            {/* La messagerie reste ouvrable en pleine partie : un défi du
+                Sablier reçu pendant un duel se lit sans quitter la table.
+                Au doigt, l’entrée suit les autres commandes dans le panneau
+                du hamburger ; son clic le referme avant d’ouvrir la fenêtre
+                sociale (posée au-dessus du jeu, `social-dock--sablier`). */}
+            <RpgMessagerieBouton
+              variante="duel"
+              onActivate={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); }}
+            />
             <button
               type="button"
               className={`rpg-duel-nav__fullscreen${pleinEcran ? ' is-on' : ''}`}
