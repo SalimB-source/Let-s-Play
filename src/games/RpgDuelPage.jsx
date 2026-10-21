@@ -75,7 +75,7 @@ import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
-import { effetsDetailles, effetsEpuisesPourEntite } from './effetIcons.js';
+import { effetsEpuisesPourEntite } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgTutorialMenu from './RpgTutorialMenu.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
@@ -2314,13 +2314,11 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // sa ligne de type prend la teinte de cette famille.
   const ligneFamille = classeLigneFamille(carte);
   const effet = carte.text && carte.text !== '—' ? carte.text : null;
-  // Les mots-clés passent en pastilles, et leur explication **s'écrit sous le
-  // mot** (`deplier`) : un aperçu ne peut pas la demander au survol — son volet
-  // ne reçoit pas la souris, et au doigt un texte qu'il faudrait toucher pour
-  // l'ouvrir n'est pas lu. Le texte de règle, lui, ne garde que ce qu'aucune
-  // pastille ne nomme (arrivées, morts, sorts…) : rien n'est écrit deux fois.
-  const lecture = effetsDetailles(carte);
-  const effets = cardEffectLines(lecture.texte);
+  // Les mots-clés passent en pastilles — le mot seul, sous la ligne de type,
+  // comme sur les cartes en main et au catalogue. L'aperçu n'écrit aucune
+  // explication sous le mot : la règle imprimée de la carte se lit entière
+  // dans le bloc « Effets », juste en dessous.
+  const effets = cardEffectLines(effet);
   const effetsEpuisesActifs = [...new Set(effetsEpuises ?? [])]
     .filter((cle) => cle === 'tenacite' || cle === 'bouclier');
   const mentionsEffetsEpuises = [
@@ -2348,10 +2346,9 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       {(estFiche || !estCreature) && <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>}
       <PastillesCarte
         carte={carte}
-        pastilles={lecture.pastilles}
         className="rpg-hover-card-preview__pastilles"
-        deplier
         effetsEpuises={effetsEpuisesActifs}
+        muettes
       />
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
       {estEnFurie && (
@@ -4599,6 +4596,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     try { sfxRef.current?.unlock(); } catch { /* ignore */ }
   };
   const duelRef = useRef(null);
+  // Le duel courant se lit **ici**, avant tout effet qui le consulte : une
+  // déclaration plus bas laissait un `useEffect` lire `duel` avant son initialisation
+  // (`Cannot access 'duel' before initialization`) et la page ne se rendait plus.
+  const duel = duelRef.current;
   const tableRef = useRef(null);
   const touchDragRef = useRef(null);
   // Aperçu au doigt : sur écran tactile le survol n'existe pas, un appui long
@@ -5417,7 +5418,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
-  const duel = duelRef.current;
   const delaiReflexionSorcier = () => rpgDelaiReflexionIA(duel, 'sorcier');
   // Les cartes que l'eau ramène dans la main du joueur : elles restent hors de
   // la main tant que le tourbillon joue — le geste se lit avant le résultat.

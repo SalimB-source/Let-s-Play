@@ -643,8 +643,8 @@ aux boosters, comme le font les six autres boîtiers.
    rendements du §8 avec la vraie formule.
 9. **Icônes** — `#effet-abordage` (**le grappin**) et `#effet-cargaison`
    (**le coffre cerclé de cuivre**) dans le sprite
-   `preview-effets-icone.html`, pastilles sous la ligne de type, dépliage
-   d’explication dans l’aperçu (contrat du Butin).
+   `preview-effets-icone.html`, pastilles sous la ligne de type — le mot seul
+   dans l’aperçu, la règle restant dans le bloc « Effets » (contrat du Butin).
 10. **Tests** (`tests/rpg-lettres-de-marque.test.js`, inclus dans
     `npm run check:rpg`) — la prise se fait **à l’arrivée** et remplace la
     destruction (pas de jeton de Momie, pas d’Honneur, pas de compteur, pas

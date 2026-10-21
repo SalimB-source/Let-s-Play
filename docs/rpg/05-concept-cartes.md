@@ -466,10 +466,10 @@ phrase de règle — or une face de carte n'imprime pas la règle, et « donne
   `arrivee` (`buff` / `debuff`) et écrivent `-2/-2`, `+1/+1`, jamais `+-2` ;
 - la même valeur devient une pastille (`pastillesPourCarte`,
   `effetIcons.js`) : « Affaiblissement -2/-2 » sur le sprite `i-degats`,
-  « Renfort +1/+1 » sur `i-aura` — donc aussi dans l'aperçu déplié du Souk et
-  du guide, où chaque pastille écrit sa règle : « La cible perd 2 en attaque
-  et 2 en défense. Si sa défense tombe à 0, elle est détruite. » La vipère ne
-  cite que l'attaque qu'elle retire ;
+  « Renfort +1/+1 » sur `i-aura` — donc aussi dans les pastilles du Souk, du
+  guide et de l'aperçu, où le survol dit sa règle : « La cible perd 2 en
+  attaque et 2 en défense. Si sa défense tombe à 0, elle est détruite. » La
+  vipère ne cite que l'attaque qu'elle retire ;
 - les **armes** sont exclues du calcul : leur bonus de porteur (`bonusArme`)
   s'affiche déjà, et deux chiffres pour la même chose se contrediraient ;
 - les créatures en main gardent leurs propres statistiques : la modification
@@ -715,11 +715,11 @@ contrôleur **pioche une carte puis en défausse une**.
   **+1,2** dans la formule de puissance (`rpgCardPower.js`) ;
 - son icône est la **besace percée** (`#effet-butin` du sprite
   `preview-effets-icone.html`), pastille sous la ligne de type. Dans un aperçu
-  de carte, la pastille se **déplie** — `deplier`, `effetIcons.jsx` — et écrit la
-  règle du mot-clé sous le mot : une explication qui attendrait un survol n'y
-  serait jamais lue (le volet ne reçoit pas la souris, et au doigt il se
-  referme) ; la section correspondante quitte alors le texte de règle, pour
-  qu'aucune règle ne se lise deux fois.
+  de carte, la pastille reste **fermée** (`muettes`, `effetIcons.jsx`) : elle
+  nomme le mot-clé, sans bulle à ouvrir ni explication à écrire dessous. La
+  règle imprimée de la carte se lit entière dans le bloc « Effets », juste
+  sous les pastilles (`HoverCardPreview`, `RpgDuelPage.jsx`) — l'aperçu montre
+  donc la carte telle qu'elle s'imprime.
 
 Porteurs (set Sable) : **Fennec des décombres** (2 mana 3/1, Rapidité + Butin —
 son Esquive a été rendue au Butin), **Chien du guet** (2 mana 2/2), **Faussoyeur des dunes**

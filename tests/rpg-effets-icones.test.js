@@ -278,7 +278,7 @@ test('la Protection élémentaire colore un bouclier par élément, le Sable gar
     'une Protection double garde un cercle par élément');
   assert.match(pastillesCss, /\.rpg-pastille\[data-pastille='protection'\] \{[^}]*border-color: var\(--rpg-protection-couleur/s,
     'la bordure de la pastille suit l’élément');
-  assert.match(pastillesCss, /\.rpg-pastille\[data-pastille='protection'\] \.rpg-pastille__libelle \{[^}]*color: var\(--rpg-protection-couleur/s,
+  assert.match(pastillesCss, /\.rpg-pastille\[data-pastille='protection'\] \{[^}]*color: var\(--rpg-protection-couleur/s,
     'les mots « Protection Braise » prennent la couleur de l’élément');
   assert.match(pastillesCss, /\.rpg-card-icone\[data-effet='protection'\] \{[^}]*border-color: var\(--rpg-protection-couleur/s,
     'le tour du cercle de l’icône prend la même couleur');
@@ -295,14 +295,12 @@ test('la Protection élémentaire colore un bouclier par élément, le Sable gar
     'aucun style de couleur ni de bordure : le Sable garde l’encre ordinaire');
 });
 
-test('un aperçu rend lisible tout ce que la fiche imprime', () => {
-  // Dans un aperçu, les mots-clés deviennent des pastilles : le nom s’affiche
-  // dans la pastille, et son explication se déroule dessous (`deplier`) au lieu
-  // d’attendre un survol que la colonne de l’aperçu ne reçoit pas. Le texte de
-  // règle, lui, ne garde que ce qu’aucune pastille ne nomme. Ce qui est retiré
-  // de l’un doit donc se retrouver dans l’autre : pas un mot de la fiche ne
-  // disparaît de l’écran, sinon la carte ne se lit plus — c’est ce qui arrivait
-  // à dix-neuf fiches réduites à deux mots qu’il fallait survoler.
+test('une pastille dit tout ce que la fiche imprime de son mot-clé', () => {
+  // Les mots-clés deviennent des pastilles : le nom s’affiche dessus, et la
+  // définition — celle du texte de règle, sinon celle du glossaire — reste
+  // dite au survol et dans l’`aria-label`. Ce qui quitte le texte de règle
+  // doit donc se retrouver dans la pastille : pas un mot de la fiche ne
+  // disparaît, sinon la carte ne se lit plus.
   const mots = (texte) => new Set(String(texte).toLowerCase().match(/[a-z0-9à-ÿ]+/gu) ?? []);
   const libelle = (pastille) => (pastille.valeur != null ? `${pastille.label} ${pastille.valeur}` : pastille.label);
   for (const carte of RPG_DUEL_CARDS) {

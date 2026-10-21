@@ -607,13 +607,14 @@ export function definitionPastille(pastille) {
 }
 
 /**
- * La lecture d’une fiche pour un aperçu : ses pastilles **avec ce qu’elles
- * font** (`description`), et le texte de règle qui reste une fois les
- * sections de mots-clés passées aux pastilles.
+ * La lecture d’une fiche pour ses pastilles : chacune **avec ce qu’elle fait**
+ * (`description`), et le texte de règle qui reste une fois les sections de
+ * mots-clés passées aux pastilles.
  *
- * La `description` se lit là où la pastille se déplie — un aperçu de carte
- * (`HoverCardPreview`) — et se survole là où elle reste une puce (grille du
- * catalogue, guide, bulles du Souk) : `PastillesCarte` tranche, `effetIcons.jsx`.
+ * La `description` s’ouvre au survol de la puce (grille du catalogue, guide,
+ * bulles du Souk) — elle n’est jamais écrite sous le mot : un aperçu de carte
+ * montre la pastille fermée, puis la règle entière de la carte dans son bloc
+ * « Effets » (`HoverCardPreview`, `effetIcons.jsx`).
  *
  * - « Coup rapide — Sélectionnée pour attaquer… » : la section court jusqu’à
  *   la fin de sa phrase (et des phrases qui la précisent, « Si vous ne
