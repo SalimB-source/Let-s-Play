@@ -10723,7 +10723,133 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     opacity: 0;
   }
 }
+
+/* ── Cercle magique d'un sacrifice ──────────────────────────────────────────
+   Quand une créature est sacrifiée (plateau plein), un cercle de runes
+   s'allume à son emplacement : halo qui pulse, anneaux en rotation,
+   glyphes et étincelles. Couleurs arcane : violet profond sur or pâle.
+   Le calque reprend la place et l'inclinaison de la créature sacrifiée,
+   ne capte aucun geste et ne recalcule aucune mise en page. */
+
+.rpg-cercle-magique {
+  position: absolute;
+  z-index: 57;
+  transform: rotate(var(--rpg-fx-rotation, 0rad));
+  transform-origin: center;
+  pointer-events: none;
+  animation: rpg-cercle-magique-vie .9s ease-out both;
+}
+
+/* Soleil central : halo lumineux qui bat puis s'efface. */
+.rpg-cercle-magique__soleil {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 55%;
+  height: 55%;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(226, 212, 170, .9),
+    rgba(170, 110, 255, .55) 42%,
+    rgba(110, 40, 220, 0) 78%);
+  box-shadow: 0 0 26px rgba(170, 110, 255, .75), 0 0 52px rgba(110, 40, 220, .5);
+  animation: rpg-cercle-magique-soleil .9s ease-out both;
+}
+
+/* Anneaux de runes : deux cercles qui tournent en sens contraires. */
+.rpg-cercle-magique__anneau {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  translate: -50% -50%;
+  opacity: 0;
+}
+.rpg-cercle-magique__anneau--externe {
+  width: 140%;
+  height: 140%;
+  border: 2px solid rgba(170, 110, 255, .7);
+  box-shadow: 0 0 22px rgba(170, 110, 255, .55);
+  animation: rpg-cercle-magique-anneau-externe .9s ease-out both;
+}
+.rpg-cercle-magique__anneau--interne {
+  width: 100%;
+  height: 100%;
+  border: 2px solid rgba(226, 212, 170, .75);
+  box-shadow: 0 0 16px rgba(226, 212, 170, .5);
+  animation: rpg-cercle-magique-anneau-interne .9s ease-out both;
+}
+
+/* Glyphes disposés sur le cercle, chacun à son angle et à son retard. */
+.rpg-cercle-magique__glyphe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120%;
+  height: 120%;
+  translate: -50% -50%;
+  rotate: var(--r, 0deg);
+  border-top: 1.4px solid rgba(226, 212, 170, .5);
+  border-radius: 50%;
+  opacity: 0;
+  animation: rpg-cercle-magique-glyphe .9s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Étincelles qui montent du cercle. */
+.rpg-cercle-magique__etincelle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 7px #fff, 0 0 14px rgba(226, 212, 170, .7);
+  opacity: 0;
+  animation: rpg-cercle-magique-etincelle var(--d, 700ms) ease-out both;
+}
+
+@keyframes rpg-cercle-magique-vie {
+  0% { opacity: 0; }
+  18% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-cercle-magique-soleil {
+  0% { scale: .45; opacity: 0; }
+  45% { scale: 1.05; opacity: .95; }
+  100% { scale: 1.55; opacity: 0; }
+}
+@keyframes rpg-cercle-magique-anneau-externe {
+  0% { scale: .35; rotate: 0deg; opacity: 0; }
+  35% { opacity: .9; }
+  100% { scale: 1.6; rotate: 360deg; opacity: 0; }
+}
+@keyframes rpg-cercle-magique-anneau-interne {
+  0% { scale: .35; rotate: 0deg; opacity: 0; }
+  25% { opacity: .95; }
+  100% { scale: 1.25; rotate: -360deg; opacity: 0; }
+}
+@keyframes rpg-cercle-magique-glyphe {
+  0% { scale: .2; opacity: 0; }
+  55% { opacity: .85; }
+  100% { scale: .85; opacity: 0; }
+}
+@keyframes rpg-cercle-magique-etincelle {
+  0% { translate: -50% -50%; scale: .2; opacity: 0; }
+  35% { opacity: 1; }
+  100% { translate: calc(-50% + var(--tx, 0px)) calc(-50% + var(--ty, 0px)); scale: .7; opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rpg-abordage-chaine { display: none; }
   .rpg-card-destruction-fx.is-abordage { animation: none; opacity: 0; }
+  .rpg-cercle-magique,
+  .rpg-cercle-magique__soleil,
+  .rpg-cercle-magique__anneau,
+  .rpg-cercle-magique__glyphe,
+  .rpg-cercle-magique__etincelle { animation: none !important; }
 }
