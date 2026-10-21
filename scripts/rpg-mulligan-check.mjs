@@ -152,8 +152,22 @@ assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card__foot,\s*\.rp
   'les deux plaques du mulligan partagent la même grille que la face de l’aperçu');
 assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card__stat--atk,\s*\.rpg-hover-card-preview__face \.rpg-card__pt,\s*\.rpg-mulligan__card \.rpg-card__stat--atk,\s*\.rpg-mulligan__card \.rpg-card__pt\s*\{[^}]*background:\s*rgba\(0,\s*0,\s*0,\s*\.68\);[^}]*font:\s*900 calc\(var\(--rpg-card-marker-size,\s*38px\) \* \.62\)\/1\.15 Georgia, serif;/s,
   'les plaques ATQ/DÉF de l’aperçu et du mulligan reprennent le noir translucide du jeu');
-assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*--rpg-frame-gradient:\s*linear-gradient\(#ffd619,\s*#ffd619\);/s,
-  'une carte mise de côté repeint son cadre orné en or, sans masquer son illustration');
+assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*--rpg-frame-gradient:\s*linear-gradient\(#ff4646,\s*#ff4646\);[^}]*box-shadow:[^}]*rgba\(255,\s*72,\s*72,\s*\.72\)[^}]*rgba\(255,\s*45,\s*45,\s*\.72\)/s,
+  'une carte mise de côté repeint son cadre orné en rouge et porte une lueur rouge');
+assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s+\.rpg-mulligan__img\s*\{[^}]*filter:\s*grayscale\(1\) brightness\(\.72\);/s,
+  'l’illustration de la carte mise de côté devient grise');
+const selectionDom = new JSDOM(`<!doctype html><html><head><style>${battleCss}</style></head><body>
+  <button class="rpg-mulligan__card is-selected"><img class="rpg-mulligan__img" alt=""></button>
+  <button class="rpg-mulligan__card"><img class="rpg-mulligan__img" alt=""></button>
+</body></html>`);
+const [selectedCard, unselectedCard] = selectionDom.window.document.querySelectorAll('.rpg-mulligan__card');
+assert.equal(selectionDom.window.getComputedStyle(selectedCard.querySelector('.rpg-mulligan__img')).filter,
+  'grayscale(1) brightness(.72)', 'la cascade grise bien l’illustration choisie');
+assert.match(selectionDom.window.getComputedStyle(selectedCard).boxShadow, /rgba\(255, 72, 72, \.72\)/,
+  'la cascade donne une lueur rouge à la carte choisie');
+assert.equal(selectionDom.window.getComputedStyle(unselectedCard.querySelector('.rpg-mulligan__img')).filter,
+  'none', 'les cartes gardées conservent leur illustration en couleur');
+selectionDom.window.close();
 assert.match(battleCss, /@keyframes rpg-mulligan-new/,
   'les cartes qui entrent en main à l’étape du résultat ont leur propre entrée');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__(name|rules|flag|banner|top|bas|type)\b/,
@@ -185,6 +199,6 @@ assert.match(battleCss, /@media \(max-width: 620px\) \{[\s\S]{0,400}?\.rpg-mulli
 assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*min-height:\s*44px;/s,
   'les commandes du volet gardent une taille tactile');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-mulligan__card:not\(\.is-selected\):hover \{ transform: none; box-shadow: none; \}/,
-  'au doigt, le survol ne soulève rien — et le liseré doré d’une carte choisie reste intact');
+  'au doigt, le survol ne soulève rien — et la carte grisée à lueur rouge reste intacte');
 
 console.log('✓ Mulligan du Sablier : trois cartes 4:5 sans ligne de type — couleur en haut à gauche, coût en haut à droite, plaques ATQ/DÉF comme dans le jeu — toutes visibles d’un seul coup, échange contre le paquet battu et nouvelle main relue avant de rendre la table');

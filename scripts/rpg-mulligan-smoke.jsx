@@ -134,9 +134,9 @@ export async function checkRpgMulligan(assert) {
   // ── 3. Le choix des cartes à changer ─────────────────────────────────────
   await click(cartes()[1], 'toucher une carte la marque');
   assert.equal(cartes()[1].getAttribute('aria-pressed'), 'true', 'la carte choisie est pressée');
-  assert.equal(cartes()[1].classList.contains('is-selected'), true, 'la carte choisie prend le liseré doré');
+  assert.equal(cartes()[1].classList.contains('is-selected'), true, 'la carte choisie prend son état grisé à lueur rouge');
   assert.equal(cartes()[1].querySelector('.rpg-mulligan__flag'), null,
-    'aucun mot n’est imprimé : le liseré doré dit « à changer », et le compteur le chiffre');
+    'aucun mot n’est imprimé : la carte grisée et sa lueur rouge disent « à changer », et le compteur le chiffre');
   await click(cartes()[2], 'toucher une seconde carte la marque aussi');
   assert.match(q('.rpg-mulligan__compteur').textContent, /2 cartes à changer/, 'le compteur suit la sélection');
   assert.match(q('.rpg-mulligan__valider').textContent, /Changer 2 cartes/, 'le bouton primary nomme l’échange');

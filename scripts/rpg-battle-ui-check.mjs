@@ -631,10 +631,12 @@ assert.match(ringRule, /border-color:\s*transparent;\s*background-image:\s*linea
   'l’anneau orné empile fond de face, motif et matière, et sans dégradé déclaré la matière est la couleur unie de l’élément');
 assert.match(ringRule, /\.rpg-mulligan__card\[class\*="rpg-card--frame-"\]\s*\{\s*--rpg-frame-fill:\s*#0b0c10;\s*\}[\s\S]*?\.rpg-card-catalogue__art\s*\{\s*--rpg-frame-fill:\s*#171218;\s*\}/,
   'le mulligan et le catalogue gardent leur propre fond sous l’illustration');
-assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*--rpg-frame-gradient:\s*linear-gradient\(#ffd619, #ffd619\);/s,
-  'au mulligan, la carte mise de côté repeint son anneau en or (la bordure étant transparente, `border-color` ne suffirait plus)');
+assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*--rpg-frame-gradient:\s*linear-gradient\(#ff4646, #ff4646\);[^}]*box-shadow:[^}]*rgba\(255, 72, 72, \.72\)[^}]*rgba\(255, 45, 45, \.72\)/s,
+  'au mulligan, la carte mise de côté repeint son anneau en rouge et reçoit une lueur rouge');
+assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s+\.rpg-mulligan__img\s*\{[^}]*filter:\s*grayscale\(1\) brightness\(\.72\);/s,
+  'l’illustration d’une carte choisie pour le mulligan est en niveaux de gris');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*border-color:/s,
-  'le liseré doré du mulligan ne passe plus par une `border-color` invisible');
+  'la lueur rouge du mulligan ne passe pas par une `border-color` invisible');
 const shineRule = frameCss.slice(frameCss.indexOf('/* ── Cadres brillants'), frameCss.indexOf('/* Hybrides : deux aplats francs'));
 assert.match(shineRule, /\.rpg-card--frame-brillant\s*\{\s*--rpg-frame-material-size:\s*240% 100%;\s*\}/,
   'seuls les cadres mythiques mono utilisent une matière large pour leur reflet');
@@ -684,8 +686,8 @@ for (const [element, teinte] of Object.entries({ braise: '#e0412a', eau: '#3f9fe
 }
 assert.doesNotMatch(mythicRule, /#2a0a45|#7a2bd0|#f2e6ff|#f0e2ff/,
   'l’ancien cadre mythique violet, y compris son motif lilas, a disparu');
-assert.match(mythicRule, /\.rpg-mulligan__card\.is-selected\.rpg-card--mythique,\s*\.rpg-mulligan__card\.is-selected\[class\*="rpg-card--frame-hybride-"\]\s*\{\s*--rpg-frame-gradient:\s*linear-gradient\(#ffd619, #ffd619\);/,
-  'le liseré du mulligan reste jaune sur les mythiques comme sur les hybrides');
+assert.match(mythicRule, /\.rpg-mulligan__card\.is-selected\.rpg-card--mythique,\s*\.rpg-mulligan__card\.is-selected\[class\*="rpg-card--frame-hybride-"\]\s*\{\s*--rpg-frame-gradient:\s*linear-gradient\(#ff4646, #ff4646\);/,
+  'la lueur rouge du mulligan reste visible sur les mythiques comme sur les hybrides');
 // Le motif est une image encodée dans la feuille : une URI mal échappée ne
 // lèverait aucune erreur, elle ne peindrait simplement rien. On la décode et on
 // la fait relire par un analyseur XML avant d'y croire.
@@ -906,14 +908,19 @@ assert.match(guideCss, /\.rpg-card-guide__cost\s*\{\s*position: absolute;\s*z-in
   }
   const mulliganHybride = cascade.window.document.createElement('button');
   mulliganHybride.className = `rpg-mulligan__card is-selected ${cardFrameClass(bicolore)}`;
+  mulliganHybride.innerHTML = '<img class="rpg-mulligan__img" alt="">';
   cascade.window.document.body.appendChild(mulliganHybride);
-  assert.match(cascade.window.getComputedStyle(mulliganHybride).getPropertyValue('--rpg-frame-gradient'), /#ffd619/,
-    'la sélection du mulligan recouvre la diagonale de l’hybride en jaune');
+  assert.match(cascade.window.getComputedStyle(mulliganHybride).getPropertyValue('--rpg-frame-gradient'), /#ff4646/,
+    'la sélection du mulligan recouvre la diagonale de l’hybride en rouge');
+  assert.equal(cascade.window.getComputedStyle(mulliganHybride.querySelector('.rpg-mulligan__img')).filter,
+    'grayscale(1) brightness(.72)', 'l’illustration choisie au mulligan devient grise');
+  assert.match(cascade.window.getComputedStyle(mulliganHybride).boxShadow, /rgba\(255, 72, 72, \.72\)/,
+    'la carte choisie au mulligan reçoit un halo rouge');
   const mulliganChoisi = cascade.window.document.createElement('button');
   mulliganChoisi.className = `rpg-mulligan__card is-selected ${cardFrameClass(anqa)}`;
   cascade.window.document.body.appendChild(mulliganChoisi);
-  assert.match(cascade.window.getComputedStyle(mulliganChoisi).getPropertyValue('--rpg-frame-gradient'), /#ffd619/,
-    'une mythique sélectionnée au mulligan garde son cadre jaune de sélection');
+  assert.match(cascade.window.getComputedStyle(mulliganChoisi).getPropertyValue('--rpg-frame-gradient'), /#ff4646/,
+    'une mythique sélectionnée au mulligan garde son cadre rouge de sélection');
   cascade.window.close();
 }
 assert.doesNotMatch(frameCss, /\.rpg-card[\.\w-]*\s*\{\s*animation:\s*rpg-frame-shine-sweep/s,
