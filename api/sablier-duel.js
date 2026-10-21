@@ -23,19 +23,31 @@
 import { createClient } from '@supabase/supabase-js';
 import { creerArbitre } from '../src/server/sablierArbitre.js';
 
+function appliquerCors(res) {
+  res.setHeader('access-control-allow-origin', '*');
+  res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
+  res.setHeader('access-control-allow-headers', 'authorization, content-type, apikey, x-client-info');
+}
+
 /** La réponse de l'arbitre quand la configuration manque. */
 function indisponible(res) {
+  appliquerCors(res);
   res.status(503).setHeader('content-type', 'application/json; charset=utf-8');
   res.setHeader('cache-control', 'no-store');
   res.end(JSON.stringify({ ok: false, raison: 'arbitre-indisponible' }));
 }
 
-/** Les en-têtes Node de Vercel → `Headers` web (les valeurs multiples sont jointes). */
+/** Seuls les en-têtes utiles à l'arbitre (`authorization`, `content-type`) sont copiés. */
 function entetes(req) {
   const sortie = new Headers();
-  for (const [cle, valeur] of Object.entries(req.headers || {})) {
-    if (Array.isArray(valeur)) valeur.forEach((v) => sortie.append(cle, v));
-    else if (valeur !== undefined) sortie.set(cle, String(valeur));
+  const h = req.headers || {};
+  const auth = Array.isArray(h.authorization) ? h.authorization[0] : (h.authorization ?? h.Authorization);
+  if (typeof auth === 'string' && auth) {
+    try { sortie.set('authorization', auth); } catch { /* en-tête illisible */ }
+  }
+  const type = Array.isArray(h['content-type']) ? h['content-type'][0] : (h['content-type'] ?? h['Content-Type']);
+  if (typeof type === 'string' && type) {
+    try { sortie.set('content-type', type); } catch { /* en-tête illisible */ }
   }
   return sortie;
 }
@@ -45,10 +57,13 @@ async function corpsBrut(req) {
   if (req.body !== undefined && req.body !== null) {
     if (typeof req.body === 'string') return req.body;
     if (Buffer.isBuffer(req.body)) return req.body.toString('utf8');
+    if (req.body instanceof Uint8Array) return Buffer.from(req.body).toString('utf8');
     return JSON.stringify(req.body);
   }
   const morceaux = [];
-  for await (const morceau of req) morceaux.push(morceau);
+  for await (const morceau of req) {
+    morceaux.push(typeof morceau === 'string' ? Buffer.from(morceau) : morceau);
+  }
   return Buffer.concat(morceaux).toString('utf8');
 }
 
@@ -61,6 +76,21 @@ function magasinSupabase(sb) {
       const { data, error } = await sb.from(TABLE).select('*').eq('code', code).maybeSingle();
       if (error) throw error;
       return data ?? null;
+    },
+
+    async invitationEnAttente(hoteId, inviteId) {
+      try {
+        const { data } = await sb
+          .from(TABLE)
+          .select('code, statut, mode, visibilite, dernier_coup')
+          .eq('hote_id', hoteId)
+          .eq('invite_id', inviteId)
+          .eq('statut', 'invitation')
+          .maybeSingle();
+        return data ?? null;
+      } catch {
+        return null;
+      }
     },
 
     async insererDuel(ligne) {
@@ -138,35 +168,49 @@ function magasinSupabase(sb) {
 }
 
 export default async function handler(req, res) {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const cle = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !cle) return indisponible(res);
+  appliquerCors(res);
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
 
-  // Une instance par invocation : pas de session persistée (clé service).
-  const sb = createClient(url, cle, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  try {
+    const url = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
+    const cle = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+    if (!url || !cle) return indisponible(res);
 
-  const arbitrer = creerArbitre({
-    magasin: magasinSupabase(sb),
-    // Le jeton de l'utilisateur est vérifié par Supabase lui-même : on ne fait
-    // jamais confiance à un identifiant envoyé dans le corps de la requête.
-    authentifier: async (jeton) => {
-      const { data, error } = await sb.auth.getUser(jeton);
-      if (error || !data?.user?.id) return null;
-      return { id: data.user.id, nom: data.user.user_metadata?.gamertag || '' };
-    },
-  });
+    // Une instance par invocation : pas de session persistée (clé service).
+    const sb = createClient(url, cle, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
-  const requete = new Request('https://arbitre.sablier.local/', {
-    method: req.method,
-    headers: entetes(req),
-    body: req.method === 'POST' ? await corpsBrut(req) : undefined,
-  });
+    const arbitrer = creerArbitre({
+      magasin: magasinSupabase(sb),
+      // Le jeton de l'utilisateur est vérifié par Supabase lui-même : on ne fait
+      // jamais confiance à un identifiant envoyé dans le corps de la requête.
+      authentifier: async (jeton) => {
+        const { data, error } = await sb.auth.getUser(jeton);
+        if (error || !data?.user?.id) return null;
+        return { id: data.user.id, nom: data.user.user_metadata?.gamertag || '' };
+      },
+    });
 
-  const reponse = await arbitrer(requete);
-  res.status(reponse.status);
-  res.setHeader('content-type', reponse.headers.get('content-type') || 'application/json');
-  res.setHeader('cache-control', 'no-store');
-  res.end(await reponse.text());
+    const requete = new Request('https://arbitre.sablier.local/', {
+      method: req.method,
+      headers: entetes(req),
+      body: req.method === 'POST' ? await corpsBrut(req) : undefined,
+    });
+
+    const reponse = await arbitrer(requete);
+    res.status(reponse.status);
+    res.setHeader('content-type', reponse.headers.get('content-type') || 'application/json; charset=utf-8');
+    res.setHeader('cache-control', 'no-store');
+    res.end(await reponse.text());
+  } catch (err) {
+    console.error('[api/sablier-duel]', err?.message ?? err);
+    res.status(500);
+    res.setHeader('content-type', 'application/json; charset=utf-8');
+    res.setHeader('cache-control', 'no-store');
+    res.end(JSON.stringify({ ok: false, raison: 'interne' }));
+  }
 }

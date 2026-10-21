@@ -486,3 +486,34 @@ test('une carte jouée par le protocole arrive sur la table, et l’adversaire l
   assert.deepEqual(vueAdverse.etat.sorcier.main, []);
   assert.equal(vueAdverse.etat.sorcier.mainCount, pose.vue.etat.joueur.main.length);
 });
+
+test('une invitation (par lien ou nominative) est lisible par le joueur attendu avant de rejoindre', async () => {
+  const { etatSalon, peutRejoindre } = await import('../src/games/rpgPvpSalon.js');
+  const monde = creerMonde();
+
+  // 1) Défi par lien : tout joueur connecté qui ouvre le lien voit l'écran « a-rejoindre ».
+  const lien = await api(monde, HOTE, { action: 'ouvrir', deck: DECK_A, visibilite: 'lien' });
+  const etatLienTiers = await api(monde, TIERS, { action: 'etat', code: lien.code });
+  assert.equal(etatLienTiers.ok, true);
+  assert.equal(etatLienTiers.statut, 'invitation');
+  assert.equal(etatLienTiers.siege, null);
+  assert.equal(etatSalon(etatLienTiers), 'a-rejoindre');
+  assert.equal(peutRejoindre(etatLienTiers, TIERS), true);
+
+  // 2) Défi nominatif : l'ami invité voit « a-rejoindre », un tiers est refusé.
+  const nominatif = await api(monde, HOTE, {
+    action: 'ouvrir', deck: DECK_A, visibilite: 'amis', invite_id: INVITE,
+  });
+  const etatInvite = await api(monde, INVITE, { action: 'etat', code: nominatif.code });
+  assert.equal(etatInvite.ok, true);
+  assert.equal(etatInvite.statut, 'invitation');
+  assert.equal(etatInvite.siege, null);
+  assert.equal(etatSalon(etatInvite), 'a-rejoindre');
+  assert.equal(peutRejoindre(etatInvite, INVITE), true);
+
+  const etatTiers = await api(monde, TIERS, { action: 'etat', code: nominatif.code });
+  assert.equal(etatTiers.ok, false);
+  assert.equal(etatTiers.status, 403);
+  assert.equal(etatTiers.raison, 'pas-participant');
+});
+
