@@ -27,6 +27,7 @@ const battleCss = read('../src/games/rpg-battle.css');
 const pvpCss = read('../src/games/rpg-pvp.css');
 const tutorialCss = read('../src/games/rpg-tutorial.css');
 const soukCss = read('../src/games/rpg-souk.css');
+const storyCss = read('../src/games/rpg-story.css');
 const deckBox = read('../src/games/RpgDeckBox.jsx');
 const cardArt = read('../src/games/rpgCardArt.js');
 
@@ -301,6 +302,29 @@ assert.match(pvpCss, /\.rpg-pvp-decks \{[^}]*display: flex;[^}]*justify-content:
   'l’étagère du salon se centre, quel que soit le nombre de decks');
 assert.match(pvpCss, /\.rpg-pvp-deckbox\.is-selected \{/, 'le coffret choisi s’allume d’un liseré');
 assert.doesNotMatch(pvpCss, /\.rpg-pvp-deck \{/, 'les règles de l’ancienne carte plate sont retirées');
+
+// Jeu Solo : l'écran prend toute la largeur et range les tours quatre de front.
+// La règle à deux colonnes du hub ne doit pas écraser `--full`.
+assert.match(
+  battleCss,
+  /\.rpg-mode-menu__play:not\(\.rpg-mode-menu__play--full\) \{ grid-template-columns:/,
+  'la grille à deux colonnes du tableau de bord épargne les écrans pleine largeur',
+);
+assert.doesNotMatch(
+  battleCss,
+  /^\.rpg-mode-menu__play \{ grid-template-columns:/m,
+  'aucune règle nue ne vient rouvrir une colonne vide à côté du Jeu Solo',
+);
+assert.match(
+  storyCss,
+  /\.rpg-story__tours \{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(min\(100%, 250px\), 1fr\)\);/,
+  'les tours de Bab El se rangent en quatre colonnes sur ordinateur, une au téléphone',
+);
+assert.match(
+  storyCss,
+  /\.rpg-story-tower__cta \{ align-self: end;/,
+  'sur une rangée de quatre, les pieds de carte s’alignent en bas',
+);
 
 const cadre = new JSDOM(`<!doctype html><html><head><style>${battleCss}\n${soukCss}</style></head><body>
   <section class="rpg-mode-menu rpg-mode-menu--souk"><div class="rpg-mode-menu__content">

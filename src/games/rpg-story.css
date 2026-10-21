@@ -38,9 +38,13 @@
 .rpg-story__reset:hover,
 .rpg-story__reset:focus-visible { color: #fca5a5; border-color: #fca5a5; outline: none; }
 
+/* Les tours de Bab El : quatre de front sur ordinateur — l'écran du Jeu Solo
+   occupe toute la largeur, et sept tours tiennent ainsi en deux rangées au
+   lieu de quatre. La colonne se resserre d'elle-même : trois tours sur un
+   portable, deux sur une tablette, une seule au téléphone. */
 .rpg-story__tours {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
   gap: 16px;
   align-items: start;
 }
@@ -146,6 +150,14 @@
   gap: 6px;
   padding: 14px 16px 14px;
 }
+/* Sur une rangée de quatre, les résumés n'ont pas la même longueur : sans ce
+   socle, la barre de progression et « Voir les étages » dansaient d'une carte à
+   l'autre. Les quatre cartes prennent la hauteur de la plus haute et le pied
+   s'aligne en bas. */
+.rpg-story-tower { height: 100%; }
+.rpg-story-tower__body { flex: 1; grid-template-rows: auto auto 1fr auto auto; align-content: start; }
+.rpg-story-tower__progress { align-self: end; }
+.rpg-story-tower__cta { align-self: end; margin-top: 2px; }
 
 .rpg-story-tower__name {
   font-family: var(--font-gaming);

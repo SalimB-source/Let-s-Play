@@ -8936,7 +8936,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__switch button span { color: #e9b94d; }
 .rpg-mode-menu__switch button.is-active { border: 0; border-bottom: 3px solid #f17c27; background: linear-gradient(0deg, #f17c271c, transparent); color: #fff2dc; }
 .rpg-mode-menu__fullscreen { order: 2; min-height: 38px; min-width: 38px; margin-left: 9px; padding: 8px; border-radius: 50%; }
-.rpg-mode-menu__play { grid-template-columns: minmax(0, 1.65fr) minmax(270px, .8fr); gap: 14px; align-items: stretch; }
+/* Le tableau de bord du Jouer garde sa colonne de quêtes ; les écrans pleine
+   largeur (`--full`, Jeu Solo) reprennent la leur — sans ce garde-fou, la
+   règle du hub écrasait `.rpg-mode-menu__play--full` et laissait les tours
+   dans une colonne de 700 px, une seconde colonne vide à côté. */
+.rpg-mode-menu__play:not(.rpg-mode-menu__play--full) { grid-template-columns: minmax(0, 1.65fr) minmax(270px, .8fr); gap: 14px; align-items: stretch; }
 .rpg-mode-menu__hero { min-height: clamp(420px, 57vh, 620px); align-items: end; border: 1px solid #d0b4774a; border-radius: 9px; background: linear-gradient(0deg, rgba(5,6,7,.94), rgba(5,6,7,.55) 32%, transparent 72%), radial-gradient(ellipse at 45% 34%, #9c6c3661, transparent 58%), linear-gradient(135deg, #1b2427, #443328 52%, #121416); box-shadow: 0 18px 45px #0008; }
 .rpg-mode-menu__hero::before { content: '✦'; position: absolute; display: block; inset: 8% 7% auto auto; color: #f5d083; font-size: clamp(100px, 18vw, 230px); opacity: .24; text-shadow: 0 0 50px #eaaa49; }
 .rpg-mode-menu__hero-copy { position: relative; z-index: 2; width: min(720px, 100%); padding: clamp(22px, 3vw, 42px); }
@@ -8989,7 +8993,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__switch button.is-active::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 3px; background: linear-gradient(90deg, #ffb34a, #f05c1d); box-shadow: 0 0 10px #ff802b; }
 .rpg-mode-menu__switch button.rpg-mode-menu__souk .rpg-mode-menu__bourse-solde { color: #f4d48f; font-size: 11px; }
 .rpg-mode-menu__switch button.rpg-mode-menu__souk .rpg-mode-menu__bourse-pastille { color: #fff6e3; }
-.rpg-mode-menu__play { width: min(1480px, 100%); margin: 0 auto; padding: clamp(24px, 4vh, 42px) clamp(18px, 4.6vw, 74px) 0; grid-template-columns: minmax(0, 1.8fr) minmax(280px, .9fr); gap: clamp(14px, 1.6vw, 24px); }
+.rpg-mode-menu__play:not(.rpg-mode-menu__play--full) { width: min(1480px, 100%); margin: 0 auto; padding: clamp(24px, 4vh, 42px) clamp(18px, 4.6vw, 74px) 0; grid-template-columns: minmax(0, 1.8fr) minmax(280px, .9fr); gap: clamp(14px, 1.6vw, 24px); }
 .rpg-mode-menu__hero { min-height: clamp(430px, 60vh, 680px); }
 @media (max-width: 820px) {
  .rpg-mode-menu__header { flex-wrap: wrap; padding: 0 14px; }
