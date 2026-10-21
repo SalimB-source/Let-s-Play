@@ -158,6 +158,10 @@ function valeurEffet(effet = {}) {
       // La vague du Léviathan : renvoyer toute la table entière vaut une
       // tempête ; le renvoi ciblé reste un rebond ordinaire.
       return effet.cible === 'toutes-autres' ? 6 : 2;
+    case 'renvoi-tueur':
+      // Le Brûlot : le tueur repart en main — un rebond différé qui ne joue
+      // qu'en combat, donc sous le prix d'un retour-main ciblé.
+      return 1.2;
     case 'retour-apres-tours': {
       // Le retour d'Anqa : différé et dégressif — deux tours valent 2,5,
       // chaque tour de plus retire 0,375 (quatre tours ≈ 1,75). Le sorcier a
@@ -212,6 +216,12 @@ export function valeurCarte(carte) {
     if (carte.donne?.rapidite) valeur += 0.5;
     if (carte.donne?.coupRapide) valeur += 2;
     if (carte.donne?.tribut) valeur += 1.6 * carte.donne.tribut;
+    // L'Abordage prêté (le Grappin d'abordage) : la capture remplace la
+    // destruction — le même prix que le mot-clé imprimé sur une créature.
+    if (carte.donne?.abordage) valeur += 1.5;
+    // La prime de prise en cale (le Grappin) : un soin conditionnel, une fois
+    // par capture — lu comme l'effet de soin qu'il est.
+    if (carte.priseEnCale) valeur += valeurEffet(carte.priseEnCale);
     // L'arme qui pose un bouclier sur son porteur (la Hache de la banquise) :
     // il absorbe les premières blessures, au prix d'un bouclier de sort.
     if (carte.donne?.bouclier) valeur += 0.7 * carte.donne.bouclier;
@@ -275,6 +285,15 @@ export function valeurCarte(carte) {
   // Tribut (set Ténèbres) : chaque contact avec le sorcier adverse transfère
   // des PV — pesé au même rythme que le Butin, un peu en dessous.
   if (carte.tribut) valeur += 0.9 * carte.tribut;
+  // Abordage (set Lettres de Marque) : la capture remplace la destruction —
+  // un retrait de table que la Rançon peut défaire, entre le Butin et l'Envol.
+  if (carte.abordage) valeur += 1.5;
+  // Cargaison (set Lettres de Marque) : l'assurance du convoi — la pioche ne
+  // joue qu'à la mort ou à la prise, donc sous le prix d'une pioche sèche.
+  if (carte.cargaison) valeur += 0.9 * carte.cargaison;
+  // Le déclencheur de rançon (le Négociant) : une carte par rançon payée,
+  // des deux côtés de la mer — un rendement incertain, un prix modéré.
+  if (carte.declencheRancon) valeur += 1.2 * carte.declencheRancon;
   if (carte.arrivee) valeur += valeurEffet(carte.arrivee);
   // L'effet de destruction n'arrive que si la créature tombe : compté, mais
   // à 80 % — la mort n'est pas une garantie, et certaines tombent trop tard.

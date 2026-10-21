@@ -64,6 +64,11 @@ export function composerDeck(recette, catalogue) {
 
   const dansIdentite = (carte) => {
     if (carte?.set === 'balance-des-heures' && !identite.includes('tenebres')) return false;
+    // Les lettres de marque (set Piraterie, doc 17) restent à bord des decks
+    // qui embarquent les DEUX couleurs de la course : Sable et Eau. Les
+    // paquets prototypes gardent ainsi leur sélection d'armes et de cartes.
+    if (carte?.set === 'lettres-de-marque'
+      && !(identite.includes('sable') && identite.includes('eau'))) return false;
     const couleurs = couleursDe(carte);
     return couleurs.length > 0 && couleurs.every((couleur) => identite.includes(couleur));
   };

@@ -19,9 +19,16 @@ import { rpgPeutAttaquer } from '../src/games/rpgDuel.js';
 function horlogeDuJeu() {
   const originalSetTimeout = window.setTimeout;
   const originalClearTimeout = window.clearTimeout;
+  const originalDateNow = Date.now;
+  // Le jeu compare la péremption de ses effets à Date.now() : l'horloge
+  // virtuelle doit donc faire avancer Date.now() en même temps que les
+  // minuteries, sinon les chiens de garde vident leurs piles avant l'heure
+  // et croient que rien n'a expiré.
+  const debutReel = Date.now();
   let maintenant = 0;
   let sequence = 0;
   const timers = new Map();
+  Date.now = () => debutReel + maintenant;
   window.setTimeout = (callback, delai = 0, ...args) => {
     const id = ++sequence;
     timers.set(id, { date: maintenant + Number(delai), callback: () => callback(...args) });
@@ -51,6 +58,7 @@ function horlogeDuJeu() {
       timers.clear();
       window.setTimeout = originalSetTimeout;
       window.clearTimeout = originalClearTimeout;
+      Date.now = originalDateNow;
     },
   };
 }
@@ -112,7 +120,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
     if (!element || element.disabled) return false;
     actions.push(etiquette || element.className?.split?.(' ')?.[1] || element.tagName);
     await act(async () => element.click());
-    verifier(`juste-apres:${actions[actions.length - 1]}`, { anime: true });
+    await verifier(`juste-apres:${actions[actions.length - 1]}`, { anime: true });
     if (!fantomeTeste && q('.rpg-card-destruction-fx')) {
       fantomeTeste = true;
       await surFantome({ q, qa, horloge, assert, graine });
@@ -121,7 +129,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
   };
   const boutonTexte = (motif) => qa('button').find((bouton) => motif.test(texte(bouton)) && !bouton.disabled);
 
-  const verifier = (etape, { anime = false } = {}) => {
+  const verifier = async (etape, { anime = false } = {}) => {
     // Hors de la table (menu, deck, catalogue), il n'y a rien à comparer.
     if (!q('.card-table')) return;
     const contexte = `graine ${graine}${mobile ? ' (doigt)' : ''} — ${etape}`;
@@ -165,6 +173,10 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
     // Une image de destruction est légitime pendant son animation : on ne la
     // compte que lorsque l'horloge a fini de tourner.
     if (!anime) {
+      // Un adieu peut naître à la toute fin de la fenêtre (une étape différée
+      // de résolution de combat achève alors à peine la carte) : il est vivant,
+      // pas figé. On ne crie au fantôme que s'il survit à sa propre expiration.
+      if (qa('.rpg-card-destruction-fx').length) await horloge.avancer(1500);
       assert.equal(qa('.rpg-card-destruction-fx').length, 0,
         `${contexte} : aucun effet de destruction figé sur la table`);
     }
@@ -206,7 +218,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
     await lancerDuelDepuisMenu(container, (element) => click(element, 'menu'));
     await passerMulligan(container, (element) => click(element, 'mulligan'));
     await horloge.avancer(2000);
-    verifier('ouverture');
+    await verifier('ouverture');
 
     let attaqueFaite = false;
     let tailleVue = -1;
@@ -218,7 +230,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
       const impatient = rng() < 0.35;
       await horloge.avancer(impatient ? 60 + Math.floor(rng() * 420) : 2000);
       if (q('.rpg-overlay')) { fin = 'duel terminé'; break; }
-      verifier(aJoue ? 'tour' : 'debut-de-tour', { anime: impatient });
+      await verifier(aJoue ? 'tour' : 'debut-de-tour', { anime: impatient });
 
       // Butin s'effectue en deux gestes depuis la confirmation ajoutée au duel :
       // sélectionner une carte, puis valider la défausse avant de poursuivre.
@@ -351,14 +363,14 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
       if (impatient || patience < 1) {
         patience += 1;
         await horloge.avancer(3000);
-        verifier('apres-attente');
+        await verifier('apres-attente');
         continue;
       }
       fin = `bloqué : ${texte(q('.rpg-actions__message, .rpg-message, .rpg-bottombar'))?.slice(0, 160)}`;
       break;
     }
     await horloge.avancer(3000);
-    verifier('fin');
+    await verifier('fin');
   } finally {
     await act(async () => root.unmount());
     container.remove();
@@ -394,10 +406,12 @@ export async function verifierRelance(assert) {
   try {
     await act(async () => root.render(
       <RpgDuelPage
-        joueurDeck={[...Array(6).fill('desert'), 'chien-du-guet', 'fennec-des-decombres', 'desert', 'montagne']}
-        sorcierDeck={['desert', 'desert', 'desert', 'chien-du-guet', 'fennec-des-decombres', 'montagne', 'montagne', 'montagne', 'montagne', 'montagne']}
+        // Trente cartes Sable chacun, sans terrain : le mana pousse tout seul
+        // et le sorcier déploie mousse, chiens et négociant tour après tour.
+        joueurDeck={[...['mousse-des-ponts', 'sandales-du-desert', 'licou-de-chameau', 'faiseur-de-briques', 'tiziri-la-douce', 'rempart-de-sable', 'cuirasse-de-cuir', 'javelot-iflelou', 'tercio-de-tercios', 'guetteur-des-dunes', 'rapport-de-mission', 'takouba-du-sud'].flatMap((id) => [id, id]), 'fennec-des-decombres', 'chien-du-guet', 'chien-du-guet', 'tislit-eclaireuse', 'tislit-eclaireuse', 'fennec-des-decombres']}
+        sorcierDeck={[...['tislit-eclaireuse', 'sandales-du-desert', 'licou-de-chameau', 'faiseur-de-briques', 'rempart-de-sable', 'cuirasse-de-cuir', 'javelot-iflelou', 'tercio-de-tercios', 'guetteur-des-dunes', 'amayas-le-druide', 'tiziri-la-douce'].flatMap((id) => [id, id]), 'negociant-des-oasis', 'chien-du-guet', 'chien-du-guet', 'dame-de-tafilalet', 'tin-hinan', 'faucon-des-ergs', 'cavalier-amazigh', 'mousse-des-ponts']}
         sorcierPuissance={0}
-        rng={() => 0.5}
+        rng={() => 0.999}
       />,
     ));
     await lancerDuelDepuisMenu(container, (element) => click(element));
@@ -428,12 +442,22 @@ export async function verifierRelance(assert) {
     }
     assert.ok(window.__RPG_DUEL__?.sorcier.creatures.length > 0,
       'le sorcier a des créatures en jeu au moment où le joueur quitte la table');
-    // On quitte la table juste après avoir rendu la main : le sorcier est en
-    // train de jouer, ses minuteries sont en vol.
-    await click(q('.rpg-btn--resolve-combat'));
-    await horloge.avancer(300);
-    await click(q('.rpg-btn--endturn'));
-    await horloge.avancer(300);
+    // On attend la main du joueur, en consommant au passage tout combat ou
+    // annonce encore en suspens, puis on la rend aussitôt : le sorcier entre
+    // dans son tour, minuteries en vol, et on quitte la table en plein geste.
+    let patience = 0;
+    while (patience < 40) {
+      if (await click(q('.rpg-btn--resolve-combat'))) continue;
+      const passer = q('.rpg-annonce-sort__pass') ?? q('.rpg-fin-tour button');
+      if (await click(passer)) continue;
+      const boutonFin = q('.rpg-btn--endturn');
+      if (boutonFin && !boutonFin.disabled) break;
+      patience += 1;
+      await horloge.avancer(300);
+    }
+    const finTour = q('.rpg-btn--endturn');
+    assert.ok(finTour && !finTour.disabled, 'la main du joueur revient avant de quitter la table');
+    await click(finTour);
     assert.ok(horloge.enAttente() > 0, 'des minuteries du sorcier sont encore en vol');
     await click(boutonTexte(/^Menu$/));
     assert.ok(!q('.card-table'), 'la table est quittée');

@@ -58,6 +58,10 @@ export const COLLECTION_DEPART = RPG_DUEL_CARDS
   // Les communes/inhabituelles Ténèbres (Chacal, Ouvrier, Papyrus…) restent
   // à ouvrir dans les boosters, même si leur rareté est « commune ».
   .filter((carte) => carte.set !== 'balance-des-heures')
+  // Les Lettres de Marque suivent la même frontière : leurs communes et
+  // inhabituelles (Mousse, Raïs, Brûlot…) restent au Souk, le rayon Sable,
+  // jusqu'à l'entrée dédiée de la Régence (doc 17 §15).
+  .filter((carte) => carte.set !== 'lettres-de-marque')
   .map((carte) => carte.id);
 
 /**
@@ -87,12 +91,16 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // les premières cartes d'Eau.
   'souk-1': ['vent-rouge', 'samourai-du-torii'],
   'souk-2': ['salem', 'vipere-de-verre', 'kenshi-de-la-forge'],
-  'souk-3': ['parade-du-verre', 'frappe-iaijutsu'],
-  'souk-4': ['ifrit-al-ahmar', 'feriel', 'colosse-de-sel', 'daimyo-du-soleil-rouge'],
+  'souk-3': ['parade-du-verre', 'frappe-iaijutsu',
+    'mousse-des-galiotes', 'rais-de-la-galiote', 'le-brulot', 'haut-fond'],
+  'souk-4': ['ifrit-al-ahmar', 'feriel', 'colosse-de-sel', 'daimyo-du-soleil-rouge',
+    'pilote-de-la-carreira', 'tercio-de-cuivre', 'cotre-de-course', 'le-renegat',
+    'lettre-de-marque', 'le-routier'],
   // Tour des Sables — le sommet du Sable/Braise, l'Eau se précise.
   'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation'],
-  'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit'],
-  'sables-3': ['anqa-des-braises', 'tin-hinan', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'lame-des-ergs', 'takouba-de-tin-hinan'],
+  'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit',
+    'negociant-des-ranscons', 'galion-de-la-flotte', 'le-grand-debarquement', 'grappin-d-abordage'],
+  'sables-3': ['anqa-des-braises', 'tin-hinan', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse'],
   // Tour des Abysses — les bêtes marines ; ce qui remonte du fond est gelé :
   // les premières cartes de Neige précèdent la tour du Fjord.
   'abysses-1': ['kraken', 'baton-des-citernes'],

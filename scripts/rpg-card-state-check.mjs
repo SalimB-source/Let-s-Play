@@ -3,9 +3,23 @@ import { readFileSync } from 'node:fs';
 import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 
+// Sonde de test : la page expose l'état du moteur pour que le scénario
+// compare l'affiché et la vérité du duel (même procédé que le mulligan).
+const sonde = {
+  name: 'rpg-duel-probe',
+  enforce: 'pre',
+  transform(code, id) {
+    if (!id.endsWith('RpgDuelPage.jsx')) return null;
+    const ancre = '  const duel = duelRef.current;';
+    if (!code.includes(ancre)) throw new Error('ancre de sonde introuvable');
+    return code.replace(ancre, `${ancre}\n  if (typeof window !== 'undefined') window.__RPG_DUEL__ = duel;`);
+  },
+};
+
 const previousEnv = process.env.NODE_ENV;
 await build({
   logLevel: 'error',
+  plugins: [sonde],
   build: { ssr: 'scripts/rpg-card-state-smoke.jsx', outDir: 'node_modules/.cache/rpg-card-state', emptyOutDir: true },
 });
 if (previousEnv === undefined) delete process.env.NODE_ENV;

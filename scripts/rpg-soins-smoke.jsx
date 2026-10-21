@@ -14,12 +14,17 @@ import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Le paquet se pioche par la fin de la liste : la main de départ réunit quatre
-// Mers et la Porteuse de cruches (arrivée : soin 3), et la première pioche
-// apporte l'Eau de la source (Sorcellerie, soin 4).
-const DECK_JOUEUR = ['mer', 'mer', 'mer', 'mer', 'eau-de-la-source', 'porteuse-de-cruches', 'mer', 'mer', 'mer', 'mer'];
-// Le sorcier tient un Trait de braise (3 dégâts), lancé dès sa seconde Montagne.
-const DECK_SORCIER = [...Array(9).fill('montagne'), 'trait-de-braise'];
+// Trente cartes mono-Eau, tirées à l'identique (rng 0.999) : la main de
+// départ tient l'Eau de la source (soin 4), la Porteuse de cruches (arrivée :
+// soin 3) et une Vipère de verre qui restera en main — le mana pousse tout
+// seul, plus besoin de poser des terrains.
+const REMPLISSAGE_EAU = ['haut-fond', 'ressac', 'pilote-de-la-carreira', 'le-brulot', 'lame-de-mer', 'ecueil', 'silence-decume', 'sonneur-fele', 'veilleuse-des-citernes', 'contresort-des-abimes', 'tour-des-flots'].flatMap((id) => [id, id]);
+const DECK_JOUEUR = ['parade-du-verre', 'brisure-de-verre', ...REMPLISSAGE_EAU, 'kraken', 'leviathan', 'jormungandr', 'vipere-de-verre', 'porteuse-de-cruches', 'eau-de-la-source'];
+// Trente cartes mono-Braise : la main du sorcier tient le Trait de braise
+// (3 dégâts) et deux créatures hors de prix — dès son deuxième tour, le
+// Trait est sa seule carte jouable, et la table du joueur est vide.
+const REMPLISSAGE_BRAISE_SOIN = [...['ashigaru-des-braises', 'ghul-des-cendres', 'hatamoto-des-cendres', 'ronin-du-soleil-rouge', 'tour-de-braise'].flatMap((id) => [id, id]), 'samourai-du-torii', 'kenshi-de-la-forge', 'sahir-des-braises', 'braisier-du-souk', 'onna-musha-des-cendres', 'tengu-du-mont-ardent', 'oni-de-la-fournaise', 'daimyo-du-soleil-rouge', 'anqa-des-braises', 'ifrit-des-ergs', 'feriel', 'ifrit-al-ahmar', 'frappe-iaijutsu', 'armure-de-cendres'];
+const DECK_SORCIER = [...REMPLISSAGE_BRAISE_SOIN, 'lionne-du-midi-ardent', 'kagutsuchi-flamme-originelle', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'trait-de-braise'];
 
 function creerTransfert() {
   const values = new Map();
@@ -71,12 +76,6 @@ async function scenarioDuel(assert, sons) {
       envoyerEvenementGlisser(carte, 'dragend', dataTransfer);
     });
   };
-  const jouerUneMer = async () => {
-    const mer = main().find((carte) => carte.classList.contains('rpg-hand__card--terrain') && estJouable(carte));
-    assert.ok(mer, 'une Mer est prête à être posée');
-    await glisserSurTable(mer);
-    await act(async () => { await wait(800); });
-  };
   const passerTourSorcier = async () => {
     await cliquer(container.querySelector('.rpg-btn--endturn'), 'le joueur peut finir son tour');
     await act(async () => { await wait(900); });
@@ -118,18 +117,15 @@ async function scenarioDuel(assert, sons) {
     assert.equal(zonesEtat()[0].getAttribute('aria-live'), 'polite', 'les soins s’annoncent poliment');
     assert.equal(zonesEtat()[0].textContent, '', 'la zone d’état des soins reste vide sans soin');
 
-    // ── 1. Deux tours de Mers ; le Trait de braise du sorcier ôte 3 PV ──────
-    await jouerUneMer();
+    // ── 1. Deux tours muets ; le Trait de braise du sorcier ôte 3 PV ──────
+    assert.ok(carteEnMain('Eau de la source'), 'la main de départ tient l’Eau de la source');
     await passerTourSorcier();
-    await jouerUneMer();
-    assert.ok(carteEnMain('Eau de la source'), 'la première pioche apporte l’Eau de la source');
     await passerTourSorcier();
     await attendre(() => pvJoueur() === RPG_PV_JOUEUR - 3, 'le Trait de braise du sorcier retire 3 PV au joueur', 6000);
     assert.equal(container.querySelector('.is-healing'), null, 'des dégâts ne passent jamais pour un soin');
     assert.ok(!sons.includes('soin_vie') && !sons.includes('soin_vie_adverse'), 'aucun son de soin avant le premier soin');
 
     // ── 2. L'Eau de la source rend 4 PV — la vie passe au-dessus de 25 ──────
-    await jouerUneMer();
     const eau = carteEnMain('Eau de la source');
     await attendre(() => estJouable(carteEnMain('Eau de la source')), 'l’Eau de la source devient jouable au tour du joueur');
     sons.length = 0;
@@ -166,7 +162,7 @@ async function scenarioDuel(assert, sons) {
 
     // ── 4. À pleine vie, la Porteuse ouvre la réserve : la vie dépasse 25 ────
     const porteuse = carteEnMain('Porteuse de cruches');
-    assert.ok(estJouable(porteuse), 'la Porteuse de cruches est jouable avec les deux Mers restantes');
+    assert.ok(estJouable(porteuse), 'la Porteuse de cruches est jouable sur le mana du tour');
     sons.length = 0;
     await glisserSurTable(porteuse);
     await attendre(() => container.querySelector('.rpg-card--equipe[data-card-id="porteuse-de-cruches"]'),

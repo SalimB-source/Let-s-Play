@@ -12,9 +12,14 @@ import { lancerDuelDepuisMenu } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Les decks du scénario : 5 premiers cartes en main, le reste au paquet. */
-const DECK_JOUER = ['desert', 'chien-du-guet', 'fennec-des-decombres', 'mer', 'montagne', 'ressac', 'parade-du-verre', 'djinn-de-foudre', 'desert', 'desert'];
-const DECK_SORCIER = ['montagne', 'desert', 'chien-du-guet', 'fennec-des-decombres', 'dune-marchante', 'montagne', 'chien-du-guet', 'desert', 'djinn-du-souk', 'vipere-de-verre'];
+/** Les decks du scénario : depuis le mana automatique, la main de départ
+ *  compte trois cartes et les paquets ne portent plus de terrains. Le deck du
+ *  joueur est mono-Sable (le premier mana s'allume tout seul) ; son tirage
+ *  déterministe ouvre sur deux Cuirasses de sel et l'Amayas du Hoggar, et
+ *  l'échange des deux dernières ramène la Tislit des Aures — la créature à
+ *  1 mana qui sera jouable dès la table rendue. */
+const DECK_JOUER = ['rempart-de-dunes', 'sandales-de-tislit', 'jitte-d-amayas', 'tislit-des-aures', 'chien-du-guet', 'faiseur-de-passage'];
+const DECK_SORCIER = ['tislit-des-aures', 'chien-du-guet', 'fennec-des-decombres'];
 
 export async function checkRpgMulligan(assert) {
   const container = document.createElement('div');
@@ -47,11 +52,11 @@ export async function checkRpgMulligan(assert) {
   assert.equal(volet().getAttribute('role'), 'dialog', 'le volet est une boîte de dialogue modale');
   assert.match(volet().getAttribute('aria-label'), /Mulligan/, 'le volet se nomme pour les lecteurs d’écran');
   assert.equal(q('.card-table').hasAttribute('inert'), true, 'la table est close tant que la main n’est pas validée');
-  assert.equal(cartes().length, 5, 'les cinq cartes piochées sont toutes présentées');
+  assert.equal(cartes().length, 3, 'les trois cartes piochées sont toutes présentées');
   assert.deepEqual(cartes().map((carte) => carte.dataset.cardId), main(),
     'le volet montre exactement la main de départ, dans le même ordre');
-  assert.equal(q('.rpg-mulligan__stage > .rpg-mulligan__cards')?.children.length, 5,
-    'les cinq cartes forment une seule rangée, dans la scène que la feuille mesure');
+  assert.equal(q('.rpg-mulligan__stage > .rpg-mulligan__cards')?.children.length, 3,
+    'les trois cartes forment une seule rangée, dans la scène que la feuille mesure');
   for (const carte of cartes()) {
     const id = carte.dataset.cardId;
     const attendue = cardById(id);
@@ -142,7 +147,7 @@ export async function checkRpgMulligan(assert) {
   assert.equal(cartes().filter((carte) => carte.getAttribute('aria-pressed') === 'true').length, 0,
     '« Annuler la sélection » vide les choix sans fermer le volet');
   await click(cartes()[1], 'la carte du milieu est choisie');
-  await click(cartes()[2], 'et la suivante aussi');
+  await click(cartes()[2], 'et la dernière aussi');
 
   // ── 4. Validation : ce qui sort, ce qui entre, et la main qui ne fond pas ─
   const duel = window.__RPG_DUEL__;
@@ -153,9 +158,9 @@ export async function checkRpgMulligan(assert) {
   await click(q('.rpg-mulligan__valider'), 'valider l’échange');
   await act(async () => { await wait(120); });
 
-  assert.equal(duel.joueur.main.length, 5, 'la main compte toujours cinq cartes après l’échange');
-  assert.deepEqual(duel.joueur.main.slice(0, 3), [mainAvant[0], mainAvant[3], mainAvant[4]],
-    'les cartes gardées restent en main, dans leur ordre');
+  assert.equal(duel.joueur.main.length, 3, 'la main compte toujours trois cartes après l’échange');
+  assert.deepEqual(duel.joueur.main.slice(0, 1), [mainAvant[0]],
+    'la carte gardée reste en main, en tête');
   assert.equal([...duel.joueur.main, ...duel.joueur.deck].sort().join('|'),
     [...mainAvant, ...paquetAvant].sort().join('|'),
     'les deux cartes écartées sont retournées dans le paquet, aucune carte perdue');
@@ -165,19 +170,19 @@ export async function checkRpgMulligan(assert) {
   // Le volet reste ouvert sur la nouvelle main, avec les étapes du bilan.
   assert.match(volet()?.className ?? '', /rpg-mulligan--resultat/, 'le volet passe à l’étape du résultat');
   assert.match(titre(), /nouvelle main/, 'le titre annonce la main qui vient d’être piochée');
-  assert.equal(cartes().length, 5, 'la nouvelle main se relit en grand');
+  assert.equal(cartes().length, 3, 'la nouvelle main se relit en grand');
   assert.equal(cartes().filter((carte) => carte.classList.contains('is-new')).length, 2,
     'les deux cartes piochées sont signalées');
   assert.deepEqual(cartes().filter((carte) => carte.classList.contains('is-new')).map((carte) => carte.dataset.cardId),
-    duel.joueur.main.slice(3), 'ce sont bien les cartes qui viennent d’entrer en main');
+    duel.joueur.main.slice(1), 'ce sont bien les cartes qui viennent d’entrer en main');
   assert.match(q('.rpg-mulligan__head p').textContent, /Vous écartez 2 cartes et piochez 2 cartes/,
     'le bilan résume l’échange');
-  assert.match(q('.rpg-mulligan__head p').textContent, /le sorcier (en change \d|garde la sienne)/,
+  assert.match(q('.rpg-mulligan__head p').textContent, /le sorcier (en change \d|garde sa main)/,
     'le bilan dit aussi ce qu’a fait le sorcier');
   assert.equal(q('.rpg-mulligan__valider'), null, 'plus de second échange possible');
 
   // ── 5. Le sorcier a eu le même droit ─────────────────────────────────────
-  assert.equal(duel.sorcier.main.length, 5, 'la main du sorcier garde cinq cartes');
+  assert.equal(duel.sorcier.main.length, 3, 'la main du sorcier garde trois cartes');
   assert.equal([...duel.sorcier.main, ...duel.sorcier.deck].sort().join('|'),
     [...sorcierAvant, ...sorcierPaquetAvant].sort().join('|'),
     'le sorcier non plus ne perd pas de carte en route');
@@ -191,14 +196,15 @@ export async function checkRpgMulligan(assert) {
   assert.match(q('.card-table').className, /card-table--plateau-/,
     'le plateau tiré est posé sous les cartes : il se voit, il ne s’annonce pas');
   assert.equal(q('.rpg-btn--endturn')?.disabled, false, 'le tour est maintenant au joueur');
-  const terrainId = duel.joueur.main.find((id) => cardById(id)?.kind === 'terrain');
-  assert.ok(terrainId, 'la main de départ gardée contient bien un terrain');
-  const terrain = q(`.rpg-hand__card[data-card-id="${terrainId}"]`);
-  assert.equal(terrain?.dataset.jouable, 'true', 'un terrain devient jouable dès la table rendue');
-  await click(terrain, 'poser le terrain');
+  const jouableId = duel.joueur.main.find((id) => cardById(id)?.kind === 'creature' && (cardById(id)?.cost ?? 9) <= 1);
+  assert.ok(jouableId, 'la main de départ gardée contient bien une créature à un mana');
+  const jouable = q(`.rpg-hand__card[data-card-id="${jouableId}"]`);
+  assert.equal(jouable?.dataset.jouable, 'true', 'une créature à un mana devient jouable dès la table rendue');
+  await click(jouable, 'poser la créature');
   // La carte vole vers la table : le geste n'est résolu qu'à l'atterrissage.
   await act(async () => { await wait(900); });
-  assert.ok(q('.rpg-terrains--joueur .rpg-terrain'), 'le terrain est posé sur la table');
+  assert.ok(q(`.card-row--equipe .rpg-card[data-card-id="${jouableId}"]`),
+    'la créature est posée sur la table');
 
   await act(async () => { root.unmount(); });
   container.remove();

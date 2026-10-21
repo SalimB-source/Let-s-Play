@@ -47,9 +47,9 @@ const mulligans = (duel, indices = []) => {
 };
 const total = (camp) => Object.values(camp.manaMax).reduce((somme, quantite) => somme + quantite, 0);
 
-test('les quatre decks de démonstration partagent le format 30 cartes sans terrain', () => {
-  assert.equal(RPG_MANA_ESSAI_DECKS.length, 4);
-  assert.deepEqual(RPG_MANA_ESSAI_DECKS.map((deck) => deck.elements.length), [1, 2, 3, 1]);
+test('les cinq decks de démonstration partagent le format 30 cartes sans terrain', () => {
+  assert.equal(RPG_MANA_ESSAI_DECKS.length, 5);
+  assert.deepEqual(RPG_MANA_ESSAI_DECKS.map((deck) => deck.elements.length), [1, 2, 3, 1, 2]);
   for (const deck of RPG_MANA_ESSAI_DECKS) {
     assert.equal(deck.cardIds.length, RPG_MANA_ESSAI_TAILLE);
     assert.deepEqual(validerDeckManaEssai(deck), { ok: true }, deck.name);

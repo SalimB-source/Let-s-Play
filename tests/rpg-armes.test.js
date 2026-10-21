@@ -81,10 +81,10 @@ const LOT_EQUIPEMENTS_SABLE = [
 ];
 const ARMES_PROTOTYPE = RPG_ARME_CARDS.filter((carte) => !LOT_EQUIPEMENTS_SABLE.includes(carte.id));
 
-test('le prototype compte six armes, une par élément (la Neige en porte deux), avec leur peinture', () => {
-  assert.equal(ARMES_PROTOTYPE.length, 6);
+test('le prototype compte sept armes, une par élément (la Neige et le Sable en portent deux), avec leur peinture', () => {
+  assert.equal(ARMES_PROTOTYPE.length, 7);
   assert.deepEqual(ARMES_PROTOTYPE.map((carte) => carte.element).sort(),
-    ['braise', 'eau', 'neige', 'neige', 'sable', 'tenebres']);
+    ['braise', 'eau', 'neige', 'neige', 'sable', 'sable', 'tenebres']);
   for (const carte of ARMES_PROTOTYPE) {
     assert.equal(carte.kind, 'arme', `${carte.id} est une arme`);
     assert.match(carte.typeLine, /^Arme — /, `${carte.id} affiche sa ligne de type`);
@@ -133,6 +133,7 @@ test('les decks du catalogue suivent leur quota d’armes et leur plafond de myt
     'serment-des-neuf-hivers': ['lance-de-givre'],
     'serment-du-soleil-rouge': [],
     'balance-des-heures': ['khopesh-d-or'],
+    'lettres-de-marque': ['baton-des-citernes', 'grappin-d-abordage'],
   };
   for (const deck of RPG_DECKS) {
     assert.equal(deck.cardIds.length, 30, `${deck.name} fait 30 cartes`);

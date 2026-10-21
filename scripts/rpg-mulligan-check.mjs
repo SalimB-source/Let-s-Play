@@ -187,4 +187,4 @@ assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*m
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-mulligan__card:not\(\.is-selected\):hover \{ transform: none; box-shadow: none; \}/,
   'au doigt, le survol ne soulève rien — et le liseré doré d’une carte choisie reste intact');
 
-console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans ligne de type — couleur en haut à gauche, coût en haut à droite, plaques ATQ/DÉF comme dans le jeu — toutes visibles d’un seul coup, échange contre le paquet battu et nouvelle main relue avant de rendre la table');
+console.log('✓ Mulligan du Sablier : trois cartes 4:5 sans ligne de type — couleur en haut à gauche, coût en haut à droite, plaques ATQ/DÉF comme dans le jeu — toutes visibles d’un seul coup, échange contre le paquet battu et nouvelle main relue avant de rendre la table');
