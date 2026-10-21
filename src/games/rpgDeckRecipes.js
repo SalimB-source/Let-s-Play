@@ -194,7 +194,7 @@ export const RPG_RECETTES_DECKS = {
     mythiquesTotalMax: 1,
     signature: [
       ['la-devoreuse', 1], ['chacal-du-seuil', 2], ['celui-qui-juge', 1],
-      ['khopesh-d-or', 1], ['momie-de-lin', 2], ['couveuse-de-shabtis', 1],
+      ['khopesh-d-or', 1], ['momie-de-lin', 2],
       ['papyrus', 2], ['la-grande-pesee', 1], ['le-poids', 2],
       ['nom-efface', 1], ['celle-qui-pese', 1], ['ouvrier-du-natron', 1],
     ],
@@ -417,7 +417,6 @@ export const RPG_RECETTES_HISTOIRE = {
     signature: [
       ['momie-de-lin', 2],
       ['ouvrier-du-natron', 2],
-      ['couveuse-de-shabtis', 2],
       ['papyrus', 2],
       ['le-poids', 2],
     ],

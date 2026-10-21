@@ -103,7 +103,7 @@ transfert), **on meurt** (déclenchements de destruction).
 | **La défausse** | *Nom effacé* | **1 carte max**, 2 mana, vitesse sorcellerie, **l'adversaire choisit** sa carte (il garde sa meilleure), **×2 max** — jamais gratuite, jamais collée à un corps (mode essai : 1 carte = 20 à 33 % d'une main de 3 à 5) |
 | **Le compte (mill)** | *Les feuillets*, *Scribe des feuillets* | paquet de 30 ⇒ 10 % par lot de 3 ; **3 cartes max par effet**, ×1 en rare ; la fatigue déjà codée en essai (1, 2, 3… PV) fait le reste |
 | **L'exil** | *La Dévoreuse* | à l'arrivée d'un corps, 6 mana, 4/5 + exil |
-| **Les shabtis** | *Couveuse*, *Momie de lin* | jetons hors collection, mal d'invocation conservé (contrat du Samouraï du Daimyō) |
+| **Les shabtis** | *Momie de lin* | jetons hors collection, mal d'invocation conservé (contrat du Samouraï du Daimyō) |
 | **Le pump** | *Offrande de lin* | sans paiement de PV, borné à la fin du tour (contrat du Rempart de dunes) |
 
 **Ce que le deck ne fait jamais** : infliger des dégâts, contrer, renvoyer en
@@ -131,14 +131,13 @@ exception demandée).
 | Uræus du seuil | 3 | 2/1 | inhabituelle | 2 | **Coup rapide** — contrôle des créatures |
 | Momie de lin | 3 | 2/4 | commune | 2 | à sa mort : crée 1 Shabti 1/1 |
 | Ibis des comptes | 3 | 2/2 | inhabituelle | 2 | **Envol** ; à l'arrivée : piochez 1 puis défaussez 1 |
-| Couveuse de shabtis | 3 | 2/2 | rare | 1 | à sa mort : crée 2 Shabtis 1/1 |
 | Khopesh d'or _(arme)_ | 3 | +2/+1 | rare | 1 | le porteur gagne **Tribut 1** ; à sa mort, revient avec 1 DEF |
 | Le Poids _(magie rapide)_ | 3 | — | commune | 2 | transfert 2 |
 | Celle qui pèse | 4 | 3/3 | rare | 1 | Arrivée : l’adversaire défausse une carte |
 | Les feuillets _(sorcellerie)_ | 4 | — | rare | 1 | 3 cartes du paquet adverse au cimetière |
 | La Grande Pesée _(sorcellerie)_ | 5 | — | rare | 1 | payez 3 PV : transfert 3, puis piochez 1 carte |
 | La Dévoreuse | 6 | 4/5 | **mythique** | 1 | à l'arrivée : retire de la partie une créature adverse |
-| Celui qui juge | 6 | 3/5 | rare | 1 | **Tribut 2** — la finition Arrivée : inflige 3 dégâts à toutes les autres créatures. |
+| Celui qui juge | 6 | 3/5 | rare | 1 | **Tribut 2** — la finition Arrivée : détruit toutes les créatures qui coûtent 3 mana ou moins. |
 
 Répartition : 14 communes · 8 inhabituelles · 6 rares · 1 mythique.
 **Rendements à recalculer** avec `rpgCardPower.js` avant implémentation (même
@@ -175,7 +174,7 @@ export const RPG_TENEBRES_JETONS = [{
   kind: 'creature', jeton: true, element: 'tenebres', set: RPG_TENEBRES_SET_ID,
   art: 'shabti', cost: 0, atk: 1, def: 1, rarity: 'commune',
   typeLine: 'Créature-jeton — Serviteur',
-  text: 'Créé par la Couveuse de shabtis et les Momies de lin : 1/1, sans coût.',
+  text: 'Créé par les Momies de lin : 1/1, sans coût.',
   flavor: 'Il fait le travail que les morts n’ont plus les mains pour faire.',
 }];
 
@@ -244,14 +243,6 @@ export const RPG_TENEBRES_CREATURES = [
     flavor: 'Il compte les feuillets comme on compte les jours : sans jamais en garder.',
   }),
   carte({
-    id: 'couveuse-de-shabtis', name: 'Couveuse de shabtis',
-    cost: 3, atk: 2, def: 2, rarity: 'rare',
-    destruction: { type: 'jetons', jeton: 'shabti', nombre: 2 },
-    typeLine: 'Créature — Humaine · Couveuse',
-    text: 'Quand Couveuse de shabtis meurt : créez deux créatures-jeton « Shabti » 1/1.',
-    flavor: 'Elle élève les serviteurs de ceux qui n’ont plus de mains.',
-  }),
-  carte({
     id: 'celle-qui-pese', name: 'Celle qui pèse',
     cost: 4, atk: 3, def: 3, rarity: 'rare',
     arrivee: { type: 'defausse-adverse' },
@@ -272,7 +263,7 @@ export const RPG_TENEBRES_CREATURES = [
     cost: 6, atk: 3, def: 5, rarity: 'rare', tribut: 2,
     arrivee: { type: 'degats', amount: 3, cible: 'toutes-autres' },
     typeLine: 'Créature légendaire — Celui qui juge',
-    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Celui qui juge arrive en jeu : il inflige 3 dégâts à toutes les autres créatures.',
+    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Celui qui juge arrive en jeu : il détruit toutes les créatures qui coûtent 3 mana ou moins.',
     flavor: 'Il ne regarde pas le sable. Il regarde le poids.',
   }),
 ];
@@ -362,7 +353,7 @@ Entrée à ajouter dans `RPG_MANA_ESSAI_DECKS` (`src/games/rpgManaEssai.js`) :
     ...copies('pretre-de-la-bouche', 2), ...copies('nom-efface', 2),
     ...copies('offrande-de-lin', 2),
     ...copies('ureus-du-seuil', 2), ...copies('momie-de-lin', 2),
-    ...copies('ibis-des-comptes', 2), 'couveuse-de-shabtis',
+    ...copies('ibis-des-comptes', 2),
     'khopesh-d-or', ...copies('le-poids', 2),
     'celle-qui-pese', 'les-feuillets', 'la-grande-pesee',
     'la-devoreuse', 'celui-qui-juge',
@@ -500,7 +491,7 @@ l'étagère**, jouable depuis le lancement comme les six autres (`RPG_DECKS`) :
   autres mythiques du set restent aux boosters ;
 - **Signature** : le triptyque du set — le Prix (Papyrus, La Grande Pesée, Le
   Poids), le Tribut (Chacal du seuil, Celui qui juge, le Khopesh d'or) et la
-  mort qui déclenche (Ouvrier du natron, Momie de lin, Couveuse de shabtis),
+  mort qui déclenche (Ouvrier du natron, Momie de lin),
   plus la défausse adverse (Nom effacé, Celle qui pèse) ;
 - **Remplissage** par `composerDeck` : les meilleures cartes Ténèbres restantes,
   palier de rareté puis puissance, chacune à son maximum légal — le

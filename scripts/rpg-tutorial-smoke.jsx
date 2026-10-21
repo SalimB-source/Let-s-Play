@@ -325,10 +325,10 @@ export async function checkRpgTutorialAutresLecons(assert) {
     await act(async () => { await wait(900); });
     assert.equal(harnais.step(), 'prix-info');
     await harnais.click(harnais.next(), 'la règle du Prix');
-    assert.equal(harnais.step(), 'creature-couveuse');
-    await harnais.click(harnais.card('couveuse-de-shabtis'), 'la Couveuse de shabtis');
+    assert.equal(harnais.step(), 'creature-momie');
+    await harnais.click(harnais.card('momie-de-lin'), 'la Momie de lin');
     await act(async () => { await wait(850); });
-    assert.equal(harnais.step(), 'couveuse-info');
+    assert.equal(harnais.step(), 'momie-info');
     await harnais.click(harnais.next(), 'la règle du Dernier souffle');
     assert.equal(harnais.step(), 'fin-tour-tenebres');
     await harnais.click(container.querySelector('[data-tutorial-target="end-turn"]'), 'la fin du tour Ténèbres');

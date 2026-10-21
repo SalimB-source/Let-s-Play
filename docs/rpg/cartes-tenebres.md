@@ -18,10 +18,9 @@ Le coût est indiqué en mana. ATQ/DEF désigne l’attaque et la défense de ba
 | **Uræus du seuil** | 3 | 2/1 | inhabituelle | Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. |
 | **Momie de lin** | 3 | 2/4 | commune | Quand Momie de lin meurt, créez une créature-jeton « Shabti » 1/1. |
 | **Ibis des comptes** | 3 | 2/2 | inhabituelle | Envol — Ne peut être bloqué que par une créature avec Envol. Quand Ibis des comptes arrive : piochez une carte puis défaussez une carte. |
-| **Couveuse de shabtis** | 3 | 2/2 | rare | Quand Couveuse de shabtis meurt : créez deux créatures-jeton « Shabti » 1/1. |
 | **Celle qui pèse** | 4 | 3/3 | rare | Quand Celle qui pèse arrive : l’adversaire défausse une carte. |
 | **La Dévoreuse** | 6 | 4/5 | mythique | Quand La Dévoreuse arrive : retirez de la partie une créature adverse ciblée. |
-| **Celui qui juge** | 6 | 3/5 | rare | Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Arrivée : inflige 3 dégâts à toutes les autres créatures. |
+| **Celui qui juge** | 6 | 3/5 | rare | Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Arrivée : détruit toutes les créatures qui coûtent 3 mana ou moins. |
 | **Le Passeur au masque de chacal** | 6 | 5/5 | mythique | Quand Le Passeur au masque de chacal arrive : la dernière créature de votre cimetière revient en jeu. |
 | **Le Maître des hiéroglyphes** | 5 | 3/5 | mythique | Envol — Ne peut être bloqué que par une créature avec Envol. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes. |
 
@@ -51,7 +50,7 @@ Les éventuels PV à payer s’ajoutent au coût en mana.
 
 ### Shabti — 1/1
 
-Créé par la Couveuse de shabtis et les Momies de lin : 1/1, sans coût.
+Créé par les Momies de lin : 1/1, sans coût.
 
 Ce jeton est créé par des effets : ce n’est pas une carte à ajouter au deck.
 

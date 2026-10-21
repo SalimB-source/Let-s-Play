@@ -2111,6 +2111,26 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       rpgActionsEtat(duel);
       return;
     }
+    case 'destruction-coutmax': {
+      // Détruit toutes les créatures (des deux camps, sauf la source) dont le
+      // coût en mana est <= effet.coutMax. Les morts sont retirées ensemble,
+      // avant leurs déclenchements : les jetons et réanimations produits
+      // ensuite échappent à cette vague.
+      const declenchements = [];
+      const victimes = [cote, adv].flatMap((camp) => duel[camp].creatures
+        .filter((entite) => entite.id !== sauf
+          && !rpgEstProtegee(entite, sourceElement)
+          && !(entite.protectionSorts && sourceType === 'magie')
+          && (duelCardById(entite.carteId)?.cost ?? 0) <= effet.coutMax)
+        .map((entite) => ({ camp, entite })));
+      for (const { camp, entite } of victimes) {
+        enterrer(duel, camp, entite, sourceElement, declenchements);
+      }
+      for (const declencher of declenchements) declencher();
+      rafraichirAuras(duel);
+      rpgActionsEtat(duel);
+      return;
+    }
     case 'exil': {
       for (const campCible of [adv, cote]) {
         const victime = duel[campCible].creatures.find((entite) => entite.id === cibleId);
