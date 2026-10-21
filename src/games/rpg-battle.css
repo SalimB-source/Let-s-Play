@@ -4049,7 +4049,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   z-index: 1;
   transform: rotateY(-8deg);
 }
-.rpg-hover-card-preview__face--prisonniere {
+/* La pile et les deux classes de face gardent la priorité sur la position
+   relative et le transform 3D génériques définis plus bas : la captive reste
+   superposée au capteur, sans créer une deuxième ligne dans la grille. */
+.rpg-hover-card-preview__empile--caale > .rpg-hover-card-preview__face.rpg-hover-card-preview__face--prisonniere {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -4537,7 +4540,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     justify-items: center;
     gap: 12px;
   }
-  .rpg-card-peek--catalogue .rpg-hover-card-preview__face { width: min(100%, 320px, 56dvh); }
+  /* Dimensionner la pile, pas ses faces à 100 % : le wrapper centré garde
+     ainsi sa largeur sur petit écran et les deux cartes le même gabarit. */
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__empile { width: min(100%, 320px, 56dvh); }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__details { width: 100%; }
 }
 

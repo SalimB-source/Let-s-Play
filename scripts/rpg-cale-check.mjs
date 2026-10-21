@@ -1,6 +1,7 @@
 /**
  * La prisonnière derrière son capteur (Abordage, set Lettres de Marque).
  * node scripts/rpg-cale-check.mjs
+ * npm run check:rpg-cale -- --browser (Chromium Playwright ou CHROMIUM_EXECUTABLE_PATH)
  *
  * Sur la TABLE, la carte de la créature détenue se glisse DERRIÈRE son
  * ravisseur : elle dépasse par le haut et la droite, inclinée, assombrie,
@@ -119,6 +120,8 @@ assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card__
 const blocFiche = css.slice(css.indexOf('.rpg-hover-card-preview__empile'), css.indexOf('.rpg-hover-card-preview__face {'));
 assert.match(blocFiche, /\.rpg-hover-card-preview__empile--caale \{\s*perspective:/,
   'la pile de la fiche vit en perspective');
+assert.match(blocFiche, /\.rpg-hover-card-preview__empile--caale > \.rpg-hover-card-preview__face\.rpg-hover-card-preview__face--prisonniere \{\s*position:\s*absolute;/,
+  'le positionnement de la captive est prioritaire sur celui des faces génériques');
 assert.match(blocFiche, /transform:\s*rotateY\(-26deg\) translateX\(-6%\)/,
   'la prisonnière est tournée vers la gauche et décalée à gauche');
 assert.match(blocFiche, /:not\(\.rpg-hover-card-preview__face--prisonniere\) \{\s*position:\s*relative;\s*z-index:\s*1;\s*transform:\s*rotateY\(-8deg\)/,
@@ -126,3 +129,84 @@ assert.match(blocFiche, /:not\(\.rpg-hover-card-preview__face--prisonniere\) \{\
 assert.match(blocFiche, /filter:\s*brightness\(\.72\)/, 'la prisonnière est assombrie : elle est détenue');
 
 console.log('✓ La prisonnière se glisse DERRIÈRE son capteur — et la fiche empile les deux créatures, en perspective vers la gauche.');
+
+// ── 5. La cascade réelle : une seule hauteur de carte, pas deux lignes ─────
+// Les assertions de source ci-dessus ne détectent pas une règle générique
+// placée plus bas qui écrase `position: absolute` ou la perspective.
+if (process.argv.includes('--browser')) {
+  const { chromium } = await import('playwright');
+  const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+  const browser = await chromium.launch({
+    executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined,
+    args: ['--no-sandbox', '--disable-dev-shm-usage'],
+  });
+  try {
+    for (const { width, height, touch } of [
+      { width: 1440, height: 900, touch: false },
+      { width: 844, height: 390, touch: true },
+      { width: 568, height: 320, touch: true },
+      { width: 390, height: 844, touch: true },
+    ]) {
+      const context = await browser.newContext({
+        viewport: { width, height }, isMobile: touch, hasTouch: touch, reducedMotion: 'reduce',
+      });
+      const page = await context.newPage();
+      for (const [nom, cas, avecPrisonniere] of [
+        ['cale pleine', rendu.fiche, true], ['cale vide', rendu.ficheLibre, false],
+      ]) {
+        await page.setContent(`<!doctype html><html><head>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>* { box-sizing: border-box; } ${css}\n${mobileCss}</style>
+          </head><body><main class="rpg-battle ${touch ? 'rpg-battle--touch' : ''}">
+            <div class="rpg-card-peek rpg-card-peek--catalogue">
+              <div class="rpg-card-peek__panel">${cas.html}</div>
+              <div class="rpg-card-peek__bar"><button>Fermer la fiche</button></div>
+            </div>
+          </main></body></html>`);
+        const layout = await page.locator('.rpg-hover-card-preview__empile').evaluate((pile) => {
+          const capteur = pile.querySelector('.rpg-hover-card-preview__face:not(.rpg-hover-card-preview__face--prisonniere)');
+          const prisonniere = pile.querySelector('.rpg-hover-card-preview__face--prisonniere');
+          const face = (node) => ({
+            ...node.getBoundingClientRect().toJSON(),
+            position: getComputedStyle(node).position,
+            zIndex: Number(getComputedStyle(node).zIndex),
+            topLayout: node.offsetTop,
+            heightLayout: node.offsetHeight,
+            translationX: new DOMMatrixReadOnly(getComputedStyle(node).transform).m41,
+            rotationY: new DOMMatrixReadOnly(getComputedStyle(node).transform).m13,
+          });
+          return {
+            height: pile.offsetHeight,
+            nombreFaces: pile.children.length,
+            capteur: face(capteur),
+            prisonniere: prisonniere ? face(prisonniere) : null,
+          };
+        });
+        const label = `${width}×${height} ${touch ? 'tactile' : 'souris'}, ${nom}`;
+        assert.ok(layout.capteur.heightLayout > 0, `${label} : la face reste visible`);
+        assert.ok(Math.abs(layout.height - layout.capteur.heightLayout) <= 1,
+          `${label} : la pile ne mesure qu’une hauteur de carte, jamais deux`);
+        assert.equal(layout.nombreFaces, avecPrisonniere ? 2 : 1, `${label} : le bon nombre de faces`);
+        assert.equal(layout.capteur.position, 'relative', `${label} : le capteur donne sa hauteur à la pile`);
+        if (avecPrisonniere) {
+          const { capteur, prisonniere } = layout;
+          assert.equal(prisonniere.position, 'absolute', `${label} : la prisonnière reste hors du flux`);
+          assert.equal(prisonniere.topLayout, capteur.topLayout, `${label} : les deux faces partagent la même ligne`);
+          const largeurCommune = Math.min(capteur.right, prisonniere.right) - Math.max(capteur.left, prisonniere.left);
+          const hauteurCommune = Math.min(capteur.bottom, prisonniere.bottom) - Math.max(capteur.top, prisonniere.top);
+          assert.ok(largeurCommune > Math.min(capteur.width, prisonniere.width) * .8,
+            `${label} : les cartes se recouvrent en largeur`);
+          assert.ok(hauteurCommune > Math.min(capteur.height, prisonniere.height) * .8,
+            `${label} : les cartes se recouvrent en hauteur, pas l’une sous l’autre`);
+          assert.ok(prisonniere.zIndex < capteur.zIndex, `${label} : la captive reste derrière le capteur`);
+          assert.ok(prisonniere.translationX < -1 && prisonniere.rotationY > .1,
+            `${label} : son décalage et son inclinaison résistent aux règles 3D génériques`);
+        }
+      }
+      await context.close();
+      console.log(`✓ ${width}×${height} : cartes superposées avec Abordage ; fiche simple inchangée sans captive.`);
+    }
+  } finally {
+    await browser.close();
+  }
+}
