@@ -127,8 +127,8 @@ export const RPG_RECETTES_DECKS = {
   /**
    * Le Serment des Neuf Hivers associe la Furie et l'appel viking de la
    * Valkyrie au corbeau aux tours de gel, au brouillard de combat et à la
-   * Lance de givre. Le Maître du marteau est
-   * son unique mythique ; les autres figures du Nord se gagnent au Souk.
+   * Lance de givre. Le Maître du marteau et la Valkyrie des glaces sont ses
+   * deux mythiques ; les autres figures du Nord se gagnent au Souk.
    */
   'serment-des-neuf-hivers': {
     identite: ['neige'],
@@ -137,7 +137,7 @@ export const RPG_RECETTES_DECKS = {
     magies: 12,
     armes: 1,
     raresTotalMax: 10,
-    mythiquesTotalMax: 1,
+    mythiquesTotalMax: 2,
     finisseursMax: 8,
     signature: [
       ['eclair-du-marteau', 2], ['festin-des-vaillants', 2],

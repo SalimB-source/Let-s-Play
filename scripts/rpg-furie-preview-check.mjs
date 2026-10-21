@@ -12,7 +12,7 @@
  *
  * Les quatre porteurs humains sont livrés en photoréaliste fantaisiste :
  * la face intacte et son double ensanglanté partagent le format 4:5 de la
- * carte et, sauf la face de base du Berserk repeinte assise et sans sang,
+ * carte et, sauf la face de base du Berserk repeinte calme et sans sang,
  * une même révision de cache. Le Loup des neiges garde son huile :
  * même meute, chef ensanglanté. Une vignette rouge animée serre les bords de
  * la créature en Furie, sur la table comme dans sa preview.
@@ -28,7 +28,7 @@ const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url)
 const glossaire = readFileSync(new URL('../src/games/effetIcons.js', import.meta.url), 'utf8');
 
 const REVISION_PHOTOREALISTE = 'furie-photorealiste-v1';
-const REVISION_BERSERK_BASE = 'berserk-assis-sans-sang-v1';
+const REVISION_BERSERK_BASE = 'berserk-meme-visage-sans-sang-v1';
 const REVISION_LOUP_FURIE = 'loup-furie-huile-v1';
 const CARTES_PHOTOREALISTES = [
   'guerrier-au-bouclier-rond',

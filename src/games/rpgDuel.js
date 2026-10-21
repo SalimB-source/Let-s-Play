@@ -1438,7 +1438,7 @@ function esquiveAttaque(duel, entite, sourceType) {
  *  les capacités de destruction des créatures. */
 function appliquerDegatsDeCombatSimultanes(duel, coups) {
   const blessures = new Map();
-  for (const coup of coups) {
+  for (const [indexCoup, coup] of coups.entries()) {
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
     // Le Serpent du monde : protégé contre les magies — la vague d'un sort
@@ -1463,10 +1463,17 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       cote: coup.cote,
       entite,
       montant: 0,
+      coups: [],
       sourceElements: [],
       sources: [],
     };
     blessure.montant += degats;
+    blessure.coups.push({
+      amount: degats,
+      sourceKey: coup.sourceCote && coup.sourceId
+        ? `${coup.sourceCote}:${coup.sourceId}`
+        : `coup:${indexCoup}`,
+    });
     blessure.sourceElements.push(...normaliserCouleurs(coup.sourceElement));
     const source = coup.sourceCote && coup.sourceId
       ? duel[coup.sourceCote]?.creatures.find((candidate) => candidate.id === coup.sourceId)
@@ -1481,14 +1488,28 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   const furieuses = [];
   for (const blessure of blessures.values()) {
     const { entite, montant, cote } = blessure;
-    const absorbes = absorberBouclier(entite, montant);
-    const recus = montant - absorbes;
+    let recus = 0;
+    const sourcesAyantBlesse = new Set();
+    for (const coupRecu of blessure.coups ?? [{ amount: montant, sourceKey: 'unique' }]) {
+      const absorbes = absorberBouclier(entite, coupRecu.amount);
+      const recusCoup = coupRecu.amount - absorbes;
+      recus += recusCoup;
+      if (recusCoup > 0) sourcesAyantBlesse.add(coupRecu.sourceKey);
+    }
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
-    // Comme pour les blessures isolées, Tenacité refuse la destruction
-    // AVANT le retrait des victimes et les capacités de mort. Les coups ont
-    // déjà été cumulés : plusieurs bloqueurs ne la dépensent qu'une fois.
-    if (entite.pv <= 0) sauverParTenacite(duel, entite);
+    // Tenacité refuse la destruction AVANT le retrait des victimes et les
+    // capacités de mort, mais elle ne tient qu'un seul coup fatal : si deux
+    // sources distinctes (deux bloqueurs, typiquement) portent ensemble le
+    // coup mortel, la première dépense Tenacité et l'autre achève la cible.
+    if (entite.pv <= 0) {
+      if (entite.tenaciteDisponible && sourcesAyantBlesse.size > 1) {
+        entite.tenaciteDisponible = false;
+        duel.log.push(`Tenacité : ${entite.name} refuse un premier coup fatal, mais un second coup l’achève.`);
+      } else {
+        sauverParTenacite(duel, entite);
+      }
+    }
     if (entite.pv <= 0) {
       mortes.push({
         cote,
@@ -2054,13 +2075,35 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       return;
     }
     case 'soin-creatures': {
+      const montant = Math.max(0, Number(effet.amount) || 0);
+      const soins = [];
       for (const entite of duel[cote].creatures) {
-        const pvAvant = entite.pv;
-        entite.pv = Math.min(entite.pvMax, entite.pv + (effet.amount ?? 0));
-        entite.def = Math.min(entite.pvMax, Math.max(entite.def, entite.pv));
-        journaliserSoin(duel, cote, entite.pv - pvAvant, entite.id);
+        const pvAvant = Number(entite.pv) || 0;
+        // Un état restauré ou construit par un scénario peut avoir perdu son
+        // plafond : il se relit alors sur la défense actuelle ou imprimée,
+        // plutôt que de laisser le soin se perdre dans un `NaN`.
+        const plafondDeclare = Number(entite.pvMax);
+        const plafond = Number.isFinite(plafondDeclare)
+          ? plafondDeclare
+          : Math.max(
+            pvAvant,
+            Number(entite.def) || 0,
+            Number(duelCardById(entite.carteId)?.def) || 0,
+          );
+        entite.pvMax = plafond;
+        entite.pv = Math.min(plafond, pvAvant + montant);
+        entite.def = Math.min(plafond, Math.max(Number(entite.def) || 0, entite.pv));
+        const gagne = entite.pv - pvAvant;
+        if (gagne > 0) {
+          journaliserSoin(duel, cote, gagne, entite.id);
+          soins.push(`${entite.name} +${gagne}`);
+        }
         // Le soin peut refermer la blessure qui tenait la Furie allumée.
         synchroniserFurieEntite(duel, entite);
+      }
+      if (soins.length) {
+        const source = sourceCarteId ? cardById(sourceCarteId)?.name : null;
+        duel.log.push(`${source ?? 'Soin'} : ${soins.join(', ')}.`);
       }
       // `etJoueur` (Yamina) : le même soin s'étend au sorcier du camp —
       // les créatures d'abord, puis leur maître.
@@ -2839,6 +2882,26 @@ export function arriveeCiblePortee(carte) {
   return null;
 }
 
+/**
+ * L'arrivée consulte-t-elle le deck **immédiatement** — pioche, pioche puis
+ * défausse, ou recherche/pioche ciblée par type ? Une telle pose révèle ou
+ * déplace des cartes du paquet : l'interface ne doit plus proposer de
+ * l'annuler comme un simple geste réversible. Les effets différés (les
+ * compteurs d'Heures du Guetteur, par exemple) ne consultent encore rien à
+ * la pose et ne sont donc pas comptés ici.
+ */
+export function arriveeConsulteDeck(carte) {
+  const arrivee = carte?.arrivee;
+  if (!arrivee) return false;
+  const type = String(arrivee.type ?? '');
+  return type.startsWith('pioche')
+    || type.startsWith('recherche')
+    || type === 'tuteur'
+    || Number(arrivee.pioche) > 0
+    || Number(arrivee.recherche) > 0
+    || Boolean(arrivee.rechercheDeck);
+}
+
 /** Les camps qu'une arrivée peut viser, dans l'ordre où on les propose. */
 function campsDePortee(cote, portee) {
   if (portee === 'tous') return [cote, autre(cote)];
@@ -3325,6 +3388,51 @@ export function rpgProvocationValide(
   return provocateursBloques >= maximumPossible;
 }
 
+/**
+ * Blocage forcé (l'Appât de la meute, l'Embuscade) : le défenseur doit
+ * **déclarer** chaque créature marquée par le camp attaquant, en l'assignant
+ * à un attaquant qu'elle peut légalement bloquer. Le moteur ne complète pas
+ * l'affectation à sa place : sans cette déclaration, le combat n'est pas
+ * recevable. Une créature marquée qui n'a aucun blocage légal (Envol,
+ * Infiltration, Protection, frappe de Coup rapide déjà dirigée contre une
+ * créature…) n'a évidemment rien à déclarer.
+ */
+export function rpgBlocageForceValide(
+  duel,
+  cote,
+  attaquantIds = [],
+  blocages = {},
+  ciblesAttaque = {},
+) {
+  if (!duel?.[cote] || !duel?.[autre(cote)]) return true;
+  const adv = autre(cote);
+  const ids = [...new Set(attaquantIds ?? [])];
+  const attaquants = duel[cote].creatures.filter((entite) => ids.includes(entite.id));
+  const frappeSurCreature = (attaquant) => Boolean(ciblesAttaque?.[attaquant?.id]
+    && duel[adv].creatures.some((entite) => entite.id === ciblesAttaque[attaquant.id]));
+  const assignations = new Map();
+  for (const attaquant of attaquants) {
+    const idsBloqueurs = blocages?.[attaquant.id] ?? [];
+    const liste = Array.isArray(idsBloqueurs) ? idsBloqueurs : [idsBloqueurs];
+    for (const bloqueurId of liste) {
+      if (bloqueurId && !assignations.has(bloqueurId)) assignations.set(bloqueurId, attaquant);
+    }
+  }
+  const legal = (bloqueur, attaquant) => Boolean(bloqueur && attaquant)
+    && !frappeSurCreature(attaquant)
+    && rpgPeutBloquerAttaquant(bloqueur, attaquant, false)
+    && !rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)));
+  const forces = duel[adv].creatures
+    .filter((entite) => peutBloquer(entite) && entite.blocageForce?.par === cote);
+  for (const bloqueurForce of forces) {
+    const ciblesLegales = attaquants.filter((attaquant) => legal(bloqueurForce, attaquant));
+    if (!ciblesLegales.length) continue;
+    const attaquantAssigne = assignations.get(bloqueurForce.id);
+    if (!attaquantAssigne || !legal(bloqueurForce, attaquantAssigne)) return false;
+  }
+  return true;
+}
+
 /** Combat entre créatures : dégâts mutuels et capacités liées au combat. */
 export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   const attaquant = duel[cote].creatures.find((e) => e.id === entiteId);
@@ -3737,26 +3845,16 @@ export function rpgLancerAttaque(
       attaquantId,
       Array.isArray(idsBloqueurs) ? idsBloqueurs : idsBloqueurs ? [idsBloqueurs] : [],
     ]));
-  // Blocage forcé (l’Appât de la meute, l’Embuscade) : chaque créature marquée
-  // par ce camp doit bloquer si elle le peut — le marqueur part à la prochaine
-  // attaque du lanceur (« si elle le peut » : sans blocage légal, elle est libre).
-  const forces = bloqueursDisponibles.filter((entite) => entite.blocageForce?.par === cote);
-  for (const force of forces) {
-    const dejaAssigne = Object.values(affectations).some((idsBloqueurs) => idsBloqueurs.includes(force.id));
-    if (dejaAssigne) continue;
-    const candidats = attaquants
-      .filter((attaque) => rpgPeutBloquerAttaquant(force, attaque, frappeSurCreature(attaque))
-        && !rpgEstProtegee(attaque, cardColors(duelCardById(force.carteId))))
-      // Un bloqueur déjà contraint sert d'abord la Provocation, elle aussi
-      // obligatoire, avant de se placer devant la plus grosse menace libre.
-      .sort((a, b) => Number(Boolean(b.provocation)) - Number(Boolean(a.provocation))
-        || (b.atk ?? 0) - (a.atk ?? 0));
-    if (!candidats.length) continue;
-    affectations[candidats[0].id] = [...(affectations[candidats[0].id] ?? []), force.id];
-  }
+  // Blocage forcé (l’Appât de la meute, l’Embuscade) : l’affectation doit
+  // déjà déclarer chaque créature marquée qui a un blocage légal. Le moteur
+  // valide cette déclaration plus bas, sans assigner le bloqueur à la place
+  // du défenseur.
   // Blocage obligatoire (Tours de défense) : les créatures avec doitBloquer: true
   // DOIVENT bloquer une créature attaquante si elles le peuvent.
-  const bloqueursObligatoires = bloqueursDisponibles.filter((entite) => entite.doitBloquer);
+  // Une créature à la fois « doit bloquer » et marquée par l’Appât ne profite
+  // pas de cette assignation permanente : le marqueur exige sa déclaration.
+  const bloqueursObligatoires = bloqueursDisponibles.filter((entite) => entite.doitBloquer
+    && entite.blocageForce?.par !== cote);
   for (const bloqueurOblig of bloqueursObligatoires) {
     const dejaAssigne = Object.values(affectations).some((idsBloqueurs) => idsBloqueurs.includes(bloqueurOblig.id));
     if (dejaAssigne) continue;
@@ -3806,6 +3904,12 @@ export function rpgLancerAttaque(
     if (avaitCible) {
       return { ok: false, raison: 'doit-bloquer' };
     }
+  }
+
+  // Blocage forcé : le défenseur doit avoir déclaré chaque bloqueur marqué
+  // qui pouvait légalement s'interposer.
+  if (!rpgBlocageForceValide(duel, cote, ids, affectations, ciblesRapides)) {
+    return { ok: false, raison: 'blocage-force' };
   }
 
   // Provocation : l'affectation doit couvrir autant de provocateurs qu'une
@@ -4131,6 +4235,11 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
     }
   } else if (cibleCreatureId) {
     return { ok: false, raison: 'cible' };
+  }
+  // Ce raccourci suppose une attaque non bloquée : un bloqueur forcé capable
+  // de s'interposer doit d'abord être déclaré dans un vrai combat.
+  if (!rpgBlocageForceValide(duel, cote, [entiteId], { [entiteId]: [] }, {})) {
+    return { ok: false, raison: 'blocage-force' };
   }
   // L'attaque directe est une attaque comme une autre : la bannière grandit
   // l'attaquant avant sa frappe. Le Coup rapide, plus haut, est passé par

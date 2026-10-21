@@ -1118,7 +1118,7 @@
 
 /* La secousse de la créature que l'Éclair du marteau vient de toucher. Elle
    part en même temps que le calque de foudre (`.rpg-eclair-marteau`) : la
-   carte reste immobile pendant la chute du marteau, encaisse l'impact à
+   carte reste immobile avant la frappe, encaisse l'impact à
    28 % — là où le tonnerre craque — puis convulse en petits sursauts qui
    s'amortissent pendant que les arcs s'éteignent. `translate`, `rotate` et
    `scale` individuels, comme l'arrivée et le blocage : l'inclinaison de
@@ -5056,14 +5056,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ── L'Éclair du marteau : la foudre tombe sur une créature ─────────────────
-   Un seul sort fait tomber le ciel : quand il touche une créature, un marteau
-   de guerre sombre s'abat en diagonale sur la carte — tête la première,
-   manche levé comme sur l'illustration — pendant que l'éclair principal
-   descend du ciel jusqu'au point d'impact et que la décharge traverse la
-   créature jusqu'au sol, qui se fissure sous la carte. Le marteau rebondit
-   et se dissout, des arcs rampent encore un instant sur les bords, et la
-   secousse de la victime (`fx-foudre`) bat au même rythme : chute silencieuse,
-   impact à 28 %, convulsions qui s'amortissent.
+   Un seul sort fait tomber le ciel : quand il touche une créature, l'éclair
+   principal descend du ciel jusqu'au point d'impact et la décharge traverse
+   la créature jusqu'au sol, qui se fissure sous la carte. Des arcs rampent
+   encore un instant sur les bords, et la secousse de la victime (`fx-foudre`)
+   bat au même rythme : impact à 28 %, convulsions qui s'amortissent.
 
    Tout est DESSINÉ dans un calque SVG qui déborde vers le haut — l'éclair
    vient de plus haut que la carte — en deux couches par trait (le halo bleu
@@ -5079,7 +5076,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: rpg-eclair-marteau-vie .95s ease-out both;
 }
 
-/* Le flash de l'impact : un éclat blanc-bleu centré là où la tête frappe. */
+/* Le flash de l'impact : un éclat blanc-bleu centré là où la foudre frappe. */
 .rpg-eclair-marteau__flash {
   position: absolute;
   left: 50%;
@@ -5112,9 +5109,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: rpg-eclair-marteau-onde .95s ease-out both;
 }
 
-/* Le ciel fendu, le marteau et les arcs. `overflow: visible` laisse l'éclair
-   venir de plus haut que la face et les fissures courir en dessous ; un seul
-   halo porte la lueur de tous les traits. */
+/* Le ciel fendu et les arcs. `overflow: visible` laisse l'éclair venir de
+   plus haut que la face et les fissures courir en dessous ; un seul halo
+   porte la lueur de tous les traits. */
 .rpg-eclair-marteau__ciel {
   position: absolute;
   inset: 0;
@@ -5128,9 +5125,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-eclair-marteau__eclair,
 .rpg-eclair-marteau__fourche,
 .rpg-eclair-marteau__fissure,
-.rpg-eclair-marteau__arc,
-.rpg-eclair-marteau__arc-mini,
-.rpg-eclair-marteau__rune {
+.rpg-eclair-marteau__arc {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -5172,37 +5167,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: rpg-eclair-marteau-arc .5s steps(2, start) both;
   animation-delay: var(--d, 0ms);
 }
-.rpg-eclair-marteau__arc-mini {
-  stroke: #dff4ff;
-  stroke-width: .9;
-  opacity: 0;
-  animation: rpg-eclair-marteau-arc .45s steps(2, start) both;
-  animation-delay: 270ms;
-}
-
-/* Le marteau : un groupe qui bat dans sa propre boîte, autour de sa tête —
-   c'est elle qui frappe, le manche suit. L'acier est sombre, ourlé de la
-   lumière de la foudre : il se détache en silhouette sur le flash. */
-.rpg-eclair-marteau__marteau {
-  transform-box: fill-box;
-  transform-origin: 50% 84%;
-  will-change: transform, opacity;
-  animation: rpg-eclair-marteau-chute .95s linear both;
-}
-.rpg-eclair-marteau__manche { fill: #241c16; stroke: rgba(190, 220, 250, .28); stroke-width: .5; }
-.rpg-eclair-marteau__anneau { fill: #3d3430; }
-.rpg-eclair-marteau__pommeau { fill: #39434f; stroke: rgba(190, 220, 250, .4); stroke-width: .5; }
-.rpg-eclair-marteau__joue { fill: #20262f; stroke: rgba(150, 190, 225, .35); stroke-width: .5; }
-.rpg-eclair-marteau__tete { fill: #2b333f; stroke: rgba(170, 210, 245, .55); stroke-width: .7; }
-.rpg-eclair-marteau__plaque { fill: #39434f; stroke: rgba(170, 210, 245, .35); stroke-width: .5; }
-/* La rune gravée sur la tête : elle s'allume pendant la chute et flambe à
-   l'impact, avant que le marteau ne se dissolve. */
-.rpg-eclair-marteau__rune {
-  stroke: #aee4ff;
-  stroke-width: 1;
-  animation: rpg-eclair-marteau-rune .95s linear both;
-}
-
 /* Les étincelles arrachées à l'impact : de courtes traînées inclinées dans
    leur direction de vol, qui retombent un peu avant de s'éteindre. */
 .rpg-eclair-marteau__etincelle {
@@ -5226,8 +5190,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   82% { opacity: 1; }
   100% { opacity: 0; }
 }
-/* L'éclair ne tombe qu'avec le marteau : rien avant la fin de la chute,
-   deux battements — le coup, puis son écho — et il s'efface. */
+/* L'éclair frappe en deux battements — le coup, puis son écho — et il
+   s'efface. */
 @keyframes rpg-eclair-marteau-frappe {
   0%, 24% { opacity: 0; }
   27% { opacity: 1; }
@@ -5258,27 +5222,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   45% { opacity: .15; }
   70% { opacity: .9; }
   100% { opacity: 0; }
-}
-@keyframes rpg-eclair-marteau-rune {
-  0% { opacity: .25; }
-  20% { opacity: .7; }
-  28% { opacity: 1; }
-  45% { opacity: .55; }
-  60% { opacity: .9; }
-  72%, 100% { opacity: 0; }
-}
-/* La chute : lente d'abord, de plus en plus vite — les distances entre
-   images font l'accélération — l'impact écrase à 28 %, puis le marteau
-   rebondit en tournoyant et se dissout avant la fin du calque. */
-@keyframes rpg-eclair-marteau-chute {
-  0% { transform: translate(30px, -86px) rotate(-26deg); opacity: 0; }
-  10% { opacity: 1; }
-  18% { transform: translate(18px, -52px) rotate(-16deg); opacity: 1; }
-  25% { transform: translate(6px, -18px) rotate(-6deg); }
-  28% { transform: translate(0, 1px) rotate(0deg) scale(1.05, .92); }
-  36% { transform: translate(-2px, -7px) rotate(5deg) scale(1); }
-  52% { transform: translate(6px, -30px) rotate(16deg); opacity: 1; }
-  72%, 100% { transform: translate(13px, -54px) rotate(25deg); opacity: 0; }
 }
 @keyframes rpg-eclair-marteau-etincelle {
   0% { translate: -50% -50%; rotate: var(--r, 0deg); scale: calc(.5 * var(--taille, 1)); opacity: 0; }

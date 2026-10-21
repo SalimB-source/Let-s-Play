@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { cardById, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 import {
@@ -250,8 +251,25 @@ test('la Protection élémentaire colore un bouclier par élément, le Sable gar
   const htmlLionne = pastillesCarte(lionne);
   assert.equal([...htmlLionne.matchAll(/#i-protection/g)].length, 2,
     'le HTML historique dessine un bouclier par élément protégé');
-  assert.match(htmlLionne, /data-protection-contre="eau" style="color:#2f7bff"/);
-  assert.match(htmlLionne, /data-protection-contre="neige" style="color:#8fd8ff"/);
+  assert.match(htmlLionne, /data-protection-contre="eau" style="color:#2f7bff;border-color:#2f7bff"/);
+  assert.match(htmlLionne, /data-protection-contre="neige" style="color:#8fd8ff;border-color:#8fd8ff"/);
+
+  const pastillesJsx = readFileSync(new URL('../src/games/effetIcons.jsx', import.meta.url), 'utf8');
+  const pastillesCss = readFileSync(new URL('../src/games/effet-icons.css', import.meta.url), 'utf8');
+  assert.match(pastillesJsx, /'--rpg-protection-couleur': couleur/,
+    'la pastille React porte la teinte élémentaire à son échelle');
+  assert.match(pastillesJsx, /style=\{styleProtectionPastille\(pastille\)\}/,
+    'le libellé « Protection <élément> » reçoit cette teinte');
+  assert.match(pastillesJsx, /style=\{styleProtectionPastille\(pastilleBadge\)\}/,
+    'le badge circulaire de face reçoit aussi cette teinte');
+  assert.match(pastillesJsx, /Deux éléments, deux cercles/,
+    'une Protection double garde un cercle par élément');
+  assert.match(pastillesCss, /\.rpg-pastille\[data-pastille='protection'\] \{[^}]*border-color: var\(--rpg-protection-couleur/s,
+    'la bordure de la pastille suit l’élément');
+  assert.match(pastillesCss, /\.rpg-pastille\[data-pastille='protection'\] \.rpg-pastille__libelle \{[^}]*color: var\(--rpg-protection-couleur/s,
+    'les mots « Protection Braise » prennent la couleur de l’élément');
+  assert.match(pastillesCss, /\.rpg-card-icone\[data-effet='protection'\] \{[^}]*border-color: var\(--rpg-protection-couleur/s,
+    'le tour du cercle de l’icône prend la même couleur');
 
   assert.deepEqual(couleursProtectionCarte(cardById('valkyrie-des-glaces')), ['braise']);
   assert.deepEqual(couleursProtectionCarte(cardById('jitte-d-amayas')), ['tenebres'],
@@ -261,8 +279,8 @@ test('la Protection élémentaire colore un bouclier par élément, le Sable gar
 
   const htmlSable = pastillesCarte({ protection: { contre: 'sable' } });
   assert.match(htmlSable, /data-protection-contre="sable"/);
-  assert.doesNotMatch(htmlSable, /style="color:/,
-    'aucun style de couleur : le Sable garde l’encre ordinaire');
+  assert.doesNotMatch(htmlSable, /style="(?:color|border-color):/,
+    'aucun style de couleur ni de bordure : le Sable garde l’encre ordinaire');
 });
 
 test('un aperçu rend lisible tout ce que la fiche imprime', () => {

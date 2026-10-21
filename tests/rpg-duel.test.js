@@ -26,6 +26,7 @@ import {
   rpgNombreDestructions,
   rpgPeutAttaquer,
   rpgPeutBloquerAttaquant,
+  rpgBlocageForceValide,
   rpgProvocationValide,
   rpgResonanceEnJeu,
   rpgResoudreDestructionCiblee,
@@ -50,6 +51,7 @@ import {
   rpgPeutRepondre,
   rpgSorcierMagieRapide,
   arriveeCiblePortee,
+  arriveeConsulteDeck,
   arriveeACibleLegale,
   rpgResoudreArriveeCiblee,
 } from '../src/games/rpgDuel.js';
@@ -417,8 +419,8 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et quatre pein
 
   const valkyrie = cardById('valkyrie-des-glaces');
   assert.deepEqual(
-    { cost: valkyrie.cost, atk: valkyrie.atk, def: valkyrie.def, envol: valkyrie.envol },
-    { cost: 6, atk: 5, def: 5, envol: true },
+    { cost: valkyrie.cost, atk: valkyrie.atk, def: valkyrie.def, envol: valkyrie.envol, rarity: valkyrie.rarity },
+    { cost: 6, atk: 5, def: 5, envol: true, rarity: 'mythique' },
   );
   assert.equal(valkyrie.resonance, undefined, 'plus de Résonance viking');
   assert.equal(valkyrie.resonanceTribu, undefined);
@@ -465,7 +467,7 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et quatre pein
     ['loup-des-neiges-furie', 'loup-furie-huile-v1'],
     ['mur-de-boucliers', 'mur-boucliers-charge-v1'],
     ['eclair-du-marteau', 'eclair-marteau-fjord-v1'],
-    ['brume-du-fjord', 'brume-soldats-geles-v1'],
+    ['brume-du-fjord', 'brume-personnes-gelees-v2'],
   ]) {
     const chemin = fileURLToPath(new URL(`../public/cards/${art}.jpg`, import.meta.url));
     assert.deepEqual(dimensionsJpeg(chemin), [1024, 1280], `${art}.jpg est en 1024×1280`);
@@ -551,6 +553,43 @@ test('la Valkyrie au corbeau pioche un Viking au hasard du deck, sans aucune Ré
   assert.deepEqual(duelSansViking.joueur.deck, ['loup-des-neiges', 'brume-du-fjord']);
   assert.ok(duelSansViking.log.includes(
     'Valkyrie au corbeau ne trouve aucune carte de type Viking dans le deck.'));
+});
+
+test('une arrivée qui pioche ou fouille le deck rend la pose non annulable', () => {
+  const consulteDeck = [
+    'ibis-des-comptes',
+    'maitre-des-hieroglyphes',
+    'tislit-des-aures',
+    'sahir-des-braises',
+    'scalde-des-runes',
+    'valkyrie-au-corbeau',
+    'jormungandr',
+  ];
+  assert.deepEqual(
+    RPG_DUEL_CARDS.filter(arriveeConsulteDeck).map((carte) => carte.id).sort(),
+    [...consulteDeck].sort(),
+    'le prédicat couvre chaque pioche/recherche immédiate d’arrivée du catalogue',
+  );
+  assert.equal(arriveeConsulteDeck(cardById('guetteur-du-beffroi')), false,
+    'sa pioche est différée par les compteurs d’Heures : rien n’est consulté à la pose');
+  assert.equal(arriveeConsulteDeck(cardById('drakkar-a-tete-de-dragon')), false,
+    'piocher à la destruction ne rend pas la pose elle-même irréversible');
+  assert.equal(arriveeConsulteDeck({ arrivee: { type: 'recherche-deck' } }), true,
+    'une future recherche explicite dans le deck suit la même règle');
+
+  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  const debutFinaliser = page.indexOf('const finaliserPoseCreature =');
+  const finaliser = page.slice(debutFinaliser, debutFinaliser + 1800);
+  assert.match(
+    finaliser,
+    /if \(arriveeConsulteDeck\(carte\) && !res\.arriveeEnAttente\) invaliderAnnulation\(\);\s+else conserverAnnulation\(etatAvantAction\);/,
+    'la table retire « Annuler la dernière action » dès qu’une arrivée a consulté le deck',
+  );
+  assert.match(
+    page,
+    /if \(arriveeConsulteDeck\(carteSource\)\) invaliderAnnulation\(\);/,
+    'une arrivée ciblée qui consulterait le deck perd aussi l’annulation à sa résolution',
+  );
 });
 
 test('Anqa est une 4/4 Braise à 5 avec Envol qui revient après quatre tours', () => {
@@ -711,8 +750,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
   // dédiée, variante du Glacier comprise (aucune ne partage le fichier d’une autre).
   const illustrationsNeige = RPG_DECK_NEIGE_BASE.filter((id, index, deck) => deck.indexOf(id) === index);
-  assert.equal(illustrationsNeige.length, 18,
-    'le deck Neige réunit les dix-huit cartes distinctes retenues par sa recette');
+  assert.equal(illustrationsNeige.length, 19,
+    'le deck Neige réunit les dix-neuf cartes distinctes retenues par sa recette');
   for (const carteId of illustrationsNeige) {
     assert.equal(cardArtId(carteId), carteId,
       `${carteId} affiche sa propre illustration Neige`);
@@ -1070,7 +1109,7 @@ test('Tenacité absorbe un échange létal direct pour les deux combattants', ()
   assert.equal(rpgNombreDestructions(duel), debut);
 });
 
-test('Tenacité ne se dépense qu’une fois face à plusieurs bloqueurs simultanés', () => {
+test('Tenacité ne sauve pas d’un coup fatal porté par deux bloqueurs', () => {
   const duel = duelDeBase();
   for (const cote of ['joueur', 'sorcier']) donnerMana(duel, cote, 50);
   donner(duel, 'joueur', 'maitre-du-marteau');
@@ -1086,15 +1125,21 @@ test('Tenacité ne se dépense qu’une fois face à plusieurs bloqueurs simulta
   assert.equal(rpgLancerAttaque(duel, 'joueur', [maitre.id], {
     [maitre.id]: bloqueurs.map((entite) => entite.id),
   }).ok, true);
-  assert.equal(duel.joueur.creatures.includes(maitre), true);
+  assert.equal(duel.joueur.creatures.includes(maitre), false,
+    'le premier bloqueur dépense Tenacité, le second achève le Maître');
   assert.deepEqual(
     [maitre.atk, maitre.def, maitre.pv, maitre.pvMax, maitre.furieDeclenchee, maitre.furieBonusAtk],
-    [8, 1, 1, 5, true, 3],
+    [5, 0, -3, 5, false, 0],
+    'une créature achevée dans l’échange ne déclenche pas sa Furie',
   );
-  assert.equal(maitre.tenaciteDisponible, false);
-  assert.equal(duel.sorcier.creatures.length, 0, 'les deux bloqueurs meurent dans le même échange');
-  assert.equal(rpgNombreDestructions(duel), debut + 2);
-  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Tenacité :')).length, 1);
+  assert.equal(maitre.tenaciteDisponible, false, 'Tenacité a bien été dépensée');
+  assert.equal(duel.joueur.cimetiere.includes('maitre-du-marteau'), true);
+  assert.equal(duel.sorcier.creatures.length, 0, 'les deux bloqueurs meurent dans le même échange simultané');
+  assert.equal(rpgNombreDestructions(duel), debut + 3);
+  assert.deepEqual(
+    duel.log.filter((ligne) => ligne.startsWith('Tenacité :')),
+    ['Tenacité : LE MAÎTRE DU MARTEAU refuse un premier coup fatal, mais un second coup l’achève.'],
+  );
 });
 
 test('Amani est une 2/5 à 4 dont l’égide donne +0/+2 aux autres créatures de son camp', () => {
@@ -3059,11 +3104,11 @@ test('le Rempart de dunes se joue désormais en réponse, comme toute magie rapi
   assert.equal(chien.def, 5, '+0/+3 jusqu’à la fin du tour');
 });
 
-test('le Mur de boucliers donne +1/+0 et Overkill jusqu’à la fin du tour', () => {
+test('le Mur de boucliers donne +2/+0 et Overkill jusqu’à la fin du tour', () => {
   const carte = cardById('mur-de-boucliers');
   assert.equal(carte.cost, 5, 'le Mur de boucliers coûte 5');
-  assert.deepEqual(carte.effet, { type: 'buff', atk: 1, def: 0, overkill: true, tours: 1 });
-  assert.equal(carte.text, 'Vos créatures gagnent +1/+0 et Overkill jusqu’à la fin du tour.');
+  assert.deepEqual(carte.effet, { type: 'buff', atk: 2, def: 0, overkill: true, tours: 1 });
+  assert.equal(carte.text, 'Vos créatures gagnent +2/+0 et Overkill jusqu’à la fin du tour.');
 
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 30);
@@ -3080,23 +3125,23 @@ test('le Mur de boucliers donne +1/+0 et Overkill jusqu’à la fin du tour', ()
   assert.equal(rpgLancerMagie(duel, 'joueur', 'mur-de-boucliers').ok, true);
   assert.deepEqual(
     [chien.atk, chien.def, chien.pv, chien.pvMax, chien.overkill, chien.overkillTemporaire],
-    [3, 2, 2, 2, true, 1],
-    'le 2/2 devient 3/2 et reçoit un Overkill prêté',
+    [4, 2, 2, 2, true, 1],
+    'le 2/2 devient 4/2 et reçoit un Overkill prêté',
   );
   assert.deepEqual(
     [serpent.atk, serpent.def, serpent.overkill, serpent.overkillTemporaire],
-    [7, 6, true, 1],
-    'le Serpent reçoit aussi +1/+0, sans confondre prêt et mot-clé imprimé',
+    [8, 6, true, 1],
+    'le Serpent reçoit aussi +2/+0, sans confondre prêt et mot-clé imprimé',
   );
 
-  // Le Chien prête sa force excédentaire au sorcier : 3 d’attaque contre un
-  // bloqueur qui n’encaisse que 2, donc 1 perce.
+  // Le Chien prête sa force excédentaire au sorcier : 4 d’attaque contre un
+  // bloqueur qui n’encaisse que 2, donc 2 percent.
   chien.ready = true;
   const pvSorcier = duel.sorcier.pv;
   const attaque = rpgLancerAttaque(duel, 'joueur', [chien.id], { [chien.id]: [bloqueur.id] });
   assert.equal(attaque.ok, true);
-  assert.equal(attaque.resume.frappeSorcier, 1, 'l’excédent d’Overkill atteint le sorcier');
-  assert.equal(duel.sorcier.pv, pvSorcier - 1);
+  assert.equal(attaque.resume.frappeSorcier, 2, 'l’excédent d’Overkill atteint le sorcier');
+  assert.equal(duel.sorcier.pv, pvSorcier - 2);
   assert.equal(duel.sorcier.creatures.includes(bloqueur), false, 'le bloqueur tombe');
   assert.equal(duel.joueur.creatures.includes(chien), true, 'le bloqueur à 0 ATQ laisse le Chien vivant');
   assert.ok(duel.log.some((ligne) => ligne.startsWith('Overkill : Chien du guet perce les bloqueurs')));
@@ -3105,7 +3150,7 @@ test('le Mur de boucliers donne +1/+0 et Overkill jusqu’à la fin du tour', ()
   assert.deepEqual(
     [chien.atk, chien.def, chien.pv, chien.overkill, chien.overkillTemporaire],
     [2, 2, 2, false, 0],
-    'à la fin du tour, +1/+0 et l’Overkill prêté repartent ensemble',
+    'à la fin du tour, +2/+0 et l’Overkill prêté repartent ensemble',
   );
   assert.deepEqual(
     [serpent.atk, serpent.def, serpent.overkill, serpent.overkillTemporaire],
@@ -3531,7 +3576,7 @@ test('Grand Voile blanc : les dégâts de combat du tour s’égarent dans le bl
   assert.equal(duel.brouillardCombat, false);
 });
 
-test('Appât de la meute : la créature marquée doit bloquer la prochaine attaque du lanceur', () => {
+test('Appât de la meute : le défenseur doit déclarer le bloqueur forcé à la prochaine attaque du lanceur', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 5);
   donnerMana(duel, 'sorcier', 5);
@@ -3542,9 +3587,21 @@ test('Appât de la meute : la créature marquée doit bloquer la prochaine attaq
   donner(duel, 'joueur', 'chien-du-guet'); // 2/2
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   chien.ready = true;
-  // Même avec une affectation de blocage laissée vide, le marqueur force le
-  // Colosse à se jeter devant l’assaillant.
-  const res = rpgLancerAttaque(duel, 'joueur', [chien.id], { [chien.id]: [] });
+  // Le marqueur n'assigne personne tout seul : sans déclaration du défenseur,
+  // le combat est refusé et ni l'attaque ni le marqueur ne sont consommés.
+  assert.equal(rpgBlocageForceValide(duel, 'joueur', [chien.id], { [chien.id]: [] }), false);
+  const sansDeclaration = rpgLancerAttaque(duel, 'joueur', [chien.id], { [chien.id]: [] });
+  assert.equal(sansDeclaration.ok, false);
+  assert.equal(sansDeclaration.raison, 'blocage-force');
+  assert.equal(chien.attaquee, false, 'le refus ne consomme pas l’attaque');
+  assert.deepEqual(colosse.blocageForce, { par: 'joueur', portee: 'attaque' },
+    'le refus ne dépense pas le marqueur');
+  // Côté IA, la déclaration est explicite : le Colosse marqué est assigné
+  // avant la résolution, comme n'importe quel bloqueur choisi.
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [chien.id]), { [chien.id]: [colosse.id] },
+    'l’IA déclare le bloqueur forcé');
+  assert.equal(rpgBlocageForceValide(duel, 'joueur', [chien.id], { [chien.id]: [colosse.id] }), true);
+  const res = rpgLancerAttaque(duel, 'joueur', [chien.id], { [chien.id]: [colosse.id] });
   assert.equal(res.ok, true);
   assert.deepEqual(res.resume.blocages[chien.id], [colosse.id], 'le Colosse marqué se jette devant le Chien');
   assert.equal(res.resume.frappeSorcier, 0, 'l’attaque est bloquée de force');
@@ -3605,7 +3662,14 @@ test('Embuscade : -2/-2 jamais sous 1/1, et toute la table adverse doit bloquer 
   donner(duel, 'joueur', 'chien-du-guet');
   const assaillant = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   assaillant.ready = true;
-  const res = rpgLancerAttaque(duel, 'joueur', [assaillant.id], { [assaillant.id]: [] });
+  // Comme pour l’Appât, le défenseur déclare ses bloqueurs forcés : le moteur
+  // refuse une affectation vide, et l’IA assigne les deux créatures marquées.
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [assaillant.id], { [assaillant.id]: [] }).raison,
+    'blocage-force');
+  const declaration = rpgChoisirBloqueurs(duel, 'joueur', [assaillant.id]);
+  assert.deepEqual(new Set(declaration[assaillant.id]), new Set([colosse.id, chien.id]),
+    'l’IA déclare les deux bloqueurs forcés');
+  const res = rpgLancerAttaque(duel, 'joueur', [assaillant.id], declaration);
   assert.equal(res.ok, true);
   assert.equal(res.resume.blocages[assaillant.id].length, 2,
     'les deux créatures adverses doivent se jeter devant l’assaillant');
@@ -3692,10 +3756,10 @@ test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes sans terrain
     assert.deepEqual(cardColors(carte), ['neige'], `${id} reste dans l’identité Neige du deck`);
   }
 
-  // Les raretés sont celles de Magic : seule la mythique est unique ; une rare
-  // du Nord (la Valkyrie des glaces) peut aller à trois comme toute rare.
+  // Les raretés sont celles de Magic : seule la mythique est unique ; la
+  // Valkyrie des glaces, désormais mythique, ne se joue donc qu'en un exemplaire.
   assert.deepEqual(Object.keys(CARD_RARITIES), ['commune', 'inhabituelle', 'rare', 'mythique'], 'pas de rareté « épique »');
-  assert.equal(cardCopyLimit(cardById('valkyrie-des-glaces')), 2);
+  assert.equal(cardCopyLimit(cardById('valkyrie-des-glaces')), 1);
   assert.equal(cardCopyLimit(cardById('maitre-du-marteau')), 1);
   assert.equal(cardCopyLimit(cardById('glacier')), Infinity, 'les terrains restent illimités');
   assert.equal(cardCopyLimit(cardById('loup-des-neiges')), 2);
@@ -3839,8 +3903,8 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(rpgLancerMagie(duel, 'joueur', 'mur-de-boucliers').ok, true);
   assert.deepEqual(
     { atk: loup.atk, def: loup.def, pv: loup.pv, overkill: loup.overkill },
-    { ...loupAvantMur, atk: loupAvantMur.atk + 1, overkill: true },
-    'le Mur de boucliers donne +1/+0 et Overkill, sans toucher à la défense',
+    { ...loupAvantMur, atk: loupAvantMur.atk + 2, overkill: true },
+    'le Mur de boucliers donne +2/+0 et Overkill, sans toucher à la défense',
   );
 
   donner(duel, 'joueur', 'brume-du-fjord');

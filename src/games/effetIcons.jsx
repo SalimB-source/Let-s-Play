@@ -97,6 +97,56 @@ export const pastilleTexte = (pastille) => (
   pastille.valeur != null ? `${pastille.label} ${pastille.valeur}` : pastille.label
 );
 
+const PROTECTION_LIBELLES = {
+  braise: 'Braise',
+  eau: 'Eau',
+  sable: 'Sable',
+  neige: 'Neige',
+  tenebres: 'Ténèbres',
+};
+
+/**
+ * La teinte élémentaire d'une Protection, portée par la pastille ou le badge
+ * entier : le CSS s'en sert pour le glyphe, les mots « Protection <élément> »
+ * et le cercle qui entoure l'icône. Le Sable n'écrit aucune variable et garde
+ * donc l'or ordinaire.
+ */
+function styleProtectionPastille(pastille) {
+  if (pastille?.cle !== 'protection') return undefined;
+  const couleur = (pastille.contres ?? []).map(couleurProtection).find(Boolean);
+  return couleur ? { '--rpg-protection-couleur': couleur } : undefined;
+}
+
+/**
+ * Le nom d'une pastille. Une Protection simple prend directement sa couleur ;
+ * une Protection double colore chaque élément séparément (« Protection Eau »
+ * en bleu, « Neige » en bleu clair).
+ */
+function LibellePastille({ pastille }) {
+  const texte = pastilleTexte(pastille);
+  const contres = pastille.cle === 'protection' ? (pastille.contres ?? []) : [];
+  if (contres.length === 1) {
+    const couleur = couleurProtection(contres[0]);
+    return couleur ? <span style={{ color: couleur }}>{texte}</span> : texte;
+  }
+  if (contres.length < 2) return texte;
+  return (
+    <>
+      {contres.map((contre, index) => {
+        const couleur = couleurProtection(contre);
+        const separateur = index === 0 ? '' : (index === contres.length - 1 ? ' et ' : ', ');
+        const libelle = `${index === 0 ? 'Protection ' : ''}${PROTECTION_LIBELLES[contre] ?? contre}`;
+        return (
+          <span key={contre}>
+            {separateur}
+            <span style={couleur ? { color: couleur } : undefined}>{libelle}</span>
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 /**
  * La bulle d'une pastille : ce que fait l'effet, posée au-dessus du mot (ou
  * dessous, faute de place). Elle est rendue **hors** de la fiche (portail) :
@@ -173,6 +223,7 @@ export function PastilleEffet({ pastille, deplier = false, epuise = false }) {
       data-pastille={pastille.cle}
       data-effet-epuise={epuise ? 'true' : undefined}
       data-protection-contre={pastille.contres?.length ? pastille.contres.join(' ') : undefined}
+      style={styleProtectionPastille(pastille)}
       // La souris ouvre au survol ; le doigt, lui, ouvre et referme d'un toucher
       // (son survol émulé ne doit pas laisser la bulle collée). Rien de tout ça
       // quand l'explication est déjà écrite sous le mot.
@@ -197,11 +248,11 @@ export function PastilleEffet({ pastille, deplier = false, epuise = false }) {
       <IconePastille pastille={pastille} size={13} />
       {deplier && explication ? (
         <>
-          <span className="rpg-pastille__libelle">{texte}</span>
+          <span className="rpg-pastille__libelle"><LibellePastille pastille={pastille} /></span>
           <span className="rpg-pastille__explication">{explication}</span>
         </>
-      ) : texte}
-      {ouverte && <BulleEffet id={id} ancre={ancreRef.current} titre={texte} description={explication} />}
+      ) : <LibellePastille pastille={pastille} />}
+      {ouverte && <BulleEffet id={id} ancre={ancreRef.current} titre={<LibellePastille pastille={pastille} />} description={explication} />}
     </span>
   );
 }
@@ -279,22 +330,32 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
       : ''}`
   );
   if (!pastilles.length) return null;
+  const rendreBadge = (pastilleBadge, key) => (
+    <span
+      key={key}
+      className={`rpg-card-icone${epuises.has(pastilleBadge.cle) ? ' is-epuisee' : ''}`}
+      data-effet={pastilleBadge.cle}
+      data-effet-epuise={epuises.has(pastilleBadge.cle) ? 'true' : undefined}
+      data-protection-contre={pastilleBadge.contres?.length ? pastilleBadge.contres.join(' ') : undefined}
+      style={styleProtectionPastille(pastilleBadge)}
+    >
+      <IconePastille pastille={pastilleBadge} size={12} />
+      {pastilleBadge.valeur != null && <small>{pastilleBadge.valeur}</small>}
+    </span>
+  );
   return (
     <span
       className={`rpg-card-icones${className ? ` ${className}` : ''}`}
       aria-label={`Effets : ${pastilles.map(texteBadge).join(', ')}`}
     >
-      {pastilles.map((pastille) => (
-        <span
-          key={pastille.cle}
-          className={`rpg-card-icone${epuises.has(pastille.cle) ? ' is-epuisee' : ''}`}
-          data-effet={pastille.cle}
-          data-effet-epuise={epuises.has(pastille.cle) ? 'true' : undefined}
-          data-protection-contre={pastille.contres?.length ? pastille.contres.join(' ') : undefined}
-        >
-          <IconePastille pastille={pastille} size={12} />
-          {pastille.valeur != null && <small>{pastille.valeur}</small>}
-        </span>
+      {pastilles.flatMap((pastille) => (
+        pastille.cle === 'protection' && pastille.contres?.length > 1
+          // Deux éléments, deux cercles : chacun porte sa propre couleur.
+          ? pastille.contres.map((contre) => rendreBadge(
+            { ...pastille, contres: [contre] },
+            `${pastille.cle}-${contre}`,
+          ))
+          : [rendreBadge(pastille, pastille.cle)]
       ))}
     </span>
   );

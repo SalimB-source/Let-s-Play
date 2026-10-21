@@ -555,8 +555,9 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   const ids = [...new Set(attaquantIds ?? [])];
   // Un attaquant rapide qui frappe une créature n'attaque plus : son attaque
   // s'arrête sur sa frappe — rien à bloquer.
-  const attaquants = duel[coteAttaquant].creatures
-    .filter((entite) => ids.includes(entite.id) && !ciblesAttaque?.[entite.id])
+  const attaquantsBloquables = duel[coteAttaquant].creatures
+    .filter((entite) => ids.includes(entite.id) && !ciblesAttaque?.[entite.id]);
+  const attaquants = attaquantsBloquables
     // Les attaquants à 0 d'attaque n'ont rien à arrêter : les ignorer évite de
     // gaspiller un bloqueur pour 0 dégât (Porteuse 0/3, etc.). Provocation
     // fait exception : même réduite à 0, elle réclame son bloqueur légal.
@@ -564,7 +565,7 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   const bloqueurs = duel[coteDefense].creatures.filter((entite) => entite && !entite.attaquee
     && !estGelee(entite) && !(entite.empecheBlocageToursRestants > 0));
   const affectations = {};
-  if (!attaquants.length || !bloqueurs.length) return affectations;
+  if (!attaquantsBloquables.length || !bloqueurs.length) return affectations;
 
   const legal = (attaquant, bloqueur) => peutBloquerAttaquant(bloqueur, attaquant)
     && !estProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)));
@@ -572,22 +573,30 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   const libres = new Set(bloqueurs.map((entite) => entite.id));
   const bloqueurParId = (id) => bloqueurs.find((entite) => entite.id === id);
 
-  // 0) Blocage forcé : les créatures avec doitBloquer: true DOIVENT bloquer.
+  // 0) Blocages obligatoires : les créatures avec `doitBloquer` et celles
+  // marquées par l'Appât de la meute / l'Embuscade DOIVENT être déclarées.
   // Elles servent d'abord un provocateur encore découvert, en commençant par
   // celui qui a le moins de bloqueurs légaux : un bloqueur contraint ne doit
-  // pas prendre la seule place capable d'arrêter un autre provocateur.
-  const bloqueursForces = bloqueurs.filter((entite) => entite.doitBloquer);
+  // pas prendre la seule place capable d'arrêter un autre provocateur. À
+  // défaut, l'IA les déclare devant la plus grosse menace encore découverte —
+  // même à 0 d'attaque, car l'obligation porte sur tout blocage légal.
+  const bloqueursForces = bloqueurs.filter((entite) => entite.doitBloquer
+    || entite.blocageForce?.par === coteAttaquant);
   const nombreBloqueursLegaux = (attaquant) => [...libres]
     .filter((id) => legal(attaquant, bloqueurParId(id)))
     .length;
+  const parMenaceForcee = (a, b) => (b.atk ?? 0) - (a.atk ?? 0)
+    || valeurEntite(b) - valeurEntite(a);
   for (const bloqueurForce of bloqueursForces) {
     if (!libres.has(bloqueurForce.id)) continue;
-    const ciblesLegales = attaquants.filter((attaquant) => legal(attaquant, bloqueurForce));
+    const ciblesLegales = attaquantsBloquables.filter((attaquant) => legal(attaquant, bloqueurForce));
     const cible = ciblesLegales
       .filter((attaquant) => attaquant.provocation && !(affectations[attaquant.id] ?? []).length)
       .sort((a, b) => nombreBloqueursLegaux(a) - nombreBloqueursLegaux(b))[0]
-      ?? ciblesLegales.find((attaquant) => !(affectations[attaquant.id] ?? []).length)
-      ?? ciblesLegales[0];
+      ?? ciblesLegales
+        .filter((attaquant) => !(affectations[attaquant.id] ?? []).length)
+        .sort(parMenaceForcee)[0]
+      ?? [...ciblesLegales].sort(parMenaceForcee)[0];
     if (cible) {
       libres.delete(bloqueurForce.id);
       affectations[cible.id] = [...(affectations[cible.id] ?? []), bloqueurForce.id];

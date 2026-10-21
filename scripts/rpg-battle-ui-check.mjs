@@ -1533,7 +1533,7 @@ assert.equal(brumeFjord?.touteZone?.gelChance, 0.25,
   'Brume du fjord gèle chaque survivante avec une probabilité de 25 %');
 assert.match(brumeFjord.text, /25 % de chances de la geler/,
   'la face de Brume affiche ce taux sans ambiguïté');
-assert.match(battlePage, /'brume-du-fjord': 'brume-soldats-geles-v1'/,
+assert.match(battlePage, /'brume-du-fjord': 'brume-personnes-gelees-v2'/,
   'la nouvelle peinture des soldats gelés dans la brume est datée contre les caches');
 
 // ── Retouches du catalogue : bonus borné, écho, coût et peintures reprises ─

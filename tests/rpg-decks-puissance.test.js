@@ -187,7 +187,7 @@ test('les boîtiers du catalogue restent valides, illustrés et fidèles à leur
   }
 });
 
-test('chaque deck de départ mélange les quatre raretés et ne contient qu’une mythique', () => {
+test('chaque deck de départ mélange les quatre raretés et respecte son plafond de mythiques', () => {
   for (const deck of RPG_DECKS) {
     const recette = RPG_RECETTES_DECKS[deck.id];
     const comptes = compter(deck.cardIds);
@@ -198,8 +198,10 @@ test('chaque deck de départ mélange les quatre raretés et ne contient qu’un
     const raresDistinctes = cartesNonTerrain.filter((carte) => carte.rarity === 'rare');
     const raretes = new Set(cartesNonTerrain.map((carte) => carte.rarity));
 
-    assert.equal(mythiques.length, 1, `${deck.name} : exactement une mythique`);
-    assert.equal(recette.mythiquesTotalMax, 1, `${deck.name} : plafond global déclaré dans sa recette`);
+    assert.equal(mythiques.length, recette.mythiquesTotalMax,
+      `${deck.name} : exactement le nombre de mythiques déclaré par sa recette`);
+    assert.equal(recette.mythiquesTotalMax, deck.id === 'serment-des-neuf-hivers' ? 2 : 1,
+      `${deck.name} : plafond global déclaré dans sa recette`);
     assert.ok(raresDistinctes.length >= 1, `${deck.name} : au moins une rare`);
     assert.ok(raresDistinctes.length <= recette.raresTotalMax,
       `${deck.name} : ${raresDistinctes.length} rares distinctes, plafond ${recette.raresTotalMax}`);
@@ -207,13 +209,15 @@ test('chaque deck de départ mélange les quatre raretés et ne contient qu’un
       assert.ok(raretes.has(rarete), `${deck.name} : contient une carte ${rarete}`);
     }
 
-    // La mythique désignée par le starter deck est jouable dans son boîtier,
-    // mais elle n'est pas remise comme carte de collection : elle se gagne au Souk.
+    // Les mythiques désignées par le starter deck sont jouables dans son
+    // boîtier, mais elles ne sont pas remises comme cartes de collection :
+    // elles se gagnent au Souk.
+    const mythiquesDuDeck = new Set(mythiques.map((carte) => carte.id));
     for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.rarity === 'mythique'
       && candidate.kind !== 'terrain'
       && cardColors(candidate).length > 0
       && cardColors(candidate).every((couleur) => recette.identite.includes(couleur)))) {
-      if (carte.id === mythiques[0].id) continue;
+      if (mythiquesDuDeck.has(carte.id)) continue;
       assert.equal(comptes.has(carte.id), false, `${deck.name} : ${carte.id} reste hors du deck de départ`);
     }
   }

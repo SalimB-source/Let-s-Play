@@ -715,7 +715,7 @@ export const RPG_CREATURE_CARDS = [
     element: 'neige',
     cost: 6,
     atk: 5, def: 5,
-    rarity: 'rare',
+    rarity: 'mythique',
     typeLine: 'Créature — Valkyrie viking',
     art: 'valkyrie-des-glaces',
     envol: true,
@@ -1156,8 +1156,8 @@ export function duelCardById(id) {
 
 /*
  * Les sept decks du jeu sont composés en fin de fichier à partir de recettes
- * et du catalogue. Ils gardent leurs mécaniques de signature, une mythique
- * chacun et un quota global de rares ; le composeur complète les places restantes
+ * et du catalogue. Ils gardent leurs mécaniques de signature, leurs mythiques
+ * de signature et un quota global de rares ; le composeur complète les places restantes
  * par puissance. Le reste des cartes de ces paliers reste à obtenir au Souk.
  */
 
@@ -1577,8 +1577,8 @@ export const RPG_MAGIE_CARDS = [
     cost: 5,
     rarity: 'commune',
     cibles: ['soi'],
-    effet: { type: 'buff', atk: 1, def: 0, overkill: true, tours: 1 },
-    text: 'Vos créatures gagnent +1/+0 et Overkill jusqu’à la fin du tour.',
+    effet: { type: 'buff', atk: 2, def: 0, overkill: true, tours: 1 },
+    text: 'Vos créatures gagnent +2/+0 et Overkill jusqu’à la fin du tour.',
     flavor: 'Épaule contre épaule, le clan devient une muraille.',
   },
   {
@@ -2245,7 +2245,7 @@ export const RPG_DECK_HYBRIDE_BASE = composerDeck(RPG_RECETTES_DECKS['sentiers-d
 /** Marée des abysses — contresorts, rebonds et Léviathan comme unique mythique. */
 export const RPG_DECK_MAREE_BASE = composerDeck(RPG_RECETTES_DECKS['maree-des-abysses'], CATALOGUE_DU_COMPOSEUR);
 
-/** Serment des Neuf Hivers — Furie, gel et une figure mythique du Nord. */
+/** Serment des Neuf Hivers — Furie, gel et les figures mythiques du Nord. */
 export const RPG_DECK_NEIGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-des-neuf-hivers'], CATALOGUE_DU_COMPOSEUR);
 
 /** Serment du Soleil rouge — Honneur, Résonance samouraï et le Daimyō. */
@@ -2320,7 +2320,7 @@ export const RPG_DECKS = [
     boxArt: 'valkyrie-des-glaces',
     archetype: 'Neige · valkyries, guerriers et drakkars',
     affrontement: 'Affrontez les serments du Nord.',
-    description: 'Deck mono-Neige : la Furie aiguise les guerriers blessés, la Valkyrie au corbeau appelle un Viking du deck, la Poigne de givre et l’Appât de la meute contrôlent le combat, et le Maître du marteau — unique mythique — apporte Furie et Ténacité. Les autres figures du Nord se découvrent dans les boosters ; elles ne sont jamais nommées « dieux ».',
+    description: 'Deck mono-Neige : la Furie aiguise les guerriers blessés, la Valkyrie au corbeau appelle un Viking du deck, la Poigne de givre et l’Appât de la meute contrôlent le combat, et ses deux mythiques — le Maître du marteau et la Valkyrie des glaces — apportent Furie, Ténacité et soin d’arrivée. Les autres figures du Nord se découvrent dans les boosters ; elles ne sont jamais nommées « dieux ».',
     cardIds: RPG_DECK_NEIGE_BASE,
   },
   {

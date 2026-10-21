@@ -223,6 +223,31 @@
   letter-spacing: .02em;
 }
 
+/* Une Protection élémentaire écrit aussi son nom dans la couleur repoussée,
+   et le cercle du badge suit le glyphe. Sans variable (le Sable), les encres
+   et bordures dorées ordinaires restent exactement celles des autres effets. */
+.rpg-pastille[data-pastille='protection'] {
+  border-color: var(--rpg-protection-couleur, rgba(237, 203, 139, .45));
+  color: var(--rpg-protection-couleur, #ffeec2);
+}
+
+.rpg-pastille[data-pastille='protection'] .rpg-effet-icone {
+  color: var(--rpg-protection-couleur, #edcb8b);
+}
+
+.rpg-pastille[data-pastille='protection'] .rpg-pastille__libelle {
+  color: var(--rpg-protection-couleur, #ffeec2);
+}
+
+.rpg-card-icone[data-effet='protection'] {
+  border-color: var(--rpg-protection-couleur, rgba(237, 203, 139, .55));
+  color: var(--rpg-protection-couleur, #ffe9a0);
+}
+
+.rpg-card-icone[data-effet='protection'] .rpg-effet-icone {
+  color: var(--rpg-protection-couleur, #ffe9a0);
+}
+
 /* L'explication prend l'encre du texte de règle : une pastille dépliée se lit
    comme une ligne de règle dont le mot-clé serait en gras. Un mot-clé que ni la
    fiche ni le glossaire ne détaillent reste sur sa ligne seule — sa règle,

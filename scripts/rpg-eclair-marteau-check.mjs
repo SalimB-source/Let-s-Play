@@ -3,12 +3,11 @@
  * node scripts/rpg-eclair-marteau-check.mjs
  *
  * Quand l'Éclair du marteau touche une créature, le ciel se fend au-dessus
- * d'elle : un marteau de guerre sombre s'abat en diagonale, l'éclair
- * principal le relie au ciel et frappe au même instant (flash, onde,
- * étincelles, fissures), le marteau rebondit et se dissout, des arcs
- * résiduels rampent sur les bords — et la créature encaisse la secousse
- * (`fx-foudre`) au même rythme. Comme la roue de feu, le calque se pose sur
- * l'emplacement mesuré avant l'action, ne capte rien et ne retient pas la
+ * d'elle : seul l'éclair tombe — trait principal, décharge, flash, onde,
+ * étincelles et fissures — puis des arcs résiduels rampent sur les bords,
+ * et la créature encaisse la secousse (`fx-foudre`) au même rythme. Comme
+ * la roue de feu, le calque se pose sur l'emplacement mesuré avant l'action,
+ * ne capte rien et ne retient pas la
  * mort : la créature tuée reçoit son adieu pendant que la foudre finit de
  * tomber là où elle se tenait. Seule cette carte allume l'effet : le journal
  * des blessures nomme la carte du coup, la couleur Neige ne suffit pas.
@@ -74,7 +73,7 @@ try {
   assert.match(principal.getAttribute('d') ?? '', /^-?M64-72/,
     'l’éclair vient de plus haut que la carte : le ciel est hors de la face');
   assert.match(principal.getAttribute('d') ?? '', /50 30$/,
-    'il frappe au point d’impact, là où la tête du marteau s’abat');
+    'il frappe au point d’impact de la créature');
   assert.equal(ciel.querySelectorAll('.rpg-eclair-marteau__fourche').length, 3,
     'trois fourches se détachent de l’éclair principal');
   assert.equal(ciel.querySelectorAll('.rpg-eclair-marteau__fissure').length, 3,
@@ -86,22 +85,22 @@ try {
   assert.ok(arcs.some((arc) => /--d:(?!330ms)\d+ms/.test(arc.getAttribute('style') ?? '')),
     'les retards des arcs ne sont pas tous les mêmes');
 
-  // Le marteau : posé sur le point d’impact, manche en diagonale, et un
-  // groupe intérieur qui porte la chute.
-  const pose = [...ciel.querySelectorAll('g')]
-    .find((groupe) => /translate\(50 30\) rotate\(36\)/.test(groupe.getAttribute('transform') ?? ''));
-  assert.ok(pose, 'le marteau est posé sur le point d’impact, manche levé en diagonale');
-  const marteau = ciel.querySelector('.rpg-eclair-marteau__marteau');
-  assert.ok(marteau, 'un groupe intérieur porte la chute, le rebond et la dissolution');
-  assert.ok(marteau.querySelector('.rpg-eclair-marteau__tete'), 'la tête du marteau est dessinée');
-  assert.ok(marteau.querySelector('.rpg-eclair-marteau__manche'), 'le manche est dessiné');
-  assert.ok(marteau.querySelector('.rpg-eclair-marteau__pommeau'), 'le pommeau couronne le manche');
-  assert.equal(marteau.querySelectorAll('.rpg-eclair-marteau__joue').length, 2,
-    'les deux joues de la tête encadrent la frappe');
-  assert.ok(marteau.querySelector('.rpg-eclair-marteau__rune'),
-    'une rune gravée s’allume sur la tête');
-  assert.equal(marteau.querySelectorAll('.rpg-eclair-marteau__arc-mini').length, 2,
-    'deux mini-arcs crépitent au bas de la tête à l’impact');
+  // Aucun marteau dessiné : seuls les traits de foudre occupent le ciel.
+  assert.equal(ciel.querySelector('g'), null,
+    'aucun groupe SVG ne porte un marteau');
+  for (const selecteur of [
+    '.rpg-eclair-marteau__marteau',
+    '.rpg-eclair-marteau__tete',
+    '.rpg-eclair-marteau__manche',
+    '.rpg-eclair-marteau__anneau',
+    '.rpg-eclair-marteau__pommeau',
+    '.rpg-eclair-marteau__joue',
+    '.rpg-eclair-marteau__plaque',
+    '.rpg-eclair-marteau__rune',
+    '.rpg-eclair-marteau__arc-mini',
+  ]) {
+    assert.equal(ciel.querySelector(selecteur), null, `${selecteur} a disparu de l’animation`);
+  }
 
   const etincelles = [...racine.querySelectorAll('.rpg-eclair-marteau__etincelle')];
   assert.equal(etincelles.length, 10, 'dix étincelles jaillissent de l’impact');
@@ -118,7 +117,7 @@ try {
   window.close();
 }
 
-// ── 2. La feuille : une chute, un impact, des arcs qui s’éteignent ─────────
+// ── 2. La feuille : un éclair, un impact, des arcs qui s’éteignent ─────────
 assert.match(css, /\.rpg-eclair-marteau\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*57;[^}]*transform:\s*rotate\(var\(--rpg-fx-rotation, 0rad\)\);[^}]*pointer-events:\s*none;/s,
   'le calque flotte au-dessus des cartes, suit l’inclinaison de la carte et ne capte aucun geste');
 assert.match(css, /\.rpg-eclair-marteau\s*\{[^}]*animation:\s*rpg-eclair-marteau-vie \.95s ease-out both;/s,
@@ -132,36 +131,39 @@ assert.match(css, /\.rpg-eclair-marteau__eclair--halo\s*\{[^}]*stroke:\s*rgba\(9
   'le halo bleu est épais et flou : c’est lui qui éclaire');
 assert.match(css, /\.rpg-eclair-marteau__eclair--coeur\s*\{[^}]*stroke:\s*#fff;[^}]*stroke-width:\s*1\.7;/s,
   'le cœur blanc est fin et net : c’est lui qu’on voit dessiné');
-const marteauCss = /\.rpg-eclair-marteau__marteau\s*\{([^}]*)\}/s.exec(css)?.[1] ?? '';
-assert.match(marteauCss, /transform-box:\s*fill-box;/, 'le marteau bat dans sa propre boîte');
-assert.match(marteauCss, /transform-origin:\s*50% 84%;/, 'il pivote autour de sa tête : c’est elle qui frappe');
-assert.match(marteauCss, /rpg-eclair-marteau-chute \.95s linear both/,
-  'la chute dure autant que le calque');
-const chute = /@keyframes rpg-eclair-marteau-chute\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
-assert.match(chute, /0% \{[^}]*translate\(30px, -86px\) rotate\(-26deg\); opacity: 0;/,
-  'le marteau part du ciel, en diagonale, invisible');
-assert.match(chute, /28% \{[^}]*translate\(0, 1px\) rotate\(0deg\) scale\(1\.05, \.92\);/,
-  'l’impact à 28 % écrase la tête sur la carte');
-assert.match(chute, /52% \{[^}]*rotate\(16deg\); opacity: 1;/,
-  'le marteau rebondit en tournoyant');
-assert.match(chute, /72%, 100% \{[^}]*opacity: 0;/,
-  'puis se dissout avant la fin du calque : les arcs finissent seuls');
+for (const motif of [
+  /\.rpg-eclair-marteau__marteau\b/,
+  /\.rpg-eclair-marteau__manche\b/,
+  /\.rpg-eclair-marteau__anneau\b/,
+  /\.rpg-eclair-marteau__pommeau\b/,
+  /\.rpg-eclair-marteau__joue\b/,
+  /\.rpg-eclair-marteau__tete\b/,
+  /\.rpg-eclair-marteau__plaque\b/,
+  /\.rpg-eclair-marteau__rune\b/,
+  /\.rpg-eclair-marteau__arc-mini\b/,
+  /@keyframes rpg-eclair-marteau-chute\b/,
+  /@keyframes rpg-eclair-marteau-rune\b/,
+]) {
+  assert.doesNotMatch(css, motif, `${motif} ne doit plus animer ni dessiner de marteau`);
+}
+assert.doesNotMatch(page, /rpg-eclair-marteau__(?:marteau|manche|anneau|pommeau|joue|tete|plaque|rune|arc-mini)\b/,
+  'le rendu ne contient plus aucune pièce du marteau');
 const frappe = /@keyframes rpg-eclair-marteau-frappe\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
 assert.match(frappe, /0%, 24% \{ opacity: 0; \}/,
-  'l’éclair attend la fin de la chute : pas de foudre avant le coup');
-assert.match(frappe, /27% \{ opacity: 1; \}/, 'il frappe avec le marteau');
+  'l’éclair attend l’instant synchronisé de l’impact : pas de foudre avant le coup');
+assert.match(frappe, /27% \{ opacity: 1; \}/, 'il frappe à l’instant de l’impact');
 assert.match(css, /\.rpg-eclair-marteau__etincelle\s*\{[^}]*animation:\s*rpg-eclair-marteau-etincelle \.55s[^}]*animation-delay:\s*var\(--d, 0ms\);/s,
   'les étincelles jaillissent avec leur retard');
 const etincelle = /@keyframes rpg-eclair-marteau-etincelle\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
 assert.match(etincelle, /\+ 26px\)/, 'elles retombent un peu avant de s’éteindre');
 
-// La secousse de la victime : immobile pendant la chute, l’impact à 28 %,
+// La secousse de la victime : immobile avant la frappe, l’impact à 28 %,
 // puis des sursauts qui s’amortissent.
 assert.match(css, /\.rpg-card\.fx-foudre \{ animation: rpg-foudre-secousse \.95s linear both; \}/,
   'la créature touchée a sa propre cinématique, aussi longue que le calque');
 const secousse = /@keyframes rpg-foudre-secousse\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
 assert.match(secousse, /0%, 27% \{[^}]*filter: none; \}/,
-  'la carte ne bouge pas pendant que le marteau tombe');
+  'la carte ne bouge pas avant que l’éclair ne frappe');
 assert.match(secousse, /28% \{[^}]*brightness\(3\)[^}]*drop-shadow\(0 0 14px rgba\(140, 220, 255/,
   'à l’impact elle blanchit, cerclée de bleu électrique');
 assert.match(secousse, /38% \{[^}]*rotate: 1\.4deg;/, 'elle convulse d’un côté');
@@ -221,17 +223,17 @@ assert.match(page, /\{eclairsMarteau\.map\(\(effet\) => \(\s*<EclairDuMarteau\s+
 assert.match(page, /onTermine=\{\(effectId\) => setEclairsMarteau\(\(current\) => current\.filter\(\(autre\) => autre\.effectId !== effectId\)\)\}/,
   'chacune s’éteint à sa dernière image');
 
-// ── 5. Le son : un seul coup de tonnerre, à l’impact ───────────────────────
+// ── 5. Le son : le routage historique reste muet ───────────────────────────
 assert.match(foudreAudio, /export const ECLAIR_DU_MARTEAU_ID = 'eclair-du-marteau';/,
   'la carte du marteau est nommée une seule fois');
 assert.match(foudreAudio, /return blessure\?\.sourceCarteId === ECLAIR_DU_MARTEAU_ID;/,
   'la blessure du marteau se reconnaît à ce nom');
-assert.match(audio, /'foudre_marteau',/, 'le bruitage est au catalogue');
-assert.match(audio, /case 'foudre_marteau':[\s\S]*?noise\(0\.26, 0\.09, 0\.5, \{ filterType: 'highpass'/,
-  'le ciel craque à 0,26 s, là où la cinématique frappe');
+assert.match(foudreAudio, /export function rpgFoudreSoundFor\(cardOrId, action\) \{[\s\S]*?return null;\s*\}/,
+  'le tonnerre synthétisé a été retiré : le routage ne propose plus de bruitage propre');
+assert.doesNotMatch(audio, /foudre_marteau/, 'le catalogue audio ne contient plus le coup de tonnerre retiré');
 assert.match(page, /\?\? rpgFoudreSoundFor\(carte, 'spell'\)\s*\n?\s*\?\? rpgWaterSoundFor\(carte, 'spell'\)/,
-  'le sort du marteau sonne le tonnerre avant tout bruit d’élément');
+  'la page garde le point de routage, puis retombe sur les sons communs');
 assert.match(page, /if \(nom === 'foudre_marteau'\) \{\s*\n\s*const maintenant = Date\.now\(\);\s*\n\s*if \(maintenant - dernierSonFoudreRef\.current < 700\) return;/,
-  'un seul coup de tonnerre par geste : l’annonce résolue ne le rejoue pas');
+  'la garde historique resterait sans effet si le tonnerre revenait');
 
-console.log('✓ Éclair du marteau : quand le sort touche une créature, un marteau de guerre sombre s’abat en diagonale sur sa carte pendant que l’éclair descend du ciel jusqu’à lui — flash, onde, dix étincelles, fissures sous la carte — puis rebondit et se dissout sous cinq arcs résiduels, la victime convulsant au même rythme (impact à 28 %) et le tonnerre craquant au même instant : 950 ms sur l’emplacement relevé, sans capter de geste, sans retenir la mort, silencieuse en mouvement réduit, et pour cette carte seule — le journal nomme le coup, la Neige ordinaire ne fait pas tomber le ciel');
+console.log('✓ Éclair du marteau : quand le sort touche une créature, seul l’éclair descend du ciel jusqu’à son point d’impact — flash, onde, dix étincelles, fissures sous la carte — puis cinq arcs résiduels s’éteignent, la victime convulsant au même rythme (impact à 28 %) : 950 ms sur l’emplacement relevé, sans aucun marteau dessiné, sans capter de geste, sans retenir la mort, silencieuse en mouvement réduit, et pour cette carte seule — le journal nomme le coup, la Neige ordinaire ne fait pas tomber le ciel');

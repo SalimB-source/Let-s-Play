@@ -122,6 +122,7 @@ import {
   RPG_PV_JOUEUR,
   RPG_PV_SORCIER_BASE,
   arriveeCiblePortee,
+  arriveeConsulteDeck,
   rpgCibleAuto,
   rpgChoisirAttaquants,
   rpgContreJouable,
@@ -158,6 +159,7 @@ import {
   rpgEmplacementsChamp,
   rpgEstProtegee,
   rpgPeutBloquerAttaquant,
+  rpgBlocageForceValide,
   rpgProvocationValide,
   rpgPeutMulligan,
   rpgPeutPayer,
@@ -275,9 +277,10 @@ const CARD_ART_CACHE_VERSIONS = {
   // casque brisé et visage en furie. On date les huit images ensemble pour
   // qu’aucun cache ne resserve les anciennes huiles sous les mêmes noms.
   'guerrier-au-bouclier-rond': 'furie-photorealiste-v1',
-  // La face de base du Berserk a depuis été repeinte seule : assis, calme et
-  // sans aucune trace de sang. Son double Furie garde la révision commune.
-  'berserk-des-trois-hivers': 'berserk-assis-sans-sang-v1',
+  // La face de base du Berserk a depuis été repeinte seule : même visage et
+  // même rendu photoréaliste que son double, mais avant la Furie — debout,
+  // calme et sans aucune trace de sang. Le double garde la révision commune.
+  'berserk-des-trois-hivers': 'berserk-meme-visage-sans-sang-v1',
   'jarl-au-marteau-de-guerre': 'furie-photorealiste-v1',
   'maitre-du-marteau': 'furie-photorealiste-v1',
   'guerrier-au-bouclier-rond-furie': 'furie-photorealiste-v1',
@@ -292,7 +295,7 @@ const CARD_ART_CACHE_VERSIONS = {
   // brume pour la Brume du fjord.
   'mur-de-boucliers': 'mur-boucliers-charge-v1',
   'eclair-du-marteau': 'eclair-marteau-fjord-v1',
-  'brume-du-fjord': 'brume-soldats-geles-v1',
+  'brume-du-fjord': 'brume-personnes-gelees-v2',
 };
 /**
  * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la
@@ -1385,7 +1388,7 @@ function EclatSoin({ montant = null, surCarte = false }) {
 // brûlée à mort ne s'en va qu'après elle.
 const DUREE_ROUE_FEU = 900;
 
-// La foudre du marteau : la chute, l'impact, puis les arcs qui s'éteignent.
+// La foudre du marteau : l'impact, puis les arcs qui s'éteignent.
 const DUREE_ECLAIR_MARTEAU = 950;
 
 const GOUTTES_TOURBILLON = Object.freeze([
@@ -1584,22 +1587,20 @@ export function RoueDeFeu({ effet, onTermine = null }) {
 /**
  * La foudre de l'Éclair du marteau sur une créature touchée.
  *
- * Le ciel se fend au-dessus de la carte : un marteau de guerre sombre tombe
- * en diagonale, tête la première, l'éclair principal le relie au ciel et
- * frappe au même instant — flash, onde au sol, étincelles, fissures qui
- * courent sous la carte — puis le marteau rebondit et se dissout pendant que
- * des arcs résiduels rampent encore sur les bords. La créature, elle, encaisse
- * la secousse (`fx-foudre`) : les deux cinématiques partent ensemble et
- * l'impact tombe au même tiers de chacune.
+ * Le ciel se fend au-dessus de la carte : l'éclair principal descend du ciel
+ * et frappe — flash, onde au sol, étincelles, fissures qui courent sous la
+ * carte — puis des arcs résiduels rampent encore sur les bords. La créature,
+ * elle, encaisse la secousse (`fx-foudre`) : les deux cinématiques partent
+ * ensemble et l'impact tombe au même tiers de chacune.
  *
  * Comme la roue de feu, le calque se pose sur l'emplacement mesuré avant
  * l'action, garde l'inclinaison de la carte, ne capte rien et ne déplace
- * rien : une créature tuée par le marteau reçoit son adieu en dessous pendant
- * que la foudre finit de tomber là où elle se tenait.
+ * rien : une créature tuée par la foudre reçoit son adieu en dessous pendant
+ * que l'éclair finit de tomber là où elle se tenait.
  */
 /** Le tracé de l'éclair principal : il descend du ciel — hors de la face,
  *  le calque SVG déborde — en zigzags serrés jusqu'au point d'impact
- *  (50, 30), là où la tête du marteau s'abat. */
+ *  (50, 30). */
 const CHEMIN_ECLAIR_PRINCIPAL = 'M64-72L55-44L61-41L50-14L57-10L47 12L53 16L50 30';
 /** La décharge traverse la créature et gagne le sol sous la carte. */
 const CHEMIN_ECLAIR_DECHARGE = 'M50 30L47 52L53 66L48 84L51 100';
@@ -1662,8 +1663,8 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
     >
       <i className="rpg-eclair-marteau__flash" />
       <i className="rpg-eclair-marteau__onde" />
-      {/* Le ciel fendu, le marteau et les arcs, dessinés : un seul calque SVG
-          posé sur la face, qui déborde vers le haut d'où tombe le coup. */}
+      {/* Le ciel fendu et les arcs, dessinés : un seul calque SVG posé sur
+          la face, qui déborde vers le haut d'où tombe la foudre. */}
       <svg
         className="rpg-eclair-marteau__ciel"
         viewBox="0 0 100 100"
@@ -1691,25 +1692,6 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
             style={{ '--d': `${arc.retard}ms` }}
           />
         ))}
-        {/* Le marteau : le groupe extérieur pose la tête sur le point
-            d'impact, manche levé en diagonale comme sur l'illustration ;
-            le groupe intérieur porte la chute, le rebond et la dissolution. */}
-        <g transform="translate(50 30) rotate(36)">
-          <g className="rpg-eclair-marteau__marteau">
-            <rect className="rpg-eclair-marteau__manche" x="-2.4" y="-34" width="4.8" height="29" rx="2" />
-            <rect className="rpg-eclair-marteau__anneau" x="-2.8" y="-27" width="5.6" height="1.7" />
-            <rect className="rpg-eclair-marteau__anneau" x="-2.8" y="-20" width="5.6" height="1.7" />
-            <rect className="rpg-eclair-marteau__anneau" x="-2.8" y="-13" width="5.6" height="1.7" />
-            <circle className="rpg-eclair-marteau__pommeau" cx="0" cy="-36.5" r="4.1" />
-            <rect className="rpg-eclair-marteau__joue" x="-18.4" y="-5.4" width="4.4" height="10.8" rx="1.4" />
-            <rect className="rpg-eclair-marteau__joue" x="14" y="-5.4" width="4.4" height="10.8" rx="1.4" />
-            <rect className="rpg-eclair-marteau__tete" x="-15" y="-7" width="30" height="14" rx="1.8" />
-            <rect className="rpg-eclair-marteau__plaque" x="-9" y="-10" width="18" height="3.6" rx="1.2" />
-            <path className="rpg-eclair-marteau__rune" d="M-8 2.6L-2-3L1 .8L7-2.4" />
-            <path className="rpg-eclair-marteau__arc-mini" d="M-16 8L-11 12L-14 15" />
-            <path className="rpg-eclair-marteau__arc-mini" d="M15 8L11 13L14 16" />
-          </g>
-        </g>
       </svg>
       {ETINCELLES_MARTEAU.map((etincelle) => (
         <i
@@ -4662,7 +4644,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // seulement : la roue brûle l'emplacement, pas la carte.
   const [rouesFeu, setRouesFeu] = useState([]);
   // Les foudres de l'Éclair du marteau : même relève d'emplacement que la
-  // roue, le temps que le marteau tombe et que ses arcs s'éteignent.
+  // roue, le temps que l'éclair tombe et que ses arcs s'éteignent.
   const [eclairsMarteau, setEclairsMarteau] = useState([]);
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
@@ -4929,7 +4911,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(id);
   }, [rouesFeu]);
 
-  // Même chien de garde pour les foudres du marteau : aucun marteau ne reste
+  // Même chien de garde pour les foudres du marteau : aucun éclair ne reste
   // suspendu au-dessus de la table si la minuterie se perd.
   useEffect(() => {
     if (!eclairsMarteau.length) return undefined;
@@ -6225,6 +6207,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     combatEntrant.blocages,
     combatEntrant.ciblesAttaque ?? {},
   );
+  const blocageForceValide = !combatEntrant || rpgBlocageForceValide(
+    duel,
+    combatEntrant.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier',
+    combatEntrant.attaquants,
+    combatEntrant.blocages,
+    combatEntrant.ciblesAttaque ?? {},
+  );
 
 
 
@@ -7120,7 +7109,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       annoncerContreSorcier(res);
     } else if (res.ok) {
-      conserverAnnulation(etatAvantAction);
+      // Une arrivée qui pioche ou fouille le deck a déjà montré/déplacé des
+      // cartes : la pose devient irréversible, comme un sort résolu.
+      if (arriveeConsulteDeck(carte) && !res.arriveeEnAttente) invaliderAnnulation();
+      else conserverAnnulation(etatAvantAction);
       // La créature sacrifiée a déjà eu son animation de déchirement : pas de
       // second fantôme de destruction pour elle.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
@@ -7494,6 +7486,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return true;
       }
       setCibleEnCours(null);
+      if (arriveeConsulteDeck(carteSource)) invaliderAnnulation();
       jouerSfx(carteSource.arrivee?.type === 'retour-main' ? 'creature_return' : 'select');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       force();
@@ -8526,15 +8519,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 }
                 : (combatEntrant && reponseActive)
                   ? {
-                    cle: `combat:${combatEntrant.coteAttaquant}:${bloqueurSelectionne ?? 'aucun'}:${provocationValide ? 'provocation-ok' : 'provocation'}`,
+                    cle: `combat:${combatEntrant.coteAttaquant}:${bloqueurSelectionne ?? 'aucun'}:${blocageForceValide ? 'force-ok' : 'force'}:${provocationValide ? 'provocation-ok' : 'provocation'}`,
                     classe: 'rpg-combat-prompt',
                     texte: combatEntrant.coteAttaquant === 'joueur'
                       ? 'Blocages déclarés — jouez un sort rapide ou acceptez les blocages'
-                      : !provocationValide
-                        ? 'Provocation — assignez au moins un bloqueur à l’attaquant provoquant'
-                        : bloqueurSelectionne
-                          ? 'Choisissez la créature attaquante à bloquer'
-                          : 'Choisissez vos bloqueurs ou résolvez le combat',
+                      : !blocageForceValide
+                        ? 'Blocage forcé — assignez chaque créature marquée à un attaquant qu’elle peut bloquer'
+                        : !provocationValide
+                          ? 'Provocation — assignez au moins un bloqueur à l’attaquant provoquant'
+                          : bloqueurSelectionne
+                            ? 'Choisissez la créature attaquante à bloquer'
+                            : 'Choisissez vos bloqueurs ou résolvez le combat',
                   }
                   : (monTour && phase && !combatEntrant)
                     ? {
@@ -9252,10 +9247,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     className="rpg-btn rpg-btn--attaque rpg-btn--resolve-combat"
                     data-tutorial-target={cibleTutoriel('resolve-combat') ? 'resolve-combat' : undefined}
                     onClick={resoudreCombat}
-                    disabled={!repartitionValide || !provocationValide}
-                    title={!provocationValide
-                      ? 'Provocation : assignez au moins un bloqueur légal à chaque attaquant qui peut être bloqué'
-                      : undefined}
+                    disabled={!repartitionValide || !blocageForceValide || !provocationValide}
+                    title={!blocageForceValide
+                      ? 'Blocage forcé : assignez chaque créature marquée à un attaquant qu’elle peut légalement bloquer'
+                      : !provocationValide
+                        ? 'Provocation : assignez au moins un bloqueur légal à chaque attaquant qui peut être bloqué'
+                        : undefined}
                   >
                     {combatEntrant.coteAttaquant === 'joueur' ? '✓ Accepter les blocages' : '⚔ Résoudre le combat'}
                   </button>

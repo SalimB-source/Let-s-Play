@@ -92,9 +92,9 @@ qui partage sa production de Neige.
 
 Quatre visuels ont été repris en 1024×1280 : **Éclair du marteau** (le marteau
 seul, foudroyé au-dessus d’un fjord de glace), **Mur de boucliers** (la charge
-frontale d’un mur de boucliers ronds peints), **Brume du fjord** (des soldats
-vikings couverts de givre qui marchent en file dans un brouillard glacial,
-les silhouettes arrière presque effacées) et l’état Furie du **Loup des
+frontale d’un mur de boucliers ronds peints), **Brume du fjord** (des Vikings
+entièrement prisonniers d’une gangue de glace translucide, figés en file dans
+le brouillard du fjord) et l’état Furie du **Loup des
 neiges** (`loup-des-neiges-furie.jpg`, même meute et même composition que la
 peinture intacte, chef ensanglanté et crocs dehors).
 
@@ -355,12 +355,12 @@ image** — même pose, même cadrage, même arrière-plan — seulement marqué
 le combat : sang, dégâts de bataille, armure ou casque partiellement brisé
 lorsque la face intacte en porte un, équipement, pelisse ou cape déchirés
 dans le cas contraire, et visage passé en furie. Le **Berserk des trois
-hivers** fait exception pour sa seule face intacte : assis et détendu sur un
-rocher, hache propre plantée dans la neige, il ne porte **aucune trace de
-sang** ; son double Furie conserve la charge ensanglantée, avec le même
-personnage et la même peau de loup. Sept fichiers portent la révision
-commune `furie-photorealiste-v1` ; cette face de base repeinte porte sa
-révision dédiée `berserk-assis-sans-sang-v1`.
+hivers** fait exception pour sa seule face intacte : debout et calme avant
+le combat, hache propre tenue basse, il ne porte **aucune trace de sang** ;
+son double Furie conserve la charge ensanglantée, avec strictement le même
+visage, le même rendu photoréaliste et la même peau de loup. Sept fichiers
+portent la révision commune `furie-photorealiste-v1` ; cette face de base
+repeinte porte sa révision dédiée `berserk-meme-visage-sans-sang-v1`.
 
 Le **Loup des neiges**, cinquième porteur de Furie, ne suit pas cette
 dérogation : sa face intacte reste l’huile d’origine et son état Furie la

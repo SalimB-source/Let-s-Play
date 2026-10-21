@@ -57,7 +57,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['rempart-de-dunes', 'mur-de-boucliers', 'tin-hinan'],
     title: 'Vérifiez combien de temps dure un bonus',
-    text: 'Le Rempart de dunes (+0/+3) et le Mur de boucliers (+1/+0 et Overkill) donnent leur bonus jusqu’à la fin du tour : le jeu le retire au bon moment. D’autres gains restent acquis — le +2/+0 du ralliement de Tin Hinan ne s’efface pas, et le bonus d’une arme dure tant qu’elle reste attachée. La durée se lit toujours sur la carte.',
+    text: 'Le Rempart de dunes (+0/+3) et le Mur de boucliers (+2/+0 et Overkill) donnent leur bonus jusqu’à la fin du tour : le jeu le retire au bon moment. D’autres gains restent acquis — le +2/+0 du ralliement de Tin Hinan ne s’efface pas, et le bonus d’une arme dure tant qu’elle reste attachée. La durée se lit toujours sur la carte.',
   },
   {
     id: 'boucliers',
@@ -169,7 +169,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['maitre-du-marteau'],
     title: 'Tenacité refuse une seule destruction',
-    text: 'Le Maître du marteau a Tenacité : une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense. La première destruction est donc annulée — aucune capacité de destruction ne se déclenche — mais la suivante l’emportera. Seule la présence en jeu la dépense : renvoyé en main puis rejoué, le Maître retrouve sa Tenacité. Relevé à 1 point de défense, il est sous sa DEF de base de 5 : sa Furie 3 s’allume aussitôt et lui donne +3/+0 tant qu’il reste sous ce seuil.',
+    text: 'Le Maître du marteau a Tenacité : une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense. La première destruction est donc annulée — aucune capacité de destruction ne se déclenche — mais la suivante l’emportera. Dans un même combat, deux bloqueurs qui portent ensemble le coup fatal comptent comme deux coups : le second l’achève. Seule la présence en jeu la dépense : renvoyé en main puis rejoué, le Maître retrouve sa Tenacité. Relevé à 1 point de défense, il est sous sa DEF de base de 5 : sa Furie 3 s’allume aussitôt et lui donne +3/+0 tant qu’il reste sous ce seuil.',
   },
   {
     id: 'protection',
@@ -239,7 +239,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['serpent-du-monde', 'mur-de-boucliers'],
     title: 'Overkill perce, la protection anti-magie blinde',
-    text: 'Le Serpent du monde cumule deux défenses d’exception. Protégé contre les magies et les sorcelleries, aucun sort ne peut le cibler ni le blesser — seules les attaques, les capacités et les armes l’atteignent. Et quand il attaque, son Overkill perce : si les bloqueurs tombent sous ses dégâts, l’excédent passe au sorcier défenseur au lieu de se perdre. Le Mur de boucliers prête le même Overkill à toutes vos créatures, avec +1/+0, jusqu’à la fin du tour.',
+    text: 'Le Serpent du monde cumule deux défenses d’exception. Protégé contre les magies et les sorcelleries, aucun sort ne peut le cibler ni le blesser — seules les attaques, les capacités et les armes l’atteignent. Et quand il attaque, son Overkill perce : si les bloqueurs tombent sous ses dégâts, l’excédent passe au sorcier défenseur au lieu de se perdre. Le Mur de boucliers prête le même Overkill à toutes vos créatures, avec +2/+0, jusqu’à la fin du tour.',
   },
   {
     id: 'magie-gratuite',

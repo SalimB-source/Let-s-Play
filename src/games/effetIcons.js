@@ -148,7 +148,7 @@ export function pastillesCarte(carte, { size = 15, classe = 'rpg-chip' } = {}) {
       if (!contres.length) return [`<span class="${classe}">${effetIcon(cle, { size })}</span>`];
       return contres.map((contre) => {
         const couleur = couleurProtection(contre);
-        const style = couleur ? ` style="color:${couleur}"` : '';
+        const style = couleur ? ` style="color:${couleur};border-color:${couleur}"` : '';
         return `<span class="${classe}" data-protection-contre="${contre}"${style}>${effetIcon(cle, { size })}</span>`;
       });
     })

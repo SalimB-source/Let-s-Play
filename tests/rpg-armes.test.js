@@ -116,7 +116,7 @@ test('le prototype compte cinq armes, une par élément, avec leur peinture', ()
   assert.equal(armeById('armure-de-cendres').donne.rapidite, true);
 });
 
-test('les decks du catalogue suivent leur quota d’armes sans dépasser une mythique', () => {
+test('les decks du catalogue suivent leur quota d’armes et leur plafond de mythiques', () => {
   const armesParDeck = {
     'veilleurs-du-desert': ['sandales-de-tislit', 'licou-du-chien-de-sable', 'jitte-d-amayas', 'takouba-de-tin-hinan', 'harnais-du-mehari'],
     'cour-des-djinns': [],
@@ -132,7 +132,8 @@ test('les decks du catalogue suivent leur quota d’armes sans dépasser une myt
     const armes = [...new Set(deck.cardIds.filter((id) => armeById(id)))].sort();
     assert.deepEqual(armes, armesParDeck[deck.id].sort(), `${deck.name} respecte sa sélection d’armes`);
     const mythiques = [...new Set(deck.cardIds.filter((id) => cardById(id).rarity === 'mythique'))];
-    assert.equal(mythiques.length, 1, `${deck.name} ne garde qu’une mythique distincte`);
+    assert.equal(mythiques.length, deck.id === 'serment-des-neuf-hivers' ? 2 : 1,
+      `${deck.name} respecte son nombre de mythiques distinctes`);
   }
 
   const veilleurs = RPG_DECKS.find((deck) => deck.id === 'veilleurs-du-desert');
