@@ -46,7 +46,6 @@ import {
   rpgPeutBloquerAttaquant,
   rpgPeutMulligan,
   rpgPreparerDefausseFinDeTour,
-  rpgRanconner,
   rpgReglerHasard,
   rpgResoudreArriveeCiblee,
   rpgResoudreDestructionCiblee,
@@ -94,7 +93,6 @@ export const RPG_PVP_INTENTIONS = [
   'preparer-defausse-fin-tour',
   'defausser',
   'renoncer-magie-gratuite',
-  'ranconner',
   'activer',
   'attaquer',
   'bloquer',
@@ -530,8 +528,6 @@ function executerIntention(duel, cote, intention) {
       }
       duel.magieGratuite = null;
       return { ok: true };
-    case 'ranconner':
-      return rpgRanconner(duel, cote, intention.entiteId);
     case 'activer': {
       const entite = duel[cote]?.creatures?.find((candidat) => candidat.id === intention.entiteId);
       if (!entite) return { ok: false, raison: 'entite-inconnue' };

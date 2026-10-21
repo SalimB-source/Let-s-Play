@@ -93,8 +93,8 @@ test('le sprite porte les 30 symboles validés, un par effet', () => {
   assert.equal(abordage.includes('M12 3v10.5'), false, 'l’ancre d’origine ne revient pas');
   assert.equal(abordage.includes('M12 18.4v3.2'), false,
     'la mâchoire dentelée du crâne précédent a disparu');
-  assert.equal(EFFET_ICONE.rancon, 'i-abordage',
-    'la Rançon garde le crâne du pirate : c’est la même prise, payée');
+  assert.equal(EFFET_ICONE.prise, 'i-abordage',
+    'la Prise garde le crâne du pirate : la cale et l’Abordage sont la même prise');
 });
 
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {

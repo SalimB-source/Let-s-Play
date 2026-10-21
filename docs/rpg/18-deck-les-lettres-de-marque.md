@@ -28,11 +28,12 @@ Ce que chaque nation prête au set :
 | **Les Espagnols** | **le convoi** : la flotte des Indes, le trésor qui voyage lentement, entouré de murs — la proie | Galion de la flotte, Tercio de cuivre, L’Invincible |
 | **Les Portugais** | **la route** : la Carreira da Índia, le routier secret, le pilote qui lit le vent et le fond — l’information | Pilote de la Carreira, Le Routier |
 | **Les Anglais** | **la licence** : les chiens des mers de la reine, le brûlot de Calais, le renégat qui change de pavillon — la signature | Lettre de marque, Le Brûlot, Le Renégat |
-| **Les Barbaresques** | **la course** : les raïs d’Alger, la galiote à voile latine, l’économie entière de la rançon — la prise | Mousse, Raïs, Cotre, Négociant, La Barbe-Rousse |
+| **Les Barbaresques** | **la course** : les raïs d’Alger, la galiote à voile latine, l’économie de la prise et de la cale | Mousse, Raïs, Cotre, Négociant, La Barbe-Rousse |
 
 Deuxième fait de design, économique celui-là : la course ne tuait pas, elle
-**détenait**. Alger, Tunis, Salé vivaient de la rançon des captifs comme les
-cours d’Europe vivaient du tribut payé pour éviter la course. Ce qui compte,
+**détenait**. Alger, Tunis, Salé vivaient des captifs et des cargaisons pris
+en mer, comme les cours d’Europe vivaient du tribut payé pour éviter la
+course. Ce qui compte,
 dans ce monde-là, ce n’est pas qui tue — c’est **qui signe**. C’est le thème du
 Sablier entier, joué à fleur d’eau.
 
@@ -81,10 +82,10 @@ fait la vague — exactement comme ses cartes, payées un pip de chaque couleur.
 Le cadre existe déjà dans le catalogue : `hybride-eau-sable`, turquoise
 (`#7fd4c8`) — la seule combinaison bicolore de Bab El encore sans set.
 
-## 4. La mécanique signature : l’Abordage, la Cale, la Rançon
+## 4. La mécanique signature : l’Abordage, la Cale et l’Ouverture
 
-Trois règles liées, comme le Prix, le Tribut et la mort formaient le triptyque
-des Ténèbres :
+Deux règles liées, et leur conséquence — comme le Prix, le Tribut et la mort
+formaient le triptyque des Ténèbres :
 
 > **Abordage** — Quand une créature avec Abordage **arrive en jeu**, la
 > créature adverse **ciblée de coût inférieur ou égal à son seuil** (le coût
@@ -98,34 +99,39 @@ des Ténèbres :
 > accostent — un jeton créé par effet ne prend rien.
 >
 > **La Cale** — Un capteur ne tient qu'**une seule** créature en cale. En cale,
-> une créature ne compte plus sur le champ (sa case se libère), perd ses
-> blessures, boucliers, compteurs, auras et armes (l’arme part au cimetière),
-> et aucune de ses capacités ne s’applique ni ne se déclenche.
+> une créature ne compte plus sur le champ (sa case se libère) : son arme part
+> au cimetière, aucune de ses capacités ne s’applique ni ne se déclenche, et
+> aucune aura ne l’atteint. Elle garde pourtant sa **mémoire** — la présence
+> elle-même est retenue dans la cale, avec ses chiffres du moment.
 >
-> **La Rançon** — À tout moment où il pourrait jouer une Magie Rapide, le
-> propriétaire d’une créature en cale peut la **rançonner** : il paie le coût
-> imprimé de la créature, en manas de n’importe quelle couleur (l’or n’a pas de
-> couleur), et elle revient **dans sa main**.
+> **Pas de rançon** — Une créature en cale ne se rachète pas : aucun mana,
+> aucune action, aucun bouton ne la libère. Il n’y a qu’une façon de la
+> récupérer : **faire quitter la table au capteur**.
 >
-> **L’ouverture** — Quand un capteur quitte la table — mort, renvoi en main,
-> exil, sacrifice, ou capture par le corsaire qui arrive — sa cale s’ouvre :
-> chaque créature qu’il tenait revient **gratuitement** dans la main de son
-> propriétaire.
+> **L’ouverture** — Quand un capteur **meurt** — destruction, mort au combat,
+> sacrifice — sa cale s’ouvre **en jeu** : la créature qu’il tenait revient sur
+> le champ de bataille de son propriétaire avec l’**attaque et la défense
+> qu’elle avait au moment de la prise**, et **sans** rejouer ses effets
+> d’arrivée (c’est un retour, pas une nouvelle présence ; comme la renaissance
+> de Tenacité, elle a le mal d’invocation). Quand il quitte la table **sans
+> mourir** — renvoi en main, exil, ou capture par le corsaire qui arrive — la
+> cale s’ouvre vers la **main** de son propriétaire.
 
 ### Pourquoi cette mécanique
 
 1. **C’est l’économie barbaresque au mot près.** Les raïs d’Alger ne coulaient
-   pas les navires : ils les montaient à l’abordage, prenaient la cargaison et
-   l’équipage, et rançonnaient. Le jeu dit exactement cela : la victime ne
-   meurt pas, elle **se rachète**.
+   pas les navires : ils les montaient à l’abordage et prenaient la cargaison
+   et l’équipage. Le jeu dit exactement cela : la victime ne meurt pas, elle
+   est **détenue** — et l’on ne récupère les siens qu’en brisant la cale
+   (détruire, exiler ou renvoyer le capteur).
 2. **Elle parle les deux langues des parents.** La prise est un renvoi
-   différé (l’Eau renvoie) que le camp adverse peut racheter (le Sable rend) :
-   tempo et récupération, l’identité même de l’hybride.
+   différé (l’Eau renvoie) que seul un départ de table du capteur défait (le
+   Sable tranche) : tempo et récupération, l’identité même de l’hybride.
 3. **Elle pose une question, jamais un réflexe.** Chaque prise dit à l’adversaire :
-   *paie (tu perds ton tour) ou tue le corsaire (tu détourne ton attaque)*. La
-   cale est face visible — le prix de chaque prisonnier est public. Toute
-   l’information est sur la table, la tension vient de ce qu’on sait : c’est
-   la charte du combat du Sablier, appliquée à l’économie.
+   *tue le corsaire (tu détournes ton attaque) ou laisse ta créature en cale*.
+   La cale est **face visible** — tout le monde voit qui est détenu, et par qui.
+   Toute l’information est sur la table, la tension vient de ce qu’on sait :
+   c’est la charte du combat du Sablier, appliquée à l’économie.
 4. **Elle est le premier contre des sets « la mort qui déclenche ».** Prendre
    une Momie de lin en cale, c’est la retirer **sans** son jeton ; prendre un
    Kraken, sans sa pioche ; prendre un samouraï, sans son Honneur. Le set
@@ -141,18 +147,19 @@ des Ténèbres :
 |---|---|
 | La cale est pleine | le second abattage tue normalement : cimetière, déclencheurs, tout |
 | Tenacité, boucliers | une créature qui survit n’est pas détruite : pas de prise — le bouclier qui absorbe tout protège de la cale aussi |
-| Jets et héros | **jamais pris en cale** : un jeton meurt normalement (on ne rançonne pas un chien), un héros à 0 loyauté s’en retourne au palier comme toujours — son serment le rappelle |
+| Jets et héros | **jamais pris en cale** : un jeton meurt normalement (on n’embarque pas un chien), un héros à 0 loyauté s’en retourne au palier comme toujours — son serment le rappelle |
 | Protections | elles fonctionnent comme toujours : elles empêchent les blessures, donc la destruction, donc la prise. Elles ne sauvent pas, en soi, une créature qu’elles n’ont pas sauvée |
-| Capturer un capteur | sa cale s’ouvre (il quitte la table) : ses prisonniers partent en main |
-| Rançonner en plein combat | légal (fenêtre de blocage, fin de tour) : la créature libérée revient **en main** — elle ne bloque pas, et elle aura le mal d’invocation en revenant |
-| Une créature rançonnée | peut être reprise plus tard — la mer est généreuse, la cale aussi |
+| Capturer un capteur | sa cale s’ouvre (il quitte la table sans mourir) : ses prisonniers partent en main |
+| Le capteur meurt | sa cale s’ouvre **en jeu** : la détenue revient sur le champ avec ses statistiques de prise, sans effet d’arrivée — et le champ doit avoir une place libre (sinon elle part en main) |
+| Racheter une prise | **impossible** : ni mana, ni Magie Rapide, ni action de tour ne libèrent une cale |
+| Une détenue libérée | revient **en jeu** si le capteur meurt (stats de prise, mal d’invocation), **en main** s’il est exilé ou renvoyé — elle peut être reprise plus tard |
 | Compteurs du jeu | une prise n’est **pas** une destruction : elle ne compte ni dans les événements, ni dans les quêtes, ni dans les débuts de conditions « quand meurt » |
 
 ### Les curseurs d’équilibrage (à jouer avant de toucher au moteur)
 
-- **le prix de la rançon** = coût imprimé, plein tarif. Trop dur pour les
-  gros corps (5–6 manas = un tour entier) ? Le curseur naturel : `coût − 1`,
-  à n’abaisser qu’après des parties réelles ;
+- **aucun prix de rachat** : la seule soupape est le départ de table du
+  capteur — si la cale pèse trop, alléger le seuil d’Abordage, jamais
+  réintroduire un paiement ;
 - **une seule place en cale** : c’est le plafond de puissance du set — ne pas
   le lever ;
 - la prise exige des blessures de **combat** : jamais par effet, jamais par
@@ -198,8 +205,8 @@ faite ensemble : elles n’ont jamais coulé ce qu’elles voulaient vendre.**
 
 | Verbe | Carte emblématique | Garde-fou convenu |
 |---|---|---|
-| **La prise** | Raïs de la galiote, Cotre, La Barbe-Rousse | blessures de **combat** seulement, cale d'**une** place, rançon instantanée publique |
-| **La rançon adverse** | le porteur paie | le prix est le coût imprimé, la créature revient **en main** (pas en jeu) — un retour, pas une résurrection |
+| **La prise** | Raïs de la galiote, Cotre, La Barbe-Rousse | blessures de **combat** seulement, cale d'**une** place, prisonnière **face visible** |
+| **La cale adverse** | aucun rachat, aucune sortie payante | seule la sortie de table du capteur libère la détenue : détruit → **en jeu** (stats de prise), exilé ou renvoyé → **en main** |
 | **L’anti-déclencheur** | la prise évite les « quand meurt » | assumé une fois par combat et par capteur ; c’est le contre-texture du set, pas un verrou |
 | **La pioche du convoi** | Galion, L’Invincible | Cargaison paie le camp qui **perd** sa créature — le set ne peut pas s’auto-nourrir de ses propres prises |
 | **La défausse adverse** | — | absente du set, voix des Ténèbres |
@@ -233,7 +240,7 @@ reste posé, avec son illustration finale.
 | Tercio de cuivre | Sable | 3 | 1/4 | commune | le mur du convoi, **Coup rapide** |
 | Cotre de course | **Sable + Eau** | 3 | 3/1 | inhabituelle | **Rapidité + Abordage 2** — l’éclaireur qui monte le premier |
 | Le Renégat | **Sable + Eau** | 3 | 3/2 | inhabituelle | **Rapidité + Butin** — l’Anglais sous pavillon d’Alger |
-| Négociant des rançons | Sable | 3 | 2/3 | rare | chaque rançon payée adverse : **piochez 1** |
+| Négociant des prises | Sable | 3 | 2/3 | rare | chaque créature **prise en cale** par qui que ce soit : **piochez 1** |
 | Galion de la flotte | **Sable + Eau** | 5 | 2/5 | rare | **Coup rapide**, **Abordage 4**, **Cargaison 2** — le trésor assuré qui prend aussi à l’abordage |
 | La légende du Hollandais volant *(jadis « La Vengeance de la reine Anne » — même identifiant)* | **Sable + Eau** | 4 | 2/4 | rare | **Coup rapide**, **Abordage 3** ; cale occupée : +2/+0 et **Butin** — vaisseau fantôme bleu translucent |
 | Le Chasseur d’Ocracoke | **Sable + Eau** | 6 | 3/6 | **mythique** | Rapidité, Coup rapide ; **Traque** (+3/+0 contre Abordage/Butin/cale occupée) et **Prime** contre la course — plus d’Insaisissable |
@@ -265,8 +272,8 @@ Nouveau fichier **`src/games/rpgLettresDeMarque.js`**, importé par
  * Les Lettres de Marque — le set Piraterie du Sablier (hybride Sable + Eau).
  * Inspiration : l’âge de la course (XVIe–XVIIe) — convois espagnols et
  * portugais, corsaires anglais et barbaresques. Identité de jeu : l’Abordage
- * (prendre sans tuer), la Cale (détenir, face visible), la Rançon (racheter
- * au prix imprimé) et la Cargaison (le convoi assuré). Jamais de dégâts nus
+ * (prendre sans tuer), la Cale (détenir, face visible — sans rachat) et la
+ * Cargaison (le convoi assuré). Jamais de dégâts nus
  * (règle de direction §11) : la course prend, elle ne brûle pas.
  */
 export const RPG_LETTRES_DE_MARQUE_SET_ID = 'lettres-de-marque';
@@ -322,7 +329,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     rarity: 'commune',
     abordage: 1,
     typeLine: 'Créature — Humain · Raïs',
-    text: 'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale (face visible) : elle ne déclenche rien. Rançon — son propriétaire peut la reprendre en main en payant son coût en manas, à tout moment où il pourrait jouer une Magie Rapide. La cale s’ouvre quand le Raïs quitte la table.',
+    text: 'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale (face visible) : elle ne déclenche rien. La cale s’ouvre quand le Raïs quitte la table : détruit, il rend la détenue EN JEU, avec l’attaque et la défense qu’elle avait à la prise et sans effet d’arrivée ; exilé ou renvoyé en main, il la rend en main.',
     flavor: 'Il ne coule jamais ce qu’il peut vendre.',
   }),
   carte({
@@ -397,13 +404,13 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
   }),
   carte({
     id: 'negociant-des-ranscons',
-    name: 'Négociant des rançons',
+    name: 'Négociant des prises',
     cost: 3,
     atk: 2,
     def: 3,
     rarity: 'rare',
     typeLine: 'Créature — Humain · Négociant',
-    text: 'Chaque fois qu’une créature est rançonnée, piochez une carte.',
+    text: 'Chaque fois qu’une créature est prise en cale, piochez une carte.',
     flavor: 'Il ne vend pas les captifs. Il vend la signature qui les rend.',
   }),
   carte({
@@ -525,7 +532,7 @@ Entrée à ajouter dans `RPG_MANA_ESSAI_DECKS` (`src/games/rpgManaEssai.js`) :
   element: 'hybride',
   elements: ['sable', 'eau'],
   boxArt: 'la-barbe-rousse',
-  description: 'Sable + Eau : la course amollit, l’abordage emporte, la rançon paie.',
+  description: 'Sable + Eau : la course amollit, l’abordage emporte, la cale ne se rachète pas.',
   cardIds: [
     ...copies('mousse-des-galiotes', 2), ...copies('rais-de-la-galiote', 2),
     ...copies('pilote-de-la-carreira', 2), ...copies('le-brulot', 2),
@@ -551,12 +558,11 @@ Entrée à ajouter dans `RPG_MANA_ESSAI_DECKS` (`src/games/rpgManaEssai.js`) :
   capteur n’en occupe aucune de plus — la cale respire dans un champ serré, et
   le sacrifice du mode peut sauver un capteur condamné en l’ouvrant à
   contretemps ;
-- **main de 3 / max 5** : la rançon adverse rend des cartes **en main** — un
-  camp qui rachète trop remplit sa propre main et défausse en fin de tour ;
-  l’économie du set se régule toute seule dans le format ;
-- **mana +1 par tour, 10 max** : le prix des rançons est **lisible** (coût
-  imprimé, manas libres) — l’écran de la jauge dit déjà ce que l’adversaire
-  peut payer ;
+- **main de 3 / max 5** : une cale ouverte par un exil ou un renvoi rend des
+  cartes **en main** — un camp qui enchaîne les renvois remplit sa propre main
+  et défausse en fin de tour ;
+- **mana +1 par tour, 10 max** : le set ne dépense **rien** pour récupérer ses
+  prisonniers — tout le mana passe dans l’abordage et les sorts ;
 - **fatigue 1, 2, 3 PV** : le deck ne mouline pas le paquet — Cargaison
   pioche, le Routier pioche, le plan reste l’abordage, pas le mill.
 
@@ -602,14 +608,15 @@ aux boosters, comme le font les six autres boîtiers.
    la Lettre de marque (effet `arrivees-abordage`) et sur le buff du Grand
    Débarquement — le drapeau `camp.abordageDesArrivees` arme toutes les
    arrivées du tour, chacune au seuil de son coût moins un.
-2. **La cale** — `entite.enCale = { carteId, cote }` (une seule place, `null`
-   par défaut). La créature prisonnière quitte `camp.creatures` et vit dans la
-   fiche du capteur, **face visible** : mini-carte dans l’aperçu du capteur
-   (même rendu que les armes portées), losange compteur sous le repère de
-   couleur — sous les deux pastilles empilées d’une carte hybride, comme sur
-   une mono : le losange ⛓ ne rejoint jamais les compteurs alignés sous le
-   coût —, annonce au lecteur d’écran. Rien ne se déclenche, aucune aura ne
-   l’atteint.
+2. **La cale** — `entite.enCale = { carteId, name, entite }` (une seule
+   place, `null` par défaut). La créature prisonnière quitte `camp.creatures`
+   et vit dans la fiche du capteur, **face visible** : mini-carte dans l’aperçu
+   du capteur (même rendu que les armes portées), losange compteur sous le
+   repère de couleur — sous les deux pastilles empilées d’une carte hybride,
+   comme sur une mono : le losange ⛓ ne rejoint jamais les compteurs alignés
+   sous le coût —, annonce au lecteur d’écran. Rien ne se déclenche, aucune
+   aura ne l’atteint. `entite` garde la **présence** elle-même, telle qu’elle
+   était au crochet : c’est elle qui revient en jeu si le capteur meurt.
 3. **La prise** — branchée sur **l’arrivée en jeu** (`rpgJouerCreature`,
    après la résolution de l’`arrivee`) : la créature adverse désignée de coût
    ≤ seuil rejoint la cale du capteur, `prendreEnCale` **à la place** d’une
@@ -628,31 +635,33 @@ aux boosters, comme le font les six autres boîtiers.
    l’invite annonce « accroché — choisissez la créature adverse à prendre en
    cale ». Sans cela, la page redemandait un porteur allié et refusait la proie
    pourtant allumée (`check:rpg-cale`).
-4. **La rançon** — `rpgRanconner(duel, cote, entiteId)` : coût imprimé du
-   prisonnier, **paiement générique** (aucun pip — `rpgPeutPayerRancon`,
-   voisin de `rpgPeutPayer`), légal partout où une Magie Rapide peut partir
-   (`rpgPeutRepondre`, phases principales du camp, fenêtres de blocage et de
-   fin de tour). Journal : « La Rançon est payée — *Galion de la flotte*
-   revient en main. » L’événement `rancon` déclenche le Négociant.
-5. **L’ouverture de la cale** — un point de sortie unique
-   `quitterLaTable(entite)` déjà parcouru par destruction, renvoi, exil,
-   sacrifice (mode essai) et prise : y libérer la cale vers la main du
-   propriétaire. Les chemins existants (`renvoyerEnMain`, `case 'exil'`,
-   `rpgSacrifierCreature`) doivent tous y passer.
+4. **Pas de rançon** — il n’existe **aucune** sortie payante de la cale : ni
+   `rpgRanconner`, ni fenêtre de Magie Rapide dédiée, ni bouton sur la table.
+   La seule façon de récupérer une détenue est de faire quitter la table au
+   capteur (voir le point suivant). L’ancien événement de rançon est remplacé
+   par le déclencheur `prise`, qui fait piocher le Négociant.
+5. **L’ouverture de la cale** — un point de sortie unique, `ouvrirCale`, que
+   parcourent la destruction, la mort au combat, le renvoi, l’exil, le
+   sacrifice (mode essai) et la prise. Deux issues : `{ enJeu: true }` sur les
+   chemins qui **tuent** (destruction, combat, sacrifice) — la détenue reprend
+   sa présence (`cale.entite`) sur le champ de son propriétaire, avec ses
+   statistiques de prise, remise à neuf d’engagement et **sans** effet
+   d’arrivée, comme une renaissance de Tenacité ; sans lui (renvoi, exil,
+   capture), la carte part en main. Le retour en jeu vérifie
+   `placesLibresChamp` : champ plein, la carte repart en main.
 6. **Effets nouveaux** — `renvoi-tueur` (Le Brûlot : le tueur en combat repart
    en main — s’appuyer sur le suivi de source des blessures,
    `rpgDerniereBlessure`) ; `priseEnCale` (le Grappin) ; le déclencheur
-   `rancon` (le Négociant). `pioche-defausse` existe déjà (Jörmungandr,
+   `prise` (le Négociant). `pioche-defausse` existe déjà (Jörmungandr,
    Masque du guetteur).
-7. **IA du sorcier** — `choisirRanconIA` : rançonner si le prisonnier coûte
-   moins que la réserve et vaut plus qu’un tour (grosse créature, corps avec
-   déclencheurs), sinon **attaquer le capteur** — l’IA doit comprendre que
-   tuer le corsaire libère tout. À la pose de ses propres capteurs, le moteur
+7. **IA du sorcier** — plus de choix de rançon : l’IA doit **attaquer le
+   capteur** pour libérer ce qui est en cale — tuer le corsaire libère tout.
+   À la pose de ses propres capteurs, le moteur
    lui choisit la prize (coût d’abord, menace ensuite) ; au barème des coups,
    un Abordage avec prize sur la table vaut +2,5.
 8. **`rpgCardPower.js`** — `abordage` (créature ou arme) → +1,5 ;
    `arriveesAbordage` → +1,5 ; `cargaison` → +0,9 × N ;
-   `renvoi-tueur` → ~1,2 ; déclencheur `rancon` → ~1,2. Recalculer les
+   `renvoi-tueur` → ~1,2 ; déclencheur `prise` → ~1,2. Recalculer les
    rendements du §8 avec la vraie formule.
 9. **Icônes** — `#effet-abordage` (**le grappin**) et `#effet-cargaison`
    (**le coffre cerclé de cuivre**) dans le sprite
@@ -664,13 +673,15 @@ aux boosters, comme le font les six autres boîtiers.
     même de riposte) ; le seuil suit le barème « coût − 1 » (refus et
     auto-pick) ; la désignation différée s’ouvre, refuse l’illégale et referme
     sur la prize ; le jeton Corsaire n’accoste pas ; une seule place en cale
-    (le Grappin ne reprend pas sur un porteur plein) ; la rançon paie et rend
-    en main ; l’ouverture (mort, renvoi, exil, sacrifice, capture d’un
-    capteur) ; la Tenacité refuse la cale, les boucliers ne comptent plus ;
+    (le Grappin ne reprend pas sur un porteur plein) ; aucune rançon ne
+    subsiste (ni export, ni bouton, ni intention PvP) et l’ouverture — **en jeu** à la mort et au sacrifice (statistiques
+    de la prise rendues, aucun effet d’arrivée rejoué, champ plein → main),
+    **en main** au renvoi, à l’exil et à la capture d’un capteur ; la Tenacité
+    refuse la cale, les boucliers ne comptent plus ;
     jetons et figures jamais pris ; le sceau de la Lettre et du Débarquement
     arme les arrivées puis expire, mais la cale reste ; Cargaison paie à la
     mort **et** à la prise ; le Brûlot renvoie son tueur ; l’IA choisit sa
-    prize et rançonne.
+    prize.
 
 ## 13. Direction artistique & sons
 
@@ -717,7 +728,7 @@ historique : Thatch l’homme d’affaires, la légende qui nouait des mèches
 brûlantes dans sa barbe pour effrayer les équipages.
 
 - **Elle arrive sous le visage de l’homme** — 2/7 avec Provocation : le
-  marchand de rançons qui prend déjà une créature de coût 4 ou moins en cale
+  marchand de prises qui prend déjà une créature de coût 4 ou moins en cale
   (Abordage 4, barème coût − 1) ;
 - **au début de CHACUN de vos tours, elle change** — `alternance`, moteur
   `changerVisages` : l’homme 2/7 Provocation, la légende 6/2. Personne ne
@@ -736,10 +747,10 @@ seul). Barème : alternance +1,5, insaisissable +1 (rpgCardPower, rpgAI).
 
 - **Le terrain hybride** — *L’Estuaire* (mana Eau **ou** Sable au choix à
   chaque engagement, contrat de *Pétra*) pour le format classique à terrains ;
-- **La clause du sang** — variante de la rançon payable **en PV** (au choix du
-  payeur : le coût en manas, ou le même chiffre en PV) — la sortie de fin de
-  partie pour un camp à cours de mana ; à ne proposer qu’après des parties
-  réelles, le prix en manas est le contrat de base ;
+- **La cale qui se paie en PV** — variante exploratoire où faire quitter la
+  table au capteur coûterait des PV : **hors contrat** tant que la rançon
+  n’existe plus, la sortie de cale est gratuite et passe uniquement par la
+  table ;
 - **L’espionnage du manifeste** — *Le Routier* v2 : « regardez la main du
   sorcier adverse » — l’information pure, très fidèle au pilote portugais ;
   attend une UI de révélation ; à ce jour la pioche/défausse tient le rôle ;
@@ -766,7 +777,7 @@ npm run build
 Le set tient en trois phrases :
 
 1. **Il ne coule pas ce qu’il peut vendre** — l’Abordage prend, la Cale
-   détient, la Rançon rend au prix imprimé ;
+   détient, et seule sa sortie de table la rend ;
 2. **L’Eau amollit la prise, le Sable l’emporte** — les −X/−X et les renvois
    préparent le combat que les corsaires doivent gagner pour capturer ;
 3. **Corsaire ou pirate ? C’est une question de signature** — la Chambre

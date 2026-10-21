@@ -259,7 +259,7 @@ async function scenarioDoublonsSorcier(assert) {
     await finirTour();
     // La rangée adverse se lit en miroir : la case 0 — la première posée —
     // est à droite. Les deux Chiens du guet occupent les premières cases,
-    // le Négociant des rançons, posé au cinquième tour, entre à gauche.
+    // le Négociant des prises, posé au cinquième tour, entre à gauche.
     assert.deepEqual(camp('ennemi').map((carte) => carte.dataset.cardId).slice(0, 3), [
       'mousse-des-galiotes', 'chien-du-guet', 'chien-du-guet',
     ], 'la première créature précède les deux exemplaires identiques');
