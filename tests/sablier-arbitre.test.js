@@ -517,3 +517,34 @@ test('une invitation (par lien ou nominative) est lisible par le joueur attendu 
   assert.equal(etatTiers.raison, 'pas-participant');
 });
 
+test('scénario F9CA4C2B : deux mulligans [1] démarrent réellement le duel et exposent decks, noms et fin', async () => {
+  const monde = creerMonde();
+  const { code } = await duelEnCours(monde);
+
+  const avantHote = await api(monde, HOTE, { action: 'etat', code });
+  const avantInvite = await api(monde, INVITE, { action: 'etat', code });
+  assert.ok(avantHote.decks?.joueur?.id && avantHote.decks?.sorcier?.id, 'les decks publics sont exposés');
+  assert.equal(avantInvite.decks.joueur.id, avantHote.decks.sorcier.id, 'les decks sont retournés pour le second joueur');
+
+  const mHote = await api(monde, HOTE, {
+    action: 'jouer', code, seq: avantHote.seq, intention: { type: 'mulligan', index: [1] },
+  });
+  assert.equal(mHote.ok, true);
+
+  const mInvite = await api(monde, INVITE, {
+    action: 'jouer', code, seq: mHote.seq, intention: { type: 'mulligan', index: [1] },
+  });
+  assert.equal(mInvite.ok, true);
+  assert.equal(mInvite.etat.manaEssaiDemarre, true, 'le mana démarre après les deux mulligans');
+  assert.equal(mInvite.etat.mulliganFait.joueur, true);
+  assert.equal(mInvite.etat.mulliganFait.sorcier, true);
+
+  // Abandon : l'état persisté porte `fin` immédiatement sur les deux vues.
+  await api(monde, INVITE, { action: 'abandonner', code });
+  const apresHote = await api(monde, HOTE, { action: 'etat', code });
+  const apresInvite = await api(monde, INVITE, { action: 'etat', code });
+  assert.deepEqual(apresHote.etat.fin, { gagnant: 'joueur', raison: 'abandon' });
+  assert.deepEqual(apresInvite.etat.fin, { gagnant: 'sorcier', raison: 'abandon' });
+});
+
+

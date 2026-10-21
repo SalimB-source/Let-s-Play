@@ -157,7 +157,12 @@ export default function RpgPvpSalon() {
   const [amiId, setAmiId] = useState('');
   const [mode, setMode] = useState('live');
   const [maintenant, setMaintenant] = useState(() => Date.now());
-  const enVolRef = useRef(false);
+  const seqRef = useRef(0);
+  const fileActionRef = useRef(Promise.resolve());
+  const nbEnVolRef = useRef(0);
+  useEffect(() => {
+    if (typeof vue?.seq === 'number') seqRef.current = vue.seq;
+  }, [vue?.seq]);
 
   // Sans code, on est à l'accueil : il n'y a rien à charger, donc pas d'écran
   // « ouverture du salon » qui tournerait dans le vide.
@@ -172,6 +177,7 @@ export default function RpgPvpSalon() {
     const prochain = String(codeParam ?? '').toUpperCase();
     setCode(prochain);
     if (!prochain) {
+      seqRef.current = 0;
       setVue(null);
       setErreur(null);
       setChargement(false);
@@ -182,7 +188,10 @@ export default function RpgPvpSalon() {
     if (!code || !uid) return;
     if (!silencieux) setChargement(true);
     const reponse = await etatDefi(code);
-    setVue(reponse);
+    if (nbEnVolRef.current === 0 || !silencieux) {
+      if (typeof reponse?.seq === 'number') seqRef.current = reponse.seq;
+      setVue(reponse);
+    }
     setChargement(false);
     if (!reponse.ok && reponse.raison === 'duel-inconnu') setErreur(SALON_TEXTES.inconnu);
     return reponse;
@@ -199,7 +208,9 @@ export default function RpgPvpSalon() {
     const utile = vue.statut === 'invitation' || vue.statut === 'en_cours';
     if (!utile) return undefined;
     const cache = typeof document !== 'undefined' && document.visibilityState === 'hidden';
-    const timer = setInterval(() => { charger(true); }, cadenceSondage(cache));
+    const timer = setInterval(() => {
+      if (nbEnVolRef.current === 0) charger(true);
+    }, cadenceSondage(cache));
     return () => clearInterval(timer);
   }, [code, uid, vue?.ok, vue?.statut, charger]);
 
@@ -218,23 +229,39 @@ export default function RpgPvpSalon() {
 
   /* -------------------------------- actions ------------------------------- */
 
-  const agir = async (action) => {
-    if (enVolRef.current) return null;
-    enVolRef.current = true;
-    setBusy(true);
-    setErreur(null);
-    try {
-      const reponse = await action();
-      if (reponse) {
-        if (!reponse.ok) setErreur(reponse.raison ?? null);
-        else if (reponse.code) { setVue(reponse); setCode(reponse.code); }
-        else if (reponse.seq !== undefined) await charger(true);
+  const agir = (action) => {
+    const tache = fileActionRef.current.then(async () => {
+      nbEnVolRef.current += 1;
+      setBusy(true);
+      setErreur(null);
+      try {
+        const reponse = await action();
+        if (reponse) {
+          if (!reponse.ok) {
+            setErreur(reponse.raison ?? null);
+            if (reponse.raison === 'sequence' || reponse.raison === 'pas-votre-tour' || reponse.raison === 'phase') {
+              await charger(true);
+            }
+          } else if (reponse.code) {
+            if (typeof reponse.seq === 'number') seqRef.current = reponse.seq;
+            setVue((precedent) => ({
+              ...(precedent?.code === reponse.code ? precedent : null),
+              ...reponse,
+              etat: reponse.etat ?? precedent?.etat ?? null,
+            }));
+            setCode(reponse.code);
+          } else if (reponse.seq !== undefined) {
+            await charger(true);
+          }
+        }
+        return reponse;
+      } finally {
+        nbEnVolRef.current = Math.max(0, nbEnVolRef.current - 1);
+        if (nbEnVolRef.current === 0) setBusy(false);
       }
-      return reponse;
-    } finally {
-      enVolRef.current = false;
-      setBusy(false);
-    }
+    });
+    fileActionRef.current = tache.catch(() => null);
+    return tache;
   };
 
   const creerDefi = (visibilite) => agir(async () => {
@@ -268,7 +295,7 @@ export default function RpgPvpSalon() {
     return rejoindreDefi({ code, deck: deck.cardIds });
   });
 
-  const jouer = (intention) => agir(() => jouerIntention({ code, seq: vue?.seq ?? 0, intention }));
+  const jouer = (intention) => agir(() => jouerIntention({ code, seq: seqRef.current, intention }));
 
   const copier = async () => {
     const prefixeBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
@@ -309,26 +336,29 @@ export default function RpgPvpSalon() {
     );
   }
 
-  // Partie en cours : le plateau prend tout l'écran du jeu.
+  // Partie en cours : la vraie table plein écran (`RpgDuelPage`) prend toute la place.
   if (vue?.ok && (vue.statut === 'en_cours' || vue.statut === 'terminee') && vue.etat) {
     return (
-      <Cadre code={code} retour={{ href: cheminSalon(), libelle: 'Salon' }} compact>
-        <RpgPvpBoard
-          vue={vue.etat}
-          siege={vue.siege}
-          code={vue.code}
-          statut={vue.statut}
-          seq={vue.seq}
-          noms={vue.noms}
-          gagnantId={vue.gagnant_id}
-          finRaison={vue.fin_raison}
-          resultat={resultatSalon(vue, uid)}
-          occupe={busy}
-          onIntention={jouer}
-          onAbandon={() => agir(() => abandonnerDefi(code))}
-          onQuitter={() => navigate(cheminSalon())}
-        />
-      </Cadre>
+      <RpgPvpBoard
+        vue={vue.etat}
+        siege={vue.siege}
+        code={vue.code}
+        statut={vue.statut}
+        mode={vue.mode}
+        echeance={vue.echeance}
+        seq={vue.seq}
+        noms={vue.noms}
+        decks={vue.decks}
+        gagnantId={vue.gagnant_id}
+        finRaison={vue.fin_raison}
+        resultat={resultatSalon(vue, uid)}
+        erreur={erreur}
+        occupe={busy}
+        onIntention={jouer}
+        onRafraichir={() => charger(true)}
+        onAbandon={() => agir(() => abandonnerDefi(code))}
+        onQuitter={() => navigate(cheminSalon())}
+      />
     );
   }
 
