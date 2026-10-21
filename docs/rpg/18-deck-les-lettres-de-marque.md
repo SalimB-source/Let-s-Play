@@ -672,16 +672,39 @@ aux boosters, comme le font les six autres boîtiers.
   et `SorcererOfTheDeepTide.mp3` existent déjà — la piste de la course
   viendra du même vivier (doc 08).
 
-## 14. Les trois autres figures (mythiques de boosters, par attribut)
+## 14. Les figures hors recette (mythiques de boosters, par attribut)
 
 Comme les figures du Nord et d’Égypte : nommées **par leur attribut**, jamais
-par leur nom — la saveur porte l’histoire.
+par leur nom — la saveur porte l’histoire. Toutes hors recette du boîtier
+(mythiques de boosters, une seule par paquet, pitié au cinquantième).
 
 | Carte | Couleur | Coût | ⚔/🛡 | Capacités |
 |---|---|---|---|---|
 | **Le Chien de la Reine** | Eau | 5 | 4/3 | **Rapidité, Butin** ; arrivée : piochez 1 carte |
 | **L’Invincible** | Sable | 6 | 3/8 | **Cargaison 3** ; arrivée : bouclier de 2 |
 | **Celle qui tient le Routier** | Eau | 4 | 2/3 | **Envol** ; arrivée : piochez 2 cartes puis défaussez 1 |
+| **La Barbe Noire, les deux visages** | Sable/Eau | 5 | 2/7 | **Provocation, Abordage 4, Deux Visages, insaisissable** |
+
+**La Barbe Noire** (la carte du dédoublement, révélée au sommet des Sables
+avec la Barbe-Rousse — `sables-3`) porte la mécanique signature du personnage
+historique : Thatch l’homme d’affaires, la légende qui nouait des mèches
+brûlantes dans sa barbe pour effrayer les équipages.
+
+- **Elle arrive sous le visage de l’homme** — 2/7 avec Provocation : le
+  marchand de rançons qui prend déjà une créature de coût 4 ou moins en cale
+  (Abordage 4, barème coût − 1) ;
+- **au début de CHACUN de vos tours, elle change** — `alternance`, moteur
+  `changerVisages` : l’homme 2/7 Provocation, la légende 6/2. Personne ne
+  choisit : la terreur se réveille et se rendort toute seule. Les blessures
+  suivent d’un visage à l’autre (une légende blessée reste un homme blessé),
+  et changer de visage ne la tue jamais — à terre, 1 PV ;
+- **Le dédoublement** — `insaisissable` : elle ne peut pas être prise en cale.
+  La signature du set ne retourne pas l’arme du set contre elle : on emporte
+  un visage, l’autre reste.
+
+Le swap se fait **par différence** sur `atk`/`def`/`pvMax` (armes et renforts
+posés par-dessus suivent), la Provocation appartient au visage (`l’homme`
+seul). Barème : alternance +1,5, insaisissable +1 (rpgCardPower, rpgAI).
 
 ## 15. Frontière & phase 2
 

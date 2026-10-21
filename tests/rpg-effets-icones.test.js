@@ -26,9 +26,9 @@ import {
 const pastillesDe = (id) => pastillesPourCarte(cardById(id))
   .map((pastille) => (pastille.valeur != null ? `${pastille.label} ${pastille.valeur}` : pastille.label));
 
-test('le sprite porte les 28 symboles validés, un par effet', () => {
+test('le sprite porte les 29 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
-  assert.equal(symboles.length, 28);
+  assert.equal(symboles.length, 29);
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
     assert.ok(symboles.includes(icone), `${icone} est dans le sprite`);
   }

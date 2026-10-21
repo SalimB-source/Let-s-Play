@@ -1091,6 +1091,11 @@ function creerEntiteCreature(carte) {
     // prise vive, détenue face visible, une seule place, `null` si vide. La
     // prisonnière ne figure plus dans `camp.creatures` : sa case est libre.
     enCale: null,
+    // Les Deux Visages (La Barbe Noire) : l'index du visage courant, `null`
+    // pour toute créature sans alternance. La fiche imprime le visage
+    // d'arrivée (index 0) ; le moteur bascule au début de chaque tour du camp
+    // (`changerVisages`), les blessures suivant d'un visage à l'autre.
+    visage: carte.alternance ? 0 : null,
     // La Cargaison (set Lettres de Marque) : combien de cartes le propriétaire
     // pioche quand cette créature meurt ou est prise en cale.
     cargaison: Math.max(0, Number(carte.cargaison) || 0),
@@ -1904,6 +1909,7 @@ function priseEnCaleLegale(victime, couleurs, seuil) {
   if (!victime || victime.jeton) return false;
   const carte = duelCardById(victime.carteId);
   if (!carte || carte.kind === 'hero') return false;
+  if (carte.insaisissable) return false;
   if (victime.tenaciteDisponible) return false;
   if (rpgEstProtegee(victime, couleurs)) return false;
   return (Number(carte.cost) || 0) <= seuil;
@@ -1932,12 +1938,14 @@ function meilleurePriseAbordage(duel, coteVictime, couleurs, seuil) {
  */
 function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictime = null) {
   if (!capteur || capteur.enCale) return false;
-  // Un jeton n'a pas de carte à détenir, une figure ne se vend pas, et la
-  // Tenacité refuse la cale comme elle refuse la mort — on ne prend pas ce
-  // qui reviendra (garde pour les appels directs du moteur : la désignation
-  // de l'arrivée a déjà filtré tout cela).
+  // Un jeton n'a pas de carte à détenir, une figure ne se vend pas, la
+  // Tenacité refuse la cale comme elle refuse la mort, et l'insaisissable
+  // (La Barbe Noire) glisse toujours entre les grappins (garde pour les
+  // appels directs du moteur : la désignation de l'arrivée a déjà filtré
+  // tout cela).
   if (victime?.jeton) return false;
   if (duelCardById(victime?.carteId)?.kind === 'hero') return false;
+  if (duelCardById(victime?.carteId)?.insaisissable) return false;
   if (victime?.tenaciteDisponible) return false;
   const coteCapteur = duel.joueur.creatures.some((candidate) => candidate.id === capteur.id)
     ? 'joueur' : 'sorcier';
@@ -4820,6 +4828,40 @@ function detruireEphemeres(duel) {
  *  pioche 1, ses créatures deviennent prêtes (le mal d'invocation tombe) et les
  *  échos différés (Nuage de cendres) dont il est le lanceur retombent sur la
  *  table d'en face. Le tour s'ouvre ensuite en phase principale. */
+/**
+ * Les Deux Visages (La Barbe Noire, set Lettres de Marque) : au début du tour
+ * de son camp, la créature change de visage — l'homme et la légende se
+ * relaient, sans que personne ne choisisse. Les statistiques du nouveau
+ * visage remplacent celles de l'ancien **par différence** : les armes portées
+ * et les renforts posés par-dessus suivent le mouvement. Les blessures
+ * suivent d'un visage à l'autre (une légende blessée reste un homme blessé),
+ * et changer de visage ne la tue jamais : à terre, le corps garde 1 PV.
+ */
+function changerVisages(duel) {
+  const camp = duel[duel.tour];
+  for (const entite of camp.creatures) {
+    if (entite.visage == null) continue;
+    const visages = duelCardById(entite.carteId)?.alternance?.visages;
+    if (!Array.isArray(visages) || visages.length < 2) continue;
+    const ancien = visages[entite.visage] ?? visages[0];
+    entite.visage = (entite.visage + 1) % visages.length;
+    const nouveau = visages[entite.visage];
+    const deltaAtk = (nouveau.atk ?? 0) - (ancien.atk ?? 0);
+    const deltaDef = (nouveau.def ?? 0) - (ancien.def ?? 0);
+    entite.atk = Math.max(0, entite.atk + deltaAtk);
+    entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + deltaDef);
+    entite.def = Math.max(1, entite.def + deltaDef);
+    entite.pv = Math.min(entite.pv + deltaDef, entite.def);
+    if (entite.pv < 1) entite.pv = 1;
+    // La Provocation appartient au visage : l'homme tient le rempart, la
+    // légende ne se cache derrière rien.
+    if (ancien.provocation || nouveau.provocation) {
+      entite.provocation = Boolean(nouveau.provocation);
+    }
+    duel.log.push(`${entite.name} change de visage : ${nouveau.nom ?? 'l’autre'} (${nouveau.atk ?? 0}/${nouveau.def ?? 0}).`);
+  }
+}
+
 export function rpgFinDeTour(duel) {
   // Un joueur multicolore doit investir son nouveau mana avant de pouvoir
   // quitter son tour. Ce garde-fou protège aussi les appels hors interface.
@@ -4936,6 +4978,7 @@ export function rpgFinDeTour(duel) {
   resoudreRetoursProgrammes(duel);
   resoudreHeures(duel);             // les compteurs d'Heures du beffroi
   resoudreEchos(duel);              // les échos dus au camp dont le tour s'ouvre
+  changerVisages(duel);             // Les Deux Visages tournent avec le camp
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && !rpgVainqueur(duel)
     && totalCapaciteMana(camp) < RPG_MANA_ESSAI_MAX) {
     camp.manaChoixEnAttente = true;

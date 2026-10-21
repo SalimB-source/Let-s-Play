@@ -1636,11 +1636,16 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   if (Number.isFinite(carte.abordage)) {
     const prisable = duel[adv].creatures.some((entite) => !entite.jeton
       && (duelCardById(entite.carteId)?.kind ?? 'creature') !== 'hero'
+      && !duelCardById(entite.carteId)?.insaisissable
       && !entite.tenaciteDisponible
       && !estProtegee(entite, cardColors(carte))
       && (duelCardById(entite.carteId)?.cost ?? 0) <= carte.abordage);
     if (prisable) score += 2.5;
   }
+  // Les Deux Visages (La Barbe Noire) : un corps qui alterne vaut deux
+  // présences ; l'insaisissable refuse la cale adverse pour de bon.
+  if (carte.alternance) score += 1.5;
+  if (carte.insaisissable) score += 1;
   return { score, cibleId };
 }
 

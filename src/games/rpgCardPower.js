@@ -295,6 +295,12 @@ export function valeurCarte(carte) {
   // table garanti à la pose, que la Rançon peut défaire, entre le Butin et
   // l'Envol.
   if (carte.abordage) valeur += 1.5;
+  // Les Deux Visages (La Barbe Noire) : l'autre visage vaut un second corps —
+  // la muraille quand la frappe manque, la frappe quand le mur s'effondre.
+  if (carte.alternance) valeur += 1.5;
+  // L'insaisissable (La Barbe Noire) : la cale adverse ne la prend jamais —
+  // une rébellion permanente contre la signature du set d'en face.
+  if (carte.insaisissable) valeur += 1;
   // Cargaison (set Lettres de Marque) : l'assurance du convoi — la pioche ne
   // joue qu'à la mort ou à la prise, donc sous le prix d'une pioche sèche.
   if (carte.cargaison) valeur += 0.9 * carte.cargaison;

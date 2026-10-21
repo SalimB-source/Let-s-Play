@@ -27,6 +27,14 @@
  * camp joue accoste avec Abordage au seuil « coût − 1 » —, `abordage: 1` sur
  * une arme (le Grappin : la prise se fait à l’attachement, `attacherArme`),
  * et `priseEnCale` sur une arme (la prime de soins du Grappin).
+ *
+ * Deux marqueurs de plus pour La Barbe Noire (la carte du dédoublement) :
+ *   - `alternance: { visages: [...] }` — Les Deux Visages : elle arrive sous
+ *     le visage imprimé (index 0), puis change au début de chaque tour de son
+ *     camp (`changerVisages`, appelé par `rpgFinDeTour`) — l’homme 2/7 avec
+ *     Provocation, la légende 6/2, les blessures suivant d’un visage à l’autre ;
+ *   - `insaisissable: true` — Le dédoublement : la cale adverse ne la prend
+ *     jamais (filtre `priseEnCaleLegale`, garde `prendreEnCale`).
  */
 
 export const RPG_LETTRES_DE_MARQUE_SET_ID = 'lettres-de-marque';
@@ -196,6 +204,29 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     typeLine: 'Créature légendaire — Amirale des deux mers',
     text: 'Abordage 5 — quand La Barbe-Rousse arrive en jeu, la créature adverse ciblée de coût 5 ou moins est prise en sa cale : elle ne déclenche rien. Quand La Barbe-Rousse arrive : créez deux jetons Corsaire 2/1.',
     flavor: 'Alger lui doit ses remparts ; les deux mers lui doivent le reste.',
+  }),
+  carte({
+    id: 'la-barbe-noire',
+    name: 'La Barbe Noire, les deux visages',
+    element: 'sable',
+    colors: ['sable', 'eau'],
+    colorCost: { sable: 1, eau: 1 },
+    cost: 5,
+    atk: 2,
+    def: 7,
+    rarity: 'mythique',
+    provocation: true,
+    abordage: 4,
+    insaisissable: true,
+    alternance: {
+      visages: [
+        { nom: 'l’homme', atk: 2, def: 7, provocation: true },
+        { nom: 'la légende', atk: 6, def: 2 },
+      ],
+    },
+    typeLine: 'Créature légendaire — Pirate · Terreur',
+    text: 'Abordage 4 — quand La Barbe Noire arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Deux Visages — elle arrive en jeu sous le visage de l’homme (2/7 avec Provocation) ; au début de chacun de vos tours, elle change : l’homme 2/7 avec Provocation, ou la légende 6/2 — ses blessures la suivent d’un visage à l’autre. Le dédoublement — Barbe Noire ne peut pas être prise en cale : on emporte un visage, l’autre reste.',
+    flavor: 'Thatch comptait les rançons au sou près ; la chose qui brûlait dans sa barbe n’a jamais rien compté.',
   }),
 ];
 

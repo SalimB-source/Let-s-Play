@@ -693,6 +693,62 @@ test('l’IA du sorcier choisit sa prize et rançonne ce qu’elle peut payer', 
   assert.ok(cher.sorcier.main.includes('galion-de-la-flotte'));
 });
 
+test('La Barbe Noire change de visage au début de chaque tour — et ne se prend jamais en cale', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 10);
+  mana(duel, 'sorcier', 10);
+  // Elle arrive sous le visage de l'homme : 2/7 avec Provocation, et son
+  // Abordage 4 emporte une créature adverse de coût ≤ 4.
+  donner(duel, 'sorcier', 'tercio-de-cuivre');
+  const tercio = jouer(duel, 'sorcier', 'tercio-de-cuivre').entite;
+  donner(duel, 'joueur', 'la-barbe-noire');
+  const noire = jouer(duel, 'joueur', 'la-barbe-noire', tercio.id).entite;
+  assert.ok(noire.enCale?.carteId === 'tercio-de-cuivre', 'l’homme a pris le Tercio à l’arrivée');
+  assert.equal(noire.atk, 2, 'l’homme est un mur');
+  assert.equal(noire.def, 7);
+  assert.equal(noire.provocation, true, 'l’homme tient le rempart');
+  assert.equal(noire.visage, 0);
+  // Le tour du sorcier s'ouvre : son camp ne tourne pas, elle reste l'homme.
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'sorcier');
+  assert.equal(noire.visage, 0, 'le visage ne tour qu’au début du tour de son camp');
+  // Le tour du joueur s'ouvre : la légende se réveille — 6/2, plus de mur.
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'joueur');
+  assert.equal(noire.visage, 1);
+  assert.equal(noire.atk, 6, 'la légende frappe');
+  assert.equal(noire.def, 2);
+  assert.equal(noire.provocation, false, 'la légende ne se cache derrière rien');
+  // Blessée sous la légende (1 PV), elle redevient l'homme : les blessures
+  // suivent — ni mort, ni soin gratuit.
+  noire.pv = 1;
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
+  assert.equal(noire.visage, 0);
+  assert.equal(noire.def, 7);
+  assert.equal(noire.pv, 6, 'blessures conservées : 7 − (2 − 1)');
+  assert.equal(noire.provocation, true, 'le rempart revient avec l’homme');
+  // Et la légende revient tour après tour — personne ne choisit.
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
+  assert.equal(noire.visage, 1);
+  assert.equal(noire.atk, 6);
+
+  // Le dédoublement : même La Barbe-Rousse adverse (Abordage 5, et la Noire
+  // coûte 5) ne peut pas la prendre — ni en la désignant, ni en auto-pick.
+  const miroir = duelVide();
+  mana(miroir, 'joueur', 10);
+  mana(miroir, 'sorcier', 10);
+  donner(miroir, 'joueur', 'la-barbe-noire');
+  const insaisissable = jouer(miroir, 'joueur', 'la-barbe-noire').entite;
+  donner(miroir, 'sorcier', 'la-barbe-rousse');
+  assert.equal(jouer(miroir, 'sorcier', 'la-barbe-rousse', insaisissable.id).ok, false,
+    'la désignation refuse l’insaisissable');
+  const rousse = jouer(miroir, 'sorcier', 'la-barbe-rousse').entite;
+  assert.equal(rousse.enCale, null, 'l’auto-pick la laisse sur la table');
+  assert.equal(miroir.joueur.creatures.includes(insaisissable), true, 'on emporte un visage, l’autre reste');
+});
+
 test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles du jeu', () => {
   // Le banc d'essai : 30 cartes Sable + Eau, validateur content.
   const essai = deckManaEssaiParId('essai-mana-lettres-de-marque');
@@ -735,6 +791,7 @@ test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles
     'tercio-de-cuivre', 'cotre-de-course', 'le-renegat', 'negociant-des-ranscons',
     'galion-de-la-flotte', 'la-barbe-rousse', 'lettre-de-marque', 'haut-fond',
     'le-routier', 'le-grand-debarquement', 'grappin-d-abordage', 'corsaire',
+    'la-barbe-noire',
   ]) {
     assert.ok(existsSync(art(id)), `${id} a sa peinture plein art`);
   }
@@ -758,6 +815,14 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Rançon, pa
   assert.deepEqual(libellesPastilles('galion-de-la-flotte'), ['Cargaison 2'], 'le Galion porte la pastille Cargaison 2');
   assert.deepEqual(libellesPastilles('negociant-des-ranscons'), ['Rançon 1'], 'le Négociant porte la pastille Rançon');
   assert.ok(libellesPastilles('grappin-d-abordage').includes('Abordage 1'), 'le Grappin porte Abordage 1');
+  const noire = cardById('la-barbe-noire');
+  assert.ok(puissanceCarte(noire) > puissanceCarte({ ...noire, alternance: null, insaisissable: false }),
+    'le dédoublement vaut son prix au barème');
+  assert.deepEqual(libellesPastilles('la-barbe-noire'), ['Provocation', 'Abordage 4', 'Deux Visages'],
+    'la Barbe Noire porte ses trois pastilles');
+  assert.equal(iconePourLigne(noire,
+    'Deux Visages — elle arrive en jeu sous le visage de l’homme (2/7 avec Provocation) ; au début de chacun de vos tours, elle change.'),
+    'visages', 'la ligne de règle se lit Deux Visages');
   assert.equal(iconePourLigne(cardById('rais-de-la-galiote'),
     'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale.'),
     'abordage', 'la ligne de règle se lit Abordage');

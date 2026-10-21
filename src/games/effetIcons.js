@@ -44,6 +44,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-overkill" viewBox="0 0 24 24"><path d="M2.5 12h12"/><path d="M10.5 7.5 15 12l-4.5 4.5"/><path d="M18.5 3.5V9"/><path d="M18.5 15v5.5"/><path d="M15 12h6.5"/></symbol>
   <symbol id="i-defausse" viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="14" rx="1.5"/><path d="M17 8v8m0 0-3-3m3 3 3-3"/><path d="M7 19h10"/></symbol>
   <symbol id="i-paquet" viewBox="0 0 24 24"><rect x="5" y="3" width="12" height="9" rx="1.5"/><path d="M8 6.5h6M8 9h4"/><path d="M19 13v6m0 0-2.5-2.5M19 19l2.5-2.5"/></symbol>
+  <symbol id="i-visages" viewBox="0 0 24 24"><path d="M11 3.5C8 3.5 5.8 5.6 5.8 8.2c0 2 1.4 3.3 1.4 3.3s-1.7 1.6-1.7 4.3c0 2.6 2.4 4.7 5.5 4.7"/><path d="M13 3.5c3 0 5.2 2.1 5.2 4.7 0 2-1.4 3.3-1.4 3.3s1.7 1.6 1.7 4.3c0 2.6-2.4 4.7-5.5 4.7"/><path d="M8.2 8.2h1.6M14.2 8.2h1.6"/></symbol>
   <symbol id="i-abordage" viewBox="0 0 24 24"><path d="M12 3v10.5"/><path d="M8.5 6h7"/><path d="M12 13.5c-2.5 0-4.5-2-4.5-4.5V6"/><path d="M12 13.5c2.5 0 4.5-2 4.5-4.5V6"/></symbol>
   <symbol id="i-cargaison" viewBox="0 0 24 24"><path d="M6.5 9V7.5a5.5 5.5 0 0 1 11 0V9"/><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M9 9v11M15 9v11"/><path d="M12 13v3"/></symbol>
 </svg>`.trim();
@@ -80,6 +81,7 @@ export function couleurProtection(contre) {
 export const EFFET_ICONE = {
   butin: 'i-butin',
   abordage: 'i-abordage',
+  visages: 'i-visages',
   cargaison: 'i-cargaison',
   rancon: 'i-abordage',
   cale: 'i-cargaison',
@@ -144,7 +146,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
 export const MOTS_CLES_PASTILLES = [
   'envol', 'infiltration', 'rapidite', 'coupRapide', 'provocation', 'overkill', 'furie', 'esquive',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'bouclier', 'aura', 'honneur', 'butin',
-  'abordage', 'cargaison',
+  'abordage', 'visages', 'cargaison',
 ];
 
 /** Les pastilles d’une carte, en HTML — `carte` = fiche `rpgCards.js`. */
@@ -173,6 +175,7 @@ export function pastillesCarte(carte, { size = 15, classe = 'rpg-chip' } = {}) {
 export const EFFET_LIBELLES = {
   butin: 'Butin',
   abordage: 'Abordage',
+  visages: 'Deux Visages',
   cargaison: 'Cargaison',
   rancon: 'Rançon',
   cale: 'Cale',
@@ -270,6 +273,8 @@ export function pastillesPourCarte(carte) {
   // Grappin à l'attachement — la pastille porte le seuil), la Cargaison du
   // convoi, et le déclencheur de rançon du Négociant.
   if (carte.abordage) ajouter('abordage', 'Abordage', Number.isFinite(carte.abordage) ? carte.abordage : null);
+  // Les Deux Visages (La Barbe Noire) : le mot-clé du dédoublement.
+  if (carte.alternance) ajouter('visages', 'Deux Visages');
   if (carte.cargaison) ajouter('cargaison', 'Cargaison', Number(carte.cargaison) || null);
   if (carte.declencheRancon) ajouter('rancon', 'Rançon', Number(carte.declencheRancon) || null);
   // Une arme peut accorder un bouclier à son porteur (la Hache de la
@@ -342,6 +347,7 @@ export function effetsEpuisesPourEntite(carte, entite) {
 const MOTIFS_LIGNE = [
   ['butin', /\bbutin\b/iu],
   ['abordage', /\babordage\b/iu],
+  ['visages', /\bdeux visages\b/iu],
   ['cargaison', /\bcargaison\b/iu],
   ['rancon', /\bran[çc]ons?\b/iu],
   ['cale', /\bcale\b/iu],
@@ -494,6 +500,7 @@ export const EFFET_DEFINITIONS = {
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`,
   butin: 'Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
   abordage: (n) => `Quand cette créature arrive en jeu, la créature adverse ciblée de coût ${n ?? 'N'} ou moins est prise en sa cale — détenue face visible, une seule place — au lieu d’être détruite : elle ne déclenche rien. Son propriétaire peut la racheter en main au prix imprimé, et la cale s’ouvre quand le capteur quitte la table.`,
+  visages: 'Au début de chacun des tours de son camp, cette créature change de visage : la légende frappe, l’homme tient le rempart. Ses blessures la suivent d’un visage à l’autre, et changer de visage ne la tue jamais.',
   cargaison: (n) => `Quand cette créature meurt ou est prise en cale, son propriétaire pioche ${n ?? 'N'} carte${n > 1 ? 's' : ''} : le convoi est assuré.`,
   rancon: (n) => `Chaque fois qu’une créature est rançonnée, vous piochez ${n ?? 1} carte${n > 1 ? 's' : ''} : la commission du négociant.`,
   cale: 'La créature détenue par ce capteur. Son propriétaire peut la rançonner au prix imprimé, en manas libres ; la cale s’ouvre quand le capteur quitte la table.',

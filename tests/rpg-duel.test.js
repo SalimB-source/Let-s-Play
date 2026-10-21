@@ -206,8 +206,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'magie', 'arme']));
 });
 
-test('le set de créatures existe : soixante-dix-sept cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 77, 'le Djinn du souk est retiré du jeu, les Lettres de Marque ajoutent dix cartes');
+test('le set de créatures existe : soixante-dix-huit cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 78, 'le Djinn du souk est retiré du jeu, les Lettres de Marque ajoutent onze cartes, la Barbe Noire compris');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
