@@ -1,5 +1,5 @@
 /**
- * Le sprite des icônes d’effets du duel — les 25 symboles validés
+ * Le sprite des icônes d’effets du duel — les 26 symboles validés
  * (`preview-effets-icone.html`), monochromes, tracé 24×24, `stroke: currentColor`.
  *
  * Deux usages :
@@ -15,15 +15,16 @@
 
 import { libelleModificationStats, modificationStats } from './rpgCards.js';
 
-/** Les 25 symboles, à injecter une seule fois par page. */
+/** Les 26 symboles, à injecter une seule fois par page. */
 export const EFFETS_SPRITE = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-butin" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></symbol>
-  <symbol id="i-furie" viewBox="0 0 24 24"><path d="M7 4c2.6 4.4 3.2 10.6 1.2 16"/><path d="M13.2 4c2.6 4.4 3.2 10.6 1.2 16"/></symbol>
+  <symbol id="i-furie" viewBox="0 0 24 24"><path d="M7.1 11.3C5.3 10.3 3.8 8.2 3.1 5.4c1.6 1.9 3.1 3.2 4.8 4"/><path d="M16.9 11.3c1.8-1 3.3-3.1 4-5.9C19.3 7.3 17.8 8.6 16.1 9.4"/><path d="M6.7 15.2v-2.7c0-3 2.4-5.4 5.3-5.4s5.3 2.4 5.3 5.4v2.7"/><path d="M5.4 15.2h13.2"/><path d="M12 7.1v8.1"/><path d="M10.9 15.2h2.2l-.4 4.2h-1.4z"/><path d="M7 15.2v3M17 15.2v3"/></symbol>
   <symbol id="i-esquive" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/><path d="M12.59 19.41A2 2 0 1 0 14 16H2"/><path d="M17.73 7.73A2.5 2.5 0 1 1 19.5 12H2"/></symbol>
   <symbol id="i-envol" viewBox="0 0 24 24"><path d="M2 10.5c3.2.4 5.8 2.2 7.2 5.2h5.6c1.4-3 4-4.8 7.2-5.2"/><path d="M12 15.7c-.6 2-.6 3.6 0 5.3"/></symbol>
   <symbol id="i-rapidite" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
   <symbol id="i-coup-rapide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></symbol>
+  <symbol id="i-provocation" viewBox="0 0 24 24"><path d="M3 10v4l3 .4V9.6z"/><path d="M6 9.6 18 4v16L6 14.4"/><path d="M8.2 14.7v4.3h3v-5"/><path d="M20 9a4.2 4.2 0 0 1 0 6"/></symbol>
   <symbol id="i-tenacite" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><path d="M12 22V7.5"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></symbol>
   <symbol id="i-infiltration" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></symbol>
   <symbol id="i-protection" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
@@ -46,6 +47,30 @@ export const EFFETS_SPRITE = `
 </svg>`.trim();
 
 /**
+ * La couleur du bouclier de Protection selon l'élément tenu à distance.
+ * `sable: null` est volontaire : sa Protection garde l'encre dorée ordinaire
+ * des icônes, sans teinte spéciale.
+ */
+export const PROTECTION_COULEURS = Object.freeze({
+  braise: '#ff3b30',
+  eau: '#2f7bff',
+  sable: null,
+  tenebres: '#a855f7',
+  neige: '#8fd8ff',
+});
+
+/** Les éléments contre lesquels une fiche est protégée, imprimés ou donnés par son arme. */
+export function couleursProtectionCarte(carte) {
+  const contre = carte?.protection?.contre ?? carte?.donne?.protection?.contre;
+  return [...new Set([contre].flat(Infinity).filter(Boolean))];
+}
+
+/** La couleur d'une Protection élémentaire, ou `null` quand l'encre ordinaire reste. */
+export function couleurProtection(contre) {
+  return PROTECTION_COULEURS[contre] ?? null;
+}
+
+/**
  * Du vocabulaire de jeu à l’id de symbole. Les clés couvrent les mots-clés
  * (drapeaux de fiche) et les types d’effet (`appliquer`, `valeurEffet`) ;
  * les ids interlinéaires servent aussi aux libellés de texte de carte.
@@ -57,6 +82,7 @@ export const EFFET_ICONE = {
   envol: 'i-envol',
   rapidite: 'i-rapidite',
   coupRapide: 'i-coup-rapide',
+  provocation: 'i-provocation',
   tenacite: 'i-tenacite',
   infiltration: 'i-infiltration',
   protection: 'i-protection',
@@ -110,7 +136,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  * (type de combat d’abord, puis les protections et l’honneur).
  */
 export const MOTS_CLES_PASTILLES = [
-  'envol', 'infiltration', 'rapidite', 'coupRapide', 'overkill', 'furie', 'esquive',
+  'envol', 'infiltration', 'rapidite', 'coupRapide', 'provocation', 'overkill', 'furie', 'esquive',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'bouclier', 'aura', 'honneur', 'butin',
 ];
 
@@ -118,7 +144,16 @@ export const MOTS_CLES_PASTILLES = [
 export function pastillesCarte(carte, { size = 15, classe = 'rpg-chip' } = {}) {
   return MOTS_CLES_PASTILLES
     .filter((cle) => Boolean(carte?.[cle]))
-    .map((cle) => `<span class="${classe}">${effetIcon(cle, { size })}</span>`)
+    .flatMap((cle) => {
+      if (cle !== 'protection') return [`<span class="${classe}">${effetIcon(cle, { size })}</span>`];
+      const contres = couleursProtectionCarte(carte);
+      if (!contres.length) return [`<span class="${classe}">${effetIcon(cle, { size })}</span>`];
+      return contres.map((contre) => {
+        const couleur = couleurProtection(contre);
+        const style = couleur ? ` style="color:${couleur};border-color:${couleur}"` : '';
+        return `<span class="${classe}" data-protection-contre="${contre}"${style}>${effetIcon(cle, { size })}</span>`;
+      });
+    })
     .join('');
 }
 
@@ -135,6 +170,7 @@ export const EFFET_LIBELLES = {
   envol: 'Envol',
   rapidite: 'Rapidité',
   coupRapide: 'Coup rapide',
+  provocation: 'Provocation',
   tenacite: 'Tenacité',
   infiltration: 'Infiltration',
   protection: 'Protection',
@@ -176,22 +212,27 @@ const capitaliser = (mot = '') => (mot ? mot.charAt(0).toUpperCase() + mot.slice
 export function pastillesPourCarte(carte) {
   if (!carte) return [];
   const pastilles = [];
-  const ajouter = (cle, label, valeur = null) => {
+  const ajouter = (cle, label, valeur = null, details = {}) => {
     if (pastilles.some((pastille) => pastille.cle === cle)) return;
-    pastilles.push({ cle, icone: EFFET_ICONE[cle] ?? 'i-degats', label, valeur });
+    pastilles.push({ cle, icone: EFFET_ICONE[cle] ?? 'i-degats', label, valeur, ...details });
   };
 
   if (carte.envol) ajouter('envol', 'Envol');
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Coup rapide');
-  if (carte.overkill) ajouter('overkill', 'Overkill');
+  if (carte.provocation) ajouter('provocation', 'Provocation');
+  // L'Overkill peut être imprimé, prêté par une arme, ou accordé par un sort
+  // (le Mur de boucliers) : la pastille suit l'effet, pas seulement la fiche.
+  if (carte.overkill || carte.effet?.overkill || carte.arrivee?.overkill || carte.donne?.overkill) {
+    ajouter('overkill', 'Overkill');
+  }
   if (carte.furie) ajouter('furie', 'Furie', Number(carte.furie) || null);
   if (carte.esquive) ajouter('esquive', 'Esquive', null);
   if (carte.tenacite) ajouter('tenacite', 'Tenacité');
   if (carte.resonance) {
-    // La Résonance se nomme par le TYPE imprimé de la carte : « Résonance
-    // samouraï », « Résonance viking ».
+    // La Résonance se nomme par le TYPE imprimé de la carte : aujourd’hui,
+    // « Résonance samouraï ».
     const tribus = { samourai: 'samouraï', viking: 'viking' };
     ajouter('resonance', carte.resonanceTribu
       ? `Résonance ${tribus[carte.resonanceTribu] ?? carte.resonanceTribu}`
@@ -200,9 +241,10 @@ export function pastillesPourCarte(carte) {
   if (carte.protection?.contre) {
     // Libellés accentués des couleurs (« Ténèbres », pas « Tenebres »).
     const labels = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
-    const contre = [carte.protection.contre].flat(Infinity).filter(Boolean)
+    const contres = couleursProtectionCarte(carte);
+    const contre = contres
       .map((couleur) => labels[couleur] ?? capitaliser(couleur)).join(' et ');
-    ajouter('protection', `Protection ${contre}`);
+    ajouter('protection', `Protection ${contre}`, null, { contres });
   }
   if (carte.protectionSorts) {
     ajouter('protectionSorts', 'Protection contre les magies et les sorcelleries');
@@ -255,6 +297,29 @@ export function pastillesPourCarte(carte) {
   return pastilles;
 }
 
+/**
+ * Les effets imprimés qu'une créature posée a déjà dépensés : sa Tenacité
+ * quand elle l'a sauvée une fois, son Bouclier quand il a absorbé son dernier
+ * point (ou que son bouclier de lumière a été touché). L'aperçu grise alors
+ * la pastille, son explication et les lignes de règle de cet effet. Une carte
+ * en main ou au catalogue n'a pas d'entité : rien n'y est jamais épuisé. Un
+ * nouveau bouclier réarme l'état — tant qu'il tient, rien n'est grisé.
+ */
+export function effetsEpuisesPourEntite(carte, entite) {
+  if (!carte || !entite) return [];
+  const epuises = [];
+  if (carte.tenacite && entite.tenaciteDisponible === false) epuises.push('tenacite');
+  const bouclierImprime = [carte.arrivee?.type, carte.effet?.type]
+    .some((type) => type === 'bouclier' || type === 'bouclier-lumiere')
+    || Boolean(carte.donne?.bouclier);
+  const bouclierActif = Number(entite.bouclier) > 0 || Boolean(entite.bouclierLumiere);
+  // Les entités du moteur portent `bouclierEpuise` ; les fixtures anciennes
+  // qui ne le portent pas retombent sur la simple absence de bouclier.
+  const bouclierTombe = entite.bouclierEpuise === true || entite.bouclierEpuise === undefined;
+  if (bouclierImprime && !bouclierActif && bouclierTombe) epuises.push('bouclier');
+  return epuises;
+}
+
 /** Les motifs qui font reconnaître une ligne de règle, dans le texte français. */
 const MOTIFS_LIGNE = [
   ['butin', /\bbutin\b/iu],
@@ -263,34 +328,36 @@ const MOTIFS_LIGNE = [
   ['envol', /\benvol\b/iu],
   ['rapidite', /\brapidité/iu],
   ['coupRapide', /\bcoup rapide/iu],
+  ['provocation', /\bprovocation\b/iu],
   ['overkill', /\boverkill\b/iu],
   ['tenacite', /\bténacité/iu],
   ['infiltration', /\binfiltration/iu],
   ['resonance', /\brésonance/iu],
   ['honneur', /\bhonneur\b/iu],
   ['tribut', /\btribut\b/iu],
-  ['contresort', /\bcontre(sort|z|s)\b/iu],
+  ['transfert', /\bperd\s+\d+\s*PV\b[^.]*\bgagnez\b|\btransfert\b/iu],
+  ['contresort', /(?:^|[—:]\s*)contre(?:z|s)?\b|\bcontresort\b|\bcontrez\b/iu],
   ['reanimation', /\bréanimation|fait revenir|cimetière[^.]*en jeu/iu],
-  ['recyclage', /\brecycl|cimetière[^.]*en main/iu],
+  ['recyclage', /\brecycl|cimetière[^.]*\b(?:dans|en)\b[^.]*\bmain\b/iu],
   ['heures', /\bheures\b|\bcompteur/iu],
   ['retour-main', /\brenvoy|retour[^.]*\bmain\b|revient en main/iu],
-  ['exil', /\bexil/iu],
-  ['protection', /\bprot[ée]g/iu],
+  ['exil', /\bexil|retire[rz]?\s+de la partie|retirée?\s+de la partie/iu],
+  ['defaussePaquet', /dessus du paquet[^.]*cimetière|paquet adverse[^.]*cimetière/iu],
+  ['empeche-blocage', /empêche de bloquer|ne pourra pas bloquer|ne peut pas bloquer/iu],
+  ['destruction-totale', /détruisez toutes les créatures/iu],
+  ['jetons', /\bcré(?:e|ez|éent|er)\b[^.]*\b(?:créatures?-jetons?|jetons?|chiens? de sable)\b|\bcréatures?-jetons?\b/iu],
+  ['protection', /\bprotection\b|\bprot[ée]g/iu],
   ['bouclier', /\bbouclier/iu],
   ['pioche', /\bpioch/iu],
-  ['soin', /\bsoign|\bsoin\b/iu],
+  ['soin', /\bsoign|\bsoin\b|récupérez|regagnez|gagnez\s+\d+\s*PV|points de vie/iu],
+  ['debuff', /retire\s+\d+\s+attaques?|perdent\s+\d+\s+attaque|donne\s+-\d+\s*\/\s*-\d+|gagnent\s+-\d+\s*\/\s*-\d+/iu],
   ['degats', /\bd[ée]g[âa]ts|\binflige/iu],
   ['defausse', /\bd[ée]fauss/iu],
 ];
 
-/**
- * L’icône qui précède une ligne de règle : le motif reconnu le plus tôt dans
- * la phrase (« Butin — … piochez » se lit Butin, pas Pioche). À défaut de motif,
- * l’effet principal de la fiche tranche ; sinon `null` — pas d’icône forcée.
- */
-export function iconePourLigne(carte, ligne = '') {
-  // « Magie Rapide » nomme la famille du sort, pas le mot-clé Rapidité.
-  const texte = String(ligne).replace(/magie rapide/giu, ' ');
+const TYPES_SANS_ICONE_LIGNE = new Set(['brouillard', 'combat', 'blocage-force']);
+
+function motifPourTexte(texte) {
   let meilleure = null;
   for (const [cle, motif] of MOTIFS_LIGNE) {
     const correspondance = motif.exec(texte);
@@ -298,12 +365,79 @@ export function iconePourLigne(carte, ligne = '') {
       meilleure = { cle, index: correspondance.index };
     }
   }
-  if (meilleure) return meilleure.cle;
-  const typePrincipal = carte?.effet?.type ?? carte?.arrivee?.type ?? carte?.destruction?.type;
-  if (typePrincipal && EFFET_ICONE[typePrincipal]) return typePrincipal;
-  if (carte?.aura) return 'aura';
-  if (carte?.banniere) return 'banniere';
-  if (carte?.butin) return 'butin';
+  return meilleure?.cle ?? null;
+}
+
+function iconeEffetStructure(effet) {
+  if (!effet?.type || TYPES_SANS_ICONE_LIGNE.has(effet.type)) return null;
+  if (effet.type === 'buff'
+    && (effet.cible === 'creatures-adverses' || (Number(effet.atk) || 0) < 0 || (Number(effet.def) || 0) < 0)) {
+    return 'debuff';
+  }
+  return EFFET_ICONE[effet.type] ? effet.type : null;
+}
+
+/**
+ * L’icône qui précède une ligne de règle : celle de l'action écrite dans
+ * CETTE phrase, jamais un tampon appliqué à toute la fiche.
+ *
+ * Trois lectures, dans l'ordre :
+ * 1. les cas où un mot seul induirait en erreur — prévenir des dégâts n'est
+ *    pas en infliger, un brouillard qui les annule ne porte aucune icône,
+ *    un retour du cimetière vers la main est un recyclage et pas un rebond ;
+ * 2. pour un déclencheur, l'action après les deux-points (« Quand le porteur
+ *    inflige… : piochez » se lit Pioche), sinon le motif le plus tôt ;
+ * 3. à défaut de motif, l'effet structuré correspondant au déclencheur de la
+ *    phrase — jamais l'arrivée d'une créature collée sur ses mots-clés, ni
+ *    son effet de mort. Certaines magies (`brouillard`, combat entre deux
+ *    créatures, blocage forcé) n'ont pas d'icône qui les dise : `null`.
+ */
+export function iconePourLigne(carte, ligne = '') {
+  // « Magie Rapide » nomme la famille du sort, pas le mot-clé Rapidité.
+  const texte = String(ligne).replace(/magie rapide/giu, ' ');
+  const phrase = texte.trim();
+
+  if (carte?.kind === 'magie' && TYPES_SANS_ICONE_LIGNE.has(carte.effet?.type)) return null;
+  if (/^(?:Mur|Doit bloquer|Priorité d’attaque rapide)\s*—/u.test(phrase)) return null;
+  if (/^Si\b/u.test(phrase)) return null;
+  if (/\bne peut pas attaquer\.?$/u.test(phrase)) return null;
+  if (/prévient les [^.]*dégâts|ne peut pas subir de dégâts/iu.test(phrase)) return 'bouclier';
+  if (/cimetière[^.]*\b(?:dans|en)\b[^.]*\bmain\b/iu.test(phrase)) return 'recyclage';
+
+  const declencheur = phrase.match(/^(?:Quand|Lorsque|Au début)\b[^:]*:\s*(.+)$/u);
+  if (declencheur) {
+    const consequence = motifPourTexte(declencheur[1]);
+    if (consequence) return consequence;
+  }
+
+  const motif = motifPourTexte(phrase);
+  if (motif) return motif;
+
+  if (carte?.kind === 'magie') return iconeEffetStructure(carte.effet);
+
+  if (/\bporteur\b[^.]*\b(?:meurt|détruit)\b/iu.test(phrase)) {
+    return iconeEffetStructure(carte?.porteurMeurt);
+  }
+  if (/\bporteur\b[^.]*blessures de combat[^.]*sorcier/iu.test(phrase)) {
+    return iconeEffetStructure(carte?.porteurBlesseSorcier ?? carte?.porteurBlesse);
+  }
+  if (/\bporteur\b[^.]*blessures de combat[^.]*créature/iu.test(phrase)) {
+    return iconeEffetStructure(carte?.porteurBlesseCreature ?? carte?.porteurBlesse);
+  }
+  if (/\bporteur\b[^.]*\battaque\b/iu.test(phrase)) {
+    return iconeEffetStructure(carte?.porteurAttaque);
+  }
+  if (/\b(?:meurt|détruite?|est détruit)\b/iu.test(phrase)) {
+    return iconeEffetStructure(carte?.destruction);
+  }
+  if (/\b(?:arrive|arrivée)\b/iu.test(phrase)) {
+    return iconeEffetStructure(carte?.arrivee);
+  }
+  if (/^Tant qu/iu.test(phrase)) {
+    if (carte?.banniere) return 'banniere';
+    if (carte?.aura) return 'aura';
+  }
+  if (carte?.butin && /touche le sorcier/iu.test(phrase)) return 'butin';
   return null;
 }
 
@@ -322,7 +456,9 @@ export const EFFET_DEFINITIONS = {
   infiltration: 'Ne peut pas être bloquée.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
-  furie: (n) => `La première fois qu’elle est blessée et survit, elle gagne +${n ?? 'X'}/+${n ?? 'X'}.`,
+  provocation: 'Quand elle attaque, elle doit être bloquée par au moins une créature si un blocage légal est possible.',
+  furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
+  overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
   esquive: () => '25 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
   tenacite: 'Une fois par partie, si elle doit être détruite, elle survit avec 1 point de défense.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
@@ -354,6 +490,8 @@ export const EFFET_DEFINITIONS = {
 /** Les libellés tels qu’ils s’impriment en tête de phrase sur les fiches. */
 const LIBELLES_IMPRIMES = [
   ['coupRapide', 'Coup rapide'],
+  ['provocation', 'Provocation'],
+  ['overkill', 'Overkill'],
   ['envol', 'Envol'],
   ['infiltration', 'Infiltration'],
   ['rapidite', 'Rapidité'],

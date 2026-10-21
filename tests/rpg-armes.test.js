@@ -105,8 +105,12 @@ test('le prototype compte six armes, une par élément (la Neige en porte deux),
   assert.equal(armeById('takouba-des-pistes').donne.infiltration, true);
   assert.equal(armeById('baton-des-citernes').arrivee.jeton, 'serpent-des-citernes');
   assert.equal(armeById('baton-des-citernes').activation.cout, 3);
-  assert.deepEqual(armeById('lance-de-givre').bonus, { atk: 3, def: 1 });
+  assert.deepEqual(armeById('lance-de-givre').bonus, { atk: 1, def: -1 });
   assert.equal(armeById('lance-de-givre').donne.envol, true);
+  assert.equal(armeById('lance-de-givre').donne.bouclier, undefined,
+    'la Lance ne donne plus de bouclier');
+  assert.match(armeById('lance-de-givre').text, /\+1\/−1 et Envol/);
+  assert.doesNotMatch(armeById('lance-de-givre').text, /bouclier/i);
   assert.equal(armeById('armure-de-cendres').rarity, 'mythique');
   assert.deepEqual(armeById('armure-de-cendres').bonus, { atk: 3, def: 3 });
   assert.equal(armeById('armure-de-cendres').donne.immunite, 'braise');
@@ -120,7 +124,7 @@ test('le prototype compte six armes, une par élément (la Neige en porte deux),
   assert.equal(hache.donne.bouclier, 1, 'et lui laisse un bouclier de 1');
 });
 
-test('les decks du catalogue suivent leur quota d’armes sans dépasser une mythique', () => {
+test('les decks du catalogue suivent leur quota d’armes et leur plafond de mythiques', () => {
   const armesParDeck = {
     'veilleurs-du-desert': ['sandales-de-tislit', 'licou-du-chien-de-sable', 'jitte-d-amayas', 'takouba-de-tin-hinan', 'harnais-du-mehari'],
     'cour-des-djinns': [],
@@ -136,7 +140,8 @@ test('les decks du catalogue suivent leur quota d’armes sans dépasser une myt
     const armes = [...new Set(deck.cardIds.filter((id) => armeById(id)))].sort();
     assert.deepEqual(armes, armesParDeck[deck.id].sort(), `${deck.name} respecte sa sélection d’armes`);
     const mythiques = [...new Set(deck.cardIds.filter((id) => cardById(id).rarity === 'mythique'))];
-    assert.equal(mythiques.length, 1, `${deck.name} ne garde qu’une mythique distincte`);
+    assert.equal(mythiques.length, deck.id === 'serment-des-neuf-hivers' ? 2 : 1,
+      `${deck.name} respecte son nombre de mythiques distinctes`);
   }
 
   const veilleurs = RPG_DECKS.find((deck) => deck.id === 'veilleurs-du-desert');
@@ -275,18 +280,28 @@ test('activer le Bâton pour 3 manas appelle un autre serpent — jamais hors de
 /** Reste-t-il de quoi payer la moindre chose ? (mana du joueur épuisé ou non). */
 const rpgPeutPayerMana = (duel) => Object.values(duel.joueur.mana).some((n) => n > 0);
 
-test('la Lance de givre donne Envol au porteur, dans les deux sens du blocage', () => {
+test('la Lance de givre donne +1/-1 et Envol au porteur, sans bouclier, dans les deux sens du blocage', () => {
   const duel = duelVide();
-  const chien = poser(duel, 'joueur', 'chien-du-guet');
+  const dune = poser(duel, 'joueur', 'dune-marchante'); // 2/4 : elle survit au -1 de défense
   const anqa = poser(duel, 'sorcier', 'anqa-des-braises'); // volante de naissance
-  assert.equal(rpgPeutBloquerAttaquant(chien, anqa), false, 'au sol, il ne bloque pas une volante');
-  equiper(duel, 'joueur', 'lance-de-givre', chien);
-  assert.equal(chien.envol, true);
-  assert.equal(rpgPeutBloquerAttaquant(chien, anqa), true, 'porteur de la Lance, il bloque les volantes');
-  assert.equal(rpgPeutBloquerAttaquant(anqa, chien), true);
-  const dune = poser(duel, 'sorcier', 'dune-marchante');
-  assert.equal(rpgPeutBloquerAttaquant(dune, chien), false,
-    'et seule une volante peut désormais le bloquer, lui');
+  assert.equal(rpgPeutBloquerAttaquant(dune, anqa), false, 'au sol, elle ne bloque pas une volante');
+  equiper(duel, 'joueur', 'lance-de-givre', dune);
+  assert.equal(dune.atk, 3, '2 + 1 d’attaque');
+  assert.equal(dune.def, 3, '4 - 1 de défense');
+  assert.equal(dune.pv, 3, 'le -1 de défense retire aussi un PV présent');
+  assert.equal(dune.pvMax, 3, 'et abaisse le plafond du même point');
+  assert.equal(dune.envol, true);
+  assert.equal(dune.bouclier ?? 0, 0, 'la Lance ne dresse aucun bouclier');
+  assert.equal(dune.arme.bouclier, undefined, 'aucun point de bouclier ne vit sur l’arme');
+  const coup = rpgBlesserCreature(duel, 'joueur', dune.id, 1, 'eau', null, 'magie');
+  assert.equal(coup.absorbes ?? 0, 0, 'le prochain dégât n’est pas absorbé');
+  assert.equal(coup.recus, 1);
+  assert.equal(dune.pv, 2, 'les PV du porteur encaissent le point');
+  assert.equal(rpgPeutBloquerAttaquant(dune, anqa), true, 'porteuse de la Lance, elle bloque les volantes');
+  assert.equal(rpgPeutBloquerAttaquant(anqa, dune), true);
+  const chien = poser(duel, 'sorcier', 'chien-du-guet');
+  assert.equal(rpgPeutBloquerAttaquant(chien, dune), false,
+    'et seule une volante peut désormais la bloquer, elle');
 });
 
 test('Infiltration : le porteur du Takouba ne peut pas être bloqué, tant qu’il le porte', () => {
@@ -328,14 +343,40 @@ test('une seconde arme envoie la première au cimetière et retire son bonus', (
   const duel = duelVide();
   const chien = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'takouba-des-pistes', chien); // → 4/2
-  equiper(duel, 'joueur', 'lance-de-givre', chien); // +3/+1 et Envol, la Takouba tombe
+  equiper(duel, 'joueur', 'lance-de-givre', chien); // +1/-1 et Envol, la Takouba tombe
   assert.equal(chien.arme.carteId, 'lance-de-givre');
-  assert.equal(chien.atk, 5, 'le +2 de la Takouba est parti, le +3 de la Lance est là');
-  assert.equal(chien.pv, 3);
+  assert.equal(chien.atk, 3, 'le +2 de la Takouba est parti, le +1 de la Lance est là');
+  assert.deepEqual([chien.def, chien.pv, chien.pvMax], [1, 1, 1],
+    'le -1 de défense de la Lance s’applique au Chien 2/2');
   assert.equal(chien.envol, true);
+  assert.equal(chien.bouclier ?? 0, 0, 'la Lance ne dresse aucun bouclier en s’attachant');
+  assert.equal(chien.arme.bouclier, undefined);
   assert.ok(duel.joueur.cimetiere.includes('takouba-des-pistes'),
     'l’ancienne arme est au cimetière, pas en main');
   assert.equal(duel.joueur.main.includes('takouba-des-pistes'), false);
+});
+
+test('remplacer la Lance retire son -1 de défense sans voler un bouclier venu d’ailleurs', () => {
+  const duel = duelVide();
+  const dune = poser(duel, 'joueur', 'dune-marchante'); // 2/4
+  equiper(duel, 'joueur', 'lance-de-givre', dune);
+  assert.deepEqual([dune.atk, dune.def, dune.pv, dune.pvMax, dune.bouclier ?? 0], [3, 3, 3, 3, 0]);
+
+  donner(duel, 'joueur', 'parade-du-verre');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'parade-du-verre', dune.id).ok, true);
+  assert.equal(dune.bouclier, 3, 'les 3 points viennent de la Parade, pas de la Lance');
+
+  rpgBlesserCreature(duel, 'joueur', dune.id, 1, 'eau', null, 'magie');
+  assert.equal(dune.bouclier, 2, 'la Parade absorbe un point');
+  assert.equal(dune.pv, 3, 'les PV restent intacts derrière la Parade');
+
+  equiper(duel, 'joueur', 'takouba-des-pistes', dune);
+  assert.deepEqual([dune.atk, dune.def, dune.pv, dune.pvMax], [4, 4, 3, 4],
+    'le -1 de la Lance repart du plafond, sans soigner le PV déjà perdu en l’équipant');
+  assert.equal(dune.bouclier, 2, 'les points restants de la Parade demeurent : changer d’arme ne les vole pas');
+  assert.equal(dune.envol, false, 'Envol repart avec la Lance');
+  assert.equal(dune.arme.carteId, 'takouba-des-pistes');
 });
 
 test('la protection contre la couleur de l’arme refuse l’attachement', () => {

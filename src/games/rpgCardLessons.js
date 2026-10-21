@@ -57,21 +57,21 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['rempart-de-dunes', 'mur-de-boucliers', 'tin-hinan'],
     title: 'Vérifiez combien de temps dure un bonus',
-    text: 'Le Rempart de dunes (+0/+3) et le Mur de boucliers (+2/+2) donnent leur bonus jusqu’à la fin du tour : le jeu le retire au bon moment. D’autres gains restent acquis — le +2/+0 du ralliement de Tin Hinan ne s’efface pas, et le bonus d’une arme dure tant qu’elle reste attachée. La durée se lit toujours sur la carte.',
+    text: 'Le Rempart de dunes (+0/+3) et le Mur de boucliers (+2/+0 et Overkill) donnent leur bonus jusqu’à la fin du tour : le jeu le retire au bon moment. D’autres gains restent acquis — le +2/+0 du ralliement de Tin Hinan ne s’efface pas, et le bonus d’une arme dure tant qu’elle reste attachée. La durée se lit toujours sur la carte.',
   },
   {
     id: 'boucliers',
     section: 'Magies',
     cardIds: ['parade-du-verre', 'salem'],
     title: 'Un bouclier absorbe les dégâts',
-    text: 'La Parade de verre protège une créature alliée contre ses trois prochains dégâts, quelle que soit leur provenance. Le bouclier de lumière de Salem est différent : il le protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie le touche.',
+    text: 'La Parade de verre protège une créature alliée contre ses trois prochains dégâts, quelle que soit leur provenance. Le bouclier de lumière de Salem est différent : il le protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie le touche. Sur la table, une égide animée cerne la créature protégée ; quand elle encaisse, l’écu claque — et se fissure si le bouclier tombe.',
   },
   {
     id: 'degats-et-gel',
     section: 'Magies',
     cardIds: ['hurlement-du-blizzard', 'brume-du-fjord', 'poigne-de-givre'],
     title: 'Des dégâts qui peuvent geler',
-    text: 'La Poigne de givre gèle toujours la créature qu’elle blesse. Le Hurlement du blizzard (2 dégâts) et la Brume du fjord (1 dégât) frappent toutes les créatures adverses, et chaque survivante tire sa chance : une sur deux est gelée — ni attaque ni blocage jusqu’à la fin de son prochain tour. Les créatures tuées par les dégâts n’ont plus rien à geler.',
+    text: 'La Poigne de givre gèle toujours la créature qu’elle blesse. Le Hurlement du blizzard (2 dégâts) et la Brume du fjord (1 dégât) frappent toutes les créatures adverses, puis chaque survivante tire sa chance : une sur deux est gelée par le Hurlement, mais la Brume ne gèle qu’avec 25 % de chances. Une créature gelée ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour ; les créatures tuées par les dégâts n’ont plus rien à geler.',
   },
   {
     id: 'contresorts',
@@ -97,9 +97,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'arrivee-en-jeu',
     section: 'Capacités des créatures',
-    cardIds: ['tislit-des-aures', 'porteuse-de-cruches'],
+    cardIds: ['tislit-des-aures', 'porteuse-de-cruches', 'valkyrie-au-corbeau'],
     title: 'Les capacités d’arrivée se déclenchent seules',
-    text: 'Quand une créature arrive, son effet d’arrivée se résout automatiquement. Tislit fait piocher une carte ; la Porteuse de cruches soigne le joueur. D’autres arrivées renforcent le groupe, donnent un bouclier ou infligent des dégâts.',
+    text: 'Quand une créature arrive, son effet d’arrivée se résout automatiquement. Tislit fait piocher une carte ; la Porteuse de cruches soigne le joueur. La Valkyrie au corbeau tire au hasard une carte dont la ligne de type contient « Viking » parmi celles qui restent dans votre deck et la met dans votre main — le Loup des neiges, de type Loup, n’est donc pas éligible, et s’il ne reste aucun Viking, elle ne fait pas piocher. D’autres arrivées donnent un bouclier ou infligent des dégâts.',
   },
   {
     id: 'creatures-jetons',
@@ -169,7 +169,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['maitre-du-marteau'],
     title: 'Tenacité refuse une seule destruction',
-    text: 'Le Maître du marteau a Tenacité : une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense. La première destruction est donc annulée — aucune capacité de destruction ne se déclenche — mais la suivante l’emportera. Seule la présence en jeu la dépense : renvoyé en main puis rejoué, le Maître retrouve sa Tenacité. Et parce qu’il vient d’être blessé en survivant, sa Furie 3 s’enflamme aussitôt (sa seule flambée) : il se relève à 1, puis gagne +3/+3.',
+    text: 'Le Maître du marteau a Tenacité : une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense. La première destruction est donc annulée — aucune capacité de destruction ne se déclenche — mais la suivante l’emportera. Dans un même combat, deux bloqueurs qui portent ensemble le coup fatal comptent comme deux coups : le second l’achève. Seule la présence en jeu la dépense : renvoyé en main puis rejoué, le Maître retrouve sa Tenacité. Relevé à 1 point de défense, il est sous sa DEF de base de 5 : sa Furie 3 s’allume aussitôt et lui donne +3/+0 tant qu’il reste sous ce seuil.',
   },
   {
     id: 'protection',
@@ -188,9 +188,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'furie',
     section: 'Capacités des créatures',
-    cardIds: ['berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre'],
-    title: 'Furie s’enflamme une seule fois',
-    text: 'Si une créature avec Furie est blessée et survit, elle gagne +X/+X — une seule fois : la première blessure survivée l’enflamme, les suivantes ne la grandissent plus. Le Berserk gagne +2/+2, le Jarl +3/+3. Un bouclier qui absorbe entièrement le coup ne déclenche pas Furie.',
+    cardIds: ['loup-des-neiges', 'berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre'],
+    title: 'Furie suit la blessure',
+    text: 'Une créature avec Furie X gagne +X/+0 tant que sa défense actuelle est inférieure à sa DEF de base, celle imprimée sur sa carte. Les renforts peuvent donc la garder au-dessus du seuil malgré une blessure. Si un soin la ramène à cette DEF de base, elle quitte la Furie et perd ce seul bonus ; une nouvelle chute sous le seuil la rallume.',
   },
   {
     id: 'honneur',
@@ -202,9 +202,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'auras-et-resonance',
     section: 'Capacités des créatures',
-    cardIds: ['tarek', 'valkyrie-des-glaces', 'tengu-du-mont-ardent', 'samourai-du-torii', 'kenshi-de-la-forge'],
+    cardIds: ['tarek', 'tengu-du-mont-ardent', 'samourai-du-torii', 'kenshi-de-la-forge'],
     title: 'Une aura agit tant que sa source reste en jeu',
-    text: 'Une aura ne quitte jamais son camp : Tarek renforce les créatures Sable de son camp, l’égide d’Amani donne +0/+2 aux autres créatures du sien, et l’aura de forge du Kenshi donne +1/+0 aux autres Samouraïs de son camp — il ne se forge pas lui-même, mais deux Kenshis du même camp se renforcent l’un l’autre et le reste des Samouraïs reçoit les deux ; celui d’en face ne forge que les siens. La Résonance, elle, est de table et se lit sur le TYPE imprimé de sa source : celle du Tengu, de Kagutsuchi et du Samouraï du torii ne renforce que les créatures de type Samouraï, même adverses et quelle que soit leur couleur, de +1/+1 par source ; celle de la Valkyrie, une Valkyrie de type Viking, ne renforce que les créatures de type Viking, des deux côtés. Celle du Samouraï du torii suit la même règle mais ne renforce que les autres Samouraïs — jamais lui-même ; deux toriis se renforcent l’un l’autre, et les autres sources le renforcent normalement. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas, pas plus qu’un Loup des neiges ne profite d’une Résonance viking. Si la source quitte la table, le bonus d’aura correspondant disparaît — l’aura de forge ne touche jamais la défense, donc la perdre ne peut pas tuer.',
+    text: 'Une aura ne quitte jamais son camp : Tarek renforce les créatures Sable de son camp, l’égide d’Amani donne +0/+2 aux autres créatures du sien, et l’aura de forge du Kenshi donne +1/+0 aux autres Samouraïs de son camp — il ne se forge pas lui-même, mais deux Kenshis du même camp se renforcent l’un l’autre et le reste des Samouraïs reçoit les deux ; celui d’en face ne forge que les siens. La Résonance, elle, est de table et se lit sur le TYPE imprimé de sa source : celle du Tengu, de Kagutsuchi et du Samouraï du torii ne renforce que les créatures de type Samouraï, même adverses et quelle que soit leur couleur, de +1/+1 par source. Celle du Samouraï du torii suit la même règle mais ne renforce que les autres Samouraïs — jamais lui-même ; deux toriis se renforcent l’un l’autre, et les autres sources le renforcent normalement. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas. Si la source quitte la table, le bonus d’aura correspondant disparaît — l’aura de forge ne touche jamais la défense, donc la perdre ne peut pas tuer.',
   },
   {
     id: 'banniere-samourai',
@@ -216,9 +216,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'coup-rapide',
     section: 'Capacités des créatures',
-    cardIds: ['feriel', 'berserk-des-trois-hivers'],
+    cardIds: ['feriel', 'djinn-de-foudre'],
     title: 'Coup rapide vise avant les blessures de combat',
-    text: 'Quand vous sélectionnez Fériel ou le Berserk comme attaquant, vous pouvez désigner une créature adverse : Coup rapide lui inflige la valeur d’attaque de votre créature, sans riposte, avant les blessures de combat (avec 25 % de chances de rater sa cible) — et l’attaque s’arrête sur cette frappe. Votre créature n’est alors ni bloquée, ni échangée, et le sorcier ne prend rien. Sans créature désignée, elle attaque l’adversaire normalement avec 100 % de chances de toucher : elle peut être bloquée, échange ses dégâts de combat, ou frappe le sorcier si personne ne s’interpose. Le choix se fait avant de confirmer l’attaque ; sans proie désignée, elle part vers le sorcier.',
+    text: 'Quand vous sélectionnez une créature avec Coup rapide comme attaquant, vous pouvez désigner une créature adverse : Coup rapide lui inflige la valeur d’attaque de votre créature, sans riposte, avant les blessures de combat (avec 25 % de chances de rater sa cible) — et l’attaque s’arrête sur cette frappe. Votre créature n’est alors ni bloquée, ni échangée, et le sorcier ne prend rien. Sans créature désignée, elle attaque l’adversaire normalement avec 100 % de chances de toucher : elle peut être bloquée, échange ses dégâts de combat, ou frappe le sorcier si personne ne s’interpose. Le choix se fait avant de confirmer l’attaque ; sans proie désignée, elle part vers le sorcier.',
   },
   {
     id: 'capacite-de-combat',
@@ -237,9 +237,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'overkill-et-protection',
     section: 'Capacités des créatures',
-    cardIds: ['serpent-du-monde'],
+    cardIds: ['serpent-du-monde', 'mur-de-boucliers'],
     title: 'Overkill perce, la protection anti-magie blinde',
-    text: 'Le Serpent du monde cumule deux défenses d’exception. Protégé contre les magies et les sorcelleries, aucun sort ne peut le cibler ni le blesser — seules les attaques, les capacités et les armes l’atteignent. Et quand il attaque, son Overkill perce : si les bloqueurs tombent sous ses dégâts, l’excédent passe au sorcier défenseur au lieu de se perdre.',
+    text: 'Le Serpent du monde cumule deux défenses d’exception. Protégé contre les magies et les sorcelleries, aucun sort ne peut le cibler ni le blesser — seules les attaques, les capacités et les armes l’atteignent. Et quand il attaque, son Overkill perce : si les bloqueurs tombent sous ses dégâts, l’excédent passe au sorcier défenseur au lieu de se perdre. Le Mur de boucliers prête le même Overkill à toutes vos créatures, avec +2/+0, jusqu’à la fin du tour.',
   },
   {
     id: 'magie-gratuite',

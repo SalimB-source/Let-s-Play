@@ -1,3 +1,14 @@
+/* Une ligne dont l'effet est dépensé reste lisible, mais entièrement grise. */
+.rpg-card-rules__ligne--epuisee {
+  color: #a9a9a9;
+  opacity: .68;
+  filter: grayscale(1);
+}
+
+.rpg-card-rules__ligne--epuisee .rpg-effet-icone--ligne {
+  color: #9b9b9b;
+}
+
 /* Les symboles de mana restent alignés et lisibles dans tous les textes de carte. */
 .rpg-card-rules__mana {
   display: inline-block;
