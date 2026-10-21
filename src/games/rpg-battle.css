@@ -366,48 +366,58 @@
 }
 .rpg-card__compteur--visage > span { color: #f4e3b2; }
 
-/* La prisonnière de la cale (Abordage) : sa mini-face se glisse sous le coin
-   du capteur et DÉPASSE du cadre — inclinée, assombrie, derrière les chaînes,
-   son nom au bas de la miniature. On voit qui est détenu, la rançon reste au
-   bouton d'action. Décorative : pointer-events none, aria-hidden, la cale se
-   lit dans l'aria du capteur. Elle passe SOUS le bouton de capacité activée
-   (z-index 4) et les losanges de compteurs (z-index 5). */
+/* La carte prisonnière de la cale (Abordage) : glissée DERRIÈRE son capteur,
+   elle dépasse par le haut et la droite — inclinée, assombrie, derrière les
+   chaînes, son nom en haut de la carte visible sur la bande qui dépasse. Le
+   bouton du capteur la recouvre (z-index 1) : elle est dessous, on ne lit
+   d'elle que ce qui dépasse. Décorative : pointer-events none, aria-hidden.
+   La fiche du capteur, elle, empile les deux créatures en perspective —
+   c'est là qu'on lit la prisonnière entière. */
+.rpg-card-prison {
+  position: relative;
+  display: grid;
+}
+.rpg-card-prison > .rpg-card {
+  z-index: 1;
+}
 .rpg-card__prisonniere {
   position: absolute;
-  z-index: 3;
-  top: -15%;
-  right: -8%;
-  width: 46%;
+  z-index: 0;
+  top: -9%;
+  left: 8%;
+  width: 95%;
   aspect-ratio: 4 / 5;
   display: flex;
   flex-direction: column;
   border: 1.5px solid #7fd4c8;
-  border-radius: 3px;
+  border-radius: 10px;
   background: #12332d;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, .75);
-  transform: rotate(-9deg);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, .7);
+  transform: rotate(2.6deg);
   overflow: hidden;
   pointer-events: none;
   animation: rpg-prisonniere-arrivee .5s cubic-bezier(.2, 1.35, .4, 1) both;
+}
+/* Le nom vit en HAUT de la prisonnière : c'est la bande qui dépasse du
+   capteur — en bas, il serait caché sous le ravisseur. */
+.rpg-card__prisonniere-nom {
+  flex: none;
+  max-width: 100%;
+  padding: 2px 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #d8fff5;
+  background: rgba(18, 51, 45, .96);
+  font: 700 clamp(5px, 1.1vw, 9px)/1.3 var(--display, sans-serif);
+  text-align: center;
 }
 .rpg-card__prisonniere-art {
   flex: 1;
   width: 100%;
   min-height: 0;
   object-fit: cover;
-  filter: saturate(.8) brightness(.82);
-}
-.rpg-card__prisonniere-nom {
-  flex: none;
-  max-width: 100%;
-  padding: 1px 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #d8fff5;
-  background: rgba(18, 51, 45, .95);
-  font: 700 clamp(4.5px, 1vw, 8.5px)/1.3 var(--display, sans-serif);
-  text-align: center;
+  filter: saturate(.8) brightness(.8);
 }
 .rpg-card__prisonniere-chaine {
   position: absolute;
@@ -415,12 +425,12 @@
   display: grid;
   place-items: center;
   color: rgba(216, 255, 245, .92);
-  font: 900 clamp(10px, 2.2vw, 19px)/1 var(--display, sans-serif);
+  font: 900 clamp(12px, 2.6vw, 22px)/1 var(--display, sans-serif);
   text-shadow: 0 1px 3px #000, 0 0 6px rgba(0, 0, 0, .8);
 }
 @keyframes rpg-prisonniere-arrivee {
-  from { transform: rotate(-24deg) translateY(-16%) scale(.55); opacity: 0; }
-  to   { transform: rotate(-9deg) translateY(0) scale(1); opacity: 1; }
+  from { transform: rotate(7deg) translateY(-9%) scale(.94); opacity: 0; }
+  to   { transform: rotate(2.6deg) translateY(0) scale(1); opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-card__prisonniere { animation: none; }
@@ -4021,6 +4031,55 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #fff2d2;
   pointer-events: none;
   animation: rpg-hover-preview-in .08s ease-out both;
+}
+/* La fiche d'un capteur d'Abordage empile les DEUX créatures : la
+   prisonnière derrière, tournée vers la gauche et décalée à gauche, le
+   capteur devant, incliné vers la gauche lui aussi — la pile se lit en
+   perspective, la détention d'un coup d'œil. Sans prisonnière, l'empilement
+   est invisible : une carte, une face, comme toujours. */
+.rpg-hover-card-preview__empile {
+  position: relative;
+  display: grid;
+}
+.rpg-hover-card-preview__empile--caale {
+  perspective: 1100px;
+}
+.rpg-hover-card-preview__empile--caale > .rpg-hover-card-preview__face:not(.rpg-hover-card-preview__face--prisonniere) {
+  position: relative;
+  z-index: 1;
+  transform: rotateY(-8deg);
+}
+.rpg-hover-card-preview__face--prisonniere {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  transform: rotateY(-26deg) translateX(-6%) translateY(-2%);
+  filter: brightness(.72) saturate(.85);
+}
+.rpg-hover-card-preview__prison-nom {
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  bottom: 4.5%;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: rgba(18, 51, 45, .94);
+  border: 1px solid rgba(127, 212, 200, .75);
+  color: #d8fff5;
+  font: 700 clamp(10px, 1.4vw, 13px)/1.3 var(--display, sans-serif);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rpg-hover-card-preview__prison-chaine {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(216, 255, 245, .95);
+  font: 900 clamp(22px, 3vw, 34px)/1 var(--display, sans-serif);
+  text-shadow: 0 2px 6px #000, 0 0 10px rgba(0, 0, 0, .85);
 }
 .rpg-hover-card-preview__face {
   --rpg-card-element-marker-top: 5%;
@@ -9960,7 +10019,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     min-width: 0;
     flex: 0 1 auto;
   }
-  .rpg-battle:not(.rpg-battle--touch) .card-row > .rpg-card-stack > .rpg-card {
+  .rpg-battle:not(.rpg-battle--touch) .card-row > .rpg-card-stack > .rpg-card,
+  /* La carte d'un capteur peut vivre dans son wrapper de prison (la
+     détenue derrière) : elle garde la même contrainte de largeur. */
+  .rpg-battle:not(.rpg-battle--touch) .card-row > .rpg-card-stack > .rpg-card-prison > .rpg-card {
     max-width: 100%;
   }
 }
