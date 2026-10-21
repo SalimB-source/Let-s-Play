@@ -58,6 +58,7 @@
     "check:rpg-fullscreen": "node scripts/rpg-fullscreen-check.mjs",
     "check:rpg-ghosts": "node scripts/rpg-ghost-check.mjs",
     "check:rpg-entry-choice": "node scripts/rpg-entry-choice-check.mjs",
+    "check:rpg-chargement": "node --test tests/chargement-jeu.test.js && node scripts/rpg-entry-choice-check.mjs",
     "check:rpg-ui": "node scripts/rpg-card-state-check.mjs && node scripts/rpg-battle-ui-check.mjs && node scripts/rpg-preview-check.mjs && node scripts/rpg-plateau-flou-check.mjs && node scripts/rpg-stacks-check.mjs && node scripts/rpg-hybrid-cost-check.mjs && node scripts/rpg-ghost-check.mjs && node scripts/rpg-mulligan-check.mjs && node scripts/rpg-turn-banner-check.mjs && node scripts/rpg-sort-signature-check.mjs && node scripts/rpg-card-motif-check.mjs && node scripts/rpg-duel-nav-check.mjs && node scripts/rpg-soins-check.mjs && node scripts/rpg-resonance-check.mjs && node scripts/rpg-aura-check.mjs && node scripts/rpg-envol-check.mjs && node scripts/rpg-table-droite-check.mjs && node scripts/rpg-sort-joue-check.mjs && node scripts/rpg-tourbillon-eau-check.mjs && node scripts/rpg-ia-joue-check.mjs",
     "check:rpg-plateau-flou": "node scripts/rpg-plateau-flou-check.mjs",
     "check:rpg-decks": "node --test tests/rpg-decks-puissance.test.js",

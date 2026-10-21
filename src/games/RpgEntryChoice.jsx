@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import './rpg-entry-choice.css';
 import RpgDesktopLogin from './RpgDesktopLogin.jsx';
+import GameLoadBoundary from './GameLoadBoundary.jsx';
+import { importerAvecReprise } from './chargementJeu.js';
 import {
   RpgMainThemeMusic,
   deposerThemePrincipal,
@@ -33,7 +35,11 @@ import {
  * jeu coche « retenir » une fois pour toutes.
  */
 
-const RpgDuelPage = lazy(() => import('./RpgDuelPage'));
+// Le morceau du duel est retenté deux fois avant d'abandonner : sur une
+// connexion qui hoquette, le clic sur « Jouer dans le navigateur » aboutit
+// quand même (voir `chargementJeu.js`). S'il échoue pour de bon,
+// `GameLoadBoundary` explique la panne au lieu de laisser un écran noir.
+const RpgDuelPage = lazy(() => importerAvecReprise(() => import('./RpgDuelPage')));
 
 /** Clé `localStorage` du choix retenu (`jeu` = navigateur). */
 export const ENTREE_CHOIX_CLE = 'letsplay_sablier_entree_v1';
@@ -131,11 +137,13 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
 
   if (!montreEcran) {
     return (
-      <RpgDesktopLogin>
-        <Suspense fallback={<div className="rpg-entry-choice__chargement" role="status">Chargement du duel…</div>}>
-          <RpgDuelPage variantesPlateaux={variantesPlateaux} />
-        </Suspense>
-      </RpgDesktopLogin>
+      <GameLoadBoundary jeu="Le Sablier">
+        <RpgDesktopLogin>
+          <Suspense fallback={<div className="rpg-entry-choice__chargement" role="status">Chargement du duel…</div>}>
+            <RpgDuelPage variantesPlateaux={variantesPlateaux} />
+          </Suspense>
+        </RpgDesktopLogin>
+      </GameLoadBoundary>
     );
   }
 

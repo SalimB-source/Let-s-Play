@@ -31,8 +31,8 @@ console.log('1. La route passe par l’écran d’entrée');
 const routeur = lire('src/main.jsx');
 assert.match(
   routeur,
-  /<Route path="\/jeu\/sablier-de-bab-el" element=\{<Suspense[\s\S]{0,140}?><RpgEntryChoice variantesPlateaux \/><\/Suspense>\} \/>/,
-  'la route du Sablier ne monte plus RpgEntryChoice',
+  /<Route path="\/jeu\/sablier-de-bab-el" element=\{<GameLoadBoundary jeu="Le Sablier"><Suspense[\s\S]{0,140}?><RpgEntryChoice variantesPlateaux \/><\/Suspense><\/GameLoadBoundary>\} \/>/,
+  'la route du Sablier ne monte plus RpgEntryChoice sous GameLoadBoundary',
 );
 assert.match(routeur, /const RpgEntryChoice = lazy\(\(\) => import\('\.\/games\/RpgEntryChoice'\)\);/,
   'RpgEntryChoice doit rester un chunk paresseux');
@@ -44,8 +44,8 @@ console.log('2. Les deux portes');
 const entree = lire('src/games/RpgEntryChoice.jsx');
 assert.match(entree, /Télécharger pour Windows/, 'porte Windows absente');
 assert.match(entree, /Jouer dans le navigateur/, 'porte navigateur absente');
-assert.match(entree, /const RpgDuelPage = lazy\(\(\) => import\('\.\/RpgDuelPage'\)\);/,
-  'le duel doit être tiré par l’écran d’entrée, pas avant');
+assert.match(entree, /const RpgDuelPage = lazy\(\(\) => importerAvecReprise\(\(\) => import\('\.\/RpgDuelPage'\)\)\);/,
+  'le duel doit être tiré par l’écran d’entrée, pas avant, et retenté en cas de coupure');
 assert.match(entree, /import '\.\/rpg-entry-choice\.css';/, 'feuille de style non importée');
 ok('deux portes, duel paresseux, styles importés');
 
@@ -70,7 +70,26 @@ assert.match(entree, /ENTREE_CHOIX_CLE = 'letsplay_sablier_entree_v1'/, 'clé du
 assert.match(entree, /localStorage\.setItem\(ENTREE_CHOIX_CLE, 'jeu'\)/, 'le choix retenu n’est pas écrit');
 ok('coque PC, APK et choix retenu entrent directement ; téléphone inclus, en une colonne');
 
-console.log('5. Styles');
+console.log('5. Aucun écran noir quand un fichier du jeu manque');
+assert.match(routeur,
+  /<Route path="\/jeu\/sablier-de-bab-el\/defi" element=\{<GameLoadBoundary jeu="Le Sablier"><Suspense[\s\S]{0,160}?><RpgPvpSalon \/><\/Suspense><\/GameLoadBoundary>\} \/>/,
+  'le salon du duel en ligne doit être protégé par le même filet');
+assert.match(routeur, /import GameLoadBoundary from '\.\/games\/GameLoadBoundary\.jsx';/,
+  'GameLoadBoundary doit être importé par le routeur');
+assert.match(entree, /<GameLoadBoundary jeu="Le Sablier">/,
+  'le duel monté après le choix doit être enveloppé par le filet');
+const filet = lire('src/games/GameLoadBoundary.jsx');
+assert.match(filet, /getDerivedStateFromError/, 'le filet ne retient pas l’erreur');
+assert.match(filet, /a pas pu se charger/, 'le filet n’explique pas la panne au joueur');
+assert.match(filet, /window\.location\.reload\(\)/, 'le filet ne propose pas de recharger la page');
+assert.match(filet, /import '\.\/game-load-boundary\.css';/, 'filet sans feuille de style');
+const retry = lire('src/games/chargementJeu.js');
+assert.match(retry, /export async function importerAvecReprise/, 'reprise du téléchargement absente');
+assert.match(retry, /throw derniereErreur/, 'la reprise doit remonter la dernière erreur');
+assert.match(lire('src/games/game-load-boundary.css'), /border-radius: 18px;/, 'feuille du filet vide');
+ok('filet + reprise : le duel se recharge, sinon un écran explique la panne');
+
+console.log('6. Styles');
 const styles = lire('src/games/rpg-entry-choice.css');
 assert.match(styles, /url\('\.\.\/\.\.\/public\/sablier-de-bab-el-keyart\.jpg'\)/,
   'le keyart doit passer par public/ pour respecter la base du build');
