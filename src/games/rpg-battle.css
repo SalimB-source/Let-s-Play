@@ -10682,35 +10682,62 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-catalogue__filters label { flex: 1 1 100%; }
 }
 
-/* Abordage : lancer les maillons, accrocher, puis ramener la prise en cale. */
+/* Abordage : lancer la chaîne à anneaux **détendue** (elle pend sous son
+   poids), le grappin accroche la prise, puis la chaîne revient **tendue**
+   (les anneaux se réalignent sur la ligne de traction) en la ramenant. */
 .rpg-abordage-chaine {
   position: absolute;
-  height: 16px;
-  margin-top: -8px;
+  height: 56px;
+  margin-top: -28px;
   overflow: visible;
   pointer-events: none;
   z-index: 46;
   transform-origin: 0 50%;
-  clip-path: inset(-8px 100% -8px -8px);
+  clip-path: inset(-36px 100% -36px -20px);
   animation: rpg-abordage-chaine 1400ms linear forwards;
   filter: drop-shadow(0 2px 2px #000b);
 }
-.rpg-abordage-chaine line { fill: none; stroke-linecap: round; }
-.rpg-abordage-chaine__ombre { stroke: #302b24; stroke-width: 8; }
-.rpg-abordage-chaine__maillons {
-  stroke: #dcc496;
-  stroke-width: 5;
-  stroke-dasharray: 7 5;
+/* Un anneau d’acier : ovale creux au trait clair, l’ombre portée du SVG lui
+   donne son épaisseur sombre. Il part pendu sur la courbe molle (son `cy`),
+   puis remonte de `--anneau-retour` quand la traction tend la chaîne. */
+.rpg-abordage-chaine__anneau {
+  fill: none;
+  stroke-width: 2.7;
+  animation: rpg-abordage-anneau 1400ms linear forwards;
+}
+@keyframes rpg-abordage-anneau {
+  0%, 38% { transform: translateY(0); }
+  55%, 100% { transform: translateY(var(--anneau-retour, 0)); }
+}
+/* Le grappin : acier clair sur ombre portée dédoublée. Il vole en cloche
+   jusqu’à la prise (le mou de mi-trajet), s’y accroche un instant, puis
+   revient **droit**, au rythme de la traction qui ramène la carte. */
+.rpg-abordage-chaine__grappin {
+  animation: rpg-abordage-grappin 1400ms linear forwards;
+}
+.rpg-abordage-chaine__grappin path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rpg-abordage-chaine__grappin-ombre { stroke: #23272c; stroke-width: 5.4; }
+.rpg-abordage-chaine__grappin-acier { stroke: #d3dae1; stroke-width: 3.1; }
+@keyframes rpg-abordage-grappin {
+  0% { transform: translate(0, 0); opacity: 1; }
+  14% { transform: translate(calc(var(--chaine-lon, 0px) * .5), var(--chaine-mou, 0px)); opacity: 1; }
+  28%, 40% { transform: translate(var(--chaine-lon, 0px), 0); opacity: 1; }
+  88% { transform: translate(0, 0); opacity: 1; }
+  100% { transform: translate(0, 0); opacity: 0; }
 }
 .rpg-card-destruction-fx.is-abordage {
   animation: rpg-abordage-prise 1400ms ease-in-out forwards;
 }
 .rpg-card-destruction-fx.is-abordage::before { display: none; }
 @keyframes rpg-abordage-chaine {
-  0% { clip-path: inset(-8px 100% -8px -8px); opacity: 1; }
-  28%, 40% { clip-path: inset(-8px 0% -8px -8px); opacity: 1; }
-  88% { clip-path: inset(-8px 100% -8px -8px); opacity: 1; }
-  100% { clip-path: inset(-8px 100% -8px -8px); opacity: 0; }
+  0% { clip-path: inset(-36px 100% -36px -20px); opacity: 1; }
+  28%, 40% { clip-path: inset(-36px 0% -36px -20px); opacity: 1; }
+  88% { clip-path: inset(-36px 100% -36px -20px); opacity: 1; }
+  100% { clip-path: inset(-36px 100% -36px -20px); opacity: 0; }
 }
 @keyframes rpg-abordage-prise {
   0%, 38% { transform: rotate(var(--rpg-fx-rotation)); opacity: 1; }

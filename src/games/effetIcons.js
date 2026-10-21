@@ -279,6 +279,9 @@ export function pastillesPourCarte(carte) {
   // Grappin à l'attachement — la pastille porte le seuil), la Cargaison du
   // convoi, et le déclencheur de rançon du Négociant.
   if (carte.abordage) ajouter('abordage', 'Abordage', Number.isFinite(carte.abordage) ? carte.abordage : null);
+  // Le Grappin dynamique : son seuil se lit sur le porteur, pas sur la fiche —
+  // la pastille nomme le mot-clé sans chiffre.
+  if (carte.abordageDynamique) ajouter('abordage', 'Abordage');
   // Les Deux Visages (La Barbe Noire) : le mot-clé du dédoublement.
   if (carte.alternance) ajouter('visages', 'Deux Visages');
   if (carte.cargaison) ajouter('cargaison', 'Cargaison', Number(carte.cargaison) || null);
@@ -303,6 +306,11 @@ export function pastillesPourCarte(carte) {
     transfert: ['transfert', 'Transfert'],
     'defausse-adverse': ['defausse-adverse', 'Défausse adverse'],
     defaussePaquet: ['defaussePaquet', 'Défausse de paquet'],
+    // Les sceaux qui arment les arrivées (Lettre de marque, Pilote) se
+    // lisent « Abordage » sur la face : c’est ce que gagne la créature
+    // suivante, même si le seuil n’existe qu’à sa pose.
+    'arrivees-abordage': ['abordage', 'Abordage'],
+    'prochaine-arrivee-abordage': ['abordage', 'Abordage'],
   }[typeEffet];
   if (pastilleEffet) ajouter(...pastilleEffet);
   if (typeEffet === 'bouclier') {

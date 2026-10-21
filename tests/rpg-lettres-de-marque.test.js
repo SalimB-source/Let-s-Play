@@ -36,6 +36,7 @@ import {
   rpgResoudreSiteCible,
   rpgBlesserCreature,
   rpgPeutAttaquer,
+  rpgCoutEntite,
 } from '../src/games/rpgDuel.js';
 import {
   RPG_DECKS,
@@ -480,6 +481,40 @@ test('la Lettre de marque arme les arrivées pour un tour — la cale déjà pri
   assert.equal(tercio3.enCale, null, 'le sceau a expiré : la pose suivante n’accoste plus');
 });
 
+test('le Pilote de la Carreira arme la seule prochaine créature jouée ce tour', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 12);
+  mana(duel, 'sorcier', 12);
+  donner(duel, 'sorcier', 'mousse-des-galiotes');
+  const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
+  // Le Pilote arrive : il ne prend rien lui-même, il arme la pose suivante.
+  donner(duel, 'joueur', 'pilote-de-la-carreira');
+  const pilote = jouer(duel, 'joueur', 'pilote-de-la-carreira').entite;
+  assert.equal(pilote.enCale, null, 'le Pilote ne s’arme pas lui-même');
+  assert.equal(duel.sorcier.creatures.includes(mousse), true, 'la Mousse tient encore la table');
+  assert.equal(duel.joueur.prochaineArriveeAbordage, true, 'le routier est ouvert pour la prochaine pose');
+  // Le Tercio (aucun Abordage imprimé) accoste au barème : coût 3 − 1 = 2.
+  donner(duel, 'joueur', 'tercio-de-cuivre');
+  const tercio = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse.id).entite;
+  assert.equal(tercio.enCale?.carteId, 'mousse-des-galiotes', 'la créature armée par le Pilote a pris la Mousse');
+  assert.equal(duel.joueur.prochaineArriveeAbordage, false, 'le sceau est consommé par cette unique pose');
+  // La créature suivante n’accoste plus : une seule route lue par tour (et par Pilote).
+  donner(duel, 'sorcier', 'mousse-des-galiotes');
+  const mousse2 = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
+  donner(duel, 'joueur', 'tercio-de-cuivre');
+  const tercio2 = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse2.id).entite;
+  assert.equal(tercio2.enCale, null, 'sans sceau en cours, la pose suivante ne prend rien');
+
+  // Non dépensé, le sceau meurt avec le tour qui l’a vu naître.
+  const tardif = duelVide();
+  mana(tardif, 'joueur', 10);
+  donner(tardif, 'joueur', 'pilote-de-la-carreira');
+  jouer(tardif, 'joueur', 'pilote-de-la-carreira');
+  assert.equal(tardif.joueur.prochaineArriveeAbordage, true);
+  rpgFinDeTour(tardif);
+  assert.equal(tardif.joueur.prochaineArriveeAbordage, false, 'le tour fermé emporte le routier');
+});
+
 test('Le Grand Débarquement arme les cales pleines : +2/+2 et Overkill jusqu’à la fin du tour', () => {
   const duel = duelVide();
   const { rais } = priseDeBase(duel);
@@ -509,7 +544,7 @@ test('Le Grand Débarquement arme les cales pleines : +2/+2 et Overkill jusqu’
   const solitaire = jouer(vide, 'joueur', 'tercio-de-cuivre').entite;
   donner(vide, 'joueur', 'le-grand-debarquement');
   assert.equal(rpgLancerMagie(vide, 'joueur', 'le-grand-debarquement').ok, true);
-  assert.equal(solitaire.atk, 2, 'aucun bonus sans cale pleine');
+  assert.equal(solitaire.atk, 1, 'aucun bonus sans cale pleine (le Tercio est un 1/4)');
   assert.equal(solitaire.overkill, false);
 });
 
@@ -523,10 +558,10 @@ test('Haut-fond amollit la prise : -1/-2 pour un tour, la vague rend son dû', (
   duel.sorcier.mana = { sable: 3, eau: 3, braise: 0 };
   donner(duel, 'sorcier', 'haut-fond');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'haut-fond', tercio.id).ok, true);
-  assert.equal(tercio.atk, 1, 'le Tercio s’affaisse sur le sable sous la vague');
+  assert.equal(tercio.atk, 0, 'le Tercio 1/4 s’affaisse sur le sable sous la vague');
   assert.equal(tercio.pv, 2);
   rpgFinDeTour(duel);
-  assert.equal(tercio.atk, 2, 'à la fin du tour du sorcier, la vague se retire');
+  assert.equal(tercio.atk, 1, 'à la fin du tour du sorcier, la vague se retire');
   assert.equal(tercio.pv, 4);
 });
 
@@ -604,24 +639,37 @@ test('Le Brûlot renvoie son tueur en combat — jamais par magie, jamais captur
   assert.equal(capture.joueur.creatures.includes(cotre), true, 'son capteur n’a pas été renvoyé : rien n’est mort');
 });
 
-test('le Grappin d’abordage prend à l’attachement et paie son soin à chaque prise', () => {
+test('le Grappin (4 manas) alourdit son porteur de 1, puis active Abordage selon son coût augmenté', () => {
   const duel = duelVide();
-  mana(duel, 'joueur', 10);
-  mana(duel, 'sorcier', 10);
+  mana(duel, 'joueur', 12);
+  mana(duel, 'sorcier', 12);
+  assert.equal(cardById('grappin-d-abordage').cost, 4, 'le crochet se paie désormais quatre manas');
   donner(duel, 'joueur', 'fennec-des-decombres');
   const fennec = jouer(duel, 'joueur', 'fennec-des-decombres').entite;
+  assert.equal(rpgCoutEntite(fennec), 2, 'le Fennec vaut d’abord son coût imprimé');
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
+  donner(duel, 'sorcier', 'pilote-de-la-carreira');
+  const pilote = jouer(duel, 'sorcier', 'pilote-de-la-carreira').entite;
   const pvAvant = duel.joueur.pv;
   donner(duel, 'joueur', 'grappin-d-abordage');
   assert.equal(rpgJouerArme(duel, 'joueur', 'grappin-d-abordage', fennec.id).ok, true);
   assert.equal(fennec.atk, 4, '+1/+1 du Grappin (3 + 1)');
-  assert.equal(duel.arriveeEnAttente?.abordage, 1, 'le crochet a ouvert la désignation de prize');
+  assert.equal(rpgCoutEntite(fennec), 3, 'équipé, le coût du porteur augmente de 1');
+  assert.equal(duel.arriveeEnAttente?.abordage, 2, 'Abordage X : coût augmenté (3) moins un');
   assert.equal(duel.arriveeEnAttente?.carteId, 'grappin-d-abordage', 'l’arme porte l’attente');
-  const resolu = rpgResoudreArriveeCiblee(duel, 'joueur', mousse.id);
+  // Le joueur **choisit** sa prize : le Pilote (coût 2) plutôt que la
+  // Mousse (coût 1) — impossible sous l’ancien seuil fixe de 1.
+  const resolu = rpgResoudreArriveeCiblee(duel, 'joueur', pilote.id);
   assert.equal(resolu.ok, true);
-  assert.equal(fennec.enCale?.carteId, 'mousse-des-galiotes', 'le porteur a pris la Mousse à l’attachement');
+  assert.equal(fennec.enCale?.carteId, 'pilote-de-la-carreira', 'le porteur a pris la créature choisie, au seuil de son coût augmenté');
+  assert.equal(duel.sorcier.creatures.includes(mousse), true, 'la Mousse épargnée tient la table');
   assert.equal(duel.joueur.pv, pvAvant + 2, 'la prime du Grappin : 2 PV gagnés à la prise');
+  // Remplacer l’arme rend le coût imprimé : le surcoût ne survit pas au crochet.
+  donner(duel, 'joueur', 'baton-des-citernes');
+  assert.equal(rpgJouerArme(duel, 'joueur', 'baton-des-citernes', fennec.id).ok, true);
+  assert.equal(rpgCoutEntite(fennec), 2, 'le Grappin parti, le porteur coûte à nouveau son imprimé');
+  assert.equal(fennec.enCale?.carteId, 'pilote-de-la-carreira', 'la prise, elle, reste en cale');
   // Sans prize possible, l'attachement ne demande rien.
   const seul = duelVide();
   mana(seul, 'joueur', 10);
@@ -838,7 +886,13 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Rançon, pa
   assert.ok(libellesPastilles('le-grand-debarquement').includes('Overkill'),
     'le Grand Débarquement annonce l’Overkill sur sa face');
   assert.deepEqual(libellesPastilles('negociant-des-ranscons'), ['Rançon 1'], 'le Négociant porte la pastille Rançon');
-  assert.ok(libellesPastilles('grappin-d-abordage').includes('Abordage 1'), 'le Grappin porte Abordage 1');
+  assert.ok(libellesPastilles('grappin-d-abordage').includes('Abordage'),
+    'le Grappin porte la pastille Abordage — dynamique, sans chiffre imprimé');
+  assert.deepEqual(libellesPastilles('tercio-de-cuivre'), ['Coup rapide'],
+    'le Tercio 1/4 porte la pastille Coup rapide');
+  assert.equal(cardById('tercio-de-cuivre').atk, 1, 'le Tercio est un 1/4');
+  assert.ok(libellesPastilles('pilote-de-la-carreira').includes('Abordage'),
+    'le Pilote annonce sur sa face l’Abordage qu’il offre à la prochaine pose');
   const noire = cardById('la-barbe-noire');
   assert.equal(noire.element, 'tenebres', 'La Barbe Noire est devenue une carte Ténèbres');
   assert.deepEqual(cardColors(noire), ['tenebres'], '100 % Ténèbres : ni Sable ni Eau');
@@ -973,7 +1027,7 @@ test('la Source de Bimini porte ses trois Heures, change d’étape et consacre 
 
   const res = rpgResoudreSiteCible(duel, 'joueur', cible.id);
   assert.equal(res.ok, true);
-  assert.equal(cible.atk, 5);
+  assert.equal(cible.atk, 4, 'le Tercio 1/4 consacré par Bimini frappe à 1 + 3');
   assert.equal(cible.pvMax, 7);
   assert.equal(cible.pv, 7, 'la créature est entièrement soignée après le +3/+3');
   assert.equal(cible.def, 7);

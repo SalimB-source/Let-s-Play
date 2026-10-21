@@ -1460,6 +1460,74 @@ const BRAISES_ROUE_FEU = Object.freeze([
   { dx: 16, dy: -186, d: 360, t: 0.65 },
 ]);
 
+/**
+ * La chaîne de l’Abordage : des **anneaux métalliques** reliés, lancés depuis
+ * le capteur, avec un **grappin** à trois dents à leur extrémité. Elle part
+ * **détendue** — les anneaux pendent sur une courbe molle, sous leur poids —
+ * puis **revient tendue** : quand la prise est ramenée en cale, chaque
+ * anneau remonte sur la ligne droite de la traction (`--anneau-retour`).
+ * Le dévoilement (lancer puis retrait) reste porté par le `clip-path` du
+ * SVG ; le grappin voyage le long de la chaîne, accroche, puis repart avec
+ * la prise. Coordonnées locales : le capteur est à x = 0, la prise à
+ * x = longueur, la ligne de traction à y = 28.
+ */
+export function ChaineAbordage({ effet }) {
+  const dx = effet.abordage?.dx ?? 0;
+  const dy = effet.abordage?.dy ?? 0;
+  const longueur = Math.max(24, Math.hypot(dx, dy));
+  const flottement = Math.min(24, longueur * 0.18);
+  // Le mou pend **vers le bas** de l’écran : le signe dépend de l’orientation
+  // de la chaîne (son axe local y pointe parfois vers le haut du monde).
+  const signeMou = -dx >= 0 ? 1 : -1;
+  const nombreAnneaux = Math.max(4, Math.min(30, Math.round(longueur / 13)));
+  const anneaux = Array.from({ length: nombreAnneaux }, (_, index) => {
+    const part = (index + 0.5) / nombreAnneaux;
+    const mou = Math.sin(Math.PI * part) * flottement * signeMou;
+    return {
+      x: part * longueur,
+      mou,
+      vertical: index % 2 === 1,
+      acier: index % 3 === 0 ? '#aab3bd' : '#d3dae1',
+    };
+  });
+  return (
+    <svg
+      className="rpg-abordage-chaine"
+      aria-hidden="true"
+      data-rpg-abordage-chaine="anneaux"
+      style={{
+        left: effet.left + effet.width / 2 + dx,
+        top: effet.top + effet.height / 2 + dy,
+        width: longueur,
+        transform: `rotate(${Math.atan2(-dy, -dx)}rad)`,
+        '--chaine-lon': `${longueur}px`,
+        '--chaine-mou': `${flottement * signeMou}px`,
+      }}
+    >
+      {anneaux.map((anneau, index) => (
+        <ellipse
+          key={index}
+          className="rpg-abordage-chaine__anneau"
+          cx={anneau.x}
+          cy={28 + anneau.mou}
+          rx={anneau.vertical ? 3.6 : 6.4}
+          ry={anneau.vertical ? 6.4 : 3.6}
+          stroke={anneau.acier}
+          style={{ '--anneau-retour': `${-anneau.mou}px` }}
+        />
+      ))}
+      <g className="rpg-abordage-chaine__grappin">
+        {/* La tige, puis les trois dents recourbées vers l’arrière. */}
+        <path className="rpg-abordage-chaine__grappin-ombre" d="M-13 28 H7 M7 28 L13 28" />
+        <path className="rpg-abordage-chaine__grappin-ombre" d="M6 28 C2 20 -4 15 -11 15 M6 28 C2 36 -4 41 -11 41" />
+        <path className="rpg-abordage-chaine__grappin-acier" d="M-13 28 H9 M9 28 L15 28" />
+        <path className="rpg-abordage-chaine__grappin-acier" d="M8 28 C4 20 -2 15 -9 15 M8 28 C4 36 -2 41 -9 41" />
+        <path className="rpg-abordage-chaine__grappin-acier" d="M-9 15 l-4 -1 M-9 41 l-4 1" />
+      </g>
+    </svg>
+  );
+}
+
 export function RoueDeFeu({ effet, onTermine = null }) {
   // Un identifiant par roue : deux créatures brûlées dans le même geste ne
   // partagent pas le tracé de leurs langues.
@@ -9604,17 +9672,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           const carteDetruite = cardById(effet.cardId);
           return (
             <Fragment key={effet.effectId}>
-              {effet.abordage && (
-                <svg className="rpg-abordage-chaine" aria-hidden="true" style={{
-                  left: effet.left + effet.width / 2 + effet.abordage.dx,
-                  top: effet.top + effet.height / 2 + effet.abordage.dy,
-                  width: Math.hypot(effet.abordage.dx, effet.abordage.dy),
-                  transform: `rotate(${Math.atan2(-effet.abordage.dy, -effet.abordage.dx)}rad)`,
-                }}>
-                  <line x1="0" y1="8" x2="100%" y2="8" className="rpg-abordage-chaine__ombre" />
-                  <line x1="0" y1="8" x2="100%" y2="8" className="rpg-abordage-chaine__maillons" />
-                </svg>
-              )}
+              {effet.abordage && <ChaineAbordage effet={effet} />}
             <div
               className={`rpg-card-destruction-fx${effet.abordage ? ' is-abordage' : ''} ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
               data-rpg-destroyed-id={effet.entityId}

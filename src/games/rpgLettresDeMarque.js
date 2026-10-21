@@ -21,14 +21,17 @@
  *     renvoie l’un de ses tueurs en main (Le Brûlot — la mort par magie ne
  *     déclenche rien, le tueur de combat seul est connu).
  *
- * Et quatre contrats d’effet étendus : `arriveesAbordage: true` sur un effet
+ * Et cinq contrats d’effet étendus : `arriveesAbordage: true` sur un effet
  * (la Lettre de marque en propre) drape `camp.abordageDesArrivees` — jusqu’à
  * la fin du tour, chaque créature que le camp joue accoste avec Abordage au
- * seuil « coût − 1 » —, `caleOccupeeSeulement: true` sur un buff (le Grand
- * Débarquement : seules les créatures qui détiennent une prise en cale sont
- * renforcées), `abordage: 1` sur une arme (le Grappin : la prise se fait à
- * l’attachement, `attacherArme`), et `priseEnCale` sur une arme (la prime de
- * soins du Grappin).
+ * seuil « coût − 1 » —, l’arrivée `prochaine-arrivee-abordage` (le Pilote de
+ * la Carreira) drape `camp.prochaineArriveeAbordage` pour la **seule**
+ * prochaine créature jouée ce tour, `caleOccupeeSeulement: true` sur un buff
+ * (le Grand Débarquement : seules les créatures qui détiennent une prise en
+ * cale sont renforcées), et sur une arme `coutPorteur` + `abordageDynamique`
+ * (le Grappin : le porteur coûte +1 tant qu’il est attaché, puis active à
+ * l’attachement un Abordage au seuil de son coût augmenté − 1) avec
+ * `priseEnCale` (la prime de soins du Grappin).
  *
  * Et le marqueur du Chasseur d’Ocracoke :
  *   - `traquePirates: N` — la Traque : quand le Chasseur attaque une créature
@@ -110,9 +113,9 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     atk: 1,
     def: 3,
     rarity: 'inhabituelle',
-    arrivee: { type: 'donne', cible: 'allie', donne: { envol: true }, tours: 1 },
+    arrivee: { type: 'prochaine-arrivee-abordage' },
     typeLine: 'Créature — Humain · Pilote',
-    text: 'Quand le Pilote arrive : une créature alliée ciblée gagne Envol jusqu’à la fin du tour.',
+    text: 'Quand le Pilote arrive : la prochaine créature que vous jouez ce tour a Abordage — au seuil de son coût moins un.',
     flavor: 'Il a lu le routier une seule fois ; la mer n’a gardé que lui.',
   }),
   carte({
@@ -132,11 +135,12 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     id: 'tercio-de-cuivre',
     name: 'Tercio de cuivre',
     cost: 3,
-    atk: 2,
+    atk: 1,
     def: 4,
     rarity: 'commune',
+    coupRapide: true,
     typeLine: 'Créature — Humain · Tercio',
-    text: '—',
+    text: 'Coup rapide — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (25 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
     flavor: 'Personne n’aboie sur un pont de cuivre.',
   }),
   carte({
@@ -398,13 +402,14 @@ export const RPG_LETTRES_DE_MARQUE_ARMES = [
     id: 'grappin-d-abordage',
     name: 'Grappin d’abordage',
     kind: 'arme',
-    cost: 2,
+    cost: 4,
     rarity: 'rare',
     typeLine: 'Arme — Grappin',
     bonus: { atk: 1, def: 1 },
-    abordage: 1,
+    coutPorteur: 1,
+    abordageDynamique: true,
     priseEnCale: { type: 'soin', amount: 2 },
-    text: 'Arme — Le porteur gagne +1/+1. Quand le Grappin s’attache, la créature adverse ciblée de coût 1 ou moins est prise en la cale du porteur. Quand le porteur prend une créature en cale, vous gagnez 2 PV.',
+    text: 'Arme — Le porteur gagne +1/+1, et son coût augmente de 1 tant que le Grappin est attaché. Quand le Grappin s’attache, le porteur active Abordage X, où X vaut son coût augmenté moins un : choisissez une créature adverse de coût X ou moins, elle est prise en sa cale. Quand le porteur prend une créature en cale, vous gagnez 2 PV.',
     flavor: 'Trois dents de fer, et la mer devient un couloir.',
   }),
 ];

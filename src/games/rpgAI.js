@@ -1659,15 +1659,29 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   if (carte.combat) score += 2;
   // L'Abordage (set Lettres de Marque) : la prize à l'arrivée — une créature
   // adverse de coût ≤ seuil quitte la table sans mourir. Le moteur choisit
-  // la meilleure prise tout seul (cibleId reste null ici).
-  if (Number.isFinite(carte.abordage)) {
+  // la meilleure prise tout seul (cibleId reste null ici). Le seuil peut
+  // venir d’un sceau du camp (Lettre de marque, Pilote de la Carreira) : au
+  // barème du set, coût de l’arrivante − 1.
+  const seuilAbordageIa = Number.isFinite(carte.abordage)
+    ? carte.abordage
+    : (duel[cote]?.abordageDesArrivees || duel[cote]?.prochaineArriveeAbordage)
+      ? Math.max(0, (Number(carte.cost) || 0) - 1)
+      : null;
+  if (seuilAbordageIa !== null) {
     const prisable = duel[adv].creatures.some((entite) => !entite.jeton
       && (duelCardById(entite.carteId)?.kind ?? 'creature') !== 'hero'
       && !duelCardById(entite.carteId)?.insaisissable
       && !entite.tenaciteDisponible
       && !estProtegee(entite, cardColors(carte))
-      && (duelCardById(entite.carteId)?.cost ?? 0) <= carte.abordage);
+      && ((duelCardById(entite.carteId)?.cost ?? 0) + Math.max(0, Number(entite.coutBonusArme) || 0)) <= seuilAbordageIa);
     if (prisable) score += 2.5;
+  }
+  // Le Pilote de la Carreira ne vaut que par la pose suivante : sans autre
+  // créature en main à armer ce tour, son routier ne mène nulle part.
+  if (carte.arrivee?.type === 'prochaine-arrivee-abordage') {
+    const autresCreatures = duel[cote].main
+      .filter((id) => id !== carte.id && duelCardById(id)).length;
+    if (autresCreatures > 0) score += 1.5;
   }
   // Les Deux Visages (La Barbe Noire) : un corps qui alterne vaut deux
   // présences ; l'insaisissable refuse la cale adverse pour de bon.
