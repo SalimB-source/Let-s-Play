@@ -877,8 +877,8 @@
 }
 /* Le mulligan, au doigt : le survol ne soulève rien (l'aperçu rapide y passe
    par l'appui long d'une seconde), et la rangée tient la largeur utile du volet
-   — les cinq faces 4:5 se lisent sans pincer ni faire défiler. Le liseré doré
-   d'une carte mise de côté, lui, reste intact. */
+   — les cinq faces 4:5 se lisent sans pincer ni faire défiler. L'illustration
+   grisée et la lueur rouge d'une carte mise de côté restent visibles. */
 .rpg-battle--touch .rpg-mulligan__card:not(.is-selected):hover { transform: none; box-shadow: none; }
 .rpg-battle--touch .rpg-mulligan__card:active { transform: scale(.97); }
 .rpg-battle--touch .rpg-mulligan__card { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }

@@ -2760,10 +2760,11 @@ function ApercuCarteCatalogue({ carte, armes = [], furieDeclenchee = false, stat
    de défense du jeu — plus la ligne de type pour les terrains et les sorts, la
    face d'une créature n'ayant pas besoin de l'annoncer. Le reste du texte (nom, effets) se
    lit dans l'**aperçu rapide** : au survol d'une carte à la souris, à l'appui
-   long d'une seconde au doigt. Toucher une carte la met de côté (liseré doré),
-   la retoucher la reprend : elles repartent dans le paquet, qui est battu, et
-   le camp pioche autant de cartes qu'il en a écartées. Un seul échange, et la
-   main ne diminue jamais : c'est une décision, pas une punition. */
+   long d'une seconde au doigt. Toucher une carte la met de côté : son
+   illustration passe en niveaux de gris et son cadre luit en rouge. La retoucher
+   la reprend : elle repart dans le paquet, qui est battu, et le camp pioche
+   autant de cartes qu'il en a écartées. Un seul échange, et la main ne diminue
+   jamais : c'est une décision, pas une punition. */
 function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
