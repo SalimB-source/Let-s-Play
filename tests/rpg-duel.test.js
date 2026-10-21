@@ -208,7 +208,7 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
 });
 
 test('le set de permanents existe : quatre-vingt-une fiches façon TCG (dont deux Sites)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 81, 'les Lettres de Marque ajoutent la Vengeance, le Chasseur et deux Sites persistants');
+  assert.equal(RPG_CREATURE_CARDS.length, 81, 'les Lettres de Marque ajoutent le Hollandais volant, le Chasseur et deux Sites persistants');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -2348,7 +2348,7 @@ test('Tempête de sable : 3 dégâts à toutes les créatures adverses', () => {
   assert.ok(duel.sorcier.cimetiere.includes('sonneur-fele'), 'la victime est bien enterrée');
 });
 
-test('Nuage de cendres : 2 dégâts sur le coup, 2 autres au début de votre tour suivant', () => {
+test('Nuage de cendres : 2 dégâts sur le coup, 1 autre au début de votre tour suivant', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donnerMana(duel, 'sorcier', 10);
@@ -2379,9 +2379,9 @@ test('Nuage de cendres : 2 dégâts sur le coup, 2 autres au début de votre tou
   rpgFinDeTour(duel);
   assert.equal(duel.tour, 'joueur');
   assert.ok(sonneur.pv <= 0, 'le nuage retombe au début de votre tour suivant');
-  assert.equal(duel.sorcier.creatures.includes(sonneur), false, 'et il l’emporte avec lui');
-  assert.ok(renfort.pv <= 0, 'la créature posée entre-temps est brûlée elle aussi');
-  assert.equal(duel.sorcier.creatures.length, 0, 'la seconde vague a vidé la table adverse');
+  assert.equal(duel.sorcier.creatures.includes(sonneur), false, 'le dernier point du Sonneur s’en va avec l’écho');
+  assert.equal(renfort.pv, 1, 'la seconde vague ne vaut que 1 dégât : le renfort 2/2 posé entre-temps survit, brûlé');
+  assert.equal(duel.sorcier.creatures.length, 1, 'il ne reste que le renfort entamé sur la table adverse');
   assert.deepEqual(duel.sorcier.degatsEchos, [], 'l’écho est consommé, il ne repasse pas deux fois');
 
   rpgFinDeTour(duel);
@@ -2409,7 +2409,7 @@ test('un écho lancé sur une table vidée par la première vague brûle ce qui 
   const sonneur = rpgJouerCreature(duel, 'sorcier', 'sonneur-fele').entite;
   assert.equal(sonneur.pv, 3, 'le Sonneur arrive entier');
   rpgFinDeTour(duel);
-  assert.equal(sonneur.pv, 1, 'la seconde vague brûle la créature posée entre-temps');
+  assert.equal(sonneur.pv, 2, 'la seconde vague (1 dégât) brûle la créature posée entre-temps');
   assert.deepEqual(duel.sorcier.degatsEchos, [], 'la promesse est soldée');
   assert.equal(duel.joueur.pv, duel.joueur.pvMax, 'le joueur n’est pas touché');
 });
@@ -2458,7 +2458,7 @@ test('un écho de l’IA retombe après le tour du joueur, sur la table telle qu
   donner(duel, 'joueur', 'chien-du-guet');
   const renfort = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   rpgFinDeTour(duel);
-  assert.equal(renfort.pv, 0, 'la seconde vague du sorcier brûle la créature posée entre-temps');
+  assert.equal(renfort.pv, 1, 'la seconde vague du sorcier (1 dégât) brûle sans tuer la créature posée entre-temps');
   assert.deepEqual(duel.joueur.degatsEchos, [], 'la promesse est soldée');
 });
 
@@ -2494,7 +2494,7 @@ test('les retouches du catalogue : Rapport du greffier à 3 manas, Déflection r
   assert.deepEqual(cardById('rempart-de-dunes').effet, { type: 'buff', atk: 0, def: 3, tours: 1 },
     'le moteur porte la durée du bonus');
   assert.equal(cardById('nuage-de-cendres').cost, 5, 'le Nuage de cendres se paie cinq manas');
-  assert.equal(cardById('nuage-de-cendres').effet.echo.amount, 2, 'le Nuage promet sa seconde vague');
+  assert.equal(cardById('nuage-de-cendres').effet.echo.amount, 1, 'le Nuage promet sa seconde vague — 1 dégât, pas 2');
 });
 
 test('le carnet des renforts ne solde que le tour qui les a vus jouer', () => {

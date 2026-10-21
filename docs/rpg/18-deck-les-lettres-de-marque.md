@@ -228,23 +228,23 @@ reste posé, avec son illustration finale.
 |---|---|---|---|---|---|
 | Mousse des galiotes | Sable | 1 | 1/2 | commune | le corps du pont — vanilla |
 | Raïs de la galiote | **Sable + Eau** | 2 | 2/2 | commune | **Abordage 1** — le poisson-pilote du set |
-| Pilote de la Carreira | Eau | 2 | 1/3 | inhabituelle | arrivée : un allié gagne **Envol** (le vent dans les voiles) |
+| Pilote de la Carreira | Eau | 2 | 1/3 | inhabituelle | arrivée : la **prochaine créature jouée ce tour** gagne **Abordage** (seuil : son coût − 1) — il lit la route pour elle |
 | Le Brûlot | Eau | 2 | 1/1 | commune | à sa mort en combat : **le tueur est renvoyé en main** |
-| Tercio de cuivre | Sable | 3 | 2/4 | commune | le mur du convoi — vanilla |
+| Tercio de cuivre | Sable | 3 | 1/4 | commune | le mur du convoi, **Coup rapide** |
 | Cotre de course | **Sable + Eau** | 3 | 3/1 | inhabituelle | **Rapidité + Abordage 2** — l’éclaireur qui monte le premier |
 | Le Renégat | **Sable + Eau** | 3 | 3/2 | inhabituelle | **Rapidité + Butin** — l’Anglais sous pavillon d’Alger |
 | Négociant des rançons | Sable | 3 | 2/3 | rare | chaque rançon payée adverse : **piochez 1** |
-| Galion de la flotte | **Sable + Eau** | 5 | 3/6 | rare | **Cargaison 2** — le trésor assuré |
-| La Vengeance de la reine Anne | **Sable + Eau** | 4 | 2/5 | rare | **Abordage 3** ; cale occupée : +2/+0 et **Butin** |
-| Le Chasseur d’Ocracoke | **Sable + Eau** | 6 | 4/6 | **mythique** | Rapidité, Coup rapide, Insaisissable ; **Prime** contre la course |
+| Galion de la flotte | **Sable + Eau** | 5 | 2/5 | rare | **Coup rapide**, **Abordage 4**, **Cargaison 2** — le trésor assuré qui prend aussi à l’abordage |
+| La légende du Hollandais volant *(jadis « La Vengeance de la reine Anne » — même identifiant)* | **Sable + Eau** | 4 | 2/4 | rare | **Coup rapide**, **Abordage 3** ; cale occupée : +2/+0 et **Butin** — vaisseau fantôme bleu translucent |
+| Le Chasseur d’Ocracoke | **Sable + Eau** | 6 | 3/6 | **mythique** | Rapidité, Coup rapide ; **Traque** (+3/+0 contre Abordage/Butin/cale occupée) et **Prime** contre la course — plus d’Insaisissable |
 | La Source de Bimini | **Eau + Sable** | 3 | — | **mythique** | **Site**, 3 Heures ; soin total, +3/+3, Protection contre les sorts et Tenacité |
 | Le Trésor de Lima | **Sable + Eau** | 2 | — | rare | **Site**, 2 Heures ; piochez 2 cartes |
 | La Barbe-Rousse | **Sable + Eau** | 6 | 4/5 | **mythique** | **Abordage 5** ; arrivée : **2 jetons Corsaire** 2/1 |
 | Lettre de marque | **Sable + Eau** | 2 | — | commune (sorcellerie) | jusqu’à la fin du tour, vos créatures **qui arrivent** gagnent **Abordage** (seuil : leur coût − 1) |
 | Haut-fond | Eau | 1 | — | commune (magie rapide) | créature adverse : **−1/−2 jusqu’à la fin du tour** |
 | Le Routier | Eau | 3 | — | inhabituelle (sorcellerie) | **piochez 2, défaussez 1** |
-| Le Grand Débarquement | **Sable + Eau** | 5 | — | rare (sorcellerie) | vos créatures gagnent **+1/+0** jusqu’à la fin du tour, et **celles qui arrivent** ont **Abordage** (seuil : leur coût − 1) |
-| Grappin d’abordage | Sable | 2 | +1/+1 | rare (arme) | à l’attachement : **prise d’une créature adverse de coût ≤ 1** ; à chaque prise : **2 PV** |
+| Le Grand Débarquement | **Sable + Eau** | 5 | — | rare (sorcellerie) | jusqu’à la fin du tour, chacune de vos créatures **qui détient une créature en sa cale** gagne **+2/+2 et Overkill** (`caleOccupeeSeulement`) |
+| Grappin d’abordage | Sable | 4 | +1/+1 | rare (arme) | le porteur **coûte +1** tant qu’il est attaché, puis active à l’attachement **Abordage X** (X = coût augmenté − 1, cible au choix) ; à chaque prise : **2 PV** |
 | *Corsaire* (jeton) | Sable | 0 | 2/1 | — | créé par La Barbe-Rousse ; pas d’Abordage (un jeton ne se joue pas depuis la main) |
 
 Rendements visés (à recalculer avec `rpgCardPower.js` avant implémentation,
@@ -333,9 +333,9 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     atk: 1,
     def: 3,
     rarity: 'inhabituelle',
-    arrivee: { type: 'donne', cible: 'allie', donne: { envol: true }, tours: 1 },
+    arrivee: { type: 'prochaine-arrivee-abordage' },
     typeLine: 'Créature — Humain · Pilote',
-    text: 'Quand le Pilote arrive : une créature alliée ciblée gagne Envol jusqu’à la fin du tour.',
+    text: 'Quand le Pilote arrive : la prochaine créature que vous jouez ce tour a Abordage — au seuil de son coût moins un.',
     flavor: 'Il a lu le routier une seule fois ; la mer n’a gardé que lui.',
   }),
   carte({
@@ -355,11 +355,12 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     id: 'tercio-de-cuivre',
     name: 'Tercio de cuivre',
     cost: 3,
-    atk: 2,
+    atk: 1,
     def: 4,
     rarity: 'commune',
+    coupRapide: true,
     typeLine: 'Créature — Humain · Tercio',
-    text: '—',
+    text: 'Coup rapide — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (25 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
     flavor: 'Personne n’aboie sur un pont de cuivre.',
   }),
   carte({
@@ -500,13 +501,14 @@ export const RPG_LETTRES_DE_MARQUE_ARMES = [
     id: 'grappin-d-abordage',
     name: 'Grappin d’abordage',
     kind: 'arme',
-    cost: 2,
+    cost: 4,
     rarity: 'rare',
     typeLine: 'Arme — Grappin',
     bonus: { atk: 1, def: 1 },
-    abordage: 1,
+    coutPorteur: 1,
+    abordageDynamique: true,
     priseEnCale: { type: 'soin', amount: 2 },
-    text: 'Arme — Le porteur gagne +1/+1. Quand le Grappin s’attache, la créature adverse ciblée de coût 1 ou moins est prise en la cale du porteur. Quand le porteur prend une créature en cale, vous gagnez 2 PV.',
+    text: 'Arme — Le porteur gagne +1/+1, et son coût augmente de 1 tant que le Grappin est attaché. Quand le Grappin s’attache, le porteur active Abordage X, où X vaut son coût augmenté moins un : choisissez une créature adverse de coût X ou moins, elle est prise en sa cale. Quand le porteur prend une créature en cale, vous gagnez 2 PV.',
     flavor: 'Trois dents de fer, et la mer devient un couloir.',
   }),
 ];
@@ -696,10 +698,10 @@ par leur nom — la saveur porte l’histoire. Toutes hors recette du boîtier
 | **Le Chien de la Reine** | Eau | 5 | 4/3 | **Rapidité, Butin** ; arrivée : piochez 1 carte |
 | **L’Invincible** | Sable | 6 | 3/8 | **Cargaison 3** ; arrivée : bouclier de 2 |
 | **Celle qui tient le Routier** | Eau | 4 | 2/3 | **Envol** ; arrivée : piochez 2 cartes puis défaussez 1 |
-| **La Barbe Noire, les deux visages** | Sable/Eau | 5 | 2/7 | **Provocation, Abordage 4, Deux Visages, insaisissable** |
+| **La Barbe Noire, les deux visages** | **Ténèbres** | 5 | 2/7 | **Provocation, Abordage 4, Deux Visages, insaisissable** — carte 100 % Ténèbres (mana de Ténèbres ; jouable dans les decks des Ténèbres, plus dans le Sable + Eau des Lettres) |
 
-**La Barbe Noire** (la carte du dédoublement, révélée au sommet des Sables
-avec la Barbe-Rousse — `sables-3`) porte la mécanique signature du personnage
+**La Barbe Noire** (la carte du dédoublement, devenue carte 100 % Ténèbres
+et révélée au sommet de la Nécropole — `necropole-4`) porte la mécanique signature du personnage
 historique : Thatch l’homme d’affaires, la légende qui nouait des mèches
 brûlantes dans sa barbe pour effrayer les équipages.
 

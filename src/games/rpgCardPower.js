@@ -109,12 +109,19 @@ function valeurEffet(effet = {}) {
       if (effet.cible === 'creatures-adverses' || atk < 0 || def < 0) {
         return Math.abs(atk) * 0.8 + Math.abs(def) * 0.6 + (effet.blocageForce ? 1 : 0) + 0.5;
       }
-      return atk * 0.8 + def * 0.6 + (effet.overkill ? 1.2 : 0)
+      const plein = atk * 0.8 + def * 0.6 + (effet.overkill ? 1.2 : 0)
         + (effet.arriveesAbordage ? 1.5 : 0);
+      // Le Grand Débarquement ne renforce que les cales pleines : le renfort
+      // ne tient que si la course a déjà pris — rabais pour conditionnel.
+      return effet.caleOccupeeSeulement ? plein * 0.7 : plein;
     }
     case 'arrivees-abordage':
       // La Lettre de marque : chaque créature du reste du tour accoste en
       // prenant — lu comme le mot-clé Abordage prêté à toute une vague.
+      return 1.5;
+    case 'prochaine-arrivee-abordage':
+      // Le Pilote de la Carreira : une seule prochaine pose accoste en
+      // prenant — une capture d’Abordage, pas davantage.
       return 1.5;
     case 'debuff': {
       // Le venin de la Vipère : les chiffres retirés valent comme un débuff
@@ -229,6 +236,9 @@ export function valeurCarte(carte) {
     // au seuil imprimé — le même prix que le mot-clé sur une créature, saisi
     // au moment où le crochet mord.
     if (Number.isFinite(carte.abordage)) valeur += 1.5;
+    // Le Grappin « dynamique » : le seuil suit le coût du porteur augmenté,
+    // presque toujours plus haut que l’ancien seuil fixe — un cran au-dessus.
+    if (carte.abordageDynamique) valeur += 2;
     // La prime de prise en cale (le Grappin) : un soin conditionnel, une fois
     // par capture — lu comme l'effet de soin qu'il est.
     if (carte.priseEnCale) valeur += valeurEffet(carte.priseEnCale);
@@ -279,6 +289,9 @@ export function valeurCarte(carte) {
   if (carte.envol) valeur += 2.5;
   if (carte.infiltration) valeur += 2.5;
   if (carte.coupRapide) valeur += 2;
+  // La Traque du Chasseur : +N/+0 contre les seules proies de la course —
+  // un tiers de la force brute, elle ne frappe pas à tous les combats.
+  if (carte.traquePirates) valeur += 0.4 * carte.traquePirates;
   // Provocation détourne un bloqueur vers ce corps et ouvre la voie aux
   // autres attaquants : une pression tactique, sans valoir l'Infiltration.
   if (carte.provocation) valeur += 1;

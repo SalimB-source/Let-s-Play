@@ -36,6 +36,7 @@ import {
   rpgResoudreSiteCible,
   rpgBlesserCreature,
   rpgPeutAttaquer,
+  rpgCoutEntite,
 } from '../src/games/rpgDuel.js';
 import {
   RPG_DECKS,
@@ -77,6 +78,9 @@ const mana = (duel, cote, n) => {
   duel[cote].mana.sable += n;
   duel[cote].mana.eau += n;
   duel[cote].mana.braise += n;
+  duel[cote].mana.neige += n;
+  // La Barbe Noire est devenue une carte 100 % Ténèbres : son mana la suit.
+  duel[cote].mana.tenebres += n;
 };
 const jouer = (duel, cote, id, cibleId = null) => rpgJouerCreature(duel, cote, id, cibleId);
 const pret = (entite) => {
@@ -477,27 +481,71 @@ test('la Lettre de marque arme les arrivées pour un tour — la cale déjà pri
   assert.equal(tercio3.enCale, null, 'le sceau a expiré : la pose suivante n’accoste plus');
 });
 
-test('Le Grand Débarquement arme l’assaut : +1/+0 pour la table, Abordage pour les arrivées', () => {
+test('le Pilote de la Carreira arme la seule prochaine créature jouée ce tour', () => {
   const duel = duelVide();
-  mana(duel, 'joueur', 10);
-  mana(duel, 'sorcier', 10);
-  donner(duel, 'joueur', 'tercio-de-cuivre');
-  const tercio = jouer(duel, 'joueur', 'tercio-de-cuivre').entite;
-  const atkAvant = tercio.atk;
+  mana(duel, 'joueur', 12);
+  mana(duel, 'sorcier', 12);
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
+  // Le Pilote arrive : il ne prend rien lui-même, il arme la pose suivante.
+  donner(duel, 'joueur', 'pilote-de-la-carreira');
+  const pilote = jouer(duel, 'joueur', 'pilote-de-la-carreira').entite;
+  assert.equal(pilote.enCale, null, 'le Pilote ne s’arme pas lui-même');
+  assert.equal(duel.sorcier.creatures.includes(mousse), true, 'la Mousse tient encore la table');
+  assert.equal(duel.joueur.prochaineArriveeAbordage, true, 'le routier est ouvert pour la prochaine pose');
+  // Le Tercio (aucun Abordage imprimé) accoste au barème : coût 3 − 1 = 2.
+  donner(duel, 'joueur', 'tercio-de-cuivre');
+  const tercio = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse.id).entite;
+  assert.equal(tercio.enCale?.carteId, 'mousse-des-galiotes', 'la créature armée par le Pilote a pris la Mousse');
+  assert.equal(duel.joueur.prochaineArriveeAbordage, false, 'le sceau est consommé par cette unique pose');
+  // La créature suivante n’accoste plus : une seule route lue par tour (et par Pilote).
+  donner(duel, 'sorcier', 'mousse-des-galiotes');
+  const mousse2 = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
+  donner(duel, 'joueur', 'tercio-de-cuivre');
+  const tercio2 = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse2.id).entite;
+  assert.equal(tercio2.enCale, null, 'sans sceau en cours, la pose suivante ne prend rien');
+
+  // Non dépensé, le sceau meurt avec le tour qui l’a vu naître.
+  const tardif = duelVide();
+  mana(tardif, 'joueur', 10);
+  donner(tardif, 'joueur', 'pilote-de-la-carreira');
+  jouer(tardif, 'joueur', 'pilote-de-la-carreira');
+  assert.equal(tardif.joueur.prochaineArriveeAbordage, true);
+  rpgFinDeTour(tardif);
+  assert.equal(tardif.joueur.prochaineArriveeAbordage, false, 'le tour fermé emporte le routier');
+});
+
+test('Le Grand Débarquement arme les cales pleines : +2/+2 et Overkill jusqu’à la fin du tour', () => {
+  const duel = duelVide();
+  const { rais } = priseDeBase(duel);
+  donner(duel, 'joueur', 'tercio-de-cuivre');
+  const tercio = jouer(duel, 'joueur', 'tercio-de-cuivre').entite;
+  const atkRais = rais.atk;
+  const pvRais = rais.pv;
+  const atkTercio = tercio.atk;
   donner(duel, 'joueur', 'le-grand-debarquement');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'le-grand-debarquement').ok, true);
-  assert.equal(tercio.atk, atkAvant + 1, 'tout le quai monte à l’assaut');
-  assert.equal(tercio.enCale, null, 'le renfort ne prend pas : seules les arrivées comptent');
-  // L'arrivée suivante accoste (le Tercio 2, seuil 2, prend la Mousse 1).
-  donner(duel, 'joueur', 'tercio-de-cuivre');
-  const tercio2 = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse.id).entite;
-  assert.ok(tercio2.enCale, 'l’arrivée sous le Débarquement a pris la Mousse');
+  assert.equal(rais.atk, atkRais + 2, 'sa cale pleine débarque en force');
+  assert.equal(rais.pv, pvRais + 2, 'le renfort tient aussi en défense');
+  assert.equal(rais.overkill, true, 'Overkill pour la créature qui détient une prise');
+  assert.equal(tercio.atk, atkTercio, 'une cale vide ne débarque personne');
+  assert.equal(tercio.overkill, false, 'pas d’Overkill sans prise à bord');
+  assert.ok(!duel.joueur.abordageDesArrivees, 'le Débarquement n’arme plus les arrivées — la Lettre seule le fait');
   rpgFinDeTour(duel);
-  assert.equal(tercio.atk, atkAvant, 'le renfort s’évapore');
-  assert.equal(duel.joueur.abordageDesArrivees, false, 'le sceau des arrivées aussi');
-  assert.ok(tercio2.enCale, 'la cale, jamais');
+  assert.equal(rais.atk, atkRais, 'le renfort s’évapore');
+  assert.equal(rais.pv, pvRais, 'la défense prêtée repart avec');
+  assert.equal(rais.overkill, false, 'l’Overkill prêté aussi');
+  assert.ok(rais.enCale, 'la cale, jamais');
+
+  // Sans aucune cale occupée, personne ne débarque.
+  const vide = duelVide();
+  mana(vide, 'joueur', 10);
+  donner(vide, 'joueur', 'tercio-de-cuivre');
+  const solitaire = jouer(vide, 'joueur', 'tercio-de-cuivre').entite;
+  donner(vide, 'joueur', 'le-grand-debarquement');
+  assert.equal(rpgLancerMagie(vide, 'joueur', 'le-grand-debarquement').ok, true);
+  assert.equal(solitaire.atk, 1, 'aucun bonus sans cale pleine (le Tercio est un 1/4)');
+  assert.equal(solitaire.overkill, false);
 });
 
 test('Haut-fond amollit la prise : -1/-2 pour un tour, la vague rend son dû', () => {
@@ -510,10 +558,10 @@ test('Haut-fond amollit la prise : -1/-2 pour un tour, la vague rend son dû', (
   duel.sorcier.mana = { sable: 3, eau: 3, braise: 0 };
   donner(duel, 'sorcier', 'haut-fond');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'haut-fond', tercio.id).ok, true);
-  assert.equal(tercio.atk, 1, 'le Tercio s’affaisse sur le sable sous la vague');
+  assert.equal(tercio.atk, 0, 'le Tercio 1/4 s’affaisse sur le sable sous la vague');
   assert.equal(tercio.pv, 2);
   rpgFinDeTour(duel);
-  assert.equal(tercio.atk, 2, 'à la fin du tour du sorcier, la vague se retire');
+  assert.equal(tercio.atk, 1, 'à la fin du tour du sorcier, la vague se retire');
   assert.equal(tercio.pv, 4);
 });
 
@@ -591,24 +639,37 @@ test('Le Brûlot renvoie son tueur en combat — jamais par magie, jamais captur
   assert.equal(capture.joueur.creatures.includes(cotre), true, 'son capteur n’a pas été renvoyé : rien n’est mort');
 });
 
-test('le Grappin d’abordage prend à l’attachement et paie son soin à chaque prise', () => {
+test('le Grappin (4 manas) alourdit son porteur de 1, puis active Abordage selon son coût augmenté', () => {
   const duel = duelVide();
-  mana(duel, 'joueur', 10);
-  mana(duel, 'sorcier', 10);
+  mana(duel, 'joueur', 12);
+  mana(duel, 'sorcier', 12);
+  assert.equal(cardById('grappin-d-abordage').cost, 4, 'le crochet se paie désormais quatre manas');
   donner(duel, 'joueur', 'fennec-des-decombres');
   const fennec = jouer(duel, 'joueur', 'fennec-des-decombres').entite;
+  assert.equal(rpgCoutEntite(fennec), 2, 'le Fennec vaut d’abord son coût imprimé');
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
+  donner(duel, 'sorcier', 'pilote-de-la-carreira');
+  const pilote = jouer(duel, 'sorcier', 'pilote-de-la-carreira').entite;
   const pvAvant = duel.joueur.pv;
   donner(duel, 'joueur', 'grappin-d-abordage');
   assert.equal(rpgJouerArme(duel, 'joueur', 'grappin-d-abordage', fennec.id).ok, true);
   assert.equal(fennec.atk, 4, '+1/+1 du Grappin (3 + 1)');
-  assert.equal(duel.arriveeEnAttente?.abordage, 1, 'le crochet a ouvert la désignation de prize');
+  assert.equal(rpgCoutEntite(fennec), 3, 'équipé, le coût du porteur augmente de 1');
+  assert.equal(duel.arriveeEnAttente?.abordage, 2, 'Abordage X : coût augmenté (3) moins un');
   assert.equal(duel.arriveeEnAttente?.carteId, 'grappin-d-abordage', 'l’arme porte l’attente');
-  const resolu = rpgResoudreArriveeCiblee(duel, 'joueur', mousse.id);
+  // Le joueur **choisit** sa prize : le Pilote (coût 2) plutôt que la
+  // Mousse (coût 1) — impossible sous l’ancien seuil fixe de 1.
+  const resolu = rpgResoudreArriveeCiblee(duel, 'joueur', pilote.id);
   assert.equal(resolu.ok, true);
-  assert.equal(fennec.enCale?.carteId, 'mousse-des-galiotes', 'le porteur a pris la Mousse à l’attachement');
+  assert.equal(fennec.enCale?.carteId, 'pilote-de-la-carreira', 'le porteur a pris la créature choisie, au seuil de son coût augmenté');
+  assert.equal(duel.sorcier.creatures.includes(mousse), true, 'la Mousse épargnée tient la table');
   assert.equal(duel.joueur.pv, pvAvant + 2, 'la prime du Grappin : 2 PV gagnés à la prise');
+  // Remplacer l’arme rend le coût imprimé : le surcoût ne survit pas au crochet.
+  donner(duel, 'joueur', 'baton-des-citernes');
+  assert.equal(rpgJouerArme(duel, 'joueur', 'baton-des-citernes', fennec.id).ok, true);
+  assert.equal(rpgCoutEntite(fennec), 2, 'le Grappin parti, le porteur coûte à nouveau son imprimé');
+  assert.equal(fennec.enCale?.carteId, 'pilote-de-la-carreira', 'la prise, elle, reste en cale');
   // Sans prize possible, l'attachement ne demande rien.
   const seul = duelVide();
   mana(seul, 'joueur', 10);
@@ -816,10 +877,25 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Rançon, pa
 
   assert.deepEqual(libellesPastilles('rais-de-la-galiote'), ['Abordage 1'], 'le Raïs porte la pastille Abordage 1');
   assert.deepEqual(libellesPastilles('la-barbe-rousse').slice(0, 1), ['Abordage 5'], 'l’amirale porte Abordage 5');
-  assert.deepEqual(libellesPastilles('galion-de-la-flotte'), ['Cargaison 2'], 'le Galion porte la pastille Cargaison 2');
+  assert.deepEqual(libellesPastilles('galion-de-la-flotte'), ['Coup rapide', 'Abordage 4', 'Cargaison 2'],
+    'le Galion 2/5 porte Coup rapide, Abordage 4 et Cargaison 2');
+  assert.equal(galion.atk, 2, 'le Galion est un 2/5');
+  assert.equal(galion.def, 5);
+  assert.deepEqual(libellesPastilles('le-chasseur-d-ocracoke'), ['Rapidité', 'Coup rapide', 'Traque 3'],
+    'le Chasseur porte la pastille de sa Traque');
+  assert.ok(libellesPastilles('le-grand-debarquement').includes('Overkill'),
+    'le Grand Débarquement annonce l’Overkill sur sa face');
   assert.deepEqual(libellesPastilles('negociant-des-ranscons'), ['Rançon 1'], 'le Négociant porte la pastille Rançon');
-  assert.ok(libellesPastilles('grappin-d-abordage').includes('Abordage 1'), 'le Grappin porte Abordage 1');
+  assert.ok(libellesPastilles('grappin-d-abordage').includes('Abordage'),
+    'le Grappin porte la pastille Abordage — dynamique, sans chiffre imprimé');
+  assert.deepEqual(libellesPastilles('tercio-de-cuivre'), ['Coup rapide'],
+    'le Tercio 1/4 porte la pastille Coup rapide');
+  assert.equal(cardById('tercio-de-cuivre').atk, 1, 'le Tercio est un 1/4');
+  assert.ok(libellesPastilles('pilote-de-la-carreira').includes('Abordage'),
+    'le Pilote annonce sur sa face l’Abordage qu’il offre à la prochaine pose');
   const noire = cardById('la-barbe-noire');
+  assert.equal(noire.element, 'tenebres', 'La Barbe Noire est devenue une carte Ténèbres');
+  assert.deepEqual(cardColors(noire), ['tenebres'], '100 % Ténèbres : ni Sable ni Eau');
   assert.ok(puissanceCarte(noire) > puissanceCarte({ ...noire, alternance: null, insaisissable: false }),
     'le dédoublement vaut son prix au barème');
   assert.deepEqual(libellesPastilles('la-barbe-noire'), ['Provocation', 'Abordage 4', 'Deux Visages'],
@@ -835,24 +911,28 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Rançon, pa
     'cargaison', 'la ligne de règle se lit Cargaison');
 });
 
-test('la Vengeance de la reine Anne gagne +2/+0 et Butin uniquement quand sa cale est occupée', () => {
+test('La légende du Hollandais volant (ex-Vengeance) : 2/4 avec Coup rapide, +2/+0 et Butin uniquement quand sa cale est occupée', () => {
   const duel = duelVide();
   mana(duel, 'joueur', 12);
   mana(duel, 'sorcier', 12);
+  assert.equal(cardById('la-vengeance-de-la-reine-anne').name, 'La légende du Hollandais volant',
+    'la Vengeance a changé de nom — son identifiant, lui, demeure pour les collections');
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
   donner(duel, 'joueur', 'la-vengeance-de-la-reine-anne');
-  const vengeance = jouer(duel, 'joueur', 'la-vengeance-de-la-reine-anne', mousse.id).entite;
+  const hollandais = jouer(duel, 'joueur', 'la-vengeance-de-la-reine-anne', mousse.id).entite;
 
-  assert.equal(vengeance.enCale?.carteId, 'mousse-des-galiotes');
-  assert.equal(vengeance.atk, 4, 'la cale comble donne +2 attaque');
-  assert.equal(vengeance.butin, true, 'la cale comble donne Butin');
+  assert.equal(hollandais.pvMax, 4, 'le vaisseau fantôme est un 2/4');
+  assert.equal(hollandais.coupRapide, true, 'avec Coup rapide');
+  assert.equal(hollandais.enCale?.carteId, 'mousse-des-galiotes', 'il garde son Abordage 3');
+  assert.equal(hollandais.atk, 4, 'la cale comble donne +2 attaque');
+  assert.equal(hollandais.butin, true, 'la cale comble donne Butin');
 
   duel.finDeTour = { cote: 'joueur' };
-  assert.equal(rpgRanconner(duel, 'sorcier', vengeance.id).ok, true);
-  assert.equal(vengeance.enCale, null);
-  assert.equal(vengeance.atk, 2, 'le bonus disparaît avec la prisonnière');
-  assert.equal(vengeance.butin, false, 'le Butin conditionnel disparaît lui aussi');
+  assert.equal(rpgRanconner(duel, 'sorcier', hollandais.id).ok, true);
+  assert.equal(hollandais.enCale, null);
+  assert.equal(hollandais.atk, 2, 'le bonus disparaît avec la prisonnière');
+  assert.equal(hollandais.butin, false, 'le Butin conditionnel disparaît lui aussi');
 });
 
 test('la Prime du Chasseur d’Ocracoke pioche quand il détruit une créature pirate qualifiée', () => {
@@ -871,7 +951,48 @@ test('la Prime du Chasseur d’Ocracoke pioche quand il détruit une créature p
   assert.equal(duel.sorcier.creatures.some((entite) => entite.id === cotre.id), false);
   assert.equal(duel.joueur.main.length, mainAvant + 1, 'la Prime fait piocher exactement une carte');
   assert.equal(chasseur.coupRapide, true);
-  assert.equal(cardById(chasseur.carteId).insaisissable, true);
+  assert.equal(chasseur.atk, 3, 'le Chasseur est un 3/6');
+  assert.equal(chasseur.pvMax, 6);
+  assert.ok(!cardById(chasseur.carteId).insaisissable, 'Insaisissable lui a été retiré');
+  assert.equal(cardById(chasseur.carteId).traquePirates, 3, 'il traque à +3/+0');
+});
+
+test('La Traque du Chasseur : +3/+0 contre les proies de la course, rien contre les autres', () => {
+  // — Contre une proie (La Barbe-Rousse, 4/5 avec Abordage) : 3 + 3 = 6
+  // dégâts la font sombrer malgré ses 5 PV, et la Prime paie en sus.
+  const duel = duelVide();
+  mana(duel, 'joueur', 12);
+  mana(duel, 'sorcier', 12);
+  donner(duel, 'sorcier', 'la-barbe-rousse');
+  const proie = jouer(duel, 'sorcier', 'la-barbe-rousse').entite;
+  donner(duel, 'joueur', 'le-chasseur-d-ocracoke');
+  const chasseur = jouer(duel, 'joueur', 'le-chasseur-d-ocracoke').entite;
+  duel.joueur.deck = ['mousse-des-galiotes'];
+  const mainAvant = duel.joueur.main.length;
+  pret(chasseur);
+  assert.equal(rpgAttaquerCreature(duel, 'joueur', chasseur.id, proie.id).ok, true);
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === proie.id), false,
+    'la Traque achève une proie que ses 3 d’attaque seuls épargnaient');
+  assert.ok(duel.joueur.creatures.includes(chasseur), 'le Chasseur survit à la riposte de 4');
+  assert.equal(duel.joueur.main.length, mainAvant + 1, 'la Prime pioche sur la traque réussie');
+  assert.ok(duel.log.some((ligne) => ligne.startsWith('Traque')), 'la Traque s’écrit au journal');
+
+  // — Contre une créature ordinaire (Tercio de cuivre, 2/4, aucun mot de la
+  // course) : 3 dégâts seulement, elle tient, aucune Traque à consigner.
+  const neutre = duelVide();
+  mana(neutre, 'joueur', 12);
+  mana(neutre, 'sorcier', 12);
+  donner(neutre, 'sorcier', 'tercio-de-cuivre');
+  const tercio = jouer(neutre, 'sorcier', 'tercio-de-cuivre').entite;
+  donner(neutre, 'joueur', 'le-chasseur-d-ocracoke');
+  const chasseur2 = jouer(neutre, 'joueur', 'le-chasseur-d-ocracoke').entite;
+  pret(chasseur2);
+  const journalAvant = neutre.log.length;
+  assert.equal(rpgAttaquerCreature(neutre, 'joueur', chasseur2.id, tercio.id).ok, true);
+  assert.ok(neutre.sorcier.creatures.includes(tercio), 'facé à la loi ordinaire : 3 dégâts n’entament que 3 PV');
+  assert.equal(tercio.pv, 1);
+  assert.equal(neutre.log.slice(journalAvant).some((ligne) => ligne.startsWith('Traque')), false,
+    'rien à traquer sur une cible qui ne fait pas la course');
 });
 
 test('la Source de Bimini porte ses trois Heures, change d’étape et consacre définitivement une créature', () => {
@@ -906,7 +1027,7 @@ test('la Source de Bimini porte ses trois Heures, change d’étape et consacre 
 
   const res = rpgResoudreSiteCible(duel, 'joueur', cible.id);
   assert.equal(res.ok, true);
-  assert.equal(cible.atk, 5);
+  assert.equal(cible.atk, 4, 'le Tercio 1/4 consacré par Bimini frappe à 1 + 3');
   assert.equal(cible.pvMax, 7);
   assert.equal(cible.pv, 7, 'la créature est entièrement soignée après le +3/+3');
   assert.equal(cible.def, 7);
@@ -938,6 +1059,7 @@ test('le Trésor de Lima porte deux Heures puis fait piocher deux cartes', () =>
 
 test('les quatre nouvelles cartes pirates sont révélées avec leurs peintures d’étapes', () => {
   assert.equal(cardById('la-vengeance-de-la-reine-anne').rarity, 'rare');
+  assert.equal(cardById('la-vengeance-de-la-reine-anne').name, 'La légende du Hollandais volant');
   assert.equal(cardById('le-chasseur-d-ocracoke').rarity, 'mythique');
   assert.equal(cardById('source-de-bimini').kind, 'site');
   assert.equal(cardById('source-de-bimini').rarity, 'mythique');

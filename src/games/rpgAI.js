@@ -606,7 +606,14 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
     });
     if (!meilleure?.cibleId || meilleure.cibleId === 'sorcier') continue;
     const proie = duel[adv].creatures.find((entite) => entite.id === meilleure.cibleId);
-    if (proie && meurtSous(proie, attaquant.atk, 'attaque')) cibles[attaquant.id] = proie.id;
+    // La Traque : contre une proie de la course (Abordage, Butin, cale
+    // occupée), la frappe du Chasseur porte son +N/+0 — l’IA le compte avant
+    // de décider si le coup tue.
+    const traque = Math.max(0, Number(carte?.traquePirates) || 0);
+    const estProie = Boolean(proie && (duelCardById(proie.carteId)?.abordage
+      || (proie.butin ?? duelCardById(proie.carteId)?.butin) || proie.enCale));
+    const forceFrappe = attaquant.atk + (estProie ? traque : 0);
+    if (proie && meurtSous(proie, forceFrappe, 'attaque')) cibles[attaquant.id] = proie.id;
   }
   return cibles;
 }
@@ -1366,11 +1373,16 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       // Rien à renforcer sans créature en jeu : le sort reste en main plutôt
       // que d'être brûlé. Un bonus déclaré avec `tours` ne dépasse pas le tour
       // en cours — il ne développe pas la table et ne vaut que pour l’échange.
-      if (!camp.creatures.length) return { score: 0, cibleId: null };
+      // Le Grand Débarquement ne compte que ses cales pleines : sans prise à
+      // bord, il ne vaut rien et reste en main.
+      const renforcees = effet.caleOccupeeSeulement
+        ? camp.creatures.filter((entite) => entite.enCale)
+        : camp.creatures;
+      if (!renforcees.length) return { score: 0, cibleId: null };
       const bonus = (effet.atk ?? 0) * 0.8 + (effet.def ?? 0) * 0.4
         + (effet.overkill ? 1.1 : 0);
       const durable = Number(effet.tours) > 0 ? 0.5 : 1;
-      const score = (1.5 + camp.creatures.length * (1.5 + bonus)) * durable - cout * 0.2;
+      const score = (1.5 + renforcees.length * (1.5 + bonus)) * durable - cout * 0.2;
       return { score: score > 0 ? score : 0, cibleId: null };
     }
     if (effet.type === 'transfert') {
@@ -1647,15 +1659,29 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   if (carte.combat) score += 2;
   // L'Abordage (set Lettres de Marque) : la prize à l'arrivée — une créature
   // adverse de coût ≤ seuil quitte la table sans mourir. Le moteur choisit
-  // la meilleure prise tout seul (cibleId reste null ici).
-  if (Number.isFinite(carte.abordage)) {
+  // la meilleure prise tout seul (cibleId reste null ici). Le seuil peut
+  // venir d’un sceau du camp (Lettre de marque, Pilote de la Carreira) : au
+  // barème du set, coût de l’arrivante − 1.
+  const seuilAbordageIa = Number.isFinite(carte.abordage)
+    ? carte.abordage
+    : (duel[cote]?.abordageDesArrivees || duel[cote]?.prochaineArriveeAbordage)
+      ? Math.max(0, (Number(carte.cost) || 0) - 1)
+      : null;
+  if (seuilAbordageIa !== null) {
     const prisable = duel[adv].creatures.some((entite) => !entite.jeton
       && (duelCardById(entite.carteId)?.kind ?? 'creature') !== 'hero'
       && !duelCardById(entite.carteId)?.insaisissable
       && !entite.tenaciteDisponible
       && !estProtegee(entite, cardColors(carte))
-      && (duelCardById(entite.carteId)?.cost ?? 0) <= carte.abordage);
+      && ((duelCardById(entite.carteId)?.cost ?? 0) + Math.max(0, Number(entite.coutBonusArme) || 0)) <= seuilAbordageIa);
     if (prisable) score += 2.5;
+  }
+  // Le Pilote de la Carreira ne vaut que par la pose suivante : sans autre
+  // créature en main à armer ce tour, son routier ne mène nulle part.
+  if (carte.arrivee?.type === 'prochaine-arrivee-abordage') {
+    const autresCreatures = duel[cote].main
+      .filter((id) => id !== carte.id && duelCardById(id)).length;
+    if (autresCreatures > 0) score += 1.5;
   }
   // Les Deux Visages (La Barbe Noire) : un corps qui alterne vaut deux
   // présences ; l'insaisissable refuse la cale adverse pour de bon.

@@ -13,7 +13,11 @@ const CARD_ART_BASE_URL = import.meta.env?.BASE_URL ?? '/';
 
 const CARD_ART_CACHE_VERSIONS = {
   // Lettres de Marque : les Sites changent de peinture à chaque Heure.
-  'la-vengeance-de-la-reine-anne': 'pirates-v1',
+  // Devenue « La légende du Hollandais volant » : vaisseau fantôme bleu
+  // translucent, repeint sous son ancien nom de fichier.
+  'la-vengeance-de-la-reine-anne': 'hollandais-volant-v1',
+  // La Barbe-Rousse repeint : jeune amiral en plein abordage, vue cinéma.
+  'la-barbe-rousse': 'barbe-rousse-jeune-abordage-v1',
   'le-chasseur-d-ocracoke': 'pirates-v1',
   'source-de-bimini': 'pirates-v1',
   'source-de-bimini-2': 'pirates-v1',
