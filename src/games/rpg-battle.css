@@ -350,6 +350,14 @@
   background: linear-gradient(145deg, #426888, #1c344e);
 }
 .rpg-card__compteur--heures > span { color: #e8f6ff; }
+/* La cale du corsaire d'une créature HYBRIDE : son losange quitte le rang des
+   autres compteurs (qui se rangent sous le coût, à droite) et se place sous le
+   bloc de couleur, à gauche. Ce bloc empile deux pastilles — deux fois le
+   repère, plus leur écart — : c'est cette hauteur qui décale le losange. */
+.rpg-card__compteurs--cale {
+  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-card-marker-size, 26px) * 2 + 2px + var(--rpg-card-counter-size) * .21 + 4px);
+  left: calc(var(--rpg-card-element-marker-left, 6%) + (var(--rpg-card-marker-size, 26px) - var(--rpg-card-counter-size)) / 2);
+}
 .rpg-card__compteur--cale {
   /* La cale du corsaire : cuivre de la chaîne sur bois sombre — le prisonnier
      est détenu face visible, la rançon le lit au dos du losange. */
