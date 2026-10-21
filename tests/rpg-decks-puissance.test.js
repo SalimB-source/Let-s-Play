@@ -39,6 +39,19 @@ import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.j
 const RECETTES = { ...RPG_RECETTES_DECKS, ...RPG_RECETTES_HISTOIRE };
 const carteParId = new Map(RPG_DUEL_CARDS.map((carte) => [carte.id, carte]));
 
+/** Les couleurs admises dans une liste : celles du vivier (`identite`), plus
+ *  celles des cartes posées d'office par la **signature** — Le Brûlot, seule
+ *  flamme (Braise) des Lettres de Marque, entre par elle et non par le
+ *  remplissage. Ces exceptions restent bornées aux cartes de la signature. */
+function couleursAdmises(recette) {
+  const admises = new Set(recette.identite);
+  for (const entree of recette.signature) {
+    const id = Array.isArray(entree) ? entree[0] : entree;
+    for (const couleur of cardColors(id)) admises.add(couleur);
+  }
+  return admises;
+}
+
 /** Les cartes d'une liste, au nombre d'exemplaires près : `Map(id → n)`. */
 function compter(liste) {
   const comptes = new Map();
@@ -175,10 +188,11 @@ test('les boîtiers du catalogue restent valides, illustrés et fidèles à leur
     const recette = RPG_RECETTES_DECKS[deck.id];
     assert.equal(validation.terrains, recette.terrains.reduce((somme, [, n]) => somme + n, 0),
       `${deck.name} : les terrains de la recette`);
+    const admises = couleursAdmises(recette);
     for (const id of new Set(deck.cardIds)) {
       const carte = cardById(id);
       const couleurs = cardColors(carte);
-      assert.ok(couleurs.every((couleur) => recette.identite.includes(couleur)),
+      assert.ok(couleurs.every((couleur) => admises.has(couleur)),
         `${deck.name} : ${id} sort de l’identité ${recette.identite.join(' + ')}`);
       assert.equal(cardColors(carte).length > 0, true, `${deck.name} : ${id} a une couleur`);
     }
@@ -250,10 +264,11 @@ test('les paquets de la campagne tiennent les plafonds de la rampe', () => {
       assert.ok(rares <= (recette.raresMax ?? Infinity),
         `${deckId} : ${rares} rares (${seau}) pour un plafond de ${recette.raresMax}`);
     }
-    // Et l'identité chromatique de la recette, sans exception.
+    // L'identité chromatique de la recette, la signature mise à part.
+    const admises = couleursAdmises(recette);
     for (const id of new Set(liste)) {
       const couleurs = cardColors(cardById(id));
-      assert.ok(couleurs.every((couleur) => recette.identite.includes(couleur)),
+      assert.ok(couleurs.every((couleur) => admises.has(couleur)),
         `${deckId} : ${id} sort de l’identité de sa recette`);
     }
   }

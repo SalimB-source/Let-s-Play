@@ -42,10 +42,11 @@ const COMBATS_DE_FEU = new Set(['degats-creature-combattue']);
 
 /**
  * Les effets de mort qui blessent : le Ghul et l'Ifrit brûlent une dernière
- * fois en tombant. L'Anqa, qui revient après quatre tours sans blesser
- * personne, s'envole en silence.
+ * fois en tombant, et le Brûlot embrase son tueur avant de sombrer.
+ * L'Anqa, qui revient après quatre tours sans blesser personne, s'envole en
+ * silence.
  */
-const MORTS_DE_FEU = new Set(['degats']);
+const MORTS_DE_FEU = new Set(['degats', 'degats-tueur']);
 
 function resolveCard(cardOrId) {
   return typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;

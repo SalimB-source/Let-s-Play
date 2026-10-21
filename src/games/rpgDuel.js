@@ -1714,8 +1714,8 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     }
   }
 
-  // Les victimes de ce combat (le Brûlot renvoie son tueur : il ne renvoie
-  // que les créatures qui ont survécu à l'échange).
+  // Les victimes de ce combat (le Brûlot embrase son tueur : seules les
+  // créatures qui ont survécu à l'échange peuvent être embrasées).
   const mortsIds = new Set(mortes.map((mort) => mort.entite.id));
   // Retire d’abord toutes les victimes : une capacité de destruction ne peut
   // donc empêcher l’autre combattant d’infliger les dégâts déjà calculés.
@@ -1763,19 +1763,23 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       duel.log.push(`Prime : ${source.name} détruit ${mort.entite.name}${pioche ? ' — son contrôleur pioche une carte' : ''}.`);
     }
   }
-  // Le Brûlot (renvoi-tueur) : mort en combat, il renvoie l'une des créatures
-  // qui l'ont tué dans la main de son propriétaire. Mort par magie ou par
-  // capacité, rien ne se déclenche : seul le tueur de combat est connu —
-  // `declencherCapaciteDestruction` passe bien par ici, son effet 'renvoi-tueur'
-  // est un no-op ailleurs.
+  // Le Brûlot (degats-tueur) : mort en combat, il embrase son tueur — les
+  // dégâts de l'effet tombent sur l'une des créatures qui l'ont détruit et qui
+  // a survécu à l'échange. Mort par magie ou par capacité, rien ne se
+  // déclenche : seul le tueur de combat est connu —
+  // `declencherCapaciteDestruction` passe bien par ici, son effet
+  // 'degats-tueur' est un no-op ailleurs.
   for (const mort of mortes) {
-    if (duelCardById(mort.entite.carteId)?.destruction?.type !== 'renvoi-tueur') continue;
+    const carte = duelCardById(mort.entite.carteId);
+    if (carte?.destruction?.type !== 'degats-tueur') continue;
+    const amount = Math.max(0, Number(carte.destruction.amount) || 0);
+    if (!amount) continue;
     for (const source of mort.sources ?? []) {
       if (mortsIds.has(source.id)) continue;
       const tueur = duel[source.cote]?.creatures.find((candidate) => candidate.id === source.id);
       if (!tueur) continue;
-      duel.log.push(`${mort.entite.name} embrase son pont : ${tueur.name} est renvoyée dans la main de son propriétaire.`);
-      renvoyerEnMain(duel, source.cote, tueur, cardColors(duelCardById(mort.entite.carteId)));
+      duel.log.push(`${mort.entite.name} embrase son pont : ${tueur.name} subit ${amount} dégât${amount > 1 ? 's' : ''}.`);
+      rpgBlesserCreature(duel, source.cote, tueur.id, amount, cardColors(carte), null, 'capacite', carte.id);
       break;
     }
   }
@@ -1795,6 +1799,10 @@ function degatsCreatureCombattue(carte) {
  *  chemin, mais sous la couleur de l'arme, pas de la créature. */
 function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible, entiteSource = null) {
   if (!cible) return;
+  // La créature qui porte la capacité est nommée comme source de la blessure :
+  // si l'échange tue une créature (le Brûlot), son effet de mort sait qui l'a
+  // détruite, même quand les dégâts sont partis avant les coups normaux.
+  const source = entiteSource ? { sourceCote: coteSource, sourceId: entiteSource.id } : {};
   const amount = degatsCreatureCombattue(carteSource);
   if (amount > 0) {
     coups.push({
@@ -1803,6 +1811,7 @@ function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible,
       amount,
       sourceElement: cardColors(carteSource),
       sourceType: 'capacite',
+      ...source,
     });
   }
   const carteArme = armeCarteDe(entiteSource);
@@ -1816,6 +1825,7 @@ function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible,
         amount: degatsArme,
         sourceElement: cardColors(carteArme),
         sourceType: 'capacite',
+        ...source,
       });
     }
   }
@@ -2745,6 +2755,10 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
           amount: combattant.atk,
           sourceElement,
           sourceType: 'capacite',
+          // Le duel de créatures nomme ses deux combattants : le mort sait
+          // laquelle l'a détruit (le Brûlot embrase son tueur).
+          sourceCote: cote,
+          sourceId: combattant.id,
         },
         {
           cote,
@@ -2752,6 +2766,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
           amount: cible.atk,
           sourceElement: cardColors(duelCardById(cible.carteId)),
           sourceType: 'capacite',
+          sourceCote: adv,
+          sourceId: cible.id,
         },
       ]);
       return;
@@ -3168,6 +3184,9 @@ function sacrifierCreature(duel, cote, entite) {
  */
 function declencherCapaciteDestruction(duel, cote, carte, carteId) {
   const effet = carte.destruction;
+  // `degats-tueur` (Le Brûlot) ne se résout qu'au combat, là où les sources
+  // des blessures sont connues : ailleurs, il n'y a pas de tueur à embraser.
+  if (effet?.type === 'degats-tueur') return;
   if (!(effet?.type === 'degats' && effet.cible === 'creature')) {
     appliquer(duel, cote, effet, null, null, cardColors(carte), null, carteId);
     return;

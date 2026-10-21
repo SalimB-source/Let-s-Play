@@ -90,9 +90,10 @@ export const RPG_MANA_ESSAI_DECKS = Object.freeze([
     id: 'essai-mana-lettres-de-marque',
     name: 'Les Lettres de Marque',
     element: 'hybride',
-    elements: ['sable', 'eau'],
+    // Sable + Eau, plus la flamme du Brûlot : la seule carte Braise du paquet.
+    elements: ['sable', 'eau', 'braise'],
     boxArt: 'la-barbe-rousse',
-    description: 'Sable + Eau : la course amollit, l’abordage emporte, la cale ne se rachète pas.',
+    description: 'Sable + Eau, la flamme du Brûlot : la course amollit, l’abordage emporte, la cale ne se rachète pas.',
     cardIds: [
       ...copies('mousse-des-galiotes', 2), ...copies('rais-de-la-galiote', 2),
       ...copies('pilote-de-la-carreira', 2), ...copies('le-brulot', 2),

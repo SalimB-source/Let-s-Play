@@ -174,10 +174,11 @@ function valeurEffet(effet = {}) {
       // La vague du Léviathan : renvoyer toute la table entière vaut une
       // tempête ; le renvoi ciblé reste un rebond ordinaire.
       return effet.cible === 'toutes-autres' ? 6 : 2;
-    case 'renvoi-tueur':
-      // Le Brûlot : le tueur repart en main — un rebond différé qui ne joue
-      // qu'en combat, donc sous le prix d'un retour-main ciblé.
-      return 1.2;
+    case 'degats-tueur':
+      // Le Brûlot : 2 dégâts à la créature qui le détruit — une riposte de
+      // mort, comptée comme des dégâts ciblés mais conditionnés au combat
+      // (protections, boucliers et esquives s'appliquent).
+      return montant * 0.9;
     case 'retour-apres-tours': {
       // Le retour d'Anqa : différé et dégressif — deux tours valent 2,5,
       // chaque tour de plus retire 0,375 (quatre tours ≈ 1,75). Le sorcier a

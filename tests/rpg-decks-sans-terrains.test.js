@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   RPG_DECKS, RPG_DECK_JOUEUR_BASE, RPG_DECK_SORCIER_BASE,
   RPG_DECK_HYBRIDE_BASE, RPG_DECK_MAREE_BASE, RPG_DECK_NEIGE_BASE,
-  cardById, carteJouableSansTerrain, rpgValiderDeck,
+  cardById, cardColors, carteJouableSansTerrain, rpgValiderDeck,
 } from '../src/games/rpgCards.js';
 import { RPG_RECETTES_DECKS } from '../src/games/rpgDeckRecipes.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
@@ -33,7 +33,11 @@ for (const deck of RPG_DECKS) {
     assert.ok(cartes.filter((c) => c.cost <= 3).length >= 15, 'au moins la moitié du deck accessible aux trois premiers manas');
     assert.ok(cartes.filter((c) => c.cost >= 5).length <= 8, 'pas de main encombrée de finisseurs');
     assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
-    const elements = recette.identite;
+    // Le banc d'essai suit les couleurs de la liste : l'identité du vivier,
+    // plus les couleurs des cartes de la signature (le Brûlot, Braise, dans
+    // les Lettres de Marque).
+    const elements = [...new Set([...recette.identite,
+      ...recette.signature.flatMap((entree) => cardColors(cardById(Array.isArray(entree) ? entree[0] : entree)))])];
     assert.deepEqual(validerDeckManaEssai({ ...deck, elements }), { ok: true });
     const duel = rpgNouveauDuel({ joueurDeck: deck.cardIds, sorcierDeck: RPG_DECK_SORCIER_BASE,
       modeMana: RPG_MODE_MANA_ESSAI, rng: () => 0.5 });

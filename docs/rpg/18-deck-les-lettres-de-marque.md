@@ -210,15 +210,29 @@ faite ensemble : elles n’ont jamais coulé ce qu’elles voulaient vendre.**
 | **L’anti-déclencheur** | la prise évite les « quand meurt » | assumé une fois par combat et par capteur ; c’est le contre-texture du set, pas un verrou |
 | **La pioche du convoi** | Galion, L’Invincible | Cargaison paie le camp qui **perd** sa créature — le set ne peut pas s’auto-nourrir de ses propres prises |
 | **La défausse adverse** | — | absente du set, voix des Ténèbres |
-| **Les dégâts nus** | — | aucun — règle de direction §11 respectée : la course prend, elle ne brûle pas |
-| **Le renvoi** | Le Brûlot, Sonneur fêlé (existant) | ciblé, jamais de masse — le Léviathan garde son monopole |
+| **Les dégâts nus** | Le Brûlot | aucun, à une exception près : la flamme du Brûlot ne s’allume qu’en mourant au combat, sur la seule créature qui l’a détruit — la course prend, elle ne brûle pas |
+| **Le renvoi** | Sonneur fêlé (existant) | ciblé, jamais de masse — le Léviathan garde son monopole |
 
 ## 8. Les cartes
 
 **Identité** : hybride Sable + Eau — les cartes signature portent les deux
 couleurs (`element: 'sable'`, `colors: ['sable', 'eau']`, `colorCost` un pip
 de chaque, contrat du Djinn de foudre) ; les cartes d’appui restent mono
-(Sable ou Eau) pour lisser la courbe de paiement. **20 cartes + 1 jeton** sont
+(Sable ou Eau) pour lisser la courbe de paiement. **Une exception : Le
+Brûlot**, navire incendiaire, est une carte **Braise** — la seule du set.
+Il entre dans le boîtier par la **signature** de la recette (`rpgDeckRecipes.js`),
+que le composeur ne filtre pas par l’identité, tandis que le vivier de
+remplissage reste strictement Sable + Eau : le deck joue donc trois couleurs,
+mais une seule carte de Braise. Le banc d’essai suit la même liste et déclare
+`elements: ['sable', 'eau', 'braise']`.
+
+Conséquence de couleur, assumée : le Brûlot **est** une source de Braise. Sa
+frappe de combat comme son explosion s’écrasent donc sur une créature protégée
+contre la Braise (Tiziri, la Valkyrie des glaces, un porteur d’Armure de
+cendres) — la protection fait écran aux deux, exactement comme pour l’Ifrit.
+Le Brûlot reste un 1/1 à 2 manas : son prix ne bouge pas, sa valeur de carte
+non plus (l’effet `degats-tueur` vaut `0,9 × N`, soit ≈ 1,8 pour 2 dégâts,
+contre 1,2 pour l’ancien renvoi). **20 cartes + 1 jeton** sont
 maintenant codés — le banc d’essai se complète avec les cartes Eau et Sable
 existantes, comme `Sentiers de cendre` le fait déjà.
 
@@ -236,7 +250,7 @@ reste posé, avec son illustration finale.
 | Mousse des galiotes | Sable | 1 | 1/2 | commune | le corps du pont — vanilla |
 | Raïs de la galiote | **Sable + Eau** | 2 | 2/2 | commune | **Abordage 1** — le poisson-pilote du set |
 | Pilote de la Carreira | Eau | 2 | 1/3 | inhabituelle | arrivée : la **prochaine créature jouée ce tour** gagne **Abordage** (seuil : son coût − 1) — il lit la route pour elle |
-| Le Brûlot | Eau | 2 | 1/1 | commune | à sa mort en combat : **le tueur est renvoyé en main** |
+| Le Brûlot | **Braise** | 2 | 1/1 | commune | à sa mort en combat : **2 dégâts à la créature qui l’a détruit** — la seule flamme du set |
 | Tercio de cuivre | Sable | 3 | 1/4 | commune | le mur du convoi, **Coup rapide** |
 | Cotre de course | **Sable + Eau** | 3 | 3/1 | inhabituelle | **Rapidité + Abordage 2** — l’éclaireur qui monte le premier |
 | Le Renégat | **Sable + Eau** | 3 | 3/2 | inhabituelle | **Rapidité + Butin** — l’Anglais sous pavillon d’Alger |
@@ -274,7 +288,8 @@ Nouveau fichier **`src/games/rpgLettresDeMarque.js`**, importé par
  * portugais, corsaires anglais et barbaresques. Identité de jeu : l’Abordage
  * (prendre sans tuer), la Cale (détenir, face visible — sans rachat) et la
  * Cargaison (le convoi assuré). Jamais de dégâts nus
- * (règle de direction §11) : la course prend, elle ne brûle pas.
+ * (règle de direction §11) : la course prend, elle ne brûle pas — sauf le
+ * Brûlot, la seule flamme du set, qui embrase la créature qui le détruit.
  */
 export const RPG_LETTRES_DE_MARQUE_SET_ID = 'lettres-de-marque';
 
@@ -348,14 +363,14 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
   carte({
     id: 'le-brulot',
     name: 'Le Brûlot',
-    element: 'eau',
+    element: 'braise',
     cost: 2,
     atk: 1,
     def: 1,
     rarity: 'commune',
-    destruction: { type: 'renvoi-tueur' },
+    destruction: { type: 'degats-tueur', amount: 2 },
     typeLine: 'Créature — Navire · Brûlot',
-    text: 'Quand Le Brûlot meurt en combat, la créature qui l’a détruit est renvoyée dans la main de son propriétaire.',
+    text: 'Quand Le Brûlot meurt en combat, il inflige 2 dégâts à la créature qui l’a détruit.',
     flavor: 'Une voile, une mèche, une promesse.',
   }),
   carte({
@@ -530,9 +545,10 @@ Entrée à ajouter dans `RPG_MANA_ESSAI_DECKS` (`src/games/rpgManaEssai.js`) :
   id: 'essai-mana-lettres-de-marque',
   name: 'Les Lettres de Marque',
   element: 'hybride',
-  elements: ['sable', 'eau'],
+  // Sable + Eau, plus la flamme du Brûlot : la seule carte Braise du paquet.
+  elements: ['sable', 'eau', 'braise'],
   boxArt: 'la-barbe-rousse',
-  description: 'Sable + Eau : la course amollit, l’abordage emporte, la cale ne se rachète pas.',
+  description: 'Sable + Eau, la flamme du Brûlot : la course amollit, l’abordage emporte, la cale ne se rachète pas.',
   cardIds: [
     ...copies('mousse-des-galiotes', 2), ...copies('rais-de-la-galiote', 2),
     ...copies('pilote-de-la-carreira', 2), ...copies('le-brulot', 2),
@@ -649,11 +665,11 @@ aux boosters, comme le font les six autres boîtiers.
    d’arrivée, comme une renaissance de Tenacité ; sans lui (renvoi, exil,
    capture), la carte part en main. Le retour en jeu vérifie
    `placesLibresChamp` : champ plein, la carte repart en main.
-6. **Effets nouveaux** — `renvoi-tueur` (Le Brûlot : le tueur en combat repart
-   en main — s’appuyer sur le suivi de source des blessures,
-   `rpgDerniereBlessure`) ; `priseEnCale` (le Grappin) ; le déclencheur
-   `prise` (le Négociant). `pioche-defausse` existe déjà (Jörmungandr,
-   Masque du guetteur).
+6. **Effets nouveaux** — `degats-tueur` (Le Brûlot : 2 dégâts à la créature
+   qui l’a détruit au combat — s’appuyer sur le suivi de source des blessures,
+   `rpgDerniereBlessure` ; le tueur doit avoir survécu à l’échange) ;
+   `priseEnCale` (le Grappin) ; le déclencheur `prise` (le Négociant).
+   `pioche-defausse` existe déjà (Jörmungandr, Masque du guetteur).
 7. **IA du sorcier** — plus de choix de rançon : l’IA doit **attaquer le
    capteur** pour libérer ce qui est en cale — tuer le corsaire libère tout.
    À la pose de ses propres capteurs, le moteur
@@ -661,7 +677,8 @@ aux boosters, comme le font les six autres boîtiers.
    un Abordage avec prize sur la table vaut +2,5.
 8. **`rpgCardPower.js`** — `abordage` (créature ou arme) → +1,5 ;
    `arriveesAbordage` → +1,5 ; `cargaison` → +0,9 × N ;
-   `renvoi-tueur` → ~1,2 ; déclencheur `prise` → ~1,2. Recalculer les
+   `degats-tueur` → ~0,9 × N (2 dégâts ≈ 1,8) ; déclencheur `prise` → ~1,2.
+   Recalculer les
    rendements du §8 avec la vraie formule.
 9. **Icônes** — `#effet-abordage` (**le grappin**) et `#effet-cargaison`
    (**le coffre cerclé de cuivre**) dans le sprite
@@ -680,8 +697,8 @@ aux boosters, comme le font les six autres boîtiers.
     refuse la cale, les boucliers ne comptent plus ;
     jetons et figures jamais pris ; le sceau de la Lettre et du Débarquement
     arme les arrivées puis expire, mais la cale reste ; Cargaison paie à la
-    mort **et** à la prise ; le Brûlot renvoie son tueur ; l’IA choisit sa
-    prize.
+    mort **et** à la prise ; le Brûlot embrase son tueur — jamais par magie,
+    jamais une capture ; l’IA choisit sa prize.
 
 ## 13. Direction artistique & sons
 

@@ -18,7 +18,7 @@ const REMPLISSAGE_PIRATE = [
   'le-routier',
   'le-grand-debarquement',
   'haut-fond',
-  'le-brulot',
+  'vipere-de-verre',
   'lettre-de-marque',
   'grappin-d-abordage',
   'baton-des-citernes',
