@@ -1703,6 +1703,10 @@ export function TableCard({
   const visageActuel = entite.visage != null
     ? carte?.alternance?.visages?.[entite.visage] ?? null
     : null;
+  // La prisonnière de la cale (Abordage) : sa fiche, pour la mini-face qui
+  // se glisse sous le coin du capteur — on voit QUI est détenu, pas
+  // seulement un losange de chaîne.
+  const prisonniereCarte = entite.enCale ? cardById(entite.enCale.carteId) : null;
   // La valeur imprimée reste le point neutre : chaque statistique peut ainsi
   // signaler séparément un bonus (bleu clair) ou un malus (rouge). Pour la
   // défense, on compare la valeur réellement montrée — les PV restants.
@@ -1919,6 +1923,21 @@ export function TableCard({
               <span>🎭</span>
             </span>
           )}
+        </span>
+      )}
+      {/* La prisonnière de la cale : sa mini-face dépasse du coin du capteur,
+          derrière les chaînes — la carte détenue se VOIT sur la table, son
+          nom au bas de la miniature. Décorative (la cale se lit dans l'aria
+          du capteur, se paie par le bouton de rançon) : rien à cliquer. */}
+      {entite.enCale && prisonniereCarte && (
+        <span
+          className="rpg-card__prisonniere"
+          aria-hidden="true"
+          data-prisonniere={entite.enCale.carteId}
+        >
+          <img className="rpg-card__prisonniere-art" src={cardArt(prisonniereCarte)} alt="" />
+          <span className="rpg-card__prisonniere-nom">{entite.enCale.name}</span>
+          <span className="rpg-card__prisonniere-chaine">⛓</span>
         </span>
       )}
       <header className="rpg-card__title">
