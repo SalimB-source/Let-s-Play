@@ -182,8 +182,10 @@ import {
   rpgSorcierAnnonceSuivante,
   rpgSorcierPrepareTerrain,
   rpgSorcierResoudreAnnonce,
+  rpgSyncCompteurEntites,
   rpgVainqueur,
 } from './rpgDuel.js';
+import { tempsRestant } from './rpgPvpSalon.js';
 import {
   cardRarityInfo,
   armeCadreClass,
@@ -4033,7 +4035,15 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   return null;
 }
 
-export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random, variantesPlateaux = false } = {}) {
+export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random, variantesPlateaux = false, pvp = null } = {}) {
+  const modePvp = Boolean(pvp);
+  const pvpRef = useRef(pvp);
+  pvpRef.current = pvp;
+  const pvpEnVolCountRef = useRef(0);
+  const pvpSeqAppliqueRef = useRef(null);
+  const pvpHorlogeExpireeRef = useRef(null);
+  const [confirmerAbandonPvp, setConfirmerAbandonPvp] = useState(false);
+  const [maintenantPvp, setMaintenantPvp] = useState(() => Date.now());
   useLumiereCartes();
   const authContext = useContext(AuthContext);
   const authUser = authContext?.user ?? null;
@@ -4056,7 +4066,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => { vivant = false; };
   }, [authUser, authContext?.isDemo]);
 
-  const [ecran, setEcran] = useState('jouer');
+  const [ecran, setEcran] = useState(() => (pvp ? 'partie' : 'jouer'));
   const [tutorielActif, setTutorielActif] = useState(false);
   const [tutorielId, setTutorielId] = useState(null);
   const [etapeTutorielId, setEtapeTutorielId] = useState(null);
@@ -4091,6 +4101,128 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     if (ecran !== 'partie') landscapeRef.current?.leave();
   }, [ecran]);
+
+  // ── Synchronisation temps réel d'un duel PvP (toujours avant tout return conditionnel) ──
+  useEffect(() => {
+    if (!modePvp || !pvp?.echeance || pvp.statut !== 'en_cours') return undefined;
+    setMaintenantPvp(Date.now());
+    const id = window.setInterval(() => {
+      const t = Date.now();
+      setMaintenantPvp(t);
+      if (t >= Date.parse(pvp.echeance) && pvpHorlogeExpireeRef.current !== pvp.echeance) {
+        pvpHorlogeExpireeRef.current = pvp.echeance;
+        pvpRef.current?.onRafraichir?.();
+      }
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [modePvp, pvp?.echeance, pvp?.statut]);
+
+  useEffect(() => {
+    if (!modePvp || !pvp?.vue) return;
+    // Résout les plateaux thématiques et musiques à partir des decks publics.
+    const deckJ = (pvp.decks?.joueur?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.joueur.id) : null)
+      ?? (pvp.vue.joueur?.couleurs?.length ? { id: 'pvp-joueur', elements: pvp.vue.joueur.couleurs, cardIds: [] } : null);
+    const deckS = (pvp.decks?.sorcier?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.sorcier.id) : null)
+      ?? (pvp.vue.sorcier?.couleurs?.length ? { id: 'pvp-sorcier', elements: pvp.vue.sorcier.couleurs, cardIds: [] } : null);
+    const plateaux = resoudrePlateauxDuDuel({ deckJoueur: deckJ, deckAdverse: deckS, variantesFantaisistes: variantesPlateaux });
+    if (plateaux?.joueur?.id) setPlateauId((actuel) => (actuel === plateaux.joueur.id ? actuel : plateaux.joueur.id));
+    if (plateaux?.adverse?.id) setPlateauAdverseId((actuel) => (actuel === plateaux.adverse.id ? actuel : plateaux.adverse.id));
+
+    const entrant = structuredClone(pvp.vue);
+    if (entrant.phase === 'blocage' && entrant.combatDeclare?.cote === 'sorcier') {
+      entrant.fenetreReponse = true;
+    }
+
+    // Premier montage (ou reconnexion en cours de duel) : pose l'état tel quel.
+    if (!duelRef.current) {
+      duelRef.current = entrant;
+      pvpSeqAppliqueRef.current = pvp.seq ?? null;
+      instantanePiocheRef.current = {
+        joueur: { deck: entrant.joueur.deckCount ?? entrant.joueur.deck.length, main: entrant.joueur.mainCount ?? entrant.joueur.main.length },
+        sorcier: { deck: entrant.sorcier.deckCount ?? entrant.sorcier.deck.length, main: entrant.sorcier.mainCount ?? entrant.sorcier.main.length },
+      };
+      setMulligan(rpgPeutMulligan(entrant, 'joueur') && entrant.joueur.main.length
+        ? { etape: 'choix', choix: new Set(), nouveau: [], bilan: '' }
+        : null);
+      if (entrant.phase === 'blocage' && entrant.combatDeclare?.cote === 'sorcier') {
+        const ids = entrant.combatDeclare.attaquants ?? [];
+        setCombatEntrant({
+          coteAttaquant: 'sorcier',
+          attaquants: ids,
+          blocages: Object.fromEntries(ids.map((id) => [id, []])),
+          repartitions: {},
+          ciblesAttaque: entrant.combatDeclare.ciblesAttaque ?? {},
+          bannieresAppliquees: Boolean(entrant.combatDeclare.bannieresAppliquees),
+        });
+      }
+      jouerSfx('apparition');
+      force();
+      return;
+    }
+
+    if (pvpEnVolCountRef.current > 0) return;
+    if (pvp.seq !== undefined && pvp.seq === pvpSeqAppliqueRef.current && entrant.fin?.gagnant === duelRef.current.fin?.gagnant) {
+      return;
+    }
+
+    const avant = duelRef.current;
+    const champAvant = prendreInstantaneChamp();
+    duelRef.current = entrant;
+    pvpSeqAppliqueRef.current = pvp.seq ?? pvpSeqAppliqueRef.current;
+
+    animerModificationsChamp(champAvant, entrant.combatDeclare?.attaquants ?? [], 0);
+    if ((entrant.joueur?.pv ?? 0) < (avant.joueur?.pv ?? 0)) declencherImpactEcran('received');
+    if ((entrant.sorcier?.pv ?? 0) < (avant.sorcier?.pv ?? 0)) declencherImpactEcran('dealt');
+
+    const idsAvantAdverse = new Set((avant.sorcier?.creatures ?? []).map((e) => e.id));
+    const nouvellesCreaturesAdverses = (entrant.sorcier?.creatures ?? []).filter((e) => !idsAvantAdverse.has(e.id));
+    if (nouvellesCreaturesAdverses.length) {
+      jouerSfx('card_place');
+      const sonFeu = rpgFireSoundFor(cardById(nouvellesCreaturesAdverses[0].carteId), 'arrival');
+      if (sonFeu) jouerSfx(sonFeu);
+    }
+
+    const cimetiereAvantLen = avant.sorcier?.cimetiere?.length ?? 0;
+    const nouvellesCimetiere = (entrant.sorcier?.cimetiere ?? []).slice(cimetiereAvantLen);
+    const magieAdverse = nouvellesCimetiere.map((id) => cardById(id)).find((c) => c?.kind === 'magie');
+    if (magieAdverse) {
+      annoncerMagieSorcier(magieAdverse, {
+        nom: magieAdverse.effet?.cible === 'sorcier' ? (nomProfilJoueur || 'Vous') : 'Le champ de bataille',
+        targetPlate: magieAdverse.effet?.cible === 'sorcier' ? 'joueur' : null,
+        targetIds: [],
+      });
+    }
+
+    if (entrant.phase === 'blocage' && entrant.combatDeclare?.cote === 'sorcier') {
+      const ids = entrant.combatDeclare.attaquants ?? [];
+      setCombatEntrant((courant) => {
+        if (courant?.coteAttaquant === 'sorcier') {
+          const vivants = new Set(ids);
+          return {
+            ...courant,
+            attaquants: ids,
+            blocages: Object.fromEntries(ids.map((id) => [id, courant.blocages?.[id] ?? []]).filter(([id]) => vivants.has(id))),
+          };
+        }
+        jouerSfx('attackers_confirm');
+        animerEntites(ids, 'attack', 650);
+        return {
+          coteAttaquant: 'sorcier',
+          attaquants: ids,
+          blocages: Object.fromEntries(ids.map((id) => [id, []])),
+          repartitions: {},
+          ciblesAttaque: entrant.combatDeclare.ciblesAttaque ?? {},
+          bannieresAppliquees: Boolean(entrant.combatDeclare.bannieresAppliquees),
+        };
+      });
+    } else if (avant.phase === 'blocage' && entrant.phase !== 'blocage') {
+      setCombatEntrant(null);
+      setBloqueurSelectionne(null);
+    }
+
+    force();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modePvp, pvp?.seq, pvp?.statut, pvp?.vue]);
 
   // ── Plein écran ──────────────────────────────────────────────────────────
   // Le Sablier s'ouvre dans la page, sans plein écran natif ni couche immersive
@@ -4264,6 +4396,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Le mana sans terrain est commun à tous les duels : les récompenses
   // et les quêtes ne sont plus exclues sur le seul critère du format.
   const noterEvenementDuel = (evenement) => {
+    if (modePvp) return;
     noterEvenementDuelReel(evenement);
   };
   const histoireVictoireMarqueeRef = useRef(null);
@@ -5170,6 +5303,40 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const validerMulligan = () => {
     const duelCourant = duelRef.current;
     if (!duelCourant || !mulligan || mulligan.etape !== 'choix') return;
+    if (modePvp) {
+      const indices = [...mulligan.choix];
+      masquerApercuSurvol();
+      if (!indices.length) setMulligan(null);
+      pvpEnVolCountRef.current += 1;
+      Promise.resolve(pvpRef.current?.onIntention?.({ type: 'mulligan', index: indices }))
+        .then((reponse) => {
+          if (reponse?.etat) {
+            duelRef.current = structuredClone(reponse.etat);
+            pvpSeqAppliqueRef.current = reponse.seq ?? pvpSeqAppliqueRef.current;
+          }
+          if (!indices.length) {
+            setMulligan(null);
+            force();
+            return;
+          }
+          const pluriel = (n) => (n > 1 ? 's' : '');
+          const mainApres = duelRef.current?.joueur.main.length ?? 0;
+          const nbPiochees = Math.min(indices.length, mainApres);
+          jouerSfx('card_draw', 0.05);
+          setMulligan({
+            etape: 'resultat',
+            choix: new Set(),
+            nouveau: Array.from({ length: nbPiochees }, (_, offset) => Math.max(0, mainApres - nbPiochees) + offset),
+            bilan: `Vous écartez ${indices.length} carte${pluriel(indices.length)} et piochez ${nbPiochees} carte${pluriel(nbPiochees)}.`,
+          });
+          force();
+        })
+        .finally(() => {
+          pvpEnVolCountRef.current = Math.max(0, pvpEnVolCountRef.current - 1);
+          force();
+        });
+      return;
+    }
     const mainAvant = duelCourant.joueur.main.length;
     masquerApercuSurvol();
     const { ecartees, piochees } = rpgMulligan(duelCourant, 'joueur', [...mulligan.choix], rng);
@@ -5198,14 +5365,35 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const terminerMulligan = () => {
     masquerApercuSurvol();
     // Le volet se ferme après le choix ; le tour 1 démarre seulement alors.
-    if (duelRef.current?.modeMana === RPG_MODE_MANA_ESSAI) rpgDemarrerManaEssai(duelRef.current);
+    if (!modePvp && duelRef.current?.modeMana === RPG_MODE_MANA_ESSAI) rpgDemarrerManaEssai(duelRef.current);
     setMulligan(null);
     force();
+  };
+  const envoyerIntentionPvp = (intention) => {
+    if (!modePvp) return Promise.resolve(null);
+    pvpEnVolCountRef.current += 1;
+    return Promise.resolve(pvpRef.current?.onIntention?.(intention))
+      .then((reponse) => {
+        if (reponse?.etat && pvpEnVolCountRef.current <= 1) {
+          const prochain = structuredClone(reponse.etat);
+          if (prochain.phase === 'blocage' && prochain.combatDeclare?.cote === 'sorcier') {
+            prochain.fenetreReponse = true;
+          }
+          duelRef.current = prochain;
+          if (reponse.seq !== undefined) pvpSeqAppliqueRef.current = reponse.seq;
+        }
+        return reponse;
+      })
+      .finally(() => {
+        pvpEnVolCountRef.current = Math.max(0, pvpEnVolCountRef.current - 1);
+        force();
+      });
   };
   const choisirNouveauManaEssai = (couleur) => {
     if (mulligan || !duelRef.current?.manaEssaiDemarre) return;
     const resultat = rpgChoisirCouleurMana(duelRef.current, 'joueur', couleur);
     if (!resultat.ok) { jouerSfx('erreur'); return; }
+    if (modePvp) void envoyerIntentionPvp({ type: 'choix-mana', couleur });
     jouerSfx('select');
     force();
   };
@@ -5310,8 +5498,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useLayoutEffect(() => {
     if (!duel) return;
     const instantaneActuel = {
-      joueur: { deck: duel.joueur.deck.length, main: duel.joueur.main.length },
-      sorcier: { deck: duel.sorcier.deck.length, main: duel.sorcier.main.length },
+      joueur: { deck: duel.joueur.deckCount ?? duel.joueur.deck.length, main: duel.joueur.mainCount ?? duel.joueur.main.length },
+      sorcier: { deck: duel.sorcier.deckCount ?? duel.sorcier.deck.length, main: duel.sorcier.mainCount ?? duel.sorcier.main.length },
     };
     const instantanePrecedent = instantanePiocheRef.current;
     instantanePiocheRef.current = instantaneActuel;
@@ -5319,10 +5507,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
     const animations = [];
     for (const side of ['joueur', 'sorcier']) {
-      const camp = duel[side];
-      const nombrePioches = Math.min(8, Math.max(0, instantanePrecedent[side].deck - camp.deck.length));
+      const nbDeck = instantaneActuel[side].deck;
+      const nbMain = instantaneActuel[side].main;
+      const nombrePioches = Math.min(8, Math.max(0, instantanePrecedent[side].deck - nbDeck));
       if (!nombrePioches) continue;
-      const indexPremierePioche = Math.max(0, camp.main.length - nombrePioches);
+      const indexPremierePioche = Math.max(0, nbMain - nombrePioches);
       for (let index = 0; index < nombrePioches; index += 1) {
         animations.push({
           token: ++sequencePiocheRef.current,
@@ -5354,7 +5543,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }, 1050 + animation.delay);
       timersRef.current.push(timer);
     });
-  }, [duel, duel?.joueur.deck.length, duel?.joueur.main.length, duel?.sorcier.deck.length, duel?.sorcier.main.length]);
+  }, [
+    duel,
+    duel?.joueur.deckCount ?? duel?.joueur.deck.length,
+    duel?.joueur.mainCount ?? duel?.joueur.main.length,
+    duel?.sorcier.deckCount ?? duel?.sorcier.deck.length,
+    duel?.sorcier.mainCount ?? duel?.sorcier.main.length,
+  ]);
   // Mobile, table d'essai : chaque plaque ouvre la colonne de gauche, sa jauge
   // de mana se range derrière elle, dans la même rangée de grille. Publier la
   // hauteur réelle mesurée des deux — la plaque (`--rpg-plaque-*-h`) et la
@@ -5963,8 +6158,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       </div>
     );
   }
-  if (!duel) return null;
-  const vainqueur = rpgVainqueur(duel);
+  if (!duel) {
+    if (!modePvp) return null;
+    return (
+      <div ref={shellRef} className="rpg-battle rpg-battle--duel rpg-battle--pvp-loading" onContextMenu={neutraliserMenuContextuel}>
+        <div className="rpg-pvp-loading-panel" role="status" aria-live="polite">
+          <span className="rpg-pvp-loading-eyebrow">LE SABLIER · DUEL EN LIGNE</span>
+          <strong>Préparation de la table…</strong>
+        </div>
+      </div>
+    );
+  }
+  const vainqueurPvp = modePvp && (pvp?.statut === 'terminee' || duel.fin?.gagnant)
+    ? ((pvp?.resultat === 'gagne' || pvp?.resultat === 'victoire' || (!pvp?.resultat && duel.fin?.gagnant === 'joueur'))
+      ? 'joueur'
+      : (pvp?.resultat === 'perdu' || pvp?.resultat === 'defaite' || (!pvp?.resultat && duel.fin?.gagnant === 'sorcier'))
+        ? 'sorcier'
+        : 'egalite')
+    : null;
+  const vainqueur = vainqueurPvp ?? rpgVainqueur(duel);
   const soinJoueur = soinsVisibles.joueur ?? null;
   const soinSorcier = soinsVisibles.sorcier ?? null;
   // L'éclat de soin d'une créature posée. Une pile d'homonymes repliée ne
@@ -5991,31 +6203,71 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Fin de tour : le camp qui a fini ne joue plus ; l'AUTRE a la main pour une magie rapide.
   const finTourJoueur = Boolean(duel.finDeTour?.cote === 'joueur' && !vainqueur);
   const fenetreFinTour = Boolean(duel.finDeTour?.cote === 'sorcier' && !vainqueur);
-  const monTour = tourDuJoueur && !finTourJoueur;
   // Tant que le volet de mulligan est ouvert, la table attend : rien ne se
   // joue, rien ne s'engage, et le tour ne peut pas être rendu.
   const mulliganOuvert = Boolean(mulligan);
+  const mulliganAttenteAdverse = Boolean(
+    modePvp && !mulliganOuvert && !vainqueur && (!duel.mulliganFait?.joueur || !duel.mulliganFait?.sorcier),
+  );
+  const attenteBlocageAdverse = Boolean(
+    modePvp && !vainqueur && duel.phase === 'blocage' && duel.combatDeclare?.cote === 'joueur',
+  );
+  const monTour = tourDuJoueur && !finTourJoueur && !mulliganAttenteAdverse && !attenteBlocageAdverse;
   const sorcierReflechit = Boolean(!vainqueur && !tutorielActif && duel.tour === 'sorcier'
     && !duel.annonce && !combatEntrant && !duel.finDeTour && !duel.magieGratuite
     && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length
     && !duel.defausseEnAttente && !mulliganOuvert);
   const choixManaEssaiOuvert = duel.modeMana === RPG_MODE_MANA_ESSAI
-    && Boolean(duel.joueur.manaChoixEnAttente) && !mulliganOuvert && !vainqueur;
+    && Boolean(duel.joueur.manaChoixEnAttente) && !mulliganOuvert && !mulliganAttenteAdverse && !vainqueur;
   const etapeTutoriel = etapesTutoriel.find((step) => step.id === etapeTutorielId) ?? null;
   const indexEtapeTutoriel = etapeTutoriel ? etapesTutoriel.findIndex((step) => step.id === etapeTutoriel.id) : -1;
   /** Vrai si l'étape courante encadre cette zone du plateau. Évite de figer
    *  une liste d'identifiants d'étapes dans le rendu. */
   const cibleTutoriel = (nom) => Boolean(tutorielActif
     && etapeTutoriel?.target?.includes(`data-tutorial-target="${nom}"`));
-  const deckJoueurAffiche = (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(duel.essaiDeckId) : null)
+  const deckPvpJoueur = modePvp
+    ? (RPG_DECKS.find((deck) => deck.id === pvp?.decks?.joueur?.id)
+      ?? (duel.joueur.couleurs?.length ? {
+        id: 'pvp-joueur',
+        name: pvp?.decks?.joueur?.name ?? 'Votre deck',
+        elements: duel.joueur.couleurs,
+        cardIds: [],
+      } : null))
+    : null;
+  const deckPvpAdverse = modePvp
+    ? (RPG_DECKS.find((deck) => deck.id === pvp?.decks?.sorcier?.id)
+      ?? (duel.sorcier.couleurs?.length ? {
+        id: 'pvp-sorcier',
+        name: pvp?.decks?.sorcier?.name ?? 'Deck adverse',
+        elements: duel.sorcier.couleurs,
+        cardIds: [],
+      } : null))
+    : null;
+  const deckJoueurAffiche = deckPvpJoueur
+    ?? (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(duel.essaiDeckId) : null)
     ?? (tutorielActif ? RPG_DECKS.find((deck) => deck.id === tutorielCourant?.deckId) : null)
     ?? decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
-  const deckAdverseAffiche = (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(deckAdverseId) : null)
+  const deckAdverseAffiche = deckPvpAdverse
+    ?? (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(deckAdverseId) : null)
     ?? (tutorielActif ? RPG_DECKS.find((deck) => deck.id === tutorielCourant?.opponentDeckId) : null)
     ?? RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
-  const nomSorcierAdverse = etageHistoire?.nom ?? (tutorielActif
-    ? tutorielCourant?.opponentName ?? 'Sorcier d’entraînement'
-    : duel.modeMana === RPG_MODE_MANA_ESSAI ? 'Sorcier adverse' : 'Ifrit al-Ahmar');
+  const nomJoueurAffiche = modePvp
+    ? (duel.noms?.joueur ?? (pvp?.siege === 'sorcier' ? pvp?.noms?.sorcier : pvp?.noms?.joueur) ?? nomProfilJoueur)
+    : nomProfilJoueur;
+  const nomSorcierAdverse = modePvp
+    ? (duel.noms?.sorcier ?? (pvp?.siege === 'sorcier' ? pvp?.noms?.joueur : pvp?.noms?.sorcier) ?? 'Adversaire')
+    : etageHistoire?.nom ?? (tutorielActif
+      ? tutorielCourant?.opponentName ?? 'Sorcier d’entraînement'
+      : duel.modeMana === RPG_MODE_MANA_ESSAI ? 'Sorcier adverse' : 'Ifrit al-Ahmar');
+  const nbMainAdverse = duel.sorcier.mainCount ?? duel.sorcier.main.length;
+  const nbDeckAdverse = duel.sorcier.deckCount ?? duel.sorcier.deck.length;
+  const nbDeckJoueur = duel.joueur.deckCount ?? duel.joueur.deck.length;
+  const msRestantesPvp = modePvp && pvp?.echeance && !vainqueur
+    ? Math.max(0, Date.parse(pvp.echeance) - maintenantPvp)
+    : null;
+  const chronoPvp = modePvp && pvp?.echeance && !vainqueur
+    ? tempsRestant(pvp.echeance, maintenantPvp)
+    : '';
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
   const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
@@ -6111,9 +6363,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ? 'FIN DE TOUR'
     : fenetreFinTour
       ? 'FIN DE TOUR · RÉPONSE'
+    : mulliganAttenteAdverse
+      ? `ATTENTE · ${nomSorcierAdverse.toUpperCase()}`
+    : attenteBlocageAdverse
+      ? `${nomSorcierAdverse.toUpperCase()} BLOQUE…`
     : reponseActive
       ? reponseApresBlocage ? 'À VOUS · RÉPONSE' : 'À VOUS · DÉFENSE'
-      : phase ? 'À VOUS · ATTAQUE' : monTour ? 'À VOTRE TOUR' : 'TOUR DU SORCIER';
+      : phase ? 'À VOUS · ATTAQUE' : monTour ? 'À VOTRE TOUR' : modePvp ? `TOUR · ${nomSorcierAdverse.toUpperCase()}` : 'TOUR DU SORCIER';
   const classeIndicateurTour = vainqueur ? 'is-finished' : reponseActive ? 'is-response' : phase ? 'is-player is-attacking' : monTour ? 'is-player' : 'is-opponent';
   // La phase allumée dans le rail : l'écran du joueur (sélection d'attaquants,
   // blocage en cours) prime, sinon on lit la phase enregistrée par le moteur.
@@ -6736,6 +6992,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const conserverAnnulation = (etatAvantAction) => {
+    if (modePvp) return;
     annulationRef.current = etatAvantAction;
     setAnnulationDisponible(true);
   };
@@ -7002,7 +7259,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     setCibleAllieeMagie(null);
+    if (modePvp) rpgSyncCompteurEntites(duel);
     const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective, cibleAllieeId ?? null);
+    if (modePvp && res.ok) {
+      void envoyerIntentionPvp({
+        type: 'jouer-carte',
+        carteId,
+        cibleId: cibleEffective ?? null,
+        cibleAllieeId: cibleAllieeId ?? null,
+      });
+    }
     // Le sort a-t-il été lancé ? Le Souk n'est prévenu qu'après `force()`.
     let lancee = false;
     if (res.ok && res.contre && res.parIA) {
@@ -7023,7 +7289,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       signalerTutoriel('contre-lance', { cardId: carteId });
       signalerTutoriel('magie-lancee', { cardId: carteId });
       force();
-      later(annoncerSuivantSorcier, delaiReflexionSorcier());
+      if (!modePvp) later(annoncerSuivantSorcier, delaiReflexionSorcier());
       return;
     }
     if (res.ok) {
@@ -7073,7 +7339,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           if (!attaquantsVivants.length) {
             rpgFermerFenetreReponse(duel);
             setCombatEntrant(null);
-            apresCombatSorcier();
+            if (!modePvp) apresCombatSorcier();
           } else {
             const vivants = new Set(attaquantsVivants);
             setCombatEntrant((courant) => courant && ({
@@ -7117,7 +7383,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
+    if (modePvp) rpgSyncCompteurEntites(duel);
     const res = rpgJouerCreature(duel, 'joueur', carteId, null, { cibleDifferee: true, sacrificeId });
+    if (modePvp && res.ok) {
+      void envoyerIntentionPvp({
+        type: 'jouer-carte',
+        carteId,
+        cibleDifferee: true,
+        sacrificeId: sacrificeId ?? null,
+      });
+    }
     if (res.ok && res.contre && res.parIA) {
       // Le sorcier contre la créature : elle n'entre pas en jeu.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
@@ -7199,7 +7474,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
+    if (modePvp) rpgSyncCompteurEntites(duel);
     const res = rpgJouerArme(duel, 'joueur', carteId, cibleId);
+    if (modePvp && res.ok) {
+      void envoyerIntentionPvp({ type: 'jouer-carte', carteId, cibleId: cibleId ?? null });
+    }
     if (res.ok && res.contre && res.parIA) {
       // Le sorcier contre l'arme : elle part au cimetière sans être portée.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
@@ -7240,6 +7519,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const etatAvantAction = JSON.stringify(duel);
     const res = rpgRanconner(duel, 'joueur', entite.id);
     if (res.ok) {
+      if (modePvp) void envoyerIntentionPvp({ type: 'ranconner', entiteId: entite.id });
       conserverAnnulation(etatAvantAction);
       jouerSfx('card_draw', 0.05);
     } else {
@@ -7276,8 +7556,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const res = rpgActiverArme(duel, 'joueur', entite.id, { mode: mode?.id ?? null });
+    if (modePvp) rpgSyncCompteurEntites(duel);
+    const options = { mode: mode?.id ?? null };
+    const res = rpgActiverArme(duel, 'joueur', entite.id, options);
     if (res.ok) {
+      if (modePvp) void envoyerIntentionPvp({ type: 'activer', arme: true, entiteId: entite.id, options });
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       jouerSfx('apparition');
@@ -7296,8 +7579,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const res = rpgActiverArme(duel, 'joueur', porteur.id, { mode, cibleId: entite.id });
+    if (modePvp) rpgSyncCompteurEntites(duel);
+    const options = { mode, cibleId: entite.id };
+    const res = rpgActiverArme(duel, 'joueur', porteur.id, options);
     if (res.ok) {
+      if (modePvp) void envoyerIntentionPvp({ type: 'activer', arme: true, entiteId: porteur.id, options });
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       jouerSfx('player_attack_hit');
@@ -7436,7 +7722,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const confirmerDefausse = () => {
     if (!defausseOuverte || !selectionDefausseValide) return;
     const { carteId, handIndex } = carteDefausseSelectionnee;
-    const res = rpgDefausserCarte(duel, 'joueur', Number.isInteger(handIndex) ? handIndex : carteId);
+    const cibleDefausse = Number.isInteger(handIndex) ? handIndex : carteId;
+    const res = rpgDefausserCarte(duel, 'joueur', cibleDefausse);
+    if (modePvp && res.ok) {
+      void envoyerIntentionPvp({ type: 'defausser', index: cibleDefausse });
+    }
     setCarteDefausseSelectionnee(null);
     jouerSfx(res.ok ? 'annuler' : 'erreur');
     // Défausse de fin de tour terminée (main redescendue à cinq) : le tour
@@ -7518,12 +7808,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       && duel.arriveeEnAttente?.carteId === cibleEnCours) {
       const champAvantAction = prendreInstantaneChamp();
       const debutJournalDestructions = rpgNombreDestructions(duel);
+      if (modePvp) rpgSyncCompteurEntites(duel);
       const res = rpgResoudreArriveeCiblee(duel, 'joueur', entite.id);
       if (!res.ok) {
         jouerSfx('erreur');
         force();
         return true;
       }
+      if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-arrivee', cibleId: entite.id });
       setCibleEnCours(null);
       if (arriveeConsulteDeck(carteSource)) invaliderAnnulation();
       jouerSfx(carteSource.arrivee?.type === 'retour-main' ? 'creature_return' : 'select');
@@ -7585,7 +7877,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const resoudreActivation = (entite) => {
     const sourceId = activationEnCours;
     setActivationEnCours(null);
+    if (modePvp) rpgSyncCompteurEntites(duel);
     const res = rpgActiverCapacite(duel, 'joueur', sourceId, entite.id);
+    if (modePvp && res.ok) {
+      void envoyerIntentionPvp({ type: 'activer', capacite: true, entiteId: sourceId, cibleId: entite.id });
+    }
     jouerSfx(res.ok ? 'player_attack_hit' : 'erreur');
     force();
   };
@@ -7693,9 +7989,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         force();
         return;
       }
+      if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-destruction', cibleId: entite.id });
       jouerSfx('select');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
-      reprendreSorcier();
+      if (!modePvp) reprendreSorcier();
       force();
       return;
     }
@@ -7758,6 +8055,39 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         .find((entite) => entite.id === ciblesAttaque[id]);
       return cible ? [[id, cible.id]] : [];
     }));
+
+    if (modePvp) {
+      invaliderAnnulation();
+      setPhase(false);
+      setAttaquants([]);
+      setCiblesAttaque({});
+      const champAvantAttaque = prendreInstantaneChamp();
+      animerEntites(ids, 'attack', 650);
+      jouerSfx('combat');
+      force();
+      pvpEnVolCountRef.current += 1;
+      Promise.resolve(pvpRef.current?.onIntention?.({
+        type: 'attaquer',
+        declarer: true,
+        attaquants: ids,
+        ciblesAttaque: ciblesFinales,
+      }))
+        .then((reponse) => {
+          if (reponse?.etat) {
+            const avant = duelRef.current;
+            duelRef.current = structuredClone(reponse.etat);
+            pvpSeqAppliqueRef.current = reponse.seq ?? pvpSeqAppliqueRef.current;
+            animerModificationsChamp(champAvantAttaque, ids, 0);
+            if ((reponse.etat.sorcier?.pv ?? 0) < (avant?.sorcier?.pv ?? 0)) declencherImpactEcran('dealt');
+            if ((reponse.etat.joueur?.pv ?? 0) < (avant?.joueur?.pv ?? 0)) declencherImpactEcran('received');
+          }
+        })
+        .finally(() => {
+          pvpEnVolCountRef.current = Math.max(0, pvpEnVolCountRef.current - 1);
+          force();
+        });
+      return;
+    }
 
     if (!rpgOuvrirFenetreReponse(duel, 'joueur')) {
       return;
@@ -7905,7 +8235,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!attaquantsVivants.length) {
       rpgFermerFenetreReponse(duel);
       setCombatEntrant(null);
-      apresCombatSorcier();
+      if (modePvp) void envoyerIntentionPvp({ type: 'bloquer', blocages: {}, repartitions: null });
+      else apresCombatSorcier();
       force();
       return;
     }
@@ -7919,6 +8250,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const sonFrappeDirecte = rpgCombatSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
+    if (modePvp) rpgSyncCompteurEntites(duel);
+    const repartitionsDeclarees = combatEntrant.repartitions ?? null;
     const res = rpgLancerAttaque(
       duel,
       'sorcier',
@@ -7938,6 +8271,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
+    if (modePvp) {
+      void envoyerIntentionPvp({ type: 'bloquer', blocages, repartitions: repartitionsDeclarees });
+    }
     const frappeDirecte = res.resume.frappeSorcier > 0;
     const frappeCreature = res.resume.paires.length > 0
       || res.resume.coupsRapides.some((coup) => !coup.annule && !coup.rate);
@@ -7954,7 +8290,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCibleEnCours(null);
     if (frappeDirecte) declencherImpactEcran('received');
     signalerTutoriel('combat-adverse-resolu', { attaquants: attaquantsVivants });
-    apresCombatSorcier();
+    if (!modePvp) apresCombatSorcier();
     force();
   };
 
@@ -8068,6 +8404,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       && duel.defausseEnAttente.restant > 0
       && duel.defausseEnAttente.motif !== 'fin-de-tour';
     if (!defausseEffetEnAttente && rpgPreparerDefausseFinDeTour(duel, 'joueur') > 0) {
+      if (modePvp) void envoyerIntentionPvp({ type: 'preparer-defausse-fin-tour' });
       finTourApresDefausseRef.current = true;
       setCarteDefausseSelectionnee(null);
       jouerSfx('select');
@@ -8080,6 +8417,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCiblesAttaque({});
     setCibleEnCours(null);
     setActivationEnCours(null);
+    if (modePvp) {
+      if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
+      void envoyerIntentionPvp({ type: 'fin-de-tour' });
+      force();
+      return;
+    }
     rpgOuvrirFinDeTour(duel);
 
     const fermerTour = () => {
@@ -8663,6 +9006,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <RpgTableScene3D plateau={plateau} enabled={decor3dVisible} paused={Boolean(carteGlissee || carteEnVol || bloqueurGlisse || apercuCarte)} />
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
           <strong>LE SABLIER</strong>
+          {modePvp && (
+            <span className="rpg-duel-nav__pvp">
+              <span className="rpg-duel-nav__pvp-dot" aria-hidden="true" />
+              EN LIGNE{pvp?.code ? ` · ${pvp.code}` : ''}
+              {chronoPvp && (
+                <span
+                  className={`rpg-duel-nav__pvp-clock${msRestantesPvp !== null && msRestantesPvp <= 15000 ? ' is-urgent' : ''}`}
+                  title="Temps restant pour ce coup"
+                >
+                  ⏱ {chronoPvp}
+                </span>
+              )}
+            </span>
+          )}
           {tutorielActif && <span className="rpg-duel-nav__tutorial">PARTIE D’ENTRAÎNEMENT</span>}
           {etageHistoire && (
             <span className="rpg-duel-nav__story">
@@ -8673,9 +9030,59 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             className={`rpg-duel-nav__menu${navMenuOuvert ? ' is-open' : ''}`}
             id="rpg-duel-nav-menu"
           >
-            <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran(histoireEtageId ? (campagneDuelRef.current ? 'histoire' : 'tours') : 'jouer'); }}>Menu</button>
-            <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran('decks'); }}>Deck</button>
-            <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran('catalogue'); }}>Catalogue</button>
+            {modePvp ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNavMenuOuvert(false);
+                    setNavParametresOuvert(false);
+                    pvp?.onQuitter?.();
+                  }}
+                >
+                  ← Salon
+                </button>
+                {!vainqueur && pvp?.onAbandon && (
+                  confirmerAbandonPvp ? (
+                    <>
+                      <button
+                        type="button"
+                        className="rpg-duel-nav__abandon is-confirm"
+                        disabled={pvp?.occupe}
+                        onClick={() => {
+                          setConfirmerAbandonPvp(false);
+                          setNavMenuOuvert(false);
+                          pvp.onAbandon();
+                        }}
+                      >
+                        Confirmer l’abandon
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmerAbandonPvp(false)}
+                      >
+                        Continuer
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="rpg-duel-nav__abandon"
+                      disabled={pvp?.occupe}
+                      onClick={() => setConfirmerAbandonPvp(true)}
+                    >
+                      Abandonner
+                    </button>
+                  )
+                )}
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran(histoireEtageId ? (campagneDuelRef.current ? 'histoire' : 'tours') : 'jouer'); }}>Menu</button>
+                <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran('decks'); }}>Deck</button>
+                <button type="button" onClick={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); setEcran('catalogue'); }}>Catalogue</button>
+              </>
+            )}
             <button
               type="button"
               className={`rpg-duel-nav__settings-tab${navParametresOuvert ? ' is-open' : ''}`}
@@ -8828,12 +9235,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </p>
 
         {combatEntrant && <BlockerArrows tableRef={tableRef} assignments={combatEntrant.blocages} />}
-        <FaceDownHand count={duel.sorcier.main.length} drawAnimations={piochesSorcier} />
+        {modePvp && (mulliganAttenteAdverse || attenteBlocageAdverse || pvp?.erreur) && (
+          <div className={`rpg-pvp-table-status${pvp?.erreur ? ' is-error' : ''}`} role="status" aria-live="polite">
+            <span className="rpg-pvp-table-status__dot" aria-hidden="true" />
+            <span>
+              {pvp?.erreur
+                ? `Action refusée (${pvp.erreur}) — synchronisation en cours…`
+                : mulliganAttenteAdverse
+                  ? `En attente de ${nomSorcierAdverse} (choix de la main de départ)…`
+                  : `${nomSorcierAdverse} choisit ses bloqueurs…`}
+            </span>
+          </div>
+        )}
+        <FaceDownHand count={nbMainAdverse} drawAnimations={piochesSorcier} />
 
         <div className="rpg-card-piles rpg-card-piles--opponent" aria-label="Zones du sorcier">
           {/* Le sort du sorcier se lit au-dessus de SES piles, cerclé de rouge. */}
           {sortJoueSorcier && <SpellAnnouncement annonce={sortJoueSorcier} camp="sorcier" />}
-          <CardPile count={duel.sorcier.deck.length} label="Paquet" variant="deck" drawing={piochesSorcier.length > 0} drawToken={tokenPiocheSorcier} />
+          <CardPile count={nbDeckAdverse} label="Paquet" variant="deck" drawing={piochesSorcier.length > 0} drawToken={tokenPiocheSorcier} />
           <CardPile
             count={duel.sorcier.cimetiere.length}
             label="Cimetière"
@@ -8847,11 +9266,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
           data-tutorial-target={cibleTutoriel('opponent-health') ? 'opponent-health' : undefined}
           data-soin={soinSorcier ? soinSorcier.montant : undefined}
-          title="Le sorcier adverse">
+          title={modePvp ? nomSorcierAdverse : 'Le sorcier adverse'}>
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={portraitSorcierAdverse} data-personnage={personnageSorcier ?? undefined} alt="" /></span>
           <span className="rpg-wizard-plate__enemy-name">{nomSorcierAdverse}</span>
           <span className="rpg-wizard-plate__identity">
-            <strong>{etageHistoire ? etageHistoire.nom : tutorielActif ? 'SORCIER D’ENTRAÎNEMENT' : 'LE SORCIER'}</strong>
+            <strong>{modePvp ? nomSorcierAdverse : etageHistoire ? etageHistoire.nom : tutorielActif ? 'SORCIER D’ENTRAÎNEMENT' : 'LE SORCIER'}</strong>
             <small>{etageHistoire ? etageHistoire.fonction : tutorielActif ? 'Partie guidée · sans pression' : `${deckAdverseAffiche.name} · ${deckColorLabel(deckAdverseAffiche)}`}</small>
           </span>
           <span className="rpg-wizard-plate__pv">
@@ -8863,8 +9282,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             {soinSorcier && <span key={soinSorcier.token} className="rpg-soin-montant" aria-hidden="true">+{soinSorcier.montant}</span>}
           </span>
           <WizardManaCounters mana={duel.sorcier.mana} />
-          {sorcierReflechit && <span className="rpg-wizard-plate__thinking" aria-hidden="true"><i /> Le sorcier réfléchit…</span>}
-          <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.sorcier.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {duel.sorcier.deck.length}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.sorcier.cimetiere.length}</span></span></span>
+          {sorcierReflechit && (
+            <span className="rpg-wizard-plate__thinking" aria-hidden="true">
+              <i /> {modePvp ? `${nomSorcierAdverse} réfléchit…` : 'Le sorcier réfléchit…'}
+            </span>
+          )}
+          <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {nbMainAdverse}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckAdverse}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.sorcier.cimetiere.length}</span></span></span>
           {soinSorcier && <EclatSoin key={soinSorcier.token} />}
         </button>
 
@@ -9262,15 +9685,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onHoverCard={afficherApercuSurvol}
             onLeaveHoverCard={quitterCarteSurvol}
           />
-          <CardPile count={duel.joueur.deck.length} label="Paquet" variant="deck" drawing={piochesJoueur.length > 0} drawToken={tokenPiocheJoueur} />
+          <CardPile count={nbDeckJoueur} label="Paquet" variant="deck" drawing={piochesJoueur.length > 0} drawToken={tokenPiocheJoueur} />
         </div>
 
         <div className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' || annonceViseVotrePlate ? ' is-spell-target' : ''}${classeSoinPlaque(soinJoueur)}`} title="Vous"
           data-soin={soinJoueur ? soinJoueur.montant : undefined}
           data-tutorial-target={cibleTutoriel('player-health') ? 'player-health' : undefined}>
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" aria-hidden="true"><img src={cardArt('tin-hinan')} alt="" /></span>
-          <span className="rpg-wizard-plate__profile-name">{nomProfilJoueur}</span>
-          <span className="rpg-wizard-plate__identity"><strong>VOUS</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
+          <span className="rpg-wizard-plate__profile-name">{nomJoueurAffiche}</span>
+          <span className="rpg-wizard-plate__identity"><strong>{modePvp ? nomJoueurAffiche : 'VOUS'}</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
           <span className="rpg-wizard-plate__pv">
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
             <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
@@ -9280,7 +9703,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             {soinJoueur && <span key={soinJoueur.token} className="rpg-soin-montant" aria-hidden="true">+{soinJoueur.montant}</span>}
           </span>
           <WizardManaCounters mana={duel.joueur.mana} />
-          <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.joueur.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {duel.joueur.deck.length}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.joueur.cimetiere.length}</span></span></span>
+          <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.joueur.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckJoueur}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.joueur.cimetiere.length}</span></span></span>
           {soinJoueur && <EclatSoin key={soinJoueur.token} />}
         </div>
 
@@ -9329,7 +9752,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     // de la dernière action, lui, défait la pose entière.
                     setCibleEnCours(null);
                     carteCibleeHandIndexRef.current = null;
-                    if (duel.arriveeEnAttente?.cote === 'joueur') duel.arriveeEnAttente = null;
+                    if (duel.arriveeEnAttente?.cote === 'joueur') {
+                      duel.arriveeEnAttente = null;
+                      if (modePvp) void envoyerIntentionPvp({ type: 'renoncer-arrivee' });
+                    }
                     force();
                   }}>
                     {duel.arriveeEnAttente?.cote === 'joueur' ? 'Renoncer à la cible' : 'Annuler la cible'}
@@ -9340,6 +9766,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     // Renoncer à la faveur du Kraken : l'attente se referme,
                     // la main redevient ordinaire.
                     duel.magieGratuite = null;
+                    if (modePvp) void envoyerIntentionPvp({ type: 'renoncer-magie-gratuite' });
                     jouerSfx('annuler');
                     force();
                   }}>
@@ -9741,20 +10168,47 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {vainqueur && (
           <div className={`rpg-overlay${vainqueur === 'joueur' ? '' : ' rpg-overlay--loss'}`}>
             <h2>
-              {etageHistoire
-                ? vainqueur === 'joueur' ? 'Étage déblayé !' : 'L’étage vous repousse…'
-                : vainqueur === 'joueur' ? 'Le sorcier s’effondre !' : vainqueur === 'sorcier' ? 'Vous êtes tombé…' : 'Double chute…'}
+              {modePvp
+                ? (vainqueur === 'joueur' ? 'Victoire !' : vainqueur === 'sorcier' ? 'Défaite' : 'Match nul')
+                : etageHistoire
+                  ? vainqueur === 'joueur' ? 'Étage déblayé !' : 'L’étage vous repousse…'
+                  : vainqueur === 'joueur' ? 'Le sorcier s’effondre !' : vainqueur === 'sorcier' ? 'Vous êtes tombé…' : 'Double chute…'}
             </h2>
             <p>
-              {etageHistoire
-                ? vainqueur === 'joueur'
-                  ? `${etageHistoire.nom} ne tient plus son palier. La suite de la tour vous attend.`
-                  : `${etageHistoire.nom} vous attend au même étage : chaque duel repart à zéro.`
-                : vainqueur === 'joueur'
-                    ? 'Bab El respire : le cycle tient encore un soir.'
-                    : 'Le sable recouvre votre Nom. L’Astrolabe sonne pour quelqu’un d’autre.'}
+              {modePvp
+                ? (() => {
+                  const motif = pvp?.finRaison ?? duel.fin?.raison ?? null;
+                  if (motif === 'abandon') {
+                    return vainqueur === 'joueur'
+                      ? `${nomSorcierAdverse} a abandonné le duel.`
+                      : 'Vous avez abandonné le duel.';
+                  }
+                  if (motif === 'temps') {
+                    return vainqueur === 'joueur'
+                      ? `${nomSorcierAdverse} a dépassé le temps imparti.`
+                      : 'Le temps imparti est écoulé.';
+                  }
+                  return vainqueur === 'joueur'
+                    ? `${nomSorcierAdverse} n’a plus de points de vie. Le duel est à vous.`
+                    : vainqueur === 'sorcier'
+                      ? `${nomSorcierAdverse} remporte le duel.`
+                      : 'Les deux camps tombent au même instant.';
+                })()
+                : etageHistoire
+                  ? vainqueur === 'joueur'
+                    ? `${etageHistoire.nom} ne tient plus son palier. La suite de la tour vous attend.`
+                    : `${etageHistoire.nom} vous attend au même étage : chaque duel repart à zéro.`
+                  : vainqueur === 'joueur'
+                      ? 'Bab El respire : le cycle tient encore un soir.'
+                      : 'Le sable recouvre votre Nom. L’Astrolabe sonne pour quelqu’un d’autre.'}
             </p>
-            {etageHistoire ? (
+            {modePvp ? (
+              <div className="rpg-overlay__actions">
+                <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => pvp?.onQuitter?.()}>
+                  Retour au salon
+                </button>
+              </div>
+            ) : etageHistoire ? (
               <div className="rpg-overlay__actions">
                 {vainqueur === 'joueur' && etageSuivant && !campagneDuelRef.current && (
                   <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => demarrerEtage(etageSuivant.id)}>

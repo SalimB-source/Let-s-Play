@@ -269,12 +269,13 @@ export function rpgReglerHasard(duel, rng = Math.random) {
  * `sorcierIA` : profil de l'IA ({ niveau, style }) — voir rpgAI.js. Chaque
  * sorcier du mode Histoire peut porter le sien.
  */
-export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random, modeMana = null, joueurCouleurs = null, sorcierCouleurs = null } = {}) {
+export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random, modeMana = null, joueurCouleurs = null, sorcierCouleurs = null, pvp = false } = {}) {
   const essaiMana = modeMana === RPG_MODE_MANA_ESSAI;
   const identiteJoueur = essaiMana ? couleursManaEssai(joueurDeck, joueurCouleurs) : null;
   const identiteSorcier = essaiMana ? couleursManaEssai(sorcierDeck, sorcierCouleurs) : null;
   const duel = {
     ...(essaiMana ? { modeMana: RPG_MODE_MANA_ESSAI, manaEssaiDemarre: false } : {}),
+    ...(pvp ? { pvp: true } : {}),
     tour: 'joueur',
     joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, degatsRecus: 0, mana: manaVide(), ...(essaiMana ? etatManaEssai(identiteJoueur) : {}), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck, rng), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
     sorcier: {
@@ -555,7 +556,8 @@ export function rpgPreparerDefausseFinDeTour(duel, cote) {
  *  main encore égale à celle du départ. Un seul échange par camp. */
 export function rpgPeutMulligan(duel, cote = 'joueur') {
   if (!duel || duel.mulliganFait?.[cote]) return false;
-  if (duel.tour !== 'joueur' || duel.annonce) return false;
+  if (duel.manaEssaiDemarre || duel.annonce) return false;
+  if (!duel.pvp && duel.tour !== 'joueur') return false;
   if (!duel[cote].main.length) return false;
   if (duel[cote].main.length !== (duel.mainDepart?.[cote] ?? 0)) return false;
   return ['joueur', 'sorcier'].every((camp) => !duel[camp].creatures.length
@@ -599,11 +601,17 @@ export function rpgMulligan(duel, cote, index = [], rng = Math.random) {
   duel.mulliganFait[cote] = true;
   const nom = (carteId) => cardById(carteId)?.name ?? carteId;
   const fois = `${piochees.length} carte${piochees.length > 1 ? 's' : ''}`;
-  duel.log.push(ecartees.length
-    ? (cote === 'joueur'
-      ? `Vous écartez ${ecartees.map(nom).join(', ')} et piochez ${fois}.`
-      : `Le sorcier écarte ${ecartees.map(nom).join(', ')} et pioche ${fois}.`)
-    : (cote === 'joueur' ? 'Vous gardez votre main de départ.' : 'Le sorcier garde sa main de départ.'));
+  if (duel.pvp) {
+    duel.log.push(ecartees.length
+      ? `${cote === 'joueur' ? 'Vous échangez' : 'Le sorcier échange'} ${fois}.`
+      : (cote === 'joueur' ? 'Vous gardez votre main de départ.' : 'Le sorcier garde sa main de départ.'));
+  } else {
+    duel.log.push(ecartees.length
+      ? (cote === 'joueur'
+        ? `Vous écartez ${ecartees.map(nom).join(', ')} et piochez ${fois}.`
+        : `Le sorcier écarte ${ecartees.map(nom).join(', ')} et pioche ${fois}.`)
+      : (cote === 'joueur' ? 'Vous gardez votre main de départ.' : 'Le sorcier garde sa main de départ.'));
+  }
   return { ok: true, ecartees, piochees };
 }
 
@@ -1018,6 +1026,31 @@ function rpgInfligerSorcier(duel, cote, amount) {
 
 let uid = 0;
 const nextId = () => { uid += 1; return `entite-${uid}`; };
+
+export function rpgSyncCompteurEntites(duel) {
+  if (!duel) return 0;
+  let plusHaut = Number(duel.prochainUid) || 0;
+  for (const camp of [duel.joueur, duel.sorcier]) {
+    if (!camp) continue;
+    for (const liste of [camp.creatures, camp.terrains, camp.retoursProgrammes]) {
+      if (!Array.isArray(liste)) continue;
+      for (const item of liste) {
+        const brut = item?.id ?? item?.entite?.id ?? '';
+        const match = String(brut).match(/^entite-(\d+)$/);
+        if (match) plusHaut = Math.max(plusHaut, Number(match[1]));
+      }
+    }
+  }
+  uid = plusHaut;
+  duel.prochainUid = plusHaut;
+  return plusHaut;
+}
+
+export function rpgNoterCompteurEntites(duel) {
+  if (!duel) return 0;
+  duel.prochainUid = Math.max(Number(duel.prochainUid) || 0, uid);
+  return duel.prochainUid;
+}
 
 function creerEntiteCreature(carte) {
   return {
@@ -3381,7 +3414,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   // L'IA peut répondre à la créature avant son entrée en jeu. Dans ce cas,
   // `contrerAnnonce` paie la créature lancée ainsi que le contresort adverse.
-  if (cote === 'joueur' && !duel.annonce) {
+  if (cote === 'joueur' && !duel.annonce && !duel.pvp) {
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
   }
@@ -3611,7 +3644,7 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
   if (cible && cible.mur) return { ok: false, raison: 'mur' };
   if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
-  if (cote === 'joueur' && !duel.annonce) {
+  if (cote === 'joueur' && !duel.annonce && !duel.pvp) {
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
   }
@@ -4089,7 +4122,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
 
-  if (cote === 'joueur' && !duel.annonce) {
+  if (cote === 'joueur' && !duel.annonce && !duel.pvp) {
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) {
       // Même contrecarré, le sort gratuit a été lancé : la faveur du Kraken
@@ -5002,8 +5035,9 @@ export function rpgFinDeTour(duel) {
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && !rpgVainqueur(duel)
     && totalCapaciteMana(camp) < RPG_MANA_ESSAI_MAX) {
     camp.manaChoixEnAttente = true;
-    if (duel.tour === 'sorcier' || camp.couleurs.length === 1) {
-      rpgChoisirCouleurMana(duel, duel.tour, duel.tour === 'sorcier'
+    const autoIA = duel.tour === 'sorcier' && !duel.pvp;
+    if (autoIA || camp.couleurs.length === 1) {
+      rpgChoisirCouleurMana(duel, duel.tour, autoIA
         ? choisirCouleurManaIA(duel, 'sorcier') : camp.couleurs[0]);
     }
   }
@@ -5203,6 +5237,8 @@ export function rpgTourSorcierIA(duel, rng = Math.random) {
 
 /** Qui a gagné ? null tant que les deux sorciers tiennent debout. */
 export function rpgVainqueur(duel) {
+  if (duel?.fin?.nul) return 'egalite';
+  if (duel?.fin?.gagnant) return duel.fin.gagnant;
   const joueur = duel.joueur.pv <= 0;
   const sorcier = duel.sorcier.pv <= 0;
   if (joueur && sorcier) return 'egalite';

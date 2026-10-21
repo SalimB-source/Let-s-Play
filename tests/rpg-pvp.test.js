@@ -277,3 +277,106 @@ test('le hasard est reprenable à l’identique après un aller-retour de sauveg
   assert.equal(troisPremiers.length, 3);
   assert.notDeepEqual(troisPremiers, suiteOriginale, 'la suite avance bien');
 });
+
+test('les deux sièges remplacent réellement leurs cartes au mulligan avant le démarrage du mana', () => {
+  const duel = rpgNouveauDuel({
+    joueurDeck: DECK_A,
+    sorcierDeck: DECK_B,
+    modeMana: RPG_MODE_MANA_ESSAI,
+    pvp: true,
+  });
+  rpgPvpBrancherHasard(duel, 77);
+  assert.equal(duel.manaEssaiDemarre, false);
+
+  const ecarteeHote = duel.joueur.main[1];
+  const ecarteeInvite = duel.sorcier.main[1];
+
+  const m1 = rpgPvpAppliquer(duel, 'joueur', { type: 'mulligan', index: [1] });
+  assert.equal(m1.ok, true);
+  assert.equal(duel.manaEssaiDemarre, false, 'la table attend encore le second mulligan');
+
+  const m2 = rpgPvpAppliquer(duel, 'sorcier', { type: 'mulligan', index: [1] });
+  assert.equal(m2.ok, true);
+  assert.equal(duel.manaEssaiDemarre, true, 'le mana démarre dès que les deux joueurs sont prêts');
+  assert.equal(duel.joueur.main.length, 3);
+  assert.equal(duel.sorcier.main.length, 3);
+  assert.ok(duel.hasard.compteur > 0, 'le mélange semé a bien été consommé par les deux mulligans');
+});
+
+test('combat PvP en deux temps : déclaration publique, blocage adverse et identifiants monotones', async () => {
+  const { RPG_DECKS, cardById } = await import('../src/games/rpgCards.js');
+  const deckA = RPG_DECKS[0].cardIds;
+  const deckB = RPG_DECKS[1].cardIds;
+  const duel = rpgNouveauDuel({
+    joueurDeck: deckA,
+    sorcierDeck: deckB,
+    modeMana: RPG_MODE_MANA_ESSAI,
+    pvp: true,
+  });
+  rpgPvpBrancherHasard(duel, 91);
+  rpgPvpAppliquer(duel, 'joueur', { type: 'mulligan', index: [] });
+  rpgPvpAppliquer(duel, 'sorcier', { type: 'mulligan', index: [] });
+  for (const camp of ['joueur', 'sorcier']) {
+    if (duel[camp].manaChoixEnAttente) {
+      rpgPvpAppliquer(duel, camp, { type: 'choix-mana', couleur: duel[camp].couleurs[0] });
+    }
+  }
+
+  // Deux créatures robustes sans arrivée destructrice, protection ni vol, pour que le blocage croisé soit légal.
+  const estSimple = (c) => c?.kind === 'creature' && !c.arrivee && !c.sacrifice && !c.protection && !c.vol && !c.imbattable && !c.mur;
+  const creatureSimple = deckA.find((id) => estSimple(cardById(id)));
+  const creatureAdverse = deckB.find((id) => estSimple(cardById(id)) && !cardById(id)?.destruction);
+  duel.joueur.main[0] = creatureSimple;
+  duel.sorcier.main[0] = creatureAdverse;
+  duel.joueur.mana = { braise: 8, eau: 8, sable: 8, neige: 8, tenebres: 8 };
+  duel.sorcier.mana = { braise: 8, eau: 8, sable: 8, neige: 8, tenebres: 8 };
+  duel.joueur.manaMax = { braise: 8, eau: 8, sable: 8, neige: 8, tenebres: 8 };
+  duel.sorcier.manaMax = { braise: 8, eau: 8, sable: 8, neige: 8, tenebres: 8 };
+
+  assert.equal(rpgPvpAppliquer(duel, 'joueur', { type: 'jouer-carte', carteId: creatureSimple, cibleDifferee: true }).ok, true);
+  if (duel.arriveeEnAttente) rpgPvpAppliquer(duel, 'joueur', { type: 'renoncer-arrivee' });
+  const idPremiere = duel.joueur.creatures[0].id;
+  assert.ok(duel.prochainUid >= 1);
+
+  // Aller-retour JSON (comme entre deux invocations serverless) : l'ID suivant ne collisionne jamais.
+  const recharge = JSON.parse(JSON.stringify(duel));
+  rpgPvpAppliquer(recharge, 'joueur', { type: 'fin-de-tour' });
+  if (recharge.sorcier.manaChoixEnAttente) {
+    rpgPvpAppliquer(recharge, 'sorcier', { type: 'choix-mana', couleur: recharge.sorcier.couleurs[0] });
+  }
+  recharge.sorcier.mana = { braise: 8, eau: 8, sable: 8, neige: 8, tenebres: 8 };
+  const poseSorcier = rpgPvpAppliquer(recharge, 'sorcier', { type: 'jouer-carte', carteId: creatureAdverse, cibleDifferee: true });
+  assert.equal(poseSorcier.ok, true);
+  if (recharge.arriveeEnAttente) rpgPvpAppliquer(recharge, 'sorcier', { type: 'renoncer-arrivee' });
+  assert.equal(recharge.sorcier.creatures.length, 1);
+  assert.notEqual(recharge.sorcier.creatures[0].id, idPremiere);
+
+  // Retour au tour du joueur : sa créature est prête et l'adversaire a un bloqueur légal.
+  rpgPvpAppliquer(recharge, 'sorcier', { type: 'fin-de-tour' });
+  if (recharge.joueur.manaChoixEnAttente) {
+    rpgPvpAppliquer(recharge, 'joueur', { type: 'choix-mana', couleur: recharge.joueur.couleurs[0] });
+  }
+
+  const decl = rpgPvpAppliquer(recharge, 'joueur', {
+    type: 'attaquer',
+    declarer: true,
+    attaquants: [idPremiere],
+    ciblesAttaque: {},
+  });
+  assert.equal(decl.ok, true);
+  assert.equal(recharge.phase, 'blocage', 'le combat attend le choix de blocage du défenseur humain');
+  assert.equal(rpgPvpCoteActif(recharge), 'sorcier', 'le défenseur humain a la main pour bloquer');
+
+  const vueDefenseur = rpgPvpVue(recharge, 'sorcier');
+  assert.equal(vueDefenseur.combatDeclare.cote, 'sorcier', 'l’attaque entrante est retournée côté défenseur');
+
+  const resol = rpgPvpAppliquer(recharge, 'sorcier', {
+    type: 'bloquer',
+    blocages: { [idPremiere]: [recharge.sorcier.creatures[0].id] },
+    repartitions: null,
+  });
+  assert.equal(resol.ok, true);
+  assert.equal(recharge.phase, 'principale2');
+  assert.equal(rpgPvpCoteActif(recharge), 'joueur');
+});
+

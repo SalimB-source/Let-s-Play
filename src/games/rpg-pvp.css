@@ -589,3 +589,116 @@ body.rpg-pvp-lock { overflow: hidden; }
 @media (max-height: 480px) {
   .rpg-pvp-page--compact .rpg-pvp-page__barre { position: static; min-height: 36px; }
 }
+
+/* --------------------- HUD PvP sur la vraie table de duel ------------------- */
+
+.rpg-duel-nav__pvp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(233, 196, 106, .34);
+  background: rgba(18, 15, 28, .82);
+  color: #f4e6c1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  font-variant-numeric: tabular-nums;
+}
+.rpg-duel-nav__pvp-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #52d68a;
+  box-shadow: 0 0 8px rgba(82, 214, 138, .85);
+}
+.rpg-duel-nav__pvp-clock {
+  margin-left: 2px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(233, 196, 106, .14);
+  border: 1px solid rgba(233, 196, 106, .32);
+  color: #ffe8a3;
+  letter-spacing: .06em;
+}
+.rpg-duel-nav__pvp-clock.is-urgent {
+  background: rgba(210, 62, 62, .28);
+  border-color: rgba(255, 118, 118, .7);
+  color: #ffd6d6;
+}
+.rpg-duel-nav__abandon {
+  color: #f5b9b0 !important;
+}
+.rpg-duel-nav__abandon.is-confirm {
+  background: rgba(190, 52, 52, .35) !important;
+  border-color: rgba(255, 130, 130, .65) !important;
+  color: #fff2f2 !important;
+}
+
+.rpg-pvp-table-status {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 42;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(233, 196, 106, .42);
+  background: rgba(14, 12, 22, .9);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .52);
+  color: #f4efe4;
+  font-size: 12.5px;
+  letter-spacing: .03em;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+.rpg-pvp-table-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e9c46a;
+  box-shadow: 0 0 10px rgba(233, 196, 106, .9);
+  animation: rpg-pvp-pulse 1.35s ease-in-out infinite;
+}
+.rpg-pvp-table-status.is-error {
+  border-color: rgba(235, 106, 90, .7);
+  background: rgba(44, 16, 18, .92);
+  color: #ffd8d2;
+}
+.rpg-pvp-table-status.is-error .rpg-pvp-table-status__dot {
+  background: #ff7a6b;
+  box-shadow: 0 0 10px rgba(255, 122, 107, .9);
+}
+
+.rpg-battle--pvp-loading {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  background: radial-gradient(circle at 50% 42%, #1d1730 0%, #0b0913 72%);
+  color: #f4efe4;
+}
+.rpg-pvp-loading-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 32px;
+  border-radius: 18px;
+  border: 1px solid rgba(233, 196, 106, .3);
+  background: rgba(14, 12, 22, .85);
+}
+.rpg-pvp-loading-eyebrow {
+  font-size: 11px;
+  letter-spacing: .22em;
+  color: #e9c46a;
+}
+
+@keyframes rpg-pvp-pulse {
+  0%, 100% { opacity: .45; transform: scale(.88); }
+  50% { opacity: 1; transform: scale(1.14); }
+}
+

@@ -43,6 +43,8 @@ import {
   rpgPvpBrancherHasard,
   rpgPvpCode,
   rpgPvpCodeAleatoire,
+  rpgPvpCoteActif,
+  rpgPvpNommerLog,
   rpgPvpResultat,
   rpgPvpVue,
 } from '../games/rpgPvp.js';
@@ -118,6 +120,27 @@ function memeDeck(a, b) {
 }
 
 /**
+ * Métadonnées publiques d'un deck (aucune liste de cartes privées ne sort) :
+ * l'identifiant du coffret s'il vient du catalogue, sinon ses seules couleurs.
+ */
+function infoDeckPublic(deckIds, couleursFallback = []) {
+  if (!Array.isArray(deckIds)) return null;
+  const catalogue = RPG_DECKS.find((candidat) => memeDeck(candidat.cardIds, deckIds));
+  if (catalogue) {
+    return {
+      id: catalogue.id,
+      name: catalogue.name,
+      elements: [...(catalogue.elements ?? couleursFallback)],
+    };
+  }
+  return {
+    id: null,
+    name: 'Deck composé',
+    elements: [...couleursFallback],
+  };
+}
+
+/**
  * État de départ d'un duel : les deux decks mélangés avec la graine du duel.
  * Le compteur du hasard est amorcé sur ce que le mélange a consommé, pour que
  * la suite des tirages soit reprise à l'identique après un rechargement.
@@ -135,6 +158,7 @@ export function etatInitial(deckHote, deckInvite, graine) {
     sorcierPuissance: 0,
     sorcierIA: null,
     modeMana: RPG_MODE_MANA_ESSAI,
+    pvp: true,
     rng,
   });
   etat.hasard = { graine, compteur: consommes };
@@ -162,6 +186,20 @@ export function creerArbitre({
 
   const horlogeDe = (mode) => RPG_PVP_HORLOGES[mode === 'async' ? 'rappelAsync' : 'live'];
   const echeanceDe = (mode, depart) => new Date(depart + horlogeDe(mode)).toISOString();
+
+  async function nomsDuDuel(duel) {
+    return {
+      joueur: (await magasin.nomDe(duel.hote_id)) || 'Hôte',
+      sorcier: duel.invite_id ? (await magasin.nomDe(duel.invite_id)) || 'Invité' : 'Invité',
+    };
+  }
+
+  /** Réécrit les nouvelles lignes de journal produites à partir de `debut`. */
+  function nommerNouvellesEntrees(etat, debut, acteur, noms) {
+    if (!Array.isArray(etat?.log) || debut >= etat.log.length) return;
+    const nouvelles = rpgPvpNommerLog(etat.log.slice(debut), acteur, noms);
+    etat.log.splice(debut, etat.log.length - debut, ...nouvelles);
+  }
 
   /** Un code libre, en insistant un peu : 8 hexadécimaux, 4 milliards de possibilités. */
   async function codeLibre() {
@@ -221,14 +259,16 @@ export function creerArbitre({
 
   /** La réponse d'une partie en cours : vue filtrée, jamais l'état complet. */
   async function etatPublic(duel, siege) {
-    const noms = {
-      joueur: (await magasin.nomDe(duel.hote_id)) || 'Hôte',
-      sorcier: duel.invite_id ? (await magasin.nomDe(duel.invite_id)) || 'Invité' : 'Invité',
-    };
+    const noms = await nomsDuDuel(duel);
     const departInvitation = Date.parse(duel.dernier_coup || '');
     const expireLe = Number.isFinite(departInvitation)
       ? new Date(departInvitation + RPG_PVP_HORLOGES.invitation).toISOString()
       : null;
+    const deckHoteInfo = infoDeckPublic(duel.hote_deck, duel.etat?.joueur?.couleurs ?? []);
+    const deckInviteInfo = infoDeckPublic(duel.invite_deck, duel.etat?.sorcier?.couleurs ?? []);
+    const decks = siege === 'sorcier'
+      ? { joueur: deckInviteInfo, sorcier: deckHoteInfo }
+      : { joueur: deckHoteInfo, sorcier: deckInviteInfo };
     const corps = {
       ok: true,
       code: duel.code,
@@ -242,11 +282,17 @@ export function creerArbitre({
       gagnant_id: duel.gagnant_id ?? null,
       fin_raison: duel.fin_raison ?? null,
       noms,
+      decks,
       hote_id: duel.hote_id,
       invite_id: duel.invite_id ?? null,
       etat: duel.etat && duel.statut !== 'invitation' ? rpgPvpVue(duel.etat, siege) : null,
     };
-    if (corps.etat) corps.etat.noms = noms;
+    if (corps.etat) {
+      corps.etat.noms = siege === 'sorcier'
+        ? { joueur: noms.sorcier, sorcier: noms.joueur }
+        : noms;
+      corps.etat.decks = decks;
+    }
     return reponse(200, corps);
   }
 
@@ -259,12 +305,49 @@ export function creerArbitre({
     if (maintenant() < Date.parse(duel.echeance)) return duel;
     const etat = duel.etat;
     rpgPvpBrancherHasard(etat);
-    const actif = etat.tour;
+    const noms = await nomsDuDuel(duel);
     etat.retards = etat.retards ?? { joueur: 0, sorcier: 0 };
+
+    // Mulligan non validé à temps : on garde la main de départ des retardataires.
+    const mulligansFaits = etat.mulliganFait?.joueur && etat.mulliganFait?.sorcier;
+    if (!mulligansFaits) {
+      let avance = false;
+      for (const camp of ['joueur', 'sorcier']) {
+        if (etat.mulliganFait?.[camp]) continue;
+        etat.retards[camp] = (etat.retards[camp] ?? 0) + 1;
+        const debut = etat.log.length;
+        if (rpgPvpAppliquer(etat, camp, { type: 'mulligan', index: [] }).ok) {
+          nommerNouvellesEntrees(etat, debut, camp, noms);
+          avance = true;
+        }
+      }
+      if (etat.modeMana === RPG_MODE_MANA_ESSAI
+        && !etat.manaEssaiDemarre
+        && etat.mulliganFait?.joueur
+        && etat.mulliganFait?.sorcier) {
+        const debut = etat.log.length;
+        rpgDemarrerManaEssai(etat);
+        nommerNouvellesEntrees(etat, debut, 'joueur', noms);
+      }
+      const patch = {
+        etat,
+        seq: duel.seq + (avance ? 1 : 0),
+        tour: etat.tour,
+        dernier_coup: new Date(maintenant()).toISOString(),
+        echeance: echeanceDe(duel.mode, maintenant()),
+        ...(await issue(duel, etat)),
+      };
+      const maj = await magasin.mettreAJourDuel(duel.code, duel.seq, patch);
+      return maj ?? (await magasin.duelParCode(duel.code)) ?? duel;
+    }
+
+    const actif = rpgPvpCoteActif(etat) ?? etat.tour;
     etat.retards[actif] = (etat.retards[actif] ?? 0) + 1;
 
     let patch;
     if (etat.retards[actif] >= OUBLIS_AVANT_ABANDON) {
+      const gagnantCote = rpgPvpAutreCote(actif);
+      etat.fin = { gagnant: gagnantCote, raison: 'temps' };
       patch = {
         etat,
         seq: duel.seq + 1,
@@ -272,11 +355,29 @@ export function creerArbitre({
         gagnant_id: actif === 'joueur' ? duel.invite_id : duel.hote_id,
         fin_raison: 'temps',
       };
+    } else if (etat.phase === 'blocage') {
+      const debut = etat.log.length;
+      const resolu = rpgPvpAppliquer(etat, actif, { type: 'bloquer', blocages: {} }).ok;
+      if (resolu) nommerNouvellesEntrees(etat, debut, etat.tour, noms);
+      patch = {
+        etat,
+        seq: duel.seq + (resolu ? 1 : 0),
+        tour: etat.tour,
+        ...(await issue(duel, etat)),
+      };
     } else {
-      // Le tour se ferme d'office : un absent ne bloque pas la partie. Si le
-      // moteur refuse (mulligan pas encore fait, défausse en attente…), on ne
-      // touche à rien d'autre que l'échéance.
+      // Un joueur multicolore absent n'a pas encore choisi son mana : on
+      // choisit sa première couleur pour que la fin de tour puisse passer.
+      if (etat.modeMana === RPG_MODE_MANA_ESSAI && etat[actif]?.manaChoixEnAttente && etat[actif]?.couleurs?.[0]) {
+        const debutMana = etat.log.length;
+        if (rpgPvpAppliquer(etat, actif, { type: 'choix-mana', couleur: etat[actif].couleurs[0] }).ok) {
+          nommerNouvellesEntrees(etat, debutMana, actif, noms);
+        }
+      }
+      // Le tour se ferme d'office : un absent ne bloque pas la partie.
+      const debut = etat.log.length;
       const ferme = rpgPvpAppliquer(etat, actif, { type: 'fin-de-tour' }).ok;
+      if (ferme) nommerNouvellesEntrees(etat, debut, actif, noms);
       patch = {
         etat,
         seq: duel.seq + (ferme ? 1 : 0),
@@ -432,6 +533,8 @@ export function creerArbitre({
 
       const etat = duel.etat;
       rpgPvpBrancherHasard(etat);
+      const noms = await nomsDuDuel(duel);
+      const debutLog = etat.log.length;
       const resultat = rpgPvpAppliquer(etat, vu.siege, corps.intention);
       if (!resultat.ok) {
         return refus(400, resultat.raison, {
@@ -439,13 +542,17 @@ export function creerArbitre({
           etat: rpgPvpVue(etat, vu.siege),
         });
       }
+      nommerNouvellesEntrees(etat, debutLog, vu.siege, noms);
+
       // Les deux mulligans faits : le premier mana arrive. Le moteur le demande
       // dans `rpgDemarrerManaEssai`, que la page appelle aussi de son côté.
       if (etat.modeMana === RPG_MODE_MANA_ESSAI
         && !etat.manaEssaiDemarre
         && etat.mulliganFait?.joueur
         && etat.mulliganFait?.sorcier) {
+        const debutMana = etat.log.length;
         rpgDemarrerManaEssai(etat);
+        nommerNouvellesEntrees(etat, debutMana, 'joueur', noms);
       }
 
       const depart = maintenant();
@@ -488,7 +595,12 @@ export function creerArbitre({
       if (vu.erreur) return vu.erreur;
       if (vu.duel.statut !== 'en_cours') return refus(409, 'partie-close');
       const adversaire = rpgPvpAutreCote(vu.siege);
+      const etat = vu.duel.etat ? structuredClone(vu.duel.etat) : null;
+      if (etat && !etat.fin?.gagnant) {
+        etat.fin = { gagnant: adversaire, raison: 'abandon' };
+      }
       const maj = await magasin.mettreAJourDuel(vu.duel.code, vu.duel.seq ?? 0, {
+        ...(etat ? { etat, seq: (vu.duel.seq ?? 0) + 1 } : {}),
         statut: 'terminee',
         gagnant_id: adversaire === 'joueur' ? vu.duel.hote_id : vu.duel.invite_id,
         fin_raison: 'abandon',

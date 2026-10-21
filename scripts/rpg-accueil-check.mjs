@@ -237,19 +237,19 @@ assert.match(
   'les onglets autres que Jouer tamisent l’artwork derrière leur contenu',
 );
 
-// La même gouttière partout : chaque écran garde sa colonne, pas sa marge.
+// La même gouttière partout (sauf Decks qui s'étale plein large) : chaque écran garde sa colonne, pas sa marge.
 const regleGouttiere = battleCss.match(/\.rpg-mode-menu--histoire \.rpg-story,[\s\S]*?\n\}/);
 assert.ok(regleGouttiere, 'la gouttière des onglets est posée par une règle commune');
 for (const ecran of [
   'rpg-mode-menu--histoire .rpg-story',
   'rpg-mode-menu--tours .rpg-story',
-  'rpg-mode-menu--decks .rpg-deck-catalog',
   'rpg-mode-menu--catalogue .rpg-card-catalogue',
   'rpg-mode-menu--parametres .rpg-settings',
   'rpg-mode-menu--souk .rpg-souk',
 ]) {
   assert.ok(regleGouttiere[0].includes(ecran), `l’onglet ${ecran.split('--')[1].split(' ')[0]} prend la gouttière commune`);
 }
+assert.match(battleCss, /\.rpg-mode-menu--decks \.rpg-deck-catalog \{/, 'l’onglet decks prend le plein large');
 assert.match(
   regleGouttiere[0],
   /padding:\s*clamp\(14px, 2\.1vw, 26px\)\s*clamp\(14px, 3\.8vw, 56px\)\s*clamp\(24px, 4\.2vh, 46px\);/,
@@ -327,11 +327,23 @@ assert.match(
   'sur une rangée de quatre, les pieds de carte s’alignent en bas',
 );
 
-// L'étagère du Deck : cinq boîtiers de front, et l'atelier à la même taille.
+const pvpBoard = read('../src/games/RpgPvpBoard.jsx');
+assert.match(
+  pvpBoard,
+  /import RpgDuelPage from '\.\/RpgDuelPage\.jsx';[\s\S]*<RpgDuelPage[\s\S]*pvp=\{\{/,
+  'le plateau PvP monte la vraie table plein écran RpgDuelPage au lieu d’un résumé textuel',
+);
+assert.doesNotMatch(
+  pvpBoard,
+  /rpg-pvp--duel/,
+  'le vieux prototype textuel du duel en ligne a disparu de RpgPvpBoard',
+);
+
+// L'étagère du Deck : boîtiers fluides auto-fit, et l'atelier à la même taille.
 assert.match(
   deckCss,
-  /\.rpg-deck-catalog--closed \.rpg-deck-catalog__choices \{\s*display: grid;\s*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/,
-  'l’étagère du Deck range les coffrets sur cinq colonnes',
+  /\.rpg-deck-catalog--closed \.rpg-deck-catalog__choices \{\s*display: grid;\s*grid-template-columns: repeat\(auto-fit, minmax\(min\(100%, 200px\), 1fr\)\);/,
+  'l’étagère du Deck range les coffrets en grille auto-fit',
 );
 assert.match(
   deckCss,
