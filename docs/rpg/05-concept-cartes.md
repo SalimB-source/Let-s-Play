@@ -152,6 +152,49 @@ Le choix de la cible pendant la phase du sorcier (une Magie Rapide qui renvoie
 une créature, par exemple) garde son cours d'origine : là, la carte est un sort
 lancé depuis la main, elle n'a pas à se poser avant de désigner.
 
+### La protection : un écran de couleur, pour l'IA comme pour le joueur
+
+Une créature **protégée contre une couleur** — Tiziri et la Braise, Amayas et
+les Ténèbres, l'Armure de cendres portée — est intouchable par **tout ce qui
+vient de cette couleur** : `rpgEstProtegee(entite, couleursSource)` est la
+seule porte d'entrée, et le moteur l'applique partout de la même façon.
+
+- **Dégâts** : attaque, capacité d'arrivée, magie et vague de zone sont
+  annulés (`rpgBlesserCreature`, `appliquerDegatsDeCombatSimultanes`) ; le gel
+  de couleur est annulé de la même façon.
+- **Ciblage** : un sort ne peut pas la désigner (`rpgLancerMagie` répond
+  `protection`), pas plus qu'un renvoi en main, une marque de venin ou un
+  équipement. Le **Serpent du monde** étend cet écran à toutes les magies
+  (`protectionSorts`), même en zone.
+- **Blocage** : une créature protégée contre la couleur de l'attaquant
+  **arrête son attaque sans une égratignure** — elle encaisse zéro et survit
+  toujours. Inversement, la protection de l'attaquant interdit à une créature
+  de cette couleur de le bloquer (`raison: 'protection'`).
+
+L'IA lit les protections avec la même règle, et pas seulement au moment de
+payer :
+
+- `resultatBlocage` simule l'échange **avec** les couleurs des deux cartes :
+  un bloqueur protégé ne meurt pas de ce coup-là, un attaquant protégé ne
+  subit aucune riposte ;
+- un blocage **gratuit** (la bloqueuse ne peut pas mourir de cet échange) se
+  prend toujours, quel que soit le profil ;
+- une attaque qui s'arrêterait sur un mur protégé — aucune percée, aucune
+  blessure rendue, et notre créature entamée pour rien — est comptée comme un
+  **gaspillage** (`choisirAttaquantsIA`) : l'IA garde son attaquant au camp ;
+- une vague de zone ne compte que les créatures que la protection laisse
+  toucher : un Vent rouge sur une table protégée contre la Braise reste en
+  main (`scoreCarte`) ;
+- aucune cible désignée chez l'adversaire n'est protégée contre la couleur de
+  la carte (`candidatsCartesIA`) : la carte n'est jamais annoncée pour être
+  refusée par le moteur — un refus couperait le tour du sorcier ;
+- une table entièrement protégée ne bloque pas le développement : le Cavalier
+  entre en jeu **sans frapper** (l'arrivée ne désigne plus personne) au lieu de
+  rester en main.
+
+Vérifications : `tests/rpg-ia.test.js`, section « Protection : l’IA respecte
+l’écran de couleur ».
+
 ### Les capacités de clan du Nord
 
 Deux capacités appartiennent au set **Neige** et à lui seul ; elles se lisent

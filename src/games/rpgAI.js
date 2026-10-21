@@ -101,6 +101,31 @@ function estProtegee(entite, couleurs) {
   ));
 }
 
+/** Couleurs imprimées d'une entité en jeu — celles qui frappent quand elle
+ *  attaque ou qu'elle bloque. Un jeton sans fiche n'a pas de couleur : aucune
+ *  protection ne s'oppose à ses coups. */
+function couleursEntite(entite) {
+  return cardColors(duelCardById(entite?.carteId));
+}
+
+/** Dégâts qu'un coup de ces couleurs laisse vraiment : la protection fait
+ *  écran à TOUT dégât de la couleur protégée, quelle que soit sa source —
+ *  attaque, capacité, magie — exactement comme `rpgBlesserCreature`. */
+function degatsSubis(entite, montant, couleursSource, sourceType = 'attaque') {
+  if (estProtegee(entite, couleursSource)) return 0;
+  return degatsApresEsquive(entite, montant, sourceType);
+}
+
+/** Blessure nette d'un coup de ces couleurs (Esquive, bouclier, protection). */
+function blessureSousCouleurs(entite, montant, couleursSource, sourceType = 'attaque') {
+  return estProtegee(entite, couleursSource) ? 0 : blessureNette(entite, montant, sourceType);
+}
+
+/** La créature meurt-elle sous ce coup-là ? La protection la sauve. */
+function meurtSousCouleurs(entite, montant, couleursSource, sourceType = 'attaque') {
+  return !estProtegee(entite, couleursSource) && meurtSous(entite, montant, sourceType);
+}
+
 /** Gelée (la Poigne de givre, le Verglas) : ni attaque ni blocage. */
 function estGelee(entite) {
   return (entite?.gelToursRestants ?? 0) > 0;
@@ -203,17 +228,24 @@ function degatsAvantCombat(carte) {
 export function resultatBlocage(attaquant, bloqueur) {
   const carteA = duelCardById(attaquant?.carteId) ?? {};
   const carteB = duelCardById(bloqueur?.carteId) ?? {};
-  let blessureA = blessureNette(attaquant, degatsAvantCombat(carteB), 'capacite');
-  let blessureB = blessureNette(bloqueur, degatsAvantCombat(carteA), 'capacite');
-  const attaquantVit = !meurtSous(attaquant, degatsAvantCombat(carteB), 'capacite');
-  const bloqueurVit = !meurtSous(bloqueur, degatsAvantCombat(carteA), 'capacite');
+  // Couleurs des deux combattants : la protection fait écran aux coups de la
+  // couleur protégée, capacité préalable comprise. Un bloqueur protégé contre
+  // la couleur de l'attaquant encaisse donc 0 et survit toujours ; un attaquant
+  // protégé contre la couleur du bloqueur ne subit, lui, aucune riposte — le
+  // moteur refuse d'ailleurs ce blocage-là (`rpgEstProtegee` sur l'attaquant).
+  const couleursA = cardColors(carteA);
+  const couleursB = cardColors(carteB);
+  let blessureA = blessureSousCouleurs(attaquant, degatsAvantCombat(carteB), couleursB, 'capacite');
+  let blessureB = blessureSousCouleurs(bloqueur, degatsAvantCombat(carteA), couleursA, 'capacite');
+  const attaquantVit = !meurtSousCouleurs(attaquant, degatsAvantCombat(carteB), couleursB, 'capacite');
+  const bloqueurVit = !meurtSousCouleurs(bloqueur, degatsAvantCombat(carteA), couleursA, 'capacite');
   let attaquantMeurt = !attaquantVit;
   let bloqueurMeurt = !bloqueurVit;
   if (attaquantVit && bloqueurVit) {
-    attaquantMeurt = meurtSous(attaquant, bloqueur.atk, 'attaque');
-    bloqueurMeurt = meurtSous(bloqueur, attaquant.atk, 'attaque');
-    blessureA += blessureNette(attaquant, bloqueur.atk, 'attaque');
-    blessureB += blessureNette(bloqueur, attaquant.atk, 'attaque');
+    attaquantMeurt = meurtSousCouleurs(attaquant, bloqueur.atk, couleursB, 'attaque');
+    bloqueurMeurt = meurtSousCouleurs(bloqueur, attaquant.atk, couleursA, 'attaque');
+    blessureA += blessureSousCouleurs(attaquant, bloqueur.atk, couleursB, 'attaque');
+    blessureB += blessureSousCouleurs(bloqueur, attaquant.atk, couleursA, 'attaque');
   }
   return {
     attaquantMeurt,
@@ -499,8 +531,11 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
     // Tour prioritaire : seulement si on la tue ou si on n'a rien de mieux à faire.
     // Attaquer une Tour 0/5 avec 3 d'attaque sans la tuer gaspille la frappe.
     if (toursPrioritaires.length > 0) {
-      const tourCiblee = toursPrioritaires[0];
-      if (meurtSous(tourCiblee, attaquant.atk, 'attaque')) {
+      // Une Tour protégée contre la couleur de l'attaquant ignore sa frappe :
+      // le moteur refuserait même la désignation (`protection`), l'IA l'écarte.
+      const tourCiblee = toursPrioritaires
+        .find((tour) => !estProtegee(tour, couleursEntite(attaquant)));
+      if (tourCiblee && meurtSousCouleurs(tourCiblee, attaquant.atk, couleursEntite(attaquant), 'attaque')) {
         // On tue la Tour : priorité absolue, même si d'autres cibles valent plus.
         cibles[attaquant.id] = tourCiblee.id;
         continue;
@@ -572,8 +607,16 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   const scoreBlocage = (attaquant, bloqueur) => {
     const { attaquantMeurt, bloqueurMeurt, attaquantFurie, bloqueurFurie } = resultatBlocage(attaquant, bloqueur);
     const degatsEvites = Math.min(attaquant.atk ?? 0, pvDefense());
-    const degatsRecus = degatsApresEsquive(bloqueur, attaquant.atk ?? 0, 'attaque');
+    // Protection : un bloqueur protégé contre la couleur de l'attaquant
+    // encaisse tout sans une égratignure. Il arrête l'attaque gratuitement et
+    // ne peut pas mourir de cet échange — l'IA ne laisse jamais passer une
+    // telle aubaine, quel que soit son seuil d'agressivité.
+    const bloqueurImmunise = estProtegee(bloqueur, couleursEntite(attaquant));
+    const degatsRecus = degatsSubis(bloqueur, attaquant.atk ?? 0, couleursEntite(attaquant), 'attaque');
     const furie = bloqueurFurie * 0.9 - attaquantFurie * 1.6;
+    if (bloqueurImmunise) {
+      return (attaquantMeurt ? 24 : 14) + degatsEvites * 0.15 + furie;
+    }
     // 1) On tue sans mourir : toujours excellent.
     if (attaquantMeurt && !bloqueurMeurt) return 20 + valeurEntite(attaquant) + degatsEvites * 0.15 + furie;
     if (attaquantMeurt && bloqueurMeurt) {
@@ -732,6 +775,11 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
     let leurPerte = 0;
     let notreFurie = 0;
     let leurFurie = 0;
+    // Une attaque arrêtée par un bloqueur protégé contre sa couleur ne rend
+    // rien : pas de percée, aucune blessure à l'adversaire, et notre créature
+    // s'entame pour rien. Ce gaspillage compte contre la déclaration — sinon
+    // l'assaut paraît « neutre » et l'IA tire dans le mur.
+    let gaspillage = 0;
     for (const attaquant of ensemble) {
       // Sa frappe l'a arrêté avant les blessures de combat.
       if (ciblesRapides[attaquant.id]) continue;
@@ -744,6 +792,10 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
         continue;
       }
       const echange = resultatBlocage(attaquant, bloqueur);
+      const couleursAttaquant = couleursEntite(attaquant);
+      if (estProtegee(bloqueur, couleursAttaquant)) {
+        gaspillage += 1.2 + degatsSubis(attaquant, bloqueur.atk, couleursEntite(bloqueur), 'attaque') * 0.25;
+      }
       if (echange.attaquantMeurt) notrePerte += valeurEntite(attaquant);
       else notreFurie += echange.attaquantFurie * 0.8;
       if (echange.bloqueurMeurt) leurPerte += valeurEntite(bloqueur);
@@ -753,14 +805,18 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
       const attaquant = ensemble.find((entite) => entite.id === id);
       const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
       if (!attaquant || !cible) continue;
-      if (meurtSous(cible, attaquant.atk, 'attaque')) leurPerte += valeurEntite(cible);
-      else leurPerte += menace(cible) * 0.3;
+      if (meurtSousCouleurs(cible, attaquant.atk, couleursEntite(attaquant), 'attaque')) {
+        leurPerte += valeurEntite(cible);
+      } else {
+        leurPerte += menace(cible) * 0.3;
+      }
     }
     return {
       face,
       notrePerte,
       leurPerte,
-      score: face + leurPerte - notrePerte + notreFurie - leurFurie,
+      gaspillage,
+      score: face + leurPerte - notrePerte + notreFurie - leurFurie - gaspillage,
     };
   };
 
@@ -938,8 +994,10 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   if (carte.kind === 'magie' || magieById(carte.id)) {
     const effet = carte.effet ?? {};
     if (effet.type === 'destruction-totale') {
+      // La protection de couleur et le Serpent du monde (protégé des magies)
+      // écartent la vague : la créature survit sans rien encaisser.
       const pertes = (c) => duel[c].creatures
-        .filter((entite) => !estProtegee(entite, cardColors(carte)))
+        .filter((entite) => !estProtegee(entite, cardColors(carte)) && !horsDAtteinteDuSort(entite, carte))
         .reduce((somme, entite) => somme + valeurEntite(entite)
           * (entite.tenaciteDisponible ? 0.25 : 1), 0);
       const gain = pertes(adv) - pertes(cote);
@@ -948,8 +1006,15 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     if (effet.type === 'degats') {
       const montant = effet.amount ?? 0;
       if (effet.cible === 'toutes-creatures') {
-        const tues = duel[adv].creatures.filter((entite) => meurtSous(entite, montant, 'magie'));
-        const blessees = duel[adv].creatures
+        // La protection de couleur (ou le Serpent du monde, contre les magies)
+        // fait écran à la vague : la créature ne perd rien, l'IA ne compte donc
+        // ni sa mort ni sa blessure — un sort de Braise jeté sur une table
+        // protégée n'est pas un balayage, c'est du mana perdu.
+        const couleursSort = cardColors(carte);
+        const touchees = duel[adv].creatures
+          .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte));
+        const tues = touchees.filter((entite) => meurtSous(entite, montant, 'magie'));
+        const blessees = touchees
           .filter((entite) => !meurtSous(entite, montant, 'magie') && degatsApresEsquive(entite, montant, 'magie') > 0);
         // Une seconde vague (`echo`, le Nuage de cendres) ne tue pas encore :
         // elle retombe au début du prochain tour de son lanceur, l'adversaire
@@ -957,12 +1022,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         // immédiat, mais elle use le bord de table.
         const echoMontant = Math.max(0, Number(effet.echo?.amount) || 0);
         const echo = echoMontant > 0
-          ? (duel[adv].creatures.length - tues.length) * echoMontant * 0.35
+          ? (touchees.length - tues.length) * echoMontant * 0.35
           : 0;
         const gain = tues.reduce((somme, entite) => somme + valeurEntite(entite), 0) + blessees.length * 1.2 + echo
           // Le gel de zone (le Verglas) fige toute la table adverse en plus
           // de la blessure : un tour entier de leur attaque en moins.
-          + (effet.gel ? duel[adv].creatures.length * 1.2 : 0);
+          + (effet.gel ? touchees.length * 1.2 : 0);
         return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
       }
       if (effet.cible === 'toutes-autres') {
@@ -970,7 +1035,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         // donc ce qu'il détruit chez l'adversaire, MOINS ce qu'il perd chez
         // lui — il ne la lance que si le compte penche de son côté.
         const valeurTable = (campVise) => duel[campVise].creatures.reduce((total, entite) => {
-          if (estProtegee(entite, cardColors(carte))) return total;
+          if (estProtegee(entite, cardColors(carte)) || horsDAtteinteDuSort(entite, carte)) return total;
           const recus = degatsApresEsquive(entite, montant, 'magie');
           if (recus <= 0) return total;
           return total + (meurtSous(entite, montant, 'magie') ? valeurEntite(entite) : 1.2);
@@ -1214,9 +1279,13 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         }, 0);
         score += valeurVague(adv) - valeurVague(cote);
       } else if (arrivee.cible === 'toutes-creatures') {
-        score += duel[adv].creatures
-          .filter((entite) => meurtSous(entite, arrivee.amount ?? 0, 'capacite'))
-          .reduce((somme, entite) => somme + valeurEntite(entite), 0) + 1;
+        // La protection de couleur annule aussi les dégâts d'arrivée : une
+        // créature protégée contre l'élément de la carte n'est pas comptée.
+        const tuees = duel[adv].creatures
+          .filter((entite) => !estProtegee(entite, cardColors(carte)))
+          .filter((entite) => meurtSous(entite, arrivee.amount ?? 0, 'capacite'));
+        score += tuees.reduce((somme, entite) => somme + valeurEntite(entite), 0);
+        if (tuees.length) score += 1;
       } else if (arrivee.cible === 'sorcier') {
         score += 2 + (pvAdv <= (arrivee.amount ?? 0) + 10 ? 3 : 0);
       } else {
@@ -1250,9 +1319,14 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         else if (!echange.attaquantMeurt && echange.bloqueurMeurt) score += 3 + valeurEntite(cible);
         else score += (valeurEntite(cible) - valeurEntite(entiteDeSecours(carte, duel))) * 0.6;
         score += echange.attaquantFurie * 0.8;
-      } else if (duel[adv].creatures.length) {
-        return null; // le Cavalier exige une cible légale
+      } else if (moteur.arriveeACibleLegale(duel, cote, carte)) {
+        // Une arrivée qui désigne une créature (le Cavalier) ne se joue pas
+        // sans cible : le moteur refuserait la pose.
+        return null;
       }
+      // Table entièrement protégée contre la couleur de la carte : aucune
+      // cible légale, donc la créature entre simplement sans frapper — la
+      // carte se joue quand même, la protection adverse ne la bloque pas.
     }
     if (arrivee.type === 'buff') score += camp.creatures.length * 1.5;
     if (arrivee.type === 'infiltration') {
@@ -1305,6 +1379,15 @@ function candidatsCartesIA(duel, cote, options = {}) {
     if (!moteur.rpgPeutPayer(camp, carte)) continue;
     const evaluation = scoreCarte(duel, cote, carte, profil, rng);
     if (!evaluation || !(evaluation.score > 0)) continue;
+    // Filet de sécurité : la cible désignée chez l'adversaire doit être
+    // légale. Une créature protégée contre la couleur de la carte (ou dérobée
+    // aux magies par le Serpent du monde) est refusée par le moteur — la carte
+    // annoncée serait alors un tour perdu, le sorcier s'arrêtant sur un refus.
+    if (evaluation.cibleId && evaluation.cibleId !== 'sorcier') {
+      const visee = duel[autre(cote)].creatures
+        .find((entite) => entite.id === evaluation.cibleId);
+      if (visee && (estProtegee(visee, cardColors(carte)) || horsDAtteinteDuSort(visee, carte))) continue;
+    }
     candidats.push({
       carteId,
       cibleId: evaluation.cibleId ?? null,

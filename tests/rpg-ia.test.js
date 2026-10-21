@@ -7,7 +7,9 @@ import {
   rpgChoisirBloqueurs,
   rpgCibleAuto,
   rpgCiblesAttaqueRapide,
+  rpgEstProtegee,
   rpgJouerCreature,
+  rpgLancerAttaque,
   rpgNouveauDuel,
   rpgSorcierAnnonceSuivante,
   rpgSorcierResoudreAnnonce,
@@ -26,7 +28,7 @@ import {
   RPG_NIVEAUX_IA,
   RPG_STYLES_IA,
 } from '../src/games/rpgAI.js';
-import { cardById } from '../src/games/rpgCards.js';
+import { cardById, cardColors } from '../src/games/rpgCards.js';
 
 /** Duel prêt à être joué sans dépendre du mélange : mains vides, tables vides. */
 const duelNu = (opts = {}) => rpgNouveauDuel({
@@ -525,4 +527,186 @@ test('Le Grand Hiver : le sorcier ne le lance que si le compte des pertes penche
   donner(duel2, 'sorcier', 'grand-hiver');
   assert.equal(choisirCarteIA(duel2, 'sorcier', () => 0.5), null,
     'le sorcier ne sacrifie pas sa propre table pour un dégât');
+});
+
+// ── Protection : l’IA respecte l’écran de couleur ───────────────────────────
+
+/**
+ * Tiziri est protégée contre la Braise de façon permanente : les coups d’une
+ * carte Braise — attaque, capacité, magie — ne la touchent pas. L’Ifrit, 5/4
+ * Braise, est le mur de référence de ce lot de tests.
+ */
+const ifritBraise = () => ({
+  id: 'ifrit', carteId: 'ifrit-des-ergs', name: 'Ifrit des ergs',
+  atk: 5, def: 4, pv: 4, pvMax: 4, bouclier: 0, esquive: 0, ready: true, attaquee: false,
+});
+
+test('la protection annule les coups de sa couleur dans l’échange simulé', () => {
+  const tiziri = {
+    id: 'tiziri', carteId: 'tiziri-du-djurdjura', name: 'Tiziri',
+    atk: 2, def: 1, pv: 1, pvMax: 1, bouclier: 0, esquive: 0,
+    protection: { contre: 'braise', toursRestants: Infinity },
+  };
+  // 5 dégâts Braise sur une 2/1 : sans protection elle meurt, avec elle elle
+  // encaisse zéro et entame l’Ifrit en retour.
+  assert.deepEqual(resultatBlocage(ifritBraise(), tiziri),
+    { attaquantMeurt: false, bloqueurMeurt: false, attaquantFurie: 0, bloqueurFurie: 0 },
+    'la protection Braise sauve Tiziri de l’Ifrit Braise');
+  assert.deepEqual(resultatBlocage(ifritBraise(), { ...tiziri, protection: null }),
+    { attaquantMeurt: false, bloqueurMeurt: true, attaquantFurie: 0, bloqueurFurie: 0 },
+    'sans la protection, les 5 dégâts l’emportent');
+  // Une protection d’une autre couleur ne protège de rien ici.
+  assert.deepEqual(
+    resultatBlocage(ifritBraise(), { ...tiziri, protection: { contre: 'tenebres', toursRestants: 2 } }),
+    { attaquantMeurt: false, bloqueurMeurt: true, attaquantFurie: 0, bloqueurFurie: 0 },
+    'protégée contre les Ténèbres, Tiziri reste vulnérable à la Braise',
+  );
+});
+
+test('le sorcier n’attaque pas dans un bloqueur protégé contre sa couleur', () => {
+  const duel = duelNu();
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'ifrit-des-ergs');
+  const ifrit = rpgJouerCreature(duel, 'sorcier', 'ifrit-des-ergs').entite;
+  donner(duel, 'joueur', 'tiziri-du-djurdjura');
+  const tiziri = rpgJouerCreature(duel, 'joueur', 'tiziri-du-djurdjura').entite;
+  ifrit.ready = true;
+  ifrit.attaquee = false;
+  assert.equal(rpgEstProtegee(tiziri, cardColors(cardById('ifrit-des-ergs'))), true,
+    'Tiziri est bien protégée contre la couleur de l’Ifrit');
+
+  // L’attaque ne percerait pas et n’abattrait personne : l’Ifrit resterait
+  // en jeu, entamé pour rien. L’IA garde son attaquant au camp.
+  assert.deepEqual(rpgChoisirAttaquants(duel, 'sorcier'), [],
+    'aucune attaque dans un mur protégé qui ne rend rien');
+
+  // La même attaque redevient bonne quand le bloqueur n’est pas protégé :
+  // le Chien 2/2 meurt sans emporter l’Ifrit.
+  duel.joueur.creatures = duel.joueur.creatures.filter((entite) => entite.id !== tiziri.id);
+  donner(duel, 'joueur', 'chien-du-guet');
+  rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  assert.deepEqual(rpgChoisirAttaquants(duel, 'sorcier'), [ifrit.id],
+    'face à un bloqueur vulnérable, l’Ifrit attaque');
+});
+
+test('le bloqueur protégé arrête l’attaque sans une égratignure, et l’IA le pose', () => {
+  const duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'ifrit-des-ergs');
+  const ifrit = rpgJouerCreature(duel, 'joueur', 'ifrit-des-ergs').entite;
+  ifrit.ready = true;
+  ifrit.attaquee = false;
+  donner(duel, 'sorcier', 'tiziri-du-djurdjura');
+  const tiziri = rpgJouerCreature(duel, 'sorcier', 'tiziri-du-djurdjura').entite;
+
+  // Un blocage gratuit — la bloqueuse ne peut pas mourir de ce coup-là — se
+  // prend toujours, quel que soit le seuil d’agressivité.
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [ifrit.id]),
+    { [ifrit.id]: [tiziri.id] }, 'Tiziri encaisse l’Ifrit Braise sans risque');
+
+  // Le moteur confirme le calcul de l’IA : la bloqueuse est intacte, l’Ifrit
+  // est entamé par la riposte.
+  const res = rpgLancerAttaque(duel, 'joueur', [ifrit.id], { [ifrit.id]: [tiziri.id] });
+  assert.equal(res.ok, true);
+  assert.equal(tiziri.pv, 1, 'la protection Braise laisse Tiziri à ses 1 PV');
+  assert.equal(ifrit.pv, 2, 'la riposte 2/1 entame quand même l’Ifrit');
+});
+
+test('le Coup rapide ne désigne pas une Tour protégée contre sa couleur', () => {
+  // La Tour de neige est une priorité d’attaque rapide, et Fériel (3/1 Braise)
+  // la tuerait : elle la frappe en premier — sauf si une protection l’en
+  // empêche. C’est le cas de figure où l’ancienne heuristique désignait une
+  // cible que le moteur refuse (`protection`), perdant l’attaque du tour.
+  const poser = (protection) => {
+    const duel = duelNu();
+    donnerMana(duel, 'joueur', 20);
+    donnerMana(duel, 'sorcier', 20);
+    donner(duel, 'joueur', 'tour-de-neige');
+    const tour = rpgJouerCreature(duel, 'joueur', 'tour-de-neige').entite;
+    Object.assign(tour, { pv: 2, def: 2, ready: false, protection });
+    donner(duel, 'sorcier', 'feriel');
+    const feriel = rpgJouerCreature(duel, 'sorcier', 'feriel').entite;
+    return { duel, tour, feriel };
+  };
+
+  const protegee = poser({ contre: 'braise', toursRestants: Infinity });
+  assert.deepEqual(rpgCiblesAttaqueRapide(protegee.duel, 'sorcier', [protegee.feriel.id]), {},
+    'une Tour protégée contre la Braise n’est pas une cible du Coup rapide Braise');
+  // Rien n’est désigné : l’attaque reste légale, Fériel attaque normalement.
+  assert.equal(rpgLancerAttaque(protegee.duel, 'sorcier', [protegee.feriel.id], null, null, null, {}).ok, true);
+
+  // Sans protection, la même Tour est bien la cible : c’est la protection,
+  // et elle seule, qui change la décision.
+  const nue = poser(null);
+  assert.deepEqual(rpgCiblesAttaqueRapide(nue.duel, 'sorcier', [nue.feriel.id]),
+    { [nue.feriel.id]: nue.tour.id });
+});
+
+test('le Trait de braise ne désigne jamais une créature protégée contre la Braise', () => {
+  const duel = duelNu();
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'tiziri-du-djurdjura');
+  const tiziri = rpgJouerCreature(duel, 'joueur', 'tiziri-du-djurdjura').entite;
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donner(duel, 'sorcier', 'trait-de-braise');
+
+  const choix = choisirCarteIA(duel, 'sorcier');
+  assert.equal(choix?.cibleId, chien.id,
+    'le Trait choisit la seule cible que la protection ne couvre pas');
+  assert.notEqual(choix.cibleId, tiziri.id);
+
+  // Seule la protégée reste sur la table : le Trait part au visage — il ne
+  // se jette pas sur l’écran de Braise.
+  duel.joueur.creatures = duel.joueur.creatures.filter((entite) => entite.id !== chien.id);
+  const choixSeul = choisirCarteIA(duel, 'sorcier');
+  if (choixSeul) {
+    assert.equal(choixSeul.cibleId, 'sorcier', 'le burn s’adresse au sorcier, jamais à Tiziri');
+  }
+});
+
+test('un sort de zone ne compte ni ne cible les créatures protégées', () => {
+  // Table entièrement protégée contre la Braise : le Vent rouge (2 dégâts à
+  // toutes les créatures adverses) ne tuerait personne — il reste en main.
+  const duel = duelNu();
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'tiziri-du-djurdjura');
+  rpgJouerCreature(duel, 'joueur', 'tiziri-du-djurdjura');
+  donner(duel, 'sorcier', 'vent-rouge');
+  assert.equal(choisirCarteIA(duel, 'sorcier'), null,
+    'aucune victime possible derrière la protection : le sort reste en main');
+
+  // Une cible vulnérable suffit à rendre le sort rentable.
+  donner(duel, 'joueur', 'chien-du-guet');
+  rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  assert.equal(choisirCarteIA(duel, 'sorcier')?.carteId, 'vent-rouge',
+    'le Chien 2/2 meurt sous la rafale : le sort vaut son mana');
+});
+
+test('une table protégée contre sa couleur n’empêche pas une créature d’arriver', () => {
+  // Le Cavalier frappe une créature à son arrivée. Contre une table protégée
+  // contre le Sable, il n’a aucune cible légale : le moteur accepte pourtant
+  // la pose (l’arrivée ne désigne plus personne), et l’IA ne doit pas garder
+  // la carte en main pour autant.
+  const duel = duelNu();
+  duel.tour = 'sorcier';
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'dune-marchante');
+  const dune = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
+  dune.protection = { contre: 'sable', toursRestants: Infinity };
+  donner(duel, 'sorcier', 'cavalier-amazigh-du-desert');
+
+  assert.equal(rpgEstProtegee(dune, cardColors(cardById('cavalier-amazigh-du-desert'))), true);
+  const choix = choisirCarteIA(duel, 'sorcier');
+  assert.equal(choix?.carteId, 'cavalier-amazigh-du-desert',
+    'le Cavalier entre en jeu sans cible plutôt que de rester en main');
+  assert.equal(choix.cibleId ?? null, null, 'aucune créature protégée n’est désignée');
 });
