@@ -1087,11 +1087,6 @@ function creerEntiteCreature(carte) {
     // Le Tribut (set Ténèbres) : transfert de vie au contact du sorcier
     // adverse — `declencherTributs`, même voie de bilans que le Butin.
     tribut: Math.max(0, Number(carte.tribut) || 0),
-    // L'Abordage (set Lettres de Marque) : les blessures de combat que cette
-    // créature inflige prennent la victime en cale au lieu de la détruire.
-    // `true` imprimé, prêté par une arme (`donne.abordage`) ou pour un tour
-    // (Lettre de marque — le carnet des renforts le reprend à la fin du tour).
-    abordage: Boolean(carte.abordage),
     // La cale du capteur : `{ carteId, name, cost }` — la créature adverse
     // prise vive, détenue face visible, une seule place, `null` si vide. La
     // prisonnière ne figure plus dans `camp.creatures` : sa case est libre.
@@ -1181,7 +1176,6 @@ function attacherArme(duel, cote, entite, carteArme) {
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
   if (carteArme.donne?.tribut) entite.tribut = (entite.tribut ?? 0) + carteArme.donne.tribut;
-  if (carteArme.donne?.abordage) entite.abordage = true;
   // La Jitte d'Amayas : l'arme couvre son porteur d'une protection de couleur
   // permanente (tant qu'elle est attachée), comme celle imprimée de Tiziri.
   if (carteArme.donne?.protection) {
@@ -1190,6 +1184,24 @@ function attacherArme(duel, cote, entite, carteArme) {
   if (carteArme.donne?.rapidite) {
     entite.rapidite = true;
     entite.ready = true;
+  }
+  // Le Grappin d'abordage (`abordage` sur l'arme) : le crochet mord dès qu'il
+  // s'attache — la créature adverse de coût ≤ seuil désignée rejoint la cale
+  // du porteur. Côté joueur, la désignation passe par `duel.arriveeEnAttente`
+  // (la table s'allume, voir la page) ; côté sorcier, l'IA choisit seule la
+  // prize la plus précieuse. Un porteur dont la cale est déjà pleine ne reprend
+  // pas : une seule place (`prendreEnCale`).
+  if (Number.isFinite(carteArme.abordage) && !entite.enCale) {
+    const seuilGrappin = carteArme.abordage;
+    const couleursGrappin = cardColors(carteArme);
+    if (cote === 'joueur') {
+      if (duel[autre(cote)].creatures.some((victime) => priseEnCaleLegale(victime, couleursGrappin, seuilGrappin))) {
+        duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId: carteArme.id, abordage: seuilGrappin };
+      }
+    } else {
+      const priseGrappin = meilleurePriseAbordage(duel, autre(cote), couleursGrappin, seuilGrappin);
+      if (priseGrappin) prendreEnCale(duel, entite, priseGrappin, null, autre(cote));
+    }
   }
 }
 
@@ -1552,47 +1564,13 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     }
   }
 
-  // L'Abordage (set Lettres de Marque) : une victime des blessures de combat
-  // peut être prise en cale par l'une des créatures vivantes qui l'ont
-  // frappée — À LA PLACE de la destruction. Le choix se fait avant de retirer
-  // qui que ce soit : un capteur mort dans le même échange ne prend rien, et
-  // chaque capteur vivant ne prend qu'une prisonnière (une seule place en
-  // cale). Un jeton n'a pas de carte à détenir, et les figures légendaires
-  // (`kind === 'hero'`) ne se prennent pas : on les tue, on ne les vend pas.
+  // Les victimes de ce combat (le Brûlot renvoie son tueur : il ne renvoie
+  // que les créatures qui ont survécu à l'échange).
   const mortsIds = new Set(mortes.map((mort) => mort.entite.id));
-  const capteursPris = new Set();
-  const prises = new Map();
-  for (const mort of mortes) {
-    if (mort.entite.jeton) continue;
-    if (duelCardById(mort.entite.carteId)?.kind === 'hero') continue;
-    // La Tenacité refuse la cale comme elle refusait la mort : la créature
-    // tombe, mais sa renaissance est promise au prochain tour de son camp —
-    // on ne prend pas ce qui reviendra.
-    if (mort.entite.tenaciteDisponible) continue;
-    for (const source of mort.attaqueSources ?? []) {
-      if (source.cote === mort.cote) continue;
-      if (mortsIds.has(source.id) || capteursPris.has(source.id)) continue;
-      const capteur = duel[source.cote]?.creatures.find((candidate) => candidate.id === source.id);
-      if (!capteur || !(capteur.pv > 0)) continue;
-      if (!capteur.abordage || capteur.enCale) continue;
-      capteursPris.add(capteur.id);
-      prises.set(mort.entite.id, { capteur, source });
-      break;
-    }
-  }
-
   // Retire d’abord toutes les victimes : une capacité de destruction ne peut
   // donc empêcher l’autre combattant d’infliger les dégâts déjà calculés.
   for (const mort of mortes) {
     const camp = duel[mort.cote];
-    // La prise en cale remplace le cimetière : la victime ne meurt pas, elle
-    // ne déclenche rien (ni journal des destructions, ni Honneur, ni capacité
-    // de mort) — elle quitte la table par la cale du capteur.
-    const prise = prises.get(mort.entite.id);
-    if (prise && prendreEnCale(duel, prise.capteur, mort.entite, prise.source, mort.cote)) {
-      mort.priseEnCale = true;
-      continue;
-    }
     // Un capteur qui meurt en combat rend sa cale, comme à toute sortie de table.
     ouvrirCale(duel, mort.cote, mort.entite);
     journaliserDestruction(duel, mort.entite, mort.sourceElements);
@@ -1614,7 +1592,6 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     duel.combatFeed = duel.combatFeed.slice(-12);
   }
   for (const mort of mortes) {
-    if (mort.priseEnCale) continue;
     mort.declencherArme?.();
     const carte = duelCardById(mort.entite.carteId);
     if (carte?.destruction) {
@@ -1628,7 +1605,6 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   // `declencherCapaciteDestruction` passe bien par ici, son effet 'renvoi-tueur'
   // est un no-op ailleurs.
   for (const mort of mortes) {
-    if (mort.priseEnCale) continue;
     if (duelCardById(mort.entite.carteId)?.destruction?.type !== 'renvoi-tueur') continue;
     for (const source of mort.sources ?? []) {
       if (mortsIds.has(source.id)) continue;
@@ -1781,11 +1757,6 @@ function annulerBonusTemporaires(duel, tourFerme) {
       entite.def = Math.min(entite.def, Math.max(0, entite.pv));
       // Le Tribut prêté par l'Offrande de lin repart avec le renfort.
       if (entry.tribut) entite.tribut = Math.max(0, (entite.tribut ?? 0) - entry.tribut);
-      // L'Abordage prêté par la Lettre de marque ou le Grand Débarquement
-      // repart lui aussi : il ne reste que l'imprimé de la fiche et celui de
-      // l'arme portée (le Grappin) — la cale, elle, ne se vide jamais d'elle-même.
-      if (entry.abordage) entite.abordage = Boolean(duelCardById(entite.carteId)?.abordage)
-        || Boolean(armeCarteDe(entite)?.donne?.abordage);
       // L'Overkill prêté par le Mur de boucliers repart aussi, sans éteindre
       // celui de la carte ni celui d'une arme encore tenue.
       if (entry.overkill) {
@@ -1905,6 +1876,54 @@ export function rpgPriXRancon(entite) {
 }
 
 /**
+ * Le seuil de prise de l'Abordage (set Lettres de Marque) : le coût de la
+ * carte captrice − 1 — une créature qui coûte 5 prend tout ce qui coûte 4 ou
+ * moins. L'imprimé (`carte.abordage`, déjà au barème) prime ; sans imprimé,
+ * le drapeau `camp.abordageDesArrivees` (la Lettre de marque, le Grand
+ * Débarquement) étend le même barème aux créatures qui arrivent. Renvoie
+ * `null` quand la carte n'accoste pas.
+ */
+function seuilAbordage(carte, camp) {
+  if (Number.isFinite(carte?.abordage)) return carte.abordage;
+  // Pas de contrôle de `kind` ici : les fiches des sets n'en portent pas
+  // toutes (seules les magies et les armes l'impriment), et la fonction ne
+  // sert que pour des créatures posées par `rpgJouerCreature`.
+  if (camp?.abordageDesArrivees && carte?.kind !== 'magie' && carte?.kind !== 'arme') {
+    return Math.max(0, (Number(carte.cost) || 0) - 1);
+  }
+  return null;
+}
+
+/**
+ * Une créature est prisable en cale : une vraie carte (pas un jeton), pas une
+ * figure légendaire (on les tue, on ne les vend pas), pas une tenace (on ne
+ * prend pas ce qui reviendra), pas protégée contre la couleur de la source,
+ * et de coût ≤ seuil.
+ */
+function priseEnCaleLegale(victime, couleurs, seuil) {
+  if (!victime || victime.jeton) return false;
+  const carte = duelCardById(victime.carteId);
+  if (!carte || carte.kind === 'hero') return false;
+  if (victime.tenaciteDisponible) return false;
+  if (rpgEstProtegee(victime, couleurs)) return false;
+  return (Number(carte.cost) || 0) <= seuil;
+}
+
+/**
+ * La prize que l'IA (ou la pose sans désignation) tire de la table : la
+ * créature légale au meilleur butin — le coût d'abord, la menace ensuite.
+ */
+function meilleurePriseAbordage(duel, coteVictime, couleurs, seuil) {
+  return duel[coteVictime].creatures
+    .filter((victime) => priseEnCaleLegale(victime, couleurs, seuil))
+    .map((victime) => ({
+      victime,
+      score: (Number(duelCardById(victime.carteId)?.cost) || 0) * 10 + (victime.atk ?? 0) + (victime.pv ?? 0),
+    }))
+    .sort((a, b) => b.score - a.score)[0]?.victime ?? null;
+}
+
+/**
  * La créature adverse vaincue quitte la table par la cale du capteur. Elle
  * libère sa case, perd tout (ses armes tombent au cimetière, comme un mort)
  * et ne déclenche RIEN — ni journal des destructions, ni Honneur, ni capacité
@@ -1913,6 +1932,13 @@ export function rpgPriXRancon(entite) {
  */
 function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictime = null) {
   if (!capteur || capteur.enCale) return false;
+  // Un jeton n'a pas de carte à détenir, une figure ne se vend pas, et la
+  // Tenacité refuse la cale comme elle refuse la mort — on ne prend pas ce
+  // qui reviendra (garde pour les appels directs du moteur : la désignation
+  // de l'arrivée a déjà filtré tout cela).
+  if (victime?.jeton) return false;
+  if (duelCardById(victime?.carteId)?.kind === 'hero') return false;
+  if (victime?.tenaciteDisponible) return false;
   const coteCapteur = duel.joueur.creatures.some((candidate) => candidate.id === capteur.id)
     ? 'joueur' : 'sorcier';
   const coteVictimeEffective = coteVictime ?? autre(coteCapteur);
@@ -2448,10 +2474,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
           && !rpgEstProtegee(entite, sourceElement) && !horsSort(entite));
       // `tribut` (l'Offrande de lin) : le renfort porte aussi le mot-clé —
       // chaque créature touchée gagne Tribut X, rendu avec le bonus quand le
-      // carnet s'efface à la fin du tour. `donne.abordage` (le Grand
-      // Débarquement) suit le même contrat pour l'Abordage.
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
-      const donneAbordage = Boolean(effet.donne?.abordage);
       const bonusOverkill = effet.overkill ? 1 : 0;
       for (const entite of ciblesBuff) {
         const bonusAttaque = effet.atk ?? 0;
@@ -2461,12 +2484,11 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.def = Math.max(plancher, entite.def + bonusDefense);
         entite.pv = Math.max(plancher, entite.pv + bonusDefense);
         if (bonusTribut) entite.tribut = (entite.tribut ?? 0) + bonusTribut;
-        if (donneAbordage) entite.abordage = true;
         if (bonusOverkill) {
           entite.overkill = true;
           if (temporaire) entite.overkillTemporaire = (entite.overkillTemporaire ?? 0) + bonusOverkill;
         }
-        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, abordage: donneAbordage, overkill: bonusOverkill, tour: duel.tour });
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, tour: duel.tour });
         // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
         // et la mort est attribuée à la couleur de la source, pour le journal.
         if (!(entite.pv > 0) && plancher <= 0) {
@@ -2480,6 +2502,13 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       }
       if (forces) {
         duel.log.push(`${forces} créature${forces > 1 ? 's adverses doivent' : ' adverse doit'} bloquer si ${forces > 1 ? 'elles le peuvent' : 'elle le peut'} ${effet.blocageForce === 'tour' ? 'ce tour' : 'lors de votre prochaine attaque'}.`);
+      }
+      // Le Grand Débarquement arme aussi les arrivées : jusqu'à la fin du
+      // tour, chaque créature que le camp pose accoste en prenant (seuil
+      // coût − 1, le même barème que l'imprimé — voir `seuilAbordage`).
+      if (effet.arriveesAbordage) {
+        duel[cote].abordageDesArrivees = true;
+        duel.log.push('Jusqu’à la fin du tour, les créatures qui arrivent en jeu ont Abordage.');
       }
       return;
     }
@@ -2791,14 +2820,11 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     case 'donne': {
       // Le Faiseur de passage : un mot-clé prêté à une créature alliée pour
       // le tour (`donne: { infiltration: true }` — le passage est ouvert).
-      // `cible: 'toutes-alliees'` (la Lettre de marque) prête le mot-clé à
-      // tout le camp d'un coup : le sceau de la Chancellerie couvre l'assaut.
       const cibleEquipe = effet.cible === 'toutes-alliees';
       const ciblesDonne = cibleEquipe
         ? duel[cote].creatures.slice()
         : [duel[cote].creatures.find((candidate) => candidate.id === cibleId)].filter(Boolean);
       if (!ciblesDonne.length) return;
-      let abordages = 0;
       for (const entite of ciblesDonne) {
         if (effet.donne?.infiltration) {
           entite.infiltration = true;
@@ -2806,21 +2832,18 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
           duel.log.push(`${entite.name} gagne Infiltration jusqu’à la fin du tour.`);
         }
         if (effet.donne?.rapidite) entite.ready = true;
-        // L'Abordage prêté (la Lettre de marque) vit jusqu'à la fin du tour :
-        // le carnet des renforts le reprend, comme le Tribut de l'Offrande —
-        // la cale déjà prise, elle, reste pleine (doc 17 §12.10).
-        if (effet.donne?.abordage && !entite.abordage) {
-          entite.abordage = true;
-          abordages += 1;
-          if (Number(effet.tours) > 0) {
-            const carnet = (duel[cote].bonusTemporaires ??= []);
-            carnet.push({ entiteId: entite.id, atk: 0, def: 0, abordage: true, tour: duel.tour });
-          }
-        }
       }
-      if (abordages) {
-        duel.log.push(`${abordages} créature${abordages > 1 ? 's' : ''} ${abordages > 1 ? 'gagnent' : 'gagne'} Abordage jusqu’à la fin du tour.`);
-      }
+      return;
+    }
+    case 'arrivees-abordage': {
+      // La Lettre de marque : la Chancellerie arme les arrivées — jusqu'à la
+      // fin du tour, chaque créature que le camp pose accoste en prenant (le
+      // seuil suit le barème de l'imprimé : coût de l'arrivante − 1, voir
+      // `seuilAbordage`). Les créatures déjà en jeu ne gagnent rien : le
+      // sceau ne se gratte pas après coup, et la cale déjà prise reste
+      // pleine (doc 18 §12.10).
+      duel[cote].abordageDesArrivees = true;
+      duel.log.push('Jusqu’à la fin du tour, les créatures qui arrivent en jeu ont Abordage.');
       return;
     }
     default:
@@ -3295,6 +3318,19 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       return { ok: false, raison: 'cible' };
     }
   }
+  // L'Abordage à l'arrivée : une cible désignée d'avance doit être une
+  // prise légale (créature adverse, pas un jeton ni une figure, coût ≤
+  // seuil) — sinon la pose est refusée, comme pour l'exil. Sans désignation
+  // (la page pose d'abord, l'IA ne désigne pas), la prize se choisit après
+  // la pose : la table s'allume ou l'IA pioche seule.
+  const seuilAbordagePose = seuilAbordage(carte, camp);
+  if (seuilAbordagePose !== null && cibleId && !arriveeCiblePortee(carte)) {
+    const cibleVisee = duel[autre(cote)].creatures.find((candidate) => candidate.id === cibleId);
+    if (!cibleVisee || !priseEnCaleLegale(cibleVisee, cardColors(carte), seuilAbordagePose)) {
+      return { ok: false, raison: 'cible' };
+    }
+  }
+
   if (carte.arrivee?.type === 'retour-main' && cibleId) {
     const cible = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId)
       ?? duel[cote].creatures.find((entite) => entite.id === cibleId);
@@ -3373,6 +3409,34 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       : null;
     appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte), 'capacite', carte.id);
   }
+  // L'Abordage (set Lettres de Marque) : la prise se fait À L'ARRIVÉE — le
+  // capteur tire sa prize dès qu'il accoste, pas en frappant (au combat, les
+  // créatures meulent et meurent ensemble : la prise n'y trouvait jamais son
+  // compte). La créature adverse de coût ≤ seuil désignée rejoint sa cale ;
+  // le seuil suit le barème de l'imprimé — coût du capteur − 1 — que la Lettre
+  // de marque et le Grand Débarquement étendent aux arrivées sans imprimé
+  // (`camp.abordageDesArrivees`). Seules les créatures **jouées depuis la
+  // main** accostent : les jetons créés par effet ne prennent rien.
+  const seuilAbordageArrivee = seuilAbordage(carte, camp);
+  if (seuilAbordageArrivee !== null && !duel.arriveeEnAttente) {
+    const couleursAbordage = cardColors(carte);
+    const ciblesPossibles = () => duel[autre(cote)].creatures
+      .filter((victime) => priseEnCaleLegale(victime, couleursAbordage, seuilAbordageArrivee));
+    if (ciblesPossibles().length) {
+      if (cibleDifferee && !cibleId) {
+        duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId, abordage: seuilAbordageArrivee };
+        rafraichirAuras(duel);
+        rpgActionsEtat(duel);
+        return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null };
+      }
+      const cibleAbordage = (cibleId && !arriveeCiblePortee(carte))
+        ? duel[autre(cote)].creatures.find((candidate) => candidate.id === cibleId)
+        : meilleurePriseAbordage(duel, autre(cote), couleursAbordage, seuilAbordageArrivee);
+      if (cibleAbordage && priseEnCaleLegale(cibleAbordage, couleursAbordage, seuilAbordageArrivee)) {
+        prendreEnCale(duel, entite, cibleAbordage, null, autre(cote));
+      }
+    }
+  }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
   return { ok: true, entite, sacrificeId: sacrifice?.id ?? null };
@@ -3394,6 +3458,27 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
   const entite = duel[cote].creatures.find((candidate) => candidate.id === attente.entiteId);
   const carte = duelCardById(entite?.carteId);
   const portee = arriveeCiblePortee(carte);
+  // L'Abordage à l'arrivée : l'attente porte son seuil (`attente.abordage`)
+  // plutôt qu'une portée d'arrivée — la créature (ou le porteur du Grappin)
+  // est posée, elle attend sa prize. La carte source peut être la créature
+  // accostante ou l'arme accrochée : c'est SA couleur qui protège.
+  if (Number.isFinite(attente.abordage)) {
+    if (!entite || entite.enCale) {
+      duel.arriveeEnAttente = null;
+      return { ok: false, raison: 'absente' };
+    }
+    const carteSource = duelCardById(attente.carteId) ?? armeById(attente.carteId);
+    const ciblePrise = duel[autre(cote)].creatures.find((candidate) => candidate.id === cibleId);
+    if (!ciblePrise || !priseEnCaleLegale(ciblePrise, cardColors(carteSource), attente.abordage)) {
+      return { ok: false, raison: 'cible' };
+    }
+    duel.arriveeEnAttente = null;
+    prendreEnCale(duel, entite, ciblePrise, null, autre(cote));
+    rafraichirAuras(duel);
+    rpgActionsEtat(duel);
+    return { ok: true, cible: ciblePrise };
+  }
+
   if (!entite || !portee) {
     // La créature a quitté la table (ou n'a plus d'arrivée à désigner) :
     // l'attente n'a plus d'objet, on la lève sans effet.
@@ -4756,6 +4841,9 @@ export function rpgFinDeTour(duel) {
   // de terminer tant qu'une désignation est ouverte, mais le moteur ne laisse
   // jamais traîner l'attente d'un tour sur l'autre.
   duel.arriveeEnAttente = null;
+  // Le sceau des arrivées (Lettre de marque, Grand Débarquement) expire
+  // avec le tour qui l'a vu naître : les poses suivantes n'accostent plus.
+  duel[duel.tour].abordageDesArrivees = false;
   // La faveur du Kraken non utilisée s'éteint avec le tour.
   duel.magieGratuite = null;
   detruireEphemeres(duel);

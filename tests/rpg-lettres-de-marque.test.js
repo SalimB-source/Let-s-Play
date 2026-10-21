@@ -1,15 +1,18 @@
 /**
- * Les Lettres de Marque — le set Piraterie Sable + Eau (doc 17).
+ * Les Lettres de Marque — le set Piraterie Sable + Eau (doc 18).
  *
- * L'Abordage prend la créature vaincue en cale au lieu de la détruire ; la
- * Cale la détient face visible, une seule place ; la Rançon la rend au prix
- * imprimé ; la Cargaison paie l'assurance du convoi. Ces contrôles suivent la
- * liste du doc 17 §12.10 : la prise remplace la destruction sans rien
+ * L'Abordage prend sa cible À L'ARRIVÉE du capteur : quand la créature
+ * accoste, la créature adverse ciblée de coût ≤ seuil (le coût du capteur
+ * moins un) rejoint sa cale au lieu d'être détruite. La Cale la détient face
+ * visible, une seule place ; la Rançon la rend au prix imprimé ; la Cargaison
+ * paie l'assurance du convoi. Ces contrôles suivent la liste du doc 18 §12.10 :
+ * la prise se fait à l'arrivée et remplace la destruction sans rien
  * déclencher, une seule place, la rançon paie et rend, la cale s'ouvre à
- * toute sortie de table, Tenacité et boucliers protègent, jetons et figures
- * ne se prennent pas, le buff de la Lettre expire mais la cale reste,
- * Cargaison paie à la mort et à la prise, le Brûlot renvoie son tueur, et
- * l'IA du sorcier rançonne.
+ * toute sortie de table, Tenacité et figures refusent la cale (les boucliers,
+ * eux, ne comptent plus : la prise ne blesse pas), jetons et effets créés ne
+ * prennent rien, le sceau de la Lettre arme les arrivées du tour puis expire
+ * mais la cale reste, Cargaison paie à la mort et à la prise, le Brûlot
+ * renvoie son tueur, et l'IA du sorcier rançonne — et choisit sa prize.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -29,6 +32,7 @@ import {
   rpgSorcierRanconnerIA,
   rpgNombreDestructions,
   rpgSacrifierCreature,
+  rpgResoudreArriveeCiblee,
 } from '../src/games/rpgDuel.js';
 import {
   RPG_DECKS,
@@ -49,6 +53,7 @@ import { composerDeck } from '../src/games/rpgDeckComposer.js';
 import { puissanceCarte } from '../src/games/rpgCardPower.js';
 import { pastillesPourCarte, iconePourLigne } from '../src/games/effetIcons.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
+import { RPG_LETTRES_DE_MARQUE_JETONS } from '../src/games/rpgLettresDeMarque.js';
 
 const duelVide = () => rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [] });
 const duelEssai = () => {
@@ -78,49 +83,120 @@ const art = (id) => fileURLToPath(new URL(`../public/cards/${id}.jpg`, import.me
 const libellesPastilles = (id) => pastillesPourCarte(cardById(id))
   .map((pastille) => (pastille.valeur != null ? `${pastille.label} ${pastille.valeur}` : pastille.label));
 
-/** Le Raïs de la galiote (2/2, Abordage) du joueur capture la Mousse (1/2) adverse. */
+/** Le Raïs de la galiote (2/2, Abordage 1 — coût 2 moins un) du joueur
+ *  capture la Mousse (1/2) adverse DÈS SON ARRIVÉE en jeu. */
 function priseDeBase(duel = duelVide(), victime = 'mousse-des-galiotes') {
   mana(duel, 'joueur', 10);
   mana(duel, 'sorcier', 10);
-  donner(duel, 'joueur', 'rais-de-la-galiote');
-  const rais = jouer(duel, 'joueur', 'rais-de-la-galiote').entite;
   donner(duel, 'sorcier', victime);
   const cible = jouer(duel, 'sorcier', victime).entite;
-  pret(rais);
-  const res = rpgAttaquerCreature(duel, 'joueur', rais.id, cible.id);
-  return { rais, cible, res };
+  donner(duel, 'joueur', 'rais-de-la-galiote');
+  const rais = jouer(duel, 'joueur', 'rais-de-la-galiote', cible.id).entite;
+  return { rais, cible };
 }
 
-test('la prise remplace la destruction : rien ne se déclenche, ni compteur, ni cimetière', () => {
+test('la prise se fait à l’arrivée : rien ne se déclenche, ni compteur, ni cimetière, ni riposte', () => {
   const duel = duelVide();
   duel.sorcier.deck = ['tercio-de-cuivre', 'tercio-de-cuivre', 'mousse-des-galiotes'];
   const destructionsAvant = rpgNombreDestructions(duel);
   const { rais, cible } = priseDeBase(duel);
-  assert.ok(rais.enCale, 'le Raïs détient sa victime');
+  assert.ok(rais.enCale, 'le Raïs détient sa victime dès son arrivée');
   assert.equal(rais.enCale.carteId, 'mousse-des-galiotes');
   assert.equal(rais.enCale.cost, 1, 'le prix de la rançon est le coût imprimé');
   assert.equal(duel.sorcier.creatures.includes(cible), false, 'la prisonnière a quitté la table');
   assert.equal(duel.sorcier.cimetiere.includes('mousse-des-galiotes'), false, 'elle n’est pas au cimetière');
   assert.equal(duel.joueur.creatures.includes(rais), true, 'le capteur tient la table');
-  assert.equal(rais.pv, 1, 'le capteur a encaissé la riposte (2 - 1)');
+  assert.equal(rais.pv, rais.def, 'aucun combat : le capteur n’a rien encaissé');
   assert.equal(rpgNombreDestructions(duel), destructionsAvant, 'aucune destruction comptée : les quêtes ne bougent pas');
   assert.ok(duel.log.some((ligne) => ligne.includes('prend') && ligne.includes('cale')), 'la prise s’écrit au journal');
   assert.ok(duel.combatFeed.some((evenement) => evenement.type === 'prise'), 'le journal visuel montre la prise');
 });
 
+test('le seuil suit le barème « coût du capteur − 1 » : une créature qui coûte 5 prend tout ce qui coûte 4 ou moins', () => {
+  // Le Raïs (coût 2, Abordage 1) prend la Mousse (1) mais pas le Pilote (2).
+  const duel = duelVide();
+  mana(duel, 'joueur', 10);
+  mana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'pilote-de-la-carreira');
+  const pilote = jouer(duel, 'sorcier', 'pilote-de-la-carreira').entite;
+  donner(duel, 'joueur', 'rais-de-la-galiote');
+  assert.equal(jouer(duel, 'joueur', 'rais-de-la-galiote', pilote.id).ok, false, 'cible trop chère : la pose est refusée');
+  assert.equal(duel.joueur.main.includes('rais-de-la-galiote'), true, 'la carte reste en main');
+  // Même créature posée sans désignation : l’auto-pick ne trouve rien.
+  const res = jouer(duel, 'joueur', 'rais-de-la-galiote');
+  assert.equal(res.ok, true);
+  assert.equal(res.entite.enCale, null, 'aucune prise sans cible de bon coût');
+
+  // Le Cotre (coût 3, Abordage 2) prend le Pilote (2).
+  const cotre = duelVide();
+  mana(cotre, 'joueur', 10);
+  mana(cotre, 'sorcier', 10);
+  donner(cotre, 'sorcier', 'pilote-de-la-carreira');
+  const pilote2 = jouer(cotre, 'sorcier', 'pilote-de-la-carreira').entite;
+  donner(cotre, 'joueur', 'cotre-de-course');
+  const resCotre = jouer(cotre, 'joueur', 'cotre-de-course', pilote2.id);
+  assert.equal(resCotre.ok, true);
+  assert.equal(resCotre.entite.enCale?.carteId, 'pilote-de-la-carreira', 'le Cotre prend le coût 2');
+
+  // La Barbe-Rousse (coût 6, Abordage 5) prend le Galion (5) — voir aussi
+  // le test Cargaison, qui rejoue ce cas complet avec les jetons.
+  const amirale = duelVide();
+  mana(amirale, 'joueur', 10);
+  mana(amirale, 'sorcier', 10);
+  donner(amirale, 'sorcier', 'galion-de-la-flotte');
+  const galion = jouer(amirale, 'sorcier', 'galion-de-la-flotte').entite;
+  donner(amirale, 'joueur', 'la-barbe-rousse');
+  const resAmirale = jouer(amirale, 'joueur', 'la-barbe-rousse', galion.id);
+  assert.equal(resAmirale.ok, true);
+  assert.equal(resAmirale.entite.enCale?.carteId, 'galion-de-la-flotte', 'l’amirale prend le coût 5');
+});
+
+test('la désignation différée : la créature se pose, la table désigne, la prize tombe', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 10);
+  mana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'mousse-des-galiotes');
+  const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
+  donner(duel, 'sorcier', 'tercio-de-cuivre');
+  const tercio = jouer(duel, 'sorcier', 'tercio-de-cuivre').entite;
+  // La page pose d'abord (`cibleDifferee`) : l'attente s'ouvre sur la table.
+  donner(duel, 'joueur', 'rais-de-la-galiote');
+  const res = rpgJouerCreature(duel, 'joueur', 'rais-de-la-galiote', null, { cibleDifferee: true });
+  assert.equal(res.ok, true);
+  assert.equal(res.arriveeEnAttente, true, 'le Raïs attend sa prize');
+  assert.equal(duel.arriveeEnAttente?.abordage, 1, 'l’attente porte le seuil');
+  assert.equal(duel.arriveeEnAttente?.carteId, 'rais-de-la-galiote');
+  assert.equal(duel.joueur.creatures.includes(res.entite), true, 'le Raïs est déjà posé');
+  // Un clic illégal (le Tercio coûte 3) est refusé, l'attente reste ouverte.
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', tercio.id).ok, false);
+  assert.equal(duel.arriveeEnAttente?.abordage, 1, 'l’attente a survécu au clic illégal');
+  assert.equal(duel.sorcier.creatures.includes(tercio), true, 'le Tercio n’a pas bougé');
+  // Le clic légal prend la Mousse.
+  const resolu = rpgResoudreArriveeCiblee(duel, 'joueur', mousse.id);
+  assert.equal(resolu.ok, true);
+  assert.equal(duel.arriveeEnAttente, null, 'l’attente est refermée');
+  assert.equal(resolu.cible.carteId, 'mousse-des-galiotes');
+  assert.equal(res.entite.enCale?.carteId, 'mousse-des-galiotes', 'la Mousse est en cale');
+  // Sans cible légale sur la table, la pose différée n'ouvre aucune attente.
+  const vide = duelVide();
+  mana(vide, 'joueur', 10);
+  donner(vide, 'joueur', 'cotre-de-course');
+  const resVide = rpgJouerCreature(vide, 'joueur', 'cotre-de-course', null, { cibleDifferee: true });
+  assert.equal(resVide.ok, true);
+  assert.equal(resVide.arriveeEnAttente, undefined, 'table adverse vide : pas d’attente');
+  assert.equal(vide.arriveeEnAttente ?? null, null);
+});
+
 test('une capacité de mort ne se déclenche pas sur une prise : le Ghul capturé ne frappe personne', () => {
   // Le Ghul des cendres : 1/1, sa mort inflige 1 dégât à une créature désignée.
-  // Pris en cale par le Cotre (Abordage) du sorcier : rien ne se déclenche.
+  // Pris en cale par le Cotre (Abordage 2) du sorcier à son arrivée : rien.
   const duel = duelVide();
   mana(duel, 'joueur', 10);
   mana(duel, 'sorcier', 10);
   donner(duel, 'joueur', 'ghul-des-cendres');
   const ghul = jouer(duel, 'joueur', 'ghul-des-cendres').entite;
   donner(duel, 'sorcier', 'cotre-de-course');
-  const cotre = jouer(duel, 'sorcier', 'cotre-de-course').entite;
-  cotre.pv = 10;
-  pret(cotre);
-  rpgAttaquerCreature(duel, 'sorcier', cotre.id, ghul.id);
+  const cotre = jouer(duel, 'sorcier', 'cotre-de-course', ghul.id).entite;
   assert.equal(cotre.enCale?.carteId, 'ghul-des-cendres', 'le Ghul est pris, pas détruit');
   assert.equal(duel.destructionsEnAttente, undefined, 'aucune désignation de cible en attente');
   assert.equal(JSON.stringify(duel.log).includes('désignez'), false, 'le journal ne demande rien');
@@ -139,54 +215,58 @@ test('une capacité de mort ne se déclenche pas sur une prise : le Ghul captur�
   assert.equal(duel2.destructionsEnAttente?.length, 1, 'sa mort déclenche la désignation de sa victime');
   assert.ok(duel2.log.some((ligne) => ligne.includes('désignez')), 'la désignation s’écrit au journal');
 
-  // La Momie de lin capturée ne laisse pas de Shabti : la prise court-circuite
-  // les « quand meurt » à jetons comme les « quand meurt » à dégâts.
+  // La Momie de lin (coût 3) capturée par La Barbe-Rousse (Abordage 5) ne
+  // laisse pas de Shabti : la prise court-circuite les « quand meurt » à
+  // jetons comme les « quand meurt » à dégâts.
   const momie = duelVide();
   mana(momie, 'joueur', 10);
   mana(momie, 'sorcier', 10);
   momie.joueur.mana = { braise: 6, eau: 6, sable: 6, neige: 6, tenebres: 6 };
   donner(momie, 'joueur', 'momie-de-lin');
   const lin = jouer(momie, 'joueur', 'momie-de-lin').entite;
-  lin.pv = 3;
-  lin.def = 3;
-  donner(momie, 'sorcier', 'cotre-de-course');
-  const cotreMomie = jouer(momie, 'sorcier', 'cotre-de-course').entite;
-  cotreMomie.pv = 10;
-  pret(cotreMomie);
-  rpgAttaquerCreature(momie, 'sorcier', cotreMomie.id, lin.id);
-  assert.equal(cotreMomie.enCale?.carteId, 'momie-de-lin', 'la Momie est prise');
+  donner(momie, 'sorcier', 'la-barbe-rousse');
+  const amirale = jouer(momie, 'sorcier', 'la-barbe-rousse', lin.id).entite;
+  assert.equal(amirale.enCale?.carteId, 'momie-de-lin', 'la Momie est prise');
   assert.equal(momie.joueur.creatures.length, 0, 'aucun jeton Shabti n’a surgi de ses bandelettes');
   assert.equal(JSON.stringify(momie.log).includes('Shabti'), false, 'le journal n’en parle même pas');
+  assert.equal(momie.sorcier.creatures.filter((entite) => entite.carteId === 'corsaire').length, 2,
+    'les deux Corsaires ont bien débarqué, eux');
 
-  // L’Honneur du Soleil rouge non plus : pris, le Samouraï du torii ne frappe
-  // personne en tombant — morte, sa dernière frappe part au hasard.
+  // L’Honneur du Soleil rouge non plus : pris, le Samouraï du torii (coût 3)
+  // ne frappe personne en tombant — La Barbe-Rousse le prend vif.
   const honneur = duelVide();
   mana(honneur, 'joueur', 10);
   mana(honneur, 'sorcier', 10);
+  honneur.joueur.mana = { braise: 6, eau: 6, sable: 6, neige: 6, tenebres: 6 };
   donner(honneur, 'joueur', 'samourai-du-torii');
   const samourai = jouer(honneur, 'joueur', 'samourai-du-torii').entite;
-  donner(honneur, 'sorcier', 'cotre-de-course');
-  const cotreHonneur = jouer(honneur, 'sorcier', 'cotre-de-course').entite;
-  cotreHonneur.pv = 10;
-  pret(cotreHonneur);
-  rpgAttaquerCreature(honneur, 'sorcier', cotreHonneur.id, samourai.id);
-  assert.equal(cotreHonneur.enCale?.carteId, 'samourai-du-torii', 'le Samouraï est pris');
-  assert.equal(cotreHonneur.pv, 8, 'il n’a encaissé que la riposte (10 - 2) : aucune dernière frappe d’Honneur');
+  donner(honneur, 'sorcier', 'la-barbe-rousse');
+  const amiraleHonneur = jouer(honneur, 'sorcier', 'la-barbe-rousse', samourai.id).entite;
+  assert.equal(amiraleHonneur.enCale?.carteId, 'samourai-du-torii', 'le Samouraï est pris');
+  assert.equal(amiraleHonneur.pv, amiraleHonneur.def, 'aucun combat, aucune riposte : aucune dernière frappe d’Honneur');
   assert.equal(JSON.stringify(honneur.log).includes('Honneur'), false, 'le journal ignore l’Honneur');
 });
 
-test('une seule place en cale : la deuxième victime du même capteur meurt normalement', () => {
+test('une seule place en cale : le Grappin ne reprend pas sur un porteur déjà plein', () => {
   const duel = duelVide();
+  mana(duel, 'joueur', 10);
+  mana(duel, 'sorcier', 10);
+  // Le Raïs du joueur capture la Mousse du sorcier.
   const { rais } = priseDeBase(duel);
   assert.ok(rais.enCale, 'la première victime est en cale');
-  rais.pv = rais.pvMax;
+  // Le Grappin s'attache au Raïs déjà plein : aucune désignation ne s'ouvre,
+  // la seconde Mousse reste sur la table.
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const seconde = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
-  pret(rais);
-  rpgAttaquerCreature(duel, 'joueur', rais.id, seconde.id);
-  assert.equal(duel.sorcier.cimetiere.filter((id) => id === 'mousse-des-galiotes').length, 1,
-    'la seconde Mousse meurt : la cale était pleine');
+  donner(duel, 'joueur', 'grappin-d-abordage');
+  assert.equal(rpgJouerArme(duel, 'joueur', 'grappin-d-abordage', rais.id).ok, true);
+  assert.equal(duel.arriveeEnAttente ?? null, null, 'un porteur plein n’ouvre aucune désignation');
+  assert.equal(duel.sorcier.creatures.includes(seconde), true, 'la seconde Mousse tient la table');
   assert.equal(rais.enCale.carteId, 'mousse-des-galiotes', 'et la cale n’a pas changé de main');
+  // Chaque capteur a SA place : un second Raïs prend la seconde Mousse.
+  donner(duel, 'joueur', 'rais-de-la-galiote');
+  const secondRais = jouer(duel, 'joueur', 'rais-de-la-galiote', seconde.id).entite;
+  assert.equal(secondRais.enCale?.carteId, 'mousse-des-galiotes', 'l’autre cale s’est remplie');
 });
 
 test('la rançon paie le coût imprimé en manas libres et rend la créature en main', () => {
@@ -216,15 +296,7 @@ test('la rançon paie le coût imprimé en manas libres et rend la créature en 
 test('la cale s’ouvre à toute sortie de table : mort, renvoi, exil, sacrifice', () => {
   // Mort au combat du capteur.
   const mort = duelVide();
-  mana(mort, 'joueur', 10);
-  mana(mort, 'sorcier', 10);
-  donner(mort, 'joueur', 'rais-de-la-galiote');
-  const raisMort = jouer(mort, 'joueur', 'rais-de-la-galiote').entite;
-  donner(mort, 'sorcier', 'mousse-des-galiotes');
-  const mousseMort = jouer(mort, 'sorcier', 'mousse-des-galiotes').entite;
-  pret(raisMort);
-  rpgAttaquerCreature(mort, 'joueur', raisMort.id, mousseMort.id);
-  assert.ok(raisMort.enCale, 'prise de référence');
+  const { rais: raisMort } = priseDeBase(mort);
   donner(mort, 'sorcier', 'salem');
   const salem = jouer(mort, 'sorcier', 'salem').entite;
   pret(salem);
@@ -262,53 +334,54 @@ test('la capture d’un capteur ouvre sa propre cale : la prisonnière du prison
   mana(duel, 'joueur', 10);
   mana(duel, 'sorcier', 10);
   // Le Raïs du joueur capture la Mousse du sorcier.
-  donner(duel, 'joueur', 'rais-de-la-galiote');
-  const rais = jouer(duel, 'joueur', 'rais-de-la-galiote').entite;
-  donner(duel, 'sorcier', 'mousse-des-galiotes');
-  const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
-  pret(rais);
-  rpgAttaquerCreature(duel, 'joueur', rais.id, mousse.id);
+  const { rais, mousse } = priseDeBase(duel);
   assert.ok(rais.enCale);
-  // Le Cotre du sorcier (Abordage) tue le Raïs plein : la Mousse s’échappe,
-  // et le Raïs, capturé à son tour, rejoint la cale du Cotre.
+  assert.equal(duel.sorcier.creatures.includes(mousse), false);
+  // Le Cotre du sorcier (Abordage 2) ARRIVE et prend le Raïs (coût 2) : la
+  // cale du Raïs s'ouvre avant sa propre capture — la Mousse s'échappe.
   donner(duel, 'sorcier', 'cotre-de-course');
-  const cotre = jouer(duel, 'sorcier', 'cotre-de-course').entite;
-  cotre.pv = 10;
-  pret(cotre);
-  rpgAttaquerCreature(duel, 'sorcier', cotre.id, rais.id);
+  const cotre = jouer(duel, 'sorcier', 'cotre-de-course', rais.id).entite;
   assert.ok(cotre.enCale, 'le Cotre détient le Raïs');
   assert.equal(cotre.enCale.carteId, 'rais-de-la-galiote');
   assert.ok(duel.sorcier.main.includes('mousse-des-galiotes'), 'la cale du Raïs s’est ouverte avant sa capture');
 });
 
-test('Tenacité et boucliers refusent la prise : la renaissance est promise', () => {
+test('la Tenacité refuse la cale, les boucliers ne comptent plus : la prise ne blesse pas', () => {
   const tenacite = duelVide();
-  const setup = (duel) => {
-    mana(duel, 'joueur', 10);
-    mana(duel, 'sorcier', 10);
-    donner(duel, 'joueur', 'rais-de-la-galiote');
-    const rais = jouer(duel, 'joueur', 'rais-de-la-galiote').entite;
-    donner(duel, 'sorcier', 'mousse-des-galiotes');
-    const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
-    pret(rais);
-    return { rais, mousse };
-  };
-  const { rais, mousse } = setup(tenacite);
+  mana(tenacite, 'joueur', 10);
+  mana(tenacite, 'sorcier', 10);
+  donner(tenacite, 'sorcier', 'mousse-des-galiotes');
+  const mousse = jouer(tenacite, 'sorcier', 'mousse-des-galiotes').entite;
   mousse.tenaciteDisponible = true;
+  // Désignée d'avance : la pose est refusée.
+  donner(tenacite, 'joueur', 'rais-de-la-galiote');
+  assert.equal(jouer(tenacite, 'joueur', 'rais-de-la-galiote', mousse.id).ok, false,
+    'on ne prend pas ce qui refuse de mourir : cible illégale');
+  // Posé sans désignation : l'auto-pick l'ignore, aucune prise.
+  const rais = jouer(tenacite, 'joueur', 'rais-de-la-galiote').entite;
+  assert.equal(rais.enCale, null, 'la Mousse tenace n’a pas été prise');
+  assert.equal(tenacite.sorcier.creatures.includes(mousse), true, 'elle tient la table');
+  // Elle meurt normalement au combat, et sa renaissance est promise.
+  pret(rais);
   rpgAttaquerCreature(tenacite, 'joueur', rais.id, mousse.id);
-  assert.equal(rais.enCale, null, 'on ne prend pas ce qui refuse de mourir');
   assert.equal(tenacite.sorcier.cimetiere.length, 1, 'la Mousse tenace tombe comme les autres');
   assert.ok(
     tenacite.sorcier.retoursProgrammes?.some((retour) => retour.carteId === 'mousse-des-galiotes' && retour.tenacite),
     'sa renaissance est promise au prochain tour de son camp',
   );
 
+  // Un bouclier n'empêche plus la prise : la capture ne passe pas par les
+  // blessures — la Mousse blindée part en cale, intacte sous ses plaques.
   const bouclier = duelVide();
-  const fois2 = setup(bouclier);
-  fois2.mousse.bouclier = 2;
-  rpgAttaquerCreature(bouclier, 'joueur', fois2.rais.id, fois2.mousse.id);
-  assert.equal(fois2.mousse.pv, 2, 'le bouclier a tout absorbé');
-  assert.equal(fois2.rais.enCale, null, 'aucune prise sans destruction');
+  mana(bouclier, 'joueur', 10);
+  mana(bouclier, 'sorcier', 10);
+  donner(bouclier, 'sorcier', 'mousse-des-galiotes');
+  const blindee = jouer(bouclier, 'sorcier', 'mousse-des-galiotes').entite;
+  blindee.bouclier = 5;
+  donner(bouclier, 'joueur', 'rais-de-la-galiote');
+  const raisBlindage = jouer(bouclier, 'joueur', 'rais-de-la-galiote', blindee.id).entite;
+  assert.equal(raisBlindage.enCale?.carteId, 'mousse-des-galiotes', 'le bouclier n’a rien arrêté');
+  assert.equal(bouclier.sorcier.cimetiere.length, 0, 'personne n’est mort');
 });
 
 test('les jetons et les figures légendaires ne se prennent pas : on les tue, on ne les vend pas', () => {
@@ -320,61 +393,107 @@ test('les jetons et les figures légendaires ne se prennent pas : on les tue, on
   jouer(duel, 'joueur', 'tarek');
   const chien = duel.joueur.creatures.find((entite) => entite.carteId === 'chien-de-sable');
   assert.ok(chien, 'Tarek a bien dressé ses chiens');
-  // Le Cotre du sorcier (Abordage) tue le jeton : il meurt, il n’est pas pris.
+  // Le Cotre du sorcier (Abordage 2) ne peut pas désigner le jeton : refus.
   donner(duel, 'sorcier', 'cotre-de-course');
+  assert.equal(jouer(duel, 'sorcier', 'cotre-de-course', chien.id).ok, false, 'un jeton n’est pas une cible légale');
+  // Posé sans désignation, il n'auto-pick que des vraies cartes : le jeton
+  // reste sur la table, aucune cale ne s'ouvre.
   const cotre = jouer(duel, 'sorcier', 'cotre-de-course').entite;
+  assert.equal(cotre.enCale, null, 'un jeton n’a pas de carte à détenir');
+  assert.equal(duel.joueur.creatures.includes(chien), true, 'le jeton tient toujours la table');
+  // Au combat, on le tue : il cesse d'exister.
   cotre.pv = 10;
   pret(cotre);
   rpgAttaquerCreature(duel, 'sorcier', cotre.id, chien.id);
   assert.equal(duel.joueur.creatures.includes(chien), false, 'le jeton a cessé d’exister');
-  assert.equal(cotre.enCale, null, 'un jeton n’a pas de carte à détenir');
-  // Une figure légendaire (SALEM, kind hero) meurt sans être prise.
-  // Son bouclier de lumière d’arrivée a déjà absorbé une attaque : à nu.
+  // Une figure légendaire (SALEM, kind hero, coût 4) : même La Barbe-Rousse
+  // (Abordage 5) refuse de la désigner.
   donner(duel, 'joueur', 'salem');
   const salem = jouer(duel, 'joueur', 'salem').entite;
   salem.bouclierLumiere = false;
+  donner(duel, 'sorcier', 'la-barbe-rousse');
+  assert.equal(jouer(duel, 'sorcier', 'la-barbe-rousse', salem.id).ok, false, 'on ne met pas une figure en cale');
+  const amirale = jouer(duel, 'sorcier', 'la-barbe-rousse').entite;
+  assert.equal(amirale.enCale, null, 'l’auto-pick l’ignore aussi');
+  // Au combat, elle meurt.
   salem.pv = 2;
   salem.def = 2;
-  pret(cotre);
-  rpgAttaquerCreature(duel, 'sorcier', cotre.id, salem.id);
+  pret(amirale);
+  rpgAttaquerCreature(duel, 'sorcier', amirale.id, salem.id);
   assert.equal(duel.joueur.cimetiere.includes('salem'), true, 'SALEM est détruite');
-  assert.equal(cotre.enCale, null, 'on ne met pas une figure en cale');
 });
 
-test('la Lettre de marque prête l’Abordage pour un tour — la cale déjà prise reste pleine', () => {
+test('le jeton Corsaire n’accoste pas : créé par effet, il ne prend rien', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 10);
+  mana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'mousse-des-galiotes');
+  const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
+  // La Barbe-Rousse débarque son équipage : les deux Corsaires arrivent par
+  // effet, pas depuis la main — aucun ne déclenche l'Abordage.
+  donner(duel, 'joueur', 'la-barbe-rousse');
+  const amirale = jouer(duel, 'joueur', 'la-barbe-rousse', mousse.id).entite;
+  const corsaires = duel.joueur.creatures.filter((entite) => entite.carteId === 'corsaire');
+  assert.equal(corsaires.length, 2, 'l’équipage a débarqué');
+  assert.ok(corsaires.every((entite) => entite.enCale === null), 'aucun Corsaire n’a pris la moindre prize');
+  // Même la fiche du jeton ne porte plus le mot-clé : il n’y a plus rien à
+  // prêter à ce qui ne se joue pas depuis la main.
+  assert.equal(RPG_LETTRES_DE_MARQUE_JETONS[0].abordage, undefined, 'la fiche du Corsaire est muette');
+});
+
+test('la Lettre de marque arme les arrivées pour un tour — la cale déjà prise reste pleine', () => {
   const duel = duelVide();
   mana(duel, 'joueur', 10);
   mana(duel, 'sorcier', 10);
   donner(duel, 'joueur', 'tercio-de-cuivre');
   const tercio = jouer(duel, 'joueur', 'tercio-de-cuivre').entite;
-  assert.equal(tercio.abordage, false, 'le Tercio n’a pas l’Abordage imprimé');
+  assert.equal(cardById('tercio-de-cuivre').abordage, undefined, 'le Tercio n’a pas l’Abordage imprimé');
   donner(duel, 'joueur', 'lettre-de-marque');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'lettre-de-marque').ok, true);
-  assert.equal(tercio.abordage, true, 'le sceau de la Chancellerie arme tout le camp');
-  // Le Tercio (2/4) prend la Mousse (1/2) pendant que la lettre court.
+  assert.equal(tercio.enCale, null, 'le sceau ne se gratte pas après coup : le Tercio déjà posé ne prend rien');
+  // Le Tercio (3/4) est déjà là — c'est la suivante arrivée qui accoste :
+  // le Routier ? Non : une créature. Le Tercio Deux prend la Mousse (1 ≤ 2).
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
-  pret(tercio);
-  rpgAttaquerCreature(duel, 'joueur', tercio.id, mousse.id);
-  assert.ok(tercio.enCale, 'le Tercio a pris la Mousse avec l’Abordage prêté');
+  donner(duel, 'joueur', 'tercio-de-cuivre');
+  const tercio2 = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse.id).entite;
+  assert.ok(tercio2.enCale, 'l’arrivée sous sceau a pris la Mousse (seuil : coût 3 − 1 = 2)');
+  assert.equal(duel.joueur.abordageDesArrivees, true, 'le drapeau du camp est levé');
   rpgFinDeTour(duel);
-  assert.equal(tercio.abordage, false, 'à la fin du tour, la lettre expire');
-  assert.ok(tercio.enCale, 'mais la cale prise ne se vide jamais d’elle-même');
+  assert.equal(duel.joueur.abordageDesArrivees, false, 'à la fin du tour, la lettre expire');
+  assert.ok(tercio2.enCale, 'mais la cale prise ne se vide jamais d’elle-même');
+  // Le tour suivant : une nouvelle arrivée ne prend plus rien.
+  duel.tour = 'joueur';
+  mana(duel, 'joueur', 10);
+  mana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'mousse-des-galiotes');
+  const mousse2 = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
+  donner(duel, 'joueur', 'tercio-de-cuivre');
+  const tercio3 = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse2.id).entite;
+  assert.equal(tercio3.enCale, null, 'le sceau a expiré : la pose suivante n’accoste plus');
 });
 
-test('Le Grand Débarquement arme l’assaut : +1/+0 et Abordage pour un tour', () => {
+test('Le Grand Débarquement arme l’assaut : +1/+0 pour la table, Abordage pour les arrivées', () => {
   const duel = duelVide();
   mana(duel, 'joueur', 10);
+  mana(duel, 'sorcier', 10);
   donner(duel, 'joueur', 'tercio-de-cuivre');
   const tercio = jouer(duel, 'joueur', 'tercio-de-cuivre').entite;
   const atkAvant = tercio.atk;
+  donner(duel, 'sorcier', 'mousse-des-galiotes');
+  const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
   donner(duel, 'joueur', 'le-grand-debarquement');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'le-grand-debarquement').ok, true);
   assert.equal(tercio.atk, atkAvant + 1, 'tout le quai monte à l’assaut');
-  assert.equal(tercio.abordage, true);
+  assert.equal(tercio.enCale, null, 'le renfort ne prend pas : seules les arrivées comptent');
+  // L'arrivée suivante accoste (le Tercio 2, seuil 2, prend la Mousse 1).
+  donner(duel, 'joueur', 'tercio-de-cuivre');
+  const tercio2 = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse.id).entite;
+  assert.ok(tercio2.enCale, 'l’arrivée sous le Débarquement a pris la Mousse');
   rpgFinDeTour(duel);
   assert.equal(tercio.atk, atkAvant, 'le renfort s’évapore');
-  assert.equal(tercio.abordage, false);
+  assert.equal(duel.joueur.abordageDesArrivees, false, 'le sceau des arrivées aussi');
+  assert.ok(tercio2.enCale, 'la cale, jamais');
 });
 
 test('Haut-fond amollit la prise : -1/-2 pour un tour, la vague rend son dû', () => {
@@ -395,22 +514,17 @@ test('Haut-fond amollit la prise : -1/-2 pour un tour, la vague rend son dû', (
 });
 
 test('Cargaison paie à la mort ET à la prise : le convoi est assuré', () => {
-  // À la prise.
+  // À la prise — La Barbe-Rousse (Abordage 5) prend le Galion (5).
   const prise = duelVide();
   prise.sorcier.deck = ['tercio-de-cuivre', 'tercio-de-cuivre'];
   mana(prise, 'joueur', 10);
   mana(prise, 'sorcier', 10);
-  donner(prise, 'joueur', 'cotre-de-course');
-  const cotre = jouer(prise, 'joueur', 'cotre-de-course').entite;
-  cotre.pv = 10;
   donner(prise, 'sorcier', 'galion-de-la-flotte');
   const galion = jouer(prise, 'sorcier', 'galion-de-la-flotte').entite;
-  galion.pv = 3;
-  galion.def = 3;
-  pret(cotre);
+  donner(prise, 'joueur', 'la-barbe-rousse');
   const mainAvant = prise.sorcier.main.length;
-  rpgAttaquerCreature(prise, 'joueur', cotre.id, galion.id);
-  assert.ok(cotre.enCale?.carteId === 'galion-de-la-flotte', 'le Galion est pris, pas coulé');
+  const amirale = jouer(prise, 'joueur', 'la-barbe-rousse', galion.id).entite;
+  assert.ok(amirale.enCale?.carteId === 'galion-de-la-flotte', 'le Galion est pris, pas coulé');
   assert.equal(prise.sorcier.main.length, mainAvant + 2, 'son propriétaire pioche deux cartes');
   assert.equal(prise.sorcier.deck.length, 0, 'les deux cartes venaient du paquet');
 
@@ -460,39 +574,45 @@ test('Le Brûlot renvoie son tueur en combat — jamais par magie, jamais captur
   assert.equal(magie.sorcier.cimetiere.includes('le-brulot'), true);
   assert.equal(magie.joueur.creatures.includes(tercio2), true, 'tué par sort : le Tercio reste en jeu');
 
-  // Capturé par l’Abordage : la prise remplace la mort, le tueur reste.
+  // Capturé par l'Abordage à l'arrivée : la prise remplace la mort, le
+  // capteur n'a rien tuu — le Brûlot (coût 2) part en la cale du Cotre (2).
   const capture = duelVide();
   mana(capture, 'joueur', 10);
   mana(capture, 'sorcier', 10);
-  donner(capture, 'joueur', 'cotre-de-course');
-  const cotre = jouer(capture, 'joueur', 'cotre-de-course').entite;
-  cotre.pv = 10;
   donner(capture, 'sorcier', 'le-brulot');
   const brulot3 = jouer(capture, 'sorcier', 'le-brulot').entite;
-  pret(cotre);
-  rpgAttaquerCreature(capture, 'joueur', cotre.id, brulot3.id);
+  donner(capture, 'joueur', 'cotre-de-course');
+  const cotre = jouer(capture, 'joueur', 'cotre-de-course', brulot3.id).entite;
   assert.equal(cotre.enCale?.carteId, 'le-brulot', 'le Brûlot est pris en cale');
   assert.equal(capture.joueur.creatures.includes(cotre), true, 'son capteur n’a pas été renvoyé : rien n’est mort');
 });
 
-test('le Grappin d’abordage arme son porteur et paie son soin à chaque prise', () => {
+test('le Grappin d’abordage prend à l’attachement et paie son soin à chaque prise', () => {
   const duel = duelVide();
   mana(duel, 'joueur', 10);
   mana(duel, 'sorcier', 10);
   donner(duel, 'joueur', 'fennec-des-decombres');
   const fennec = jouer(duel, 'joueur', 'fennec-des-decombres').entite;
-  assert.equal(fennec.abordage, false);
-  donner(duel, 'joueur', 'grappin-d-abordage');
-  assert.equal(rpgJouerArme(duel, 'joueur', 'grappin-d-abordage', fennec.id).ok, true);
-  assert.equal(fennec.abordage, true, 'trois dents de fer, et la mer devient un couloir');
-  assert.equal(fennec.atk, 4, '+1/+1 du Grappin (3 + 1)');
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
-  pret(fennec);
   const pvAvant = duel.joueur.pv;
-  rpgAttaquerCreature(duel, 'joueur', fennec.id, mousse.id);
-  assert.ok(fennec.enCale, 'le porteur a pris la Mousse');
+  donner(duel, 'joueur', 'grappin-d-abordage');
+  assert.equal(rpgJouerArme(duel, 'joueur', 'grappin-d-abordage', fennec.id).ok, true);
+  assert.equal(fennec.atk, 4, '+1/+1 du Grappin (3 + 1)');
+  assert.equal(duel.arriveeEnAttente?.abordage, 1, 'le crochet a ouvert la désignation de prize');
+  assert.equal(duel.arriveeEnAttente?.carteId, 'grappin-d-abordage', 'l’arme porte l’attente');
+  const resolu = rpgResoudreArriveeCiblee(duel, 'joueur', mousse.id);
+  assert.equal(resolu.ok, true);
+  assert.equal(fennec.enCale?.carteId, 'mousse-des-galiotes', 'le porteur a pris la Mousse à l’attachement');
   assert.equal(duel.joueur.pv, pvAvant + 2, 'la prime du Grappin : 2 PV gagnés à la prise');
+  // Sans prize possible, l'attachement ne demande rien.
+  const seul = duelVide();
+  mana(seul, 'joueur', 10);
+  donner(seul, 'joueur', 'fennec-des-decombres');
+  const fennec2 = jouer(seul, 'joueur', 'fennec-des-decombres').entite;
+  donner(seul, 'joueur', 'grappin-d-abordage');
+  assert.equal(rpgJouerArme(seul, 'joueur', 'grappin-d-abordage', fennec2.id).ok, true);
+  assert.equal(seul.arriveeEnAttente ?? null, null, 'table adverse vide : le crochet mord dans l’eau');
 });
 
 test('le Négociant des rançons encaisse sa commission à chaque rançon', () => {
@@ -500,15 +620,14 @@ test('le Négociant des rançons encaisse sa commission à chaque rançon', () =
   duel.joueur.deck = ['fennec-des-decombres', 'fennec-des-decombres'];
   mana(duel, 'joueur', 10);
   mana(duel, 'sorcier', 10);
-  // Le Négociant du joueur regarde la mer ; le Raïs du sorcier prend la Mousse du joueur.
+  // Le Négociant du joueur regarde la mer ; le Raïs du sorcier ARRIVE et
+  // prend la Mousse du joueur (coût 1 ≤ seuil 1).
   donner(duel, 'joueur', 'negociant-des-ranscons');
   jouer(duel, 'joueur', 'negociant-des-ranscons');
-  donner(duel, 'sorcier', 'rais-de-la-galiote');
-  const rais = jouer(duel, 'sorcier', 'rais-de-la-galiote').entite;
   donner(duel, 'joueur', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'joueur', 'mousse-des-galiotes').entite;
-  pret(rais);
-  rpgAttaquerCreature(duel, 'sorcier', rais.id, mousse.id);
+  donner(duel, 'sorcier', 'rais-de-la-galiote');
+  const rais = jouer(duel, 'sorcier', 'rais-de-la-galiote', mousse.id).entite;
   assert.ok(rais.enCale, 'le Raïs du sorcier détient la Mousse du joueur');
   duel.tour = 'joueur';
   duel.joueur.mana = { sable: 3, eau: 3, braise: 0 };
@@ -518,11 +637,27 @@ test('le Négociant des rançons encaisse sa commission à chaque rançon', () =
   assert.equal(duel.joueur.deck.length, deckAvant - 1, 'le Négociant a pioché sa commission');
 });
 
-test('l’IA du sorcier rançonne ce qu’elle peut payer — et garde son tempo sur les grosses prises', () => {
+test('l’IA du sorcier choisit sa prize et rançonne ce qu’elle peut payer', () => {
+  // La prize : le sorcier pose son Cotre (Abordage 2) sans désigner — le
+  // moteur lui choisit la prise la plus précieuse parmi les légales.
+  const prise = duelVide();
+  mana(prise, 'joueur', 10);
+  mana(prise, 'sorcier', 10);
+  donner(prise, 'joueur', 'mousse-des-galiotes');
+  const mousse = jouer(prise, 'joueur', 'mousse-des-galiotes').entite;
+  donner(prise, 'joueur', 'le-brulot');
+  const brulot = jouer(prise, 'joueur', 'le-brulot').entite;
+  donner(prise, 'joueur', 'tercio-de-cuivre');
+  const tercio = jouer(prise, 'joueur', 'tercio-de-cuivre').entite; // coût 3 : trop cher
+  donner(prise, 'sorcier', 'cotre-de-course');
+  const cotre = jouer(prise, 'sorcier', 'cotre-de-course').entite;
+  assert.equal(cotre.enCale?.carteId, 'le-brulot',
+    'l’auto-pick a pris le Brûlot (coût 2), pas la Mousse (coût 1) ni le Tercio (coût 3, hors seuil)');
+  assert.equal(prise.joueur.creatures.includes(brulot), false);
+  assert.equal(prise.joueur.creatures.includes(tercio), true, 'le Tercio coûteux reste sur la table');
+
+  // La rançon : le Raïs du joueur détient la Mousse du sorcier (prix 1).
   const duel = duelVide();
-  mana(duel, 'joueur', 10);
-  mana(duel, 'sorcier', 10);
-  // Le Raïs du joueur détient la Mousse du sorcier (prix 1).
   const { rais } = priseDeBase(duel);
   assert.ok(rais.enCale?.carteId === 'mousse-des-galiotes', 'le Raïs détient la Mousse');
   duel.tour = 'sorcier';
@@ -541,21 +676,16 @@ test('l’IA du sorcier rançonne ce qu’elle peut payer — et garde son tempo
   const cher = duelVide();
   mana(cher, 'joueur', 10);
   mana(cher, 'sorcier', 10);
-  donner(cher, 'joueur', 'cotre-de-course');
-  const cotre = jouer(cher, 'joueur', 'cotre-de-course').entite;
-  cotre.pv = 10;
   donner(cher, 'sorcier', 'galion-de-la-flotte');
   const galion = jouer(cher, 'sorcier', 'galion-de-la-flotte').entite;
-  galion.pv = 3;
-  galion.def = 3;
-  pret(cotre);
-  rpgAttaquerCreature(cher, 'joueur', cotre.id, galion.id);
-  assert.equal(cotre.enCale?.carteId, 'galion-de-la-flotte', 'le Galion est détenu');
-  assert.equal(rpgPriXRancon(cotre), 5, 'le prix du Galion est son coût imprimé');
+  donner(cher, 'joueur', 'la-barbe-rousse');
+  const amirale = jouer(cher, 'joueur', 'la-barbe-rousse', galion.id).entite;
+  assert.equal(amirale.enCale?.carteId, 'galion-de-la-flotte', 'le Galion est détenu');
+  assert.equal(rpgPriXRancon(amirale), 5, 'le prix du Galion est son coût imprimé');
   cher.tour = 'sorcier';
   cher.sorcier.mana = { sable: 3, eau: 4, braise: 0 };
   assert.deepEqual(rpgSorcierRanconnerIA(cher), [], 'sept manas pour huit exigés : le sorcier garde son tempo');
-  assert.ok(cotre.enCale, 'le Galion croupit en cale');
+  assert.ok(amirale.enCale, 'le Galion croupit en cale');
   cher.sorcier.mana = { sable: 6, eau: 6, braise: 0 };
   const rachetes = rpgSorcierRanconnerIA(cher);
   assert.equal(rachetes.length, 1, 'la mer assez généreuse, il paie');
@@ -564,7 +694,7 @@ test('l’IA du sorcier rançonne ce qu’elle peut payer — et garde son tempo
 });
 
 test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles du jeu', () => {
-  // Le banc d’essai : 30 cartes Sable + Eau, validateur content.
+  // Le banc d'essai : 30 cartes Sable + Eau, validateur content.
   const essai = deckManaEssaiParId('essai-mana-lettres-de-marque');
   assert.ok(essai, 'le cinquième deck d’essai existe');
   assert.equal(essai.cardIds.length, 30);
@@ -575,7 +705,7 @@ test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles
     'toutes les cartes sont Sable, Eau ou les deux');
   assert.equal(RPG_MANA_ESSAI_DECKS.length, 5, 'le banc d’essai compte cinq paquets');
 
-  // Le boîtier de l’étagère : composé par sa recette, pas écrit à la main.
+  // Le boîtier de l'étagère : composé par sa recette, pas écrit à la main.
   const boitier = RPG_DECKS.find((deck) => deck.id === 'lettres-de-marque');
   assert.ok(boitier, 'le boîtier est sur l’étagère');
   assert.deepEqual(boitier.cardIds, composerDeck(RPG_RECETTES_DECKS['lettres-de-marque'], CATALOGUE_DU_COMPOSEUR),
@@ -620,13 +750,16 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Rançon, pa
   const negociant = cardById('negociant-des-ranscons');
   assert.ok(puissanceCarte(negociant) > puissanceCarte({ ...negociant, declencheRancon: 0 }),
     'la commission du Négociant compte');
+  const lettre = cardById('lettre-de-marque');
+  assert.ok(puissanceCarte(lettre) > 0, 'le sceau des arrivées vaut son prix au barème');
 
-  assert.deepEqual(libellesPastilles('rais-de-la-galiote'), ['Abordage'], 'le Raïs porte la pastille Abordage');
+  assert.deepEqual(libellesPastilles('rais-de-la-galiote'), ['Abordage 1'], 'le Raïs porte la pastille Abordage 1');
+  assert.deepEqual(libellesPastilles('la-barbe-rousse').slice(0, 1), ['Abordage 5'], 'l’amirale porte Abordage 5');
   assert.deepEqual(libellesPastilles('galion-de-la-flotte'), ['Cargaison 2'], 'le Galion porte la pastille Cargaison 2');
   assert.deepEqual(libellesPastilles('negociant-des-ranscons'), ['Rançon 1'], 'le Négociant porte la pastille Rançon');
-  assert.ok(libellesPastilles('grappin-d-abordage').includes('Abordage'), 'le Grappin prête l’Abordage');
+  assert.ok(libellesPastilles('grappin-d-abordage').includes('Abordage 1'), 'le Grappin porte Abordage 1');
   assert.equal(iconePourLigne(cardById('rais-de-la-galiote'),
-    'Abordage — quand le Raïs inflige des blessures de combat qui détruiraient une créature adverse, celle-ci est prise en cale.'),
+    'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale.'),
     'abordage', 'la ligne de règle se lit Abordage');
   assert.equal(iconePourLigne(cardById('galion-de-la-flotte'),
     'Cargaison 2 — Quand le Galion meurt ou est pris en cale, piochez deux cartes.'),

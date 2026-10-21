@@ -86,11 +86,16 @@ Le cadre existe déjà dans le catalogue : `hybride-eau-sable`, turquoise
 Trois règles liées, comme le Prix, le Tribut et la mort formaient le triptyque
 des Ténèbres :
 
-> **Abordage** — Quand une créature avec Abordage inflige des blessures de
-> combat à une créature adverse qui devrait être détruite par ces blessures,
-> elle la **prend en cale** : la créature vaincue quitte la table, **face
-> visible**, posée sous son capteur. Elle n’est pas détruite — rien ne se
-> déclenche — et elle n’est dans aucune zone : elle est **en cale**.
+> **Abordage** — Quand une créature avec Abordage **arrive en jeu**, la
+> créature adverse **ciblée de coût inférieur ou égal à son seuil** (le coût
+> du capteur **moins un** : une créature qui coûte 5 a Abordage 4) est **prise
+> en cale** : elle quitte la table, **face visible**, posée sous son capteur.
+> Elle n’est pas détruite — rien ne se déclenche — et elle n’est dans aucune
+> zone : elle est **en cale**. La prise se fait à l’accostage, pas au combat :
+> les créatures qui seulent meurrent ensemble, la course préfère choisir sa
+> prize avant l’échange. Jetons et figures légendaires ne se prennent pas, la
+> Tenacité refuse la cale ; seules les créatures **jouées depuis la main**
+> accostent — un jeton créé par effet ne prend rien.
 >
 > **La Cale** — Un capteur ne tient qu'**une seule** créature en cale. En cale,
 > une créature ne compte plus sur le champ (sa case se libère), perd ses
@@ -103,7 +108,7 @@ des Ténèbres :
 > couleur), et elle revient **dans sa main**.
 >
 > **L’ouverture** — Quand un capteur quitte la table — mort, renvoi en main,
-> exil, sacrifice, ou prise en cale par un autre corsaire — sa cale s’ouvre :
+> exil, sacrifice, ou capture par le corsaire qui arrive — sa cale s’ouvre :
 > chaque créature qu’il tenait revient **gratuitement** dans la main de son
 > propriétaire.
 
@@ -213,21 +218,21 @@ Eau et Sable existantes, comme `Sentiers de cendre` le fait déjà.
 | Carte | Couleur | Coût | ⚔/🛡 | Rareté | Rôle |
 |---|---|---|---|---|---|
 | Mousse des galiotes | Sable | 1 | 1/2 | commune | le corps du pont — vanilla |
-| Raïs de la galiote | **Sable + Eau** | 2 | 2/2 | commune | **Abordage** — le poisson-pilote du set |
+| Raïs de la galiote | **Sable + Eau** | 2 | 2/2 | commune | **Abordage 1** — le poisson-pilote du set |
 | Pilote de la Carreira | Eau | 2 | 1/3 | inhabituelle | arrivée : un allié gagne **Envol** (le vent dans les voiles) |
 | Le Brûlot | Eau | 2 | 1/1 | commune | à sa mort en combat : **le tueur est renvoyé en main** |
 | Tercio de cuivre | Sable | 3 | 2/4 | commune | le mur du convoi — vanilla |
-| Cotre de course | **Sable + Eau** | 3 | 3/1 | inhabituelle | **Rapidité + Abordage** — l’éclaireur qui monte le premier |
+| Cotre de course | **Sable + Eau** | 3 | 3/1 | inhabituelle | **Rapidité + Abordage 2** — l’éclaireur qui monte le premier |
 | Le Renégat | **Sable + Eau** | 3 | 3/2 | inhabituelle | **Rapidité + Butin** — l’Anglais sous pavillon d’Alger |
 | Négociant des rançons | Sable | 3 | 2/3 | rare | chaque rançon payée adverse : **piochez 1** |
 | Galion de la flotte | **Sable + Eau** | 5 | 3/6 | rare | **Cargaison 2** — le trésor assuré |
-| La Barbe-Rousse | **Sable + Eau** | 6 | 4/5 | **mythique** | **Abordage** ; arrivée : **2 jetons Corsaire** 2/1 avec Abordage |
-| Lettre de marque | **Sable + Eau** | 2 | — | commune (sorcellerie) | jusqu’à la fin du tour, vos créatures gagnent **Abordage** |
+| La Barbe-Rousse | **Sable + Eau** | 6 | 4/5 | **mythique** | **Abordage 5** ; arrivée : **2 jetons Corsaire** 2/1 |
+| Lettre de marque | **Sable + Eau** | 2 | — | commune (sorcellerie) | jusqu’à la fin du tour, vos créatures **qui arrivent** gagnent **Abordage** (seuil : leur coût − 1) |
 | Haut-fond | Eau | 1 | — | commune (magie rapide) | créature adverse : **−1/−2 jusqu’à la fin du tour** |
 | Le Routier | Eau | 3 | — | inhabituelle (sorcellerie) | **piochez 2, défaussez 1** |
-| Le Grand Débarquement | **Sable + Eau** | 5 | — | rare (sorcellerie) | vos créatures gagnent **+1/+0 et Abordage** jusqu’à la fin du tour |
-| Grappin d’abordage | Sable | 2 | +1/+1 | rare (arme) | le porteur gagne **Abordage** ; à chaque prise : **2 PV** |
-| *Corsaire* (jeton) | Sable | 0 | 2/1 | — | créé par La Barbe-Rousse ; Abordage |
+| Le Grand Débarquement | **Sable + Eau** | 5 | — | rare (sorcellerie) | vos créatures gagnent **+1/+0** jusqu’à la fin du tour, et **celles qui arrivent** ont **Abordage** (seuil : leur coût − 1) |
+| Grappin d’abordage | Sable | 2 | +1/+1 | rare (arme) | à l’attachement : **prise d’une créature adverse de coût ≤ 1** ; à chaque prise : **2 PV** |
+| *Corsaire* (jeton) | Sable | 0 | 2/1 | — | créé par La Barbe-Rousse ; pas d’Abordage (un jeton ne se joue pas depuis la main) |
 
 Rendements visés (à recalculer avec `rpgCardPower.js` avant implémentation,
 même discipline que `nerfs-set-*.md`) : 2,3–3,0, le plafond des « stars »
@@ -275,9 +280,8 @@ export const RPG_LETTRES_DE_MARQUE_JETONS = [{
   atk: 2,
   def: 1,
   rarity: 'commune',
-  abordage: true,
   typeLine: 'Créature-jeton — Corsaire',
-  text: 'Abordage — ses blessures de combat prennent la créature adverse vaincue en cale au lieu de la détruire.',
+  text: '—',
   flavor: 'Il a signé d’une croix ; la mer a contresigné.',
 }];
 
@@ -303,9 +307,9 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     atk: 2,
     def: 2,
     rarity: 'commune',
-    abordage: true,
+    abordage: 1,
     typeLine: 'Créature — Humain · Raïs',
-    text: 'Abordage — quand le Raïs inflige des blessures de combat qui détruiraient une créature adverse, celle-ci est prise en cale (face visible, sous le Raïs) au lieu d’être détruite : elle ne déclenche rien. Rançon — son propriétaire peut la reprendre en main en payant son coût en manas, à tout moment où il pourrait jouer une Magie Rapide. La cale s’ouvre quand le Raïs quitte la table.',
+    text: 'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale (face visible) : elle ne déclenche rien. Rançon — son propriétaire peut la reprendre en main en payant son coût en manas, à tout moment où il pourrait jouer une Magie Rapide. La cale s’ouvre quand le Raïs quitte la table.',
     flavor: 'Il ne coule jamais ce qu’il peut vendre.',
   }),
   carte({
@@ -356,9 +360,9 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     def: 1,
     rarity: 'inhabituelle',
     rapidite: true,
-    abordage: true,
+    abordage: 2,
     typeLine: 'Créature — Navire · Cotre',
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Abordage — ses blessures de combat prennent la créature adverse vaincue en cale au lieu de la détruire.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Abordage 2 — quand le Cotre arrive en jeu, la créature adverse ciblée de coût 2 ou moins est prise en sa cale : elle ne déclenche rien.',
     flavor: 'Deux voiles latines, une seule promesse : personne ne le rattrape.',
   }),
   carte({
@@ -413,10 +417,10 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     atk: 4,
     def: 5,
     rarity: 'mythique',
-    abordage: true,
+    abordage: 5,
     arrivee: { type: 'jetons', jeton: 'corsaire', nombre: 2 },
     typeLine: 'Créature légendaire — Amirale des deux mers',
-    text: 'Abordage — ses blessures de combat prennent la créature adverse vaincue en cale au lieu de la détruire. Quand La Barbe-Rousse arrive : créez deux jetons Corsaire 2/1 avec Abordage.',
+    text: 'Abordage 5 — quand La Barbe-Rousse arrive en jeu, la créature adverse ciblée de coût 5 ou moins est prise en sa cale : elle ne déclenche rien. Quand La Barbe-Rousse arrive : créez deux jetons Corsaire 2/1.',
     flavor: 'Alger lui doit ses remparts ; les deux mers lui doivent le reste.',
   }),
 ];
@@ -432,8 +436,8 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     cost: 2,
     rarity: 'commune',
     typeLine: 'Sorcellerie — Chancellerie · Sable + Eau',
-    effet: { type: 'donne', donne: { abordage: true }, cible: 'toutes-alliees', tours: 1 },
-    text: 'Jusqu’à la fin du tour, toutes vos créatures gagnent Abordage.',
+    effet: { type: 'arrivees-abordage' },
+    text: 'Jusqu’à la fin du tour, vos créatures qui arrivent en jeu ont Abordage — chacune au seuil de son coût moins un.',
     flavor: 'Le sceau de la Chambre change un pillard en officier — le temps d’un assaut.',
   }),
   carte({
@@ -472,8 +476,8 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     cost: 5,
     rarity: 'rare',
     typeLine: 'Sorcellerie — Assaut · Sable + Eau',
-    effet: { type: 'buff', atk: 1, def: 0, donne: { abordage: true }, cible: 'toutes-alliees', tours: 1 },
-    text: 'Jusqu’à la fin du tour, vos créatures gagnent +1/+0 et Abordage.',
+    effet: { type: 'buff', atk: 1, def: 0, arriveesAbordage: true, cible: 'toutes-alliees', tours: 1 },
+    text: 'Jusqu’à la fin du tour, vos créatures gagnent +1/+0 et celles qui arrivent en jeu ont Abordage — chacune au seuil de son coût moins un.',
     flavor: 'Ce jour-là, tout le quai monta à l’assaut — jusqu’aux lapins de la cale.',
   }),
 ];
@@ -487,9 +491,9 @@ export const RPG_LETTRES_DE_MARQUE_ARMES = [
     rarity: 'rare',
     typeLine: 'Arme — Grappin',
     bonus: { atk: 1, def: 1 },
-    donne: { abordage: true },
+    abordage: 1,
     priseEnCale: { type: 'soin', amount: 2 },
-    text: 'Arme — Le porteur gagne +1/+1 et Abordage. Quand le porteur prend une créature en cale, vous gagnez 2 PV.',
+    text: 'Arme — Le porteur gagne +1/+1. Quand le Grappin s’attache, la créature adverse ciblée de coût 1 ou moins est prise en la cale du porteur. Quand le porteur prend une créature en cale, vous gagnez 2 PV.',
     flavor: 'Trois dents de fer, et la mer devient un couloir.',
   }),
 ];
@@ -576,24 +580,28 @@ aux boosters, comme le font les six autres boîtiers.
 
 ## 12. Ce que le moteur doit ajouter
 
-1. **Fiches** — `abordage: true` et `cargaison: N` sur les créatures ;
-   `donne: { abordage: true }` sur l’arme (chemin `donne` existant, contrat
-   du Khopesh et du Tribut) ; **`donne` en buff d’équipe** (Lettre de marque,
-   Grand Débarquement — variante `cible: 'toutes-alliees'` du `donne` ciblé du
-   Faiseur de passage, `tours: 1`).
+1. **Fiches** — `abordage: N` sur les créatures (le seuil imprimé suit le
+   barème « coût − 1 ») et `cargaison: N` ; `abordage: 1` sur l’arme (le
+   Grappin, capture à l’attachement) ; **`arriveesAbordage`** : en propre sur
+   la Lettre de marque (effet `arrivees-abordage`) et sur le buff du Grand
+   Débarquement — le drapeau `camp.abordageDesArrivees` arme toutes les
+   arrivées du tour, chacune au seuil de son coût moins un.
 2. **La cale** — `entite.enCale = { carteId, cote }` (une seule place, `null`
    par défaut). La créature prisonnière quitte `camp.creatures` et vit dans la
    fiche du capteur, **face visible** : mini-carte dans l’aperçu du capteur
    (même rendu que les armes portées), losange compteur sous le repère de
    couleur, annonce au lecteur d’écran. Rien ne se déclenche, aucune aura ne
    l’atteint.
-3. **La prise** — branchée sur la résolution des blessures de **combat**
-   (`rpgBlesserCreature` et les bilans de `rpgLancerAttaque` /
-   `rpgAttaquerCreature`, qui connaissent la source) : quand la victime
-   devrait mourir de blessures de combat, que la source vivante porte Abordage
-   et que sa cale est vide → `prendreEnCale` **à la place** du cimetière.
-   Jamais par effet de magie. Les compteurs `rpgNombreDestructions` ne bougent
-   pas — vérifier `rpgEvenementsDuel` et les quêtes.
+3. **La prise** — branchée sur **l’arrivée en jeu** (`rpgJouerCreature`,
+   après la résolution de l’`arrivee`) : la créature adverse désignée de coût
+   ≤ seuil rejoint la cale du capteur, `prendreEnCale` **à la place** d’une
+   destruction qui n’a jamais lieu. La désignation passe par
+   `duel.arriveeEnAttente = { …, abordage: seuil }` et
+   `rpgResoudreArriveeCiblee` (côté joueur, la table s’allume sur les seules
+   prises légales) ; sans désignation — l’IA, un appel direct — le moteur
+   choisit la prize la plus précieuse. Les boucliers ne comptent plus (la
+   prise ne blesse pas) ; jetons, figures et Tenacité restent insaisissables ;
+   les compteurs `rpgNombreDestructions` ne bougent pas.
 4. **La rançon** — `rpgRanconner(duel, cote, entiteId)` : coût imprimé du
    prisonnier, **paiement générique** (aucun pip — `rpgPeutPayerRancon`,
    voisin de `rpgPeutPayer`), légal partout où une Magie Rapide peut partir
@@ -613,9 +621,11 @@ aux boosters, comme le font les six autres boîtiers.
 7. **IA du sorcier** — `choisirRanconIA` : rançonner si le prisonnier coûte
    moins que la réserve et vaut plus qu’un tour (grosse créature, corps avec
    déclencheurs), sinon **attaquer le capteur** — l’IA doit comprendre que
-   tuer le corsaire libère tout ; et ne pas bloquer bêtement dans un Abordage
-   qu’elle perd.
-8. **`rpgCardPower.js`** — `abordage` → +1,5 ; `cargaison` → +0,9 × N ;
+   tuer le corsaire libère tout. À la pose de ses propres capteurs, le moteur
+   lui choisit la prize (coût d’abord, menace ensuite) ; au barème des coups,
+   un Abordage avec prize sur la table vaut +2,5.
+8. **`rpgCardPower.js`** — `abordage` (créature ou arme) → +1,5 ;
+   `arriveesAbordage` → +1,5 ; `cargaison` → +0,9 × N ;
    `renvoi-tueur` → ~1,2 ; déclencheur `rancon` → ~1,2. Recalculer les
    rendements du §8 avec la vraie formule.
 9. **Icônes** — `#effet-abordage` (**le grappin**) et `#effet-cargaison`
@@ -623,21 +633,32 @@ aux boosters, comme le font les six autres boîtiers.
    `preview-effets-icone.html`, pastilles sous la ligne de type, dépliage
    d’explication dans l’aperçu (contrat du Butin).
 10. **Tests** (`tests/rpg-lettres-de-marque.test.js`, inclus dans
-    `npm run check:rpg`) — la prise remplace la destruction (pas de jeton de
-    Momie, pas d’Honneur, pas de compteur de destruction) ; une seule place
-    en cale ; la rançon paie et rend en main ; l’ouverture (mort, renvoi,
-    exil, sacrifice, capture d’un capteur) ; Tenacité et boucliers protègent ;
-    jetons et héros jamais pris ; le buff Abordage de la Lettre expire mais la
-    cale reste ; Cargaison paie à la mort **et** à la prise ; le Brûlot
-    renvoie son tueur ; l’IA rançonne et libère.
+    `npm run check:rpg`) — la prise se fait **à l’arrivée** et remplace la
+    destruction (pas de jeton de Momie, pas d’Honneur, pas de compteur, pas
+    même de riposte) ; le seuil suit le barème « coût − 1 » (refus et
+    auto-pick) ; la désignation différée s’ouvre, refuse l’illégale et referme
+    sur la prize ; le jeton Corsaire n’accoste pas ; une seule place en cale
+    (le Grappin ne reprend pas sur un porteur plein) ; la rançon paie et rend
+    en main ; l’ouverture (mort, renvoi, exil, sacrifice, capture d’un
+    capteur) ; la Tenacité refuse la cale, les boucliers ne comptent plus ;
+    jetons et figures jamais pris ; le sceau de la Lettre et du Débarquement
+    arme les arrivées puis expire, mais la cale reste ; Cargaison paie à la
+    mort **et** à la prise ; le Brûlot renvoie son tueur ; l’IA choisit sa
+    prize et rançonne.
 
 ## 13. Direction artistique & sons
 
 - **Style** : l’âge de la course relu par l’art déco mauresque de Bab El —
-  voiles latines, cuivre patiné, toile écrue, pavillons calligraphiés, ponts
-  de galions vissés de laiton ; le noir du pavillon contre le turquoise de la
-  vague. Le cadre hybride existe déjà (`hybride-eau-sable`, turquoise
-  `#7fd4c8`) ;
+  voiles latines, cuivre patiné, toile écrue, ponts de galions vissés de
+  laiton ; le noir du pavillon contre le turquoise de la vague. **Monde
+  alternatif : aucun symbole national réel** (pas d’Espagne, de Portugal,
+  d’Angleterre ni de croissant ottoman) — les bannières sont fantaisistes et
+  cohérentes entre elles : la maison corsaire porte le **pavillon noir au
+  sablier d’or** (Raïs, Cotre, Barbe-Rousse, Corsaire), la flotte royale le
+  **teal profond au soleil de cuivre** (Galion, Tercio), la guilde des pilotes
+  l’**écrue à la rose des vents de cuivre** (Pilote), et le Renégat tient
+  **deux pavillons fantaisistes rivaux**. Le cadre hybride existe déjà
+  (`hybride-eau-sable`, turquoise `#7fd4c8`) ;
 - **15 illustrations + le Corsaire**, plein art 4:5, dans `public/cards/`,
   une par identifiant, aucun partage d’illustration au sein du deck (garde-fou
   du catalogue) ; direction : `src/games/RPG-CARD-ART.md` ;

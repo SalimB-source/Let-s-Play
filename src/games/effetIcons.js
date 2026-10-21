@@ -266,9 +266,10 @@ export function pastillesPourCarte(carte) {
   if (carte.honneur) ajouter('honneur', 'Honneur', Number(carte.honneur) || null);
   if (carte.butin) ajouter('butin', 'Butin');
   if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
-  // Les Lettres de Marque : l'Abordage imprime (ou prêté par le Grappin),
-  // la Cargaison du convoi, et le déclencheur de rançon du Négociant.
-  if (carte.abordage || carte.donne?.abordage) ajouter('abordage', 'Abordage');
+  // Les Lettres de Marque : l'Abordage imprimé (créature au seuil « coût − 1 »,
+  // Grappin à l'attachement — la pastille porte le seuil), la Cargaison du
+  // convoi, et le déclencheur de rançon du Négociant.
+  if (carte.abordage) ajouter('abordage', 'Abordage', Number.isFinite(carte.abordage) ? carte.abordage : null);
   if (carte.cargaison) ajouter('cargaison', 'Cargaison', Number(carte.cargaison) || null);
   if (carte.declencheRancon) ajouter('rancon', 'Rançon', Number(carte.declencheRancon) || null);
   // Une arme peut accorder un bouclier à son porteur (la Hache de la
@@ -492,7 +493,7 @@ export const EFFET_DEFINITIONS = {
   banniere: 'Tant qu’elle est en jeu, les créatures de sa tribu gagnent un bonus.',
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`,
   butin: 'Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
-  abordage: 'Quand ses blessures de combat détruiraient une créature adverse, celle-ci est prise en cale — détenue face visible, une seule place — au lieu d’être détruite : elle ne déclenche rien. Son propriétaire peut la racheter en main au prix imprimé, et la cale s’ouvre quand le capteur quitte la table.',
+  abordage: (n) => `Quand cette créature arrive en jeu, la créature adverse ciblée de coût ${n ?? 'N'} ou moins est prise en sa cale — détenue face visible, une seule place — au lieu d’être détruite : elle ne déclenche rien. Son propriétaire peut la racheter en main au prix imprimé, et la cale s’ouvre quand le capteur quitte la table.`,
   cargaison: (n) => `Quand cette créature meurt ou est prise en cale, son propriétaire pioche ${n ?? 'N'} carte${n > 1 ? 's' : ''} : le convoi est assuré.`,
   rancon: (n) => `Chaque fois qu’une créature est rançonnée, vous piochez ${n ?? 1} carte${n > 1 ? 's' : ''} : la commission du négociant.`,
   cale: 'La créature détenue par ce capteur. Son propriétaire peut la rançonner au prix imprimé, en manas libres ; la cale s’ouvre quand le capteur quitte la table.',
