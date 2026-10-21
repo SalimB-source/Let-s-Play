@@ -35,7 +35,7 @@ export const RPG_TENEBRES_JETONS = [{
   def: 1,
   rarity: 'commune',
   typeLine: 'Créature-jeton — Serviteur',
-  text: 'Créé par la Couveuse de shabtis et les Momies de lin : 1/1, sans coût.',
+  text: 'Créé par les Momies de lin : 1/1, sans coût.',
   flavor: 'Il fait le travail que les morts n’ont plus les mains pour faire.',
 }];
 
@@ -141,18 +141,6 @@ export const RPG_TENEBRES_CREATURES = [
     flavor: 'Il compte les feuillets comme on compte les jours : sans jamais en garder.',
   }),
   carte({
-    id: 'couveuse-de-shabtis',
-    name: 'Couveuse de shabtis',
-    cost: 3,
-    atk: 2,
-    def: 2,
-    rarity: 'rare',
-    destruction: { type: 'jetons', jeton: 'shabti', nombre: 2 },
-    typeLine: 'Créature — Humaine · Couveuse',
-    text: 'Quand Couveuse de shabtis meurt : créez deux créatures-jeton « Shabti » 1/1.',
-    flavor: 'Elle élève les serviteurs de ceux qui n’ont plus de mains.',
-  }),
-  carte({
     id: 'celle-qui-pese',
     name: 'Celle qui pèse',
     cost: 4,
@@ -184,9 +172,9 @@ export const RPG_TENEBRES_CREATURES = [
     def: 5,
     rarity: 'rare',
     tribut: 2,
-    arrivee: { type: 'degats', amount: 3, cible: 'toutes-autres' },
+    arrivee: { type: 'destruction-coutmax', coutMax: 3, cible: 'toutes-autres' },
     typeLine: 'Créature légendaire — Celui qui juge',
-    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Celui qui juge arrive en jeu : il inflige 3 dégâts à toutes les autres créatures.',
+    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Celui qui juge arrive en jeu : il détruit toutes les créatures qui coûtent 3 mana ou moins.',
     flavor: 'Il ne regarde pas le sable. Il regarde le poids.',
   }),
   // ── Les grandes figures d’Égypte : nommées par leur attribut, jamais « dieux » ──

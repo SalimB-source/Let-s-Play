@@ -20,7 +20,7 @@ const DECK_JOUER = ['chien-du-guet', 'fennec-des-decombres', 'tiziri-du-djurdjur
 const DECK_SORCIER = [
   ...['papyrus', 'ouvrier-du-natron', 'nom-efface', 'gardienne-de-la-balance',
     'scribe-des-feuillets', 'pretre-de-la-bouche', 'offrande-de-lin', 'ureus-du-seuil',
-    'momie-de-lin', 'ibis-des-comptes', 'couveuse-de-shabtis', 'khopesh-d-or',
+    'momie-de-lin', 'ibis-des-comptes', 'khopesh-d-or',
     'le-poids', 'celle-qui-pese'].flatMap((id) => [id, id]),
   'chacal-du-seuil', 'chacal-du-seuil',
 ];

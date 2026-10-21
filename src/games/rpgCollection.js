@@ -120,7 +120,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // avec leurs mythiques tenebres — elles sont du même set.
   'necropole-1': ['chacal-du-seuil', 'ouvrier-du-natron', 'papyrus', 'gardienne-de-la-balance', 'scribe-des-feuillets'],
   'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'nom-efface', 'offrande-de-lin'],
-  'necropole-3': ['couveuse-de-shabtis', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets'],
+  'necropole-3': ['khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets'],
   'necropole-4': ['la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres'],
 };
 

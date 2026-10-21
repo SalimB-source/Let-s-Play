@@ -435,19 +435,19 @@ test('l’Ibis des comptes gagne Envol et conserve son arrivée de pioche-défau
 });
 
 
-test('la Couveuse crée deux Shabtis à sa mort, pas à son arrivée', () => {
-  const carte = cardById('couveuse-de-shabtis');
+test('la Momie crée un Shabti à sa mort, pas à son arrivée', () => {
+  const carte = cardById('momie-de-lin');
   assert.equal(carte.arrivee, undefined);
-  assert.deepEqual(carte.destruction, { type: 'jetons', jeton: 'shabti', nombre: 2 });
+  assert.deepEqual(carte.destruction, { type: 'jetons', jeton: 'shabti', nombre: 1 });
   assert.match(carte.text, /meurt/);
   const duel = nouveau();
   installerMana(duel);
-  const couveuse = poserTenebres(duel, 'couveuse-de-shabtis');
+  const momie = poserTenebres(duel, 'momie-de-lin');
   assert.equal(duel.joueur.creatures.filter((c) => c.carteId === 'shabti').length, 0);
-  rpgBlesserCreature(duel, 'joueur', couveuse.id, couveuse.pv);
-  assert.ok(!duel.joueur.creatures.some((c) => c.id === couveuse.id));
+  rpgBlesserCreature(duel, 'joueur', momie.id, momie.pv);
+  assert.ok(!duel.joueur.creatures.some((c) => c.id === momie.id));
   const shabtis = duel.joueur.creatures.filter((c) => c.carteId === 'shabti');
-  assert.equal(shabtis.length, 2);
+  assert.equal(shabtis.length, 1);
   for (const shabti of shabtis) {
     assert.equal(shabti.atk, 1);
     assert.equal(shabti.pv, 1);
@@ -468,20 +468,20 @@ test('La Dévoreuse est une 4/5 pour 6 mana et conserve son exil à l’arrivée
   assert.deepEqual(carte.arrivee, { type: 'exil', cible: 'creature' });
 });
 
-test('Celui qui juge 3/5 frappe toutes les autres créatures des deux camps à l’arrivée', () => {
+test('Celui qui juge 3/5 détruit les créatures à 3 mana ou moins à l’arrivée', () => {
   const carte = cardById('celui-qui-juge');
   assert.equal(carte.atk, 3);
   assert.equal(carte.def, 5);
   assert.equal(carte.cost, 6);
   assert.equal(carte.tribut, 2);
   assert.ok(!carte.infiltration);
-  assert.deepEqual(carte.arrivee, { type: 'degats', amount: 3, cible: 'toutes-autres' });
+  assert.deepEqual(carte.arrivee, { type: 'destruction-coutmax', coutMax: 3, cible: 'toutes-autres' });
   assert.equal(arriveeCiblePortee(carte), null);
   for (const cote of ['joueur', 'sorcier']) {
     const duel = nouveau();
     installerMana(duel);
     const momie = poserTenebres(duel, 'momie-de-lin');
-    const couveuse = poserTenebres(duel, 'couveuse-de-shabtis');
+    const gardienne = poserTenebres(duel, 'gardienne-de-la-balance');
     const ennemi = poserTenebres(duel, 'momie-de-lin');
     duel.joueur.creatures = duel.joueur.creatures.filter((c) => c.id !== ennemi.id);
     duel.sorcier.creatures.push(ennemi);
@@ -494,11 +494,9 @@ test('Celui qui juge 3/5 frappe toutes les autres créatures des deux camps à l
     const resultat = rpgJouerCreature(duel, cote, carte.id);
     assert.equal(resultat.ok, true, JSON.stringify(resultat));
     assert.equal(resultat.entite.pv, 5, 'la source est épargnée');
-    assert.equal(momie.pv, 1, 'le camp joueur subit trois dégâts');
-    assert.equal(ennemi.pv, 1, 'le camp sorcier subit trois dégâts');
-    assert.ok(!duel.joueur.creatures.some((c) => c.id === couveuse.id));
-    const jetons = duel.joueur.creatures.filter((c) => c.carteId === 'shabti');
-    assert.equal(jetons.length, 2, 'les jetons créés après la mort survivent à la vague');
+    assert.ok(!duel.joueur.creatures.some((c) => c.id === momie.id), 'la momie du joueur est détruite (3 mana)');
+    assert.ok(!duel.joueur.creatures.some((c) => c.id === gardienne.id), 'la gardienne du joueur est détruite (2 mana)');
+    assert.ok(!duel.sorcier.creatures.some((c) => c.id === ennemi.id), 'la momie ennemie est détruite (3 mana)');
     assert.deepEqual([duel.joueur.pv, duel.sorcier.pv], pv, 'aucun dégât aux sorciers');
   }
 });
@@ -551,12 +549,10 @@ test('La Dernière Pesée détruit les deux camps sans dégâts ni exil et paie 
 test('La Dernière Pesée libère tout le champ avant les déclenchements de mort', () => {
   const duel = nouveau();
   installerMana(duel);
-  poserTenebres(duel, 'couveuse-de-shabtis');
-  for (let i = 0; i < 4; i++) poserTenebres(duel, 'chacal-du-seuil');
+  for (let i = 0; i < 5; i++) poserTenebres(duel, 'chacal-du-seuil');
   assert.equal(duel.joueur.creatures.length, 5);
   assert.equal(lancerDernierePesee(duel).ok, true);
-  assert.equal(duel.joueur.creatures.length, 2, 'les deux Shabtis ont une place et survivent');
-  assert.ok(duel.joueur.creatures.every((c) => c.carteId === 'shabti' && c.pv === 1));
+  assert.equal(duel.joueur.creatures.length, 0, 'toutes les créatures sont détruites');
 });
 
 test('La Dernière Pesée tue les créatures tenaces et épargne les protections', () => {
