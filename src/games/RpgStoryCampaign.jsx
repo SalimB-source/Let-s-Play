@@ -57,7 +57,7 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
             <img src={`${import.meta.env.BASE_URL}${RPG_STORY_CAMPAIGN_MINIATURE}`} alt="Miniature du Mode Histoire" />
           </span>
           <div className="rpg-campaign__header-text">
-            <span className="rpg-narrative__eyebrow">CAMPAGNE ILLUSTRÉE <span aria-hidden="true">/</span> {acteAffiche.id === 'acte-1' ? 'ÉPISODE 01' : `ACTE ${acteAffiche.romain}`}</span>
+            <span className="rpg-narrative__eyebrow">CAMPAGNE ILLUSTRÉE <span aria-hidden="true">/</span> <span className="rpg-campaign__episode">{acteAffiche.id === 'acte-1' ? 'ÉPISODE 01' : `ACTE ${acteAffiche.romain}`}</span></span>
             <h2>La Dernière<br /><em>Liste.</em></h2>
           </div>
         </div>
