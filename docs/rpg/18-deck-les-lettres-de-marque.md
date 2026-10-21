@@ -588,7 +588,8 @@ Recette `lettres-de-marque` (`rpgDeckRecipes.js`), dans la continuité de
     ['rais-de-la-galiote', 2], ['cotre-de-course', 2], ['le-renegat', 2],
     ['tercio-de-cuivre', 2], ['pilote-de-la-carreira', 2], ['le-brulot', 2],
     ['negociant-des-ranscons', 1], ['galion-de-la-flotte', 1],
-    ['la-barbe-rousse', 1], ['sonneur-fele', 1],
+    ['la-vengeance-de-la-reine-anne', 1], ['la-barbe-rousse', 1],
+    ['sonneur-fele', 1],
     ['lettre-de-marque', 2], ['haut-fond', 2], ['le-routier', 1],
     ['le-grand-debarquement', 1], ['ressac', 1], ['lame-de-mer', 1],
     ['grappin-d-abordage', 1], ['baton-des-citernes', 1],
@@ -607,11 +608,13 @@ aux boosters, comme le font les six autres boîtiers.
    la Lettre de marque (effet `arrivees-abordage`) et sur le buff du Grand
    Débarquement — le drapeau `camp.abordageDesArrivees` arme toutes les
    arrivées du tour, chacune au seuil de son coût moins un.
-2. **La cale** — `entite.enCale = { carteId, name, cost, entite }` (une seule
+2. **La cale** — `entite.enCale = { carteId, name, entite }` (une seule
    place, `null` par défaut). La créature prisonnière quitte `camp.creatures`
    et vit dans la fiche du capteur, **face visible** : mini-carte dans l’aperçu
    du capteur (même rendu que les armes portées), losange compteur sous le
-   repère de couleur, annonce au lecteur d’écran. Rien ne se déclenche, aucune
+   repère de couleur — sous les deux pastilles empilées d’une carte hybride,
+   comme sur une mono : le losange ⛓ ne rejoint jamais les compteurs alignés
+   sous le coût —, annonce au lecteur d’écran. Rien ne se déclenche, aucune
    aura ne l’atteint. `entite` garde la **présence** elle-même, telle qu’elle
    était au crochet : c’est elle qui revient en jeu si le capteur meurt.
 3. **La prise** — branchée sur **l’arrivée en jeu** (`rpgJouerCreature`,
@@ -624,6 +627,14 @@ aux boosters, comme le font les six autres boîtiers.
    choisit la prize la plus précieuse. Les boucliers ne comptent plus (la
    prise ne blesse pas) ; jetons, figures et Tenacité restent insaisissables ;
    les compteurs `rpgNombreDestructions` ne bougent pas.
+   **Le second temps se lit sur l’attente, pas sur la fiche** : le Grappin
+   accroché garde `cibleEnCours` sur sa carte d’arme — une fiche qui dit
+   « arme », donc « créature alliée ». La portée vient de
+   `porteeCibleEnCours` (`RpgDuelPage`) : tant que `arriveeEnAttente.abordage`
+   porte l’arme, la table ne laisse désigner que les prises adverses, et
+   l’invite annonce « accroché — choisissez la créature adverse à prendre en
+   cale ». Sans cela, la page redemandait un porteur allié et refusait la proie
+   pourtant allumée (`check:rpg-cale`).
 4. **Pas de rançon** — il n’existe **aucune** sortie payante de la cale : ni
    `rpgRanconner`, ni fenêtre de Magie Rapide dédiée, ni bouton sur la table.
    La seule façon de récupérer une détenue est de faire quitter la table au

@@ -30,6 +30,7 @@ import {
   tempsRestant,
 } from './rpgPvpSalon.js';
 import RpgPvpBoard from './RpgPvpBoard.jsx';
+import RpgMessagerieBouton from './RpgMessagerieBouton.jsx';
 
 /**
  * Le salon du Sablier en ligne — `src/games/RpgPvpSalon.jsx`

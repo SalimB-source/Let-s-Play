@@ -2066,13 +2066,13 @@ function seuilAbordage(carte, camp, prochaineOfferte = Boolean(camp?.prochaineAr
 }
 
 /**
- * Une créature est prisable en cale : une vraie carte (pas un jeton), pas une
- * figure légendaire (on les tue, on ne les vend pas), pas une tenace (on ne
- * prend pas ce qui reviendra), pas protégée contre la couleur de la source,
- * et de coût ≤ seuil.
+ * Une créature est prisable en cale : pas une figure légendaire (on les tue,
+ * on ne les vend pas), pas une tenace (on ne prend pas ce qui reviendra), pas
+ * protégée contre la couleur de la source, et de coût ≤ seuil. Les jetons de
+ * créature sont prisables depuis n’importe quel seuil d’abordage.
  */
 function priseEnCaleLegale(victime, couleurs, seuil) {
-  if (!victime || victime.jeton) return false;
+  if (!victime) return false;
   const carte = duelCardById(victime.carteId);
   if (!carte || carte.kind === 'hero') return false;
   if (carte.insaisissable) return false;
@@ -2106,12 +2106,10 @@ function meilleurePriseAbordage(duel, coteVictime, couleurs, seuil) {
  */
 function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictime = null) {
   if (!capteur || capteur.enCale) return false;
-  // Un jeton n'a pas de carte à détenir, une figure ne se vend pas, la
-  // Tenacité refuse la cale comme elle refuse la mort, et l'insaisissable
-  // (La Barbe Noire) glisse toujours entre les grappins (garde pour les
-  // appels directs du moteur : la désignation de l'arrivée a déjà filtré
-  // tout cela).
-  if (victime?.jeton) return false;
+  // Une figure légendaire ne se vend pas, la Tenacité refuse la cale comme
+  // elle refuse la mort, et l'insaisissable (La Barbe Noire) glisse toujours
+  // entre les grappins (garde pour les appels directs du moteur : la
+  // désignation de l'arrivée a déjà filtré tout cela).
   if (duelCardById(victime?.carteId)?.kind === 'hero') return false;
   if (duelCardById(victime?.carteId)?.insaisissable) return false;
   if (victime?.tenaciteDisponible) return false;

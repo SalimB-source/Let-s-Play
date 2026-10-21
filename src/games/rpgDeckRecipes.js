@@ -204,7 +204,9 @@ export const RPG_RECETTES_DECKS = {
    * — le set Piraterie hybride Sable + Eau de l'âge de la course. La signature
    * pose l'équipage de la Régence : l'Abordage prend (Raïs, Cotre, Lettre de
    * marque ; le Grand Débarquement arme les cales pleines), la prise paie (Négociant), la Cargaison
-   * assure (Galion) et le Brûlot renvoie son tueur. L'Eau qui amollit la
+   * assure (Galion) et le Brûlot renvoie son tueur. Le Hollandais volant —
+   * vaisseau fantôme au Coup rapide et à l'Abordage 3 — hante la flotte en
+   * second grand voilier, aux côtés du Galion. L'Eau qui amollit la
    * prise vient du catalogue (Sonneur fêlé, Ressac, Lame de mer, Bâton des
    * citernes) ; le remplissage choisit les meilleures cartes Sable + Eau.
    */
@@ -220,7 +222,8 @@ export const RPG_RECETTES_DECKS = {
       ['rais-de-la-galiote', 2], ['cotre-de-course', 2], ['le-renegat', 2],
       ['tercio-de-cuivre', 2], ['pilote-de-la-carreira', 2], ['le-brulot', 2],
       ['negociant-des-ranscons', 1], ['galion-de-la-flotte', 1],
-      ['la-barbe-rousse', 1], ['sonneur-fele', 1],
+      ['la-vengeance-de-la-reine-anne', 1], ['la-barbe-rousse', 1],
+      ['sonneur-fele', 1],
       ['lettre-de-marque', 2], ['haut-fond', 2], ['le-routier', 1],
       ['le-grand-debarquement', 1], ['ressac', 1], ['lame-de-mer', 1],
       ['grappin-d-abordage', 1], ['baton-des-citernes', 1],

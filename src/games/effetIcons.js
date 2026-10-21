@@ -46,7 +46,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-defausse" viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="14" rx="1.5"/><path d="M17 8v8m0 0-3-3m3 3 3-3"/><path d="M7 19h10"/></symbol>
   <symbol id="i-paquet" viewBox="0 0 24 24"><rect x="5" y="3" width="12" height="9" rx="1.5"/><path d="M8 6.5h6M8 9h4"/><path d="M19 13v6m0 0-2.5-2.5M19 19l2.5-2.5"/></symbol>
   <symbol id="i-visages" viewBox="0 0 24 24"><path d="M11 3.5C8 3.5 5.8 5.6 5.8 8.2c0 2 1.4 3.3 1.4 3.3s-1.7 1.6-1.7 4.3c0 2.6 2.4 4.7 5.5 4.7"/><path d="M13 3.5c3 0 5.2 2.1 5.2 4.7 0 2-1.4 3.3-1.4 3.3s1.7 1.6 1.7 4.3c0 2.6-2.4 4.7-5.5 4.7"/><path d="M8.2 8.2h1.6M14.2 8.2h1.6"/></symbol>
-  <symbol id="i-abordage" viewBox="0 0 24 24"><path d="M12 3v10.5"/><path d="M8.5 6h7"/><path d="M12 13.5c-2.5 0-4.5-2-4.5-4.5V6"/><path d="M12 13.5c2.5 0 4.5-2 4.5-4.5V6"/></symbol>
+  <symbol id="i-abordage" viewBox="0 0 24 24"><path d="M12 3.2c-3.8 0-6.6 2.9-6.6 6.6 0 1.8.7 2.9 1.8 3.7v2.4h9.6v-2.4c1.1-.8 1.8-1.9 1.8-3.7 0-3.7-2.8-6.6-6.6-6.6z"/><path d="M8.8 18.4v1.7a1.5 1.5 0 0 0 1.5 1.5h3.4a1.5 1.5 0 0 0 1.5-1.5v-1.7"/><path d="M12 18.4v3.2"/><circle cx="9.4" cy="10.2" r="1.5"/><circle cx="14.6" cy="10.2" r="1.5"/><path d="m12 12.2-1 2h2z"/><path d="M3.6 20.4 8 16"/><path d="M3.9 16.3 7.7 20.1"/><path d="M20.4 3.6 16 8"/><path d="M20.1 7.7 16.3 3.9"/></symbol>
   <symbol id="i-cargaison" viewBox="0 0 24 24"><path d="M6.5 9V7.5a5.5 5.5 0 0 1 11 0V9"/><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M9 9v11M15 9v11"/><path d="M12 13v3"/></symbol>
 </svg>`.trim();
 

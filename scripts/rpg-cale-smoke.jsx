@@ -5,7 +5,7 @@
 // créature sans cale n'a ni petite carte captive ni face supplémentaire.
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import RpgDuelPage, { TableCard, HoverCardPreview } from '../src/games/RpgDuelPage.jsx';
+import RpgDuelPage, { TableCard, HoverCardPreview, porteeCibleEnCours } from '../src/games/RpgDuelPage.jsx';
 import { cardById } from '../src/games/rpgCards.js';
 
 void RpgDuelPage;
@@ -32,6 +32,16 @@ export function rendreCales() {
     capitaineEnnemi: { html: rendre('cotre-de-course', capitaineCotre, 'ennemi') },
     // Le même Cotre, cale vide : le DOM reste celui d'avant, une carte = un bouton.
     libre: { html: rendre('cotre-de-course') },
+    // La Barbe Noire : la seule créature à Abordage d'une seule couleur
+    // (Ténèbres). Sa cale garde le rang commun des compteurs, sous l'unique
+    // pastille de couleur, à côté du masque des Deux Visages.
+    mono: {
+      html: rendre('la-barbe-noire', {
+        name: cardById('la-barbe-noire').name,
+        enCale,
+        visage: 0,
+      }),
+    },
     // La fiche du capteur (clic droit sur la table) : une petite carte captive
     // dans les détails, et une seule face principale.
     fiche: {
@@ -51,3 +61,23 @@ export function rendreCales() {
     },
   };
 }
+
+// La portée de la désignation en cours, attente du moteur comprise : c'est elle
+// qui dit quels clics la table accepte. Le Grappin accroché ouvre une prise en
+// cale — une proie ADVERSE — même si sa fiche dit « arme » ; tant qu'il n'est
+// pas attaché, il demande bien un porteur allié.
+export function porteesGrappin() {
+  return {
+    avantAttachement: porteeCibleEnCours({ carte: cardById('grappin-d-abordage') }),
+    apresAttachement: porteeCibleEnCours({ carte: cardById('grappin-d-abordage'), attenteAbordage: true }),
+    autreArme: porteeCibleEnCours({ carte: cardById('baton-des-citernes'), attenteAbordage: true }),
+    creatureAccostage: porteeCibleEnCours({ carte: cardById('rais-de-la-galiote'), attenteAbordage: true }),
+    bimini: porteeCibleEnCours({
+      carte: cardById('grappin-d-abordage'),
+      attenteAbordage: true,
+      attenteSiteBimini: true,
+    }),
+  };
+}
+
+export { porteeCibleEnCours };

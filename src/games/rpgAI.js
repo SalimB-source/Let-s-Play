@@ -1668,8 +1668,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       ? Math.max(0, (Number(carte.cost) || 0) - 1)
       : null;
   if (seuilAbordageIa !== null) {
-    const prisable = duel[adv].creatures.some((entite) => !entite.jeton
-      && (duelCardById(entite.carteId)?.kind ?? 'creature') !== 'hero'
+    const prisable = duel[adv].creatures.some((entite) => (duelCardById(entite.carteId)?.kind ?? 'creature') !== 'hero'
       && !duelCardById(entite.carteId)?.insaisissable
       && !entite.tenaciteDisponible
       && !estProtegee(entite, cardColors(carte))

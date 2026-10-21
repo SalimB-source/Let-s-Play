@@ -26,9 +26,14 @@ import {
 const pastillesDe = (id) => pastillesPourCarte(cardById(id))
   .map((pastille) => (pastille.valeur != null ? `${pastille.label} ${pastille.valeur}` : pastille.label));
 
-test('le sprite porte les 29 symboles validés, un par effet', () => {
+test('le sprite porte les 30 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
-  assert.equal(symboles.length, 29);
+  // 30 depuis le paquet de la défausse (`i-paquet`) : le compte était resté à
+  // 29 dans ce test, alors que chaque symbole est bien référencé par
+  // `EFFET_ICONE`.
+  assert.equal(symboles.length, 30);
+  assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
+    'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
     assert.ok(symboles.includes(icone), `${icone} est dans le sprite`);
   }
@@ -58,6 +63,24 @@ test('le sprite porte les 29 symboles validés, un par effet', () => {
     'le nasal central du casque viking est dans le sprite');
   assert.equal(furie.includes('M7 4c2.6 4.4 3.2 10.6 1.2 16'), false,
     'l’ancien dessin de Furie a disparu');
+  // L'Abordage : un crâne de mort pirate — boîte crânienne, deux orbites,
+  // mâchoire dentelée et os croisés aux deux coins, pas une ancre.
+  const abordage = EFFETS_SPRITE.match(/<symbol id="i-abordage"[^>]*>(.*?)<\/symbol>/)?.[1] ?? '';
+  assert.ok(abordage.includes('M12 3.2c-3.8 0-6.6 2.9-6.6 6.6'),
+    'l’Abordage dessine une boîte crânienne');
+  assert.equal((abordage.match(/<circle/g) ?? []).length, 2,
+    'le crâne a ses deux orbites');
+  assert.ok(abordage.includes('M8.8 18.4v1.7a1.5 1.5 0 0 0 1.5 1.5h3.4'),
+    'la mâchoire du crâne est dessinée sous la face');
+  assert.ok(abordage.includes('M12 18.4v3.2'), 'la mâchoire est fendue en deux dents');
+  assert.ok(abordage.includes('M3.6 20.4 8 16') && abordage.includes('M20.4 3.6 16 8'),
+    'les deux os croisés du pavillon pirate entourent le crâne');
+  assert.equal(abordage.includes('M12 3v10.5'), false,
+    'l’ancienne ancre de l’Abordage a disparu');
+  assert.equal(abordage.includes('<path d="M8.5 6h7"/>'), false,
+    'la vergue de l’ancre ne reste pas dans le crâne');
+  assert.equal(EFFET_ICONE.prise, 'i-abordage',
+    'la Prise garde le crâne du pirate : la cale et l’Abordage sont la même prise');
 });
 
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
