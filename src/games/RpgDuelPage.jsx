@@ -6495,6 +6495,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ]);
     const cartesDisparues = avant.filter((entite) => !vivants.has(entite.entityId)
       && !renvoyees.has(entite.entityId));
+    // Une prise n'est pas une mort : son fantôme rejoint le capteur par la chaîne.
+    const prises = new Map((duel.combatFeed ?? [])
+      .filter((evenement) => evenement.type === 'prise')
+      .map((evenement) => [evenement.victim.id, evenement.killers[0]?.id]));
     const mouvementReduit = animationsReduites();
     const disparues = mouvementReduit ? [] : cartesDisparues;
     // La roue de feu : seules les blessures **parues depuis la dernière action
@@ -6566,14 +6570,38 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (mouvementReduit && entitesBrulees.size) jouerSfx('flame_gust');
     if (disparues.length) {
       const token = ++sequenceAnimationRef.current;
-      const duree = disparues.some((entite) => entitesBrulees.has(entite.entityId)) ? 1050
+      const duree = disparues.some((entite) => prises.has(entite.entityId)) ? 1400
+        : disparues.some((entite) => entitesBrulees.has(entite.entityId)) ? 1050
         : disparues.some((entite) => foudroyees.has(entite.entityId)) ? DUREE_ECLAIR_MARTEAU
           : 760;
       // Le souffle de feu du coup vient peut-être de sonner (le sort qui vient
       // d'être lancé) : une carte consumée par la roue ne le rejoue pas.
       const feuVientDeSonner = Date.now() - dernierSonFeuRef.current < 700;
-      const effets = disparues.map((entite) => ({
+      const effets = disparues.map((entite) => {
+        const capteurId = prises.get(entite.entityId);
+        const capteur = avant.find((carte) => carte.entityId === capteurId);
+        const tableRect = tableRef.current?.getBoundingClientRect();
+        const element = capteurId && [...(tableRef.current?.querySelectorAll('[data-entity-id]') ?? [])]
+          .find((carte) => carte.dataset.entityId === capteurId);
+        // L'IA peut poser et capturer dans la même action, avant le rendu
+        // du capteur : viser alors le centre de sa rangée, jamais une mort.
+        const capteurVivant = vivants.get(capteurId);
+        const rang = capteurVivant && tableRef.current?.querySelector(
+          duel.joueur.creatures.some((carte) => carte.id === capteurId)
+            ? '.card-row--equipe' : '.card-row--ennemi',
+        );
+        const rect = (element ?? rang)?.getBoundingClientRect();
+        const destination = capteur
+          ? { x: capteur.left + capteur.width / 2, y: capteur.top + capteur.height / 2 }
+          : rect && tableRect
+            ? { x: rect.left + rect.width / 2 - tableRect.left, y: rect.top + rect.height / 2 - tableRect.top }
+            : null;
+        return ({
         ...entite,
+        abordage: capteurId && destination ? {
+          dx: destination.x - entite.left - entite.width / 2,
+          dy: destination.y - entite.top - entite.height / 2,
+        } : null,
         token,
         effectId: `${token}-${entite.entityId}`,
         bruleeParBraise: entitesBrulees.has(entite.entityId),
@@ -6582,7 +6610,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         // Trois voies la retirent (fin d'animation, minuterie, ménage), la
         // dernière servant de filet si l'onglet dort pendant l'animation.
         expireA: Date.now() + duree + 400,
-      }));
+      });
+      });
       // La mort ne se fait plus attendre : la carte brûlée reçoit son adieu
       // **tout de suite**, pendant que la roue finit de consumer l'emplacement
       // qu'elle vient de quitter. Seul le tourbillon d'eau retient encore son
@@ -9044,9 +9073,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {cartesEnDestruction.map((effet) => {
           const carteDetruite = cardById(effet.cardId);
           return (
+            <Fragment key={effet.effectId}>
+              {effet.abordage && (
+                <svg className="rpg-abordage-chaine" aria-hidden="true" style={{
+                  left: effet.left + effet.width / 2 + effet.abordage.dx,
+                  top: effet.top + effet.height / 2 + effet.abordage.dy,
+                  width: Math.hypot(effet.abordage.dx, effet.abordage.dy),
+                  transform: `rotate(${Math.atan2(-effet.abordage.dy, -effet.abordage.dx)}rad)`,
+                }}>
+                  <line x1="0" y1="8" x2="100%" y2="8" className="rpg-abordage-chaine__ombre" />
+                  <line x1="0" y1="8" x2="100%" y2="8" className="rpg-abordage-chaine__maillons" />
+                </svg>
+              )}
             <div
-              key={effet.effectId}
-              className={`rpg-card-destruction-fx ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
+              className={`rpg-card-destruction-fx${effet.abordage ? ' is-abordage' : ''} ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
               data-rpg-destroyed-id={effet.entityId}
               data-destruction-source={effet.bruleeParBraise ? 'braise' : undefined}
               aria-hidden="true"
@@ -9065,11 +9105,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 width: `${effet.width}px`,
                 height: `${effet.height}px`,
                 '--rpg-fx-rotation': `${effet.angle}rad`,
+                '--rpg-abordage-x': `${effet.abordage?.dx ?? 0}px`,
+                '--rpg-abordage-y': `${effet.abordage?.dy ?? 0}px`,
               }}
             >
               <img src={cardArt(effet.cardId)} alt="" />
               <b>{effet.name}</b>
             </div>
+            </Fragment>
           );
         })}
 
