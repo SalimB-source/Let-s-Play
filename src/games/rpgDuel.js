@@ -1133,7 +1133,7 @@ function creerEntiteCreature(carte) {
     // Le surcoût du porteur d’une arme (le Grappin d’abordage) : le mana déjà
     // payé ne change pas, mais le **coût que vaut la créature en jeu** grimpe
     // tant que l’arme tient (voir `rpgCoutEntite`) — seuil d’Abordage à
-    // l’attachement, prix de rançon et plafonds de coût le lisent.
+    // l’attachement et plafonds de coût le lisent.
     coutBonusArme: 0,
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
@@ -1181,7 +1181,7 @@ function creerEntiteCreature(carte) {
     // Le Tribut (set Ténèbres) : transfert de vie au contact du sorcier
     // adverse — `declencherTributs`, même voie de bilans que le Butin.
     tribut: Math.max(0, Number(carte.tribut) || 0),
-    // La cale du capteur : `{ carteId, name, cost }` — la créature adverse
+    // La cale du capteur : `{ carteId, name, entite }` — la créature adverse
     // prise vive, détenue face visible, une seule place, `null` si vide. La
     // prisonnière ne figure plus dans `camp.creatures` : sa case est libre.
     enCale: null,
@@ -1260,8 +1260,8 @@ function absorberBouclier(entite, montant) {
 /**
  * Le coût que vaut une créature **en jeu** : son coût imprimé plus le
  * surcoût de l’arme qu’elle porte (le Grappin d’abordage : +1 tant qu’il est
- * attaché). C’est ce chiffre que lisent la légalité d’une prise en cale, le
- * prix d’une rançon (figé à la capture) et les plafonds de coût.
+ * attaché). C’est ce chiffre que lisent la légalité d’une prise en cale et
+ * les plafonds de coût.
  */
 export function rpgCoutEntite(entite) {
   if (!entite) return Math.max(1, Number(duelCardById(entite?.carteId)?.cost) || 1);
@@ -2024,20 +2024,12 @@ function declencherTributs(duel, cote, bilans) {
   return declenche;
 }
 
-/* ── La cale des corsaires (set Lettres de Marque, doc 17) ────────────────────
+/* ── La cale des corsaires (set Lettres de Marque, doc 18) ────────────────────
    L'Abordage prend la créature vaincue en cale au lieu de la détruire ; la
-   cale la détient face visible (une seule place par capteur) ; la Rançon la
-   rend à son propriétaire au prix imprimé, en manas libres ; toute sortie de
-   table du capteur — mort, sacrifice, renvoi, exil, ou sa propre capture —
-   ouvre la cale gratuitement vers la main du propriétaire. */
-
-/**
- * Le prix affiché d'une rançon : le coût imprimé du prisonnier, jamais
- * gratuit — la Chambre ne rend rien pour rien.
- */
-export function rpgPriXRancon(entite) {
-  return Math.max(1, Number(entite?.enCale?.cost) || 1);
-}
+   cale la détient face visible (une seule place par capteur) ; il n'y a pas
+   de rachat : la détenue ne revient qu'en **faisant quitter la table au
+   capteur** — détruit (elle revient en jeu), exilé ou renvoyé en main (elle
+   revient en main). */
 
 /** Met à jour le bonus qui n'existe que tant que la cale est occupée. */
 function synchroniserCaleComble(entite) {
@@ -2130,9 +2122,6 @@ function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictim
   capteur.enCale = {
     carteId: victime.carteId,
     name: victime.name,
-    // Le prix se fige à la capture, Grappin porté compris : la rançon paie
-    // ce que la créature valait en jeu quand le crochet l’a prise.
-    cost: rpgCoutEntite(victime),
     // La présence elle-même, telle qu'elle était au moment du crochet. Elle
     // revient EN JEU si le capteur meurt (voir `ouvrirCale`) : sa fiche est
     // relue par la cale, sa mémoire de table (attaque, défense, PV, auras
@@ -2163,6 +2152,8 @@ function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictim
     appliquer(duel, coteCapteur, carteArme.priseEnCale, null, capteur.id,
       cardColors(carteArme), 'capacite', carteArme.id);
   }
+  // Le Négociant encaisse sa commission à chaque prise, des deux côtés de la mer.
+  declencherPrises(duel);
   return true;
 }
 
@@ -2180,7 +2171,7 @@ function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictim
  *   pas le tour de son retour, sauf Rapidité) ;
  * - **il quitte la table sans mourir** (renvoi en main, exil, capture par un
  *   autre corsaire) : le prisonnier retourne dans la **main** de son
- *   propriétaire, comme la rançon le rendrait.
+ *   propriétaire.
  *
  * Le retour en jeu exige une place libre sur le champ (mode sans terrains) :
  * s'il n'y en a pas, la carte part en main — la cale ne se referme jamais.
@@ -2228,87 +2219,21 @@ function declencherCargaison(duel, coteProprietaire, entite) {
   return true;
 }
 
-/** Le déclencheur `rancon` (le Négociant des rançons) : chaque fois qu'une
- *  créature est rançonnée — par qui que ce soit —, le contrôleur de chaque
- *  Négociant en jeu pioche une carte : la commission se paie des deux côtés
- *  de la mer. */
-function declencherRancons(duel) {
+/** Le déclencheur `prise` (le Négociant) : chaque fois qu'une créature est
+ *  prise en cale — par qui que ce soit —, le contrôleur de chaque Négociant
+ *  en jeu pioche une carte : la commission se paie des deux côtés de la mer. */
+function declencherPrises(duel) {
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
       const carte = duelCardById(entite.carteId);
-      const n = Math.max(0, Number(carte?.declencheRancon) || 0);
+      const n = Math.max(0, Number(carte?.declenchePrise) || 0);
       if (!n) continue;
       appliquer(duel, cote, { type: 'pioche', amount: n },
         null, null, cardColors(carte), 'capacite', carte.id);
-      duel.log.push(`Rançon : ${entite.name} encaisse sa commission — ${
+      duel.log.push(`Prise : ${entite.name} encaisse sa commission — ${
         cote === 'joueur' ? 'vous piochez' : 'le sorcier pioche'} ${n} carte${n > 1 ? 's' : ''}.`);
     }
   }
-}
-
-/**
- * La fenêtre de la rançon : elle part comme une Magie Rapide — pendant son
- * propre tour, en réponse à une carte annoncée, ou pendant la fenêtre de fin
- * de tour adverse. Pas pendant le choix de couleur du mana.
- */
-function fenetreRanconOuverte(duel, cote) {
-  if (duel[cote]?.manaChoixEnAttente) return false;
-  return duel.tour === cote || Boolean(duel.annonce) || Boolean(duel.finDeTour);
-}
-
-/** Le camp peut-il rançonner le prisonnier détenu par cette créature adverse ? */
-export function rpgPeutRanconner(duel, cote, entiteId) {
-  const camp = duel?.[cote];
-  const entite = duel?.[autre(cote)]?.creatures.find((candidate) => candidate.id === entiteId);
-  if (!camp || !entite?.enCale) return false;
-  if (!fenetreRanconOuverte(duel, cote)) return false;
-  return rpgPeutPayer(camp, { cost: rpgPriXRancon(entite), colorCost: {} });
-}
-
-/**
- * Paie la rançon : le coût imprimé du prisonnier, en manas libres (aucun pip
- * coloré). Le prisonnier revient dans la main de son propriétaire — pas sur
- * la table — et l'événement `rancon` déclenche les Négociants des deux camps.
- */
-export function rpgRanconner(duel, cote, entiteId) {
-  const entite = duel?.[autre(cote)]?.creatures.find((candidate) => candidate.id === entiteId);
-  if (!entite?.enCale) return { ok: false, raison: 'aucune-cale' };
-  if (!fenetreRanconOuverte(duel, cote)) return { ok: false, raison: 'fenetre' };
-  const prix = rpgPriXRancon(entite);
-  if (!rpgPeutPayer(duel[cote], { cost: prix, colorCost: {} })) return { ok: false, raison: 'mana' };
-  payer(duel, cote, { cost: prix, colorCost: {} });
-  const prisonnier = entite.enCale;
-  entite.enCale = null;
-  synchroniserCaleComble(entite);
-  duel[cote].main.push(prisonnier.carteId);
-  duel.log.push(`${cote === 'joueur' ? 'Vous payez' : 'Le sorcier paie'} la rançon de ${prisonnier.name} (${prix} mana${prix > 1 ? 's' : ''}) — elle revient en main.`);
-  declencherRancons(duel);
-  rafraichirAuras(duel);
-  rpgActionsEtat(duel);
-  return { ok: true, carteId: prisonnier.carteId, prix };
-}
-
-/**
- * L'IA du sorcier face à la cale : rançonner ce qu'elle peut payer tant que
- * le prix reste honnête — la créature revient en main, prête à être rejouée
- * le même tour (la préparation de l'IA passe après). Sinon, ne rien faire :
- * tuer le capteur ouvre la cale, et c'est au combat de s'en charger.
- */
-export function rpgSorcierRanconnerIA(duel) {
-  const rachetees = [];
-  const captives = duel.joueur.creatures
-    .filter((entite) => entite.enCale)
-    .sort((a, b) => rpgPriXRancon(a) - rpgPriXRancon(b));
-  for (const capteur of captives) {
-    if (!rpgPeutRanconner(duel, 'sorcier', capteur.id)) continue;
-    const prix = rpgPriXRancon(capteur);
-    // Heuristique : le sorcier garde son tempo — il ne vide pas sa réserve
-    // pour une rançon de plus de 3 manas, sauf si la mer est généreuse.
-    if (prix > 3 && sourcesManaDisponibles(duel.sorcier).length < prix + 3) continue;
-    const res = rpgRanconner(duel, 'sorcier', capteur.id);
-    if (res.ok) rachetees.push(res);
-  }
-  return rachetees;
 }
 
 /**
@@ -5632,9 +5557,6 @@ export function rpgSorcierActiverCapacitesIA(duel, rng = Math.random) {
 
 export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
   const joue = [];
-  // Les rançons d'abord : la créature rachetée revient en main avant que
-  // l'IA n'annonce ses cartes — elle peut la rejouer dans la foulée.
-  rpgSorcierRanconnerIA(duel);
   rpgSorcierPrepareTerrain(duel);
   // Sans interface, chaque carte annoncée est résolue aussitôt (pas de réponse du joueur).
   let garde = 12;

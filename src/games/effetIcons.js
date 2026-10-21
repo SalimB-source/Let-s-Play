@@ -84,7 +84,7 @@ export const EFFET_ICONE = {
   abordage: 'i-abordage',
   visages: 'i-visages',
   cargaison: 'i-cargaison',
-  rancon: 'i-abordage',
+  prise: 'i-abordage',
   cale: 'i-cargaison',
   furie: 'i-furie',
   esquive: 'i-esquive',
@@ -180,7 +180,7 @@ export const EFFET_LIBELLES = {
   abordage: 'Abordage',
   visages: 'Deux Visages',
   cargaison: 'Cargaison',
-  rancon: 'Rançon',
+  prise: 'Prise',
   cale: 'Cale',
   furie: 'Furie',
   furie: 'Furie',
@@ -277,7 +277,7 @@ export function pastillesPourCarte(carte) {
   if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
   // Les Lettres de Marque : l'Abordage imprimé (créature au seuil « coût − 1 »,
   // Grappin à l'attachement — la pastille porte le seuil), la Cargaison du
-  // convoi, et le déclencheur de rançon du Négociant.
+  // convoi, et le déclencheur de prise du Négociant.
   if (carte.abordage) ajouter('abordage', 'Abordage', Number.isFinite(carte.abordage) ? carte.abordage : null);
   // Le Grappin dynamique : son seuil se lit sur le porteur, pas sur la fiche —
   // la pastille nomme le mot-clé sans chiffre.
@@ -285,7 +285,7 @@ export function pastillesPourCarte(carte) {
   // Les Deux Visages (La Barbe Noire) : le mot-clé du dédoublement.
   if (carte.alternance) ajouter('visages', 'Deux Visages');
   if (carte.cargaison) ajouter('cargaison', 'Cargaison', Number(carte.cargaison) || null);
-  if (carte.declencheRancon) ajouter('rancon', 'Rançon', Number(carte.declencheRancon) || null);
+  if (carte.declenchePrise) ajouter('prise', 'Prise', Number(carte.declenchePrise) || null);
   // Une arme peut accorder un bouclier à son porteur (la Hache de la
   // banquise) : la pastille se lit sur la fiche de l'arme comme sur celle
   // d'une créature qui arrive avec un bouclier.
@@ -364,7 +364,7 @@ const MOTIFS_LIGNE = [
   ['abordage', /\babordage\b/iu],
   ['visages', /\bdeux visages\b/iu],
   ['cargaison', /\bcargaison\b/iu],
-  ['rancon', /\bran[çc]ons?\b/iu],
+  ['prise', /\bprises? en cale\b/iu],
   ['cale', /\bcale\b/iu],
   ['furie', /\bfurie\b/iu],
   ['esquive', /\besquive/iu],
@@ -518,8 +518,8 @@ export const EFFET_DEFINITIONS = {
   abordage: (n) => `Quand cette créature arrive en jeu, la créature adverse ciblée de coût ${n ?? 'N'} ou moins est prise en sa cale — détenue face visible, une seule place — au lieu d’être détruite : elle ne déclenche rien. Son propriétaire peut la racheter en main au prix imprimé ; si le capteur meurt, elle revient en jeu avec l’attaque et la défense qu’elle avait à la prise, sans effet d’arrivée — renvoyé ou exilé, il la rend en main.`,
   visages: 'Au début de chacun des tours de son camp, cette créature change de visage : la légende frappe, l’homme tient le rempart. Ses blessures la suivent d’un visage à l’autre, et changer de visage ne la tue jamais.',
   cargaison: (n) => `Quand cette créature meurt ou est prise en cale, son propriétaire pioche ${n ?? 'N'} carte${n > 1 ? 's' : ''} : le convoi est assuré.`,
-  rancon: (n) => `Chaque fois qu’une créature est rançonnée, vous piochez ${n ?? 1} carte${n > 1 ? 's' : ''} : la commission du négociant.`,
-  cale: 'La créature détenue par ce capteur. Son propriétaire peut la rançonner au prix imprimé, en manas libres ; si le capteur meurt, elle revient en jeu avec ses statistiques de prise, sans effet d’arrivée — sinon elle retourne en main.',
+  prise: (n) => `Chaque fois qu’une créature est prise en cale, vous piochez ${n ?? 1} carte${n > 1 ? 's' : ''} : la commission du négociant.`,
+  cale: 'La créature détenue par ce capteur. Elle ne se rachète pas : il faut détruire le capteur (elle revient alors en jeu avec ses statistiques de prise, sans effet d’arrivée), ou l’exiler, ou le renvoyer en main (elle revient en main).',
   tribut: (n) => `Quand cette créature touche le sorcier adverse, il perd ${n ?? 'N'} PV et vous en gagnez ${n ?? 'N'}.`,
   transfert: (n) => `Le sorcier adverse perd ${n ?? 'X'} PV et vous en gagnez ${n ?? 'X'}.`,
   'defausse-adverse': 'L’adversaire défausse une carte : il en choisit une, sa moins utile.',

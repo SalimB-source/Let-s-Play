@@ -352,7 +352,7 @@
 .rpg-card__compteur--heures > span { color: #e8f6ff; }
 .rpg-card__compteur--cale {
   /* La cale du corsaire : cuivre de la chaîne sur bois sombre — le prisonnier
-     est détenu face visible, la rançon le lit au dos du losange. */
+     est détenu face visible, le losange dit la prise. */
   border-color: #7fd4c8;
   background: linear-gradient(145deg, #2e6e63, #12332d);
 }

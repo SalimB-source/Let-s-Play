@@ -106,7 +106,7 @@ assert.match(blocPile, /top:\s*-9%/, 'elle dépasse du capteur par le haut');
 assert.match(blocPile, /left:\s*8%/, 'et par la droite');
 assert.match(blocPile, /z-index:\s*0/, 'elle vit SOUS le bouton du capteur');
 assert.match(css, /\.rpg-card-prison > \.rpg-card \{\s*z-index:\s*1;/, 'le capteur la recouvre');
-assert.match(blocPile, /pointer-events:\s*none/, 'rien à cliquer : la rançon reste au bouton d’action');
+assert.match(blocPile, /pointer-events:\s*none/, 'rien à cliquer : la détenue est décorative, la cale se lit sur le capteur');
 assert.match(blocPile, /transform:\s*rotate\(2\.6deg\)/, 'la carte détenue arrive inclinée, glissée derrière');
 assert.match(css, /@keyframes rpg-prisonniere-arrivee/, 'la carte détenue anime son arrivée derrière le capteur');
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card__prisonniere \{\s*animation: none;/,
