@@ -53,7 +53,7 @@
  * recadrage se fait au centre sans rien perdre de l'arène.
  */
 
-import { cardColors } from './rpgCards.js';
+import { cardById, cardColors } from './rpgCards.js';
 
 /** Le catalogue des plateaux, dans l'ordre de la galerie d'origine. */
 export const RPG_PLATEAUX = [
@@ -117,6 +117,13 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-palais-du-pharaon.jpg',
     resume: 'Un intérieur, vu de dessus : le dallage d’albâtre et de granit, encadré de bandes d’or, de lapis et de turquoise, et le grand disque de granit noir, vide, qu’entoure une frise de pétales de lotus. Très peu d’objets, tous aux bords : en bas, les marches d’albâtre et le trône doré, vus du dessus ; à gauche et à droite, les colonnes à chapiteau de lotus qui sortent du cadre ; dans les deux angles bas, un brasero de bronze et un éventail de plumes d’autruche. Le centre reste nu : c’est là que les cartes se posent.',
   },
+  {
+    id: 'navire-pirate',
+    nom: 'Le Navire Pirate',
+    lieu: 'En pleine mer, sur le pont supérieur du galion corsaire',
+    fichier: 'plateau-navire-pirate.jpg',
+    resume: 'Vue parfaitement verticale à 90° de dessus, serrée à bord du pont supérieur à ciel ouvert d’un navire pirate en plein soleil : le grand plancher de chêne blond patiné et sa rose des vents dorée incrustée à plat au centre occupent presque tout le cadre, entièrement nus et dégagés au milieu pour poser les cartes. Aux bords haut et bas, les bastingages de bois sombre armés de quatre canons cerclés de laiton laissent voir l’eau turquoise et l’écume blanche du large ; dans les quatre angles, quatre fanaux dorés allumés veillent près d’un coffre au trésor débordant de pièces d’or, d’une carte marine déroulée avec longue-vue, boussole et sabre d’abordage, de tonneaux et de cordages lovés.',
+  },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
   {
@@ -166,10 +173,10 @@ export const RPG_PLATEAUX_PAR_DECK = {
   // dedans du palais (Le Palais du Pharaon), où siège le tribunal de la
   // Nécropole — le jugement se rend devant le trône.
   'balance-des-heures': 'necropole-des-dalles',
-  // Les Lettres de Marque se battent sur la côte : les Ruines de Tipaza, les
-  // quais antiques que la mer reprend — le monde des corsaires de la Régence
-  // avant que Les Quais de Cuivre (doc 17 §13) n'aient leur propre plateau.
-  'lettres-de-marque': 'ruines-de-tipaza',
+  // Les Lettres de Marque embarquent sur leur propre navire pirate : le pont
+  // du galion corsaire vu de dessus, en duel libre comme en mode sans terrains.
+  'lettres-de-marque': 'navire-pirate',
+  'essai-mana-lettres-de-marque': 'navire-pirate',
   // Campagne (clés de `RPG_STORY_DECKS`) : la Souffleuse tient la piste de
   // caravane du deck hybride dont elle vient ; le Grand Horloger, lui, reçoit
   // dans la salle haute de la Chambre, sur la table d'origine. Les quatre
@@ -275,10 +282,28 @@ export function couleurDominanteDeck(deck) {
  * `motif` dit d'où vient la réponse : `deck` (correspondance explicite),
  * `couleur` (couleur dominante du paquet) ou `repli` (rien de lisible).
  */
+function estPaquetCorsaire(deck) {
+  const cartes = cartesDeDeck(deck);
+  if (!cartes?.length) return false;
+  let connues = 0;
+  let corsaires = 0;
+  for (const carteId of cartes) {
+    const carte = cardById(carteId);
+    if (!carte || carte.kind === 'terrain') continue;
+    connues += 1;
+    if (carte.set === 'lettres-de-marque') corsaires += 1;
+  }
+  return connues > 0 && corsaires >= Math.max(3, Math.ceil(connues / 2));
+}
+
 export function plateauDeDeck(deck) {
   const identifiant = typeof deck === 'string' ? deck : deck?.id;
   const attitre = plateauParId(RPG_PLATEAUX_PAR_DECK[identifiant] ?? null);
   if (attitre) return { plateau: attitre, motif: 'deck' };
+  if (estPaquetCorsaire(deck)) {
+    const navire = plateauParId('navire-pirate');
+    if (navire) return { plateau: navire, motif: 'deck' };
+  }
   const parCouleur = plateauParId(RPG_PLATEAUX_PAR_COULEUR[couleurDominanteDeck(deck)] ?? null);
   if (parCouleur) return { plateau: parCouleur, motif: 'couleur' };
   return { plateau: plateauDeRepli(), motif: 'repli' };

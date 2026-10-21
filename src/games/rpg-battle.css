@@ -2508,6 +2508,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-palais-du-pharaon {
   background-color: #d9c4a0;
 }
+.card-table--plateau-navire-pirate {
+  background-color: #9b6c3e;
+}
 
 /* ── La table découpée : un terrain par camp ─────────────────────────────────
    Quand les deux decks imposent des terrains différents (`resoudrePlateauxDuDuel`
@@ -2544,6 +2547,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-plateau-moitie--plateau-iles-celestes { background-color: #50636b; }
 .rpg-plateau-moitie--plateau-necropole-des-dalles { background-color: #cbb389; }
 .rpg-plateau-moitie--plateau-palais-du-pharaon { background-color: #d9c4a0; }
+.rpg-plateau-moitie--plateau-navire-pirate { background-color: #9b6c3e; }
 
 /* Le liseré de la jonction : la ligne médiane du champ de bataille, entre les
    deux territoires. Un filet doré qui naît et meurt aux bords, bordé d'ombre
@@ -4161,8 +4165,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__details {
   display: grid;
   align-content: center;
-  /* Le texte de règle allonge la colonne : quand elle déborde, on la commence
-     en haut plutôt que de rogner également des deux bords. */
+  /* Les mots-clés dépliés allongent la colonne : quand elle déborde, on la
+     commence en haut plutôt que de rogner également des deux bords. */
   align-content: safe center;
   gap: 8px;
   min-width: 0;

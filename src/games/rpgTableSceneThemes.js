@@ -206,6 +206,21 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     particles: motes({ count: 46, color: '#ffe6b8', size: 0.024, opacity: 0.45, vx: 0.04, vy: 0.03, sway: 0.1, swayHz: 0.18, z: 1 }),
     overlay: { kind: 'ombre', color: '#3a2a12', opacity: 0.12, speed: 0.007, scale: 2 },
   }),
+  // Le Navire Pirate : grand air marin et soleil éclatant sur le pont supérieur
+  // de chêne, quatre fanaux de laiton qui vacillent aux angles exacts de la
+  // peinture, embruns salés soufflés par l'alizé et ombre légère des haubans.
+  'navire-pirate': theme({
+    ambient: '#fdf7ec', key: '#ffe8be', keyIntensity: 0.52, ambientIntensity: 0.58,
+    keyDirection: [0.65, 0.72, 1], relief: 1.4, roughness: 0.76,
+    lights: [
+      light({ color: '#ffbe66', intensity: 1.85, distance: 3.8, x: -0.75, y: 0.80, z: 0.85, flicker: 0.24 }),
+      light({ color: '#ffbe66', intensity: 1.85, distance: 3.8, x: 0.95, y: 0.70, z: 0.85, flicker: 0.24 }),
+      light({ color: '#ffbe66', intensity: 1.85, distance: 3.8, x: -0.95, y: -0.38, z: 0.85, flicker: 0.24 }),
+      light({ color: '#ffbe66', intensity: 1.85, distance: 3.8, x: 0.86, y: -0.84, z: 0.85, flicker: 0.24 }),
+    ],
+    particles: motes({ count: 60, color: '#f2fcff', size: 0.032, opacity: 0.56, vx: 0.22, vy: 0.05, sway: 0.14, swayHz: 0.32, z: 0.9, zSpread: 0.55 }),
+    overlay: { kind: 'ombre', color: '#1b3a4b', opacity: 0.11, speed: 0.014, scale: 2.0 },
+  }),
   // Le sable vitrifié : éclats de verre, deux lumières qui glissent.
   'desert-de-verre': theme({
     key: '#fff0cf', keyIntensity: 0.46, relief: 1.2, roughness: 0.3,
