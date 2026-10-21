@@ -1,9 +1,9 @@
 # 17 — Le set « Les Lettres de Marque » (Sable + Eau · l’âge de la course)
 
-**Statut : fiche de design — proposition, rien n’est codé.** Comme la fiche 16
-avant l’implémentation des Ténèbres, ce document est la référence à valider :
-le parti pris historique, la mécanique signature, les garde-fous, les fiches
-prêtes à coller et l’impact moteur.
+**Statut : implémenté, avec extension Sites persistants.** Ce document conserve
+le parti pris historique, la mécanique signature, les garde-fous et les fiches
+de référence. La Vengeance de la reine Anne, le Chasseur d’Ocracoke, la Source
+de Bimini et le Trésor de Lima complètent désormais la première passe codée.
 
 ## 1. Le parti pris : l’âge de la course (XVIᵉ–XVIIᵉ)
 
@@ -189,7 +189,7 @@ empêche le mot-clé signature de devenir un rouleau compresseur.
 | **Les jetons Trésor** (mana stockable) | le calque d’une autre maison — la discipline du set est de nommer ses propres mots (Tribut refuse « lifelink », la Course refuse « Treasure ») ; et le mana de l’essai pousse tout seul |
 | **Le détournement** (vol de créature temporaire) | langue de la Braise chez Magic ; ne dit rien de l’Eau ni du Sable, et retire l’interaction : la victime ne décide plus rien |
 | **Le convoi en bande** (bonus d’attaque groupée) | le banding, la mécanique la plus détestée de l’histoire du genre — la flotte se lit dans les Cargaisons et les murs, pas dans une règle d’empilement |
-| **Les compteurs de raid** (la course comme chrono) | les Heures du set Sable occupent déjà le créneau « compteurs qui sonnent » (Guetteur du beffroi) ; un second compte-calendrier éteindrait le premier |
+| **Les compteurs de raid sur les créatures** | écartés : les Heures du set Sable occupent déjà ce créneau. Les deux **Sites persistants** constituent l’exception lisible : leurs compteurs vivent sur le lieu lui-même, changent son illustration et ouvrent une récompense unique. |
 
 **Ce qui reste, finalement, c’est la seule chose que les quatre nations ont
 faite ensemble : elles n’ont jamais coulé ce qu’elles voulaient vendre.**
@@ -211,9 +211,18 @@ faite ensemble : elles n’ont jamais coulé ce qu’elles voulaient vendre.**
 **Identité** : hybride Sable + Eau — les cartes signature portent les deux
 couleurs (`element: 'sable'`, `colors: ['sable', 'eau']`, `colorCost` un pip
 de chaque, contrat du Djinn de foudre) ; les cartes d’appui restent mono
-(Sable ou Eau) pour lisser la courbe de paiement. **15 nouvelles cartes + 1
-jeton** pour la première passe — le banc d’essai se complète avec les cartes
-Eau et Sable existantes, comme `Sentiers de cendre` le fait déjà.
+(Sable ou Eau) pour lisser la courbe de paiement. **20 cartes + 1 jeton** sont
+maintenant codés — le banc d’essai se complète avec les cartes Eau et Sable
+existantes, comme `Sentiers de cendre` le fait déjà.
+
+### 8.1 Les Sites persistants
+
+Un **Site** occupe l’un des cinq emplacements du champ, mais n’est pas une
+créature : il est indestructible, ne peut ni attaquer, ni bloquer, ni être
+ciblé, équipé, capturé ou sacrifié. Ses compteurs d’Heures vivent sur sa propre
+carte. Au début de chaque tour de son contrôleur, un compteur est retiré et
+l’illustration avance d’une étape ; à zéro, le Site donne sa récompense puis
+reste posé, avec son illustration finale.
 
 | Carte | Couleur | Coût | ⚔/🛡 | Rareté | Rôle |
 |---|---|---|---|---|---|
@@ -226,6 +235,10 @@ Eau et Sable existantes, comme `Sentiers de cendre` le fait déjà.
 | Le Renégat | **Sable + Eau** | 3 | 3/2 | inhabituelle | **Rapidité + Butin** — l’Anglais sous pavillon d’Alger |
 | Négociant des rançons | Sable | 3 | 2/3 | rare | chaque rançon payée adverse : **piochez 1** |
 | Galion de la flotte | **Sable + Eau** | 5 | 3/6 | rare | **Cargaison 2** — le trésor assuré |
+| La Vengeance de la reine Anne | **Sable + Eau** | 4 | 2/5 | rare | **Abordage 3** ; cale occupée : +2/+0 et **Butin** |
+| Le Chasseur d’Ocracoke | **Sable + Eau** | 6 | 4/6 | **mythique** | Rapidité, Coup rapide, Insaisissable ; **Prime** contre la course |
+| La Source de Bimini | **Eau + Sable** | 3 | — | **mythique** | **Site**, 3 Heures ; soin total, +3/+3, Protection contre les sorts et Tenacité |
+| Le Trésor de Lima | **Sable + Eau** | 2 | — | rare | **Site**, 2 Heures ; piochez 2 cartes |
 | La Barbe-Rousse | **Sable + Eau** | 6 | 4/5 | **mythique** | **Abordage 5** ; arrivée : **2 jetons Corsaire** 2/1 |
 | Lettre de marque | **Sable + Eau** | 2 | — | commune (sorcellerie) | jusqu’à la fin du tour, vos créatures **qui arrivent** gagnent **Abordage** (seuil : leur coût − 1) |
 | Haut-fond | Eau | 1 | — | commune (magie rapide) | créature adverse : **−1/−2 jusqu’à la fin du tour** |

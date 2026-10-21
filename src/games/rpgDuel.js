@@ -125,6 +125,15 @@ const GROUPES_RESONANCE = [...new Set(
   [...RPG_ELEMENTS, ...RPG_DUEL_CARDS.filter((carte) => carte.resonance).map(cardResonanceGroup)],
 )];
 
+/** Les Sites occupent le champ, mais ne sont jamais des créatures de combat. */
+function estSite(entiteOuCarte) {
+  if (!entiteOuCarte) return false;
+  const carte = entiteOuCarte.carteId
+    ? duelCardById(entiteOuCarte.carteId)
+    : entiteOuCarte;
+  return carte?.kind === 'site';
+}
+
 export function rpgNombreDestructions(duel) {
   return destructionsParDuel.get(duel)?.length ?? 0;
 }
@@ -311,6 +320,8 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     annonce: null,
     // Défausse en attente (ex. Jörmungandr côté joueur) : { cote, restant, sourceCarteId }
     defausseEnAttente: null,
+    // Récompense d'un Site qui attend le choix de sa créature alliée.
+    siteEnAttente: null,
     // Mulligan : chaque camp a droit à UN échange, avant le premier tour.
     mulliganFait: { joueur: false, sorcier: false },
     log: [],
@@ -826,7 +837,7 @@ function appliquerAuraSable(duel, cote) {
   const tarekEnJeu = camp.creatures.some((entite) => entite.carteId === 'tarek');
   for (const entite of camp.creatures) {
     const carte = duelCardById(entite.carteId);
-    const prochainBonus = tarekEnJeu && cardColors(carte).includes('sable') ? 1 : 0;
+    const prochainBonus = !estSite(carte) && tarekEnJeu && cardColors(carte).includes('sable') ? 1 : 0;
     const delta = prochainBonus - (entite.auraSableBonus ?? 0);
     if (!delta) continue;
     entite.auraSableBonus = prochainBonus;
@@ -855,7 +866,7 @@ function appliquerAuraAmani(duel, cote) {
     const sources = entite.carteId === 'amani-des-ksour'
       ? nombreAmani - 1
       : nombreAmani;
-    const prochainBonus = 2 * Math.max(0, sources);
+    const prochainBonus = estSite(entite) ? 0 : 2 * Math.max(0, sources);
     const delta = prochainBonus - (entite.auraAmaniBonus ?? 0);
     if (!delta) continue;
     entite.auraAmaniBonus = prochainBonus;
@@ -991,6 +1002,9 @@ function rafraichirAuras(duel) {
  *  (`donne.immunite`, l'Armure de cendres contre la Braise) : même porte
  *  d'entrée pour tous les dégâts, ciblages et blocages du moteur. */
 export function rpgEstProtegee(entite, element) {
+  // Un Site n'est pas une cible légale, quelle que soit la couleur de la
+  // source. Cette porte commune le protège aussi des zones et destructions.
+  if (estSite(entite)) return true;
   const couleursSources = normaliserCouleurs(element);
   if (!entite || !couleursSources.length) return false;
   // `contre` accepte une couleur seule ou une liste (la Lionne du midi
@@ -1024,6 +1038,10 @@ function creerEntiteCreature(carte) {
     id: nextId(),
     carteId: carte.id,
     kind: carte.kind ?? 'creature',
+    // Un Site occupe bien une case du champ, mais reste hors de toutes les
+    // règles de créature : indestructible, non combattant et non ciblable.
+    site: carte.kind === 'site',
+    indestructible: carte.kind === 'site',
     // Créature-jeton : créée par un effet, sans carte en main ni coût payé.
     // Elle se bat comme les autres, mais ne retourne jamais dans une main.
     jeton: Boolean(carte.jeton),
@@ -1091,6 +1109,10 @@ function creerEntiteCreature(carte) {
     // prise vive, détenue face visible, une seule place, `null` si vide. La
     // prisonnière ne figure plus dans `camp.creatures` : sa case est libre.
     enCale: null,
+    // Bonus conditionnel d'une cale occupée (la Vengeance). Le delta est
+    // mémorisé séparément afin de disparaître sans effacer les autres buffs.
+    caleCombleBonusAtk: 0,
+    butin: Boolean(carte.butin),
     // Les Deux Visages (La Barbe Noire) : l'index du visage courant, `null`
     // pour toute créature sans alternance. La fiche imprime le visage
     // d'arrivée (index 0) ; le moteur bascule au début de chaque tour du camp
@@ -1160,7 +1182,7 @@ function absorberBouclier(entite, montant) {
  * cimetière du même camp.
  */
 function attacherArme(duel, cote, entite, carteArme) {
-  if (entite.mur) return;
+  if (entite.mur || estSite(entite)) return;
   if (entite.arme) retirerArme(duel, cote, entite);
   entite.arme = { carteId: carteArme.id };
   entite.atk += carteArme.bonus?.atk ?? 0;
@@ -1576,6 +1598,12 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   // donc empêcher l’autre combattant d’infliger les dégâts déjà calculés.
   for (const mort of mortes) {
     const camp = duel[mort.cote];
+    const carteVictime = duelCardById(mort.entite.carteId);
+    // La Prime lit la victime avant que sa mort n'ouvre sa cale et n'éteigne
+    // un éventuel Butin conditionnel.
+    mort.donnePrime = Boolean(carteVictime?.abordage
+      || (mort.entite.butin ?? carteVictime?.butin)
+      || mort.entite.enCale);
     // Un capteur qui meurt en combat rend sa cale, comme à toute sortie de table.
     ouvrirCale(duel, mort.cote, mort.entite);
     journaliserDestruction(duel, mort.entite, mort.sourceElements);
@@ -1603,6 +1631,16 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       declencherCapaciteDestruction(duel, mort.cote, carte, mort.entite.carteId);
     }
     declencherHonneur(duel, mort.cote, mort.entite);
+  }
+  // Prime du Chasseur d'Ocracoke : seul un tueur qui a porté des blessures
+  // d'attaque et une victime pirate qualifiée font piocher.
+  for (const mort of mortes) {
+    if (!mort.donnePrime) continue;
+    for (const source of mort.attaqueSources ?? []) {
+      if (!duelCardById(source.carteId)?.primeChasseur) continue;
+      const pioche = rpgPiocher(duel, source.cote);
+      duel.log.push(`Prime : ${source.name} détruit ${mort.entite.name}${pioche ? ' — son contrôleur pioche une carte' : ''}.`);
+    }
   }
   // Le Brûlot (renvoi-tueur) : mort en combat, il renvoie l'une des créatures
   // qui l'ont tué dans la main de son propriétaire. Mort par magie ou par
@@ -1834,7 +1872,7 @@ function declencherButins(duel, cote, bilans) {
     if (!(bilan.sorcier > 0)) continue;
     const entite = duel[cote].creatures.find((candidate) => candidate.id === bilan.id);
     const carte = entite ? duelCardById(entite.carteId) : null;
-    if (!carte?.butin) continue;
+    if (!(entite?.butin ?? Boolean(carte?.butin))) continue;
     appliquer(duel, cote, { type: 'pioche-defausse', pioche: 1, defausse: 1 },
       null, entite.id, cardColors(carte), 'capacite', carte.id);
     duel.log.push(`Butin : ${entite.name} touche le sorcier — pioche 1, défausse 1.`);
@@ -1878,6 +1916,17 @@ function declencherTributs(duel, cote, bilans) {
  */
 export function rpgPriXRancon(entite) {
   return Math.max(1, Number(entite?.enCale?.cost) || 1);
+}
+
+/** Met à jour le bonus qui n'existe que tant que la cale est occupée. */
+function synchroniserCaleComble(entite) {
+  if (!entite) return;
+  const carte = duelCardById(entite.carteId);
+  const voulu = entite.enCale ? Math.max(0, Number(carte?.caleComble?.atk) || 0) : 0;
+  const delta = voulu - Math.max(0, Number(entite.caleCombleBonusAtk) || 0);
+  entite.atk = Math.max(0, (Number(entite.atk) || 0) + delta);
+  entite.caleCombleBonusAtk = voulu;
+  entite.butin = Boolean(carte?.butin || (entite.enCale && carte?.caleComble?.butin));
 }
 
 /**
@@ -1956,6 +2005,7 @@ function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictim
     name: victime.name,
     cost: Math.max(1, Number(duelCardById(victime.carteId)?.cost) || 1),
   };
+  synchroniserCaleComble(capteur);
   duel[coteVictimeEffective].creatures = duel[coteVictimeEffective].creatures
     .filter((candidate) => candidate.id !== victime.id);
   detacherArmes(duel, coteVictimeEffective, victime);
@@ -1990,6 +2040,7 @@ function ouvrirCale(duel, cote, entite) {
   const cale = entite?.enCale;
   if (!cale) return false;
   entite.enCale = null;
+  synchroniserCaleComble(entite);
   duel[autre(cote)].main.push(cale.carteId);
   duel.log.push(`La cale de ${entite.name} s’ouvre : ${cale.name} retourne dans la main de son propriétaire.`);
   return true;
@@ -2062,6 +2113,7 @@ export function rpgRanconner(duel, cote, entiteId) {
   payer(duel, cote, { cost: prix, colorCost: {} });
   const prisonnier = entite.enCale;
   entite.enCale = null;
+  synchroniserCaleComble(entite);
   duel[cote].main.push(prisonnier.carteId);
   duel.log.push(`${cote === 'joueur' ? 'Vous payez' : 'Le sorcier paie'} la rançon de ${prisonnier.name} (${prix} mana${prix > 1 ? 's' : ''}) — elle revient en main.`);
   declencherRancons(duel);
@@ -2938,6 +2990,7 @@ export function rpgSacrifierCreature(duel, cote, entiteId) {
   const camp = duel?.[cote];
   const entite = camp?.creatures.find((candidate) => candidate.id === entiteId);
   if (!entite) return { ok: false, raison: 'absente' };
+  if (estSite(entite)) return { ok: false, raison: 'indestructible' };
   duel.log.push(`${cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${entite.name} pour libérer un emplacement.`);
   sacrifierCreature(duel, cote, entite);
   rafraichirAuras(duel);
@@ -2991,7 +3044,9 @@ function enterrer(duel, cote, entite, sourceElements = [], declenchements = null
  * donc, elle aussi, du retour promis au prochain tour de son camp.
  */
 function sacrifierCreature(duel, cote, entite) {
+  if (estSite(entite)) return false;
   rejoindreCimetiere(duel, cote, entite, [], 'est sacrifiée et rejoint le cimetière.');
+  return true;
 }
 
 /**
@@ -3029,6 +3084,7 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId) {
 
 /** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
 function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null) {
+  if (estSite(entite)) return false;
   // Le mort qui tenait une cale la rend : toute sortie de table ouvre la
   // cale, et la Cargaison du mort paie son assurance.
   ouvrirCale(duel, cote, entite);
@@ -3124,7 +3180,7 @@ export function rpgEmplacementsChamp(camp) {
  *  plus entamée ensuite — l'IA (et une pose sans désignation) garde toujours
  *  ses meilleures cartes quand le champ est plein. */
 function choisirSacrifice(camp) {
-  return [...camp.creatures].sort((a, b) =>
+  return camp.creatures.filter((entite) => !estSite(entite)).sort((a, b) =>
     ((a.atk ?? 0) + (a.def ?? 0)) - ((b.atk ?? 0) + (b.def ?? 0))
     || (a.pv ?? 0) - (b.pv ?? 0))[0] ?? null;
 }
@@ -3319,7 +3375,9 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     sacrifice = sacrificeId
       ? camp.creatures.find((entite) => entite.id === sacrificeId) ?? null
       : (cote === 'sorcier' ? choisirSacrifice(camp) : null);
-    if (!sacrifice) return { ok: false, raison: sacrificeId ? 'sacrifice' : 'champ-plein' };
+    if (!sacrifice || estSite(sacrifice)) {
+      return { ok: false, raison: sacrificeId ? 'sacrifice' : 'champ-plein' };
+    }
   }
   if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
     // Une arrivée qui désigne une créature (duel du Cavalier, lance de givre de
@@ -3401,6 +3459,12 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
   const entite = creerEntiteCreature(carte);
+  if (carte.kind === 'site') {
+    entite.heures = {
+      restants: Math.max(0, Math.trunc(Number(carte.site?.compteurs) || 0)),
+      effet: { type: 'site', recompense: carte.site?.recompense ?? null },
+    };
+  }
   // La capacité de destruction du sacrifié a pu déplacer la table (jetons,
   // renvois) : l'emplacement libéré se borne à la rangée telle qu'elle est.
   if (emplacementSacrifice !== null && emplacementSacrifice >= 0) {
@@ -3730,13 +3794,15 @@ export function rpgModesArme(duel, cote, entiteId) {
 // Mur (Tours de défense) et `nePeutPasAttaquer` (le Drakkar) : ne peuvent
 // jamais attaquer, même prêts — seul le Mur interdit aussi l'équipement.
 const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
-export const rpgPeutAttaquer = (entite) => entite && entite.ready && !entite.attaquee && !estGelee(entite)
+export const rpgPeutAttaquer = (entite) => entite && !estSite(entite)
+  && entite.ready && !entite.attaquee && !estGelee(entite)
   && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur && !entite.nePeutPasAttaquer;
 const pret = rpgPeutAttaquer;
 // Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
 // Le gel, lui, ferme aussi la défense.
-const peutBloquer = (entite) => entite && !entite.attaquee && !estGelee(entite)
+const peutBloquer = (entite) => entite && !estSite(entite)
+  && !entite.attaquee && !estGelee(entite)
   && !(entite.empecheBlocageToursRestants > 0);
 
 /**
@@ -3749,7 +3815,7 @@ const peutBloquer = (entite) => entite && !entite.attaquee && !estGelee(entite)
  * — Envol : un attaquant volant ne peut être bloqué que par une créature volante.
  */
 export function rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide = false) {
-  if (!bloqueur || !attaquant) return false;
+  if (!bloqueur || !attaquant || estSite(bloqueur) || estSite(attaquant)) return false;
   if (frappeRapide) return false;
   if (attaquant.infiltration) return false;
   return !attaquant.envol || Boolean(bloqueur.envol);
@@ -4023,7 +4089,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     if (!idVise || idVise === 'sorcier') continue;
     const visee = [...duel.joueur.creatures, ...duel.sorcier.creatures]
       .find((entite) => entite.id === idVise);
-    if (visee?.protectionSorts) return { ok: false, raison: 'protection' };
+    if (visee?.protectionSorts || estSite(visee)) return { ok: false, raison: 'protection' };
   }
 
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
@@ -4708,9 +4774,61 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
 }
 
 /**
- * Les heures du Guetteur du beffroi : au début de chaque tour de son
- * contrôleur, un compteur tombe — et le dernier emporte la sonnerie
- * (`effetFinal`, d'habitude des dégâts au sorcier adverse et une carte).
+ * Don de Bimini : la cible est entièrement soignée après avoir grandi, puis
+ * conserve définitivement les deux protections promises par la Source.
+ */
+export function rpgResoudreSiteCible(duel, cote, cibleId) {
+  const attente = duel?.siteEnAttente;
+  if (!attente || attente.cote !== cote || attente.recompense !== 'bimini') {
+    return { ok: false, raison: 'attente' };
+  }
+  const cible = duel[cote]?.creatures.find((entite) => entite.id === cibleId);
+  if (!cible || estSite(cible)) return { ok: false, raison: 'cible' };
+  const pvAvant = Math.max(0, Number(cible.pv) || 0);
+  const pvMaxAvant = Math.max(1, Number(cible.pvMax) || Number(cible.def) || 1);
+  cible.atk = Math.max(0, (Number(cible.atk) || 0) + 3);
+  cible.pvMax = pvMaxAvant + 3;
+  cible.def = cible.pvMax;
+  cible.pv = cible.pvMax;
+  cible.protectionSorts = true;
+  cible.tenaciteDisponible = true;
+  journaliserSoin(duel, cote, Math.max(0, cible.pv - pvAvant), cible.id);
+  duel.siteEnAttente = null;
+  duel.log.push(`La Source de Bimini soigne entièrement ${cible.name} : elle gagne définitivement +3/+3, Protection contre les sorts et Tenacité.`);
+  return { ok: true, cibleId: cible.id };
+}
+
+/** Résout l'étape finale d'un Site lorsque sa dernière Heure est retirée. */
+function resoudreSite(duel, cote, entite, carte) {
+  const recompense = carte.site?.recompense;
+  if (recompense === 'pioche') {
+    const nombre = Math.max(0, Math.trunc(Number(carte.site?.pioche) || 0));
+    let piochees = 0;
+    for (let index = 0; index < nombre; index += 1) {
+      if (rpgPiocher(duel, cote)) piochees += 1;
+    }
+    duel.log.push(`${carte.name} est découvert : ${cote === 'joueur' ? 'vous piochez' : 'le sorcier pioche'} ${piochees} carte${piochees > 1 ? 's' : ''}.`);
+    return;
+  }
+  if (recompense !== 'bimini') return;
+  const cibles = duel[cote].creatures.filter((candidate) => !estSite(candidate));
+  if (!cibles.length) {
+    duel.log.push('La Source de Bimini est atteinte, mais aucune créature ne peut boire son eau.');
+    return;
+  }
+  duel.siteEnAttente = { cote, entiteId: entite.id, carteId: carte.id, recompense: 'bimini' };
+  if (cote === 'sorcier') {
+    const cible = [...cibles].sort((a, b) =>
+      ((b.atk ?? 0) + (b.pv ?? 0)) - ((a.atk ?? 0) + (a.pv ?? 0)))[0];
+    rpgResoudreSiteCible(duel, cote, cible.id);
+  } else {
+    duel.log.push('La Source de Bimini est atteinte : choisissez une créature alliée à restaurer et consacrer.');
+  }
+}
+
+/**
+ * Les Heures tombent au début du tour du contrôleur. Le Guetteur applique son
+ * effet final ; un Site révèle sa récompense et reste posé avec son art final.
  */
 function resoudreHeures(duel) {
   const camp = duel[duel.tour];
@@ -4723,10 +4841,16 @@ function resoudreHeures(duel) {
     }
     const effetFinal = entite.heures.effet;
     entite.heures = null;
+    const carte = duelCardById(entite.carteId);
+    if (carte?.kind === 'site') {
+      duel.log.push(`${entite.name} : la dernière Heure est retirée.`);
+      resoudreSite(duel, duel.tour, entite, carte);
+      continue;
+    }
     duel.log.push(`Le beffroi sonne : ${entite.name} a fini de compter.`);
     const effets = Array.isArray(effetFinal) ? effetFinal : (effetFinal ? [effetFinal] : []);
     for (const effet of effets) {
-      appliquer(duel, duel.tour, effet, null, entite.id, cardColors(duelCardById(entite.carteId)), 'capacite', entite.carteId);
+      appliquer(duel, duel.tour, effet, null, entite.id, cardColors(carte), 'capacite', entite.carteId);
     }
   }
 }
@@ -4798,6 +4922,7 @@ export function rpgDefinirPhase(duel, phase) {
  *  n'est encore effacé — un Rempart de dunes « jusqu'à la fin du tour » protège
  *  donc toujours pendant cette fenêtre. `rpgFinDeTour` ferme ensuite le tour. */
 export function rpgOuvrirFinDeTour(duel) {
+  if (duel.siteEnAttente) return null;
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[duel.tour].manaChoixEnAttente) return null;
   if (duel.finDeTour) return duel.finDeTour;
   duel.phase = 'fin';
@@ -4883,6 +5008,8 @@ function changerVisages(duel) {
 }
 
 export function rpgFinDeTour(duel) {
+  // Bimini attend que son contrôleur désigne la créature consacrée.
+  if (duel.siteEnAttente) return duel;
   // Un joueur multicolore doit investir son nouveau mana avant de pouvoir
   // quitter son tour. Ce garde-fou protège aussi les appels hors interface.
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[duel.tour].manaChoixEnAttente) return duel;

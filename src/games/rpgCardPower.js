@@ -267,6 +267,14 @@ export function valeurCarte(carte) {
     if (carte.effet?.pioche) valeur += Number(carte.effet.pioche) * 1.5;
     return valeur;
   }
+  if (carte.kind === 'site') {
+    const attente = Math.max(1, Number(carte.site?.compteurs) || 1);
+    const finale = carte.site?.recompense === 'bimini'
+      ? 13 // +3/+3, soin complet, Protection contre les sorts et Tenacité
+      : Math.max(0, Number(carte.site?.pioche) || 0) * 1.5;
+    // La persistance et l'indestructibilité ont un prix, minoré par l'attente.
+    return 2 + finale * Math.max(0.45, 1 - attente * 0.12);
+  }
   let valeur = 1.3 * (carte.atk ?? 0) + (carte.def ?? 0);
   if (carte.envol) valeur += 2.5;
   if (carte.infiltration) valeur += 2.5;

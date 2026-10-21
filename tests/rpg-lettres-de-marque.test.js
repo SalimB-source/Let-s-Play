@@ -33,6 +33,9 @@ import {
   rpgNombreDestructions,
   rpgSacrifierCreature,
   rpgResoudreArriveeCiblee,
+  rpgResoudreSiteCible,
+  rpgBlesserCreature,
+  rpgPeutAttaquer,
 } from '../src/games/rpgDuel.js';
 import {
   RPG_DECKS,
@@ -54,6 +57,7 @@ import { puissanceCarte } from '../src/games/rpgCardPower.js';
 import { pastillesPourCarte, iconePourLigne } from '../src/games/effetIcons.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 import { RPG_LETTRES_DE_MARQUE_JETONS } from '../src/games/rpgLettresDeMarque.js';
+import { cardArtEntite } from '../src/games/rpgCardArt.js';
 
 const duelVide = () => rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [] });
 const duelEssai = () => {
@@ -829,4 +833,126 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Rançon, pa
   assert.equal(iconePourLigne(cardById('galion-de-la-flotte'),
     'Cargaison 2 — Quand le Galion meurt ou est pris en cale, piochez deux cartes.'),
     'cargaison', 'la ligne de règle se lit Cargaison');
+});
+
+test('la Vengeance de la reine Anne gagne +2/+0 et Butin uniquement quand sa cale est occupée', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 12);
+  mana(duel, 'sorcier', 12);
+  donner(duel, 'sorcier', 'mousse-des-galiotes');
+  const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
+  donner(duel, 'joueur', 'la-vengeance-de-la-reine-anne');
+  const vengeance = jouer(duel, 'joueur', 'la-vengeance-de-la-reine-anne', mousse.id).entite;
+
+  assert.equal(vengeance.enCale?.carteId, 'mousse-des-galiotes');
+  assert.equal(vengeance.atk, 4, 'la cale comble donne +2 attaque');
+  assert.equal(vengeance.butin, true, 'la cale comble donne Butin');
+
+  duel.finDeTour = { cote: 'joueur' };
+  assert.equal(rpgRanconner(duel, 'sorcier', vengeance.id).ok, true);
+  assert.equal(vengeance.enCale, null);
+  assert.equal(vengeance.atk, 2, 'le bonus disparaît avec la prisonnière');
+  assert.equal(vengeance.butin, false, 'le Butin conditionnel disparaît lui aussi');
+});
+
+test('la Prime du Chasseur d’Ocracoke pioche quand il détruit une créature pirate qualifiée', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 12);
+  mana(duel, 'sorcier', 12);
+  donner(duel, 'sorcier', 'cotre-de-course');
+  const cotre = jouer(duel, 'sorcier', 'cotre-de-course').entite;
+  donner(duel, 'joueur', 'le-chasseur-d-ocracoke');
+  const chasseur = jouer(duel, 'joueur', 'le-chasseur-d-ocracoke').entite;
+  duel.joueur.deck = ['mousse-des-galiotes'];
+  const mainAvant = duel.joueur.main.length;
+
+  pret(chasseur);
+  assert.equal(rpgAttaquerCreature(duel, 'joueur', chasseur.id, cotre.id).ok, true);
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === cotre.id), false);
+  assert.equal(duel.joueur.main.length, mainAvant + 1, 'la Prime fait piocher exactement une carte');
+  assert.equal(chasseur.coupRapide, true);
+  assert.equal(cardById(chasseur.carteId).insaisissable, true);
+});
+
+test('la Source de Bimini porte ses trois Heures, change d’étape et consacre définitivement une créature', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 20);
+  donner(duel, 'joueur', 'tercio-de-cuivre');
+  const cible = jouer(duel, 'joueur', 'tercio-de-cuivre').entite;
+  cible.pv = 1;
+  cible.def = 1;
+  donner(duel, 'joueur', 'source-de-bimini');
+  const source = jouer(duel, 'joueur', 'source-de-bimini').entite;
+
+  assert.equal(source.heures.restants, 3);
+  assert.match(cardArtEntite(source), /source-de-bimini\.jpg/);
+  assert.equal(rpgPeutAttaquer(source), false, 'un Site ne peut jamais attaquer');
+  rpgBlesserCreature(duel, 'joueur', source.id, 99, 'braise');
+  assert.ok(duel.joueur.creatures.includes(source), 'la Source est indestructible');
+
+  rpgFinDeTour(duel); // tour du sorcier
+  rpgFinDeTour(duel); // tour du joueur : 2
+  assert.equal(source.heures.restants, 2);
+  assert.match(cardArtEntite(source), /source-de-bimini-2\.jpg/);
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel); // 1
+  assert.equal(source.heures.restants, 1);
+  assert.match(cardArtEntite(source), /source-de-bimini-1\.jpg/);
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel); // 0, choix
+  assert.equal(source.heures, null);
+  assert.match(cardArtEntite(source), /source-de-bimini-0\.jpg/);
+  assert.equal(duel.siteEnAttente?.recompense, 'bimini');
+
+  const res = rpgResoudreSiteCible(duel, 'joueur', cible.id);
+  assert.equal(res.ok, true);
+  assert.equal(cible.atk, 5);
+  assert.equal(cible.pvMax, 7);
+  assert.equal(cible.pv, 7, 'la créature est entièrement soignée après le +3/+3');
+  assert.equal(cible.def, 7);
+  assert.equal(cible.protectionSorts, true);
+  assert.equal(cible.tenaciteDisponible, true);
+  assert.equal(duel.siteEnAttente, null);
+  assert.ok(duel.joueur.creatures.includes(source), 'le Site reste posé après sa résolution');
+});
+
+test('le Trésor de Lima porte deux Heures puis fait piocher deux cartes', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'le-tresor-de-lima');
+  const tresor = jouer(duel, 'joueur', 'le-tresor-de-lima').entite;
+  duel.joueur.deck = ['mousse-des-galiotes', 'tercio-de-cuivre', 'le-brulot', 'haut-fond'];
+
+  assert.equal(tresor.heures.restants, 2);
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel); // pioche de tour + une Heure restante
+  assert.equal(tresor.heures.restants, 1);
+  assert.equal(duel.joueur.main.length, 1);
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel); // pioche de tour + les deux cartes du Trésor
+  assert.equal(tresor.heures, null);
+  assert.equal(duel.joueur.main.length, 4, 'deux pioches normales et deux cartes du Trésor');
+  assert.equal(duel.joueur.deck.length, 0);
+  assert.ok(duel.joueur.creatures.includes(tresor), 'le Trésor persiste sur son emplacement');
+});
+
+test('les quatre nouvelles cartes pirates sont révélées avec leurs peintures d’étapes', () => {
+  assert.equal(cardById('la-vengeance-de-la-reine-anne').rarity, 'rare');
+  assert.equal(cardById('le-chasseur-d-ocracoke').rarity, 'mythique');
+  assert.equal(cardById('source-de-bimini').kind, 'site');
+  assert.equal(cardById('source-de-bimini').rarity, 'mythique');
+  assert.equal(cardById('le-tresor-de-lima').site.compteurs, 2);
+  assert.equal(carteReveleePar('la-vengeance-de-la-reine-anne')?.etageId, 'sables-2');
+  assert.equal(carteReveleePar('le-tresor-de-lima')?.etageId, 'sables-2');
+  assert.equal(carteReveleePar('le-chasseur-d-ocracoke')?.etageId, 'sables-3');
+  assert.equal(carteReveleePar('source-de-bimini')?.etageId, 'sables-3');
+
+  for (const id of [
+    'la-vengeance-de-la-reine-anne', 'le-chasseur-d-ocracoke',
+    'source-de-bimini', 'source-de-bimini-2', 'source-de-bimini-1', 'source-de-bimini-0',
+    'le-tresor-de-lima', 'le-tresor-de-lima-1', 'le-tresor-de-lima-0',
+  ]) {
+    assert.ok(existsSync(art(id)), `${id} a sa peinture plein art 1024 × 1280`);
+  }
+  assert.ok(puissanceCarte(cardById('source-de-bimini')) > 40, 'le Site mythique valorise sa récompense différée');
 });
