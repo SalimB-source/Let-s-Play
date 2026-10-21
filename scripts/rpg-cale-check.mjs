@@ -227,6 +227,16 @@ assert.match(css, /\.rpg-card-prison \{[^}]*min-width: 0;[^}]*max-width: 100%;/,
   'le wrapper se laisse comprimer comme une carte');
 assert.match(css, /\.rpg-card-prison > \.rpg-card \{[^}]*max-width: 100%;/,
   'la face ne déborde jamais de la boîte du wrapper');
+// Le wrapper doit recevoir les mêmes largeurs à CHAQUE breakpoint, pas
+// seulement max-width: 100 % (qui ne corrige pas sa taille intrinsèque).
+assert.match(css, /\.rpg-card-prison > \.rpg-card \{[^}]*width: 100%;/);
+assert.match(css, /\.rpg-card-prison \{[^}]*display: block;/);
+for (const rule of css.matchAll(/([^{}]+)\{([^{}]+)\}/g)) {
+  if (/(^|,)\s*\.rpg-card\s*(,|$)/.test(rule[1]) && /width: clamp\(/.test(rule[2])) {
+    assert.ok(rule[1].includes('.rpg-card-prison'),
+      'chaque largeur responsive de carte s’applique aussi à la cale');
+  }
+}
 assert.match(pageSource,
   /className="rpg-card-prison"\s*\n\s*style=\{caseEssai \? \{ '--case-essai': caseEssai \} : undefined\}/,
   'la case du mode sans terrains est posée sur le wrapper comme sur la carte');
@@ -262,7 +272,9 @@ if (process.argv.includes('--browser')) {
   });
   try {
     for (const { width, height, touch } of [
+      { width: 1920, height: 1080, touch: false },
       { width: 1440, height: 900, touch: false },
+      { width: 1280, height: 600, touch: false },
       { width: 844, height: 390, touch: true },
       { width: 568, height: 320, touch: true },
       { width: 390, height: 844, touch: true },
@@ -271,6 +283,28 @@ if (process.argv.includes('--browser')) {
         viewport: { width, height }, isMobile: touch, hasTouch: touch, reducedMotion: 'reduce',
       });
       const page = await context.newPage();
+      // Comparer les faces SUR LA TABLE, et pas seulement dans la fiche.
+      for (const mode of ['', 'essai']) {
+        await page.setContent(`<!doctype html><html><head>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>* { box-sizing: border-box; } ${css}\n${mobileCss}\n${essaiCss}</style>
+          </head><body><main class="rpg-battle ${touch ? 'rpg-battle--touch' : ''}"
+            data-mode-mana="${mode}" style="position:fixed;inset:0">
+            <div class="card-table" style="height:100%">
+              <div class="card-row card-row--equipe">
+                ${rendu.libre.html}${rendu.capitaine.html}
+              </div>
+            </div>
+          </main></body></html>`);
+        const faces = await page.locator('.card-row .rpg-card').evaluateAll(cards =>
+          cards.map(card => ({ width: card.offsetWidth, height: card.offsetHeight })));
+        assert.equal(faces.length, 2);
+        for (const axis of ['width', 'height']) {
+          assert.ok(faces[0][axis] > 0);
+          assert.ok(Math.abs(faces[0][axis] - faces[1][axis]) <= 1,
+            `${width}×${height}, ${mode || 'classique'} : même ${axis} avec ou sans cale (${JSON.stringify(faces)})`);
+        }
+      }
       for (const [nom, cas, avecPrisonniere] of [
         ['cale pleine', rendu.fiche, true], ['cale vide', rendu.ficheLibre, false],
       ]) {

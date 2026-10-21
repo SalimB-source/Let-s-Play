@@ -383,8 +383,11 @@
    c'est là qu'on lit la prisonnière entière. */
 .rpg-card-prison {
   position: relative;
-  display: grid;
-  /* Le wrapper n'est qu'un calque : dans une rangée, il tient la place d'une
+  display: block;
+  /* La boîte partage toutes les largeurs responsive de .rpg-card, et sa
+     face prend 100 % de cette largeur : aucune taille intrinsèque de grille
+     ne peut agrandir le capteur lorsque la colonne le comprime.
+     Le wrapper n'est qu'un calque : dans une rangée, il tient la place d'une
      carte et se laisse comprimer comme elle. Sans ces trois lignes, la
      créature qui détient une cale gardait sa largeur nominale (jusqu'à 198 px
      sur grand écran) alors que ses voisines se rangeaient dans leur case ou
@@ -396,6 +399,7 @@
 }
 .rpg-card-prison > .rpg-card {
   z-index: 1;
+  width: 100%;
   max-width: 100%;
 }
 .rpg-card__prisonniere {
@@ -652,9 +656,9 @@
 .card-row--equipe { bottom: 27%; }
 
 /* ── La carte : liseré noir, cadre piloté par l'élément, zones imprimées ── */
+.rpg-card, .rpg-card-prison { width: clamp(138px, 11.5vw, 168px); }
 .rpg-card {
   position: relative;
-  width: clamp(138px, 11.5vw, 168px);
   aspect-ratio: 4 / 5;
   display: flex;
   flex-direction: column;
@@ -1515,7 +1519,7 @@
 
 @media (max-width: 900px) {
   .card-row { gap: 8px; }
-  .rpg-card { width: clamp(104px, 20vw, 140px); }
+  .rpg-card, .rpg-card-prison { width: clamp(104px, 20vw, 140px); }
   .card-row--equipe { bottom: 44%; }
   .rpg-card__text { font-size: 8px; }
   .rpg-hand__card { width: 104px; min-height: 120px; }
@@ -2436,7 +2440,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 @media (max-width: 540px) {
   .card-row { gap: 4px; }
-  .rpg-card { width: clamp(72px, 19vw, 100px); border-width: 3px; border-radius: 8px; }
+  .rpg-card, .rpg-card-prison { width: clamp(72px, 19vw, 100px); border-width: 3px; border-radius: 8px; }
   .rpg-card--img .rpg-card__title strong { font-size: 7px; }
   .rpg-card--img .rpg-card__type { font-size: 5.4px; min-height: 9px; padding: 1px 3px; }
   .rpg-card--img .rpg-card__text { font-size: 5.6px; padding: 2px 3px; }
@@ -2941,7 +2945,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .card-row--ennemi { top: 21%; bottom: auto; }
 .card-row--equipe { top: 49%; bottom: auto; }
-.rpg-card { width: clamp(104px, 10vw, 142px); }
+.rpg-card, .rpg-card-prison { width: clamp(104px, 10vw, 142px); }
 
 .rpg-turn-ribbon {
   top: 50%;
@@ -3109,7 +3113,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-wizard-plate__pv { font-size: 15px; }
   .rpg-wizard-plate__sable { display: none; }
   .card-row { left: 170px; right: 100px; }
-  .rpg-card { width: clamp(82px, 13vw, 112px); }
+  .rpg-card, .rpg-card-prison { width: clamp(82px, 13vw, 112px); }
   .rpg-terrains--ennemi,
   .rpg-terrains--joueur { left: 174px; max-width: calc(100% - 290px); }
   .rpg-bottombar { width: min(360px, calc(100vw - 190px)); }
@@ -3134,7 +3138,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .card-row { left: 4%; right: 4%; height: 20%; gap: 3px; padding: 2px; }
   .card-row--ennemi { top: 23%; }
   .card-row--equipe { top: 49%; }
-  .rpg-card { width: clamp(68px, 18vw, 96px); border-width: 3px; border-radius: 7px; }
+  .rpg-card, .rpg-card-prison { width: clamp(68px, 18vw, 96px); border-width: 3px; border-radius: 7px; }
   .rpg-terrains--ennemi { top: 11%; left: 140px; }
   .rpg-terrains--joueur { top: 74%; left: 140px; }
   .rpg-terrain { width: clamp(48px, 13vw, 54px); }
@@ -3447,7 +3451,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* Les dimensions favorisent l’illustration full art et la lisibilité des repères de carte. */
-.rpg-card { width: clamp(132px, min(12.8vw, 17vh), 198px); }
+.rpg-card, .rpg-card-prison { width: clamp(132px, min(12.8vw, 17vh), 198px); }
 .rpg-hand__card { width: clamp(104px, 9.6vw, 136px); }
 
 .rpg-card--img .rpg-card__title {
@@ -3552,7 +3556,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hand__card--img .rpg-hand__rarity { right: 7%; bottom: 1%; font-size: 6px; }
 
 @media (max-width: 900px) {
-  .rpg-card { width: clamp(86px, 13.5vw, 116px); }
+  .rpg-card, .rpg-card-prison { width: clamp(86px, 13.5vw, 116px); }
   .rpg-hand__card { width: clamp(90px, 11vw, 112px); }
   .rpg-card--img .rpg-card__title { height: 22%; min-height: 22%; }
   .rpg-card--img .rpg-card__title strong { font-size: 7.5px; }
@@ -3579,7 +3583,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 @media (max-width: 620px) {
-  .rpg-card { width: clamp(72px, 18.5vw, 100px); }
+  .rpg-card, .rpg-card-prison { width: clamp(72px, 18.5vw, 100px); }
   .rpg-hand__card { width: clamp(74px, 21vw, 94px); }
   .rpg-card--img .rpg-card__title { height: 24%; min-height: 24%; }
   .rpg-card--img .rpg-card__title strong { font-size: 6.4px; }
@@ -4050,11 +4054,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 @media (max-height: 650px) and (min-width: 621px) {
-  .rpg-card { width: clamp(72px, 8vw, 112px); }
+  .rpg-card, .rpg-card-prison { width: clamp(72px, 8vw, 112px); }
 }
 
 @media (max-height: 500px) and (max-width: 620px) {
-  .rpg-card { width: clamp(54px, 15vw, 82px); }
+  .rpg-card, .rpg-card-prison { width: clamp(54px, 15vw, 82px); }
 }
 
 /* Aperçu instantané au survol : contenu agrandi, sans fond principal ni grand
