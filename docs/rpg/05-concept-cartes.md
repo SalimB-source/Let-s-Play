@@ -444,6 +444,36 @@ carte hybride partage le sceau entre ses éléments. Le bandeau de famille et
 la lueur de carte jouable gardent, eux, leur teinte de famille (or pour la
 Magie Rapide, améthyste pour la Sorcellerie).
 
+### Le chiffre d'un effet s'écrit sur la carte
+
+Une carte qui **change les statistiques** d'une créature porte son chiffre sur
+sa face, dans la même plaque que les statistiques d'un corps ou le bonus d'un
+porteur : la **Lame de mer** affiche `⚔ -2 🛡 -2`, l'**Embuscade** aussi (elle
+rabote toute la table adverse), la **Vipère de verre** `⚔ -2 🛡 0`, la
+**Brisure de verre** `-1/-1`, et les renforts **+1/+1**, **+2/+1**, `+0/+3`,
+**+2/+2** en teinte de bonus. Sans ce chiffre, le nombre ne vivait que dans la
+phrase de règle — or une face de carte n'imprime pas la règle, et « donne
+-2/-2 » se lisait donc seulement en ouvrant la fiche.
+
+- la source du chiffre est unique — `modificationStats(carte)` et
+  `libelleModificationStats(carte)` (`rpgCards.js`) lisent `effet` **ou**
+  `arrivee` (`buff` / `debuff`) et écrivent `-2/-2`, `+1/+1`, jamais `+-2` ;
+- la même valeur devient une pastille (`pastillesPourCarte`,
+  `effetIcons.js`) : « Affaiblissement -2/-2 » sur le sprite `i-degats`,
+  « Renfort +1/+1 » sur `i-aura` — donc aussi dans l'aperçu déplié du Souk et
+  du guide, où chaque pastille écrit sa règle : « La cible perd 2 en attaque
+  et 2 en défense. Si sa défense tombe à 0, elle est détruite. » La vipère ne
+  cite que l'attaque qu'elle retire ;
+- les **armes** sont exclues du calcul : leur bonus de porteur (`bonusArme`)
+  s'affiche déjà, et deux chiffres pour la même chose se contrediraient ;
+- les créatures en main gardent leurs propres statistiques : la modification
+  d'une arrivée (Vipère de verre, Colosse de sel) se lit sur la pastille et
+  dans la règle, pas à la place du `atk/def` du corps ;
+- l'atelier de decks écrit le même libellé dans sa ligne compacte
+  (` · -2/-2` derrière le type), et les lecteurs d'écran reçoivent la valeur
+  (« Effet sur les statistiques : -2 attaque, -2 défense ») sur la carte en
+  main comme sur l'aperçu.
+
 ## 7. Les contres (deck Marée des abysses)
 
 Le deck **Marée des abysses** (`RPG_DECK_MAREE_BASE`, mono-Eau, 16 Mer) joue la

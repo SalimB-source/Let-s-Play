@@ -133,6 +133,44 @@ export function bonusArme(carte) {
   return null;
 }
 
+/** Un nombre signé pour l'affichage d'un changement de statistique :
+ *  « +2 », « -2 », « 0 » — jamais « +-2 ». */
+export function signeStat(valeur = 0) {
+  const nombre = Number.isFinite(Number(valeur)) ? Number(valeur) : 0;
+  return nombre > 0 ? `+${nombre}` : `${nombre}`;
+}
+
+/**
+ * La modification d'attaque et de défense qu'une carte inflige à sa cible
+ * (`{ atk, def }`), ou `null` quand elle n'en inflige aucune.
+ *
+ * C'est ce que la face d'une carte doit montrer pour qu'on lise son effet
+ * d'un coup d'œil, comme les armes affichent le bonus de leur porteur : la
+ * **Lame de mer** écrit `-2/-2`, l'**Embuscade** `-2/-2` sur toute la table
+ * adverse, la vipère de verre `-2/0`, le Colosse `+1/+1` à son arrivée. Sans
+ * ce calcul, ces nombres ne vivaient que dans la ligne de règle — et les
+ * faces de cartes n'impriment pas la règle.
+ *
+ * Les armes sont exclues : elles ont déjà leur bonus de porteur (`bonusArme`),
+ * et les répéter ferait lire deux fois le même chiffre.
+ */
+export function modificationStats(carte) {
+  if (!carte || carteEstArme(carte)) return null;
+  const source = carte.effet ?? carte.arrivee ?? null;
+  if (!source || !['buff', 'debuff'].includes(source.type)) return null;
+  const atk = Number(source.atk) || 0;
+  const def = Number(source.def) || 0;
+  if (!atk && !def) return null;
+  return { atk, def };
+}
+
+/** « -2/-2 », « +1/+1 » : la modification telle qu'elle s'écrit sur la carte. */
+export function libelleModificationStats(carte) {
+  const modif = modificationStats(carte);
+  if (!modif) return null;
+  return `${signeStat(modif.atk)}/${signeStat(modif.def)}`;
+}
+
 /**
  * Les deux familles de sorts, et leur signature visuelle.
  *
