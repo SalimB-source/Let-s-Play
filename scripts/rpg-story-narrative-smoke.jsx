@@ -5,6 +5,7 @@ import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { cardById } from '../src/games/rpgCards.js';
 import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY } from '../src/games/rpgStory.js';
 import { RPG_STORY_DECKS, RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
+import { placerPlateauHistoire } from '../src/games/rpgStoryCast.js';
 import { RPG_STORY_ACTES, RPG_STORY_CAMPAIGN_FLOORS, acteSuivantHistoire, questionChoix, sceneHistoire, texteEpilogueActe } from '../src/games/rpgStoryScenes.js';
 import { recitHistoireVide, transitionRecitHistoire } from '../src/games/rpgStoryFlow.js';
 import { collectionJoueur, chargerCollectionDistante, revelationsDepuisEtages } from '../src/games/rpgCollection.js';
@@ -177,7 +178,13 @@ export async function checkRpgStoryNarrative(assert) {
     let garde = 0;
     while (lire().recit.curseur.type !== 'fin' && garde++ < 40) {
       const c = lire().recit.curseur;
-      if (c.type === 'duel') await click(query('[data-story-skip-duel]'));
+      if (c.type === 'duel') {
+        // Le cartouche nomme l'acte et la tour : deux champs morts y laissaient
+        // « undefined » et un « / » orphelin.
+        assert.match(query('.rpg-narrative__eyebrow').textContent, /^ACTE I \/ LES ABSENTS$/);
+        assert.match(query('.rpg-narrative__location').textContent, /^La Tour des Listes · Duel \d sur 5$/);
+        await click(query('[data-story-skip-duel]'));
+      }
       else {
         if (query('[data-story-summary]')) await click(query('[data-story-summary]'));
         if (query('[data-story-choice="confiee"]')) await click(query('[data-story-choice="confiee"]'));
@@ -295,6 +302,8 @@ export async function checkRpgStoryPoses(assert) {
   let root = null;
   const query = (selector) => container.querySelector(selector);
   const sprite = (id) => container.querySelector(`[data-personnage-stand="${id}"] img[data-personnage]`);
+  const plateau = () => [...container.querySelectorAll('.rpg-narrative__plateau [data-personnage-stand]')]
+    .map((noeud) => noeud.dataset.personnageStand);
   const dernier = (id) => sceneHistoire(id).repliques.length - 1;
   const poserEtat = (curseur, { etagesVaincus = [], scenesVues = [], choix = {} } = {}) => window.localStorage.setItem(
     RPG_STORY_STORAGE_KEY,
@@ -409,6 +418,21 @@ export async function checkRpgStoryPoses(assert) {
     assert.match(sprite('horloger-zenith').getAttribute('src'), /stand-horloger-zenith-decision\.webp/);
     assert.equal(query('.rpg-narrative__plateau [data-pose="apres"], .rpg-narrative__plateau [data-pose="duel"]'), null,
       'et aucune pose de duel ne traîne sur un plateau de décision');
+
+    // 7. Le bord d'une figure suit son regard peint : Fériel est tournée vers
+    //    la gauche de son image — à gauche du plan, elle fixait le bord de
+    //    l'écran pendant que Salem la regardait. Elle passe donc à droite. Les
+    //    figures frontales, elles, gardent l'ordre du récit.
+    const etatRegard = avancerJusqua('listes-4-avant');
+    poserEtat({ type: 'scene', id: 'listes-4-avant', replique: 0, resume: false },
+      { etagesVaincus: etatRegard.etages, scenesVues: etatRegard.recit.scenesVues, choix: etatRegard.recit.choix });
+    await ouvrir();
+    assert.deepEqual(plateau(), ['salem', 'feriel'], 'Fériel passe à droite pour faire face à Salem');
+    assert.deepEqual(placerPlateauHistoire(['feriel', 'salem']), ['salem', 'feriel']);
+    assert.deepEqual(placerPlateauHistoire(['salem', 'feriel']), ['salem', 'feriel'], 'déjà en face, le plan ne bouge plus');
+    assert.deepEqual(placerPlateauHistoire(['salem', 'guetteur']), ['salem', 'guetteur'], 'deux figures frontales gardent l’ordre du récit');
+    assert.deepEqual(placerPlateauHistoire(['boualem', 'sonneur']), ['sonneur', 'boualem'], 'le Sonneur regarde à droite : il passe à gauche');
+    assert.deepEqual(placerPlateauHistoire(['nageuse', 'salem']), ['salem', 'nageuse'], 'la Nageuse regarde à gauche : elle passe à droite');
   } finally {
     if (root) await act(async () => root.unmount());
     container.remove();

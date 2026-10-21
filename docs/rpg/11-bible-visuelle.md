@@ -114,6 +114,13 @@ du halo, plume légère, WebP à fond transparent, 900 px de haut au plus).
   carré cassé, jamais de fond de détourage visible.
 - Une nouvelle passe de détourage incrémente la révision `?v=` de
   `standHistoire()` : aucun cache ne peut resservir l'ancienne image.
+- **Le bord d'une figure suit son regard peint.** `REGARDS_PEINTS`
+  (`rpgStoryCast.js`) note les sprites qui ne sont pas frontaux ; `placerPlateauHistoire()`
+  place ceux qui regardent vers la gauche de l'image au bord **droit** du plan,
+  et inversement — deux figures tournées du même côté fixeraient sinon le même
+  bord de l'écran au lieu de se faire face. Une figure frontale n'a pas de
+  regard déclaré : elle garde l'ordre du récit (l'hôte à gauche, celui qui
+  parle à droite).
 
 ## Les poses selon la situation
 

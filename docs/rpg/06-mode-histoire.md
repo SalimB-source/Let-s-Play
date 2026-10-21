@@ -183,7 +183,16 @@ déploie les malédictions, le Tribut et le jugement d'outre-tombe.
      bords, halo désincrusté, bords adoucis) — mêmes visages, même style de
      peinture, aucun recolorage. À gauche l'hôte de la scène (`scene.figure`),
      à droite celui qui parle, ou son interlocuteur attitré quand l'hôte
-     parle ; celui qui parle est en pleine lumière, l'autre dans l'ombre. Le
+     parle ; celui qui parle est en pleine lumière, l'autre dans l'ombre. Ces
+     bords ne sont pas figés : `placerPlateauHistoire()` échange les deux
+     places quand les regards peints les tourneraient vers le **même** bord de
+     l'écran. `REGARDS_PEINTS` ne recense que les figures franchement de trois
+     quarts — `feriel`, `reine-etals`, `nageuse`, `devoreur` et
+     `dernier-fennec` regardent vers la gauche de leur peinture, `sonneur`,
+     `horloger-zenith` et `meute-neiges` vers la droite ; les autres sont
+     frontales et tiennent indifféremment l'un ou l'autre bord. Sans cette
+     règle, Fériel placée à gauche fixait le bord de l'écran pendant que Salem
+     la regardait : les deux semblaient regarder dans la même direction. Le
      champ `stand` du registre `rpgStoryCast.js` porte les sprites et
      `standHistoire()` les résout ; les personnages des actes suivants, encore
      sans sprite, retombent sur le portrait encadré (même placement).
