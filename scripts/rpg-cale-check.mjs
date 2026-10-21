@@ -118,6 +118,34 @@ assert.match(blocFiche, /border-color:\s*rgba\(127, 212, 200, \.72\)/,
 assert.match(blocFiche, /figcaption > \.rpg-hover-card-preview__prisonniere-label/,
   'la petite carte porte son libellé « En cale »');
 
+// ── 4 bis. Le wrapper de prison est une CARTE de la rangée ─────────────────
+// Il n'y a qu'un wrapper par capteur : s'il manque aux règles qui mesurent les
+// enfants de la rangée, le capteur garde la largeur nominale du PC pendant que
+// ses voisines se partagent la rangée — il paraît deux fois trop grand en
+// plein écran, et la grille des cinq cases le place au hasard.
+const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+assert.match(mobileCss,
+  /\.rpg-battle--touch \.card-row > :is\(\.rpg-card, \.rpg-card-stack, \.rpg-card-prison\) \{/,
+  'au doigt, le capteur se partage la rangée comme une carte');
+assert.match(mobileCss,
+  /\.card-row \.rpg-card-prison > \.rpg-card[^{]*\{ width: 100%; \}/,
+  'la face du capteur prend la largeur que la rangée donne au wrapper');
+assert.match(mobileCss,
+  /\.card-row > \.rpg-card-prison:first-child/,
+  'un capteur seul dans sa rangée se centre comme une carte');
+const essaiCss = readFileSync(new URL('../src/games/rpg-mana-essai.css', import.meta.url), 'utf8');
+assert.match(essaiCss,
+  /\[data-mode-mana="essai"\] \.card-row > :is\(\.rpg-card, \.rpg-card-stack, \.rpg-card-prison\) \{\s*grid-column: var\(--case-essai, auto\);/,
+  'dans la grille des cinq cases, le capteur tombe dans sa case');
+assert.match(css, /\.rpg-card-prison \{[^}]*min-width: 0;[^}]*max-width: 100%;/,
+  'le wrapper se laisse comprimer comme une carte');
+assert.match(css, /\.rpg-card-prison > \.rpg-card \{[^}]*max-width: 100%;/,
+  'la face ne déborde jamais de la boîte du wrapper');
+const pageSource = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+assert.match(pageSource,
+  /className="rpg-card-prison"\s*\n\s*style=\{caseEssai \? \{ '--case-essai': caseEssai \} : undefined\}/,
+  'la case du mode sans terrains est posée sur le wrapper comme sur la carte');
+
 console.log('✓ La prisonnière se glisse derrière son capteur sur la table ; dans la fiche, elle apparaît en petite carte dans la description.');
 
 // ── 5. La cascade réelle : une seule hauteur de carte, pas deux lignes ─────

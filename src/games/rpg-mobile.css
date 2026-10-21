@@ -28,9 +28,11 @@
 .card-row { justify-content: flex-start; }
 .card-row > .rpg-card:first-child,
 .card-row > .rpg-card-stack:first-child,
+.card-row > .rpg-card-prison:first-child,
 .card-row > .rpg-card-stack__toggle:first-child { margin-inline-start: auto; }
 .card-row > .rpg-card:last-child,
 .card-row > .rpg-card-stack:last-child,
+.card-row > .rpg-card-prison:last-child,
 .card-row > .rpg-card-stack__toggle:last-child { margin-inline-end: auto; }
 
 /* La confirmation de sort reste utilisable à la souris, au clavier et au doigt. */
@@ -499,7 +501,11 @@
    librement. Pour que le groupe tienne toujours dans sa colonne, la largeur
    d'une carte se partage entre les emplacements de la rangée (`--row-count`,
    compté en CSS plus bas), jusqu'au plancher `--rpg-field-min` ; au-delà, les
-   cartes se chevauchent au lieu de déborder. */
+   cartes se chevauchent au lieu de déborder. Le wrapper de prison
+   (`.rpg-card-prison`, créature qui détient une cale) compte comme une carte :
+   sans lui dans la liste, son capteur gardait la largeur nominale du PC
+   (jusqu'à 140 px au doigt) pendant que ses voisines se partageaient la
+   rangée (40 à 60 px) — il paraissait deux fois trop grand en plein écran. */
 .rpg-battle--touch .card-table > .card-row { --row-count: 1; align-items: center; justify-content: center; padding: 4px max(8px, calc(var(--duel-card) * .12)); gap: var(--rpg-field-gap); overflow: visible; }
 .rpg-battle--touch .card-row:has(> :nth-child(2)) { --row-count: 2; }
 .rpg-battle--touch .card-row:has(> :nth-child(3)) { --row-count: 3; }
@@ -515,7 +521,7 @@
 .rpg-battle--touch .card-row:has(> :nth-child(14)) { --row-count: 14; }
 .rpg-battle--touch .card-row:has(> :nth-child(16)) { --row-count: 16; }
 .rpg-battle--touch .card-row:has(> :nth-child(20)) { --row-count: 20; }
-.rpg-battle--touch .card-row > :is(.rpg-card, .rpg-card-stack) {
+.rpg-battle--touch .card-row > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
   flex: 0 0 auto;
   width: clamp(var(--rpg-field-min), calc((100% - (var(--row-count) - 1) * var(--rpg-field-gap)) / var(--row-count)), var(--rpg-field-card));
 }
@@ -525,6 +531,11 @@
   margin-inline-start: min(0px, calc((100% - var(--row-count) * var(--rpg-field-min)) / max(1, var(--row-count) - 1) - var(--rpg-field-gap)));
 }
 .rpg-battle--touch .card-row .rpg-card-stack > .rpg-card { width: 100%; }
+/* La face du capteur suit la boîte que la rangée lui donne — seule ou dans une
+   pile d'exemplaires identiques —, sinon elle déborde du wrapper comprimé. */
+.rpg-battle--touch .card-row .rpg-card-prison > .rpg-card,
+.rpg-battle--touch .card-row .rpg-card-stack > .rpg-card-prison > .rpg-card { width: 100%; }
+.rpg-battle--touch .card-row .rpg-card-stack > .rpg-card-prison { width: 100%; }
 .rpg-battle--touch .card-row .rpg-card { min-width: 0; min-height: 0; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius, 10px); touch-action: pan-x; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
 .rpg-battle--touch .card-row .rpg-card.is-declared-attacker,

@@ -2147,10 +2147,16 @@ export function TableCard({
   // cale se lit dans l'aria du capteur, se paie par le bouton de rançon, et
   // la fiche du capteur empile les deux créatures en perspective. Le wrapper
   // n'existe qu'avec une prisonnière : sans prise, le DOM reste celui
-  // d'avant, une carte = un bouton.
+  // d'avant, une carte = un bouton. Le wrapper reste une CARTE de la rangée :
+  // il reçoit la case du mode sans terrains (la grille de cinq colonnes le
+  // placerait sinon au hasard) et se laisse mesurer comme ses voisines.
   if (!prisonniereCarte) return carteRendue;
   return (
-    <span className="rpg-card-prison">
+    <span
+      className="rpg-card-prison"
+      style={caseEssai ? { '--case-essai': caseEssai } : undefined}
+      data-case-essai={caseEssai ?? undefined}
+    >
       <span className="rpg-card__prisonniere" aria-hidden="true">
         <span className="rpg-card__prisonniere-nom">{entite.enCale.name}</span>
         <img className="rpg-card__prisonniere-art" src={cardArt(prisonniereCarte)} alt="" />
