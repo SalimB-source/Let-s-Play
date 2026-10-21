@@ -8,7 +8,9 @@
  * paie l'assurance du convoi. Ces contrôles suivent la liste du doc 18 §12.10 :
  * la prise se fait à l'arrivée et remplace la destruction sans rien
  * déclencher, une seule place, la rançon paie et rend, la cale s'ouvre à
- * toute sortie de table, Tenacité et figures refusent la cale (les boucliers,
+ * toute sortie de table — EN JEU quand le capteur meurt (statistiques de la
+ * prise, aucun effet d'arrivée), en main sinon —, Tenacité et figures
+ * refusent la cale (les boucliers,
  * eux, ne comptent plus : la prise ne blesse pas), jetons et effets créés ne
  * prennent rien, le sceau de la Lettre arme les arrivées du tour puis expire
  * mais la cale reste, Cargaison paie à la mort et à la prise, le Brûlot
@@ -301,8 +303,45 @@ test('la rançon paie le coût imprimé en manas libres et rend la créature en 
   duel.annonce = null;
 });
 
-test('la cale s’ouvre à toute sortie de table : mort, renvoi, exil, sacrifice', () => {
-  // Mort au combat du capteur.
+test('la mort du capteur rend la détenue EN JEU, avec ses statistiques de prise et sans effet d’arrivée', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 10);
+  mana(duel, 'sorcier', 10);
+  // Tislit des aures (1/1, arrivée : piochez une carte) est la proie du Raïs.
+  donner(duel, 'sorcier', 'tislit-des-aures');
+  const tislit = jouer(duel, 'sorcier', 'tislit-des-aures').entite;
+  // Elle a grandi avant la prise : ce sont CES chiffres que la cale garde.
+  tislit.atk = 3;
+  tislit.def = 4;
+  tislit.pvMax = 4;
+  tislit.pv = 4;
+  const deckApresArrivee = duel.sorcier.deck.length;
+  donner(duel, 'joueur', 'rais-de-la-galiote');
+  const rais = jouer(duel, 'joueur', 'rais-de-la-galiote', tislit.id).entite;
+  assert.equal(rais.enCale?.carteId, 'tislit-des-aures', 'la prise se fait à l’arrivée');
+  assert.equal(duel.sorcier.creatures.includes(tislit), false, 'la détenue quitte le champ');
+
+  // Le Raïs meurt au combat : sa cale s’ouvre et la détenue revient sur le champ.
+  donner(duel, 'sorcier', 'salem');
+  const salem = jouer(duel, 'sorcier', 'salem').entite;
+  pret(salem);
+  rpgAttaquerCreature(duel, 'sorcier', salem.id, rais.id);
+  assert.equal(duel.joueur.creatures.includes(rais), false, 'le capteur est mort');
+  const revenue = duel.sorcier.creatures.find((entite) => entite.carteId === 'tislit-des-aures');
+  assert.ok(revenue, 'la détenue revient en jeu, pas en main');
+  assert.equal(revenue.atk, 3, 'l’attaque de la prise est rendue');
+  assert.equal(revenue.def, 4, 'la défense de la prise aussi');
+  assert.equal(revenue.pv, 4, 'avec ses points de vie d’avant la cale');
+  assert.equal(duel.sorcier.main.includes('tislit-des-aures'), false, 'elle ne repasse pas en main');
+  assert.equal(duel.sorcier.cimetiere.includes('tislit-des-aures'), false, 'elle n’est pas au cimetière non plus');
+  assert.equal(duel.sorcier.deck.length, deckApresArrivee, 'aucun effet d’arrivée ne se rejoue');
+  assert.equal(revenue.ready, false, 'mal d’invocation : le retour n’offre pas d’attaque gratuite');
+  assert.match(duel.log.at(-2) ?? duel.log.at(-1) ?? '', /revient en jeu avec 3\/4/,
+    'le journal dit le retour et ses chiffres');
+});
+
+test('la cale s’ouvre à toute sortie de table : mort et sacrifice en jeu, renvoi et exil en main', () => {
+  // Mort au combat du capteur : la détenue revient EN JEU.
   const mort = duelVide();
   const { rais: raisMort } = priseDeBase(mort);
   donner(mort, 'sorcier', 'salem');
@@ -310,7 +349,9 @@ test('la cale s’ouvre à toute sortie de table : mort, renvoi, exil, sacrifice
   pret(salem);
   rpgAttaquerCreature(mort, 'sorcier', salem.id, raisMort.id);
   assert.equal(mort.joueur.creatures.includes(raisMort), false, 'le capteur est mort');
-  assert.ok(mort.sorcier.main.includes('mousse-des-galiotes'), 'sa cale s’est ouverte vers la main adverse');
+  assert.ok(mort.sorcier.creatures.some((entite) => entite.carteId === 'mousse-des-galiotes'),
+    'sa cale s’est ouverte en jeu, chez son propriétaire');
+  assert.equal(mort.sorcier.main.includes('mousse-des-galiotes'), false, 'pas en main : le capteur a coulé');
 
   // Renvoi en main du capteur (le Sonneur fêlé rebondit le Raïs).
   const renvoi = duelVide();
@@ -329,12 +370,26 @@ test('la cale s’ouvre à toute sortie de table : mort, renvoi, exil, sacrifice
   assert.ok((exil.joueur.exil ?? []).includes('rais-de-la-galiote'), 'le capteur est exilé');
   assert.ok(exil.sorcier.main.includes('mousse-des-galiotes'), 'même l’au-delà paie ses dettes');
 
-  // Sacrifice du capteur (mode essai).
+  // Sacrifice du capteur (mode essai) : c’est une mort, la détenue revient en jeu.
   const sacrifice = duelEssai();
   const { rais: raisSacrifice } = priseDeBase(sacrifice);
   const res = rpgSacrifierCreature(sacrifice, 'joueur', raisSacrifice.id);
   assert.equal(res.ok, true);
-  assert.ok(sacrifice.sorcier.main.includes('mousse-des-galiotes'), 'le sacrifice du capteur ouvre la cale');
+  assert.ok(sacrifice.sorcier.creatures.some((entite) => entite.carteId === 'mousse-des-galiotes'),
+    'le sacrifice du capteur ouvre la cale en jeu');
+
+  // Champ plein chez le propriétaire : pas de place, la carte repart en main.
+  const plein = duelEssai();
+  const { rais: raisPlein } = priseDeBase(plein);
+  mana(plein, 'sorcier', 20);
+  for (const id of ['ouvrier-du-natron', 'chacal-du-seuil', 'ashigaru-des-braises', 'scribe-des-feuillets', 'loup-des-neiges']) {
+    donner(plein, 'sorcier', id);
+    assert.equal(jouer(plein, 'sorcier', id).ok, true, `le sorcier pose ${id}`);
+  }
+  assert.equal(plein.sorcier.creatures.length, 5, 'les cinq cases du sorcier sont prises');
+  assert.equal(rpgSacrifierCreature(plein, 'joueur', raisPlein.id).ok, true);
+  assert.ok(plein.sorcier.main.includes('mousse-des-galiotes'),
+    'sans place libre, la détenue retourne en main au lieu de déborder du champ');
 });
 
 test('la capture d’un capteur ouvre sa propre cale : la prisonnière du prisonnier s’échappe', () => {

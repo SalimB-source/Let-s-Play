@@ -1724,8 +1724,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     // La Prime lit la victime avant que sa mort n'ouvre sa cale et n'éteigne
     // un éventuel Butin conditionnel.
     mort.donnePrime = estProieDuChasseur(mort.entite);
-    // Un capteur qui meurt en combat rend sa cale, comme à toute sortie de table.
-    ouvrirCale(duel, mort.cote, mort.entite);
+    // Un capteur qui meurt en combat rend sa cale — et la détenue revient EN
+    // JEU, avec ses statistiques de prise.
+    ouvrirCale(duel, mort.cote, mort.entite, { enJeu: true });
     journaliserDestruction(duel, mort.entite, mort.sourceElements);
     mort.declencherArme = armeDePorteurMort(duel, mort.cote, mort.entite);
     camp.creatures = camp.creatures.filter((candidate) => candidate.id !== mort.entite.id);
@@ -2132,6 +2133,12 @@ function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictim
     // Le prix se fige à la capture, Grappin porté compris : la rançon paie
     // ce que la créature valait en jeu quand le crochet l’a prise.
     cost: rpgCoutEntite(victime),
+    // La présence elle-même, telle qu'elle était au moment du crochet. Elle
+    // revient EN JEU si le capteur meurt (voir `ouvrirCale`) : sa fiche est
+    // relue par la cale, sa mémoire de table (attaque, défense, PV, auras
+    // déjà comptées, marques) reste intacte — c'est un retour, pas une
+    // nouvelle arrivée.
+    entite: victime,
   };
   synchroniserCaleComble(capteur);
   duel[coteVictimeEffective].creatures = duel[coteVictimeEffective].creatures
@@ -2160,17 +2167,47 @@ function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictim
 }
 
 /**
- * La cale d'un capteur s'ouvre : le prisonnier retourne dans la main de son
- * propriétaire (le camp opposé à celui du capteur). Appelée à TOUTE sortie de
- * table du capteur — destruction, sacrifice, renvoi en main, exil, capture —
- * et jamais autrement : la cale ne se vide pas d'elle-même.
+ * La cale d'un capteur s'ouvre à sa sortie de table — destruction, sacrifice,
+ * renvoi en main, exil, capture — et jamais autrement : la cale ne se vide pas
+ * d'elle-même.
+ *
+ * Deux issues, selon la façon dont le capteur quitte la table :
+ * - **il meurt** (`enJeu: true` — destruction, mort au combat, sacrifice) : le
+ *   prisonnier revient **en jeu**, sur le champ de bataille de son
+ *   propriétaire, avec l'attaque et la défense qu'il avait avant la prise. Ce
+ *   n'est pas une arrivée : aucun effet d'arrivée ne se déclenche. Comme la
+ *   renaissance de Tenacité, il revient avec le mal d'invocation (il n'attaque
+ *   pas le tour de son retour, sauf Rapidité) ;
+ * - **il quitte la table sans mourir** (renvoi en main, exil, capture par un
+ *   autre corsaire) : le prisonnier retourne dans la **main** de son
+ *   propriétaire, comme la rançon le rendrait.
+ *
+ * Le retour en jeu exige une place libre sur le champ (mode sans terrains) :
+ * s'il n'y en a pas, la carte part en main — la cale ne se referme jamais.
  */
-function ouvrirCale(duel, cote, entite) {
+function ouvrirCale(duel, cote, entite, { enJeu = false } = {}) {
   const cale = entite?.enCale;
   if (!cale) return false;
   entite.enCale = null;
   synchroniserCaleComble(entite);
-  duel[autre(cote)].main.push(cale.carteId);
+  const coteProprietaire = autre(cote);
+  const camp = duel[coteProprietaire];
+  const prisonniere = cale.entite;
+  if (enJeu && prisonniere && placesLibresChamp(duel, coteProprietaire) > 0) {
+    // La détenue reprend sa présence : ses statistiques sont celles de la
+    // prise, ses auras déjà comptées dans ses chiffres (`auraSableBonus` et
+    // consorts), donc `rafraichirAuras` ne les comptera pas deux fois. Seul
+    // l'engagement se remet à neuf : le retour ne donne pas d'attaque gratuite.
+    const carte = duelCardById(prisonniere.carteId);
+    prisonniere.ready = Boolean(carte?.rapidite);
+    prisonniere.attaquee = false;
+    camp.creatures.push(prisonniere);
+    placerDansEmplacement(duel, coteProprietaire, prisonniere,
+      Number.isInteger(prisonniere.emplacement) ? prisonniere.emplacement : null);
+    duel.log.push(`La cale de ${entite.name} s’ouvre : ${cale.name} revient en jeu avec ${prisonniere.atk}/${prisonniere.def} — sa prise, pas une arrivée.`);
+    return true;
+  }
+  camp.main.push(cale.carteId);
   duel.log.push(`La cale de ${entite.name} s’ouvre : ${cale.name} retourne dans la main de son propriétaire.`);
   return true;
 }
@@ -3233,9 +3270,10 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId) {
 /** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
 function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null) {
   if (estSite(entite)) return false;
-  // Le mort qui tenait une cale la rend : toute sortie de table ouvre la
-  // cale, et la Cargaison du mort paie son assurance.
-  ouvrirCale(duel, cote, entite);
+  // Le mort qui tenait une cale la rend : le prisonnier revient EN JEU (la
+  // mort du capteur n'est pas un renvoi), et la Cargaison du mort paie son
+  // assurance.
+  ouvrirCale(duel, cote, entite, { enJeu: true });
   declencherCargaison(duel, cote, entite);
   journaliserDestruction(duel, entite, sourceElements);
   const declencherArme = armeDePorteurMort(duel, cote, entite);

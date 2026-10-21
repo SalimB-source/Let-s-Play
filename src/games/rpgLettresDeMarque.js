@@ -102,7 +102,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     rarity: 'commune',
     abordage: 1,
     typeLine: 'Créature — Humain · Raïs',
-    text: 'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale (face visible) : elle ne déclenche rien. Rançon — son propriétaire peut la reprendre en main en payant son coût en manas, à tout moment où il pourrait jouer une Magie Rapide. La cale s’ouvre quand le Raïs quitte la table.',
+    text: 'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale (face visible) : elle ne déclenche rien. Rançon — son propriétaire peut la reprendre en main en payant son coût en manas, à tout moment où il pourrait jouer une Magie Rapide. La cale s’ouvre quand le Raïs quitte la table : s’il meurt, la créature détenue revient en jeu avec l’attaque et la défense qu’elle avait à la prise, sans effet d’arrivée ; s’il est renvoyé, exilé ou pris à son tour, elle retourne en main.',
     flavor: 'Il ne coule jamais ce qu’il peut vendre.',
   }),
   carte({

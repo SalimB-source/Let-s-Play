@@ -98,19 +98,24 @@ des Ténèbres :
 > accostent — un jeton créé par effet ne prend rien.
 >
 > **La Cale** — Un capteur ne tient qu'**une seule** créature en cale. En cale,
-> une créature ne compte plus sur le champ (sa case se libère), perd ses
-> blessures, boucliers, compteurs, auras et armes (l’arme part au cimetière),
-> et aucune de ses capacités ne s’applique ni ne se déclenche.
+> une créature ne compte plus sur le champ (sa case se libère) : son arme part
+> au cimetière, aucune de ses capacités ne s’applique ni ne se déclenche, et
+> aucune aura ne l’atteint. Elle garde pourtant sa **mémoire** — la présence
+> elle-même est retenue dans la cale, avec ses chiffres du moment.
 >
 > **La Rançon** — À tout moment où il pourrait jouer une Magie Rapide, le
 > propriétaire d’une créature en cale peut la **rançonner** : il paie le coût
 > imprimé de la créature, en manas de n’importe quelle couleur (l’or n’a pas de
 > couleur), et elle revient **dans sa main**.
 >
-> **L’ouverture** — Quand un capteur quitte la table — mort, renvoi en main,
-> exil, sacrifice, ou capture par le corsaire qui arrive — sa cale s’ouvre :
-> chaque créature qu’il tenait revient **gratuitement** dans la main de son
-> propriétaire.
+> **L’ouverture** — Quand un capteur **meurt** — destruction, mort au combat,
+> sacrifice — sa cale s’ouvre **en jeu** : la créature qu’il tenait revient sur
+> le champ de bataille de son propriétaire avec l’**attaque et la défense
+> qu’elle avait au moment de la prise**, et **sans** rejouer ses effets
+> d’arrivée (c’est un retour, pas une nouvelle présence ; comme la renaissance
+> de Tenacité, elle a le mal d’invocation). Quand il quitte la table **sans
+> mourir** — renvoi en main, exil, ou capture par le corsaire qui arrive — la
+> cale s’ouvre vers la **main** de son propriétaire.
 
 ### Pourquoi cette mécanique
 
@@ -143,7 +148,8 @@ des Ténèbres :
 | Tenacité, boucliers | une créature qui survit n’est pas détruite : pas de prise — le bouclier qui absorbe tout protège de la cale aussi |
 | Jets et héros | **jamais pris en cale** : un jeton meurt normalement (on ne rançonne pas un chien), un héros à 0 loyauté s’en retourne au palier comme toujours — son serment le rappelle |
 | Protections | elles fonctionnent comme toujours : elles empêchent les blessures, donc la destruction, donc la prise. Elles ne sauvent pas, en soi, une créature qu’elles n’ont pas sauvée |
-| Capturer un capteur | sa cale s’ouvre (il quitte la table) : ses prisonniers partent en main |
+| Capturer un capteur | sa cale s’ouvre (il quitte la table sans mourir) : ses prisonniers partent en main |
+| Le capteur meurt | sa cale s’ouvre **en jeu** : la détenue revient sur le champ avec ses statistiques de prise, sans effet d’arrivée — et le champ doit avoir une place libre (sinon elle part en main) |
 | Rançonner en plein combat | légal (fenêtre de blocage, fin de tour) : la créature libérée revient **en main** — elle ne bloque pas, et elle aura le mal d’invocation en revenant |
 | Une créature rançonnée | peut être reprise plus tard — la mer est généreuse, la cale aussi |
 | Compteurs du jeu | une prise n’est **pas** une destruction : elle ne compte ni dans les événements, ni dans les quêtes, ni dans les débuts de conditions « quand meurt » |
@@ -322,7 +328,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     rarity: 'commune',
     abordage: 1,
     typeLine: 'Créature — Humain · Raïs',
-    text: 'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale (face visible) : elle ne déclenche rien. Rançon — son propriétaire peut la reprendre en main en payant son coût en manas, à tout moment où il pourrait jouer une Magie Rapide. La cale s’ouvre quand le Raïs quitte la table.',
+    text: 'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale (face visible) : elle ne déclenche rien. Rançon — son propriétaire peut la reprendre en main en payant son coût en manas, à tout moment où il pourrait jouer une Magie Rapide. La cale s’ouvre quand le Raïs quitte la table : s’il meurt, la créature détenue revient en jeu avec l’attaque et la défense qu’elle avait à la prise, sans effet d’arrivée ; s’il est renvoyé, exilé ou pris à son tour, elle retourne en main.',
     flavor: 'Il ne coule jamais ce qu’il peut vendre.',
   }),
   carte({
@@ -601,12 +607,13 @@ aux boosters, comme le font les six autres boîtiers.
    la Lettre de marque (effet `arrivees-abordage`) et sur le buff du Grand
    Débarquement — le drapeau `camp.abordageDesArrivees` arme toutes les
    arrivées du tour, chacune au seuil de son coût moins un.
-2. **La cale** — `entite.enCale = { carteId, cote }` (une seule place, `null`
-   par défaut). La créature prisonnière quitte `camp.creatures` et vit dans la
-   fiche du capteur, **face visible** : mini-carte dans l’aperçu du capteur
-   (même rendu que les armes portées), losange compteur sous le repère de
-   couleur, annonce au lecteur d’écran. Rien ne se déclenche, aucune aura ne
-   l’atteint.
+2. **La cale** — `entite.enCale = { carteId, name, cost, entite }` (une seule
+   place, `null` par défaut). La créature prisonnière quitte `camp.creatures`
+   et vit dans la fiche du capteur, **face visible** : mini-carte dans l’aperçu
+   du capteur (même rendu que les armes portées), losange compteur sous le
+   repère de couleur, annonce au lecteur d’écran. Rien ne se déclenche, aucune
+   aura ne l’atteint. `entite` garde la **présence** elle-même, telle qu’elle
+   était au crochet : c’est elle qui revient en jeu si le capteur meurt.
 3. **La prise** — branchée sur **l’arrivée en jeu** (`rpgJouerCreature`,
    après la résolution de l’`arrivee`) : la créature adverse désignée de coût
    ≤ seuil rejoint la cale du capteur, `prendreEnCale` **à la place** d’une
@@ -623,11 +630,15 @@ aux boosters, comme le font les six autres boîtiers.
    (`rpgPeutRepondre`, phases principales du camp, fenêtres de blocage et de
    fin de tour). Journal : « La Rançon est payée — *Galion de la flotte*
    revient en main. » L’événement `rancon` déclenche le Négociant.
-5. **L’ouverture de la cale** — un point de sortie unique
-   `quitterLaTable(entite)` déjà parcouru par destruction, renvoi, exil,
-   sacrifice (mode essai) et prise : y libérer la cale vers la main du
-   propriétaire. Les chemins existants (`renvoyerEnMain`, `case 'exil'`,
-   `rpgSacrifierCreature`) doivent tous y passer.
+5. **L’ouverture de la cale** — un point de sortie unique, `ouvrirCale`, que
+   parcourent la destruction, la mort au combat, le renvoi, l’exil, le
+   sacrifice (mode essai) et la prise. Deux issues : `{ enJeu: true }` sur les
+   chemins qui **tuent** (destruction, combat, sacrifice) — la détenue reprend
+   sa présence (`cale.entite`) sur le champ de son propriétaire, avec ses
+   statistiques de prise, remise à neuf d’engagement et **sans** effet
+   d’arrivée, comme une renaissance de Tenacité ; sans lui (renvoi, exil,
+   capture), la carte part en main. Le retour en jeu vérifie
+   `placesLibresChamp` : champ plein, la carte repart en main.
 6. **Effets nouveaux** — `renvoi-tueur` (Le Brûlot : le tueur en combat repart
    en main — s’appuyer sur le suivi de source des blessures,
    `rpgDerniereBlessure`) ; `priseEnCale` (le Grappin) ; le déclencheur
@@ -654,8 +665,10 @@ aux boosters, comme le font les six autres boîtiers.
     auto-pick) ; la désignation différée s’ouvre, refuse l’illégale et referme
     sur la prize ; le jeton Corsaire n’accoste pas ; une seule place en cale
     (le Grappin ne reprend pas sur un porteur plein) ; la rançon paie et rend
-    en main ; l’ouverture (mort, renvoi, exil, sacrifice, capture d’un
-    capteur) ; la Tenacité refuse la cale, les boucliers ne comptent plus ;
+    en main ; l’ouverture — **en jeu** à la mort et au sacrifice (statistiques
+    de la prise rendues, aucun effet d’arrivée rejoué, champ plein → main),
+    **en main** au renvoi, à l’exil et à la capture d’un capteur ; la Tenacité
+    refuse la cale, les boucliers ne comptent plus ;
     jetons et figures jamais pris ; le sceau de la Lettre et du Débarquement
     arme les arrivées puis expire, mais la cale reste ; Cargaison paie à la
     mort **et** à la prise ; le Brûlot renvoie son tueur ; l’IA choisit sa
