@@ -3519,8 +3519,17 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     // (`cibleDifferee`) et qu'il reste une cible légale, l'arrivée attend son
     // tour — la créature est en jeu, le duel retient ce qu'il reste à désigner,
     // et `rpgResoudreArriveeCiblee` appliquera l'effet sur la cible choisie.
+    // Quand la Lettre de marque (ou le Grand Débarquement) arme aussi les
+    // arrivées, l'attente porte à la fois la cible d'arrivée et le seuil
+    // d'Abordage : les deux seront résolus l'un après l'autre.
     if (cibleDifferee && !cibleId && arriveeACibleLegale(duel, cote, carte)) {
-      duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId };
+      const seuilAbordagePose = seuilAbordage(carte, camp);
+      duel.arriveeEnAttente = {
+        cote,
+        entiteId: entite.id,
+        carteId,
+        ...(Number.isFinite(seuilAbordagePose) ? { abordage: seuilAbordagePose } : {}),
+      };
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
       return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null };
@@ -3587,28 +3596,54 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
   // plutôt qu'une portée d'arrivée — la créature (ou le porteur du Grappin)
   // est posée, elle attend sa prize. La carte source peut être la créature
   // accostante ou l'arme accrochée : c'est SA couleur qui protège.
-  if (Number.isFinite(attente.abordage)) {
+  //
+  // Quand l'attente porte à la fois un Abordage et une cible d'arrivée
+  // (Lettre de marque + créature avec arrivée ciblée), un effet est résolu
+  // par clic : l'attente est allégée de l'effet résolu et reste ouverte pour
+  // l'autre. Le drapeau `arriveeResolue` marque que la cible d'arrivée a
+  // déjà été désignée (sinon `portee`, toujours dérivée de la fiche de carte,
+  // resterait vraie après résolution).
+  const hasAbordage = Number.isFinite(attente.abordage);
+  const arriveeDejaResolue = Boolean(attente.arriveeResolue);
+  const hasArrivee = Boolean(portee) && !arriveeDejaResolue;
+
+  const estCibleAbordage = hasAbordage
+    && duel[autre(cote)].creatures.some((c) => c.id === cibleId)
+    && priseEnCaleLegale(duel[autre(cote)].creatures.find((c) => c.id === cibleId),
+      cardColors(duelCardById(attente.carteId) ?? armeById(attente.carteId)), attente.abordage);
+
+  const estCibleArrivee = hasArrivee
+    && campsDePortee(cote, portee)
+      .flatMap((camp) => duel[camp].creatures)
+      .some((c) => c.id === cibleId);
+
+  if (!estCibleAbordage && !estCibleArrivee) return { ok: false, raison: 'cible' };
+
+  // 1. Résoudre l'Abordage si la cible cliquée est une prise légale.
+  if (estCibleAbordage) {
     if (!entite || entite.enCale) {
       duel.arriveeEnAttente = null;
       return { ok: false, raison: 'absente' };
     }
     const carteSource = duelCardById(attente.carteId) ?? armeById(attente.carteId);
     const ciblePrise = duel[autre(cote)].creatures.find((candidate) => candidate.id === cibleId);
-    if (!ciblePrise || !priseEnCaleLegale(ciblePrise, cardColors(carteSource), attente.abordage)) {
-      return { ok: false, raison: 'cible' };
-    }
-    duel.arriveeEnAttente = null;
     prendreEnCale(duel, entite, ciblePrise, null, autre(cote));
-    rafraichirAuras(duel);
-    rpgActionsEtat(duel);
+    // S'il reste aussi une cible d'arrivée à désigner, on garde l'attente
+    // pour elle seule (le seuil d'Abordage est consommé).
+    if (hasArrivee) {
+      duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId: attente.carteId };
+    } else {
+      duel.arriveeEnAttente = null;
+      rafraichirAuras(duel);
+      rpgActionsEtat(duel);
+    }
     return { ok: true, cible: ciblePrise };
   }
 
-  if (!entite || !portee) {
-    // La créature a quitté la table (ou n'a plus d'arrivée à désigner) :
-    // l'attente n'a plus d'objet, on la lève sans effet.
+  // 2. Résoudre la cible d'arrivée.
+  if (!entite) {
     duel.arriveeEnAttente = null;
-    return { ok: false, raison: portee ? 'absente' : 'arrivee' };
+    return { ok: false, raison: 'absente' };
   }
   const cible = campsDePortee(cote, portee)
     .flatMap((camp) => duel[camp].creatures)
@@ -3625,7 +3660,11 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
     return { ok: false, raison: 'cible' };
   }
   if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
-  duel.arriveeEnAttente = null;
+  // Marquer l'arrivée comme résolue et garder l'Abordage en attente s'il reste.
+  const arriveeSuivante = hasAbordage
+    ? { cote, entiteId: entite.id, carteId: attente.carteId, abordage: attente.abordage, arriveeResolue: true }
+    : null;
+  duel.arriveeEnAttente = arriveeSuivante;
   appliquer(duel, cote, carte.arrivee, cible.id, entite.id, cardColors(carte), 'capacite', carte.id);
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
