@@ -278,7 +278,7 @@ export const RPG_TENEBRES_CREATURES = [
     tenacite: true,
     tribut: 2,
     typeLine: 'Créature légendaire — Crocodile du fleuve',
-    text: 'Tenacité — Une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense. Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',
+    text: 'Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',
     flavor: 'La crue monte sans prévenir ; ce qu’elle prend appartient au limon.',
   }),
 ];

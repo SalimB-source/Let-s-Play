@@ -281,7 +281,7 @@ test('la capture d’un capteur ouvre sa propre cale : la prisonnière du prison
   assert.ok(duel.sorcier.main.includes('mousse-des-galiotes'), 'la cale du Raïs s’est ouverte avant sa capture');
 });
 
-test('Tenacité et boucliers refusent la prise : la victime survit', () => {
+test('Tenacité et boucliers refusent la prise : la renaissance est promise', () => {
   const tenacite = duelVide();
   const setup = (duel) => {
     mana(duel, 'joueur', 10);
@@ -296,9 +296,12 @@ test('Tenacité et boucliers refusent la prise : la victime survit', () => {
   const { rais, mousse } = setup(tenacite);
   mousse.tenaciteDisponible = true;
   rpgAttaquerCreature(tenacite, 'joueur', rais.id, mousse.id);
-  assert.equal(mousse.pv, 1, 'Tenacité : la Mousse survit avec 1 point de défense');
   assert.equal(rais.enCale, null, 'on ne prend pas ce qui refuse de mourir');
-  assert.equal(tenacite.sorcier.cimetiere.length, 0);
+  assert.equal(tenacite.sorcier.cimetiere.length, 1, 'la Mousse tenace tombe comme les autres');
+  assert.ok(
+    tenacite.sorcier.retoursProgrammes?.some((retour) => retour.carteId === 'mousse-des-galiotes' && retour.tenacite),
+    'sa renaissance est promise au prochain tour de son camp',
+  );
 
   const bouclier = duelVide();
   const fois2 = setup(bouclier);
