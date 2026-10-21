@@ -29,7 +29,7 @@ else process.env.NODE_ENV = previousEnv;
 
 const { rendreCartes } = await import('../node_modules/.cache/rpg-resonance/rpg-resonance-smoke.js');
 const rendu = rendreCartes();
-assert.ok(rendu.source.carte?.resonance, 'la Valkyrie au corbeau imprime la résonance');
+assert.ok(rendu.source.carte?.resonance, 'le Samouraï du torii imprime la résonance');
 assert.equal(rendu.neutre.carte?.resonance, undefined, 'le Fennec des décombres ne l’imprime pas');
 
 const carteDom = (html) => {
@@ -67,6 +67,19 @@ try {
   domNeutre.window.close();
 }
 
+for (const [cle, nom] of [['corbeau', 'la Valkyrie au corbeau'], ['glaces', 'la Valkyrie des glaces']]) {
+  const { dom, racine } = carteDom(rendu[cle].html);
+  try {
+    assert.equal(rendu[cle].carte?.resonance, undefined, `${nom} n’imprime plus de résonance`);
+    assert.equal(racine.classList.contains('has-resonance'), false,
+      `${nom} ne porte pas la classe de l’aura`);
+    assert.equal(racine.querySelector('.rpg-card__resonance'), null,
+      `${nom} ne projette aucune onde de sonar`);
+  } finally {
+    dom.window.close();
+  }
+}
+
 // ── 1. Qui la porte : la carte imprimée, et elle seule ──────────────────────
 const lire = (nom) => readFileSync(new URL(`../src/games/${nom}`, import.meta.url), 'utf8');
 const battleCss = lire('rpg-battle.css');
@@ -79,10 +92,17 @@ for (const carte of sources) {
     `${carte.id} : seules les créatures invoquées portent la résonance`);
   assert.ok(carte.resonance > 0, `${carte.id} : la résonance donne au moins +1`);
 }
-assert.equal(cardById('valkyrie-au-corbeau').resonance, 1,
-  'la Valkyrie au corbeau reste une source de résonance');
-assert.equal(cardById('valkyrie-des-glaces').resonance, 1,
-  'la Valkyrie des glaces aussi');
+assert.deepEqual(sources.map((carte) => carte.id), [
+  'samourai-du-torii',
+  'tengu-du-mont-ardent',
+  'kagutsuchi-flamme-originelle',
+], 'le catalogue ne garde que les trois sources de Résonance samouraï');
+assert.equal(cardById('samourai-du-torii').resonance, 1,
+  'le Samouraï du torii est une source de résonance');
+assert.equal(cardById('valkyrie-au-corbeau').resonance, undefined,
+  'la Valkyrie au corbeau n’imprime plus la résonance viking');
+assert.equal(cardById('valkyrie-des-glaces').resonance, undefined,
+  'la Valkyrie des glaces n’imprime aucune résonance');
 
 // Le rendu lit la carte, jamais `entite.resonance` (le bonus reçu, recalculé
 // par le moteur sur chaque créature de la famille).

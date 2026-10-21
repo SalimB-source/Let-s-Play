@@ -199,7 +199,7 @@ les cartes rares distinctes, pas leurs copies.
 | Cour des Djinns | dégâts en vagues, effets à la mort, retour différé d'Anqa, Honneur et Résonance samouraï | Anqa des braises |
 | Sentiers de cendre | Pétra et mana bicolore, Butin, équipements, Coup rapide | Fériel |
 | Marée des abysses | contresorts, rebonds, Vipère de verre et serpents du Bâton des citernes | Léviathan |
-| Serment des Neuf Hivers | Furie, Résonance, gel et contrôle du combat | Maître du marteau |
+| Serment des Neuf Hivers | Furie, appel viking, gel et contrôle du combat | Maître du marteau |
 | Serment du Soleil rouge | Honneur, Résonance samouraï et Bannière du Daimyō | Kagutsuchi, flamme originelle |
 
 **Les autres mythiques ne sont pas ajoutées à la dotation.** Les étages les

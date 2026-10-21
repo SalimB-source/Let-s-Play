@@ -391,8 +391,8 @@ export async function checkRpgTutorialAutresLecons(assert) {
     assert.equal(harnais.step(), 'valkyrie');
     await harnais.click(harnais.card('valkyrie-au-corbeau'), 'la Valkyrie au corbeau');
     await act(async () => { await wait(850); });
-    assert.equal(harnais.step(), 'resonance-neige');
-    await harnais.click(harnais.next(), 'la règle de l’Envol');
+    assert.equal(harnais.step(), 'appel-viking');
+    await harnais.click(harnais.next(), 'la règle de l’appel viking');
     assert.equal(harnais.step(), 'poigne');
     await harnais.click(harnais.card('poigne-de-givre'), 'la Poigne de givre');
     assert.equal(harnais.step(), 'poigne-cible');
@@ -406,7 +406,7 @@ export async function checkRpgTutorialAutresLecons(assert) {
       await act(async () => { await wait(300); });
     }
     assert.equal(harnais.step(), 'blocage-neige');
-    await harnais.click(harnais.carteChamp('equipe', 'guerrier-au-bouclier-rond'), 'le Guerrier allié bloqueur');
+    await harnais.click(harnais.carteChamp('equipe', 'berserk-des-trois-hivers'), 'le Berserk allié bloqueur');
     assert.equal(harnais.step(), 'blocage-neige-cible');
     await harnais.click(harnais.carteChamp('ennemi', 'loup-des-neiges'), 'le Loup des neiges attaquant');
     assert.equal(harnais.step(), 'blocage-neige-confirmer');

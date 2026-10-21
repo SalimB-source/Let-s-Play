@@ -1,3 +1,4 @@
+import RpgPvpCarte from '../games/RpgPvpCarte.jsx';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fill } from '../friends/friendsCopy';
@@ -6,6 +7,7 @@ import { ProfileIcon } from '../friends/FriendsTabs';
 import { callBlockLabel } from './callsCopy';
 import { describeMessagesError, messageSuggestions, pseudoLabel, reasonLabel } from './messagesCopy';
 import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
+import { decouperLiens } from './liensTexte';
 
 /**
  * Vues de messagerie — partagées par la fenêtre sociale (bureau) et la page
@@ -250,6 +252,36 @@ function BlockedRow({ entry, t, lang, onUnblock }) {
       </button>
     </li>
   );
+}
+
+/**
+ * Le corps d'une bulle, liens compris.
+ *
+ * Un lien reçu par la messagerie doit s'ouvrir au clic : sans ça, le joueur qui
+ * envoie « viens, on joue ici https://… » oblige l'autre à sélectionner l'URL
+ * puis à la coller dans la barre d'adresse. Le découpage vient de
+ * `liensTexte.js` (texte pur, jamais de HTML) : seuls http(s) et `www.` sont
+ * reconnus, et l'ancre porte `rel="noopener noreferrer"`.
+ *
+ * Un message sans lien rend la chaîne d'origine, sans nœud ajouté : le fil
+ * reste identique à ce qu'il était.
+ */
+function TexteMessage({ texte }) {
+  const morceaux = useMemo(() => decouperLiens(texte), [texte]);
+  if (morceaux.length === 1 && morceaux[0].type === 'texte') return texte;
+  return morceaux.map((morceau, index) => (morceau.type === 'lien' ? (
+    <a
+      key={index}
+      className="messages-lien"
+      href={morceau.href}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {morceau.valeur}
+    </a>
+  ) : (
+    <React.Fragment key={index}>{morceau.valeur}</React.Fragment>
+  )));
 }
 
 export function InboxView({ t, ft, friends, lang, conversations, blocked, isOnline, profileLabel, onOpen, onUnblock }) {
@@ -733,7 +765,10 @@ export function ThreadView({
                 {showDay && <li className="messages-day" aria-hidden="true"><span>{label}</span></li>}
                 <li className={`messages-bubble-row${message.mine ? ' is-mine' : ''}`}>
                   <div className="messages-bubble-wrap">
-                    <p className={`messages-bubble${message.mine ? ' is-mine' : ''}`}>{message.body}</p>
+                    <p className={`messages-bubble${message.mine ? ' is-mine' : ''}`}><TexteMessage texte={message.body} /></p>
+                    {/* Un défi du Sablier est un message typé : la carte
+                        renvoie vers le salon, qui seul connaît son statut. */}
+                    {message.kind === 'defi-sablier' && <RpgPvpCarte message={message} />}
                     {message.mine && (
                       <button
                         type="button"

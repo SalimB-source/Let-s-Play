@@ -1,6 +1,7 @@
 /* Les icônes d'effets : pastilles des fiches, badges des faces, interlignage.
    Monochromes (stroke: currentColor) — l'icône prend la couleur du texte qui
-   l'accueille et passe sur les quatre cadres d'élément sans variante. */
+   l'accueille. Seule exception : la Protection élémentaire, dont le bouclier
+   prend la couleur de l'élément repoussé (sauf le Sable, qui garde l'or). */
 
 /* L'icône dans le flux du texte : alignée sur la ligne, jamais déformée. */
 .rpg-effet-icone {
@@ -11,6 +12,60 @@
 .rpg-effet-icone--ligne {
   margin-right: 5px;
   color: #edcb8b;
+}
+
+/* Une Protection contre plusieurs éléments aligne un bouclier par couleur. */
+.rpg-protection-icones {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.rpg-protection-icones--ligne {
+  margin-right: 5px;
+  vertical-align: -0.16em;
+}
+
+.rpg-protection-icones--ligne .rpg-effet-icone--ligne {
+  margin-right: 0;
+}
+
+/* Un effet dépensé (Tenacité déjà déclenchée, Bouclier tombé) reste écrit,
+   mais entièrement gris : icône, mot-clé, explication et badge de face. */
+.rpg-effet-icone--ligne.is-epuisee {
+  color: #9b9b9b;
+  opacity: .65;
+  filter: grayscale(1);
+}
+
+.rpg-pastille.is-epuisee {
+  border-color: rgba(168, 168, 168, .38);
+  background: rgba(28, 28, 28, .62);
+  color: #a9a9a9;
+  opacity: .68;
+  filter: grayscale(1);
+}
+
+.rpg-pastille.is-epuisee .rpg-effet-icone,
+.rpg-pastille.is-epuisee .rpg-pastille__libelle {
+  color: #a9a9a9;
+}
+
+.rpg-pastille.is-epuisee .rpg-pastille__explication {
+  color: #b8b8b8;
+}
+
+.rpg-card-icone.is-epuisee {
+  border-color: rgba(168, 168, 168, .42);
+  background: rgba(24, 24, 24, .82);
+  color: #a9a9a9;
+  opacity: .68;
+  filter: grayscale(1);
+}
+
+.rpg-card-icone.is-epuisee small {
+  color: #b8b8b8;
 }
 
 /* ── Les pastilles : mots-clés passifs sous la ligne de type ────────────────── */
@@ -153,11 +208,44 @@
   grid-area: 1 / 1;
 }
 
+.rpg-pastille--depliee .rpg-protection-icones {
+  grid-area: 1 / 1;
+}
+
+.rpg-pastille--depliee .rpg-protection-icones .rpg-effet-icone {
+  grid-area: auto;
+}
+
 .rpg-pastille__libelle {
   grid-area: 1 / 2;
   color: #ffeec2;
   font-weight: 750;
   letter-spacing: .02em;
+}
+
+/* Une Protection élémentaire écrit aussi son nom dans la couleur repoussée,
+   et le cercle du badge suit le glyphe. Sans variable (le Sable), les encres
+   et bordures dorées ordinaires restent exactement celles des autres effets. */
+.rpg-pastille[data-pastille='protection'] {
+  border-color: var(--rpg-protection-couleur, rgba(237, 203, 139, .45));
+  color: var(--rpg-protection-couleur, #ffeec2);
+}
+
+.rpg-pastille[data-pastille='protection'] .rpg-effet-icone {
+  color: var(--rpg-protection-couleur, #edcb8b);
+}
+
+.rpg-pastille[data-pastille='protection'] .rpg-pastille__libelle {
+  color: var(--rpg-protection-couleur, #ffeec2);
+}
+
+.rpg-card-icone[data-effet='protection'] {
+  border-color: var(--rpg-protection-couleur, rgba(237, 203, 139, .55));
+  color: var(--rpg-protection-couleur, #ffe9a0);
+}
+
+.rpg-card-icone[data-effet='protection'] .rpg-effet-icone {
+  color: var(--rpg-protection-couleur, #ffe9a0);
 }
 
 /* L'explication prend l'encre du texte de règle : une pastille dépliée se lit

@@ -897,9 +897,8 @@
 /* Les effets et le bonus de l'arme ne s'impriment pas sur la carte posée.
    Les compteurs (Heures sur la créature, sable sur la Jitte) restent sous le
    repère de couleur en petits losanges, même si la carte rétrécit au doigt.
-   Les anciennes vignettes d'arme sur la face doublonnaient l'arme glissée
-   sous la créature : elles restent masquées, la miniature est dans l'aperçu. */
-.rpg-battle--touch .rpg-card__weapons { display: none; }
+   Aucune vignette d'arme ne recouvre la face : l'équipement se lit à son
+   cadre d'acier, et la carte d'arme apparaît dans l'aperçu. */
 .rpg-battle--touch .card-row .rpg-card { container-type: inline-size; }
 .rpg-battle--touch .rpg-card__foot .rpg-stat-icon,
 .rpg-battle--touch .rpg-hand__stats .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }

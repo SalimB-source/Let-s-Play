@@ -139,6 +139,44 @@ export function bonusArme(carte) {
   return null;
 }
 
+/** Un nombre signé pour l'affichage d'un changement de statistique :
+ *  « +2 », « -2 », « 0 » — jamais « +-2 ». */
+export function signeStat(valeur = 0) {
+  const nombre = Number.isFinite(Number(valeur)) ? Number(valeur) : 0;
+  return nombre > 0 ? `+${nombre}` : `${nombre}`;
+}
+
+/**
+ * La modification d'attaque et de défense qu'une carte inflige à sa cible
+ * (`{ atk, def }`), ou `null` quand elle n'en inflige aucune.
+ *
+ * C'est ce que la face d'une carte doit montrer pour qu'on lise son effet
+ * d'un coup d'œil, comme les armes affichent le bonus de leur porteur : la
+ * **Lame de mer** écrit `-2/-2`, l'**Embuscade** `-2/-2` sur toute la table
+ * adverse, la vipère de verre `-2/0`, le Colosse `+1/+1` à son arrivée. Sans
+ * ce calcul, ces nombres ne vivaient que dans la ligne de règle — et les
+ * faces de cartes n'impriment pas la règle.
+ *
+ * Les armes sont exclues : elles ont déjà leur bonus de porteur (`bonusArme`),
+ * et les répéter ferait lire deux fois le même chiffre.
+ */
+export function modificationStats(carte) {
+  if (!carte || carteEstArme(carte)) return null;
+  const source = carte.effet ?? carte.arrivee ?? null;
+  if (!source || !['buff', 'debuff'].includes(source.type)) return null;
+  const atk = Number(source.atk) || 0;
+  const def = Number(source.def) || 0;
+  if (!atk && !def) return null;
+  return { atk, def };
+}
+
+/** « -2/-2 », « +1/+1 » : la modification telle qu'elle s'écrit sur la carte. */
+export function libelleModificationStats(carte) {
+  const modif = modificationStats(carte);
+  if (!modif) return null;
+  return `${signeStat(modif.atk)}/${signeStat(modif.def)}`;
+}
+
 /**
  * Les deux familles de sorts, et leur signature visuelle.
  *
@@ -576,7 +614,7 @@ export const RPG_CREATURE_CARDS = [
     name: 'Braisier du souk',
     element: 'braise',
     cost: 3,
-    atk: 2, def: 2,
+    atk: 1, def: 1,
     rarity: 'rare',
     typeLine: 'Créature — Souffleur',
     art: 'braisier-du-souk',
@@ -628,22 +666,23 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Guerrier viking',
     art: 'guerrier-au-bouclier-rond',
-    furie: 1,
+    furie: 2,
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
-    text: 'Furie 1 — La première fois qu’il est blessé et survit, le Guerrier gagne +1/+1. Quand il arrive : il reçoit un bouclier de 1.',
+    text: 'Furie 2. Quand il arrive : il reçoit un bouclier de 1.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {
     id: 'loup-des-neiges',
     name: 'Loup des neiges',
     element: 'neige',
-    cost: 3,
-    atk: 3,
-    def: 3,
+    cost: 2,
+    atk: 2,
+    def: 2,
     rarity: 'commune',
     typeLine: 'Créature — Loup',
     art: 'loup-des-neiges',
-    text: '—',
+    furie: 1,
+    text: 'Furie 1.',
     flavor: 'La meute court sur la croûte gelée sans la briser.',
   },
   {
@@ -651,7 +690,7 @@ export const RPG_CREATURE_CARDS = [
     name: 'Scalde des runes',
     element: 'neige',
     cost: 3,
-    atk: 2,
+    atk: 1,
     def: 2,
     rarity: 'rare',
     typeLine: 'Créature — Scalde',
@@ -664,17 +703,14 @@ export const RPG_CREATURE_CARDS = [
     id: 'valkyrie-au-corbeau',
     name: 'Valkyrie au corbeau',
     element: 'neige',
-    cost: 4,
-    atk: 3, def: 3,
+    cost: 5,
+    atk: 3, def: 4,
     rarity: 'rare',
-    // Valkyrie viking : son type la fait recevoir sa propre Résonance, comme
-    // un Samouraï reçoit la sienne.
     typeLine: 'Créature — Valkyrie viking',
     art: 'valkyrie-au-corbeau',
-    resonance: 1,
-    resonanceTribu: 'viking',
     envol: true,
-    text: 'Résonance viking — Tant qu’elle est en jeu, toutes les créatures de type Viking de la table, dans les deux camps, gagnent +1/+1. Envol — Ne peut être bloquée que par une créature avec Envol.',
+    arrivee: { type: 'pioche', amount: 1, tribu: 'viking' },
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Quand elle arrive : piochez une carte de type Viking au hasard dans votre deck.',
     flavor: 'Le corbeau tourne une fois, puis la mêlée se souvient de son nom.',
   },
   {
@@ -682,13 +718,13 @@ export const RPG_CREATURE_CARDS = [
     name: 'Berserk des trois hivers',
     element: 'neige',
     cost: 4,
-    atk: 2, def: 4,
+    atk: 1, def: 5,
     rarity: 'rare',
     typeLine: 'Créature — Berserk viking',
     art: 'berserk-des-trois-hivers',
     furie: 2,
-    coupRapide: true,
-    text: 'Furie 2 — La première fois qu’il est blessé et survit, le Berserk gagne +2/+2. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    provocation: true,
+    text: 'Furie 2. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
     flavor: 'Trois hivers de rage tenus dans un seul bras — et le sang ne fait que l’attiser.',
   },
   {
@@ -696,28 +732,28 @@ export const RPG_CREATURE_CARDS = [
     name: 'Jarl au marteau de guerre',
     element: 'neige',
     cost: 5,
-    atk: 3, def: 4,
+    atk: 2, def: 5,
     rarity: 'rare',
     typeLine: 'Créature — Jarl viking',
     art: 'jarl-au-marteau-de-guerre',
     furie: 3,
-    text: 'Furie 3 — La première fois qu’il est blessé et survit, le Jarl gagne +3/+3.',
+    overkill: true,
+    text: 'Furie 3. Overkill.',
     flavor: 'Le vieux chef ne crie pas : il encaisse, puis il avance.',
   },
   {
     id: 'valkyrie-des-glaces',
     name: 'Valkyrie des glaces',
     element: 'neige',
-    cost: 5,
-    atk: 4, def: 4,
-    rarity: 'rare',
+    cost: 6,
+    atk: 5, def: 5,
+    rarity: 'mythique',
     typeLine: 'Créature — Valkyrie viking',
     art: 'valkyrie-des-glaces',
-    resonance: 1,
-    resonanceTribu: 'viking',
     envol: true,
-    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Résonance viking — Tant qu’elle est en jeu, toutes les créatures de type Viking de la table, dans les deux camps, gagnent +1/+1. Envol — Ne peut être bloquée que par une créature avec Envol. Quand elle arrive : choisissez une créature adverse — sa lance de givre lui inflige 2 dégâts.',
+    protection: { contre: 'braise' },
+    arrivee: { type: 'soin-creatures', amount: 2 },
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Protection contre la Braise. Quand elle arrive : soignez chacune de vos créatures de 2.',
     flavor: 'Elle choisit qui monte, et qui reste dans la neige.',
   },
   {
@@ -739,13 +775,14 @@ export const RPG_CREATURE_CARDS = [
     name: 'Drakkar à tête de dragon',
     element: 'neige',
     cost: 5,
-    atk: 3,
+    atk: 2,
     def: 6,
     rarity: 'rare',
     typeLine: 'Créature — Navire viking',
     art: 'drakkar-a-tete-de-dragon',
-    destruction: { type: 'pioche', amount: 2 },
-    text: 'Quand le Drakkar est détruit : l’épave rend ses coffres — piochez deux cartes.',
+    nePeutPasAttaquer: true,
+    destruction: { type: 'pioche', amount: 1 },
+    text: 'Le Drakkar ne peut pas attaquer. Quand il est détruit : l’épave rend ses coffres — piochez une carte.',
     flavor: 'Quarante rameurs, une proue de dragon, et la brume qui s’ouvre.',
   },
   // ── Bêtes marines mythiques (deck Marée des abysses) ───────────────────
@@ -1100,10 +1137,10 @@ export const RPG_HERO_CARDS = [
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     art: 'maitre-du-marteau',
-    arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
     furie: 3,
+    overkill: true,
     tenacite: true,
-    text: 'Quand il arrive : son marteau tombe — 2 dégâts à toutes les créatures adverses. Furie 3 — La première fois qu’il est blessé et survit, le Maître gagne +3/+3. Tenacité — Une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense.',
+    text: 'Furie 3. Overkill. Tenacité — Une fois par partie, s’il doit être détruit, il survit et il lui reste 1 point de défense.',
     flavor: 'Le tonnerre n’est pas un bruit : c’est un rendez-vous — et son marteau, lui, retrouve toujours sa main.',
   },
   {
@@ -1152,8 +1189,8 @@ export function duelCardById(id) {
 
 /*
  * Les sept decks du jeu sont composés en fin de fichier à partir de recettes
- * et du catalogue. Ils gardent leurs mécaniques de signature, une mythique
- * chacun et un quota global de rares ; le composeur complète les places restantes
+ * et du catalogue. Ils gardent leurs mécaniques de signature, leurs mythiques
+ * de signature et un quota global de rares ; le composeur complète les places restantes
  * par puissance. Le reste des cartes de ces paliers reste à obtenir au Souk.
  */
 
@@ -1440,11 +1477,11 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'mur-de-boucliers',
-    cost: 2,
+    cost: 5,
     rarity: 'commune',
     cibles: ['soi'],
-    effet: { type: 'buff', atk: 2, def: 2, tours: 1 },
-    text: 'Vos créatures gagnent +2/+2 jusqu’à la fin du tour.',
+    effet: { type: 'buff', atk: 2, def: 0, overkill: true, tours: 1 },
+    text: 'Vos créatures gagnent +2/+0 et Overkill jusqu’à la fin du tour.',
     flavor: 'Épaule contre épaule, le clan devient une muraille.',
   },
   {
@@ -1454,11 +1491,11 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'festin-des-vaillants',
-    cost: 2,
+    cost: 3,
     rarity: 'commune',
     cibles: ['soi'],
-    effet: { type: 'soin', amount: 5 },
-    text: 'Vous récupérez 5 points de vie.',
+    effet: { type: 'soin-creatures', amount: 1 },
+    text: 'Soignez chacune de vos créatures de 1.',
     flavor: 'On boit au souvenir de ceux qui ne reviendront pas.',
   },
   {
@@ -1471,8 +1508,8 @@ export const RPG_MAGIE_CARDS = [
     cost: 2,
     rarity: 'rare',
     cibles: ['toutes'],
-    effet: { type: 'degats', amount: 1, cible: 'toutes-creatures', gelChance: 0.5 },
-    text: 'Sorcellerie — 1 dégât à toutes les créatures adverses, et chacune a une chance sur deux d’être gelée.',
+    effet: { type: 'degats', amount: 1, cible: 'toutes-creatures', gelChance: 0.25 },
+    text: 'Sorcellerie — 1 dégât à toutes les créatures adverses, et chacune a 25 % de chances d’être gelée.',
     flavor: 'La brume mord d’abord les chevilles ; le froid prend le reste.',
   },
   {
@@ -1577,7 +1614,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'embuscade',
-    cost: 4,
+    cost: 5,
     rarity: 'rare',
     cibles: ['toutes'],
     effet: {
@@ -1771,9 +1808,9 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Lance',
     cost: 3,
     rarity: 'rare',
-    bonus: { atk: 3, def: 1 },
+    bonus: { atk: 1, def: -1 },
     donne: { envol: true },
-    text: 'Arme — Le porteur gagne +3/+1 et Envol.',
+    text: 'Arme — Le porteur gagne +1/−1 et Envol.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
   {
@@ -2009,14 +2046,22 @@ export function resonanceGroupLabel(group) {
   return tribus[group] ?? String(group ?? '').charAt(0).toUpperCase() + String(group ?? '').slice(1);
 }
 
+/** Un type tribal se lit dans les sous-types imprimés après le tiret de la
+ *  ligne de type — jamais dans le nom de la carte ni dans sa couleur. */
+export function cardHasPrintedType(cardOrId, type) {
+  const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
+  if (!card || !type) return false;
+  const normaliser = (texte) => String(texte).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const sousTypes = (card.typeLine ?? '').split('—').slice(1).join(' ').split(/[\s·]+/);
+  return sousTypes.some((sousType) => normaliser(sousType) === normaliser(type));
+}
+
 /** Une résonance tribale suit le TYPE imprimé, jamais le nom ni la couleur. */
 export function cardReceivesResonance(cardOrId, group) {
   const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
   if (!card || ['terrain', 'magie'].includes(card.kind)) return false;
   if (RPG_ELEMENTS.includes(group)) return cardColors(card).includes(group);
-  const normaliser = (texte) => String(texte).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const sousTypes = (card.typeLine ?? '').split('—').slice(1).join(' ').split(/[\s·]+/);
-  return sousTypes.some((type) => normaliser(type) === normaliser(group));
+  return cardHasPrintedType(card, group);
 }
 
 /** Pips colorés exigés. Les cartes mono gardent leur règle historique. */
@@ -2132,7 +2177,7 @@ export const RPG_DECK_HYBRIDE_BASE = composerDeck(RPG_RECETTES_DECKS['sentiers-d
 /** Marée des abysses — contresorts, rebonds et Léviathan comme unique mythique. */
 export const RPG_DECK_MAREE_BASE = composerDeck(RPG_RECETTES_DECKS['maree-des-abysses'], CATALOGUE_DU_COMPOSEUR);
 
-/** Serment des Neuf Hivers — Furie, Résonance et une figure mythique du Nord. */
+/** Serment des Neuf Hivers — Furie, gel et les figures mythiques du Nord. */
 export const RPG_DECK_NEIGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-des-neuf-hivers'], CATALOGUE_DU_COMPOSEUR);
 
 /** Serment du Soleil rouge — Honneur, Résonance samouraï et le Daimyō. */
@@ -2210,7 +2255,7 @@ export const RPG_DECKS = [
     boxArt: 'valkyrie-des-glaces',
     archetype: 'Neige · valkyries, guerriers et drakkars',
     affrontement: 'Affrontez les serments du Nord.',
-    description: 'Deck mono-Neige : Furie et Résonance renforcent les guerriers, la Poigne de givre et l’Appât de la meute contrôlent le combat, et le Maître du marteau — unique mythique — apporte Furie et Ténacité. Les autres figures du Nord se découvrent dans les boosters ; elles ne sont jamais nommées « dieux ».',
+    description: 'Deck mono-Neige : la Furie aiguise les guerriers blessés, la Valkyrie au corbeau appelle un Viking du deck, la Poigne de givre et l’Appât de la meute contrôlent le combat, et ses deux mythiques — le Maître du marteau et la Valkyrie des glaces — apportent Furie, Ténacité et soin d’arrivée. Les autres figures du Nord se découvrent dans les boosters ; elles ne sont jamais nommées « dieux ».',
     cardIds: RPG_DECK_NEIGE_BASE,
   },
   {

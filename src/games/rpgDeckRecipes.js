@@ -19,6 +19,7 @@
  *
  * Les plafonds globaux (`mythiquesTotalMax`, `raresTotalMax`) contrôlent la
  * collection de raretés des decks de départ et comptent toutes les familles.
+ * `finisseursMax` peut aussi borner les exemplaires à cinq manas ou plus.
  * Les plafonds facultatifs de campagne (`mythiquesMax`, `raresMax`) restent
  * comptés par famille : ils règlent la rampe des Tours sans laisser de place vide.
  *
@@ -124,9 +125,10 @@ export const RPG_RECETTES_DECKS = {
     ],
   },
   /**
-   * Le Serment des Neuf Hivers associe Furie et Résonance aux tours de gel,
-   * au brouillard de combat et à la Lance de givre. Le Maître du marteau est
-   * son unique mythique ; les autres figures du Nord se gagnent au Souk.
+   * Le Serment des Neuf Hivers associe la Furie et l'appel viking de la
+   * Valkyrie au corbeau aux tours de gel, au brouillard de combat et à la
+   * Lance de givre. Le Maître du marteau et la Valkyrie des glaces sont ses
+   * deux mythiques ; les autres figures du Nord se gagnent au Souk.
    */
   'serment-des-neuf-hivers': {
     identite: ['neige'],
@@ -135,11 +137,13 @@ export const RPG_RECETTES_DECKS = {
     magies: 12,
     armes: 1,
     raresTotalMax: 10,
-    mythiquesTotalMax: 1,
+    mythiquesTotalMax: 2,
+    finisseursMax: 8,
     signature: [
       ['eclair-du-marteau', 2], ['festin-des-vaillants', 2],
       ['guerrier-au-bouclier-rond', 2], ['loup-des-neiges', 2],
       ['jarl-au-marteau-de-guerre', 1], ['valkyrie-des-glaces', 1], ['maitre-du-marteau', 1],
+      ['drakkar-a-tete-de-dragon', 1],
       ['poigne-de-givre', 1], ['appat-de-la-meute', 1],
       ['grand-voile-blanc', 1], ['mur-de-boucliers', 1], ['lance-de-givre', 1],
     ],
@@ -196,7 +200,7 @@ export const RPG_RECETTES_DECKS = {
     ],
   },
   /**
-   * Les Lettres de Marque (fiche : `docs/rpg/17-deck-les-lettres-de-marque.md`)
+   * Les Lettres de Marque (fiche : `docs/rpg/18-deck-les-lettres-de-marque.md`)
    * — le set Piraterie hybride Sable + Eau de l'âge de la course. La signature
    * pose l'équipage de la Régence : l'Abordage prend (Raïs, Cotre, Lettre de
    * marque, Grand Débarquement), la Rançon rend (Négociant), la Cargaison

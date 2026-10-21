@@ -7,7 +7,7 @@ import { RPG_SOLEIL_ROUGE_CARDS, RPG_SOLEIL_ROUGE_SET_ID } from '../src/games/rp
 import { RPG_DECKS, cardById, cardColors, cardReceivesResonance, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
-import { rpgNouveauDuel, rpgJouerArme, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgAttaquerSorcier, rpgResonanceEnJeu, rpgBonusResonance, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerArme, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgAttaquerSorcier, rpgResonanceEnJeu, rpgBonusResonance, rpgAppliquerBannieresAttaque, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
 
 function duelTest(rng = () => 0.5) {
   const duel = rpgNouveauDuel({
@@ -166,8 +166,8 @@ test('la Résonance samouraï se cumule dans les deux camps, sans toucher les au
   assert.deepEqual([adverse.atk, adverse.def], [5, 5]);
   assert.equal(kagutsuchi.resonance, 0, 'le Kami n’est pas de type Samouraï');
   jouer(duel, 'joueur', 'valkyrie-au-corbeau');
-  assert.equal(rpgResonanceEnJeu(duel, 'viking'), 1, 'la Valkyrie porte la Résonance viking');
-  assert.equal(neige.resonance, 0, 'la Résonance ne se compte plus par élément : le Loup n’est pas Viking');
+  assert.equal(rpgResonanceEnJeu(duel, 'viking'), 0, 'la Valkyrie ne porte plus de Résonance viking');
+  assert.equal(neige.resonance, 0, 'la Neige ne reçoit aucune Résonance dans ce duel');
   assert.equal(ami.resonance, 3, 'le Torii ne compte jamais sa propre source');
   for (const entite of exclus) assert.equal(entite.resonance, 0, entite.name);
   assert.equal(rpgBonusResonance(duel, { kind: 'creature', element: 'neige', typeLine: 'Créature — Samouraï' }), 4, 'seule la tribu compte pour un Samouraï');
@@ -645,6 +645,31 @@ test('la bannière du Daimyō grandit chaque Samouraï qui attaque, et lui-même
   assert.deepEqual([daimyo.atk, daimyo.def], [4, 4]);
 });
 
+test('la bannière tombe dès la déclaration verrouillée, sans repasser à la résolution', () => {
+  const duel = duelTest();
+  jouer(duel, 'joueur', 'daimyo-du-soleil-rouge');
+  const ronin = jouer(duel, 'joueur', 'ronin-du-soleil-rouge');
+  const pvSorcier = duel.sorcier.pv;
+  assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [3, 2, 2]);
+
+  // C'est le geste de l'interface quand les attaquants sont confirmés : le
+  // renfort est visible avant les bloqueurs, alors qu'aucune blessure n'a
+  // encore été infligée et que l'attaquant n'est pas encore engagé.
+  assert.equal(rpgAppliquerBannieresAttaque(duel, 'joueur', [ronin.id]), true);
+  assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [4, 3, 3],
+    'le +1/+1 est déjà là à la déclaration');
+  assert.equal(ronin.attaquee, false, 'la déclaration ne résout pas encore le combat');
+  assert.equal(duel.sorcier.pv, pvSorcier);
+
+  assert.equal(rpgLancerAttaque(
+    duel, 'joueur', [ronin.id], { [ronin.id]: [] }, null, null, {},
+    { attaqueDeclaree: true, bannieresAppliquees: true },
+  ).ok, true);
+  assert.equal(duel.sorcier.pv, pvSorcier - 4, 'la frappe utilise la force déjà grandie');
+  assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [4, 3, 3],
+    'la résolution ne déclenche pas la bannière une seconde fois');
+});
+
 test('la bannière s’applique à chaque attaque et reste acquise quand le Daimyō part', () => {
   const duel = duelTest();
   const daimyo = jouer(duel, 'joueur', 'daimyo-du-soleil-rouge');
@@ -695,15 +720,16 @@ test('la bannière arme la frappe du tour dans l’échange, pas seulement sur l
   jouer(duel, 'joueur', 'daimyo-du-soleil-rouge');
   const ronin = jouer(duel, 'joueur', 'ronin-du-soleil-rouge');
   // Un 3/4 neutre : ni Samouraï (la bannière du camp d’en face ne le touche
-  // pas), ni Honneur — il meurt à 4 dégâts (l’attaque armée), il survivrait à 3.
-  const bloqueur = jouer(duel, 'sorcier', 'jarl-au-marteau-de-guerre');
+  // pas), ni Honneur, ni Furie — il meurt à 4 dégâts (l’attaque armée), il
+  // survivrait à 3.
+  const bloqueur = jouer(duel, 'sorcier', 'boualem');
   assert.deepEqual([bloqueur.atk, bloqueur.def], [3, 4]);
   const pvSorcier = duel.sorcier.pv;
   const res = rpgLancerAttaque(duel, 'joueur', [ronin.id], { [ronin.id]: [bloqueur.id] });
   assert.equal(res.ok, true);
   assert.equal(res.resume.repartitions[ronin.id][bloqueur.id], 4, 'la bannière compte dans le partage');
   assert.equal(duel.sorcier.creatures.some((entite) => entite.id === bloqueur.id), false,
-    '4 dégâts sur une 4/4 : le bloqueur tombe, là où 3 ne l’auraient pas tué');
+    '4 dégâts sur un 3/4 : le bloqueur tombe, là où 3 ne l’auraient pas tué');
   assert.equal(res.resume.frappeSorcier, 0, 'l’attaque était bloquée : aucun dégât de combat direct');
   assert.equal(duel.sorcier.pv, pvSorcier - 1, 'sans survivant adverse, Honneur 1 du rōnin mort touche le sorcier');
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === ronin.id), false,
