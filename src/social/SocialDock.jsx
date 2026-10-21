@@ -40,7 +40,26 @@ import LetsTalkLogo, { LetsTalkMark } from './LetsTalkLogo';
  *
  * Sur la page de messagerie (`/messages`), la fenêtre s'efface entièrement :
  * c'est la page qui porte la messagerie, rien ne flotte par-dessus.
+ *
+ * Dans le Sablier (`/jeu/sablier-de-bab-el*`), elle reste au contraire
+ * présente et **visible au-dessus du jeu** (`social-dock--sablier`) : la
+ * messagerie est le canal des défis du duel en ligne, et le jeu — une couche
+ * plein écran — la couvrait entièrement.
  */
+
+/**
+ * Les routes du Sablier de Bab El (hub du jeu et salon du duel en ligne).
+ * Le jeu est une couche plein écran au-dessus du site (z-index 1500) : sans
+ * ce repérage, la messagerie restait peinte dessous — invisible et
+ * incliquable — alors que c’est elle qui lance et reçoit les défis du duel
+ * en ligne (la carte « Défi du Sablier » des discussions). Sur ces routes,
+ * la fenêtre sociale monte au-dessus du jeu (`social-dock--sablier`, voir
+ * `social.css`), et les barres du jeu portent leur propre bouton
+ * « Messagerie » (`src/games/RpgMessagerieBouton.jsx`).
+ */
+export function estRouteSablier(pathname) {
+  return /^\/jeu\/sablier-de-bab-el(\/|$)/.test(pathname || '');
+}
 
 function CloseIcon({ size = 14 }) {
   return (
@@ -77,6 +96,9 @@ export default function SocialDock() {
   // Sur la page sociale, le lanceur flottant disparaît : la page se suffit
   // à elle-même.
   const onSocialRoute = /^\/(messages|messagerie)(\/|$)/.test(location.pathname || '');
+  // Dans le Sablier, la fenêtre sociale passe au-dessus de la couche plein
+  // écran du jeu : voir `estRouteSablier` ci-dessus et `social.css`.
+  const onSablierRoute = estRouteSablier(location.pathname);
 
   const {
     enabled: friendsEnabled, status: friendsStatus, error: friendsError,
@@ -356,7 +378,7 @@ export default function SocialDock() {
   ];
 
   return (
-    <div className={`social-dock${open ? ' is-open' : ''}`}>
+    <div className={`social-dock${open ? ' is-open' : ''}${onSablierRoute ? ' social-dock--sablier' : ''}`}>
       {open && (
         <section className="social-panel" role="dialog" aria-label={t.title} aria-modal="false">
           {!inThread && (

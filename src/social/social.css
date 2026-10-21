@@ -26,6 +26,15 @@
   right: 16px;
   left: auto;
 }
+
+/* Dans le Sablier (`/jeu/sablier-de-bab-el*`) : le jeu est une couche plein
+   écran à z-index 1500 (`rpg-battle.css` / `rpg-pvp.css`) qui couvrait la
+   fenêtre sociale (1250) — la messagerie n’apparaissait pas dans le jeu,
+   alors que c’est par elle que les défis du duel en ligne se lancent et se
+   reçoivent. La fenêtre monte donc au-dessus de la table sur ces routes
+   (détection : `estRouteSablier` dans SocialDock.jsx), en restant sous les
+   appels (1900), qui doivent toujours pouvoir la couvrir. */
+.social-dock--sablier { z-index: 1600; }
 .social-dock > * { pointer-events: auto; }
 
 /* Conteneur du lanceur. Les pastilles de notification dépassent légèrement
