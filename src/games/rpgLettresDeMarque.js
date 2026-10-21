@@ -9,9 +9,10 @@
  * direction §11 du doc 17) : la course prend, elle ne brûle pas.
  *
  * Le moteur lit quatre nouveaux marqueurs de fiche :
- *   - `abordage: true` — les blessures de **combat** que cette créature
- *     inflige prennent la victime en cale au lieu de la détruire (moteur :
- *     `prendreEnCale`, dans `appliquerDegatsDeCombatSimultanes`) ;
+ *   - `abordage: N` — QUAND la créature arrive en jeu, la créature adverse
+ *     ciblée de coût N ou moins est prise en sa cale au lieu d’être détruite
+ *     (moteur : `rpgJouerCreature` → `prendreEnCale`) ; le seuil imprimé suit
+ *     le barème « coût du capteur − 1 » ;
  *   - `cargaison: N` — quand cette créature meurt **ou** est prise en cale,
  *     son propriétaire pioche N cartes ;
  *   - `declencheRancon: 1` — quand une créature est rançonnée, le contrôleur
@@ -20,9 +21,20 @@
  *     renvoie l’un de ses tueurs en main (Le Brûlot — la mort par magie ne
  *     déclenche rien, le tueur de combat seul est connu).
  *
- * Et deux contrats d’effet étendus : `donne: { abordage: true }` sur une arme
- * (chemin `donne` existant du Khopesh) et sur un buff d’équipe (Lettre de
- * marque, Le Grand Débarquement), plus `priseEnCale` sur une arme (le Grappin).
+ * Et trois contrats d’effet étendus : `arriveesAbordage: true` sur un effet
+ * (la Lettre de marque en propre, le Grand Débarquement sur son buff) drape
+ * `camp.abordageDesArrivees` — jusqu’à la fin du tour, chaque créature que le
+ * camp joue accoste avec Abordage au seuil « coût − 1 » —, `abordage: 1` sur
+ * une arme (le Grappin : la prise se fait à l’attachement, `attacherArme`),
+ * et `priseEnCale` sur une arme (la prime de soins du Grappin).
+ *
+ * Deux marqueurs de plus pour La Barbe Noire (la carte du dédoublement) :
+ *   - `alternance: { visages: [...] }` — Les Deux Visages : elle arrive sous
+ *     le visage imprimé (index 0), puis change au début de chaque tour de son
+ *     camp (`changerVisages`, appelé par `rpgFinDeTour`) — l’homme 2/7 avec
+ *     Provocation, la légende 6/2, les blessures suivant d’un visage à l’autre ;
+ *   - `insaisissable: true` — Le dédoublement : la cale adverse ne la prend
+ *     jamais (filtre `priseEnCaleLegale`, garde `prendreEnCale`).
  */
 
 export const RPG_LETTRES_DE_MARQUE_SET_ID = 'lettres-de-marque';
@@ -49,9 +61,8 @@ export const RPG_LETTRES_DE_MARQUE_JETONS = [{
   atk: 2,
   def: 1,
   rarity: 'commune',
-  abordage: true,
   typeLine: 'Créature-jeton — Corsaire',
-  text: 'Abordage — ses blessures de combat prennent la créature adverse vaincue en cale au lieu de la détruire.',
+  text: '—',
   flavor: 'Il a signé d’une croix ; la mer a contresigné.',
 }];
 
@@ -77,9 +88,9 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     atk: 2,
     def: 2,
     rarity: 'commune',
-    abordage: true,
+    abordage: 1,
     typeLine: 'Créature — Humain · Raïs',
-    text: 'Abordage — quand le Raïs inflige des blessures de combat qui détruiraient une créature adverse, celle-ci est prise en cale (face visible, sous le Raïs) au lieu d’être détruite : elle ne déclenche rien. Rançon — son propriétaire peut la reprendre en main en payant son coût en manas, à tout moment où il pourrait jouer une Magie Rapide. La cale s’ouvre quand le Raïs quitte la table.',
+    text: 'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale (face visible) : elle ne déclenche rien. Rançon — son propriétaire peut la reprendre en main en payant son coût en manas, à tout moment où il pourrait jouer une Magie Rapide. La cale s’ouvre quand le Raïs quitte la table.',
     flavor: 'Il ne coule jamais ce qu’il peut vendre.',
   }),
   carte({
@@ -130,9 +141,9 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     def: 1,
     rarity: 'inhabituelle',
     rapidite: true,
-    abordage: true,
+    abordage: 2,
     typeLine: 'Créature — Navire · Cotre',
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Abordage — ses blessures de combat prennent la créature adverse vaincue en cale au lieu de la détruire.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Abordage 2 — quand le Cotre arrive en jeu, la créature adverse ciblée de coût 2 ou moins est prise en sa cale : elle ne déclenche rien.',
     flavor: 'Deux voiles latines, une seule promesse : personne ne le rattrape.',
   }),
   carte({
@@ -188,11 +199,34 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     atk: 4,
     def: 5,
     rarity: 'mythique',
-    abordage: true,
+    abordage: 5,
     arrivee: { type: 'jetons', jeton: 'corsaire', nombre: 2 },
     typeLine: 'Créature légendaire — Amirale des deux mers',
-    text: 'Abordage — ses blessures de combat prennent la créature adverse vaincue en cale au lieu de la détruire. Quand La Barbe-Rousse arrive : créez deux jetons Corsaire 2/1 avec Abordage.',
+    text: 'Abordage 5 — quand La Barbe-Rousse arrive en jeu, la créature adverse ciblée de coût 5 ou moins est prise en sa cale : elle ne déclenche rien. Quand La Barbe-Rousse arrive : créez deux jetons Corsaire 2/1.',
     flavor: 'Alger lui doit ses remparts ; les deux mers lui doivent le reste.',
+  }),
+  carte({
+    id: 'la-barbe-noire',
+    name: 'La Barbe Noire, les deux visages',
+    element: 'sable',
+    colors: ['sable', 'eau'],
+    colorCost: { sable: 1, eau: 1 },
+    cost: 5,
+    atk: 2,
+    def: 7,
+    rarity: 'mythique',
+    provocation: true,
+    abordage: 4,
+    insaisissable: true,
+    alternance: {
+      visages: [
+        { nom: 'l’homme', atk: 2, def: 7, provocation: true },
+        { nom: 'la légende', atk: 6, def: 2 },
+      ],
+    },
+    typeLine: 'Créature légendaire — Pirate · Terreur',
+    text: 'Abordage 4 — quand La Barbe Noire arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Deux Visages — elle arrive en jeu sous le visage de l’homme (2/7 avec Provocation) ; au début de chacun de vos tours, elle change : l’homme 2/7 avec Provocation, ou la légende 6/2 — ses blessures la suivent d’un visage à l’autre. Le dédoublement — Barbe Noire ne peut pas être prise en cale : on emporte un visage, l’autre reste.',
+    flavor: 'Thatch comptait les rançons au sou près ; la chose qui brûlait dans sa barbe n’a jamais rien compté.',
   }),
 ];
 
@@ -208,8 +242,8 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     rarity: 'commune',
     typeLine: 'Sorcellerie — Chancellerie · Sable + Eau',
     cibles: ['soi'],
-    effet: { type: 'donne', donne: { abordage: true }, cible: 'toutes-alliees', tours: 1 },
-    text: 'Jusqu’à la fin du tour, toutes vos créatures gagnent Abordage.',
+    effet: { type: 'arrivees-abordage' },
+    text: 'Jusqu’à la fin du tour, vos créatures qui arrivent en jeu ont Abordage — chacune au seuil de son coût moins un.',
     flavor: 'Le sceau de la Chambre change un pillard en officier — le temps d’un assaut.',
   }),
   carte({
@@ -250,8 +284,8 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     rarity: 'rare',
     typeLine: 'Sorcellerie — Assaut · Sable + Eau',
     cibles: ['soi'],
-    effet: { type: 'buff', atk: 1, def: 0, donne: { abordage: true }, cible: 'toutes-alliees', tours: 1 },
-    text: 'Jusqu’à la fin du tour, vos créatures gagnent +1/+0 et Abordage.',
+    effet: { type: 'buff', atk: 1, def: 0, arriveesAbordage: true, cible: 'toutes-alliees', tours: 1 },
+    text: 'Jusqu’à la fin du tour, vos créatures gagnent +1/+0 et celles qui arrivent en jeu ont Abordage — chacune au seuil de son coût moins un.',
     flavor: 'Ce jour-là, tout le quai monta à l’assaut — jusqu’aux lapins de la cale.',
   }),
 ];
@@ -265,9 +299,9 @@ export const RPG_LETTRES_DE_MARQUE_ARMES = [
     rarity: 'rare',
     typeLine: 'Arme — Grappin',
     bonus: { atk: 1, def: 1 },
-    donne: { abordage: true },
+    abordage: 1,
     priseEnCale: { type: 'soin', amount: 2 },
-    text: 'Arme — Le porteur gagne +1/+1 et Abordage. Quand le porteur prend une créature en cale, vous gagnez 2 PV.',
+    text: 'Arme — Le porteur gagne +1/+1. Quand le Grappin s’attache, la créature adverse ciblée de coût 1 ou moins est prise en la cale du porteur. Quand le porteur prend une créature en cale, vous gagnez 2 PV.',
     flavor: 'Trois dents de fer, et la mer devient un couloir.',
   }),
 ];

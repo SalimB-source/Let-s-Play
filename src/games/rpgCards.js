@@ -2292,7 +2292,7 @@ export const RPG_DECKS = [
     boxArt: 'la-barbe-rousse',
     archetype: 'Sable + Eau · l’Abordage, la Cale, la Rançon',
     affrontement: 'Affrontez les lettres de marque de la Régence.',
-    description: 'Deck hybride Sable + Eau de l’âge de la course : l’Abordage prend la créature vaincue en cale au lieu de la détruire (Raïs de la galiote, Cotre de course, Lettre de marque), la Rançon la rend à son prix imprimé, et la Cargaison du Galion paie l’assurance du convoi. Le Brûlot renvoie son tueur en main, le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque deux Corsaires. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste s’ouvrent dans les boosters.',
+    description: 'Deck hybride Sable + Eau de l’âge de la course : à l’arrivée en jeu, l’Abordage prend la créature adverse ciblée de coût inférieur au sien en cale (Raïs de la galiote, Cotre de course, La Barbe-Rousse — et la Lettre de marque arme toutes les arrivées du tour), la Rançon la rend à son prix imprimé, et la Cargaison du Galion paie l’assurance du convoi. Le Brûlot renvoie son tueur en main, le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque deux Corsaires. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste s’ouvrent dans les boosters.',
     cardIds: RPG_DECK_LETTRES_DE_MARQUE_BASE,
   },
 ];

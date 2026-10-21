@@ -1394,6 +1394,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const cibleId = meilleureCibleAmie(duel, cote, carte);
       return cibleId ? { score: 2 + (effet.amount ?? 0) * 0.5, cibleId } : null;
     }
+    if (effet.type === 'arrivees-abordage') {
+      // La Lettre de marque : les arrivées du tour accostent — elle ne vaut
+      // que ce que le reste de la main peut poser.
+      const creaturesEnMain = camp.main.filter((id) => (duelCardById(id) ?? magieById(id) ?? armeById(id))?.kind === 'creature').length;
+      return { score: creaturesEnMain ? 1.5 + creaturesEnMain : 0, cibleId: null };
+    }
     return null;
   }
 
@@ -1624,6 +1630,22 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   if (carte.destruction) score += 1;
   if (carte.honneur) score += carte.honneur * (duel[adv].creatures.length ? 0.8 : 0.3);
   if (carte.combat) score += 2;
+  // L'Abordage (set Lettres de Marque) : la prize à l'arrivée — une créature
+  // adverse de coût ≤ seuil quitte la table sans mourir. Le moteur choisit
+  // la meilleure prise tout seul (cibleId reste null ici).
+  if (Number.isFinite(carte.abordage)) {
+    const prisable = duel[adv].creatures.some((entite) => !entite.jeton
+      && (duelCardById(entite.carteId)?.kind ?? 'creature') !== 'hero'
+      && !duelCardById(entite.carteId)?.insaisissable
+      && !entite.tenaciteDisponible
+      && !estProtegee(entite, cardColors(carte))
+      && (duelCardById(entite.carteId)?.cost ?? 0) <= carte.abordage);
+    if (prisable) score += 2.5;
+  }
+  // Les Deux Visages (La Barbe Noire) : un corps qui alterne vaut deux
+  // présences ; l'insaisissable refuse la cale adverse pour de bon.
+  if (carte.alternance) score += 1.5;
+  if (carte.insaisissable) score += 1;
   return { score, cibleId };
 }
 

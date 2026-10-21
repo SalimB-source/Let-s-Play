@@ -358,6 +358,14 @@
 }
 .rpg-card__compteur--cale > span { color: #d8fff5; }
 
+.rpg-card__compteur--visage {
+  /* Les Deux Visages (La Barbe Noire) : pourpre profond cerclé d'or — le
+     masque qui tourne au début de chaque tour du camp. */
+  border-color: #e8c66a;
+  background: linear-gradient(145deg, #5b2a86, #1d1030);
+}
+.rpg-card__compteur--visage > span { color: #f4e3b2; }
+
 /* Fin du tour : la grande pastille dorée du Sablier, bien visible sur la table. */
 .rpg-btn--endturn {
   min-height: 48px;

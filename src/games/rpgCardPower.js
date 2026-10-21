@@ -109,8 +109,13 @@ function valeurEffet(effet = {}) {
       if (effet.cible === 'creatures-adverses' || atk < 0 || def < 0) {
         return Math.abs(atk) * 0.8 + Math.abs(def) * 0.6 + (effet.blocageForce ? 1 : 0) + 0.5;
       }
-      return atk * 0.8 + def * 0.6 + (effet.overkill ? 1.2 : 0);
+      return atk * 0.8 + def * 0.6 + (effet.overkill ? 1.2 : 0)
+        + (effet.arriveesAbordage ? 1.5 : 0);
     }
+    case 'arrivees-abordage':
+      // La Lettre de marque : chaque créature du reste du tour accoste en
+      // prenant — lu comme le mot-clé Abordage prêté à toute une vague.
+      return 1.5;
     case 'debuff': {
       // Le venin de la Vipère : les chiffres retirés valent comme un débuff
       // de `buff`, et les interdits de combat ont leur prix — la défense
@@ -220,9 +225,10 @@ export function valeurCarte(carte) {
     if (carte.donne?.rapidite) valeur += 0.5;
     if (carte.donne?.coupRapide) valeur += 2;
     if (carte.donne?.tribut) valeur += 1.6 * carte.donne.tribut;
-    // L'Abordage prêté (le Grappin d'abordage) : la capture remplace la
-    // destruction — le même prix que le mot-clé imprimé sur une créature.
-    if (carte.donne?.abordage) valeur += 1.5;
+    // L'Abordage d'arme (le Grappin d'abordage) : la capture à l'attachement,
+    // au seuil imprimé — le même prix que le mot-clé sur une créature, saisi
+    // au moment où le crochet mord.
+    if (Number.isFinite(carte.abordage)) valeur += 1.5;
     // La prime de prise en cale (le Grappin) : un soin conditionnel, une fois
     // par capture — lu comme l'effet de soin qu'il est.
     if (carte.priseEnCale) valeur += valeurEffet(carte.priseEnCale);
@@ -289,9 +295,16 @@ export function valeurCarte(carte) {
   // Tribut (set Ténèbres) : chaque contact avec le sorcier adverse transfère
   // des PV — pesé au même rythme que le Butin, un peu en dessous.
   if (carte.tribut) valeur += 0.9 * carte.tribut;
-  // Abordage (set Lettres de Marque) : la capture remplace la destruction —
-  // un retrait de table que la Rançon peut défaire, entre le Butin et l'Envol.
+  // Abordage (set Lettres de Marque) : la capture à L'ARRIVÉE — un retrait de
+  // table garanti à la pose, que la Rançon peut défaire, entre le Butin et
+  // l'Envol.
   if (carte.abordage) valeur += 1.5;
+  // Les Deux Visages (La Barbe Noire) : l'autre visage vaut un second corps —
+  // la muraille quand la frappe manque, la frappe quand le mur s'effondre.
+  if (carte.alternance) valeur += 1.5;
+  // L'insaisissable (La Barbe Noire) : la cale adverse ne la prend jamais —
+  // une rébellion permanente contre la signature du set d'en face.
+  if (carte.insaisissable) valeur += 1;
   // Cargaison (set Lettres de Marque) : l'assurance du convoi — la pioche ne
   // joue qu'à la mort ou à la prise, donc sous le prix d'une pioche sèche.
   if (carte.cargaison) valeur += 0.9 * carte.cargaison;
