@@ -701,6 +701,16 @@ aux boosters, comme le font les six autres boîtiers.
     arme les arrivées puis expire, mais la cale reste ; Cargaison paie à la
     mort **et** à la prise ; le Brûlot embrase son tueur — jamais par magie,
     jamais une capture ; l’IA choisit sa prize.
+11. **La chaîne de l’Abordage** — la carte prise rejoint son capteur au bout
+    d’une **chaîne tressée** (`ChaineAbordage`) : deux brins d’acier enroulés,
+    dont les demi-ondes alternent entre un calque arrière et un calque avant —
+    c’est l’ordre de peinture, et lui seul, qui fait passer un brin dessus et
+    l’autre dessous. Et c’est le **capteur** qui en tient le bout. Son adresse se mesure **sur la table rendue**
+    (`vecteurVersCapteur`, relu par `FantomeCarteDetruite` à la première
+    image) : le sorcier pose sa créature et prend sa prise dans le même
+    geste, si bien que l’instantané d’avant l’action ne la connaît pas — la
+    chaîne partait alors du **centre de sa rangée**, en plein milieu de la
+    table (`check:rpg-abordage-chaine`).
 
 ## 13. Direction artistique & sons
 

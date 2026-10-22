@@ -1652,15 +1652,206 @@ const BRAISES_ROUE_FEU = Object.freeze([
 ]);
 
 /**
- * La chaîne de l’Abordage : des **anneaux métalliques** reliés, lancés depuis
- * le capteur, avec un **grappin** à trois dents à leur extrémité. Elle part
- * **détendue** — les anneaux pendent sur une courbe molle, sous leur poids —
- * puis **revient tendue** : quand la prise est ramenée en cale, chaque
- * anneau remonte sur la ligne droite de la traction (`--anneau-retour`).
- * Le dévoilement (lancer puis retrait) reste porté par le `clip-path` du
- * SVG ; le grappin voyage le long de la chaîne, accroche, puis repart avec
- * la prise. Coordonnées locales : le capteur est à x = 0, la prise à
- * x = longueur, la ligne de traction à y = 28.
+ * La translation animée d’une carte, telle que son style calculé la donne :
+ * `translate: 0 24px` quand elle entre en jeu (`fx-enter`), `0 -14px` quand
+ * elle lévite (Envol). La boîte rendue par `getBoundingClientRect` l’inclut ;
+ * l’adresse de la carte, elle, ne bouge pas — c’est cette adresse que la
+ * chaîne doit viser.
+ */
+function translationsDeCarte(valeur) {
+  if (!valeur || valeur === 'none') return { x: 0, y: 0 };
+  const parts = String(valeur).trim().split(/\s+/);
+  const enPixels = (texte) => {
+    const nombre = Number.parseFloat(texte);
+    return Number.isFinite(nombre) && !String(texte).includes('%') ? nombre : 0;
+  };
+  return { x: enPixels(parts[0]), y: parts.length > 1 ? enPixels(parts[1]) : 0 };
+}
+
+/**
+ * Le vecteur de l’Abordage : du centre de la carte prise au centre de son
+ * **capteur**, en coordonnées de table. Il se lit sur la table RÉELLE, pas
+ * dans l’instantané d’avant l’action : le sorcier pose sa créature et prend
+ * sa prise dans le même geste, si bien qu’au moment du calcul elle n’a pas
+ * encore d’élément — la chaîne partait alors du centre de sa rangée, en
+ * plein milieu de la table. `null` tant que le capteur n’est pas rendu (on
+ * remesure à l’image suivante).
+ */
+export function vecteurVersCapteur({ table, capteurId, effet }) {
+  if (!table || !capteurId || !effet) return null;
+  const capteur = [...(table.querySelectorAll('[data-entity-id]') ?? [])]
+    .find((carte) => carte.dataset.entityId === String(capteurId));
+  if (!capteur) return null;
+  const tableRect = table.getBoundingClientRect();
+  const rect = capteur.getBoundingClientRect();
+  const translation = translationsDeCarte(window.getComputedStyle?.(capteur)?.translate);
+  const centreX = rect.left + rect.width / 2 - tableRect.left - translation.x;
+  const centreY = rect.top + rect.height / 2 - tableRect.top - translation.y;
+  return {
+    dx: centreX - (effet.left + effet.width / 2),
+    dy: centreY - (effet.top + effet.height / 2),
+  };
+}
+
+/**
+ * Le fantôme d’une carte qui quitte la table : sa dernière image s’efface sur
+ * place — ou, **prise en cale** (Abordage), rejoint son capteur au bout de la
+ * chaîne. `left`/`top` viennent de l’instantané : c’est la place qu’elle
+ * occupait avant de disparaître. Le vecteur de la prise, lui, se **mesure
+ * après le rendu** : le capteur que le sorcier vient de poser n’existait pas
+ * encore quand l’action s’est résolue. L’instantané fournit une première
+ * estimation (`effet.abordage`), corrigée dès la première image.
+ */
+export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
+  const carteDetruite = cardById(effet.cardId);
+  const [vecteur, setVecteur] = useState(effet.abordage ?? null);
+  // Une prise est une prise, même sans vecteur encore mesuré : la carte
+  // attend son capteur au lieu de s’effacer comme une morte.
+  const prise = Boolean(effet.capteurId);
+  useLayoutEffect(() => {
+    if (!effet.capteurId) return undefined;
+    const mesurer = () => {
+      const mesure = vecteurVersCapteur({
+        table: tableRef?.current,
+        capteurId: effet.capteurId,
+        effet,
+      });
+      if (!mesure) return false;
+      // Même adresse que l'estimation ? Pas de rendu pour rien : la chaîne et
+      // la carte sont déjà sur le bon cap.
+      setVecteur((actuel) => (actuel
+        && Math.abs(actuel.dx - mesure.dx) < 0.5
+        && Math.abs(actuel.dy - mesure.dy) < 0.5
+        ? actuel : mesure));
+      return true;
+    };
+    if (mesurer()) return undefined;
+    // Le capteur arrive avec le rendu de l’action (le sorcier pose et prend
+    // dans le même geste). Quelques images d’attente, puis on garde
+    // l’estimation de l’instantané : la carte est déjà en route.
+    const raf = window.requestAnimationFrame ?? ((rappel) => window.setTimeout(rappel, 16));
+    const annuler = window.cancelAnimationFrame ?? window.clearTimeout;
+    let handle = null;
+    let images = 0;
+    const encore = () => {
+      images += 1;
+      if (mesurer() || images >= 12) return;
+      handle = raf(encore);
+    };
+    handle = raf(encore);
+    return () => {
+      if (handle !== null) annuler?.call(window, handle);
+    };
+  }, [effet, tableRef]);
+  return (
+    <Fragment>
+      {prise && vecteur && (
+        <ChaineAbordage effet={{ ...effet, abordage: vecteur }} />
+      )}
+      <div
+        className={`rpg-card-destruction-fx${prise ? ' is-abordage' : ''} ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
+        data-rpg-destroyed-id={effet.entityId}
+        data-destruction-source={effet.bruleeParBraise ? 'braise' : undefined}
+        aria-hidden="true"
+        // L’adieu se retire de lui-même dès la dernière image de son
+        // animation, sans dépendre d’une minuterie. On ignore les animations
+        // des enfants (l’illustration qui brûle) et des pseudo-éléments, qui
+        // se terminent avant la carte.
+        onAnimationEnd={(event) => {
+          if (event.target !== event.currentTarget || event.pseudoElement) return;
+          onTermine?.(effet.effectId);
+        }}
+        style={{
+          ...cardFrameStyle(carteDetruite),
+          left: `${effet.left}px`,
+          top: `${effet.top}px`,
+          width: `${effet.width}px`,
+          height: `${effet.height}px`,
+          '--rpg-fx-rotation': `${effet.angle}rad`,
+          '--rpg-abordage-x': `${vecteur?.dx ?? 0}px`,
+          '--rpg-abordage-y': `${vecteur?.dy ?? 0}px`,
+        }}
+      >
+        <img src={cardArt(effet.cardId)} alt="" />
+        <b>{effet.name}</b>
+      </div>
+    </Fragment>
+  );
+}
+
+/**
+ * Une **torsade** d’acier : deux brins qui s’enroulent l’un autour de l’autre,
+ * comme une corde. Les deux brins suivent la MÊME onde, en opposition de
+ * phase : l’un bombe au-dessus de l’axe pendant que l’autre bombe en dessous,
+ * et ils se croisent sur l’axe à chaque demi-longueur d’onde.
+ *
+ * Le dessus/dessous ne se devine pas : il se **peint**. Chaque demi-onde est
+ * un segment continu de l’onde — prolongé d’un peu plus que le croisement,
+ * pour que le brin qui passe devant recouvre réellement l’autre. Les segments
+ * sont versés dans deux calques (`{ arriere, avant }`) qui alternent : au
+ * premier croisement c’est le brin montant qui passe devant, au suivant c’est
+ * le brin plongeant. La torsade tourne, elle ne reste pas plate.
+ *
+ * Coordonnées locales : l’axe de la chaîne est la ligne y = 28 ; `sag(x)` est
+ * le **mou** — la chaîne pend sous son poids tant qu’elle n’est pas tendue.
+ */
+function brinsDeTorsade({ longueur, flottement, signeMou }) {
+  // Trois à quatre enroulements selon la portée : lisible de loin, serré de
+  // près. L’amplitude reste modeste — une chaîne, pas un ressort.
+  const longueurOnde = Math.max(17, Math.min(30, longueur / 13));
+  const amplitude = Math.max(4, Math.min(6.2, longueurOnde * 0.26));
+  const demi = longueurOnde / 2;
+  const debord = demi * 0.16;
+  const sag = (x) => Math.sin(Math.PI * Math.min(1, Math.max(0, x / longueur))) * flottement * signeMou;
+  // L’onde continue du brin : `phase` = 0 (monte d’abord) ou π (plonge).
+  const onde = (x, phase) => Math.sin((2 * Math.PI * x) / longueurOnde + phase) * amplitude;
+  const nombreDemiOndes = Math.max(4, Math.ceil(longueur / demi));
+  const arriere = [];
+  const avant = [];
+  for (let index = 0; index < nombreDemiOndes; index += 1) {
+    const x0 = index * demi;
+    const x1 = x0 + demi;
+    const a = Math.max(0, x0 - debord);
+    const b = Math.min(longueur, x1 + debord);
+    const mou = sag((x0 + x1) / 2);
+    // Le tracé d’un brin sur ce demi-segment : l’onde échantillonnée fin, le
+    // prolongement suit la même courbe — rien ne casse au croisement.
+    const trace = (phase) => {
+      const points = 10;
+      let d = '';
+      for (let i = 0; i <= points; i += 1) {
+        const x = a + (b - a) * (i / points);
+        const y = 28 + sag(x) + onde(x, phase);
+        d += `${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)} `;
+      }
+      return d.trim();
+    };
+    // Au croisement, l’un des deux brins passe devant : celui qui MONTE aux
+    // croisements pairs, celui qui PLONGE aux impairs.
+    const devantMonte = index % 2 === 0;
+    arriere.push({ d: trace(devantMonte ? Math.PI : 0), mou });
+    avant.push({ d: trace(devantMonte ? 0 : Math.PI), mou });
+  }
+  return { arriere, avant };
+}
+
+/**
+ * La chaîne de l’Abordage : une **chaîne tressée** de deux brins d’acier
+ * enroulés, lancée depuis le capteur, un **grappin** à trois dents à son
+ * extrémité. Elle part **détendue** — la torsade pend sur une courbe molle,
+ * sous son poids — puis **revient tendue** : quand la prise est ramenée en
+ * cale, chaque lobe remonte sur la ligne droite de la traction
+ * (`--anneau-retour`).
+ *
+ * Chaque lobe est peint deux fois : le creux du brin (trait sombre, large)
+ * puis le fil de lumière qui court au cœur de l’acier (trait clair, fin). Les
+ * lobes alternent entre deux calques (`__arriere` / `__avant`) : c’est l’ordre
+ * de peinture, et lui seul, qui donne le tressage.
+ *
+ * Le dévoilement (lancer puis retrait) reste porté par le `clip-path` du SVG ;
+ * le grappin voyage le long de la chaîne, accroche, puis repart avec la prise.
+ * Coordonnées locales : le capteur est à x = 0, la prise à x = longueur, la
+ * ligne de traction à y = 28.
  */
 export function ChaineAbordage({ effet }) {
   const dx = effet.abordage?.dx ?? 0;
@@ -1670,22 +1861,27 @@ export function ChaineAbordage({ effet }) {
   // Le mou pend **vers le bas** de l’écran : le signe dépend de l’orientation
   // de la chaîne (son axe local y pointe parfois vers le haut du monde).
   const signeMou = -dx >= 0 ? 1 : -1;
-  const nombreAnneaux = Math.max(4, Math.min(30, Math.round(longueur / 13)));
-  const anneaux = Array.from({ length: nombreAnneaux }, (_, index) => {
-    const part = (index + 0.5) / nombreAnneaux;
-    const mou = Math.sin(Math.PI * part) * flottement * signeMou;
-    return {
-      x: part * longueur,
-      mou,
-      vertical: index % 2 === 1,
-      acier: index % 3 === 0 ? '#aab3bd' : '#d3dae1',
-    };
-  });
+  const torsade = brinsDeTorsade({ longueur, flottement, signeMou });
+  const lobeSvg = (lobe, index, calque) => (
+    <g key={`${calque}-${index}`}>
+      <path
+        className={`rpg-abordage-chaine__brin rpg-abordage-chaine__brin--${calque}`}
+        d={lobe.d}
+        style={{ '--anneau-retour': `${-lobe.mou}px` }}
+      />
+      <path
+        className={`rpg-abordage-chaine__fil rpg-abordage-chaine__fil--${calque}`}
+        d={lobe.d}
+        style={{ '--anneau-retour': `${-lobe.mou}px` }}
+      />
+    </g>
+  );
   return (
     <svg
       className="rpg-abordage-chaine"
       aria-hidden="true"
-      data-rpg-abordage-chaine="anneaux"
+      data-rpg-abordage-chaine="tressee"
+      data-rpg-abordage-lobes={torsade.arriere.length + torsade.avant.length}
       style={{
         left: effet.left + effet.width / 2 + dx,
         top: effet.top + effet.height / 2 + dy,
@@ -1695,18 +1891,28 @@ export function ChaineAbordage({ effet }) {
         '--chaine-mou': `${flottement * signeMou}px`,
       }}
     >
-      {anneaux.map((anneau, index) => (
-        <ellipse
-          key={index}
-          className="rpg-abordage-chaine__anneau"
-          cx={anneau.x}
-          cy={28 + anneau.mou}
-          rx={anneau.vertical ? 3.6 : 6.4}
-          ry={anneau.vertical ? 6.4 : 3.6}
-          stroke={anneau.acier}
-          style={{ '--anneau-retour': `${-anneau.mou}px` }}
-        />
-      ))}
+      {/* 1. L’ombre portée de la torsade, sous l’acier. */}
+      <g className="rpg-abordage-chaine__ombre">
+        {[...torsade.arriere, ...torsade.avant].map((lobe, index) => (
+          <path key={index} d={lobe.d} style={{ '--anneau-retour': `${-lobe.mou}px` }} />
+        ))}
+      </g>
+      {/* 2. Les lobes ARRIÈRE : le brin qui plonge passe sous l’autre. */}
+      <g className="rpg-abordage-chaine__brins rpg-abordage-chaine__brins--arriere">
+        {torsade.arriere.map((lobe, index) => lobeSvg(lobe, index, 'arriere'))}
+      </g>
+      {/* 3. Les lobes AVANT : le brin qui monte couvre le croisement. */}
+      <g className="rpg-abordage-chaine__brins rpg-abordage-chaine__brins--avant">
+        {torsade.avant.map((lobe, index) => lobeSvg(lobe, index, 'avant'))}
+      </g>
+      {/* 4. La manille du capteur, puis le grappin de la prise. */}
+      <ellipse
+        className="rpg-abordage-chaine__manille"
+        cx="1.2"
+        cy="28"
+        rx="3.6"
+        ry="5.2"
+      />
       <g className="rpg-abordage-chaine__grappin">
         {/* La tige, puis les trois dents recourbées vers l’arrière. */}
         <path className="rpg-abordage-chaine__grappin-ombre" d="M-13 28 H7 M7 28 L13 28" />
@@ -7442,7 +7648,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const element = capteurId && [...(tableRef.current?.querySelectorAll('[data-entity-id]') ?? [])]
           .find((carte) => carte.dataset.entityId === capteurId);
         // L'IA peut poser et capturer dans la même action, avant le rendu
-        // du capteur : viser alors le centre de sa rangée, jamais une mort.
+        // du capteur : sa rangée n'est qu'une estimation d'attente. Le
+        // fantôme (`FantomeCarteDetruite`) remesure le capteur sur la table
+        // rendue dès la première image — la chaîne part de SA carte, jamais
+        // du milieu de sa rangée.
         const capteurVivant = vivants.get(capteurId);
         const rang = capteurVivant && tableRef.current?.querySelector(
           duel.joueur.creatures.some((carte) => carte.id === capteurId)
@@ -7457,6 +7666,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return ({
         ...entite,
         priseEnCale: Boolean(capteurId),
+        capteurId: capteurId ?? null,
         abordage: capteurId && destination ? {
           dx: destination.x - entite.left - entite.width / 2,
           dy: destination.y - entite.top - entite.height / 2,
@@ -10137,41 +10347,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           }) : null}
         </div>
 
-        {cartesEnDestruction.map((effet) => {
-          const carteDetruite = cardById(effet.cardId);
-          return (
-            <Fragment key={effet.effectId}>
-              {effet.abordage && <ChaineAbordage effet={effet} />}
-            <div
-              className={`rpg-card-destruction-fx${effet.abordage ? ' is-abordage' : ''} ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
-              data-rpg-destroyed-id={effet.entityId}
-              data-destruction-source={effet.bruleeParBraise ? 'braise' : undefined}
-              aria-hidden="true"
-              // L'adieu se retire de lui-même dès la dernière image de son
-              // animation, sans dépendre d'une minuterie. On ignore les
-              // animations des enfants (l'illustration qui brûle) et des
-              // pseudo-éléments, qui se terminent avant la carte.
-              onAnimationEnd={(event) => {
-                if (event.target !== event.currentTarget || event.pseudoElement) return;
-                setCartesEnDestruction((current) => current.filter((autre) => autre.effectId !== effet.effectId));
-              }}
-              style={{
-                ...cardFrameStyle(carteDetruite),
-                left: `${effet.left}px`,
-                top: `${effet.top}px`,
-                width: `${effet.width}px`,
-                height: `${effet.height}px`,
-                '--rpg-fx-rotation': `${effet.angle}rad`,
-                '--rpg-abordage-x': `${effet.abordage?.dx ?? 0}px`,
-                '--rpg-abordage-y': `${effet.abordage?.dy ?? 0}px`,
-              }}
-            >
-              <img src={cardArt(effet.cardId)} alt="" />
-              <b>{effet.name}</b>
-            </div>
-            </Fragment>
-          );
-        })}
+        {cartesEnDestruction.map((effet) => (
+          <FantomeCarteDetruite
+            key={effet.effectId}
+            effet={effet}
+            tableRef={tableRef}
+            onTermine={(effectId) => setCartesEnDestruction((current) => current
+              .filter((autre) => autre.effectId !== effectId))}
+          />
+        ))}
 
         {/* Braise : la roue de feu tourne autour de la créature brûlée. */}
         {rouesFeu.map((effet) => (
