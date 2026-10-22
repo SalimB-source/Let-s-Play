@@ -280,15 +280,18 @@
    montrent les places libres (pointillés) comme les places prises (pleines),
    et la carte posée tombe dans la colonne de son emplacement. */
 /* Les cinq colonnes ont la largeur d'une carte posée — plus de colonnes
-   étirées sur toute la table : la grille se resserre au centre et les cases
-   ne laissent entre elles qu'une gouttière étroite. `--essai-colonne` est
-   partagée par la rangée et par la grille des cases dessinées dessous. */
+   étirées sur toute la table : la grille se resserre au centre, mais la
+   gouttière (16 à 26 px selon la largeur) écarte les cases pour que chaque
+   emplacement se lise seul. `--essai-colonne` est partagée par la rangée et
+   par la grille des cases dessinées dessous. Sur PC, c'est la seule gouttière
+   qui s'ouvre : au doigt, la règle tactile suivante la resserre pour la
+   largeur du téléphone. */
 .rpg-battle[data-mode-mana="essai"] .card-row {
   --essai-colonne: clamp(62px, min(11vw, 18.5vh), 160px);
   display: grid;
   grid-template-columns: repeat(5, minmax(0, var(--essai-colonne)));
   justify-content: center;
-  column-gap: clamp(10px, 1vw, 16px);
+  column-gap: clamp(16px, 1.6vw, 26px);
   justify-items: center;
   align-items: end;
   /* Même plateau vide, la rangée garde la hauteur d'une carte : les cinq

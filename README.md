@@ -8001,8 +8001,8 @@ vaut désormais `calc(var(--duel-card) * .95)` : sur un 844 × 390, une créatur
 posée fait 63 px de large au lieu de 56,4 (`--duel-card` = 66,3 px) — toujours
 un peu sous la carte en main, comme le veut la table. Le budget vertical tient :
 une face 4:5 à 95 % mesure 1,19 × `--duel-card`, sous le plancher de rangée
-(1,4 × `--duel-card` + 8 px), et l'attaquant couché à 15° occupe 1,47 × sa
-largeur — 92,4 px sur 844 × 390, dans une rangée d'au moins 100,8 px. Le
+(1,4 × `--duel-card` + 8 px), et l'attaquant couché à 10° occupe 1,40 × sa
+largeur — 88,5 px sur 844 × 390, dans une rangée d'au moins 100,8 px. Le
 partage de largeur par `--row-count`, le plancher de 40 px et le
 chevauchement au-delà ne bougent pas ; les repères en `cqw` (pastille,
 statistiques, compteurs) suivent la carte agrandie, puisqu'ils sont mesurés sur

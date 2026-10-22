@@ -689,7 +689,7 @@ try {
       const angle = Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
       return Math.abs(angle - expected) < .5;
     }, { selector, expected });
-    await waitForTilt('.rpg-card--equipe.is-declared-attacker', 15);
+    await waitForTilt('.rpg-card--equipe.is-declared-attacker', 10);
     assert.equal(await page.locator('.card-row .rpg-card__type').count(), 0, 'table cards do not print their type');
     for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
       await page.setViewportSize({ width, height });
@@ -714,7 +714,7 @@ try {
     await waitForTilt('.rpg-card--equipe', 0);
     await page.locator('.rpg-btn--attaque-tous').click();
     await page.locator('.rpg-btn--confirmer-attaque').click();
-    await waitForTilt('.rpg-card--equipe.is-attacked', 15);
+    await waitForTilt('.rpg-card--equipe.is-attacked', 10);
     const angles = await page.locator('.rpg-card--equipe.is-attacked').evaluate(async card => {
       const values = [];
       // Sample the lunge/impact animation and its cleanup, not just the resting state.
@@ -725,8 +725,8 @@ try {
       }
       return values;
     });
-    assert.ok(angles.every(angle => Math.abs(angle - 15) < .5), 'combat animations preserve the 15-degree clockwise attacker tilt');
-    console.log('✓ Attackers tilt 15° to the right on declaration, straighten on cancellation and keep the tilt after attacking');
+    assert.ok(angles.every(angle => Math.abs(angle - 10) < .5), 'combat animations preserve the 10-degree clockwise attacker tilt');
+    console.log('✓ Attackers tilt 10° to the right on declaration, straighten on cancellation and keep the tilt after attacking');
     console.log('✓ Attack-all, cancellation and confirmation share the controls column; the turn rail keeps the phases, undo and end-turn above the hand');
   } else {
     console.log('✓ Duel sans terrains : le parcours des piles de terrains est hors interface, la jauge de mana le remplace');

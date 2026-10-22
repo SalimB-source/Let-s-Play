@@ -9,7 +9,7 @@
  * `.rpg-card`, qui ne tourne plus la face ; et les rangées du duel, qui ne
  * transmettent plus d'angle. Il vérifie aussi ce qui reste voulu : la main
  * garde son éventail (`--hand-fan`), et un attaquant déclaré garde sa
- * bascule de 15°.
+ * bascule de 10°.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -73,7 +73,7 @@ assert.match(battleCss, /\.rpg-card\.is-down \{[^}]*transform:\s*rotate\(-7deg\)
   'une carte tombée garde sa propre inclinaison de repos, fixe');
 
 // ── 3. Ce qui reste voulu : l'attaquant déclaré penche ─────────────────────
-assert.match(battleCss, /\.rpg-card\[data-combat-tilted="true"\] \{\s*transform:\s*rotate\(15deg\) !important;/,
-  'un attaquant déclaré garde sa bascule de 15° — un état de combat, pas une pose');
+assert.match(battleCss, /\.rpg-card\[data-combat-tilted="true"\] \{\s*transform:\s*rotate\(10deg\) !important;/,
+  'un attaquant déclaré garde sa bascule de 10° — un état de combat, pas une pose');
 
-console.log('✓ Table droite : les créatures jouées, des deux côtés, ne portent plus l’inclinaison d’éventail de la main (`--tilt` retiré, `.rpg-card` sans rotation, rangées sans angle) ; la main garde son éventail (`--hand-fan`) et l’attaquant déclaré sa bascule de 15°');
+console.log('✓ Table droite : les créatures jouées, des deux côtés, ne portent plus l’inclinaison d’éventail de la main (`--tilt` retiré, `.rpg-card` sans rotation, rangées sans angle) ; la main garde son éventail (`--hand-fan`) et l’attaquant déclaré sa bascule de 10°');

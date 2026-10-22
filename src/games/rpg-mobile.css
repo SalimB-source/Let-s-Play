@@ -147,7 +147,7 @@
   /* Les cartes posées sur la table restent un peu plus petites que celles de
      la main — 95 % —, sans toucher à `--duel-card` qui règle la grille et la
      main. Une face 4:5 à 95 % fait 1,19 carte de haut, sous la rangée de jeu,
-     et l'attaquant couché à 15° (1,47 × sa largeur) reste dans la sienne. */
+     et l'attaquant couché à 10° (1,40 × sa largeur) reste dans la sienne. */
   --rpg-field-card: calc(var(--duel-card) * .95);
   --rpg-field-min: 40px;
   --rpg-field-gap: max(6px, calc(var(--duel-card) * .16));
