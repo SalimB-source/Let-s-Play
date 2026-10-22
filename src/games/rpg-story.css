@@ -1109,9 +1109,9 @@
   transform-origin: bottom center;
   animation: rpg-story-stand .5s ease both;
 }
-.rpg-narrative__stand:first-child { left: -2.2%; }
-.rpg-narrative__stand:last-child { right: -2.2%; }
-.rpg-narrative__stand:only-child { left: 0; right: auto; }
+.rpg-narrative__stand:first-child { left: 0; justify-content: flex-start; }
+.rpg-narrative__stand:last-child { right: 0; justify-content: flex-end; }
+.rpg-narrative__stand:only-child { left: 0; right: auto; justify-content: flex-start; }
 .rpg-narrative__stand--actif { filter: none; }
 @keyframes rpg-story-stand {
   from { opacity: 0; transform: translateY(16px); }
@@ -1119,11 +1119,15 @@
 }
 /* Le sprite est plus haut que l'écran : sa partie basse descend sous le bord
    (les jambes sont coupées), sa tête garde la marge du cartouche. `dvh` suit
-   la hauteur réellement visible du navigateur mobile. */
+   la hauteur réellement visible du navigateur mobile. `margin-inline: auto`
+   centre une silhouette étroite dans son emprise, et bloque une pose large
+   (bâton diagonal, bras ouverts) sur le bord extérieur de l'écran pour qu'elle
+   déborde uniquement vers le centre de la scène sans jamais être coupée. */
 .rpg-narrative__stand-img {
   display: block;
   width: auto;
-  max-width: none;
+  max-width: 56vw;
+  margin-inline: auto;
   height: calc(100vh + var(--rpg-story-debord) - var(--rpg-story-tete));
   height: calc(100dvh + var(--rpg-story-debord) - var(--rpg-story-tete));
   max-height: calc(100vh + var(--rpg-story-debord) - var(--rpg-story-tete));
@@ -1151,6 +1155,7 @@
    l'écran couperait un portrait encadré au lieu d'un personnage. */
 .rpg-narrative__stand-cadre {
   height: clamp(260px, 48vh, 540px);
+  margin-inline: auto;
   margin-bottom: var(--rpg-story-debord);
   overflow: hidden;
   background: rgba(9, 15, 22, .35);
@@ -1281,15 +1286,18 @@
     max-width: 280px;
     flex: 0 0 auto;
   }
-  .rpg-narrative__stand:first-child,
-  .rpg-narrative__stand:last-child { left: auto; right: auto; }
-  .rpg-narrative__stand:only-child { left: auto; right: auto; margin: 0 auto; }
+  .rpg-narrative__stand:first-child { left: auto; right: auto; justify-content: flex-start; }
+  .rpg-narrative__stand:last-child { left: auto; right: auto; justify-content: flex-end; }
+  .rpg-narrative__stand:only-child { left: auto; right: auto; margin: 0 auto; justify-content: center; }
   .rpg-narrative__stand-img {
-    max-width: none;
+    max-width: min(360px, 60vw);
     height: clamp(240px, 44vh, 400px);
     height: clamp(240px, 44dvh, 400px);
     max-height: clamp(240px, 44vh, 400px);
     max-height: clamp(240px, 44dvh, 400px);
+  }
+  .rpg-narrative__stand:only-child .rpg-narrative__stand-img {
+    max-width: min(520px, calc(100vw - 36px));
   }
   /* Le portrait encadré remonte du débord : il reste entier au-dessus de la
      bulle, seuls les personnages détourés descendent derrière elle. */
@@ -1312,15 +1320,18 @@
   .rpg-narrative__scene { min-height: calc(100% - 70px); padding: 10px 12px 14px; }
   .rpg-narrative__fenetre { width: 100%; margin: 8px 0 calc(-1 * var(--rpg-story-debord)); padding-top: 6px; }
   .rpg-narrative__stand { width: 50%; max-width: 250px; z-index: 2; }
-  .rpg-narrative__stand:first-child,
-  .rpg-narrative__stand:last-child { left: auto; right: auto; }
-  .rpg-narrative__stand:only-child { left: auto; right: auto; margin: 0 auto; }
+  .rpg-narrative__stand:first-child { left: auto; right: auto; justify-content: flex-start; }
+  .rpg-narrative__stand:last-child { left: auto; right: auto; justify-content: flex-end; }
+  .rpg-narrative__stand:only-child { left: auto; right: auto; margin: 0 auto; justify-content: center; }
   .rpg-narrative__stand-img {
-    max-width: none;
+    max-width: 60vw;
     height: clamp(230px, 43vh, 380px);
     height: clamp(230px, 43dvh, 380px);
     max-height: clamp(230px, 43vh, 380px);
     max-height: clamp(230px, 43dvh, 380px);
+  }
+  .rpg-narrative__stand:only-child .rpg-narrative__stand-img {
+    max-width: calc(100vw - 24px);
   }
   .rpg-narrative__stand-cadre {
     height: clamp(170px, 32vh, 260px);
@@ -1359,11 +1370,11 @@
     max-width: none;
     margin: 0;
   }
-  .rpg-narrative__stand:first-child { left: -1.5%; right: auto; }
-  .rpg-narrative__stand:last-child { right: -1.5%; left: auto; }
-  .rpg-narrative__stand:only-child { left: 0; right: auto; margin: 0; }
+  .rpg-narrative__stand:first-child { left: 0; right: auto; justify-content: flex-start; }
+  .rpg-narrative__stand:last-child { right: 0; left: auto; justify-content: flex-end; }
+  .rpg-narrative__stand:only-child { left: 0; right: auto; margin: 0; justify-content: flex-start; }
   .rpg-narrative__stand-img {
-    max-width: none;
+    max-width: 52vw;
     height: calc(100vh + var(--rpg-story-debord) - 54px);
     height: calc(100dvh + var(--rpg-story-debord) - 54px);
     max-height: calc(100vh + var(--rpg-story-debord) - 54px);

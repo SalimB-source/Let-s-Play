@@ -27,6 +27,8 @@ SORTIE = Path(__file__).resolve().parent.parent / 'public' / 'sablier-story' / '
 HAUTEUR_PLEINE = 850     # un sprite livré plus court vient d'une source cadrée trop large
 LISERe_SEUIL = 4000      # pixels semi-transparents teintés tolérés (désaturations douces)
 TEINTE = 30              # min(r, b) - g au-delà duquel un pixel est « teinté magenta »
+BORD_HAUT_MAX = 40       # au-delà, la tête ou l'arme haute est coupée net
+BORD_COTE_MAX = 65       # au-delà, un bras, un bouclier ou une arme latérale est coupé net
 
 
 def mesurer(chemin):
@@ -45,7 +47,15 @@ def mesurer(chemin):
             if a > 40:
                 min_x, max_x = min(min_x, x), max(max_x, x)
                 min_y, max_y = min(min_y, y), max(max_y, y)
-    return {'teintes': teintes, 'hauteur': hauteur, 'taille': (largeur, hauteur)}
+    bord_haut = sum(1 for x in range(largeur) if pixels[x, 0][3] > 40)
+    bord_gauche = sum(1 for y in range(hauteur) if pixels[0, y][3] > 40)
+    bord_droite = sum(1 for y in range(hauteur) if pixels[largeur - 1, y][3] > 40)
+    return {
+        'teintes': teintes,
+        'hauteur': hauteur,
+        'taille': (largeur, hauteur),
+        'bords': (bord_haut, bord_gauche, bord_droite),
+    }
 
 
 def main():
@@ -64,11 +74,18 @@ def main():
             souci.append(f"{mesure['teintes']} pixels teintés")
         if mesure['hauteur'] < HAUTEUR_PLEINE:
             souci.append(f"{mesure['hauteur']} px de haut (source cadrée trop large)")
+        haut, gauche, droite = mesure['bords']
+        if haut > BORD_HAUT_MAX:
+            souci.append(f"coupé en haut ({haut} px)")
+        if gauche > BORD_COTE_MAX:
+            souci.append(f"coupé à gauche ({gauche} px)")
+        if droite > BORD_COTE_MAX:
+            souci.append(f"coupé à droite ({droite} px)")
         etat = '✗ ' + ' · '.join(souci) if souci else '✓'
         if souci:
             echecs.append(sprite.name)
         print(f"{etat:4s} {sprite.name:40s} {mesure['taille'][0]}×{mesure['taille'][1]} "
-              f"teintés={mesure['teintes']}")
+              f"teintés={mesure['teintes']} bords=({haut},{gauche},{droite})")
     if echecs:
         print(f"\n{len(echecs)} sprite(s) à reprendre : {', '.join(echecs)}")
         return 1

@@ -34,7 +34,7 @@ const personnages = {
   narrateur: { nom: 'Bab El', fonction: 'La ville qui monte', portrait: null, couleur: '#d7bc86' },
   salem: { nom: 'Salem', fonction: 'Le Sondeur', carte: 'salem', portrait: 'cards/salem.jpg', position: '50% 24%', couleur: '#e6bf76', stand: 'sablier-story/stands/stand-salem.webp', poses: { duel: 'sablier-story/stands/stand-salem-affrontement.webp', choix: 'sablier-story/stands/stand-salem-decision.webp', apres: 'sablier-story/stands/stand-salem-apaisement.webp' } },
   yamina: { nom: 'Yamina', fonction: 'L’Horlogère', carte: 'yamina', portrait: 'cards/yamina.jpg', position: '50% 26%', couleur: '#9fd1cc', stand: 'sablier-story/stands/stand-yamina.webp', poses: { duel: 'sablier-story/stands/stand-yamina-affrontement.webp', choix: 'sablier-story/stands/stand-yamina-decision.webp', apres: 'sablier-story/stands/stand-yamina-apaisement.webp' } },
-  feriel: { nom: 'Fériel', fonction: 'La Souffleuse de verre', carte: 'feriel', portrait: 'cards/feriel.jpg', position: '55% 22%', couleur: '#efb18e', stand: 'sablier-story/stands/stand-feriel.webp', poses: { duel: 'sablier-story/stands/stand-feriel-affrontement.webp', apres: 'sablier-story/stands/stand-feriel-apaisement.webp' } },
+  feriel: { nom: 'Fériel', fonction: 'La Souffleuse de verre', carte: 'feriel', portrait: 'cards/feriel.jpg', position: '55% 15%', couleur: '#efb18e', stand: 'sablier-story/stands/stand-feriel.webp', poses: { duel: 'sablier-story/stands/stand-feriel-affrontement.webp', apres: 'sablier-story/stands/stand-feriel-apaisement.webp' } },
   tarek: { nom: 'Tarek', fonction: 'Le Porteur', carte: 'tarek', portrait: 'cards/tarek.jpg', position: '50% 24%', couleur: '#d4ad79', stand: 'sablier-story/stands/stand-tarek.webp', poses: { duel: 'sablier-story/stands/stand-tarek-affrontement.webp', apres: 'sablier-story/stands/stand-tarek-apaisement.webp' } },
   boualem: { nom: 'Boualem', fonction: 'Le Puisatier', carte: 'boualem', portrait: 'cards/boualem.jpg', position: '50% 22%', couleur: '#9bc7d2', stand: 'sablier-story/stands/stand-boualem.webp', poses: { duel: 'sablier-story/stands/stand-boualem-affrontement.webp', choix: 'sablier-story/stands/stand-boualem-decision.webp', apres: 'sablier-story/stands/stand-boualem-apaisement.webp' } },
   guetteur: { nom: 'Le Guetteur', fonction: 'Vigie de la Chambre', carte: 'guetteur-du-beffroi', portrait: 'cards/guetteur-du-beffroi.jpg', position: '60% 22%', couleur: '#cebb99', stand: 'sablier-story/stands/stand-guetteur.webp', poses: { duel: 'sablier-story/stands/stand-guetteur-affrontement.webp', apres: 'sablier-story/stands/stand-guetteur-apaisement.webp' } },
@@ -135,7 +135,7 @@ export function placerPlateauHistoire(ids = []) {
 }
 
 /** Une seule révision de cache pour toute la famille des sprites du récit. */
-export const STAND_REVISION = 'recit-stands-4';
+export const STAND_REVISION = 'recit-stands-5';
 
 export function personnageHistoire(id) {
   return Object.hasOwn(RPG_STORY_CAST, id) ? RPG_STORY_CAST[id] : RPG_STORY_CAST.narrateur;
