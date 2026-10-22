@@ -1652,6 +1652,134 @@ const BRAISES_ROUE_FEU = Object.freeze([
 ]);
 
 /**
+ * La translation animée d’une carte, telle que son style calculé la donne :
+ * `translate: 0 24px` quand elle entre en jeu (`fx-enter`), `0 -14px` quand
+ * elle lévite (Envol). La boîte rendue par `getBoundingClientRect` l’inclut ;
+ * l’adresse de la carte, elle, ne bouge pas — c’est cette adresse que la
+ * chaîne doit viser.
+ */
+function translationsDeCarte(valeur) {
+  if (!valeur || valeur === 'none') return { x: 0, y: 0 };
+  const parts = String(valeur).trim().split(/\s+/);
+  const enPixels = (texte) => {
+    const nombre = Number.parseFloat(texte);
+    return Number.isFinite(nombre) && !String(texte).includes('%') ? nombre : 0;
+  };
+  return { x: enPixels(parts[0]), y: parts.length > 1 ? enPixels(parts[1]) : 0 };
+}
+
+/**
+ * Le vecteur de l’Abordage : du centre de la carte prise au centre de son
+ * **capteur**, en coordonnées de table. Il se lit sur la table RÉELLE, pas
+ * dans l’instantané d’avant l’action : le sorcier pose sa créature et prend
+ * sa prise dans le même geste, si bien qu’au moment du calcul elle n’a pas
+ * encore d’élément — la chaîne partait alors du centre de sa rangée, en
+ * plein milieu de la table. `null` tant que le capteur n’est pas rendu (on
+ * remesure à l’image suivante).
+ */
+export function vecteurVersCapteur({ table, capteurId, effet }) {
+  if (!table || !capteurId || !effet) return null;
+  const capteur = [...(table.querySelectorAll('[data-entity-id]') ?? [])]
+    .find((carte) => carte.dataset.entityId === String(capteurId));
+  if (!capteur) return null;
+  const tableRect = table.getBoundingClientRect();
+  const rect = capteur.getBoundingClientRect();
+  const translation = translationsDeCarte(window.getComputedStyle?.(capteur)?.translate);
+  const centreX = rect.left + rect.width / 2 - tableRect.left - translation.x;
+  const centreY = rect.top + rect.height / 2 - tableRect.top - translation.y;
+  return {
+    dx: centreX - (effet.left + effet.width / 2),
+    dy: centreY - (effet.top + effet.height / 2),
+  };
+}
+
+/**
+ * Le fantôme d’une carte qui quitte la table : sa dernière image s’efface sur
+ * place — ou, **prise en cale** (Abordage), rejoint son capteur au bout de la
+ * chaîne. `left`/`top` viennent de l’instantané : c’est la place qu’elle
+ * occupait avant de disparaître. Le vecteur de la prise, lui, se **mesure
+ * après le rendu** : le capteur que le sorcier vient de poser n’existait pas
+ * encore quand l’action s’est résolue. L’instantané fournit une première
+ * estimation (`effet.abordage`), corrigée dès la première image.
+ */
+export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
+  const carteDetruite = cardById(effet.cardId);
+  const [vecteur, setVecteur] = useState(effet.abordage ?? null);
+  // Une prise est une prise, même sans vecteur encore mesuré : la carte
+  // attend son capteur au lieu de s’effacer comme une morte.
+  const prise = Boolean(effet.capteurId);
+  useLayoutEffect(() => {
+    if (!effet.capteurId) return undefined;
+    const mesurer = () => {
+      const mesure = vecteurVersCapteur({
+        table: tableRef?.current,
+        capteurId: effet.capteurId,
+        effet,
+      });
+      if (!mesure) return false;
+      // Même adresse que l'estimation ? Pas de rendu pour rien : la chaîne et
+      // la carte sont déjà sur le bon cap.
+      setVecteur((actuel) => (actuel
+        && Math.abs(actuel.dx - mesure.dx) < 0.5
+        && Math.abs(actuel.dy - mesure.dy) < 0.5
+        ? actuel : mesure));
+      return true;
+    };
+    if (mesurer()) return undefined;
+    // Le capteur arrive avec le rendu de l’action (le sorcier pose et prend
+    // dans le même geste). Quelques images d’attente, puis on garde
+    // l’estimation de l’instantané : la carte est déjà en route.
+    const raf = window.requestAnimationFrame ?? ((rappel) => window.setTimeout(rappel, 16));
+    const annuler = window.cancelAnimationFrame ?? window.clearTimeout;
+    let handle = null;
+    let images = 0;
+    const encore = () => {
+      images += 1;
+      if (mesurer() || images >= 12) return;
+      handle = raf(encore);
+    };
+    handle = raf(encore);
+    return () => {
+      if (handle !== null) annuler?.call(window, handle);
+    };
+  }, [effet, tableRef]);
+  return (
+    <Fragment>
+      {prise && vecteur && (
+        <ChaineAbordage effet={{ ...effet, abordage: vecteur }} />
+      )}
+      <div
+        className={`rpg-card-destruction-fx${prise ? ' is-abordage' : ''} ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
+        data-rpg-destroyed-id={effet.entityId}
+        data-destruction-source={effet.bruleeParBraise ? 'braise' : undefined}
+        aria-hidden="true"
+        // L’adieu se retire de lui-même dès la dernière image de son
+        // animation, sans dépendre d’une minuterie. On ignore les animations
+        // des enfants (l’illustration qui brûle) et des pseudo-éléments, qui
+        // se terminent avant la carte.
+        onAnimationEnd={(event) => {
+          if (event.target !== event.currentTarget || event.pseudoElement) return;
+          onTermine?.(effet.effectId);
+        }}
+        style={{
+          ...cardFrameStyle(carteDetruite),
+          left: `${effet.left}px`,
+          top: `${effet.top}px`,
+          width: `${effet.width}px`,
+          height: `${effet.height}px`,
+          '--rpg-fx-rotation': `${effet.angle}rad`,
+          '--rpg-abordage-x': `${vecteur?.dx ?? 0}px`,
+          '--rpg-abordage-y': `${vecteur?.dy ?? 0}px`,
+        }}
+      >
+        <img src={cardArt(effet.cardId)} alt="" />
+        <b>{effet.name}</b>
+      </div>
+    </Fragment>
+  );
+}
+
+/**
  * La chaîne de l’Abordage : des **anneaux métalliques** reliés, lancés depuis
  * le capteur, avec un **grappin** à trois dents à leur extrémité. Elle part
  * **détendue** — les anneaux pendent sur une courbe molle, sous leur poids —
@@ -7442,7 +7570,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const element = capteurId && [...(tableRef.current?.querySelectorAll('[data-entity-id]') ?? [])]
           .find((carte) => carte.dataset.entityId === capteurId);
         // L'IA peut poser et capturer dans la même action, avant le rendu
-        // du capteur : viser alors le centre de sa rangée, jamais une mort.
+        // du capteur : sa rangée n'est qu'une estimation d'attente. Le
+        // fantôme (`FantomeCarteDetruite`) remesure le capteur sur la table
+        // rendue dès la première image — la chaîne part de SA carte, jamais
+        // du milieu de sa rangée.
         const capteurVivant = vivants.get(capteurId);
         const rang = capteurVivant && tableRef.current?.querySelector(
           duel.joueur.creatures.some((carte) => carte.id === capteurId)
@@ -7457,6 +7588,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return ({
         ...entite,
         priseEnCale: Boolean(capteurId),
+        capteurId: capteurId ?? null,
         abordage: capteurId && destination ? {
           dx: destination.x - entite.left - entite.width / 2,
           dy: destination.y - entite.top - entite.height / 2,
@@ -10137,41 +10269,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           }) : null}
         </div>
 
-        {cartesEnDestruction.map((effet) => {
-          const carteDetruite = cardById(effet.cardId);
-          return (
-            <Fragment key={effet.effectId}>
-              {effet.abordage && <ChaineAbordage effet={effet} />}
-            <div
-              className={`rpg-card-destruction-fx${effet.abordage ? ' is-abordage' : ''} ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
-              data-rpg-destroyed-id={effet.entityId}
-              data-destruction-source={effet.bruleeParBraise ? 'braise' : undefined}
-              aria-hidden="true"
-              // L'adieu se retire de lui-même dès la dernière image de son
-              // animation, sans dépendre d'une minuterie. On ignore les
-              // animations des enfants (l'illustration qui brûle) et des
-              // pseudo-éléments, qui se terminent avant la carte.
-              onAnimationEnd={(event) => {
-                if (event.target !== event.currentTarget || event.pseudoElement) return;
-                setCartesEnDestruction((current) => current.filter((autre) => autre.effectId !== effet.effectId));
-              }}
-              style={{
-                ...cardFrameStyle(carteDetruite),
-                left: `${effet.left}px`,
-                top: `${effet.top}px`,
-                width: `${effet.width}px`,
-                height: `${effet.height}px`,
-                '--rpg-fx-rotation': `${effet.angle}rad`,
-                '--rpg-abordage-x': `${effet.abordage?.dx ?? 0}px`,
-                '--rpg-abordage-y': `${effet.abordage?.dy ?? 0}px`,
-              }}
-            >
-              <img src={cardArt(effet.cardId)} alt="" />
-              <b>{effet.name}</b>
-            </div>
-            </Fragment>
-          );
-        })}
+        {cartesEnDestruction.map((effet) => (
+          <FantomeCarteDetruite
+            key={effet.effectId}
+            effet={effet}
+            tableRef={tableRef}
+            onTermine={(effectId) => setCartesEnDestruction((current) => current
+              .filter((autre) => autre.effectId !== effectId))}
+          />
+        ))}
 
         {/* Braise : la roue de feu tourne autour de la créature brûlée. */}
         {rouesFeu.map((effet) => (
