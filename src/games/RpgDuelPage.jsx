@@ -204,6 +204,7 @@ import {
   cardColors,
   cardHybridGradient,
   terrainManaColors,
+  RPG_ELEMENTS,
   RPG_DECK_JOUEUR_BASE,
   RPG_DECK_SORCIER_BASE,
   RPG_DECKS,
@@ -511,38 +512,134 @@ function WizardManaCounters({ mana }) {
   );
 }
 
-export function FluxManaTrack({ camp, cote }) {
+export function calculerApercuDepenseMana(camp, carte) {
+  if (!camp || !carte) return null;
+  const cout = Math.max(0, Number(carte.cost) || 0);
+  if (cout <= 0 || !rpgPeutPayer(camp, carte)) return null;
+  const dispo = {};
+  const depense = {};
+  for (const couleur of RPG_ELEMENTS) {
+    dispo[couleur] = Math.max(0, Math.floor(Number(camp.mana?.[couleur]) || 0));
+    depense[couleur] = 0;
+  }
+  let reste = cout;
+  const coutCouleur = cardColorCost(carte);
+  for (const couleur of RPG_ELEMENTS) {
+    const requis = Math.max(0, Number(coutCouleur[couleur]) || 0);
+    if (!requis) continue;
+    const pris = Math.min(dispo[couleur], requis);
+    if (pris < requis) return null;
+    dispo[couleur] -= pris;
+    depense[couleur] += pris;
+    reste -= pris;
+  }
+  const prioriteGenerique = [
+    ...RPG_ELEMENTS.filter((couleur) => !coutCouleur[couleur]),
+    ...RPG_ELEMENTS.filter((couleur) => coutCouleur[couleur]),
+  ];
+  for (const couleur of prioriteGenerique) {
+    if (reste <= 0) break;
+    const pris = Math.min(dispo[couleur], reste);
+    dispo[couleur] -= pris;
+    depense[couleur] += pris;
+    reste -= pris;
+  }
+  return reste === 0 ? depense : null;
+}
+
+export function calculerDeficitMana(camp, carte, slots) {
+  if (!camp || !carte || !Array.isArray(slots)) return null;
+  const cout = Math.max(0, Number(carte.cost) || 0);
+  if (cout <= 0 || rpgPeutPayer(camp, carte)) return null;
+  const coutCouleur = cardColorCost(carte);
+  const manqueParCouleur = {};
+  let totalManqueCouleur = 0;
+  let totalDispo = 0;
+  for (const couleur of RPG_ELEMENTS) {
+    const requis = Math.max(0, Number(coutCouleur[couleur]) || 0);
+    const dispo = Math.max(0, Math.floor(Number(camp.mana?.[couleur]) || 0));
+    totalDispo += dispo;
+    const manque = Math.max(0, requis - dispo);
+    manqueParCouleur[couleur] = manque;
+    totalManqueCouleur += manque;
+  }
+  let manqueGenerique = Math.max(0, (cout - totalDispo) - totalManqueCouleur);
+  const indicesDeficit = new Set();
+  // 1. Sources de la couleur requise déjà dépensées ce tour
+  for (const slot of slots) {
+    if (slot.etat === 'depense' && slot.couleur && manqueParCouleur[slot.couleur] > 0) {
+      indicesDeficit.add(slot.index);
+      manqueParCouleur[slot.couleur] -= 1;
+    }
+  }
+  // 2. Déficit générique sur d'autres sources dépensées ce tour
+  for (const slot of slots) {
+    if (manqueGenerique <= 0) break;
+    if (slot.etat === 'depense' && !indicesDeficit.has(slot.index)) {
+      indicesDeficit.add(slot.index);
+      manqueGenerique -= 1;
+    }
+  }
+  // 3. Sources non encore acquises (emplacements vides) pour les pips ou le coût restant
+  let manqueNonAcquis = Object.values(manqueParCouleur).reduce((a, b) => a + b, 0) + manqueGenerique;
+  for (const slot of slots) {
+    if (manqueNonAcquis <= 0) break;
+    if (slot.etat === 'vide' && !indicesDeficit.has(slot.index)) {
+      indicesDeficit.add(slot.index);
+      manqueNonAcquis -= 1;
+    }
+  }
+  return indicesDeficit.size > 0 ? indicesDeficit : null;
+}
+
+export function FluxManaTrack({ camp, cote, carteApercu = null }) {
   const capacite = camp.manaMax ?? {};
   const maximum = Object.values(capacite).reduce((total, valeur) => total + valeur, 0);
   const disponible = Object.values(camp.mana).reduce((total, valeur) => total + valeur, 0);
+  const depenseApercu = cote === 'joueur' ? calculerApercuDepenseMana(camp, carteApercu) : null;
+  const totalApercu = depenseApercu
+    ? Object.values(depenseApercu).reduce((total, valeur) => total + valeur, 0)
+    : 0;
   // Dix orbes fixes, dans l'ordre d'acquisition. Un mana dépensé s'assombrit
   // mais garde sa couleur ; il se rallume quand la réserve se recharge.
   const restants = { ...camp.mana };
-  const slots = Array.from({ length: RPG_MANA_ESSAI_MAX }, (_, index) => {
+  const slotsBase = Array.from({ length: RPG_MANA_ESSAI_MAX }, (_, index) => {
     const couleur = camp.manaSources?.[index] ?? null;
     const allumee = Boolean(couleur && restants[couleur] > 0);
+    const apercuCout = Boolean(allumee && depenseApercu && restants[couleur] <= (depenseApercu[couleur] ?? 0));
     if (allumee) restants[couleur] -= 1;
-    return { index, couleur, etat: !couleur ? 'vide' : allumee ? 'disponible' : 'depense' };
+    return { index, couleur, etat: !couleur ? 'vide' : allumee ? 'disponible' : 'depense', apercuCout };
   });
+  const indicesDeficit = cote === 'joueur' && !depenseApercu
+    ? calculerDeficitMana(camp, carteApercu, slotsBase)
+    : null;
+  const slots = slotsBase.map((slot) => ({
+    ...slot,
+    deficitCout: Boolean(indicesDeficit?.has(slot.index)),
+  }));
   return (
     <div
       className={`rpg-terrains rpg-terrains--${cote} rpg-flux-track rpg-flux-track--${cote}`}
       data-tutorial-target={cote === 'joueur' ? 'mana-track' : undefined}
       data-mana-capacite={maximum}
       data-mana-disponible={disponible}
+      data-mana-apercu-cout={totalApercu > 0 ? totalApercu : undefined}
+      data-mana-deficit-cout={indicesDeficit ? indicesDeficit.size : undefined}
       role="status"
       aria-label={`${cote === 'joueur' ? 'Votre mana' : 'Mana du sorcier'} : ${disponible} disponible sur ${maximum} acquis, maximum ${RPG_MANA_ESSAI_MAX}. ${Object.entries(capacite).filter(([, n]) => n > 0).map(([couleur, n]) => `${couleurLabel(couleur)} ${camp.mana[couleur] ?? 0} sur ${n}`).join(', ')}`}
     >
       <span className="rpg-flux-track__bar">
         <b className="rpg-flux-track__reserve" aria-hidden="true">{disponible}<span>/</span>{maximum}</b>
         <span className="rpg-flux-track__slots" aria-hidden="true">
-          {slots.map(({ index, couleur, etat }) => (
+          {slots.map(({ index, couleur, etat, apercuCout, deficitCout }) => (
             <i
               key={index}
-              className={`rpg-flux-track__slot${couleur ? ` rpg-flux-track__slot--${couleur}` : ''} ${etat === 'vide' ? 'is-empty' : etat === 'disponible' ? 'is-lit' : 'is-spent'}`}
+              className={`rpg-flux-track__slot${couleur ? ` rpg-flux-track__slot--${couleur}` : ''} ${etat === 'vide' ? 'is-empty' : etat === 'disponible' ? 'is-lit' : 'is-spent'}${apercuCout ? ' is-cost-preview' : ''}${deficitCout ? ' is-deficit-preview' : ''}`}
               data-mana-slot={index + 1}
               data-mana-etat={etat}
-              title={couleur ? `${couleurLabel(couleur)} — ${etat === 'disponible' ? 'disponible' : 'dépensé'}` : `Mana ${index + 1} non acquis`}
+              data-mana-preview={apercuCout ? 'true' : undefined}
+              data-mana-deficit={deficitCout ? 'true' : undefined}
+              title={couleur ? `${couleurLabel(couleur)} — ${apercuCout ? 'sera dépensé pour cette carte' : deficitCout ? 'mana manquant pour cette carte' : etat === 'disponible' ? 'disponible' : 'dépensé'}` : `Mana ${index + 1} non acquis${deficitCout ? ' (requis pour cette carte)' : ''}`}
             >{couleur ? <ElementEmblem element={couleur} /> : '◇'}</i>
           ))}
         </span>
@@ -2361,8 +2458,9 @@ function BlockerArrows({ tableRef, assignments }) {
  *
  * Rien au doigt : là il n'y a pas de curseur, et le reflet n'a personne à suivre.
  */
-function useLumiereCartes() {
+function useLumiereCartes(actif = true) {
   useEffect(() => {
+    if (!actif) return undefined;
     if (!window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches) return undefined;
     const racine = document.documentElement;
     let frame = 0;
@@ -2389,7 +2487,7 @@ function useLumiereCartes() {
       racine.style.removeProperty('--rpg-foil-cx');
       racine.style.removeProperty('--rpg-foil-cy');
     };
-  }, []);
+  }, [actif]);
 }
 
 export function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null, prisonniere = null }) {
@@ -4320,7 +4418,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const pvpSeqAppliqueRef = useRef(null);
   const pvpHorlogeExpireeRef = useRef(null);
   const [confirmerAbandonPvp, setConfirmerAbandonPvp] = useState(false);
-  useLumiereCartes();
+  const [ecran, setEcran] = useState(() => (pvp ? 'partie' : 'jouer'));
+  useLumiereCartes(ecran !== 'partie');
   const authContext = useContext(AuthContext);
   const authUser = authContext?.user ?? null;
   const desktopMode = typeof window !== 'undefined' && Boolean(window.letsPlayDesktop);
@@ -4341,8 +4440,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .catch(() => {});
     return () => { vivant = false; };
   }, [authUser, authContext?.isDemo]);
-
-  const [ecran, setEcran] = useState(() => (pvp ? 'partie' : 'jouer'));
   const [tutorielActif, setTutorielActif] = useState(false);
   const [tutorielId, setTutorielId] = useState(null);
   const [etapeTutorielId, setEtapeTutorielId] = useState(null);
@@ -5931,6 +6028,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const minuteurs = minuteursSurvolRef.current;
     const actuel = apercuSurvolRef.current;
     const entiteId = event.currentTarget.dataset.entityId ?? null;
+    const dansMain = Boolean(event.currentTarget.classList?.contains('rpg-hand__card'));
     const furie = etatFurieDepuisHote(event.currentTarget);
     const effetsEpuises = effetsEpuisesDepuisHote(event.currentTarget);
     // Deux exemplaires de la même carte ne partagent pas leur preview : une
@@ -5949,6 +6047,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (memeCarte) {
       setApercuSurvol((courant) => (courant?.carteId === carte.id && (courant.entiteId ?? null) === entiteId ? {
         ...courant,
+        dansMain,
         armesIds: armes,
         furie,
         effetsEpuises,
@@ -5973,6 +6072,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setApercuSurvol({
       carteId: carte.id,
       entiteId,
+      dansMain,
       armesIds: armes,
       furie,
       effetsEpuises,
@@ -6055,7 +6155,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     };
     window.addEventListener('pointermove', suivre, { passive: true });
     return () => window.removeEventListener('pointermove', suivre);
-  });
+  }, []);
 
   // Reposé avant peinture : dès que le panneau de l'aperçu est rendu, sa
   // boîte réelle remplace la première pose et le colle à la carte survolée —
@@ -6226,6 +6326,92 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     window.addEventListener('keydown', surTouche);
     return () => window.removeEventListener('keydown', surTouche);
   }, [ecran, tourHistoireId, plateauId]);
+
+  // Raccourcis clavier PC en duel (façon MTG Arena / Runeterra) :
+  // - 1 / 2 / 3 (ou Digit1..3 sur AZERTY) : choisir la couleur de mana en début de tour
+  // - Espace : action principale contextuelle (Fin du tour, Confirmer l'attaque, Résoudre le combat, Laisser passer)
+  // - A : Attaquer avec tous
+  // - Z ou Ctrl/Cmd+Z : Annuler la dernière action ou Annuler l'attaque
+  useEffect(() => {
+    if (ecran !== 'partie' || viewport.portrait) return undefined;
+    const surRaccourciDuel = (event) => {
+      if (event.defaultPrevented || event.repeat || event.altKey) return;
+      if (vientDunChampDeSaisie(event.target)) return;
+      const coque = shellRef.current;
+      if (!coque || coque.getAttribute('data-scene') !== 'duel') return;
+      if (apercuAppui || apercuCatalogue || navMenuOuvert || navParametresOuvert || messagerieVoletOuvert) return;
+
+      const touche = event.key?.toLowerCase() ?? '';
+      const code = event.code ?? '';
+
+      // Ctrl+Z / Cmd+Z ou Z seul : Annuler la dernière action ou Annuler l'attaque
+      if (touche === 'z') {
+        const btnUndo = coque.querySelector('.rpg-btn--undo:not(:disabled), .rpg-btn--cancel-attack:not(:disabled)');
+        if (btnUndo) {
+          event.preventDefault();
+          btnUndo.click();
+        }
+        return;
+      }
+      if (event.ctrlKey || event.metaKey) return;
+
+      // Choix de mana en début de tour : touches 1, 2, 3 (QWERTY & AZERTY via code)
+      const optionsMana = coque.querySelectorAll('.rpg-flux-choix__option:not(:disabled)');
+      const indexChiffre = (touche === '1' || code === 'Digit1' || code === 'Numpad1') ? 0
+        : (touche === '2' || code === 'Digit2' || code === 'Numpad2') ? 1
+          : (touche === '3' || code === 'Digit3' || code === 'Numpad3') ? 2
+            : (touche === '4' || code === 'Digit4' || code === 'Numpad4') ? 3
+              : (touche === '5' || code === 'Digit5' || code === 'Numpad5') ? 4
+                : -1;
+      if (optionsMana.length > 0) {
+        if (indexChiffre >= 0 && indexChiffre < optionsMana.length) {
+          event.preventDefault();
+          optionsMana[indexChiffre].click();
+        }
+        return;
+      }
+
+      // Touches 1 à 5 hors choix de mana : jouer ou sélectionner une carte jouable de la main
+      if (indexChiffre >= 0) {
+        const cartesMain = coque.querySelectorAll('.rpg-hand .rpg-hand__card');
+        const carteMain = cartesMain[indexChiffre];
+        if (carteMain && !carteMain.disabled && carteMain.classList.contains('is-playable')) {
+          event.preventDefault();
+          carteMain.click();
+        }
+        return;
+      }
+
+      // A : Attaquer avec tous
+      if (touche === 'a') {
+        const btnAttaqueTous = coque.querySelector('.rpg-btn--attaque-tous:not(:disabled)');
+        if (btnAttaqueTous) {
+          event.preventDefault();
+          btnAttaqueTous.click();
+        }
+        return;
+      }
+
+      // Espace : commande principale du tour (hors focus sur un bouton/lien pour ne pas doubler le clic natif)
+      if (code === 'Space' || event.key === ' ') {
+        if (event.target?.closest?.('button, a, [role="button"]')) return;
+        const btnPrincipal = coque.querySelector([
+          '.rpg-mulligan__keep:not(:disabled)',
+          '.rpg-btn--discard-confirm:not(:disabled)',
+          '.rpg-annonce-sort__pass:not(:disabled)',
+          '.rpg-btn--confirmer-attaque:not(:disabled)',
+          '.rpg-btn--resolve-combat:not(:disabled)',
+          '.rpg-btn--endturn:not(:disabled)',
+        ].join(', '));
+        if (btnPrincipal) {
+          event.preventDefault();
+          btnPrincipal.click();
+        }
+      }
+    };
+    window.addEventListener('keydown', surRaccourciDuel);
+    return () => window.removeEventListener('keydown', surRaccourciDuel);
+  }, [ecran, viewport.portrait, apercuAppui, apercuCatalogue, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert]);
 
   const demarrerEtage = (etageId, { campagne = false } = {}) => {
     if (!etageEstDebloque(progressionHistoireRef.current, etageId)) return;
@@ -6683,6 +6869,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             ? 'debut'
             : duel.phase ?? 'principale';
   const prets = duel.joueur.creatures.filter((e) => rpgPeutAttaquer(e));
+  const calculerPuissanceAssaut = (entites) => {
+    if (!entites.length) return 0;
+    const bonusBanniere = entites.reduce((somme, entite) => somme + Math.max(0, Number(cardById(entite.carteId)?.banniere) || 0), 0);
+    return entites.reduce((somme, entite) => {
+      const carte = cardById(entite.carteId);
+      const estSamourai = bonusBanniere > 0 && cardResonanceGroup(carte) === 'samourai';
+      return somme + Math.max(0, (Number(entite.atk) || 0) + (estSamourai ? bonusBanniere : 0));
+    }, 0);
+  };
+  const entitesAttaquantes = duel.joueur.creatures.filter((e) => attaquants.includes(e.id));
+  const puissancePrets = calculerPuissanceAssaut(prets);
+  const puissanceAttaquants = calculerPuissanceAssaut(entitesAttaquantes);
+  const vieTotaleSorcier = Math.max(0, (duel.sorcier.pv ?? 0) + (duel.sorcier.bouclier ?? 0));
+  const menaceLetaleActive = Boolean(monTour && phase && !combatEntrant && puissanceAttaquants > 0 && puissanceAttaquants >= vieTotaleSorcier);
   const carteCiblee = cibleEnCours ? cardById(cibleEnCours) : null;
   // L'Abordage (set Lettres de Marque) : la créature (ou le porteur du
   // Grappin) vient d'accoster et attend sa prize — la table ne doit allumer
@@ -9613,6 +9813,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
           data-tutorial-target={cibleTutoriel('opponent-health') ? 'opponent-health' : undefined}
           data-soin={soinSorcier ? soinSorcier.montant : undefined}
+          data-menace-letale={menaceLetaleActive ? 'true' : undefined}
           title={modePvp ? nomSorcierAdverse : 'Le sorcier adverse'}>
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={portraitSorcierAdverse} data-personnage={personnageSorcier ?? undefined} alt="" /></span>
           <span className="rpg-wizard-plate__enemy-name">{nomSorcierAdverse}</span>
@@ -9951,7 +10152,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         )}
 
         {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
-          <FluxManaTrack camp={duel.joueur} cote="joueur" />
+          <FluxManaTrack
+            camp={duel.joueur}
+            cote="joueur"
+            carteApercu={cibleEnCours
+              ? cardById(cibleEnCours)
+              : confirmationSort
+                ? cardById(confirmationSort.carteId)
+                : apercuSurvol?.dansMain
+                  ? cardById(apercuSurvol.carteId)
+                  : null}
+          />
         ) : (
         <div className="rpg-terrains rpg-terrains--joueur" aria-label="Vos terrains : clic manuel pour produire du mana, ou engagement automatique au paiement">
           {groupTerrainStacks(duel.joueur.terrains).map((groupe) => {
@@ -10074,10 +10285,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   <>
                     <button type="button" className="rpg-btn rpg-btn--attaque rpg-btn--confirmer-attaque"
                       data-tutorial-target={cibleTutoriel('confirm-attack') ? 'confirm-attack' : undefined}
+                      data-key-hint="Espace"
+                      data-attaque-totale={puissanceAttaquants > 0 ? puissanceAttaquants : undefined}
+                      data-attaque-letale={menaceLetaleActive ? 'true' : undefined}
+                      title={puissanceAttaquants > 0 ? `Puissance totale : ${puissanceAttaquants} ATQ${menaceLetaleActive ? ' (LÉTAL)' : ''} · Raccourci : Espace` : 'Raccourci clavier : Espace'}
                       disabled={!attaquants.length} onClick={() => lancerAttaque()}>
                       <CombatActionIcon type="confirm" /> Confirmer l’attaque ({attaquants.length})
                     </button>
-                    <button type="button" className="rpg-btn rpg-btn--ghost rpg-btn--cancel-attack" onClick={annulerAttaque}>
+                    <button type="button" className="rpg-btn rpg-btn--ghost rpg-btn--cancel-attack"
+                      data-key-hint="Z"
+                      title="Raccourci clavier : Z"
+                      onClick={annulerAttaque}>
                       Annuler l’attaque
                     </button>
                   </>
@@ -10087,13 +10305,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     type="button"
                     className="rpg-btn rpg-btn--attaque rpg-btn--resolve-combat"
                     data-tutorial-target={cibleTutoriel('resolve-combat') ? 'resolve-combat' : undefined}
+                    data-key-hint="Espace"
                     onClick={resoudreCombat}
                     disabled={!repartitionValide || !blocageForceValide || !provocationValide}
                     title={!blocageForceValide
                       ? 'Blocage forcé : assignez chaque créature marquée à un attaquant qu’elle peut légalement bloquer'
                       : !provocationValide
                         ? 'Provocation : assignez au moins un bloqueur légal à chaque attaquant qui peut être bloqué'
-                        : undefined}
+                        : 'Raccourci clavier : Espace'}
                   >
                     {combatEntrant.coteAttaquant === 'joueur' ? '✓ Accepter les blocages' : '⚔ Résoudre le combat'}
                   </button>
@@ -10294,6 +10513,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     type="button"
                     className={`rpg-btn rpg-btn--attaque rpg-btn--attaque-tous${attaqueJouee ? ' is-jouee' : ''}`}
                     data-tutorial-target={cibleTutoriel('attack-all') ? 'attack-all' : undefined}
+                    data-key-hint={attaqueJouee ? undefined : 'A'}
+                    data-attaque-totale={!attaqueJouee && puissancePrets > 0 ? puissancePrets : undefined}
+                    title={attaqueJouee ? undefined : `Puissance prête : ${puissancePrets} ATQ · Raccourci : A`}
                     disabled={!monTour || attaqueJouee || !prets.length || Boolean(combatEntrant) || Boolean(sacrificeEnCours) || defausseOuverte}
                     onClick={declarerAttaqueAvecTous}
                   >
@@ -10305,6 +10527,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 type="button"
                 className="rpg-btn rpg-btn--undo"
                 aria-label="Annuler la dernière action"
+                data-key-hint="Z"
+                title="Raccourci clavier : Z ou Ctrl+Z"
                 onClick={annulerDerniereAction}
               >
                 ↶ Annuler la dernière action
@@ -10312,6 +10536,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             )}
             <button type="button" className="rpg-btn rpg-btn--endturn"
               data-tutorial-target={cibleTutoriel('end-turn') ? 'end-turn' : undefined}
+              data-key-hint="Espace"
+              title="Raccourci clavier : Espace"
               onClick={finDuTour}
               disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || Boolean(sacrificeEnCours) || mulliganOuvert || choixManaEssaiOuvert}>
               ⧗ Fin du tour
@@ -10416,6 +10642,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-draw-token={piocheEnCours?.token}
                   data-card-id={carteId}
                   data-hand-index={i}
+                  data-hand-key={position < 5 ? String(position + 1) : undefined}
                   data-tutorial-target={tutorielActif && etapeTutorielId === 'terrain' && carteId === 'desert'
                     ? 'terrain-card'
                     : tutorielActif && etapeTutorielId === 'creature' && carteId === 'tislit-des-aures'
@@ -10624,6 +10851,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     className={`rpg-flux-choix__option rpg-flux-choix__option--${couleur}`}
                     data-mana-acquis={acquis}
                     data-mana-en-main={enMain}
+                    data-key-shortcut={String(index + 1)}
+                    title={`Choisir ${couleurLabel(couleur)} (raccourci : ${index + 1})`}
                     onClick={() => choisirNouveauManaEssai(couleur)}
                     aria-label={`Choisir le mana ${couleurLabel(couleur)} (${acquis} déjà acquis, ${enMain} carte${enMain > 1 ? 's' : ''} en main)`}
                   >
