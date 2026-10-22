@@ -149,8 +149,8 @@ function peutBloquerAttaquant(bloqueur, attaquant, frappePrecoce = false) {
 }
 
 /**
- * Dégâts effectifs après Esquive : une attaque a 25 % de chance d'être
- * entièrement esquivée, soit 75 % de ses dégâts en espérance. Les magies et
+ * Dégâts effectifs après Esquive : une attaque a 30 % de chance d'être
+ * entièrement esquivée, soit 70 % de ses dégâts en espérance. Les magies et
  * les capacités ne s'esquivent pas.
  */
 export function degatsApresEsquive(entite, montant, sourceType = 'attaque') {

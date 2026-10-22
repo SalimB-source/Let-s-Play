@@ -93,7 +93,7 @@ défend — elle esquive parfois le coup entier). L’Honneur 2 est toujours rec
 par l’helper `carte()`.
 
 *Révision (demande 24) :* l’Esquive ne retire plus 1 dégât par coup, elle donne
-**25 % de chance d’esquiver une attaque** — le coup ne porte pas du tout, et les
+**30 % de chance d’esquiver une attaque** — le coup ne porte pas du tout, et les
 magies ne s’esquivent jamais. Le champ est un booléen, sans chiffre.
 
 ```js
@@ -101,7 +101,7 @@ magies ne s’esquivent jamais. Le champ est un booléen, sans chiffre.
     id: 'onna-musha-des-cendres', name: 'Onna-musha des cendres',
     cost: 4, atk: 3, def: 3, rarity: 'rare', esquive: true,
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
-    text: 'Esquive — 25 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
+    text: 'Esquive — 30 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
 ```
@@ -134,7 +134,7 @@ imprimé.
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
     effet: { type: 'arme', cible: 'creature-amie', atk: 4, def: -2, coupRapide: true },
-    text: 'Arme — Le porteur gagne +4/-2 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
+    text: 'Arme — Le porteur gagne +4/-2 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix (30 % de chances de rater ; 100 % de chances de toucher s’il attaque l’adversaire) — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
 ```

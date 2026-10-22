@@ -141,7 +141,8 @@ test('les decks du catalogue suivent leur quota d’armes et leur plafond de myt
     const armes = [...new Set(deck.cardIds.filter((id) => armeById(id)))].sort();
     assert.deepEqual(armes, armesParDeck[deck.id].sort(), `${deck.name} respecte sa sélection d’armes`);
     const mythiques = [...new Set(deck.cardIds.filter((id) => cardById(id).rarity === 'mythique'))];
-    assert.equal(mythiques.length, deck.id === 'serment-des-neuf-hivers' ? 2 : 1,
+    assert.equal(mythiques.length,
+      ['serment-des-neuf-hivers', 'serment-du-soleil-rouge'].includes(deck.id) ? 2 : 1,
       `${deck.name} respecte son nombre de mythiques distinctes`);
   }
 

@@ -80,7 +80,7 @@ avec `rpgCardPower.js` (valeur ÷ coût).
   art: 'berserk-des-trois-hivers',
   furie: 2,
   coupRapide: true,
-  text: 'Furie 2 — La première fois qu’il est blessé et survit, le Berserk gagne +2/+2. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+  text: 'Furie 2 — La première fois qu’il est blessé et survit, le Berserk gagne +2/+2. Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
   flavor: 'Trois hivers de rage tenus dans un seul bras — et le sang ne fait que l’attiser.',
 }
 ```

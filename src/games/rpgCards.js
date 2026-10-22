@@ -650,7 +650,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'djinn-de-foudre',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Coup rapide — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Rapidité. Coup rapide — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
@@ -1057,7 +1057,7 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Coup rapide — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Rapidité. Coup rapide — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'Le verre se souvient du feu.',
   },
   {
@@ -1861,7 +1861,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 0, def: 3 },
     donne: { esquive: true },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque).',
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive (30 % de chance d’esquiver une attaque).',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {
@@ -1874,7 +1874,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { coupRapide: true },
-    text: 'Arme — Le porteur gagne +2/+0 et Coup rapide (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher).',
+    text: 'Arme — Le porteur gagne +2/+0 et Coup rapide (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 30 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher).',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -1965,7 +1965,7 @@ export const RPG_ARME_CARDS = [
     donne: { coupRapide: true },
     porteurBlesseCreature: { type: 'pioche', amount: 1 },
     porteurBlesseSorcier: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },
-    text: 'Arme — Le porteur gagne +3/+2 et Coup rapide (25 % de chances de rater contre une créature, 100 % contre l’adversaire). Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
+    text: 'Arme — Le porteur gagne +3/+2 et Coup rapide (30 % de chances de rater contre une créature, 100 % contre l’adversaire). Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
     flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
 ];
@@ -2268,7 +2268,7 @@ export const RPG_DECKS = [
     boxArt: 'kagutsuchi-flamme-originelle',
     archetype: 'Braise · samouraïs et yōkai',
     affrontement: 'Affrontez le Serment du Soleil rouge.',
-    description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Samouraï du torii, le Tengu, le Kenshi et Kagutsuchi font résonner les Samouraïs, et le Daimyō lève des jetons qui grandissent en attaquant. Kagutsuchi est l’unique mythique du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
+    description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Samouraï du torii, le Tengu, le Kenshi et Kagutsuchi font résonner les Samouraïs, et le Daimyō mythique lève des jetons qui grandissent en attaquant. Kagutsuchi et le Daimyō sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
     cardIds: RPG_DECK_SOLEIL_ROUGE_BASE,
   },
   {
@@ -2295,7 +2295,7 @@ export const RPG_DECKS = [
     boxArt: 'la-barbe-rousse',
     archetype: 'Sable + Eau · l’Abordage, la Cale, la Cargaison',
     affrontement: 'Affrontez les lettres de marque de la Régence.',
-    description: 'Deck hybride Sable + Eau de l’âge de la course : à l’arrivée en jeu, l’Abordage prend la créature adverse ciblée de coût inférieur au sien en cale (Raïs de la galiote, Cotre de course, La Barbe-Rousse — et la Lettre de marque arme toutes les arrivées du tour) ; la cale ne se rachète pas, il faut détruire ou faire quitter la table au capteur pour récupérer sa créature, et la Cargaison du Galion paie l’assurance du convoi. La Mousse des galiotes hisse la voile dès le premier mana ; le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque deux Corsaires. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste et le Brûlot — la seule flamme du set, devenu Braise — s’ouvrent dans les boosters.',
+    description: 'Deck hybride Sable + Eau de l’âge de la course : à l’arrivée en jeu, l’Abordage prend la créature adverse ciblée de coût inférieur au sien en cale (Raïs de la galiote, Cotre de course, La Barbe-Rousse — et la Lettre de marque arme toutes les arrivées du tour) ; la cale ne se rachète pas, il faut détruire ou faire quitter la table au capteur pour récupérer sa créature, et la Cargaison du Galion paie l’assurance du convoi. La Mousse des galiotes hisse la voile dès le premier mana ; le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque un Corsaire. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste et le Brûlot — la seule flamme du set, devenu Braise — s’ouvrent dans les boosters.',
     cardIds: RPG_DECK_LETTRES_DE_MARQUE_BASE,
   },
 ];

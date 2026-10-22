@@ -74,7 +74,7 @@ test('le deck Soleil rouge est valide et concentre sa signature culturelle', () 
   assert.ok(deck.cardIds.every((id) => cardColors(id).every((couleur) => couleur === 'braise')));
 });
 
-test('le starter met en avant Honneur, Résonance samouraï et la Bannière sans offrir les autres mythiques', () => {
+test('le starter met en avant Honneur, Résonance samouraï et la Bannière avec le Daimyō et Kagutsuchi mythiques', () => {
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   const ids = new Set(deck.cardIds);
   for (const id of SAMOURAIS_AJOUTES) assert.equal(ids.has(id), true, `${id} anime le boîtier`);
@@ -82,10 +82,10 @@ test('le starter met en avant Honneur, Résonance samouraï et la Bannière sans
     assert.equal(ids.has(id), true, `${id} porte une mécanique du set`);
   }
   assert.deepEqual([...new Set(deck.cardIds.filter((id) => cardById(id).rarity === 'mythique'))],
-    ['kagutsuchi-flamme-originelle']);
+    ['daimyo-du-soleil-rouge', 'kagutsuchi-flamme-originelle']);
 
   for (const carte of RPG_SOLEIL_ROUGE_CARDS.filter((candidate) => candidate.rarity === 'mythique'
-    && candidate.id !== 'kagutsuchi-flamme-originelle')) {
+    && !['daimyo-du-soleil-rouge', 'kagutsuchi-flamme-originelle'].includes(candidate.id))) {
     assert.equal(ids.has(carte.id), false, `${carte.id} reste hors du deck de départ`);
     assert.equal(COLLECTION_DEPART.includes(carte.id), false, `${carte.id} n’est pas dans la dotation`);
     assert.ok(carteReveleePar(carte.id), `${carte.id} est accessible dans un booster après sa révélation`);
@@ -538,7 +538,7 @@ test('l’IA choisit une cible à exiler et l’exil retire les auras sans décl
 
 test('le Daimyō du Soleil rouge est un 3/3 à 5 qui lève deux Samouraïs 1/1 en arrivant', () => {
   const carte = cardById('daimyo-du-soleil-rouge');
-  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.rarity, carte.honneur], [5, 3, 3, 'rare', 1]);
+  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.rarity, carte.honneur], [5, 3, 3, 'mythique', 1]);
   assert.deepEqual(carte.arrivee, { type: 'jetons', jeton: 'samourai-du-daimyo', nombre: 2 });
   assert.deepEqual(carte.banniere, { tribu: 'samourai', atk: 1, def: 1 });
   assert.match(carte.text, /deux créatures-jetons « Samouraï » 1\/1/);

@@ -98,7 +98,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
     esquive: true,
-    text: 'Esquive — 25 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
+    text: 'Esquive — 30 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({
@@ -124,10 +124,10 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     coupRapide: true,
     resonance: 1,
     resonanceTribu: 'samourai',
-    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Résonance samouraï — Tant que Kagutsuchi est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1.',
+    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Résonance samouraï — Tant que Kagutsuchi est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
-  }),  // Trois samouraïs de plus : une recrue commune, une inhabituelle et un
-  // daimyō rare. Leur type imprimé suffit à recevoir la Résonance samouraï.
+  }),  // Trois samouraïs de plus : une recrue commune, un soutien rare et un
+  // daimyō mythique. Leur type imprimé suffit à recevoir la Résonance samouraï.
   carte({
     id: 'hatamoto-des-cendres', name: 'Hatamoto des cendres',
     cost: 2, atk: 2, def: 2, rarity: 'commune',
@@ -148,7 +148,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'daimyo-du-soleil-rouge', name: 'Daimyō du Soleil rouge',
-    cost: 5, atk: 3, def: 3, rarity: 'rare',
+    cost: 5, atk: 3, def: 3, rarity: 'mythique',
     typeLine: 'Créature — Humain · Samouraï',
     // Il lève ses deux Samouraïs en arrivant, puis grandit chaque attaque de son
     // camp : la bannière ne se lit que sur les créatures de type Samouraï.
@@ -167,7 +167,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
     effet: { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true },
-    text: 'Arme — Le porteur gagne +1/+0 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix (25 % de chances de rater) — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement (100 % de chances de toucher l’adversaire). Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu.',
+    text: 'Arme — Le porteur gagne +1/+0 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix (30 % de chances de rater) — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement (100 % de chances de toucher l’adversaire). Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({

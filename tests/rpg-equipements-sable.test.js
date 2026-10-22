@@ -117,15 +117,15 @@ test('les Sandales de Tislit donnent la Rapidité : un jeton équipé frappe le 
   assert.equal(porteur.def, 2 + 1, '+0/+1');
 });
 
-test('la Cuirasse de sel donne +0/+3 et Esquive : 25 % des attaques sont annulées', () => {
+test('la Cuirasse de sel donne +0/+3 et Esquive : 30 % des attaques sont annulées', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'cuirasse-de-sel', porteur);
   assert.equal(porteur.def, 5);
   assert.equal(porteur.esquive, true, 'l’arme donne le mot-clé, sans chiffre');
 
-  // Jet forcé sous le seuil : l’attaque entière est esquivée.
-  rpgReglerHasard(duel, () => 0.1);
+  // Jet forcé à 29 %, sous le seuil de 30 % : l’attaque entière est esquivée.
+  rpgReglerHasard(duel, () => 0.29);
   const attaquant = poser(duel, 'sorcier', 'chien-du-guet');
   rendrePret(duel, attaquant);
   const res = rpgLancerAttaque(duel, 'sorcier', [attaquant.id], { [attaquant.id]: [porteur.id] });

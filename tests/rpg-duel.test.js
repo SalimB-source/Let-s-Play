@@ -5,6 +5,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   RPG_MAIN_DEPART,
+  RPG_ESQUIVE_CHANCE,
+  RPG_COUP_RAPIDE_ECHEC_CHANCE,
   RPG_PV_JOUEUR,
   RPG_PV_SORCIER_BASE,
   RPG_PV_SORCIER_PAR_PUISSANCE,
@@ -1485,16 +1487,17 @@ test('le Coup rapide frappe la créature désignée, et l’attaque s’arrête 
   ]);
 });
 
-test('le Coup rapide a 25 % de chances de rater une créature, mais touche toujours l’adversaire à 100 %', () => {
+test('le Coup rapide a 30 % de chances de rater une créature, mais touche toujours l’adversaire à 100 %', () => {
+  assert.equal(RPG_COUP_RAPIDE_ECHEC_CHANCE, 0.30);
   const cartesCoupRapide = RPG_DUEL_CARDS.filter((carte) => carte.coupRapide || carte.donne?.coupRapide || carte.effet?.coupRapide);
   assert.ok(cartesCoupRapide.length >= 9);
   for (const carte of cartesCoupRapide) {
-    assert.match(carte.text, /25\s*%/, `${carte.id} précise les 25 % de chances de rater`);
+    assert.match(carte.text, /30\s*%/, `${carte.id} précise les 30 % de chances de rater`);
     assert.match(carte.text, /100\s*%/, `${carte.id} précise les 100 % contre l’adversaire`);
   }
 
-  // Jet < 0.25 : la frappe rapide contre une créature rate, l’attaque s’arrête là.
-  const duelRate = duelDeBase({ rng: () => 0.24 });
+  // Jet < 0.30 : la frappe rapide contre une créature rate, l’attaque s’arrête là.
+  const duelRate = duelDeBase({ rng: () => 0.29 });
   donnerMana(duelRate, 'joueur', 20);
   donnerMana(duelRate, 'sorcier', 20);
   donner(duelRate, 'joueur', 'feriel');
@@ -1504,15 +1507,15 @@ test('le Coup rapide a 25 % de chances de rater une créature, mais touche toujo
   const pvSorcierAvant = duelRate.sorcier.pv;
   const resRate = rpgLancerAttaque(duelRate, 'joueur', [ferielRate.id], {}, null, null, { [ferielRate.id]: fennecRate.id });
   assert.equal(resRate.ok, true);
-  assert.equal(resRate.resume.coupsRapides[0].rate, true, 'le jet sous 0.25 marque le Coup rapide comme raté');
+  assert.equal(resRate.resume.coupsRapides[0].rate, true, 'le jet sous 0.30 marque le Coup rapide comme raté');
   assert.equal(resRate.resume.coupsRapides[0].degats, 0, 'aucun dégât infligé en cas d’échec');
   assert.equal(fennecRate.pv, fennecRate.pvMax, 'la créature ciblée reste indemne');
   assert.equal(duelRate.sorcier.pv, pvSorcierAvant, 'l’attaque s’arrête quand même : le sorcier ne prend rien');
   assert.equal(ferielRate.attaquee, true, 'l’attaquant est engagé malgré le raté');
   assert.ok(duelRate.log.some((ligne) => ligne.includes('rate son Coup rapide contre Fennec des décombres')));
 
-  // Jet >= 0.25 : la frappe rapide touche sa cible.
-  const duelTouche = duelDeBase({ rng: () => 0.25 });
+  // Jet >= 0.30 : la frappe rapide touche sa cible.
+  const duelTouche = duelDeBase({ rng: () => 0.30 });
   donnerMana(duelTouche, 'joueur', 20);
   donnerMana(duelTouche, 'sorcier', 20);
   donner(duelTouche, 'joueur', 'feriel');
@@ -2125,7 +2128,7 @@ test('Sahir : les boucliers préservent les bloqueurs pour le partage', () => {
   sahir.ready = true;
   bloqueurs[0].bouclier = 2;
   const pvEsquive = bloqueurs[0].pv;
-  // Jet d'esquive manqué (au-dessus du seuil de 25 %) : l'Onna-musha encaisse
+  // Jet d'esquive manqué (au-dessus du seuil de 30 %) : l'Onna-musha encaisse
   // la blessure normale, que le test veut voir passer.
   rpgReglerHasard(duel, () => 0.9);
   const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], { [sahir.id]: bloqueurs.map(b => b.id) });
@@ -2642,7 +2645,8 @@ test('capacité à l’arrivée : le Colosse buffe vos autres créatures', () =>
   assert.equal(colosse.atk, 6, 'lui-même n’est pas buffé');
 });
 
-test('Esquive : 25 % des attaques sont annulées entièrement — jamais une magie', () => {
+test('Esquive : 30 % des attaques sont annulées entièrement — jamais une magie', () => {
+  assert.equal(RPG_ESQUIVE_CHANCE, 0.30);
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -2653,8 +2657,8 @@ test('Esquive : 25 % des attaques sont annulées entièrement — jamais une mag
   porteuse.ready = true;
   assert.equal(esquiveuse.esquive, true, 'l’Onna-musha imprime Esquive, sans chiffre');
 
-  // Jet forcé sous le seuil : l’attaque ne porte pas du tout.
-  rpgReglerHasard(duel, () => 0.1);
+  // À 29 %, le jet est encore sous le seuil de 30 % : l’attaque ne porte pas du tout.
+  rpgReglerHasard(duel, () => 0.29);
   const combat = rpgLancerAttaque(duel, 'sorcier', [porteuse.id], { [porteuse.id]: [esquiveuse.id] });
   assert.equal(combat.ok, true);
   assert.equal(esquiveuse.pv, 3, 'l’attaque esquivée est annulée en entier'); 
@@ -2681,8 +2685,8 @@ test('Esquive : le jet se tente pour chaque attaquant d’un combat', () => {
   const premierePorteuse = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
   const secondePorteuse = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
 
-  // Premier coup esquivé, second coup encaissé : deux jets indépendants.
-  const jets = [0.1, 0.9];
+  // Premier coup esquivé à 29 %, second coup encaissé : deux jets indépendants.
+  const jets = [0.29, 0.9];
   rpgReglerHasard(duel, () => (jets.length ? jets.shift() : 0.9));
   const combat = rpgLancerAttaque(duel, 'joueur', [esquiveuse.id], {
     [esquiveuse.id]: [premierePorteuse.id, secondePorteuse.id],

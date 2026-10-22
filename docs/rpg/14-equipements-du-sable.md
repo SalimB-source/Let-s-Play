@@ -47,7 +47,7 @@ meilleures raisons d'attaquer.
 | # | Carte | Rareté | Coût | Bonus | L'idée |
 |---|---|---|---|---|---|
 | 1 | Sandales de Tislit | commune | 1 | +0/+1 | Rapidité |
-| 2 | Cuirasse de sel | commune | 2 | +0/+3 | Esquive (25 %) |
+| 2 | Cuirasse de sel | commune | 2 | +0/+3 | Esquive (30 %) |
 | 3 | Javelot du beffroi | commune | 2 | +2/+0 | Coup rapide |
 | 4 | Licou du chien de sable | inhabituelle | 1 | **+1/−1** | Quand le porteur meurt : piochez 2 |
 | 5 | Boussole du Hoggar | inhabituelle | 2 | +1/+1 | Attaque → lit le dessus du deck, garde les terrains |
@@ -82,7 +82,7 @@ arrivée de Tarek.
 > *« Le sel tient mieux que le fer quand le fer chauffe. »*
 
 `donne: { esquive: true }`. Aucune brique moteur (`attacherArme` pose déjà le
-mot-clé). **Esquive** donne **25 % de chance d'esquiver une attaque** : le coup
+mot-clé). **Esquive** donne **30 % de chance d'esquiver une attaque** : le coup
 ne porte pas du tout ; les magies et les capacités, elles, ne s'esquivent
 jamais. La première **armure** Sable : le pendant défensif de la Takouba des
 pistes, qui rend une Amani des ksour (2/5) ou une Dune marchante (2/5) très
@@ -91,7 +91,7 @@ difficile à tuer au combat — et donne enfin une cible d'équipement aux créa
 
 ### 3. Javelot du beffroi — commune — 2
 
-> **Arme — Javelot.** Le porteur gagne +2/+0 et **Coup rapide**.
+> **Arme — Javelot.** Le porteur gagne +2/+0 et **Coup rapide** : 30 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse.
 >
 > *« Il ne vise pas l'homme. Il vise la fenêtre derrière lui. »*
 
@@ -233,7 +233,7 @@ même traitement que les jetons de Tarek.
 
 ### 10. Takouba de Tin Hinan — mythique (1 par deck) — 4
 
-> **Arme — Takouba.** Le porteur gagne +3/+2 et **Coup rapide**. **Quand le
+> **Arme — Takouba.** Le porteur gagne +3/+2 et **Coup rapide** (30 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse). **Quand le
 > porteur inflige des blessures de combat à une créature, piochez une carte.
 > Quand il en inflige au sorcier adverse, créez un jeton chien de sable 1/1.**
 >
@@ -315,7 +315,7 @@ qui se joue la table vide sans rien désigner.
 
 - **Collier du fennec** (rare, 3, +1/+1) — *Basilisk Collar* : **Contact
   mortel** (toute blessure infligée par le porteur détruit la créature
-  blessée) + Esquive (25 %). Mécanique nouvelle, énorme sur une créature
+  blessée) + Esquive (30 %). Mécanique nouvelle, énorme sur une créature
   Infiltrable ; à réserver pour une extension.
 - **Cape de la dune** (inhabituelle, 2, +1/+1) — *Trailblazer's Boots* : le
   porteur gagne Infiltration **tant que vous contrôlez un Désert**. La
