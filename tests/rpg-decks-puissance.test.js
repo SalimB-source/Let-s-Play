@@ -104,7 +104,15 @@ test('aucune carte laissée de côté n’est mieux classée qu’une carte rete
     const signature = new Set(recette.signature.map((entree) => (Array.isArray(entree) ? entree[0] : entree)));
     const comptes = compter(liste);
     const identite = (carte) => {
+      if (carte?.set === 'balance-des-heures' && !recette.identite.includes('tenebres')) return false;
       const couleurs = cardColors(carte);
+      if (carte?.set === 'lettres-de-marque') {
+        const course = recette.identite.includes('sable') && recette.identite.includes('eau');
+        const tenebresPures = couleurs.length > 0
+          && couleurs.every((couleur) => couleur === 'tenebres')
+          && recette.identite.includes('tenebres');
+        if (!course && !tenebresPures) return false;
+      }
       return couleurs.length > 0 && couleurs.every((couleur) => recette.identite.includes(couleur));
     };
     // Les places de remplissage — signature et terrains exclus : la signature
@@ -214,7 +222,7 @@ test('chaque deck de départ mélange les quatre raretés et respecte son plafon
 
     assert.equal(mythiques.length, recette.mythiquesTotalMax,
       `${deck.name} : exactement le nombre de mythiques déclaré par sa recette`);
-    assert.equal(recette.mythiquesTotalMax, deck.id === 'serment-des-neuf-hivers' ? 2 : 1,
+    assert.equal(recette.mythiquesTotalMax, ['serment-des-neuf-hivers', 'serment-du-soleil-rouge'].includes(deck.id) ? 2 : 1,
       `${deck.name} : plafond global déclaré dans sa recette`);
     assert.ok(raresDistinctes.length >= 1, `${deck.name} : au moins une rare`);
     assert.ok(raresDistinctes.length <= recette.raresTotalMax,

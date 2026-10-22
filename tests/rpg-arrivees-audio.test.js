@@ -140,14 +140,14 @@ test('une créature ordinaire d’un autre set ne déclenche aucun journal d’a
   assert.deepEqual(rpgConsommerArriveesNavire(duel), []);
 });
 
-test('La Barbe-Rousse journalise son arrivée, mais pas les deux jetons Corsaire qu’elle crée', () => {
+test('La Barbe-Rousse journalise son arrivée, mais pas le jeton Corsaire qu’elle crée', () => {
   const duel = duelDeTest();
   donner(duel, 'joueur', 'la-barbe-rousse');
   const pose = rpgJouerCreature(duel, 'joueur', 'la-barbe-rousse');
   assert.equal(pose.ok, true);
-  // L’amiral + ses deux jetons occupent trois cases.
-  assert.equal(duel.joueur.creatures.length, 3);
-  assert.equal(duel.joueur.creatures.filter((e) => e.jeton).length, 2);
+  // L’amiral et son unique jeton occupent deux cases.
+  assert.equal(duel.joueur.creatures.length, 2);
+  assert.equal(duel.joueur.creatures.filter((e) => e.jeton).length, 1);
 
   const pirates = rpgConsommerArriveesPirate(duel);
   assert.deepEqual(pirates.map((e) => e.carteId), ['la-barbe-rousse']);

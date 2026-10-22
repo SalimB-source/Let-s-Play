@@ -153,9 +153,9 @@ export const RPG_RECETTES_DECKS = {
   },
   /**
    * Le Soleil rouge donne sa place aux trois mécaniques du set : Honneur à la
-   * mort, Résonance samouraï et Bannière du Daimyō. Kagutsuchi est l'unique
-   * mythique du deck ; Orochi, Susanoo et les autres figures s'ouvrent dans les
-   * boosters.
+   * mort, Résonance samouraï et Bannière du Daimyō. Le Daimyō et Kagutsuchi
+   * sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures
+   * s'ouvrent dans les boosters.
    */
   'serment-du-soleil-rouge': {
     identite: ['braise'],
@@ -164,7 +164,7 @@ export const RPG_RECETTES_DECKS = {
     magies: 10,
     armes: 0,
     raresTotalMax: 10,
-    mythiquesTotalMax: 1,
+    mythiquesTotalMax: 2,
     signature: [
       ['ghul-des-cendres', 2], ['nuage-de-cendres', 2], ['sabre-maudit', 2],
       ['ashigaru-des-braises', 2], ['hatamoto-des-cendres', 2],
@@ -403,7 +403,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 20,
     magies: 10,
     armes: 0,
-    mythiquesMax: 2,
+    mythiquesMax: 3,
     raresMax: 8,
     signature: [
       ['daimyo-du-soleil-rouge', 1],

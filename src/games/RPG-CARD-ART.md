@@ -213,11 +213,10 @@ n'est pas un rendu photoréaliste.
   d'or sous une lune géante, corbeaux rouges.
 - **Kenshi de la forge** (rare) : forgeron-samouraï qui frappe une lame en fusion, dragon de feu qui
   s'élève des étincelles, angle plongeant.
-- **Daimyō du Soleil rouge** (rare) : daimyō sur un cheval blanc, yari levé, soleil rouge géant,
+- **Daimyō du Soleil rouge** (mythique) : daimyō sur un cheval blanc, yari levé, soleil rouge géant,
   phénix d'or et cerisiers.
 
-Ils portent `soleil-rouge-kaiga-couleurs-v7`. Ils ne figurent pas dans le deck préconstruit : ils se
-composent à l'atelier. Les trois ajouts sont des créatures `Samouraï` : ils reçoivent la Résonance samouraï.
+Ils portent `soleil-rouge-kaiga-couleurs-v7`. Les trois ajouts sont des créatures `Samouraï` : ils reçoivent la Résonance samouraï et figurent dans la signature du deck préconstruit du Soleil rouge.
 
 Le Daimyō a depuis sa **bannière** et ses deux **Samouraïs** : la carte devient
 un 3/3 à 5 qui lève deux créatures-jetons 1/1 en arrivant (`samourai-du-daimyo`,

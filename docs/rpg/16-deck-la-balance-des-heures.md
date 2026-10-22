@@ -222,7 +222,7 @@ export const RPG_TENEBRES_CREATURES = [
     id: 'ureus-du-seuil', name: 'Uræus du seuil',
     cost: 3, atk: 2, def: 1, rarity: 'inhabituelle', coupRapide: true,
     typeLine: 'Créature — Animal · Serpent royal',
-    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater ; 100 % de chances de toucher le sorcier adverse) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
     flavor: 'Il frappe avant que la main n’atteigne le seuil.',
   }),
   carte({
@@ -474,8 +474,8 @@ panthéon égyptien — toujours nommées **par leur attribut** (jamais le mot
 | Carte | Identifiant | Couleur(s) | Coût | ⚔/🛡 | Capacités |
 |---|---|---|---|---|---|
 | **Le Passeur au masque de chacal** _(Anubis)_ | `passeur-au-masque-de-chacal` | Ténèbres | 6 | 5/5 | Arrivée : réanime la dernière créature de votre cimetière |
-| **Le Maître des hiéroglyphes** _(Thot)_ | `maitre-des-hieroglyphes` | Ténèbres | 5 | 3/5 | **Envol**, **Coup rapide** ; arrivée : piochez 2 cartes |
-| **Le Faucon du zénith** _(Horus)_ | `faucon-du-zenith` | Sable | 5 | 3/3 | **Envol**, **Coup rapide**, **Tribut 1**, **Protection Ténèbres** (permanente) |
+| **Le Maître des hiéroglyphes** _(Thot)_ | `maitre-des-hieroglyphes` | Ténèbres | 5 | 3/5 | **Envol**, **Coup rapide** (30 % contre une créature, 100 % contre le sorcier) ; arrivée : piochez 2 cartes |
+| **Le Faucon du zénith** _(Horus)_ | `faucon-du-zenith` | Sable | 5 | 3/3 | **Envol**, **Coup rapide** (30 % contre une créature, 100 % contre le sorcier), **Tribut 1**, **Protection Ténèbres** (permanente) |
 | **La Lionne du midi ardent** _(Sekhmet)_ | `lionne-du-midi-ardent` | Braise | 6 | 4/4 | **Rapidité**, **Protection Eau et Neige** (permanente) ; arrivée : 2 dégâts à toutes les créatures adverses |
 | **La Dame aux ailes d'or** _(Isis)_ | `dame-aux-ailes-d-or` | Sable | 5 | 3/5 | **Envol** ; arrivée : bouclier de lumière ; mort : vous gagnez 4 PV |
 | **Le Seigneur des mâchoires** _(Sobek)_ | `seigneur-des-machoires` | Eau | 6 | 6/6 | **Tenacité**, **Tribut 2** |

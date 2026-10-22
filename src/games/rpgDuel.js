@@ -69,13 +69,13 @@ export const RPG_PV_PLAFOND = null;
 export const RPG_MAIN_DEPART = 5;
 /**
  * Esquive : une créature qui l'imprime (ou dont l'arme la donne) échappe à
- * **25 % des attaques** — l'attaque entière est annulée, pas diminuée. Les
+ * **30 % des attaques** — l'attaque entière est annulée, pas diminuée. Les
  * magies et les capacités ne sont jamais esquivées. Le tirage vient du hasard
  * du duel (`hasardParDuel`), donc une même partie reste reproductible.
  */
-export const RPG_ESQUIVE_CHANCE = 0.25;
+export const RPG_ESQUIVE_CHANCE = 0.3;
 export const RPG_COULEURS = RPG_ELEMENTS;
-export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.25;
+export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.3;
 
 /**
  * Les six phases d'un tour, dans l'ordre. Le moteur les enregistre dans
@@ -1646,7 +1646,7 @@ function bonusTraquePirates(attaquant, cible) {
 }
 
 /**
- * L'Esquive se tente **une fois par attaque** : 25 % de chance que le coup ne
+ * L'Esquive se tente **une fois par attaque** : 30 % de chance que le coup ne
  * porte pas du tout. Les magies et les capacités ne sont pas concernées — le
  * mot-clé dit « une attaque », et la carte le dit aussi.
  */
@@ -4751,7 +4751,7 @@ export function rpgLancerAttaque(
   // sur une copie pour qu'une répartition invalide ne modifie jamais la partie.
   const degatsAvantCombat = [];
   // Le Coup rapide frappe AVANT les blessures de combat : la créature désignée à
-  // la déclaration encaisse les dégâts d'attaque, sans riposte, avec 25 % de
+  // la déclaration encaisse les dégâts d'attaque, sans riposte, avec 30 % de
   // chances de rater sa cible (alors qu'attaquer l'adversaire normalement touche
   // à 100 %). C'est un choix — et il coupe court : l'attaquant qui a frappé
   // s'arrête là, il n'est ni bloqué, ni échangé, et ne touche pas le sorcier

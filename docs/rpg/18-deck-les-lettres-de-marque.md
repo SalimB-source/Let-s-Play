@@ -251,18 +251,18 @@ reste posé, avec son illustration finale.
 |---|---|---|---|---|---|
 | Mousse des galiotes | Sable | 1 | 1/2 | commune | le corps du pont — vanilla |
 | Raïs de la galiote | **Sable + Eau** | 2 | 2/2 | commune | **Abordage 1** — le poisson-pilote du set |
-| Pilote de la Carreira | Eau | 2 | 1/3 | inhabituelle | arrivée : la **prochaine créature jouée ce tour** gagne **Abordage** (seuil : son coût − 1) — il lit la route pour elle |
+| Pilote de la Carreira | Eau | 2 | 2/1 | inhabituelle | arrivée : la **prochaine créature jouée ce tour** gagne **Abordage** (seuil : son coût − 1) — il lit la route pour elle |
 | Le Brûlot | **Braise** | 2 | 1/1 | commune | à sa mort en combat : **2 dégâts à la créature qui l’a détruit** — la seule flamme du set |
 | Tercio de cuivre | Sable | 3 | 1/4 | commune | le mur du convoi, **Coup rapide** |
 | Cotre de course | **Sable + Eau** | 3 | 3/1 | inhabituelle | **Rapidité + Abordage 2** — l’éclaireur qui monte le premier |
-| Le Renégat | **Sable + Eau** | 3 | 3/2 | inhabituelle | **Rapidité + Butin** — l’Anglais sous pavillon d’Alger |
+| Le Renégat | **Sable + Eau** | 3 | 3/3 | inhabituelle | **Rapidité + Butin** — l’Anglais sous pavillon d’Alger |
 | Négociant des prises | Sable | 3 | 2/3 | rare | chaque créature **prise en cale** par qui que ce soit : **piochez 1** |
-| Galion de la flotte | **Sable + Eau** | 5 | 2/5 | rare | **Coup rapide**, **Abordage 4**, **Cargaison 2** — le trésor assuré qui prend aussi à l’abordage |
+| Galion de la flotte | **Sable + Eau** | 5 | 2/5 | rare | **Coup rapide**, **Abordage 4**, **Cargaison 1** — le trésor assuré qui prend aussi à l’abordage |
 | La légende du Hollandais volant *(jadis « La Vengeance de la reine Anne » — même identifiant)* | **Sable + Eau** | 4 | 2/4 | rare | **Coup rapide**, **Abordage 3** ; cale occupée : +2/+0 et **Butin** — vaisseau fantôme bleu translucent |
 | Le Chasseur d’Ocracoke | **Sable + Eau** | 6 | 3/6 | **mythique** | Rapidité, Coup rapide ; **Traque** (+3/+0 contre Abordage/Butin/cale occupée) et **Prime** contre la course — plus d’Insaisissable |
 | La Source de Bimini | **Eau + Sable** | 3 | — | **mythique** | **Site**, 3 Heures ; soin total, +3/+3, Protection contre les sorts et Tenacité |
 | Le Trésor de Lima | **Sable + Eau** | 2 | — | rare | **Site**, 2 Heures ; piochez 2 cartes |
-| La Barbe-Rousse | **Sable + Eau** | 6 | 4/5 | **mythique** | **Abordage 5** ; arrivée : **2 jetons Corsaire** 2/1 |
+| La Barbe-Rousse | **Sable + Eau** | 6 | 4/5 | **mythique** | **Abordage 5** ; arrivée : **1 jeton Corsaire** 2/1 |
 | Lettre de marque | **Sable + Eau** | 2 | — | commune (sorcellerie) | jusqu’à la fin du tour, vos créatures **qui arrivent** gagnent **Abordage** (seuil : leur coût − 1) |
 | Haut-fond | Eau | 1 | — | commune (magie rapide) | créature adverse : **−1/−2 jusqu’à la fin du tour** |
 | Le Routier | Eau | 3 | — | inhabituelle (sorcellerie) | **piochez 2, défaussez 1** |
@@ -354,8 +354,8 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     name: 'Pilote de la Carreira',
     element: 'eau',
     cost: 2,
-    atk: 1,
-    def: 3,
+    atk: 2,
+    def: 1,
     rarity: 'inhabituelle',
     arrivee: { type: 'prochaine-arrivee-abordage' },
     typeLine: 'Créature — Humain · Pilote',
@@ -384,7 +384,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     rarity: 'commune',
     coupRapide: true,
     typeLine: 'Créature — Humain · Tercio',
-    text: 'Coup rapide — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (25 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    text: 'Coup rapide — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
     flavor: 'Personne n’aboie sur un pont de cuivre.',
   }),
   carte({
@@ -411,7 +411,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     colorCost: { sable: 1, eau: 1 },
     cost: 3,
     atk: 3,
-    def: 2,
+    def: 3,
     rarity: 'inhabituelle',
     rapidite: true,
     butin: true,
@@ -440,9 +440,9 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     atk: 3,
     def: 6,
     rarity: 'rare',
-    cargaison: 2,
+    cargaison: 1,
     typeLine: 'Créature — Navire · Galion',
-    text: 'Cargaison 2 — Quand le Galion meurt ou est pris en cale, piochez deux cartes.',
+    text: 'Cargaison 1 — Quand le Galion meurt ou est pris en cale, piochez une carte.',
     flavor: 'L’argent voyage en convoi ; le roi voyage en prière.',
   }),
   carte({
@@ -456,9 +456,9 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     def: 5,
     rarity: 'mythique',
     abordage: 5,
-    arrivee: { type: 'jetons', jeton: 'corsaire', nombre: 2 },
+    arrivee: { type: 'jetons', jeton: 'corsaire', nombre: 1 },
     typeLine: 'Créature légendaire — Amirale des deux mers',
-    text: 'Abordage 5 — quand La Barbe-Rousse arrive en jeu, la créature adverse ciblée de coût 5 ou moins est prise en sa cale : elle ne déclenche rien. Quand La Barbe-Rousse arrive : créez deux jetons Corsaire 2/1.',
+    text: 'Abordage 5 — quand La Barbe-Rousse arrive en jeu, la créature adverse ciblée de coût 5 ou moins est prise en sa cale : elle ne déclenche rien. Quand La Barbe-Rousse arrive : créez un jeton Corsaire 2/1.',
     flavor: 'Alger lui doit ses remparts ; les deux mers lui doivent le reste.',
   }),
 ];

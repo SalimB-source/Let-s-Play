@@ -7823,13 +7823,15 @@ donnée par le calcul ci-dessus, pas par une mesure d'écran.
 
 Deux règles du duel ont changé d'un même geste, à la demande du jeu :
 
-1. **Le Coup rapide s'arrête sur sa frappe.** « La créature peut infliger ses
-   dégâts à la créature ciblée ou attaquer directement l'adversaire. Si elle
-   inflige des dégâts à une créature, son attaque s'arrête. » Jusqu'ici la
-   frappe précoce tombait avant les blessures de combat, **puis l'attaque se
-   poursuivait normalement** : l'attaquant pouvait encore être bloqué, échanger
-   ses blessures de combat et frapper le sorcier. Désormais la frappe **clôt
-   l'attaque** : ni blocage, ni riposte, ni dégâts au sorcier.
+1. **Le Coup rapide s'arrête sur sa frappe.** Une créature adverse désignée
+   a **30 % de chances d'être manquée** ; même si la frappe échoue, l'attaque
+   s'arrête là. Dirigée vers le sorcier adverse, elle n'a pas de jet d'échec
+   (**100 % de précision**), mais les bloqueurs s'appliquent normalement.
+   Jusqu'ici la frappe précoce tombait avant les blessures de combat, **puis
+   l'attaque se poursuivait normalement** : l'attaquant pouvait encore être
+   bloqué, échanger ses blessures de combat et frapper le sorcier. Désormais la
+   frappe **clôt l'attaque** : ni blocage, ni riposte, ni dégâts supplémentaires
+   au sorcier.
 2. **Une seule phase d'attaque par tour.** Le camp qui a déclaré son combat n'en
    déclare pas un second avant le tour suivant, quel que soit le nombre de
    créatures encore prêtes.
@@ -8226,7 +8228,7 @@ chromium`, `npm run dev` dans un autre terminal).
 
 ## Le Sablier : decks reconstruits pour le mana sans terrain
 
-Les recettes des six decks de base produisent directement **30 cartes jouables,
+Les recettes des huit decks de base produisent directement **30 cartes jouables,
 aucun terrain**. Les constantes `RPG_DECK_*_BASE`, les boîtiers du catalogue et
 les paquets utilisés en Histoire lisent ces mêmes recettes : il ne s'agit plus
 d'un retrait des terrains au lancement suivi d'un remplissage générique.
@@ -8239,8 +8241,11 @@ d'un retrait des terrains au lancement suivi d'un remplissage générique.
 | Marée des abysses | 10 | 18 | 2 |
 | Serment des Neuf Hivers | 17 | 12 | 1 |
 | Serment du Soleil rouge | 20 | 10 | 0 |
+| Balance des Heures | 19 | 10 | 1 |
+| Lettres de Marque | 19 | 9 | 2 |
 
-Chaque starter conserve une seule mythique, son identité chromatique et ses
+La plupart des starters ont une mythique ; le Serment des Neuf Hivers et le
+Soleil rouge en ont deux. Chaque deck conserve son identité chromatique et ses
 synergies. Les plafonds de rares sont adaptés à trente cartes actives, avec
 les quotas d'exemplaires habituels. La Boussole du Hoggar et le Djinn du souk,
 dont les effets exigent des terrains, sont exclus du catalogue du composeur.

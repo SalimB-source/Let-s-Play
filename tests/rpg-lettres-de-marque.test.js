@@ -238,8 +238,8 @@ test('une capacité de mort ne se déclenche pas sur une prise : le Ghul captur�
   assert.equal(amirale.enCale?.carteId, 'momie-de-lin', 'la Momie est prise');
   assert.equal(momie.joueur.creatures.length, 0, 'aucun jeton Shabti n’a surgi de ses bandelettes');
   assert.equal(JSON.stringify(momie.log).includes('Shabti'), false, 'le journal n’en parle même pas');
-  assert.equal(momie.sorcier.creatures.filter((entite) => entite.carteId === 'corsaire').length, 2,
-    'les deux Corsaires ont bien débarqué, eux');
+  assert.equal(momie.sorcier.creatures.filter((entite) => entite.carteId === 'corsaire').length, 1,
+    'l’unique Corsaire a bien débarqué, lui');
 
   // L’Honneur du Soleil rouge non plus : pris, le Samouraï du torii (coût 3)
   // ne frappe personne en tombant — La Barbe-Rousse le prend vif.
@@ -482,12 +482,12 @@ test('le jeton Corsaire n’accoste pas : créé par effet, il ne prend rien', (
   mana(duel, 'sorcier', 10);
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
-  // La Barbe-Rousse débarque son équipage : les deux Corsaires arrivent par
-  // effet, pas depuis la main — aucun ne déclenche l'Abordage.
+  // La Barbe-Rousse débarque un Corsaire par effet, pas depuis la main :
+  // il ne déclenche donc pas l'Abordage.
   donner(duel, 'joueur', 'la-barbe-rousse');
   const amirale = jouer(duel, 'joueur', 'la-barbe-rousse', mousse.id).entite;
   const corsaires = duel.joueur.creatures.filter((entite) => entite.carteId === 'corsaire');
-  assert.equal(corsaires.length, 2, 'l’équipage a débarqué');
+  assert.equal(corsaires.length, 1, 'un seul Corsaire a débarqué');
   assert.ok(corsaires.every((entite) => entite.enCale === null), 'aucun Corsaire n’a pris la moindre prize');
   // Même la fiche du jeton ne porte plus le mot-clé : il n’y a plus rien à
   // prêter à ce qui ne se joue pas depuis la main.
@@ -610,7 +610,7 @@ test('Haut-fond amollit la prise : -1/-2 pour un tour, la vague rend son dû', (
   assert.equal(tercio.pv, 4);
 });
 
-test('Cargaison paie à la mort ET à la prise : le convoi est assuré', () => {
+test('Cargaison fait piocher une carte à la mort comme à la prise', () => {
   // À la prise — La Barbe-Rousse (Abordage 5) prend le Galion (5).
   const prise = duelVide();
   prise.sorcier.deck = ['tercio-de-cuivre', 'tercio-de-cuivre'];
@@ -622,8 +622,8 @@ test('Cargaison paie à la mort ET à la prise : le convoi est assuré', () => {
   const mainAvant = prise.sorcier.main.length;
   const amirale = jouer(prise, 'joueur', 'la-barbe-rousse', galion.id).entite;
   assert.ok(amirale.enCale?.carteId === 'galion-de-la-flotte', 'le Galion est pris, pas coulé');
-  assert.equal(prise.sorcier.main.length, mainAvant + 2, 'son propriétaire pioche deux cartes');
-  assert.equal(prise.sorcier.deck.length, 0, 'les deux cartes venaient du paquet');
+  assert.equal(prise.sorcier.main.length, mainAvant + 1, 'son propriétaire pioche une carte');
+  assert.equal(prise.sorcier.deck.length, 1, 'une seule carte est tirée du paquet');
 
   // À la mort (sort direct, sans Abordage).
   const mort = duelVide();
@@ -639,7 +639,8 @@ test('Cargaison paie à la mort ET à la prise : le convoi est assuré', () => {
   donner(mort, 'joueur', 'trait-de-braise');
   assert.equal(rpgLancerMagie(mort, 'joueur', 'trait-de-braise', galion2.id).ok, true);
   assert.equal(mort.sorcier.cimetiere.includes('galion-de-la-flotte'), true, 'cette fois le Galion meurt');
-  assert.equal(mort.sorcier.main.length, mainAvant2 + 2, 'la Cargaison paie aussi à la mort');
+  assert.equal(mort.sorcier.main.length, mainAvant2 + 1, 'la Cargaison fait piocher une carte à la mort');
+  assert.equal(mort.sorcier.deck.length, 1, 'une seule carte est tirée du paquet à la mort');
 });
 
 test('Le Brûlot embrase la créature qui le détruit en combat — jamais par magie', () => {
@@ -936,6 +937,20 @@ test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles
   }
 });
 
+test('les révisions des cartes corsaires affichent les bons chiffres et effets', () => {
+  const renegat = cardById('le-renegat');
+  assert.deepEqual([renegat.cost, renegat.atk, renegat.def], [3, 3, 3]);
+  const pilote = cardById('pilote-de-la-carreira');
+  assert.deepEqual([pilote.cost, pilote.atk, pilote.def], [2, 2, 1]);
+
+  const galion = cardById('galion-de-la-flotte');
+  assert.equal(galion.cargaison, 1);
+  assert.match(galion.text, /Cargaison 1.*piochez une carte/);
+  const barbeRousse = cardById('la-barbe-rousse');
+  assert.deepEqual(barbeRousse.arrivee, { type: 'jetons', jeton: 'corsaire', nombre: 1 });
+  assert.match(barbeRousse.text, /créez un jeton Corsaire 2\/1/);
+});
+
 test('les valeurs du set se paient au barème : Abordage, Cargaison, Prise, pastilles et icônes', () => {
   const rais = cardById('rais-de-la-galiote');
   assert.ok(puissanceCarte(rais) > puissanceCarte({ ...rais, abordage: false }),
@@ -951,8 +966,8 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Prise, past
 
   assert.deepEqual(libellesPastilles('rais-de-la-galiote'), ['Abordage 1'], 'le Raïs porte la pastille Abordage 1');
   assert.deepEqual(libellesPastilles('la-barbe-rousse').slice(0, 1), ['Abordage 5'], 'l’amirale porte Abordage 5');
-  assert.deepEqual(libellesPastilles('galion-de-la-flotte'), ['Coup rapide', 'Abordage 4', 'Cargaison 2'],
-    'le Galion 2/5 porte Coup rapide, Abordage 4 et Cargaison 2');
+  assert.deepEqual(libellesPastilles('galion-de-la-flotte'), ['Coup rapide', 'Abordage 4', 'Cargaison 1'],
+    'le Galion 2/5 porte Coup rapide, Abordage 4 et Cargaison 1');
   assert.equal(galion.atk, 2, 'le Galion est un 2/5');
   assert.equal(galion.def, 5);
   assert.deepEqual(libellesPastilles('le-chasseur-d-ocracoke'), ['Rapidité', 'Coup rapide', 'Traque 3'],
@@ -981,7 +996,7 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Prise, past
     'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale.'),
     'abordage', 'la ligne de règle se lit Abordage');
   assert.equal(iconePourLigne(cardById('galion-de-la-flotte'),
-    'Cargaison 2 — Quand le Galion meurt ou est pris en cale, piochez deux cartes.'),
+    'Cargaison 1 — Quand le Galion meurt ou est pris en cale, piochez une carte.'),
     'cargaison', 'la ligne de règle se lit Cargaison');
 });
 

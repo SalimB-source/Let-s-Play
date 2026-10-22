@@ -132,9 +132,9 @@ lisent tous la même chose.
 
 ## Les recettes : d'où viennent les decks du catalogue
 
-Les **onze paquets du jeu** — les six boîtiers de l'étagère et les cinq
+Les **treize paquets du jeu** — les huit boîtiers de l'étagère et les cinq
 variantes de la campagne — sont composés par recette, pas écrits carte par
-carte. Les six starters privilégient les mécaniques déjà présentes au
+carte. Les huit starters privilégient les mécaniques déjà présentes au
 catalogue, puis le composeur complète les places dans l'identité du deck.
 
 Trois fichiers portent cette règle, sans dépendance circulaire :
@@ -142,7 +142,7 @@ Trois fichiers portent cette règle, sans dépendance circulaire :
 | Fichier | Ce qu'il contient |
 |---|---|
 | `src/games/rpgCardPower.js` | l'échelle de puissance d'une carte |
-| `src/games/rpgDeckRecipes.js` | les six recettes de starter et les cinq recettes d'Histoire |
+| `src/games/rpgDeckRecipes.js` | les huit recettes de starter et les cinq recettes d'Histoire |
 | `src/games/rpgDeckComposer.js` | `composerDeck(recette, catalogue)` et l'application des plafonds |
 
 ### La puissance d'une carte
@@ -162,12 +162,13 @@ Chaque recette fixe :
 - `identite` — la ou les couleurs du deck. **Aucune carte ne sort de cette
   identité** ;
 - `terrains`, `creatures`, `magies` et, pour les decks concernés, `armes` — les
-  places de chaque famille, pour un total de quarante ;
+  places de chaque famille, pour un total de trente ;
 - `signature` — les cartes d'archétype posées avant le remplissage, même si
   une carte mieux classée frappe à la porte ;
-- pour les starters, `mythiquesTotalMax: 1` et `raresTotalMax` — des plafonds
-  globaux comptant les cartes rares distinctes non-terrain (quatre pour cinq
-  decks, six pour le Soleil rouge) ;
+- pour les starters, `mythiquesTotalMax` et `raresTotalMax` — des plafonds
+  globaux comptant les cartes rares distinctes non-terrain. La plupart des
+  starters ont une mythique ; le Serment des Neuf Hivers et le Soleil rouge
+  en ont deux ;
 - pour les paquets d'Histoire, `mythiquesMax` et `raresMax` — des plafonds par
   famille, conservés pour régler la montée des Tours.
 
@@ -178,42 +179,43 @@ Les plafonds d'Histoire restent par famille. Chaque carte ne dépasse jamais sa
 limite légale (une copie d'une mythique, trois des autres cartes non-terrain) ;
 les terrains sont sans plafond de copies.
 
-### Les six starters
+### Les huit decks du catalogue
 
-La répartition des raretés ci-dessous compte les **copies** ; les terrains sont
-présentés à part. Chaque ligne totalise quarante cartes. Le plafond rare compte
-les cartes rares distinctes, pas leurs copies.
+La répartition des raretés ci-dessous compte les **copies** ; le nombre de
+terrains, créatures, magies et armes est donné à part. Chaque ligne totalise
+trente cartes sans terrain. Le plafond rare est celui de la recette et compte
+les cartes rares distinctes, pas leurs copies. Les héros sont comptés parmi les
+créatures.
 
 | Deck | Terrains / Créatures / Magies / Armes | Commune | Inhabituelle | Rare | Mythique | Plafond rare distinct |
 |---|---:|---:|---:|---:|---:|---:|
-| Veilleurs du Désert | 17 / 15 / 4 / 4 | 5 | 7 | 10 | 1 | 4 |
-| Cour des Djinns | 18 / 16 / 6 / 0 | 12 | 2 | 7 | 1 | 4 |
-| Sentiers de cendre | 17 / 13 / 6 / 4 | 6 | 8 | 8 | 1 | 4 |
-| Marée des abysses | 16 / 8 / 15 / 1 | 12 | 1 | 10 | 1 | 4 |
-| Serment des Neuf Hivers | 17 / 13 / 9 / 1 | 9 | 3 | 10 | 1 | 4 |
-| Serment du Soleil rouge | 16 / 17 / 7 / 0 | 9 | 3 | 11 | 1 | 6 |
+| Veilleurs du Désert | 0 / 18 / 6 / 6 | 13 | 6 | 10 | 1 | 5 |
+| Cour des Djinns | 0 / 21 / 9 / 0 | 10 | 2 | 17 | 1 | 10 |
+| Sentiers de cendre | 0 / 16 / 8 / 6 | 15 | 4 | 10 | 1 | 6 |
+| Marée des abysses | 0 / 10 / 18 / 2 | 15 | 2 | 12 | 1 | 7 |
+| Serment des Neuf Hivers | 0 / 17 / 12 / 1 | 10 | 1 | 17 | 2 | 10 |
+| Serment du Soleil rouge | 0 / 20 / 10 / 0 | 8 | 2 | 18 | 2 | 10 |
+| Balance des Heures | 0 / 19 / 10 / 1 | 12 | 8 | 9 | 1 | 6 |
+| Lettres de Marque | 0 / 19 / 9 / 2 | 12 | 8 | 9 | 1 | 7 |
 
-| Starter | Mécaniques mises en avant | Unique mythique |
+| Starter | Mécaniques mises en avant | Mythiques du boîtier |
 |---|---|---|
 | Veilleurs du Désert | Butin, protection, pioche de Tislit, équipements et récupération de cartes | Takouba de Tin Hinan |
 | Cour des Djinns | dégâts en vagues, effets à la mort, retour différé d'Anqa, Honneur et Résonance samouraï | Anqa des braises |
 | Sentiers de cendre | Pétra et mana bicolore, Butin, équipements, Coup rapide | Fériel |
 | Marée des abysses | contresorts, rebonds, Vipère de verre et serpents du Bâton des citernes | Léviathan |
-| Serment des Neuf Hivers | Furie, appel viking, gel et contrôle du combat | Maître du marteau |
-| Serment du Soleil rouge | Honneur, Résonance samouraï et Bannière du Daimyō | Kagutsuchi, flamme originelle |
+| Serment des Neuf Hivers | Furie, appel viking, gel et contrôle du combat | Valkyrie des glaces ; Maître du marteau |
+| Serment du Soleil rouge | Honneur, Résonance samouraï et Bannière du Daimyō | Daimyō du Soleil rouge ; Kagutsuchi, Flamme originelle |
+| Balance des Heures | Prix, Tribut, destruction, défausse et réanimation | La Dévoreuse |
+| Lettres de Marque | Abordage, cale, Cargaison, Butin et course | La Barbe-Rousse |
 
-**Les autres mythiques ne sont pas ajoutées à la dotation.** Les étages les
-révèlent, puis les boosters du Souk peuvent les donner. Le starter marée ne
-contient ainsi que le Léviathan, tandis que Kraken, Bakunawa et Jörmungandr
-restent à ouvrir ; Cavalier des deux sabres, Orochi et Susanoo attendent aussi
-les boosters pour le Soleil rouge. Les rares hors starter suivent la même
-progression de révélation et d'achat.
-
-Le Sonneur fêlé passe de rare à inhabituelle pour composer une Marée avec les
-quatre raretés ; il entre alors dans la dotation de départ et sort des
-révélations d'Abysses 1. L'Appât de la meute passe de commune à inhabituelle
-pour la même raison de composition. Les deux cartes restent dans la dotation,
-qui comprend toutes les communes et inhabituelles.
+**Les autres mythiques ne sont pas ajoutées à la dotation.** Elles se révèlent
+au fil de l'Histoire, puis s'obtiennent dans les boosters du Souk. Le Serment
+des Neuf Hivers et le Soleil rouge ont chacun deux mythiques dans leur starter ;
+les autres figures du Nord et du Japon — notamment le Cavalier des deux sabres,
+Orochi et Susanoo — restent à ouvrir. Les figures marines hors du Léviathan,
+les autres grandes figures des Ténèbres et les mythiques hors du boîtier pirate
+suivent la même progression de révélation et d'achat.
 
 ### Les cinq paquets d'Histoire
 
@@ -234,9 +236,9 @@ sorts.
 `npm run check:rpg-decks` (`tests/rpg-decks-puissance.test.js`) recalcule chaque
 liste à partir de sa recette et vérifie :
 
-- les quarante cartes, l'identité chromatique et la composition par recette ;
-- au moins une carte de chaque rareté et exactement une mythique dans chacun
-  des six starters ;
+- les trente cartes, l'identité chromatique et la composition par recette ;
+- au moins une carte de chaque rareté et le quota mythique déclaré par la
+  recette de chacun des huit starters ;
 - les plafonds rares, la disponibilité en boosters des rares et mythiques hors
   starters, et les cartes d'illustration présentes dans leur boîtier ;
 - les plafonds de campagne par famille et le classement des cartes de

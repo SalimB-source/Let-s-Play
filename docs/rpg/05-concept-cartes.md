@@ -259,9 +259,11 @@ le tour suivant (`duel.attaqueJouee`, posé par `rpgLancerAttaque` sur une
 déclaration acceptée et remis à `null` par `rpgFinDeTour`). Et **Coup rapide**
 (Fériel, le Djinn de foudre, et les armes qui le donnent) : déclaré
 attaquant, le porteur **peut** frapper une créature adverse de votre choix —
-elle encaisse ses dégâts, sans riposte, avant les blessures de combat, et
-**son attaque s'arrête là** : ni blocage, ni échange, ni dégâts au sorcier.
-Sans proie désignée, il attaque normalement.
+elle a **30 % de chances d'être manquée** — sans riposte, avant les blessures
+de combat, et **son attaque s'arrête là**, même si la frappe rate : ni blocage,
+ni échange, ni dégâts au sorcier. Dirigé vers le sorcier adverse, le Coup rapide
+le touche avec **100 % de précision** ; les bloqueurs s'appliquent normalement.
+Sans proie désignée, le porteur attaque normalement.
 
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
