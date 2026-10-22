@@ -144,13 +144,20 @@ export async function checkRpgAbordageAudio(assert, fichiersLus = []) {
       () => container.querySelector('.rpg-card--equipe[data-card-id="mousse-des-galiotes"]'),
       'Mousse du joueur sur la table',
     );
-    assert.ok(!sons.includes('abordage'), 'aucun cri pirate sur une créature ordinaire');
+    assert.ok(!sons.includes('abordage'), 'aucun cliquetis de chaînes sur une créature ordinaire');
+    assert.ok(sons.includes('pirate_arrivee'),
+      'la Mousse des galiotes, carte pirate, est saluée d’un « Ahoy ! » à son arrivée');
+    assert.ok(!sons.includes('navire_arrivee'), 'une créature à terre ne déclenche pas l’ambiance de quai');
+    assert.ok(fichiersLus.some((src) => /pirate-ahoy/i.test(src)),
+      'l’élément <audio> joue bien pirate-ahoy.mp3 à l’arrivée pirate');
 
     await passerTourSorcier();
     await attendre(
       () => container.querySelector('.rpg-card--ennemi[data-card-id="mousse-des-galiotes"]'),
       'Mousse du sorcier sur la table',
     );
+    assert.ok(sons.includes('pirate_arrivee'),
+      'l’arrivée de la Mousse du sorcier déclenche aussi le cri pirate');
 
     // ── Tour 2 (Joueur) : Raïs de la galiote kidnappe la Mousse adverse ──────
     await choisirMana('eau');
@@ -164,7 +171,10 @@ export async function checkRpgAbordageAudio(assert, fichiersLus = []) {
       'Raïs du joueur arrive sur la table',
     );
     assert.ok(!sons.includes('abordage'),
-      'tant que la victime n’est pas désignée, le cri « Ahoy ! » ne part pas');
+      'tant que la victime n’est pas désignée, le cliquetis de chaînes ne part pas');
+    assert.ok(sons.includes('pirate_arrivee'),
+      'le Raïs, carte pirate, est salué d’un « Ahoy ! » dès qu’il entre en jeu');
+    assert.ok(!sons.includes('navire_arrivee'), 'le Raïs n’est pas un navire');
 
     const cibleMousseEnnemie = container.querySelector('.rpg-card--ennemi[data-card-id="mousse-des-galiotes"]');
     await cliquer(cibleMousseEnnemie, 'désigner la Mousse adverse à kidnapper');
@@ -173,9 +183,9 @@ export async function checkRpgAbordageAudio(assert, fichiersLus = []) {
       'la Mousse adverse est en cale derrière le Raïs du joueur',
     );
     assert.equal(sons.filter((nom) => nom === 'abordage').length, 1,
-      'le cri pirate « Ahoy ! » retentit exactement une fois au kidnapping');
-    assert.ok(fichiersLus.some((src) => /pirate-ahoy/i.test(src)),
-      'l’élément <audio> joue bien pirate-ahoy.mp3');
+      'le cliquetis de chaînes retentit exactement une fois au kidnapping');
+    assert.ok(fichiersLus.some((src) => /chain-rattle/i.test(src)),
+      'l’élément <audio> joue bien chain-rattle.wav');
     assert.ok(!sons.includes('destruction_hit'),
       'une créature kidnappée en cale ne joue jamais le bruit de destruction');
 
@@ -188,9 +198,9 @@ export async function checkRpgAbordageAudio(assert, fichiersLus = []) {
       'le Raïs du sorcier détient la Mousse du joueur en cale',
     );
     assert.equal(sons.filter((nom) => nom === 'abordage').length, 1,
-      'le kidnapping par une créature adverse avec Abordage joue aussi « Ahoy ! »');
-    assert.ok(fichiersLus.some((src) => /pirate-ahoy/i.test(src)),
-      'l’élément <audio> joue pirate-ahoy.mp3 aussi pour un kidnapping adverse');
+      'le kidnapping par une créature adverse avec Abordage joue aussi le cliquetis de chaînes');
+    assert.ok(fichiersLus.some((src) => /chain-rattle/i.test(src)),
+      'l’élément <audio> joue chain-rattle.wav aussi pour un kidnapping adverse');
     assert.ok(!sons.includes('destruction_hit'),
       'pas de bruit de destruction non plus quand le sorcier kidnappe une créature');
 
@@ -206,7 +216,7 @@ export async function checkRpgAbordageAudio(assert, fichiersLus = []) {
     );
     assert.ok(sons.includes('card_place'), 'la pose joue son bruitage de carte');
     assert.ok(!sons.includes('abordage'),
-      'sans créature kidnappée, le Raïs n’émet pas le cri d’abordage');
+      'sans créature kidnappée, le Raïs n’émet pas le cliquetis d’abordage');
   } finally {
     RpgAudioPlayer.prototype.play = jouerOriginal;
     await act(async () => root.unmount());

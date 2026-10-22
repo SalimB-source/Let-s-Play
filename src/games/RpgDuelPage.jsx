@@ -70,7 +70,14 @@ import {
   RPG_PLATEAUX_MUSICAUX,
   reprendreThemePrincipal,
 } from './rpgPlateauMusic.js';
-import { clampRpgVolume, RPG_ABORDAGE_SFX, RpgAudioPlayer } from './rpgAudio.js';
+import {
+  clampRpgVolume,
+  RPG_ABORDAGE_SFX,
+  RPG_NAVIRE_ARRIVEE_SFX,
+  RPG_PIRATE_ARRIVEE_SFX,
+  RpgAudioPlayer,
+} from './rpgAudio.js';
+import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import { blessureDuMarteau, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
@@ -144,6 +151,8 @@ import {
   rpgFinDeTour,
   rpgConsommerPresentations,
   rpgConsommerPrisesEnCale,
+  rpgConsommerArriveesPirate,
+  rpgConsommerArriveesNavire,
   rpgConsommerSoins,
   rpgJouerCreature,
   rpgAppliquerBannieresAttaque,
@@ -211,6 +220,7 @@ import {
   RPG_DUEL_CARDS,
   cardArtId,
   cardById,
+  cardHasPrintedType,
   cardTypeLine,
   cardResonanceGroup,
   resonanceGroupLabel,
@@ -4453,7 +4463,7 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
       // Une carte que la roue de feu a consumée garde son adieu mais pas son
       // bruit : le feu a déjà sonné au moment du coup (`flammeJouee`). Une
       // créature prise en cale par Abordage rejoint son capteur par la chaîne
-      // sans jamais mourir : c'est « Ahoy ! » qui sonne, pas la destruction.
+      // sans jamais mourir : c'est le cliquetis de chaînes qui sonne, pas la destruction.
       const nouvellesDestructions = cartesEnDestruction
         .slice(prevDestructionCountRef.current)
         .filter((effet) => !effet.flammeJouee && !effet.priseEnCale && !effet.abordage);
@@ -4638,6 +4648,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       jouerSfx('card_place');
       const sonFeu = rpgFireSoundFor(cardById(nouvellesCreaturesAdverses[0].carteId), 'arrival');
       if (sonFeu) jouerSfx(sonFeu);
+      // Les journaux WeakMap du moteur ne traversent pas l'instantané PvP :
+      // l'arrivée d'une créature adverse s'y constate par différence de champ.
+      for (const entite of nouvellesCreaturesAdverses) {
+        const carteNouvelle = cardById(entite.carteId);
+        if (cardHasPrintedType(carteNouvelle, 'Navire')) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
+        else if (rpgEstCartePirate(carteNouvelle)) jouerSfx(RPG_PIRATE_ARRIVEE_SFX);
+      }
     }
 
     const cimetiereAvantLen = avant.sorcier?.cimetiere?.length ?? 0;
@@ -5272,7 +5289,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   useEffect(() => () => soinsTimersRef.current.forEach((id) => window.clearTimeout(id)), []);
 
-  // ── Abordage : chaque créature kidnappée en cale déclenche le cri pirate ───
+  // ── Abordage : chaque créature kidnappée en cale déclenche le cliquetis de chaînes ───
   const prisesDuelRef = useRef(null);
   const prisesPvpIdsRef = useRef({ code: null, ids: new Set() });
   useEffect(() => {
@@ -5296,6 +5313,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (prisesLocales.length) jouerSfx(RPG_ABORDAGE_SFX);
+  });
+
+  // ── Arrivées en jeu : « Ahoy ! » pour les pirates, quai pour les navires ──
+  const arriveesDuelRef = useRef(null);
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    // Les journaux se vident à chaque relevé, y compris au premier rendu :
+    // aucune arrivée survenue avant le montage ne doit sonner en différé.
+    const navires = rpgConsommerArriveesNavire(duelCourant);
+    const pirates = rpgConsommerArriveesPirate(duelCourant);
+    if (arriveesDuelRef.current !== duelCourant || ecran !== 'partie') {
+      arriveesDuelRef.current = duelCourant;
+      return;
+    }
+    if (navires.length) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
+    if (pirates.length) jouerSfx(RPG_PIRATE_ARRIVEE_SFX);
   });
 
   // Compteur de séquence pour les animations de pioche.

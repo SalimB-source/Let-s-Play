@@ -61,6 +61,19 @@ const carte = (definition) => ({
   art: definition.id,
 });
 
+/**
+ * Une carte « pirate » : une créature du set Piraterie (Lettres de Marque),
+ * jouée depuis la main — donc ni les jetons Corsaire (nés d'un effet, pas
+ * joués), ni les Sites, magies et armes du même set. Le moteur journalise
+ * leurs arrivées pour que le cri « Ahoy ! » salue chaque pirate qui accoste.
+ */
+export function rpgEstCartePirate(carte) {
+  return Boolean(carte)
+    && carte.set === RPG_LETTRES_DE_MARQUE_SET_ID
+    && (carte.kind ?? 'creature') === 'creature'
+    && !carte.jeton;
+}
+
 /** Le Corsaire : l’équipage débarqué par La Barbe-Rousse. */
 export const RPG_LETTRES_DE_MARQUE_JETONS = [{
   id: 'corsaire',
