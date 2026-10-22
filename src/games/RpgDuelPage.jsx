@@ -76,6 +76,7 @@ import {
   RPG_NAVIRE_ARRIVEE_SFX,
   RPG_PIRATE_ARRIVEE_SFX,
   RpgAudioPlayer,
+  rpgSonArriveePirate,
 } from './rpgAudio.js';
 import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
@@ -4859,7 +4860,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       for (const entite of nouvellesCreaturesAdverses) {
         const carteNouvelle = cardById(entite.carteId);
         if (cardHasPrintedType(carteNouvelle, 'Navire')) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
-        else if (rpgEstCartePirate(carteNouvelle)) jouerSfx(RPG_PIRATE_ARRIVEE_SFX);
+        else if (rpgEstCartePirate(carteNouvelle)) jouerArriveePirate();
       }
     }
 
@@ -5263,6 +5264,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       p.play(nom, delai);
     } catch { /* audio indisponible */ }
   };
+  // L'accueil des cartes pirates alterne d'une arrivée sur l'autre entre le cri
+  // « Ahoy ! » (`RPG_PIRATE_ARRIVEE_SFX`) et le dialogue « Alright »
+  // (`RPG_PIRATE_DIALOGUE_SFX`) : le compteur vit le temps de la partie et sert
+  // les deux camps comme les deux modes (solo et PvP). Un navire, même pirate,
+  // reste accueilli par l'ambiance de quai seule — jamais par ce cycle.
+  const arriveesPiratesJoueesRef = useRef(0);
+  const jouerArriveePirate = (nombre = 1) => {
+    const demandees = Math.trunc(Number(nombre));
+    const fois = Number.isFinite(demandees) && demandees > 0 ? demandees : 1;
+    for (let index = 0; index < fois; index += 1) {
+      jouerSfx(rpgSonArriveePirate(arriveesPiratesJoueesRef.current));
+      arriveesPiratesJoueesRef.current += 1;
+    }
+  };
   const unlockSfx = () => {
     try { sfxRef.current?.unlock(); } catch { /* ignore */ }
   };
@@ -5521,7 +5536,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (prisesLocales.length) jouerSfx(RPG_ABORDAGE_SFX);
   });
 
-  // ── Arrivées en jeu : « Ahoy ! » pour les pirates, quai pour les navires ──
+  // ── Arrivées en jeu : accueil alterné (« Ahoy ! » / « Alright ») pour les
+  //    pirates, ambiance de quai pour les navires ──
   const arriveesDuelRef = useRef(null);
   useEffect(() => {
     const duelCourant = duelRef.current;
@@ -5534,7 +5550,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (navires.length) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
-    if (pirates.length) jouerSfx(RPG_PIRATE_ARRIVEE_SFX);
+    if (pirates.length) jouerArriveePirate(pirates.length);
   });
 
   // Compteur de séquence pour les animations de pioche.

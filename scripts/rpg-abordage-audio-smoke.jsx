@@ -156,8 +156,14 @@ export async function checkRpgAbordageAudio(assert, fichiersLus = []) {
       () => container.querySelector('.rpg-card--ennemi[data-card-id="mousse-des-galiotes"]'),
       'Mousse du sorcier sur la table',
     );
-    assert.ok(sons.includes('pirate_arrivee'),
-      'l’arrivée de la Mousse du sorcier déclenche aussi le cri pirate');
+    // Deuxième arrivée pirate de la partie : l’accueil alterne et laisse la
+    // place au dialogue « Alright » (Pirate_Dialogue_Alright.wav).
+    assert.ok(sons.includes('pirate_dialogue'),
+      'l’arrivée de la Mousse du sorcier joue le second accueil pirate, « Alright »');
+    assert.equal(sons.filter((nom) => nom === 'pirate_arrivee').length, 1,
+      'le cri « Ahoy ! » ne double pas le dialogue : les deux voix alternent');
+    assert.ok(fichiersLus.some((src) => /pirate-dialogue-alright/i.test(src)),
+      'l’élément <audio> joue bien pirate-dialogue-alright.wav');
 
     // ── Tour 2 (Joueur) : Raïs de la galiote kidnappe la Mousse adverse ──────
     await choisirMana('eau');
@@ -172,8 +178,9 @@ export async function checkRpgAbordageAudio(assert, fichiersLus = []) {
     );
     assert.ok(!sons.includes('abordage'),
       'tant que la victime n’est pas désignée, le cliquetis de chaînes ne part pas');
+    // Troisième arrivée pirate : le cycle revient au cri « Ahoy ! ».
     assert.ok(sons.includes('pirate_arrivee'),
-      'le Raïs, carte pirate, est salué d’un « Ahoy ! » dès qu’il entre en jeu');
+      'le Raïs, carte pirate, est accueilli par un nouvel « Ahoy ! » : les voix alternent');
     assert.ok(!sons.includes('navire_arrivee'), 'le Raïs n’est pas un navire');
 
     const cibleMousseEnnemie = container.querySelector('.rpg-card--ennemi[data-card-id="mousse-des-galiotes"]');

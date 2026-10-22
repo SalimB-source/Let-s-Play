@@ -33,6 +33,19 @@ whenever a pirate creature of the Lettres de Marque set — a non-token,
 non-ship creature card played from the hand — enters the battlefield, on
 either side (solo AI and PvP).
 
+## Pirate arrival, second voice: `pirate-dialogue-alright.wav`
+
+`pirate-dialogue-alright.wav` is the user-supplied
+`public/Pirate_Dialogue_Alright.wav`, copied byte-for-byte with no
+re-encoding (WAV PCM, stereo, 16-bit, 44.1 kHz, 0.779 second, 266,158 bytes).
+It plays under the SFX name `pirate_dialogue`.
+
+The pirate arrival alternates between the two voices: the first pirate card
+cries « Ahoy ! », the next one says « Alright », and so on for the whole
+match (`RPG_PIRATE_ARRIVEES_SFX` / `rpgSonArriveePirate` in `rpgAudio.js`).
+Both sides and both modes share the same cycle. Ships keep the dock sound
+alone — a pirate ship never plays either voice.
+
 ## Ship arrival: `dock-sound.mp3`
 
 `dock-sound.mp3` is the user-supplied `Dock Sound_320k.mp3`, stored

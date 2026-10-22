@@ -40,6 +40,7 @@ const VICTORY_TRUMPETS_SAMPLE_URL = new URL('./assets/victory-trumpets.mp3', imp
 const GAME_LOST_SAMPLE_URL = new URL('./assets/game-lost.mp3', import.meta.url);
 const HIT_SAMPLE_URL = new URL('./assets/hit.wav', import.meta.url);
 const PIRATE_AHOY_SAMPLE_URL = new URL('./assets/pirate-ahoy.mp3', import.meta.url);
+const PIRATE_DIALOGUE_SAMPLE_URL = new URL('./assets/pirate-dialogue-alright.wav', import.meta.url);
 const CHAIN_RATTLE_SAMPLE_URL = new URL('./assets/chain-rattle.wav', import.meta.url);
 const DOCK_SOUND_SAMPLE_URL = new URL('./assets/dock-sound.mp3', import.meta.url);
 const CARD_PLACE_VOLUME = 0.62;
@@ -57,6 +58,7 @@ const VICTORY_TRUMPETS_VOLUME = 0.6;
 const GAME_LOST_VOLUME = 0.6;
 const HIT_VOLUME = 0.62;
 const PIRATE_AHOY_VOLUME = 0.62;
+const PIRATE_DIALOGUE_VOLUME = 0.62;
 const CHAIN_RATTLE_VOLUME = 0.62;
 const DOCK_SOUND_VOLUME = 0.62;
 
@@ -65,6 +67,31 @@ export const RPG_ABORDAGE_SFX = 'abordage';
 
 /** Le cri pirate (« Ahoy ! ») joué quand une carte pirate arrive en jeu. */
 export const RPG_PIRATE_ARRIVEE_SFX = 'pirate_arrivee';
+
+/** Le dialogue pirate (« Alright »), seconde voix de l'arrivée des cartes pirates. */
+export const RPG_PIRATE_DIALOGUE_SFX = 'pirate_dialogue';
+
+/**
+ * Les deux accueils des cartes pirates, joués **en alternance** : une arrivée
+ * sur deux est saluée par `pirate_arrivee` (« Ahoy ! »), l'autre par
+ * `pirate_dialogue` (« Alright »).
+ */
+export const RPG_PIRATE_ARRIVEES_SFX = Object.freeze([
+  RPG_PIRATE_ARRIVEE_SFX,
+  RPG_PIRATE_DIALOGUE_SFX,
+]);
+
+/**
+ * Le son d'arrivée pirate de la n-ième arrivée depuis le début de la partie
+ * (`0` → « Ahoy ! », `1` → « Alright », `2` → « Ahoy ! »…). Toute valeur
+ * inattendue retombe sur le premier son, et les indices négatifs restent dans
+ * le cycle au lieu de sortir du tableau.
+ */
+export function rpgSonArriveePirate(index = 0) {
+  const total = RPG_PIRATE_ARRIVEES_SFX.length;
+  const depart = Number.isFinite(Number(index)) ? Math.trunc(Number(index)) : 0;
+  return RPG_PIRATE_ARRIVEES_SFX[((depart % total) + total) % total];
+}
 
 /** L'ambiance de quai (« Dock Sound ») jouée quand un navire arrive en jeu. */
 export const RPG_NAVIRE_ARRIVEE_SFX = 'navire_arrivee';
@@ -116,6 +143,9 @@ const RPG_SFX_TABLE = {
   // Une carte pirate jouée depuis la main entre en jeu : « Ahoy ! »
   // (Cartoon Pirate Voice - Ahoy.mp3, le même échantillon que l'ancien abordage).
   pirate_arrivee: [{ kind: 'sample', at: 0, dur: 1.411, g: 1 }],
+  // L'autre accueil pirate, joué une arrivée sur deux : « Alright »
+  // (Pirate_Dialogue_Alright.wav, 0,779 s — PCM 16 bits, 44,1 kHz, stéréo).
+  pirate_dialogue: [{ kind: 'sample', at: 0, dur: 0.779, g: 1 }],
   // Un navire (type imprimé « Navire ») accoste : l'ambiance du quai
   // (Dock Sound_320k.mp3 — MPEG-1 Layer III, 320 kbps CBR, 48 kHz).
   navire_arrivee: [{ kind: 'sample', at: 0, dur: 2.352, g: 1 }],
@@ -181,6 +211,7 @@ export class RpgAudioPlayer {
     this.gameLostAudio = null;
     this.hitAudio = null;
     this.pirateAhoyAudio = null;
+    this.pirateDialogueAudio = null;
     this.chainRattleAudio = null;
     this.dockSoundAudio = null;
     const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
@@ -231,6 +262,9 @@ export class RpgAudioPlayer {
         this.pirateAhoyAudio = new AudioCtor(PIRATE_AHOY_SAMPLE_URL.href);
         this.pirateAhoyAudio.preload = 'auto';
         this.pirateAhoyAudio.volume = PIRATE_AHOY_VOLUME;
+        this.pirateDialogueAudio = new AudioCtor(PIRATE_DIALOGUE_SAMPLE_URL.href);
+        this.pirateDialogueAudio.preload = 'auto';
+        this.pirateDialogueAudio.volume = PIRATE_DIALOGUE_VOLUME;
         this.chainRattleAudio = new AudioCtor(CHAIN_RATTLE_SAMPLE_URL.href);
         this.chainRattleAudio.preload = 'auto';
         this.chainRattleAudio.volume = CHAIN_RATTLE_VOLUME;
@@ -340,6 +374,7 @@ export class RpgAudioPlayer {
       [this.gameLostAudio, GAME_LOST_VOLUME],
       [this.hitAudio, HIT_VOLUME],
       [this.pirateAhoyAudio, PIRATE_AHOY_VOLUME],
+      [this.pirateDialogueAudio, PIRATE_DIALOGUE_VOLUME],
       [this.chainRattleAudio, CHAIN_RATTLE_VOLUME],
       [this.dockSoundAudio, DOCK_SOUND_VOLUME],
     ];
@@ -372,7 +407,7 @@ export class RpgAudioPlayer {
 
   play(name, delay = 0) {
     if (!this.ctx || !this.master || this.muted || this.volume <= 0) return;
-    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier' || name === 'abordage' || name === 'pirate_arrivee' || name === 'navire_arrivee') {
+    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier' || name === 'abordage' || name === 'pirate_arrivee' || name === 'pirate_dialogue' || name === 'navire_arrivee') {
       const sample = name === 'card_place'
         ? this.cardPlaceAudio
         : name === 'card_draw' ? this.cardDrawAudio
@@ -383,7 +418,7 @@ export class RpgAudioPlayer {
                 : name === 'card_countered' ? this.cardCounteredAudio
                 : name === 'creature_return' ? this.creatureReturnAudio
                 : name === 'block_impact' ? this.blockImpactAudio
-                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryTrumpetsAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'navire_arrivee' ? this.dockSoundAudio : this.hitAudio;
+                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryTrumpetsAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'pirate_dialogue' ? this.pirateDialogueAudio : name === 'navire_arrivee' ? this.dockSoundAudio : this.hitAudio;
       if (!sample) return;
       try {
         sample.currentTime = 0;
@@ -683,6 +718,14 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.pirateAhoyAudio = null;
+    if (this.pirateDialogueAudio) {
+      try {
+        this.pirateDialogueAudio.pause?.();
+        this.pirateDialogueAudio.removeAttribute?.('src');
+        this.pirateDialogueAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.pirateDialogueAudio = null;
     if (this.chainRattleAudio) {
       try {
         this.chainRattleAudio.pause?.();
