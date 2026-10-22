@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from collections import deque
 from pathlib import Path
+import sys
 from PIL import Image, ImageFilter
 
 RACINE = Path(__file__).resolve().parents[1]
@@ -30,6 +31,11 @@ QUALITE_WEBP = 86
 # Cadrages (top_frac, bot_frac, left_frac, right_frac) appliqués sur la boîte
 # englobante brute afin d'harmoniser tous les personnages en plan américain
 # (mi-cuisses / genoux) à la même échelle que salem, yamina, feriel et guetteur.
+# Règle : ne JAMAIS rogner le haut (top_frac = 0.0), la gauche (left_frac = 0.0)
+# ni la droite (right_frac = 1.0) après `getbbox()` — ces trois bords sont en
+# plein air sur le décor et trancheraient tête, casque, mains ou armes. Seul le
+# bas (`bot_frac`) est coupé, puisqu'il descend sous le bord de l'écran ou
+# derrière la boîte de dialogue (`--rpg-story-debord`).
 CADRAGES_PAR_DEFAUT = (0.0, 0.70, 0.0, 1.0)
 
 CADRAGES_SPECIFIQUES: dict[str, tuple[float, float, float, float]] = {
@@ -41,17 +47,17 @@ CADRAGES_SPECIFIQUES: dict[str, tuple[float, float, float, float]] = {
     "mahieddine": (0.0, 1.0, 0.0, 1.0),
     "scribe": (0.0, 1.0, 0.0, 1.0),
     "puisatier": (0.0, 1.0, 0.0, 1.0),
-    "valkyrie-fjord-decision": (0.04, 0.96, 0.0, 1.0),
-    # Poses spécifiques harmonisées avec leur stand de base
-    "salem-affrontement": (0.0, 0.66, 0.08, 0.92),
-    "salem-apaisement": (0.06, 0.68, 0.05, 1.0),
+    "valkyrie-fjord-decision": (0.0, 0.96, 0.0, 1.0),
+    # Poses spécifiques harmonisées avec leur stand de base (sans rognage haut/côtés)
+    "salem-affrontement": (0.0, 0.66, 0.0, 1.0),
+    "salem-apaisement": (0.0, 0.65, 0.0, 1.0),
     "salem-decision": (0.0, 0.66, 0.0, 1.0),
     "yamina-affrontement": (0.0, 0.68, 0.0, 1.0),
     "yamina-apaisement": (0.0, 0.68, 0.0, 1.0),
-    "yamina-decision": (0.0, 0.68, 0.04, 0.96),
-    "feriel-affrontement": (0.0, 0.68, 0.0, 0.88),
+    "yamina-decision": (0.0, 0.68, 0.0, 1.0),
+    "feriel-affrontement": (0.0, 0.68, 0.0, 1.0),
     "feriel-apaisement": (0.0, 0.68, 0.0, 1.0),
-    "guetteur-affrontement": (0.0, 0.70, 0.08, 0.94),
+    "guetteur-affrontement": (0.0, 0.70, 0.0, 1.0),
     "guetteur-apaisement": (0.0, 0.70, 0.0, 1.0),
     "mahieddine-affrontement": (0.0, 0.65, 0.0, 1.0),
     "mahieddine-apaisement": (0.0, 0.65, 0.0, 1.0),
@@ -59,19 +65,19 @@ CADRAGES_SPECIFIQUES: dict[str, tuple[float, float, float, float]] = {
     "scribe-affrontement": (0.0, 0.66, 0.0, 1.0),
     "scribe-apaisement": (0.0, 0.66, 0.0, 1.0),
     "scribe-decision": (0.0, 0.66, 0.0, 1.0),
-    "puisatier-affrontement": (0.0, 0.66, 0.0, 0.96),
-    "puisatier-apaisement": (0.0, 0.66, 0.0, 0.90),
-    "horloger-zenith-affrontement": (0.11, 0.71, 0.08, 0.92),
-    "maitre-hivers": (0.05, 0.73, 0.04, 0.96),
-    "maitre-hivers-affrontement": (0.08, 0.71, 0.0, 1.0),
-    "maitre-hivers-apaisement": (0.05, 0.73, 0.0, 1.0),
-    "sonneur-affrontement": (0.08, 0.70, 0.0, 1.0),
-    "pecheur-affrontement": (0.06, 0.68, 0.0, 1.0),
-    "tarek-affrontement": (0.0, 0.70, 0.04, 0.94),
-    "valkyrie-fjord-affrontement": (0.0, 0.70, 0.05, 0.95),
-    "valkyrie-fjord-apaisement": (0.05, 0.70, 0.0, 1.0),
-    "djinn-souk-apaisement": (0.0, 0.70, 0.04, 0.96),
-    "amani-apaisement": (0.0, 0.70, 0.03, 0.97),
+    "puisatier-affrontement": (0.0, 0.66, 0.0, 1.0),
+    "puisatier-apaisement": (0.0, 0.66, 0.0, 1.0),
+    "horloger-zenith-affrontement": (0.0, 0.65, 0.0, 1.0),
+    "maitre-hivers": (0.0, 0.71, 0.0, 1.0),
+    "maitre-hivers-affrontement": (0.0, 0.68, 0.0, 1.0),
+    "maitre-hivers-apaisement": (0.0, 0.70, 0.0, 1.0),
+    "sonneur-affrontement": (0.0, 0.66, 0.0, 1.0),
+    "pecheur-affrontement": (0.0, 0.65, 0.0, 1.0),
+    "tarek-affrontement": (0.0, 0.70, 0.0, 1.0),
+    "valkyrie-fjord-affrontement": (0.0, 0.70, 0.0, 1.0),
+    "valkyrie-fjord-apaisement": (0.0, 0.68, 0.0, 1.0),
+    "djinn-souk-apaisement": (0.0, 0.70, 0.0, 1.0),
+    "amani-apaisement": (0.0, 0.70, 0.0, 1.0),
     # Créatures non-humanoïdes (conserver la silhouette, couper poussières/éclaboussures basses)
     "dernier-fennec": (0.0, 0.90, 0.0, 1.0),
     "dernier-fennec-affrontement": (0.0, 0.80, 0.0, 1.0),
@@ -85,7 +91,7 @@ CADRAGES_SPECIFIQUES: dict[str, tuple[float, float, float, float]] = {
     "meute-neiges": (0.0, 0.90, 0.0, 1.0),
     "meute-neiges-affrontement": (0.0, 0.88, 0.0, 1.0),
     "meute-neiges-apaisement": (0.0, 0.95, 0.0, 1.0),
-    "nageuse": (0.0, 0.95, 0.0, 1.0),
+    "nageuse": (0.0, 0.75, 0.0, 1.0),
     "nageuse-affrontement": (0.0, 0.92, 0.0, 1.0),
     "nageuse-apaisement": (0.0, 0.94, 0.0, 1.0),
 }
@@ -96,6 +102,7 @@ REGLAGES: dict[str, tuple[int, float, int]] = {
     "yamina": (80, 1.2, 26),
     "djinn-souk": (85, 1.2, 24),
     "meute-neiges": (55, 1.2, 24),
+    "horloger-zenith-affrontement": (55, 1.4, 22),
     "ifrit-ergs": (105, 1.0, 20),
     "ifrit-ergs-affrontement": (105, 1.0, 20),
     "ifrit-ergs-apaisement": (105, 1.0, 20),
@@ -260,8 +267,14 @@ def detourer(chemin: Path) -> Image.Image:
     if boite:
         image = image.crop(boite)
 
-    # Harmonisation du cadrage (plan américain mi-cuisses / genoux)
+    # Harmonisation du cadrage (plan américain mi-cuisses / genoux) :
+    # seul le bas (`b_f`) peut être rogné — jamais le haut ni les côtés.
     t_f, b_f, l_f, r_f = cadrage
+    if t_f != 0.0 or l_f != 0.0 or r_f != 1.0:
+        raise ValueError(
+            f"{chemin.stem} : rognage haut/côtés interdit ({cadrage}) — "
+            "cela couperait le personnage en plein air."
+        )
     if (t_f, b_f, l_f, r_f) != (0.0, 1.0, 0.0, 1.0):
         w, h = image.size
         x0 = max(0, min(w - 1, int(round(w * l_f))))
@@ -282,9 +295,12 @@ def detourer(chemin: Path) -> Image.Image:
 
 def main() -> None:
     DOSSIER_SORTIE.mkdir(parents=True, exist_ok=True)
+    filtres = [a for a in sys.argv[1:] if not a.startswith("-")]
     fichiers = sorted(DOSSIER_BRUT.glob("*.jpg"))
+    if filtres:
+        fichiers = [f for f in fichiers if f.stem in filtres or any(a in f.stem for a in filtres)]
     if not fichiers:
-        raise SystemExit(f"Aucun fichier brut dans {DOSSIER_BRUT}")
+        raise SystemExit(f"Aucun fichier brut correspondant dans {DOSSIER_BRUT}")
 
     for src in fichiers:
         sortie = DOSSIER_SORTIE / f"stand-{src.stem}.webp"

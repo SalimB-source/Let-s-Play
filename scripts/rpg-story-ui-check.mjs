@@ -178,6 +178,23 @@ assert.ok(declared(storyCss, '.rpg-narrative__boite', 'margin').includes('0 auto
   'sur mobile en portrait, la boîte de dialogue se colle sous la fenêtre des personnages');
 assert.ok(hauteursSprite.some((val) => val.includes('100vh + var(--rpg-story-debord) - 54px')),
   'en paysage mobile, les personnages remontent jusqu’en haut de la scène avec leur débord sous le bord');
+// Les sprites larges (bâton diagonal, bras ouverts, hallebarde) ne doivent jamais
+// être poussés hors de l'écran par un `left`/`right` négatif ni dépasser sans
+// borne avec `max-width: none` : leur marge automatique les centre quand ils sont
+// étroits et les cale à ras du bord extérieur quand ils sont larges.
+for (const selecteur of ['.rpg-narrative__stand', '.rpg-narrative__stand:first-child', '.rpg-narrative__stand:last-child']) {
+  for (const prop of ['left', 'right']) {
+    for (const val of declared(storyCss, selecteur, prop)) {
+      assert.doesNotMatch(val, /^-\d|^-\.\d/,
+        `${selecteur} { ${prop}: ${val} } pousserait un personnage hors de l’écran`);
+    }
+  }
+}
+const largeursMaxSprite = declared(storyCss, '.rpg-narrative__stand-img', 'max-width');
+assert.ok(largeursMaxSprite.length >= 4 && !largeursMaxSprite.includes('none'),
+  'les sprites déclarent toujours une largeur maximale bornée à la scène ou à l’écran');
+assert.ok(declared(storyCss, '.rpg-narrative__stand-img', 'margin-inline').includes('auto'),
+  'margin-inline: auto centre les silhouettes étroites sans couper les poses larges');
 
 // ── Le décor reste visible ──────────────────────────────────────────────────
 // Le lecteur a longtemps posé une nappe sombre sur toute la peinture
