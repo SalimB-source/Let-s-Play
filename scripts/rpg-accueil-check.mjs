@@ -65,6 +65,17 @@ assert.match(
 assert.match(actions, /rpg-menu-button__live/, 'la pastille « en ligne » signale le mode vivant');
 assert.match(actions, /<span className="sr-only">\(en ligne\)<\/span>/, 'la pastille est aussi lisible par un lecteur d’écran');
 
+// L'encadré sous les quatre portes raconte l'histoire de Bab El, à la place de l'ancien rappel des règles.
+const presentation = page.slice(
+  page.indexOf('className="rpg-flux-menu"'),
+  page.indexOf('</section>', page.indexOf('className="rpg-flux-menu"')) + '</section>'.length,
+);
+for (const repere of ['Bab El', 'Astrolabe', 'Chambre des Heures', 'Salem', 'douze survivants', 'Yamina']) {
+  assert.ok(presentation.includes(repere), `la présentation de l’onglet Jouer mentionne « ${repere} »`);
+}
+assert.doesNotMatch(presentation, /Le mana remplace les terrains/i,
+  'l’ancien encadré des règles a laissé sa place à la présentation de l’histoire');
+
 // Le duel en ligne vit dans le cadre du jeu, avec un retour vers le hub.
 assert.match(salon, /function Cadre\(/, 'le salon se rend dans un cadre propre');
 assert.match(
@@ -238,6 +249,29 @@ try {
     tutorialCss,
     /@media \(max-width: 620px\) \{\s*\.rpg-mode-menu__hero-actions \{ grid-template-columns: minmax\(0, 1fr\); \}/,
     'sur téléphone, les quatre portes s’empilent en une colonne',
+  );
+  // Sur mobile en mode vertical, `.rpg-mode-menu__play:not(.rpg-mode-menu__play--full)`
+  // (spécificité 0,2,0) doit repasser à une seule colonne après la règle 2 colonnes
+  // du bureau — sinon la colonne de droite (280 px) écrase le héros de l'onglet Jouer.
+  const derniereGrilleDeuxColonnes = battleCss.lastIndexOf('minmax(0, 1.8fr) minmax(280px, .9fr)');
+  const repliPortrait = battleCss.indexOf(
+    '.rpg-mode-menu__play:not(.rpg-mode-menu__play--full)',
+    derniereGrilleDeuxColonnes,
+  );
+  assert.ok(
+    derniereGrilleDeuxColonnes > 0 && repliPortrait > derniereGrilleDeuxColonnes,
+    'la surcharge mobile/portrait reprend la même spécificité `:not(.rpg-mode-menu__play--full)` après la grille bureau',
+  );
+  assert.match(
+    battleCss.slice(repliPortrait, repliPortrait + 220),
+    /grid-template-columns:\s*minmax\(0,\s*1fr\);/,
+    'en mode vertical sur mobile, l’onglet Jouer passe réellement sur une seule colonne pleine largeur',
+  );
+  const dernierePaireRaccourcis = battleCss.lastIndexOf('.rpg-mode-menu__secondary-actions {\n  grid-column: 1 / -1;');
+  assert.match(
+    battleCss.slice(dernierePaireRaccourcis),
+    /@media \(max-width: 620px\)[\s\S]{0,220}?\.rpg-mode-menu__secondary-actions \{\s*grid-template-columns: minmax\(0, 1fr\);/,
+    'les deux raccourcis (partie rapide, tutoriel) s’empilent aussi en une colonne sur mobile après la déclaration 2 colonnes',
   );
 } finally {
   tel.window.close();

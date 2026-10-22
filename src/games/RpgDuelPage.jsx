@@ -3402,11 +3402,15 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </button>
                   </div>
                 </div>
-                <section className="rpg-flux-menu" aria-label="Les règles du Sablier">
-                  <span className="rpg-flux-menu__eyebrow">LES RÈGLES · TOUS LES DUELS</span>
-                  <h3>Le mana remplace les terrains.</h3>
-                  <p>30 cartes à jouer, aucun terrain à piocher. Gagnez un mana coloré à chaque tour jusqu’à 10 ; choisissez sa couleur si votre deck en a plusieurs. Main de départ : 3 cartes, cinq créatures au plus par camp (la sixième demande un sacrifice) et cinq cartes en main au maximum en fin de tour.</p>
-                  <small className="rpg-flux-menu__note">Ces règles s’appliquent aux duels libres, au tutoriel et à toute l’Histoire.</small>
+                <section className="rpg-flux-menu" aria-label="Présentation de l’histoire du Sablier">
+                  <span className="rpg-flux-menu__eyebrow">L’HISTOIRE · BAB EL</span>
+                  <h3>Une cité verticale face au désert qui monte.</h3>
+                  <p>
+                    <em>Le Sablier</em> se passe à Bab El, une cité verticale de neuf étages construite autour d’un portail scellé, au-dessus d’un désert dont le sable monte inexorablement. À chaque cycle d’une horloge géante — l’Astrolabe —, l’étage du bas est englouti, et une administration très polie mais implacable, la Chambre des Heures, publie <em>la Liste</em> de ceux qui ont le droit de monter… et de ceux qu’on abandonne.
+                  </p>
+                  <p>
+                    L’histoire démarre quand Salem, un sauveteur qui fouille les étages condamnés, remonte douze survivants d’un quartier officiellement déclaré vide : sur le papier, ils n’existent plus, donc personne ne veut les loger. Avec Yamina, une ancienne horlogère repentie, et quelques alliés, il invoque un ancien droit de contestation — qui se règle par des duels de cartes faites de mémoire et de pactes — pour forcer la Chambre à réinscrire ces douze oubliés… avant de découvrir que ces effacements cachent le vrai secret du portail de Bab El.
+                  </p>
                 </section>
               </div>
               {/* Le halo doré reste : simple lumière, pas un fond. */}
