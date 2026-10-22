@@ -6332,9 +6332,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 @media (max-width: 560px) {
   /* Huit onglets sur un téléphone : celui de la Messagerie garde sa bulle et
-     son chiffre, et lâche le mot — l'`aria-label`, lui, dit tout. */
-  .rpg-mode-menu__switch button.rpg-mode-menu__messagerie .rpg-mode-menu__onglet-libelle { display: none; }
-  .rpg-mode-menu__messagerie-mark { width: 15px; height: 15px; }
+     son chiffre — et le mot, en tout petit, sous la bulle comme les libellés
+     des autres onglets. Un onglet sans libellé ne se reconnaît pas : sans ce
+     mot, la messagerie n'était qu'une bulle anonyme au bout de la barre,
+     personne n'y voyait « la messagerie ». */
+  .rpg-mode-menu__switch button.rpg-mode-menu__messagerie { flex-direction: column; gap: 2px; }
+  .rpg-mode-menu__switch button.rpg-mode-menu__messagerie .rpg-mode-menu__onglet-libelle {
+    font-size: 8px;
+    letter-spacing: .02em;
+  }
+  .rpg-mode-menu__messagerie-mark { width: 14px; height: 14px; }
   .rpg-mode-menu__switch button.rpg-mode-menu__messagerie .rpg-mode-menu__messagerie-pastille {
     display: inline;
     position: absolute;
@@ -9200,24 +9207,26 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Téléphone en paysage et petites tablettes — la fenêtre tactile du jeu
    (≤ 1100 px), le portrait étroit étant déjà traité ci-dessus — : la marque,
-   les six onglets et le bouton plein écran ne tiennent jamais sur une seule
+   les huit onglets et le bouton plein écran ne tiennent jamais sur une seule
    ligne.
    Sans cette rangée de secours, les onglets débordent de l'écran (la barre
    reste en `overflow: visible` du bloc « Ajustements ») et deviennent
    inatteignables. La barre d'onglets passe donc sur une **deuxième ligne**,
    pleine largeur d'un bord à l'autre de l'écran (mêmes retraits que le
    `padding` de l'en-tête), et ses onglets se distribuent le reste de place :
-   les six tiennent sans défiler dès 821 px. S'ils ne tenaient vraiment pas,
-   la barre défile horizontalement, sans barre de défilement visible, au lieu
-   de les laisser déborder. */
-@media (min-width: 821px) and (max-width: 1100px) {
+   ils tiennent tous sur une ligne dès 830 px environ. En dessous, la barre
+   **passe à la ligne** (`flex-wrap: wrap`) au lieu de défiler : le huitième
+   onglet — la Messagerie — restait peint hors de l'écran, invisible et
+   incliquable, sur les largeurs où les six premiers tenaient encore. Un
+   onglet qu'on ne peut pas voir est un onglet qui n'existe pas. */
+@media (min-width: 701px) and (max-width: 1100px) {
  .rpg-mode-menu__header { flex-wrap: wrap; }
  /* La barre passe sur deux rangées : sans cela, la marque restait collée au
     bouton plein écran, au milieu de l'écran, au lieu de rester à gauche. */
  .rpg-mode-menu__brand { margin-right: auto; }
- .rpg-mode-menu__switch { order: 3; width: calc(100% + clamp(14px, 4.6vw, 74px) * 2); flex: 0 0 calc(100% + clamp(14px, 4.6vw, 74px) * 2); min-width: 0; margin: 0 calc(clamp(14px, 4.6vw, 74px) * -1); padding: 0 clamp(10px, 1.6vw, 18px); border-top: 1px solid rgba(255,255,255,.08); overflow-x: auto; scrollbar-width: none; }
+ .rpg-mode-menu__switch { order: 3; width: calc(100% + clamp(14px, 4.6vw, 74px) * 2); flex: 0 0 calc(100% + clamp(14px, 4.6vw, 74px) * 2); min-width: 0; margin: 0 calc(clamp(14px, 4.6vw, 74px) * -1); padding: 0 clamp(10px, 1.6vw, 18px); border-top: 1px solid rgba(255,255,255,.08); flex-wrap: wrap; overflow-x: auto; scrollbar-width: none; }
  .rpg-mode-menu__switch::-webkit-scrollbar { display: none; }
- .rpg-mode-menu__switch button, .rpg-mode-menu__switch button.rpg-mode-menu__souk { flex: 1 0 auto; min-height: 46px; padding: 0 clamp(9px, 1.4vw, 16px); }
+ .rpg-mode-menu__switch button, .rpg-mode-menu__switch button.rpg-mode-menu__souk { flex: 1 1 auto; min-height: 46px; padding: 0 clamp(9px, 1.4vw, 16px); }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
