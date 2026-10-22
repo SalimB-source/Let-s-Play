@@ -233,6 +233,7 @@ Terminer **les trois quêtes du jour** ouvre le **Cachet du cycle** : +80 ◈.
 | --- | --- |
 | Premier déblayage d'un étage | **50 ◈** |
 | Étage rejoué | **10 ◈** |
+| **Tour terminée** — tous ses étages déblayés | **+200 ◈**, une seule fois par tour |
 | Duel libre gagné | **8 ◈** |
 | Duel perdu | 0 ◈ |
 | Quête facile terminée | 55 ◈ |
@@ -248,9 +249,13 @@ moins, et une journée ratée ne se rattrape pas (D6). Le calibrage visé —
 nets** qui bouclent la collection (37 paquets, doublons réinvestis) représentent
 ainsi ≈ 12 journées de quêtes, crédits des étages compris.
 
-**Ce que la campagne entière rapporte** : 20 étages × 50 ◈ = **1 000 ◈**, soit
-sept paquets. Les Tours paient l'entrée au Souk, pas sa totalité — c'est la
-boucle quotidienne qui porte le reste, et c'est voulu.
+**Ce que la campagne entière rapporte** : 20 étages × 50 ◈ = **1 000 ◈**, plus
+le butin des cinq tours gravies (5 × 200 ◈) = **2 000 ◈**, soit quatorze
+paquets. Toute la galerie des Tours (8 tours, 32 étages) rapporte
+32 × 50 ◈ + 8 × 200 ◈ = **3 200 ◈**. Le butin ne se rejoue pas : une tour
+terminée l'a versé une fois (`toursPayees` dans le portefeuille), les reprises
+d'étages ne paient que 10 ◈. Les Tours paient l'entrée au Souk, pas sa
+totalité — c'est la boucle quotidienne qui porte le reste, et c'est voulu.
 
 ## 4. Le contenu (données pures)
 
@@ -409,10 +414,12 @@ tirerIndex(liste, rng) · tirerParmi(liste, rng) · choixPondere(paires, rng, de
 
 // rpgCredits.js
 BAREME_DOUBLON = { commune: 12, inhabituelle: 20, rare: 45, mythique: 120 }
-GAINS = { etagePremiere: 50, etageRejoue: 10, duelLibre: 8, cachetDuCycle: 80 }
+GAINS = { etagePremiere: 50, etageRejoue: 10, tourTerminee: 200, duelLibre: 8, cachetDuCycle: 80 }
 RPG_BOURSE_STORAGE_KEY = 'letsplay_sablier_bourse_v1'
-portefeuilleVide() · normaliserPortefeuille(v)
+portefeuilleVide() · normaliserPortefeuille(v)   // le portefeuille porte `toursPayees`
 creditsDeVictoire({ mode, premiere }) · creditsDeDoublons(ids)
+reclamerButinTour(p, tourId) -> { ok, raison, gain, portefeuille }   // une fois par tour
+gainsDeTour(tourId, { etagesVaincus, toursPayees })   // l'affiche des tours : barème et acquis
 crediterCredits(p, montant) · depenserCredits(p, prix) -> { ok, raison, portefeuille }
 ajouterCartesAuPortefeuille(p, ids) · enregistrerOuverture(p, { mythique, aDesMythiques })
 paquetsAvantMythique(p, { aDesMythiques, seuil }) · fusionnerPortefeuilles(local, distant)
@@ -670,7 +677,11 @@ douze.
    `etage-deblaye` tombent au même instant, pour le même étage : les faire payer
    tous les deux aurait doublé chaque victoire. Le premier paie (8/10/50 ◈), le
    second ne sert qu'à la quête du palier suivant — et il ne tombe que si
-   l'étage était vraiment neuf.
+   l'étage était vraiment neuf. Le **butin de la tour** (+200 ◈, tous les
+   étages déblayés) suit la même règle : il voyage avec `duel-gagne`
+   (`tourComplete`, raconté par l'écran qui lit la progression après la
+   victoire), jamais dans un événement à part, et sa garde d'unicité vit dans
+   le portefeuille (`toursPayees`) — pas au point d'appel.
 2. **Les dégâts au sorcier se comptent sur ses PV**, pas au point d'appel. Un
    effet de fin de tour, un écho différé, une capacité d'arrivée : sept chemins
    différents font saigner le sorcier, et un point d'appel oublié était un
@@ -773,7 +784,10 @@ Les cas couverts :
   couleurs d'une carte jouée sont lues **dans le catalogue** (une couleur
   annoncée par l'appelant est ignorée) ; un montant glissé dans un autre
   événement ne compte jamais ; le premier déblayage paie 50 ◈, le rejeu 10 ◈,
-  le duel libre 8 ◈, la défaite 0 ; `etage-deblaye` ne paie rien ; un geste sans
+  le duel libre 8 ◈, la défaite 0 ; le butin de la tour (+200 ◈) accompagne
+  `duel-gagne` quand la victoire trouve la tour complète, ne se verse qu'**une
+  fois par tour** (`toursPayees`), exige le mode Histoire et une tour du
+  catalogue ; `etage-deblaye` ne paie rien, butin compris ; un geste sans
   effet rend l'état **d'origine** (stabilité référentielle) ; chaque quête du
   jour avance sur le geste de son type, et une carte d'une autre couleur ne
   touche pas une quête de couleur ; les dégâts comptent leur montant et

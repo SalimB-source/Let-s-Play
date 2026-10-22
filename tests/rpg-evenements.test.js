@@ -116,6 +116,63 @@ test('appliquer un événement crédite le solde et rend le gain', () => {
   assert.equal(perdu.evenement, null);
 });
 
+test('une victoire qui termine la tour paie aussi son butin — une fois par tour', () => {
+  const bourse = portefeuilleVide();
+  const quetes = journee();
+  const sommet = appliquerEvenementDuel(
+    { bourse, quetes },
+    { type: 'duel-gagne', mode: 'histoire', etageId: 'listes-5', tourId: 'tour-des-listes', premiere: true, tourComplete: true },
+  );
+  assert.equal(sommet.butin, GAINS.tourTerminee, 'le butin est isolé pour l’annonce');
+  assert.equal(sommet.gain, GAINS.etagePremiere + GAINS.tourTerminee, 'le gain annonce étage + butin');
+  assert.equal(sommet.bourse.credits, GAINS.etagePremiere + GAINS.tourTerminee);
+  assert.deepEqual(sommet.bourse.toursPayees, ['tour-des-listes'], 'la tour réglée est retenue dans le portefeuille');
+
+  const reprise = appliquerEvenementDuel(
+    { bourse: sommet.bourse, quetes },
+    { type: 'duel-gagne', mode: 'histoire', etageId: 'listes-5', tourId: 'tour-des-listes', premiere: false, tourComplete: true },
+  );
+  assert.equal(reprise.butin, 0, 'le butin est déjà en poche');
+  assert.equal(reprise.gain, GAINS.etageRejoue, 'la reprise ne paie que le duel');
+  assert.equal(reprise.bourse.credits, sommet.bourse.credits + GAINS.etageRejoue);
+});
+
+test('le butin exige le mode Histoire et une tour connue', () => {
+  const libre = appliquerEvenementDuel(
+    { bourse: portefeuilleVide() },
+    { type: 'duel-gagne', mode: 'libre', tourComplete: true, tourId: 'tour-des-listes' },
+  );
+  assert.equal(libre.butin, 0, 'un duel libre ne termine aucune tour');
+  assert.equal(libre.gain, GAINS.duelLibre);
+
+  const fantome = appliquerEvenementDuel(
+    { bourse: portefeuilleVide() },
+    { type: 'duel-gagne', mode: 'histoire', premiere: true, tourComplete: true, tourId: 'tour-fantome' },
+  );
+  assert.equal(fantome.butin, 0);
+  assert.equal(fantome.gain, GAINS.etagePremiere, 'une tour inconnue ne bloque pas le gain de l’étage');
+
+  const sansTour = appliquerEvenementDuel(
+    { bourse: portefeuilleVide() },
+    { type: 'duel-gagne', mode: 'histoire', premiere: true, tourComplete: true },
+  );
+  assert.equal(sansTour.butin, 0, 'pas de butin sans tour racontée');
+  assert.equal(sansTour.gain, GAINS.etagePremiere);
+});
+
+test('tourComplete se raconte comme premiere, et etage-deblaye ne paie pas le butin', () => {
+  assert.equal(normaliserEvenementDuel({ type: 'duel-gagne', tourComplete: true }).tourComplete, true);
+  assert.equal('tourComplete' in normaliserEvenementDuel({ type: 'duel-gagne' }), false);
+  assert.equal('tourComplete' in normaliserEvenementDuel({ type: 'duel-gagne', tourComplete: 'oui' }), false,
+    'seul le vrai drapeau compte');
+  const deblaye = appliquerEvenementDuel(
+    { bourse: portefeuilleVide() },
+    { type: 'etage-deblaye', etageId: 'listes-5', tourId: 'tour-des-listes', premiere: true, tourComplete: true },
+  );
+  assert.equal(deblaye.gain, 0, 'le duel a déjà payé : etage-deblaye ne paie rien, butin compris');
+  assert.equal(deblaye.butin, 0);
+});
+
 test('un événement sans effet ne bouge pas l’état (stabilité référentielle)', () => {
   const bourse = portefeuilleVide();
   const quetes = journee('partie-sans-duel');

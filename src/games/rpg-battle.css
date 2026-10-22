@@ -2022,6 +2022,34 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-overlay p { margin: 0; max-width: 56ch; color: var(--muted); }
 .rpg-overlay--loss h2 { color: #fca5a5; }
 
+/* Ce que la victoire vient de payer : le gain de l'étage, et le butin de la
+   tour quand cette victoire l'a terminée. Les deux lignes se lisent comme des
+   récompenses — la pièce devant, l'or pour le butin. */
+.rpg-overlay__gains {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.rpg-overlay__gain {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(229, 191, 105, .35);
+  border-radius: 999px;
+  background: rgba(92, 59, 28, .28);
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #e8d3aa;
+}
+
+.rpg-overlay__gain--butin {
+  border-color: rgba(229, 191, 105, .75);
+  background: linear-gradient(120deg, rgba(122, 84, 32, .55), rgba(92, 59, 28, .35));
+  color: var(--yellow);
+  font-weight: 700;
+}
+
 /* ── Bilan et suite ──────────────────────────────────────────────────────── */
 .rpg-outro,
 .rpg-docs {

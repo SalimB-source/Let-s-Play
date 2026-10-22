@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { GAINS } from './rpgCredits.js';
 import { etapesRecitHistoire, resumeActesHistoire, resumeRecitHistoire } from './rpgStoryFlow.js';
 import { RPG_STORY_CAMPAIGN_MINIATURE, RPG_STORY_REGISTRES, acteHistoire, registresDebloques } from './rpgStoryScenes.js';
 import { StoryPortrait, StoryStorageNotice } from './RpgStoryScene.jsx';
@@ -121,6 +122,13 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
                       <span className="rpg-campaign__step-body">
                         <strong>{etape.personnageNom}</strong>
                         <small>{etape.statut === 'termine' ? 'Palier terminé' : etape.statut === 'en-cours' ? 'En cours' : 'À venir'}</small>
+                        {/* Le palier dit ce qu'il paie : le premier déblayage
+                            gagne, le duel déjà remporté est en poche. */}
+                        <span className="rpg-campaign__step-gain" data-step-gain={etape.etageId}>
+                          {etape.duelVaincu
+                            ? `✓ +${GAINS.etagePremiere} crédits gagnés`
+                            : `+${GAINS.etagePremiere} crédits à gagner`}
+                        </span>
                       </span>
                     </li>
                   ))}
