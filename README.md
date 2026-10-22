@@ -8543,3 +8543,66 @@ largeur du rail, et `elementFromPoint` au centre de chaque commande du tour —
 à 844 × 390 comme à 568 × 320. `check:rpg-ui` garde ses rouges antérieurs
 (catalogue de Fériel, main de mulligan à cinq cartes, icônes d'effets en main),
 identiques sur `main` ; les assertions tactiles passent.
+## Le Sablier : le journal du duel se replie dans le coin
+
+Le journal visuel du duel — quatre échanges récents, avec la vignette des
+cartes impliquées — restait **déplié en permanence** dans l'angle inférieur
+gauche de la table. À la souris, il ne gênait personne : la plaque du joueur
+vit à 67 % de la hauteur, le journal à 24 px du bas. Au doigt, les deux
+occupaient la même case. Le journal (`.rpg-combat-feed`, `left: 6px;
+bottom: 7px; width: min(220px, 55vw); max-height: 112px` sous 800 px) se
+posait exactement sur la plaque du sorcier joueur, que la grille tactile range
+dans la cellule `mana`, en bas de la colonne de gauche : la vie, la main, le
+paquet et le cimetière du joueur passaient dessous, et la première carte de la
+main avec eux. C'était le premier retour de terrain sur la capture du duel :
+**le journal cache le jeu**.
+
+**Le journal devient un onglet.** La capsule « ⚔ Journal » — même matière que
+la barre de navigation du duel, même filet, même rayon — prend la place libre
+en haut à gauche, à hauteur de la navigation. Fermée, elle ne montre que son
+nom et le **badge des faits non lus** (`2`, `9+` au-delà de neuf) ; le panneau
+des quatre derniers échanges ne s'ouvre qu'au toucher, **par-dessus** le champ
+du sorcier, et se referme d'un second toucher, de sa croix, d'un toucher
+ailleurs sur la table ou d'Échap — sans avaler le geste de jeu. Le compte suit
+l'identifiant du dernier fait lu : un échange qui arrive pendant la lecture est
+lu, un échange qui arrive après la referme rallume le badge, et sans aucun
+échange la table ne porte aucun onglet.
+
+**Au doigt, il prend la cellule `coin`.** La grille tactile réservait une case
+vide à gauche de la navigation, devant le trésor peint du plateau ; le journal
+s'y range (`grid-area: coin`, `align-self: center`) au lieu de flotter en
+absolu sur le champ, et sa cible garde le plancher de 32 px des commandes
+secondaires. Sur PC, il s'ancre en `top: 12px; left: 12px` — le miroir exact de
+la capsule de navigation (`top: 12px; right: 12px`) : les deux capsules du haut
+se lisent comme une seule rangée de HUD, de part et d'autre de la table.
+
+| Ce qui change | Avant | Après |
+| --- | --- | --- |
+| La place du journal | bas à gauche, sur la table | capsule en haut à gauche ; cellule `coin` au doigt |
+| Le récit | 4 échanges toujours dépliés (286 × 154 px) | 4 échanges à la demande, 286 px × 200 px au plus |
+| La plaque du joueur | recouverte au doigt | dégagée, comme la main |
+| Les gestes | `pointer-events: none` sur tout le journal | la table reste jouable ; seule la capsule — et le panneau ouvert — prend le pointeur |
+| Le panneau | dégradé translucide et filtré (`backdrop-filter: blur(7px)`) | quasi opaque, sans filtre : les WebView qui ne peignent pas un panneau filtré sur une table animée l'affichent quand même |
+
+### Où vit le code de ces retouches
+
+- `src/games/RpgDuelPage.jsx` — le composant `CombatFeed` exporté pour le
+  contrôle : capsule `aria-expanded` / `aria-controls`, panneau `hidden` tant
+  qu'il est fermé, badge des faits non lus, fermeture par un toucher ailleurs
+  ou Échap ;
+- `src/games/rpg-battle.css` — l'onglet (`top: 12px; left: 12px`), la capsule,
+  le panneau (`position: absolute; top: calc(100% + 6px)`, `max-height:
+  min(200px, 56vh)`), la mise à l'échelle sous 800 px ;
+- `src/games/rpg-mobile.css` — la cellule `coin` de la grille tactile et la
+  cible de 32 px ;
+- `scripts/rpg-journal-duel-smoke.jsx` — le rendu réel : fermé, ouvert,
+  refermé, badge après un fait nouveau, absence sans événement ;
+- `scripts/rpg-journal-duel-check.mjs` — les assertions de rendu et de feuille.
+
+### Vérifications
+
+```bash
+npm run check:rpg-journal   # ✓ — onglet, panneau, badge, cellule `coin`
+npm run check:rpg           # ✓ — les règles du duel ne changent pas
+npm run build               # ✓ — le bundle se construit
+```

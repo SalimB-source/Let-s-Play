@@ -199,7 +199,7 @@
 /* Une seule échelle pour les quatre tailles d'écran du duel : les mêmes
    proportions à 568 × 320 qu'à 1440 × 900. Rien n'est recadré : la table est
    un calque fixe plein viewport, et la grille ci-dessus absorbe la hauteur. */
-.rpg-battle--touch .card-table > :is(.rpg-duel-nav, .rpg-wizard-plate, .rpg-card-piles, .rpg-terrains, .card-row, .rpg-bottombar, .rpg-hand-dock) {
+.rpg-battle--touch .card-table > :is(.rpg-duel-nav, .rpg-combat-feed, .rpg-wizard-plate, .rpg-card-piles, .rpg-terrains, .card-row, .rpg-bottombar, .rpg-hand-dock) {
   position: relative;
   inset: auto;
   width: auto;
@@ -217,6 +217,23 @@
   -webkit-backdrop-filter: none;
 }
 .rpg-battle--touch .card-table > .rpg-hidden-hand { display: none; }
+/* Le journal du duel occupe la cellule `coin` — la seule que la navigation
+   laisse libre sur la rangée du haut, devant le trésor peint du plateau.
+   Refermé, il ne prend qu'une capsule de la hauteur de cette rangée ; ouvert,
+   son panneau tombe par-dessus le champ du sorcier — jamais sur la plaque du
+   joueur, la main ou les commandes, qu'il recouvrait en bas à gauche. */
+.rpg-battle--touch .card-table > .rpg-combat-feed {
+  grid-area: coin;
+  align-self: center;
+  justify-self: start;
+}
+.rpg-battle--touch .rpg-combat-feed__toggle {
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: 9px;
+}
+.rpg-battle--touch .rpg-combat-feed__crest { font-size: 11px; }
+.rpg-battle--touch .rpg-combat-feed__close { width: 28px; height: 28px; font-size: 12px; }
 .rpg-battle--touch .card-table > .rpg-duel-nav { grid-area: nav; justify-content: flex-end; padding: 0; gap: 0; z-index: 50; }
 .rpg-battle--touch .rpg-duel-nav strong { display: none; }
 .rpg-battle--touch .rpg-duel-nav button { min-height: 38px; padding: 4px 5px; font-size: 9px; text-shadow: 0 1px 3px #000; }

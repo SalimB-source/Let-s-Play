@@ -10469,24 +10469,116 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 
-/* Journal de combat compact, façon flux d’événements de TCG : il reste dans
-   l’angle inférieur gauche de la table et ne gêne jamais les gestes de jeu. */
+/* ── Le journal du duel : un onglet, et un récit qui ne s'ouvre qu'à la
+   demande ──────────────────────────────────────────────────────────────────
+   Il restait déplié en permanence dans l'angle inférieur gauche : quatre
+   échanges, vignettes comprises, sur 286 × 154 px. Au doigt (784 × 356), ce
+   panneau recouvrait la plaque du sorcier joueur — la vie, la main, le paquet,
+   le cimetière — et la première carte de la main. Le journal devient un
+   **onglet fermé par défaut**, posé dans le coin que la navigation laisse
+   libre, en haut à gauche : la capsule dit son nom et le nombre de faits non
+   lus ; un toucher déplie les quatre derniers échanges **par-dessus** le
+   champ, un second (ou la croix) les referme. Ce qui se joue n'est plus jamais
+   dessous. Le coin est celui du décor : la peinture du plateau y garde son
+   trésor, la capsule se contente de le couvrir. */
 .rpg-combat-feed {
   position: absolute;
   z-index: 80;
-  left: clamp(8px, 1.4vw, 20px);
-  bottom: clamp(10px, 2.2vh, 24px);
-  width: min(286px, 31vw);
-  max-height: 154px;
-  overflow: hidden;
+  top: 12px;
+  left: 12px;
+  display: grid;
+  justify-items: start;
+  pointer-events: none; /* la table reste jouable : l'onglet et le panneau seuls prennent le pointeur */
+}
+/* La capsule de l'onglet reprend la matière de la barre de navigation du duel
+   (même fond, même filet, même rayon) : les deux capsules du haut se lisent
+   comme une seule rangée de HUD, de part et d'autre de la table. */
+.rpg-combat-feed__toggle {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(238, 216, 171, .28);
+  border-radius: 12px;
+  background: rgba(10, 9, 13, .84);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .35);
+  color: #f2e8d1;
+  font: 800 9px/1 var(--mono, monospace);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+.rpg-combat-feed__toggle:hover,
+.rpg-combat-feed__toggle:focus-visible {
+  border-color: rgba(246, 207, 103, .62);
+  color: #ffe5a0;
+  outline: none;
+}
+/* Des faits non lus : la capsule s'éclaire de l'or du badge — sans battement,
+   pour ne pas voler l'œil au champ de bataille. */
+.rpg-combat-feed__toggle:has(.rpg-combat-feed__badge) {
+  border-color: rgba(246, 207, 103, .5);
+  color: #ffe5a0;
+}
+.rpg-combat-feed__crest { color: #d9b978; font-size: 12px; line-height: 1; }
+.rpg-combat-feed__label { white-space: nowrap; }
+.rpg-combat-feed__chevron {
+  width: 0;
+  height: 0;
+  border-top: 5px solid currentColor;
+  border-right: 3.5px solid transparent;
+  border-left: 3.5px solid transparent;
+  opacity: .72;
+  transition: transform .18s ease;
+}
+.rpg-combat-feed.is-open .rpg-combat-feed__chevron { transform: rotate(180deg); }
+.rpg-combat-feed__badge {
+  display: grid;
+  min-width: 15px;
+  height: 15px;
+  place-items: center;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e9c27b;
+  color: #22160a;
+  font: 800 8.5px/1 var(--mono, monospace);
+  letter-spacing: 0;
+  animation: rpg-combat-feed-badge .32s ease-out both;
+}
+@keyframes rpg-combat-feed-badge {
+  from { opacity: 0; transform: scale(.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+/* Le panneau : il tombe sous l'onglet, prend le pointeur, et se mesure au
+   viewport (la table est plein écran, jamais plus étroite que lui). */
+.rpg-combat-feed__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(286px, calc(100vw - 24px));
+  max-height: min(200px, 56vh);
+  max-height: min(200px, 56dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 8px 10px 7px;
   border: 1px solid rgba(218, 181, 111, .4);
-  border-radius: 9px;
+  border-radius: 10px;
   color: #f4e7cb;
-  background: linear-gradient(135deg, rgba(19, 15, 17, .91), rgba(35, 25, 19, .82));
-  box-shadow: 0 5px 18px rgba(0, 0, 0, .38), inset 0 1px rgba(255, 238, 197, .08);
-  backdrop-filter: blur(7px);
-  pointer-events: none;
+  /* Sans `backdrop-filter` : certaines WebView ne peignent pas un panneau
+     filtré posé sur une table animée (voir le menu du hamburger). Le fond
+     quasi opaque suffit à tenir l'encre crème. */
+  background: linear-gradient(135deg, rgba(19, 15, 17, .96), rgba(35, 25, 19, .94));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .5), inset 0 1px rgba(255, 238, 197, .08);
+  pointer-events: auto;
+  animation: rpg-combat-feed-open .18s ease-out both;
+}
+.rpg-combat-feed__panel[hidden] { display: none; }
+@keyframes rpg-combat-feed-open {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .rpg-combat-feed__heading {
   display: flex;
@@ -10499,6 +10591,28 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-transform: uppercase;
 }
 .rpg-combat-feed__heading > span { font-size: 12px; }
+.rpg-combat-feed__close {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid rgba(238, 216, 171, .22);
+  border-radius: 6px;
+  background: transparent;
+  color: #e9d3a5;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.rpg-combat-feed__close:hover,
+.rpg-combat-feed__close:focus-visible {
+  border-color: rgba(246, 207, 103, .62);
+  color: #ffe5a0;
+  outline: none;
+}
 .rpg-combat-feed__list {
   display: grid;
   gap: 4px;
@@ -10545,16 +10659,24 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-combat-feed__arrow { flex: none; color: #dfbd7f; font-size: 14px; }
 .rpg-combat-feed__skull { flex: none; color: #e69576; font-size: 14px; text-shadow: 0 0 8px rgba(193, 79, 54, .5); }
 .rpg-combat-feed__cause { color: #c9b89d; font: 600 9px/1.2 system-ui, sans-serif; }
+.rpg-combat-feed__damage {
+  flex: none;
+  color: #f1c579;
+  font: 800 10px/1 system-ui, sans-serif;
+  text-shadow: 0 0 7px rgba(230, 145, 70, .55);
+}
 @keyframes rpg-combat-feed-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* Sur un écran étroit, l'onglet garde sa cible et le panneau se resserre : il
+   ne prend jamais plus de la moitié de la hauteur, et les vignettes restent
+   lisibles sans pousser les noms hors du panneau. */
 @media (max-width: 800px) {
-  .rpg-combat-feed {
-    left: 6px;
-    bottom: max(7px, env(safe-area-inset-bottom));
-    width: min(220px, 55vw);
-    max-height: 112px;
+  .rpg-combat-feed__panel {
+    width: min(240px, calc(100vw - 20px));
+    max-height: min(180px, 52vh);
+    max-height: min(180px, 52dvh);
     padding: 6px 7px;
   }
   .rpg-combat-feed__heading { margin-bottom: 3px; font-size: 8px; }
@@ -10562,21 +10684,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-combat-feed__event { padding-top: 2px; }
   .rpg-combat-feed__participants { gap: 3px; }
   .rpg-combat-feed__card { gap: 3px; font-size: 8px; }
-  .rpg-combat-feed__card img { width: 18px; height: 23px; }
+  .rpg-combat-feed__card img { width: 21px; height: 26px; }
   .rpg-combat-feed__arrow, .rpg-combat-feed__skull { font-size: 11px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rpg-combat-feed__event { animation: none; }
-}
-.rpg-combat-feed__damage {
-  flex: none;
-  color: #f1c579;
-  font: 800 10px/1 system-ui, sans-serif;
-  text-shadow: 0 0 7px rgba(230, 145, 70, .55);
-}
-@media (max-width: 800px) {
   .rpg-combat-feed__damage { font-size: 9px; }
 }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-combat-feed__event,
+  .rpg-combat-feed__badge,
+  .rpg-combat-feed__panel { animation: none; }
+  .rpg-combat-feed__chevron { transition: none; }
+}
+
 
 /* ══════════════════════════════════════════════════════════════════════════
    ACCUEIL DU SABLIER — LES QUATRE PORTES
