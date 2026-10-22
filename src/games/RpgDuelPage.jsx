@@ -3416,41 +3416,102 @@ function AnnonceTour({ annonce }) {
   );
 }
 
-/** Petit journal visuel du duel : les échanges et morts récents, avec les
- * cartes impliquées — dans l’esprit du journal de combat de MTG Arena. */
-function CombatFeed({ events = [] }) {
-  if (!events.length) return null;
-  const recentes = events.slice(-4).reverse();
+/** Le journal visuel du duel — les échanges et morts récents, avec les cartes
+ * impliquées —, dans l’esprit du journal de combat de MTG Arena, mais **replié
+ * en onglet**. Il restait auparavant déplié en permanence dans l’angle
+ * inférieur gauche : quatre événements, vignettes comprises, sur 286 × 154 px.
+ * Au doigt (784 × 356), ce panneau recouvrait la plaque du sorcier joueur — la
+ * vie, la main, le paquet, le cimetière — et la première carte de la main. Le
+ * journal devient une capsule dans le coin libre de la table, qui ne dit que
+ * les faits non lus ; le récit s’ouvre par-dessus le champ, sur demande, et
+ * jamais dessous. */
+export function CombatFeed({ events = [] }) {
+  const evenements = Array.isArray(events) ? events : [];
+  const panneauId = useId();
+  const [ouvert, setOuvert] = useState(false);
+  // L’identifiant du dernier fait lu : panneau ouvert, les événements qui
+  // arrivent sont lus au fil de l’eau ; refermé, chacun rallume le badge.
+  const [vuJusqua, setVuJusqua] = useState(null);
+  const racineRef = useRef(null);
+  const dernierId = evenements.length ? evenements[evenements.length - 1].id : null;
+  useEffect(() => {
+    if (ouvert) setVuJusqua(dernierId);
+  }, [ouvert, dernierId]);
+  // Le panneau se referme comme une infobulle : un toucher ailleurs sur la
+  // table (le geste de jeu passe, lui, sans être avalé) ou Échap. L’onglet et
+  // la croix restent les deux sorties évidentes.
+  useEffect(() => {
+    if (!ouvert) return undefined;
+    const fermerHors = (event) => {
+      if (!racineRef.current?.contains(event.target)) setOuvert(false);
+    };
+    const fermerEchap = (event) => {
+      if (event.key === 'Escape') setOuvert(false);
+    };
+    document.addEventListener('pointerdown', fermerHors, true);
+    window.addEventListener('keydown', fermerEchap);
+    return () => {
+      document.removeEventListener('pointerdown', fermerHors, true);
+      window.removeEventListener('keydown', fermerEchap);
+    };
+  }, [ouvert]);
+  if (!evenements.length) return null;
+  const recentes = evenements.slice(-4).reverse();
+  const indexVu = vuJusqua === null ? -1 : evenements.findIndex((evenement) => evenement.id === vuJusqua);
+  const nonVus = indexVu < 0 ? evenements.length : evenements.length - indexVu - 1;
+  const lu = nonVus > 0 ? `, ${nonVus} fait${nonVus > 1 ? 's' : ''} non lu${nonVus > 1 ? 's' : ''}` : '';
   return (
-    <aside className="rpg-combat-feed" aria-label="Journal des actions du duel">
-      <div className="rpg-combat-feed__heading"><span aria-hidden="true">⚔</span><strong>Journal du duel</strong></div>
-      <ol className="rpg-combat-feed__list" aria-live="polite" aria-relevant="additions">
-        {recentes.map((event) => {
-          const killers = event.killers ?? [];
-          return (
-            <li className={`rpg-combat-feed__event${event.type === 'hit' ? ' is-hit' : event.type === 'prise' ? ' is-prise' : ' is-death'}`} key={event.id}>
-              <div className="rpg-combat-feed__participants">
-                {killers.length ? killers.slice(0, 2).map((killer) => (
-                  <span className="rpg-combat-feed__card" key={killer.id} title={killer.name}>
-                    <img src={cardArt(killer.carteId)} alt="" />
-                    <span>{killer.name}</span>
+    <aside ref={racineRef} className={`rpg-combat-feed${ouvert ? ' is-open' : ''}`} aria-label="Journal des actions du duel">
+      <button
+        type="button"
+        className="rpg-combat-feed__toggle"
+        aria-expanded={ouvert}
+        aria-controls={panneauId}
+        aria-label={`${ouvert ? 'Fermer' : 'Ouvrir'} le journal du duel${lu}`}
+        title="Journal du duel"
+        onClick={() => setOuvert((etaitOuvert) => !etaitOuvert)}
+      >
+        <span className="rpg-combat-feed__crest" aria-hidden="true">⚔</span>
+        <span className="rpg-combat-feed__label">Journal</span>
+        {!ouvert && nonVus > 0 && (
+          <span className="rpg-combat-feed__badge" key={nonVus} aria-hidden="true">{nonVus > 9 ? '9+' : nonVus}</span>
+        )}
+        <span className="rpg-combat-feed__chevron" aria-hidden="true" />
+      </button>
+      <div className="rpg-combat-feed__panel" id={panneauId} hidden={!ouvert}>
+        <div className="rpg-combat-feed__heading">
+          <span aria-hidden="true">⚔</span>
+          <strong>Journal du duel</strong>
+          <button type="button" className="rpg-combat-feed__close" onClick={() => setOuvert(false)} aria-label="Fermer le journal du duel">✕</button>
+        </div>
+        <ol className="rpg-combat-feed__list" aria-live="polite" aria-relevant="additions">
+          {recentes.map((event) => {
+            const killers = event.killers ?? [];
+            return (
+              <li className={`rpg-combat-feed__event${event.type === 'hit' ? ' is-hit' : event.type === 'prise' ? ' is-prise' : ' is-death'}`} key={event.id}>
+                <div className="rpg-combat-feed__participants">
+                  {killers.length ? killers.slice(0, 2).map((killer) => (
+                    <span className="rpg-combat-feed__card" key={killer.id} title={killer.name}>
+                      <img src={cardArt(killer.carteId)} alt="" />
+                      <span>{killer.name}</span>
+                    </span>
+                  )) : <span className="rpg-combat-feed__cause">Effet de jeu</span>}
+                  <span className="rpg-combat-feed__arrow" aria-hidden="true">➜</span>
+                  <span className="rpg-combat-feed__card rpg-combat-feed__card--victim" title={event.victim.name}>
+                    <img src={cardArt(event.victim.carteId)} alt="" />
+                    <span>{event.victim.name}</span>
                   </span>
-                )) : <span className="rpg-combat-feed__cause">Effet de jeu</span>}
-                <span className="rpg-combat-feed__arrow" aria-hidden="true">➜</span>
-                <span className="rpg-combat-feed__card rpg-combat-feed__card--victim" title={event.victim.name}>
-                  <img src={cardArt(event.victim.carteId)} alt="" />
-                  <span>{event.victim.name}</span>
-                </span>
-                {event.type === 'death'
-                  ? <span className="rpg-combat-feed__skull" aria-label="détruite">☠</span>
-                  : event.type === 'prise'
-                    ? <span className="rpg-combat-feed__skull" aria-label="prise en cale">⛓</span>
-                    : <span className="rpg-combat-feed__damage" aria-label={`${event.amount} dégâts`}>−{event.amount}</span>}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+                  {event.type === 'death'
+                    ? <span className="rpg-combat-feed__skull" aria-label="détruite">☠</span>
+                    : event.type === 'prise'
+                      ? <span className="rpg-combat-feed__skull" aria-label="prise en cale">⛓</span>
+                      : <span className="rpg-combat-feed__damage" aria-label={`${event.amount} dégâts`}>−{event.amount}</span>}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
     </aside>
   );
 }
