@@ -10863,21 +10863,65 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: rpg-abordage-chaine 1400ms linear forwards;
   filter: drop-shadow(0 2px 2px #000b);
 }
-/* Un anneau d’acier : ovale creux au trait clair, l’ombre portée du SVG lui
-   donne son épaisseur sombre. Il part pendu sur la courbe molle (son `cy`),
-   puis remonte de `--anneau-retour` quand la traction tend la chaîne. */
-.rpg-abordage-chaine__anneau {
-  fill: none;
-  stroke-width: 2.7;
+/* Une chaîne TRESSÉE : deux brins d’acier qui s’enroulent l’un autour de
+   l’autre (`fasciDeTorsade`, dans `RpgDuelPage`). Le tressage ne vient pas du
+   trait mais de l’ORDRE des calques : les fasci arrière d’abord, les fasci
+   avant ensuite. À chaque croisement, l’un des brins couvre l’autre — la
+   corde s’enroule au lieu de se juxtaposer.
+
+   Chaque fasce est peinte deux fois : un trait sombre (le creux du brin),
+   puis un fil clair au cœur (la lumière qui court sur l’acier). Le brin qui
+   bombe vers le haut reçoit plus de lumière que celui qui plonge
+   (`--fil-lumiere`).
+
+   Chaque fasce part pendue sur la courbe molle (`--anneau-retour` = le mou
+   local) puis remonte sur la ligne de traction quand la chaîne se tend. */
+.rpg-abordage-chaine__brin,
+.rpg-abordage-chaine__fil,
+.rpg-abordage-chaine__ombre path {
   animation: rpg-abordage-anneau 1400ms linear forwards;
 }
 @keyframes rpg-abordage-anneau {
   0%, 38% { transform: translateY(0); }
   55%, 100% { transform: translateY(var(--anneau-retour, 0)); }
 }
-/* Le grappin : acier clair sur ombre portée dédoublée. Il vole en cloche
-   jusqu’à la prise (le mou de mi-trajet), s’y accroche un instant, puis
-   revient **droit**, au rythme de la traction qui ramène la carte. */
+/* L’ombre portée de la torsade : un trait noir large et flou, sous tout. */
+.rpg-abordage-chaine__ombre path {
+  fill: none;
+  stroke: #05070a;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: .5;
+  filter: blur(1.3px);
+}
+/* Le creux du brin : l’acier à l’ombre, jamais noir. */
+.rpg-abordage-chaine__brin {
+  fill: none;
+  stroke: #39424b;
+  stroke-width: 3.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* L’arrière est à l’ombre : le creux plus profond, le fil plus sourd. */
+.rpg-abordage-chaine__brin--arriere { stroke: #454e58; }
+.rpg-abordage-chaine__fil--arriere { stroke: #a6b2be; }
+/* L’avant reçoit la lumière de face. */
+.rpg-abordage-chaine__brin--avant { stroke: #313940; }
+.rpg-abordage-chaine__fil--avant { stroke: #f4fafd; }
+/* Le fil de lumière au cœur du brin. */
+.rpg-abordage-chaine__fil {
+  fill: none;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: calc(.45 + .55 * var(--fil-lumiere, 1));
+}
+.rpg-abordage-chaine__manille {
+  fill: none;
+  stroke: #4e5761;
+  stroke-width: 2.8;
+}
 .rpg-abordage-chaine__grappin {
   animation: rpg-abordage-grappin 1400ms linear forwards;
 }

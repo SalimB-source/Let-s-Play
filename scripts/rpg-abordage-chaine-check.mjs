@@ -83,8 +83,65 @@ const documentDe = (html) => new JSDOM(`<!doctype html><html><body>${html}</body
   assert.match(styleChaine, /top:115px/);
   assert.match(styleChaine, /width:563\.56\d*px/, 'elle couvre la distance réelle (√(500² + 260²))');
   assert.match(styleChaine, /rotate\(2\.662\d*rad\)/, 'elle s’oriente du capteur vers la prise');
-  const anneaux = [...docChaine.querySelectorAll('.rpg-abordage-chaine__anneau')];
-  assert.ok(anneaux.length >= 4, 'des anneaux d’acier la composent');
+  // ── Le tressage ─────────────────────────────────────────────────────────
+  // Deux brins d'acier enroulés : les demi-ondes alternent entre un calque
+  // arrière et un calque avant, et ce sont EUX qui font passer un brin
+  // dessus, l'autre dessous. Rien d'un chapelet d'ovales.
+  assert.equal(chaine.getAttribute('data-rpg-abordage-chaine'), 'tressee',
+    'la chaîne se nomme pour ce qu’elle est : une torsade');
+  const arriere = [...docChaine.querySelectorAll('.rpg-abordage-chaine__brins--arriere .rpg-abordage-chaine__brin')];
+  const avant = [...docChaine.querySelectorAll('.rpg-abordage-chaine__brins--avant .rpg-abordage-chaine__brin')];
+  assert.ok(arriere.length >= 6, 'les demi-ondes arrière forment un brin continu');
+  assert.ok(avant.length >= 6, 'les demi-ondes avant aussi');
+  assert.equal(Number(chaine.getAttribute('data-rpg-abordage-lobes')), arriere.length + avant.length,
+    'le nombre annoncé est celui des demi-ondes peintes');
+  // Chaque demi-onde est peinte deux fois : le creux du brin, puis le fil de
+  // lumière qui court au cœur de l’acier.
+  assert.equal(docChaine.querySelectorAll('.rpg-abordage-chaine__fil--avant').length, avant.length,
+    'un fil de lumière par demi-onde avant');
+  assert.equal(docChaine.querySelectorAll('.rpg-abordage-chaine__fil--arriere').length, arriere.length,
+    'un fil de lumière par demi-onde arrière');
+  // L’alternance : d’un croisement à l’autre, c’est l’autre brin qui passe
+  // devant. Le brin avant change donc de côté à chaque demi-onde.
+  const pointsDe = (brin) => {
+    const nombres = brin.getAttribute('d').trim().split(/[ML\s]+/).filter(Boolean).map(Number);
+    return nombres.reduce((liste, valeur, index) => {
+      if (index % 2 === 0) liste.push({ x: valeur, y: 0 });
+      else liste.at(-1).y = valeur;
+      return liste;
+    }, []);
+  };
+  const bombement = (brin) => {
+    const ys = pointsDe(brin).map((point) => point.y);
+    return Math.max(...ys) - Math.min(...ys);
+  };
+  assert.ok([...arriere, ...avant].every((brin) => bombement(brin) > 4),
+    'chaque demi-onde bombe vraiment de part et d’autre de l’axe');
+  // Les deux calques se recouvrent : à la même abscisse, une demi-onde avant
+  // couvre une demi-onde arrière — c’est le croisement tressé.
+  const bornes = (brin) => {
+    const points = pointsDe(brin);
+    return [points[0].x, points.at(-1).x];
+  };
+  const avantX = avant.map(bornes);
+  const arriereX = arriere.map(bornes);
+  const recouvrements = avantX.filter(([a0, a1]) => arriereX.some(([b0, b1]) => a0 < b1 && b0 < a1));
+  assert.ok(recouvrements.length >= avantX.length - 1,
+    'chaque demi-onde avant recouvre une demi-onde arrière : le brin passe dessus');
+  const cotes = avant.map((brin) => (pointsDe(brin)[0].y < 28 ? 'haut' : 'bas'));
+  assert.ok(cotes.some((cote, index) => index > 0 && cote !== cotes[index - 1]),
+    'le brin qui passe devant change de côté : la torsade tourne');
+  // Les deux brins suivent la MÊME ondulation : au premier croisement ils se
+  // rejoignent sur l’axe (y = 28), c’est un seul fil qui s’enroule.
+  const croisement = (brin) => pointsDe(brin)[0];
+  assert.deepEqual(croisement(avant[0]), croisement(arriere[0]),
+    'les deux brins passent par le même point de croisement');
+  assert.equal(croisement(avant[0]).y, 28, 'ce croisement est sur l’axe de la chaîne');
+
+  assert.ok(docChaine.querySelector('.rpg-abordage-chaine__ombre path'),
+    'une ombre portée donne du relief sous l’acier');
+  assert.ok(docChaine.querySelector('.rpg-abordage-chaine__manille'),
+    'une manille noue la chaîne au capteur');
   assert.ok(docChaine.querySelector('.rpg-abordage-chaine__grappin path'), 'un grappin termine la course');
 }
 
@@ -188,6 +245,18 @@ assert.doesNotMatch(rendu, /effet\.abordage && <ChaineAbordage/,
 // ── 4. La feuille : la course a la durée de la mesure ──────────────────────
 assert.match(css, /\.rpg-card-destruction-fx\.is-abordage\s*\{\s*animation: rpg-abordage-prise 1400ms ease-in-out forwards;/s,
   'la carte prise voyage pendant 1,4 s');
+// La feuille peint le tressage : creux sombre, fil de lumière, calques avant
+// et arrière distincts.
+assert.match(css, /\.rpg-abordage-chaine__brin\s*\{[^}]*fill:\s*none;[^}]*stroke-width:\s*3\.1;/s,
+  'le creux du brin est un trait plein, large');
+assert.match(css, /\.rpg-abordage-chaine__fil\s*\{[^}]*fill:\s*none;[^}]*stroke-width:\s*1\.1;/s,
+  'la lumière de l’acier est un fil fin, au cœur du brin');
+assert.match(css, /\.rpg-abordage-chaine__brin--arriere\s*\{\s*stroke:\s*#454e58;\s*\}/,
+  'le brin arrière est à l’ombre');
+assert.match(css, /\.rpg-abordage-chaine__fil--avant\s*\{\s*stroke:\s*#f4fafd;\s*\}/,
+  'le brin avant reçoit la lumière');
+assert.match(css, /\.rpg-abordage-chaine__brin,\s*\n\.rpg-abordage-chaine__fil,\s*\n\.rpg-abordage-chaine__ombre path\s*\{\s*animation: rpg-abordage-anneau 1400ms linear forwards;/s,
+  'les lobes et leur ombre remontent ensemble quand la chaîne se tend');
 assert.match(css, /@keyframes rpg-abordage-prise\s*\{\s*0%, 38% \{ transform: rotate\(var\(--rpg-fx-rotation\)\); opacity: 1; \}/,
   'elle attend la première image : la mesure a le temps d’arriver');
 

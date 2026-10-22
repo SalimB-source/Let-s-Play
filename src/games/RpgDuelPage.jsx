@@ -1780,15 +1780,78 @@ export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
 }
 
 /**
- * La chaîne de l’Abordage : des **anneaux métalliques** reliés, lancés depuis
- * le capteur, avec un **grappin** à trois dents à leur extrémité. Elle part
- * **détendue** — les anneaux pendent sur une courbe molle, sous leur poids —
- * puis **revient tendue** : quand la prise est ramenée en cale, chaque
- * anneau remonte sur la ligne droite de la traction (`--anneau-retour`).
- * Le dévoilement (lancer puis retrait) reste porté par le `clip-path` du
- * SVG ; le grappin voyage le long de la chaîne, accroche, puis repart avec
- * la prise. Coordonnées locales : le capteur est à x = 0, la prise à
- * x = longueur, la ligne de traction à y = 28.
+ * Une **torsade** d’acier : deux brins qui s’enroulent l’un autour de l’autre,
+ * comme une corde. Les deux brins suivent la MÊME onde, en opposition de
+ * phase : l’un bombe au-dessus de l’axe pendant que l’autre bombe en dessous,
+ * et ils se croisent sur l’axe à chaque demi-longueur d’onde.
+ *
+ * Le dessus/dessous ne se devine pas : il se **peint**. Chaque demi-onde est
+ * un segment continu de l’onde — prolongé d’un peu plus que le croisement,
+ * pour que le brin qui passe devant recouvre réellement l’autre. Les segments
+ * sont versés dans deux calques (`{ arriere, avant }`) qui alternent : au
+ * premier croisement c’est le brin montant qui passe devant, au suivant c’est
+ * le brin plongeant. La torsade tourne, elle ne reste pas plate.
+ *
+ * Coordonnées locales : l’axe de la chaîne est la ligne y = 28 ; `sag(x)` est
+ * le **mou** — la chaîne pend sous son poids tant qu’elle n’est pas tendue.
+ */
+function brinsDeTorsade({ longueur, flottement, signeMou }) {
+  // Trois à quatre enroulements selon la portée : lisible de loin, serré de
+  // près. L’amplitude reste modeste — une chaîne, pas un ressort.
+  const longueurOnde = Math.max(17, Math.min(30, longueur / 13));
+  const amplitude = Math.max(4, Math.min(6.2, longueurOnde * 0.26));
+  const demi = longueurOnde / 2;
+  const debord = demi * 0.16;
+  const sag = (x) => Math.sin(Math.PI * Math.min(1, Math.max(0, x / longueur))) * flottement * signeMou;
+  // L’onde continue du brin : `phase` = 0 (monte d’abord) ou π (plonge).
+  const onde = (x, phase) => Math.sin((2 * Math.PI * x) / longueurOnde + phase) * amplitude;
+  const nombreDemiOndes = Math.max(4, Math.ceil(longueur / demi));
+  const arriere = [];
+  const avant = [];
+  for (let index = 0; index < nombreDemiOndes; index += 1) {
+    const x0 = index * demi;
+    const x1 = x0 + demi;
+    const a = Math.max(0, x0 - debord);
+    const b = Math.min(longueur, x1 + debord);
+    const mou = sag((x0 + x1) / 2);
+    // Le tracé d’un brin sur ce demi-segment : l’onde échantillonnée fin, le
+    // prolongement suit la même courbe — rien ne casse au croisement.
+    const trace = (phase) => {
+      const points = 10;
+      let d = '';
+      for (let i = 0; i <= points; i += 1) {
+        const x = a + (b - a) * (i / points);
+        const y = 28 + sag(x) + onde(x, phase);
+        d += `${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)} `;
+      }
+      return d.trim();
+    };
+    // Au croisement, l’un des deux brins passe devant : celui qui MONTE aux
+    // croisements pairs, celui qui PLONGE aux impairs.
+    const devantMonte = index % 2 === 0;
+    arriere.push({ d: trace(devantMonte ? Math.PI : 0), mou });
+    avant.push({ d: trace(devantMonte ? 0 : Math.PI), mou });
+  }
+  return { arriere, avant };
+}
+
+/**
+ * La chaîne de l’Abordage : une **chaîne tressée** de deux brins d’acier
+ * enroulés, lancée depuis le capteur, un **grappin** à trois dents à son
+ * extrémité. Elle part **détendue** — la torsade pend sur une courbe molle,
+ * sous son poids — puis **revient tendue** : quand la prise est ramenée en
+ * cale, chaque lobe remonte sur la ligne droite de la traction
+ * (`--anneau-retour`).
+ *
+ * Chaque lobe est peint deux fois : le creux du brin (trait sombre, large)
+ * puis le fil de lumière qui court au cœur de l’acier (trait clair, fin). Les
+ * lobes alternent entre deux calques (`__arriere` / `__avant`) : c’est l’ordre
+ * de peinture, et lui seul, qui donne le tressage.
+ *
+ * Le dévoilement (lancer puis retrait) reste porté par le `clip-path` du SVG ;
+ * le grappin voyage le long de la chaîne, accroche, puis repart avec la prise.
+ * Coordonnées locales : le capteur est à x = 0, la prise à x = longueur, la
+ * ligne de traction à y = 28.
  */
 export function ChaineAbordage({ effet }) {
   const dx = effet.abordage?.dx ?? 0;
@@ -1798,22 +1861,27 @@ export function ChaineAbordage({ effet }) {
   // Le mou pend **vers le bas** de l’écran : le signe dépend de l’orientation
   // de la chaîne (son axe local y pointe parfois vers le haut du monde).
   const signeMou = -dx >= 0 ? 1 : -1;
-  const nombreAnneaux = Math.max(4, Math.min(30, Math.round(longueur / 13)));
-  const anneaux = Array.from({ length: nombreAnneaux }, (_, index) => {
-    const part = (index + 0.5) / nombreAnneaux;
-    const mou = Math.sin(Math.PI * part) * flottement * signeMou;
-    return {
-      x: part * longueur,
-      mou,
-      vertical: index % 2 === 1,
-      acier: index % 3 === 0 ? '#aab3bd' : '#d3dae1',
-    };
-  });
+  const torsade = brinsDeTorsade({ longueur, flottement, signeMou });
+  const lobeSvg = (lobe, index, calque) => (
+    <g key={`${calque}-${index}`}>
+      <path
+        className={`rpg-abordage-chaine__brin rpg-abordage-chaine__brin--${calque}`}
+        d={lobe.d}
+        style={{ '--anneau-retour': `${-lobe.mou}px` }}
+      />
+      <path
+        className={`rpg-abordage-chaine__fil rpg-abordage-chaine__fil--${calque}`}
+        d={lobe.d}
+        style={{ '--anneau-retour': `${-lobe.mou}px` }}
+      />
+    </g>
+  );
   return (
     <svg
       className="rpg-abordage-chaine"
       aria-hidden="true"
-      data-rpg-abordage-chaine="anneaux"
+      data-rpg-abordage-chaine="tressee"
+      data-rpg-abordage-lobes={torsade.arriere.length + torsade.avant.length}
       style={{
         left: effet.left + effet.width / 2 + dx,
         top: effet.top + effet.height / 2 + dy,
@@ -1823,18 +1891,28 @@ export function ChaineAbordage({ effet }) {
         '--chaine-mou': `${flottement * signeMou}px`,
       }}
     >
-      {anneaux.map((anneau, index) => (
-        <ellipse
-          key={index}
-          className="rpg-abordage-chaine__anneau"
-          cx={anneau.x}
-          cy={28 + anneau.mou}
-          rx={anneau.vertical ? 3.6 : 6.4}
-          ry={anneau.vertical ? 6.4 : 3.6}
-          stroke={anneau.acier}
-          style={{ '--anneau-retour': `${-anneau.mou}px` }}
-        />
-      ))}
+      {/* 1. L’ombre portée de la torsade, sous l’acier. */}
+      <g className="rpg-abordage-chaine__ombre">
+        {[...torsade.arriere, ...torsade.avant].map((lobe, index) => (
+          <path key={index} d={lobe.d} style={{ '--anneau-retour': `${-lobe.mou}px` }} />
+        ))}
+      </g>
+      {/* 2. Les lobes ARRIÈRE : le brin qui plonge passe sous l’autre. */}
+      <g className="rpg-abordage-chaine__brins rpg-abordage-chaine__brins--arriere">
+        {torsade.arriere.map((lobe, index) => lobeSvg(lobe, index, 'arriere'))}
+      </g>
+      {/* 3. Les lobes AVANT : le brin qui monte couvre le croisement. */}
+      <g className="rpg-abordage-chaine__brins rpg-abordage-chaine__brins--avant">
+        {torsade.avant.map((lobe, index) => lobeSvg(lobe, index, 'avant'))}
+      </g>
+      {/* 4. La manille du capteur, puis le grappin de la prise. */}
+      <ellipse
+        className="rpg-abordage-chaine__manille"
+        cx="1.2"
+        cy="28"
+        rx="3.6"
+        ry="5.2"
+      />
       <g className="rpg-abordage-chaine__grappin">
         {/* La tige, puis les trois dents recourbées vers l’arrière. */}
         <path className="rpg-abordage-chaine__grappin-ombre" d="M-13 28 H7 M7 28 L13 28" />
