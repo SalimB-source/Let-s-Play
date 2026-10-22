@@ -17,10 +17,14 @@ import useRpgMythicImpact from './useRpgMythicImpact.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
 import RpgMessagerieBouton from './RpgMessagerieBouton.jsx';
+import RpgMessageriePanel from './RpgMessageriePanel.jsx';
 import { isFullscreenShortcut } from './gameFullscreen.js';
 import useGameFullscreen from './useGameFullscreen.js';
 import { AuthContext } from '../auth/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useFriends } from '../friends/FriendsContext.jsx';
+import { useMessages } from '../messages/MessagesContext.jsx';
+import { LetsTalkMark } from '../social/LetsTalkLogo.jsx';
 import {
   plateauDeRepli,
   plateauParId,
@@ -3093,6 +3097,14 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const [partieRapideOuverte, setPartieRapideOuverte] = useState(false);
   const [partieRapideChoix, setPartieRapideChoix] = useState(null);
   const detailRef = useRef(null);
+  // L’onglet Messagerie porte la pastille du site : les messages non lus
+  // d’abord, les demandes d’amis sinon — le détail est dans l’`aria-label`.
+  // `?? {}` : sans fournisseur (vérifications jsdom), le contexte est inerte.
+  const messagesContexte = useMessages() ?? {};
+  const friendsContexte = useFriends() ?? {};
+  const messagerieNonLus = messagesContexte.unreadTotal ?? 0;
+  const messagerieDemandes = friendsContexte.pendingCount ?? 0;
+  const messageriePastille = messagerieNonLus > 0 ? messagerieNonLus : messagerieDemandes;
   const play = (n) => { try { onPlaySfx?.(n); } catch {} };
   const compteDesktopLabel = desktopAccountName(desktopAccount);
   const deconnecterCompteDesktop = async () => {
@@ -3222,13 +3234,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <h1>Le <span>Sablier</span></h1>
             <p>Les portes de la ville attendent leur prochain gardien.</p>
           </div>
-          {/* La messagerie Let’s Play, dans le jeu : c’est par elle que les
-              défis du duel en ligne se lancent et se reçoivent (la carte
-              « Défi du Sablier » des discussions) — elle doit donc être
-              atteignable sans quitter la table, pastille des non-lus
-              comprise. La fenêtre sociale se pose au-dessus du jeu sur cette
-              route (voir `social-dock--sablier`). */}
-          <RpgMessagerieBouton variante="menu" onActivate={() => play('menu')} />
           <button
             type="button"
             className={`rpg-mode-menu__fullscreen${fullscreen ? ' is-on' : ''}`}
@@ -3294,6 +3299,29 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             </button>
             <button type="button" className={screen === 'parametres' ? 'is-active' : ''} aria-current={screen === 'parametres' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('parametres'); }}>
               <span aria-hidden="true">⚙</span> Paramètres
+            </button>
+            {/* La messagerie a son onglet, comme le Souk ou le Catalogue : la
+                fenêtre sociale du site flotte en bas de l’écran, mais le jeu
+                est une couche plein écran (surtout en plein écran natif de
+                l’APK) qui la recouvre — sur mobile, la messagerie n’apparaît
+                pas en bas de l’écran. Elle vit donc DANS le jeu, dans son
+                propre onglet, avec la bulle « Let’s Talk » et la pastille des
+                non-lus (les défis du duel en ligne passent par elle). */}
+            <button
+              type="button"
+              className={`rpg-mode-menu__messagerie${screen === 'messagerie' ? ' is-active' : ''}`}
+              aria-current={screen === 'messagerie' ? 'page' : undefined}
+              aria-label={`Messagerie Let’s Talk — défis du Sablier${messageriePastille > 0 ? ` (${messageriePastille} en attente)` : ''}`}
+              data-rpg-messagerie-onglet={messageriePastille}
+              onClick={() => { play('menu'); onChangeScreen('messagerie'); }}
+            >
+              <LetsTalkMark className="rpg-mode-menu__messagerie-mark" typing={messagerieNonLus > 0} />
+              <span className="rpg-mode-menu__onglet-libelle">Messagerie</span>
+              {messageriePastille > 0 && (
+                <span className="rpg-mode-menu__messagerie-pastille" aria-hidden="true">
+                  {messageriePastille}
+                </span>
+              )}
             </button>
           </nav>
         </header>
@@ -4057,6 +4085,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               )}
             </div>
           </main>
+        )}
+        {/* L’onglet Messagerie : la messagerie Let’s Talk vit dans le jeu —
+            discussions et défis du duel en ligne, sans quitter la table. */}
+        {screen === 'messagerie' && (
+          <RpgMessageriePanel variante="ecran" />
         )}
         <footer className="rpg-mode-menu__footer"><span>LE SABLIER</span><span>STRATÉGIE · CRÉATURES · MAGIE</span></footer>
       </div>
@@ -5081,21 +5114,26 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Au doigt, la barre de navigation du duel se replie dans un bouton hamburger.
   const [navMenuOuvert, setNavMenuOuvert] = useState(false);
   const [navParametresOuvert, setNavParametresOuvert] = useState(false);
+  // La messagerie, en pleine partie : un voile au-dessus de la table — un défi
+  // du Sablier reçu pendant un duel se lit sans quitter la table, et le duel
+  // reprend où il en était à la fermeture (voir `RpgMessageriePanel.jsx`).
+  const [messagerieVoletOuvert, setMessagerieVoletOuvert] = useState(false);
 
   // La foudre activée se désigne avec Échap, comme les autres ciblages ; la
   // proie d'un mode d'arme aussi ; le sacrifice en attente, enfin, se renonce.
   useEffect(() => {
-    if (!activationEnCours && !sacrificeEnCours && !navMenuOuvert && !navParametresOuvert) return undefined;
+    if (!activationEnCours && !sacrificeEnCours && !navMenuOuvert && !navParametresOuvert && !messagerieVoletOuvert) return undefined;
     const onKey = (event) => {
       if (event.key !== 'Escape') return;
       setActivationEnCours(null);
       setSacrificeEnCours(null);
       setNavMenuOuvert(false);
       setNavParametresOuvert(false);
+      setMessagerieVoletOuvert(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activationEnCours, sacrificeEnCours, navMenuOuvert, navParametresOuvert]);
+  }, [activationEnCours, sacrificeEnCours, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert]);
   // Le menu hamburger et son onglet Paramètres se referment au premier geste hors de la barre du duel.
   useEffect(() => {
     if (!navMenuOuvert && !navParametresOuvert) return undefined;
@@ -9452,13 +9490,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               )}
             </div>
             {/* La messagerie reste ouvrable en pleine partie : un défi du
-                Sablier reçu pendant un duel se lit sans quitter la table.
-                Au doigt, l’entrée suit les autres commandes dans le panneau
-                du hamburger ; son clic le referme avant d’ouvrir la fenêtre
-                sociale (posée au-dessus du jeu, `social-dock--sablier`). */}
+                Sablier reçu pendant un duel se lit sans quitter la table —
+                le panneau du jeu s'ouvre en voile au-dessus de la table
+                (`RpgMessageriePanel.jsx`), le duel reprend à la fermeture. */}
             <RpgMessagerieBouton
               variante="duel"
               onActivate={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); }}
+              onOuvrir={() => setMessagerieVoletOuvert(true)}
             />
             <button
               type="button"
@@ -9487,6 +9525,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <span aria-hidden="true" className="rpg-duel-nav__burger-icon">{navMenuOuvert ? '✕' : '☰'}</span>
           </button>
         </nav>
+
+        {/* La messagerie, en pleine partie : le voile se pose au-dessus de la
+            table — discussions et défis du Sablier sans quitter le duel
+            (`RpgMessageriePanel.jsx`). */}
+        {messagerieVoletOuvert && (
+          <RpgMessageriePanel
+            variante="volet"
+            onFermer={() => setMessagerieVoletOuvert(false)}
+          />
+        )}
 
         {/* Bandeau d'ouverture de tour : le camp qui prend la main se nomme au
             centre de la table pendant 1,5 s, puis s'efface (`AnnonceTour`). */}

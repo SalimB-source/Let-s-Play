@@ -5,17 +5,24 @@
  * y dépose la carte « Défi du Sablier », et c’est elle qu’on ouvre pour lancer
  * ou relever un défi. Or le jeu est une couche plein écran (z-index 1500) qui
  * couvrait la fenêtre sociale (1250) : dans le Sablier, la messagerie
- * n’apparaissait pas. Ce contrôle verrouille les trois pièces du correctif :
+ * n’apparaissait pas — et sur mobile (APK, plein écran natif de la coque) elle
+ * n’apparaît toujours pas en bas de l’écran. Elle vit donc **dans le jeu** :
+ * son propre onglet au menu, un voile au-dessus de la table en pleine partie
+ * et au-dessus du salon. Ce contrôle verrouille les cinq pièces :
  *
  *   1. la fenêtre sociale monte au-dessus du jeu sur les routes du Sablier
- *      seulement (`social-dock--sablier`), en restant sous les appels ;
- *   2. les barres du jeu portent leur bouton « Messagerie » (menu principal,
- *      barre du duel, salon en ligne), avec la pastille des non-lus ;
- *   3. le bouton ouvre la messagerie du site et rend le plein écran natif de
- *      la coque du jeu quand il le faut (la fenêtre sociale vit hors de la
- *      coque : elle serait invisible derrière le sous-arbre plein écran).
+ *      seulement (`social-dock--sablier`), en restant sous les appels — le
+ *      parcours bureau, inchangé ;
+ *   2. le menu principal donne à la messagerie **son onglet** (pastille des
+ *      non-lus comprise), et cet onglet rend le panneau du jeu
+ *      (`RpgMessageriePanel.jsx`) ;
+ *   3. la barre du duel et le salon en ligne ouvrent ce même panneau en voile
+ *      (`onOuvrir`) : un défi se lit sans quitter la table ni démonter le
+ *      salon ;
+ *   4. le panneau réutilise les composants de la messagerie du site
+ *      (`InboxView` / `ThreadView`) et garde le thème sombre du jeu.
  *
- * Le rendu réel des variantes « menu » et « duel » est couvert par
+ * Le rendu réel du menu et du voile est couvert par
  * `scripts/rpg-duel-nav-smoke.jsx` (la page montée dans jsdom).
  */
 import assert from 'node:assert/strict';
@@ -32,6 +39,8 @@ const pvpCss = lire('../src/games/rpg-pvp.css');
 const bouton = lire('../src/games/RpgMessagerieBouton.jsx');
 const duelPage = lire('../src/games/RpgDuelPage.jsx');
 const salon = lire('../src/games/RpgPvpSalon.jsx');
+const panneau = lire('../src/games/RpgMessageriePanel.jsx');
+const panneauCss = lire('../src/games/rpg-messagerie-panel.css');
 
 /* ── 1. L’ordre des couches : jeu < fenêtre sociale (routes Sablier) < appels ── */
 
@@ -80,30 +89,74 @@ for (const chemin of ['/jeu', '/jeu/mirage-rush', '/jeu/sablier-de-bab-el2', '/m
 }
 assert.match(socialDock, /onSablierRoute \? ' social-dock--sablier' : ''/,
   'la classe qui monte la fenêtre sociale n’est posée que sur les routes du Sablier');
+assert.match(socialDock, /const dockVisible = !onSocialRoute && !\(onSablierRoute && isMobile\);/,
+  'sur téléphone, dans le jeu, le lanceur flottant s’efface : la messagerie y a son onglet et son voile');
 
-/* ── 3. Le bouton « Messagerie » dans les barres du jeu ──────────────────────── */
+/* ── 3. La messagerie a son onglet dans le menu du jeu ─────────────────────── */
 
-assert.match(duelPage, /<RpgMessagerieBouton variante="menu"/,
-  'le menu principal du Sablier porte le bouton Messagerie');
-assert.match(duelPage, /<RpgMessagerieBouton\s+variante="duel"/,
-  'la barre du duel porte le bouton Messagerie');
-assert.match(salon, /<RpgMessagerieBouton variante="salon" \/>/,
-  'le salon du duel en ligne porte le bouton Messagerie');
-assert.match(salon, /import RpgMessagerieBouton from '\.\/RpgMessagerieBouton\.jsx';/,
-  'le bouton Messagerie utilisé par le salon est importé (pas de ReferenceError au chargement)');
+assert.match(duelPage, /className=\{`rpg-mode-menu__messagerie\$\{screen === 'messagerie' \? ' is-active' : ''\}`\}/,
+  'le menu principal du Sablier donne à la messagerie son onglet, dans la barre des modes');
+assert.match(duelPage, /onChangeScreen\('messagerie'\)/,
+  'l’onglet Messagerie mène à son propre écran');
+assert.match(duelPage, /<RpgMessageriePanel\s+variante="ecran"/,
+  'l’écran de l’onglet est le panneau de messagerie du jeu');
+assert.match(duelPage, /data-rpg-messagerie-onglet=\{messageriePastille\}/,
+  'l’onglet porte la pastille des non-lus (repère de test compris)');
+assert.match(duelPage, /useMessages\(\)/, 'le menu lit la messagerie du site pour sa pastille');
+assert.match(duelPage, /useFriends\(\)/, 'le menu lit aussi les demandes d’amis pour sa pastille');
+// Plus de bouton dans l’en-tête du menu : l’onglet le remplace.
+assert.doesNotMatch(duelPage, /<RpgMessagerieBouton\s+variante="menu"/,
+  'l’en-tête du menu ne double plus l’onglet : la messagerie a sa place, et une seule');
+
+/* ── 4. Le voile au-dessus de la table et du salon ─────────────────────────── */
+
+assert.match(duelPage, /<RpgMessagerieBouton\s+variante="duel"[\s\S]{0,200}onOuvrir=\{\(\) => setMessagerieVoletOuvert\(true\)\}/,
+  'la barre du duel ouvre le panneau de messagerie du jeu en pleine partie');
+assert.match(duelPage, /messagerieVoletOuvert && \([\s\S]{0,120}<RpgMessageriePanel\s+variante="volet"/,
+  'le voile se rend par-dessus la table quand la messagerie est ouverte en partie');
+assert.match(salon, /<RpgMessagerieBouton variante="salon" onOuvrir=/,
+  'le salon du duel en ligne ouvre le panneau de messagerie du jeu');
+assert.match(salon, /messagerieOuverte && \([\s\S]{0,120}<RpgMessageriePanel\s+variante="volet"/,
+  'le voile se rend par-dessus le salon quand la messagerie y est ouverte');
+assert.match(salon, /import RpgMessageriePanel from '\.\/RpgMessageriePanel\.jsx';/,
+  'le panneau utilisé par le salon est importé (pas de ReferenceError au chargement)');
 assert.match(salon, /className="rpg-pvp-page__outils"/,
   'le bouton du salon vit dans le liseré, à côté du code du défi');
 
+/* ── 5. Le bouton et le panneau ─────────────────────────────────────────────── */
+
+assert.match(bouton, /onOuvrir/, 'le bouton sait ouvrir la messagerie du jeu (gestionnaire `onOuvrir`)');
+assert.match(bouton, /if \(onOuvrir\) \{ onOuvrir\(\); return; \}/,
+  'avec `onOuvrir`, le clic ouvre le panneau du jeu et rien d’autre');
 assert.match(bouton, /useMessages\(\)/, 'le bouton lit la messagerie du site');
 assert.match(bouton, /unreadTotal/, 'la pastille compte les messages non lus');
 assert.match(bouton, /pendingCount/, 'la pastille signale aussi les demandes d’amis');
 assert.match(bouton, /openInbox\?\.\(\)/,
-  'le clic ouvre la messagerie comme partout sur le site (fenêtre sociale, ou page sur mobile)');
+  'sans `onOuvrir`, le clic ouvre la messagerie comme partout sur le site (fenêtre sociale, ou page sur mobile)');
 assert.match(bouton, /lancer ou recevoir un défi du Sablier/,
   'le bouton dit à quoi il sert : lancer et recevoir les défis');
 assert.match(bouton, /href=\{`[^`]*messages`\}/,
-  'sans compte, le bouton mène à la page de messagerie (connexion), sans routeur');
+  'sans compte ni `onOuvrir`, le bouton mène à la page de messagerie (connexion), sans routeur');
 assert.match(bouton, /nativeFullscreenElement\(\)[\s\S]{0,200}!== document\.documentElement[\s\S]{0,120}exitNativeFullscreen\(\)/,
   'en plein écran natif de la coque du jeu, le clic rend d’abord le plein écran : la fenêtre sociale serait sinon invisible');
 
-console.log('check:rpg-messagerie ✓ — dans le Sablier, la fenêtre sociale passe au-dessus du jeu (sous les appels) et les barres du menu, du duel et du salon portent le bouton Messagerie qui lance et reçoit les défis.');
+assert.match(panneau, /import \{ InboxView, ThreadView \} from '\.\.\/messages\/MessagesTabs\.jsx';/,
+  'le panneau réutilise la liste et le fil de la messagerie du site (aucune logique dupliquée)');
+assert.match(panneau, /useMessages\(\)/, 'le panneau lit la messagerie du site');
+assert.match(panneau, /useFriends\(\)/, 'le panneau lit le module amis du site');
+assert.match(panneau, /useCalls\(\)/, 'le panneau garde les appels de la messagerie du site');
+assert.match(panneau, /viewThread\(peerId\)/, 'le fil lu dans le jeu fait taire le « ding » des messages reçus');
+assert.match(panneau, /markRead\(peerId\)/, 'une discussion ouverte passe ses messages en lus');
+assert.match(panneau, /useContext\(AuthContext\)/, 'le panneau lit le compte sans routeur (la page du jeu se monte hors `<BrowserRouter>`)');
+
+// La coque du panneau force le thème sombre du site : la table est nocturne
+// même quand le joueur est en thème clair, et `messages.css` / `social.css`
+// lisent ces variables.
+assert.match(panneauCss, /\.rpg-messagerie \{[\s\S]{0,220}--ink: #eef0ff;/,
+  'le panneau repose le thème sombre du site sur lui-même');
+assert.match(panneauCss, /\.rpg-messagerie--volet \{[\s\S]{0,140}z-index: 3100;/,
+  'le voile passe au-dessus de tout le HUD de la table');
+const zHudMax = Math.max(...[...battleCss.matchAll(/z-index:\s*(\d+);/g)].map((m) => Number(m[1])));
+assert.ok(3100 > zHudMax, `le voile (3100) domine la table (z-index max ${zHudMax})`);
+
+console.log('check:rpg-messagerie ✓ — dans le Sablier, la messagerie vit dans le jeu : son onglet au menu, son voile sur la table et sur le salon (la fenêtre sociale du site reste le parcours bureau, au-dessus du jeu et sous les appels).');

@@ -86,7 +86,12 @@ function buildDictionary(lang) {
   return withBaseFallback(dict, base);
 }
 
-const LanguageContext = createContext(null);
+/**
+ * Le contexte est exporté : certains composants montés hors fournisseur —
+ * le jeu (vérifications jsdom) — le lisent en direct pour rester inertes
+ * (`useContext(LanguageContext)` au lieu de `useLanguage()` qui lève).
+ */
+export const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children, lang = SITE_LANG }) {
   // `lang` n'est qu'une prise de test (voir l'en-tête) : la langue du site ne

@@ -42,9 +42,13 @@ import LetsTalkLogo, { LetsTalkMark } from './LetsTalkLogo';
  * c'est la page qui porte la messagerie, rien ne flotte par-dessus.
  *
  * Dans le Sablier (`/jeu/sablier-de-bab-el*`), elle reste au contraire
- * présente et **visible au-dessus du jeu** (`social-dock--sablier`) : la
- * messagerie est le canal des défis du duel en ligne, et le jeu — une couche
- * plein écran — la couvrait entièrement.
+ * présente et **visible au-dessus du jeu** sur ordinateur
+ * (`social-dock--sablier`) : la messagerie est le canal des défis du duel en
+ * ligne, et le jeu — une couche plein écran — la couvrait entièrement. Sur
+ * téléphone, au contraire, le lanceur s’efface sur ces routes : la
+ * messagerie du jeu vit dans le jeu lui-même — son onglet au menu, son voile
+ * au-dessus de la table et du salon (`src/games/RpgMessageriePanel.jsx`) — et
+ * le lanceur n’aurait fait que mener hors de la partie.
  */
 
 /**
@@ -56,6 +60,10 @@ import LetsTalkLogo, { LetsTalkMark } from './LetsTalkLogo';
  * la fenêtre sociale monte au-dessus du jeu (`social-dock--sablier`, voir
  * `social.css`), et les barres du jeu portent leur propre bouton
  * « Messagerie » (`src/games/RpgMessagerieBouton.jsx`).
+ *
+ * Au téléphone, la fenêtre du site n’existe plus sur ces routes (`dockVisible`
+ * ci-dessous) : la messagerie du jeu a son onglet et son voile, et un lanceur
+ * flottant n’aurait fait que sortir de la partie en ouvrant `/messages`.
  */
 export function estRouteSablier(pathname) {
   return /^\/jeu\/sablier-de-bab-el(\/|$)/.test(pathname || '');
@@ -212,7 +220,14 @@ export default function SocialDock() {
   // La WebView de l'APK possède sa propre session : même si le joueur n'y est
   // pas encore connecté, garder un accès visible à /messages, qui affiche
   // alors l'invitation à se connecter (sans exposer les conversations).
-  const dockVisible = !onSocialRoute;
+  // Dans le Sablier **sur téléphone**, le lanceur flottant disparaît à son
+  // tour : la messagerie vit désormais dans le jeu — son onglet au menu
+  // (`RpgDuelPage.jsx`), son voile au-dessus de la table et du salon
+  // (`RpgMessageriePanel.jsx`). Le lanceur n’aurait servi qu’à sortir du jeu
+  // (il ouvre la page `/messages`, qui démonte la partie en cours), et en
+  // plein écran natif (APK) il reste de toute façon peint sous la coque du
+  // jeu : invisible. Le jeu est son propre accès à la messagerie.
+  const dockVisible = !onSocialRoute && !(onSablierRoute && isMobile);
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const { classList } = document.body;

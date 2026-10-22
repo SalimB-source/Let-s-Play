@@ -9,8 +9,8 @@ import { JSDOM } from 'jsdom';
  *
  *   - **onglet Jouer** : les quatre portes forment une grille 2 × 2 (le récit et
  *     le duel en ligne en tête, la partie rapide et le tutoriel en dessous), et
- *     sur téléphone les sept onglets passent sur deux rangées au lieu de
- *     défiler hors champ ;
+ *     sur téléphone les huit onglets passent sur deux rangées au lieu de
+ *     défiler hors champ (le dernier, la Messagerie, y compris) ;
  *   - **duel en ligne** : le salon vit dans le même cadre plein écran que le
  *     duel (barre de retour vers le hub, key art de Bab El), au lieu de se
  *     glisser sous la barre fixe du site.
@@ -113,6 +113,7 @@ const dom = new JSDOM(`<!doctype html><html><head><style>${battleCss}\n${tutoria
           <button type="button" class="rpg-mode-menu__souk">Souk</button>
           <button type="button">Catalogue</button>
           <button type="button">Paramètres</button>
+          <button type="button" class="rpg-mode-menu__messagerie"><span class="rpg-mode-menu__onglet-libelle">Messagerie</span></button>
         </nav>
       </header>
       <main class="rpg-mode-menu__play">
@@ -192,6 +193,7 @@ const tel = new JSDOM(`<!doctype html><html><head><style>${battleCss}\n${tutoria
         <button type="button">Jeu Solo</button><button type="button">Deck</button>
         <button type="button" class="rpg-mode-menu__souk">Souk</button>
         <button type="button">Catalogue</button><button type="button">Paramètres</button>
+        <button type="button" class="rpg-mode-menu__messagerie"><span class="rpg-mode-menu__onglet-libelle">Messagerie</span></button>
       </nav>
     </header>
     <main class="rpg-mode-menu__play"><section class="rpg-mode-menu__hero">
@@ -211,7 +213,7 @@ try {
   assert.match(
     battleCss,
     /@media \(max-width: 700px\) \{\s*\.rpg-mode-menu__switch \{\s*display: flex;\s*flex-wrap: wrap;/,
-    'au téléphone, la barre des sept onglets passe en deux rangées (flex-wrap)',
+    'au téléphone, la barre des huit onglets passe en deux rangées (flex-wrap)',
   );
   assert.match(
     battleCss,
@@ -388,8 +390,8 @@ try {
 
 console.log(
   'check:rpg-accueil ✓ — l’onglet Jouer range ses quatre portes en grille (récit et duel en ligne en tête), '
-  + 'la barre des sept onglets passe sur deux rangées au téléphone, le salon en ligne vit dans le cadre plein écran du jeu, '
-  + 'et les six autres onglets reprennent cette même scène : artwork tamisé, gouttière unique, retour au menu rangé. '
+  + 'la barre des huit onglets passe sur deux rangées au téléphone, le salon en ligne vit dans le cadre plein écran du jeu, '
+  + 'et les sept autres onglets reprennent cette même scène : artwork tamisé, gouttière unique, retour au menu rangé. '
   + 'Le salon choisit son deck sur les coffrets du menu.',
 );
 process.exit(0);
