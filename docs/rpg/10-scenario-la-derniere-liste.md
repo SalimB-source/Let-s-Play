@@ -1,6 +1,6 @@
 # 10 — La Dernière Liste : scénario et plan de campagne
 
-> **Campagne complète intégrée (Actes I à V) : 5 tours, 20 duels, 40 scènes, 5 choix, les 9 Registres et les 3 fins du Portail (*Ouvrir*, *Tenir*, *Prendre la place*).**
+> **Campagne étendue : Actes I à VIII, 8 tours, 32 duels et 64 scènes.** Les trois voies du Portail restent des choix intermédiaires ; elles convergent vers les Corsaires, puis le voyage temporel à l’ère Edo (Tour du Soleil rouge) et la conclusion dans la Tour de la Nécropole. Le dossier compte désormais 10 registres.
 > État de réalisation et références de personnages :
 > [`11-bible-visuelle.md`](11-bible-visuelle.md).
 > Conception et intégration au 12 octobre 2026. Ce document adapte l'univers de

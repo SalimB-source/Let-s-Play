@@ -10,6 +10,7 @@ const FEATURES = {
   'tour-du-souk': ['etals-suspendus', 'auvents-colores', 'domes-dores'],
   'tour-des-sables': ['portail-ouvert', 'sommet-en-ruines', 'dunes'],
   'tour-des-abysses': ['galeries-aquatiques', 'pont-a-arches', 'algues'],
+  'tour-des-corsaires': ['mats-de-voile', 'cordages', 'coque-de-galion'],
   'tour-du-fjord': ['corniches-gelees', 'cristaux-de-glace', 'drakkar'],
   'tour-du-soleil-rouge': ['toits-recourbes', 'torii-ecarlate', 'bannieres-samourai'],
   'tour-de-la-necropole': ['obelisques', 'colonnes-de-lotus', 'sarcophage'],

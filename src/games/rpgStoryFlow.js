@@ -1,4 +1,4 @@
-/** Transitions pures de la campagne (Actes I à V) : aucune minuterie, aucun effet de combat. */
+/** Transitions pures de la campagne (Actes I à VIII) : aucune minuterie, aucun effet de combat. */
 import {
   RPG_STORY_ACTES,
   RPG_STORY_ALL_SCENES,
@@ -62,7 +62,7 @@ export function normaliserRecitHistoire(value, etagesVaincus = []) {
   }
   const suivante = RPG_STORY_ALL_SCENES[scenesVues.length];
   if (!suivante) {
-    return { campagneId: RPG_STORY_CAMPAIGN_ID, curseur: curseurFinActe('acte-5'), scenesVues, choix };
+    return { campagneId: RPG_STORY_CAMPAIGN_ID, curseur: curseurFinActe(RPG_STORY_ALL_SCENES.at(-1)?.acteId ?? 'acte-1'), scenesVues, choix };
   }
   const sauve = value.curseur;
   const derniereVue = scenesVues.length > 0 ? RPG_STORY_ALL_SCENES[scenesVues.length - 1] : null;
@@ -179,7 +179,7 @@ export function resumeRecitHistoire(recit) {
   };
 }
 
-const CHIFFRES_ROMAINS = Object.freeze(['I', 'II', 'III', 'IV', 'V']);
+const CHIFFRES_ROMAINS = Object.freeze(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']);
 
 /**
  * Découpage de l’acte en paliers narratifs (un par étage de la tour de l’acte)
@@ -220,7 +220,7 @@ export function etapesRecitHistoire(recit, etagesVaincus = [], forceActeId = nul
   });
 }
 
-/** Résumé des 5 actes de la campagne pour l’affiche et le journal. */
+/** Résumé des actes de la campagne pour l’affiche et le journal. */
 export function resumeActesHistoire(recit) {
   const vues = new Set(recit?.scenesVues ?? []);
   const acteActifId = acteCourantRecit(recit);

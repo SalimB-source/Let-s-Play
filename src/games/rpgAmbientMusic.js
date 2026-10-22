@@ -31,6 +31,7 @@ export const RPG_AMBIENT_BPM = Object.freeze({
   'tour-du-souk': 92,      // marchandage animé mais pas pressé
   'tour-des-sables': 70,   // très lent, solennel, fin des choses
   'tour-des-abysses': 66,  // immersion sous l'eau, tempo flottant
+  'tour-des-corsaires': 96, // rameurs, tambour de bord et abordage
   'tour-du-fjord': 84,     // vent du nord, pas cadencé d'une garde
   'tour-du-soleil-rouge': 88, // martial, koto et braises du mont ardent
   'tour-de-la-necropole': 64, // funéraire, sistre et murmure des tombes
@@ -456,6 +457,7 @@ export class RpgAmbientMusic {
       case 'tour-du-souk':     this.playSouk(step, time); return;
       case 'tour-des-sables':  this.playSables(step, time); return;
       case 'tour-des-abysses': this.playAbysses(step, time); return;
+      case 'tour-des-corsaires': this.playCorsaires(step, time); return;
       case 'tour-du-fjord':    this.playFjord(step, time); return;
       case 'tour-du-soleil-rouge': this.playSoleilRouge(step, time); return;
       case 'tour-de-la-necropole': this.playNecropole(step, time); return;
@@ -727,6 +729,22 @@ export class RpgAmbientMusic {
     }
   }
 
+  // ── Tour des Corsaires : fond sous-marin, rame et tambour de bord ──
+  playCorsaires(step, time) {
+    this.playAbysses(step, time);
+    const beat = step % STEPS_PER_BAR;
+    const stepLength = 60 / RPG_AMBIENT_BPM['tour-des-corsaires'] / 4;
+    // Deux coups sourds de tambour rythment les rames, sans masquer le ressac.
+    if (beat === 0 || beat === 8) {
+      this.tone(beat === 0 ? 48 : 43, time, stepLength * 2.4, 'triangle', 0.09, {
+        filter: 150, attack: 0.008, destination: this.musicBus,
+      });
+    }
+    if (beat === 4 || beat === 12) {
+      this.filteredNoise(time, 0.09, 0.026, { type: 'lowpass', frequency: 420, q: 0.7 });
+    }
+  }
+
   // ── Tour du Fjord : neige, boucliers, corbeaux ─────────────────────
   playFjord(step, time) {
     const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
@@ -929,6 +947,11 @@ export const RPG_AMBIENT_THEMES = Object.freeze({
     nom: 'Les cloches du fond répondent',
     bpm: RPG_AMBIENT_BPM['tour-des-abysses'],
     ambiance: 'Cloches étouffées, bulles et ressac — l\'abîme contre une carte à la fois.',
+  }),
+  'tour-des-corsaires': Object.freeze({
+    nom: 'Les lettres de marque',
+    bpm: RPG_AMBIENT_BPM['tour-des-corsaires'],
+    ambiance: 'Tambour de rame, cordages qui grincent et cloches des citernes — la flotte corsaire de la Régence.',
   }),
   'tour-du-fjord': Object.freeze({
     nom: 'Neuf hivers de mémoire et de glace',

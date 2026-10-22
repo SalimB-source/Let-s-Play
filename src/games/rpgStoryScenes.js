@@ -1,9 +1,18 @@
-/** La Dernière Liste — Actes I à V. Données seules : aucun effet sur le duel. */
+/** La Dernière Liste — Actes I à VIII. Données seules : aucun effet sur le duel. */
 export const RPG_STORY_CAMPAIGN_ID = 'derniere-liste';
 export const RPG_STORY_CAMPAIGN_TITLE = 'La Dernière Liste';
 export const RPG_STORY_CAMPAIGN_MINIATURE = 'sablier-story/mode-histoire.jpg';
 export const RPG_STORY_EPISODE_TITLE = 'Les absents';
-export const RPG_STORY_CAMPAIGN_FLOORS = Object.freeze(['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5']);
+export const RPG_STORY_CAMPAIGN_FLOORS = Object.freeze([
+  'listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5',
+  'souk-1', 'souk-2', 'souk-3', 'souk-4',
+  'abysses-1', 'abysses-2', 'abysses-3', 'abysses-4',
+  'fjord-1', 'fjord-2', 'fjord-3', 'fjord-4',
+  'sables-1', 'sables-2', 'sables-3',
+  'corsaires-1', 'corsaires-2', 'corsaires-3', 'corsaires-4',
+  'soleil-1', 'soleil-2', 'soleil-3', 'soleil-4',
+  'necropole-1', 'necropole-2', 'necropole-3', 'necropole-4',
+]);
 
 export const RPG_STORY_CAMPAIGN = Object.freeze({
   id: RPG_STORY_CAMPAIGN_ID,
@@ -515,6 +524,130 @@ const scenesActe5 = [
   },
 ];
 
+const scenesActe6 = [
+  { id: 'corsaires-1-avant', acteId: 'acte-6', etageId: 'corsaires-1', moment: 'avant', titre: 'La voile sous la citerne', lieu: 'La Tour des Corsaires · Chenal de la Régence', decor: 'citerne', figure: 'corsaire-mousse', resume: 'Le choix du portail n’a pas effacé les preuves. Une voile noire apparaît dans les eaux libérées : le registre du Zénith mentionne un dernier manifeste, détenu par la flotte de la Régence.', repliques: [
+    { personnage: 'salem', texte: 'Le sceau du Zénith porte une annotation : « cargaison transférée à la Régence ». Ce n’est pas la fin du dossier.' },
+    { personnage: 'corsaire-mousse', texte: 'La marée a ramené leur galiote. Les Corsaires savent où sont passées les cargaisons des quartiers rayés. Mais leur équipage ne répond qu’aux lettres de marque.' },
+    { personnage: 'yamina', texte: 'Alors nous ne prendrons pas leur navire. Nous leur demanderons de répondre de leurs propres signatures.' },
+  ] },
+  { id: 'corsaires-1-apres', acteId: 'acte-6', etageId: 'corsaires-1', moment: 'apres', titre: 'Le pavillon de la Régence', lieu: 'La Tour des Corsaires · Première darse', decor: 'citerne', figure: 'corsaire-mousse', resume: 'La guetteuse remet un pavillon de trêve et révèle que les lettres de marque autorisaient la flotte à déplacer des biens, jamais des habitants.', repliques: [
+    { personnage: 'corsaire-mousse', texte: 'Vous avez tenu le chenal. Prenez ce pavillon : le Raïs vous recevra. Les lettres autorisaient le transport des biens, pas celui des habitants.' },
+    { personnage: 'salem', texte: 'Alors quelqu’un a utilisé vos navires pour faire disparaître les gens, tout en gardant leurs cargaisons.' },
+    { personnage: 'tarek', texte: 'Et la preuve est dans la cale. Le Négociant des rançons en tient les comptes.' },
+  ] },
+  { id: 'corsaires-2-avant', acteId: 'acte-6', etageId: 'corsaires-2', moment: 'avant', titre: 'Le prix de la cargaison', lieu: 'La Tour des Corsaires · Cale des rançons', decor: 'citerne', figure: 'corsaire-negociant', resume: 'Le Négociant a les registres de fret, mais refuse de les remettre sans garantie pour les marins endettés.', repliques: [
+    { personnage: 'corsaire-negociant', texte: 'Chaque cargaison a payé sa traversée. Ces marins aussi ont une dette, et la Chambre la rachète à prix d’or.' },
+    { personnage: 'feriel', texte: 'Une dette ne transforme pas un équipage en complice. Ouvrez les comptes, nous témoignerons pour eux.' },
+    { personnage: 'salem', texte: 'Nous ne sommes pas venus acheter le silence. Posez vos cartes : gagnons le droit de lire le manifeste.' },
+  ] },
+  { id: 'corsaires-2-apres', acteId: 'acte-6', etageId: 'corsaires-2', moment: 'apres', titre: 'Les noms dans la cale', lieu: 'La Tour des Corsaires · Cale des rançons', decor: 'citerne', figure: 'corsaire-negociant', resume: 'Les comptes prouvent que les cargaisons ont été vendues, tandis que les personnes transportées ont été remises à la Chambre sans reçu.', repliques: [
+    { personnage: 'corsaire-negociant', texte: 'Voilà le manifeste. Les caisses ont été vendues au Souk. Les passagers, eux, ont été débarqués à la Tour des Listes. Aucun reçu, aucun nom.' },
+    { personnage: 'yamina', texte: 'La même opération a donc traversé toutes les tours. La Chambre a séparé les biens des personnes pour effacer la trace.' },
+    { personnage: 'salem', texte: 'Le Raïs doit signer ce témoignage. Allons au pont.' },
+  ] },
+  { id: 'corsaires-3-avant', acteId: 'acte-6', etageId: 'corsaires-3', moment: 'avant', titre: 'La lettre de marque', lieu: 'La Tour des Corsaires · Pont du cotre', decor: 'citerne', figure: 'corsaire-rais', resume: 'Le Raïs reconnaît la signature de la Chambre sur ses ordres, mais conteste que son équipage ait su ce qu’il transportait.', repliques: [
+    { personnage: 'corsaire-rais', texte: 'J’ai signé les lettres de marque. J’ai transporté des caisses scellées sous pavillon légal. Je n’ai jamais vu les passagers.' },
+    { personnage: 'boualem', texte: 'Les citernes ont reçu l’ordre d’inonder l’étage. Les corsaires ont reçu l’ordre de vider les quartiers. La même main a écrit les deux.' },
+    { personnage: 'corsaire-rais', texte: 'Je ne signerai pas une accusation fondée sur des paroles. Montrez-moi que vous pouvez tenir face à la flotte.' },
+  ] },
+  { id: 'corsaires-3-apres', acteId: 'acte-6', etageId: 'corsaires-3', moment: 'apres', titre: 'Le Raïs témoigne', lieu: 'La Tour des Corsaires · Pont du cotre', decor: 'citerne', figure: 'corsaire-rais', resume: 'Le Raïs confirme son témoignage et révèle que l’original du manifeste se trouve à bord du Hollandais volant.', repliques: [
+    { personnage: 'corsaire-rais', texte: 'Je reconnais la main du greffe. La Chambre m’a fait transporter ces gens et m’a payé pour ne pas demander leurs noms. Je témoignerai.' },
+    { personnage: 'tarek', texte: 'L’original est sur le Hollandais volant. La Barbe-Rousse l’a pris avant que le navire ne disparaisse dans le brouillard.' },
+    { personnage: 'salem', texte: 'Nous irons chercher l’original. Cette fois, personne ne pourra dire que le registre est une copie.' },
+  ] },
+  { id: 'corsaires-4-avant', acteId: 'acte-6', etageId: 'corsaires-4', moment: 'avant', titre: 'Le Hollandais volant', lieu: 'La Tour des Corsaires · Mât de brume', decor: 'citerne', figure: 'corsaire-barbe-rousse', resume: 'Au sommet, la Barbe-Rousse garde l’original du manifeste et le dernier inventaire des personnes transportées. Elle le remettra seulement si Salem accepte que la flotte soit jugée avec la Chambre.', repliques: [
+    { personnage: 'corsaire-barbe-rousse', texte: 'La Chambre a payé. La Régence a navigué. Si vous ouvrez ce registre, les deux seront jugées.' },
+    { personnage: 'salem', texte: 'Les douze noms ne seront pas les derniers. Nous ne pouvons pas demander justice pour les absents et protéger ceux qui ont signé.' },
+    { personnage: 'corsaire-barbe-rousse', texte: 'Alors affrontez le Hollandais. Si vous gagnez, l’original est à la ville.' },
+  ] },
+  { id: 'corsaires-4-apres', acteId: 'acte-6', etageId: 'corsaires-4', moment: 'apres', titre: 'Le manifeste des absents', lieu: 'La Tour des Corsaires · Mât de brume', decor: 'citerne', figure: 'corsaire-barbe-rousse', resume: 'L’original complète les preuves des autres tours. Salem promet une enquête publique, sans effacer ni les victimes ni les responsabilités.', repliques: [
+    { personnage: 'corsaire-barbe-rousse', texte: 'Prenez-le. Chaque traversée, chaque cargaison, chaque nom que nous avons laissé sans reçu.' },
+    { personnage: 'yamina', texte: 'La Tour des Listes a effacé les personnes. Le Souk a gardé leurs biens. Les Abysses ont noyé la trace. Le Fjord a verrouillé le portail. Les Sables ont scellé le cycle.' },
+    { personnage: 'salem', texte: 'Et la Régence a transporté les absents. Nous rendrons le manifeste public, avec tous les noms et toutes les signatures. La ville jugera sur les preuves, pas sur une nouvelle Liste.' },
+    { personnage: 'tarek', texte: 'Alors le dossier est complet. Cette fois, il ne se refermera pas dans une seule tour.' },
+  ] },
+];
+
+const scenesActe7 = [
+  { id: 'soleil-1-avant', acteId: 'acte-7', etageId: 'soleil-1', moment: 'avant', titre: 'Le cadran s’ouvre sur Edo', lieu: 'Tour du Soleil rouge · Mont Ardent, ère Edo', decor: 'sables', figure: 'samurai-ashigaru', resume: 'Au moment où Salem déplie le manifeste corsaire, l’encre se met à couler à rebours. L’Astrolabe ouvre une brèche temporelle et projette le groupe au pied du Mont Ardent, dans une époque où les samouraïs gardent la première roue du mécanisme.', repliques: [
+    { personnage: 'mahieddine', texte: 'Les coordonnées du manifeste ne désignent pas un port. Elles donnent une date. L’Astrolabe vient de remonter jusqu’à l’ère Edo.' },
+    { personnage: 'salem', texte: 'Les maisons, les vêtements… Nous ne sommes plus à Bab El. La tour a traversé le temps avec nous.' },
+    { personnage: 'samurai-ashigaru', texte: 'Étrangers, le Daimyō a interdit l’accès au Mont Ardent. Si vous prétendez venir d’un autre siècle, prouvez d’abord que vous n’êtes pas des espions.' },
+  ] },
+  { id: 'soleil-1-apres', acteId: 'acte-7', etageId: 'soleil-1', moment: 'apres', titre: 'Le premier rouage', lieu: 'Tour du Soleil rouge · Palissade du Mont Ardent', decor: 'sables', figure: 'samurai-ashigaru', resume: 'L’Ashigaru comprend que les voyageurs portent un sceau venu du futur et les laisse franchir la palissade.', repliques: [
+    { personnage: 'samurai-ashigaru', texte: 'Vous ne combattez pas pour conquérir. Le sceau dans votre carnet porte pourtant le même soleil que notre sanctuaire. Montez : le Rōnin vous attend.' },
+    { personnage: 'yamina', texte: 'L’Astrolabe s’est servi du manifeste comme d’une ancre. Nous devons retrouver la roue qui appartenait au premier Horloger.' },
+  ] },
+  { id: 'soleil-2-avant', acteId: 'acte-7', etageId: 'soleil-2', moment: 'avant', titre: 'Le Rōnin sans époque', lieu: 'Tour du Soleil rouge · Sentier des braises', decor: 'sables', figure: 'samurai-ronin', resume: 'Le Rōnin pense que le groupe cherche à voler le sabre rituel qui maintient la roue du temps immobile.', repliques: [
+    { personnage: 'samurai-ronin', texte: 'Le sabre du sanctuaire ne quittera pas le Mont Ardent. Le Daimyō le garde pour empêcher la roue de réveiller la guerre.' },
+    { personnage: 'tarek', texte: 'Nous ne voulons pas emporter votre histoire. Nous voulons rentrer chez nous sans laisser cette époque se briser.' },
+    { personnage: 'samurai-ronin', texte: 'Alors montrez-moi que votre avenir vaut mieux que les guerres que je connais.' },
+  ] },
+  { id: 'soleil-2-apres', acteId: 'acte-7', etageId: 'soleil-2', moment: 'apres', titre: 'Le sabre reste au fourreau', lieu: 'Tour du Soleil rouge · Sentier des braises', decor: 'sables', figure: 'samurai-ronin', resume: 'Le Rōnin remet au groupe une carte du sanctuaire et révèle que la roue est protégée par un serment, non par une arme.', repliques: [
+    { personnage: 'samurai-ronin', texte: 'Vous avez gagné sans prendre ma lame. La roue n’est pas une arme : c’est un pacte. Le Kenshi vous expliquera ce que nos ancêtres ont juré.' },
+    { personnage: 'feriel', texte: 'À chaque tour, quelqu’un a confondu protéger les autres et décider à leur place.' },
+  ] },
+  { id: 'soleil-3-avant', acteId: 'acte-7', etageId: 'soleil-3', moment: 'avant', titre: 'Le serment du torii', lieu: 'Tour du Soleil rouge · Sanctuaire du torii', decor: 'sables', figure: 'samurai-kenshi', resume: 'Le Kenshi reconnaît sur le manifeste une inscription gravée des siècles plus tard et soupçonne Mahieddine d’avoir rompu l’ancien pacte.', repliques: [
+    { personnage: 'samurai-kenshi', texte: 'Ce sceau annonce qu’un jour la Chambre des Heures détournera notre roue pour tenir une ville sous quarantaine.' },
+    { personnage: 'mahieddine', texte: 'La Chambre a utilisé votre serment sans vous le dire. Je ne vous demande pas de me pardonner : seulement de m’aider à le défaire.' },
+    { personnage: 'samurai-kenshi', texte: 'Le Daimyō seul peut rendre la roue au sanctuaire. Il vous attend sous la bannière rouge.' },
+  ] },
+  { id: 'soleil-3-apres', acteId: 'acte-7', etageId: 'soleil-3', moment: 'apres', titre: 'La roue rendue', lieu: 'Tour du Soleil rouge · Sanctuaire du torii', decor: 'sables', figure: 'samurai-kenshi', resume: 'Le Kenshi remet la roue au groupe, à condition qu’elle soit rendue intacte à son époque après le retour à Bab El.', repliques: [
+    { personnage: 'samurai-kenshi', texte: 'Le serment est clair : la roue voyage, mais ne devient la propriété d’aucun siècle. Ramenez-la au point où l’Astrolabe s’est ouvert.' },
+    { personnage: 'yamina', texte: 'Nous la rendrons. Il nous faut maintenant le sceau du Daimyō pour éviter que la brèche ne s’élargisse.' },
+  ] },
+  { id: 'soleil-4-avant', acteId: 'acte-7', etageId: 'soleil-4', moment: 'avant', titre: 'Le Daimyō et les étrangers', lieu: 'Tour du Soleil rouge · Donjon du Mont Ardent', decor: 'sables', figure: 'samurai-daimyo', resume: 'Le Daimyō craint que la disparition de la roue ne condamne son peuple. Salem doit le convaincre que le temps peut être réparé sans effacer Edo.', repliques: [
+    { personnage: 'samurai-daimyo', texte: 'Vous dites venir d’un avenir où mon peuple n’existe plus dans vos registres. Pourquoi devrais-je risquer le présent pour sauver votre ville ?' },
+    { personnage: 'salem', texte: 'Parce que nous avons appris à Bab El ce que coûte l’effacement. Nous ne prendrons ni votre roue ni vos noms.' },
+    { personnage: 'samurai-daimyo', texte: 'Alors défendez cette promesse. Si vous tenez, je vous confierai le sceau du retour.' },
+  ] },
+  { id: 'soleil-4-apres', acteId: 'acte-7', etageId: 'soleil-4', moment: 'apres', titre: 'Une promesse pour chaque siècle', lieu: 'Tour du Soleil rouge · Donjon du Mont Ardent', decor: 'sables', figure: 'samurai-daimyo', resume: 'Le Daimyō confie le sceau du retour et demande que les noms des samouraïs soient conservés dans le dossier de Bab El.', repliques: [
+    { personnage: 'samurai-daimyo', texte: 'Emportez le sceau. Écrivez nos noms dans votre registre, non comme des fantômes, mais comme ceux qui ont choisi de vous aider.' },
+    { personnage: 'salem', texte: 'Ils y auront leur place. La brèche se referme déjà — mais elle ouvre sur une chambre plus ancienne que notre ville.' },
+    { personnage: 'mahieddine', texte: 'Le premier Horloger a laissé sa mémoire sous la pierre. Nous devons descendre avant que l’Astrolabe ne nous rappelle.' },
+  ] },
+];
+
+const scenesActe8 = [
+  { id: 'necropole-1-avant', acteId: 'acte-8', etageId: 'necropole-1', moment: 'avant', titre: 'Les bandelettes du temps', lieu: 'Tour de la Nécropole · Cryptes basses', decor: 'greffe', figure: 'necro-ouvrier', resume: 'Le sceau d’Edo ouvre une salle funéraire enfouie sous la Chambre des Heures. Les bandelettes portent les dates des tours et le nom du tout premier Horloger.', repliques: [
+    { personnage: 'boualem', texte: 'Cette crypte n’est pas sous le désert. Elle est sous toutes les tours à la fois : regardez les dates, elles n’ont pas le même calendrier.' },
+    { personnage: 'necro-ouvrier', texte: 'Les morts ne sont pas vos archives. Laissez le registre où il repose, ou prouvez que vous savez le lire sans le profaner.' },
+    { personnage: 'yamina', texte: 'Nous sommes venus rendre leurs noms, pas prendre leurs reliques.' },
+  ] },
+  { id: 'necropole-1-apres', acteId: 'acte-8', etageId: 'necropole-1', moment: 'apres', titre: 'Le nom sous le lin', lieu: 'Tour de la Nécropole · Cryptes basses', decor: 'greffe', figure: 'necro-ouvrier', resume: 'L’ouvrier révèle que le fondateur de la Chambre a caché son premier registre dans la Nécropole.', repliques: [
+    { personnage: 'necro-ouvrier', texte: 'Le premier Horloger a demandé que son nom soit caché, pas détruit. La Grande Pesée garde le chemin vers sa tombe.' },
+    { personnage: 'mahieddine', texte: 'Il m’a appris à signer seul. J’ai pris son silence pour un ordre.' },
+  ] },
+  { id: 'necropole-2-avant', acteId: 'acte-8', etageId: 'necropole-2', moment: 'avant', titre: 'Le gardien du tribut', lieu: 'Tour de la Nécropole · Seuil des chacals', decor: 'greffe', figure: 'necro-chacal', resume: 'Le Chacal refuse le passage : selon le vieux pacte, toute vérité exige un tribut, mais la règle ne précise pas qu’il doit être payé en sang.', repliques: [
+    { personnage: 'necro-chacal', texte: 'Pour passer, donnez un nom à la balance. Un nom oublié, ou l’un des vôtres.' },
+    { personnage: 'salem', texte: 'Aucun nom ne sera monnaie. Nous apporterons les preuves et les partagerons avec toute la ville.' },
+    { personnage: 'necro-chacal', texte: 'Alors gagnez le passage sans sacrifier personne.' },
+  ] },
+  { id: 'necropole-2-apres', acteId: 'acte-8', etageId: 'necropole-2', moment: 'apres', titre: 'Le tribut refusé', lieu: 'Tour de la Nécropole · Seuil des chacals', decor: 'greffe', figure: 'necro-chacal', resume: 'La porte cède sans sacrifice. Le Chacal remet la tablette qui explique le premier mécanisme de l’Astrolabe.', repliques: [
+    { personnage: 'necro-chacal', texte: 'Vous avez payé par votre victoire, pas par une vie. Prenez la tablette : la première roue fut créée pour compter les saisons, non les habitants.' },
+    { personnage: 'yamina', texte: 'La Chambre a transformé un calendrier en instrument de contrôle.' },
+  ] },
+  { id: 'necropole-3-avant', acteId: 'acte-8', etageId: 'necropole-3', moment: 'avant', titre: 'La balance des heures', lieu: 'Tour de la Nécropole · Salle de la Pesée', decor: 'greffe', figure: 'necro-peseuse', resume: 'Celle qui pèse conserve les témoignages du premier cycle et demande qui aura le droit de raconter cette histoire.', repliques: [
+    { personnage: 'necro-peseuse', texte: 'Vos registres sont complets, mais qui les lira ? Qui décidera quels noms méritent une place dans la mémoire ?' },
+    { personnage: 'tarek', texte: 'Pas un seul gardien. Les témoins, les familles et les habitants les liront ensemble.' },
+    { personnage: 'necro-peseuse', texte: 'Alors montrez-moi que vous pouvez porter une mémoire sans en devenir propriétaire.' },
+  ] },
+  { id: 'necropole-3-apres', acteId: 'acte-8', etageId: 'necropole-3', moment: 'apres', titre: 'La première signature', lieu: 'Tour de la Nécropole · Salle de la Pesée', decor: 'greffe', figure: 'necro-peseuse', resume: 'La tablette livre la signature du fondateur et prouve qu’il avait refusé une quarantaine éternelle.', repliques: [
+    { personnage: 'necro-peseuse', texte: 'Voici la première signature : le fondateur avait prévu une fin au pacte. Les Horlogers suivants ont supprimé cette ligne.' },
+    { personnage: 'mahieddine', texte: 'Je peux enfin cesser de prétendre que je ne savais pas. J’ajouterai mon témoignage au vôtre.' },
+  ] },
+  { id: 'necropole-4-avant', acteId: 'acte-8', etageId: 'necropole-4', moment: 'avant', titre: 'La dernière pesée', lieu: 'Tour de la Nécropole · Tombe du Premier Horloger', decor: 'greffe', figure: 'necro-devoreuse', resume: 'La Dévoreuse garde la tombe et éprouve le groupe une dernière fois : la vérité peut libérer Bab El, mais aussi accuser tous les ordres qui l’ont maintenue.', repliques: [
+    { personnage: 'necro-devoreuse', texte: 'Si vous ouvrez le tombeau, chaque signature sera exposée : celle du fondateur, celle de Mahieddine, celles des capitaines et des gardiens.' },
+    { personnage: 'yamina', texte: 'La justice n’est pas l’oubli des coupables. Elle n’est pas non plus l’oubli des victimes.' },
+    { personnage: 'salem', texte: 'Nous ouvrirons le registre entier. Aucun nom ne sera retiré pour rendre l’histoire plus facile.' },
+  ] },
+  { id: 'necropole-4-apres', acteId: 'acte-8', etageId: 'necropole-4', moment: 'apres', titre: 'Le registre sans effacement', lieu: 'Tour de la Nécropole · Tombe du Premier Horloger', decor: 'greffe', figure: 'necro-devoreuse', resume: 'Le dernier tombeau révèle le mécanisme pour renvoyer chaque tour à son époque. La campagne s’achève avec une mémoire commune, non une nouvelle liste fermée.', repliques: [
+    { personnage: 'necro-devoreuse', texte: 'Le mécanisme est à vous. Il renverra la roue au Mont Ardent et vous ramènera à Bab El. Ne le faites pas tourner seul.' },
+    { personnage: 'salem', texte: 'Nous rentrerons ensemble. À Bab El, chaque tour déposera ses preuves devant les habitants, et chacun pourra contester le récit.' },
+    { personnage: 'mahieddine', texte: 'Alors la Chambre des Heures n’aura plus le dernier mot. Ce sera enfin une mémoire à plusieurs voix.' },
+  ] },
+];
+
 function figerScenes(liste) {
   return Object.freeze(liste.map((scene) => Object.freeze({
     ...scene,
@@ -527,13 +660,16 @@ function figerScenes(liste) {
 /** Les 10 scènes de l’Acte I (référence historique conservée pour les tests de l’épisode I). */
 export const RPG_STORY_SCENES = figerScenes(scenesActe1);
 
-/** Toutes les scènes de la campagne complète (Actes I à V : 40 scènes sur les 20 duels). */
+/** Toutes les scènes de la campagne complète : 8 actes, 32 duels et 64 scènes. */
 export const RPG_STORY_ALL_SCENES = figerScenes([
   ...scenesActe1,
   ...scenesActe2,
   ...scenesActe3,
   ...scenesActe4,
   ...scenesActe5,
+  ...scenesActe6,
+  ...scenesActe7,
+  ...scenesActe8,
 ]);
 
 export const RPG_STORY_ACTES = Object.freeze([
@@ -611,6 +747,33 @@ export const RPG_STORY_ACTES = Object.freeze([
     figureFin: 'mahieddine',
     epilogueTitre: 'La Dernière Liste.\nBab El a choisi.',
     epilogueLead: 'Le droit de contestation a été mené jusqu’au sommet. Le destin du portail et de la ville est désormais scellé.',
+  }),
+  Object.freeze({
+    id: 'acte-6', numero: 6, romain: 'VI', titre: 'Les lettres de marque',
+    tourId: 'tour-des-corsaires', lieu: 'La Tour des Corsaires',
+    resume: 'Suivre les manifestes de la Chambre jusqu’à la flotte de la Régence, confronter les corsaires et rendre publique la preuve complète des disparitions.',
+    etages: Object.freeze(['corsaires-1', 'corsaires-2', 'corsaires-3', 'corsaires-4']),
+    choixId: null, decor: 'citerne', figureFin: 'salem',
+    epilogueTitre: 'Un manifeste.\\nTous les noms.',
+    epilogueLead: 'Les preuves des six tours sont réunies. La ville peut enfin juger les faits sans effacer les témoins.',
+  }),
+  Object.freeze({
+    id: 'acte-7', numero: 7, romain: 'VII', titre: 'L’ère des braises',
+    tourId: 'tour-du-soleil-rouge', lieu: 'La Tour du Soleil rouge · Ère Edo',
+    resume: 'Suivre le manifeste à travers le temps jusqu’au Mont Ardent, rencontrer les samouraïs et rendre à leur époque la roue de l’Astrolabe.',
+    etages: Object.freeze(['soleil-1', 'soleil-2', 'soleil-3', 'soleil-4']),
+    choixId: null, decor: 'sables', figureFin: 'samurai-daimyo',
+    epilogueTitre: 'Le serment rendu.\nLe temps continue.',
+    epilogueLead: 'Les samouraïs ont confié le sceau du retour. La brèche mène maintenant sous les fondations de Bab El.',
+  }),
+  Object.freeze({
+    id: 'acte-8', numero: 8, romain: 'VIII', titre: 'La mémoire sous la pierre',
+    tourId: 'tour-de-la-necropole', lieu: 'La Tour de la Nécropole',
+    resume: 'Retrouver la première signature de la Chambre, comprendre l’origine de l’Astrolabe et rendre aux habitants de toutes les époques une mémoire partageable.',
+    etages: Object.freeze(['necropole-1', 'necropole-2', 'necropole-3', 'necropole-4']),
+    choixId: null, decor: 'greffe', figureFin: 'salem',
+    epilogueTitre: 'La mémoire commune.\nAucun nom effacé.',
+    epilogueLead: 'Les huit tours de la campagne ont livré leurs preuves. Bab El peut enfin écrire son histoire à plusieurs voix.',
   }),
 ]);
 
@@ -690,31 +853,58 @@ export function texteEpilogueActe(acteId, choix = {}) {
       note: 'L’Acte V vous mène au sommet de la Tour des Sables, devant le portail et le Grand Horloger.',
     };
   }
+  if (acteId === 'acte-7') {
+    return {
+      lieu: `Acte VII terminé · ${acte.lieu}`,
+      titre: acte.epilogueTitre,
+      chapeau: acte.epilogueLead,
+      conclusion: 'L’Ashigaru, le Rōnin, le Kenshi et le Daimyō ont confié à Salem le sceau du retour. La roue sera rendue à l’ère Edo ; les noms des samouraïs restent dans le registre de Bab El.',
+      note: 'L’Acte VIII vous attend dans la Tour de la Nécropole, sous les fondations de la Chambre des Heures.',
+    };
+  }
+  if (acteId === 'acte-8') {
+    return {
+      lieu: `Campagne terminée · ${acte.lieu}`,
+      titre: acte.epilogueTitre,
+      chapeau: acte.epilogueLead,
+      conclusion: 'Salem et ses compagnons reviennent à Bab El avec les preuves de la Régence, le sceau d’Edo et la première signature de la Chambre. Le conseil ouvre les registres aux témoins et aux familles : l’histoire n’appartient plus à un seul Horloger.',
+      note: 'La campagne complète est achevée. Les huit tours restent accessibles pour les duels libres et la relecture du journal.',
+    };
+  }
+  if (acteId === 'acte-6') {
+    return {
+      lieu: `Acte VI terminé · ${acte.lieu}`,
+      titre: acte.epilogueTitre,
+      chapeau: acte.epilogueLead,
+      conclusion: 'Le manifeste original relie les six premières Tours : des noms effacés, des cargaisons détournées et des signatures conservées. Salem le garde comme preuve pour la suite du voyage.',
+      note: 'L’Acte VII vous entraîne dans l’ère Edo, à la Tour du Soleil rouge, où les samouraïs gardent une roue de l’Astrolabe.'
+    };
+  }
   if (acteId === 'acte-5') {
     if (choix['choix-portail'] === 'ouvrir') {
       return {
-        lieu: 'Campagne terminée · Le Portail de Bab El',
-        titre: 'Fin I — Ouvrir le portail.',
+        lieu: 'Acte V terminé · Le Portail de Bab El',
+        titre: 'Voie I — Ouvrir le portail.',
         chapeau: acte.epilogueLead,
         conclusion: 'Vous avez ouvert le portail. Le sable a cessé de monter ; Bab El, debout, armée et rassemblée autour de Salem, Yamina et Fériel, fait face à ce qui franchit le seuil.',
-        note: 'Les neuf registres sont complets dans votre journal. Vous pouvez relire chaque scène ou explorer librement les cinq tours.',
+        note: 'Les neuf registres sont complets dans votre journal. La suite du récit vous attend dans la Tour des Corsaires ; vous pouvez aussi relire chaque scène ou explorer librement les tours.',
       };
     }
     if (choix['choix-portail'] === 'prendre-la-place') {
       return {
-        lieu: 'Campagne terminée · La Chambre des Heures',
-        titre: 'Fin III — Prendre la place.',
+        lieu: 'Acte V terminé · La Chambre des Heures',
+        titre: 'Voie III — Prendre la place.',
         chapeau: acte.epilogueLead,
         conclusion: '« Vous n’aviez pas à porter ça tout seul. » Assis à la table du Grand Horloger, le stylo en main et chaque absent nommé, vous avez arrêté l’Astrolabe.',
-        note: 'Les neuf registres sont complets dans votre journal. Vous pouvez relire chaque scène ou explorer librement les cinq tours.',
+        note: 'Les neuf registres sont complets dans votre journal. La suite du récit vous attend dans la Tour des Corsaires ; vous pouvez aussi relire chaque scène ou explorer librement les tours.',
       };
     }
     return {
-      lieu: 'Campagne terminée · Les Terrasses de Bab El',
-      titre: 'Fin II — Tenir ensemble.',
+      lieu: 'Acte V terminé · Les Terrasses de Bab El',
+      titre: 'Voie II — Tenir ensemble.',
       chapeau: acte.epilogueLead,
       conclusion: 'Vous avez maintenu le portail fermé et organisé la montée collective de Bab El avec le Souk, l’atelier et les citernes : on ne gagne pas d’un coup, mais la ville dure ensemble.',
-      note: 'Les neuf registres sont complets dans votre journal. Vous pouvez relire chaque scène ou explorer librement les cinq tours.',
+      note: 'Les neuf registres sont complets dans votre journal. La suite du récit vous attend dans la Tour des Corsaires ; vous pouvez aussi relire chaque scène ou explorer librement les tours.',
     };
   }
   return {
@@ -821,7 +1011,12 @@ export const RPG_STORY_REGISTRES = Object.freeze([
     cote: 'REG-IX · ZENITH-00',
     titre: 'Registre du Premier Horloger & Sceau du Zénith',
     lieu: 'Sous l’Astrolabe',
-    texte: 'Le neuvième et dernier registre de Bab El : il consigne les noms de tous les étages et remet le balancier de l’Astrolabe entre les mains de ceux qui ont contesté la Liste.',
+    texte: 'Le neuvième registre de Bab El : il consigne les noms de tous les étages et remet le balancier de l’Astrolabe entre les mains de ceux qui ont contesté la Liste.',
+  }),
+  Object.freeze({
+    id: 'registre-manifeste-regence', acteId: 'acte-6', sceneId: 'corsaires-4-apres', etageId: 'corsaires-4',
+    cote: 'REG-X · REG-COURSE-01', titre: 'Manifeste original de la Régence', lieu: 'Le Hollandais volant',
+    texte: 'Original des lettres de marque : les navires de la Régence transportèrent des habitants déplacés par ordre de la Chambre. Les cargaisons furent vendues ; les personnes furent remises sans reçu. Le Raïs et la Barbe-Rousse cosignent le témoignage.',
   }),
 ]);
 
@@ -839,6 +1034,18 @@ export function statutSurvivantsHistoire(recit) {
   const vues = new Set(recit?.scenesVues ?? []);
   const voie = recit?.choix?.['diffusion-liste'];
   const portail = recit?.choix?.['choix-portail'];
+  if (vues.has('necropole-4-apres')) {
+    return { etape: 'Mémoire commune · Huit tours réunies', resume: 'Les témoins et les familles de Bab El peuvent désormais consulter les preuves de toutes les tours, y compris le témoignage des samouraïs de l’ère Edo.' };
+  }
+  if (vues.has('soleil-4-apres')) {
+    return { etape: 'Sceau du retour obtenu · Ère Edo préservée', resume: 'Les samouraïs du Mont Ardent ont confié la roue à Salem et demandé que leur histoire rejoigne les registres de Bab El.' };
+  }
+  if (vues.has('corsaires-4-apres')) {
+    return {
+      etape: 'Manifeste public · Enquête ouverte sur les huit Tours',
+      resume: 'Le registre original de la Régence relie les disparitions aux signatures de la Chambre. Les survivants de Bab El témoignent aux côtés du Raïs et des marchands.',
+    };
+  }
   if (vues.has('sables-3-apres')) {
     return {
       etape: portail === 'ouvrir'
