@@ -7,6 +7,10 @@
  * journal `navire_arrivee`, les autres créatures pirates du set Lettres de
  * Marque au journal `pirate_arrivee`. Les jetons, réanimations et retours de
  * cale ne sont pas des arrivées : aucun journal ne les mentionne.
+ *
+ * L'accueil pirate a deux voix jouées en alternance d'une arrivée à l'autre :
+ * le cri « Ahoy ! » (`pirate_arrivee`) puis le dialogue « Alright »
+ * (`pirate_dialogue`, `Pirate_Dialogue_Alright.wav`).
  */
 
 import test from 'node:test';
@@ -16,8 +20,10 @@ import {
   RPG_ABORDAGE_SFX,
   RPG_NAVIRE_ARRIVEE_SFX,
   RPG_PIRATE_ARRIVEE_SFX,
+  RPG_PIRATE_DIALOGUE_SFX,
   RPG_SFX_NAMES,
   RpgAudioPlayer,
+  rpgSonArriveePirate,
 } from '../src/games/rpgAudio.js';
 import { rpgEstCartePirate } from '../src/games/rpgLettresDeMarque.js';
 import { cardById, cardHasPrintedType } from '../src/games/rpgCards.js';
@@ -53,6 +59,19 @@ test('les deux échantillons d’arrivée sont livrés avec le jeu, octet pour o
   const ahoy = readFileSync(new URL('../src/games/assets/pirate-ahoy.mp3', import.meta.url));
   assert.equal(ahoy.byteLength, 57631,
     'Cartoon Pirate Voice - Ahoy.mp3 reste l’échantillon du cri d’arrivée pirate');
+  const alright = readFileSync(new URL('../src/games/assets/pirate-dialogue-alright.wav', import.meta.url));
+  assert.equal(alright.byteLength, 266158,
+    'Pirate_Dialogue_Alright.wav est conservé intact dans src/games/assets/pirate-dialogue-alright.wav');
+  // Même contenu que le fichier déposé dans public/ : aucun ré-encodage.
+  const publicAlright = readFileSync(new URL('../public/Pirate_Dialogue_Alright.wav', import.meta.url));
+  assert.ok(alright.equals(publicAlright), 'la copie du jeu est identique octet pour octet à public/');
+});
+
+test('les deux accueils pirates alternent d’une arrivée à l’autre', () => {
+  assert.deepEqual(
+    Array.from({ length: 4 }, (_, index) => rpgSonArriveePirate(index)),
+    [RPG_PIRATE_ARRIVEE_SFX, RPG_PIRATE_DIALOGUE_SFX, RPG_PIRATE_ARRIVEE_SFX, RPG_PIRATE_DIALOGUE_SFX],
+  );
 });
 
 test('les prédicats identifient les pirates et les navires', () => {
@@ -153,8 +172,9 @@ test('le sorcier adverse journalise aussi ses arrivées, du bon côté', () => {
   assert.deepEqual(rpgConsommerArriveesPirate(duel), []);
 });
 
-test('RpgAudioPlayer route les trois échantillons maritimes vers les bons fichiers', () => {
+test('RpgAudioPlayer route les quatre échantillons maritimes vers les bons fichiers', () => {
   assert.ok(RPG_SFX_NAMES.includes('pirate_arrivee'));
+  assert.ok(RPG_SFX_NAMES.includes('pirate_dialogue'));
   assert.ok(RPG_SFX_NAMES.includes('navire_arrivee'));
   assert.ok(RPG_SFX_NAMES.includes('abordage'));
 
@@ -200,23 +220,29 @@ test('RpgAudioPlayer route les trois échantillons maritimes vers les bons fichi
     const player = new RpgAudioPlayer();
     player.unlock();
     assert.match(player.pirateAhoyAudio.src, /pirate-ahoy\.mp3$/);
+    assert.match(player.pirateDialogueAudio.src, /pirate-dialogue-alright\.wav$/);
     assert.match(player.dockSoundAudio.src, /dock-sound\.mp3$/);
     assert.match(player.chainRattleAudio.src, /chain-rattle\.wav$/);
 
     player.play(RPG_PIRATE_ARRIVEE_SFX);
+    player.play(RPG_PIRATE_DIALOGUE_SFX);
     player.play(RPG_NAVIRE_ARRIVEE_SFX);
     player.play(RPG_ABORDAGE_SFX);
     const fichiers = lectures.map((l) => l.src.split('/').pop());
-    assert.deepEqual(fichiers, ['pirate-ahoy.mp3', 'dock-sound.mp3', 'chain-rattle.wav']);
+    assert.deepEqual(fichiers, [
+      'pirate-ahoy.mp3', 'pirate-dialogue-alright.wav', 'dock-sound.mp3', 'chain-rattle.wav',
+    ]);
 
     player.setMuted(true);
     const avantMute = lectures.length;
     player.play(RPG_PIRATE_ARRIVEE_SFX);
+    player.play(RPG_PIRATE_DIALOGUE_SFX);
     player.play(RPG_NAVIRE_ARRIVEE_SFX);
     assert.equal(lectures.length, avantMute, 'muet : aucun son d’arrivée supplémentaire');
 
     player.destroy();
     assert.equal(player.pirateAhoyAudio, null);
+    assert.equal(player.pirateDialogueAudio, null);
     assert.equal(player.dockSoundAudio, null);
     assert.equal(player.chainRattleAudio, null);
   } finally {

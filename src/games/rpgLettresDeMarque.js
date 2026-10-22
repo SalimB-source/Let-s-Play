@@ -65,7 +65,8 @@ const carte = (definition) => ({
  * Une carte « pirate » : une créature du set Piraterie (Lettres de Marque),
  * jouée depuis la main — donc ni les jetons Corsaire (nés d'un effet, pas
  * joués), ni les Sites, magies et armes du même set. Le moteur journalise
- * leurs arrivées pour que le cri « Ahoy ! » salue chaque pirate qui accoste.
+ * leurs arrivées pour que l'accueil pirate — cri « Ahoy ! » puis dialogue
+ * « Alright », en alternance — salue chaque pirate qui accoste.
  */
 export function rpgEstCartePirate(carte) {
   return Boolean(carte)

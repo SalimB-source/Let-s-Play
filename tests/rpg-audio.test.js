@@ -8,7 +8,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { hz, rpgSfx, RPG_SFX_NAMES, RpgAudioPlayer } from '../src/games/rpgAudio.js';
+import {
+  hz,
+  rpgSfx,
+  rpgSonArriveePirate,
+  RPG_PIRATE_ARRIVEES_SFX,
+  RPG_PIRATE_ARRIVEE_SFX,
+  RPG_PIRATE_DIALOGUE_SFX,
+  RPG_SFX_NAMES,
+  RpgAudioPlayer,
+} from '../src/games/rpgAudio.js';
 
 test('hz : le la de référence et ses voisins', () => {
   assert.equal(Math.round(hz('A4')), 440);
@@ -22,7 +31,8 @@ test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
     'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw', 'card_place',
     'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'hover',
-    'navire_arrivee', 'page_turn', 'pirate_arrivee', 'player_attack_hit', 'victoire', 'water_wave',
+    'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'player_attack_hit', 'victoire',
+    'water_wave',
   ].sort(), 'le son du duel = la synthèse du survol + les échantillons de la table');
   for (const name of RPG_SFX_NAMES) {
     const sequence = rpgSfx(name);
@@ -47,6 +57,26 @@ test('les arrivées jouent le cri pirate et l’ambiance de quai, tous deux sur 
     'le cri « Ahoy ! » salue l’arrivée des cartes pirates');
   assert.ok(existsSync(new URL('../src/games/assets/dock-sound.mp3', import.meta.url)),
     'Dock Sound_320k.mp3 voyage dans src/games/assets/dock-sound.mp3');
+});
+
+test('le dialogue « Alright » est le second accueil pirate, en alternance avec « Ahoy ! »', () => {
+  assert.ok(RPG_SFX_NAMES.includes('pirate_dialogue'));
+  assert.deepEqual(rpgSfx('pirate_dialogue'), [{ kind: 'sample', at: 0, dur: 0.779, g: 1 }]);
+  assert.ok(existsSync(new URL('../src/games/assets/pirate-dialogue-alright.wav', import.meta.url)),
+    'Pirate_Dialogue_Alright.wav voyage dans src/games/assets/pirate-dialogue-alright.wav');
+
+  // Le cycle : une arrivée sur deux pour chaque voix, sans fin ni trou.
+  assert.deepEqual(RPG_PIRATE_ARRIVEES_SFX, [RPG_PIRATE_ARRIVEE_SFX, RPG_PIRATE_DIALOGUE_SFX]);
+  const cycle = Array.from({ length: 6 }, (_, index) => rpgSonArriveePirate(index));
+  assert.deepEqual(cycle, [
+    'pirate_arrivee', 'pirate_dialogue', 'pirate_arrivee',
+    'pirate_dialogue', 'pirate_arrivee', 'pirate_dialogue',
+  ]);
+  // Un index inattendu retombe sur le premier son ; un indice négatif reste
+  // dans le cycle plutôt que de sortir du tableau.
+  assert.equal(rpgSonArriveePirate(undefined), RPG_PIRATE_ARRIVEE_SFX);
+  assert.equal(rpgSonArriveePirate('bonjour'), RPG_PIRATE_ARRIVEE_SFX);
+  assert.equal(rpgSonArriveePirate(-1), RPG_PIRATE_DIALOGUE_SFX);
 });
 
 test('la victoire est la fanfare fournie, livrée avec le jeu', () => {

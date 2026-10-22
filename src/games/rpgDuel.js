@@ -176,8 +176,9 @@ export function rpgConsommerPrisesEnCale(duel) {
 // la main entre en jeu via `rpgJouerCreature`, le moteur la classe une seule
 // fois : un **navire** — type imprimé « Navire », quel que soit son set — est
 // accueilli par l'ambiance de quai (`navire_arrivee`) ; toute autre créature
-// pirate du set Lettres de Marque l'est par le cri « Ahoy ! »
-// (`pirate_arrivee`). Le type Navire prime : un navire pirate ne fait jamais
+// pirate du set Lettres de Marque l'est par un accueil alterné entre le cri
+// « Ahoy ! » (`pirate_arrivee`) et le dialogue « Alright »
+// (`pirate_dialogue`). Le type Navire prime : un navire pirate ne fait jamais
 // retentir les deux sons. Ni les jetons (nés d'un effet), ni les réanimations,
 // ni les détenues rendues en jeu par l'ouverture d'une cale ne passent par ce
 // journal : le moteur précise lui-même que ces retours ne sont pas des
