@@ -13,7 +13,7 @@
  *      la feuille attend — et l'icône passe de ☰ à ✕ ;
  *   3. le panneau porte bien les trois modes (Menu, Deck, Catalogue), les
  *      réglages (son, 3D, plein écran) et l’entrée Messagerie — le canal des
- *      défis du duel en ligne ;
+ *      défis du duel en ligne, ouverte en voile au-dessus de la table ;
  *   4. un geste hors de la barre referme le panneau ;
  *   5. rouvert, le mode Deck s'ouvre depuis le panneau : la barre du duel
  *      disparaît avec la table et l'écran des decks prend la place.
@@ -55,11 +55,18 @@ export async function checkRpgDuelNav(assert) {
     // Paramètres doit être disponible depuis le menu, avant qu'aucune partie ne
     // soit lancée : l'écran et ses commandes ne dépendent pas du duel.
     assert.equal(node.querySelector('.rpg-battle')?.dataset.scene, 'menu', 'le test commence hors partie');
-    // La messagerie du site apparaît dans le jeu dès le menu : c’est elle qui
-    // permet de se lancer des duels en ligne (carte « Défi du Sablier »).
-    const messagerieMenu = node.querySelector('.rpg-mode-menu__header [data-rpg-messagerie="menu"]');
-    assert.ok(messagerieMenu, 'la barre du menu principal porte l’entrée Messagerie');
-    assert.match(messagerieMenu.textContent, /Messagerie/, 'l’entrée Messagerie du menu est libellée');
+    // La messagerie du site apparaît dans le jeu dès le menu, dans son propre
+    // onglet : c’est elle qui permet de se lancer des duels en ligne (carte
+    // « Défi du Sablier »), et la fenêtre sociale du site reste peinte sous la
+    // couche plein écran du jeu.
+    const ongletMessagerie = [...node.querySelectorAll('.rpg-mode-menu__switch button')]
+      .find((bouton) => bouton.textContent.includes('Messagerie'));
+    assert.ok(ongletMessagerie, 'la barre des modes du menu porte l’onglet Messagerie');
+    assert.ok(ongletMessagerie.querySelector('.rpg-mode-menu__messagerie-mark'),
+      'l’onglet porte la bulle « Let’s Talk »');
+    assert.ok(ongletMessagerie.querySelector('.rpg-mode-menu__messagerie-pastille') === null
+      || ongletMessagerie.getAttribute('aria-label')?.includes('Messagerie'),
+      'la pastille des non-lus de l’onglet est annoncée par son aria-label');
     const settingsHorsPartie = [...node.querySelectorAll('.rpg-mode-menu__switch button')]
       .find((bouton) => bouton.textContent.includes('Paramètres'));
     assert.ok(settingsHorsPartie, 'le menu principal expose Paramètres avant une partie');
@@ -95,6 +102,12 @@ export async function checkRpgDuelNav(assert) {
     await settle();
     assert.equal(deconnexions, 1, 'le bouton appelle la déconnexion du compte');
 
+    // L’onglet Messagerie ouvre le panneau de messagerie du jeu : sans compte
+    // (ce scénario), l’invitation à se connecter — comme la page /messages.
+    await click(ongletMessagerie);
+    assert.ok(node.querySelector('.rpg-messagerie--ecran'),
+      'l’onglet Messagerie ouvre son panneau dans le jeu, sans quitter la page');
+
     const ongletJouer = [...node.querySelectorAll('.rpg-mode-menu__switch button')]
       .find((bouton) => bouton.textContent.includes('Jouer'));
     await click(ongletJouer);
@@ -121,15 +134,23 @@ export async function checkRpgDuelNav(assert) {
     assert.deepEqual(commandesDirectes.slice(0, 4).map((bouton) => bouton.textContent.trim()),
       ['Menu', 'Deck', 'Catalogue', 'Paramètres'],
       'le panneau porte les trois modes du duel et l’onglet Paramètres');
-    assert.equal(commandesDirectes.length, 5,
-      'les boutons directs du panneau sont Menu, Deck, Catalogue, Paramètres et Plein écran');
+    assert.equal(commandesDirectes.length, 6,
+      'les boutons directs du panneau sont Menu, Deck, Catalogue, Paramètres, Messagerie et Plein écran');
     // La messagerie du site fait partie du panneau : c’est par elle que les
     // défis du Sablier se lancent. Sans fournisseur de messagerie (ce
-    // scénario), elle se rend en lien vers /messages — avec un compte, le
-    // même emplacement est un bouton qui ouvre la fenêtre sociale.
+    // scénario), elle ouvre le voile du jeu ; avec un compte, le même
+    // emplacement montre la liste des discussions.
     const entreeMessagerie = menu.querySelector(':scope > [data-rpg-messagerie="duel"]');
     assert.ok(entreeMessagerie, 'le panneau porte l’entrée Messagerie (les défis passent par elle)');
     assert.match(entreeMessagerie.textContent, /Messagerie/, 'l’entrée Messagerie est libellée');
+    // Le voile s’ouvre au-dessus de la table et se referme sans quitter le duel.
+    await click(entreeMessagerie);
+    assert.ok(node.querySelector('.rpg-messagerie--volet'),
+      'l’entrée Messagerie du duel ouvre le voile du jeu au-dessus de la table');
+    assert.ok(node.querySelector('.card-table'), 'la table reste montée sous le voile : le duel n’est pas quitté');
+    await click(node.querySelector('.rpg-messagerie--volet [aria-label="Fermer"]'));
+    assert.equal(node.querySelector('.rpg-messagerie--volet'), null,
+      'le bouton Fermer rend la table au joueur');
 
     // L'onglet Paramètres déplie l'option 3D et le contrôle du volume des sons et musiques.
     const ongletParametres = menu.querySelector('.rpg-duel-nav__settings-tab');

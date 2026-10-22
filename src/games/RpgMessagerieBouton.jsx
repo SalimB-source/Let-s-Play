@@ -14,12 +14,20 @@ import './rpg-messagerie.css';
  * entièrement la fenêtre sociale (z-index 1250) : dans le jeu, impossible de
  * voir un défi reçu, ou d’aller en lancer un, sans quitter la table.
  *
- * Ce bouton vit donc **dans** les barres du jeu — le menu principal, la barre
- * du duel et le salon en ligne (`variante`) — avec la pastille des non-lus.
- * Son clic ouvre la messagerie comme partout ailleurs sur le site
+ * Ce bouton vit donc **dans** les barres du jeu — la barre du duel et le
+ * salon en ligne (`variante`) — avec la pastille des non-lus. Son clic ouvre
+ * la messagerie comme partout ailleurs sur le site
  * (`openInbox` : la fenêtre sociale sur bureau, la page `/messages` sur
  * mobile) ; `SocialDock` se pose au-dessus du jeu sur les routes du Sablier
  * (voir `social-dock--sablier` dans `src/social/social.css`).
+ *
+ * **`onOuvrir` : la messagerie du jeu lui-même.** Quand la barre qui porte le
+ * bouton sait héberger la messagerie — le panneau de `RpgMessageriePanel.jsx`,
+ * en onglet du menu ou en voile au-dessus de la table —, elle passe ce
+ * gestionnaire et le clic ouvre CE panneau au lieu de la fenêtre du site :
+ * dans le jeu (surtout en plein écran natif, où la fenêtre sociale reste
+ * peinte sous la coque), la messagerie fait partie du jeu, elle y vit. Le
+ * menu principal, lui, ne passe plus de bouton : la messagerie y a son onglet.
  *
  * Plein écran natif : la fenêtre sociale est rendue hors de la coque du jeu,
  * donc hors du sous-arbre plein écran quand la coque elle-même est
@@ -27,15 +35,18 @@ import './rpg-messagerie.css';
  * illisible. Dans ce seul cas, le clic rend d’abord le plein écran natif
  * (la couche fixe du jeu reste : la partie ne bouge pas). Si le plein écran
  * porte sur `<html>` (session paysage), la fenêtre sociale est déjà dedans :
- * on n’y touche pas.
+ * on n’y touche pas. Avec `onOuvrir`, aucune de ces deux manœuvres n’est
+ * nécessaire : le panneau est déjà dans la coque.
  *
  * Sans compte (contexte inerte ou visiteur), le bouton est un simple lien
  * vers la messagerie, qui y propose la connexion — sans routeur, comme le
  * lien « Quitter » du menu : la page se monte aussi hors `<BrowserRouter>`
  * dans les vérifications jsdom, et les contextes sans fournisseur restent
- * inertes (voir les défauts de `MessagesContext` / `FriendsContext`).
+ * inertes (voir les défauts de `MessagesContext` / `FriendsContext`). Avec
+ * `onOuvrir`, le visiteur reste sur un bouton : c’est le panneau du jeu qui
+ * montre l’invitation à se connecter.
  */
-export default function RpgMessagerieBouton({ variante = 'menu', onActivate } = {}) {
+export default function RpgMessagerieBouton({ variante = 'menu', onActivate, onOuvrir } = {}) {
   const messages = useMessages() ?? {};
   const friends = useFriends() ?? {};
   const nonLus = messages.unreadTotal ?? 0;
@@ -68,9 +79,11 @@ export default function RpgMessagerieBouton({ variante = 'menu', onActivate } = 
 
   const classes = `rpg-messagerie-bouton rpg-messagerie-bouton--${variante}${pastille > 0 ? ' has-alert' : ''}`;
 
-  // Visiteur : la page de messagerie explique la connexion, comme le fait le
-  // lanceur de la fenêtre sociale quand aucun compte n’est là.
-  if (!connecte) {
+  // Visiteur sans `onOuvrir` : la page de messagerie explique la connexion,
+  // comme le fait le lanceur de la fenêtre sociale quand aucun compte n’est
+  // là. Avec `onOuvrir`, le panneau du jeu porte cette invitation : le
+  // bouton reste un bouton (rendu plus bas).
+  if (!connecte && !onOuvrir) {
     return (
       <a
         className={classes}
@@ -87,6 +100,9 @@ export default function RpgMessagerieBouton({ variante = 'menu', onActivate } = 
 
   const ouvrir = () => {
     onActivate?.();
+    // La messagerie du jeu (onglet du menu, voile sur la table) : le panneau
+    // est déjà dans la coque, rien d’autre à faire.
+    if (onOuvrir) { onOuvrir(); return; }
     const pleinEcran = nativeFullscreenElement();
     if (pleinEcran && typeof document !== 'undefined' && pleinEcran !== document.documentElement) {
       void exitNativeFullscreen();

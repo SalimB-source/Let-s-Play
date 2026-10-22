@@ -1,12 +1,16 @@
 /**
  * Le bouton « Messagerie » dans le Sablier — `src/games/rpg-messagerie.css`
  * --------------------------------------------------------------------------
- * Trois gabarits, un par barre du jeu (`RpgMessagerieBouton.jsx`) : le bouton
- * reprend partout le laiton de la barre qui l’accueille, pour être du jeu —
- * et la bulle cyan de « Let’s Talk », pour rester la messagerie du site. La
- * pastille jaune est celle du lanceur social : même signal, même endroit
- * (coin haut droit), un chiffre = ce qui attend (non-lus d’abord, demandes
- * d’amis sinon — le détail vit dans l’`aria-label`).
+ * Deux gabarits, un par barre du jeu qui reste (`RpgMessagerieBouton.jsx`) :
+ * le bouton reprend partout le laiton de la barre qui l’accueille, pour être
+ * du jeu — et la bulle cyan de « Let’s Talk », pour rester la messagerie du
+ * site. La pastille jaune est celle du lanceur social : même signal, même
+ * endroit (coin haut droit), un chiffre = ce qui attend (non-lus d’abord,
+ * demandes d’amis sinon — le détail vit dans l’`aria-label`).
+ *
+ * Le menu principal n’a plus de bouton : la messagerie y a son onglet
+ * (`rpg-battle.css`, `.rpg-mode-menu__messagerie`) et son panneau
+ * (`rpg-messagerie-panel.css`).
  */
 
 .rpg-messagerie-bouton {
@@ -41,38 +45,6 @@
   pointer-events: none;
 }
 .rpg-messagerie-bouton.has-alert { border-color: rgba(255, 214, 25, .55); }
-
-/* ── Menu principal : même rangée et même laiton que le plein écran et la
-      sortie (« Quitter »), en pilule libellée — les défis se lancent depuis
-      le menu, le mot doit se lire. Sur téléphone étroit, la pilule devient
-      une pastille ronde comme ses deux voisines. ── */
-.rpg-messagerie-bouton--menu {
-  order: 2;
-  min-height: 38px;
-  margin-left: 9px;
-  padding: 8px 13px;
-  border: 1px solid rgba(240, 221, 183, .22);
-  border-radius: 999px;
-  background: rgba(12, 10, 13, .7);
-  color: rgba(247, 237, 220, .86);
-  font: 800 10px/1 var(--mono, monospace);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
-  backdrop-filter: blur(10px);
-}
-.rpg-messagerie-bouton--menu:hover,
-.rpg-messagerie-bouton--menu:focus-visible {
-  border-color: rgba(231, 191, 101, .48);
-  background: linear-gradient(135deg, rgba(201, 150, 57, .26), rgba(111, 69, 34, .22));
-  color: #ffe7af;
-  outline: none;
-}
-@media (max-width: 700px) {
-  .rpg-messagerie-bouton--menu { min-width: 34px; min-height: 34px; margin-left: 6px; padding: 7px; border-radius: 50%; }
-  .rpg-messagerie-bouton--menu .rpg-messagerie-bouton__libelle { display: none; }
-  .rpg-messagerie-bouton--menu .rpg-messagerie-bouton__mark { width: 16px; height: 16px; }
-}
 
 /* ── Barre du duel : le gabarit des boutons de la barre (`.rpg-duel-nav
       button`), posé aussi sur le lien visiteur pour que les deux rendus

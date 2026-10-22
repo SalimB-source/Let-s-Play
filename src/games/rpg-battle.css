@@ -6291,6 +6291,64 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu__bourse-pastille { animation: none; }
 }
 
+/* L'onglet Messagerie : la messagerie Let's Talk a sa place dans la barre des
+   modes — le jeu est une couche plein écran, la fenêtre sociale du site n'y
+   apparaît pas (surtout en plein écran natif de l'APK), elle vit donc dans le
+   jeu. La bulle « Let's Talk » tient l'icône ; la pastille jaune est celle du
+   lanceur social — non-lus d'abord, demandes d'amis sinon, détail dans
+   l'`aria-label`. */
+.rpg-mode-menu__messagerie {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.rpg-mode-menu__messagerie-mark {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: #7fe3f2;
+}
+.rpg-mode-menu__switch button.rpg-mode-menu__messagerie span.rpg-mode-menu__onglet-libelle {
+  margin-right: 0;
+  color: inherit;
+}
+.rpg-mode-menu__messagerie-pastille {
+  min-width: 17px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: var(--yellow, #ffd619);
+  color: #0a0b1a;
+  font: 800 9px/1.3 var(--mono, monospace);
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 0 12px rgba(255, 214, 25, .55);
+  pointer-events: none;
+}
+.rpg-mode-menu__messagerie.is-active .rpg-mode-menu__messagerie-pastille {
+  background: #fff3c4;
+}
+@media (max-width: 560px) {
+  /* Huit onglets sur un téléphone : celui de la Messagerie garde sa bulle et
+     son chiffre, et lâche le mot — l'`aria-label`, lui, dit tout. */
+  .rpg-mode-menu__switch button.rpg-mode-menu__messagerie .rpg-mode-menu__onglet-libelle { display: none; }
+  .rpg-mode-menu__messagerie-mark { width: 15px; height: 15px; }
+  .rpg-mode-menu__switch button.rpg-mode-menu__messagerie .rpg-mode-menu__messagerie-pastille {
+    display: inline;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 14px;
+    padding: 1px 4px;
+    font-size: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-mode-menu__messagerie-pastille { box-shadow: none; }
+}
+
 /* Plein écran du menu : le bouton se tient à gauche de la barre des modes, dans
    le même laiton. Il ouvre le plein écran natif — déjà posé en couche fixe dès
    l'ouverture de la page — et le referme une fois allumé (`is-on`). */
@@ -10624,6 +10682,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu--tours .rpg-story,
 .rpg-mode-menu--catalogue .rpg-card-catalogue,
 .rpg-mode-menu--parametres .rpg-settings,
+.rpg-mode-menu--messagerie .rpg-messagerie,
 .rpg-mode-menu--souk .rpg-souk,
 .rpg-mode-menu--guide .rpg-card-guide,
 .rpg-mode-menu--tutoriels .rpg-tutoriels {

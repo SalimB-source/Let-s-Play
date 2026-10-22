@@ -31,6 +31,7 @@ import {
 } from './rpgPvpSalon.js';
 import RpgPvpBoard from './RpgPvpBoard.jsx';
 import RpgMessagerieBouton from './RpgMessagerieBouton.jsx';
+import RpgMessageriePanel from './RpgMessageriePanel.jsx';
 
 /**
  * Le salon du Sablier en ligne — `src/games/RpgPvpSalon.jsx`
@@ -72,6 +73,12 @@ const FOND_EN_LIGNE = `linear-gradient(105deg, rgba(7, 6, 12, .93) 0%, rgba(7, 6
  * chaîne vers la page du site, verrouillée par `body.rpg-pvp-lock`).
  */
 function Cadre({ code = '', retour = null, compact = false, children }) {
+  // La messagerie s’ouvre en voile AU-DESSUS du salon (`RpgMessageriePanel`) :
+  // sur mobile, la fenêtre sociale du site naviguerait vers `/messages` et
+  // démonterait le salon — défi en création, deck choisi et attente de
+  // l’adversaire perdus. Ici rien ne se démonte, le salon reprend à la
+  // fermeture du voile.
+  const [messagerieOuverte, setMessagerieOuverte] = useState(false);
   return (
     <div className={`rpg-pvp-page${compact ? ' rpg-pvp-page--compact' : ''}`} style={{ backgroundImage: FOND_EN_LIGNE }}>
       <header className="rpg-pvp-page__barre">
@@ -83,11 +90,10 @@ function Cadre({ code = '', retour = null, compact = false, children }) {
         </Link>
         {/* La messagerie, dans la barre du salon : c’est par elle que les
             défis se lancent et se reçoivent. Elle reste joignable pendant
-            l’attente d’un adversaire comme pendant le duel — la fenêtre
-            sociale se pose au-dessus du jeu sur cette route
-            (`social-dock--sablier`). */}
+            l’attente d’un adversaire comme pendant le duel — le voile du jeu
+            s’ouvre au-dessus du salon, rien ne quitte la partie. */}
         <span className="rpg-pvp-page__outils">
-          <RpgMessagerieBouton variante="salon" />
+          <RpgMessagerieBouton variante="salon" onOuvrir={() => setMessagerieOuverte(true)} />
           {code ? (
             <span className="rpg-pvp-page__code" title="Code du défi">{code}</span>
           ) : (
@@ -99,6 +105,9 @@ function Cadre({ code = '', retour = null, compact = false, children }) {
         </span>
       </header>
       <div className="rpg-pvp-page__contenu">{children}</div>
+      {messagerieOuverte && (
+        <RpgMessageriePanel variante="volet" onFermer={() => setMessagerieOuverte(false)} />
+      )}
     </div>
   );
 }
