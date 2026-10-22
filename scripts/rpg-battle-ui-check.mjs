@@ -1271,10 +1271,10 @@ assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-wizard-plate\s
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table::before/,
   'le doigt ne reçoit pas de voile non plus : seul le chrome tient la lisibilité');
 
-// ── L'aperçu au doigt : une seconde d'appui sur une carte ───────────────────
+// ── L'aperçu au doigt : appui long réactif (320 ms) sur une carte ───────────
 const longPressSource = readFileSync(new URL('../src/games/rpgLongPress.js', import.meta.url), 'utf8');
-assert.match(longPressSource, /export const RPG_LONG_PRESS_MS = 1000;/,
-  'l’aperçu au doigt demande une seconde d’appui, comme annoncé au joueur');
+assert.match(longPressSource, /export const RPG_LONG_PRESS_MS = 320;/,
+  'l’aperçu au doigt répond en 320 ms d’appui');
 assert.match(longPressSource, /export function peutDemarrerAppuiLong\(event\) \{[\s\S]*?\['touch', 'pen'\]\.includes\(event\.pointerType\)[\s\S]*?\n\}/,
   'la souris garde le survol : l’appui long ne concerne que le doigt et le stylet');
 assert.match(longPressSource, /if \(declenche\) armerAvalageClic\(\);/,

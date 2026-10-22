@@ -697,7 +697,8 @@
   border: 1px solid rgba(242, 154, 74, .24);
   border-radius: 12px;
   background: rgba(8, 7, 9, .62);
-  backdrop-filter: blur(6px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .rpg-battle--touch .rpg-turn-rail .rpg-phase-step {
   --rpg-phase-lit: #f29a4a;
@@ -1413,7 +1414,7 @@
 .rpg-battle .card-row .rpg-card .rpg-card__activation { top: 6cqw; right: 6cqw; padding: 3cqw 7cqw; border-width: 1cqw; }
 .rpg-battle .card-row .rpg-card .rpg-mana-cost i { width: 11cqw; height: 11cqw; font-size: 7cqw; }
 
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
   .rpg-battle .rpg-hand__card .rpg-card-icones.rpg-card-icones--colonne {
     top: calc(5% + var(--rpg-card-marker-size, 22px) + 2px);
     gap: 2px;
@@ -1442,4 +1443,35 @@
   width: 9px;
   height: 9px;
 }
+
+/* ── Performance GPU, rail droit épuré & aperçu latéralisé anti-occultation ──
+   Sur GPU mobile, un rayon de flou réduit de moitié divise par quatre le
+   nombre d'échantillons par fragment. Dans la colonne de droite, les boutons
+   d'activation d'arme indisponibles s'effacent au doigt pour ne jamais pousser
+   le rail du tour hors d'un écran bas, et les modes disponibles d'une arme se
+   rangent sur deux colonnes compactes. Lorsqu'une carte est maintenue à droite
+   de l'écran, l'aperçu se décale vers la gauche (et inversement) pour ne
+   jamais se glisser sous le pouce qui consulte la carte. */
+.rpg-battle.rpg-battle--touch {
+  --rpg-plateau-flou: 1.5px;
+}
+.rpg-battle--touch .rpg-bottombar .rpg-btn--activation:disabled {
+  display: none;
+}
+.rpg-battle--touch .rpg-bottombar .rpg-actions__row:has(.rpg-btn--activation:not(:disabled):nth-of-type(2)) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.rpg-battle--touch .rpg-turn-rail .rpg-btn--endturn:not(:disabled) {
+  border-color: rgba(246, 206, 118, .85);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .48), 0 0 0 1px rgba(246, 206, 118, .24);
+}
+.rpg-battle--touch .rpg-card-peek[data-apercu-cote="gauche"] .rpg-card-peek__panel {
+  justify-self: start;
+  margin-inline-start: max(12px, env(safe-area-inset-left, 0px));
+}
+.rpg-battle--touch .rpg-card-peek[data-apercu-cote="droite"] .rpg-card-peek__panel {
+  justify-self: end;
+  margin-inline-end: max(12px, env(safe-area-inset-right, 0px));
+}
+
 

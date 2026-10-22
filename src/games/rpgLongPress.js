@@ -28,11 +28,11 @@
  *   l'aperçu ouvert ne dépend plus du doigt : il se ferme par son propre volet.
  */
 
-/** Durée de l'appui qui ouvre l'aperçu : une seconde, geste volontaire. */
-export const RPG_LONG_PRESS_MS = 1000;
+/** Durée de l'appui qui ouvre l'aperçu : 320 ms, réactif au doigt sans confondre avec un tap. */
+export const RPG_LONG_PRESS_MS = 320;
 
-/** Déplacement toléré pendant l'appui, en pixels — le seuil de `rpgTouchDrag.js`. */
-export const RPG_LONG_PRESS_SEUIL_PX = 10;
+/** Déplacement toléré pendant l'appui, en pixels — absorbe le roulement naturel du pouce sur écran capacitif. */
+export const RPG_LONG_PRESS_SEUIL_PX = 14;
 
 /** Fenêtre pendant laquelle le clic qui suit la fin du geste est avalé. */
 const DELAI_CLIC_AVALE_MS = 400;
@@ -107,6 +107,7 @@ export function startRpgLongPress(event, {
   const declencher = () => {
     timer = null;
     declenche = true;
+    try { win.navigator?.vibrate?.(10); } catch { /* haptique optionnelle selon la WebView */ }
     onTrigger({ source, event });
   };
   const bouge = (e) => {

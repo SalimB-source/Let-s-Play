@@ -186,7 +186,7 @@ test('la souris et les arguments manquants sont ignorés', async () => {
   assert.equal(peutDemarrerAppuiLong(null), false);
 });
 
-test('la durée par défaut est bien une seconde, comme annoncé au joueur', () => {
-  assert.equal(RPG_LONG_PRESS_MS, 1000, 'une seconde d’appui');
-  assert.equal(RPG_LONG_PRESS_SEUIL_PX, 10, 'le seuil de déplacement suit le glisser-déposer');
+test('la durée par défaut est réactive au doigt (320 ms) avec tolérance au roulement du pouce (14 px)', () => {
+  assert.equal(RPG_LONG_PRESS_MS, 320, '320 ms d’appui réactif');
+  assert.equal(RPG_LONG_PRESS_SEUIL_PX, 14, 'le seuil de déplacement absorbe le roulement du pouce');
 });
