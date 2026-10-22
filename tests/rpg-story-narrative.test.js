@@ -249,21 +249,26 @@ for (const optionId of ['publique', 'confiee']) {
     let recit = recitHistoireVide();
     let etat = { ...progressionHistoireVide(), recit };
     let etapes = 0;
-    while (recit.curseur.type !== 'fin' && etapes++ < 80) {
-      if (recit.curseur.type === 'duel') {
+    while ((recit.curseur.type !== 'fin' || recit.scenesVues.length < RPG_STORY_ALL_SCENES.length) && etapes++ < 240) {
+      if (recit.curseur.type === 'fin') {
+        const suivante = RPG_STORY_ALL_SCENES[recit.scenesVues.length];
+        recit = transitionRecitHistoire(recit, { type: 'ouvrir-acte', curseur: recit.curseur, acteId: suivante.acteId }, etat.etagesVaincus);
+      } else if (recit.curseur.type === 'duel') {
         etat = marquerEtageVaincu({ ...etat, recit }, recit.curseur.etageId);
         recit = agir(recit, 'victoire', { etageId: recit.curseur.etageId }, etat.etagesVaincus);
       } else {
         const scene = sceneHistoire(recit.curseur.id);
         const fin = recit.curseur.replique === scene.repliques.length - 1;
-        recit = agir(recit, fin && scene.choix ? 'choisir' : 'continuer', { optionId }, etat.etagesVaincus);
+        recit = agir(recit, fin && scene.choix ? 'choisir' : 'continuer', {
+          optionId: scene.choix === 'diffusion-liste' ? optionId : RPG_STORY_CHOICES[scene.choix]?.options[0]?.id,
+        }, etat.etagesVaincus);
       }
       etat = { ...etat, recit };
       assert.deepEqual(normaliserProgressionHistoire(etat), etat);
     }
-    assert.ok(etapes < 80, 'pas de boucle ou d’impasse');
+    assert.ok(etapes < 240, 'pas de boucle ou d’impasse');
     assert.equal(recit.curseur.type, 'fin');
-    assert.deepEqual(recit.scenesVues, RPG_STORY_SCENES.map((s) => s.id));
+    assert.deepEqual(recit.scenesVues, RPG_STORY_ALL_SCENES.map((s) => s.id));
     assert.deepEqual(etat.etagesVaincus, [...RPG_STORY_CAMPAIGN_FLOORS]);
     assert.equal(recit.choix['diffusion-liste'], optionId);
     assert.equal(resumeRecitHistoire(recit).termine, true);
@@ -358,13 +363,13 @@ test('recommencer le récit préserve victoires et collection ; l’effacement c
   assert.deepEqual(chargerProgressionHistoire(), progressionHistoireVide());
 }));
 
-test('le résumé ne prétend pas que les autres tours sont scénarisées', () => {
+test('le résumé commence bien à l’Acte I, puis le journal suit les actes débloqués', () => {
   assert.equal(resumeRecitHistoire(null).total, 10);
   assert.equal(resumeRecitHistoire(null).commence, false);
 });
 
 test('les cinq paliers et pièces du dossier suivent l’avancement réel sans rien dévoiler d’avance', () => {
-  assert.equal(RPG_STORY_REGISTRES.length, 9);
+  assert.equal(RPG_STORY_REGISTRES.length, 10);
   assert.deepEqual(registresDebloques(null), []);
   assert.equal(statutSurvivantsHistoire(null).etape, 'Au seuil de la Tour des Listes');
   const etapesInitiales = etapesRecitHistoire(null, []);
@@ -388,16 +393,16 @@ test('les cinq paliers et pièces du dossier suivent l’avancement réel sans r
   assert.equal(statutSurvivantsHistoire(apresDeuxieme).etape, 'Sous la voûte du premier palier');
 });
 
-test('les cinq actes couvrent les vingt duels des cinq tours, neuf registres et les trois fins du Portail', () => {
+test('les huit actes relient les tours, le voyage à l’ère Edo et la mémoire de la Nécropole', () => {
   const tousLesEtages = RPG_STORY_TOURS.flatMap((tour) => tour.etages.map((etage) => etage.id));
   const etagesCampagne = RPG_STORY_ACTES.flatMap((acte) => acte.etages);
   const etagesToursCampagne = RPG_STORY_TOURS
     .filter((tour) => RPG_STORY_ACTES.some((acte) => acte.tourId === tour.id))
     .flatMap((tour) => tour.etages.map((etage) => etage.id));
-  assert.equal(RPG_STORY_ACTES.length, 5);
-  assert.equal(RPG_STORY_ALL_SCENES.length, 40);
+  assert.equal(RPG_STORY_ACTES.length, 8);
+  assert.equal(RPG_STORY_ALL_SCENES.length, 64);
   assert.equal(Object.keys(RPG_STORY_CHOICES).length, 5);
-  assert.equal(etagesCampagne.length, 20);
+  assert.equal(etagesCampagne.length, 32);
   assert.deepEqual(
     new Set(etagesCampagne),
     new Set(etagesToursCampagne),
@@ -454,20 +459,20 @@ test('les cinq actes couvrent les vingt duels des cinq tours, neuf registres et 
       'serment-archives': finPortail === 'prendre-la-place' ? 'lire-tout' : 'sceller',
       'choix-portail': finPortail,
     });
-    assert.equal(recitFin.scenesVues.length, 40);
-    assert.equal(registresDebloques(recitFin).length, 9);
+    assert.equal(recitFin.scenesVues.length, 64);
+    assert.equal(registresDebloques(recitFin).length, 10);
     const actesResumes = resumeActesHistoire(recitFin);
     assert.ok(actesResumes.every((a) => a.statut === 'termine'));
     const epilogue = texteEpilogueActe('acte-5', recitFin.choix);
     if (finPortail === 'ouvrir') {
       assert.match(epilogue.titre, /Ouvrir/);
-      assert.match(statutSurvivantsHistoire(recitFin).etape, /Portail ouvert/);
+      assert.match(statutSurvivantsHistoire(recitFin).etape, /Mémoire commune/);
     } else if (finPortail === 'tenir') {
       assert.match(epilogue.titre, /Tenir/);
-      assert.match(statutSurvivantsHistoire(recitFin).etape, /Montée collective/);
+      assert.match(statutSurvivantsHistoire(recitFin).etape, /Mémoire commune/);
     } else {
       assert.match(epilogue.titre, /Prendre la place/);
-      assert.match(statutSurvivantsHistoire(recitFin).etape, /Astrolabe arrêté/);
+      assert.match(statutSurvivantsHistoire(recitFin).etape, /Mémoire commune/);
     }
   }
 });

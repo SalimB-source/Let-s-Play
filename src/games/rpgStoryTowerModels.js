@@ -1,5 +1,5 @@
 /**
- * Maquettes des cinq Tours de Bab El : de vraies géométries, sans GLB ni
+ * Maquettes des Tours de Bab El : de vraies géométries, sans GLB ni
  * texture distante. Les silhouettes et ornements reprennent les peintures du
  * mode Histoire. Construction déterministe, utilisable aussi dans les tests
  * Node (pas de document/canvas). Les pièces statiques sont fusionnées par
@@ -13,6 +13,7 @@ export const RPG_STORY_TOWER_THEMES = Object.freeze({
   'tour-du-souk': Object.freeze({ stone: '#c79969', dark: '#785442', tile: '#237b85', ground: '#634b48', accent: '#ffb96a', fill: '#9ebccf', particles: '#ffd99c' }),
   'tour-des-sables': Object.freeze({ stone: '#bd8752', dark: '#92633e', tile: '#926941', ground: '#9c774c', accent: '#ffd08a', fill: '#d4bfaa', particles: '#edbd70' }),
   'tour-des-abysses': Object.freeze({ stone: '#39777e', dark: '#234955', tile: '#216f99', ground: '#24464f', accent: '#70e7e3', fill: '#63bde3', particles: '#9bffff' }),
+  'tour-des-corsaires': Object.freeze({ stone: '#876a4d', dark: '#342f38', tile: '#17677a', ground: '#263c43', accent: '#e5b45b', fill: '#60c6d0', particles: '#b8f4ed' }),
   'tour-du-fjord': Object.freeze({ stone: '#6e889e', dark: '#3e536b', tile: '#527eaa', ground: '#394e67', accent: '#acdfff', fill: '#8dbbff', particles: '#e7f7ff' }),
   'tour-du-soleil-rouge': Object.freeze({ stone: '#8f2d22', dark: '#3a1410', tile: '#1f2d3d', ground: '#42322a', accent: '#e85d43', fill: '#ff9d7a', particles: '#ff6242' }),
   'tour-de-la-necropole': Object.freeze({ stone: '#28232e', dark: '#17121c', tile: '#4a3866', ground: '#1f1b24', accent: '#e5b73e', fill: '#8c6ebd', particles: '#d4af37' }),
@@ -514,11 +515,37 @@ function buildNecropole(k) {
   k.cylinder(m.gold, 0, 0.32, 0, 0.16, 0.68, 1, 12, sarco);
 }
 
+function buildCorsaires(k) {
+  const { materials: m } = k;
+  k.feature('mats-de-voile'); k.feature('cordages'); k.feature('coque-de-galion');
+  k.box(m.dark, 0, 0.42, 0, 3.1, 0.24, 3.1);
+  // Tour-port suspendue au-dessus des citernes, ponctuée de fanions corsaires.
+  for (const sign of [-1, 1]) {
+    k.box(m.stone, sign * 1.02, 1.28, 0, 0.55, 1.45, 0.62);
+    k.box(m.dark, sign * 1.02, 2.05, 0, 0.72, 0.12, 0.78);
+    k.cylinder(m.gold, sign * 1.02, 2.22, 0, 0.08, 0.28, 0.82, 8);
+  }
+  k.box(m.tile, 0, 1.1, 0, 1.55, 0.16, 1.45);
+  k.squareTier(1.2, 1.5, 1.25);
+  k.box(m.stone, 0, 2.2, 0, 0.78, 1.05, 0.78);
+  k.box(m.dark, 0, 2.78, 0, 1.15, 0.13, 1.15);
+  k.squareTier(2.88, 1.12, 0.95);
+  for (const x of [-0.56, 0.56]) {
+    k.cylinder(m.gold, x, 3.45, 0, 0.06, 1.05, 0.8, 8);
+    k.mesh(k.geometry('corsaire-voile', () => new THREE.ConeGeometry(0.44, 0.9, 3)), m.tile,
+      [x, 3.42, 0], [0.75, 1, 0.12], [0, 0, Math.PI / 2]);
+  }
+  // Une étrave et son beaupré donnent sa silhouette de navire à la base.
+  k.mesh(k.geometry('etrave', () => new THREE.ConeGeometry(0.62, 1.55, 4)), m.dark,
+    [0, 0.74, 1.35], [0.8, 0.55, 1.2], [Math.PI / 2, 0, 0]);
+}
+
 const BUILDERS = {
   'tour-des-listes': buildLists,
   'tour-du-souk': buildSouk,
   'tour-des-sables': buildSands,
   'tour-des-abysses': buildAbysses,
+  'tour-des-corsaires': buildCorsaires,
   'tour-du-fjord': buildFjord,
   'tour-du-soleil-rouge': buildSoleilRouge,
   'tour-de-la-necropole': buildNecropole,

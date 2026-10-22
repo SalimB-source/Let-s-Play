@@ -22,6 +22,7 @@ import { RPG_RECETTES_HISTOIRE } from './rpgDeckRecipes.js';
 import {
   CATALOGUE_DU_COMPOSEUR,
   RPG_DECK_HYBRIDE_BASE,
+  RPG_DECK_LETTRES_DE_MARQUE_BASE,
   RPG_DECK_JOUEUR_BASE,
   RPG_DECK_MAREE_BASE,
   RPG_DECK_NEIGE_BASE,
@@ -46,6 +47,8 @@ import {
  */
 export const RPG_STORY_DECKS = {
   'cour-des-djinns': RPG_DECK_SORCIER_BASE,
+  // Les Corsaires de la Régence relient les citernes des Abysses aux pistes du désert.
+  'lettres-de-marque': RPG_DECK_LETTRES_DE_MARQUE_BASE,
   'veilleurs-du-desert': RPG_DECK_JOUEUR_BASE,
   // Deck bleu (Eau) : contres et bêtes marines. Seule la Tour des Abysses le joue.
   'maree-des-abysses': RPG_DECK_MAREE_BASE,
@@ -262,6 +265,38 @@ export const RPG_STORY_TOURS = [
         puissance: 7,
         ia: { niveau: 'veilleur', style: 'controle' },
         note: 'Les bêtes du fond répondent à son appel. Il contre le premier sort qui le menace.',
+      },
+    ],
+  },
+  {
+    id: 'tour-des-corsaires',
+    nom: 'La Tour des Corsaires',
+    miniature: 'tour-des-corsaires.jpg',
+    resume: 'Quand les citernes des Abysses se sont ouvertes, la marée a révélé les routes de contrebande de la Régence. Les Corsaires de la Reine Anne détiennent les manifestes qui relient le Souk aux tours : à bord, la prise se partage, les cargaisons changent de main et chaque abordage rapproche Salem de la vérité sur la Chambre.',
+    etages: [
+      {
+        id: 'corsaires-1', nom: 'La Mousse des galiotes', fonction: 'Guetteuse du chenal',
+        deck: 'lettres-de-marque', avatar: null, puissance: 1,
+        ia: { niveau: 'recit', style: 'equilibre' },
+        note: 'Elle connaît les passes que la Nageuse des puits a laissées derrière elle. À bord, même une petite prise peut changer le cours du duel.',
+      },
+      {
+        id: 'corsaires-2', nom: 'Le Négociant des rançons', fonction: 'Teneur des comptes de prise',
+        deck: 'lettres-de-marque', avatar: null, puissance: 3,
+        ia: { niveau: 'normale', style: 'prudent' },
+        note: 'Il rachète les prisonniers de la Chambre et réinvestit chaque rançon dans la cale. Rien ne se perd, tout devient cargaison.',
+      },
+      {
+        id: 'corsaires-3', nom: 'Le Raïs de la Galiote', fonction: 'Capitaine de la flotte de la Régence',
+        deck: 'lettres-de-marque', avatar: null, puissance: 5,
+        ia: { niveau: 'veilleur', style: 'agressif' },
+        note: 'Son cotre ouvre la voie, le grappin accroche le pont et les lettres de marque font de chaque abordage une affaire légale.',
+      },
+      {
+        id: 'corsaires-4', nom: 'La Barbe-Rousse', fonction: 'Amiral du Hollandais volant',
+        deck: 'lettres-de-marque', avatar: null, puissance: 7,
+        ia: { niveau: 'veilleur', style: 'controle' },
+        note: 'Au sommet, le vaisseau fantôme surgit de la brume des Abysses. La Chambre a falsifié les manifestes : Salem doit choisir ce qu’il fera de la preuve.',
       },
     ],
   },
