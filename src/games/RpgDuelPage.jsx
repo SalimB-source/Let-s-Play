@@ -6,7 +6,7 @@ import { convertirDeckSansTerrain } from './rpgCards.js';
  * pendant la fenêtre de réponse de l'adversaire.
  */
 
-import { Fragment, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, memo, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import './rpg-mobile.css';
 import './rpg-story.css';
@@ -2678,17 +2678,31 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
  * joue jamais la carte : c'est une consultation, pas une action. */
 function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], onFermer }) {
   const boutonFermerRef = useRef(null);
+  const [coteOppose, setCoteOppose] = useState(null);
   // Le focus arrive sur « Fermer l'aperçu » sans faire défiler la page :
   // un `scroll` même minuscule interromptrait un appui long encore en cours —
   // ou aurait laissé passer le clic qui suit la levée du doigt et refermé le
   // volet à peine ouvert (`rpgLongPress.js`).
+  // Sur téléphone en paysage, l'aperçu se décale vers la moitié opposée au
+  // doigt (`data-apercu-cote`) pour que la main qui tient la carte ne masque
+  // ni la carte source ni sa fiche de lecture.
   useEffect(() => {
     boutonFermerRef.current?.focus({ preventScroll: true });
-  }, []);
+    const source = typeof document !== 'undefined' ? document.querySelector('[data-apercu-source]') : null;
+    const rect = source?.getBoundingClientRect?.();
+    const largeurVue = typeof window !== 'undefined' ? (window.innerWidth || 0) : 0;
+    if (rect && rect.width > 0 && largeurVue > 0) {
+      const centreX = rect.left + rect.width / 2;
+      setCoteOppose(centreX > largeurVue * 0.56 ? 'gauche' : centreX < largeurVue * 0.44 ? 'droite' : 'centre');
+    } else {
+      setCoteOppose(null);
+    }
+  }, [carte?.id]);
   if (!carte) return null;
   return (
     <div
       className="rpg-card-peek"
+      data-apercu-cote={coteOppose || undefined}
       role="dialog"
       aria-modal="true"
       aria-label={`Aperçu de ${carte.name}`}
@@ -4263,6 +4277,37 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   return null;
 }
 
+// ── Horloge PvP isolée : son tick à la seconde ne redessine que le badge ⏱,
+//    jamais les 10 000 lignes du plateau ni les cartes sur table. ──────────
+const HorlogePvp = memo(function HorlogePvp({ echeance, statut, vainqueur, pvpRef, pvpHorlogeExpireeRef }) {
+  const [maintenantPvp, setMaintenantPvp] = useState(() => Date.now());
+  useEffect(() => {
+    if (!echeance || statut !== 'en_cours') return undefined;
+    setMaintenantPvp(Date.now());
+    const id = window.setInterval(() => {
+      const t = Date.now();
+      setMaintenantPvp(t);
+      if (t >= Date.parse(echeance) && pvpHorlogeExpireeRef.current !== echeance) {
+        pvpHorlogeExpireeRef.current = echeance;
+        pvpRef.current?.onRafraichir?.();
+      }
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [echeance, statut]);
+  if (!echeance || vainqueur) return null;
+  const msRestantesPvp = Math.max(0, Date.parse(echeance) - maintenantPvp);
+  const chronoPvp = tempsRestant(echeance, maintenantPvp);
+  if (!chronoPvp) return null;
+  return (
+    <span
+      className={`rpg-duel-nav__pvp-clock${msRestantesPvp <= 15000 ? ' is-urgent' : ''}`}
+      title="Temps restant pour ce coup"
+    >
+      ⏱ {chronoPvp}
+    </span>
+  );
+});
+
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random, variantesPlateaux = false, pvp = null } = {}) {
   const modePvp = Boolean(pvp);
   const pvpRef = useRef(pvp);
@@ -4271,7 +4316,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const pvpSeqAppliqueRef = useRef(null);
   const pvpHorlogeExpireeRef = useRef(null);
   const [confirmerAbandonPvp, setConfirmerAbandonPvp] = useState(false);
-  const [maintenantPvp, setMaintenantPvp] = useState(() => Date.now());
   useLumiereCartes();
   const authContext = useContext(AuthContext);
   const authUser = authContext?.user ?? null;
@@ -4331,20 +4375,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, [ecran]);
 
   // ── Synchronisation temps réel d'un duel PvP (toujours avant tout return conditionnel) ──
-  useEffect(() => {
-    if (!modePvp || !pvp?.echeance || pvp.statut !== 'en_cours') return undefined;
-    setMaintenantPvp(Date.now());
-    const id = window.setInterval(() => {
-      const t = Date.now();
-      setMaintenantPvp(t);
-      if (t >= Date.parse(pvp.echeance) && pvpHorlogeExpireeRef.current !== pvp.echeance) {
-        pvpHorlogeExpireeRef.current = pvp.echeance;
-        pvpRef.current?.onRafraichir?.();
-      }
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [modePvp, pvp?.echeance, pvp?.statut]);
-
   useEffect(() => {
     if (!modePvp || !pvp?.vue) return;
     // Résout les plateaux thématiques et musiques à partir des decks publics.
@@ -6532,12 +6562,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const nbMainAdverse = duel.sorcier.mainCount ?? duel.sorcier.main.length;
   const nbDeckAdverse = duel.sorcier.deckCount ?? duel.sorcier.deck.length;
   const nbDeckJoueur = duel.joueur.deckCount ?? duel.joueur.deck.length;
-  const msRestantesPvp = modePvp && pvp?.echeance && !vainqueur
-    ? Math.max(0, Date.parse(pvp.echeance) - maintenantPvp)
-    : null;
-  const chronoPvp = modePvp && pvp?.echeance && !vainqueur
-    ? tempsRestant(pvp.echeance, maintenantPvp)
-    : '';
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
   const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
@@ -9264,7 +9288,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
       <div
         ref={tableRef}
-        inert={viewport.portrait || mulliganOuvert || choixManaEssaiOuvert || sacrificeDemande ? true : undefined}
+        inert={viewport.portrait || mulliganOuvert ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
         className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
@@ -9310,24 +9334,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <div className="rpg-plateau-lisere" aria-hidden="true" />
           </>
         )}
-        {/* Le décor 3D se met en pause sous un aperçu : il est flou comme le
-            reste du plateau, et un canvas animé ne vaut pas la peine d'être
-            recomposé flou à chaque image derrière un voile. */}
-        <RpgTableScene3D plateau={plateau} enabled={decor3dVisible} paused={Boolean(carteGlissee || carteEnVol || bloqueurGlisse || apercuCarte)} />
+        {/* Le décor 3D se met en pause sous un aperçu ou un volet : il est
+            masqué ou flouté, et un canvas animé ne vaut pas la peine d'être
+            recomposé à chaque image derrière un voile sur mobile. */}
+        <RpgTableScene3D plateau={plateau} enabled={decor3dVisible} paused={Boolean(carteGlissee || carteEnVol || bloqueurGlisse || apercuCarte || mulliganOuvert || choixManaEssaiOuvert || sacrificeDemande || navMenuOuvert)} />
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
           <strong>LE SABLIER</strong>
           {modePvp && (
             <span className="rpg-duel-nav__pvp">
               <span className="rpg-duel-nav__pvp-dot" aria-hidden="true" />
               EN LIGNE{pvp?.code ? ` · ${pvp.code}` : ''}
-              {chronoPvp && (
-                <span
-                  className={`rpg-duel-nav__pvp-clock${msRestantesPvp !== null && msRestantesPvp <= 15000 ? ' is-urgent' : ''}`}
-                  title="Temps restant pour ce coup"
-                >
-                  ⏱ {chronoPvp}
-                </span>
-              )}
+              <HorlogePvp
+                echeance={pvp?.echeance}
+                statut={pvp?.statut}
+                vainqueur={vainqueur}
+                pvpRef={pvpRef}
+                pvpHorlogeExpireeRef={pvpHorlogeExpireeRef}
+              />
             </span>
           )}
           {tutorielActif && <span className="rpg-duel-nav__tutorial">PARTIE D’ENTRAÎNEMENT</span>}
@@ -10582,22 +10605,29 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
       )}
       {choixManaEssaiOuvert && !viewport.portrait && (
-        <div className="rpg-flux-choix" role="dialog" aria-modal="true" aria-labelledby="rpg-flux-choix-titre">
+        <div className="rpg-flux-choix" role="dialog" aria-modal="false" aria-labelledby="rpg-flux-choix-titre">
           <div className="rpg-flux-choix__panel">
             <h2 id="rpg-flux-choix-titre" className="rpg-flux-choix__titre">Choisis ton mana</h2>
             <div className="rpg-flux-choix__options">
-              {duel.joueur.couleurs.map((couleur, index) => (
-                <button
-                  key={couleur}
-                  type="button"
-                  autoFocus={index === 0}
-                  className={`rpg-flux-choix__option rpg-flux-choix__option--${couleur}`}
-                  onClick={() => choisirNouveauManaEssai(couleur)}
-                  aria-label={`Choisir le mana ${couleurLabel(couleur)}`}
-                >
-                  <span aria-hidden="true"><ElementEmblem element={couleur} /></span>
-                </button>
-              ))}
+              {duel.joueur.couleurs.map((couleur, index) => {
+                const acquis = duel.joueur.manaMax?.[couleur] ?? 0;
+                const enMain = (duel.joueur.main ?? []).filter((cid) => cardCostColors(cardById(cid)).includes(couleur)).length;
+                return (
+                  <button
+                    key={couleur}
+                    type="button"
+                    autoFocus={index === 0}
+                    className={`rpg-flux-choix__option rpg-flux-choix__option--${couleur}`}
+                    data-mana-acquis={acquis}
+                    data-mana-en-main={enMain}
+                    onClick={() => choisirNouveauManaEssai(couleur)}
+                    aria-label={`Choisir le mana ${couleurLabel(couleur)} (${acquis} déjà acquis, ${enMain} carte${enMain > 1 ? 's' : ''} en main)`}
+                  >
+                    <span aria-hidden="true"><ElementEmblem element={couleur} /></span>
+                    <small className="rpg-flux-choix__count" aria-hidden="true" title={`${acquis} source(s) acquise(s)`}>{acquis}</small>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

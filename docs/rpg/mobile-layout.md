@@ -28,7 +28,7 @@ Au survol d’une carte (ordinateur), l’aperçu instantané permet de consulte
 
 Le survol n’existe pas sur écran tactile, et le clic **agit** (poser la carte, déclarer une attaque, produire un mana). Consulter une carte sans la jouer passe donc par l’**appui long** :
 
-- garder le doigt **une seconde** sur une carte (`RPG_LONG_PRESS_MS`, `src/games/rpgLongPress.js`) ouvre le même aperçu, dans un volet sombre centré avec son bouton « Fermer l’aperçu » ;
+- garder le doigt **320 ms** sur une carte (`RPG_LONG_PRESS_MS`, `src/games/rpgLongPress.js`) ouvre le même aperçu, dans un volet sombre décalé à l'opposé du pouce avec retour haptique et son bouton « Fermer l’aperçu » ;
 - le geste répond partout où une carte porte un `data-card-id` : main, créatures des deux camps, rails de terrains, dessus de cimetière, catalogue, liste de deck et **créateur de deck** (bibliothèque et deck en cours) — au menu comme en duel ;
 - **rien n’est joué** : le clic synthétique qui suit la fin du geste est avalé, comme après un glisser-déposer — **quelle que soit la fin du geste** (levée du doigt, annulation, défilement, `pointercancel` de WebView). Sans ça, une interruption qui arrivait entre le déclenchement et la levée laissait passer ce clic : il refermait le volet à peine ouvert et le joueur ne voyait « rien ne se passe » ;
 - un **appui court reste un clic** et garde son action de jeu ; un doigt qui glisse au-delà de 10 px annule l’appui (c’est un défilement de la main ou un glisser-déposer) ;
