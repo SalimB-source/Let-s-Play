@@ -195,9 +195,9 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
   carte({
     id: 'negociant-des-ranscons',
     name: 'Négociant des prises',
-    cost: 3,
-    atk: 2,
-    def: 3,
+    cost: 2,
+    atk: 1,
+    def: 1,
     rarity: 'rare',
     declenchePrise: 1,
     typeLine: 'Créature — Humain · Négociant',

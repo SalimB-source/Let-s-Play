@@ -168,7 +168,7 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
   assert.equal(ashigaru.pv, 2, 'la Résonance du torii renforce l’Ashigaru');
   assert.equal(rpgJouerCreature(duel, 'joueur', 'daimyo-du-soleil-rouge').ok, true);
   assert.equal(duel.joueur.creatures.length, 5, 'le Daimyō crée deux jetons : cinq créatures, la limite');
-  assert.equal(duel.joueur.mana.braise, 0, 'les trois poses coûtent exactement neuf manas');
+  assert.equal(duel.joueur.mana.braise, 0, 'les trois poses coûtent exactement dix manas');
 
   rpgFinDeTour(duel);
   rpgFinDeTour(duel);
@@ -226,8 +226,8 @@ test('la leçon Neige appelle un Viking, gèle un adversaire et active deux Furi
     [loup.id], {}, { attaqueDeclaree: true }).ok, true);
   assert.deepEqual(
     [berserk.furieDeclenchee, berserk.furieBonusAtk, berserk.atk, berserk.pv, berserk.pvMax],
-    [true, 2, 3, 3, 5],
-    'le Berserk tombe à 3 PV : sa Furie 2 lui donne +2/+0',
+    [true, 3, 4, 3, 5],
+    'le Berserk tombe à 3 PV : sa Furie 3 lui donne +3/+0',
   );
   assert.deepEqual(
     [duel.sorcier.creatures.includes(loup), loup.furieDeclenchee, loup.furieBonusAtk, loup.atk, loup.pv],

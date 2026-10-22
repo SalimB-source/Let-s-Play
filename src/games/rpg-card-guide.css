@@ -65,15 +65,12 @@
   padding: 12px 6px 17px;
 }
 /* Chaque fiche porte le même anneau orné que les autres faces du jeu, à la
-   même épaisseur pour toutes les cartes : 6 px, la plaque des armes. Le guide
-   la posait sur les seules armes (6 px contre 3 px pour les mythiques et les
-   hybrides, 1 px de filet pour les autres) ; trois épaisseurs côte à côte se
-   lisaient comme trois formats de cartes. La bordure est transparente, la
-   couleur et le motif sont peints dessous : le fond de la fiche sur la
-   padding-box, la résille (ou le zellige, ou le guilloché des armes) puis la
-   matière du cadre sur la border-box — un aplat de la couleur de l'élément
-   pour une carte mono, la diagonale bicolore d'une hybride, le dégradé qui
-   brille d'une mythique mono, l'acier teinté d'une arme. */
+   même épaisseur pour toutes les cartes : 6 px. La bordure est transparente,
+   la couleur et le motif sont peints dessous : le fond de la fiche sur la
+   padding-box, la résille ou le zellige puis la matière du cadre sur la
+   border-box — un aplat de la couleur de l'élément pour une carte mono, la
+   diagonale bicolore d'une hybride, le dégradé qui brille d'une mythique mono.
+   Les armes suivent ces mêmes règles, sans matière ni cadre spécifiques. */
 .rpg-card-guide__example {
   position: relative;
   display: grid;
@@ -283,24 +280,4 @@
   background-repeat: no-repeat !important;
   background-position: 0 0 !important;
   background-color: transparent !important;
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   LA BOUTIQUE DU SABLIER — le cadre des armes revient, plus fin et gris
-   Jumeau du bloc de fin de `rpg-battle.css` : l'exemple d'une arme garde son
-   filet d'acier gris. Hors de `.rpg-battle`, les valeurs sont donc répétées en
-   repli — à garder d'accord avec celles du duel. Pour revenir en arrière :
-   supprimer ce bloc.
-   ══════════════════════════════════════════════════════════════════════════ */
-.rpg-card-guide__example[class*="rpg-card--frame-arme"] {
-  border: var(--rpg-arme-cadre, 5px) solid transparent !important;
-  background-color: #141318 !important;
-  background-image:
-    var(--rpg-frame-motif, none),
-    var(--rpg-arme-metal, linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd)) !important;
-  background-origin: border-box, border-box !important;
-  background-clip: border-box, border-box !important;
-  background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100% !important;
-  background-repeat: repeat, no-repeat !important;
-  background-position: 0 0, 0 0 !important;
 }

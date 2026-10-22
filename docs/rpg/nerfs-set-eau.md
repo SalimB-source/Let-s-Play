@@ -12,7 +12,6 @@
 |---|---|---|---|
 | **Bâton des citernes** | 2 mana | **4 mana** (serpents gardés) | 4,65 → 2,33 |
 | **Sonneur fêlé** | rare, 4 mana 2/3 | **inhabituelle, 3 mana 2/3** | 1,90 → 2,53 |
-| **Colosse de sel** | 6 mana 5/5 | **6 mana 6/6** | 2,15 → 2,53 |
 | **Vipère de verre** | arrivee : 2 dégâts ciblés | **-2/-0 + ne peut pas attaquer** (la morsure engourdit) | 2,47 → 2,83 |
 | **Bakunawa** | arrivee : 2 dégâts ciblés | **ne peut pas bloquer** (la lune dévorée) | 3,10 → 2,98 |
 | **Léviathan** | arrivee : 3 dégâts ciblés | **renvoie toutes les autres créatures** (la vague) | 2,71 → 3,08 |
@@ -68,28 +67,7 @@ entrer dans la dotation de départ ; Abysses 1 ne le révèle donc plus au Souk.
 }
 ```
 
-## 3. Colosse de sel — 6/6
-
-**Changement :** corps `5/5 → 6/6`. Un « colosse » 5/5 à 6 manas était le
-géant le plus mou du catalogue.
-
-```js
-{
-  id: 'colosse-de-sel',
-  name: 'Colosse de sel',
-  element: 'eau',
-  cost: 6,
-  atk: 6,
-  def: 6,
-  rarity: 'rare',
-  typeLine: 'Créature — Géant',
-  arrivee: { type: 'buff', atk: 1, def: 1 },
-  text: 'Quand le Colosse arrive : vos autres créatures gagnent +1/+1.',
-  flavor: 'La mer est partie. Son sel est resté debout.',
-}
-```
-
-## 4. Les dégâts → le langage de l’eau *(validé)*
+## 3. Les dégâts → le langage de l’eau *(validé)*
 
 Règle de direction : **les effets de dégâts bruts appartiennent à la Braise**.
 L’Eau contrôle : elle ronge, engourdit, emporte, protège. Le combat normal des
@@ -203,7 +181,7 @@ dans les mains — le rêve du jeu de tempo.
 }
 ```
 
-## 5. 🆕 Écueil — 2 mana Magie Rapide *(nouvelle carte)*
+## 4. 🆕 Écueil — 2 mana Magie Rapide *(nouvelle carte)*
 
 La famille des contresorts avait un trou : on pouvait contrer **une carte**
 (Contresort des abîmes, 4 manas), une **magie rapide ou sorcellerie** (Silence
@@ -270,6 +248,6 @@ Ressac (2,00) · Courant de retour (1,17).
 - **`docs/rpg/05-concept-cartes.md`** : note de direction — « les effets de
   dégâts bruts appartiennent à la Braise » (et la sous-section Butin déjà
   prévue côté Sable).
-- **Tests** : Bâton à 4 manas, Sonneur à 3 manas, Colosse 6/6, Vipère (-2/-0 +
+- **Tests** : Bâton à 4 manas, Sonneur à 3 manas, Vipère (-2/-0 +
   bloquée l’attaque), Bakunawa (bloquage bloqué), Léviathan (masse), Lame de
   mer (-2/-2), Brisure (-1/-1), Écueil (contre une créature, PAS un sort).

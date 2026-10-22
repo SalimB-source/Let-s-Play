@@ -2,7 +2,7 @@
 // l'aperçu : le Guerrier dresse son égide d'arrivée, la Parade laisse un
 // bouclier partiellement entamé en place, sa chute à zéro rejoue le choc qui
 // l'a brisé, et le bouclier de lumière de Salem veille en or pâle. La Lance de
-// givre, elle, donne désormais +1/−1 et Envol — jamais de bouclier.
+// givre, elle, donne désormais +1/+0 et Coup rapide — jamais de bouclier.
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import RpgDuelPage, { HoverCardPreview, TableCard } from '../src/games/RpgDuelPage.jsx';
@@ -64,10 +64,10 @@ export function rendreCartesBouclier() {
     neutre: rendreTable({}),
     // Le bouclier d'arrivée du Guerrier : un point, encore debout.
     guerrier: rendreTable(guerrier({ bouclier: 1 })),
-    // La Lance équipe et fait voler son porteur, sans dresser d'égide.
+    // La Lance équipe et donne Coup rapide à son porteur, sans dresser d'égide.
     lanceSansBouclier: rendreTable({
       arme: { carteId: 'lance-de-givre' },
-      envol: true,
+      coupRapide: true,
       bouclier: 0,
     }),
     // Un coup de 1 absorbé par une Parade, 2 points restants : ça tient.

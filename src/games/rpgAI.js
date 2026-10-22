@@ -83,7 +83,11 @@ const optionsIA = (duel, cote, options = {}) => ({
 /** Le Serpent du monde : protégé contre les magies et les sorcelleries —
  *  une carte `magie` ne peut ni le viser ni le toucher, l'IA l'écarte. */
 function horsDAtteinteDuSort(entite, carte) {
-  return Boolean(entite?.protectionSorts && carte?.kind === 'magie');
+  if (carte?.kind !== 'magie') return false;
+  if (entite?.protectionSorts) return true;
+  const couleurs = cardColors(carte);
+  const contre = entite?.protectionSortsContre;
+  return Boolean(contre && couleurs.some((couleur) => [contre].flat(Infinity).includes(couleur)));
 }
 
 /** Version locale du test de protection (pur, sans dépendance au moteur). */
@@ -149,13 +153,13 @@ function peutBloquerAttaquant(bloqueur, attaquant, frappePrecoce = false) {
 }
 
 /**
- * Dégâts effectifs après Esquive : une attaque a 30 % de chance d'être
- * entièrement esquivée, soit 70 % de ses dégâts en espérance. Les magies et
- * les capacités ne s'esquivent pas.
+ * Dégâts effectifs après Esquive : une attaque, une Magie ou une Sorcellerie
+ * a 30 % de chance d'être entièrement esquivée, soit 70 % de ses dégâts en
+ * espérance. Les capacités ne s'esquivent pas.
  */
 export function degatsApresEsquive(entite, montant, sourceType = 'attaque') {
   const degats = Math.max(0, Number(montant) || 0);
-  return entite?.esquive && sourceType === 'attaque'
+  return entite?.esquive && ['attaque', 'magie'].includes(sourceType)
     ? degats * (1 - moteur.RPG_ESQUIVE_CHANCE)
     : degats;
 }
@@ -263,9 +267,11 @@ function excesOverkill(attaquant, bloqueur) {
   return Math.max(0, (Number(attaquant.atk) || 0) - encaissable);
 }
 
-/** Dégâts « préalables » d’une capacité (type Sahir) — nuls sans capacité. */
-function degatsAvantCombat(carte) {
+/** Dégâts « préalables » d’un déclencheur de combat — nuls sans déclencheur
+ *  correspondant à l’attaque ou au blocage en cours. */
+function degatsAvantCombat(carte, quand) {
   if (carte?.combat?.type !== 'degats-creature-combattue') return 0;
+  if (carte.combat.quand && carte.combat.quand !== quand) return 0;
   return Math.max(0, Number(carte.combat.amount) || 0);
 }
 
@@ -284,10 +290,14 @@ export function resultatBlocage(attaquant, bloqueur) {
   // moteur refuse d'ailleurs ce blocage-là (`rpgEstProtegee` sur l'attaquant).
   const couleursA = cardColors(carteA);
   const couleursB = cardColors(carteB);
-  let blessureA = blessureSousCouleurs(attaquant, degatsAvantCombat(carteB), couleursB, 'capacite');
-  let blessureB = blessureSousCouleurs(bloqueur, degatsAvantCombat(carteA), couleursA, 'capacite');
-  const attaquantVit = !meurtSousCouleurs(attaquant, degatsAvantCombat(carteB), couleursB, 'capacite');
-  const bloqueurVit = !meurtSousCouleurs(bloqueur, degatsAvantCombat(carteA), couleursA, 'capacite');
+  const degatsB = degatsAvantCombat(carteB, 'blocage');
+  const degatsA = degatsAvantCombat(carteA, 'attaque');
+  const typeB = carteB.combat?.sourceType ?? 'capacite';
+  const typeA = carteA.combat?.sourceType ?? 'capacite';
+  let blessureA = blessureSousCouleurs(attaquant, degatsB, couleursB, typeB);
+  let blessureB = blessureSousCouleurs(bloqueur, degatsA, couleursA, typeA);
+  const attaquantVit = !meurtSousCouleurs(attaquant, degatsB, couleursB, typeB);
+  const bloqueurVit = !meurtSousCouleurs(bloqueur, degatsA, couleursA, typeA);
   let attaquantMeurt = !attaquantVit;
   let bloqueurMeurt = !bloqueurVit;
   if (attaquantVit && bloqueurVit) {
@@ -418,6 +428,11 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
     // Le Faiseur de passage : l'Infiltration va à l'allié le plus précieux.
     return meilleureCibleAmie(duel, cote, carte);
   }
+  if (carte?.arrivee?.type === 'bouclier' && carte.arrivee.cible === 'creature-amie' && carte.arrivee.choisirCible) {
+    // La Veilleuse choisit un allié déjà présent ; seule sur la table, le
+    // moteur retombe sur elle-même après son arrivée.
+    return meilleureCibleAmie(duel, cote, carte);
+  }
   if (carte?.effet?.cible === 'creature-amie') {
     return meilleureCibleAmie(duel, cote, carte);
   }
@@ -489,8 +504,8 @@ function meilleureCibleArme(duel, cote, carte) {
   // Une arme à défense négative dont la mort du porteur déclenche un gain
   // (le Licou du chien de sable, +1/−1) ne cherche pas le meilleur bras :
   // elle cherche le moins regrettable — un jeton, un mourant — puisque la
-  // pioche est le but et le porteur le prix. La Lance de givre, elle aussi
-  // à +1/−1, n'a pas ce déclencheur : tuer son porteur serait une perte sèche.
+  // pioche est le but et le porteur le prix. La Lance de givre, désormais
+  // à +1/+0, n'a pas ce déclencheur : tuer son porteur serait une perte sèche.
   const malusDef = Math.min(0, Number(carte?.bonus?.def) || 0);
   if (malusDef < 0 && carte?.porteurMeurt) {
     const condamnees = candidates.filter((entite) => (entite.pv ?? 0) + malusDef <= 0);
@@ -588,7 +603,7 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
     const carte = duelCardById(attaquant.carteId);
 
     // Tour prioritaire : seulement si on la tue ou si on n'a rien de mieux à faire.
-    // Attaquer une Tour 0/5 avec 3 d'attaque sans la tuer gaspille la frappe.
+    // Attaquer une Tour 0/4 avec 3 d'attaque sans la tuer gaspille la frappe.
     if (toursPrioritaires.length > 0) {
       // Une Tour protégée contre la couleur de l'attaquant ignore sa frappe :
       // le moteur refuserait même la désignation (`protection`), l'IA l'écarte.
@@ -899,7 +914,7 @@ function degatsGarantis(duel, cote, prets) {
 export function choisirAttaquantsIA(duel, cote, options = {}) {
   const { profil } = optionsIA(duel, cote, options);
   const pretsBruts = attaquantsPrets(duel, cote);
-  // Jamais d'attaque à 0 sans déclencheur — la Porteuse 0/3, une Tour 0/5 ne
+  // Jamais d'attaque à 0 sans déclencheur — la Porteuse 0/3, une Tour 0/4 ne
   // frappent pas : elles se tapent pour rien et ne bloquent plus ensuite.
   const prets = pretsBruts.filter(peutAttaquerUtile);
   if (!prets.length) return [];
@@ -1538,6 +1553,18 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const entiteAllie = duel[cote].creatures.find((entite) => entite.id === allie);
       score += 1.2 + (entiteAllie ? menace(entiteAllie) * 0.2 : 0);
     }
+    if (arrivee.type === 'bouclier' && arrivee.cible === 'creature-amie' && arrivee.choisirCible) {
+      // La Veilleuse privilégie l'allié le plus utile ; seule, elle peut
+      // encore se protéger elle-même grâce au repli du moteur.
+      const allie = meilleureCibleAmie(duel, cote, carte);
+      if (allie) {
+        cibleId = allie;
+        const entiteAllie = duel[cote].creatures.find((entite) => entite.id === allie);
+        score += 1.2 + (entiteAllie ? menace(entiteAllie) * 0.2 : 0);
+      } else {
+        score += 0.8;
+      }
+    }
     if (arrivee.type === 'degats') {
       if (arrivee.cible === 'toutes-autres') {
         const valeurVague = (camp) => duel[camp].creatures.reduce((total, entite) => {
@@ -1547,13 +1574,24 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         }, 0);
         score += valeurVague(adv) - valeurVague(cote);
       } else if (arrivee.cible === 'toutes-creatures') {
-        // La protection de couleur annule aussi les dégâts d'arrivée : une
-        // créature protégée contre l'élément de la carte n'est pas comptée.
-        const tuees = duel[adv].creatures
+        // La protection de couleur annule aussi les dégâts d'arrivée. Ifrit
+        // al-Ahmar est la seule vague qui inclut les deux camps : ses pertes
+        // alliées et sa propre mort comptent donc dans l'évaluation.
+        const campsTouches = arrivee.inclutAllies ? [cote, adv] : [adv];
+        const valeurVague = (camp) => duel[camp].creatures
           .filter((entite) => !estProtegee(entite, cardColors(carte)))
-          .filter((entite) => meurtSous(entite, arrivee.amount ?? 0, 'capacite'));
-        score += tuees.reduce((somme, entite) => somme + valeurEntite(entite), 0);
-        if (tuees.length) score += 1;
+          .reduce((total, entite) => total + (meurtSous(entite, arrivee.amount ?? 0, 'capacite')
+            ? valeurEntite(entite) : 0.5), 0);
+        if (arrivee.inclutAllies) {
+          score += valeurVague(adv) - valeurVague(cote);
+          // La carte elle-même entre avant la vague : un 3/3 qui s'inflige
+          // trois blessures ne laisse pas de présence derrière lui.
+          if ((carte.def ?? 0) <= (arrivee.amount ?? 0)) score -= valeurEntite(entiteDeSecours(carte, duel));
+        } else {
+          score += valeurVague(adv);
+          if (duel[adv].creatures.some((entite) => !estProtegee(entite, cardColors(carte))
+            && meurtSous(entite, arrivee.amount ?? 0, 'capacite'))) score += 1;
+        }
       } else if (arrivee.cible === 'sorcier') {
         score += 2 + (pvAdv <= (arrivee.amount ?? 0) + 10 ? 3 : 0);
       } else {
@@ -1611,7 +1649,13 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       // Daimyō et ses deux Samouraïs se renforcent l'un l'autre.
       if (carte.banniere) score += 2;
     }
-    if (arrivee.type === 'bouclier') score += 1.5;
+    if (arrivee.type === 'bouclier') {
+      score += 1.5;
+      if (arrivee.cible === 'creature-amie') {
+        cibleId = meilleureCibleAmie(duel, cote, carte);
+        if (cibleId) score += 0.5;
+      }
+    }
     if (arrivee.type === 'bouclier-lumiere') {
       // La Dame aux ailes d'or, Salem : un rempart qui avale la prochaine
       // attaque ou magie — il protège un corps qu'on veut garder.

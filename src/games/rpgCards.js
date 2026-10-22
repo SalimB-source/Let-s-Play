@@ -68,9 +68,6 @@ export const MYTHIQUE_VITRINE_PAR_ELEMENT = Object.freeze({
  * encore dans le catalogue : ses couleurs se partagent le cadre en diagonale,
  * sans reflet animé.
  *
- * Exception : les armes gardent un cadre d'**acier métallique guilloché**
- * (`arme`), mais teinté dans la couleur de leur élément — acier de Braise,
- * d'Eau, de Sable, de Neige ou de Ténèbres.
  */
 export const CARD_FRAME_COLORS = {
   braise: { label: 'Braise', color: '#e0412a' },
@@ -104,15 +101,6 @@ export const CARD_FRAME_COLORS = {
   'hybride-braise-sable-neige-tenebres': { label: 'Braise + Sable + Neige + Ténèbres', color: '#b08aa8' },
   'hybride-eau-sable-neige-tenebres': { label: 'Eau + Sable + Neige + Ténèbres', color: '#8fb8c4' },
   'hybride-braise-eau-sable-neige-tenebres': { label: 'Braise + Eau + Sable + Neige + Ténèbres', color: '#bda3c9' },
-  /* Les cadres des armes : le même acier guilloché pour toutes, teinté dans
-     la couleur de leur élément (les dégradés métalliques sont peints dans
-     `rpg-battle.css`). La clé générique sert de repli. */
-  'arme-braise': { label: 'Acier de Braise', color: '#e0412a' },
-  'arme-eau': { label: 'Acier d’Eau', color: '#3f9fe8' },
-  'arme-sable': { label: 'Acier de Sable', color: '#d8bc86' },
-  'arme-neige': { label: 'Acier de Neige', color: '#a9e0f5' },
-  'arme-tenebres': { label: 'Acier de Ténèbres', color: '#4b2e83' },
-  arme: { label: 'Acier des armes', color: '#9aa6b2' },
 };
 
 /** Clé de repli : les cinq couleurs, si une combinaison inconnue apparaissait. */
@@ -153,7 +141,7 @@ export function signeStat(valeur = 0) {
  * C'est ce que la face d'une carte doit montrer pour qu'on lise son effet
  * d'un coup d'œil, comme les armes affichent le bonus de leur porteur : la
  * **Lame de mer** écrit `-2/-2`, l'**Embuscade** `-2/-2` sur toute la table
- * adverse, la vipère de verre `-2/0`, le Colosse `+1/+1` à son arrivée. Sans
+ * adverse, la vipère de verre `-2/0`, le Serment de la forge `+2/+1`. Sans
  * ce calcul, ces nombres ne vivaient que dans la ligne de règle — et les
  * faces de cartes n'impriment pas la règle.
  *
@@ -205,7 +193,8 @@ export const RPG_SORT_FAMILIES = {
  * La famille de sort d'une carte : `'rapide'`, `'sorcellerie'`, ou `null` pour
  * tout ce qui n'est pas un sort — créature, héros, terrain, et arme. Le Sabre
  * maudit est une magie pour le moteur, mais sa carte se présente comme une
- * arme : elle garde le cadre d'acier et ne porte pas la signature des sorts.
+ * arme : elle garde le cadre ordinaire de son élément et ne porte pas la
+ * signature des sorts.
  */
 export function magieFamille(carte) {
   if (carte?.kind !== 'magie' || carteEstArme(carte)) return null;
@@ -233,10 +222,9 @@ export function magieFamilleInfo(carte) {
  *   pas celle qui passe.
  *
  * Chaque type a son dessin d'anneau, et le terrain le sien. Deux exclusions
- * voulues : le Sabre maudit
- * est une magie pour le moteur mais son cadre est celui des armes — il garde
- * l'acier guilloché (voir `magieFamille`) — et une carte mythique garde le
- * zellige qui dit sa rareté, car le CSS ne pose ces motifs que sous
+ * voulues : le Sabre maudit est une magie pour le moteur mais suit le cadre
+ * ordinaire de son élément (voir `magieFamille`), et une carte mythique garde
+ * le zellige qui dit sa rareté, car le CSS ne pose ces motifs que sous
  * `:not(.rpg-card--mythique)`. Créatures, héros et armes n'ont que la résille
  * commune.
  */
@@ -269,13 +257,6 @@ export function cardMotifClass(carte) {
 
 /** Clé et couleur de cadre d'une carte : élément seul, ou combinaison multicolore. */
 export function cardFrameInfo(carte) {
-  // Les armes gardent la matière commune des armes — acier guilloché peint
-  // par la classe `rpg-card--frame-arme` — mais leur teinte suit leur
-  // élément : acier doré du Sable, acier bleu de l'Eau, et ainsi de suite.
-  if (carteEstArme(carte)) {
-    const couleur = cardColors(carte)[0] ?? 'sable';
-    return { key: 'arme', ...(CARD_FRAME_COLORS[`arme-${couleur}`] ?? CARD_FRAME_COLORS.arme) };
-  }
   const colors = cardColors(carte).slice().sort(
     (a, b) => CARD_FRAME_COLOR_ORDER.indexOf(a) - CARD_FRAME_COLOR_ORDER.indexOf(b),
   );
@@ -304,11 +285,6 @@ export function cardFrameColor(carte) {
 /** Classes communes à toutes les présentations d'une carte du Sablier. */
 export function cardFrameClass(carte) {
   const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
-  // Une arme ajoute la teinte d'acier de son élément à la matière commune.
-  if (carteEstArme(carte)) {
-    const couleurArme = cardColors(carte)[0];
-    if (couleurArme) classes.push(`rpg-card--frame-arme-${couleurArme}`);
-  }
   if (cardHasShinyFrame(carte)) classes.push('rpg-card--frame-brillant');
   if (cardHasMythicFrame(carte)) classes.push('rpg-card--mythique');
   return classes.join(' ');
@@ -321,23 +297,6 @@ export const CARD_KIND_LABELS = {
   statut: 'Utilité',
   site: 'Site',
 };
-
-/**
- * Le cadre d'acier d'une arme, porté par la créature qu'elle équipe.
- *
- * Depuis que la carte d'arme ne se glisse plus derrière son porteur, c'est
- * l'anneau de la créature qui dit l'équipement : elle reçoit la matière des
- * armes (`rpg-card--frame-arme`) teintée par l'élément de son arme, comme la
- * carte d'arme elle-même. On ne reprend pas `cardFrameClass`, qui ajoute la
- * variante brillante des mythiques : le porteur n'est pas mythique, son cadre
- * ne doit pas se mettre à respirer. Rend `''` pour une carte qui n'est pas
- * une arme.
- */
-export function armeCadreClass(carte) {
-  if (!carteEstArme(carte)) return '';
-  const couleur = cardColors(carte)[0];
-  return `rpg-card--frame-arme${couleur ? ` rpg-card--frame-arme-${couleur}` : ''}`;
-}
 
 /**
  * Les créatures du duel — façon Magic : un coût en sable, ⚔ l'attaque,
@@ -401,7 +360,7 @@ export const RPG_CREATURE_CARDS = [
     name: 'Vipère de verre',
     element: 'eau',
     cost: 3,
-    atk: 3,
+    atk: 2,
     def: 1,
     rarity: 'rare',
     typeLine: 'Créature — Serpent',
@@ -453,29 +412,17 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Un seul coup de bâton sur le bronze fêlé, et l’écho chasse l’intrus.',
   },
   {
-    id: 'colosse-de-sel',
-    name: 'Colosse de sel',
-    element: 'eau',
-    cost: 6,
-    atk: 6, def: 6,
-    rarity: 'rare',
-    typeLine: 'Créature — Géant',
-    arrivee: { type: 'buff', atk: 1, def: 1 },
-    text: 'Quand le Colosse arrive : vos autres créatures gagnent +1/+1.',
-    flavor: 'La mer est partie. Son sel est resté debout.',
-  },
-  {
     id: 'veilleuse-des-citernes',
     name: 'Veilleuse des citernes',
     element: 'eau',
     cost: 3,
     atk: 1,
-    def: 4,
+    def: 2,
     rarity: 'commune',
     typeLine: 'Créature — Gardienne',
     art: 'veilleuse-des-citernes',
-    arrivee: { type: 'bouclier', amount: 2, cible: 'creature-amie' },
-    text: 'Quand la Veilleuse arrive : elle reçoit un bouclier de 2.',
+    arrivee: { type: 'bouclier', amount: 2, cible: 'creature-amie', choisirCible: true },
+    text: 'Quand la Veilleuse arrive : une créature alliée ciblée reçoit un bouclier de 2.',
     flavor: 'Elle garde les réserves, et la dernière porte.',
   },
   {
@@ -529,11 +476,11 @@ export const RPG_CREATURE_CARDS = [
     art: 'amani-des-ksour',
     // Égide de la Gardienne — aura de camp, comme l'aura Sable de Tarek, mais
     // en défense : tant qu'Amani est en jeu, les AUTRES créatures de son camp
-    // gagnent +0/+2 (le moteur la tient dans `appliquerAuraAmani`). L'égide se
+    // gagnent +0/+1 (le moteur la tient dans `appliquerAuraAmani`). L'égide se
     // cumule par Amani présente : une seconde Amani double le bonus, et les
     // Amani se protègent l'une l'autre.
-    aura: { type: 'buff-autres', atk: 0, def: 2, camps: 'camp' },
-    text: 'Tant qu’Amani est en jeu, vos autres créatures gagnent +0/+2.',
+    aura: { type: 'buff-autres', atk: 0, def: 1, camps: 'camp' },
+    text: 'Tant qu’Amani est en jeu, vos autres créatures gagnent +0/+1.',
     flavor: 'Les portes de pierre tiennent parce que quelqu’un veille.',
   },
   {
@@ -709,9 +656,10 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'rare',
     typeLine: 'Créature — Valkyrie viking',
     art: 'valkyrie-au-corbeau',
+    furie: 2,
     envol: true,
     arrivee: { type: 'pioche', amount: 1, tribu: 'viking' },
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Quand elle arrive : piochez une carte de type Viking au hasard dans votre deck.',
+    text: 'Furie 2. Envol — Ne peut être bloquée que par une créature avec Envol. Quand elle arrive : piochez une carte de type Viking au hasard dans votre deck.',
     flavor: 'Le corbeau tourne une fois, puis la mêlée se souvient de son nom.',
   },
   {
@@ -723,9 +671,9 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'rare',
     typeLine: 'Créature — Berserk viking',
     art: 'berserk-des-trois-hivers',
-    furie: 2,
+    furie: 3,
     provocation: true,
-    text: 'Furie 2. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
+    text: 'Furie 3. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
     flavor: 'Trois hivers de rage tenus dans un seul bras — et le sang ne fait que l’attiser.',
   },
   {
@@ -752,9 +700,9 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Valkyrie viking',
     art: 'valkyrie-des-glaces',
     envol: true,
-    protection: { contre: 'braise' },
+    protectionSortsContre: 'braise',
     arrivee: { type: 'soin-creatures', amount: 2 },
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Protection contre la Braise. Quand elle arrive : soignez chacune de vos créatures de 2.',
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Protection contre les sorts de Braise — Les Magies Rapides et Sorcelleries de Braise ne peuvent ni la cibler ni la blesser. Quand elle arrive : soignez chacune de vos créatures de 2.',
     flavor: 'Elle choisit qui monte, et qui reste dans la neige.',
   },
   {
@@ -901,7 +849,7 @@ export const RPG_TOUR_CARDS = [
     element: 'braise',
     cost: 3,
     atk: 0,
-    def: 5,
+    def: 4,
     rarity: 'commune',
     typeLine: 'Créature — Tour de défense',
     art: 'tour-de-braise',
@@ -909,7 +857,8 @@ export const RPG_TOUR_CARDS = [
     doitBloquer: true,
     prioriteAttaqueRapide: true,
     arrivee: { type: 'degats', amount: 1, cible: 'creature' },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : infligez 1 dégât à une créature adverse.',
+    combat: { type: 'degats-creature-combattue', amount: 1, quand: 'blocage', sourceType: 'magie' },
+    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : infligez 1 dégât à une créature adverse. Quand la Tour bloque une créature, elle lui inflige 1 dégât de sort avant les blessures de combat.',
     flavor: 'Elle brûle ceux qui osent s’en approcher.',
   },
   {
@@ -1098,14 +1047,14 @@ export const RPG_HERO_CARDS = [
     role: 'Souverain des cendres',
     element: 'braise',
     cost: 5,
-    atk: 2,
-    def: 2,
+    atk: 3,
+    def: 3,
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Ifrit',
     art: 'ifrit-al-ahmar',
-    arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
-    text: 'Quand l’Ifrit arrive : 2 dégâts à toutes les créatures adverses.',
+    arrivee: { type: 'degats', amount: 3, cible: 'toutes-creatures', inclutAllies: true },
+    text: 'Quand l’Ifrit arrive : 3 dégâts à toutes les créatures, lui compris.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -1122,8 +1071,9 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     art: 'pere-des-corbeaux',
     envol: true,
+    tenacite: true,
     arrivee: { type: 'exil', cible: 'creature', coutMax: 3 },
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Quand il arrive : ses corbeaux emportent une créature de coût 3 ou moins — elle est exilée, retirée de la partie.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 3 ou moins — elle est exilée, retirée de la partie.',
     flavor: 'Il a donné un œil pour savoir, et ne l’a jamais regretté.',
   },
   {
@@ -1295,7 +1245,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Magie Rapide — Braise',
     art: 'trait-de-braise',
-    cost: 2,
+    cost: 3,
     rarity: 'commune',
     instant: true,
     cibles: ['creature', 'sorcier'],
@@ -1731,7 +1681,7 @@ export const RPG_MAGIE_CARDS = [
  * Une arme se joue depuis la main, payée en mana comme un sort, et s'attache
  * directement à une créature alliée (héros et jetons compris) : le porteur
  * gagne le bonus `bonus` (+attaque/+défense) et, selon l'arme, le mot-clé
- * `donne` (esquive, envol…) ou l'effet déclenché `declenche`, tant qu'il la
+ * `donne` (esquive, coupRapide…) ou l'effet déclenché `declenche`, tant qu'il la
  * porte. Une seule arme par créature : en attacher une seconde envoie la
  * première au cimetière. Quand le porteur quitte la table — détruit, renvoyé
  * en main — l'arme tombe avec lui, au cimetière. Le moteur vit dans
@@ -1809,9 +1759,9 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Lance',
     cost: 3,
     rarity: 'rare',
-    bonus: { atk: 1, def: -1 },
-    donne: { envol: true },
-    text: 'Arme — Le porteur gagne +1/−1 et Envol.',
+    bonus: { atk: 1, def: 0 },
+    donne: { coupRapide: true },
+    text: 'Arme — Le porteur gagne +1/+0 et Coup rapide (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 30 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher).',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
   {
@@ -1861,7 +1811,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 0, def: 3 },
     donne: { esquive: true },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive (30 % de chance d’esquiver une attaque).',
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive (30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas).',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {
@@ -2268,7 +2218,7 @@ export const RPG_DECKS = [
     boxArt: 'kagutsuchi-flamme-originelle',
     archetype: 'Braise · samouraïs et yōkai',
     affrontement: 'Affrontez le Serment du Soleil rouge.',
-    description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Samouraï du torii, le Tengu, le Kenshi et Kagutsuchi font résonner les Samouraïs, et le Daimyō mythique lève des jetons qui grandissent en attaquant. Kagutsuchi et le Daimyō sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
+    description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Samouraï du torii, le Tengu et le Kenshi font résonner les Samouraïs, et le Daimyō mythique lève des jetons qui grandissent en attaquant. Kagutsuchi et le Daimyō sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
     cardIds: RPG_DECK_SOLEIL_ROUGE_BASE,
   },
   {

@@ -85,27 +85,19 @@ test('le catalogue applique les mêmes cadres aux vraies mythiques, sans violet 
   assert.equal(cardFrameColor(cardById('maitre-du-marteau')), CARD_FRAME_COLORS.neige.color);
 });
 
-test('les armes portent le même acier guilloché, teinté dans leur élément', () => {
+test('les armes n’ont plus de cadre spécifique : elles suivent leur élément', () => {
   for (const carte of RPG_ARME_CARDS) {
-    assert.equal(cardFrameInfo(carte).key, 'arme', carte.id);
-    assert.equal(cardFrameInfo(carte).label, CARD_FRAME_COLORS[`arme-${carte.element}`].label, carte.id);
-    assert.equal(cardFrameColor(carte), CARD_FRAME_COLORS[`arme-${carte.element}`].color, carte.id);
-    assert.deepEqual(cardFrameClass(carte).split(' ').slice(0, 2),
-      ['rpg-card--frame-arme', `rpg-card--frame-arme-${carte.element}`], carte.id);
+    assert.equal(cardFrameInfo(carte).key, carte.element, carte.id);
+    assert.equal(cardFrameColor(carte), CARD_FRAME_COLORS[carte.element].color, carte.id);
+    assert.equal(cardFrameClass(carte).includes('rpg-card--frame-arme'), false, carte.id);
   }
-  // Le Takouba (Sable) et le Bâton (Eau) partagent la matière, pas la teinte :
-  // acier doré contre acier bleu.
   const takouba = cardById('takouba-des-pistes');
   const baton = cardById('baton-des-citernes');
-  assert.notEqual(takouba.element, baton.element);
-  assert.notEqual(cardFrameColor(takouba), cardFrameColor(baton));
-  assert.equal(cardFrameColor(takouba), CARD_FRAME_COLORS.sable.color);
-  assert.equal(cardFrameColor(baton), CARD_FRAME_COLORS.eau.color);
-  // L'Armure de cendres, mythique, garde le reflet animé sur son acier rouge.
+  assert.equal(cardFrameClass(takouba), 'rpg-card--frame-sable');
+  assert.equal(cardFrameClass(baton), 'rpg-card--frame-eau');
   const armure = cardById('armure-de-cendres');
-  assert.equal(cardFrameClass(armure), 'rpg-card--frame-arme rpg-card--frame-arme-braise rpg-card--frame-brillant rpg-card--mythique');
+  assert.equal(cardFrameClass(armure), 'rpg-card--frame-braise rpg-card--frame-brillant rpg-card--mythique');
   assert.equal(cardHasShinyFrame(armure), true);
   assert.equal(cardHasShinyFrame(takouba), false);
-  // Une carte ordinaire garde le cadre de son élément.
   assert.equal(cardFrameInfo(cardById('kraken')).key, 'eau');
 });

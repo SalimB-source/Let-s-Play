@@ -22,6 +22,7 @@ import {
   blessureNette,
   choisirActivationIA,
   choisirCarteIA,
+  choisirCibleAutoIA,
   furieGagnee,
   rpgProfilIA,
   rpgDelaiReflexionIA,
@@ -41,6 +42,14 @@ const duelNu = (opts = {}) => rpgNouveauDuel({
 });
 
 const donner = (duel, cote, carteId) => duel[cote].main.push(carteId);
+
+// Fixture de combat neutre : le Seigneur fournit un corps 6/6 ; ses
+// mots-clés sans rapport avec le scénario sont désactivés explicitement.
+const jouerGros = (duel, cote) => {
+  const resultat = rpgJouerCreature(duel, cote, 'seigneur-des-machoires');
+  if (resultat.entite) Object.assign(resultat.entite, { tenaciteDisponible: false, tribut: 0 });
+  return resultat;
+};
 const donnerMana = (duel, cote, n) => { duel[cote].mana = { braise: n, eau: n, sable: n, neige: n }; };
 
 // ── Ciblage ─────────────────────────────────────────────────────────────────
@@ -61,6 +70,30 @@ test('l’IA vise le kill, pas la première créature venue', () => {
   assert.equal(rpgCibleAuto(duel, 'sorcier', trait), chien.id,
     'le Trait vise le Chien 2/2 (kill) plutôt que la Vipère arrivée en premier');
   assert.notEqual(rpgCibleAuto(duel, 'sorcier', trait), vipere.id);
+});
+
+test('l’IA confie le Bouclier 2 de la Veilleuse à un allié, avec un repli solo', () => {
+  const duel = duelNu();
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'dune-marchante');
+  const allie = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
+  donner(duel, 'sorcier', 'veilleuse-des-citernes');
+  assert.equal(choisirCibleAutoIA(duel, 'sorcier', cardById('veilleuse-des-citernes')), allie.id);
+  const choix = choisirCarteIA(duel, 'sorcier');
+  assert.equal(choix?.carteId, 'veilleuse-des-citernes');
+  assert.equal(choix?.cibleId, allie.id);
+  assert.equal(rpgJouerCreature(duel, 'sorcier', 'veilleuse-des-citernes', choix.cibleId).ok, true);
+  assert.equal(allie.bouclier, 2);
+
+  const solo = duelNu();
+  donnerMana(solo, 'sorcier', 20);
+  donner(solo, 'sorcier', 'veilleuse-des-citernes');
+  assert.equal(choisirCibleAutoIA(solo, 'sorcier', cardById('veilleuse-des-citernes')), null);
+  const choixSolo = choisirCarteIA(solo, 'sorcier');
+  assert.equal(choixSolo?.carteId, 'veilleuse-des-citernes');
+  const pose = rpgJouerCreature(solo, 'sorcier', 'veilleuse-des-citernes', choixSolo.cibleId);
+  assert.equal(pose.ok, true);
+  assert.equal(pose.entite.bouclier, 2);
 });
 
 test('l’IA préfère le visage létal à un kill sur le plateau', () => {
@@ -98,8 +131,8 @@ test('l’IA bloque les échanges favorables et refuse les blocages suicidaires'
   const duel = duelNu();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  donner(duel, 'joueur', 'colosse-de-sel');
-  const grosAttaquant = rpgJouerCreature(duel, 'joueur', 'colosse-de-sel').entite; // 5/5
+  donner(duel, 'joueur', 'seigneur-des-machoires');
+  const grosAttaquant = jouerGros(duel, 'joueur').entite; // 5/5
   donner(duel, 'sorcier', 'dune-marchante');
   const petiteDune = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite; // 2/5
   grosAttaquant.ready = true;
@@ -121,8 +154,8 @@ test('l’IA interpose un chump block quand la partie se joue', () => {
   const duel = duelNu();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  donner(duel, 'joueur', 'colosse-de-sel');
-  const grosAttaquant = rpgJouerCreature(duel, 'joueur', 'colosse-de-sel').entite; // 5/5
+  donner(duel, 'joueur', 'seigneur-des-machoires');
+  const grosAttaquant = jouerGros(duel, 'joueur').entite; // 5/5
   donner(duel, 'sorcier', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite; // 2/2
   grosAttaquant.ready = true;
@@ -502,7 +535,7 @@ test('Bakunawa et Faiseur de passage : la lune et le passage se choisissent auss
 });
 
 test('Le Grand Hiver : le sorcier ne le lance que si le compte des pertes penche de son côté', () => {
-  // Deux 1/1 chez le joueur, un Colosse chez le sorcier : la vague tue pour
+  // Deux 1/1 chez le joueur, un Seigneur chez le sorcier : la vague tue pour
   // lui et ne lui coûte qu'une blessure — il la lance, sans désigner de cible.
   const duel = duelNu();
   duel.tour = 'sorcier';
@@ -512,8 +545,8 @@ test('Le Grand Hiver : le sorcier ne le lance que si le compte des pertes penche
     donner(duel, 'joueur', 'tislit-des-aures');
     rpgJouerCreature(duel, 'joueur', 'tislit-des-aures');
   }
-  donner(duel, 'sorcier', 'colosse-de-sel');
-  rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel');
+  donner(duel, 'sorcier', 'seigneur-des-machoires');
+  jouerGros(duel, 'sorcier');
   donner(duel, 'sorcier', 'grand-hiver');
   const choix = choisirCarteIA(duel, 'sorcier', () => 0.5);
   assert.equal(choix?.carteId, 'grand-hiver');
@@ -525,8 +558,8 @@ test('Le Grand Hiver : le sorcier ne le lance que si le compte des pertes penche
   duel2.tour = 'sorcier';
   donnerMana(duel2, 'joueur', 9);
   donnerMana(duel2, 'sorcier', 9);
-  donner(duel2, 'joueur', 'colosse-de-sel');
-  rpgJouerCreature(duel2, 'joueur', 'colosse-de-sel');
+  donner(duel2, 'joueur', 'seigneur-des-machoires');
+  jouerGros(duel2, 'joueur');
   for (let i = 0; i < 2; i += 1) {
     donner(duel2, 'sorcier', 'tislit-des-aures');
     rpgJouerCreature(duel2, 'sorcier', 'tislit-des-aures');
@@ -623,7 +656,7 @@ test('le bloqueur protégé arrête l’attaque sans une égratignure, et l’IA
 });
 
 test('le Coup rapide ne désigne pas une Tour protégée contre sa couleur', () => {
-  // La Tour de neige est une priorité d’attaque rapide, et Fériel (3/1 Braise)
+  // La Tour de neige est une priorité d’attaque rapide, et Fériel (3/2 Braise)
   // la tuerait : elle la frappe en premier — sauf si une protection l’en
   // empêche. C’est le cas de figure où l’ancienne heuristique désignait une
   // cible que le moteur refuse (`protection`), perdant l’attaque du tour.
@@ -731,10 +764,10 @@ test('le venin anti-blocage retire le bloqueur de la liste de l’IA', () => {
   donner(duel, 'joueur', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   chien.ready = true;
-  donner(duel, 'sorcier', 'colosse-de-sel');
-  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
-  colosse.ready = false;
-  colosse.empecheBlocageToursRestants = 2; // mordu, la défense s'éteint
+  donner(duel, 'sorcier', 'seigneur-des-machoires');
+  const seigneur = jouerGros(duel, 'sorcier').entite;
+  seigneur.ready = false;
+  seigneur.empecheBlocageToursRestants = 2; // mordu, la défense s'éteint
 
   // Un 6/6 tuerait le Chien sans mourir : sans l’interdit, l’IA le poserait.
   assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [chien.id]), {},
@@ -745,12 +778,12 @@ test('le venin anti-blocage retire le bloqueur de la liste de l’IA', () => {
   assert.equal(duel.sorcier.pv, RPG_PV_JOUEUR - 2, 'les 2 dégâts passent');
 
   // Le venin expire : la même créature bloque de nouveau.
-  colosse.empecheBlocageToursRestants = 0;
+  seigneur.empecheBlocageToursRestants = 0;
   duel.tour = 'joueur';
   chien.ready = true;
   chien.attaquee = false;
   assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [chien.id]),
-    { [chien.id]: [colosse.id] }, 'sans venin, le 6/6 bloque à nouveau');
+    { [chien.id]: [seigneur.id] }, 'sans venin, le 6/6 bloque à nouveau');
 });
 
 test('le Grand Voile blanc : l’IA n’attaque pas pour rien', () => {
@@ -846,10 +879,10 @@ test('la Lame de mer est jouée : elle tue ce qu’elle fait tomber sous 1', () 
   duel.tour = 'sorcier';
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  // Le Colosse arrive d’abord (son +1/+1 ne touche donc pas le Chien), puis
+  // Le Seigneur arrive d’abord, puis
   // le Chien 2/2 — la Lame de mer le fait tomber à 0/0, elle est détruite.
-  donner(duel, 'joueur', 'colosse-de-sel'); // 6/6 → 4/4 : survit
-  rpgJouerCreature(duel, 'joueur', 'colosse-de-sel');
+  donner(duel, 'joueur', 'seigneur-des-machoires'); // 6/6 → 4/4 : survit
+  jouerGros(duel, 'joueur');
   donner(duel, 'joueur', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   assert.deepEqual([chien.atk, chien.pv], [2, 2], 'le Chien arrive intact');
@@ -857,9 +890,9 @@ test('la Lame de mer est jouée : elle tue ce qu’elle fait tomber sous 1', () 
 
   const choix = choisirCarteIA(duel, 'sorcier');
   assert.equal(choix?.carteId, 'lame-de-mer', 'l’IA joue enfin sa Lame de mer');
-  assert.equal(choix.cibleId, chien.id, 'elle vise la créature qu’elle détruit, pas le Colosse');
+  assert.equal(choix.cibleId, chien.id, 'elle vise la créature qu’elle détruit, pas le Seigneur');
 
-  // Le moteur confirme le calcul : le Chien tombe, le Colosse survit.
+  // Le moteur confirme le calcul : le Chien tombe, le Seigneur survit.
   const res = rpgLancerMagie(duel, 'sorcier', 'lame-de-mer', choix.cibleId);
   assert.equal(res.ok, true, 'la Lame de mer se lance sur la cible annoncée');
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === chien.id), false,
@@ -870,7 +903,7 @@ test('la Réanimation ramène le mort qui vaut son mana', () => {
   const duel = duelNu();
   duel.tour = 'sorcier';
   donnerMana(duel, 'sorcier', 20);
-  duel.sorcier.cimetiere.push('colosse-de-sel');
+  duel.sorcier.cimetiere.push('seigneur-des-machoires');
   donner(duel, 'sorcier', 'reanimation');
   assert.equal(choisirCarteIA(duel, 'sorcier')?.carteId, 'reanimation',
     'un 6/6 au cimetière justifie la Réanimation');

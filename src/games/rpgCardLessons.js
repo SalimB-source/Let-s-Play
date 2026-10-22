@@ -15,7 +15,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Types de cartes',
     cardIds: ['takouba-des-pistes', 'baton-des-citernes', 'armure-de-cendres', 'lance-de-givre'],
     title: 'Les armes équipent vos créatures',
-    text: 'Une arme se paie en mana puis s’attache à une créature alliée : son porteur gagne le bonus imprimé (+attaque/+défense) et, selon l’arme, un mot-clé comme Envol ou Infiltration (le Takouba rend son porteur inbloquable), un effet de combat, ou même un serpent appelé à son arrivée (le Bâton des citernes, qui peut en appeler d’autres pour 3 manas). Une seule arme par créature — en attacher une autre envoie la première au cimetière — et quand le porteur quitte la table, détruit ou renvoyé en main, son arme tombe avec lui au cimetière.',
+    text: 'Une arme se paie en mana puis s’attache à une créature alliée : son porteur gagne le bonus imprimé (+attaque/+défense) et, selon l’arme, un mot-clé comme Coup rapide ou Infiltration (le Takouba rend son porteur inbloquable), un effet de combat, ou même un serpent appelé à son arrivée (le Bâton des citernes, qui peut en appeler d’autres pour 3 manas). Une seule arme par créature — en attacher une autre envoie la première au cimetière — et quand le porteur quitte la table, détruit ou renvoyé en main, son arme tombe avec lui au cimetière.',
   },
   {
     id: 'terrain-hybride',
@@ -134,7 +134,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['fennec-des-decombres'],
     title: 'Rapidité et Esquive changent les échanges',
-    text: 'Rapidité permet d’attaquer dès le tour où la créature arrive. Esquive donne 30 % de chance d’esquiver une attaque — elle ne porte pas du tout, mais les magies et les capacités ne s’esquivent jamais : les deux capacités font des choses différentes.',
+    text: 'Rapidité permet d’attaquer dès le tour où la créature arrive. Esquive donne 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie — leur effet sur elle ne porte pas du tout. Les capacités de créatures, elles, ne s’esquivent toujours pas.',
   },
   {
     id: 'envol',
@@ -188,7 +188,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'furie',
     section: 'Capacités des créatures',
-    cardIds: ['loup-des-neiges', 'berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre'],
+    cardIds: ['loup-des-neiges', 'berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre', 'valkyrie-au-corbeau'],
     title: 'Furie suit la blessure',
     text: 'Une créature avec Furie X gagne +X/+0 tant que sa défense actuelle est inférieure à sa DEF de base, celle imprimée sur sa carte. Les renforts peuvent donc la garder au-dessus du seuil malgré une blessure. Si un soin la ramène à cette DEF de base, elle quitte la Furie et perd ce seul bonus ; une nouvelle chute sous le seuil la rallume.',
   },
@@ -204,7 +204,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['tarek', 'tengu-du-mont-ardent', 'samourai-du-torii', 'kenshi-de-la-forge'],
     title: 'Une aura agit tant que sa source reste en jeu',
-    text: 'Une aura ne quitte jamais son camp : Tarek renforce les créatures Sable de son camp, l’égide d’Amani donne +0/+2 aux autres créatures du sien, et l’aura de forge du Kenshi donne +1/+0 aux autres Samouraïs de son camp — il ne se forge pas lui-même, mais deux Kenshis du même camp se renforcent l’un l’autre et le reste des Samouraïs reçoit les deux ; celui d’en face ne forge que les siens. La Résonance, elle, est de table et se lit sur le TYPE imprimé de sa source : celle du Tengu, de Kagutsuchi et du Samouraï du torii ne renforce que les créatures de type Samouraï, même adverses et quelle que soit leur couleur, de +1/+1 par source. Celle du Samouraï du torii suit la même règle mais ne renforce que les autres Samouraïs — jamais lui-même ; deux toriis se renforcent l’un l’autre, et les autres sources le renforcent normalement. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas. Si la source quitte la table, le bonus d’aura correspondant disparaît — l’aura de forge ne touche jamais la défense, donc la perdre ne peut pas tuer.',
+    text: 'Une aura ne quitte jamais son camp : Tarek renforce les créatures Sable de son camp, l’égide d’Amani donne +0/+1 aux autres créatures du sien, et l’aura de forge du Kenshi donne +1/+0 à toutes les autres créatures de son camp, quel que soit leur type — il ne se forge pas lui-même, mais deux Kenshis du même camp se renforcent l’un l’autre et le reste de leur camp reçoit les deux ; celui d’en face ne forge que les siens. La Résonance, elle, est de table et se lit sur le TYPE imprimé de sa source : celle du Tengu et du Samouraï du torii ne renforce que les créatures de type Samouraï, même adverses et quelle que soit leur couleur, de +1/+1 par source ; Kagutsuchi ne porte plus cette Résonance. Celle du Samouraï du torii suit la même règle mais ne renforce que les autres Samouraïs — jamais lui-même ; deux toriis se renforcent l’un l’autre, et les autres sources le renforcent normalement. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas. Si la source quitte la table, le bonus d’aura correspondant disparaît — l’aura de forge ne touche jamais la défense, donc la perdre ne peut pas tuer.',
   },
   {
     id: 'banniere-samourai',
@@ -232,7 +232,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['pere-des-corbeaux'],
     title: 'L’exil retire la carte de la partie',
-    text: 'Quand le Père des corbeaux arrive — porté par son Envol — ses corbeaux exilent une créature de coût 3 ou moins, alliée ou adverse. Une carte exilée ne va pas au cimetière : elle quitte la partie, hors de portée des réanimations et des retours en main. Les créatures de coût 4 et plus sont hors d’atteinte des corbeaux : la cible doit respecter le seuil.',
+    text: 'Quand le Père des corbeaux arrive — porté par son Envol — ses corbeaux exilent une créature de coût 3 ou moins, alliée ou adverse. Une carte exilée ne va pas au cimetière : elle quitte la partie, hors de portée des réanimations et des retours en main. Les créatures de coût 4 et plus sont hors d’atteinte des corbeaux : la cible doit respecter le seuil. Le Père porte aussi Ténacité : une fois par partie, s’il meurt sans être exilé, il revient au début de votre prochain tour avec 1 point de défense.',
   },
   {
     id: 'overkill-et-protection',

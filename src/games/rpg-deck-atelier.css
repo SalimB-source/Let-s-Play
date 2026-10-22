@@ -785,31 +785,3 @@
   background-image: none !important;
   animation: none !important;
 }
-
-/* ══════════════════════════════════════════════════════════════════════════
-   LA BOUTIQUE DU SABLIER — le cadre des armes revient, plus fin et gris
-   Jumeau du bloc de fin de `rpg-battle.css` : la vignette d'une arme garde
-   elle aussi son filet d'acier gris. L'atelier est hors de `.rpg-battle`, les
-   valeurs y sont donc répétées en repli — à garder d'accord avec celles du
-   duel si l'on affine davantage. Pour revenir en arrière : supprimer ce bloc.
-   ══════════════════════════════════════════════════════════════════════════ */
-.rpg-atelier__carte-art[class*="rpg-card--frame-arme"] {
-  border: var(--rpg-arme-cadre, 5px) solid transparent !important;
-  background-color: #171218 !important;
-  background-image:
-    var(--rpg-frame-motif, none),
-    var(--rpg-arme-metal, linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd)) !important;
-  background-origin: border-box, border-box !important;
-  background-clip: border-box, border-box !important;
-  background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100% !important;
-  background-repeat: repeat, no-repeat !important;
-  background-position: 0 0, 0 0 !important;
-}
-
-/* Une arme verrouillée gardait son anneau terni : elle le garde, mais sans la
-   matière polie ni le guilloché — le simple aplat gris-brun que le jeu lui
-   réservait déjà pour les cartes verrouillées. */
-.rpg-atelier__carte.is-locked .rpg-atelier__carte-art[class*="rpg-card--frame-arme"] {
-  border-color: rgba(120, 110, 95, .8) !important;
-  background-image: none !important;
-}

@@ -13,9 +13,9 @@ const CARD_ART_BASE_URL = import.meta.env?.BASE_URL ?? '/';
 
 const CARD_ART_CACHE_VERSIONS = {
   // Lettres de Marque : les Sites changent de peinture à chaque Heure.
-  // Devenue « La légende du Hollandais volant » : vaisseau fantôme bleu
-  // translucent, repeint sous son ancien nom de fichier.
-  'la-vengeance-de-la-reine-anne': 'hollandais-volant-v1',
+  // Devenue « La légende du Hollandais volant » : vaisseau fantôme
+  // photoréaliste, repeint sous son ancien nom de fichier.
+  'la-vengeance-de-la-reine-anne': 'hollandais-volant-photorealiste-v2',
   // La Barbe-Rousse repeint : jeune amiral en plein abordage, vue cinéma.
   'la-barbe-rousse': 'barbe-rousse-jeune-abordage-v1',
   'le-chasseur-d-ocracoke': 'pirates-v1',
@@ -36,7 +36,7 @@ const CARD_ART_CACHE_VERSIONS = {
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
   'ashigaru-des-braises': 'soleil-rouge-kaiga-couleurs-v7',
   'ronin-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
-  'samourai-du-torii': 'soleil-rouge-kaiga-couleurs-v7',
+  'samourai-du-torii': 'chef-samourai-strategie-sous-la-tente-v1',
   'onna-musha-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
   'hatamoto-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
   'kenshi-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
@@ -54,9 +54,12 @@ const CARD_ART_CACHE_VERSIONS = {
   // Les cinq héros du récit ont été **repeints en nihonga** (pigments
   // minéraux sur feuille d’or) avec une palette algérienne — indigo touareg,
   // safran, henné, vert émeraude, turquoise et or. Mêmes noms de fichiers,
-  // mêmes visages et mêmes accessoires : on date donc les cinq images d’un
-  // seul geste pour qu’aucun cache ne resserve les huiles précédentes.
-  feriel: 'heros-nihonga-algerien-v1',
+  // mêmes visages et mêmes accessoires : les quatre portraits dont la
+  // composition est inchangée partagent une révision, pour qu’aucun cache ne
+  // resserve les huiles précédentes. Fériel a une nouvelle composition :
+  // archère au sommet d’une tour, une flèche électrique encochée, et donc
+  // une révision dédiée.
+  feriel: 'feriel-tour-fleche-electrique-v1',
   salem: 'heros-nihonga-algerien-v1',
   yamina: 'heros-nihonga-algerien-v1',
   tarek: 'heros-nihonga-algerien-v1',
@@ -99,12 +102,18 @@ const CARD_ART_CACHE_VERSIONS = {
   // Le Loup garde, lui, la peinture à l’huile de sa meute : même composition,
   // chef ensanglanté et crocs dehors dans l’état Furie.
   'loup-des-neiges-furie': 'loup-furie-huile-v1',
+  // La Valkyrie repart de sa scène d'origine : enragée et ensanglantée, elle
+  // vole dans le ciel et fond sur sa cible avec son corbeau noir, épée levée.
+  'valkyrie-au-corbeau-furie': 'valkyrie-vol-plongeon-enragee-v4',
   // Repeints sous leurs anciens noms : charge frontale pour le Mur, marteau
   // seul foudroyé au-dessus du fjord pour l’Éclair, soldats gelés dans la
   // brume pour la Brume du fjord.
   'mur-de-boucliers': 'mur-boucliers-charge-v1',
   'eclair-du-marteau': 'eclair-marteau-fjord-v1',
   'brume-du-fjord': 'brume-personnes-gelees-v2',
+  // La Hache est seule, sa lame plantée dans la banquise : aucun porteur
+  // ne vient concurrencer l’arme dans la nouvelle illustration.
+  'hache-de-la-banquise': 'hache-plantee-glace-v2',
 };
 /**
  * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la

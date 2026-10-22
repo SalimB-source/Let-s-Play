@@ -926,8 +926,8 @@
 /* Les effets et le bonus de l'arme ne s'impriment pas sur la carte posée.
    Les compteurs (Heures sur la créature, sable sur la Jitte) restent sous le
    repère de couleur en petits losanges, même si la carte rétrécit au doigt.
-   Aucune vignette d'arme ne recouvre la face : l'équipement se lit à son
-   cadre d'acier, et la carte d'arme apparaît dans l'aperçu. */
+   Aucune vignette d'arme ne recouvre la face : l'équipement ne change pas
+   le cadre ordinaire de la créature, et la carte d'arme apparaît dans l'aperçu. */
 .rpg-battle--touch .card-row .rpg-card { container-type: inline-size; }
 .rpg-battle--touch .rpg-card__foot .rpg-stat-icon,
 .rpg-battle--touch .rpg-hand__stats .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
@@ -1354,26 +1354,6 @@
 .rpg-battle.rpg-battle--touch [class*="rpg-card--frame-"][class] {
   border-width: 0;
   background-image: none;
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   LA CRÉATURE ÉQUIPÉE GARDE LE CADRE D'ACIER DE SON ARME — au doigt aussi
-   ──────────────────────────────────────────────────────────────────────────
-   Le duel tactile ne pose aucun cadre sur les faces de jeu : la carte d'arme
-   ne se glisse plus derrière son porteur (elle n'existe plus dans le DOM), et
-   sans anneau l'équipement ne se lirait plus du tout. La créature équipée
-   fait donc exception, exactement comme la carte d'arme elle-même — les
-   règles `!important` de la boutique (`rpg-battle.css`) peignent déjà l'acier,
-   il ne reste qu'à en régler l'épaisseur.
-
-   Les cartes posées au doigt sont petites (40 à 95 px) : le filet prend la
-   mesure des petites faces (`--rpg-arme-cadre-fin`, 3 px, celle des terrains
-   et du dessus des piles) au lieu de la plaque de 5 px, qui mangerait le
-   quart d'une carte de 40 px. Le calque ne touche pas à la géométrie de la
-   carte : elle garde exactement la largeur de ses voisines dans la rangée.
-   ══════════════════════════════════════════════════════════════════════════ */
-.rpg-battle--touch .card-row .rpg-card.is-arme-equipee {
-  --rpg-arme-cadre: var(--rpg-arme-cadre-fin, 3px);
 }
 
 /* Les repères suivent la largeur réelle de chaque créature, pas le viewport.

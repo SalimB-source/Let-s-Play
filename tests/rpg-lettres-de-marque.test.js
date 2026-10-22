@@ -241,7 +241,7 @@ test('une capacité de mort ne se déclenche pas sur une prise : le Ghul captur�
   assert.equal(momie.sorcier.creatures.filter((entite) => entite.carteId === 'corsaire').length, 1,
     'l’unique Corsaire a bien débarqué, lui');
 
-  // L’Honneur du Soleil rouge non plus : pris, le Samouraï du torii (coût 3)
+  // L’Honneur du Soleil rouge non plus : pris, le Samouraï du torii (coût 4)
   // ne frappe personne en tombant — La Barbe-Rousse le prend vif.
   const honneur = duelVide();
   mana(honneur, 'joueur', 10);
@@ -658,7 +658,7 @@ test('Le Brûlot embrase la créature qui le détruit en combat — jamais par m
   assert.equal(duel.joueur.creatures.includes(tercio), true, 'son tueur survit à l’échange');
   assert.equal(tercio.pv, 1, 'le Tercio 1/4 a pris 1 au combat et 2 à l’explosion');
 
-  // Un tueur qui tombe avec lui n'a pas à être embrasé : la Vipère 3/1 meurt
+  // Un tueur qui tombe avec lui n'a pas à être embrasé : la Vipère 2/1 meurt
   // du seul retour de combat, et l'explosion n'a plus de cible.
   const double = duelVide();
   mana(double, 'joueur', 10);
@@ -686,9 +686,9 @@ test('Le Brûlot embrase la créature qui le détruit en combat — jamais par m
   assert.equal(capacite.sorcier.cimetiere.includes('le-brulot'), true, 'la capacité tue le Brûlot');
   assert.equal(sahir.pv, 1, 'le Sahir 2/3 encaisse les 2 dégâts de l’explosion');
 
-  // Protégée contre la Braise, la Valkyrie des glaces ne sent rien : le
-  // Brûlot est désormais une créature Braise, sa frappe comme son explosion
-  // s'écrasent sur la protection.
+  // La Valkyrie des glaces ne protège que contre les sorts de Braise :
+  // la frappe et l’explosion du Brûlot sont des blessures de combat/capacité,
+  // elles passent donc normalement (1 + 2 dégâts sur ses 5 PV).
   const protegee = duelVide();
   mana(protegee, 'joueur', 12);
   mana(protegee, 'sorcier', 12);
@@ -699,7 +699,7 @@ test('Le Brûlot embrase la créature qui le détruit en combat — jamais par m
   pret(valkyrie);
   rpgAttaquerCreature(protegee, 'joueur', valkyrie.id, brulotProtege.id);
   assert.equal(protegee.sorcier.cimetiere.includes('le-brulot'), true);
-  assert.equal(valkyrie.pv, 5, 'ni la frappe du Brûlot ni l’explosion ne passent la protection');
+  assert.equal(valkyrie.pv, 2, 'la frappe du Brûlot et son explosion atteignent la Valkyrie : ce ne sont pas des sorts');
 
   // Morte par magie : le tueur est inconnu, rien ne se déclenche.
   const magie = duelVide();

@@ -56,7 +56,8 @@ test('la cinquième couleur existe partout où l’élément se nomme', () => {
   assert.equal(couleurs.length, 31, '5 mono + 26 combinaisons (binômes, trinômes, quadrinômes et le tout-éléments)');
   assert.ok(CARD_FRAME_COLORS.tenebres, 'la couleur mono Ténèbres');
   assert.ok(CARD_FRAME_COLORS['hybride-braise-eau-sable-neige-tenebres'], 'le repli à cinq couleurs');
-  assert.ok(CARD_FRAME_COLORS['arme-tenebres'], 'l’acier de Ténèbres');
+  assert.equal(Object.keys(CARD_FRAME_COLORS).some((key) => key.startsWith('arme')), false,
+    'aucune couleur de cadre spécifique aux armes ne subsiste, y compris pour Ténèbres');
   assert.equal(MYTHIQUE_VITRINE_PAR_ELEMENT.tenebres, 'la-devoreuse');
   assert.ok(cardById('la-devoreuse'));
 });

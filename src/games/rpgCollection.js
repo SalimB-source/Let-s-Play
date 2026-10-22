@@ -93,7 +93,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'souk-2': ['salem', 'vipere-de-verre', 'kenshi-de-la-forge'],
   'souk-3': ['parade-du-verre', 'frappe-iaijutsu',
     'mousse-des-galiotes', 'rais-de-la-galiote', 'le-brulot', 'haut-fond'],
-  'souk-4': ['ifrit-al-ahmar', 'feriel', 'colosse-de-sel', 'daimyo-du-soleil-rouge',
+  'souk-4': ['ifrit-al-ahmar', 'feriel', 'daimyo-du-soleil-rouge',
     'pilote-de-la-carreira', 'tercio-de-cuivre', 'cotre-de-course', 'le-renegat',
     'lettre-de-marque', 'le-routier'],
   // Tour des Sables — le sommet du Sable/Braise, l'Eau se précise.

@@ -229,9 +229,11 @@ mais une seule carte de Braise. Le banc d’essai suit la même liste et déclar
 `elements: ['sable', 'eau', 'braise']`.
 
 Conséquence de couleur, assumée : le Brûlot **est** une source de Braise. Sa
-frappe de combat comme son explosion s’écrasent donc sur une créature protégée
-contre la Braise (Tiziri, la Valkyrie des glaces, un porteur d’Armure de
+frappe de combat comme son explosion s’écrasent donc sur une créature dotée
+d’une protection générale contre la Braise (Tiziri ou un porteur d’Armure de
 cendres) — la protection fait écran aux deux, exactement comme pour l’Ifrit.
+La Valkyrie des glaces est différente : sa protection ne vise que les **sorts**
+de Braise, donc ces blessures de combat et de capacité la touchent normalement.
 Le Brûlot reste un 1/1 à 2 manas : son prix ne bouge pas, sa valeur de carte
 non plus (l’effet `degats-tueur` vaut `0,9 × N`, soit ≈ 1,8 pour 2 dégâts,
 contre 1,2 pour l’ancien renvoi). **20 cartes + 1 jeton** sont
@@ -256,9 +258,9 @@ reste posé, avec son illustration finale.
 | Tercio de cuivre | Sable | 3 | 1/4 | commune | le mur du convoi, **Coup rapide** |
 | Cotre de course | **Sable + Eau** | 3 | 3/1 | inhabituelle | **Rapidité + Abordage 2** — l’éclaireur qui monte le premier |
 | Le Renégat | **Sable + Eau** | 3 | 3/3 | inhabituelle | **Rapidité + Butin** — l’Anglais sous pavillon d’Alger |
-| Négociant des prises | Sable | 3 | 2/3 | rare | chaque créature **prise en cale** par qui que ce soit : **piochez 1** |
+| Négociant des prises | Sable | 2 | 1/1 | rare | chaque créature **prise en cale** par qui que ce soit : **piochez 1** |
 | Galion de la flotte | **Sable + Eau** | 5 | 2/5 | rare | **Coup rapide**, **Abordage 4**, **Cargaison 1** — le trésor assuré qui prend aussi à l’abordage |
-| La légende du Hollandais volant *(jadis « La Vengeance de la reine Anne » — même identifiant)* | **Sable + Eau** | 4 | 2/4 | rare | **Coup rapide**, **Abordage 3** ; cale occupée : +2/+0 et **Butin** — vaisseau fantôme bleu translucent |
+| La légende du Hollandais volant *(jadis « La Vengeance de la reine Anne » — même identifiant)* | **Sable + Eau** | 4 | 2/4 | rare | **Coup rapide**, **Abordage 3** ; cale occupée : +2/+0 et **Butin** — vaisseau fantôme photoréaliste, bois usé, lune et embruns |
 | Le Chasseur d’Ocracoke | **Sable + Eau** | 6 | 3/6 | **mythique** | Rapidité, Coup rapide ; **Traque** (+3/+0 contre Abordage/Butin/cale occupée) et **Prime** contre la course — plus d’Insaisissable |
 | La Source de Bimini | **Eau + Sable** | 3 | — | **mythique** | **Site**, 3 Heures ; soin total, +3/+3, Protection contre les sorts et Tenacité |
 | Le Trésor de Lima | **Sable + Eau** | 2 | — | rare | **Site**, 2 Heures ; piochez 2 cartes |

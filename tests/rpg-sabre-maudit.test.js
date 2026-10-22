@@ -15,6 +15,7 @@ function poser(duel, cote, id) {
   duel[cote].main.push(id);
   const r = rpgJouerCreature(duel, cote, id);
   assert.equal(r.ok, true);
+  if (id === 'seigneur-des-machoires') Object.assign(r.entite, { tenaciteDisponible: false, tribut: 0 });
   return r.entite;
 }
 function armer(duel, cible) {
@@ -90,7 +91,7 @@ test('le porteur frappe à sa force augmentée, sans riposte, et l’attaque s�
 test('sans créature désignée, le porteur du Sabre maudit attaque le sorcier de ses 3 dégâts', () => {
   const duel = partie();
   const porteur = poser(duel, 'joueur', 'momie-de-lin');
-  const cible = poser(duel, 'sorcier', 'colosse-de-sel');
+  const cible = poser(duel, 'sorcier', 'seigneur-des-machoires');
   armer(duel, porteur);
   porteur.ready = true;
   const pvSorcier = duel.sorcier.pv;
@@ -149,13 +150,13 @@ test('le sabre est sérialisable et l’IA arme sa meilleure créature', () => {
   assert.deepEqual(copie.sorcier.creatures.find((e) => e.id === robuste.id).armes, ['sabre-maudit']);
 });
 
-test('le sabre porte le cadre d’acier des armes, comme les autres armes', async () => {
+test('le sabre suit le cadre ordinaire de son élément, sans cadre d’arme', async () => {
   const { cardFrameInfo, cardFrameClass, carteEstArme, bonusArme, cardById: byId } = await import('../src/games/rpgCards.js');
   const sabre = byId('sabre-maudit');
   assert.equal(carteEstArme(sabre), true);
   assert.equal(sabre.kind, 'magie', 'le moteur le garde parmi les magies (ciblage, porteur.armes)');
-  assert.equal(cardFrameInfo(sabre).key, 'arme');
-  assert.equal(cardFrameClass(sabre), 'rpg-card--frame-arme rpg-card--frame-arme-braise');
+  assert.equal(cardFrameInfo(sabre).key, 'braise');
+  assert.equal(cardFrameClass(sabre), 'rpg-card--frame-braise');
   assert.deepEqual(bonusArme(sabre), { atk: 1, def: 0 });
   assert.deepEqual(bonusArme(byId('takouba-des-pistes')), { atk: 2, def: 0 });
   assert.equal(carteEstArme(byId('samourai-du-torii')), false);
@@ -170,11 +171,13 @@ test('équipé, le Sabre ne se dessine plus en miniature sur son porteur', () =>
 
   // Le Sabre vit dans `entite.armes` : l'ancienne rangée `.rpg-card__weapons`
   // en faisait une carte de 22 × 28 px collée sur la créature. Elle a disparu
-  // de toutes les surfaces ; l'équipement se lit au cadre d'acier du porteur.
+  // de toutes les surfaces ; l'équipement reste lisible dans les effets et l’aperçu.
   assert.doesNotMatch(page, /rpg-card__weapons/);
   assert.doesNotMatch(batailleCss, /\.rpg-card__weapons\b/);
   assert.doesNotMatch(mobileCss, /\.rpg-card__weapons\b/);
-  assert.match(page, /is-arme-equipee/, 'le cadre d’acier signale toujours l’équipement');
+  assert.doesNotMatch(page, /is-arme-equipee|rpg-card--frame-arme/, 'aucun cadre d’arme ne signale plus l’équipement');
+  assert.doesNotMatch(batailleCss, /is-arme-equipee|rpg-card--frame-arme/);
+  assert.doesNotMatch(mobileCss, /is-arme-equipee|rpg-card--frame-arme/);
   assert.match(page, /data-armes=\{armes\.length \? armes\.join\(' '\) : undefined\}/,
     'les armes portées restent transmises aux aperçus');
   assert.match(page, /rpg-hover-card-preview__weapons/,
