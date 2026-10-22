@@ -10961,6 +10961,57 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 
+/* Abordage : la carte prise s’entrave de deux chaînes en croix sur ses
+   diagonales. La croix attend le contact du grappin (28 % de la course,
+   quand il atteint la prise), se verrouille d’un coup sec avec un éclair
+   d’impact au centre, puis accompagne la carte jusqu’au capteur. Le SVG est
+   interne à la carte : son rétrécissement et son fondu sont ceux du parent. */
+.rpg-abordage-liens {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .75));
+}
+.rpg-abordage-liens__chaines {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rpg-abordage-liens 1400ms linear forwards;
+}
+.rpg-abordage-liens__anneau {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rpg-abordage-liens__anneau--creux {
+  stroke: #39424b;
+  stroke-width: 2.6;
+}
+.rpg-abordage-liens__anneau--fil {
+  stroke: #eef4f9;
+  stroke-width: .95;
+  opacity: .85;
+}
+/* L’éclair d’impact : une brève lueur au croisement des deux diagonales, au
+   moment précis où le grappin mord la carte. */
+.rpg-abordage-liens__eclair {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rpg-abordage-liens-eclair 1400ms linear forwards;
+}
+@keyframes rpg-abordage-liens {
+  0%, 27% { opacity: 0; transform: scale(.72); }
+  34% { opacity: 1; transform: scale(1.07); }
+  43%, 100% { opacity: 1; transform: scale(1); }
+}
+@keyframes rpg-abordage-liens-eclair {
+  0%, 28% { opacity: 0; transform: scale(.45); }
+  34% { opacity: .9; transform: scale(1); }
+  50%, 100% { opacity: 0; transform: scale(1.55); }
+}
+
 /* ── Cercle magique d'un sacrifice ──────────────────────────────────────────
    Quand une créature est sacrifiée (plateau plein), un cercle de runes
    s'allume à son emplacement : halo qui pulse, anneaux en rotation,
@@ -11083,6 +11134,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .rpg-abordage-chaine { display: none; }
+  .rpg-abordage-liens { display: none; }
   .rpg-card-destruction-fx.is-abordage { animation: none; opacity: 0; }
   .rpg-cercle-magique,
   .rpg-cercle-magique__soleil,

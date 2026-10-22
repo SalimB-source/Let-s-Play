@@ -60,6 +60,47 @@ const documentDe = (html) => new JSDOM(`<!doctype html><html><body>${html}</body
   assert.equal(fantome.getAttribute('aria-hidden'), 'true', 'il est décoratif');
 }
 
+// Les liens d’entrave : deux chaînes rivetées en croix sur les diagonales de
+// la carte, qui s’y verrouillent au contact du grappin.
+{
+  const doc = documentDe(rendreFantome({ abordage: null }));
+  const liens = doc.querySelector('.rpg-abordage-liens');
+  assert.ok(liens, 'la carte prise porte ses chaînes d’entrave en croix');
+  const diagonales = [...doc.querySelectorAll('.rpg-abordage-liens__diagonale')];
+  assert.deepEqual(diagonales.map((g) => g.getAttribute('data-diagonale')),
+    ['descendante', 'montante'], 'les deux diagonales sont chaînées');
+  const chapelets = [...doc.querySelectorAll('.rpg-abordage-liens__chapelet')];
+  assert.ok(chapelets.length >= 8, 'au moins quatre maillons par diagonale');
+  assert.equal(Number(liens.getAttribute('data-rpg-abordage-liens')), chapelets.length,
+    'le compteur annoncé est celui des maillons peints');
+  assert.ok(doc.querySelector('.rpg-abordage-liens__eclair'),
+    'un éclair d’impact marque le contact de la chaîne au centre de la carte');
+  // Chaque maillon est peint deux fois, comme la torsade : le creux d’acier,
+  // puis le fil de lumière.
+  for (const chapelet of chapelets) {
+    assert.equal(chapelet.querySelectorAll('.rpg-abordage-liens__anneau--creux').length, 1);
+    assert.equal(chapelet.querySelectorAll('.rpg-abordage-liens__anneau--fil').length, 1);
+  }
+  // Les maillons tombent exactement sur l’une des deux diagonales (carte 120 × 150).
+  const W = 120;
+  const H = 150;
+  const surDiagonale = (x, y) => {
+    const descendante = Math.abs(y - (H / W) * x) < 1.5;
+    const montante = Math.abs(y - (H - (H / W) * x)) < 1.5;
+    return descendante || montante;
+  };
+  for (const chapelet of chapelets) {
+    const transform = chapelet.getAttribute('transform') ?? '';
+    const match = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(transform);
+    assert.ok(match, 'chaque maillon est positionné sur sa diagonale');
+    assert.ok(surDiagonale(Number(match[1]), Number(match[2])),
+      'le maillon tombe sur l’une des deux diagonales de la carte');
+    assert.match(transform, /rotate\(/, 'le maillon s’oriente dans l’axe de sa diagonale');
+  }
+  assert.ok(chapelets.some((c) => c.getAttribute('data-central') === 'true'),
+    'le croisement des diagonales est verrouillé par un maillon central');
+}
+
 // Le vecteur mesuré mène les deux : la chaîne part du capteur, la carte vole
 // jusqu'à lui. Ici le capteur est à 500 px à droite et 260 px plus haut.
 {
@@ -152,6 +193,8 @@ const documentDe = (html) => new JSDOM(`<!doctype html><html><body>${html}</body
   assert.ok(fantome, 'la carte détruite garde son fantôme');
   assert.ok(!fantome.classList.contains('is-abordage'), 'une morte n’est pas une prise');
   assert.equal(doc.querySelector('.rpg-abordage-chaine'), null, 'aucune chaîne pour une destruction');
+  assert.equal(doc.querySelector('.rpg-abordage-liens'), null,
+    'une destruction sans prise n’entrave pas la carte de chaînes');
 }
 
 // ── 2. La mesure : le capteur réel, jamais le milieu de sa rangée ──────────
@@ -229,6 +272,8 @@ assert.match(page, /window\.requestAnimationFrame \?\? \(\(rappel\) => window\.s
   'si le capteur manque encore, la mesure est retentée');
 assert.match(page, /prise && vecteur && \(\s*<ChaineAbordage effet=\{\{ \.\.\.effet, abordage: vecteur \}\} \/>/s,
   'la chaîne utilise le MÊME vecteur mesuré que la carte');
+assert.match(page, /\{prise && <LiensAbordageCarte effet=\{effet\} \/>\}/,
+  'seule une prise en cale entrave la carte de ses chaînes diagonales, jamais une destruction');
 assert.match(page, /'--rpg-abordage-x': `\$\{vecteur\?\.dx \?\? 0\}px`/,
   'et la carte vole vers ce même capteur');
 assert.match(page, /export function vecteurVersCapteur\(\{ table, capteurId, effet \}\)/,
@@ -259,5 +304,15 @@ assert.match(css, /\.rpg-abordage-chaine__brin,\s*\n\.rpg-abordage-chaine__fil,\
   'les lobes et leur ombre remontent ensemble quand la chaîne se tend');
 assert.match(css, /@keyframes rpg-abordage-prise\s*\{\s*0%, 38% \{ transform: rotate\(var\(--rpg-fx-rotation\)\); opacity: 1; \}/,
   'elle attend la première image : la mesure a le temps d’arriver');
+
+// ── 5. Les liens diagonaux : verrouillage au contact du grappin ───────────
+assert.match(css, /\.rpg-abordage-liens\s*\{[^}]*z-index: 3;/s,
+  'les chaînes d’entrave se peignent par-dessus l’illustration de la carte');
+assert.match(css, /@keyframes rpg-abordage-liens\s*\{[\s\S]*?0%, 27% \{ opacity: 0;[\s\S]*?34% \{ opacity: 1;/,
+  'la croix de chaînes reste invisible pendant le vol puis se verrouille au contact (28 %–34 %)');
+assert.match(css, /@keyframes rpg-abordage-liens-eclair\s*\{/,
+  'l’éclair d’impact au croisement des diagonales est animé sur la même course de 1,4 s');
+assert.match(css, /\.rpg-abordage-liens \{ display: none; \}/,
+  'mouvement réduit : les liens d’entrave sont masqués comme la chaîne de traction');
 
 window.close();

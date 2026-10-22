@@ -1784,6 +1784,7 @@ export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
       >
         <img src={cardArt(effet.cardId)} alt="" />
         <b>{effet.name}</b>
+        {prise && <LiensAbordageCarte effet={effet} />}
       </div>
     </Fragment>
   );
@@ -1843,6 +1844,88 @@ function brinsDeTorsade({ longueur, flottement, signeMou }) {
     avant.push({ d: trace(devantMonte ? 0 : Math.PI), mou });
   }
   return { arriere, avant };
+}
+
+/**
+ * Les liens qui entravent la carte prise : deux chaînes rivetées en croix sur
+ * les deux diagonales. Elles restent invisibles pendant le vol du grappin, se
+ * verrouillent sur la carte au contact (28 %–40 % de la course de 1400 ms,
+ * calées sur `rpg-abordage-grappin`) puis l’accompagnent jusqu’au capteur. Le
+ * SVG vit DANS la carte : il rétrécit et s’efface avec elle, sans calcul de
+ * position. Chaque maillon est une ellipse d’acier peinte deux fois (creux
+ * sombre, fil de lumière), comme la torsade de la chaîne de traction.
+ */
+export function LiensAbordageCarte({ effet }) {
+  const gradientId = `rpg-abordage-eclair-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const width = Number(effet.width) || 1;
+  const height = Number(effet.height) || 1;
+  const diagonales = [
+    { x1: 0, y1: 0, x2: width, y2: height, sens: 'descendante' },
+    { x1: width, y1: 0, x2: 0, y2: height, sens: 'montante' },
+  ];
+  let totalMaillons = 0;
+  const chapelets = diagonales.map((d, di) => {
+    const longueur = Math.hypot(d.x2 - d.x1, d.y2 - d.y1);
+    const angle = (Math.atan2(d.y2 - d.y1, d.x2 - d.x1) * 180) / Math.PI;
+    // Un maillon tous les ~22 px, au moins quatre par diagonale.
+    const nb = Math.max(4, Math.round(longueur / 22));
+    totalMaillons += nb;
+    const maillons = [];
+    for (let k = 1; k <= nb; k += 1) {
+      const t = k / (nb + 1);
+      const cx = d.x1 + (d.x2 - d.x1) * t;
+      const cy = d.y1 + (d.y2 - d.y1) * t;
+      const central = Math.abs(t - 0.5) < 0.55 / nb;
+      maillons.push(
+        <g
+          key={k}
+          className="rpg-abordage-liens__chapelet"
+          transform={`translate(${cx.toFixed(2)} ${cy.toFixed(2)}) rotate(${angle.toFixed(2)})`}
+          data-central={central ? 'true' : undefined}
+        >
+          <ellipse
+            className="rpg-abordage-liens__anneau rpg-abordage-liens__anneau--creux"
+            rx={central ? 7.6 : 6.3}
+            ry={central ? 5 : 4}
+          />
+          <ellipse
+            className="rpg-abordage-liens__anneau rpg-abordage-liens__anneau--fil"
+            rx={central ? 7.6 : 6.3}
+            ry={central ? 5 : 4}
+          />
+        </g>,
+      );
+    }
+    return (
+      <g key={di} className="rpg-abordage-liens__diagonale" data-diagonale={d.sens}>
+        {maillons}
+      </g>
+    );
+  });
+  return (
+    <svg
+      className="rpg-abordage-liens"
+      viewBox={`0 0 ${width} ${height}`}
+      aria-hidden="true"
+      data-rpg-abordage-liens={totalMaillons}
+    >
+      <defs>
+        <radialGradient id={gradientId} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fff4d6" stopOpacity=".95" />
+          <stop offset="55%" stopColor="#ffb84d" stopOpacity=".45" />
+          <stop offset="100%" stopColor="#ff8a3d" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle
+        className="rpg-abordage-liens__eclair"
+        cx={width / 2}
+        cy={height / 2}
+        r={Math.min(width, height) * 0.3}
+        fill={`url(#${gradientId})`}
+      />
+      <g className="rpg-abordage-liens__chaines">{chapelets}</g>
+    </svg>
+  );
 }
 
 /**
