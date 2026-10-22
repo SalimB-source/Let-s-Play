@@ -3174,7 +3174,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    Keep attackers readable while still making their engaged state visible;
    `!important` prevents entry, hit and attack animations from straightening them. */
 .rpg-card[data-combat-tilted="true"] {
-  transform: rotate(15deg) !important;
+  transform: rotate(10deg) !important;
   transform-origin: center;
 }
 /* Une créature attaquante (dès sa déclaration et pendant l'animation d'attaque)

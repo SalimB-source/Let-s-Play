@@ -79,8 +79,8 @@ assert.match(battlePage, /RPG_DUEL_CARDS\.filter\(\(carte\) => \{[\s\S]*?catalog
   'le catalogue filtre les hybrides seuls ou via chacune de leurs couleurs');
 assert.match(battleCss, /\.rpg-terrain-mana-choice\s*\{[^}]*position:\s*absolute;[^}]*z-index:/s,
   'le sélecteur de couleur de Pétra reste lisible au-dessus du rail des terrains');
-assert.match(battleCss, /\.rpg-card\[data-combat-tilted="true"\]\s*\{\s*transform:\s*rotate\(15deg\) !important;/,
-  'les créatures engagées gardent une inclinaison de 15° vers la droite');
+assert.match(battleCss, /\.rpg-card\[data-combat-tilted="true"\]\s*\{\s*transform:\s*rotate\(10deg\) !important;/,
+  'les créatures engagées gardent une inclinaison de 10° vers la droite');
 assert.match(battleCss, /\.rpg-card\.is-attacked\.fx-lunge\s*\{[^}]*box-shadow:[^}]*rgba\(239, 49, 43, \.74\)/s,
   'les cartes engagées gardent le halo rouge uniquement pendant l’animation d’attaque');
 assert.doesNotMatch(tableCardSource, /rpg-card__(?:engagee|action-fx)|(?:BLOCAGE|RETIRÉ|IMPACT|ATTAQUE|RENFORCÉ)/,
