@@ -220,6 +220,20 @@ try {
     /\.rpg-mode-menu__switch button,\s*\.rpg-mode-menu__switch button\.rpg-mode-menu__souk \{\s*flex: 1 1 calc\(25% - 6px\);/,
     'quatre onglets par rangée, à parts égales',
   );
+  // Paysage du téléphone et petites tablettes (701 – 1100 px) : la barre passe
+  // sur sa deuxième ligne et S'AUTORISE À DÉFILER SUR UNE NOUVELLE RANGÉE —
+  // sans ce `flex-wrap`, le huitième onglet (la Messagerie) restait peint hors
+  // de l'écran dès que les sept premiers tenaient encore sur une ligne.
+  assert.match(
+    battleCss,
+    /@media \(min-width: 701px\) and \(max-width: 1100px\) \{[\s\S]{0,700}?\.rpg-mode-menu__switch \{[\s\S]{0,500}?flex-wrap: wrap;/,
+    'en paysage et sur petite tablette, la barre d’onglets passe à la ligne au lieu de couper le dernier onglet',
+  );
+  assert.match(
+    battleCss,
+    /@media \(min-width: 701px\) and \(max-width: 1100px\) \{[\s\S]{0,700}?\.rpg-mode-menu__switch button,\s*\.rpg-mode-menu__switch button\.rpg-mode-menu__souk \{\s*flex: 1 1 auto;/,
+    'les onglets de cette barre se partagent la place et se replient au lieu de déborder',
+  );
   assert.match(
     tutorialCss,
     /@media \(max-width: 620px\) \{\s*\.rpg-mode-menu__hero-actions \{ grid-template-columns: minmax\(0, 1fr\); \}/,

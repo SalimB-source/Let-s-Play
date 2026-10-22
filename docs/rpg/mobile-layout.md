@@ -197,7 +197,9 @@ La messagerie du site — la fenêtre « Let's Talk » posée en bas de l'écran
 - la pastille jaune compte ce qui attend — messages non lus d'abord, demandes d'amis sinon, le détail dans l'`aria-label` ; sans compte, le panneau montre l'invitation à se connecter ;
 - **le lanceur flottant du site disparaît de ces routes au téléphone** (`dockVisible` de `SocialDock.jsx`) : il n'aurait fait que mener hors de la partie en ouvrant `/messages`. Sur ordinateur, il reste, au-dessus du jeu (`social-dock--sablier`), avec l'onglet « Demandes » d'amis que le panneau du jeu n'a pas.
 
-Vérification : `npm run check:rpg-messagerie` (onglet, voile, couches, relecture des routes du Sablier), `npm run check:rpg-duel-nav` (le hamburger ouvre le voile, la table reste montée) et `npm run check:rpg-accueil` (les huit onglets sur deux rangées à 700 px).
+**L'onglet se voit à toutes les largeurs.** La barre des modes a été dessinée pour six onglets ; le huitième disparaissait dès qu'il ne tenait plus sur la même ligne — peint hors de l'écran, sans barre de défilement visible, donc incliquable (paysage du téléphone 701 – 1100 px), et réduit à une bulle anonyme sans son mot au-dessous de 560 px. Deux règles le rattrapent : à 701 – 1100 px la barre **passe à la ligne** (`flex-wrap: wrap`) au lieu de défiler, et au-dessous de 560 px l'onglet garde le mot « Messagerie », en tout petit. Un onglet qu'on ne peut pas voir est un onglet qui n'existe pas.
+
+Vérification : `npm run check:rpg-messagerie` (onglet, voile, couches, relecture des routes du Sablier, libellé jamais perdu), `npm run check:rpg-duel-nav` (le hamburger ouvre le voile, la table reste montée) et `npm run check:rpg-accueil` (les huit onglets sur deux rangées à 700 px, et la barre qui passe à la ligne de 701 à 1100 px).
 
 ## Plein écran et orientation
 

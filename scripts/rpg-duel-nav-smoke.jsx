@@ -64,6 +64,11 @@ export async function checkRpgDuelNav(assert) {
     assert.ok(ongletMessagerie, 'la barre des modes du menu porte l’onglet Messagerie');
     assert.ok(ongletMessagerie.querySelector('.rpg-mode-menu__messagerie-mark'),
       'l’onglet porte la bulle « Let’s Talk »');
+    // L’onglet doit SE LIRE : un onglet réduit à sa bulle, sans le mot, ne se
+    // reconnaît pas — la barre des modes est écrite pour six onglets et le
+    // huitième disparaissait derrière le bord de l’écran (701 – 1100 px).
+    assert.ok(ongletMessagerie.querySelector('.rpg-mode-menu__onglet-libelle')?.textContent.includes('Messagerie'),
+      'l’onglet Messagerie porte son libellé : un onglet sans mot ne se reconnaît pas');
     assert.ok(ongletMessagerie.querySelector('.rpg-mode-menu__messagerie-pastille') === null
       || ongletMessagerie.getAttribute('aria-label')?.includes('Messagerie'),
       'la pastille des non-lus de l’onglet est annoncée par son aria-label');
