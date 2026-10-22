@@ -3317,10 +3317,13 @@ function ConfirmationSort({ carte, onConfirmer, onAnnuler }) {
 /**
  * La fiche compacte d'une magie qui vient d'être jouée.
  *
- * Côté joueur, elle se pose au-dessus de son paquet et de son cimetière, dans
- * le turquoise de la magie. Côté sorcier (`camp="sorcier"`), elle se pose
- * au-dessus de SES piles et prend le rouge de l'adversaire : on lit d'un coup
- * d'œil qui a lancé le sort, sans quitter la table des yeux.
+ * Quel que soit le lanceur, elle se pose au **milieu du plateau** (la pile
+ * centrale `.rpg-spell-played-stack`, voir `rpg-battle.css`) : le regard est
+ * déjà au centre de la table, là où le sort fait son effet. C'est la couleur
+ * qui dit le camp — turquoise de la magie pour le joueur, rouge de
+ * l'adversaire pour le sorcier (`camp="sorcier"`) — et le sur-titre le nomme
+ * (« MAGIE JOUÉE » / « SORT DU SORCIER ») : on lit d'un coup d'œil qui a
+ * lancé le sort, sans quitter la table des yeux.
  */
 function SpellAnnouncement({ annonce, camp = 'joueur' }) {
   const carte = cardById(annonce?.carteId);
@@ -5881,9 +5884,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [surZoneDepot, setSurZoneDepot] = useState(false);
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
   const [sortJoue, setSortJoue] = useState(null);
-  // Le sort du sorcier : sa fiche se pose au-dessus de ses piles, bordée de
-  // rouge. Même vie que celle du joueur, mais son propre minuteur — les deux
-  // camps peuvent lancer un sort dans la même seconde.
+  // Le sort du sorcier : même fiche au milieu du plateau, bordée de rouge.
+  // Même vie que celle du joueur, mais son propre minuteur — les deux camps
+  // peuvent lancer un sort dans la même seconde, les deux fiches s'empilent
+  // alors au centre au lieu de se recouvrir.
   const [sortJoueSorcier, setSortJoueSorcier] = useState(null);
   // Piles de cartes homonymes (tactile) : les groupes que le joueur a dépliés.
   const [pilesDeployees, setPilesDeployees] = useState(() => new Set());
@@ -8268,8 +8272,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // `vague` : la promesse d'un sort à écho (le Nuage de cendres) retombe au
   // début du tour suivant de son lanceur — la carte se réaffiche en preview,
   // le son du sort reprend, et le bandeau nomme la vague.
-  // `camp` : la fiche se pose chez qui a lancé le sort — la vôtre au-dessus de
-  // vos piles (turquoise), celle du sorcier au-dessus des siennes (rouge).
+  // `camp` : les deux fiches se posent au milieu du plateau — la vôtre en
+  // turquoise, celle du sorcier en rouge, chacune avec son propre minuteur.
   const annoncerMagie = (carte, cible, { contre = false, vague = false, sonForce = null, camp = 'joueur' } = {}) => {
     if (contre) {
       jouerSfx('card_countered');
@@ -8297,22 +8301,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       vague,
     });
     // Le sort joué ne s'ouvre plus en aperçu plein cadre : sa fiche compacte
-    // (`.rpg-spell-played`) se pose juste au-dessus des piles de son lanceur,
-    // la carte en petit et son texte à côté — la table reste lisible.
+    // (`.rpg-spell-played`) se pose au milieu du plateau, la carte en petit et
+    // son texte à côté — la table reste lisible autour.
     minuteur.current = window.setTimeout(() => {
       minuteur.current = null;
       poserFiche(null);
     }, 3600);
   };
 
-  /** Le sort du sorcier : même fiche, de son côté, cerclée de rouge. */
+  /** Le sort du sorcier : même fiche au milieu du plateau, cerclée de rouge. */
   const annoncerMagieSorcier = (carte, cible, options = {}) => {
     if (!carte) return;
     annoncerMagie(carte, cible, { ...options, camp: 'sorcier' });
   };
 
   // Le sorcier contre une carte du joueur : sa carte de contre s'affiche au
-  // dessus de SES piles, ciblant la carte défaite. Sans ce bandeau, la carte du
+  // milieu du plateau, ciblant la carte défaite. Sans ce bandeau, la carte du
   // joueur disparaissait sans qu'on sache qui l'avait arrêtée ni avec quoi.
   const annoncerContreSorcier = (res) => {
     const contre = cardById(res.carteContre);
@@ -10328,6 +10332,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             centre de la table pendant 1,5 s, puis s'efface (`AnnonceTour`). */}
         <AnnonceTour annonce={annonceTour} />
         <AnnonceActionJoueur invite={inviteActionJoueur} decalee={Boolean(annonceTour)} />
+        {/* Les sorts qui viennent d'être joués : la fiche rectangulaire se pose
+            au milieu du plateau, que le lanceur soit le joueur (turquoise) ou
+            le sorcier (rouge). Elles vivaient autrefois accrochées aux piles
+            de leur lanceur — au doigt, ces piles sont masquées
+            (`.rpg-battle--touch .rpg-card-piles`), la fiche disparaissait
+            avec elles. Enfant direct de la table, la pile centrale les tient
+            au centre à tous les formats ; quand les deux camps lancent un
+            sort dans la même seconde (un contre, une réponse), les deux
+            fiches s'empilent autour du centre sans se recouvrir. */}
+        {(sortJoue || sortJoueSorcier) && (
+          <div className="rpg-spell-played-stack">
+            {sortJoueSorcier && <SpellAnnouncement annonce={sortJoueSorcier} camp="sorcier" />}
+            {sortJoue && <SpellAnnouncement annonce={sortJoue} />}
+          </div>
+        )}
         {sorcierReflechit && <span className="sr-only" role="status" aria-live="polite">Le sorcier réfléchit à son prochain coup.</span>}
 
         {/* Soins : quand VOS PV remontent, les bords de la table s'éclairent
@@ -10358,8 +10377,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <FaceDownHand count={nbMainAdverse} drawAnimations={piochesSorcier} />
 
         <div className="rpg-card-piles rpg-card-piles--opponent" aria-label="Zones du sorcier">
-          {/* Le sort du sorcier se lit au-dessus de SES piles, cerclé de rouge. */}
-          {sortJoueSorcier && <SpellAnnouncement annonce={sortJoueSorcier} camp="sorcier" />}
           <CardPile count={nbDeckAdverse} label="Paquet" variant="deck" drawing={piochesSorcier.length > 0} drawToken={tokenPiocheSorcier} />
           <CardPile
             count={duel.sorcier.cimetiere.length}
@@ -10774,9 +10791,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         )}
 
         <div className="rpg-card-piles rpg-card-piles--player" aria-label="Vos zones de cartes">
-          {/* La magie qui vient d'être jouée se lit ici, juste au-dessus du
-              cimetière et du paquet : petite carte à gauche, texte à côté. */}
-          {sortJoue && <SpellAnnouncement annonce={sortJoue} />}
           <CardPile
             count={duel.joueur.cimetiere.length}
             label="Cimetière"

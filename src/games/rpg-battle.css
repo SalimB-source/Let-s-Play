@@ -3328,16 +3328,36 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-spell-confirm__rules > span { display: block; }
 .rpg-spell-confirm__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
 
-/* Magie jouée : une fiche compacte, pas un aperçu. Elle se pose juste au-dessus
-   du cimetière et du paquet du joueur (elle est enfant de `.rpg-card-piles`, donc
-   elle suit leurs déplacements à tous les formats) : la carte en petit à gauche,
-   son texte à côté. Aucun voile, aucun flou — la table reste lisible derrière et
-   le jeu continue. `pointer-events: none` : la fiche ne capte aucun geste. */
-.rpg-spell-played {
+/* Magie jouée : une fiche compacte rectangulaire, pas un aperçu. Elle se pose
+   au **milieu du plateau**, quel que soit le lanceur : la carte en petit à
+   gauche, son texte à côté. Aucun voile, aucun flou — la table reste lisible
+   autour et le jeu continue. `pointer-events: none` : ni la pile ni les
+   fiches ne captent un geste.
+   Le conteneur est enfant direct de `.card-table` (plein cadre, contenu
+   centré, comme `.rpg-annonce-tour`) : le centre visé est donc bien celui de
+   la table, à tous les formats — accrochées aux `.rpg-card-piles` de leur
+   lanceur, les fiches vivaient aux coins, et au doigt elles disparaissaient
+   avec ces piles masquées (`rpg-mobile.css`). `z-index: 47` : devant les
+   cartes et les bandeaux de tour (46), sous le choix de mana (48), le voile
+   de fin de duel (49) et l'annonce de sort plein cadre (950) — ce qui prend
+   la scène ou attend un geste reste devant elle. Chaque camp garde sa fiche
+   et son minuteur : quand deux sorts partent dans la même seconde (un
+   contre, une réponse), les deux fiches s'empilent en colonne autour du
+   centre au lieu de se recouvrir au même point. */
+.rpg-spell-played-stack {
   position: absolute;
-  z-index: 6;
-  bottom: calc(100% + 10px);
-  left: 0;
+  z-index: 47;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  pointer-events: none;
+}
+.rpg-spell-played {
+  flex: none;
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr);
   align-items: center;
@@ -3366,30 +3386,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-color: rgba(255, 158, 100, .9);
   box-shadow: 0 12px 30px rgba(0, 0, 0, .65), 0 0 18px rgba(255, 140, 80, .3), inset 0 1px rgba(255, 255, 255, .1);
 }
-/* Le sort du sorcier : même fiche, posée **sous** SES piles et cerclée de
-   rouge. Le rouge est celui de l'adversaire partout dans le duel (sa plaque,
-   la lueur de visée) : on sait qui a lancé le sort sans lire une ligne. Le
-   contre et la seconde vague gardent leur sur-titre, mais l'anneau reste rouge
-   — c'est le camp du lanceur qui parle d'abord.
-   La colonne de droite est celle de l'adversaire : son paquet et son cimetière
-   ouvrent le haut de la table, le rail du tour — « À VOTRE TOUR » / « TOUR DU
-   SORCIER » — la referme en bas. La fiche se glisse donc dans le vide entre les
-   deux, alignée sous son deck, au lieu de déborder au-dessus de la table. */
+/* Le sort du sorcier : même fiche, au même endroit — le milieu du plateau —,
+   même gabarit que celle du joueur, mais cerclée de rouge. Le rouge est celui
+   de l'adversaire partout dans le duel (sa plaque, la lueur de visée) : on
+   sait qui a lancé le sort sans lire une ligne, et le sur-titre le confirme
+   (« SORT DU SORCIER »). Le contre et la seconde vague gardent leur
+   sur-titre, mais l'anneau reste rouge — c'est le camp du lanceur qui parle
+   d'abord. La fiche du sorcier n'a plus son ancien gabarit réduit : il ne
+   tenait qu'à la place étroite sous ses piles, le centre de la table offre
+   aux deux camps la même fenêtre. */
 .rpg-spell-played--sorcier {
-  top: calc(100% + 8px);
-  right: 0;
-  bottom: auto;
-  left: auto;
-  grid-template-columns: 46px minmax(0, 1fr);
-  min-height: 74px;
-  padding: 6px 10px 6px 6px;
   border-color: rgba(255, 118, 92, .92);
   background: linear-gradient(120deg, rgba(38, 12, 12, .96), rgba(20, 10, 11, .95));
   box-shadow: 0 12px 30px rgba(0, 0, 0, .65), 0 0 18px rgba(255, 84, 60, .32), inset 0 1px rgba(255, 255, 255, .1);
 }
 .rpg-spell-played--sorcier .rpg-spell-played__art {
-  width: 46px;
-  height: 58px;
   border-color: #ff7a60;
 }
 .rpg-spell-played--sorcier .rpg-spell-played__eyebrow { color: #ff9d86; }
