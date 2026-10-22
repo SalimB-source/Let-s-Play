@@ -2,10 +2,10 @@
  * Les crédits du Sablier — le portefeuille du Souk.
  *
  * Une seule monnaie pour ce chantier : **les crédits (◈)**. Ils viennent du jeu
- * (quêtes du jour, victoires d'étage, parties libres), se dépensent au Souk
- * (boosters) et se remboursent en doublons. Le module est écrit comme un
- * portefeuille à plusieurs devises — `{ credits, sable }` un jour — mais **seuls
- * les crédits sont ouverts** : le sable du dossier `04-progression-da.md`
+ * (quêtes du jour, victoires d'étage, butins de tour, parties libres), se
+ * dépensent au Souk (boosters) et se remboursent en doublons. Le module est
+ * écrit comme un portefeuille à plusieurs devises — `{ credits, sable }` un
+ * jour — mais **seuls les crédits sont ouverts** : le sable du dossier `04-progression-da.md`
  * (place sur la Liste, forge, rachat de Nom) mérite son propre chantier.
  *
  * Trois invariants, ceux de la maison :
@@ -25,6 +25,7 @@
 import { cardById, cardRarityInfo } from './rpgCards.js';
 import { rayonParId } from './rpgBoosters.js';
 import { normaliserCollection } from './rpgCollection.js';
+import { tourHistoireParId } from './rpgStoryTours.js';
 import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 
 /**
@@ -67,6 +68,10 @@ export const GAINS = Object.freeze({
   etagePremiere: 50,
   /** Étage déjà déblayé, regagné : le jeu paie le duel, pas le farm. */
   etageRejoue: 10,
+  /** Le butin de la tour : tous ses étages déblayés. Plus gros que n'importe
+   *  quel étage — c'est le sommet qui paie — mais versé **une fois par tour** :
+   *  `toursPayees` le retient, comme `tutoriels` retient les leçons payées. */
+  tourTerminee: 200,
   /** Partie libre gagnée, sans étage : de quoi entretenir la boucle. */
   duelLibre: 8,
   /** Le Cachet du cycle : les trois quêtes du jour terminées. */
@@ -77,9 +82,10 @@ export const GAINS = Object.freeze({
 
 /** Le portefeuille d'un joueur neuf. `tutoriels` retient les leçons dont la
  *  récompense a déjà été encaissée : une leçon se rejoue, mais ne se paie
- *  qu'une fois. */
+ *  qu'une fois. `toursPayees` retient de même les tours dont le butin a déjà
+ *  été versé : les étages se rejouent, le butin ne tombe qu'une fois. */
 export function portefeuilleVide() {
-  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], tutoriels: [], majLe: null };
+  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], tutoriels: [], toursPayees: [], majLe: null };
 }
 
 /** Entier positif ou nul, quelle que soit l'entrée (chaîne, `NaN`, négatif). */
@@ -103,6 +109,7 @@ export function normaliserPortefeuille(value) {
     pitie: entierPositif(brut.pitie),
     journal: normaliserJournal(brut.journal),
     tutoriels: normaliserTutoriels(brut.tutoriels),
+    toursPayees: normaliserToursPayees(brut.toursPayees),
     majLe: typeof brut.majLe === 'string' ? brut.majLe : null,
   };
 }
@@ -116,6 +123,22 @@ export function normaliserTutoriels(value) {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.filter((id) => typeof id === 'string' && id.trim()).map((id) => id.trim()))]
     .slice(0, 40);
+}
+
+/**
+ * Les identifiants de tours dont le butin a déjà été versé : des chaînes non
+ * vides **connues du catalogue des tours**, sans doublon. Même mémoire petite
+ * et tolérante que les leçons — les anciennes sauvegardes n'avaient pas le
+ * champ, une tour retirée du catalogue un jour ne bloque rien.
+ */
+export function normaliserToursPayees(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(
+    value
+      .filter((id) => typeof id === 'string' && id.trim())
+      .map((id) => id.trim())
+      .filter((id) => tourHistoireParId(id)),
+  )].slice(0, 40);
 }
 
 /**
@@ -231,6 +254,69 @@ export function reclamerRecompenseTutoriel(portefeuille, tutorielId, montant) {
 }
 
 /**
+ * Encaisse le **butin d'une tour terminée** — tous ses étages déblayés. Une
+ * tour ne paie qu'une fois : `toursPayees` porte les identifiants déjà réglés,
+ * et la fusion entre appareils en fait l'union. Rend `{ ok, portefeuille, gain,
+ * raison }` : `'tour-inconnue'` pour un identifiant hors catalogue,
+ * `'deja-payee'` quand le butin est déjà en poche — un refus rend le
+ * portefeuille normalisé, jamais crédité.
+ */
+export function reclamerButinTour(portefeuille, tourId, montant = GAINS.tourTerminee) {
+  const base = normaliserPortefeuille(portefeuille);
+  const id = typeof tourId === 'string' ? tourId.trim() : '';
+  if (!id || !tourHistoireParId(id)) return { ok: false, raison: 'tour-inconnue', portefeuille: base, gain: 0 };
+  if (base.toursPayees.includes(id)) return { ok: false, raison: 'deja-payee', portefeuille: base, gain: 0 };
+  const paiement = crediterCredits(base, montant);
+  if (!paiement.gain) return { ok: false, raison: 'montant-invalide', portefeuille: base, gain: 0 };
+  return {
+    ok: true,
+    raison: null,
+    gain: paiement.gain,
+    portefeuille: { ...paiement.portefeuille, toursPayees: [...base.toursPayees, id] },
+  };
+}
+
+/**
+ * L'affiche des gains d'une tour — ce que le menu des Tours promet et ce que
+ * le joueur a déjà en poche. Chaque étage porte son barème (le premier
+ * déblayage paie, le rejeu paie moins), le sommet porte le butin, et les
+ * totaux se lisent sans calcul d'écran :
+ *
+ * `{ tourId, etages: [{ id, premiere, rejoue, gagne }], butin, butinGagne,
+ *    total, dejaGagne, reste, complete }`
+ *
+ * `etagesVaincus` vient de la progression Histoire (`rpgStory.js`),
+ * `toursPayees` du portefeuille. Les deux sont tolérants : absents, ils disent
+ * simplement « rien de gagné ». Une tour inconnue rend `null`.
+ */
+export function gainsDeTour(tourId, { etagesVaincus = null, toursPayees = null } = {}) {
+  const tour = tourHistoireParId(tourId);
+  if (!tour) return null;
+  const vaincus = new Set(Array.isArray(etagesVaincus) ? etagesVaincus : []);
+  const etages = tour.etages.map((etage) => ({
+    id: etage.id,
+    premiere: GAINS.etagePremiere,
+    rejoue: GAINS.etageRejoue,
+    gagne: vaincus.has(etage.id),
+  }));
+  const butin = GAINS.tourTerminee;
+  const butinGagne = normaliserToursPayees(toursPayees).includes(tour.id);
+  const dejaGagne = etages.filter((etage) => etage.gagne).length * GAINS.etagePremiere
+    + (butinGagne ? butin : 0);
+  const total = etages.length * GAINS.etagePremiere + butin;
+  return {
+    tourId: tour.id,
+    etages,
+    butin,
+    butinGagne,
+    total,
+    dejaGagne,
+    reste: Math.max(0, total - dejaGagne),
+    complete: etages.length > 0 && etages.every((etage) => etage.gagne),
+  };
+}
+
+/**
  * Dépense un montant. Rend `{ ok, portefeuille, raison }` : `'solde-insuffisant'`
  * quand il manque des crédits, `'montant-invalide'` pour un prix nul ou négatif.
  * Un refus rend le portefeuille normalisé, jamais amputé.
@@ -308,6 +394,7 @@ export function fusionnerPortefeuilles(local, distant) {
     // trie et borne, donc deux appareils ne peuvent pas faire enfler la mémoire.
     journal: normaliserJournal([...ici.journal, ...la.journal]),
     tutoriels: normaliserTutoriels([...ici.tutoriels, ...la.tutoriels]),
+    toursPayees: normaliserToursPayees([...ici.toursPayees, ...la.toursPayees]),
     majLe: (ici.majLe ?? '') >= (la.majLe ?? '') ? ici.majLe : la.majLe,
   };
   const modifie = JSON.stringify(fusion) !== JSON.stringify(ici);

@@ -207,13 +207,15 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
 
   /**
    * Applique un événement du duel : le solde s'il paie, les quêtes du jour
-   * toujours. Rend `{ gain, evenement, reconnu }` — `gain` est ce que le duel
-   * peut annoncer, `reconnu` dit si le geste fait partie du contrat.
+   * toujours. Rend `{ gain, butin, evenement, reconnu }` — `gain` est ce que le
+   * duel peut annoncer (butin compris), `butin` isole le butin de la tour
+   * terminée pour l'annonce de fin de duel, `reconnu` dit si le geste fait
+   * partie du contrat.
    */
   const noterEvenementDuel = useCallback((evenement) => {
     const avant = etatRef.current;
     const suite = appliquerEvenementDuel(avant, evenement);
-    if (!suite.reconnu) return { gain: 0, evenement: null, reconnu: false };
+    if (!suite.reconnu) return { gain: 0, butin: 0, evenement: null, reconnu: false };
     // Les deux modules rendent leur entrée **telle quelle** quand rien ne bouge :
     // la comparaison de références suffit donc, et un geste sans effet (poser un
     // terrain quand aucune quête ne l'écoute) ne fait pas re-rendre l'écran.
@@ -221,7 +223,7 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
       appliquer(normaliserPortefeuille(suite.bourse), normaliserEtatQuetes(suite.quetes));
       pousser();
     }
-    return { gain: suite.gain, evenement: suite.evenement, reconnu: true };
+    return { gain: suite.gain, butin: suite.butin ?? 0, evenement: suite.evenement, reconnu: true };
   }, [appliquer, pousser]);
 
   /**

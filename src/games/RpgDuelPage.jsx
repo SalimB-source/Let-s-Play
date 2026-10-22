@@ -99,7 +99,7 @@ import RpgSouk from './RpgSouk.jsx';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
-import { creditsLisible } from './rpgCredits.js';
+import { GAINS, creditsLisible, gainsDeTour } from './rpgCredits.js';
 import {
   appliquerManaInitialTutoriel,
   preparerDuelTutoriel,
@@ -3884,6 +3884,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 {(() => {
                   const tourLibre = tourHistoireParId(tourLibreOuverteId);
                   const resumeLibre = resumeTourHistoire(tourLibre.id, progressionHistoire);
+                  // L'affiche des gains de la tour : le barème de chaque étage,
+                  // le butin du sommet, et ce qui est déjà en poche.
+                  const gainsLibre = gainsDeTour(tourLibre.id, {
+                    etagesVaincus: progressionHistoire?.etagesVaincus,
+                    toursPayees: portefeuille?.toursPayees,
+                  });
                   return (
                     <section key={tourLibre.id} className="rpg-story-tour">
                       <header className="rpg-story-tour__header">
@@ -3897,6 +3903,22 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       <div className="rpg-story-tour__progress" aria-hidden="true">
                         <span style={{ width: `${resumeLibre.total ? (resumeLibre.vaincus / resumeLibre.total) * 100 : 0}%` }} />
                       </div>
+                      {gainsLibre && (
+                        <div className="rpg-story-tour__gains" data-tour-butin={tourLibre.id} data-butin-gagne={gainsLibre.butinGagne ? 'oui' : 'non'}>
+                          <span className="rpg-story-tour__gains-total">
+                            <RpgCreditIcon />
+                            <b>{creditsLisible(gainsLibre.dejaGagne)}</b> / {creditsLisible(gainsLibre.total)} crédits gagnés sur cette tour
+                          </span>
+                          <span className={`rpg-story-tour__gains-butin${gainsLibre.butinGagne ? ' is-gagne' : gainsLibre.complete ? ' is-due' : ''}`}>
+                            <b>Butin de la tour : +{creditsLisible(gainsLibre.butin)} crédits</b>
+                            {gainsLibre.butinGagne
+                              ? ' — encaissé ✓'
+                              : gainsLibre.complete
+                                ? ' — tous les étages sont déblayés : il tombera à votre prochaine victoire ici'
+                                : ' — versé quand tous les étages seront déblayés'}
+                          </span>
+                        </div>
+                      )}
                       <ul className="rpg-story-tour__floors">
                         {tourLibre.etages.map((etage, index) => {
                           const vaincu = etageEstVaincu(progressionHistoire, etage.id);
@@ -3917,6 +3939,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                                 </span>
                                 <span className="rpg-story-floor__badge">
                                   {vaincu ? 'déblayé' : debloque ? `puissance ${etage.puissance}` : 'verrouillé'}
+                                </span>
+                                <span className="rpg-story-floor__gain" data-etage-gain={etage.id}>
+                                  <RpgCreditIcon />
+                                  {vaincu
+                                    ? <>+{creditsLisible(GAINS.etagePremiere)} crédits gagnés · rejeu +{creditsLisible(GAINS.etageRejoue)}</>
+                                    : <>+{creditsLisible(GAINS.etagePremiere)} crédits au premier déblayage</>}
                                 </span>
                               </button>
                             </li>
@@ -3954,6 +3982,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <div className="rpg-story__tours">
                   {RPG_STORY_TOURS.map((tour) => {
                     const resume = resumeTourHistoire(tour.id, progressionHistoire);
+                    // Ce que la tour rapporte — étages et butin du sommet — et
+                    // ce qui est déjà en poche : les deux se lisent sur la carte.
+                    const gains = gainsDeTour(tour.id, {
+                      etagesVaincus: progressionHistoire?.etagesVaincus,
+                      toursPayees: portefeuille?.toursPayees,
+                    });
                     return (
                       <button
                         key={tour.id}
@@ -3968,6 +4002,18 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                           <span className="rpg-mode-menu__eyebrow">{resume.vaincus} / {resume.total} ÉTAGES DÉBLAYÉS</span>
                           <strong className="rpg-story-tower__name">{tour.nom}</strong>
                           <small className="rpg-story-tower__resume">{tour.resume}</small>
+                          {gains && (
+                            <span
+                              className={`rpg-story-tower__loot${gains.reste === 0 ? ' is-complet' : ''}`}
+                              data-tour-gains={tour.id}
+                              data-gains-gagnes={gains.dejaGagne}
+                              data-gains-total={gains.total}
+                            >
+                              <RpgCreditIcon />
+                              <b>{creditsLisible(gains.dejaGagne)}</b> / {creditsLisible(gains.total)} crédits gagnés
+                              {gains.reste > 0 && <small>encore {creditsLisible(gains.reste)} à gagner</small>}
+                            </span>
+                          )}
                           <span className="rpg-story-tower__progress" aria-hidden="true">
                             <span style={{ width: `${resume.total ? (resume.vaincus / resume.total) * 100 : 0}%` }} />
                           </span>
@@ -5035,8 +5081,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // déblayage, 10 ◈ au rejeu). Les deux événements du contrat font avancer
     // les quêtes du jour ; `etage-deblaye` porte la garde « premier déblayage »
     // de la quête du palier suivant, et c'est `duel-gagne` qui paie.
+    // La victoire raconte aussi l'état de la tour APRÈS le déblayage : si plus
+    // aucun étage ne résiste, le butin de la tour (+200 ◈) tombe avec le gain
+    // du duel — une fois par tour, la garde vit dans le portefeuille.
+    const sommet = tourId ? resumeTourHistoire(tourId, maj) : null;
+    const tourComplete = Boolean(sommet && sommet.total > 0 && sommet.vaincus >= sommet.total);
     noterVictoireEtage(histoireEtageId, maj);
-    noterEvenementDuel({ type: 'duel-gagne', mode: 'histoire', etageId: histoireEtageId, tourId, premiere });
+    const paiement = noterEvenementDuel({ type: 'duel-gagne', mode: 'histoire', etageId: histoireEtageId, tourId, premiere, tourComplete });
+    if (paiement?.gain) {
+      setAnnonceGain({ session, gain: paiement.gain, butin: paiement.butin ?? 0, premiere, libre: false });
+    }
     if (premiere) noterEvenementDuel({ type: 'etage-deblaye', etageId: histoireEtageId, tourId, premiere: true });
     if (campagne) {
       annulerMinuteriesDuTour();
@@ -5057,7 +5111,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const session = sessionDuelRef.current;
     if (libreVictoireMarqueeRef.current === session) return;
     libreVictoireMarqueeRef.current = session;
-    noterEvenementDuel({ type: 'duel-gagne', mode: 'libre', premiere: false });
+    const paiement = noterEvenementDuel({ type: 'duel-gagne', mode: 'libre', premiere: false });
+    if (paiement?.gain) {
+      setAnnonceGain({ session, gain: paiement.gain, butin: 0, premiere: false, libre: true });
+    }
   });
 
   // « Le sorcier saigne » se compte sur les **PV du sorcier**, pas au point
@@ -5160,10 +5217,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   });
   // Le mana sans terrain est commun à tous les duels : les récompenses
   // et les quêtes ne sont plus exclues sur le seul critère du format.
+  // Le rendu du duel-gagne (gain de l'étage, butin de la tour) remonte à
+  // l'écran : l'overlay de victoire l'annonce, session par session.
   const noterEvenementDuel = (evenement) => {
-    if (modePvp) return;
-    noterEvenementDuelReel(evenement);
+    if (modePvp) return null;
+    return noterEvenementDuelReel(evenement);
   };
+  // Ce que la dernière victoire vient de payer — `{ session, gain, butin,
+  // premiere, libre }`. Elle ne s'affiche que sur la session qui l'a produite :
+  // « Rejouer » ou « Étage suivant » incrémente la session et l'annonce tombe.
+  const [annonceGain, setAnnonceGain] = useState(null);
   const histoireVictoireMarqueeRef = useRef(null);
   // Un duel libre ne passe pas par la session du récit : il a son propre témoin.
   const libreVictoireMarqueeRef = useRef(null);
@@ -11181,6 +11244,26 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       ? 'Bab El respire : le cycle tient encore un soir.'
                       : 'Le sable recouvre votre Nom. L’Astrolabe sonne pour quelqu’un d’autre.'}
             </p>
+            {/* Ce que la victoire vient de payer : le gain de l'étage (ou du
+                duel libre), et le butin de la tour quand cette victoire l'a
+                terminée. L'annonce ne vit que pour la session en cours —
+                « Rejouer » l'emporte avec l'ancien duel. */}
+            {!modePvp && vainqueur === 'joueur' && annonceGain && annonceGain.session === sessionDuelRef.current && (
+              <p className="rpg-overlay__gains" role="status" data-victoire-gain={annonceGain.gain} data-victoire-butin={annonceGain.butin}>
+                <span className="rpg-overlay__gain">
+                  <RpgCreditIcon />
+                  +{creditsLisible(annonceGain.gain - annonceGain.butin)} crédits — {annonceGain.libre
+                    ? 'duel libre gagné'
+                    : annonceGain.premiere ? 'premier déblayage de l’étage' : 'étage rejoué'}
+                </span>
+                {annonceGain.butin > 0 && (
+                  <span className="rpg-overlay__gain rpg-overlay__gain--butin">
+                    <RpgCreditIcon anime />
+                    +{creditsLisible(annonceGain.butin)} crédits — butin de la tour terminée !
+                  </span>
+                )}
+              </p>
+            )}
             {modePvp ? (
               <div className="rpg-overlay__actions">
                 <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => pvp?.onQuitter?.()}>

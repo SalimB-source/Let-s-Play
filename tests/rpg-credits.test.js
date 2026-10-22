@@ -13,13 +13,17 @@ import {
   depenserCredits,
   enregistrerOuverture,
   fusionnerPortefeuilles,
+  gainsDeTour,
   normaliserJournal,
   normaliserPortefeuille,
+  normaliserToursPayees,
   noterOuvertureJournal,
   paquetsAvantMythique,
   portefeuilleVide,
+  reclamerButinTour,
   sauverPortefeuille,
 } from '../src/games/rpgCredits.js';
+import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
 
 /** Remplace `localStorage` le temps d'un test, puis le rétablit. */
 function avecStockage(stockage, test) {
@@ -77,6 +81,97 @@ test('le remboursement des doublons suit le barème, carte inconnue comprise', (
   for (const [rarete, montant] of Object.entries(BAREME_DOUBLON)) {
     assert.ok(montant > 0, `le barème paie la ${rarete}`);
   }
+});
+
+// ── Le butin des tours ───────────────────────────────────────────────────────
+
+test('le barème promet un butin de tour plus gros qu’un étage', () => {
+  assert.equal(GAINS.tourTerminee, 200);
+  assert.ok(GAINS.tourTerminee > GAINS.etagePremiere, 'le sommet paie mieux qu’un premier déblayage');
+});
+
+test('le butin d’une tour se verse une fois, et jamais pour une tour inconnue', () => {
+  const depart = portefeuille(100);
+  const premier = reclamerButinTour(depart, 'tour-des-listes');
+  assert.equal(premier.ok, true);
+  assert.equal(premier.gain, GAINS.tourTerminee);
+  assert.equal(premier.portefeuille.credits, 100 + GAINS.tourTerminee);
+  assert.deepEqual(premier.portefeuille.toursPayees, ['tour-des-listes'], 'la tour réglée est retenue');
+
+  const second = reclamerButinTour(premier.portefeuille, 'tour-des-listes');
+  assert.equal(second.ok, false);
+  assert.equal(second.raison, 'deja-payee');
+  assert.equal(second.gain, 0);
+  assert.equal(second.portefeuille.credits, 300, 'un refus ne crédite rien');
+
+  const inconnue = reclamerButinTour(depart, 'tour-qui-nexiste-pas');
+  assert.equal(inconnue.ok, false);
+  assert.equal(inconnue.raison, 'tour-inconnue');
+  assert.equal(inconnue.gain, 0);
+  assert.equal(reclamerButinTour(depart, null).raison, 'tour-inconnue');
+  assert.equal(reclamerButinTour(depart, '  tour-du-souk  ').ok, true, 'l’identifiant est nettoyé');
+});
+
+test('toursPayees se normalise comme les leçons : tours connues, sans doublon', () => {
+  assert.deepEqual(portefeuilleVide().toursPayees, [], 'un joueur neuf n’a aucun butin encaissé');
+  assert.deepEqual(normaliserToursPayees('pas un tableau'), []);
+  assert.deepEqual(
+    normaliserToursPayees(['tour-du-souk', 'tour-du-souk', 'tour-fantome', 42, null, ' tour-des-sables ']),
+    ['tour-du-souk', 'tour-des-sables'],
+    'une tour hors catalogue ne passe pas, les doublons non plus',
+  );
+  const lu = normaliserPortefeuille({ credits: 10, toursPayees: ['tour-du-fjord', 'inconnue'] });
+  assert.deepEqual(lu.toursPayees, ['tour-du-fjord']);
+});
+
+test('la fusion des appareils unit les butins déjà versés', () => {
+  const ici = portefeuille(300, { toursPayees: ['tour-des-listes'] });
+  const la = portefeuille(250, { toursPayees: ['tour-du-souk'] });
+  const fusion = fusionnerPortefeuilles(ici, la).portefeuille;
+  assert.deepEqual(fusion.toursPayees, ['tour-des-listes', 'tour-du-souk'], 'l’union — un butin payé ailleurs reste payé');
+  assert.equal(reclamerButinTour(fusion, 'tour-des-listes').raison, 'deja-payee');
+  assert.equal(reclamerButinTour(fusion, 'tour-du-souk').raison, 'deja-payee');
+  assert.equal(reclamerButinTour(fusion, 'tour-des-sables').ok, true);
+});
+
+test('gainsDeTour affiche le barème de chaque étage, le butin et ce qui est en poche', () => {
+  for (const tour of RPG_STORY_TOURS) {
+    const affiche = gainsDeTour(tour.id);
+    assert.equal(affiche.total, tour.etages.length * GAINS.etagePremiere + GAINS.tourTerminee,
+      `${tour.nom} : le total promet chaque étage au premier déblayage, plus le butin`);
+    assert.equal(affiche.dejaGagne, 0, 'rien de gagné sans progression');
+    assert.equal(affiche.reste, affiche.total);
+    assert.equal(affiche.complete, false);
+    assert.equal(affiche.butinGagne, false);
+    assert.equal(affiche.etages.length, tour.etages.length);
+    for (const etage of affiche.etages) {
+      assert.equal(etage.premiere, GAINS.etagePremiere);
+      assert.equal(etage.rejoue, GAINS.etageRejoue);
+      assert.equal(etage.gagne, false);
+    }
+  }
+
+  const souk = RPG_STORY_TOURS.find((tour) => tour.id === 'tour-du-souk');
+  const deuxEtages = souk.etages.slice(0, 2).map((etage) => etage.id);
+  const enRoute = gainsDeTour('tour-du-souk', { etagesVaincus: deuxEtages });
+  assert.equal(enRoute.dejaGagne, 2 * GAINS.etagePremiere);
+  assert.equal(enRoute.reste, enRoute.total - enRoute.dejaGagne);
+  assert.equal(enRoute.complete, false);
+  assert.equal(enRoute.etages.filter((etage) => etage.gagne).length, 2);
+
+  const tout = souk.etages.map((etage) => etage.id);
+  const finie = gainsDeTour('tour-du-souk', { etagesVaincus: tout, toursPayees: ['tour-du-souk'] });
+  assert.equal(finie.complete, true);
+  assert.equal(finie.butinGagne, true);
+  assert.equal(finie.dejaGagne, finie.total, 'tout est gagné : étages et butin');
+  assert.equal(finie.reste, 0);
+
+  const finieNonPayee = gainsDeTour('tour-du-souk', { etagesVaincus: tout });
+  assert.equal(finieNonPayee.complete, true);
+  assert.equal(finieNonPayee.butinGagne, false, 'une tour complète d’avant le butin l’affiche encore à gagner');
+  assert.equal(finieNonPayee.dejaGagne, tout.length * GAINS.etagePremiere);
+
+  assert.equal(gainsDeTour('tour-fantome'), null, 'une tour inconnue n’affiche rien');
 });
 
 test('créditer encaisse un montant valable, ignore le reste', () => {

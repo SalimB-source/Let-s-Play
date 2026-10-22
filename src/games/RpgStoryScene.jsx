@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cardById } from './rpgCards.js';
 import { cartesReveleesParEtage } from './rpgCollection.js';
+import { GAINS } from './rpgCredits.js';
 import { rpgSorcierPv } from './rpgDuel.js';
 import { etageHistoireParId } from './rpgStoryTours.js';
 import { acteCourantRecit, cleCurseurRecit } from './rpgStoryFlow.js';
@@ -313,7 +314,13 @@ export default function RpgStoryScene({
   const scene = sceneActive;
   const curseurActif = curseurActifLecture;
   const etageId = scene?.etageId ?? curseur.etageId;
-  const etage = etageHistoireParId(etageId)?.etage;
+  const contexteEtage = etageHistoireParId(etageId);
+  const etage = contexteEtage?.etage;
+  // Ce que paie ce duel : l'étage (premier déblayage ou rejeu), et le butin de
+  // la tour quand cet étage est le dernier debout — la victoire le ferait tomber.
+  const etageDejaVaincu = (etagesVaincus ?? []).includes(etageId);
+  const butinEnJeu = Boolean(contexteEtage && !etageDejaVaincu
+    && contexteEtage.tour.etages.every((autre) => autre.id === etageId || (etagesVaincus ?? []).includes(autre.id)));
   const ligne = scene?.repliques[curseurActif.replique];
   const personnageId = curseur.type === 'fin' ? 'salem'
     : !scene && curseur.type === 'duel' ? personnageEtage(etageId)
@@ -519,6 +526,15 @@ export default function RpgStoryScene({
                   <dl className="rpg-narrative__duel-stats">
                     <div><dt>Adversaire</dt><dd data-story-duel-hp>{pvAdversaire} PV · puissance {etage?.puissance}</dd></div>
                     <div><dt>Profil tactique</dt><dd data-story-duel-profile>{styleAdversaire} · {niveauAdversaire}</dd></div>
+                    <div>
+                      <dt>Ce que gagne ce duel</dt>
+                      <dd data-story-duel-gain={etageDejaVaincu ? 'rejoue' : 'premiere'}>
+                        {etageDejaVaincu
+                          ? `+${GAINS.etageRejoue} crédits — étage déjà déblayé`
+                          : `+${GAINS.etagePremiere} crédits — premier déblayage`}
+                        {butinEnJeu && ` · butin de la tour : +${GAINS.tourTerminee} crédits`}
+                      </dd>
+                    </div>
                     <div>
                       <dt>Votre deck</dt>
                       <dd>
