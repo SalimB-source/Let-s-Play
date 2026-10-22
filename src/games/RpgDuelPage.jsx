@@ -3093,6 +3093,10 @@ function writeRpgVolumePref(key, value) {
 function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
+  const [catalogueRarete, setCatalogueRarete] = useState('toutes');
+  const [catalogueCollection, setCatalogueCollection] = useState('toutes');
+  const [catalogueCout, setCatalogueCout] = useState('tous');
+  const [catalogueRecherche, setCatalogueRecherche] = useState('');
   const [openDeckId, setOpenDeckId] = useState(null);
   const [deckCouleur, setDeckCouleur] = useState('toutes');
   const [confirmation, setConfirmation] = useState(null);
@@ -3157,11 +3161,55 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // Le Catalogue est une encyclopédie : il montre vraiment toutes les cartes,
   // y compris les terrains et les cartes archivées hors du format de deck.
   // L’atelier, lui, conserve son filtre de jouabilité.
+  const rechercheCatalogueNormalisee = catalogueRecherche
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('fr');
+  const filtresCatalogueActifs = Boolean(rechercheCatalogueNormalisee)
+    || catalogueCouleur !== 'toutes'
+    || catalogueType !== 'tous'
+    || catalogueRarete !== 'toutes'
+    || catalogueCollection !== 'toutes'
+    || catalogueCout !== 'tous';
+  const reinitialiserFiltresCatalogue = () => {
+    setCatalogueCouleur('toutes');
+    setCatalogueType('tous');
+    setCatalogueRarete('toutes');
+    setCatalogueCollection('toutes');
+    setCatalogueCout('tous');
+    setCatalogueRecherche('');
+  };
   const cartesCatalogue = RPG_DUEL_CARDS.filter((carte) => {
     const colors = cardColors(carte);
     const couleurCorrespond = catalogueCouleur === 'toutes'
       || (catalogueCouleur === 'hybride' ? colors.length > 1 : colors.includes(catalogueCouleur));
-    return couleurCorrespond && (catalogueType === 'tous' || carte.kind === catalogueType);
+    const rareteCorrespond = catalogueRarete === 'toutes' || cardRarityInfo(carte).key === catalogueRarete;
+    const estPossedee = possedeCarte(collection, carte.id);
+    const collectionCorrespond = catalogueCollection === 'toutes'
+      || (catalogueCollection === 'possedees' ? estPossedee : !estPossedee);
+    const cout = Number(carte.cost);
+    const coutCorrespond = catalogueCout === 'tous'
+      || (catalogueCout === 'terrain' ? carte.kind === 'terrain'
+        : carte.kind !== 'terrain' && (catalogueCout === '0-2' ? cout <= 2
+          : catalogueCout === '3-4' ? cout >= 3 && cout <= 4
+            : cout >= 5));
+    const texteCarte = [
+      carte.name,
+      carte.typeLine,
+      carte.text,
+      carte.element,
+      ...colors,
+      carteFamille(carte),
+      cardRarityInfo(carte).label,
+    ].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr');
+    const rechercheCorrespond = !rechercheCatalogueNormalisee || texteCarte.includes(rechercheCatalogueNormalisee);
+    return couleurCorrespond
+      && (catalogueType === 'tous' || carte.kind === catalogueType)
+      && rareteCorrespond
+      && collectionCorrespond
+      && coutCorrespond
+      && rechercheCorrespond;
   });
   // Voile noir volontairement léger : le keyart de Bab El reste lisible derrière
   // les menus, le côté gauche garde assez d'ombre pour porter les textes.
@@ -3853,7 +3901,17 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <p>Parcourez les créatures, héros, terrains, magies et armes de Bab El — cliquez une carte pour l’ouvrir en grand, illustration et effets.</p>
               </div>
             </header>
-            <div className="rpg-card-catalogue__filters" aria-label="Filtres du catalogue">
+            <div className="rpg-card-catalogue__filters" aria-label="Recherche et filtres du catalogue">
+              <label className="rpg-card-catalogue__search">
+                <span>Recherche</span>
+                <input
+                  type="search"
+                  aria-label="Rechercher dans le catalogue"
+                  placeholder="Nom, capacité, élément…"
+                  value={catalogueRecherche}
+                  onChange={(event) => setCatalogueRecherche(event.target.value)}
+                />
+              </label>
               <label>
                 <span>Couleur</span>
                 <select aria-label="Filtrer par couleur" value={catalogueCouleur} onChange={(event) => { play('menu'); setCatalogueCouleur(event.target.value); }}>
@@ -3873,10 +3931,47 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <option value="creature">Créatures</option>
                   <option value="hero">Héros</option>
                   <option value="terrain">Terrains</option>
+                  <option value="site">Sites</option>
                   <option value="magie">Magies</option>
                   <option value="arme">Armes</option>
                 </select>
               </label>
+              <label>
+                <span>Rareté</span>
+                <select aria-label="Filtrer par rareté" value={catalogueRarete} onChange={(event) => { play('menu'); setCatalogueRarete(event.target.value); }}>
+                  <option value="toutes">Toutes les raretés</option>
+                  <option value="commune">Commune</option>
+                  <option value="inhabituelle">Inhabituelle</option>
+                  <option value="rare">Rare</option>
+                  <option value="mythique">Mythique</option>
+                </select>
+              </label>
+              <label>
+                <span>Coût</span>
+                <select aria-label="Filtrer par coût" value={catalogueCout} onChange={(event) => { play('menu'); setCatalogueCout(event.target.value); }}>
+                  <option value="tous">Tous les coûts</option>
+                  <option value="terrain">Terrains (sans coût)</option>
+                  <option value="0-2">0 à 2</option>
+                  <option value="3-4">3 à 4</option>
+                  <option value="5+">5 et plus</option>
+                </select>
+              </label>
+              <label>
+                <span>Collection</span>
+                <select aria-label="Filtrer selon ma collection" value={catalogueCollection} onChange={(event) => { play('menu'); setCatalogueCollection(event.target.value); }}>
+                  <option value="toutes">Toutes les cartes</option>
+                  <option value="possedees">Possédées</option>
+                  <option value="manquantes">À découvrir</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                className="rpg-card-catalogue__reset"
+                disabled={!filtresCatalogueActifs}
+                onClick={() => { play('menu'); reinitialiserFiltresCatalogue(); }}
+              >
+                Réinitialiser
+              </button>
               <p className="rpg-card-catalogue__count" aria-live="polite">
                 {cartesCatalogue.length} / {RPG_DUEL_CARDS.length} carte{RPG_DUEL_CARDS.length === 1 ? '' : 's'}
               </p>
