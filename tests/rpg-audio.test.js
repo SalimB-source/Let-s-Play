@@ -21,8 +21,8 @@ test('hz : le la de référence et ses voisins', () => {
 test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
     'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw', 'card_place',
-    'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'hover', 'page_turn',
-    'player_attack_hit', 'victoire', 'water_wave',
+    'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'hover',
+    'navire_arrivee', 'page_turn', 'pirate_arrivee', 'player_attack_hit', 'victoire', 'water_wave',
   ].sort(), 'le son du duel = la synthèse du survol + les échantillons de la table');
   for (const name of RPG_SFX_NAMES) {
     const sequence = rpgSfx(name);
@@ -31,11 +31,22 @@ test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.equal(rpgSfx('silence-total'), null);
 });
 
-test('l’abordage joue la voix pirate « Ahoy ! » fournie, livrée avec le jeu', () => {
+test('l’abordage joue le cliquetis de chaînes fourni, livré avec le jeu', () => {
   assert.ok(RPG_SFX_NAMES.includes('abordage'));
-  assert.deepEqual(rpgSfx('abordage'), [{ kind: 'sample', at: 0, dur: 1.411, g: 1 }]);
+  assert.deepEqual(rpgSfx('abordage'), [{ kind: 'sample', at: 0, dur: 2.4, g: 1 }]);
+  assert.ok(existsSync(new URL('../src/games/assets/chain-rattle.wav', import.meta.url)),
+    'ChainRattleMetalChainManyVariations_jxKTo_03.wav voyage dans src/games/assets/chain-rattle.wav');
+});
+
+test('les arrivées jouent le cri pirate et l’ambiance de quai, tous deux sur échantillons', () => {
+  assert.ok(RPG_SFX_NAMES.includes('pirate_arrivee'));
+  assert.ok(RPG_SFX_NAMES.includes('navire_arrivee'));
+  assert.deepEqual(rpgSfx('pirate_arrivee'), [{ kind: 'sample', at: 0, dur: 1.411, g: 1 }]);
+  assert.deepEqual(rpgSfx('navire_arrivee'), [{ kind: 'sample', at: 0, dur: 2.352, g: 1 }]);
   assert.ok(existsSync(new URL('../src/games/assets/pirate-ahoy.mp3', import.meta.url)),
-    'Cartoon Pirate Voice - Ahoy.mp3 voyage dans src/games/assets/pirate-ahoy.mp3');
+    'le cri « Ahoy ! » salue l’arrivée des cartes pirates');
+  assert.ok(existsSync(new URL('../src/games/assets/dock-sound.mp3', import.meta.url)),
+    'Dock Sound_320k.mp3 voyage dans src/games/assets/dock-sound.mp3');
 });
 
 test('la victoire est la fanfare fournie, livrée avec le jeu', () => {

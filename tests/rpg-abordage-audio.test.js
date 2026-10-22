@@ -33,12 +33,12 @@ function donner(duel, cote, carteId) {
   duel[cote].main.push(carteId);
 }
 
-test('pirate-ahoy.mp3 est l’échantillon fourni, déclaré et lu par RpgAudioPlayer', () => {
-  const mp3 = readFileSync(new URL('../src/games/assets/pirate-ahoy.mp3', import.meta.url));
-  assert.equal(mp3.byteLength, 57631, 'Cartoon Pirate Voice - Ahoy.mp3 est conservé octet pour octet');
+test('chain-rattle.wav est l’échantillon fourni, déclaré et lu par RpgAudioPlayer', () => {
+  const wav = readFileSync(new URL('../src/games/assets/chain-rattle.wav', import.meta.url));
+  assert.equal(wav.byteLength, 211724, 'ChainRattleMetalChainManyVariations_jxKTo_03.wav est conservé octet pour octet');
   assert.equal(RPG_ABORDAGE_SFX, 'abordage');
   assert.ok(RPG_SFX_NAMES.includes('abordage'));
-  assert.deepEqual(rpgSfx('abordage'), [{ kind: 'sample', at: 0, dur: 1.411, g: 1 }]);
+  assert.deepEqual(rpgSfx('abordage'), [{ kind: 'sample', at: 0, dur: 2.4, g: 1 }]);
 
   const lectures = [];
   class FakeAudio {
@@ -81,19 +81,19 @@ test('pirate-ahoy.mp3 est l’échantillon fourni, déclaré et lu par RpgAudioP
   try {
     const player = new RpgAudioPlayer();
     player.unlock();
-    assert.match(player.pirateAhoyAudio.src, /pirate-ahoy\.mp3$/);
+    assert.match(player.chainRattleAudio.src, /chain-rattle\.wav$/);
 
     player.play(RPG_ABORDAGE_SFX);
-    assert.equal(lectures.length, 1, 'le cri pirate « Ahoy ! » est joué');
-    assert.match(lectures[0].src, /pirate-ahoy\.mp3$/);
+    assert.equal(lectures.length, 1, 'le cliquetis de chaînes d’abordage est joué');
+    assert.match(lectures[0].src, /chain-rattle\.wav$/);
 
     player.setMuted(true);
     player.play(RPG_ABORDAGE_SFX);
     assert.equal(lectures.length, 1, 'muet : aucune lecture supplémentaire');
-    assert.equal(player.pirateAhoyAudio.paused, true);
+    assert.equal(player.chainRattleAudio.paused, true);
 
     player.destroy();
-    assert.equal(player.pirateAhoyAudio, null);
+    assert.equal(player.chainRattleAudio, null);
   } finally {
     globalThis.window = prevWindow;
   }

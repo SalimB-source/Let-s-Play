@@ -38,6 +38,7 @@ import {
   choisirCouleurManaIA,
   couleurEngagement,
 } from './rpgAI.js';
+import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
 import {
   RPG_MANA_ESSAI_CARTES_EXCLUES,
   RPG_MANA_ESSAI_CHAMP_MAX,
@@ -153,7 +154,7 @@ export function rpgRenvoisEnMain(duel) {
 // les soins. Deux rôles : `prisesEnCaleParDuel` garde l'historique du duel pour
 // que la table ne traite jamais une créature kidnappée comme une carte détruite
 // (`destruction_hit`), et `prisesAudioParDuel` livre à chaque rendu les prises
-// toutes fraîches pour déclencher le cri pirate (`abordage`).
+// toutes fraîches pour déclencher le cliquetis de chaînes d'abordage (`abordage`).
 const prisesEnCaleParDuel = new WeakMap();
 const prisesAudioParDuel = new WeakMap();
 
@@ -168,6 +169,50 @@ export function rpgConsommerPrisesEnCale(duel) {
   const journal = prisesAudioParDuel.get(duel) ?? [];
   prisesAudioParDuel.delete(duel);
   return journal;
+}
+
+// Les arrivées sonores des créatures maritimes : des journaux audio hors
+// état JSON, sur le modèle des prises en cale. Quand une créature jouée depuis
+// la main entre en jeu via `rpgJouerCreature`, le moteur la classe une seule
+// fois : un **navire** — type imprimé « Navire », quel que soit son set — est
+// accueilli par l'ambiance de quai (`navire_arrivee`) ; toute autre créature
+// pirate du set Lettres de Marque l'est par le cri « Ahoy ! »
+// (`pirate_arrivee`). Le type Navire prime : un navire pirate ne fait jamais
+// retentir les deux sons. Ni les jetons (nés d'un effet), ni les réanimations,
+// ni les détenues rendues en jeu par l'ouverture d'une cale ne passent par ce
+// journal : le moteur précise lui-même que ces retours ne sont pas des
+// arrivées. La page consomme les journaux à chaque rendu.
+const arriveesPirateAudioParDuel = new WeakMap();
+const arriveesNavireAudioParDuel = new WeakMap();
+
+/** Les arrivées de pirates survenues depuis le dernier relevé — le journal se vide. */
+export function rpgConsommerArriveesPirate(duel) {
+  if (!duel) return [];
+  const journal = arriveesPirateAudioParDuel.get(duel) ?? [];
+  arriveesPirateAudioParDuel.delete(duel);
+  return journal;
+}
+
+/** Les arrivées de navires survenues depuis le dernier relevé — le journal se vide. */
+export function rpgConsommerArriveesNavire(duel) {
+  if (!duel) return [];
+  const journal = arriveesNavireAudioParDuel.get(duel) ?? [];
+  arriveesNavireAudioParDuel.delete(duel);
+  return journal;
+}
+
+function journaliserArriveeCreature(duel, cote, entite) {
+  const carte = duelCardById(entite.carteId);
+  const evenement = { entityId: entite.id, carteId: entite.carteId, cote };
+  if (cardHasPrintedType(carte, 'Navire')) {
+    const journal = arriveesNavireAudioParDuel.get(duel) ?? [];
+    journal.push(evenement);
+    arriveesNavireAudioParDuel.set(duel, journal);
+  } else if (rpgEstCartePirate(carte)) {
+    const journal = arriveesPirateAudioParDuel.get(duel) ?? [];
+    journal.push(evenement);
+    arriveesPirateAudioParDuel.set(duel, journal);
+  }
 }
 
 function journaliserPriseEnCale(duel, capteur, coteCapteur, victime, coteVictime) {
@@ -3611,6 +3656,11 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // Sa case : celle de la victime d'un sacrifice, sinon la première libre.
   placerDansEmplacement(duel, cote, entite, caseSacrifice >= 0 ? caseSacrifice : null);
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
+  // Le son d'arrivée suit l'entrée en jeu elle-même, avant même la résolution
+  // des effets d'arrivée (qui peuvent ouvrir une attente et rendre la main
+  // tôt) : un pirate salue, un navire accoste au bruit du quai — des deux
+  // camps, une seule fois par créature.
+  journaliserArriveeCreature(duel, cote, entite);
   if (entite.protection) {
     const couleur = labelCouleursProtection(entite.protection.contre);
     duel.log.push(entite.protection.toursRestants === Infinity

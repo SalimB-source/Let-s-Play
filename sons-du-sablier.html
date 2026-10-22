@@ -186,7 +186,7 @@
       dans <code>public/</code> en même temps ; cette page suit les nouveaux chemins.
     </div>
     <div class="note">
-      <b>Sources :</b> <code>src/games/rpgAudio.js</code> (16 bruitages : le survol synthétisé + 15 échantillons — <code>hit.wav</code> partagé par les deux coups),
+      <b>Sources :</b> <code>src/games/rpgAudio.js</code> (19 bruitages : le survol synthétisé + 18 entrées échantillons — <code>hit.wav</code> partagé par les deux coups, <code>pirate-ahoy.mp3</code> réservé aux arrivées pirates),
       <code>src/games/rpgPlateauMusic.js</code> (musiques de plateaux),
       <code>src/games/rpgAmbientMusic.js</code> (7 ambiances des Tours),
       <code>src/games/rpgFireAudio.js</code> · <code>rpgWaterAudio.js</code> · <code>rpgFoudreAudio.js</code>
@@ -337,6 +337,12 @@ const ECHANTILLONS = [
     desc: 'Game Lost — la mélodie du duel perdu.' },
   { nom: 'Coup blessant', fichier: './src/games/assets/hit.wav', code: 'degats · degats_sorcier · hit.wav',
     desc: 'Le coup sec quand des PV tombent — même son pour les deux camps.' },
+  { nom: 'Abordage — cliquetis de chaînes', fichier: './src/games/assets/chain-rattle.wav', code: 'abordage · chain-rattle.wav',
+    desc: 'Le grappin et la chaîne qui sifflent quand une créature avec Abordage kidnappe une créature adverse en cale.' },
+  { nom: 'Arrivée d’un pirate — « Ahoy ! »', fichier: './src/games/assets/pirate-ahoy.mp3', code: 'pirate_arrivee · pirate-ahoy.mp3',
+    desc: 'Le cri pirate salue chaque carte pirate du set Lettres de Marque qui arrive en jeu (jouée depuis la main, pas les jetons).' },
+  { nom: 'Arrivée d’un navire — quai', fichier: './src/games/assets/dock-sound.mp3', code: 'navire_arrivee · dock-sound.mp3',
+    desc: 'L’ambiance du quai quand un navire (type imprimé « Navire ») accoste : Brûlot, Cotre, Galion, Hollandais volant, Drakkar.' },
 ];
 const le = $('#liste-echantillons');
 ECHANTILLONS.forEach(e => le.appendChild(carteAudio({ plateau: e.nom, ...e })));
