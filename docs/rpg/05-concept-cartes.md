@@ -225,8 +225,9 @@ La Furie appartient au set **Neige** et à lui seul ; elle se lit sur la carte
 (`furie`) et le moteur l'applique sans table d'effets supplémentaires. Les
 valkyries n'émettent plus de Résonance viking.
 
-- **Furie X** (Loup des neiges 1, Guerrier au bouclier rond et Berserk des
-  trois hivers 2, Jarl au marteau de guerre et Maître du marteau 3) — un état
+- **Furie X** (Loup des neiges 1, Valkyrie au corbeau, Guerrier au bouclier
+  rond et Berserk des trois hivers 3, Jarl au marteau de guerre et Maître du
+  marteau 3) — un état
   continu : tant que la défense actuelle d'une créature vivante est sous sa
   **DEF de base** — la défense imprimée de sa carte, sans les renforts ni les
   auras — elle gagne **+X/+0**. Ces renforts peuvent donc absorber une
@@ -236,13 +237,13 @@ valkyries n'émettent plus de Résonance viking.
   puis une nouvelle chute sous le seuil peut le rallumer. Une attaque
   entièrement absorbée par un bouclier ne fait pas passer sous le seuil, et
   une créature qui meurt n'entre pas en Furie.
-- **L'appel du corbeau** (Valkyrie au corbeau, 5 mana, 3/4, Envol) — à son
+- **L'appel du corbeau** (Valkyrie au corbeau, 5 mana, 3/4, Envol, Furie 2) — à son
   arrivée, son contrôleur pioche une carte dont la ligne de type contient
   **Viking**, choisie uniformément au hasard parmi les exemplaires encore
   dans son deck. Le type imprimé décide : un Loup des neiges (type Loup) et
   les sorts Neige ne sont pas éligibles. S'il ne reste aucun Viking dans le
   deck, l'arrivée ne fait pas piocher de carte de remplacement.
-- **Provocation** (Berserk des trois hivers, 4 mana, 1/5, Furie 2) — quand
+- **Provocation** (Berserk des trois hivers, 4 mana, 1/5, Furie 3) — quand
   le Berserk attaque, le défenseur doit lui assigner au moins un bloqueur
   légal si un tel blocage est possible. S'il y a plusieurs provocateurs et
   trop peu de bloqueurs, l'affectation doit couvrir le plus grand nombre de
@@ -313,29 +314,26 @@ d'invocation, comme les chiens de sable. Illustration dédiée
 
 ### L'aura de forge (Kenshi de la forge)
 
-Le Kenshi de la forge est un **1/3 à 3 mana** qui porte une aura de table :
+Le Kenshi de la forge est un **1/2 à 3 mana** qui porte une aura de camp :
 
-> Tant qu'il est en jeu, les autres créatures de type Samouraï de la table,
-> dans les deux camps, gagnent +2/+0.
+> Tant qu'il est en jeu, toutes vos autres créatures gagnent +1/+0, quel que
+> soit leur type.
 
-- **Les deux camps, comme la Résonance samouraï** — le Kenshi ne connaît pas la
-  ligne de bataille : il forge aussi bien les Samouraïs du sorcier. Le type se
-  lit sur la ligne de type imprimée (`cardReceivesResonance`), jamais sur la
-  couleur ni sur le nom.
-- **« Les autres » : il ne se forge pas lui-même.** Deux Kenshis en jeu se
-  donnent +2/+0 l'un à l'autre et +4/+0 au reste des Samouraïs.
+- **Uniquement son propre camp, mais tous les types** — Samouraïs, yōkai et
+  créatures non-Samouraïs reçoivent la forge ; le camp adverse n'en profite pas.
+- **« Les autres » : il ne se forge pas lui-même.** Deux Kenshis du même camp
+  se donnent +1/+0 l'un à l'autre et +2/+0 au reste de leurs créatures.
 - **La défense ne bouge jamais** : perdre l'aura ne peut pas tuer, et l'attaque
   retombe au plancher de 0. Chaque entité ne retient que l'écart appliqué
   (`auraKenshiBonus`), même contrat que l'aura Sable de Tarek et l'égide
   d'Amani — les statistiques déjà gagnées (Furie, renforts) ne dérivent pas.
 - L'aura se **cumule** avec la Résonance samouraï et la bannière du Daimyō :
-  sous un Torii et un Kenshi, un Samouraï de base gagne +3/+1.
+  sous un Torii et un Kenshi, un Samouraï de base gagne +2/+1.
 
 Moteur : `appliquerAuraKenshi` (`rpgDuel.js`), appelée par `rafraichirAuras`
 avec les autres auras de présence. Le catalogue imprime l'aura sur la carte
-(`aura: { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true,
-camps: 'tous' }`), et `rpgCardPower.js` en tient compte dans la valeur de la
-carte.
+(`aura: { type: 'buff-autres', atk: 1, def: 0, saufSoi: true, camps: 'camp' }`),
+et `rpgCardPower.js` en tient compte dans la valeur de la carte.
 
 ### La bannière (Daimyō du Soleil rouge)
 
@@ -475,7 +473,7 @@ phrase de règle — or une face de carte n'imprime pas la règle, et « donne
 - les **armes** sont exclues du calcul : leur bonus de porteur (`bonusArme`)
   s'affiche déjà, et deux chiffres pour la même chose se contrediraient ;
 - les créatures en main gardent leurs propres statistiques : la modification
-  d'une arrivée (Vipère de verre, Colosse de sel) se lit sur la pastille et
+  d'une arrivée (Vipère de verre) se lit sur la pastille et
   dans la règle, pas à la place du `atk/def` du corps ;
 - l'atelier de decks écrit le même libellé dans sa ligne compacte
   (` · -2/-2` derrière le type), et les lecteurs d'écran reçoivent la valeur
@@ -599,7 +597,7 @@ est unique :
   renvoi en main, exil), l'arme part au cimetière — un jeton qui cesse
   d'exister l'entraîne avec lui ;
 - le porteur gagne les bonus imprimés (**+X/+Y**) et les mots-clés donnés
-  (`donne` : Envol, Rapidité, immunité contre une couleur) **tant que
+  (`donne` : Coup rapide, Rapidité, immunité contre une couleur) **tant que
   l'arme est attachée** ; le retrait se fait sans tuer, avec le plancher de
   1 PV du patron Résonance. La **Rapidité** accordée désactive le mal
   d'invocation du porteur, dans les deux sens ;
@@ -614,7 +612,7 @@ Quatre armes forment le prototype — une par élément, des effets **mixtes
 |---|---|---|---|
 | Takouba des pistes | Sable (commune) | 3 | **+2/+0 et Infiltration** : le porteur ne peut pas être bloqué, par personne — l'arme de départ, offerte dès la première collection, est devenue une arme d'assaut pur (aucune défense ajoutée). |
 | Bâton des citernes | Eau (rare) | 4 | +1/+2 ; à son arrivée et pour **3 manas** (capacité activée au tour du contrôleur) : un jeton **Serpent des citernes** 3/1 Rapidité, **détruit à la fin du tour** de sa création. |
-| Lance de givre | Neige (rare) | 3 | **+1/−1 et Envol** au porteur, tant que la Lance reste attachée ; elle ne donne aucun bouclier. |
+| Lance de givre | Neige (rare) | 3 | **+1/+0 et Coup rapide** au porteur, tant que la Lance reste attachée ; elle ne donne aucun bouclier. |
 | Armure de cendres | Braise (**mythique**, unique dans un deck) | 4 | **+3/+3, Rapidité** et **immunité contre la Braise** : le porteur ne peut pas être ciblé par la Braise et n'en reçoit aucun dégât (protection pilotée par `rpgEstProtegee`). |
 
 Le serpent des citernes est le deuxième jeton du catalogue
@@ -626,7 +624,7 @@ d'Histoire n'en reçoivent pas.
 
 Le **Sabre maudit** (Soleil rouge, rare, coût 4) est une arme de même nature : le moteur le
 traite comme une magie à effet `arme` (ciblage, `porteur.armes`), mais sa présentation est celle
-des armes — cadre d'acier de Braise, ligne « Arme — Sabre maudit », stats de porteur (+4/-2) dans
+des armes — cadre ordinaire de Braise, ligne « Arme — Sabre maudit », stats de porteur (+4/-2) dans
 la main, l'aperçu, l'atelier et le guide, et texte « Arme — Le porteur gagne… ». `carteEstArme`
 et `bonusArme` (`rpgCards.js`) disent qu'une carte est une arme pour l'affichage.
 
@@ -634,46 +632,26 @@ Illustrations : `public/cards/<identifiant>.jpg` plein art 4:5 — un porteur
 en pleine action, l'arme entièrement dans le cadre (voir la dérogation
 photoréaliste de `RPG-CARD-ART.md`).
 
-Présentation : les cartes Arme portent un **cadre d'acier métallique**
-à motif de **guilloché de Damas** — fines ondes gravées façon lames
-damassées (`.rpg-card--frame-arme` dans `rpg-battle.css`, clé `arme` de
-`cardFrameInfo`), matière commune aux quatre éléments — mais chaque
-élément **teinte son acier** : rouge pour la Braise, bleu pour l'Eau,
-doré pour le Sable et glacé pour la Neige. Leur anneau n'est **pas plus
-épais** que celui des autres cartes : la plaque des armes — ×1,6 l'ancien
-gabarit — est devenue l'épaisseur commune de toutes les faces (variables
-`--rpg-card-border*` en tête de `rpg-battle.css`), sans changer la taille
-extérieure des cartes ; une arme se reconnaît donc à sa matière et à sa
-teinte, jamais à l'épaisseur de son cadre.
-L'Armure de cendres, mythique, perd le zellige mais
-garde son reflet animé sur l'acier. L'épaisseur suit le gabarit de la face :
-5 px sur une carte de la main ou de la table, `--rpg-card-border-large`
-(≈ 10 à 13 px) sur les grandes faces du **mulligan** et du **catalogue**, qui
-portent le même anneau que leurs voisines — sans quoi le filet d'une arme,
-deux fois plus fin que le cadre des autres cartes à côté d'elle, semblait
-absent.
+Présentation : les cartes Arme utilisent **le cadre ordinaire de leur
+élément**, comme les autres cartes du catalogue. Il n’existe plus de cadre
+métallique, de guilloché de Damas, de variante `arme` ni de classe CSS
+spécifique aux armes. La couleur et les éventuels motifs suivent donc les
+mêmes règles que pour une créature, une magie ou un terrain de cet élément ;
+une arme mythique conserve les effets de rareté communs, sans traitement de
+matière particulier. L’épaisseur est celle du gabarit de la face, sur PC
+comme au doigt, sans changer la taille extérieure des cartes.
 
-**Créature armée = cadre d'acier.** Une créature qui porte une arme reçoit
-le **cadre métallique de son arme** : la matière d'acier gris des cartes
-d'arme, la même que sur la carte d'arme elle-même (`armeCadreClass`,
-`rpgCards.js`, posée par `TableCard` dans `RpgDuelPage.jsx`). C'est l'anneau qui dit l'équipement —
-la carte d'arme ne se glisse plus derrière la créature, il n'y a plus de
-plaque ni de pile d'équipement dans le DOM. La carte reste donc un
+**Créature armée = cadre ordinaire de la créature.** Une créature qui porte
+une arme conserve son propre cadre et sa propre couleur. L’équipement ne
+remplace plus cette présentation par un cadre d’arme : il reste consultable
+dans les effets et dans l’aperçu, tandis que la carte posée demeure un
 emplacement ordinaire de la rangée, exactement de la taille de ses voisines.
-Son **bord intérieur est ciselé** : le filet n'est pas une bordure mais un
-calque découpé par un masque SVG (`--rpg-arme-ciselle`, `rpg-battle.css`) —
-rectangle arrondi à l'extérieur, contour irrégulier fait de facettes et de
-quelques entailles à l'intérieur, comme un cadre de métal repoussé à la
-main. Le masque est étiré avec la carte (`preserveAspectRatio="none"`), donc
-ses facettes suivent sa taille, et la carte garde exactement la largeur de
-ses voisines. Au doigt, où les faces de jeu n'ont pas de cadre, ce filet
-d'acier est la seule exception avec les cartes d'arme elles-mêmes
-(`rpg-mobile.css`) ; il y prend l'épaisseur des petites faces (3 px). Le
-cadre ne change rien au jeu : la créature reste l'unique carte qui agit. Une créature armée ne se
-regroupe avec aucun homonyme (`groupEntitesParCarte`, `rpgCardStacks.js`) ;
-elle forme toujours sa propre pile d'exemplaires, même au doigt.
-`armesPortees` lit à la fois l'arme du prototype (`entite.arme`) et l'arme
-de l'effet « arme » des magies (`entite.armes`, le Sabre maudit).
+Le cadre ne change rien au jeu : la créature reste l’unique carte qui agit.
+Une créature armée ne se regroupe avec aucun homonyme
+(`groupEntitesParCarte`, `rpgCardStacks.js`) ; elle forme toujours sa propre
+pile d’exemplaires, même au doigt. `armesPortees` lit à la fois l’arme du
+prototype (`entite.arme`) et l’arme de l’effet « arme » des magies
+(`entite.armes`, le Sabre maudit).
 
 **L'aperçu dit l'équipement.** Sur la carte posée, ni le texte d'effet ni
 le bonus d'attaque/défense de l'arme ne sont imprimés (et aucun infobulle

@@ -78,7 +78,7 @@ test('Contresort des abîmes contre la carte annoncée, sort ou créature : la c
   assert.equal(duel.annonce, null, 'l’annonce est défaite');
   assert.equal(duel.sorcier.main.includes('trait-de-braise'), false, 'la carte quitte la main du sorcier');
   assert.ok(duel.sorcier.cimetiere.includes('trait-de-braise'), 'elle va au cimetière');
-  assert.equal(duel.sorcier.mana.braise, 3, 'le sort annoncé paie son coût même s’il est contrecarré');
+  assert.equal(duel.sorcier.mana.braise, 2, 'le sort annoncé paie son coût même s’il est contrecarré');
   assert.equal(duel.joueur.mana.eau, 0, 'le contresort est lui aussi payé');
   assert.equal(rpgSorcierResoudreAnnonce(duel).ok, false, 'il n’y a plus rien à résoudre');
   assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'aucun dégât');
@@ -182,7 +182,7 @@ test('sans contre, la carte annoncée se résout quand le joueur laisse passer',
   const res = rpgSorcierResoudreAnnonce(duel);
   assert.equal(res.ok, true);
   assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 3, 'la magie fait ses 3 dégâts au visage');
-  assert.equal(duel.sorcier.mana.braise, 6, 'le sort qui passe paie son coût une seule fois');
+  assert.equal(duel.sorcier.mana.braise, 5, 'le sort qui passe paie son coût une seule fois');
   assert.equal(duel.annonce, null);
   assert.equal(duel.fenetreReponse, false);
 });
@@ -260,7 +260,7 @@ test('l’IA contre une magie du joueur avec Silence d’écume', () => {
   assert.equal(res.contre, true);
   assert.equal(res.parIA, true);
   assert.ok(duel.joueur.cimetiere.includes('trait-de-braise'));
-  assert.equal(duel.joueur.mana.braise, 1, 'le coût du sort contré est payé');
+  assert.equal(duel.joueur.mana.braise, 0, 'le coût du sort contré est payé');
   assert.equal(duel.sorcier.mana.eau, 0, 'le contresort adverse est aussi payé');
 });
 
@@ -339,6 +339,12 @@ test('la Tour des Abysses joue le deck bleu sur ses quatre étages, avec des con
 // capacité de destruction).
 
 /** Le sorcier pose une de ses créatures : elle devient la cible du renvoi. */
+const jouerGros = (duel, cote) => {
+  const resultat = rpgJouerCreature(duel, cote, 'seigneur-des-machoires');
+  if (resultat.entite) Object.assign(resultat.entite, { tenaciteDisponible: false, tribut: 0 });
+  return resultat;
+};
+
 const creatureAdverse = (duel, carteId) => {
   mana(duel, 'sorcier', 'sable', 9);
   mana(duel, 'sorcier', 'eau', 9);
@@ -388,13 +394,13 @@ test('Courant de retour renvoie une créature adverse, puis fait piocher son lan
   const duel = duelVide();
   duel.tour = 'joueur';
   duel.joueur.deck = ['mer', 'mer'];
-  const colosse = creatureAdverse(duel, 'colosse-de-sel');
+  const seigneur = creatureAdverse(duel, 'seigneur-des-machoires');
   mana(duel, 'joueur', 'eau', 3);
   donner(duel, 'joueur', 'courant-de-retour');
-  const res = rpgLancerMagie(duel, 'joueur', 'courant-de-retour', colosse.id);
+  const res = rpgLancerMagie(duel, 'joueur', 'courant-de-retour', seigneur.id);
   assert.equal(res.ok, true, JSON.stringify(res));
   assert.equal(res.renvoiMain, true, 'le moteur confirme le retour en main');
-  assert.ok(duel.sorcier.main.includes('colosse-de-sel'), 'le Colosse repart dans la main adverse');
+  assert.ok(duel.sorcier.main.includes('seigneur-des-machoires'), 'le Seigneur repart dans la main adverse');
   assert.equal(duel.joueur.deck.length, 1, 'une carte a été piochée');
   assert.ok(duel.joueur.main.includes('mer'), 'la carte piochée vient du deck');
   assert.equal(duel.joueur.main.length, 1, 'le sort quitte la main, la pioche le remplace');
@@ -443,29 +449,29 @@ test('une créature protégée contre l’Eau échappe au renvoi', () => {
 test('l’IA vise la menace la plus lourde avec le Ressac', () => {
   const duel = duelVide();
   mana(duel, 'joueur', 'sable', 9);
-  mana(duel, 'joueur', 'eau', 9); // le Colosse de sel est une créature d’Eau
+  mana(duel, 'joueur', 'eau', 9); // le Seigneur des mâchoires est une créature d’Eau
   donner(duel, 'joueur', 'chien-du-guet');
-  donner(duel, 'joueur', 'colosse-de-sel');
+  donner(duel, 'joueur', 'seigneur-des-machoires');
   rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
-  const colosse = rpgJouerCreature(duel, 'joueur', 'colosse-de-sel').entite;
-  assert.equal(rpgCibleAuto(duel, 'sorcier', cardById('ressac')), colosse.id,
-    'le Colosse pèse plus lourd que le Chien');
+  const seigneur = jouerGros(duel, 'joueur').entite;
+  assert.equal(rpgCibleAuto(duel, 'sorcier', cardById('ressac')), seigneur.id,
+    'le Seigneur pèse plus lourd que le Chien');
 });
 
 test('le sorcier annonce et résout un Ressac sur la créature du joueur', () => {
   const duel = duelVide();
   mana(duel, 'joueur', 'sable', 9);
-  mana(duel, 'joueur', 'eau', 9); // le Colosse de sel est une créature d’Eau
-  donner(duel, 'joueur', 'colosse-de-sel');
-  const colosse = rpgJouerCreature(duel, 'joueur', 'colosse-de-sel').entite;
+  mana(duel, 'joueur', 'eau', 9); // le Seigneur des mâchoires est une créature d’Eau
+  donner(duel, 'joueur', 'seigneur-des-machoires');
+  const seigneur = jouerGros(duel, 'joueur').entite;
   duel.tour = 'sorcier';
   mana(duel, 'sorcier', 'eau', 5);
   donner(duel, 'sorcier', 'ressac');
   const annonce = rpgSorcierAnnonceSuivante(duel, () => 0.5);
   assert.equal(annonce?.carteId, 'ressac', 'le sorcier annonce le Ressac');
-  assert.equal(annonce.cibleId, colosse.id, 'il vise la créature posée');
+  assert.equal(annonce.cibleId, seigneur.id, 'il vise la créature posée');
   assert.equal(rpgSorcierResoudreAnnonce(duel).ok, true);
   assert.equal(duel.joueur.creatures.length, 0, 'la créature du joueur quitte la table');
-  assert.ok(duel.joueur.main.includes('colosse-de-sel'), 'elle revient dans la main du joueur');
+  assert.ok(duel.joueur.main.includes('seigneur-des-machoires'), 'elle revient dans la main du joueur');
   assert.ok(duel.sorcier.cimetiere.includes('ressac'), 'le sort du sorcier est consommé');
 });

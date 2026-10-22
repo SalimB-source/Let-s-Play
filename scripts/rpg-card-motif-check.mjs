@@ -3,15 +3,15 @@
  * node scripts/rpg-card-motif-check.mjs
  *
  * La résille commune est posée une fois, sur `.rpg-battle` ; la mythique met
- * son zellige, les armes leur guilloché. Ce contrôle tient les trois motifs de
+ * son zellige ; les armes suivent la résille commune. Ce contrôle tient les trois motifs de
  * type qui s'y ajoutent — le losange de la Magie Rapide, l'étincelle de la
  * Sorcellerie, les strates du terrain : leur image — décodée puis relue par un
  * analyseur XML, parce qu'une URI mal échappée ne peindrait simplement rien —,
  * le dessin du sigle qu'elle doit reprendre, la tuile qui les répète le long de
  * l'anneau, et les surfaces qui les portent. Il vérifie aussi ce qu'ils ne
  * touchent pas : l'épaisseur, la couleur et la matière du cadre ne changent
- * pas, le zellige des mythiques reste au-dessus, et le Sabre maudit — une magie
- * au cadre d'acier — n'en reçoit aucun.
+ * pas, le zellige des mythiques reste au-dessus, et le Sabre maudit — une
+ * magie à effet d’arme — n’en reçoit aucun.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -38,7 +38,7 @@ for (const kind of ['creature', 'hero', 'arme', 'statut']) {
   assert.equal(motifCarte(carte({ kind })), null, `un ${kind} garde la résille commune`);
 }
 assert.equal(motifCarte(carte({ kind: 'magie', effet: { type: 'arme' } })), null,
-  'le Sabre maudit — une magie au cadre d’acier — n’a pas le motif des magies');
+  'le Sabre maudit — une magie à effet d’arme — n’a pas le motif des magies');
 assert.equal(magieFamille(carte({ kind: 'magie', effet: { type: 'arme' } })), null,
   'et c’est la même règle que le socle des familles : le Sabre maudit n’est pas un sort');
 assert.equal(cardMotifClass(carte({ kind: 'magie', instant: true })), 'rpg-card--motif-losange');
@@ -104,15 +104,13 @@ const taille = dessin(motifLosange);
 assert.ok(taille.includes('M4 1.7 5.9 4 2.1 4Z') && taille.includes('M4 6.3 5.9 4 2.1 4Z'),
   'la table et le pavillon du losange se lisent : deux moitiés claires sous la même arête');
 
-// ── 4. Six cadres, six images : aucune ne recopie une autre ─────────────────
+// ── 4. Cinq cadres, cinq images : aucune ne recopie une autre ────────────────
 const toutes = [...battleCss.matchAll(/--rpg-frame-motif:\s*url\("([^"]+)"\)/g)].map(([, image]) => image);
-assert.equal(toutes.length, 6,
-  'six motifs en tout : la résille commune, le zellige mythique, le guilloché des armes, le losange, l’étincelle et les strates');
+assert.equal(toutes.length, 5,
+  'cinq motifs en tout : la résille commune, le zellige mythique, le losange, l’étincelle et les strates');
 assert.equal(new Set(toutes).size, toutes.length, 'aucun motif ne recopie l’image d’un autre cadre');
 assert.ok(toutes.includes(motifLosange) && toutes.includes(motifEtincelle) && toutes.includes(motifTerrain),
   'les trois motifs de type sont bien dans la feuille');
-assert.ok(toutes.some((image) => /width='18' height='12'/.test(decodeURIComponent(image))),
-  'le guilloché des armes garde son onde de 18 × 12 px');
 assert.match(battleCss, /\.rpg-battle\s*\{\s*--rpg-frame-motif:\s*url\("data:image\/svg\+xml,%3Csvg /,
   'la résille commune reste posée une seule fois, sur `.rpg-battle`');
 assert.match(battleCss, /\.rpg-card--mythique\s*\{[^}]*--rpg-frame-motif:\s*url\("data:image\/svg\+xml,%3Csvg [^}]*--rpg-frame-motif-size:\s*12px 12px;/s,
@@ -142,4 +140,4 @@ for (const [source, surface, attendu] of surfaces) {
 assert.equal((duel.match(/cardMotifClass\(/g) ?? []).length, 12, 'les douze faces du duel portent le motif (dont la carte déchirée du sacrifice et celle emportée par l’eau ; la roue de feu ne redessine plus la carte, son adieu s’en charge)');
 assert.equal((duel.match(/cardMotifClass\(carte\)/g) ?? []).length, 8, 'huit d’entre elles suivent la carte affichée');
 
-console.log('✓ Le cadre des magies rapides taille un losange, celui des sorcelleries grave l’étincelle de son sigle, celui des terrains ses strates : six images distinctes, les mythiques gardent leur zellige, les armes leur guilloché, et rien ne change d’épaisseur ni de couleur.');
+console.log('✓ Le cadre des magies rapides taille un losange, celui des sorcelleries grave l’étincelle de son sigle, celui des terrains ses strates : cinq images distinctes, les mythiques gardent leur zellige, les armes suivent le cadre ordinaire, et rien ne change d’épaisseur ni de couleur.');

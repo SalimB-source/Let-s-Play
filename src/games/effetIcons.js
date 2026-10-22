@@ -65,7 +65,7 @@ export const PROTECTION_COULEURS = Object.freeze({
 
 /** Les éléments contre lesquels une fiche est protégée, imprimés ou donnés par son arme. */
 export function couleursProtectionCarte(carte) {
-  const contre = carte?.protection?.contre ?? carte?.donne?.protection?.contre;
+  const contre = carte?.protection?.contre ?? carte?.protectionSortsContre ?? carte?.donne?.protection?.contre;
   return [...new Set([contre].flat(Infinity).filter(Boolean))];
 }
 
@@ -98,6 +98,7 @@ export const EFFET_ICONE = {
   infiltration: 'i-infiltration',
   protection: 'i-protection',
   protectionSorts: 'i-protection',
+  protectionSortsContre: 'i-protection',
   overkill: 'i-overkill',
   bouclier: 'i-bouclier',
   'bouclier-lumiere': 'i-bouclier',
@@ -148,7 +149,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  */
 export const MOTS_CLES_PASTILLES = [
   'envol', 'infiltration', 'rapidite', 'coupRapide', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
-  'tenacite', 'resonance', 'protection', 'protectionSorts', 'bouclier', 'aura', 'honneur', 'butin',
+  'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
   'abordage', 'visages', 'cargaison',
 ];
 
@@ -157,7 +158,7 @@ export function pastillesCarte(carte, { size = 15, classe = 'rpg-chip' } = {}) {
   return MOTS_CLES_PASTILLES
     .filter((cle) => Boolean(carte?.[cle]))
     .flatMap((cle) => {
-      if (cle !== 'protection') return [`<span class="${classe}">${effetIcon(cle, { size })}</span>`];
+      if (cle !== 'protection' && cle !== 'protectionSortsContre') return [`<span class="${classe}">${effetIcon(cle, { size })}</span>`];
       const contres = couleursProtectionCarte(carte);
       if (!contres.length) return [`<span class="${classe}">${effetIcon(cle, { size })}</span>`];
       return contres.map((contre) => {
@@ -195,6 +196,7 @@ export const EFFET_LIBELLES = {
   infiltration: 'Infiltration',
   protection: 'Protection',
   protectionSorts: 'Protection anti-magie',
+  protectionSortsContre: 'Protection contre les sorts',
   overkill: 'Overkill',
   bouclier: 'Bouclier',
   aura: 'Aura',
@@ -270,6 +272,12 @@ export function pastillesPourCarte(carte) {
   if (carte.protectionSorts) {
     ajouter('protectionSorts', 'Protection contre les magies et les sorcelleries');
   }
+  if (carte.protectionSortsContre) {
+    const labels = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
+    const contres = [carte.protectionSortsContre].flat(Infinity).filter(Boolean);
+    const contre = contres.map((couleur) => labels[couleur] ?? capitaliser(couleur)).join(' et ');
+    ajouter('protectionSortsContre', `Protection contre les sorts de ${contre}`, null, { contres });
+  }
   if (carte.aura) ajouter('aura', 'Aura');
   if (carte.banniere) ajouter('banniere', 'Bannière');
   if (carte.honneur) ajouter('honneur', 'Honneur', Number(carte.honneur) || null);
@@ -318,8 +326,8 @@ export function pastillesPourCarte(carte) {
   }
 
   // La modification de statistiques, écrite en clair : « Lame de mer » porte
-  // « Affaiblissement -2/-2 », l'Embuscade autant, le Colosse « Renfort
-  // +1/+1 ». Sans elle, le chiffre ne se lisait que dans la règle imprimée —
+  // « Affaiblissement -2/-2 », l'Embuscade autant, le Serment de la forge
+  // « Renfort +2/+1 ». Sans elle, le chiffre ne se lisait que dans la règle —
   // que les faces de cartes n'affichent pas.
   const modif = modificationStats(carte);
   if (modif) {
@@ -389,6 +397,7 @@ const MOTIFS_LIGNE = [
   ['empeche-blocage', /empêche de bloquer|ne pourra pas bloquer|ne peut pas bloquer/iu],
   ['destruction-totale', /détruisez toutes les créatures/iu],
   ['jetons', /\bcré(?:e|ez|éent|er)\b[^.]*\b(?:créatures?-jetons?|jetons?|chiens? de sable)\b|\bcréatures?-jetons?\b/iu],
+  ['protectionSortsContre', /\bprotection contre les sorts\b/iu],
   ['protection', /\bprotection\b|\bprot[ée]g/iu],
   ['bouclier', /\bbouclier/iu],
   ['pioche', /\bpioch/iu],
@@ -503,10 +512,11 @@ export const EFFET_DEFINITIONS = {
   provocation: 'Quand elle attaque, elle doit être bloquée par au moins une créature si un blocage légal est possible.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
-  esquive: () => '30 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
+  esquive: () => '30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
   tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
+  protectionSortsContre: (couleur) => `Les Magies Rapides et Sorcelleries de ${couleur ?? 'cette couleur'} ne peuvent ni la cibler ni la blesser. Les créatures et leurs capacités fonctionnent normalement.`,
   bouclier: (n) => {
     if (n === 1) return 'Absorbe le prochain dégât reçu, quelle que soit sa provenance.';
     return n ? `Absorbe les ${n} prochains dégâts reçus, quelle que soit leur provenance.` : 'Absorbe les prochains dégâts reçus.';
@@ -618,6 +628,10 @@ export function definitionPastille(pastille) {
   if (pastille.cle === 'protection') {
     const couleur = String(pastille.label ?? '').replace(/^Protection\s*/u, '');
     return definition(couleur || null);
+  }
+  if (pastille.cle === 'protectionSortsContre') {
+    const couleurs = pastille.contres?.map((couleur) => capitaliser(couleur)).join(' et ');
+    return definition(couleurs || null);
   }
   return definition(pastille.valeur ?? null);
 }

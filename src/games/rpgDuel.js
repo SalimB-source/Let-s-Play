@@ -69,9 +69,9 @@ export const RPG_PV_PLAFOND = null;
 export const RPG_MAIN_DEPART = 5;
 /**
  * Esquive : une créature qui l'imprime (ou dont l'arme la donne) échappe à
- * **30 % des attaques** — l'attaque entière est annulée, pas diminuée. Les
- * magies et les capacités ne sont jamais esquivées. Le tirage vient du hasard
- * du duel (`hasardParDuel`), donc une même partie reste reproductible.
+ * **30 % des attaques, Magies et Sorcelleries** — leur effet sur elle est
+ * annulé, pas diminué. Les capacités ne sont jamais esquivées. Le tirage vient
+ * du hasard du duel (`hasardParDuel`), donc une même partie reste reproductible.
  */
 export const RPG_ESQUIVE_CHANCE = 0.3;
 export const RPG_COULEURS = RPG_ELEMENTS;
@@ -942,7 +942,7 @@ function appliquerAuraSable(duel, cote) {
 
 /**
  * Amani — l'égide de la Gardienne des ksour : tant qu'Amani est en jeu, les
- * **autres** créatures de son camp gagnent +0/+2. Même contrat que l'aura
+ * **autres** créatures de son camp gagnent +0/+1. Même contrat que l'aura
  * Sable : chaque entité ne garde que l'écart appliqué (`auraAmaniBonus`), pour
  * qu'une créature qui entre ou qui meurt ne fasse pas dériver les statistiques
  * déjà cumulées par la Furie ou d'autres renforts. L'égide compte **par source** :
@@ -958,7 +958,7 @@ function appliquerAuraAmani(duel, cote) {
     const sources = entite.carteId === 'amani-des-ksour'
       ? nombreAmani - 1
       : nombreAmani;
-    const prochainBonus = estSite(entite) ? 0 : 2 * Math.max(0, sources);
+    const prochainBonus = estSite(entite) ? 0 : Math.max(0, sources);
     const delta = prochainBonus - (entite.auraAmaniBonus ?? 0);
     if (!delta) continue;
     entite.auraAmaniBonus = prochainBonus;
@@ -1033,14 +1033,13 @@ export function rpgAppliquerBannieresAttaque(duel, cote, attaquantIds = []) {
 }
 
 /**
- * Kenshi de la forge — l'aura de forge : tant qu'il est en jeu, **les autres**
- * créatures de type Samouraï gagnent +1/+0. Comme la Résonance samouraï, elle
- * est **de table** : elle profite aux deux camps et à toutes les couleurs ; le
- * type se lit sur la ligne de type imprimée (`cardReceivesResonance`).
+ * Kenshi de la forge — l'aura de forge : tant qu'il est en jeu, **toutes les
+ * autres créatures de son camp** gagnent +1/+0, quel que soit leur type. Une
+ * aura ne franchit jamais la ligne du camp adverse.
  *
  * Le Kenshi ne se forge pas lui-même — il dit « les autres » : il ne reçoit que
- * l'aura de ses confrères, s'il y en a d'autres. Deux Kenshis se donnent donc
- * +1/+0 l'un à l'autre et +2/+0 au reste des Samouraïs.
+ * l'aura de ses confrères, s'il y en a d'autres. Deux Kenshis du même camp se
+ * donnent donc +1/+0 l'un à l'autre et +2/+0 au reste de leur camp.
  *
  * Chaque entité ne retient que l'écart appliqué (`auraKenshiBonus`), même
  * contrat que l'aura Sable et l'égide d'Amani : une arrivée ou une mort ne fait
@@ -1049,17 +1048,15 @@ export function rpgAppliquerBannieresAttaque(duel, cote, attaquantIds = []) {
  * retombe au plancher de 0.
  */
 function appliquerAuraKenshi(duel) {
-  // Une aura ne franchit jamais la ligne du camp : les Kenshis d'un camp ne
-  // forgent que les Samouraïs de CE camp. Deux Kenshis du même camp se donnent
-  // +1/+0 l'un à l'autre ; ceux d'en face gardent leur propre forge.
   for (const cote of ['joueur', 'sorcier']) {
     const sources = duel[cote].creatures
-      .filter((entite) => entite.carteId === 'kenshi-de-la-forge').length;
+      .filter((entite) => entite.carteId === 'kenshi-de-la-forge');
     for (const entite of duel[cote].creatures) {
-      const siennes = sources - (entite.carteId === 'kenshi-de-la-forge' ? 1 : 0);
-      const voulu = cardReceivesResonance(duelCardById(entite.carteId), 'samourai')
-        ? Math.max(0, siennes)
-        : 0;
+      const voulu = estSite(entite) ? 0 : sources.reduce((bonus, source) => {
+        const aura = duelCardById(source.carteId)?.aura;
+        if (source.id === entite.id && aura?.saufSoi) return bonus;
+        return bonus + Math.max(0, Number(aura?.atk) || 0);
+      }, 0);
       const delta = voulu - (entite.auraKenshiBonus ?? 0);
       if (!delta) continue;
       entite.auraKenshiBonus = voulu;
@@ -1105,6 +1102,23 @@ export function rpgEstProtegee(entite, element) {
     && normaliserCouleurs(entite.protection.contre).some((couleur) => couleursSources.includes(couleur))) return true;
   const immunite = armeCarteDe(entite)?.donne?.immunite;
   return Boolean(immunite && couleursSources.includes(immunite));
+}
+
+/**
+ * Protection limitée aux sorts d'une couleur. Elle ne remplace pas la
+ * protection générale ci-dessus : une créature de Braise peut toujours
+ * attaquer, bloquer ou utiliser une capacité contre la Valkyrie des glaces ;
+ * seules les Magies Rapides et Sorcelleries de Braise sont arrêtées.
+ * `sourceType` reste explicite pour ne jamais transformer une capacité en
+ * sort par simple présence d'une couleur.
+ */
+export function rpgEstProtegeeDesSorts(entite, element, sourceType = 'magie') {
+  if (!entite || sourceType !== 'magie') return false;
+  if (entite.protectionSorts) return true;
+  const couleursSources = normaliserCouleurs(element);
+  const couleursProtegees = normaliserCouleurs(entite.protectionSortsContre);
+  return couleursSources.length > 0
+    && couleursProtegees.some((couleur) => couleursSources.includes(couleur));
 }
 
 /** Les boucliers absorbent les prochains dégâts avant qu'ils n'atteignent les PV. */
@@ -1201,6 +1215,7 @@ function creerEntiteCreature(carte) {
     // monde) : aucun sort ne peut la cibler ni la blesser — les capacités,
     // armes et attaques passent normalement.
     protectionSorts: Boolean(carte.protectionSorts),
+    protectionSortsContre: carte.protectionSortsContre ?? null,
     tenaciteDisponible: Boolean(carte.tenacite),
     protection: carte.protection ? {
       contre: carte.protection.contre,
@@ -1541,8 +1556,9 @@ export function rpgBonusResonance(duel, carte) {
 }
 
 /** Aura de table par élément ou tribu. La Résonance samouraï ne renforce que
- * le type Samouraï, quelle que soit sa couleur ; ni le Tengu ni Kagutsuchi ne
- * se renforcent eux-mêmes. Les sources se cumulent dans les deux camps.
+ * le type Samouraï, quelle que soit sa couleur ; le Tengu ne se renforce pas
+ * lui-même et Kagutsuchi n’est plus une source de Résonance. Les sources se
+ * cumulent dans les deux camps.
  * Une source marquée `resonanceExclutSource` (le Samouraï du torii) ne
  * renforce que **les autres** : sa propre contribution est retirée du total
  * qu'elle reçoit, mais les autres sources continuent de la renforcer.
@@ -1646,14 +1662,19 @@ function bonusTraquePirates(attaquant, cible) {
 }
 
 /**
- * L'Esquive se tente **une fois par attaque** : 30 % de chance que le coup ne
- * porte pas du tout. Les magies et les capacités ne sont pas concernées — le
- * mot-clé dit « une attaque », et la carte le dit aussi.
+ * L'Esquive se tente **une fois par attaque ou par sort** : 30 % de chance que
+ * son effet sur la créature ne porte pas du tout. Les Magies rapides et les
+ * Sorcelleries partagent le `sourceType` « magie » ; les capacités de
+ * créatures conservent leur propre type et ne sont jamais esquivées.
  */
-function esquiveAttaque(duel, entite, sourceType) {
-  if (sourceType !== 'attaque' || !entite?.esquive) return false;
+function tenterEsquive(duel, entite, sourceType) {
+  if (!['attaque', 'magie'].includes(sourceType) || !entite?.esquive) return false;
   const rng = hasardParDuel.get(duel) ?? Math.random;
-  return rng() < RPG_ESQUIVE_CHANCE;
+  const reussie = rng() < RPG_ESQUIVE_CHANCE;
+  if (reussie) {
+    duel.log.push(`${entite.name} esquive ${sourceType === 'magie' ? 'le sort' : 'l’attaque'}.`);
+  }
+  return reussie;
 }
 
 /** Applique les blessures d’un effet de combat simultanément avant de résoudre
@@ -1665,7 +1686,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
     // Le Serpent du monde : protégé contre les magies — la vague d'un sort
     // de zone le contourne, les attaques et capacités passent.
-    if (entite.protectionSorts && coup.sourceType === 'magie') continue;
+    if (rpgEstProtegeeDesSorts(entite, coup.sourceElement, coup.sourceType)) continue;
     // Le Grand Voile blanc : les dégâts de combat s’égarent dans le blanc —
     // les dégâts de capacité et de magie, eux, traversent le voile.
     if (duel.brouillardCombat && coup.sourceType === 'attaque') continue;
@@ -1674,10 +1695,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       if (!(entite.bouclier > 0)) entite.bouclierEpuise = true;
       continue;
     }
-    if (esquiveAttaque(duel, entite, coup.sourceType)) {
-      duel.log.push(`${entite.name} esquive l’attaque.`);
-      continue;
-    }
+    if (tenterEsquive(duel, entite, coup.sourceType)) continue;
     const degats = Math.max(0, Number(coup.amount) || 0);
     if (degats <= 0) continue;
     const cle = `${coup.cote}:${entite.id}`;
@@ -1833,30 +1851,32 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   rpgActionsEtat(duel);
 }
 
-/** Dégâts de capacité infligés à la créature que la carte combat, s’il y a lieu. */
-function degatsCreatureCombattue(carte) {
+/** Dégâts infligés à la créature que la carte combat, s’il y a lieu. */
+function degatsCreatureCombattue(carte, quand) {
   if (carte?.combat?.type !== 'degats-creature-combattue') return 0;
+  if (carte.combat.quand && carte.combat.quand !== quand) return 0;
   return Math.max(0, Number(carte.combat.amount) || 0);
 }
 
 /** Prépare les dégâts des capacités « quand cette créature attaque ou bloque ».
  *  Ils se résolvent avant les blessures normales du combat. Le déclenché de
  *  l'arme portée (`declenche.sur === 'combat'`) frapperait par le même
- *  chemin, mais sous la couleur de l'arme, pas de la créature. */
-function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible, entiteSource = null) {
+ *  chemin, mais sous la couleur de l'arme, pas de la créature. `quand` évite
+ *  qu'un effet réservé au blocage (la Tour de Braise) ne parte en attaque. */
+function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible, entiteSource = null, quand = 'attaque') {
   if (!cible) return;
   // La créature qui porte la capacité est nommée comme source de la blessure :
   // si l'échange tue une créature (le Brûlot), son effet de mort sait qui l'a
   // détruite, même quand les dégâts sont partis avant les coups normaux.
   const source = entiteSource ? { sourceCote: coteSource, sourceId: entiteSource.id } : {};
-  const amount = degatsCreatureCombattue(carteSource);
+  const amount = degatsCreatureCombattue(carteSource, quand);
   if (amount > 0) {
     coups.push({
       cote: autre(coteSource),
       entiteId: cible.id,
       amount,
       sourceElement: cardColors(carteSource),
-      sourceType: 'capacite',
+      sourceType: carteSource.combat.sourceType ?? 'capacite',
       ...source,
     });
   }
@@ -2308,8 +2328,8 @@ function transfertVie(duel, coteSource, montant) {
   return { perdu: n, gagne };
 }
 
-/** Applique un effet de capacité (arrivée / destruction). `sauf` exclut une
- *  entité du buff (le Colosse ne se buffe pas lui-même). */
+/** Applique un effet de capacité (arrivée / destruction). `sauf` exclut
+ *  l’entité source quand l’effet ne doit pas se viser elle-même. */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
   presenterEffet(duel, cote, sourceCarteId);
   const adv = autre(cote);
@@ -2325,6 +2345,23 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       return;
     }
   }
+  // Une Magie ou une Sorcellerie hostile qui désigne une créature peut voir
+  // son effet sur cette cible esquivé. Les dégâts passent, eux, par les deux
+  // fonctions de blessure ci-dessous afin de couvrir aussi les sorts de zone
+  // sans effectuer un second jet sur une cible directe.
+  const viseUneCreatureAdverse = cibleId && (effet.cible === 'creature'
+    // Certaines fiches de malus portent leur cible dans `cibles`, sans la
+    // répéter dans l'effet ; leur cible reste toujours une créature adverse.
+    || ['debuff', 'empeche-blocage'].includes(effet.type));
+  if (sourceType === 'magie' && effet.type !== 'degats' && viseUneCreatureAdverse) {
+    const cibleSort = duel[adv].creatures.find((entite) => entite.id === cibleId);
+    if (cibleSort && tenterEsquive(duel, cibleSort, sourceType)) {
+      // La pioche éventuelle (Courant de retour) appartient au lanceur : elle
+      // ne dépend pas de l'effet esquivé par la cible et se résout normalement.
+      for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+      return;
+    }
+  }
   switch (effet.type) {
     case 'destruction-totale': {
       // Les morts sont retirés ensemble, avant leurs déclenchements : les
@@ -2332,7 +2369,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       const declenchements = [];
       const victimes = [cote, adv].flatMap((camp) => duel[camp].creatures
         .filter((entite) => !rpgEstProtegee(entite, sourceElement)
-          && !(entite.protectionSorts && sourceType === 'magie'))
+          && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
+          && !tenterEsquive(duel, entite, sourceType))
         .map((entite) => ({ camp, entite })));
       for (const { camp, entite } of victimes) {
         enterrer(duel, camp, entite, sourceElement, declenchements);
@@ -2351,8 +2389,9 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       const victimes = [cote, adv].flatMap((camp) => duel[camp].creatures
         .filter((entite) => entite.id !== sauf
           && !rpgEstProtegee(entite, sourceElement)
-          && !(entite.protectionSorts && sourceType === 'magie')
-          && (duelCardById(entite.carteId)?.cost ?? 0) <= effet.coutMax)
+          && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
+          && (duelCardById(entite.carteId)?.cost ?? 0) <= effet.coutMax
+          && !tenterEsquive(duel, entite, sourceType))
         .map((entite) => ({ camp, entite })));
       for (const { camp, entite } of victimes) {
         enterrer(duel, camp, entite, sourceElement, declenchements);
@@ -2366,7 +2405,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       for (const campCible of [adv, cote]) {
         const victime = duel[campCible].creatures.find((entite) => entite.id === cibleId);
         if (!victime) continue;
-        if (rpgEstProtegee(victime, sourceElement)) return;
+        if (rpgEstProtegee(victime, sourceElement) || rpgEstProtegeeDesSorts(victime, sourceElement, sourceType)) return;
         // `coutMax` (le Père des corbeaux) : les corbeaux ne soulèvent que les
         // créatures de coût 3 ou moins — au-delà, la cible est illégale.
         if (Number.isFinite(effet.coutMax)
@@ -2389,7 +2428,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     }
     case 'arme': {
       const porteur = duel[cote].creatures.find((entite) => entite.id === cibleId);
-      if (!porteur || rpgEstProtegee(porteur, sourceElement)) return;
+      if (!porteur || rpgEstProtegee(porteur, sourceElement)
+        || rpgEstProtegeeDesSorts(porteur, sourceElement, sourceType)) return;
       porteur.armes ??= [];
       porteur.armes.push(sourceCarteId);
       porteur.atk += effet.atk ?? 0;
@@ -2494,22 +2534,22 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       if (effet.cible === 'toutes-autres') {
         for (const campCible of [cote, adv]) {
           for (const entite of [...duel[campCible].creatures]) {
-            if (entite.id === sauf) continue;
-            renvoyerEnMain(duel, campCible, entite, sourceElement);
+            if (entite.id === sauf || tenterEsquive(duel, entite, sourceType)) continue;
+            renvoyerEnMain(duel, campCible, entite, sourceElement, sourceType);
           }
         }
       } else if (effet.cible === 'creature-amie') {
         const cibles = duel[cote].creatures.filter((entite) => entite.id === cibleId);
         for (const cible of cibles) {
-          renvoyerEnMain(duel, cote, cible, sourceElement);
+          renvoyerEnMain(duel, cote, cible, sourceElement, sourceType);
         }
       } else {
         const enFace = duel[adv].creatures.find((entite) => entite.id === cibleId);
         const chezSoi = duel[cote].creatures.find((entite) => entite.id === cibleId && entite.id !== sauf);
         if (enFace) {
-          renvoyerEnMain(duel, adv, enFace, sourceElement);
+          renvoyerEnMain(duel, adv, enFace, sourceElement, sourceType);
         } else if (chezSoi) {
-          renvoyerEnMain(duel, cote, chezSoi, sourceElement);
+          renvoyerEnMain(duel, cote, chezSoi, sourceElement, sourceType);
         }
       }
       for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
@@ -2625,8 +2665,11 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     }
     case 'bouclier': {
       if (effet.cible === 'creature-amie') {
-        const entite = duel[cote].creatures.find((e) => e.id === cibleId);
-        if (entite && !rpgEstProtegee(entite, sourceElement)) {
+        // Sans autre allié (ou lors d’une réanimation), la Veilleuse retombe
+        // sur sa propre entité : son arrivée ne se perd jamais.
+        const entite = duel[cote].creatures.find((e) => e.id === (cibleId ?? sauf));
+        if (entite && !rpgEstProtegee(entite, sourceElement)
+          && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) {
           entite.bouclier = (entite.bouclier ?? 0) + (effet.amount ?? 0);
           if (entite.bouclier > 0) entite.bouclierEpuise = false;
         }
@@ -2691,12 +2734,13 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // `sauf` — un mode de la Jitte d’Amayas grandit le porteur seul, pas le
       // camp entier. Toutes les autres buffs campent sur le camp et
       // s'excluent elles-mêmes (`sauf`).
-      const horsSort = (entite) => contreAdversaire
-        && entite.protectionSorts && sourceType === 'magie';
+      const horsSort = (entite) => contreAdversaire && sourceType === 'magie'
+        && (rpgEstProtegeeDesSorts(entite, sourceElement, sourceType) || tenterEsquive(duel, entite, sourceType));
       const ciblesBuff = effet.cible === 'porteur'
         ? campCible.creatures.filter((entite) => entite.id === sauf && !rpgEstProtegee(entite, sourceElement))
         : campCible.creatures.filter((entite) => entite.id !== sauf
-          && !rpgEstProtegee(entite, sourceElement) && !horsSort(entite)
+          && !rpgEstProtegee(entite, sourceElement)
+          && !horsSort(entite)
           // Le Grand Débarquement ne renforce que les cales pleines : une
           // créature sans prise à bord ne débarque personne.
           && (!effet.caleOccupeeSeulement || Boolean(entite.enCale)));
@@ -2759,7 +2803,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // le peut lors de la prochaine attaque du lanceur (le marqueur est
       // dépensé par cette attaque, voir `rpgLancerAttaque`).
       const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
-      if (!entite || rpgEstProtegee(entite, sourceElement)) return;
+      if (!entite || rpgEstProtegee(entite, sourceElement)
+        || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) return;
       entite.blocageForce = { par: cote, portee: effet.portee === 'tour' ? 'tour' : 'attaque' };
       duel.log.push(`${entite.name} devra bloquer si elle le peut lors de votre prochaine attaque.`);
       return;
@@ -2778,7 +2823,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       const ouvreLaRoute = effet.cible === 'autres-allies';
       for (const entite of duel[cote].creatures) {
         if (ouvreLaRoute && entite.id === sauf) continue;
-        if (rpgEstProtegee(entite, sourceElement)) continue;
+        if (rpgEstProtegee(entite, sourceElement)
+          || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) continue;
         entite.atk += bonusAttaque;
         entite.pvMax = (entite.pvMax ?? entite.def) + bonusDefense;
         entite.def += bonusDefense;
@@ -2849,21 +2895,29 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId);
         return;
       }
+      // La plupart des vagues « toutes-creatures » sont hostiles. Ifrit
+      // al-Ahmar déclare explicitement `inclutAllies` : sa vague balaie les
+      // deux camps et ne s'épargne pas elle-même.
       const cibles = effet.cible === 'toutes-creatures'
-        ? [...duel[adv].creatures]
-        : duel[adv].creatures.filter((entite) => entite.id === cibleId);
+        ? (effet.inclutAllies
+          ? [cote, adv].flatMap((camp) => duel[camp].creatures.map((entite) => ({ entite, camp })))
+          : duel[adv].creatures.map((entite) => ({ entite, camp: adv })))
+        : duel[adv].creatures.filter((entite) => entite.id === cibleId).map((entite) => ({ entite, camp: adv }));
       // `gelChance` (le Hurlement du blizzard, la Brume du fjord) : chaque
       // créature touchée tire son propre jet — le même hasard que le duel.
       const rngGel = hasardParDuel.get(duel) ?? Math.random;
-      for (const cible of cibles) {
-        rpgBlesserCreature(duel, adv, cible.id, effet.amount ?? 0, sourceElement, null, sourceType, sourceCarteId);
+      for (const { entite: cible, camp: campCible } of cibles) {
+        const blessure = rpgBlesserCreature(duel, campCible, cible.id, effet.amount ?? 0, sourceElement, null, sourceType, sourceCarteId);
+        // Un sort esquivé est annulé en entier sur cette créature : ni dégât,
+        // ni gel associé. Les autres cibles font leur propre jet.
+        if (blessure.esquive) continue;
         // Le gel (`gel`) accompagne les dégâts — la Poigne de givre, le
         // Verglas. La créature tuée n'a rien à figer ; la survivante ne
         // rejoindra ni l'attaque ni le blocage avant la fin de son prochain tour.
         if (effet.gel || effet.gelChance) {
-          const survivante = duel[adv].creatures.find((entite) => entite.id === cible.id);
+          const survivante = duel[campCible].creatures.find((entite) => entite.id === cible.id);
           if (!survivante) continue;
-          if (survivante.protectionSorts && sourceType === 'magie') continue;
+          if (rpgEstProtegeeDesSorts(survivante, sourceElement, sourceType)) continue;
           if (rpgEstProtegee(survivante, sourceElement)) continue;
           if (effet.gel || rngGel() < effet.gelChance) {
             gelerEntite(duel, survivante);
@@ -2910,9 +2964,12 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // prochain tour. La protection contre la couleur de la source fait écran
       // au gel exactement comme elle ferait écran aux dégâts.
       const cibles = effet.cible === 'toutes-creatures'
-        ? duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, sourceElement))
+        ? duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, sourceElement)
+          && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
+          && !tenterEsquive(duel, entite, sourceType))
         : duel[adv].creatures.filter((entite) => entite.id === cibleId
-          && !rpgEstProtegee(entite, sourceElement));
+          && !rpgEstProtegee(entite, sourceElement)
+          && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType));
       for (const cible of cibles) gelerEntite(duel, cible);
       return;
     }
@@ -3008,7 +3065,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // (`minimum` empêche de tuer par la statistique seule — l'Embuscade).
       const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
       if (!entite || rpgEstProtegee(entite, sourceElement)) return;
-      if (entite.protectionSorts && sourceType === 'magie') return;
+      if (rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) return;
       const plancher = Number.isFinite(effet.minimum) ? effet.minimum : 0;
       const bonusDefense = effet.def ?? 0;
       entite.atk = Math.max(plancher, entite.atk + (effet.atk ?? 0));
@@ -3050,7 +3107,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       // table, mais la défense s'éteint — elle ne peut pas bloquer jusqu'à la
       // fin de son prochain tour.
       const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
-      if (!entite || rpgEstProtegee(entite, sourceElement)) return;
+      if (!entite || rpgEstProtegee(entite, sourceElement)
+        || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) return;
       entite.empecheBlocageToursRestants = Math.max(
         entite.empecheBlocageToursRestants,
         dureeJusquAuProchainTour(duel, entite),
@@ -3067,6 +3125,8 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         : [duel[cote].creatures.find((candidate) => candidate.id === cibleId)].filter(Boolean);
       if (!ciblesDonne.length) return;
       for (const entite of ciblesDonne) {
+        if (rpgEstProtegee(entite, sourceElement)
+          || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) continue;
         if (effet.donne?.infiltration) {
           entite.infiltration = true;
           entite.infiltrationTour = true;
@@ -3116,11 +3176,11 @@ function detacherArmes(duel, cote, entite) {
  * compteurs) : la rejouer coûtera de nouveau son mana. La protection contre la
  * couleur du sort arrête le renvoi, comme elle arrête les dégâts.
  */
-function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
+function renvoyerEnMain(duel, cote, entite, sourceElement = null, sourceType = null) {
   const camp = duel[cote];
   const presente = camp.creatures.find((e) => e.id === entite.id);
   if (!presente) return false;
-  if (rpgEstProtegee(presente, sourceElement)) {
+  if (rpgEstProtegee(presente, sourceElement) || rpgEstProtegeeDesSorts(presente, sourceElement, sourceType)) {
     duel.log.push(`${presente.name} échappe au renvoi : protégée.`);
     return false;
   }
@@ -3402,7 +3462,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
     return { ok: true, recus: 0, absorbes: 0, protegee: true };
   }
   // Le Serpent du monde : les sorts ne le blessent pas, même en zone.
-  if (entite.protectionSorts && sourceType === 'magie') {
+  if (rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) {
     return { ok: true, recus: 0, absorbes: 0, protegee: true };
   }
   if (entite.bouclierLumiere && (sourceType === 'attaque' || sourceType === 'magie')) {
@@ -3410,8 +3470,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
     if (!(entite.bouclier > 0)) entite.bouclierEpuise = true;
     return { ok: true, recus: 0, absorbes: 0, bouclierLumiere: true };
   }
-  if (esquiveAttaque(duel, entite, sourceType)) {
-    duel.log.push(`${entite.name} esquive l’attaque.`);
+  if (tenterEsquive(duel, entite, sourceType)) {
     return { ok: true, recus: 0, absorbes: 0, esquive: true };
   }
   const apresEsquive = Math.max(0, amount);
@@ -3468,6 +3527,7 @@ export function arriveeCiblePortee(carte) {
   }
   if (arrivee.type === 'debuff' || arrivee.type === 'empeche-blocage') return 'ennemi';
   if (arrivee.type === 'donne') return 'allie';
+  if (arrivee.type === 'bouclier' && arrivee.cible === 'creature-amie' && arrivee.choisirCible) return 'allie';
   return null;
 }
 
@@ -3508,11 +3568,12 @@ export function cibleRespecteCoutMax(carte, entite) {
   return rpgCoutEntite(entite) <= carte.arrivee.coutMax;
 }
 
-export function arriveeACibleLegale(duel, cote, carte) {
+export function arriveeACibleLegale(duel, cote, carte, entiteId = null) {
   const portee = arriveeCiblePortee(carte);
   if (!portee) return false;
   return campsDePortee(cote, portee)
-    .some((camp) => duel[camp].creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte))
+    .some((camp) => duel[camp].creatures.some((entite) => entite.id !== entiteId
+      && !rpgEstProtegee(entite, cardColors(carte))
       && cibleRespecteCoutMax(carte, entite)));
 }
 
@@ -3602,7 +3663,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
-  if (['debuff', 'empeche-blocage', 'donne'].includes(carte.arrivee?.type)) {
+  if (['debuff', 'empeche-blocage', 'donne'].includes(carte.arrivee?.type)
+    || (carte.arrivee?.type === 'bouclier' && carte.arrivee.choisirCible)) {
     // Une arrivée qui marque une créature (le venin de la Vipère, la lune de
     // Bakunawa, le passage ouvert du Faiseur) exige sa cible comme le duel
     // d'un Jarl — la portée dit quel camp, la protection garde ses droits.
@@ -3676,7 +3738,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     // Quand la Lettre de marque arme aussi les
     // arrivées, l'attente porte à la fois la cible d'arrivée et le seuil
     // d'Abordage : les deux seront résolus l'un après l'autre.
-    if (cibleDifferee && !cibleId && arriveeACibleLegale(duel, cote, carte)) {
+    if (cibleDifferee && !cibleId && arriveeACibleLegale(duel, cote, carte, entite.id)) {
       const seuilAbordagePose = seuilAbordage(carte, camp, prochainAbordageOffert);
       duel.arriveeEnAttente = {
         cote,
@@ -4178,8 +4240,8 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   const couleursAttaquant = cardColors(carteAttaquant);
   const couleursCible = cardColors(carteCible);
   const degatsAvantCombat = [];
-  ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, carteAttaquant, cible, attaquant);
-  ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, autre(cote), carteCible, attaquant, cible);
+  ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, carteAttaquant, cible, attaquant, 'attaque');
+  ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, autre(cote), carteCible, attaquant, cible, 'blocage');
   appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
 
   const coupsNormaux = [];
@@ -4252,7 +4314,7 @@ export function rpgContreJouable(duel, cote, carte) {
 function entiteCiblableParSort(entite, carte) {
   return Boolean(entite)
     && !rpgEstProtegee(entite, cardColors(carte))
-    && !entite.protectionSorts;
+    && !rpgEstProtegeeDesSorts(entite, cardColors(carte));
 }
 
 /**
@@ -4380,7 +4442,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     if (!idVise || idVise === 'sorcier') continue;
     const visee = [...duel.joueur.creatures, ...duel.sorcier.creatures]
       .find((entite) => entite.id === idVise);
-    if (visee?.protectionSorts || estSite(visee)) return { ok: false, raison: 'protection' };
+    if (rpgEstProtegeeDesSorts(visee, cardColors(carte)) || estSite(visee)) return { ok: false, raison: 'protection' };
   }
 
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
@@ -4481,12 +4543,15 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
   rpgActionsEtat(duel);
+  // Une Esquive annule le renvoi : la cible est toujours sur la table et la
+  // page ne doit pas jouer son animation de retour en main.
+  const renvoiEffectif = Boolean(creatureRetourneeEnMain && !creatureRetourneeEnMain.jeton
+    && ![...duel.joueur.creatures, ...duel.sorcier.creatures]
+      .some((entite) => entite.id === creatureRetourneeEnMain.id));
   return {
     ok: true,
-    renvoiMain: Boolean(creatureRetourneeEnMain && !creatureRetourneeEnMain.jeton),
-    renvoiEntityId: creatureRetourneeEnMain && !creatureRetourneeEnMain.jeton
-      ? creatureRetourneeEnMain.id
-      : null,
+    renvoiMain: renvoiEffectif,
+    renvoiEntityId: renvoiEffectif ? creatureRetourneeEnMain.id : null,
   };
 }
 
@@ -4798,12 +4863,27 @@ export function rpgLancerAttaque(
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
-      if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant);
-      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur);
+      if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant, 'attaque');
+      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur, 'blocage');
     }
   }
   const apresCapacites = degatsAvantCombat.length ? JSON.parse(JSON.stringify(duel)) : duel;
-  if (degatsAvantCombat.length) appliquerDegatsDeCombatSimultanes(apresCapacites, degatsAvantCombat);
+  if (degatsAvantCombat.length) {
+    // La copie sert à valider la répartition, la partie réelle à la résoudre.
+    // Enregistrer puis rejouer les jets évite qu’une Esquive réussie sur la
+    // copie soit différente sur la table (ce qui ferait disparaître une
+    // riposte ou invaliderait un blocage à cause du seul hasard).
+    const rngSource = hasardParDuel.get(duel) ?? Math.random;
+    const jets = [];
+    hasardParDuel.set(apresCapacites, () => {
+      const jet = rngSource();
+      jets.push(jet);
+      return jet;
+    });
+    appliquerDegatsDeCombatSimultanes(apresCapacites, degatsAvantCombat);
+    let rejoues = 0;
+    hasardParDuel.set(duel, () => (rejoues < jets.length ? jets[rejoues++] : rngSource()));
+  }
   const attaquantsApresCapacites = apresCapacites[cote].creatures.filter((entite) => ids.includes(entite.id));
   const bloqueursApresCapacites = new Set(apresCapacites[adv].creatures.map((entite) => entite.id));
   const blocagesApresCapacites = Object.fromEntries(attaquantsApresCapacites.map((entite) => [

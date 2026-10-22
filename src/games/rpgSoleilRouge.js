@@ -85,7 +85,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'samourai-du-torii', name: 'Samouraï du torii',
-    cost: 3, atk: 2, def: 2, rarity: 'rare',
+    cost: 4, atk: 2, def: 2, rarity: 'rare',
     typeLine: 'Créature — Humain · Samouraï',
     resonance: 1,
     resonanceTribu: 'samourai',
@@ -98,12 +98,12 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
     esquive: true,
-    text: 'Esquive — 30 % de chance d’esquiver une attaque : elle ne porte pas du tout.',
+    text: 'Esquive — 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({
     id: 'tengu-du-mont-ardent', name: 'Tengu du mont ardent',
-    cost: 4, atk: 2, def: 2, rarity: 'rare', envol: true,
+    cost: 4, atk: 2, def: 3, rarity: 'rare', envol: true,
     typeLine: 'Créature — Yōkai · Tengu',
     resonance: 1,
     resonanceTribu: 'samourai',
@@ -122,9 +122,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     cost: 6, atk: 6, def: 5, rarity: 'mythique',
     typeLine: 'Créature légendaire — Kami · Feu',
     coupRapide: true,
-    resonance: 1,
-    resonanceTribu: 'samourai',
-    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Résonance samouraï — Tant que Kagutsuchi est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1.',
+    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
   }),  // Trois samouraïs de plus : une recrue commune, un soutien rare et un
   // daimyō mythique. Leur type imprimé suffit à recevoir la Résonance samouraï.
@@ -139,16 +137,16 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'kenshi-de-la-forge', name: 'Kenshi de la forge',
     cost: 3, atk: 1, def: 2, rarity: 'rare',
     typeLine: 'Créature — Humain · Samouraï',
-    // L'aura de forge : +1/+0 aux AUTRES Samouraïs de SON camp — une aura ne
-    // franchit jamais la ligne du camp adverse (voir `appliquerAuraKenshi`).
-    // Le petit corps est le prix de l'aura.
-    aura: { type: 'buff-tribu', tribu: 'samourai', atk: 1, def: 0, saufSoi: true, camps: 'camp' },
-    text: 'Tant qu’il est en jeu, les autres créatures de type Samouraï de votre camp gagnent +1/+0.',
+    // L'aura de forge : +1/+0 à TOUTES les AUTRES créatures de SON camp,
+    // quel que soit leur type — une aura ne franchit jamais la ligne du camp
+    // adverse (voir `appliquerAuraKenshi`). Le petit corps est le prix de l'aura.
+    aura: { type: 'buff-autres', atk: 1, def: 0, saufSoi: true, camps: 'camp' },
+    text: 'Tant qu’il est en jeu, toutes vos autres créatures gagnent +1/+0, quel que soit leur type.',
     flavor: 'Il a appris à tenir l’acier avant de savoir tenir une lame.',
   }),
   carte({
     id: 'daimyo-du-soleil-rouge', name: 'Daimyō du Soleil rouge',
-    cost: 5, atk: 3, def: 3, rarity: 'mythique',
+    cost: 5, atk: 3, def: 4, rarity: 'mythique',
     typeLine: 'Créature — Humain · Samouraï',
     // Il lève ses deux Samouraïs en arrivant, puis grandit chaque attaque de son
     // camp : la bannière ne se lit que sur les créatures de type Samouraï.
@@ -175,8 +173,8 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     kind: 'magie', cost: 2, rarity: 'rare', instant: true,
     typeLine: 'Magie Rapide — Technique · Braise',
     cibles: ['creature'],
-    effet: { type: 'degats', amount: 3, cible: 'creature' },
-    text: 'Magie Rapide — Inflige 3 dégâts à une créature ciblée.',
+    effet: { type: 'degats', amount: 2, cible: 'creature' },
+    text: 'Magie Rapide — Inflige 2 dégâts à une créature ciblée.',
     flavor: 'Le fourreau n’a pas fini de résonner que le duel est terminé.',
   }),
   carte({

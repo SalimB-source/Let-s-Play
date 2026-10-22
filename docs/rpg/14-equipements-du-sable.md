@@ -82,9 +82,10 @@ arrivée de Tarek.
 > *« Le sel tient mieux que le fer quand le fer chauffe. »*
 
 `donne: { esquive: true }`. Aucune brique moteur (`attacherArme` pose déjà le
-mot-clé). **Esquive** donne **30 % de chance d'esquiver une attaque** : le coup
-ne porte pas du tout ; les magies et les capacités, elles, ne s'esquivent
-jamais. La première **armure** Sable : le pendant défensif de la Takouba des
+mot-clé). **Esquive** donne **30 % de chance d'esquiver une attaque, une Magie
+ou une Sorcellerie** : leur effet sur le porteur ne porte pas du tout ; les
+capacités, elles, ne s'esquivent jamais. La première **armure** Sable : le
+pendant défensif de la Takouba des
 pistes, qui rend une Amani des ksour (2/5) ou une Dune marchante (2/5) très
 difficile à tuer au combat — et donne enfin une cible d'équipement aux créatures
 à forte défense du Sable, qui n'avaient rien à porter.

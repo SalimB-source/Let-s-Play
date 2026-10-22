@@ -117,7 +117,7 @@ test('les Sandales de Tislit donnent la Rapidité : un jeton équipé frappe le 
   assert.equal(porteur.def, 2 + 1, '+0/+1');
 });
 
-test('la Cuirasse de sel donne +0/+3 et Esquive : 30 % des attaques sont annulées', () => {
+test('la Cuirasse de sel donne +0/+3 et Esquive contre les attaques comme contre les sorts', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'cuirasse-de-sel', porteur);
@@ -132,9 +132,13 @@ test('la Cuirasse de sel donne +0/+3 et Esquive : 30 % des attaques sont annulé
   assert.equal(res.ok, true);
   assert.equal(porteur.pv, 5, 'l’attaque esquivée ne laisse aucun dégât sur 5 de défense');
 
-  // Une magie n’est jamais esquivée : 3 dégâts passent.
+  // Le même seuil s’applique aux sorts : à 29 %, la magie est esquivée ;
+  // à 30 %, le jet échoue et ses 3 dégâts passent.
   rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'braise', null, 'magie');
-  assert.equal(porteur.pv, 2, 'la magie retire ses 3 points, sans Esquive');
+  assert.equal(porteur.pv, 5, 'la magie est esquivée à 29 %');
+  rpgReglerHasard(duel, () => 0.30);
+  rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'braise', null, 'magie');
+  assert.equal(porteur.pv, 2, 'à 30 %, l’Esquive échoue et la magie retire ses 3 points');
 });
 
 test('le Javelot du beffroi donne le Coup rapide, que le remplacement retire', () => {

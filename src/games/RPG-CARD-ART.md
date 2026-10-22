@@ -123,11 +123,11 @@ attribut, parce que leur sujet ne doit jamais se réduire à un objet :
   direction générale de la collection : deux bandes de guerriers du fjord
   saisis par le même mur de neige, aucun camp épargné.
 - **Hache de la banquise** (`hache-de-la-banquise.jpg`) — arme Neige à 3 manas :
-  elle inflige 1 dégât à son porteur en s'attachant, puis il gagne +2/+0 et un
-  bouclier de 1. Comme les autres armes du prototype, elle suit la
-  **dérogation photoréaliste** documentée plus bas : le porteur tient l'arme
-  en pleine action, l'arme entièrement dans le cadre, pointe et pommeau
-  dégagés.
+  sa nouvelle illustration 4:5 montre **la hache seule**, entière, avec sa lame
+  givrée **plantée dans la glace**, ses entrelacs et son manche dressé au
+  premier plan d'un fjord de banquise. La glace se fissure autour du point
+  d'impact. Aucun porteur, aucune main et aucune autre arme ne viennent
+  concurrencer l'objet. Révision dédiée `hache-plantee-glace-v2`.
 
 ## État des sept magies reprises en plein art 4:5
 
@@ -186,7 +186,7 @@ Les scènes d’action et les identités des cartes sont conservées :
 
 - **Ashigaru des braises** : avance au yari, deux fantassins derrière lui.
 - **Rōnin du Soleil rouge** : course sur les marches brisées d’une forteresse.
-- **Samouraï du torii** : parade au katana contre un second guerrier.
+- **Samouraï du torii** : chef samouraï qui expose sa stratégie sur une carte de bataille sous une tente, entouré de ses officiers ; le torii reste visible par l’ouverture. Nouvelle version d’image : `chef-samourai-strategie-sous-la-tente-v1`.
 - **Onna-musha des cendres** : naginata sur un toit, avec une guerrière alliée.
 - **Tengu du mont ardent** : plongeon ailé entre les montagnes.
 - **Oni de la fournaise** : course sur un pont de pierre, kanabō sur l’épaule.
@@ -227,17 +227,18 @@ n’ajoute aucune carte au catalogue : le jeton vit hors de `RPG_DUEL_CARDS`,
 comme les chiens de sable.
 
 Le **Kenshi de la forge** a, lui, reçu l'**aura de forge** : 1/2 au lieu de 2/4,
-et « tant qu'il est en jeu, les autres créatures de type Samouraï de votre camp
-gagnent +1/+0 » — l'aura ne touche jamais la défense, donc la perdre ne peut pas
-tuer. Sa peinture ne change pas (le forgeron frappant une
-lame en fusion reste son illustration, version `soleil-rouge-kaiga-couleurs-v7`) :
-c'est bien lui qui forge les autres, y compris les Samouraïs du camp adverse,
-comme le veut le texte imprimé.
+et « tant qu'il est en jeu, toutes vos autres créatures gagnent +1/+0, quel que
+soit leur type » — l'aura ne touche jamais la défense, donc la perdre ne peut pas
+tuer. Sa peinture ne change pas (le forgeron frappant une lame en fusion reste
+son illustration, version `soleil-rouge-kaiga-couleurs-v7`) : il forge toutes les
+autres créatures de son propre camp, sans franchir la ligne adverse.
 
 Les peintures sont versionnées `soleil-rouge-kaiga-couleurs-v7` dans
-`CARD_ART_CACHE_VERSIONS`, sauf les Feux de kitsune (`kitsune-kaiga-couleurs-v4`)
-et la Frappe d’iaijutsu corrigée (`iaijutsu-kaiga-couleurs-sans-jambes-v10`). Les noms des fichiers, le plein art 1024×1280 et les
-règles des cartes restent inchangés.
+`CARD_ART_CACHE_VERSIONS`, sauf le Samouraï du torii
+(`chef-samourai-strategie-sous-la-tente-v1`), les Feux de kitsune
+(`kitsune-kaiga-couleurs-v4`) et la Frappe d’iaijutsu corrigée
+(`iaijutsu-kaiga-couleurs-sans-jambes-v10`). Les noms des fichiers et le plein
+art 1024×1280 restent inchangés.
 
 Les sujets humains s’inspirent des guerriers du Japon ; les tengu, oni,
 kitsune et Kagutsuchi relèvent de sa mythologie et ne sont pas présentés
@@ -247,7 +248,7 @@ de cendre existantes ; il n’ajoute pas de terrain sans illustration dédiée.
 
 ### Résonance samouraï
 
-Le Samouraï du torii, le Tengu et Kagutsuchi portent **Résonance samouraï** : chaque source donne
+Le Samouraï du torii et le Tengu portent **Résonance samouraï** ; Kagutsuchi n’en porte plus. Chaque source donne
 +1/+1 uniquement aux créatures dont la ligne de type indique **Samouraï**, dans
 les deux camps et quelle que soit leur couleur. La couleur Braise et le nom
 d’une carte ne suffisent pas. Ni les yōkai, ni les kami, ni les autres types
@@ -382,13 +383,23 @@ reprend trait pour trait — même meute au couchant, même cadrage — avec le
 chef de meute ensanglanté, blessé à l’épaule et à la patte, babines retroussées
 (`loup-des-neiges-furie.jpg`, 1024×1280, révision `loup-furie-huile-v1`).
 
+La **Valkyrie au corbeau**, désormais dotée de **Furie 2**, possède aussi une
+peinture alternative (`valkyrie-au-corbeau-furie.jpg`, 1024×1280, révision
+`valkyrie-vol-plongeon-enragee-v4`) qui repart de sa face intacte : même
+Valkyrie, même heaume ailé, même corbeau noir, même bouclier et même champ de
+bataille. Elle vole maintenant haut dans le ciel et fond sur sa cible dans un
+plongeon enragé, jambes repliées par l’élan, cape et tresses balayées par la
+vitesse. Elle brandit son épée ensanglantée, le visage couvert de sang, tandis
+que son corbeau noir descend en vol à ses côtés ; le champ de bataille reste
+lointain sous les nuages. Sa face intacte et l’appel de Viking ne changent pas.
+
 En jeu, tant que la Furie est active, la peinture alternative pleine page
 s’affiche sans cadre, sur la table comme dans la preview ; une **vignette
 rouge animée** serre alors les bords de la face des deux côtés (elle devient
 statique si les mouvements réduits sont demandés). Quand l’état retombe, la
 face intacte et son cadre reviennent. Les faces intactes rejoignent le
 garde-fou `PLEIN_ART_45`, et `check:rpg-furie-preview` mesure les fichiers
-des cinq porteurs tout en rendant les deux états.
+des six porteurs tout en rendant les deux états.
 
 ## Dérogation : les équipements du Sable en nihonga coloré (octobre 2026)
 
@@ -484,8 +495,10 @@ photoréaliste, gel en fresque).
 
 - **Ce qui ne change pas** : l'identité des cinq héros du récit. Âge, visage,
   teint, coiffure, barbe, silhouette, tenue de métier et accessoires restent
-  ceux de la peinture précédente, reprise comme référence ; la pose et le
-  cadrage aussi. Un personnage garde **un seul fichier**, réutilisé par la
+  ceux de la peinture précédente, reprise comme référence. La pose et le
+  cadrage sont conservés pour Salem, Yamina, Tarek et Boualem ; **Fériel
+  fait exception** avec sa nouvelle scène d’archère sur la tour, décrite
+  ci-dessous. Un personnage garde **un seul fichier**, réutilisé par la
   carte, le dialogue, le journal et la plaque adverse du duel (voir
   `docs/rpg/11-bible-visuelle.md`). Le Serpent du monde garde, lui, son identité
   de grand serpent marin du Nord et la facture nihonga algérienne.
@@ -537,11 +550,25 @@ photoréaliste, gel en fresque).
   l'intérieur. La citerne disparaît donc du cadre. Motifs amazighs carrelés
   dans le laiton de la vitrine et du bâton.
 
+### Passe ciblée : Fériel et le Hollandais volant
+
+- **Fériel** (`feriel.jpg`) conserve ses vêtements et ses motifs algériens,
+  mais sa composition est nouvelle : elle se tient **au sommet d'une tour**,
+  au-dessus de la ville et des dunes, et bande son arc avec **une flèche
+  électrique** encochée. La révision dédiée est
+  `feriel-tour-fleche-electrique-v1` ; les quatre autres héros gardent la
+  révision commune du lot nihonga.
+- **La légende du Hollandais volant** (`la-vengeance-de-la-reine-anne.jpg`)
+  est désormais une scène **photoréaliste** : un trois-mâts en bois usé,
+  voiles déchirés, lune, embruns et vagues détaillées, avec une luminescence
+  spectrale discrète. Sa révision est `hollandais-volant-photorealiste-v2`.
+
 ### Versions de cache
 
-Les cinq peintures des héros du récit sont datées ensemble par la révision
-`heros-nihonga-algerien-v1` dans `CARD_ART_CACHE_VERSIONS`
-(`RpgDuelPage.jsx`). Le Serpent du monde porte désormais sa révision dédiée,
+Les peintures de Salem, Yamina, Tarek et Boualem sont datées ensemble par la
+révision `heros-nihonga-algerien-v1` dans `CARD_ART_CACHE_VERSIONS`
+(`rpgCardArt.js`). Fériel possède la révision dédiée indiquée ci-dessus, car
+sa composition a changé. Le Serpent du monde porte désormais sa révision dédiée,
 `serpent-terre-nihonga-v1`, car sa composition a été entièrement repensée.
 L'Armure de cendres porte la sienne, `armure-nihonga-v1`, et le Bâton des
 citernes, `baton-nihonga-vitrine-dehors-v2`. Le jeton `serpent-des-citernes`

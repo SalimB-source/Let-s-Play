@@ -100,14 +100,14 @@ test('le sprite porte les 30 symboles validés, un par effet', () => {
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Rapidité', 'Butin']);
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Overkill', 'Furie 3']);
-  assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Furie 2'],
+  assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Furie 3'],
     'Provocation remplace Coup rapide dans les pastilles du Berserk');
   assert.deepEqual(pastillesDe('maitre-du-marteau'), ['Overkill', 'Furie 3', 'Tenacité']);
   assert.deepEqual(pastillesDe('loup-des-neiges'), ['Furie 1']);
-  assert.deepEqual(pastillesDe('valkyrie-des-glaces'), ['Envol', 'Protection Braise'],
-    'Envol et Protection, sans aucune Résonance');
-  assert.deepEqual(pastillesDe('valkyrie-au-corbeau'), ['Envol'],
-    'la Valkyrie au corbeau ne porte plus de pastille Résonance');
+  assert.deepEqual(pastillesDe('valkyrie-des-glaces'), ['Envol', 'Protection contre les sorts de Braise'],
+    'Envol et protection limitée aux sorts, sans aucune Résonance');
+  assert.deepEqual(pastillesDe('valkyrie-au-corbeau'), ['Envol', 'Furie 2'],
+    'la Valkyrie au corbeau porte Envol et Furie 2, sans Résonance');
   assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive', 'Honneur 1']);
   assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Honneur 1']);
   assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['Protection Braise']);
@@ -204,7 +204,7 @@ test('l’icône d’une ligne de règle est celle que la phrase annonce', () =>
     ['maree-contraire', 'contresort'],
     ['festin-des-vaillants', 'soin'],
     ['mur-de-boucliers', 'overkill'],
-    ['lance-de-givre', 'envol'],
+    ['lance-de-givre', 'coupRapide'],
     ['embuscade', 'debuff'],
   ]) {
     const carte = cardById(id);
@@ -266,7 +266,7 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   assert.equal(berserk.texte, '', 'Furie et Provocation vivent entièrement dans leurs pastilles');
 
   const corbeau = effetsDetailles(cardById('valkyrie-au-corbeau'));
-  assert.deepEqual(corbeau.pastilles.map((pastille) => pastille.label), ['Envol']);
+  assert.deepEqual(corbeau.pastilles.map((pastille) => pastille.label), ['Envol', 'Furie']);
   assert.equal(corbeau.texte,
     'Quand elle arrive : piochez une carte de type Viking au hasard dans votre deck.',
     'la pioche tribale d’arrivée reste écrite dans l’aperçu');
@@ -364,7 +364,7 @@ test('les cartes qui modifient les statistiques affichent leur chiffre', () => {
     'l’Embuscade rabote toute la table adverse de -2/-2');
   assert.deepEqual(pastillesDe('vipere-de-verre'), ['Affaiblissement -2/0'],
     'la vipère ne retire que de l’attaque : la défense reste à 0');
-  assert.deepEqual(pastillesDe('colosse-de-sel'), ['Renfort +1/+1'],
+  assert.deepEqual(pastillesDe('serment-de-la-forge'), ['Renfort +2/+1'],
     'une arrivée qui renforce s’écrit en positif');
   assert.deepEqual(pastillesDe('lame-de-mer').length, pastillesPourCarte(cardById('lame-de-mer')).length,
     'une seule pastille par carte');
@@ -377,7 +377,7 @@ test('la pastille chiffrée explique le malus, statistique par statistique', () 
   assert.equal(lire('vipere-de-verre'),
     'La cible perd 2 en attaque. Si sa défense tombe à 0, elle est détruite.',
     'la vipère ne dit pas qu’elle retire de la défense');
-  assert.equal(lire('colosse-de-sel'), 'La cible gagne 1 en attaque et 1 en défense.');
+  assert.equal(lire('serment-de-la-forge'), 'La cible gagne 2 en attaque et 1 en défense.');
 });
 
 test('le chiffre de la carte se lit aussi hors des pastilles', () => {
@@ -385,7 +385,7 @@ test('le chiffre de la carte se lit aussi hors des pastilles', () => {
   assert.deepEqual(modif('lame-de-mer'), { atk: -2, def: -2 });
   assert.deepEqual(modif('vipere-de-verre'), { atk: -2, def: 0 });
   assert.equal(libelleModificationStats(cardById('lame-de-mer')), '-2/-2');
-  assert.equal(libelleModificationStats(cardById('colosse-de-sel')), '+1/+1');
+  assert.equal(libelleModificationStats(cardById('serment-de-la-forge')), '+2/+1');
   // Une arme garde son bonus de porteur : pas de doublon chiffré.
   assert.equal(modif('khopesh-d-or'), null);
   assert.equal(libelleModificationStats(cardById('khopesh-d-or')), null);

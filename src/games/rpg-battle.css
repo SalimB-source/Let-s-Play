@@ -26,11 +26,8 @@
   color-scheme: dark;
 }
 
-/* ── Cadres responsive : l'épaisseur suit la carte, et c'est la plaque des
-   armes qui donne la mesure. Les armes sont arrivées avec un cadre d'acier
-   1,6 fois plus épais que celui des autres cartes ; côte à côte, deux
-   épaisseurs se lisaient comme deux formats de cartes. Toutes les faces
-   prennent donc désormais cette plaque : ≈ 7 % de la largeur de la carte
+/* ── Cadres responsive : l'épaisseur suit la carte. Toutes les faces
+   partagent la même plaque commune : ≈ 7 % de la largeur de la carte
    (contre ≈ 4,5 % pour le bord d'une carte Magic, 2,8 mm sur 63 mm) — un
    anneau large où la couleur de l'élément et le motif gravé se lisent
    franchement, sans manger l'illustration (le tout est en `border-box` :
@@ -8177,62 +8174,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card--frame-brillant { animation: none !important; background-position: 0 0, 0 0, 42% 0; }
 }
 
-/* ── Le cadre des armes : acier guilloché teinté par élément ────────────
-   Toutes les armes partagent la même matière — un acier poli guilloché,
-   posé par `cardFrameInfo` via la classe `rpg-card--frame-arme` — mais
-   chaque élément teinte son acier : rouge de Braise, bleu d'Eau, doré de
-   Sable et glacé de Neige. On reconnaît donc une arme à sa matière, puis
-   sa couleur à sa teinte.
-   Le motif change aussi : ni la résille commune ni le zellige mythique,
-   mais un **guilloché d'acier de Damas** — de fines ondes gravées, chacune
-   une ligne sombre doublée de son reflet, comme la matière ondée des
-   lames damassées et le guillochage des boîtiers de montre : un décor
-   discret et précieux, qui se lit dans l'anneau large commun à toutes les
-   cartes comme une gravure continue. Les règles viennent après celle des
-   mythiques : l'Armure de
-   cendres, mythique, perd le zellige mais garde son reflet animé sur son
-   acier rouge (classe `rpg-card--frame-brillant`). */
-.rpg-card--frame-arme {
-  --rpg-frame-gradient: linear-gradient(115deg, #454e56 0%, #828d95 15%, #dfe6eb 29%, #6e787f 43%, #c3ccd2 56%, #59636a 72%, #a7b2ba 87%, #454e56 100%);
-  --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='12' viewBox='0 0 18 12'%3E%3Cg fill='none' stroke-width='1'%3E%3Cpath d='M-2 3 Q2.5 .8 7 3 T16 3 T25 3' stroke='%23000' stroke-opacity='.38'/%3E%3Cpath d='M-2 4 Q2.5 1.8 7 4 T16 4 T25 4' stroke='%23fff' stroke-opacity='.28'/%3E%3Cpath d='M-2 9 Q2.5 6.8 7 9 T16 9 T25 9' stroke='%23000' stroke-opacity='.38'/%3E%3Cpath d='M-2 10 Q2.5 7.8 7 10 T16 10 T25 10' stroke='%23fff' stroke-opacity='.28'/%3E%3C/g%3E%3C/svg%3E");
-  --rpg-frame-motif-size: 18px 12px;
-  background-color: #5f6a72;
-}
-
-/* La même trempe d'acier, teintée par élément : chaque dégradé garde les
-   reflets clairs et les ombres profondes du métal poli, dans la famille de
-   couleur de son élément. Le guilloché de la règle commune court par-dessus,
-   inchangé d'une teinte à l'autre. */
-.rpg-card--frame-arme-braise {
-  --rpg-frame-gradient: linear-gradient(115deg, #3d1512 0%, #8f2d22 16%, #ff9a7a 31%, #74251d 46%, #eec0ab 59%, #5d1d17 74%, #c46a58 88%, #3d1512 100%);
-  background-color: #5d1d17;
-}
-.rpg-card--frame-arme-eau {
-  --rpg-frame-gradient: linear-gradient(115deg, #10283d 0%, #28689b 16%, #9bd8ff 31%, #1d4f78 46%, #dcf3ff 59%, #173f5f 74%, #6ba9cf 88%, #10283d 100%);
-  background-color: #173f5f;
-}
-.rpg-card--frame-arme-sable {
-  --rpg-frame-gradient: linear-gradient(115deg, #4a3517 0%, #a87f42 16%, #ffe9ad 31%, #8a6534 46%, #fff3cf 59%, #6b4d26 74%, #d3af72 88%, #4a3517 100%);
-  background-color: #6b4d26;
-}
-.rpg-card--frame-arme-neige {
-  --rpg-frame-gradient: linear-gradient(115deg, #31566b 0%, #79b5cf 16%, #ffffff 31%, #5d93ad 46%, #eaf9ff 59%, #47758d 74%, #bfe8f7 88%, #31566b 100%);
-  background-color: #47758d;
-}
-.rpg-card--frame-arme-tenebres {
-  --rpg-frame-gradient: linear-gradient(115deg, #191033 0%, #4b2e83 16%, #b39ae0 31%, #3a2468 46%, #ded2f7 59%, #2c1b56 74%, #7f63c4 88%, #191033 100%);
-  background-color: #2c1b56;
-}
-
-/* La plaque des armes n'est pas plus épaisse que les autres cadres : c'est
-   elle qui a donné la mesure commune (`--rpg-card-border*`, en tête de
-   fichier). Les armes sont arrivées avec un anneau ×1,6, et deux épaisseurs
-   côte à côte se lisaient comme deux formats de cartes ; toutes les faces
-   ont donc repris la plaque, et une arme ne se reconnaît plus qu'à sa
-   matière — l'acier guilloché — et à sa teinte. Aucune règle d'épaisseur
-   propre aux armes, ici comme au doigt (`rpg-mobile.css`), dans l'atelier
-   ou dans le guide : le gabarit de chaque face vaut pour toutes ses cartes. */
-
 /* L'aperçu rapide n'a pas de fond : l'illustration y flotte sur la table (voir
    `docs/rpg/mobile-layout.md`). Or l'aperçu porte les classes de cadre de la
    carte deux fois — sur sa racine (l'encadré entier, illustration + infos) et
@@ -9093,7 +9034,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* ── Le motif des magies et des terrains ──────────────────────────────────────
    La résille commune (posée par `.rpg-battle`) dit « ceci est un cadre » ; la
-   mythique y met son zellige, les armes leur guilloché d'acier. Il manquait les
+   mythique y met son zellige, tandis que les armes suivent la résille commune.
+   Il manquait les
    deux types qui se posent le plus souvent sur la table : la magie et le
    terrain. Chacun grave son dessin dans le même gabarit — la bordure
    transparente, le fond de face sur la padding-box, le motif puis la matière
@@ -9110,8 +9052,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    montre qu'une bande de 6 px, et les dessins se relaient d'un bord à l'autre.
 
    `:not(.rpg-card--mythique)` : une carte mythique garde son zellige, quel que
-   soit son type. Rien ici ne touche au cadre des armes — `cardMotifClass` n'en
-   attribue aucun au Sabre maudit, qui reste une magie au cadre d'acier. */
+   soit son type. `cardMotifClass` n'attribue aucun motif de sort au Sabre
+   maudit, qui suit le cadre ordinaire de son élément. */
 .rpg-card--motif-losange:not(.rpg-card--mythique) {
   --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath transform='translate(.28 .28)' fill='%23000' fill-opacity='.34' stroke='%23000' stroke-opacity='.34' stroke-width='1.5' d='M4 1.7 5.9 4 4 6.3 2.1 4Z'/%3E%3Cpath fill='%23fff' fill-opacity='.34' d='M4 1.7 5.9 4 2.1 4Z'/%3E%3Cpath fill='%23fff' fill-opacity='.22' d='M4 6.3 5.9 4 2.1 4Z'/%3E%3Cpath fill='none' stroke='%23fff' stroke-opacity='.3' stroke-width='.5' d='M2.1 4h3.8'/%3E%3C/svg%3E");
   --rpg-frame-motif-size: 8px 8px;
@@ -9344,11 +9286,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background-image: none !important;
 }
 
-/* La teinte de matière des mythiques et des armes (`#62180d`, l'acier…) ne
-   servait qu'à teindre l'anneau : sans anneau, elle ne peindrait plus qu'un
-   aplat derrière l'illustration. On la retire donc des deux familles. */
-.rpg-card--mythique[class*="rpg-card--frame-"],
-.rpg-card--frame-arme[class*="rpg-card--frame-"] {
+/* La teinte de matière des mythiques ne servait qu'à teindre l'anneau :
+   sans anneau, elle ne peindrait plus qu'un aplat derrière l'illustration. */
+.rpg-card--mythique[class*="rpg-card--frame-"] {
   background-color: transparent !important;
 }
 
@@ -9366,165 +9306,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-terrain.rpg-terrain-stack.is-partially-tapped {
   box-shadow: 0 0 0 1px rgba(255, 217, 168, .45) !important;
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   LA BOUTIQUE DU SABLIER — le cadre des armes revient, plus fin et gris
-   ──────────────────────────────────────────────────────────────────────────
-   Après « plus aucun cadre », une seule famille garde un anneau : les armes.
-   Même matière pour toutes — de l'acier — mais un acier gris, sans la trempe
-   colorée de l'élément. La carte d'une arme ne se distingue plus que par la
-   sienne ; celle d'une créature reste une image sans bordure.
-
-   Et l'anneau n'est plus un trait plein : il est repeint à la façon du jeu —
-   bordure transparente, matière peinte sur la border-box — pour porter un
-   acier poli ( `--rpg-arme-metal` ) et le guilloché de Damas. Ce dernier est
-   celui que `.rpg-card--frame-arme` posait déjà (`--rpg-frame-motif`), toujours
-   en vigueur : on ne réinvente pas la texture, on la repose à sa place. Le
-   zellige des mythiques et la résille des cartes, eux, restent absents.
-
-   L'épaisseur n'est plus celle d'une plaque (≈ 7 à 9 px, l'×1,6 des armes) mais
-   celle d'un filet de carte : 3 px sur les faces du jeu, 2 px sur les
-   petites — terrains, dessus des piles, vignette de magie jouée. Tout se règle
-   sur `--rpg-arme-cadre*` et `--rpg-arme-metal`, posés ci-dessous.
-
-   La bordure, elle, est transparente : tout l'anneau est peint sur la
-   border-box, à la façon du jeu — le fond de la face passe en `background-color`
-   (il est déjà posé par chaque face, via `--rpg-frame-fill`), et les deux
-   couches d'image ne portent que le décor : le guilloché puis l'acier poli.
-   C'est deux couches et non trois : le fond de face ne pouvait pas rester une
-   couche, trois couches dont une en `var()` ne sont plus tranchables par la
-   cascade de test — et la bordure transparente rend la première inutile.
-   ══════════════════════════════════════════════════════════════════════════ */
-.rpg-battle {
-  --rpg-arme-cadre: 5px;
-  --rpg-arme-cadre-apercu: 10px;
-  --rpg-arme-cadre-fin: 3px;
-  /* L'acier poli : des bandes sombres et claires en travers de l'anneau, ce
-     qui le fait lire comme du métal plutôt que comme un trait de peinture.
-     Trois réglages pour toute la matière — la couleur du gris, le nombre de
-     bandes, leur écart. */
-  --rpg-arme-metal: linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd);
-}
-
-/* Le filet est posé en `border` — le raccourci, comme le fait le jeu partout
-   ailleurs — et non en `border-width` : c'est plus court, et c'est la seule
-   forme que la cascade de test arrive à trancher entre deux règles
-   `!important` qui se suivent (voir le bloc jumeau de l'atelier). */
-.rpg-card[class*="rpg-card--frame-arme"],
-.rpg-hand__card[class*="rpg-card--frame-arme"],
-.rpg-hover-card-preview__face[class*="rpg-card--frame-arme"],
-.rpg-mulligan__card[class*="rpg-card--frame-arme"],
-.rpg-card-catalogue__art[class*="rpg-card--frame-arme"],
-.rpg-card-destruction-fx[class*="rpg-card--frame-arme"] {
-  border: var(--rpg-arme-cadre, 5px) solid transparent !important;
-  background-color: var(--rpg-frame-fill, #0c0c0e) !important;
-  background-image:
-    var(--rpg-frame-motif, none),
-    var(--rpg-arme-metal, linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd)) !important;
-  background-origin: border-box, border-box !important;
-  background-clip: border-box, border-box !important;
-  background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100% !important;
-  background-repeat: repeat, no-repeat !important;
-  background-position: 0 0, 0 0 !important;
-}
-
-.rpg-hover-card-preview__face[class*="rpg-card--frame-arme"] {
-  border: var(--rpg-arme-cadre-apercu, 10px) solid transparent !important;
-}
-
-/* Le mulligan et le catalogue sont les deux faces du **grand gabarit** : leur
-   cadre vaut `--rpg-card-border-large` (≈ 9,6 à 12,8 px), pas la plaque de
-   5 px des cartes tenues en main. L'anneau d'une arme y suivait pourtant la
-   valeur de la main : sur une face de 180 à 270 px, son filet d'acier était
-   deux fois plus fin que celui des créatures posées à côté, et l'arme — la
-   seule carte à porter un anneau — paraissait ne pas en avoir. Il reprend
-   donc l'épaisseur de sa propre face : une seule épaisseur par gabarit,
-   arme ou non, comme partout ailleurs. La couleur et le guilloché ne
-   bougent pas. */
-.rpg-mulligan__card[class*="rpg-card--frame-arme"],
-.rpg-card-catalogue__art[class*="rpg-card--frame-arme"] {
-  --rpg-arme-cadre: var(--rpg-card-border-large, 6px);
-}
-
-/* Les petites faces gardent proportionnellement le même filet : 2 px sur
-   43–96 px de large, 3 px y mangeraient le tiers de l'image. */
-.rpg-terrain[class*="rpg-card--frame-arme"],
-.rpg-spell-played__art[class*="rpg-card--frame-arme"],
-.rpg-card-pile__card--top[class*="rpg-card--frame-arme"] {
-  border: var(--rpg-arme-cadre-fin, 3px) solid transparent !important;
-  background-color: var(--rpg-frame-fill, #0c0c0e) !important;
-  background-image:
-    var(--rpg-frame-motif, none),
-    var(--rpg-arme-metal, linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd)) !important;
-  background-origin: border-box, border-box !important;
-  background-clip: border-box, border-box !important;
-  background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100% !important;
-  background-repeat: repeat, no-repeat !important;
-  background-position: 0 0, 0 0 !important;
-}
-
-/* ── La créature équipée porte le cadre d'acier de son arme ─────────────────
-   C'est l'anneau qui dit l'équipement : la carte d'arme ne se glisse plus
-   derrière son porteur (plus de plaque, plus de pile d'équipement dans le
-   DOM), et la face jouée reprend la matière des cartes d'arme — l'acier gris
-   guilloché, exactement celui que la boutique pose sur les cartes d'arme
-   (`armeCadreClass`, `rpgCards.js`).
-
-   Le filet n'est **pas** une bordure, contrairement à la carte d'arme : une
-   bordure entre dans la base de rétrécissement de l'item flex (Chromium
-   compte le contenu, bordure déduite), si bien qu'une carte de 136 px
-   bordée de 5 px gardait deux pixels de plus que ses voisines une fois la
-   rangée remplie — la créature équipée paraissait encore plus grande, en
-   plus petit. Le filet est donc un **calque intérieur** (`::before`), et la
-   carte garde exactement la taille de ses voisines.
-
-   **Le bord intérieur est ciselé.** Le calque est découpé par un masque SVG
-   (`--rpg-arme-ciselle`) : un rectangle arrondi à l'extérieur, un contour
-   irrégulier à l'intérieur, fait de facettes et de quelques entailles — la
-   taille de la carte, comme un cadre de métal repoussé à la main. Le masque
-   est étiré avec la carte (`preserveAspectRatio='none'`, gabarit 4:5) : ses
-   facettes suivent donc la taille de la face. Le filet fait ≈ 4,5 % de la
-   largeur de la carte (5 px sur une carte de 112 px, 3 px sur une de 64 px
-   au doigt) — l'épaisseur commune des cadres du jeu.
-
-   Le reste de la règle des armes ne s'applique plus à la face : la bordure
-   et la matière de fond sont retirées, seul le calque porte l'acier et son
-   guilloché (`--rpg-frame-motif`, posé par la classe `rpg-card--frame-arme`
-   que la carte porte aussi).
-   ══════════════════════════════════════════════════════════════════════════ */
-.rpg-card.is-arme-equipee {
-  border: 0 !important;
-  background-image: none !important;
-}
-.rpg-card.is-arme-equipee {
-  /* Le contour ciselé du cadre d'arme : rectangle arrondi moins un contour
-     irrégulier, dessiné dans un gabarit 4:5 et étiré avec la carte. */
-  --rpg-arme-ciselle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='250' viewBox='0 0 200 250' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M 14 0 H 186 Q 200 0 200 14 V 236 Q 200 250 186 250 H 14 Q 0 250 0 236 V 14 Q 0 0 14 0 Z M 9 10.8 L 21.1 9.5 L 33.3 9.3 L 45.4 8.2 L 57.5 11.7 L 69.7 8.8 L 81.8 8.3 L 93.9 7.6 L 106.1 9.4 L 118.2 7.1 L 130.3 7.7 L 142.5 11.3 L 154.6 8 L 166.7 5.5 L 178.9 7.3 L 191 10.7 L 190.5 21.9 L 191 34.8 L 193.5 47.7 L 189.9 60.6 L 194.1 73.4 L 194.1 86.3 L 192.4 99.2 L 188.3 112.1 L 191.7 125 L 192.3 137.9 L 191 150.8 L 191 163.7 L 193.2 176.6 L 192.7 189.4 L 189.3 202.3 L 190.4 215.2 L 193.9 228.1 L 192.6 241 L 178.9 240.5 L 166.7 241.3 L 154.6 245.1 L 142.5 238.7 L 130.3 241.2 L 118.2 242.1 L 106.1 244.2 L 93.9 238.3 L 81.8 241.7 L 69.7 243.7 L 57.5 244 L 45.4 237.9 L 33.3 239.5 L 21.1 242.7 L 9 239.3 L 9.5 228.1 L 9 215.2 L 5.4 202.3 L 9.2 189.4 L 5.6 176.6 L 8.3 163.7 L 10.6 150.8 L 11.7 137.9 L 10.5 125 L 7.9 112.1 L 7.4 99.2 L 10.7 86.3 L 8.1 73.4 L 7.3 60.6 L 8.7 47.7 L 7 34.8 L 8.1 21.9 L 7.4 9 Z'/%3E%3C/svg%3E");
-}
-.rpg-card.is-arme-equipee::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  border-radius: inherit;
-  background-image:
-    var(--rpg-frame-motif, none),
-    var(--rpg-arme-metal, linear-gradient(115deg, #4a5259, #dfe5ea 18%, #767e85 38%, #eef2f5 54%, #6b737a 74%, #aeb6bd));
-  background-origin: border-box, border-box;
-  background-size: var(--rpg-frame-motif-size, 18px 12px), 100% 100%;
-  background-repeat: repeat, no-repeat;
-  pointer-events: none;
-  /* Le contour ciselé. Une seule couche : le masque découpe l'anneau et son
-     bord intérieur d'un seul geste (voir la description ci-dessus). */
-  -webkit-mask-image: var(--rpg-arme-ciselle);
-  mask-image: var(--rpg-arme-ciselle);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: 0 0;
-  mask-position: 0 0;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -10157,13 +9938,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card__brume-nappe { animation: none; }
 }
 
-/* Une créature équipée n'est plus enveloppée dans un bloc : elle reçoit le
-   cadre d'acier de son arme (`armeCadreClass`, `rpgCards.js`) et reste une
-   carte de la rangée comme les autres. C'est ce qui a supprimé d'un coup les
-   deux défauts de l'ancienne plaque glissée dessous : un wrapper dont la
-   largeur venait du contenu, et un `flex-shrink: 0` qui l'empêchait de
-   rétrécir avec ses voisines quand la rangée se remplissait (la créature
-   armée paraissait alors plus grande que les autres, plein écran). */
+/* Les créatures équipées restent des cartes ordinaires de la rangée :
+   l'équipement est lisible dans leurs effets et leur aperçu, sans cadre
+   supplémentaire ni calque d'acier. */
 
 /* Les piles d'exemplaires identiques restent des blocs de la rangée : leur
    largeur ne vient pas de leur contenu et elles rétrécissent comme une carte. */

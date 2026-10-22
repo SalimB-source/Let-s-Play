@@ -292,10 +292,11 @@ async function scenarioChampAdverse(assert) {
 }
 
 /**
- * Une créature équipée d'une arme reçoit le cadre d'acier de son arme — la
- * carte d'arme ne se glisse plus derrière elle — et l'aperçu (survol, appui
- * long) dit de quelle arme il s'agit. Joué une fois au doigt, une fois à la
- * souris : la carte ne dépend pas de la disposition.
+ * Une créature équipée conserve le cadre ordinaire de sa propre carte : les
+ * armes n'ont plus de cadre spécifique. La carte d'arme ne se glisse pas
+ * derrière elle, et l'aperçu (survol, appui long) dit de quelle arme il
+ * s'agit. Joué une fois au doigt, une fois à la souris : la carte ne dépend
+ * pas de la disposition.
  */
 async function scenarioCreatureArmee(assert, disposition) {
   const duel = creerDuel(assert, {});
@@ -325,29 +326,27 @@ async function scenarioCreatureArmee(assert, disposition) {
     await finDuTour();
     await click(hand('desert'), `[${disposition}] poser le troisième Désert`);
 
-    // ── Un Chien nu n'est pas équipé : aucun cadre d'acier ─────────────────
+    // ── Un Chien nu : le cadre ordinaire de sa carte ───────────────────────
     const chien = camp('equipe', 'chien-du-guet')[0];
     assert.ok(chien, `[${disposition}] le Chien est sur le champ`);
     assert.equal(chien.classList.contains('is-arme-equipee'), false,
       `[${disposition}] un Chien nu n’est pas marqué comme équipé`);
     assert.equal(chien.className.includes('rpg-card--frame-arme'), false,
-      `[${disposition}] un Chien nu ne porte pas le cadre d’acier des armes`);
+      `[${disposition}] un Chien nu ne porte aucun cadre d’arme`);
 
-    // ── La Takouba s'attache au Chien : il reçoit le cadre d'acier ─────────
+    // ── La Takouba s'attache sans changer le cadre du Chien ───────────────
     await click(hand('takouba-des-pistes'), `[${disposition}] jouer la Takouba`);
     await click(camp('equipe', 'chien-du-guet')[0], `[${disposition}] attacher la Takouba au Chien`);
     const armee = camp('equipe', 'chien-du-guet')[0];
     assert.ok(armee, `[${disposition}] le Chien équipé reste sur le champ`);
-    assert.ok(armee.classList.contains('is-arme-equipee'),
-      `[${disposition}] le Chien équipé est marqué comme équipé`);
-    assert.ok(armee.classList.contains('rpg-card--frame-arme'),
-      `[${disposition}] le Chien équipé porte la matière d’acier des armes`);
-    assert.ok(armee.classList.contains('rpg-card--frame-arme-sable'),
-      `[${disposition}] l’acier du cadre prend la teinte de l’élément de l’arme`);
-    assert.equal(armee.className.includes('rpg-card--frame-sable'), false,
-      `[${disposition}] le cadre d’élément de la créature cède la place à celui de l’arme`);
-    assert.equal(armee.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(cardById('takouba-des-pistes')),
-      `[${disposition}] la couleur de cadre de la carte devient celle de l’arme`);
+    assert.equal(armee.classList.contains('is-arme-equipee'), false,
+      `[${disposition}] aucune classe de cadre d’arme n’est ajoutée au porteur`);
+    assert.equal(armee.className.includes('rpg-card--frame-arme'), false,
+      `[${disposition}] le Chien équipé ne reçoit pas de cadre d’arme`);
+    assert.ok(armee.classList.contains('rpg-card--frame-sable'),
+      `[${disposition}] le cadre ordinaire de l’élément de la créature est conservé`);
+    assert.equal(armee.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(cardById('chien-du-guet')),
+      `[${disposition}] la couleur de cadre reste celle de la créature`);
     assert.equal(armee.closest('.rpg-card-stack--arme'), null,
       `[${disposition}] la créature équipée n’est plus enveloppée dans une pile`);
     assert.equal(armee.querySelector('.rpg-card-stack__arme'), null,

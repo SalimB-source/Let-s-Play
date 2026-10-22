@@ -25,7 +25,7 @@ les références, les fichiers livrés et la continuité de leurs URL dans l'int
 | --- | --- | --- |
 | Salem | `public/cards/salem.jpg` | **Repeint en nihonga** (octobre 2026) : même visage, même perche, même carnet |
 | Yamina | `public/cards/yamina.jpg` | **Repeinte en nihonga** (octobre 2026) : même visage, même outil d'horlogère |
-| Fériel | `public/cards/feriel.jpg` | **Repeinte en nihonga** (octobre 2026), y compris comme adversaire à `listes-4` |
+| Fériel | `public/cards/feriel.jpg` | **Nouvelle composition nihonga** : archère au sommet d’une tour, flèche électrique encochée, y compris comme adversaire à `listes-4` |
 | Tarek | `public/cards/tarek.jpg` | **Repeint en nihonga** (octobre 2026) : même visage, même charge sur l'épaule |
 | Boualem | `public/cards/boualem.jpg` | **Repeint en nihonga** (octobre 2026) ; toujours réservé pour les actes suivants |
 | Le Guetteur de palier | `public/cards/guetteur-du-beffroi.jpg` | Portrait existant adopté comme référence de ce gardien |
@@ -48,17 +48,23 @@ feuille d'or, lavis d'encre, fibre de papier washi, nuages d'or plats) portée
 par une **palette algérienne** plus riche — indigo touareg, safran, henné,
 vert émeraude et turquoise, terre cuite, ocre, or abondant — avec des motifs
 amazighs (losanges, chevrons, zigzags), des bijoux kabyles argent et corail,
-et le sablier en filigrane.
+et le sablier en filigrane. **Fériel a ensuite reçu une composition dédiée** :
+au sommet d’une tour crénelée, elle bande son arc et décoche une flèche
+électrique au-dessus de la ville et des dunes ; ses autres repères d’identité
+restent conservés.
 
 Les repères d'identité restent intacts : même âge, même visage, même coiffure,
 même tenue de métier et mêmes accessoires (perche à crochet et carnet de
 Salem, outils d'horlogère de Yamina, canne et verre en fusion de Fériel,
 carton de la Chambre de Tarek, corde et clef de citerne de Boualem), et la
 tête reste dans le tiers supérieur du cadre pour que les portraits de
-dialogue, le journal et les cartes la lisent sans recadrage. Les fichiers sont
+dialogue, le journal et les cartes la lisent sans recadrage. Pour Fériel,
+la tour et la flèche sont également lisibles dans le cadrage de la carte. Les fichiers sont
 désormais livrés au ratio **4:5 de la face**, contrôlé par `PLEIN_ART_45`, et
-datés d'une seule révision de cache `heros-nihonga-algerien-v1` dans
-`RpgDuelPage.jsx` : aucun cache ne peut resservir les huiles précédentes.
+datés de la révision commune `heros-nihonga-algerien-v1` pour Salem,
+Yamina, Tarek et Boualem, et de `feriel-tour-fleche-electrique-v1` pour la
+nouvelle composition de Fériel, dans `rpgCardArt.js` : aucun cache ne peut
+resservir les huiles précédentes.
 
 Les autres personnages du registre — Guetteur, Scribe, Puisatier des Cendres,
 Mahieddine et les figures des autres tours — gardent leur illustration d'origine.

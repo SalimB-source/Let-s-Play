@@ -24,12 +24,14 @@ import { JSDOM } from 'jsdom';
 import { RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+const artSource = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 const glossaire = readFileSync(new URL('../src/games/effetIcons.js', import.meta.url), 'utf8');
 
 const REVISION_PHOTOREALISTE = 'furie-photorealiste-v1';
 const REVISION_BERSERK_BASE = 'berserk-meme-visage-sans-sang-v1';
 const REVISION_LOUP_FURIE = 'loup-furie-huile-v1';
+const REVISION_VALKYRIE_FURIE = 'valkyrie-vol-plongeon-enragee-v4';
 const CARTES_PHOTOREALISTES = [
   'guerrier-au-bouclier-rond',
   'berserk-des-trois-hivers',
@@ -165,7 +167,7 @@ try {
 
 // ── 2. Chaque carte à Furie a sa peinture alternative ──────────────────────
 const cartesFurie = RPG_DUEL_CARDS.filter((carte) => carte.furie);
-assert.equal(cartesFurie.length, 5, 'quatre humains et le Loup portent la Furie');
+assert.equal(cartesFurie.length, 6, 'cinq humains et le Loup portent la Furie');
 for (const carte of cartesFurie) {
   const artId = carte.art ?? carte.id;
   assert.ok(existsSync(new URL(`../public/cards/${artId}-furie.jpg`, import.meta.url)),
@@ -188,7 +190,7 @@ for (const carteId of CARTES_PHOTOREALISTES) {
     const revision = illustration === 'berserk-des-trois-hivers'
       ? REVISION_BERSERK_BASE
       : REVISION_PHOTOREALISTE;
-    assert.match(page, new RegExp(`'${illustration}': '${revision}'`),
+    assert.match(artSource, new RegExp(`'${illustration}': '${revision}'`),
       `${illustration}.jpg est daté dans l’URL sous ${revision}`);
   }
 }
@@ -198,8 +200,16 @@ for (const carteId of CARTES_PHOTOREALISTES) {
 const loupFurie = new URL('../public/cards/loup-des-neiges-furie.jpg', import.meta.url);
 assert.deepEqual(dimensionsJpeg(loupFurie), [1024, 1280],
   'loup-des-neiges-furie.jpg est au format exact 4:5 de la face');
-assert.match(page, new RegExp(`'loup-des-neiges-furie': '${REVISION_LOUP_FURIE}'`),
+assert.match(artSource, new RegExp(`'loup-des-neiges-furie': '${REVISION_LOUP_FURIE}'`),
   `loup-des-neiges-furie.jpg est daté dans l’URL sous ${REVISION_LOUP_FURIE}`);
+
+// La Valkyrie repart de sa scène intacte : enragée et ensanglantée, épée levée,
+// elle vole dans le ciel et plonge vers sa cible avec son corbeau noir.
+const valkyrieFurie = new URL('../public/cards/valkyrie-au-corbeau-furie.jpg', import.meta.url);
+assert.deepEqual(dimensionsJpeg(valkyrieFurie), [1024, 1280],
+  'valkyrie-au-corbeau-furie.jpg est au format exact 4:5 de la face');
+assert.match(artSource, new RegExp(`'valkyrie-au-corbeau-furie': '${REVISION_VALKYRIE_FURIE}'`),
+  `valkyrie-au-corbeau-furie.jpg est daté sous ${REVISION_VALKYRIE_FURIE}`);
 
 // ── 3. La table étiquette, les gestes transmettent, la feuille dénude ──────
 assert.match(glossaire, /Tant que sa défense actuelle est inférieure à sa DEF de base/,
@@ -212,7 +222,7 @@ assert.match(page, /data-furie-atk=\{entite\.furieDeclenchee \? entite\.atk : un
   'avec ses statistiques du moment, attaque et PV restants');
 assert.match(page, /function etatFurieDepuisHote\(hote\) \{[\s\S]*?dataset\?\.furieDeclenchee !== 'true'/,
   'un seul lecteur pour l’étiquette Furie des hôtes');
-assert.match(page, /const furie = etatFurieDepuisHote\(event\.currentTarget\);[\s\S]*?entiteId,\s*armesIds: armes,\s*furie,/,
+assert.match(page, /const furie = etatFurieDepuisHote\(event\.currentTarget\);[\s\S]*?entiteId,[\s\S]*?armesIds: armes,\s*furie,/,
   'le survol retient l’entité survolée et sa Furie');
 assert.match(page, /const furieDeLaCarte = etatFurieDepuisHote\(hote\);[\s\S]*?setApercuAppuiFurie\(furieDeLaCarte\);/,
   'l’appui long transmet la Furie de la créature pressée');
@@ -245,4 +255,4 @@ assert.match(css, /@keyframes rpg-furie-vignette \{\s*from \{\s*opacity: \.55;[\
 assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-furie-vignette \{ animation: none; opacity: \.82; \}\s*\}/,
   'les mouvements réduits figent la vignette sans la faire disparaître');
 
-console.log('✓ Furie en jeu : les quatre humains photoréalistes et le Loup en huile ont leur double ensanglanté en 1024×1280, datés contre les caches ; tant que l’état est actif, la peinture furie pleine page et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');
+console.log('✓ Furie en jeu : les quatre humains photoréalistes, la Valkyrie au corbeau et le Loup ont leur double de bataille en 1024×1280, daté contre les caches ; tant que l’état est actif, la peinture furie pleine page et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');

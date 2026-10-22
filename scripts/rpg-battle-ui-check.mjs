@@ -707,48 +707,12 @@ assert.match(mythicRule, /--rpg-frame-motif-size:\s*12px 12px;/,
   'le motif du cadre mythique se répète tous les 12 px le long de l’anneau');
 assert.match(mythicRule, /--rpg-frame-shine-duration:\s*2\.8s;/,
   'le reflet des mythiques mono-élément garde sa cadence');
-// Toutes les armes partagent la même matière — acier poli guilloché, à la
-// place de la résille commune — mais chaque élément teinte son acier.
-// Le motif est décodé et relu par un analyseur XML, comme ceux des autres
-// cadres : une URI mal échappée ne peindrait simplement rien.
-const armeRule = frameCss.match(/\.rpg-card--frame-arme\s*\{([^}]*)\}/);
-assert.ok(armeRule, 'les armes ont leur propre cadre');
-assert.match(armeRule[1], /--rpg-frame-gradient:\s*linear-gradient\(115deg, #454e56/,
-  'la matière commune des armes reste un acier poli, avant sa teinte d’élément');
-const teintesAcier = armeRule[1].match(/#[0-9a-f]{6}/gi);
-assert.ok(teintesAcier.length >= 6 && teintesAcier.every((teinte) => {
-  const [r, g, b] = teinte.slice(1).match(/../g).map((canal) => parseInt(canal, 16));
-  return Math.max(r, g, b) - Math.min(r, g, b) <= 24;
-}), 'la trempe commune du cadre des armes reste un acier presque neutre');
-// Chaque élément teinte ensuite cet acier dans sa propre couleur, sans
-// toucher au guilloché : quatre dégradés métalliques, un par élément.
-for (const [element, teinte] of Object.entries({ braise: '#8f2d22', eau: '#28689b', sable: '#a87f42', neige: '#79b5cf' })) {
-  const rule = frameCss.match(new RegExp(`\\.rpg-card--frame-arme-${element}\\s*\\{([^}]*)\\}`));
-  assert.ok(rule, `l’acier des armes ${element} a sa teinte`);
-  assert.match(rule[1], /--rpg-frame-gradient:\s*linear-gradient\(115deg,/,
-    `l’acier des armes ${element} reste un dégradé métallique`);
-  assert.ok(rule[1].includes(teinte), `l’acier des armes ${element} porte sa couleur (${teinte})`);
-  assert.doesNotMatch(rule[1], /--rpg-frame-motif/,
-    `la teinte ${element} ne remplace pas le guilloché commun des armes`);
-}
-const armeMotif = armeRule[1].match(/--rpg-frame-motif:\s*url\("([^"]+)"\)/);
-assert.ok(armeMotif, 'le cadre des armes porte son propre motif');
-assert.match(armeMotif[1], /^data:image\/svg\+xml,%3Csvg /,
-  'le motif du cadre des armes est un SVG en ligne');
-const armeMotifDom = new JSDOM('<!doctype html><body></body>');
-const armeMotifDoc = new armeMotifDom.window.DOMParser().parseFromString(
-  decodeURIComponent(armeMotif[1].replace(/^data:image\/svg\+xml,/, '')), 'image/svg+xml');
-assert.equal(armeMotifDoc.querySelector('parsererror'), null,
-  'le SVG du guilloché des armes est bien formé une fois décodé');
-assert.ok(armeMotifDoc.querySelectorAll('path').length >= 4,
-  'le guilloché de Damas superpose au moins deux ondes gravées et leurs reflets');
-armeMotifDom.window.close();
-assert.match(armeRule[1], /--rpg-frame-motif-size:\s*18px 12px;/,
-  'les ondes du guilloché des armes se répètent tous les 18 × 12 px le long de l’anneau');
-assert.match(cardsSource, /carte\?\.kind === 'arme'[\s\S]*?CARD_FRAME_COLORS\[`arme-\$\{couleur\}`\]/,
-  'le catalogue attribue aux armes la teinte d’acier de leur élément');
-assert.match(cardsSource, /carte\?\.kind === 'arme'[\s\S]*?rpg-card--frame-arme-\$\{couleurArme\}/,
-  'les faces des armes ajoutent la classe de teinte de leur élément à la matière commune');
+// Les armes n’ont plus de cadre spécifique : leur présentation suit les
+// mêmes couleurs et les mêmes motifs que les autres cartes de leur élément.
+assert.doesNotMatch(frameCss, /rpg-card--frame-arme|rpg-arme-ciselle|--rpg-arme-cadre/,
+  'aucune matière, épaisseur ou découpe de cadre ne reste réservée aux armes');
+assert.doesNotMatch(cardsSource, /armeCadreClass|rpg-card--frame-arme|CARD_FRAME_COLORS\[`arme-/,
+  'le catalogue ne fabrique plus de variante de cadre pour les armes');
 assert.match(frameCss, /\.rpg-hover-card-preview\[class\*="rpg-card--frame-"\],\s*\.rpg-hover-card-preview__face\[class\*="rpg-card--frame-"\]\s*\{\s*background-color:\s*transparent;\s*\}/,
   'l’aperçu rapide ne garde aucune teinte de repli, ni sur son encadré entier ni derrière l’illustration');
 // Le foil partagé a remplacé le vernis des mythiques. Une seule face brille
@@ -809,10 +773,10 @@ assert.match(foilCss, /repeating-linear-gradient\(118deg[\s\S]*?linear-gradient\
 assert.match(frameCss, /filter: saturate\(1\.1\) contrast\(1\.04\);/,
   'la peinture mythique garde son relief, sans calque de reflet ajouté');
 // Le guide habille chaque fiche du même anneau orné que les autres faces, à
-// l'épaisseur commune de 6 px (la plaque des armes) : couleur unie d'une mono,
-// diagonale d'une hybride, acier des armes — plus de filet de 1 px ni de 3 px.
+// l'épaisseur commune de 6 px : couleur unie d'une mono ou diagonale d'une
+// hybride — plus de filet de 1 px ni de 3 px.
 assert.match(guideCss, /\.rpg-card-guide__example\s*\{[^}]*border:\s*6px solid transparent;[^}]*var\(--rpg-frame-gradient, linear-gradient\(var\(--rpg-frame-color, var\(--rpg-guide-frame, #d3ab62\)\), var\(--rpg-frame-color, var\(--rpg-guide-frame, #d3ab62\)\)\)\)[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
-  'le guide peint l’anneau orné — couleur unie, diagonale bicolore ou acier des armes — sur toutes ses fiches, à 6 px');
+  'le guide peint le même anneau orné sur toutes ses fiches, à 6 px');
 assert.doesNotMatch(guideCss, /\.rpg-card-guide__example[^{]*\{[^}]*border(?:-width)?:\s*(?:1px|3px)/s,
   'aucune fiche du guide ne garde un cadre plus fin que la plaque commune');
 assert.match(guideCss, /\.rpg-card-guide__example\.rpg-card--frame-brillant\s*\{\s*animation:\s*rpg-frame-shine-sweep/,
@@ -1400,58 +1364,17 @@ assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-row > \.
   'la carte d’une pile se cale sur la largeur du bloc : elle réduit avec lui au lieu de déborder');
 assert.doesNotMatch(battleCss, /\.rpg-card-stack--arme \{[\s\S]{0,80}?flex: 0 0 max-content/,
   'plus de `flex-shrink: 0` sur la créature armée : elle ne reste plus plus grande que ses voisines en plein écran');
-// Une créature équipée porte le cadre d'acier de son arme : plus de carte
-// d'arme glissée derrière elle.
-assert.match(battlePage, /armeCadre \? armeCadreClass\(armeCadre\) : cardFrameClass\(carte\)/,
-  'la créature équipée prend le cadre d’acier de son arme à la place de son cadre d’élément');
-assert.match(battlePage, /armeCadre \? 'is-arme-equipee' : ''/,
-  'la face jouée annonce son équipement par une classe, lisible au doigt comme à la souris');
-assert.match(battlePage, /\.\.\.cardFrameStyle\(armeCadre \?\? carte\)/,
-  'la couleur de cadre de la carte devient celle de l’arme portée');
-assert.doesNotMatch(battlePage, /PileArmee|rpg-card-stack__arme/,
-  'la carte d’arme ne se glisse plus derrière la créature : plus de pile d’équipement dans le DOM');
-assert.doesNotMatch(battleCss, /\.rpg-card-stack__arme/,
-  'la plaque d’arme n’a plus de style : le bloc a été retiré');
-// Le filet de la créature équipée est un calque intérieur, pas une bordure :
-// une bordure entrerait dans la base de rétrécissement de l’item flex et la
-// carte resterait plus large que ses voisines une fois la rangée remplie.
-assert.match(battleCss, /\.rpg-card\.is-arme-equipee \{\s*border: 0 !important;\s*background-image: none !important;\s*\}/,
-  'la face d’une créature équipée ne porte ni bordure ni fond de cadre : tout l’anneau est peint dans un calque');
-assert.match(battleCss, /\.rpg-card\.is-arme-equipee::before \{[^}]*mask-image: var\(--rpg-arme-ciselle\);[^}]*mask-size: 100% 100%;[^}]*\}/s,
-  'le cadre d’acier de l’arme est peint dans un calque découpé par le contour ciselé, sans toucher à la taille de la carte');
-// Le bord intérieur est ciselé : le masque est un SVG étiré avec la carte
-// (rectangle arrondi à l'extérieur, contour irrégulier à l'intérieur). Comme
-// les autres motifs de cadre, l'URI est décodée et relue par un analyseur XML.
-const ciselle = battleCss.match(/--rpg-arme-ciselle:\s*url\("([^"]+)"\)/);
-assert.ok(ciselle, 'le cadre de la créature équipée porte son contour ciselé');
-assert.match(ciselle[1], /^data:image\/svg\+xml,%3Csvg /,
-  'le contour ciselé est un SVG en ligne');
-const ciselleDom = new JSDOM('<!doctype html><body></body>');
-const ciselleDoc = new ciselleDom.window.DOMParser().parseFromString(
-  decodeURIComponent(ciselle[1].replace(/^data:image\/svg\+xml,/, '')), 'image/svg+xml');
-assert.equal(ciselleDoc.querySelector('parsererror'), null,
-  'le SVG du contour ciselé est bien formé une fois décodé');
-const cisellePath = ciselleDoc.querySelector('path');
-assert.ok(cisellePath, 'le contour ciselé est un seul tracé');
-assert.equal(cisellePath.getAttribute('fill-rule'), 'evenodd',
-  'le tracé du contour ciselé perce le centre (règle even-odd) : il découpe un anneau');
-assert.equal(ciselleDoc.querySelector('svg').getAttribute('preserveAspectRatio'), 'none',
-  'le contour ciselé est étiré avec la carte : ses facettes suivent sa taille');
-const ciselleBords = cisellePath.getAttribute('d').split('M').length - 2;
-assert.ok(ciselleBords >= 1, 'le tracé porte bien un contour intérieur distinct du rectangle arrondi');
-assert.ok((cisellePath.getAttribute('d').match(/L /g) ?? []).length >= 40,
-  'le bord intérieur est fait de nombreuses facettes, pas d’un trait lisse');
-ciselleDom.window.close();
-assert.doesNotMatch(battleCss, /\.rpg-card\.is-arme-equipee \{[^}]*border: var\(--rpg-arme-cadre/,
-  'la créature équipée ne prend pas la bordure des cartes d’arme : elle garderait la largeur de ses voisines');
-assert.match(mobileCss, /\.rpg-battle--touch \.card-row \.rpg-card\.is-arme-equipee \{\s*--rpg-arme-cadre: var\(--rpg-arme-cadre-fin, 3px\);\s*\}/,
-  'au doigt, la créature équipée garde un filet d’acier fin — seule face de jeu à porter un cadre');
-// Le mulligan et le catalogue sont des faces du grand gabarit : le filet
-// d'une arme y suit l'épaisseur de sa propre face, pas la plaque de la main.
-assert.match(battleCss, /\.rpg-mulligan__card\[class\*="rpg-card--frame-arme"\],\s*\.rpg-card-catalogue__art\[class\*="rpg-card--frame-arme"\] \{\s*--rpg-arme-cadre: var\(--rpg-card-border-large, 6px\);\s*\}/s,
-  'au mulligan et au catalogue, le cadre d’une arme reprend l’épaisseur du grand gabarit');
-assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\[class\*="rpg-card--frame-arme"\][^{]*\{[^}]*border:\s*var\(--rpg-arme-cadre-fin/,
-  'le mulligan ne garde pas le filet fin des petites faces : sa bordure serait deux fois trop mince');
+// Une créature équipée garde son cadre ordinaire. L’équipement reste
+// consultable dans les effets et les aperçus, mais ne change ni la classe ni
+// la couleur de la face jouée.
+assert.match(battlePage, /cardFrameClass\(carte\)/,
+  'la face jouée utilise toujours le cadre de sa propre carte');
+assert.doesNotMatch(battlePage, /armeCadre|is-arme-equipee|rpg-card--frame-arme/,
+  'aucun cadre d’arme ne remplace le cadre de la créature équipée');
+assert.doesNotMatch(battleCss, /is-arme-equipee|rpg-card--frame-arme|rpg-arme-ciselle|--rpg-arme-cadre/,
+  'aucun style de cadre d’arme ne subsiste dans le duel');
+assert.doesNotMatch(mobileCss, /is-arme-equipee|rpg-card--frame-arme|rpg-arme-ciselle|--rpg-arme-cadre/,
+  'aucun style de cadre d’arme ne subsiste au doigt');
 
 assert.match(battlePage, /className="rpg-card-stack"[\s\S]{0,120}?style=\{cardFrameStyle\(cardById\(pile\.carteId\)\)\}/,
   'la pile reprend la couleur de cadre de sa carte pour ses ombres décalées');
@@ -1536,14 +1459,15 @@ for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.furie)) {
 for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {
   assert.equal(carte.resonanceTribu, 'samourai',
     `${carte.id} : la Résonance du catalogue est désormais uniquement samouraï`);
-  assert.match(carte.text, /Résonance samouraï — Tant (?:qu’il|que Kagutsuchi) est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent \+1\/\+1/,
+  assert.match(carte.text, /Résonance samouraï — Tant qu’il est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent \+1\/\+1/,
     `${carte.id} annonce sa Résonance de tribu sur sa face`);
 }
 assert.equal(RPG_DUEL_CARDS.some((carte) => carte.resonanceTribu === 'viking' || /Résonance viking/.test(carte.text ?? '')), false,
   'aucune carte n’affiche encore de Résonance viking');
 const valkyrieCorbeau = RPG_DUEL_CARDS.find((carte) => carte.id === 'valkyrie-au-corbeau');
-assert.ok(valkyrieCorbeau?.cost === 5 && valkyrieCorbeau.atk === 3 && valkyrieCorbeau.def === 4,
-  'la Valkyrie au corbeau est une 3/4 pour cinq manas');
+assert.ok(valkyrieCorbeau?.cost === 5 && valkyrieCorbeau.atk === 3 && valkyrieCorbeau.def === 4
+  && valkyrieCorbeau.furie === 2,
+  'la Valkyrie au corbeau est une 3/4 pour cinq manas avec Furie 2');
 assert.match(valkyrieCorbeau.text, /piochez une carte de type Viking au hasard dans votre deck/,
   'sa face annonce la pioche tribale aléatoire');
 const brumeFjord = RPG_DUEL_CARDS.find((carte) => carte.id === 'brume-du-fjord');
@@ -1638,8 +1562,8 @@ assert.doesNotMatch(battleCss, /\.rpg-card__weapons\b/,
   'la miniature d’arme sur la face n’a plus de style');
 assert.doesNotMatch(mobileCss, /\.rpg-card__weapons\b/,
   'la miniature d’arme sur la face n’existe plus au doigt non plus');
-assert.match(battlePage, /is-arme-equipee/,
-  'l’équipement reste signalé par le cadre d’acier de la créature');
+assert.doesNotMatch(battlePage, /is-arme-equipee/,
+  'l’équipement n’est plus signalé par un cadre spécial sur la créature');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-row \.rpg-card\s*\{\s*container-type:\s*inline-size;\s*\}/,
   'une carte posée au doigt est un conteneur de requête : sa largeur vient de sa rangée');
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-card__compteurs\s*\{[^}]*display:\s*none/,

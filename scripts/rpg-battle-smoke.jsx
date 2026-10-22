@@ -234,20 +234,20 @@ export async function checkRpgBattle(assert) {
   assert.ok(ferielCatalogue?.querySelector('.rpg-card-catalogue__art.rpg-card--frame-braise.rpg-card--frame-brillant.rpg-card--mythique'),
     'le catalogue donne à Fériel le même cadre brillant que dans le duel');
   assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
-    /\/cards\/feriel\.jpg\?v=heros-nihonga-algerien-v1$/,
-    'le catalogue charge la nouvelle illustration nihonga de Fériel avec une URL versionnée contre le cache');
+    /\/cards\/feriel\.jpg\?v=feriel-tour-fleche-electrique-v1$/,
+    'le catalogue charge la nouvelle illustration de Fériel sur sa tour avec une URL versionnée contre le cache');
   assert.equal(ferielCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '4',
     'le catalogue affiche le nouveau coût de quatre pour Fériel');
-  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /4\s*·\s*🛡\s*3/,
-    'le catalogue affiche les nouvelles statistiques 4/3 de Fériel');
+  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /3\s*·\s*🛡\s*2/,
+    'le catalogue affiche les statistiques 3/2 de Fériel');
   assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Coup rapide/s,
     'le catalogue décrit Rapidité et le ciblage du Coup rapide');
   const traitCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="trait-de-braise"]');
   assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
     /\/cards\/trait-de-braise\.jpg\?v=trait-feu-sorcier-appeure-v1$/,
     'le catalogue charge le nouveau Trait de braise vers le sorcier avec une URL versionnée');
-  assert.equal(traitCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '2',
-    'le catalogue affiche le coût de deux du Trait de braise');
+  assert.equal(traitCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '3',
+    'le catalogue affiche le coût de trois du Trait de braise');
   assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__type')?.textContent ?? '', /Magie Rapide/,
     'le catalogue identifie le Trait de braise comme Magie Rapide');
   assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /3 dégâts.*créature.*sorcier/i,
@@ -1050,7 +1050,7 @@ export async function checkRpgBattle(assert) {
   assert.equal(responseContainer.querySelector('.rpg-blocker-arrows')?.getAttribute('data-arrow-count'), '1',
     'la flèche jaune matérialise le blocage adverse pendant la fenêtre de réponse');
   const traitReponse = responseHand().find((card) => card.getAttribute('aria-label')?.includes('Trait de braise'));
-  assert.ok(traitReponse && estJouable(traitReponse), 'Trait de braise, Magie Rapide à 2, est payable pendant la réponse');
+  assert.ok(traitReponse && estJouable(traitReponse), 'Trait de braise, Magie Rapide à 3, est payable pendant la réponse');
   await glisserSurTable(responseContainer, traitReponse);
   const bloqueurTrait = responseContainer.querySelector('.rpg-card--ennemi.is-blocking');
   assert.ok(bloqueurTrait?.classList.contains('is-ciblable'), 'le bloqueur choisi est mis en évidence comme cible du Trait');
