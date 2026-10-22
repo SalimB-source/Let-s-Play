@@ -7671,6 +7671,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border: 0;
   background: transparent;
   color: #f29a4a;
+  pointer-events: auto;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step.is-active {
   border-color: transparent;
