@@ -68,7 +68,9 @@ import {
   XP,
   boostersDus,
   chargerProfil,
+  choisirAvatar,
   choisirEmbleme,
+  choisirPlateau,
   fusionnerProfils,
   gagnerXp,
   marquerBoosterOffert,
@@ -585,6 +587,35 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     return true;
   }, [appliquer, pousser]);
 
+  /**
+   * Choisit le visage de la carte de profil — un personnage du récit
+   * (`rpgAvatars.js`), ou `null` pour revenir au glyphe de l'emblème. Rend
+   * `true` si le visage a changé.
+   */
+  const choisirUnAvatar = useCallback((avatarId) => {
+    const avant = etatRef.current;
+    const suivant = choisirAvatar(avant.profil, avatarId);
+    if (suivant === avant.profil) return false;
+    appliquer(avant.bourse, avant.quetes, suivant);
+    pousser();
+    return true;
+  }, [appliquer, pousser]);
+
+  /**
+   * Choisit le terrain sur lequel le joueur reçoit : sa moitié de table, en
+   * duel libre comme en Histoire. `null` rend la main au deck. Rend `true` si
+   * la table a changé — la partie en cours garde son terrain, c'est la suivante
+   * qui le prend.
+   */
+  const choisirUnPlateau = useCallback((plateauId) => {
+    const avant = etatRef.current;
+    const suivant = choisirPlateau(avant.profil, plateauId);
+    if (suivant === avant.profil) return false;
+    appliquer(avant.bourse, avant.quetes, suivant);
+    pousser();
+    return true;
+  }, [appliquer, pousser]);
+
   const profil = etat.profil;
   return {
     bourse: etat.bourse,
@@ -609,6 +640,8 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     fermerMonteeNiveau,
     renommerLeProfil,
     choisirUnEmbleme,
+    choisirUnAvatar,
+    choisirUnPlateau,
     pousser,
   };
 }

@@ -102,13 +102,21 @@ for (const interdit of ['paliersAVenir', 'BAREME_XP', 'RANGS', 'rangDeNiveau', '
   'rpg-profil__courbe', 'rpg-profil__sync', 'rpg-profil__rang']) {
   assert.ok(!ecranCode.includes(interdit), `l’écran n’affiche plus ${interdit}`);
 }
-// Ce qui reste : l'identité, le niveau, la barre, le chemin vers les paquets.
+// Ce qui reste : l'identité, le niveau, la barre, le chemin vers les paquets, et
+// trois gestes — un visage, un emblème, une table.
 for (const attendu of ['rpg-profil__medaillon', 'data-profil-niveau', 'data-profil-xp', 'data-profil-emblemes',
+  'data-profil-avatars', 'data-profil-plateaux', 'data-profil-medaille',
   'data-profil-pseudo-saisie', 'data-profil-retour']) {
   assert.ok(ecranCode.includes(attendu), `l’écran garde ${attendu}`);
 }
 assert.ok(ecranCode.includes('data-profil-attente-aller'), 'et le bandeau des paquets dus mène au Souk');
-assert.ok(ecran.split('\n').length < 180, `la carte tient en un seul écran (${ecran.split('\n').length} lignes)`);
+// Les vignettes sont des **fonds peints** des boutons, pas des `<img>` dans le
+// flux : ce sont des décors de choix, le nom accessible porte déjà le personnage
+// et le lieu — et jsdom ne charge de toute façon aucun fond.
+assert.ok(!/<img/.test(ecranCode), 'la carte ne charge aucune image dans le flux du document');
+assert.ok(ecranCode.includes('backgroundImage'), 'les vignettes arrivent par `background-image`');
+assert.ok(ecran.split('\n').length < 300,
+  `la carte tient en un seul écran, trois gestes compris (${ecran.split('\n').length} lignes)`);
 
 // 3. La page branche l'onglet, l'écran et la cérémonie.
 assert.match(page, /import RpgProfilJoueur from '\.\/RpgProfilJoueur\.jsx';/, 'la page importe l’écran');
@@ -140,10 +148,18 @@ for (const prop of [
 // compte. Ni collection, ni portefeuille, ni quêtes, ni état de synchronisation.
 for (const prop of [
   'profil={profil}', 'nomCompte={nomCompte}', 'onRenommer={onRenommerProfil}',
-  'onChoisirEmbleme={onChoisirEmbleme}', 'onPlaySfx={play}', "onExit={() => onChangeScreen('jouer')}",
+  'onChoisirEmbleme={onChoisirEmbleme}', 'onChoisirAvatar={onChoisirAvatar}',
+  'onChoisirPlateau={onChoisirPlateau}', 'onPlaySfx={play}', "onExit={() => onChangeScreen('jouer')}",
 ]) {
   assert.ok(pageCode.includes(prop), `l’écran reçoit ${prop}`);
 }
+for (const prop of [
+  'onChoisirAvatar={choisirUnAvatarProfil}', 'onChoisirPlateau={choisirUnPlateauProfil}',
+]) {
+  assert.ok(pageCode.includes(prop), `le menu reçoit ${prop}`);
+}
+assert.match(pageCode, /data-profil-onglet-avatar=\{avatarOnglet\.id\}/,
+  'l’onglet Profil porte le visage choisi, à la place du glyphe');
 const brancheProfil = pageCode.split("<RpgProfilJoueur")[1]?.split('/>')[0] ?? '';
 for (const retiree of ['portefeuille=', 'quetes=', 'collection=', 'statutSync=']) {
   assert.ok(!brancheProfil.includes(retiree), `l’écran ne reçoit plus ${retiree}`);
@@ -258,10 +274,15 @@ assert.ok((css.match(/prefers-reduced-motion: reduce/g) ?? []).length >= 2,
   'la barre et l’annonce se tiennent tranquilles pour qui le demande');
 
 console.log('Le profil du Sablier est branché : un onglet Profil dans le menu, et une carte');
-console.log('dépouillée — l’emblème, le pseudo, le niveau et sa barre d’XP, plus une ligne');
-console.log('quand un paquet attend. Ni rang, ni compteurs, ni barème, ni journal : ces');
-console.log('chiffres vivent dans `rpgProfil.js` et au Souk, pas ici. La barre monte vite au');
-console.log('début puis devient gourmande, et chaque palier offre un paquet tiré au hasard');
-console.log('parmi les rayons ouverts, sans un crédit dépensé, avec la pitié et les doublons');
-console.log('d’un vrai paquet. La dette attend derrière une cérémonie déjà ouverte, se règle');
-console.log('à la fermeture, et ne se réannonce pas en boucle.');
+console.log('dépouillée qui répond à trois gestes — douze visages du récit en médaillon, six');
+console.log('emblèmes en glyphes, douze tables de duel plus « au gré du deck » — autour du');
+console.log('pseudo, du niveau et de sa barre d’XP, plus une ligne quand un paquet attend.');
+console.log('Ni rang, ni compteurs, ni barème, ni journal : ces chiffres vivent dans');
+console.log('`rpgProfil.js` et au Souk, pas ici. Les vignettes des visages et des tables');
+console.log('(6 à 34 Ko, `tools/make-profil-vignettes.mjs`) coûtent moins qu’une peinture.');
+console.log('La table choisie peint la moitié du joueur — musique et décor 3D suivent — et');
+console.log('le tutoriel garde la sienne. La barre monte vite au début puis devient');
+console.log('gourmande, et chaque palier offre un paquet tiré au hasard parmi les rayons');
+console.log('ouverts, sans un crédit dépensé, avec la pitié et les doublons d’un vrai');
+console.log('paquet. La dette attend derrière une cérémonie déjà ouverte, se règle à la');
+console.log('fermeture, et ne se réannonce pas en boucle.');

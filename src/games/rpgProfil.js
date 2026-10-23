@@ -45,11 +45,23 @@
  * 1. **Tout est tolérant** : stockage absent, JSON corrompu, XP d'un autre
  *    catalogue — on retombe sur un profil neuf plutôt que de casser un écran.
  * 2. **Rien ne redescend** : `fusionnerProfils` prend le maximum de l'XP, des
- *    compteurs et des paquets offerts, l'union des paliers, et le pseudo le
- *    plus récent **sans jamais l'effacer**.
+ *    compteurs et des paquets offerts, l'union des paliers, et le pseudo,
+ *    l'avatar ou le plateau le plus récent **sans jamais effacer** un choix qui
+ *    n'existe que d'un côté.
  * 3. **Aucun barème n'est caché** : la courbe, les gains d'XP et les rangs sont
- *    des constantes exportées, affichées par l'écran du profil et vérifiées par
- *    `tests/rpg-profil.test.js`.
+ *    des constantes exportées, vérifiées par `tests/rpg-profil.test.js`. La
+ *    carte de profil, elle, est dépouillée (dossier 20 §6) : ces chiffres vivent
+ *    ici, pas à l'écran.
+ *
+ * ## L'identité tient en trois champs
+ *
+ * `pseudo`, `embleme`, `avatar` — et un choix de table, `plateau`. Le module ne
+ * connaît **ni le casting ni les plateaux** : il garde une chaîne propre, bornée
+ * par `COURBE.choixMax`, et ce sont les catalogues qui valident
+ * (`avatarParId` dans `rpgAvatars.js`, `plateauParId` dans `rpgPlateaux.js`).
+ * Un identifiant inconnu — sauvegarde retouchée, avatar retiré d'une version à
+ * l'autre — rend `null` à la lecture : le médaillon retombe sur le glyphe, la
+ * table retombe sur le terrain du deck. Rien ne casse, rien ne ment.
  */
 
 import { creditsLisible } from './rpgCredits.js';
@@ -80,6 +92,8 @@ export const COURBE = Object.freeze({
   paliersJournal: 20,
   /** Un pseudo se lit sur un onglet de menu : il reste court. */
   pseudoMax: 24,
+  /** Un choix d'avatar ou de plateau est un identifiant : il reste court. */
+  choixMax: 48,
 });
 
 /**
@@ -330,6 +344,10 @@ export function profilVide() {
     version: 1,
     pseudo: null,
     embleme: EMBLEMES[0].id,
+    // Pas de visage choisi, pas de table imposée : le médaillon porte le glyphe
+    // de l'emblème et la moitié du joueur prend le terrain de son deck.
+    avatar: null,
+    plateau: null,
     xp: 0,
     boostersOfferts: 0,
     stats: Object.fromEntries(CLES_STATS.map((cle) => [cle, 0])),
@@ -383,6 +401,18 @@ function normaliserEmbleme(value) {
   return EMBLEMES.some((embleme) => embleme.id === value) ? value : EMBLEMES[0].id;
 }
 
+/**
+ * Un choix d'avatar ou de plateau : un identifiant court, ou `null` pour « je
+ * n'ai pas choisi ». **Aucun catalogue n'est consulté ici** — voir l'en-tête :
+ * une chaîne propre suffit, et l'écran comme la table valident de leur côté.
+ */
+function normaliserChoix(value) {
+  if (typeof value !== 'string') return null;
+  const propre = value.replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim();
+  if (!propre) return null;
+  return propre.slice(0, COURBE.choixMax);
+}
+
 /** Les compteurs, clé par clé : un entier positif ou nul, jamais `NaN`. */
 function normaliserStats(value) {
   const brut = value && typeof value === 'object' ? value : {};
@@ -401,6 +431,8 @@ export function normaliserProfil(value) {
     version: 1,
     pseudo: normaliserPseudo(brut.pseudo),
     embleme: normaliserEmbleme(brut.embleme),
+    avatar: normaliserChoix(brut.avatar),
+    plateau: normaliserChoix(brut.plateau),
     xp: entierPositif(brut.xp),
     boostersOfferts: entierPositif(brut.boostersOfferts),
     stats: normaliserStats(brut.stats),
@@ -521,6 +553,30 @@ export function choisirEmbleme(profil, emblemeId, { horloge = null } = {}) {
   return { ...normaliserProfil(profil), embleme: emblemeId, majLe: maintenant(horloge) };
 }
 
+/**
+ * Choisit le visage de la carte. `null` (ou une chaîne vide) **retire** le
+ * choix : le médaillon retombe sur le glyphe de l'emblème. Un identifiant
+ * inconnu ne change rien et rend le profil d'origine — l'appelant compare les
+ * références, comme partout dans l'économie du jeu.
+ */
+export function choisirAvatar(profil, avatarId, { horloge = null } = {}) {
+  const voulu = normaliserChoix(avatarId);
+  if (normaliserProfil(profil).avatar === voulu) return profil ?? profilVide();
+  return { ...normaliserProfil(profil), avatar: voulu, majLe: maintenant(horloge) };
+}
+
+/**
+ * Choisit le terrain sur lequel le joueur reçoit — sa moitié de table, en duel
+ * libre comme en Histoire. `null` rend la main au deck (`plateauDeDeck`), et
+ * c'est l'état d'un joueur neuf. L'identifiant est validé par la table, pas
+ * ici : un plateau retiré du catalogue retombe sur le terrain du deck.
+ */
+export function choisirPlateau(profil, plateauId, { horloge = null } = {}) {
+  const voulu = normaliserChoix(plateauId);
+  if (normaliserProfil(profil).plateau === voulu) return profil ?? profilVide();
+  return { ...normaliserProfil(profil), plateau: voulu, majLe: maintenant(horloge) };
+}
+
 /** Le glyphe de l'emblème choisi — l'onglet du menu et la carte le lisent. */
 export function glypheEmbleme(profil) {
   const base = normaliserProfil(profil);
@@ -529,8 +585,9 @@ export function glypheEmbleme(profil) {
 
 /**
  * Fusion de l'appareil et du compte : l'XP, les compteurs et les paquets
- * offerts au **maximum**, le journal en union, le pseudo et l'emblème du côté
- * le plus récent — sans jamais effacer un nom qui n'existe que d'un côté.
+ * offerts au **maximum**, le journal en union, le pseudo, l'emblème, l'avatar et
+ * le plateau du côté le plus récent — sans jamais effacer un choix qui n'existe
+ * que d'un côté.
  * `modifie` dit si le compte apportait quelque chose à l'appareil.
  */
 export function fusionnerProfils(local, distant) {
@@ -541,6 +598,10 @@ export function fusionnerProfils(local, distant) {
     version: 1,
     pseudo: recent.pseudo ?? ici.pseudo ?? la.pseudo,
     embleme: recent.embleme,
+    // Un visage ou une table choisi d'un seul côté ne se perd pas : le côté le
+    // plus récent parle, et s'il n'a rien choisi, l'autre garde son choix.
+    avatar: recent.avatar ?? ici.avatar ?? la.avatar,
+    plateau: recent.plateau ?? ici.plateau ?? la.plateau,
     xp: Math.max(ici.xp, la.xp),
     boostersOfferts: Math.max(ici.boostersOfferts, la.boostersOfferts),
     stats: Object.fromEntries(CLES_STATS.map((cle) => [cle, Math.max(ici.stats[cle], la.stats[cle])])),

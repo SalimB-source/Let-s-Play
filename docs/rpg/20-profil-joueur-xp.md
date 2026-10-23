@@ -273,7 +273,48 @@ Dix rangs, du niveau 1 au niveau 60. Un rang se **garde** entre deux paliers
 > reste dans le module pour le jour où un autre écran voudra la lire, et
 > `tests/rpg-profil.test.js` continue de la vérifier.
 
-### 4.4 Les emblèmes
+### 4.5 Les visages du profil
+
+Douze personnages emblématiques, pris dans la bible visuelle du récit
+(`rpgStoryCast.js`) — **un portrait canonique par figure, jamais un second
+fichier** : les cinq héros du récit d'abord, le Grand Horloger qui les envoie,
+puis une figure par grande famille du catalogue.
+
+| Avatar | Personnage | Famille |
+| --- | --- | --- |
+| `salem` | Salem, le Sondeur | Bab El (héros) |
+| `yamina` | Yamina, l'Horlogère | Bab El (héros) |
+| `feriel` | Fériel, la Souffleuse de verre | Bab El (héros) |
+| `tarek` | Tarek, le Porteur | Bab El (héros) |
+| `boualem` | Boualem, le Puisatier | Bab El (héros) |
+| `mahieddine` | Mahieddine, le Grand Horloger | Bab El |
+| `reine-etals` | Tin Hinan, la Reine des étals | Sables |
+| `ifrit-ergs` | L'Ifrit des ergs | Braise |
+| `maitre-hivers` | Le Maître des Neuf Hivers (le Père des Corbeaux) | Neige |
+| `samurai-daimyo` | Le Daimyō du Soleil rouge | Soleil rouge |
+| `corsaire-barbe-rousse` | La Barbe-Rousse | Corsaires |
+| `necro-peseuse` | Celle qui pèse | Ténèbres |
+
+Les peintures canoniques font de 160 à 590 Ko : douze d'un coup dans un bandeau
+de choix coûteraient plus qu'un booster entier. Chacune a donc sa **vignette** —
+un carré de 192 px découpé **au cadrage exact du jeu** (`position` de la bible,
+le `background-position` d'un cadre en `background-size: cover`, reproduit par
+`tools/make-profil-vignettes.mjs`) — de 6 à 16 Ko. Les vignettes des douze
+tables (336×224, recadrées au centre du fond 4K) font de 10 à 34 Ko. Tout vit
+dans `public/profil/`, suivi par le dépôt comme les sprites du récit
+(`public/sablier-story/stands/`), et l'outil se relit d'un commande :
+
+```bash
+node tools/make-profil-vignettes.mjs            # régénère visages et tables
+node tools/make-profil-vignettes.mjs --verifier # ne régénère rien, contrôle
+```
+
+Une figure **repeinte** (révision de cache dans `rpgCardArt.js`) passe par
+l'outil, puis par `AVATAR_REVISION` / `PLATEAU_VIGNETTE_REVISION` pour que les
+caches suivent. `tests/rpg-profil.test.js` vérifie que chaque visage a son
+portrait canonique **et** sa vignette, et que chacune pèse moins de 60 Ko.
+
+### 4.6 Les emblèmes
 
 Six glyphes de texte — `⌛ ✦ ⚒ ☾ ❂ ▤` — aucun asset à charger, aucun temps de
 téléchargement, et une lisibilité identique sur l'onglet du menu, le médaillon
@@ -312,20 +353,50 @@ synchronisation. C'était un tableau de bord, et on n'y lisait plus rien.
 L'écran tient maintenant en une carte centrée (520 px au plus), lisible sans
 faire défiler :
 
-1. **le médaillon** — l'emblème choisi, seul dans un cercle de 76 px ;
+1. **le médaillon** — le visage choisi (§4.5), peint en fond d'un cercle de
+   96 px ; sans visage, le glyphe de l'emblème ;
 2. **le pseudo** — le titre, une ligne ;
 3. **le niveau** — « Niveau 5 », ou « Niveau 60 — maximal » au plafond ;
 4. **la barre** — un `role="progressbar"` complet (`aria-valuenow`, `-min`,
    `-max`, `-text`) et sa seule lecture : « 214 / 353 XP » ;
-5. **les six emblèmes** — des glyphes, sans libellé ; l'`aria-label` et
-   `aria-pressed` disent le reste ;
+5. **trois gestes**, chacun sous une étiquette de 10 px : les douze **visages**
+   en cercles de 52 px, les six **emblèmes** en glyphes, les douze **tables** en
+   pellicule qui défile plus « Au gré du deck » ;
 6. **le champ du pseudo** — avec son bouton **Enregistrer**, désactivé tant que
    rien n'a changé (« Un champ vide n'efface pas votre nom. »).
 
-Une ligne apparaît entre la barre et les emblèmes **seulement** quand des
-paquets attendent : « Un paquet vous attend. », avec le bouton **Ouvrir au
-Souk**. C'est la seule information contextuelle de la carte, et elle porte une
-action.
+Une ligne apparaît entre la barre et les gestes **seulement** quand des paquets
+attendent : « Un paquet vous attend. », avec le bouton **Ouvrir au Souk**. C'est
+la seule information contextuelle de la carte, et elle porte une action.
+
+Les vignettes sont des **fonds peints** des boutons (`background-image`), pas
+des `<img>` dans le flux : ce sont des décors de choix, et chaque bouton porte
+déjà son nom accessible (« Yamina — L'Horlogère », « La Table des Heures — Bab
+El, salle haute de la Chambre »). L'onglet Profil du menu, lui, remplace son
+glyphe par la vignette du visage choisi (`data-profil-onglet-avatar`).
+
+### 6.1 La table choisie — la moitié du joueur, et seulement elle
+
+`profil.plateau` vaut l'identifiant d'un plateau du catalogue, ou `null` pour
+« au gré du deck » — l'état d'un joueur neuf. `resoudrePlateauxDuDuel` accepte
+alors `plateauChoisi` : la **moitié basse** de la table se peint avec ce terrain
+(`motif: 'choix-du-joueur'`), la moitié haute reste celle du deck adverse —
+l'adversaire joue toujours chez lui. Le plateau du joueur restant le
+**principal**, le choix pilote la musique dédiée et le décor 3D.
+
+- un terrain choisi n'est **jamais** échangé contre son double merveilleux :
+  `variantesFantaisistes` ne tire que ce qui n'a pas été demandé, et le tirage
+  du joueur n'est pas consommé — sans choix, la résolution reste bit à bit
+  celle d'avant (`tests/rpg-plateaux.test.js`) ;
+- un identifiant inconnu (plateau retiré d'une version à l'autre) rend la main
+  au deck : `plateauParId` rend `null`, rien ne casse ;
+- le **tutoriel** garde sa table : la leçon impose son décor, la page passe
+  `plateauChoisi: modeTutoriel ? null : plateauChoisiDuProfil` ;
+- en **duel en ligne**, le choix est une préférence locale : chaque client
+  peint sa propre moitié, l'arbitre ne lit ni l'une ni l'autre.
+
+Il n'y a toujours ni pastille « Aléatoire » ni verrou de plateau en début de
+partie : le choix vit sur la carte de profil, comme une préférence de maison.
 
 Ce qui a disparu de l'écran n'a pas disparu du jeu :
 
@@ -339,9 +410,18 @@ Ce qui a disparu de l'écran n'a pas disparu du jeu :
 | l'état de la synchronisation | le Souk et le menu, qui l'affichent déjà |
 
 Les props suivent : l'écran ne reçoit plus que `profil` et `nomCompte` (plus de
-`collection`, `portefeuille`, `quetes`, `statutSync`). `paliersAVenir`,
-`BAREME_XP` et `RANGS` restent exportés — un autre écran, ou une infobulle,
-pourra les reprendre sans qu'ils reviennent ici.
+`collection`, `portefeuille`, `quetes`, `statutSync`) et quatre gestes —
+`onRenommer`, `onChoisirEmbleme`, `onChoisirAvatar`, `onChoisirPlateau`.
+`paliersAVenir`, `BAREME_XP` et `RANGS` restent exportés — un autre écran, ou
+une infobulle, pourra les reprendre sans qu'ils reviennent ici.
+
+L'identité tient désormais en trois champs (`pseudo`, `embleme`, `avatar`) plus
+un choix de table (`plateau`). Le module du profil ne connaît **ni le casting ni
+les plateaux** : il garde une chaîne propre bornée à 48 caractères, et ce sont
+les catalogues qui valident à la lecture — un visage ou une table inconnus
+rendent `null`, le médaillon retombe sur le glyphe, la table sur le deck. La
+fusion reprend la règle du pseudo : le côté le plus récent parle, et un choix
+qui n'existe que d'un côté ne s'efface jamais.
 
 L'ancienne découpe, pour mémoire — cinq sections, dans l'ordre de lecture :
 
@@ -366,7 +446,10 @@ Marques de vérification dans le DOM : `data-profil`, `data-profil-niveau`,
 `data-profil-xp-percent`, `data-profil-xp-reste`, `data-profil-pseudo`,
 `data-profil-pseudo-saisie`, `data-profil-pseudo-enregistrer`,
 `data-profil-pseudo-vide`, `data-profil-attente`, `data-profil-attente-aller`,
-`data-profil-embleme`, `data-profil-identite`, `data-profil-retour`.
+`data-profil-medaille`, `data-profil-avatar-image`, `data-profil-avatars`,
+`data-profil-avatar`, `data-profil-embleme`, `data-profil-plateaux`,
+`data-profil-plateau`, `data-profil-plateau-auto`, `data-profil-identite`,
+`data-profil-retour`. Sur l'onglet : `data-profil-onglet-avatar`.
 **Retirées** : `data-profil-rang`, `-sync`, `-courbe`, `-bareme`, `-stat` et
 `-journal` — `scripts/rpg-profil-check.mjs` vérifie maintenant leur **absence**.
 Sur la page : `data-profil-onglet`, `data-profil-xp-onglet`,
@@ -456,9 +539,19 @@ Les gardes de source vérifient ce que le DOM ne peut pas dire : où vit la
 persistance, qui tire le rayon au hasard, ce qu'une dette impayée ne répète
 pas, et à quelle hauteur la cérémonie passe au-dessus de la table. Elles
 tiennent aussi la carte **dépouillée** : ni `paliersAVenir`, ni `BAREME_XP`, ni
-`RANGS`, ni aucune des classes retirées dans la source de l'écran, moins de 40
-noeuds dans le DOM, aucune section à titre — et, côté page, que l'écran ne
-reçoit plus `collection`, `portefeuille`, `quetes` ni `statutSync`.
+`RANGS`, ni aucune des classes retirées dans la source de l'écran, aucune
+section à titre, aucun `<img>` dans le flux (les vignettes sont des fonds
+peints) — et, côté page, que l'écran ne reçoit plus `collection`,
+`portefeuille`, `quetes` ni `statutSync`, mais bien les quatre gestes.
+
+`tests/rpg-profil.test.js` (34 tests) ajoute l'identité élargie : un profil neuf
+n'a ni visage ni table, `choisirAvatar` / `choisirPlateau` s'écrivent et se
+retirent avec `null`, la fusion ne perd pas un choix qui n'existe que d'un
+côté, les douze visages ont chacun leur portrait canonique **et** leur
+vignette de moins de 60 Ko. `tests/rpg-plateaux.test.js` (38 tests) tient la
+table choisie : la moitié du joueur obéit, celle de l'adversaire reste chez
+elle, un terrain choisi n'est jamais merveilleux malgré lui, le rng n'est pas
+consommé pour qui a demandé, et sans choix la résolution reste celle d'avant.
 
 Les contrôles voisins ont été mis à jour pour dire la même chose :
 `scripts/rpg-souk-bourse-smoke.jsx` et `scripts/rpg-souk-smoke.jsx` affirment

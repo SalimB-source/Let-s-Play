@@ -12,9 +12,13 @@ import {
   RPG_PLATEAUX_PAR_COULEUR,
   RPG_PLATEAUX_PAR_DECK,
   RPG_PLATEAUX_VARIANTES_FANTAISISTES,
+  PLATEAU_VIGNETTE_REVISION,
+  RPG_PLATEAU_MOTIF_CHOIX,
   resoudrePlateauxDuDuel,
   tirerPlateauDuDuel,
   varianteFantaisisteDe,
+  vignettePlateau,
+  vignettePlateauRelative,
 } from '../src/games/rpgPlateaux.js';
 import { RPG_DECKS } from '../src/games/rpgCards.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
@@ -679,4 +683,68 @@ test('chaque camp tire son double merveilleux indépendamment, joueur d’abord'
     assert.ok(RPG_PLATEAUX.includes(resolution.adversaire.plateau), `valeur ${String(valeur)} : plateau adverse valide`);
     assert.equal(typeof resolution.decouper, 'boolean', `valeur ${String(valeur)} : découpe renseignée`);
   }
+});
+
+// ── Le plateau choisi : la moitié du joueur, et seulement elle ──────────────
+
+test('le joueur qui a choisi une table reçoit chez lui, l’adversaire chez lui', () => {
+  const resolution = resoudrePlateauxDuDuel({
+    deckJoueur: 'veilleurs-du-desert',
+    deckAdverse: 'maree-des-abysses',
+    plateauChoisi: 'cour-de-l-empereur',
+  });
+  assert.equal(resolution.joueur.plateau.id, 'cour-de-l-empereur', 'la moitié basse obéit au joueur');
+  assert.equal(resolution.joueur.motif, RPG_PLATEAU_MOTIF_CHOIX, 'et le dit : ce n’est ni le deck ni un tirage');
+  assert.equal(resolution.joueur.variante, false);
+  assert.equal(resolution.adversaire.plateau.id, 'ruines-de-tipaza', 'la moitié haute reste celle du deck adverse');
+  assert.equal(resolution.principal.plateau.id, 'cour-de-l-empereur', 'le choix pilote musique et décor 3D');
+  assert.equal(resolution.decouper, true, 'deux terrains différents : la table se découpe');
+});
+
+test('un terrain choisi n’est jamais échangé contre son double merveilleux', () => {
+  let appels = 0;
+  const resolution = resoudrePlateauxDuDuel({
+    deckJoueur: 'veilleurs-du-desert',
+    deckAdverse: 'maree-des-abysses',
+    variantesFantaisistes: true,
+    plateauChoisi: 'erg-du-sahara',
+    rng: () => { appels += 1; return 0.9; },
+  });
+  assert.equal(resolution.joueur.plateau.id, 'erg-du-sahara', 'l’Erg choisi reste l’Erg');
+  assert.equal(resolution.joueur.variante, false, 'pas de Désert de Verre imposé à qui a demandé l’Erg');
+  assert.equal(appels, 1, 'le joueur ne tire pas : son tirage n’existe pas');
+  assert.equal(resolution.adversaire.plateau.id, 'abysses-phosphorescentes',
+    'et l’adversaire prend la première valeur du rng, pas la seconde');
+});
+
+test('sans choix, ou avec un choix inconnu, la résolution reste celle d’avant', () => {
+  const duel = { deckJoueur: 'veilleurs-du-desert', deckAdverse: 'maree-des-abysses', variantesFantaisistes: true };
+  const suite = () => [0.9, 0.1];
+  const reference = resoudrePlateauxDuDuel({ ...duel, rng: rngSequentiel(suite()) });
+  assert.deepEqual(resoudrePlateauxDuDuel({ ...duel, plateauChoisi: null, rng: rngSequentiel(suite()) }), reference,
+    'null : le deck décide, bit à bit comme avant');
+  assert.deepEqual(resoudrePlateauxDuDuel({ ...duel, plateauChoisi: 'table-retiree-du-catalogue', rng: rngSequentiel(suite()) }), reference,
+    'un identifiant inconnu rend la main au deck');
+  // Et le rng n’est pas consommé différemment : sans choix, zéro appel quand
+  // rien n’a de double, comme le test ci-dessus le tient déjà.
+});
+
+test('les vignettes des plateaux portent leur révision de cache', () => {
+  assert.equal(vignettePlateau(plateauParId('erg-du-sahara'), '/Let-s-Play/'),
+    `/Let-s-Play/${vignettePlateauRelative('erg-du-sahara')}?v=${PLATEAU_VIGNETTE_REVISION}`);
+  assert.equal(vignettePlateau('table-inconnue'), null, 'un plateau inconnu n’a pas de vignette');
+  assert.equal(vignettePlateau(null), null);
+  for (const plateau of RPG_PLATEAUX) {
+    assert.equal(vignettePlateauRelative(plateau), `profil/plateaux/${plateau.id}.webp`,
+      `${plateau.id} : le chemin de l’outil et celui de l’écran sont le même`);
+  }
+});
+
+test('la page passe le choix du profil aux deux résolutions de table', () => {
+  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  assert.match(page, /const plateauChoisiDuProfil = plateauParId\(profilJoueur\?\.plateau\)\?\.id \?\? null;/,
+    'le choix est validé par le catalogue, une fois, à la lecture du profil');
+  assert.match(page, /plateauChoisi: modeTutoriel \? null : plateauChoisiDuProfil,/,
+    'la partie lancée reçoit le choix — sauf le tutoriel, qui impose sa table');
+  assert.match(page, /\n      plateauChoisi: plateauChoisiDuProfil,\n/, 'le duel en ligne aussi');
 });

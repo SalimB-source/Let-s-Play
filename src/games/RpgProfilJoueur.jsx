@@ -1,8 +1,9 @@
 /**
  * La carte de profil du joueur — src/games/RpgProfilJoueur.jsx
  * ------------------------------------------------------------
- * Une carte, et rien d'autre (`dossier 20-profil-joueur-xp.md`) : l'emblème,
- * le nom, le niveau, la barre d'XP — et de quoi choisir son emblème et son nom.
+ * Une carte, et rien d'autre (`dossier 20-profil-joueur-xp.md`) : le visage, le
+ * nom, le niveau, la barre d'XP — et de quoi choisir **qui l'on est** : un
+ * avatar, un emblème, un pseudo, et la table sur laquelle on reçoit.
  *
  * Tout le reste a été retiré : le rang et sa phrase, l'état de synchronisation,
  * les seize compteurs, le barème des dix gestes, le journal des vingt derniers
@@ -10,6 +11,13 @@
  * existent toujours — dans `rpgProfil.js`, dans le Souk, dans la collection —
  * mais la carte de profil n'est pas un tableau de bord. Ce qu'elle répond tient
  * en une ligne : **qui je suis, et où j'en suis de mon prochain paquet.**
+ *
+ * Les trois choix sont des gestes, pas des informations : douze visages du
+ * récit (`rpgAvatars.js`), six emblèmes en glyphes de texte, douze terrains de
+ * duel (`rpgPlateaux.js`) plus « au gré du deck ». Les vignettes pèsent de 6 à
+ * 34 Ko — le bandeau entier coûte moins qu'une seule peinture de carte. Elles
+ * sont peintes en `background-image` des boutons, pas en `<img>` : ce sont des
+ * décors de bouton, le nom accessible porte déjà tout (`aria-label`, `title`).
  *
  * Comme l'écran du Souk, celui-ci est **purement présentationnel** : la barre
  * vient de `rpgProfil.js`, la persistance de `useSablierBourse.js`. Il rend
@@ -28,12 +36,19 @@ import {
   pseudoLisible,
   xpLisible,
 } from './rpgProfil.js';
+import { RPG_AVATARS, avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
+import { RPG_PLATEAUX, vignettePlateau } from './rpgPlateaux.js';
+
+/** Le préfixe de `public/` : `/Let-s-Play/` en ligne, `/` sur le bureau. */
+const BASE_URL = import.meta.env?.BASE_URL ?? '/';
 
 export default function RpgProfilJoueur({
   profil = null,
   nomCompte = null,
   onRenommer = null,
   onChoisirEmbleme = null,
+  onChoisirAvatar = null,
+  onChoisirPlateau = null,
   onPlaySfx = null,
   onExit = null,
   onOuvrirSouk = null,
@@ -41,6 +56,8 @@ export default function RpgProfilJoueur({
   const barre = useMemo(() => progressionDeXp(profil?.xp ?? 0), [profil?.xp]);
   const { niveau, into, need, percent, reste, maximal } = barre;
   const glyphe = glypheEmbleme(profil);
+  const avatar = avatarDeProfil(profil);
+  const plateauChoisi = profil?.plateau ?? null;
   const dus = boostersDus(profil);
 
   const nom = pseudoLisible(profil, nomCompte);
@@ -70,7 +87,14 @@ export default function RpgProfilJoueur({
       </button>
 
       <div className="rpg-profil__carte">
-        <span className="rpg-profil__medaillon" aria-hidden="true">{glyphe}</span>
+        <span
+          className={`rpg-profil__medaillon${avatar ? ' rpg-profil__medaillon--visage' : ''}`}
+          style={avatar ? { backgroundImage: `url("${vignetteAvatar(avatar.id, BASE_URL)}")` } : undefined}
+          data-profil-medaille={avatar?.id ?? 'glyphe'}
+          data-profil-avatar-image={avatar?.id ?? undefined}
+        >
+          {avatar ? null : glyphe}
+        </span>
         <h2 className="rpg-profil__nom" data-profil-pseudo={nom}>{nom}</h2>
         <p className="rpg-profil__niveau" data-profil-niveau={niveau}>
           Niveau {niveau}{maximal ? ' — maximal' : ''}
@@ -109,27 +133,109 @@ export default function RpgProfilJoueur({
           </p>
         )}
 
-        <div className="rpg-profil__emblemes" data-profil-emblemes={EMBLEMES.length} role="group" aria-label="Choisir un emblème">
-          {EMBLEMES.map((embleme) => {
-            const choisi = glyphe === embleme.glyphe;
-            return (
-              <button
-                key={embleme.id}
-                type="button"
-                className={`rpg-profil__embleme${choisi ? ' is-choisi' : ''}`}
-                aria-pressed={choisi}
-                aria-label={embleme.nom}
-                title={embleme.nom}
-                data-profil-embleme={embleme.id}
-                onClick={() => {
-                  const change = onChoisirEmbleme?.(embleme.id);
-                  onPlaySfx?.(change ? 'select' : 'menu');
-                }}
-              >
-                {embleme.glyphe}
-              </button>
-            );
-          })}
+        {/* Qui l'on est : trois gestes, chacun sur sa ligne, aucun chiffre. */}
+        <div className="rpg-profil__choix">
+          <span className="rpg-profil__etiquette" id="rpg-profil-visage" aria-hidden="true">Visage</span>
+          <div
+            className="rpg-profil__avatars"
+            role="group"
+            aria-labelledby="rpg-profil-visage"
+            data-profil-avatars={RPG_AVATARS.length}
+          >
+            {RPG_AVATARS.map((figure) => {
+              const choisi = avatar?.id === figure.id;
+              return (
+                <button
+                  key={figure.id}
+                  type="button"
+                  className={`rpg-profil__avatar${choisi ? ' is-choisi' : ''}`}
+                  aria-pressed={choisi}
+                  aria-label={`${figure.nom} — ${figure.fonction}`}
+                  title={`${figure.nom} — ${figure.fonction}`}
+                  data-profil-avatar={figure.id}
+                  style={{ backgroundImage: `url("${vignetteAvatar(figure.id, BASE_URL)}")` }}
+                  onClick={() => {
+                    const change = onChoisirAvatar?.(figure.id);
+                    onPlaySfx?.(change ? 'select' : 'menu');
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          <span className="rpg-profil__etiquette" id="rpg-profil-cachet" aria-hidden="true">Emblème</span>
+          <div
+            className="rpg-profil__emblemes"
+            role="group"
+            aria-labelledby="rpg-profil-cachet"
+            data-profil-emblemes={EMBLEMES.length}
+          >
+            {EMBLEMES.map((embleme) => {
+              const choisi = glyphe === embleme.glyphe;
+              return (
+                <button
+                  key={embleme.id}
+                  type="button"
+                  className={`rpg-profil__embleme${choisi ? ' is-choisi' : ''}`}
+                  aria-pressed={choisi}
+                  aria-label={embleme.nom}
+                  title={embleme.nom}
+                  data-profil-embleme={embleme.id}
+                  onClick={() => {
+                    const change = onChoisirEmbleme?.(embleme.id);
+                    onPlaySfx?.(change ? 'select' : 'menu');
+                  }}
+                >
+                  {embleme.glyphe}
+                </button>
+              );
+            })}
+          </div>
+
+          <span className="rpg-profil__etiquette" id="rpg-profil-table" aria-hidden="true">Table</span>
+          <div
+            className="rpg-profil__plateaux"
+            role="group"
+            aria-labelledby="rpg-profil-table"
+            data-profil-plateaux={RPG_PLATEAUX.length}
+          >
+            <button
+              type="button"
+              className={`rpg-profil__plateau rpg-profil__plateau--auto${plateauChoisi ? '' : ' is-choisi'}`}
+              aria-pressed={!plateauChoisi}
+              aria-label="Au gré du deck — le terrain que votre paquet impose"
+              title="Au gré du deck — le terrain que votre paquet impose"
+              data-profil-plateau-auto
+              onClick={() => {
+                const change = onChoisirPlateau?.(null);
+                onPlaySfx?.(change ? 'select' : 'menu');
+              }}
+            >
+              <span aria-hidden="true">✦</span>
+              Au gré
+              <br />
+              du deck
+            </button>
+            {RPG_PLATEAUX.map((table) => {
+              const choisi = plateauChoisi === table.id;
+              return (
+                <button
+                  key={table.id}
+                  type="button"
+                  className={`rpg-profil__plateau${choisi ? ' is-choisi' : ''}`}
+                  aria-pressed={choisi}
+                  aria-label={`${table.nom} — ${table.lieu}`}
+                  title={`${table.nom} — ${table.lieu}`}
+                  data-profil-plateau={table.id}
+                  style={{ backgroundImage: `url("${vignettePlateau(table, BASE_URL)}")` }}
+                  onClick={() => {
+                    const change = onChoisirPlateau?.(table.id);
+                    onPlaySfx?.(change ? 'select' : 'menu');
+                  }}
+                />
+              );
+            })}
+          </div>
         </div>
 
         <form

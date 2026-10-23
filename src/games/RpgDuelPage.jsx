@@ -67,6 +67,7 @@ import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
 import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
+import { avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import {
   RpgMainThemeMusic,
@@ -3642,7 +3643,7 @@ function MonteeDeNiveau({ montee, profil, cardArt, onFermer, onPlaySfx }) {
   );
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -3681,6 +3682,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // Un profil absent se lit « niveau 1, 0 XP » — l'onglet ne casse jamais.
   const barreOnglet = barreXp ?? progressionDeXp(profil?.xp ?? 0);
   const niveauOnglet = barreOnglet.niveau;
+  const avatarOnglet = avatarDeProfil(profil);
   const resteOnglet = xpLisible(barreOnglet.reste);
   // L'onglet ne peut pas écrire ses chiffres : c'est l'`aria-label` qui les dit,
   // en une phrase — construite ici, hors du gabarit, pour qu'aucun retour à la
@@ -3904,7 +3906,17 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               data-profil-onglet={niveauOnglet}
               onClick={() => { play('menu'); onChangeScreen('profil'); }}
             >
-              <span className="rpg-mode-menu__profil-embleme" aria-hidden="true">{glypheEmbleme(profil)}</span>
+              {avatarOnglet ? (
+                <img
+                  className="rpg-mode-menu__profil-embleme rpg-mode-menu__profil-visage"
+                  src={vignetteAvatar(avatarOnglet.id, import.meta.env.BASE_URL)}
+                  alt=""
+                  aria-hidden="true"
+                  data-profil-onglet-avatar={avatarOnglet.id}
+                />
+              ) : (
+                <span className="rpg-mode-menu__profil-embleme" aria-hidden="true">{glypheEmbleme(profil)}</span>
+              )}
               <span className="rpg-mode-menu__onglet-libelle">Profil</span>
               <span className="rpg-mode-menu__profil-niveau" data-profil-niveau={niveauOnglet}>NIV. {niveauOnglet}</span>
               <span className="rpg-mode-menu__profil-xp" aria-hidden="true">
@@ -4522,6 +4534,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             nomCompte={nomCompte}
             onRenommer={onRenommerProfil}
             onChoisirEmbleme={onChoisirEmbleme}
+            onChoisirAvatar={onChoisirAvatar}
+            onChoisirPlateau={onChoisirPlateau}
             onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }}
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
@@ -5128,18 +5142,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // ── Synchronisation temps réel d'un duel PvP (toujours avant tout return conditionnel) ──
   useEffect(() => {
     if (!modePvp || !pvp?.vue) return;
-    // Résout les plateaux thématiques et musiques à partir des decks publics.
-    const deckJ = (pvp.decks?.joueur?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.joueur.id) : null)
-      ?? (pvp.decks?.joueur?.cardIds?.length ? { id: pvp.decks.joueur.id ?? 'pvp-joueur', elements: pvp.vue.joueur?.couleurs, cardIds: pvp.decks.joueur.cardIds } : null)
-      ?? (pvp.vue.joueur?.couleurs?.length ? { id: 'pvp-joueur', elements: pvp.vue.joueur.couleurs, cardIds: [] } : null);
-    const deckS = (pvp.decks?.sorcier?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.sorcier.id) : null)
-      ?? (pvp.decks?.sorcier?.cardIds?.length ? { id: pvp.decks.sorcier.id ?? 'pvp-sorcier', elements: pvp.vue.sorcier?.couleurs, cardIds: pvp.decks.sorcier.cardIds } : null)
-      ?? (pvp.vue.sorcier?.couleurs?.length ? { id: 'pvp-sorcier', elements: pvp.vue.sorcier.couleurs, cardIds: [] } : null);
-    const plateaux = resoudrePlateauxDuDuel({ deckJoueur: deckJ, deckAdverse: deckS, variantesFantaisistes: variantesPlateaux });
-    const prochainPlateauJoueurId = plateaux?.joueur?.plateau?.id;
-    const prochainPlateauAdverseId = plateaux?.adversaire?.plateau?.id;
-    if (prochainPlateauJoueurId) setPlateauId((actuel) => (actuel === prochainPlateauJoueurId ? actuel : prochainPlateauJoueurId));
-    if (prochainPlateauAdverseId) setPlateauAdverseId((actuel) => (actuel === prochainPlateauAdverseId ? actuel : prochainPlateauAdverseId));
+    // Les plateaux du duel en ligne se résolvent dans leur propre effet, plus
+    // bas : il lit le profil déballé après cet effet-ci, et le choix de table
+    // du joueur avec lui.
 
     const entrant = structuredClone(pvp.vue);
     if (entrant.phase === 'blocage' && entrant.combatDeclare?.cote === 'sorcier') {
@@ -5438,6 +5443,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // que chaque palier franchi fait ouvrir au hasard.
     profil: profilJoueur, barreXp, boostersEnAttente: paquetsDePalierEnAttente,
     monteeNiveau, fermerMonteeNiveau, renommerLeProfil, choisirUnEmblemeProfil,
+    choisirUnAvatar: choisirUnAvatarProfil, choisirUnPlateau: choisirUnPlateauProfil,
   } = useSablierBourse({
     progression: progressionHistoireRef.current,
     // Un achat range ses cartes dans la collection : l'atelier de decks doit
@@ -5445,6 +5451,35 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // un palier passe par le même chemin.
     onCartesRangees: rafraichirCollection,
   });
+  // La carte de profil peut imposer la moitié basse de la table (dossier 20 §6) :
+  // le choix vit dans le profil, validé par le catalogue — un identifiant inconnu
+  // (plateau retiré d'une version à l'autre) rend la main au deck, sans planter.
+  const plateauChoisiDuProfil = plateauParId(profilJoueur?.plateau)?.id ?? null;
+
+  // ── Les plateaux d'un duel en ligne : les decks publics, et le choix du joueur ──
+  // Découpé de l'effet de synchronisation PvP : celui-ci doit lire le profil,
+  // déballé ci-dessus, et il n'a rien à voir avec l'état du duel entrant — il ne
+  // fait que peindre la table. Chaque camp garde son terrain ; la moitié basse
+  // obéit au joueur qui a choisi une table chez lui.
+  useEffect(() => {
+    if (!modePvp || !pvp?.vue) return;
+    const deckJ = (pvp.decks?.joueur?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.joueur.id) : null)
+      ?? (pvp.decks?.joueur?.cardIds?.length ? { id: pvp.decks.joueur.id ?? 'pvp-joueur', elements: pvp.vue.joueur?.couleurs, cardIds: pvp.decks.joueur.cardIds } : null)
+      ?? (pvp.vue.joueur?.couleurs?.length ? { id: 'pvp-joueur', elements: pvp.vue.joueur.couleurs, cardIds: [] } : null);
+    const deckS = (pvp.decks?.sorcier?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.sorcier.id) : null)
+      ?? (pvp.decks?.sorcier?.cardIds?.length ? { id: pvp.decks.sorcier.id ?? 'pvp-sorcier', elements: pvp.vue.sorcier?.couleurs, cardIds: pvp.decks.sorcier.cardIds } : null)
+      ?? (pvp.vue.sorcier?.couleurs?.length ? { id: 'pvp-sorcier', elements: pvp.vue.sorcier.couleurs, cardIds: [] } : null);
+    const plateaux = resoudrePlateauxDuDuel({
+      deckJoueur: deckJ,
+      deckAdverse: deckS,
+      variantesFantaisistes: variantesPlateaux,
+      plateauChoisi: plateauChoisiDuProfil,
+    });
+    const prochainPlateauJoueurId = plateaux?.joueur?.plateau?.id;
+    const prochainPlateauAdverseId = plateaux?.adversaire?.plateau?.id;
+    if (prochainPlateauJoueurId) setPlateauId((actuel) => (actuel === prochainPlateauJoueurId ? actuel : prochainPlateauJoueurId));
+    if (prochainPlateauAdverseId) setPlateauAdverseId((actuel) => (actuel === prochainPlateauAdverseId ? actuel : prochainPlateauAdverseId));
+  }, [modePvp, pvp, plateauChoisiDuProfil, variantesPlateaux]);
   // Le mana sans terrain est commun à tous les duels : les récompenses
   // et les quêtes ne sont plus exclues sur le seul critère du format.
   // Le rendu du duel-gagne (gain de l'étage, butin de la tour) remonte à
@@ -6287,6 +6322,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         : etageCourant ? etageCourant.deck : sorcierDeck ?? deckAdverse),
       rng,
       variantesFantaisistes: variantesPlateaux,
+      plateauChoisi: modeTutoriel ? null : plateauChoisiDuProfil,
     });
     const plateau = resolutionPlateaux.joueur.plateau;
     setPlateauId(plateau.id);
@@ -7375,6 +7411,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           nomCompte={nomProfilJoueur}
           onRenommerProfil={renommerLeProfil}
           onChoisirEmbleme={choisirUnEmblemeProfil}
+          onChoisirAvatar={choisirUnAvatarProfil}
+          onChoisirPlateau={choisirUnPlateauProfil}
           statutSync={statutSync}
           onEnregistrerDeckMaison={enregistrerDeckMaison}
           onSupprimerDeckMaison={supprimerDeckMaison}

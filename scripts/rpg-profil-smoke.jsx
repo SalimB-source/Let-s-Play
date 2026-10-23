@@ -66,6 +66,8 @@ function Sonde({ surPret, sons, nomCompte = null }) {
         nomCompte={nomCompte}
         onRenommer={(pseudo) => bourse.renommerLeProfil(pseudo)}
         onChoisirEmbleme={(id) => bourse.choisirUnEmbleme(id)}
+        onChoisirAvatar={(id) => bourse.choisirUnAvatar(id)}
+        onChoisirPlateau={(id) => bourse.choisirUnPlateau(id)}
         onOuvrirSouk={() => { sons.push('vers-le-souk'); }}
         onPlaySfx={(nom) => { sons.push(nom); }}
         onExit={() => { sons.push('sortie'); }}
@@ -127,8 +129,8 @@ export async function checkRpgProfilEcran(assert) {
       assert.equal(noeud(absent), null, `${absent} n’est plus sur la carte`);
     }
     assert.equal(document.querySelectorAll('.rpg-profil__section').length, 0, 'plus aucune section à titre');
-    assert.ok(document.querySelectorAll('[data-profil] *').length < 40,
-      `toute la carte tient en quelques noeuds (${document.querySelectorAll('[data-profil] *').length})`);
+    assert.ok(document.querySelectorAll('[data-profil] *').length < 95,
+      `toute la carte tient en quelques noeuds (${document.querySelectorAll('[data-profil] *').length}) — deux bandeaux de choix compris`);
     assert.equal(document.querySelectorAll('[data-profil] h3').length, 0, 'et pas un titre de section');
 
     // ── Jouer fait monter la barre, sans franchir de palier ─────────────────
@@ -272,12 +274,52 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(bourse.choisirUnEmbleme('introuvable'), false, 'un emblème inconnu ne change rien');
     assert.equal(bourse.profil, avantInconnu, 'et ne réécrit pas le profil');
 
+    // ── Le visage et la table : deux bandeaux, un choix chacun ──────────────
+    assert.equal(nombre('[data-profil-avatars]', 'profilAvatars'), 12, 'douze visages du récit');
+    assert.equal(nombre('[data-profil-plateaux]', 'profilPlateaux'), 12, 'douze tables, plus celle du deck');
+    assert.ok(noeud('[data-profil-plateau-auto]').classList.contains('is-choisi'),
+      'au départ, c’est le deck qui décide de la table');
+    assert.equal(noeud('[data-profil-avatar-image]'), null, 'sans visage choisi, le médaillon porte le glyphe');
+
+    const visage = noeud('[data-profil-avatar="yamina"]');
+    await act(async () => visage.click());
+    assert.equal(bourse.profil.avatar, 'yamina', 'le visage choisi est retenu');
+    assert.equal(donnee('[data-profil-medaille]', 'profilMedaille'), 'yamina', 'et le médaillon le peint');
+    assert.match(noeud('[data-profil-avatar-image]').style.backgroundImage, /profil\/avatars\/yamina\.webp/,
+      'depuis sa vignette, pas depuis la peinture de 310 Ko');
+    assert.ok(visage.classList.contains('is-choisi'), 'le visage choisi se marque');
+    assert.equal(
+      [...document.querySelectorAll('[data-profil-avatar]')].filter((bouton) => bouton.classList.contains('is-choisi')).length,
+      1, 'un seul visage à la fois',
+    );
+    // Le geste écrit une chaîne propre, sans consulter le casting : c'est la
+    // **lecture** qui valide. Un visage retiré du jeu ne peint rien, il ne casse
+    // rien — le médaillon retombe sur le glyphe.
+    await act(async () => {
+      assert.equal(bourse.choisirUnAvatar('pas-un-personnage'), true, 'le geste écrit une chaîne propre');
+    });
+    assert.equal(noeud('[data-profil-avatar-image]'), null, '…que le médaillon ignore : la lecture valide');
+    await act(async () => noeud('[data-profil-avatar="yamina"]').click());
+    assert.equal(bourse.profil.avatar, 'yamina', 'et le visage revient d’un clic');
+
+    const table = noeud('[data-profil-plateau="fjord-des-neuf-hivers"]');
+    await act(async () => table.click());
+    assert.equal(bourse.profil.plateau, 'fjord-des-neuf-hivers', 'la table choisie est retenue');
+    assert.ok(table.classList.contains('is-choisi'), 'et se marque');
+    assert.equal(noeud('[data-profil-plateau-auto]').classList.contains('is-choisi'), false, 'le deck ne décide plus');
+    await act(async () => noeud('[data-profil-plateau-auto]').click());
+    assert.equal(bourse.profil.plateau, null, '« au gré du deck » rend la main au deck');
+    await act(async () => noeud('[data-profil-plateau="fjord-des-neuf-hivers"]').click());
+    assert.equal(bourse.profil.plateau, 'fjord-des-neuf-hivers', 'et le joueur la reprend');
+
     // ── L'appareil garde le profil ──────────────────────────────────────────
     const ecrit = JSON.parse(window.localStorage.getItem(RPG_PROFIL_STORAGE_KEY) ?? 'null');
     assert.ok(ecrit, 'le profil est écrit sur l’appareil');
     assert.equal(ecrit.xp, bourse.profil.xp, 'l’XP écrite est celle de l’écran');
     assert.equal(ecrit.pseudo, 'Salem l’arpenteur');
     assert.equal(ecrit.embleme, embleme.id);
+    assert.equal(ecrit.avatar, 'yamina', 'le visage est écrit sur l’appareil');
+    assert.equal(ecrit.plateau, 'fjord-des-neuf-hivers', 'et la table aussi');
     assert.equal(ecrit.boostersOfferts, bourse.profil.boostersOfferts, 'et les paquets offerts aussi');
 
     const xpAvantRemontage = bourse.profil.xp;
@@ -293,7 +335,9 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(bourse2.profil.xp, xpAvantRemontage, 'un nouveau montage relit l’XP de l’appareil');
     assert.equal(nombre('[data-profil-niveau]', 'profilNiveau'), niveauAvantRemontage, 'et le niveau qui va avec');
     assert.equal(donnee('[data-profil-pseudo]', 'profilPseudo'), 'Salem l’arpenteur', 'le nom survit');
-    assert.equal(texte(noeud('.rpg-profil__medaillon')), embleme.glyphe, 'l’emblème aussi');
+    assert.equal(donnee('[data-profil-medaille]', 'profilMedaille'), 'yamina', 'le visage survit au remontage');
+    assert.ok(noeud(`[data-profil-embleme="${embleme.id}"]`).classList.contains('is-choisi'), 'l’emblème aussi');
+    assert.ok(noeud('[data-profil-plateau="fjord-des-neuf-hivers"]').classList.contains('is-choisi'), 'et la table aussi');
     assert.equal(bourse2.boostersEnAttente, 0, 'aucune dette ne renaît au remontage');
     assert.equal(noeud('[data-souk-ceremonie]'), null, 'et aucune cérémonie ne se rouvre toute seule');
 

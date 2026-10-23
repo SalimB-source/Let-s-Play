@@ -17,6 +17,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, statSync } from 'node:fs';
 import {
   BAREME_XP,
   COURBE,
@@ -42,12 +43,17 @@ import {
   progressionDuProfil,
   pseudoLisible,
   rangDeNiveau,
+  choisirAvatar,
+  choisirPlateau,
   renommerProfil,
   sauverProfil,
   seuilDuNiveau,
   xpLisible,
   xpTotalDuNiveau,
 } from '../src/games/rpgProfil.js';
+import { RPG_AVATARS, avatarDeProfil, avatarParId, vignetteAvatarRelative } from '../src/games/rpgAvatars.js';
+import { RPG_PLATEAUX, plateauParId, vignettePlateauRelative } from '../src/games/rpgPlateaux.js';
+import { RPG_STORY_CAST } from '../src/games/rpgStoryCast.js';
 import {
   EVENEMENTS_XP,
   appliquerEvenementDuel,
@@ -580,4 +586,89 @@ test('le profil se sauvegarde et se relit, et se tait quand le stockage manque',
   });
   assert.equal(sauverProfil(profil({ xp: 10 })), false, 'hors stockage, l’écriture échoue en silence');
   assert.equal(chargerProfil().xp, 0);
+});
+
+// ── Le visage et la table : deux champs de choix, vides au départ ───────────
+
+const dansPublic = (relative) => new URL(`../public/${relative}`, import.meta.url).pathname;
+
+test('un profil neuf n’a ni visage ni table : le glyphe et le deck décident', () => {
+  const neuf = profilVide();
+  assert.equal(neuf.avatar, null, 'aucun visage imposé : le médaillon porte le glyphe');
+  assert.equal(neuf.plateau, null, 'aucune table imposée : le deck impose la sienne');
+  assert.equal(avatarDeProfil(neuf), null, 'et la lecture le dit');
+  // Une sauvegarde retouchée, ou un avatar retiré d’une version à l’autre, ne
+  // casse rien : la chaîne est gardée propre, et la lecture rend null.
+  const bricole = normaliserProfil({ avatar: '  inconnu-au-bataillon  ', plateau: 'x'.repeat(90) });
+  assert.equal(bricole.avatar, 'inconnu-au-bataillon');
+  assert.equal(bricole.plateau.length, COURBE.choixMax, 'un choix reste court');
+  assert.equal(avatarDeProfil(bricole), null, 'un visage inconnu retombe sur le glyphe');
+  assert.equal(plateauParId(bricole.plateau), null, 'une table inconnue retombe sur le deck');
+  assert.equal(normaliserProfil({ avatar: 12, plateau: {} }).avatar, null);
+});
+
+test('choisir un visage est un geste : il s’écrit, se retire, et ne bégaie pas', () => {
+  const avant = profilVide();
+  const avec = choisirAvatar(avant, 'salem', { horloge: () => '2026-10-23T10:00:00Z' });
+  assert.notEqual(avec, avant, 'un visage choisi écrit le profil');
+  assert.equal(avec.avatar, 'salem');
+  assert.equal(avec.majLe, '2026-10-23T10:00:00Z', 'et le date, comme le pseudo');
+  assert.equal(choisirAvatar(avec, 'salem'), avec, 'rechoisir le même visage ne change rien');
+  const sans = choisirAvatar(avec, null);
+  assert.equal(sans.avatar, null, 'null retire le choix : le médaillon redevient glyphe');
+  assert.equal(choisirAvatar(avec, '   ').avatar, null, 'une chaîne vide retire aussi');
+  assert.equal(choisirAvatar(avant, 'pas-un-personnage').avatar, 'pas-un-personnage',
+    'le module garde une chaîne propre : c’est la lecture qui valide');
+});
+
+test('choisir une table rend la main au deck avec null', () => {
+  const avec = choisirPlateau(profilVide(), 'fjord-des-neuf-hivers');
+  assert.equal(avec.plateau, 'fjord-des-neuf-hivers');
+  assert.equal(choisirPlateau(avec, 'fjord-des-neuf-hivers'), avec, 'le même choix ne réécrit rien');
+  assert.equal(choisirPlateau(avec, null).plateau, null, 'et null rend la main au deck');
+});
+
+test('la fusion ne perd ni un visage ni une table choisis d’un seul côté', () => {
+  const ici = choisirAvatar(choisirPlateau(profilVide(), 'erg-du-sahara'), 'yamina', { horloge: () => '2026-10-23T09:00:00Z' });
+  // L’appareil d’en face n’a rien choisi, et il est plus récent : le choix de
+  // celui-ci ne doit pas s’effacer pour autant.
+  const la = { ...profilVide(), xp: 400, majLe: '2026-10-23T12:00:00Z' };
+  const { profil } = fusionnerProfils(ici, la);
+  assert.equal(profil.avatar, 'yamina', 'le visage survit à un côté muet');
+  assert.equal(profil.plateau, 'erg-du-sahara', 'la table aussi');
+  assert.equal(profil.xp, 400, 'et l’XP monte quand même');
+  // Le côté le plus récent parle quand il a choisi, lui aussi.
+  const laChoisi = choisirAvatar(la, 'tarek');
+  assert.equal(fusionnerProfils(ici, laChoisi).profil.avatar, 'tarek');
+});
+
+test('douze visages, chacun un personnage du récit, avec son portrait', () => {
+  assert.equal(RPG_AVATARS.length, 12, 'douze visages : cinq héros et une figure par famille');
+  const ids = RPG_AVATARS.map((avatar) => avatar.id);
+  assert.equal(new Set(ids).size, 12, 'aucun visage en double');
+  for (const avatar of RPG_AVATARS) {
+    const figure = RPG_STORY_CAST[avatar.id];
+    assert.ok(figure, `${avatar.id} est un personnage de la bible du récit`);
+    assert.ok(figure.portrait, `${avatar.id} a un portrait canonique`);
+    assert.ok(existsSync(dansPublic(figure.portrait)), `le portrait de ${avatar.id} existe`);
+    assert.equal(avatar.nom, figure.nom, `${avatar.id} porte le nom de la bible`);
+    assert.ok(avatar.fonction && avatar.couleur, `${avatar.id} se présente`);
+    assert.equal(avatarParId(avatar.id), avatar, 'et se retrouve par son identifiant');
+  }
+  assert.equal(avatarParId('narrateur'), null, 'la ville n’est pas un visage de profil');
+});
+
+test('les vignettes du profil existent toutes, et pèsent moins qu’une peinture', () => {
+  // Douze visages et douze tables, découpés par `tools/make-profil-vignettes.mjs`
+  // : sans eux le bandeau chargerait jusqu’à 4 Mo par tuile.
+  for (const avatar of RPG_AVATARS) {
+    const fichier = dansPublic(vignetteAvatarRelative(avatar.id));
+    assert.ok(existsSync(fichier), `la vignette de ${avatar.id} existe`);
+    assert.ok(statSync(fichier).size < 60 * 1024, `la vignette de ${avatar.id} pèse moins de 60 Ko`);
+  }
+  for (const plateau of RPG_PLATEAUX) {
+    const fichier = dansPublic(vignettePlateauRelative(plateau));
+    assert.ok(existsSync(fichier), `la vignette de ${plateau.id} existe`);
+    assert.ok(statSync(fichier).size < 80 * 1024, `la vignette de ${plateau.id} pèse moins de 80 Ko`);
+  }
 });

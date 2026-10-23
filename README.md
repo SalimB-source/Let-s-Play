@@ -5431,8 +5431,10 @@ réserve.
 
 Le duel se joue **sur une table** : un fond plein cadre, sous les cartes.
 Jusqu'ici il n'y en avait qu'une — le bois gravé de Bab El. Le jeu en propose
-désormais plusieurs, et **le joueur n'en choisit aucune** : le plateau d'une
-partie est imposé par **le deck de l'un des deux duellistes**.
+désormais plusieurs, et le plateau d'une partie est imposé par **le deck de
+l'un des deux duellistes** — sauf sur la moitié du joueur, qui peut **recevoir
+chez lui** : la carte de profil propose les douze tables plus « au gré du
+deck » (dossier 20 §6.1).
 
 ### La règle
 
@@ -5481,11 +5483,16 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   `buildCrystalCluster`), la couleur de repli de la CSS et le script qui
   fabriquait sa plaque sont retirés. La Table des Heures redevient un terrain
   sans double, comme la piste caravanière.
-- **Plus aucun choix de plateau.** Le bloc « Le terrain d'affrontement » du menu
-  *Jouer* a été retiré, avec la pastille **Aléatoire**, le verrou de plateau et
-  sa sauvegarde sur l'appareil (la clé `letsplay_sablier_plateau_v1` n'est plus
-  ni lue ni écrite). Rien à régler : le terrain se découvre à l'ouverture du
-  duel.
+- **Plus aucun choix de plateau *par partie*.** Le bloc « Le terrain
+  d'affrontement » du menu *Jouer* a été retiré, avec la pastille **Aléatoire**,
+  le verrou de plateau et sa sauvegarde d'alors (la clé
+  `letsplay_sablier_plateau_v1` n'est plus ni lue ni écrite) : rien à régler
+  avant chaque duel, le terrain se découvre à l'ouverture. Le choix est revenu
+  ailleurs, comme une préférence de maison : `profil.plateau`, choisi sur la
+  carte de profil, peint la **moitié basse** de la table (`motif:
+  'choix-du-joueur'`) — la moitié haute reste celle du deck adverse, un terrain
+  choisi n'est jamais échangé contre son double merveilleux, et `null` rend la
+  main au deck.
 - **Le plateau se voit, il ne se raconte pas.** La table porte le terrain tiré
   dans sa classe (`card-table--plateau-<id>`), son fond et son nom dans son
   libellé accessible : aucune phrase ne le commente, la peinture sous les
@@ -8708,11 +8715,20 @@ sans un crédit dépensé.
 - L'onglet **Profil** ouvre le menu, devant Jouer : l'emblème, « NIV. 12 », la
   barre d'XP en miniature, et une pastille quand un paquet attend.
 - La carte de profil est **dépouillée** : une seule carte centrée, lisible sans
-  faire défiler — l'emblème dans son médaillon, le pseudo, « Niveau 5 », la
-  barre (`role="progressbar"`) et sa lecture « 214 / 353 XP », les six
-  emblèmes en glyphes de texte (aucun asset), le champ du pseudo. Plus une
-  ligne, seulement quand des paquets attendent : « Un paquet vous attend. » et
-  le bouton **Ouvrir au Souk**. La première version empilait cinq sections —
+  faire défiler — le pseudo, « Niveau 5 », la barre (`role="progressbar"`) et sa
+  lecture « 214 / 353 XP », le champ du pseudo, et **trois gestes** : douze
+  **visages** de personnages emblématiques du récit (Salem, Yamina, Fériel,
+  Tarek, Boualem, Mahieddine, Tin Hinan, l'Ifrit des ergs, le Maître des Neuf
+  Hivers, le Daimyō du Soleil rouge, la Barbe-Rousse, Celle qui pèse) peints
+  dans le médaillon et dans l'onglet du menu, six **emblèmes** en glyphes de
+  texte, et douze **tables** de duel plus « au gré du deck ». Plus une ligne,
+  seulement quand des paquets attendent : « Un paquet vous attend. » et le
+  bouton **Ouvrir au Souk**.
+- Les visages et les tables arrivent en **vignettes** de 6 à 34 Ko
+  (`public/profil/`, découpées par `tools/make-profil-vignettes.mjs` au cadrage
+  exact des peintures canoniques) : les deux bandeaux coûtent moins qu'une
+  seule peinture de carte. Elles sont peintes en fond des boutons, pas en
+  `<img>` : chaque bouton porte déjà son nom accessible. La première version empilait cinq sections —
   le rang de Bab El, seize compteurs, le barème, le journal des vingt derniers
   paliers, les paliers à venir, l'état de la synchronisation — et on n'y lisait
   plus rien. **Rien n'a disparu du jeu**, seulement de cet écran : `RANGS`,

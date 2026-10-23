@@ -1,10 +1,13 @@
 /* La carte de profil du joueur : **une carte**, pas un tableau de bord.
    Même matière que le Souk — laiton sur nuit, chiffres en tabulaire — mais
-   dépouillée : l'emblème, le nom, le niveau, la barre, et de quoi choisir son
-   emblème et son nom. Rien d'autre n'y a sa place : les compteurs vivent dans
-   le profil (`rpgProfil.js`), le barème dans le dossier 20, les paquets au
-   Souk. La barre est une colonne de sable qui **monte** (le dossier 04 fait
-   descendre celles de vie : ici, c'est le joueur qui s'élève). */
+   dépouillée : le visage, le nom, le niveau, la barre, et trois gestes — un
+   avatar, un emblème, une table. Rien d'autre n'y a sa place : les compteurs
+   vivent dans le profil (`rpgProfil.js`), le barème dans le dossier 20, les
+   paquets au Souk. La barre est une colonne de sable qui **monte** (le
+   dossier 04 fait descendre celles de vie : ici, c'est le joueur qui
+   s'élève). Les vignettes des visages et des tables pèsent de 6 à 34 Ko
+   (`public/profil/`, générées par `tools/make-profil-vignettes.mjs`) : le
+   bandeau entier coûte moins qu'une seule peinture de carte. */
 
 .rpg-profil {
   width: 100%;
@@ -35,12 +38,13 @@
   text-align: center;
 }
 
-/* ── L'identité : l'emblème cerclé d'or, le nom, le niveau ─────────────────── */
+/* ── L'identité : le visage cerclé d'or, le nom, le niveau ─────────────────── */
 .rpg-profil__medaillon {
   display: grid;
   place-items: center;
-  width: 78px;
-  height: 78px;
+  overflow: hidden;
+  width: 96px;
+  height: 96px;
   border: 1px solid rgba(232, 194, 113, .5);
   border-radius: 50%;
   background: radial-gradient(circle at 50% 34%, rgba(120, 82, 31, .46), rgba(18, 14, 15, .96) 70%);
@@ -49,6 +53,15 @@
   line-height: 1;
   color: #ffe7af;
   text-shadow: 0 0 16px rgba(231, 191, 101, .45);
+}
+/* Le visage choisi occupe tout le cercle : la vignette est déjà découpée au
+   cadrage du jeu (`position` de la bible du récit), rien ne se recadre ici. Le
+   fond peint remplace le glyphe — un décor de cercle, pas une image à charger
+   dans le flux du document. */
+.rpg-profil__medaillon--visage {
+  background-size: cover;
+  background-position: 50% 50%;
+  text-shadow: none;
 }
 .rpg-profil__nom {
   margin: 3px 0 0;
@@ -115,6 +128,59 @@
 .rpg-profil__attente-aller:hover,
 .rpg-profil__attente-aller:focus-visible { border-color: rgba(231, 191, 101, .85); outline: none; }
 
+/* ── Les trois gestes : une étiquette chacun, et rien d'autre ──────────────── */
+.rpg-profil__choix {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 6px;
+}
+/* Une étiquette de 10 px, pas un titre de section : le geste se voit, il ne se
+   raconte pas. `aria-hidden` — le groupe porte son propre nom accessible. */
+.rpg-profil__etiquette {
+  margin-top: 6px;
+  color: rgba(247, 237, 218, .42);
+  font: 700 9.5px/1.4 var(--mono, monospace);
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+.rpg-profil__etiquette:first-child { margin-top: 0; }
+
+/* ── Les visages : douze portraits du récit, en cercles ────────────────────── */
+.rpg-profil__avatars {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.rpg-profil__avatar {
+  display: block;
+  overflow: hidden;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid rgba(232, 194, 113, .24);
+  border-radius: 50%;
+  background: rgba(12, 10, 12, .6);
+  cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.rpg-profil__avatar {
+  background-size: cover;
+  background-position: 50% 50%;
+}
+.rpg-profil__avatar:hover,
+.rpg-profil__avatar:focus-visible {
+  border-color: rgba(231, 191, 101, .55);
+  outline: none;
+  transform: translateY(-1px);
+}
+.rpg-profil__avatar.is-choisi {
+  border-color: rgba(231, 191, 101, .9);
+  box-shadow: 0 0 0 2px rgba(231, 191, 101, .35), 0 0 18px rgba(231, 191, 101, .22);
+}
+
 /* ── Les emblèmes : six glyphes, sans libellé ──────────────────────────────── */
 .rpg-profil__emblemes {
   display: flex;
@@ -144,6 +210,58 @@
   background: radial-gradient(circle at 50% 30%, rgba(201, 150, 57, .4), rgba(12, 10, 12, .6));
   color: #ffe7af;
 }
+
+/* ── Les tables : une pellicule qui défile, douze terrains ─────────────────── */
+.rpg-profil__plateaux {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(231, 191, 101, .35) transparent;
+}
+.rpg-profil__plateaux::-webkit-scrollbar { height: 5px; }
+.rpg-profil__plateaux::-webkit-scrollbar-track { background: transparent; }
+.rpg-profil__plateaux::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(231, 191, 101, .3);
+}
+.rpg-profil__plateau {
+  flex: none;
+  overflow: hidden;
+  width: 104px;
+  height: 70px;
+  padding: 0;
+  border: 1px solid rgba(232, 194, 113, .22);
+  border-radius: 10px;
+  background: rgba(12, 10, 12, .6);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.rpg-profil__plateau:not(.rpg-profil__plateau--auto) {
+  background-size: cover;
+  background-position: 50% 50%;
+}
+.rpg-profil__plateau:hover,
+.rpg-profil__plateau:focus-visible { border-color: rgba(231, 191, 101, .55); outline: none; }
+.rpg-profil__plateau.is-choisi {
+  border-color: rgba(231, 191, 101, .9);
+  box-shadow: 0 0 0 2px rgba(231, 191, 101, .35), 0 0 18px rgba(231, 191, 101, .22);
+}
+/* « Au gré du deck » : la tuile sans peinture, deux mots et le cachet doré. */
+.rpg-profil__plateau--auto {
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+  color: rgba(247, 237, 218, .62);
+  font: 700 9px/1.5 var(--mono, monospace);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.rpg-profil__plateau--auto span { color: #ffe7af; font-size: 13px; line-height: 1; }
 
 /* ── Le pseudo : un champ, un bouton ───────────────────────────────────────── */
 .rpg-profil__pseudo {
@@ -181,7 +299,9 @@
 /* ── Téléphone ─────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .rpg-profil__carte { gap: 12px; padding: 24px 18px; }
-  .rpg-profil__medaillon { width: 68px; height: 68px; font-size: 26px; }
+  .rpg-profil__medaillon { width: 84px; height: 84px; font-size: 28px; }
+  .rpg-profil__avatar { width: 48px; height: 48px; }
+  .rpg-profil__plateau { width: 96px; height: 64px; }
 }
 @media (max-width: 420px) {
   /* Le champ et son bouton passent l'un sous l'autre : chacun garde ses 44 px. */
@@ -195,6 +315,8 @@
 @media (prefers-reduced-motion: reduce) {
   .rpg-profil__xp-piste i { transition: none; }
   .rpg-profil__embleme { transition: none; }
+  .rpg-profil__avatar { transition: none; }
+  .rpg-profil__plateau { transition: none; }
 }
 
 /* ── Le palier tombe où le joueur est, y compris sur la table ────────────────
@@ -262,6 +384,16 @@
   gap: 6px;
 }
 .rpg-mode-menu__profil-embleme { align-self: center; font-size: 15px; line-height: 1; color: #e5bf69; }
+/* Le visage choisi tient la place du glyphe dans l'onglet : même alignement, un
+   cercle de 20 px — la vignette est déjà un carré cadré comme la scène. */
+img.rpg-mode-menu__profil-embleme {
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(232, 194, 113, .55);
+  border-radius: 50%;
+  object-fit: cover;
+  color: transparent;
+}
 /* Au téléphone, les onglets mettent leurs icônes en bloc au-dessus du libellé
    (`rpg-battle.css`) : celui-ci garde sa ligne, comme l'onglet du Souk garde son
    solde — sinon le niveau passe sous le mot « Profil ». La piste d'XP, elle,
