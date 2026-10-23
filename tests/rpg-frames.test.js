@@ -43,7 +43,7 @@ test('une hybride garde la diagonale de sa combinaison sans reflet, même mythiq
   assert.equal(cardHasShinyFrame(rare), false);
 });
 
-test('coûts et sceaux hybrides se partagent nettement les couleurs de la carte', () => {
+test('les coûts hybrides se partagent nettement les couleurs de la carte', () => {
   assert.equal(cardHybridGradient(cardById('trait-de-braise')), null, 'une mono garde son coût ordinaire');
   assert.equal(cardHybridGradient(cardById('desert')), null, 'un terrain mono n’a pas de dégradé');
   const rouge = CARD_FRAME_COLORS.braise.color;

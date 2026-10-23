@@ -1,17 +1,16 @@
-// La signature des familles de sorts dans le jeu réel : losange rapide ou
-// rond de sorcellerie teint comme la carte, sur la main, dans le mulligan,
-// l'aperçu et le catalogue ; ligne de type et lueur jouable gardent la couleur
-// de la famille. Rien de tout cela sur une créature, un terrain ou une arme.
+// La signature des familles de sorts dans le jeu réel : losange jaune rapide
+// ou rond violet de sorcellerie, sur la main, dans le mulligan, l'aperçu et le
+// catalogue, quel que soit l'élément de la carte ; ligne de type et lueur
+// jouable gardent la même couleur de famille. Rien de tout cela sur une
+// créature, un terrain ou une arme.
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import {
-  CARD_FRAME_COLORS,
   RPG_DUEL_CARDS,
   RPG_SORT_FAMILIES,
   cardById,
   cardColors,
-  cardFrameColor,
   cardTypeLine,
   carteEstArme,
   magieFamille,
@@ -63,6 +62,18 @@ function verifierCatalogueDeCartes(assert) {
   assert.equal(carteEstArme(cardById('sabre-maudit')), true, 'le Sabre maudit se présente bien comme une arme');
 }
 
+/** La couleur du sceau vient de sa famille, sans variante liée à la carte. */
+function verifierCouleurDeFamille(assert, sceau, contexte) {
+  assert.equal(
+    [...sceau.classList].some((classe) => classe.startsWith('rpg-sort-sceau--element-')
+      || classe === 'rpg-sort-sceau--hybride'),
+    false,
+    `${contexte} : aucune couleur d’élément ne remplace le jaune ou le violet de la famille`,
+  );
+  assert.equal(sceau.getAttribute('style'), null,
+    `${contexte} : le sceau ne reçoit aucun dégradé propre à la carte`);
+}
+
 /** Ce qu'une face de sort porte — et ce que les autres ne portent pas. */
 function verifierFaceDeSort(assert, face, contexte) {
   const carte = cardById(face.dataset.cardId);
@@ -73,8 +84,7 @@ function verifierFaceDeSort(assert, face, contexte) {
   if (!famille) return null;
   assert.equal(sceau.classList.contains(`rpg-sort-sceau--${famille}`), true,
     `${contexte} : le sceau de ${carte.id} garde la forme de sa famille`);
-  assert.equal(sceau.classList.contains(`rpg-sort-sceau--element-${cardColors(carte)[0]}`), true,
-    `${contexte} : le sceau de ${carte.id} suit la couleur de la carte`);
+  verifierCouleurDeFamille(assert, sceau, `${contexte} — ${carte.id}`);
   assert.ok(sceau.querySelector('.rpg-sort-sigil'), `${contexte} : le sigle est dessiné, pas emprunté à une police`);
   assert.match(face.getAttribute('aria-label'), new RegExp(RPG_SORT_FAMILIES[famille].label),
     `${contexte} : le nom de la famille demeure accessible sans texte sur la face`);
@@ -156,8 +166,7 @@ export async function checkRpgSortSignature(assert) {
       if (famille) {
         assert.equal(sceau.classList.contains(`rpg-sort-sceau--${famille}`), true,
           `mulligan : le sceau de ${fiche.id} porte la famille ${famille}`);
-        assert.equal(sceau.classList.contains(`rpg-sort-sceau--element-${cardColors(fiche)[0]}`), true,
-          `mulligan : son losange ou son rond suit la couleur de ${fiche.id}`);
+        verifierCouleurDeFamille(assert, sceau, `mulligan — ${fiche.id}`);
       } else {
         assert.equal(sceau, null, `mulligan : ${fiche.id} ne porte aucun sceau de sort`);
       }
@@ -167,15 +176,14 @@ export async function checkRpgSortSignature(assert) {
     // ── 2. La main du duel : le sceau sur les sorts, pas de ligne de type ─────
     verifierMain(assert, container);
 
-    // ── 3. L'aperçu : même forme et même élément, ligne de type teintée ──────
+    // ── 3. L'aperçu : même forme et couleur de famille, ligne teintée ───────
     const rapide = container.querySelector('.rpg-hand__card[data-card-id="trait-de-braise"]');
     await survoler(rapide);
     const apercu = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
     assert.ok(apercu, 'survoler une Magie Rapide ouvre son aperçu');
     const sceauApercu = apercu.querySelector('.rpg-hover-card-preview__face .rpg-sort-sceau--rapide');
     assert.ok(sceauApercu, 'la face de l’aperçu porte le losange de la Magie Rapide');
-    assert.equal(sceauApercu.classList.contains('rpg-sort-sceau--element-braise'), true,
-      'le losange de Braise garde la couleur de sa carte dans l’aperçu');
+    verifierCouleurDeFamille(assert, sceauApercu, 'aperçu de la Magie Rapide de Braise');
     assert.equal(apercu.querySelector('.rpg-hover-card-preview__type')?.classList.contains('rpg-sort-ligne--rapide'), true,
       'la ligne de type de l’aperçu prend la teinte de la Magie Rapide');
     await survoler(rapide, 'mouseout');
@@ -186,8 +194,7 @@ export async function checkRpgSortSignature(assert) {
     const apercuSorcellerie = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
     const sceauSorcellerie = apercuSorcellerie?.querySelector('.rpg-hover-card-preview__face .rpg-sort-sceau--sorcellerie');
     assert.ok(sceauSorcellerie, 'la face de l’aperçu porte le médaillon rond de la Sorcellerie');
-    assert.equal(sceauSorcellerie.classList.contains('rpg-sort-sceau--element-sable'), true,
-      'le médaillon de Sable garde la couleur de sa carte dans l’aperçu');
+    verifierCouleurDeFamille(assert, sceauSorcellerie, 'aperçu de la Sorcellerie de Sable');
     assert.equal(apercuSorcellerie.querySelector('.rpg-hover-card-preview__type')?.classList.contains('rpg-sort-ligne--sorcellerie'), true,
       'la ligne de type de l’aperçu prend la teinte de la Sorcellerie');
     await survoler(sorcellerie, 'mouseout');
@@ -215,7 +222,7 @@ export async function checkRpgSortSignature(assert) {
     const vignettes = [...container.querySelectorAll('.rpg-card-catalogue__card')];
     assert.ok(vignettes.length >= 10, 'la grille du catalogue est peinte');
     let sceaux = 0;
-    const elementsVus = new Set();
+    const famillesVues = new Set();
     for (const vignette of vignettes) {
       const carte = cardById(vignette.dataset.cardId);
       const famille = magieFamille(carte);
@@ -229,38 +236,19 @@ export async function checkRpgSortSignature(assert) {
         `catalogue : la ligne de type de ${carte.id} suit sa famille`);
       if (famille) {
         sceaux += 1;
-        const couleurs = cardColors(carte);
-        elementsVus.add(couleurs[0]);
+        famillesVues.add(famille);
         assert.equal(sceau.classList.contains(`rpg-sort-sceau--${famille}`), true,
           `catalogue : le sceau de ${carte.id} porte la famille ${famille}`);
-        assert.equal(sceau.classList.contains(`rpg-sort-sceau--element-${couleurs[0]}`), true,
-          `catalogue : le sceau de ${carte.id} suit l’élément de sa carte`);
-        assert.equal(sceau.classList.contains('rpg-sort-sceau--hybride'), couleurs.length > 1,
-          `catalogue : ${carte.id} partage son sceau uniquement si elle est multicolore`);
-        if (couleurs.length > 1) {
-          const fond = sceau.style.getPropertyValue('--rpg-sort-sceau-fond-hybride');
-          assert.match(fond, /^linear-gradient\(135deg,/u,
-            `catalogue : ${carte.id} possède un fond hybride`);
-          for (const couleur of couleurs) {
-            assert.ok(fond.includes(CARD_FRAME_COLORS[couleur].color),
-              `catalogue : l’élément ${couleur} est peint dans le sceau de ${carte.id}`);
-          }
-          assert.equal(sceau.style.getPropertyValue('--rpg-sort-sceau-couleur'), cardFrameColor(carte),
-            'le filet du sceau hybride suit la couleur du cadre');
-        }
+        verifierCouleurDeFamille(assert, sceau, `catalogue — ${carte.id}`);
       }
     }
     assert.ok(sceaux >= 10, `catalogue : les deux familles de sorts se repèrent au sceau (${sceaux} vignettes)`);
-    assert.deepEqual([...elementsVus].sort(), ['braise', 'eau', 'neige', 'sable', 'tenebres'],
-      'les sceaux couvrent les cinq couleurs de carte dans le catalogue');
+    assert.deepEqual([...famillesVues].sort(), ['rapide', 'sorcellerie'],
+      'les sceaux jaunes et violets couvrent les deux familles du catalogue');
     const ventRouge = container.querySelector('.rpg-card-catalogue__card[data-card-id="vent-rouge"] .rpg-sort-sceau');
-    assert.ok(ventRouge?.classList.contains('rpg-sort-sceau--sorcellerie')
-      && ventRouge.classList.contains('rpg-sort-sceau--hybride'),
-      'Vent rouge garde son rond de sorcellerie peint de ses deux éléments');
-    const [braise, sable] = cardColors(cardById('vent-rouge')).map((couleur) => CARD_FRAME_COLORS[couleur].color);
-    assert.equal(ventRouge.style.getPropertyValue('--rpg-sort-sceau-fond-hybride'),
-      `linear-gradient(135deg, ${braise} 0% 50%, ${sable} 50% 100%)`,
-      'Vent rouge partage visiblement son sceau en deux moitiés Braise et Sable');
+    assert.ok(ventRouge?.classList.contains('rpg-sort-sceau--sorcellerie'),
+      'Vent rouge, bien qu’hybride, garde son rond violet de Sorcellerie');
+    verifierCouleurDeFamille(assert, ventRouge, 'catalogue — Vent rouge hybride');
     for (const [rapide, sorcellerie] of [
       ['trait-de-braise', 'nuage-de-cendres'],
       ['ressac', 'eau-de-la-source'],
@@ -268,9 +256,9 @@ export async function checkRpgSortSignature(assert) {
     ]) {
       const couleur = cardColors(cardById(rapide))[0];
       const sceauDe = (id) => container.querySelector(`.rpg-card-catalogue__card[data-card-id="${id}"] .rpg-sort-sceau`);
-      assert.ok(sceauDe(rapide)?.classList.contains(`rpg-sort-sceau--element-${couleur}`)
-        && sceauDe(sorcellerie)?.classList.contains(`rpg-sort-sceau--element-${couleur}`),
-        `le losange et le rond ${couleur} partagent la couleur de leurs cartes, seule leur forme indique la famille`);
+      assert.ok(sceauDe(rapide)?.classList.contains('rpg-sort-sceau--rapide')
+        && sceauDe(sorcellerie)?.classList.contains('rpg-sort-sceau--sorcellerie'),
+        `sur deux cartes ${couleur}, le losange jaune et le rond violet disent chacun leur famille`);
     }
   }, { lancerDuel: false });
 
@@ -314,5 +302,5 @@ export async function checkRpgSortSignature(assert) {
       'la face allumée est celle de la famille que la feuille teinte en améthyste');
   }, { deck: DECK_LUEUR });
 
-  console.log('✓ Familles de sorts : losange rapide et rond de sorcellerie teintés selon la carte (Braise, Eau, Sable, Neige, hybride), sans changer leur forme ; socle et lueur jouable gardent la teinte de famille. Les sceaux suivent la carte dans le mulligan et le catalogue, aucune créature, terrain ou arme n’en porte.');
+  console.log('✓ Familles de sorts : losange jaune pour la Magie Rapide et rond violet pour la Sorcellerie, sur toutes les cartes et quel que soit leur élément, y compris hybride ; socle et lueur jouable gardent la même teinte de famille. Les sceaux sont présents dans la main, le mulligan, l’aperçu et le catalogue ; aucune créature, terrain ou arme n’en porte.');
 }

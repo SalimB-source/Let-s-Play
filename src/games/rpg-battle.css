@@ -2154,8 +2154,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #f4eeff;
   text-shadow: 0 1px 2px #000;
 }
-/* Le coût hybride partage son disque entre les éléments, comme le sceau des
-   magies ; le chiffre clair reste lisible même sur la moitié Sable. */
+/* Le coût hybride partage son disque entre les éléments ; le chiffre clair
+   reste lisible même sur la moitié Sable. */
 .rpg-mana-cost--hybride {
   background: var(--rpg-hybrid-cost-bg);
   color: #fff9ea;
@@ -8816,9 +8816,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      qui part en réponse), rond pour la Sorcellerie — qui reste lisible en noir
      et blanc ; les deux socles, eux, partagent la même voûte, où la teinte et
      le sigle suffisent à séparer les familles ;
-   - la TEINTE du sceau — Braise, Eau, Sable ou Neige, comme la carte elle-même,
-     avec ses deux éléments si elle est hybride ; le socle et le halo jouable
-     gardent l'or ou l'améthyste de la famille ;
+   - la TEINTE du sceau — jaune pour la Magie Rapide, violet pour la
+     Sorcellerie, quel que soit l'élément de la carte ; le socle et le halo
+     jouable reprennent la couleur de la même famille ;
    - le SIGLE et le MOT — l'éclair ou l'étincelle, « Magie Rapide » ou
      « Sorcellerie » — qui disent la règle à qui découvre le duel.
 
@@ -8880,15 +8880,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-radius: 58% 58% 0 0 / 30% 30% 0 0;
 }
 
-/* Le sceau garde la FORME de la famille, mais sa couleur suit l'ÉLÉMENT de
-   la carte, comme la pastille en haut de la face. Les deux éléments d'une
-   hybride occupent chacun une bande nette du même jeton. Les teintes des
-   socles et des halos de jouabilité restent propres à leur famille. */
+/* Le sceau garde la FORME et la COULEUR de sa famille : jaune pour la Magie
+   Rapide, violet pour la Sorcellerie. L'élément reste visible sur la pastille,
+   le cadre et le coût de la carte ; il ne repeint plus ce repère, même pour
+   une carte hybride. Les deux familles utilisent les couleurs de
+   RPG_SORT_FAMILIES, avec un reflet clair et une encre contrastée. */
 .rpg-sort-sceau {
-  --rpg-sort-sceau-clair: #f8e69d;
-  --rpg-sort-sceau-sombre: #795613;
-  --rpg-sort-sceau-encre: #281b05;
-  --rpg-sort-sceau-halo: rgba(255, 215, 98, .8);
   --rpg-sort-sceau-fond: radial-gradient(circle at 34% 24%, var(--rpg-sort-sceau-clair), var(--rpg-sort-sceau-sombre) 72%);
   position: relative;
   display: grid;
@@ -8898,22 +8895,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: var(--rpg-sort-sceau-encre);
   box-shadow: 0 2px 6px rgba(0, 0, 0, .78), inset 0 1px rgba(255, 255, 255, .4);
 }
-.rpg-sort-sceau--element-braise { --rpg-sort-sceau-clair: #f09675; --rpg-sort-sceau-sombre: #8e2e1d; --rpg-sort-sceau-encre: #fff9ea; --rpg-sort-sceau-halo: rgba(224, 65, 42, .8); }
-.rpg-sort-sceau--element-eau { --rpg-sort-sceau-clair: #a5dcf5; --rpg-sort-sceau-sombre: #285e91; --rpg-sort-sceau-encre: #fff9ea; --rpg-sort-sceau-halo: rgba(63, 159, 232, .8); }
-.rpg-sort-sceau--element-sable { --rpg-sort-sceau-clair: #f8e69d; --rpg-sort-sceau-sombre: #795613; --rpg-sort-sceau-encre: #281b05; --rpg-sort-sceau-halo: rgba(255, 215, 98, .8); }
-.rpg-sort-sceau--element-neige { --rpg-sort-sceau-clair: #eefaff; --rpg-sort-sceau-sombre: #4a86ab; --rpg-sort-sceau-encre: #08202e; --rpg-sort-sceau-halo: rgba(150, 220, 255, .85); }
-.rpg-sort-sceau--element-tenebres { --rpg-sort-sceau-clair: #9a7ce0; --rpg-sort-sceau-sombre: #241543; --rpg-sort-sceau-encre: #f4eeff; --rpg-sort-sceau-halo: rgba(143, 116, 212, .8); }
-.rpg-sort-sceau--hybride {
-  --rpg-sort-sceau-fond: var(--rpg-sort-sceau-fond-hybride);
-  --rpg-sort-sceau-clair: color-mix(in srgb, var(--rpg-sort-sceau-couleur) 52%, white);
-  --rpg-sort-sceau-encre: #fff9ea;
-  --rpg-sort-sceau-halo: color-mix(in srgb, var(--rpg-sort-sceau-couleur) 78%, transparent);
-}
 .rpg-sort-sceau .rpg-sort-sigil { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .75)); }
-.rpg-sort-sceau--element-sable:not(.rpg-sort-sceau--hybride) .rpg-sort-sigil,
-.rpg-sort-sceau--element-neige:not(.rpg-sort-sceau--hybride) .rpg-sort-sigil {
-  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, .82));
-}
 /* C'est ici que vit la FORME : les deux socles sont la même voûte, mais le
    jeton de la Magie Rapide est un **losange** — la taille que grave l'anneau de
    ses cartes, son éclair au milieu — quand celui de la Sorcellerie est un
@@ -8921,14 +8903,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    couleurs, et il ne se confond pas avec la pastille d'élément, qui garde le
    cercle plein. */
 .rpg-sort-sceau--rapide {
+  --rpg-sort-sceau-clair: #ffeda1;
+  --rpg-sort-sceau-sombre: #ffd619;
+  --rpg-sort-sceau-encre: #3b2c00;
+  --rpg-sort-sceau-halo: rgba(255, 214, 25, .8);
   border-color: transparent; /* la découpe emporterait le liseré : il est peint dessous */
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   background: var(--rpg-sort-sceau-clair);
   filter: drop-shadow(0 0 2px var(--rpg-sort-sceau-halo));
 }
-/* L'intérieur du losange reprend le même fond élémentaire que le cercle.
-   L'arête claire reste visible entre les deux découpes, quelle que soit sa
-   teinte, du mulligan au catalogue (`--rpg-card-marker-size`). */
+/* L'intérieur du losange reprend le même fond de famille que le cercle.
+   L'arête claire reste visible entre les deux découpes, du mulligan au
+   catalogue (`--rpg-card-marker-size`). */
 .rpg-sort-sceau--rapide::before {
   content: '';
   position: absolute;
@@ -8939,6 +8925,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* L'éclair reste au-dessus de la couleur du losange. */
 .rpg-sort-sceau--rapide .rpg-sort-sigil { position: relative; }
 .rpg-sort-sceau--sorcellerie {
+  --rpg-sort-sceau-clair: #e2d6f7;
+  --rpg-sort-sceau-sombre: #b39ae0;
+  --rpg-sort-sceau-encre: #321d4d;
+  --rpg-sort-sceau-halo: rgba(179, 154, 224, .8);
   border-radius: 50%;
   background: var(--rpg-sort-sceau-fond);
   filter: drop-shadow(0 0 2px var(--rpg-sort-sceau-halo));

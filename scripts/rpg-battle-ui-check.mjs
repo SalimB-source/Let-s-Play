@@ -72,7 +72,7 @@ for (const [css, classe] of [
   [guideCss, 'rpg-card-guide__cost--hybride'],
 ]) {
   assert.match(css, new RegExp(`\\.${classe}\\s*\\{[^}]*background:\\s*var\\(--rpg-hybrid-cost-bg\\)`),
-    `le coût ${classe} partage son disque en deux couleurs, comme le sceau`);
+    `le coût ${classe} partage son disque en deux couleurs`);
 }
 assert.match(battlePage, /aria-label=\{`Coût : \$\{cardCostLabel\(carte\)\}`\}/,
   'le libellé accessible conserve le détail des couleurs exigées pour payer le coût hybride');

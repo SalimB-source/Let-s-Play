@@ -43,8 +43,8 @@ limitée à 7.
   au moins un de la couleur d'une carte mono (comme « 2R » à Magic), un de
   chaque couleur d'une hybride (par exemple Sable + Braise pour le Djinn de
   foudre). Le disque du coût hybride est partagé **en deux moitiés nettes**
-  suivant l'ordre des couleurs de la carte, comme le sceau d'une magie hybride ;
-  le chiffre, les pips requis et le paiement restent inchangés. Cette face est
+  suivant l'ordre des couleurs de la carte ; le chiffre, les pips requis et le
+  paiement restent inchangés. Cette face est
   commune à la main, à la table, au catalogue et à l'atelier ; le guide emploie
   le même rendu pour toute carte hybride payante qu'il présente. Les cartes
   mono gardent leur disque habituel et les terrains n'affichent aucun coût.
@@ -448,11 +448,11 @@ Les cartes posées sont **courtes** — la table reste lisible :
 Plus de grand encadré de règles ni de saveur sur les cartes posées : la
 règle détaillée vit dans la carte en main et dans le journal.
 
-Sur les cartes de sort, le **losange** (Magie Rapide, éclair) et le **rond**
-(Sorcellerie, étincelle) gardent leurs formes respectives. Leur couleur suit
-celle de la carte — Braise rouge, Eau bleue, Sable doré, Neige glacée ; une
-carte hybride partage le sceau entre ses éléments. Le bandeau de famille et
-la lueur de carte jouable gardent, eux, leur teinte de famille (or pour la
+Sur les cartes de sort, le **losange jaune** (Magie Rapide, éclair) et le
+**rond violet** (Sorcellerie, étincelle) gardent leurs formes et leurs couleurs
+de famille, quel que soit l'élément de la carte, y compris pour une hybride.
+L'élément reste indiqué par la pastille, le cadre et le coût. Le bandeau de
+famille et la lueur de carte jouable reprennent les mêmes teintes (or pour la
 Magie Rapide, améthyste pour la Sorcellerie).
 
 ### Le chiffre d'un effet s'écrit sur la carte

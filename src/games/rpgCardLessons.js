@@ -43,7 +43,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['trait-de-braise', 'tempete-de-sable', 'vent-rouge'],
     title: 'Choisir une cible ou frapper une zone',
-    text: 'Le Trait de braise demande une cible légale : une créature ou le sorcier. La Tempête de sable et le Vent rouge touchent toutes les créatures adverses. Le Vent rouge est hybride : son coût exige Braise et Sable, et son disque partage leurs couleurs comme son sceau. Regardez toujours la cible et la portée écrites sur la carte.',
+    text: 'Le Trait de braise demande une cible légale : une créature ou le sorcier. La Tempête de sable et le Vent rouge touchent toutes les créatures adverses. Le Vent rouge est hybride : son coût exige Braise et Sable, et son disque de coût partage leurs couleurs. Son sceau violet indique qu’il s’agit d’une Sorcellerie. Regardez toujours la cible et la portée écrites sur la carte.',
   },
   {
     id: 'soin-et-pioche',
