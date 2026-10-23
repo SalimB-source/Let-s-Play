@@ -241,19 +241,19 @@ test('une capacité de mort ne se déclenche pas sur une prise : le Ghul captur�
   assert.equal(momie.sorcier.creatures.filter((entite) => entite.carteId === 'corsaire').length, 1,
     'l’unique Corsaire a bien débarqué, lui');
 
-  // L’Honneur du Soleil rouge non plus : pris, le Samouraï du torii (coût 4)
+  // Le Harakiri du Soleil rouge non plus : pris, le Samouraï du torii (coût 4)
   // ne frappe personne en tombant — La Barbe-Rousse le prend vif.
-  const honneur = duelVide();
-  mana(honneur, 'joueur', 10);
-  mana(honneur, 'sorcier', 10);
-  honneur.joueur.mana = { braise: 6, eau: 6, sable: 6, neige: 6, tenebres: 6 };
-  donner(honneur, 'joueur', 'samourai-du-torii');
-  const samourai = jouer(honneur, 'joueur', 'samourai-du-torii').entite;
-  donner(honneur, 'sorcier', 'la-barbe-rousse');
-  const amiraleHonneur = jouer(honneur, 'sorcier', 'la-barbe-rousse', samourai.id).entite;
-  assert.equal(amiraleHonneur.enCale?.carteId, 'samourai-du-torii', 'le Samouraï est pris');
-  assert.equal(amiraleHonneur.pv, amiraleHonneur.def, 'aucun combat, aucune riposte : aucune dernière frappe d’Honneur');
-  assert.equal(JSON.stringify(honneur.log).includes('Honneur'), false, 'le journal ignore l’Honneur');
+  const duelHarakiri = duelVide();
+  mana(duelHarakiri, 'joueur', 10);
+  mana(duelHarakiri, 'sorcier', 10);
+  duelHarakiri.joueur.mana = { braise: 6, eau: 6, sable: 6, neige: 6, tenebres: 6 };
+  donner(duelHarakiri, 'joueur', 'samourai-du-torii');
+  const samourai = jouer(duelHarakiri, 'joueur', 'samourai-du-torii').entite;
+  donner(duelHarakiri, 'sorcier', 'la-barbe-rousse');
+  const amiralePrenue = jouer(duelHarakiri, 'sorcier', 'la-barbe-rousse', samourai.id).entite;
+  assert.equal(amiralePrenue.enCale?.carteId, 'samourai-du-torii', 'le Samouraï est pris');
+  assert.equal(amiralePrenue.pv, amiralePrenue.def, 'aucun combat, aucune riposte : aucune dernière frappe d’Harakiri');
+  assert.equal(JSON.stringify(duelHarakiri.log).includes('Harakiri'), false, 'le journal ignore le Harakiri');
 });
 
 test('une seule place en cale : le Grappin ne reprend pas sur un porteur déjà plein', () => {

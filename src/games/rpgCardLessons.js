@@ -29,7 +29,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['sabre-maudit', 'samourai-du-torii'],
     title: 'Une arme reste attachée à son porteur',
-    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Coup rapide, comme Fériel. Ce n’est pas Rapidité : le mal d’invocation reste applicable. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Honneur ni le type Samouraï.',
+    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Coup rapide, comme Fériel. Ce n’est pas Rapidité : le mal d’invocation reste applicable. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Harakiri ni le type Samouraï.',
   },
   {
     id: 'rituel-ephemere',
@@ -176,7 +176,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['maitre-du-marteau'],
     title: 'Tenacité ramène la créature au tour suivant',
-    text: 'Le Maître du marteau a Tenacité : une fois par partie, quand il meurt — détruit par une blessure, un sort ou même un sacrifice — sa carte revient en jeu au début du prochain tour de son camp, avec 1 point de défense. Sa mort est bien réelle : il rejoint le cimetière, les déclenchements de mort (capacité de destruction, Honneur, arme du porteur) ont lieu, sa Furie ne s’allume pas — on ne s’énerve pas en mourant — et il perd tout ce qu’il avait gagné sur la table. La renaissance, elle, est une présence neuve, sans Tenacité : une seconde mort est définitive pour cette présence. (Comme pour la Furie et le reste du moteur, une carte repassée en main puis rejouée recommence sa vie de présence en jeu — c’est la renaissance qui est dépensée, pas la carte.) Seul l’exil, qui retire la carte de la partie, empêche le retour — et si le champ de bataille est plein, le Maître attend une place libre avant de revenir.',
+    text: 'Le Maître du marteau a Tenacité : une fois par partie, quand il meurt — détruit par une blessure, un sort ou même un sacrifice — sa carte revient en jeu au début du prochain tour de son camp, avec 1 point de défense. Sa mort est bien réelle : il rejoint le cimetière, les déclenchements de mort (capacité de destruction, Harakiri, arme du porteur) ont lieu, sa Furie ne s’allume pas — on ne s’énerve pas en mourant — et il perd tout ce qu’il avait gagné sur la table. La renaissance, elle, est une présence neuve, sans Tenacité : une seconde mort est définitive pour cette présence. (Comme pour la Furie et le reste du moteur, une carte repassée en main puis rejouée recommence sa vie de présence en jeu — c’est la renaissance qui est dépensée, pas la carte.) Seul l’exil, qui retire la carte de la partie, empêche le retour — et si le champ de bataille est plein, le Maître attend une place libre avant de revenir.',
   },
   {
     id: 'protection',
@@ -200,11 +200,11 @@ export const RPG_CARD_LESSONS = Object.freeze([
     text: 'Une créature avec Furie X gagne +X/+0 tant que sa défense actuelle est inférieure à sa DEF de base, celle imprimée sur sa carte. Les renforts peuvent donc la garder au-dessus du seuil malgré une blessure. Si un soin la ramène à cette DEF de base, elle quitte la Furie et perd ce seul bonus ; une nouvelle chute sous le seuil la rallume.',
   },
   {
-    id: 'honneur',
+    id: 'harakiri',
     section: 'Capacités des créatures',
     cardIds: ['ronin-du-soleil-rouge', 'samourai-du-torii', 'oni-de-la-fournaise'],
-    title: 'Honneur : une dernière frappe à la mort',
-    text: 'Quand une créature avec Honneur meurt, elle inflige 1 dégât à une seule créature adverse vivante choisie au hasard, ou au sorcier adverse s’il n’y a aucune créature adverse. Boucliers et protection s’appliquent normalement. Un renvoi en main ou un contresort ne déclenche pas Honneur.',
+    title: 'Harakiri : une dernière frappe à la mort',
+    text: 'Quand une créature avec Harakiri meurt, elle inflige 1 dégât à une seule créature adverse vivante choisie au hasard, ou au sorcier adverse s’il n’y a aucune créature adverse. Boucliers et protection s’appliquent normalement. Un renvoi en main ou un contresort ne déclenche pas Harakiri.',
   },
   {
     id: 'auras-et-resonance',

@@ -577,7 +577,7 @@
 .rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone:nth-child(n + 5) {
   display: none;
 }
-/* L'icône seule, sans chiffre derrière (Honneur, Bouclier, Esquive…) : la
+/* L'icône seule, sans chiffre derrière (Harakiri, Bouclier, Esquive…) : la
    valeur reste dans l'aperçu au survol et dans le libellé de la carte. */
 .rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone small,
 .rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone small {

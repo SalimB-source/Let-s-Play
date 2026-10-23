@@ -136,7 +136,7 @@ formaient le triptyque des Ténèbres :
    c’est la charte du combat du Sablier, appliquée à l’économie.
 4. **Elle est le premier contre des sets « la mort qui déclenche ».** Prendre
    une Momie de lin en cale, c’est la retirer **sans** son jeton ; prendre un
-   Kraken, sans sa pioche ; prendre un samouraï, sans son Honneur. Le set
+   Kraken, sans sa pioche ; prendre un samouraï, sans son Harakiri. Le set
    répond aux decks Ténèbres et Soleil rouge sans imprimer un seul contresort.
 5. **Elle récompense le mathématicien du combat, pas le chanceux.** Pour
    prendre, il faut tuer en combat : petit corps = petite prise. Les gros
@@ -690,7 +690,7 @@ aux boosters, comme le font les six autres boîtiers.
    dans l’aperçu, la règle restant dans le bloc « Effets » (contrat du Butin).
 10. **Tests** (`tests/rpg-lettres-de-marque.test.js`, inclus dans
     `npm run check:rpg`) — la prise se fait **à l’arrivée** et remplace la
-    destruction (pas de jeton de Momie, pas d’Honneur, pas de compteur, pas
+    destruction (pas de jeton de Momie, pas d’Harakiri, pas de compteur, pas
     même de riposte) ; le seuil suit le barème « coût − 1 » (refus et
     auto-pick) ; la désignation différée s’ouvre, refuse l’illégale et referme
     sur la prize ; le jeton Corsaire n’accoste pas ; une seule place en cale

@@ -1,17 +1,20 @@
 /**
  * Le Serment du Soleil rouge — extension mono-Braise du Sablier.
  * Inspiration : guerriers du Japon et folklore japonais. Identité de jeu :
- * Résonance samouraï et Honneur à la mort. Les yōkai et Kagutsuchi ne sont pas des figures historiques.
+ * Résonance samouraï et Harakiri à la mort. Les yōkai et Kagutsuchi ne sont pas des figures historiques.
  */
 export const RPG_SOLEIL_ROUGE_SET_ID = 'serment-du-soleil-rouge';
 
-/** Toutes les créatures du set qui portent Honneur ont Honneur 1. */
-export const RPG_HONNEUR_PAR_RARETE = Object.freeze({
+/** Toutes les créatures du set qui portent le Harakiri ont Harakiri 1. */
+export const RPG_HARAKIRI_PAR_RARETE = Object.freeze({
   commune: 1, inhabituelle: 1, rare: 1, mythique: 1,
 });
 
 const carte = (definition) => {
-  const honneur = ['magie', 'terrain'].includes(definition.kind) ? 0 : (definition.honneur ?? RPG_HONNEUR_PAR_RARETE[definition.rarity]);
+  // La clé de données reste `honneur` (les parties en cours la lisent dans
+  // les entities sauvegardées) : seul le NOM de l'effet a changé, il
+  // s'affiche et se lit Harakiri.
+  const honneur = ['magie', 'terrain'].includes(definition.kind) ? 0 : (definition.honneur ?? RPG_HARAKIRI_PAR_RARETE[definition.rarity]);
   const texte = definition.text === '—' ? '' : definition.text;
   return {
     ...definition,
@@ -20,7 +23,7 @@ const carte = (definition) => {
     art: definition.id,
     ...(honneur ? {
       honneur,
-      text: [texte, `Honneur ${honneur} — Quand cette créature meurt, elle inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`].filter(Boolean).join(' '),
+      text: [texte, `Harakiri${honneur > 1 ? ` ${honneur}` : ''} — Quand cette créature meurt, elle inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`].filter(Boolean).join(' '),
     } : {}),
   };
 };
@@ -35,7 +38,7 @@ export const RPG_SOLEIL_ROUGE_JETONS = [{
 }, {
   // Le Samouraï levé par le Daimyō : un corps de plus sur la table, de type
   // Samouraï — il reçoit donc la Résonance samouraï comme la bannière de son
-  // seigneur. Sans coût, sans Honneur (un jeton n’est pas une carte du set) et
+  // seigneur. Sans coût, sans Harakiri (un jeton n’est pas une carte du set) et
   // sans Rapidité : il arrive avec le mal d’invocation, comme tout le monde.
   id: 'samourai-du-daimyo', name: 'Samouraï', pluriel: 'samouraïs',
   kind: 'creature', jeton: true, element: 'braise', set: RPG_SOLEIL_ROUGE_SET_ID,

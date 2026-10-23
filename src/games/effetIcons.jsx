@@ -92,9 +92,15 @@ function IconePastille({ pastille, size = 13 }) {
   );
 }
 
-/** Le libellé complet d'une pastille : « Furie 3 », « Protection Braise »… */
+/**
+ * Le libellé complet d'une pastille : « Furie 3 », « Protection Braise »…
+ * Une pastille dont la valeur est masquée (le Harakiri) se lit d'un seul
+ * mot : le nombre reste dans la donnée, pas dans le nom affiché.
+ */
 export const pastilleTexte = (pastille) => (
-  pastille.valeur != null ? `${pastille.label} ${pastille.valeur}` : pastille.label
+  pastille.valeur != null && !pastille.valeurMasquee
+    ? `${pastille.label} ${pastille.valeur}`
+    : pastille.label
 );
 
 const PROTECTION_LIBELLES = {
@@ -336,7 +342,7 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
       style={styleProtectionPastille(pastilleBadge)}
     >
       <IconePastille pastille={pastilleBadge} size={12} />
-      {pastilleBadge.valeur != null && <small>{pastilleBadge.valeur}</small>}
+      {pastilleBadge.valeur != null && !pastilleBadge.valeurMasquee && <small>{pastilleBadge.valeur}</small>}
     </span>
   );
   return (

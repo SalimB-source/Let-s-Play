@@ -147,7 +147,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
 
 /**
  * Les pastilles d’une fiche : ses mots-clés passifs, dans l’ordre de lecture
- * (type de combat d’abord, puis les protections et l’honneur).
+ * (type de combat d’abord, puis les protections et le Harakiri).
  */
 export const MOTS_CLES_PASTILLES = [
   'envol', 'infiltration', 'rapidite', 'coupRapide', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
@@ -206,7 +206,9 @@ export const EFFET_LIBELLES = {
   aura: 'Aura',
   banniere: 'Bannière',
   resonance: 'Résonance',
-  honneur: 'Honneur',
+  // Le mot-clé du set Soleil rouge se nomme Harakiri : un mot, pas une
+  // statistique — la pastille ne porte donc aucun chiffre derrière elle.
+  honneur: 'Harakiri',
   tribut: 'Tribut',
   defausse: 'Défausse',
   transfert: 'Transfert',
@@ -232,7 +234,7 @@ const capitaliser = (mot = '') => (mot ? mot.charAt(0).toUpperCase() + mot.slice
 /**
  * Les pastilles d’une fiche, structurées : `[{ cle, icone, label, valeur }]`.
  * Les mots-clés passifs d’abord (l’ordre de lecture validé sur la preview :
- * combat, protections, honneur, butin), puis — pour les sorts et les arrivées
+ * combat, protections, Harakiri, butin), puis — pour les sorts et les arrivées
  * signées — la pastille de l’effet principal (Contresort, Réanimation…).
  */
 export function pastillesPourCarte(carte) {
@@ -285,7 +287,12 @@ export function pastillesPourCarte(carte) {
   }
   if (carte.aura) ajouter('aura', 'Aura');
   if (carte.banniere) ajouter('banniere', 'Bannière');
-  if (carte.honneur) ajouter('honneur', 'Honneur', Number(carte.honneur) || null);
+  // Le Harakiri est un mot-clé, pas une statistique : le chiffre de dégâts
+  // reste dans la donnée (le glossaire s'en sert) mais ne s'imprime pas
+  // derrière le nom.
+  if (carte.honneur) {
+    ajouter('honneur', 'Harakiri', Number(carte.honneur) || null, { valeurMasquee: true });
+  }
   if (carte.butin) ajouter('butin', 'Butin');
   if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
   // Les Lettres de Marque : l'Abordage imprimé (créature au seuil « coût − 1 »,
@@ -390,7 +397,7 @@ const MOTIFS_LIGNE = [
   ['tenacite', /\bténacité/iu],
   ['infiltration', /\binfiltration/iu],
   ['resonance', /\brésonance/iu],
-  ['honneur', /\bhonneur\b/iu],
+  ['honneur', /\bharakiri\b|\bhonneur\b/iu],
   ['tribut', /\btribut\b/iu],
   ['transfert', /\bperd\s+\d+\s*PV\b[^.]*\bgagnez\b|\btransfert\b/iu],
   ['contresort', /(?:^|[—:]\s*)contre(?:z|s)?\b|\bcontresort\b|\bcontrez\b/iu],
@@ -567,7 +574,7 @@ const LIBELLES_IMPRIMES = [
   ['contreAttaque', 'Contre-attaque'],
   ['tenacite', 'T[ée]nacité'],
   ['resonance', 'Résonance(?: samouraï|viking)?'],
-  ['honneur', 'Honneur(?: \\d+)?'],
+  ['honneur', 'Harakiri(?: \\d+)?'],
   ['butin', 'Butin'],
   ['tribut', 'Tribut(?: \\d+)?'],
   ['abordage', 'Abordage'],

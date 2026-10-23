@@ -204,7 +204,7 @@ désormais dans les évaluations de `rpgAI.js`, et chacune a son test.
 | --- | --- | --- |
 | **Venin anti-blocage** | `empecheBlocageToursRestants` (Vipère de verre, Bakunawa) : la créature reste en jeu mais ne bloque plus | Le bloqueur marqué sort de la liste (`peutBloquerEntite`). Avant, l'IA le proposait : le moteur refusait l'attaque entière (`raison: 'bloqueur'`) et **le joueur perdait son tour de frappe**. |
 | **Grand Voile blanc** | `duel.brouillardCombat` : aucun dégât de combat ce tour, des deux côtés | Aucun attaquant n'est déclaré (sauf un porteur d'arme à déclencheur d'attaque), aucun bloqueur posé : la frappe est gardée pour le tour suivant. |
-| **Tenacité** | Une renaissance par partie : la créature meurt normalement (cimetière, arme, capacités de mort, Honneur), puis sa carte revient en jeu au début du prochain tour de son camp avec 1 point de défense. L'exil, qui retire la carte de la partie, empêche le retour. | `meurtSous` la tue comme n'importe qui (plus de fausse survie dans la simulation) ; `valeurEntite` lui rend +1 pour le corps gratuit du tour suivant, et une vague de destruction vaut 0,7 de sa valeur contre elle. |
+| **Tenacité** | Une renaissance par partie : la créature meurt normalement (cimetière, arme, capacités de mort, Harakiri), puis sa carte revient en jeu au début du prochain tour de son camp avec 1 point de défense. L'exil, qui retire la carte de la partie, empêche le retour. | `meurtSous` la tue comme n'importe qui (plus de fausse survie dans la simulation) ; `valeurEntite` lui rend +1 pour le corps gratuit du tour suivant, et une vague de destruction vaut 0,7 de sa valeur contre elle. |
 | **Bouclier de lumière** | La première attaque ou magie ne touche pas (Dame aux ailes d'or, Salem) | Il avale la frappe dans `resultatBlocage` ; une magie de dégâts qui le vise ne compte plus comme un kill. |
 | **Overkill** | L'excédent de force qui dépasse les bloqueurs perce jusqu'au sorcier (Serpent du monde) | Compté des deux côtés : en attaque (dégâts au visage) et en défense (ce qu'un petit bloqueur ne retient pas). |
 | **Blocage obligatoire** | `doitBloquer` (Tours) et `blocageForce` (Appât de la meute, Embuscade) | Anticipé dans la simulation, sur le plus gros attaquant, comme le moteur. |
@@ -313,7 +313,7 @@ Deuxième famille de jetons, côté Soleil rouge : le **Daimyō du Soleil rouge*
 lève **deux Samouraïs 1/1** (`samourai-du-daimyo`) en arrivant, par le même
 effet `jetons`. Le jeton est un **Samouraï** au sens des règles — la Résonance
 samouraï le renforce donc comme la bannière de son seigneur — mais il ne porte
-ni Honneur (un jeton n'est pas une carte du set) ni Rapidité : il garde le mal
+ni Harakiri (un jeton n'est pas une carte du set) ni Rapidité : il garde le mal
 d'invocation, comme les chiens de sable. Illustration dédiée
 `public/cards/samourai-du-daimyo.jpg`, plein art 4:5.
 

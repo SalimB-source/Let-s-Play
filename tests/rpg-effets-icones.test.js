@@ -24,7 +24,9 @@ import {
 } from '../src/games/effetIcons.js';
 
 const pastillesDe = (id) => pastillesPourCarte(cardById(id))
-  .map((pastille) => (pastille.valeur != null ? `${pastille.label} ${pastille.valeur}` : pastille.label));
+  .map((pastille) => (pastille.valeur != null && !pastille.valeurMasquee
+    ? `${pastille.label} ${pastille.valeur}`
+    : pastille.label));
 
 test('le sprite porte les 30 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
@@ -109,8 +111,9 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
     'Envol et protection limitée aux sorts, sans aucune Résonance');
   assert.deepEqual(pastillesDe('valkyrie-au-corbeau'), ['Envol', 'Furie 2'],
     'la Valkyrie au corbeau porte Envol et Furie 2, sans Résonance');
-  assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive', 'Honneur 1']);
-  assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Honneur 1']);
+  assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive', 'Harakiri'],
+    'le Harakiri du Soleil rouge se lit sans chiffre derrière le nom');
+  assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Harakiri']);
   assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['Protection Braise']);
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
   assert.deepEqual(pastillesDe('desert'), [], 'un terrain ne porte aucune pastille');

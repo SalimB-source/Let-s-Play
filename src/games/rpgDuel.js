@@ -1617,11 +1617,12 @@ function majResonance(duel) {
   }
 }
 
-/** Honneur : une seule créature adverse vivante, choisie uniformément au
+/** Harakiri : une seule créature adverse vivante, choisie uniformément au
  * hasard — ou le sorcier adverse s'il n'y a aucune créature adverse.
  * Protection et bouclier restent applicables ; ce sont des dégâts de capacité,
- * pas une attaque ni une magie. */
-function declencherHonneur(duel, cote, entite) {
+ * pas une attaque ni une magie.
+ * La donnée de la carte garde le nom `honneur` : seul le nom affiché a changé. */
+function declencherHarakiri(duel, cote, entite) {
   const carte = duelCardById(entite.carteId);
   const honneur = Math.max(0, Number(carte?.honneur) || 0);
   if (!honneur) return;
@@ -1632,13 +1633,13 @@ function declencherHonneur(duel, cote, entite) {
   const cibles = duel[adversaire].creatures.filter((cible) => cible.pv > 0);
   if (!cibles.length) {
     rpgInfligerSorcier(duel, adversaire, honneur);
-    duel.log.push(`Honneur ${honneur} : ${entite.name} inflige ${honneur} dégât${honneur > 1 ? 's' : ''} au sorcier ${adversaire === 'joueur' ? 'joueur' : 'ennemi'}.`);
+    duel.log.push(`Harakiri${honneur > 1 ? ` ${honneur}` : ''} : ${entite.name} inflige ${honneur} dégât${honneur > 1 ? 's' : ''} au sorcier ${adversaire === 'joueur' ? 'joueur' : 'ennemi'}.`);
     return;
   }
   const rng = hasardParDuel.get(duel) ?? Math.random;
   const index = Math.min(cibles.length - 1, Math.max(0, Math.floor(rng() * cibles.length)));
   const cible = cibles[index];
-  duel.log.push(`Honneur ${honneur} : ${entite.name} inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à ${cible.name}, choisie au hasard.`);
+  duel.log.push(`Harakiri${honneur > 1 ? ` ${honneur}` : ''} : ${entite.name} inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à ${cible.name}, choisie au hasard.`);
   rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite');
 }
 
@@ -1888,7 +1889,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     if (carte?.destruction) {
       declencherCapaciteDestruction(duel, mort.cote, carte, mort.entite.carteId);
     }
-    declencherHonneur(duel, mort.cote, mort.entite);
+    declencherHarakiri(duel, mort.cote, mort.entite);
   }
   // Prime du Chasseur d'Ocracoke : seul un tueur qui a porté des blessures
   // d'attaque et une victime pirate qualifiée font piocher.
@@ -2250,7 +2251,7 @@ function meilleurePriseAbordage(duel, coteVictime, couleurs, seuil) {
 /**
  * La créature adverse vaincue quitte la table par la cale du capteur. Elle
  * libère sa case, perd tout (ses armes tombent au cimetière, comme un mort)
- * et ne déclenche RIEN — ni journal des destructions, ni Honneur, ni capacité
+ * et ne déclenche RIEN — ni journal des destructions, ni Harakiri, ni capacité
  * de mort, ni quêtes. Sa propre cale, si elle en tenait une, s'ouvre d'abord :
  * quitter la table ouvre toujours.
  */
@@ -3297,7 +3298,7 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null, sourceType = n
  * Sacrifice consenti du mode sans terrains : une créature du camp quitte le
  * plateau pour le cimetière afin de libérer l'un des cinq emplacements. C'est
  * une vraie destruction — armes détachées au cimetière, capacité de
- * destruction et honneur déclenchés. Une créature tenace meurt donc pour de
+ * destruction et Harakiri déclenchés. Une créature tenace meurt donc pour de
  * bon : seule sa renaissance (Tenacité) lui rendra une présence au tour
  * suivant.
  */
@@ -3317,7 +3318,7 @@ export function rpgSacrifierCreature(duel, cote, entiteId) {
 /**
  * Tenacité — la renaissance, au prochain tour du camp qui contrôle la carte.
  * Une fois par partie, une créature tenace **meurt** normalement (cimetière,
- * arme au cimetière, capacité de mort et honneur déclenchés : rien n'est
+ * arme au cimetière, capacité de mort et Harakiri déclenchés : rien n'est
  * refusé) mais sa carte est promise à un retour au début du prochain tour de
  * son contrôleur, avec 1 point de défense.
  *
@@ -3427,7 +3428,7 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
     if (carte?.destruction) {
       declencherCapaciteDestruction(duel, cote, carte, entite.carteId);
     }
-    declencherHonneur(duel, cote, entite);
+    declencherHarakiri(duel, cote, entite);
   };
   if (declenchements) declenchements.push(declencher);
   else {

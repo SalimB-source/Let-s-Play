@@ -62,7 +62,7 @@ export const RPG_RECETTES_DECKS = {
   /**
    * Les Djinns font travailler les nouvelles règles de Braise : dégâts en
    * plusieurs vagues, effets à la mort et retour différé d'Anqa. Les guerriers
-   * au Honneur et le Shogun promu relient le nouveau lot du Soleil rouge
+   * au Harakiri et le Shogun promu relient le nouveau lot du Soleil rouge
    * à l'ancien feu. Anqa est l'unique mythique de ce boîtier.
    */
   'cour-des-djinns': {
@@ -152,7 +152,7 @@ export const RPG_RECETTES_DECKS = {
     ],
   },
   /**
-   * Le Soleil rouge donne sa place aux trois mécaniques du set : Honneur à la
+   * Le Soleil rouge donne sa place aux trois mécaniques du set : Harakiri à la
    * mort, Résonance samouraï et Bannière du Daimyō. Le Daimyō et Kagutsuchi
    * sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures
    * s'ouvrent dans les boosters.
