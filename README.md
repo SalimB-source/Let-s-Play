@@ -8625,8 +8625,8 @@ la vie réelle, jamais le maximum historique `pvMax`, ni les boucliers.
 - Les cartes, commandes et zones de dépôt **ne bougent jamais**. Aucun bonus,
   aucune règle de combat et aucun tirage aléatoire ne sont ajoutés.
 - Deux decks sur le même terrain gardent une peinture unie, sans couture.
-  La musique reste celle du joueur ; le décor 3D reste masqué lorsque les
-  terrains diffèrent, comme avant.
+  Le décor 3D reste masqué lorsque les terrains diffèrent, comme avant.
+  La musique suit désormais la conquête (voir ci-dessous).
 
 Le calcul pur est dans `src/games/rpgTerritoire.js`. La page transmet le
 pourcentage à la propriété CSS typée `--rpg-frontiere` ; le masque de la
@@ -8638,3 +8638,38 @@ Vérifications : `npm run check:rpg-territoire` (calcul, symétrie des deux
 perspectives et rendus successifs de la vraie page : dégâts, soins, fin PvP,
 nul, terrain commun et nouvelle partie), `npm run check:rpg-sanctuaire`,
 `npm run check:rpg-plateau-flou` et `npm run build`.
+
+
+## Le Sablier : le thème du territoire dominant prend le relais
+
+**20 points d’écart entre les deux territoires** déclenchent le relais musical :
+**60 % joueur / 40 % sorcier** impose le thème du joueur ; **40 / 60** impose
+celui du sorcier. Ce n’est ni 20 PV, ni 70 / 30. Au départ, le joueur donne le
+thème. Dans la bande intermédiaire (40–60 %, bornes exclues), le dernier camp
+musical conserve la main : une oscillation autour de 50 % ne change pas la
+piste à chaque dégât ou soin. Une nouvelle partie réinitialise ce choix.
+La victoire suit le même calcul et donne donc la musique au vainqueur.
+
+- Le relais est un **fondu croisé de 1,2 seconde** entre les pistes livrées.
+- Chaque morceau est choisi une seule fois par terrain pendant le duel et
+  reprend à sa position précédente quand son camp revient. Les terrains
+  partageant le même fichier ne lancent jamais deux copies simultanées.
+- Si un terrain n’a pas de piste dédiée (Nécropole ou Palais), l’autre camp
+  fournit la musique. Si aucun n’en a, l’ambiance de tour reste disponible en
+  Histoire ; le duel libre reste silencieux, comme avant.
+- Volume, son coupé, pause d’onglet et démontage s’appliquent aux deux pistes,
+  y compris pendant un fondu. Une mise à jour PvP dans un onglet masqué ne
+  relance pas l’audio. Un refus d’autoplay garde l’ancien thème ; le prochain
+  geste peut réessayer sans couper vers le silence.
+- L’ambiance synthétique de la tour ne redémarre pas au rétablissement du son
+  lorsqu’une piste de plateau est disponible : pas de double musique.
+
+`src/games/rpgConqueteMusic.js` contient le sélecteur à hystérésis et le relais
+entre lecteurs `RpgPlateauMusic`. La page utilise les mêmes PV et le même
+vainqueur que la conquête visuelle, sans modifier les règles ni le hasard du
+duel. Le décor et la musique ne se déplacent pas mutuellement.
+
+Contrôle : `npm run check:rpg-conquete-music` (23 tests audio/sélection et le
+rendu de la vraie page dans jsdom avec lecteurs audio simulés),
+`npm run check:rpg-ambient-ui`, `npm run check:rpg-territoire`, `npm run build`.
+Ces contrôles n’équivalent pas à une écoute dans un navigateur réel.

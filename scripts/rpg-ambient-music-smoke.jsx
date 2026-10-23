@@ -190,12 +190,13 @@ export async function checkRpgAmbientMusic(assert) {
   await laisserJouer(500);
   assert.equal(noeudsMusique(), apresCoupure, 'plus aucun son n’est planifié une fois la musique coupée');
 
-  // --- Rendre le son relance la boucle ---
+  // --- Rendre le son reprend la piste dédiée, sans doubler l’ambiance ---
   await click(boutonSon(), 'son rendu');
   await laisserJouer(1400);
   assert.equal(boutonSon().getAttribute('aria-pressed'), 'true', 'le bouton annonce le son rendu');
-  assert.ok(noeudsMusique() > apresCoupure, 'la boucle reprend quand le son revient');
-  assert.ok(contexteMusique.gains[0].gain.cibles.at(-1) > 0.5, 'le volume général est rendu');
+  assert.equal(noeudsMusique(), apresCoupure, 'une piste dédiée ne relance pas la boucle synthétique de tour');
+  const pistesPartie = cumul.pistesHtml.filter((piste) => piste !== pisteTheme && piste.loop && !piste.paused && !piste.muted && piste.volume > 0);
+  assert.equal(pistesPartie.length, 1, 'la musique du territoire reprend seule quand le son revient');
   assert.equal(pisteTheme.paused, true, 'rendre le son en pleine partie ne relance pas le thème hors parties');
 
   // --- Rentrer au menu arrête la musique de partie et relance le thème principal ---

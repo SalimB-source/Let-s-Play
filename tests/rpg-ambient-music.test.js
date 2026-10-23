@@ -99,20 +99,20 @@ test('la page du duel joue la musique d’ambiance du mode Histoire sans doubler
     'le lecteur est détruit au démontage (contexte audio fermé)');
   assert.match(page, /musiqueRef\.current\?\.setTour\(tourHistoireId\)/,
     'la tour de l’étage en cours commande la boucle');
-  assert.match(page, /RPG_PLATEAUX_MUSICAUX\.has\(plateauId\)/,
+  assert.match(page, /RPG_PLATEAUX_MUSICAUX\.has\(plateauMusiqueId\)/,
     'la page connaît les plateaux qui ont leur propre musique');
   assert.match(page, /musiquePlateau\?\.setPlateau\(plateau\.id,\s*\{\s*reroll:\s*true\s*\}\)/,
     'le lecteur reçoit le plateau choisi et tire une nouvelle piste au sort au lancement');
   assert.match(page, /if \(modeLibre && sonActif && RPG_PLATEAUX_MUSICAUX\.has\(plateau\.id\)\) \{\s*void musiquePlateau\?\.start\(\);/,
     'la piste du plateau démarre dans le geste du duel libre, uniquement s’il est musical');
-  assert.match(page, /tourHistoireId && sonActif && !plateauMusical\) musique\.start\(\)/,
+  assert.match(page, /tourHistoireId && sonActif && !plateauMusical && !document\.hidden\) musique\.start\(\)/,
     'l’ambiance de la tour démarre seulement si le plateau n’a pas sa propre musique');
   assert.match(page, /musique\.stop\(\)/,
     'la boucle s’arrête hors duel et récit (menus, duels libres, son coupé)');
   assert.match(page, /musique\.pause\(\)/,
     'un onglet mis de côté suspend la musique');
-  assert.match(page, /musique\.resume\(\)/,
-    'au retour sur l’onglet, la musique reprend');
+  assert.match(page, /!RPG_PLATEAUX_MUSICAUX\.has\(plateauMusiqueId\)\) musique\.start\(\)/,
+    'au retour sur l’onglet, seule une ambiance sans piste dédiée peut reprendre');
   assert.match(page, /musiqueRef\.current\?\.setTour\(etageHistoireParId\(etageId\)\?\.tour\?\.id \?\? null\)/,
     'le lancement d’un étage naît dans le geste joueur (contexte audio)');
   assert.match(page, /onClick=\{basculerSon\}/,

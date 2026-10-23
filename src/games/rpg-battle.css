@@ -2571,7 +2571,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .card-table--decoupee {
   --rpg-conquete-rgb: 217, 180, 91;
-  --rpg-fondu: 3%;
+  --rpg-fondu: 2%;
   transition: --rpg-frontiere 900ms cubic-bezier(.22, .61, .36, 1);
 }
 .card-table--decoupee[data-territoire-termine] { --rpg-fondu: 0%; }
@@ -2591,11 +2591,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-plateau-moitie--adverse {
   -webkit-mask-image: linear-gradient(to bottom,
-    #000 calc(var(--rpg-frontiere, 50%) - var(--rpg-fondu, 3%)),
-    transparent calc(var(--rpg-frontiere, 50%) + var(--rpg-fondu, 3%)));
+    #000 calc(var(--rpg-frontiere, 50%) - var(--rpg-fondu, 2%)),
+    transparent calc(var(--rpg-frontiere, 50%) + var(--rpg-fondu, 2%)));
   mask-image: linear-gradient(to bottom,
-    #000 calc(var(--rpg-frontiere, 50%) - var(--rpg-fondu, 3%)),
-    transparent calc(var(--rpg-frontiere, 50%) + var(--rpg-fondu, 3%)));
+    #000 calc(var(--rpg-frontiere, 50%) - var(--rpg-fondu, 2%)),
+    transparent calc(var(--rpg-frontiere, 50%) + var(--rpg-fondu, 2%)));
 }
 .rpg-plateau-moitie--joueur { background-position: center; }
 .rpg-plateau-moitie--plateau-table-des-heures { background-color: #1c1006; }

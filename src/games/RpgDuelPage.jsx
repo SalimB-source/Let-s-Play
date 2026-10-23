@@ -64,10 +64,10 @@ import RpgStoryJournal from './RpgStoryJournal.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
 import { rpgDelaiReflexionIA } from './rpgAI.js';
+import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import {
   RpgMainThemeMusic,
-  RpgPlateauMusic,
   RPG_PLATEAUX_MUSICAUX,
   reprendreThemePrincipal,
 } from './rpgPlateauMusic.js';
@@ -5243,8 +5243,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return sauverDeckChoisi(deck.id, decksMaison, collection);
   };
   // Plateaux du duel : la table est découpée en deux moitiés — en bas, le
-  // terrain du deck du joueur (`plateauId`, le principal : il pilote la
-  // musique dédiée et le décor 3D) ; en haut, celui du deck adverse. Avant la
+  // terrain du deck du joueur (`plateauId`, le principal pour le décor 3D) ;
+  // en haut, celui du deck adverse. La musique suit la conquête. Avant la
   // première partie, la table d'origine de Bab El sert de décor aux deux.
   const [plateauId, setPlateauId] = useState(PLATEAU_PAR_DEFAUT.id);
   const [plateauAdverseId, setPlateauAdverseId] = useState(PLATEAU_PAR_DEFAUT.id);
@@ -5328,7 +5328,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     musiqueRef.current = new RpgAmbientMusic();
     musiqueRef.current.setVolume(volumeMusique);
     musiqueRef.current.setMuted(!sonActif);
-    musiquePlateauRef.current = new RpgPlateauMusic();
+    musiquePlateauRef.current = new RpgConqueteMusic();
     musiquePlateauRef.current.setVolume(volumeMusique);
     musiquePlateauRef.current.setMuted(!sonActif);
     sfxRef.current = new RpgAudioPlayer();
@@ -5391,55 +5391,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (ecran !== 'partie' && sonActif) void musiqueTheme.start();
     else musiqueTheme.stop();
   }, [ecran, sonActif]);
-  useEffect(() => {
-    const musique = musiqueRef.current;
-    if (!musique) return;
-    const plateauMusical = RPG_PLATEAUX_MUSICAUX.has(plateauId);
-    if (ecran === 'partie' && tourHistoireId && sonActif && !plateauMusical) musique.start();
-    else musique.stop();
-  }, [ecran, lectureHistoire, tourHistoireId, plateauId, sonActif]);
-  useEffect(() => {
-    const musique = musiquePlateauRef.current;
-    if (!musique) return;
-    musique.setPlateau(plateauId);
-    if (ecran === 'partie' && sonActif) musique.start();
-    else musique.stop();
-  }, [plateauId, ecran, sonActif]);
-  // Un onglet mis de côté ne laisse pas la boucle tourner dans le vide ;
-  // au retour, elle reprend où le duel en est.
-  useEffect(() => {
-    const surVisibilite = () => {
-      const musiqueTheme = musiqueThemeRef.current;
-      if (musiqueTheme) {
-        if (document.hidden) musiqueTheme.pause();
-        else if (ecran !== 'partie' && sonActif) musiqueTheme.resume();
-      }
-      const musique = musiqueRef.current;
-      if (musique) {
-        if (document.hidden) musique.pause();
-        else if (ecran === 'partie' && tourHistoireId && sonActif && !RPG_PLATEAUX_MUSICAUX.has(plateauId)) musique.resume();
-      }
-      const musiquePlateau = musiquePlateauRef.current;
-      if (musiquePlateau) {
-        if (document.hidden) musiquePlateau.pause();
-        else if (ecran === 'partie' && sonActif) musiquePlateau.resume();
-      }
-    };
-    document.addEventListener('visibilitychange', surVisibilite);
-    return () => document.removeEventListener('visibilitychange', surVisibilite);
-  }, [ecran, lectureHistoire, tourHistoireId, plateauId, sonActif]);
-  const basculerSon = () => setSonActif((actif) => {
-    const prochain = !actif;
-    if (prochain) {
-      if (ecran === 'partie') {
-        if (tourHistoireId) musiqueRef.current?.start();
-        if (RPG_PLATEAUX_MUSICAUX.has(plateauId)) void musiquePlateauRef.current?.start();
-      } else {
-        void musiqueThemeRef.current?.start();
-      }
-    }
-    return prochain;
-  });
   // Un seul bruit de feu par geste : un sort ou un effet de Braise qui blesse
   // puis tue sa cible ne joue pas `flame_gust` deux fois (le lancement, puis
   // la destruction). Le souffle n'appartient d'ailleurs qu'aux blessures —
@@ -5485,6 +5436,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const unlockSfx = () => {
     try { sfxRef.current?.unlock(); } catch { /* ignore */ }
+    if (ecran === 'partie' && sonActif && !document.hidden) void musiquePlateauRef.current?.start();
   };
   const duelRef = useRef(null);
   const tableRef = useRef(null);
@@ -6129,7 +6081,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // partie réelle (`variantesPlateaux`), chaque camp peut échanger son
     // terrain contre son double merveilleux ; sans la prop (tests, scénarios),
     // les classiques sont gardés. Le plateau du joueur reste le principal : la
-    // musique dédiée ci-dessous est la sienne.
+    // musique démarre sur son thème, puis suit la conquête à 60/40.
     const modeLibre = !modeTutoriel && !etageCourant;
     const resolutionPlateaux = resoudrePlateauxDuDuel({
       deckJoueur: deckEssai ?? (modeTutoriel ? deckJoueurSelectionne : joueurDeck ?? deckJoueurSelectionne),
@@ -6356,6 +6308,78 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const duel = duelRef.current;
+  const vainqueurPvp = modePvp && (pvp?.statut === 'terminee' || duel?.fin?.gagnant)
+    ? ((pvp?.resultat === 'gagne' || pvp?.resultat === 'victoire' || (!pvp?.resultat && duel?.fin?.gagnant === 'joueur'))
+      ? 'joueur'
+      : (pvp?.resultat === 'perdu' || pvp?.resultat === 'defaite' || (!pvp?.resultat && duel?.fin?.gagnant === 'sorcier'))
+        ? 'sorcier'
+        : 'egalite')
+    : null;
+  const vainqueur = vainqueurPvp ?? (duel ? rpgVainqueur(duel) : null);
+  const territoire = territoireDuDuel(duel, vainqueur);
+  // Un nouveau duel repart avec la musique du joueur. Dans la bande neutre,
+  // le dernier camp ayant franchi 60/40 conserve la main (hystérésis).
+  const [memoireMusicale, setMemoireMusicale] = useState({ session: null, camp: 'joueur' });
+  const sessionMusicale = sessionDuelRef.current;
+  const campMusical = ecran === 'partie'
+    ? campMusicalDuTerritoire(territoire.partJoueur,
+      memoireMusicale.session === sessionMusicale ? memoireMusicale.camp : 'joueur')
+    : 'joueur';
+  useEffect(() => {
+    setMemoireMusicale((avant) => avant.session === sessionMusicale && avant.camp === campMusical
+      ? avant : { session: sessionMusicale, camp: campMusical });
+  }, [sessionMusicale, campMusical]);
+  const plateauMusiqueId = plateauMusicalDuCamp(campMusical, plateauId, plateauAdverseId);
+  useEffect(() => {
+    const musique = musiqueRef.current;
+    if (!musique || (ecran === 'partie' && !duel)) return;
+    const plateauMusical = RPG_PLATEAUX_MUSICAUX.has(plateauMusiqueId);
+    if (ecran === 'partie' && tourHistoireId && sonActif && !plateauMusical && !document.hidden) musique.start();
+    else musique.stop();
+  }, [ecran, lectureHistoire, tourHistoireId, plateauMusiqueId, sonActif, Boolean(duel)]);
+  useEffect(() => {
+    const musique = musiquePlateauRef.current;
+    if (!musique || (ecran === 'partie' && !duel)) return;
+    musique.setPlateau(plateauMusiqueId);
+    if (ecran === 'partie' && sonActif && !document.hidden) void musique.start();
+    else if (ecran === 'partie') musique.pause();
+    else musique.stop();
+  }, [plateauMusiqueId, ecran, sonActif, Boolean(duel)]);
+  // Un onglet mis de côté ne laisse pas la boucle tourner dans le vide ;
+  // au retour, elle reprend où le duel en est.
+  useEffect(() => {
+    const surVisibilite = () => {
+      const musiqueTheme = musiqueThemeRef.current;
+      if (musiqueTheme) {
+        if (document.hidden) musiqueTheme.pause();
+        else if (ecran !== 'partie' && sonActif) musiqueTheme.resume();
+      }
+      const musique = musiqueRef.current;
+      if (musique) {
+        if (document.hidden) musique.pause();
+        else if (ecran === 'partie' && tourHistoireId && sonActif && !RPG_PLATEAUX_MUSICAUX.has(plateauMusiqueId)) musique.start();
+      }
+      const musiquePlateau = musiquePlateauRef.current;
+      if (musiquePlateau) {
+        if (document.hidden) musiquePlateau.pause();
+        else if (ecran === 'partie' && sonActif) void musiquePlateau.start();
+      }
+    };
+    document.addEventListener('visibilitychange', surVisibilite);
+    return () => document.removeEventListener('visibilitychange', surVisibilite);
+  }, [ecran, lectureHistoire, tourHistoireId, plateauMusiqueId, sonActif]);
+  const basculerSon = () => setSonActif((actif) => {
+    const prochain = !actif;
+    if (prochain) {
+      if (ecran === 'partie') {
+        if (tourHistoireId && !RPG_PLATEAUX_MUSICAUX.has(plateauMusiqueId)) musiqueRef.current?.start();
+        if (RPG_PLATEAUX_MUSICAUX.has(plateauMusiqueId)) void musiquePlateauRef.current?.start();
+      } else {
+        void musiqueThemeRef.current?.start();
+      }
+    }
+    return prochain;
+  });
   const delaiReflexionSorcier = () => rpgDelaiReflexionIA(duel, 'sorcier');
   // Les cartes que l'eau ramène dans la main du joueur : elles restent hors de
   // la main tant que le tourbillon joue — le geste se lit avant le résultat.
@@ -7215,15 +7239,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       </div>
     );
   }
-  const vainqueurPvp = modePvp && (pvp?.statut === 'terminee' || duel.fin?.gagnant)
-    ? ((pvp?.resultat === 'gagne' || pvp?.resultat === 'victoire' || (!pvp?.resultat && duel.fin?.gagnant === 'joueur'))
-      ? 'joueur'
-      : (pvp?.resultat === 'perdu' || pvp?.resultat === 'defaite' || (!pvp?.resultat && duel.fin?.gagnant === 'sorcier'))
-        ? 'sorcier'
-        : 'egalite')
-    : null;
-  const vainqueur = vainqueurPvp ?? rpgVainqueur(duel);
-  const territoire = territoireDuDuel(duel, vainqueur);
   const soinJoueur = soinsVisibles.joueur ?? null;
   const soinSorcier = soinsVisibles.sorcier ?? null;
   // L'éclat de soin d'une créature posée. Une pile d'homonymes repliée ne
@@ -10068,6 +10083,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         data-plateau-joueur={plateau.id}
         data-plateau-adversaire={plateauAdverse.id}
         data-territoire-joueur={territoire.partJoueur}
+        data-camp-musical={campMusical}
+        data-plateau-musical={plateauMusiqueId}
         data-territoire-dominant={territoire.dominant}
         data-territoire-termine={vainqueur ? 'true' : undefined}
         data-apercu-carte={apercuCarte ?? undefined}
