@@ -9309,6 +9309,226 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   to { opacity: 1; transform: scale(1); }
 }
 
+/* ── Gel de masse : blizzard qui recouvre tout le plateau ──
+   Verglas = lourd / blanc bleuté intense
+   Brume   = léger / voile diffus, moins de neige
+   Blizzard= moyen-lourd / vent fort
+   Géant   = arrivée créature, souffle polaire */
+.rpg-mass-freeze {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+  isolation: isolate;
+  animation: rpg-mass-freeze-in 420ms ease-out both;
+}
+.rpg-mass-freeze__veil {
+  position: absolute;
+  inset: -8%;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.22) 0%, rgba(200,240,255,0.18) 36%, rgba(120,200,255,0.12) 72%, transparent 88%),
+    linear-gradient(180deg, rgba(220,245,255,0.28) 0%, rgba(160,220,255,0.18) 50%, rgba(200,235,255,0.22) 100%);
+  backdrop-filter: blur(2px) saturate(1.2);
+  animation: rpg-mass-freeze-veil 2.8s ease-in-out both;
+}
+.rpg-mass-freeze__flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 38%, rgba(255,255,255,0.92) 0%, rgba(200,240,255,0.55) 22%, transparent 62%);
+  opacity: 0;
+  animation: rpg-mass-freeze-flash 520ms ease-out both;
+}
+.rpg-mass-freeze__wind {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.rpg-mass-freeze__wind-streak {
+  position: absolute;
+  left: -20%;
+  height: 2px;
+  width: 140%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), rgba(180,235,255,0.65), transparent);
+  opacity: 0.6;
+  animation: rpg-mass-freeze-wind 1.1s linear infinite;
+}
+.rpg-mass-freeze__wind-streak:nth-child(1) { top: 24%; animation-duration: 0.9s; animation-delay: 0s; }
+.rpg-mass-freeze__wind-streak:nth-child(2) { top: 52%; animation-duration: 1.25s; animation-delay: 0.18s; width: 120%; opacity: 0.45; }
+.rpg-mass-freeze__wind-streak:nth-child(3) { top: 76%; animation-duration: 1.05s; animation-delay: 0.32s; opacity: 0.35; }
+
+.rpg-mass-freeze__snow {
+  position: absolute;
+  inset: 0;
+}
+.rpg-mass-freeze__flake {
+  position: absolute;
+  top: -8%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 10px rgba(180,235,255,0.6);
+  opacity: 0;
+  animation: rpg-mass-freeze-snow 2.4s linear both;
+  animation-delay: calc(var(--i) * 90ms);
+  left: calc((var(--i) * 13.7 % 100%) + 2%);
+}
+.rpg-mass-freeze__flake:nth-child(odd) { width: 4px; height: 4px; }
+.rpg-mass-freeze__flake:nth-child(3n) { width: 2px; height: 2px; opacity: 0.9; }
+
+.rpg-mass-freeze__ice-edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.rpg-mass-freeze__ice {
+  position: absolute;
+  background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(168,236,255,0.55), transparent);
+  box-shadow: 0 0 12px rgba(168,236,255,0.55), inset 0 0 8px rgba(255,255,255,0.7);
+}
+.rpg-mass-freeze__ice--top {
+  top: 0; left: 0; right: 0; height: 18%;
+  background: linear-gradient(180deg, rgba(210,245,255,0.72) 0%, rgba(180,235,255,0.28) 55%, transparent 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 86% 48%, 72% 72%, 58% 38%, 42% 64%, 28% 42%, 14% 68%, 0 46%);
+  animation: rpg-mass-freeze-ice-top 520ms ease-out both;
+}
+.rpg-mass-freeze__ice--bottom {
+  bottom: 0; left: 0; right: 0; height: 16%;
+  background: linear-gradient(0deg, rgba(210,245,255,0.68) 0%, rgba(180,235,255,0.24) 55%, transparent 100%);
+  clip-path: polygon(0 100%, 100% 100%, 100% 54%, 88% 72%, 74% 44%, 60% 68%, 44% 38%, 26% 62%, 12% 42%, 0 58%);
+  animation: rpg-mass-freeze-ice-bottom 560ms ease-out 80ms both;
+}
+.rpg-mass-freeze__ice--left {
+  left: 0; top: 0; bottom: 0; width: 10%;
+  background: linear-gradient(90deg, rgba(210,245,255,0.62) 0%, transparent 100%);
+  clip-path: polygon(0 0, 58% 0, 42% 18%, 68% 36%, 38% 52%, 62% 74%, 44% 92%, 0 100%);
+  animation: rpg-mass-freeze-ice-side 480ms ease-out 40ms both;
+}
+.rpg-mass-freeze__ice--right {
+  right: 0; top: 0; bottom: 0; width: 10%;
+  background: linear-gradient(270deg, rgba(210,245,255,0.62) 0%, transparent 100%);
+  clip-path: polygon(100% 0, 100% 100%, 56% 92%, 38% 74%, 62% 52%, 32% 36%, 58% 18%, 42% 0);
+  animation: rpg-mass-freeze-ice-side 480ms ease-out 90ms both;
+}
+
+.rpg-mass-freeze__label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%) scale(0.7);
+  padding: 7px 16px;
+  border-radius: 22px;
+  border: 1.5px solid rgba(184,240,255,0.9);
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(182,236,255,0.9));
+  color: #0b2f4d;
+  font: 800 13px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35), 0 0 18px rgba(168,236,255,0.6);
+  opacity: 0;
+  animation: rpg-mass-freeze-label 680ms cubic-bezier(0.34,1.56,0.64,1) 320ms both,
+             rpg-mass-freeze-label-out 420ms ease-in 2.1s both;
+}
+
+/* Variantes */
+.rpg-mass-freeze--brume .rpg-mass-freeze__veil {
+  backdrop-filter: blur(1.2px) saturate(1.05);
+  background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.14) 0%, rgba(200,235,255,0.10) 52%, transparent 84%);
+  opacity: 0.72;
+}
+.rpg-mass-freeze--brume .rpg-mass-freeze__snow { opacity: 0.55; }
+.rpg-mass-freeze--brume .rpg-mass-freeze__flake { animation-duration: 3.2s; }
+.rpg-mass-freeze--brume .rpg-mass-freeze__wind-streak { opacity: 0.28; }
+.rpg-mass-freeze--brume .rpg-mass-freeze__ice { opacity: 0.55; }
+
+.rpg-mass-freeze--verglas .rpg-mass-freeze__veil {
+  backdrop-filter: blur(3px) saturate(1.35);
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(255,255,255,0.38) 0%, rgba(180,230,255,0.28) 42%, rgba(120,200,255,0.18) 78%, transparent 92%),
+    linear-gradient(180deg, rgba(240,250,255,0.32) 0%, rgba(180,235,255,0.22) 100%);
+}
+.rpg-mass-freeze--verglas .rpg-mass-freeze__flash { animation-duration: 680ms; }
+.rpg-mass-freeze--verglas .rpg-mass-freeze__ice { filter: brightness(1.15); }
+
+.rpg-mass-freeze--blizzard .rpg-mass-freeze__wind-streak { height: 3px; opacity: 0.72; }
+.rpg-mass-freeze--blizzard .rpg-mass-freeze__snow .rpg-mass-freeze__flake { animation-duration: 1.6s; }
+
+.rpg-mass-freeze--geant .rpg-mass-freeze__veil {
+  background: radial-gradient(ellipse at 50% 38%, rgba(200,240,255,0.32) 0%, rgba(160,220,255,0.22) 48%, transparent 88%);
+}
+.rpg-mass-freeze--geant .rpg-mass-freeze__label { font-size: 14px; }
+
+/* Camp */
+.rpg-mass-freeze--joueur .rpg-mass-freeze__label { border-color: #7de8c0; }
+.rpg-mass-freeze--sorcier .rpg-mass-freeze__label { border-color: #ff8a8a; }
+
+/* Keyframes */
+@keyframes rpg-mass-freeze-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes rpg-mass-freeze-veil {
+  0% { opacity: 0; transform: scale(1.08); }
+  18% { opacity: 1; transform: scale(1); }
+  72% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.02); }
+}
+@keyframes rpg-mass-freeze-flash {
+  0% { opacity: 0; transform: scale(0.7); filter: brightness(1.8); }
+  22% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 0; transform: scale(1.25); filter: brightness(1); }
+}
+@keyframes rpg-mass-freeze-wind {
+  0% { transform: translateX(-10%) skewX(-12deg); opacity: 0; }
+  12% { opacity: 0.75; }
+  88% { opacity: 0.55; }
+  100% { transform: translateX(32%) skewX(-12deg); opacity: 0; }
+}
+@keyframes rpg-mass-freeze-snow {
+  0% { opacity: 0; transform: translate3d(0,-10px,0) rotate(0deg); }
+  12% { opacity: 1; }
+  88% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate3d(-18px,110vh,0) rotate(260deg); }
+}
+@keyframes rpg-mass-freeze-ice-top {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes rpg-mass-freeze-ice-bottom {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes rpg-mass-freeze-ice-side {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes rpg-mass-freeze-label {
+  from { opacity: 0; transform: translate(-50%,-50%) scale(0.4) rotate(-8deg); filter: blur(2px); }
+  62% { transform: translate(-50%,-50%) scale(1.12) rotate(2deg); filter: blur(0); }
+  to { opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(0); }
+}
+@keyframes rpg-mass-freeze-label-out {
+  from { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%,-54%) scale(0.92); filter: blur(1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-mass-freeze,
+  .rpg-mass-freeze__veil,
+  .rpg-mass-freeze__flash,
+  .rpg-mass-freeze__wind-streak,
+  .rpg-mass-freeze__flake,
+  .rpg-mass-freeze__ice,
+  .rpg-mass-freeze__label {
+    animation: none !important;
+  }
+  .rpg-mass-freeze__veil { opacity: 0.28; }
+  .rpg-mass-freeze__label { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+}
+
 /* Accueil du Sablier — tableau de bord fantasy inspiré des hubs de jeux de cartes.
    On conserve les interactions et les vues du jeu, en leur donnant une barre
    d'onglets, un panneau vedette et une colonne d'activités. */
