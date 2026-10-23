@@ -477,6 +477,10 @@ décide de sa soirée, et c'est là qu'on lit ce que rapportent les prochains
 niveaux. La carte, elle, ne montre plus que ce qui est **déjà** gagné : le cadre
 peint autour du médaillon, le titre écrit sous le pseudo.
 
+Le **cadre s'allonge** sur toute la largeur du menu (`grid-column: 1 / -1` sur la
+grille de Jouer) : le héros et les quêtes du jour restent au-dessus, et d'un coup
+d'oeil la bande montre beaucoup plus de colonnes.
+
 La bande se lit comme une passe de maîtrise : une **colonne** par niveau,
 séparées d'un filet, teintées selon l'état — déjà passé, en cours, à venir — et
 dans chaque colonne, de haut en bas :
@@ -503,9 +507,9 @@ C'est un `<ol>` qui défile à l'horizontale (`scroll-snap`, `tabindex="0"` pour
 clavier, ouvert sur le palier en cours), et non un tableau : aucun compteur,
 aucun barème, aucune formule de courbe n'est revenu dans le menu.
 
-- **sa forme** — du niveau en cours jusqu'au **prochain rang**, puis quatre
-  niveaux au-delà, sans jamais dépasser le plafond : six paliers au niveau 2,
-  quatorze au plus. Au niveau maximal, la piste regarde en arrière et montre les
+- **sa forme** — du niveau en cours jusqu'au **prochain rang**, puis **huit**
+  niveaux au-delà, sans jamais dépasser le plafond : dix paliers au niveau 2,
+  dix-neuf au plus. Au niveau maximal, la piste regarde en arrière et montre les
   cinq derniers niveaux, tous gagnés. Le prochain rang porte un jalon (« rang »)
   et une tuile ronde ;
 - **ce qui se clique** — seuls les cosmétiques. Un cadre ou un titre gagné se
@@ -721,7 +725,7 @@ titre du niveau 2 se porte et s'écrit sous le pseudo, un titre pas encore gagn�
 ne se porte pas, `null` le repose, et un cadre hors de portée sonne l'erreur sans
 rien changer — le hook refusant même appelé de front (`choisirUnCadre('eclipse')`
 au niveau 1 rend `false` et n'écrit rien). Sur la page, au niveau 2, la piste
-montre six colonnes (2 → le rang du niveau 3, puis quatre) : un seul `courant`
+montre dix colonnes (2 → le rang du niveau 3, puis huit) : un seul `courant`
 marqué `aria-current="step"` et pointé par le repère, le jalon sur le rang avec
 son sachet en coin, le niveau 7 qui n'attend qu'un paquet — dos de carte en
 miniature et sachet —, les niveaux à venir cadenassés, et le titre du niveau 2
@@ -741,7 +745,7 @@ et la légende peinte existent dans l'écran et dans `rpg-profil.css`
 deux lignes, `.rpg-profil__etiquette b`).
 
 La section 11 garde la piste, côté source : la forme du chemin (le prochain rang
-plus quatre niveaux, borné par la courbe), le paquet qui ferme chaque liste de
+plus huit niveaux, borné par la courbe), le paquet qui ferme chaque liste de
 gains, **ce qui est gagné qui se calcule** (`cadreDeProfil` retombe sur le cadre
 du départ, `titreDeProfil` sur `null`) et le hook qui refuse un gain hors de
 portée ; l'indépendance des modules (`rpgProfil.js` ignore `rpgProfilGains.js`,

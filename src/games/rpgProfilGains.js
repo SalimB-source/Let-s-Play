@@ -3,7 +3,7 @@
  * --------------------------------------------------
  * Ce que rapporte chaque niveau franchi au Sablier, et la **piste** qui le dit :
  * un chemin de paliers à faire défiler, du niveau en cours jusqu'au prochain
- * rang, puis quatre niveaux au-delà.
+ * rang, puis huit niveaux au-delà.
  *
  * ## Trois sortes de gains
  *
@@ -250,7 +250,7 @@ export function gainsDuNiveau(niveau) {
  * relie à ses voisins — la moitié droite du niveau en cours se remplit au
  * pourcentage de la barre.
  */
-export function pisteDesGains(profil, { apres = 4, arriere = 5 } = {}) {
+export function pisteDesGains(profil, { apres = 8, arriere = 5 } = {}) {
   const barre = progressionDuProfil(profil ?? null);
   const niveau = barre.niveau;
   const { rang, prochain } = rangDeNiveau(niveau);

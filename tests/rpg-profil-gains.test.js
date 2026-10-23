@@ -10,7 +10,7 @@
  *      le niveau vient de l'XP, donc une sauvegarde retouchée ne pare personne
  *      de l'Éclipse au niveau 3 ;
  *   3. **la piste a la forme demandée** — du niveau en cours jusqu'au prochain
- *      rang, puis quatre niveaux au-delà, le rang en jalon, le plafond en
+ *      rang, puis huit niveaux au-delà, le rang en jalon, le plafond en
  *      rétrospective ;
  *   4. **le filet dit la barre** — plein derrière soi, au pourcentage devant soi,
  *      vide au-delà.
@@ -132,7 +132,7 @@ test('ce qui est gagné se calcule depuis l’XP — une sauvegarde ne pare pers
   assert.ok(cadresGagnes(auNiveau(60)).length > cadresGagnes(auNiveau(2)).length, 'et la liste grandit');
 });
 
-test('la piste va du niveau en cours au prochain rang, puis quatre niveaux au-delà', () => {
+test('la piste va du niveau en cours au prochain rang, puis huit niveaux au-delà', () => {
   for (let niveau = 1; niveau < COURBE.niveauMax; niveau += 1) {
     const piste = pisteDesGains(auNiveau(niveau));
     const barre = progressionDuProfil(auNiveau(niveau));
@@ -140,11 +140,11 @@ test('la piste va du niveau en cours au prochain rang, puis quatre niveaux au-de
     assert.equal(piste.debut, niveau, 'et part de là — pas de rétrospective');
 
     const finAttendue = piste.prochainRang
-      ? Math.min(COURBE.niveauMax, piste.prochainRang.niveau + 4)
+      ? Math.min(COURBE.niveauMax, piste.prochainRang.niveau + 8)
       : COURBE.niveauMax;
-    assert.equal(piste.fin, finAttendue, `le niveau ${niveau} s’arrête au prochain rang plus quatre`);
+    assert.equal(piste.fin, finAttendue, `le niveau ${niveau} s’arrête au prochain rang plus huit`);
     assert.equal(piste.paliers.length, finAttendue - niveau + 1, 'un palier par niveau montré');
-    assert.ok(piste.paliers.length <= 15, `la piste reste courte (${piste.paliers.length} paliers)`);
+    assert.ok(piste.paliers.length <= 19, `la piste reste lisible (${piste.paliers.length} paliers)`);
     assert.deepEqual(piste.paliers.map((un) => un.niveau),
       Array.from({ length: finAttendue - niveau + 1 }, (_, index) => niveau + index),
       'les paliers se suivent, sans trou ni doublon');

@@ -449,6 +449,8 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(donnee('[data-piste-rang]', 'pisteRang'), 'lanterne', 'elle nomme le prochain rang');
     assert.equal(document.querySelectorAll('[data-palier]').length,
       nombre('[data-piste-paliers]', 'pistePaliers'), 'autant de tuiles qu’elle l’annonce');
+    assert.equal(document.querySelectorAll('[data-palier]').length, 10,
+      'dix niveaux d’un coup : le rang du niveau 3, puis huit au-delà');
     assert.equal(donnee('[data-palier="2"]', 'palierEtat'), 'courant', 'elle part du niveau relu sur l’appareil');
     assert.equal(noeud('[data-palier="2"]').getAttribute('aria-current'), 'step', 'et le dit');
     assert.equal(donnee('[data-palier-jalon]', 'palierJalon'), '3', 'le prochain rang est en jalon');

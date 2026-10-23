@@ -8728,10 +8728,12 @@ sans un crédit dépensé.
   marque. L'emblème, une fois un visage peint, se pose en **cachet de cire** au
   coin du médaillon. Plus une ligne, seulement quand des paquets attendent :
   « Un paquet vous attend. » et le bouton **Ouvrir au Souk**.
-- La **piste des gains** vit sur l'écran **Jouer**, sous le héros : une bande de
-  **colonnes** façon passe de maîtrise, qui défile du niveau en cours jusqu'au
-  **prochain rang** de Bab El puis quatre niveaux au-delà (six paliers au
-  niveau 2, quatorze au plus ; au plafond, les cinq derniers niveaux parcourus).
+- La **piste des gains** vit sur l'écran **Jouer** : une bande de **colonnes**
+  façon passe de maîtrise dont le cadre prend **toute la largeur** du menu (le
+  héros et les quêtes du jour restent au-dessus), et qui défile du niveau en
+  cours jusqu'au **prochain rang** de Bab El puis **huit** niveaux au-delà
+  (dix paliers au niveau 2, dix-neuf au plus ; au plafond, les cinq derniers
+  niveaux parcourus).
   Chaque colonne porte, de haut en bas : le repère « niveau actuel » sur celle
   en cours, le **numéro**, la **coche** des niveaux déjà passés, le filet qui se
   remplit au pourcentage de la barre (plein derrière soi, en route devant, vide

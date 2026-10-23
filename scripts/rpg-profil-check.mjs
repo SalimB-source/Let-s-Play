@@ -323,10 +323,10 @@ assert.match(hookCode, /const profil = fusionnerProfils\(chargerProfil\(\), fusi
 // aucun compteur, aucun barème, aucune formule de courbe à l'écran.
 assert.match(gainsCode, /export const CADRES = Object\.freeze\(\[/, 'les cadres sont un catalogue gelé');
 assert.match(gainsCode, /export const TITRES = Object\.freeze\(\[/, 'les titres aussi');
-assert.match(gainsCode, /export function pisteDesGains\(profil, \{ apres = 4/,
-  'la piste part du niveau en cours et pousse de quatre niveaux au-delà du rang');
+assert.match(gainsCode, /export function pisteDesGains\(profil, \{ apres = 8/,
+  'la piste part du niveau en cours et pousse de huit niveaux au-delà du rang');
 assert.match(gainsCode, /prochain\.niveau : niveau \+ suite\) \+ suite/,
-  'sa fin est le prochain rang, plus ces quatre niveaux');
+  'sa fin est le prochain rang, plus ces huit niveaux');
 assert.match(gainsCode, /Math\.min\(COURBE\.niveauMax,/, 'et jamais au-delà de la courbe');
 assert.match(gainsCode, /gains\.push\(\{ \.\.\.GAIN_PAQUET, sorte: 'paquet', niveau: n \}\)/,
   'chaque niveau ferme sa liste par un paquet offert');
@@ -430,6 +430,8 @@ assert.match(cssPiste, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]{0,300
 assert.match(cssPiste, /@media \(max-width: 900px\)/, 'la piste a son palier téléphone');
 assert.match(cssPiste, /\.rpg-mode-menu__play > \.rpg-piste \{ order: 1; \}/,
   'en une colonne, la piste passe avant les quêtes du jour');
+assert.match(cssPiste, /\.rpg-mode-menu__play > \.rpg-piste \{ grid-column: 1 \/ -1; \}/,
+  'le cadre s’allonge sur toute la largeur du menu : plus de niveaux d’un coup d’oeil');
 
 // La piste est montée sur **Jouer**, dans la colonne de gauche, sous le héros —
 // pas sur la carte du profil : c'est là qu'on décide de sa soirée.
@@ -518,7 +520,7 @@ console.log('visages du récit, six emblèmes, douze tables nommées plus « au 
 console.log('une ligne quand un paquet attend, et ce qui est déjà gagné : un cadre peint');
 console.log('autour du médaillon, un titre écrit sous le pseudo.');
 console.log('La **piste des gains** vit sur l’écran Jouer, sous le héros : un chemin qui');
-console.log('défile du niveau en cours jusqu’au prochain rang de Bab El, puis quatre niveaux');
+console.log('défile du niveau en cours jusqu’au prochain rang de Bab El, puis huit niveaux');
 console.log('au-delà. Chaque palier dit ce qu’il rapporte, et **chaque niveau montre son');
 console.log('paquet** — le dos de carte en miniature et son sachet quand le paquet est tout');
 console.log('le gain, un sachet en coin quand un rang ou un cosmétique occupe la tuile. Des');

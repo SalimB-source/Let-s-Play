@@ -74,6 +74,12 @@
 }
 .rpg-piste__du span:last-child { font-size: 12px; }
 
+/* Le cadre s'allonge : la piste prend **toute la largeur** du menu de Jouer —
+   le héros et les quêtes du jour restent au-dessus — et d'un coup d'oeil la
+   bande montre beaucoup plus de colonnes. En une colonne (téléphone),
+   `1 / -1` reste la seule : la règle ne change rien au téléphone. */
+.rpg-mode-menu__play > .rpg-piste { grid-column: 1 / -1; }
+
 /* ── La bande : un chemin qui défile ──────────────────────────────────────── */
 .rpg-piste__bande {
   display: flex;
