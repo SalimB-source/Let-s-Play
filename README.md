@@ -6532,11 +6532,11 @@ leurs exemplaires.
 | Deck | Mécaniques mises en avant | Mythique du boîtier |
 | --- | --- | --- |
 | **Veilleurs du Désert** | Butin, protection, équipements et récupération de cartes | Takouba de Tin Hinan |
-| **Cour des Djinns** | dégâts en vagues, effets à la mort, retour différé d’Anqa, Honneur et Résonance samouraï | Anqa des braises |
+| **Cour des Djinns** | dégâts en vagues, effets à la mort, retour différé d’Anqa, Harakiri et Résonance samouraï | Anqa des braises |
 | **Sentiers de cendre** | Pétra et mana bicolore, Butin, équipements, Coup rapide | Fériel |
 | **Marée des abysses** | contresorts, rebonds, Vipère de verre et serpents du Bâton des citernes | Léviathan |
 | **Serment des Neuf Hivers** | Furie, Résonance, gel et contrôle du combat | Maître du marteau |
-| **Serment du Soleil rouge** | Honneur, Résonance samouraï et Bannière du Daimyō | Kagutsuchi, flamme originelle |
+| **Serment du Soleil rouge** | Harakiri, Résonance samouraï et Bannière du Daimyō | Kagutsuchi, flamme originelle |
 
 Les autres mythiques — par exemple Salem, Tarek et Tin Hinan chez les Veilleurs,
 les bêtes marines hors du Léviathan, ou Cavalier des deux sabres, Orochi et

@@ -76,7 +76,7 @@ test('le deck Soleil rouge est valide et concentre sa signature culturelle', () 
   assert.ok(deck.cardIds.every((id) => cardColors(id).every((couleur) => couleur === 'braise')));
 });
 
-test('le starter met en avant Honneur, Résonance samouraï et la Bannière avec le Daimyō et Kagutsuchi mythiques', () => {
+test('le starter met en avant Harakiri, Résonance samouraï et la Bannière avec le Daimyō et Kagutsuchi mythiques', () => {
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   const ids = new Set(deck.cardIds);
   for (const id of SAMOURAIS_AJOUTES) assert.equal(ids.has(id), true, `${id} anime le boîtier`);
@@ -100,15 +100,15 @@ test('le starter met en avant Honneur, Résonance samouraï et la Bannière avec
   for (const liste of listes) assert.equal(liste.includes('samourai-du-daimyo'), false, 'le jeton ne figure pas dans une liste');
 });
 
-test('les créatures suivent Honneur 1, sans anciens effets dispersés', () => {
+test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
   const valeurs = { commune: 1, inhabituelle: 1, rare: 1, mythique: 1 };
   // Deux exceptions assumées : Orochi (ses héritiers remplacent la frappe) et
-  // l'Ashigaru des braises, redevenu un simple corps de 1 mana sans Honneur.
-  const sansHonneur = ['orochi', 'ashigaru-des-braises'];
+  // l'Ashigaru des braises, redevenu un simple corps de 1 mana sans Harakiri.
+  const sansHarakiri = ['orochi', 'ashigaru-des-braises'];
   for (const carte of RPG_SOLEIL_ROUGE_CARDS.filter((c) => !['magie', 'terrain'].includes(c.kind))) {
-    assert.equal(carte.honneur, sansHonneur.includes(carte.id) ? 0 : valeurs[carte.rarity], carte.id);
-    if (sansHonneur.includes(carte.id)) assert.doesNotMatch(carte.text, /Honneur/);
-    else assert.match(carte.text, new RegExp(`Honneur ${carte.honneur}`));
+    assert.equal(carte.honneur, sansHarakiri.includes(carte.id) ? 0 : valeurs[carte.rarity], carte.id);
+    if (sansHarakiri.includes(carte.id)) assert.doesNotMatch(carte.text, /Harakiri/);
+    else assert.match(carte.text, /Harakiri/);
     // Deux arrivées dans le set : l'exil de Susanoo et les deux Samouraïs du
     // Daimyō. La bannière du Daimyō est un déclenché d'attaque, pas un des
     // « anciens effets dispersés » que le set a retirés (ni combat, ni esquive
@@ -194,7 +194,7 @@ test('la Résonance samouraï suit le sous-type imprimé, pas le nom ni la coule
   assert.doesNotMatch(cardById('kagutsuchi-flamme-originelle').text, /Résonance samouraï/);
 });
 
-test('le renvoi d’une source retire sa Résonance, sans déclencher Honneur', () => {
+test('le renvoi d’une source retire sa Résonance, sans déclencher Harakiri', () => {
   const duel = duelTest();
   const ami = jouer(duel, 'joueur', 'samourai-du-torii');
   const source = jouer(duel, 'sorcier', 'tengu-du-mont-ardent');
@@ -204,10 +204,10 @@ test('le renvoi d’une source retire sa Résonance, sans déclencher Honneur', 
   assert.deepEqual([ami.atk, ami.def], [3, 3], 'seul en jeu, le Shogun se renforce lui-même');
   assert.equal(cible.def, 2);
   assert.ok(duel.sorcier.main.includes('tengu-du-mont-ardent'));
-  assert.ok(!duel.log.some((ligne) => ligne.startsWith('Honneur')));
+  assert.ok(!duel.log.some((ligne) => ligne.startsWith('Harakiri')));
 });
 
-test('Honneur tire au hasard parmi tous les adversaires vivants, jamais les alliés', () => {
+test('Harakiri tire au hasard parmi tous les adversaires vivants, jamais les alliés', () => {
   for (const [rng, attendu] of [[() => 0, 0], [() => 0.5, 1], [() => 0.99, 2]]) {
     const duel = duelTest(rng);
     const honneur = jouer(duel, 'joueur', 'hatamoto-des-cendres');
@@ -217,12 +217,12 @@ test('Honneur tire au hasard parmi tous les adversaires vivants, jamais les alli
     assert.deepEqual(cibles.map((c) => c.def), [0, 1, 2].map((i) => i === attendu ? 5 : 6));
     assert.equal(allie.def, 2);
     assert.equal(duel.sorcier.pv, 25);
-    assert.equal(duel.log.filter((ligne) => ligne.startsWith('Honneur')).length, 1);
+    assert.equal(duel.log.filter((ligne) => ligne.startsWith('Harakiri')).length, 1);
   }
 });
 
-test('Honneur inflige 1 dégât quelle que soit la rareté et fonctionne dans les deux camps', () => {
-  // L'Ashigaru des braises n'a plus d'Honneur : sa mort ne frappe personne (montant 0).
+test('Harakiri inflige 1 dégât quelle que soit la rareté et fonctionne dans les deux camps', () => {
+  // L'Ashigaru des braises n'a plus de Harakiri : sa mort ne frappe personne (montant 0).
   for (const [id, montant] of [['ashigaru-des-braises', 0], ['hatamoto-des-cendres', 1], ['ronin-du-soleil-rouge', 1], ['samourai-du-torii', 1], ['oni-de-la-fournaise', 1]]) {
     for (const cote of ['joueur', 'sorcier']) {
       const duel = duelTest();
@@ -235,18 +235,18 @@ test('Honneur inflige 1 dégât quelle que soit la rareté et fonctionne dans le
   }
 });
 
-test('sans créature adverse, Honneur frappe le sorcier adverse', () => {
+test('sans créature adverse, Harakiri frappe le sorcier adverse', () => {
   for (const cote of ['joueur', 'sorcier']) {
     const duel = duelTest();
     const adverse = cote === 'joueur' ? 'sorcier' : 'joueur';
     const oni = jouer(duel, cote, 'oni-de-la-fournaise');
     rpgBlesserCreature(duel, cote, oni.id, 20, 'eau');
     assert.equal(duel[adverse].pv, 24);
-    assert.match(duel.log.at(-1), /Honneur 1 : Oni de la fournaise inflige 1 dégât au sorcier/);
+    assert.match(duel.log.at(-1), /Harakiri : Oni de la fournaise inflige 1 dégât au sorcier/);
   }
 });
 
-test('les dégâts d’Honneur respectent bouclier et protection, mais pas Esquive', () => {
+test('les dégâts du Harakiri respectent bouclier et protection, mais pas Esquive', () => {
   const duel = duelTest();
   const mort = jouer(duel, 'joueur', 'samourai-du-torii');
   const protege = jouer(duel, 'sorcier', 'tiziri-du-djurdjura');
@@ -258,7 +258,7 @@ test('les dégâts d’Honneur respectent bouclier et protection, mais pas Esqui
   cibleBouclier.bouclier = 1;
   rpgBlesserCreature(avecBouclier, 'joueur', mortBouclier.id, 20, 'eau');
   assert.equal(cibleBouclier.bouclier, 0);
-  assert.equal(cibleBouclier.def, 6, 'le bouclier absorbe le dégât d’Honneur 1');
+  assert.equal(cibleBouclier.def, 6, 'le bouclier absorbe le dégât du Harakiri');
   const autre = duelTest();
   const mort2 = jouer(autre, 'joueur', 'samourai-du-torii');
   const cible = jouer(autre, 'sorcier', 'seigneur-des-machoires');
@@ -267,7 +267,7 @@ test('les dégâts d’Honneur respectent bouclier et protection, mais pas Esqui
   assert.equal(cible.def, 5, 'capacité : Esquive ne se déclenche pas (6 − 1)');
 });
 
-test('Honneur peut provoquer une chaîne de morts sans se déclencher deux fois', () => {
+test('Harakiri peut provoquer une chaîne de morts sans se déclencher deux fois', () => {
   const duel = duelTest();
   const premier = jouer(duel, 'joueur', 'samourai-du-torii');
   const kenshi = jouer(duel, 'sorcier', 'kenshi-de-la-forge');
@@ -279,13 +279,13 @@ test('Honneur peut provoquer une chaîne de morts sans se déclencher deux fois'
   rpgBlesserCreature(duel, 'joueur', premier.id, 20, 'eau');
   assert.equal(duel.joueur.creatures.length, 0);
   assert.equal(duel.sorcier.creatures.length, 0);
-  assert.equal(duel.sorcier.pv, 24, 'le dernier Honneur sans créature en face touche le sorcier');
-  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Honneur')).length, 3);
+  assert.equal(duel.sorcier.pv, 24, 'le dernier Harakiri sans créature en face touche le sorcier');
+  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Harakiri')).length, 3);
   rpgActionsEtat(duel);
-  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Honneur')).length, 3);
+  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Harakiri')).length, 3);
 });
 
-test('les victimes simultanées sont retirées avant les tirages d’Honneur', () => {
+test('les victimes simultanées sont retirées avant les tirages du Harakiri', () => {
   const duel = duelTest(() => 0);
   const attaquant = jouer(duel, 'joueur', 'hatamoto-des-cendres');
   const bloqueur = jouer(duel, 'sorcier', 'hatamoto-des-cendres');
@@ -297,7 +297,7 @@ test('les victimes simultanées sont retirées avant les tirages d’Honneur', (
   assert.deepEqual(duel.sorcier.creatures.map((c) => c.id), [survivant.id]);
 });
 
-test('la mort d’une source retire la Résonance avant sa frappe d’Honneur', () => {
+test('la mort d’une source retire la Résonance avant sa frappe de Harakiri', () => {
   const duel = duelTest();
   const ami = jouer(duel, 'joueur', 'samourai-du-torii');
   const tengu = jouer(duel, 'joueur', 'tengu-du-mont-ardent');
@@ -305,7 +305,7 @@ test('la mort d’une source retire la Résonance avant sa frappe d’Honneur', 
   rpgBlesserCreature(duel, 'joueur', tengu.id, 20, 'eau');
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 1);
   assert.deepEqual([ami.atk, ami.def], [3, 3], 'sans le Tengu, le Shogun garde sa propre Résonance');
-  assert.equal(cible.def, 5, 'Honneur 1 du Tengu sur le colosse 6');
+  assert.equal(cible.def, 5, 'Harakiri du Tengu sur le colosse 6');
 });
 
 test('l’iaijutsu détruit sa cible et le serment expire à la fin du tour', () => {
@@ -366,7 +366,7 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
   }
 });
 
-test('une carte contrecarrée ne déclenche pas Honneur', () => {
+test('une carte contrecarrée ne déclenche pas Harakiri', () => {
   const duel = duelTest();
   const cible = jouer(duel, 'joueur', 'chien-du-guet');
   duel.annonce = { cote: 'sorcier', carteId: 'samourai-du-torii' };
@@ -375,10 +375,10 @@ test('une carte contrecarrée ne déclenche pas Honneur', () => {
   assert.equal(rpgLancerMagie(duel, 'joueur', 'contresort-des-abimes').ok, true);
   assert.equal(cible.def, 2);
   assert.ok(duel.sorcier.cimetiere.includes('samourai-du-torii'));
-  assert.ok(!duel.log.some((ligne) => ligne.startsWith('Honneur')));
+  assert.ok(!duel.log.some((ligne) => ligne.startsWith('Harakiri')));
 });
 
-test('les actions d’état déclenchent Honneur une seule fois pour une créature morte', () => {
+test('les actions d’état déclenchent Harakiri une seule fois pour une créature morte', () => {
   const duel = duelTest();
   const mort = jouer(duel, 'joueur', 'samourai-du-torii');
   const cible = jouer(duel, 'sorcier', 'seigneur-des-machoires');
@@ -390,7 +390,7 @@ test('les actions d’état déclenchent Honneur une seule fois pour une créatu
   assert.equal(duel.joueur.cimetiere.filter((id) => id === 'samourai-du-torii').length, 1);
 });
 
-test('Honneur fonctionne aussi après un aller-retour JSON de la partie', () => {
+test('Harakiri fonctionne aussi après un aller-retour JSON de la partie', () => {
   let duel = duelTest();
   const mort = jouer(duel, 'joueur', 'oni-de-la-fournaise');
   const cible = jouer(duel, 'sorcier', 'seigneur-des-machoires');
@@ -400,7 +400,7 @@ test('Honneur fonctionne aussi après un aller-retour JSON de la partie', () => 
 });
 
 
-test('le Cavalier des deux sabres est mythique, rapide, samouraï et porte Honneur 1', () => {
+test('le Cavalier des deux sabres est mythique, rapide, samouraï et porte Harakiri', () => {
   const carte = cardById('cavalier-des-deux-sabres');
   assert.equal(carte.rarity, 'mythique');
   assert.equal(carte.honneur, 1);
@@ -418,7 +418,7 @@ test('le Cavalier des deux sabres est mythique, rapide, samouraï et porte Honne
   assert.deepEqual([cavalier.atk, cavalier.def], [6, 5]);
   const cible = jouer(duel, 'sorcier', 'seigneur-des-machoires');
   rpgBlesserCreature(duel, 'joueur', cavalier.id, 20, 'eau');
-  assert.equal(cible.def, 5, 'Honneur 1 à la mort');
+  assert.equal(cible.def, 5, 'Harakiri à la mort');
 });
 
 
@@ -459,7 +459,7 @@ test('Orochi est un serpent 8/8 pour 8 et crée deux Petits Orochi 4/4 à sa mor
     const orochi = jouer(duel, cote, 'orochi');
     assert.equal(orochi.honneur, 0);
     rpgBlesserCreature(duel, cote, orochi.id, 8, 'eau');
-    assert.equal(cible.def, defenseAvant, 'Orochi ne déclenche plus Honneur');
+    assert.equal(cible.def, defenseAvant, 'Orochi ne déclenche plus Harakiri');
     const petits = duel[cote].creatures;
     assert.equal(petits.length, 2);
     assert.notEqual(petits[0].id, petits[1].id);
@@ -495,7 +495,7 @@ test('renvoyer Orochi ne crée pas de petits, et renvoyer un Petit Orochi le fai
   assert.ok(!deck.cardIds.includes('petit-orochi'));
 });
 
-test('Susanoo reste hors du starter : 5/3 pour 6, Honneur 1 et exil à l’arrivée', () => {
+test('Susanoo reste hors du starter : 5/3 pour 6, Harakiri et exil à l’arrivée', () => {
   const carte = cardById('susanoo');
   assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [6, 5, 3, 1]);
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
@@ -532,10 +532,10 @@ test('Susanoo respecte la protection et peut être joué sans cible sur une tabl
   const susanoo = jouer(vide, 'joueur', 'susanoo');
   const cible = jouer(vide, 'sorcier', 'seigneur-des-machoires');
   rpgBlesserCreature(vide, 'joueur', susanoo.id, 3, 'eau');
-  assert.equal(cible.def, 5, 'Honneur 1 fonctionne à la mort de Susanoo');
+  assert.equal(cible.def, 5, 'Harakiri fonctionne à la mort de Susanoo');
 });
 
-test('l’IA choisit une cible à exiler et l’exil retire les auras sans déclencher Honneur', () => {
+test('l’IA choisit une cible à exiler et l’exil retire les auras sans déclencher Harakiri', () => {
   const duel = duelTest();
   const source = jouer(duel, 'joueur', 'samourai-du-torii');
   const cavalier = jouer(duel, 'sorcier', 'cavalier-des-deux-sabres');
@@ -544,7 +544,7 @@ test('l’IA choisit une cible à exiler et l’exil retire les auras sans décl
   duel.sorcier.main.push('susanoo');
   assert.equal(rpgJouerCreature(duel, 'sorcier', 'susanoo', source.id).ok, true);
   assert.deepEqual([cavalier.atk, cavalier.def], [5, 4]);
-  assert.ok(!duel.log.some((ligne) => ligne.startsWith('Honneur')));
+  assert.ok(!duel.log.some((ligne) => ligne.startsWith('Harakiri')));
 });
 
 
@@ -561,7 +561,7 @@ test('le Daimyō du Soleil rouge est un 3/4 à 5 qui lève deux Samouraïs 1/1 e
   const jeton = cardById('samourai-du-daimyo');
   assert.equal(jeton.jeton, true);
   assert.deepEqual([jeton.cost, jeton.atk, jeton.def, jeton.element], [0, 1, 1, 'braise']);
-  assert.equal(jeton.honneur, undefined, 'un jeton ne porte pas d’Honneur');
+  assert.equal(jeton.honneur, undefined, 'un jeton ne porte pas de Harakiri');
   assert.match(jeton.typeLine, /Créature-jeton — Humain · Samouraï/);
   assert.equal(cardReceivesResonance(jeton, 'samourai'), true, 'le jeton est un Samouraï');
   assert.equal(COLLECTION_DEPART.includes('samourai-du-daimyo'), false);
@@ -732,7 +732,7 @@ test('la bannière arme la frappe du tour dans l’échange, pas seulement sur l
   jouer(duel, 'joueur', 'daimyo-du-soleil-rouge');
   const ronin = jouer(duel, 'joueur', 'ronin-du-soleil-rouge');
   // Un 3/4 neutre : ni Samouraï (la bannière du camp d’en face ne le touche
-  // pas), ni Honneur, ni Furie — il meurt à 4 dégâts (l’attaque armée), il
+  // pas), ni Harakiri, ni Furie — il meurt à 4 dégâts (l’attaque armée), il
   // survivrait à 3.
   const bloqueur = jouer(duel, 'sorcier', 'boualem');
   assert.deepEqual([bloqueur.atk, bloqueur.def], [3, 4]);
@@ -743,7 +743,7 @@ test('la bannière arme la frappe du tour dans l’échange, pas seulement sur l
   assert.equal(duel.sorcier.creatures.some((entite) => entite.id === bloqueur.id), false,
     '4 dégâts sur un 3/4 : le bloqueur tombe, là où 3 ne l’auraient pas tué');
   assert.equal(res.resume.frappeSorcier, 0, 'l’attaque était bloquée : aucun dégât de combat direct');
-  assert.equal(duel.sorcier.pv, pvSorcier - 1, 'sans survivant adverse, Honneur 1 du rōnin mort touche le sorcier');
+  assert.equal(duel.sorcier.pv, pvSorcier - 1, 'sans survivant adverse, le Harakiri du rōnin mort touche le sorcier');
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === ronin.id), false,
     'le rōnin encaisse 3 : il tombe, sa bannière ne l’a pas sauvé');
 });
@@ -831,8 +831,8 @@ test('la forge compte par source, se retire à l’exil et ne touche jamais la d
   assert.deepEqual([premier.atk, premier.def], [1, 2], 'un Kenshi seul dans son camp ne se forge pas');
   assert.deepEqual([second.atk, second.def], [1, 2]);
   // On retire les sources par l'exil de Susanoo : l'exil n'est pas une mort,
-  // ni Honneur, ni capacité de destruction ne se déclenchent — là où une
-  // blessure ferait frapper l'Honneur 2 du Kenshi et brouillerait la mesure.
+  // ni Harakiri, ni capacité de destruction ne se déclenchent — là où une
+  // blessure ferait frapper le Harakiri du Kenshi et brouillerait la mesure.
   const exiler = (cibleId) => {
     duel.joueur.main.push('susanoo');
     assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', cibleId).ok, true);
@@ -846,7 +846,7 @@ test('la forge compte par source, se retire à l’exil et ne touche jamais la d
   assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [3, 2, 2]);
   assert.deepEqual([onna.atk, onna.def], [3, 3]);
   // La défense n’a jamais bougé d’un point : perdre la forge ne peut pas tuer.
-  assert.ok(!duel.log.some((ligne) => ligne.startsWith('Honneur')));
+  assert.ok(!duel.log.some((ligne) => ligne.startsWith('Harakiri')));
 });
 
 test('la forge, la Résonance samouraï et la bannière se cumulent sans dériver', () => {

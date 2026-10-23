@@ -352,7 +352,7 @@ export const RPG_STORY_TOURS = [
     id: 'tour-du-soleil-rouge',
     nom: 'La Tour du Soleil rouge',
     miniature: 'tour-du-soleil-rouge.jpg',
-    resume: 'Une forteresse d’écarlate et de cèdre au flanc du Mont Ardent. L’honneur y frappe au trépas, les sabres vibrent en résonance et le Daimyō lève son armée sous la flamme originelle.',
+    resume: 'Une forteresse d’écarlate et de cèdre au flanc du Mont Ardent. Le Harakiri y frappe au trépas, les sabres vibrent en résonance et le Daimyō lève son armée sous la flamme originelle.',
     etages: [
       {
         id: 'soleil-1',

@@ -261,7 +261,7 @@ Le Samouraï du torii et le Tengu portent **Résonance samouraï** ; Kagutsuchi 
 les deux camps et quelle que soit leur couleur. La couleur Braise et le nom
 d’une carte ne suffisent pas. Ni les yōkai, ni les kami, ni les autres types
 ne bénéficient du bonus. Les types imprimés existants restent inchangés.
-La Résonance Neige et Honneur gardent leurs règles. Les illustrations ne sont
+La Résonance Neige et le Harakiri gardent leurs règles. Les illustrations ne sont
 pas modifiées par cet ajustement de mécanique.
 
 
@@ -299,7 +299,7 @@ Peinture kaiga / nihonga plein art 1024×1280, harmonisée avec le Soleil rouge,
 sans texte ni cadre ; version `cavalier-deux-sabres-kaiga-champ-ble-v2`.
 
 Créature mythique Braise de type Samouraï : coût 6, force/défense 5/4,
-Rapidité et Honneur 3. Elle bénéficie de Résonance samouraï. Un exemplaire
+Rapidité et Harakiri 3. Elle bénéficie de Résonance samouraï. Un exemplaire
 remplace un Tengu dans le deck préconstruit, qui garde ses 40 cartes et ses
 16 terrains. La carte se débloque à `sables-3`.
 
@@ -308,7 +308,7 @@ remplace un Tengu dans le deck préconstruit, qui garde ses 40 cartes et ses
 
 Orochi rejoint Soleil rouge : créature légendaire mythique Braise, Serpent,
 coût 8, force/défense 8/8. À sa mort, son contrôleur crée sur son champ de
-bataille deux créatures-jetons « Petit Orochi » 4/4. Orochi ne possède pas Honneur, par exception à la règle de rareté du set. Les petits n’ont ni Honneur, ni
+bataille deux créatures-jetons « Petit Orochi » 4/4. Orochi ne possède pas Harakiri, par exception à la règle de rareté du set. Les petits n’ont ni Harakiri, ni
 Rapidité, ni effet de mort ; ils ne sont pas Samouraïs. Un renvoi en main
 d’Orochi ne crée pas de jetons, et un Petit Orochi renvoyé cesse d’exister.
 
@@ -325,9 +325,9 @@ préconstruit, qui conserve 40 cartes, 17 créatures, 7 magies et 16 terrains.
 ### Susanoo — mythique
 
 Créature légendaire Braise — Kami · Tempête, coût 5, force/défense 6/3,
-Honneur 3. À son arrivée, son contrôleur choisit une créature de l’un ou
+Harakiri 3. À son arrivée, son contrôleur choisit une créature de l’un ou
 l’autre camp et la retire de la partie. L’exil n’est pas une mort : ni
-Honneur, ni création de jetons, ni retour programmé ne se déclenchent.
+Harakiri, ni création de jetons, ni retour programmé ne se déclenchent.
 La cible ne rejoint ni la main ni le cimetière ; les armes attachées sont
 mises au cimetière et les auras de la créature quittant le jeu disparaissent.
 La protection et le contresort de Boualem s’appliquent aux capacités ciblées.

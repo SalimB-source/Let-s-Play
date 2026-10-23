@@ -41,7 +41,7 @@ type restent muettes, la saveur porte le mythe.
 ## 2. Le mot-clé : **Tribut**
 
 Le transfert de vie — ce que la fiche précédente appelait « lien de vie » —
-reçoit un nom propre, calé sur le vocabulaire du set (Butin, Honneur,
+reçoit un nom propre, calé sur le vocabulaire du set (Butin, Harakiri,
 Résonance : un mot court, français, qui se lit sans le voir jouer) :
 
 > **Tribut N** — *Quand cette créature touche le sorcier adverse, il perd N PV
@@ -62,7 +62,7 @@ Règles et frontières :
   Braise ;
 - **distinct du soin du Sable** : le Sable *ramasse* (gain seul), le Tribut
   *transfère* (l'un perd, l'autre gagne) ;
-- **distinct de l'Honneur** (Soleil rouge) : Honneur déclenche **à la mort**,
+- **distinct du Harakiri** (Soleil rouge) : le Harakiri déclenche **à la mort**,
   en dégâts, au hasard — le Tribut déclenche **au contact**, en transfert, à
   coup sûr ;
 - sur une arme, il se porte comme les autres mots-clés : `donne: { tribut: 1 }`

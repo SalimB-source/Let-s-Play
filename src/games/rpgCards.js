@@ -2133,7 +2133,7 @@ export const CATALOGUE_DU_COMPOSEUR = {
 /** Veilleurs du Désert — Butin et équipements, avec la Takouba de Tin Hinan comme seule mythique. */
 export const RPG_DECK_JOUEUR_BASE = composerDeck(RPG_RECETTES_DECKS['veilleurs-du-desert'], CATALOGUE_DU_COMPOSEUR);
 
-/** Cour des Djinns — cendres, Honneur et retour différé d'Anqa. */
+/** Cour des Djinns — cendres, Harakiri et retour différé d'Anqa. */
 export const RPG_DECK_SORCIER_BASE = composerDeck(RPG_RECETTES_DECKS['cour-des-djinns'], CATALOGUE_DU_COMPOSEUR);
 
 /** Sentiers de cendre — Pétra, mana bicolore et frappe rapide de Fériel. */
@@ -2145,7 +2145,7 @@ export const RPG_DECK_MAREE_BASE = composerDeck(RPG_RECETTES_DECKS['maree-des-ab
 /** Serment des Neuf Hivers — Furie, gel et les figures mythiques du Nord. */
 export const RPG_DECK_NEIGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-des-neuf-hivers'], CATALOGUE_DU_COMPOSEUR);
 
-/** Serment du Soleil rouge — Honneur, Résonance samouraï et le Daimyō. */
+/** Serment du Soleil rouge — Harakiri, Résonance samouraï et le Daimyō. */
 export const RPG_DECK_SOLEIL_ROUGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-du-soleil-rouge'], CATALOGUE_DU_COMPOSEUR);
 
 /** La Balance des Heures — Prix, Tribut et morts qui déclenchent, avec La Dévoreuse comme seule mythique. */
@@ -2184,7 +2184,7 @@ export const RPG_DECKS = [
     boxArt: 'anqa-des-braises',
     archetype: 'Djinns et sorcellerie',
     affrontement: 'Affrontez les djinns de Braise.',
-    description: 'Deck mono-Braise autour des djinns et des ghuls : le Ghul frappe à sa mort, le Nuage de cendres revient en écho et Anqa — son unique mythique — renaît après quatre tours. Ashigaru, rōnin et Shogun promu ajoutent Honneur et Résonance ; les autres figures mythiques s’obtiennent dans les boosters.',
+    description: 'Deck mono-Braise autour des djinns et des ghuls : le Ghul frappe à sa mort, le Nuage de cendres revient en écho et Anqa — son unique mythique — renaît après quatre tours. Ashigaru, rōnin et Shogun promu ajoutent Harakiri et Résonance ; les autres figures mythiques s’obtiennent dans les boosters.',
     cardIds: RPG_DECK_SORCIER_BASE,
   },
   {
@@ -2232,7 +2232,7 @@ export const RPG_DECKS = [
     boxArt: 'kagutsuchi-flamme-originelle',
     archetype: 'Braise · samouraïs et yōkai',
     affrontement: 'Affrontez le Serment du Soleil rouge.',
-    description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Shogun promu, le Tengu et le Kenshi font résonner les Samouraïs, et le Daimyō mythique lève des jetons qui grandissent en attaquant. Kagutsuchi et le Daimyō sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
+    description: 'Deck mono-Braise du Japon fantastique : Harakiri frappe à la mort, le Shogun promu, le Tengu et le Kenshi font résonner les Samouraïs, et le Daimyō mythique lève des jetons qui grandissent en attaquant. Kagutsuchi et le Daimyō sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
     cardIds: RPG_DECK_SOLEIL_ROUGE_BASE,
   },
   {
