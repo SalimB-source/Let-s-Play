@@ -8150,11 +8150,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         // rendue dès la première image — la chaîne part de SA carte, jamais
         // du milieu de sa rangée.
         const capteurVivant = vivants.get(capteurId);
+        const coteCapteur = duel.joueur.creatures.some((carte) => carte.id === capteurId)
+          ? 'joueur' : 'sorcier';
+        // Quand le capteur vient d'être joué, on utilise son emplacement
+        // connu pour estimer sa position précise au lieu du centre de la
+        // rangée (qui correspondrait au 3ème emplacement sur 5).
+        const emplacementCapteur = capteurVivant?.emplacement;
+        const slotSpecifique = Number.isInteger(emplacementCapteur)
+          && tableRef.current?.querySelector(
+            `.rpg-creature-slots--${coteCapteur} [data-creature-slot="${emplacementCapteur + 1}"]`
+          );
         const rang = capteurVivant && tableRef.current?.querySelector(
-          duel.joueur.creatures.some((carte) => carte.id === capteurId)
-            ? '.card-row--equipe' : '.card-row--ennemi',
+          coteCapteur === 'joueur' ? '.card-row--equipe' : '.card-row--ennemi',
         );
-        const rect = (element ?? rang)?.getBoundingClientRect();
+        const rect = (element ?? slotSpecifique ?? rang)?.getBoundingClientRect();
         const destination = capteur
           ? { x: capteur.left + capteur.width / 2, y: capteur.top + capteur.height / 2 }
           : rect && tableRect
