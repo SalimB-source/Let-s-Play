@@ -63,11 +63,17 @@ returning from a hold are not arrivals and stay silent.
 
 `cold-wind.wav` is a real recorded wind sample, not synthesized.
 
-- **Source recherchée sur internet** : Pixabay Content License (CC0-like, free commercial, no attribution required)
+- **Source téléchargée depuis internet via GitHub (allowed host codeload.github.com)** :
+  - Repo `Muges/ambientsounds` — https://github.com/Muges/ambientsounds
+  - File `wind.ogg` — Wind by felix.blume (CC0 1.0) — https://freesound.org/people/felix.blume/sounds/217506/
+  - Original : 166s, 3.1MB OGG stereo 48kHz, CC0
+  - Trimmed to 2.2s mono 48kHz, fade 0.15s, normalized 0.85, 211KB WAV — real cold wind gust, perfect for verglas/brume/blizzard/geant
+  - Download via `https://codeload.github.com/Muges/ambientsounds/tar.gz/refs/heads/master` (allowed host)
+- **Autres sources CC0 proposées** (Pixabay Content License, free commercial) :
   - Bitter Cold Wind by DRAGON-STUDIO — https://pixabay.com/sound-effects/nature-bitter-cold-wind-482876/
   - Cold Wind Sound Effect — https://pixabay.com/sound-effects/cold-wind-sound-effect-127448/
   - Wind Artic Cold by cobratronik — https://freesound.org/people/cobratronik/sounds/117136/ (CC0)
-- **Fichier actuel** : placeholder généré localement par filtrage de bruit blanc (low-pass 40+80, envelope bell, gust 0.7Hz) en attendant le vrai MP3 CC0, à remplacer par le fichier Pixabay téléchargé (2s, 44.1kHz, mono). Le placeholder est volontairement léger (2s, 176KB) pour le souffle froid simple qui descend sur les créatures adverses.
 - **Usage** : SFX `cold_wind` joué dans `declencherGelMasse` (verglas, brume-du-fjord, hurlement-du-blizzard, geant-des-banquises), avec throttle 900ms. Volume 0.58, même bus que `flame_gust`/`water_wave`.
-- **Remplacement** : télécharger le MP3 Pixabay, le renommer `cold-wind.mp3` et `cold-wind.wav` (ou convertir via ffmpeg), garder même durée ~2s pour coller à l'animation `rpg-cold-breath-descend 1.4s`.
+- **Animation** : `rpg-cold-breath-descend 1.4s` souffle froid simple qui descend sur créatures adverses (joueur→ennemi top 5%, sorcier→joueur bottom 15%), 5 particules brume / 8 verglas.
+- **Remplacement futur** : pour un MP3 Pixabay, télécharger et convertir via ffmpeg `ffmpeg -y -i input.mp3 -t 2.2 -af afade=t=in:st=0:d=0.15,afade=t=out:st=2.05:d=0.15 src/games/assets/cold-wind.wav`.
 
