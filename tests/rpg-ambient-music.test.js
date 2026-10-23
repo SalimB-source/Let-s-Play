@@ -339,7 +339,7 @@ test('les deux plateaux enneigés proposent aléatoirement les pistes Viking How
   const fichiers = ['/Viking Howl.mp3', '/Viking Howl (Take 2).mp3', '/audio/full-track.mp3'];
   assert.ok(existsSync(new URL('../public/Viking Howl.mp3', import.meta.url)));
   assert.ok(existsSync(new URL('../public/Viking Howl (Take 2).mp3', import.meta.url)));
-  for (const plateauId of ['fjord-des-neuf-hivers', 'iles-celestes']) {
+  for (const plateauId of ['village-viking', 'iles-celestes']) {
     assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), `${plateauId} doit avoir une musique dédiée`);
     assert.deepEqual(RPG_PLATEAU_MUSIC_FILES[plateauId], fichiers);
   }
@@ -348,11 +348,11 @@ test('les deux plateaux enneigés proposent aléatoirement les pistes Viking How
 
   const tirages = [0, 0.5, 0.99];
   const lecteur = new RpgPlateauMusic(() => tirages.shift());
-  lecteur.setPlateau('fjord-des-neuf-hivers', { reroll: true });
+  lecteur.setPlateau('village-viking', { reroll: true });
   assert.equal(lecteur.musicFile, fichiers[0], 'le premier tirage choisit Viking Howl');
-  lecteur.setPlateau('fjord-des-neuf-hivers');
+  lecteur.setPlateau('village-viking');
   assert.equal(lecteur.musicFile, fichiers[0], 'les mises à jour du duel gardent la même piste');
-  lecteur.setPlateau('fjord-des-neuf-hivers', { reroll: true });
+  lecteur.setPlateau('village-viking', { reroll: true });
   assert.equal(lecteur.musicFile, fichiers[1], 'une nouvelle partie peut tirer Take 2');
   lecteur.setPlateau('iles-celestes');
   assert.equal(lecteur.musicFile, fichiers[2], 'la variante neige peut aussi tirer la piste complète');

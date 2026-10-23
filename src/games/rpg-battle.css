@@ -2521,8 +2521,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-ruines-de-tipaza {
   background-color: #9d9179;
 }
-.card-table--plateau-fjord-des-neuf-hivers {
-  background-color: #b9cdd6;
+.card-table--plateau-village-viking {
+  background-color: #b5b0ad;
 }
 .card-table--plateau-cour-de-l-empereur {
   background-color: #608280;
@@ -2602,7 +2602,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-plateau-moitie--plateau-erg-du-sahara { background-color: #a8804f; }
 .rpg-plateau-moitie--plateau-caravane-de-gourara { background-color: #a8764f; }
 .rpg-plateau-moitie--plateau-ruines-de-tipaza { background-color: #9d9179; }
-.rpg-plateau-moitie--plateau-fjord-des-neuf-hivers { background-color: #b9cdd6; }
+.rpg-plateau-moitie--plateau-village-viking { background-color: #b5b0ad; }
 .rpg-plateau-moitie--plateau-cour-de-l-empereur { background-color: #608280; }
 .rpg-plateau-moitie--plateau-desert-de-verre { background-color: #9aa48a; }
 .rpg-plateau-moitie--plateau-abysses-phosphorescentes { background-color: #adc1b8; }

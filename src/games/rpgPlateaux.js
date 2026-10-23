@@ -13,8 +13,8 @@
  *    la Cour des Djinns sur la Table des Heures… Un deck
  *    sans identité connue (paquet brut passé en prop, deck maison) retombe sur
  *    la **couleur dominante de ses cartes** : Sable → l'Erg, Braise → la Table
- *    des Heures, Eau → les Ruines de Tipaza, Neige → le Fjord des Neuf
- *    Hivers, Ténèbres → la Nécropole des dalles, deux couleurs à égalité → la
+ *    des Heures, Eau → les Ruines de Tipaza, Neige → le Village Viking,
+ *    Ténèbres → la Nécropole des dalles, deux couleurs à égalité → la
  *    Caravane de Gourara, le carrefour des pistes. Sans rien de lisible, c'est
  *    la Table des Heures, la table d'origine de Bab El.
  * 2. **Chaque camp joue sur son terrain.** La table est découpée en deux
@@ -36,8 +36,8 @@
  * Trois des terrains classiques ont leur **double merveilleux** : quand la
  * partie l'autorise (`variantesFantaisistes`), un tirage par camp peut échanger
  * le terrain imposé contre sa version fantaisiste — l'Erg contre le Désert de
- * Verre, les Ruines contre les Abysses Phosphorescentes, le Fjord contre les
- * Îles Célestes. Les cinq autres — la piste caravanière, la Table des Heures
+ * Verre, les Ruines contre les Abysses Phosphorescentes, le Village Viking
+ * contre les Îles Célestes. Les cinq autres — la piste caravanière, la Table des Heures
  * (la table d'origine, que les Cavernes de Cristal ont quittée), la
  * Cour de l'Empereur et les deux terrains des Ténèbres, la Nécropole des
  * dalles et les Palais du Pharaon — restent uniques. Le
@@ -79,11 +79,11 @@ export const RPG_PLATEAUX = [
     resume: 'Le lit sec de l’oued et sa piste de caravane : les deux empreintes du campement, l’outre, la corde et le compas abandonné.',
   },
   {
-    id: 'fjord-des-neuf-hivers',
-    nom: 'Le Fjord des Neuf Hivers',
-    lieu: 'La glace du Nord, devant le Serment',
-    fichier: 'plateau-fjord-des-neuf-hivers.jpg',
-    resume: 'La glace polie du fjord et sa rose des vents gravée au ciseau ; la lanterne de fer, le cor à boire, la corde lovée, la hache et le bâton de runes posés au bord.',
+    id: 'village-viking',
+    nom: 'Le Village Viking',
+    lieu: 'Le village du Nord, au bord du fjord enneigé',
+    fichier: 'plateau-village-viking.jpg',
+    resume: 'Un village viking sous la neige, vu à vol d’oiseau : au centre, la grande place dégagée bordée d’une frise de runes gravées dans la pierre, entièrement nue au milieu pour poser les cartes. Tout autour, la grande halle du Jarl au toit de bardeaux enneigés et au fronton sculpté, les maisons longues en bois, les sapins sous la neige, les tas de bûches, les râteliers de boucliers ronds peints, les stèles runiques, les tonneaux, la corde lovée et deux braseros de fer enflammés.',
   },
   {
     id: 'ruines-de-tipaza',
@@ -163,8 +163,8 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'cour-des-djinns': 'table-des-heures',
   'sentiers-de-cendre': 'caravane-de-gourara',
   'maree-des-abysses': 'ruines-de-tipaza',
-  // Le Nord : le Serment des Neuf Hivers se bat sur la glace du fjord.
-  'serment-des-neuf-hivers': 'fjord-des-neuf-hivers',
+  // Le Nord : le Serment des Neuf Hivers se bat sur la place du village viking.
+  'serment-des-neuf-hivers': 'village-viking',
   // L'Est : le Serment du Soleil rouge reçoit dans la cour de l'Empereur, le
   // grand parvis de gravier ratissé que garde le palais impérial.
   'serment-du-soleil-rouge': 'cour-de-l-empereur',
@@ -180,12 +180,12 @@ export const RPG_PLATEAUX_PAR_DECK = {
   // Campagne (clés de `RPG_STORY_DECKS`) : la Souffleuse tient la piste de
   // caravane du deck hybride dont elle vient ; le Grand Horloger, lui, reçoit
   // dans la salle haute de la Chambre, sur la table d'origine. Les quatre
-  // étages de la Tour du Fjord gardent la glace de leur deck.
+  // étages de la Tour du Fjord se battent au village viking.
   'souffleuse-de-verre': 'caravane-de-gourara',
   'grand-horloger': 'table-des-heures',
-  'gardes-du-fjord': 'fjord-des-neuf-hivers',
-  'meute-des-neiges': 'fjord-des-neuf-hivers',
-  'maitre-des-neuf-hivers': 'fjord-des-neuf-hivers',
+  'gardes-du-fjord': 'village-viking',
+  'meute-des-neiges': 'village-viking',
+  'maitre-des-neuf-hivers': 'village-viking',
   'gardes-du-soleil': 'cour-de-l-empereur',
   'lames-du-soleil': 'cour-de-l-empereur',
   'maitre-du-soleil-rouge': 'cour-de-l-empereur',
@@ -202,7 +202,7 @@ export const RPG_PLATEAUX_PAR_COULEUR = {
   sable: 'erg-du-sahara',
   braise: 'table-des-heures',
   eau: 'ruines-de-tipaza',
-  neige: 'fjord-des-neuf-hivers',
+  neige: 'village-viking',
   // Les Ténèbres ont leur terrain : la Nécropole des dalles, le set égyptien
   // du catalogue. Le Palais du Pharaon restent au deck qui les revendique
   // (le tribunal de la Nécropole), pas à la couleur.
@@ -213,14 +213,14 @@ export const RPG_PLATEAUX_PAR_COULEUR = {
 /**
  * Le double merveilleux d'un terrain classique, par identifiant de plateau.
  * L'Erg s'effile en Désert de Verre, les Ruines sombrent en Abysses
- * Phosphorescentes, le Fjord s'allège en Îles Célestes. La piste caravanière
+ * Phosphorescentes, le Village Viking s'allège en Îles Célestes. La piste caravanière
  * et la Table des Heures — la table d'origine, depuis le retrait des Cavernes
  * de Cristal — restent uniques.
  */
 export const RPG_PLATEAUX_VARIANTES_FANTAISISTES = {
   'erg-du-sahara': 'desert-de-verre',
   'ruines-de-tipaza': 'abysses-phosphorescentes',
-  'fjord-des-neuf-hivers': 'iles-celestes',
+  'village-viking': 'iles-celestes',
 };
 
 /** Le plateau par son identifiant, ou null. */

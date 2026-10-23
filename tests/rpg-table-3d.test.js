@@ -41,6 +41,17 @@ test('la cour de l’Empereur garde sa peinture : des pétales, aucun objet 3D',
   assert.ok(theme.keyDirection[0] > 0 && theme.keyDirection[1] > 0, ' lumière du matin');
 });
 
+test('le village viking garde sa peinture à vol d’oiseau : deux braseros vacillants et de la neige qui tombe', () => {
+  const plateau = plateauParId('village-viking');
+  const theme = tableSceneTheme(plateau.id);
+  assert.deepEqual(theme.objets, []);
+  assert.equal(theme.plaque, null);
+  assert.equal(tablePlaqueFile(plateau), 'plateau-village-viking.jpg');
+  assert.equal(theme.lights.length, 2, 'les deux braseros peints en bas à droite scintillent en 3D');
+  assert.ok(theme.lights.every((lamp) => lamp.flicker > 0), 'chaque brasero vacille');
+  assert.ok(theme.particles.vy < 0, 'la neige tombe sur la place du village');
+});
+
 test('le navire pirate éclaire son pont par quatre fanaux d’angle et ses embruns marins', () => {
   const plateau = plateauParId('navire-pirate');
   const theme = tableSceneTheme(plateau.id);
@@ -88,7 +99,7 @@ test('les ambiances sont distinctes et leurs réglages restent dans les bornes',
 });
 
 test('les particules sont déterministes, bornées et se replient dans la table', () => {
-  const theme = tableSceneTheme('fjord-des-neuf-hivers');
+  const theme = tableSceneTheme('village-viking');
   const a = particleLayout(theme.particles, 1, 7);
   const b = particleLayout(theme.particles, 1, 7);
   assert.deepEqual(a, b, 'même ciel à chaque ouverture');

@@ -52,7 +52,6 @@ ombre portée sur la table et reflètent un environnement doux. Plateaux livrés
 | Erg du Sahara | lanterne (vraie lumière), gourde, galets, bol, corde |
 | Caravane de Gourara | tapis roulé (motif kilim), corde, compas de laiton à couvercle ouvert, outre |
 | Ruines de Tipaza | la pièce de monnaie et les quatre escargots (fûts, chapiteau, amphore et tessons restent peints) |
-| Fjord des Neuf Hivers | lanterne de fer, cor à boire, hache, corde, bâton de runes |
 | Désert de Verre | les cinq roses de verre, l'astrolabe de laiton, la corde et l'outre |
 | Abysses Phosphorescentes | la raie manta (battement d'ailes) et l'anneau de coquillages |
 | Îles Célestes | les douze sapins et les sept rochers des berges, la corde (berges de roche et lanterne restent peintes) |
@@ -69,7 +68,7 @@ inchangée.
   reste de la peinture est inchangé au pixel près. Deux procédés selon le fond :
   polygones manuels relevés sur la peinture, comblés par fusion de gradient sur
   le sable, la roche ou les volutes (`caravane-de-gourara.py`,
-  `fjord-des-neuf-hivers.py`, `desert-de-verre.py`) ; comblement par le pourtour
+  `desert-de-verre.py`) ; comblement par le pourtour
   quand le fond est lisse et l'objet petit ou opaque, sapins et coquillages
   compris (`ruines-de-tipaza.py`, `abysses-phosphorescentes.py`,
   `iles-celestes.py`).
