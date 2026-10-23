@@ -380,3 +380,31 @@ test('combat PvP en deux temps : déclaration publique, blocage adverse et ident
   assert.equal(rpgPvpCoteActif(recharge), 'joueur');
 });
 
+test('pose PvP : la case choisie voyage dans l’intention, une case occupée est refusée intacte', async () => {
+  const { cardById } = await import('../src/games/rpgCards.js');
+  const duel = partieNeuve(7);
+  if (duel.joueur.manaChoixEnAttente) {
+    rpgPvpAppliquer(duel, 'joueur', { type: 'choix-mana', couleur: duel.joueur.couleurs[0] });
+  }
+  const creature = DECK_A.find((id) => cardById(id)?.kind === 'creature' && !cardById(id)?.arrivee);
+  assert.ok(creature, 'le deck de départ contient une créature sans arrivée');
+  duel.joueur.main[0] = creature;
+  duel.joueur.main[1] = creature;
+  duel.joueur.mana = { braise: 8, eau: 8, sable: 8, neige: 8, tenebres: 8 };
+
+  const pose = rpgPvpAppliquer(duel, 'joueur', {
+    type: 'jouer-carte', carteId: creature, cibleDifferee: true, emplacement: 4,
+  });
+  assert.equal(pose.ok, true);
+  assert.equal(duel.joueur.creatures[0].emplacement, 4, 'la créature entre en jeu sur la case 5 désignée');
+
+  // La même case, une seconde fois : refus du moteur, état intact.
+  const avant = JSON.stringify(duel);
+  const refus = rpgPvpAppliquer(duel, 'joueur', {
+    type: 'jouer-carte', carteId: creature, cibleDifferee: true, emplacement: 4,
+  });
+  assert.equal(refus.ok, false);
+  assert.equal(refus.raison, 'emplacement');
+  assert.equal(JSON.stringify(duel), avant, 'une intention refusée ne change rien');
+});
+

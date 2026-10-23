@@ -483,6 +483,9 @@ function executerIntention(duel, cote, intention) {
         return rpgJouerCreature(duel, cote, intention.carteId, intention.cibleId ?? null, {
           cibleDifferee: Boolean(intention.cibleDifferee),
           sacrificeId: intention.sacrificeId ?? null,
+          // La case choisie sur la table du joueur : le moteur la revalide
+          // (libre, dans le champ) — une case occupée refuse l'intention.
+          emplacement: Number.isInteger(intention.emplacement) ? intention.emplacement : null,
         });
       }
       if (carte.kind === 'arme') return rpgJouerArme(duel, cote, intention.carteId, intention.cibleId ?? null);

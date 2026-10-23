@@ -70,6 +70,12 @@ function creerDuel(assert, props) {
     });
     await outils.attendre(460);   // le clic avalé après un appui long est passé
   };
+  // Jouer une créature = la cliquer, puis cliquer la case libre qui la reçoit.
+  outils.jouerCreature = async (id, message) => {
+    await outils.click(outils.hand(id), message);
+    const boutonCase = container.querySelector('.rpg-creature-slot--choix');
+    if (boutonCase) await outils.click(boutonCase, 'la première case libre reçoit la créature');
+  };
   outils.pileDe = (carte) => carte?.closest('.rpg-card-stack') ?? null;
   outils.compteur = (cote, id) => outils.pileDe(outils.camp(cote, id)[0])?.querySelector('.rpg-card-stack__count') ?? null;
   return outils;
@@ -97,7 +103,7 @@ async function scenarioMainEtChampJoueur(assert) {
   const duel = creerDuel(assert, {});
   const {
     container, root, click, attendre, mainSlots, hand, camp, pileDe, compteur, puces, pv, finDuTour,
-    appuiLong, fermerApercu,
+    appuiLong, fermerApercu, jouerCreature,
   } = duel;
   try {
     await act(async () => root.render(<RpgDuelPage
@@ -121,7 +127,7 @@ async function scenarioMainEtChampJoueur(assert) {
 
     // ── Tour 2 : deuxième terrain, premier Chien — pas encore de pile ──────
     await click(hand('desert'), 'poser le deuxième Désert');
-    await click(hand('chien-du-guet'), 'jouer le premier Chien du guet');
+    await jouerCreature('chien-du-guet', 'jouer le premier Chien du guet');
     assert.equal(camp('equipe', 'chien-du-guet').length, 1, 'une créature seule occupe un emplacement');
     assert.equal(pileDe(camp('equipe', 'chien-du-guet')[0]), null, 'une carte seule n’est pas une pile');
     assert.equal(compteur('equipe', 'chien-du-guet'), null, 'pas de compteur pour un exemplaire unique');
@@ -131,7 +137,7 @@ async function scenarioMainEtChampJoueur(assert) {
 
     // ── Tour 3 : le second Chien rejoint le premier, la pile apparaît ──────
     await click(hand('desert'), 'poser le troisième Désert');
-    await click(hand('chien-du-guet'), 'jouer le second Chien du guet');
+    await jouerCreature('chien-du-guet', 'jouer le second Chien du guet');
     assert.equal(camp('equipe', 'chien-du-guet').length, 1,
       'deux Chiens du guet identiques ne forment qu’une carte sur le champ');
     assert.equal(compteur('equipe', 'chien-du-guet').textContent, '×2', 'la pile affiche son compteur ×2');
@@ -202,7 +208,7 @@ async function scenarioMainEtChampJoueur(assert) {
 // blocage assigné depuis une pile repliée (la tête de pile est le bloqueur).
 async function scenarioChampAdverse(assert) {
   const duel = creerDuel(assert, {});
-  const { container, root, click, attendre, hand, camp, compteur, puces, pv } = duel;
+  const { container, root, click, attendre, hand, camp, compteur, puces, pv, jouerCreature } = duel;
   // Générateur déterministe mais varié : une constante figerait l'IA en défense.
   let graine = 7;
   const rng = () => { graine = (graine * 1103515245 + 12345) % 2147483648; return graine / 2147483648; };
@@ -238,14 +244,14 @@ async function scenarioChampAdverse(assert) {
     await finirLeTour();
     assert.equal(camp('ennemi', 'chien-du-guet').length, 0, 'le sorcier n’a rien posé au tour 1');
     await click(hand('desert'), 'poser le deuxième Désert');
-    await click(hand('chien-du-guet'), 'poser un premier Chien du guet');
+    await jouerCreature('chien-du-guet', 'poser un premier Chien du guet');
     await finirLeTour();
     assert.equal(camp('ennemi', 'chien-du-guet').length, 1, 'le sorcier aligne un Chien du guet');
     assert.equal(compteur('ennemi', 'chien-du-guet'), null, 'un exemplaire unique n’affiche pas de compteur');
 
     // ── Tour 3 : la pile du joueur, puis l'attaque adverse qui déplie ──────
     await click(hand('desert'), 'poser le troisième Désert');
-    await click(hand('chien-du-guet'), 'poser le second Chien du guet');
+    await jouerCreature('chien-du-guet', 'poser le second Chien du guet');
     assert.equal(camp('equipe', 'chien-du-guet').length, 1, 'les deux Chiens du joueur forment une pile');
     assert.equal(compteur('equipe', 'chien-du-guet').textContent, '×2', 'compteur ×2 côté joueur');
     await finirLeTour();
@@ -300,7 +306,7 @@ async function scenarioChampAdverse(assert) {
  */
 async function scenarioCreatureArmee(assert, disposition) {
   const duel = creerDuel(assert, {});
-  const { container, root, click, hand, camp, finDuTour, appuiLong, fermerApercu } = duel;
+  const { container, root, click, hand, camp, finDuTour, appuiLong, fermerApercu, jouerCreature } = duel;
   const survoler = async (element) => {
     await act(async () => element.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true, relatedTarget: null })));
   };
@@ -322,7 +328,7 @@ async function scenarioCreatureArmee(assert, disposition) {
     await click(hand('desert'), `[${disposition}] poser un Désert`);
     await finDuTour();
     await click(hand('desert'), `[${disposition}] poser le deuxième Désert`);
-    await click(hand('chien-du-guet'), `[${disposition}] jouer le Chien du guet`);
+    await jouerCreature('chien-du-guet', `[${disposition}] jouer le Chien du guet`);
     await finDuTour();
     await click(hand('desert'), `[${disposition}] poser le troisième Désert`);
 
