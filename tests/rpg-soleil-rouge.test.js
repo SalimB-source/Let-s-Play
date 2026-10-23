@@ -156,22 +156,22 @@ test('la Résonance samouraï se cumule dans les deux camps, sans toucher les au
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 3);
   for (const entite of samourais) assert.equal(entite.resonance, 3, entite.name);
   assert.equal(rpgResonanceEnJeu(duel, 'braise'), 0);
-  // Chaque Torii (2/2) reçoit les trois sources moins la sienne : +2/+2.
-  assert.deepEqual([ami.atk, ami.def], [4, 4]);
-  assert.deepEqual([adverse.atk, adverse.def], [4, 4]);
+  // Chaque Shogun (2/2) reçoit les trois sources, lui compris : +3/+3.
+  assert.deepEqual([ami.atk, ami.def], [5, 5]);
+  assert.deepEqual([adverse.atk, adverse.def], [5, 5]);
   assert.equal(tengu.resonance, 0, 'le Tengu n’est pas de type Samouraï');
   for (const entite of exclus) assert.equal(entite.resonance, 0, entite.name);
   assert.equal(neige.resonance, 0);
   const kagutsuchi = jouer(duel, 'sorcier', 'kagutsuchi-flamme-originelle');
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 3);
   for (const entite of samourais) assert.equal(entite.resonance, 3, entite.name);
-  assert.deepEqual([ami.atk, ami.def], [4, 4]);
-  assert.deepEqual([adverse.atk, adverse.def], [4, 4]);
+  assert.deepEqual([ami.atk, ami.def], [5, 5]);
+  assert.deepEqual([adverse.atk, adverse.def], [5, 5]);
   assert.equal(kagutsuchi.resonance, 0, 'le Kami n’est pas de type Samouraï');
   jouer(duel, 'joueur', 'valkyrie-au-corbeau');
   assert.equal(rpgResonanceEnJeu(duel, 'viking'), 0, 'la Valkyrie ne porte plus de Résonance viking');
   assert.equal(neige.resonance, 0, 'la Neige ne reçoit aucune Résonance dans ce duel');
-  assert.equal(ami.resonance, 2, 'le Torii ne compte jamais sa propre source');
+  assert.equal(ami.resonance, 3, 'le Shogun compte sa propre source');
   for (const entite of exclus) assert.equal(entite.resonance, 0, entite.name);
   assert.equal(rpgBonusResonance(duel, { kind: 'creature', element: 'neige', typeLine: 'Créature — Samouraï' }), 3, 'seule la tribu compte pour un Samouraï');
   assert.ok(duel.log.some((ligne) => ligne.startsWith('La Résonance samouraï')));
@@ -198,7 +198,7 @@ test('le renvoi d’une source retire sa Résonance, sans déclencher Honneur', 
   const cible = jouer(duel, 'sorcier', 'chien-du-guet');
   sort(duel, 'ressac', source.id);
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 1);
-  assert.deepEqual([ami.atk, ami.def], [2, 2], 'seul en jeu, le Torii ne se renforce pas lui-même');
+  assert.deepEqual([ami.atk, ami.def], [3, 3], 'seul en jeu, le Shogun se renforce lui-même');
   assert.equal(cible.def, 2);
   assert.ok(duel.sorcier.main.includes('tengu-du-mont-ardent'));
   assert.ok(!duel.log.some((ligne) => ligne.startsWith('Honneur')));
@@ -301,11 +301,12 @@ test('la mort d’une source retire la Résonance avant sa frappe d’Honneur', 
   const cible = jouer(duel, 'sorcier', 'seigneur-des-machoires');
   rpgBlesserCreature(duel, 'joueur', tengu.id, 20, 'eau');
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 1);
-  assert.deepEqual([ami.atk, ami.def], [2, 2], 'sans le Tengu, le Torii ne garde que son imprimé');
+  assert.deepEqual([ami.atk, ami.def], [3, 3], 'sans le Tengu, le Shogun garde sa propre Résonance');
   assert.equal(cible.def, 5, 'Honneur 1 du Tengu sur le colosse 6');
 });
 
 test('l’iaijutsu détruit sa cible et le serment expire à la fin du tour', () => {
+  assert.equal(cardById('frappe-iaijutsu').cost, 1);
   const duel = duelTest();
   const cible = jouer(duel, 'sorcier', 'chien-du-guet');
   sort(duel, 'frappe-iaijutsu', cible.id);
@@ -417,25 +418,26 @@ test('le Cavalier des deux sabres est mythique, rapide, samouraï et porte Honne
 });
 
 
-test('le Samouraï du torii renforce les autres Samouraïs, jamais lui-même, et retire son bonus en quittant le jeu', () => {
+test('le Shogun promu renforce tous les Samouraïs, lui compris, et retire son bonus en quittant le jeu', () => {
   const carte = cardById('samourai-du-torii');
   assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [4, 2, 2, 1]);
   assert.equal(carte.resonance, 1);
-  assert.equal(carte.resonanceExclutSource, true);
-  assert.match(carte.text, /toutes les autres créatures de type Samouraï/);
+  assert.equal(carte.name, 'Shogun promu');
+  assert.ok(!carte.resonanceExclutSource);
+  assert.match(carte.text, /toutes les créatures de type Samouraï/);
   const duel = duelTest();
   const cavalier = jouer(duel, 'joueur', 'cavalier-des-deux-sabres');
   const source = jouer(duel, 'sorcier', carte.id);
-  assert.deepEqual([source.atk, source.def], [2, 2], 'sa propre Résonance ne le renforce pas');
+  assert.deepEqual([source.atk, source.def], [3, 3], 'sa propre Résonance le renforce');
   assert.deepEqual([cavalier.atk, cavalier.def], [6, 5]);
-  // Deux toriis se renforcent l'un l'autre : chacun ne retire que sa source.
+  // Deux Shoguns cumulent les deux sources, eux compris.
   const second = jouer(duel, 'joueur', carte.id);
-  assert.deepEqual([second.atk, second.def], [3, 3]);
-  assert.deepEqual([source.atk, source.def], [3, 3]);
+  assert.deepEqual([second.atk, second.def], [4, 4]);
+  assert.deepEqual([source.atk, source.def], [4, 4]);
   assert.deepEqual([cavalier.atk, cavalier.def], [7, 6]);
   sort(duel, 'ressac', source.id);
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 1);
-  assert.deepEqual([second.atk, second.def], [2, 2], 'seul, il retombe à son imprimé');
+  assert.deepEqual([second.atk, second.def], [3, 3], 'seul, il conserve sa propre Résonance');
   assert.deepEqual([cavalier.atk, cavalier.def], [6, 5]);
 });
 
@@ -711,7 +713,7 @@ test('le jeton Samouraï reçoit la Résonance samouraï comme la bannière de s
   // bannière, pas la Résonance — mais les jetons, eux, sont des Samouraïs.
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 1);
   for (const jeton of jetons) assert.deepEqual([jeton.atk, jeton.def], [2, 2]);
-  assert.deepEqual([torii.atk, torii.def], [2, 2], 'le Torii ne profite pas de sa propre Résonance');
+  assert.deepEqual([torii.atk, torii.def], [3, 3], 'le Shogun profite de sa propre Résonance');
   assert.deepEqual([daimyo.atk, daimyo.def], [4, 5]);
   // En attaquant, le jeton gagne encore +1/+1 par bannière : 3/3.
   for (const jeton of jetons) jeton.ready = true;
@@ -800,9 +802,8 @@ test('le Kenshi de la forge est un 1/2 à 3 qui forge toutes les autres créatur
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 2, 'le Torii et le Tengu');
   assert.deepEqual([kenshi.atk, kenshi.def], [3, 4],
     'le Kenshi reçoit la Résonance mais pas sa propre forge');
-  // Le Torii : 2/2 d’imprimé, +1/+1 de la Résonance du Tengu (jamais la
-  // sienne), +1/+0 de la forge.
-  assert.deepEqual([torii.atk, torii.def], [4, 3]);
+  // Le Shogun : 2/2 imprimé, +2/+2 de Résonance, +1/+0 de forge.
+  assert.deepEqual([torii.atk, torii.def], [5, 4]);
   // Le rōnin adverse : 3/2, +2/+2 de Résonance (elle, est de table) — la forge
   // du Kenshi, elle, ne franchit pas la ligne du camp.
   assert.deepEqual([adverse.atk, adverse.def], [5, 4]);
@@ -854,14 +855,14 @@ test('la forge, la Résonance samouraï et la bannière se cumulent sans dérive
   // +1/+0 à toutes les autres créatures du camp, et la bannière attend l’attaque.
   assert.equal(rpgResonanceEnJeu(duel, 'samourai'), 1);
   assert.deepEqual([kenshi.atk, kenshi.def], [2, 3], 'le Kenshi reçoit la Résonance, pas sa forge');
-  assert.deepEqual([torii.atk, torii.def], [3, 2], 'le Torii reçoit la forge, pas sa propre Résonance');
+  assert.deepEqual([torii.atk, torii.def], [4, 3], 'le Shogun reçoit la forge et sa propre Résonance');
   assert.deepEqual([daimyo.atk, daimyo.def], [5, 5]);
   assert.deepEqual([jeton.atk, jeton.def], [3, 2]);
   // La table bouge encore (le jeton grandit à l’attaque) : la forge ne dérive pas.
   jeton.ready = true;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [jeton.id], { [jeton.id]: [] }).ok, true);
   assert.deepEqual([jeton.atk, jeton.def], [4, 3], 'bannière +1/+1 sur la forge et la Résonance');
-  assert.deepEqual([torii.atk, torii.def], [3, 2], 'les autres n’ont pas bougé');
+  assert.deepEqual([torii.atk, torii.def], [4, 3], 'les autres n’ont pas bougé');
   assert.deepEqual([daimyo.atk, daimyo.def], [5, 5]);
 });
 

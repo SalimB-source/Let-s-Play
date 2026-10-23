@@ -62,7 +62,7 @@ export const RPG_RECETTES_DECKS = {
   /**
    * Les Djinns font travailler les nouvelles règles de Braise : dégâts en
    * plusieurs vagues, effets à la mort et retour différé d'Anqa. Les guerriers
-   * au Honneur et le Samouraï du torii relient le nouveau lot du Soleil rouge
+   * au Honneur et le Shogun promu relient le nouveau lot du Soleil rouge
    * à l'ancien feu. Anqa est l'unique mythique de ce boîtier.
    */
   'cour-des-djinns': {

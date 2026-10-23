@@ -178,7 +178,7 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
   rpgOuvrirFenetreReponse(duel, 'joueur');
   assert.equal(rpgLancerAttaque(duel, 'joueur', ids, null, null, null, {}, { attaqueDeclaree: true }).ok, true);
   assert.ok(duel.sorcier.pv < pvAvant);
-  assert.deepEqual(duel.joueur.creatures.map((entite) => entite.atk), [3, 3, 5, 3, 3],
+  assert.deepEqual(duel.joueur.creatures.map((entite) => entite.atk), [3, 4, 5, 3, 3],
     'la Bannière grandit chaque Samouraï qui attaque');
 });
 

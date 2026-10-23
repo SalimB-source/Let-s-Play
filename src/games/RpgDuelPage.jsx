@@ -6548,7 +6548,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       observateur.disconnect();
       table.style.removeProperty('--rpg-plaque-droite');
     };
-  }, [essaiTactile]);
+  }, [essaiTactile, ecran, duel]);
   // Toucher : la barre de combat ferme la colonne de droite, juste au-dessus
   // de la main, et sa hauteur varie d'une à trois commandes empilées
   // (« Confirmer l'attaque », « Annuler l'attaque », « Résoudre le combat »…).
