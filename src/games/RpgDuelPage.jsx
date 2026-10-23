@@ -2508,12 +2508,6 @@ export function TableCard({
         <span className="rpg-card__frost-snow" />
         <span className="rpg-card__frost-shimmer" />
         <span className="rpg-card__frost-glow" />
-        <span className="rpg-card__frost-icicles">
-          <span className="rpg-card__frost-icicle" />
-          <span className="rpg-card__frost-icicle" />
-          <span className="rpg-card__frost-icicle" />
-          <span className="rpg-card__frost-icicle" />
-        </span>
       </span>}
       <CardElementBadge carte={carte} />
       {/* Les losanges de compteurs sont sous la couleur d'une carte mono,
