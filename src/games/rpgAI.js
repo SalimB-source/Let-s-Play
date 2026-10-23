@@ -220,6 +220,7 @@ export function valeurEntite(entite) {
     + Math.max(0, entite?.pv ?? entite?.def ?? 0) * 1.1
     + (entite?.bouclier ?? 0) * 1.1
     + (entite?.esquive ? 1.6 : 0)
+    + (entite?.contreAttaque || carte.contreAttaque ? 1.8 : 0)
     + Math.max(0, carte.cost ?? 0) * 0.4;
   if (entite?.envol) valeur += 2.5;
   if (entite?.coupRapide) valeur += 2;
@@ -1150,6 +1151,7 @@ function entiteDeSecours(carte, duel = null) {
     pvMax: (carte.def ?? 0) + resonance,
     bouclier: 0,
     esquive: Boolean(carte.esquive),
+    contreAttaque: Boolean(carte.contreAttaque),
     protection: null,
   };
 }

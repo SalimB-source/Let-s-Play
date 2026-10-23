@@ -1190,6 +1190,10 @@ function creerEntiteCreature(carte) {
     auraAmaniBonus: 0,
     boualemContresortDisponible: carte.id === 'boualem',
     esquive: Boolean(carte.esquive),
+    // Contre-attaque (Tojiro, le pourfendeur) : la créature rend chaque coup
+    // porté CONTRE elle — Coup rapide, capacité qui la cible, sort qui la
+    // désigne — même quand son Esquive a annulé les blessures.
+    contreAttaque: Boolean(carte.contreAttaque),
     // Le surcoût du porteur d’une arme (le Grappin d’abordage) : le mana déjà
     // payé ne change pas, mais le **coût que vaut la créature en jeu** grimpe
     // tant que l’arme tient (voir `rpgCoutEntite`) — seuil d’Abordage à
@@ -1677,10 +1681,67 @@ function tenterEsquive(duel, entite, sourceType) {
   return reussie;
 }
 
+/**
+ * La Contre-attaque (Tojiro, le pourfendeur) : une riposte IMMÉDIATE, sans
+ * jet de dés. Elle frappe la créature qui a porté le coup (un Coup rapide, une
+ * capacité qui le ciblait) ou, pour un sort, le sorcier qui l'a lancé — la
+ * magie se paie sur le visage du lanceur.
+ *
+ * Elle passe par `rpgBlesserCreature` avec le type « capacite » : les
+ * capacités ne s'esquivent pas, une riposte ne peut donc jamais être renvoyée
+ * en boucle par une Esquive adverse. Une créature déjà tombée ne riposte pas ;
+ * une Esquive réussie, elle, n'empêche rien — c'est tout l'intérêt de la carte.
+ *
+ * @param {object} duel partie en cours
+ * @param {object} defenseur entité qui porte Contre-attaque
+ * @param {{ type: 'creature'|'sorcier', cote: string, entiteId?: string }} source
+ * @returns {boolean} vrai si une riposte est partie
+ */
+function riposteDeContreAttaque(duel, defenseur, source) {
+  if (!defenseur?.contreAttaque || !(defenseur.pv > 0)) return false;
+  const force = Math.max(0, Number(defenseur.atk) || 0);
+  if (!force) return false;
+  const carte = duelCardById(defenseur.carteId);
+  if (source?.type === 'sorcier') {
+    if (!duel[source.cote]) return false;
+    duel.log.push(`Contre-attaque : ${defenseur.name} renvoie le sort au sorcier ${source.cote === 'joueur' ? 'joueur' : 'ennemi'} — ${force} dégât${force > 1 ? 's' : ''}.`);
+    rpgInfligerSorcier(duel, source.cote, force);
+    return true;
+  }
+  const attaquant = duel[source?.cote]?.creatures.find((entite) => entite.id === source?.entiteId);
+  if (!attaquant) return false;
+  duel.log.push(`Contre-attaque : ${defenseur.name} rend son coup à ${attaquant.name} — ${force} dégât${force > 1 ? 's' : ''}.`);
+  rpgBlesserCreature(duel, source.cote, attaquant.id, force, cardColors(carte), null, 'capacite', defenseur.carteId);
+  return true;
+}
+
+/**
+ * La Contre-attaque d'un effet : la cible adverse désignée par une capacité
+ * riposte sur la créature source, celle d'un sort sur le sorcier qui l'a
+ * lancé. Les effets de zone (`cible: 'toutes-creatures'`) ne désignent
+ * personne : ils ne déclenchent rien.
+ */
+function riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType) {
+  if (!cibleId || effet?.cible !== 'creature') return false;
+  if (sourceType !== 'capacite' && sourceType !== 'magie') return false;
+  const defenseur = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId);
+  if (!defenseur?.contreAttaque) return false;
+  return riposteDeContreAttaque(duel, defenseur, sourceType === 'magie'
+    ? { type: 'sorcier', cote }
+    : { type: 'creature', cote, entiteId: sauf });
+}
+
 /** Applique les blessures d’un effet de combat simultanément avant de résoudre
- *  les capacités de destruction des créatures. */
+ *  les capacités de destruction des créatures.
+ *
+ *  Rend les Esquives réussies contre des ATTAQUES (hors Coup rapide, traité
+ *  par l'appelant) : l'appelant y lit les Contre-attaques à déclencher une
+ *  fois l'échange terminé. */
 function appliquerDegatsDeCombatSimultanes(duel, coups) {
   const blessures = new Map();
+  // Les Esquives réussies contre une attaque : l'appelant en tire les
+  // Contre-attaques (Tojiro riposte même quand le coup n'a pas porté).
+  const esquivesContre = [];
   for (const [indexCoup, coup] of coups.entries()) {
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
@@ -1695,7 +1756,19 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       if (!(entite.bouclier > 0)) entite.bouclierEpuise = true;
       continue;
     }
-    if (tenterEsquive(duel, entite, coup.sourceType)) continue;
+    if (tenterEsquive(duel, entite, coup.sourceType)) {
+      // Une attaque esquivée reste une attaque portée : Contre-attaque se
+      // déclenche. Les Coup rapide sont déjà comptés par `rpgLancerAttaque`
+      // (`rapide`), pour ne pas riposter deux fois.
+      if (!coup.rapide && coup.sourceType === 'attaque' && coup.sourceCote && coup.sourceId) {
+        esquivesContre.push({
+          cote: coup.cote,
+          entiteId: entite.id,
+          source: { type: 'creature', cote: coup.sourceCote, entiteId: coup.sourceId },
+        });
+      }
+      continue;
+    }
     const degats = Math.max(0, Number(coup.amount) || 0);
     if (degats <= 0) continue;
     const cle = `${coup.cote}:${entite.id}`;
@@ -1849,6 +1922,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
+  return esquivesContre;
 }
 
 /** Dégâts infligés à la créature que la carte combat, s’il y a lieu. */
@@ -2330,7 +2404,7 @@ function transfertVie(duel, coteSource, montant) {
 
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut
  *  l’entité source quand l’effet ne doit pas se viser elle-même. */
-function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
+function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
   presenterEffet(duel, cote, sourceCarteId);
   const adv = autre(cote);
   // Boualem ne contre que l'effet qui le **cible vraiment** : un effet de zone,
@@ -3158,6 +3232,18 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     }
     default:
   }
+}
+
+/**
+ * L'entrée unique des effets du duel. Elle applique l'effet, puis laisse la
+ * Contre-attaque répondre si l'effet **désignait** une créature adverse :
+ * une capacité se paie sur la créature qui la porte, un sort sur le sorcier
+ * qui l'a lancé. Un effet esquivé par la cible déclenche la riposte comme un
+ * effet encaissé — l'Esquive ne rend pas le coup moins vif.
+ */
+function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
+  appliquerEffet(duel, cote, effet, cibleId, sauf, sourceElement, sourceType, sourceCarteId);
+  riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType);
 }
 
 /** Une arme attachée quitte le jeu avec son porteur, sans revenir en main. */
@@ -4263,7 +4349,13 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
       sourceCote: autre(cote), sourceId: cible.id,
     });
   }
-  appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
+  const esquivesCombat = appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
+  // Contre-attaque : le duel de créatures rend les coups esquivés.
+  for (const esquive of esquivesCombat ?? []) {
+    const defenseur = duel[esquive.cote]?.creatures.find((entite) => entite.id === esquive.entiteId);
+    if (!defenseur) continue;
+    riposteDeContreAttaque(duel, defenseur, esquive.source);
+  }
   rpgActionsEtat(duel);
   return { ok: true };
 }
@@ -4851,6 +4943,9 @@ export function rpgLancerAttaque(
       sourceElement: cardColors(duelCardById(attaquant.carteId)),
       sourceType: 'attaque',
       sourceCote: cote, sourceId: attaquant.id,
+      // Marque la frappe rapide : sa Contre-attaque est résolue une seule
+      // fois, juste après les blessures de la frappe.
+      rapide: true,
     });
   }
   // Les attaquants dont la frappe a trouvé sa cible : leur attaque s'arrête sur
@@ -5056,7 +5151,14 @@ export function rpgLancerAttaque(
   const coupsNormaux = degatsCombat
     .filter((coup) => duel[coup.coteSource].creatures.some((entite) => entite.id === coup.sourceId))
     .map(({ coteSource, sourceId, ...coup }) => ({ ...coup, sourceCote: coteSource, sourceId }));
-  appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
+  const esquivesCombat = appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
+  // Contre-attaque : une attaque esquivée pendant l'échange est rendue à son
+  // auteur, une seule fois par défenseur, après les blessures simultanées.
+  for (const esquive of esquivesCombat ?? []) {
+    const defenseur = duel[esquive.cote]?.creatures.find((entite) => entite.id === esquive.entiteId);
+    if (!defenseur) continue;
+    riposteDeContreAttaque(duel, defenseur, esquive.source);
+  }
   for (const coup of resume.coupsRapides) {
     duel.log.push(coup.annule
       ? `${coup.attaquant} ne trouve plus sa cible : son Coup rapide est annulé.`
@@ -5066,6 +5168,19 @@ export function rpgLancerAttaque(
   }
   for (const traque of traquesCombat) {
     duel.log.push(`Traque : ${traque.attaquant} gagne +${traque.bonus}/+0 contre ${traque.cible} pour ce combat.`);
+  }
+  // Contre-attaque : la cible d'un Coup rapide rend le coup, qu'elle ait
+  // encaissé la frappe ou qu'elle l'ait esquivée — seule une frappe RATÉE ne
+  // lui laisse rien à rendre. La cible tombée sous le coup, elle, ne riposte
+  // plus (`riposteDeContreAttaque` lit ses PV). La riposte est résolue après
+  // le journal de la frappe rapide, pour que le récit se lise dans l'ordre.
+  for (const frappe of frappesRapides) {
+    if (frappe.annule || frappe.rate) continue;
+    const defenseur = duel[adv].creatures.find((entite) => entite.id === frappe.cibleId);
+    if (!defenseur) continue;
+    riposteDeContreAttaque(duel, defenseur, {
+      type: 'creature', cote, entiteId: frappe.attaquantId,
+    });
   }
   duel.log.push(resume.paires.length || resume.coupsRapides.length
     ? `Combat : ${attaquants.length} attaquant(s), ${resume.paires.length} bloqué(s), ${resume.frappeSorcier} dégâts directs.`
