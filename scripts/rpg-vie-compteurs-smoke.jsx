@@ -2,7 +2,7 @@
 //
 // Ce que l'on vérifie, et qui ne se lit pas dans le code : la plaque de vie
 // garde la valeur vraie même pendant le roulage, la jauge de sable suit la part
-// de vie, la réserve s'ouvre au-dessus du maximum d'origine, les grains
+// de vie de base, les PV bonus gardent le rond plein, les grains
 // tombent à chaque perte, et le losange des compteurs passe par la pose, la
 // perte, la veille de la dernière Heure — puis se tait en mouvement réduit.
 import React, { act } from 'react';
@@ -81,19 +81,18 @@ export async function checkRpgVieCompteurs(assert) {
     assert.equal(valeur()?.textContent, '22', 'et le chiffre vrai reste seul, intact');
     assert.equal(plaque()?.classList.contains('is-roulage'), false);
 
-    // ── 3. La réserve : la bande d’or s’ouvre au-dessus du maximum d’origine ──
-    await rendre(<PlaqueVie pv={28} pvMax={29} base={25} />);
-    assert.equal(valeur()?.textContent, '28');
-    assert.equal(conteneur.querySelector('.rpg-wizard-plate__hp-max')?.textContent, '/29',
-      'la plaque annonce son maximum : la réserve se lit');
-    assert.ok(conteneur.querySelector('.rpg-jauge-vie__reserve'),
-      'la bande d’or apparaît au-dessus du maximum d’origine');
-    assert.ok(conteneur.querySelector('.rpg-jauge-vie__trait'),
-      'le trait du maximum d’origine marque le début de la réserve');
-    assert.equal(plaque()?.style.getPropertyValue('--rpg-jauge-base'), (25 / 29).toFixed(4),
-      'le trait se place au maximum d’origine, rapporté au maximum tenu');
-    assert.equal(plaque()?.style.getPropertyValue('--rpg-jauge-reserve'), (3 / 29).toFixed(4),
-      'et la bande d’or couvre exactement la vie tenue au-dessus');
+    // ── 3. Les bonus ne changent ni le plein ni la structure du rond ───────
+    for (const [pv, pvMax, attendu] of [[28, 29, '1.0000'], [50, 50, '1.0000'],
+      [25, 50, '1.0000'], [20, 50, '0.8000']]) {
+      await rendre(<PlaqueVie pv={pv} pvMax={pvMax} base={25} />);
+      assert.equal(valeur()?.textContent, String(pv), 'les PV réels restent lisibles');
+      assert.equal(part(), attendu, 'plein dès 25 PV, quel que soit le record');
+      assert.equal(conteneur.querySelector('.rpg-wizard-plate__hp-max'), null,
+        'aucun maximum ajouté à côté du rond');
+      assert.equal(conteneur.querySelector('.rpg-jauge-vie__reserve'), null,
+        'pas de bande qui transforme le visuel plein');
+      assert.equal(conteneur.querySelector('.rpg-jauge-vie__trait'), null);
+    }
 
     // ── 4. Le seuil : à 5 PV, la jauge veille ───────────────────────────────
     await rendre(<PlaqueVie pv={4} pvMax={25} base={25} />);
@@ -165,4 +164,17 @@ export async function checkRpgVieCompteurs(assert) {
     conteneurReduit?.remove();
     conteneur.remove();
   }
+}
+
+/** Plaques statiques pour vérifier leur géométrie dans un vrai navigateur. */
+export async function plaquesViePourLayout() {
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  return renderToStaticMarkup(<>
+    {[['25', 25, 25], ['bonus', 30, 50], ['record', 25, 50], ['100', 100, 100], ['blesse', 20, 50]]
+      .flatMap(([id, pv, pvMax]) => ['joueur', 'ennemi'].map(camp => (
+        <div key={`${id}-${camp}`} data-cas={`${id}-${camp}`} className={`rpg-wizard-plate rpg-wizard-plate--${camp}`}>
+          <PlaqueVie pv={pv} pvMax={pvMax} base={25} />
+        </div>
+      )))}
+  </>);
 }

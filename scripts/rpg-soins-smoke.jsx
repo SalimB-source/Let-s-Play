@@ -170,8 +170,8 @@ async function scenarioDuel(assert, sons) {
     await act(async () => { await wait(400); });
     assert.equal(pvJoueur(), RPG_PV_JOUEUR + 4, 'pleine vie, la Porteuse (+3) fait grimper la vie : 26 → 29');
     assert.equal(plaqueJoueur().dataset.soin, '3', 'la plaque note le gain de la Porteuse');
-    assert.equal(plaqueJoueur().querySelector('.rpg-wizard-plate__hp-max')?.textContent, '/29',
-      'la plaque annonce le maximum : la réserve se lit');
+    assert.equal(plaqueJoueur().querySelector('.rpg-wizard-plate__hp-max'), null,
+      'les PV bonus restent dans le chiffre, sans ajouter de maximum au rond');
     assert.ok(sons.includes('soin_vie'), 'le soin se fait entendre comme les autres');
   } finally {
     await act(async () => root.unmount());

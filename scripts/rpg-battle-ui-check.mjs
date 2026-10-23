@@ -483,7 +483,7 @@ assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \{\s*--rpg-acti
   'rail et barre de combat partagent la même colonne de droite, sous les mêmes repères');
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\):has\(\.rpg-annonce-sort__compact\) \{\s*--rpg-actions-reserve:\s*204px;\s*\}/,
   'la fenêtre de réponse à une magie annoncée relève le rail de sa hauteur');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \{\s*top:\s*auto;\s*bottom:\s*calc\(var\(--rpg-actions-bottom\) \+ var\(--rpg-actions-reserve\)\);\s*height:\s*max-content;\s*margin-block:\s*0;\s*transform:\s*none;\s*\}/,
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \{\s*top:\s*auto;\s*bottom:\s*calc\(var\(--rpg-actions-bottom\) \+ max\(var\(--rpg-actions-reserve\), calc\(var\(--rpg-controles-h, 0px\) \+ 12px\)\)\);\s*height:\s*max-content;\s*margin-block:\s*0;\s*transform:\s*none;\s*\}/,
   'sur PC, le rail s’arrête juste au-dessus de la barre de combat');
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-bottombar \{\s*right:\s*max\(16px, env\(safe-area-inset-right, 0px\)\);\s*bottom:\s*var\(--rpg-actions-bottom\);\s*width:\s*var\(--rpg-actions-column\);\s*gap:\s*8px;\s*\}/,
   'les commandes de combat rejoignent la colonne des actions, juste au-dessus de la main du joueur');

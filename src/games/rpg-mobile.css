@@ -427,8 +427,8 @@
 }
 .rpg-battle--touch .rpg-wizard-plate__identity small,
 .rpg-battle--touch .rpg-wizard-plate__sable { display: none; }
-/* La vie : un nombre franc, à l'échelle de la carte (0,32), dans la goutte de
-   sang qui s'élargit si la réserve s'affiche (« 25/34 »). */
+/* La vie : un nombre franc, à l'échelle de la carte (0,32), dans un rond
+   de diamètre constant, y compris au-delà de 25 PV. */
 .rpg-battle--touch .rpg-wizard-plate__pv {
   grid-column: 3;
   grid-row: 1 / -1;

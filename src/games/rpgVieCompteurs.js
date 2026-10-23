@@ -4,12 +4,10 @@
  * Deux animations livrées ensemble parce qu'elles disent la même chose : ce
  * qui compte dans une partie **coule comme du sable**.
  *
- *  - **La vie** est une jauge de sable. La part remplie se lit sur `pv / pvMax`,
- *    le maximum d'origine (`base`) marque le trait de la réserve, et toute vie
- *    tenue au-dessus de ce trait est de l'or. Le nombre, lui, roule jusqu'à sa
- *    nouvelle valeur au lieu de sauter — le roulage est **décoratif** : le
- *    texte lisible par les lecteurs d'écran et par les tests reste la valeur
- *    vraie, l'overlay qui compte est `aria-hidden` (voir `RpgVieCompteurs.jsx`).
+ *  - **La vie** est une jauge de sable, pleine à la vie de base (25 PV).
+ *    Les PV bonus restent dans le chiffre, sans agrandir ni vider la jauge.
+ *    Le nombre roule jusqu'à sa nouvelle valeur ; ce roulage est décoratif,
+ *    le texte accessible reste la valeur vraie (voir `RpgVieCompteurs.jsx`).
  *  - **Les compteurs** posés sur les cartes (les Heures d'un effet, le sable
  *    d'une arme) se vident d'un grain : une variation de valeur allume un geste
  *    court, et la **dernière Heure** se met à veiller — c'est le moment où le
@@ -81,23 +79,18 @@ export function valeurRouleeVie(depart, arrivee, t) {
 /**
  * L'état d'une jauge de vie, prêt pour le CSS.
  *
- * - `part` : la fraction remplie, `pv / pvMax` borné à [0, 1] ;
- * - `basePart` : le maximum d'origine (25 PV pour un sorcier) rapporté au même
- *   axe — c'est le trait sous lequel la réserve commence ;
- * - `reserve` : la hauteur de la bande dorée, en fraction de la jauge. Nulle
- *   tant que la vie ne dépasse pas le maximum d'origine ;
+ * - `part` : `pv / base` borné à [0, 1], indépendamment du record `pvMax` ;
+ * - `basePart` / `reserve` : repères CSS conservés à 1 / 0 : aucun bonus
+ *   ne transforme le visuel plein en une nouvelle réserve ;
  * - `critique` : la vie est au seuil ou en dessous ; la jauge veille.
  */
-export function etatJaugeVie({ pv, pvMax, base } = {}) {
+export function etatJaugeVie({ pv, base = 25 } = {}) {
   const vie = Math.max(0, nombre(pv));
-  const maximum = Math.max(1, nombre(pvMax), vie);
-  const origine = Math.max(0, Math.min(nombre(base, maximum), maximum));
-  const part = borne(vie / maximum, 0, 1);
-  const basePart = borne(origine / maximum, 0, 1);
+  const origine = Math.max(1, nombre(base, 25));
   return {
-    part,
-    basePart,
-    reserve: Math.max(0, part - basePart),
+    part: borne(vie / origine, 0, 1),
+    basePart: 1,
+    reserve: 0,
     critique: vie <= RPG_VIE_SEUIL_CRITIQUE,
     vide: vie <= 0,
   };

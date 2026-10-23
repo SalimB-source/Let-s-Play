@@ -12,10 +12,10 @@
  * s'ajoute :
  *
  * - une **nappe de sable** derrière le chiffre, dont la hauteur suit
- *   `pv / pvMax` : la vie qui baisse vide le verre, la vie qui monte le
+ *   `min(pv / base, 1)` : la vie qui baisse vide le verre, la vie qui monte le
  *   remplit ;
- * - une **bande d'or** au-dessus du maximum d'origine (25 PV) : la réserve de
- *   vie, celle que les soins peuvent ouvrir, se lit sans lire `/29` ;
+ * - au-dessus de la vie de base (25 PV), le rond reste plein et garde son
+ *   diamètre ; seul le chiffre affiche les PV bonus ;
  * - un **roulage du nombre** : le chiffre compte jusqu'à sa nouvelle valeur
  *   quand on encaisse ou qu'on regagne des PV ;
  * - **six grains** qui quittent la plaque à chaque perte, et des variantes
@@ -180,10 +180,10 @@ function useValeurRoulee(valeur, reduit) {
 }
 
 /**
- * La plaque de vie d'un camp — le chiffre, sa réserve et sa jauge de sable.
+ * La plaque de vie d'un camp — le chiffre et sa jauge de sable.
  *
- * `base` est le maximum d'origine du camp (25 PV) : au-delà, la vie tenue est
- * de la réserve, et la plaque affiche `/{pvMax}` comme avant.
+ * `base` est le seuil du rond plein (25 PV). Le record `pvMax` n'en change
+ * ni le remplissage ni le diamètre, et n'est pas ajouté au chiffre.
  */
 export function PlaqueVie({ pv, pvMax, bouclier = 0, soin = null, base = 25 }) {
   const reduit = useMouvementReduit();
@@ -241,7 +241,6 @@ export function PlaqueVie({ pv, pvMax, bouclier = 0, soin = null, base = 25 }) {
       </span>
       <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
       <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
-      {pvMax > base && <span className="rpg-wizard-plate__hp-max">/{pvMax}</span>}
       {bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {bouclier}</span>}
       {soin && <span key={soin.token} className="rpg-soin-montant" aria-hidden="true">+{soin.montant}</span>}
     </span>

@@ -363,7 +363,7 @@
 
 /* ══ Compatibilité mode mana essai : le rond extérieur devient transparent,
    le rond intérieur porte le visuel et le masque ──────────────────────── */
-.rpg-battle[data-mode-mana=\"essai\"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv.rpg-jauge-vie {
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv.rpg-jauge-vie {
   background: transparent;
   box-shadow: none;
   border-radius: 0;
@@ -373,7 +373,7 @@
   width: auto;
   height: auto;
 }
-.rpg-battle[data-mode-mana=\"essai\"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-jauge-vie__rond {
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-jauge-vie__rond {
   width: clamp(28px, calc(var(--duel-card) * .62), 46px);
   height: clamp(28px, calc(var(--duel-card) * .62), 46px);
 }

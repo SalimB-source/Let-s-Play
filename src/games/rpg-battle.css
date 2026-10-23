@@ -7809,7 +7809,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      survolée (soulevée d'une tête) ne passe jamais dessous, assez basse pour
      rester sous le pouce. */
   --rpg-actions-bottom: 216px;
-  /* Hauteur de la barre de combat sous le rail, dans son cas courant : la
+  /* Réserve minimale (la hauteur réelle mesurée prend le relais si la barre
+     grandit, notamment avec les raccourcis clavier ou un texte sur deux lignes).
+     Hauteur de la barre de combat sous le rail, dans son cas courant : la
      commande principale (58), l'air entre les deux (8) et « Annuler l'attaque »
      (46), plus 12 px de respiration — le rail s'arrête juste au-dessus des deux
      boutons. */
@@ -7822,7 +7824,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail {
   top: auto;
-  bottom: calc(var(--rpg-actions-bottom) + var(--rpg-actions-reserve));
+  bottom: calc(var(--rpg-actions-bottom) + max(var(--rpg-actions-reserve), calc(var(--rpg-controles-h, 0px) + 12px)));
   height: max-content;
   margin-block: 0;
   transform: none;
