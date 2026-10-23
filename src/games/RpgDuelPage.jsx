@@ -4432,7 +4432,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <option value="tous">Tous les types</option>
                   <option value="creature">Créatures</option>
                   <option value="hero">Héros</option>
-                  <option value="terrain">Terrains</option>
                   <option value="site">Sites</option>
                   <option value="magie">Magies</option>
                   <option value="arme">Armes</option>

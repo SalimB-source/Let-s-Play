@@ -82,7 +82,7 @@ export const RPG_MANA_ESSAI_DECKS = Object.freeze([
       ...copies('ureus-du-seuil', 2), ...copies('momie-de-lin', 2),
       ...copies('ibis-des-comptes', 2),
       'khopesh-d-or', ...copies('le-poids', 2),
-      'celle-qui-pese', 'les-feuillets', 'la-grande-pesee',
+      'celle-qui-pese', 'les-feuillets', 'la-grande-pesee', 'la-derniere-pesee',
       'la-devoreuse', 'celui-qui-juge',
     ],
   },

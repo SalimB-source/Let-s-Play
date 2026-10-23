@@ -6,8 +6,8 @@ import { JSDOM } from 'jsdom';
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 // La magie jouée n'ouvre plus d'aperçu plein cadre : plus de couche, plus de
-// voile, plus de carte centrale. Sa fiche compacte vit dans le flux des piles
-// du joueur et se pose juste au-dessus d'elles — la table reste nette.
+// voile. Sa fiche compacte vit dans un volet central posé au-dessus des piles
+// (`.rpg-spell-played-stack`) — la table reste nette.
 assert.doesNotMatch(battleCss, /\.rpg-spell-preview-layer|\.rpg-preview-backdrop|is-spell-preview/,
   'ni couche d’aperçu, ni voile, ni carte centrale pour un sort joué');
 assert.doesNotMatch(battlePage, /apercuMagie|spellPlayed|rpg-spell-preview-layer/,
@@ -16,14 +16,16 @@ assert.match(battlePage, /data-creature-en-cale=\{prisonniereCarte\.id\}[\s\S]*?
   'la créature capturée par Abordage apparaît en petite carte dans les détails');
 assert.doesNotMatch(battlePage, /rpg-hover-card-preview__face--prisonniere|rpg-hover-card-preview__prison-nom|rpg-hover-card-preview__prison-chaine/,
   'la captive n’est plus empilée en grand sur la face de la créature avec Abordage');
-assert.match(battleCss, /\.rpg-spell-played\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*calc\(100% \+ 10px\);[^}]*left:\s*0;[^}]*grid-template-columns:\s*58px minmax\(0, 1fr\);/s,
-  'la fiche du sort se pose au-dessus de ses piles, petite carte à gauche et texte à côté');
+assert.match(battleCss, /\.rpg-spell-played-stack\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*47;/s,
+  'le volet du sort se pose au-dessus des piles');
+assert.match(battleCss, /\.rpg-spell-played\s*\{[^}]*grid-template-columns:\s*58px minmax\(0, 1fr\);/s,
+  'la fiche du sort : petite carte à gauche et texte à côté');
 assert.match(battleCss, /\.rpg-spell-played\s*\{[^}]*width:\s*min\(360px, calc\(100vw - 40px\)\);/s,
   'sa largeur se mesure au viewport, pas à la largeur des piles qui la portent');
 assert.match(battleCss, /\.rpg-spell-played\s*\{[^}]*pointer-events:\s*none;/s,
   'la fiche ne capte aucun geste : la table reste jouable dessous');
-assert.match(battlePage, /<div className="rpg-card-piles rpg-card-piles--player" aria-label="Vos zones de cartes">\s*\{[^}]*\}\s*\{sortJoue && <SpellAnnouncement annonce=\{sortJoue\} \/>\}/s,
-  'la fiche est rendue dans les piles du joueur : elle suit le cimetière et le paquet à tous les formats');
+assert.match(battlePage, /<div className="rpg-spell-played-stack">\s*\{sortJoueSorcier && <SpellAnnouncement annonce=\{sortJoueSorcier\} camp="sorcier" \/>\}\s*\{sortJoue && <SpellAnnouncement annonce=\{sortJoue\} \/>\}/s,
+  'la fiche est rendue dans le volet central : elle couvre les deux camps, quelles que soient les piles');
 assert.match(battlePage, /\{apercuSurvol && !mulligan && !apercuAnnonceOuvert && \(/,
   'le survol garde ses aperçus, sans exclusivité à céder à un sort joué');
 assert.match(battleCss, /\.rpg-card-peek\s*\{[^}]*position:\s*fixed;[^}]*isolation:\s*isolate;/s,
