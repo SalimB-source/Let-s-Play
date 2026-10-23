@@ -347,12 +347,13 @@ test('les feux de kitsune coûtent 5 et infligent 4 blessures à une créature c
 });
 
 
-test('les quinze illustrations du set et leurs refontes ont une version de cache', () => {
+test('les seize illustrations du set et leurs refontes ont une version de cache', () => {
   const page = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
     const versionsSpecifiques = {
       'susanoo': 'susanoo-kaiga-couleurs-v1',
       'orochi': 'orochi-kaiga-vert-rouge-v2',
+      'tojiro-le-pourfendeur': 'tojiro-photorealiste-v1',
       'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
       'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
       'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
