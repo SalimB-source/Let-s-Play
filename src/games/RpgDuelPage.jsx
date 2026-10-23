@@ -3003,13 +3003,14 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       )}
     </>
   );
-  // L'aperçu rapide — le survol à la souris comme l'appui long au doigt — ne
-  // montre plus l'illustration de la carte : seul l'encadré de texte (coût,
-  // mots-clés, effets) s'affiche. Exception : une Furie déclenchée a changé
-  // de peinture, et ce changement doit se voir dès la preview — sa face
-  // revient donc, comme sur la fiche. La fiche du catalogue, l'annonce et
-  // les présentations centrées (magie jouée, effet activé) gardent la leur.
-  const estApercuRapide = (variante === '' || variante === 'appui-long') && !estEnFurie;
+  // Le survol à la souris reste un aperçu « texte-seul » : seul l'encadré de
+  // texte (coût, mots-clés, effets) s'affiche, compact, sous le curseur.
+  // L'appui long au doigt, lui, montre la carte entière — sa face illustrée
+  // comprise, comme la fiche — son volet sombre isolant déjà la lecture du
+  // plateau. Une Furie déclenchée a changé de peinture, et ce changement se
+  // voit dès la preview, où qu'elle s'ouvre. La fiche du catalogue, l'annonce
+  // et les présentations centrées (magie jouée, effet activé) gardent la leur.
+  const estApercuRapide = variante === '' && !estEnFurie;
   // L'Abordage se lit dans les détails : la créature captive est montrée en
   // vignette, comme une arme portée, sans doubler la face principale.
   const face = (
@@ -3064,10 +3065,10 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   );
 }
 
-/** L'aperçu au doigt : une seconde d'appui sur une carte ouvre le même contenu
- * que le survol de la souris, posé sur un volet sombre qui l'isole du plateau.
- * N'importe quel toucher — le volet ou le bouton — le referme. L'appui long ne
- * joue jamais la carte : c'est une consultation, pas une action. */
+/** L'aperçu au doigt : une seconde d'appui sur une carte la montre entière —
+ * face illustrée comprise, comme la fiche — sur un volet sombre qui l'isole du
+ * plateau. N'importe quel toucher — le volet ou le bouton — le referme. L'appui
+ * long ne joue jamais la carte : c'est une consultation, pas une action. */
 function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], onFermer }) {
   const boutonFermerRef = useRef(null);
   const [coteOppose, setCoteOppose] = useState(null);

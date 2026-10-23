@@ -458,9 +458,16 @@ export async function checkRpgPreviewActions(assert) {
       [...apercuAppui.querySelectorAll('.rpg-hover-card-preview__rules > span')].map((node) => node.textContent),
       lignesAttendues,
       'les effets de la carte tiennent dans l’aperçu, un par ligne');
+    // L'aperçu au doigt montre la carte elle-même : sa face illustrée ouvre le
+    // volet — cadre de famille, coût, statistiques imprimées — comme la fiche.
+    const faceAppui = apercuAppui.querySelector('.rpg-hover-card-preview__face');
+    assert.ok(faceAppui, 'l’aperçu au doigt montre la face de la carte');
+    assert.match(faceAppui.querySelector('img')?.getAttribute('src') ?? '', /cards\/.+\.jpg/,
+      'et son illustration, en grand');
     if (attendue.kind === 'creature' || attendue.kind === 'hero') {
-      // L'aperçu rapide est « texte-seul » : plus de face d'illustration, les
-      // statistiques se lisent dans le libellé du volet.
+      // Les statistiques se lisent sur la face imprimée et dans le libellé.
+      assert.ok(faceAppui.querySelector('.rpg-card__stat--atk .rpg-stat-value'),
+        'la face porte les plaques d’attaque et de défense');
       assert.ok(apercuAppui.getAttribute('aria-label').includes(`attaque ${attendue.atk}, défense ${attendue.def}`),
         'l’attaque et la défense restent lisibles sur la carte au doigt');
     }
