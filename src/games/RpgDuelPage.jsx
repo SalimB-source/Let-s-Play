@@ -5435,6 +5435,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Même garde pour `foudre_marteau`, devenu silencieux avec le retrait du
   // catalogue synthétique : le test ne coûte rien si le tonnerre revenait.
   const dernierSonFoudreRef = useRef(0);
+  const dernierSonFroidRef = useRef(0);
   // La position du journal des blessures déjà animée : une brûlure ancienne ne
   // rallume jamais la roue de feu sur une action qui ne la concerne pas.
   const journalBlessuresRef = useRef({ duel: null, position: 0 });
@@ -5448,6 +5449,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const maintenant = Date.now();
       if (maintenant - dernierSonFoudreRef.current < 700) return;
       dernierSonFoudreRef.current = maintenant;
+    }
+    if (nom === 'cold_wind') {
+      const maintenant = Date.now();
+      if (maintenant - dernierSonFroidRef.current < 900) return;
+      dernierSonFroidRef.current = maintenant;
     }
     try {
       const p = sfxRef.current;
@@ -8354,6 +8360,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const token = ++sequenceGelMasseRef.current;
     if (timerGelMasseRef.current) window.clearTimeout(timerGelMasseRef.current);
     setGelMasseFx({ type, camp, token, carteId: id });
+    // Son de vent froid — réel échantillon CC0 (cold-wind.wav), pas de synthèse
+    jouerSfx('cold_wind');
     const duree = type === 'brume' ? 2800 : type === 'blizzard' ? 3200 : type === 'geant' ? 3400 : 3000;
     timerGelMasseRef.current = window.setTimeout(() => setGelMasseFx((cur) => (cur?.token === token ? null : cur)), duree);
   };
