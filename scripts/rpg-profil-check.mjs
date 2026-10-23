@@ -91,11 +91,24 @@ for (const interdit of ['localStorage', 'chargerProfil', 'sauverProfil', 'useSab
 }
 assert.match(ecran, /import '\.\/rpg-profil\.css';/, 'et il porte sa propre feuille de style');
 assert.match(ecranCode, /progressionDeXp\(profil\?\.xp \?\? 0\)/, 'la barre est une lecture pure des règles');
-assert.match(ecranCode, /paliersAVenir\(profil/, 'la courbe à venir aussi');
-assert.match(ecranCode, /BAREME_XP\.map/, 'le barème est lu dans le module, pas recopié');
 assert.ok(!/\b(26|80|154|246|353)\b/.test(ecranCode.replace(/data-profil[^ ]*/g, '')),
   'aucun seuil écrit à la main dans l’écran');
-assert.ok(ecran.includes('<RpgCreditIcon'), 'les crédits gardent leur pièce');
+
+// La carte est **dépouillée** : ce que le joueur voulait, c'est un écran lisible,
+// pas un tableau de bord. Les chiffres existent toujours — dans `rpgProfil.js` et
+// au Souk — mais aucun ne s'affiche ici.
+for (const interdit of ['paliersAVenir', 'BAREME_XP', 'RANGS', 'rangDeNiveau', 'RpgCreditIcon',
+  'rpg-profil__section', 'rpg-profil__stats', 'rpg-profil__bareme', 'rpg-profil__journal',
+  'rpg-profil__courbe', 'rpg-profil__sync', 'rpg-profil__rang']) {
+  assert.ok(!ecranCode.includes(interdit), `l’écran n’affiche plus ${interdit}`);
+}
+// Ce qui reste : l'identité, le niveau, la barre, le chemin vers les paquets.
+for (const attendu of ['rpg-profil__medaillon', 'data-profil-niveau', 'data-profil-xp', 'data-profil-emblemes',
+  'data-profil-pseudo-saisie', 'data-profil-retour']) {
+  assert.ok(ecranCode.includes(attendu), `l’écran garde ${attendu}`);
+}
+assert.ok(ecranCode.includes('data-profil-attente-aller'), 'et le bandeau des paquets dus mène au Souk');
+assert.ok(ecran.split('\n').length < 180, `la carte tient en un seul écran (${ecran.split('\n').length} lignes)`);
 
 // 3. La page branche l'onglet, l'écran et la cérémonie.
 assert.match(page, /import RpgProfilJoueur from '\.\/RpgProfilJoueur\.jsx';/, 'la page importe l’écran');
@@ -123,12 +136,17 @@ for (const prop of [
   assert.ok(pageCode.includes(prop), `le menu reçoit ${prop}`);
 }
 // …et le menu le rend à l'écran, avec les gestes qui remontent au hook.
+// Dépouillé jusque dans ses props : l'écran ne reçoit que le profil et le nom du
+// compte. Ni collection, ni portefeuille, ni quêtes, ni état de synchronisation.
 for (const prop of [
-  'profil={profil}', 'portefeuille={portefeuille}', 'quetes={quetes}', 'collection={collection}',
-  'statutSync={statutSync}', 'nomCompte={nomCompte}', 'onRenommer={onRenommerProfil}',
+  'profil={profil}', 'nomCompte={nomCompte}', 'onRenommer={onRenommerProfil}',
   'onChoisirEmbleme={onChoisirEmbleme}', 'onPlaySfx={play}', "onExit={() => onChangeScreen('jouer')}",
 ]) {
   assert.ok(pageCode.includes(prop), `l’écran reçoit ${prop}`);
+}
+const brancheProfil = pageCode.split("<RpgProfilJoueur")[1]?.split('/>')[0] ?? '';
+for (const retiree of ['portefeuille=', 'quetes=', 'collection=', 'statutSync=']) {
+  assert.ok(!brancheProfil.includes(retiree), `l’écran ne reçoit plus ${retiree}`);
 }
 assert.match(pageCode, /<RpgProfilJoueur[\s\S]{0,600}onOuvrirSouk=\{\(\) => \{ play\('menu'\); onChangeScreen\('souk'\); \}\}/,
   'et l’écran mène au Souk, là où les paquets dus s’ouvrent');
@@ -236,12 +254,14 @@ assert.match(css, /min-height: 44px/, 'les boutons font leur taille au doigt');
 assert.ok(css.includes('@media (max-width: 640px)'), 'le téléphone a son palier');
 assert.ok(css.includes('@media (max-width: 420px)'), 'et le portrait étroit aussi');
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/, 'le mouvement se coupe');
-assert.ok((css.match(/prefers-reduced-motion: reduce/g) ?? []).length >= 3,
-  'la barre, l’annonce et l’onglet se tiennent tranquilles pour qui le demande');
+assert.ok((css.match(/prefers-reduced-motion: reduce/g) ?? []).length >= 2,
+  'la barre et l’annonce se tiennent tranquilles pour qui le demande');
 
-console.log('Le profil du Sablier est branché : un onglet Profil dans le menu, une carte');
-console.log('de gardien (pseudo, emblème, rang, compteurs, journal des paliers), une barre');
-console.log('d’XP qui monte vite au début puis devient gourmande, et un paquet du Souk offert');
-console.log('à chaque niveau — tiré au hasard parmi les rayons ouverts, sans un crédit dépensé,');
-console.log('avec la pitié et les doublons d’un vrai paquet. La dette attend derrière une');
-console.log('cérémonie déjà ouverte, se règle à la fermeture, et ne se réannonce pas en boucle.');
+console.log('Le profil du Sablier est branché : un onglet Profil dans le menu, et une carte');
+console.log('dépouillée — l’emblème, le pseudo, le niveau et sa barre d’XP, plus une ligne');
+console.log('quand un paquet attend. Ni rang, ni compteurs, ni barème, ni journal : ces');
+console.log('chiffres vivent dans `rpgProfil.js` et au Souk, pas ici. La barre monte vite au');
+console.log('début puis devient gourmande, et chaque palier offre un paquet tiré au hasard');
+console.log('parmi les rayons ouverts, sans un crédit dépensé, avec la pitié et les doublons');
+console.log('d’un vrai paquet. La dette attend derrière une cérémonie déjà ouverte, se règle');
+console.log('à la fermeture, et ne se réannonce pas en boucle.');

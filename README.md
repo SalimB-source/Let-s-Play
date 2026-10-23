@@ -8690,11 +8690,11 @@ sans un crédit dépensé.
   le trentième vaut **247 fois** le premier, le cinquantième **565 fois**.
 - Le niveau **n'est pas un champ stocké** : il se déduit de l'XP
   (`niveauDeXp`). Aucune sauvegarde ne peut mentir sur son propre palier.
-- Dix gestes font monter la barre, écrits noir sur blanc sur la carte de
-  profil : premier déblayage **70**, tour terminée **150**, étage rejoué 22,
-  duel libre 20, Cachet de la semaine 80, Cachet du cycle 50, leçon 40, quête
-  réclamée 30, paquet ouvert 6, carte posée 2. Une carte posée ne paie
-  **qu'une fois** : invoquer, lancer ou équiper racontent déjà `carte-jouee`.
+- Dix gestes font monter la barre (`BAREME_XP`) : premier déblayage **70**,
+  tour terminée **150**, étage rejoué 22, duel libre 20, Cachet de la semaine
+  80, Cachet du cycle 50, leçon 40, quête réclamée 30, paquet ouvert 6, carte
+  posée 2. Une carte posée ne paie **qu'une fois** : invoquer, lancer ou
+  équiper racontent déjà `carte-jouee`.
 - La dette de paquets se **calcule** (`boostersDus = niveaux franchis −
   paquets offerts`), elle ne s'écrit pas : deux appareils ne se paient jamais
   deux fois le même palier, et un palier franchi pendant qu'une cérémonie est
@@ -8706,12 +8706,19 @@ sans un crédit dépensé.
 - L'XP ne s'achète pas et n'achète rien : les crédits ◈ restent leur propre
   monnaie, et une défaite ne retire rien — ni XP, ni crédits.
 - L'onglet **Profil** ouvre le menu, devant Jouer : l'emblème, « NIV. 12 », la
-  barre d'XP en miniature, et une pastille quand un paquet attend. La carte de
-  profil porte le pseudo (24 caractères, modifiable), six emblèmes en glyphes
-  de texte — aucun asset —, le rang de Bab El (dix rangs, de « Sans-Nom » à
-  « Voix de l'Astrolabe »), la barre détaillée, les quatre prochains paliers et
-  leur prix, seize compteurs, le barème et le journal des vingt derniers
-  paliers.
+  barre d'XP en miniature, et une pastille quand un paquet attend.
+- La carte de profil est **dépouillée** : une seule carte centrée, lisible sans
+  faire défiler — l'emblème dans son médaillon, le pseudo, « Niveau 5 », la
+  barre (`role="progressbar"`) et sa lecture « 214 / 353 XP », les six
+  emblèmes en glyphes de texte (aucun asset), le champ du pseudo. Plus une
+  ligne, seulement quand des paquets attendent : « Un paquet vous attend. » et
+  le bouton **Ouvrir au Souk**. La première version empilait cinq sections —
+  le rang de Bab El, seize compteurs, le barème, le journal des vingt derniers
+  paliers, les paliers à venir, l'état de la synchronisation — et on n'y lisait
+  plus rien. **Rien n'a disparu du jeu**, seulement de cet écran : `RANGS`,
+  `BAREME_XP`, `paliersAVenir` et `profil.paliers` restent dans
+  `src/games/rpgProfil.js`, et `scripts/rpg-profil-check.mjs` vérifie
+  désormais leur **absence** de la carte.
 - Une montée de niveau a deux visages, jamais les deux à la fois : la
   **cérémonie** du Souk quand un paquet a pu être tiré, sinon une **annonce**
   seule (`role="status"`, fermée au bout de 6 s) qui dit le niveau et les
@@ -8726,8 +8733,9 @@ Les règles pures vivent dans `src/games/rpgProfil.js` (courbe, rangs, dette,
 journal, normalisation, fusion, stockage), l'XP des gestes dans
 `src/games/rpgEvenementsDuel.js`, le paquet offert dans
 `src/games/rpgBoosters.js` (`ouvrirBoosterOffert`), l'écran dans
-`src/games/RpgProfilJoueur.jsx` — présentationnel, sans aucun stockage — et sa
-feuille dans `src/games/rpg-profil.css`. `useSablierBourse.js` porte le profil
+`src/games/RpgProfilJoueur.jsx` — présentationnel, sans aucun stockage, et qui
+ne reçoit plus que `profil` et `nomCompte` — et sa feuille dans
+`src/games/rpg-profil.css`. `useSablierBourse.js` porte le profil
 comme **troisième moitié** de l'état (`bourse`, `quetes`, `profil`), le règle
 par `reglerPaliers` et rend `profil`, `barreXp`, `boostersEnAttente`,
 `monteeNiveau`, `fermerMonteeNiveau`, `renommerLeProfil`, `choisirUnEmbleme`.

@@ -1,397 +1,199 @@
-/* La carte de profil du joueur : le niveau, la barre d'XP, les rangs.
-   Même matière que le Souk — laiton sur nuit, sections cerclées, chiffres en
-   tabulaire — mais c'est une **fiche** : une colonne d'identité à gauche, la
-   barre qui prend toute la largeur, et rien qui dépende du survol. La barre est
-   une colonne de sable qui **monte** (le dossier 04 fait descendre celles de
-   vie : ici, c'est le joueur qui s'élève). */
+/* La carte de profil du joueur : **une carte**, pas un tableau de bord.
+   Même matière que le Souk — laiton sur nuit, chiffres en tabulaire — mais
+   dépouillée : l'emblème, le nom, le niveau, la barre, et de quoi choisir son
+   emblème et son nom. Rien d'autre n'y a sa place : les compteurs vivent dans
+   le profil (`rpgProfil.js`), le barème dans le dossier 20, les paquets au
+   Souk. La barre est une colonne de sable qui **monte** (le dossier 04 fait
+   descendre celles de vie : ici, c'est le joueur qui s'élève). */
 
 .rpg-profil {
   width: 100%;
-  max-width: 1220px;
+  max-width: 520px;
   min-width: 0;
   box-sizing: border-box;
   margin: 0 auto;
-  padding: clamp(10px, 2vw, 24px) clamp(4px, 1vw, 12px) 34px;
+  padding: clamp(12px, 2.4vw, 26px) clamp(8px, 2vw, 16px) 40px;
   color: #f7edda;
   display: grid;
-  gap: clamp(12px, 1.8vw, 18px);
+  gap: 16px;
+  justify-items: center;
 }
 
-/* ── L'en-tête : le nom, le médaillon, le retour ──────────────────────────── */
-.rpg-profil__header {
-  display: flex;
-  align-items: flex-start;
-  gap: clamp(12px, 1.8vw, 22px);
-  flex-wrap: wrap;
-}
-.rpg-profil__titre { min-width: 0; flex: 1 1 300px; }
-.rpg-profil__titre h2 {
-  margin: 6px 0 8px;
-  font-size: clamp(24px, 3.4vw, 38px);
-  line-height: 1;
-  letter-spacing: .01em;
-  overflow-wrap: anywhere;
-}
-.rpg-profil__titre p { margin: 0; max-width: 62ch; color: rgba(247, 237, 218, .72); font-size: 13px; line-height: 1.6; }
-.rpg-profil__sync {
-  margin-top: 7px !important;
-  color: rgba(247, 237, 218, .5) !important;
-  font: 700 10px/1.4 var(--mono, monospace);
-  letter-spacing: .06em;
-}
-.rpg-profil__retour { flex: none; }
+.rpg-profil__retour { justify-self: start; }
 
-/* Le médaillon : l'emblème cerclé d'or, avec le niveau en chiffres. C'est la
-   seule zone claire de la fiche, comme le solde l'est au Souk. */
+.rpg-profil__carte {
+  width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  justify-items: center;
+  gap: 13px;
+  padding: clamp(24px, 4.4vw, 38px) clamp(18px, 3.6vw, 32px);
+  border: 1px solid rgba(232, 194, 113, .26);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(21, 17, 19, .8), rgba(11, 10, 14, .92));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .34);
+  text-align: center;
+}
+
+/* ── L'identité : l'emblème cerclé d'or, le nom, le niveau ─────────────────── */
 .rpg-profil__medaillon {
-  position: relative;
-  flex: none;
   display: grid;
   place-items: center;
-  gap: 2px;
-  width: clamp(104px, 14vw, 132px);
-  height: clamp(104px, 14vw, 132px);
-  border: 1px solid rgba(232, 194, 113, .55);
+  width: 78px;
+  height: 78px;
+  border: 1px solid rgba(232, 194, 113, .5);
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 34%, rgba(120, 82, 31, .5), rgba(18, 14, 15, .96) 70%);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .34), inset 0 0 26px rgba(231, 191, 101, .16);
+  background: radial-gradient(circle at 50% 34%, rgba(120, 82, 31, .46), rgba(18, 14, 15, .96) 70%);
+  box-shadow: inset 0 0 22px rgba(231, 191, 101, .16);
+  font-size: 30px;
+  line-height: 1;
+  color: #ffe7af;
+  text-shadow: 0 0 16px rgba(231, 191, 101, .45);
 }
-.rpg-profil__medaillon::after {
-  content: '';
-  position: absolute;
-  inset: 7px;
-  border: 1px dashed rgba(231, 191, 101, .28);
-  border-radius: 50%;
-  pointer-events: none;
+.rpg-profil__nom {
+  margin: 3px 0 0;
+  font-size: clamp(20px, 4.8vw, 27px);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
-.rpg-profil__medaillon-glyphe { font-size: clamp(26px, 3.6vw, 34px); line-height: 1; color: #ffe7af; text-shadow: 0 0 18px rgba(231, 191, 101, .5); }
-.rpg-profil__medaillon-chiffre { display: grid; justify-items: center; gap: 1px; }
-.rpg-profil__medaillon-chiffre em {
-  color: rgba(247, 237, 218, .58);
-  font: 700 8.5px/1 var(--mono, monospace);
-  font-style: normal;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-}
-.rpg-profil__medaillon-chiffre strong {
-  color: #fff6e3;
-  font: 800 clamp(22px, 3vw, 28px)/1 var(--mono, monospace);
-  font-variant-numeric: tabular-nums;
-}
-/* Au plafond, le médaillon prend l'or plein : il n'y a plus de palier à promettre. */
-.rpg-profil__medaillon.is-maximal {
-  border-color: rgba(255, 214, 138, .8);
-  background: radial-gradient(circle at 50% 34%, rgba(197, 139, 53, .58), rgba(38, 25, 12, .96) 72%);
-}
-
-/* ── Ce qui attend d'être offert ──────────────────────────────────────────── */
-.rpg-profil__attente {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+.rpg-profil__niveau {
   margin: 0;
-  padding: 11px 14px;
-  border: 1px solid rgba(231, 191, 101, .5);
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(201, 150, 57, .22), rgba(111, 69, 34, .16));
-  color: #ffe7af;
-  font: 800 11px/1.5 var(--mono, monospace);
-  letter-spacing: .06em;
-}
-.rpg-profil__attente-aller {
-  min-height: 34px;
-  padding: 6px 12px;
-  border: 1px solid rgba(231, 191, 101, .55);
-  border-radius: 9px;
-  background: rgba(12, 10, 12, .5);
-  color: #ffe7af;
-  font: 800 10px/1 var(--mono, monospace);
-  letter-spacing: .1em;
+  color: rgba(247, 237, 218, .58);
+  font: 700 10px/1.4 var(--mono, monospace);
+  letter-spacing: .18em;
   text-transform: uppercase;
-  cursor: pointer;
 }
-
-/* ── Une section, sa tête ─────────────────────────────────────────────────── */
-.rpg-profil__section {
-  padding: clamp(12px, 1.6vw, 18px);
-  border: 1px solid rgba(235, 215, 176, .18);
-  border-radius: 16px;
-  background: rgba(15, 12, 15, .78);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, .22);
-}
-.rpg-profil__section-tete { display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-.rpg-profil__section-tete h3 { margin: 0; font-size: clamp(15px, 2vw, 19px); letter-spacing: .02em; }
-.rpg-profil__section-tete p { margin: 0; max-width: 74ch; color: rgba(247, 237, 218, .58); font-size: 12px; line-height: 1.6; }
-.rpg-profil__section-tete p strong { color: #ffe7af; }
-.rpg-profil__note {
-  margin: 12px 0 0;
-  color: rgba(247, 237, 218, .5);
-  font: 700 9.5px/1.6 var(--mono, monospace);
-  letter-spacing: .06em;
-}
-.rpg-profil__note code { color: rgba(247, 237, 218, .74); font-family: var(--mono, monospace); }
-.rpg-profil__note .rpg-credit { font-size: 1.15em; }
 
 /* ── La barre d'XP ────────────────────────────────────────────────────────── */
-.rpg-profil__xp { display: grid; gap: 9px; }
 .rpg-profil__xp-piste {
   position: relative;
-  height: clamp(20px, 2.4vw, 26px);
+  width: 100%;
+  height: 8px;
   overflow: hidden;
-  border: 1px solid rgba(232, 194, 113, .42);
+  border: 1px solid rgba(232, 194, 113, .4);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(8, 7, 9, .92), rgba(24, 18, 12, .92));
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, .55);
+  background: rgba(8, 7, 9, .85);
 }
-/* Le sable qui monte : un remplissage doré, un front lumineux, et une largeur
-   qui suit exactement le pourcentage calculé par `rpgProfil.js`. */
-.rpg-profil__xp-remplissage {
+.rpg-profil__xp-piste i {
   position: absolute;
   inset: 0 auto 0 0;
   display: block;
-  border-radius: inherit;
-  background: linear-gradient(90deg, rgba(166, 106, 32, .95), rgba(240, 190, 96, .98) 72%, rgba(255, 231, 175, 1));
-  box-shadow: 0 0 18px rgba(231, 191, 101, .38);
-  transition: width .5s cubic-bezier(.22, .68, .28, 1);
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(166, 106, 32, .95), #ffe7af);
+  transition: width .45s ease;
 }
-.rpg-profil__xp-remplissage::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgba(255, 246, 227, .9);
-  box-shadow: 0 0 12px rgba(255, 231, 175, .8);
+/* Au plafond la barre est pleine : elle prend l'or clair, et la lecture le dit. */
+.rpg-profil__xp-piste[data-profil-xp-maximal] i {
+  background: linear-gradient(90deg, #ffe7af, #fff8e6);
+  transition: none;
 }
-/* Les grains de sable : un décor qui tombe dans la piste, sans jamais masquer
-   la lecture du chiffre. Douze grains, douze délais. */
-.rpg-profil__xp-grains { position: absolute; inset: 0; pointer-events: none; opacity: .5; }
-.rpg-profil__xp-grains b {
-  position: absolute;
-  top: -3px;
-  left: calc(4% + var(--grain) * 8%);
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  background: rgba(255, 231, 175, .85);
-  animation: rpg-profil-grain 3.4s linear infinite;
-  animation-delay: calc(var(--grain) * .28s);
-}
-@keyframes rpg-profil-grain {
-  0% { transform: translateY(0); opacity: 0; }
-  18% { opacity: .9; }
-  100% { transform: translateY(30px); opacity: 0; }
-}
-.rpg-profil__xp-piste[data-profil-xp-maximal] .rpg-profil__xp-remplissage {
-  background: linear-gradient(90deg, rgba(197, 139, 53, .95), rgba(255, 214, 138, 1));
-}
-.rpg-profil__xp-lecture { margin: 0; color: rgba(247, 237, 218, .78); font-size: 12.5px; line-height: 1.6; }
-.rpg-profil__xp-lecture strong {
-  color: #ffe7af;
-  font: 800 13px/1.4 var(--mono, monospace);
+.rpg-profil__xp-lecture {
+  margin: 0;
+  color: rgba(247, 237, 218, .6);
+  font: 700 11px/1.4 var(--mono, monospace);
+  letter-spacing: .07em;
   font-variant-numeric: tabular-nums;
 }
-.rpg-profil__rang { display: grid; gap: 3px; margin: 2px 0 0; }
-.rpg-profil__rang strong {
-  color: #fff6e3;
-  font: 800 11px/1.4 var(--mono, monospace);
-  letter-spacing: .14em;
-  text-transform: uppercase;
-}
-.rpg-profil__rang span { color: rgba(247, 237, 218, .66); font-size: 12.5px; font-style: italic; line-height: 1.5; }
-.rpg-profil__rang em {
-  color: rgba(247, 237, 218, .46);
-  font: 700 9px/1.4 var(--mono, monospace);
-  font-style: normal;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
 
-/* La courbe, lisible : chaque palier à venir affiche son prix. C'est la preuve
-   que la barre devient gourmande, sans qu'un chiffre soit caché. */
-.rpg-profil__courbe {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+/* ── Le paquet qui attend : une ligne, un bouton ───────────────────────────── */
+.rpg-profil__attente { margin: 2px 0 0; }
+.rpg-profil__attente-aller {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
-  margin: 14px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.rpg-profil__courbe li {
-  display: grid;
-  gap: 3px;
-  padding: 10px 12px;
-  border: 1px solid rgba(235, 215, 176, .16);
-  border-radius: 11px;
-  background: linear-gradient(165deg, rgba(30, 25, 26, .88), rgba(17, 14, 17, .9));
-}
-.rpg-profil__courbe-niveau { color: rgba(247, 237, 218, .62); font: 700 9px/1.3 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
-.rpg-profil__courbe-prix { color: #ffe7af; font: 800 16px/1.2 var(--mono, monospace); font-variant-numeric: tabular-nums; }
-.rpg-profil__courbe-total { color: rgba(247, 237, 218, .44); font: 700 9px/1.3 var(--mono, monospace); letter-spacing: .06em; }
-
-/* ── L'identité : pseudo et emblème ───────────────────────────────────────── */
-.rpg-profil__identite {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.rpg-profil__pseudo { display: grid; gap: 6px; flex: 1 1 260px; min-width: 0; }
-.rpg-profil__pseudo span { color: rgba(247, 237, 218, .56); font: 700 9px/1.3 var(--mono, monospace); letter-spacing: .14em; text-transform: uppercase; }
-.rpg-profil__pseudo input {
   min-height: 44px;
-  padding: 10px 12px;
-  border: 1px solid rgba(235, 215, 176, .26);
-  border-radius: 10px;
-  background: rgba(8, 7, 9, .8);
-  color: #f7edda;
-  font: 700 14px/1.3 var(--mono, monospace);
+  padding: 8px 18px;
+  border: 1px solid rgba(231, 191, 101, .5);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(201, 150, 57, .22), rgba(111, 69, 34, .16));
+  color: #ffe7af;
+  font: 800 11px/1 var(--mono, monospace);
+  letter-spacing: .08em;
+  cursor: pointer;
 }
-.rpg-profil__pseudo input:focus-visible { border-color: rgba(231, 191, 101, .7); outline: none; box-shadow: 0 0 0 2px rgba(231, 191, 101, .22); }
-.rpg-profil__pseudo-note { margin: 6px 0 0; color: rgba(247, 237, 218, .44); font: 700 9px/1.5 var(--mono, monospace); letter-spacing: .08em; }
-.rpg-profil__identite .rpg-menu-button { min-height: 44px; }
+.rpg-profil__attente-aller span { font-size: 13px; line-height: 1; }
+.rpg-profil__attente-aller:hover,
+.rpg-profil__attente-aller:focus-visible { border-color: rgba(231, 191, 101, .85); outline: none; }
 
+/* ── Les emblèmes : six glyphes, sans libellé ──────────────────────────────── */
 .rpg-profil__emblemes {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
-  margin: 14px 0 0;
-  padding: 0;
-  list-style: none;
+  margin-top: 4px;
 }
 .rpg-profil__embleme {
   display: grid;
-  gap: 5px;
-  justify-items: center;
-  width: 100%;
-  min-height: 76px;
-  padding: 12px 8px;
-  border: 1px solid rgba(235, 215, 176, .18);
-  border-radius: 12px;
-  background: linear-gradient(165deg, rgba(28, 23, 24, .9), rgba(16, 13, 16, .92));
-  color: rgba(247, 237, 218, .74);
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(232, 194, 113, .22);
+  border-radius: 50%;
+  background: rgba(12, 10, 12, .5);
+  color: rgba(247, 237, 218, .7);
+  font-size: 19px;
+  line-height: 1;
   cursor: pointer;
-  transition: border-color .18s ease, color .18s ease, background .18s ease;
+  transition: border-color .18s ease, color .18s ease;
 }
-.rpg-profil__embleme span { font-size: 24px; line-height: 1; color: #e5bf69; }
-.rpg-profil__embleme em { font: 700 9px/1.3 var(--mono, monospace); font-style: normal; letter-spacing: .08em; text-align: center; }
 .rpg-profil__embleme:hover,
 .rpg-profil__embleme:focus-visible { border-color: rgba(231, 191, 101, .5); color: #ffe7af; outline: none; }
 .rpg-profil__embleme.is-choisi {
-  border-color: rgba(231, 191, 101, .72);
-  background: linear-gradient(150deg, rgba(201, 150, 57, .28), rgba(111, 69, 34, .2));
-  color: #fff6e3;
-  box-shadow: 0 10px 24px rgba(197, 139, 53, .18);
-}
-
-/* ── Les compteurs ────────────────────────────────────────────────────────── */
-.rpg-profil__stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 178px), 1fr));
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.rpg-profil__stats li {
-  display: grid;
-  gap: 3px;
-  padding: 11px 12px;
-  border: 1px solid rgba(235, 215, 176, .16);
-  border-radius: 11px;
-  background: linear-gradient(165deg, rgba(28, 23, 24, .86), rgba(16, 13, 16, .9));
-}
-.rpg-profil__stats strong {
+  border-color: rgba(231, 191, 101, .8);
+  background: radial-gradient(circle at 50% 30%, rgba(201, 150, 57, .4), rgba(12, 10, 12, .6));
   color: #ffe7af;
-  font: 800 18px/1.15 var(--mono, monospace);
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
 }
-.rpg-profil__stats span { color: rgba(247, 237, 218, .56); font-size: 11px; line-height: 1.45; }
 
-/* ── Le barème de l'XP ────────────────────────────────────────────────────── */
-.rpg-profil__bareme {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.rpg-profil__bareme li {
+/* ── Le pseudo : un champ, un bouton ───────────────────────────────────────── */
+.rpg-profil__pseudo {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 9px 12px;
-  border: 1px solid rgba(235, 215, 176, .14);
+  gap: 8px;
+  width: 100%;
+  max-width: 340px;
+  margin-top: 4px;
+}
+.rpg-profil__pseudo input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid rgba(232, 194, 113, .24);
   border-radius: 10px;
-  background: rgba(20, 16, 19, .6);
+  background: rgba(8, 7, 9, .7);
+  color: #f7edda;
+  font: 600 13px/1.3 var(--mono, monospace);
 }
-.rpg-profil__bareme-geste { color: rgba(247, 237, 218, .78); font-size: 12px; line-height: 1.5; }
-.rpg-profil__bareme-xp {
-  flex: none;
-  color: #ffe7af;
-  font: 800 12px/1.4 var(--mono, monospace);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: .04em;
-  white-space: nowrap;
+.rpg-profil__pseudo input:focus-visible {
+  border-color: rgba(231, 191, 101, .7);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(231, 191, 101, .2);
 }
-
-/* ── Le journal des paliers ───────────────────────────────────────────────── */
-.rpg-profil__journal { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.rpg-profil__journal li {
-  display: grid;
-  grid-template-columns: minmax(88px, auto) minmax(0, 1fr) auto;
-  gap: 4px 12px;
-  align-items: baseline;
-  padding: 10px 12px;
-  border: 1px solid rgba(235, 215, 176, .16);
-  border-left: 3px solid rgba(231, 191, 101, .55);
-  border-radius: 11px;
-  background: linear-gradient(165deg, rgba(30, 25, 26, .84), rgba(16, 13, 16, .9));
-}
-.rpg-profil__journal-niveau { color: #ffe7af; font: 800 12px/1.4 var(--mono, monospace); letter-spacing: .06em; }
-.rpg-profil__journal-date { color: rgba(247, 237, 218, .46); font: 700 9.5px/1.4 var(--mono, monospace); white-space: nowrap; }
-.rpg-profil__journal-motif { grid-column: 1 / -1; color: rgba(247, 237, 218, .7); font-size: 12px; line-height: 1.5; }
-.rpg-profil__journal-paquet {
-  grid-column: 1 / -1;
-  color: rgba(247, 237, 218, .5);
-  font: 700 9px/1.4 var(--mono, monospace);
-  letter-spacing: .1em;
-  text-transform: uppercase;
+.rpg-profil__pseudo .rpg-menu-button { flex: none; min-height: 44px; }
+.rpg-profil__note {
+  margin: 0;
+  color: rgba(247, 237, 218, .45);
+  font: 700 9.5px/1.5 var(--mono, monospace);
+  letter-spacing: .06em;
 }
 
-/* ── Téléphone : une seule colonne, tout se touche ────────────────────────── */
-@media (max-width: 820px) {
-  .rpg-profil__header { gap: 12px; }
-  .rpg-profil__titre { flex: 1 1 100%; }
-  .rpg-profil__medaillon { order: -1; margin: 0 auto; }
-  .rpg-profil__retour { flex: 1 1 100%; }
-}
+/* ── Téléphone ─────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .rpg-profil { padding-bottom: 26px; }
-  .rpg-profil__section-tete { align-items: start; }
-  .rpg-profil__journal li { grid-template-columns: minmax(0, 1fr); }
-  .rpg-profil__journal-date { white-space: normal; }
-  .rpg-profil__stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); }
-  .rpg-profil__stats strong { font-size: 16px; }
-  .rpg-profil__bareme { grid-template-columns: minmax(0, 1fr); }
-  .rpg-profil__emblemes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rpg-profil__carte { gap: 12px; padding: 24px 18px; }
+  .rpg-profil__medaillon { width: 68px; height: 68px; font-size: 26px; }
 }
 @media (max-width: 420px) {
-  .rpg-profil__medaillon { width: 96px; height: 96px; }
-  .rpg-profil__emblemes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Le champ et son bouton passent l'un sous l'autre : chacun garde ses 44 px. */
+  .rpg-profil__pseudo { flex-direction: column; }
+  .rpg-profil__pseudo .rpg-menu-button { width: 100%; }
+  .rpg-profil__embleme { width: 42px; height: 42px; }
 }
 
-/* Le mouvement est un décor : réduit, les grains s'arrêtent et la barre prend
-   sa largeur sans transition (la valeur, elle, ne change pas). */
+/* Le mouvement est un décor : réduit, la barre prend sa largeur sans transition
+   (la valeur, elle, ne change pas). */
 @media (prefers-reduced-motion: reduce) {
-  .rpg-profil__xp-grains { display: none; }
-  .rpg-profil__xp-remplissage { transition: none; }
+  .rpg-profil__xp-piste i { transition: none; }
   .rpg-profil__embleme { transition: none; }
 }
 

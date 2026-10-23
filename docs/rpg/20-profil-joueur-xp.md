@@ -48,9 +48,8 @@ Ce que le joueur voit, dans l'ordre :
 
 1. **l'onglet Profil** du menu, en première position : l'emblème, « NIV. 12 »,
    une barre d'XP miniature, et une pastille quand un paquet attend ;
-2. **la carte de profil** : le pseudo, le rang de Bab El, le médaillon du
-   niveau, la barre détaillée, les quatre prochains paliers et leur prix, les
-   compteurs, le barème complet, le journal des paliers ;
+2. **la carte de profil**, dépouillée (§6) : l'emblème, le pseudo, le niveau,
+   sa barre d'XP et les six emblèmes — rien d'autre ;
 3. **la victoire** qui annonce les deux monnaies : « +50 crédits » et
    « ✦ +70 XP — niveau 3 atteint, un paquet s'ouvre ! » ;
 4. **la cérémonie** du paquet offert — la même qu'au Souk, avec son sachet, ses
@@ -270,6 +269,10 @@ Dix rangs, du niveau 1 au niveau 60. Un rang se **garde** entre deux paliers
 | 50 | Passeur de la Liste |
 | 60 | Voix de l'Astrolabe |
 
+> Les rangs **ne s'affichent plus** sur la carte de profil (voir §6) : la table
+> reste dans le module pour le jour où un autre écran voudra la lire, et
+> `tests/rpg-profil.test.js` continue de la vérifier.
+
 ### 4.4 Les emblèmes
 
 Six glyphes de texte — `⌛ ✦ ⚒ ☾ ❂ ▤` — aucun asset à charger, aucun temps de
@@ -300,9 +303,47 @@ Deux règles d'import, toutes deux vérifiées :
   règle d'écriture : `localStorage`, `chargerProfil`, `sauverProfil`,
   `gagnerXp` et `useSablierBourse` y sont absents, et le contrôle le vérifie.
 
-## 6. L'écran Profil
+## 6. L'écran Profil — une carte dépouillée
 
-Cinq sections, dans l'ordre de lecture :
+**Une seule carte.** La première version empilait cinq sections : le rang et sa
+phrase, seize compteurs, le barème des dix gestes, le journal des vingt derniers
+paliers, les quatre paliers à venir et la formule de la courbe, l'état de la
+synchronisation. C'était un tableau de bord, et on n'y lisait plus rien.
+L'écran tient maintenant en une carte centrée (520 px au plus), lisible sans
+faire défiler :
+
+1. **le médaillon** — l'emblème choisi, seul dans un cercle de 76 px ;
+2. **le pseudo** — le titre, une ligne ;
+3. **le niveau** — « Niveau 5 », ou « Niveau 60 — maximal » au plafond ;
+4. **la barre** — un `role="progressbar"` complet (`aria-valuenow`, `-min`,
+   `-max`, `-text`) et sa seule lecture : « 214 / 353 XP » ;
+5. **les six emblèmes** — des glyphes, sans libellé ; l'`aria-label` et
+   `aria-pressed` disent le reste ;
+6. **le champ du pseudo** — avec son bouton **Enregistrer**, désactivé tant que
+   rien n'a changé (« Un champ vide n'efface pas votre nom. »).
+
+Une ligne apparaît entre la barre et les emblèmes **seulement** quand des
+paquets attendent : « Un paquet vous attend. », avec le bouton **Ouvrir au
+Souk**. C'est la seule information contextuelle de la carte, et elle porte une
+action.
+
+Ce qui a disparu de l'écran n'a pas disparu du jeu :
+
+| Retiré de la carte | Où le lire |
+| --- | --- |
+| le rang et sa phrase | `RANGS` / `rangDeNiveau` dans `rpgProfil.js` (§4.3) |
+| les seize compteurs | `profil.stats`, et le Souk pour la collection |
+| le barème des gestes | `BAREME_XP` (§4.1) |
+| le journal des paliers | `profil.paliers`, fusionné monotone (§P7) |
+| les paliers à venir | `paliersAVenir`, et `SEUILS`/`CUMULS` (§4.2) |
+| l'état de la synchronisation | le Souk et le menu, qui l'affichent déjà |
+
+Les props suivent : l'écran ne reçoit plus que `profil` et `nomCompte` (plus de
+`collection`, `portefeuille`, `quetes`, `statutSync`). `paliersAVenir`,
+`BAREME_XP` et `RANGS` restent exportés — un autre écran, ou une infobulle,
+pourra les reprendre sans qu'ils reviennent ici.
+
+L'ancienne découpe, pour mémoire — cinq sections, dans l'ordre de lecture :
 
 1. **l'en-tête** — emblème, pseudo, rang et sa phrase, médaillon du niveau,
    état de la synchronisation (« ☁ Profil synchronisé avec votre compte »,
@@ -320,19 +361,18 @@ Cinq sections, dans l'ordre de lecture :
    paliers avec leur date et leur motif (« Niveau 7 · 12 mars, 14 h 05 · un
    étage déblayé · 1 paquet offert »).
 
-Un bandeau apparaît en tête quand des paquets attendent : « Un paquet de palier
-vous attend : il s'ouvrira dès que le comptoir pourra tirer », avec un bouton
-**Voir le Souk**.
-
 Marques de vérification dans le DOM : `data-profil`, `data-profil-niveau`,
-`data-profil-xp`, `data-profil-xp-need`, `data-profil-xp-percent`,
-`data-profil-xp-reste`, `data-profil-rang`, `data-profil-pseudo`,
-`data-profil-sync`, `data-profil-attente`, `data-profil-courbe`,
-`data-profil-bareme`, `data-profil-stat`, `data-profil-journal`,
-`data-profil-embleme`. Sur la page : `data-profil-onglet`,
-`data-profil-xp-onglet`, `data-profil-pastille`, `data-victoire-xp`,
-`data-victoire-niveaux`, `data-niveau-toast`, `data-niveau-dus`,
-`data-souk-ceremonie-offert`, `data-souk-ceremonie-niveau`.
+`data-profil-xp`, `data-profil-xp-need`, `data-profil-xp-maximal`,
+`data-profil-xp-percent`, `data-profil-xp-reste`, `data-profil-pseudo`,
+`data-profil-pseudo-saisie`, `data-profil-pseudo-enregistrer`,
+`data-profil-pseudo-vide`, `data-profil-attente`, `data-profil-attente-aller`,
+`data-profil-embleme`, `data-profil-identite`, `data-profil-retour`.
+**Retirées** : `data-profil-rang`, `-sync`, `-courbe`, `-bareme`, `-stat` et
+`-journal` — `scripts/rpg-profil-check.mjs` vérifie maintenant leur **absence**.
+Sur la page : `data-profil-onglet`, `data-profil-xp-onglet`,
+`data-profil-pastille`, `data-victoire-xp`, `data-victoire-niveaux`,
+`data-niveau-toast`, `data-niveau-dus`, `data-souk-ceremonie-offert`,
+`data-souk-ceremonie-niveau`.
 
 ## 7. Les deux visages d'une montée de niveau
 
@@ -414,7 +454,11 @@ et survivent à un remontage — puis la **vraie page** est montée pour l'ongle
 Profil, son `aria-current`, son aria-label et son aller-retour vers le menu.
 Les gardes de source vérifient ce que le DOM ne peut pas dire : où vit la
 persistance, qui tire le rayon au hasard, ce qu'une dette impayée ne répète
-pas, et à quelle hauteur la cérémonie passe au-dessus de la table.
+pas, et à quelle hauteur la cérémonie passe au-dessus de la table. Elles
+tiennent aussi la carte **dépouillée** : ni `paliersAVenir`, ni `BAREME_XP`, ni
+`RANGS`, ni aucune des classes retirées dans la source de l'écran, moins de 40
+noeuds dans le DOM, aucune section à titre — et, côté page, que l'écran ne
+reçoit plus `collection`, `portefeuille`, `quetes` ni `statutSync`.
 
 Les contrôles voisins ont été mis à jour pour dire la même chose :
 `scripts/rpg-souk-bourse-smoke.jsx` et `scripts/rpg-souk-smoke.jsx` affirment

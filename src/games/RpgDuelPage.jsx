@@ -4513,12 +4513,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             onExit={() => onChangeScreen('jouer')}
           />
         ) : screen === 'profil' ? (
+          // Une carte dépouillée : l'écran ne reçoit que le profil et le nom du
+          // compte. Les compteurs, le barème et le journal existent dans
+          // `rpgProfil.js` et au Souk — la carte de profil n'est pas un tableau
+          // de bord (dossier 20).
           <RpgProfilJoueur
             profil={profil}
-            collection={collection}
-            portefeuille={portefeuille}
-            quetes={quetes}
-            statutSync={statutSync}
             nomCompte={nomCompte}
             onRenommer={onRenommerProfil}
             onChoisirEmbleme={onChoisirEmbleme}

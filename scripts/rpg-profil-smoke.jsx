@@ -13,14 +13,13 @@
  * minuterie.
  */
 
-import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { useSablierBourse } from '../src/games/useSablierBourse.js';
 import RpgProfilJoueur from '../src/games/RpgProfilJoueur.jsx';
 import RpgBoosterOuverture from '../src/games/RpgBoosterOuverture.jsx';
-import { GAINS, RPG_BOURSE_STORAGE_KEY } from '../src/games/rpgCredits.js';
+import { GAINS } from '../src/games/rpgCredits.js';
 import { RPG_GRAINE_STORAGE_KEY } from '../src/games/rpgQuetes.js';
 import {
   EMBLEMES,
@@ -30,7 +29,6 @@ import {
   seuilDuNiveau,
 } from '../src/games/rpgProfil.js';
 import { RPG_DUEL_CARDS, carteJouableSansTerrain } from '../src/games/rpgCards.js';
-import { collectionJoueur } from '../src/games/rpgCollection.js';
 import { rngSeme } from '../src/games/rpgHasard.js';
 import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
 
@@ -47,15 +45,6 @@ const DERNIER_ETAGE = TOUR.etages[TOUR.etages.length - 1].id;
 const illustration = (carte) => `/cards/${carte?.id ?? 'inconnue'}.jpg`;
 const jouables = RPG_DUEL_CARDS.filter(carteJouableSansTerrain).map((carte) => carte.id);
 
-/** La collection de l'appareil, telle que `useDecksSablier` la calcule. */
-function lireCollection() {
-  let cartes = [];
-  try {
-    cartes = JSON.parse(window.localStorage.getItem(RPG_BOURSE_STORAGE_KEY) ?? 'null')?.cartes ?? [];
-  } catch { cartes = []; }
-  return collectionJoueur({ souk: cartes });
-}
-
 /**
  * L'écran, tel que la page le monte : le hook en dessous, le profil au-dessus,
  * et la cérémonie du paquet offert à côté — c'est `MonteeDeNiveau` de la page,
@@ -63,11 +52,10 @@ function lireCollection() {
  * `scripts/rpg-profil-check.mjs`, qui lit la source).
  */
 function Sonde({ surPret, sons, nomCompte = null }) {
-  const [collection, setCollection] = useState(lireCollection);
   const bourse = useSablierBourse({
     progression: PROGRESSION,
     rng: rngSeme(20261023),
-    onCartesRangees: () => { setCollection(lireCollection()); sons.push('collection-rafraichie'); },
+    onCartesRangees: () => { sons.push('collection-rafraichie'); },
   });
   surPret(bourse);
   const montee = bourse.monteeNiveau;
@@ -75,10 +63,6 @@ function Sonde({ surPret, sons, nomCompte = null }) {
     <>
       <RpgProfilJoueur
         profil={bourse.profil}
-        collection={collection}
-        portefeuille={bourse.bourse}
-        quetes={bourse.quetes}
-        statutSync={bourse.statutSync}
         nomCompte={nomCompte}
         onRenommer={(pseudo) => bourse.renommerLeProfil(pseudo)}
         onChoisirEmbleme={(id) => bourse.choisirUnEmbleme(id)}
@@ -124,32 +108,28 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(nombre('[data-profil-xp-need]', 'profilXpNeed'), seuilDuNiveau(1),
       'et elle annonce ce que le premier palier demande');
     assert.equal(nombre('[data-profil-xp-percent]', 'profilXpPercent'), 0);
-    assert.equal(donnee('[data-profil-rang]', 'profilRang'), 'sans-nom', 'le premier rang de Bab El');
     assert.equal(noeud('[data-profil-attente]'), null, 'rien n’est dû : pas de bandeau');
     assert.equal(noeud('[data-souk-ceremonie]'), null, 'et pas de cérémonie en l’air');
-    assert.match(texte(noeud('[data-profil-xp-reste]')), new RegExp(`encore ${seuilDuNiveau(1)} XP avant le niveau 2`),
-      'la lecture dit ce qu’il reste, et que le palier offrira un paquet');
-    assert.match(texte(noeud('[data-profil-xp-reste]')), /offrira un paquet/,
-      'chaque palier promet son paquet, écrit noir sur blanc');
-    assert.equal(texte(noeud('.rpg-profil__medaillon-glyphe')), EMBLEMES[0].glyphe,
+    assert.match(texte(noeud('[data-profil-xp-reste]')), new RegExp(`^0 / ${seuilDuNiveau(1)} XP$`),
+      'la lecture dit ce que la barre a avalé et ce que le palier demande — rien d’autre');
+    assert.match(texte(noeud('[data-profil-niveau]')), /^Niveau 1$/, 'le niveau s’écrit en toutes lettres');
+    assert.equal(texte(noeud('.rpg-profil__medaillon')), EMBLEMES[0].glyphe,
       'le médaillon porte l’emblème du joueur');
     assert.equal(donnee('[data-profil-pseudo]', 'profilPseudo'), 'Gardien de Bab El',
       'sans compte et sans pseudo, la ville nomme le joueur');
 
-    // La courbe est affichée, et elle monte : c'est la promesse du dossier.
-    const courbe = [...document.querySelectorAll('[data-profil-courbe-niveau]')];
-    assert.equal(courbe.length, 4, 'les quatre prochains paliers sont écrits');
-    const prix = courbe.map((ligne) => Number(texte(ligne.querySelector('.rpg-profil__courbe-prix')).replace(/[^\d]/g, '')));
-    assert.equal(prix[0], seuilDuNiveau(1), 'le premier prix est celui des règles');
-    for (let index = 1; index < prix.length; index += 1) {
-      assert.ok(prix[index] > prix[index - 1], `le palier ${index + 1} coûte plus cher que le ${index}`);
+    // La carte est **dépouillée** : ni rang, ni compteurs, ni barème, ni journal,
+    // ni paliers à venir, ni état de synchronisation. Ces chiffres existent
+    // toujours — dans `rpgProfil.js`, au Souk — mais la carte de profil n'est pas
+    // un tableau de bord.
+    for (const absent of ['[data-profil-rang]', '[data-profil-stat]', '[data-profil-stats]',
+      '[data-profil-bareme]', '[data-profil-journal]', '[data-profil-courbe]', '[data-profil-sync]']) {
+      assert.equal(noeud(absent), null, `${absent} n’est plus sur la carte`);
     }
-    assert.equal(nombre('[data-profil-bareme]', 'profilBareme'), 10, 'le barème affiche ses dix gestes');
-    const bareme = [...document.querySelectorAll('[data-profil-bareme-ligne]')]
-      .map((ligne) => Number(texte(ligne).replace(/[^\d]/g, '')));
-    assert.ok(bareme.includes(XP.carteJouee) && bareme.includes(XP.etagePremiere),
-      'les montants du barème sont ceux du module');
-    assert.equal(texte(noeud('[data-profil-stat="cartes"] strong')), '0', 'les compteurs partent de zéro');
+    assert.equal(document.querySelectorAll('.rpg-profil__section').length, 0, 'plus aucune section à titre');
+    assert.ok(document.querySelectorAll('[data-profil] *').length < 40,
+      `toute la carte tient en quelques noeuds (${document.querySelectorAll('[data-profil] *').length})`);
+    assert.equal(document.querySelectorAll('[data-profil] h3').length, 0, 'et pas un titre de section');
 
     // ── Jouer fait monter la barre, sans franchir de palier ─────────────────
     for (let index = 0; index < 4; index += 1) {
@@ -161,8 +141,8 @@ export async function checkRpgProfilEcran(assert) {
       'et la barre se remplit du même pourcentage');
     assert.equal(nombre('[data-profil-niveau]', 'profilNiveau'), 1, 'le premier palier n’est pas encore franchi');
     assert.equal(noeud('[data-souk-ceremonie]'), null, 'rien à ouvrir : pas de cérémonie');
-    assert.equal(texte(noeud('[data-profil-stat="cartes"] strong')), '4',
-      'le compteur de cartes suit');
+    assert.equal(bourse.profil.stats.cartesJouees, 4,
+      'le compteur de cartes suit — dans le profil, plus sur la carte');
     assert.equal(bourse.bourse.credits, 0, 'l’XP ne paie pas de crédit : ce sont deux monnaies');
 
     // ── Le duel gagné franchit le palier et ouvre un paquet offert ──────────
@@ -221,9 +201,11 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(palier2.niveaux, 1, 'un nouveau palier sonne');
     assert.equal(bourse.boostersEnAttente, 1, 'mais la cérémonie occupe l’écran : le paquet attend');
     assert.equal(nombre('[data-profil-attente]', 'profilAttente'), 1, 'et l’écran le dit');
-    assert.match(texte(noeud('[data-profil-attente]')), /paquet de palier vous attend/,
-      'le bandeau promet le paquet, sans l’ouvrir de force');
-    assert.ok(noeud('[data-profil-attente] button'), 'avec un chemin vers le Souk');
+    assert.match(texte(noeud('[data-profil-attente]')), /Un paquet vous attend/,
+      'le bandeau promet le paquet en une ligne, sans l’ouvrir de force');
+    await act(async () => noeud('[data-profil-attente-aller]').click());
+    assert.ok(sons.includes('vers-le-souk') && sons.includes('menu'),
+      'et ce bouton mène au Souk, avec le son du menu');
     assert.equal(donnee('[data-souk-ceremonie]', 'soukCeremonieNiveau'), '2',
       'la première cérémonie reste seule à l’écran');
 
@@ -252,14 +234,9 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(bourse.monteeNiveau, null, 'et le hook a oublié la montée');
     assert.ok(bourse.bourse.credits >= soldeAvant, 'deux paliers offerts n’ont rien débité');
     assert.equal(noeud('[data-profil-attente]'), null, 'plus de bandeau : tout est offert');
-    assert.ok(bourse.profil.paliers.length >= 2, 'le journal des paliers a gardé les montées');
-    assert.equal(texte(noeud('[data-profil-stat="offerts"] strong')), String(bourse.profil.boostersOfferts),
-      'la carte de profil compte les paquets offerts');
-    assert.ok(texte(noeud('[data-profil-stat="offerts"] strong')) >= '2', 'au moins deux paquets offerts');
-    assert.ok(noeud('[data-profil-journal-niveau="2"]'), 'le journal garde le palier franchi');
-    assert.match(texte(noeud('[data-profil-journal-niveau="2"]')), /Niveau 2/, 'et le nomme');
-    assert.match(texte(noeud('[data-profil-journal-niveau="2"]')), /paquet offert/,
-      'chaque ligne rappelle le paquet qui va avec');
+    assert.ok(bourse.profil.paliers.length >= 2,
+      'le profil a gardé les paliers franchis — la carte, elle, ne les affiche plus');
+    assert.ok(bourse.profil.boostersOfferts >= 2, 'et les paquets offerts sont comptés');
 
     // ── Le nom et l'emblème s'écrivent, et se relisent ──────────────────────
     const saisie = noeud('[data-profil-pseudo-saisie]');
@@ -284,7 +261,7 @@ export async function checkRpgProfilEcran(assert) {
     const embleme = EMBLEMES[3];
     await act(async () => noeud(`[data-profil-embleme="${embleme.id}"]`).click());
     assert.equal(bourse.profil.embleme, embleme.id, 'l’emblème choisi est retenu');
-    assert.equal(texte(noeud('.rpg-profil__medaillon-glyphe')), embleme.glyphe, 'et le médaillon le porte');
+    assert.equal(texte(noeud('.rpg-profil__medaillon')), embleme.glyphe, 'et le médaillon le porte');
     assert.ok(noeud(`[data-profil-embleme="${embleme.id}"]`).classList.contains('is-choisi'),
       'le bouton choisi se marque');
     assert.equal(
@@ -316,7 +293,7 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(bourse2.profil.xp, xpAvantRemontage, 'un nouveau montage relit l’XP de l’appareil');
     assert.equal(nombre('[data-profil-niveau]', 'profilNiveau'), niveauAvantRemontage, 'et le niveau qui va avec');
     assert.equal(donnee('[data-profil-pseudo]', 'profilPseudo'), 'Salem l’arpenteur', 'le nom survit');
-    assert.equal(texte(noeud('.rpg-profil__medaillon-glyphe')), embleme.glyphe, 'l’emblème aussi');
+    assert.equal(texte(noeud('.rpg-profil__medaillon')), embleme.glyphe, 'l’emblème aussi');
     assert.equal(bourse2.boostersEnAttente, 0, 'aucune dette ne renaît au remontage');
     assert.equal(noeud('[data-souk-ceremonie]'), null, 'et aucune cérémonie ne se rouvre toute seule');
 
