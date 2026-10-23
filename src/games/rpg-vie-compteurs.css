@@ -175,6 +175,12 @@
   100% { box-shadow: inset 0 0 10px rgba(0, 0, 0, .38); }
 }
 
+/* Pendant un soin, le battement vert des PV tombe sur le chiffre vrai — qui
+   est masqué le temps du roulage. Le calque qui compte reprend le même
+   battement : la vie qui remonte ne perd jamais son éclat. */
+.rpg-wizard-plate.is-healing--a .rpg-jauge-vie__roule { animation: rpg-soin-valeur-a .95s ease-out; }
+.rpg-wizard-plate.is-healing--b .rpg-jauge-vie__roule { animation: rpg-soin-valeur-b .95s ease-out; }
+
 /* ── La veille : à 5 PV, un liseré chaud respire, rien de plus ──────────
    Porté par le pseudo-élément de la nappe : il ne dispute pas son animation
    à la perte ou au gain, qui jouent sur la nappe elle-même. */
