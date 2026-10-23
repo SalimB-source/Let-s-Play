@@ -6774,7 +6774,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       table.style.removeProperty('--rpg-plaque-droite');
     };
   }, [essaiTactile, ecran, duel]);
-  // Toucher : la barre de combat ferme la colonne de droite, juste au-dessus
+  // La barre de combat ferme la colonne de droite, juste au-dessus
   // de la main, et sa hauteur varie d'une à trois commandes empilées
   // (« Confirmer l'attaque », « Annuler l'attaque », « Résoudre le combat »…).
   // Sa hauteur réelle est publiée en variable CSS : le rail du tour s'ancre
@@ -6782,17 +6782,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useLayoutEffect(() => {
     const table = tableRef.current;
     const controles = table?.querySelector('.rpg-bottombar');
-    if (!viewport.mobile || !table || !controles) return undefined;
+    if (!table || !controles) return undefined;
     const publier = () => table.style.setProperty('--rpg-controles-h', `${controles.offsetHeight}px`);
     publier();
-    if (typeof ResizeObserver !== 'function') return undefined;
-    const observateur = new ResizeObserver(publier);
-    observateur.observe(controles);
+    const observateur = typeof ResizeObserver === 'function' ? new ResizeObserver(publier) : null;
+    observateur?.observe(controles);
     return () => {
-      observateur.disconnect();
+      observateur?.disconnect();
       table.style.removeProperty('--rpg-controles-h');
     };
-  }, [viewport.mobile, duel]);
+  }, [viewport.mobile, ecran, duel]);
   useLayoutEffect(() => {
     if (!duel) return;
     const terrains = tableRef.current?.querySelector('.rpg-terrains--joueur');

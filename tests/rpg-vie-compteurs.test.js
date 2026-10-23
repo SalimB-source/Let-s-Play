@@ -58,7 +58,7 @@ test('la valeur roulée va d’un entier à l’autre, et s’arrête exactement
 
 // ── La jauge de vie ────────────────────────────────────────────────────────
 
-test('la jauge rapporte la vie au maximum tenu, jamais au maximum d’origine', () => {
+test('la jauge est pleine à la vie de base, sans dépendre des PV bonus', () => {
   const pleine = etatJaugeVie({ pv: 25, pvMax: 25, base: 25 });
   assert.equal(pleine.part, 1);
   assert.equal(pleine.basePart, 1);
@@ -70,10 +70,18 @@ test('la jauge rapporte la vie au maximum tenu, jamais au maximum d’origine', 
   assert.equal(entamee.reserve, 0);
   assert.equal(entamee.critique, true);
 
-  const reserve = etatJaugeVie({ pv: 28, pvMax: 30, base: 25 });
-  assert.ok(Math.abs(reserve.part - 28 / 30) < 1e-12);
-  assert.ok(Math.abs(reserve.reserve - (28 / 30 - 25 / 30)) < 1e-12,
-    'la bande d’or est la vie tenue au-dessus du maximum d’origine');
+  for (const pvMax of [25, 30, 50, 100]) {
+    for (const pv of [25, 28, 30, 50, 100]) {
+      const bonus = etatJaugeVie({ pv, pvMax, base: 25 });
+      assert.equal(bonus.part, 1, `${pv} PV : le rond reste plein, même avec un record de ${pvMax}`);
+      assert.equal(bonus.basePart, 1);
+      assert.equal(bonus.reserve, 0, 'les PV bonus ne changent pas le visuel plein');
+    }
+    assert.equal(etatJaugeVie({ pv: 20, pvMax, base: 25 }).part, .8,
+      'après un bonus, la jauge ne descend que sous 25 PV');
+  }
+  assert.equal(etatJaugeVie({ pv: 30, pvMax: 60, base: 30 }).part, 1,
+    'une base personnalisée reste prise en compte');
 });
 
 test('une jauge ne ment jamais : les états partiels, vides ou absurdes retombent juste', () => {
@@ -155,14 +163,13 @@ test('la plaque garde la structure et les classes attendues par la feuille', () 
     'rpg-wizard-plate__pv',
     'rpg-wizard-plate__hp-icon--shield',
     'rpg-wizard-plate__hp-icon--heart',
-    'rpg-wizard-plate__hp-max',
     'rpg-wizard-plate__shield-value',
     'rpg-soin-montant',
   ]) {
     assert.ok(composant.includes(classe), `la plaque réutilise ${classe}`);
   }
-  assert.match(composant, /\{pvMax > base && <span className="rpg-wizard-plate__hp-max">\/\{pvMax\}<\/span>\}/,
-    'le maximum ne s’affiche toujours que si la réserve est ouverte');
+  assert.doesNotMatch(composant, /className="rpg-wizard-plate__hp-max"/,
+    'le record de PV ne rajoute aucun texte qui élargit le rond');
   assert.match(composant, /data-vie-sens=\{sens\}/, 'la plaque expose son sens de variation');
 });
 

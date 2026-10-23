@@ -2,8 +2,8 @@
 //
 // Rendu jsdom réel de `PlaqueVie` et `CompteurCarte`, puis lectures de la
 // feuille : la plaque garde la valeur vraie pendant que le chiffre roule, le
-// sable suit la part de vie, la réserve s'ouvre au-dessus du maximum
-// d'origine, les grains tombent, la dernière Heure veille, et le mouvement
+// sable reste plein dès la vie de base, les PV bonus ne changent pas le rond,
+// les grains tombent, la dernière Heure veille, et le mouvement
 // réduit n'enlève que le geste — jamais l'information.
 //
 // Aperçu interactif (sans navigateur à installer) :
@@ -63,7 +63,7 @@ async function verifier() {
     'les grains ne tombent plus en mouvement réduit');
   assert.doesNotMatch(composant, /setInterval/, 'aucune minuterie qui tourne en boucle');
 
-  console.log('✓ Vie et compteurs : la plaque garde la valeur vraie pendant que le chiffre roule, le sable suit la part de vie, la réserve s’ouvre en or au-dessus de 25, six grains tombent à chaque perte, la jauge veille à 5 PV — et la dernière Heure se fêle dans son losange. En mouvement réduit, tout s’arrête sauf l’information.');
+  console.log('✓ Vie et compteurs : la plaque garde la valeur vraie pendant que le chiffre roule, le sable suit la part de vie, le rond reste plein au-dessus de 25, six grains tombent à chaque perte, la jauge veille à 5 PV — et la dernière Heure se fêle dans son losange. En mouvement réduit, tout s’arrête sauf l’information.');
 }
 
 /* ══ Aperçu interactif ══════════════════════════════════════════════════════

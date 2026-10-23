@@ -45,6 +45,7 @@
     "check:rpg-souk-ui": "node scripts/rpg-souk-ui-check.mjs",
     "check:rpg-booster-layout": "node scripts/rpg-booster-layout-check.mjs",
     "preview:rpg-booster": "node scripts/rpg-booster-layout-check.mjs --preview",
+    "check:rpg-vie-layout": "node scripts/rpg-vie-layout-check.mjs",
     "preview:rpg-vie-compteurs": "node scripts/rpg-vie-compteurs-check.mjs --preview",
     "check:rpg-souk": "npm run check:rpg-hasard && npm run check:rpg-credits && npm run check:rpg-quetes && npm run check:rpg-boosters && npm run check:rpg-evenements && npm run check:rpg-souk-branche && npm run check:rpg-souk-ui",
     "check:rpg-profil": "node --test tests/rpg-profil.test.js && node scripts/rpg-profil-check.mjs",
@@ -158,7 +159,8 @@
     "desktop:setup": "npm --prefix desktop install",
     "desktop:run": "npm --prefix desktop run start",
     "desktop:dist": "npm --prefix desktop run dist",
-    "check:desktop": "node scripts/desktop-check.mjs"
+    "check:desktop": "node scripts/desktop-check.mjs",
+    "check:rpg-combat-controls": "node scripts/rpg-combat-controls-check.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
