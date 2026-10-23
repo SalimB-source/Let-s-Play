@@ -1,0 +1,332 @@
+/*
+ * Le Sablier — la vie est du sable, et les compteurs se vident d'un grain.
+ * ------------------------------------------------------------------------
+ * Deux animations courtes, locales, sans captation de geste :
+ *
+ *   1. **La jauge de vie** (`PlaqueVie`) : une nappe de sable derrière le
+ *      chiffre des PV, dont la hauteur suit `pv / pvMax` ; une bande d'or pour
+ *      la réserve au-dessus du maximum d'origine ; un roulage du nombre ; six
+ *      grains qui quittent la plaque à chaque perte ; une veille à 5 PV.
+ *   2. **Les compteurs de carte** (`CompteurCarte`) : pose, perte d'un grain,
+ *      gain, et la « dernière Heure » qui pulse dans son losange.
+ *
+ * Les couleurs restent celles de la table : sable chaud pour la vie, or pour
+ * la réserve, bleu d'Heures pour le compteur du temps, ocre pour le sable
+ * d'une arme. Rien ne clignote en plein écran : tout vit sur la plaque ou sur
+ * le losange, sous une couche `pointer-events: none`.
+ *
+ * En mouvement réduit, il reste la jauge et ses couleurs — l'information ne
+ * disparaît jamais —, mais plus de roulage, de grains, ni de pulsation.
+ */
+
+/* ══ 1. La vie est du sable ═══════════════════════════════════════════════ */
+
+/* La plaque de vie devient le repère des couches. Les enfants textuels
+   (icônes, chiffres) passent au-dessus de la nappe ; l'éclat de soin garde son
+   positionnement absolu, il n'est donc pas concerné. */
+.rpg-jauge-vie {
+  position: relative;
+}
+
+.rpg-jauge-vie__nappe {
+  position: absolute;
+  inset: -1px -3px;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 7px;
+  background: rgba(26, 19, 11, .3);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, .38);
+  pointer-events: none;
+}
+
+/* Le sable : la hauteur est pilotée par `--rpg-jauge-part`, la transition fait
+   le geste. Une vie qui monte remplit, une vie qui baisse vide — sans saut. */
+.rpg-jauge-vie__sable {
+  position: absolute;
+  inset: auto 0 0;
+  height: calc(var(--rpg-jauge-part, 1) * 100%);
+  background: linear-gradient(180deg, rgba(238, 205, 138, .52), rgba(196, 152, 82, .3));
+  box-shadow: inset 0 1px rgba(255, 236, 191, .72);
+  transition: height 420ms cubic-bezier(.2, .7, .2, 1);
+}
+
+/* La réserve : la vie tenue au-dessus du maximum d'origine. Elle se lit comme
+   une strate d'or posée sur le sable, sans texte. */
+.rpg-jauge-vie__reserve {
+  position: absolute;
+  inset: auto 0 auto;
+  bottom: calc(var(--rpg-jauge-base, 0) * 100%);
+  height: calc(var(--rpg-jauge-reserve, 0) * 100%);
+  background: linear-gradient(180deg, rgba(255, 219, 133, .78), rgba(214, 161, 62, .55));
+  box-shadow: inset 0 1px rgba(255, 245, 210, .9);
+  transition: height 420ms cubic-bezier(.2, .7, .2, 1), bottom 420ms cubic-bezier(.2, .7, .2, 1);
+}
+
+/* Le trait du maximum d'origine : « au-delà, c'est de la réserve ». */
+.rpg-jauge-vie__trait {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--rpg-jauge-base, 0) * 100%);
+  height: 1px;
+  background: rgba(255, 231, 170, .5);
+  box-shadow: 0 0 4px rgba(255, 210, 120, .32);
+  pointer-events: none;
+}
+
+.rpg-jauge-vie .rpg-wizard-plate__hp-icon,
+.rpg-jauge-vie .rpg-wizard-plate__hp-max,
+.rpg-jauge-vie .rpg-wizard-plate__shield-value {
+  position: relative;
+  z-index: 1;
+}
+
+/* Le chiffre vrai reste dans le flux (il garde sa place et sa largeur) ; le
+   calque de roulage vient se poser exactement dessus, dans le même cadre.
+   La marge de `.rpg-wizard-plate__hp-value` passe sur le cadre, qui est
+   désormais l'élément en ligne : l'espacement est conservé à l'identique, et
+   les deux contextes qui l'annulaient (PC et tactile) l'annulent ici. */
+.rpg-jauge-vie__chiffre {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  margin-inline-start: .25em;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  vertical-align: baseline;
+}
+.rpg-jauge-vie__chiffre > .rpg-wizard-plate__hp-value {
+  position: relative;
+  margin-inline-start: 0;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-jauge-vie__chiffre,
+.rpg-battle--touch .rpg-jauge-vie__chiffre {
+  margin-inline-start: 0;
+}
+.rpg-jauge-vie.is-roulage .rpg-wizard-plate__hp-value {
+  visibility: hidden;
+}
+.rpg-jauge-vie__roule {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
+/* ── Les grains : six par perte, chacun avec sa position, son retard ---- */
+.rpg-jauge-vie__grains {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.rpg-jauge-vie__grain {
+  position: absolute;
+  top: 72%;
+  left: var(--x, 50%);
+  width: var(--t, 3px);
+  height: var(--t, 3px);
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffe6b4, #cfa55e 68%, rgba(201, 158, 88, 0));
+  opacity: 0;
+  animation: rpg-vie-grain 760ms var(--d, 0ms) cubic-bezier(.3, .1, .6, 1) forwards;
+}
+@keyframes rpg-vie-grain {
+  0% { opacity: 0; transform: translate(0, 0) scale(.6); }
+  16% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 0), 32px) scale(1); }
+}
+
+/* ── Perte : la nappe s'éteint, le chiffre marque le coup ─────────────── */
+.rpg-jauge-vie.is-perte--a .rpg-jauge-vie__nappe { animation: rpg-vie-nappe-perte-a 560ms ease-out; }
+.rpg-jauge-vie.is-perte--b .rpg-jauge-vie__nappe { animation: rpg-vie-nappe-perte-b 560ms ease-out; }
+@keyframes rpg-vie-nappe-perte-a {
+  0% { box-shadow: inset 0 0 10px rgba(0, 0, 0, .38); }
+  22% { box-shadow: inset 0 0 0 1px rgba(255, 138, 96, .8), inset 0 0 18px rgba(196, 74, 40, .5); }
+  100% { box-shadow: inset 0 0 10px rgba(0, 0, 0, .38); }
+}
+@keyframes rpg-vie-nappe-perte-b {
+  0% { box-shadow: inset 0 0 10px rgba(0, 0, 0, .38); }
+  22% { box-shadow: inset 0 0 0 1px rgba(255, 138, 96, .8), inset 0 0 18px rgba(196, 74, 40, .5); }
+  100% { box-shadow: inset 0 0 10px rgba(0, 0, 0, .38); }
+}
+.rpg-jauge-vie.is-perte--a .rpg-wizard-plate__hp-value,
+.rpg-jauge-vie.is-perte--b .rpg-wizard-plate__hp-value {
+  color: #ffb9a0;
+}
+
+/* ── Gain : la nappe s'allume par le haut, comme un verre qu'on remplit ── */
+.rpg-jauge-vie.is-gain--a .rpg-jauge-vie__nappe { animation: rpg-vie-nappe-gain-a 640ms ease-out; }
+.rpg-jauge-vie.is-gain--b .rpg-jauge-vie__nappe { animation: rpg-vie-nappe-gain-b 640ms ease-out; }
+@keyframes rpg-vie-nappe-gain-a {
+  0% { box-shadow: inset 0 0 10px rgba(0, 0, 0, .38); }
+  30% { box-shadow: inset 0 0 0 1px rgba(214, 255, 200, .7), inset 0 0 16px rgba(120, 220, 130, .34); }
+  100% { box-shadow: inset 0 0 10px rgba(0, 0, 0, .38); }
+}
+@keyframes rpg-vie-nappe-gain-b {
+  0% { box-shadow: inset 0 0 10px rgba(0, 0, 0, .38); }
+  30% { box-shadow: inset 0 0 0 1px rgba(214, 255, 200, .7), inset 0 0 16px rgba(120, 220, 130, .34); }
+  100% { box-shadow: inset 0 0 10px rgba(0, 0, 0, .38); }
+}
+
+/* ── La veille : à 5 PV, un liseré chaud respire, rien de plus ──────────
+   Porté par le pseudo-élément de la nappe : il ne dispute pas son animation
+   à la perte ou au gain, qui jouent sur la nappe elle-même. */
+.rpg-jauge-vie__nappe::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.rpg-jauge-vie.is-critique .rpg-jauge-vie__nappe::after {
+  animation: rpg-vie-veille 2.6s ease-in-out infinite;
+}
+@keyframes rpg-vie-veille {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255, 138, 96, .3), 0 0 7px rgba(214, 80, 48, .12); }
+  50% { box-shadow: inset 0 0 0 1px rgba(255, 178, 128, .8), 0 0 15px rgba(214, 80, 48, .3); }
+}
+.rpg-jauge-vie.is-critique .rpg-jauge-vie__sable {
+  background: linear-gradient(180deg, rgba(255, 168, 122, .5), rgba(190, 84, 52, .3));
+}
+
+/* ══ 2. Les compteurs de carte ═══════════════════════════════════════════ */
+
+/* Le losange devient le repère de son grain. Sa rotation de 45° ne bouge pas :
+   rien ici ne touche `transform` sur le losange lui-même. */
+.rpg-card__compteur {
+  position: relative;
+}
+
+/* Le grain qui traverse le verre : il glisse le long de la diagonale du
+   losange, comme le sable au col d'un sablier. */
+.rpg-compteur__passe {
+  position: absolute;
+  top: 26%;
+  left: 50%;
+  width: 2px;
+  height: 2px;
+  margin-left: -1px;
+  border-radius: 50%;
+  background: var(--rpg-compteur-grain, #ffe6b4);
+  box-shadow: 0 0 3px var(--rpg-compteur-grain, #ffe6b4);
+  opacity: 0;
+  pointer-events: none;
+}
+.rpg-card__compteur--heures { --rpg-compteur-grain: #e8f6ff; --rpg-compteur-veille: rgba(190, 230, 255, .9); }
+.rpg-card__compteur--sable { --rpg-compteur-grain: #ffe0a2; --rpg-compteur-veille: rgba(255, 220, 150, .9); }
+
+/* ── Pose : le compteur arrive du néant, une seule fois ────────────────── */
+.rpg-card__compteur.is-pose { animation: rpg-compteur-pose 420ms cubic-bezier(.2, .8, .3, 1); }
+@keyframes rpg-compteur-pose {
+  0% { opacity: 0; filter: brightness(2.2); }
+  70% { opacity: 1; }
+  100% { opacity: 1; filter: brightness(1); }
+}
+
+/* ── Perte : le verre s'éclaire, le chiffre repart, le grain tombe ────── */
+.rpg-card__compteur.is-perte--a { animation: rpg-compteur-perte-a 420ms ease-out; }
+.rpg-card__compteur.is-perte--b { animation: rpg-compteur-perte-b 420ms ease-out; }
+@keyframes rpg-compteur-perte-a {
+  0% { filter: brightness(1); }
+  24% { filter: brightness(1.9) saturate(.65); }
+  100% { filter: brightness(1); }
+}
+@keyframes rpg-compteur-perte-b {
+  0% { filter: brightness(1); }
+  24% { filter: brightness(1.9) saturate(.65); }
+  100% { filter: brightness(1); }
+}
+.rpg-card__compteur.is-perte--a > span { animation: rpg-compteur-chiffre-a 420ms ease-out; }
+.rpg-card__compteur.is-perte--b > span { animation: rpg-compteur-chiffre-b 420ms ease-out; }
+@keyframes rpg-compteur-chiffre-a {
+  0% { transform: rotate(-45deg) scale(1.45); opacity: .3; }
+  58% { transform: rotate(-45deg) scale(.9); opacity: 1; }
+  100% { transform: rotate(-45deg) scale(1); }
+}
+@keyframes rpg-compteur-chiffre-b {
+  0% { transform: rotate(-45deg) scale(1.45); opacity: .3; }
+  58% { transform: rotate(-45deg) scale(.9); opacity: 1; }
+  100% { transform: rotate(-45deg) scale(1); }
+}
+.rpg-card__compteur.is-perte--a .rpg-compteur__passe { animation: rpg-compteur-grain-a 420ms ease-in forwards; }
+.rpg-card__compteur.is-perte--b .rpg-compteur__passe { animation: rpg-compteur-grain-b 420ms ease-in forwards; }
+@keyframes rpg-compteur-grain-a {
+  0% { opacity: 0; transform: translateY(0); }
+  22% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(9px); }
+}
+@keyframes rpg-compteur-grain-b {
+  0% { opacity: 0; transform: translateY(0); }
+  22% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(9px); }
+}
+
+/* ── Gain : le losange s'ouvre d'un cran, liseré clair ────────────────── */
+.rpg-card__compteur.is-gain--a { animation: rpg-compteur-gain-a 420ms ease-out; }
+.rpg-card__compteur.is-gain--b { animation: rpg-compteur-gain-b 420ms ease-out; }
+@keyframes rpg-compteur-gain-a {
+  0% { filter: brightness(1); }
+  26% { filter: brightness(1.7) saturate(1.2); }
+  100% { filter: brightness(1); }
+}
+@keyframes rpg-compteur-gain-b {
+  0% { filter: brightness(1); }
+  26% { filter: brightness(1.7) saturate(1.2); }
+  100% { filter: brightness(1); }
+}
+
+/* ── La dernière Heure : le verre se fêle et veille ─────────────────────
+   Le joueur doit savoir que l'effet tombe au prochain tour sans lire le
+   journal. Deux signes discrets, sur un losange de 10 à 18 px : un trait de
+   fêlure, et un liseré qui pulse. */
+.rpg-card__compteur--heures.is-derniere {
+  border-color: #ffe0a8;
+  box-shadow: 0 0 7px rgba(190, 230, 255, .5), inset 0 1px rgba(255, 255, 255, .3);
+}
+.rpg-card__compteur--heures.is-derniere::before {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  background: linear-gradient(135deg, transparent 44%, rgba(232, 246, 255, .95) 50%, transparent 56%);
+  pointer-events: none;
+}
+.rpg-card__compteur--heures.is-derniere::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 1px solid var(--rpg-compteur-veille, rgba(190, 230, 255, .9));
+  border-radius: 4px;
+  pointer-events: none;
+  animation: rpg-compteur-veille 2s ease-out infinite;
+}
+@keyframes rpg-compteur-veille {
+  0% { opacity: .85; transform: scale(1); }
+  72%, 100% { opacity: 0; transform: scale(1.55); }
+}
+
+/* ══ Mouvement réduit ════════════════════════════════════════════════════
+   Le sable reste (il porte l'information), mais il ne coule plus : les
+   hauteurs changent d'un coup, les grains, les pulsations et le roulage
+   n'existent plus. Le roulage est déjà coupé côté composant ; ici, on éteint
+   ce qui reste en CSS. */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-jauge-vie__sable,
+  .rpg-jauge-vie__reserve { transition: none; }
+  .rpg-jauge-vie__grain { display: none; }
+  .rpg-jauge-vie__nappe,
+  .rpg-jauge-vie__nappe::after,
+  .rpg-card__compteur,
+  .rpg-card__compteur > span,
+  .rpg-compteur__passe,
+  .rpg-card__compteur--heures.is-derniere::after { animation: none !important; }
+  .rpg-jauge-vie.is-roulage .rpg-wizard-plate__hp-value { visibility: visible; }
+  .rpg-jauge-vie__roule { display: none; }
+  .rpg-card__compteur--heures.is-derniere { box-shadow: 0 0 0 1px rgba(190, 230, 255, .7); }
+}

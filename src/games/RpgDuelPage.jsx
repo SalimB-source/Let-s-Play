@@ -13,6 +13,8 @@ import './rpg-story.css';
 import './rpg-deckbox.css';
 import './rpg-mana-essai.css';
 import './rpg-soins.css';
+import './rpg-vie-compteurs.css';
+import { CompteurCarte, PlaqueVie } from './RpgVieCompteurs.jsx';
 import useRpgMythicImpact from './useRpgMythicImpact.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
@@ -2474,14 +2476,10 @@ export function TableCard({
       {(entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0) || (entite.enCale && !hybride)) && (
         <span className={`rpg-card__compteurs${hybride ? ' rpg-card__compteurs--hybride' : ''}`} aria-hidden="true">
           {entite.heures?.restants > 0 && (
-            <span className="rpg-card__compteur rpg-card__compteur--heures" data-compteur="heures">
-              <span>{entite.heures.restants}</span>
-            </span>
+            <CompteurCarte type="heures" valeur={entite.heures.restants} />
           )}
           {armeCarte && entite.arme?.compteurs > 0 && (
-            <span className="rpg-card__compteur rpg-card__compteur--sable" data-compteur="sable">
-              <span>{entite.arme.compteurs}</span>
-            </span>
+            <CompteurCarte type="sable" valeur={entite.arme.compteurs} />
           )}
           {entite.enCale && !hybride && (
             <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
@@ -10423,14 +10421,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <strong>{modePvp ? nomSorcierAdverse : etageHistoire ? etageHistoire.nom : tutorielActif ? 'SORCIER D’ENTRAÎNEMENT' : 'LE SORCIER'}</strong>
             <small>{etageHistoire ? etageHistoire.fonction : tutorielActif ? 'Partie guidée · sans pression' : `${deckAdverseAffiche.name} · ${deckColorLabel(deckAdverseAffiche)}`}</small>
           </span>
-          <span className="rpg-wizard-plate__pv">
-            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
-            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
-            <span className="rpg-wizard-plate__hp-value">{duel.sorcier.pv}</span>
-            {duel.sorcier.pvMax > RPG_PV_SORCIER_BASE && <span className="rpg-wizard-plate__hp-max">/{duel.sorcier.pvMax}</span>}
-            {duel.sorcier.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.sorcier.bouclier}</span>}
-            {soinSorcier && <span key={soinSorcier.token} className="rpg-soin-montant" aria-hidden="true">+{soinSorcier.montant}</span>}
-          </span>
+          <PlaqueVie
+            pv={duel.sorcier.pv}
+            pvMax={duel.sorcier.pvMax}
+            bouclier={duel.sorcier.bouclier}
+            soin={soinSorcier}
+            base={RPG_PV_SORCIER_BASE}
+          />
           <WizardManaCounters mana={duel.sorcier.mana} />
           {sorcierReflechit && (
             <span className="rpg-wizard-plate__thinking" aria-hidden="true">
@@ -10832,14 +10829,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" aria-hidden="true"><img src={cardArt('tin-hinan')} alt="" /></span>
           <span className="rpg-wizard-plate__profile-name">{nomJoueurAffiche}</span>
           <span className="rpg-wizard-plate__identity"><strong>{modePvp ? nomJoueurAffiche : 'VOUS'}</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
-          <span className="rpg-wizard-plate__pv">
-            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
-            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
-            <span className="rpg-wizard-plate__hp-value">{duel.joueur.pv}</span>
-            {duel.joueur.pvMax > RPG_PV_JOUEUR && <span className="rpg-wizard-plate__hp-max">/{duel.joueur.pvMax}</span>}
-            {duel.joueur.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.joueur.bouclier}</span>}
-            {soinJoueur && <span key={soinJoueur.token} className="rpg-soin-montant" aria-hidden="true">+{soinJoueur.montant}</span>}
-          </span>
+          <PlaqueVie
+            pv={duel.joueur.pv}
+            pvMax={duel.joueur.pvMax}
+            bouclier={duel.joueur.bouclier}
+            soin={soinJoueur}
+            base={RPG_PV_JOUEUR}
+          />
           <WizardManaCounters mana={duel.joueur.mana} />
           <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.joueur.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckJoueur}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.joueur.cimetiere.length}</span></span></span>
           {soinJoueur && <EclatSoin key={soinJoueur.token} />}

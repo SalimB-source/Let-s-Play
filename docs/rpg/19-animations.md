@@ -122,8 +122,8 @@ animation qui clarifie l'état vaut dix animations de dégâts.
 | --- | --- | --- | --- |
 | **Le grain du tour** · `rpg-astrolabe-grain` | À chaque passage de tour, un grain de sable traverse l'anneau de l'Astrolabe du HUD et tombe dans le verre du bas. Le compteur de tours devient un objet, pas un nombre. | 600 ms · SVG `stroke-dashoffset` | **P0** · S |
 | **Le sablier se retourne** · `rpg-fin-de-tour-retourne` | Le bouton « Fin du tour » se retourne en 3D (rotation Y, 240 ms) et devient la pastille dorée du tour suivant. Le geste le plus répété de la partie doit être le plus satisfaisant. | 480 ms · CSS `rotateY` | **P0** · S |
-| **Les Heures s'égrènent** · `rpg-heures-grain` | Un compteur d'Heures (`effetIcons.js`, `i-heures`) perd une unité : un grain tombe dans l'icône, le chiffre décrémente avec un léger rebond. Aujourd'hui c'est un changement de texte. | 320 ms · CSS | **P0** · S |
-| **La dernière Heure** · `rpg-heures-derniere` | Le compteur passe de 1 à 0 : le verre se fêle, la fêlure court, **puis** l'effet se déclenche. On comprend que l'effet *vient du compteur*, pas du hasard. | 500 ms puis effet · CSS + SVG | **P0** · M |
+| **Les Heures s'égrènent** · `rpg-heures-grain` ✅ | Un compteur d'Heures perd une unité : un grain traverse le losange, le verre s'éclaire et le chiffre repart. Chaque coup rejoue son geste, même deux coups rapprochés (variantes a/b). Aujourd'hui c'est un changement de texte. | 420 ms · CSS | **P0** · S |
+| **La dernière Heure** · `rpg-heures-derniere` ✅ | À **une** Heure restante, le verre se fêle et un liseré pulse : le joueur sait que l'effet tombe au prochain tour sans lire le journal. Le moteur retirant le compteur à zéro, la chute du dernier grain ne peut pas s'animer — l'état de veille la remplace. | 2 s en boucle · CSS | **P0** · S |
 | **La marée de mana** · `rpg-mana-maree` | Au début du tour, les pastilles de mana se remplissent **une par une**, de gauche à droite, avec une petite vague ; le débordement au-delà du plafond ondule au lieu de clignoter. Réutilise `rpg-flux-icone-allumee`. | 45 ms × n · CSS | **P0** · S |
 | **Intention révélée** · `rpg-intention-deplie` | L'intention ennemie imprimée sur le parchemin se déplie d'un coup sec, puis l'icône est **tamponnée** (échelle 1,3 → 1, encre). Le joueur doit voir le moment où il apprend ce qui vient. | 380 ms · CSS | P1 · S |
 | **Le sorcier réfléchit** · `rpg-sorcier-pendule` | Pendant le tour adverse, un pendule d'horloger oscille près de sa plaque, puis s'arrête net quand il joue. Remplace/complète `rpg-ai-thinking-pulse`, qui pulse sans raconter. | boucle ≤ 2 s · CSS | P2 · S |
@@ -164,9 +164,9 @@ Verre et Encre n'en ont pas** — et ce sont eux qui portent l'histoire.
 
 | Nom · id proposé | Ce qui se joue | Durée · technique | P · coût |
 | --- | --- | --- | --- |
-| **La vie est du sable** · `rpg-vie-ecoule` | Quand la plaque de vie perd des PV, le chiffre **roule** jusqu'à sa nouvelle valeur et une traînée de sable quitte la jauge vers le bas de l'écran. C'est la métaphore fondatrice du jeu, appliquée là où on la regarde. | 420 ms · CSS + WAAPI | **P0** · S |
-| **La vie revient** · `rpg-vie-remonte` | Un soin fait remonter le sable dans la jauge, grain par grain. Même geste, sens inverse : on lit le soin sans lire le chiffre. | 380 ms · CSS | P1 · S |
-| **Au-delà de 25** · `rpg-vie-reserve` | La réserve de vie dépasse son maximum : le sable s'amoncelle **au-dessus** du trait, en petit tas, et le chiffre passe en doré. La règle « la vie peut dépasser 25 » devient visible. | 300 ms · CSS | P1 · S |
+| **La vie est du sable** · `rpg-vie-ecoule` ✅ | La nappe de sable derrière le chiffre descend à la nouvelle part de vie, le chiffre **roule** jusqu'à sa nouvelle valeur et six grains quittent la plaque. C'est la métaphore fondatrice du jeu, appliquée là où on la regarde. | 420–780 ms · CSS + rAF | **P0** · S |
+| **La vie revient** · `rpg-vie-remonte` ✅ | Un soin fait remonter la nappe de sable et l'allume par le haut, le chiffre roule vers le haut. Même geste, sens inverse : on lit le soin sans lire le chiffre. | 540 ms · CSS + rAF | P1 · S |
+| **Au-delà de 25** · `rpg-vie-reserve` ✅ | La vie tenue dépasse le maximum d'origine : une **bande d'or** s'ouvre au-dessus du trait des 25 PV. La règle « la vie peut dépasser 25 » devient visible. | 420 ms · CSS | P1 · S |
 | **Déclaration d'attaque** · `rpg-ligne-de-charge` | Avant le bond, une ligne de sable se trace de l'attaquant à sa cible. Le joueur voit **qui** frappe **qui** avant l'impact, pas pendant. | 220 ms · SVG | **P0** · S |
 | **Blocage** · `rpg-blocage-etincelle` | Une flèche de blocage existe ; à l'impact, elle produit une étincelle et la carte bloqueuse recule d'un pixel. Le blocage doit se _sentir_ dans la carte, pas seulement dans le chiffre. | 260 ms · CSS | P1 · S |
 | **Dégâts cumulés** · `rpg-degats-cumul` | Plusieurs sources dans le même combat : les chiffres flottants s'additionnent au lieu de se chevaucher, le total reste 300 ms puis s'efface. Lisibilité pure. | 600 ms · CSS | P1 · S |
@@ -300,6 +300,38 @@ attente, 2 j). Le reste (P2) au fil de l'eau.
    animation orpheline qui écrit dans le DOM d'une partie terminée produit des
    effets fantômes. Le patron est celui de `rpgMythicImpact` : tout est
    annulable, tout est idempotent.
+
+---
+
+## 5 bis. Livré — la vie et les compteurs (octobre 2026)
+
+Les cinq animations marquées ✅ ci-dessus sont codées, vérifiées et visibles
+dans un aperçu interactif.
+
+| Ce qui a été livré | Où |
+| --- | --- |
+| `PlaqueVie` — jauge de sable, bande d'or de la réserve, roulage du nombre, six grains, veille à 5 PV | `src/games/RpgVieCompteurs.jsx` |
+| `CompteurCarte` — pose, perte d'un grain, gain, dernière Heure qui se fêle et veille | `src/games/RpgVieCompteurs.jsx` |
+| Calculs purs (part de jauge, réserve, durée et courbe du roulage, variantes) | `src/games/rpgVieCompteurs.js` |
+| Les deux animations, en CSS, avec leur version en mouvement réduit | `src/games/rpg-vie-compteurs.css` |
+| Règles vérifiées | `tests/rpg-vie-compteurs.test.js` (`npm run check:rpg-vie-compteurs`) |
+| Rendu jsdom réel | `scripts/rpg-vie-compteurs-check.mjs`, `scripts/rpg-vie-compteurs-smoke.jsx` |
+| Aperçu interactif, sans navigateur à installer | `npm run preview:rpg-vie-compteurs`, `scripts/rpg-vie-compteurs-apercu.jsx` |
+
+Trois décisions prises en codant, à garder pour la suite :
+
+1. **Le chiffre vrai ne roule pas dans le DOM.** `.rpg-wizard-plate__hp-value`
+   garde toujours la valeur exacte ; le roulage est un calque `aria-hidden`
+   posé dessus. Les lecteurs d'écran, les tests et les captures lisent donc
+   une vie juste, même au milieu du geste.
+2. **L'horloge du roulage est celle de `requestAnimationFrame`**, prise à la
+   première image. `performance.now()` d'un autre contexte part d'une autre
+   origine : le roulage ne finissait jamais (bug attrapé par le rendu jsdom,
+   qui a fait tomber le processus avant la correction).
+3. **La dernière Heure est un état, pas une disparition.** Le moteur retire le
+   compteur à zéro : on ne peut donc pas animer la chute du dernier grain.
+   L'animation veille à **une** Heure restante — fêlure et liseré qui pulse —,
+   ce qui prévient le joueur avant que l'effet ne tombe, sans mentir sur l'état.
 
 ---
 
