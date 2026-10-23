@@ -9096,7 +9096,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* Verglas qui dépasse retiré — demande user */
-  right: 2px;
 /* Couche de glace principale : allégée, transparente */
 .rpg-card__frost-ice {
   background:
