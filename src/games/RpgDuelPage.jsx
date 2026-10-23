@@ -2227,6 +2227,7 @@ export function RpgMassFreezeFx({ effet }) {
   // camp = lanceur ; le souffle descend sur les créatures de l'adversaire
   const target = camp === 'joueur' ? 'ennemi' : 'joueur';
   const count = intensity === 'light' ? 5 : 8;
+  const iceCount = intensity === 'light' ? 3 : 5;
   return (
     <div
       key={`cold-breath-${token}`}
@@ -2241,6 +2242,13 @@ export function RpgMassFreezeFx({ effet }) {
       <span className="rpg-cold-breath__particles rpg-mass-freeze__snow" aria-hidden="true">
         {Array.from({ length: count }, (_, i) => (
           <i key={i} className="rpg-cold-breath__particle rpg-mass-freeze__flake" style={{ '--i': i }} />
+        ))}
+      </span>
+      <span className="rpg-cold-breath__ice-flakes" aria-hidden="true">
+        {Array.from({ length: iceCount }, (_, i) => (
+          <i key={`ice-${i}`} className="rpg-cold-breath__ice-flake" style={{ '--i': i, '--j': i * 1.7 }} >
+            {i % 3 === 0 ? '❄' : i % 3 === 1 ? '❅' : '❆'}
+          </i>
         ))}
       </span>
     </div>
@@ -2495,12 +2503,9 @@ export function TableCard({
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       {gelee && <span className="rpg-card__frost" aria-hidden="true">
         <span className="rpg-card__frost-ice" />
-        <span className="rpg-card__frost-cracks" />
         <span className="rpg-card__frost-crystals" />
         <span className="rpg-card__frost-snow" />
-        <span className="rpg-card__frost-shimmer" />
-        <span className="rpg-card__frost-glow" />
-        <span className="rpg-card__frozen-label">❄ Gelée</span>
+        <span className="rpg-card__frozen-label">❄</span>
       </span>}
       <CardElementBadge carte={carte} />
       {/* Les losanges de compteurs sont sous la couleur d'une carte mono,
