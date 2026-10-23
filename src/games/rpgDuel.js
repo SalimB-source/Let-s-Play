@@ -1190,9 +1190,9 @@ function creerEntiteCreature(carte) {
     auraAmaniBonus: 0,
     boualemContresortDisponible: carte.id === 'boualem',
     esquive: Boolean(carte.esquive),
-    // Contre-attaque (Tojiro, le pourfendeur) : la créature rend chaque coup
-    // porté CONTRE elle — Coup rapide, capacité qui la cible, sort qui la
-    // désigne — même quand son Esquive a annulé les blessures.
+    // Contre-attaque (Tojiro, Eirik) : la créature rend chaque coup porté
+    // CONTRE elle — Coup rapide, capacité qui la cible, sort qui la désigne —
+    // même quand une Esquive a annulé les blessures.
     contreAttaque: Boolean(carte.contreAttaque),
     // Le surcoût du porteur d’une arme (le Grappin d’abordage) : le mana déjà
     // payé ne change pas, mais le **coût que vaut la créature en jeu** grimpe
@@ -1682,8 +1682,8 @@ function tenterEsquive(duel, entite, sourceType) {
 }
 
 /**
- * La Contre-attaque (Tojiro, le pourfendeur) : une riposte IMMÉDIATE, sans
- * jet de dés. Elle frappe la créature qui a porté le coup (un Coup rapide, une
+ * La Contre-attaque est une riposte IMMÉDIATE, sans jet de dés. Elle frappe
+ * la créature qui a porté le coup (un Coup rapide, une
  * capacité qui le ciblait) ou, pour un sort, le sorcier qui l'a lancé — la
  * magie se paie sur le visage du lanceur.
  *

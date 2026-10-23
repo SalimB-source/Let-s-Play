@@ -225,8 +225,13 @@ La Furie appartient au set **Neige** et à lui seul ; elle se lit sur la carte
 (`furie`) et le moteur l'applique sans table d'effets supplémentaires. Les
 valkyries n'émettent plus de Résonance viking.
 
-- **Furie X** (Loup des neiges 1, Valkyrie au corbeau, Guerrier au bouclier
-  rond et Berserk des trois hivers 3, Jarl au marteau de guerre et Maître du
+- **Eirik du Premier Serment** (1 mana, 2/2, mythique, Contre-attaque) — une
+  créature légendaire de type Guerrier viking. Une créature qui le frappe avec
+  Coup rapide ou le cible avec une capacité encaisse ses 2 dégâts d’attaque ;
+  un sort qui le cible fait riposter sur le sorcier adverse. Sa rareté le
+  limite à un exemplaire par deck ; il est révélé au premier étage du Fjord.
+- **Furie X** (Loup des neiges 1 ; Valkyrie au corbeau, Guerrier au bouclier
+  rond et Berserk des trois hivers 2 ; Jarl au marteau de guerre et Maître du
   marteau 3) — un état
   continu : tant que la défense actuelle d'une créature vivante est sous sa
   **DEF de base** — la défense imprimée de sa carte, sans les renforts ni les
@@ -243,7 +248,7 @@ valkyries n'émettent plus de Résonance viking.
   dans son deck. Le type imprimé décide : un Loup des neiges (type Loup) et
   les sorts Neige ne sont pas éligibles. S'il ne reste aucun Viking dans le
   deck, l'arrivée ne fait pas piocher de carte de remplacement.
-- **Provocation** (Berserk des trois hivers, 4 mana, 1/5, Furie 3) — quand
+- **Provocation** (Berserk des trois hivers, 3 mana, 2/4, Furie 2) — quand
   le Berserk attaque, le défenseur doit lui assigner au moins un bloqueur
   légal si un tel blocage est possible. S'il y a plusieurs provocateurs et
   trop peu de bloqueurs, l'affectation doit couvrir le plus grand nombre de

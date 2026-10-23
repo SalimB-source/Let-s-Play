@@ -139,7 +139,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'contre-attaque',
     section: 'Capacités des créatures',
-    cardIds: ['tojiro-le-pourfendeur'],
+    cardIds: ['tojiro-le-pourfendeur', 'eirik-du-premier-serment'],
     title: 'Contre-attaque : le coup se paie',
     text: 'Contre-attaque rend chaque coup porté CONTRE la créature qui la porte : une créature adverse qui la frappe avec Coup rapide, ou qui la cible avec une capacité, encaisse ses dégâts d’attaque en retour ; un sort qui la cible fait frapper le sorcier qui l’a lancé. Une Esquive réussie n’empêche jamais la riposte : Tojiro esquive, puis contre-attaque.',
   },

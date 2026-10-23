@@ -91,13 +91,21 @@ banquise** — ont leur plein art dédié dans `public/cards/`.
 Le Glacier possède aussi une seconde peinture jouable, **Glacier des arches**,
 qui partage sa production de Neige.
 
-Quatre visuels ont été repris en 1024×1280 : **Éclair du marteau** (le marteau
-seul, foudroyé au-dessus d’un fjord de glace), **Mur de boucliers** (la charge
-frontale d’un mur de boucliers ronds peints), **Brume du fjord** (des Vikings
+La nouvelle mythique **Eirik du Premier Serment** rejoint ce vivier avec son
+propre plein art 1024×1280 (`eirik-du-premier-serment.jpg`) : un guerrier
+viking seul, en marche sur le fjord gelé à l’aube, hache basse et bouclier au
+dos, dans la même huile naturaliste que le reste du Serment.
+
+Cinq visuels ont été repris en 1024×1280 : **Éclair du marteau** (un marteau
+entièrement fait d’électricité qui fonce vers un guerrier viking et son
+bouclier, révision `eclair-marteau-electrique-cible-v1`), **Mur de boucliers**
+(la charge frontale d’un mur de boucliers ronds peints), **Brume du fjord** (des Vikings
 entièrement prisonniers d’une gangue de glace translucide, figés en file dans
-le brouillard du fjord) et l’état Furie du **Loup des
-neiges** (`loup-des-neiges-furie.jpg`, même meute et même composition que la
-peinture intacte, chef ensanglanté et crocs dehors).
+le brouillard du fjord), **Hurlement du blizzard** (un grizzli figé dans une
+gangue de glace translucide au cœur de la tempête, révision
+`hurlement-grizzli-gele-v1`) et l’état Furie du **Loup des neiges**
+(`loup-des-neiges-furie.jpg`, même meute et même composition que la peinture
+intacte, chef ensanglanté et crocs dehors).
 
 Les **figures du Nord** sont peintes comme des personnes, chacune avec son
 attribut, parce que leur sujet ne doit jamais se réduire à un objet :
@@ -105,8 +113,8 @@ attribut, parce que leur sujet ne doit jamais se réduire à un objet :
 - le **Maître du marteau** (le Tonnerre) — un colosse à la chevelure et à la
   barbe rousses, gantelets de fer et large ceinture cloutée, marteau runique
   levé sous l’orage. C’est le seul moyen de ne pas le confondre avec
-  l’Éclair du marteau, la magie du set, qui montre le marteau seul fendant le
-  ciel ;
+  l’Éclair du marteau, la magie du set, qui montre un marteau d’électricité
+  fonçant sur sa cible ;
 - le **Père des corbeaux** — un vieux marcheur à large chapeau de voyage,
   corbeaux sur les épaules et vol de corbeaux dans la tempête (et non un
   sorcier à chapeau pointu, qui n’aurait rien du Nord). Depuis sa refonte

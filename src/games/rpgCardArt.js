@@ -109,11 +109,13 @@ const CARD_ART_CACHE_VERSIONS = {
   // vole dans le ciel et fond sur sa cible avec son corbeau noir, épée levée.
   'valkyrie-au-corbeau-furie': 'valkyrie-vol-plongeon-enragee-v4',
   // Repeints sous leurs anciens noms : charge frontale pour le Mur, marteau
-  // seul foudroyé au-dessus du fjord pour l’Éclair, soldats gelés dans la
-  // brume pour la Brume du fjord.
+  // d’électricité fonçant sur une cible pour l’Éclair, soldats gelés dans la
+  // brume pour la Brume du fjord et grizzli prisonnier de la glace pour le
+  // Hurlement du blizzard.
   'mur-de-boucliers': 'mur-boucliers-charge-v1',
-  'eclair-du-marteau': 'eclair-marteau-fjord-v1',
+  'eclair-du-marteau': 'eclair-marteau-electrique-cible-v1',
   'brume-du-fjord': 'brume-personnes-gelees-v2',
+  'hurlement-du-blizzard': 'hurlement-grizzli-gele-v1',
   // La Hache est seule, sa lame plantée dans la banquise : aucun porteur
   // ne vient concurrencer l’arme dans la nouvelle illustration.
   'hache-de-la-banquise': 'hache-plantee-glace-v2',
