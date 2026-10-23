@@ -20,6 +20,7 @@ réactif de *Clair Obscur*.
 | [`17-pvp-multijoueur.md`](17-pvp-multijoueur.md) | Le **PvP** : arbitre serveur, vue filtrée par joueur, invitation cliquable dans la messagerie, file d’attente — et le plan par étapes |
 | [`18-deck-les-lettres-de-marque.md`](18-deck-les-lettres-de-marque.md) | Fiche de design du set **Piraterie** « Les Lettres de Marque » — hybride **Sable + Eau**, l’âge de la course, les mots-clés **Abordage / Cale / Prise** et **Cargaison** |
 | [`11-bible-visuelle.md`](11-bible-visuelle.md) | Portraits canoniques, continuité des personnages, état de réalisation, sauvegarde et vérifications |
+| [`19-animations.md`](19-animations.md) | **Catalogue des animations à créer** : 80 idées classées par scène (table, tour, cartes, éléments, combat, mots-clés, Souk, PvP), avec durées, priorité, coût et conventions d'intégration |
 
 ## La décision de conception
 
