@@ -6,6 +6,7 @@ import { JSDOM } from 'jsdom';
 const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 assert.match(css, /@property --rpg-frontiere\s*\{[^}]*syntax: '<percentage>';[^}]*inherits: true;/s);
 assert.match(css, /transition: --rpg-frontiere 900ms/);
+assert.match(css, /--rpg-fondu: 2%;/, 'le mélange reste contenu à 4 % de la hauteur totale');
 assert.match(css, /mask-image: linear-gradient\(to bottom,[^}]*var\(--rpg-frontiere, 50%\)/);
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.card-table--decoupee,[^}]*transition: none;/s);
 assert.match(css, /\.card-table\[data-territoire-termine\] \.rpg-plateau-lisere \{ opacity: 0; \}/);
