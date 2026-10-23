@@ -24,6 +24,11 @@ export async function checkRpgPreviewActions(assert) {
   const confirmDialog = () => container.querySelector('.rpg-spell-confirm[role="dialog"]');
   const confirmButton = (label) => [...(confirmDialog()?.querySelectorAll('button') ?? [])].find((b) => b.textContent === label);
   const fennec = () => container.querySelector('.rpg-card--equipe[data-card-id="fennec-des-decombres"]');
+  const caseLibre = (numero) => container.querySelector(`.rpg-creature-slot--choix[data-creature-slot="${numero}"]`);
+  const poserSurCase = async (numero = 1) => {
+    assert.ok(caseLibre(numero), `la case libre ${numero} attend la créature choisie`);
+    await click(caseLibre(numero));
+  };
   // Le geste tactile : `pointerdown` tenu une seconde, puis levé — exactement ce
   // qu'envoie un doigt sur l'APK ou le navigateur mobile.
   const peek = () => container.querySelector('.rpg-card-peek');
@@ -352,13 +357,19 @@ export async function checkRpgPreviewActions(assert) {
     await attendreTourJoueur();
     console.log('DEBUG t2 apres attente:', handCards().map((s) => s.dataset.cardId));
     await click(hand('fennec-des-decombres'));
-    assert.ok(fennec(), 'cliquer une créature payable la pose sur la table');
+    assert.equal(fennec(), null, 'cliquer une créature payable ouvre le choix de sa case, sans la poser');
+    assert.ok(container.querySelector('.rpg-target-prompt')?.textContent.includes('Choisissez l’emplacement'),
+      'la table demande sur quel emplacement poser la créature');
+    await poserSurCase(4);
+    assert.ok(fennec(), 'cliquer une case libre pose la créature sur la table');
+    assert.equal(fennec().dataset.caseEssai, '4', 'la créature occupe la case choisie, pas la première libre');
     assert.ok(container.querySelector('.rpg-actions__turn .rpg-btn--undo'),
       'jouer une carte ouvre un retour en arrière d’un pas');
     await click(container.querySelector('.rpg-actions__turn .rpg-btn--undo'));
     assert.equal(fennec(), null, 'l’annulation retire la créature posée');
     assert.ok(hand('fennec-des-decombres'), 'et la rend à la main');
     await click(hand('fennec-des-decombres'));
+    await poserSurCase(4);
     assert.ok(fennec(), 'rejouée, la créature regagne la table');
 
     // ── La sélection d’attaque est directe, avec annulation et confirmation ─

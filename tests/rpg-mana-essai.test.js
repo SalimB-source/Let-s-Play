@@ -356,6 +356,64 @@ test('chaque créature garde sa case : une mort laisse un trou, la suivante le c
   assert.equal(rpgJouerCreature(classique, 'joueur', 'chien-du-guet').entite.emplacement, undefined);
 });
 
+test('le joueur choisit la case de sa créature : case libre honorée, case occupée refusée sans payer', () => {
+  const duel = nouveau(mono);
+  mulligans(duel);
+  rpgDemarrerManaEssai(duel);
+  duel.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+  duel.joueur.main = Array(6).fill('chien-du-guet');
+
+  // Champ vide : la première créature peut entrer directement en case 4.
+  const quatrieme = rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { emplacement: 3 });
+  assert.equal(quatrieme.ok, true);
+  assert.equal(quatrieme.entite.emplacement, 3, 'la case choisie est celle de la créature');
+  assert.equal(quatrieme.emplacement, 3);
+  assert.deepEqual(rpgEmplacementsChamp(duel.joueur).map((entite) => entite?.id ?? null),
+    [null, null, null, quatrieme.entite.id, null], 'les cases 1 à 3 restent libres');
+
+  // Sans choix, la première case libre reste la règle.
+  const defaut = rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  assert.equal(defaut.entite.emplacement, 0);
+
+  // Case occupée ou hors du champ : refus avant paiement, carte en main.
+  const manaAvant = duel.joueur.mana.sable;
+  const mainAvant = duel.joueur.main.length;
+  for (const emplacement of [3, 0, -1, 5, 1.5]) {
+    const refusee = rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { emplacement });
+    assert.equal(refusee.ok, false, `emplacement ${emplacement}`);
+    assert.equal(refusee.raison, 'emplacement');
+  }
+  assert.equal(duel.joueur.mana.sable, manaAvant, 'un refus de case ne paie aucun mana');
+  assert.equal(duel.joueur.main.length, mainAvant, 'la carte refusée reste en main');
+  assert.equal(duel.joueur.creatures.length, 2);
+
+  // Poser en case 2 comble le trou entre la case 1 et la case 4 : les trois
+  // créatures occupent les cases 1, 2 et 4, la 3 et la 5 restent libres.
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { emplacement: 1 }).ok, true);
+  assert.deepEqual(rpgEmplacementsChamp(duel.joueur).map((entite) => (entite ? entite.emplacement : null)),
+    [0, 1, null, 3, null]);
+
+  // Champ plein : la case de la victime du sacrifice est désignable (elle se
+  // libère dans la pose), une autre case occupée ne l'est pas.
+  duel.joueur.main = Array(4).fill('chien-du-guet');
+  rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { emplacement: 2 });
+  rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { emplacement: 4 });
+  assert.equal(duel.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX);
+  const victime = rpgEmplacementsChamp(duel.joueur)[2];
+  assert.equal(
+    rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { sacrificeId: victime.id, emplacement: 4 }).raison,
+    'emplacement', 'sacrifier la case 3 ne libère pas la case 5');
+  const remplace = rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { sacrificeId: victime.id, emplacement: 2 });
+  assert.equal(remplace.ok, true);
+  assert.equal(remplace.entite.emplacement, 2, 'la nouvelle créature prend la case libérée désignée');
+
+  // Hors essai, le choix est ignoré : aucune case n'est attribuée.
+  const classique = rpgNouveauDuel({ joueurDeck: Array(12).fill('chien-du-guet'), sorcierDeck: [], rng });
+  classique.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
+  classique.joueur.main = ['chien-du-guet'];
+  assert.equal(rpgJouerCreature(classique, 'joueur', 'chien-du-guet', null, { emplacement: 4 }).entite.emplacement, undefined);
+});
+
 test('fin de tour : une main de six cartes est conservée sans défausse', () => {
   const duel = nouveau(mono);
   mulligans(duel);

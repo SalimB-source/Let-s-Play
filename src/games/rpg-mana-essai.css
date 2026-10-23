@@ -385,14 +385,56 @@
   border-color: rgba(240, 214, 150, .22);
   background: rgba(10, 8, 5, .12);
 }
-/* Sur PC, quand le joueur glisse une carte depuis sa main, la première case
-   libre de sa rangée s'éclaire d'un halo doré pour montrer où la créature
-   va se poser. */
-.rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table.is-dragging-card .card-row--equipe .rpg-creature-slot:not(.is-occupied):first-of-type {
-  border-color: rgba(250, 222, 144, .92);
-  background: radial-gradient(circle, rgba(246, 211, 122, .16), rgba(10, 8, 5, .28) 76%);
-  box-shadow: 0 0 18px rgba(246, 211, 122, .34), inset 0 0 18px rgba(246, 211, 122, .18);
+/* Quand le joueur glisse une créature depuis sa main, TOUTES les cases
+   libres de sa rangée s'éclairent d'un halo doré : déposer la carte sur
+   l'une d'elles la pose sur cette case (la déposer ailleurs garde la
+   première libre). La case sous le pointeur — `is-survole` à la souris,
+   `is-touch-drop-target` au doigt — brille plus fort : c'est elle qui
+   recevra la pose. */
+.rpg-battle[data-mode-mana="essai"] .card-table.is-dragging-creature .card-row--equipe .rpg-creature-slot:not(.is-occupied) {
+  border-color: rgba(250, 222, 144, .78);
+  background: radial-gradient(circle, rgba(246, 211, 122, .12), rgba(10, 8, 5, .28) 76%);
+  box-shadow: 0 0 12px rgba(246, 211, 122, .22), inset 0 0 14px rgba(246, 211, 122, .12);
   transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.rpg-battle[data-mode-mana="essai"] .card-row--equipe .rpg-creature-slot.is-survole,
+.rpg-battle[data-mode-mana="essai"] .card-row--equipe .rpg-creature-slot.is-touch-drop-target {
+  border-color: rgba(255, 236, 170, 1);
+  background: radial-gradient(circle, rgba(246, 211, 122, .26), rgba(10, 8, 5, .28) 76%);
+  box-shadow: 0 0 22px rgba(246, 211, 122, .55), inset 0 0 20px rgba(246, 211, 122, .3);
+}
+/* Une créature cliquée attend sa case : les cases libres deviennent des
+   boutons dorés qui respirent, au-dessus du décor mais sous les cartes déjà
+   posées de la rangée. Le conteneur reste éteint aux pointeurs — seuls les
+   boutons des cases libres les captent. */
+.rpg-creature-slot--choix {
+  pointer-events: auto;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  border-color: rgba(250, 222, 144, .95);
+  background: radial-gradient(circle, rgba(246, 211, 122, .18), rgba(10, 8, 5, .3) 76%);
+  box-shadow: 0 0 16px rgba(246, 211, 122, .4), inset 0 0 16px rgba(246, 211, 122, .2);
+  animation: rpg-emplacement-choix-pulse 1.15s ease-in-out infinite;
+}
+.rpg-creature-slot--choix:hover,
+.rpg-creature-slot--choix:focus-visible {
+  border-color: #ffecaa;
+  background: radial-gradient(circle, rgba(246, 211, 122, .34), rgba(10, 8, 5, .3) 78%);
+  box-shadow: 0 0 26px rgba(246, 211, 122, .65), inset 0 0 22px rgba(246, 211, 122, .35);
+  outline: 2px solid rgba(255, 236, 170, .9);
+  outline-offset: 2px;
+}
+.rpg-creature-slot--choix .rpg-creature-slot__numero {
+  color: #ffecaa;
+  opacity: 1;
+}
+@keyframes rpg-emplacement-choix-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(246, 211, 122, .3), inset 0 0 12px rgba(246, 211, 122, .14); }
+  50% { box-shadow: 0 0 22px rgba(246, 211, 122, .55), inset 0 0 20px rgba(246, 211, 122, .28); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-creature-slot--choix { animation: none; }
 }
 /* Repères de raccourcis clavier PC sur la colonne d'actions (sans modifier
    textContent) et aura de menace létale sur la plaque du sorcier adverse. */

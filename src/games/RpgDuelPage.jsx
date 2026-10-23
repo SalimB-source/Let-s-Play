@@ -368,7 +368,7 @@ function mesurerBoiteCarteMain(element, fallbackWidth = 128, fallbackHeight = 16
   };
 }
 
-function mesurerDestinationVol(table, kind, from, carteId) {
+function mesurerDestinationVol(table, kind, from, carteId, emplacement = null) {
   const terrain = kind === 'terrain';
   const zone = table?.querySelector(terrain ? '.rpg-terrains--joueur' : '.card-row--equipe');
   if (!zone) return from;
@@ -431,9 +431,11 @@ function mesurerDestinationVol(table, kind, from, carteId) {
   // plateau. On vise la case elle-même (la cinquième reste toujours visible)
   // au lieu de répartir les cartes comme dans une rangée flexible.
   const slots = [...zone.querySelectorAll('.rpg-creature-slot')];
-  // La première case vide — pas la n-ième : une case libérée par une mort
-  // peut se trouver au milieu de la rangée.
-  const slotLibre = zone.querySelector('.rpg-creature-slot.is-empty') ?? slots[cards.length];
+  // La case choisie par le joueur quand il en a désigné une ; sinon la
+  // première case vide — pas la n-ième : une case libérée par une mort peut
+  // se trouver au milieu de la rangée.
+  const slotLibre = (Number.isInteger(emplacement) ? slots[emplacement] : null)
+    ?? zone.querySelector('.rpg-creature-slot.is-empty') ?? slots[cards.length];
   const slotRect = slotLibre?.getBoundingClientRect();
   if (slotRect && (slotRect.width || slotLibre.offsetWidth) && (slotRect.height || slotLibre.offsetHeight)) {
     const slotWidth = slotRect.width || slotLibre.offsetWidth;
@@ -668,31 +670,57 @@ export function FluxManaTrack({ camp, cote, carteApercu = null }) {
 
 /** Les cinq emplacements de créatures du mode sans terrains, dessinés sous
  * la rangée de chaque camp : une case par créature jouable, pleine quand elle
- * est occupée, en pointillés quand elle attend encore sa créature. */
-export function CreatureSlots({ camp, cote }) {
+ * est occupée, en pointillés quand elle attend encore sa créature.
+ *
+ * Quand une pose attend sa case (`choixEmplacement`, côté joueur), les cases
+ * libres deviennent de vrais boutons : clic, doigt ou clavier (touches 1 à 5)
+ * posent la créature en attente sur la case choisie. Une case occupée ne se
+ * désigne jamais : échanger une créature contre une autre passe par le
+ * sacrifice du plateau plein (`sacrificeEnCours`), pas par ici. */
+export function CreatureSlots({ camp, cote, choixEmplacement = false, nomCartePose = null, onChoisirEmplacement = null, emplacementSurvole = null }) {
   // Chaque créature garde sa case : une case vidée par une mort reste vide
   // au milieu de la rangée, les autres ne glissent pas pour la combler.
   const cases = rpgEmplacementsChamp(camp);
   const occupees = cases.filter(Boolean).length;
   return (
     <div
-      className={`rpg-creature-slots rpg-creature-slots--${cote}`}
+      className={`rpg-creature-slots rpg-creature-slots--${cote}${choixEmplacement ? ' is-choix-ouvert' : ''}`}
       data-creature-slots={RPG_MANA_ESSAI_CHAMP_MAX}
       data-creature-slots-occupes={occupees}
+      data-choix-emplacement={choixEmplacement ? 'true' : undefined}
       aria-label={`Emplacements de créatures ${cote === 'joueur' ? 'de votre camp' : 'du sorcier'} : ${occupees} sur ${RPG_MANA_ESSAI_CHAMP_MAX} occupés`}
       aria-hidden="false"
     >
-      {cases.map((occupant, index) => (
-        <span
-          key={index}
-          className={`rpg-creature-slot${occupant ? ' is-occupied' : ' is-empty'}`}
-          data-creature-slot={index + 1}
-          data-creature-slot-occupe={occupant ? 'true' : 'false'}
-          aria-hidden="true"
-        >
-          <span className="rpg-creature-slot__numero">{index + 1}</span>
-        </span>
-      ))}
+      {cases.map((occupant, index) => {
+        const classes = `rpg-creature-slot${occupant ? ' is-occupied' : ' is-empty'}${emplacementSurvole === index ? ' is-survole' : ''}`;
+        if (choixEmplacement && !occupant && onChoisirEmplacement) {
+          return (
+            <button
+              type="button"
+              key={index}
+              className={`${classes} rpg-creature-slot--choix`}
+              data-creature-slot={index + 1}
+              data-creature-slot-occupe="false"
+              data-creature-slot-choix="true"
+              onClick={() => onChoisirEmplacement(index)}
+              aria-label={`Poser ${nomCartePose ?? 'la créature choisie'} sur l’emplacement ${index + 1}`}
+            >
+              <span className="rpg-creature-slot__numero">{index + 1}</span>
+            </button>
+          );
+        }
+        return (
+          <span
+            key={index}
+            className={classes}
+            data-creature-slot={index + 1}
+            data-creature-slot-occupe={occupant ? 'true' : 'false'}
+            aria-hidden="true"
+          >
+            <span className="rpg-creature-slot__numero">{index + 1}</span>
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -5946,6 +5974,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Le champ d'essai plein (cinq créatures) : la carte à poser attend le choix
   // de la créature à sacrifier — Échap ou « Renoncer » rend la carte à la main.
   const [sacrificeEnCours, setSacrificeEnCours] = useState(null);
+  // La créature cliquée attend sa CASE : `{ carteId, handIndex }` tant que le
+  // joueur n'a pas cliqué une des cases libres de sa rangée (les boutons de
+  // `CreatureSlots`). Rien n'est encore payé — recliquer la carte ou Échap
+  // renonce. `emplacementSurvole` : la case libre sous le glisser en cours.
+  const [poseEnCours, setPoseEnCours] = useState(null);
+  const [emplacementSurvole, setEmplacementSurvole] = useState(null);
   // Au doigt, la barre de navigation du duel se replie dans un bouton hamburger.
   const [navMenuOuvert, setNavMenuOuvert] = useState(false);
   const [navParametresOuvert, setNavParametresOuvert] = useState(false);
@@ -5957,18 +5991,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // La foudre activée se désigne avec Échap, comme les autres ciblages ; la
   // proie d'un mode d'arme aussi ; le sacrifice en attente, enfin, se renonce.
   useEffect(() => {
-    if (!activationEnCours && !sacrificeEnCours && !navMenuOuvert && !navParametresOuvert && !messagerieVoletOuvert) return undefined;
+    if (!activationEnCours && !sacrificeEnCours && !poseEnCours && !navMenuOuvert && !navParametresOuvert && !messagerieVoletOuvert) return undefined;
     const onKey = (event) => {
       if (event.key !== 'Escape') return;
       setActivationEnCours(null);
       setSacrificeEnCours(null);
+      setPoseEnCours(null);
       setNavMenuOuvert(false);
       setNavParametresOuvert(false);
       setMessagerieVoletOuvert(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activationEnCours, sacrificeEnCours, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert]);
+  }, [activationEnCours, sacrificeEnCours, poseEnCours, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert]);
   // Le menu hamburger et son onglet Paramètres se referment au premier geste hors de la barre du duel.
   useEffect(() => {
     if (!navMenuOuvert && !navParametresOuvert) return undefined;
@@ -6236,7 +6271,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     const from = mesurerBoiteCarteMain(source, 128, 160);
-    const to = mesurerDestinationVol(table, carteEnVol.kind, from, carteEnVol.carteId);
+    const to = mesurerDestinationVol(table, carteEnVol.kind, from, carteEnVol.carteId, carteEnVol.emplacement ?? null);
     const slotWidth = source.offsetWidth || from.width;
     const slotHeight = source.offsetHeight || from.height;
     setCarteEnVol((current) => current?.token === carteEnVol.token && current.phase === 'pending'
@@ -6351,6 +6386,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     clicApresGlisserBloqueurRef.current = null;
     setCibleEnCours(null);
     setConfirmationSort(null);
+    setPoseEnCours(null);
+    setEmplacementSurvole(null);
     setSacrificeDemande(null);
     setSacrificeFx(null);
     sacrificeEnCoursRef.current = null;
@@ -7152,6 +7189,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return;
       }
 
+      // Une créature attend sa case : les touches 1 à 5 désignent alors
+      // l'emplacement numéroté (une case occupée n'a pas de bouton).
+      const boutonEmplacement = indexChiffre >= 0
+        ? coque.querySelector(`.rpg-creature-slot--choix[data-creature-slot="${indexChiffre + 1}"]`)
+        : null;
+      if (boutonEmplacement) {
+        event.preventDefault();
+        boutonEmplacement.click();
+        return;
+      }
+      // Choix d'emplacement ouvert mais case occupée : la touche ne retombe
+      // pas sur la main — elle ne fait rien, comme un clic refusé.
+      if (indexChiffre >= 0 && coque.querySelector('.rpg-creature-slot--choix')) return;
+
       // Touches 1 à 6 hors choix de mana : jouer ou sélectionner une carte jouable de la main
       if (indexChiffre >= 0) {
         const cartesMain = coque.querySelectorAll('.rpg-hand .rpg-hand__card');
@@ -7828,7 +7879,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, duree);
   };
 
-  const demarrerVolCarte = (carte, handIndex, resoudreAction) => {
+  const demarrerVolCarte = (carte, handIndex, resoudreAction, emplacement = null) => {
     if (!carte || !resoudreAction) return;
     const origine = carteOrigineVolRef.current;
     const source = [...(tableRef.current?.querySelectorAll('.rpg-hand__card') ?? [])]
@@ -7849,7 +7900,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const token = ++sequenceVolRef.current;
     actionVolRef.current = { token, resoudre: resoudreAction };
     jouerSfx('whoosh');
-    setCarteEnVol({ token, carteId: carte.id, kind: carte.kind === 'terrain' ? 'terrain' : 'creature', handIndex: index, phase: 'pending' });
+    setCarteEnVol({ token, carteId: carte.id, kind: carte.kind === 'terrain' ? 'terrain' : 'creature', handIndex: index, emplacement: Number.isInteger(emplacement) ? emplacement : null, phase: 'pending' });
     const timer = window.setTimeout(() => {
       if (timerVolRef.current !== timer) return;
       timerVolRef.current = null;
@@ -8335,6 +8386,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setAttaquants([]);
     setCiblesAttaque({});
     setCibleEnCours(null);
+    setPoseEnCours(null);
     setConfirmationSort(null);
     setApercuSurvol(null);
     force();
@@ -8398,6 +8450,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (carteOrigineVolRef.current?.carteId === carteId) carteOrigineVolRef.current = null;
     setCarteGlissee(null);
     setSurZoneDepot(false);
+    setEmplacementSurvole(null);
     window.setTimeout(() => { clicApresGlisserRef.current = false; }, 300);
   };
 
@@ -8406,10 +8459,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
     setSurZoneDepot(true);
+    // Une créature en vol de glisser : la case libre sous le pointeur
+    // brille plus fort — c'est elle qui recevra la pose au dépôt.
+    if (cartePrendUneCase(cardById(carteGlisseeRef.current))) {
+      const survole = emplacementLibreAuPoint(event.clientX, event.clientY);
+      setEmplacementSurvole((courant) => (courant === survole ? courant : survole));
+    }
   };
 
   const quitterZoneDepot = (event) => {
-    if (!event.currentTarget.contains(event.relatedTarget)) setSurZoneDepot(false);
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      setSurZoneDepot(false);
+      setEmplacementSurvole(null);
+    }
   };
 
   const poserTerrain = (carteId) => {
@@ -8742,21 +8804,27 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * referme l'attente (`resoudreCible`). Une arrivée qui ne désigne rien —
    * pioche, jetons, dégâts de zone — se résout avec la pose, comme avant.
    */
-  const finaliserPoseCreature = (carteId, sacrificeId = null) => {
+  const finaliserPoseCreature = (carteId, sacrificeId = null, emplacement = null) => {
     const carte = cardById(carteId);
     carteCibleeHandIndexRef.current = null;
     setSacrificeEnCours(null);
+    setPoseEnCours(null);
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     if (modePvp) rpgSyncCompteurEntites(duel);
-    const res = rpgJouerCreature(duel, 'joueur', carteId, null, { cibleDifferee: true, sacrificeId });
+    const res = rpgJouerCreature(duel, 'joueur', carteId, null, {
+      cibleDifferee: true,
+      sacrificeId,
+      emplacement: Number.isInteger(emplacement) ? emplacement : null,
+    });
     if (modePvp && res.ok) {
       void envoyerIntentionPvp({
         type: 'jouer-carte',
         carteId,
         cibleDifferee: true,
         sacrificeId: sacrificeId ?? null,
+        emplacement: Number.isInteger(emplacement) ? emplacement : null,
       });
     }
     if (res.ok && res.contre && res.parIA) {
@@ -8949,7 +9017,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
-  const poserCarte = (carteId) => {
+  const poserCarte = (carteId, emplacement = null) => {
     const carte = cardById(carteId);
     const peutRepondre = reponseActive && carte.instant;
     if (reponseApresBlocage && !carte.instant) return;
@@ -8999,10 +9067,28 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
-    finaliserPoseCreature(carteId);
+    finaliserPoseCreature(carteId, null, emplacement);
   };
 
-  const jouerCarteDepuisMain = (carteId, handIndex = null) => {
+  /** Une carte qui prend une des cinq cases du champ quand on la joue. */
+  const cartePrendUneCase = (carte) => carte?.kind === 'creature' || carte?.kind === 'hero' || carte?.kind === 'site';
+
+  /** Les numéros (0 à 4) des cases encore libres dans la rangée du joueur. */
+  const casesLibresJoueur = () => (duel.modeMana === RPG_MODE_MANA_ESSAI
+    ? rpgEmplacementsChamp(duel.joueur)
+      .map((occupant, index) => (occupant ? null : index))
+      .filter((index) => index !== null)
+    : []);
+
+  /**
+   * Jouer une carte de la main. `emplacement` dit qui a choisi la case d'une
+   * créature : `undefined` (clic, touche 1 à 5) ouvre le choix sur la table —
+   * les cases libres s'allument, `choisirEmplacement` termine la pose ;
+   * un numéro (glisser-déposer sur une case) pose directement là ; `null`
+   * (dépôt ailleurs sur la table, leçon du tutoriel, une seule case libre)
+   * garde la première case libre, comme avant.
+   */
+  const jouerCarteDepuisMain = (carteId, handIndex = null, emplacement = undefined) => {
     const carte = cardById(carteId);
     if (carteEnVol || sacrificeEnCours) return;
     if (!carte || !duel.joueur.main.includes(carteId)) return;
@@ -9022,6 +9108,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (carte.kind !== 'terrain') { unlockSfx(); }
     const index = Number.isInteger(handIndex) && duel.joueur.main[handIndex] === carteId
       ? handIndex : duel.joueur.main.indexOf(carteId);
+    // Une pose attendait sa case : recliquer la même carte y renonce (rien
+    // n'a été payé) ; jouer une autre carte referme l'attente au passage.
+    if (poseEnCours) {
+      const memeCarte = poseEnCours.carteId === carteId && poseEnCours.handIndex === index;
+      setPoseEnCours(null);
+      if (memeCarte && emplacement === undefined) {
+        jouerSfx('annuler');
+        force();
+        return;
+      }
+    }
     // Sixième créature du mode sans terrains : le plateau est plein (5/5).
     // Avant tout vol et tout paiement, une fenêtre demande si l'on veut
     // sacrifier une créature — « Annuler » ne coûte rien, « Sacrifier »
@@ -9052,11 +9149,63 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         force();
         return;
       }
-      demarrerVolCarte(carte, index, () => poserCarte(carteId));
+      // Le choix de la case : un simple clic sur la créature ne la pose plus
+      // d'office à gauche — les cases libres de sa rangée s'allument et le
+      // clic suivant (ou la touche de son numéro) dit où elle entre en jeu.
+      // Le glisser-déposer a déjà choisi (un numéro, ou `null` = première
+      // case libre), la leçon du tutoriel garde son geste unique, et une
+      // seule case libre ne laisse rien à choisir.
+      if (emplacement === undefined && !tutorielActif && cartePrendUneCase(carte)
+        && casesLibresJoueur().length > 1) {
+        setPoseEnCours({ carteId, handIndex: index });
+        jouerSfx('select');
+        force();
+        return;
+      }
+      demarrerVolCarte(carte, index, () => poserCarte(carteId, emplacement ?? null), emplacement ?? null);
     }
   };
 
-  const deposerCarteSurTable = (event) => {
+  /** La case est choisie (clic, doigt ou touche du numéro) : la créature en
+   * attente vole jusqu'à elle et s'y pose. La table a pu changer depuis
+   * l'attente — tout est revalidé (carte en main, case toujours libre) avant
+   * que le moteur ne paie quoi que ce soit. */
+  const choisirEmplacement = (index) => {
+    const pose = poseEnCours;
+    if (!pose || carteEnVol) return;
+    const carte = cardById(pose.carteId);
+    const handIndex = Number.isInteger(pose.handIndex) && duel.joueur.main[pose.handIndex] === pose.carteId
+      ? pose.handIndex : duel.joueur.main.indexOf(pose.carteId);
+    if (!carte || handIndex < 0 || rpgEmplacementsChamp(duel.joueur)[index]) {
+      jouerSfx('erreur');
+      force();
+      return;
+    }
+    setPoseEnCours(null);
+    jouerSfx('select');
+    demarrerVolCarte(carte, handIndex, () => poserCarte(pose.carteId, index), index);
+    force();
+  };
+
+  /** La case libre de la rangée du joueur sous un point de l'écran, ou
+   * `null` — la géométrie des cases dessinées, partagée par le glisser de la
+   * souris (HTML5) et celui du doigt (qui ne voit pas les cases, éteintes
+   * aux pointeurs). */
+  const emplacementLibreAuPoint = (clientX, clientY) => {
+    if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+    const cases = tableRef.current?.querySelectorAll('.card-row--equipe .rpg-creature-slot.is-empty') ?? [];
+    for (const element of cases) {
+      const rect = element.getBoundingClientRect();
+      if (rect.width && clientX >= rect.left && clientX <= rect.right
+        && clientY >= rect.top && clientY <= rect.bottom) {
+        const numero = Number(element.dataset.creatureSlot);
+        return Number.isInteger(numero) ? numero - 1 : null;
+      }
+    }
+    return null;
+  };
+
+  const deposerCarteSurTable = (event, emplacementDepot = undefined) => {
     event.preventDefault();
     if (carteEnVol) return;
     const carteId = event.dataTransfer?.getData('text/plain')
@@ -9064,12 +9213,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       || carteGlisseeRef.current;
     const handIndex = carteOrigineVolRef.current?.carteId === carteId
       ? carteOrigineVolRef.current.handIndex : null;
+    // Déposer une créature sur une case libre la pose sur CETTE case ; la
+    // déposer ailleurs sur la table garde la première case libre (`null`),
+    // sans ouvrir le choix du clic — le glisser a déjà dit où il visait.
+    const emplacement = emplacementDepot !== undefined
+      ? emplacementDepot
+      : (cartePrendUneCase(cardById(carteId))
+        ? emplacementLibreAuPoint(event.clientX, event.clientY)
+        : null);
     carteGlisseeRef.current = null;
     carteOrigineVolRef.current = null;
     setCarteGlissee(null);
     setSurZoneDepot(false);
+    setEmplacementSurvole(null);
     if (!carteId) return;
-    jouerCarteDepuisMain(carteId, handIndex);
+    jouerCarteDepuisMain(carteId, handIndex, emplacement);
   };
 
   const confirmerDefausse = () => {
@@ -9287,6 +9445,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const cliquerCreatureJoueur = (entite) => {
     // Le déchirement est en cours : la table attend la pose qui le suit.
     if (sacrificeEnCoursRef.current) return;
+    // Une créature attend sa case : seule une case libre la pose (Échap ou
+    // un reclic sur la carte pour renoncer) — pas une de ses voisines.
+    if (poseEnCours) { jouerSfx('erreur'); force(); return; }
     if (clicApresGlisserBloqueurRef.current === entite.id) {
       clicApresGlisserBloqueurRef.current = null;
       return;
@@ -9355,6 +9516,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const cliquerCreatureEnnemie = (entite) => {
+    // Une créature attend sa case dans votre rangée : le camp adverse n'a
+    // rien à recevoir de ce geste-là.
+    if (poseEnCours) { jouerSfx('erreur'); force(); return; }
     if (cibleEnCours) {
       resoudreCible(entite, 'ennemi');
       return;
@@ -9842,6 +10006,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setAttaquants([]);
     setCiblesAttaque({});
     setCibleEnCours(null);
+    setPoseEnCours(null);
     setActivationEnCours(null);
     if (modePvp) {
       if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
@@ -10128,6 +10293,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const element = document.elementFromPoint(x, y);
         if (!element || !tableRef.current?.contains(element)) return null;
         if (!depuisMain) return element.closest('.is-blocker-target');
+        // Une créature glissée au doigt sur une case libre vise CETTE case :
+        // les cases sont éteintes aux pointeurs (`elementFromPoint` ne les
+        // voit pas), leur géométrie parle donc directement.
+        if (cartePrendUneCase(carte)) {
+          const numero = emplacementLibreAuPoint(x, y);
+          if (numero !== null) {
+            return tableRef.current
+              ?.querySelector(`.card-row--equipe .rpg-creature-slot[data-creature-slot="${numero + 1}"]`) ?? null;
+          }
+        }
         // Dropping back in the hand or on HUD/overlays must not play a card.
         if (element.closest('.rpg-hand-dock, button:not(.rpg-card), nav, [role="dialog"], .rpg-controls, .rpg-bottombar, .rpg-combat-window')) return null;
         return element.closest('.card-table');
@@ -10139,7 +10314,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       },
       onHover: (over) => { if (depuisMain) setSurZoneDepot(over); },
       onDrop: (target) => {
-        if (depuisMain) deposerCarteSurTable({ preventDefault() {} });
+        if (depuisMain) {
+          const numero = Number(target?.dataset?.creatureSlot);
+          deposerCarteSurTable(
+            { preventDefault() {} },
+            target?.classList?.contains('rpg-creature-slot') && Number.isInteger(numero) ? numero - 1 : null,
+          );
+        }
         else assignerBloqueur(target.dataset.entityId, bloqueurId);
       },
       onEnd: () => {
@@ -10270,6 +10451,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         classe: 'rpg-sacrifice-prompt',
         texte: `Champ plein — choisissez une créature à sacrifier pour poser ${cardById(sacrificeEnCours)?.name ?? 'cette carte'}`,
       }
+      : poseEnCours
+        ? {
+          cle: `pose:${poseEnCours.carteId}:${poseEnCours.handIndex}`,
+          classe: 'rpg-target-prompt',
+          texte: `Choisissez l’emplacement de ${cardById(poseEnCours.carteId)?.name ?? 'votre créature'} — cliquez une case libre de votre rangée (Échap pour renoncer)`,
+        }
       : defausseOuverte
         ? {
           cle: `defausse:${duel.defausseEnAttente.motif ?? 'effet'}:${duel.defausseEnAttente.restant}:${selectionDefausseValide ? carteDefausseSelectionnee.carteId : 'aucune'}`,
@@ -10393,7 +10580,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ref={tableRef}
         inert={viewport.portrait || mulliganOuvert ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
-        className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
+        className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${carteGlissee && cartePrendUneCase(cardById(carteGlissee)) ? ' is-dragging-creature' : ''}${poseEnCours ? ' is-choix-emplacement' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
         data-screen-impact-token={impactEcran?.token ?? undefined}
         data-plateau-joueur={plateau.id}
@@ -10874,7 +11061,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
         <div className="card-row card-row--equipe" aria-label="Votre champ de bataille"
           data-tutorial-target={cibleTutoriel('player-field') ? 'player-field' : undefined}>
-          {duel.modeMana === RPG_MODE_MANA_ESSAI && <CreatureSlots camp={duel.joueur} cote="joueur" />}
+          {duel.modeMana === RPG_MODE_MANA_ESSAI && (
+            <CreatureSlots
+              camp={duel.joueur}
+              cote="joueur"
+              choixEmplacement={Boolean(poseEnCours)}
+              nomCartePose={poseEnCours ? cardById(poseEnCours.carteId)?.name ?? null : null}
+              onChoisirEmplacement={choisirEmplacement}
+              emplacementSurvole={emplacementSurvole}
+            />
+          )}
           {duel.joueur.creatures.length ? campJoueur.piles.map((pile) => {
             const cle = clePile('joueur', pile.carteId);
             const deployee = pileDeployee('joueur', pile);
@@ -11498,7 +11694,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   type="button"
                   draggable={jouable && !defausseOuverte}
                   onClick={() => cliquerCarteMain(carteId, i)}
-                  aria-pressed={defausseOuverte ? defausseSelectionnee : undefined}
+                  aria-pressed={defausseOuverte ? defausseSelectionnee : poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? true : undefined}
                   onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
                   onMouseLeave={quitterCarteSurvol}
                   onFocus={(event) => afficherApercuSurvol(carte, event)}
@@ -11520,6 +11716,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     defausseSelectionnee ? 'is-discard-selected' : '',
                     carte.instant ? 'is-instant' : '',
                     cibleEnCours === carteId ? 'is-targeting' : '',
+                    // En attente de sa case : même soulèvement que le ciblage.
+                    poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'is-targeting is-pose-en-cours' : '',
                     jouable ? 'is-playable' : 'is-unplayable',
                     carteGlissee === carteId ? 'is-dragging' : '',
                     enVol ? `rpg-card-flight is-flying${estTerrain ? ' rpg-card-flight--terrain' : ''}` : '',
@@ -11544,7 +11742,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-rpg-card-flight={enVol ? (estTerrain ? 'terrain' : 'creature') : undefined}
                   data-rpg-flight-card-id={enVol ? carteId : undefined}
                   data-jouable={jouable ? 'true' : 'false'}
-                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer)' : ', indisponible pour le moment'}`}
+                  data-pose-en-cours={poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'true' : undefined}
+                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
                   <CardElementBadge carte={carte} />

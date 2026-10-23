@@ -3794,8 +3794,16 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null) {
  * sacrifiée au moment de payer, puis la nouvelle entre en jeu. Sans
  * désignation, le moteur refuse la pose (`raison: 'champ-plein'`) sauf pour le
  * sorcier, qui sacrifie automatiquement sa créature la plus frêle.
+ *
+ * `emplacement` — la **case choisie par le joueur** (0 à 4, mode essai) : la
+ * créature entre en jeu sur cette case plutôt que sur la première libre. Une
+ * case hors du champ ou déjà occupée refuse la pose (`raison:
+ * 'emplacement'`) avant tout paiement — sauf la case de la créature
+ * sacrifiée, libérée par la pose elle-même. Sans choix (`null`, l'IA, les
+ * effets), la première case libre reste la règle ; hors essai, le choix est
+ * ignoré : le champ classique n'a pas de cases.
  */
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, emplacement = null } = {}) {
   const camp = duel[cote];
   // Le sceau du Pilote se lit **avant** la pose : il arme cette créature-ci,
   // et le Pilote lui-même ne peut pas profiter du sceau qu’il va poser.
@@ -3817,6 +3825,22 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       : (cote === 'sorcier' ? choisirSacrifice(camp) : null);
     if (!sacrifice || estSite(sacrifice)) {
       return { ok: false, raison: sacrificeId ? 'sacrifice' : 'champ-plein' };
+    }
+  }
+  // La case choisie se valide tôt, comme le sacrifice : hors du champ ou
+  // déjà occupée (par une autre que la victime du sacrifice), la pose est
+  // refusée avant paiement et sans rien changer à la table.
+  const emplacementChoisi = duel.modeMana === RPG_MODE_MANA_ESSAI && emplacement !== null && emplacement !== undefined
+    ? emplacement
+    : null;
+  if (emplacementChoisi !== null) {
+    if (!Number.isInteger(emplacementChoisi)
+      || emplacementChoisi < 0 || emplacementChoisi >= RPG_MANA_ESSAI_CHAMP_MAX) {
+      return { ok: false, raison: 'emplacement' };
+    }
+    const occupant = rpgEmplacementsChamp(camp)[emplacementChoisi];
+    if (occupant && occupant.id !== sacrifice?.id) {
+      return { ok: false, raison: 'emplacement' };
     }
   }
   if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
@@ -3926,8 +3950,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   } else {
     camp.creatures.push(entite);
   }
-  // Sa case : celle de la victime d'un sacrifice, sinon la première libre.
-  placerDansEmplacement(duel, cote, entite, caseSacrifice >= 0 ? caseSacrifice : null);
+  // Sa case : celle que le joueur a choisie, sinon celle de la victime d'un
+  // sacrifice, sinon la première libre.
+  placerDansEmplacement(duel, cote, entite,
+    emplacementChoisi ?? (caseSacrifice >= 0 ? caseSacrifice : null));
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
   // Le son d'arrivée suit l'entrée en jeu elle-même, avant même la résolution
   // des effets d'arrivée (qui peuvent ouvrir une attente et rendre la main
@@ -3958,7 +3984,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       };
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
-      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null };
+      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, emplacement: entite.emplacement ?? null };
     }
     // Seuls les effets d'arrivée qui **désignent** une cible reçoivent un
     // `cibleId` : les autres (renfort de camp, pioche, création de jetons…)
@@ -3989,7 +4015,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
         duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId, abordage: seuilAbordageArrivee };
         rafraichirAuras(duel);
         rpgActionsEtat(duel);
-        return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null };
+        return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, emplacement: entite.emplacement ?? null };
       }
       const cibleAbordage = (cibleId && !arriveeCiblePortee(carte))
         ? duel[autre(cote)].creatures.find((candidate) => candidate.id === cibleId)
@@ -4001,7 +4027,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
-  return { ok: true, entite, sacrificeId: sacrifice?.id ?? null };
+  return { ok: true, entite, sacrificeId: sacrifice?.id ?? null, emplacement: entite.emplacement ?? null };
 }
 
 /**

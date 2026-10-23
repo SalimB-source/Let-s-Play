@@ -188,7 +188,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-creature-slots--joueur',
         eyebrow: 'RÈGLE · LE CHAMP',
         title: 'Cinq créatures au maximum',
-        text: 'Chaque camp dispose de cinq emplacements, dessinés sous sa rangée. Poser une sixième créature ne l’ajoute pas : le jeu vous demande d’en sacrifier une pour libérer sa place. Le champ est plein à cinq, jamais plus.',
+        text: 'Chaque camp dispose de cinq emplacements, dessinés sous sa rangée. En partie, après avoir choisi une créature de votre main, vous cliquez la case libre où elle entre en jeu — ou vous l’y glissez directement. Poser une sixième créature ne l’ajoute pas : le jeu vous demande d’en sacrifier une pour libérer sa place. Le champ est plein à cinq, jamais plus.',
         nextLabel: 'Passer la main',
         side: 'top',
       },
