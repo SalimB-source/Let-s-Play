@@ -212,35 +212,35 @@ export function PlaqueVie({ pv, pvMax, bouclier = 0, soin = null, base = 25 }) {
         '--rpg-jauge-reserve': jauge.reserve.toFixed(4),
       }}
     >
-      <span className="rpg-jauge-vie__nappe" aria-hidden="true">
-        <span className="rpg-jauge-vie__sable" />
-        {jauge.reserve > 0 && <span className="rpg-jauge-vie__reserve" />}
-        {jauge.basePart < 1 && <span className="rpg-jauge-vie__trait" />}
-      </span>
-      {sens === 'perte' && !reduit && (
-        <span key={token} className="rpg-jauge-vie__grains" aria-hidden="true">
-          {Array.from({ length: RPG_VIE_GRAINS }, (_, index) => {
-            const grain = GRAINS_VIE[index % GRAINS_VIE.length];
-            return (
-              <i
-                key={index}
-                className="rpg-jauge-vie__grain"
-                style={{ '--x': `${grain.x}%`, '--d': `${grain.d}ms`, '--t': `${grain.t}px`, '--dx': `${grain.dx}px` }}
-              />
-            );
-          })}
+      {/* Masque d'écrêtage : le rond qui contient le nombre de PV et l'effet de vie qui baisse */}
+      <span className="rpg-jauge-vie__rond" aria-hidden="false">
+        <span className="rpg-jauge-vie__nappe" aria-hidden="true">
+          <span className="rpg-jauge-vie__sable" />
+          {jauge.reserve > 0 && <span className="rpg-jauge-vie__reserve" />}
+          {jauge.basePart < 1 && <span className="rpg-jauge-vie__trait" />}
         </span>
-      )}
+        {sens === 'perte' && !reduit && (
+          <span key={token} className="rpg-jauge-vie__grains" aria-hidden="true">
+            {Array.from({ length: RPG_VIE_GRAINS }, (_, index) => {
+              const grain = GRAINS_VIE[index % GRAINS_VIE.length];
+              return (
+                <i
+                  key={index}
+                  className="rpg-jauge-vie__grain"
+                  style={{ '--x': `${grain.x}%`, '--d': `${grain.d}ms`, '--t': `${grain.t}px`, '--dx': `${grain.dx}px` }}
+                />
+              );
+            })}
+          </span>
+        )}
+        {/* Le chiffre vrai, toujours à jour, désormais centré et écrêté au rond */}
+        <span className="rpg-jauge-vie__chiffre">
+          <span className="rpg-wizard-plate__hp-value">{pv}</span>
+          {roule && <span className="rpg-jauge-vie__roule" aria-hidden="true">{affichee}</span>}
+        </span>
+      </span>
       <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
       <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
-      {/* Le chiffre vrai, toujours à jour : c'est lui que lisent les lecteurs
-          d'écran et les vérifications. Pendant le roulage il est masqué
-          visuellement, mais il garde sa place et son texte ; le calque qui
-          compte vient se poser exactement dessus, dans le même cadre. */}
-      <span className="rpg-jauge-vie__chiffre">
-        <span className="rpg-wizard-plate__hp-value">{pv}</span>
-        {roule && <span className="rpg-jauge-vie__roule" aria-hidden="true">{affichee}</span>}
-      </span>
       {pvMax > base && <span className="rpg-wizard-plate__hp-max">/{pvMax}</span>}
       {bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {bouclier}</span>}
       {soin && <span key={soin.token} className="rpg-soin-montant" aria-hidden="true">+{soin.montant}</span>}
