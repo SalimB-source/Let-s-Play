@@ -4,7 +4,7 @@
 La fiche ci-dessous reste la référence de design. Le format cible d'origine —
 le **banc d'essai sans terrains** (`modeMana: 'essai'`,
 `15-essai-mana-sans-terrains.md`) — **30 cartes non-terrain**, main de départ 3,
-main max 5, mana +1 par tour jusqu'à 10, champ de 5 cases avec sacrifice de la
+main max 6, mana +1 par tour jusqu'à 10, champ de 5 cases avec sacrifice de la
 sixième — est rejoint depuis par le **deck de collection** de l'étagère
 (§10.3 et « Le deck du catalogue » plus bas). Le format classique avec
 terrains (le Portail scellé) reste en phase 2.
