@@ -356,13 +356,32 @@ test('chaque créature garde sa case : une mort laisse un trou, la suivante le c
   assert.equal(rpgJouerCreature(classique, 'joueur', 'chien-du-guet').entite.emplacement, undefined);
 });
 
-test('fin de tour : plus de cinq cartes en main oblige à défausser jusqu’à cinq', () => {
-  assert.equal(RPG_MANA_ESSAI_MAIN_MAX, 5);
+test('fin de tour : une main de six cartes est conservée sans défausse', () => {
+  const duel = nouveau(mono);
+  mulligans(duel);
+  rpgDemarrerManaEssai(duel);
+  duel.joueur.main.push('chien-du-guet', 'chien-du-guet', 'chien-du-guet');
+  const main = [...duel.joueur.main];
+  const cimetiere = [...duel.joueur.cimetiere];
+  assert.equal(main.length, 6);
+  assert.equal(rpgExcesMainFinDeTour(duel, 'joueur'), 0);
+  assert.equal(rpgPreparerDefausseFinDeTour(duel, 'joueur'), 0);
+  assert.equal(duel.defausseEnAttente, null);
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'sorcier');
+  assert.deepEqual(duel.joueur.main, main, 'aucune carte ne quitte la main à la limite');
+  assert.deepEqual(duel.joueur.cimetiere, cimetiere);
+});
+
+test('fin de tour : plus de six cartes en main oblige à défausser jusqu’à six', () => {
+  assert.equal(RPG_MANA_ESSAI_MAIN_MAX, 6);
   const duel = nouveau(mono);
   mulligans(duel);
   rpgDemarrerManaEssai(duel);
   duel.joueur.main.push('chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet');
   assert.equal(duel.joueur.main.length, 7);
+  assert.equal(rpgExcesMainFinDeTour(duel, 'joueur'), 1, 'la septième carte seule dépasse la limite');
+  duel.joueur.main.push('chien-du-guet');
   assert.equal(rpgExcesMainFinDeTour(duel, 'joueur'), 2);
   assert.equal(rpgPreparerDefausseFinDeTour(duel, 'joueur'), 2);
   assert.equal(duel.defausseEnAttente.motif, 'fin-de-tour');
@@ -371,19 +390,19 @@ test('fin de tour : plus de cinq cartes en main oblige à défausser jusqu’à 
   assert.equal(duel.defausseEnAttente.restant, 1);
   assert.equal(rpgDefausserCarte(duel, 'joueur', 0).ok, true);
   assert.equal(duel.defausseEnAttente, null);
-  assert.equal(duel.joueur.main.length, 5);
+  assert.equal(duel.joueur.main.length, 6);
 
   // Sans choix exprimé, la fermeture du tour défausse d'office l'excédent —
   // pour le joueur comme, à son tour, pour le sorcier.
   duel.joueur.main.push('chien-du-guet', 'chien-du-guet');
   rpgFinDeTour(duel);
   assert.equal(duel.tour, 'sorcier');
-  assert.equal(duel.joueur.main.length, 5, 'la main du joueur est redescendue à cinq');
+  assert.equal(duel.joueur.main.length, 6, 'la main du joueur est redescendue à six');
   duel.sorcier.main.push('chien-du-guet', 'chien-du-guet', 'chien-du-guet');
-  assert.ok(duel.sorcier.main.length > 5);
+  assert.ok(duel.sorcier.main.length > 6);
   rpgFinDeTour(duel);
   assert.equal(duel.tour, 'joueur');
-  assert.equal(duel.sorcier.main.length, 5, 'le sorcier défausse aussi son excédent');
+  assert.equal(duel.sorcier.main.length, 6, 'le sorcier défausse aussi son excédent');
 
   const classique = rpgNouveauDuel({ joueurDeck: Array(12).fill('chien-du-guet'), sorcierDeck: [], rng });
   classique.joueur.main.push('chien-du-guet', 'chien-du-guet');

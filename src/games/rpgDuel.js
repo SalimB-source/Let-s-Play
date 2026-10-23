@@ -618,7 +618,7 @@ function ouvrirDefausseEnAttente(duel, cote, restant, sourceCarteId = null, moti
 }
 
 /** Cartes à défausser en fin de tour dans le mode sans terrains : au-delà de
- * cinq cartes en main, l'excédent part au cimetière. Hors essai, aucune limite
+ * six cartes en main, l'excédent part au cimetière. Hors essai, aucune limite
  * de fin de tour ne s'applique (la main classique n'est pas plafonnée ici). */
 export function rpgExcesMainFinDeTour(duel, cote) {
   if (duel?.modeMana !== RPG_MODE_MANA_ESSAI) return 0;
@@ -5621,7 +5621,7 @@ export function rpgFinDeTour(duel) {
       if (entite.blocageForce?.portee === 'tour') entite.blocageForce = null;
     }
   }
-  // Mode sans terrains : main plafonnée à cinq cartes en fin de tour. Ce qui
+  // Mode sans terrains : main plafonnée à six cartes en fin de tour. Ce qui
   // dépasse est défaussé ici — choisi par le joueur via l'interface quand il
   // a ouvert la défausse, défaussé d'office (lecture de l'IA) sinon, et
   // toujours pour le sorcier, qui n'a personne pour choisir à sa place.

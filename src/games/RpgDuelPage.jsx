@@ -42,7 +42,7 @@ import {
   adversaireManaEssai,
   deckManaEssaiParId,
 } from './rpgManaEssai.js';
-import { armesPortees, groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
+import { armesPortees, groupEntitesParCarte, trierCartesMainParCout } from './rpgCardStacks.js';
 import { classeVariationStatCreature, libelleVariationStatCreature } from './rpgCreatureStats.js';
 import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
@@ -3285,7 +3285,7 @@ function VoletMulligan({
             les cartes interrogent : les cinq tiennent dans le volet. */}
         <div className="rpg-mulligan__stage">
           <div className="rpg-mulligan__cards">
-            {main.map((carteId, index) => (
+            {trierCartesMainParCout(main).map(({ carteId, indices: [index] }) => (
               <CarteMulligan
                 key={`${carteId}-${index}`}
                 carte={cardById(carteId)}
@@ -7141,7 +7141,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           : (touche === '3' || code === 'Digit3' || code === 'Numpad3') ? 2
             : (touche === '4' || code === 'Digit4' || code === 'Numpad4') ? 3
               : (touche === '5' || code === 'Digit5' || code === 'Numpad5') ? 4
-                : -1;
+                : (touche === '6' || code === 'Digit6' || code === 'Numpad6') ? 5
+                  : -1;
       if (optionsMana.length > 0) {
         if (indexChiffre >= 0 && indexChiffre < optionsMana.length) {
           event.preventDefault();
@@ -7150,7 +7151,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return;
       }
 
-      // Touches 1 à 5 hors choix de mana : jouer ou sélectionner une carte jouable de la main
+      // Touches 1 à 6 hors choix de mana : jouer ou sélectionner une carte jouable de la main
       if (indexChiffre >= 0) {
         const cartesMain = coque.querySelectorAll('.rpg-hand .rpg-hand__card');
         const carteMain = cartesMain[indexChiffre];
@@ -9052,7 +9053,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     setCarteDefausseSelectionnee(null);
     jouerSfx(res.ok ? 'annuler' : 'erreur');
-    // Défausse de fin de tour terminée (main redescendue à cinq) : le tour
+    // Défausse de fin de tour terminée (main redescendue à six) : le tour
     // suspendu reprend et se ferme pour de bon.
     if (res.ok && finTourApresDefausseRef.current && !duel.defausseEnAttente) {
       finTourApresDefausseRef.current = false;
@@ -9764,9 +9765,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (choixManaEssaiOuvert) { jouerSfx('erreur'); return; }
     if (sacrificeDemande || sacrificeEnCours || sacrificeEnCoursRef.current) { jouerSfx('erreur'); return; }
-    // Mode sans terrains : plus de cinq cartes en main à la fin du tour ? Le
+    // Mode sans terrains : plus de six cartes en main à la fin du tour ? Le
     // tour se suspend, le joueur CHOISIT ses défausses (l'attente du moteur),
-    // et `confirmerDefausse` relance cette fermeture quand la main est à cinq.
+    // et `confirmerDefausse` relance cette fermeture quand la main est à six.
     // Une défausse d'EFFET déjà en attente (le Butin d'un Chien du guet) ne
     // suspend rien : elle garde son comportement historique, refermée
     // d'office par la fermeture du tour.
@@ -10113,9 +10114,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
      mode essai (sans terrains) refuse lui la superposition : chaque carte,
      en main comme sur le champ, garde sa place et son identité. */
   const empilerCartes = viewport.mobile && duel.modeMana !== RPG_MODE_MANA_ESSAI;
-  const groupesMain = empilerCartes
-    ? groupCartesMain(duel.joueur.main)
-    : duel.joueur.main.map((carteId, index) => ({ carteId, indices: [index] }));
+  const groupesMain = trierCartesMainParCout(duel.joueur.main, empilerCartes);
   // Exemplaires impliqués dans l'action en cours : leur groupe se déplie seul,
   // pour que le joueur voie chaque carte concernée (et que les flèches de
   // blocage, les halos de cible et les destructions trouvent leur élément).
@@ -11478,7 +11477,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-draw-token={piocheEnCours?.token}
                   data-card-id={carteId}
                   data-hand-index={i}
-                  data-hand-key={position < 5 ? String(position + 1) : undefined}
+                  data-hand-key={position < RPG_MANA_ESSAI_MAIN_MAX ? String(position + 1) : undefined}
                   data-tutorial-target={tutorielActif && etapeTutorielId === 'terrain' && carteId === 'desert'
                     ? 'terrain-card'
                     : tutorielActif && etapeTutorielId === 'creature' && carteId === 'tislit-des-aures'
