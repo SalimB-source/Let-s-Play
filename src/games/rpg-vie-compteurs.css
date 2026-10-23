@@ -21,37 +21,74 @@
 
 /* ══ 1. La vie est du sable ═══════════════════════════════════════════════ */
 
-/* La plaque de vie devient le repère des couches. Les enfants textuels
-   (icônes, chiffres) passent au-dessus de la nappe ; l'éclat de soin garde son
-   positionnement absolu, il n'est donc pas concerné. */
+/* La plaque de vie devient le repère des couches. On crée un rond qui
+   contient le nombre de PV et qui sert de masque d'écrêtage pour l'effet
+   de vie qui baisse : sable, grains, roulage restent à l'intérieur du cercle. */
 .rpg-jauge-vie {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  overflow: visible;
+}
+
+/* Le rond qui contient les PV : masque d'écrêtage circulaire */
+.rpg-jauge-vie__rond {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(38px, 4.2vw, 54px);
+  height: clamp(38px, 4.2vw, 54px);
+  border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
+  flex: none;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 196, 186, .85) 0 7%, rgba(255, 120, 110, .35) 16%, transparent 34%),
+    radial-gradient(circle at 50% 42%, #c4161c 0%, #8e0a12 52%, #4f0208 86%, #2c0004 100%);
+  box-shadow:
+    inset 0 -4px 7px rgba(25, 0, 3, .75),
+    inset 0 2px 3px rgba(255, 150, 140, .35),
+    0 0 0 1px rgba(60, 0, 6, .9),
+    0 3px 6px rgba(0, 0, 0, .7),
+    0 0 9px rgba(190, 20, 30, .35);
+  /* Masque d'écrêtage : tout ce qui dépasse du cercle est coupé */
+  clip-path: circle(50% at 50% 50%);
+  -webkit-clip-path: circle(50% at 50% 50%);
+  /* Fallback masque pour Safari */
+  -webkit-mask-image: radial-gradient(circle, black 99%, transparent 100%);
+  mask-image: radial-gradient(circle, black 99%, transparent 100%);
 }
 
 .rpg-jauge-vie__nappe {
   position: absolute;
-  inset: -1px -3px;
+  inset: 0;
   z-index: 0;
   overflow: hidden;
-  border-radius: 7px;
-  background: rgba(26, 19, 11, .3);
+  border-radius: 50%;
+  background: rgba(26, 19, 11, .18);
   box-shadow: inset 0 0 10px rgba(0, 0, 0, .38);
   pointer-events: none;
+  /* S'assure que la nappe elle-même est écrêtée au rond */
+  clip-path: circle(50% at 50% 50%);
 }
 
 /* Le sable : la hauteur est pilotée par `--rpg-jauge-part`, la transition fait
-   le geste. Une vie qui monte remplit, une vie qui baisse vide — sans saut. */
+   le geste. Une vie qui monte remplit, une vie qui baisse vide — sans saut.
+   Il est désormais écrêté au rond : il remplit le cercle par le bas. */
 .rpg-jauge-vie__sable {
   position: absolute;
   inset: auto 0 0;
   height: calc(var(--rpg-jauge-part, 1) * 100%);
-  background: linear-gradient(180deg, rgba(238, 205, 138, .52), rgba(196, 152, 82, .3));
+  background: linear-gradient(180deg, rgba(238, 205, 138, .58), rgba(196, 152, 82, .42));
   box-shadow: inset 0 1px rgba(255, 236, 191, .72);
   transition: height 420ms cubic-bezier(.2, .7, .2, 1);
+  border-radius: 0 0 50% 50% / 0 0 20% 20%;
 }
 
 /* La réserve : la vie tenue au-dessus du maximum d'origine. Elle se lit comme
-   une strate d'or posée sur le sable, sans texte. */
+   une strate d'or posée sur le sable, sans texte, à l'intérieur du rond. */
 .rpg-jauge-vie__reserve {
   position: absolute;
   inset: auto 0 auto;
@@ -65,12 +102,12 @@
 /* Le trait du maximum d'origine : « au-delà, c'est de la réserve ». */
 .rpg-jauge-vie__trait {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 8%;
+  right: 8%;
   bottom: calc(var(--rpg-jauge-base, 0) * 100%);
   height: 1px;
-  background: rgba(255, 231, 170, .5);
-  box-shadow: 0 0 4px rgba(255, 210, 120, .32);
+  background: rgba(255, 231, 170, .6);
+  box-shadow: 0 0 4px rgba(255, 210, 120, .42);
   pointer-events: none;
 }
 
@@ -81,23 +118,26 @@
   z-index: 1;
 }
 
-/* Le chiffre vrai reste dans le flux (il garde sa place et sa largeur) ; le
-   calque de roulage vient se poser exactement dessus, dans le même cadre.
-   La marge de `.rpg-wizard-plate__hp-value` passe sur le cadre, qui est
-   désormais l'élément en ligne : l'espacement est conservé à l'identique, et
-   les deux contextes qui l'annulaient (PC et tactile) l'annulent ici. */
+/* Le chiffre est désormais centré dans le rond, écrêté avec le sable */
 .rpg-jauge-vie__chiffre {
   position: relative;
-  z-index: 1;
-  display: inline-block;
-  margin-inline-start: .25em;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-variant-numeric: tabular-nums;
-  text-align: end;
-  vertical-align: baseline;
+  text-align: center;
+  color: #fff3ee;
+  font: 800 clamp(16px, 1.8vw, 22px)/1 Georgia, serif;
+  text-shadow: 0 1px 0 #3a0006, 0 2px 4px rgba(0, 0, 0, .8);
+  pointer-events: none;
 }
 .rpg-jauge-vie__chiffre > .rpg-wizard-plate__hp-value {
   position: relative;
   margin-inline-start: 0;
+  color: inherit;
+  font: inherit;
+  text-shadow: inherit;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-jauge-vie__chiffre,
 .rpg-battle--touch .rpg-jauge-vie__chiffre {
@@ -108,23 +148,27 @@
 }
 .rpg-jauge-vie__roule {
   position: absolute;
-  z-index: 2;
+  z-index: 4;
   inset: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   pointer-events: none;
   font: inherit;
   font-variant-numeric: tabular-nums;
   color: inherit;
+  text-shadow: inherit;
 }
 
-/* ── Les grains : six par perte, chacun avec sa position, son retard ---- */
+/* ── Les grains : six par perte, écrêtés au rond ── */
 .rpg-jauge-vie__grains {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
+  border-radius: 50%;
+  overflow: hidden;
+  clip-path: circle(50% at 50% 50%);
 }
 .rpg-jauge-vie__grain {
   position: absolute;
@@ -315,6 +359,32 @@
 @keyframes rpg-compteur-veille {
   0% { opacity: .85; transform: scale(1); }
   72%, 100% { opacity: 0; transform: scale(1.55); }
+}
+
+/* ══ Compatibilité mode mana essai : le rond extérieur devient transparent,
+   le rond intérieur porte le visuel et le masque ──────────────────────── */
+.rpg-battle[data-mode-mana=\"essai\"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__pv.rpg-jauge-vie {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  padding: 0;
+  min-width: 0;
+  width: auto;
+  height: auto;
+}
+.rpg-battle[data-mode-mana=\"essai\"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-jauge-vie__rond {
+  width: clamp(28px, calc(var(--duel-card) * .62), 46px);
+  height: clamp(28px, calc(var(--duel-card) * .62), 46px);
+}
+
+/* Desktop : le rond est un peu plus grand pour rester lisible */
+.rpg-battle:not(.rpg-battle--touch) .rpg-jauge-vie__rond {
+  width: clamp(44px, 3.2vw, 56px);
+  height: clamp(44px, 3.2vw, 56px);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-jauge-vie__chiffre {
+  font-size: clamp(18px, 1.6vw, 24px);
 }
 
 /* ══ Mouvement réduit ════════════════════════════════════════════════════
