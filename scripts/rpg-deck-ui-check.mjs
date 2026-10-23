@@ -105,7 +105,7 @@ assert.match(pageSource, /aria-pressed=\{actif\}[\s\S]*?changerCouleur\(filtre\.
 assert.match(pageSource, /neige: 'Neige'/, 'la puce de filtre Neige existe dans le menu Deck');
 assert.match(readSource('../src/games/RpgDeckBox.jsx'), /rpg-emblem--\$\{element\}/, 'les emblèmes de couleur sont dessinés par le même composant SVG');
 assert.match(boxCss, /\.rpg-emblem--neige\s*\{\s*color:\s*#a9e0f5;/,
-  'l’emblème Neige est un cristal de glace bleu clair');
+  'l’emblème Neige est un flocon bleu clair');
 assert.match(boxCss, /\.rpg-deckbox--neige\s*\{[^}]*--accent:\s*#a9e0f5;/,
   'le boîtier du deck Neige a son laiton bleu clair');
 assert.match(boxCss, /\.rpg-deck-filter__chip--neige\.is-active\s*\{/,
