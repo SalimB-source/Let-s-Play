@@ -114,6 +114,7 @@
 .rpg-atelier__pip--eau { background: radial-gradient(circle at 34% 24%, #a5dcf5, #285e91 72%); }
 .rpg-atelier__pip--sable { background: radial-gradient(circle at 34% 24%, #f8e69d, #795613 72%); }
 .rpg-atelier__pip--neige { background: radial-gradient(circle at 34% 24%, #eefaff, #4a86ab 72%); }
+.rpg-atelier__pip--tenebres { background: radial-gradient(circle at 34% 24%, #b9a4d6, #3c2a57 72%); }
 
 .rpg-atelier__cout {
   display: inline-flex;
@@ -784,4 +785,328 @@
   border-width: 0 !important;
   background-image: none !important;
   animation: none !important;
+}
+
+/* ── La création assistée (« ✦ Création assistée ») ─────────────────────────
+   Le wizard remplace les panneaux de l'atelier : mêmes matières (nuit,
+   laiton, encres claires), un fil d'étapes, puis des vignettes à cocher. */
+
+.rpg-atelier__outil--assistant {
+  border-color: rgba(235, 194, 106, .55);
+  background: rgba(235, 194, 106, .12);
+  color: #ffe9b0;
+}
+.rpg-atelier__outil--assistant:hover:not(:disabled) { background: rgba(235, 194, 106, .22); }
+
+.rpg-assistant {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(235, 194, 106, .14);
+  border-radius: 14px;
+  background: rgba(8, 7, 13, .45);
+}
+
+.rpg-assistant__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rpg-assistant__header h3 {
+  margin: 2px 0 0;
+  color: var(--encre);
+  font: 700 clamp(18px, 2.2vw, 24px) / 1.15 Georgia, serif;
+}
+.rpg-assistant__aide {
+  margin: 4px 0 0;
+  color: var(--or-sombre);
+  font: 500 11px/1.4 var(--mono, monospace);
+}
+
+/* Le fil des étapes : 1 Couleurs · 2 4 créatures · 3 4 sorts. */
+.rpg-assistant__fil {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rpg-assistant__fil li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--liseret);
+  border-radius: 999px;
+  color: var(--or-sombre);
+  font: 700 10.5px/1.2 var(--mono, monospace);
+}
+.rpg-assistant__fil li i {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(235, 194, 106, .18);
+  color: var(--or);
+  font: 800 10px/1 var(--mono, monospace);
+  font-style: normal;
+}
+.rpg-assistant__fil li.is-courante {
+  border-color: rgba(235, 194, 106, .5);
+  color: var(--encre);
+  background: rgba(235, 194, 106, .1);
+}
+.rpg-assistant__fil li.is-faite i { background: rgba(235, 194, 106, .4); color: #14100a; }
+
+.rpg-assistant__message {
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid rgba(224, 92, 67, .35);
+  border-radius: 9px;
+  background: rgba(224, 92, 67, .12);
+  color: #ffd6cc;
+  font: 500 11.5px/1.5 var(--mono, monospace);
+}
+
+/* L'étape couleurs : cinq grandes pastilles. */
+.rpg-assistant__couleurs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+.rpg-assistant__couleur {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border: 1px solid rgba(235, 194, 106, .25);
+  border-radius: 12px;
+  background: rgba(8, 7, 13, .7);
+  color: var(--encre);
+  cursor: pointer;
+}
+.rpg-assistant__couleur i {
+  font: 26px/1 "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-style: normal;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5));
+}
+.rpg-assistant__couleur strong { font: 700 13px/1.2 Georgia, serif; }
+.rpg-assistant__couleur small { color: var(--or-sombre); font: 500 9.5px/1.2 var(--mono, monospace); }
+.rpg-assistant__couleur.is-on {
+  border-color: var(--or);
+  background: rgba(235, 194, 106, .16);
+  box-shadow: 0 0 0 1px rgba(235, 194, 106, .35), 0 6px 18px rgba(0, 0, 0, .35);
+}
+.rpg-assistant__couleur.is-on small { color: var(--or); }
+.rpg-assistant__couleur:focus-visible { outline: 2px solid var(--or); outline-offset: 2px; }
+.rpg-assistant__astuce {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  color: var(--or-sombre);
+  font: 500 11px/1.5 var(--mono, monospace);
+}
+
+.rpg-assistant__compteur {
+  margin: 0;
+  color: var(--or-sombre);
+  font: 700 12px/1.4 var(--mono, monospace);
+}
+.rpg-assistant__compteur b { color: var(--or); }
+
+/* La grille des candidats : les mêmes vignettes illustrées que la collection. */
+.rpg-assistant__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 132px), 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  max-height: 56vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(235, 194, 106, .35) transparent;
+}
+
+.rpg-assistant__carte {
+  position: relative;
+  border: 1px solid rgba(235, 194, 106, .16);
+  border-top: 3px solid var(--frame, rgba(235, 194, 106, .4));
+  border-radius: 10px;
+  background: rgba(20, 18, 28, .55);
+  overflow: hidden;
+}
+.rpg-assistant__carte.is-choisie {
+  border-color: var(--or);
+  box-shadow: 0 0 0 1px rgba(235, 194, 106, .5), 0 8px 20px rgba(0, 0, 0, .35);
+}
+.rpg-assistant__carte-bouton {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rpg-assistant__carte-bouton:focus-visible { outline: 2px solid var(--or); outline-offset: -2px; }
+.rpg-assistant__carte-art {
+  position: relative;
+  display: block;
+  aspect-ratio: 2 / 2.6;
+  overflow: hidden;
+}
+.rpg-assistant__carte-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-user-drag: none;
+}
+.rpg-assistant__cout {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid rgba(0, 0, 0, .55);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 24%, #fff2c8, #9a7c2c 72%);
+  color: #221a06;
+  font: 800 11px/1 var(--mono, monospace);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .5), 0 1px 3px rgba(0, 0, 0, .55);
+}
+.rpg-assistant__coche {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(0, 0, 0, .5);
+  border-radius: 50%;
+  background: var(--or);
+  color: #221a06;
+  font: 800 12px/1 var(--mono, monospace);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .5);
+}
+.rpg-assistant__pt {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  padding: 2px 6px;
+  border: 1px solid rgba(0, 0, 0, .5);
+  border-radius: 7px;
+  background: rgba(8, 7, 13, .82);
+  color: var(--encre);
+  font: 800 10.5px/1.1 var(--mono, monospace);
+}
+.rpg-assistant__pt i { font-style: normal; color: var(--or-sombre); }
+.rpg-assistant__carte-sort {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  font-size: 13px;
+}
+.rpg-assistant__carte-nom {
+  display: grid;
+  gap: 1px;
+  padding: 0 7px 7px;
+  min-width: 0;
+}
+.rpg-assistant__carte-nom strong {
+  color: var(--encre);
+  font: 700 12px/1.2 Georgia, serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rpg-assistant__carte-nom small {
+  color: var(--or-sombre);
+  font: 500 9px/1.25 var(--mono, monospace);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rpg-assistant__vide {
+  margin: 2px 0;
+  color: var(--or-sombre);
+  font: 500 11.5px/1.5 var(--mono, monospace);
+}
+
+.rpg-assistant__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Le nommage à l'enregistrement ──────────────────────────────────────────
+   « Enregistrer » propose d'abord de nommer le deck : trois suggestions
+   cliquables (autour de la carte emblème), et le champ reste libre. */
+
+.rpg-atelier__nommage {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 100%;
+  padding: 12px;
+  border: 1px solid rgba(235, 194, 106, .4);
+  border-radius: 12px;
+  background: rgba(235, 194, 106, .07);
+}
+.rpg-atelier__nommage h3 {
+  margin: 0;
+  color: var(--encre);
+  font: 700 16px/1.2 Georgia, serif;
+}
+.rpg-atelier__nommage-aide {
+  margin: 0;
+  color: var(--or-sombre);
+  font: 500 11px/1.5 var(--mono, monospace);
+}
+.rpg-atelier__nommage-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rpg-atelier__nommage-suggestions button {
+  padding: 6px 11px;
+  border: 1px solid rgba(235, 194, 106, .35);
+  border-radius: 999px;
+  background: rgba(8, 7, 13, .7);
+  color: var(--or);
+  font: 700 11.5px/1.2 Georgia, serif;
+  cursor: pointer;
+}
+.rpg-atelier__nommage-suggestions button:hover { background: rgba(235, 194, 106, .16); }
+.rpg-atelier__nommage-suggestions button.is-on {
+  border-color: var(--or);
+  background: rgba(235, 194, 106, .22);
+  color: var(--encre);
+}
+.rpg-atelier__nommage-suggestions button:focus-visible { outline: 2px solid var(--or); outline-offset: 1px; }
+.rpg-atelier__nommage-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (max-width: 820px) {
+  .rpg-assistant__grille { max-height: none; grid-template-columns: repeat(auto-fill, minmax(min(100%, 118px), 1fr)); }
+  .rpg-assistant__actions .rpg-menu-button { flex: 1 1 100%; }
+  .rpg-atelier__nommage-actions .rpg-menu-button { flex: 1 1 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-assistant__carte,
+  .rpg-assistant__couleur { transition: none; }
 }

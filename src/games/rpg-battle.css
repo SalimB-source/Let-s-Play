@@ -4351,10 +4351,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    arme, teintée selon qu'elle retire ou qu'elle donne. */
 .rpg-hover-card-preview__stats--modif.is-malus { color: #ffb4a6; }
 .rpg-hover-card-preview__stats--modif.is-bonus { color: #a9f0c8; }
-/* L'aperçu rapide est texte seul : sans l'illustration, l'encadré d'infos
-   prend toute la largeur du panneau — au survol comme sur le volet d'appui
-   long, qui restent plus étroits que la fiche. La fiche du catalogue,
-   l'annonce et les présentations centrées gardent leurs deux colonnes. */
+/* Le survol est texte seul : sans l'illustration, l'encadré d'infos prend
+   toute la largeur du panneau — plus étroit que la fiche. L'appui long au
+   doigt montre la carte entière et garde donc ses deux colonnes, comme la
+   fiche du catalogue, l'annonce et les présentations centrées. */
 .rpg-hover-card-preview.rpg-hover-card-preview--texte-seul {
   grid-template-columns: minmax(0, 1fr);
   width: min(420px, calc(100vw - 20px));

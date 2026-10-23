@@ -18,18 +18,21 @@
    Arena** (voir « La disposition » plus bas) : à gauche **la collection en
    grille** de cartes illustrées, surmontée d'une barre de filtres à
    bascules ; à droite **le panneau du deck** — le **nom** (60 caractères),
-   le compteur `N / 40 cartes` et sa jauge, `N terrains · P %`, la **courbe de
+   le compteur `N / 30 cartes` et sa jauge, la **courbe de
    mana**, la répartition des couleurs, la liste par type, la **carte
    emblématique** du boîtier. La validation (`rpgValiderDeckMaison`) court
-   **en direct** : elle dit à chaque instant si le deck tiendrait les quotas,
+   **en direct** : elle dit à chaque instant si le deck tiendrait le format,
    et **vérifie la collection** — une carte verrouillée refuse de rejoindre le
-   deck et annonce où se débloquer (« Vainquez « Le Pêcheur de perles » — La
-   Tour des Abysses »).
+   deck et annonce où se débloquer (« Le Souk la vendra après « Le Pêcheur de
+   perles » — La Tour des Abysses »).
 3. **Enregistrer** — un deck peut être enregistré **en brouillon** (moins de
-   40 cartes) : il rejoint l'étagère, mais son bouton reste « Indisponible »
-   tant que les quotas ne sont pas tenus, et sa fiche l'explique. Un deck
-   complet est **jouable aussitôt**. L'enregistrement referme l'atelier,
-   ouvre la fiche du deck et confirme sur la ligne d'état.
+   30 cartes) : il rejoint l'étagère, mais son bouton reste « Indisponible »
+   tant que le format n'est pas tenu, et sa fiche l'explique. Un deck
+   complet est **jouable aussitôt**. Quand le joueur enregistre, le jeu
+   **propose de donner un nom au deck** (panneau `.rpg-atelier__nommage`) :
+   trois suggestions tirées de son contenu, et le champ reste libre. La
+   sauvegarde referme l'atelier, ouvre la fiche du deck et confirme sur la
+   ligne d'état.
 4. **La fiche maison** — comme celle du catalogue : répartition, liste,
    bouton de jeu — plus trois gestes propres (**Modifier**, **Supprimer**,
    **Copier** dans `.rpg-deck-detail__actions`) :
@@ -48,6 +51,33 @@
    garde les decks écrits pour chaque étage (`deckSeJoue` refuse un deck
    maison en Histoire).
 
+## La création assistée
+
+Le bouton **« ✦ Création assistée »** de l'atelier ouvre un assistant en trois
+étapes (`RpgDeckAssistant.jsx`, fil `.rpg-assistant__fil`) :
+
+1. **Couleurs** — une à trois des cinq couleurs du jeu ;
+2. **4 créatures** — créatures **et héros** possédés de ces couleurs, choisis
+   librement sur la grille ;
+3. **4 sorts** — tout ce qui n'est ni créature ni héros : **magies et armes**,
+   mêmes règles.
+
+Puis **« Générer le deck »** : `genererDeckAssiste` (`src/games/rpgDeckAuto.js`)
+complète les vingt-deux places restantes avec des cartes qui **complètent** les
+huit choisies. Chaque candidat est noté sur la **synergie** avec les familles
+de mots-clés déjà choisies (le mot de la famille plafonné, sinon son
+couple), la **couverture** des familles absentes, la **courbe de mana** visée,
+le **mix créatures / sorts**, les **couleurs** et la puissance intrinsèque —
+le tout dans la collection, avec **× 2 exemplaires** par carte (× 1 pour un
+mythique). Le deck fini (30 cartes) revient dans l'atelier, annoncé **prêt à
+jouer** ; chaque carte reste modifiable à la main, comme dans une création
+classique.
+
+À l'enregistrement, le **nommage** s'ouvre pour tout deck, assisté ou non :
+trois suggestions sont tirées du contenu (« Les Disciples de … », « Le Serment
+de … », « La Garde de … », particules respectées — « d'Anqa »), et le champ
+reste libre.
+
 ## La disposition : ce que l'on emprunte à Magic Arena
 
 Le constructeur de decks d'Arena est la référence des joueurs de cartes sur
@@ -58,12 +88,13 @@ laiton, encres claires — `src/games/rpg-deck-atelier.css`).
 |---|---|
 | La collection est une **grille de cartes**, pas une liste | `.rpg-atelier__cartes` : vignettes plein art au cadre de la couleur de la carte (`cardFrameColor`), médaillon de coût avec pips, attaque / défense des créatures, losange de rareté |
 | **Clic gauche +1, clic droit −1** | le bouton `.rpg-atelier__carte-ajout` couvre la vignette ; `contextmenu` sur la vignette ou sur une rangée du deck retire un exemplaire (et ne montre pas le menu du navigateur) ; un petit « − » (`.rpg-atelier__carte-retrait`) apparaît au survol, toujours visible au doigt |
-| Compteur « 2/4 » posé sur la carte | `.rpg-atelier__carte-count` : `×N/limite` (`×N` pour un terrain, illimité) ; une carte au quota s'éteint (`.is-full`), une carte verrouillée porte un cadenas et dit où se gagner (`.is-locked`) |
+| Compteur « 2/4 » posé sur la carte | `.rpg-atelier__carte-count` : `×N/limite` ; une carte au quota s'éteint (`.is-full`), une carte verrouillée porte un cadenas et dit où se gagner (`.is-locked`) |
 | **Aperçu grand format au survol** | le même `HoverCardPreview` que le duel et le catalogue : la page passe `onHoverCard` / `onLeaveHoverCard`, l'atelier les pose sur les vignettes (souris **et** focus clavier) et les rangées du deck |
-| Barre de filtres à **bascules** (symboles de mana, coût, type, rareté, « possédées ») | `.rpg-atelier__toolbar` : quatre **pips de couleur** (`aria-pressed`, cumulables en OU) + « Hybrides » ; coûts **1 à 6 et 7+** (un filtre de coût écarte les terrains) ; types ; raretés — **commune, inhabituelle, rare, mythique**, comme Magic (losange coloré) ; « Possédées » ; recherche sur nom, ligne de type **et texte** ; tri (coût — terrains en fin —, nom, couleur, rareté) ; « ↺ Réinitialiser » n'apparaît que si un filtre est actif |
-| Panneau du deck à droite : nom en titre, compteur, **courbe de mana**, couleurs, liste par type | `.rpg-atelier__deck` (collant à l'écran sur PC) : nom en champ-titre, `N / 40` et jauge (verte à 40, rouge au-delà), terrains / créatures / magies / **coût moyen**, verdict de validation ; `courbeDeMana` dessine sept barres (1…6, 7+) ; `repartitionCouleurs` liste par couleur cartes, pips exigés et terrains producteurs ; la liste va **Créatures → Magies → Terrains**, rangées « vignette · médaillon de coût · nom · − × N + » triées par coût |
-| **« Ajouter des terrains »** | **« ⛰ Compléter en terrains »** (`completerEnTerrains`) : remplit les places libres jusqu'à 40 avec des terrains **possédés**, au prorata des **pips** exigés par les sorts (à défaut des couleurs des cartes, à défaut du Sable), parts entières aux plus forts restes ; ne retire jamais rien |
+| Barre de filtres à **bascules** (symboles de mana, coût, type, rareté, « possédées ») | `.rpg-atelier__toolbar` : quatre **pips de couleur** (`aria-pressed`, cumulables en OU) + « Hybrides » ; coûts **1 à 6 et 7+** ; types ; raretés — **commune, inhabituelle, rare, mythique**, comme Magic (losange coloré) ; « Possédées » ; recherche sur nom, ligne de type **et texte** ; tri (coût, nom, couleur, rareté) ; « ↺ Réinitialiser » n'apparaît que si un filtre est actif |
+| Panneau du deck à droite : nom en titre, compteur, **courbe de mana**, couleurs, liste par type | `.rpg-atelier__deck` (collant à l'écran sur PC) : nom en champ-titre, `N / 30 cartes` et jauge (verte à 30, rouge au-delà), créatures / magies / armes / **coût moyen**, verdict de validation ; `courbeDeMana` dessine sept barres (1…6, 7+) ; `repartitionCouleurs` liste par couleur cartes et pips exigés ; la liste va **Créatures → Magies → Armes**, rangées « vignette · médaillon de coût · nom · − × N + » triées par coût |
+| **« Ajouter des terrains »** | *(retiré)* : les terrains ont quitté le jeu, le mana est automatique — `completerEnTerrains` ne fait plus rien et le bouton a disparu |
 | Vider le deck | « ⌫ Vider le deck », confirmation en deux temps sur le bouton lui-même |
+| **Créer sans cliquer** | **« ✦ Création assistée »** : un assistant en trois étapes (couleurs, 4 créatures, 4 sorts) puis le moteur `genererDeckAssiste` complète le deck ; à l'enregistrement, le jeu propose de **nommer** le deck |
 
 Les règles pures du panneau (`courbeDeMana`, `repartitionCouleurs`,
 `completerEnTerrains`, `RPG_DECK_TAILLE`) vivent dans
@@ -113,15 +144,16 @@ achetée**.
 
 ## Les règles de construction
 
-Les mêmes quotas que les decks du catalogue (`rpgValiderDeck`, étendus aux
+Le même format que les decks du catalogue (`rpgValiderDeck`, étendu aux
 decks maison par `rpgValiderDeckMaison` dans `src/games/rpgDeckBuilder.js`) :
 
 | Règle | Valeur |
 |---|---|
-| Taille | exactement **40 cartes** (un brouillon peut être enregistré en dessous, il n'est pas jouable) |
-| Terrains | au moins **40 %** du deck, en quantité libre |
+| Taille | exactement **30 cartes** (un brouillon peut être enregistré en dessous, il n'est pas jouable) |
+| Terrains | **aucun** : les terrains ont été retirés du jeu, le mana est automatique |
+| Couleurs | **1 à 3** |
 | Mythique | **× 1** |
-| Autres non-terrains | **× 3** |
+| Autres cartes | **× 2** |
 
 Un deck maison porte un nom (60 caractères au plus, tronqué sans casser), un
 identifiant `maison-*` généré (jamais codé en dur dans les tests : les
@@ -162,7 +194,8 @@ Chaque recette fixe :
 - `identite` — la ou les couleurs du deck. **Aucune carte ne sort de cette
   identité** ;
 - `terrains`, `creatures`, `magies` et, pour les decks concernés, `armes` — les
-  places de chaque famille, pour un total de trente ;
+  places de chaque famille, pour un total de trente (`terrains` reste dans le
+  schéma, mais il est toujours vide depuis le retrait des terrains) ;
 - `signature` — les cartes d'archétype posées avant le remplissage, même si
   une carte mieux classée frappe à la porte ;
 - pour les starters, `mythiquesTotalMax` et `raresTotalMax` — des plafonds
@@ -176,14 +209,13 @@ Le composeur pose la signature, remplit les familles par rareté puis puissance,
 et poursuit jusqu'à ce qu'aucune place ne reste vide. Les plafonds globaux des
 starters sont durs : ils s'appliquent aussi à la signature et à la passe finale.
 Les plafonds d'Histoire restent par famille. Chaque carte ne dépasse jamais sa
-limite légale (une copie d'une mythique, trois des autres cartes non-terrain) ;
-les terrains sont sans plafond de copies.
+limite légale (une copie d'une mythique, deux des autres cartes).
 
 ### Les huit decks du catalogue
 
 La répartition des raretés ci-dessous compte les **copies** ; le nombre de
-terrains, créatures, magies et armes est donné à part. Chaque ligne totalise
-trente cartes sans terrain. Le plafond rare est celui de la recette et compte
+créatures, magies et armes est donné à part. Chaque ligne totalise
+trente cartes, sans terrain. Le plafond rare est celui de la recette et compte
 les cartes rares distinctes, pas leurs copies. Les héros sont comptés parmi les
 créatures.
 
@@ -308,7 +340,9 @@ casse.
 | Fichier | Rôle |
 | --- | --- |
 | `src/games/rpgCollection.js` | dotation de départ, **révélations** d'étage, **gel des acquis**, `carteReveleePar`, `normaliserCollection` |
-| `src/games/rpgDeckBuilder.js` | limites (nom, plafond, `RPG_DECK_TAILLE`), `rpgValiderDeckMaison`, `normaliserDeckMaison`, `fusionnerEtatsSablier`, et le panneau du deck : `courbeDeMana`, `repartitionCouleurs`, `completerEnTerrains` |
+| `src/games/rpgDeckBuilder.js` | limites (nom, plafond, `RPG_DECK_TAILLE = 30`), `rpgValiderDeckMaison`, `normaliserDeckMaison`, `fusionnerEtatsSablier`, et le panneau du deck : `courbeDeMana`, `repartitionCouleurs` (`completerEnTerrains` ne fait plus rien : le mana est automatique) |
+| `src/games/rpgDeckAuto.js` | la création assistée : `genererDeckAssiste` (complétion notée), `scoreComplementarite`, `suggestionsNomsDeck`, `particuleDe` |
+| `src/games/RpgDeckAssistant.jsx` | l'assistant en trois étapes (couleurs, 4 créatures, 4 sorts) : composant pur, `onGenerer({ couleurs, creatures, sorts })` rend la main à l'atelier |
 | `src/games/RpgDeckAtelier.jsx` + `rpg-deck-atelier.css` | l'éditeur façon Arena (grille, bascules, panneau du deck) : composant pur, tout état vient en props, la persistance et l'aperçu au survol restent au parent |
 | `src/games/rpgLongPress.js`, `src/games/RpgDuelPage.jsx` | le geste d'aperçu au doigt, délégué au menu entier (l'atelier compris) par `onPointerDown` |
 | `src/games/useDecksSablier.js` | casier local, collection, compte, `statutSync`, suppression à pierre tombale |
@@ -316,7 +350,7 @@ casse.
 | `src/games/RpgDuelPage.jsx` | le câblage : crate, étagère maison, fiche, ligne d'état, `enregistrerAtelier` |
 | `src/auth/AuthContext.jsx` | le contexte de compte, lu défensivement par le hook |
 | `supabase/schema.sql` | la table `rpg_sablier_progress` et ses règles RLS |
-| `tests/rpg-collection.test.js`, `tests/rpg-deck-builder.test.js` | les règles vérifiées (`npm run check:rpg`) |
+| `tests/rpg-collection.test.js`, `tests/rpg-deck-builder.test.js`, `tests/rpg-deck-auto.test.js` | les règles vérifiées (`npm run check:rpg`) |
 | `scripts/rpg-deck-smoke.jsx` + `scripts/rpg-deck-ui-check.mjs` | la page montée dans jsdom : atelier complet, brouillon, duel maison, édition, copie, garde-fous de source (`npm run check:rpg-deck-ui`) |
 | `scripts/rpg-preview-smoke.jsx` | le scénario d'appui long, créateur de deck compris (grille, « + », ligne du deck, « − ») : l'aperçu s'ouvre, le deck ne bouge pas (`npm run check:rpg-ui`) |
 
@@ -337,6 +371,16 @@ casse.
   définitive à l'échelle de l'appareil ; la confirmation sur la fiche évite
   le `window.confirm` proscrit, la liste `supprimes` évite la résurrection
   lors d'une fusion avec un appareil qui ne sait pas encore.
+- **L'assistant choisit, l'algorithme complète** : les huit cartes posées à la
+  main disent ce que le joueur veut jouer ; la notation (synergie, couverture,
+  courbe, mix) ne fait que traduire ce vœu en trente cartes. « Sorts » veut
+  dire magies **et** armes — tout ce qui n'est ni créature ni héros — et les
+  choix entrent ×2 (×1 si mythique), comme s'ils avaient été cliqués un par
+  un dans la grille.
+- **Nommer à l'enregistrement, pas avant** : le nom raconte le deck fini ;
+  les suggestions naissent donc du contenu réel, une fois la génération (ou la
+  sélection manuelle) terminée — et le champ reste libre pour qui veut le
+  sien.
 
 Les vérifications : `npm run check:rpg` (les règles pures — moteur, collection,
 deck builder), `npm run check:rpg-deck-ui` (la page rendue dans jsdom, plus les

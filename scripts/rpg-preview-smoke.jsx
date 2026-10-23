@@ -28,6 +28,20 @@ export async function checkRpgPreviewActions(assert) {
   // qu'envoie un doigt sur l'APK ou le navigateur mobile.
   const peek = () => container.querySelector('.rpg-card-peek');
   const attendre = (ms) => act(async () => new Promise((resolve) => setTimeout(resolve, ms)));
+  // Le sorcier (IA Veilleur) joue son tour avec ses propres cadences : le
+  // scénario attend le retour de parole plutôt qu'un temps fixe.
+  const attendreTourJoueur = async () => {
+    for (let essai = 0; essai < 40; essai += 1) {
+      if (container.querySelector('.rpg-turn-indicator')?.textContent.includes('À VOTRE TOUR')) {
+        // Le surlignage « début de tour » dure encore 800 ms après la reprise
+        // de la parole : la piste de phase ne se lit qu'une fois retombé.
+        await attendre(820);
+        return;
+      }
+      await attendre(100);
+    }
+    assert.fail('le tour du sorcier ne rend jamais la parole au joueur');
+  };
   const envoyerPointeur = async (element, type, props = {}) => {
     assert.ok(element, 'la carte existe');
     await act(async () => {
@@ -64,8 +78,34 @@ export async function checkRpgPreviewActions(assert) {
   };
   try {
     await act(async () => root.render(<RpgDuelPage
-      joueurDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'rapport-du-greffier', 'fennec-des-decombres', 'desert', 'chien-du-guet', 'desert']}
-      sorcierDeck={Array(15).fill('desert')} rng={() => .999}
+      joueurDeck={[
+        // Trente cartes mono-Sable, dans l'ordre : la pioche tire depuis la
+        // fin — main de départ [Rapport, Chien, Chien], tour 2 le Fennec,
+        // Butin la Tislit (défaussée au choix), tour 3 le Cavalier, et le
+        // Rapport les deux suivants. Trente cartes : aucun remplissage auto.
+        'faucon-du-zenith', 'dame-aux-ailes-d-or', 'mousse-des-galiotes', 'mousse-des-galiotes',
+        'tercio-de-cuivre', 'tercio-de-cuivre', 'negociant-des-ranscons', 'negociant-des-ranscons',
+        'guetteur-du-beffroi', 'guetteur-du-beffroi', 'dune-marchante', 'dune-marchante',
+        'faussoyeur-des-dunes', 'faussoyeur-des-dunes', 'scribe-de-la-liste', 'scribe-de-la-liste',
+        'tiziri-du-djurdjura', 'tiziri-du-djurdjura', 'amani-des-ksour', 'amani-des-ksour',
+        'amayas-du-hoggar', 'amayas-du-hoggar', 'tour-de-sable',
+        'faiseur-de-passage', 'cavalier-amazigh-du-desert', 'tislit-des-aures',
+        'fennec-des-decombres', 'chien-du-guet', 'chien-du-guet', 'rapport-du-greffier',
+      ]}
+      sorcierDeck={[
+        // Trente cartes à trois manas ou plus : la réserve des deux premiers
+        // tours du sorcier ne peut rien payer — il regarde la table, passif.
+        'susanoo', 'orochi', 'cavalier-des-deux-sabres', 'ronin-du-soleil-rouge',
+        'ronin-du-soleil-rouge', 'samourai-du-torii', 'samourai-du-torii',
+        'onna-musha-des-cendres', 'onna-musha-des-cendres', 'tengu-du-mont-ardent',
+        'tengu-du-mont-ardent', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle',
+        'kenshi-de-la-forge', 'kenshi-de-la-forge', 'tojiro-le-pourfendeur',
+        'daimyo-du-soleil-rouge', 'ureus-du-seuil', 'ureus-du-seuil', 'momie-de-lin',
+        'momie-de-lin', 'ibis-des-comptes', 'ibis-des-comptes', 'celle-qui-pese',
+        'celle-qui-pese', 'la-devoreuse', 'celui-qui-juge', 'celui-qui-juge',
+        'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes',
+      ]}
+      rng={() => .999}
     />));
     // ── Hors duel : le catalogue se clique, la carte s'ouvre en grand ───────
     await changerEcran('Catalogue');
@@ -179,14 +219,14 @@ export async function checkRpgPreviewActions(assert) {
     assert.equal(fiche(), null, 'la fiche de la carte verrouillée se ferme normalement');
 
     // ── Filtrer ne change rien au geste : la fiche ouvre la carte cliquée ───
-    await filtrer('Filtrer par type', 'terrain');
-    const terrains = ordreGrille();
-    assert.ok(terrains.length > 2 && terrains.every((id) => cardById(id).kind === 'terrain'),
-      'le filtre de type ne laisse que des terrains dans la grille');
-    await click(ouvrirDe(terrains[1]));
-    assert.equal(carteOuverte(), terrains[1], 'la fiche s’ouvre sur le terrain cliqué');
+    await filtrer('Filtrer par type', 'magie');
+    const magies = ordreGrille();
+    assert.ok(magies.length > 2 && magies.every((id) => cardById(id).kind === 'magie'),
+      'le filtre de type ne laisse que des magies dans la grille');
+    await click(ouvrirDe(magies[1]));
+    assert.equal(carteOuverte(), magies[1], 'la fiche s’ouvre sur la magie cliquée');
     assert.equal(fiche().querySelector('.rpg-card-peek__nav'), null,
-      'un terrain ouvert garde la même fiche : une carte, aucune flèche');
+      'une magie ouverte garde la même fiche : une carte, aucune flèche');
     await click(fiche().querySelector('.rpg-card-peek__close'));
     assert.equal(fiche(), null, 'le bouton Fermer referme la fiche ouverte depuis la grille filtrée');
     await filtrer('Filtrer par type', 'tous');
@@ -287,86 +327,39 @@ export async function checkRpgPreviewActions(assert) {
     await passerMulligan(container, click);
     assert.ok(container.querySelector('.rpg-battle--touch'));
 
-    // ── Au doigt, les exemplaires identiques de la main forment une pile ────
-    assert.equal(totalMain(), 5, 'la main de départ compte cinq cartes');
-    assert.equal(handCards().length, 4, 'les deux Désert identiques n’occupent qu’un emplacement');
-    assert.equal(hand('desert').dataset.pileCount, '2', 'la pile annonce ses deux exemplaires');
-    assert.equal(pileDe('desert').querySelector('.rpg-hand__pile-count').textContent, '×2',
-      'le compteur ×N flotte sur la pile');
-    assert.equal(pileDe('chien-du-guet').querySelector('.rpg-hand__pile-count'), null,
-      'une carte seule n’affiche pas de compteur');
-    assert.ok(hand('desert').getAttribute('aria-label').includes('pile de 2 exemplaires identiques'),
-      'le libellé accessible dit combien d’exemplaires la pile contient');
+    // ── Au doigt, chaque carte garde sa place : le mode essai refuse les piles ─
+    assert.equal(totalMain(), 3, 'la main de départ en compte trois');
+    assert.equal(handCards().length, 3, 'deux Chiens du guet identiques gardent chacun leur emplacement');
+    assert.equal(hand('chien-du-guet').dataset.pileCount, '1',
+      'aucun compteur ×N : chaque exemplaire reste sa propre carte');
+    assert.equal(container.querySelector('.rpg-hand__pile'), null,
+      'aucune pile ne se forme, même pour des exemplaires identiques');
+    assert.ok(hand('chien-du-guet').getAttribute('aria-label').includes('Chien du guet'),
+      'le libellé accessible nomme la carte tenue');
 
     // ── Cliquer une carte non jouable ne lance rien, et ne dit rien ───────
-    await click(hand('fennec-des-decombres'));
-    assert.equal(hand('fennec-des-decombres').dataset.jouable, 'false',
+    await click(hand('chien-du-guet'));
+    assert.equal(hand('chien-du-guet').dataset.jouable, 'false',
       'une créature non payable reste éteinte : le refus se lit au halo, sans phrase');
-    assert.ok(hand('fennec-des-decombres'), 'la créature non payable reste en main');
-    assert.equal(terrainsJoueurs().length, 0, 'aucune carte n’est posée');
+    assert.ok(hand('chien-du-guet'), 'la créature non payable reste en main');
+    assert.equal(container.querySelector('.rpg-card--equipe'), null, 'aucune créature n’est posée');
     assert.equal(confirmDialog(), null, 'aucune boîte de confirmation pour une créature');
 
-    // ── Cliquer un terrain le pose immédiatement ; limite à un par tour ────
-    await click(hand('desert'));
-    assert.equal(terrainsJoueurs().length, 1, 'le clic pose le terrain sur la table');
-    assert.equal(hand('desert').dataset.pileCount, '1',
-      'poser un Désert retire un seul exemplaire de la pile');
-    assert.equal(pileDe('desert').querySelector('.rpg-hand__pile-count'), null,
-      'la pile redevenue seule perd son compteur');
-    await click(hand('desert'));
-    assert.equal(hand('desert').dataset.jouable, 'false',
-      'le second terrain du tour s’éteint en main : le refus se lit au halo, sans phrase');
-    assert.equal(terrainsJoueurs().length, 1, 'le terrain refusé reste en main');
-    assert.equal(confirmDialog(), null, 'la limite de terrain ne demande pas de confirmation');
-
-    // ── Une seule étape d’annulation restaure le terrain posé ──────────────
-    await click(container.querySelector('.rpg-actions__turn .rpg-btn--undo'));
-    assert.equal(terrainsJoueurs().length, 0, 'l’annulation retire le terrain posé');
-
-    // ── Les magies demandent confirmation avant le lancement ──────────────
-    // Le Rapport du greffier se paie trois manas : le scénario laisse donc le
-    // joueur poser un terrain par tour pendant trois tours avant de le lancer.
-    await click(hand('desert'));
+    // ── Tour 2 : la créature payable se paie seule, et l’annulation revient ─
+    // Le mode essai paie sans terrains : la réserve grandit d’un mana par tour.
+    // Au second tour, le Fennec de deux manas se paie d’un simple clic.
     await click(container.querySelector('.rpg-btn--endturn'));
-    await attendre(800);
-    await click(hand('desert'));
-    await click(container.querySelector('.rpg-btn--endturn'));
-    await attendre(800);
-    await click(hand('desert'));
-    const mainAvantSort = totalMain();
-    await click(hand('rapport-du-greffier'));
-    assert.ok(confirmDialog(), 'cliquer une magie ouvre la confirmation de lancement');
-    assert.ok(confirmDialog().textContent.includes('Lancer Rapport du greffier ?'),
-      'la confirmation nomme le sort à lancer');
-    assert.equal(confirmDialog().querySelectorAll('.rpg-spell-confirm__rules > span').length, 1,
-      'la confirmation montre les effets du sort, un par ligne');
-    await click(confirmButton('Annuler'));
-    assert.equal(confirmDialog(), null, 'Annuler ferme la confirmation');
-    assert.equal(totalMain(), mainAvantSort, 'le sort annulé reste en main');
-    await click(hand('rapport-du-greffier'));
-    await click(confirmButton('Lancer le sort'));
-    assert.equal(confirmDialog(), null, 'confirmer ferme la boîte de lancement');
-    assert.equal(totalMain(), mainAvantSort + 1,
-      'le sort se lance : il quitte la main et pioche deux cartes');
-    assert.equal(hand('desert').dataset.pileCount, '3',
-      'les deux Désert piochés rejoignent la pile existante');
-    assert.equal(handCards().length, 3,
-      '… sans ajouter d’emplacement : la main reste courte au doigt');
-
-    // ── Le tour suivant empile le second terrain, la créature se paie seule ─
-    await click(container.querySelector('.rpg-btn--endturn'));
-    await act(async () => new Promise(resolve => setTimeout(resolve, 800)));
-    await click(hand('desert'));
-    assert.equal(terrainsJoueurs().length, 1, 'les terrains identiques forment une seule pile');
-    assert.equal(terrain().dataset.terrainCount, '4');
-    assert.equal(hand('desert').dataset.pileCount, '3',
-      'le Désert posé quitte la pile, les autres exemplaires restent groupés');
+    await attendreTourJoueur();
+    console.log('DEBUG t2 apres attente:', handCards().map((s) => s.dataset.cardId));
     await click(hand('fennec-des-decombres'));
     assert.ok(fennec(), 'cliquer une créature payable la pose sur la table');
-    assert.equal(terrain().dataset.tappedCount, '2',
-      'le paiement automatique engage deux instances de la pile, pas la carte affichée deux fois');
-    assert.equal(terrain().dataset.availableCount, '2',
-      'les deux terrains de trop restent dégagés après le paiement');
+    assert.ok(container.querySelector('.rpg-actions__turn .rpg-btn--undo'),
+      'jouer une carte ouvre un retour en arrière d’un pas');
+    await click(container.querySelector('.rpg-actions__turn .rpg-btn--undo'));
+    assert.equal(fennec(), null, 'l’annulation retire la créature posée');
+    assert.ok(hand('fennec-des-decombres'), 'et la rend à la main');
+    await click(hand('fennec-des-decombres'));
+    assert.ok(fennec(), 'rejouée, la créature regagne la table');
 
     // ── La sélection d’attaque est directe, avec annulation et confirmation ─
     await click(container.querySelector('.rpg-btn--attaque-tous'));
@@ -393,24 +386,50 @@ export async function checkRpgPreviewActions(assert) {
       'la confirmation résout l’attaque sans bloqueur');
     assert.equal(fennec().dataset.combatTilted, 'true');
 
+    // ── Le Butin pioche une carte, puis sa défausse attend le choix du joueur ─
+    assert.ok(hand('tislit-des-aures'), 'toucher le sorcier déclenche le Butin : une carte piochée');
+    assert.equal(totalMain(), 4, 'le Butin pioche, et sa défausse reste en attente');
+    assert.equal(container.querySelector('.rpg-btn--discard-confirm'), null,
+      'aucune validation de défausse avant d’avoir choisi la carte');
+    await click(hand('tislit-des-aures'));
+    assert.ok(container.querySelector('.rpg-btn--discard-confirm'),
+      'choisir une carte de la main ouvre la validation de la défausse');
+    await click(container.querySelector('.rpg-btn--discard-confirm'));
+    assert.equal(hand('tislit-des-aures'), null, 'la carte choisie part à la défausse');
+    assert.equal(totalMain(), 3, 'le Butin laisse la main là où elle était');
+
     // ── Les gardes de cartes engagées restent actives sans aperçu ──────────
     await click(fennec());
     assert.equal(fennec().classList.contains('is-selected'), false,
       'une créature engagée ne peut pas attaquer deux fois');
     assert.equal(fennec().classList.contains('is-pret'), false,
       'la créature engagée perd son halo de disponibilité : le refus se voit sur la carte');
-    // Les terrains que le paiement du Fennec a laissés dégagés produisent bien
-    // leur mana au toucher, un exemplaire par clic ; une pile entièrement
-    // engagée, elle, ne donne plus rien.
-    await click(terrain());
-    await click(terrain());
-    const comptes = { available: terrain().dataset.availableCount, tapped: terrain().dataset.tappedCount };
-    assert.deepEqual(comptes, { available: '0', tapped: '4' },
-      'deux touches engagent les deux terrains restés libres de la pile');
-    await click(terrain());
-    assert.deepEqual(
-      { available: terrain().dataset.availableCount, tapped: terrain().dataset.tappedCount }, comptes,
-      'cliquer un terrain engagé ne produit pas de mana');
+
+    // ── Les magies demandent confirmation avant le lancement ──────────────
+    // Le Rapport du greffier se paie trois manas : le troisième tour ouvre
+    // enfin assez de réserve pour le lancer.
+    await click(container.querySelector('.rpg-btn--endturn'));
+    await attendreTourJoueur();
+    const mainAvantSort = totalMain();
+    await click(hand('rapport-du-greffier'));
+    assert.ok(confirmDialog(), 'cliquer une magie ouvre la confirmation de lancement');
+    assert.ok(confirmDialog().textContent.includes('Lancer Rapport du greffier ?'),
+      'la confirmation nomme le sort à lancer');
+    assert.equal(confirmDialog().querySelectorAll('.rpg-spell-confirm__rules > span').length, 1,
+      'la confirmation montre les effets du sort, un par ligne');
+    await click(confirmButton('Annuler'));
+    assert.equal(confirmDialog(), null, 'Annuler ferme la confirmation');
+    assert.equal(totalMain(), mainAvantSort, 'le sort annulé reste en main');
+    await click(hand('rapport-du-greffier'));
+    await click(confirmButton('Lancer le sort'));
+    assert.equal(confirmDialog(), null, 'confirmer ferme la boîte de lancement');
+    assert.equal(totalMain(), mainAvantSort + 1,
+      'le sort se lance : il quitte la main et pioche deux cartes');
+    assert.ok(hand('faiseur-de-passage') && hand('tour-de-sable'),
+      'les deux cartes piochées atterrissent en main');
+    assert.equal(handCards().length, 5,
+      'une carte, une place : chaque pioche prend son emplacement');
+
 
     // ── L'appui long d'une seconde ouvre l'aperçu de la carte, sans la jouer ─
     const carteMain = handCards().at(-1);
@@ -439,11 +458,18 @@ export async function checkRpgPreviewActions(assert) {
       [...apercuAppui.querySelectorAll('.rpg-hover-card-preview__rules > span')].map((node) => node.textContent),
       lignesAttendues,
       'les effets de la carte tiennent dans l’aperçu, un par ligne');
+    // L'aperçu au doigt montre la carte elle-même : sa face illustrée ouvre le
+    // volet — cadre de famille, coût, statistiques imprimées — comme la fiche.
+    const faceAppui = apercuAppui.querySelector('.rpg-hover-card-preview__face');
+    assert.ok(faceAppui, 'l’aperçu au doigt montre la face de la carte');
+    assert.match(faceAppui.querySelector('img')?.getAttribute('src') ?? '', /cards\/.+\.jpg/,
+      'et son illustration, en grand');
     if (attendue.kind === 'creature' || attendue.kind === 'hero') {
-      assert.equal(apercuAppui.querySelector('.rpg-hover-card-preview__face .rpg-card__stat--atk .rpg-stat-value')?.textContent,
-        String(attendue.atk), 'l’attaque reste lisible sur la carte au doigt');
-      assert.equal(apercuAppui.querySelector('.rpg-hover-card-preview__face .rpg-card__pt .rpg-stat-value')?.textContent,
-        String(attendue.def), 'la défense reste lisible sur la carte au doigt');
+      // Les statistiques se lisent sur la face imprimée et dans le libellé.
+      assert.ok(faceAppui.querySelector('.rpg-card__stat--atk .rpg-stat-value'),
+        'la face porte les plaques d’attaque et de défense');
+      assert.ok(apercuAppui.getAttribute('aria-label').includes(`attaque ${attendue.atk}, défense ${attendue.def}`),
+        'l’attaque et la défense restent lisibles sur la carte au doigt');
     }
     assert.equal(totalMain(), mainAvantAppui, 'l’appui long ne joue pas la carte');
     assert.equal(terrainsJoueurs().length, terrainsAvantAppui, 'l’appui long ne pose rien sur la table');
@@ -483,12 +509,13 @@ export async function checkRpgPreviewActions(assert) {
     }
 
     // ── Sur la table : l'aperçu ne déclare ni attaque ni mana ───────────────
+    const inclinaisonAvantAppui = fennec().dataset.combatTilted;
     await appuiLong(fennec());
     assert.ok(peek(), 'une créature en jeu s’aperçoit aussi par appui long');
     assert.ok(peek().getAttribute('aria-label').includes('Fennec'), 'l’aperçu nomme la créature tenue');
     assert.equal(fennec().classList.contains('is-selected'), false,
       'l’appui long ne déclare pas la créature attaquante');
-    assert.equal(fennec().dataset.combatTilted, 'true', 'son état de combat ne change pas');
+    assert.equal(fennec().dataset.combatTilted, inclinaisonAvantAppui, 'son état de combat ne change pas');
     await act(async () => {
       window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     });
@@ -541,12 +568,13 @@ export async function checkRpgPreviewActions(assert) {
     await touche('Escape');
     assert.equal(fiche(), null, 'Échap referme la fiche ouverte au clic droit');
     // Sur le champ : la créature s'ouvre en grand sans être déclarée attaquante.
+    const inclinaisonAvantDroit = fennec().dataset.combatTilted;
     await clicDroit(fennec());
     assert.ok(fiche(), 'une créature en jeu s’ouvre en grand au clic droit');
     assert.equal(carteOuverte(), 'fennec-des-decombres');
     assert.equal(fennec().classList.contains('is-selected'), false,
       'le clic droit ne déclare pas la créature attaquante');
-    assert.equal(fennec().dataset.combatTilted, 'true', 'son état de combat ne change pas');
+    assert.equal(fennec().dataset.combatTilted, inclinaisonAvantDroit, 'son état de combat ne change pas');
     await click(fiche().querySelector('.rpg-card-peek__close'));
     assert.equal(fiche(), null, 'le bouton Fermer referme la fiche du duel');
     // La table nue n'ouvre rien : le menu du navigateur reste étouffé, c'est tout.

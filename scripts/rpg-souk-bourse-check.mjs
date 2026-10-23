@@ -65,7 +65,8 @@ const css = lire('src/games/rpg-battle.css');
 const emissions = {
   'duel-gagne': /noterEvenementDuel\(\{ type: 'duel-gagne', mode: 'histoire'/,
   'etage-deblaye': /noterEvenementDuel\(\{ type: 'etage-deblaye'/,
-  'terrain-pose': /noterEvenementDuel\(\{ type: 'terrain-pose', cardId: carteId \}\)/,
+  // Les terrains ne se posent plus : « terrain-pose » a quitté le contrat et
+  // `normaliserEvenementDuel` le refuse — le reste des gestes tient toujours.
   'creature-invoquee': /noterEvenementDuel\(\{ type: 'creature-invoquee', cardId: carteId \}\)/,
   'magie-lancee': /noterEvenementDuel\(\{ type: 'magie-lancee', cardId: carteId \}\)/,
   'arme-jouee': /noterEvenementDuel\(\{ type: 'arme-jouee', cardId: carteId \}\)/,
@@ -124,8 +125,10 @@ assert.match(page, /progression: progressionHistoireRef\.current/, 'et elle reç
 // ── 4. La bourse tient ses promesses de la maison ──────────────────────────
 assert.match(hook, /export function useSablierBourse/, 'le hook est exporté');
 assert.match(hook, /ouvrirJournee\(\{ etat: etatRef\.current\.quetes/, 'le jour est réouvert au réveil de l’onglet');
-assert.match(hook, /fusionnerPortefeuilles\(etatRef\.current\.bourse, fusion\.etat\.bourse\)/, 'la bourse se fusionne avec le compte');
-assert.match(hook, /fusionnerQuetes\(etatRef\.current\.quetes, fusion\.etat\.quetes\)/, 'les quêtes aussi');
+assert.match(hook, /fusionnerPortefeuilles\(chargerPortefeuille\(\), fusion\.etat\.bourse\)\.portefeuille/,
+  'la bourse se fusionne avec le compte, en relisant le stockage de l’appareil');
+assert.match(hook, /fusionnerQuetes\(chargerEtatQuetes\(\), fusion\.etat\.quetes\)\.etat/,
+  'les quêtes aussi, du même geste');
 assert.match(hook, /fusionnerEtatsSablier\(\{ local: etatLocalComplet\(\) \}\)/, 'l’état poussé au compte est entier');
 assert.match(hook, /if \(suite\.bourse !== avant\.bourse \|\| suite\.quetes !== avant\.quetes\)/,
   'un geste sans effet ne recopie pas l’état (stabilité référentielle)');

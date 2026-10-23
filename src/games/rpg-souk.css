@@ -999,8 +999,9 @@
   .rpg-souk__journal li { grid-template-columns: auto minmax(0, 1fr); }
   .rpg-souk__journal-cartes { grid-column: 1 / -1; }
   .rpg-souk__journal-notes { grid-column: 1 / -1; }
-  /* Cinquante cartes ne tiennent pas dans une colonne : au téléphone, la
-     cérémonie passe en deux colonnes serrées et se fait défiler. */
+  /* Cinquante cartes ne tiennent pas dans une colonne : hors portrait, la
+     cérémonie passe en deux colonnes serrées et se fait défiler — le portrait
+     gagne ses trois colonnes plus bas. */
   .rpg-souk__ceremonie-cartes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .rpg-souk__ceremonie-pied .rpg-menu-button { flex: 1 1 100%; }
 }
@@ -1020,6 +1021,13 @@
   .rpg-souk__ceremonie-cartes { grid-template-columns: minmax(0, 1fr); }
   .rpg-souk__quete-pied .rpg-menu-button { flex: 1 1 100%; }
   .rpg-souk__section-tete { align-items: flex-start; }
+}
+/* Sur téléphone tenu en portrait, les cartes ouvertes s'ouvrent en trois
+   colonnes : même les cinquante cartes d'un coffret se lisent d'un coup d'œil,
+   et la grille se fait défiler verticalement. La règle vient après les paliers
+   ci-dessus : c'est elle qui décide en portrait. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .rpg-souk__ceremonie-cartes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* Le mouvement ne sert à rien : la barre se pose d'un coup. */

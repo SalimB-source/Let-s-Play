@@ -82,10 +82,10 @@ assert.doesNotMatch(pageSource, /Réservé à l’adversaire|DECK ADVERSAIRE|DEC
 // Le sorcier joue la Cour des Djinns, sauf si le joueur la joue : le deck du duel, la plaque adverse
 // et la carte « ADVERSAIRE » de l'écran Jouer suivent le même choix (jamais deux fois le même deck).
 assert.match(pageSource, /const opponentDeck = deckAdversePour\(playerDeck\);/, 'la carte « ADVERSAIRE » annonce le deck que le sorcier jouera');
-assert.match(pageSource, /const deckAdverse = modeTutoriel \|\| etageCourant \|\| sorcierDeck \? null : deckAdversePour\(deckJoueurSelectionne\);/,
+assert.match(pageSource, /const deckAdverse = modeTutoriel \|\| etageCourant \|\| sorcierDeck \|\| deckEssai \? null : deckAdversePour\(deckJoueurSelectionne\);/,
   'hors tutoriel et histoire, le sorcier prend le deck choisi par deckAdversePour');
 assert.match(pageSource, /sorcierDeck \?\? deckAdverse\?\.cardIds/, 'le moteur reçoit les cartes de ce deck');
-assert.match(pageSource, /setDeckAdverseId\(deckAdverse\?\.id \?\? null\)/, 'la plaque adverse retient le deck réellement joué');
+assert.match(pageSource, /setDeckAdverseId\(adversaireEssai\?\.id \?\? deckAdverse\?\.id \?\? deckTutorielAdverse\?\.id \?\? null\)/, 'la plaque adverse retient le deck réellement joué');
 assert.match(pageSource, /\$\{deckAdverseAffiche\.name\} · \$\{deckColorLabel\(deckAdverseAffiche\)\}/, 'la plaque adverse nomme ce deck');
 // « Jouer avec ce deck » démarre avec le deck ouvert sans attendre le rendu suivant ; le bouton
 // « Mode histoire » (écran Jouer) ne doit pas transmettre son événement de clic comme identifiant.
@@ -103,7 +103,7 @@ assert.match(pageSource, /className="rpg-deck-filter" role="group" aria-label="F
 assert.match(pageSource, /aria-pressed=\{actif\}[\s\S]*?changerCouleur\(filtre\.id\)/, 'chaque puce indique si elle est active');
 // La Neige, quatrième couleur du set : puce, emblème, boîtier et cadre de couleur.
 assert.match(pageSource, /neige: 'Neige'/, 'la puce de filtre Neige existe dans le menu Deck');
-assert.match(pageSource, /rpg-emblem--\$\{element\}/, 'les emblèmes de couleur sont dessinés par le même composant SVG');
+assert.match(readSource('../src/games/RpgDeckBox.jsx'), /rpg-emblem--\$\{element\}/, 'les emblèmes de couleur sont dessinés par le même composant SVG');
 assert.match(boxCss, /\.rpg-emblem--neige\s*\{\s*color:\s*#a9e0f5;/,
   'l’emblème Neige est un cristal de glace bleu clair');
 assert.match(boxCss, /\.rpg-deckbox--neige\s*\{[^}]*--accent:\s*#a9e0f5;/,

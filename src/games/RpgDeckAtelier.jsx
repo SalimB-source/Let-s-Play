@@ -16,7 +16,7 @@ import { carteJouableSansTerrain } from './rpgCards.js';
  *   - **à droite, le panneau du deck** : son nom, le compteur « N / 30 », la
  *     **courbe de mana**, la répartition des couleurs, puis la liste par
  *     type (créatures, magies, terrains) en rangées compactes « pip · nom ·
- *     × N » ; et le geste d'Arena, **Compléter en terrains**.
+ *     × N » ; et le geste d'Arena, la **création assistée**.
  *
  * Les règles de construction sont celles du duel (`rpgValiderDeck`) ; la
  * collection (`rpgCollection.js`) borne ce que la grille laisse ajouter.
@@ -61,9 +61,11 @@ import {
   repartitionCouleurs,
   rpgValiderDeckMaison,
 } from './rpgDeckBuilder.js';
+import { genererDeckAssiste, suggestionsNomsDeck } from './rpgDeckAuto.js';
+import RpgDeckAssistant from './RpgDeckAssistant.jsx';
 
-const GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️' };
-const COULEUR_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige' };
+const GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️' };
+const COULEUR_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
 const COUTS = [1, 2, 3, 4, 5, 6, 7];
 const TYPES = [
   { id: 'creature', label: 'Créatures', court: 'Créat.' },
@@ -178,6 +180,11 @@ export function RpgDeckAtelier({
   const [confirmerAbandon, setConfirmerAbandon] = useState(false);
   const [confirmerSuppression, setConfirmerSuppression] = useState(false);
   const [confirmerVidage, setConfirmerVidage] = useState(false);
+  // L'assistant (« Création assistée ») remplace les panneaux tant qu'il est
+  // ouvert ; le nommage s'ouvre à l'enregistrement, propositions en main.
+  const [assistant, setAssistant] = useState(false);
+  const [nommage, setNommage] = useState(false);
+  const [nomTouche, setNomTouche] = useState(false);
   const [filtres, setFiltres] = useState(FILTRES_VIERGES);
   const titreRef = useRef(null);
 
@@ -284,6 +291,49 @@ export function RpgDeckAtelier({
     setMessage('Deck vidé.');
   };
 
+  /**
+   * La création assistée a fini ses trois choix : l'IA (`rpgDeckAuto.js`) pose
+   * les huit cartes choisies et complète le deck — il atterrit dans l'atelier,
+   * retoucheable carte par carte comme un deck fait à la main.
+   */
+  const genererAvecIA = ({ couleurs, creatures, sorts }) => {
+    const { cardIds: genere, embleme } = genererDeckAssiste({
+      couleurs,
+      creatures,
+      sorts,
+      collection,
+      catalogue: { cartes: RPG_DUEL_CARDS, couleursDe: cardColors, limiteDe: cardCopyLimit },
+    });
+    setCardIds(genere);
+    if (embleme) setBoxArt(embleme);
+    setAssistant(false);
+    setConfirmerVidage(false);
+    setMessage(`Deck généré : ${genere.length} carte${genere.length > 1 ? 's' : ''} autour de vos choix. Ajustez à votre guise, puis enregistrez.`);
+  };
+
+  /** Trois propositions de nom, autour de la carte emblème du deck en cours. */
+  const suggestions = useMemo(
+    () => suggestionsNomsDeck(cardIds, { cartes: RPG_DUEL_CARDS }),
+    [cardIds],
+  );
+
+  /**
+   * L'enregistrement propose d'abord de nommer le deck : la proposition du
+   * jeu préremplit le champ tant que le joueur n'a pas écrit le sien, et trois
+   * suggestions restent cliquables à côté.
+   */
+  const ouvrirNommage = () => {
+    if (cardIds.length === 0) {
+      surSfx('erreur');
+      setMessage('Ajoutez au moins une carte : un casier vide ne s\'enregistre pas.');
+      return;
+    }
+    if (!nomTouche) setNom(suggestions[0] ?? nom);
+    setNommage(true);
+    setMessage('');
+    surSfx('menu');
+  };
+
   const enregistrer = () => {
     if (!nom.trim()) {
       surSfx('erreur');
@@ -356,6 +406,18 @@ export function RpgDeckAtelier({
         </button>
       </header>
 
+      {assistant ? (
+        <RpgDeckAssistant
+          collection={collection}
+          artUrl={artUrl}
+          onGenerer={genererAvecIA}
+          onFermer={() => setAssistant(false)}
+          surSfx={surSfx}
+          onHoverCard={onHoverCard}
+          onLeaveHoverCard={onLeaveHoverCard}
+        />
+      ) : (
+        <>
       <div className="rpg-atelier__panneaux">
         {/* ── La collection en grille ─────────────────────────────────────── */}
         <section className="rpg-atelier__biblio" aria-label="Collection de cartes">
@@ -583,7 +645,7 @@ export function RpgDeckAtelier({
                 value={nom}
                 aria-label="Nom du deck"
                 placeholder="Nom du deck"
-                onChange={(event) => { setNom(event.target.value); setConfirmerAbandon(false); }}
+                onChange={(event) => { setNom(event.target.value); setNomTouche(true); setConfirmerAbandon(false); }}
               />
             </label>
             <div className="rpg-atelier__compteur">
@@ -642,6 +704,14 @@ export function RpgDeckAtelier({
           </div>
 
           <div className="rpg-atelier__outils">
+            <button
+              type="button"
+              className="rpg-atelier__outil rpg-atelier__outil--assistant"
+              title="Laissez l'IA composer un deck autour de vos choix : couleurs, 4 créatures, 4 sorts"
+              onClick={() => { surSfx('apparition'); setAssistant(true); setMessage(''); setConfirmerVidage(false); }}
+            >
+              ✦ Création assistée
+            </button>
             <button
               type="button"
               className={`rpg-atelier__outil rpg-atelier__outil--danger${confirmerVidage ? ' is-armed' : ''}`}
@@ -730,14 +800,66 @@ export function RpgDeckAtelier({
       </div>
 
       <footer className="rpg-atelier__actions">
-        <button
-          type="button"
-          className="rpg-menu-button rpg-menu-button--primary"
-          disabled={!nom.trim() || cardIds.length === 0}
-          onClick={() => { surSfx('apparition'); enregistrer(); }}
-        >
-          ⌸ Enregistrer le deck
-        </button>
+        {nommage ? (
+          <div className="rpg-atelier__nommage" role="group" aria-label="Nommer le deck">
+            <h3>Nommez votre deck</h3>
+            <p className="rpg-atelier__nommage-aide">
+              Le jeu vous propose un nom — gardez l’un d’eux, ou écrivez le vôtre. Il paraîtra sur l’étagère.
+            </p>
+            <ul className="rpg-atelier__nommage-suggestions">
+              {suggestions.map((proposition) => (
+                <li key={proposition}>
+                  <button
+                    type="button"
+                    className={nom === proposition ? 'is-on' : ''}
+                    aria-pressed={nom === proposition}
+                    onClick={() => { surSfx('menu'); setNom(proposition); setNomTouche(true); setConfirmerAbandon(false); }}
+                  >
+                    {proposition}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <label className="rpg-atelier__champ rpg-atelier__champ--nom">
+              <span className="sr-only">Nom du deck</span>
+              <input
+                type="text"
+                maxLength={60}
+                value={nom}
+                aria-label="Nom du deck"
+                placeholder="Nom du deck"
+                autoFocus
+                onChange={(event) => { setNom(event.target.value); setNomTouche(true); setConfirmerAbandon(false); }}
+              />
+            </label>
+            <div className="rpg-atelier__nommage-actions">
+              <button
+                type="button"
+                className="rpg-menu-button rpg-menu-button--primary"
+                disabled={!nom.trim() || cardIds.length === 0}
+                onClick={() => { surSfx('apparition'); enregistrer(); }}
+              >
+                ⌸ Enregistrer le deck
+              </button>
+              <button
+                type="button"
+                className="rpg-menu-button"
+                onClick={() => { surSfx('annuler'); setNommage(false); }}
+              >
+                ← Retour
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="rpg-menu-button rpg-menu-button--primary"
+              disabled={!nom.trim() || cardIds.length === 0}
+              onClick={() => { surSfx('apparition'); ouvrirNommage(); }}
+            >
+              ⌸ Enregistrer le deck
+            </button>
         <button
           type="button"
           className="rpg-menu-button"
@@ -754,12 +876,16 @@ export function RpgDeckAtelier({
             {confirmerSuppression ? 'Confirmer la suppression' : 'Supprimer ce deck'}
           </button>
         )}
+          </>
+        )}
         <p className="rpg-atelier__statut" role="status" aria-live="polite">
           {message || (validation.ok
             ? 'Ce deck peut être sélectionné et joué en duel libre dès l\'enregistrement.'
             : 'Brouillon enregistré tel quel : il restera « incomplet » tant qu\'il ne tient pas les règles.')}
         </p>
       </footer>
+        </>
+      )}
     </section>
   );
 }
