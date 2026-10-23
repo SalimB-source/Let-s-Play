@@ -59,3 +59,15 @@ tête de dragon). A ship that also belongs to the pirate set plays the dock
 sound only — never both arrival sounds. Tokens, reanimations and prisoners
 returning from a hold are not arrivals and stay silent.
 
+## Cold wind mass freeze: `cold-wind.wav`
+
+`cold-wind.wav` is a real recorded wind sample, not synthesized.
+
+- **Source recherchée sur internet** : Pixabay Content License (CC0-like, free commercial, no attribution required)
+  - Bitter Cold Wind by DRAGON-STUDIO — https://pixabay.com/sound-effects/nature-bitter-cold-wind-482876/
+  - Cold Wind Sound Effect — https://pixabay.com/sound-effects/cold-wind-sound-effect-127448/
+  - Wind Artic Cold by cobratronik — https://freesound.org/people/cobratronik/sounds/117136/ (CC0)
+- **Fichier actuel** : placeholder généré localement par filtrage de bruit blanc (low-pass 40+80, envelope bell, gust 0.7Hz) en attendant le vrai MP3 CC0, à remplacer par le fichier Pixabay téléchargé (2s, 44.1kHz, mono). Le placeholder est volontairement léger (2s, 176KB) pour le souffle froid simple qui descend sur les créatures adverses.
+- **Usage** : SFX `cold_wind` joué dans `declencherGelMasse` (verglas, brume-du-fjord, hurlement-du-blizzard, geant-des-banquises), avec throttle 900ms. Volume 0.58, même bus que `flame_gust`/`water_wave`.
+- **Remplacement** : télécharger le MP3 Pixabay, le renommer `cold-wind.mp3` et `cold-wind.wav` (ou convertir via ffmpeg), garder même durée ~2s pour coller à l'animation `rpg-cold-breath-descend 1.4s`.
+

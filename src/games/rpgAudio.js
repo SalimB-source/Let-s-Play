@@ -43,6 +43,7 @@ const PIRATE_AHOY_SAMPLE_URL = new URL('./assets/pirate-ahoy.mp3', import.meta.u
 const PIRATE_DIALOGUE_SAMPLE_URL = new URL('./assets/pirate-dialogue-alright.wav', import.meta.url);
 const CHAIN_RATTLE_SAMPLE_URL = new URL('./assets/chain-rattle.wav', import.meta.url);
 const DOCK_SOUND_SAMPLE_URL = new URL('./assets/dock-sound.mp3', import.meta.url);
+const COLD_WIND_SAMPLE_URL = new URL('./assets/cold-wind.wav', import.meta.url);
 const CARD_PLACE_VOLUME = 0.62;
 const CARD_DRAW_VOLUME = 0.52;
 const ATTACKERS_CONFIRM_VOLUME = 0.58;
@@ -61,6 +62,7 @@ const PIRATE_AHOY_VOLUME = 0.62;
 const PIRATE_DIALOGUE_VOLUME = 0.62;
 const CHAIN_RATTLE_VOLUME = 0.62;
 const DOCK_SOUND_VOLUME = 0.62;
+const COLD_WIND_VOLUME = 0.58;
 
 /** Le cliquetis de chaînes joué lorsqu'une créature avec Abordage kidnappe une créature en cale. */
 export const RPG_ABORDAGE_SFX = 'abordage';
@@ -95,6 +97,9 @@ export function rpgSonArriveePirate(index = 0) {
 
 /** L'ambiance de quai (« Dock Sound ») jouée quand un navire arrive en jeu. */
 export const RPG_NAVIRE_ARRIVEE_SFX = 'navire_arrivee';
+
+/** Souffle froid du gel de masse (Verglas / Brume / Blizzard / Géant) — vent hivernal. */
+export const RPG_COLD_WIND_SFX = 'cold_wind';
 
 /** « A4 » → 440 Hz ; accepte # et b. */
 export function hz(note) {
@@ -149,6 +154,8 @@ const RPG_SFX_TABLE = {
   // Un navire (type imprimé « Navire ») accoste : l'ambiance du quai
   // (Dock Sound_320k.mp3 — MPEG-1 Layer III, 320 kbps CBR, 48 kHz).
   navire_arrivee: [{ kind: 'sample', at: 0, dur: 2.352, g: 1 }],
+  // Souffle froid du gel de masse : vent hivernal (cold-wind.wav, 2s, CC0/Pixabay).
+  cold_wind: [{ kind: 'sample', at: 0, dur: 2.0, g: 1 }],
 };
 
 /** Toutes les séquences nommées sont jouables par le lecteur et couvertes par les tests. */
@@ -214,6 +221,7 @@ export class RpgAudioPlayer {
     this.pirateDialogueAudio = null;
     this.chainRattleAudio = null;
     this.dockSoundAudio = null;
+    this.coldWindAudio = null;
     const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
     if (typeof AudioCtor === 'function') {
       try {
@@ -271,6 +279,9 @@ export class RpgAudioPlayer {
         this.dockSoundAudio = new AudioCtor(DOCK_SOUND_SAMPLE_URL.href);
         this.dockSoundAudio.preload = 'auto';
         this.dockSoundAudio.volume = DOCK_SOUND_VOLUME;
+        this.coldWindAudio = new AudioCtor(COLD_WIND_SAMPLE_URL.href);
+        this.coldWindAudio.preload = 'auto';
+        this.coldWindAudio.volume = COLD_WIND_VOLUME;
       } catch { /* l’échantillon reste optionnel si Audio n’est pas disponible */ }
     }
   }
@@ -377,6 +388,7 @@ export class RpgAudioPlayer {
       [this.pirateDialogueAudio, PIRATE_DIALOGUE_VOLUME],
       [this.chainRattleAudio, CHAIN_RATTLE_VOLUME],
       [this.dockSoundAudio, DOCK_SOUND_VOLUME],
+      [this.coldWindAudio, COLD_WIND_VOLUME],
     ];
     for (const [audio, base] of samples) {
       if (!audio) continue;
@@ -407,7 +419,7 @@ export class RpgAudioPlayer {
 
   play(name, delay = 0) {
     if (!this.ctx || !this.master || this.muted || this.volume <= 0) return;
-    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier' || name === 'abordage' || name === 'pirate_arrivee' || name === 'pirate_dialogue' || name === 'navire_arrivee') {
+    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier' || name === 'abordage' || name === 'pirate_arrivee' || name === 'pirate_dialogue' || name === 'navire_arrivee' || name === 'cold_wind') {
       const sample = name === 'card_place'
         ? this.cardPlaceAudio
         : name === 'card_draw' ? this.cardDrawAudio
@@ -418,7 +430,7 @@ export class RpgAudioPlayer {
                 : name === 'card_countered' ? this.cardCounteredAudio
                 : name === 'creature_return' ? this.creatureReturnAudio
                 : name === 'block_impact' ? this.blockImpactAudio
-                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryTrumpetsAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'pirate_dialogue' ? this.pirateDialogueAudio : name === 'navire_arrivee' ? this.dockSoundAudio : this.hitAudio;
+                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryTrumpetsAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'pirate_dialogue' ? this.pirateDialogueAudio : name === 'navire_arrivee' ? this.dockSoundAudio : name === 'cold_wind' ? this.coldWindAudio : this.hitAudio;
       if (!sample) return;
       try {
         sample.currentTime = 0;
@@ -742,6 +754,14 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.dockSoundAudio = null;
+    if (this.coldWindAudio) {
+      try {
+        this.coldWindAudio.pause?.();
+        this.coldWindAudio.removeAttribute?.('src');
+        this.coldWindAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.coldWindAudio = null;
     if (context && typeof context.close === 'function') {
       try { context.close(); } catch { /* Contexte déjà fermé. */ }
     }
