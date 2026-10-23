@@ -115,6 +115,14 @@ assert.ok(ecranCode.includes('data-profil-attente-aller'), 'et le bandeau des pa
 // et le lieu — et jsdom ne charge de toute façon aucun fond.
 assert.ok(!/<img/.test(ecranCode), 'la carte ne charge aucune image dans le flux du document');
 assert.ok(ecranCode.includes('backgroundImage'), 'les vignettes arrivent par `background-image`');
+// Chaque geste **nomme** ce qu'il choisit : le nom de la table est peint sur sa
+// tuile, l'étiquette du geste écrit le nom du choix courant, et l'emblème se
+// pose en sceau sur le visage. Cliquer doit se lire, pas seulement déplacer un
+// anneau de 44 px autour d'un glyphe.
+for (const attendu of ['rpg-profil__plateau-nom', 'rpg-profil__cachet', 'emblemeChoisi', 'tableChoisie',
+  'data-profil-cachet={emblemeChoisi.id}', 'Visage{avatar ? <b>']) {
+  assert.ok(ecranCode.includes(attendu), `l’écran nomme ce qu’il choisit (${attendu})`);
+}
 assert.ok(ecran.split('\n').length < 300,
   `la carte tient en un seul écran, trois gestes compris (${ecran.split('\n').length} lignes)`);
 
@@ -158,6 +166,17 @@ for (const prop of [
 ]) {
   assert.ok(pageCode.includes(prop), `le menu reçoit ${prop}`);
 }
+// Les gestes du hook sont **renommés** en entrant dans la page : écrire
+// `choisirUnEmblemeProfil` tout seul déstructure un champ qui n'existe pas, le
+// prop part `undefined`, et cliquer un emblème ne fait plus rien — sans erreur,
+// sans trace. Le renommage est donc gardé ici, nom par nom.
+for (const [duHook, deLaPage] of [
+  ['choisirUnEmbleme', 'choisirUnEmblemeProfil'],
+  ['choisirUnAvatar', 'choisirUnAvatarProfil'],
+  ['choisirUnPlateau', 'choisirUnPlateauProfil'],
+]) {
+  assert.match(pageCode, new RegExp(`${duHook}:\\s*${deLaPage}`), `la page renomme ${duHook} en ${deLaPage}`);
+}
 assert.match(pageCode, /data-profil-onglet-avatar=\{avatarOnglet\.id\}/,
   'l’onglet Profil porte le visage choisi, à la place du glyphe');
 const brancheProfil = pageCode.split("<RpgProfilJoueur")[1]?.split('/>')[0] ?? '';
@@ -168,7 +187,7 @@ assert.match(pageCode, /<RpgProfilJoueur[\s\S]{0,600}onOuvrirSouk=\{\(\) => \{ p
   'et l’écran mène au Souk, là où les paquets dus s’ouvrent');
 
 // 4. Le profil vient du hook, et le hook seul écrit.
-assert.match(pageCode, /const \{[\s\S]{0,900}?profil: profilJoueur,[\s\S]{0,900}?barreXp,[\s\S]{0,900}?boostersEnAttente: paquetsDePalierEnAttente,[\s\S]{0,900}?monteeNiveau,[\s\S]{0,900}?fermerMonteeNiveau,[\s\S]{0,900}?renommerLeProfil,[\s\S]{0,900}?choisirUnEmblemeProfil/,
+assert.match(pageCode, /const \{[\s\S]{0,900}?profil: profilJoueur,[\s\S]{0,900}?barreXp,[\s\S]{0,900}?boostersEnAttente: paquetsDePalierEnAttente,[\s\S]{0,900}?monteeNiveau,[\s\S]{0,900}?fermerMonteeNiveau,[\s\S]{0,900}?renommerLeProfil,[\s\S]{0,900}?choisirUnEmbleme: choisirUnEmblemeProfil/,
   'le profil, sa barre et ses gestes viennent du hook de bourse');
 assert.ok(!pageCode.includes('chargerProfil(') && !pageCode.includes('sauverProfil('),
   'la page n’écrit jamais le profil elle-même');
@@ -270,12 +289,20 @@ assert.match(css, /min-height: 44px/, 'les boutons font leur taille au doigt');
 assert.ok(css.includes('@media (max-width: 640px)'), 'le téléphone a son palier');
 assert.ok(css.includes('@media (max-width: 420px)'), 'et le portrait étroit aussi');
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/, 'le mouvement se coupe');
+// Le sceau et les noms peints ont leurs règles : sans elles, le cachet tombe
+// dans le flux sous le médaillon, et le nom de la table déborde de la tuile.
+assert.match(css, /\.rpg-profil__tete \{[\s\S]{0,90}position: relative;/, 'le médaillon porte son sceau');
+assert.match(css, /\.rpg-profil__cachet \{[\s\S]{0,260}position: absolute;/, 'et le sceau se pose à son coin');
+assert.match(css, /\.rpg-profil__plateau-nom \{[\s\S]{0,500}-webkit-line-clamp: 2;/,
+  'le nom de la table tient en deux lignes sur sa tuile');
+assert.match(css, /\.rpg-profil__etiquette b \{/, 'l’étiquette écrit le nom du choix courant');
 assert.ok((css.match(/prefers-reduced-motion: reduce/g) ?? []).length >= 2,
   'la barre et l’annonce se tiennent tranquilles pour qui le demande');
 
 console.log('Le profil du Sablier est branché : un onglet Profil dans le menu, et une carte');
 console.log('dépouillée qui répond à trois gestes — douze visages du récit en médaillon, six');
-console.log('emblèmes en glyphes, douze tables de duel plus « au gré du deck » — autour du');
+console.log('emblèmes en glyphes, douze tables de duel plus « au gré du deck » — chaque');
+console.log('tuile portant le nom de sa table, et l’emblème se posant en sceau sur le');
 console.log('pseudo, du niveau et de sa barre d’XP, plus une ligne quand un paquet attend.');
 console.log('Ni rang, ni compteurs, ni barème, ni journal : ces chiffres vivent dans');
 console.log('`rpgProfil.js` et au Souk, pas ici. Les vignettes des visages et des tables');

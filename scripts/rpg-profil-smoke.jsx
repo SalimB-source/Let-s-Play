@@ -270,6 +270,12 @@ export async function checkRpgProfilEcran(assert) {
       [...document.querySelectorAll('[data-profil-embleme]')].filter((bouton) => bouton.classList.contains('is-choisi')).length,
       1, 'un seul emblème est choisi à la fois',
     );
+    // Choisir un emblème se **voit** : le médaillon porte le glyphe tant
+    // qu'aucun visage n'est peint, et l'étiquette du geste écrit son nom — le
+    // sceau, lui, n'arrive qu'avec le visage (voir plus bas).
+    assert.equal(noeud('[data-profil-cachet]'), null, 'sans visage, le glyphe n’est pas répété en sceau');
+    assert.ok(noeud('[id="rpg-profil-cachet"]').textContent.includes(embleme.nom),
+      'l’étiquette du geste nomme l’emblème choisi');
     const avantInconnu = bourse.profil;
     assert.equal(bourse.choisirUnEmbleme('introuvable'), false, 'un emblème inconnu ne change rien');
     assert.equal(bourse.profil, avantInconnu, 'et ne réécrit pas le profil');
@@ -277,6 +283,10 @@ export async function checkRpgProfilEcran(assert) {
     // ── Le visage et la table : deux bandeaux, un choix chacun ──────────────
     assert.equal(nombre('[data-profil-avatars]', 'profilAvatars'), 12, 'douze visages du récit');
     assert.equal(nombre('[data-profil-plateaux]', 'profilPlateaux'), 12, 'douze tables, plus celle du deck');
+    assert.match(texte(noeud('[data-profil-plateau="erg-du-sahara"]')), /L’Erg du Sahara/,
+      'chaque tuile porte le nom de sa table, peint sur sa vignette');
+    assert.match(texte(noeud('[data-profil-plateau="cour-de-l-empereur"]')), /La Cour de l’Empereur/,
+      'même les noms longs : deux lignes au plus');
     assert.ok(noeud('[data-profil-plateau-auto]').classList.contains('is-choisi'),
       'au départ, c’est le deck qui décide de la table');
     assert.equal(noeud('[data-profil-avatar-image]'), null, 'sans visage choisi, le médaillon porte le glyphe');
@@ -287,6 +297,11 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(donnee('[data-profil-medaille]', 'profilMedaille'), 'yamina', 'et le médaillon le peint');
     assert.match(noeud('[data-profil-avatar-image]').style.backgroundImage, /profil\/avatars\/yamina\.webp/,
       'depuis sa vignette, pas depuis la peinture de 310 Ko');
+    // Le visage peint, l'emblème ne disparaît pas : il se pose en sceau sur le
+    // médaillon. Les deux choix se lisent ensemble, et changer d'emblème change
+    // le sceau — c'est ce qui manquait quand l'emblème semblait inerte.
+    assert.equal(texte(noeud('[data-profil-cachet]')), embleme.glyphe, 'le sceau porte l’emblème choisi par-dessus le visage');
+    assert.equal(donnee('[data-profil-cachet]', 'profilCachet'), embleme.id, 'et son identifiant, pour les vérifications');
     assert.ok(visage.classList.contains('is-choisi'), 'le visage choisi se marque');
     assert.equal(
       [...document.querySelectorAll('[data-profil-avatar]')].filter((bouton) => bouton.classList.contains('is-choisi')).length,
@@ -305,6 +320,8 @@ export async function checkRpgProfilEcran(assert) {
     const table = noeud('[data-profil-plateau="fjord-des-neuf-hivers"]');
     await act(async () => table.click());
     assert.equal(bourse.profil.plateau, 'fjord-des-neuf-hivers', 'la table choisie est retenue');
+    assert.ok(noeud('[id="rpg-profil-table"]').textContent.includes('Le Fjord des Neuf Hivers'),
+      'et l’étiquette de la table nomme le choix, même tuile hors de vue');
     assert.ok(table.classList.contains('is-choisi'), 'et se marque');
     assert.equal(noeud('[data-profil-plateau-auto]').classList.contains('is-choisi'), false, 'le deck ne décide plus');
     await act(async () => noeud('[data-profil-plateau-auto]').click());
@@ -384,9 +401,34 @@ export async function checkRpgProfilEcran(assert) {
       'et l’onglet se marque comme la page courante');
     assert.ok(noeud('[data-profil-retour]'), 'l’écran a son bouton Menu');
 
+    // Les trois gestes, à travers la **vraie page** : page → menu → écran → hook
+    // → stockage. Plus haut, la sonde branche l'écran directement sur le hook ;
+    // un prop perdu entre la page et l'écran ne se verrait que ici.
+    await act(async () => noeud('[data-profil-embleme="astre"]').click());
+    assert.ok(noeud('[data-profil-embleme="astre"]').classList.contains('is-choisi'),
+      'l’emblème choisi se marque, à travers la page');
+    assert.ok(noeud('[id="rpg-profil-cachet"]').textContent.includes(EMBLEMES[1].nom),
+      'et l’étiquette du geste écrit son nom');
+    await act(async () => noeud('[data-profil-avatar="salem"]').click());
+    assert.equal(donnee('[data-profil-medaille]', 'profilMedaille'), 'salem',
+      'le visage se peint, à travers la page');
+    assert.equal(texte(noeud('[data-profil-cachet]')), EMBLEMES[1].glyphe,
+      'et le sceau garde l’emblème lisible par-dessus le visage');
+    await act(async () => noeud('[data-profil-plateau="erg-du-sahara"]').click());
+    assert.ok(noeud('[data-profil-plateau="erg-du-sahara"]').classList.contains('is-choisi'),
+      'la table se choisit, à travers la page');
+    const ecritPage = JSON.parse(window.localStorage.getItem(RPG_PROFIL_STORAGE_KEY) ?? 'null');
+    assert.equal(ecritPage.embleme, 'astre', 'la page écrit l’emblème sur l’appareil');
+    assert.equal(ecritPage.avatar, 'salem', 'le visage aussi');
+    assert.equal(ecritPage.plateau, 'erg-du-sahara', 'et la table aussi');
+
     await act(async () => noeud('[data-profil-retour]').click());
     assert.equal(noeud('[data-profil]'), null, 'le bouton Menu rend le menu');
     assert.ok(noeud('[data-profil-onglet]'), 'et l’onglet est toujours là');
+    assert.equal(donnee('[data-profil-onglet-avatar]', 'profilOngletAvatar'), 'salem',
+      'l’onglet du menu porte le visage choisi');
+    assert.equal(noeud('[data-profil-onglet] .rpg-mode-menu__profil-embleme').tagName, 'IMG',
+      'la vignette y remplace le glyphe');
   } finally {
     try { await act(async () => rootPage.unmount()); } catch { /* déjà démonté */ }
     conteneurPage.remove();

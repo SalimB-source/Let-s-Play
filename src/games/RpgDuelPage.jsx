@@ -5442,7 +5442,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Le profil du joueur (dossier 20) : la barre d'XP, le niveau, et le paquet
     // que chaque palier franchi fait ouvrir au hasard.
     profil: profilJoueur, barreXp, boostersEnAttente: paquetsDePalierEnAttente,
-    monteeNiveau, fermerMonteeNiveau, renommerLeProfil, choisirUnEmblemeProfil,
+    monteeNiveau, fermerMonteeNiveau, renommerLeProfil,
+    // Renommés : la page parle des gestes du **profil**, le hook rend des gestes
+    // plus généraux. Sans le renommage ici, le prop vaut `undefined` et le clic
+    // ne fait rien — l'emblème semblait impossible à choisir.
+    choisirUnEmbleme: choisirUnEmblemeProfil,
     choisirUnAvatar: choisirUnAvatarProfil, choisirUnPlateau: choisirUnPlateauProfil,
   } = useSablierBourse({
     progression: progressionHistoireRef.current,

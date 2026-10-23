@@ -354,14 +354,19 @@ L'écran tient maintenant en une carte centrée (520 px au plus), lisible sans
 faire défiler :
 
 1. **le médaillon** — le visage choisi (§4.5), peint en fond d'un cercle de
-   96 px ; sans visage, le glyphe de l'emblème ;
+   96 px ; sans visage, le glyphe de l'emblème — et, visage peint, ce même
+   glyphe en **cachet de cire** au coin du cercle (30 px, cerclé d'or) ;
 2. **le pseudo** — le titre, une ligne ;
 3. **le niveau** — « Niveau 5 », ou « Niveau 60 — maximal » au plafond ;
 4. **la barre** — un `role="progressbar"` complet (`aria-valuenow`, `-min`,
    `-max`, `-text`) et sa seule lecture : « 214 / 353 XP » ;
 5. **trois gestes**, chacun sous une étiquette de 10 px : les douze **visages**
    en cercles de 52 px, les six **emblèmes** en glyphes, les douze **tables** en
-   pellicule qui défile plus « Au gré du deck » ;
+   pellicule qui défile plus « Au gré du deck ». Chaque tuile de table porte le
+   **nom** de son terrain, peint au bas de la vignette sur une encre (8,5 px,
+   deux lignes au plus) ; chaque étiquette écrit le nom du choix courant —
+   « Visage · Yamina », « Emblème · Le corbeau des neiges », « Table · au gré du
+   deck » ;
 6. **le champ du pseudo** — avec son bouton **Enregistrer**, désactivé tant que
    rien n'a changé (« Un champ vide n'efface pas votre nom. »).
 
@@ -374,6 +379,19 @@ des `<img>` dans le flux : ce sont des décors de choix, et chaque bouton porte
 déjà son nom accessible (« Yamina — L'Horlogère », « La Table des Heures — Bab
 El, salle haute de la Chambre »). L'onglet Profil du menu, lui, remplace son
 glyphe par la vignette du visage choisi (`data-profil-onglet-avatar`).
+
+**Choisir se lit, pas seulement se marque.** Les six emblèmes tiennent dans des
+cercles de 44 px : un anneau doré autour d'un glyphe en était le seul retour,
+et une fois le médaillon peint d'un visage, cliquer un emblème ne déplaçait plus
+qu'un anneau — le geste semblait mort. Deux choses l'écrivent désormais :
+l'**étiquette** du bandeau, qui porte le nom du choix courant, et le **cachet**
+posé au coin du médaillon, qui suit le clic quand un visage est peint. Sans
+visage, le médaillon porte déjà le glyphe : le sceau s'efface pour ne pas le
+répéter. Les noms peints sur les tuiles répondent au même besoin — une pellicule
+de vignettes muettes ne se choisit pas à l'œil, et la tuile choisie peut avoir
+défilé hors de vue quand l'étiquette, elle, reste sous les yeux. Le nom
+accessible de chaque bouton reste complet (« La Cour de l'Empereur — Rome, la
+pourpre et le sable ») : la légende peinte est `aria-hidden`.
 
 ### 6.1 La table choisie — la moitié du joueur, et seulement elle
 
@@ -415,6 +433,17 @@ Les props suivent : l'écran ne reçoit plus que `profil` et `nomCompte` (plus d
 `paliersAVenir`, `BAREME_XP` et `RANGS` restent exportés — un autre écran, ou
 une infobulle, pourra les reprendre sans qu'ils reviennent ici.
 
+Les quatre gestes arrivent du hook **renommés** : `choisirUnEmbleme:
+choisirUnEmblemeProfil`, `choisirUnAvatar: choisirUnAvatarProfil`,
+`choisirUnPlateau: choisirUnPlateauProfil`. Écrire le nom de la page tout seul
+déstructure un champ que le hook ne rend pas, le prop part `undefined`, et le
+clic ne fait plus rien — sans erreur, sans avertissement, nulle part. C'est
+arrivé à l'emblème : le visage et la table répondaient, l'emblème semblait
+inerte. Deux garde-fous le tiennent maintenant : le smoke clique les trois
+gestes **à travers la vraie page** (page → menu → écran → hook → stockage, puis
+retour au menu pour l'onglet), et `rpg-profil-check.mjs` vérifie le renommage
+dans la source, geste par geste.
+
 L'identité tient désormais en trois champs (`pseudo`, `embleme`, `avatar`) plus
 un choix de table (`plateau`). Le module du profil ne connaît **ni le casting ni
 les plateaux** : il garde une chaîne propre bornée à 48 caractères, et ce sont
@@ -447,7 +476,7 @@ Marques de vérification dans le DOM : `data-profil`, `data-profil-niveau`,
 `data-profil-pseudo-saisie`, `data-profil-pseudo-enregistrer`,
 `data-profil-pseudo-vide`, `data-profil-attente`, `data-profil-attente-aller`,
 `data-profil-medaille`, `data-profil-avatar-image`, `data-profil-avatars`,
-`data-profil-avatar`, `data-profil-embleme`, `data-profil-plateaux`,
+`data-profil-avatar`, `data-profil-embleme`, `data-profil-cachet`, `data-profil-plateaux`,
 `data-profil-plateau`, `data-profil-plateau-auto`, `data-profil-identite`,
 `data-profil-retour`. Sur l'onglet : `data-profil-onglet-avatar`.
 **Retirées** : `data-profil-rang`, `-sync`, `-courbe`, `-bareme`, `-stat` et
@@ -534,7 +563,12 @@ aucun crédit n'est débité, un second palier franchi **pendant** la cérémoni
 reste dû (bandeau « un paquet vous attend »), la fermeture règle la dette, la
 seconde cérémonie repart du sachet (`key`), le pseudo et l'emblème s'écrivent
 et survivent à un remontage — puis la **vraie page** est montée pour l'onglet
-Profil, son `aria-current`, son aria-label et son aller-retour vers le menu.
+Profil, son `aria-current`, son aria-label, son aller-retour vers le menu, et
+surtout **les trois gestes cliqués à travers elle** : l'emblème se marque et se
+lit sur l'étiquette, le visage se peint, la table se choisit, les trois choix
+sont écrits sur l'appareil, et l'onglet du menu repart avec la vignette du
+visage. Un prop perdu entre la page et l'écran — comme l'emblème renommé de
+travers — ne se voit que là.
 Les gardes de source vérifient ce que le DOM ne peut pas dire : où vit la
 persistance, qui tire le rayon au hasard, ce qu'une dette impayée ne répète
 pas, et à quelle hauteur la cérémonie passe au-dessus de la table. Elles
@@ -542,7 +576,11 @@ tiennent aussi la carte **dépouillée** : ni `paliersAVenir`, ni `BAREME_XP`, n
 `RANGS`, ni aucune des classes retirées dans la source de l'écran, aucune
 section à titre, aucun `<img>` dans le flux (les vignettes sont des fonds
 peints) — et, côté page, que l'écran ne reçoit plus `collection`,
-`portefeuille`, `quetes` ni `statutSync`, mais bien les quatre gestes.
+`portefeuille`, `quetes` ni `statutSync`, mais bien les quatre gestes, **chacun
+renommé** à la déstructuration du hook. Elles tiennent aussi les noms : le sceau
+et la légende peinte existent dans l'écran et dans `rpg-profil.css`
+(`.rpg-profil__cachet` en `position: absolute`, `.rpg-profil__plateau-nom` en
+deux lignes, `.rpg-profil__etiquette b`).
 
 `tests/rpg-profil.test.js` (34 tests) ajoute l'identité élargie : un profil neuf
 n'a ni visage ni table, `choisirAvatar` / `choisirPlateau` s'écrivent et se

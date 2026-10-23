@@ -58,6 +58,11 @@ export default function RpgProfilJoueur({
   const glyphe = glypheEmbleme(profil);
   const avatar = avatarDeProfil(profil);
   const plateauChoisi = profil?.plateau ?? null;
+  // Le nom de ce qui est choisi s'écrit sur l'étiquette du geste : cliquer doit
+  // se **voir** ailleurs que sur un anneau de 44 px — le cachet du médaillon et
+  // l'étiquette le disent, même quand la tuile choisie a défilé hors de vue.
+  const emblemeChoisi = EMBLEMES.find((embleme) => embleme.glyphe === glyphe) ?? EMBLEMES[0];
+  const tableChoisie = RPG_PLATEAUX.find((table) => table.id === plateauChoisi) ?? null;
   const dus = boostersDus(profil);
 
   const nom = pseudoLisible(profil, nomCompte);
@@ -87,13 +92,24 @@ export default function RpgProfilJoueur({
       </button>
 
       <div className="rpg-profil__carte">
-        <span
-          className={`rpg-profil__medaillon${avatar ? ' rpg-profil__medaillon--visage' : ''}`}
-          style={avatar ? { backgroundImage: `url("${vignetteAvatar(avatar.id, BASE_URL)}")` } : undefined}
-          data-profil-medaille={avatar?.id ?? 'glyphe'}
-          data-profil-avatar-image={avatar?.id ?? undefined}
-        >
-          {avatar ? null : glyphe}
+        <span className="rpg-profil__tete">
+          <span
+            className={`rpg-profil__medaillon${avatar ? ' rpg-profil__medaillon--visage' : ''}`}
+            style={avatar ? { backgroundImage: `url("${vignetteAvatar(avatar.id, BASE_URL)}")` } : undefined}
+            data-profil-medaille={avatar?.id ?? 'glyphe'}
+            data-profil-avatar-image={avatar?.id ?? undefined}
+          >
+            {avatar ? null : glyphe}
+          </span>
+          {/* Le cachet de cire : quand le médaillon porte un visage, l'emblème
+              choisi se pose dessus en sceau — sans visage, c'est le médaillon
+              lui-même qui porte le glyphe, et le répéter ici ne ferait que
+              charger la carte. Un emblème se lit donc toujours, une seule fois. */}
+          {avatar ? (
+            <span className="rpg-profil__cachet" aria-hidden="true" data-profil-cachet={emblemeChoisi.id}>
+              {glyphe}
+            </span>
+          ) : null}
         </span>
         <h2 className="rpg-profil__nom" data-profil-pseudo={nom}>{nom}</h2>
         <p className="rpg-profil__niveau" data-profil-niveau={niveau}>
@@ -135,7 +151,9 @@ export default function RpgProfilJoueur({
 
         {/* Qui l'on est : trois gestes, chacun sur sa ligne, aucun chiffre. */}
         <div className="rpg-profil__choix">
-          <span className="rpg-profil__etiquette" id="rpg-profil-visage" aria-hidden="true">Visage</span>
+          <span className="rpg-profil__etiquette" id="rpg-profil-visage" aria-hidden="true">
+            Visage{avatar ? <b> · {avatar.nom}</b> : null}
+          </span>
           <div
             className="rpg-profil__avatars"
             role="group"
@@ -163,7 +181,9 @@ export default function RpgProfilJoueur({
             })}
           </div>
 
-          <span className="rpg-profil__etiquette" id="rpg-profil-cachet" aria-hidden="true">Emblème</span>
+          <span className="rpg-profil__etiquette" id="rpg-profil-cachet" aria-hidden="true">
+            Emblème<b> · {emblemeChoisi.nom}</b>
+          </span>
           <div
             className="rpg-profil__emblemes"
             role="group"
@@ -192,7 +212,9 @@ export default function RpgProfilJoueur({
             })}
           </div>
 
-          <span className="rpg-profil__etiquette" id="rpg-profil-table" aria-hidden="true">Table</span>
+          <span className="rpg-profil__etiquette" id="rpg-profil-table" aria-hidden="true">
+            Table<b> · {tableChoisie ? tableChoisie.nom : 'au gré du deck'}</b>
+          </span>
           <div
             className="rpg-profil__plateaux"
             role="group"
@@ -232,7 +254,11 @@ export default function RpgProfilJoueur({
                     const change = onChoisirPlateau?.(table.id);
                     onPlaySfx?.(change ? 'select' : 'menu');
                   }}
-                />
+                >
+                  {/* Le nom peint sur la tuile : une table se choisit aussi en
+                      la lisant. Le nom accessible porte déjà nom et lieu. */}
+                  <span className="rpg-profil__plateau-nom" aria-hidden="true">{table.nom}</span>
+                </button>
               );
             })}
           </div>

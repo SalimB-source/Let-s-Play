@@ -5433,8 +5433,8 @@ Le duel se joue **sur une table** : un fond plein cadre, sous les cartes.
 Jusqu'ici il n'y en avait qu'une — le bois gravé de Bab El. Le jeu en propose
 désormais plusieurs, et le plateau d'une partie est imposé par **le deck de
 l'un des deux duellistes** — sauf sur la moitié du joueur, qui peut **recevoir
-chez lui** : la carte de profil propose les douze tables plus « au gré du
-deck » (dossier 20 §6.1).
+chez lui** : la carte de profil propose les douze tables — chacune **nommée**
+sur sa tuile — plus « au gré du deck » (dossier 20 §6.1).
 
 ### La règle
 
@@ -8721,14 +8721,19 @@ sans un crédit dépensé.
   Tarek, Boualem, Mahieddine, Tin Hinan, l'Ifrit des ergs, le Maître des Neuf
   Hivers, le Daimyō du Soleil rouge, la Barbe-Rousse, Celle qui pèse) peints
   dans le médaillon et dans l'onglet du menu, six **emblèmes** en glyphes de
-  texte, et douze **tables** de duel plus « au gré du deck ». Plus une ligne,
-  seulement quand des paquets attendent : « Un paquet vous attend. » et le
-  bouton **Ouvrir au Souk**.
+  texte, et douze **tables** de duel plus « au gré du deck ». Chaque tuile porte
+  le **nom** de son terrain, peint sur sa vignette, et chaque étiquette écrit le
+  nom du choix courant — « Visage · Yamina », « Emblème · Le corbeau des
+  neiges », « Table · au gré du deck » : choisir se lit, pas seulement se
+  marque. L'emblème, une fois un visage peint, se pose en **cachet de cire** au
+  coin du médaillon. Plus une ligne, seulement quand des paquets attendent :
+  « Un paquet vous attend. » et le bouton **Ouvrir au Souk**.
 - Les visages et les tables arrivent en **vignettes** de 6 à 34 Ko
   (`public/profil/`, découpées par `tools/make-profil-vignettes.mjs` au cadrage
   exact des peintures canoniques) : les deux bandeaux coûtent moins qu'une
   seule peinture de carte. Elles sont peintes en fond des boutons, pas en
-  `<img>` : chaque bouton porte déjà son nom accessible. La première version empilait cinq sections —
+  `<img>` : chaque bouton porte déjà son nom accessible, et les noms peints ne
+  sont que des légendes `aria-hidden`. La première version empilait cinq sections —
   le rang de Bab El, seize compteurs, le barème, le journal des vingt derniers
   paliers, les paliers à venir, l'état de la synchronisation — et on n'y lisait
   plus rien. **Rien n'a disparu du jeu**, seulement de cet écran : `RANGS`,
