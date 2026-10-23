@@ -3643,7 +3643,7 @@ function MonteeDeNiveau({ montee, profil, cardArt, onFermer, onPlaySfx }) {
   );
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -4536,6 +4536,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             onChoisirEmbleme={onChoisirEmbleme}
             onChoisirAvatar={onChoisirAvatar}
             onChoisirPlateau={onChoisirPlateau}
+            onChoisirCadre={onChoisirCadre}
+            onChoisirTitre={onChoisirTitre}
             onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }}
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
@@ -5448,6 +5450,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // ne fait rien — l'emblème semblait impossible à choisir.
     choisirUnEmbleme: choisirUnEmblemeProfil,
     choisirUnAvatar: choisirUnAvatarProfil, choisirUnPlateau: choisirUnPlateauProfil,
+    // Les gains de la piste : un cadre de médaillon, un titre sous le pseudo.
+    choisirUnCadre: choisirUnCadreProfil, choisirUnTitre: choisirUnTitreProfil,
   } = useSablierBourse({
     progression: progressionHistoireRef.current,
     // Un achat range ses cartes dans la collection : l'atelier de decks doit
@@ -7417,6 +7421,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onChoisirEmbleme={choisirUnEmblemeProfil}
           onChoisirAvatar={choisirUnAvatarProfil}
           onChoisirPlateau={choisirUnPlateauProfil}
+          onChoisirCadre={choisirUnCadreProfil}
+          onChoisirTitre={choisirUnTitreProfil}
           statutSync={statutSync}
           onEnregistrerDeckMaison={enregistrerDeckMaison}
           onSupprimerDeckMaison={supprimerDeckMaison}

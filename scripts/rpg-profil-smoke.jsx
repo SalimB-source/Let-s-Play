@@ -27,6 +27,7 @@ import {
   XP,
   progressionDeXp,
   seuilDuNiveau,
+  xpTotalDuNiveau,
 } from '../src/games/rpgProfil.js';
 import { RPG_DUEL_CARDS, carteJouableSansTerrain } from '../src/games/rpgCards.js';
 import { rngSeme } from '../src/games/rpgHasard.js';
@@ -129,9 +130,59 @@ export async function checkRpgProfilEcran(assert) {
       assert.equal(noeud(absent), null, `${absent} n’est plus sur la carte`);
     }
     assert.equal(document.querySelectorAll('.rpg-profil__section').length, 0, 'plus aucune section à titre');
-    assert.ok(document.querySelectorAll('[data-profil] *').length < 95,
-      `toute la carte tient en quelques noeuds (${document.querySelectorAll('[data-profil] *').length}) — deux bandeaux de choix compris`);
+    assert.ok(document.querySelectorAll('[data-profil] *').length < 210,
+      `toute la carte tient en quelques noeuds (${document.querySelectorAll('[data-profil] *').length}) — trois bandeaux de choix et la piste des gains compris`);
     assert.equal(document.querySelectorAll('[data-profil] h3').length, 0, 'et pas un titre de section');
+
+    // ── La piste des gains : ce que rapportent les prochains niveaux ────────
+    // Sous la barre, un chemin qui défile — du niveau en cours jusqu'au prochain
+    // rang, puis quatre niveaux au-delà. C'est la seule « information » que la
+    // carte reprend : elle porte des gains, pas des compteurs.
+    assert.ok(noeud('[data-profil-piste]'), 'la piste des gains est sur la carte, sous la barre');
+    assert.equal(donnee('[data-profil-chemin-rang]', 'profilCheminRang'), 'lanterne',
+      'son étiquette nomme le prochain rang');
+    assert.match(texte(noeud('[id="rpg-profil-chemin"]')), /rang Porteur de lanterne au niveau 3/,
+      'écrit en toutes lettres, pas en identifiant');
+    assert.equal(document.querySelectorAll('[data-profil-palier]').length,
+      nombre('[data-profil-piste-paliers]', 'profilPistePaliers'),
+      'autant de tuiles que la piste l’annonce');
+    assert.equal(document.querySelectorAll('[data-profil-palier]').length, 7,
+      'du niveau 1 au rang du niveau 3, puis quatre niveaux au-delà');
+    assert.equal(donnee('[data-profil-palier="1"]', 'profilPalierEtat'), 'courant',
+      'le premier palier est celui où l’on est');
+    assert.equal(document.querySelectorAll('[data-profil-palier-etat="courant"]').length, 1,
+      'et il n’y en a qu’un');
+    assert.equal(noeud('[data-profil-palier="1"]').getAttribute('aria-current'), 'step',
+      'dit aussi à qui ne le voit pas');
+    assert.equal(donnee('[data-profil-palier-jalon]', 'profilPalierJalon'), '3',
+      'le prochain rang est mis en jalon');
+    assert.equal(donnee('[data-profil-palier="2"]', 'profilPalierEtat'), 'verrouille',
+      'ce qui suit est verrouillé');
+    assert.equal(donnee('[data-profil-palier="2"]', 'profilPalierGain'), 'titre',
+      'le niveau 2 promet un titre');
+    assert.equal(donnee('[data-profil-palier="4"]', 'profilPalierGain'), 'cadre',
+      'le niveau 4 promet un cadre');
+    assert.ok(document.querySelectorAll('[data-profil-palier-gain="paquet"]').length >= 1,
+      'les autres niveaux promettent leur paquet');
+    assert.match(texte(noeud('[data-profil-palier="6"]')), /Sondeur/, 'le rang promis est écrit sous la tuile');
+    assert.match(texte(noeud('[data-profil-palier="7"]')), /paquet du Souk/i, 'et le paquet aussi');
+    assert.equal(donnee('[data-profil-cadre]', 'profilCadre'), 'laiton',
+      'le médaillon porte le cadre du départ');
+    assert.equal(noeud('[data-profil-titre]'), null, 'aucun titre tant que rien n’est gagné');
+
+    // Un gain verrouillé ne se porte pas : le clic sonne l'erreur et ne change
+    // rien, et le hook refuse même appelé de front — une sauvegarde retouchée ne
+    // pare personne de ce que son XP ne donne pas.
+    const sonsAvantPiste = sons.length;
+    await act(async () => noeud('[data-profil-gain-cadre="chanvre"]').click());
+    assert.equal(donnee('[data-profil-cadre]', 'profilCadre'), 'laiton', 'le cadre verrouillé ne se porte pas');
+    assert.ok(sons.slice(sonsAvantPiste).includes('erreur'), 'et son clic sonne l’erreur');
+    assert.equal(noeud('[data-profil-gain-cadre="chanvre"]').getAttribute('aria-disabled'), 'true',
+      'la tuile se dit verrouillée, au lieu de disparaître');
+    let porteVol = true;
+    await act(async () => { porteVol = bourse.choisirUnCadre('eclipse'); });
+    assert.equal(porteVol, false, 'le hook refuse un cadre hors de portée');
+    assert.equal(bourse.profil.cadre ?? null, null, 'et n’écrit rien sur l’appareil');
 
     // ── Jouer fait monter la barre, sans franchir de palier ─────────────────
     for (let index = 0; index < 4; index += 1) {
@@ -239,6 +290,30 @@ export async function checkRpgProfilEcran(assert) {
     assert.ok(bourse.profil.paliers.length >= 2,
       'le profil a gardé les paliers franchis — la carte, elle, ne les affiche plus');
     assert.ok(bourse.profil.boostersOfferts >= 2, 'et les paquets offerts sont comptés');
+
+    // ── Les gains portés : un titre sous le pseudo, un cadre au médaillon ───
+    // Au niveau 3, le titre du niveau 2 est gagné — la piste ne le montre plus
+    // (elle part du niveau en cours), mais il se porte, et la carte l'écrit.
+    let porteTitre = false;
+    await act(async () => { porteTitre = bourse.choisirUnTitre('arpenteur'); });
+    assert.equal(porteTitre, true, 'un titre gagné se porte');
+    assert.equal(donnee('[data-profil-titre]', 'profilTitre'), 'arpenteur', 'et s’écrit sous le pseudo');
+    assert.match(texte(noeud('[data-profil-titre]')), /l’Arpenteur/, 'en toutes lettres');
+    await act(async () => { porteTitre = bourse.choisirUnTitre('noctambule'); });
+    assert.equal(porteTitre, false, 'un titre pas encore gagné ne se porte pas');
+    assert.equal(donnee('[data-profil-titre]', 'profilTitre'), 'arpenteur', 'et le titre porté reste');
+    await act(async () => { porteTitre = bourse.choisirUnTitre(null); });
+    assert.equal(porteTitre, true, 'reposer son titre est toujours permis');
+    assert.equal(noeud('[data-profil-titre]'), null, 'la ligne disparaît avec lui');
+    let porteCadre = false;
+    await act(async () => { porteCadre = bourse.choisirUnCadre('chanvre'); });
+    assert.equal(porteCadre, false, 'le cadre du niveau 4 attend le niveau 4');
+    assert.equal(donnee('[data-profil-cadre]', 'profilCadre'), 'laiton', 'le médaillon garde son laiton');
+    // Tous les cosmétiques de la piste sont encore verrouillés : chacun le dit.
+    for (const tuile of document.querySelectorAll('[data-profil-gain-cadre], [data-profil-gain-titre]')) {
+      assert.equal(tuile.getAttribute('aria-disabled'), 'true',
+        `au niveau ${nombre('[data-profil-niveau]', 'profilNiveau')}, ${tuile.dataset.profilGainCadre ?? tuile.dataset.profilGainTitre} reste verrouillé`);
+    }
 
     // ── Le nom et l'emblème s'écrivent, et se relisent ──────────────────────
     const saisie = noeud('[data-profil-pseudo-saisie]');
@@ -374,6 +449,13 @@ export async function checkRpgProfilEcran(assert) {
   // et un smoke qui ne monterait que l'écran ne verrait pas un branchement cassé.
   window.localStorage.clear();
   window.localStorage.setItem(RPG_GRAINE_STORAGE_KEY, 'graine-du-smoke-profil');
+  // Un joueur au niveau 2, posé sur l'appareil avant le montage : la page le
+  // relit, et la piste a un titre **gagné** à faire porter — de quoi vérifier les
+  // deux gestes des gains jusqu'au stockage, sans rejouer un duel entier.
+  // `boostersOfferts: 1` solde la dette du niveau 2 : ni pastille ni bandeau.
+  window.localStorage.setItem(RPG_PROFIL_STORAGE_KEY, JSON.stringify({
+    version: 1, xp: xpTotalDuNiveau(2), boostersOfferts: 1,
+  }));
   const conteneurPage = document.createElement('div');
   document.body.appendChild(conteneurPage);
   const rootPage = createRoot(conteneurPage);
@@ -386,8 +468,8 @@ export async function checkRpgProfilEcran(assert) {
     const onglet = noeud('[data-profil-onglet]');
     assert.ok(onglet, 'l’onglet Profil est dans le menu du Sablier');
     assert.equal(onglet.tagName, 'BUTTON', 'et c’est un bouton');
-    assert.equal(nombre('[data-profil-onglet]', 'profilOnglet'), 1, 'il affiche le niveau du joueur');
-    assert.match(texte(onglet), /NIV\. 1/, 'et l’écrit en toutes lettres sur l’onglet');
+    assert.equal(nombre('[data-profil-onglet]', 'profilOnglet'), 2, 'il affiche le niveau du joueur');
+    assert.match(texte(onglet), /NIV\. 2/, 'et l’écrit en toutes lettres sur l’onglet');
     assert.match(texte(onglet), /Profil/, 'avec son libellé');
     assert.ok(onglet.querySelector('.rpg-mode-menu__profil-embleme'), 'et l’emblème du joueur');
     assert.equal(nombre('[data-profil-xp-onglet]', 'profilXpOnglet'), 0, 'et sa barre d’XP');
@@ -417,10 +499,27 @@ export async function checkRpgProfilEcran(assert) {
     await act(async () => noeud('[data-profil-plateau="erg-du-sahara"]').click());
     assert.ok(noeud('[data-profil-plateau="erg-du-sahara"]').classList.contains('is-choisi'),
       'la table se choisit, à travers la page');
+
+    // Le gain de la piste, à travers la page : au niveau 2 le titre est gagné, sa
+    // tuile se clique, et la carte l'écrit sous le pseudo.
+    assert.ok(noeud('[data-profil-piste]'), 'la piste est sur la carte, à travers la page aussi');
+    assert.equal(donnee('[data-profil-palier="2"]', 'profilPalierEtat'), 'courant',
+      'elle part du niveau relu sur l’appareil');
+    assert.equal(noeud('[data-profil-gain-titre="arpenteur"]').getAttribute('aria-disabled'), null,
+      'le titre du niveau 2 n’y est pas verrouillé');
+    await act(async () => noeud('[data-profil-gain-titre="arpenteur"]').click());
+    assert.equal(donnee('[data-profil-titre]', 'profilTitre'), 'arpenteur',
+      'le titre gagné se porte, à travers la page');
+    assert.match(texte(noeud('[data-profil-titre]')), /l’Arpenteur/, 'et s’écrit sous le pseudo');
+    assert.equal(noeud('[data-profil-gain-titre="arpenteur"]').getAttribute('aria-pressed'), 'true',
+      'sa tuile se marque portée');
+
     const ecritPage = JSON.parse(window.localStorage.getItem(RPG_PROFIL_STORAGE_KEY) ?? 'null');
     assert.equal(ecritPage.embleme, 'astre', 'la page écrit l’emblème sur l’appareil');
     assert.equal(ecritPage.avatar, 'salem', 'le visage aussi');
     assert.equal(ecritPage.plateau, 'erg-du-sahara', 'et la table aussi');
+    assert.equal(ecritPage.titre, 'arpenteur', 'le titre porté, comme le reste');
+    assert.equal(ecritPage.xp, xpTotalDuNiveau(2), 'sans toucher à l’XP : un gain se porte, il ne s’achète pas');
 
     await act(async () => noeud('[data-profil-retour]').click());
     assert.equal(noeud('[data-profil]'), null, 'le bouton Menu rend le menu');

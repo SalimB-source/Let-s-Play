@@ -63,7 +63,12 @@ const hook = lire('src/games/useSablierBourse.js');
 const hookCode = sansCommentaires(hook);
 const evenements = lire('src/games/rpgEvenementsDuel.js');
 const boosters = lire('src/games/rpgBoosters.js');
+const piste = lire('src/games/RpgProfilPiste.jsx');
+const pisteCode = sansCommentaires(piste);
+const gains = lire('src/games/rpgProfilGains.js');
+const gainsCode = sansCommentaires(gains);
 const css = lire('src/games/rpg-profil.css');
+const cssPiste = lire('src/games/rpg-profil-piste.css');
 const cssMenu = lire('src/games/rpg-battle.css');
 const decks = lire('src/games/useDecksSablier.js');
 const fusion = lire('src/games/rpgDeckBuilder.js');
@@ -106,14 +111,15 @@ for (const interdit of ['paliersAVenir', 'BAREME_XP', 'RANGS', 'rangDeNiveau', '
 // trois gestes — un visage, un emblème, une table.
 for (const attendu of ['rpg-profil__medaillon', 'data-profil-niveau', 'data-profil-xp', 'data-profil-emblemes',
   'data-profil-avatars', 'data-profil-plateaux', 'data-profil-medaille',
-  'data-profil-pseudo-saisie', 'data-profil-retour']) {
+  'data-profil-pseudo-saisie', 'data-profil-retour', 'RpgProfilPiste', 'data-profil-cadre']) {
   assert.ok(ecranCode.includes(attendu), `l’écran garde ${attendu}`);
 }
 assert.ok(ecranCode.includes('data-profil-attente-aller'), 'et le bandeau des paquets dus mène au Souk');
 // Les vignettes sont des **fonds peints** des boutons, pas des `<img>` dans le
 // flux : ce sont des décors de choix, le nom accessible porte déjà le personnage
 // et le lieu — et jsdom ne charge de toute façon aucun fond.
-assert.ok(!/<img/.test(ecranCode), 'la carte ne charge aucune image dans le flux du document');
+assert.ok(!/<img/.test(ecranCode) && !/<img/.test(pisteCode),
+  'ni la carte ni la piste ne chargent d’image dans le flux du document');
 assert.ok(ecranCode.includes('backgroundImage'), 'les vignettes arrivent par `background-image`');
 // Chaque geste **nomme** ce qu'il choisit : le nom de la table est peint sur sa
 // tuile, l'étiquette du geste écrit le nom du choix courant, et l'emblème se
@@ -123,8 +129,10 @@ for (const attendu of ['rpg-profil__plateau-nom', 'rpg-profil__cachet', 'embleme
   'data-profil-cachet={emblemeChoisi.id}', 'Visage{avatar ? <b>']) {
   assert.ok(ecranCode.includes(attendu), `l’écran nomme ce qu’il choisit (${attendu})`);
 }
-assert.ok(ecran.split('\n').length < 300,
-  `la carte tient en un seul écran, trois gestes compris (${ecran.split('\n').length} lignes)`);
+assert.ok(ecran.split('\n').length < 360,
+  `la carte tient en un seul écran, trois gestes et piste des gains compris (${ecran.split('\n').length} lignes)`);
+assert.ok(piste.split('\n').length < 220,
+  `la piste a son propre fichier, et reste courte (${piste.split('\n').length} lignes)`);
 
 // 3. La page branche l'onglet, l'écran et la cérémonie.
 assert.match(page, /import RpgProfilJoueur from '\.\/RpgProfilJoueur\.jsx';/, 'la page importe l’écran');
@@ -158,11 +166,13 @@ for (const prop of [
   'profil={profil}', 'nomCompte={nomCompte}', 'onRenommer={onRenommerProfil}',
   'onChoisirEmbleme={onChoisirEmbleme}', 'onChoisirAvatar={onChoisirAvatar}',
   'onChoisirPlateau={onChoisirPlateau}', 'onPlaySfx={play}', "onExit={() => onChangeScreen('jouer')}",
+  'onChoisirCadre={onChoisirCadre}', 'onChoisirTitre={onChoisirTitre}',
 ]) {
   assert.ok(pageCode.includes(prop), `l’écran reçoit ${prop}`);
 }
 for (const prop of [
   'onChoisirAvatar={choisirUnAvatarProfil}', 'onChoisirPlateau={choisirUnPlateauProfil}',
+  'onChoisirCadre={choisirUnCadreProfil}', 'onChoisirTitre={choisirUnTitreProfil}',
 ]) {
   assert.ok(pageCode.includes(prop), `le menu reçoit ${prop}`);
 }
@@ -174,12 +184,14 @@ for (const [duHook, deLaPage] of [
   ['choisirUnEmbleme', 'choisirUnEmblemeProfil'],
   ['choisirUnAvatar', 'choisirUnAvatarProfil'],
   ['choisirUnPlateau', 'choisirUnPlateauProfil'],
+  ['choisirUnCadre', 'choisirUnCadreProfil'],
+  ['choisirUnTitre', 'choisirUnTitreProfil'],
 ]) {
   assert.match(pageCode, new RegExp(`${duHook}:\\s*${deLaPage}`), `la page renomme ${duHook} en ${deLaPage}`);
 }
 assert.match(pageCode, /data-profil-onglet-avatar=\{avatarOnglet\.id\}/,
   'l’onglet Profil porte le visage choisi, à la place du glyphe');
-const brancheProfil = pageCode.split("<RpgProfilJoueur")[1]?.split('/>')[0] ?? '';
+const brancheProfil = pageCode.split('<RpgProfilJoueur')[1]?.split('/>')[0] ?? '';
 for (const retiree of ['portefeuille=', 'quetes=', 'collection=', 'statutSync=']) {
   assert.ok(!brancheProfil.includes(retiree), `l’écran ne reçoit plus ${retiree}`);
 }
@@ -284,6 +296,67 @@ assert.match(sansCommentaires(fusion), /const modifie = JSON\.stringify\(\{ deck
 assert.match(hookCode, /const profil = fusionnerProfils\(chargerProfil\(\), fusion\.etat\.profil\)\.profil;/,
   'le hook fusionne ce que le compte renvoie — l’XP au maximum, jamais le dernier arrivé');
 
+// 11. La piste des gains : un chemin qui défile, et deux cosmétiques portés.
+// La carte était dépouillée de ses paliers à venir ; la piste les rend, mais
+// comme un **chemin de gains** — pas un tableau de chiffres. Ce qui est gardé :
+// aucun compteur, aucun barème, aucune formule de courbe à l'écran.
+assert.match(gainsCode, /export const CADRES = Object\.freeze\(\[/, 'les cadres sont un catalogue gelé');
+assert.match(gainsCode, /export const TITRES = Object\.freeze\(\[/, 'les titres aussi');
+assert.match(gainsCode, /export function pisteDesGains\(profil, \{ apres = 4/,
+  'la piste part du niveau en cours et pousse de quatre niveaux au-delà du rang');
+assert.match(gainsCode, /prochain\.niveau : niveau \+ suite\) \+ suite/,
+  'sa fin est le prochain rang, plus ces quatre niveaux');
+assert.match(gainsCode, /Math\.min\(COURBE\.niveauMax,/, 'et jamais au-delà de la courbe');
+assert.match(gainsCode, /gains\.push\(\{ \.\.\.GAIN_PAQUET, sorte: 'paquet', niveau: n \}\)/,
+  'chaque niveau ferme sa liste par un paquet offert');
+// Ce qui est gagné se **calcule** depuis le niveau — donc depuis l'XP. Aucune
+// liste de possessions à écrire, donc rien à tricher dans une sauvegarde.
+assert.match(gainsCode, /return niveauDe\(profil\) >= cadre\.niveau \? cadre : CADRES\[0\];/,
+  'un cadre volé retombe sur celui du départ');
+assert.match(gainsCode, /return niveauDe\(profil\) >= titre\.niveau \? titre : null;/,
+  'un titre volé retombe sur aucun titre');
+assert.match(gainsCode, /export function cadrePortable\(profil, cadreId\)/, 'porter se mérite');
+assert.match(hookCode, /if \(!cadrePortable\(avant\.profil, cadreId\)\) return false;/,
+  'et le hook refuse un cadre hors de portée');
+assert.match(hookCode, /if \(!titrePortable\(avant\.profil, titreId\)\) return false;/,
+  'comme un titre hors de portée');
+// Le module des règles ne connaît pas le catalogue des gains : il garde deux
+// chaînes propres, la validation se fait à la lecture — comme les visages.
+assert.ok(!reglesCode.includes('rpgProfilGains'), 'le profil ignore les gains : il garde des chaînes');
+assert.match(reglesCode, /cadre: normaliserChoix\(brut\.cadre\)/, 'et borne ce qu’il garde');
+assert.match(reglesCode, /cadre: recent\.cadre \?\? ici\.cadre \?\? la\.cadre/,
+  'la fusion ne perd pas un cadre porté d’un seul côté');
+assert.ok(!gainsCode.includes('rpgAvatars') && !gainsCode.includes('rpgPlateaux') && !gainsCode.includes('rpgCards'),
+  'les gains ne connaissent ni les visages, ni les tables, ni les cartes');
+// La piste est présentationnelle : aucune écriture, aucun stockage.
+for (const interdit of ['localStorage', 'sauverProfil', 'useState', 'fetch(']) {
+  assert.ok(!pisteCode.includes(interdit), `la piste ne fait rien elle-même (${interdit})`);
+}
+assert.match(pisteCode, /data-profil-palier=\{palier\.niveau\}/, 'chaque palier est marqué pour les vérifications');
+assert.match(pisteCode, /aria-current=\{palier\.etat === 'courant' \? 'step' : undefined\}/,
+  'le palier en cours se dit à qui ne le voit pas');
+assert.match(pisteCode, /aria-disabled=\{!gagne \|\| undefined\}/,
+  'un gain verrouillé reste un bouton, mais se dit verrouillé — il ne disparaît pas');
+assert.match(pisteCode, /onPlaySfx\?\.\('erreur'\)/, 'et son clic sonne l’erreur au lieu de mentir');
+assert.match(pisteCode, /tabIndex=\{0\}/, 'la zone qui défile se parcourt au clavier');
+assert.match(pisteCode, /bande\.scrollLeft = Math\.max\(0, courant\.offsetLeft/,
+  'elle s’ouvre sur le niveau en cours, sans `scrollIntoView` — absent de jsdom');
+// Les styles ont leur feuille : la queue de `rpg-profil.css` porte les `z-index`
+// de la cérémonie et de l'annonce, on n'y touche pas pour un décor.
+assert.ok(!css.includes('rpg-profil__piste'), 'la piste a sa propre feuille de style');
+assert.match(cssPiste, /\.rpg-profil__piste \{[\s\S]{0,220}overflow-x: auto;/, 'elle défile vraiment');
+assert.match(cssPiste, /scroll-snap-type: x proximity;/, 'et s’arrête sur un palier');
+assert.match(cssPiste, /\.rpg-profil__piste:focus-visible \{/, 'avec un signe visible au clavier');
+assert.match(cssPiste, /\.rpg-profil__palier-filet \{[\s\S]{0,600}calc\(var\(--gauche, 0%\) \/ 2\) 100%,/,
+  'le filet se remplit en propriétés personnalisées — un noeud, pas quatre');
+assert.match(cssPiste, /\.rpg-profil__palier\.is-jalon::before \{[\s\S]{0,400}content: 'rang';/,
+  'le prochain rang est mis en avant');
+assert.match(cssPiste, /\.rpg-profil__tete\[data-profil-cadre='astrolabe'\]::before \{/,
+  'les cadres sont peints en CSS, sans un asset de plus');
+assert.match(cssPiste, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]{0,200}animation: none;/,
+  'et l’astrolabe s’arrête pour qui le demande');
+assert.match(cssPiste, /@media \(max-width: 640px\)/, 'la piste a son palier téléphone');
+
 // 10. Tactile et mouvement : les règles reprises des autres écrans.
 assert.match(css, /min-height: 44px/, 'les boutons font leur taille au doigt');
 assert.ok(css.includes('@media (max-width: 640px)'), 'le téléphone a son palier');
@@ -300,13 +373,18 @@ assert.ok((css.match(/prefers-reduced-motion: reduce/g) ?? []).length >= 2,
   'la barre et l’annonce se tiennent tranquilles pour qui le demande');
 
 console.log('Le profil du Sablier est branché : un onglet Profil dans le menu, et une carte');
-console.log('dépouillée qui répond à trois gestes — douze visages du récit en médaillon, six');
-console.log('emblèmes en glyphes, douze tables de duel plus « au gré du deck » — chaque');
-console.log('tuile portant le nom de sa table, et l’emblème se posant en sceau sur le');
-console.log('pseudo, du niveau et de sa barre d’XP, plus une ligne quand un paquet attend.');
-console.log('Ni rang, ni compteurs, ni barème, ni journal : ces chiffres vivent dans');
-console.log('`rpgProfil.js` et au Souk, pas ici. Les vignettes des visages et des tables');
-console.log('(6 à 34 Ko, `tools/make-profil-vignettes.mjs`) coûtent moins qu’une peinture.');
+console.log('dépouillée — le pseudo, le niveau, la barre et sa lecture, trois gestes (douze');
+console.log('visages du récit, six emblèmes, douze tables nommées plus « au gré du deck »),');
+console.log('une ligne quand un paquet attend, et la **piste des gains** : un chemin qui');
+console.log('défile du niveau en cours jusqu’au prochain rang de Bab El, puis quatre niveaux');
+console.log('au-delà. Chaque palier dit ce qu’il rapporte — un paquet du Souk, un rang, un');
+console.log('cadre de médaillon, un titre sous le pseudo — et c’est là que les cosmétiques');
+console.log('gagnés se portent, ou se reposent. Ce qui est gagné se calcule depuis l’XP :');
+console.log('rien à réclamer, rien à tricher, et un gain verrouillé le reste.');
+console.log('Ni compteurs, ni barème, ni journal : ces chiffres vivent dans `rpgProfil.js`');
+console.log('et au Souk, pas ici. Les vignettes des visages et des tables (6 à 34 Ko,');
+console.log('`tools/make-profil-vignettes.mjs`) coûtent moins qu’une peinture, et la piste');
+console.log('ne coûte aucun asset — des glyphes et des dégradés.');
 console.log('La table choisie peint la moitié du joueur — musique et décor 3D suivent — et');
 console.log('le tutoriel garde la sienne. La barre monte vite au début puis devient');
 console.log('gourmande, et chaque palier offre un paquet tiré au hasard parmi les rayons');

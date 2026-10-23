@@ -44,7 +44,9 @@ import {
   pseudoLisible,
   rangDeNiveau,
   choisirAvatar,
+  choisirCadre,
   choisirPlateau,
+  choisirTitre,
   renommerProfil,
   sauverProfil,
   seuilDuNiveau,
@@ -671,4 +673,33 @@ test('les vignettes du profil existent toutes, et pèsent moins qu’une peintur
     assert.ok(existsSync(fichier), `la vignette de ${plateau.id} existe`);
     assert.ok(statSync(fichier).size < 80 * 1024, `la vignette de ${plateau.id} pèse moins de 80 Ko`);
   }
+});
+
+test('un cadre et un titre se choisissent, se retirent, et survivent à la fusion', () => {
+  // Ce que le profil garde des gains de la piste : deux chaînes, pas une liste de
+  // possessions. Ce qui est **gagné** se calcule depuis l'XP (`rpgProfilGains.js`).
+  const neuf = profilVide();
+  assert.equal(neuf.cadre, null, 'un profil neuf ne porte aucun cadre');
+  assert.equal(neuf.titre, null, 'ni aucun titre');
+
+  const pare = choisirCadre(choisirTitre(neuf, 'arpenteur', { horloge: 1000 }), 'verre', { horloge: 2000 });
+  assert.equal(pare.cadre, 'verre', 'le cadre choisi s’écrit');
+  assert.equal(pare.titre, 'arpenteur', 'et le titre aussi');
+  assert.notEqual(pare, neuf, 'un choix rend un profil neuf');
+  assert.equal(choisirCadre(pare, 'verre'), pare, 'rechoisir le même cadre ne réécrit rien');
+  assert.equal(choisirTitre(pare, null).titre, null, 'un titre retiré rend le pseudo seul');
+  assert.equal(choisirCadre(pare, null).cadre, null, 'un cadre retiré revient au départ');
+
+  // Le module ne connaît aucun catalogue : il borne la chaîne, c'est tout.
+  assert.equal(choisirCadre(neuf, 'introuvable').cadre, 'introuvable', 'une chaîne inconnue reste une chaîne');
+  assert.equal(normaliserProfil({ cadre: '  x'.repeat(80) }).cadre.length, COURBE.choixMax, 'et bornée');
+  assert.equal(normaliserProfil({ titre: 42 }).titre, null, 'un titre qui n’est pas une chaîne vaut null');
+
+  const ici = { ...neuf, majLe: '2024-01-01T00:00:00.000Z' };
+  const la = { ...choisirCadre(choisirTitre(neuf, 'ombre', { horloge: 5 }), 'pourpre', { horloge: 5 }), majLe: '2024-06-01T00:00:00.000Z' };
+  const fusion = fusionnerProfils(ici, la).profil;
+  assert.equal(fusion.cadre, 'pourpre', 'le côté le plus récent parle');
+  assert.equal(fusion.titre, 'ombre', 'et son titre aussi');
+  assert.equal(fusionnerProfils(la, ici).profil.cadre, 'pourpre',
+    'un gain porté d’un seul côté ne s’efface jamais');
 });

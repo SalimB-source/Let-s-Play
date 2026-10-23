@@ -69,8 +69,10 @@ import {
   boostersDus,
   chargerProfil,
   choisirAvatar,
+  choisirCadre,
   choisirEmbleme,
   choisirPlateau,
+  choisirTitre,
   fusionnerProfils,
   gagnerXp,
   marquerBoosterOffert,
@@ -80,6 +82,9 @@ import {
   renommerProfil,
   sauverProfil,
 } from './rpgProfil.js';
+// Les gains de la piste : ce qui est **porté** se choisit ici, ce qui est
+// **gagné** se calcule là-bas, depuis le niveau — donc depuis l'XP.
+import { cadrePortable, titrePortable } from './rpgProfilGains.js';
 import { tirerParmi } from './rpgHasard.js';
 import { chargerAcquis, chargerCollectionDistante, collectionJoueur } from './rpgCollection.js';
 import { chargerDecksMaison, chargerSupprimesMaison, fusionnerEtatsSablier } from './rpgDeckBuilder.js';
@@ -616,6 +621,37 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     return true;
   }, [appliquer, pousser]);
 
+  /**
+   * Porte un **cadre** de médaillon gagné sur la piste. `null` revient au cadre
+   * du départ. Un cadre que le niveau ne donne pas encore est refusé — une
+   * sauvegarde retouchée ne se pare pas de l'Éclipse au niveau 3. Rend `true` si
+   * le cadre a changé.
+   */
+  const choisirUnCadre = useCallback((cadreId) => {
+    const avant = etatRef.current;
+    if (!cadrePortable(avant.profil, cadreId)) return false;
+    const suivant = choisirCadre(avant.profil, cadreId);
+    if (suivant === avant.profil) return false;
+    appliquer(avant.bourse, avant.quetes, suivant);
+    pousser();
+    return true;
+  }, [appliquer, pousser]);
+
+  /**
+   * Porte un **titre** gagné sur la piste, écrit sous le pseudo. `null` le
+   * retire. Même règle que le cadre : ce qui n'est pas gagné ne se porte pas.
+   * Rend `true` si le titre a changé.
+   */
+  const choisirUnTitre = useCallback((titreId) => {
+    const avant = etatRef.current;
+    if (!titrePortable(avant.profil, titreId)) return false;
+    const suivant = choisirTitre(avant.profil, titreId);
+    if (suivant === avant.profil) return false;
+    appliquer(avant.bourse, avant.quetes, suivant);
+    pousser();
+    return true;
+  }, [appliquer, pousser]);
+
   const profil = etat.profil;
   return {
     bourse: etat.bourse,
@@ -642,6 +678,8 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     choisirUnEmbleme,
     choisirUnAvatar,
     choisirUnPlateau,
+    choisirUnCadre,
+    choisirUnTitre,
     pousser,
   };
 }

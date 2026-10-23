@@ -8728,6 +8728,30 @@ sans un crédit dépensé.
   marque. L'emblème, une fois un visage peint, se pose en **cachet de cire** au
   coin du médaillon. Plus une ligne, seulement quand des paquets attendent :
   « Un paquet vous attend. » et le bouton **Ouvrir au Souk**.
+- Sous la barre, la **piste des gains** : un chemin de paliers qui défile, style
+  laissez-passer de bataille, du niveau en cours jusqu'au **prochain rang** de
+  Bab El puis quatre niveaux au-delà (sept paliers au niveau 1, quatorze au
+  plus ; au plafond, les cinq derniers niveaux parcourus). Chaque tuile dit ce
+  que le niveau rapporte — un **paquet** du Souk (✦ au coin de la tuile, à tous
+  les niveaux), un **rang** (tuile ronde, jalon « rang » sur le prochain), un
+  **cadre** de médaillon ou un **titre** sous le pseudo — et le filet qui relie
+  les tuiles se remplit au pourcentage de la barre : plein derrière soi, en
+  route devant, vide au-delà. Les cosmétiques gagnés se **portent** en cliquant
+  leur tuile, et se reposent en recliquant ; ceux qui ne sont pas encore gagnés
+  restent visibles mais `aria-disabled`, et disent ce qu'il manque
+  (« Gagné au niveau 14 — 353 XP pour passer au niveau 15 »). Sept cadres
+  (laiton, chanvre, argent, verre soufflé, fil de pourpre, astrolabe, éclipse) et
+  neuf titres (l'Arpenteur, la Main sûre, le Noctambule, le Compteur de sable,
+  l'Ombre de la Chambre, le Doreur, la Voix basse, le Marcheur d'étages,
+  l'Heure exacte) vivent dans `src/games/rpgProfilGains.js`. **Ce qui est gagné
+  se calcule depuis l'XP**, jamais ne s'écrit : le profil ne garde que `cadre` et
+  `titre`, ce qu'on porte parmi ce qu'on a — une sauvegarde retouchée ne pare
+  donc personne de l'Éclipse au niveau 3. Aucun asset : des glyphes et des
+  dégradés, l'astrolabe tournant en 64 s et arrêté par `prefers-reduced-motion`.
+- La piste a sa propre feuille de style (`rpg-profil-piste.css`) et son propre
+  composant (`RpgProfilPiste.jsx`, sans un `useState` ni un octet de stockage) :
+  la queue de `rpg-profil.css` porte les `z-index` de la cérémonie et de
+  l'annonce, on n'y touche pas pour un décor de plus.
 - Les visages et les tables arrivent en **vignettes** de 6 à 34 Ko
   (`public/profil/`, découpées par `tools/make-profil-vignettes.mjs` au cadrage
   exact des peintures canoniques) : les deux bandeaux coûtent moins qu'une

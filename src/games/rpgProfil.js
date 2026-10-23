@@ -62,6 +62,18 @@
  * Un identifiant inconnu — sauvegarde retouchée, avatar retiré d'une version à
  * l'autre — rend `null` à la lecture : le médaillon retombe sur le glyphe, la
  * table retombe sur le terrain du deck. Rien ne casse, rien ne ment.
+ *
+ * ## Les gains portés ne sont pas des compteurs
+ *
+ * La piste des gains (dossier 20 §6.2) débloque un cosmétique par niveau : un
+ * **cadre** de médaillon, un **titre** sous le pseudo. Rien de tout cela ne
+ * s'écrit comme une liste de possessions — ce qui est gagné se **calcule**
+ * depuis le niveau, donc depuis l'XP, donc depuis `niveauDeXp`. Le profil ne
+ * garde que deux chaînes, `cadre` et `titre` : ce que le joueur **porte** parmi
+ * ce qu'il a gagné. `rpgProfilGains.js` valide à la lecture, exactement comme
+ * les visages et les tables : un cadre inconnu retombe sur celui du départ, un
+ * titre inconnu sur aucun titre, et un cosmétique gagné par une sauvegarde
+ * retouchée mais pas par l'XP ne se porte pas.
  */
 
 import { creditsLisible } from './rpgCredits.js';
@@ -348,6 +360,10 @@ export function profilVide() {
     // de l'emblème et la moitié du joueur prend le terrain de son deck.
     avatar: null,
     plateau: null,
+    // Rien de porté au départ : le médaillon a son laiton (qui n'est pas un
+    // choix mais l'absence de choix), et le pseudo n'a pas de titre.
+    cadre: null,
+    titre: null,
     xp: 0,
     boostersOfferts: 0,
     stats: Object.fromEntries(CLES_STATS.map((cle) => [cle, 0])),
@@ -433,6 +449,8 @@ export function normaliserProfil(value) {
     embleme: normaliserEmbleme(brut.embleme),
     avatar: normaliserChoix(brut.avatar),
     plateau: normaliserChoix(brut.plateau),
+    cadre: normaliserChoix(brut.cadre),
+    titre: normaliserChoix(brut.titre),
     xp: entierPositif(brut.xp),
     boostersOfferts: entierPositif(brut.boostersOfferts),
     stats: normaliserStats(brut.stats),
@@ -577,6 +595,28 @@ export function choisirPlateau(profil, plateauId, { horloge = null } = {}) {
   return { ...normaliserProfil(profil), plateau: voulu, majLe: maintenant(horloge) };
 }
 
+/**
+ * Choisit le **cadre** du médaillon, un gain de la piste (`rpgProfilGains.js`).
+ * `null` revient au cadre du départ. Le module ne sait pas quels cadres existent
+ * ni lesquels sont gagnés : il garde la chaîne, la lecture valide — et le geste
+ * du hook refuse un cadre que le niveau ne donne pas encore.
+ */
+export function choisirCadre(profil, cadreId, { horloge = null } = {}) {
+  const voulu = normaliserChoix(cadreId);
+  if (normaliserProfil(profil).cadre === voulu) return profil ?? profilVide();
+  return { ...normaliserProfil(profil), cadre: voulu, majLe: maintenant(horloge) };
+}
+
+/**
+ * Choisit le **titre** écrit sous le pseudo, lui aussi gagné par niveau.
+ * `null` retire le titre : le pseudo se lit seul.
+ */
+export function choisirTitre(profil, titreId, { horloge = null } = {}) {
+  const voulu = normaliserChoix(titreId);
+  if (normaliserProfil(profil).titre === voulu) return profil ?? profilVide();
+  return { ...normaliserProfil(profil), titre: voulu, majLe: maintenant(horloge) };
+}
+
 /** Le glyphe de l'emblème choisi — l'onglet du menu et la carte le lisent. */
 export function glypheEmbleme(profil) {
   const base = normaliserProfil(profil);
@@ -585,9 +625,9 @@ export function glypheEmbleme(profil) {
 
 /**
  * Fusion de l'appareil et du compte : l'XP, les compteurs et les paquets
- * offerts au **maximum**, le journal en union, le pseudo, l'emblème, l'avatar et
- * le plateau du côté le plus récent — sans jamais effacer un choix qui n'existe
- * que d'un côté.
+ * offerts au **maximum**, le journal en union, le pseudo, l'emblème, l'avatar, le
+ * plateau, le cadre et le titre du côté le plus récent — sans jamais effacer un
+ * choix qui n'existe que d'un côté.
  * `modifie` dit si le compte apportait quelque chose à l'appareil.
  */
 export function fusionnerProfils(local, distant) {
@@ -602,6 +642,10 @@ export function fusionnerProfils(local, distant) {
     // plus récent parle, et s'il n'a rien choisi, l'autre garde son choix.
     avatar: recent.avatar ?? ici.avatar ?? la.avatar,
     plateau: recent.plateau ?? ici.plateau ?? la.plateau,
+    // Un cadre ou un titre porté d'un seul côté ne se perd pas non plus : ce
+    // sont des choix, pas des possessions — ce qui est gagné se recalcule.
+    cadre: recent.cadre ?? ici.cadre ?? la.cadre,
+    titre: recent.titre ?? ici.titre ?? la.titre,
     xp: Math.max(ici.xp, la.xp),
     boostersOfferts: Math.max(ici.boostersOfferts, la.boostersOfferts),
     stats: Object.fromEntries(CLES_STATS.map((cle) => [cle, Math.max(ici.stats[cle], la.stats[cle])])),
