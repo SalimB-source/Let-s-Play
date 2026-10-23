@@ -143,14 +143,22 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
     return () => window.removeEventListener('resize', placer);
   }, [phase]);
 
-  // Le son suit la révélation : la pioche pour une carte, la victoire pour une
-  // mythique — et rien pour les cartes qui ne sont pas encore retournées.
+  // Le son de l'ouverture : le papier du sachet cède au moment où le sceau se
+  // brise, avant que les cartes ne partent.
+  useEffect(() => {
+    if (phase !== 'ouverture') return;
+    onPlaySfx?.('page_turn');
+  }, [phase, onPlaySfx]);
+
+  // Le son suit la révélation : le bruit de pioche du paquet pour une carte,
+  // la fanfare de victoire pour une mythique — et rien pour les cartes qui ne
+  // sont pas encore retournées.
   useEffect(() => {
     if (!revelees) return;
     const derniere = cartes[revelees - 1];
     if (!derniere) return;
     const mythique = (derniere.carte ?? cardById(derniere.id))?.rarity === 'mythique';
-    onPlaySfx?.(mythique ? 'victoire' : 'pioche');
+    onPlaySfx?.(mythique ? 'victoire' : 'card_draw');
   }, [revelees, cartes, onPlaySfx]);
 
   if (!ouverture) return null;

@@ -16,16 +16,24 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgBoosterOuverture from '/src/games/RpgBoosterOuverture.jsx';
 import { cardArtId } from '/src/games/rpgCards.js';
+import { RpgAudioPlayer } from '/src/games/rpgAudio.js';
 import '/src/styles.css';
 import '/src/games/rpg-battle.css';
 const ids = ['baton-des-citernes', 'kraken', 'leviathan', 'masque-du-guetteur', 'pere-des-corbeaux'];
 let generation = 0;
 window.sons = [];
 window.fermetures = 0;
+// L'aperçu joue les vrais échantillons du jeu (le déblocage audio se fait au
+// premier clic — « Rejouer l'ouverture »). Le check, lui, se contente d'espionner.
+const audio = ${preview} ? new RpgAudioPlayer() : null;
+if (audio) audio.setVolume(0.8);
 const root = createRoot(document.getElementById('root'));
 window.renderBooster = (count) => root.render(React.createElement(RpgBoosterOuverture, {
   key: ++generation,
-  onPlaySfx: (son) => window.sons.push(son),
+  onPlaySfx: (son) => {
+    window.sons.push(son);
+    if (audio) { audio.unlock(); audio.play(son); }
+  },
   onFermer: () => { window.fermetures++; if (${preview}) root.render(null); },
   ouverture: {
     prix: 140, nouvelles: 3, remboursement: 44, coffret: count > 5, paquets: count / 5,
@@ -48,7 +56,8 @@ if (${preview}) {
 `;
 const server = await createServer({
   base: '/',
-  server: { host: preview ? '0.0.0.0' : '127.0.0.1', port: preview ? 5173 : 0 },
+  // `allowedHosts: true` : l'aperçu accepte le domaine public de la prévisualisation.
+  server: { host: preview ? '0.0.0.0' : '127.0.0.1', port: preview ? 5173 : 0, allowedHosts: true },
   plugins: [{
     name: 'booster-layout-fixture',
     resolveId(id) { if (id === 'virtual:booster-layout') return '\0booster-layout'; },
@@ -134,7 +143,7 @@ async function checkLayout() {
     assert.equal(await page.locator('.rpg-souk__sachet-ancre').count(), 0, 'pack disappears');
     assert.equal(await page.locator('[data-souk-ceremonie-ranger]').isEnabled(), true);
     assert.equal(await page.locator('.rpg-souk__carte-flotte').first().evaluate((node) => getComputedStyle(node).animationName), 'rpg-souk-carte-suspension');
-    assert.deepEqual(await page.evaluate(() => window.sons), ['pioche', 'victoire', 'victoire', 'pioche', 'victoire'], 'one sound per reveal');
+    assert.deepEqual(await page.evaluate(() => window.sons), ['page_turn', 'card_draw', 'victoire', 'victoire', 'card_draw', 'victoire'], 'the seal breaks with a sound, then one sound per reveal');
     await page.locator('[data-souk-ceremonie-ranger]').click();
     assert.equal(await page.evaluate(() => window.fermetures), 1);
     console.log('✓ Complete opening: seal, extraction, staggered flips, floating cards and close');

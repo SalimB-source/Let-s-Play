@@ -160,8 +160,8 @@ export async function checkRpgSoukEcran(assert) {
     assert.equal(donnee('[data-souk-cachet]', 'soukCachet'), 'attente',
       'le Cachet attend ses trois quêtes');
     // ── Le comptoir : un seul paquet, ouvert, et rien d'achetable sans solde ─
-    assert.equal(Number(donnee('[data-souk-rayons-nombre]', 'soukRayonsNombre')), 1,
-      'un seul paquet remplace les cinq rayons');
+    assert.equal(Number(donnee('[data-souk-rayons-nombre]', 'soukRayonsNombre')), 3,
+      'trois paquets au comptoir : Souk, Banquise et Citerne');
     assert.equal(donnee('[data-souk-rayons]', 'soukRayons'), 'ouvert',
       'les Listes sont montées : le comptoir est ouvert');
     assert.equal(donnee('[data-souk-rayon="souk"]', 'soukRayonEtat'), 'sans-solde',
@@ -175,12 +175,13 @@ export async function checkRpgSoukEcran(assert) {
       'le comptoir annonce son taux');
     assert.match(noeud('[data-souk-rayon="souk"] [data-souk-rayon-taux]')?.textContent ?? '', /1 rare garantie/,
       'et la rare garantie');
-    assert.match(noeud('[data-souk-rayon="souk"] [data-souk-rayon-taux]')?.textContent ?? '', /8 % de mythique/,
+    assert.match(noeud('[data-souk-rayon="souk"] [data-souk-rayon-taux]')?.textContent ?? '', /1 % de mythique/,
       'et la chance de mythique, plus basse qu’avant');
 
     // ── Le paquet en volume : cinq faces, deux sertissages, son étiquette ───
     const paquet = noeud('[data-souk-ouvrir="souk"]');
-    assert.equal(paquet.dataset.soukPaquet, 'souk', 'le paquet porte le comptoir, pas une couleur');
+    assert.equal(paquet.dataset.soukPaquet, 'sable,braise',
+      'le paquet porte ses deux couleurs de vivier');
     assert.ok(!paquet.classList.contains('is-ferme'), 'le comptoir est ouvert');
     assert.equal(paquet.querySelectorAll('.rpg-souk__paquet-face').length, 5,
       'le sachet est un pavé : cinq faces');
@@ -194,7 +195,7 @@ export async function checkRpgSoukEcran(assert) {
       'son étiquette dit le geste et le prix');
     assert.ok(paquet.querySelector('.rpg-souk__paquet-prix .rpg-credit'),
       'et le prix est frappé de la pièce, pas d’un losange de texte');
-    assert.equal(paquet.getAttribute('aria-label'), 'Ouvrir le paquet du Souk · 140 crédits',
+    assert.equal(paquet.getAttribute('aria-label'), 'Ouvrir le paquet Souk · 140 crédits',
       'et le paquet se nomme pour qui ne le voit pas');
     assert.equal(paquet.querySelector('.rpg-souk__paquet-scene')?.getAttribute('aria-hidden'), 'true',
       'la scène est décorative : le bouton porte déjà tout le sens');
