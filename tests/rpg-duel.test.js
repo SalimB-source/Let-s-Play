@@ -4666,6 +4666,12 @@ test('gel : animation, état persistant, accessibilité et résolution dans les 
   assert.match(battlePage, /gelée : ne peut ni attaquer ni bloquer/);
   assert.match(battleCss, /\.rpg-card__frost\s*\{[^}]*pointer-events:\s*none;[^}]*animation:\s*rpg-freeze-spread/s);
   assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card__frost, \.rpg-card__frost-crystals \{ animation: none;/);
+  // Une créature gelée ne bouge plus : l'Envol s'arrête (lévitation et souffle),
+  // le « respire » de l'illustration aussi, mais les cinématiques de combat
+  // (fx-*) restent jouées.
+  assert.match(battleCss, /\.rpg-card\.is-frozen\.is-envol:not\(\.fx-enter[^)]*\)\s*\{\s*animation:\s*none;/);
+  assert.match(battleCss, /\.rpg-card\.is-frozen \.rpg-card__envol-souffle\s*\{[^}]*animation:\s*none;[^}]*opacity:\s*0;/s);
+  assert.match(battleCss, /\.rpg-card\.is-frozen \.rpg-card__img\s*\{[^}]*animation:\s*none\s*!important/s);
   assert.equal((battlePage.match(/attaqueDeclaree: true,/g) ?? []).length, 2,
     'les deux camps résolvent une attaque déjà déclarée malgré un gel en réponse');
 });
