@@ -2217,38 +2217,30 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
 export function RpgMassFreezeFx({ effet }) {
   if (!effet) return null;
   const { type, camp, token } = effet;
-  const label = type === 'brume' ? 'Brume du fjord — givre léger'
-    : type === 'blizzard' ? 'Hurlement du blizzard — tempête glaciale'
+  const label = type === 'brume' ? 'Brume du fjord — souffle léger'
+    : type === 'blizzard' ? 'Hurlement du blizzard — souffle froid'
     : type === 'geant' ? 'Géant des banquises — souffle polaire'
-    : 'Verglas — gel intégral';
+    : 'Verglas — souffle givrant';
+  const intensity = type === 'brume' ? 'light' : 'heavy';
+  // camp = lanceur ; le souffle descend sur les créatures de l'adversaire
+  const target = camp === 'joueur' ? 'ennemi' : 'joueur';
+  const count = intensity === 'light' ? 5 : 8;
   return (
     <div
-      key={`mass-freeze-${token}`}
-      className={`rpg-mass-freeze rpg-mass-freeze--${type} rpg-mass-freeze--${camp}`}
+      key={`cold-breath-${token}`}
+      className={`rpg-cold-breath rpg-cold-breath--${target} rpg-cold-breath--${intensity} rpg-cold-breath--${type} rpg-mass-freeze rpg-mass-freeze--${type} rpg-mass-freeze--${camp}`}
+      data-rpg-cold-breath={type}
       data-rpg-mass-freeze={type}
       data-rpg-mass-freeze-camp={camp}
       role="status"
       aria-label={label}
     >
-      <span className="rpg-mass-freeze__veil" aria-hidden="true" />
-      <span className="rpg-mass-freeze__flash" aria-hidden="true" />
-      <span className="rpg-mass-freeze__wind" aria-hidden="true">
-        <i className="rpg-mass-freeze__wind-streak" />
-        <i className="rpg-mass-freeze__wind-streak" />
-        <i className="rpg-mass-freeze__wind-streak" />
-      </span>
-      <span className="rpg-mass-freeze__snow" aria-hidden="true">
-        {Array.from({ length: type === 'brume' ? 10 : type === 'blizzard' ? 22 : 18 }, (_, i) => (
-          <i key={i} className="rpg-mass-freeze__flake" style={{ '--i': i }} />
+      <span className="rpg-cold-breath__flow rpg-mass-freeze__veil" aria-hidden="true" />
+      <span className="rpg-cold-breath__particles rpg-mass-freeze__snow" aria-hidden="true">
+        {Array.from({ length: count }, (_, i) => (
+          <i key={i} className="rpg-cold-breath__particle rpg-mass-freeze__flake" style={{ '--i': i }} />
         ))}
       </span>
-      <span className="rpg-mass-freeze__ice-edges" aria-hidden="true">
-        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--top" />
-        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--bottom" />
-        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--left" />
-        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--right" />
-      </span>
-      <span className="rpg-mass-freeze__label" aria-hidden="true">❄ {type === 'brume' ? 'Brume givrante' : type === 'blizzard' ? 'Blizzard' : type === 'geant' ? 'Souffle polaire' : 'Verglas'}</span>
     </div>
   );
 }
