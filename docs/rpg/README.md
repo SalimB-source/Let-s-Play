@@ -19,6 +19,7 @@ réactif de *Clair Obscur*.
 | [`16-deck-la-balance-des-heures.md`](16-deck-la-balance-des-heures.md) | Fiche de design du deck **Ténèbres** « La Balance des Heures » — l’Égypte pharaonique, le mot-clé **Tribut**, le banc d’essai et le boîtier de l’étagère |
 | [`17-pvp-multijoueur.md`](17-pvp-multijoueur.md) | Le **PvP** : arbitre serveur, vue filtrée par joueur, invitation cliquable dans la messagerie, file d’attente — et le plan par étapes |
 | [`18-deck-les-lettres-de-marque.md`](18-deck-les-lettres-de-marque.md) | Fiche de design du set **Piraterie** « Les Lettres de Marque » — hybride **Sable + Eau**, l’âge de la course, les mots-clés **Abordage / Cale / Prise** et **Cargaison** |
+| [`19-profil-joueur-xp.md`](19-profil-joueur-xp.md) | Le **profil du joueur** : la barre d’XP (courbe `26 × niveau^1,62`, 60 niveaux), les dix gestes qui la font monter, les rangs de Bab El, et le **booster offert à chaque palier** — tiré au hasard, sans un crédit dépensé |
 | [`11-bible-visuelle.md`](11-bible-visuelle.md) | Portraits canoniques, continuité des personnages, état de réalisation, sauvegarde et vérifications |
 
 ## La décision de conception

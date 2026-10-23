@@ -35,6 +35,7 @@ import { cartesOuvertes } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
 import { chargerPortefeuille, sauverPortefeuille } from './rpgCredits.js';
 import { chargerEtatQuetes, sauverEtatQuetes } from './rpgQuetes.js';
+import { chargerProfil, sauverProfil } from './rpgProfil.js';
 import { chargerProgressionHistoire, sauverProgressionHistoire } from './rpgStory.js';
 import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
 
@@ -51,8 +52,8 @@ function compteSablierActif() {
 
 /**
  * L'état complet porté par le compte : casier local, apports du compte en
- * cache, acquis figés de l'appareil (le gel), et **l'économie** — le solde et
- * les quêtes, qui appartiennent à `useSablierBourse.js`.
+ * cache, acquis figés de l'appareil (le gel), et **l'économie** — le solde, les
+ * quêtes et le profil (XP, niveaux), qui appartiennent à `useSablierBourse.js`.
  *
  * Ce hook les relit sur l'appareil au moment d'écrire sans jamais les toucher :
  * c'est ce qui lui permet de pousser l'état **entier** sans écraser les crédits
@@ -67,6 +68,7 @@ function etatLocalActuel(acquis) {
     bourse: chargerPortefeuille(),
     quetes: chargerEtatQuetes(),
     histoire: chargerProgressionHistoire(),
+    profil: chargerProfil(),
   };
 }
 
@@ -148,6 +150,9 @@ export function useDecksSablier() {
       sauverPortefeuille(fusion.etat.bourse);
       sauverEtatQuetes(fusion.etat.quetes);
       sauverProgressionHistoire(fusion.etat.histoire);
+      // Le profil voyage comme l'économie : relu, fusionné, rendu au stockage —
+      // jamais modifié ici, c'est `useSablierBourse.js` qui le fait monter.
+      sauverProfil(fusion.etat.profil);
       // Les acquis du compte rejoignent ceux de l'appareil (union, gel
       // compris) : un autre appareil peut porter des cartes que celui-ci n'a
       // pas encore vues.

@@ -97,10 +97,13 @@ import { readRpgTable3dPref, writeRpgTable3dPref } from './rpgTableSceneThemes.j
 import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
 import RpgSouk from './RpgSouk.jsx';
+import RpgProfilJoueur from './RpgProfilJoueur.jsx';
+import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
 import { GAINS, creditsLisible, gainsDeTour } from './rpgCredits.js';
+import { glypheEmbleme, progressionDeXp, pseudoLisible, xpLisible } from './rpgProfil.js';
 import {
   appliquerManaInitialTutoriel,
   preparerDuelTutoriel,
@@ -3592,7 +3595,57 @@ function writeRpgVolumePref(key, value) {
   try { window.localStorage.setItem(key, String(clampRpgVolume(value))); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+/**
+ * Le palier qui sonne — `monteeNiveau`, posé par `useSablierBourse.js`.
+ *
+ * Deux visages, jamais les deux à la fois :
+ *
+ *   - **le paquet offert** : la même cérémonie qu'au Souk (`RpgBoosterOuverture`),
+ *     montée par la page et non par l'écran du Souk, parce qu'un niveau tombe
+ *     aussi en plein duel — et qu'une cérémonie `position: fixed` passe
+ *     au-dessus de la table (`rpg-profil.css`) ;
+ *   - **l'annonce seule** : quand le comptoir ne peut pas encore tirer, la dette
+ *     reste au profil (`boostersDus`) et le joueur lit son niveau, sans paquet.
+ *
+ * Les cartes sont déjà rangées dans la collection avant l'affichage : fermer
+ * l'onglet au milieu d'un retournement ne coûte rien, comme au Souk.
+ */
+function MonteeDeNiveau({ montee, profil, cardArt, onFermer, onPlaySfx }) {
+  if (!montee) return null;
+  if (montee.ouverture) {
+    return (
+      <RpgBoosterOuverture
+        key={montee.token}
+        ouverture={montee.ouverture}
+        cardArt={cardArt}
+        onFermer={onFermer}
+        onPlaySfx={onPlaySfx}
+      />
+    );
+  }
+  const dus = montee.dus ?? 0;
+  return (
+    <div className="rpg-niveau-toast" role="status" aria-live="polite" data-niveau-toast={montee.vers} data-niveau-dus={dus}>
+      <span className="rpg-niveau-toast__glyphe" aria-hidden="true">{glypheEmbleme(profil)}</span>
+      <strong>Niveau {montee.vers}</strong>
+      <span>
+        {dus > 0
+          ? `${dus} paquet${dus > 1 ? 's' : ''} de palier ${dus > 1 ? 'vous attendent' : 'vous attend'} au comptoir`
+          : 'la barre a monté'}
+      </span>
+      <button
+        type="button"
+        className="rpg-niveau-toast__fermer"
+        onClick={() => { try { onPlaySfx?.('menu'); } catch {} onFermer?.(); }}
+        aria-label="Fermer l’annonce du niveau"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -3626,6 +3679,24 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const messagerieDemandes = friendsContexte.pendingCount ?? 0;
   const messageriePastille = messagerieNonLus > 0 ? messagerieNonLus : messagerieDemandes;
   const play = (n) => { try { onPlaySfx?.(n); } catch {} };
+  // La barre de l'onglet Profil : celle que le hook a déjà calculée, ou sa
+  // recopie locale quand la page est montée sans lui (vérifications jsdom).
+  // Un profil absent se lit « niveau 1, 0 XP » — l'onglet ne casse jamais.
+  const barreOnglet = barreXp ?? progressionDeXp(profil?.xp ?? 0);
+  const niveauOnglet = barreOnglet.niveau;
+  const resteOnglet = xpLisible(barreOnglet.reste);
+  // L'onglet ne peut pas écrire ses chiffres : c'est l'`aria-label` qui les dit,
+  // en une phrase — construite ici, hors du gabarit, pour qu'aucun retour à la
+  // ligne d'indentation ne se glisse dans la lecture d'écran.
+  const ariaOngletProfil = [
+    `Profil du joueur — niveau ${niveauOnglet}`,
+    barreOnglet.maximal
+      ? 'niveau maximal atteint'
+      : `${resteOnglet} XP avant le niveau ${barreOnglet.suivant}`,
+    paquetsDePalierEnAttente > 0
+      ? `${paquetsDePalierEnAttente} paquet${paquetsDePalierEnAttente > 1 ? 's' : ''} de palier à ouvrir`
+      : null,
+  ].filter(Boolean).join(', ');
   const compteDesktopLabel = desktopAccountName(desktopAccount);
   const deconnecterCompteDesktop = async () => {
     play('menu');
@@ -3824,6 +3895,30 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             </svg>
           </a>
           <nav className="rpg-mode-menu__switch" aria-label="Modes de jeu">
+            {/* Le profil ouvre la barre, comme une pièce d'identité : l'emblème,
+                le niveau, et la barre d'XP en miniature — le palier qui attend
+                son paquet porte une pastille. L'aria-label dit le chiffre que la
+                miniature ne peut pas écrire. */}
+            <button
+              type="button"
+              className={`rpg-mode-menu__profil${screen === 'profil' ? ' is-active' : ''}`}
+              aria-current={screen === 'profil' ? 'page' : undefined}
+              aria-label={ariaOngletProfil}
+              data-profil-onglet={niveauOnglet}
+              onClick={() => { play('menu'); onChangeScreen('profil'); }}
+            >
+              <span className="rpg-mode-menu__profil-embleme" aria-hidden="true">{glypheEmbleme(profil)}</span>
+              <span className="rpg-mode-menu__onglet-libelle">Profil</span>
+              <span className="rpg-mode-menu__profil-niveau" data-profil-niveau={niveauOnglet}>NIV. {niveauOnglet}</span>
+              <span className="rpg-mode-menu__profil-xp" aria-hidden="true">
+                <i style={{ width: `${barreOnglet.percent}%` }} data-profil-xp-onglet={barreOnglet.percent} />
+              </span>
+              {paquetsDePalierEnAttente > 0 && (
+                <span className="rpg-mode-menu__profil-pastille" data-profil-pastille={paquetsDePalierEnAttente} aria-hidden="true">
+                  {paquetsDePalierEnAttente}
+                </span>
+              )}
+            </button>
             <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
               <span aria-hidden="true">⚔</span> Jouer
             </button>
@@ -4417,6 +4512,20 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             cardArt={cardArt}
             hasGame={hasGame}
             onResumeGame={onResumeGame}
+            onPlaySfx={play}
+            onExit={() => onChangeScreen('jouer')}
+          />
+        ) : screen === 'profil' ? (
+          <RpgProfilJoueur
+            profil={profil}
+            collection={collection}
+            portefeuille={portefeuille}
+            quetes={quetes}
+            statutSync={statutSync}
+            nomCompte={nomCompte}
+            onRenommer={onRenommerProfil}
+            onChoisirEmbleme={onChoisirEmbleme}
+            onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }}
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
           />
@@ -5191,8 +5300,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const tourComplete = Boolean(sommet && sommet.total > 0 && sommet.vaincus >= sommet.total);
     noterVictoireEtage(histoireEtageId, maj);
     const paiement = noterEvenementDuel({ type: 'duel-gagne', mode: 'histoire', etageId: histoireEtageId, tourId, premiere, tourComplete });
-    if (paiement?.gain) {
-      setAnnonceGain({ session, gain: paiement.gain, butin: paiement.butin ?? 0, premiere, libre: false });
+    if (paiement?.gain || paiement?.xp) {
+      setAnnonceGain({
+        session,
+        gain: paiement.gain ?? 0,
+        butin: paiement.butin ?? 0,
+        xp: paiement.xp ?? 0,
+        niveaux: paiement.niveaux ?? 0,
+        premiere,
+        libre: false,
+      });
     }
     if (premiere) noterEvenementDuel({ type: 'etage-deblaye', etageId: histoireEtageId, tourId, premiere: true });
     if (campagne) {
@@ -5215,8 +5332,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (libreVictoireMarqueeRef.current === session) return;
     libreVictoireMarqueeRef.current = session;
     const paiement = noterEvenementDuel({ type: 'duel-gagne', mode: 'libre', premiere: false });
-    if (paiement?.gain) {
-      setAnnonceGain({ session, gain: paiement.gain, butin: 0, premiere: false, libre: true });
+    if (paiement?.gain || paiement?.xp) {
+      setAnnonceGain({
+        session,
+        gain: paiement.gain ?? 0,
+        butin: 0,
+        xp: paiement.xp ?? 0,
+        niveaux: paiement.niveaux ?? 0,
+        premiere: false,
+        libre: true,
+      });
     }
   });
 
@@ -5312,10 +5437,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerTutoriel,
     reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, fermerOuverture, ouverture: ouvertureSouk,
+    // Le profil du joueur (dossier 19) : la barre d'XP, le niveau, et le paquet
+    // que chaque palier franchi fait ouvrir au hasard.
+    profil: profilJoueur, barreXp, boostersEnAttente: paquetsDePalierEnAttente,
+    monteeNiveau, fermerMonteeNiveau, renommerLeProfil, choisirUnEmblemeProfil,
   } = useSablierBourse({
     progression: progressionHistoireRef.current,
     // Un achat range ses cartes dans la collection : l'atelier de decks doit
-    // les voir tout de suite, sans qu'on recharge la page.
+    // les voir tout de suite, sans qu'on recharge la page. Un paquet offert par
+    // un palier passe par le même chemin.
     onCartesRangees: rafraichirCollection,
   });
   // Le mana sans terrain est commun à tous les duels : les récompenses
@@ -5326,9 +5456,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (modePvp) return null;
     return noterEvenementDuelReel(evenement);
   };
-  // Ce que la dernière victoire vient de payer — `{ session, gain, butin,
-  // premiere, libre }`. Elle ne s'affiche que sur la session qui l'a produite :
-  // « Rejouer » ou « Étage suivant » incrémente la session et l'annonce tombe.
+  // Ce que la dernière victoire vient de payer — `{ session, gain, butin, xp,
+  // niveaux, premiere, libre }`. Elle ne s'affiche que sur la session qui l'a
+  // produite : « Rejouer » ou « Étage suivant » incrémente la session et
+  // l'annonce tombe.
   const [annonceGain, setAnnonceGain] = useState(null);
   const histoireVictoireMarqueeRef = useRef(null);
   // Un duel libre ne passe pas par la session du récit : il a son propre témoin.
@@ -5614,6 +5745,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const timer = window.setTimeout(() => setRecompenseTutoriel(null), 4200);
     return () => window.clearTimeout(timer);
   }, [recompenseTutoriel?.token]);
+  // Un palier sonne : la fanfare de victoire le dit à l'oreille. La cérémonie du
+  // paquet a ses propres sons (sceau, retournements) — l'annonce seule, elle,
+  // n'a que celui-là.
+  useEffect(() => {
+    if (!monteeNiveau) return;
+    if (monteeNiveau.ouverture) return;
+    jouerSfx('victoire');
+  }, [monteeNiveau?.token]);
+  // L'annonce sans paquet s'efface seule (comme le toast d'une leçon) ; la
+  // cérémonie, elle, attend le geste du joueur — on ne lui vole pas ses cartes.
+  useEffect(() => {
+    if (!monteeNiveau || monteeNiveau.ouverture) return undefined;
+    const timer = window.setTimeout(() => fermerMonteeNiveau(), 6000);
+    return () => window.clearTimeout(timer);
+  }, [monteeNiveau?.token, monteeNiveau?.ouverture, fermerMonteeNiveau]);
   const [animationsEntites, setAnimationsEntites] = useState({});
   const [missVisibles, setMissVisibles] = useState({});
   const sequenceMissRef = useRef(0);
@@ -7220,6 +7366,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onOuvrirBooster={acheterBooster}
           onOuvrirCoffret={acheterCoffret}
           onFermerOuverture={fermerOuverture}
+          profil={profilJoueur}
+          barreXp={barreXp}
+          paquetsDePalierEnAttente={paquetsDePalierEnAttente}
+          nomCompte={nomProfilJoueur}
+          onRenommerProfil={renommerLeProfil}
+          onChoisirEmbleme={choisirUnEmblemeProfil}
           statutSync={statutSync}
           onEnregistrerDeckMaison={enregistrerDeckMaison}
           onSupprimerDeckMaison={supprimerDeckMaison}
@@ -7250,6 +7402,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <span>+{recompenseTutoriel.gain} crédits</span>
           </div>
         )}
+        {/* Le palier tombe où le joueur est : au menu comme sur la table, le
+            paquet offert s'ouvre par-dessus l'écran (dossier 19). */}
+        <MonteeDeNiveau
+          montee={monteeNiveau}
+          profil={profilJoueur}
+          cardArt={cardArt}
+          onFermer={fermerMonteeNiveau}
+          onPlaySfx={jouerSfx}
+        />
         {apercuSurvol && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
@@ -11448,13 +11609,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 terminée. L'annonce ne vit que pour la session en cours —
                 « Rejouer » l'emporte avec l'ancien duel. */}
             {!modePvp && vainqueur === 'joueur' && annonceGain && annonceGain.session === sessionDuelRef.current && (
-              <p className="rpg-overlay__gains" role="status" data-victoire-gain={annonceGain.gain} data-victoire-butin={annonceGain.butin}>
+              <p className="rpg-overlay__gains" role="status" data-victoire-gain={annonceGain.gain} data-victoire-butin={annonceGain.butin} data-victoire-xp={annonceGain.xp ?? 0} data-victoire-niveaux={annonceGain.niveaux ?? 0}>
                 <span className="rpg-overlay__gain">
                   <RpgCreditIcon />
                   +{creditsLisible(annonceGain.gain - annonceGain.butin)} crédits — {annonceGain.libre
                     ? 'duel libre gagné'
                     : annonceGain.premiere ? 'premier déblayage de l’étage' : 'étage rejoué'}
                 </span>
+                {/* La barre d'XP monte avec les crédits : la victoire dit les
+                    deux, et annonce le palier quand il vient de sonner — le
+                    paquet offert s'ouvre par-dessus la table. */}
+                {annonceGain.xp > 0 && (
+                  <span className="rpg-overlay__gain rpg-overlay__gain--xp" data-victoire-xp-ligne>
+                    ✦ +{xpLisible(annonceGain.xp)} XP
+                    {annonceGain.niveaux > 0 && ` — niveau ${barreXp.niveau} atteint, un paquet s’ouvre !`}
+                  </span>
+                )}
                 {annonceGain.butin > 0 && (
                   <span className="rpg-overlay__gain rpg-overlay__gain--butin">
                     <RpgCreditIcon anime />
@@ -11565,6 +11735,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <span>+{recompenseTutoriel.gain} crédits</span>
         </div>
       )}
+      {/* Un niveau peut sonner en plein duel — une carte posée suffit. La
+          cérémonie passe au-dessus de la table et de sa navigation, et le duel,
+          lui, n'a aucune contrainte de temps : rien n'est perdu pendant qu'elle
+          se joue. */}
+      <MonteeDeNiveau
+        montee={monteeNiveau}
+        profil={profilJoueur}
+        cardArt={cardArt}
+        onFermer={fermerMonteeNiveau}
+        onPlaySfx={jouerSfx}
+      />
       {tutorielActif && etapeTutoriel && !viewport.portrait && !mulliganOuvert && (
         <RpgTutorialOverlay
           key={etapeTutoriel.id}

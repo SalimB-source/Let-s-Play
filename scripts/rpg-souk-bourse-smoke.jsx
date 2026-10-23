@@ -13,6 +13,8 @@ import { act } from 'react';
 import { useSablierBourse } from '../src/games/useSablierBourse.js';
 import { RPG_BOURSE_STORAGE_KEY } from '../src/games/rpgCredits.js';
 import { RPG_GRAINE_STORAGE_KEY, RPG_QUETES_STORAGE_KEY, QUETES, queteParId } from '../src/games/rpgQuetes.js';
+import { XP } from '../src/games/rpgProfil.js';
+import { cardById } from '../src/games/rpgCards.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -67,21 +69,40 @@ export async function checkRpgSouk(assert) {
 
     // ── Un duel libre gagné paie 8 ◈ ────────────────────────────────────────
     // Les montants sont écrits en clair : c'est le contrat public du dossier 13,
-    // pas un détail que le module pourrait changer tout seul.
-    await act(async () => bourse.noterEvenementDuel({ type: 'duel-gagne', mode: 'libre' }));
-    assert.equal(solde(), 8, 'un duel libre gagné paie 8 ◈');
+    // pas un détail que le module pourrait changer tout seul. Le geste **rend**
+    // ce qu'il paie (`gain`, `xp`, `niveaux`) : c'est sur ce rendu que le smoke
+    // se règle. Le solde, lui, peut monter d'autant plus — un palier franchi
+    // offre un paquet du Souk (lot 6), et un paquet rend ses doublons.
+    const libre = await act(async () => bourse.noterEvenementDuel({ type: 'duel-gagne', mode: 'libre' }));
+    assert.equal(libre.gain, 8, 'un duel libre gagné paie 8 ◈');
+    assert.equal(libre.xp, XP.duelLibre, 'et verse son XP dans la barre');
+    assert.equal(libre.niveaux, 0, 'huit duels libres ne font pas encore un palier');
+    assert.equal(solde(), libre.gain, 'le solde encaisse exactement le gain');
 
     // ── Un premier étage paie 50 ◈, un rejeu 10 ◈ ───────────────────────────
-    await act(async () => bourse.noterEvenementDuel({
+    const premier = await act(async () => bourse.noterEvenementDuel({
       type: 'duel-gagne', mode: 'histoire', etageId: 'listes-1', tourId: 'tour-des-listes', premiere: true,
     }));
-    assert.equal(solde(), 8 + 50, 'le premier déblayage paie 50 ◈');
-    await act(async () => bourse.noterEvenementDuel({
+    assert.equal(premier.gain, 50, 'le premier déblayage paie 50 ◈');
+    assert.equal(premier.xp, XP.etagePremiere, 'et verse l’XP du récit');
+    assert.equal(premier.niveaux, 1, 'le niveau 2 sonne du même coup');
+    assert.ok(bourse.monteeNiveau?.ouverture, 'un palier franchi ouvre un paquet du comptoir');
+    assert.equal(bourse.monteeNiveau.ouverture.prix, 0, 'offert : aucun crédit débité');
+    assert.equal(bourse.monteeNiveau.ouverture.cartes.length, 5, 'et c’est un vrai paquet de cinq cartes');
+    assert.ok(solde() >= libre.gain + premier.gain,
+      'le solde encaisse les gains — les doublons du paquet offert rendent le reste');
+
+    const soldeAvantRejeu = solde();
+    const rejeu = await act(async () => bourse.noterEvenementDuel({
       type: 'duel-gagne', mode: 'histoire', etageId: 'listes-1', tourId: 'tour-des-listes', premiere: false,
     }));
-    assert.equal(solde(), 8 + 50 + 10, 'le rejeu paie 10 ◈');
+    assert.equal(rejeu.gain, 10, 'le rejeu paie 10 ◈');
+    assert.equal(rejeu.xp, XP.etageRejoue, 'et bien moins d’XP que le récit');
+    assert.ok(solde() >= soldeAvantRejeu + rejeu.gain, 'le solde suit');
+
+    const soldeAvantDeblaye = solde();
     await act(async () => bourse.noterEvenementDuel({ type: 'etage-deblaye', etageId: 'listes-1', premiere: true }));
-    assert.equal(solde(), 8 + 50 + 10, '« etage-deblaye » ne paie pas une deuxième fois');
+    assert.equal(solde(), soldeAvantDeblaye, '« etage-deblaye » ne paie pas une deuxième fois');
 
     // ── Un geste inconnu ne casse rien ──────────────────────────────────────
     const avantInconnu = solde();
@@ -98,7 +119,10 @@ export async function checkRpgSouk(assert) {
     document.body.appendChild(conteneur2);
     const root2 = createRoot(conteneur2);
     await act(async () => root2.render(<Sonde surPret={(valeur) => { bourse = valeur; }} />));
-    assert.equal(solde(), avantInconnu, 'le solde est relu sur l’appareil');
+    // Un paquet dû peut se régler au montage (la dette attendait derrière la
+    // cérémonie du palier précédent) : il rend ses doublons, donc le solde relu
+    // vaut au moins ce qui était écrit.
+    assert.ok(solde() >= avantInconnu, 'le solde est relu sur l’appareil');
     assert.equal(sonde().bourseJour, jourAvant, 'la journée en cours est conservée, pas retirée');
     assert.ok(window.localStorage.getItem(RPG_BOURSE_STORAGE_KEY), 'la bourse est écrite sur l’appareil');
 
@@ -118,13 +142,19 @@ export async function checkRpgSouk(assert) {
     let encaisse = 0;
     await act(async () => { encaisse = bourse.reclamerUneQuete(cible.id); });
     assert.equal(encaisse, cible.recompense, 'la quête paie son montant annoncé');
-    assert.equal(solde(), soldeAvantReclamation + cible.recompense, 'et le solde monte d’autant');
+    assert.ok(solde() >= soldeAvantReclamation + cible.recompense, 'et le solde monte d’autant');
+    const soldeApresReclamation = solde();
     await act(async () => bourse.reclamerUneQuete(cible.id));
-    assert.equal(solde(), soldeAvantReclamation + cible.recompense, 'on ne paie jamais deux fois la même quête');
+    assert.equal(solde(), soldeApresReclamation, 'on ne paie jamais deux fois la même quête');
 
     // ── Les cartes du Souk vivent dans le portefeuille ──────────────────────
-    assert.equal(Number(sonde().bourseCartes), 0,
-      'aucune carte du Souk avant le lot 4 : le portefeuille les attend');
+    // Elles viennent du comptoir (lot 4) **et** des paquets offerts par les
+    // paliers (lot 6) : la liste n'est plus vide par construction, mais chaque
+    // entrée est une vraie carte du catalogue.
+    const cartesRangees = bourse.bourse.cartes;
+    assert.equal(Number(sonde().bourseCartes), cartesRangees.length, 'le menu compte les cartes du portefeuille');
+    assert.ok(cartesRangees.length >= 5, 'au moins le paquet du premier palier est rangé');
+    assert.ok(cartesRangees.every((id) => cardById(id)), 'et chaque carte existe au catalogue');
 
     // ── Toutes les quêtes du pool sont au contrat ───────────────────────────
     for (const quete of QUETES) {

@@ -34,6 +34,7 @@ import {
 import { fusionnerAcquisitions, fusionnerCollections, normaliserAcquis, normaliserCollection } from './rpgCollection.js';
 import { fusionnerPortefeuilles, normaliserPortefeuille } from './rpgCredits.js';
 import { fusionnerQuetes, normaliserEtatQuetes } from './rpgQuetes.js';
+import { fusionnerProfils, normaliserProfil } from './rpgProfil.js';
 import { fusionnerProgressionHistoire, normaliserProgressionHistoire } from './rpgStory.js';
 import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 
@@ -439,9 +440,14 @@ export function fusionnerEtatsSablier({ local = casierMaisonVide(), distant = nu
   const bourse = fusionnerPortefeuilles(local?.bourse, distant?.bourse).portefeuille;
   const quetes = fusionnerQuetes(local?.quetes, distant?.quetes).etat;
   const histoire = fusionnerProgressionHistoire(local?.histoire, distant?.histoire).progression;
+  // Le profil (XP, niveaux, paquets offerts) se fusionne chez lui, comme le
+  // reste : un maximum monotone, donc un palier gagné hors ligne ne redescend
+  // jamais au retour du compte — et la dette de boosters, qui se **calcule**
+  // (`boostersDus`), ressort identique des deux côtés.
+  const profil = fusionnerProfils(local?.profil, distant?.profil).profil;
   const casier = { decks, supprimes };
-  const etat = { decks, supprimes, collection, acquis, bourse, quetes, histoire, majLe: maintenantIso() };
-  const modifie = JSON.stringify({ decks, supprimes, collection, acquis, bourse, quetes, histoire }) !== JSON.stringify({
+  const etat = { decks, supprimes, collection, acquis, bourse, quetes, histoire, profil, majLe: maintenantIso() };
+  const modifie = JSON.stringify({ decks, supprimes, collection, acquis, bourse, quetes, histoire, profil }) !== JSON.stringify({
     decks: decksLocaux,
     supprimes: pierresLocales,
     collection: normaliserCollection(local?.collection),
@@ -449,6 +455,7 @@ export function fusionnerEtatsSablier({ local = casierMaisonVide(), distant = nu
     bourse: normaliserPortefeuille(local?.bourse),
     quetes: normaliserEtatQuetes(local?.quetes),
     histoire: normaliserProgressionHistoire(local?.histoire),
+    profil: normaliserProfil(local?.profil),
   });
   return { casier, etat, modifie };
 }

@@ -163,6 +163,9 @@ export function normaliserJournal(value) {
       mythique: Boolean(entree.mythique),
       remboursement: entierPositif(entree.remboursement),
       coffret: Boolean(entree.coffret),
+      // Un paquet offert par un palier (`rpgProfil.js`) : le journal le dit,
+      // pour que le joueur reconnaisse ce qu'il n'a pas payé.
+      offert: Boolean(entree.offert),
     });
   }
   // La même ouverture peut arriver des deux appareils (l'appareil pousse au
@@ -184,7 +187,7 @@ export function normaliserJournal(value) {
 }
 
 /** Encore une ouverture au journal, la plus récente en tête, la mémoire bornée. */
-export function noterOuvertureJournal(portefeuille, { rayonId, cartes, mythique = false, remboursement = 0, coffret = false, horloge = null } = {}) {
+export function noterOuvertureJournal(portefeuille, { rayonId, cartes, mythique = false, remboursement = 0, coffret = false, offert = false, horloge = null } = {}) {
   const base = normaliserPortefeuille(portefeuille);
   if (!rayonParId(rayonId)) return base;
   const lot = normaliserCollection(cartes);
@@ -193,7 +196,7 @@ export function noterOuvertureJournal(portefeuille, { rayonId, cartes, mythique 
   return {
     ...base,
     journal: normaliserJournal([
-      { le, rayonId, cartes: lot, mythique: Boolean(mythique), remboursement: entierPositif(remboursement), coffret: Boolean(coffret) },
+      { le, rayonId, cartes: lot, mythique: Boolean(mythique), remboursement: entierPositif(remboursement), coffret: Boolean(coffret), offert: Boolean(offert) },
       ...base.journal,
     ]),
   };
@@ -348,7 +351,7 @@ export function ajouterCartesAuPortefeuille(portefeuille, cardIds) {
  * sortie remet la pitié à zéro.
  */
 export function enregistrerOuverture(portefeuille, {
-  mythique = false, aDesMythiques = true, rayonId = null, cartes = null, remboursement = 0, coffret = false,
+  mythique = false, aDesMythiques = true, rayonId = null, cartes = null, remboursement = 0, coffret = false, offert = false,
 } = {}) {
   const base = normaliserPortefeuille(portefeuille);
   const compte = {
@@ -360,7 +363,7 @@ export function enregistrerOuverture(portefeuille, {
   // Le journal ne suit que si l'appelant dit ce qui est sorti : les compteurs,
   // eux, avancent toujours.
   return rayonId && cartes
-    ? noterOuvertureJournal(compte, { rayonId, cartes, mythique, remboursement, coffret })
+    ? noterOuvertureJournal(compte, { rayonId, cartes, mythique, remboursement, coffret, offert })
     : compte;
 }
 

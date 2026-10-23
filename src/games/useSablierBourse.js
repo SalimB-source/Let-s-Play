@@ -1,11 +1,11 @@
 /**
- * La bourse du Souk : les crédits ◈ et les quêtes du jour d'un joueur.
+ * La bourse du Souk : les crédits ◈, les quêtes du jour **et le profil** d'un joueur.
  *
  * Frère de `useDecksSablier.js`, avec les mêmes règles de la maison :
  *
  *   - **le stockage local est la copie de travail** — le jeu se joue hors ligne,
- *     `letsplay_sablier_bourse_v1` et `letsplay_sablier_quetes_v1` portent
- *     l'état, la table du compte le suit ;
+ *     `letsplay_sablier_bourse_v1`, `letsplay_sablier_quetes_v1` et
+ *     `letsplay_sablier_profil_v1` portent l'état, la table du compte le suit ;
  *   - **rien ne redescend** : la fusion est monotone (`fusionnerPortefeuilles`,
  *     `fusionnerQuetes`), un solde ne disparaît pas parce qu'un appareil est en
  *     retard ;
@@ -15,6 +15,16 @@
  * Le hook ne connaît **que des événements normalisés** (`rpgEvenementsDuel.js`) :
  * les gestes du duel lui arrivent par `noterEvenementDuel`, ce qui rend la règle
  * testable sans monter un composant React.
+ *
+ * ## L'XP et le paquet du palier
+ *
+ * Chaque geste verse aussi de l'XP (`rpgProfil.js`), et **chaque niveau gagné
+ * ouvre un booster au hasard** — un vrai paquet du comptoir, offert : aucun
+ * crédit n'est débité, la pitié avance, les doublons remboursent. Le hook ne
+ * recalcule jamais la dette : `boostersDus(profil)` la déduit du niveau et des
+ * paquets déjà offerts, donc un palier franchi pendant qu'une cérémonie est à
+ * l'écran (ou avant que le comptoir puisse tirer) **attend** au lieu de se
+ * perdre, et `reglerPaliers` le règle au prochain moment libre.
  *
  * ## Le jour
  *
@@ -53,7 +63,22 @@ import {
   sauverEtatQuetes,
 } from './rpgQuetes.js';
 import { appliquerEvenementDuel, compterReclamations } from './rpgEvenementsDuel.js';
-import { ouvrirBooster, ouvrirCoffret } from './rpgBoosters.js';
+import { ouvrirBooster, ouvrirBoosterOffert, ouvrirCoffret, rayonsOuverts } from './rpgBoosters.js';
+import {
+  XP,
+  boostersDus,
+  chargerProfil,
+  choisirEmbleme,
+  fusionnerProfils,
+  gagnerXp,
+  marquerBoosterOffert,
+  niveauDeXp,
+  normaliserProfil,
+  progressionDuProfil,
+  renommerProfil,
+  sauverProfil,
+} from './rpgProfil.js';
+import { tirerParmi } from './rpgHasard.js';
 import { chargerAcquis, chargerCollectionDistante, collectionJoueur } from './rpgCollection.js';
 import { chargerDecksMaison, chargerSupprimesMaison, fusionnerEtatsSablier } from './rpgDeckBuilder.js';
 import { chargerProgressionHistoire, sauverProgressionHistoire } from './rpgStory.js';
@@ -69,6 +94,7 @@ function etatLocalComplet() {
     bourse: chargerPortefeuille(),
     quetes: chargerEtatQuetes(),
     histoire: chargerProgressionHistoire(),
+    profil: chargerProfil(),
   };
 }
 
@@ -85,7 +111,7 @@ function etatInitial(progression, compteId = null) {
   const bourse = chargerPortefeuille();
   const journee = ouvrirJournee({ etat: chargerEtatQuetes(), graine: chargerGraine(compteId), progression });
   sauverEtatQuetes(journee.etat);
-  return { bourse, quetes: journee.etat };
+  return { bourse, quetes: journee.etat, profil: chargerProfil() };
 }
 
 /** Statuts de synchronisation : `'local'`, `'attente'`, `'synchronise'`, `'horsligne'`. */
@@ -107,8 +133,23 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
   // l'état React mais **pas** dans le stockage : elle n'a rien à survivre à un
   // rechargement, et les cartes, elles, sont déjà encaissées.
   const [ouverture, setOuverture] = useState(null);
+  // La cérémonie en cours, lisible sans attendre le rendu : une montée de niveau
+  // qui tombe pendant qu'un paquet acheté se retourne **attend** sa fermeture
+  // plutôt que d'empiler deux cérémonies l'une sur l'autre.
+  const ouvertureRef = useRef(null);
   const rngRef = useRef(rng);
   rngRef.current = rng;
+  // Le palier en cours d'annonce — `null` hors d'une montée de niveau. La dette
+  // de paquets, elle, vit dans le profil : elle ne dépend jamais de cet état.
+  const [monteeNiveau, setMonteeNiveau] = useState(null);
+  const monteeRef = useRef(null);
+  // La dernière dette qu'on a essayé de régler **sans** pouvoir tirer un paquet :
+  // annoncée une fois, pas répétée à chaque geste tant que rien n'a changé.
+  const essaiPaliersRef = useRef(null);
+  // Le jeton de la cérémonie : un compteur, pas `Date.now()` — deux paquets dus
+  // se règlent dans le même tick (fermer l'un ouvre l'autre), et la page passe
+  // `key={montee.token}` pour que chaque cérémonie rejoue depuis le sachet.
+  const tokenPalierRef = useRef(0);
 
   // Changement de joueur (session restaurée, connexion, déconnexion, autre
   // compte sur la même machine) : le solde et les quêtes en mémoire
@@ -121,17 +162,29 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
       graine: chargerGraine(compteId),
       progression: progressionRef.current,
     });
-    const relu = { bourse: chargerPortefeuille(), quetes: journee.etat };
+    const relu = { bourse: chargerPortefeuille(), quetes: journee.etat, profil: chargerProfil() };
     sauverEtatQuetes(journee.etat);
     etatRef.current = relu;
     setEtat(relu);
   }, [compteId]);
 
-  /** Écrit une paire (bourse, quêtes) : stockage d'abord, écran ensuite, compte en dernier. */
-  const appliquer = useCallback((bourse, quetes) => {
-    sauverPortefeuille(bourse);
-    sauverEtatQuetes(quetes);
-    setEtat({ bourse, quetes });
+  /**
+   * Écrit le trio (bourse, quêtes, profil) : stockage d'abord, écran ensuite,
+   * compte en dernier. Le profil absent reprend celui déjà en mémoire — un
+   * geste qui ne touche qu'au solde n'a pas à le rapporter.
+   *
+   * `etatRef` suit **l'écriture**, pas le rendu : la victoire note
+   * `duel-gagne` puis `etage-deblaye` dans le même tick, et sans cela le second
+   * relirait l'état d'avant le premier — le gain du duel serait écrasé par son
+   * propre voisin.
+   */
+  const appliquer = useCallback((bourse, quetes, profil) => {
+    const suivant = { bourse, quetes, profil: profil === undefined ? etatRef.current.profil : profil };
+    etatRef.current = suivant;
+    sauverPortefeuille(suivant.bourse);
+    sauverEtatQuetes(suivant.quetes);
+    sauverProfil(suivant.profil);
+    setEtat(suivant);
   }, []);
 
   /** Pousse l'état entier au compte — les deux moitiés, jamais une seule. */
@@ -183,7 +236,7 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
         // statut ne ment pas : si l'écriture échoue (table absente, droits
         // manquants), l'écran annonce « hors ligne » plutôt que « synchronisé ».
         const local = etatLocalComplet();
-        appliquer(local.bourse, local.quetes);
+        appliquer(local.bourse, local.quetes, local.profil);
         const enregistre = await sauverEtatSablier(compteId, local);
         if (!vivant) return;
         setStatutSync(enregistre ? 'synchronise' : 'horsligne');
@@ -196,49 +249,186 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
       const fusion = fusionnerEtatsSablier({ local: etatLocalComplet(), distant: state });
       const bourse = fusionnerPortefeuilles(chargerPortefeuille(), fusion.etat.bourse).portefeuille;
       const quetes = fusionnerQuetes(chargerEtatQuetes(), fusion.etat.quetes).etat;
+      // Le profil se fusionne chez lui : l'XP au maximum, donc un palier gagné
+      // hors ligne ne redescend jamais au retour du compte.
+      const profil = fusionnerProfils(chargerProfil(), fusion.etat.profil).profil;
       if (!vivant) return;
-      appliquer(bourse, quetes);
+      appliquer(bourse, quetes, profil);
       sauverProgressionHistoire(fusion.etat.histoire);
       setStatutSync('synchronise');
-      sauverEtatSablier(compteId, { ...fusion.etat, bourse, quetes });
+      sauverEtatSablier(compteId, { ...fusion.etat, bourse, quetes, profil });
     })();
     return () => { vivant = false; };
   }, [compteId, appliquer]);
 
   /**
+   * Règle la dette des paliers : **un booster offert par niveau gagné**, tiré
+   * au hasard parmi les paquets du comptoir.
+   *
+   * Trois garde-fous, tous décidés par le profil et non par l'état React :
+   *
+   *   - la dette se **calcule** (`boostersDus`) : un palier franchi pendant
+   *     qu'une cérémonie est à l'écran, ou avant que le comptoir puisse tirer,
+   *     attend son tour au lieu de disparaître ;
+   *   - jamais deux cérémonies en même temps : si un paquet acheté se retourne
+   *     encore, ou si un palier est déjà annoncé, on rend `null` et la dette
+   *     reste ;
+   *   - plusieurs niveaux d'un coup ouvrent plusieurs paquets, et une seule
+   *     cérémonie les montre — comme le coffret.
+   *
+   * Le paquet offert est un vrai paquet (`ouvrirBoosterOffert`) : aucun crédit
+   * débité, mais la pitié avance et les doublons remboursent.
+   */
+  const reglerPaliers = useCallback(() => {
+    if (ouvertureRef.current || monteeRef.current) return null;
+    const avant = etatRef.current;
+    const dus = boostersDus(avant.profil);
+    if (!dus) return null;
+
+    const collection = collectionJoueur({
+      acquis: chargerAcquis(),
+      distante: chargerCollectionDistante(),
+      souk: avant.bourse.cartes,
+    });
+    const rayons = rayonsOuverts(progressionRef.current, collection);
+    let portefeuille = avant.bourse;
+    let profil = avant.profil;
+    const paquets = [];
+    const rayonsTires = [];
+    for (let index = 0; index < dus && rayons.length; index += 1) {
+      // « Au hasard » veut dire au hasard : le rayon est tiré à chaque paquet,
+      // pas choisi une fois pour toute la montée.
+      const rayon = tirerParmi(rayons, rngRef.current);
+      const offert = ouvrirBoosterOffert({
+        portefeuille,
+        rayonId: rayon?.rayon?.id ?? null,
+        progression: progressionRef.current,
+        collection,
+        rng: rngRef.current,
+      });
+      if (!offert.ok) break;
+      portefeuille = offert.portefeuille;
+      profil = marquerBoosterOffert(profil);
+      paquets.push(offert.tirage);
+      rayonsTires.push(rayon?.rayon?.id ?? null);
+    }
+    if (paquets.length) {
+      essaiPaliersRef.current = null;
+      // Les cartes sont écrites sur l'appareil **avant** la cérémonie, comme
+      // pour un achat : fermer l'onglet en plein retournement ne coûte rien.
+      appliquer(portefeuille, avant.quetes, profil);
+      pousser();
+      onCartesRangees?.();
+    } else if (essaiPaliersRef.current === dus) {
+      // Déjà annoncé pour cette même dette : on ne répète pas. La dette attend
+      // son heure, elle ne se perd pas.
+      return null;
+    } else {
+      essaiPaliersRef.current = dus;
+    }
+    const cartes = paquets.flatMap((paquet) => paquet.details ?? []);
+    const barre = progressionDuProfil(profil);
+    const montee = {
+      token: (tokenPalierRef.current += 1),
+      niveaux: paquets.length || dus,
+      vers: barre.niveau,
+      xp: barre.xp,
+      dus: boostersDus(profil),
+      // Aucune ouverture possible (comptoir fermé, vivier vide) : la cérémonie
+      // est absente et l'écran annonce le palier seul — la dette attend.
+      ouverture: paquets.length ? {
+        offert: true,
+        niveaux: paquets.length,
+        vers: barre.niveau,
+        rang: barre.niveau,
+        rayonId: rayonsTires[0],
+        coffret: false,
+        paquets: paquets.length,
+        prix: 0,
+        cartes,
+        remboursement: paquets.reduce((somme, paquet) => somme + (paquet.remboursement ?? 0), 0),
+        nouvelles: cartes.filter((carte) => !carte.doublon).length,
+        mythique: paquets.some((paquet) => paquet.mythique),
+      } : null,
+    };
+    monteeRef.current = montee;
+    setMonteeNiveau(montee);
+    return montee;
+  }, [appliquer, pousser, onCartesRangees]);
+
+  // La progression bouge (une victoire ouvre un étage, une tour tombe) : la
+  // dette d'un palier franchi plus tôt se règle dès que le comptoir le peut.
+  useEffect(() => { reglerPaliers(); }, [progression, reglerPaliers]);
+
+  /**
    * Applique un événement du duel : le solde s'il paie, les quêtes du jour
-   * toujours. Rend `{ gain, butin, evenement, reconnu }` — `gain` est ce que le
-   * duel peut annoncer (butin compris), `butin` isole le butin de la tour
-   * terminée pour l'annonce de fin de duel, `reconnu` dit si le geste fait
-   * partie du contrat.
+   * toujours, **et la barre d'XP** (`rpgProfil.js`). Rend `{ gain, butin, xp,
+   * niveaux, evenement, reconnu }` — `gain` est ce que le duel peut annoncer
+   * (butin compris), `butin` isole le butin de la tour terminée, `xp` ce que la
+   * barre vient d'avaler, `niveaux` combien de paliers ont sonné (chacun ouvre
+   * un booster, réglé ici même), et `reconnu` dit si le geste fait partie du
+   * contrat.
    */
   const noterEvenementDuel = useCallback((evenement) => {
     const avant = etatRef.current;
     const suite = appliquerEvenementDuel(avant, evenement);
-    if (!suite.reconnu) return { gain: 0, butin: 0, evenement: null, reconnu: false };
-    // Les deux modules rendent leur entrée **telle quelle** quand rien ne bouge :
-    // la comparaison de références suffit donc, et un geste sans effet (poser un
-    // terrain quand aucune quête ne l'écoute) ne fait pas re-rendre l'écran.
-    if (suite.bourse !== avant.bourse || suite.quetes !== avant.quetes) {
-      appliquer(normaliserPortefeuille(suite.bourse), normaliserEtatQuetes(suite.quetes));
+    if (!suite.reconnu) return { gain: 0, butin: 0, xp: 0, niveaux: 0, evenement: null, reconnu: false };
+    // Les trois modules rendent leur entrée **telle quelle** quand rien ne
+    // bouge : la comparaison de références suffit donc, et un geste sans effet
+    // (poser un terrain quand aucune quête ne l'écoute) ne fait pas re-rendre
+    // l'écran.
+    if (suite.bourse !== avant.bourse || suite.quetes !== avant.quetes || suite.profil !== avant.profil) {
+      appliquer(
+        normaliserPortefeuille(suite.bourse),
+        normaliserEtatQuetes(suite.quetes),
+        normaliserProfil(suite.profil),
+      );
       pousser();
     }
-    return { gain: suite.gain, butin: suite.butin ?? 0, evenement: suite.evenement, reconnu: true };
-  }, [appliquer, pousser]);
+    // Un palier a sonné : le paquet offert s'ouvre tout de suite, sauf si une
+    // cérémonie occupe déjà l'écran — la dette attend sa fermeture.
+    if (suite.niveaux > 0 || boostersDus(suite.profil) > 0) reglerPaliers();
+    return {
+      gain: suite.gain,
+      butin: suite.butin ?? 0,
+      xp: suite.xp ?? 0,
+      niveaux: suite.niveaux ?? 0,
+      evenement: suite.evenement,
+      reconnu: true,
+    };
+  }, [appliquer, pousser, reglerPaliers]);
+
+  /**
+   * Verse l'XP d'un gain qui ne passe pas par le contrat d'événements : une
+   * quête réclamée, un Cachet, une leçon. La barre monte, les paliers sonnent,
+   * et la dette de paquets se règle dans la foulée — exactement comme au duel.
+   */
+  const verserXp = useCallback((bourse, quetes, profil, montant, { motif = 'autre', stats = null } = {}) => {
+    const palier = gagnerXp(profil, montant, { motif, stats });
+    appliquer(bourse, quetes, normaliserProfil(palier.profil));
+    pousser();
+    if (palier.niveauxGagnes > 0 || boostersDus(palier.profil) > 0) reglerPaliers();
+    return palier;
+  }, [appliquer, pousser, reglerPaliers]);
 
   /**
    * Réclame une quête terminée : les ◈ entrent dans la bourse, la quête est
-   * marquée prise (on ne la paie pas deux fois). Rend le montant encaissé, ou
-   * `0` si la réclamation n'était pas due.
+   * marquée prise (on ne la paie pas deux fois), et l'XP monte la barre. Rend le
+   * montant encaissé, ou `0` si la réclamation n'était pas due.
    */
   const reclamerUneQuete = useCallback((queteId) => {
     const avant = etatRef.current;
     const resultat = reclamerQuete(avant.quetes, queteId);
     if (!resultat.ok) return 0;
-    appliquer(crediterCredits(avant.bourse, resultat.credits).portefeuille, resultat.etat);
-    pousser();
+    verserXp(
+      crediterCredits(avant.bourse, resultat.credits).portefeuille,
+      resultat.etat,
+      avant.profil,
+      XP.queteReclamee,
+      { motif: 'quete', stats: { quetesReclamees: 1 } },
+    );
     return resultat.credits;
-  }, [appliquer, pousser]);
+  }, [verserXp]);
 
   /**
    * Achète et ouvre un paquet (ou un coffret de dix) : les crédits sont
@@ -270,11 +460,14 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     if (!achat.ok) return { ok: false, raison: achat.raison, prix: achat.prix, tirage: null };
     // Le reste de la boucle : l'ouverture est un geste du contrat d'événements,
     // donc les quêtes du jour la voient comme n'importe quel autre geste.
+    // L'ouverture est un geste du contrat : elle fait avancer les quêtes **et**
+    // la barre d'XP. Le profil vient de l'état courant — l'événement ne le
+    // recrée jamais, il le monte.
     const suite = appliquerEvenementDuel(
-      { bourse: achat.portefeuille, quetes: avant.quetes },
+      { bourse: achat.portefeuille, quetes: avant.quetes, profil: avant.profil },
       { type: 'booster-ouvert', rayonId },
     );
-    appliquer(suite.bourse, suite.quetes);
+    appliquer(suite.bourse, suite.quetes, suite.profil);
     // Le paquet et le coffret ne rendent pas la même forme : le paquet rend un
     // tirage, le coffret une liste de paquets. La cérémonie, elle, reçoit
     // toujours la même : les cartes, une par une, et ce qu'elles ont rendu.
@@ -282,7 +475,7 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     const cartes = paquets.flatMap((paquet) => paquet.details ?? []);
     // Les cartes sont écrites sur l'appareil **avant** la cérémonie : fermer
     // l'onglet au milieu d'un retournement ne doit rien coûter au joueur.
-    setOuverture({
+    ouvertureRef.current = {
       rayonId,
       coffret,
       paquets: paquets.length,
@@ -291,7 +484,8 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
       remboursement: paquets.reduce((somme, paquet) => somme + (paquet.remboursement ?? 0), 0),
       nouvelles: cartes.filter((carte) => !carte.doublon).length,
       mythique: paquets.some((paquet) => paquet.mythique),
-    });
+    };
+    setOuverture(ouvertureRef.current);
     pousser();
     onCartesRangees?.();
     return { ok: true, raison: null, prix: achat.prix, tirage: achat.tirage };
@@ -305,9 +499,22 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
 
   /**
    * Referme la cérémonie d'ouverture. Le portefeuille est déjà écrit et déjà
-   * poussé au compte : ici, on rend la main, rien de plus.
+   * poussé au compte : ici, on rend la main — et l'on règle aussitôt les paliers
+   * qui attendaient leur tour derrière cette cérémonie (un paquet ouvert rapporte
+   * de l'XP, il peut donc faire monter un niveau).
    */
-  const fermerOuverture = useCallback(() => setOuverture(null), []);
+  const fermerOuverture = useCallback(() => {
+    ouvertureRef.current = null;
+    setOuverture(null);
+    reglerPaliers();
+  }, [reglerPaliers]);
+
+  /** Referme l'annonce d'un palier, puis règle ce qui reste dû. */
+  const fermerMonteeNiveau = useCallback(() => {
+    monteeRef.current = null;
+    setMonteeNiveau(null);
+    reglerPaliers();
+  }, [reglerPaliers]);
 
   /**
    * Le Cachet de la semaine : sept jours d'affilée. La série est relue **avant**
@@ -322,10 +529,15 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     }).etat.serie;
     const resultat = reclamerCachetDeLaSemaine({ etat: avant.quetes, serie });
     if (!resultat.ok) return 0;
-    appliquer(crediterCredits(avant.bourse, resultat.credits).portefeuille, resultat.etat);
-    pousser();
+    verserXp(
+      crediterCredits(avant.bourse, resultat.credits).portefeuille,
+      resultat.etat,
+      avant.profil,
+      XP.cachetDeLaSemaine,
+      { motif: 'semaine', stats: { cachets: 1 } },
+    );
     return resultat.credits;
-  }, [appliquer, pousser, compteId]);
+  }, [verserXp, compteId]);
 
   /** La récompense d'un tutoriel : versée une seule fois, puis retenue dans
    *  `bourse.tutoriels` (la fusion entre appareils en fait l'union). Rend le
@@ -334,24 +546,53 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     const avant = etatRef.current;
     const resultat = reclamerRecompenseTutoriel(avant.bourse, tutorielId, montant);
     if (!resultat.ok) return 0;
-    appliquer(resultat.portefeuille, avant.quetes);
-    pousser();
+    verserXp(resultat.portefeuille, avant.quetes, avant.profil, XP.lecon, { motif: 'lecon', stats: { lecons: 1 } });
     return resultat.gain;
-  }, [appliquer, pousser]);
+  }, [verserXp]);
 
   /** Le Cachet du cycle : +80 ◈ une fois les trois quêtes du jour réclamées. */
   const reclamerLeCachet = useCallback(() => {
     const avant = etatRef.current;
     const resultat = reclamerCachetDuCycle(avant.quetes);
     if (!resultat.ok) return 0;
-    appliquer(crediterCredits(avant.bourse, resultat.credits).portefeuille, resultat.etat);
-    pousser();
+    verserXp(
+      crediterCredits(avant.bourse, resultat.credits).portefeuille,
+      resultat.etat,
+      avant.profil,
+      XP.cachetDuCycle,
+      { motif: 'cachet', stats: { cachets: 1 } },
+    );
     return resultat.credits;
+  }, [verserXp]);
+
+  /** Renomme la carte de profil. Rend `true` si le nom a changé. */
+  const renommerLeProfil = useCallback((pseudo) => {
+    const avant = etatRef.current;
+    const suivant = renommerProfil(avant.profil, pseudo);
+    if (suivant === avant.profil) return false;
+    appliquer(avant.bourse, avant.quetes, suivant);
+    pousser();
+    return true;
   }, [appliquer, pousser]);
 
+  /** Change l'emblème de la carte. Rend `true` si l'emblème a changé. */
+  const choisirUnEmbleme = useCallback((emblemeId) => {
+    const avant = etatRef.current;
+    const suivant = choisirEmbleme(avant.profil, emblemeId);
+    if (suivant === avant.profil) return false;
+    appliquer(avant.bourse, avant.quetes, suivant);
+    pousser();
+    return true;
+  }, [appliquer, pousser]);
+
+  const profil = etat.profil;
   return {
     bourse: etat.bourse,
     quetes: etat.quetes,
+    profil,
+    barreXp: progressionDuProfil(profil),
+    boostersEnAttente: boostersDus(profil),
+    niveau: niveauDeXp(profil.xp),
     credits: etat.bourse.credits,
     aReclamer: compterReclamations(etat.quetes),
     statutSync,
@@ -364,6 +605,10 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     acheterCoffret,
     fermerOuverture,
     ouverture,
+    monteeNiveau,
+    fermerMonteeNiveau,
+    renommerLeProfil,
+    choisirUnEmbleme,
     pousser,
   };
 }

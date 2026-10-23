@@ -55,8 +55,15 @@ function lireCollection() {
   return collectionJoueur({ souk: cartes });
 }
 
-/** L'écran, tel que la page le monte : le hook en dessous, l'écran au-dessus. */
-function Sonde({ surPret, sons }) {
+/**
+ * L'écran, tel que la page le monte : le hook en dessous, l'écran au-dessus.
+ *
+ * `caisse` enregistre ce que chaque encaissement **rend** : le solde affiché
+ * peut monter d'autant plus qu'un palier franchi pendant le smoke offre un
+ * paquet du Souk, et un paquet rend ses doublons (lot 6). Le montant du geste,
+ * lui, reste exact — c'est ce qu'on affirme.
+ */
+function Sonde({ surPret, sons, caisse }) {
   // Le tirage est semé : sans ça, le smoke dépendrait du hasard — exactement ce
   // qu'on refuse ailleurs. La graine est posée une fois pour toutes.
   // La collection est un état du *parent*, comme dans la page : elle ne bouge
@@ -75,9 +82,9 @@ function Sonde({ surPret, sons }) {
     <RpgQuetesDuJour
       quetes={bourse.quetes}
       credits={bourse.credits}
-      onReclamerQuete={(id) => bourse.reclamerUneQuete(id)}
-      onReclamerCachet={() => bourse.reclamerLeCachet()}
-      onReclamerSemaine={() => bourse.reclamerLeCachetDeLaSemaine()}
+      onReclamerQuete={(id) => caisse.push(bourse.reclamerUneQuete(id))}
+      onReclamerCachet={() => caisse.push(bourse.reclamerLeCachet())}
+      onReclamerSemaine={() => caisse.push(bourse.reclamerLeCachetDeLaSemaine())}
       onOuvrirSouk={() => { sons.push('vers-le-souk'); }}
       onPlaySfx={(nom) => { sons.push(nom); }}
     />
@@ -91,8 +98,8 @@ function Sonde({ surPret, sons }) {
       collection={collection}
       ouverture={bourse.ouverture}
       cardArt={illustration}
-      onReclamerQuete={(id) => bourse.reclamerUneQuete(id)}
-      onReclamerCachet={() => bourse.reclamerLeCachet()}
+      onReclamerQuete={(id) => caisse.push(bourse.reclamerUneQuete(id))}
+      onReclamerCachet={() => caisse.push(bourse.reclamerLeCachet())}
       onOuvrirBooster={(rayonId) => bourse.acheterBooster(rayonId)}
       onOuvrirCoffret={(rayonId) => bourse.acheterCoffret(rayonId)}
       onFermerOuverture={() => bourse.fermerOuverture()}
@@ -147,8 +154,11 @@ export async function checkRpgSoukEcran(assert) {
   let root3 = null;
   let root4 = null;
   const sons = [];
+  const caisse = [];
   let bourse = null;
-  const rendre = (racine) => racine.render(<Sonde surPret={(valeur) => { bourse = valeur; }} sons={sons} />);
+  const rendre = (racine) => racine.render(
+    <Sonde surPret={(valeur) => { bourse = valeur; }} sons={sons} caisse={caisse} />,
+  );
   try {
     await act(async () => rendre(root));
 
@@ -315,8 +325,9 @@ export async function checkRpgSoukEcran(assert) {
     // paiement de la quête qu'on isole ici.
     const avantReclamation = Number(donnee('[data-souk-solde]', 'soukSolde'));
     await act(async () => noeud(`[data-souk-reclamer="${premiere.id}"]`).click());
-    assert.equal(Number(donnee('[data-souk-solde]', 'soukSolde')), avantReclamation + premiere.recompense,
-      'la réclamation encaisse la récompense annoncée');
+    assert.equal(caisse.at(-1), premiere.recompense, 'la réclamation encaisse la récompense annoncée');
+    assert.ok(Number(donnee('[data-souk-solde]', 'soukSolde')) >= avantReclamation + premiere.recompense,
+      'et le solde monte d’autant');
     assert.equal(donnee(`[data-souk-quete="${premiere.id}"]`, 'soukQueteEtat'), 'reclamee');
     assert.equal(noeud(`[data-souk-reclamer="${premiere.id}"]`), null, 'le bouton disparaît une fois payé');
     assert.equal(donnee(`[data-jouer-quete="${premiere.id}"]`, 'jouerQueteEtat'), 'reclamee',
@@ -352,8 +363,9 @@ export async function checkRpgSoukEcran(assert) {
         `${quete.id} est réclamée`);
       assert.equal(donnee(`[data-jouer-quete="${quete.id}"]`, 'jouerQueteEtat'), 'reclamee',
         'et le panneau du menu dit exactement la même chose');
-      assert.equal(Number(donnee('[data-souk-solde]', 'soukSolde')), avant + quete.recompense,
-        `${quete.id} paie les ${quete.recompense} ◈ qu’elle annonce`);
+      assert.equal(caisse.at(-1), quete.recompense, `${quete.id} paie les ${quete.recompense} ◈ qu’elle annonce`);
+      assert.ok(Number(donnee('[data-souk-solde]', 'soukSolde')) >= avant + quete.recompense,
+        'et le solde les encaisse');
     }
     assert.equal(donnee('[data-souk-cachet]', 'soukCachet'), 'disponible',
       'les trois réclamées : le Cachet s’ouvre');
@@ -370,8 +382,10 @@ export async function checkRpgSoukEcran(assert) {
     assert.ok(noeud('[data-jouer-cachet-reclamer] .rpg-credit'),
       'le Cachet du panneau est frappé de la pièce lui aussi');
     await act(async () => noeud('[data-jouer-cachet-reclamer]').click());
-    assert.equal(Number(donnee('[data-souk-solde]', 'soukSolde')), avantCachet + GAINS.cachetDuCycle,
+    assert.equal(caisse.at(-1), GAINS.cachetDuCycle,
       `le Cachet paie ${GAINS.cachetDuCycle} ◈, d’où qu’on le réclame`);
+    assert.ok(Number(donnee('[data-souk-solde]', 'soukSolde')) >= avantCachet + GAINS.cachetDuCycle,
+      'et le solde les encaisse');
     assert.equal(donnee('[data-souk-cachet]', 'soukCachet'), 'pris', 'et il ne se réclame plus');
     assert.equal(donnee('[data-jouer-cachet]', 'jouerCachet'), 'pris', 'le panneau le sait aussi');
     assert.equal(noeud('[data-souk-cachet-reclamer]'), null, 'son bouton disparaît');
@@ -394,7 +408,13 @@ export async function checkRpgSoukEcran(assert) {
       soldeAvantAchat - 140 + bourse.ouverture.remboursement,
       'le paquet coûte ses 140 ◈, moins ce que les doublons rendent',
     );
-    assert.equal(bourse.bourse.cartes.length, cartesAvant + 5, 'les cinq cartes rejoignent le portefeuille');
+    // Le portefeuille ne garde qu'un exemplaire de chaque carte : une carte déjà
+    // rangée — par un paquet de palier, par exemple — n'y revient pas. Ce qui
+    // compte, c'est que le tirage y entre, et que la collection voie ses
+    // cartes **nouvelles**.
+    const rangees = bourse.bourse.cartes.length - cartesAvant;
+    assert.ok(rangees >= bourse.ouverture.nouvelles && rangees <= 5,
+      `le paquet range ses cartes (${rangees} entrées, ${bourse.ouverture.nouvelles} nouvelles)`);
     assert.equal(noeud('[data-souk-ceremonie]').querySelectorAll('[data-souk-carte-dos]').length, 5,
       'les cinq cartes commencent face cachée');
     assert.ok(sons.includes('collection-rafraichie'), 'l’atelier de decks est prévenu : la collection a grandi');
