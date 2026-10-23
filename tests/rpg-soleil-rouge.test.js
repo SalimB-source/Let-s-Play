@@ -7,6 +7,7 @@ import { RPG_SOLEIL_ROUGE_CARDS, RPG_SOLEIL_ROUGE_SET_ID } from '../src/games/rp
 import { RPG_DECKS, cardById, cardColors, cardReceivesResonance, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
+import { pastillesPourCarte } from '../src/games/effetIcons.js';
 import { rpgNouveauDuel, rpgJouerArme, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgAttaquerSorcier, rpgResonanceEnJeu, rpgBonusResonance, rpgAppliquerBannieresAttaque, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
 
 function duelTest(rng = () => 0.5) {
@@ -33,8 +34,8 @@ function sort(duel, id, cible) {
 // Les trois cartes de soutien ajoutées (hatamoto, kenshi, daimyō) forment désormais la charpente du starter.
 const SAMOURAIS_AJOUTES = ['hatamoto-des-cendres', 'kenshi-de-la-forge', 'daimyo-du-soleil-rouge'];
 
-test('Soleil rouge : dix-sept cartes mono-Braise uniques, illustrées en 1024 × 1280 et collectionnables', () => {
-  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 17, 'le terrain Braise du Soleil rouge est retiré');
+test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 × 1280 et collectionnables', () => {
+  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 18, 'le terrain Braise du Soleil rouge est retiré');
   const empreintes = new Set();
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
     assert.equal(cardById(carte.id).set, RPG_SOLEIL_ROUGE_SET_ID);
@@ -54,7 +55,7 @@ test('Soleil rouge : dix-sept cartes mono-Braise uniques, illustrées en 1024 ×
     }
     assert.deepEqual(dimensions, [1024, 1280], carte.id);
   }
-  assert.equal(empreintes.size, 17, 'une illustration dédiée par carte');
+  assert.equal(empreintes.size, 18, 'une illustration dédiée par carte');
 });
 
 test('le deck Soleil rouge est valide et concentre sa signature culturelle', () => {
@@ -99,7 +100,7 @@ test('le starter met en avant Honneur, Résonance samouraï et la Bannière avec
   for (const liste of listes) assert.equal(liste.includes('samourai-du-daimyo'), false, 'le jeton ne figure pas dans une liste');
 });
 
-test('les dix créatures suivent Honneur 1, sans anciens effets dispersés', () => {
+test('les créatures suivent Honneur 1, sans anciens effets dispersés', () => {
   const valeurs = { commune: 1, inhabituelle: 1, rare: 1, mythique: 1 };
   // Deux exceptions assumées : Orochi (ses héritiers remplacent la frappe) et
   // l'Ashigaru des braises, redevenu un simple corps de 1 mana sans Honneur.
@@ -115,7 +116,9 @@ test('les dix créatures suivent Honneur 1, sans anciens effets dispersés', () 
     if (!['susanoo', 'daimyo-du-soleil-rouge'].includes(carte.id)) assert.equal(carte.arrivee, undefined);
     if (carte.id !== 'orochi') assert.equal(carte.destruction, undefined);
     assert.equal(carte.combat, undefined);
-    assert.equal(carte.esquive, carte.id === 'onna-musha-des-cendres' ? true : undefined, carte.id);
+    // Deux Esquives assumées : l'Onna-musha et Tojiro, le pourfendeur.
+    assert.equal(carte.esquive, ['onna-musha-des-cendres', 'tojiro-le-pourfendeur'].includes(carte.id) ? true : undefined, carte.id);
+    assert.equal(carte.contreAttaque, carte.id === 'tojiro-le-pourfendeur' ? true : undefined, carte.id);
   }
   assert.equal(cardById('tengu-du-mont-ardent').resonance, 1);
   const kagutsuchiCarte = cardById('kagutsuchi-flamme-originelle');
@@ -890,4 +893,73 @@ test('Susanoo exile aussi un porteur des nouvelles armes sans perdre son équipe
   assert.deepEqual(duel.sorcier.exil, ['chien-du-guet']);
   assert.ok(duel.sorcier.cimetiere.includes('takouba-des-pistes'));
   assert.ok(!duel.sorcier.cimetiere.includes('chien-du-guet'));
+});
+
+test('Tojiro, le pourfendeur : 5/5 mythique à 6, Esquive et Contre-attaque', () => {
+  const carte = cardById('tojiro-le-pourfendeur');
+  assert.equal(carte.rarity, 'mythique');
+  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [6, 5, 5, 1]);
+  assert.equal(carte.esquive, true);
+  assert.equal(carte.contreAttaque, true);
+  assert.match(carte.text, /Contre-attaque — /);
+  assert.match(carte.text, /riposte frappe le sorcier adverse/);
+  assert.match(carte.text, /il contre-attaque quand même/);
+  assert.equal(cardReceivesResonance(carte, 'samourai'), true);
+  const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
+  assert.equal(deck.cardIds.includes(carte.id), false, 'la mythique attend le Souk');
+  assert.equal(carteReveleePar(carte.id).etageId, 'sables-3');
+  assert.equal(pastillesPourCarte(carte).some((pastille) => pastille.cle === 'contreAttaque'), true);
+});
+
+test('Contre-attaque : un Coup rapide porté contre Tojiro lui est rendu — et reste rendu s’il esquive', () => {
+  const duel = duelTest();
+  const tojiro = jouer(duel, 'sorcier', 'tojiro-le-pourfendeur');
+  const djinn = jouer(duel, 'joueur', 'djinn-de-foudre');
+  djinn.ready = true;
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [djinn.id], {}, null, null, { [djinn.id]: tojiro.id }).ok, true);
+  assert.equal(tojiro.pv, 3, 'la frappe rapide de 2 passe');
+  assert.equal(duel.joueur.creatures.some((entite) => entite.id === djinn.id), false,
+    'Tojiro rend 5 dégâts au Coup rapide et le tue');
+  assert.ok(duel.log.some((ligne) => /Contre-attaque : Tojiro, le pourfendeur rend son coup/.test(ligne)));
+
+  // Esquive réussie : la frappe ne porte pas, la riposte part quand même. Le
+  // premier jet (0,5) laisse le Coup rapide toucher, le second (0,1) réussit
+  // l'Esquive de Tojiro — un seul jet à 0,1 aurait fait RATER la frappe.
+  let jets = [];
+  const duelEsquive = duelTest(() => (jets.length ? jets.shift() : 0.5));
+  const tojiroEsquive = jouer(duelEsquive, 'sorcier', 'tojiro-le-pourfendeur');
+  const djinnEsquive = jouer(duelEsquive, 'joueur', 'djinn-de-foudre');
+  djinnEsquive.ready = true;
+  jets = [0.5, 0.1];
+  rpgLancerAttaque(duelEsquive, 'joueur', [djinnEsquive.id], {}, null, null, { [djinnEsquive.id]: tojiroEsquive.id });
+  assert.equal(tojiroEsquive.pv, 5, 'le Coup rapide est esquivé');
+  assert.equal(duelEsquive.joueur.creatures.some((entite) => entite.id === djinnEsquive.id), false,
+    'la Contre-attaque frappe malgré l’Esquive');
+});
+
+test('Contre-attaque : un sort qui cible Tojiro frappe son lanceur, même esquivé', () => {
+  const duel = duelTest();
+  const tojiro = jouer(duel, 'sorcier', 'tojiro-le-pourfendeur');
+  duel.joueur.main.push('frappe-iaijutsu');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'frappe-iaijutsu', tojiro.id).ok, true);
+  assert.equal(tojiro.pv, 3, 'le sort inflige ses 2 dégâts');
+  assert.equal(duel.joueur.pv, 20, 'la riposte frappe le sorcier qui a lancé le sort');
+
+  const duelEsquive = duelTest(() => 0.05);
+  const tojiroEsquive = jouer(duelEsquive, 'sorcier', 'tojiro-le-pourfendeur');
+  duelEsquive.joueur.main.push('frappe-iaijutsu');
+  rpgLancerMagie(duelEsquive, 'joueur', 'frappe-iaijutsu', tojiroEsquive.id);
+  assert.equal(tojiroEsquive.pv, 5, 'le sort est esquivé');
+  assert.equal(duelEsquive.joueur.pv, 20, 'Tojiro renvoie le sort au sorcier malgré l’Esquive');
+});
+
+test('Contre-attaque : une capacité qui cible Tojiro se paie sur la créature qui la porte', () => {
+  const duel = duelTest();
+  const tojiro = jouer(duel, 'sorcier', 'tojiro-le-pourfendeur');
+  duel.joueur.main.push('tour-de-braise');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'tour-de-braise', tojiro.id).ok, true);
+  assert.equal(tojiro.pv, 4, 'l’arrivée inflige son dégât');
+  assert.equal(duel.joueur.creatures.some((entite) => entite.carteId === 'tour-de-braise'), false,
+    'la Tour de Braise encaisse la Contre-attaque et meurt');
+  assert.equal(duel.joueur.pv, 25, 'un effet de créature ne touche jamais le sorcier');
 });

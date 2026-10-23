@@ -219,8 +219,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'magie', 'arme', 'site']));
 });
 
-test('le set de permanents existe : quatre-vingts fiches façon TCG (dont deux Sites)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 80, 'les Lettres de Marque ajoutent le Hollandais volant, le Chasseur et deux Sites persistants');
+test('le set de permanents existe : quatre-vingt-une fiches façon TCG (dont deux Sites)', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 81, 'Tojiro rejoint les créatures du Soleil rouge');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');

@@ -137,6 +137,13 @@ export const RPG_CARD_LESSONS = Object.freeze([
     text: 'Rapidité permet d’attaquer dès le tour où la créature arrive. Esquive donne 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie — leur effet sur elle ne porte pas du tout. Les capacités de créatures, elles, ne s’esquivent toujours pas.',
   },
   {
+    id: 'contre-attaque',
+    section: 'Capacités des créatures',
+    cardIds: ['tojiro-le-pourfendeur'],
+    title: 'Contre-attaque : le coup se paie',
+    text: 'Contre-attaque rend chaque coup porté CONTRE la créature qui la porte : une créature adverse qui la frappe avec Coup rapide, ou qui la cible avec une capacité, encaisse ses dégâts d’attaque en retour ; un sort qui la cible fait frapper le sorcier qui l’a lancé. Une Esquive réussie n’empêche jamais la riposte : Tojiro esquive, puis contre-attaque.',
+  },
+  {
     id: 'envol',
     section: 'Capacités des créatures',
     cardIds: ['anqa-des-braises', 'valkyrie-au-corbeau'],

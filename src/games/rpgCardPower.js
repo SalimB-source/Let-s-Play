@@ -301,6 +301,9 @@ export function valeurCarte(carte) {
   if (carte.nePeutPasAttaquer) valeur -= 0.5 * Math.max(0, Number(carte.atk) || 0);
   if (carte.rapidite) valeur += 0.5;
   if (carte.esquive) valeur += 1.5;
+  // Contre-attaque : chaque coup porté contre elle se paie — une épine dans
+  // le jeu agressif, qui décourage le Coup rapide et les sorts ciblés.
+  if (carte.contreAttaque) valeur += 2;
   if (carte.protection) valeur += 1.5;
   if (carte.furie) valeur += 0.7 + 0.55 * carte.furie;
   if (carte.overkill) valeur += 1.5;

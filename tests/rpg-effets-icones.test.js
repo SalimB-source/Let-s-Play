@@ -28,10 +28,9 @@ const pastillesDe = (id) => pastillesPourCarte(cardById(id))
 
 test('le sprite porte les 30 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
-  // 30 depuis le paquet de la défausse (`i-paquet`) : le compte était resté à
-  // 29 dans ce test, alors que chaque symbole est bien référencé par
-  // `EFFET_ICONE`.
-  assert.equal(symboles.length, 30);
+  // 31 depuis la Contre-attaque (`i-contre-attaque`) : chaque symbole est
+  // référencé par `EFFET_ICONE`, aucun n'est orphelin.
+  assert.equal(symboles.length, 31);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {

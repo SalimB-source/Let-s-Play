@@ -1,5 +1,5 @@
 /**
- * Le sprite des icônes d’effets du duel — les 26 symboles validés
+ * Le sprite des icônes d’effets du duel — les symboles validés
  * (`preview-effets-icone.html`), monochromes, tracé 24×24, `stroke: currentColor`.
  *
  * Deux usages :
@@ -15,12 +15,13 @@
 
 import { libelleModificationStats, modificationStats } from './rpgCards.js';
 
-/** Les 26 symboles, à injecter une seule fois par page. */
+/** Les symboles, à injecter une seule fois par page. */
 export const EFFETS_SPRITE = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-butin" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></symbol>
   <symbol id="i-furie" viewBox="0 0 24 24"><path d="M7.1 11.3C5.3 10.3 3.8 8.2 3.1 5.4c1.6 1.9 3.1 3.2 4.8 4"/><path d="M16.9 11.3c1.8-1 3.3-3.1 4-5.9C19.3 7.3 17.8 8.6 16.1 9.4"/><path d="M6.7 15.2v-2.7c0-3 2.4-5.4 5.3-5.4s5.3 2.4 5.3 5.4v2.7"/><path d="M5.4 15.2h13.2"/><path d="M12 7.1v8.1"/><path d="M10.9 15.2h2.2l-.4 4.2h-1.4z"/><path d="M7 15.2v3M17 15.2v3"/></symbol>
   <symbol id="i-esquive" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/><path d="M12.59 19.41A2 2 0 1 0 14 16H2"/><path d="M17.73 7.73A2.5 2.5 0 1 1 19.5 12H2"/></symbol>
+  <symbol id="i-contre-attaque" viewBox="0 0 24 24"><path d="M14.5 3.5 20.5 9.5"/><path d="M13 5 5 13"/><path d="M3 21l5.5-5.5"/><path d="M8.5 15.5 4 20"/><path d="M17.5 3.5l3 3-3 3"/><path d="M9.5 9.5 6 6"/><path d="M6 6l-3 3"/><path d="M3 9l3 3 3-3"/></symbol>
   <symbol id="i-envol" viewBox="0 0 24 24"><path d="M2 10.5c3.2.4 5.8 2.2 7.2 5.2h5.6c1.4-3 4-4.8 7.2-5.2"/><path d="M12 15.7c-.6 2-.6 3.6 0 5.3"/></symbol>
   <symbol id="i-rapidite" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
   <symbol id="i-coup-rapide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></symbol>
@@ -88,6 +89,7 @@ export const EFFET_ICONE = {
   cale: 'i-cargaison',
   furie: 'i-furie',
   esquive: 'i-esquive',
+  contreAttaque: 'i-contre-attaque',
   envol: 'i-envol',
   rapidite: 'i-rapidite',
   coupRapide: 'i-coup-rapide',
@@ -149,6 +151,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  */
 export const MOTS_CLES_PASTILLES = [
   'envol', 'infiltration', 'rapidite', 'coupRapide', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
+  'contreAttaque',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
   'abordage', 'visages', 'cargaison',
 ];
@@ -186,6 +189,7 @@ export const EFFET_LIBELLES = {
   furie: 'Furie',
   furie: 'Furie',
   esquive: 'Esquive',
+  contreAttaque: 'Contre-attaque',
   envol: 'Envol',
   rapidite: 'Rapidité',
   coupRapide: 'Coup rapide',
@@ -252,6 +256,7 @@ export function pastillesPourCarte(carte) {
   }
   if (carte.furie) ajouter('furie', 'Furie', Number(carte.furie) || null);
   if (carte.esquive) ajouter('esquive', 'Esquive', null);
+  if (carte.contreAttaque) ajouter('contreAttaque', 'Contre-attaque');
   if (carte.tenacite) ajouter('tenacite', 'Tenacité');
   if (carte.resonance) {
     // La Résonance se nomme par le TYPE imprimé de la carte : aujourd’hui,
@@ -376,6 +381,7 @@ const MOTIFS_LIGNE = [
   ['cale', /\bcale\b/iu],
   ['furie', /\bfurie\b/iu],
   ['esquive', /\besquive/iu],
+  ['contreAttaque', /\bcontre[- ]attaque/iu],
   ['envol', /\benvol\b/iu],
   ['rapidite', /\brapidité/iu],
   ['coupRapide', /\bcoup rapide/iu],
@@ -513,6 +519,7 @@ export const EFFET_DEFINITIONS = {
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
   esquive: () => '30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
+  contreAttaque: 'Quand une créature adverse la frappe avec Coup rapide ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort qui la cible, la riposte frappe le sorcier adverse. Une Esquive réussie ne l’empêche pas de riposter.',
   tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
@@ -557,6 +564,7 @@ const LIBELLES_IMPRIMES = [
   ['rapidite', 'Rapidité'],
   ['furie', 'Furie(?: \\d+)?'],
   ['esquive', 'Esquive'],
+  ['contreAttaque', 'Contre-attaque'],
   ['tenacite', 'T[ée]nacité'],
   ['resonance', 'Résonance(?: samouraï|viking)?'],
   ['honneur', 'Honneur(?: \\d+)?'],

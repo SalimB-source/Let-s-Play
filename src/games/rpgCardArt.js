@@ -31,6 +31,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
   'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
   'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
+  'tojiro-le-pourfendeur': 'soleil-rouge-kaiga-couleurs-v7',
   'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
