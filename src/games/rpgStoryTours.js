@@ -276,7 +276,7 @@ export const RPG_STORY_TOURS = [
     etages: [
       {
         id: 'corsaires-1', nom: 'La Mousse des galiotes', fonction: 'Guetteuse du chenal',
-        deck: 'lettres-de-marque', avatar: null, puissance: 1,
+        deck: 'lettres-de-marque', avatar: 'mousse-des-galiotes', puissance: 1,
         ia: { niveau: 'recit', style: 'equilibre' },
         note: 'Elle connaît les passes que la Nageuse des puits a laissées derrière elle. À bord, même une petite prise peut changer le cours du duel.',
       },
@@ -288,13 +288,13 @@ export const RPG_STORY_TOURS = [
       },
       {
         id: 'corsaires-3', nom: 'Le Raïs de la Galiote', fonction: 'Capitaine de la flotte de la Régence',
-        deck: 'lettres-de-marque', avatar: null, puissance: 5,
+        deck: 'lettres-de-marque', avatar: 'rais-de-la-galiote', puissance: 5,
         ia: { niveau: 'veilleur', style: 'agressif' },
         note: 'Son cotre ouvre la voie, le grappin accroche le pont et les lettres de marque font de chaque abordage une affaire légale.',
       },
       {
         id: 'corsaires-4', nom: 'La Barbe-Rousse', fonction: 'Amiral du Hollandais volant',
-        deck: 'lettres-de-marque', avatar: null, puissance: 7,
+        deck: 'lettres-de-marque', avatar: 'la-barbe-rousse', puissance: 7,
         ia: { niveau: 'veilleur', style: 'controle' },
         note: 'Au sommet, le vaisseau fantôme surgit de la brume des Abysses. La Chambre a falsifié les manifestes : Salem doit choisir ce qu’il fera de la preuve.',
       },
@@ -407,7 +407,7 @@ export const RPG_STORY_TOURS = [
         nom: 'L’Ouvrier du natron',
         fonction: 'Embaumeur des cryptes basses',
         deck: 'momies-de-la-necropole',
-        avatar: 'momie-de-lin',
+        avatar: 'ouvrier-du-natron',
         puissance: 1,
         ia: { niveau: 'normale', style: 'prudent' },
         note: 'Il roule les bandelettes sans hâte. Ses momies tombent pour mieux renaître et épuiser vos réserves.',
