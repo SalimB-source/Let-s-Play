@@ -2170,7 +2170,7 @@ export const RPG_DECKS = [
     boxArt: 'anqa-des-braises',
     archetype: 'Djinns et sorcellerie',
     affrontement: 'Affrontez les djinns de Braise.',
-    description: 'Deck mono-Braise autour des djinns et des ghuls : le Ghul frappe à sa mort, le Nuage de cendres revient en écho et Anqa — son unique mythique — renaît après quatre tours. Ashigaru, rōnin et Samouraï du torii ajoutent Honneur et Résonance ; les autres figures mythiques s’obtiennent dans les boosters.',
+    description: 'Deck mono-Braise autour des djinns et des ghuls : le Ghul frappe à sa mort, le Nuage de cendres revient en écho et Anqa — son unique mythique — renaît après quatre tours. Ashigaru, rōnin et Shogun promu ajoutent Honneur et Résonance ; les autres figures mythiques s’obtiennent dans les boosters.',
     cardIds: RPG_DECK_SORCIER_BASE,
   },
   {
@@ -2218,7 +2218,7 @@ export const RPG_DECKS = [
     boxArt: 'kagutsuchi-flamme-originelle',
     archetype: 'Braise · samouraïs et yōkai',
     affrontement: 'Affrontez le Serment du Soleil rouge.',
-    description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Samouraï du torii, le Tengu et le Kenshi font résonner les Samouraïs, et le Daimyō mythique lève des jetons qui grandissent en attaquant. Kagutsuchi et le Daimyō sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
+    description: 'Deck mono-Braise du Japon fantastique : Honneur frappe à la mort, le Shogun promu, le Tengu et le Kenshi font résonner les Samouraïs, et le Daimyō mythique lève des jetons qui grandissent en attaquant. Kagutsuchi et le Daimyō sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
     cardIds: RPG_DECK_SOLEIL_ROUGE_BASE,
   },
   {

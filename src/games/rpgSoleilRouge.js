@@ -84,13 +84,12 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'Sans maître, mais pas sans parole.',
   }),
   carte({
-    id: 'samourai-du-torii', name: 'Samouraï du torii',
+    id: 'samourai-du-torii', name: 'Shogun promu',
     cost: 4, atk: 2, def: 2, rarity: 'rare',
     typeLine: 'Créature — Humain · Samouraï',
     resonance: 1,
     resonanceTribu: 'samourai',
-    resonanceExclutSource: true,
-    text: 'Résonance samouraï — Tant qu’il est en jeu, toutes les autres créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1.',
+    text: 'Résonance samouraï — Tant qu’il est en jeu, toutes les créatures de type Samouraï de la table, lui compris, dans les deux camps, gagnent +1/+1.',
     flavor: 'Il ne garde pas la porte pour empêcher les vivants d’entrer.',
   }),
   carte({
@@ -170,7 +169,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
   }),
   carte({
     id: 'frappe-iaijutsu', name: 'Frappe d’iaijutsu',
-    kind: 'magie', cost: 2, rarity: 'rare', instant: true,
+    kind: 'magie', cost: 1, rarity: 'rare', instant: true,
     typeLine: 'Magie Rapide — Technique · Braise',
     cibles: ['creature'],
     effet: { type: 'degats', amount: 2, cible: 'creature' },

@@ -1559,7 +1559,7 @@ export function rpgBonusResonance(duel, carte) {
  * le type Samouraï, quelle que soit sa couleur ; le Tengu ne se renforce pas
  * lui-même et Kagutsuchi n’est plus une source de Résonance. Les sources se
  * cumulent dans les deux camps.
- * Une source marquée `resonanceExclutSource` (le Samouraï du torii) ne
+ * Une source marquée `resonanceExclutSource` ne
  * renforce que **les autres** : sa propre contribution est retirée du total
  * qu'elle reçoit, mais les autres sources continuent de la renforcer.
  * La perte du bonus laisse au minimum 1 PV, comme en Neige. */
