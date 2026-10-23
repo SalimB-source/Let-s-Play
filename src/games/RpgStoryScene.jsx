@@ -413,10 +413,11 @@ export default function RpgStoryScene({
               {plateauScene.map(({ id, miroir }) => {
                 const figurant = personnageHistoire(id);
                 const stand = standHistoire(id, BASE);
+                const echelle = figurant.echelle ?? 1;
                 return (
-                  <div key={id} data-personnage-stand={id}
-                    className={`rpg-narrative__stand${id === standActif ? ' rpg-narrative__stand--actif' : ''}${stand ? ' rpg-narrative__stand--decoupe' : ''}`}
-                    style={{ '--stand-couleur': figurant.couleur }}>
+                  <div key={id} data-personnage-stand={id} data-echelle={echelle !== 1 ? echelle : undefined}
+                    className={`rpg-narrative__stand${id === standActif ? ' rpg-narrative__stand--actif' : ''}${stand ? ' rpg-narrative__stand--decoupe' : ''}${echelle !== 1 ? ' rpg-narrative__stand--echelle' : ''}`}
+                    style={{ '--stand-couleur': figurant.couleur, '--stand-echelle': echelle }}>
                     <StoryStand personnageId={id} situation={situationPose} cardArt={cardArt} miroir={miroir} />
                   </div>
                 );

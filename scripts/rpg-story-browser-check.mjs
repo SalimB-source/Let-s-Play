@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY } from '../src/games/rpgStory.js';
 import { RPG_STORY_CAMPAIGN_FLOORS, acteSuivantHistoire, questionChoix, sceneHistoire } from '../src/games/rpgStoryScenes.js';
+import { ECHELLE_STAND_PLAN_LARGE } from '../src/games/rpgStoryCast.js';
 import { recitHistoireVide, transitionRecitHistoire } from '../src/games/rpgStoryFlow.js';
 
 /** Rejoue les vraies transitions, sans fabriquer un acte encore verrouillé. */
@@ -198,9 +199,12 @@ try {
   // scène (briefing, livre et épilogue), pas seulement présentes sur disque.
   const casActes = [
     { nom: 'acte-6-scene', cible: 'corsaires-1-avant', acte: 'acte-6', decor: 'corsaires', id: 'corsaire-mousse', fichier: 'stand-corsaire-mousse.webp', stand: true },
+    { nom: 'acte-6-barbe-rousse', cible: 'corsaires-4-avant', acte: 'acte-6', decor: 'corsaires', id: 'corsaire-barbe-rousse', fichier: 'stand-corsaire-barbe-rousse.webp', stand: true },
     { nom: 'acte-6-negociant', cible: { type: 'duel', etageId: 'corsaires-2' }, acte: 'acte-6', decor: 'corsaires', id: 'corsaire-negociant', fichier: 'corsaire-negociant.jpg', duel: true },
     { nom: 'acte-6-epilogue', cible: 'corsaires-4-apres', acte: 'acte-6', decor: 'corsaires', id: 'corsaire-barbe-rousse', fichier: 'la-barbe-rousse.jpg', conclure: true },
     { nom: 'acte-7-scene', cible: 'soleil-1-avant', acte: 'acte-7', decor: 'soleil', id: 'samurai-ashigaru', fichier: 'stand-samurai-ashigaru.webp', stand: true, livre: true },
+    { nom: 'acte-7-daimyo', cible: 'soleil-4-avant', acte: 'acte-7', decor: 'soleil', id: 'samurai-daimyo', fichier: 'stand-samurai-daimyo.webp', stand: true },
+    { nom: 'acte-8-chacal', cible: 'necropole-2-avant', acte: 'acte-8', decor: 'necropole', id: 'necro-chacal', fichier: 'stand-necro-chacal.webp', stand: true },
     { nom: 'acte-8-scene-mobile', cible: 'necropole-3-avant', acte: 'acte-8', decor: 'necropole', id: 'necro-peseuse', fichier: 'stand-necro-peseuse.webp', stand: true, mobile: true },
     { nom: 'acte-8-epilogue', cible: 'necropole-4-apres', acte: 'acte-8', decor: 'necropole', id: 'necro-devoreuse', fichier: 'la-devoreuse.jpg', conclure: true },
   ];
@@ -230,6 +234,8 @@ try {
     }
     assert.equal(await lecteur.getAttribute('data-story-act'), cas.acte);
     assert.equal(await lecteur.getAttribute('data-story-decor'), cas.decor, `${cas.nom} : décor de son acte`);
+    assert.ok(await lecteur.evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+      `${cas.nom} : l’agrandissement ne crée pas de défilement horizontal`);
     const image = page.locator(cas.stand
       ? `[data-personnage-stand="${cas.id}"] img[data-personnage="${cas.id}"]`
       : `.rpg-narrative__portrait img[data-personnage="${cas.id}"]`);
@@ -237,6 +243,12 @@ try {
     await image.evaluate((element) => element.decode());
     assert.ok(await image.evaluate((element) => element.naturalWidth > 0), `${cas.id} : image décodée`);
     assert.ok((await image.getAttribute('src')).includes(cas.fichier), `${cas.id} : sa propre peinture`);
+    if (cas.stand) {
+      const support = page.locator(`[data-personnage-stand="${cas.id}"]`);
+      assert.equal(await support.getAttribute('data-echelle'), String(ECHELLE_STAND_PLAN_LARGE));
+      assert.equal(await support.evaluate((element) => getComputedStyle(element).scale), String(ECHELLE_STAND_PLAN_LARGE),
+        `${cas.id} : le grossissement du plan large est bien appliqué au plateau`);
+    }
     if (screenshotDir) await page.screenshot({ path: join(screenshotDir, `${cas.nom}.png`) });
     if (cas.duel) {
       const portrait = await image.getAttribute('src');

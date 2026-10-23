@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { cardById } from '../src/games/rpgCards.js';
 import { collectionJoueur } from '../src/games/rpgCollection.js';
-import { RPG_STORY_CAST, RPG_STORY_DECORS, SITUATIONS_POSE_HISTOIRE, personnageEtage, personnageHistoire, portraitHistoire, poseHistoire, situationsPoseHistoire, standHistoire } from '../src/games/rpgStoryCast.js';
+import { RPG_STORY_CAST, RPG_STORY_DECORS, SITUATIONS_POSE_HISTOIRE, ECHELLE_STAND_PLAN_LARGE, personnageEtage, personnageHistoire, portraitHistoire, poseHistoire, situationsPoseHistoire, standHistoire } from '../src/games/rpgStoryCast.js';
 import { RPG_STORY_ACTES, RPG_STORY_ALL_SCENES, RPG_STORY_CAMPAIGN_FLOORS, RPG_STORY_CHOICES, RPG_STORY_REGISTRES, RPG_STORY_SCENES, RPG_STORY_SURVIVANTS, RPG_STORY_LIST_CHOICE, registresDebloques, sceneHistoire, statutSurvivantsHistoire, texteEpilogueActe, texteRegistre, texteReplique } from '../src/games/rpgStoryScenes.js';
 import { acteCourantRecit, etapesRecitHistoire, recitHistoireVide, resumeActesHistoire, normaliserRecitHistoire, transitionRecitHistoire, resumeRecitHistoire } from '../src/games/rpgStoryFlow.js';
 import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY, abonnerProgressionHistoire, progressionHistoireVide, normaliserProgressionHistoire, marquerEtageVaincu, fusionnerProgressionHistoire, chargerProgressionHistoire, sauverProgressionHistoire, reinitialiserProgressionHistoire } from '../src/games/rpgStory.js';
@@ -155,6 +155,8 @@ test('les actes VI à VIII ont leur propre casting, leurs décors et leurs épil
     for (const id of attendu.cast) {
       const personnage = personnageHistoire(id);
       assert.equal(personnage.stand, `sablier-story/stands/stand-${id}.webp`);
+      assert.equal(personnage.echelle, ECHELLE_STAND_PLAN_LARGE,
+        `${id} : son plan large est agrandi comme les autres nouvelles figures`);
       assert.ok(scenes.some((scene) => scene.repliques.some((ligne) => ligne.personnage === id)),
         `${id} : le protagoniste créé apparaît réellement dans son acte`);
     }
