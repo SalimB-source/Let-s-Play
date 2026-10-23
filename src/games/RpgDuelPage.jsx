@@ -30,6 +30,7 @@ import {
   plateauParId,
   resoudrePlateauxDuDuel,
 } from './rpgPlateaux.js';
+import { territoireDuDuel } from './rpgTerritoire.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import {
   RPG_MANA_ESSAI_CHAMP_MAX,
@@ -7222,6 +7223,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         : 'egalite')
     : null;
   const vainqueur = vainqueurPvp ?? rpgVainqueur(duel);
+  const territoire = territoireDuDuel(duel, vainqueur);
   const soinJoueur = soinsVisibles.joueur ?? null;
   const soinSorcier = soinsVisibles.sorcier ?? null;
   // L'éclat de soin d'une créature posée. Une pile d'homonymes repliée ne
@@ -10065,11 +10067,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         data-screen-impact-token={impactEcran?.token ?? undefined}
         data-plateau-joueur={plateau.id}
         data-plateau-adversaire={plateauAdverse.id}
+        data-territoire-joueur={territoire.partJoueur}
+        data-territoire-dominant={territoire.dominant}
+        data-territoire-termine={vainqueur ? 'true' : undefined}
         data-apercu-carte={apercuCarte ?? undefined}
         aria-busy={carteEnVol ? 'true' : undefined}
-        style={{ backgroundImage: `url(${import.meta.env.BASE_URL}${plateau.fichier})` }}
+        style={{
+          backgroundImage: `url(${import.meta.env.BASE_URL}${plateau.fichier})`,
+          '--rpg-frontiere': `${territoire.frontiere}%`,
+        }}
         aria-label={plateauDecoupe
-          ? `Table de jeu du duel de sorciers — ${plateauAdverse.nom} côté sorcier, ${plateau.nom} côté joueur`
+          ? `Table de jeu du duel de sorciers — ${plateauAdverse.nom} côté sorcier, ${plateau.nom} côté joueur — territoire joueur ${territoire.partJoueur} %`
           : `Table de jeu du duel de sorciers — ${plateau.nom}`}
         onPointerDown={commencerGlisserTactile}
         onDragOver={survolerTablePourDepot}
@@ -10084,21 +10092,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             décor que le temps de l'aperçu, flou (voir `rpg-battle.css`).
             `aria-hidden` : il ne montre rien que la table ne montre déjà. */}
         <span className="rpg-plateau-fond" aria-hidden="true" />
-        {/* La table découpée : chaque moitié est la peinture plein cadre de son
-            camp, rognée à sa moitié par `clip-path` (voir `rpg-battle.css`) —
-            même échelle que la table pleine, jonction au centre soulignée d'un
-            liseré. La peinture du plateau principal reste le fond de la table :
-            elle tient lieu de repli le temps que les deux moitiés arrivent. */}
+        {/* Les peintures restent plein cadre : seul le masque du terrain adverse
+            avance ou recule. Le joueur reste dessous pour un fondu sans trou.
+            Aucun déplacement des cartes, des zones de dépôt ou des commandes. */}
         {plateauDecoupe && (
           <>
             <div
-              className={`rpg-plateau-moitie rpg-plateau-moitie--adverse rpg-plateau-moitie--plateau-${plateauAdverse.id}`}
-              style={{ backgroundImage: `url(${import.meta.env.BASE_URL}${plateauAdverse.fichier})` }}
+              className={`rpg-plateau-moitie rpg-plateau-moitie--joueur rpg-plateau-moitie--plateau-${plateau.id}`}
+              style={{ backgroundImage: `url(${import.meta.env.BASE_URL}${plateau.fichier})` }}
               aria-hidden="true"
             />
             <div
-              className={`rpg-plateau-moitie rpg-plateau-moitie--joueur rpg-plateau-moitie--plateau-${plateau.id}`}
-              style={{ backgroundImage: `url(${import.meta.env.BASE_URL}${plateau.fichier})` }}
+              className={`rpg-plateau-moitie rpg-plateau-moitie--adverse rpg-plateau-moitie--plateau-${plateauAdverse.id}`}
+              style={{ backgroundImage: `url(${import.meta.env.BASE_URL}${plateauAdverse.fichier})` }}
               aria-hidden="true"
             />
             <div className="rpg-plateau-lisere" aria-hidden="true" />

@@ -8606,3 +8606,35 @@ npm run check:rpg-journal   # ✓ — onglet, panneau, badge, cellule `coin`
 npm run check:rpg           # ✓ — les règles du duel ne changent pas
 npm run build               # ✓ — le bundle se construit
 ```
+
+## Le Sablier : les territoires avancent avec les points de vie
+
+Les deux décors des decks ne restent plus figés à mi-table. Le territoire du
+joueur part à **50 %** et gagne **1,5 point de pourcentage par PV d'avance**
+sur le sorcier (ou recule d'autant). Exemple : 25 PV contre 15 → **65 / 35**.
+Les soins peuvent inverser l'avantage, même au-dessus de 25 PV : on compare
+la vie réelle, jamais le maximum historique `pvMax`, ni les boucliers.
+
+- Pendant le duel, le partage reste borné entre **20 / 80 et 80 / 20**.
+- À la victoire, le terrain du gagnant recouvre toute la table, y compris en
+  PvP sur abandon ou expiration du délai. Un nul ramène le partage à 50 / 50.
+- La frontière est un **fondu animé de 900 ms**, pas une ligne dure. Une lueur
+  discrète suit le fondu ; elle devient rouge braise quand la Cour de
+  l'Empereur prend l'avantage. Le réglage de réduction des animations coupe
+  cette transition.
+- Les cartes, commandes et zones de dépôt **ne bougent jamais**. Aucun bonus,
+  aucune règle de combat et aucun tirage aléatoire ne sont ajoutés.
+- Deux decks sur le même terrain gardent une peinture unie, sans couture.
+  La musique reste celle du joueur ; le décor 3D reste masqué lorsque les
+  terrains diffèrent, comme avant.
+
+Le calcul pur est dans `src/games/rpgTerritoire.js`. La page transmet le
+pourcentage à la propriété CSS typée `--rpg-frontiere` ; le masque de la
+peinture adverse révèle le décor du joueur qui reste dessous. Pas de boucle
+JavaScript d'animation. Sans prise en charge de `@property`, le partage reste
+correct mais sa mise à jour n'est pas interpolée.
+
+Vérifications : `npm run check:rpg-territoire` (calcul, symétrie des deux
+perspectives et rendus successifs de la vraie page : dégâts, soins, fin PvP,
+nul, terrain commun et nouvelle partie), `npm run check:rpg-sanctuaire`,
+`npm run check:rpg-plateau-flou` et `npm run build`.
