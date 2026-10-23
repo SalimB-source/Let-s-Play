@@ -146,19 +146,18 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     particles: motes({ count: 44, color: '#f1ead8', size: 0.026, opacity: 0.45, vx: 0.14, vy: 0.04, sway: 0.12, swayHz: 0.3 }),
     overlay: { kind: 'ombre', color: '#26333a', opacity: 0.15, speed: 0.014, scale: 1.8 },
   }),
-  // La glace du fjord : froide, brillante, la neige tombe.
-  'fjord-des-neuf-hivers': theme({
-    key: '#e5f1ff', keyIntensity: 0.52, keyDirection: [-0.5, 0.7, 1], ambient: '#f2f7ff', relief: 1.1, roughness: 0.42,
-    particles: motes({ count: 90, color: '#ffffff', size: 0.038, opacity: 0.8, vx: 0.04, vy: -0.16, sway: 0.18, swayHz: 0.3, z: 1.1, zSpread: 0.8 }),
-    // Lanterne de fer, cor à boire, hache, corde et bâton de runes (plaque sans eux).
-    plaque: 'plateau-fjord-des-neuf-hivers-vide.jpg',
-    objets: [
-      { kind: 'lanterne-fer', u: 0.0957, v: 0.435, size: 0.274, angle: 103 },
-      { kind: 'cor', u: 0.061, v: 0.598, size: 0.388, angle: -46 },
-      { kind: 'hache', u: 0.983, v: 0.555, size: 0.3, angle: 134 },
-      { kind: 'corde-brune', u: 0.947, v: 0.277, size: 0.22, angle: 90 },
-      { kind: 'baton', u: 0.7755, v: 0.977, size: 0.307, angle: 51 },
+  // Le village viking : vu à vol d'oiseau sous la neige qui tombe, la grande
+  // place dégagée au milieu et les deux braseros enflammés en bas à droite.
+  // Aucun objet 3D : la halle du Jarl, les maisons longues, les boucliers
+  // ronds, les stèles runiques, les tonneaux, la corde et les sapins sont
+  // peints aux bords de la place.
+  'village-viking': theme({
+    ambient: '#f2f7ff', key: '#e5f1ff', keyIntensity: 0.52, keyDirection: [-0.5, 0.7, 1], relief: 1.15, roughness: 0.78,
+    lights: [
+      light({ color: '#ff9e42', intensity: 2.1, distance: 3.8, x: 0.43, y: -0.64, z: 0.75, flicker: 0.28 }),
+      light({ color: '#ff9e42', intensity: 2.1, distance: 3.8, x: 0.67, y: -0.64, z: 0.75, flicker: 0.28 }),
     ],
+    particles: motes({ count: 90, color: '#ffffff', size: 0.038, opacity: 0.8, vx: 0.04, vy: -0.16, sway: 0.18, swayHz: 0.3, z: 1.1, zSpread: 0.8 }),
     overlay: { kind: 'ombre', color: '#1d2f45', opacity: 0.12, speed: 0.01, scale: 1.7 },
   }),
   // La cour de l'Empereur : l'encre, les aplats et l'or d'une peinture

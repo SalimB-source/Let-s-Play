@@ -57,6 +57,7 @@ import {
   arriveeCiblePortee,
   arriveeConsulteDeck,
   arriveeACibleLegale,
+  arriveeViseSorcier,
   rpgResoudreArriveeCiblee,
 } from '../src/games/rpgDuel.js';
 import {
@@ -1025,16 +1026,22 @@ test('le Père des corbeaux : 5/5 à 6 avec Envol, et ses corbeaux exilent une c
     'le Kraken, lui, reste en jeu');
 });
 
-test('le Maître du marteau : 5/5 Furie 3, Overkill et Tenacité, sans dégâts d’arrivée', () => {
+test('le Maître du marteau : 3 dégâts à une créature ou au sorcier, Furie 3 qui prête Overkill et Envol, Tenacité', () => {
   const carte = cardById('maitre-du-marteau');
   assert.deepEqual([carte.atk, carte.def, carte.furie], [5, 5, 3], '5/5 avec Furie 3');
-  assert.equal(carte.arrivee, undefined, 'son arrivée ne blesse plus les créatures adverses');
-  assert.equal(carte.overkill, true, 'Overkill remplace les dégâts d’arrivée');
+  assert.deepEqual(carte.arrivee, {
+    type: 'degats', amount: 3, cible: 'creature', cibles: ['creature', 'sorcier'],
+  }, 'son arrivée frappe une créature ou le sorcier adverse');
+  assert.equal(carte.overkill, undefined, 'Overkill n’est plus imprimé : la Furie le prête');
+  assert.equal(carte.envol, undefined, 'Envol non plus : la Furie le prête');
+  assert.deepEqual(carte.furieGains, { overkill: true, envol: true });
   assert.equal(carte.tenacite, true);
-  assert.match(carte.text, /^Furie 3\. Overkill\./);
-  assert.doesNotMatch(carte.text, /première fois|gagne \+3\/\+3|inflige 2 dégâts/);
-  assert.match(carte.text, /Tenacité — Une fois par partie, quand il meurt \(sauf exilé\), il revient en jeu au début de votre prochain tour avec 1 point de défense/);
+  assert.match(carte.text, /^Quand il arrive : son marteau frappe — 3 dégâts à une créature ou au sorcier adverse/);
+  assert.match(carte.text, /Furie 3\. Tant que sa Furie est active, il gagne aussi Overkill et Envol\./);
+  assert.match(carte.text, /Tenacité — Une fois par partie, quand il meurt \(sauf exilé\), il revient en jeu au début de votre prochain tour avec 1 point de défense ; son effet d’arrivée se déclenche alors de nouveau\./);
 
+  // 1. L'arrivée désigne sa victime sur la table : le Chien 2/2 tombe, la Dune
+  // 2/4 reste intacte et le sorcier ne perd rien.
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -1042,70 +1049,101 @@ test('le Maître du marteau : 5/5 Furie 3, Overkill et Tenacité, sans dégâts 
   const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
   donner(duel, 'sorcier', 'dune-marchante');
   const dune = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
-
+  const pvSorcier = duel.sorcier.pv;
   donner(duel, 'joueur', 'maitre-du-marteau');
-  const maitre = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau').entite;
-  assert.equal(duel.sorcier.creatures.includes(chien), true,
-    'sans dégâts d’arrivée, le Chien 2/2 reste en jeu');
-  assert.equal(chien.pv, 2, 'le Chien est intact');
-  assert.equal(dune.pv, 4, 'la Dune 2/4 aussi');
-  assert.equal(maitre.overkill, true, 'l’entité porte l’Overkill imprimé');
+  const maitre = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau', chien.id).entite;
+  assert.ok(maitre, 'le Maître se pose en désignant sa cible');
+  assert.equal(duel.sorcier.creatures.includes(chien), false, 'les 3 dégâts emportent le Chien');
+  assert.equal(dune.pv, 4, 'une seule cible : la Dune reste intacte');
+  assert.equal(duel.sorcier.pv, pvSorcier, 'le sorcier n’est pas touché quand une créature est visée');
+  assert.equal(maitre.overkill, false, 'hors Furie, pas d’Overkill');
+  assert.equal(maitre.envol, false, 'hors Furie, pas d’Envol');
 
-  // Tenacité : le Maître meurt pour de bon — cimetière, déclenchements de mort
-  // et aucune Furie — mais sa carte est promise au prochain tour du joueur.
-  const debut = rpgNombreDestructions(duel);
-  assert.equal(rpgBlesserCreature(duel, 'joueur', maitre.id, 20, 'braise').ok, true);
-  assert.equal(duel.joueur.creatures.includes(maitre), false, 'la mort n’est plus refusée');
-  assert.ok(duel.joueur.cimetiere.includes('maitre-du-marteau'));
-  assert.equal(rpgNombreDestructions(duel), debut + 1, 'la destruction a bien eu lieu');
-  assert.equal(maitre.furieDeclenchee, false, 'une morte ne s’allume pas de Furie');
-  assert.deepEqual(duel.joueur.retoursProgrammes, [
+  // L'arrivée peut viser le sorcier lui-même.
+  const auVisage = duelDeBase();
+  donnerMana(auVisage, 'joueur', 20);
+  const pvAvant = auVisage.sorcier.pv;
+  donner(auVisage, 'joueur', 'maitre-du-marteau');
+  assert.equal(rpgJouerCreature(auVisage, 'joueur', 'maitre-du-marteau', 'sorcier').ok, true);
+  assert.equal(auVisage.sorcier.pv, pvAvant - 3, '3 dégâts au sorcier adverse');
+  assert.ok(auVisage.log.some((ligne) => ligne.includes('3 dégâts au sorcier adverse')),
+    'le journal dit d’où viennent les points');
+
+  // Sans désignation, la pose est refusée tant qu’une cible reste — le visage
+  // adverse en est toujours une.
+  const sansCible = duelDeBase();
+  donnerMana(sansCible, 'joueur', 20);
+  donner(sansCible, 'joueur', 'maitre-du-marteau');
+  assert.equal(rpgJouerCreature(sansCible, 'joueur', 'maitre-du-marteau').raison, 'cible');
+
+  // 2. La Furie prête Overkill et Envol, et les retire quand elle retombe.
+  const furie = duelDeBase();
+  donnerMana(furie, 'joueur', 20);
+  donnerMana(furie, 'sorcier', 20);
+  donner(furie, 'joueur', 'maitre-du-marteau');
+  const frappeur = rpgJouerCreature(furie, 'joueur', 'maitre-du-marteau', 'sorcier').entite;
+  assert.equal(rpgBlesserCreature(furie, 'joueur', frappeur.id, 2, 'braise').recus, 2);
+  assert.deepEqual(
+    [frappeur.atk, frappeur.furieDeclenchee, frappeur.furieBonusAtk, frappeur.overkill, frappeur.envol],
+    [8, true, 3, true, true],
+    'blessé, il entre en Furie : +3/+0, Overkill et Envol',
+  );
+  // Un soin qui le ramène à sa DEF de base éteint la Furie — et ses deux mots-clés.
+  donnerMana(furie, 'joueur', 20);
+  donner(furie, 'joueur', 'valkyrie-des-glaces');
+  assert.equal(rpgJouerCreature(furie, 'joueur', 'valkyrie-des-glaces').ok, true);
+  assert.deepEqual(
+    [frappeur.atk, frappeur.pv, frappeur.furieDeclenchee, frappeur.overkill, frappeur.envol],
+    [5, 5, false, false, false],
+    'soigné à sa DEF de base, il perd la Furie, l’Overkill et l’Envol',
+  );
+
+  // 3. Tenacité : la mort est réelle, la renaissance est une arrivée en jeu —
+  // son effet d'arrivée retentit donc au retour.
+  const debut = rpgNombreDestructions(furie);
+  assert.equal(rpgBlesserCreature(furie, 'joueur', frappeur.id, 20, 'braise').ok, true);
+  assert.equal(furie.joueur.creatures.includes(frappeur), false, 'la mort n’est pas refusée');
+  assert.equal(rpgNombreDestructions(furie), debut + 1);
+  assert.deepEqual(furie.joueur.retoursProgrammes, [
     { carteId: 'maitre-du-marteau', toursRestants: 2, tenacite: true },
   ], 'il est mort pendant son tour : il revient au tour suivant du joueur');
 
-  rpgFinDeTour(duel);
-  assert.equal(duel.tour, 'sorcier');
-  assert.equal(duel.joueur.retoursProgrammes[0].toursRestants, 1,
+  rpgFinDeTour(furie);
+  assert.equal(furie.tour, 'sorcier');
+  assert.equal(furie.joueur.retoursProgrammes[0].toursRestants, 1,
     'il reste au cimetière pendant le tour du sorcier');
-  assert.equal(duel.joueur.creatures.some((entite) => entite.carteId === 'maitre-du-marteau'), false);
+  assert.equal(furie.joueur.creatures.some((entite) => entite.carteId === 'maitre-du-marteau'), false);
+  const pvSorcierAvantRetour = furie.sorcier.pv;
 
-  rpgFinDeTour(duel);
-  assert.equal(duel.tour, 'joueur');
-  const revenu = duel.joueur.creatures.find((entite) => entite.carteId === 'maitre-du-marteau');
+  rpgFinDeTour(furie);
+  assert.equal(furie.tour, 'joueur');
+  const revenu = furie.joueur.creatures.find((entite) => entite.carteId === 'maitre-du-marteau');
   assert.ok(revenu, 'Tenacité le ramène en jeu au début du prochain tour du joueur');
-  assert.notEqual(revenu.id, maitre.id, 'c’est une présence neuve');
+  assert.notEqual(revenu.id, frappeur.id, 'c’est une présence neuve');
   assert.deepEqual([revenu.def, revenu.pv, revenu.pvMax], [1, 1, 5],
     'il revient avec 1 point de défense, sa vie pleine restant à restaurer');
   assert.equal(revenu.tenaciteDisponible, false, 'la renaissance de la partie est dépensée');
   assert.equal(revenu.ready, false, 'il revient avec le mal d’invocation');
-  assert.equal(duel.joueur.cimetiere.includes('maitre-du-marteau'), false);
-  assert.deepEqual(duel.joueur.retoursProgrammes, []);
-  // Revenu à 1 PV, donc sous sa DEF de base de 5 : sa Furie 3 s’allume pour
-  // +3/+0 seulement — la Furie du Sablier ne touche jamais la défense.
-  assert.deepEqual([revenu.atk, revenu.furieDeclenchee, revenu.furieBonusAtk], [8, true, 3],
-    'la présence revenue retrouve sa Furie : +3/+0 tant qu’elle reste sous sa DEF de base');
-
-  // Un soin partiel ne suffit pas à éteindre l’état : à 3 PV sur 5, le
-  // Maître reste en Furie. Une blessure de plus ne cumule pas son bonus.
-  donnerMana(duel, 'joueur', 20); // le mana du tour a été remis à zéro au changement de tour
-  donner(duel, 'joueur', 'valkyrie-des-glaces');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces').ok, true);
+  assert.equal(furie.sorcier.pv, pvSorcierAvantRetour - 3,
+    'la renaissance rejoue son arrivée : 3 dégâts au sorcier, faute de créature en face');
+  assert.ok(furie.log.some((ligne) => ligne.includes('3 dégâts au sorcier adverse')),
+    'les dégâts du retour s’écrivent au journal');
+  assert.ok(furie.log.some((ligne) => ligne.startsWith('Tenacité :') && /revient en jeu.*effet d’arrivée retentit/.test(ligne)),
+    'le journal dit que l’arrivée retentit');
+  assert.equal(furie.joueur.cimetiere.includes('maitre-du-marteau'), false);
+  assert.deepEqual(furie.joueur.retoursProgrammes, []);
+  // Revenu à 1 PV, donc sous sa DEF de base de 5 : sa Furie 3 s’allume —
+  // +3/+0, et avec elle l’Overkill et l’Envol.
   assert.deepEqual(
-    [revenu.atk, revenu.def, revenu.pv, revenu.pvMax, revenu.furieDeclenchee, revenu.furieBonusAtk],
-    [8, 3, 3, 5, true, 3],
-    'soigné de 2 sans retrouver sa DEF de base, il garde exactement le même bonus',
-  );
-  assert.equal(rpgBlesserCreature(duel, 'joueur', revenu.id, 1, 'braise').recus, 1);
-  assert.deepEqual(
-    [revenu.atk, revenu.def, revenu.pv, revenu.pvMax, revenu.furieBonusAtk],
-    [8, 2, 2, 5, 3],
-    'déjà active, la Furie ne se regagne pas',
+    [revenu.atk, revenu.furieDeclenchee, revenu.overkill, revenu.envol],
+    [8, true, true, true],
+    'la présence revenue retrouve sa Furie, son Overkill et son Envol',
   );
 
   // Seconde mort : la Tenacité n’a plus rien à promettre.
-  assert.equal(rpgBlesserCreature(duel, 'joueur', revenu.id, 20, 'braise').ok, true);
-  assert.equal(duel.joueur.creatures.includes(revenu), false);
-  assert.deepEqual(duel.joueur.retoursProgrammes, [],
+  assert.equal(rpgBlesserCreature(furie, 'joueur', revenu.id, 20, 'braise').ok, true);
+  assert.equal(furie.joueur.creatures.includes(revenu), false);
+  assert.deepEqual(furie.joueur.retoursProgrammes, [],
     'une seule renaissance par partie : la seconde mort est définitive');
 });
 
@@ -1114,7 +1152,9 @@ test('Tenacité : le retour dépend du camp dont le tour commence', () => {
   duel.tour = 'sorcier';
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'sorcier', 'maitre-du-marteau');
-  const maitre = rpgJouerCreature(duel, 'sorcier', 'maitre-du-marteau').entite;
+  // Son arrivée « créature ou sorcier » désigne toujours sa cible : le visage
+  // adverse fait l'affaire.
+  const maitre = rpgJouerCreature(duel, 'sorcier', 'maitre-du-marteau', 'sorcier').entite;
   // Le sorcier tue lui-même son Maître pendant SON tour : le retour attend le
   // prochain tour du sorcier, donc deux changements de tour.
   assert.equal(rpgBlesserCreature(duel, 'sorcier', maitre.id, 20, 'braise').ok, true);
@@ -1128,7 +1168,7 @@ test('Tenacité : le retour dépend du camp dont le tour commence', () => {
   autre.tour = 'sorcier';
   donnerMana(autre, 'joueur', 20);
   donner(autre, 'joueur', 'maitre-du-marteau');
-  const sien = rpgJouerCreature(autre, 'joueur', 'maitre-du-marteau').entite;
+  const sien = rpgJouerCreature(autre, 'joueur', 'maitre-du-marteau', 'sorcier').entite;
   assert.equal(rpgBlesserCreature(autre, 'joueur', sien.id, 20, 'braise').ok, true);
   assert.deepEqual(autre.joueur.retoursProgrammes, [
     { carteId: 'maitre-du-marteau', toursRestants: 1, tenacite: true },
@@ -1143,7 +1183,7 @@ test('Tenacité : l’exil ne ramène jamais la créature', () => {
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'maitre-du-marteau');
-  const maitre = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau').entite;
+  const maitre = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau', 'sorcier').entite;
   donner(duel, 'sorcier', 'la-devoreuse');
   const devoreuse = rpgJouerCreature(duel, 'sorcier', 'la-devoreuse', maitre.id).entite;
   assert.ok(devoreuse);
@@ -1152,14 +1192,21 @@ test('Tenacité : l’exil ne ramène jamais la créature', () => {
   assert.deepEqual(duel.joueur.retoursProgrammes, [], 'l’exil ne programme aucune renaissance');
 });
 
-test('le Jarl et le Maître du marteau percent avec leur Overkill imprimé', () => {
-  for (const carteId of ['jarl-au-marteau-de-guerre', 'maitre-du-marteau']) {
+test('le Jarl percent avec son Overkill imprimé, le Maître du marteau avec celui de sa Furie', () => {
+  // Le Jarl porte Overkill sur sa fiche ; le Maître ne l'a que sous sa Furie —
+  // il entre donc légèrement blessé, Furie 3 allumée.
+  for (const [carteId, blessure] of [['jarl-au-marteau-de-guerre', 0], ['maitre-du-marteau', 1]]) {
     const duel = duelDeBase();
     donnerMana(duel, 'joueur', 30);
     donnerMana(duel, 'sorcier', 30);
     donner(duel, 'joueur', carteId);
-    const attaquant = rpgJouerCreature(duel, 'joueur', carteId).entite;
-    assert.equal(attaquant.overkill, true, `${carteId} entre avec Overkill`);
+    const attaquant = rpgJouerCreature(duel, 'joueur', carteId,
+      carteId === 'maitre-du-marteau' ? 'sorcier' : null).entite;
+    if (blessure) {
+      rpgBlesserCreature(duel, 'joueur', attaquant.id, blessure, 'braise');
+      assert.equal(attaquant.furieDeclenchee, true, `${carteId} est en Furie`);
+    }
+    assert.equal(attaquant.overkill, true, `${carteId} attaque avec Overkill`);
     donner(duel, 'sorcier', 'chien-du-guet');
     const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
     // Le bloqueur absorbe exactement un point de moins que la force de
@@ -1169,6 +1216,9 @@ test('le Jarl et le Maître du marteau percent avec leur Overkill imprimé', () 
       pv: attaquant.atk - 1,
       def: attaquant.atk - 1,
       pvMax: attaquant.atk - 1,
+      // La Furie du Maître lui prête Envol : seul un bloqueur volant peut
+      // l'arrêter sur la table.
+      envol: true,
     });
     attaquant.ready = true;
     const pvSorcier = duel.sorcier.pv;
@@ -1188,7 +1238,10 @@ for (const carteId of ['maitre-du-marteau', 'seigneur-des-machoires']) {
         const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
         for (const camp of [cote, adv]) donnerMana(duel, camp, 50);
         donner(duel, cote, carteId);
-        const tenace = rpgJouerCreature(duel, cote, carteId).entite;
+        // Le Maître du marteau frappe à l'arrivée : sa cible est le visage
+        // adverse (l'arrivée du Seigneur des mâchoires n'en demande pas).
+        const tenace = rpgJouerCreature(duel, cote, carteId,
+          carteId === 'maitre-du-marteau' ? 'sorcier' : null).entite;
         donner(duel, adv, 'chien-du-guet');
         const adversaire = rpgJouerCreature(duel, adv, 'chien-du-guet').entite;
         adversaire.atk = 20;
@@ -1257,7 +1310,7 @@ test('Tenacité ne sauve pas d’un coup fatal porté par deux bloqueurs', () =>
   const duel = duelDeBase();
   for (const cote of ['joueur', 'sorcier']) donnerMana(duel, cote, 50);
   donner(duel, 'joueur', 'maitre-du-marteau');
-  const maitre = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau').entite;
+  const maitre = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau', 'sorcier').entite;
   const bloqueurs = Array.from({ length: 2 }, () => {
     donner(duel, 'sorcier', 'chien-du-guet');
     const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
@@ -1389,6 +1442,46 @@ test('une arrivée ciblée se désigne APRÈS la pose : la créature entre en je
   assert.equal(duel.sorcier.creatures.includes(chien), true, 'le venin ronge, il ne tue pas');
   assert.equal(duel.arriveeEnAttente, null, 'il ne reste rien à désigner');
   assert.ok(duel.joueur.creatures.includes(pose.entite), 'la Vipère, elle, reste en jeu');
+});
+
+test('le Maître du marteau peut désigner une créature ou le sorcier adverse', () => {
+  const maitre = cardById('maitre-du-marteau');
+  assert.equal(arriveeCiblePortee(maitre), 'ennemi', 'la portée reste la table adverse');
+  assert.equal(arriveeViseSorcier(maitre), true, 'mais le visage adverse est une cible déclarée');
+  assert.equal(arriveeViseSorcier(cardById('vipere-de-verre')), false,
+    'les autres arrivées ciblées ne visent que les créatures');
+
+  // Table adverse vide : le sorcier reste une cible, donc l’attente s’ouvre.
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donner(duel, 'joueur', 'maitre-du-marteau');
+  assert.equal(arriveeACibleLegale(duel, 'joueur', maitre), true,
+    'le sorcier adverse est toujours une cible légale');
+  const pose = rpgJouerCreature(duel, 'joueur', 'maitre-du-marteau', null, { cibleDifferee: true });
+  assert.equal(pose.ok, true);
+  assert.equal(pose.arriveeEnAttente, true, 'les 3 dégâts attendent leur cible');
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE, 'rien n’a encore été frappé');
+
+  const pvAvant = duel.sorcier.pv;
+  const res = rpgResoudreArriveeCiblee(duel, 'joueur', 'sorcier');
+  assert.equal(res.ok, true, 'le clic sur le sorcier referme l’attente');
+  assert.equal(duel.sorcier.pv, pvAvant - 3, '3 dégâts au sorcier adverse');
+  assert.ok(duel.log.some((ligne) => ligne.includes('3 dégâts au sorcier adverse')),
+    'le journal dit d’où viennent les points');
+  assert.equal(duel.arriveeEnAttente, null);
+
+  // Une créature reste une cible comme l’autre : le marteau choisit.
+  const autre = duelDeBase();
+  donnerMana(autre, 'joueur', 30);
+  donnerMana(autre, 'sorcier', 30);
+  donner(autre, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(autre, 'sorcier', 'chien-du-guet').entite;
+  donner(autre, 'joueur', 'maitre-du-marteau');
+  rpgJouerCreature(autre, 'joueur', 'maitre-du-marteau', null, { cibleDifferee: true });
+  const pvSorcier = autre.sorcier.pv;
+  assert.equal(rpgResoudreArriveeCiblee(autre, 'joueur', chien.id).ok, true);
+  assert.equal(autre.sorcier.creatures.includes(chien), false, 'le Chien 2/2 tombe');
+  assert.equal(autre.sorcier.pv, pvSorcier, 'le sorcier n’est pas touché quand une créature est visée');
 });
 
 test('le venin de la Vipère ronge jusqu’au bout du tour de sa victime', () => {
@@ -3834,6 +3927,75 @@ test('Embuscade : -2/-2 jamais sous 1/1, et toute la table adverse doit bloquer 
   }
 });
 
+test('Embuscade force un multi-blocage : la page précalcule la répartition, « Accepter les blocages » reste cliquable', () => {
+  // Le scénario du blocage (rapporté en partie) : Embuscade force TOUTE la
+  // table adverse à bloquer ; l’IA interpose donc quatre créatures sur un seul
+  // attaquant. La page créait son combat avec `repartitions: {}` — la porte
+  // `repartitionValide` (somme des parts === force de l’attaquant dès
+  // 2 bloqueurs) ne pouvait alors jamais s’ouvrir : le bouton
+  // « ✓ Accepter les blocages » restait désactivé, attaque consommée,
+  // « Fin du tour » fermé — partie figée.
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 9);
+  donnerMana(duel, 'sorcier', 9);
+  donner(duel, 'joueur', 'geant-des-banquises'); // 5 ATK
+  const geant = rpgJouerCreature(duel, 'joueur', 'geant-des-banquises').entite;
+  geant.ready = true;
+  for (let i = 0; i < 4; i += 1) {
+    donner(duel, 'sorcier', 'chien-du-guet');
+    rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
+  }
+  donner(duel, 'joueur', 'embuscade');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'embuscade').ok, true);
+  assert.equal(rpgOuvrirFenetreReponse(duel, 'joueur'), true);
+
+  const ids = [geant.id];
+  const blocages = rpgChoisirBloqueurs(duel, 'joueur', ids);
+  assert.ok((blocages[geant.id] ?? []).length >= 2,
+    'l’IA interpose au moins deux bloqueurs forcés sur le Géant');
+
+  // La porte exacte de RpgDuelPage : avec des répartitions vides, la somme (0)
+  // ne atteint jamais la force de l’attaquant — c’est le verrou signalé.
+  const repartitionValide = (repartitions) => {
+    const parts = Object.values(repartitions[geant.id] ?? {}).reduce((total, amount) => total + Number(amount || 0), 0);
+    return (blocages[geant.id] ?? []).length <= 1 || parts === geant.atk;
+  };
+  assert.equal(repartitionValide({}), false,
+    'une répartition vide verrouille le bouton — c’est le bug');
+
+  // La page doit donc précalculer le partage (quotient + reste, comme le
+  // moteur) dès la déclaration de l’attaque — au camp attaquant « joueur ».
+  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  const debutLancer = page.indexOf('const lancerAttaque = () => {');
+  const finLancer = page.indexOf('const declarerAttaqueAvecTous =', debutLancer);
+  const lancer = page.slice(debutLancer, finLancer);
+  assert.match(lancer, /repartitions: recalculerRepartitions\(ids, blocages, 'joueur'\)/,
+    'le combat déclaré précalcule ses répartitions au camp attaquant — un `repartitions: {}` fige « Accepter les blocages »');
+
+  // Et chaque appel de l’aide nomme son camp : la lecture de `combatEntrant`
+  // au moment de la déclaration (état pas encore posé) renvoyait le camp noir.
+  for (const appel of page.matchAll(/recalculerRepartitions\(([^)]*)\)/g)) {
+    assert.match(appel[1], /'(joueur|sorcier)'\s*$/,
+      `recalculerRepartitions(${appel[1]}) doit nommer explicitement le camp attaquant`);
+  }
+
+  // Le partage précalculé passe la porte, et la résolution moteur (répartitions
+  // null : le moteur partage ses blessures après capacités) va au bout.
+  const quotient = Math.floor(geant.atk / blocages[geant.id].length);
+  let reste = geant.atk - quotient * blocages[geant.id].length;
+  const partage = Object.fromEntries(blocages[geant.id].map((bloqueurId) => {
+    const amount = quotient + (reste > 0 ? 1 : 0);
+    if (reste > 0) reste -= 1;
+    return [bloqueurId, amount];
+  }));
+  assert.equal(repartitionValide({ [geant.id]: partage }), true,
+    'le partage précalculé ouvre le bouton « Accepter les blocages »');
+  const res = rpgLancerAttaque(duel, 'joueur', ids, blocages, null, [geant.id]);
+  assert.equal(res.ok, true, res.raison);
+  assert.equal(res.resume.blocages[geant.id].length, blocages[geant.id].length,
+    'le combat résout avec tous ses bloqueurs forcés');
+});
+
 test('le plein art du Serment est livré : les vingt-neuf cartes Neige sont dédiées, aucune provisoire', () => {
   // La liste des illustrations provisoires est vide : le deck Neige et sa
   // variante de Glacier sont entièrement peints.
@@ -4106,11 +4268,12 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
     assert.equal(carte.kind, 'hero', `${figure} est un héros`);
     assert.equal(carte.element, 'neige');
     donner(duel, 'joueur', id);
-    // Le Père des corbeaux désigne une créature de coût 3 ou moins à exiler.
+    // Le Père des corbeaux désigne une créature de coût 3 ou moins à exiler ;
+    // le Maître du marteau désigne une créature ou le sorcier adverse.
     const cibleExil = id === 'pere-des-corbeaux'
       ? [...duel.sorcier.creatures, ...duel.joueur.creatures]
         .find((entite) => (cardById(entite.carteId)?.cost ?? 0) <= 3)?.id ?? null
-      : undefined;
+      : id === 'maitre-du-marteau' ? 'sorcier' : undefined;
     assert.equal(rpgJouerCreature(duel, 'joueur', id, cibleExil).ok, true, `${figure} se pose`);
   }
   // Le joueur a été remis à 20 PV : le soin de la Dame s’ajoute en entier

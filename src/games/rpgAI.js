@@ -223,6 +223,10 @@ export function valeurEntite(entite) {
     + (entite?.contreAttaque || carte.contreAttaque ? 1.8 : 0)
     + Math.max(0, carte.cost ?? 0) * 0.4;
   if (entite?.envol) valeur += 2.5;
+  // Envol et Overkill prêtés par la Furie (le Maître du marteau) : l'état
+  // vivant les porte, la carte les déclare dans `furieGains` — une Furie qui
+  // n'est pas encore allumée garde ce potentiel.
+  else if (carte.furieGains?.envol) valeur += 0.9;
   if (entite?.coupRapide) valeur += 2;
   if (entite?.provocation || carte.provocation) valeur += 0.8;
   if (entite?.nePeutPasAttaquer || carte.nePeutPasAttaquer) {
@@ -230,7 +234,7 @@ export function valeurEntite(entite) {
   }
   if (entite?.rapidite) valeur += 0.5;
   if (entite?.protection) valeur += 1.5;
-  if (entite?.overkill || carte.overkill) valeur += 1.2;
+  if (entite?.overkill || carte.overkill || carte.furieGains?.overkill) valeur += 1.2;
   // Tenacité : la créature meurt bien, mais sa carte revient au prochain tour
   // avec 1 point de défense — un corps gratuit vaut un peu plus que ses PV
   // affichés, sans valoir une créature qui refuse la destruction.
@@ -358,8 +362,12 @@ function meilleuresOptionsOffensives(duel, cote, carte, { montant, sourceType, p
       score: (kill ? 20 : 0) + menace(entite),
     });
   }
+  // « Créature ou sorcier » : la magie le déclare dans `cibles`, l'arrivée du
+  // Maître du marteau dans `arrivee.cibles` — le visage adverse est alors une
+  // option de ciblage, y compris quand la table est vide.
   const peutViserSorcier = portee === 'sorcier'
-    || portee === 'creature' && (carte?.cibles?.includes('sorcier') ?? false)
+    || portee === 'creature' && Boolean(carte?.cibles?.includes('sorcier')
+      || carte?.arrivee?.cibles?.includes('sorcier'))
     || carte?.effet?.cible === 'sorcier';
   if (peutViserSorcier) {
     const degats = montant ?? 0;
@@ -1604,10 +1612,16 @@ function scoreCarte(duel, cote, carte, profil, rng) {
           profil,
           rng,
         });
-        if (meilleure?.cibleId && meilleure.cibleId !== 'sorcier') {
+        if (meilleure?.cibleId) {
           cibleId = meilleure.cibleId;
-          const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
-          score += meilleure.kill ? 3 + valeurEntite(cible) : 0.5 + menace(cible) * 0.2;
+          if (cibleId === 'sorcier') {
+            // Le visage est une cible légale (Maître du marteau) : la carte se
+            // pose en le frappant, même quand la table adverse est vide.
+            score += meilleure.lethal ? 4 : 1.5;
+          } else {
+            const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+            score += meilleure.kill ? 3 + valeurEntite(cible) : 0.5 + menace(cible) * 0.2;
+          }
         }
       }
     }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { armesPortees, groupCartesMain, groupEntitesParCarte } from '../src/games/rpgCardStacks.js';
+import { armesPortees, groupCartesMain, groupEntitesParCarte, trierCartesMainParCout } from '../src/games/rpgCardStacks.js';
 
 const creature = (id, carteId) => ({ id, carteId, name: carteId, atk: 1, pv: 1 });
 
@@ -24,6 +24,48 @@ test('a hand without duplicates keeps one slot per card', () => {
   assert.deepEqual(piles.map((pile) => pile.indices.length), [1, 1, 1]);
   assert.deepEqual(groupCartesMain([]), []);
   assert.deepEqual(groupCartesMain(), []);
+});
+
+test('la main se lit du coût le plus bas au plus haut sans modifier les index du moteur', () => {
+  const main = Object.freeze([
+    'jormungandr', 'rapport-du-greffier', 'chien-du-guet',
+    'tislit-des-aures', 'fennec-des-decombres', 'djinn-de-foudre',
+  ]);
+  assert.deepEqual(trierCartesMainParCout(main), [
+    { carteId: 'tislit-des-aures', indices: [3] },
+    { carteId: 'chien-du-guet', indices: [2] },
+    { carteId: 'fennec-des-decombres', indices: [4] },
+    { carteId: 'djinn-de-foudre', indices: [5] },
+    { carteId: 'rapport-du-greffier', indices: [1] },
+    { carteId: 'jormungandr', indices: [0] },
+  ], 'les égalités gardent leur ordre et le coût hybride compte une seule fois');
+});
+
+test('le tri conserve chaque exemplaire, avec ou sans empilement tactile', () => {
+  const main = Object.freeze(['kraken', 'chien-du-guet', 'kraken', 'tislit-des-aures', 'chien-du-guet']);
+  assert.deepEqual(trierCartesMainParCout(main), [
+    { carteId: 'tislit-des-aures', indices: [3] },
+    { carteId: 'chien-du-guet', indices: [1] },
+    { carteId: 'chien-du-guet', indices: [4] },
+    { carteId: 'kraken', indices: [0] },
+    { carteId: 'kraken', indices: [2] },
+  ]);
+  assert.deepEqual(trierCartesMainParCout(main, true), [
+    { carteId: 'tislit-des-aures', indices: [3] },
+    { carteId: 'chien-du-guet', indices: [1, 4] },
+    { carteId: 'kraken', indices: [0, 2] },
+  ]);
+});
+
+test('les nouvelles cartes rejoignent leur palier de coût et une main vide reste vide', () => {
+  const main = ['kraken', 'chien-du-guet'];
+  main.push('tislit-des-aures', 'fennec-des-decombres');
+  assert.deepEqual(trierCartesMainParCout(main).map(({ indices }) => indices[0]), [2, 1, 3, 0]);
+  for (const empiler of [false, true]) {
+    assert.deepEqual(trierCartesMainParCout([], empiler), []);
+    assert.deepEqual(trierCartesMainParCout(null, empiler), []);
+    assert.deepEqual(trierCartesMainParCout(undefined, empiler), []);
+  }
 });
 
 test('board copies pile up per card, per camp, without mixing sides', () => {

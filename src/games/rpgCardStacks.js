@@ -13,6 +13,21 @@
  * aperçu sans changer le cadre ordinaire de la créature (voir `armesPortees`).
  */
 
+import { cardById, cardCost } from './rpgCards.js';
+
+/**
+ * Présente la main par coût croissant, de gauche à droite, avec ou sans piles.
+ * Les coûts égaux gardent leur ordre d'arrivée. Seule cette vue est triée :
+ * les index réels restent ceux du moteur pour les clics, pioches et défausses.
+ * @returns {{ carteId: string, indices: number[] }[]}
+ */
+export function trierCartesMainParCout(main = [], empiler = false) {
+  const cartes = empiler
+    ? groupCartesMain(main)
+    : (main ?? []).map((carteId, index) => ({ carteId, indices: [index] }));
+  return cartes.sort((a, b) => cardCost(cardById(a.carteId)) - cardCost(cardById(b.carteId)));
+}
+
 /**
  * Regroupe les exemplaires identiques d'une main.
  * @param {string[]} main identifiants de cartes, dans l'ordre de la main

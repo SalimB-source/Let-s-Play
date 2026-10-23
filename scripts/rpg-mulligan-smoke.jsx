@@ -6,11 +6,21 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { rpgPeutMulligan } from '../src/games/rpgDuel.js';
-import { cardById } from '../src/games/rpgCards.js';
+import { rpgPeutMulligan, rpgPiocher } from '../src/games/rpgDuel.js';
+import { cardById, cardCost } from '../src/games/rpgCards.js';
 import { lancerDuelDepuisMenu } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function verifierTriMain(assert, cartes, main, cleIndex = 'handIndex') {
+  const couts = cartes.map((carte) => cardCost(cardById(carte.dataset.cardId)));
+  assert.deepEqual(couts, [...couts].sort((a, b) => a - b),
+    'les cartes sont présentées de gauche à droite par coût croissant');
+  for (const carte of cartes) {
+    assert.equal(carte.dataset.cardId, main[Number(carte.dataset[cleIndex])],
+      'la position visuelle conserve son index réel dans la main du moteur');
+  }
+}
 
 /** Les decks du scénario : depuis le mana automatique, la main de départ
  *  compte trois cartes et les paquets ne portent plus de terrains. Le deck du
@@ -55,6 +65,8 @@ export async function checkRpgMulligan(assert) {
   assert.equal(cartes().length, 3, 'les trois cartes piochées sont toutes présentées');
   assert.deepEqual(cartes().map((carte) => carte.dataset.cardId), main(),
     'le volet montre exactement la main de départ, dans le même ordre');
+  verifierTriMain(assert, cartes(), window.__RPG_DUEL__.joueur.main, 'mulliganIndex');
+  verifierTriMain(assert, qa('.rpg-hand__card'), window.__RPG_DUEL__.joueur.main);
   assert.equal(q('.rpg-mulligan__stage > .rpg-mulligan__cards')?.children.length, 3,
     'les trois cartes forment une seule rangée, dans la scène que la feuille mesure');
   for (const carte of cartes()) {
@@ -175,6 +187,8 @@ export async function checkRpgMulligan(assert) {
     'les deux cartes piochées sont signalées');
   assert.deepEqual(cartes().filter((carte) => carte.classList.contains('is-new')).map((carte) => carte.dataset.cardId),
     duel.joueur.main.slice(1), 'ce sont bien les cartes qui viennent d’entrer en main');
+  verifierTriMain(assert, cartes(), duel.joueur.main, 'mulliganIndex');
+  verifierTriMain(assert, qa('.rpg-hand__card'), duel.joueur.main);
   assert.match(q('.rpg-mulligan__head p').textContent, /Vous écartez 2 cartes et piochez 2 cartes/,
     'le bilan résume l’échange');
   assert.match(q('.rpg-mulligan__head p').textContent, /le sorcier (en change \d|garde sa main)/,
@@ -229,6 +243,47 @@ export async function checkRpgMulligan(assert) {
     'garder sa main n’écrit aucun bandeau : la table se rend telle quelle');
   assert.match(deuxieme.querySelector('.card-table').className, /card-table--plateau-/,
     'la partie neuve a bien tiré son plateau');
+  // ── 8. Une pioche se range par coût ; la septième carte ouvre une défausse ─
+  // La sonde de ce build permet une main contrôlée, puis les vrais boutons
+  // exercent le tri, les raccourcis et le choix de l'index à défausser.
+  const secondDuel = window.__RPG_DUEL__;
+  secondDuel.joueur.main = [
+    'jormungandr', 'kraken', 'rapport-du-greffier',
+    'chien-du-guet', 'fennec-des-decombres', 'sonneur-fele',
+  ];
+  secondDuel.joueur.deck = ['tislit-des-aures'];
+  assert.equal(rpgPiocher(secondDuel, 'joueur'), 'tislit-des-aures');
+  await act(async () => { deuxieme.querySelector('.rpg-btn--endturn').click(); });
+  assert.equal(secondDuel.defausseEnAttente?.restant, 1, 'sept cartes : une seule défausse, pour revenir à six');
+  const mainTriee = () => [...deuxieme.querySelectorAll('.rpg-hand__card')];
+  verifierTriMain(assert, mainTriee(), secondDuel.joueur.main);
+  assert.equal(mainTriee()[0].dataset.cardId, 'tislit-des-aures', 'la nouvelle carte à un mana se range tout à gauche');
+  assert.equal(mainTriee()[0].dataset.handIndex, '6', 'son index de pioche reste 6, même à gauche');
+  await act(async () => { mainTriee()[0].click(); });
+  assert.equal(deuxieme.querySelector('.is-discard-selected')?.dataset.handIndex, '6',
+    'le clic sélectionne la carte piochée, pas la première carte du moteur');
+
+  for (const clavier of [
+    { key: '6', code: 'Digit6' },
+    { key: '-', code: 'Digit6' }, // AZERTY
+    { key: '6', code: 'Numpad6' },
+  ]) {
+    await act(async () => {
+      window.dispatchEvent(new window.KeyboardEvent('keydown', { ...clavier, bubbles: true }));
+    });
+    assert.equal(deuxieme.querySelector('.is-discard-selected')?.dataset.cardId, 'kraken',
+      'la touche 6 sélectionne la sixième carte affichée, pas celle d’index moteur 5');
+  }
+  assert.equal(mainTriee()[5].dataset.handKey, '6', 'la sixième carte annonce son raccourci');
+  const avantDefausse = [...secondDuel.joueur.main];
+  await act(async () => { deuxieme.querySelector('.rpg-btn--discard-confirm').click(); });
+  assert.equal(secondDuel.defausseEnAttente, null);
+  assert.deepEqual(secondDuel.joueur.main, avantDefausse.filter((_, index) => index !== 1),
+    'seul le Kraken choisi quitte la main : le tri ne change pas la cible de défausse');
+  assert.equal(secondDuel.joueur.main.length, 6, 'la main termine bien à six cartes');
+  assert.equal(secondDuel.joueur.cimetiere.at(-1), 'kraken');
+  verifierTriMain(assert, mainTriee(), secondDuel.joueur.main);
+
   await act(async () => { secondRoot.unmount(); });
   deuxieme.remove();
 }

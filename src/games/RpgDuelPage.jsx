@@ -42,7 +42,7 @@ import {
   adversaireManaEssai,
   deckManaEssaiParId,
 } from './rpgManaEssai.js';
-import { armesPortees, groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
+import { armesPortees, groupEntitesParCarte, trierCartesMainParCout } from './rpgCardStacks.js';
 import { classeVariationStatCreature, libelleVariationStatCreature } from './rpgCreatureStats.js';
 import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
@@ -141,6 +141,7 @@ import {
   RPG_PV_SORCIER_BASE,
   arriveeCiblePortee,
   arriveeConsulteDeck,
+  arriveeViseSorcier,
   rpgCibleAuto,
   rpgChoisirAttaquants,
   rpgContreJouable,
@@ -3313,7 +3314,7 @@ function VoletMulligan({
             les cartes interrogent : les cinq tiennent dans le volet. */}
         <div className="rpg-mulligan__stage">
           <div className="rpg-mulligan__cards">
-            {main.map((carteId, index) => (
+            {trierCartesMainParCout(main).map(({ carteId, indices: [index] }) => (
               <CarteMulligan
                 key={`${carteId}-${index}`}
                 carte={cardById(carteId)}
@@ -7178,7 +7179,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           : (touche === '3' || code === 'Digit3' || code === 'Numpad3') ? 2
             : (touche === '4' || code === 'Digit4' || code === 'Numpad4') ? 3
               : (touche === '5' || code === 'Digit5' || code === 'Numpad5') ? 4
-                : -1;
+                : (touche === '6' || code === 'Digit6' || code === 'Numpad6') ? 5
+                  : -1;
       if (optionsMana.length > 0) {
         if (indexChiffre >= 0 && indexChiffre < optionsMana.length) {
           event.preventDefault();
@@ -7201,7 +7203,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // pas sur la main — elle ne fait rien, comme un clic refusé.
       if (indexChiffre >= 0 && coque.querySelector('.rpg-creature-slot--choix')) return;
 
-      // Touches 1 à 5 hors choix de mana : jouer ou sélectionner une carte jouable de la main
+      // Touches 1 à 6 hors choix de mana : jouer ou sélectionner une carte jouable de la main
       if (indexChiffre >= 0) {
         const cartesMain = coque.querySelectorAll('.rpg-hand .rpg-hand__card');
         const carteMain = cartesMain[indexChiffre];
@@ -7743,6 +7745,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       && !rpgEstProtegee(entite, cardColors(carteSource))
       && (carteVisee?.cost ?? 0) <= seuil;
   };
+  // L'arrivée qui peut frapper **le sorcier adverse** (le Maître du marteau) :
+  // la créature est déjà posée, l'attente est ouverte — le visage adverse
+  // s'allume comme une cible et le clic la referme.
+  const arriveeViseSorcierEnAttente = Boolean(cibleEnCours
+    && duel.arriveeEnAttente?.cote === 'joueur'
+    && duel.arriveeEnAttente?.carteId === cibleEnCours
+    && arriveeViseSorcier(carteCiblee));
   const attenteSiteBimini = duel.siteEnAttente?.cote === 'joueur'
     && duel.siteEnAttente?.recompense === 'bimini';
   const modeCible = porteeCibleEnCours({
@@ -8192,11 +8201,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         // rendue dès la première image — la chaîne part de SA carte, jamais
         // du milieu de sa rangée.
         const capteurVivant = vivants.get(capteurId);
+        const coteCapteur = duel.joueur.creatures.some((carte) => carte.id === capteurId)
+          ? 'joueur' : 'sorcier';
+        // Quand le capteur vient d'être joué, on utilise son emplacement
+        // connu pour estimer sa position précise au lieu du centre de la
+        // rangée (qui correspondrait au 3ème emplacement sur 5).
+        const emplacementCapteur = capteurVivant?.emplacement;
+        const slotSpecifique = Number.isInteger(emplacementCapteur)
+          && tableRef.current?.querySelector(
+            `.rpg-creature-slots--${coteCapteur} [data-creature-slot="${emplacementCapteur + 1}"]`
+          );
         const rang = capteurVivant && tableRef.current?.querySelector(
-          duel.joueur.creatures.some((carte) => carte.id === capteurId)
-            ? '.card-row--equipe' : '.card-row--ennemi',
+          coteCapteur === 'joueur' ? '.card-row--equipe' : '.card-row--ennemi',
         );
-        const rect = (element ?? rang)?.getBoundingClientRect();
+        const rect = (element ?? slotSpecifique ?? rang)?.getBoundingClientRect();
         const destination = capteur
           ? { x: capteur.left + capteur.width / 2, y: capteur.top + capteur.height / 2 }
           : rect && tableRect
@@ -8723,7 +8741,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             attaquants: attaquantsVivants,
             blocages,
             attaquantsBloques: attaquantsBloques.filter((id) => attaquantsVivantsSet.has(id)),
-            repartitions: recalculerRepartitions(attaquantsVivants, blocages),
+            repartitions: recalculerRepartitions(attaquantsVivants, blocages, 'joueur'),
           }));
         }
       } else if (reponseActive && combatEntrant) {
@@ -8740,12 +8758,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             if (!modePvp) apresCombatSorcier();
           } else {
             const vivants = new Set(attaquantsVivants);
-            setCombatEntrant((courant) => courant && ({
-              ...courant,
-              attaquants: attaquantsVivants,
-              blocages: Object.fromEntries(Object.entries(courant.blocages).filter(([id]) => vivants.has(id))),
-              repartitions: Object.fromEntries(Object.entries(courant.repartitions).filter(([id]) => vivants.has(id))),
-            }));
+            const bloqueursVivants = new Set(duel.sorcier.creatures
+              .filter((entite) => !entite.attaquee)
+              .map((entite) => entite.id));
+            setCombatEntrant((courant) => {
+              if (!courant) return courant;
+              // Un bloqueur abattu par la riposte quitte aussi les affectations :
+              // gardé dans `blocages`, sa part figée dans `repartitions` ferait
+              // rejeter le partage par l'arbitre (clé inconnue dans la saisie).
+              const blocagesVivants = Object.fromEntries(Object.entries(courant.blocages)
+                .filter(([id]) => vivants.has(id))
+                .map(([id, idsBloqueurs]) => [id, (idsBloqueurs ?? []).filter((bloqueurId) => bloqueursVivants.has(bloqueurId))]));
+              return {
+                ...courant,
+                attaquants: attaquantsVivants,
+                blocages: blocagesVivants,
+                repartitions: recalculerRepartitions(attaquantsVivants, blocagesVivants, 'sorcier'),
+              };
+            });
           }
         }
       }
@@ -9210,7 +9240,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     setCarteDefausseSelectionnee(null);
     jouerSfx(res.ok ? 'annuler' : 'erreur');
-    // Défausse de fin de tour terminée (main redescendue à cinq) : le tour
+    // Défausse de fin de tour terminée (main redescendue à six) : le tour
     // suspendu reprend et se ferme pour de bon.
     if (res.ok && finTourApresDefausseRef.current && !duel.defausseEnAttente) {
       finTourApresDefausseRef.current = false;
@@ -9629,7 +9659,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       attaquants: ids,
       blocages,
       attaquantsBloques,
-      repartitions: {},
+      // Le partage est précalculé dès la déclaration : l'IA peut interposer
+      // plusieurs bloqueurs sur un même attaquant (Provocation, ou obligation
+      // de blocage posée par l'Embuscade), et une répartition vide laissait le
+      // bouton « Accepter les blocages » verrouillé pour toujours — la porte
+      // `repartitionValide` exige une somme égale à la force de l'attaquant,
+      // tandis que la résolution, elle, ne reçoit jamais la main (null :
+      // le moteur partage ses blessures tout seul).
+      repartitions: recalculerRepartitions(ids, blocages, 'joueur'),
       ciblesAttaque: ciblesFinales,
       bannieresAppliquees,
     };
@@ -9671,6 +9708,26 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       lancerMagie(cibleEnCours, 'sorcier');
       return;
     }
+    // L'arrivée en attente qui peut frapper le visage (le Maître du marteau) :
+    // la créature est déjà posée, le clic sur le sorcier referme l'attente —
+    // les 3 dégâts partent au sorcier, bouclier compris.
+    if (arriveeViseSorcierEnAttente) {
+      const champAvantAction = prendreInstantaneChamp();
+      const debutJournalDestructions = rpgNombreDestructions(duel);
+      if (modePvp) rpgSyncCompteurEntites(duel);
+      const res = rpgResoudreArriveeCiblee(duel, 'joueur', 'sorcier');
+      if (!res.ok) {
+        jouerSfx('erreur');
+        force();
+        return;
+      }
+      if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-arrivee', cibleId: 'sorcier' });
+      if (!duel.arriveeEnAttente) setCibleEnCours(null);
+      jouerSfx('select');
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      force();
+      return;
+    }
     if (!monTour) return;
     // Pendant la déclaration d'attaque, désigner le sorcier est le geste du
     // Coup rapide qui y renonce : les proies désignées s'effacent et toutes les
@@ -9685,9 +9742,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
-  const recalculerRepartitions = (attaquantsIds, blocages) => Object.fromEntries(attaquantsIds.map((attaquantId) => {
-    const coteAttaquant = combatEntrant?.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier';
-    const attaquant = duel[coteAttaquant].creatures.find((entite) => entite.id === attaquantId);
+  const recalculerRepartitions = (attaquantsIds, blocages, coteAttaquants) => Object.fromEntries(attaquantsIds.map((attaquantId) => {
+    const attaquant = duel[coteAttaquants].creatures.find((entite) => entite.id === attaquantId);
     const idsBloqueurs = blocages[attaquantId] ?? [];
     if (!attaquant || !idsBloqueurs.length) return [attaquantId, {}];
     const quotient = Math.floor(attaquant.atk / idsBloqueurs.length);
@@ -9732,7 +9788,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return {
         ...courant,
         blocages,
-        repartitions: recalculerRepartitions(courant.attaquants, blocages),
+        repartitions: recalculerRepartitions(courant.attaquants, blocages, 'sorcier'),
       };
     });
     if (!retireDeCetteAttaque) signalerTutoriel('bloqueur-assigne', { attaquantId, bloqueurId });
@@ -9928,9 +9984,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (choixManaEssaiOuvert) { jouerSfx('erreur'); return; }
     if (sacrificeDemande || sacrificeEnCours || sacrificeEnCoursRef.current) { jouerSfx('erreur'); return; }
-    // Mode sans terrains : plus de cinq cartes en main à la fin du tour ? Le
+    // Mode sans terrains : plus de six cartes en main à la fin du tour ? Le
     // tour se suspend, le joueur CHOISIT ses défausses (l'attente du moteur),
-    // et `confirmerDefausse` relance cette fermeture quand la main est à cinq.
+    // et `confirmerDefausse` relance cette fermeture quand la main est à six.
     // Une défausse d'EFFET déjà en attente (le Butin d'un Chien du guet) ne
     // suspend rien : elle garde son comportement historique, refermée
     // d'office par la fermeture du tour.
@@ -10294,9 +10350,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
      mode essai (sans terrains) refuse lui la superposition : chaque carte,
      en main comme sur le champ, garde sa place et son identité. */
   const empilerCartes = viewport.mobile && duel.modeMana !== RPG_MODE_MANA_ESSAI;
-  const groupesMain = empilerCartes
-    ? groupCartesMain(duel.joueur.main)
-    : duel.joueur.main.map((carteId, index) => ({ carteId, indices: [index] }));
+  const groupesMain = trierCartesMainParCout(duel.joueur.main, empilerCartes);
   // Exemplaires impliqués dans l'action en cours : leur groupe se déplie seul,
   // pour que le joueur voie chaque carte concernée (et que les flèches de
   // blocage, les halos de cible et les destructions trouvent leur élément).
@@ -10446,7 +10500,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   : modeCible === 'allie'
                     ? `Choisissez une créature alliée pour ${carteCiblee?.name ?? 'cet effet'}`
                     : modeCible === 'ennemi'
-                      ? `Choisissez une cible adverse pour ${carteCiblee?.name ?? 'cet effet'}`
+                      ? (arriveeViseSorcierEnAttente
+                        ? `${carteCiblee?.name ?? 'Cet effet'} : choisissez une créature ou le sorcier adverse`
+                        : `Choisissez une cible adverse pour ${carteCiblee?.name ?? 'cet effet'}`)
                       : `Choisissez une cible pour ${carteCiblee?.name ?? 'cet effet'}`,
           }
           : cibleArmeEnCours
@@ -10859,7 +10915,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         </div>
 
-        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
+        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && (carteCiblee?.cibles?.includes('sorcier') || arriveeViseSorcierEnAttente) ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
           data-tutorial-target={cibleTutoriel('opponent-health') ? 'opponent-health' : undefined}
           data-soin={soinSorcier ? soinSorcier.montant : undefined}
           data-menace-letale={menaceLetaleActive ? 'true' : undefined}
@@ -11676,7 +11732,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-draw-token={piocheEnCours?.token}
                   data-card-id={carteId}
                   data-hand-index={i}
-                  data-hand-key={position < 5 ? String(position + 1) : undefined}
+                  data-hand-key={position < RPG_MANA_ESSAI_MAIN_MAX ? String(position + 1) : undefined}
                   data-tutorial-target={tutorielActif && etapeTutorielId === 'terrain' && carteId === 'desert'
                     ? 'terrain-card'
                     : tutorielActif && etapeTutorielId === 'creature' && carteId === 'tislit-des-aures'

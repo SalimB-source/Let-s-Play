@@ -246,16 +246,21 @@ export function pastillesPourCarte(carte) {
   };
 
   if (carte.envol) ajouter('envol', 'Envol');
+  // L'Envol que la Furie prête (le Maître du marteau) ne s'imprime pas : la
+  // pastille dit d'où il vient, tant que la Furie n'est pas allumée.
+  if (carte.furieGains?.envol) ajouter('envol', 'Envol (furie)');
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Coup rapide');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
   if (carte.provocation) ajouter('provocation', 'Provocation');
-  // L'Overkill peut être imprimé, prêté par une arme, ou accordé par un sort
-  // (le Mur de boucliers) : la pastille suit l'effet, pas seulement la fiche.
-  if (carte.overkill || carte.effet?.overkill || carte.arrivee?.overkill || carte.donne?.overkill) {
-    ajouter('overkill', 'Overkill');
-  }
+  // L'Overkill peut être imprimé, prêté par une arme, accordé par un sort
+  // (le Mur de boucliers) ou par la Furie (le Maître du marteau) : la pastille
+  // suit l'effet, pas seulement la fiche.
+  const overkillImprime = carte.overkill || carte.effet?.overkill
+    || carte.arrivee?.overkill || carte.donne?.overkill;
+  if (overkillImprime) ajouter('overkill', 'Overkill');
+  else if (carte.furieGains?.overkill) ajouter('overkill', 'Overkill (furie)');
   if (carte.furie) ajouter('furie', 'Furie', Number(carte.furie) || null);
   if (carte.esquive) ajouter('esquive', 'Esquive', null);
   if (carte.contreAttaque) ajouter('contreAttaque', 'Contre-attaque');
@@ -527,7 +532,7 @@ export const EFFET_DEFINITIONS = {
   overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
   esquive: () => '30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
   contreAttaque: 'Quand une créature adverse la frappe avec Coup rapide ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort qui la cible, la riposte frappe le sorcier adverse. Une Esquive réussie ne l’empêche pas de riposter.',
-  tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense.',
+  tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense — son effet d’arrivée se déclenche de nouveau.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
   protectionSortsContre: (couleur) => `Les Magies Rapides et Sorcelleries de ${couleur ?? 'cette couleur'} ne peuvent ni la cibler ni la blesser. Les créatures et leurs capacités fonctionnent normalement.`,
