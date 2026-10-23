@@ -8673,3 +8673,81 @@ Contrôle : `npm run check:rpg-conquete-music` (23 tests audio/sélection et le
 rendu de la vraie page dans jsdom avec lecteurs audio simulés),
 `npm run check:rpg-ambient-ui`, `npm run check:rpg-territoire`, `npm run build`.
 Ces contrôles n’équivalent pas à une écoute dans un navigateur réel.
+
+
+## Le Sablier : le profil du joueur, la barre d'XP et le booster de palier
+
+Le Sablier payait déjà — des crédits ◈ au Souk, des cartes révélées par les
+étages, des quêtes du jour — mais il ne **comptait** pas le joueur. Il a
+maintenant une troisième monnaie, l'**XP**, une carte de profil à son nom, et
+une règle : **chaque niveau franchi ouvre un booster tiré au hasard**, offert,
+sans un crédit dépensé.
+
+- La courbe est `seuil(n) = max(1, arrondi(26 × n^1,62))`, du niveau 1 au
+  niveau 60. **26 XP** pour le premier palier : un duel libre gagné et trois
+  cartes posées suffisent, donc le premier paquet tombe dans la première
+  partie. Ensuite chaque palier coûte strictement plus cher que le précédent —
+  le trentième vaut **247 fois** le premier, le cinquantième **565 fois**.
+- Le niveau **n'est pas un champ stocké** : il se déduit de l'XP
+  (`niveauDeXp`). Aucune sauvegarde ne peut mentir sur son propre palier.
+- Dix gestes font monter la barre, écrits noir sur blanc sur la carte de
+  profil : premier déblayage **70**, tour terminée **150**, étage rejoué 22,
+  duel libre 20, Cachet de la semaine 80, Cachet du cycle 50, leçon 40, quête
+  réclamée 30, paquet ouvert 6, carte posée 2. Une carte posée ne paie
+  **qu'une fois** : invoquer, lancer ou équiper racontent déjà `carte-jouee`.
+- La dette de paquets se **calcule** (`boostersDus = niveaux franchis −
+  paquets offerts`), elle ne s'écrit pas : deux appareils ne se paient jamais
+  deux fois le même palier, et un palier franchi pendant qu'une cérémonie est
+  à l'écran **attend** au lieu de disparaître.
+- Le paquet offert est un vrai paquet : même vivier par rayon, même rare
+  garantie, même pitié, mêmes doublons remboursés, même journal (marqué
+  `offert`) — seule la caisse est court-circuitée (`prix: 0`). Le rayon est
+  tiré au hasard **à chaque paquet**, pas une fois pour toute la montée.
+- L'XP ne s'achète pas et n'achète rien : les crédits ◈ restent leur propre
+  monnaie, et une défaite ne retire rien — ni XP, ni crédits.
+- L'onglet **Profil** ouvre le menu, devant Jouer : l'emblème, « NIV. 12 », la
+  barre d'XP en miniature, et une pastille quand un paquet attend. La carte de
+  profil porte le pseudo (24 caractères, modifiable), six emblèmes en glyphes
+  de texte — aucun asset —, le rang de Bab El (dix rangs, de « Sans-Nom » à
+  « Voix de l'Astrolabe »), la barre détaillée, les quatre prochains paliers et
+  leur prix, seize compteurs, le barème et le journal des vingt derniers
+  paliers.
+- Une montée de niveau a deux visages, jamais les deux à la fois : la
+  **cérémonie** du Souk quand un paquet a pu être tiré, sinon une **annonce**
+  seule (`role="status"`, fermée au bout de 6 s) qui dit le niveau et les
+  paquets qui attendent. En plein duel, la cérémonie passe à `z-index: 10045`
+  — la navigation de la table est à 900, le journal du combat à 80 — et ne
+  mange aucun chrono : le PvP ne verse pas d'XP, c'est l'arbitre serveur qui
+  paie.
+- L'overlay de victoire annonce les deux monnaies : « +50 crédits » et
+  « ✦ +70 XP — niveau 3 atteint, un paquet s'ouvre ! ».
+
+Les règles pures vivent dans `src/games/rpgProfil.js` (courbe, rangs, dette,
+journal, normalisation, fusion, stockage), l'XP des gestes dans
+`src/games/rpgEvenementsDuel.js`, le paquet offert dans
+`src/games/rpgBoosters.js` (`ouvrirBoosterOffert`), l'écran dans
+`src/games/RpgProfilJoueur.jsx` — présentationnel, sans aucun stockage — et sa
+feuille dans `src/games/rpg-profil.css`. `useSablierBourse.js` porte le profil
+comme **troisième moitié** de l'état (`bourse`, `quetes`, `profil`), le règle
+par `reglerPaliers` et rend `profil`, `barreXp`, `boostersEnAttente`,
+`monteeNiveau`, `fermerMonteeNiveau`, `renommerLeProfil`, `choisirUnEmbleme`.
+Le profil voyage avec l'état entier : `letsplay_sablier_profil_v1` sur
+l'appareil, par joueur, et le `jsonb` de `rpg_sablier_progress` — aucune
+nouvelle table, aucun SQL.
+
+Deux bugs réels sont tombés avec ce chantier. `appliquer()` écrivait `setEtat`
+mais laissait `etatRef.current` se mettre à jour au rendu suivant : deux
+événements dans le même tick (la victoire raconte `duel-gagne` puis
+`etage-deblaye`) faisaient lire un état périmé au second, qui écrasait
+l'écriture du premier — 50 ◈ perdus. Et `useDecksSablier.etatLocalActuel()`
+pousse tout l'état : sans `chargerProfil()` dedans, modifier un deck écrasait
+le profil du compte avec un profil vide.
+
+Contrôles : `npm run check:rpg-profil` (28 tests sur la courbe, la dette, le
+barème, la fusion et le paquet offert, puis l'écran monté dans jsdom branché
+sur le vrai hook **et** la vraie page pour l'onglet, plus les gardes de
+source), `npm run check:rpg-souk`, `npm run check:rpg` (915 tests) et
+`npm run build`. Les smokes du Souk et du tutoriel affirment désormais le
+montant **rendu par le geste** — exact — et un solde qui monte d'autant, un
+paquet de palier pouvant rendre ses doublons par-dessus. Conception :
+`docs/rpg/20-profil-joueur-xp.md`.

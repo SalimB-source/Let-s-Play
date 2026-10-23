@@ -130,8 +130,10 @@ assert.match(hook, /fusionnerPortefeuilles\(chargerPortefeuille\(\), fusion\.eta
 assert.match(hook, /fusionnerQuetes\(chargerEtatQuetes\(\), fusion\.etat\.quetes\)\.etat/,
   'les quêtes aussi, du même geste');
 assert.match(hook, /fusionnerEtatsSablier\(\{ local: etatLocalComplet\(\) \}\)/, 'l’état poussé au compte est entier');
-assert.match(hook, /if \(suite\.bourse !== avant\.bourse \|\| suite\.quetes !== avant\.quetes\)/,
-  'un geste sans effet ne recopie pas l’état (stabilité référentielle)');
+assert.match(hook, /if \(suite\.bourse !== avant\.bourse \|\| suite\.quetes !== avant\.quetes \|\| suite\.profil !== avant\.profil\)/,
+  'un geste sans effet ne recopie pas l’état (stabilité référentielle) — bourse, quêtes **et** profil');
+assert.match(hook, /fusionnerProfils\(chargerProfil\(\), fusion\.etat\.profil\)\.profil/,
+  'le profil du joueur se fusionne avec le compte, du même geste');
 assert.match(lire('src/games/useDecksSablier.js'), /bourse: chargerPortefeuille\(\),/,
   'l’autre hook transporte l’économie sans la modifier');
 assert.match(lire('src/games/rpgDeckBuilder.js'), /const bourse = fusionnerPortefeuilles\(local\?\.bourse, distant\?\.bourse\)\.portefeuille/,

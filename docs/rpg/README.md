@@ -21,6 +21,7 @@ réactif de *Clair Obscur*.
 | [`18-deck-les-lettres-de-marque.md`](18-deck-les-lettres-de-marque.md) | Fiche de design du set **Piraterie** « Les Lettres de Marque » — hybride **Sable + Eau**, l’âge de la course, les mots-clés **Abordage / Cale / Prise** et **Cargaison** |
 | [`11-bible-visuelle.md`](11-bible-visuelle.md) | Portraits canoniques, continuité des personnages, état de réalisation, sauvegarde et vérifications |
 | [`19-animations.md`](19-animations.md) | **Catalogue des animations à créer** : 80 idées classées par scène (table, tour, cartes, éléments, combat, mots-clés, Souk, PvP), avec durées, priorité, coût et conventions d'intégration |
+| [`20-profil-joueur-xp.md`](20-profil-joueur-xp.md) | Le **profil du joueur** : la barre d’XP (courbe `26 × niveau^1,62`, 60 niveaux), les dix gestes qui la font monter, les rangs de Bab El, et le **booster offert à chaque palier** — tiré au hasard, sans un crédit dépensé |
 
 ## La décision de conception
 

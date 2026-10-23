@@ -489,19 +489,25 @@ function detaillerTirage(cartes, collection) {
 }
 
 /**
- * Achète et ouvre un paquet : le solde est débité, les cinq cartes rejoignent le
- * portefeuille, les doublons sont remboursés, la pitié est mise à jour. Rend
- * `{ ok, raison, portefeuille, prix, tirage }` — un refus ne touche à rien.
+ * Ouvre un paquet du comptoir — **acheté ou offert**.
+ *
+ * Les deux chemins partagent exactement le même tirage, le même remboursement
+ * des doublons et la même pitié : un paquet offert par un palier est un vrai
+ * paquet, il compte dans les ouvertures et rapproche de la mythique assurée.
+ * Seule la caisse change : `offert` ne touche pas au solde et rend `prix: 0`.
  */
-export function ouvrirBooster({ portefeuille, rayonId, progression = null, collection = null, rng = Math.random } = {}) {
+function ouvrirUnPaquet({ portefeuille, rayonId, progression = null, collection = null, rng = Math.random, offert = false } = {}) {
   const base = normaliserPortefeuille(portefeuille);
   const rayon = rayonActif(rayonId);
+  const prix = offert ? 0 : (rayon?.prix ?? 0);
   if (!rayon) return { ok: false, raison: 'rayon-inconnu', portefeuille: base, prix: 0, tirage: null };
-  const achat = depenserCredits(base, rayon.prix);
-  if (!achat.ok) return { ok: false, raison: achat.raison, portefeuille: base, prix: rayon.prix, tirage: null };
+  // Le paquet offert ne passe pas par la caisse : aucun solde n'est débité, et
+  // un joueur à zéro crédit reçoit son palier comme tout le monde.
+  const achat = offert ? { ok: true, portefeuille: base } : depenserCredits(base, rayon.prix);
+  if (!achat.ok) return { ok: false, raison: achat.raison, portefeuille: base, prix, tirage: null };
 
   const tirage = tirerCartes({ rayonId, progression, collection, rng, pitie: base.pitie });
-  if (!tirage.ok) return { ok: false, raison: tirage.raison, portefeuille: base, prix: rayon.prix, tirage: null };
+  if (!tirage.ok) return { ok: false, raison: tirage.raison, portefeuille: base, prix, tirage: null };
 
   const possedees = new Set(collection ?? collectionJoueur({ progression }));
   const { details, remboursement } = detaillerTirage(tirage.cartes, possedees);
@@ -513,6 +519,7 @@ export function ouvrirBooster({ portefeuille, rayonId, progression = null, colle
     rayonId,
     cartes: tirage.cartes,
     remboursement,
+    offert,
   });
   if (remboursement) {
     apres = { ...apres, credits: apres.credits + remboursement, majLe: new Date().toISOString() };
@@ -521,9 +528,28 @@ export function ouvrirBooster({ portefeuille, rayonId, progression = null, colle
     ok: true,
     raison: null,
     portefeuille: apres,
-    prix: rayon.prix,
+    prix,
     tirage: { ...tirage, details, remboursement },
   };
+}
+
+/**
+ * Achète et ouvre un paquet : le solde est débité, les cinq cartes rejoignent le
+ * portefeuille, les doublons sont remboursés, la pitié est mise à jour. Rend
+ * `{ ok, raison, portefeuille, prix, tirage }` — un refus ne touche à rien.
+ */
+export function ouvrirBooster(args = {}) {
+  return ouvrirUnPaquet({ ...args, offert: false });
+}
+
+/**
+ * Le paquet **offert par un palier** (`rpgProfil.js`) : le même tirage, la même
+ * pitié, le même remboursement des doublons — et aucun crédit dépensé. C'est la
+ * récompense d'une montée de niveau, et elle ne passe jamais par la caisse :
+ * un joueur à zéro ◈ la reçoit comme les autres.
+ */
+export function ouvrirBoosterOffert(args = {}) {
+  return ouvrirUnPaquet({ ...args, offert: true });
 }
 
 /**

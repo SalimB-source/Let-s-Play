@@ -147,8 +147,13 @@ export async function checkRpgTutorialCombat(assert) {
       'la leçon terminée est marquée comme complétée',
     );
     const bourseTexte = () => container.querySelector('.rpg-tutoriels__purse strong')?.textContent ?? '';
-    const soldeApresPremiereFois = bourseTexte();
-    assert.ok(soldeApresPremiereFois.includes('120'), 'la bourse affiche les 120 crédits gagnés');
+    // La leçon paie ses 120 ◈ — le bandeau ci-dessus le dit au crédit près — et
+    // verse aussi son XP (lot 6) : le niveau 2 tombe, son paquet du Souk s'ouvre,
+    // et les doublons de ce paquet sont rendus comme dans n'importe quel paquet.
+    // La bourse affiche donc les 120 ◈ de la leçon, et parfois un peu plus.
+    const soldeApresPremiereFois = Number(bourseTexte().replace(/[^\d]/g, ''));
+    assert.ok(soldeApresPremiereFois >= 120,
+      `la bourse affiche les 120 crédits gagnés (et ${soldeApresPremiereFois - 120} rendus par le paquet du palier)`);
   } finally {
     await act(async () => { harnais.root.unmount(); });
     container.remove();
