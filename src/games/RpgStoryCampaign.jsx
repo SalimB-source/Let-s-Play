@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { GAINS } from './rpgCredits.js';
 import { etapesRecitHistoire, resumeActesHistoire, resumeRecitHistoire } from './rpgStoryFlow.js';
-import { RPG_STORY_CAMPAIGN_MINIATURE, RPG_STORY_REGISTRES, acteHistoire, registresDebloques } from './rpgStoryScenes.js';
+import { RPG_STORY_ACTES, RPG_STORY_CAMPAIGN_FLOORS, RPG_STORY_CAMPAIGN_MINIATURE, RPG_STORY_REGISTRES, acteHistoire, registresDebloques } from './rpgStoryScenes.js';
 import { StoryPortrait, StoryStorageNotice } from './RpgStoryScene.jsx';
 
 /** Entrée narrative, sans remplacer la galerie des tours libres. */
@@ -40,15 +40,7 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
       setConfirmer(action);
     } else actions[action]?.();
   };
-  const figuresActe = acteAffiche.id === 'acte-2'
-    ? ['salem', 'yamina', 'tarek']
-    : acteAffiche.id === 'acte-3'
-      ? ['salem', 'boualem', 'yamina']
-      : acteAffiche.id === 'acte-4'
-        ? ['salem', 'feriel', 'yamina']
-        : acteAffiche.id === 'acte-5'
-          ? ['salem', 'mahieddine', 'yamina']
-          : ['salem', 'yamina', 'feriel'];
+  const figuresActe = acteAffiche.protagonistes;
   return (
     <section className="rpg-campaign" aria-label="Campagne — La Dernière Liste">
       <div className="rpg-campaign__art" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}${RPG_STORY_CAMPAIGN_MINIATURE}")` }} aria-hidden="true" />
@@ -104,7 +96,7 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
                   : acteAffiche.resume}</p>
                 <div className="rpg-campaign__cast" aria-label="Personnages de l’acte">
                   {figuresActe.map((id) => <StoryPortrait key={id} personnageId={id} cardArt={cardArt} />)}
-                  <span>20 duels · 5 actes · vos choix · aucun chronomètre</span>
+                  <span>{RPG_STORY_CAMPAIGN_FLOORS.length} duels · {RPG_STORY_ACTES.length} actes · vos choix · aucun chronomètre</span>
                 </div>
               </section>
               <section className="rpg-campaign__page rpg-campaign__page--droite"

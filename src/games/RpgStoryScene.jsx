@@ -322,12 +322,11 @@ export default function RpgStoryScene({
   const butinEnJeu = Boolean(contexteEtage && !etageDejaVaincu
     && contexteEtage.tour.etages.every((autre) => autre.id === etageId || (etagesVaincus ?? []).includes(autre.id)));
   const ligne = scene?.repliques[curseurActif.replique];
-  const personnageId = curseur.type === 'fin' ? 'salem'
+  const personnageId = curseur.type === 'fin' ? acte.figureFin ?? 'salem'
     : !scene && curseur.type === 'duel' ? personnageEtage(etageId)
       : curseurActif.resume ? scene.figure : ligne?.personnage === 'narrateur' ? scene.figure : ligne?.personnage;
   const personnage = personnageHistoire(personnageId);
-  const decorFin = acte.id === 'acte-2' ? 'souk' : acte.id === 'acte-3' ? 'abysses' : acte.id === 'acte-4' ? 'fjord' : acte.id === 'acte-5' ? 'sables' : 'atelier';
-  const decor = RPG_STORY_DECORS[scene?.decor ?? (curseur.type === 'fin' ? decorFin : 'greffe')] ?? RPG_STORY_DECORS.greffe;
+  const decor = RPG_STORY_DECORS[scene?.decor ?? acte.decor] ?? RPG_STORY_DECORS.greffe;
   const estDerniereSceneActe = Boolean(scene && scenesActe[scenesActe.length - 1]?.id === scene.id);
   const derniere = derniereLecture;
   const choixDef = choixEnAttente ? questionChoix(scene.choix) : null;
@@ -380,7 +379,7 @@ export default function RpgStoryScene({
 
   return (
     <section ref={lecteurRef} className="rpg-narrative" data-story-cursor={curseur.id ?? curseur.etageId ?? curseur.acteId ?? 'fin'}
-      data-story-act={acte.id}
+      data-story-act={acte.id} data-story-decor={scene?.decor ?? acte.decor}
       style={{ '--rpg-story-decor': `url("${BASE}${decor.fichier}")`, '--rpg-story-position': decor.position }}>
       <div className="rpg-narrative__decor" aria-hidden="true" />
       <div className="rpg-narrative__sable" aria-hidden="true" />

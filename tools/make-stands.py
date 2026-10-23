@@ -94,6 +94,8 @@ CADRAGES_SPECIFIQUES: dict[str, tuple[float, float, float, float]] = {
     "nageuse": (0.0, 0.75, 0.0, 1.0),
     "nageuse-affrontement": (0.0, 0.92, 0.0, 1.0),
     "nageuse-apaisement": (0.0, 0.94, 0.0, 1.0),
+    # Quadrupède : un plan américain humain couperait les pattes du Chacal.
+    "necro-chacal": (0.0, 1.0, 0.0, 1.0),
 }
 
 # Réglages spécifiques par fichier (tolérance magenta, rayon de plume, force despill)

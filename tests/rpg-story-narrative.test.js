@@ -104,11 +104,16 @@ test('tout personnage qui parle a son sprite détouré, livré et daté', () => 
     }
     assert.equal(stand.split('?')[0], `/Let-s-Play/${personnage.stand}`,
       `${personnage.id} : le sprite suit la racine de l’application`);
+    assert.equal(personnage.stand, `sablier-story/stands/stand-${personnage.id}.webp`,
+      `${personnage.id} : son identité visuelle ne peut pas être l’alias d’un autre personnage`);
     assert.match(stand, /\?v=/, `${personnage.id} : le sprite est daté (aucun cache ne peut resservir un ancien détourage)`);
     assert.ok(existsSync(fileURLToPath(new URL(`../public/${personnage.stand}`, import.meta.url))),
       `${personnage.id} : le sprite est livré dans public/${personnage.stand}`);
   }
   assert.deepEqual(sansSprite, [], 'aucun personnage joué ne retombe sur le portrait encadré');
+  const sprites = Object.values(RPG_STORY_CAST).filter((personnage) => personnage.stand);
+  assert.equal(new Set(sprites.map((personnage) => personnage.stand)).size, sprites.length,
+    'deux identités ne peuvent jamais partager le même sprite de référence');
   assert.equal(standHistoire('narrateur', '/'), null, 'la ville parle sans sprite : le décor porte la scène');
   assert.equal(standHistoire('absent', '/'), null);
   assert.equal(standHistoire('__proto__', '/'), null, 'un identifiant inconnu ne peut pas atteindre le prototype');
@@ -128,6 +133,40 @@ test('les sprites du casting portent bien un fond transparent et une échelle un
     const hauteur = octets.readUIntLE(27, 3) + 1;
     assert.equal(hauteur, 900, `${personnage.id} : hauteur de sprite unifiée à 900 px`);
     assert.ok(largeur >= 380, `${personnage.id} : largeur suffisante (${largeur} px) pour éviter tout sprite minuscule`);
+  }
+});
+
+test('les actes VI à VIII ont leur propre casting, leurs décors et leurs épilogues', () => {
+  const attendus = {
+    'acte-6': { decor: 'corsaires', fin: 'corsaire-barbe-rousse', cast: ['corsaire-mousse', 'corsaire-negociant', 'corsaire-rais', 'corsaire-barbe-rousse'] },
+    'acte-7': { decor: 'soleil', fin: 'samurai-daimyo', cast: ['samurai-ashigaru', 'samurai-ronin', 'samurai-kenshi', 'samurai-daimyo'] },
+    'acte-8': { decor: 'necropole', fin: 'necro-devoreuse', cast: ['necro-ouvrier', 'necro-chacal', 'necro-peseuse', 'necro-devoreuse'] },
+  };
+  for (const [acteId, attendu] of Object.entries(attendus)) {
+    const acte = RPG_STORY_ACTES.find((item) => item.id === acteId);
+    const scenes = RPG_STORY_ALL_SCENES.filter((scene) => scene.acteId === acteId);
+    assert.equal(scenes.length, 8, `${acteId} : huit scènes avant/après`);
+    assert.equal(acte.decor, attendu.decor);
+    assert.equal(acte.figureFin, attendu.fin, `${acteId} : l’épilogue ne retombe pas sur Salem`);
+    assert.doesNotMatch(texteEpilogueActe(acteId, {}).titre, /\\n/,
+      `${acteId} : aucun saut de ligne échappé ne doit apparaître dans le titre`);
+    assert.deepEqual([...new Set(scenes.map((scene) => scene.decor))], [attendu.decor],
+      `${acteId} : aucune scène ne réutilise le décor d’un autre acte`);
+    for (const id of attendu.cast) {
+      const personnage = personnageHistoire(id);
+      assert.equal(personnage.stand, `sablier-story/stands/stand-${id}.webp`);
+      assert.ok(scenes.some((scene) => scene.repliques.some((ligne) => ligne.personnage === id)),
+        `${id} : le protagoniste créé apparaît réellement dans son acte`);
+    }
+  }
+  for (const acte of RPG_STORY_ACTES) {
+    assert.equal(acte.protagonistes.length, 3, `${acte.id} : trois figures dans le livre de campagne`);
+    for (const id of acte.protagonistes) {
+      assert.ok(RPG_STORY_CAST[id], `${acte.id} : protagoniste connu (${id})`);
+      assert.ok(RPG_STORY_ALL_SCENES.some((scene) => scene.acteId === acte.id
+        && scene.repliques.some((ligne) => ligne.personnage === id)),
+      `${acte.id} : ${id} est bien un protagoniste de cet acte`);
+    }
   }
 });
 

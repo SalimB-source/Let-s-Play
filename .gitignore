@@ -19,6 +19,7 @@ android/.idea/
 
 # Harnais locaux jetables (rendus logiciels, vérifications headless)
 .cache/
+.venv/
 __pycache__/
 
 # Coque PC (desktop/) — paquet web construit et sorties d’electron-builder

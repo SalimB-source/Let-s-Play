@@ -56,18 +56,18 @@ const personnages = {
   'dernier-fennec': { nom: 'Le Dernier Fennec', fonction: 'Éclaireur des étages perdus', carte: 'fennec-des-decombres', portrait: 'cards/fennec-des-decombres.jpg', position: '50% 24%', couleur: '#e3be7a', stand: 'sablier-story/stands/stand-dernier-fennec.webp', poses: { duel: 'sablier-story/stands/stand-dernier-fennec-affrontement.webp', apres: 'sablier-story/stands/stand-dernier-fennec-apaisement.webp' } },
   'ifrit-ergs': { nom: 'L’Ifrit des ergs', fonction: 'Gardien du portail', carte: 'ifrit-des-ergs', portrait: 'cards/ifrit-des-ergs.jpg', position: '50% 22%', couleur: '#f09c67', stand: 'sablier-story/stands/stand-ifrit-ergs.webp', poses: { duel: 'sablier-story/stands/stand-ifrit-ergs-affrontement.webp', apres: 'sablier-story/stands/stand-ifrit-ergs-apaisement.webp' } },
   'horloger-zenith': { nom: 'L’Horloger du Zénith', fonction: 'Voix de l’horloge du ciel', carte: 'sahir-des-braises', portrait: 'cards/sahir-des-braises.jpg', position: '50% 22%', couleur: '#e8c47c', stand: 'sablier-story/stands/stand-horloger-zenith.webp', poses: { duel: 'sablier-story/stands/stand-horloger-zenith-affrontement.webp', choix: 'sablier-story/stands/stand-horloger-zenith-decision.webp', apres: 'sablier-story/stands/stand-horloger-zenith-apaisement.webp' } },
-  'corsaire-mousse': { nom: 'La Mousse des galiotes', fonction: 'Guetteuse du chenal', carte: 'mousse-des-galiotes', portrait: 'cards/mousse-des-galiotes.jpg', position: '50% 22%', couleur: '#75c7d1', stand: 'sablier-story/stands/stand-pecheur.webp' },
-  'corsaire-negociant': { nom: 'Le Négociant des rançons', fonction: 'Teneur des comptes de prise', carte: null, portrait: 'cards/faiseur-de-passage.jpg', position: '50% 24%', couleur: '#d9b578', stand: 'sablier-story/stands/stand-marchand.webp' },
-  'corsaire-rais': { nom: 'Le Raïs de la Galiote', fonction: 'Capitaine de la flotte de la Régence', carte: 'rais-de-la-galiote', portrait: 'cards/rais-de-la-galiote.jpg', position: '50% 22%', couleur: '#9fd1cc', stand: 'sablier-story/stands/stand-sonneur.webp' },
-  'corsaire-barbe-rousse': { nom: 'La Barbe-Rousse', fonction: 'Amiral du Hollandais volant', carte: 'la-barbe-rousse', portrait: 'cards/la-barbe-rousse.jpg', position: '50% 22%', couleur: '#6fb3c8', stand: 'sablier-story/stands/stand-devoreur.webp' },
-  'samurai-ashigaru': { nom: 'L’Ashigaru du guet', fonction: 'Sentinelle de la palissade d’Edo', carte: 'ashigaru-des-braises', portrait: 'cards/ashigaru-des-braises.jpg', position: '50% 22%', couleur: '#e39a79', stand: 'sablier-story/stands/stand-guetteur.webp' },
-  'samurai-ronin': { nom: 'Le Rōnin des braises', fonction: 'Sabre errant sans seigneur', carte: 'ronin-du-soleil-rouge', portrait: 'cards/ronin-du-soleil-rouge.jpg', position: '50% 22%', couleur: '#e99c6d', stand: 'sablier-story/stands/stand-dernier-fennec.webp' },
-  'samurai-kenshi': { nom: 'Le Kenshi du torii', fonction: 'Maître d’armes du sanctuaire', carte: 'samourai-du-torii', portrait: 'cards/samourai-du-torii.jpg', position: '50% 22%', couleur: '#db846a', stand: 'sablier-story/stands/stand-valkyrie-fjord.webp' },
-  'samurai-daimyo': { nom: 'Le Daimyō du Soleil rouge', fonction: 'Seigneur du Mont Ardent', carte: 'daimyo-du-soleil-rouge', portrait: 'cards/daimyo-du-soleil-rouge.jpg', position: '50% 22%', couleur: '#d56352', stand: 'sablier-story/stands/stand-maitre-hivers.webp' },
-  'necro-ouvrier': { nom: 'L’Ouvrier du natron', fonction: 'Embaumeur des cryptes basses', carte: 'ouvrier-du-natron', portrait: 'cards/ouvrier-du-natron.jpg', position: '50% 22%', couleur: '#b8a5c9', stand: 'sablier-story/stands/stand-puisatier.webp' },
-  'necro-chacal': { nom: 'Le Chacal du seuil', fonction: 'Gardien des caveaux', carte: 'chacal-du-seuil', portrait: 'cards/chacal-du-seuil.jpg', position: '50% 22%', couleur: '#c9a24e', stand: 'sablier-story/stands/stand-ifrit-ergs.webp' },
-  'necro-peseuse': { nom: 'Celle qui pèse', fonction: 'Greffière de la Balance', carte: 'celle-qui-pese', portrait: 'cards/celle-qui-pese.jpg', position: '50% 22%', couleur: '#c9aa6a', stand: 'sablier-story/stands/stand-scribe.webp' },
-  'necro-devoreuse': { nom: 'La Dévoreuse des âmes', fonction: 'Bête sacrée du Jugement', carte: 'la-devoreuse', portrait: 'cards/la-devoreuse.jpg', position: '50% 22%', couleur: '#947bb0', stand: 'sablier-story/stands/stand-devoreur.webp' },
+  'corsaire-mousse': { nom: 'La Mousse des galiotes', fonction: 'Guetteuse du chenal', carte: 'mousse-des-galiotes', portrait: 'cards/mousse-des-galiotes.jpg', position: '50% 22%', couleur: '#75c7d1', stand: 'sablier-story/stands/stand-corsaire-mousse.webp' },
+  'corsaire-negociant': { nom: 'Le Négociant des rançons', fonction: 'Teneur des comptes de prise', carte: null, portrait: 'sablier-story/corsaire-negociant.jpg', position: '50% 22%', couleur: '#d9b578', stand: 'sablier-story/stands/stand-corsaire-negociant.webp' },
+  'corsaire-rais': { nom: 'Le Raïs de la Galiote', fonction: 'Capitaine de la flotte de la Régence', carte: 'rais-de-la-galiote', portrait: 'cards/rais-de-la-galiote.jpg', position: '50% 22%', couleur: '#9fd1cc', stand: 'sablier-story/stands/stand-corsaire-rais.webp' },
+  'corsaire-barbe-rousse': { nom: 'La Barbe-Rousse', fonction: 'Amiral du Hollandais volant', carte: 'la-barbe-rousse', portrait: 'cards/la-barbe-rousse.jpg', position: '50% 22%', couleur: '#6fb3c8', stand: 'sablier-story/stands/stand-corsaire-barbe-rousse.webp' },
+  'samurai-ashigaru': { nom: 'L’Ashigaru du guet', fonction: 'Sentinelle de la palissade d’Edo', carte: 'ashigaru-des-braises', portrait: 'cards/ashigaru-des-braises.jpg', position: '50% 22%', couleur: '#e39a79', stand: 'sablier-story/stands/stand-samurai-ashigaru.webp' },
+  'samurai-ronin': { nom: 'Le Rōnin des braises', fonction: 'Sabre errant sans seigneur', carte: 'ronin-du-soleil-rouge', portrait: 'cards/ronin-du-soleil-rouge.jpg', position: '50% 22%', couleur: '#e99c6d', stand: 'sablier-story/stands/stand-samurai-ronin.webp' },
+  'samurai-kenshi': { nom: 'Le Kenshi du torii', fonction: 'Maître d’armes du sanctuaire', carte: 'samourai-du-torii', portrait: 'cards/samourai-du-torii.jpg', position: '50% 22%', couleur: '#db846a', stand: 'sablier-story/stands/stand-samurai-kenshi.webp' },
+  'samurai-daimyo': { nom: 'Le Daimyō du Soleil rouge', fonction: 'Seigneur du Mont Ardent', carte: 'daimyo-du-soleil-rouge', portrait: 'cards/daimyo-du-soleil-rouge.jpg', position: '50% 22%', couleur: '#d56352', stand: 'sablier-story/stands/stand-samurai-daimyo.webp' },
+  'necro-ouvrier': { nom: 'L’Ouvrier du natron', fonction: 'Embaumeur des cryptes basses', carte: 'ouvrier-du-natron', portrait: 'cards/ouvrier-du-natron.jpg', position: '50% 22%', couleur: '#b8a5c9', stand: 'sablier-story/stands/stand-necro-ouvrier.webp' },
+  'necro-chacal': { nom: 'Le Chacal du seuil', fonction: 'Gardien des caveaux', carte: 'chacal-du-seuil', portrait: 'cards/chacal-du-seuil.jpg', position: '50% 22%', couleur: '#c9a24e', stand: 'sablier-story/stands/stand-necro-chacal.webp' },
+  'necro-peseuse': { nom: 'Celle qui pèse', fonction: 'Greffière de la Balance', carte: 'celle-qui-pese', portrait: 'cards/celle-qui-pese.jpg', position: '50% 22%', couleur: '#c9aa6a', stand: 'sablier-story/stands/stand-necro-peseuse.webp' },
+  'necro-devoreuse': { nom: 'La Dévoreuse des âmes', fonction: 'Bête sacrée du Jugement', carte: 'la-devoreuse', portrait: 'cards/la-devoreuse.jpg', position: '50% 22%', couleur: '#947bb0', stand: 'sablier-story/stands/stand-necro-devoreuse.webp' },
 };
 export const RPG_STORY_CAST = Object.freeze(Object.fromEntries(
   Object.entries(personnages).map(([id, personnage]) => [id, Object.freeze({ id, ...personnage })]),
@@ -119,19 +119,29 @@ export const RPG_STORY_OPPONENT_CAST = Object.freeze({
 const REGARDS_PEINTS = Object.freeze({
   // Tournées vers la gauche de l'image : elles appartiennent au bord droit.
   boualem: 'gauche',
+  'corsaire-mousse': 'gauche',
+  'corsaire-rais': 'gauche',
   'dernier-fennec': 'gauche',
   devoreur: 'gauche',
   'djinn-souk': 'gauche',
   feriel: 'gauche',
   marchand: 'gauche',
   nageuse: 'gauche',
+  'necro-chacal': 'gauche',
   'reine-etals': 'gauche',
+  'samurai-ashigaru': 'gauche',
+  'samurai-kenshi': 'gauche',
   // Tournées vers la droite de l'image : elles appartiennent au bord gauche.
   amani: 'droite',
+  'corsaire-barbe-rousse': 'droite',
+  'corsaire-negociant': 'droite',
   guetteur: 'droite',
   'horloger-zenith': 'droite',
   'meute-neiges': 'droite',
+  'necro-devoreuse': 'droite',
+  'necro-ouvrier': 'droite',
   salem: 'droite',
+  'samurai-ronin': 'droite',
   sonneur: 'droite',
   yamina: 'droite',
 });
@@ -159,7 +169,7 @@ export function placerPlateauHistoire(ids = []) {
 }
 
 /** Une seule révision de cache pour toute la famille des sprites du récit. */
-export const STAND_REVISION = 'recit-stands-5';
+export const STAND_REVISION = 'recit-stands-6';
 
 export function personnageHistoire(id) {
   return Object.hasOwn(RPG_STORY_CAST, id) ? RPG_STORY_CAST[id] : RPG_STORY_CAST.narrateur;
@@ -215,4 +225,7 @@ export const RPG_STORY_DECORS = Object.freeze({
   abysses: Object.freeze({ fichier: 'sablier-story/decor-citerne.jpg', position: '50% 55%' }),
   fjord: Object.freeze({ fichier: 'sablier-story/decor-fjord.jpg', position: '50% 50%' }),
   sables: Object.freeze({ fichier: 'sablier-story/decor-sables.jpg', position: '50% 52%' }),
+  corsaires: Object.freeze({ fichier: 'sablier-story/decor-corsaires.jpg', position: '50% 52%' }),
+  soleil: Object.freeze({ fichier: 'sablier-story/decor-soleil.jpg', position: '50% 52%' }),
+  necropole: Object.freeze({ fichier: 'sablier-story/decor-necropole.jpg', position: '50% 52%' }),
 });
