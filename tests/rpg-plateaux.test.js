@@ -68,17 +68,29 @@ test('le désert du Sahara est livré comme plateau de plein droit', () => {
   assert.ok(caravane && caravane.fichier !== sahara.fichier, 'chaque plateau saharien a son propre fond');
 });
 
-test('le fjord des Neuf Hivers est livré comme plateau de plein droit', () => {
-  const fjord = plateauParId('fjord-des-neuf-hivers');
-  assert.ok(fjord, 'le Fjord des Neuf Hivers fait partie des plateaux');
-  assert.match(fjord.fichier, /\.jpg$/);
-  assert.match(fjord.nom, /fjord/i);
-  assert.match(fjord.resume, /glace/i, 'le résumé annonce bien la glace du fjord');
-  // Le décor du Nord : lanterne, cor, corde, hache et bâton de runes.
-  for (const accessoire of ['lanterne', 'cor', 'corde', 'hache', 'runes']) {
-    assert.match(fjord.resume, new RegExp(accessoire, 'i'),
-      `le résumé nomme ${accessoire} au bord du plateau`);
+test('le Village Viking remplace le Fjord des Neuf Hivers comme plateau de la Neige', () => {
+  const village = plateauParId('village-viking');
+  assert.ok(village, 'Le Village Viking fait partie des plateaux');
+  assert.equal(village.fichier, 'plateau-village-viking.jpg');
+  assert.match(village.nom, /Village Viking/i);
+  assert.match(village.lieu, /village|Nord|fjord/i);
+  assert.match(village.resume, /vol d’oiseau|vol d.oiseau/i, 'le résumé annonce la vue à vol d’oiseau');
+  assert.match(village.resume, /place|nue|cartes/i, 'le centre de la place est dégagé pour les cartes');
+  // Le décor du village du Nord : la halle du Jarl, les maisons longues, les
+  // boucliers ronds, les stèles runiques, les tonneaux, la corde et les braseros.
+  for (const accessoire of ['halle', 'maisons', 'boucliers', 'runes', 'tonneaux', 'corde', 'braseros']) {
+    assert.match(village.resume, new RegExp(accessoire, 'i'),
+      `le résumé nomme ${accessoire} autour de la place`);
   }
+  const taille = tailleJpeg(new URL(`../public/${village.fichier}`, import.meta.url));
+  assert.deepEqual(taille, { width: 3840, height: 2560 }, 'fond livré en 4K au ratio 3:2');
+  // L'ancien plateau du Fjord des Neuf Hivers a quitté le jeu, fonds compris.
+  assert.equal(plateauParId('fjord-des-neuf-hivers'), null, 'le Fjord des Neuf Hivers n’est plus au catalogue');
+  assert.ok(!RPG_PLATEAUX.some(({ fichier }) => /fjord-des-neuf-hivers/.test(fichier)));
+  assert.equal(existsSync(new URL('../public/plateau-fjord-des-neuf-hivers.jpg', import.meta.url)), false,
+    'l’ancien fond du fjord n’est plus livré');
+  assert.equal(existsSync(new URL('../public/plateau-fjord-des-neuf-hivers-vide.jpg', import.meta.url)), false,
+    'l’ancienne plaque vide du fjord n’est plus livrée');
   assert.equal(new Set(RPG_PLATEAUX.map((plateau) => plateau.fichier)).size, RPG_PLATEAUX.length,
     'aucun plateau ne réutilise le fond d’un autre');
 });
@@ -284,7 +296,7 @@ test('chaque deck du catalogue impose un plateau connu', () => {
   assert.equal(plateauDeDeck('cour-des-djinns').plateau.id, 'table-des-heures');
   assert.equal(plateauDeDeck('sentiers-de-cendre').plateau.id, 'caravane-de-gourara');
   assert.equal(plateauDeDeck('maree-des-abysses').plateau.id, 'ruines-de-tipaza');
-  assert.equal(plateauDeDeck('serment-des-neuf-hivers').plateau.id, 'fjord-des-neuf-hivers');
+  assert.equal(plateauDeDeck('serment-des-neuf-hivers').plateau.id, 'village-viking');
   // Les Ténèbres ont leur terrain : la Balance des Heures, le set égyptien,
   // se bat sur les dalles de la Nécropole (doc 16 §9).
   assert.equal(plateauDeDeck('balance-des-heures').plateau.id, 'necropole-des-dalles');
@@ -331,9 +343,9 @@ test('chaque deck de la campagne impose un plateau connu', () => {
   }
   // Le Grand Horloger reçoit dans la salle haute de la Chambre.
   assert.equal(plateauDeDeck('grand-horloger').plateau.id, 'table-des-heures');
-  // Les étages de la Tour du Fjord gardent la glace de leur deck de Neige.
+  // Les étages de la Tour du Fjord se battent au village viking.
   for (const cle of ['gardes-du-fjord', 'meute-des-neiges', 'serment-des-neuf-hivers', 'maitre-des-neuf-hivers']) {
-    assert.equal(plateauDeDeck(cle).plateau.id, 'fjord-des-neuf-hivers', `${cle} se bat sur le fjord`);
+    assert.equal(plateauDeDeck(cle).plateau.id, 'village-viking', `${cle} se bat au village viking`);
   }
 });
 
@@ -364,9 +376,9 @@ test('un paquet brut prend le terrain de sa couleur dominante', () => {
   assert.equal(plateauDeDeck(['chien-du-guet', 'chien-du-guet', 'chien-du-guet']).plateau.id, 'erg-du-sahara');
   assert.equal(plateauDeDeck(Array(8).fill('trait-de-braise')).plateau.id, 'table-des-heures');
   assert.equal(plateauDeDeck(Array(8).fill('ressac')).plateau.id, 'ruines-de-tipaza');
-  // La quatrième couleur : la Neige prend la glace du fjord.
+  // La quatrième couleur : la Neige prend la place du village viking.
   assert.equal(couleurDominanteDeck(['loup-des-neiges', 'loup-des-neiges', 'loup-des-neiges']), 'neige');
-  assert.equal(plateauDeDeck(Array(8).fill('loup-des-neiges')).plateau.id, 'fjord-des-neuf-hivers');
+  assert.equal(plateauDeDeck(Array(8).fill('loup-des-neiges')).plateau.id, 'village-viking');
   // La cinquième couleur : les Ténèbres prennent les dalles de la Nécropole.
   assert.equal(couleurDominanteDeck(['chacal-du-seuil', 'chacal-du-seuil', 'papyrus']), 'tenebres');
   assert.equal(plateauDeDeck(Array(8).fill('chacal-du-seuil')).plateau.id, 'necropole-des-dalles');
@@ -507,7 +519,7 @@ test('chaque terrain classique a son double merveilleux, sauf la piste caravani�
   assert.deepEqual(RPG_PLATEAUX_VARIANTES_FANTAISISTES, {
     'erg-du-sahara': 'desert-de-verre',
     'ruines-de-tipaza': 'abysses-phosphorescentes',
-    'fjord-des-neuf-hivers': 'iles-celestes',
+    'village-viking': 'iles-celestes',
   });
   for (const [classiqueId, varianteId] of Object.entries(RPG_PLATEAUX_VARIANTES_FANTAISISTES)) {
     const classique = plateauParId(classiqueId);

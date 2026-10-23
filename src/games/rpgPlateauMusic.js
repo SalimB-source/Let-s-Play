@@ -31,10 +31,10 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   'navire-pirate': `${RPG_AUDIO_BASE}stepanbel_pirates_main-01.mp3`,
   'abysses-phosphorescentes': `${RPG_AUDIO_BASE}deep-sea-underwater-ambience.mp3`,
   'desert-de-verre': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
-  // Le Fjord et son double, les Îles Célestes, partagent trois pistes : les
-  // deux prises vikings et la piste complète. Le lecteur en choisit une au
+  // Le Village Viking et son double, les Îles Célestes, partagent trois pistes :
+  // les deux prises vikings et la piste complète. Le lecteur en choisit une au
   // lancement de chaque duel enneigé.
-  'fjord-des-neuf-hivers': RPG_SNOW_MUSIC_FILES,
+  'village-viking': RPG_SNOW_MUSIC_FILES,
   // La Cour alterne le thème Bushido existant et la nouvelle piste des cerisiers.
   'cour-de-l-empereur': RPG_JAPANESE_MUSIC_FILES,
   'iles-celestes': RPG_SNOW_MUSIC_FILES,
