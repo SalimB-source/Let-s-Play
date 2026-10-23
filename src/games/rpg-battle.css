@@ -9069,6 +9069,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-card.is-frozen .rpg-card__img {
   filter: saturate(0.68) brightness(1.04) contrast(1.02) sepia(0.06) hue-rotate(165deg);
+  /* Le « respire » de l'illustration au survol s'arrête : la glace ne bouge pas. */
+  animation: none !important;
+}
+
+/* Une créature gelée est prise dans la glace : elle ne bouge plus. La lévitation
+   d'Envol (`rpg-envol-levite`) et le souffle qui traverse la face s'arrêtent,
+   mais la carte garde la hauteur de repos que `.is-envol` lui donne — `translate:
+   0 -14px`, `rotate: -0.7deg`, `scale: 1` — et reste donc figée en l'air,
+   immobile, au lieu de retomber au sol.
+
+   `:not(.fx-*)` : une cinématique de combat (arrivée, bond, impact, foudre,
+   blocage) reste jouée même sur une carte gelée — le gel fige le vol, pas la
+   table. Ce bloc vit après les halos de ciblage (`is-ciblable`, plus haut, et
+   `is-spell-target`) : sa spécificité l'emporte, et la lévitation ne reprend
+   pas dès que la créature devient une cible. */
+.rpg-card.is-frozen.is-envol:not(.fx-enter, .fx-lunge, .fx-hit, .fx-foudre, .fx-glow, .fx-block, .fx-unblock) {
+  animation: none;
+}
+.rpg-card.is-frozen .rpg-card__envol-souffle {
+  animation: none;
+  opacity: 0;
 }
 
 .rpg-card__frost {
