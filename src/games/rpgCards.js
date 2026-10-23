@@ -176,13 +176,13 @@ export function libelleModificationStats(carte) {
  * cadre du tout. Un sort ne se distinguait donc d'une créature ou d'un terrain
  * qu'en lisant la ligne de type, écrite en 6 px.
  *
- * Chaque famille garde ici sa teinte et son encre pour le socle, la ligne de
- * type et le halo de jouabilité (voir `rpgSortSignature.jsx` et le bloc « Les
- * familles de sorts » de `rpg-battle.css`). Le jeton, lui, prend la **couleur
- * de la carte** et distingue la famille par sa forme et son sigle : losange
- * et éclair pour la Magie Rapide, cercle et étincelle pour la Sorcellerie.
- * Les deux socles partagent la même voûte ; leur texte garde le nom de la
- * famille même si leurs jetons ont la même couleur d'élément.
+ * Chaque famille garde ici sa teinte et son encre de référence pour le socle,
+ * la ligne de type et le halo de jouabilité (voir `rpgSortSignature.jsx` et le
+ * bloc « Les familles de sorts » de `rpg-battle.css`). Le sceau reprend la
+ * teinte de sa famille avec une encre contrastée, et la distingue aussi par sa
+ * forme et son sigle : losange et éclair jaunes pour la Magie Rapide, cercle
+ * et étincelle violets pour la Sorcellerie. Il ne suit jamais l'élément de la
+ * carte, y compris lorsqu'elle est hybride.
  */
 export const RPG_SORT_FAMILIES = {
   rapide: { key: 'rapide', label: 'Magie Rapide', teinte: '#ffd619', encre: '#ffe9a0' },
@@ -1976,7 +1976,7 @@ export function cardColors(cardOrId) {
   return [...new Set(configured.filter((color) => RPG_CARD_COLORS.has(color)))];
 }
 
-/** Bandes nettes, une par élément, pour les sceaux et les coûts hybrides.
+/** Bandes nettes, une par élément, pour les coûts hybrides.
  *  L'ordre suit le même canon que le cadre de la carte (braise, eau, sable,
  *  neige) : la couleur du coût et celle de la carte se lisent dans le même
  *  sens, de la moitié haute gauche à la basse droite. Une carte mono n'a pas

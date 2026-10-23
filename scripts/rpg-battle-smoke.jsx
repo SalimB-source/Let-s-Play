@@ -344,7 +344,7 @@ export async function checkRpgBattle(assert) {
   assert.equal(coutDjinnCatalogue?.classList.contains('rpg-card-catalogue__cost--hybride'), true,
     'le coût hybride a son propre disque dans le catalogue');
   assert.equal(coutDjinnCatalogue?.style.getPropertyValue('--rpg-hybrid-cost-bg'), cardHybridGradient('djinn-de-foudre'),
-    'le catalogue peint le même partage Sable/Braise que le sceau des magies');
+    'le catalogue peint le partage Sable/Braise du coût hybride');
   assert.equal(container.querySelector('.rpg-card-catalogue__card[data-card-id="petra"] .rpg-card-catalogue__cost'), null,
     'un terrain hybride ne gagne pas de coût imprimé');
   await filtrerCatalogue(filtresCatalogue[0], 'toutes');

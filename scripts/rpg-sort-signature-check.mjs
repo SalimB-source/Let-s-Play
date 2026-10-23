@@ -70,28 +70,29 @@ for (const [surface, regle] of [
   assert.match(battleCss + mobileCss, regle, `${surface} annonce le repère que le socle suit`);
 }
 
-// ── Le sceau : forme de famille et couleur de la carte ──────────────────────
-for (const couleur of ['braise', 'eau', 'sable', 'neige', 'tenebres']) {
-  const badge = battleCss.match(new RegExp(`\\.rpg-card-element-badge--${couleur}\\s*\\{([^}]*)\\}`))?.[1];
-  const teintes = badge?.match(/radial-gradient\(circle at 34% 24%, (#[\da-f]+), (#[\da-f]+) 72%\)/)?.slice(1);
-  const sceau = battleCss.match(new RegExp(`\\.rpg-sort-sceau--element-${couleur}\\s*\\{([^}]*)\\}`))?.[1];
-  assert.ok(teintes && sceau, `le repère et le sceau ${couleur} sont déclarés`);
-  assert.ok(sceau.includes(`--rpg-sort-sceau-clair: ${teintes[0]};`)
-    && sceau.includes(`--rpg-sort-sceau-sombre: ${teintes[1]};`),
-    `le sceau ${couleur} reprend les deux teintes du badge de couleur de la carte`);
-}
-assert.match(signatureSource, /const couleurs = cardColors\(carte\);[\s\S]*?rpg-sort-sceau--element-\$\{couleurs\[0\] \?\? 'sable'\}/,
-  'la couleur du jeton vient de chaque carte, indépendamment de sa famille');
-assert.match(cartesSource, /export function cardHybridGradient\(cardOrId\)[\s\S]*?CARD_FRAME_COLORS\[couleur\]\?\.color[\s\S]*?linear-gradient\(135deg, \$\{bandes\.join\(', '\)\}\)/,
-  'le dégradé partagé peint chaque élément côte à côte avec sa teinte de cadre');
-assert.match(signatureSource, /'--rpg-sort-sceau-fond-hybride': cardHybridGradient\(carte\)/,
-  'le sceau des magies hybrides réutilise le même dégradé que leur coût');
-assert.match(battleCss, /\.rpg-sort-sceau--hybride\s*\{[^}]*--rpg-sort-sceau-fond:\s*var\(--rpg-sort-sceau-fond-hybride\)/,
-  'la teinte hybride remplace le dégradé monochrome sur les deux formes');
+// ── Le sceau : forme et couleur de la famille, jamais de l'élément ──────────
+const sceauRapide = battleCss.match(/\.rpg-sort-sceau--rapide\s*\{([^}]*)\}/)?.[1] ?? '';
+const sceauSorcellerie = battleCss.match(/\.rpg-sort-sceau--sorcellerie\s*\{([^}]*)\}/)?.[1] ?? '';
+assert.match(sceauRapide, /--rpg-sort-sceau-sombre:\s*#ffd619;/,
+  'le losange de Magie Rapide est jaune, avec la teinte #ffd619 de sa famille');
+assert.match(sceauSorcellerie, /--rpg-sort-sceau-sombre:\s*#b39ae0;/,
+  'le médaillon de Sorcellerie est violet, avec la teinte #b39ae0 de sa famille');
+assert.match(sceauRapide, /--rpg-sort-sceau-encre:\s*#3b2c00;/,
+  'l’éclair garde une encre sombre et lisible sur le jaune');
+assert.match(sceauSorcellerie, /--rpg-sort-sceau-encre:\s*#321d4d;/,
+  'l’étincelle garde une encre sombre et lisible sur le violet');
+assert.match(battleCss, /\.rpg-sort-sigil\s*\{[^}]*fill:\s*currentColor;/,
+  'le dessin SVG reçoit bien l’encre contrastée de son sceau');
+assert.match(signatureSource, /import \{ magieFamilleInfo \} from '\.\/rpgCards\.js';/,
+  'le sceau ne consulte plus les couleurs élémentaires de la carte');
+assert.doesNotMatch(signatureSource, /cardColors|cardFrameColor|cardHybridGradient|rpg-sort-sceau--element|rpg-sort-sceau--hybride/,
+  'aucun élément ni dégradé hybride ne pilote plus la couleur du sceau');
+assert.doesNotMatch(battleCss, /\.rpg-sort-sceau--(?:element|hybride)/,
+  'les anciennes variantes élémentaires et hybrides du sceau sont retirées');
 assert.match(battleCss, /\.rpg-sort-sceau--rapide::before\s*\{[^}]*background:\s*var\(--rpg-sort-sceau-fond\);/,
-  'l’intérieur du losange prend la couleur de la carte');
+  'l’intérieur du losange prend le jaune de sa famille');
 assert.match(battleCss, /\.rpg-sort-sceau--sorcellerie\s*\{[^}]*background:\s*var\(--rpg-sort-sceau-fond\);/,
-  'le médaillon rond prend la même couleur de carte');
+  'le médaillon rond prend le violet de sa famille');
 assert.match(battleCss, /\.rpg-card-catalogue__sort,\s*\.rpg-atelier__carte-sort\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*8px;[^}]*left:\s*8px;[^}]*width:\s*var\(--rpg-card-marker-size, 38px\);/s,
   'le sceau des vignettes se pose au coin libre, en face du galet du coût, à l’échelle du repère');
 assert.match(battleCss, /\.rpg-sort-sceau--rapide\s*\{[^}]*clip-path:\s*polygon\(50% 0, 100% 50%, 50% 100%, 0 50%\)/s,
