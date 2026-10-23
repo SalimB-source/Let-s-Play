@@ -1149,7 +1149,9 @@
 }
 .rpg-narrative__cartouche {
   position: relative;
-  z-index: 3;
+  /* Les commandes restent lisibles même quand une arme ou un grand plan
+     détouré déborde vers le centre de la scène. */
+  z-index: 6;
   width: min(480px, 26vw);
   margin: 0 auto;
   text-align: center;
@@ -1187,6 +1189,7 @@
   width: clamp(300px, 38vw, 640px);
   margin: 0;
   pointer-events: none;
+  scale: var(--stand-echelle, 1);
   filter: brightness(.46) saturate(.62);
   transition: filter .38s ease;
   transform-origin: bottom center;
@@ -1196,6 +1199,9 @@
 .rpg-narrative__stand:last-child { right: 0; justify-content: flex-end; }
 .rpg-narrative__stand:only-child { left: 0; right: auto; justify-content: flex-start; }
 .rpg-narrative__stand--actif { filter: none; }
+/* Les plans larges grandissent depuis leur ligne supérieure : la tête reste
+   dans le cadre et le bas dépasse davantage, comme les bustes historiques. */
+.rpg-narrative__stand--echelle { transform-origin: top center; }
 @keyframes rpg-story-stand {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; }
