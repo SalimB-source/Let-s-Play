@@ -1226,6 +1226,13 @@
   filter: drop-shadow(0 16px 22px rgba(0, 0, 0, .55));
   user-select: none;
 }
+/* Un sprite large ne doit pas être rétréci une seconde fois par son emprise :
+ * sinon `object-fit: contain` peint une petite silhouette avec du vide au-dessus,
+ * même quand le support est agrandi. Le débord se fait vers le centre du duo. */
+.rpg-narrative__stand.rpg-narrative__stand--echelle.rpg-narrative__stand--decoupe .rpg-narrative__stand-img {
+  flex-shrink: 0;
+  max-width: none;
+}
 /* Un changement de situation change la pose : la silhouette se recompose au
    lieu de sauter. `key` est posé sur l'image, l'animation rejoue donc à chaque
    nouvelle pose — et jamais sur la pose de référence. */

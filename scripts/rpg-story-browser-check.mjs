@@ -204,6 +204,7 @@ try {
     { nom: 'acte-6-epilogue', cible: 'corsaires-4-apres', acte: 'acte-6', decor: 'corsaires', id: 'corsaire-barbe-rousse', fichier: 'la-barbe-rousse.jpg', conclure: true },
     { nom: 'acte-7-scene', cible: 'soleil-1-avant', acte: 'acte-7', decor: 'soleil', id: 'samurai-ashigaru', fichier: 'stand-samurai-ashigaru.webp', stand: true, livre: true },
     { nom: 'acte-7-daimyo', cible: 'soleil-4-avant', acte: 'acte-7', decor: 'soleil', id: 'samurai-daimyo', fichier: 'stand-samurai-daimyo.webp', stand: true },
+    { nom: 'acte-7-daimyo-mobile', cible: 'soleil-4-apres', acte: 'acte-7', decor: 'soleil', id: 'samurai-daimyo', fichier: 'stand-samurai-daimyo.webp', stand: true, mobile: true },
     { nom: 'acte-8-chacal', cible: 'necropole-2-avant', acte: 'acte-8', decor: 'necropole', id: 'necro-chacal', fichier: 'stand-necro-chacal.webp', stand: true },
     { nom: 'acte-8-scene-mobile', cible: 'necropole-3-avant', acte: 'acte-8', decor: 'necropole', id: 'necro-peseuse', fichier: 'stand-necro-peseuse.webp', stand: true, mobile: true },
     { nom: 'acte-8-epilogue', cible: 'necropole-4-apres', acte: 'acte-8', decor: 'necropole', id: 'necro-devoreuse', fichier: 'la-devoreuse.jpg', conclure: true },
@@ -248,6 +249,18 @@ try {
       assert.equal(await support.getAttribute('data-echelle'), String(ECHELLE_STAND_PLAN_LARGE));
       assert.equal(await support.evaluate((element) => getComputedStyle(element).scale), String(ECHELLE_STAND_PLAN_LARGE),
         `${cas.id} : le grossissement du plan large est bien appliqué au plateau`);
+      const imagesPlateau = page.locator('.rpg-narrative__plateau .rpg-narrative__stand-img');
+      await imagesPlateau.evaluateAll((images) => Promise.all(images.map((element) => element.decode())));
+      const mesures = await imagesPlateau.evaluateAll((images) => images.map((element) => {
+        const rect = element.getBoundingClientRect();
+        const facteur = Math.min(rect.width / element.naturalWidth, rect.height / element.naturalHeight);
+        return { id: element.dataset.personnage, hauteur: element.naturalHeight * facteur };
+      }));
+      const propre = mesures.find((item) => item.id === cas.id);
+      for (const autre of mesures.filter((item) => item.id !== cas.id)) {
+        assert.ok(propre.hauteur >= autre.hauteur * 1.15,
+          `${cas.id} : sa hauteur réellement peinte (${Math.round(propre.hauteur)}) dépasse celle de ${autre.id} (${Math.round(autre.hauteur)})`);
+      }
     }
     if (screenshotDir) await page.screenshot({ path: join(screenshotDir, `${cas.nom}.png`) });
     if (cas.duel) {
