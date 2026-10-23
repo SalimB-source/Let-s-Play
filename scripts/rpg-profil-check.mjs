@@ -151,7 +151,7 @@ for (const attendu of ['rpg-profil__plateau-nom', 'rpg-profil__cachet', 'embleme
 }
 assert.ok(ecran.split('\n').length < 330,
   `la carte tient en un seul écran et trois gestes (${ecran.split('\n').length} lignes)`);
-assert.ok(piste.split('\n').length < 260,
+assert.ok(piste.split('\n').length < 280,
   `la piste a son propre fichier, et reste courte (${piste.split('\n').length} lignes)`);
 
 // 3. La page branche l'onglet, l'écran et la cérémonie.
@@ -391,8 +391,26 @@ assert.match(vignettes, /const sortie = path\.join\(PUBLIC, vignetteDosRelative\
 assert.match(vignettes, /hauteur: Math\.round\(\(DOS_DE_CARTE_LARGEUR \* 5\) \/ 4\),/,
   'au format des cartes du Sablier, quatre pour cinq');
 assert.match(cssPiste, /\.rpg-piste__carte \{[\s\S]{0,300}background-size: cover;/, 'la miniature couvre la tuile');
-assert.match(cssPiste, /\.rpg-piste__sachet::before \{[\s\S]{0,600}clip-path: polygon\(/,
-  'le sachet a son bord dentelé');
+assert.match(cssPiste, /\.rpg-piste__sachet-top \{[\s\S]{0,600}clip-path: polygon\(/,
+  'le sceau cranté du sachet se voit de dessus');
+// Le sachet est un **volume** : trois faces en perspective, et une rotation
+// lente que `prefers-reduced-motion` arrête.
+assert.match(cssPiste, /\.rpg-piste__sachet \{[\s\S]{0,300}transform-style: preserve-3d;/,
+  'le sachet est un volume, pas une image plate');
+for (const face of ['face', 'cote', 'top']) {
+  assert.ok(cssPiste.includes(`.rpg-piste__sachet-${face} {`), `le sachet a sa face « ${face} »`);
+}
+assert.match(cssPiste, /@keyframes rpg-piste-sachet \{/, 'et il tourne lentement sur lui-même');
+// Ce qu'il y a à gagner s'écrit pour se lire d'un coup d'oeil : la famille du
+// gain dans sa couleur, puis le nom de ce gain.
+assert.match(pisteCode, /<b className="rpg-piste__famille">\{gain\.sorte\}<\/b>/,
+  'chaque colonne écrit la famille de son gain');
+assert.match(pisteCode, /<span className="rpg-piste__gain-nom">\{gain\.nom\}<\/span>/,
+  'puis le nom de ce gain');
+for (const famille of ['paquet', 'rang', 'cadre', 'titre']) {
+  assert.match(cssPiste, new RegExp(`\\.rpg-piste__palier--${famille} \\{ --famille: #`),
+    `la famille ${famille} a sa couleur`);
+}
 assert.match(cssPiste, /\.rpg-piste__palier:not\(\.rpg-piste__palier--paquet\) \.rpg-piste__tuile::after \{/,
   'un niveau qui gagne autre chose porte quand même son sachet, en coin');
 // La lecture d'une passe de maîtrise : une colonne par niveau — le repère du

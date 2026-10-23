@@ -478,6 +478,16 @@ export async function checkRpgProfilEcran(assert) {
       document.querySelectorAll('[data-palier]').length, 'chaque colonne a sa case de coche');
     assert.equal(noeud('[data-palier="2"] .rpg-piste__verrou'), null, 'un niveau passé n’est pas cadenassé');
     assert.ok(noeud('[data-palier="7"] .rpg-piste__verrou'), 'un niveau à venir porte son cadenas');
+    // Ce qu'il y a à gagner se lit sans deviner : la famille en toutes lettres,
+    // dans sa couleur, puis le nom du gain — et le sachet est un volume de trois
+    // faces, pas une silhouette plate.
+    assert.equal(texte(noeud('[data-palier="7"] .rpg-piste__famille')), 'paquet',
+      'la colonne dit la famille de son gain');
+    assert.equal(texte(noeud('[data-palier="3"] .rpg-piste__famille')), 'rang', 'et chacune la sienne');
+    assert.match(texte(noeud('[data-palier="7"] .rpg-piste__gain-nom')), /paquet du Souk/i,
+      'puis le nom de ce gain');
+    assert.equal(document.querySelectorAll('[data-palier="7"] .rpg-piste__sachet > i').length, 3,
+      'le sachet est un volume : trois faces montées');
     assert.equal(noeud('.rpg-flux-menu'), null, 'le décor de Bab El n’est plus posé sur Jouer');
 
     await act(async () => onglet.click());

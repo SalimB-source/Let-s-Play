@@ -493,13 +493,20 @@ dans chaque colonne, de haut en bas :
 - le **filet** qui relie les colonnes : plein derrière soi, au pourcentage de la
   barre devant soi, vide au-delà. Une seule boîte, deux largeurs en propriétés
   personnalisées (`--gauche`, `--droite`) ;
-- la **récompense** : le sachet du Souk et son **dos de carte en miniature**
-  quand le paquet est tout le gain (vignette WebP de 1,3 Ko,
-  `public/profil/dos-de-carte.webp`, découpée par
-  `tools/make-profil-vignettes.mjs` au format 4/5 des cartes), le glyphe du rang
+- la **récompense**, reconnaissable d'un coup d'oeil : le sachet du Souk **en
+  volume** — trois faces en perspective (corps doré et son étoile imprimée, flanc
+  sombre, sceau cranté dessus) que la feuille de style fait tourner lentement —
+  et son **dos de carte en miniature** quand le paquet est tout le gain (vignette
+  WebP de 1,3 Ko, `public/profil/dos-de-carte.webp`, découpée par
+  `tools/make-profil-vignettes.mjs` au format 4/5 des cartes) ; le glyphe du rang
   ou du cosmétique sinon — et quand le niveau gagne autre chose qu'un paquet, le
   sachet se pose **en coin** de la tuile (`::after`) : **chaque** niveau montre
   son paquet ;
+- **ce qu'il y a à gagner, écrit** : la **famille** du gain en capitales
+  espacées, puis le **nom** de ce gain — « PAQUET · Un paquet du Souk »,
+  « RANG · Porteur de lanterne ». Quatre familles, quatre **couleurs** qui
+  teintent la tuile, le glyphe et l'étiquette : paquet ambre `#f2b544`, rang ciel
+  `#66c3e9`, cadre argent `#c9d2dd`, titre vert `#93d483` ;
 - le **cadenas** d'une récompense à venir, peint en CSS au coin de la tuile ;
 - le **nom** du gain, deux lignes au plus.
 

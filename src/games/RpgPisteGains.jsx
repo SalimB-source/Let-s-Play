@@ -172,7 +172,14 @@ export default function RpgPisteGains({
           const face = gain.sorte === 'paquet' ? (
             <>
               <span className="rpg-piste__carte" style={{ backgroundImage: `url("${dos}")` }} aria-hidden="true" />
-              <span className="rpg-piste__sachet" aria-hidden="true" />
+              {/* Le sachet est un **volume** : trois faces montées que la feuille
+                  de style met en perspective et fait tourner doucement — un
+                  paquet à gagner se reconnaît de loin. */}
+              <span className="rpg-piste__sachet" aria-hidden="true">
+                <i className="rpg-piste__sachet-face" />
+                <i className="rpg-piste__sachet-cote" />
+                <i className="rpg-piste__sachet-top" />
+              </span>
             </>
           ) : gain.glyphe;
 
@@ -227,7 +234,10 @@ export default function RpgPisteGains({
                 </span>
               )}
 
-              <span className="rpg-piste__gain" aria-hidden="true">{gain.nom}</span>
+              <span className="rpg-piste__gain" aria-hidden="true">
+                <b className="rpg-piste__famille">{gain.sorte}</b>
+                <span className="rpg-piste__gain-nom">{gain.nom}</span>
+              </span>
 
               {/* Le cosmétique que le rang pousse hors de la tuile : sa pastille. */}
               {cosmetique && !dansTuile ? (

@@ -8737,12 +8737,17 @@ sans un crédit dépensé.
   Chaque colonne porte, de haut en bas : le repère « niveau actuel » sur celle
   en cours, le **numéro**, la **coche** des niveaux déjà passés, le filet qui se
   remplit au pourcentage de la barre (plein derrière soi, en route devant, vide
-  au-delà), puis la **récompense** et son nom. La récompense se voit : un
-  **paquet** du Souk montre le sachet et le **dos de carte en miniature**
+  au-delà), puis la **récompense**, sa **famille** et son nom. La récompense se
+  reconnaît d'un coup d'oeil : un **paquet** du Souk montre le sachet **en
+  volume** — trois faces en perspective qui tournent lentement — et le **dos de
+  carte en miniature**
   (vignette WebP de 1,3 Ko) ; un **rang** (tuile ronde, jalon « rang » sur le
   prochain), un **cadre** de médaillon ou un **titre** sous le pseudo montre son
   glyphe — et le sachet se pose **en coin** de ces tuiles-là : chaque niveau
-  montre son paquet. Une récompense à venir porte son **cadenas**, peint en CSS.
+  montre son paquet. Chaque colonne écrit sa famille en capitales **colorées**
+  (« PAQUET », « RANG », « CADRE », « TITRE ») puis le nom du gain, et cette
+  teinte — ambre, ciel, argent, vert — peint la tuile et le glyphe. Une
+  récompense à venir porte son **cadenas**, peint en CSS.
   Les cosmétiques gagnés se **portent** en cliquant leur tuile, et se reposent
   en recliquant ; ceux qui ne sont pas encore gagnés restent visibles mais
   `aria-disabled`, et disent ce qu'il manque

@@ -127,6 +127,13 @@
   border-left: 1px solid rgba(232, 194, 113, .1);
 }
 .rpg-piste__palier:first-child { border-left: 0; }
+/* Une couleur par famille de gain : d'un coup d'oeil on sait si le niveau
+   offre un paquet, un rang, un cadre ou un titre — la tuile, le glyphe et
+   l'étiquette prennent cette teinte. */
+.rpg-piste__palier--paquet { --famille: #f2b544; }
+.rpg-piste__palier--rang { --famille: #66c3e9; }
+.rpg-piste__palier--cadre { --famille: #c9d2dd; }
+.rpg-piste__palier--titre { --famille: #93d483; }
 .rpg-piste__palier.is-gagne {
   background: linear-gradient(180deg, rgba(150, 88, 28, .17), rgba(150, 88, 28, .04) 68%, transparent);
 }
@@ -190,9 +197,13 @@
   height: 56px;
   padding: 0;
   border: 1px solid rgba(232, 194, 113, .3);
+  border-color: color-mix(in srgb, var(--famille, #e8c271) 45%, transparent);
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(30, 24, 26, .95), rgba(14, 12, 15, .95));
-  color: rgba(255, 231, 175, .82);
+  background:
+    radial-gradient(circle at 50% 26%, color-mix(in srgb, var(--famille, #e8c271) 18%, transparent), transparent 72%),
+    linear-gradient(180deg, rgba(30, 24, 26, .95), rgba(14, 12, 15, .95));
+  color: var(--famille, rgba(255, 231, 175, .82));
   font: 400 19px/1 var(--serif, ui-serif, Georgia, serif);
   cursor: default;
 }
@@ -230,16 +241,86 @@ button.rpg-piste__tuile:focus-visible {
   background-size: cover;
   box-shadow: 0 3px 7px rgba(0, 0, 0, .55);
 }
+/* Le sachet du Souk en **volume** : trois faces — devant, le corps doré et son
+   étoile imprimée ; à droite, un flanc plus sombre ; dessus, le sceau cranté —
+   mises en perspective sur le wrapper, qui tourne doucement. Un paquet à gagner
+   se reconnaît de loin, comme sur une passe de maîtrise. */
 .rpg-piste__sachet {
   position: absolute;
-  bottom: 4px;
+  bottom: 3px;
   left: 50%;
   width: 20px;
   height: 27px;
-  transform: translateX(-50%);
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .6));
+  transform: translateX(-50%) rotateX(-14deg) rotateY(-24deg);
+  transform-style: preserve-3d;
 }
-.rpg-piste__sachet::before {
+.rpg-piste__sachet > i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+}
+.rpg-piste__sachet-face {
+  width: 20px;
+  height: 27px;
+  margin: -13.5px 0 0 -10px;
+  transform: translateZ(4px);
+  border: 1px solid rgba(232, 190, 111, .95);
+  border-radius: 2px 2px 5px 5px;
+  background:
+    radial-gradient(circle at 50% 60%, rgba(255, 231, 175, .3), transparent 46%),
+    linear-gradient(120deg, #c3974d, #342318 24%, #795228 72%, #d3ac5e);
+  box-shadow: inset -2px 0 0 rgba(0, 0, 0, .35), inset 2px 0 0 rgba(255, 231, 175, .22);
+}
+.rpg-piste__sachet-face::after {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 231, 175, .9);
+  font: 700 10px/1 var(--mono, ui-monospace, monospace);
+  content: '✦';
+}
+.rpg-piste__sachet-cote {
+  width: 8px;
+  height: 27px;
+  margin: -13.5px 0 0 -4px;
+  transform: rotateY(90deg) translateZ(10px);
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(180deg, #7a5526, #241708 55%, #4e3315);
+}
+.rpg-piste__sachet-top {
+  width: 20px;
+  height: 8px;
+  margin: -4px 0 0 -10px;
+  transform: rotateX(90deg) translateZ(13.5px);
+  background: repeating-linear-gradient(90deg, #af7e38 0 2px, #d6b06c 2px 4px);
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 93% 100%, 86% 62%, 79% 100%, 72% 62%,
+    65% 100%, 58% 62%, 51% 100%, 44% 62%, 37% 100%, 30% 62%, 23% 100%, 16% 62%,
+    9% 100%, 2% 62%, 0 78%);
+}
+/* Le paquet respire : une rotation lente, arrêtée par `prefers-reduced-motion`. */
+.rpg-piste__palier--paquet .rpg-piste__sachet {
+  animation: rpg-piste-sachet 5.5s ease-in-out infinite;
+}
+@keyframes rpg-piste-sachet {
+  0%, 100% { transform: translateX(-50%) rotateX(-14deg) rotateY(-30deg); }
+  50% { transform: translateX(-50%) translateY(-1px) rotateX(-10deg) rotateY(-16deg); }
+}
+/* Le même sachet, en pastille plate — dans l'entête quand des paquets attendent :
+   à douze pixels, le volume ne se lirait pas. */
+.rpg-piste__sachet--puce {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  width: 12px;
+  height: 17px;
+  transform: none;
+  transform-style: flat;
+  flex: none;
+  animation: none;
+}
+.rpg-piste__sachet--puce::before {
   position: absolute;
   inset: 0 0 78%;
   border: 1px solid #f4d28c;
@@ -250,25 +331,13 @@ button.rpg-piste__tuile:focus-visible {
     9% 100%, 2% 62%, 0 78%);
   content: '';
 }
-.rpg-piste__sachet::after {
+.rpg-piste__sachet--puce::after {
   position: absolute;
   inset: 20% 0 0;
   border: 1px solid rgba(232, 190, 111, .95);
   border-radius: 2px 2px 5px 5px;
   background: linear-gradient(120deg, #c3974d, #342318 24%, #795228 72%, #d3ac5e);
-  box-shadow: inset -2px 0 0 rgba(0, 0, 0, .35), inset 2px 0 0 rgba(255, 231, 175, .22);
   content: '';
-}
-/* Le même sachet, en pastille — dans l'entête quand des paquets attendent, et au
-   coin des tuiles qui gagnent autre chose qu'un paquet. */
-.rpg-piste__sachet--puce {
-  position: relative;
-  bottom: auto;
-  left: auto;
-  width: 12px;
-  height: 17px;
-  transform: none;
-  flex: none;
 }
 .rpg-piste__palier:not(.rpg-piste__palier--paquet) .rpg-piste__tuile::after {
   position: absolute;
@@ -315,8 +384,8 @@ button.rpg-piste__tuile:focus-visible {
    le niveau est écrit, l'état est dans `data-palier-etat` comme dans le nom
    accessible, et le palier en cours porte `aria-current="step"`. */
 .rpg-piste__palier.is-gagne .rpg-piste__tuile {
-  border-color: rgba(231, 191, 101, .5);
-  color: #ffe7af;
+  border-color: var(--famille, #e8b64c);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--famille, #e8b64c) 24%, transparent);
 }
 .rpg-piste__palier.is-courant .rpg-piste__tuile {
   transform: scale(1.08);
@@ -326,8 +395,8 @@ button.rpg-piste__tuile:focus-visible {
 }
 .rpg-piste__palier.is-verrouille .rpg-piste__tuile {
   border-style: dashed;
-  border-color: rgba(232, 194, 113, .22);
-  color: rgba(247, 237, 218, .34);
+  border-color: color-mix(in srgb, var(--famille, #e8c271) 26%, transparent);
+  color: color-mix(in srgb, var(--famille, #e8c271) 42%, rgba(247, 237, 218, .3));
 }
 .rpg-piste__palier.is-verrouille .rpg-piste__tuile-face {
   filter: saturate(.3);
@@ -390,19 +459,35 @@ button.rpg-piste__tuile[aria-disabled='true']:hover {
 .rpg-piste__palier.is-courant .rpg-piste__niveau { color: #ffe7af; }
 
 /* Le nom du gain : deux lignes au plus, comme les noms de table. */
+/* Ce qu'il y a à gagner, écrit pour se lire d'un coup d'oeil : la **famille**
+   du gain dans sa couleur, en capitales espacées, puis le **nom** de ce gain —
+   « PAQUET · Un paquet du Souk », « RANG · Porteur de lanterne ». */
 .rpg-piste__gain {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: center;
+  max-width: 80px;
+  text-align: center;
+}
+.rpg-piste__famille {
+  color: var(--famille, #e8c271);
+  font: 800 8px/1.3 var(--mono, ui-monospace, monospace);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.rpg-piste__gain-nom {
   display: -webkit-box;
   overflow: hidden;
-  max-width: 78px;
-  color: rgba(247, 237, 218, .62);
-  font: 600 8.5px/1.3 var(--mono, ui-monospace, monospace);
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  text-align: center;
+  color: rgba(247, 237, 218, .82);
+  font: 600 9.5px/1.3 var(--mono, ui-monospace, monospace);
+  letter-spacing: .02em;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
-.rpg-piste__palier.is-courant .rpg-piste__gain { color: rgba(255, 231, 175, .85); }
+.rpg-piste__palier.is-verrouille .rpg-piste__famille { opacity: .6; }
+.rpg-piste__palier.is-verrouille .rpg-piste__gain-nom { color: rgba(247, 237, 218, .45); }
+.rpg-piste__palier.is-courant .rpg-piste__gain-nom { color: rgba(255, 243, 210, .95); }
 
 /* ── La pastille : le cosmétique que le rang pousse hors de la tuile ──────── */
 .rpg-piste__puce {
@@ -443,7 +528,6 @@ button.rpg-piste__tuile[aria-disabled='true']:hover {
   .rpg-piste__palier { flex-basis: 74px; }
   .rpg-piste__tuile { width: 46px; height: 50px; font-size: 17px; }
   .rpg-piste__carte { width: 21px; }
-  .rpg-piste__sachet { width: 18px; height: 24px; }
   .rpg-piste__gain { max-width: 68px; }
 }
 @media (max-width: 560px) {
@@ -457,4 +541,5 @@ button.rpg-piste__tuile[aria-disabled='true']:hover {
   .rpg-piste__bande { scroll-snap-type: none; }
   .rpg-piste__palier.is-courant .rpg-piste__tuile { transform: none; }
   .rpg-piste__palier.is-du .rpg-piste__tuile { animation: none; }
+  .rpg-piste__palier--paquet .rpg-piste__sachet { animation: none; }
 }
