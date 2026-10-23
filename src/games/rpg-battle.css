@@ -2559,20 +2559,28 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background-color: #9b6c3e;
 }
 
-/* ── La table découpée : un terrain par camp ─────────────────────────────────
-   Quand les deux decks imposent des terrains différents (`resoudrePlateauxDuDuel`
-   dans `rpgPlateaux.js`), la table se partage en deux moitiés : en haut le
-   plateau du sorcier, en bas celui du joueur. Chaque moitié est la peinture
-   **plein cadre** de son camp — `inset: 0`, `background-size: cover`, comme la
-   table d'un seul tenant — rognée à sa moitié par `clip-path` : l'échelle et le
-   cadrage sont donc exactement ceux de la table pleine, le haut montre le haut
-   de la peinture adverse, le bas le bas de celle du joueur, et la jonction
-   tombe au centre, là où les deux arènes sont vides. Sous tout le chrome
-   (`z-index: -1` dans l'isolat de `.card-table`, comme le décor 3D qu'elles
-   remplacent alors), sans aucun geste. La peinture du plateau principal reste
-   le fond de `.card-table` : repli le temps que les moitiés arrivent. Les
-   couleurs de repli ci-dessous recopient celles des `.card-table--plateau-*`
-   ci-dessus — les changer ensemble. */
+/* ── La conquête : deux peintures, une frontière mobile ────────────────────
+   Propriété typée : le masque ET le halo héritent du même pourcentage animé,
+   sans boucle JS ni état de jeu supplémentaire. La peinture du joueur reste
+   pleine sous celle du sorcier : aucun trou dans le fondu. Sans @property,
+   la position finale reste correcte, seule l'interpolation est absente. */
+@property --rpg-frontiere {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 50%;
+}
+.card-table--decoupee {
+  --rpg-conquete-rgb: 217, 180, 91;
+  --rpg-fondu: 3%;
+  transition: --rpg-frontiere 900ms cubic-bezier(.22, .61, .36, 1);
+}
+.card-table--decoupee[data-territoire-termine] { --rpg-fondu: 0%; }
+.card-table--decoupee[data-plateau-joueur="cour-de-l-empereur"][data-territoire-dominant="joueur"],
+.card-table--decoupee[data-plateau-adversaire="cour-de-l-empereur"][data-territoire-dominant="sorcier"] {
+  --rpg-conquete-rgb: 245, 91, 53;
+}
+/* Le double agrandi du sanctuaire ne doit pas dépasser les territoires. */
+.card-table--decoupee.card-table--plateau-cour-de-l-empereur::before { content: none; }
 .rpg-plateau-moitie {
   position: absolute;
   inset: 0;
@@ -2581,8 +2589,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background-size: cover;
   pointer-events: none;
 }
-.rpg-plateau-moitie--adverse { clip-path: inset(0 0 50% 0); }
-.rpg-plateau-moitie--joueur { clip-path: inset(50% 0 0 0); }
+.rpg-plateau-moitie--adverse {
+  -webkit-mask-image: linear-gradient(to bottom,
+    #000 calc(var(--rpg-frontiere, 50%) - var(--rpg-fondu, 3%)),
+    transparent calc(var(--rpg-frontiere, 50%) + var(--rpg-fondu, 3%)));
+  mask-image: linear-gradient(to bottom,
+    #000 calc(var(--rpg-frontiere, 50%) - var(--rpg-fondu, 3%)),
+    transparent calc(var(--rpg-frontiere, 50%) + var(--rpg-fondu, 3%)));
+}
+.rpg-plateau-moitie--joueur { background-position: center; }
 .rpg-plateau-moitie--plateau-table-des-heures { background-color: #1c1006; }
 .rpg-plateau-moitie--plateau-erg-du-sahara { background-color: #a8804f; }
 .rpg-plateau-moitie--plateau-caravane-de-gourara { background-color: #a8764f; }
@@ -2596,42 +2611,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-plateau-moitie--plateau-palais-du-pharaon { background-color: #d9c4a0; }
 .rpg-plateau-moitie--plateau-navire-pirate { background-color: #9b6c3e; }
 
-/* Le liseré de la jonction : la ligne médiane du champ de bataille, entre les
-   deux territoires. Un filet doré qui naît et meurt aux bords, bordé d'ombre
-   des deux côtés pour tenir aussi bien sur la glace du fjord que sur le bois
-   sombre de la Table des Heures, et un losange au centre — le nœud du sablier,
-   là où les deux camps se rejoignent. */
+/* Frontière diffuse, sous les cartes : pas de trait dur ni de losange.
+   La cour japonaise teinte le halo de braise lorsqu'elle prend l'avantage. */
 .rpg-plateau-lisere {
   position: absolute;
   left: 0;
   right: 0;
-  top: 50%;
+  top: var(--rpg-frontiere, 50%);
   z-index: -1;
-  height: 3px;
+  height: 36px;
   transform: translateY(-50%);
   pointer-events: none;
-  background: linear-gradient(90deg,
-    transparent,
-    rgba(217, 180, 91, .85) 10%,
-    rgba(255, 233, 160, .95) 50%,
-    rgba(217, 180, 91, .85) 90%,
-    transparent);
-  box-shadow:
-    0 -1px 0 rgba(20, 12, 4, .5),
-    0 1px 0 rgba(20, 12, 4, .5),
-    0 0 12px rgba(217, 180, 91, .35);
+  opacity: .55;
+  background: radial-gradient(ellipse at center,
+    rgba(var(--rpg-conquete-rgb), .5),
+    rgba(var(--rpg-conquete-rgb), .12) 40%, transparent 72%);
+  transition: opacity 900ms ease;
 }
-.rpg-plateau-lisere::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 11px;
-  height: 11px;
-  transform: translate(-50%, -50%) rotate(45deg);
-  background: linear-gradient(135deg, #ffe9a0, #d9b45b);
-  border: 1px solid rgba(20, 12, 4, .6);
-  box-shadow: 0 0 10px rgba(217, 180, 91, .5);
+.card-table[data-territoire-termine] .rpg-plateau-lisere { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .card-table--decoupee,
+  .rpg-plateau-lisere { transition: none; }
 }
 
 /* ── Le plateau derrière une carte consultée ─────────────────────────────────
