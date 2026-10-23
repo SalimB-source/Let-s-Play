@@ -99,8 +99,10 @@ test('le sprite porte les 30 symboles validés, un par effet', () => {
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Rapidité', 'Butin']);
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Overkill', 'Furie 3']);
-  assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Furie 3'],
-    'Provocation remplace Coup rapide dans les pastilles du Berserk');
+  assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Furie 2'],
+    'les pastilles du Berserk affichent Provocation et sa nouvelle Furie 2');
+  assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Contre-attaque'],
+    'Eirik affiche sa Contre-attaque dans les pastilles');
   assert.deepEqual(pastillesDe('maitre-du-marteau'), ['Overkill', 'Furie 3', 'Tenacité']);
   assert.deepEqual(pastillesDe('loup-des-neiges'), ['Furie 1']);
   assert.deepEqual(pastillesDe('valkyrie-des-glaces'), ['Envol', 'Protection contre les sorts de Braise'],

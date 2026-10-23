@@ -109,7 +109,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'abysses-3': ['bakunawa', 'valkyrie-au-corbeau', 'lance-de-givre'],
   'abysses-4': ['jormungandr', 'boualem', 'brume-du-fjord', 'grand-voile-blanc'],
   // Tour du Fjord — le Serment au complet.
-  'fjord-1': ['jarl-au-marteau-de-guerre', 'hurlement-du-blizzard', 'berserk-des-trois-hivers', 'defi-du-jarl'],
+  'fjord-1': ['eirik-du-premier-serment', 'jarl-au-marteau-de-guerre', 'hurlement-du-blizzard', 'berserk-des-trois-hivers', 'defi-du-jarl'],
   'fjord-2': ['valkyrie-des-glaces', 'geant-des-banquises', 'verglas', 'embuscade', 'tour-de-neige'],
   // Le Grand Hiver tombe avec les derniers hivers du Serment ; la Hache de la
   // banquise, commune, rejoint d'elle-même la dotation de départ.

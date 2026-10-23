@@ -605,6 +605,20 @@ export const RPG_CREATURE_CARDS = [
   // « dieux » — elles portent des titres (le Père des corbeaux, le Maître du
   // marteau), comme on les appelait pour ne pas les appeler.
   {
+    id: 'eirik-du-premier-serment',
+    name: 'Eirik du Premier Serment',
+    element: 'neige',
+    cost: 1,
+    atk: 2,
+    def: 2,
+    rarity: 'mythique',
+    typeLine: 'Créature légendaire — Guerrier viking',
+    art: 'eirik-du-premier-serment',
+    contreAttaque: true,
+    text: 'Contre-attaque — Quand une créature adverse le frappe avec Coup rapide ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse.',
+    flavor: 'Avant le jour, son pas résonne déjà sur la glace du fjord.',
+  },
+  {
     id: 'guerrier-au-bouclier-rond',
     name: 'Guerrier au bouclier rond',
     element: 'neige',
@@ -666,14 +680,14 @@ export const RPG_CREATURE_CARDS = [
     id: 'berserk-des-trois-hivers',
     name: 'Berserk des trois hivers',
     element: 'neige',
-    cost: 4,
-    atk: 1, def: 5,
+    cost: 3,
+    atk: 2, def: 4,
     rarity: 'rare',
     typeLine: 'Créature — Berserk viking',
     art: 'berserk-des-trois-hivers',
-    furie: 3,
+    furie: 2,
     provocation: true,
-    text: 'Furie 3. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
+    text: 'Furie 2. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
     flavor: 'Trois hivers de rage tenus dans un seul bras — et le sang ne fait que l’attiser.',
   },
   {
@@ -1149,8 +1163,8 @@ export function duelCardById(id) {
  * Illustrations provisoires : une carte dont le plein art n'est pas encore
  * peint peut être déclarée ici — elle affiche alors un recadrage étalonné d'une
  * illustration existante (direction artistique : `RPG-CARD-ART.md`). La liste
- * est vide : les dix-huit cartes hors terrain du Serment des Neuf Hivers, le
- * Glacier et sa variante ont leur peinture dédiée. Chaque entrée doit
+ * est vide : toutes les cartes hors terrain du Serment des Neuf Hivers, Eirik
+ * compris, le Glacier et sa variante ont leur peinture dédiée. Chaque entrée doit
  * disparaître le jour où la peinture originale remplace le fichier
  * `public/cards/<id>.jpg`.
  */

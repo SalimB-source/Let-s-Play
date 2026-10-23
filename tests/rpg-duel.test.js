@@ -152,6 +152,8 @@ const PLEIN_ART_45 = [
   // `check:rpg-furie-preview`).
   'guerrier-au-bouclier-rond', 'berserk-des-trois-hivers',
   'jarl-au-marteau-de-guerre', 'maitre-du-marteau',
+  // Eirik, la nouvelle mythique viking, reçoit aussi son plein art dédié.
+  'eirik-du-premier-serment',
   // La révision Neige : l’huile intacte du Loup et les nouveaux pleins arts
   // du Mur de boucliers, de l’Éclair du marteau et de la Brume du fjord.
   'loup-des-neiges', 'mur-de-boucliers', 'eclair-du-marteau', 'brume-du-fjord',
@@ -219,8 +221,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'magie', 'arme', 'site']));
 });
 
-test('le set de permanents existe : quatre-vingt-une fiches façon TCG (dont deux Sites)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 81, 'Tojiro rejoint les créatures du Soleil rouge');
+test('le set de permanents existe : quatre-vingt-deux fiches façon TCG (dont deux Sites)', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 82, 'Eirik rejoint les créatures du Serment des Neuf Hivers');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -229,6 +231,55 @@ test('le set de permanents existe : quatre-vingt-une fiches façon TCG (dont deu
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'chaque carte a un type parmi les quatre couleurs');
   }
   assert.equal(creatureById('djinn-du-souk'), null, 'le Djinn du souk n’existe plus');
+});
+
+test('Eirik du Premier Serment est une créature viking mythique : 2/2 pour 1 mana et Contre-attaque', () => {
+  const carte = cardById('eirik-du-premier-serment');
+  assert.deepEqual(
+    {
+      kind: carte.kind, element: carte.element, cost: carte.cost,
+      atk: carte.atk, def: carte.def, rarity: carte.rarity,
+      contreAttaque: carte.contreAttaque,
+    },
+    {
+      kind: 'creature', element: 'neige', cost: 1,
+      atk: 2, def: 2, rarity: 'mythique', contreAttaque: true,
+    },
+  );
+  assert.match(carte.text, /^Contre-attaque — /);
+  assert.match(carte.text, /la riposte frappe le sorcier adverse/);
+  assert.equal(carte.typeLine, 'Créature légendaire — Guerrier viking');
+  assert.equal(cardHasPrintedType(carte, 'viking'), true);
+  assert.equal(cardCopyLimit(carte), 1, 'sa rareté mythique le limite à un exemplaire');
+
+  const duel = duelDeBase();
+  donner(duel, 'joueur', carte.id);
+  donnerMana(duel, 'joueur', 1);
+  const resultat = rpgJouerCreature(duel, 'joueur', carte.id);
+  assert.equal(resultat.ok, true, JSON.stringify(resultat));
+  assert.equal(resultat.entite.contreAttaque, true, 'l’entité posée porte bien la riposte');
+  assert.deepEqual(
+    [resultat.entite.atk, resultat.entite.def, resultat.entite.pv, duel.joueur.mana.neige],
+    [2, 2, 2, 0],
+    'un mana Neige suffit pour poser le corps 2/2 annoncé',
+  );
+});
+
+test('la Contre-attaque d’Eirik rend 2 dégâts à la créature qui le cible', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  donner(duel, 'joueur', 'tour-de-braise');
+  const tour = rpgJouerCreature(duel, 'joueur', 'tour-de-braise', eirik.id).entite;
+
+  assert.equal(eirik.pv, 1, 'la capacité de la Tour inflige d’abord son dégât');
+  assert.equal(tour.pv, 2, 'Eirik survivant rend immédiatement ses 2 dégâts d’attaque');
+  assert.deepEqual([duel.joueur.pv, duel.sorcier.pv], [25, 25],
+    'une capacité de créature riposte sur son auteur, jamais sur un sorcier');
+  assert.ok(duel.log.some((ligne) => ligne.includes('Contre-attaque : Eirik du Premier Serment rend son coup')),
+    'le journal annonce la riposte d’Eirik');
 });
 
 test('les cinq Tours de défense appartiennent au catalogue et peuvent être jouées', () => {
@@ -254,13 +305,13 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   donnerMana(duel, 'joueur', 40);
   donnerMana(duel, 'sorcier', 40);
 
-  // Furie du catalogue : 1 pour le Loup, 2 pour le Guerrier,
-  // 3 pour le Berserk, le Jarl et le Maître du marteau. Les faces se contentent de
+  // Furie du catalogue : 1 pour le Loup, 2 pour le Guerrier et le Berserk,
+  // 3 pour le Jarl et le Maître du marteau. Les faces se contentent de
   // « Furie X. » : aucune ne récite la règle de soin et de réactivation.
   for (const [id, furie] of [
     ['guerrier-au-bouclier-rond', 2],
     ['loup-des-neiges', 1],
-    ['berserk-des-trois-hivers', 3],
+    ['berserk-des-trois-hivers', 2],
     ['jarl-au-marteau-de-guerre', 3],
     ['maitre-du-marteau', 3],
   ]) {
@@ -380,7 +431,7 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   );
 });
 
-test('la révision Neige : nouvelles valeurs, nouvelles valkyries et quatre peintures reprises', () => {
+test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintures reprises', () => {
   const loup = cardById('loup-des-neiges');
   assert.deepEqual(
     { cost: loup.cost, atk: loup.atk, def: loup.def, furie: loup.furie, text: loup.text },
@@ -393,8 +444,8 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et quatre pein
       cost: berserk.cost, atk: berserk.atk, def: berserk.def, furie: berserk.furie,
       provocation: berserk.provocation, coupRapide: berserk.coupRapide,
     },
-    { cost: 4, atk: 1, def: 5, furie: 3, provocation: true, coupRapide: undefined },
-    'le Berserk devient 1/5 : Provocation remplace Coup rapide',
+    { cost: 3, atk: 2, def: 4, furie: 2, provocation: true, coupRapide: undefined },
+    'le Berserk devient 2/4 pour 3 manas, avec Furie 2 et Provocation',
   );
   assert.match(berserk.text, /Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible/);
 
@@ -478,17 +529,19 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et quatre pein
     'l’Éclair ne change que de peinture, pas d’effet',
   );
 
-  // Les quatre nouvelles images sont livrées au format exact de la face et
-  // datées dans l’URL : Mur, Éclair et Brume remplacent d’anciens fichiers de
-  // même nom, le Loup furieux est un nouvel état de sa peinture d’origine.
+  // Les cinq nouvelles images sont livrées au format exact de la face et
+  // datées dans l’URL : Mur, Éclair, Brume et Hurlement remplacent d’anciens
+  // fichiers de même nom, le Loup furieux est un nouvel état de sa peinture
+  // d’origine.
   // Les versions de cache vivent dans `rpgCardArt.js` depuis que le coffret du
   // salon et l'onglet Deck partagent les mêmes URL d'illustration.
   const page = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   for (const [art, revision] of [
     ['loup-des-neiges-furie', 'loup-furie-huile-v1'],
     ['mur-de-boucliers', 'mur-boucliers-charge-v1'],
-    ['eclair-du-marteau', 'eclair-marteau-fjord-v1'],
+    ['eclair-du-marteau', 'eclair-marteau-electrique-cible-v1'],
     ['brume-du-fjord', 'brume-personnes-gelees-v2'],
+    ['hurlement-du-blizzard', 'hurlement-grizzli-gele-v1'],
   ]) {
     const chemin = fileURLToPath(new URL(`../public/cards/${art}.jpg`, import.meta.url));
     assert.deepEqual(dimensionsJpeg(chemin), [1024, 1280], `${art}.jpg est en 1024×1280`);
@@ -1683,7 +1736,7 @@ test('Provocation : sans bloqueur légal, l’attaque peut passer', () => {
     '« si possible » ne crée pas un bloqueur volant inexistant');
   const pvSorcier = duel.sorcier.pv;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [berserk.id], {}).ok, true);
-  assert.equal(duel.sorcier.pv, pvSorcier - 1);
+  assert.equal(duel.sorcier.pv, pvSorcier - 2);
 });
 
 test('Provocation : deux provocateurs pour un seul bloqueur n’exigent que le maximum possible', () => {
@@ -3781,13 +3834,13 @@ test('Embuscade : -2/-2 jamais sous 1/1, et toute la table adverse doit bloquer 
   }
 });
 
-test('le plein art du Serment est livré : les vingt-huit cartes Neige sont dédiées, aucune provisoire', () => {
+test('le plein art du Serment est livré : les vingt-neuf cartes Neige sont dédiées, aucune provisoire', () => {
   // La liste des illustrations provisoires est vide : le deck Neige et sa
   // variante de Glacier sont entièrement peints.
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 28, 'vingt-huit cartes Neige au catalogue, sans le Glacier ni sa variante');
+  assert.equal(cartesNeige.length, 29, 'vingt-neuf cartes Neige au catalogue, sans le Glacier ni sa variante');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['arme', 'creature', 'hero', 'magie'], 'le set Neige couvre les quatre types de cartes jouables');
   for (const carte of cartesNeige) {
@@ -3838,7 +3891,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 28, 'les vingt-huit peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 29, 'les vingt-neuf peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes, sans terrain, mythiques en un exemplaire', () => {
@@ -3971,7 +4024,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
 
   // Berserk : Provocation — son attaque ne peut pas partir sans bloqueur
   // tant qu'un blocage légal est possible. Le Fennec 3/1 s'interpose donc :
-  // il tombe sous le point du Berserk, mais ses 3 dégâts allument sa Furie.
+  // il tombe sous les deux points du Berserk, mais ses 3 dégâts allument sa Furie.
   donner(duel, 'sorcier', 'fennec-des-decombres');
   rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres');
   const fennec = duel.sorcier.creatures.at(-1);
@@ -3989,11 +4042,11 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   const attaque = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [fennec.id] });
   assert.equal(attaque.ok, true, 'avec un bloqueur légal, l’attaque se résout');
   assert.equal(duel.sorcier.creatures.includes(fennec), false,
-    'le Fennec 3/1 tombe sous le point de combat du Berserk');
+    'le Fennec 3/1 tombe sous les 2 points de combat du Berserk');
   assert.deepEqual(
     [berserk.atk, berserk.def, berserk.pv, berserk.pvMax, berserk.furieDeclenchee, berserk.furieBonusAtk],
-    [4, 2, 2, 5, true, 3],
-    'les 3 dégâts du bloqueur laissent le Berserk 1/5 à 2 PV : Furie 3 porte son attaque à 4',
+    [4, 1, 1, 4, true, 2],
+    'les 3 dégâts du bloqueur laissent le Berserk 2/4 à 1 PV : Furie 2 porte son attaque à 4',
   );
   assert.equal(attaque.resume.frappeSorcier, 0);
   assert.equal(duel.sorcier.pv, pvSorcierAvantBerserk,
@@ -4027,8 +4080,8 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
     'chaque créature alliée blessée récupère 1 PV');
   assert.deepEqual(
     [berserk.furieDeclenchee, berserk.furieBonusAtk],
-    [true, 3],
-    'à 3 PV, toujours sous sa DEF de base 5, le Berserk reste en Furie',
+    [true, 2],
+    'à 2 PV, toujours sous sa DEF de base 4, le Berserk reste en Furie',
   );
   assert.equal(loup.pv, loup.pvMax, 'les créatures intactes restent plafonnées à leurs PV max');
   assert.equal(dune.pv, pvDuneAvantFestin, 'les créatures adverses ne sont pas soignées');
