@@ -2214,6 +2214,45 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
   );
 }
 
+export function RpgMassFreezeFx({ effet }) {
+  if (!effet) return null;
+  const { type, camp, token } = effet;
+  const label = type === 'brume' ? 'Brume du fjord — givre léger'
+    : type === 'blizzard' ? 'Hurlement du blizzard — tempête glaciale'
+    : type === 'geant' ? 'Géant des banquises — souffle polaire'
+    : 'Verglas — gel intégral';
+  return (
+    <div
+      key={`mass-freeze-${token}`}
+      className={`rpg-mass-freeze rpg-mass-freeze--${type} rpg-mass-freeze--${camp}`}
+      data-rpg-mass-freeze={type}
+      data-rpg-mass-freeze-camp={camp}
+      role="status"
+      aria-label={label}
+    >
+      <span className="rpg-mass-freeze__veil" aria-hidden="true" />
+      <span className="rpg-mass-freeze__flash" aria-hidden="true" />
+      <span className="rpg-mass-freeze__wind" aria-hidden="true">
+        <i className="rpg-mass-freeze__wind-streak" />
+        <i className="rpg-mass-freeze__wind-streak" />
+        <i className="rpg-mass-freeze__wind-streak" />
+      </span>
+      <span className="rpg-mass-freeze__snow" aria-hidden="true">
+        {Array.from({ length: type === 'brume' ? 10 : type === 'blizzard' ? 22 : 18 }, (_, i) => (
+          <i key={i} className="rpg-mass-freeze__flake" style={{ '--i': i }} />
+        ))}
+      </span>
+      <span className="rpg-mass-freeze__ice-edges" aria-hidden="true">
+        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--top" />
+        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--bottom" />
+        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--left" />
+        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--right" />
+      </span>
+      <span className="rpg-mass-freeze__label" aria-hidden="true">❄ {type === 'brume' ? 'Brume givrante' : type === 'blizzard' ? 'Blizzard' : type === 'geant' ? 'Souffle polaire' : 'Verglas'}</span>
+    </div>
+  );
+}
+
 export function TableCard({
   entite,
   cote,
@@ -2461,7 +2500,12 @@ export function TableCard({
       )}
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       {gelee && <span className="rpg-card__frost" aria-hidden="true">
+        <span className="rpg-card__frost-ice" />
+        <span className="rpg-card__frost-cracks" />
         <span className="rpg-card__frost-crystals" />
+        <span className="rpg-card__frost-snow" />
+        <span className="rpg-card__frost-shimmer" />
+        <span className="rpg-card__frost-glow" />
         <span className="rpg-card__frozen-label">❄ Gelée</span>
       </span>}
       <CardElementBadge carte={carte} />
@@ -5591,6 +5635,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [eclairsMarteau, setEclairsMarteau] = useState([]);
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
+  const [gelMasseFx, setGelMasseFx] = useState(null);
+  const sequenceGelMasseRef = useRef(0);
+  const timerGelMasseRef = useRef(null);
   const [animationsPioche, setAnimationsPioche] = useState([]);
   const instantanePiocheRef = useRef(null);
   const [presentationsCartes, setPresentationsCartes] = useState([]);
@@ -5877,6 +5924,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (timerSortSorcierRef.current) window.clearTimeout(timerSortSorcierRef.current);
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerImpactRef.current) window.clearTimeout(timerImpactRef.current);
+    if (timerGelMasseRef.current) window.clearTimeout(timerGelMasseRef.current);
   }, []);
 
   // Chien de garde des images d'adieu : réarmé par React à chaque changement de
@@ -6174,6 +6222,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setEclairsMarteau([]);
     setCarteEnVol(null);
     setImpactEcran(null);
+    setGelMasseFx(null);
+    if (timerGelMasseRef.current) window.clearTimeout(timerGelMasseRef.current);
+    timerGelMasseRef.current = null;
     effacerSoinsVisibles();
     carteOrigineVolRef.current = null;
     carteCibleeHandIndexRef.current = null;
@@ -8290,6 +8341,31 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // le son du sort reprend, et le bandeau nomme la vague.
   // `camp` : les deux fiches se posent au milieu du plateau — la vôtre en
   // turquoise, celle du sorcier en rouge, chacune avec son propre minuteur.
+  const declencherGelMasse = (carte, camp = 'joueur') => {
+    if (!carte) return;
+    const id = carte.id;
+    const effet = carte.effet;
+    const arrivee = carte.arrivee;
+    const estMasseGel = (effet?.cible === 'toutes-creatures' && (effet?.gel || effet?.gelChance))
+      || (arrivee?.type === 'gel' && arrivee?.cible === 'toutes-creatures')
+      || ['verglas', 'brume-du-fjord', 'hurlement-du-blizzard', 'geant-des-banquises'].includes(id);
+    if (!estMasseGel) return;
+    let type = 'verglas';
+    if (id === 'brume-du-fjord') type = 'brume';
+    else if (id === 'hurlement-du-blizzard') type = 'blizzard';
+    else if (id === 'verglas') type = 'verglas';
+    else if (id === 'geant-des-banquises') type = 'geant';
+    else if (effet?.gelChance === 0.25) type = 'brume';
+    else if (effet?.gelChance === 0.5) type = 'blizzard';
+    else if (effet?.gel) type = 'verglas';
+    else type = 'geant';
+    const token = ++sequenceGelMasseRef.current;
+    if (timerGelMasseRef.current) window.clearTimeout(timerGelMasseRef.current);
+    setGelMasseFx({ type, camp, token, carteId: id });
+    const duree = type === 'brume' ? 2800 : type === 'blizzard' ? 3200 : type === 'geant' ? 3400 : 3000;
+    timerGelMasseRef.current = window.setTimeout(() => setGelMasseFx((cur) => (cur?.token === token ? null : cur)), duree);
+  };
+
   const annoncerMagie = (carte, cible, { contre = false, vague = false, sonForce = null, camp = 'joueur' } = {}) => {
     if (contre) {
       jouerSfx('card_countered');
@@ -8304,6 +8380,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ?? rpgFireSoundFor(carte, 'spell')
         ?? (carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
       jouerSfx(son);
+      if (!vague) declencherGelMasse(carte, camp);
     }
     // Chaque camp a sa fiche et son minuteur : deux sorts dans la même seconde
     // ne se volent pas la place.
@@ -8503,6 +8580,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       jouerSfx('card_place');
       const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
+      else {
+        const sonEau = rpgWaterSoundFor(carte, 'arrival');
+        if (sonEau) jouerSfx(sonEau);
+      }
+      if (carte?.arrivee?.type === 'gel' && carte?.arrivee?.cible === 'toutes-creatures') {
+        declencherGelMasse(carte, 'joueur');
+      }
       signalerTutoriel('creature-jouee', { cardId: carteId, entiteId: res.entite?.id });
       // La créature attend sa victime : la table s'allume, la main est close.
       if (res.arriveeEnAttente) setCibleEnCours(carteId);
@@ -9414,10 +9498,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const debutJournalReponse = rpgNombreDestructions(duel);
       const reponse = rpgSorcierMagieRapide(duel, rng);
       if (reponse) {
-        jouerSfx(rpgFoudreSoundFor(cardById(reponse.carteId), 'spell')
-          ?? rpgWaterSoundFor(cardById(reponse.carteId), 'spell')
-          ?? rpgFireSoundFor(cardById(reponse.carteId), 'spell')
+        const carteReponse = cardById(reponse.carteId);
+        jouerSfx(rpgFoudreSoundFor(carteReponse, 'spell')
+          ?? rpgWaterSoundFor(carteReponse, 'spell')
+          ?? rpgFireSoundFor(carteReponse, 'spell')
           ?? 'magie');
+        if (carteReponse?.kind === 'magie') {
+          annoncerMagieSorcier(carteReponse, describeAnnouncedMagicTarget(
+            carteReponse, reponse.cibleId ?? null, duel, sorcierArtId, portraitSorcierAdverse,
+          ));
+        } else if (carteReponse?.arrivee?.type === 'gel' && carteReponse?.arrivee?.cible === 'toutes-creatures') {
+          declencherGelMasse(carteReponse, 'sorcier');
+        }
         animerModificationsChamp(champAvantReponse, [], debutJournalReponse);
       }
     }
@@ -9758,6 +9850,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Une créature ou une arme annoncée, elle, reste une carte posée : rien à
     // annoncer dans la zone des sorts.
     if (res.ok && carteAnnoncee?.kind === 'magie') annoncerMagieSorcier(carteAnnoncee, cibleAnnoncee);
+    if (res.ok && carteAnnoncee?.arrivee?.type === 'gel' && carteAnnoncee?.arrivee?.cible === 'toutes-creatures') {
+      declencherGelMasse(carteAnnoncee, 'sorcier');
+    }
     animerModificationsChamp(champAvant, [], debutJournalDestructions,
       [res.renvoiEntityId]);
     force();
@@ -10680,6 +10775,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onTermine={(effectId) => setTourbillonsEau((current) => current.filter((autre) => autre.effectId !== effectId))}
           />
         ))}
+
+        {/* Gel de masse : Verglas / Brume / Blizzard / Géant — tempête qui couvre le plateau. */}
+        {gelMasseFx && (
+          <RpgMassFreezeFx effet={gelMasseFx} />
+        )}
 
         {/* Déchirement du sacrifice : la carte désignée se fend en deux
             moitiés à son emplacement, AVANT que la nouvelle créature ne soit

@@ -4178,6 +4178,11 @@ const pret = rpgPeutAttaquer;
 const peutBloquer = (entite) => entite && !estSite(entite)
   && !entite.attaquee && !estGelee(entite)
   && !(entite.empecheBlocageToursRestants > 0);
+// Pour la résolution d'un combat déjà déclaré : un bloqueur gelé après sa
+// déclaration reste bloquant (comme un attaquant gelé reste attaquant avec
+// 0 de force). On ignore donc gel et empêche-blocage pour retrouver le
+// bloqueur déjà assigné.
+const peutBloquerPourResolution = (entite) => entite && !estSite(entite) && !entite.attaquee;
 
 /**
  * Qui peut bloquer qui :
@@ -4789,7 +4794,13 @@ export function rpgLancerAttaque(
   const frappeSurCreature = (attaquant) => Boolean(ciblesRapides[attaquant?.id]
     && duel[adv].creatures.some((entite) => entite.id === ciblesRapides[attaquant.id]));
 
-  const bloqueursDisponibles = duel[adv].creatures.filter(peutBloquer);
+  const bloqueursDisponiblesStrict = duel[adv].creatures.filter(peutBloquer);
+  // Si le combat a déjà été déclaré (fenêtre de réponse), un bloqueur gelé
+  // après coup reste bloquant : on le retrouve même s'il est gelé.
+  const bloqueursDisponiblesPourValidation = attaqueDeclaree
+    ? duel[adv].creatures.filter(peutBloquerPourResolution)
+    : bloqueursDisponiblesStrict;
+  const bloqueursDisponibles = bloqueursDisponiblesStrict;
   const affectations = blocages === null
     ? rpgChoisirBloqueurs(duel, cote, ids, ciblesRapides)
     : Object.fromEntries(Object.entries(blocages).map(([attaquantId, idsBloqueurs]) => [
@@ -4804,7 +4815,7 @@ export function rpgLancerAttaque(
   // DOIVENT bloquer une créature attaquante si elles le peuvent.
   // Une créature à la fois « doit bloquer » et marquée par l’Appât ne profite
   // pas de cette assignation permanente : le marqueur exige sa déclaration.
-  const bloqueursObligatoires = bloqueursDisponibles.filter((entite) => entite.doitBloquer
+  const bloqueursObligatoires = bloqueursDisponiblesStrict.filter((entite) => entite.doitBloquer
     && entite.blocageForce?.par !== cote);
   for (const bloqueurOblig of bloqueursObligatoires) {
     const dejaAssigne = Object.values(affectations).some((idsBloqueurs) => idsBloqueurs.includes(bloqueurOblig.id));
@@ -4830,7 +4841,7 @@ export function rpgLancerAttaque(
     if (new Set(idsBloqueurs).size !== idsBloqueurs.length) return { ok: false, raison: 'bloqueur' };
     const attaquant = attaquants.find((entite) => entite.id === attaquantId);
     for (const bloqueurId of idsBloqueurs) {
-      const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
+      const bloqueur = bloqueursDisponiblesPourValidation.find((entite) => entite.id === bloqueurId);
       if (!bloqueur || bloqueursUtilises.has(bloqueurId)) return { ok: false, raison: 'bloqueur' };
       if (!rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide)) {
         return { ok: false, raison: frappeRapide ? 'blocage' : attaquant.infiltration ? 'infiltration' : 'envol' };
@@ -4844,7 +4855,7 @@ export function rpgLancerAttaque(
 
   // Vérification des bloqueurs obligatoires (Tours de défense) : toutes les
   // créatures avec doitBloquer: true DOIVENT avoir bloqué si elles le pouvaient
-  const bloqueursObligatoiresNonUtilises = bloqueursDisponibles
+  const bloqueursObligatoiresNonUtilises = bloqueursDisponiblesStrict
     .filter((entite) => entite.doitBloquer && !bloqueursUtilises.has(entite.id));
   for (const bloqueurOblig of bloqueursObligatoiresNonUtilises) {
     // Vérifier s'il y avait au moins un attaquant qu'il pouvait bloquer
@@ -4957,9 +4968,9 @@ export function rpgLancerAttaque(
     .map((frappe) => frappe.attaquantId));
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
-      const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
+      const bloqueur = bloqueursDisponiblesPourValidation.find((entite) => entite.id === bloqueurId);
       if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant, 'attaque');
-      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur, 'blocage');
+      if (bloqueur && !estGelee(bloqueur)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur, 'blocage');
     }
   }
   const apresCapacites = degatsAvantCombat.length ? JSON.parse(JSON.stringify(duel)) : duel;
@@ -5071,12 +5082,13 @@ export function rpgLancerAttaque(
       continue;
     }
 
-    const bloqueurs = idsBloqueurs.map((id) => bloqueursDisponibles.find((entite) => entite.id === id));
+    const bloqueurs = idsBloqueurs.map((id) => bloqueursDisponiblesPourValidation.find((entite) => entite.id === id)).filter(Boolean);
     const carteAttaquant = duelCardById(attaquant.carteId);
     const couleursAttaquant = cardColors(carteAttaquant);
     for (const bloqueur of bloqueurs) {
       const carteBloqueur = duelCardById(bloqueur.carteId);
       const couleursBloqueur = cardColors(carteBloqueur);
+      const forceBloqueur = estGelee(bloqueur) ? 0 : bloqueur.atk;
 
       enregistrerDegatsCombat(
         degatsCombat,
@@ -5093,7 +5105,7 @@ export function rpgLancerAttaque(
         degatsCombat,
         cote,
         attaquant.id,
-        bloqueur.atk,
+        forceBloqueur,
         couleursBloqueur,
         'attaque',
         adv,
