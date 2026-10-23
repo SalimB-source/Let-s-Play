@@ -19,18 +19,16 @@
  * sont peintes en `background-image` des boutons, pas en `<img>` : ce sont des
  * décors de bouton, le nom accessible porte déjà tout (`aria-label`, `title`).
  *
- * Sous la barre, la **piste des gains** (`RpgProfilPiste.jsx`) : un chemin de
- * paliers qui défile, du niveau en cours jusqu'au prochain rang puis quatre
- * niveaux au-delà. Elle dit ce que chaque niveau rapporte — un paquet du Souk,
- * un rang de Bab El, un cadre de médaillon, un titre sous le pseudo — et c'est
- * là que les cosmétiques gagnés se portent. La carte y gagne une ligne de plus,
- * pas un tableau de bord : aucun compteur, aucun barème, aucune formule n'est
- * revenu.
+ * Ce que la piste des gains fait **porter** se voit ici, et seulement ici : un
+ * cadre autour du médaillon, un titre sous le pseudo. La piste, elle, vit sur
+ * l'écran Jouer (`RpgPisteGains.jsx`) — la carte dit qui l'on est, la piste dit
+ * ce que l'on gagne à monter. Aucun des deux gestes de la piste n'est donc reçu
+ * ici : la carte ne choisit ni cadre ni titre, elle les affiche.
  *
  * Comme l'écran du Souk, celui-ci est **purement présentationnel** : la barre
- * vient de `rpgProfil.js`, les gains de `rpgProfilGains.js`, la persistance de
- * `useSablierBourse.js`. Il rend toujours quelque chose — un profil vide dit
- * « Niveau 1 », il ne casse jamais l'écran.
+ * vient de `rpgProfil.js`, les gains portés de `rpgProfilGains.js`, la
+ * persistance de `useSablierBourse.js`. Il rend toujours quelque chose — un
+ * profil vide dit « Niveau 1 », il ne casse jamais l'écran.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -47,7 +45,6 @@ import {
 import { RPG_AVATARS, avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
 import { RPG_PLATEAUX, vignettePlateau } from './rpgPlateaux.js';
 import { cadreDeProfil, titreDeProfil } from './rpgProfilGains.js';
-import RpgProfilPiste from './RpgProfilPiste.jsx';
 
 /** Le préfixe de `public/` : `/Let-s-Play/` en ligne, `/` sur le bureau. */
 const BASE_URL = import.meta.env?.BASE_URL ?? '/';
@@ -59,8 +56,6 @@ export default function RpgProfilJoueur({
   onChoisirEmbleme = null,
   onChoisirAvatar = null,
   onChoisirPlateau = null,
-  onChoisirCadre = null,
-  onChoisirTitre = null,
   onPlaySfx = null,
   onExit = null,
   onOuvrirSouk = null,
@@ -154,15 +149,6 @@ export default function RpgProfilJoueur({
         <p className="rpg-profil__xp-lecture" data-profil-xp-reste={reste}>
           {maximal ? 'Plus aucun palier à franchir.' : `${xpLisible(into)} / ${xpLisible(need)} XP`}
         </p>
-
-        {/* La piste des gains : ce que rapportent les prochains niveaux, en
-            défilant. C'est aussi là qu'un cadre ou un titre gagné se porte. */}
-        <RpgProfilPiste
-          profil={profil}
-          onChoisirCadre={onChoisirCadre}
-          onChoisirTitre={onChoisirTitre}
-          onPlaySfx={onPlaySfx}
-        />
 
         {dus > 0 && (
           <p className="rpg-profil__attente" role="status" data-profil-attente={dus}>

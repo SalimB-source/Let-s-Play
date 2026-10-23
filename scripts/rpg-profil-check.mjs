@@ -14,7 +14,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 
@@ -63,13 +63,18 @@ const hook = lire('src/games/useSablierBourse.js');
 const hookCode = sansCommentaires(hook);
 const evenements = lire('src/games/rpgEvenementsDuel.js');
 const boosters = lire('src/games/rpgBoosters.js');
-const piste = lire('src/games/RpgProfilPiste.jsx');
+const piste = lire('src/games/RpgPisteGains.jsx');
 const pisteCode = sansCommentaires(piste);
 const gains = lire('src/games/rpgProfilGains.js');
 const gainsCode = sansCommentaires(gains);
+const seuil = lire('src/games/RpgStoryBabEl.jsx');
+const seuilCode = sansCommentaires(seuil);
+const vignettes = lire('tools/make-profil-vignettes.mjs');
 const css = lire('src/games/rpg-profil.css');
-const cssPiste = lire('src/games/rpg-profil-piste.css');
+const cssPiste = lire('src/games/rpg-piste-gains.css');
+const cssSeuil = lire('src/games/rpg-story-bab-el.css');
 const cssMenu = lire('src/games/rpg-battle.css');
+const cssMana = lire('src/games/rpg-mana-essai.css');
 const decks = lire('src/games/useDecksSablier.js');
 const fusion = lire('src/games/rpgDeckBuilder.js');
 
@@ -111,15 +116,30 @@ for (const interdit of ['paliersAVenir', 'BAREME_XP', 'RANGS', 'rangDeNiveau', '
 // trois gestes — un visage, un emblème, une table.
 for (const attendu of ['rpg-profil__medaillon', 'data-profil-niveau', 'data-profil-xp', 'data-profil-emblemes',
   'data-profil-avatars', 'data-profil-plateaux', 'data-profil-medaille',
-  'data-profil-pseudo-saisie', 'data-profil-retour', 'RpgProfilPiste', 'data-profil-cadre']) {
+  'data-profil-pseudo-saisie', 'data-profil-retour', 'data-profil-cadre', 'data-profil-titre']) {
   assert.ok(ecranCode.includes(attendu), `l’écran garde ${attendu}`);
 }
+// La piste des gains a quitté la carte pour l'écran Jouer : la carte **porte** ce
+// qui est gagné (un cadre peint, un titre écrit), elle n'annonce plus ce qui
+// reste à gagner. Une carte qui remonterait la piste remettrait un tableau de
+// bord là où le joueur voulait un écran lisible.
+for (const interdit of ['RpgPisteGains', 'RpgProfilPiste', 'data-piste', 'pisteDesGains', 'onChoisirCadre', 'onChoisirTitre']) {
+  assert.ok(!ecranCode.includes(interdit), `la carte ne monte plus la piste des gains (${interdit})`);
+}
+// Ce qui reste des gains sur la carte se **peint** : le cadre est un attribut que
+// la feuille de style transforme en anneau, le titre une ligne sous le pseudo.
+assert.match(css, /\.rpg-profil__tete\[data-profil-cadre='astrolabe'\]::before \{/,
+  'les cadres sont peints en CSS, sans un asset de plus');
+assert.match(css, /animation: rpg-profil-astrolabe 64s linear infinite;/, 'l’astrolabe tourne lentement');
+assert.match(css, /@keyframes rpg-profil-astrolabe \{ to \{ transform: rotate\(360deg\); \} \}/,
+  'sa rotation est une image clé');
+assert.match(css, /\.rpg-profil__titre \{/, 'et le titre gagné a sa ligne');
 assert.ok(ecranCode.includes('data-profil-attente-aller'), 'et le bandeau des paquets dus mène au Souk');
 // Les vignettes sont des **fonds peints** des boutons, pas des `<img>` dans le
 // flux : ce sont des décors de choix, le nom accessible porte déjà le personnage
 // et le lieu — et jsdom ne charge de toute façon aucun fond.
-assert.ok(!/<img/.test(ecranCode) && !/<img/.test(pisteCode),
-  'ni la carte ni la piste ne chargent d’image dans le flux du document');
+assert.ok(!/<img/.test(ecranCode) && !/<img/.test(pisteCode) && !/<img/.test(seuilCode),
+  'ni la carte, ni la piste, ni le seuil ne chargent d’image dans le flux du document');
 assert.ok(ecranCode.includes('backgroundImage'), 'les vignettes arrivent par `background-image`');
 // Chaque geste **nomme** ce qu'il choisit : le nom de la table est peint sur sa
 // tuile, l'étiquette du geste écrit le nom du choix courant, et l'emblème se
@@ -129,13 +149,15 @@ for (const attendu of ['rpg-profil__plateau-nom', 'rpg-profil__cachet', 'embleme
   'data-profil-cachet={emblemeChoisi.id}', 'Visage{avatar ? <b>']) {
   assert.ok(ecranCode.includes(attendu), `l’écran nomme ce qu’il choisit (${attendu})`);
 }
-assert.ok(ecran.split('\n').length < 360,
-  `la carte tient en un seul écran, trois gestes et piste des gains compris (${ecran.split('\n').length} lignes)`);
-assert.ok(piste.split('\n').length < 220,
+assert.ok(ecran.split('\n').length < 330,
+  `la carte tient en un seul écran et trois gestes (${ecran.split('\n').length} lignes)`);
+assert.ok(piste.split('\n').length < 260,
   `la piste a son propre fichier, et reste courte (${piste.split('\n').length} lignes)`);
 
 // 3. La page branche l'onglet, l'écran et la cérémonie.
 assert.match(page, /import RpgProfilJoueur from '\.\/RpgProfilJoueur\.jsx';/, 'la page importe l’écran');
+assert.match(page, /import RpgPisteGains from '\.\/RpgPisteGains\.jsx';/, 'et la piste des gains');
+assert.match(page, /import RpgStoryBabEl from '\.\/RpgStoryBabEl\.jsx';/, 'et le seuil de Bab El');
 assert.match(page, /import RpgBoosterOuverture from '\.\/RpgBoosterOuverture\.jsx';/,
   'et la cérémonie — montée par la page, pas par l’écran, parce qu’un palier tombe aussi en plein duel');
 assert.match(page, /from '\.\/rpgProfil\.js';/, 'les règles viennent du module');
@@ -166,7 +188,6 @@ for (const prop of [
   'profil={profil}', 'nomCompte={nomCompte}', 'onRenommer={onRenommerProfil}',
   'onChoisirEmbleme={onChoisirEmbleme}', 'onChoisirAvatar={onChoisirAvatar}',
   'onChoisirPlateau={onChoisirPlateau}', 'onPlaySfx={play}', "onExit={() => onChangeScreen('jouer')}",
-  'onChoisirCadre={onChoisirCadre}', 'onChoisirTitre={onChoisirTitre}',
 ]) {
   assert.ok(pageCode.includes(prop), `l’écran reçoit ${prop}`);
 }
@@ -192,7 +213,7 @@ for (const [duHook, deLaPage] of [
 assert.match(pageCode, /data-profil-onglet-avatar=\{avatarOnglet\.id\}/,
   'l’onglet Profil porte le visage choisi, à la place du glyphe');
 const brancheProfil = pageCode.split('<RpgProfilJoueur')[1]?.split('/>')[0] ?? '';
-for (const retiree of ['portefeuille=', 'quetes=', 'collection=', 'statutSync=']) {
+for (const retiree of ['portefeuille=', 'quetes=', 'collection=', 'statutSync=', 'onChoisirCadre=', 'onChoisirTitre=']) {
   assert.ok(!brancheProfil.includes(retiree), `l’écran ne reçoit plus ${retiree}`);
 }
 assert.match(pageCode, /<RpgProfilJoueur[\s\S]{0,600}onOuvrirSouk=\{\(\) => \{ play\('menu'\); onChangeScreen\('souk'\); \}\}/,
@@ -332,7 +353,10 @@ assert.ok(!gainsCode.includes('rpgAvatars') && !gainsCode.includes('rpgPlateaux'
 for (const interdit of ['localStorage', 'sauverProfil', 'useState', 'fetch(']) {
   assert.ok(!pisteCode.includes(interdit), `la piste ne fait rien elle-même (${interdit})`);
 }
-assert.match(pisteCode, /data-profil-palier=\{palier\.niveau\}/, 'chaque palier est marqué pour les vérifications');
+assert.match(piste, /import '\.\/rpg-piste-gains\.css';/, 'et elle porte sa propre feuille de style');
+assert.match(pisteCode, /data-palier=\{palier\.niveau\}/, 'chaque palier est marqué pour les vérifications');
+assert.match(pisteCode, /data-palier-etat=\{palier\.etat\}/, 'son état aussi');
+assert.match(pisteCode, /data-palier-gain=\{gain\.sorte\}/, 'et ce qu’il rapporte');
 assert.match(pisteCode, /aria-current=\{palier\.etat === 'courant' \? 'step' : undefined\}/,
   'le palier en cours se dit à qui ne le voit pas');
 assert.match(pisteCode, /aria-disabled=\{!gagne \|\| undefined\}/,
@@ -341,21 +365,83 @@ assert.match(pisteCode, /onPlaySfx\?\.\('erreur'\)/, 'et son clic sonne l’erre
 assert.match(pisteCode, /tabIndex=\{0\}/, 'la zone qui défile se parcourt au clavier');
 assert.match(pisteCode, /bande\.scrollLeft = Math\.max\(0, courant\.offsetLeft/,
   'elle s’ouvre sur le niveau en cours, sans `scrollIntoView` — absent de jsdom');
+
+// ── Les paquets sur la barre ────────────────────────────────────────────────
+// Chaque niveau offre un paquet : la tuile le montre donc toujours. En grand —
+// le dos de carte en miniature et son sachet — quand le paquet est tout le gain ;
+// en coin, par le `::after` de la feuille, quand un rang ou un cosmétique occupe
+// la tuile. Ni l'un ni l'autre ne coûte un asset : une vignette de 1,3 Ko et des
+// dégradés.
+assert.match(pisteCode, /vignetteDosDeCarte\(BASE_URL\)/, 'la miniature vient de la vignette du dos de carte');
+assert.match(pisteCode, /className="rpg-piste__carte" style=\{\{ backgroundImage: `url\("\$\{dos\}"\)` \}\}/,
+  'peinte en fond, pas en `<img>` dans le flux');
+assert.match(pisteCode, /className="rpg-piste__sachet" aria-hidden="true"/, 'avec le sachet du Souk');
+assert.match(gainsCode, /export const DOS_DE_CARTE_SOURCE = 'dos-de-carte\.jpg';/,
+  'la source de la vignette est écrite une fois');
+assert.match(gainsCode, /export const DOS_DE_CARTE_REVISION = '[^']+';/,
+  'et sa révision casse le cache des navigateurs');
+assert.match(gainsCode, /export function vignetteDosDeCarte\(baseUrl = '\/'\) \{/,
+  'l’URL se construit comme celles des visages et des tables');
+assert.ok(existsSync(new URL('../public/profil/dos-de-carte.webp', import.meta.url)),
+  'la vignette est dans `public/` — `tools/make-profil-vignettes.mjs` la régénère');
+assert.match(vignettes, /DOS_DE_CARTE_LARGEUR,/, 'l’outil la taille depuis la même constante');
+assert.match(vignettes, /DOS_DE_CARTE_SOURCE,/, 'la source aussi vient du module');
+assert.match(vignettes, /const sortie = path\.join\(PUBLIC, vignetteDosRelative\(\)\);/,
+  'et son nom aussi — un seul endroit où l’URL est écrite');
+assert.match(vignettes, /hauteur: Math\.round\(\(DOS_DE_CARTE_LARGEUR \* 5\) \/ 4\),/,
+  'au format des cartes du Sablier, quatre pour cinq');
+assert.match(cssPiste, /\.rpg-piste__carte \{[\s\S]{0,300}background-size: cover;/, 'la miniature couvre la tuile');
+assert.match(cssPiste, /\.rpg-piste__sachet::before \{[\s\S]{0,600}clip-path: polygon\(/,
+  'le sachet a son bord dentelé');
+assert.match(cssPiste, /\.rpg-piste__palier:not\(\.rpg-piste__palier--paquet\) \.rpg-piste__tuile::after \{/,
+  'un niveau qui gagne autre chose porte quand même son sachet, en coin');
+// La lecture d'une passe de maîtrise : une colonne par niveau — le repère du
+// niveau en cours, le numéro, la coche des niveaux passés, la récompense et son
+// cadenas tant qu'elle est à venir.
+assert.match(pisteCode, /\{palier\.etat === 'courant' \? 'niveau actuel' : ''\}/,
+  'le repère « niveau actuel » n’écrit que la colonne en cours');
+assert.match(pisteCode, /\{gagne \? null : <span className="rpg-piste__verrou" aria-hidden="true" \/>\}/,
+  'une récompense à venir porte son cadenas');
+assert.match(cssPiste, /\.rpg-piste__palier\.is-gagne \.rpg-piste__coche::before \{[\s\S]{0,120}content: '✓';/,
+  'la coche des niveaux passés est peinte, pas montée');
+assert.match(cssPiste, /\.rpg-piste__verrou \{[\s\S]{0,400}border-radius: 2px;/, 'le cadenas a son corps');
+assert.match(cssPiste, /\.rpg-piste__verrou::before \{[\s\S]{0,300}border-bottom: 0;/, 'et son anse');
+assert.match(cssPiste, /\.rpg-piste__palier \{[\s\S]{0,400}border-left: 1px solid/,
+  'les colonnes se séparent d’un filet, comme les cases d’une passe');
+
+// Des paquets dus ? La piste le dit, et mène au Souk — le seul endroit du menu où
+// la dette de paliers se règle d'un clic.
+assert.match(pisteCode, /data-piste-du=\{dus\}/, 'les paquets qui attendent ont leur bouton');
+assert.match(pisteCode, /onClick=\{\(\) => \{ onPlaySfx\?\.\('menu'\); onOuvrirSouk\?\.\(\); \}\}/,
+  'qui sonne le menu et mène au Souk');
+
 // Les styles ont leur feuille : la queue de `rpg-profil.css` porte les `z-index`
 // de la cérémonie et de l'annonce, on n'y touche pas pour un décor.
-assert.ok(!css.includes('rpg-profil__piste'), 'la piste a sa propre feuille de style');
-assert.match(cssPiste, /\.rpg-profil__piste \{[\s\S]{0,220}overflow-x: auto;/, 'elle défile vraiment');
+assert.ok(!css.includes('rpg-piste'), 'la piste a sa propre feuille de style');
+assert.match(cssPiste, /\.rpg-piste__bande \{[\s\S]{0,400}overflow-x: auto;/, 'elle défile vraiment');
 assert.match(cssPiste, /scroll-snap-type: x proximity;/, 'et s’arrête sur un palier');
-assert.match(cssPiste, /\.rpg-profil__piste:focus-visible \{/, 'avec un signe visible au clavier');
-assert.match(cssPiste, /\.rpg-profil__palier-filet \{[\s\S]{0,600}calc\(var\(--gauche, 0%\) \/ 2\) 100%,/,
+assert.match(cssPiste, /\.rpg-piste__bande:focus-visible \{/, 'avec un signe visible au clavier');
+assert.match(cssPiste, /\.rpg-piste__filet \{[\s\S]{0,700}calc\(var\(--gauche, 0%\) \/ 2\) 100%,/,
   'le filet se remplit en propriétés personnalisées — un noeud, pas quatre');
-assert.match(cssPiste, /\.rpg-profil__palier\.is-jalon::before \{[\s\S]{0,400}content: 'rang';/,
+assert.match(cssPiste, /\.rpg-piste__palier\.is-jalon::before \{[\s\S]{0,600}content: 'rang';/,
   'le prochain rang est mis en avant');
-assert.match(cssPiste, /\.rpg-profil__tete\[data-profil-cadre='astrolabe'\]::before \{/,
-  'les cadres sont peints en CSS, sans un asset de plus');
-assert.match(cssPiste, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]{0,200}animation: none;/,
-  'et l’astrolabe s’arrête pour qui le demande');
-assert.match(cssPiste, /@media \(max-width: 640px\)/, 'la piste a son palier téléphone');
+assert.match(cssPiste, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]{0,300}animation: none;/,
+  'et le rappel des paquets dus s’arrête pour qui le demande');
+assert.match(cssPiste, /@media \(max-width: 900px\)/, 'la piste a son palier téléphone');
+assert.match(cssPiste, /\.rpg-mode-menu__play > \.rpg-piste \{ order: 1; \}/,
+  'en une colonne, la piste passe avant les quêtes du jour');
+
+// La piste est montée sur **Jouer**, dans la colonne de gauche, sous le héros —
+// pas sur la carte du profil : c'est là qu'on décide de sa soirée.
+const menuJouer = pageCode.split('<main className="rpg-mode-menu__play">')[1]?.split('</main>')[0] ?? '';
+assert.ok(menuJouer.includes('<RpgPisteGains'), 'la piste est montée sur l’écran Jouer');
+const branchePiste = pageCode.split('<RpgPisteGains')[1]?.split('/>')[0] ?? '';
+for (const prop of ['profil={profil}', 'paquetsEnAttente={paquetsDePalierEnAttente}',
+  'onChoisirCadre={onChoisirCadre}', 'onChoisirTitre={onChoisirTitre}', 'onPlaySfx={play}']) {
+  assert.ok(branchePiste.includes(prop), `la piste reçoit ${prop}`);
+}
+assert.match(branchePiste, /onOuvrirSouk=\{\(\) => \{ play\('menu'\); onChangeScreen\('souk'\); \}\}/,
+  'et son bouton des paquets dus mène au Souk');
 
 // 10. Tactile et mouvement : les règles reprises des autres écrans.
 assert.match(css, /min-height: 44px/, 'les boutons font leur taille au doigt');
@@ -372,19 +458,81 @@ assert.match(css, /\.rpg-profil__etiquette b \{/, 'l’étiquette écrit le nom 
 assert.ok((css.match(/prefers-reduced-motion: reduce/g) ?? []).length >= 2,
   'la barre et l’annonce se tiennent tranquilles pour qui le demande');
 
+// 12. L'histoire de Bab El : un seuil au lancement du mode Histoire.
+// Le décor a quitté Jouer — une présentation qu'on relit à chaque passage ne
+// vaut pas un seuil qu'on franchit une fois — et il attend un nouveau joueur, au
+// moment où il compte. « Nouveau » se **lit** dans la progression : rien n'est
+// écrit pour s'en souvenir, donc commencer la campagne suffit à ne plus l'être,
+// et « Plus tard » ramène le seuil la fois suivante.
+assert.ok(!pageCode.includes('rpg-flux-menu'), 'le bloc « L’histoire · Bab El » a quitté l’écran Jouer');
+assert.ok(!cssMana.includes('rpg-flux-menu'), 'et ses règles sont parties avec lui');
+assert.match(pageCode, /const lectureHistoire = ecran === 'recit' \|\| ecran === 'journal' \|\| ecran === 'bab-el';/,
+  'le seuil est un écran de lecture, de la famille du récit et du journal');
+assert.match(pageCode, /const nouveauJoueurHistoire = !progressionHistoire\?\.recit/,
+  '« nouveau joueur » se lit dans la progression');
+assert.match(pageCode, /\(progressionHistoire\?\.etagesVaincus\?\.length \?\? 0\) === 0;/,
+  'ni récit en cours, ni étage déblayé');
+assert.match(pageCode, /if \(nouveauJoueurHistoire\) \{[\s\S]{0,240}setEcran\('bab-el'\);/,
+  'lancer le mode Histoire ouvre le seuil avant le récit');
+assert.match(pageCode, /const commencerCampagne = \(\) => \{\s*ouvrirRecit\(\);/,
+  '« Commencer la campagne » écrit le récit : le seuil ne revient plus');
+assert.match(pageCode, /\{ecran === 'bab-el' \? \(\s*<RpgStoryBabEl/, 'le seuil est sa propre branche de rendu');
+assert.match(pageCode, /const seuilHistoireVenuDe = useRef\('jouer'\);/,
+  '« Plus tard » rend l’écran d’où l’on vient — noté à l’ouverture');
+assert.match(pageCode, /seuilHistoireVenuDe\.current = ecran;/, 'au moment où le seuil s’ouvre');
+assert.match(pageCode, /onPlusTard=\{\(\) => setEcran\(seuilHistoireVenuDe\.current\)\}/, 'pas un menu imposé');
+// Le seuil lui-même : du texte, un keyart, deux boutons. Aucune règle, aucun
+// état — la progression s'écrit dans la page, par `ouvrirRecit()`.
+for (const interdit of ['localStorage', 'useState', 'useSablierBourse', 'fetch(', 'pisteDesGains', 'ouvrirRecit']) {
+  assert.ok(!seuilCode.includes(interdit), `le seuil ne fait rien lui-même (${interdit})`);
+}
+assert.match(seuil, /import '\.\/rpg-story-bab-el\.css';/, 'il porte sa propre feuille de style');
+for (const attendu of ['data-bab-el', 'data-bab-el-commencer', 'data-bab-el-plus-tard']) {
+  assert.ok(seuilCode.includes(attendu), `le seuil est marqué pour les vérifications (${attendu})`);
+}
+assert.match(seuilCode, /commencerRef\.current\?\.focus\?\.\(\)/,
+  '« Commencer la campagne » prend le focus : Entrée suffit');
+assert.match(seuilCode, /'--bab-el-decor': `url\("\$\{BASE_URL\}sablier-story\/mode-histoire\.jpg"\)`/,
+  'le keyart du mode Histoire arrive en fond, pas en `<img>`');
+assert.match(seuilCode, /className="rpg-menu-button rpg-menu-button--primary"/,
+  'les boutons sont ceux du menu — pas une seconde famille');
+// Les deux paragraphes d'origine, mot pour mot : c'est le texte que le joueur
+// lisait sur Jouer, pas un résumé écrit pour l'occasion.
+for (const mot of ['Bab El', 'l’Astrolabe', 'la Liste', 'Salem', 'Yamina', 'douze survivants',
+  'portail de Bab El']) {
+  assert.ok(seuil.includes(mot), `le seuil raconte ${mot}`);
+}
+assert.ok(seuil.split('\n').length < 130, `le seuil reste un écran de texte (${seuil.split('\n').length} lignes)`);
+assert.ok(existsSync(new URL('../public/sablier-story/mode-histoire.jpg', import.meta.url)), 'le keyart existe');
+assert.match(cssSeuil, /\.rpg-bab-el \{[\s\S]{0,400}background-image: var\(--bab-el-decor, none\);/,
+  'le décor se peint en fond');
+assert.match(cssSeuil, /background-size: cover;/, 'il couvre l’écran');
+assert.match(cssSeuil, /\.rpg-bab-el__voile \{/, 'un voile garde le texte lisible par-dessus');
+assert.match(cssSeuil, /\.rpg-bab-el__carte \{/, 'et le texte a sa carte');
+assert.match(cssSeuil, /@media \(max-width: 640px\)/, 'le seuil a son palier téléphone');
+assert.match(cssSeuil, /@media \(prefers-reduced-motion: reduce\)/, 'et se tient tranquille pour qui le demande');
+
 console.log('Le profil du Sablier est branché : un onglet Profil dans le menu, et une carte');
 console.log('dépouillée — le pseudo, le niveau, la barre et sa lecture, trois gestes (douze');
 console.log('visages du récit, six emblèmes, douze tables nommées plus « au gré du deck »),');
-console.log('une ligne quand un paquet attend, et la **piste des gains** : un chemin qui');
+console.log('une ligne quand un paquet attend, et ce qui est déjà gagné : un cadre peint');
+console.log('autour du médaillon, un titre écrit sous le pseudo.');
+console.log('La **piste des gains** vit sur l’écran Jouer, sous le héros : un chemin qui');
 console.log('défile du niveau en cours jusqu’au prochain rang de Bab El, puis quatre niveaux');
-console.log('au-delà. Chaque palier dit ce qu’il rapporte — un paquet du Souk, un rang, un');
-console.log('cadre de médaillon, un titre sous le pseudo — et c’est là que les cosmétiques');
-console.log('gagnés se portent, ou se reposent. Ce qui est gagné se calcule depuis l’XP :');
-console.log('rien à réclamer, rien à tricher, et un gain verrouillé le reste.');
+console.log('au-delà. Chaque palier dit ce qu’il rapporte, et **chaque niveau montre son');
+console.log('paquet** — le dos de carte en miniature et son sachet quand le paquet est tout');
+console.log('le gain, un sachet en coin quand un rang ou un cosmétique occupe la tuile. Des');
+console.log('paquets dus ? Un bouton mène au Souk. Les cosmétiques gagnés se portent là, ou');
+console.log('se reposent ; ce qui est gagné se calcule depuis l’XP — rien à réclamer, rien à');
+console.log('tricher, et un gain verrouillé le reste.');
+console.log('L’histoire de Bab El, elle, a quitté Jouer : elle attend un **nouveau joueur**');
+console.log('au lancement du mode Histoire — ni récit en cours, ni étage déblayé — avec le');
+console.log('keyart, les deux paragraphes d’origine, « Commencer la campagne » et « Plus');
+console.log('tard », qui rend l’écran d’où l’on vient sans rien écrire.');
 console.log('Ni compteurs, ni barème, ni journal : ces chiffres vivent dans `rpgProfil.js`');
 console.log('et au Souk, pas ici. Les vignettes des visages et des tables (6 à 34 Ko,');
-console.log('`tools/make-profil-vignettes.mjs`) coûtent moins qu’une peinture, et la piste');
-console.log('ne coûte aucun asset — des glyphes et des dégradés.');
+console.log('`tools/make-profil-vignettes.mjs`) coûtent moins qu’une peinture ; la piste');
+console.log('n’ajoute qu’un dos de carte de 1,3 Ko — le reste est glyphes et dégradés.');
 console.log('La table choisie peint la moitié du joueur — musique et décor 3D suivent — et');
 console.log('le tutoriel garde la sienne. La barre monte vite au début puis devient');
 console.log('gourmande, et chaque palier offre un paquet tiré au hasard parmi les rayons');

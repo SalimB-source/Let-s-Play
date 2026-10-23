@@ -117,6 +117,31 @@ export const TITRES = Object.freeze([
   }),
 ]);
 
+/**
+ * La miniature du **dos de carte** peinte sur la piste : un paquet rapporte cinq
+ * cartes face cachée, et c'est ce dos qu'on montre — jamais une carte précise,
+ * puisque le tirage n'a pas encore eu lieu. Découpée dans `dos-de-carte.jpg`
+ * (640 × 917) par `tools/make-profil-vignettes.mjs` : 130 Ko deviennent quelques
+ * kilo-octets, répétés quatorze fois sur la piste.
+ */
+export const DOS_DE_CARTE_SOURCE = 'dos-de-carte.jpg';
+
+/** Une révision de cache pour la famille, comme les visages et les tables. */
+export const DOS_DE_CARTE_REVISION = 'piste-dos-1';
+
+/** La largeur de la miniature : 4:5 comme une carte en jeu, 26 px nets à 2×. */
+export const DOS_DE_CARTE_LARGEUR = 120;
+
+/** Le chemin relatif (dans `public/`) de la miniature. */
+export function vignetteDosRelative() {
+  return 'profil/dos-de-carte.webp';
+}
+
+/** L'URL servie de la miniature, `baseUrl` étant celui du build. */
+export function vignetteDosDeCarte(baseUrl = '/') {
+  return `${baseUrl}${vignetteDosRelative()}?v=${DOS_DE_CARTE_REVISION}`;
+}
+
 /** Ce que vaut un gain sur la piste : une sorte, un glyphe, un nom, un détail. */
 const GAIN_PAQUET = Object.freeze({
   sorte: 'paquet', glyphe: '✦', nom: 'Un paquet du Souk',

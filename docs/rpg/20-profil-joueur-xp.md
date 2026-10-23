@@ -365,9 +365,11 @@ en 64 s, arrêté par `prefers-reduced-motion`) et l'éclipse.
 | `src/games/rpgProfilGains.js` | **les gains** : `CADRES`, `TITRES`, `gainsDuNiveau`, `pisteDesGains`, et la lecture qui valide (`cadreDeProfil`, `titreDeProfil`, `cadrePortable`, `titrePortable`) |
 | `src/games/useSablierBourse.js` | `reglerPaliers`, `verserXp`, `fermerMonteeNiveau`, `renommerLeProfil`, `choisirUnEmbleme`, `choisirUnAvatar`, `choisirUnPlateau`, `choisirUnCadre`, `choisirUnTitre` ; rend `profil`, `barreXp`, `boostersEnAttente`, `monteeNiveau` |
 | `src/games/RpgProfilJoueur.jsx` | **l'écran** : présentationnel, il reçoit des états et rend des gestes |
-| `src/games/RpgProfilPiste.jsx` | **la piste des gains** : le chemin qui défile sous la barre, et le seul endroit où un cosmétique se porte |
-| `src/games/rpg-profil.css` | la carte de profil, l'annonce de palier, l'onglet du menu, la ligne d'XP de la victoire |
-| `src/games/rpg-profil-piste.css` | la piste, ses paliers et son filet, les cadres du médaillon, la ligne du titre — feuille à part pour ne pas toucher la queue de `rpg-profil.css` |
+| `src/games/RpgPisteGains.jsx` | **la piste des gains** : les colonnes façon passe de maîtrise de l'écran Jouer, et le seul endroit où un cosmétique se porte |
+| `src/games/rpg-piste-gains.css` | la piste et ses colonnes, le sachet et son dos de carte, le cadenas, la coche — feuille à part pour ne pas toucher la queue de `rpg-profil.css` |
+| `src/games/RpgStoryBabEl.jsx` | **le seuil de Bab El** : l'histoire de la cité, montrée à un nouveau joueur au lancement du mode Histoire |
+| `src/games/rpg-story-bab-el.css` | le seuil : le keyart en fond, le voile, la carte de texte |
+| `src/games/rpg-profil.css` | la carte de profil, l'annonce de palier, l'onglet du menu, la ligne d'XP de la victoire, les cadres du médaillon, la ligne du titre |
 | `src/games/RpgDuelPage.jsx` | l'onglet Profil, la branche `screen === 'profil'`, `MonteeDeNiveau`, l'XP dans l'overlay de victoire |
 | `tests/rpg-profil.test.js` | la courbe, la dette, le barème, la fusion, le paquet offert, les visages et les tables |
 | `tests/rpg-profil-gains.test.js` | les catalogues de gains, la forme de la piste, ses états, son filet, et ce qui se porte |
@@ -380,7 +382,8 @@ Deux règles d'import, toutes deux vérifiées :
 - `RpgProfilJoueur.jsx` ne touche à **aucun** stockage et n'appelle aucune
   règle d'écriture : `localStorage`, `chargerProfil`, `sauverProfil`,
   `gagnerXp` et `useSablierBourse` y sont absents, et le contrôle le vérifie.
-  `RpgProfilPiste.jsx` de même, plus strict encore : pas même un `useState`.
+  `RpgPisteGains.jsx` de même, plus strict encore : pas même un `useState` ;
+  `RpgStoryBabEl.jsx` aussi — le seuil ne fait que lire ses props et son décor.
 - `rpgProfilGains.js` ne connaît ni les visages, ni les tables, ni les cartes —
   seulement `rpgProfil.js` (la courbe et les rangs). Et `rpgProfil.js` ne
   connaît pas les gains : il garde deux chaînes, la validation se fait à la
@@ -402,8 +405,10 @@ faire défiler :
 3. **le niveau** — « Niveau 5 », ou « Niveau 60 — maximal » au plafond ;
 4. **la barre** — un `role="progressbar"` complet (`aria-valuenow`, `-min`,
    `-max`, `-text`) et sa seule lecture : « 214 / 353 XP » ;
-5. **la piste des gains** (§6.2) — un chemin de paliers qui défile sous la
-   barre, du niveau en cours au prochain rang puis quatre niveaux au-delà ;
+5. **ce qui est gagné, porté** — le cadre peint autour du médaillon
+   (`data-profil-cadre`), le titre écrit sous le pseudo (`data-profil-titre`) ;
+   la **piste des gains** qui les fait gagner vit, elle, sur l'écran Jouer
+   (§6.2) ;
 6. **trois gestes**, chacun sous une étiquette de 10 px : les douze **visages**
    en cercles de 52 px, les six **emblèmes** en glyphes, les douze **tables** en
    pellicule qui défile plus « Au gré du deck ». Chaque tuile de table porte le
@@ -463,36 +468,58 @@ l'adversaire joue toujours chez lui. Le plateau du joueur restant le
 Il n'y a toujours ni pastille « Aléatoire » ni verrou de plateau en début de
 partie : le choix vit sur la carte de profil, comme une préférence de maison.
 
-### 6.2 La piste des gains — un laissez-passer qui défile
+### 6.2 La piste des gains — des colonnes de passe de maîtrise, sur Jouer
 
-Sous la barre, la piste répond à la question que la carte dépouillée ne posait
-plus : **qu'est-ce que j'y gagne ?** C'est un `<ol>` qui défile à
-l'horizontale (`scroll-snap`, `tabindex="0"` pour le clavier, ouvert sur le
-palier en cours), et non un tableau : aucun compteur, aucun barème, aucune
-formule de courbe n'est revenu sur la carte.
+La piste a quitté la carte : elle vit sur l'écran **Jouer**, sous le héros, dans
+la colonne de gauche (en une colonne, elle se glisse juste après le héros, avant
+les quêtes du jour — `order` dans la media query du téléphone). C'est là qu'on
+décide de sa soirée, et c'est là qu'on lit ce que rapportent les prochains
+niveaux. La carte, elle, ne montre plus que ce qui est **déjà** gagné : le cadre
+peint autour du médaillon, le titre écrit sous le pseudo.
+
+La bande se lit comme une passe de maîtrise : une **colonne** par niveau,
+séparées d'un filet, teintées selon l'état — déjà passé, en cours, à venir — et
+dans chaque colonne, de haut en bas :
+
+- le **repère** « niveau actuel » — la ligne est réservée partout, seule la
+  colonne en cours l'écrit, et sa flèche la pointe ;
+- le **numéro** du niveau ;
+- la **coche** des niveaux déjà passés, peinte sur `.is-gagne` (un glyphe, pas un
+  noeud de plus) ;
+- le **filet** qui relie les colonnes : plein derrière soi, au pourcentage de la
+  barre devant soi, vide au-delà. Une seule boîte, deux largeurs en propriétés
+  personnalisées (`--gauche`, `--droite`) ;
+- la **récompense** : le sachet du Souk et son **dos de carte en miniature**
+  quand le paquet est tout le gain (vignette WebP de 1,3 Ko,
+  `public/profil/dos-de-carte.webp`, découpée par
+  `tools/make-profil-vignettes.mjs` au format 4/5 des cartes), le glyphe du rang
+  ou du cosmétique sinon — et quand le niveau gagne autre chose qu'un paquet, le
+  sachet se pose **en coin** de la tuile (`::after`) : **chaque** niveau montre
+  son paquet ;
+- le **cadenas** d'une récompense à venir, peint en CSS au coin de la tuile ;
+- le **nom** du gain, deux lignes au plus.
+
+C'est un `<ol>` qui défile à l'horizontale (`scroll-snap`, `tabindex="0"` pour le
+clavier, ouvert sur le palier en cours), et non un tableau : aucun compteur,
+aucun barème, aucune formule de courbe n'est revenu dans le menu.
 
 - **sa forme** — du niveau en cours jusqu'au **prochain rang**, puis quatre
-  niveaux au-delà, sans jamais dépasser le plafond : sept paliers au niveau 1,
+  niveaux au-delà, sans jamais dépasser le plafond : six paliers au niveau 2,
   quatorze au plus. Au niveau maximal, la piste regarde en arrière et montre les
   cinq derniers niveaux, tous gagnés. Le prochain rang porte un jalon (« rang »)
   et une tuile ronde ;
-- **une tuile par palier** — le glyphe du gain principal (le rang d'abord, puis
-  le cosmétique, puis le paquet), le numéro du niveau, le nom du gain en deux
-  lignes au plus. Le paquet de chaque niveau s'ajoute en ✦ au coin de la tuile,
-  en pseudo-élément : pas un noeud de plus ;
-- **le filet** — la ligne qui relie les tuiles se remplit : pleine derrière soi,
-  au pourcentage de la barre devant soi, vide au-delà. Une seule boîte, deux
-  largeurs en propriétés personnalisées (`--gauche`, `--droite`) ;
 - **ce qui se clique** — seuls les cosmétiques. Un cadre ou un titre gagné se
   porte (la tuile se remplit d'or, `aria-pressed`), et se repose en recliquant.
-  Les paquets ne se réclament pas ici : la dette se règle au Souk, et la carte a
-  déjà sa ligne « Un paquet vous attend ». Les rangs tombent d'eux-mêmes ;
+  Les paquets ne se réclament pas ici : la dette se règle au Souk — et quand des
+  paquets sont dus, l'entête de la piste ouvre un bouton (« N paquets à ouvrir »)
+  qui y mène. Les rangs tombent d'eux-mêmes ;
 - **ce qui est verrouillé reste visible** — un gain pas encore gagné est un
   bouton `aria-disabled`, jamais un bouton `disabled` ni un noeud absent : il dit
   ce qu'il manque (« Gagné au niveau 14 — 353 XP pour passer au niveau 15 ») et
-  son clic sonne l'erreur au lieu de mentir ;
-- **l'étiquette** au-dessus de la piste nomme le prochain rang :
-  « Chemin · rang Sondeur au niveau 6 », ou « niveau maximal atteint ».
+  son clic sonne l'erreur au lieu de mentir. Le cadenas le dit d'un coup d'oeil ;
+- **l'accroche** au-dessus de la piste nomme le prochain rang :
+  « Prochain rang : Porteur de lanterne, au niveau 3 », ou « niveau maximal
+  atteint ».
 
 Le médaillon porte le cadre gagné (`data-profil-cadre`) et le pseudo son titre
 (`data-profil-titre`) — les deux disparaissent quand rien n'est porté. Les
@@ -570,6 +597,29 @@ Sur la page : `data-profil-onglet`, `data-profil-xp-onglet`,
 `data-profil-pastille`, `data-victoire-xp`, `data-victoire-niveaux`,
 `data-niveau-toast`, `data-niveau-dus`, `data-souk-ceremonie-offert`,
 `data-souk-ceremonie-niveau`.
+
+### 6.3 Le seuil de Bab El — l'histoire au lancement du mode Histoire
+
+Le bloc « L'HISTOIRE · BAB EL » ne siège plus sur l'écran Jouer : une
+présentation qu'on relit à chaque passage ne vaut pas un seuil qu'on franchit
+une fois. Il attend un **nouveau joueur** au moment où il compte — quand il
+lance le mode Histoire (bouton « Mode histoire ») : ni récit en cours
+(`progression.recit`), ni étage déblayé (`progression.etagesVaincus`). Rien
+n'est écrit pour s'en souvenir : commencer la campagne suffit à ne plus être
+neuf, et « Plus tard » ramène le seuil la fois suivante.
+
+- **l'ouverture** — `continuerCampagne()` lit la progression : un joueur neuf
+  passe par `ecran = 'bab-el'`, un écran de lecture de la famille du récit et du
+  journal (plein écran, hors duel) ; sinon le récit reprend où il en était, et
+  un duel en mémoire se reprend d'abord ;
+- **le seuil** — `RpgStoryBabEl` : le keyart du mode Histoire en fond
+  (`--bab-el-decor`, pas de `<img>`), un voile, une carte portant les **deux
+  paragraphes d'origine mot pour mot**, « Commencer la campagne » (qui prend le
+  focus : Entrée suffit) et « Plus tard ». Ce dernier rend l'écran d'où l'on
+  vient — noté dans une référence au moment de l'ouverture ;
+- **le franchissement** — « Commencer la campagne » appelle `ouvrirRecit()` :
+  le récit naît, la première scène enchaîne, et le seuil ne revient plus.
+  « Plus tard » n'écrit rien : la progression reste vide, et le seuil attendra.
 
 ## 7. Les deux visages d'une montée de niveau
 
@@ -651,22 +701,31 @@ seconde cérémonie repart du sachet (`key`), le pseudo et l'emblème s'écriven
 et survivent à un remontage — puis la **vraie page** est montée pour l'onglet
 Profil, son `aria-current`, son aria-label, son aller-retour vers le menu, et
 surtout **les gestes cliqués à travers elle** : l'emblème se marque et se lit sur
-l'étiquette, le visage se peint, la table se choisit, le titre gagné sur la piste
-se porte, les quatre choix sont écrits sur l'appareil, et l'onglet du menu repart
-avec la vignette du visage. Un prop perdu entre la page et l'écran — comme
-l'emblème renommé de travers — ne se voit que là. La page est montée sur un
-profil semé au **niveau 2** (`boostersOfferts: 1`, donc aucune dette) : la piste
-y a un titre gagné à faire porter, sans rejouer un duel entier.
+l'étiquette, le visage se peint, la table se choisit, les quatre choix sont écrits
+sur l'appareil, et l'onglet du menu repart avec la vignette du visage. Un prop
+perdu entre la page et l'écran — comme l'emblème renommé de travers — ne se voit
+que là. Dès le montage, la **piste de l'écran Jouer** est vérifiée elle aussi :
+ses colonnes, le repère du niveau en cours, la coche des niveaux passés, le
+cadenas des niveaux à venir, la miniature du dos de carte et le sachet du niveau
+qui n'attend qu'un paquet — puis le titre gagné se porte **depuis la piste**, et
+se relit sous le pseudo en rouvrant la carte. Vient enfin le **seuil de Bab El** :
+un joueur neuf le découvre en lançant le mode Histoire, « Plus tard » rend le
+menu sans rien écrire (le seuil reviendra), « Commencer la campagne » franchit le
+seuil, écrit la progression et enchaîne le récit. La page est montée sur un profil
+semé au **niveau 2** (`boostersOfferts: 1`, donc aucune dette) : la piste y a un
+titre gagné à faire porter, sans rejouer un duel entier.
 
-La piste est vérifiée aux deux niveaux. Dans la sonde : au niveau 1 elle montre
-sept paliers (1 → le rang du niveau 3, puis quatre), un seul `courant` marqué
-`aria-current="step"`, le jalon sur le rang, le niveau 2 qui promet un titre et
-le 4 un cadre, les noms écrits sous les tuiles — et un gain verrouillé qui sonne
-l'erreur sans rien changer, le hook refusant même appelé de front
-(`choisirUnCadre('eclipse')` au niveau 1 rend `false` et n'écrit rien). Au
-niveau 3, le titre du niveau 2 se porte et s'écrit sous le pseudo, un titre pas
-encore gagné ne se porte pas, `null` le repose, et toutes les tuiles de
-cosmétiques encore visibles se disent `aria-disabled`.
+La carte et la piste sont vérifiées séparément. Dans la sonde, la carte **ne
+monte plus la piste** (c'est asserté) et se contente de porter : au niveau 3, le
+titre du niveau 2 se porte et s'écrit sous le pseudo, un titre pas encore gagné
+ne se porte pas, `null` le repose, et un cadre hors de portée sonne l'erreur sans
+rien changer — le hook refusant même appelé de front (`choisirUnCadre('eclipse')`
+au niveau 1 rend `false` et n'écrit rien). Sur la page, au niveau 2, la piste
+montre six colonnes (2 → le rang du niveau 3, puis quatre) : un seul `courant`
+marqué `aria-current="step"` et pointé par le repère, le jalon sur le rang avec
+son sachet en coin, le niveau 7 qui n'attend qu'un paquet — dos de carte en
+miniature et sachet —, les niveaux à venir cadenassés, et le titre du niveau 2
+qui se porte d'un clic depuis Jouer.
 Les gardes de source vérifient ce que le DOM ne peut pas dire : où vit la
 persistance, qui tire le rayon au hasard, ce qu'une dette impayée ne répète
 pas, et à quelle hauteur la cérémonie passe au-dessus de la table. Elles
@@ -689,10 +748,20 @@ portée ; l'indépendance des modules (`rpgProfil.js` ignore `rpgProfilGains.js`
 qui ignore les visages, les tables et les cartes) ; la piste qui ne fait rien
 elle-même (ni `localStorage`, ni `sauverProfil`, ni `useState`, ni `fetch`) ;
 l'accessibilité (`aria-current`, `aria-disabled`, `tabindex`, l'ouverture sur le
-palier en cours sans `scrollIntoView`) ; et les styles — la piste a **sa propre
-feuille** (`rpg-profil.css` n'en parle pas), elle défile vraiment, son filet se
-remplit en propriétés personnalisées, le jalon est écrit, les cadres sont peints
-en CSS, et l'astrolabe s'arrête pour qui demande moins de mouvement.
+palier en cours sans `scrollIntoView`) ; la lecture de passe de maîtrise — le
+repère « niveau actuel », la coche peinte sur `.is-gagne`, le cadenas peint des
+récompenses à venir, le sachet en coin de toute tuile qui gagne autre chose qu'un
+paquet, la miniature du dos de carte et son outil ; sa **place** — montée dans le
+`<main>` de l'écran Jouer, avec ses props (`profil`, `paquetsEnAttente`, les deux
+gestes de cosmétiques, le Souk, les sons) — ; et les styles : la piste a **sa
+propre feuille** (`rpg-profil.css` n'en parle pas), elle défile vraiment, son
+filet se remplit en propriétés personnalisées, le jalon est écrit, les cadres du
+médaillon sont peints en CSS dans `rpg-profil.css`, et l'astrolabe s'arrête pour
+qui demande moins de mouvement. La section 12 garde le seuil de Bab El : le bloc
+parti de Jouer avec ses règles, « nouveau joueur » lu dans la progression, le
+seuil ouvert avant le récit et rendu à l'écran d'où l'on vient, les deux
+paragraphes d'origine mot pour mot, le keyart en fond et les deux boutons du
+menu.
 
 L'identité élargie, dans le même fichier : un profil neuf n'a ni visage, ni
 table, ni cadre, ni titre ; `choisirAvatar` / `choisirPlateau` / `choisirCadre` /

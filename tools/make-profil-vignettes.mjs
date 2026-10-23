@@ -44,6 +44,11 @@ import {
   RPG_PLATEAUX,
   vignettePlateauRelative,
 } from '../src/games/rpgPlateaux.js';
+import {
+  DOS_DE_CARTE_LARGEUR,
+  DOS_DE_CARTE_SOURCE,
+  vignetteDosRelative,
+} from '../src/games/rpgProfilGains.js';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(RACINE, 'public');
@@ -137,6 +142,26 @@ for (const plateau of RPG_PLATEAUX) {
   }
   ecrireVignette(source, sortie, ciblePlateau, '50% 50%');
   lignes.push(['plateau', plateau.id, ko(sortie)]);
+}
+
+// ── Le dos de carte : la miniature que la piste montre pour un paquet ───────
+// Cinq cartes face cachée — on montre le dos, jamais un tirage qui n'a pas eu
+// lieu. 4:5 comme une carte en jeu.
+{
+  const source = path.join(PUBLIC, DOS_DE_CARTE_SOURCE);
+  const sortie = path.join(PUBLIC, vignetteDosRelative());
+  const cible = {
+    largeur: DOS_DE_CARTE_LARGEUR,
+    hauteur: Math.round((DOS_DE_CARTE_LARGEUR * 5) / 4),
+  };
+  if (!existsSync(source)) manquants.push(source);
+  else if (VERIFIER) {
+    if (existsSync(sortie)) lignes.push(['dos', 'dos-de-carte', ko(sortie)]);
+    else manquants.push(sortie);
+  } else {
+    ecrireVignette(source, sortie, cible, '50% 40%');
+    lignes.push(['dos', 'dos-de-carte', ko(sortie)]);
+  }
 }
 
 for (const [famille, id, poids] of lignes) {

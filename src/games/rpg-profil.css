@@ -87,11 +87,80 @@
   background-position: 50% 50%;
   text-shadow: none;
 }
+
+/* ── Les cadres gagnés sur la piste des gains (dossier 20 §4.7) ──────────────
+   Un cadre se lit sur l'**entête**, pas sur le médaillon : celui-ci rogne sa
+   vignette (`overflow: hidden`) et avalerait l'anneau. Les anneaux sont donc des
+   `::before` de `.rpg-profil__tete`, glissés **sous** le médaillon — si un
+   dégradé ne prend pas chez un navigateur, il reste un liseré, jamais un disque
+   sur le visage. Le cadre se choisit sur la piste (écran Jouer) et se porte ici. */
+.rpg-profil__tete[data-profil-cadre] .rpg-profil__medaillon { position: relative; z-index: 1; }
+.rpg-profil__tete[data-profil-cadre] .rpg-profil__cachet { z-index: 2; }
+
+/* Argent du beffroi (8), Verre soufflé (14), Fil de pourpre (25) : un cerne et
+   une lumière, rien de plus. */
+.rpg-profil__tete[data-profil-cadre='argent'] .rpg-profil__medaillon {
+  border-color: rgba(214, 226, 240, .8);
+  box-shadow: 0 0 0 2px rgba(214, 226, 240, .16), 0 0 20px rgba(200, 220, 245, .2),
+    inset 0 0 22px rgba(200, 220, 245, .14);
+}
+.rpg-profil__tete[data-profil-cadre='verre'] .rpg-profil__medaillon {
+  border-color: rgba(178, 236, 214, .7);
+  box-shadow: 0 0 0 3px rgba(150, 224, 198, .14), 0 0 24px rgba(140, 226, 196, .24),
+    inset 0 0 22px rgba(160, 232, 206, .16);
+}
+.rpg-profil__tete[data-profil-cadre='pourpre'] .rpg-profil__medaillon {
+  border-color: rgba(196, 74, 84, .85);
+  box-shadow: 0 0 0 2px rgba(150, 32, 46, .3), 0 0 22px rgba(196, 74, 84, .26),
+    inset 0 0 22px rgba(196, 74, 84, .18);
+}
+
+/* Corde de chanvre (4), Astrolabe (45), Éclipse (60) : un anneau peint derrière
+   le médaillon, débordant de quelques pixels. */
+.rpg-profil__tete[data-profil-cadre='chanvre']::before,
+.rpg-profil__tete[data-profil-cadre='astrolabe']::before,
+.rpg-profil__tete[data-profil-cadre='eclipse']::before {
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+}
+.rpg-profil__tete[data-profil-cadre='chanvre']::before {
+  inset: -5px;
+  background: repeating-conic-gradient(from 8deg,
+    rgba(196, 172, 122, .95) 0deg 3deg, rgba(120, 100, 66, .85) 3deg 6deg);
+}
+.rpg-profil__tete[data-profil-cadre='astrolabe']::before {
+  inset: -8px;
+  background: repeating-conic-gradient(from 0deg,
+    rgba(255, 231, 175, .95) 0deg 1deg, rgba(231, 191, 101, .12) 1deg 12deg);
+  animation: rpg-profil-astrolabe 64s linear infinite;
+}
+.rpg-profil__tete[data-profil-cadre='eclipse']::before {
+  inset: -5px;
+  background: conic-gradient(from 200deg, #fff3d2, rgba(255, 138, 76, .75) 28%,
+    rgba(28, 22, 30, .2) 52%, rgba(255, 231, 175, .9) 78%, #fff3d2);
+  box-shadow: 0 0 26px rgba(255, 176, 96, .28);
+}
+@keyframes rpg-profil-astrolabe { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-profil__tete[data-profil-cadre='astrolabe']::before { animation: none; }
+}
 .rpg-profil__nom {
   margin: 3px 0 0;
   font-size: clamp(20px, 4.8vw, 27px);
   line-height: 1.15;
   overflow-wrap: anywhere;
+}
+/* Le titre gagné sur la piste : une ligne sous le pseudo, en petites capitales.
+   Il n'apparaît que porté — un profil sans titre ne laisse pas de ligne vide. */
+.rpg-profil__titre {
+  margin: -1px 0 0;
+  color: rgba(255, 231, 175, .74);
+  font: 600 10.5px/1.35 var(--mono, ui-monospace, monospace);
+  letter-spacing: .2em;
+  text-transform: uppercase;
 }
 .rpg-profil__niveau {
   margin: 0;

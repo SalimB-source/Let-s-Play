@@ -8728,18 +8728,25 @@ sans un crédit dépensé.
   marque. L'emblème, une fois un visage peint, se pose en **cachet de cire** au
   coin du médaillon. Plus une ligne, seulement quand des paquets attendent :
   « Un paquet vous attend. » et le bouton **Ouvrir au Souk**.
-- Sous la barre, la **piste des gains** : un chemin de paliers qui défile, style
-  laissez-passer de bataille, du niveau en cours jusqu'au **prochain rang** de
-  Bab El puis quatre niveaux au-delà (sept paliers au niveau 1, quatorze au
-  plus ; au plafond, les cinq derniers niveaux parcourus). Chaque tuile dit ce
-  que le niveau rapporte — un **paquet** du Souk (✦ au coin de la tuile, à tous
-  les niveaux), un **rang** (tuile ronde, jalon « rang » sur le prochain), un
-  **cadre** de médaillon ou un **titre** sous le pseudo — et le filet qui relie
-  les tuiles se remplit au pourcentage de la barre : plein derrière soi, en
-  route devant, vide au-delà. Les cosmétiques gagnés se **portent** en cliquant
-  leur tuile, et se reposent en recliquant ; ceux qui ne sont pas encore gagnés
-  restent visibles mais `aria-disabled`, et disent ce qu'il manque
-  (« Gagné au niveau 14 — 353 XP pour passer au niveau 15 »). Sept cadres
+- La **piste des gains** vit sur l'écran **Jouer**, sous le héros : une bande de
+  **colonnes** façon passe de maîtrise, qui défile du niveau en cours jusqu'au
+  **prochain rang** de Bab El puis quatre niveaux au-delà (six paliers au
+  niveau 2, quatorze au plus ; au plafond, les cinq derniers niveaux parcourus).
+  Chaque colonne porte, de haut en bas : le repère « niveau actuel » sur celle
+  en cours, le **numéro**, la **coche** des niveaux déjà passés, le filet qui se
+  remplit au pourcentage de la barre (plein derrière soi, en route devant, vide
+  au-delà), puis la **récompense** et son nom. La récompense se voit : un
+  **paquet** du Souk montre le sachet et le **dos de carte en miniature**
+  (vignette WebP de 1,3 Ko) ; un **rang** (tuile ronde, jalon « rang » sur le
+  prochain), un **cadre** de médaillon ou un **titre** sous le pseudo montre son
+  glyphe — et le sachet se pose **en coin** de ces tuiles-là : chaque niveau
+  montre son paquet. Une récompense à venir porte son **cadenas**, peint en CSS.
+  Les cosmétiques gagnés se **portent** en cliquant leur tuile, et se reposent
+  en recliquant ; ceux qui ne sont pas encore gagnés restent visibles mais
+  `aria-disabled`, et disent ce qu'il manque
+  (« Gagné au niveau 14 — 353 XP pour passer au niveau 15 »). Des paquets dus ?
+  L'entête de la piste ouvre un bouton « N paquets à ouvrir » qui mène au Souk.
+  Sept cadres
   (laiton, chanvre, argent, verre soufflé, fil de pourpre, astrolabe, éclipse) et
   neuf titres (l'Arpenteur, la Main sûre, le Noctambule, le Compteur de sable,
   l'Ombre de la Chambre, le Doreur, la Voix basse, le Marcheur d'étages,
@@ -8748,10 +8755,18 @@ sans un crédit dépensé.
   `titre`, ce qu'on porte parmi ce qu'on a — une sauvegarde retouchée ne pare
   donc personne de l'Éclipse au niveau 3. Aucun asset : des glyphes et des
   dégradés, l'astrolabe tournant en 64 s et arrêté par `prefers-reduced-motion`.
-- La piste a sa propre feuille de style (`rpg-profil-piste.css`) et son propre
-  composant (`RpgProfilPiste.jsx`, sans un `useState` ni un octet de stockage) :
-  la queue de `rpg-profil.css` porte les `z-index` de la cérémonie et de
-  l'annonce, on n'y touche pas pour un décor de plus.
+- La piste a sa propre feuille de style (`rpg-piste-gains.css`) et son propre
+  composant (`RpgPisteGains.jsx`, sans un `useState` ni un octet de stockage) ;
+  la carte de profil, elle, ne fait que **porter** ce qui est gagné — le cadre
+  peint autour du médaillon, le titre écrit sous le pseudo. La queue de
+  `rpg-profil.css` porte les `z-index` de la cérémonie et de l'annonce, on n'y
+  touche pas pour un décor de plus.
+- L'histoire de Bab El a quitté l'écran Jouer : elle attend un **nouveau
+  joueur** au lancement du mode Histoire — ni récit en cours, ni étage déblayé.
+  Le seuil (`RpgStoryBabEl`) montre le keyart du mode Histoire, les deux
+  paragraphes d'origine mot pour mot, « Commencer la campagne » (qui écrit le
+  récit et enchaîne la première scène) et « Plus tard » (qui rend l'écran d'où
+  l'on vient, sans rien écrire : le seuil reviendra la fois suivante).
 - Les visages et les tables arrivent en **vignettes** de 6 à 34 Ko
   (`public/profil/`, découpées par `tools/make-profil-vignettes.mjs` au cadrage
   exact des peintures canoniques) : les deux bandeaux coûtent moins qu'une

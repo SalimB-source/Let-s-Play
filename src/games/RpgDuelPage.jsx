@@ -101,6 +101,8 @@ import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
 import RpgSouk from './RpgSouk.jsx';
 import RpgProfilJoueur from './RpgProfilJoueur.jsx';
+import RpgPisteGains from './RpgPisteGains.jsx';
+import RpgStoryBabEl from './RpgStoryBabEl.jsx';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
@@ -4056,16 +4058,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </button>
                   </div>
                 </div>
-                <section className="rpg-flux-menu" aria-label="Présentation de l’histoire du Sablier">
-                  <span className="rpg-flux-menu__eyebrow">L’HISTOIRE · BAB EL</span>
-                  <h3>Une cité verticale face au désert qui monte.</h3>
-                  <p>
-                    <em>Le Sablier</em> se passe à Bab El, une cité verticale de neuf étages construite autour d’un portail scellé, au-dessus d’un désert dont le sable monte inexorablement. À chaque cycle d’une horloge géante — l’Astrolabe —, l’étage du bas est englouti, et une administration très polie mais implacable, la Chambre des Heures, publie <em>la Liste</em> de ceux qui ont le droit de monter… et de ceux qu’on abandonne.
-                  </p>
-                  <p>
-                    L’histoire démarre quand Salem, un sauveteur qui fouille les étages condamnés, remonte douze survivants d’un quartier officiellement déclaré vide : sur le papier, ils n’existent plus, donc personne ne veut les loger. Avec Yamina, une ancienne horlogère repentie, et quelques alliés, il invoque un ancien droit de contestation — qui se règle par des duels de cartes faites de mémoire et de pactes — pour forcer la Chambre à réinscrire ces douze oubliés… avant de découvrir que ces effacements cachent le vrai secret du portail de Bab El.
-                  </p>
-                </section>
               </div>
               {/* Le halo doré reste : simple lumière, pas un fond. */}
               <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
@@ -4079,6 +4071,19 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               onReclamerCachet={onReclamerCachet}
               onReclamerSemaine={onReclamerSemaine}
               onOuvrirSouk={() => { onChangeScreen('souk'); }}
+              onPlaySfx={play}
+            />
+            {/* Ce que rapportent les prochains niveaux : la piste des gains, là
+                où l'on décide de sa soirée. Elle prend la place du bloc
+                « L'histoire · Bab El », parti au lancement du mode Histoire pour
+                un nouveau joueur (`RpgStoryBabEl`) — un décor qu'on relit à
+                chaque passage contre un seuil qu'on franchit une fois. */}
+            <RpgPisteGains
+              profil={profil}
+              paquetsEnAttente={paquetsDePalierEnAttente}
+              onChoisirCadre={onChoisirCadre}
+              onChoisirTitre={onChoisirTitre}
+              onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }}
               onPlaySfx={play}
             />
           </main>
@@ -4536,8 +4541,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             onChoisirEmbleme={onChoisirEmbleme}
             onChoisirAvatar={onChoisirAvatar}
             onChoisirPlateau={onChoisirPlateau}
-            onChoisirCadre={onChoisirCadre}
-            onChoisirTitre={onChoisirTitre}
             onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }}
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
@@ -5085,6 +5088,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const pvpHorlogeExpireeRef = useRef(null);
   const [confirmerAbandonPvp, setConfirmerAbandonPvp] = useState(false);
   const [ecran, setEcran] = useState(() => (pvp ? 'partie' : 'jouer'));
+  // D'où vient-on quand le seuil de Bab El s'ouvre ? « Plus tard » rend cet
+  // écran-là : le joueur repart d'où il a lancé le mode Histoire (Jouer, le
+  // plus souvent), pas d'un menu qu'il n'a pas demandé.
+  const seuilHistoireVenuDe = useRef('jouer');
   useLumiereCartes(ecran !== 'partie');
   const authContext = useContext(AuthContext);
   const authUser = authContext?.user ?? null;
@@ -5593,7 +5600,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setVolumeMusique((actuel) => (actuel > 0 ? 0 : (dernierVolumeMusiqueRef.current || 1)));
   };
   // La tour de l'étage en cours commande la boucle (null : duel libre).
-  const lectureHistoire = ecran === 'recit' || ecran === 'journal';
+  // `bab-el` est le seuil du récit : l'histoire de la cité, pour qui n'a encore
+  // rien vécu de la campagne. Même famille que le récit et le journal — plein
+  // écran, hors duel.
+  const lectureHistoire = ecran === 'recit' || ecran === 'journal' || ecran === 'bab-el';
   const tourHistoireId = lectureHistoire
     ? (resumeRecitHistoire(progressionHistoire.recit)?.acte?.tourId ?? 'tour-des-listes')
     : histoireEtageId
@@ -7320,6 +7330,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     unlockSfx();
     if (sonActif) void musiqueThemeRef.current?.start();
   };
+  // Un nouveau joueur n'a ni récit en cours ni étage déblayé. Rien n'est écrit
+  // pour s'en souvenir : « nouveau » se **lit** dans la progression, donc
+  // commencer la campagne suffit à ne plus l'être — et revenir en arrière sans
+  // commencer ramène le seuil la fois suivante.
+  const nouveauJoueurHistoire = !progressionHistoire?.recit
+    && (progressionHistoire?.etagesVaincus?.length ?? 0) === 0;
   const continuerCampagne = () => {
     // Un duel encore en mémoire se reprend normalement depuis le menu.
     if (campagneDuelRef.current?.session === sessionDuelRef.current
@@ -7328,6 +7344,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     libererDuelPourLecture();
+    if (nouveauJoueurHistoire) {
+      // L'histoire de Bab El d'abord : c'est ici qu'elle sert, pas sur Jouer.
+      seuilHistoireVenuDe.current = ecran;
+      sonLecture();
+      setEcran('bab-el');
+      return;
+    }
+    ouvrirRecit();
+    sonLecture();
+    setEcran('recit');
+  };
+  /** Le seuil est franchi : le récit naît, et la première scène enchaîne. */
+  const commencerCampagne = () => {
     ouvrirRecit();
     sonLecture();
     setEcran('recit');
@@ -7349,7 +7378,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const deckActifHistoire = decksJouablesHistoire.find((deck) => deck.id === deckSelectionneId) ?? decksJouablesHistoire[0] ?? deckParDefaut();
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onContextMenu={neutraliserMenuContextuel}>
-        {ecran === 'journal' ? (
+        {ecran === 'bab-el' ? (
+          <RpgStoryBabEl
+            onCommencer={commencerCampagne}
+            onPlusTard={() => setEcran(seuilHistoireVenuDe.current)}
+            onPlaySfx={jouerSfx}
+          />
+        ) : ecran === 'journal' ? (
           <RpgStoryJournal recit={progressionHistoire.recit} cardArt={cardArt}
             onExit={() => setEcran('histoire')} onContinue={continuerCampagne}
             sauvegardeOk={sauvegardeHistoireOk} sonActif={sonActif} onToggleSound={basculerSon} />
