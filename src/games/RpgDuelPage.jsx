@@ -141,6 +141,7 @@ import {
   RPG_PV_SORCIER_BASE,
   arriveeCiblePortee,
   arriveeConsulteDeck,
+  arriveeViseSorcier,
   rpgCibleAuto,
   rpgChoisirAttaquants,
   rpgContreJouable,
@@ -7693,6 +7694,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       && !rpgEstProtegee(entite, cardColors(carteSource))
       && (carteVisee?.cost ?? 0) <= seuil;
   };
+  // L'arrivée qui peut frapper **le sorcier adverse** (le Maître du marteau) :
+  // la créature est déjà posée, l'attente est ouverte — le visage adverse
+  // s'allume comme une cible et le clic la referme.
+  const arriveeViseSorcierEnAttente = Boolean(cibleEnCours
+    && duel.arriveeEnAttente?.cote === 'joueur'
+    && duel.arriveeEnAttente?.carteId === cibleEnCours
+    && arriveeViseSorcier(carteCiblee));
   const attenteSiteBimini = duel.siteEnAttente?.cote === 'joueur'
     && duel.siteEnAttente?.recompense === 'bimini';
   const modeCible = porteeCibleEnCours({
@@ -9527,6 +9535,26 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       lancerMagie(cibleEnCours, 'sorcier');
       return;
     }
+    // L'arrivée en attente qui peut frapper le visage (le Maître du marteau) :
+    // la créature est déjà posée, le clic sur le sorcier referme l'attente —
+    // les 3 dégâts partent au sorcier, bouclier compris.
+    if (arriveeViseSorcierEnAttente) {
+      const champAvantAction = prendreInstantaneChamp();
+      const debutJournalDestructions = rpgNombreDestructions(duel);
+      if (modePvp) rpgSyncCompteurEntites(duel);
+      const res = rpgResoudreArriveeCiblee(duel, 'joueur', 'sorcier');
+      if (!res.ok) {
+        jouerSfx('erreur');
+        force();
+        return;
+      }
+      if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-arrivee', cibleId: 'sorcier' });
+      if (!duel.arriveeEnAttente) setCibleEnCours(null);
+      jouerSfx('select');
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      force();
+      return;
+    }
     if (!monTour) return;
     // Pendant la déclaration d'attaque, désigner le sorcier est le geste du
     // Coup rapide qui y renonce : les proies désignées s'effacent et toutes les
@@ -10276,7 +10304,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   : modeCible === 'allie'
                     ? `Choisissez une créature alliée pour ${carteCiblee?.name ?? 'cet effet'}`
                     : modeCible === 'ennemi'
-                      ? `Choisissez une cible adverse pour ${carteCiblee?.name ?? 'cet effet'}`
+                      ? (arriveeViseSorcierEnAttente
+                        ? `${carteCiblee?.name ?? 'Cet effet'} : choisissez une créature ou le sorcier adverse`
+                        : `Choisissez une cible adverse pour ${carteCiblee?.name ?? 'cet effet'}`)
                       : `Choisissez une cible pour ${carteCiblee?.name ?? 'cet effet'}`,
           }
           : cibleArmeEnCours
@@ -10689,7 +10719,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         </div>
 
-        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
+        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && (carteCiblee?.cibles?.includes('sorcier') || arriveeViseSorcierEnAttente) ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
           data-tutorial-target={cibleTutoriel('opponent-health') ? 'opponent-health' : undefined}
           data-soin={soinSorcier ? soinSorcier.montant : undefined}
           data-menace-letale={menaceLetaleActive ? 'true' : undefined}

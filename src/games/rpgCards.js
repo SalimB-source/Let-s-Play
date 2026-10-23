@@ -1103,9 +1103,15 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     art: 'maitre-du-marteau',
     furie: 3,
-    overkill: true,
+    // La Furie du Tonnerre ne frappe pas seulement plus fort : tant qu'elle
+    // tient, le Maître gagne aussi Overkill et Envol (voir `furieGains` dans
+    // `rpgDuel.js`). Ces deux mots-clés ne sont donc pas imprimés à part.
+    furieGains: { overkill: true, envol: true },
     tenacite: true,
-    text: 'Furie 3. Overkill. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense.',
+    // « son marteau frappe » : 3 dégâts à une créature **ou** au sorcier
+    // adverse. La cible se désigne sur la table, comme pour un Trait de braise.
+    arrivee: { type: 'degats', amount: 3, cible: 'creature', cibles: ['creature', 'sorcier'] },
+    text: 'Quand il arrive : son marteau frappe — 3 dégâts à une créature ou au sorcier adverse, au choix. Furie 3. Tant que sa Furie est active, il gagne aussi Overkill et Envol. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense ; son effet d’arrivée se déclenche alors de nouveau.',
     flavor: 'Le tonnerre n’est pas un bruit : c’est un rendez-vous — et son marteau, lui, retrouve toujours sa main.',
   },
   {

@@ -105,7 +105,8 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
     'les pastilles du Berserk affichent Provocation et sa nouvelle Furie 2');
   assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Contre-attaque'],
     'Eirik affiche sa Contre-attaque dans les pastilles');
-  assert.deepEqual(pastillesDe('maitre-du-marteau'), ['Overkill', 'Furie 3', 'Tenacité']);
+  assert.deepEqual(pastillesDe('maitre-du-marteau'), ['Envol (furie)', 'Overkill (furie)', 'Furie 3', 'Tenacité'],
+    'le Maître ne porte que Furie 3 et Tenacité : Overkill et Envol sont prêtés par la Furie');
   assert.deepEqual(pastillesDe('loup-des-neiges'), ['Furie 1']);
   assert.deepEqual(pastillesDe('valkyrie-des-glaces'), ['Envol', 'Protection contre les sorts de Braise'],
     'Envol et protection limitée aux sorts, sans aucune Résonance');

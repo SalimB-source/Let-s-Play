@@ -307,6 +307,10 @@ export function valeurCarte(carte) {
   if (carte.protection) valeur += 1.5;
   if (carte.furie) valeur += 0.7 + 0.55 * carte.furie;
   if (carte.overkill) valeur += 1.5;
+  // Les mots-clés que la Furie prête (le Maître du marteau) ne comptent que
+  // sous la Furie : une fraction de leur prix imprimé.
+  if (carte.furieGains?.overkill) valeur += 0.8;
+  if (carte.furieGains?.envol) valeur += 1.1;
   if (carte.resonance) valeur += 2 + 2 * carte.resonance;
   if (carte.honneur) valeur += carte.honneur;
   if (carte.combat) valeur += 2;

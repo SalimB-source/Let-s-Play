@@ -147,3 +147,40 @@ carte. À 2 dégâts, « son marteau tombe » frappe encore très fort (3,32).
 - **Tests** : Valkyrie 3/3, Valkyrie corbeau 2/3, Berserk 3/2, Jarl 3/4, et
   le Maître du marteau (2 dégâts à l’arrivée — plus 3 —, Furie 3 et Tenacité
   inchangées).
+
+---
+
+## 6. Le Maître du marteau — la Furie du Tonnerre *(révision de la fiche)*
+
+**Changement :** la fiche quitte l'AoE et l'Overkill imprimé. Le Maître
+**frappe à l'arrivée** — 3 dégâts à une créature **ou** au sorcier adverse, au
+choix, comme un Trait de braise — et **sa Furie lui prête Overkill et Envol**
+tant qu'elle tient. Tenacité est conservée, et sa renaissance rejoue
+désormais explicitement l'effet d'arrivée : un Maître revenu frappe de
+nouveau.
+
+```js
+{
+  id: 'maitre-du-marteau',
+  name: 'Le Maître du marteau',
+  element: 'neige',
+  cost: 6,
+  atk: 5,
+  def: 5,
+  rarity: 'mythique',
+  typeLine: 'Créature légendaire — Héros',
+  art: 'maitre-du-marteau',
+  furie: 3,
+  furieGains: { overkill: true, envol: true },
+  tenacite: true,
+  arrivee: { type: 'degats', amount: 3, cible: 'creature', cibles: ['creature', 'sorcier'] },
+  text: 'Quand il arrive : son marteau frappe — 3 dégâts à une créature ou au sorcier adverse, au choix. Furie 3. Tant que sa Furie est active, il gagne aussi Overkill et Envol. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense ; son effet d’arrivée se déclenche alors de nouveau.',
+}
+```
+
+- **`rpgDuel.js`** : `furieGains` allume et éteint les mots-clés avec la Furie ;
+  l'arrivée accepte `cibleId: 'sorcier'` (`arriveeViseSorcier`,
+  `effetArriveePourCible`) ; `appliquerArriveeDeRetour` rejoue l'arrivée des
+  retours en jeu (Tenacité, Khopesh, Anqa).
+- **`RpgDuelPage.jsx`** : le visage adverse s'allume pendant l'attente
+  d'arrivée, et le clic dessus résout les 3 dégâts.

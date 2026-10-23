@@ -1408,7 +1408,11 @@ function retirerArme(duel, cote, entite) {
     entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - bouclierRestant);
   }
   if (carteArme.donne?.esquive) entite.esquive = Boolean(duelCardById(entite.carteId)?.esquive);
-  if (carteArme.donne?.envol) entite.envol = Boolean(duelCardById(entite.carteId)?.envol);
+  if (carteArme.donne?.envol) {
+    // L'arme rendue ne retire pas l'Envol que la Furie prête encore.
+    entite.envol = Boolean(duelCardById(entite.carteId)?.envol)
+      || Boolean(gainsFurieActifs(duel, entite)?.envol);
+  }
   if (carteArme.donne?.infiltration) entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
     || Boolean(entite.infiltrationTour);
   if (carteArme.donne?.coupRapide) entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide);
@@ -1471,10 +1475,7 @@ function armeDePorteurMort(duel, cote, entite) {
       camp.creatures.push(revenant);
       placerDansEmplacement(duel, cote, revenant, entite.emplacement);
       duel.log.push(`${carteArme.name} : ${carte.name} revient en jeu avec 1 point de défense, sans son arme.`);
-      if (carte.arrivee) {
-        const cible = rpgCibleAuto(duel, cote, carte);
-        appliquer(duel, cote, carte.arrivee, cible, revenant.id, cardColors(carte), 'capacite', carte.id);
-      }
+      appliquerArriveeDeRetour(duel, cote, carte, revenant);
       return;
     }
     appliquer(duel, cote, carteArme.porteurMeurt, null, null, cardColors(carteArme), null, carteArme.id);
@@ -1487,6 +1488,42 @@ function armeDePorteurMort(duel, cote, entite) {
 function furieTotale(entite) {
   return Math.max(0, Number(duelCardById(entite.carteId)?.furie) || 0)
     + Math.max(0, Number(armeCarteDe(entite)?.donne?.furie) || 0);
+}
+
+/**
+ * Les mots-clés qu'une Furie prête **tant qu'elle tient** : la carte les
+ * déclare dans `furieGains` (le Maître du marteau gagne Overkill et Envol).
+ * `null` quand la carte n'en prête aucun, ou quand la Furie est retombée — la
+ * même lecture pour la synchronisation et pour les recomputations de bonus
+ * temporaires.
+ */
+function gainsFurieActifs(duel, entite) {
+  const gains = duelCardById(entite?.carteId)?.furieGains;
+  if (!gains) return null;
+  return Number(entite?.pv) > 0 && Boolean(entite?.furieDeclenchee) ? gains : null;
+}
+
+/**
+ * Allume ou éteint les mots-clés prêtés par la Furie. Ils ne sont **pas**
+ * imprimés sur la carte : l'Overkill du Maître n'existe que sous la Furie. Le
+ * recalcul n'oublie jamais ce qu'une arme ou un renfort temporaire prête à
+ * côté (`overkillTemporaire`, le Mur de boucliers).
+ */
+function appliquerGainsFurie(duel, entite) {
+  const carte = duelCardById(entite?.carteId);
+  if (!carte?.furieGains) return;
+  const gains = gainsFurieActifs(duel, entite);
+  if (carte.furieGains.overkill) {
+    entite.overkill = Boolean(gains?.overkill)
+      || Boolean(carte.overkill)
+      || Boolean(armeCarteDe(entite)?.donne?.overkill)
+      || (Number(entite.overkillTemporaire) || 0) > 0;
+  }
+  if (carte.furieGains.envol) {
+    entite.envol = Boolean(gains?.envol)
+      || Boolean(carte.envol)
+      || Boolean(armeCarteDe(entite)?.donne?.envol);
+  }
 }
 
 /**
@@ -1519,8 +1556,16 @@ function synchroniserFurieEntite(duel, entite) {
   entite.furieBonusAtk = voulu;
   entite.furieDeclenchee = active;
   if (delta) entite.atk = Math.max(0, (Number(entite.atk) || 0) + delta);
+  // Les mots-clés prêtés par la Furie (Overkill et Envol du Maître du marteau)
+  // suivent exactement le même état : actifs tant que la Furie tient, éteints
+  // dès qu'un soin ramène la créature à sa DEF de base.
+  appliquerGainsFurie(duel, entite);
   if (duel && pv > 0 && active && !etaitActive) {
-    duel.log.push(`${entite.name} entre en furie : +${furie}/+0.`);
+    const gains = gainsFurieActifs(duel, entite);
+    const mots = [gains?.overkill ? 'Overkill' : null, gains?.envol ? 'Envol' : null].filter(Boolean);
+    duel.log.push(mots.length
+      ? `${entite.name} entre en furie : +${furie}/+0, ${mots.join(' et ')}.`
+      : `${entite.name} entre en furie : +${furie}/+0.`);
   } else if (duel && pv > 0 && !active && etaitActive) {
     duel.log.push(`${entite.name} retrouve sa DEF de base : la furie retombe.`);
   }
@@ -2081,7 +2126,10 @@ function annulerBonusTemporaires(duel, tourFerme) {
         );
         entite.overkill = Boolean(duelCardById(entite.carteId)?.overkill)
           || Boolean(armeCarteDe(entite)?.donne?.overkill)
-          || entite.overkillTemporaire > 0;
+          || entite.overkillTemporaire > 0
+          // L'Overkill prêté par la Furie (le Maître du marteau) ne part pas
+          // avec le renfort temporaire d'un sort.
+          || Boolean(gainsFurieActifs(duel, entite)?.overkill);
       }
       effaces.push(entite.name);
     }
@@ -3115,10 +3163,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       camp.creatures.push(entite);
       placerDansEmplacement(duel, cote, entite);
       duel.log.push(`Réanimation : ${carte.name} revient en jeu.`);
-      if (carte.arrivee) {
-        const cibleArrivee = rpgCibleAuto(duel, cote, carte);
-        appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte), 'capacite', carte.id);
-      }
+      appliquerArriveeDeRetour(duel, cote, carte, entite);
       return;
     }
     case 'heures': {
@@ -3333,6 +3378,11 @@ export function rpgSacrifierCreature(duel, cote, entiteId) {
  * dépensée, et une seconde mort est définitive pour cette présence — comme
  * pour la Furie, une carte repassée en main puis rejouée repart, elle, d'une
  * présence neuve.
+ *
+ * La renaissance est une **vraie arrivée en jeu** : l'effet d'arrivée de la
+ * carte retentit (voir `appliquerArriveeDeRetour`). Un Maître du marteau qui
+ * revient frappe donc de nouveau ses 3 dégâts, et les corbeaux du Père des
+ * corbeaux emportent une nouvelle créature.
  */
 function programmerRetourTenacite(duel, cote, entite) {
   // Seule une vraie carte le peut : un jeton n'a pas de Tenacité, et sa mort
@@ -3588,6 +3638,18 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
 }
 
 /**
+ * L'arrivée peut-elle frapper **le sorcier adverse**, et pas seulement une
+ * créature ? Le Maître du marteau le déclare : `arrivee.cibles` liste
+ * `'creature'` et `'sorcier'`, exactement comme la magie « 3 dégâts à une
+ * créature ou un sorcier ciblés » (Trait de braise, Éclair du marteau). La
+ * portée reste `'ennemi'` — la table allume les créatures —, le visage adverse
+ * s'allume à part, et le moteur accepte `cibleId: 'sorcier'`.
+ */
+export function arriveeViseSorcier(carte) {
+  return Boolean(carte?.arrivee?.cibles?.includes('sorcier'));
+}
+
+/**
  * La portée d'une **arrivée qui désigne une cible** : `'ennemi'` (le duel du
  * Cavalier, la morsure de la Vipère, la lance de la Valkyrie, la gueule du
  * Léviathan et du Bakunawa, le rebond du Sonneur), `'tous'` (l'exil du
@@ -3595,6 +3657,10 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
  * sur une créature du camp qui le joue). `null` pour une arrivée qui se
  * résout seule : soin, pioche, renfort, jetons, dégâts de zone ou au sorcier —
  * ces effets ne demandent rien, il n'y a donc rien à ordonner.
+ *
+ * Une arrivée « créature **ou** sorcier » (le Maître du marteau) garde la
+ * portée `'ennemi'` : les créatures adverses s'allument, et le visage adverse
+ * s'allume à part (`arriveeViseSorcier`).
  *
  * Cette portée est la **même règle** pour le moteur et pour la table : le duel
  * s'en sert pour exiger la cible (`rpgJouerCreature`) et pour valider la
@@ -3655,9 +3721,56 @@ export function cibleRespecteCoutMax(carte, entite) {
   return rpgCoutEntite(entite) <= carte.arrivee.coutMax;
 }
 
+/**
+ * L'effet d'arrivée tel qu'il se résout sur la cible désignée. Viser le
+ * **sorcier adverse** bascule `cible: 'creature'` en `cible: 'sorcier'` — la
+ * même bascule que la magie « créature ou sorcier » de `rpgLancerMagie` : les
+ * dégâts partent alors au visage, bouclier du sorcier compris.
+ */
+export function effetArriveePourCible(carte, cibleId) {
+  const arrivee = carte?.arrivee;
+  if (!arrivee) return null;
+  if (arrivee.cible === 'creature' && cibleId === 'sorcier') {
+    return { ...arrivee, cible: 'sorcier' };
+  }
+  return arrivee;
+}
+
+/**
+ * L'effet d'arrivée d'une créature qui **revient en jeu** sans être posée
+ * depuis la main — renaissance de Tenacité, réanimation du Khopesh, retour
+ * programmé de l'Anqa. C'est le même déclenchement que la pose : la cible est
+ * désignée automatiquement (le joueur ne reprend pas la main au milieu d'un
+ * changement de tour), et le Maître du marteau revenu de Tenacité frappe donc
+ * de nouveau ses 3 dégâts — sur une créature, ou sur le sorcier adverse quand
+ * il n'y a rien de mieux à toucher.
+ */
+function appliquerArriveeDeRetour(duel, cote, carte, entite) {
+  if (!carte?.arrivee) return false;
+  const cible = rpgCibleAuto(duel, cote, carte);
+  appliquer(duel, cote, effetArriveePourCible(carte, cible), cible,
+    entite.id, cardColors(carte), 'capacite', carte.id);
+  journaliserArriveeAuSorcier(duel, carte, cible);
+  return true;
+}
+
+/** Les dégâts d'arrivée portés au **visage** adverse n'ont pas de ligne à eux
+ *  dans `appliquer` (contrairement aux blessures de créature) : le journal
+ *  l'écrit ici, pour que le joueur voie d'où viennent les 3 points. */
+function journaliserArriveeAuSorcier(duel, carte, cibleId) {
+  if (cibleId !== 'sorcier') return;
+  const amount = Number(carte?.arrivee?.amount) || 0;
+  if (!amount) return;
+  duel.log.push(`${carte.name} : ${amount} dégâts au sorcier adverse.`);
+}
+
 export function arriveeACibleLegale(duel, cote, carte, entiteId = null) {
   const portee = arriveeCiblePortee(carte);
   if (!portee) return false;
+  // Le sorcier adverse est toujours une cible légale quand l'arrivée le
+  // permet : l'effet trouve donc toujours quelqu'un à frapper (le retour de
+  // Tenacité, lui aussi, ne se dissipe plus faute de créature).
+  if (arriveeViseSorcier(carte)) return true;
   return campsDePortee(cote, portee)
     .some((camp) => duel[camp].creatures.some((entite) => entite.id !== entiteId
       && !rpgEstProtegee(entite, cardColors(carte))
@@ -3712,12 +3825,22 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     // créature adverse à viser : la pose sans désignation est refusée — sauf
     // quand la page pose la créature d'abord (`cibleDifferee`), la désignation
     // suivant alors sur la table.
-    const adversaires = duel[autre(cote)].creatures;
-    const cible = adversaires.find((entite) => entite.id === cibleId);
-    if (cibleId && !cible) return { ok: false, raison: 'cible' };
-    if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
-    if (!cibleId && !cibleDifferee && adversaires.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
-      return { ok: false, raison: 'cible' };
+    //
+    // Le Maître du marteau peut, lui, frapper **le sorcier adverse** : le
+    // visage est alors une cible comme une autre (`'sorcier'`, le même jeton
+    // que les magies « créature ou sorcier »).
+    if (cibleId === 'sorcier') {
+      if (!arriveeViseSorcier(carte)) return { ok: false, raison: 'cible' };
+    } else {
+      const adversaires = duel[autre(cote)].creatures;
+      const cible = adversaires.find((entite) => entite.id === cibleId);
+      if (cibleId && !cible) return { ok: false, raison: 'cible' };
+      if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+      // Sans désignation, la pose n'est refusée que s'il reste une cible
+      // légale — créature, ou sorcier quand la carte le permet.
+      if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) {
+        return { ok: false, raison: 'cible' };
+      }
     }
   }
   if (carte.arrivee?.type === 'exil') {
@@ -3844,7 +3967,9 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     const cibleArrivee = carte.arrivee.cible
       ? (carte.arrivee.cible === 'creature-amie' ? (cibleId ?? entite.id) : cibleId)
       : null;
-    appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte), 'capacite', carte.id);
+    appliquer(duel, cote, effetArriveePourCible(carte, cibleArrivee), cibleArrivee,
+      entite.id, cardColors(carte), 'capacite', carte.id);
+    journaliserArriveeAuSorcier(duel, carte, cibleArrivee);
   }
   // L'Abordage (set Lettres de Marque) : la prise se fait À L'ARRIVÉE — le
   // capteur tire sa prize dès qu'il accoste, pas en frappant (au combat, les
@@ -3915,10 +4040,14 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
     && priseEnCaleLegale(duel[autre(cote)].creatures.find((c) => c.id === cibleId),
       cardColors(duelCardById(attente.carteId) ?? armeById(attente.carteId)), attente.abordage);
 
-  const estCibleArrivee = hasArrivee
+  // Le visage adverse est une cible d'arrivée à part entière quand la carte
+  // l'autorise (`arrivee.cibles`, le Maître du marteau) : il n'est pas une
+  // créature de la table, il n'apparaît donc pas dans `campsDePortee`.
+  const viseSorcier = hasArrivee && cibleId === 'sorcier' && arriveeViseSorcier(carte);
+  const estCibleArrivee = viseSorcier || (hasArrivee
     && campsDePortee(cote, portee)
       .flatMap((camp) => duel[camp].creatures)
-      .some((c) => c.id === cibleId);
+      .some((c) => c.id === cibleId));
 
   if (!estCibleAbordage && !estCibleArrivee) return { ok: false, raison: 'cible' };
 
@@ -3948,6 +4077,21 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
     duel.arriveeEnAttente = null;
     return { ok: false, raison: 'absente' };
   }
+  // 2a. Le sorcier adverse (« créature ou sorcier ») : la bascule d'effet
+  // route les dégâts au visage, bouclier du sorcier compris.
+  if (cibleId === 'sorcier') {
+    if (!arriveeViseSorcier(carte)) return { ok: false, raison: 'cible' };
+    const arriveeSuivante = hasAbordage
+      ? { cote, entiteId: entite.id, carteId: attente.carteId, abordage: attente.abordage, arriveeResolue: true }
+      : null;
+    duel.arriveeEnAttente = arriveeSuivante;
+    appliquer(duel, cote, effetArriveePourCible(carte, 'sorcier'), 'sorcier',
+      entite.id, cardColors(carte), 'capacite', carte.id);
+    journaliserArriveeAuSorcier(duel, carte, 'sorcier');
+    rafraichirAuras(duel);
+    rpgActionsEtat(duel);
+    return { ok: true, cible: null, sorcier: true };
+  }
   const cible = campsDePortee(cote, portee)
     .flatMap((camp) => duel[camp].creatures)
     .find((candidate) => candidate.id === cibleId);
@@ -3968,7 +4112,8 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
     ? { cote, entiteId: entite.id, carteId: attente.carteId, abordage: attente.abordage, arriveeResolue: true }
     : null;
   duel.arriveeEnAttente = arriveeSuivante;
-  appliquer(duel, cote, carte.arrivee, cible.id, entite.id, cardColors(carte), 'capacite', carte.id);
+  appliquer(duel, cote, effetArriveePourCible(carte, cible.id), cible.id,
+    entite.id, cardColors(carte), 'capacite', carte.id);
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
   return { ok: true, cible };
@@ -5392,6 +5537,11 @@ function resoudreHeures(duel) {
  * défense et plus aucune renaissance pour la partie. Une carte qui n'est plus
  * au cimetière (relevée entre-temps par le Khopesh, par exemple) ne revient
  * pas : le retour se dissipe sans doublon.
+ *
+ * Ce retour est une **arrivée en jeu** : `appliquerArriveeDeRetour` rejoue
+ * l'effet d'arrivée de la carte, cible désignée par l'IA. C'est la règle de
+ * Tenacité voulue pour le Maître du marteau (ses 3 dégâts retentissent) comme
+ * pour toutes les créatures tenaces.
  */
 function resoudreRetoursProgrammes(duel) {
   for (const cote of ['joueur', 'sorcier']) {
@@ -5425,16 +5575,19 @@ function resoudreRetoursProgrammes(duel) {
         entite.tenaciteDisponible = false;
         entite.pv = 1;
         entite.def = 1;
-        duel.log.push(`Tenacité : ${carte.name} revient en jeu avec 1 point de défense.`);
+        // La renaissance est une **vraie arrivée en jeu** : l'effet d'arrivée
+        // de la carte se déclenche de nouveau (voir `appliquerArriveeDeRetour`
+        // juste après). Le Maître du marteau revenu de Tenacité refrappe donc.
+        duel.log.push(carte.arrivee
+          ? `Tenacité : ${carte.name} revient en jeu avec 1 point de défense, et son effet d’arrivée retentit.`
+          : `Tenacité : ${carte.name} revient en jeu avec 1 point de défense.`);
       } else {
         duel.log.push(`${carte.name} renaît et revient en jeu.`);
       }
       camp.creatures.push(entite);
       placerDansEmplacement(duel, cote, entite);
-      if (carte.arrivee) {
-        const cibleArrivee = rpgCibleAuto(duel, cote, carte);
-        appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte), 'capacite', carte.id);
-      }
+      // Tenacité, Khopesh, Anqa : revenir en jeu rejoue l'arrivée de la carte.
+      appliquerArriveeDeRetour(duel, cote, carte, entite);
     }
   }
   rafraichirAuras(duel);
