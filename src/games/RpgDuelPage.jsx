@@ -13,6 +13,8 @@ import './rpg-story.css';
 import './rpg-deckbox.css';
 import './rpg-mana-essai.css';
 import './rpg-soins.css';
+import './rpg-vie-compteurs.css';
+import { CompteurCarte, PlaqueVie } from './RpgVieCompteurs.jsx';
 import useRpgMythicImpact from './useRpgMythicImpact.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
@@ -2220,38 +2222,38 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
 export function RpgMassFreezeFx({ effet }) {
   if (!effet) return null;
   const { type, camp, token } = effet;
-  const label = type === 'brume' ? 'Brume du fjord — givre léger'
-    : type === 'blizzard' ? 'Hurlement du blizzard — tempête glaciale'
+  const label = type === 'brume' ? 'Brume du fjord — souffle léger'
+    : type === 'blizzard' ? 'Hurlement du blizzard — souffle froid'
     : type === 'geant' ? 'Géant des banquises — souffle polaire'
-    : 'Verglas — gel intégral';
+    : 'Verglas — souffle givrant';
+  const intensity = type === 'brume' ? 'light' : 'heavy';
+  // camp = lanceur ; le souffle descend sur les créatures de l'adversaire
+  const target = camp === 'joueur' ? 'ennemi' : 'joueur';
+  const count = intensity === 'light' ? 5 : 8;
+  const iceCount = intensity === 'light' ? 3 : 5;
   return (
     <div
-      key={`mass-freeze-${token}`}
-      className={`rpg-mass-freeze rpg-mass-freeze--${type} rpg-mass-freeze--${camp}`}
+      key={`cold-breath-${token}`}
+      className={`rpg-cold-breath rpg-cold-breath--${target} rpg-cold-breath--${intensity} rpg-cold-breath--${type} rpg-mass-freeze rpg-mass-freeze--${type} rpg-mass-freeze--${camp}`}
+      data-rpg-cold-breath={type}
       data-rpg-mass-freeze={type}
       data-rpg-mass-freeze-camp={camp}
       role="status"
       aria-label={label}
     >
-      <span className="rpg-mass-freeze__veil" aria-hidden="true" />
-      <span className="rpg-mass-freeze__flash" aria-hidden="true" />
-      <span className="rpg-mass-freeze__wind" aria-hidden="true">
-        <i className="rpg-mass-freeze__wind-streak" />
-        <i className="rpg-mass-freeze__wind-streak" />
-        <i className="rpg-mass-freeze__wind-streak" />
-      </span>
-      <span className="rpg-mass-freeze__snow" aria-hidden="true">
-        {Array.from({ length: type === 'brume' ? 10 : type === 'blizzard' ? 22 : 18 }, (_, i) => (
-          <i key={i} className="rpg-mass-freeze__flake" style={{ '--i': i }} />
+      <span className="rpg-cold-breath__flow rpg-mass-freeze__veil" aria-hidden="true" />
+      <span className="rpg-cold-breath__particles rpg-mass-freeze__snow" aria-hidden="true">
+        {Array.from({ length: count }, (_, i) => (
+          <i key={i} className="rpg-cold-breath__particle rpg-mass-freeze__flake" style={{ '--i': i }} />
         ))}
       </span>
-      <span className="rpg-mass-freeze__ice-edges" aria-hidden="true">
-        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--top" />
-        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--bottom" />
-        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--left" />
-        <i className="rpg-mass-freeze__ice rpg-mass-freeze__ice--right" />
+      <span className="rpg-cold-breath__ice-flakes" aria-hidden="true">
+        {Array.from({ length: iceCount }, (_, i) => (
+          <i key={`ice-${i}`} className="rpg-cold-breath__ice-flake" style={{ '--i': i, '--j': i * 1.7 }} >
+            {i % 3 === 0 ? '❄' : i % 3 === 1 ? '❅' : '❆'}
+          </i>
+        ))}
       </span>
-      <span className="rpg-mass-freeze__label" aria-hidden="true">❄ {type === 'brume' ? 'Brume givrante' : type === 'blizzard' ? 'Blizzard' : type === 'geant' ? 'Souffle polaire' : 'Verglas'}</span>
     </div>
   );
 }
@@ -2509,7 +2511,6 @@ export function TableCard({
         <span className="rpg-card__frost-snow" />
         <span className="rpg-card__frost-shimmer" />
         <span className="rpg-card__frost-glow" />
-        <span className="rpg-card__frozen-label">❄ Gelée</span>
       </span>}
       <CardElementBadge carte={carte} />
       {/* Les losanges de compteurs sont sous la couleur d'une carte mono,
@@ -2521,14 +2522,10 @@ export function TableCard({
       {(entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0) || (entite.enCale && !hybride)) && (
         <span className={`rpg-card__compteurs${hybride ? ' rpg-card__compteurs--hybride' : ''}`} aria-hidden="true">
           {entite.heures?.restants > 0 && (
-            <span className="rpg-card__compteur rpg-card__compteur--heures" data-compteur="heures">
-              <span>{entite.heures.restants}</span>
-            </span>
+            <CompteurCarte type="heures" valeur={entite.heures.restants} />
           )}
           {armeCarte && entite.arme?.compteurs > 0 && (
-            <span className="rpg-card__compteur rpg-card__compteur--sable" data-compteur="sable">
-              <span>{entite.arme.compteurs}</span>
-            </span>
+            <CompteurCarte type="sable" valeur={entite.arme.compteurs} />
           )}
           {entite.enCale && !hybride && (
             <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
@@ -5437,7 +5434,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerTutoriel,
     reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, fermerOuverture, ouverture: ouvertureSouk,
-    // Le profil du joueur (dossier 19) : la barre d'XP, le niveau, et le paquet
+    // Le profil du joueur (dossier 20) : la barre d'XP, le niveau, et le paquet
     // que chaque palier franchi fait ouvrir au hasard.
     profil: profilJoueur, barreXp, boostersEnAttente: paquetsDePalierEnAttente,
     monteeNiveau, fermerMonteeNiveau, renommerLeProfil, choisirUnEmblemeProfil,
@@ -5574,6 +5571,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Même garde pour `foudre_marteau`, devenu silencieux avec le retrait du
   // catalogue synthétique : le test ne coûte rien si le tonnerre revenait.
   const dernierSonFoudreRef = useRef(0);
+  const dernierSonFroidRef = useRef(0);
   // La position du journal des blessures déjà animée : une brûlure ancienne ne
   // rallume jamais la roue de feu sur une action qui ne la concerne pas.
   const journalBlessuresRef = useRef({ duel: null, position: 0 });
@@ -5587,6 +5585,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const maintenant = Date.now();
       if (maintenant - dernierSonFoudreRef.current < 700) return;
       dernierSonFoudreRef.current = maintenant;
+    }
+    if (nom === 'cold_wind') {
+      const maintenant = Date.now();
+      if (maintenant - dernierSonFroidRef.current < 900) return;
+      dernierSonFroidRef.current = maintenant;
     }
     try {
       const p = sfxRef.current;
@@ -7403,7 +7406,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         )}
         {/* Le palier tombe où le joueur est : au menu comme sur la table, le
-            paquet offert s'ouvre par-dessus l'écran (dossier 19). */}
+            paquet offert s'ouvre par-dessus l'écran (dossier 20). */}
         <MonteeDeNiveau
           montee={monteeNiveau}
           profil={profilJoueur}
@@ -8523,6 +8526,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const token = ++sequenceGelMasseRef.current;
     if (timerGelMasseRef.current) window.clearTimeout(timerGelMasseRef.current);
     setGelMasseFx({ type, camp, token, carteId: id });
+    // Son de vent froid — réel échantillon CC0 (cold-wind.wav), pas de synthèse
+    jouerSfx('cold_wind');
     const duree = type === 'brume' ? 2800 : type === 'blizzard' ? 3200 : type === 'geant' ? 3400 : 3000;
     timerGelMasseRef.current = window.setTimeout(() => setGelMasseFx((cur) => (cur?.token === token ? null : cur)), duree);
   };
@@ -10679,14 +10684,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <strong>{modePvp ? nomSorcierAdverse : etageHistoire ? etageHistoire.nom : tutorielActif ? 'SORCIER D’ENTRAÎNEMENT' : 'LE SORCIER'}</strong>
             <small>{etageHistoire ? etageHistoire.fonction : tutorielActif ? 'Partie guidée · sans pression' : `${deckAdverseAffiche.name} · ${deckColorLabel(deckAdverseAffiche)}`}</small>
           </span>
-          <span className="rpg-wizard-plate__pv">
-            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
-            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
-            <span className="rpg-wizard-plate__hp-value">{duel.sorcier.pv}</span>
-            {duel.sorcier.pvMax > RPG_PV_SORCIER_BASE && <span className="rpg-wizard-plate__hp-max">/{duel.sorcier.pvMax}</span>}
-            {duel.sorcier.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.sorcier.bouclier}</span>}
-            {soinSorcier && <span key={soinSorcier.token} className="rpg-soin-montant" aria-hidden="true">+{soinSorcier.montant}</span>}
-          </span>
+          <PlaqueVie
+            pv={duel.sorcier.pv}
+            pvMax={duel.sorcier.pvMax}
+            bouclier={duel.sorcier.bouclier}
+            soin={soinSorcier}
+            base={RPG_PV_SORCIER_BASE}
+          />
           <WizardManaCounters mana={duel.sorcier.mana} />
           {sorcierReflechit && (
             <span className="rpg-wizard-plate__thinking" aria-hidden="true">
@@ -11093,14 +11097,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" aria-hidden="true"><img src={cardArt('tin-hinan')} alt="" /></span>
           <span className="rpg-wizard-plate__profile-name">{nomJoueurAffiche}</span>
           <span className="rpg-wizard-plate__identity"><strong>{modePvp ? nomJoueurAffiche : 'VOUS'}</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
-          <span className="rpg-wizard-plate__pv">
-            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
-            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
-            <span className="rpg-wizard-plate__hp-value">{duel.joueur.pv}</span>
-            {duel.joueur.pvMax > RPG_PV_JOUEUR && <span className="rpg-wizard-plate__hp-max">/{duel.joueur.pvMax}</span>}
-            {duel.joueur.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.joueur.bouclier}</span>}
-            {soinJoueur && <span key={soinJoueur.token} className="rpg-soin-montant" aria-hidden="true">+{soinJoueur.montant}</span>}
-          </span>
+          <PlaqueVie
+            pv={duel.joueur.pv}
+            pvMax={duel.joueur.pvMax}
+            bouclier={duel.joueur.bouclier}
+            soin={soinJoueur}
+            base={RPG_PV_JOUEUR}
+          />
           <WizardManaCounters mana={duel.joueur.mana} />
           <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.joueur.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckJoueur}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.joueur.cimetiere.length}</span></span></span>
           {soinJoueur && <EclatSoin key={soinJoueur.token} />}

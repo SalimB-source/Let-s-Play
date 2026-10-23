@@ -46,6 +46,7 @@ const duelEngine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.u
 const aiBrain = readFileSync(new URL('../src/games/rpgAI.js', import.meta.url), 'utf8');
 const cardsSource = readFileSync(new URL('../src/games/rpgCards.js', import.meta.url), 'utf8');
 const tableCardSource = battlePage.slice(battlePage.indexOf('function TableCard('), battlePage.indexOf('function HoverCardPreview('));
+const compteursSource = readFileSync(new URL('../src/games/RpgVieCompteurs.jsx', import.meta.url), 'utf8');
 const hoverPreviewSource = battlePage.slice(battlePage.indexOf('function HoverCardPreview('), battlePage.indexOf('function ConfirmationSort('));
 const confirmSortSource = battlePage.slice(battlePage.indexOf('function ConfirmationSort('), battlePage.indexOf('function SpellAnnouncement('));
 assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️', hybride: '🔥⏳' \};/,
@@ -133,8 +134,14 @@ assert.match(battleCss, /\.rpg-hover-card-preview--catalogue \.rpg-hover-card-pr
   'la fiche ouverte révèle le texte complet de chaque arme');
 assert.match(hoverPreviewSource, /rpg-hover-card-preview__rules[\s\S]*?rpg-hover-card-preview__rule--equipment[\s\S]*?effets\.map/,
   'la ligne bleue de l’équipement ouvre la zone d’effets, avant les effets propres de la carte');
-assert.match(tableCardSource, /<CardElementBadge carte=\{carte\} \/>[\s\S]*?rpg-card__compteurs\$\{hybride \? ' rpg-card__compteurs--hybride' : ''\}[\s\S]*?data-compteur="heures"[\s\S]*?data-compteur="sable"/,
+assert.match(tableCardSource, /<CardElementBadge carte=\{carte\} \/>[\s\S]*?rpg-card__compteurs\$\{hybride \? ' rpg-card__compteurs--hybride' : ''\}[\s\S]*?<CompteurCarte type="heures"[\s\S]*?<CompteurCarte type="sable"/,
   'les compteurs d’Heures et de sable restent accessibles, sous le coût d’une hybride et sous la couleur d’une mono');
+assert.match(compteursSource, /data-compteur=\{type\}/,
+  'le losange des compteurs animés porte toujours son repère `data-compteur`');
+assert.match(tableCardSource, /<CompteurCarte type="heures" valeur=\{entite\.heures\.restants\} \/>/,
+  'le compteur d’Heures reçoit sa valeur restante — c’est elle qui règle le geste de la dernière Heure');
+assert.match(tableCardSource, /<CompteurCarte type="sable" valeur=\{entite\.arme\.compteurs\} \/>/,
+  'le compteur de sable d’une arme reçoit son nombre de compteurs');
 assert.match(battleCss, /\.rpg-card__compteurs\s*\{[^}]*top:\s*calc\(var\(--rpg-card-element-marker-top,[^}]*\+ var\(--rpg-card-marker-size,[^}]*\+ var\(--rpg-card-counter-size\)/,
   'les compteurs sont placés juste en dessous du repère de couleur ou de coût');
 assert.match(battleCss, /\.rpg-card__compteurs--hybride\s*\{[^}]*--rpg-card-counter-size:\s*clamp\(8px,[^}]*left:\s*auto;[^}]*right:\s*calc\(6% \+ \(var\(--rpg-card-marker-size, 26px\) - var\(--rpg-card-counter-size\)\) \/ 2 - 1px\);/,

@@ -1,7 +1,7 @@
 /**
  * La carte de profil du joueur — src/games/RpgProfilJoueur.jsx
  * ------------------------------------------------------------
- * Le neuvième onglet du menu (`dossier 19-profil-joueur-xp.md`). Il répond à
+ * L'onglet qui ouvre le menu (`dossier 20-profil-joueur-xp.md`). Il répond à
  * trois questions, dans cet ordre :
  *
  *   1. **qui je suis** — le pseudo, l'emblème, le rang de Bab El et le niveau,

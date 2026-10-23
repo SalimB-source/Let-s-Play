@@ -28,7 +28,7 @@
  * ## Le booster du palier
  *
  * **Chaque niveau gagné ouvre un booster au hasard** (dossier
- * `19-profil-joueur-xp.md`). Le module ne sait pas ouvrir un paquet — il tient
+ * `20-profil-joueur-xp.md`). Le module ne sait pas ouvrir un paquet — il tient
  * la **comptabilité** : `boostersDus(profil)` rend le nombre de paquets que le
  * jeu doit encore au joueur, déduit comme
  *

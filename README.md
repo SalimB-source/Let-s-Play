@@ -8750,4 +8750,4 @@ source), `npm run check:rpg-souk`, `npm run check:rpg` (915 tests) et
 `npm run build`. Les smokes du Souk et du tutoriel affirment désormais le
 montant **rendu par le geste** — exact — et un solde qui monte d'autant, un
 paquet de palier pouvant rendre ses doublons par-dessus. Conception :
-`docs/rpg/19-profil-joueur-xp.md`.
+`docs/rpg/20-profil-joueur-xp.md`.

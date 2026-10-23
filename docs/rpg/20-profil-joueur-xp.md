@@ -1,4 +1,4 @@
-# 19 — Le profil du joueur : la barre d'XP et le paquet de palier
+# 20 — Le profil du joueur : la barre d'XP et le paquet de palier
 
 > Le Sablier payait déjà : des crédits ◈ au Souk (dossier 13), des cartes
 > révélées par les étages, des quêtes du jour, une série de sept jours. Il ne
