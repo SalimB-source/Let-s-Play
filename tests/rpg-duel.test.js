@@ -3834,6 +3834,75 @@ test('Embuscade : -2/-2 jamais sous 1/1, et toute la table adverse doit bloquer 
   }
 });
 
+test('Embuscade force un multi-blocage : la page précalcule la répartition, « Accepter les blocages » reste cliquable', () => {
+  // Le scénario du blocage (rapporté en partie) : Embuscade force TOUTE la
+  // table adverse à bloquer ; l’IA interpose donc quatre créatures sur un seul
+  // attaquant. La page créait son combat avec `repartitions: {}` — la porte
+  // `repartitionValide` (somme des parts === force de l’attaquant dès
+  // 2 bloqueurs) ne pouvait alors jamais s’ouvrir : le bouton
+  // « ✓ Accepter les blocages » restait désactivé, attaque consommée,
+  // « Fin du tour » fermé — partie figée.
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 9);
+  donnerMana(duel, 'sorcier', 9);
+  donner(duel, 'joueur', 'geant-des-banquises'); // 5 ATK
+  const geant = rpgJouerCreature(duel, 'joueur', 'geant-des-banquises').entite;
+  geant.ready = true;
+  for (let i = 0; i < 4; i += 1) {
+    donner(duel, 'sorcier', 'chien-du-guet');
+    rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
+  }
+  donner(duel, 'joueur', 'embuscade');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'embuscade').ok, true);
+  assert.equal(rpgOuvrirFenetreReponse(duel, 'joueur'), true);
+
+  const ids = [geant.id];
+  const blocages = rpgChoisirBloqueurs(duel, 'joueur', ids);
+  assert.ok((blocages[geant.id] ?? []).length >= 2,
+    'l’IA interpose au moins deux bloqueurs forcés sur le Géant');
+
+  // La porte exacte de RpgDuelPage : avec des répartitions vides, la somme (0)
+  // ne atteint jamais la force de l’attaquant — c’est le verrou signalé.
+  const repartitionValide = (repartitions) => {
+    const parts = Object.values(repartitions[geant.id] ?? {}).reduce((total, amount) => total + Number(amount || 0), 0);
+    return (blocages[geant.id] ?? []).length <= 1 || parts === geant.atk;
+  };
+  assert.equal(repartitionValide({}), false,
+    'une répartition vide verrouille le bouton — c’est le bug');
+
+  // La page doit donc précalculer le partage (quotient + reste, comme le
+  // moteur) dès la déclaration de l’attaque — au camp attaquant « joueur ».
+  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  const debutLancer = page.indexOf('const lancerAttaque = () => {');
+  const finLancer = page.indexOf('const declarerAttaqueAvecTous =', debutLancer);
+  const lancer = page.slice(debutLancer, finLancer);
+  assert.match(lancer, /repartitions: recalculerRepartitions\(ids, blocages, 'joueur'\)/,
+    'le combat déclaré précalcule ses répartitions au camp attaquant — un `repartitions: {}` fige « Accepter les blocages »');
+
+  // Et chaque appel de l’aide nomme son camp : la lecture de `combatEntrant`
+  // au moment de la déclaration (état pas encore posé) renvoyait le camp noir.
+  for (const appel of page.matchAll(/recalculerRepartitions\(([^)]*)\)/g)) {
+    assert.match(appel[1], /'(joueur|sorcier)'\s*$/,
+      `recalculerRepartitions(${appel[1]}) doit nommer explicitement le camp attaquant`);
+  }
+
+  // Le partage précalculé passe la porte, et la résolution moteur (répartitions
+  // null : le moteur partage ses blessures après capacités) va au bout.
+  const quotient = Math.floor(geant.atk / blocages[geant.id].length);
+  let reste = geant.atk - quotient * blocages[geant.id].length;
+  const partage = Object.fromEntries(blocages[geant.id].map((bloqueurId) => {
+    const amount = quotient + (reste > 0 ? 1 : 0);
+    if (reste > 0) reste -= 1;
+    return [bloqueurId, amount];
+  }));
+  assert.equal(repartitionValide({ [geant.id]: partage }), true,
+    'le partage précalculé ouvre le bouton « Accepter les blocages »');
+  const res = rpgLancerAttaque(duel, 'joueur', ids, blocages, null, [geant.id]);
+  assert.equal(res.ok, true, res.raison);
+  assert.equal(res.resume.blocages[geant.id].length, blocages[geant.id].length,
+    'le combat résout avec tous ses bloqueurs forcés');
+});
+
 test('le plein art du Serment est livré : les vingt-neuf cartes Neige sont dédiées, aucune provisoire', () => {
   // La liste des illustrations provisoires est vide : le deck Neige et sa
   // variante de Glacier sont entièrement peints.

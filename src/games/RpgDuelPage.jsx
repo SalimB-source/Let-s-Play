@@ -8661,7 +8661,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             attaquants: attaquantsVivants,
             blocages,
             attaquantsBloques: attaquantsBloques.filter((id) => attaquantsVivantsSet.has(id)),
-            repartitions: recalculerRepartitions(attaquantsVivants, blocages),
+            repartitions: recalculerRepartitions(attaquantsVivants, blocages, 'joueur'),
           }));
         }
       } else if (reponseActive && combatEntrant) {
@@ -8678,12 +8678,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             if (!modePvp) apresCombatSorcier();
           } else {
             const vivants = new Set(attaquantsVivants);
-            setCombatEntrant((courant) => courant && ({
-              ...courant,
-              attaquants: attaquantsVivants,
-              blocages: Object.fromEntries(Object.entries(courant.blocages).filter(([id]) => vivants.has(id))),
-              repartitions: Object.fromEntries(Object.entries(courant.repartitions).filter(([id]) => vivants.has(id))),
-            }));
+            const bloqueursVivants = new Set(duel.sorcier.creatures
+              .filter((entite) => !entite.attaquee)
+              .map((entite) => entite.id));
+            setCombatEntrant((courant) => {
+              if (!courant) return courant;
+              // Un bloqueur abattu par la riposte quitte aussi les affectations :
+              // gardé dans `blocages`, sa part figée dans `repartitions` ferait
+              // rejeter le partage par l'arbitre (clé inconnue dans la saisie).
+              const blocagesVivants = Object.fromEntries(Object.entries(courant.blocages)
+                .filter(([id]) => vivants.has(id))
+                .map(([id, idsBloqueurs]) => [id, (idsBloqueurs ?? []).filter((bloqueurId) => bloqueursVivants.has(bloqueurId))]));
+              return {
+                ...courant,
+                attaquants: attaquantsVivants,
+                blocages: blocagesVivants,
+                repartitions: recalculerRepartitions(attaquantsVivants, blocagesVivants, 'sorcier'),
+              };
+            });
           }
         }
       }
@@ -9465,7 +9477,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       attaquants: ids,
       blocages,
       attaquantsBloques,
-      repartitions: {},
+      // Le partage est précalculé dès la déclaration : l'IA peut interposer
+      // plusieurs bloqueurs sur un même attaquant (Provocation, ou obligation
+      // de blocage posée par l'Embuscade), et une répartition vide laissait le
+      // bouton « Accepter les blocages » verrouillé pour toujours — la porte
+      // `repartitionValide` exige une somme égale à la force de l'attaquant,
+      // tandis que la résolution, elle, ne reçoit jamais la main (null :
+      // le moteur partage ses blessures tout seul).
+      repartitions: recalculerRepartitions(ids, blocages, 'joueur'),
       ciblesAttaque: ciblesFinales,
       bannieresAppliquees,
     };
@@ -9521,9 +9540,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
-  const recalculerRepartitions = (attaquantsIds, blocages) => Object.fromEntries(attaquantsIds.map((attaquantId) => {
-    const coteAttaquant = combatEntrant?.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier';
-    const attaquant = duel[coteAttaquant].creatures.find((entite) => entite.id === attaquantId);
+  const recalculerRepartitions = (attaquantsIds, blocages, coteAttaquants) => Object.fromEntries(attaquantsIds.map((attaquantId) => {
+    const attaquant = duel[coteAttaquants].creatures.find((entite) => entite.id === attaquantId);
     const idsBloqueurs = blocages[attaquantId] ?? [];
     if (!attaquant || !idsBloqueurs.length) return [attaquantId, {}];
     const quotient = Math.floor(attaquant.atk / idsBloqueurs.length);
@@ -9568,7 +9586,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return {
         ...courant,
         blocages,
-        repartitions: recalculerRepartitions(courant.attaquants, blocages),
+        repartitions: recalculerRepartitions(courant.attaquants, blocages, 'sorcier'),
       };
     });
     if (!retireDeCetteAttaque) signalerTutoriel('bloqueur-assigne', { attaquantId, bloqueurId });
