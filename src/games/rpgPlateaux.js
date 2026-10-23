@@ -2,8 +2,9 @@
  * Le Sablier — les plateaux de duel.
  *
  * Le duel se joue sur une **table** : un fond plein cadre, sous les cartes.
- * Le jeu en propose plusieurs, mais **le joueur n'en choisit aucun** : le
- * plateau d'une partie est imposé par **le deck de l'un des deux duellistes**.
+ * Le jeu en propose plusieurs, et le plateau d'une partie est imposé par **le
+ * deck de l'un des deux duellistes** — sauf sur la moitié du joueur, qui peut
+ * maintenant **recevoir chez lui** (voir « Le plateau choisi », plus bas).
  *
  * La règle tient en deux temps :
  *
@@ -30,8 +31,30 @@
  *    partie se rejoue à l'identique, comme le reste du moteur, et une valeur
  *    hors bornes ne plante rien.
  *
- * Il n'y a donc plus ni pastille « Aléatoire », ni verrou de plateau, ni
- * sauvegarde du choix sur l'appareil : rien à mémoriser, rien à reprendre.
+ * ## Le plateau choisi — la moitié du joueur, et seulement elle
+ *
+ * Il n'y a toujours **ni pastille « Aléatoire » ni verrou de plateau en début
+ * de partie** : rien à reprendre avant chaque duel. Le choix vit ailleurs, dans
+ * la carte de profil (dossier 20 §6), comme une préférence de maison :
+ *
+ * - `profil.plateau` vaut l'identifiant d'un plateau du catalogue, ou `null`
+ *   pour « selon mon deck » — l'état d'un joueur neuf, et celui de tout le
+ *   monde jusqu'à ce qu'il choisisse ;
+ * - `resoudrePlateauxDuDuel({ plateauChoisi })` peint alors la **moitié basse**
+ *   de la table avec ce terrain, `motif: 'choix-du-joueur'`. La moitié haute
+ *   reste celle du deck adverse : l'adversaire joue toujours chez lui ;
+ * - le plateau du joueur restant le **principal**, le choix pilote la musique
+ *   dédiée et le décor 3D ;
+ * - un terrain choisi n'est **jamais** échangé contre son double merveilleux :
+ *   `variantesFantaisistes` ne tire que ce qui n'a pas été demandé. Le tirage du
+ *   joueur n'est donc pas consommé, et celui de l'adversaire prend la première
+ *   valeur du `rng` — sans choix, la résolution reste bit à bit celle d'avant ;
+ * - un identifiant inconnu (plateau retiré d'une version à l'autre, sauvegarde
+ *   retouchée) retombe sur le terrain du deck : `plateauParId` rend `null`, et
+ *   la résolution suit son cours normal.
+ *
+ * En duel en ligne, le choix est une préférence **locale** : chaque client
+ * peint sa propre moitié, l'arbitre ne lit ni l'un ni l'autre.
  *
  * Trois des terrains classiques ont leur **double merveilleux** : quand la
  * partie l'autorise (`variantesFantaisistes`), un tirage par camp peut échanger
@@ -223,10 +246,44 @@ export const RPG_PLATEAUX_VARIANTES_FANTAISISTES = {
   'village-viking': 'iles-celestes',
 };
 
+/** Le motif d'une moitié de table imposée par la carte de profil. */
+export const RPG_PLATEAU_MOTIF_CHOIX = 'choix-du-joueur';
+
 /** Le plateau par son identifiant, ou null. */
 export function plateauParId(id) {
   if (typeof id !== 'string') return null;
   return RPG_PLATEAUX.find((plateau) => plateau.id === id) ?? null;
+}
+
+/**
+ * Une seule révision de cache pour les vignettes du choix de plateau.
+ *
+ * Les fonds de table font de 740 Ko à 4 Mo en 3840×2560 : douze d'un coup dans
+ * le bandeau de la carte de profil, c'est plus lourd que la partie qu'ils
+ * annoncent. Chacun a donc sa **vignette** — 320×200 découpés au centre du fond,
+ * là où la table pose les cartes — générée par `tools/make-profil-vignettes.mjs`
+ * et servie depuis `public/profil/plateaux/`. Le fond pleine taille, lui, reste
+ * celui de la table : la vignette ne remplace rien.
+ */
+export const PLATEAU_VIGNETTE_REVISION = 'profil-plateaux-1';
+
+/** Le côté long de la vignette d'un plateau, en pixels — 3:2 comme les fonds,
+ * pour une tuile de 104 px CSS nette à 2×. */
+export const PLATEAU_VIGNETTE_LARGEUR = 336;
+
+/** Le chemin relatif (dans `public/`) de la vignette d'un plateau. */
+export function vignettePlateauRelative(plateauOuId) {
+  const plateau = typeof plateauOuId === 'string' ? plateauParId(plateauOuId) : plateauOuId;
+  return plateau?.id ? `profil/plateaux/${plateau.id}.webp` : null;
+}
+
+/**
+ * L'URL servie de la vignette d'un plateau, `baseUrl` étant celui du build
+ * (`import.meta.env.BASE_URL`).
+ */
+export function vignettePlateau(plateauOuId, baseUrl = '/') {
+  const relative = vignettePlateauRelative(plateauOuId);
+  return relative ? `${baseUrl}${relative}?v=${PLATEAU_VIGNETTE_REVISION}` : null;
 }
 
 /** Le plateau rendu quand aucun deck ne parle — toujours un plateau du catalogue. */
@@ -379,7 +436,7 @@ export function tirerPlateauDuDuel({ deckJoueur = null, deckAdverse = null, rng 
  * musique dédiée et le décor 3D ; `decouper` dit si les deux terrains
  * diffèrent (sinon, la table reste d'un seul tenant).
  */
-export function resoudrePlateauxDuDuel({ deckJoueur = null, deckAdverse = null, rng = Math.random, variantesFantaisistes = false } = {}) {
+export function resoudrePlateauxDuDuel({ deckJoueur = null, deckAdverse = null, rng = Math.random, variantesFantaisistes = false, plateauChoisi = null } = {}) {
   const resoudre = (deck) => {
     const resolu = plateauDeDeck(deck);
     if (variantesFantaisistes) {
@@ -390,7 +447,12 @@ export function resoudrePlateauxDuDuel({ deckJoueur = null, deckAdverse = null, 
     }
     return { ...resolu, variante: false };
   };
-  const joueur = resoudre(deckJoueur);
+  // Le joueur qui a choisi un terrain reçoit chez lui : sa moitié ne tire rien,
+  // pas même son double merveilleux. Un identifiant inconnu rend la main au deck.
+  const choisi = plateauParId(plateauChoisi);
+  const joueur = choisi
+    ? { plateau: choisi, motif: RPG_PLATEAU_MOTIF_CHOIX, variante: false }
+    : resoudre(deckJoueur);
   const adversaire = resoudre(deckAdverse);
   return {
     joueur,

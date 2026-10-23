@@ -1,0 +1,99 @@
+/* L'histoire de Bab El — src/games/rpg-story-bab-el.css
+   ------------------------------------------------------
+   Le seuil du mode Histoire (`RpgStoryBabEl.jsx`) : un keyart, un voile, une
+   carte de texte, deux boutons. Feuille à part, comme la piste des gains — le
+   texte vivait dans le flux de l'écran Jouer, en bloc de décor — bloc et règles
+   retirés ensemble — et n'y a plus sa place.
+
+   Les boutons reprennent `.rpg-menu-button` de `rpg-battle.css` : pas de seconde
+   famille de boutons dans le Sablier. */
+
+.rpg-bab-el {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  width: 100%;
+  min-height: 100%;
+  padding: clamp(18px, 4vw, 52px) clamp(14px, 3vw, 32px);
+  background-image: var(--bab-el-decor, none);
+  background-position: center 28%;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* Le voile : le keyart reste lisible derrière, mais le texte passe avant. */
+.rpg-bab-el__voile {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(120% 90% at 50% 8%, rgba(9, 8, 12, .34), rgba(6, 5, 9, .82) 62%, rgba(5, 4, 8, .94)),
+    linear-gradient(180deg, rgba(8, 7, 11, .5), rgba(6, 5, 9, .86));
+  pointer-events: none;
+}
+
+.rpg-bab-el__carte {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+  width: min(720px, 100%);
+  padding: clamp(20px, 3.4vw, 34px) clamp(18px, 3.2vw, 32px);
+  border: 1px solid rgba(232, 194, 113, .3);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(20, 16, 19, .86), rgba(10, 9, 13, .93));
+  box-shadow: 0 22px 54px rgba(0, 0, 0, .48), inset 0 1px 0 rgba(255, 231, 175, .06);
+}
+
+.rpg-bab-el__eyebrow {
+  color: rgba(232, 194, 113, .82);
+  font: 800 9.5px/1.4 var(--mono, ui-monospace, monospace);
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+
+.rpg-bab-el__titre {
+  margin: 0;
+  color: #fff1d5;
+  font: 700 clamp(21px, 3.1vw, 31px)/1.16 Georgia, 'Times New Roman', serif;
+  text-wrap: balance;
+}
+
+.rpg-bab-el__texte {
+  margin: 0;
+  color: #e6d8bd;
+  font: 400 clamp(13.5px, 1.45vw, 15.5px)/1.72 Georgia, 'Times New Roman', serif;
+}
+.rpg-bab-el__texte em {
+  color: #ffe7af;
+  font-style: italic;
+}
+
+.rpg-bab-el__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+.rpg-bab-el__actions .rpg-menu-button {
+  flex: 1 1 240px;
+  min-height: 44px;
+  text-align: left;
+}
+.rpg-bab-el__plus-tard {
+  flex: 0 1 auto;
+  color: rgba(240, 228, 202, .82);
+}
+
+/* ── Téléphone : les boutons s'empilent, chacun garde ses 44 px ───────────── */
+@media (max-width: 640px) {
+  .rpg-bab-el__actions { flex-direction: column; }
+  .rpg-bab-el__actions .rpg-menu-button { flex: 1 1 auto; width: 100%; }
+}
+
+/* ── Le mouvement est un décor ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-bab-el__carte { animation: none; }
+}

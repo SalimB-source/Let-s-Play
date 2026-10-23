@@ -67,6 +67,7 @@ import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
 import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
+import { avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import {
   RpgMainThemeMusic,
@@ -100,6 +101,8 @@ import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
 import RpgSouk from './RpgSouk.jsx';
 import RpgProfilJoueur from './RpgProfilJoueur.jsx';
+import RpgPisteGains from './RpgPisteGains.jsx';
+import RpgStoryBabEl from './RpgStoryBabEl.jsx';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
@@ -3671,7 +3674,7 @@ function MonteeDeNiveau({ montee, profil, cardArt, onFermer, onPlaySfx }) {
   );
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -3710,6 +3713,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // Un profil absent se lit « niveau 1, 0 XP » — l'onglet ne casse jamais.
   const barreOnglet = barreXp ?? progressionDeXp(profil?.xp ?? 0);
   const niveauOnglet = barreOnglet.niveau;
+  const avatarOnglet = avatarDeProfil(profil);
   const resteOnglet = xpLisible(barreOnglet.reste);
   // L'onglet ne peut pas écrire ses chiffres : c'est l'`aria-label` qui les dit,
   // en une phrase — construite ici, hors du gabarit, pour qu'aucun retour à la
@@ -3933,7 +3937,17 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               data-profil-onglet={niveauOnglet}
               onClick={() => { play('menu'); onChangeScreen('profil'); }}
             >
-              <span className="rpg-mode-menu__profil-embleme" aria-hidden="true">{glypheEmbleme(profil)}</span>
+              {avatarOnglet ? (
+                <img
+                  className="rpg-mode-menu__profil-embleme rpg-mode-menu__profil-visage"
+                  src={vignetteAvatar(avatarOnglet.id, import.meta.env.BASE_URL)}
+                  alt=""
+                  aria-hidden="true"
+                  data-profil-onglet-avatar={avatarOnglet.id}
+                />
+              ) : (
+                <span className="rpg-mode-menu__profil-embleme" aria-hidden="true">{glypheEmbleme(profil)}</span>
+              )}
               <span className="rpg-mode-menu__onglet-libelle">Profil</span>
               <span className="rpg-mode-menu__profil-niveau" data-profil-niveau={niveauOnglet}>NIV. {niveauOnglet}</span>
               <span className="rpg-mode-menu__profil-xp" aria-hidden="true">
@@ -4073,16 +4087,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </button>
                   </div>
                 </div>
-                <section className="rpg-flux-menu" aria-label="Présentation de l’histoire du Sablier">
-                  <span className="rpg-flux-menu__eyebrow">L’HISTOIRE · BAB EL</span>
-                  <h3>Une cité verticale face au désert qui monte.</h3>
-                  <p>
-                    <em>Le Sablier</em> se passe à Bab El, une cité verticale de neuf étages construite autour d’un portail scellé, au-dessus d’un désert dont le sable monte inexorablement. À chaque cycle d’une horloge géante — l’Astrolabe —, l’étage du bas est englouti, et une administration très polie mais implacable, la Chambre des Heures, publie <em>la Liste</em> de ceux qui ont le droit de monter… et de ceux qu’on abandonne.
-                  </p>
-                  <p>
-                    L’histoire démarre quand Salem, un sauveteur qui fouille les étages condamnés, remonte douze survivants d’un quartier officiellement déclaré vide : sur le papier, ils n’existent plus, donc personne ne veut les loger. Avec Yamina, une ancienne horlogère repentie, et quelques alliés, il invoque un ancien droit de contestation — qui se règle par des duels de cartes faites de mémoire et de pactes — pour forcer la Chambre à réinscrire ces douze oubliés… avant de découvrir que ces effacements cachent le vrai secret du portail de Bab El.
-                  </p>
-                </section>
               </div>
               {/* Le halo doré reste : simple lumière, pas un fond. */}
               <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
@@ -4096,6 +4100,19 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               onReclamerCachet={onReclamerCachet}
               onReclamerSemaine={onReclamerSemaine}
               onOuvrirSouk={() => { onChangeScreen('souk'); }}
+              onPlaySfx={play}
+            />
+            {/* Ce que rapportent les prochains niveaux : la piste des gains, là
+                où l'on décide de sa soirée. Elle prend la place du bloc
+                « L'histoire · Bab El », parti au lancement du mode Histoire pour
+                un nouveau joueur (`RpgStoryBabEl`) — un décor qu'on relit à
+                chaque passage contre un seuil qu'on franchit une fois. */}
+            <RpgPisteGains
+              profil={profil}
+              paquetsEnAttente={paquetsDePalierEnAttente}
+              onChoisirCadre={onChoisirCadre}
+              onChoisirTitre={onChoisirTitre}
+              onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }}
               onPlaySfx={play}
             />
           </main>
@@ -4542,15 +4559,17 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             onExit={() => onChangeScreen('jouer')}
           />
         ) : screen === 'profil' ? (
+          // Une carte dépouillée : l'écran ne reçoit que le profil et le nom du
+          // compte. Les compteurs, le barème et le journal existent dans
+          // `rpgProfil.js` et au Souk — la carte de profil n'est pas un tableau
+          // de bord (dossier 20).
           <RpgProfilJoueur
             profil={profil}
-            collection={collection}
-            portefeuille={portefeuille}
-            quetes={quetes}
-            statutSync={statutSync}
             nomCompte={nomCompte}
             onRenommer={onRenommerProfil}
             onChoisirEmbleme={onChoisirEmbleme}
+            onChoisirAvatar={onChoisirAvatar}
+            onChoisirPlateau={onChoisirPlateau}
             onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }}
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
@@ -5098,6 +5117,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const pvpHorlogeExpireeRef = useRef(null);
   const [confirmerAbandonPvp, setConfirmerAbandonPvp] = useState(false);
   const [ecran, setEcran] = useState(() => (pvp ? 'partie' : 'jouer'));
+  // D'où vient-on quand le seuil de Bab El s'ouvre ? « Plus tard » rend cet
+  // écran-là : le joueur repart d'où il a lancé le mode Histoire (Jouer, le
+  // plus souvent), pas d'un menu qu'il n'a pas demandé.
+  const seuilHistoireVenuDe = useRef('jouer');
   useLumiereCartes(ecran !== 'partie');
   const authContext = useContext(AuthContext);
   const authUser = authContext?.user ?? null;
@@ -5157,18 +5180,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // ── Synchronisation temps réel d'un duel PvP (toujours avant tout return conditionnel) ──
   useEffect(() => {
     if (!modePvp || !pvp?.vue) return;
-    // Résout les plateaux thématiques et musiques à partir des decks publics.
-    const deckJ = (pvp.decks?.joueur?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.joueur.id) : null)
-      ?? (pvp.decks?.joueur?.cardIds?.length ? { id: pvp.decks.joueur.id ?? 'pvp-joueur', elements: pvp.vue.joueur?.couleurs, cardIds: pvp.decks.joueur.cardIds } : null)
-      ?? (pvp.vue.joueur?.couleurs?.length ? { id: 'pvp-joueur', elements: pvp.vue.joueur.couleurs, cardIds: [] } : null);
-    const deckS = (pvp.decks?.sorcier?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.sorcier.id) : null)
-      ?? (pvp.decks?.sorcier?.cardIds?.length ? { id: pvp.decks.sorcier.id ?? 'pvp-sorcier', elements: pvp.vue.sorcier?.couleurs, cardIds: pvp.decks.sorcier.cardIds } : null)
-      ?? (pvp.vue.sorcier?.couleurs?.length ? { id: 'pvp-sorcier', elements: pvp.vue.sorcier.couleurs, cardIds: [] } : null);
-    const plateaux = resoudrePlateauxDuDuel({ deckJoueur: deckJ, deckAdverse: deckS, variantesFantaisistes: variantesPlateaux });
-    const prochainPlateauJoueurId = plateaux?.joueur?.plateau?.id;
-    const prochainPlateauAdverseId = plateaux?.adversaire?.plateau?.id;
-    if (prochainPlateauJoueurId) setPlateauId((actuel) => (actuel === prochainPlateauJoueurId ? actuel : prochainPlateauJoueurId));
-    if (prochainPlateauAdverseId) setPlateauAdverseId((actuel) => (actuel === prochainPlateauAdverseId ? actuel : prochainPlateauAdverseId));
+    // Les plateaux du duel en ligne se résolvent dans leur propre effet, plus
+    // bas : il lit le profil déballé après cet effet-ci, et le choix de table
+    // du joueur avec lui.
 
     const entrant = structuredClone(pvp.vue);
     if (entrant.phase === 'blocage' && entrant.combatDeclare?.cote === 'sorcier') {
@@ -5466,7 +5480,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Le profil du joueur (dossier 20) : la barre d'XP, le niveau, et le paquet
     // que chaque palier franchi fait ouvrir au hasard.
     profil: profilJoueur, barreXp, boostersEnAttente: paquetsDePalierEnAttente,
-    monteeNiveau, fermerMonteeNiveau, renommerLeProfil, choisirUnEmblemeProfil,
+    monteeNiveau, fermerMonteeNiveau, renommerLeProfil,
+    // Renommés : la page parle des gestes du **profil**, le hook rend des gestes
+    // plus généraux. Sans le renommage ici, le prop vaut `undefined` et le clic
+    // ne fait rien — l'emblème semblait impossible à choisir.
+    choisirUnEmbleme: choisirUnEmblemeProfil,
+    choisirUnAvatar: choisirUnAvatarProfil, choisirUnPlateau: choisirUnPlateauProfil,
+    // Les gains de la piste : un cadre de médaillon, un titre sous le pseudo.
+    choisirUnCadre: choisirUnCadreProfil, choisirUnTitre: choisirUnTitreProfil,
   } = useSablierBourse({
     progression: progressionHistoireRef.current,
     // Un achat range ses cartes dans la collection : l'atelier de decks doit
@@ -5474,6 +5495,35 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // un palier passe par le même chemin.
     onCartesRangees: rafraichirCollection,
   });
+  // La carte de profil peut imposer la moitié basse de la table (dossier 20 §6) :
+  // le choix vit dans le profil, validé par le catalogue — un identifiant inconnu
+  // (plateau retiré d'une version à l'autre) rend la main au deck, sans planter.
+  const plateauChoisiDuProfil = plateauParId(profilJoueur?.plateau)?.id ?? null;
+
+  // ── Les plateaux d'un duel en ligne : les decks publics, et le choix du joueur ──
+  // Découpé de l'effet de synchronisation PvP : celui-ci doit lire le profil,
+  // déballé ci-dessus, et il n'a rien à voir avec l'état du duel entrant — il ne
+  // fait que peindre la table. Chaque camp garde son terrain ; la moitié basse
+  // obéit au joueur qui a choisi une table chez lui.
+  useEffect(() => {
+    if (!modePvp || !pvp?.vue) return;
+    const deckJ = (pvp.decks?.joueur?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.joueur.id) : null)
+      ?? (pvp.decks?.joueur?.cardIds?.length ? { id: pvp.decks.joueur.id ?? 'pvp-joueur', elements: pvp.vue.joueur?.couleurs, cardIds: pvp.decks.joueur.cardIds } : null)
+      ?? (pvp.vue.joueur?.couleurs?.length ? { id: 'pvp-joueur', elements: pvp.vue.joueur.couleurs, cardIds: [] } : null);
+    const deckS = (pvp.decks?.sorcier?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.sorcier.id) : null)
+      ?? (pvp.decks?.sorcier?.cardIds?.length ? { id: pvp.decks.sorcier.id ?? 'pvp-sorcier', elements: pvp.vue.sorcier?.couleurs, cardIds: pvp.decks.sorcier.cardIds } : null)
+      ?? (pvp.vue.sorcier?.couleurs?.length ? { id: 'pvp-sorcier', elements: pvp.vue.sorcier.couleurs, cardIds: [] } : null);
+    const plateaux = resoudrePlateauxDuDuel({
+      deckJoueur: deckJ,
+      deckAdverse: deckS,
+      variantesFantaisistes: variantesPlateaux,
+      plateauChoisi: plateauChoisiDuProfil,
+    });
+    const prochainPlateauJoueurId = plateaux?.joueur?.plateau?.id;
+    const prochainPlateauAdverseId = plateaux?.adversaire?.plateau?.id;
+    if (prochainPlateauJoueurId) setPlateauId((actuel) => (actuel === prochainPlateauJoueurId ? actuel : prochainPlateauJoueurId));
+    if (prochainPlateauAdverseId) setPlateauAdverseId((actuel) => (actuel === prochainPlateauAdverseId ? actuel : prochainPlateauAdverseId));
+  }, [modePvp, pvp, plateauChoisiDuProfil, variantesPlateaux]);
   // Le mana sans terrain est commun à tous les duels : les récompenses
   // et les quêtes ne sont plus exclues sur le seul critère du format.
   // Le rendu du duel-gagne (gain de l'étage, butin de la tour) remonte à
@@ -5579,7 +5629,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setVolumeMusique((actuel) => (actuel > 0 ? 0 : (dernierVolumeMusiqueRef.current || 1)));
   };
   // La tour de l'étage en cours commande la boucle (null : duel libre).
-  const lectureHistoire = ecran === 'recit' || ecran === 'journal';
+  // `bab-el` est le seuil du récit : l'histoire de la cité, pour qui n'a encore
+  // rien vécu de la campagne. Même famille que le récit et le journal — plein
+  // écran, hors duel.
+  const lectureHistoire = ecran === 'recit' || ecran === 'journal' || ecran === 'bab-el';
   const tourHistoireId = lectureHistoire
     ? (resumeRecitHistoire(progressionHistoire.recit)?.acte?.tourId ?? 'tour-des-listes')
     : histoireEtageId
@@ -6323,6 +6376,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         : etageCourant ? etageCourant.deck : sorcierDeck ?? deckAdverse),
       rng,
       variantesFantaisistes: variantesPlateaux,
+      plateauChoisi: modeTutoriel ? null : plateauChoisiDuProfil,
     });
     const plateau = resolutionPlateaux.joueur.plateau;
     setPlateauId(plateau.id);
@@ -7328,6 +7382,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     unlockSfx();
     if (sonActif) void musiqueThemeRef.current?.start();
   };
+  // Un nouveau joueur n'a ni récit en cours ni étage déblayé. Rien n'est écrit
+  // pour s'en souvenir : « nouveau » se **lit** dans la progression, donc
+  // commencer la campagne suffit à ne plus l'être — et revenir en arrière sans
+  // commencer ramène le seuil la fois suivante.
+  const nouveauJoueurHistoire = !progressionHistoire?.recit
+    && (progressionHistoire?.etagesVaincus?.length ?? 0) === 0;
   const continuerCampagne = () => {
     // Un duel encore en mémoire se reprend normalement depuis le menu.
     if (campagneDuelRef.current?.session === sessionDuelRef.current
@@ -7336,6 +7396,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     libererDuelPourLecture();
+    if (nouveauJoueurHistoire) {
+      // L'histoire de Bab El d'abord : c'est ici qu'elle sert, pas sur Jouer.
+      seuilHistoireVenuDe.current = ecran;
+      sonLecture();
+      setEcran('bab-el');
+      return;
+    }
+    ouvrirRecit();
+    sonLecture();
+    setEcran('recit');
+  };
+  /** Le seuil est franchi : le récit naît, et la première scène enchaîne. */
+  const commencerCampagne = () => {
     ouvrirRecit();
     sonLecture();
     setEcran('recit');
@@ -7357,7 +7430,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const deckActifHistoire = decksJouablesHistoire.find((deck) => deck.id === deckSelectionneId) ?? decksJouablesHistoire[0] ?? deckParDefaut();
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onContextMenu={neutraliserMenuContextuel}>
-        {ecran === 'journal' ? (
+        {ecran === 'bab-el' ? (
+          <RpgStoryBabEl
+            onCommencer={commencerCampagne}
+            onPlusTard={() => setEcran(seuilHistoireVenuDe.current)}
+            onPlaySfx={jouerSfx}
+          />
+        ) : ecran === 'journal' ? (
           <RpgStoryJournal recit={progressionHistoire.recit} cardArt={cardArt}
             onExit={() => setEcran('histoire')} onContinue={continuerCampagne}
             sauvegardeOk={sauvegardeHistoireOk} sonActif={sonActif} onToggleSound={basculerSon} />
@@ -7427,6 +7506,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           nomCompte={nomProfilJoueur}
           onRenommerProfil={renommerLeProfil}
           onChoisirEmbleme={choisirUnEmblemeProfil}
+          onChoisirAvatar={choisirUnAvatarProfil}
+          onChoisirPlateau={choisirUnPlateauProfil}
+          onChoisirCadre={choisirUnCadreProfil}
+          onChoisirTitre={choisirUnTitreProfil}
           statutSync={statutSync}
           onEnregistrerDeckMaison={enregistrerDeckMaison}
           onSupprimerDeckMaison={supprimerDeckMaison}

@@ -48,9 +48,8 @@ Ce que le joueur voit, dans l'ordre :
 
 1. **l'onglet Profil** du menu, en première position : l'emblème, « NIV. 12 »,
    une barre d'XP miniature, et une pastille quand un paquet attend ;
-2. **la carte de profil** : le pseudo, le rang de Bab El, le médaillon du
-   niveau, la barre détaillée, les quatre prochains paliers et leur prix, les
-   compteurs, le barème complet, le journal des paliers ;
+2. **la carte de profil**, dépouillée (§6) : l'emblème, le pseudo, le niveau,
+   sa barre d'XP et les six emblèmes — rien d'autre ;
 3. **la victoire** qui annonce les deux monnaies : « +50 crédits » et
    « ✦ +70 XP — niveau 3 atteint, un paquet s'ouvre ! » ;
 4. **la cérémonie** du paquet offert — la même qu'au Souk, avec son sachet, ses
@@ -270,12 +269,90 @@ Dix rangs, du niveau 1 au niveau 60. Un rang se **garde** entre deux paliers
 | 50 | Passeur de la Liste |
 | 60 | Voix de l'Astrolabe |
 
-### 4.4 Les emblèmes
+> Les rangs **ne s'affichent plus** sur la carte de profil (voir §6) : la table
+> reste dans le module pour le jour où un autre écran voudra la lire, et
+> `tests/rpg-profil.test.js` continue de la vérifier.
+
+### 4.5 Les visages du profil
+
+Douze personnages emblématiques, pris dans la bible visuelle du récit
+(`rpgStoryCast.js`) — **un portrait canonique par figure, jamais un second
+fichier** : les cinq héros du récit d'abord, le Grand Horloger qui les envoie,
+puis une figure par grande famille du catalogue.
+
+| Avatar | Personnage | Famille |
+| --- | --- | --- |
+| `salem` | Salem, le Sondeur | Bab El (héros) |
+| `yamina` | Yamina, l'Horlogère | Bab El (héros) |
+| `feriel` | Fériel, la Souffleuse de verre | Bab El (héros) |
+| `tarek` | Tarek, le Porteur | Bab El (héros) |
+| `boualem` | Boualem, le Puisatier | Bab El (héros) |
+| `mahieddine` | Mahieddine, le Grand Horloger | Bab El |
+| `reine-etals` | Tin Hinan, la Reine des étals | Sables |
+| `ifrit-ergs` | L'Ifrit des ergs | Braise |
+| `maitre-hivers` | Le Maître des Neuf Hivers (le Père des Corbeaux) | Neige |
+| `samurai-daimyo` | Le Daimyō du Soleil rouge | Soleil rouge |
+| `corsaire-barbe-rousse` | La Barbe-Rousse | Corsaires |
+| `necro-peseuse` | Celle qui pèse | Ténèbres |
+
+Les peintures canoniques font de 160 à 590 Ko : douze d'un coup dans un bandeau
+de choix coûteraient plus qu'un booster entier. Chacune a donc sa **vignette** —
+un carré de 192 px découpé **au cadrage exact du jeu** (`position` de la bible,
+le `background-position` d'un cadre en `background-size: cover`, reproduit par
+`tools/make-profil-vignettes.mjs`) — de 6 à 16 Ko. Les vignettes des douze
+tables (336×224, recadrées au centre du fond 4K) font de 10 à 34 Ko. Tout vit
+dans `public/profil/`, suivi par le dépôt comme les sprites du récit
+(`public/sablier-story/stands/`), et l'outil se relit d'un commande :
+
+```bash
+node tools/make-profil-vignettes.mjs            # régénère visages et tables
+node tools/make-profil-vignettes.mjs --verifier # ne régénère rien, contrôle
+```
+
+Une figure **repeinte** (révision de cache dans `rpgCardArt.js`) passe par
+l'outil, puis par `AVATAR_REVISION` / `PLATEAU_VIGNETTE_REVISION` pour que les
+caches suivent. `tests/rpg-profil.test.js` vérifie que chaque visage a son
+portrait canonique **et** sa vignette, et que chacune pèse moins de 60 Ko.
+
+### 4.6 Les emblèmes
 
 Six glyphes de texte — `⌛ ✦ ⚒ ☾ ❂ ▤` — aucun asset à charger, aucun temps de
 téléchargement, et une lisibilité identique sur l'onglet du menu, le médaillon
 de la carte et l'annonce de palier. Un emblème inconnu (sauvegarde d'une
 version future) retombe sur le premier.
+
+### 4.7 Les gains de palier — ce que rapporte un niveau
+
+`rpgProfilGains.js` répond à une seule question : **que gagne-t-on au niveau
+`n` ?** Trois familles, dans cet ordre d'importance :
+
+| Famille | Où elle tombe | Ce que c'est |
+| --- | --- | --- |
+| **le rang** | aux dix niveaux de `RANGS` (§4.3) | un jalon, pas une récompense à réclamer : il tombe avec le niveau |
+| **les cosmétiques** | sept **cadres** de médaillon (1, 4, 8, 14, 25, 45, 60) et neuf **titres** sous le pseudo (2, 5, 9, 12, 18, 26, 35, 44, 55) | gagnés au niveau, **portables** ensuite |
+| **le paquet** | à *chaque* niveau | la dette de `boostersDus` (§P3) : elle existe déjà, la piste ne fait que l'écrire |
+
+Les deux règles qui tiennent l'ensemble :
+
+- **ce qui est gagné se calcule, jamais ne s'écrit.** Aucune liste de
+  possessions dans le profil : le niveau vient de l'XP (`niveauDeXp`), donc un
+  cosmétique est gagné dès que `niveau >= gain.niveau` — y compris
+  rétroactivement. Une sauvegarde retouchée qui écrit `cadre: 'eclipse'` au
+  niveau 3 ne pare personne : `cadreDeProfil` retombe sur le cadre du départ,
+  `titreDeProfil` sur `null`, et le hook (`cadrePortable`, `titrePortable`)
+  refuse le geste. Le profil ne garde que ce qui se **choisit** : `cadre` et
+  `titre`, deux chaînes propres bornées comme `avatar` et `plateau` ;
+- **un niveau ne gagne pas deux cosmétiques.** Les niveaux des cadres et ceux
+  des titres sont disjoints (`tests/rpg-profil-gains.test.js`), donc une tuile
+  de la piste n'a jamais deux choses à peindre. Les deux seuls niveaux qui
+  portent à la fois un rang et un cosmétique (1 et 60) mettent le rang sur la
+  tuile et le cosmétique en pastille dessous.
+
+Les cosmétiques ne coûtent **aucun asset** : les glyphes sont du texte
+(`◯ ◍ ◎ ◈ ❂ ✧ ☀` pour les cadres, `❧` pour les titres) et les cadres sont
+peints en CSS — un cerne et une lumière pour l'argent, le verre et la pourpre,
+un anneau en `repeating-conic-gradient` pour le chanvre, l'astrolabe (qui tourne
+en 64 s, arrêté par `prefers-reduced-motion`) et l'éclipse.
 
 ## 5. Architecture et fichiers
 
@@ -285,11 +362,17 @@ version future) retombe sur le premier.
 | `src/games/rpgEvenementsDuel.js` | `xpDeLEvenement`, `motifDeLEvenement`, `statsDeLEvenement` ; `appliquerEvenementDuel` rend aussi `profil`, `xp`, `niveaux` |
 | `src/games/rpgBoosters.js` | `ouvrirUnPaquet` (acheté **ou** offert), `ouvrirBoosterOffert` |
 | `src/games/rpgCredits.js` | `offert` dans le journal des ouvertures |
-| `src/games/useSablierBourse.js` | `reglerPaliers`, `verserXp`, `fermerMonteeNiveau`, `renommerLeProfil`, `choisirUnEmbleme` ; rend `profil`, `barreXp`, `boostersEnAttente`, `monteeNiveau` |
+| `src/games/rpgProfilGains.js` | **les gains** : `CADRES`, `TITRES`, `gainsDuNiveau`, `pisteDesGains`, et la lecture qui valide (`cadreDeProfil`, `titreDeProfil`, `cadrePortable`, `titrePortable`) |
+| `src/games/useSablierBourse.js` | `reglerPaliers`, `verserXp`, `fermerMonteeNiveau`, `renommerLeProfil`, `choisirUnEmbleme`, `choisirUnAvatar`, `choisirUnPlateau`, `choisirUnCadre`, `choisirUnTitre` ; rend `profil`, `barreXp`, `boostersEnAttente`, `monteeNiveau` |
 | `src/games/RpgProfilJoueur.jsx` | **l'écran** : présentationnel, il reçoit des états et rend des gestes |
-| `src/games/rpg-profil.css` | la carte de profil, l'annonce de palier, l'onglet du menu, la ligne d'XP de la victoire |
+| `src/games/RpgPisteGains.jsx` | **la piste des gains** : les colonnes façon passe de maîtrise de l'écran Jouer, et le seul endroit où un cosmétique se porte |
+| `src/games/rpg-piste-gains.css` | la piste et ses colonnes, le sachet et son dos de carte, le cadenas, la coche — feuille à part pour ne pas toucher la queue de `rpg-profil.css` |
+| `src/games/RpgStoryBabEl.jsx` | **le seuil de Bab El** : l'histoire de la cité, montrée à un nouveau joueur au lancement du mode Histoire |
+| `src/games/rpg-story-bab-el.css` | le seuil : le keyart en fond, le voile, la carte de texte |
+| `src/games/rpg-profil.css` | la carte de profil, l'annonce de palier, l'onglet du menu, la ligne d'XP de la victoire, les cadres du médaillon, la ligne du titre |
 | `src/games/RpgDuelPage.jsx` | l'onglet Profil, la branche `screen === 'profil'`, `MonteeDeNiveau`, l'XP dans l'overlay de victoire |
-| `tests/rpg-profil.test.js` | la courbe, la dette, le barème, la fusion, le paquet offert |
+| `tests/rpg-profil.test.js` | la courbe, la dette, le barème, la fusion, le paquet offert, les visages et les tables |
+| `tests/rpg-profil-gains.test.js` | les catalogues de gains, la forme de la piste, ses états, son filet, et ce qui se porte |
 | `scripts/rpg-profil-check.mjs` | l'écran monté dans jsdom + la vraie page, et les gardes de source |
 
 Deux règles d'import, toutes deux vérifiées :
@@ -299,10 +382,200 @@ Deux règles d'import, toutes deux vérifiées :
 - `RpgProfilJoueur.jsx` ne touche à **aucun** stockage et n'appelle aucune
   règle d'écriture : `localStorage`, `chargerProfil`, `sauverProfil`,
   `gagnerXp` et `useSablierBourse` y sont absents, et le contrôle le vérifie.
+  `RpgPisteGains.jsx` de même, plus strict encore : pas même un `useState` ;
+  `RpgStoryBabEl.jsx` aussi — le seuil ne fait que lire ses props et son décor.
+- `rpgProfilGains.js` ne connaît ni les visages, ni les tables, ni les cartes —
+  seulement `rpgProfil.js` (la courbe et les rangs). Et `rpgProfil.js` ne
+  connaît pas les gains : il garde deux chaînes, la validation se fait à la
+  lecture, comme pour `avatar` et `plateau`.
 
-## 6. L'écran Profil
+## 6. L'écran Profil — une carte dépouillée
 
-Cinq sections, dans l'ordre de lecture :
+**Une seule carte.** La première version empilait cinq sections : le rang et sa
+phrase, seize compteurs, le barème des dix gestes, le journal des vingt derniers
+paliers, les quatre paliers à venir et la formule de la courbe, l'état de la
+synchronisation. C'était un tableau de bord, et on n'y lisait plus rien.
+L'écran tient maintenant en une carte centrée (520 px au plus), lisible sans
+faire défiler :
+
+1. **le médaillon** — le visage choisi (§4.5), peint en fond d'un cercle de
+   96 px ; sans visage, le glyphe de l'emblème — et, visage peint, ce même
+   glyphe en **cachet de cire** au coin du cercle (30 px, cerclé d'or) ;
+2. **le pseudo** — le titre, une ligne ;
+3. **le niveau** — « Niveau 5 », ou « Niveau 60 — maximal » au plafond ;
+4. **la barre** — un `role="progressbar"` complet (`aria-valuenow`, `-min`,
+   `-max`, `-text`) et sa seule lecture : « 214 / 353 XP » ;
+5. **ce qui est gagné, porté** — le cadre peint autour du médaillon
+   (`data-profil-cadre`), le titre écrit sous le pseudo (`data-profil-titre`) ;
+   la **piste des gains** qui les fait gagner vit, elle, sur l'écran Jouer
+   (§6.2) ;
+6. **trois gestes**, chacun sous une étiquette de 10 px : les douze **visages**
+   en cercles de 52 px, les six **emblèmes** en glyphes, les douze **tables** en
+   pellicule qui défile plus « Au gré du deck ». Chaque tuile de table porte le
+   **nom** de son terrain, peint au bas de la vignette sur une encre (8,5 px,
+   deux lignes au plus) ; chaque étiquette écrit le nom du choix courant —
+   « Visage · Yamina », « Emblème · Le corbeau des neiges », « Table · au gré du
+   deck » ;
+7. **le champ du pseudo** — avec son bouton **Enregistrer**, désactivé tant que
+   rien n'a changé (« Un champ vide n'efface pas votre nom. »).
+
+Deux choses s'y ajoutent, seulement quand elles sont gagnées : un **cadre**
+autour du médaillon (§4.7) et un **titre** d'une ligne sous le pseudo.
+
+Une ligne apparaît entre la barre et les gestes **seulement** quand des paquets
+attendent : « Un paquet vous attend. », avec le bouton **Ouvrir au Souk**. C'est
+la seule information contextuelle de la carte, et elle porte une action.
+
+Les vignettes sont des **fonds peints** des boutons (`background-image`), pas
+des `<img>` dans le flux : ce sont des décors de choix, et chaque bouton porte
+déjà son nom accessible (« Yamina — L'Horlogère », « La Table des Heures — Bab
+El, salle haute de la Chambre »). L'onglet Profil du menu, lui, remplace son
+glyphe par la vignette du visage choisi (`data-profil-onglet-avatar`).
+
+**Choisir se lit, pas seulement se marque.** Les six emblèmes tiennent dans des
+cercles de 44 px : un anneau doré autour d'un glyphe en était le seul retour,
+et une fois le médaillon peint d'un visage, cliquer un emblème ne déplaçait plus
+qu'un anneau — le geste semblait mort. Deux choses l'écrivent désormais :
+l'**étiquette** du bandeau, qui porte le nom du choix courant, et le **cachet**
+posé au coin du médaillon, qui suit le clic quand un visage est peint. Sans
+visage, le médaillon porte déjà le glyphe : le sceau s'efface pour ne pas le
+répéter. Les noms peints sur les tuiles répondent au même besoin — une pellicule
+de vignettes muettes ne se choisit pas à l'œil, et la tuile choisie peut avoir
+défilé hors de vue quand l'étiquette, elle, reste sous les yeux. Le nom
+accessible de chaque bouton reste complet (« La Cour de l'Empereur — Rome, la
+pourpre et le sable ») : la légende peinte est `aria-hidden`.
+
+### 6.1 La table choisie — la moitié du joueur, et seulement elle
+
+`profil.plateau` vaut l'identifiant d'un plateau du catalogue, ou `null` pour
+« au gré du deck » — l'état d'un joueur neuf. `resoudrePlateauxDuDuel` accepte
+alors `plateauChoisi` : la **moitié basse** de la table se peint avec ce terrain
+(`motif: 'choix-du-joueur'`), la moitié haute reste celle du deck adverse —
+l'adversaire joue toujours chez lui. Le plateau du joueur restant le
+**principal**, le choix pilote la musique dédiée et le décor 3D.
+
+- un terrain choisi n'est **jamais** échangé contre son double merveilleux :
+  `variantesFantaisistes` ne tire que ce qui n'a pas été demandé, et le tirage
+  du joueur n'est pas consommé — sans choix, la résolution reste bit à bit
+  celle d'avant (`tests/rpg-plateaux.test.js`) ;
+- un identifiant inconnu (plateau retiré d'une version à l'autre) rend la main
+  au deck : `plateauParId` rend `null`, rien ne casse ;
+- le **tutoriel** garde sa table : la leçon impose son décor, la page passe
+  `plateauChoisi: modeTutoriel ? null : plateauChoisiDuProfil` ;
+- en **duel en ligne**, le choix est une préférence locale : chaque client
+  peint sa propre moitié, l'arbitre ne lit ni l'une ni l'autre.
+
+Il n'y a toujours ni pastille « Aléatoire » ni verrou de plateau en début de
+partie : le choix vit sur la carte de profil, comme une préférence de maison.
+
+### 6.2 La piste des gains — des colonnes de passe de maîtrise, sur Jouer
+
+La piste a quitté la carte : elle vit sur l'écran **Jouer**, sous le héros, dans
+la colonne de gauche (en une colonne, elle se glisse juste après le héros, avant
+les quêtes du jour — `order` dans la media query du téléphone). C'est là qu'on
+décide de sa soirée, et c'est là qu'on lit ce que rapportent les prochains
+niveaux. La carte, elle, ne montre plus que ce qui est **déjà** gagné : le cadre
+peint autour du médaillon, le titre écrit sous le pseudo.
+
+Le **cadre s'allonge** sur toute la largeur du menu (`grid-column: 1 / -1` sur la
+grille de Jouer) : le héros et les quêtes du jour restent au-dessus, et d'un coup
+d'oeil la bande montre beaucoup plus de colonnes.
+
+La bande se lit comme une passe de maîtrise : une **colonne** par niveau,
+séparées d'un filet, teintées selon l'état — déjà passé, en cours, à venir — et
+dans chaque colonne, de haut en bas :
+
+- le **repère** « niveau actuel » — la ligne est réservée partout, seule la
+  colonne en cours l'écrit, et sa flèche la pointe ;
+- le **numéro** du niveau ;
+- la **coche** des niveaux déjà passés, peinte sur `.is-gagne` (un glyphe, pas un
+  noeud de plus) ;
+- le **filet** qui relie les colonnes : plein derrière soi, au pourcentage de la
+  barre devant soi, vide au-delà. Une seule boîte, deux largeurs en propriétés
+  personnalisées (`--gauche`, `--droite`) ;
+- la **récompense**, reconnaissable d'un coup d'oeil : le sachet du Souk **en
+  volume** — trois faces en perspective (corps doré et son étoile imprimée, flanc
+  sombre, sceau cranté dessus) que la feuille de style fait tourner lentement —
+  et son **dos de carte en miniature** quand le paquet est tout le gain (vignette
+  WebP de 1,3 Ko, `public/profil/dos-de-carte.webp`, découpée par
+  `tools/make-profil-vignettes.mjs` au format 4/5 des cartes) ; le glyphe du rang
+  ou du cosmétique sinon — et quand le niveau gagne autre chose qu'un paquet, le
+  sachet se pose **en coin** de la tuile (`::after`) : **chaque** niveau montre
+  son paquet ;
+- **ce qu'il y a à gagner, écrit** : la **famille** du gain en capitales
+  espacées, puis le **nom** de ce gain — « PAQUET · Un paquet du Souk »,
+  « RANG · Porteur de lanterne ». Quatre familles, quatre **couleurs** qui
+  teintent la tuile, le glyphe et l'étiquette : paquet ambre `#f2b544`, rang ciel
+  `#66c3e9`, cadre argent `#c9d2dd`, titre vert `#93d483` ;
+- le **cadenas** d'une récompense à venir, peint en CSS au coin de la tuile ;
+- le **nom** du gain, deux lignes au plus.
+
+C'est un `<ol>` qui défile à l'horizontale (`scroll-snap`, `tabindex="0"` pour le
+clavier, ouvert sur le palier en cours), et non un tableau : aucun compteur,
+aucun barème, aucune formule de courbe n'est revenu dans le menu.
+
+- **sa forme** — du niveau en cours jusqu'au **prochain rang**, puis **huit**
+  niveaux au-delà, sans jamais dépasser le plafond : dix paliers au niveau 2,
+  dix-neuf au plus. Au niveau maximal, la piste regarde en arrière et montre les
+  cinq derniers niveaux, tous gagnés. Le prochain rang porte un jalon (« rang »)
+  et une tuile ronde ;
+- **ce qui se clique** — seuls les cosmétiques. Un cadre ou un titre gagné se
+  porte (la tuile se remplit d'or, `aria-pressed`), et se repose en recliquant.
+  Les paquets ne se réclament pas ici : la dette se règle au Souk — et quand des
+  paquets sont dus, l'entête de la piste ouvre un bouton (« N paquets à ouvrir »)
+  qui y mène. Les rangs tombent d'eux-mêmes ;
+- **ce qui est verrouillé reste visible** — un gain pas encore gagné est un
+  bouton `aria-disabled`, jamais un bouton `disabled` ni un noeud absent : il dit
+  ce qu'il manque (« Gagné au niveau 14 — 353 XP pour passer au niveau 15 ») et
+  son clic sonne l'erreur au lieu de mentir. Le cadenas le dit d'un coup d'oeil ;
+- **l'accroche** au-dessus de la piste nomme le prochain rang :
+  « Prochain rang : Porteur de lanterne, au niveau 3 », ou « niveau maximal
+  atteint ».
+
+Le médaillon porte le cadre gagné (`data-profil-cadre`) et le pseudo son titre
+(`data-profil-titre`) — les deux disparaissent quand rien n'est porté. Les
+anneaux des cadres sont peints sur `.rpg-profil__tete`, pas sur le médaillon :
+celui-ci rogne sa vignette (`overflow: hidden`) et avalerait l'anneau. Ils passent
+**sous** le médaillon, donc si un dégradé ne prend pas chez un navigateur, il
+reste un liseré — jamais un disque sur le visage.
+
+Ce qui a disparu de l'écran n'a pas disparu du jeu :
+
+| Retiré de la carte | Où le lire |
+| --- | --- |
+| le rang et sa phrase | `RANGS` / `rangDeNiveau` dans `rpgProfil.js` (§4.3) |
+| les seize compteurs | `profil.stats`, et le Souk pour la collection |
+| le barème des gestes | `BAREME_XP` (§4.1) |
+| le journal des paliers | `profil.paliers`, fusionné monotone (§P7) |
+| les paliers à venir | `paliersAVenir`, et `SEUILS`/`CUMULS` (§4.2) |
+| l'état de la synchronisation | le Souk et le menu, qui l'affichent déjà |
+
+Les props suivent : l'écran ne reçoit plus que `profil` et `nomCompte` (plus de
+`collection`, `portefeuille`, `quetes`, `statutSync`) et quatre gestes —
+`onRenommer`, `onChoisirEmbleme`, `onChoisirAvatar`, `onChoisirPlateau`.
+`paliersAVenir`, `BAREME_XP` et `RANGS` restent exportés — un autre écran, ou
+une infobulle, pourra les reprendre sans qu'ils reviennent ici.
+
+Les quatre gestes arrivent du hook **renommés** : `choisirUnEmbleme:
+choisirUnEmblemeProfil`, `choisirUnAvatar: choisirUnAvatarProfil`,
+`choisirUnPlateau: choisirUnPlateauProfil`. Écrire le nom de la page tout seul
+déstructure un champ que le hook ne rend pas, le prop part `undefined`, et le
+clic ne fait plus rien — sans erreur, sans avertissement, nulle part. C'est
+arrivé à l'emblème : le visage et la table répondaient, l'emblème semblait
+inerte. Deux garde-fous le tiennent maintenant : le smoke clique les trois
+gestes **à travers la vraie page** (page → menu → écran → hook → stockage, puis
+retour au menu pour l'onglet), et `rpg-profil-check.mjs` vérifie le renommage
+dans la source, geste par geste.
+
+L'identité tient désormais en trois champs (`pseudo`, `embleme`, `avatar`) plus
+un choix de table (`plateau`). Le module du profil ne connaît **ni le casting ni
+les plateaux** : il garde une chaîne propre bornée à 48 caractères, et ce sont
+les catalogues qui valident à la lecture — un visage ou une table inconnus
+rendent `null`, le médaillon retombe sur le glyphe, la table sur le deck. La
+fusion reprend la règle du pseudo : le côté le plus récent parle, et un choix
+qui n'existe que d'un côté ne s'efface jamais.
+
+L'ancienne découpe, pour mémoire — cinq sections, dans l'ordre de lecture :
 
 1. **l'en-tête** — emblème, pseudo, rang et sa phrase, médaillon du niveau,
    état de la synchronisation (« ☁ Profil synchronisé avec votre compte »,
@@ -320,19 +593,44 @@ Cinq sections, dans l'ordre de lecture :
    paliers avec leur date et leur motif (« Niveau 7 · 12 mars, 14 h 05 · un
    étage déblayé · 1 paquet offert »).
 
-Un bandeau apparaît en tête quand des paquets attendent : « Un paquet de palier
-vous attend : il s'ouvrira dès que le comptoir pourra tirer », avec un bouton
-**Voir le Souk**.
-
 Marques de vérification dans le DOM : `data-profil`, `data-profil-niveau`,
-`data-profil-xp`, `data-profil-xp-need`, `data-profil-xp-percent`,
-`data-profil-xp-reste`, `data-profil-rang`, `data-profil-pseudo`,
-`data-profil-sync`, `data-profil-attente`, `data-profil-courbe`,
-`data-profil-bareme`, `data-profil-stat`, `data-profil-journal`,
-`data-profil-embleme`. Sur la page : `data-profil-onglet`,
-`data-profil-xp-onglet`, `data-profil-pastille`, `data-victoire-xp`,
-`data-victoire-niveaux`, `data-niveau-toast`, `data-niveau-dus`,
-`data-souk-ceremonie-offert`, `data-souk-ceremonie-niveau`.
+`data-profil-xp`, `data-profil-xp-need`, `data-profil-xp-maximal`,
+`data-profil-xp-percent`, `data-profil-xp-reste`, `data-profil-pseudo`,
+`data-profil-pseudo-saisie`, `data-profil-pseudo-enregistrer`,
+`data-profil-pseudo-vide`, `data-profil-attente`, `data-profil-attente-aller`,
+`data-profil-medaille`, `data-profil-avatar-image`, `data-profil-avatars`,
+`data-profil-avatar`, `data-profil-embleme`, `data-profil-cachet`, `data-profil-plateaux`,
+`data-profil-plateau`, `data-profil-plateau-auto`, `data-profil-identite`,
+`data-profil-retour`. Sur l'onglet : `data-profil-onglet-avatar`.
+**Retirées** : `data-profil-rang`, `-sync`, `-courbe`, `-bareme`, `-stat` et
+`-journal` — `scripts/rpg-profil-check.mjs` vérifie maintenant leur **absence**.
+Sur la page : `data-profil-onglet`, `data-profil-xp-onglet`,
+`data-profil-pastille`, `data-victoire-xp`, `data-victoire-niveaux`,
+`data-niveau-toast`, `data-niveau-dus`, `data-souk-ceremonie-offert`,
+`data-souk-ceremonie-niveau`.
+
+### 6.3 Le seuil de Bab El — l'histoire au lancement du mode Histoire
+
+Le bloc « L'HISTOIRE · BAB EL » ne siège plus sur l'écran Jouer : une
+présentation qu'on relit à chaque passage ne vaut pas un seuil qu'on franchit
+une fois. Il attend un **nouveau joueur** au moment où il compte — quand il
+lance le mode Histoire (bouton « Mode histoire ») : ni récit en cours
+(`progression.recit`), ni étage déblayé (`progression.etagesVaincus`). Rien
+n'est écrit pour s'en souvenir : commencer la campagne suffit à ne plus être
+neuf, et « Plus tard » ramène le seuil la fois suivante.
+
+- **l'ouverture** — `continuerCampagne()` lit la progression : un joueur neuf
+  passe par `ecran = 'bab-el'`, un écran de lecture de la famille du récit et du
+  journal (plein écran, hors duel) ; sinon le récit reprend où il en était, et
+  un duel en mémoire se reprend d'abord ;
+- **le seuil** — `RpgStoryBabEl` : le keyart du mode Histoire en fond
+  (`--bab-el-decor`, pas de `<img>`), un voile, une carte portant les **deux
+  paragraphes d'origine mot pour mot**, « Commencer la campagne » (qui prend le
+  focus : Entrée suffit) et « Plus tard ». Ce dernier rend l'écran d'où l'on
+  vient — noté dans une référence au moment de l'ouverture ;
+- **le franchissement** — « Commencer la campagne » appelle `ouvrirRecit()` :
+  le récit naît, la première scène enchaîne, et le seuil ne revient plus.
+  « Plus tard » n'écrit rien : la progression reste vide, et le seuil attendra.
 
 ## 7. Les deux visages d'une montée de niveau
 
@@ -389,13 +687,14 @@ offerts compris.
 ## 9. Vérifications
 
 ```bash
-npm run check:rpg-profil   # tests/rpg-profil.test.js + scripts/rpg-profil-check.mjs
+npm run check:rpg-profil   # tests/rpg-profil.test.js + tests/rpg-profil-gains.test.js
+                           # + scripts/rpg-profil-check.mjs (smoke et gardes)
 npm run check:rpg-souk     # l'économie du comptoir, dont le paquet offert
-npm run check:rpg          # les 915 tests du Sablier
+npm run check:rpg          # les 951 tests du Sablier (947 passent)
 npm run build
 ```
 
-`tests/rpg-profil.test.js` (28 tests) tient : la monotonie de la courbe palier
+`tests/rpg-profil.test.js` (35 tests) tient : la monotonie de la courbe palier
 par palier, les bornes de `niveauDeXp`, la forme de `progressionDeXp`, les
 paliers à venir, les rangs, la dette (un niveau = un paquet, deux niveaux =
 deux paquets, la dette qui survit à la fusion, le plafond qui ne sonne plus),
@@ -411,10 +710,91 @@ aucun crédit n'est débité, un second palier franchi **pendant** la cérémoni
 reste dû (bandeau « un paquet vous attend »), la fermeture règle la dette, la
 seconde cérémonie repart du sachet (`key`), le pseudo et l'emblème s'écrivent
 et survivent à un remontage — puis la **vraie page** est montée pour l'onglet
-Profil, son `aria-current`, son aria-label et son aller-retour vers le menu.
+Profil, son `aria-current`, son aria-label, son aller-retour vers le menu, et
+surtout **les gestes cliqués à travers elle** : l'emblème se marque et se lit sur
+l'étiquette, le visage se peint, la table se choisit, les quatre choix sont écrits
+sur l'appareil, et l'onglet du menu repart avec la vignette du visage. Un prop
+perdu entre la page et l'écran — comme l'emblème renommé de travers — ne se voit
+que là. Dès le montage, la **piste de l'écran Jouer** est vérifiée elle aussi :
+ses colonnes, le repère du niveau en cours, la coche des niveaux passés, le
+cadenas des niveaux à venir, la miniature du dos de carte et le sachet du niveau
+qui n'attend qu'un paquet — puis le titre gagné se porte **depuis la piste**, et
+se relit sous le pseudo en rouvrant la carte. Vient enfin le **seuil de Bab El** :
+un joueur neuf le découvre en lançant le mode Histoire, « Plus tard » rend le
+menu sans rien écrire (le seuil reviendra), « Commencer la campagne » franchit le
+seuil, écrit la progression et enchaîne le récit. La page est montée sur un profil
+semé au **niveau 2** (`boostersOfferts: 1`, donc aucune dette) : la piste y a un
+titre gagné à faire porter, sans rejouer un duel entier.
+
+La carte et la piste sont vérifiées séparément. Dans la sonde, la carte **ne
+monte plus la piste** (c'est asserté) et se contente de porter : au niveau 3, le
+titre du niveau 2 se porte et s'écrit sous le pseudo, un titre pas encore gagné
+ne se porte pas, `null` le repose, et un cadre hors de portée sonne l'erreur sans
+rien changer — le hook refusant même appelé de front (`choisirUnCadre('eclipse')`
+au niveau 1 rend `false` et n'écrit rien). Sur la page, au niveau 2, la piste
+montre dix colonnes (2 → le rang du niveau 3, puis huit) : un seul `courant`
+marqué `aria-current="step"` et pointé par le repère, le jalon sur le rang avec
+son sachet en coin, le niveau 7 qui n'attend qu'un paquet — dos de carte en
+miniature et sachet —, les niveaux à venir cadenassés, et le titre du niveau 2
+qui se porte d'un clic depuis Jouer.
 Les gardes de source vérifient ce que le DOM ne peut pas dire : où vit la
 persistance, qui tire le rayon au hasard, ce qu'une dette impayée ne répète
-pas, et à quelle hauteur la cérémonie passe au-dessus de la table.
+pas, et à quelle hauteur la cérémonie passe au-dessus de la table. Elles
+tiennent aussi la carte **dépouillée** : ni `paliersAVenir`, ni `BAREME_XP`, ni
+`RANGS`, ni aucune des classes retirées dans la source de l'écran, aucune
+section à titre, aucun `<img>` dans le flux (les vignettes sont des fonds
+peints) — et, côté page, que l'écran ne reçoit plus `collection`,
+`portefeuille`, `quetes` ni `statutSync`, mais bien les quatre gestes, **chacun
+renommé** à la déstructuration du hook — les six gestes maintenant, emblème,
+visage, table, cadre et titre compris. Elles tiennent aussi les noms : le sceau
+et la légende peinte existent dans l'écran et dans `rpg-profil.css`
+(`.rpg-profil__cachet` en `position: absolute`, `.rpg-profil__plateau-nom` en
+deux lignes, `.rpg-profil__etiquette b`).
+
+La section 11 garde la piste, côté source : la forme du chemin (le prochain rang
+plus huit niveaux, borné par la courbe), le paquet qui ferme chaque liste de
+gains, **ce qui est gagné qui se calcule** (`cadreDeProfil` retombe sur le cadre
+du départ, `titreDeProfil` sur `null`) et le hook qui refuse un gain hors de
+portée ; l'indépendance des modules (`rpgProfil.js` ignore `rpgProfilGains.js`,
+qui ignore les visages, les tables et les cartes) ; la piste qui ne fait rien
+elle-même (ni `localStorage`, ni `sauverProfil`, ni `useState`, ni `fetch`) ;
+l'accessibilité (`aria-current`, `aria-disabled`, `tabindex`, l'ouverture sur le
+palier en cours sans `scrollIntoView`) ; la lecture de passe de maîtrise — le
+repère « niveau actuel », la coche peinte sur `.is-gagne`, le cadenas peint des
+récompenses à venir, le sachet en coin de toute tuile qui gagne autre chose qu'un
+paquet, la miniature du dos de carte et son outil ; sa **place** — montée dans le
+`<main>` de l'écran Jouer, avec ses props (`profil`, `paquetsEnAttente`, les deux
+gestes de cosmétiques, le Souk, les sons) — ; et les styles : la piste a **sa
+propre feuille** (`rpg-profil.css` n'en parle pas), elle défile vraiment, son
+filet se remplit en propriétés personnalisées, le jalon est écrit, les cadres du
+médaillon sont peints en CSS dans `rpg-profil.css`, et l'astrolabe s'arrête pour
+qui demande moins de mouvement. La section 12 garde le seuil de Bab El : le bloc
+parti de Jouer avec ses règles, « nouveau joueur » lu dans la progression, le
+seuil ouvert avant le récit et rendu à l'écran d'où l'on vient, les deux
+paragraphes d'origine mot pour mot, le keyart en fond et les deux boutons du
+menu.
+
+L'identité élargie, dans le même fichier : un profil neuf n'a ni visage, ni
+table, ni cadre, ni titre ; `choisirAvatar` / `choisirPlateau` / `choisirCadre` /
+`choisirTitre` s'écrivent et se retirent avec `null`, la fusion ne perd pas un
+choix qui n'existe que d'un côté, les douze visages ont chacun leur portrait
+canonique **et** leur vignette de moins de 60 Ko.
+
+`tests/rpg-profil-gains.test.js` (7 tests) tient la piste et ses catalogues :
+identifiants uniques et niveaux croissants dans la courbe, le cadre du départ
+jamais verrouillé, aucun titre qui double un rang, aucun niveau qui gagne deux
+cosmététiques ; chaque niveau rapporte au moins un paquet et le paquet ferme la
+liste ; ce qui est gagné se calcule depuis l'XP (un cadre volé retombe, un gain
+inconnu ne se porte pas, les listes de gains gagnés sont rétroactives) ; la forme
+de la piste niveau par niveau de 1 à 59 (départ, fin, longueur bornée à 15,
+paliers qui se suivent, un seul jalon, états dans l'ordre, prix égaux à ceux de
+la courbe) ; le plafond qui montre les cinq derniers niveaux tous gagnés ; le
+filet plein derrière, au pourcentage devant, vide au-delà ; et un profil abîmé
+(`null`, `{}`, `xp: -5`, `xp: NaN`, `'beaucoup'`) qui repart du niveau 1 sans
+jamais dépasser la courbe. `tests/rpg-plateaux.test.js` (38 tests) tient la
+table choisie : la moitié du joueur obéit, celle de l'adversaire reste chez
+elle, un terrain choisi n'est jamais merveilleux malgré lui, le rng n'est pas
+consommé pour qui a demandé, et sans choix la résolution reste celle d'avant.
 
 Les contrôles voisins ont été mis à jour pour dire la même chose :
 `scripts/rpg-souk-bourse-smoke.jsx` et `scripts/rpg-souk-smoke.jsx` affirment
