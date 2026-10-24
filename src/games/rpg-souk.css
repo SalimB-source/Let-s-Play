@@ -186,6 +186,18 @@
 .rpg-souk__direct-rafraichir { flex: none; min-height: 44px; }
 .rpg-souk__direct-resume { margin: -2px 0 13px; color: rgba(247, 237, 218, .66); font-size: 12px; line-height: 1.55; }
 .rpg-souk__direct-resume strong { color: #ffe7af; }
+/* Le décompte des cartes déjà au quota : une ligne, pas une alerte — ce n'est
+   pas une punition, c'est l'étal qui dit où il en est. */
+.rpg-souk__direct-complet {
+  margin: -6px 0 13px;
+  padding: 7px 10px;
+  border: 1px solid rgba(160, 214, 140, .26);
+  border-radius: 9px;
+  background: rgba(89, 130, 70, .1);
+  color: #cfe7c2;
+  font: 700 9.5px/1.5 var(--mono, monospace);
+  letter-spacing: .02em;
+}
 .rpg-souk__direct-cartes {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -211,7 +223,10 @@
   background: linear-gradient(165deg, rgba(48, 30, 63, .72), rgba(14, 12, 18, .96));
 }
 .rpg-souk__direct-carte.is-achetee { border-color: rgba(160, 214, 140, .55); }
-.rpg-souk__direct-carte.is-possedee:not(.is-achetee) .rpg-souk__direct-art img { filter: saturate(.55) brightness(.72); }
+/* « complet » = le quota du deck est atteint : rien de plus à acheter. C'est le
+   seul état qui voile l'illustration — une carte qu'on ne peut *qu'achever*
+   reste lumineuse, sinon l'œil lit « finie » là où il reste un exemplaire. */
+.rpg-souk__direct-carte.is-complet:not(.is-achetee) .rpg-souk__direct-art img { filter: saturate(.55) brightness(.72); }
 .rpg-souk__direct-art {
   position: relative;
   aspect-ratio: 4 / 5;
@@ -240,6 +255,20 @@
 .rpg-souk__direct-corps { min-width: 0; }
 .rpg-souk__direct-corps h4 { margin: 0 0 4px; color: #fff0d4; font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; }
 .rpg-souk__direct-corps p { margin: 0; color: rgba(247, 237, 218, .52); font-size: 9px; line-height: 1.35; }
+/* Le stock se lit sous le nom : « il manque le 2ᵉ exemplaire » ou « quota
+   atteint ». Trois couleurs, trois réponses — le joueur n'a jamais à deviner
+   pourquoi un bouton est grisé. Sélecteurs à deux classes : ils passent devant
+   `.rpg-souk__direct-corps p` sans avoir besoin d'un `!important`. */
+.rpg-souk__direct-corps .rpg-souk__direct-stock {
+  margin-top: 3px;
+  color: rgba(247, 237, 218, .46);
+  font: 700 8.5px/1.4 var(--mono, monospace);
+  letter-spacing: .02em;
+}
+.rpg-souk__direct-carte.is-disponible .rpg-souk__direct-stock { color: #ffd98a; }
+.rpg-souk__direct-carte.is-sans-solde .rpg-souk__direct-stock { color: #f0b9a4; }
+.rpg-souk__direct-carte.is-achetee .rpg-souk__direct-stock,
+.rpg-souk__direct-carte.is-complet .rpg-souk__direct-stock { color: #c8e9b6; }
 .rpg-souk__direct-acheter {
   display: inline-flex;
   align-items: center;

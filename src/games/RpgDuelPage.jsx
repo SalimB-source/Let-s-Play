@@ -3904,7 +3904,10 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       .filter((famille) => famille.cartes.length > 0)
     : [];
   const openValidation = openDeck
-    ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection) : rpgValiderDeck(openDeck.cardIds))
+    // Le stock, ici aussi : la fiche d'un deck maison annonce les mêmes raisons
+    // que l'atelier, sinon elle promettrait « prêt à jouer » à un paquet dont
+    // deux copies n'ont jamais été payées.
+    ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection, portefeuille?.exemplaires ?? null) : rpgValiderDeck(openDeck.cardIds))
     : { ok: false, raisons: ['Aucun deck ouvert.'] };
   // Le Catalogue est une encyclopédie : il montre vraiment toutes les cartes,
   // y compris les terrains et les cartes archivées hors du format de deck.
@@ -4458,6 +4461,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 ? atelier.deck.cardIds.filter((id) => collection.includes(id))
                 : []}
               collection={collection}
+              exemplaires={portefeuille?.exemplaires ?? null}
               artUrl={cardArt}
               onEnregistrer={enregistrerAtelier}
               onAnnuler={() => setAtelier(null)}
@@ -4832,7 +4836,10 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   const degradeCout = estTerrain ? null : cardHybridGradient(carte);
                   const famille = carteFamille(carte);
                   const verrouillee = !possedeCarte(collection, carte.id);
-                  const exemplaires = nombreExemplaires(collection, carte.id);
+                  // Le stock se lit dans le portefeuille du Souk : une carte
+                  // rachetée à l'étal y compte deux copies, et le catalogue doit
+                  // dire la même chose que l'étal — deux pastilles, un seul chiffre.
+                  const exemplaires = nombreExemplaires(collection, carte.id, portefeuille?.exemplaires);
                   // Le sceau de la famille au coin libre de la vignette : c'est
                   // là qu'on feuillette la collection, et c'est là qu'il faut
                   // repérer un sort sans ouvrir sa fiche.

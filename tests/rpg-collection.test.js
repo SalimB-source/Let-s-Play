@@ -2,18 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RPG_DUEL_CARDS, cardById, cardColors, cardCopyLimit } from '../src/games/rpgCards.js';
 import { tousLesEtages } from '../src/games/rpgStoryTours.js';
+import { prixCarteDirecte } from '../src/games/rpgSoukDirect.js';
 import {
   COLLECTION_DEPART,
   RPG_ACQUIS_STORAGE_KEY,
   RPG_COLLECTION_STORAGE_KEY,
   RPG_REVELATIONS_PAR_ETAGE,
   acquisVide,
+  carteEnPlayset,
   carteReveleePar,
+  plafondVisible,
   cartesReveleesParEtage,
   chargerAcquis,
   chargerCollectionDistante,
   collectionJoueur,
   exemplairesPossedables,
+  lireExemplaire,
   nombreExemplaires,
   figerAcquisitions,
   fusionnerAcquisitions,
@@ -238,6 +242,30 @@ test('nombreExemplaires compte le stock acquis pour les pastilles', () => {
   assert.equal(nombreExemplaires(avecAcquisitions, 'chien-du-guet'), 2, 'la dotation ne perd pas ses exemplaires');
 });
 
+test('le compteur d’exemplaires de l’étal remonte dans la pastille', () => {
+  const avecAcquisitions = fusionnerCollections(COLLECTION_DEPART, ['kraken', 'scribe-de-la-liste']);
+  const comptes = { 'scribe-de-la-liste': 2, kraken: 2 };
+  assert.equal(nombreExemplaires(avecAcquisitions, 'scribe-de-la-liste', comptes), 2,
+    'rachetée à l’étal : la rare compte deux copies');
+  assert.equal(nombreExemplaires(avecAcquisitions, 'kraken', comptes), 1,
+    'la mythique reste bornée à son quota, compteur mentant ou non');
+  assert.equal(nombreExemplaires(avecAcquisitions, 'tarek', { tarek: 2 }), 0,
+    'un compteur ne rend pas possédée une carte absente de la collection');
+  assert.equal(nombreExemplaires(avecAcquisitions, 'chien-du-guet', { 'chien-du-guet': 9 }), 2,
+    'la dotation garde son playset, sans se laisser décréter un stock');
+  assert.equal(lireExemplaire(null, 'kraken', true), 1, 'sans compteur, la lecture reste celle d’avant l’étal');
+  assert.equal(lireExemplareSafe(), 0, 'une carte inconnue du catalogue n’a pas de stock');
+});
+
+/** `lireExemplaire` sur un identifiant hors catalogue : la tolérance, pas une exception. */
+function lireExemplareSafe() {
+  try {
+    return lireExemplaire({ 'carte-inconnue': 3 }, 'carte-inconnue', true);
+  } catch {
+    return 'une exception';
+  }
+}
+
 // ── Cache des apports du compte ──────────────────────────────────────────────
 
 test('les apports du compte se mettent en cache et relisent toléramment', () => {
@@ -249,4 +277,59 @@ test('les apports du compte se mettent en cache et relisent toléramment', () =>
     cache.donnees.set(RPG_COLLECTION_STORAGE_KEY, '{ cassé');
     assert.deepEqual(chargerCollectionDistante(), [], 'un cache corrompu rend une liste vide');
   });
+});
+
+// ── Le playset, le stock, et ce que la pastille a le droit de promettre ──────
+
+test('la pastille du catalogue dit exactement ce que le deck laisse aligner', () => {
+  // Un chiffre, deux écrans : le Souk vend une copie parce que le deck la
+  // jouera. Si les deux lectures divergeaient, la pastille promettrait un
+  // exemplaire que l'atelier refuserait — le bug qui a ouvert ce dossier.
+  const cartes = RPG_DUEL_CARDS.filter((carte) => carte.kind !== 'terrain');
+  const collection = collectionJoueur({ acquis: { gel: true, cartes: cartes.map((carte) => carte.id) } });
+  for (const [id, nombre] of [[cartes[0].id, 1], [cartes[1].id, 2], [cartes[2].id, 0], [cartes[3].id, 7]]) {
+    const comptes = { [id]: nombre };
+    assert.equal(nombreExemplaires(collection, id, comptes), exemplairesPossedables(collection, id, comptes),
+      `${id} : la pastille et le deck ne connaissent qu'une règle`);
+  }
+  assert.equal(plafondVisible(collection, cartes[0].id, { [cartes[0].id]: 1 }),
+    nombreExemplaires(collection, cartes[0].id, { [cartes[0].id]: 1 }),
+    'et l’atelier affiche ce même chiffre');
+});
+
+test('toute copie que le deck réclame en plus s’achète quelque part', () => {
+  // L'invariant qui ferme la porte au piège : une carte bornée par son stock —
+  // et non par le quota du format — DOIT se vendre à l'étal. Une commune y a
+  // droit au playset précisément parce qu'elle n'y est pas vendue.
+  const collection = collectionJoueur({
+    acquis: { gel: true, cartes: RPG_DUEL_CARDS.filter((c) => c.kind !== 'terrain').map((c) => c.id) },
+  });
+  const orphelines = [];
+  for (const carte of RPG_DUEL_CARDS) {
+    if (carte.kind === 'terrain') continue;
+    const plafond = exemplairesPossedables(collection, carte.id, null);
+    const quota = cardCopyLimit(carte);
+    if (plafond >= quota) continue;
+    if (prixCarteDirecte(carte.id) === null) orphelines.push(carte.id);
+  }
+  assert.deepEqual(orphelines, [], 'aucune carte n’est plafonnée sous son quota sans voie d’achat');
+  // Inverse : ce que l'étal vend ne peut pas déjà être couvert par le playset.
+  const vendables = RPG_DUEL_CARDS.filter((carte) => carte.kind !== 'terrain' && prixCarteDirecte(carte.id) !== null);
+  assert.ok(vendables.length > 0, "l'étal a un catalogue");
+  for (const carte of vendables) {
+    assert.equal(carteEnPlayset(carte) && carte.rarity === 'commune', false,
+      `${carte.id} : une commune ne se vend pas, son playset vient de la possession`);
+  }
+});
+
+test('le plafonnement du stock ne mange jamais le playset de la dotation', () => {
+  // Un compteur vide, chez un joueur de la dotation, ne doit rien retirer : la
+  // réparation des decks hérités s'appuie là-dessus pour rester un rangement silencieux.
+  for (const id of COLLECTION_DEPART) {
+    const carte = cardById(id);
+    if (!carte || carte.kind === 'terrain') continue;
+    assert.equal(exemplairesPossedables(COLLECTION_DEPART, id, {}), cardCopyLimit(carte),
+      `${id} : la dotation garde ses deux copies, compteur ou pas`);
+    assert.equal(nombreExemplaires(COLLECTION_DEPART, id, {}), cardCopyLimit(carte));
+  }
 });

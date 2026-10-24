@@ -471,8 +471,16 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
   };
 }
 
-/** Le détail d'une carte tirée, prêt pour la cérémonie d'ouverture. */
-function detaillerTirage(cartes, collection) {
+/**
+ * Le détail d'une carte tirée, prêt pour la cérémonie d'ouverture.
+ *
+ * `comptes` est le stock d'exemplaires du portefeuille
+ * (`portefeuille.exemplaires`, voir `rpgCredits.js`) : la pastille de la
+ * cérémonie dit la même chose que celle du catalogue et de l'étal, jusqu'à la
+ * seconde copie rachetée à l'unité. Le paquet, lui, ne compte jamais ses
+ * doublons : ils se remboursent (doc 13, D4).
+ */
+function detaillerTirage(cartes, collection, comptes = null) {
   const possedees = new Set(collection ?? []);
   const details = cartes.map((id) => {
     const carte = cardById(id);
@@ -485,7 +493,7 @@ function detaillerTirage(cartes, collection) {
       remboursement: doublon ? creditsDeDoublons([id]) : 0,
       // Stock après rangement de cette carte : la pastille de la cérémonie
       // affiche ainsi 1 pour une nouvelle acquisition, sans relire le stockage.
-      exemplaires: nombreExemplaires([...possedees, id], id),
+      exemplaires: nombreExemplaires([...possedees, id], id, comptes),
     };
   });
   return { details, remboursement: details.reduce((somme, carte) => somme + carte.remboursement, 0) };
@@ -513,7 +521,7 @@ function ouvrirUnPaquet({ portefeuille, rayonId, progression = null, collection 
   if (!tirage.ok) return { ok: false, raison: tirage.raison, portefeuille: base, prix, tirage: null };
 
   const possedees = new Set(collection ?? collectionJoueur({ progression }));
-  const { details, remboursement } = detaillerTirage(tirage.cartes, possedees);
+  const { details, remboursement } = detaillerTirage(tirage.cartes, possedees, base.exemplaires);
   let apres = achat.portefeuille;
   apres = ajouterCartesAuPortefeuille(apres, tirage.cartes);
   apres = enregistrerOuverture(apres, {
@@ -586,7 +594,7 @@ export function ouvrirCoffret({ portefeuille, rayonId, progression = null, colle
       pitie: forcer ? TAUX.pitie : apres.pitie,
     });
     if (!tirage.ok) break;
-    const { details, remboursement } = detaillerTirage(tirage.cartes, possedees);
+    const { details, remboursement } = detaillerTirage(tirage.cartes, possedees, base.exemplaires);
     for (const carte of details) possedees.add(carte.id);
     apres = ajouterCartesAuPortefeuille(apres, tirage.cartes);
     apres = enregistrerOuverture(apres, {

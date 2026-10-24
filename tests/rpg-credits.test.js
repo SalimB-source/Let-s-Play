@@ -6,7 +6,12 @@ import {
   JOURNAL_MAX,
   RPG_BOURSE_STORAGE_KEY,
   ajouterCartesAuPortefeuille,
+  ajouterExemplaireAuPortefeuille,
   chargerPortefeuille,
+  exemplairesDuPortefeuille,
+  fusionnerEtals,
+  fusionnerExemplaires,
+  normaliserEtal,
   crediterCredits,
   creditsDeDoublons,
   creditsDeVictoire,
@@ -15,6 +20,7 @@ import {
   fusionnerPortefeuilles,
   gainsDeTour,
   normaliserJournal,
+  normaliserExemplaires,
   normaliserPortefeuille,
   normaliserToursPayees,
   noterOuvertureJournal,
@@ -24,6 +30,7 @@ import {
   sauverPortefeuille,
 } from '../src/games/rpgCredits.js';
 import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
+import { RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 
 /** Remplace `localStorage` le temps d'un test, puis le rétablit. */
 function avecStockage(stockage, test) {
@@ -338,4 +345,115 @@ test('une ouverture avec cartes entre au journal, une ouverture sans cartes non'
   assert.equal(avec.journal[0].coffret, true, 'un paquet de coffret se reconnaît');
   assert.equal(avec.journal[0].mythique, true);
   assert.equal(avec.pitie, 0, 'et la pitié repart, comme avant');
+});
+
+test('la mémoire de l’étal garde les inhabituelles depuis qu’elles s’y vendent', () => {
+  // Le tiroir de l’étal ne retient que ce qui s’y achète. Oublier le palier de
+  // 80 ◈ dans cette liste vidé silencieusement un cinquième de l’étal du jour à
+  // chaque relecture : la carte est proposée, payable, puis disparaît du casier.
+  const inhabituelle = RPG_DUEL_CARDS.find((carte) => carte.kind !== 'terrain'
+    && carte.rarity === 'inhabituelle').id;
+  const etal = {
+    jour: '2026-10-24',
+    cartes: [inhabituelle, 'scribe-de-la-liste', 'tarek'],
+    achetees: [inhabituelle],
+    rafraichissements: 1,
+    majLe: '2026-10-24T10:00:00.000Z',
+  };
+  const relu = normaliserPortefeuille({ cartes: [inhabituelle], exemplaires: { [inhabituelle]: 1 }, etal });
+  assert.deepEqual(relu.etal.cartes, [inhabituelle, 'scribe-de-la-liste', 'tarek'],
+    'les trois offres du jour se relisent telles quelles');
+  assert.deepEqual(relu.etal.achetees, [inhabituelle], 'et l’achat du jour reste comptabilisé');
+  assert.equal(relu.exemplaires[inhabituelle], undefined, 'un seul exemplaire payé reste implicite');
+  // Une commune n’a rien à faire dans cette mémoire : elle ne s’achète pas.
+  const commune = RPG_DUEL_CARDS.find((carte) => carte.kind !== 'terrain' && carte.rarity === 'commune').id;
+  assert.deepEqual(normaliserEtal({ jour: '2026-10-24', cartes: [commune, inhabituelle] }).cartes, [inhabituelle],
+    'la filtre garde sa raison d’être : elle ne connaît que les raretés de l’étal');
+  // La fusion, elle, ne soude jamais deux moitiés d’un même compteur.
+  const fusion = fusionnerEtals(
+    { jour: '2026-10-24', cartes: [inhabituelle], achetees: [], rafraichissements: 0, majLe: '2026-10-24T09:00:00.000Z' },
+    { jour: '2026-10-24', cartes: [inhabituelle, 'scribe-de-la-liste'], achetees: [inhabituelle], rafraichissements: 1, majLe: '2026-10-24T11:00:00.000Z' },
+  );
+  assert.deepEqual(fusion.achetees, [inhabituelle], 'l’achat déjà fait sur un appareil n’est pas rejouable sur l’autre');
+});
+
+// ── Le stock d'exemplaires de l'étal ─────────────────────────────────────────
+//
+// `cartes` répond à « est-ce que je la possède ? », `exemplaires` à « combien de
+// copies ai-je payées ? ». Les deux doivent survivre au stockage, à la fusion
+// entre appareils et à une sauvegarde retouchée — sans jamais rendre une carte
+// jouable ou invisible : la possession ne se discute pas avec un compteur.
+
+test('le stock d’exemplaires part vide et se normalise sans bruit', () => {
+  assert.deepEqual(portefeuilleVide().exemplaires, {}, 'un joueur neuf n’a aucune copie rachetée');
+  assert.deepEqual(normaliserExemplaires('pas un objet', []), {});
+  assert.deepEqual(normaliserExemplaires([2, 3], []), {}, 'un tableau n’est pas un compteur');
+  assert.deepEqual(normaliserExemplaires({ 'tarek': 'deux' }, ['tarek']), {}, 'une valeur illisible tombe');
+  assert.deepEqual(normaliserExemplaires({ 'tarek': 1 }, ['tarek']), {},
+    'le premier exemplaire est la valeur implicite : il ne s’écrit pas');
+  assert.deepEqual(normaliserExemplaires({ 'tarek': 2 }, []), {},
+    'un compteur ne peut pas faire exister une carte');
+  assert.deepEqual(normaliserExemplaires({ 'carte-inconnue': 2 }, ['carte-inconnue']), {},
+    'et une carte hors catalogue n’a pas de stock');
+});
+
+test('le quota de rareté borne le stock, la mythique reste unique', () => {
+  let p = portefeuilleVide();
+  const premiere = ajouterExemplaireAuPortefeuille(p, 'scribe-de-la-liste');
+  assert.equal(premiere.ajoute, true);
+  assert.equal(premiere.total, 1);
+  assert.deepEqual(premiere.portefeuille.cartes, ['scribe-de-la-liste'], 'la copie range aussi la carte');
+  assert.deepEqual(premiere.portefeuille.exemplaires, {}, 'et laisse le premier exemplaire implicite');
+  p = premiere.portefeuille;
+  const seconde = ajouterExemplaireAuPortefeuille(p, 'scribe-de-la-liste');
+  assert.equal(seconde.ajoute, true, 'une rare a droit à un second exemplaire');
+  assert.equal(seconde.total, 2);
+  assert.deepEqual(seconde.portefeuille.exemplaires, { 'scribe-de-la-liste': 2 });
+  p = seconde.portefeuille;
+  const avant = JSON.stringify(p);
+  const troisieme = ajouterExemplaireAuPortefeuille(p, 'scribe-de-la-liste');
+  assert.equal(troisieme.ajoute, false, 'le troisième est hors quota');
+  assert.equal(troisieme.total, 2);
+  assert.equal(JSON.stringify(troisieme.portefeuille), avant, 'et le portefeuille ne bouge pas d’un octet');
+  // Une mythique déclarée à cinq copies par une sauvegarde retouchée : la borne
+  // du catalogue gagne, toujours.
+  const triche = normaliserPortefeuille({ cartes: ['tarek'], exemplaires: { tarek: 5 } });
+  assert.deepEqual(triche.exemplaires, {}, 'tarek est mythique : une seule copie, donc rien d’écrit');
+});
+
+test('la possession d’un appareil ne dépend pas du compteur de l’autre', () => {
+  // Une rare, quota de deux copies : `tarek` est mythique et ne serait jamais
+  // écrit, ce qui est exactement la règle à vérifier ailleurs.
+  assert.deepEqual(fusionnerExemplaires(
+    { 'scribe-de-la-liste': 2 }, { 'scribe-de-la-liste': 1 }, ['scribe-de-la-liste'],
+  ), { 'scribe-de-la-liste': 2 }, 'le maximum gagne, jamais la somme ni le plus récent');
+  assert.deepEqual(fusionnerExemplaires({}, { 'scribe-de-la-liste': 2 }, ['scribe-de-la-liste']),
+    { 'scribe-de-la-liste': 2 });
+  assert.deepEqual(fusionnerExemplaires({ 'scribe-de-la-liste': 2 }, {}, []), {},
+    'une carte que la fusion ne connaît pas perd son compteur, pas sa possession');
+  const local = normaliserPortefeuille({ cartes: ['scribe-de-la-liste'], exemplaires: { 'scribe-de-la-liste': 2 } });
+  const enRetard = normaliserPortefeuille({ cartes: ['scribe-de-la-liste'] });
+  const fusion = fusionnerPortefeuilles(local, enRetard).portefeuille;
+  assert.deepEqual(fusion.exemplaires, { 'scribe-de-la-liste': 2 },
+    'un appareil en retard ne fait pas redescendre une carte de 2 à 1');
+});
+
+test('le stock traverse le stockage local comme le reste du portefeuille', () => {
+  const stockage = stockageEnMemoire();
+  avecStockage({ value: stockage.stockage.value }, () => {
+    const trop = ajouterExemplaireAuPortefeuille(
+      ajouterCartesAuPortefeuille(portefeuilleVide(), ['kraken']), 'kraken', { possedee: true },
+    );
+    assert.equal(trop.ajoute, false, 'une mythique possédée n’a plus de copie à vendre');
+    assert.equal(trop.total, 1, 'et son stock reste au quota, sans écriture');
+    const avecSeconde = ajouterExemplaireAuPortefeuille(
+      ajouterCartesAuPortefeuille(portefeuilleVide(), ['scribe-de-la-liste']), 'scribe-de-la-liste', { possedee: true },
+    );
+    assert.equal(avecSeconde.total, 2);
+    assert.equal(sauverPortefeuille(avecSeconde.portefeuille), true);
+    const relu = chargerPortefeuille();
+    assert.deepEqual(relu.exemplaires, { 'scribe-de-la-liste': 2 }, 'la relecture retrouve le stock');
+    assert.deepEqual(exemplairesDuPortefeuille(relu), { 'scribe-de-la-liste': 2 });
+    assert.deepEqual(exemplairesDuPortefeuille(null), {}, 'un portefeuille absent ne dit rien');
+  });
 });

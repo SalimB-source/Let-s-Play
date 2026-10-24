@@ -19,7 +19,15 @@ import { act } from 'react';
 import { useSablierBourse } from '../src/games/useSablierBourse.js';
 import RpgSouk, { dureeAvantMinuit } from '../src/games/RpgSouk.jsx';
 import RpgQuetesDuJour from '../src/games/RpgQuetesDuJour.jsx';
-import { GAINS, RPG_BOURSE_STORAGE_KEY, crediterCredits, creditsLisible, portefeuilleVide, sauverPortefeuille } from '../src/games/rpgCredits.js';
+import {
+  GAINS,
+  RPG_BOURSE_STORAGE_KEY,
+  chargerPortefeuille,
+  crediterCredits,
+  creditsLisible,
+  portefeuilleVide,
+  sauverPortefeuille,
+} from '../src/games/rpgCredits.js';
 import {
   RPG_GRAINE_STORAGE_KEY, RPG_QUETES_STORAGE_KEY, cleJour, jourPrecedent, queteParId,
 } from '../src/games/rpgQuetes.js';
@@ -215,12 +223,15 @@ export async function checkRpgSoukEcran(assert) {
       'le paquet est la seule voie d’achat — pas de bouton texte qui le double');
     assert.equal(noeud('[data-souk-attente]'), null, 'rien à réclamer : pas de bandeau');
 
-    // ── L’étal direct : cinq cartes, deux raretés, zéro achat sans solde ────
+    // ── L’étal direct : cinq cartes, trois raretés, zéro achat sans solde ───
     const offres = [...document.querySelectorAll('[data-souk-direct-carte]')];
     assert.equal(offres.length, 5, 'l’étal propose exactement cinq cartes');
     assert.equal(new Set(offres.map((carte) => carte.dataset.soukDirectCarte)).size, 5, 'les cinq offres sont distinctes');
-    assert.ok(offres.every((carte) => ['rare', 'mythique'].includes(carte.dataset.soukDirectRarete)),
-      'l’étal ne vend que des rares et des mythiques');
+    assert.ok(offres.every((carte) => ['inhabituelle', 'rare', 'mythique'].includes(carte.dataset.soukDirectRarete)),
+      'l’étal vend des inhabituelles, des rares et des mythiques — jamais une commune');
+    assert.deepEqual(new Set(offres.map((carte) => carte.dataset.soukDirectRarete)),
+      new Set(['inhabituelle', 'rare', 'mythique']),
+      'les trois prix sont visibles chaque jour : la garantie du tirage, pas un vœu');
     assert.ok(offres.some((carte) => carte.dataset.soukDirectRarete === 'rare')
       && offres.some((carte) => carte.dataset.soukDirectRarete === 'mythique'),
     'les deux prix sont représentés chaque jour');
@@ -513,10 +524,26 @@ export async function checkRpgSoukEcran(assert) {
     assert.equal(bourse.bourse.etal.achetees.filter((id) => id === rareId).length, 1, 'et mémorise un seul achat');
     assert.equal(bourse.bourse.ouvertures, ouverturesAvant, 'l’étal ne compte pas comme un booster');
     assert.equal(bourse.bourse.pitie, pitieAvant, 'et ne touche pas à la pitié');
-    assert.equal(noeud(`[data-souk-direct-carte="${rareId}"] [data-card-copies]`)?.dataset.cardCopies, '1',
+    const carteAchetee = noeud(`[data-souk-direct-carte="${rareId}"]`);
+    assert.equal(carteAchetee?.querySelector('[data-card-copies]')?.dataset.cardCopies, '1',
       'la pastille de l’étal voit le nouvel exemplaire');
-    assert.ok(noeud(`[data-souk-direct-acheter="${rareId}"]`).disabled, 'la carte achetée ne peut pas être facturée deux fois');
+    assert.equal(carteAchetee?.querySelector('[data-card-copies]')?.dataset.cardCopiesMax, '2',
+      'et elle dit le quota du deck : « 1/2 », pas un chiffre sans bord');
+    assert.equal(carteAchetee?.dataset.soukDirectEtat, 'achetee',
+      'la carte du jour reste marquée « achetée », pas « déjà obtenue »');
+    assert.match(carteAchetee?.textContent ?? '', /1\/2/, 'la ligne de stock reste lisible sous le nom');
+    assert.ok(noeud(`[data-souk-direct-acheter="${rareId}"]`).disabled, 'la carte achetée ne peut pas être facturée deux fois le même jour');
     assert.equal(noeud('[data-souk-ceremonie]'), null, 'un achat direct ne déclenche aucune cérémonie de booster');
+    // Le bug d’origine, côté DOM : une carte possédée en un exemplaire portait
+    // « déjà possédée » et se refusait à la vente. Plus aucun carte de l’étal ne
+    // doit employer ce mot — soit il reste une copie à acheter, soit le quota
+    // est atteint et l’étal le dit.
+    assert.ok(![...document.querySelectorAll('[data-souk-direct-carte]')]
+      .some((carte) => /Déjà possédée/i.test(carte.textContent ?? '')),
+    'aucune carte de l’étal ne dit « déjà possédée »');
+    const offresApresAchat = [...document.querySelectorAll('[data-souk-direct-carte]')];
+    assert.ok(offresApresAchat.filter((carte) => carte.dataset.soukDirectEtat === 'disponible').length >= 4,
+      'les quatre autres offres du jour restent achetables : une possession partielle n’en ferme aucune');
 
     await act(async () => noeud('[data-souk-direct-rafraichir]').click());
     const secondTirage = [...bourse.bourse.etal.cartes];
@@ -536,6 +563,48 @@ export async function checkRpgSoukEcran(assert) {
     await act(async () => { secondAchat = bourse.acheterCarteDirecte(mythiqueId); });
     assert.equal(secondAchat.ok, false, 'même en rejouant le geste, la seconde facturation est refusée');
     assert.equal(bourse.bourse.credits, soldeApres, 'et le solde ne bouge plus');
+
+    // ── Le lendemain : ce qui manque encore est bel et bien en vente ───────
+    // Le tirage est rejoué à l'identique (même graine, même jour) et seul le
+    // garde-fou des achats se vide — c'est exactement ce que voit le joueur qui
+    // revient après minuit. Une rare tenue à un seul exemplaire doit donc être
+    // **achetable**, et non pas marquée d'un « déjà obtenu » qui la dit finie.
+    await act(async () => rootDirect.unmount());
+    rootDirect = null;
+    conteneurDirect.remove();
+    conteneurDirect = null;
+    await wait(20);
+
+    const veille = chargerPortefeuille();
+    sauverPortefeuille({
+      ...veille,
+      etal: { ...veille.etal, cartes: premierTirage, achetees: [] },
+    });
+    conteneurDirect = document.createElement('div');
+    document.body.appendChild(conteneurDirect);
+    rootDirect = createRoot(conteneurDirect);
+    await act(async () => rendre(rootDirect));
+
+    const auLendemain = noeud(`[data-souk-direct-carte="${rareId}"]`);
+    assert.equal(auLendemain?.dataset.soukDirectEtat, 'disponible',
+      'un exemplaire sur deux : la carte est disponible, pas « déjà obtenue »');
+    assert.match(auLendemain?.querySelector('[data-souk-direct-acheter]')?.textContent ?? '', /Acheter le 2ᵉ/,
+      'le bouton nomme la copie qu’il vend');
+    assert.match(auLendemain?.textContent ?? '', /Il vous manque le 2ᵉ exemplaire · 1\/2/,
+      'et la ligne de stock le redit sous le nom');
+    await act(async () => noeud(`[data-souk-direct-acheter="${rareId}"]`).click());
+    assert.equal(bourse.bourse.credits, 400, 'la seconde copie se paie au même prix, 150 crédits');
+    assert.deepEqual(bourse.bourse.exemplaires, { [rareId]: 2 }, 'le portefeuille compte deux copies');
+    assert.equal(bourse.bourse.cartes.filter((id) => id === rareId).length, 1,
+      'la possession, elle, reste un seul identifiant : c’est le stock qui compte');
+    const complete = noeud(`[data-souk-direct-carte="${rareId}"]`);
+    assert.equal(complete?.dataset.soukDirectEtat, 'complet', 'au quota du deck, la carte devient « complète »');
+    assert.equal(complete?.querySelector('[data-card-copies]')?.dataset.cardCopies, '2');
+    assert.match(complete?.textContent ?? '', /Quota du deck atteint · 2\/2/,
+      'et la raison du refus est écrite noir sur blanc');
+    assert.ok(noeud(`[data-souk-direct-acheter="${rareId}"]`).disabled, 'plus rien à payer sur cette carte');
+    assert.ok(Number(donnee('[data-souk-direct-complet]', 'soukDirectComplet')) >= 1,
+      'l’étal résume en une ligne les cartes du jour déjà au quota');
 
     await act(async () => rootDirect.unmount());
     rootDirect = null;

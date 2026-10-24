@@ -1196,21 +1196,39 @@ export function cardCopyLimit(card) {
 }
 
 /** Cartes conservées dans les archives, mais incompatibles avec le mana automatique. */
+/**
+ * Les raretés que **l'étal du Souk vend à l'unité** (doc 13, D10). La commune en
+ * est absente, et ce n'est pas un oubli : sa seconde copie ne s'achète nulle
+ * part, donc on ne la compte pas — le playset suit la seule possession
+ * (`carteEnPlayset`, `rpgCollection.js`). Le prix, lui, se lit côté Souk.
+ */
+export const RARETES_A_LETAL = Object.freeze(['inhabituelle', 'rare', 'mythique']);
+
+/** Une carte est-elle vendable à l'unité ? Le format sans terrain d'abord. */
+export const carteVendueALUnite = (carte) => carteJouableSansTerrain(carte)
+  && RARETES_A_LETAL.includes(carte.rarity);
+
 export const RPG_CARTES_HORS_FORMAT = Object.freeze([]);
 export const carteJouableSansTerrain = (carte) => Boolean(carte && carte.kind !== 'terrain'
   && !RPG_CARTES_HORS_FORMAT.includes(carte.id));
 
-/** Conversion déterministe des anciennes recettes. Ne modifie jamais la source.
- * Les cartes ajoutées respectent l'identité et les quotas. Avec une collection,
- * seules les cartes possédées peuvent compléter un ancien deck maison. */
-export function convertirDeckSansTerrain(ids, collection = null) {
+/**
+ * Conversion déterministe des anciennes recettes. Ne modifie jamais la source.
+ * Les cartes ajoutées respectent l'identité et les quotas ; avec une collection,
+ * seules les cartes possédées peuvent compléter un ancien deck maison.
+ *
+ * `limiteDe` remplace le plafond de copies (le quota de rareté par défaut) : la
+ * réparation des decks maison y passe par le stock possédé (doc 13, D10), pour ne
+ * jamais réintroduire une copie que le joueur n'a pas payée.
+ */
+export function convertirDeckSansTerrain(ids, collection = null, limiteDe = cardCopyLimit) {
   const resultat = ids.filter((id) => carteJouableSansTerrain(cardById(id)));
   const couleurs = [...new Set(resultat.flatMap((id) => cardColors(id)))];
   if (!couleurs.length) couleurs.push('sable');
   const comptes = {};
   const retenues = resultat.filter((id) => {
     comptes[id] = (comptes[id] ?? 0) + 1;
-    return comptes[id] <= cardCopyLimit(cardById(id));
+    return comptes[id] <= limiteDe(cardById(id));
   }).slice(0, 30);
   const candidats = RPG_DUEL_CARDS.filter((carte) => carteJouableSansTerrain(carte)
     && cardColors(carte).every((c) => couleurs.includes(c))
@@ -1220,7 +1238,7 @@ export function convertirDeckSansTerrain(ids, collection = null) {
   const ordre = [...new Set([...retenues, ...candidats.map((c) => c.id)])];
   for (const id of ordre) {
     if (collection && !collection.includes(id)) continue;
-    while (retenues.length < 30 && retenues.filter((c) => c === id).length < cardCopyLimit(cardById(id))) retenues.push(id);
+    while (retenues.length < 30 && retenues.filter((c) => c === id).length < limiteDe(cardById(id))) retenues.push(id);
     if (retenues.length === 30) break;
   }
   return retenues;

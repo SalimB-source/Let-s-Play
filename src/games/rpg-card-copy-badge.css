@@ -22,3 +22,10 @@
   background: rgba(20, 20, 23, .9);
   color: rgba(240, 240, 240, .68);
 }
+/* Stock au quota : la pastille se dore d'un liseré vert, pour que « 2/2 » se
+   repère d'un coup d'œil entre deux « 1/2 » qui sont, eux, encore à achever. */
+.rpg-card-copy-badge.is-plein {
+  border-color: rgba(160, 214, 140, .78);
+  background: linear-gradient(180deg, rgba(46, 74, 38, .96), rgba(12, 18, 12, .96));
+  color: #d9f0c9;
+}

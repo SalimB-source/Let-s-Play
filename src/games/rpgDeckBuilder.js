@@ -23,6 +23,7 @@
 
 import {
   carteJouableSansTerrain,
+  convertirDeckSansTerrain,
   RPG_ELEMENTS,
   cardById,
   cardColorCost,
@@ -31,7 +32,13 @@ import {
   rpgValiderDeck,
   terrainManaColors,
 } from './rpgCards.js';
-import { fusionnerAcquisitions, fusionnerCollections, normaliserAcquis, normaliserCollection } from './rpgCollection.js';
+import {
+  exemplairesPossedables,
+  fusionnerAcquisitions,
+  fusionnerCollections,
+  normaliserAcquis,
+  normaliserCollection,
+} from './rpgCollection.js';
 import { fusionnerPortefeuilles, normaliserPortefeuille } from './rpgCredits.js';
 import { fusionnerQuetes, normaliserEtatQuetes } from './rpgQuetes.js';
 import { fusionnerProfils, normaliserProfil } from './rpgProfil.js';
@@ -259,10 +266,21 @@ export function compteExemplaires(cardIds) {
 }
 
 /**
- * L'ajout d'une carte est-il permis ici ? Rend `{ ok, raison }` — carte
- * inconnue, verrouillée (hors collection) ou quota de rareté atteint.
+ * L'ajout d'une carte est-il permis ici ? Rend `{ ok, raison }`.
+ *
+ * Quatre refus, dans l'ordre : carte inconnue, hors format, verrouillée (hors
+ * collection), puis **plus d'exemplaire mobilisable**. Le dernier se lit dans
+ * `exemplairesPossedables` (`rpgCollection.js`), pas dans le seul quota de
+ * rareté : depuis la règle de l'étal (doc 13, D10), un deck aligne autant de
+ * copies qu'on en **possède**, sauf playset (communes et dotation, qui tiennent
+ * leur seconde copie de la possession seule).
+ *
+ * `comptes` est le stock du portefeuille (`exemplairesDuPortefeuille`,
+ * `rpgCredits.js`). Sans lui — et sans collection — la lecture reste l'ancienne :
+ * le quota de rareté, ce qui garde les decks du catalogue et les arènes
+ * d'essai indépendants de la boutique.
  */
-export function peutAjouterCarte(cardId, cardIds, collection = null) {
+export function peutAjouterCarte(cardId, cardIds, collection = null, comptes = null) {
   const carte = cardById(cardId);
   if (!carte) return { ok: false, raison: 'Carte inconnue.' };
   if (!carteJouableSansTerrain(carte)) return { ok: false, raison: 'Carte hors format : le mana est automatique, sans terrain.' };
@@ -271,16 +289,75 @@ export function peutAjouterCarte(cardId, cardIds, collection = null) {
     return { ok: false, raison: 'Carte verrouillée : elle se débloque dans les Tours de Bab El.' };
   }
   const possedees = compteExemplaires(cardIds).get(cardId) ?? 0;
-  const limite = cardCopyLimit(carte);
-  if (possedees >= limite) {
-    return {
-      ok: false,
-      raison: limite === 1
-        ? 'Une seule exemplaire autorisé pour cette rareté.'
-        : `Quota atteint : ${limite} exemplaires au plus.`,
-    };
+  const mobilisables = collection ? exemplairesPossedables(collection, cardId, comptes) : cardCopyLimit(carte);
+  const quota = cardCopyLimit(carte);
+  if (possedees >= mobilisables) {
+    if (quota === 1) return { ok: false, raison: 'Un seul exemplaire autorisé pour cette rareté.' };
+    if (collection && mobilisables < quota) {
+      const mot = mobilisables > 1 ? `${mobilisables} exemplaires` : 'Un seul exemplaire';
+      return { ok: false, raison: `${mot} en collection : la copie suivante s'achète au Souk.` };
+    }
+    return { ok: false, raison: `Quota atteint : ${quota} exemplaires au plus.` };
   }
   return { ok: true, raison: null };
+}
+
+/**
+ * Répare un deck maison construit sous la règle du playset : les copies qui
+ * dépassent le stock **tombent**, et la place libérée est reprise par des
+ * cartes légales — la même mécanique que la conversion des anciennes recettes
+ * (`convertirDeckSansTerrain`), donc le deck revient à trente cartes sans trou.
+ *
+ * Un deck conforme ressort **identique** : la passe peut donc se rejouer à
+ * chaque lecture du casier, y compris après une fusion de compte qui ramènerait
+ * un paquet d'un autre appareil. Rien n'est jamais ajouté à la collection — la
+ * réparation ne donne pas de cartes, elle range celles qui n'ont pas été payées.
+ *
+ * Rend `{ cardIds, retires, ajoutes, modifie }`.
+ */
+export function reparerDeckHorsStock(cardIds, collection = null, comptes = null) {
+  const bruts = Array.isArray(cardIds) ? cardIds : [];
+  const rendu = { cardIds: [...bruts], retires: 0, ajoutes: 0, modifie: false };
+  if (!Array.isArray(collection) || collection.length === 0) return rendu;
+  const limiteDe = (carte) => (carte ? exemplairesPossedables(collection, carte.id, comptes) : 0);
+  const bornes = convertirDeckSansTerrain(bruts, collection, limiteDe);
+  const comptesAvant = compteExemplaires(bruts);
+  const comptesApres = compteExemplaires(bornes);
+  let retires = 0;
+  for (const [id, nombre] of comptesAvant) retires += Math.max(0, nombre - (comptesApres.get(id) ?? 0));
+  let ajoutes = 0;
+  for (const [id, nombre] of comptesApres) ajoutes += Math.max(0, nombre - (comptesAvant.get(id) ?? 0));
+  if (bornes.length === bruts.length && retires === 0) return rendu;
+  return { cardIds: bornes, retires, ajoutes, modifie: true };
+}
+
+/**
+ * La même passe pour le casier entier. Un casier conforme ressort **tel quel**,
+ * `modifie: false` : on peut donc l'appeler à chaque lecture sans jamais toucher
+ * l'horodatage d'un deck ni déclencher d'écriture. Quand quelque chose est
+ * retiré, le deck est re-horodaté — la copie rangée devient celle que la
+ * synchronisation propagera aux autres appareils.
+ *
+ * Rend `{ casier, modifie, retires, ajoutes }`.
+ */
+export function reparerCasierHorsStock(casier, collection = null, comptes = null) {
+  const decks = normaliserDecksMaison(casier);
+  const supprimes = normaliserSupprimesMaison(casier);
+  const conforme = { casier: { decks, supprimes }, modifie: false, retires: 0, ajoutes: 0 };
+  if (!Array.isArray(collection) || collection.length === 0) return conforme;
+  let modifie = false;
+  let retires = 0;
+  let ajoutes = 0;
+  const repares = decks.map((deck) => {
+    const repare = reparerDeckHorsStock(deck.cardIds, collection, comptes);
+    if (!repare.modifie) return deck;
+    modifie = true;
+    retires += repare.retires;
+    ajoutes += repare.ajoutes;
+    return { ...deck, cardIds: repare.cardIds, majLe: maintenantIso() };
+  });
+  if (!modifie) return conforme;
+  return { casier: { decks: repares, supprimes }, modifie: true, retires, ajoutes };
 }
 
 /** Paliers de la courbe de mana, façon Arena : 1 à 6, puis « 7+ ». */
@@ -356,24 +433,34 @@ export function completerEnTerrains(cardIds, collection = null) {
  * Rend `{ ok, raisons: [] }` — les deux familles de raisons sont listées
  * ensemble, pour que la fiche explique tout d'un coup.
  */
-export function rpgValiderDeckMaison(cardIds, collection = null) {
+export function rpgValiderDeckMaison(cardIds, collection = null, comptes = null) {
   const raisons = [];
-  const structurelle = rpgValiderDeck(Array.isArray(cardIds) ? cardIds : []);
+  const liste = Array.isArray(cardIds) ? cardIds : [];
+  const structurelle = rpgValiderDeck(liste);
   if (!structurelle.ok) raisons.push(structurelle.raison);
   if (Array.isArray(collection)) {
     const possedees = new Set(collection);
-    const horsCollection = [...new Set((Array.isArray(cardIds) ? cardIds : []))].filter((id) => !possedees.has(id));
+    const horsCollection = [...new Set(liste)].filter((id) => !possedees.has(id));
     if (horsCollection.length) {
       raisons.push(`cartes hors collection : ${horsCollection.slice(0, 3).join(', ')}${horsCollection.length > 3 ? '…' : ''}`);
+    }
+    // Le stock, maintenant qu'il se compte : deux copies alignées pour une seule
+    // payée ne sont pas un deck « illégal » au sens du format — c'est un deck
+    // qui joue une carte qu'on n'a pas. La raison le nomme copie par copie.
+    const horsStock = [...compteExemplaires(liste).entries()]
+      .filter(([id, nombre]) => possedees.has(id) && nombre > exemplairesPossedables(collection, id, comptes))
+      .map(([id, nombre]) => `${cardById(id)?.name ?? id} (${nombre}/${exemplairesPossedables(collection, id, comptes)})`);
+    if (horsStock.length) {
+      raisons.push(`exemplaires non possédés : ${horsStock.slice(0, 3).join(', ')}${horsStock.length > 3 ? '…' : ''}`);
     }
   }
   return { ok: raisons.length === 0, raisons };
 }
 
-/** Un deck maison se joue s'il est structurellement valide et entièrement possédé. */
-export function deckMaisonEstSelectionnable(deck, collection = null) {
+/** Un deck maison se joue s'il est structurellement valide, possédé et dans son stock. */
+export function deckMaisonEstSelectionnable(deck, collection = null, comptes = null) {
   if (!deck?.maison || !Array.isArray(deck.cardIds)) return false;
-  return rpgValiderDeckMaison(deck.cardIds, collection).ok;
+  return rpgValiderDeckMaison(deck.cardIds, collection, comptes).ok;
 }
 
 /**

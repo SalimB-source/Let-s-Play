@@ -32,6 +32,7 @@ import {
   carteEstArme,
 } from './rpgCards.js';
 import { SortSceau } from './rpgSortSignature.jsx';
+import { plafondVisible } from './rpgCollection.js';
 import {
   RPG_ASSISTANT_CREATURES,
   RPG_ASSISTANT_SORTS,
@@ -41,7 +42,17 @@ import {
 
 const GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀' };
 const COULEUR_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
-const CATALOGUE = { cartes: RPG_DUEL_CARDS, couleursDe: cardColors, limiteDe: cardCopyLimit };
+/**
+ * Le catalogue que l'assistant pose sur la table. `limiteDe` n'est PAS le quota
+ * de rareté par défaut : l'assistant compose avec le **stock** (doc 13, D10),
+ * sinon il générerait un deck à trente cartes dont l'atelier refuserait les
+ * doublons — un deck né conforme dans l'assistant, hors stock à l'enregistrement.
+ */
+const cataloguePour = (collection, exemplaires) => ({
+  cartes: RPG_DUEL_CARDS,
+  couleursDe: cardColors,
+  limiteDe: (carte) => (carte ? plafondVisible(collection, carte.id, exemplaires) : 0),
+});
 
 const typeLabel = (carte) => (carteEstArme(carte) ? 'Arme'
   : carte.kind === 'magie' ? 'Magie'
@@ -96,6 +107,7 @@ function Vignette({ carte, choisi, max, onChoisir, artUrl, surSfx, onHoverCard, 
 
 export function RpgDeckAssistant({
   collection = [],
+  exemplaires = null,
   artUrl = (id) => id,
   onGenerer,
   onFermer,
@@ -110,13 +122,14 @@ export function RpgDeckAssistant({
   const [message, setMessage] = useState('');
 
   const rangEtape = ETAPES.findIndex((entree) => entree.id === etape);
+  const catalogue = useMemo(() => cataloguePour(collection, exemplaires), [collection, exemplaires]);
   const candidatsCreatures = useMemo(
-    () => cartesPourEtape([...couleurs], 'creatures', CATALOGUE, collection),
-    [couleurs, collection],
+    () => cartesPourEtape([...couleurs], 'creatures', catalogue, collection),
+    [couleurs, collection, catalogue],
   );
   const candidatsSorts = useMemo(
-    () => cartesPourEtape([...couleurs], 'sorts', CATALOGUE, collection),
-    [couleurs, collection],
+    () => cartesPourEtape([...couleurs], 'sorts', catalogue, collection),
+    [couleurs, collection, catalogue],
   );
 
   const basculerCouleur = (couleur) => {

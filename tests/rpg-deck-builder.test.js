@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RPG_DUEL_CARDS, cardById, convertirDeckSansTerrain } from '../src/games/rpgCards.js';
-import { collectionJoueur } from '../src/games/rpgCollection.js';
+import { RPG_DUEL_CARDS, cardById, cardCopyLimit, convertirDeckSansTerrain } from '../src/games/rpgCards.js';
+import { carteEnPlayset, collectionJoueur, exemplairesPossedables, plafondVisible } from '../src/games/rpgCollection.js';
 import { fusionnerCollections } from '../src/games/rpgCollection.js';
 import {
+  RPG_DECK_TAILLE,
   RPG_DECKS_MAISON_LIMITE,
   RPG_DECKS_MAISON_STORAGE_KEY,
   casierMaisonVide,
@@ -21,6 +22,8 @@ import {
   normaliserSupprimesMaison,
   nouvelIdDeckMaison,
   peutAjouterCarte,
+  reparerCasierHorsStock,
+  reparerDeckHorsStock,
   repartitionCouleurs,
   rpgValiderDeckMaison,
   sauverCasierMaison,
@@ -373,4 +376,154 @@ test('fusionnerEtatsSablier synchronise la progression du mode Histoire (étages
   assert.deepEqual(fusion.etat.histoire.recit.choix, { 'diffusion-liste': 'publique' });
   assert.equal(fusion.modifie, true);
 });
+
+// ── Le deck compte les exemplaires payés (doc 13, D10) ───────────────────────
+
+/**
+ * Les cartes de test sont choisies dans le catalogue vivant, jamais écrites en
+ * dur : si le playset bouge un jour, ce sont les préconditions qui crient, pas
+ * une attente silencieusement vidée de son sens.
+ */
+function cartePourTest({ rarete, dotee }) {
+  const dot = new Set(COLLECTION);
+  const carte = RPG_DUEL_CARDS.find((candidat) => candidat.kind !== 'terrain'
+    && candidat.rarity === rarete
+    && dot.has(candidat.id) === dotee);
+  assert.ok(carte, `le catalogue contient une ${rarete} ${dotee ? 'dans' : 'hors'} dotation`);
+  return carte.id;
+}
+
+const RARE = cartePourTest({ rarete: 'rare', dotee: false });
+const INHABITUELLE = cartePourTest({ rarete: 'inhabituelle', dotee: false });
+const COMMUNE = cartePourTest({ rarete: 'commune', dotee: false });
+const COMMUNE_DOTEE = cartePourTest({ rarete: 'commune', dotee: true });
+const INHABITUELLE_DOTEE = cartePourTest({ rarete: 'inhabituelle', dotee: true });
+// Une collection qui possède les trois cartes de test : sans ça, la règle répond
+// « 0 » pour bonne raison (rien n'est possédé) et le test ne dit plus rien.
+const AVEC = [...COLLECTION, RARE, INHABITUELLE, COMMUNE];
+
+test('le playset est une règle : communes et dotation tiennent leurs deux copies sans rien payer', () => {
+  assert.equal(carteEnPlayset(COMMUNE), true, 'une commune reste au playset — l’étal n’en vend pas');
+  assert.equal(carteEnPlayset(RARE), false, 'une rare hors dotation se compte en exemplaires payés');
+  assert.equal(carteEnPlayset(INHABITUELLE), false, 'une inhabituelle hors dotation aussi : c’est le palier à 80 ◈');
+  assert.equal(carteEnPlayset(COMMUNE_DOTEE), true, 'la dotation est un playset, communes comprises');
+  assert.equal(carteEnPlayset(INHABITUELLE_DOTEE), true, 'et ses inhabituelles aussi : pas de dette sur ce qui est déjà donné');
+  assert.equal(carteEnPlayset('carte-fantome'), false, 'une carte inconnue ne peut être en playset');
+  // Le plafond, tel que l’atelier le lit.
+  assert.equal(exemplairesPossedables(COLLECTION, COMMUNE, null), 0, 'non possédée : rien à aligner du tout');
+  assert.equal(exemplairesPossedables(AVEC, COMMUNE, null), cardCopyLimit(cardById(COMMUNE)),
+    'possédée une seule fois, la commune tient pourtant son playset');
+  assert.equal(exemplairesPossedables(AVEC, RARE, null), 1, 'débloquer une rare donne UN exemplaire, pas le carton');
+  assert.equal(exemplairesPossedables(AVEC, RARE, { [RARE]: 1 }), 1);
+  assert.equal(exemplairesPossedables(AVEC, RARE, { [RARE]: 2 }), 2, 'la copie payée ouvre la seconde place');
+  assert.equal(exemplairesPossedables(AVEC, RARE, { [RARE]: 9 }), 2, 'le stock ne dépasse jamais le quota du format');
+  assert.equal(exemplairesPossedables(AVEC, 'carte-fantome', { 'carte-fantome': 4 }), 0, 'et ne crédite pas une carte inconnue');
+});
+
+test('le plafond affiché ne promet jamais ce que le deck refuse, ni n’invente une dette', () => {
+  assert.equal(plafondVisible(COLLECTION, RARE, null), 1,
+    'une carte verrouillée n’est pas un zéro : la gagner, c’en recevoir un exemplaire');
+  assert.equal(plafondVisible(COLLECTION, COMMUNE, null), 2,
+    'une commune verrouillée annonce déjà son playset entier');
+  assert.equal(plafondVisible(AVEC, RARE, null), 1, 'possédée en un exemplaire : le deck annonce 1, pas le quota');
+  assert.equal(plafondVisible(AVEC, RARE, { [RARE]: 2 }), 2, 'et 2 quand la seconde copie est payée');
+  assert.equal(plafondVisible(COLLECTION, INHABITUELLE_DOTEE, null), 2, 'la dotation garde son playset affiché');
+  assert.equal(plafondVisible(COLLECTION, 'carte-fantome', null), 0, 'une carte inconnue n’a pas de plafond');
+});
+
+test('peutAjouterCarte refuse la seconde copie d’une carte payée une fois', () => {
+  const collection = [...COLLECTION, RARE];
+  assert.equal(peutAjouterCarte(RARE, [], collection, null).ok, true, 'la première copie passe toujours');
+  const refus = peutAjouterCarte(RARE, [RARE], collection, null);
+  assert.equal(refus.ok, false, 'la seconde copie d’un seul exemplaire possédé est refusée');
+  assert.match(refus.raison, /Souk/, 'et le refus nomme où acheter : ' + refus.raison);
+  assert.equal(peutAjouterCarte(RARE, [RARE], collection, { [RARE]: 2 }).ok, true, 'la copie rachetée ouvre la seconde place');
+  assert.match(peutAjouterCarte(RARE, [RARE, RARE], collection, { [RARE]: 2 }).raison, /Quota/, 'le quota de rareté reste le plafond');
+  // Le jeu, lui, ne consulte pas la boutique : sans collection, l’ancien droit.
+  assert.equal(peutAjouterCarte(RARE, [RARE], null, null).ok, true);
+});
+
+test('une inhabituelle et une commune ne vivent pas la même règle à l’atelier', () => {
+  assert.equal(peutAjouterCarte(INHABITUELLE, [INHABITUELLE], AVEC, null).ok, false,
+    'l’inhabituelle se rachète à l’étal : le deck ne joue que ce qui est payé');
+  assert.equal(peutAjouterCarte(INHABITUELLE, [INHABITUELLE], AVEC, { [INHABITUELLE]: 2 }).ok, true,
+    'pour 80 ◈, la seconde copie s’achète et se joue');
+  assert.equal(peutAjouterCarte(COMMUNE, [COMMUNE], AVEC, null).ok, true,
+    'la commune garde son playset : la borner serait une impasse sans voie d’achat');
+});
+
+test('la validation et la sélection du deck lisent le stock, carte par carte', () => {
+  const collection = [...COLLECTION, RARE];
+  const deck = deckValide('Deck surchargé');
+  // Trente cartes, dont deux copies d'une rare payée une fois : la structure est
+  // bonne, seul le stock coince — sinon ce serait le format qui parlerait.
+  const surcharge = { ...deck, cardIds: [...deck.cardIds.slice(0, 28), RARE, RARE] };
+  assert.equal(surcharge.cardIds.length, RPG_DECK_TAILLE);
+  const horsStock = rpgValiderDeckMaison(surcharge.cardIds, collection, null);
+  assert.equal(horsStock.ok, false);
+  assert.ok(horsStock.raisons.some((raison) => /exemplaires non possédés/.test(raison)),
+    'la raison nomme la carte et son plafond : ' + horsStock.raisons.join(' · '));
+  assert.equal(deckMaisonEstSelectionnable(surcharge, collection, null), false);
+  assert.equal(deckMaisonEstSelectionnable(surcharge, collection, { [RARE]: 2 }), true,
+    'payer la seconde copie rend le deck jouable — c’est le ressort du Souk');
+  // Un deck de dotation n’a rien à payer : le stock ne le touche pas.
+  assert.deepEqual(rpgValiderDeckMaison(deck.cardIds, COLLECTION, null), { ok: true, raisons: [] });
+  assert.deepEqual(rpgValiderDeckMaison(deck.cardIds, COLLECTION, {}), { ok: true, raisons: [] },
+    'un stock vide ne retire rien à ce que le playset autorise déjà');
+});
+
+test('la réparation rend les copies de trop et complète le deck, sans rien donner', () => {
+  const collection = [...COLLECTION, RARE];
+  // Trente cartes dont deux copies d’une rare payée une fois : la seconde tombe,
+  // et sa place revient à une carte légale — le deck ne reste pas à vingt-neuf.
+  const surcharge = [...deckValide('Deck surchargé').cardIds.slice(0, 28), RARE, RARE];
+  assert.equal(surcharge.length, 30);
+  const repare = reparerDeckHorsStock(surcharge, collection, null);
+  assert.equal(repare.modifie, true);
+  assert.equal(repare.retires, 1, 'la seconde copie de RARE tombait, une seule');
+  assert.equal(repare.ajoutes, 1, 'et la place libérée est reprise');
+  assert.equal(repare.cardIds.filter((id) => id === RARE).length, 1);
+  assert.equal(repare.cardIds.length, 30, 'le deck ne reste pas boiteux');
+  assert.deepEqual(rpgValiderDeckMaison(repare.cardIds, collection, null), { ok: true, raisons: [] });
+  assert.ok(repare.cardIds.every((id) => collection.includes(id)), 'la réparation ne joue que des cartes possédées');
+  assert.equal(reparerDeckHorsStock(repare.cardIds, collection, null).modifie, false, 'rejouée, elle ne touche plus rien');
+  assert.equal(reparerDeckHorsStock(surcharge, null, null).modifie, false, 'sans collection, elle ne juge pas');
+  assert.deepEqual(reparerDeckHorsStock(surcharge, collection, { [RARE]: 2 }).cardIds, surcharge,
+    'une carte payée deux fois n’a rien à réparer');
+});
+
+test('la conversion des anciennes recettes respecte le plafond qu’on lui donne', () => {
+  const surcharge = [...Array(30).fill(COMMUNE)];
+  const parDefaut = convertirDeckSansTerrain(surcharge, AVEC);
+  assert.equal(parDefaut.filter((id) => id === COMMUNE).length, cardCopyLimit(cardById(COMMUNE)),
+    'le quota de rareté borne déjà les copies, playset ou pas');
+  const borne = convertirDeckSansTerrain(surcharge, AVEC, () => 1);
+  assert.equal(borne.filter((id) => id === COMMUNE).length, 1, 'un plafond plus strict est obéi');
+  assert.ok(borne.every((id, index) => borne.indexOf(id) === index),
+    'un plafond à un exemplaire se respecte jusqu’au bout de la conversion, retenues comprises');
+  assert.ok(borne.length <= parDefaut.length, 'et borne davantage, jamais l’inverse');
+});
+
+test('le casier entier passe par la même range, et ne se re-horodate pas pour rien', () => {
+  const collection = [...COLLECTION, RARE];
+  const conforme = deckValide('Deck rangé');
+  const surcharge = normaliserDeckMaison({
+    id: 'maison-surcharge',
+    nom: 'Deck surchargé',
+    cardIds: [...conforme.cardIds.slice(0, 29), RARE, RARE],
+    majLe: '2020-01-01T00:00:00.000Z',
+  });
+  const casier = { decks: [conforme, surcharge], supprimes: [] };
+  const range = reparerCasierHorsStock(casier, collection, null);
+  assert.equal(range.modifie, true);
+  assert.equal(range.casier.decks.length, 2);
+  assert.equal(range.casier.decks.find((deck) => deck.id === conforme.id).majLe, conforme.majLe,
+    'un deck conforme garde son horodatage : la range ne le fait pas passer pour récent');
+  const ajuste = range.casier.decks.find((deck) => deck.id === 'maison-surcharge');
+  assert.notEqual(ajuste.majLe, surcharge.majLe, 'le deck rangé se re-horodate, pour que la copie réparée gagne la fusion');
+  assert.equal(reparerCasierHorsStock(range.casier, collection, null).modifie, false, 'et ne se rejoue plus');
+  assert.equal(reparerCasierHorsStock({ decks: [surcharge], supprimes: [] }, [], null).modifie, false,
+    'une collection vide ne fait pas tomber un deck : rien n’est possédé, rien n’est jugé');
+});
+
 

@@ -550,6 +550,9 @@ export function useSablierBourse({
       portefeuille: jour.portefeuille,
       cardId,
       collection,
+      // Le stock d'exemplaires vit dans le portefeuille : c'est lui qui dit si
+      // l'étal a encore une copie à vendre pour cette carte.
+      exemplaires: jour.portefeuille.exemplaires,
       graine,
     });
     if (!achat.ok) {

@@ -153,7 +153,32 @@ decks maison par `rpgValiderDeckMaison` dans `src/games/rpgDeckBuilder.js`) :
 | Terrains | **aucun** : les terrains ont été retirés du jeu, le mana est automatique |
 | Couleurs | **1 à 3** |
 | Mythique | **× 1** |
-| Autres cartes | **× 2** |
+| Communes, et cartes de la dotation de départ | **× 2** — le **playset** : la possession suffit, rien à payer |
+| Inhabituelles et rares d'un set récent | **× 2 payées** : le deck ne joue que les exemplaires achetés (dossier 13, D10 bis) |
+
+La troisième ligne du tableau est une **règle du deck**, pas une phrase de la
+boutique : elle est écrite une seule fois, dans `exemplairesPossedables`
+(`rpgCollection.js`), et lue par les quatre endroits qui pourraient la contredire —
+`peutAjouterCarte` (les deux « + » de l'atelier), `rpgValiderDeckMaison` (le
+verdict), `deckMaisonEstSelectionnable` (la sélection du deck) et la pastille du
+catalogue (`nombreExemplaires`, qui lui délègue). Un chiffre, deux écrans : la
+vitrine ne promet plus ce que l'atelier refuse, et l'atelier ne refuse plus ce que
+la vitrine annonce.
+
+Le plafond reste un droit pour les **communes** et la **dotation** : `RARETES_A_LETAL`
+ne les vend pas, donc les borner au stock les rendrait incomplètes à vie — un
+deck qui réclame une copie que personne ne peut payer est un piège, pas une règle.
+Un test le crie sur tout le catalogue : *toute copie que le deck réclame en plus
+du stock s'achète quelque part.*
+
+Enfin, **les decks écrits avant cette règle sont rangés, pas confisqués**
+(`reparerDeckHorsStock`, puis `reparerCasierHorsStock` pour le casier) : les copies
+de trop tombent et la place libérée revient aux cartes légales, par la mécanique
+qui convertissait déjà les anciennes recettes (`convertirDeckSansTerrain`, dont le
+plafond `limiteDe` devient paramétrable). La passe court au montage du hook et
+**après** la fusion du compte — jamais entre les deux, ce qui jetterait des copies
+payées sur l'autre appareil — et ne touche pas un deck conforme : horodatage
+intact, aucune écriture, donc aucun risque à la rejouer.
 
 Un deck maison porte un nom (60 caractères au plus, tronqué sans casser), un
 identifiant `maison-*` généré (jamais codé en dur dans les tests : les
@@ -339,13 +364,13 @@ casse.
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/games/rpgCollection.js` | dotation de départ, **révélations** d'étage, **gel des acquis**, `carteReveleePar`, `normaliserCollection` |
-| `src/games/rpgDeckBuilder.js` | limites (nom, plafond, `RPG_DECK_TAILLE = 30`), `rpgValiderDeckMaison`, `normaliserDeckMaison`, `fusionnerEtatsSablier`, et le panneau du deck : `courbeDeMana`, `repartitionCouleurs` (`completerEnTerrains` ne fait plus rien : le mana est automatique) |
+| `src/games/rpgCollection.js` | dotation de départ, **révélations** d'étage, **gel des acquis**, `carteReveleePar`, `normaliserCollection`, et la règle des copies : `carteEnPlayset`, `exemplairesPossedables`, `plafondVisible` |
+| `src/games/rpgDeckBuilder.js` | limites (nom, plafond, `RPG_DECK_TAILLE = 30`), `peutAjouterCarte`, `rpgValiderDeckMaison`, `deckMaisonEstSelectionnable`, `normaliserDeckMaison`, `fusionnerEtatsSablier`, le rangement des decks hors stock (`reparerDeckHorsStock`, `reparerCasierHorsStock`), et le panneau du deck : `courbeDeMana`, `repartitionCouleurs` (`completerEnTerrains` ne fait plus rien : le mana est automatique) |
 | `src/games/rpgDeckAuto.js` | la création assistée : `genererDeckAssiste` (complétion notée), `scoreComplementarite`, `suggestionsNomsDeck`, `particuleDe` |
-| `src/games/RpgDeckAssistant.jsx` | l'assistant en trois étapes (couleurs, 4 créatures, 4 sorts) : composant pur, `onGenerer({ couleurs, creatures, sorts })` rend la main à l'atelier |
+| `src/games/RpgDeckAssistant.jsx` | l'assistant en trois étapes (couleurs, 4 créatures, 4 sorts) : composant pur, `onGenerer({ couleurs, creatures, sorts })` rend la main à l'atelier ; son catalogue passe le **stock** en `limiteDe`, pour qu'un deck né assisté soit enregistrable tel quel |
 | `src/games/RpgDeckAtelier.jsx` + `rpg-deck-atelier.css` | l'éditeur façon Arena (grille, bascules, panneau du deck) : composant pur, tout état vient en props, la persistance et l'aperçu au survol restent au parent |
 | `src/games/rpgLongPress.js`, `src/games/RpgDuelPage.jsx` | le geste d'aperçu au doigt, délégué au menu entier (l'atelier compris) par `onPointerDown` |
-| `src/games/useDecksSablier.js` | casier local, collection, compte, `statutSync`, suppression à pierre tombale |
+| `src/games/useDecksSablier.js` | casier local, collection, **stock d'exemplaires** (`exemplaires` du portefeuille), `statutSync`, suppression à pierre tombale, et la passe de rangement au montage comme après fusion |
 | `src/games/rpgSablierRemote.js` | transport Supabase (lecture `maybeSingle`, upsert tolérant) |
 | `src/games/RpgDuelPage.jsx` | le câblage : crate, étagère maison, fiche, ligne d'état, `enregistrerAtelier` |
 | `src/auth/AuthContext.jsx` | le contexte de compte, lu défensivement par le hook |
@@ -371,6 +396,17 @@ casse.
   définitive à l'échelle de l'appareil ; la confirmation sur la fiche évite
   le `window.confirm` proscrit, la liste `supprimes` évite la résurrection
   lors d'une fusion avec un appareil qui ne sait pas encore.
+- **Le deck joue ce qui a été payé** : deux copies d'une carte achetée une fois
+  n'étaient pas un deck illégal au sens du format, mais un deck qui joue une
+  carte qu'on n'a pas. Le stock devient donc la borne de l'atelier — et le playset
+  l'exception assumée, parce qu'une carte qu'aucun comptoir ne vend ne peut pas
+  être tenue en dette. Le chemin est marqué là où le « +» se grise : l'atelier
+  nomme le prix de la copie manquante sous le nom de la carte.
+- **Réparer plutôt que bloquer ou gâter** : refuser la sélection de tous les decks
+  écrits sous l'ancienne règle aurait puni le joueur d'un changement de règle, et
+  offrir les copies manquantes aurait vidé le comptoir de son sens. Le deck rentre
+  dans son stock, la place part aux cartes légales, et payer la copie la rend —
+  trois comportements qui se vérignent dans `tests/rpg-deck-builder.test.js`.
 - **L'assistant choisit, l'algorithme complète** : les huit cartes posées à la
   main disent ce que le joueur veut jouer ; la notation (synergie, couverture,
   courbe, mix) ne fait que traduire ce vœu en trente cartes. « Sorts » veut
