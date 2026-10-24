@@ -498,6 +498,8 @@ test('renvoyer Orochi ne crée pas de petits, et renvoyer un Petit Orochi le fai
 test('Susanoo reste hors du starter : 5/3 pour 6, Harakiri et exil à l’arrivée', () => {
   const carte = cardById('susanoo');
   assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [6, 5, 3, 1]);
+  assert.deepEqual(carte.arrivee, { type: 'exil', cible: 'creature', coutMin: 5 });
+  assert.match(carte.text, /coût 5 ou plus/);
   const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(deck.cardIds.length, 30);
   assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 0, 'l’autre mythique attend les boosters');
@@ -523,11 +525,17 @@ test('Susanoo reste hors du starter : 5/3 pour 6, Harakiri et exil à l’arriv�
 
 test('Susanoo respecte la protection et peut être joué sans cible sur une table vide', () => {
   const duel = duelTest();
-  const protege = jouer(duel, 'sorcier', 'chien-du-guet');
+  const petite = jouer(duel, 'sorcier', 'samourai-du-torii'); // coût 4 : hors seuil
+  const protege = jouer(duel, 'sorcier', 'oni-de-la-fournaise'); // coût 5 : dans le seuil
   protege.protection = { contre: 'braise', toursRestants: 2 };
   duel.joueur.main.push('susanoo');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', petite.id).raison, 'cible',
+    'une créature de coût inférieur à 5 ne peut pas être ciblée par Susanoo');
   assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', protege.id).raison, 'protection');
   assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', 'inexistante').raison, 'cible');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo').ok, true,
+    'sans cible légale de coût 5 ou plus non protégée, Susanoo se pose sans cible');
+  assert.equal(duel.sorcier.creatures.includes(petite), true, 'la créature de coût 4 reste en jeu');
   const vide = duelTest();
   const susanoo = jouer(vide, 'joueur', 'susanoo');
   const cible = jouer(vide, 'sorcier', 'seigneur-des-machoires');
@@ -537,11 +545,15 @@ test('Susanoo respecte la protection et peut être joué sans cible sur une tabl
 
 test('l’IA choisit une cible à exiler et l’exil retire les auras sans déclencher Harakiri', () => {
   const duel = duelTest();
-  const source = jouer(duel, 'joueur', 'samourai-du-torii');
+  const ronin = jouer(duel, 'joueur', 'ronin-du-soleil-rouge'); // coût 3 : hors seuil
+  const source = jouer(duel, 'joueur', 'samourai-du-torii'); // coût 4 imprimé, +1 par le Grappin → 5
+  duel.joueur.main.push('grappin-d-abordage');
+  assert.equal(rpgJouerArme(duel, 'joueur', 'grappin-d-abordage', source.id).ok, true);
   const cavalier = jouer(duel, 'sorcier', 'cavalier-des-deux-sabres');
   assert.equal(cavalier.atk, 6);
   assert.equal(choisirCibleAutoIA(duel, 'sorcier', cardById('susanoo')), source.id);
   duel.sorcier.main.push('susanoo');
+  assert.equal(rpgJouerCreature(duel, 'sorcier', 'susanoo', ronin.id).raison, 'cible');
   assert.equal(rpgJouerCreature(duel, 'sorcier', 'susanoo', source.id).ok, true);
   assert.deepEqual([cavalier.atk, cavalier.def], [5, 4]);
   assert.ok(!duel.log.some((ligne) => ligne.startsWith('Harakiri')));
@@ -830,12 +842,13 @@ test('la forge compte par source, se retire à l’exil et ne touche jamais la d
   assert.deepEqual([onna.atk, onna.def], [4, 3], 'la Samouraï adverse reçoit la sienne');
   assert.deepEqual([premier.atk, premier.def], [1, 2], 'un Kenshi seul dans son camp ne se forge pas');
   assert.deepEqual([second.atk, second.def], [1, 2]);
-  // On retire les sources par l'exil de Susanoo : l'exil n'est pas une mort,
-  // ni Harakiri, ni capacité de destruction ne se déclenchent — là où une
-  // blessure ferait frapper le Harakiri du Kenshi et brouillerait la mesure.
+  // On retire les sources par l'exil du Père des corbeaux (coût 3 ou moins) :
+  // l'exil n'est pas une mort, ni Harakiri, ni capacité de destruction ne se
+  // déclenchent — là où une blessure ferait frapper le Harakiri du Kenshi et
+  // brouillerait la mesure.
   const exiler = (cibleId) => {
-    duel.joueur.main.push('susanoo');
-    assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', cibleId).ok, true);
+    duel.joueur.main.push('pere-des-corbeaux');
+    assert.equal(rpgJouerCreature(duel, 'joueur', 'pere-des-corbeaux', cibleId).ok, true);
   };
   exiler(premier.id);
   assert.deepEqual([ronin.atk, ronin.def, ronin.pv], [3, 2, 2], 'la forge de l’absent est retirée');
@@ -886,14 +899,14 @@ test('une bannière adverse ne grandit pas mes Samouraïs, et deux bannières se
 
 test('Susanoo exile aussi un porteur des nouvelles armes sans perdre son équipement', () => {
   const duel = duelTest();
-  const porteur = jouer(duel, 'sorcier', 'chien-du-guet');
+  const porteur = jouer(duel, 'sorcier', 'oni-de-la-fournaise');
   duel.sorcier.main.push('takouba-des-pistes');
   assert.equal(rpgJouerArme(duel, 'sorcier', 'takouba-des-pistes', porteur.id).ok, true);
   duel.joueur.main.push('susanoo');
   assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', porteur.id).ok, true);
-  assert.deepEqual(duel.sorcier.exil, ['chien-du-guet']);
+  assert.deepEqual(duel.sorcier.exil, ['oni-de-la-fournaise']);
   assert.ok(duel.sorcier.cimetiere.includes('takouba-des-pistes'));
-  assert.ok(!duel.sorcier.cimetiere.includes('chien-du-guet'));
+  assert.ok(!duel.sorcier.cimetiere.includes('oni-de-la-fournaise'));
 });
 
 test('Tojiro, le pourfendeur : 5/5 mythique à 6, Esquive et Contre-attaque', () => {
