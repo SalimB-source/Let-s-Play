@@ -85,6 +85,7 @@ test('noms des ambiances reflètent bien chaque tour', () => {
   assert.match(RPG_AMBIENT_THEMES['tour-du-fjord'].nom, /hiver|fjord|glace|neige/i);
   assert.match(RPG_AMBIENT_THEMES['tour-du-soleil-rouge'].nom, /soleil|katana|forge|samouraï|acier/i);
   assert.match(RPG_AMBIENT_THEMES['tour-de-la-necropole'].nom, /nécropole|jugement|pesée|ombre|balance/i);
+  assert.match(RPG_AMBIENT_THEMES['tour-du-sablier-renverse'].nom, /sablier|retournement|sable/i);
 });
 
 // La musique existe mais ne se fait entendre que si la page la joue : ce

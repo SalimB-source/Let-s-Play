@@ -248,7 +248,7 @@ test('le sorcier conclut avec son burn plutôt que de chipoter', () => {
 // ── Profils (crochets du mode Histoire) ─────────────────────────────────────
 
 test('les profils IA se normalisent et couvrent niveaux et styles', () => {
-  assert.deepEqual(RPG_NIVEAUX_IA, ['recit', 'normale', 'veilleur']);
+  assert.deepEqual(RPG_NIVEAUX_IA, ['recit', 'normale', 'veilleur', 'sablier']);
   assert.deepEqual(RPG_STYLES_IA, ['agressif', 'equilibre', 'prudent', 'controle']);
   const defaut = rpgProfilIA(null);
   assert.equal(defaut.niveau, 'normale');
@@ -262,6 +262,14 @@ test('les profils IA se normalisent et couvrent niveaux et styles', () => {
   assert.equal(rpgProfilIA({ niveau: 'normale' }).profondeur, 2);
   assert.equal(rpgProfilIA({ niveau: 'veilleur' }).profondeur, 3);
   assert.ok(rpgProfilIA({ niveau: 'veilleur' }).largeur > rpgProfilIA({ niveau: 'normale' }).largeur);
+  // Le Sablier (Tour du Sablier renversé) est le niveau terminal : il voit
+  // un coup plus loin que le Veilleur, explore plus de réponses à chaque
+  // pas, garde la prescience et ne se trompe jamais.
+  const sablier = rpgProfilIA({ niveau: 'sablier' });
+  assert.equal(sablier.profondeur, 4);
+  assert.ok(sablier.largeur > rpgProfilIA({ niveau: 'veilleur' }).largeur);
+  assert.equal(sablier.prescience, true);
+  assert.equal(sablier.tauxErreur, 0);
 });
 
 test('le Veilleur réfléchit plus longtemps quand le plateau et sa main sont chargés', () => {
@@ -273,6 +281,9 @@ test('le Veilleur réfléchit plus longtemps quand le plateau et sa main sont ch
   assert.ok(rpgDelaiReflexionIA(duel) > delaiSimple);
   const duelNormal = duelNu({ sorcierIA: { niveau: 'normale' } });
   assert.ok(delaiSimple > rpgDelaiReflexionIA(duelNormal));
+  // Le Sablier prend encore plus de recul que le Veilleur, à plateau égal.
+  const duelSablier = duelNu({ sorcierIA: { niveau: 'sablier' } });
+  assert.ok(rpgDelaiReflexionIA(duelSablier) > delaiSimple);
 });
 
 test('la recherche tactique simule ses coups sans modifier le duel réel', () => {

@@ -14,6 +14,7 @@ const FEATURES = {
   'tour-du-fjord': ['corniches-gelees', 'cristaux-de-glace', 'drakkar'],
   'tour-du-soleil-rouge': ['toits-recourbes', 'torii-ecarlate', 'bannieres-samourai'],
   'tour-de-la-necropole': ['obelisques', 'colonnes-de-lotus', 'sarcophage'],
+  'tour-du-sablier-renverse': ['sablier-geant', 'chambres-inversees', 'anneau-des-cinq-couleurs'],
 };
 
 function resources(model) {
@@ -30,7 +31,7 @@ function resources(model) {
 
 test('les tours du catalogue ont chacune leur maquette et leur ambiance', () => {
   assert.deepEqual(Object.keys(RPG_STORY_TOWER_THEMES), RPG_STORY_TOURS.map((tour) => tour.id));
-  assert.equal(new Set(Object.values(RPG_STORY_TOWER_THEMES).map((theme) => theme.stone)).size, 7);
+  assert.equal(new Set(Object.values(RPG_STORY_TOWER_THEMES).map((theme) => theme.stone)).size, RPG_STORY_TOURS.length);
   const signatures = new Set();
   for (const tour of RPG_STORY_TOURS) {
     const model = createStoryTowerModel(tour.id);
@@ -57,7 +58,7 @@ test('les tours du catalogue ont chacune leur maquette et leur ambiance', () => 
       for (const texture of resources(model).textures) assert.ok(texture.isDataTexture, 'les textures sont locales, sans image/CDN à charger');
     } finally { disposeStoryTowerModel(model); }
   }
-  assert.equal(signatures.size, 7, 'ce ne sont pas des recolorations du même modèle');
+  assert.equal(signatures.size, RPG_STORY_TOURS.length, 'ce ne sont pas des recolorations du même modèle');
   assert.equal(createStoryTowerModel('tour-inconnue'), null);
 });
 

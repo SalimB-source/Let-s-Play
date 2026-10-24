@@ -473,4 +473,146 @@ export const RPG_RECETTES_HISTOIRE = {
       ['la-derniere-pesee', 1],
     ],
   },
+  /**
+   * ── La Tour du Sablier renversé ──────────────────────────────────────────
+   * Les sept recettes « absolues » de la tour d'épreuves terminale. Leur
+   * règle tient en un mot : **aucun plafond**. Ni `mythiquesMax`, ni
+   * `raresMax` — là où les recettes ci-dessus règlent la rampe des Tours,
+   * celles-ci ouvrent le vivier en grand et le composeur prend
+   * littéralement **les meilleures cartes de l'identité**, mythiques
+   * d'abord, chacune à son maximum légal. La signature ne garde que
+   * l'ouverture de partie (les petits coûts qui tiennent les premiers
+   * tours) : tout le reste est le sommet du catalogue, étage après étage,
+   * dans une identité différente à chaque fois.
+   */
+  /**
+   * Les Veilleurs absolus (Sablier 1) : le Sable sans retenue. Tislit et le
+   * Fennec ouvrent la piste, puis la Dame aux ailes d'or, Salem, Tarek et
+   * Tin Hinan tiennent la muraille — toutes les figures du désert à la fois.
+   */
+  'veilleurs-absolus': {
+    identite: ['sable'],
+    terrains: [],
+    creatures: 19,
+    magies: 8,
+    armes: 3,
+    signature: [
+      ['tislit-des-aures', 2],
+      ['fennec-des-decombres', 2],
+      ['dame-aux-ailes-d-or', 1],
+    ],
+  },
+  /**
+   * La Flamme absolue (Sablier 2) : la Braise au maximum du catalogue —
+   * les treize mythiques de la couleur dans un seul paquet, Kagutsuchi,
+   * Orochi et Susanoo compris. Le Ghul et l'Ashigaru frappent dès le
+   * premier mana, Sahir suit au troisième.
+   */
+  'flamme-absolue': {
+    identite: ['braise'],
+    terrains: [],
+    creatures: 21,
+    magies: 9,
+    armes: 0,
+    signature: [
+      ['ghul-des-cendres', 2],
+      ['ashigaru-des-braises', 2],
+      ['frappe-iaijutsu', 2],
+      ['sahir-des-braises', 1],
+    ],
+  },
+  /**
+   * La Marée absolue (Sablier 3) : l'Eau qui dit non. Contresorts, Ressacs
+   * et Silences d'écume dès l'ouverture, puis toutes les bêtes du fond —
+   * Léviathan, Kraken, Bakunawa et Jörmungandr dans le même paquet.
+   */
+  'maree-absolue': {
+    identite: ['eau'],
+    terrains: [],
+    creatures: 14,
+    magies: 14,
+    armes: 2,
+    signature: [
+      ['ressac', 2],
+      ['silence-decume', 2],
+      ['contresort-des-abimes', 2],
+      ['vipere-de-verre', 1],
+    ],
+  },
+  /**
+   * L'Hiver absolu (Sablier 4) : la Neige au complet. Eirik ouvre au
+   * premier mana, les loups et les boucliers tiennent la croûte, puis les
+   * six figures du Nord descendent ensemble — le Père des corbeaux, le
+   * Maître du marteau, la Dame des neuf mondes et le Serpent du monde.
+   */
+  'hiver-absolu': {
+    identite: ['neige'],
+    terrains: [],
+    creatures: 19,
+    magies: 10,
+    armes: 1,
+    signature: [
+      ['eirik-du-premier-serment', 1],
+      ['loup-des-neiges', 2],
+      ['guerrier-au-bouclier-rond', 2],
+    ],
+  },
+  /**
+   * Le Jugement absolu (Sablier 5) : les Ténèbres sans appel. Le Chacal
+   * et l'Ouvrier paient le Prix dès le premier tour, le Papyrus dévore,
+   * puis le Passeur, la Dévoreuse, le Maître des hiéroglyphes et la
+   * Dernière Pesée ferment le tribunal.
+   */
+  'jugement-absolu': {
+    identite: ['tenebres'],
+    terrains: [],
+    creatures: 19,
+    magies: 10,
+    armes: 1,
+    signature: [
+      ['chacal-du-seuil', 2],
+      ['ouvrier-du-natron', 2],
+      ['papyrus', 2],
+    ],
+  },
+  /**
+   * La Course absolue (Sablier 6) : les Lettres de Marque revenues à leur
+   * sommet. La Mousse hisse la voile, le Raïs et le Cotre accrochent le
+   * pont, la Lettre de marque arme chaque arrivée — et le remplissage
+   * prend le meilleur du Sable et de l'Eau réunis, Chasseur d'Ocracoke
+   * et Barbe-Rousse en tête.
+   */
+  'course-absolue': {
+    identite: ['sable', 'eau'],
+    terrains: [],
+    creatures: 20,
+    magies: 8,
+    armes: 2,
+    signature: [
+      ['mousse-des-galiotes', 2],
+      ['rais-de-la-galiote', 2],
+      ['cotre-de-course', 2],
+      ['lettre-de-marque', 2],
+    ],
+  },
+  /**
+   * Le Sablier (Sablier 7 — le sommet) : le seul paquet tricolore de la
+   * campagne, Sable + Braise + Ténèbres, les trois couleurs du temps qui
+   * tombe. Sans plafond, le composeur y verse **toutes** les mythiques
+   * des trois identités — plus de vingt cartes d'exception dans trente
+   * places. Tislit et le Trait de braise seuls gardent l'ouverture ;
+   * ensuite, chaque carte piochée est une figure.
+   */
+  'le-sablier': {
+    identite: ['sable', 'braise', 'tenebres'],
+    terrains: [],
+    creatures: 20,
+    magies: 9,
+    armes: 1,
+    signature: [
+      ['tislit-des-aures', 2],
+      ['trait-de-braise', 2],
+      ['sahir-des-braises', 1],
+    ],
+  },
 };

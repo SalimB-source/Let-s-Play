@@ -218,6 +218,17 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'momies-de-la-necropole': 'necropole-des-dalles',
   'chacals-du-seuil': 'necropole-des-dalles',
   'juges-de-la-necropole': 'palais-du-pharaon',
+  // La Tour du Sablier renversé : chaque étage « absolu » reçoit dans la
+  // maison de son identité — sept étages, sept terrains différents. Le
+  // Sablier tricolore du sommet tient la Table des Heures, la table
+  // d'origine de Bab El : c'est chez lui que tout a commencé.
+  'veilleurs-absolus': 'erg-du-sahara',
+  'flamme-absolue': 'cour-de-l-empereur',
+  'maree-absolue': 'ruines-de-tipaza',
+  'hiver-absolu': 'village-viking',
+  'jugement-absolu': 'palais-du-pharaon',
+  'course-absolue': 'navire-pirate',
+  'le-sablier': 'table-des-heures',
 };
 
 /** Le terrain d'une couleur de deck sans identité connue. */

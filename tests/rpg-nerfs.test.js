@@ -225,7 +225,7 @@ for (const cote of ['joueur', 'sorcier']) {
     assert.equal(rpgPeutAttaquer(libre), true);
     // Sans défenseur, l’IA voudrait envoyer toutes les créatures disponibles.
     duel[adverse].creatures = [];
-    for (const niveau of ['recit', 'normale', 'veilleur']) {
+    for (const niveau of ['recit', 'normale', 'veilleur', 'sablier']) {
       assert.deepEqual(rpgChoisirAttaquants(duel, cote, { ia: { niveau } }), [libre.id]);
     }
     const avant = structuredClone(duel);

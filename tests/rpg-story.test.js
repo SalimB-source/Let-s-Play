@@ -33,6 +33,7 @@ import {
   tousLesEtages,
 } from '../src/games/rpgStoryTours.js';
 import { RPG_STORY_CAMPAIGN_MINIATURE } from '../src/games/rpgStoryScenes.js';
+import { RPG_RECETTES_HISTOIRE } from '../src/games/rpgDeckRecipes.js';
 
 // ── Données des tours ───────────────────────────────────────────────────────
 
@@ -170,6 +171,80 @@ test('la Tour de la Nécropole fait peser les Ténèbres : quatre étages mono-T
 
   const boss = deckHistoire(tour.etages.at(-1).deck);
   assert.ok(boss.includes('la-devoreuse') && boss.includes('celui-qui-juge'));
+});
+
+test('la Tour du Sablier renversé aligne sept étages de types différents, au-dessus de toutes les tours', () => {
+  const tour = tourHistoireParId('tour-du-sablier-renverse');
+  assert.ok(tour, 'la Tour du Sablier renversé fait partie des tours de Bab El');
+  assert.equal(RPG_STORY_TOURS.at(-1).id, tour.id, 'elle se dresse après toutes les autres');
+  assert.equal(tour.etages.length, 7, 'sept étages');
+  assert.match(tour.resume, /Sablier|sept|maîtres/i, 'son résumé annonce le retour des maîtres');
+
+  // La difficulté dépasse l'échelle historique (0 à 7) dès le premier
+  // palier, monte à chaque étage et culmine au Sablier lui-même.
+  const puissances = tour.etages.map((etage) => etage.puissance);
+  assert.deepEqual(puissances, [8, 9, 10, 11, 12, 13, 14]);
+  const maxAutres = Math.max(...tousLesEtages()
+    .filter(({ tour: autre }) => autre.id !== tour.id)
+    .map(({ etage }) => etage.puissance));
+  assert.ok(puissances[0] > maxAutres, `son premier étage (${puissances[0]}) dépasse le boss le plus fort des autres tours (${maxAutres})`);
+
+  // Tous les gardiens jouent au niveau Sablier — le plus fort du jeu —
+  // et les quatre styles tactiques passent sur la montée.
+  for (const etage of tour.etages) {
+    assert.equal(etage.ia.niveau, 'sablier', `${etage.id} se joue contre un maître absolu`);
+  }
+  assert.deepEqual(new Set(tour.etages.map((etage) => etage.ia.style)), new Set(RPG_STYLES_IA),
+    'les quatre manières de jouer sont représentées');
+
+  // Chaque étage a son paquet et son identité : les cinq couleurs pures,
+  // la Course Sable + Eau, puis le tricolore du sommet.
+  const identites = tour.etages.map((etage) => {
+    const deck = deckHistoire(etage.deck);
+    const validation = rpgValiderDeck(deck);
+    assert.equal(validation.ok, true, `${etage.id} : ${validation.raison}`);
+    return [...new Set(deck.flatMap((id) => cardColors(cardById(id))))].sort().join('+');
+  });
+  assert.equal(new Set(tour.etages.map((etage) => etage.deck)).size, 7, 'aucun paquet ne se répète');
+  assert.equal(new Set(identites).size, 7, 'aucune identité chromatique ne se répète');
+  assert.deepEqual(new Set(identites.slice(0, 5)), new Set(['sable', 'braise', 'eau', 'neige', 'tenebres']),
+    'les cinq couleurs pures ouvrent la tour');
+  assert.equal(identites[5], 'eau+sable', 'le sixième étage est la Course');
+  assert.equal(identites[6].split('+').length, 3, 'le sommet joue trois couleurs');
+  const manieres = tour.etages.map((etage, i) => `${identites[i]}/${etage.ia.style}`);
+  assert.equal(new Set(manieres).size, 7, 'chaque étage est un type de duel différent');
+
+  // « L'IA a les meilleures cartes » : les recettes absolues n'ont aucun
+  // plafond de rareté, et le résultat se lit dans les listes — chaque
+  // paquet absolu aligne au moins autant de mythiques que le paquet de
+  // campagne le plus fourni d'avant, et le Sablier les écrase tous.
+  const mythiques = (deckId) => deckHistoire(deckId)
+    .filter((id) => cardById(id).rarity === 'mythique').length;
+  const absolus = new Set(tour.etages.map((etage) => etage.deck));
+  const maxAvant = Math.max(...Object.keys(RPG_STORY_DECKS)
+    .filter((deckId) => !absolus.has(deckId)).map(mythiques));
+  for (const etage of tour.etages) {
+    const recette = RPG_RECETTES_HISTOIRE[etage.deck];
+    assert.ok(recette, `${etage.deck} a sa recette`);
+    assert.equal(recette.mythiquesMax, undefined, `${etage.deck} : aucun plafond de mythiques`);
+    assert.equal(recette.raresMax, undefined, `${etage.deck} : aucun plafond de rares`);
+    assert.ok(mythiques(etage.deck) >= maxAvant,
+      `${etage.deck} aligne ${mythiques(etage.deck)} mythiques, au moins le maximum d'avant (${maxAvant})`);
+  }
+  assert.ok(mythiques('le-sablier') >= 20, 'le Sablier verse plus de vingt mythiques dans trente cartes');
+  assert.ok(deckHistoire('flamme-absolue').includes('kagutsuchi-flamme-originelle')
+    && deckHistoire('flamme-absolue').includes('orochi'), 'la Braise absolue a ses deux plus grandes figures');
+  assert.ok(deckHistoire('hiver-absolu').includes('pere-des-corbeaux')
+    && deckHistoire('hiver-absolu').includes('serpent-du-monde'), 'la Neige absolue réunit les figures du Nord');
+
+  // Les six premiers gardiens portent le portrait de leur figure, qui
+  // joue dans leur paquet ; le Sablier, lui, n'a pas de visage.
+  for (const etage of tour.etages.slice(0, 6)) {
+    assert.ok(etage.avatar, `${etage.id} a son portrait`);
+    assert.equal(cardById(etage.avatar).rarity, 'mythique', `${etage.id} : un maître, une figure mythique`);
+    assert.ok(deckHistoire(etage.deck).includes(etage.avatar), `${etage.id} : sa figure joue dans son paquet`);
+  }
+  assert.equal(tour.etages.at(-1).avatar, null, 'le Sablier n’a pas de visage');
 });
 
 test('chaque tour garde une peinture de repli livrée pour les appareils sans WebGL', () => {
