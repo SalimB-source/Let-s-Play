@@ -336,6 +336,18 @@ assert.match(battleCss, /\.rpg-hidden-hand__card\s*\{[^}]*width:\s*78px;[^}]*hei
   'la main cachée du sorcier se lit en vraies cartes (78 × 101), pas en vignettes');
 assert.match(battleCss, /@media \(max-width: 620px\) \{\s*\.rpg-hidden-hand \{ top: 1%; \}\s*\.rpg-hidden-hand__card \{ width: 52px; height: 67px; margin-left: -18px;/s,
   'sur un écran étroit, la main cachée garde la même proportion, un cran plus petite');
+// ── La main du sorcier, au doigt ─────────────────────────────────────────────
+// Elle était effacée sur téléphone (`display: none`) : on jouait sans voir la
+// main d'en face. Elle revient dans la bande de navigation, en dos de cartes —
+// jamais une face — et sans prendre le moindre toucher.
+assert.doesNotMatch(mobileCss, /\.card-table > \.rpg-hidden-hand\s*\{[^}]*display:\s*none/s,
+  'la main adverse n’est plus effacée sur téléphone');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-hidden-hand\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;[^}]*pointer-events:\s*none;/s,
+  'au doigt, l’éventail du sorcier se range dans la rangée de navigation et ne capte aucun toucher');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hidden-hand__card\s*\{[^}]*width:\s*var\(--rpg-hidden-card-w\);[^}]*height:\s*calc\(var\(--rpg-hidden-card-w\) \* 1\.3\);/s,
+  'la carte cachée du doigt suit l’échelle de la rangée, sans quitter le format du dos de carte (1,3)');
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-hidden-hand__card\s*\{[^}]*background-image:\s*none/s,
+  'le dos gravé de la main adverse reste au doigt : rien de sa face n’est montré');
 
 assert.match(battleCss, /\.rpg-card-piles--player\s*\{\s*top:\s*44%;\s*right:\s*auto;\s*left:\s*14px;/,
   'le deck et le cimetière du joueur sont à gauche sur grand écran, centrés dans la bande libre au lieu de coller à la plaque du joueur');

@@ -65,6 +65,11 @@ import {
 import { appliquerEvenementDuel, compterReclamations } from './rpgEvenementsDuel.js';
 import { ouvrirBooster, ouvrirBoosterOffert, ouvrirCoffret, rayonsOuverts } from './rpgBoosters.js';
 import {
+  acheterCarteDirecte as acheterDansEtal,
+  ouvrirEtalDuJour,
+  rafraichirEtalDuJour,
+} from './rpgSoukDirect.js';
+import {
   XP,
   boostersDus,
   chargerProfil,
@@ -115,8 +120,10 @@ function etatLocalComplet() {
  * ne se tire pas tant que le Souk est fermé.
  */
 function etatInitial(progression, compteId = null) {
-  const bourse = chargerPortefeuille();
-  const journee = ouvrirJournee({ etat: chargerEtatQuetes(), graine: chargerGraine(compteId), progression });
+  const graine = chargerGraine(compteId);
+  const bourse = ouvrirEtalDuJour({ portefeuille: chargerPortefeuille(), graine }).portefeuille;
+  const journee = ouvrirJournee({ etat: chargerEtatQuetes(), graine, progression });
+  sauverPortefeuille(bourse);
   sauverEtatQuetes(journee.etat);
   return { bourse, quetes: journee.etat, profil: chargerProfil() };
 }
@@ -173,12 +180,15 @@ export function useSablierBourse({
   // de stockage porte son compte (voir `lib/progressionScope.js`) — avant
   // toute écriture, pour ne jamais verser l'état d'un joueur à un autre.
   useEffect(() => {
+    const graine = chargerGraine(compteId);
     const journee = ouvrirJournee({
       etat: chargerEtatQuetes(),
-      graine: chargerGraine(compteId),
+      graine,
       progression: progressionRef.current,
     });
-    const relu = { bourse: chargerPortefeuille(), quetes: journee.etat, profil: chargerProfil() };
+    const bourse = ouvrirEtalDuJour({ portefeuille: chargerPortefeuille(), graine }).portefeuille;
+    const relu = { bourse, quetes: journee.etat, profil: chargerProfil() };
+    sauverPortefeuille(relu.bourse);
     sauverEtatQuetes(journee.etat);
     etatRef.current = relu;
     setEtat(relu);
@@ -218,9 +228,11 @@ export function useSablierBourse({
   useEffect(() => {
     const verifier = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      const journee = ouvrirJournee({ etat: etatRef.current.quetes, graine: chargerGraine(compteId), progression });
-      if (!journee.nouveau && !journee.retirees?.length) return;
-      appliquer(etatRef.current.bourse, journee.etat);
+      const graine = chargerGraine(compteId);
+      const journee = ouvrirJournee({ etat: etatRef.current.quetes, graine, progression });
+      const etal = ouvrirEtalDuJour({ portefeuille: etatRef.current.bourse, graine });
+      if (!journee.nouveau && !journee.retirees?.length && !etal.modifie) return;
+      appliquer(etal.portefeuille, journee.etat);
       pousser();
     };
     document?.addEventListener?.('visibilitychange', verifier);
@@ -263,7 +275,8 @@ export function useSablierBourse({
       // Les deux côtés sont relus sur le stockage du joueur courant, jamais sur
       // une valeur en mémoire héritée d'un autre compte.
       const fusion = fusionnerEtatsSablier({ local: etatLocalComplet(), distant: state });
-      const bourse = fusionnerPortefeuilles(chargerPortefeuille(), fusion.etat.bourse).portefeuille;
+      const bourseFusionnee = fusionnerPortefeuilles(chargerPortefeuille(), fusion.etat.bourse).portefeuille;
+      const bourse = ouvrirEtalDuJour({ portefeuille: bourseFusionnee, graine: chargerGraine(compteId) }).portefeuille;
       const quetes = fusionnerQuetes(chargerEtatQuetes(), fusion.etat.quetes).etat;
       // Le profil se fusionne chez lui : l'XP au maximum, donc un palier gagné
       // hors ligne ne redescend jamais au retour du compte.
@@ -523,6 +536,49 @@ export function useSablierBourse({
   /** Le coffret : dix paquets du comptoir, une mythique assurée. */
   const acheterCoffret = useCallback((rayonId) => acheter(rayonId, { coffret: true }), [acheter]);
 
+  /** Une carte de l'étal quotidien : un débit, un exemplaire, zéro tirage. */
+  const acheterCarteDirecte = useCallback((cardId) => {
+    const avant = etatRef.current;
+    const graine = chargerGraine(compteId);
+    const jour = ouvrirEtalDuJour({ portefeuille: avant.bourse, graine });
+    const collection = collectionJoueur({
+      acquis: chargerAcquis(),
+      distante: chargerCollectionDistante(),
+      souk: jour.portefeuille.cartes,
+    });
+    const achat = acheterDansEtal({
+      portefeuille: jour.portefeuille,
+      cardId,
+      collection,
+      graine,
+    });
+    if (!achat.ok) {
+      // Si minuit vient de passer, même un refus doit laisser le nouvel étal
+      // persisté et visible plutôt que conserver la veille à l'écran.
+      if (jour.modifie) {
+        appliquer(jour.portefeuille, avant.quetes, avant.profil);
+        pousser();
+      }
+      return achat;
+    }
+    appliquer(achat.portefeuille, avant.quetes, avant.profil);
+    pousser();
+    onCartesRangees?.();
+    return achat;
+  }, [appliquer, pousser, onCartesRangees, compteId]);
+
+  /** Le second tirage de l'étal, consommé une seule fois dans la journée. */
+  const rafraichirEtal = useCallback(() => {
+    const avant = etatRef.current;
+    const graine = chargerGraine(compteId);
+    const jour = ouvrirEtalDuJour({ portefeuille: avant.bourse, graine });
+    const tirage = rafraichirEtalDuJour({ portefeuille: jour.portefeuille, graine });
+    if (!tirage.ok && !jour.modifie) return tirage;
+    appliquer(tirage.portefeuille, avant.quetes, avant.profil);
+    pousser();
+    return tirage;
+  }, [appliquer, pousser, compteId]);
+
   /**
    * Referme la cérémonie d'ouverture. Le portefeuille est déjà écrit et déjà
    * poussé au compte : ici, on rend la main — et l'on règle aussitôt les paliers
@@ -689,6 +745,8 @@ export function useSablierBourse({
     reclamerLeCachetDeLaSemaine,
     acheterBooster,
     acheterCoffret,
+    acheterCarteDirecte,
+    rafraichirEtal,
     fermerOuverture,
     ouverture,
     monteeNiveau,

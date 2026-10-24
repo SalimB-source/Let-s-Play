@@ -17,7 +17,7 @@ import {
   vivierRayon,
 } from '../src/games/rpgBoosters.js';
 import { RPG_DUEL_CARDS, cardById, cardColors, carteJouableSansTerrain } from '../src/games/rpgCards.js';
-import { COLLECTION_DEPART, RPG_REVELATIONS_PAR_ETAGE, collectionJoueur } from '../src/games/rpgCollection.js';
+import { COLLECTION_DEPART, RPG_REVELATIONS_PAR_ETAGE, collectionJoueur, nombreExemplaires } from '../src/games/rpgCollection.js';
 import { tousLesEtages } from '../src/games/rpgStoryTours.js';
 import { BAREME_DOUBLON, noterOuvertureJournal, portefeuilleVide } from '../src/games/rpgCredits.js';
 import { rngSeme } from '../src/games/rpgHasard.js';
@@ -216,6 +216,10 @@ test('ouvrir un paquet débite le solde, range les cartes et rembourse les doubl
   const doublons = tirage.tirage.details.filter((carte) => carte.doublon);
   for (const carte of doublons) assert.equal(carte.remboursement, BAREME_DOUBLON[carte.rarete]);
   for (const carte of tirage.tirage.details.filter((detail) => !detail.doublon)) assert.equal(carte.remboursement, 0);
+  for (const detail of tirage.tirage.details) {
+    assert.equal(detail.exemplaires, nombreExemplaires([...COLLECTION_DEPART, ...depart.cartes, detail.id], detail.id),
+      'la pastille connaît le stock juste après le rangement de la carte');
+  }
 });
 
 test('un paquet de doublons n’enrichit jamais son acheteur', () => {

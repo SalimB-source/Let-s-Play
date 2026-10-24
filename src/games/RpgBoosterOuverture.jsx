@@ -23,11 +23,11 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-souk.css';
-import { cardById, cardCost, cardFrameClass, cardRarityInfo, cardTypeLine } from './rpgCards.js';
+import { cardById, cardFrameClass, cardRarityInfo, cardTypeLine } from './rpgCards.js';
 import { rayonParId } from './rpgBoosters.js';
 import { creditsLisible } from './rpgCredits.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
-import { PastillesCarte } from './effetIcons.jsx';
+import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 
 /** Une gravure vectorielle : pas de dépendance à la police emoji du mobile. */
 function RuneSablier() {
@@ -40,40 +40,41 @@ function RuneSablier() {
   );
 }
 
-/** Une carte, face visible : son art, son nom, sa rareté, et ce qu'elle a rendu. */
+/** Une carte seule, en volume : ni nom ni description ; la fiche reste au clic droit. */
 function CarteRevelee({ detail, cardArt, index, visible = true }) {
   const carte = detail.carte ?? cardById(detail.id);
   if (!carte) return null;
   const rarete = cardRarityInfo(carte);
+  const exemplaires = detail.exemplaires ?? 1;
   return (
     <article
       inert={!visible}
       aria-hidden={!visible || undefined}
+      aria-label={`${carte.name}, ${rarete.label}, ${cardTypeLine(carte)} — ${exemplaires} exemplaire${exemplaires > 1 ? 's' : ''} dans la collection${detail.doublon ? `, doublon remboursé ${detail.remboursement} crédits` : ', nouvelle carte'}`}
+      title={`${carte.name} — clic droit pour ouvrir la fiche`}
       className={`rpg-souk__carte ${cardFrameClass(carte)}${detail.doublon ? ' is-doublon' : ' is-nouvelle'}`}
+      data-card-id={carte.id}
       data-souk-carte={visible ? carte.id : undefined}
       data-souk-carte-etat={detail.doublon ? 'doublon' : 'nouvelle'}
       data-souk-carte-rarete={rarete.key}
       data-souk-carte-remboursement={detail.remboursement}
       style={{ '--rang': index }}
     >
-      <div className="rpg-souk__carte-art">
-        <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} width="176" height="238" />
+      <div className="rpg-souk__carte-volume">
+        <div className="rpg-souk__carte-art">
+          <img src={cardArt(carte)} alt="" width="176" height="238" />
+        </div>
+        <span className="rpg-souk__carte-reflet" aria-hidden="true" />
+        <RpgCardCopyBadge nombre={exemplaires} className="rpg-souk__carte-copies" />
+        <p className="rpg-souk__carte-tampon" data-souk-carte-tampon={detail.doublon ? 'doublon' : 'nouvelle'}>
+          {detail.doublon ? (
+            <>
+              +{detail.remboursement} <RpgCreditIcon />
+              <span className="sr-only">crédits remboursés pour ce doublon</span>
+            </>
+          ) : 'Nouvelle'}
+        </p>
       </div>
-      <div className="rpg-souk__carte-corps">
-        <span className="rpg-souk__carte-rarete" data-souk-carte-rarete={rarete.key}>{rarete.label}</span>
-        <h4>{carte.name}</h4>
-        <p>{cardTypeLine(carte)}</p>
-        <PastillesCarte carte={carte} className="rpg-souk__carte-pastilles" />
-        <p className="rpg-souk__carte-cout" aria-label={`Coût : ${cardCost(carte)} mana`}>{cardCost(carte)} mana</p>
-      </div>
-      <p className="rpg-souk__carte-tampon" data-souk-carte-tampon={detail.doublon ? 'doublon' : 'nouvelle'}>
-        {detail.doublon ? (
-          <>
-            Déjà possédée · +{detail.remboursement} <RpgCreditIcon />
-            <span className="sr-only">crédits</span>
-          </>
-        ) : 'Nouvelle'}
-      </p>
     </article>
   );
 }
@@ -199,6 +200,7 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
                 ? <> {creditsLisible(ouverture.prix)} <RpgCreditIcon /> — dix paquets, une mythique assurée.</>
                 : <> {creditsLisible(ouverture.prix)} <RpgCreditIcon /> — cinq cartes, une rare garantie, la mythique en dernière.</>}
           </p>
+          <p className="rpg-souk__ceremonie-aide">Clic droit ou appui long sur une carte pour afficher sa fiche.</p>
         </header>
 
         <div className="rpg-souk__ouverture-scene" ref={sceneRef}>

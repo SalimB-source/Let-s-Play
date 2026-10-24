@@ -19,11 +19,11 @@ import { act } from 'react';
 import { useSablierBourse } from '../src/games/useSablierBourse.js';
 import RpgSouk, { dureeAvantMinuit } from '../src/games/RpgSouk.jsx';
 import RpgQuetesDuJour from '../src/games/RpgQuetesDuJour.jsx';
-import { GAINS, RPG_BOURSE_STORAGE_KEY, creditsLisible, portefeuilleVide } from '../src/games/rpgCredits.js';
+import { GAINS, RPG_BOURSE_STORAGE_KEY, crediterCredits, creditsLisible, portefeuilleVide, sauverPortefeuille } from '../src/games/rpgCredits.js';
 import {
   RPG_GRAINE_STORAGE_KEY, RPG_QUETES_STORAGE_KEY, cleJour, jourPrecedent, queteParId,
 } from '../src/games/rpgQuetes.js';
-import { RPG_DUEL_CARDS, cardColors } from '../src/games/rpgCards.js';
+import { RPG_DUEL_CARDS, cardById, cardColors } from '../src/games/rpgCards.js';
 import { rngSeme } from '../src/games/rpgHasard.js';
 import { collectionJoueur } from '../src/games/rpgCollection.js';
 import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
@@ -102,6 +102,8 @@ function Sonde({ surPret, sons, caisse }) {
       onReclamerCachet={() => caisse.push(bourse.reclamerLeCachet())}
       onOuvrirBooster={(rayonId) => bourse.acheterBooster(rayonId)}
       onOuvrirCoffret={(rayonId) => bourse.acheterCoffret(rayonId)}
+      onAcheterCarteDirecte={(cardId) => bourse.acheterCarteDirecte(cardId)}
+      onRafraichirEtal={() => bourse.rafraichirEtal()}
       onFermerOuverture={() => bourse.fermerOuverture()}
       onPlaySfx={(nom) => { sons.push(nom); }}
       onExit={() => { sons.push('sortie'); }}
@@ -151,8 +153,8 @@ export async function checkRpgSoukEcran(assert) {
   const conteneur = document.createElement('div');
   document.body.appendChild(conteneur);
   const root = createRoot(conteneur);
-  let root3 = null;
-  let root4 = null;
+  let rootDirect = null;
+  let conteneurDirect = null;
   const sons = [];
   const caisse = [];
   let bourse = null;
@@ -212,6 +214,23 @@ export async function checkRpgSoukEcran(assert) {
     assert.equal(noeud('[data-souk-ouvrir-bouton="souk"]'), null,
       'le paquet est la seule voie d’achat — pas de bouton texte qui le double');
     assert.equal(noeud('[data-souk-attente]'), null, 'rien à réclamer : pas de bandeau');
+
+    // ── L’étal direct : cinq cartes, deux raretés, zéro achat sans solde ────
+    const offres = [...document.querySelectorAll('[data-souk-direct-carte]')];
+    assert.equal(offres.length, 5, 'l’étal propose exactement cinq cartes');
+    assert.equal(new Set(offres.map((carte) => carte.dataset.soukDirectCarte)).size, 5, 'les cinq offres sont distinctes');
+    assert.ok(offres.every((carte) => ['rare', 'mythique'].includes(carte.dataset.soukDirectRarete)),
+      'l’étal ne vend que des rares et des mythiques');
+    assert.ok(offres.some((carte) => carte.dataset.soukDirectRarete === 'rare')
+      && offres.some((carte) => carte.dataset.soukDirectRarete === 'mythique'),
+    'les deux prix sont représentés chaque jour');
+    assert.ok(offres.every((carte) => carte.dataset.cardId === carte.dataset.soukDirectCarte),
+      'chaque offre est reliée à l’aperçu par data-card-id');
+    assert.ok(offres.every((carte) => carte.querySelector('[data-souk-direct-acheter]').disabled),
+      'sans crédits, aucune carte ne peut être facturée');
+    assert.match(noeud('[data-souk-direct-cartes="5"]')?.textContent ?? '', /150/, 'la rare annonce 150 crédits');
+    assert.match(noeud('[data-souk-direct-cartes="5"]')?.textContent ?? '', /300/, 'la mythique annonce 300 crédits');
+    assert.equal(noeud('[data-souk-direct-rafraichir]').disabled, false, 'le rafraîchissement du jour est disponible');
 
     // ── Les sept cartes de la série : la première porte déjà son cachet ─────
     const sections = [...document.querySelectorAll('[data-souk] > section')];
@@ -437,6 +456,15 @@ export async function checkRpgSoukEcran(assert) {
     );
     assert.ok(bourse.ouverture.cartes.every((detail) => detail.carte), 'chaque carte tirée est une carte réelle');
     assert.equal(new Set(bourse.ouverture.cartes.map((detail) => detail.id)).size, 5, 'jamais deux fois la même');
+    cartes.forEach((carte, index) => {
+      const detail = bourse.ouverture.cartes[index];
+      assert.equal(carte.dataset.cardId, detail.id, 'la face 3D ouvre la fiche de la bonne carte au clic droit');
+      assert.ok(carte.querySelector('.rpg-souk__carte-volume'), 'la carte est présentée dans son volume 3D');
+      assert.equal(carte.querySelector('.rpg-souk__carte-corps'), null, 'aucun descriptif ne couvre la carte révélée');
+      assert.equal(carte.querySelector('h4'), null, 'même son nom reste dans la fiche de prévisualisation');
+      assert.equal(carte.querySelector('[data-card-copies]')?.dataset.cardCopies, String(detail.exemplaires),
+        'la pastille indique le stock après rangement de cette carte');
+    });
     assert.ok(noeud('[data-souk-ceremonie-ranger]').disabled === false, 'une fois retournées, on peut ranger');
 
     // ── « Tout ranger » referme, et la collection voit les nouvelles cartes ──
@@ -462,8 +490,64 @@ export async function checkRpgSoukEcran(assert) {
     await act(async () => root.unmount());
     conteneur.remove();
     await wait(20);
+
+    // ── Achat à l’unité : une rare, un second tirage, puis une mythique ────
+    // Une seconde sonde part avec une bourse garnie par la règle de crédit ;
+    // le parcours utilise ensuite uniquement les vrais boutons et le vrai hook.
+    window.localStorage.clear();
+    window.localStorage.setItem(RPG_GRAINE_STORAGE_KEY, 'graine-du-smoke-souk');
+    sauverPortefeuille(crediterCredits(portefeuilleVide(), 1000).portefeuille);
+    conteneurDirect = document.createElement('div');
+    document.body.appendChild(conteneurDirect);
+    rootDirect = createRoot(conteneurDirect);
+    await act(async () => rendre(rootDirect));
+
+    const premierTirage = [...bourse.bourse.etal.cartes];
+    const rareId = premierTirage.find((id) => cardById(id)?.rarity === 'rare');
+    assert.ok(rareId, 'le premier tirage contient une rare à acheter');
+    const ouverturesAvant = bourse.bourse.ouvertures;
+    const pitieAvant = bourse.bourse.pitie;
+    await act(async () => noeud(`[data-souk-direct-acheter="${rareId}"]`).click());
+    assert.equal(bourse.bourse.credits, 850, 'la rare débite exactement 150 crédits');
+    assert.equal(bourse.bourse.cartes.filter((id) => id === rareId).length, 1, 'elle ajoute un seul identifiant de carte');
+    assert.equal(bourse.bourse.etal.achetees.filter((id) => id === rareId).length, 1, 'et mémorise un seul achat');
+    assert.equal(bourse.bourse.ouvertures, ouverturesAvant, 'l’étal ne compte pas comme un booster');
+    assert.equal(bourse.bourse.pitie, pitieAvant, 'et ne touche pas à la pitié');
+    assert.equal(noeud(`[data-souk-direct-carte="${rareId}"] [data-card-copies]`)?.dataset.cardCopies, '1',
+      'la pastille de l’étal voit le nouvel exemplaire');
+    assert.ok(noeud(`[data-souk-direct-acheter="${rareId}"]`).disabled, 'la carte achetée ne peut pas être facturée deux fois');
+    assert.equal(noeud('[data-souk-ceremonie]'), null, 'un achat direct ne déclenche aucune cérémonie de booster');
+
+    await act(async () => noeud('[data-souk-direct-rafraichir]').click());
+    const secondTirage = [...bourse.bourse.etal.cartes];
+    assert.equal(secondTirage.length, 5, 'le rafraîchissement propose bien cinq cartes');
+    assert.ok(secondTirage.every((id) => !premierTirage.includes(id)), 'les cinq offres sont réellement renouvelées');
+    assert.equal(bourse.bourse.etal.rafraichissements, 1, 'le rafraîchissement quotidien est consommé');
+    assert.ok(noeud('[data-souk-direct-rafraichir]').disabled, 'et son bouton se ferme jusqu’au lendemain');
+    assert.ok(bourse.bourse.etal.achetees.includes(rareId), 'l’achat du premier tirage reste dans l’historique du jour');
+
+    const mythiqueId = secondTirage.find((id) => cardById(id)?.rarity === 'mythique');
+    assert.ok(mythiqueId, 'le second tirage contient une mythique à acheter');
+    await act(async () => noeud(`[data-souk-direct-acheter="${mythiqueId}"]`).click());
+    assert.equal(bourse.bourse.credits, 550, 'la mythique débite exactement 300 crédits');
+    assert.equal(bourse.bourse.cartes.filter((id) => id === mythiqueId).length, 1, 'elle aussi ne donne qu’un exemplaire');
+    const soldeApres = bourse.bourse.credits;
+    let secondAchat = null;
+    await act(async () => { secondAchat = bourse.acheterCarteDirecte(mythiqueId); });
+    assert.equal(secondAchat.ok, false, 'même en rejouant le geste, la seconde facturation est refusée');
+    assert.equal(bourse.bourse.credits, soldeApres, 'et le solde ne bouge plus');
+
+    await act(async () => rootDirect.unmount());
+    rootDirect = null;
+    conteneurDirect.remove();
+    conteneurDirect = null;
+    await wait(20);
   } finally {
     try { await act(async () => root.unmount()); } catch { /* déjà démonté */ }
     conteneur.remove();
+    if (rootDirect) {
+      try { await act(async () => rootDirect.unmount()); } catch { /* déjà démonté */ }
+    }
+    conteneurDirect?.remove();
   }
 }

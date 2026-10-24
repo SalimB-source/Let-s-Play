@@ -235,7 +235,87 @@
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-.rpg-battle--touch .card-table > .rpg-hidden-hand { display: none; }
+/* ── La main du sorcier, face cachée, au doigt ───────────────────────────────
+   Sur PC, la main adverse s'étale en haut de la table : jusqu'à sept dos de
+   cartes de 78 × 101 (`FaceDownHand`). Au doigt, elle était **effacée** : la
+   plaque ne gardait que son compteur « Main · 3 », et l'on jouait sans voir la
+   main d'en face se remplir ni se vider.
+
+   Elle revient dans la **bande de navigation** — la seule rangée que la table
+   laisse libre sur toute sa largeur : le journal du duel occupe le coin
+   gauche, le hamburger le bord droit, et le milieu, entre les deux, ne sert à
+   rien. L'éventail y prend la cellule du milieu et se cale au centre de cette
+   colonne : ni sur la plaque du sorcier, ni sur ses cartes, ni sur les
+   commandes du tour.
+
+   Rien n'est dévoilé : ce sont les mêmes dos de cartes que sur PC (le dessin
+   `--rpg-dos-de-carte`, cerclé d'or), et seul le **nombre** les accompagne.
+   `pointer-events: none` : la rangée ne prend aucun toucher — le hamburger et
+   le journal restent atteignables au travers.
+
+   L'échelle suit la hauteur de la rangée (`--rpg-touch-nav`, 0,62 carte) :
+   22 px de large sur un 568 × 320, 30 px sur une tablette — les sept dos de
+   l'éventail tiennent alors dans ~140 px, sous les 300 px libres du milieu de
+   l'écran le plus étroit. */
+.rpg-battle--touch .card-table > .rpg-hidden-hand {
+  --rpg-hidden-card-w: clamp(20px, calc(var(--rpg-touch-nav) * .58), 34px);
+  position: relative;
+  inset: auto;
+  grid-column: 2;
+  grid-row: 1;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  transform: none;
+  pointer-events: none;
+}
+/* La carte de l'éventail : ses angles et sa hauteur d'assise (`--card-angle`,
+   `--card-rise`) viennent du composant, comme sur PC. La taille, elle, change
+   — c'est la seule chose que le doigt demande. */
+.rpg-battle--touch .rpg-hidden-hand__cards {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+}
+.rpg-battle--touch .rpg-hidden-hand__card {
+  width: var(--rpg-hidden-card-w);
+  height: calc(var(--rpg-hidden-card-w) * 1.3);
+  flex: none;
+  margin-left: calc(var(--rpg-hidden-card-w) * -.4);
+  border-width: clamp(1px, calc(var(--rpg-hidden-card-w) * .05), 2px);
+  border-radius: clamp(2px, calc(var(--rpg-hidden-card-w) * .16), 6px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(236, 199, 117, .55);
+}
+.rpg-battle--touch .rpg-hidden-hand__card:first-child { margin-left: 0; }
+.rpg-battle--touch .rpg-hidden-hand__count {
+  color: rgba(245, 224, 183, .92);
+  /* Le plancher de lecture du duel tactile : 8 px (sous 9 px, un libellé ne
+     se lit plus ; la plaque du sorcier descend à 7,5 px, sa mesure la plus
+     basse, et ce libellé-là reste au-dessus). */
+  font-size: clamp(8px, calc(var(--rpg-touch-nav) * .2), 10px);
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+/* Quand la barre porte un badge — duel en ligne (code et horloge), partie
+   guidée, mode Histoire —, elle s'élargit vers la gauche : l'éventail se
+   range alors au début de sa colonne et perd son libellé, que la plaque du
+   sorcier dit déjà (« Main · N »). `:has()` est un confort : une WebView qui
+   l'ignore garde l'éventail centré, rien ne casse. */
+.rpg-battle--touch .card-table:has(.rpg-duel-nav__pvp) .rpg-hidden-hand,
+.rpg-battle--touch .card-table:has(.rpg-duel-nav__tutorial) .rpg-hidden-hand,
+.rpg-battle--touch .card-table:has(.rpg-duel-nav__story) .rpg-hidden-hand {
+  justify-self: start;
+}
+.rpg-battle--touch .card-table:has(.rpg-duel-nav__pvp) .rpg-hidden-hand__count,
+.rpg-battle--touch .card-table:has(.rpg-duel-nav__tutorial) .rpg-hidden-hand__count,
+.rpg-battle--touch .card-table:has(.rpg-duel-nav__story) .rpg-hidden-hand__count {
+  display: none;
+}
 /* Le journal du duel occupe la cellule `coin` — la seule que la navigation
    laisse libre sur la rangée du haut, devant le trésor peint du plateau.
    Refermé, il ne prend qu'une capsule de la hauteur de cette rangée ; ouvert,
