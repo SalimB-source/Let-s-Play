@@ -257,7 +257,7 @@ import {
   redresserBoitier,
 } from './RpgDeckBox.jsx';
 
-const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀', hybride: '🔥⏳' };
+const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️', hybride: '🔥⏳' };
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Sable + Braise' };
 const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' };
 /**
@@ -3904,10 +3904,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       .filter((famille) => famille.cartes.length > 0)
     : [];
   const openValidation = openDeck
-    // Le stock, ici aussi : la fiche d'un deck maison annonce les mêmes raisons
-    // que l'atelier, sinon elle promettrait « prêt à jouer » à un paquet dont
-    // deux copies n'ont jamais été payées.
-    ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection, portefeuille?.exemplaires ?? null) : rpgValiderDeck(openDeck.cardIds))
+    ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection) : rpgValiderDeck(openDeck.cardIds))
     : { ok: false, raisons: ['Aucun deck ouvert.'] };
   // Le Catalogue est une encyclopédie : il montre vraiment toutes les cartes,
   // y compris les terrains et les cartes archivées hors du format de deck.
@@ -4461,7 +4458,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 ? atelier.deck.cardIds.filter((id) => collection.includes(id))
                 : []}
               collection={collection}
-              exemplaires={portefeuille?.exemplaires ?? null}
               artUrl={cardArt}
               onEnregistrer={enregistrerAtelier}
               onAnnuler={() => setAtelier(null)}
@@ -4836,10 +4832,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   const degradeCout = estTerrain ? null : cardHybridGradient(carte);
                   const famille = carteFamille(carte);
                   const verrouillee = !possedeCarte(collection, carte.id);
-                  // Le stock se lit dans le portefeuille du Souk : une carte
-                  // rachetée à l'étal y compte deux copies, et le catalogue doit
-                  // dire la même chose que l'étal — deux pastilles, un seul chiffre.
-                  const exemplaires = nombreExemplaires(collection, carte.id, portefeuille?.exemplaires);
+                  const exemplaires = nombreExemplaires(collection, carte.id);
                   // Le sceau de la famille au coin libre de la vignette : c'est
                   // là qu'on feuillette la collection, et c'est là qu'il faut
                   // repérer un sort sans ouvrir sa fiche.
@@ -7017,47 +7010,35 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     duel?.sorcier.deckCount ?? duel?.sorcier.deck.length,
     duel?.sorcier.mainCount ?? duel?.sorcier.main.length,
   ]);
-  // Table d'essai (PC et mobile) : chaque plaque ouvre la colonne de gauche et
-  // sa jauge de mana se pose juste dessous (PC) ou dans la cellule voisine
-  // (mobile). Publier la hauteur réelle mesurée de chaque plaque
-  // (`--rpg-plaque-*-h`) empêche la jauge de recouvrir les PV ou l'avatar
-  // quand un nom long passe sur deux lignes ; sur mobile, `--rpg-jauge-*-h`
-  // borne aussi la hauteur disponible dans la rangée du camp.
-  const modeManaEssai = Boolean(duel && duel.modeMana === RPG_MODE_MANA_ESSAI);
-  const essaiTactile = Boolean(modeManaEssai && viewport.mobile);
+  // Mobile, table d'essai : chaque plaque ouvre la colonne de gauche, sa jauge
+  // de mana se range derrière elle, dans la même rangée de grille. Publier la
+  // hauteur réelle mesurée des deux — la plaque (`--rpg-plaque-*-h`) et la
+  // place qui reste pour la jauge (`--rpg-jauge-*-h`) — laisse la colonne
+  // s'ajuster d'elle-même : une plaque plus haute parce que les zones de
+  // cartes passent sur deux lignes rétrécit sa jauge au lieu de la faire
+  // déborder sur le camp d'en face.
+  const essaiTactile = Boolean(duel && viewport.mobile && duel.modeMana === RPG_MODE_MANA_ESSAI);
   useLayoutEffect(() => {
     const table = tableRef.current;
-    if (!modeManaEssai || !table) return undefined;
+    if (!essaiTactile || !table) return undefined;
     const camps = [
       { plaque: table.querySelector('.rpg-wizard-plate--ennemi'), rangee: table.querySelector('.card-row--ennemi'), suffixe: 'ennemi' },
       { plaque: table.querySelector('.rpg-wizard-plate--joueur'), rangee: table.querySelector('.card-row--equipe'), suffixe: 'joueur' },
-    ].filter(({ plaque }) => plaque);
+    ].filter(({ plaque, rangee }) => plaque && rangee);
     if (!camps.length) return undefined;
     const publier = () => {
-      // Le bord droit des plaques : au doigt, la barre de réponse du sorcier s'y
-      // accroche au lieu de les recouvrir (elle occupe toute la largeur
-      // restante, au-dessus de la main).
-      if (essaiTactile) {
-        const joueur = camps.find(({ suffixe }) => suffixe === 'joueur') ?? camps[0];
-        table.style.setProperty('--rpg-plaque-droite', `${Math.round(joueur.plaque.getBoundingClientRect().right)}px`);
-      } else {
-        table.style.removeProperty('--rpg-plaque-droite');
-      }
+      // Le bord droit des plaques : la barre de réponse du sorcier s'y accroche
+      // au lieu de les recouvrir (elle occupe toute la largeur restante,
+      // au-dessus de la main).
+      const joueur = camps.find(({ suffixe }) => suffixe === 'joueur') ?? camps[0];
+      table.style.setProperty('--rpg-plaque-droite', `${Math.round(joueur.plaque.getBoundingClientRect().right)}px`);
       for (const { plaque, rangee, suffixe } of camps) {
         const hauteurPlaque = plaque.offsetHeight;
-        if (hauteurPlaque > 0) {
-          table.style.setProperty(`--rpg-plaque-${suffixe}-h`, `${hauteurPlaque}px`);
-        } else {
-          table.style.removeProperty(`--rpg-plaque-${suffixe}-h`);
-        }
-        // Sur mobile, la rangée de jeu du camp donne la hauteur de la cellule :
+        table.style.setProperty(`--rpg-plaque-${suffixe}-h`, `${hauteurPlaque}px`);
+        // La rangée de jeu du camp donne la hauteur de la cellule de grille :
         // ce qui reste sous (ou au-dessus de) la plaque revient à la jauge.
-        if (essaiTactile && rangee) {
-          const place = Math.max(0, Math.round(rangee.getBoundingClientRect().height - hauteurPlaque - 1));
-          table.style.setProperty(`--rpg-jauge-${suffixe}-h`, `${place}px`);
-        } else {
-          table.style.removeProperty(`--rpg-jauge-${suffixe}-h`);
-        }
+        const place = Math.max(0, Math.round(rangee.getBoundingClientRect().height - hauteurPlaque - 1));
+        table.style.setProperty(`--rpg-jauge-${suffixe}-h`, `${place}px`);
       }
     };
     publier();
@@ -7065,17 +7046,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const observateur = new ResizeObserver(publier);
     camps.forEach(({ plaque, rangee }) => {
       observateur.observe(plaque);
-      if (essaiTactile && rangee) observateur.observe(rangee);
+      observateur.observe(rangee);
     });
     return () => {
       observateur.disconnect();
       table.style.removeProperty('--rpg-plaque-droite');
-      table.style.removeProperty('--rpg-plaque-ennemi-h');
-      table.style.removeProperty('--rpg-plaque-joueur-h');
-      table.style.removeProperty('--rpg-jauge-ennemi-h');
-      table.style.removeProperty('--rpg-jauge-joueur-h');
     };
-  }, [modeManaEssai, essaiTactile, ecran, duel]);
+  }, [essaiTactile, ecran, duel]);
   // La barre de combat ferme la colonne de droite, juste au-dessus
   // de la main, et sa hauteur varie d'une à trois commandes empilées
   // (« Confirmer l'attaque », « Annuler l'attaque », « Résoudre le combat »…).
@@ -7268,11 +7245,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * `data-card-id`, en main, sur la table, dans un rail de terrains, sur le
    * dessus d'un cimetière, au catalogue et dans la liste d'un deck. */
   const demarrerAppuiLongCarte = (event) => {
-    const hote = event.target?.closest?.('[data-card-id]')
-      ?? event.target?.closest?.('.rpg-souk__carte-place')?.querySelector?.('[data-souk-carte][data-card-id]');
-    if (!hote || hote.hasAttribute('inert') || hote.getAttribute('aria-hidden') === 'true') return;
+    const hote = event.target?.closest?.('[data-card-id]');
     const carte = cardById(hote?.dataset?.cardId);
-    if (!carte) return;
+    if (!hote || !carte) return;
     // Un second doigt, une souris ou un clic droit ne doit pas désarmer l'appui
     // déjà en cours du premier doigt : seul un geste qui armerait vraiment un
     // appui long reprend la main.
@@ -7366,21 +7341,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // jusqu'ici.
   const surMenuContextuel = (event) => {
     event.preventDefault();
-    const hote = event.target?.closest?.('[data-card-id]')
-      ?? event.target?.closest?.('.rpg-souk__carte-place')?.querySelector?.('[data-souk-carte][data-card-id]');
-    if (!hote || hote.hasAttribute('inert') || hote.getAttribute('aria-hidden') === 'true') return;
+    const hote = event.target?.closest?.('[data-card-id]');
     const carte = cardById(hote?.dataset?.cardId);
-    if (!carte) return;
+    if (!hote || !carte) return;
     // Le plateau se floute derrière la carte, pas elle : on retient l'élément.
     carteSourceApercuRef.current = hote;
-    const dansCeremonieSouk = Boolean(hote.closest?.('[data-souk-ceremonie]'));
     ouvrirApercuCatalogue(carte, {
       armes: (hote.dataset.armes ?? '').split(' ').filter(Boolean),
       furie: etatFurieDepuisHote(hote),
       effetsEpuises: effetsEpuisesDepuisHote(hote),
       // Le capteur d'Abordage dit qui il détient : la fiche empilera les deux.
       prisonniere: hote.dataset.prisonniere ?? null,
-      surface: dansCeremonieSouk ? 'LE SOUK' : (SURFACE_FICHE[ecran] ?? 'LE SABLIER'),
+      surface: SURFACE_FICHE[ecran] ?? 'LE SABLIER',
     });
   };
   // Le plateau se floute derrière la carte consultée, elle seule reste nette :
@@ -12021,7 +11993,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // glisser-déposer et le clic : deux copies de la règle
               // finissaient par diverger, et une carte allumée mais injouable
               // enferme le joueur.
-              const jouable = defausseOuverte || peutJouerCarte(carte);
+              const baseJouable = !defausseOuverte && peutJouerCarte(carte);
+              const jouable = defausseOuverte || baseJouable;
+              const estMythique = cardRarityInfo(carte).key === 'mythique';
+              const estCreatureMythique = estMythique && (carte.kind === 'creature' || carte.kind === 'hero' || (!carte.kind && carte.atk != null && carte.def != null));
+              const mythiqueJouable = baseJouable && estCreatureMythique;
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId
                 && groupe.indices.includes(carteEnVol.handIndex);
@@ -12069,6 +12045,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     // En attente de sa case : même soulèvement que le ciblage.
                     poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'is-targeting is-pose-en-cours' : '',
                     jouable ? 'is-playable' : 'is-unplayable',
+                    mythiqueJouable ? 'is-mythique-jouable' : '',
                     carteGlissee === carteId ? 'is-dragging' : '',
                     enVol ? `rpg-card-flight is-flying${estTerrain ? ' rpg-card-flight--terrain' : ''}` : '',
                   ].filter(Boolean).join(' ')}
@@ -12092,10 +12069,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-rpg-card-flight={enVol ? (estTerrain ? 'terrain' : 'creature') : undefined}
                   data-rpg-flight-card-id={enVol ? carteId : undefined}
                   data-jouable={jouable ? 'true' : 'false'}
+                  data-mythique-jouable={mythiqueJouable ? 'true' : undefined}
                   data-pose-en-cours={poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'true' : undefined}
                   aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+                  {mythiqueJouable && (
+                    <span className="rpg-mythique-flammes" aria-hidden="true">
+                      <img src={`${import.meta.env.BASE_URL}flames/flame-07-bottom.png`} className="rpg-mythique-flamme rpg-mythique-flamme--bottom" alt="" loading="lazy" draggable={false} />
+                      <img src={`${import.meta.env.BASE_URL}flames/flame-01-top-left.png`} className="rpg-mythique-flamme rpg-mythique-flamme--top" alt="" loading="lazy" draggable={false} />
+                      <img src={`${import.meta.env.BASE_URL}flames/flame-04-mid-left.png`} className="rpg-mythique-flamme rpg-mythique-flamme--left" alt="" loading="lazy" draggable={false} />
+                      <img src={`${import.meta.env.BASE_URL}flames/flame-06-mid-right.png`} className="rpg-mythique-flamme rpg-mythique-flamme--right" alt="" loading="lazy" draggable={false} />
+                      <img src={`${import.meta.env.BASE_URL}flames/flame-02-top-mid.png`} className="rpg-mythique-flamme rpg-mythique-flamme--top-mid" alt="" loading="lazy" draggable={false} />
+                    </span>
+                  )}
                   <CardElementBadge carte={carte} />
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
