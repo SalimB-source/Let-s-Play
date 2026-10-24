@@ -3418,19 +3418,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    ------------------------------------------------------------------------- */
 .rpg-hand__card.is-mythique-jouable.is-playable {
   overflow: visible;
-  border-color: #fdba74 !important;
+  border-color: #9a3412 !important;
   box-shadow:
-    0 0 0 2px rgba(254, 215, 170, 0.96),
-    0 0 6px 1px rgba(254, 215, 170, 0.82),
-    0 0 18px 4px rgba(251, 146, 60, 0.88),
-    0 6px 16px rgba(0, 0, 0, 0.55);
+    0 0 0 2px rgba(253, 186, 116, 0.96),
+    0 0 6px 1px rgba(251, 146, 60, 0.82),
+    0 0 18px 4px rgba(194, 65, 12, 0.92),
+    0 6px 16px rgba(0, 0, 0, 0.58);
   animation: rpg-mythique-orange-pulse 1.6s ease-in-out infinite;
 }
 .rpg-hand__card.is-mythique-jouable.is-playable:hover:not(:disabled) {
   box-shadow:
-    0 0 0 2px rgba(255, 237, 213, 1),
-    0 0 7px 1px rgba(254, 215, 170, 0.92),
-    0 0 24px 6px rgba(251, 146, 60, 0.96),
+    0 0 0 2px rgba(254, 215, 170, 1),
+    0 0 7px 1px rgba(253, 186, 116, 0.92),
+    0 0 24px 6px rgba(194, 65, 12, 0.96),
     0 12px 22px rgba(0, 0, 0, 0.62);
 }
 .rpg-hand__card.is-mythique-jouable.is-playable .rpg-hand__img {
@@ -3439,17 +3439,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @keyframes rpg-mythique-orange-pulse {
   0%, 100% {
     box-shadow:
-      0 0 0 2px rgba(254, 215, 170, 0.96),
-      0 0 6px 1px rgba(254, 215, 170, 0.82),
-      0 0 18px 4px rgba(251, 146, 60, 0.88),
-      0 6px 16px rgba(0, 0, 0, 0.55);
+      0 0 0 2px rgba(253, 186, 116, 0.96),
+      0 0 6px 1px rgba(251, 146, 60, 0.82),
+      0 0 18px 4px rgba(194, 65, 12, 0.92),
+      0 6px 16px rgba(0, 0, 0, 0.58);
   }
   50% {
     box-shadow:
-      0 0 0 2px rgba(255, 237, 213, 1),
-      0 0 7px 1px rgba(254, 215, 170, 0.92),
-      0 0 22px 6px rgba(251, 146, 60, 0.92),
-      0 8px 20px rgba(0, 0, 0, 0.55);
+      0 0 0 2px rgba(254, 215, 170, 1),
+      0 0 7px 1px rgba(253, 186, 116, 0.92),
+      0 0 22px 6px rgba(194, 65, 12, 0.96),
+      0 8px 20px rgba(0, 0, 0, 0.58);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3458,10 +3458,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-hand__card.is-mythique-jouable.is-playable {
     box-shadow:
-      0 0 0 2px rgba(254, 215, 170, 0.96),
-      0 0 6px 1px rgba(254, 215, 170, 0.82),
-      0 0 18px 4px rgba(251, 146, 60, 0.88),
-      0 6px 16px rgba(0, 0, 0, 0.55);
+      0 0 0 2px rgba(253, 186, 116, 0.96),
+      0 0 6px 1px rgba(251, 146, 60, 0.82),
+      0 0 18px 4px rgba(194, 65, 12, 0.92),
+      0 6px 16px rgba(0, 0, 0, 0.58);
   }
 }
 .rpg-hand__card.is-unplayable { filter: saturate(.58) brightness(.82); cursor: zoom-in; }
