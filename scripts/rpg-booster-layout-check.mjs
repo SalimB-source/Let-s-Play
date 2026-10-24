@@ -102,7 +102,7 @@ async function checkLayout() {
         const colonnes = await page.locator('.rpg-souk__ceremonie-cartes').evaluate((node) => (
           getComputedStyle(node).gridTemplateColumns.split(/\s+/).filter(Boolean).length
         ));
-        assert.equal(colonnes, 3, `three card columns at ${width}px`);
+        assert.equal(colonnes, 5, `five card columns at ${width}px`);
         const cards = await page.locator('[data-souk-carte]').evaluateAll((nodes) => nodes.map((node) => {
           const rect = (selector) => node.querySelector(selector).getBoundingClientRect().toJSON();
           return {

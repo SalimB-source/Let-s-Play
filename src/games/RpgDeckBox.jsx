@@ -40,13 +40,12 @@ const EMBLEMS = {
       ))}
     </g>
   ),
-  // Ténèbres : la balance du jugement — poutre, plateaux et cœur pesé.
+  // Ténèbres : la tête de mort — crâne, orbites, cavité nasale et mâchoire.
   tenebres: (
-    <>
-      <path d="M4 7.6h16M12 7.6v11M7.5 21h9" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <path d="M4 7.6 1.4 13.4h5.2L4 7.6zm16 0-2.6 5.8h5.2L20 7.6z" />
-      <path d="M12 4.6c0 0-2.1-1.4-2.1-2.8a1.15 1.15 0 0 1 2.1-.58 1.15 1.15 0 0 1 2.1.58c0 1.4-2.1 2.8-2.1 2.8z" />
-    </>
+    <path
+      fillRule="evenodd"
+      d="M12 2.2C7.1 2.2 3.6 5.4 3.6 9.9c0 2.5 1.3 4.5 3.2 5.6l.4 4.1c.1.85.7 1.5 1.4 1.5h.8v-2.75a.75.75 0 0 1 1.5 0V21.1h2.2v-2.75a.75.75 0 0 1 1.5 0V21.1h.8c.7 0 1.3-.65 1.4-1.5l.4-4.1c1.9-1.1 3.2-3.1 3.2-5.6 0-4.5-3.5-7.7-8.4-7.7zM8.6 8a2.2 2.3 0 1 0 0 4.6 2.2 2.3 0 1 0 0-4.6zm6.8 0a2.2 2.3 0 1 0 0 4.6 2.2 2.3 0 1 0 0-4.6zM12 12.7l-1.6 3h3.2L12 12.7z"
+    />
   ),
 };
 

@@ -14,8 +14,9 @@ const ELEMENT_LABELS = {
   eau: 'Eau',
   sable: 'Sable',
   neige: 'Neige',
+  tenebres: 'Ténèbres',
 };
-const ELEMENT_MARKS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️' };
+const ELEMENT_MARKS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀' };
 
 /** Un bonus signé pour l'affichage : « +2 », ou « -2 » pour le malus du Sabre maudit. */
 const signeBonus = (valeur = 0) => (valeur >= 0 ? `+${valeur}` : `${valeur}`);

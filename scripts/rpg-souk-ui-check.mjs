@@ -141,8 +141,8 @@ assert.ok(!/localStorage|sauverPortefeuille/.test(ceremonieCode),
   'la cérémonie ne range rien elle-même : les cartes sont déjà achetées');
 const colonnesCeremonie = [...css.matchAll(/\.rpg-souk__ceremonie-cartes\s*\{([^}]*)\}/g)]
   .flatMap(([, corps]) => [...corps.matchAll(/grid-template-columns:\s*([^;]+)/g)].map((regle) => regle[1].trim()));
-assert.deepEqual(colonnesCeremonie, ['repeat(3, minmax(0, 1fr))'],
-  'les cartes du booster restent en trois colonnes à tous les paliers responsive');
+assert.deepEqual(colonnesCeremonie, ['repeat(5, minmax(0, 1fr))'],
+  'les cartes du booster restent en cinq colonnes à tous les paliers responsive');
 assert.match(page, /if \(ecran === 'partie' && viewport\.portrait && apercuAppui\) fermerApercuAppui\(\);/,
   'seule la rotation du duel ferme un aperçu tactile : le Souk garde le sien en portrait');
 

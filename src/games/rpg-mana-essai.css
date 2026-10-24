@@ -24,15 +24,43 @@
 }
 /* Les terrains classiques se glissent sous la main. Le rail compact des dix
    icônes suit les plaques des deux camps : chacun a son mana juste sous son nom
-   et ses PV, loin du paquet, des cartes cachées et des cartes en main. */
+   et ses PV, loin du paquet, des cartes cachées et des cartes en main. La
+   hauteur réelle de chaque plaque (`--rpg-plaque-*-h`, publiée par la table)
+   ancre la jauge dessous sans jamais la laisser mordre sur l'avatar ou les PV,
+   même quand un nom long s'écrit sur deux lignes. */
+.rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table {
+  --rpg-essai-ennemi-top: clamp(54px, 12.5%, 144px);
+  --rpg-essai-joueur-top: 68.5%;
+  --rpg-essai-hud-gap: 8px;
+  --rpg-essai-hud-w: clamp(212px, 18vw, 284px);
+}
+.rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate {
+  width: var(--rpg-essai-hud-w);
+  padding: 6px 20px 6px 7px;
+}
+.rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--ennemi {
+  top: var(--rpg-essai-ennemi-top);
+}
+.rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--joueur {
+  top: var(--rpg-essai-joueur-top);
+}
+.rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .rpg-wizard-plate--ennemi .rpg-wizard-plate__thinking {
+  top: auto;
+  bottom: calc(100% + 7px);
+}
+.rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-card-piles--player {
+  top: 42%;
+}
 .rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-flux-track {
   left: 14px;
-  width: clamp(236px, 18.5vw, 292px);
+  width: var(--rpg-essai-hud-w);
   max-width: none;
 }
-.rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-flux-track--ennemi { top: calc(19% + 64px); }
+.rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-flux-track--ennemi {
+  top: calc(var(--rpg-essai-ennemi-top) + var(--rpg-plaque-ennemi-h, 82px) + var(--rpg-essai-hud-gap));
+}
 .rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-flux-track--joueur {
-  top: calc(67% + 64px); /* juste sous la plaque du joueur */
+  top: calc(var(--rpg-essai-joueur-top) + var(--rpg-plaque-joueur-h, 76px) + var(--rpg-essai-hud-gap));
   left: 14px;
 }
 .rpg-battle[data-mode-mana="essai"]:not(.rpg-battle--touch) .rpg-flux-track__slot {
@@ -92,8 +120,10 @@
 /* Les emblèmes SVG du jeu restent nets et colorés même sans police emoji. */
 .rpg-flux-track__slot .rpg-emblem {
   display: block;
-  width: clamp(11px, 1.3vw, 18px);
-  height: clamp(11px, 1.3vw, 18px);
+  width: clamp(11px, 1.25vw, 17px);
+  height: clamp(11px, 1.25vw, 17px);
+  max-width: 100%;
+  max-height: 100%;
   fill: currentColor;
   color: inherit;
 }
@@ -762,6 +792,16 @@
   grid-column: 1;
   grid-row: 1;
   align-self: center;
+  width: var(--rpg-plate-avatar);
+  height: var(--rpg-plate-avatar);
+}
+.rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) :is(.rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name) {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: break-word;
 }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch :is(.rpg-wizard-plate--joueur, .rpg-wizard-plate--ennemi) .rpg-wizard-plate__identity {
   grid-column: 2;

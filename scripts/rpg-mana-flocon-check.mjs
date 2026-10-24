@@ -47,7 +47,7 @@ assert.ok(neigeEmblem.includes('strokeLinecap="round"') && neigeEmblem.includes(
   'le flocon se dessine en traits arrondis, sans surface pleine');
 assert.doesNotMatch(neigeEmblem, /M12 1\.3 4\.9 5\.6v9\.6L12 22\.7/,
   'le prisme hexagonal qui figurait la Neige a disparu');
-assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️', hybride: '🔥⏳' \};/,
+assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀', hybride: '🔥⏳' \};/,
   'l’icône des cartes Neige reste le flocon ❄️ : l’emblème du choix le rejoint');
 assert.match(battlePage, /className=\{`rpg-flux-choix__option rpg-flux-choix__option--\$\{couleur\}`\}[\s\S]{0,900}?<ElementEmblem element=\{couleur\} \/>/,
   'chaque rond du choix du mana dessine l’emblème de sa couleur, Neige comprise');

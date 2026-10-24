@@ -909,7 +909,7 @@
 }
 .rpg-souk__ceremonie-corps {
   position: relative;
-  width: min(100%, 1020px);
+  width: min(100%, 1120px);
   display: grid;
   gap: clamp(12px, 1.6vw, 18px);
   padding: clamp(14px, 2vw, 24px);
@@ -923,8 +923,8 @@
 .rpg-souk__ceremonie-tete .rpg-souk__ceremonie-aide { margin-top: 7px; color: rgba(247, 237, 218, .44); font: 700 9px/1.45 var(--mono, monospace); letter-spacing: .04em; }
 .rpg-souk__ceremonie-cartes {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(9px, 1.4vw, 14px);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(8px, 1.2vw, 14px);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -935,10 +935,12 @@
   min-width: 0;
   aspect-ratio: 176 / 238;
   padding: 0;
-  border: 1px solid rgba(235, 215, 176, .22);
+  border: 0;
   border-radius: 12px;
-  background: rgba(12, 10, 12, .82);
-  transform-style: preserve-3d;
+  background: transparent;
+  box-shadow: none;
+  perspective: 900px;
+  cursor: context-menu;
   animation: rpg-souk-carte-pose .34s ease both;
   animation-delay: calc(var(--rang, 0) * 60ms);
 }
@@ -946,14 +948,19 @@
 .rpg-souk__carte-volume {
   position: absolute;
   inset: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(235, 215, 176, .22);
   border-radius: inherit;
+  background: rgba(12, 10, 12, .82);
   transform-style: preserve-3d;
   transform: rotateX(5deg) rotateY(calc((var(--rang, 0) - 2) * 1.5deg));
   transform-origin: 50% 55%;
-  transition: transform .28s cubic-bezier(.2, .75, .25, 1), filter .28s ease;
+  transition: transform .28s cubic-bezier(.2, .75, .25, 1);
 }
 .rpg-souk__carte-retourne.is-revelee .rpg-souk__carte:hover .rpg-souk__carte-volume {
   transform: rotateX(0) rotateY(-7deg) translateZ(28px) scale(1.035);
+}
+.rpg-souk__carte-retourne.is-revelee .rpg-souk__carte:hover .rpg-souk__carte-art img {
   filter: brightness(1.06);
 }
 .rpg-souk__carte-reflet {
@@ -975,13 +982,17 @@
   88%, 100% { background-position: -40% 0; }
 }
 .rpg-souk__carte-copies { position: absolute; z-index: 4; top: 7px; right: 7px; transform: translateZ(24px); }
-.rpg-souk__carte.is-nouvelle { border-color: rgba(231, 191, 101, .6); }
+.rpg-souk__carte.is-nouvelle > .rpg-souk__carte-volume { border-color: rgba(231, 191, 101, .6); }
 /* Ne pas appliquer d'opacité au conteneur : cela aplatirait sa scène 3D. */
 .rpg-souk__carte.is-doublon .rpg-souk__carte-art img { opacity: .82; }
 /* ── Lueurs de rareté : la cérémonie honore ses trésors ─────────────────────
    Rare : lueur dorée chaude (#e1b33f, or du Souk)
-   Mythique : lueur violette électrique (#a875ed, violet légendaire) */
-.rpg-souk__carte[data-souk-carte-rarete='rare'] {
+   Mythique : lueur violette électrique (#a875ed, violet légendaire)
+   Le fond, la bordure et l'aura vivent sur `.rpg-souk__carte-volume` pour
+   basculer d'un seul bloc avec l'illustration : un fond peint sur `.rpg-souk__carte`
+   à Z = 0 couperait en biseau la moitié haute inclinée à Z < 0 (voile noir). */
+.rpg-souk__carte[data-souk-carte-rarete='rare'] > .rpg-souk__carte-volume,
+.rpg-souk__carte:has([data-souk-carte-rarete='rare']) > .rpg-souk__carte-volume {
   border-color: rgba(225, 179, 63, .95);
   background:
     radial-gradient(120% 90% at 50% 0%, rgba(255, 215, 85, .18), transparent 62%),
@@ -993,7 +1004,8 @@
     0 10px 28px rgba(0, 0, 0, .32);
   animation: rpg-souk-lueur-doree 2.6s ease-in-out infinite alternate;
 }
-.rpg-souk__carte[data-souk-carte-rarete='mythique'] {
+.rpg-souk__carte[data-souk-carte-rarete='mythique'] > .rpg-souk__carte-volume,
+.rpg-souk__carte:has([data-souk-carte-rarete='mythique']) > .rpg-souk__carte-volume {
   border-color: rgba(168, 117, 237, .95);
   background:
     radial-gradient(120% 90% at 50% 0%, rgba(168, 117, 237, .22), transparent 64%),
@@ -1007,21 +1019,22 @@
   animation: rpg-souk-lueur-violette 2.2s ease-in-out infinite alternate;
 }
 /* Aura diffuse derrière la carte — renforce la lueur sans masquer l'art */
-.rpg-souk__carte[data-souk-carte-rarete='rare']::before,
-.rpg-souk__carte[data-souk-carte-rarete='mythique']::before {
+.rpg-souk__carte[data-souk-carte-rarete='rare'] > .rpg-souk__carte-volume::before,
+.rpg-souk__carte[data-souk-carte-rarete='mythique'] > .rpg-souk__carte-volume::before {
   content: '';
   position: absolute;
   inset: -7px;
   border-radius: 14px;
   z-index: -1;
   pointer-events: none;
+  transform: translateZ(-2px);
   filter: blur(12px);
   opacity: .58;
 }
-.rpg-souk__carte[data-souk-carte-rarete='rare']::before {
+.rpg-souk__carte[data-souk-carte-rarete='rare'] > .rpg-souk__carte-volume::before {
   background: radial-gradient(60% 60% at 50% 45%, rgba(255, 215, 85, .45), transparent 72%);
 }
-.rpg-souk__carte[data-souk-carte-rarete='mythique']::before {
+.rpg-souk__carte[data-souk-carte-rarete='mythique'] > .rpg-souk__carte-volume::before {
   background: radial-gradient(60% 60% at 50% 45%, rgba(168, 117, 237, .52), transparent 74%);
   filter: blur(14px);
 }
@@ -1034,32 +1047,6 @@
   color: #d8b4fe;
   text-shadow: 0 0 10px rgba(168, 117, 237, .85), 0 0 22px rgba(168, 117, 237, .45);
 }
-/* Compatibilité : si la rareté n'est que sur le label, la carte parente réagit */
-.rpg-souk__carte:has([data-souk-carte-rarete='rare']) {
-  border-color: rgba(225, 179, 63, .95);
-  background:
-    radial-gradient(120% 90% at 50% 0%, rgba(255, 215, 85, .18), transparent 62%),
-    rgba(12, 10, 12, .86);
-  box-shadow:
-    0 0 0 1px rgba(255, 231, 175, .35) inset,
-    0 0 14px rgba(255, 215, 85, .55),
-    0 0 32px rgba(232, 179, 63, .32),
-    0 10px 28px rgba(0, 0, 0, .32);
-  animation: rpg-souk-lueur-doree 2.6s ease-in-out infinite alternate;
-}
-.rpg-souk__carte:has([data-souk-carte-rarete='mythique']) {
-  border-color: rgba(168, 117, 237, .95);
-  background:
-    radial-gradient(120% 90% at 50% 0%, rgba(168, 117, 237, .22), transparent 64%),
-    rgba(14, 10, 18, .88);
-  box-shadow:
-    0 0 0 1px rgba(216, 180, 254, .38) inset,
-    0 0 16px rgba(168, 117, 237, .65),
-    0 0 36px rgba(120, 80, 210, .42),
-    0 0 58px rgba(168, 117, 237, .18),
-    0 10px 28px rgba(0, 0, 0, .36);
-  animation: rpg-souk-lueur-violette 2.2s ease-in-out infinite alternate;
-}
 @keyframes rpg-souk-lueur-doree {
   0% { box-shadow: 0 0 0 1px rgba(255, 231, 175, .25) inset, 0 0 10px rgba(255, 215, 85, .42), 0 0 24px rgba(232, 179, 63, .26), 0 10px 28px rgba(0, 0, 0, .32); }
   100% { box-shadow: 0 0 0 1px rgba(255, 231, 175, .45) inset, 0 0 18px rgba(255, 215, 85, .68), 0 0 38px rgba(232, 179, 63, .42), 0 10px 28px rgba(0, 0, 0, .32); }
@@ -1071,7 +1058,7 @@
 /* Les fichiers source n'ont pas tous le même ratio (Léviathan notamment).
    Le cadre impose le format commun, même avant le chargement de l'image. */
 .rpg-souk__carte-art { position: absolute; inset: 0; min-width: 0; overflow: hidden; border-radius: inherit; transform: translateZ(1px); }
-.rpg-souk__carte-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.rpg-souk__carte-art img { display: block; width: 100%; height: 100%; object-fit: cover; transition: filter .28s ease; }
 .rpg-souk__carte-tampon {
   position: absolute;
   z-index: 4;
@@ -1099,10 +1086,11 @@
 }
 .rpg-souk__carte.is-doublon .rpg-souk__carte-tampon { background: rgba(27, 23, 18, .82); color: rgba(247, 237, 218, .76) !important; }
 .rpg-souk__carte.is-dos {
+  display: grid;
   grid-template-rows: 1fr;
   min-height: 120px;
   place-items: center;
-  border-color: rgba(235, 215, 176, .14);
+  border: 1px solid rgba(235, 215, 176, .14);
   background:
     repeating-linear-gradient(45deg, rgba(120, 34, 30, .5) 0 8px, rgba(88, 24, 22, .5) 8px 16px),
     rgba(12, 10, 12, .9);
@@ -1135,9 +1123,18 @@
   .rpg-souk__journal li { grid-template-columns: auto minmax(0, 1fr); }
   .rpg-souk__journal-cartes { grid-column: 1 / -1; }
   .rpg-souk__journal-notes { grid-column: 1 / -1; }
-  /* Trois colonnes sur téléphone aussi : seules les gouttières se resserrent,
-     les cartes nues gardent leur lecture en rangées de trois. */
-  .rpg-souk__ceremonie-cartes { gap: 8px; }
+  /* Cinq colonnes alignent le paquet entier sur une seule rangée : sur petit
+     écran les gouttières et tampons se resserrent sans déborder. */
+  .rpg-souk__ceremonie-cartes { gap: 5px; }
+  .rpg-souk__carte-copies { top: 4px; right: 4px; }
+  .rpg-souk__carte-tampon {
+    bottom: 5px;
+    max-width: calc(100% - 4px);
+    min-height: 24px;
+    padding: 3px 5px;
+    font-size: 6.5px !important;
+    letter-spacing: .03em;
+  }
   .rpg-souk__ceremonie-pied .rpg-menu-button { flex: 1 1 100%; }
 }
 /* Un seul paquet de front : les prix et les boutons gardent leur taille au
@@ -1326,11 +1323,26 @@
 .rpg-souk__carte-retourne > .rpg-souk__carte,
 .rpg-souk__carte-verso { grid-area: 1 / 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .rpg-souk__carte-retourne > .rpg-souk__carte { animation: none; transform: translateZ(.1px); }
+.rpg-souk__carte-retourne:not(.is-revelee) > .rpg-souk__carte { pointer-events: none; }
+/* Une fois les retournements achevés, on retire le preserve-3d parent et le
+   verso caché pour que le hit-testing navigateur (clic droit, survol, appui
+   long) touche directement la carte révélée sans ambiguïté de profondeur 3D. */
+[data-souk-phase='termine'] .rpg-souk__carte-retourne.is-revelee {
+  transform-style: flat;
+  transform: none;
+}
+[data-souk-phase='termine'] .rpg-souk__carte-retourne.is-revelee > .rpg-souk__carte {
+  transform: none;
+}
+[data-souk-phase='termine'] .rpg-souk__carte-verso {
+  display: none;
+}
 .rpg-souk__carte-verso {
   display: grid;
   padding: 10px;
   border: 1px solid #bd9650;
   border-radius: 12px;
+  pointer-events: none;
   transform: rotateY(180deg);
   background:
     radial-gradient(ellipse at 50% 40%, #65432188, transparent 65%),
@@ -1454,6 +1466,7 @@
   .rpg-souk__sachet-ancre { display: none; }
   .rpg-souk__ceremonie .rpg-souk__carte-place,
   .rpg-souk__ceremonie .rpg-souk__carte-flotte,
+  .rpg-souk__ceremonie .rpg-souk__carte-volume,
   .rpg-souk__ceremonie [data-souk-carte-rarete] { animation: none !important; }
   .rpg-souk__carte-retourne { transition: none; }
   .rpg-souk__carte-volume,

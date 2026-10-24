@@ -294,6 +294,24 @@ test('Montée de niveau : aucun paquet ne s’ouvre pendant une partie en cours,
         assert.equal(ceremonieVictoire.dataset.soukCeremonieOffert, 'true');
 
         await cliquer(containerVictoire.querySelector('[data-souk-ceremonie-passer]'));
+        const carteOuverteVictoire = containerVictoire.querySelector('[data-souk-carte][data-card-id]');
+        assert.ok(carteOuverteVictoire, 'les cartes ouvertes du paquet offert exposent leur identifiant');
+        await act(async () => {
+          carteOuverteVictoire.dispatchEvent(new window.MouseEvent('contextmenu', {
+            bubbles: true,
+            cancelable: true,
+            button: 2,
+          }));
+        });
+        const ficheBoosterOffert = containerVictoire.querySelector('[data-catalogue-preview]');
+        assert.ok(ficheBoosterOffert,
+          'le clic droit sur une carte ouverte d’un paquet offert ouvre sa fiche');
+        assert.equal(ficheBoosterOffert.dataset.cataloguePreview, carteOuverteVictoire.dataset.cardId);
+        assert.ok(containerVictoire.querySelector('[data-souk-ceremonie]'),
+          'ouvrir la fiche au clic droit garde la cérémonie du paquet offert ouverte');
+        await cliquer(ficheBoosterOffert.querySelector('.rpg-card-peek__close'));
+        assert.equal(containerVictoire.querySelector('[data-catalogue-preview]'), null,
+          'fermer la fiche rend la main à la cérémonie');
         await cliquer(containerVictoire.querySelector('[data-souk-ceremonie-ranger]'));
         assert.equal(containerVictoire.querySelector('[data-souk-ceremonie]'), null,
           'une fois le paquet rangé, l’écran de victoire reste accessible');

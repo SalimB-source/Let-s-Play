@@ -3032,8 +3032,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   justify-content: start;
   width: clamp(176px, 15vw, 224px);
   min-height: clamp(52px, 4vw, 64px);
-  gap: 2px clamp(8px, .75vw, 11px);
-  padding: 0;
+  gap: 3px clamp(8px, .75vw, 11px);
+  padding: 6px 18px 6px 6px;
   box-sizing: border-box;
   border: 1px solid rgba(226, 190, 119, .78);
   border-radius: 999px;
@@ -3059,9 +3059,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   grid-row: 1;
   width: 100%;
   color: #fff0cf;
-  font: 700 clamp(10px, .9vw, 13px)/1.15 var(--display);
+  font: 700 clamp(10px, .9vw, 13px)/1.18 var(--display);
   text-align: left;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__avatar {
   grid-column: 1;
@@ -4542,6 +4542,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
     max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 }
+/* Quand un booster est ouvert (au Souk comme pour un paquet offert par un
+   niveau à z-index 10045), la fiche du clic droit et l'aperçu d'appui long
+   passent par-dessus la cérémonie pour rester lisibles. */
+.rpg-souk__ceremonie ~ .rpg-card-peek,
+.rpg-battle:has([data-souk-ceremonie]) .rpg-card-peek {
+  z-index: 10060;
+}
 .rpg-card-peek__backdrop {
   position: absolute;
   z-index: 0;
@@ -5710,6 +5717,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-shadow: 0 1px 1px rgba(255, 255, 255, .7);
   filter: drop-shadow(0 0 2px rgba(150, 220, 255, .85));
 }
+.rpg-card-element-badge__pip--tenebres { background: radial-gradient(circle at 34% 24%, #9a7ce0, #241543 72%); }
 .rpg-card-element-badge--verre { background: radial-gradient(circle at 34% 24%, #9fd6e8, #2b6d84 72%); }
 .rpg-card-element-badge--souffle { background: radial-gradient(circle at 34% 24%, #d9dee6, #6d7480 72%); }
 .rpg-card-element-badge--encre { background: radial-gradient(circle at 34% 24%, #b39ae0, #432d73 72%); }
@@ -7439,20 +7447,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Le paquet devient une vraie zone de table, assez grande pour se lire sur les
    deux côtés. La défausse reste compacte afin de laisser respirer les cartes. */
-.rpg-card-piles { gap: 11px; }
+.rpg-card-piles { align-items: flex-end; gap: 12px; }
 .rpg-card-pile--deck {
   min-width: 78px;
   gap: 4px;
+  padding: 10px 10px 6px 12px;
   position: relative;
 }
 .rpg-card-pile--deck .rpg-card-pile__stack {
-  width: clamp(66px, 6vw, 82px);
-  height: clamp(88px, 7.2vw, 104px);
+  width: clamp(54px, min(6vw, 9.5vh), 82px);
+  height: clamp(72px, min(7.2vw, 12vh), 104px);
   filter: drop-shadow(0 7px 10px rgba(0, 0, 0, .5));
 }
 .rpg-card-pile--deck .rpg-card-pile__card {
-  width: clamp(66px, 6vw, 82px);
-  height: clamp(88px, 7.2vw, 104px);
+  width: clamp(54px, min(6vw, 9.5vh), 82px);
+  height: clamp(72px, min(7.2vw, 12vh), 104px);
   border-width: 3px;
   border-color: #111016;
   border-radius: 8px;

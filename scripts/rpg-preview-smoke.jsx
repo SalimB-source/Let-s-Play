@@ -296,10 +296,30 @@ export async function checkRpgPreviewActions(assert) {
     assert.ok(paquetSouk && !paquetSouk.disabled, 'le paquet du Souk est ouvert sur le téléphone');
     await click(paquetSouk);
     assert.ok(container.querySelector('[data-souk-ceremonie]'), 'le paquet ouvre sa cérémonie en portrait');
+    const carteCachee = container.querySelector('.rpg-souk__carte-retourne:not(.is-revelee) > .rpg-souk__carte[data-card-id]');
+    if (carteCachee) {
+      await clicDroit(carteCachee);
+      assert.equal(fiche(), null, 'une carte encore face cachée ne dévoile pas sa fiche au clic droit');
+    }
     const passerRevelation = container.querySelector('[data-souk-ceremonie-passer]');
     if (passerRevelation) await click(passerRevelation);
     const carteBooster = container.querySelector('[data-souk-carte][data-card-id]');
     assert.ok(carteBooster, 'une carte révélée du booster peut recevoir le geste tactile');
+    const menuBooster = await clicDroit(carteBooster.querySelector('img') ?? carteBooster);
+    assert.equal(menuBooster.defaultPrevented, true, 'le menu natif est étouffé sur une carte ouverte du booster');
+    assert.ok(fiche(), 'le clic droit sur l’illustration ouvre la fiche d’une carte ouverte dans un booster du Souk');
+    assert.equal(fiche().dataset.cataloguePreview, carteBooster.dataset.cardId,
+      'la fiche du booster montre bien la carte cliquée droit');
+    assert.match(fiche().querySelector('.rpg-hover-card-preview__eyebrow').textContent, /^LE SOUK · /u,
+      'le sur-titre de la fiche rappelle l’ouverture au Souk');
+    assert.ok(container.querySelector('[data-souk-ceremonie]'), 'le clic droit ne ferme pas la cérémonie du booster');
+    await click(fiche().querySelector('.rpg-card-peek__close'));
+    assert.equal(fiche(), null, 'la fiche du clic droit se referme sans quitter le booster');
+    const placeBooster = carteBooster.closest('.rpg-souk__carte-place');
+    await clicDroit(placeBooster);
+    assert.ok(fiche(), 'même un clic droit reçu par l’emplacement 2D (.rpg-souk__carte-place) ouvre la fiche de la carte');
+    await click(fiche().querySelector('.rpg-card-peek__close'));
+    assert.equal(fiche(), null, 'la fiche ouverte depuis l’emplacement se referme proprement');
     await appuiLong(carteBooster);
     assert.ok(peek(), 'l’appui long ouvre la preview du booster sur téléphone portrait');
     assert.ok(peek().getAttribute('aria-label').includes(cardById(carteBooster.dataset.cardId).name),
