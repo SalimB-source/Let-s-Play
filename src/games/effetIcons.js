@@ -360,6 +360,19 @@ export function pastillesPourCarte(carte) {
 }
 
 /**
+ * Les mots-clés que la Furie prête, mais qui ne sont pas encore actifs.
+ * L'état réel de l'entité décide : Envol et Overkill restent visibles sur le
+ * Maître, grisés tant qu'il ne les possède pas, puis se colorent dès que sa
+ * Furie les lui donne. Sans entité (main, catalogue), ils sont évidemment
+ * encore en attente. Une autre source peut n'en activer qu'un : chaque icône
+ * suit alors son propre état au lieu de regarder seulement le drapeau Furie.
+ */
+export function effetsFurieInactifs(carte, entite = null) {
+  if (!carte?.furieGains) return [];
+  return ['envol', 'overkill'].filter((cle) => carte.furieGains[cle] && !entite?.[cle]);
+}
+
+/**
  * Les effets imprimés qu'une créature posée a déjà dépensés : sa Tenacité
  * quand elle l'a sauvée une fois, son Bouclier quand il a absorbé son dernier
  * point (ou que son bouclier de lumière a été touché). L'aperçu grise alors

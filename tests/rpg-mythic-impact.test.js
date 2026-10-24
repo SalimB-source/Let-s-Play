@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { arriveesEnJeu, playMythicImpact } from '../src/games/rpgMythicImpact.js';
+import {
+  MAITRE_DU_MARTEAU_ID,
+  estArriveeMaitreDuMarteau,
+  playMarteauArrivee,
+} from '../src/games/rpgMarteauArrivee.js';
 const lookup = (id) => ({ rarity: id === 'legend' ? 'mythique' : 'rare' });
 const a = { id: 'a', carteId: 'legend' };
 const b = { id: 'b', carteId: 'ordinary' };
@@ -110,4 +115,63 @@ test('mouvement réduit : l’arrivée se lit sans cérémonie, et sans secousse
     assert.equal(table.querySelectorAll('.rpg-mythic-impact').length, 0,
       'les deux cérémonies réduites laissent la table vide');
   } finally { dom.window.close(); delete globalThis.document; }
+});
+
+test('l’orage d’arrivée appartient uniquement au Maître du marteau', () => {
+  assert.equal(MAITRE_DU_MARTEAU_ID, 'maitre-du-marteau');
+  assert.equal(estArriveeMaitreDuMarteau({ carteId: 'maitre-du-marteau' }), true);
+  assert.equal(estArriveeMaitreDuMarteau({ carteId: 'pere-des-corbeaux' }), false,
+    'une autre mythique de Neige ne déclenche pas sa signature');
+  assert.equal(estArriveeMaitreDuMarteau({ carteId: 'eclair-du-marteau' }), false,
+    'le sort du marteau garde sa propre foudre, différente de l’arrivée');
+  assert.equal(estArriveeMaitreDuMarteau(null), false);
+});
+
+test('le Maître fait couvrir le ciel, ramifier la foudre et frapper sa carte', () => {
+  const { dom, table } = tableDeTest();
+  try {
+    const stop = playMarteauArrivee(table, table.querySelector('[data-entity-id="a"]'));
+    const orage = table.querySelector('.rpg-marteau-arrivee');
+    assert.ok(orage, 'la couche d’orage est posée sur la table');
+    assert.equal(orage.dataset.rpgArriveeFx, 'maitre-du-marteau');
+    assert.equal(orage.getAttribute('aria-hidden'), 'true', 'toute la cérémonie est décorative');
+    assert.equal(orage.style.getPropertyValue('--marteau-x'), '60px');
+    assert.equal(orage.style.getPropertyValue('--marteau-y'), '90px',
+      'la frappe rejoint le centre mesuré de la carte');
+    assert.equal(orage.querySelectorAll('.rpg-marteau-arrivee__nuages').length, 2,
+      'deux profondeurs de nuages couvrent le ciel');
+    assert.equal(orage.querySelectorAll('.rpg-marteau-arrivee__pluie').length, 2,
+      'la pluie a elle aussi deux profondeurs');
+    assert.deepEqual(
+      [...orage.querySelectorAll('.rpg-marteau-arrivee__eclair')].map((node) => node.dataset.bolt),
+      ['nuages', 'gauche', 'principal', 'droite'],
+      'les éclairs parcourent toute la table, pas seulement la carte',
+    );
+    const ciel = orage.querySelector('.rpg-marteau-arrivee__ciel');
+    assert.equal(ciel.getAttribute('viewBox'), '0 0 100 100', 'le dessin épouse le repère de la table');
+    const traitsPrincipaux = [...orage.querySelectorAll('.rpg-marteau-arrivee__eclair--principal .rpg-marteau-arrivee__trait--coeur')];
+    assert.equal(traitsPrincipaux.length, 4, 'le trait principal et ses trois fourches ont un cœur blanc');
+    assert.match(traitsPrincipaux[0].getAttribute('d'), /L60 90$/, 'le dernier point est exactement la carte');
+    assert.ok(traitsPrincipaux.every((path) => path.getAttribute('pathLength') === '1'),
+      'chaque décharge se dessine quelle que soit sa longueur');
+    assert.equal(orage.querySelectorAll('.rpg-marteau-arrivee__trait--halo').length, 16,
+      'chacun des seize traits principaux ou fourchus possède aussi son halo lumineux');
+    assert.equal(orage.querySelectorAll('.rpg-marteau-arrivee__impact-onde').length, 2,
+      'l’impact électrique a son onde et son écho');
+    assert.equal(orage.querySelectorAll('.rpg-marteau-arrivee__etincelle').length, 18,
+      'dix-huit étincelles jaillissent au contact du marteau');
+    stop();
+    stop();
+    assert.equal(table.querySelector('.rpg-marteau-arrivee'), null,
+      'l’annulation est idempotente et ne laisse aucune couche');
+  } finally { dom.window.close(); }
+});
+
+test('mouvement réduit : aucun flash d’orage n’est créé', () => {
+  const { dom, table } = tableDeTest();
+  try {
+    const stop = playMarteauArrivee(table, table.querySelector('[data-entity-id="a"]'), true);
+    assert.equal(table.querySelector('.rpg-marteau-arrivee'), null);
+    stop();
+  } finally { dom.window.close(); }
 });

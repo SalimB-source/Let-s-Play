@@ -20,3 +20,16 @@ const EFFET = Object.freeze({
 export function rendreTourbillon() {
   return renderToStaticMarkup(<TourbillonEau effet={EFFET} />);
 }
+
+export function rendreTourbillonExil() {
+  return renderToStaticMarkup(
+    <TourbillonEau
+      effet={{
+        ...EFFET,
+        entityId: 'entite-exilee',
+        effectId: 'exil-8-entite-exilee',
+        variante: 'exil',
+      }}
+    />,
+  );
+}

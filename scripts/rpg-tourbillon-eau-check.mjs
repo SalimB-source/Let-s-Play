@@ -102,8 +102,8 @@ assert.match(css, /@keyframes rpg-tourbillon-eau-carte\s*\{\s*0% \{ opacity: 1;[
 
 // ── 2 bis. L'ordre : l'eau d'abord, la main ensuite ────────────────────────
 // La carte renvoyée ne doit pas reparaître dans la main pendant le tourbillon.
-assert.match(page, /const cartesEnRenvoi = new Set\(\(tourbillonsEau \?\? \[\]\)\s*\n?\s*\.filter\(\(effet\) => effet\.camp !== 'sorcier'\)\s*\n?\s*\.map\(\(effet\) => effet\.cardId\)\);/s,
-  'la table sait quelles cartes l’eau ramène dans VOTRE main');
+assert.match(page, /const cartesEnRenvoi = new Set\(\(tourbillonsEau \?\? \[\]\)\s*\n?\s*\.filter\(\(effet\) => effet\.variante !== 'exil' && effet\.camp !== 'sorcier'\)\s*\n?\s*\.map\(\(effet\) => effet\.cardId\)\);/s,
+  'la table sait quelles cartes l’eau ramène dans VOTRE main, sans confondre un exil');
 assert.match(page, /cartesEnRenvoi\.has\(carteId\) \? 'is-en-renvoi' : ''/,
   'leur emplacement de main les masque pendant le tourbillon');
 assert.match(css, /\.rpg-hand__card\.is-en-renvoi\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s,
@@ -123,8 +123,8 @@ assert.match(animer, /setTourbillonsEau\(\(current\) => \[\.\.\.nettoyerFantomes
   'le calque rejoint la file des effets, en nettoyant les périmés');
 assert.match(animer, /expireA: Date\.now\(\) \+ duree \+ 400,/, 'il porte sa date de péremption');
 assert.match(animer, /const duree = 950;/, 'il dure 950 ms');
-assert.match(animer, /const cartesDisparues = avant\.filter\(\(entite\) => !vivants\.has\(entite\.entityId\)\s*\n?\s*&& !renvoyees\.has\(entite\.entityId\)\);/s,
-  'une créature renvoyée n’est pas un fantôme de destruction : elle a son propre adieu');
+assert.match(animer, /const cartesDisparues = avant\.filter\(\(entite\) => !vivants\.has\(entite\.entityId\)\s*\n?\s*&& !renvoyees\.has\(entite\.entityId\)\s*\n?\s*&& !exiles\.has\(entite\.entityId\)\);/s,
+  'une créature renvoyée ou exilée n’est pas un fantôme de destruction : elle a son propre adieu');
 
 assert.match(page, /const \[tourbillonsEau, setTourbillonsEau\] = useState\(\[\]\);/,
   'la table garde la liste des tourbillons en cours');

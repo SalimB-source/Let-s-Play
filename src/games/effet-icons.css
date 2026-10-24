@@ -196,6 +196,29 @@
   color: var(--rpg-protection-couleur, #ffe9a0);
 }
 
+/* Un gain annoncé par Furie n'est pas un effet dépensé : il reste imprimé,
+   mais attend son activation dans une version neutre, sans l'or des mots-clés
+   réellement portés par la créature. */
+.rpg-pastille.is-inactif {
+  border-color: rgba(168, 168, 168, .38);
+  background: rgba(28, 28, 28, .62);
+  color: #a9a9a9;
+  opacity: .68;
+  filter: grayscale(1);
+}
+
+.rpg-pastille.is-inactif .rpg-effet-icone,
+.rpg-card-icone.is-inactif {
+  color: #a9a9a9;
+}
+
+.rpg-card-icone.is-inactif {
+  border-color: rgba(168, 168, 168, .42);
+  background: rgba(24, 24, 24, .82);
+  opacity: .68;
+  filter: grayscale(1);
+}
+
 /* L'aperçu rapide du duel ne vole pas le survol aux cartes qu'il recouvre : ses
    pastilles n'ont rien à ouvrir — l'aperçu n'écrit aucune explication sous le
    mot — et restent donc inertes, y compris dans les volets lisibles
