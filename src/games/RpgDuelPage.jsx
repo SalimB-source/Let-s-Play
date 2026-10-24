@@ -7634,6 +7634,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }
 
   if (ecran !== 'partie') {
+    // Une partie n'est **reprenable** que tant qu'elle n'a pas de vainqueur :
+    // un duel terminé n'a plus rien à reprendre, et son bouton vert n'a rien à
+    // faire sous l'étagère des tours — « Retour aux tours » ramène au menu, pas
+    // à une table finie. Le duel reste en mémoire pour son bilan et sa
+    // cérémonie de palier ; il ne se propose simplement plus.
+    const partieReprenable = Boolean(duel) && !vainqueur;
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <EffetsSprite />
@@ -7647,7 +7653,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onStartTutorial={demarrerTutoriel}
           onStartCardGuide={() => setEcran('guide')}
           onResumeGame={reprendrePartie}
-          hasGame={Boolean(duel)}
+          hasGame={partieReprenable}
           progressionHistoire={progressionHistoire}
           onStartEtage={demarrerEtage}
           onResetHistoire={() => {
@@ -7662,7 +7668,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onJournalRecit={ouvrirJournal}
           onRestartRecit={nouveauRecit}
           sauvegardeHistoireOk={sauvegardeHistoireOk}
-          duelEnCours={Boolean(duel && !rpgVainqueur(duel))}
+          duelEnCours={partieReprenable}
           campagneEnCours={Boolean(campagneDuelRef.current)}
           decksMaison={decksMaison}
           collection={collection}
