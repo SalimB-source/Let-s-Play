@@ -20,7 +20,7 @@
  *
  * Contrat des requêtes (POST JSON) :
  *
- *   { action: 'ouvrir',    deck, visibilite?: 'amis'|'lien', invite_id?, mode?: 'live'|'async' }
+ *   { action: 'ouvrir',    deck, visibilite?: 'amis'|'lien', invite_id?, mode?: 'live' }
  *   { action: 'rejoindre', code, deck }
  *   { action: 'etat',      code }
  *   { action: 'jouer',     code, seq, intention }
@@ -184,8 +184,8 @@ export function creerArbitre({
   if (!magasin) throw new Error('magasin requis');
   if (typeof authentifier !== 'function') throw new Error('authentifier requis');
 
-  const horlogeDe = (mode) => RPG_PVP_HORLOGES[mode === 'async' ? 'rappelAsync' : 'live'];
-  const echeanceDe = (mode, depart) => new Date(depart + horlogeDe(mode)).toISOString();
+  const horlogeDe = () => RPG_PVP_HORLOGES.live;
+  const echeanceDe = (depart) => new Date(depart + horlogeDe()).toISOString();
 
   async function nomsDuDuel(duel) {
     return {
@@ -301,7 +301,7 @@ export function creerArbitre({
   /* ---------------------------------------------------------------- */
 
   async function verifierHorloge(duel) {
-    if (duel.mode !== 'live' || duel.statut !== 'en_cours' || !duel.echeance) return duel;
+    if (duel.statut !== 'en_cours' || !duel.echeance) return duel;
     if (maintenant() < Date.parse(duel.echeance)) return duel;
     const etat = duel.etat;
     rpgPvpBrancherHasard(etat);
@@ -334,7 +334,7 @@ export function creerArbitre({
         seq: duel.seq + (avance ? 1 : 0),
         tour: etat.tour,
         dernier_coup: new Date(maintenant()).toISOString(),
-        echeance: echeanceDe(duel.mode, maintenant()),
+        echeance: echeanceDe(maintenant()),
         ...(await issue(duel, etat)),
       };
       const maj = await magasin.mettreAJourDuel(duel.code, duel.seq, patch);
@@ -386,7 +386,7 @@ export function creerArbitre({
       };
     }
     patch.dernier_coup = new Date(maintenant()).toISOString();
-    patch.echeance = echeanceDe(duel.mode, maintenant());
+    patch.echeance = echeanceDe(maintenant());
     const maj = await magasin.mettreAJourDuel(duel.code, duel.seq, patch);
     return maj ?? (await magasin.duelParCode(duel.code)) ?? duel;
   }
@@ -403,7 +403,7 @@ export function creerArbitre({
       if (!permis.ok) return refus(400, permis.raison);
 
       const visibilite = corps.visibilite === 'lien' ? 'lien' : 'amis';
-      const mode = corps.mode === 'async' ? 'async' : 'live';
+      const mode = 'live';
       const invite = visibilite === 'amis' ? String(corps.invite_id || '') : null;
       if (visibilite === 'amis' && !invite) return refus(400, 'invite-requis');
       if (invite && invite === joueur.id) return refus(400, 'soi-meme');
@@ -493,7 +493,7 @@ export function creerArbitre({
         statut: 'en_cours',
         tour: 'joueur',
         dernier_coup: new Date(depart).toISOString(),
-        echeance: echeanceDe(duel.mode, depart),
+        echeance: echeanceDe(depart),
       };
       // `seq` attendu = 0 : deux joueurs qui cliquent en même temps sur le même
       // lien ne peuvent pas s'asseoir tous les deux à la même place.
@@ -561,7 +561,7 @@ export function creerArbitre({
         seq: duel.seq + 1,
         tour: etat.tour,
         dernier_coup: new Date(depart).toISOString(),
-        echeance: echeanceDe(duel.mode, depart),
+        echeance: echeanceDe(depart),
         ...(await issue(duel, etat)),
       };
       const maj = await magasin.mettreAJourDuel(duel.code, duel.seq, patch);

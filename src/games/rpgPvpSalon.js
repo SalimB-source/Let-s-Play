@@ -89,9 +89,8 @@ export function resultatSalon(vue, uid) {
 }
 
 /** Le texte du message d'invitation (corps lisible ; le lien est dans `payload`). */
-export function messageDefi({ nom = 'Un joueur', mode = 'live' } = {}) {
-  const quand = mode === 'async' ? ' quand tu veux (à la correspondance)' : '';
-  return `${nom} te défie au Sablier${quand} — ouvre le défi pour choisir ton deck.`;
+export function messageDefi({ nom = 'Un joueur' } = {}) {
+  return `${nom} te défie au Sablier — ouvre le défi pour choisir ton deck.`;
 }
 
 /**
@@ -99,10 +98,10 @@ export function messageDefi({ nom = 'Un joueur', mode = 'live' } = {}) {
  * jamais recopié — la carte l'interroge à l'arbitre, donc elle ne peut pas
  * mentir (voir docs/rpg/17-pvp-multijoueur.md §4.1).
  */
-export function payloadDefi({ code, mode = 'live', deckNom = null } = {}) {
+export function payloadDefi({ code, deckNom = null } = {}) {
   const propre = String(code ?? '').toUpperCase();
   if (!rpgPvpCodeValide(propre)) return null;
-  return { code: propre, mode: mode === 'async' ? 'async' : 'live', ...(deckNom ? { deckNom: String(deckNom).slice(0, 60) } : {}) };
+  return { code: propre, mode: 'live', ...(deckNom ? { deckNom: String(deckNom).slice(0, 60) } : {}) };
 }
 
 /**
@@ -115,7 +114,7 @@ export function invitationDepuisMessage(message) {
   if (!rpgPvpCodeValide(code)) return null;
   return {
     code,
-    mode: message.payload?.mode === 'async' ? 'async' : 'live',
+    mode: 'live',
     deckNom: message.payload?.deckNom ?? null,
   };
 }
