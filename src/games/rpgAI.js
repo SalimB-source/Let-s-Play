@@ -1202,6 +1202,26 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const gain = pertes(adv) - pertes(cote);
       return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
     }
+    if (effet.type === 'destruction-coutmax') {
+      // Le jugement, et la Neige noire qui le complète de gel : la vague ne
+      // brise que les créatures assez petites, dans les camps qu'elle couvre
+      // (`cible: 'creatures-adverses'` épargne le camp du lanceur). La
+      // protection de couleur et le Serpent du monde écartent la vague ;
+      // l'Esquive de la cible en annule la destruction à son taux d'échec.
+      const couleursSort = cardColors(carte);
+      const seuil = Number(effet.coutMax) || 0;
+      const camps = effet.cible === 'creatures-adverses' ? [adv] : [cote, adv];
+      const couvertes = camps.flatMap((camp) => duel[camp].creatures
+        .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte)));
+      const brisees = couvertes
+        .filter((entite) => (duelCardById(entite.carteId)?.cost ?? 0) <= seuil);
+      const gain = brisees.reduce((somme, entite) => somme
+        + valeurEntite(entite)
+          * (entite.esquive ? 1 - moteur.RPG_ESQUIVE_CHANCE : 1)
+          * (entite.tenaciteDisponible ? 0.7 : 1), 0)
+        + (effet.gel ? (couvertes.length - brisees.length) * 1.2 : 0);
+      return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
+    }
     if (effet.type === 'degats') {
       const montant = effet.amount ?? 0;
       if (effet.cible === 'toutes-creatures') {

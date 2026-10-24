@@ -155,6 +155,9 @@ au ratio exact de la face (1024×1280), dans une seule révision de cache —
   plumes, la lance basse, les corbeaux en spirale, la glace au sol.
 - **Neige noire** — le champ de bataille figé sous une neige qui tombe à
   l'envers, la balance de pierre vide au centre, l'éclipse ourlée de violet.
+  Le sort brise les petites créatures et fige les autres : les corps pris
+  dans la glace et les mains encore levées disent les deux moitiés de la
+  carte.
 - **LE MAÎTRE DES CORBEAUX** — la figure retournée du Père des corbeaux : le
   même œil lumineux sous le chapeau, l'autre sous le bandeau, la neige noire
   mêlée à la blanche, le trône de pierres et l'arbre mort peuplé de corbeaux.

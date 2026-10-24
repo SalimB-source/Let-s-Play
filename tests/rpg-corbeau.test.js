@@ -154,8 +154,10 @@ test('les cartes du Corbeau réunissent les vocabulaires imprimés des deux coul
 
   const neige = cardById('neige-noire');
   assert.equal(neige.kind, 'magie');
+  assert.equal(neige.cost, 6, 'la neige noire coûte six manas');
   assert.equal(neige.prixPv, 3, 'le Prix se paie en PV');
-  assert.deepEqual(neige.effet, { type: 'gel', cible: 'toutes-creatures' });
+  assert.deepEqual(neige.effet, { type: 'destruction-coutmax', coutMax: 3, cible: 'creatures-adverses', gel: true },
+    'la vague brise les coûts de 3 ou moins, puis fige les survivantes — d’un seul côté');
   assert.doesNotMatch(neige.text, /dégâts? nus?/i, 'aucune carte du set ne frappe nu');
 });
 
@@ -327,18 +329,29 @@ test('la Valkyrie des neuf nuits n’emporte que les créatures de coût 2 ou mo
   assert.ok(duel.sorcier.creatures.includes(moyenne), 'celle de coût 3 reste sur la table');
 });
 
-test('Neige noire gèle toute la table adverse en payant son prix en PV', () => {
+test('Neige noire brise les créatures de coût 3 ou moins, gèle les autres — et épargne son camp', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  const premiere = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-  const seconde = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
+  // Chez le sorcier : une créature de coût 3 (brisée) et une de coût 4 (gelée).
+  donner(duel, 'sorcier', 'momie-de-lin');
+  donner(duel, 'sorcier', 'celle-qui-pese');
+  const petite = rpgJouerCreature(duel, 'sorcier', 'momie-de-lin').entite;
+  const grosse = rpgJouerCreature(duel, 'sorcier', 'celle-qui-pese').entite;
+  // Chez le joueur : la neige ne tombe jamais sur les siens.
+  const alliee = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   donner(duel, 'joueur', 'neige-noire');
   const pvAvant = duel.joueur.pv;
   const sort = rpgLancerMagie(duel, 'joueur', 'neige-noire');
   assert.equal(sort.ok, true, sort.raison);
   assert.equal(duel.joueur.pv, pvAvant - 3, 'le Prix se paie en PV');
-  for (const entite of [premiere, seconde]) {
-    assert.ok(entite.gelToursRestants > 0, `${entite.name} est gelée`);
-  }
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === petite.id), false,
+    'la créature de coût 3 est détruite');
+  assert.ok(duel.sorcier.cimetiere.includes('momie-de-lin'), 'elle rejoint le cimetière');
+  assert.ok(duel.sorcier.creatures.some((entite) => entite.id === grosse.id),
+    'la créature de coût 4 survit à la vague');
+  assert.ok(grosse.gelToursRestants > 0, '…et reste gelée');
+  assert.ok(duel.joueur.creatures.some((entite) => entite.id === alliee.id),
+    'le camp du lanceur n’est pas touché');
+  assert.equal(alliee.gelToursRestants ?? 0, 0, 'ni détruit, ni gelé');
 });

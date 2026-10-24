@@ -164,10 +164,16 @@ function valeurEffet(effet = {}) {
     }
     case 'destruction-totale':
       return 8; // Nettoyage symétrique : détruit aussi le champ allié.
-    case 'destruction-coutmax':
+    case 'destruction-coutmax': {
       // Celui qui juge : détruire les créatures à petit coût est un nettoyage
-      // de terrain sélectif, plus faible qu'une destruction totale.
-      return 5 + Math.min(2, Number(effet.coutMax) || 0);
+      // de terrain sélectif, plus faible qu'une destruction totale. La Neige
+      // noire y ajoute deux choses — la vague épargne son propre camp, et le
+      // gel tombe sur ce qu'elle n'a pas brisé.
+      let valeur = 5 + Math.min(2, Number(effet.coutMax) || 0);
+      if (effet.cible === 'creatures-adverses') valeur += 1.5;
+      if (effet.gel) valeur += 3;
+      return valeur;
+    }
     case 'exil':
       return 6;
     case 'retour-main':

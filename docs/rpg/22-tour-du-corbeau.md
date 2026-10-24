@@ -56,7 +56,7 @@ Ténèbres** : elles demandent un pip de chaque couleur et portent le cadre
 | **Veilleuse au corbeau noir** | 3 | Créature 2/3 | inhabituelle | Rapidité ; Tribut 1 |
 | **Berserk du crépuscule** | 4 | Créature 3/5 | rare | Provocation, Furie 2, Tribut 2 — il ouvre le combat, il encaisse, et chaque contact paie |
 | **Valkyrie des neuf nuits** | 5 | Créature 3/4 | rare | Envol, Furie 2 ; à l'arrivée, exile une créature de coût 2 ou moins |
-| **Neige noire** | 5 + 3 PV | Sorcellerie | rare | Gèle toutes les créatures adverses |
+| **Neige noire** | 6 + 3 PV | Sorcellerie | rare | Détruit les créatures adverses de coût 3 ou moins ; gèle toutes les survivantes |
 | **LE MAÎTRE DES CORBEAUX** | 7 | Héros 5/6 | mythique | Envol, Tenacité, Tribut 1 ; à l'arrivée, exile une créature de coût 4 ou moins |
 
 Trois règles de direction tenues par les tests :
