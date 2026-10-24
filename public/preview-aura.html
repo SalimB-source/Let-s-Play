@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Preview Aura Enflammée - Mythique Jouable</title>
+<link rel="stylesheet" href="../src/games/rpg-battle.css" />
+<style>
+  body { background: #0a0612; color: #eee; font-family: system-ui; margin: 0; padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+  h1 { color: #d8b4fe; font-size: 22px; margin: 0; }
+  p.desc { color: #a78bfa; max-width: 720px; text-align: center; line-height: 1.6; }
+  .row { display: flex; gap: 32px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .card-mock { position: relative; width: 180px; aspect-ratio: 4/5; background: #1a1033; border-radius: 12px; border: 3px solid #c084fc; overflow: visible; display: grid; place-items: center; color: #fff; font-weight: 700; }
+  .card-mock img.card-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+  .label { text-align: center; margin-top: 12px; font-size: 12px; color: #c4b5fd; }
+  .ref img { border-radius: 12px; box-shadow: 0 0 30px rgba(168,85,247,.4); }
+</style>
+</head>
+<body>
+  <h1>Aura Enflammée Violette — Preview</h1>
+  <p class="desc">À gauche : visuel cible généré (aura enveloppante). À droite : vraie implémentation en jeu avec flammes PNG qui bougent autour du cadre quand la créature mythique est jouable.</p>
+  
+  <div class="row">
+    <div class="ref">
+      <img src="./aura-preview-reference.png" alt="Référence IA" style="width: 280px; border-radius: 12px;" />
+      <div class="label">Visuel cible (IA) — aura enveloppante</div>
+    </div>
+    
+    <div style="padding: 40px;">
+      <div class="card-mock rpg-hand__card is-mythique-jouable is-playable">
+        <img class="rpg-hand__img" src="https://picsum.photos/seed/dragon/300/400" style="border-radius: inherit;" alt="" />
+        <span class="rpg-mythique-flammes" aria-hidden="true">
+          <img src="./flames/flame-07-bottom.png" class="rpg-mythique-flamme rpg-mythique-flamme--bottom" alt="" />
+          <img src="./flames/flame-01-top-left.png" class="rpg-mythique-flamme rpg-mythique-flamme--top" alt="" />
+          <img src="./flames/flame-02-top-mid.png" class="rpg-mythique-flamme rpg-mythique-flamme--top-mid" alt="" />
+          <img src="./flames/flame-04-mid-left.png" class="rpg-mythique-flamme rpg-mythique-flamme--left" alt="" />
+          <img src="./flames/flame-06-mid-right.png" class="rpg-mythique-flamme rpg-mythique-flamme--right" alt="" />
+        </span>
+        <div style="position: absolute; inset: auto 8px 8px; background: rgba(0,0,0,.7); padding: 6px 8px; border-radius: 6px; font-size: 10px; z-index: 5;">Mythique jouable</div>
+      </div>
+      <div class="label" style="margin-top: 36px;">Implémentation réelle — flammes bougent (flicker)</div>
+    </div>
+  </div>
+
+  <p class="desc">Les 5 flammes PNG sont positionnées autour du cadre (haut/bas/gauche/droite) avec animation flicker individuelle. Fond noir → transparent, mix-blend screen, drop-shadow violet.</p>
+</body>
+</html>

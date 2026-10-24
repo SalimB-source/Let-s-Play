@@ -3458,62 +3458,68 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   mix-blend-mode: screen;
   will-change: transform, opacity, filter;
 }
-/* Flamme longue du bas — le bandeau de l'image référence */
+/* Flamme longue du bas — le bandeau de l'image référence - ENVELOPPANT */
 .rpg-mythique-flamme--bottom {
   left: 50%;
-  bottom: -16px;
-  width: 118%;
-  height: 42px;
+  bottom: -28px;
+  width: 148%;
+  height: 68px;
   transform: translateX(-50%);
   object-fit: cover;
   object-position: center bottom;
+  opacity: 0.98;
+  filter: brightness(1.15) saturate(1.22) drop-shadow(0 0 10px rgba(168, 85, 247, 0.65)) drop-shadow(0 0 18px rgba(124, 58, 237, 0.45));
   animation: rpg-mythique-flamme-flicker 0.48s ease-in-out infinite alternate;
   animation-delay: 0ms;
 }
-/* Flamme du haut — même image retournée pour lécher le haut */
+/* Flamme du haut — même image retournée pour lécher le haut - ENVELOPPANT */
 .rpg-mythique-flamme--top {
   left: 50%;
-  top: -24px;
-  width: 86%;
-  height: 46px;
+  top: -38px;
+  width: 132%;
+  height: 72px;
   transform: translateX(-50%) rotate(180deg);
-  object-fit: contain;
-  opacity: 0.92;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.96;
+  filter: brightness(1.12) saturate(1.20) drop-shadow(0 0 10px rgba(168, 85, 247, 0.60)) drop-shadow(0 0 16px rgba(124, 58, 237, 0.40));
   animation: rpg-mythique-flamme-flicker 0.52s ease-in-out infinite alternate;
   animation-delay: 80ms;
 }
-/* Flamme milieu haut — petite touche au centre haut */
+/* Flamme milieu haut — petite touche au centre haut - ENVELOPPANT */
 .rpg-mythique-flamme--top-mid {
   left: 50%;
-  top: -14px;
-  width: 34%;
-  height: 32px;
+  top: -18px;
+  width: 52%;
+  height: 44px;
   transform: translateX(-50%) rotate(180deg);
-  opacity: 0.82;
-  filter: brightness(1.12) saturate(1.18) drop-shadow(0 0 5px rgba(168, 85, 247, 0.45));
+  opacity: 0.88;
+  filter: brightness(1.14) saturate(1.22) drop-shadow(0 0 8px rgba(168, 85, 247, 0.50));
   animation: rpg-mythique-flamme-flicker 0.58s ease-in-out infinite alternate;
   animation-delay: 160ms;
 }
-/* Flammes latérales — verticales le long des bords */
+/* Flammes latérales — verticales le long des bords - ENVELOPPANT */
 .rpg-mythique-flamme--left {
-  left: -14px;
+  left: -22px;
   top: 50%;
-  width: 36px;
-  height: 64%;
+  width: 56px;
+  height: 88%;
   transform: translateY(-50%) rotate(-90deg);
-  object-fit: contain;
-  opacity: 0.88;
+  object-fit: cover;
+  opacity: 0.92;
+  filter: brightness(1.10) saturate(1.18) drop-shadow(0 0 8px rgba(168, 85, 247, 0.50));
   animation: rpg-mythique-flamme-flicker 0.55s ease-in-out infinite alternate;
   animation-delay: 40ms;
 }
 .rpg-mythique-flamme--right {
-  right: -14px;
+  right: -22px;
   top: 50%;
-  width: 36px;
-  height: 64%;
+  width: 56px;
+  height: 88%;
   transform: translateY(-50%) rotate(90deg);
-  object-fit: contain;
-  opacity: 0.88;
+  object-fit: cover;
+  opacity: 0.92;
+  filter: brightness(1.10) saturate(1.18) drop-shadow(0 0 8px rgba(168, 85, 247, 0.50));
   animation: rpg-mythique-flamme-flicker 0.5s ease-in-out infinite alternate;
   animation-delay: 120ms;
 }
