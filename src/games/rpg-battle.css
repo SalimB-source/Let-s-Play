@@ -3413,30 +3413,26 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     0 0 24px 6px rgba(var(--rpg-play-halo, 77, 125, 255), 1),
     0 12px 22px rgba(0, 0, 0, .68);
 }
-/* ── Lueur violette forte — créature mythique jouable ────────────────────────
-   Annule l'aura flammes : juste une lueur violette forte, continue, bien
-   visible. Pas d'images, pas de flammes intérieures/extérieures.
+/* ── Lueur violette — créature mythique jouable (petite aura) ───────────────
+   Même gabarit que les autres halos jouables (2px + 6px + 18px), juste teintée
+   violette. Pas de grosse aura, discrète comme les sorts rapides/sorcellerie.
    ------------------------------------------------------------------------- */
 .rpg-hand__card.is-mythique-jouable.is-playable {
   overflow: visible;
   border-color: #d8b4fe !important;
   box-shadow:
-    0 0 0 2px rgba(243, 232, 255, 1),
-    0 0 14px 4px rgba(168, 85, 247, 0.95),
-    0 0 28px 8px rgba(124, 58, 237, 0.85),
-    0 0 48px 14px rgba(88, 28, 174, 0.55),
-    0 0 70px 22px rgba(124, 58, 237, 0.35),
-    0 8px 20px rgba(0, 0, 0, 0.6);
-  animation: rpg-mythique-violet-pulse 1.2s ease-in-out infinite;
+    0 0 0 2px rgba(221, 214, 254, 0.96),
+    0 0 6px 1px rgba(221, 214, 254, 0.82),
+    0 0 18px 4px rgba(168, 85, 247, 0.88),
+    0 6px 16px rgba(0, 0, 0, 0.55);
+  animation: rpg-mythique-violet-pulse 1.6s ease-in-out infinite;
 }
 .rpg-hand__card.is-mythique-jouable.is-playable:hover:not(:disabled) {
   box-shadow:
-    0 0 0 2px rgba(255, 245, 255, 1),
-    0 0 18px 5px rgba(192, 132, 252, 1),
-    0 0 36px 10px rgba(147, 51, 234, 1),
-    0 0 58px 18px rgba(88, 28, 174, 0.65),
-    0 0 82px 26px rgba(124, 58, 237, 0.42),
-    0 10px 24px rgba(0, 0, 0, 0.65);
+    0 0 0 2px rgba(233, 213, 255, 1),
+    0 0 7px 1px rgba(221, 214, 254, 0.92),
+    0 0 24px 6px rgba(168, 85, 247, 0.96),
+    0 12px 22px rgba(0, 0, 0, 0.62);
 }
 .rpg-hand__card.is-mythique-jouable.is-playable .rpg-hand__img {
   border-radius: inherit;
@@ -3444,21 +3440,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @keyframes rpg-mythique-violet-pulse {
   0%, 100% {
     box-shadow:
-      0 0 0 2px rgba(243, 232, 255, 1),
-      0 0 14px 4px rgba(168, 85, 247, 0.95),
-      0 0 28px 8px rgba(124, 58, 237, 0.85),
-      0 0 48px 14px rgba(88, 28, 174, 0.55),
-      0 0 70px 22px rgba(124, 58, 237, 0.35),
-      0 8px 20px rgba(0, 0, 0, 0.6);
+      0 0 0 2px rgba(221, 214, 254, 0.96),
+      0 0 6px 1px rgba(221, 214, 254, 0.82),
+      0 0 18px 4px rgba(168, 85, 247, 0.88),
+      0 6px 16px rgba(0, 0, 0, 0.55);
   }
   50% {
     box-shadow:
-      0 0 0 2.5px rgba(255, 250, 255, 1),
-      0 0 20px 6px rgba(192, 132, 252, 1),
-      0 0 38px 12px rgba(147, 51, 234, 1),
-      0 0 62px 18px rgba(88, 28, 174, 0.68),
-      0 0 86px 28px rgba(124, 58, 237, 0.48),
-      0 8px 20px rgba(0, 0, 0, 0.6);
+      0 0 0 2px rgba(233, 213, 255, 1),
+      0 0 7px 1px rgba(221, 214, 254, 0.92),
+      0 0 22px 6px rgba(168, 85, 247, 0.92),
+      0 8px 20px rgba(0, 0, 0, 0.55);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3467,10 +3459,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-hand__card.is-mythique-jouable.is-playable {
     box-shadow:
-      0 0 0 2px rgba(243, 232, 255, 1),
-      0 0 14px 4px rgba(168, 85, 247, 0.95),
-      0 0 28px 8px rgba(124, 58, 237, 0.85),
-      0 0 48px 14px rgba(88, 28, 174, 0.55);
+      0 0 0 2px rgba(221, 214, 254, 0.96),
+      0 0 6px 1px rgba(221, 214, 254, 0.82),
+      0 0 18px 4px rgba(168, 85, 247, 0.88),
+      0 6px 16px rgba(0, 0, 0, 0.55);
   }
 }
 .rpg-hand__card.is-unplayable { filter: saturate(.58) brightness(.82); cursor: zoom-in; }
