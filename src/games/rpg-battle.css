@@ -3423,68 +3423,58 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-color: #ff8c1a !important;
   box-shadow:
     0 0 0 2px rgba(255, 251, 235, 1),
-    0 0 4px 1px rgba(254, 249, 195, 0.98),
-    0 0 12px 3px rgba(253, 186, 116, 0.95),
-    0 0 22px 6px rgba(251, 113, 22, 0.92),
-    0 0 34px 10px rgba(234, 88, 12, 0.78),
-    0 0 46px 14px rgba(194, 65, 12, 0.52),
-    0 8px 22px rgba(0, 0, 0, 0.62);
-  filter: brightness(1.08) saturate(1.12);
+    0 0 5px 1px rgba(254, 249, 195, 0.98),
+    0 0 11px 2px rgba(253, 186, 116, 0.96),
+    0 0 16px 4px rgba(251, 113, 22, 0.92),
+    0 6px 16px rgba(0, 0, 0, 0.60);
+  filter: brightness(1.12) saturate(1.14);
   animation: rpg-mythique-kyubi-pulse 0.9s ease-in-out infinite alternate;
 }
 .rpg-hand__card.is-mythique-jouable.is-playable:hover:not(:disabled) {
   border-color: #ffa726 !important;
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 1),
-    0 0 6px 2px rgba(255, 247, 205, 1),
-    0 0 16px 4px rgba(253, 186, 116, 1),
-    0 0 28px 8px rgba(251, 113, 22, 1),
-    0 0 42px 12px rgba(234, 88, 12, 0.88),
-    0 0 56px 16px rgba(194, 65, 12, 0.62),
-    0 10px 26px rgba(0, 0, 0, 0.65);
-  filter: brightness(1.15) saturate(1.18);
+    0 0 6px 1.5px rgba(255, 247, 205, 1),
+    0 0 13px 3px rgba(253, 186, 116, 1),
+    0 0 19px 5px rgba(251, 113, 22, 1),
+    0 8px 20px rgba(0, 0, 0, 0.62);
+  filter: brightness(1.18) saturate(1.16);
 }
 .rpg-hand__card.is-mythique-jouable.is-playable .rpg-hand__img {
   border-radius: inherit;
 }
-/* Le chakra ondule : lueur qui respire + léger pic de luminosité */
+/* Le chakra ondule : halo condensé qui respire, collé à la carte */
 @keyframes rpg-mythique-kyubi-pulse {
   0% {
     box-shadow:
       0 0 0 2px rgba(255, 251, 235, 1),
-      0 0 4px 1px rgba(254, 249, 195, 0.98),
-      0 0 12px 3px rgba(253, 186, 116, 0.95),
-      0 0 22px 6px rgba(251, 113, 22, 0.92),
-      0 0 34px 10px rgba(234, 88, 12, 0.78),
-      0 0 46px 14px rgba(194, 65, 12, 0.52),
-      0 8px 22px rgba(0, 0, 0, 0.62);
-    filter: brightness(1.08) saturate(1.12);
+      0 0 5px 1px rgba(254, 249, 195, 0.98),
+      0 0 11px 2px rgba(253, 186, 116, 0.96),
+      0 0 16px 4px rgba(251, 113, 22, 0.92),
+      0 6px 16px rgba(0, 0, 0, 0.60);
+    filter: brightness(1.12) saturate(1.14);
   }
   100% {
     box-shadow:
       0 0 0 2px rgba(255, 255, 255, 1),
-      0 0 6px 1.5px rgba(255, 247, 205, 0.98),
-      0 0 16px 4px rgba(253, 186, 116, 0.98),
-      0 0 28px 8px rgba(251, 113, 22, 0.98),
-      0 0 40px 12px rgba(234, 88, 12, 0.86),
-      0 0 54px 16px rgba(194, 65, 12, 0.62),
-      0 10px 26px rgba(0, 0, 0, 0.62);
-    filter: brightness(1.18) saturate(1.18);
+      0 0 6px 1.2px rgba(255, 247, 205, 0.99),
+      0 0 13px 3px rgba(253, 186, 116, 0.99),
+      0 0 19px 5px rgba(251, 113, 22, 0.96),
+      0 8px 20px rgba(0, 0, 0, 0.60);
+    filter: brightness(1.20) saturate(1.16);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-hand__card.is-mythique-jouable.is-playable {
     animation: none !important;
-    filter: brightness(1.08) saturate(1.12);
+    filter: brightness(1.12) saturate(1.14);
   }
   .rpg-hand__card.is-mythique-jouable.is-playable {
     box-shadow:
       0 0 0 2px rgba(255, 251, 235, 1),
-      0 0 4px 1px rgba(254, 249, 195, 0.98),
-      0 0 12px 3px rgba(253, 186, 116, 0.95),
-      0 0 22px 6px rgba(251, 113, 22, 0.92),
-      0 0 34px 10px rgba(234, 88, 12, 0.78),
-      0 0 46px 14px rgba(194, 65, 12, 0.52),
+      0 0 5px 1px rgba(254, 249, 195, 0.98),
+      0 0 11px 2px rgba(253, 186, 116, 0.96),
+      0 0 16px 4px rgba(251, 113, 22, 0.92),
       0 8px 22px rgba(0, 0, 0, 0.62);
   }
 }
