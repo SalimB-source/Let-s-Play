@@ -1743,6 +1743,35 @@ export function vecteurVersCapteur({ table, capteurId, effet }) {
 }
 
 /**
+ * Élément de destination d'un fantôme de carte. Chaque repli vaut un nœud ou
+ * `null`, jamais le booléen produit par une condition `&&` : une destruction
+ * sans capteur doit pouvoir sauter la mesure sans interrompre le combat.
+ */
+export function elementCapteurPourAnimation({
+  table, capteurId = null, capteurVivant = null, coteCapteur = 'sorcier',
+}) {
+  const element = capteurId
+    ? [...(table?.querySelectorAll('[data-entity-id]') ?? [])]
+      .find((carte) => carte.dataset.entityId === capteurId) ?? null
+    : null;
+  if (element) return element;
+
+  // Le capteur peut venir d'être posé et ne pas encore être rendu. Sa case
+  // connue est une estimation plus précise que le milieu de sa rangée.
+  const emplacement = capteurVivant?.emplacement;
+  if (Number.isInteger(emplacement)) {
+    const slot = table?.querySelector(
+      `.rpg-creature-slots--${coteCapteur} [data-creature-slot="${emplacement + 1}"]`,
+    ) ?? null;
+    if (slot) return slot;
+  }
+  if (!capteurVivant) return null;
+  return table?.querySelector(
+    coteCapteur === 'joueur' ? '.card-row--equipe' : '.card-row--ennemi',
+  ) ?? null;
+}
+
+/**
  * Le fantôme d’une carte qui quitte la table : sa dernière image s’efface sur
  * place — ou, **prise en cale** (Abordage), rejoint son capteur au bout de la
  * chaîne. `left`/`top` viennent de l’instantané : c’est la place qu’elle
@@ -8276,8 +8305,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const capteurId = prises.get(entite.entityId);
         const capteur = avant.find((carte) => carte.entityId === capteurId);
         const tableRect = tableRef.current?.getBoundingClientRect();
-        const element = capteurId && [...(tableRef.current?.querySelectorAll('[data-entity-id]') ?? [])]
-          .find((carte) => carte.dataset.entityId === capteurId);
         // L'IA peut poser et capturer dans la même action, avant le rendu
         // du capteur : sa rangée n'est qu'une estimation d'attente. Le
         // fantôme (`FantomeCarteDetruite`) remesure le capteur sur la table
@@ -8286,18 +8313,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const capteurVivant = vivants.get(capteurId);
         const coteCapteur = duel.joueur.creatures.some((carte) => carte.id === capteurId)
           ? 'joueur' : 'sorcier';
-        // Quand le capteur vient d'être joué, on utilise son emplacement
-        // connu pour estimer sa position précise au lieu du centre de la
-        // rangée (qui correspondrait au 3ème emplacement sur 5).
-        const emplacementCapteur = capteurVivant?.emplacement;
-        const slotSpecifique = Number.isInteger(emplacementCapteur)
-          && tableRef.current?.querySelector(
-            `.rpg-creature-slots--${coteCapteur} [data-creature-slot="${emplacementCapteur + 1}"]`
-          );
-        const rang = capteurVivant && tableRef.current?.querySelector(
-          coteCapteur === 'joueur' ? '.card-row--equipe' : '.card-row--ennemi',
-        );
-        const rect = (element ?? slotSpecifique ?? rang)?.getBoundingClientRect();
+        const element = elementCapteurPourAnimation({
+          table: tableRef.current, capteurId, capteurVivant, coteCapteur,
+        });
+        const rect = element?.getBoundingClientRect();
         const destination = capteur
           ? { x: capteur.left + capteur.width / 2, y: capteur.top + capteur.height / 2 }
           : rect && tableRect
