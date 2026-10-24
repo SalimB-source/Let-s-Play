@@ -110,6 +110,10 @@ const destructionsParDuel = new WeakMap();
 // soit l'action qui l'a renvoyée — une magie, le rebond d'une créature
 // (le Sonneur fêlé, le Léviathan) ou une riposte du sorcier.
 const renvoisParDuel = new WeakMap();
+// Les exils, sur le même principe : la table reconnaît une créature retirée
+// de la partie sans la confondre avec une destruction. Le journal reste hors
+// de l'état sérialisé et couvre aussi les jetons emportés par cet effet.
+const exilsParDuel = new WeakMap();
 // Les blessures infligées à une créature par un **effet** — magie, sorcellerie,
 // capacité ou arrivée — dans l'ordre où elles tombent. Le combat a son propre
 // chemin (simultané) et n'y figure pas : la table y lit la couleur de la
@@ -148,6 +152,11 @@ export function rpgDestructionsDepuis(duel, position = 0) {
 /** Les créatures déjà renvoyées en main depuis le début du duel. */
 export function rpgRenvoisEnMain(duel) {
   return (renvoisParDuel.get(duel) ?? []).map((evenement) => ({ ...evenement }));
+}
+
+/** Les créatures déjà exilées depuis le début du duel. */
+export function rpgExils(duel) {
+  return (exilsParDuel.get(duel) ?? []).map((evenement) => ({ ...evenement }));
 }
 
 // Les prises en cale par Abordage : hors de l'état JSON, comme les renvois et
@@ -251,9 +260,10 @@ export function rpgBlessuresDepuis(duel, position = 0) {
  * `pvApres`/`bouclierApres` disent si l'état actuel de la créature est
  * **encore** celui de cette blessure — la table n'allume donc la roue de feu
  * que pour un coup qui vient de tomber, jamais pour une ancienne brûlure.
- * `sourceCarteId` nomme la carte du coup quand le moteur la connaît (une
- * magie lancée) : l'Éclair du marteau se reconnaît ainsi parmi les autres
- * blessures de Neige, et sa foudre ne tombe que pour lui.
+ * `sourceCarteId` nomme la carte du coup quand le moteur la connaît (magie,
+ * capacité ou arrivée) : l'Éclair du marteau et les 3 dégâts du Maître se
+ * reconnaissent ainsi parmi les autres blessures de Neige, et leur foudre
+ * commune ne tombe que pour eux.
  */
 export function rpgDerniereBlessure(duel, entityId) {
   const journal = blessuresParDuel.get(duel);
@@ -290,6 +300,17 @@ function journaliserRenvoiEnMain(duel, cote, entite) {
   const journal = renvoisParDuel.get(duel) ?? [];
   journal.push({ entityId: entite.id, carteId: entite.carteId, cote });
   renvoisParDuel.set(duel, journal);
+}
+
+function journaliserExil(duel, cote, entite, sourceCarteId = null) {
+  const journal = exilsParDuel.get(duel) ?? [];
+  journal.push({
+    entityId: entite.id,
+    carteId: entite.carteId,
+    cote,
+    sourceCarteId: sourceCarteId ?? null,
+  });
+  exilsParDuel.set(duel, journal);
 }
 
 function journaliserDestruction(duel, entite, sourceElements = []) {
@@ -2558,6 +2579,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         ouvrirCale(duel, campCible, victime);
         detacherArmes(duel, campCible, victime);
         armeAuCimetiere(duel, campCible, victime);
+        // L'exil est une sortie de table à part entière, jamais une mort :
+        // la page lève son tourbillon blanc au lieu du fantôme de destruction.
+        journaliserExil(duel, campCible, victime, sourceCarteId);
         if (!victime.jeton) {
           duel[campCible].exil ??= [];
           duel[campCible].exil.push(victime.carteId);

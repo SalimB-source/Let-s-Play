@@ -25,6 +25,7 @@ import {
   couleursProtectionCarte,
   effetsDetailles,
   effetsEpuisesPourEntite,
+  effetsFurieInactifs,
   pastillesPourCarte,
   iconePourLigne,
 } from './effetIcons.js';
@@ -205,7 +206,7 @@ function BulleEffet({ id, ancre, titre, description }) {
  * cartes qu'il recouvre), et la règle imprimée se lit entière juste dessous :
  * ni bulle, ni focus, ni explication à chercher.
  */
-export function PastilleEffet({ pastille, epuise = false, muette = false }) {
+export function PastilleEffet({ pastille, epuise = false, inactif = false, muette = false }) {
   const id = useId();
   const ancreRef = useRef(null);
   const [survolee, setSurvolee] = useState(false);
@@ -213,21 +214,22 @@ export function PastilleEffet({ pastille, epuise = false, muette = false }) {
   const texte = pastilleTexte(pastille);
   const explication = pastille.description ? String(pastille.description) : '';
   const ouverte = !muette && Boolean(explication) && (survolee || epinglee);
-  const mentionEpuise = pastille.cle === 'tenacite'
-    ? 'déjà utilisée'
-    : pastille.cle === 'bouclier' ? 'tombé' : 'déjà utilisé';
+  const mentionEtat = epuise
+    ? (pastille.cle === 'tenacite' ? 'déjà utilisée' : pastille.cle === 'bouclier' ? 'tombé' : 'déjà utilisé')
+    : inactif ? 'Furie non active' : '';
   return (
     <span
       ref={ancreRef}
-      className={`rpg-pastille${epuise ? ' is-epuisee' : ''}${!muette && explication ? ' rpg-pastille--explicable' : ''}${ouverte ? ' is-ouverte' : ''}`}
+      className={`rpg-pastille${epuise ? ' is-epuisee' : ''}${inactif ? ' is-inactif' : ''}${!muette && explication ? ' rpg-pastille--explicable' : ''}${ouverte ? ' is-ouverte' : ''}`}
       role="listitem"
       tabIndex={!muette && explication ? 0 : undefined}
       aria-describedby={ouverte ? id : undefined}
       aria-label={!muette && explication
-        ? `${texte}${epuise ? ` — ${mentionEpuise}` : ''} : ${explication}`
+        ? `${texte}${mentionEtat ? ` — ${mentionEtat}` : ''} : ${explication}`
         : undefined}
       data-pastille={pastille.cle}
       data-effet-epuise={epuise ? 'true' : undefined}
+      data-effet-inactif={inactif ? 'true' : undefined}
       data-protection-contre={pastille.contres?.length ? pastille.contres.join(' ') : undefined}
       style={styleProtectionPastille(pastille)}
       // La souris ouvre au survol ; le doigt, lui, ouvre et referme d'un toucher
@@ -271,10 +273,14 @@ export function PastillesCarte({
   pastilles: lues = null,
   className = '',
   effetsEpuises = [],
+  // `null` : hors de la table, les gains conditionnels ne sont pas encore là.
+  // Une preview en Furie passe explicitement la liste vide pour les réveiller.
+  effetsInactifs = null,
   muettes = false,
 }) {
   const pastilles = lues ?? effetsDetailles(carte).pastilles;
   const epuises = new Set(effetsEpuises ?? []);
+  const inactifs = new Set(effetsInactifs ?? effetsFurieInactifs(carte));
   if (!pastilles.length) return null;
   return (
     <span
@@ -287,6 +293,7 @@ export function PastillesCarte({
           key={pastille.cle}
           pastille={pastille}
           epuise={epuises.has(pastille.cle)}
+          inactif={inactifs.has(pastille.cle)}
           muette={muettes}
         />
       ))}
@@ -326,18 +333,20 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
     if (entite.tenaciteDisponible) ajouter('tenacite', 'Tenacité');
   }
   const epuises = new Set(effetsEpuisesPourEntite(carte, entite));
+  const inactifs = new Set(effetsFurieInactifs(carte, entite));
   const texteBadge = (pastille) => (
     `${pastilleTexte(pastille)}${epuises.has(pastille.cle)
       ? (pastille.cle === 'tenacite' ? ' (déjà utilisée)' : ' (tombé)')
-      : ''}`
+      : inactifs.has(pastille.cle) ? ' (Furie non active)' : ''}`
   );
   if (!pastilles.length) return null;
   const rendreBadge = (pastilleBadge, key) => (
     <span
       key={key}
-      className={`rpg-card-icone${epuises.has(pastilleBadge.cle) ? ' is-epuisee' : ''}`}
+      className={`rpg-card-icone${epuises.has(pastilleBadge.cle) ? ' is-epuisee' : ''}${inactifs.has(pastilleBadge.cle) ? ' is-inactif' : ''}`}
       data-effet={pastilleBadge.cle}
       data-effet-epuise={epuises.has(pastilleBadge.cle) ? 'true' : undefined}
+      data-effet-inactif={inactifs.has(pastilleBadge.cle) ? 'true' : undefined}
       data-protection-contre={pastilleBadge.contres?.length ? pastilleBadge.contres.join(' ') : undefined}
       style={styleProtectionPastille(pastilleBadge)}
     >

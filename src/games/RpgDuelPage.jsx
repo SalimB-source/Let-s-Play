@@ -91,7 +91,7 @@ import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
-import { effetsEpuisesPourEntite } from './effetIcons.js';
+import { effetsEpuisesPourEntite, effetsFurieInactifs } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgTutorialMenu from './RpgTutorialMenu.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
@@ -178,6 +178,7 @@ import {
   rpgDestructionsDepuis,
   rpgPrisesEnCale,
   rpgRenvoisEnMain,
+  rpgExils,
   rpgNombreBlessures,
   rpgBlessuresDepuis,
   rpgOuvrirFenetreReponse,
@@ -1501,7 +1502,8 @@ function EclatSoin({ montant = null, surCarte = false }) {
 }
 
 /**
- * Le tourbillon d'eau d'un renvoi en main.
+ * Le tourbillon d'une créature emportée : eau bleue pour un renvoi en main,
+ * souffle blanc pour un exil.
  *
  * Une magie ou un effet renvoie une créature dans la main de son propriétaire :
  * la carte quitte la table, mais pas sans adieu. À sa place s'enroule une
@@ -1527,11 +1529,12 @@ const GOUTTES_TOURBILLON = Object.freeze([
 ]);
 
 export function TourbillonEau({ effet, onTermine = null }) {
+  const estExil = effet.variante === 'exil';
   return (
     <div
-      className="rpg-tourbillon-eau"
+      className={`rpg-tourbillon-eau${estExil ? ' rpg-tourbillon-eau--exil' : ''}`}
       data-rpg-bounce-id={effet.entityId}
-      data-rpg-bounce-fx="eau"
+      data-rpg-bounce-fx={estExil ? 'exil' : 'eau'}
       aria-hidden="true"
       style={{
         left: `${effet.left}px`,
@@ -1547,8 +1550,8 @@ export function TourbillonEau({ effet, onTermine = null }) {
         onTermine?.(effet.effectId);
       }}
     >
-      {/* La carte elle-même, encore à sa place : l'eau l'enveloppe, la
-          soulève et la dissout — puis elle reparaîtra dans la main. */}
+      {/* La carte elle-même, encore à sa place : le tourbillon l'enveloppe,
+          la soulève et la dissout — vers la main ou hors de la partie. */}
       {effet.cardId && (
         <span
           className={`rpg-tourbillon-eau__carte ${cardFrameClass(cardById(effet.cardId))} ${cardMotifClass(cardById(effet.cardId))}`}
@@ -2156,7 +2159,8 @@ export function RoueDeFeu({ effet, onTermine = null }) {
 }
 
 /**
- * La foudre de l'Éclair du marteau sur une créature touchée.
+ * La foudre du marteau sur une créature touchée — par le sort Éclair du
+ * marteau ou par les 3 dégâts infligés à l'arrivée du Maître du marteau.
  *
  * Le ciel se fend au-dessus de la carte : l'éclair principal descend du ciel
  * et frappe — flash, onde au sol, étincelles, fissures qui courent sous la
@@ -3003,6 +3007,10 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   const effets = cardEffectLines(effet);
   const effetsEpuisesActifs = [...new Set(effetsEpuises ?? [])]
     .filter((cle) => cle === 'tenacite' || cle === 'bouclier');
+  // L'aperçu ne reçoit pas l'entité, mais sa Furie déclenchée garantit les
+  // gains imprimés dans `furieGains`. Avant ce déclenchement, Envol et
+  // Overkill restent donc visibles en gris ; ensuite ils reprennent leur or.
+  const effetsInactifsActifs = effetsFurieInactifs(carte, estEnFurie ? carte?.furieGains : null);
   const mentionsEffetsEpuises = [
     effetsEpuisesActifs.includes('tenacite') && 'Tenacité déjà utilisée',
     effetsEpuisesActifs.includes('bouclier') && 'Bouclier tombé',
@@ -3031,6 +3039,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
         carte={carte}
         className="rpg-hover-card-preview__pastilles"
         effetsEpuises={effetsEpuisesActifs}
+        effetsInactifs={effetsInactifsActifs}
         muettes
       />
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
@@ -3151,6 +3160,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       onPointerLeave={onPointerLeave ?? undefined}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
       data-effets-epuises={effetsEpuisesActifs.length ? effetsEpuisesActifs.join(' ') : undefined}
+      data-effets-inactifs={effetsInactifsActifs.length ? effetsInactifsActifs.join(' ') : undefined}
       aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${modifCarte && !carteEstArme(carte) ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${prisonniereCarte ? `, détient ${prisonniereCarte.name} en sa cale` : ''}${cibleLabel}`}
       style={{ ...style, ...(estEnFurie ? {} : cardFrameStyle(carte)) }}
     >
@@ -6008,8 +6018,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [boucliersVisibles, setBoucliersVisibles] = useState({});
   const sequenceBouclierRef = useRef(0);
   const [cartesEnDestruction, setCartesEnDestruction] = useState([]);
-  // Les tourbillons d'eau des renvois en main : `{ entityId, cardId, left, top,
-  // width, height, angle, effectId, expireA }`, le temps de l'effet seulement.
+  // Les tourbillons de sortie : `{ entityId, cardId, left, top, width, height,
+  // angle, variante: 'eau' | 'exil', effectId, expireA }`. Même file et même
+  // ménage pour le renvoi bleu et l'exil blanc.
   const [tourbillonsEau, setTourbillonsEau] = useState([]);
   // Les roues de feu des créatures brûlées par la Braise : `{ entityId, cardId,
   // left, top, width, height, angle, effectId, expireA }`, le temps de l'effet
@@ -6852,7 +6863,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Les cartes que l'eau ramène dans la main du joueur : elles restent hors de
   // la main tant que le tourbillon joue — le geste se lit avant le résultat.
   const cartesEnRenvoi = new Set((tourbillonsEau ?? [])
-    .filter((effet) => effet.camp !== 'sorcier')
+    .filter((effet) => effet.variante !== 'exil' && effet.camp !== 'sorcier')
     .map((effet) => effet.cardId));
   useRpgMythicImpact(duel, ecran, tableRef, cardById, jouerSfx);
   const plateau = plateauParId(plateauId) ?? PLATEAU_PAR_DEFAUT;
@@ -8392,8 +8403,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ...entitesRenvoyees.filter(Boolean),
       ...rpgRenvoisEnMain(duel).map((evenement) => evenement.entityId),
     ]);
+    // Une créature exilée quitte elle aussi la table sans mourir : son adieu
+    // blanc remplace le fantôme et le coup de destruction ordinaires.
+    const exiles = new Set(rpgExils(duel).map((evenement) => evenement.entityId));
     const cartesDisparues = avant.filter((entite) => !vivants.has(entite.entityId)
-      && !renvoyees.has(entite.entityId));
+      && !renvoyees.has(entite.entityId)
+      && !exiles.has(entite.entityId));
     // Une prise n'est pas une mort : son fantôme rejoint le capteur par la chaîne.
     const prises = new Map([
       ...rpgPrisesEnCale(duel).map((evenement) => [evenement.entityId, evenement.capteurId]),
@@ -8429,9 +8444,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     // La foudre du marteau : la couleur ne suffit pas — plein de Neige
     // blesse sans faire tomber le ciel — c'est la carte du coup que le
-    // journal nomme (`blessureDuMarteau`). Même règle de fraîcheur que la
-    // Braise : seule la blessure qui vient de tomber allume l'éclair, et la
-    // créature tuée par le marteau le voit tomber sur son emplacement.
+    // journal nomme (`blessureDuMarteau`). L'Éclair et les 3 dégâts d'arrivée
+    // du Maître partagent ainsi la même frappe sur une créature ciblée. Même
+    // règle de fraîcheur que la Braise : seule la blessure qui vient de tomber
+    // allume l'éclair, et la créature tuée le voit sur son emplacement.
     const idsFoudroyees = new Set(blessuresNouvelles
       .filter((blessure) => blessureDuMarteau(blessure))
       .map((blessure) => blessure.entityId));
@@ -8546,9 +8562,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }, DUREE_ROUE_FEU);
     }
 
-    // La foudre du marteau : une par créature que l'Éclair du marteau vient
-    // de toucher. Comme la roue, elle tombe sur l'emplacement relevé avant
-    // l'action — la créature tuée a déjà commencé son adieu en dessous.
+    // La foudre du marteau : une par créature touchée par le sort ou par les
+    // 3 dégâts d'arrivée du Maître. Comme la roue, elle tombe sur l'emplacement
+    // relevé avant l'action — la créature tuée a déjà commencé son adieu.
     if (foudroyees.size) {
       const token = ++sequenceAnimationRef.current;
       const effetsFoudre = [...foudroyees.values()].map((entite) => ({
@@ -8576,6 +8592,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const effets = renvoyeesSurTable.map((entite) => ({
         ...entite,
         token,
+        variante: 'eau',
         effectId: `eau-${token}-${entite.entityId}`,
         expireA: Date.now() + duree + 400,
       }));
@@ -8584,6 +8601,30 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const ids = new Set(effets.map((effet) => effet.effectId));
         setTourbillonsEau((current) => current.filter((effet) => !ids.has(effet.effectId)));
       }, duree);
+    }
+
+    // Exil : exactement le même tourbillon que le renvoi, mais blanc. Le vent
+    // accompagne la sortie même en mouvement réduit ; seule la chorégraphie
+    // visuelle est alors supprimée, comme pour les autres effets de table.
+    const exileesSurTable = avant.filter((entite) => exiles.has(entite.entityId) && !entite.isTerrain);
+    if (exileesSurTable.length) {
+      jouerSfx('cold_wind');
+      if (!mouvementReduit) {
+        const token = ++sequenceAnimationRef.current;
+        const duree = 950;
+        const effets = exileesSurTable.map((entite) => ({
+          ...entite,
+          token,
+          variante: 'exil',
+          effectId: `exil-${token}-${entite.entityId}`,
+          expireA: Date.now() + duree + 400,
+        }));
+        setTourbillonsEau((current) => [...nettoyerFantomes(current), ...effets]);
+        programmerNettoyageVisuel(() => {
+          const ids = new Set(effets.map((effet) => effet.effectId));
+          setTourbillonsEau((current) => current.filter((effet) => !ids.has(effet.effectId)));
+        }, duree);
+      }
     }
 
     const attaquants = new Set(attaquantsIds);
@@ -11464,7 +11505,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         ))}
 
-        {/* Renvoi en main : l'eau se referme là où la créature se tenait. */}
+        {/* Renvoi bleu ou exil blanc : le tourbillon se referme sur l'ancienne place. */}
         {tourbillonsEau.map((effet) => (
           <TourbillonEau
             key={effet.effectId}

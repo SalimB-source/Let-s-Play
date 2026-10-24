@@ -90,7 +90,7 @@ import {
   carteJouableSansTerrain,
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
-import { rpgLancerMagie, rpgRenvoisEnMain } from '../src/games/rpgDuel.js';
+import { rpgExils, rpgLancerMagie, rpgRenvoisEnMain } from '../src/games/rpgDuel.js';
 import { choisirMulliganIA } from '../src/games/rpgAI.js';
 import { cardArtFurie } from '../src/games/rpgCardArt.js';
 
@@ -1027,6 +1027,12 @@ test('le Père des corbeaux : 5/5 à 6 avec Envol, et ses corbeaux exilent une c
     'le Loup à 3 mana est emporté');
   assert.equal(duel.sorcier.exil?.includes('loup-des-neiges'), true,
     'il est exilé — retiré de la partie, pas au cimetière');
+  assert.deepEqual(rpgExils(duel), [{
+    entityId: proie.id,
+    carteId: 'loup-des-neiges',
+    cote: 'sorcier',
+    sourceCarteId: 'pere-des-corbeaux',
+  }], 'le journal visuel nomme la victime et la source, sans enregistrer la cible illégale');
   assert.equal(duel.sorcier.creatures.some((entite) => entite.id === kraken.id), true,
     'le Kraken, lui, reste en jeu');
 });
@@ -1486,6 +1492,12 @@ test('le Maître du marteau peut désigner une créature ou le sorcier adverse',
   const pvSorcier = autre.sorcier.pv;
   assert.equal(rpgResoudreArriveeCiblee(autre, 'joueur', chien.id).ok, true);
   assert.equal(autre.sorcier.creatures.includes(chien), false, 'le Chien 2/2 tombe');
+  const blessureMarteau = rpgDerniereBlessure(autre, chien.id);
+  assert.deepEqual(
+    [blessureMarteau.sourceCarteId, blessureMarteau.recus, blessureMarteau.mortelle],
+    ['maitre-du-marteau', 3, true],
+    'la cible cliquée porte le nom du Maître : la table peut allumer sa foudre sur l’ancien emplacement',
+  );
   assert.equal(autre.sorcier.pv, pvSorcier, 'le sorcier n’est pas touché quand une créature est visée');
 });
 

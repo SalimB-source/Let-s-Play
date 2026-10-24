@@ -2,15 +2,16 @@
  * La foudre de l'Éclair du marteau sur une créature touchée.
  * node scripts/rpg-eclair-marteau-check.mjs
  *
- * Quand l'Éclair du marteau touche une créature, le ciel se fend au-dessus
- * d'elle : seul l'éclair tombe — trait principal, décharge, flash, onde,
+ * Quand l'Éclair du marteau ou les 3 dégâts d'arrivée du Maître touchent une
+ * créature, le ciel se fend au-dessus d'elle : seul l'éclair tombe — trait
+ * principal, décharge, flash, onde,
  * étincelles et fissures — puis des arcs résiduels rampent sur les bords,
  * et la créature encaisse la secousse (`fx-foudre`) au même rythme. Comme
  * la roue de feu, le calque se pose sur l'emplacement mesuré avant l'action,
  * ne capte rien et ne retient pas la
  * mort : la créature tuée reçoit son adieu pendant que la foudre finit de
- * tomber là où elle se tenait. Seule cette carte allume l'effet : le journal
- * des blessures nomme la carte du coup, la couleur Neige ne suffit pas.
+ * tomber là où elle se tenait. Seules ces deux cartes allument l'effet : le
+ * journal des blessures nomme la carte du coup, la couleur Neige ne suffit pas.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -192,8 +193,10 @@ assert.match(engine, /export function rpgBlesserCreature\(duel, cote, entiteId, 
   'blesser une créature peut nommer sa carte');
 assert.match(engine, /journaliserBlessure\(duel, cote, entite, \{ elements, sourceCarteId, recus, absorbes, mortelle \}\);/,
   'le nom passe au journal');
-assert.match(engine, /rpgBlesserCreature\(duel, adv, cible\.id, effet\.amount \?\? 0, sourceElement, null, sourceType, sourceCarteId\);/,
-  'un sort de dégâts passe sa carte à la blessure qu’il inflige');
+assert.match(engine, /rpgBlesserCreature\(duel, campCible, cible\.id, effet\.amount \?\? 0, sourceElement, null, sourceType, sourceCarteId\);/,
+  'un effet de dégâts passe sa carte à la blessure qu’il inflige');
+assert.match(engine, /appliquer\(duel, cote, effetArriveePourCible\(carte, cibleArrivee\), cibleArrivee,\s*entite\.id, cardColors\(carte\), 'capacite', carte\.id\);/,
+  'les 3 dégâts d’arrivée du Maître nomment eux aussi leur carte');
 
 // ── 4. La table : la foudre s’allume sur la créature touchée ───────────────
 assert.match(page, /const DUREE_ECLAIR_MARTEAU = 950;/, 'la foudre dure 950 ms');
@@ -225,9 +228,13 @@ assert.match(page, /onTermine=\{\(effectId\) => setEclairsMarteau\(\(current\) =
 
 // ── 5. Le son : le routage historique reste muet ───────────────────────────
 assert.match(foudreAudio, /export const ECLAIR_DU_MARTEAU_ID = 'eclair-du-marteau';/,
-  'la carte du marteau est nommée une seule fois');
-assert.match(foudreAudio, /return blessure\?\.sourceCarteId === ECLAIR_DU_MARTEAU_ID;/,
-  'la blessure du marteau se reconnaît à ce nom');
+  'le sort du marteau est nommé une seule fois');
+assert.match(foudreAudio, /export const MAITRE_DU_MARTEAU_ID = 'maitre-du-marteau';/,
+  'le Maître partage le même registre de sources');
+assert.match(foudreAudio, /const CARTES_FOUDRE_MARTEAU = new Set\(\[ECLAIR_DU_MARTEAU_ID, MAITRE_DU_MARTEAU_ID\]\);/,
+  'les deux cartes — et elles seules — sont reconnues');
+assert.match(foudreAudio, /return CARTES_FOUDRE_MARTEAU\.has\(blessure\?\.sourceCarteId\);/,
+  'la blessure du marteau se reconnaît à sa carte, pas à sa couleur');
 assert.match(foudreAudio, /export function rpgFoudreSoundFor\(cardOrId, action\) \{[\s\S]*?return null;\s*\}/,
   'le tonnerre synthétisé a été retiré : le routage ne propose plus de bruitage propre');
 assert.doesNotMatch(audio, /foudre_marteau/, 'le catalogue audio ne contient plus le coup de tonnerre retiré');
@@ -236,4 +243,4 @@ assert.match(page, /\?\? rpgFoudreSoundFor\(carte, 'spell'\)\s*\n?\s*\?\? rpgWat
 assert.match(page, /if \(nom === 'foudre_marteau'\) \{\s*\n\s*const maintenant = Date\.now\(\);\s*\n\s*if \(maintenant - dernierSonFoudreRef\.current < 700\) return;/,
   'la garde historique resterait sans effet si le tonnerre revenait');
 
-console.log('✓ Éclair du marteau : quand le sort touche une créature, seul l’éclair descend du ciel jusqu’à son point d’impact — flash, onde, dix étincelles, fissures sous la carte — puis cinq arcs résiduels s’éteignent, la victime convulsant au même rythme (impact à 28 %) : 950 ms sur l’emplacement relevé, sans aucun marteau dessiné, sans capter de geste, sans retenir la mort, silencieuse en mouvement réduit, et pour cette carte seule — le journal nomme le coup, la Neige ordinaire ne fait pas tomber le ciel');
+console.log('✓ Foudre des marteaux : quand le sort ou les 3 dégâts d’arrivée du Maître touchent une créature, seul l’éclair descend du ciel jusqu’à son point d’impact — flash, onde, dix étincelles, fissures sous la carte — puis cinq arcs résiduels s’éteignent, la victime convulsant au même rythme (impact à 28 %) : 950 ms sur l’emplacement relevé, sans aucun marteau dessiné, sans capter de geste, sans retenir la mort, silencieuse en mouvement réduit, et pour ces deux cartes seules — le journal nomme le coup, la Neige ordinaire ne fait pas tomber le ciel');

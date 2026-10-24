@@ -1,0 +1,297 @@
+/* ── Le Maître du marteau arrive : toute la table devient un ciel d'orage ──
+   La couche reste sous l'impact mythique (45) et les annonces (46), mais
+   au-dessus des champs, des terrains et de la main (42). Elle ne possède
+   aucune zone interactive : les cibles de son effet restent cliquables. */
+.rpg-marteau-arrivee {
+  position: absolute;
+  z-index: 44;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: #dfe7ff;
+  animation: rpg-marteau-arrivee-vie 1950ms linear both;
+}
+.rpg-marteau-arrivee,
+.rpg-marteau-arrivee * { pointer-events: none; }
+.rpg-marteau-arrivee__nuit,
+.rpg-marteau-arrivee__nuages,
+.rpg-marteau-arrivee__pluie,
+.rpg-marteau-arrivee__flash,
+.rpg-marteau-arrivee__ciel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* La lumière ambiante baisse avant la décharge. Le bas reste plus lisible :
+   la main et les consignes ne disparaissent jamais sous un voile opaque. */
+.rpg-marteau-arrivee__nuit {
+  background:
+    radial-gradient(ellipse at 50% -8%, rgba(82, 67, 124, .35), transparent 58%),
+    linear-gradient(180deg, rgba(8, 7, 20, .84) 0%, rgba(20, 14, 39, .62) 38%, rgba(9, 12, 27, .25) 72%, rgba(5, 8, 18, .08) 100%);
+  animation: rpg-marteau-arrivee-nuit 1900ms ease-out both;
+}
+
+/* Deux profondeurs de nuages, peintes en dégradés multiples : aucun téléchargement,
+   aucune vidéo et aucune frame de canvas ne sont nécessaires. Le masque fond
+   la nappe dans l'air au lieu de découper une ligne d'horizon artificielle. */
+.rpg-marteau-arrivee__nuages {
+  inset: -14% -10% auto;
+  width: 120%;
+  height: 78%;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 48%, rgba(0, 0, 0, .72) 70%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 48%, rgba(0, 0, 0, .72) 70%, transparent 100%);
+  filter: blur(10px) contrast(1.08);
+  transform-origin: 50% 15%;
+  will-change: transform, opacity;
+}
+.rpg-marteau-arrivee__nuages--loin {
+  background:
+    radial-gradient(ellipse at 4% 22%, rgba(82, 77, 108, .92) 0 9%, rgba(38, 34, 57, .82) 22%, transparent 43%),
+    radial-gradient(ellipse at 24% 9%, rgba(119, 105, 143, .74) 0 8%, rgba(51, 43, 70, .88) 23%, transparent 45%),
+    radial-gradient(ellipse at 43% 28%, rgba(88, 78, 119, .85) 0 10%, rgba(35, 30, 53, .94) 26%, transparent 48%),
+    radial-gradient(ellipse at 64% 7%, rgba(128, 111, 154, .72) 0 7%, rgba(48, 40, 70, .9) 24%, transparent 44%),
+    radial-gradient(ellipse at 84% 26%, rgba(92, 83, 125, .86) 0 9%, rgba(33, 29, 54, .92) 25%, transparent 47%),
+    radial-gradient(ellipse at 103% 10%, rgba(103, 91, 130, .78) 0 8%, rgba(36, 31, 55, .9) 24%, transparent 43%),
+    linear-gradient(180deg, rgba(24, 20, 39, .96), rgba(47, 39, 67, .64) 62%, transparent);
+  animation: rpg-marteau-arrivee-nuages-loin 1950ms cubic-bezier(.16, .65, .25, 1) both;
+}
+.rpg-marteau-arrivee__nuages--pres {
+  inset: -20% -14% auto;
+  width: 128%;
+  height: 67%;
+  background:
+    radial-gradient(ellipse at 10% 19%, rgba(33, 29, 47, .94) 0 12%, rgba(62, 53, 80, .74) 25%, transparent 46%),
+    radial-gradient(ellipse at 31% 4%, rgba(43, 36, 58, .96) 0 11%, rgba(93, 77, 113, .62) 27%, transparent 48%),
+    radial-gradient(ellipse at 52% 22%, rgba(28, 25, 43, .95) 0 10%, rgba(70, 57, 91, .72) 26%, transparent 47%),
+    radial-gradient(ellipse at 74% 3%, rgba(38, 32, 54, .96) 0 12%, rgba(103, 84, 128, .62) 27%, transparent 49%),
+    radial-gradient(ellipse at 96% 20%, rgba(30, 27, 46, .96) 0 11%, rgba(66, 55, 88, .75) 26%, transparent 47%);
+  filter: blur(7px) contrast(1.12);
+  animation: rpg-marteau-arrivee-nuages-pres 1950ms cubic-bezier(.16, .65, .25, 1) both;
+}
+
+/* Pluie oblique en deux profondeurs. Les calques sont plus grands que la table :
+   leur translation ne découvre jamais un bord et n'anime aucune mise en page. */
+.rpg-marteau-arrivee__pluie {
+  inset: -32%;
+  width: 164%;
+  height: 164%;
+  opacity: 0;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 76%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 76%, transparent 100%);
+  background-image: repeating-linear-gradient(106deg, transparent 0 27px, rgba(184, 195, 241, .17) 28px, transparent 29px 54px);
+  background-size: 58px 94px;
+  animation:
+    rpg-marteau-arrivee-pluie-visible 1900ms ease-out both,
+    rpg-marteau-arrivee-pluie-chute 620ms linear 3;
+}
+.rpg-marteau-arrivee__pluie--pres {
+  background-image: repeating-linear-gradient(106deg, transparent 0 57px, rgba(213, 219, 255, .2) 58px, transparent 60px 116px);
+  background-size: 92px 142px;
+  filter: blur(.35px);
+  animation:
+    rpg-marteau-arrivee-pluie-visible-pres 1900ms ease-out both,
+    rpg-marteau-arrivee-pluie-chute 430ms linear 4;
+}
+
+/* L'éclair éclaire réellement toute la scène, avec son foyer sur la carte.
+   Deux battements brefs seulement ; le reste du temps est porté par les traits. */
+.rpg-marteau-arrivee__flash {
+  background:
+    radial-gradient(circle at var(--marteau-x) var(--marteau-y), rgba(246, 250, 255, .92) 0%, rgba(176, 188, 255, .46) 9%, rgba(118, 99, 218, .18) 25%, transparent 48%),
+    linear-gradient(112deg, transparent 12%, rgba(150, 141, 255, .2) 48%, rgba(206, 218, 255, .12) 60%, transparent 86%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: rpg-marteau-arrivee-flash 900ms linear 300ms both;
+}
+
+.rpg-marteau-arrivee__ciel {
+  overflow: hidden;
+  pointer-events: none;
+}
+.rpg-marteau-arrivee__eclair {
+  opacity: 0;
+  animation: rpg-marteau-arrivee-eclair-vie var(--duree, 800ms) linear var(--retard, 0ms) both;
+}
+.rpg-marteau-arrivee__trait {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: rpg-marteau-arrivee-trait-dessin 112ms ease-out var(--retard-trait, var(--retard, 0ms)) both;
+}
+.rpg-marteau-arrivee__eclair:not(.rpg-marteau-arrivee__eclair--principal) .rpg-marteau-arrivee__trait {
+  animation-duration: 148ms;
+}
+.rpg-marteau-arrivee__trait--halo {
+  stroke: rgba(119, 98, 255, .54);
+  stroke-width: 16px;
+  filter: blur(5px);
+}
+.rpg-marteau-arrivee__trait--ame {
+  stroke: rgba(165, 182, 255, .82);
+  stroke-width: 5.4px;
+  filter: blur(.65px);
+}
+.rpg-marteau-arrivee__trait--coeur {
+  stroke: #f4f7ff;
+  stroke-width: 2.05px;
+}
+.rpg-marteau-arrivee__trait--fourche.rpg-marteau-arrivee__trait--halo { stroke-width: 10px; }
+.rpg-marteau-arrivee__trait--fourche.rpg-marteau-arrivee__trait--ame { stroke-width: 3.4px; }
+.rpg-marteau-arrivee__trait--fourche.rpg-marteau-arrivee__trait--coeur { stroke-width: 1.25px; }
+.rpg-marteau-arrivee__eclair--nuages .rpg-marteau-arrivee__trait--coeur { stroke: #dce2ff; }
+
+/* Impact électrique : le slam doré commun reste visible au-dessus, tandis que
+   cette onde bleue et ces étincelles racontent la décharge du marteau. */
+.rpg-marteau-arrivee__impact {
+  position: absolute;
+  left: var(--marteau-x);
+  top: var(--marteau-y);
+  width: 0;
+  height: 0;
+}
+.rpg-marteau-arrivee__impact i {
+  position: absolute;
+  display: block;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+.rpg-marteau-arrivee__impact-flash {
+  width: clamp(130px, 19vw, 290px);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, .96) 0%, rgba(208, 221, 255, .66) 14%, rgba(133, 127, 255, .3) 37%, transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: rpg-marteau-arrivee-impact-flash 720ms ease-out 330ms both;
+}
+.rpg-marteau-arrivee__impact-onde {
+  width: clamp(100px, 12vw, 190px);
+  height: clamp(34px, 4.8vw, 72px);
+  translate: -50% -50%;
+  border: 2px solid rgba(206, 220, 255, .9);
+  border-radius: 50%;
+  box-shadow: inset 0 0 16px rgba(126, 126, 255, .42), 0 0 14px rgba(157, 177, 255, .65);
+  opacity: 0;
+  animation: rpg-marteau-arrivee-impact-onde 880ms cubic-bezier(.12, .62, .24, 1) 348ms both;
+}
+.rpg-marteau-arrivee__impact-onde--echo {
+  border-width: 1px;
+  animation-delay: 430ms;
+}
+.rpg-marteau-arrivee__etincelle {
+  width: 2px;
+  height: 14px;
+  translate: -50% -50%;
+  rotate: var(--rotation, 0deg);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff, #c4d4ff 42%, rgba(122, 99, 255, 0));
+  box-shadow: 0 0 7px rgba(169, 190, 255, .9);
+  opacity: 0;
+  animation: rpg-marteau-arrivee-etincelle 650ms cubic-bezier(.16, .68, .26, 1) var(--retard-etincelle, 348ms) both;
+}
+
+@keyframes rpg-marteau-arrivee-vie {
+  0% { opacity: 0; }
+  2%, 91% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-marteau-arrivee-nuit {
+  0% { opacity: 0; }
+  10%, 58% { opacity: 1; }
+  78% { opacity: .68; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-marteau-arrivee-nuages-loin {
+  0% { opacity: 0; transform: translate3d(-2.5%, -4%, 0) scale(1.1); }
+  12%, 68% { opacity: .96; }
+  82% { opacity: .74; }
+  100% { opacity: 0; transform: translate3d(1.5%, 1%, 0) scale(1.02); }
+}
+@keyframes rpg-marteau-arrivee-nuages-pres {
+  0% { opacity: 0; transform: translate3d(3%, -7%, 0) scale(1.14); }
+  14%, 63% { opacity: .92; }
+  80% { opacity: .62; }
+  100% { opacity: 0; transform: translate3d(-2%, 2%, 0) scale(1.03); }
+}
+@keyframes rpg-marteau-arrivee-pluie-visible {
+  0%, 7% { opacity: 0; }
+  20%, 61% { opacity: .65; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-marteau-arrivee-pluie-visible-pres {
+  0%, 11% { opacity: 0; }
+  24%, 55% { opacity: .52; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-marteau-arrivee-pluie-chute {
+  from { transform: translate3d(34px, -74px, 0); }
+  to { transform: translate3d(-34px, 74px, 0); }
+}
+@keyframes rpg-marteau-arrivee-flash {
+  0%, 5% { opacity: 0; }
+  11% { opacity: .92; }
+  18% { opacity: .12; }
+  27% { opacity: .5; }
+  42% { opacity: .16; }
+  68%, 100% { opacity: 0; }
+}
+@keyframes rpg-marteau-arrivee-eclair-vie {
+  0% { opacity: 0; }
+  2%, 14% { opacity: var(--force, 1); }
+  20% { opacity: calc(var(--force, 1) * .2); }
+  27% { opacity: var(--force, 1); }
+  45% { opacity: calc(var(--force, 1) * .58); }
+  66% { opacity: calc(var(--force, 1) * .32); }
+  100% { opacity: 0; }
+}
+@keyframes rpg-marteau-arrivee-trait-dessin {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes rpg-marteau-arrivee-impact-flash {
+  0%, 4% { opacity: 0; scale: .35; }
+  12% { opacity: 1; scale: 1; }
+  28% { opacity: .4; scale: 1.15; }
+  62%, 100% { opacity: 0; scale: 1.45; }
+}
+@keyframes rpg-marteau-arrivee-impact-onde {
+  0% { opacity: 0; scale: .2; }
+  9% { opacity: .95; }
+  100% { opacity: 0; scale: 2.65; }
+}
+@keyframes rpg-marteau-arrivee-etincelle {
+  0% { translate: -50% -50%; scale: .35; opacity: 0; }
+  12% { opacity: 1; }
+  72% { opacity: .85; }
+  100% {
+    translate: calc(-50% + var(--dx, 0px)) calc(-50% + var(--dy, 0px) + 20px);
+    scale: .75;
+    opacity: 0;
+  }
+}
+
+/* Petites WebViews : une seule pluie et des halos moins coûteux, sans changer
+   la géométrie de la frappe ni sa synchronisation avec l'arrivée. */
+@media (max-width: 700px) {
+  .rpg-marteau-arrivee__nuages { filter: blur(6px) contrast(1.08); }
+  .rpg-marteau-arrivee__nuages--pres { filter: blur(4px) contrast(1.1); }
+  .rpg-marteau-arrivee__pluie--pres { display: none; }
+  .rpg-marteau-arrivee__trait--halo { filter: blur(3px); }
+}
+
+/* Le mouvement réduit ne reçoit aucun stroboscope : le hook ne crée déjà pas
+   cette couche ; cette garde couvre aussi une feuille chargée après coup. */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-marteau-arrivee,
+  .rpg-marteau-arrivee * {
+    display: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

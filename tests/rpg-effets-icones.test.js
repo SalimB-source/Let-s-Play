@@ -20,6 +20,7 @@ import {
   iconePourLigne,
   effetsDetailles,
   effetsEpuisesPourEntite,
+  effetsFurieInactifs,
   definitionPastille,
 } from '../src/games/effetIcons.js';
 
@@ -176,6 +177,30 @@ test('Tenacité et Bouclier ne se grisent qu’une fois dépensés sur la table'
   }), [], 'une carte sans Bouclier imprimé n’a aucun texte de Bouclier à griser');
   assert.deepEqual(effetsEpuisesPourEntite(maitre, null), [],
     'sans entité — main, catalogue — rien n’est jamais épuisé');
+});
+
+test('Envol et Overkill du Maître attendent leur activation réelle par Furie', () => {
+  const maitre = cardById('maitre-du-marteau');
+  assert.deepEqual(effetsFurieInactifs(maitre), ['envol', 'overkill'],
+    'dans la main ou le catalogue, les deux gains sont encore conditionnels');
+  assert.deepEqual(effetsFurieInactifs(maitre, {
+    furieDeclenchee: false,
+    envol: false,
+    overkill: false,
+  }), ['envol', 'overkill'], 'le Maître intact ne les porte pas encore');
+  assert.deepEqual(effetsFurieInactifs(maitre, {
+    furieDeclenchee: true,
+    envol: true,
+    overkill: true,
+  }), [], 'sa Furie active réveille les deux icônes');
+  assert.deepEqual(effetsFurieInactifs(maitre, {
+    furieDeclenchee: true,
+    envol: true,
+    overkill: false,
+  }), ['overkill'], 'chaque gain suit son propre état, pas seulement le drapeau Furie');
+  assert.deepEqual(effetsFurieInactifs(cardById('jarl-au-marteau-de-guerre')), [],
+    'un Overkill imprimé sans condition ne doit jamais être grisé');
+  assert.deepEqual(effetsFurieInactifs(null), [], 'une carte absente ne produit aucun état');
 });
 
 test('l’icône d’une ligne de règle est celle que la phrase annonce', () => {

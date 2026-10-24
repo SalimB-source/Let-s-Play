@@ -5176,6 +5176,40 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation-delay: var(--d, 0ms);
 }
 
+/* Exil : la même spirale et les mêmes images clés, dans un souffle blanc.
+   Seules les encres changent — la géométrie et la durée restent celles du
+   renvoi en main, qui conserve sa palette turquoise ci-dessus. */
+.rpg-tourbillon-eau--exil .rpg-tourbillon-eau__nappe {
+  background: radial-gradient(closest-side,
+    rgba(255, 255, 255, .82),
+    rgba(238, 238, 238, .5) 46%,
+    rgba(190, 190, 190, 0) 76%);
+}
+
+.rpg-tourbillon-eau--exil .rpg-tourbillon-eau__spirale {
+  background: conic-gradient(from 0deg,
+    transparent 0 40%,
+    rgba(255, 255, 255, .16) 52%,
+    rgba(232, 232, 232, .72) 68%,
+    rgba(255, 255, 255, .98) 80%,
+    transparent 88%);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, .82));
+}
+
+.rpg-tourbillon-eau--exil .rpg-tourbillon-eau__anneau {
+  border-color: rgba(255, 255, 255, .9);
+  box-shadow: 0 0 12px rgba(255, 255, 255, .72), inset 0 0 10px rgba(255, 255, 255, .42);
+}
+
+.rpg-tourbillon-eau--exil .rpg-tourbillon-eau__anneau--deux {
+  border-color: rgba(255, 255, 255, .62);
+}
+
+.rpg-tourbillon-eau--exil .rpg-tourbillon-eau__goutte {
+  background: linear-gradient(150deg, #fff, #ededed 62%, #bcbcbc);
+  box-shadow: 0 0 8px rgba(255, 255, 255, .86);
+}
+
 @keyframes rpg-tourbillon-eau-vie {
   0% { opacity: 0; }
   10% { opacity: 1; }
