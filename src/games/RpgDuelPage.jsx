@@ -11993,7 +11993,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // glisser-déposer et le clic : deux copies de la règle
               // finissaient par diverger, et une carte allumée mais injouable
               // enferme le joueur.
-              const jouable = defausseOuverte || peutJouerCarte(carte);
+              const baseJouable = !defausseOuverte && peutJouerCarte(carte);
+              const jouable = defausseOuverte || baseJouable;
+              const estMythique = cardRarityInfo(carte).key === 'mythique';
+              const estCreatureMythique = estMythique && (carte.kind === 'creature' || carte.kind === 'hero' || (!carte.kind && carte.atk != null && carte.def != null));
+              const mythiqueJouable = baseJouable && estCreatureMythique;
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId
                 && groupe.indices.includes(carteEnVol.handIndex);
@@ -12041,6 +12045,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     // En attente de sa case : même soulèvement que le ciblage.
                     poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'is-targeting is-pose-en-cours' : '',
                     jouable ? 'is-playable' : 'is-unplayable',
+                    mythiqueJouable ? 'is-mythique-jouable' : '',
                     carteGlissee === carteId ? 'is-dragging' : '',
                     enVol ? `rpg-card-flight is-flying${estTerrain ? ' rpg-card-flight--terrain' : ''}` : '',
                   ].filter(Boolean).join(' ')}
@@ -12064,6 +12069,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-rpg-card-flight={enVol ? (estTerrain ? 'terrain' : 'creature') : undefined}
                   data-rpg-flight-card-id={enVol ? carteId : undefined}
                   data-jouable={jouable ? 'true' : 'false'}
+                  data-mythique-jouable={mythiqueJouable ? 'true' : undefined}
                   data-pose-en-cours={poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'true' : undefined}
                   aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >
