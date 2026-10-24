@@ -727,7 +727,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 6,
     atk: 5,
     def: 5,
-    rarity: 'rare',
+    rarity: 'mythique',
     typeLine: 'Créature — Géant',
     art: 'geant-des-banquises',
     arrivee: { type: 'gel', cible: 'toutes-creatures' },
