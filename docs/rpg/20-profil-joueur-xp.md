@@ -637,19 +637,23 @@ neuf, et « Plus tard » ramène le seuil la fois suivante.
 `MonteeDeNiveau` (dans la page, jamais dans l'écran) n'en montre qu'un à la
 fois :
 
-- **le paquet offert** — la cérémonie du Souk, montée par la page parce qu'un
-  palier tombe aussi en plein duel. Dans `.rpg-battle`, elle passe à
-  `z-index: 10045` : la navigation de la table est à 900 et le journal du
-  combat à 80, donc une cérémonie à 60 (sa valeur au Souk) serait passée
-  **sous** la table ;
+- **le paquet offert** — la cérémonie du Souk, montée par la page hors partie
+  en cours (au menu, au retour sur le récit après un duel de campagne, et à la
+  fin d'un duel par-dessus le bilan de victoire ou de défaite). Dans
+  `.rpg-battle`, elle passe à `z-index: 10045` : la navigation de la table est à
+  900 et le journal du combat à 80, donc une cérémonie à 60 (sa valeur au Souk)
+  serait passée **sous** la table ;
 - **l'annonce seule** — `.rpg-niveau-toast` à `z-index: 10040`, `role="status"`,
   `aria-live="polite"`, quand le comptoir ne peut pas encore tirer. Elle dit le
   niveau et le nombre de paquets qui attendent, se ferme à la main, et se
   referme toute seule au bout de 6 s. Le toast du tutoriel reste au-dessus
   (10 050) : deux annonces ne se battent pas.
 
-En plein duel, la cérémonie ne mange aucun chrono : le seul minuteur est celui
-du salon PvP, et le PvP ne verse pas d'XP (P8).
+**Aucune ouverture ne coupe une partie en cours.** Poser une carte verse son XP
+tout de suite et inscrit la dette dans le profil (`boostersDus`), mais tant que
+la table est ouverte sans vainqueur (`partieEnCours`), `reglerPaliers` attend :
+le paquet s'ouvre dès que la partie se termine (victoire, défaite ou égalité)
+ou lorsque le joueur quitte la table.
 
 L'onglet du menu tient sur téléphone. Sous 560 px, `rpg-battle.css` empile tous
 les `span` d'un onglet (`display: block`) : les règles du Profil sont donc
@@ -815,11 +819,11 @@ qui verse aussi ses 40 XP.
   joueur (RLS stricte). Rien ne l'affiche à un autre joueur aujourd'hui — le
   jour où le PvP montrera la carte de profil, il passera par la modération des
   pseudonymes du site.
-- **La cérémonie en plein duel** coupe la lecture de la table quelques
-  secondes. Elle est fermable immédiatement (« Passer », « Tout ranger »),
-  aucun chrono ne tourne, et le PvP n'en déclenche jamais. Un réglage
-  « annoncer sans ouvrir » (tout ranger d'office) reste possible si l'usage le
-  demande : la dette et le tirage ne changeraient pas.
+- **La cérémonie attend la fin du duel** : poser une carte en cours de partie
+  fait monter l'XP et inscrit la dette dans le profil, mais `reglerPaliers` ne
+  tire et n'ouvre le paquet qu'une fois la partie terminée (victoire, défaite ou
+  égalité) ou à la sortie de la table. Un duel n'est donc jamais coupé en plein
+  tour.
 - **Les doublons d'un paquet offert rendent des crédits** (P5). C'est
   volontaire — un paquet est un paquet — mais cela fait du palier une petite
   source de ◈. Le montant reste marginal devant un premier déblayage (50 ◈) et

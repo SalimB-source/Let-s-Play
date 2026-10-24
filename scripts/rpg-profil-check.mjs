@@ -284,8 +284,16 @@ assert.match(pageCode, /className="rpg-niveau-toast" role="status" aria-live="po
   'sinon une annonce seule, polie pour les lecteurs d’écran');
 assert.match(pageCode, /data-niveau-toast=\{montee\.vers\}/, 'qui dit le niveau atteint');
 assert.match(pageCode, /data-niveau-dus=\{dus\}/, 'et les paquets qui attendent');
-assert.equal(pageCode.match(/<MonteeDeNiveau/g)?.length, 2,
-  'montée dans le menu **et** dans le duel : un palier tombe aussi en pleine table');
+assert.equal(pageCode.match(/<MonteeDeNiveau/g)?.length, 3,
+  'montée dans le menu, au retour sur le récit et en fin de duel');
+assert.match(pageCode, /\{!partieEnCours && \(\s*<MonteeDeNiveau/,
+  'jamais pendant une partie en cours : sur la table, la cérémonie attend la fin du duel');
+assert.match(pageCode, /useSablierBourse\(\{[\s\S]{0,300}?partieEnCours,\s*\}\)/,
+  'la page dit au hook quand une partie est en cours');
+assert.match(hookCode, /if \(partieEnCoursRef\.current\) return null;/,
+  'le hook n’ouvre aucun paquet de palier tant qu’une partie est en cours');
+assert.match(hookCode, /if \(!partieEnCours\) reglerPaliers\(\);/,
+  'et il règle les paliers en attente dès que la partie est terminée');
 assert.match(pageCode, /montee=\{monteeNiveau\}[\s\S]{0,200}onFermer=\{fermerMonteeNiveau\}/,
   'et elle se ferme par le geste du hook');
 assert.match(css, /\.rpg-battle \.rpg-souk__ceremonie\[data-souk-ceremonie-offert\] \{ z-index: 10045; \}/,

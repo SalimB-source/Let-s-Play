@@ -122,7 +122,12 @@ function etatInitial(progression, compteId = null) {
 }
 
 /** Statuts de synchronisation : `'local'`, `'attente'`, `'synchronise'`, `'horsligne'`. */
-export function useSablierBourse({ progression = null, rng = Math.random, onCartesRangees = null } = {}) {
+export function useSablierBourse({
+  progression = null,
+  rng = Math.random,
+  onCartesRangees = null,
+  partieEnCours = false,
+} = {}) {
   const authContext = useContext(AuthContext);
   // Un profil de démonstration n'est pas un compte : rien à synchroniser, et
   // il reste sur les clés invité de l'appareil.
@@ -136,6 +141,10 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
   // marches du moment, pas celles du premier rendu.
   const progressionRef = useRef(progression);
   progressionRef.current = progression;
+  // Une partie en cours interdit d'ouvrir un paquet sur la table : l'XP monte
+  // en silence et la dette se règle dès que le duel est terminé.
+  const partieEnCoursRef = useRef(Boolean(partieEnCours));
+  partieEnCoursRef.current = Boolean(partieEnCours);
   // La cérémonie d'ouverture en cours — `null` hors d'un achat. Elle vit dans
   // l'état React mais **pas** dans le stockage : elle n'a rien à survivre à un
   // rechargement, et les cartes, elles, sont déjà encaissées.
@@ -272,11 +281,15 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
    * Règle la dette des paliers : **un booster offert par niveau gagné**, tiré
    * au hasard parmi les paquets du comptoir.
    *
-   * Trois garde-fous, tous décidés par le profil et non par l'état React :
+   * Quatre garde-fous, tous décidés par le profil et par l'état du duel :
    *
+   *   - jamais pendant une partie en cours (`partieEnCours`) : l'XP monte et
+   *     la dette (`boostersDus`) s'inscrit tout de suite dans le profil, mais
+   *     le paquet attend la fin du duel (victoire, défaite ou sortie) pour ne
+   *     jamais interrompre un tour ;
    *   - la dette se **calcule** (`boostersDus`) : un palier franchi pendant
-   *     qu'une cérémonie est à l'écran, ou avant que le comptoir puisse tirer,
-   *     attend son tour au lieu de disparaître ;
+   *     qu'une cérémonie est à l'écran, pendant une partie, ou avant que le
+   *     comptoir puisse tirer, attend son tour au lieu de disparaître ;
    *   - jamais deux cérémonies en même temps : si un paquet acheté se retourne
    *     encore, ou si un palier est déjà annoncé, on rend `null` et la dette
    *     reste ;
@@ -287,6 +300,7 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
    * débité, mais la pitié avance et les doublons remboursent.
    */
   const reglerPaliers = useCallback(() => {
+    if (partieEnCoursRef.current) return null;
     if (ouvertureRef.current || monteeRef.current) return null;
     const avant = etatRef.current;
     const dus = boostersDus(avant.profil);
@@ -363,9 +377,13 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
     return montee;
   }, [appliquer, pousser, onCartesRangees]);
 
-  // La progression bouge (une victoire ouvre un étage, une tour tombe) : la
-  // dette d'un palier franchi plus tôt se règle dès que le comptoir le peut.
-  useEffect(() => { reglerPaliers(); }, [progression, reglerPaliers]);
+  // Quand la partie se termine (`partieEnCours` repasse à `false`), quand la
+  // progression bouge (une victoire ouvre un étage, une tour tombe), ou quand
+  // le profil reçu d'un compte porte une dette, les paquets de palier en
+  // attente s'ouvrent aussitôt.
+  useEffect(() => {
+    if (!partieEnCours) reglerPaliers();
+  }, [partieEnCours, progression, etat.profil.xp, etat.profil.boostersOfferts, reglerPaliers]);
 
   /**
    * Applique un événement du duel : le solde s'il paie, les quêtes du jour
@@ -373,8 +391,8 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
    * niveaux, evenement, reconnu }` — `gain` est ce que le duel peut annoncer
    * (butin compris), `butin` isole le butin de la tour terminée, `xp` ce que la
    * barre vient d'avaler, `niveaux` combien de paliers ont sonné (chacun ouvre
-   * un booster, réglé ici même), et `reconnu` dit si le geste fait partie du
-   * contrat.
+   * un booster une fois la partie terminée), et `reconnu` dit si le geste fait
+   * partie du contrat.
    */
   const noterEvenementDuel = useCallback((evenement) => {
     const avant = etatRef.current;
@@ -392,8 +410,9 @@ export function useSablierBourse({ progression = null, rng = Math.random, onCart
       );
       pousser();
     }
-    // Un palier a sonné : le paquet offert s'ouvre tout de suite, sauf si une
-    // cérémonie occupe déjà l'écran — la dette attend sa fermeture.
+    // Un palier a sonné : hors d'une partie en cours, le paquet offert s'ouvre
+    // tout de suite ; pendant un duel, `reglerPaliers` attend la fin de partie
+    // et la dette reste inscrite dans le profil.
     if (suite.niveaux > 0 || boostersDus(suite.profil) > 0) reglerPaliers();
     return {
       gain: suite.gain,

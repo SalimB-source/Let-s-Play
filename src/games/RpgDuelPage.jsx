@@ -5146,6 +5146,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const pvpHorlogeExpireeRef = useRef(null);
   const [confirmerAbandonPvp, setConfirmerAbandonPvp] = useState(false);
   const [ecran, setEcran] = useState(() => (pvp ? 'partie' : 'jouer'));
+  const duelRef = useRef(null);
   // D'où vient-on quand le seuil de Bab El s'ouvre ? « Plus tard » rend cet
   // écran-là : le joueur repart d'où il a lancé le mode Histoire (Jouer, le
   // plus souvent), pas d'un menu qu'il n'a pas demandé.
@@ -5501,6 +5502,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Elle est branchée APRÈS `useRpgStory` : ses quêtes du jour lisent la
   // progression, pour ne pas proposer « ouvrir le comptoir » tant que le Souk
   // est fermé — y compris au tout premier rendu.
+  // Une partie est en cours tant que la table est à l'écran et que le duel
+  // (ou la leçon de tutoriel) n'est pas terminé : l'XP gagnée en jouant des
+  // cartes y monte en silence, et l'ouverture du paquet de niveau attend la
+  // fin de la partie (victoire, défaite ou sortie) pour ne jamais couper un tour.
+  const duelPvpEnCours = Boolean(
+    (pvp || duelRef.current)
+    && pvp?.statut !== 'terminee'
+    && !duelRef.current?.fin?.gagnant,
+  );
+  const duelSoloEnCours = Boolean(
+    tutorielActif || (duelRef.current && !rpgVainqueur(duelRef.current)),
+  );
+  const partieEnCours = ecran === 'partie' && (modePvp ? duelPvpEnCours : duelSoloEnCours);
   const {
     credits, aReclamer: soukAReclamer, quetes: quetesSouk, bourse: portefeuilleSouk,
     noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerTutoriel,
@@ -5523,6 +5537,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // les voir tout de suite, sans qu'on recharge la page. Un paquet offert par
     // un palier passe par le même chemin.
     onCartesRangees: rafraichirCollection,
+    partieEnCours,
   });
   // La carte de profil peut imposer la moitié basse de la table (dossier 20 §6) :
   // le choix vit dans le profil, validé par le catalogue — un identifiant inconnu
@@ -5727,7 +5742,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     try { sfxRef.current?.unlock(); } catch { /* ignore */ }
     if (ecran === 'partie' && sonActif && !document.hidden) void musiquePlateauRef.current?.start();
   };
-  const duelRef = useRef(null);
   const tableRef = useRef(null);
   const touchDragRef = useRef(null);
   // Aperçu au doigt : sur écran tactile le survol n'existe pas, un appui long
@@ -7239,7 +7253,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       if (vientDunChampDeSaisie(event.target)) return;
       const coque = shellRef.current;
       if (!coque || coque.getAttribute('data-scene') !== 'duel') return;
-      if (apercuAppui || apercuCatalogue || navMenuOuvert || navParametresOuvert || messagerieVoletOuvert) return;
+      if (apercuAppui || apercuCatalogue || navMenuOuvert || navParametresOuvert || messagerieVoletOuvert || monteeNiveau) return;
 
       const touche = event.key?.toLowerCase() ?? '';
       const code = event.code ?? '';
@@ -7326,7 +7340,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     };
     window.addEventListener('keydown', surRaccourciDuel);
     return () => window.removeEventListener('keydown', surRaccourciDuel);
-  }, [ecran, viewport.portrait, apercuAppui, apercuCatalogue, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert]);
+  }, [ecran, viewport.portrait, apercuAppui, apercuCatalogue, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert, monteeNiveau]);
 
   const demarrerEtage = (etageId, { campagne = false } = {}) => {
     if (!etageEstDebloque(progressionHistoireRef.current, etageId)) return;
@@ -7459,6 +7473,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const deckActifHistoire = decksJouablesHistoire.find((deck) => deck.id === deckSelectionneId) ?? decksJouablesHistoire[0] ?? deckParDefaut();
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onContextMenu={neutraliserMenuContextuel}>
+        <EffetsSprite />
         {ecran === 'bab-el' ? (
           <RpgStoryBabEl
             onCommencer={commencerCampagne}
@@ -7480,6 +7495,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             sauvegardeOk={sauvegardeHistoireOk} sonActif={sonActif} onToggleSound={basculerSon}
             onSfx={jouerSfx} />
         )}
+        <MonteeDeNiveau
+          montee={monteeNiveau}
+          profil={profilJoueur}
+          cardArt={cardArt}
+          onFermer={fermerMonteeNiveau}
+          onPlaySfx={jouerSfx}
+        />
       </div>
     );
   }
@@ -12094,17 +12116,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <span>+{recompenseTutoriel.gain} crédits</span>
         </div>
       )}
-      {/* Un niveau peut sonner en plein duel — une carte posée suffit. La
-          cérémonie passe au-dessus de la table et de sa navigation, et le duel,
-          lui, n'a aucune contrainte de temps : rien n'est perdu pendant qu'elle
-          se joue. */}
-      <MonteeDeNiveau
-        montee={monteeNiveau}
-        profil={profilJoueur}
-        cardArt={cardArt}
-        onFermer={fermerMonteeNiveau}
-        onPlaySfx={jouerSfx}
-      />
+      {/* Aucun paquet ne s'ouvre pendant une partie en cours : la cérémonie
+          n'apparaît ici qu'une fois le duel terminé (victoire, défaite ou
+          égalité), au-dessus du bilan de fin de partie. */}
+      {!partieEnCours && (
+        <MonteeDeNiveau
+          montee={monteeNiveau}
+          profil={profilJoueur}
+          cardArt={cardArt}
+          onFermer={fermerMonteeNiveau}
+          onPlaySfx={jouerSfx}
+        />
+      )}
       {tutorielActif && etapeTutoriel && !viewport.portrait && !mulliganOuvert && (
         <RpgTutorialOverlay
           key={etapeTutoriel.id}
