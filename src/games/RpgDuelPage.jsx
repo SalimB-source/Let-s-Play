@@ -12106,7 +12106,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         )}
         {vainqueur && (
-          <div className={`rpg-overlay${vainqueur === 'joueur' ? '' : ' rpg-overlay--loss'}`}>
+          <div className={`rpg-overlay${vainqueur === 'joueur' ? ' rpg-overlay--win' : ' rpg-overlay--loss'}`}>
             <h2>
               {modePvp
                 ? (vainqueur === 'joueur' ? 'Victoire !' : vainqueur === 'sorcier' ? 'Défaite' : 'Match nul')
