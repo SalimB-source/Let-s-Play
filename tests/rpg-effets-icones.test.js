@@ -251,7 +251,7 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
 
   const susanoo = effetsDetailles(cardById('susanoo'));
   assert.match(susanoo.pastilles.find((pastille) => pastille.cle === 'exil').description, /ne va pas au cimetière/u);
-  assert.equal(susanoo.texte, 'Quand Susanoo arrive en jeu, retirez de la partie une créature de votre choix.',
+  assert.equal(susanoo.texte, 'Quand Susanoo arrive en jeu, retirez de la partie une créature de coût 5 ou plus de votre choix.',
     'une pastille qui ne nomme pas la phrase ne la cache pas');
 
   const jarl = effetsDetailles(cardById('jarl-au-marteau-de-guerre'));

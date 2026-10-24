@@ -53,8 +53,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'susanoo', name: 'Susanoo',
     cost: 6, atk: 5, def: 3, rarity: 'mythique',
     typeLine: 'Créature légendaire — Kami · Tempête',
-    arrivee: { type: 'exil', cible: 'creature' },
-    text: 'Quand Susanoo arrive en jeu, retirez de la partie une créature de votre choix.',
+    arrivee: { type: 'exil', cible: 'creature', coutMin: 5 },
+    text: 'Quand Susanoo arrive en jeu, retirez de la partie une créature de coût 5 ou plus de votre choix.',
     flavor: 'Sa tempête emporte jusqu’au souvenir de ses adversaires.',
   }),
   carte({
