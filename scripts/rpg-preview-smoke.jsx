@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { cardById } from '../src/games/rpgCards.js';
 import { RPG_LONG_PRESS_MS } from '../src/games/rpgLongPress.js';
+import { crediterCredits, portefeuilleVide, sauverPortefeuille } from '../src/games/rpgCredits.js';
 import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 export async function checkRpgPreviewActions(assert) {
@@ -82,6 +83,9 @@ export async function checkRpgPreviewActions(assert) {
     });
   };
   try {
+    // Le parcours mobile ouvre un vrai paquet : la bourse est financée par la
+    // règle de crédit, puis relue par le même hook que dans l'application.
+    sauverPortefeuille(crediterCredits(portefeuilleVide(), 1000).portefeuille);
     await act(async () => root.render(<RpgDuelPage
       joueurDeck={[
         // Trente cartes mono-Sable, dans l'ordre : la pioche tire depuis la
@@ -275,6 +279,44 @@ export async function checkRpgPreviewActions(assert) {
     await click(ouvrirDe(FENNEC));
     assert.equal(feuillets(), null, 'la fiche ouverte au clic n’a pas de flèches elle non plus');
     await touche('Escape');
+
+    // ── Le Souk garde son aperçu tactile sur un téléphone en portrait ──────
+    // La rotation forcée ne concerne que la table du duel. Ici, le viewport et
+    // le geste sont ceux d'un téléphone : la fiche doit survivre à l'effet qui
+    // ferme les aperçus quand l'écran de rotation d'un duel prend la main.
+    await changerEcran('Souk');
+    const largeurAvantPortrait = window.innerWidth;
+    const hauteurAvantPortrait = window.innerHeight;
+    await act(async () => {
+      window.innerWidth = 390;
+      window.innerHeight = 844;
+      window.dispatchEvent(new window.Event('resize'));
+    });
+    const paquetSouk = container.querySelector('[data-souk-ouvrir="souk"]');
+    assert.ok(paquetSouk && !paquetSouk.disabled, 'le paquet du Souk est ouvert sur le téléphone');
+    await click(paquetSouk);
+    assert.ok(container.querySelector('[data-souk-ceremonie]'), 'le paquet ouvre sa cérémonie en portrait');
+    const passerRevelation = container.querySelector('[data-souk-ceremonie-passer]');
+    if (passerRevelation) await click(passerRevelation);
+    const carteBooster = container.querySelector('[data-souk-carte][data-card-id]');
+    assert.ok(carteBooster, 'une carte révélée du booster peut recevoir le geste tactile');
+    await appuiLong(carteBooster);
+    assert.ok(peek(), 'l’appui long ouvre la preview du booster sur téléphone portrait');
+    assert.ok(peek().getAttribute('aria-label').includes(cardById(carteBooster.dataset.cardId).name),
+      'la preview mobile nomme la carte réellement tenue');
+    await attendre(100);
+    assert.ok(peek(), 'la preview du Souk reste ouverte après sa première frame en portrait');
+    assert.ok(container.querySelector('[data-souk-ceremonie]'), 'consulter la carte ne ferme pas la cérémonie');
+    await attendre(460);
+    await click(peek());
+    assert.equal(peek(), null, 'le volet tactile du Souk se referme au toucher');
+    await click(container.querySelector('[data-souk-ceremonie-ranger]'));
+    assert.equal(container.querySelector('[data-souk-ceremonie]'), null, 'la cérémonie rend la main après consultation');
+    await act(async () => {
+      window.innerWidth = largeurAvantPortrait;
+      window.innerHeight = hauteurAvantPortrait;
+      window.dispatchEvent(new window.Event('resize'));
+    });
 
     // ── Le créateur de deck répond au même geste ────────────────────────────
     await changerEcran('Deck');

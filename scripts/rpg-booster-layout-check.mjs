@@ -99,6 +99,10 @@ async function checkLayout() {
       for (const width of [1122, 820, 640, 481, 390, 320]) {
         await page.setViewportSize({ width, height: 900 });
         await page.locator('.rpg-souk__carte img').evaluateAll((images) => Promise.all(images.map((img) => img.decode())));
+        const colonnes = await page.locator('.rpg-souk__ceremonie-cartes').evaluate((node) => (
+          getComputedStyle(node).gridTemplateColumns.split(/\s+/).filter(Boolean).length
+        ));
+        assert.equal(colonnes, 3, `three card columns at ${width}px`);
         const cards = await page.locator('[data-souk-carte]').evaluateAll((nodes) => nodes.map((node) => {
           const rect = (selector) => node.querySelector(selector).getBoundingClientRect().toJSON();
           return {
@@ -143,7 +147,8 @@ async function checkLayout() {
     await attendre('sortie');
     assert.equal(await page.locator('[data-souk-carte]').count(), 0, 'no faces exposed during extraction');
     const depart = await page.locator('.rpg-souk__carte-place').evaluateAll((nodes) => nodes.map((node) => node.style.getPropertyValue('--depart-x')));
-    assert.ok(depart.every(Boolean) && new Set(depart).size === 5, 'each card departs from the pack towards its own column');
+    assert.ok(depart.every(Boolean), 'every card receives its departure vector from the pack');
+    assert.equal(new Set(depart).size, 3, 'the five cards depart towards the three columns, including the second row');
     await attendre('revelation');
     await attendre('termine');
     assert.equal(await page.locator('[data-souk-carte]').count(), 5);
