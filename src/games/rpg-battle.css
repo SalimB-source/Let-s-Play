@@ -3413,43 +3413,42 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     0 0 24px 6px rgba(var(--rpg-play-halo, 77, 125, 255), 1),
     0 12px 22px rgba(0, 0, 0, .68);
 }
-/* ── Lueur violette — créature mythique jouable (petite aura) ───────────────
-   Même gabarit que les autres halos jouables (2px + 6px + 18px), juste teintée
-   violette. Pas de grosse aura, discrète comme les sorts rapides/sorcellerie.
+/* ── Lueur orange — créature mythique jouable (petite aura) ──────────────────
+   Même gabarit que les autres halos jouables (2px + 6px + 18px), teintée orange.
    ------------------------------------------------------------------------- */
 .rpg-hand__card.is-mythique-jouable.is-playable {
   overflow: visible;
-  border-color: #d8b4fe !important;
+  border-color: #fdba74 !important;
   box-shadow:
-    0 0 0 2px rgba(221, 214, 254, 0.96),
-    0 0 6px 1px rgba(221, 214, 254, 0.82),
-    0 0 18px 4px rgba(168, 85, 247, 0.88),
+    0 0 0 2px rgba(254, 215, 170, 0.96),
+    0 0 6px 1px rgba(254, 215, 170, 0.82),
+    0 0 18px 4px rgba(251, 146, 60, 0.88),
     0 6px 16px rgba(0, 0, 0, 0.55);
-  animation: rpg-mythique-violet-pulse 1.6s ease-in-out infinite;
+  animation: rpg-mythique-orange-pulse 1.6s ease-in-out infinite;
 }
 .rpg-hand__card.is-mythique-jouable.is-playable:hover:not(:disabled) {
   box-shadow:
-    0 0 0 2px rgba(233, 213, 255, 1),
-    0 0 7px 1px rgba(221, 214, 254, 0.92),
-    0 0 24px 6px rgba(168, 85, 247, 0.96),
+    0 0 0 2px rgba(255, 237, 213, 1),
+    0 0 7px 1px rgba(254, 215, 170, 0.92),
+    0 0 24px 6px rgba(251, 146, 60, 0.96),
     0 12px 22px rgba(0, 0, 0, 0.62);
 }
 .rpg-hand__card.is-mythique-jouable.is-playable .rpg-hand__img {
   border-radius: inherit;
 }
-@keyframes rpg-mythique-violet-pulse {
+@keyframes rpg-mythique-orange-pulse {
   0%, 100% {
     box-shadow:
-      0 0 0 2px rgba(221, 214, 254, 0.96),
-      0 0 6px 1px rgba(221, 214, 254, 0.82),
-      0 0 18px 4px rgba(168, 85, 247, 0.88),
+      0 0 0 2px rgba(254, 215, 170, 0.96),
+      0 0 6px 1px rgba(254, 215, 170, 0.82),
+      0 0 18px 4px rgba(251, 146, 60, 0.88),
       0 6px 16px rgba(0, 0, 0, 0.55);
   }
   50% {
     box-shadow:
-      0 0 0 2px rgba(233, 213, 255, 1),
-      0 0 7px 1px rgba(221, 214, 254, 0.92),
-      0 0 22px 6px rgba(168, 85, 247, 0.92),
+      0 0 0 2px rgba(255, 237, 213, 1),
+      0 0 7px 1px rgba(254, 215, 170, 0.92),
+      0 0 22px 6px rgba(251, 146, 60, 0.92),
       0 8px 20px rgba(0, 0, 0, 0.55);
   }
 }
@@ -3459,9 +3458,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-hand__card.is-mythique-jouable.is-playable {
     box-shadow:
-      0 0 0 2px rgba(221, 214, 254, 0.96),
-      0 0 6px 1px rgba(221, 214, 254, 0.82),
-      0 0 18px 4px rgba(168, 85, 247, 0.88),
+      0 0 0 2px rgba(254, 215, 170, 0.96),
+      0 0 6px 1px rgba(254, 215, 170, 0.82),
+      0 0 18px 4px rgba(251, 146, 60, 0.88),
       0 6px 16px rgba(0, 0, 0, 0.55);
   }
 }
