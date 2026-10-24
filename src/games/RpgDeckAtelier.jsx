@@ -64,7 +64,7 @@ import {
 import { genererDeckAssiste, suggestionsNomsDeck } from './rpgDeckAuto.js';
 import RpgDeckAssistant from './RpgDeckAssistant.jsx';
 
-const GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️' };
+const GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀' };
 const COULEUR_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
 const COUTS = [1, 2, 3, 4, 5, 6, 7];
 const TYPES = [

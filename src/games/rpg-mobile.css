@@ -1243,8 +1243,8 @@
     justify-content: start;
     width: clamp(176px, 15vw, 224px);
     min-height: clamp(52px, 4vw, 64px);
-    gap: 2px clamp(8px, .75vw, 11px);
-    padding: 0;
+    gap: 3px clamp(8px, .75vw, 11px);
+    padding: 6px 18px 6px 6px;
     box-sizing: border-box;
     border: 1px solid rgba(226, 190, 119, .78);
     border-radius: 999px;
@@ -1271,9 +1271,9 @@
     grid-row: 1;
     width: 100%;
     color: #fff0cf;
-    font: 700 clamp(10px, .9vw, 13px)/1.15 var(--display);
+    font: 700 clamp(10px, .9vw, 13px)/1.18 var(--display);
     text-align: left;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .rpg-battle--touch .rpg-wizard-plate__avatar {
     grid-column: 1;

@@ -39,7 +39,7 @@ import {
   familleDeCarte,
 } from './rpgDeckAuto.js';
 
-const GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️' };
+const GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀' };
 const COULEUR_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
 const CATALOGUE = { cartes: RPG_DUEL_CARDS, couleursDe: cardColors, limiteDe: cardCopyLimit };
 

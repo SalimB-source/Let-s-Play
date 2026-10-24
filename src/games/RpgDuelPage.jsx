@@ -256,7 +256,7 @@ import {
   redresserBoitier,
 } from './RpgDeckBox.jsx';
 
-const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️', hybride: '🔥⏳' };
+const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀', hybride: '🔥⏳' };
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Sable + Braise' };
 const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' };
 /**
@@ -6999,35 +6999,47 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     duel?.sorcier.deckCount ?? duel?.sorcier.deck.length,
     duel?.sorcier.mainCount ?? duel?.sorcier.main.length,
   ]);
-  // Mobile, table d'essai : chaque plaque ouvre la colonne de gauche, sa jauge
-  // de mana se range derrière elle, dans la même rangée de grille. Publier la
-  // hauteur réelle mesurée des deux — la plaque (`--rpg-plaque-*-h`) et la
-  // place qui reste pour la jauge (`--rpg-jauge-*-h`) — laisse la colonne
-  // s'ajuster d'elle-même : une plaque plus haute parce que les zones de
-  // cartes passent sur deux lignes rétrécit sa jauge au lieu de la faire
-  // déborder sur le camp d'en face.
-  const essaiTactile = Boolean(duel && viewport.mobile && duel.modeMana === RPG_MODE_MANA_ESSAI);
+  // Table d'essai (PC et mobile) : chaque plaque ouvre la colonne de gauche et
+  // sa jauge de mana se pose juste dessous (PC) ou dans la cellule voisine
+  // (mobile). Publier la hauteur réelle mesurée de chaque plaque
+  // (`--rpg-plaque-*-h`) empêche la jauge de recouvrir les PV ou l'avatar
+  // quand un nom long passe sur deux lignes ; sur mobile, `--rpg-jauge-*-h`
+  // borne aussi la hauteur disponible dans la rangée du camp.
+  const modeManaEssai = Boolean(duel && duel.modeMana === RPG_MODE_MANA_ESSAI);
+  const essaiTactile = Boolean(modeManaEssai && viewport.mobile);
   useLayoutEffect(() => {
     const table = tableRef.current;
-    if (!essaiTactile || !table) return undefined;
+    if (!modeManaEssai || !table) return undefined;
     const camps = [
       { plaque: table.querySelector('.rpg-wizard-plate--ennemi'), rangee: table.querySelector('.card-row--ennemi'), suffixe: 'ennemi' },
       { plaque: table.querySelector('.rpg-wizard-plate--joueur'), rangee: table.querySelector('.card-row--equipe'), suffixe: 'joueur' },
-    ].filter(({ plaque, rangee }) => plaque && rangee);
+    ].filter(({ plaque }) => plaque);
     if (!camps.length) return undefined;
     const publier = () => {
-      // Le bord droit des plaques : la barre de réponse du sorcier s'y accroche
-      // au lieu de les recouvrir (elle occupe toute la largeur restante,
-      // au-dessus de la main).
-      const joueur = camps.find(({ suffixe }) => suffixe === 'joueur') ?? camps[0];
-      table.style.setProperty('--rpg-plaque-droite', `${Math.round(joueur.plaque.getBoundingClientRect().right)}px`);
+      // Le bord droit des plaques : au doigt, la barre de réponse du sorcier s'y
+      // accroche au lieu de les recouvrir (elle occupe toute la largeur
+      // restante, au-dessus de la main).
+      if (essaiTactile) {
+        const joueur = camps.find(({ suffixe }) => suffixe === 'joueur') ?? camps[0];
+        table.style.setProperty('--rpg-plaque-droite', `${Math.round(joueur.plaque.getBoundingClientRect().right)}px`);
+      } else {
+        table.style.removeProperty('--rpg-plaque-droite');
+      }
       for (const { plaque, rangee, suffixe } of camps) {
         const hauteurPlaque = plaque.offsetHeight;
-        table.style.setProperty(`--rpg-plaque-${suffixe}-h`, `${hauteurPlaque}px`);
-        // La rangée de jeu du camp donne la hauteur de la cellule de grille :
+        if (hauteurPlaque > 0) {
+          table.style.setProperty(`--rpg-plaque-${suffixe}-h`, `${hauteurPlaque}px`);
+        } else {
+          table.style.removeProperty(`--rpg-plaque-${suffixe}-h`);
+        }
+        // Sur mobile, la rangée de jeu du camp donne la hauteur de la cellule :
         // ce qui reste sous (ou au-dessus de) la plaque revient à la jauge.
-        const place = Math.max(0, Math.round(rangee.getBoundingClientRect().height - hauteurPlaque - 1));
-        table.style.setProperty(`--rpg-jauge-${suffixe}-h`, `${place}px`);
+        if (essaiTactile && rangee) {
+          const place = Math.max(0, Math.round(rangee.getBoundingClientRect().height - hauteurPlaque - 1));
+          table.style.setProperty(`--rpg-jauge-${suffixe}-h`, `${place}px`);
+        } else {
+          table.style.removeProperty(`--rpg-jauge-${suffixe}-h`);
+        }
       }
     };
     publier();
@@ -7035,13 +7047,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const observateur = new ResizeObserver(publier);
     camps.forEach(({ plaque, rangee }) => {
       observateur.observe(plaque);
-      observateur.observe(rangee);
+      if (essaiTactile && rangee) observateur.observe(rangee);
     });
     return () => {
       observateur.disconnect();
       table.style.removeProperty('--rpg-plaque-droite');
+      table.style.removeProperty('--rpg-plaque-ennemi-h');
+      table.style.removeProperty('--rpg-plaque-joueur-h');
+      table.style.removeProperty('--rpg-jauge-ennemi-h');
+      table.style.removeProperty('--rpg-jauge-joueur-h');
     };
-  }, [essaiTactile, ecran, duel]);
+  }, [modeManaEssai, essaiTactile, ecran, duel]);
   // La barre de combat ferme la colonne de droite, juste au-dessus
   // de la main, et sa hauteur varie d'une à trois commandes empilées
   // (« Confirmer l'attaque », « Annuler l'attaque », « Résoudre le combat »…).

@@ -49,8 +49,8 @@ const tableCardSource = battlePage.slice(battlePage.indexOf('function TableCard(
 const compteursSource = readFileSync(new URL('../src/games/RpgVieCompteurs.jsx', import.meta.url), 'utf8');
 const hoverPreviewSource = battlePage.slice(battlePage.indexOf('function HoverCardPreview('), battlePage.indexOf('function ConfirmationSort('));
 const confirmSortSource = battlePage.slice(battlePage.indexOf('function ConfirmationSort('), battlePage.indexOf('function SpellAnnouncement('));
-assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '⚖️', hybride: '🔥⏳' \};/,
-  'les éléments utilisent flamme, goutte d’eau, sablier, flocon de neige et repère bicolore');
+assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀', hybride: '🔥⏳' \};/,
+  'les éléments utilisent flamme, goutte d’eau, sablier, flocon de neige, tête de mort et repère bicolore');
 assert.match(battlePage, /FILTRE_COULEUR_LABELS = \{ toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' \};/,
   'la puce de filtre Neige existe, à côté des trois couleurs historiques');
 assert.match(battleCss, /\.rpg-card-element-badge--sable\s*\{[^}]*drop-shadow\(0 0 2px rgba\(255, 215, 98, \.8\)\)/,
