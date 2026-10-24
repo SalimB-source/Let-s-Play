@@ -311,14 +311,14 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   donnerMana(duel, 'joueur', 40);
   donnerMana(duel, 'sorcier', 40);
 
-  // Furie du catalogue : 1 pour le Loup, 2 pour le Guerrier et le Berserk,
-  // 3 pour le Jarl et le Maître du marteau. Les faces se contentent de
+  // Furie du catalogue : 1 pour le Loup, 2 pour le Guerrier, le Berserk et le
+  // Jarl, 3 pour le Maître du marteau. Les faces se contentent de
   // « Furie X. » : aucune ne récite la règle de soin et de réactivation.
   for (const [id, furie] of [
     ['guerrier-au-bouclier-rond', 2],
     ['loup-des-neiges', 1],
     ['berserk-des-trois-hivers', 2],
-    ['jarl-au-marteau-de-guerre', 3],
+    ['jarl-au-marteau-de-guerre', 2],
     ['maitre-du-marteau', 3],
   ]) {
     const carte = cardById(id);
@@ -457,8 +457,8 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
 
   const jarl = cardById('jarl-au-marteau-de-guerre');
   assert.deepEqual(
-    { cost: jarl.cost, atk: jarl.atk, def: jarl.def, furie: jarl.furie, overkill: jarl.overkill, text: jarl.text },
-    { cost: 5, atk: 2, def: 5, furie: 3, overkill: true, text: 'Furie 3. Overkill.' },
+    { cost: jarl.cost, atk: jarl.atk, def: jarl.def, furie: jarl.furie, overkill: jarl.overkill, provocation: jarl.provocation, text: jarl.text },
+    { cost: 5, atk: 3, def: 5, furie: 2, overkill: true, provocation: true, text: 'Furie 2. Overkill. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.' },
   );
 
   const drakkar = cardById('drakkar-a-tete-de-dragon');
@@ -500,12 +500,13 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   assert.equal(valkyrie.resonance, undefined, 'plus de Résonance viking');
   assert.equal(valkyrie.resonanceTribu, undefined);
   assert.equal(valkyrie.protection, undefined, 'la protection ne couvre plus les créatures de Braise');
-  assert.equal(valkyrie.protectionSortsContre, 'braise');
-  assert.deepEqual(valkyrie.arrivee, { type: 'soin-creatures', amount: 2 });
-  assert.equal(arriveeCiblePortee(valkyrie), null, 'son soin collectif ne demande aucune cible');
-  assert.match(valkyrie.text, /Protection contre les sorts de Braise/);
-  assert.match(valkyrie.text, /soignez chacune de vos créatures de 2/);
-  assert.doesNotMatch(valkyrie.text, /Résonance|inflige 2 dégâts/);
+  assert.equal(valkyrie.protectionSorts, true);
+  assert.equal(valkyrie.protectionSortsContre, undefined);
+  assert.deepEqual(valkyrie.arrivee, { type: 'degats', amount: 1, cible: 'toutes-creatures', gelChance: 0.25 });
+  assert.equal(arriveeCiblePortee(valkyrie), null, 'sa vague collective ne demande aucune cible');
+  assert.match(valkyrie.text, /Protection contre les sorts/);
+  assert.match(valkyrie.text, /25 % de chances de geler/);
+  assert.doesNotMatch(valkyrie.text, /Résonance|soignez chacune/);
 
   const corbeau = cardById('valkyrie-au-corbeau');
   assert.deepEqual(
@@ -1100,9 +1101,10 @@ test('le Maître du marteau : 3 dégâts à une créature ou au sorcier, Furie 3
     'blessé, il entre en Furie : +3/+0, Overkill et Envol',
   );
   // Un soin qui le ramène à sa DEF de base éteint la Furie — et ses deux mots-clés.
+  // La Valkyrie des glaces ne soigne plus : on utilise Yamina, qui soigne 2 à toutes.
   donnerMana(furie, 'joueur', 20);
-  donner(furie, 'joueur', 'valkyrie-des-glaces');
-  assert.equal(rpgJouerCreature(furie, 'joueur', 'valkyrie-des-glaces').ok, true);
+  donner(furie, 'joueur', 'yamina');
+  assert.equal(rpgJouerCreature(furie, 'joueur', 'yamina').ok, true);
   assert.deepEqual(
     [frappeur.atk, frappeur.pv, frappeur.furieDeclenchee, frappeur.overkill, frappeur.envol],
     [5, 5, false, false, false],
@@ -1923,10 +1925,13 @@ test('les capacités de feu punissent les bloqueurs et rendent les djinns distin
   donner(duel, 'sorcier', 'ifrit-des-ergs');
   const pvJoueur = duel.joueur.pv;
   const ifrit = rpgJouerCreature(duel, 'sorcier', 'ifrit-des-ergs').entite;
+  assert.deepEqual([ifrit.atk, ifrit.def], [5, 5], 'l’Ifrit est désormais 5/5');
+  assert.equal(ifrit.rapidite, true, 'il a Rapidité');
+  assert.equal(ifrit.overkill, true, 'et Overkill');
   assert.equal(duel.joueur.pv, pvJoueur, 'l’Ifrit n’a plus d’effet d’arrivée');
   rpgBlesserCreature(duel, 'sorcier', ifrit.id, 10, 'eau');
-  assert.equal(duel.joueur.pv, pvJoueur - 4,
-    'l’Ifrit détruit inflige 4 dégâts au sorcier adverse');
+  assert.equal(duel.joueur.pv, pvJoueur,
+    'l’Ifrit détruit n’inflige plus de dégâts');
   donner(duel, 'sorcier', 'ifrit-al-ahmar');
   rpgJouerCreature(duel, 'sorcier', 'ifrit-al-ahmar');
   assert.equal(duel.joueur.creatures.length, 0, 'l’Ifrit al-Ahmar balaie les créatures adverses à son arrivée');
@@ -2905,7 +2910,7 @@ test('la Veilleuse diffère sa désignation sur la table, puis la résout sur un
   assert.equal(poseSolo.entite.bouclier, 2);
 });
 
-test('la Valkyrie des glaces ne protège que contre les sorts de Braise', () => {
+test('la Valkyrie des glaces protège contre tous les sorts', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donner(duel, 'joueur', 'valkyrie-des-glaces');
@@ -2920,13 +2925,14 @@ test('la Valkyrie des glaces ne protège que contre les sorts de Braise', () => 
   assert.equal(valkyrie.pv, 4, 'le sort de Braise ne la blesse pas');
   assert.ok(duel.joueur.main.includes('trait-de-braise'));
   const autreElement = rpgBlesserCreature(duel, 'joueur', valkyrie.id, 1, ['eau'], null, 'magie');
-  assert.equal(autreElement.recus, 1, 'une magie d’un autre élément passe');
-  assert.equal(valkyrie.pv, 3);
+  assert.equal(autreElement.recus, 0, 'une magie d’Eau est aussi protégée');
+  assert.equal(valkyrie.pv, 4);
+  assert.equal(valkyrie.protectionSorts, true);
 });
 
 test('Ifrit al-Ahmar inflige 3 dégâts à toutes les créatures, y compris lui-même', () => {
   const carte = cardById('ifrit-al-ahmar');
-  assert.deepEqual([carte.atk, carte.def], [3, 3]);
+  assert.deepEqual([carte.atk, carte.def], [4, 4]);
   assert.equal(carte.arrivee.amount, 3);
   assert.equal(carte.arrivee.inclutAllies, true);
   assert.match(carte.text, /toutes les créatures, lui compris/);
@@ -2942,9 +2948,9 @@ test('Ifrit al-Ahmar inflige 3 dégâts à toutes les créatures, y compris lui-
   assert.equal(pose.ok, true);
   assert.equal(adverse.pv, 1, 'la créature adverse encaisse 3');
   assert.equal(alliee.pv, 1, 'la créature alliée encaisse aussi 3');
-  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === pose.entite.id), false,
-    'le 3/3 s’inflige sa propre vague et meurt');
-  assert.ok(duel.sorcier.cimetiere.includes('ifrit-al-ahmar'));
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === pose.entite.id), true,
+    'le 4/4 s’inflige sa propre vague et survit avec 1 PV');
+  assert.equal(pose.entite.pv, 1, 'il lui reste 1 PV');
 });
 
 test('capacité à l’arrivée : le Guetteur pose ses compteurs d’Heures', () => {
@@ -3172,10 +3178,11 @@ test('Yamina soigne toutes les créatures alliées de 2 et rend 5 PV au joueur',
 
 test('le Kraken offre une magie gratuite : le sort se lance sans payer son mana', () => {
   const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 5);
+  donnerMana(duel, 'joueur', 8);
   donner(duel, 'joueur', 'kraken');
   const kraken = rpgJouerCreature(duel, 'joueur', 'kraken').entite;
-  assert.deepEqual([kraken.atk, kraken.def], [2, 5], 'le Kraken est passé 2/5');
+  assert.deepEqual([kraken.atk, kraken.def], [8, 8], 'Le Kraken est passé 8/8 pour 8');
+  assert.equal(cardById('kraken').name, 'Le Kraken');
   assert.equal(duel.magieGratuite?.cote, 'joueur', 'la faveur du Kraken est ouverte');
 
   // Le mana est épuisé par la pose : seule la faveur permet de lancer.
@@ -4145,10 +4152,10 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(duel.sorcier.creatures.every((e) => rpgPeutBloquerAttaquant(e, valkyrie) === false), true,
     'aucune créature terrestre ne peut bloquer la Valkyrie');
 
-  // Valkyrie des glaces : plus de Résonance ni de lance ciblée. Elle entre
-  // sans désignation à ses statistiques imprimées 5/5, et son arrivée soigne
-  // les créatures du joueur — assez pour éteindre la Furie du Loup ramené à
-  // sa DEF de base.
+  // Valkyrie des glaces : plus de Résonance ni de soin. Elle entre
+  // sans désignation à ses statistiques imprimées 5/5, et son arrivée inflige
+  // 1 dégât à toutes les créatures avec 25 % de chances de gel.
+  // La Furie du loup reste donc active — la Valkyrie ne soigne plus.
   rpgBlesserCreature(duel, 'joueur', loup.id, 1, 'braise');
   assert.deepEqual(
     [loup.atk, loup.pv, loup.pvMax, loup.furieDeclenchee],
@@ -4158,7 +4165,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   donner(duel, 'joueur', 'valkyrie-des-glaces');
   const duneAvantGlace = dune.pv;
   const glace = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces');
-  assert.equal(glace.ok, true, 'son soin ne demande aucune cible');
+  assert.equal(glace.ok, true, 'sa vague ne demande aucune cible');
   assert.deepEqual(
     [glace.entite.atk, glace.entite.def, glace.entite.pv, glace.entite.pvMax, glace.entite.envol],
     [5, 5, 5, 5, true],
@@ -4167,13 +4174,13 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(rpgResonanceEnJeu(duel, 'viking'), 0);
   assert.equal(rpgEstProtegee(glace.entite, ['braise']), false, 'les créatures de Braise ne sont plus bloquées');
   assert.equal(rpgEstProtegeeDesSorts(glace.entite, ['braise']), true, 'les sorts de Braise sont bloqués');
-  assert.equal(rpgEstProtegeeDesSorts(glace.entite, ['eau']), false, 'les sorts des autres éléments passent');
+  assert.equal(rpgEstProtegeeDesSorts(glace.entite, ['eau']), true, 'désormais tous les sorts sont bloqués');
   assert.deepEqual(
     [loup.atk, loup.pv, loup.pvMax, loup.furieDeclenchee, loup.furieBonusAtk],
-    [2, 2, 2, false, 0],
-    'soigné de 2 jusqu’à sa DEF de base, le Loup quitte la Furie',
+    [3, 1, 2, true, 1],
+    'la Valkyrie n’a pas soigné : le Loup reste en Furie',
   );
-  assert.equal(dune.pv, duneAvantGlace, 'aucune lance ne blesse plus la Dune à l’arrivée');
+  assert.equal(dune.pv, duneAvantGlace - 1, 'la vague de la Valkyrie blesse la Dune de 1');
 
   // Géant des banquises : à l'arrivée, il gèle toutes les créatures adverses.
   donner(duel, 'sorcier', 'chien-du-guet');

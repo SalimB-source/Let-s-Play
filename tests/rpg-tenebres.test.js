@@ -461,10 +461,10 @@ test('les textes de défausse adverse restent concis sans préciser le choix', (
   assert.equal(cardById('celle-qui-pese').text, 'Quand Celle qui pèse arrive : l’adversaire défausse une carte.');
 });
 
-test('La Dévoreuse est une 4/5 pour 6 mana et conserve son exil à l’arrivée', () => {
+test('La Dévoreuse est une 4/4 pour 6 mana et conserve son exil à l’arrivée', () => {
   const carte = cardById('la-devoreuse');
   assert.equal(carte.atk, 4);
-  assert.equal(carte.def, 5);
+  assert.equal(carte.def, 4);
   assert.equal(carte.cost, 6);
   assert.deepEqual(carte.arrivee, { type: 'exil', cible: 'creature' });
 });

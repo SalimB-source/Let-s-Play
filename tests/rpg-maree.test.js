@@ -200,7 +200,7 @@ test('le sorcier enchaîne les annonces, une par une', () => {
   assert.ok(rpgSorcierAnnonceSuivante(duel, () => 0.5), 'la carte suivante est annoncée après le passage');
 });
 
-test('Bakunawa, à son arrivée, interdit le blocage à une créature adverse', () => {
+test('Bakunawa, à son arrivée, se bat avec une créature adverse', () => {
   const duel = duelVide();
   duel.tour = 'joueur';
   donner(duel, 'sorcier', 'chien-du-guet');
@@ -209,10 +209,11 @@ test('Bakunawa, à son arrivée, interdit le blocage à une créature adverse', 
   assert.equal(chien.ok, true);
   donner(duel, 'joueur', 'bakunawa');
   mana(duel, 'joueur', 'eau', 4);
+  const pvAvant = chien.entite.pv;
   const pose = rpgJouerCreature(duel, 'joueur', 'bakunawa', chien.entite.id);
   assert.equal(pose.ok, true, JSON.stringify(pose));
-  assert.equal(duel.sorcier.creatures.length, 1, 'Bakunawa n’inflige plus de dégâts d’arrivée');
-  assert.ok(chien.entite.empecheBlocageToursRestants >= 1, 'le chien ne peut plus bloquer');
+  // 3/6 se bat contre 2/2 : chacun inflige ses dégâts
+  assert.ok(chien.entite.pv < pvAvant || duel.sorcier.cimetiere.includes(chien.entite.carteId), 'le chien a subi les dégâts de Bakunawa');
 });
 
 test('le sorcier IA ne lance jamais un contre : il le garde en main', () => {

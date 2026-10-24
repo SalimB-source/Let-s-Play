@@ -1236,6 +1236,7 @@ function creerEntiteCreature(carte) {
     // boucliers) sans écraser l'Overkill imprimé ou celui d'une arme.
     overkill: Boolean(carte.overkill),
     overkillTemporaire: 0,
+    coupRapideTemporaire: 0,
     // Protection contre les magies rapides et les sorcelleries (le Serpent du
     // monde) : aucun sort ne peut la cibler ni la blesser — les capacités,
     // armes et attaques passent normalement.
@@ -2152,6 +2153,15 @@ function annulerBonusTemporaires(duel, tourFerme) {
           // avec le renfort temporaire d'un sort.
           || Boolean(gainsFurieActifs(duel, entite)?.overkill);
       }
+      if (entry.coupRapide) {
+        entite.coupRapideTemporaire = Math.max(
+          0,
+          (entite.coupRapideTemporaire ?? entry.coupRapide) - entry.coupRapide,
+        );
+        entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide)
+          || Boolean(armeCarteDe(entite)?.donne?.coupRapide)
+          || entite.coupRapideTemporaire > 0;
+      }
       effaces.push(entite.name);
     }
     camp.bonusTemporaires = restants;
@@ -2914,6 +2924,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // chaque créature touchée gagne Tribut X, rendu avec le bonus quand le
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
       const bonusOverkill = effet.overkill ? 1 : 0;
+      const bonusCoupRapide = effet.coupRapide ? 1 : 0;
       for (const entite of ciblesBuff) {
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
@@ -2926,7 +2937,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           entite.overkill = true;
           if (temporaire) entite.overkillTemporaire = (entite.overkillTemporaire ?? 0) + bonusOverkill;
         }
-        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, tour: duel.tour });
+        if (bonusCoupRapide) {
+          entite.coupRapide = true;
+          if (temporaire) entite.coupRapideTemporaire = (entite.coupRapideTemporaire ?? 0) + bonusCoupRapide;
+        }
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, coupRapide: bonusCoupRapide, tour: duel.tour });
         // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
         // et la mort est attribuée à la couleur de la source, pour le journal.
         if (!(entite.pv > 0) && plancher <= 0) {
@@ -3064,11 +3079,33 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // La plupart des vagues « toutes-creatures » sont hostiles. Ifrit
       // al-Ahmar déclare explicitement `inclutAllies` : sa vague balaie les
       // deux camps et ne s'épargne pas elle-même.
-      const cibles = effet.cible === 'toutes-creatures'
+      let cibles = effet.cible === 'toutes-creatures'
         ? (effet.inclutAllies
           ? [cote, adv].flatMap((camp) => duel[camp].creatures.map((entite) => ({ entite, camp })))
           : duel[adv].creatures.map((entite) => ({ entite, camp: adv })))
         : duel[adv].creatures.filter((entite) => entite.id === cibleId).map((entite) => ({ entite, camp: adv }));
+      // Oni de la fournaise : `nombre: 2` inflige 3 dégâts à deux créatures
+      // (ou à une seule s’il n’y en a qu’une). Le joueur désigne la première ;
+      // la seconde est choisie automatiquement parmi les créatures adverses
+      // restantes — la plus menaçante d’abord, à défaut une au hasard. Si
+      // l’arrivée est résolue sans cible (IA automatique), on pioche jusqu’à
+      // `nombre` cibles adverses au hasard.
+      if (Number.isFinite(effet.nombre) && effet.nombre > 1 && effet.cible === 'creature') {
+        const deja = new Set(cibles.map(({ entite }) => entite.id));
+        const besoin = Math.max(0, Math.floor(effet.nombre) - cibles.length);
+        if (besoin > 0) {
+          const restantes = duel[adv].creatures.filter((entite) => !deja.has(entite.id));
+          // Si aucune cible initiale (résolution automatique sans désignation),
+          // on complète jusqu’à `nombre` avec les adversaires disponibles.
+          const aCompleter = cibles.length === 0 ? Math.floor(effet.nombre) : besoin;
+          // Tri par menace (approximation simple : atk + def) pour la seconde
+          // cible, comme le ferait l’IA pour la première.
+          restantes.sort((a, b) => (b.atk + b.def) - (a.atk + a.def));
+          for (let i = 0; i < Math.min(aCompleter, restantes.length); i += 1) {
+            cibles.push({ entite: restantes[i], camp: adv });
+          }
+        }
+      }
       // `gelChance` (le Hurlement du blizzard, la Brume du fjord) : chaque
       // créature touchée tire son propre jet — le même hasard que le duel.
       const rngGel = hasardParDuel.get(duel) ?? Math.random;

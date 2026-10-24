@@ -31,9 +31,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
   'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
   'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
-  // Le Pourfendeur est peint en photoréaliste (deux sabres, regard effacé,
-  // attaque au plus près de la caméra) : révision dédiée pour le cache.
-  'tojiro-le-pourfendeur': 'tojiro-photorealiste-v1',
+  // Le Pourfendeur repeint en peinture japonaise nihonga, même composition
+  // mais en pigments minéraux (octobre 2025) : révision dédiée pour le cache.
+  'tojiro-le-pourfendeur': 'tojiro-nihonga-compo-identique-v1',
   'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
@@ -51,7 +51,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
   'serment-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
   'pere-des-corbeaux': 'odin-photoreal-v1',
-  'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
+  'ifrit-al-ahmar': 'minotaure-demon-photorealiste-v1',
+  'la-devoreuse': 'devoreuse-nihonga-visage-v1',
+  'ifrit-des-ergs': 'ifrit-ergs-photorealiste-v1',
   'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
   'anqa-des-braises': 'anqa-des-braises-huile-v1',
   // Les cinq héros du récit ont été **repeints en nihonga** (pigments

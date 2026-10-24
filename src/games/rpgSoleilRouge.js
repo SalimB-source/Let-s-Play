@@ -67,9 +67,9 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'cavalier-des-deux-sabres', name: 'Cavalier des deux sabres',
-    cost: 6, atk: 5, def: 4, rarity: 'mythique', rapidite: true,
+    cost: 6, atk: 5, def: 4, rarity: 'mythique', rapidite: true, overkill: true,
     typeLine: 'Créature légendaire — Humain · Samouraï',
-    text: 'Rapidité — Peut attaquer le tour où il arrive.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse.',
     flavor: 'Sans armure, sans hésitation : les cimes ne sont qu’un autre chemin.',
   }),
   carte({
@@ -113,10 +113,11 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'La montagne enseigne à ceux qui savent écouter ses ailes.',
   }),
   carte({
-    id: 'oni-de-la-fournaise', name: 'Oni de la fournaise',
-    cost: 5, atk: 5, def: 4, rarity: 'mythique',
+    id: 'oni-de-la-fournaise', name: 'Oni de la fournaise', honneur: 0,
+    cost: 5, atk: 4, def: 5, rarity: 'mythique',
     typeLine: 'Créature — Yōkai · Oni',
-    text: '—',
+    arrivee: { type: 'degats', amount: 3, cible: 'creature', nombre: 2 },
+    text: 'Quand l’Oni de la fournaise arrive : il inflige 3 dégâts à deux créatures ciblées (ou 3 dégâts à une seule s’il n’y en a qu’une).',
     flavor: 'Même tombée, sa massue fait trembler la forge.',
   }),
   carte({
@@ -207,8 +208,8 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     kind: 'magie', cost: 4, rarity: 'mythique',
     typeLine: 'Sorcellerie — Serment · Braise',
     cibles: ['soi'],
-    effet: { type: 'buff', atk: 2, def: 1, tours: 1 },
-    text: 'Vos créatures gagnent +2/+1 jusqu’à la fin du tour.',
+    effet: { type: 'buff', atk: 2, def: 1, coupRapide: true, tours: 1 },
+    text: 'Vos créatures gagnent +2/+1 et Coup rapide (30 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour.',
     flavor: 'Ce n’est pas l’acier qui prête serment, mais la main qui le reçoit.',
   }),
 ];
