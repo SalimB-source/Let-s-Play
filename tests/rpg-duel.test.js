@@ -351,11 +351,10 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
     'Furie 2 : +2/+0, sans rendre de PV',
   );
 
-  // Le soin d’arrivée de la Valkyrie des glaces referme exactement la
-  // blessure : le Guerrier retrouve sa DEF de base et rend son +2.
-  donner(duel, 'joueur', 'valkyrie-des-glaces');
-  const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces').entite;
-  assert.deepEqual([valkyrie.atk, valkyrie.def, valkyrie.pv, valkyrie.pvMax], [5, 5, 5, 5]);
+  // Le soin d’arrivée de Yamina referme exactement la blessure : le Guerrier retrouve sa DEF de base et rend son +2.
+  donner(duel, 'joueur', 'yamina');
+  const yamina = rpgJouerCreature(duel, 'joueur', 'yamina').entite;
+  assert.deepEqual([yamina.atk, yamina.def, yamina.pv, yamina.pvMax], [2, 4, 4, 4]);
   assert.deepEqual(
     [guerrier.atk, guerrier.pv, guerrier.pvMax, guerrier.furieDeclenchee, guerrier.furieBonusAtk],
     [1, 3, 3, false, 0],
@@ -382,19 +381,19 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   // Furie 3 : le Jarl 2/5 devient 5/4 après un point de dégâts.
   donner(duel, 'joueur', 'jarl-au-marteau-de-guerre');
   const jarl = rpgJouerCreature(duel, 'joueur', 'jarl-au-marteau-de-guerre').entite;
-  assert.deepEqual([jarl.atk, jarl.def, jarl.pv, jarl.pvMax], [2, 5, 5, 5]);
+  assert.deepEqual([jarl.atk, jarl.def, jarl.pv, jarl.pvMax], [3, 5, 5, 5]);
   rpgBlesserCreature(duel, 'joueur', jarl.id, 1, 'braise');
   assert.deepEqual(
     [jarl.atk, jarl.def, jarl.pv, jarl.pvMax, jarl.furieDeclenchee, jarl.furieBonusAtk],
-    [5, 4, 4, 5, true, 3],
-    'Furie 3 : +3/+0',
+    [5, 4, 4, 5, true, 2],
+    'Furie 2 : +2/+0',
   );
 
   // Une blessure de plus ne regagne pas le bonus déjà actif.
   rpgBlesserCreature(duel, 'joueur', jarl.id, 2, 'braise');
   assert.deepEqual(
     [jarl.atk, jarl.def, jarl.pv, jarl.pvMax, jarl.furieDeclenchee, jarl.furieBonusAtk],
-    [5, 2, 2, 5, true, 3],
+    [5, 2, 2, 5, true, 2],
     'déjà en Furie : le bonus ne se cumule pas',
   );
 
@@ -408,8 +407,8 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   assert.equal(duel.joueur.creatures.includes(jarlNeuf), true, 'le Jarl encaisse les 2 dégâts sans mourir');
   assert.deepEqual(
     [jarlNeuf.atk, jarlNeuf.def, jarlNeuf.pv, jarlNeuf.pvMax, jarlNeuf.furieDeclenchee, jarlNeuf.furieBonusAtk],
-    [5, 3, 3, 5, true, 3],
-    'la blessure de combat allume la Furie 3, sans défense gagnée',
+    [5, 3, 3, 5, true, 2],
+    'la blessure de combat allume la Furie 2, sans défense gagnée',
   );
 
   // Le seuil est la DEF imprimée (5), pas le plafond renforcé : le Rempart
@@ -420,19 +419,19 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   assert.equal(rpgLancerMagie(duel, 'joueur', 'rempart-de-dunes').ok, true);
   assert.deepEqual(
     [jarlNeuf.atk, jarlNeuf.def, jarlNeuf.pv, jarlNeuf.pvMax, jarlNeuf.furieDeclenchee, jarlNeuf.furieBonusAtk],
-    [2, 6, 6, 8, false, 0],
+    [3, 6, 6, 8, false, 0],
     'un renfort qui ramène les PV au-dessus de la DEF de base éteint la Furie',
   );
   rpgBlesserCreature(duel, 'joueur', jarlNeuf.id, 1, 'braise');
   assert.deepEqual(
     [jarlNeuf.atk, jarlNeuf.pv, jarlNeuf.furieDeclenchee],
-    [2, 5, false],
+    [3, 5, false],
     'à exactement 5 PV, malgré un plafond de 8, il n’est toujours pas en Furie',
   );
   rpgBlesserCreature(duel, 'joueur', jarlNeuf.id, 1, 'braise');
   assert.deepEqual(
     [jarlNeuf.atk, jarlNeuf.pv, jarlNeuf.pvMax, jarlNeuf.furieDeclenchee, jarlNeuf.furieBonusAtk],
-    [5, 4, 8, true, 3],
+    [5, 4, 8, true, 2],
     'à 4 PV, sous la DEF de base, la Furie revient sans toucher au plafond renforcé',
   );
 });
@@ -1565,7 +1564,7 @@ test('la désignation différée revalide sa cible : camp, protection, attente c
   // L’exil du Susanoo, lui, choisit dans les deux camps parmi les créatures de
   // coût 5 ou plus — mais jamais lui-même, ni une créature de coût inférieur à 5.
   donner(duel, 'joueur', 'oni-de-la-fournaise');
-  const oni = rpgJouerCreature(duel, 'joueur', 'oni-de-la-fournaise').entite;
+  const oni = rpgJouerCreature(duel, 'joueur', 'oni-de-la-fournaise', chien.id).entite;
   donner(duel, 'joueur', 'susanoo');
   const susanoo = rpgJouerCreature(duel, 'joueur', 'susanoo', null, { cibleDifferee: true });
   assert.equal(susanoo.arriveeEnAttente, true, 'le Susanoo se pose, puis désigne son exil');

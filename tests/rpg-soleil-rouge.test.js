@@ -19,10 +19,19 @@ function duelTest(rng = () => 0.5) {
   }
   return duel;
 }
-function jouer(duel, cote, id) {
+function jouer(duel, cote, id, cibleId = null) {
   duel[cote].main.push(id);
-  const resultat = rpgJouerCreature(duel, cote, id);
-  assert.equal(resultat.ok, true, id);
+  let resultat = rpgJouerCreature(duel, cote, id, cibleId);
+  if (!resultat.ok && resultat.raison === 'cible') {
+    const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
+    const carte = cardById(id);
+    if (carte?.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature') {
+      const adversaires = duel[adv].creatures;
+      const cible = adversaires[adversaires.length - 1] ?? adversaires[0];
+      if (cible) resultat = rpgJouerCreature(duel, cote, id, cible.id);
+    }
+  }
+  assert.equal(resultat.ok, true, `${id} ${resultat.raison ?? ''}`.trim());
   if (id === 'seigneur-des-machoires') Object.assign(resultat.entite, { tenaciteDisponible: false, tribut: 0 });
   return resultat.entite;
 }
@@ -102,10 +111,11 @@ test('le starter met en avant Harakiri, Résonance samouraï et la Bannière ave
 
 test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
   const valeurs = { commune: 1, inhabituelle: 1, rare: 1, mythique: 1 };
-  // Trois exceptions assumées : Orochi (ses héritiers remplacent la frappe),
+  // Quatre exceptions assumées : Orochi (ses héritiers remplacent la frappe),
   // l'Ashigaru des braises, redevenu un simple corps de 1 mana sans Harakiri,
-  // et l'Oni de la fournaise, désormais 4/5 avec dégâts à l'arrivée à la place.
-  const sansHarakiri = ['orochi', 'ashigaru-des-braises', 'oni-de-la-fournaise'];
+  // l'Oni de la fournaise, désormais 4/5 avec dégâts à l'arrivée à la place,
+  // et Kagutsuchi, 2/6 avec Coup critique au lieu de Harakiri.
+  const sansHarakiri = ['orochi', 'ashigaru-des-braises', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle'];
   for (const carte of RPG_SOLEIL_ROUGE_CARDS.filter((c) => !['magie', 'terrain'].includes(c.kind))) {
     assert.equal(carte.honneur, sansHarakiri.includes(carte.id) ? 0 : valeurs[carte.rarity], carte.id);
     if (sansHarakiri.includes(carte.id)) assert.doesNotMatch(carte.text, /Harakiri/);
@@ -127,8 +137,11 @@ test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
   assert.equal(kagutsuchiCarte.resonanceTribu, undefined);
   assert.doesNotMatch(kagutsuchiCarte.text, /Résonance samouraï/);
   assert.equal(kagutsuchiCarte.coupRapide, true);
-  assert.deepEqual([kagutsuchiCarte.atk, kagutsuchiCarte.def], [6, 5]);
+  assert.deepEqual(kagutsuchiCarte.coupCritique, { chance: 0.3, fois: 4 });
+  assert.deepEqual([kagutsuchiCarte.atk, kagutsuchiCarte.def], [2, 6]);
+  assert.equal(kagutsuchiCarte.honneur, 0);
   assert.match(kagutsuchiCarte.text, /Coup rapide — /);
+  assert.match(kagutsuchiCarte.text, /Coup critique/);
 });
 
 test('le rōnin garde Rapidité et le tengu combine Envol et Résonance', () => {

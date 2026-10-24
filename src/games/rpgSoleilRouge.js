@@ -121,11 +121,12 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'Même tombée, sa massue fait trembler la forge.',
   }),
   carte({
-    id: 'kagutsuchi-flamme-originelle', name: 'Kagutsuchi, Flamme originelle',
-    cost: 6, atk: 6, def: 5, rarity: 'mythique',
+    id: 'kagutsuchi-flamme-originelle', name: 'Kagutsuchi, Flamme originelle', honneur: 0,
+    cost: 6, atk: 2, def: 6, rarity: 'mythique',
     typeLine: 'Créature légendaire — Kami · Feu',
     coupRapide: true,
-    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    coupCritique: { chance: 0.3, fois: 4 },
+    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Coup critique — En combat, 30 % de chances de frapper 4 fois la créature adverse.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
   }),  // Trois samouraïs de plus : une recrue commune, un soutien rare et un
   // daimyō mythique. Leur type imprimé suffit à recevoir la Résonance samouraï.
