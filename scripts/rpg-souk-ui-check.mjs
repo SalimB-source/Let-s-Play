@@ -74,6 +74,7 @@ for (const prop of [
   'progression={progressionHistoire}', 'collection={collection}', 'ouverture={ouvertureSouk}',
   'onReclamerQuete={reclamerUneQuete}', 'onReclamerCachet={reclamerLeCachet}',
   'onOuvrirBooster={acheterBooster}', 'onOuvrirCoffret={acheterCoffret}',
+  'onAcheterCarteDirecte={acheterCarteDirecte}', 'onRafraichirEtal={rafraichirEtal}',
   'onFermerOuverture={fermerOuverture}',
 ]) {
   assert.ok(page.includes(prop), `la page passe ${prop} à l’écran`);
@@ -102,6 +103,8 @@ for (const marque of [
   'data-souk-semaine', 'data-souk-semaine-reclamer', 'data-souk-journal', 'data-souk-journal-ligne',
   'data-souk-rayons', 'data-souk-rayon=', 'data-souk-rayon-etat', 'data-souk-rayon-taux',
   'data-souk-rayon-reste', 'data-souk-rayon-refus', 'data-souk-ouvrir=', 'data-souk-coffret=',
+  'data-souk-direct', 'data-souk-direct-carte=', 'data-souk-direct-acheter=', 'data-souk-direct-rafraichir',
+  'data-card-id={carte.id}',
 ]) {
   assert.ok(ecran.includes(marque), `l’écran expose ${marque}`);
 }
@@ -128,6 +131,11 @@ for (const marque of ['data-souk-ceremonie', 'data-souk-carte=', 'data-souk-cart
   'data-souk-carte-tampon', 'data-souk-ceremonie-passer', 'data-souk-ceremonie-ranger']) {
   assert.ok(ceremonie.includes(marque), `la cérémonie expose ${marque}`);
 }
+assert.ok(ceremonie.includes('data-card-id={carte.id}'), 'chaque carte révélée ouvre sa prévisualisation au clic droit');
+assert.match(ceremonie, /import RpgCardCopyBadge from '\.\/RpgCardCopyBadge\.jsx';/, 'la cérémonie affiche le stock possédé');
+assert.ok(ceremonie.includes('rpg-souk__carte-volume'), 'les cartes révélées conservent leur volume 3D');
+assert.ok(!ceremonieCode.includes('rpg-souk__carte-corps') && !ceremonieCode.includes('<PastillesCarte'),
+  'la face révélée ne contient ni nom, ni description, ni pastilles d’effet');
 assert.match(ceremonieCode, /disabled=\{!toutRevele\}/, 'on ne range pas des cartes encore face cachée');
 assert.ok(!/localStorage|sauverPortefeuille/.test(ceremonieCode),
   'la cérémonie ne range rien elle-même : les cartes sont déjà achetées');
@@ -154,6 +162,18 @@ assert.match(decks, /\.\.\.etatLocalActuel\(acquisRef\.current\),/,
   'l’enregistrement d’un deck pousse l’état entier, économie comprise');
 assert.match(decks, /bourse: chargerPortefeuille\(\),\n    quetes: chargerEtatQuetes\(\),/,
   'l’autre hook transporte l’économie sans la modifier');
+
+// 7 bis. L’étal et les pastilles partagent les règles, sans prix recopiés.
+assert.match(ecranCode, /import \{ SOUK_DIRECT_REGLES, prixCarteDirecte \} from '\.\/rpgSoukDirect\.js';/,
+  'le format et les prix de l’étal viennent de son module de règles');
+assert.ok(!/\b(150|300)\b/.test(ecranCode), 'aucun prix de carte à l’unité n’est écrit en dur dans l’écran');
+const badge = lire('src/games/RpgCardCopyBadge.jsx');
+assert.ok(badge.includes('data-card-copies={exemplaires}'), 'la pastille expose le nombre d’exemplaires');
+assert.ok(badge.includes('aria-label={libelle}'), 'et le vocalise pour les lecteurs d’écran');
+assert.match(page, /const exemplaires = nombreExemplaires\(collection, carte\.id\)/,
+  'le catalogue lit le stock avec la règle de collection');
+assert.match(page, /<RpgCardCopyBadge nombre=\{exemplaires\} className="rpg-card-catalogue__copies" \/>/,
+  'chaque vignette du catalogue porte sa pastille');
 
 // 8. Tactile et mouvement : les règles reprises des autres écrans.
 assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'), 'le mouvement se coupe');
@@ -312,9 +332,10 @@ for (const geste of ['creature-invoquee', 'magie-lancee', 'arme-jouee']) {
 
 console.log('Le Souk (lots 3 à 5) est branché : sixième onglet, solde et pastille dessus,');
 console.log('trois quêtes réclamables, Cachet du cycle et de la semaine, un paquet du Souk');
-console.log('mélangé (une rare garantie, 8 % de mythique) dont le paquet en volume est le bouton');
-console.log('d’achat, la cérémonie d’ouverture, le journal des');
-console.log('ouvertures, et les cartes achetées qui entrent dans la collection. Le crédit y a');
+console.log('mélangé (une rare garantie, 1 % de mythique) dont le paquet en volume est le bouton');
+console.log('d’achat, la cérémonie 3D sans description avec pastilles et aperçu au clic droit,');
+console.log('l’étal quotidien de cinq rares/mythiques à 150/300 crédits, son rafraîchissement unique,');
+console.log('le journal des ouvertures, et les cartes achetées qui entrent dans la collection. Le crédit y a');
 console.log('sa pièce — frappée or, une seule à l’écran, jamais deux fois le même dégradé.');
 console.log('Les quêtes du jour attendent aussi dans l’onglet Jouer, à droite du menu :');
 console.log('mêmes barres, mêmes montants, et le geste d’encaissement au même endroit.');

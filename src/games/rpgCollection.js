@@ -283,6 +283,22 @@ export function exemplairesPossedables(collection, cardId) {
   return cardCopyLimit(carte);
 }
 
+/**
+ * Nombre d'exemplaires réellement acquis, pour les pastilles du catalogue et
+ * du Souk. La dotation de départ est un playset : ses cartes sont utilisables
+ * jusqu'à leur limite de deck. Chaque autre carte possédée correspond à une
+ * acquisition unique (les doublons de booster sont remboursés, pas stockés).
+ *
+ * Cette lecture est volontairement distincte d'`exemplairesPossedables`, qui
+ * décrit le plafond de deck après déblocage et non le stock acquis.
+ */
+export function nombreExemplaires(collection, cardId) {
+  if (!possedeCarte(collection, cardId)) return 0;
+  if (!COLLECTION_DEPART.includes(cardId)) return 1;
+  const limite = cardCopyLimit(cardById(cardId));
+  return Number.isFinite(limite) ? limite : 1;
+}
+
 function browserStorage() {
   return stockageProgression();
 }

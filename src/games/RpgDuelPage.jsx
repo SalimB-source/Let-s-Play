@@ -64,7 +64,7 @@ import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
-import { sauverCollectionDistante, possedeCarte } from './rpgCollection.js';
+import { sauverCollectionDistante, possedeCarte, nombreExemplaires } from './rpgCollection.js';
 import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
 import { avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
@@ -106,6 +106,7 @@ import RpgStoryBabEl from './RpgStoryBabEl.jsx';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
+import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
 import { GAINS, creditsLisible, gainsDeTour } from './rpgCredits.js';
 import { glypheEmbleme, progressionDeXp, pseudoLisible, xpLisible } from './rpgProfil.js';
@@ -3808,7 +3809,7 @@ export function BarreXpFinDeDuel({ depart = 0, arrivee = 0, legende = null }) {
   );
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -4724,6 +4725,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             onReclamerSemaine={onReclamerSemaine}
             onOuvrirBooster={onOuvrirBooster}
             onOuvrirCoffret={onOuvrirCoffret}
+            onAcheterCarteDirecte={onAcheterCarteDirecte}
+            onRafraichirEtal={onRafraichirEtal}
             onFermerOuverture={onFermerOuverture}
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
@@ -4819,6 +4822,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   const degradeCout = estTerrain ? null : cardHybridGradient(carte);
                   const famille = carteFamille(carte);
                   const verrouillee = !possedeCarte(collection, carte.id);
+                  const exemplaires = nombreExemplaires(collection, carte.id);
                   // Le sceau de la famille au coin libre de la vignette : c'est
                   // là qu'on feuillette la collection, et c'est là qu'il faut
                   // repérer un sort sans ouvrir sa fiche.
@@ -4856,6 +4860,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                           aria-label={`Coût ${cardCostLabel(carte)}`}
                         >{carte.cost}</span>}
                         <SortSceau carte={carte} className="rpg-card-catalogue__sort" />
+                        <RpgCardCopyBadge nombre={exemplaires} className="rpg-card-catalogue__copies" />
                         {verrouillee && <span className="rpg-card-catalogue__lock" aria-hidden="true">🔒</span>}
                         <span className="rpg-card-catalogue__zoom" aria-hidden="true">⤢</span>
                       </div>
@@ -5625,6 +5630,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerTutoriel,
     reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, fermerOuverture, ouverture: ouvertureSouk,
+    acheterCarteDirecte, rafraichirEtal,
     // Le profil du joueur (dossier 20) : la barre d'XP, le niveau, et le paquet
     // que chaque palier franchi fait ouvrir au hasard.
     profil: profilJoueur, barreXp, boostersEnAttente: paquetsDePalierEnAttente,
@@ -7599,7 +7605,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const decksJouablesHistoire = decksTous.filter((deck) => deckSeJoue(deck, collection));
     const deckActifHistoire = decksJouablesHistoire.find((deck) => deck.id === deckSelectionneId) ?? decksJouablesHistoire[0] ?? deckParDefaut();
     return (
-      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onContextMenu={neutraliserMenuContextuel}>
+      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <EffetsSprite />
         {ecran === 'bab-el' ? (
           <RpgStoryBabEl
@@ -7629,6 +7635,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onFermer={fermerMonteeNiveau}
           onPlaySfx={jouerSfx}
         />
+        {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} furieDeclenchee={Boolean(apercuAppuiFurie)} statsFurie={apercuAppuiFurie} effetsEpuises={apercuAppuiEffetsEpuises} onFermer={fermerApercuAppui} />}
+        {apercuCatalogue && (
+          <ApercuCarteCatalogue
+            carte={cardById(apercuCatalogue)}
+            armes={cartesDesIds(apercuCatalogueArmes)}
+            prisonniere={apercuCataloguePrisonniere ? cardById(apercuCataloguePrisonniere) : null}
+            furieDeclenchee={Boolean(apercuCatalogueFurie)}
+            statsFurie={apercuCatalogueFurie}
+            effetsEpuises={apercuCatalogueEffetsEpuises}
+            surface={apercuCatalogueSurface}
+            onFermer={fermerApercuCatalogue}
+          />
+        )}
       </div>
     );
   }
@@ -7683,6 +7702,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           ouverture={ouvertureSouk}
           onOuvrirBooster={acheterBooster}
           onOuvrirCoffret={acheterCoffret}
+          onAcheterCarteDirecte={acheterCarteDirecte}
+          onRafraichirEtal={rafraichirEtal}
           onFermerOuverture={fermerOuverture}
           profil={profilJoueur}
           barreXp={barreXp}

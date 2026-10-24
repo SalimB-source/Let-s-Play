@@ -14,9 +14,29 @@ import { useSablierBourse } from '../src/games/useSablierBourse.js';
 import { RPG_BOURSE_STORAGE_KEY } from '../src/games/rpgCredits.js';
 import { RPG_GRAINE_STORAGE_KEY, RPG_QUETES_STORAGE_KEY, QUETES, queteParId } from '../src/games/rpgQuetes.js';
 import { XP } from '../src/games/rpgProfil.js';
-import { cardById } from '../src/games/rpgCards.js';
+import { RPG_DUEL_CARDS, cardById, cardColors } from '../src/games/rpgCards.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const KIND_PAR_TYPE = {
+  'creature-invoquee': 'creature',
+  'magie-lancee': 'magie',
+  'arme-jouee': 'arme',
+};
+
+/** Un geste réel pour n'importe quelle quête tirée ce jour-là. */
+function evenementPour(quete) {
+  const { type, couleur } = quete.ecoute ?? {};
+  if (type === 'degats-infliges') return { type, montant: quete.objectif };
+  if (type === 'duel-gagne') return { type, mode: 'libre' };
+  if (type === 'etage-deblaye') return { type, etageId: 'listes-2', premiere: true };
+  if (type === 'booster-ouvert') return { type, rayonId: 'souk' };
+  const kind = KIND_PAR_TYPE[type];
+  const carte = type === 'carte-jouee'
+    ? RPG_DUEL_CARDS.find((candidat) => cardColors(candidat).includes(couleur))
+    : RPG_DUEL_CARDS.find((candidat) => candidat.kind === kind);
+  return carte ? { type, cardId: carte.id } : null;
+}
 
 /**
  * Une sonde : le hook, et de quoi déclencher ses gestes depuis le test. Elle
@@ -127,13 +147,17 @@ export async function checkRpgSouk(assert) {
     assert.ok(window.localStorage.getItem(RPG_BOURSE_STORAGE_KEY), 'la bourse est écrite sur l’appareil');
 
     // ── Une journée finie se réclame : la quête, puis le Cachet ─────────────
-    // On force une quête du jour à son objectif par les gestes du contrat.
+    // On force une quête du jour à son objectif par les gestes du contrat. Le
+    // tirage quotidien ne promet pas une quête de duel : on utilise celui qui
+    // est réellement au programme plutôt que de faire dépendre le smoke du jour.
     const cible = bourse.quetes.quetes
       .map((id) => queteParId(id))
-      .find((quete) => quete.ecoute.type === 'duel-gagne');
-    assert.ok(cible, `une quête de duel est au programme du jour (${bourse.quetes.quetes.join(', ')})`);
-    for (let coup = 0; coup < cible.objectif; coup += 1) {
-      await act(async () => bourse.noterEvenementDuel({ type: 'duel-gagne', mode: 'libre' }));
+      .find((quete) => evenementPour(quete));
+    assert.ok(cible, `une quête actionnable est au programme du jour (${bourse.quetes.quetes.join(', ')})`);
+    const gesteCible = evenementPour(cible);
+    const repetitions = cible.ecoute.montant ? 1 : cible.objectif;
+    for (let coup = 0; coup < repetitions; coup += 1) {
+      await act(async () => bourse.noterEvenementDuel(gesteCible));
     }
     assert.ok(bourse.aReclamer >= 1, `la pastille signale ${bourse.aReclamer} réclamation(s)`);
     assert.equal(Number(sonde().bourseAReclamer), bourse.aReclamer, 'et le menu affiche le même chiffre');
