@@ -30,9 +30,12 @@ import {
   etapesDeLaSerie, joursAvantLeCachetDeLaSemaine, secondesAvantMinuit, vueDeLaQuete,
 } from './rpgQuetes.js';
 import { COFFRET, TAUX, etatRayons, rayonParId } from './rpgBoosters.js';
-import { cardById } from './rpgCards.js';
+import { cardById, cardRarityInfo, cardTypeLine } from './rpgCards.js';
+import { nombreExemplaires } from './rpgCollection.js';
+import { SOUK_DIRECT_REGLES, prixCarteDirecte } from './rpgSoukDirect.js';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
+import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 
 /** Les paliers, tels que le joueur les lit (le module les nomme en interne). */
 const PALIERS = Object.freeze({ facile: 'Facile', moyenne: 'Moyenne', difficile: 'Difficile' });
@@ -256,6 +259,64 @@ function PaquetDuRayon({ rayon, index, ferme, prix, refus, onOuvrir, cardArt }) 
   );
 }
 
+/** Une carte de l'étal quotidien : sa face, son stock et son prix à l'unité. */
+function CarteDeLEtal({ id, collection, possedee, achetee, credits, cardArt, onAcheter }) {
+  const carte = cardById(id);
+  if (!carte) return null;
+  const rarete = cardRarityInfo(carte);
+  const prix = prixCarteDirecte(carte);
+  const exemplaires = nombreExemplaires(collection, id);
+  const assez = credits >= prix;
+  const etat = achetee ? 'achetee' : possedee ? 'possedee' : !assez ? 'sans-solde' : 'disponible';
+  const titre = achetee
+    ? `${carte.name} a rejoint votre collection en un exemplaire`
+    : possedee
+      ? `${carte.name} est déjà dans votre collection`
+      : !assez
+        ? `Il manque ${creditsLisible(prix - credits)} crédits`
+        : `Acheter un exemplaire de ${carte.name} pour ${prix} crédits`;
+  return (
+    <li
+      className={`rpg-souk__direct-carte is-${rarete.key} is-${etat}`}
+      data-card-id={carte.id}
+      data-souk-direct-carte={carte.id}
+      data-souk-direct-etat={etat}
+      data-souk-direct-rarete={rarete.key}
+      data-souk-direct-prix={prix}
+      title={`${carte.name} — clic droit pour ouvrir la fiche`}
+    >
+      <div className="rpg-souk__direct-art">
+        <img src={cardArt?.(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
+        <span className="rpg-souk__direct-rarete">{rarete.label}</span>
+        <RpgCardCopyBadge nombre={exemplaires} className="rpg-souk__direct-copies" />
+      </div>
+      <div className="rpg-souk__direct-corps">
+        <h4>{carte.name}</h4>
+        <p>{cardTypeLine(carte)}</p>
+      </div>
+      <button
+        type="button"
+        className="rpg-menu-button rpg-souk__direct-acheter"
+        data-souk-direct-acheter={carte.id}
+        disabled={etat !== 'disponible'}
+        title={titre}
+        aria-label={titre}
+        onClick={() => onAcheter?.(carte.id)}
+      >
+        {achetee ? 'Achetée · 1 exemplaire' : possedee ? 'Déjà possédée' : (
+          <>
+            Acheter · {creditsLisible(prix)} <RpgCreditIcon />
+            <span className="sr-only">crédits, un exemplaire</span>
+          </>
+        )}
+      </button>
+      {etat === 'sans-solde' && (
+        <p className="rpg-souk__direct-refus">Il manque {creditsLisible(prix - credits)} <RpgCreditIcon /></p>
+      )}
+    </li>
+  );
+}
+
 export default function RpgSouk({
   quetes = null,
   credits = 0,
@@ -270,6 +331,8 @@ export default function RpgSouk({
   onReclamerSemaine,
   onOuvrirBooster,
   onOuvrirCoffret,
+  onAcheterCarteDirecte,
+  onRafraichirEtal,
   onFermerOuverture,
   onExit,
   onPlaySfx,
@@ -288,6 +351,7 @@ export default function RpgSouk({
   const [soldePop, setSoldePop] = useState(false);
   const [cachetSlam, setCachetSlam] = useState(false);
   const [semaineSlam, setSemaineSlam] = useState(false);
+  const [etalMessage, setEtalMessage] = useState(null);
 
   /** La fête d'une récompense : des pièces du bouton jusqu'au solde, et le
       solde qui fait un pop. Rien ne s'anime si l'utilisateur a demandé le
@@ -320,6 +384,11 @@ export default function RpgSouk({
   const joursDeLaSerie = etapesDeLaSerie(quetes);
   const journal = Array.isArray(portefeuille?.journal) ? portefeuille.journal : [];
   const jouees = portefeuille?.ouvertures ?? 0;
+  const etal = portefeuille?.etal ?? { jour: quetes?.jour ?? null, cartes: [], achetees: [], rafraichissements: 0 };
+  const offresDirect = Array.isArray(etal.cartes) ? etal.cartes : [];
+  const collectionDirect = Array.isArray(collection) ? collection : (portefeuille?.cartes ?? []);
+  const possedeesDirect = new Set(collectionDirect);
+  const rafraichissementUtilise = etal.rafraichissements >= SOUK_DIRECT_REGLES.rafraichissementsParJour;
   const sync = statutSync === 'synchronise'
     ? '☁ Synchronisé avec votre compte'
     : statutSync === 'attente'
@@ -336,6 +405,34 @@ export default function RpgSouk({
       setCachetSlam(true);
       window.setTimeout(() => setCachetSlam(false), 700);
     }
+  };
+
+  const acheterDansEtal = (cardId) => {
+    const resultat = onAcheterCarteDirecte?.(cardId);
+    if (resultat?.ok) {
+      setEtalMessage({ ok: true, texte: `${resultat.carte.name} rejoint votre collection — 1 exemplaire.` });
+      onPlaySfx?.(resultat.carte.rarity === 'mythique' ? 'victoire' : 'card_draw');
+      return;
+    }
+    const messages = {
+      'deja-achetee': 'Cette carte a déjà été achetée dans cet étal.',
+      'deja-possedee': 'Cette carte est déjà dans votre collection.',
+      'solde-insuffisant': 'Votre bourse ne contient pas assez de crédits.',
+      'hors-etal': 'Cette carte ne fait plus partie de la sélection du jour.',
+    };
+    setEtalMessage({ ok: false, texte: messages[resultat?.raison] ?? 'L’achat n’est pas disponible pour le moment.' });
+    onPlaySfx?.('erreur');
+  };
+
+  const rafraichirEtal = () => {
+    const resultat = onRafraichirEtal?.();
+    if (resultat?.ok) {
+      setEtalMessage({ ok: true, texte: 'Le marchand propose cinq nouvelles cartes. À demain pour le prochain rafraîchissement.' });
+      onPlaySfx?.('page_turn');
+      return;
+    }
+    setEtalMessage({ ok: false, texte: 'Le rafraîchissement du jour a déjà été utilisé.' });
+    onPlaySfx?.('erreur');
   };
 
   return (
@@ -468,6 +565,63 @@ export default function RpgSouk({
             );
           })}
         </ul>
+      </section>
+
+      <section
+        className="rpg-souk__section rpg-souk__direct"
+        aria-labelledby="souk-direct-titre"
+        data-souk-direct
+        data-souk-direct-jour={etal.jour ?? undefined}
+        data-souk-direct-rafraichissements={etal.rafraichissements ?? 0}
+      >
+        <div className="rpg-souk__section-tete">
+          <div>
+            <h3 id="souk-direct-titre">Les cartes à l’unité</h3>
+            <p>
+              {SOUK_DIRECT_REGLES.cartesParJour} cartes chaque jour · Rare {SOUK_DIRECT_REGLES.prix.rare} <RpgCreditIcon /> · Mythique {SOUK_DIRECT_REGLES.prix.mythique} <RpgCreditIcon />
+            </p>
+          </div>
+          <button
+            type="button"
+            className="rpg-menu-button rpg-souk__direct-rafraichir"
+            data-souk-direct-rafraichir
+            disabled={rafraichissementUtilise || offresDirect.length !== SOUK_DIRECT_REGLES.cartesParJour}
+            title={rafraichissementUtilise ? 'Sélection déjà rafraîchie : revenez demain' : 'Remplacer les cinq cartes — une seule fois aujourd’hui'}
+            onClick={rafraichirEtal}
+          >
+            {rafraichissementUtilise ? 'Rafraîchissement utilisé' : 'Rafraîchir la sélection'}
+          </button>
+        </div>
+        <p className="rpg-souk__direct-resume">
+          Choisissez exactement la carte qu’il vous manque. Chaque achat ajoute <strong>un seul exemplaire</strong> à votre collection.
+        </p>
+        {offresDirect.length ? (
+          <ul className="rpg-souk__direct-cartes" data-souk-direct-cartes={offresDirect.length}>
+            {offresDirect.map((id) => (
+              <CarteDeLEtal
+                key={`${etal.jour}-${etal.rafraichissements}-${id}`}
+                id={id}
+                collection={collectionDirect}
+                possedee={possedeesDirect.has(id)}
+                achetee={etal.achetees?.includes(id) ?? false}
+                credits={credits}
+                cardArt={cardArt}
+                onAcheter={acheterDansEtal}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p className="rpg-souk__vide" data-souk-direct-vide>Le marchand prépare les cinq cartes du jour.</p>
+        )}
+        {etalMessage && (
+          <p className={`rpg-souk__direct-message${etalMessage.ok ? ' is-ok' : ' is-erreur'}`} role="status" data-souk-direct-message>
+            {etalMessage.texte}
+          </p>
+        )}
+        <footer className="rpg-souk__direct-pied">
+          <span>{rafraichissementUtilise ? 'Nouvelle sélection et rafraîchissement disponibles demain.' : 'Un rafraîchissement gratuit reste disponible aujourd’hui.'}</span>
+          <span>Clic droit ou appui long sur une carte pour l’agrandir.</span>
+        </footer>
       </section>
 
       <section className="rpg-souk__cachet" data-souk-cachet={cachet}>

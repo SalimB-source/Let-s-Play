@@ -85,13 +85,63 @@ export const GAINS = Object.freeze({
  *  qu'une fois. `toursPayees` retient de même les tours dont le butin a déjà
  *  été versé : les étages se rejouent, le butin ne tombe qu'une fois. */
 export function portefeuilleVide() {
-  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], tutoriels: [], toursPayees: [], majLe: null };
+  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], tutoriels: [], toursPayees: [], etal: etalVide(), majLe: null };
 }
 
 /** Entier positif ou nul, quelle que soit l'entrée (chaîne, `NaN`, négatif). */
 function entierPositif(valeur) {
   const nombre = Math.floor(Number(valeur));
   return Number.isFinite(nombre) && nombre > 0 ? nombre : 0;
+}
+
+/** L'étal de cartes à l'unité avant sa première ouverture. */
+export function etalVide() {
+  return { jour: null, cartes: [], achetees: [], rafraichissements: 0, majLe: null };
+}
+
+/** Identifiants vendables à l'unité, sans doublon et avec une mémoire bornée. */
+function idsCartesDirectes(value, limite) {
+  return normaliserCollection(value).filter((id) => {
+    const carte = cardById(id);
+    return carte && carte.kind !== 'terrain' && ['rare', 'mythique'].includes(cardRarityInfo(carte).key);
+  }).slice(0, limite);
+}
+
+/**
+ * Normalise l'étal quotidien transporté par le portefeuille. Les achats des
+ * deux tirages du jour restent mémorisés (cinq + cinq au maximum), tandis que
+ * les offres courantes ne dépassent jamais cinq cartes.
+ */
+export function normaliserEtal(value) {
+  const brut = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const jour = typeof brut.jour === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(brut.jour) ? brut.jour : null;
+  const majLe = typeof brut.majLe === 'string' && Number.isFinite(Date.parse(brut.majLe)) ? brut.majLe : null;
+  return {
+    jour,
+    cartes: idsCartesDirectes(brut.cartes, 5),
+    achetees: idsCartesDirectes(brut.achetees, 10),
+    rafraichissements: Math.min(1, entierPositif(brut.rafraichissements)),
+    majLe,
+  };
+}
+
+/**
+ * Fusion compte/appareil de l'étal : le jour le plus récent gagne ; à jour
+ * égal, le tirage rafraîchi remplace le tirage initial et les achats s'unissent.
+ * Un vieil appareil ne peut donc ni rendre un rafraîchissement ni rouvrir hier.
+ */
+export function fusionnerEtals(local, distant) {
+  const ici = normaliserEtal(local);
+  const la = normaliserEtal(distant);
+  if (ici.jour !== la.jour) return (ici.jour ?? '') >= (la.jour ?? '') ? ici : la;
+  const source = ici.rafraichissements === la.rafraichissements
+    ? ((ici.majLe ?? '') >= (la.majLe ?? '') ? ici : la)
+    : (ici.rafraichissements > la.rafraichissements ? ici : la);
+  return {
+    ...source,
+    achetees: idsCartesDirectes([...ici.achetees, ...la.achetees], 10),
+    rafraichissements: Math.max(ici.rafraichissements, la.rafraichissements),
+  };
 }
 
 /**
@@ -110,6 +160,7 @@ export function normaliserPortefeuille(value) {
     journal: normaliserJournal(brut.journal),
     tutoriels: normaliserTutoriels(brut.tutoriels),
     toursPayees: normaliserToursPayees(brut.toursPayees),
+    etal: normaliserEtal(brut.etal),
     majLe: typeof brut.majLe === 'string' ? brut.majLe : null,
   };
 }
@@ -398,6 +449,7 @@ export function fusionnerPortefeuilles(local, distant) {
     journal: normaliserJournal([...ici.journal, ...la.journal]),
     tutoriels: normaliserTutoriels([...ici.tutoriels, ...la.tutoriels]),
     toursPayees: normaliserToursPayees([...ici.toursPayees, ...la.toursPayees]),
+    etal: fusionnerEtals(ici.etal, la.etal),
     majLe: (ici.majLe ?? '') >= (la.majLe ?? '') ? ici.majLe : la.majLe,
   };
   const modifie = JSON.stringify(fusion) !== JSON.stringify(ici);

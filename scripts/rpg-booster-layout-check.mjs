@@ -1,4 +1,4 @@
-/** Browser regression for booster artwork ratios and stretched status stamps.
+/** Browser regression for bare 3D booster faces, artwork ratios, copy badges and compact status stamps.
  * Run: node scripts/rpg-booster-layout-check.mjs
  * Requires Playwright Chromium, or CHROMIUM_EXECUTABLE_PATH.
  * Interactive preview with real artwork: npm run preview:rpg-booster (no browser install).
@@ -37,7 +37,7 @@ window.renderBooster = (count) => root.render(React.createElement(RpgBoosterOuve
   onFermer: () => { window.fermetures++; if (${preview}) root.render(null); },
   ouverture: {
     prix: 140, nouvelles: 3, remboursement: 44, coffret: count > 5, paquets: count / 5,
-    cartes: Array.from({ length: count }, (_, i) => ({ id: ids[i % 5], doublon: i % 5 > 2, remboursement: 22 })),
+    cartes: Array.from({ length: count }, (_, i) => ({ id: ids[i % 5], doublon: i % 5 > 2, remboursement: 22, exemplaires: i % 5 > 2 ? 2 : 1 })),
   },
   cardArt: (card) => ${preview} ? '/cards/' + cardArtId(card) + '.jpg' : 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="176" height="' + (card.id === 'leviathan' ? 320 : 220) + '"><rect width="100%" height="100%" fill="#806535"/></svg>'),
 }));
@@ -103,22 +103,29 @@ async function checkLayout() {
           const rect = (selector) => node.querySelector(selector).getBoundingClientRect().toJSON();
           return {
             card: node.getBoundingClientRect().toJSON(), art: rect('.rpg-souk__carte-art'),
-            body: rect('.rpg-souk__carte-corps'), stamp: rect('.rpg-souk__carte-tampon'),
+            copies: rect('[data-card-copies]'), stamp: rect('.rpg-souk__carte-tampon'),
+            cardId: node.dataset.cardId,
+            copiesValue: node.querySelector('[data-card-copies]')?.dataset.cardCopies,
+            description: Boolean(node.querySelector('.rpg-souk__carte-corps, h4')),
           };
         }));
         for (const card of cards) {
           assert.ok(Math.abs(card.art.width / card.art.height - 176 / 238) < .01, 'common artwork ratio');
-          assert.ok(card.body.bottom <= card.stamp.top, 'text does not overlap stamp');
-          assert.ok(card.stamp.height >= 32 && card.stamp.height <= 34, 'status stamp stays compact');
+          assert.equal(card.description, false, 'the revealed face has no name or description');
+          assert.ok(card.cardId, 'the revealed face is connected to right-click preview');
+          assert.ok(Number(card.copiesValue) >= 1, 'the owned-copy badge is visible');
+          assert.ok(card.copies.top >= card.art.top - 1 && card.copies.right <= card.art.right + 1, 'badge stays on the artwork');
+          assert.ok(card.stamp.bottom <= card.art.bottom + 1, 'status stamp stays on the artwork');
+          assert.ok(card.stamp.height >= 24 && card.stamp.height <= 30, 'status stamp stays compact');
           assert.ok(card.card.left >= 0 && card.card.right <= width, 'card stays within viewport');
           const row = cards.filter((other) => Math.abs(other.card.top - card.card.top) < 1);
           for (const other of row) {
-            for (const edge of [other.art.bottom - card.art.bottom, other.body.top - card.body.top, other.stamp.top - card.stamp.top]) {
-              assert.ok(Math.abs(edge) < 1, 'artwork, text and stamps align within each row');
+            for (const edge of [other.art.bottom - card.art.bottom, other.copies.top - card.copies.top, other.stamp.top - card.stamp.top]) {
+              assert.ok(Math.abs(edge) < 1, `artwork, badges and stamps align within each row (${count} cards, ${width}px, edge ${edge})`);
             }
           }
         }
-        console.log(`✓ ${count} cards at ${width}px: uniform art, aligned text and compact stamps`);
+        console.log(`✓ ${count} cards at ${width}px: bare 3D faces, aligned copy badges and compact stamps`);
       }
     }
     // Real-time choreography, not just CSS/source assertions.

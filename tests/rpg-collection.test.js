@@ -14,6 +14,7 @@ import {
   chargerCollectionDistante,
   collectionJoueur,
   exemplairesPossedables,
+  nombreExemplaires,
   figerAcquisitions,
   fusionnerAcquisitions,
   fusionnerCollections,
@@ -226,6 +227,15 @@ test('exemplairesPossedables suit les quotas de rareté et la possession', () =>
   const avecKraken = fusionnerCollections(COLLECTION_DEPART, ['kraken']);
   assert.equal(exemplairesPossedables(avecKraken, 'kraken'), 1, 'mythique : un exemplaire');
   assert.equal(exemplairesPossedables(COLLECTION_DEPART, 'petra'), 0, 'Pétra verrouillée au départ');
+});
+
+test('nombreExemplaires compte le stock acquis pour les pastilles', () => {
+  assert.equal(nombreExemplaires(COLLECTION_DEPART, 'chien-du-guet'), 2, 'la dotation contient son playset');
+  assert.equal(nombreExemplaires(COLLECTION_DEPART, 'kraken'), 0, 'une carte absente reste à zéro');
+  const avecAcquisitions = fusionnerCollections(COLLECTION_DEPART, ['kraken', 'scribe-de-la-liste']);
+  assert.equal(nombreExemplaires(avecAcquisitions, 'kraken'), 1, 'une mythique acquise compte pour une');
+  assert.equal(nombreExemplaires(avecAcquisitions, 'scribe-de-la-liste'), 1, 'une rare acquise compte pour une aussi');
+  assert.equal(nombreExemplaires(avecAcquisitions, 'chien-du-guet'), 2, 'la dotation ne perd pas ses exemplaires');
 });
 
 // ── Cache des apports du compte ──────────────────────────────────────────────

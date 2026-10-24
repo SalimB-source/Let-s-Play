@@ -7258,6 +7258,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #fff9ea;
   text-shadow: 0 1px 2px #000, 0 0 3px #000;
 }
+.rpg-card-catalogue__copies {
+  position: absolute;
+  z-index: 3;
+  left: 8px;
+  bottom: 8px;
+}
 .rpg-card-catalogue__details { display: grid; gap: 7px; padding: 11px 12px 13px; }
 .rpg-card-catalogue__title { display: flex; align-items: start; justify-content: space-between; gap: 7px; }
 .rpg-card-catalogue__title h3 { min-width: 0; margin: 0; color: #fff0d4; font: 700 15px/1.17 Georgia, serif; }

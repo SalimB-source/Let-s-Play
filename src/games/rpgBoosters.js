@@ -46,7 +46,7 @@
  */
 
 import { carteJouableSansTerrain, RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardColors, cardRarityInfo } from './rpgCards.js';
-import { COLLECTION_DEPART, RPG_REVELATIONS_PAR_ETAGE, cartesReveleesParEtage, collectionJoueur } from './rpgCollection.js';
+import { COLLECTION_DEPART, RPG_REVELATIONS_PAR_ETAGE, cartesReveleesParEtage, collectionJoueur, nombreExemplaires } from './rpgCollection.js';
 import { RPG_STORY_TOURS, etageHistoireParId, tousLesEtages } from './rpgStoryTours.js';
 import {
   ajouterCartesAuPortefeuille,
@@ -483,6 +483,9 @@ function detaillerTirage(cartes, collection) {
       rarete: cardRarityInfo(carte).key,
       doublon,
       remboursement: doublon ? creditsDeDoublons([id]) : 0,
+      // Stock après rangement de cette carte : la pastille de la cérémonie
+      // affiche ainsi 1 pour une nouvelle acquisition, sans relire le stockage.
+      exemplaires: nombreExemplaires([...possedees, id], id),
     };
   });
   return { details, remboursement: details.reduce((somme, carte) => somme + carte.remboursement, 0) };
