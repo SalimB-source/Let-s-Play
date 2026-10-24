@@ -7356,10 +7356,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => hote.removeAttribute('data-apercu-source');
   }, [apercuAppui, apercuCatalogue]);
 
-  // En portrait, l'écran de rotation reprend la main : plus rien à consulter.
+  // En portrait, l'écran de rotation du duel reprend la main : plus rien à
+  // consulter sur la table. Les cartes du Souk et des autres menus gardent
+  // leur aperçu tactile, puisqu'aucun écran de rotation ne les recouvre.
   useEffect(() => {
-    if (viewport.portrait && apercuAppui) fermerApercuAppui();
-  }, [viewport.portrait, apercuAppui]);
+    if (ecran === 'partie' && viewport.portrait && apercuAppui) fermerApercuAppui();
+  }, [ecran, viewport.portrait, apercuAppui, fermerApercuAppui]);
 
   // « M » coupe ou rend la musique (en partie comme hors parties).
   useEffect(() => {

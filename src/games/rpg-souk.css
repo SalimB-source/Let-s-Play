@@ -924,7 +924,7 @@
 .rpg-souk__ceremonie-tete .rpg-souk__ceremonie-aide { margin-top: 7px; color: rgba(247, 237, 218, .44); font: 700 9px/1.45 var(--mono, monospace); letter-spacing: .04em; }
 .rpg-souk__ceremonie-cartes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(9px, 1.4vw, 14px);
   margin: 0;
   padding: 0;
@@ -1136,10 +1136,9 @@
   .rpg-souk__journal li { grid-template-columns: auto minmax(0, 1fr); }
   .rpg-souk__journal-cartes { grid-column: 1 / -1; }
   .rpg-souk__journal-notes { grid-column: 1 / -1; }
-  /* Cinquante cartes ne tiennent pas dans une colonne : hors portrait, la
-     cérémonie passe en deux colonnes serrées et se fait défiler — le portrait
-     gagne ses trois colonnes plus bas. */
-  .rpg-souk__ceremonie-cartes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  /* Trois colonnes sur téléphone aussi : seules les gouttières se resserrent,
+     les cartes nues gardent leur lecture en rangées de trois. */
+  .rpg-souk__ceremonie-cartes { gap: 8px; }
   .rpg-souk__ceremonie-pied .rpg-menu-button { flex: 1 1 100%; }
 }
 /* Un seul paquet de front : les prix et les boutons gardent leur taille au
@@ -1155,17 +1154,12 @@
 }
 @media (max-width: 480px) {
   .rpg-souk__quetes { grid-template-columns: minmax(0, 1fr); }
-  .rpg-souk__ceremonie-cartes { grid-template-columns: minmax(0, 1fr); }
   .rpg-souk__quete-pied .rpg-menu-button { flex: 1 1 100%; }
   .rpg-souk__section-tete { align-items: flex-start; }
 }
-/* Sur téléphone tenu en portrait, les cartes ouvertes s'ouvrent en trois
-   colonnes : même les cinquante cartes d'un coffret se lisent d'un coup d'œil,
-   et la grille se fait défiler verticalement. La règle vient après les paliers
-   ci-dessus : c'est elle qui décide en portrait. */
-@media (max-width: 640px) and (orientation: portrait) {
-  .rpg-souk__ceremonie-cartes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
+/* Les cartes ouvertes restent en trois colonnes à toutes les tailles : même
+   les cinquante cartes d'un coffret se lisent en rangées régulières, et la
+   grille se fait défiler verticalement sur téléphone. */
 
 /* Le mouvement ne sert à rien : la barre se pose d'un coup. */
 @media (max-width: 420px) {
