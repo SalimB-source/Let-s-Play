@@ -376,8 +376,50 @@
   0%, 100% { box-shadow: 0 0 10px rgba(246, 211, 122, .3), inset 0 0 12px rgba(246, 211, 122, .14); }
   50% { box-shadow: 0 0 22px rgba(246, 211, 122, .55), inset 0 0 20px rgba(246, 211, 122, .28); }
 }
+/* ── La carte qui attend sa case ─────────────────────────────────────────────
+   Depuis le choix de l'emplacement, un clic sur une créature ne la pose plus
+   d'office : elle attend qu'on désigne une case. Ce temps d'attente garde le
+   geste vivant, sans quoi le clic paraît sans effet :
+
+   - la carte se **soulève** hors de l'éventail, plus haut que le survol, et
+     son halo doré **respire** (`rpg-pose-attente`) ;
+   - la rangée du joueur s'éclaire par le bas (`rpg-choix-emplacement-table`) ;
+   - les cases libres battent (`rpg-emplacement-choix-pulse`).
+
+   Choisir une case rend la carte au vol (`demarrerVolCarte`) : toute la chaîne
+   d'arrivée — trajectoire, impact de la carte, poussière, effet d'arrivée —
+   rejoue alors exactement comme avant. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand__card.is-pose-en-cours {
+  --hand-fan-lift: 54px;
+  --hand-fan-scale: 1.09;
+}
+.rpg-hand__card.is-pose-en-cours { z-index: 11; }
+.rpg-hand__card.is-pose-en-cours,
+.rpg-hand__card.is-pose-en-cours:hover { animation: rpg-pose-attente 1.15s ease-in-out infinite; }
+@keyframes rpg-pose-attente {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(246, 211, 122, .92), 0 0 18px rgba(246, 211, 122, .42); }
+  50% { box-shadow: 0 0 0 3px #ffe9a8, 0 0 34px rgba(246, 211, 122, .78); }
+}
+.card-table.is-choix-emplacement .card-row--equipe .rpg-creature-slots {
+  border-radius: 12px;
+  animation: rpg-choix-emplacement-table 1.9s ease-in-out infinite;
+}
+@keyframes rpg-choix-emplacement-table {
+  0%, 100% { box-shadow: inset 0 -16px 30px rgba(246, 211, 122, .1); }
+  50% { box-shadow: inset 0 -18px 40px rgba(246, 211, 122, .26); }
+}
 @media (prefers-reduced-motion: reduce) {
   .rpg-creature-slot--choix { animation: none; }
+  /* Le mouvement s'arrête, la lumière reste : halo fixe, carte levée. */
+  .rpg-hand__card.is-pose-en-cours,
+  .rpg-hand__card.is-pose-en-cours:hover {
+    animation: none;
+    box-shadow: 0 0 0 3px #f6d37a, 0 0 26px rgba(246, 211, 122, .55);
+  }
+  .card-table.is-choix-emplacement .card-row--equipe .rpg-creature-slots {
+    animation: none;
+    box-shadow: inset 0 -18px 34px rgba(246, 211, 122, .18);
+  }
 }
 /* Repères de raccourcis clavier PC sur la colonne d'actions (sans modifier
    textContent) et aura de menace létale sur la plaque du sorcier adverse. */

@@ -215,6 +215,11 @@ export async function checkRpgMulligan(assert) {
   const jouable = q(`.rpg-hand__card[data-card-id="${jouableId}"]`);
   assert.equal(jouable?.dataset.jouable, 'true', 'une créature à un mana devient jouable dès la table rendue');
   await click(jouable, 'poser la créature');
+  // Une créature cliquée attend sa case : le joueur désigne l'emplacement, et
+  // c'est ce clic-là qui lance le vol vers la table.
+  const caseLibre = q('.rpg-creature-slot--choix');
+  assert.ok(caseLibre, 'le clic ouvre le choix de l’emplacement');
+  await click(caseLibre, 'choisir la première case libre');
   // La carte vole vers la table : le geste n'est résolu qu'à l'atterrissage.
   await act(async () => { await wait(900); });
   assert.ok(q(`.card-row--equipe .rpg-card[data-card-id="${jouableId}"]`),

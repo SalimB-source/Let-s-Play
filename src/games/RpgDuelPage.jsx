@@ -680,7 +680,7 @@ export function FluxManaTrack({ camp, cote, carteApercu = null }) {
  * posent la créature en attente sur la case choisie. Une case occupée ne se
  * désigne jamais : échanger une créature contre une autre passe par le
  * sacrifice du plateau plein (`sacrificeEnCours`), pas par ici. */
-export function CreatureSlots({ camp, cote, choixEmplacement = false, nomCartePose = null, onChoisirEmplacement = null, emplacementSurvole = null }) {
+export function CreatureSlots({ camp, cote, choixEmplacement = false, nomCartePose = null, onChoisirEmplacement = null, onSurvolEmplacement = null, emplacementSurvole = null }) {
   // Chaque créature garde sa case : une case vidée par une mort reste vide
   // au milieu de la rangée, les autres ne glissent pas pour la combler.
   const cases = rpgEmplacementsChamp(camp);
@@ -706,6 +706,10 @@ export function CreatureSlots({ camp, cote, choixEmplacement = false, nomCartePo
               data-creature-slot-occupe="false"
               data-creature-slot-choix="true"
               onClick={() => onChoisirEmplacement(index)}
+              onPointerEnter={() => onSurvolEmplacement?.(index)}
+              onPointerLeave={() => onSurvolEmplacement?.(null)}
+              onFocus={() => onSurvolEmplacement?.(index)}
+              onBlur={() => onSurvolEmplacement?.(null)}
               aria-label={`Poser ${nomCartePose ?? 'la créature choisie'} sur l’emplacement ${index + 1}`}
             >
               <span className="rpg-creature-slot__numero">{index + 1}</span>
@@ -11151,6 +11155,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               choixEmplacement={Boolean(poseEnCours)}
               nomCartePose={poseEnCours ? cardById(poseEnCours.carteId)?.name ?? null : null}
               onChoisirEmplacement={choisirEmplacement}
+              onSurvolEmplacement={setEmplacementSurvole}
               emplacementSurvole={emplacementSurvole}
             />
           )}

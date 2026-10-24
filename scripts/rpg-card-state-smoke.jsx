@@ -62,10 +62,15 @@ async function avecDuel(assert, props, scenario, { mobile = false } = {}) {
   };
   const hand = (id) => container.querySelector(`.rpg-hand__card[data-card-id="${id}"]`);
   const camp = (cote, id) => [...container.querySelectorAll(`.card-row--${cote} .rpg-card${id ? `[data-card-id="${id}"]` : ''}`)];
+  // Jouer une carte : la cliquer. Une créature ouvre alors le choix de sa case
+  // (mode sans terrains) : on clique la première case libre, comme le joueur.
+  // Le sort, lui, passe par sa fenêtre de confirmation.
   const jouer = async (id) => {
     const carte = hand(id);
     assert.equal(carte?.dataset.jouable, 'true', `${id} est jouable`);
     await click(carte);
+    const boutonCase = container.querySelector('.rpg-creature-slot--choix');
+    if (boutonCase) await click(boutonCase);
     const confirmer = container.querySelector('.rpg-spell-confirm .rpg-btn--primary');
     if (confirmer) await click(confirmer);
   };
