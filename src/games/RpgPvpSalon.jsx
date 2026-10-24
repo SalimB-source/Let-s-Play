@@ -463,11 +463,6 @@ export default function RpgPvpSalon() {
                   <span className="rpg-pvp__mode-titre">Direct</span>
                   <span className="rpg-pvp__mode-desc">Les deux joueurs sont là, 90 s par tour.</span>
                 </label>
-                <label className={`rpg-pvp__mode-option${mode === 'async' ? ' is-active' : ''}`}>
-                  <input type="radio" name="pvp-mode" checked={mode === 'async'} onChange={() => setMode('async')} />
-                  <span className="rpg-pvp__mode-titre">À la correspondance</span>
-                  <span className="rpg-pvp__mode-desc">Chacun joue quand il peut, sans pendule.</span>
-                </label>
               </div>
             </section>
 

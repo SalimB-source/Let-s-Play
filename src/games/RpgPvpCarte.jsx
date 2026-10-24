@@ -22,7 +22,7 @@ export default function RpgPvpCarte({ message }) {
       <p className="rpg-pvp-carte__eyebrow">DÉFI DU SABLIER</p>
       <p className="rpg-pvp-carte__code">{invitation.code}</p>
       <p className="rpg-pvp-carte__mode">
-        {invitation.mode === 'async' ? 'À la correspondance' : 'En direct'}
+        En direct
         {invitation.deckNom ? ` · ${invitation.deckNom}` : ''}
       </p>
       <Link className="rpg-pvp-carte__cta" to={cheminDefi(invitation.code)}>Rejoindre le duel</Link>

@@ -71,14 +71,10 @@ export const RPG_PVP_SIEGES = ['joueur', 'sorcier'];
  *
  * `live`  : un tour ne dure pas une éternité, mais laisse le temps de lire sa
  *           main sur un téléphone. Au-delà, le serveur joue « fin de tour ».
- * `async` : pas de pendule qui court — seulement un rappel, puis un abandon
- *           technique au bout d'une semaine sans coup.
  * `invitation` : une invitation non acceptée expire au bout de 7 jours.
  */
 export const RPG_PVP_HORLOGES = {
   live: 90 * 1000,
-  rappelAsync: 24 * 60 * 60 * 1000,
-  abandonAsync: 7 * 24 * 60 * 60 * 1000,
   invitation: 7 * 24 * 60 * 60 * 1000,
 };
 
@@ -646,22 +642,13 @@ export function rpgPvpNommerLog(entrees, acteur, noms = {}) {
 }
 
 /**
- * Horloge d'un tour. `mode` vaut `'live'` ou `'async'`.
+ * Horloge d'un tour (mode unique : `live`).
  * Rend `{ echeance, restant, expire, rappel }` — `expire` est ce que le
  * serveur vérifie avant d'accepter une action.
  */
-export function rpgPvpHorloge(mode, dernierCoup, maintenant = Date.now()) {
+export function rpgPvpHorloge(dernierCoup, maintenant = Date.now()) {
   const depart = Number(dernierCoup) || 0;
   if (!depart) return { echeance: null, restant: null, expire: false, rappel: false };
-  if (mode === 'async') {
-    const echeance = depart + RPG_PVP_HORLOGES.abandonAsync;
-    return {
-      echeance,
-      restant: Math.max(0, echeance - maintenant),
-      expire: maintenant >= echeance,
-      rappel: maintenant >= depart + RPG_PVP_HORLOGES.rappelAsync,
-    };
-  }
   const echeance = depart + RPG_PVP_HORLOGES.live;
   return { echeance, restant: Math.max(0, echeance - maintenant), expire: maintenant >= echeance, rappel: false };
 }
