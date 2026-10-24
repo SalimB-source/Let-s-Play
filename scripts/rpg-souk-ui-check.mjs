@@ -180,6 +180,14 @@ assert.match(page, /const exemplaires = nombreExemplaires\(collection, carte\.id
   'le catalogue lit le stock avec la règle de collection');
 assert.match(page, /<RpgCardCopyBadge nombre=\{exemplaires\} className="rpg-card-catalogue__copies" \/>/,
   'chaque vignette du catalogue porte sa pastille');
+const colonnesMarche = [...css.matchAll(/\.rpg-souk__direct-cartes\s*\{([^}]*)\}/g)]
+  .flatMap(([, corps]) => [...corps.matchAll(/grid-template-columns:\s*([^;]+)/g)].map((regle) => regle[1].trim()));
+assert.deepEqual(colonnesMarche, [
+  'repeat(5, minmax(0, 1fr))',
+  'repeat(3, minmax(0, 1fr))',
+], 'le marché garde cinq colonnes sur PC et trois sur les écrans étroits');
+assert.match(css, /@media \(max-width: 980px\), \(orientation: portrait\) \{\s*\.rpg-souk__direct-cartes \{/,
+  'le marché passe à trois colonnes en portrait, quelle que soit la largeur de l’écran');
 
 // 8. Tactile et mouvement : les règles reprises des autres écrans.
 assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'), 'le mouvement se coupe');
