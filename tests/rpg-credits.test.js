@@ -9,7 +9,9 @@ import {
   ajouterExemplaireAuPortefeuille,
   chargerPortefeuille,
   exemplairesDuPortefeuille,
+  fusionnerEtals,
   fusionnerExemplaires,
+  normaliserEtal,
   crediterCredits,
   creditsDeDoublons,
   creditsDeVictoire,
@@ -28,6 +30,7 @@ import {
   sauverPortefeuille,
 } from '../src/games/rpgCredits.js';
 import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
+import { RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 
 /** Remplace `localStorage` le temps d'un test, puis le rétablit. */
 function avecStockage(stockage, test) {
@@ -342,6 +345,36 @@ test('une ouverture avec cartes entre au journal, une ouverture sans cartes non'
   assert.equal(avec.journal[0].coffret, true, 'un paquet de coffret se reconnaît');
   assert.equal(avec.journal[0].mythique, true);
   assert.equal(avec.pitie, 0, 'et la pitié repart, comme avant');
+});
+
+test('la mémoire de l’étal garde les inhabituelles depuis qu’elles s’y vendent', () => {
+  // Le tiroir de l’étal ne retient que ce qui s’y achète. Oublier le palier de
+  // 80 ◈ dans cette liste vidé silencieusement un cinquième de l’étal du jour à
+  // chaque relecture : la carte est proposée, payable, puis disparaît du casier.
+  const inhabituelle = RPG_DUEL_CARDS.find((carte) => carte.kind !== 'terrain'
+    && carte.rarity === 'inhabituelle').id;
+  const etal = {
+    jour: '2026-10-24',
+    cartes: [inhabituelle, 'scribe-de-la-liste', 'tarek'],
+    achetees: [inhabituelle],
+    rafraichissements: 1,
+    majLe: '2026-10-24T10:00:00.000Z',
+  };
+  const relu = normaliserPortefeuille({ cartes: [inhabituelle], exemplaires: { [inhabituelle]: 1 }, etal });
+  assert.deepEqual(relu.etal.cartes, [inhabituelle, 'scribe-de-la-liste', 'tarek'],
+    'les trois offres du jour se relisent telles quelles');
+  assert.deepEqual(relu.etal.achetees, [inhabituelle], 'et l’achat du jour reste comptabilisé');
+  assert.equal(relu.exemplaires[inhabituelle], undefined, 'un seul exemplaire payé reste implicite');
+  // Une commune n’a rien à faire dans cette mémoire : elle ne s’achète pas.
+  const commune = RPG_DUEL_CARDS.find((carte) => carte.kind !== 'terrain' && carte.rarity === 'commune').id;
+  assert.deepEqual(normaliserEtal({ jour: '2026-10-24', cartes: [commune, inhabituelle] }).cartes, [inhabituelle],
+    'la filtre garde sa raison d’être : elle ne connaît que les raretés de l’étal');
+  // La fusion, elle, ne soude jamais deux moitiés d’un même compteur.
+  const fusion = fusionnerEtals(
+    { jour: '2026-10-24', cartes: [inhabituelle], achetees: [], rafraichissements: 0, majLe: '2026-10-24T09:00:00.000Z' },
+    { jour: '2026-10-24', cartes: [inhabituelle, 'scribe-de-la-liste'], achetees: [inhabituelle], rafraichissements: 1, majLe: '2026-10-24T11:00:00.000Z' },
+  );
+  assert.deepEqual(fusion.achetees, [inhabituelle], 'l’achat déjà fait sur un appareil n’est pas rejouable sur l’autre');
 });
 
 // ── Le stock d'exemplaires de l'étal ─────────────────────────────────────────

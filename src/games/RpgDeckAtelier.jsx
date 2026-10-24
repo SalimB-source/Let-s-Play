@@ -51,7 +51,8 @@ import {
 // Le sceau des familles de sorts : l'atelier feuillette la collection entière,
 // c'est donc là aussi qu'un sort doit se repérer d'un coup d'œil.
 import { SortSceau } from './rpgSortSignature.jsx';
-import { carteReveleePar, possedeCarte } from './rpgCollection.js';
+import { carteReveleePar, plafondVisible, possedeCarte } from './rpgCollection.js';
+import { prixCarteDirecte } from './rpgSoukDirect.js';
 import {
   RPG_DECK_TAILLE,
   compteExemplaires,
@@ -163,6 +164,12 @@ export function RpgDeckAtelier({
   nomInitial = 'Deck maison',
   cardIdsInitiaux = [],
   collection = [],
+  /**
+   * Le stock d'exemplaires payés à l'étal (`exemplaires` du portefeuille). Il
+   * borne les copies alignables : deux copies d'une carte achetée une fois ne
+   * passent pas (doc 13, D10). `null` = lecture d'avant l'étal, une copie.
+   */
+  exemplaires = null,
   artUrl = (id) => id,
   onEnregistrer,
   onAnnuler,
@@ -202,7 +209,7 @@ export function RpgDeckAtelier({
     else acc.creatures += 1;
     return acc;
   }, { terrains: 0, creatures: 0, magies: 0, armes: 0 }), [cardIds]);
-  const validation = useMemo(() => rpgValiderDeckMaison(cardIds, collection), [cardIds, collection]);
+  const validation = useMemo(() => rpgValiderDeckMaison(cardIds, collection, exemplaires), [cardIds, collection, exemplaires]);
   const courbe = useMemo(() => courbeDeMana(cardIds), [cardIds]);
   const couleursDeck = useMemo(() => repartitionCouleurs(cardIds), [cardIds]);
   const cartesEmbleme = useMemo(
@@ -253,7 +260,7 @@ export function RpgDeckAtelier({
   };
 
   const ajouter = (carte) => {
-    const avis = peutAjouterCarte(carte.id, cardIds, collection);
+    const avis = peutAjouterCarte(carte.id, cardIds, collection, exemplaires);
     if (!avis.ok) {
       surSfx('erreur');
       setMessage(avis.raison);
@@ -302,7 +309,13 @@ export function RpgDeckAtelier({
       creatures,
       sorts,
       collection,
-      catalogue: { cartes: RPG_DUEL_CARDS, couleursDe: cardColors, limiteDe: cardCopyLimit },
+      catalogue: {
+        cartes: RPG_DUEL_CARDS,
+        couleursDe: cardColors,
+        // L'IA compose dans le stock, pas dans le quota : un deck généré ici doit
+        // être enregistrable tel quel (`peutAjouterCarte` ne dirait rien de plus).
+        limiteDe: (carte) => (carte ? plafondVisible(collection, carte.id, exemplaires) : 0),
+      },
     });
     setCardIds(genere);
     if (embleme) setBoxArt(embleme);
@@ -396,6 +409,7 @@ export function RpgDeckAtelier({
           <h2 ref={titreRef} tabIndex={-1}>{edition ? deckInitial.nom : 'Un deck à votre main'}</h2>
           <p className="rpg-atelier__aide">
             Clic sur une carte : <b>+1</b> au deck · clic droit : <b>−1</b> · survol : aperçu grand format.
+            {' '}Le deck compte vos exemplaires : une carte ne s'aligne que autant de fois qu'elle a été payée.
           </p>
           {/* Au doigt, le survol n'existe pas : l'atelier annonce le geste
               d'aperçu de la maison (`rpgLongPress.js`), comme la barre du duel. */}
@@ -409,6 +423,7 @@ export function RpgDeckAtelier({
       {assistant ? (
         <RpgDeckAssistant
           collection={collection}
+          exemplaires={exemplaires}
           artUrl={artUrl}
           onGenerer={genererAvecIA}
           onFermer={() => setAssistant(false)}
@@ -546,12 +561,17 @@ export function RpgDeckAtelier({
               {cartesFiltrees.map((carte) => {
                 const acquise = possedees(carte.id);
                 const dansLeDeck = compte.get(carte.id) ?? 0;
-                const limite = cardCopyLimit(carte);
-                const avis = peutAjouterCarte(carte.id, cardIds, collection);
                 const deblocage = acquise ? null : carteReveleePar(carte.id);
                 const estTerrain = carte.kind === 'terrain';
                 const estCreature = ['creature', 'hero'].includes(carte.kind);
                 const rarete = CARD_RARITIES[carte.rarity]?.label ?? carte.rarity;
+                const limite = plafondVisible(collection, carte.id, exemplaires);
+                const avis = peutAjouterCarte(carte.id, cardIds, collection, exemplaires);
+                // Le plafond ici, ce n'est plus le quota de rareté mais le stock
+                // payé : un « + » grisé sans issue ressemblerait à un bug. La
+                // ligne qui suit nomme le chemin de la copie manquante.
+                const prixCopieManquante = acquise && !estTerrain && limite < cardCopyLimit(carte)
+                  ? prixCarteDirecte(carte.id) : null;
                 // Le clic droit a son sens dans l'atelier — retirer un
                 // exemplaire —, il ne remonte donc pas jusqu'à la page : sans
                 // ça, la fiche de la carte s'ouvrirait en plus (RpgDuelPage).
@@ -563,6 +583,7 @@ export function RpgDeckAtelier({
                       acquise ? '' : 'is-locked',
                       !avis.ok ? 'is-full' : '',
                       dansLeDeck > 0 ? 'is-in-deck' : '',
+                      prixCopieManquante != null ? 'is-stock-limit' : '',
                     ].filter(Boolean).join(' ')}
                     data-card-id={carte.id}
                     data-color={carte.element}
@@ -608,6 +629,13 @@ export function RpgDeckAtelier({
                         {!acquise && deblocage && (
                           <small className="rpg-atelier__carte-verrou">
                             Le Souk la vendra après « {deblocage.etage} »{deblocage.tour ? ` — ${deblocage.tour}` : ''}
+                          </small>
+                        )}
+                        {prixCopieManquante != null && (
+                          <small className="rpg-atelier__carte-stock">
+                            {dansLeDeck >= limite
+                              ? `Stock épuisé · la copie suivante se vend ${prixCopieManquante} ◈ au Souk`
+                              : `${limite} exemplaire${limite > 1 ? 's' : ''} en stock · le quota du deck est ${cardCopyLimit(carte)}`}
                           </small>
                         )}
                       </span>
@@ -765,7 +793,7 @@ export function RpgDeckAtelier({
                         <button
                           type="button"
                           aria-label={`Ajouter un exemplaire de ${carte.name}`}
-                          disabled={!peutAjouterCarte(carte.id, cardIds, collection).ok}
+                          disabled={!peutAjouterCarte(carte.id, cardIds, collection, exemplaires).ok}
                           onClick={() => ajouter(carte)}
                           onFocus={survoler(carte)}
                           onBlur={quitter}

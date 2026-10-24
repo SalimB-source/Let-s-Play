@@ -22,7 +22,7 @@
  *    par `tests/rpg-credits.test.js`.
  */
 
-import { cardById, cardCopyLimit, cardRarityInfo } from './rpgCards.js';
+import { RARETES_A_LETAL, cardById, cardCopyLimit, cardRarityInfo } from './rpgCards.js';
 import { rayonParId } from './rpgBoosters.js';
 import { lireExemplaire, normaliserCollection } from './rpgCollection.js';
 import { tourHistoireParId } from './rpgStoryTours.js';
@@ -202,7 +202,7 @@ export function fusionnerExemplaires(local, distant, cartes = []) {
 function idsCartesDirectes(value, limite) {
   return normaliserCollection(value).filter((id) => {
     const carte = cardById(id);
-    return carte && carte.kind !== 'terrain' && ['rare', 'mythique'].includes(cardRarityInfo(carte).key);
+    return carte && carte.kind !== 'terrain' && RARETES_A_LETAL.includes(cardRarityInfo(carte).key);
   }).slice(0, limite);
 }
 

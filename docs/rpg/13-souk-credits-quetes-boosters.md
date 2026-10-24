@@ -226,11 +226,6 @@ Conséquences, toutes testées :
   « quota du deck atteint » au lieu d'un « déjà obtenu » qui ne voulait rien dire ;
 - **une carte à quota unique ne se revend pas** : la mythique possède un
   exemplaire, elle est *complète* — l'étal le dit, il ne facture pas ;
-- **la possession n'est jamais un compteur** : `cartes` reste un ensemble
-  d'identifiants, `exemplaires` un objet `{ id: nombre }`. Racheter une copie ne
-  débloque rien de plus au deck (le playset est ouvert dès la première possession,
-  D9) — **c'est l'achèvement de la collection qui s'écrit, pas une place de
-  plus**. C'est assumé, et cela se lit sur la carte : `2/2`, pas « nouveau deck » ;
 - **le premier exemplaire ne s'écrit pas** : la valeur implicite d'une carte
   possédée sans entrée est `1`. Aucune sauvegarde d'avant l'étal ne change de
   valeur, et le `jsonb` du compte reste minuscule ;
@@ -247,6 +242,61 @@ L'écran, lui, ne tranche rien : `vueCarteDeEtal` (`rpgSoukDirect.js`) rend
 des quatre états — `disponible`, `achetee`, `complet`, `sans-solde`. Le quota
 passe avant le garde-fou du jour : « achetée aujourd'hui » promet un retour
 demain, « complet » dit qu'il n'y a plus rien à acheter du tout.
+
+#### D10 bis — et le deck compte les exemplaires payés
+
+Rendre la seconde copie **achetable** sans la rendre **jouable** était une
+demi-mesure : le comptoir encaissait pour un chiffre de vitrine, et l'atelier
+laissait aligner deux copies d'une carte payée une fois. La règle est donc
+cousue des deux côtés, dans une seule fonction — `exemplairesPossedables`
+(`rpgCollection.js`) — que l'atelier, la validation d'un deck, sa sélection et la
+pastille du catalogue lisent tous. Un chiffre, deux écrans : ils ne peuvent plus
+se contredire.
+
+Ce qu'elle répond, carte par carte :
+
+| Carte | Plafond au deck | Pourquoi |
+| --- | --- | --- |
+| Commune | `cardCopyLimit`, **2** | l'étal n'en vend pas : la borner au stock la rendrait incomplète **pour toujours** |
+| Dotation de départ (communes et inhabituelles des quatre couleurs) | **2** | la dotation est livrée en playset (D9) — pas en cartons à racheter |
+| Inhabituelle, rare hors dotation | **le stock payé**, borné à 2 | la copie manquante s'achète à l'étal : 80 ◈, 150 ◈ |
+| Mythique | **le stock payé**, borné à 1 | unique au deck comme au comptoir |
+| Terrain | `Infinity` | ni stock, ni playset ; le format n'en aligne plus (dossier 09) |
+
+Le playset — communes et dotation — reste donc un **droit de la possession**, et
+c'est un choix, pas un reste : `RARETES_A_LETAL` (`rpgCards.js`) ne nomme
+qu'inhabituelle, rare et mythique, si bien qu'aucune carte ne peut être plafonnée
+par un stock qu'aucun comptoir ne vend. L'invariant est écrit en test
+(`tests/rpg-collection.test.js`) : *toute copie que le deck réclame en plus du
+stock s'achète quelque part.*
+
+Pour que la garantie tienne au jour le jour, le tirage de l'étal assure
+désormais **une inhabituelle, une rare et une mythique** sur les cinq cartes —
+les trois prix sont visibles chaque jour, au lieu d'attendre que le hasard y
+pense. Un joueur neuf peut ainsi combler un playset sans dépendre d'un coup de
+chance, et la commune hors dotation — celle que les sets récents ajoutent — garde
+ses deux copies offertes par la seule possession.
+
+**Les decks déjà écrits sont rangés, pas refusés ni gâtés**
+(`reparerDeckHorsStock`, `reparerCasierHorsStock`, `rpgDeckBuilder.js`). Un deck
+maison sauvegardé sous l'ancienne règle peut porter des copies que le stock ne
+paye plus : la passe les retire et rend la place libérée aux cartes légales, avec
+la mécanique qui convertissait déjà les anciennes recettes
+(`convertirDeckSansTerrain`, dont `limiteDe` devient paramétrable). Trois
+garde-fous à ce geste :
+
+- **rien n'est ajouté à la collection** : la réparation range, elle n'offre pas ;
+  payer la copie rend la place, et l'atelier la refuse tant que ce n'est pas fait ;
+- **elle ne touche pas un deck conforme** : `modifie: false`, horodatage intact —
+  elle peut donc se rejouer à chaque lecture du casier et après la fusion du
+  compte, sans jamais faire passer un deck pour « modifié hier » ;
+- **elle ne juge rien sans collection** : `collection` absente ou vide, les decks
+  du catalogue, l'arène d'essai et les tests de structure restent sur le quota de
+  rareté. La boutique ne se mêle pas du duel.
+
+Côté écriture, la réparation court **après** la fusion du compte : c'est le stock
+fusionné qui décide. Ranger avant jetterait des copies qu'un achat fait sur
+l'autre appareil vient juste de payer.
 
 ### D5 — La quête du jour est tirée par graine, jamais au hasard
 
@@ -378,7 +428,8 @@ Le même contenu voyage dans le `state` du compte (`rpg_sablier_progress`) :
   "bourse": {
     "credits": 1240,
     "cartes": ["tarek", "kraken"],      // cartes gagnées au Souk (union monotone)
-    "exemplaires": { "tarek": 2 },       // stock payé à l'étal (D10) ; 1 = implicite, non écrit
+    "exemplaires": { "tarek": 2 },       // stock payé à l'étal (D10) ; 1 = implicite, non écrit ;
+                                         // c'est LUI qui borne les copies au deck
     "etal": {                            // la sélection du jour, figée par la graine
       "jour": "2026-10-14",
       "cartes": ["tarek", "kraken", "scribe-de-la-liste", "ifrit-al-ahmar", "yamina"],
@@ -411,7 +462,7 @@ autorisée dans `supabase/schema.sql`.
 | `acquis.gel` | **ou** dès qu'un appareil l'a posé | un appareil non migré ne défait pas la migration d'un autre |
 | `bourse.cartes` | **union** | une carte gagnée ne se perd jamais |
 | `bourse.credits` | **maximum** | on ne fait pas disparaître un solde |
-| `bourse.exemplaires` | **maximum copie par copie** | deux appareils qui paient la même copie n'en créent pas deux ; un appareil en retard ne fait pas redescendre une carte de `2/2` à `1/2` (D10) |
+| `bourse.exemplaires` | **maximum copie par copie** | deux appareils qui paient la même copie n'en créent pas deux ; un appareil en retard ne fait pas redescendre une carte de `2/2` à `1/2` (D10). Comme ce stock borne désormais les decks, la fusion **précède** leur rangement (dossier 09) |
 | `bourse.ouvertures` / `pitie` | maximum, appariés | la pitié la plus avancée : la règle est généreuse |
 | `quetes.jour` | **le jour le plus récent** | le temps ne recule pas |
 | `quetes.progres` (même jour) | **maximum par quête** | deux appareils additionnent la même journée |
@@ -444,7 +495,7 @@ livré** ; les autres sont les lots 2 à 5.
 | ✅ `src/games/rpgCredits.js` | portefeuille : normalisation, gains, dépense, barème des doublons, **stock d'exemplaires** (D10), pitié, fusion, stockage | `tests/rpg-credits.test.js` |
 | ✅ `src/games/rpgQuetes.js` | pool, tirage semé, journée monotone, progression, réclamation, Cachet, fusion | `tests/rpg-quetes.test.js` |
 | ✅ `src/games/rpgBoosters.js` | comptoir, viviers mélangés ouverts par les marches (D2), `tirerCartes`, `ouvrirBooster`, `ouvrirCoffret`, prix du coffret | `tests/rpg-boosters.test.js` |
-| ✅ `src/games/rpgSoukDirect.js` | l'**étal du jour** : tirage semé de cinq rares/mythiques, rafraîchissement unique, prix à l'unité, quota d'exemplaires (D10), vue de carte | `tests/rpg-souk-direct.test.js` |
+| ✅ `src/games/rpgSoukDirect.js` | l'**étal du jour** : tirage semé de cinq cartes (une inhabituelle, une rare, une mythique garanties), rafraîchissement unique, prix à l'unité (80 / 150 / 300 ◈), quota d'exemplaires (D10), vue de carte | `tests/rpg-souk-direct.test.js` |
 | ✅ `src/games/RpgCardCopyBadge.jsx` | la pastille de stock : `×2` seul, `1/2` avec le quota du deck, voix comprise | `scripts/rpg-souk-ui-check.mjs` (gardes de source) |
 | ✅ `src/games/rpgCollection.js` | révélations d'étage, **gel des acquis** (D9), sources de la collection | `tests/rpg-collection.test.js` |
 | ✅ `src/games/rpgDeckBuilder.js` | la fusion de compte transporte les acquis, gel compris | `tests/rpg-deck-builder.test.js` |
@@ -958,10 +1009,12 @@ Les cas couverts :
   entrent dans l'ordre de la campagne.
 
 - **l'étal à l'unité et son stock (D10)** — cinq cartes distinctes tirées du jour
-  et de la graine (stables au rechargement, différentes le lendemain), une rare
-  et une mythique garanties, rafraîchissement unique qui ne répète aucune carte
-  du premier tirage et ne coûte rien ; **150 ◈ la première copie d'une rare comme
-  sa seconde**, 300 ◈ la mythique ; la copie déjà possédée une fois **s'achète**,
+  et de la graine (stables au rechargement, différentes le lendemain), une
+  inhabituelle, une rare et une mythique garanties, rafraîchissement unique qui ne
+  répète aucune carte du premier tirage et ne coûte rien ; **80 ◈ la seconde copie
+  d'une inhabituelle, 150 ◈ la première copie d'une rare comme sa seconde**,
+  300 ◈ la mythique, et **jamais de commune au comptoir** ; la copie déjà possédée
+  une fois **s'achète**,
   la copie de trop est refusée (`quota-atteint`) **sans un crédit de débit** ;
   le stock s'écrit à la seconde copie et jamais à la première (valeur implicite
   `1`), il se borne au quota même si une sauvegarde déclare cinq mythiques, il ne
@@ -973,6 +1026,14 @@ Les cas couverts :
   DOM : `1/2` sur la pastille, le bouton qui nomme « le 2ᵉ exemplaire », la ligne
   « quota du deck atteint · 2/2 » une fois la copie payée, et **plus une seule
   carte qui dise « déjà possédée »** ;
+- **le stock borne le deck (D10 bis)** — une carte non playée plafonne à ses
+  exemplaires payés, à l'atelier comme à la validation, à la sélection du deck et
+  à la fiche ouverte ; les communes et la dotation gardent leur playset (faute de
+  quoi une carte invendable serait incomplète à vie) ; la pastille et le deck
+  lisent la même fonction, `exemplairesPossedables` ; les decks écrits sous
+  l'ancienne règle sont **rangés** (copies de trop retirées, place rendue aux
+  cartes légales) après la fusion du compte, sans jamais rien ajouter à la
+  collection. Voir le dossier 09 pour la partie atelier.
 
 ## 11. Risques et points ouverts
 
@@ -982,6 +1043,7 @@ Les cas couverts :
 | La collection est **dérivée** : oublier une source rendrait les cartes invisibles | une seule porte (`collectionJoueur`, quatre sources) + un test qui vérifie qu'une carte du Souk est bien possédée et jouable |
 | L'économie écrase le rythme de la campagne | le vivier qui suit les marches (D2) + un test qui refuse une carte du Fjord à qui n'y est pas entré |
 | **La collection se boucle en ≈ 37 paquets** et le Souk n'a plus rien à vendre | assumé : c'est exactement ce qui rend le lot 6 (set dédié) nécessaire — et les doublons paient en crédits d'ici là |
+| **Le stock rendu comptable au deck surprend un joueur dont le deck perd des copies** | la réparation ne touche que les copies **non payées**, rend la place aux cartes légales et ne remonte pas l'horodatage d'un deck conforme ; l'atelier nomme le prix de la copie manquante sur la carte même (dossier 09) |
 | Le solde donne envie de farmer les parties libres | 8 ◈ par duel libre, 10 ◈ par étage rejoué, et les quêtes restent le gros du revenu |
 | Deux appareils, dépense hors ligne | fusion par maximum, compromis documenté (§4.4) — jamais de perte |
 | Le monolithe `RpgDuelPage.jsx` | l'écran vit dans ses fichiers, la page ne gagne qu'une branche |

@@ -1,5 +1,5 @@
 /**
- * L'étal du Souk : cinq cartes rares ou mythiques vendues à l'unité.
+ * L'étal du Souk : cinq cartes inhabituelles, rares ou mythiques vendues à l'unité.
  *
  * Le tirage initial est déterministe (jour + graine du joueur), les offres et
  * le rafraichissement unique sont conservés dans le portefeuille. Toutes les
@@ -16,6 +16,7 @@
  */
 
 import {
+  RARETES_A_LETAL,
   RPG_DUEL_CARDS,
   carteJouableSansTerrain,
   cardById,
@@ -31,7 +32,7 @@ import { lireExemplaire } from './rpgCollection.js';
 import { graineNumerique, melanger, rngSeme } from './rpgHasard.js';
 import { jourCourant } from './rpgQuetes.js';
 
-export const PRIX_CARTE_DIRECTE = Object.freeze({ rare: 150, mythique: 300 });
+export const PRIX_CARTE_DIRECTE = Object.freeze({ inhabituelle: 80, rare: 150, mythique: 300 });
 export const SOUK_DIRECT_REGLES = Object.freeze({
   cartesParJour: 5,
   rafraichissementsParJour: 1,
@@ -40,6 +41,9 @@ export const SOUK_DIRECT_REGLES = Object.freeze({
   exemplairesParAchat: 1,
   prix: PRIX_CARTE_DIRECTE,
 });
+
+/** Les raretés de l'étal, de la moins chère à la plus chère — la liste du catalogue. */
+export const RARETES_DE_LETAL = RARETES_A_LETAL;
 
 const CATALOGUE_DIRECT = Object.freeze(
   RPG_DUEL_CARDS.filter((carte) => carteJouableSansTerrain(carte)
@@ -144,9 +148,9 @@ function avecEtal(portefeuille, etal, horloge) {
 }
 
 /**
- * Cinq identifiants distincts pour un couple jour/graine. Les deux raretés
- * sont représentées dès que le catalogue le permet. `exclure` sert au second
- * tirage : rafraîchir propose réellement cinq autres cartes.
+ * Cinq identifiants distincts pour un couple jour/graine. Les trois raretés
+ * vendues sont représentées dès que le catalogue le permet. `exclure` sert au
+ * second tirage : rafraîchir propose réellement cinq autres cartes.
  */
 export function tirageEtal({ jour, graine = null, generation = 0, exclure = [] } = {}) {
   if (typeof jour !== 'string' || !jour) return [];
@@ -156,9 +160,11 @@ export function tirageEtal({ jour, graine = null, generation = 0, exclure = [] }
   ));
   const restant = melanger(CATALOGUE_DIRECT.filter((carte) => !exclusions.has(carte.id)), rng);
   const selection = [];
-  // Une rare et une mythique au minimum : les deux prix sont ainsi visibles
-  // chaque jour, pas seulement lorsque le hasard y pense.
-  for (const rarete of ['rare', 'mythique']) {
+  // Une inhabituelle, une rare et une mythique au minimum : les trois prix sont
+  // ainsi visibles chaque jour, pas seulement lorsque le hasard y pense. C'est
+  // aussi ce qui rend l'étal utile au playset — sans garantie, un joueur neuf
+  // peut passer une semaine sans voir la moindre carte à une copie.
+  for (const rarete of RARETES_DE_LETAL) {
     const index = restant.findIndex((carte) => cardRarityInfo(carte).key === rarete);
     if (index >= 0) selection.push(...restant.splice(index, 1));
   }

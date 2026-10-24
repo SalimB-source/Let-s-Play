@@ -21,6 +21,7 @@ import {
   chargerDecksMaison,
   chargerSupprimesMaison,
   fusionnerEtatsSablier,
+  reparerCasierHorsStock,
   sauverCasierMaison,
   supprimerDeckDuCasier,
 } from './rpgDeckBuilder.js';
@@ -33,7 +34,7 @@ import {
 } from './rpgCollection.js';
 import { cartesOuvertes } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
-import { chargerPortefeuille, sauverPortefeuille } from './rpgCredits.js';
+import { chargerPortefeuille, exemplairesDuPortefeuille, sauverPortefeuille } from './rpgCredits.js';
 import { chargerEtatQuetes, sauverEtatQuetes } from './rpgQuetes.js';
 import { chargerProfil, sauverProfil } from './rpgProfil.js';
 import { chargerProgressionHistoire, sauverProgressionHistoire } from './rpgStory.js';
@@ -86,6 +87,41 @@ function collectionDeLAppareil(acquis) {
   });
 }
 
+/**
+ * Le stock d'exemplaires payés à l'étal, relu sur l'appareil (`rpgCredits.js`).
+ * C'est lui, et lui seul, qui borne les copies alignables au deck.
+ */
+function exemplairesDeLAppareil() {
+  return exemplairesDuPortefeuille(chargerPortefeuille());
+}
+
+/**
+ * L'état d'un appareil au moment où on le lit : ses decks, **rangés** selon le
+ * stock du jour, la collection effective et ce stock. Une seule passe de
+ * stockage, pour que les trois viennent du même instant.
+ *
+ * Le rangement n'est ni une punition ni une faveur : les decks écrits avant la
+ * règle du stock (doc 13, D10) pouvaient aligner deux copies d'une carte payée
+ * une fois. Ils rentrent dans leur stock — rien n'est ajouté à la collection,
+ * et rien ne bouge sur un deck déjà conforme.
+ */
+function etatDeDepart(acquis) {
+  const collection = collectionDeLAppareil(acquis);
+  const exemplaires = exemplairesDeLAppareil();
+  const lu = reparerCasierHorsStock(
+    { decks: chargerDecksMaison(), supprimes: chargerSupprimesMaison() },
+    collection,
+    exemplaires,
+  );
+  if (lu.modifie) sauverCasierMaison(lu.casier);
+  return {
+    ...lu.casier,
+    collection,
+    exemplaires,
+    reparation: lu.modifie ? { retires: lu.retires, ajoutes: lu.ajoutes } : null,
+  };
+}
+
 /** Statuts de synchronisation : `'local'`, `'attente'`, `'synchronise'`, `'horsligne'`. */
 export function useDecksSablier() {
   // Le gel des acquis est calculé UNE fois, au montage : au premier lancement
@@ -94,8 +130,14 @@ export function useDecksSablier() {
   // rend définitif — les victoires suivantes révèlent sans donner.
   const [acquis, setAcquis] = useState(() => figerAcquisitions());
   const acquisRef = useRef(acquis);
-  const [decksMaison, setDecksMaison] = useState(() => chargerDecksMaison());
-  const [collection, setCollection] = useState(() => collectionDeLAppareil(acquis));
+  // Un seul instantané au montage : `etatDeDepart` écrit dans le casier quand il
+  // range des decks, il ne doit donc pas être calculé deux fois.
+  const [depart] = useState(() => etatDeDepart(acquis));
+  const [decksMaison, setDecksMaison] = useState(depart.decks);
+  const [collection, setCollection] = useState(depart.collection);
+  // Le stock payé à l'étal : les decks le respectent, l'atelier le consulte.
+  const [exemplaires, setExemplaires] = useState(depart.exemplaires);
+  const [reparation, setReparation] = useState(depart.reparation);
   const [statutSync, setStatutSync] = useState('local');
   const compteId = compteSablierActif();
   const supprimesRef = useRef(chargerSupprimesMaison());
@@ -106,10 +148,13 @@ export function useDecksSablier() {
   useEffect(() => {
     const suivis = figerAcquisitions();
     acquisRef.current = suivis;
-    supprimesRef.current = chargerSupprimesMaison();
+    const depart = etatDeDepart(suivis);
+    supprimesRef.current = depart.supprimes;
     setAcquis(suivis);
-    setDecksMaison(chargerDecksMaison());
-    setCollection(collectionDeLAppareil(suivis));
+    setDecksMaison(depart.decks);
+    setCollection(depart.collection);
+    setExemplaires(depart.exemplaires);
+    setReparation(depart.reparation);
   }, [compteId]);
   // Le gel est écrit sur l'appareil dès qu'il change (silencieux s'il n'y a
   // pas de stockage : le jeu reste jouable, la migration se refera).
@@ -140,9 +185,22 @@ export function useDecksSablier() {
         return;
       }
       const fusion = fusionnerEtatsSablier({ local: etatLocalActuel(acquisRef.current), distant: state });
-      sauverCasierMaison(fusion.casier);
-      supprimesRef.current = fusion.casier.supprimes;
-      setDecksMaison(fusion.casier.decks);
+      const etatFusionne = fusion.etat;
+      // Le casier est rangé APRÈS la fusion : c'est le stock fusionné qui décide
+      // des copies alignables. Ranger avant jetterait des copies qu'un achat
+      // fait sur l'autre appareil vient juste de payer.
+      const acquisFusionnes = etatFusionne.acquis ?? acquisRef.current;
+      const collectionFusionnee = collectionJoueur({
+        acquis: acquisFusionnes,
+        distante: etatFusionne.collection,
+        souk: etatFusionne.bourse?.cartes ?? [],
+      });
+      const exemplairesFusionnes = exemplairesDuPortefeuille(etatFusionne.bourse);
+      const casier = reparerCasierHorsStock(fusion.casier, collectionFusionnee, exemplairesFusionnes);
+      sauverCasierMaison(casier.casier);
+      supprimesRef.current = casier.casier.supprimes;
+      setDecksMaison(casier.casier.decks);
+      if (casier.modifie) setReparation({ retires: casier.retires, ajoutes: casier.ajoutes });
       sauverCollectionDistante(fusion.etat.collection);
       // L'économie appartient à `useSablierBourse.js` : ce hook la transporte,
       // jamais ne la modifie — elle est rendue au stockage telle que la fusion
@@ -156,14 +214,10 @@ export function useDecksSablier() {
       // Les acquis du compte rejoignent ceux de l'appareil (union, gel
       // compris) : un autre appareil peut porter des cartes que celui-ci n'a
       // pas encore vues.
-      const acquisFusionnes = fusion.etat.acquis ?? acquisRef.current;
       acquisRef.current = acquisFusionnes;
       setAcquis(acquisFusionnes);
-      setCollection(collectionJoueur({
-        acquis: acquisFusionnes,
-        distante: fusion.etat.collection,
-        souk: fusion.etat.bourse?.cartes ?? [],
-      }));
+      setCollection(collectionFusionnee);
+      setExemplaires(exemplairesFusionnes);
       setStatutSync('synchronise');
       // La fusion a apporté quelque chose à l'appareil : les autres
       // appareils doivent le savoir (pierres tombales, decks récents).
@@ -242,10 +296,11 @@ export function useDecksSablier() {
    */
   const rafraichirCollection = useCallback(() => {
     setCollection(collectionDeLAppareil(acquisRef.current));
+    setExemplaires(exemplairesDeLAppareil());
   }, []);
 
   return {
-    decksMaison, collection, statutSync,
+    decksMaison, collection, exemplaires, reparation, statutSync,
     enregistrerDeckMaison, supprimerDeckMaison, noterVictoireEtage, rafraichirCollection,
   };
 }

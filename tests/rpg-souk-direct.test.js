@@ -28,7 +28,7 @@ const ouvrir = (credits = 1000, horloge = JOUR) => ouvrirEtalDuJour({
 const parRarete = (etal, rarete) => etal.cartes.find((id) => cardRarityInfo(cardById(id)).key === rarete);
 
 test('les prix et le format de l’étal sont publics', () => {
-  assert.deepEqual(PRIX_CARTE_DIRECTE, { rare: 150, mythique: 300 });
+  assert.deepEqual(PRIX_CARTE_DIRECTE, { inhabituelle: 80, rare: 150, mythique: 300 });
   assert.equal(SOUK_DIRECT_REGLES.cartesParJour, 5);
   assert.equal(SOUK_DIRECT_REGLES.rafraichissementsParJour, 1);
   assert.equal(prixCarteDirecte('scribe-de-la-liste'), 150);
@@ -37,14 +37,26 @@ test('les prix et le format de l’étal sont publics', () => {
   assert.equal(prixCarteDirecte('carte-inconnue'), null);
 });
 
-test('cinq cartes distinctes sont proposées, avec les deux raretés et un tirage stable', () => {
+test('l’inhabituelle se vend, la commune non — et la commune gardée au playset', () => {
+  // Le palier à 80 ◈ existe parce que le deck compte le stock : une inhabituelle
+  // hors dotation achetée une fois doit pouvoir être payée deux fois.
+  const inhabituelle = RPG_DUEL_CARDS.find((carte) => cardRarityInfo(carte).key === 'inhabituelle'
+    && carte.kind !== 'terrain');
+  assert.ok(inhabituelle, 'le catalogue compte des inhabituelles');
+  assert.equal(prixCarteDirecte(inhabituelle.id), 80);
+  // Une commune ne s’achète pas : son second exemplaire vient du playset, pas d’une caisse.
+  const commune = RPG_DUEL_CARDS.find((carte) => cardRarityInfo(carte).key === 'commune' && carte.kind !== 'terrain');
+  assert.equal(prixCarteDirecte(commune.id), null);
+});
+
+test('cinq cartes distinctes sont proposées, avec les trois raretés et un tirage stable', () => {
   const premier = tirageEtal({ jour: '2026-10-24', graine: GRAINE });
   assert.equal(premier.length, 5);
   assert.equal(new Set(premier).size, 5);
   assert.deepEqual(premier, tirageEtal({ jour: '2026-10-24', graine: GRAINE }), 'recharger ne relance pas le dé');
   assert.notDeepEqual(premier, tirageEtal({ jour: '2026-10-25', graine: GRAINE }), 'le lendemain propose une autre sélection');
   const raretes = new Set(premier.map((id) => cardRarityInfo(cardById(id)).key));
-  assert.deepEqual([...raretes].sort(), ['mythique', 'rare']);
+  assert.deepEqual([...raretes].sort(), ['inhabituelle', 'mythique', 'rare']);
   assert.ok(premier.every((id) => prixCarteDirecte(id) !== null));
 });
 

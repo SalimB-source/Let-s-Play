@@ -284,13 +284,44 @@ export function possedeCarte(collection, cardId) {
 }
 
 /**
- * Nombre d'exemplaires mobilisables d'une carte dans une collection :
- * la limite de rareté (`cardCopyLimit`) borne ce que la possession permet.
+ * Le **playset** d'une carte : ce que la possession seule autorise à aligner au
+ * deck, sans rien payer de plus. Deux familles en bénéficient :
+ *
+ * - **les communes**, partout — y compris celles des sets récents que la
+ *   dotation ne couvre pas. L'étal ne vend pas de commune (`rpgSoukDirect.js`) :
+ *   borner une commune à ce qu'on a payé la rendrait donc incomplète **pour
+ *   toujours**, sans aucun chemin pour la seconde copie ;
+ * - **la dotation de départ** (communes et inhabituelles des quatre couleurs
+ *   historiques), qui est livrée en playset et non en cartons (doc 13, D9).
+ *
+ * À partir de l'inhabituelle hors dotation, le deck compte les copies possédées :
+ * la seconde copie d'une rare ou d'une inhabituelle s'**achète** à l'étal
+ * (doc 13, D10), et une mythique reste unique.
  */
-export function exemplairesPossedables(collection, cardId) {
+export function carteEnPlayset(carteOuId) {
+  const carte = typeof carteOuId === 'string' ? cardById(carteOuId) : carteOuId;
+  if (!carte) return false;
+  if (carte.rarity === 'commune') return true;
+  return COLLECTION_DEPART.includes(carte.id);
+}
+
+/**
+ * Nombre d'exemplaires **mobilisables au deck** : le playset pour les cartes qui
+ * le portent (communes et dotation), le stock payé pour les autres, `0` pour une
+ * carte non possédée. C'est LA règle que l'atelier, la validation d'un deck et
+ * sa sélection obeyissent — nulle part le quota de rareté ne se consulte seul.
+ *
+ * Un terrain garde son quota sans limite (`Infinity`) : il n'a ni stock, ni
+ * playset à payer, et le format sans terrains n'en aligne plus.
+ */
+export function exemplairesPossedables(collection, cardId, comptes = null) {
   if (!possedeCarte(collection, cardId)) return 0;
   const carte = cardById(cardId);
-  return cardCopyLimit(carte);
+  const limite = cardCopyLimit(carte);
+  if (carteEnPlayset(carte)) return limite;
+  // `lireExemplaire` borne déjà au quota de rareté : le deck ne peut pas
+  // aligner plus de copies que le format n'en admet.
+  return lireExemplaire(comptes, cardId, true);
 }
 
 /**
@@ -316,26 +347,39 @@ export function lireExemplaire(comptes, cardId, possedee = true) {
 }
 
 /**
- * Nombre d'exemplaires réellement acquis, pour les pastilles du catalogue et
- * du Souk. La dotation de départ est un playset : ses cartes sont utilisables
- * jusqu'à leur limite de deck. Ailleurs, le stock se lit dans le compteur du
- * portefeuille (`exemplaires`, voir `lireExemplaire`) : une carte achetée deux
- * fois à l'étal compte deux copies, une carte sortie une fois en compte une.
+ * Nombre d'exemplaires réellement acquis, pour les pastilles du catalogue, du
+ * Souk et de la cérémonie. Cette lecture est **celle du deck** : une pastille
+ * ne promet jamais un chiffre que l'atelier refuserait de jouer, et ne cache
+ * jamais une copie que le deck réclamerait. D'où le partage avec
+ * `exemplairesPossedables` : playset pour les communes et la dotation, stock
+ * payé ailleurs.
  *
  * Appelé sans compteur — c'est le cas des écrans qui ne connaissent que la
  * collection — la lecture reste celle d'avant l'étal : une acquisition par
  * carte, les doublons de booster étant remboursés et non stockés (doc 13, D4).
- *
- * Cette lecture est volontairement distincte d'`exemplairesPossedables`, qui
- * décrit le plafond de deck après déblocage et non le stock acquis : posséder
- * une carte ouvre son playset entier à l'atelier, sans qu'il faille racheter
- * chaque copie.
  */
 export function nombreExemplaires(collection, cardId, comptes = null) {
-  if (!possedeCarte(collection, cardId)) return 0;
-  if (!COLLECTION_DEPART.includes(cardId)) return lireExemplaire(comptes, cardId);
-  const limite = cardCopyLimit(cardById(cardId));
-  return Number.isFinite(limite) ? limite : 1;
+  return exemplairesPossedables(collection, cardId, comptes);
+}
+
+/**
+ * Le plafond à **afficher** : ce que le deck laisserait aligner **si la carte
+ * était à vous aujourd'hui**. Une carte verrouillée n'a donc pas un plafond de
+ * `0` — elle n'est pas absente du deck, elle est absente de la collection. Ce
+ * qu'elle y pèserait se lit dans la même règle qu'ailleurs : le playset pour les
+ * communes et la dotation (deux copies offertes à la possession), une copie
+ * ailleurs (la seconde s'achète à l'étal).
+ *
+ * Un plafond affiché doit coller à la porte de l'atelier : c'est `exemplairesPossedables`
+ * qui tranche, et les deux partagent `carteEnPlayset` pour ne jamais s'annoncer
+ * l'un l'autre un chiffre différent.
+ */
+export function plafondVisible(collection, cardId, comptes = null) {
+  const carte = typeof cardId === 'string' ? cardById(cardId) : cardId;
+  if (!carte) return 0;
+  if (carte.kind === 'terrain') return Infinity;
+  if (!possedeCarte(collection, carte.id)) return carteEnPlayset(carte) ? cardCopyLimit(carte) : 1;
+  return exemplairesPossedables(collection, carte.id, comptes);
 }
 
 function browserStorage() {

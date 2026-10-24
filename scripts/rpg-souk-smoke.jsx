@@ -223,12 +223,15 @@ export async function checkRpgSoukEcran(assert) {
       'le paquet est la seule voie d’achat — pas de bouton texte qui le double');
     assert.equal(noeud('[data-souk-attente]'), null, 'rien à réclamer : pas de bandeau');
 
-    // ── L’étal direct : cinq cartes, deux raretés, zéro achat sans solde ────
+    // ── L’étal direct : cinq cartes, trois raretés, zéro achat sans solde ───
     const offres = [...document.querySelectorAll('[data-souk-direct-carte]')];
     assert.equal(offres.length, 5, 'l’étal propose exactement cinq cartes');
     assert.equal(new Set(offres.map((carte) => carte.dataset.soukDirectCarte)).size, 5, 'les cinq offres sont distinctes');
-    assert.ok(offres.every((carte) => ['rare', 'mythique'].includes(carte.dataset.soukDirectRarete)),
-      'l’étal ne vend que des rares et des mythiques');
+    assert.ok(offres.every((carte) => ['inhabituelle', 'rare', 'mythique'].includes(carte.dataset.soukDirectRarete)),
+      'l’étal vend des inhabituelles, des rares et des mythiques — jamais une commune');
+    assert.deepEqual(new Set(offres.map((carte) => carte.dataset.soukDirectRarete)),
+      new Set(['inhabituelle', 'rare', 'mythique']),
+      'les trois prix sont visibles chaque jour : la garantie du tirage, pas un vœu');
     assert.ok(offres.some((carte) => carte.dataset.soukDirectRarete === 'rare')
       && offres.some((carte) => carte.dataset.soukDirectRarete === 'mythique'),
     'les deux prix sont représentés chaque jour');

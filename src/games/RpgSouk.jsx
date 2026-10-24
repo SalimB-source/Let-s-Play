@@ -634,7 +634,7 @@ export default function RpgSouk({
           <div>
             <h3 id="souk-direct-titre">Les cartes à l’unité</h3>
             <p>
-              {SOUK_DIRECT_REGLES.cartesParJour} cartes chaque jour · Rare {SOUK_DIRECT_REGLES.prix.rare} <RpgCreditIcon /> · Mythique {SOUK_DIRECT_REGLES.prix.mythique} <RpgCreditIcon />
+              {SOUK_DIRECT_REGLES.cartesParJour} cartes chaque jour · Inhabituelle {SOUK_DIRECT_REGLES.prix.inhabituelle} <RpgCreditIcon /> · Rare {SOUK_DIRECT_REGLES.prix.rare} <RpgCreditIcon /> · Mythique {SOUK_DIRECT_REGLES.prix.mythique} <RpgCreditIcon />
             </p>
           </div>
           <button
@@ -649,7 +649,7 @@ export default function RpgSouk({
           </button>
         </div>
         <p className="rpg-souk__direct-resume">
-          Choisissez exactement ce qu’il vous manque. Chaque achat ajoute <strong>un exemplaire</strong>, jusqu’au quota du deck — {SOUK_DIRECT_REGLES.prix.rare} <RpgCreditIcon /> la première copie d’une rare, {SOUK_DIRECT_REGLES.prix.rare} <RpgCreditIcon /> sa seconde, et une mythique reste unique.
+          Choisissez exactement ce qu’il vous manque. Chaque achat ajoute <strong>un exemplaire</strong>, et le deck ne joue que ce que vous avez payé : {SOUK_DIRECT_REGLES.prix.inhabituelle} <RpgCreditIcon /> la seconde copie d’une inhabituelle, {SOUK_DIRECT_REGLES.prix.rare} <RpgCreditIcon /> celle d’une rare, une mythique reste unique.
         </p>
         {cartesCompletes > 0 && (
           <p className="rpg-souk__direct-complet" data-souk-direct-complet={cartesCompletes} role="status">

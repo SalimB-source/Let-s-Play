@@ -3904,7 +3904,10 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       .filter((famille) => famille.cartes.length > 0)
     : [];
   const openValidation = openDeck
-    ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection) : rpgValiderDeck(openDeck.cardIds))
+    // Le stock, ici aussi : la fiche d'un deck maison annonce les mêmes raisons
+    // que l'atelier, sinon elle promettrait « prêt à jouer » à un paquet dont
+    // deux copies n'ont jamais été payées.
+    ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection, portefeuille?.exemplaires ?? null) : rpgValiderDeck(openDeck.cardIds))
     : { ok: false, raisons: ['Aucun deck ouvert.'] };
   // Le Catalogue est une encyclopédie : il montre vraiment toutes les cartes,
   // y compris les terrains et les cartes archivées hors du format de deck.
@@ -4458,6 +4461,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 ? atelier.deck.cardIds.filter((id) => collection.includes(id))
                 : []}
               collection={collection}
+              exemplaires={portefeuille?.exemplaires ?? null}
               artUrl={cardArt}
               onEnregistrer={enregistrerAtelier}
               onAnnuler={() => setAtelier(null)}

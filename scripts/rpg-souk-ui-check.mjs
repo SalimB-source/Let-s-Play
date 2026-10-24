@@ -172,7 +172,7 @@ assert.match(decks, /bourse: chargerPortefeuille\(\),\n    quetes: chargerEtatQu
 // 7 bis. L’étal et les pastilles partagent les règles, sans prix recopiés.
 assert.match(ecranCode, /import \{ SOUK_DIRECT_REGLES, vueCarteDeEtal \} from '\.\/rpgSoukDirect\.js';/,
   'le format, les prix et l’état d’une carte de l’étal viennent de son module de règles');
-assert.ok(!/\b(150|300)\b/.test(ecranCode), 'aucun prix de carte à l’unité n’est écrit en dur dans l’écran');
+assert.ok(!/\b(80|150|300)\b/.test(ecranCode), 'aucun prix de carte à l’unité n’est écrit en dur dans l’écran');
 assert.match(ecranCode, /const vue = vueCarteDeEtal\(\{ id, collection, exemplaires, acheteAujourdhui, credits \}\)/,
   'la carte de l’étal relit la vue pure : elle ne décide ni du quota ni du stock');
 // Le bug d’origine : un « déjà possédée » affiché sur une carte à un seul
@@ -358,7 +358,7 @@ console.log('Le Souk (lots 3 à 5) est branché : sixième onglet, solde et past
 console.log('trois quêtes réclamables, Cachet du cycle et de la semaine, un paquet du Souk');
 console.log('mélangé (une rare garantie, 1 % de mythique) dont le paquet en volume est le bouton');
 console.log('d’achat, la cérémonie 3D sans description avec pastilles et aperçu au clic droit,');
-console.log('l’étal quotidien de cinq rares/mythiques à 150/300 crédits, son rafraîchissement unique,');
+console.log('l’étal quotidien de cinq inhabituelles/rares/mythiques à 80/150/300 crédits, son rafraîchissement unique,');
 console.log('le journal des ouvertures, et les cartes achetées qui entrent dans la collection. Le crédit y a');
 console.log('sa pièce — frappée or, une seule à l’écran, jamais deux fois le même dégradé.');
 console.log('Les quêtes du jour attendent aussi dans l’onglet Jouer, à droite du menu :');

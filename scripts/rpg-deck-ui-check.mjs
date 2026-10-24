@@ -171,6 +171,32 @@ assert.match(readSource('../src/games/RpgDeckAtelier.jsx'), /carteReveleePar/, '
 // Le geste est délégué par la page au menu entier (l’atelier y vit) : il suffit que les
 // cartes de l’atelier portent leur `data-card-id` et que l’astuce annonce le geste au doigt.
 const atelierSource = readSource('../src/games/RpgDeckAtelier.jsx');
+// Le deck compte les exemplaires **payés** : l'atelier ne laisse pas aligner deux
+// copies d'une carte achetée une fois (doc 13, D10). Trois portes, un seul stock lu.
+const atelierStock = atelierSource;
+assert.match(atelierStock, /const validation = useMemo\(\(\) => rpgValiderDeckMaison\(cardIds, collection, exemplaires\)/,
+  'la validation de l’atelier consulte le stock, pas le seul quota de rareté');
+assert.equal((atelierStock.match(/peutAjouterCarte\(carte\.id, cardIds, collection, exemplaires\)/g) ?? []).length, 3,
+  'les trois portes d’ajout de l’atelier — grille, deck, assistant — lisent le même stock');
+assert.match(atelierStock, /const limite = plafondVisible\(collection, carte\.id, exemplaires\)/,
+  'le plafond affiché dans la grille est celui du deck, pas le quota brut de la carte');
+assert.match(atelierStock, /limiteDe: \(carte\) => \(carte \? plafondVisible\(collection, carte\.id, exemplaires\) : 0\)/,
+  'l’assistant génère dans le stock : un deck né assisté doit rester enregistrable');
+const collectionRules = readSource('../src/games/rpgCollection.js');
+assert.match(collectionRules, /export function carteEnPlayset\(carteOuId\)/,
+  'le playset (communes et dotation) est une règle nommée, pas une exception éparse');
+assert.match(collectionRules, /if \(carte\.rarity === 'commune'\) return true;/,
+  'les communes restent au playset : l’étal n’en vend pas, les borner serait une impasse');
+assert.match(collectionRules, /return exemplairesPossedables\(collection, cardId, comptes\);/,
+  'la pastille du catalogue dit ce que le deck laisse jouer : un seul chiffre, deux écrans');
+assert.match(builderSource, /export function reparerDeckHorsStock\(cardIds, collection = null, comptes = null\)/,
+  'les decks hérités sont rangés dans leur stock, pas refusés ni gâtés');
+assert.match(builderSource, /export function reparerCasierHorsStock\(casier, collection = null, comptes = null\)/,
+  'la passe de réparation connaît le casier entier');
+assert.match(hookSource, /function etatDeDepart\(acquis\)/,
+  'la réparation se joue à la lecture du casier, en même temps que la collection');
+assert.match(hookSource, /reparerCasierHorsStock\(fusion\.casier, collectionFusionnee, exemplairesFusionnes\)/,
+  'et après la fusion du compte : le stock fusionné décide, sinon on jetterait des copies payées ailleurs');
 const atelierCss = stripComments(readSource('../src/games/rpg-deck-atelier.css'));
 const battleCss = stripComments(readSource('../src/games/rpg-battle.css'));
 const atelierCardOverlay = atelierCss.match(/\.rpg-atelier__carte-art::after\s*\{([^}]*)\}/)?.[1] ?? '';
