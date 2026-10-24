@@ -2,9 +2,8 @@
  * Écran d'entrée du Sablier — src/games/rpg-entry-choice.css
  * ----------------------------------------------------------
  * Le même keyart de Bab El que le menu du duel (`RpgDuelPage.jsx`), voilé pour
- * porter deux grandes options : l'installeur Windows et le navigateur.
- * Deux colonnes sur ordinateur, une seule sous 720 px — mais l'écran ne se
- * montre de toute façon pas sur téléphone (`pointer: coarse`).
+ * porter les options Windows, Android et navigateur. Trois colonnes sur
+ * ordinateur, une seule sous 720 px pour rester lisible sur téléphone.
  */
 
 .rpg-entry-choice {
@@ -52,7 +51,7 @@
 
 .rpg-entry-choice__choix {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   width: 100%;
   margin-top: 6px;
