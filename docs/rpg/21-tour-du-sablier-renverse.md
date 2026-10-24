@@ -1,17 +1,18 @@
 # 21 — La Tour du Sablier renversé (tour d'épreuves terminale)
 
 **Statut : codé et jouable** dans le Jeu Solo (les Tours de Bab El), après la
-Tour de la Nécropole. La fiche ci-dessous reste la référence de design.
+Tour du Corbeau (dossier 22) — la dernière des neuf tours avant elle. La fiche
+ci-dessous reste la référence de design.
 
 ## 1. Le parti pris : les maîtres revenus à leur sommet
 
-Les huit tours existantes enseignent le jeu couleur par couleur, avec une
+Les neuf tours qui la précèdent enseignent le jeu couleur par couleur, avec une
 rampe : les premiers étages ménagent leurs mythiques (`mythiquesMax`,
 `raresMax` dans `rpgDeckRecipes.js`), l'IA monte de `recit` à `veilleur`, et
 la puissance affichée plafonne à 7. Une fois ces tours déblayées, il ne
 restait aucun mur à mesurer pour une collection complète.
 
-La neuvième tour renverse le principe — et le Sablier avec :
+La dixième tour renverse le principe — et le Sablier avec :
 
 > **Quand le Sablier se renverse, les maîtres de Bab El reviennent à leur
 > sommet.** Sept étages, sept types de duels différents, et à chaque palier

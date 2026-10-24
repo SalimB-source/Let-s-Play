@@ -12,6 +12,7 @@
  * catalogue, palier de rareté puis puissance (`rpgCardPower.js`).
  */
 
+import { RPG_CORBEAU_CREATURES, RPG_CORBEAU_FIGURES, RPG_CORBEAU_MAGIES } from './rpgCorbeau.js';
 import { RPG_SOLEIL_ROUGE_CREATURES, RPG_SOLEIL_ROUGE_JETONS, RPG_SOLEIL_ROUGE_MAGIES } from './rpgSoleilRouge.js';
 import { RPG_TENEBRES_ARMES, RPG_TENEBRES_CREATURES, RPG_TENEBRES_JETONS, RPG_TENEBRES_MAGIES } from './rpgTenebres.js';
 import {
@@ -799,6 +800,8 @@ export const RPG_CREATURE_CARDS = [
     text: 'Quand Jörmungandr arrive : piochez 3 cartes et défaussez une carte.',
     flavor: 'Il tient le monde dans sa queue. Il lâche prise pour frapper.',
   },
+  // Le Corbeau des neuf nuits : la Neige retournée en Ténèbres (doc 22).
+  ...RPG_CORBEAU_CREATURES,
 ];
 
 /**
@@ -1147,6 +1150,8 @@ export const RPG_HERO_CARDS = [
     text: 'Protection — Le Serpent est protégé contre les magies rapides et les sorcelleries : aucun sort ne peut le cibler ni le blesser. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse.',
     flavor: 'Il mord sa propre queue dans la glace, et le monde tient debout.',
   },
+  // Le Père des corbeaux retourné : la figure hybride de la Tour du Corbeau.
+  ...RPG_CORBEAU_FIGURES,
 ];
 
 export function heroById(id) {
@@ -1255,6 +1260,7 @@ export function terrainById(id) {
  * d'autres (parfois) les sorciers.
  */
 export const RPG_MAGIE_CARDS = [
+  ...RPG_CORBEAU_MAGIES,
   ...RPG_SOLEIL_ROUGE_MAGIES,
   ...RPG_TENEBRES_MAGIES,
   ...RPG_LETTRES_DE_MARQUE_MAGIES,

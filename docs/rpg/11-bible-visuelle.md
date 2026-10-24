@@ -32,6 +32,14 @@ les références, les fichiers livrés et la continuité de leurs URL dans l'int
 | La Scribe | `public/sablier-story/scribe.jpg` | Portrait dédié au personnage féminin du récit ; ne remplace pas l'illustration de la carte générique `scribe-de-la-liste` |
 | Le Puisatier des Cendres | `public/sablier-story/puisatier.jpg` | Personnage distinct de Boualem |
 | Mahieddine | `public/sablier-story/mahieddine.jpg` | Le Grand Horloger de `listes-5`, pas l'Horloger du Zénith |
+| Le Maître des corbeaux | `public/cards/maitre-des-corbeaux.jpg` | **Le Père des corbeaux retourné** (octobre 2026, Tour du Corbeau) : même œil, même chapeau, même neige — le portrait du Nord reste la référence, la nuit prend le second œil. Ce n'est pas un second personnage, c'est la même figure à un autre moment. |
+
+**Une seule exception de continuité, assumée** : le Père des corbeaux
+(`public/cards/pere-des-corbeaux.jpg`, Tour du Fjord) garde son portrait, et le
+Maître des corbeaux (Tour du Corbeau) en reçoit un second — la règle « un
+personnage, un portrait » vaut pour un **état** du personnage, pas pour toutes
+ses métamorphoses. Les deux peintures partagent l'œil clair, le chapeau à large
+bord et la neige ; seule la lumière change de camp (dossier 22).
 
 Les quatre nouveaux fichiers de `public/sablier-story/` sont des illustrations
 IA réalisées pour cet épisode : trois portraits et un décor vide (`greffe.jpg`).

@@ -17,6 +17,7 @@ export const RPG_STORY_TOWER_THEMES = Object.freeze({
   'tour-du-fjord': Object.freeze({ stone: '#6e889e', dark: '#3e536b', tile: '#527eaa', ground: '#394e67', accent: '#acdfff', fill: '#8dbbff', particles: '#e7f7ff' }),
   'tour-du-soleil-rouge': Object.freeze({ stone: '#8f2d22', dark: '#3a1410', tile: '#1f2d3d', ground: '#42322a', accent: '#e85d43', fill: '#ff9d7a', particles: '#ff6242' }),
   'tour-de-la-necropole': Object.freeze({ stone: '#28232e', dark: '#17121c', tile: '#4a3866', ground: '#1f1b24', accent: '#e5b73e', fill: '#8c6ebd', particles: '#d4af37' }),
+  'tour-du-corbeau': Object.freeze({ stone: '#4b5666', dark: '#1b2230', tile: '#2c3550', ground: '#232936', accent: '#b9c9e0', fill: '#8fa6c9', particles: '#e6eefc' }),
   'tour-du-sablier-renverse': Object.freeze({ stone: '#57406b', dark: '#2c2138', tile: '#7a4a8c', ground: '#33283f', accent: '#f0c46a', fill: '#b79ce8', particles: '#ffd98a' }),
 });
 
@@ -549,6 +550,74 @@ function buildCorsaires(k) {
   k.finial(0, 6.6, 0, 0.8);
 }
 
+function buildCorbeau(k) {
+  const { materials: m } = k;
+  k.feature('arbre-des-corbeaux'); k.feature('neige-noire'); k.feature('cercle-de-plumes');
+  const plume = k.geometry('plume-de-corbeau', () => new THREE.ConeGeometry(1, 1, 4));
+  const bec = k.geometry('bec-de-corbeau', () => new THREE.ConeGeometry(1, 1, 4));
+
+  // Le cercle de pierres levées, chacune à son ombre de plume. La neige noire
+  // n'est pas une autre matière : c'est la neige du kit, prise dans la nuit.
+  for (let i = 0; i < 9; i += 1) {
+    const angle = (i + 0.5) * Math.PI * 2 / 9;
+    const x = Math.sin(angle) * 1.66, z = Math.cos(angle) * 1.66;
+    k.box(m.dark, x, 0.4 + (i % 3) * 0.07, z, 0.17, 0.42 + (i % 3) * 0.16, 0.17, angle);
+    k.box(m.snow, x, 0.63 + (i % 3) * 0.16, z, 0.2, 0.05, 0.2, angle);
+    k.mesh(plume, m.snow, [x * 0.76, 0.33, z * 0.76], [0.045, 0.2 + (i % 2) * 0.06, 0.045], [0.55, angle, 0.28]);
+    k.ring(m.ice, x * 0.9, 0.3, z * 0.9, 0.09, 0.008, [Math.PI / 2, 0, 0]);
+  }
+  k.ring(m.ice, 0, 0.35, 0, 1.36, 0.012);
+
+  // Trois paliers de pierre, coiffés de neige — la tour penche à mesure
+  // qu'elle monte : le corbeau ne tient jamais droit.
+  k.squareTier(0.34, 1.58, 1.22, { snow: true });
+  k.squareTier(1.56, 1.24, 1.14, { snow: true });
+  k.squareTier(2.7, 0.94, 1.06, { x: 0.06, z: -0.03, snow: true });
+
+  // Le tronc noir, ses branches nues et son nid de givre.
+  const trunk = k.group(0.12, 3.7, -0.06, 0.22);
+  k.box(m.dark, 0, 1.24, 0, 0.28, 2.5, 0.28, 0, trunk);
+  k.box(m.dark, 0.24, 2.28, 0.03, 0.13, 0.95, 0.13, 0.55, trunk);
+  k.box(m.dark, -0.3, 2.08, -0.05, 0.12, 0.85, 0.12, -0.6, trunk);
+  k.box(m.dark, 0.06, 2.46, 0.18, 0.1, 0.72, 0.1, 1.05, trunk);
+  k.box(m.snow, 0.12, 2.5, 0.02, 0.16, 0.06, 0.16, 0, trunk);
+  k.sphere(m.snow, 0.18, 2.02, 0.05, [0.2, 0.07, 0.2], trunk);
+  k.mesh(plume, m.snow, [-0.46, 2.4, -0.1], [0.05, 0.24, 0.05], [0.2, 0.4, 1.1], trunk);
+  k.mesh(plume, m.snow, [0.42, 2.62, 0.14], [0.045, 0.2, 0.045], [-0.2, -0.5, 1.2], trunk);
+
+  // Le corbeau de garde, perché sur la branche haute, et son compagnon
+  // posé sur la pierre du seuil.
+  const corbeau = (x, y, z, yaw, echelle) => {
+    const o = k.group(x, y, z, yaw);
+    k.sphere(m.dark, 0, 0, 0, [0.14 * echelle, 0.11 * echelle, 0.21 * echelle], o);
+    k.sphere(m.dark, 0, 0.1 * echelle, 0.18 * echelle, [0.075 * echelle, 0.075 * echelle, 0.085 * echelle], o);
+    k.mesh(bec, m.dark, [0, 0.09 * echelle, 0.29 * echelle], [0.032 * echelle, 0.1 * echelle, 0.032 * echelle], [Math.PI / 2, 0, 0], o);
+    k.box(m.dark, 0.15 * echelle, 0.03 * echelle, -0.02 * echelle, 0.24 * echelle, 0.022 * echelle, 0.1 * echelle, 0.36, o);
+    k.box(m.dark, -0.15 * echelle, 0.03 * echelle, -0.02 * echelle, 0.24 * echelle, 0.022 * echelle, 0.1 * echelle, -0.36, o);
+    k.box(m.dark, 0, 0.005 * echelle, -0.26 * echelle, 0.09 * echelle, 0.03 * echelle, 0.18 * echelle, 0, o);
+    k.sphere(m.window, 0.035 * echelle, 0.12 * echelle, 0.24 * echelle, [0.022 * echelle, 0.022 * echelle, 0.022 * echelle], o);
+  };
+  corbeau(0.28, 6.02, 0.12, 0.5, 1);
+  corbeau(-1.28, 0.72, 0.98, -0.4, 0.8);
+
+  // La lanterne de fer au verre cassé : le seul point chaud de la clairière.
+  const lanterne = k.group(-1.02, 4.2, 0.72, 0.3);
+  k.cylinder(m.wood, 0, 0.62, 0, 0.022, 1.1, 1, 6, lanterne);
+  k.box(m.gold, 0, 0, 0, 0.26, 0.06, 0.26, 0, lanterne);
+  k.box(m.window, 0, -0.19, 0, 0.16, 0.3, 0.16, 0, lanterne);
+  k.box(m.gold, 0, -0.37, 0, 0.26, 0.06, 0.26, 0, lanterne);
+  k.mesh(k.geometry('toit-lanterne', () => new THREE.ConeGeometry(1, 1, 4)), m.dark, [0, 0.16, 0], [0.19, 0.18, 0.19], [0, Math.PI / 4, 0], lanterne);
+  k.mesh(plume, m.snow, [-0.7, 0.5, 0.9], [0.05, 0.2, 0.05], [0.4, 0.3, 1.15]);
+
+  // Les congères de la clairière et les éclats de glace noire.
+  for (let i = 0; i < 7; i += 1) {
+    const angle = i * Math.PI * 2 / 7 + 0.35;
+    k.rock(m.dark, Math.sin(angle) * 1.9, 0.31, Math.cos(angle) * 1.9, [0.24, 0.1, 0.2], angle);
+    k.mesh(k.geometry('eclat-glace', () => new THREE.ConeGeometry(1, 1, 5)), m.ice,
+      [Math.sin(angle) * 1.94, 0.44, Math.cos(angle) * 1.94], [0.09, 0.32 + (i % 3) * 0.12, 0.09], [0.18, angle, 0.22]);
+  }
+}
+
 function buildSablierRenverse(k) {
   const { materials: m } = k;
   k.feature('sablier-geant'); k.feature('chambres-inversees'); k.feature('anneau-des-cinq-couleurs');
@@ -597,6 +666,7 @@ const BUILDERS = {
   'tour-du-fjord': buildFjord,
   'tour-du-soleil-rouge': buildSoleilRouge,
   'tour-de-la-necropole': buildNecropole,
+  'tour-du-corbeau': buildCorbeau,
   'tour-du-sablier-renverse': buildSablierRenverse,
 };
 

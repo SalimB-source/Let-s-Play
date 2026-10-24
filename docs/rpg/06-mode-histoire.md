@@ -103,6 +103,30 @@ déploie les malédictions, le Tribut et le jugement d'outre-tombe.
 - Maquette 3D procédurale : pylône monumental, obélisques veilleurs, colonnes de lotus et sarcophage de basalte.
 - Ambiance sonore : harpe modale phrygienne, percussions rituelles et basses profondes (`playNecropole`).
 
+## La Tour du Corbeau — la Neige entre dans la nuit
+
+La huitième tour libre retourne la figure du Fjord : le **Père des corbeaux**
+devient le **Maître des corbeaux**, moitié givre, moitié nuit. Elle ouvre le
+seul set hybride **Neige + Ténèbres** du jeu (fiche complète :
+[`22-tour-du-corbeau.md`](22-tour-du-corbeau.md)).
+
+| Étage | Sorcier | Deck | Profil IA | Note |
+| --- | --- | --- | --- | --- |
+| 1 | La Vigie des neuf nuits | `corbeaux-du-givre` (corbeaux, boucliers, gel) | `normale` / `prudent` | la neige fait le travail : chaque corbeau fige une créature de coût 3 ou moins |
+| 2 | La Veilleuse au corbeau noir | `serment-des-neuf-nuits` (Tribut, berserks, provocations) | `veilleur` / `controle` | elle compte les morts, et la vie change de camp |
+| 3 | La Valkyrie des neuf nuits | `veille-du-corbeau` (Envol, Furie, exil) | `veilleur` / `agressif` | elle emporte les petites créatures avant qu'elles ne servent |
+| 4 | Le Maître des corbeaux | `maitre-des-corbeaux` (les figures des deux identités) | `sablier` / `equilibre` | **boss** : cinq mythiques, le gel et l'exil, un œil dans la nuit |
+
+- Les quatre decks sont **hybrides Neige + Ténèbres**, composés par leur
+  recette et validés comme les autres (`tests/rpg-corbeau.test.js`).
+- Plateau attitré : **Le Cercle des corbeaux** (`cercle-des-corbeaux`), la
+  clairière des neuf nuits vue de dessus, le cercle de pierres vide au centre.
+- Maquette 3D : cercle de pierres levées et plumes, tour de pierre sombre en
+  trois paliers coiffés de neige, tronc noir, nid de givre et corbeaux de garde.
+- Ambiance : « La neige tombe dans le noir », 68 BPM (`playCorbeau`).
+- Le set ne rejoint pas la dotation de départ : ses six cartes se révèlent
+  étage par étage, puis s'achètent au Souk.
+
 ## Ce qui existe déjà (à brancher, pas à réinventer)
 
 - **Profils d'IA** : `rpgNouveauDuel({ sorcierIA: { niveau, style } })`.
@@ -140,7 +164,7 @@ déploie les malédictions, le Tribut et le jugement d'outre-tombe.
    affichée sur le bouton d'accueil et dans l'en-tête de la campagne.
 2. **Les données des tours** — `src/games/rpgStoryTours.js` (id, nom, miniature,
    fonction, deck, puissance, ia, note, et depuis la Neige `avatar` — la figure de
-   l'étage sur la plaque du sorcier) : **sept tours, vingt-huit étages, seize decks**
+   l'étage sur la plaque du sorcier) : **dix tours, quarante-trois étages, trente decks**
    (les archétypes existants et leurs variantes, tous à 30 cartes sans terrain validées).
 3. **La règle de continuité entre étages** — **décision : piste A (simple) retenue
    pour l'instant**. Chaque étage est un duel autonome : deck complet, PV pleins,

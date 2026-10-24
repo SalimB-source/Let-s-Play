@@ -1048,6 +1048,13 @@ assert.match(battleCss, /\.card-table--plateau-cour-de-l-empereur\s*\{[^}]*backg
   'le parvis de la cour a sa propre couleur de repli');
 assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*background-color:/s,
   'la pierre des ruines a sa propre couleur de repli');
+// La clairière des neuf nuits, terrain de la Tour du Corbeau.
+assert.match(plateauxSource, /id: 'cercle-des-corbeaux'[\s\S]*?fichier: 'plateau-cercle-des-corbeaux\.jpg'/,
+  'le Cercle des corbeaux est un plateau déclaré, avec sa peinture dans public/');
+assert.match(plateauxSource, /'corbeaux-du-givre': 'cercle-des-corbeaux'/,
+  'les quatre paquets du Corbeau se battent dans la clairière des neuf nuits');
+assert.match(battleCss, /\.card-table--plateau-cercle-des-corbeaux\s*\{[^}]*background-color:/s,
+  'la neige de la clairière a sa propre couleur de repli');
 // Les Ténèbres : deux terrains, le désert du Nil et la salle du trône.
 assert.match(plateauxSource, /id: 'necropole-des-dalles'[\s\S]*?fichier: 'plateau-necropole-des-dalles\.jpg'/,
   'la Nécropole des dalles est un plateau déclaré, avec sa peinture égyptienne dans public/');

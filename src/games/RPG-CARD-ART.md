@@ -137,6 +137,33 @@ attribut, parce que leur sujet ne doit jamais se réduire à un objet :
   d'impact. Aucun porteur, aucune main et aucune autre arme ne viennent
   concurrencer l'objet. Révision dédiée `hache-plantee-glace-v2`.
 
+## Le Corbeau des neuf nuits — Neige + Ténèbres
+
+Le set hybride de la **Tour du Corbeau** (dossier 22) peint six cartes, toutes
+au ratio exact de la face (1024×1280), dans une seule révision de cache —
+`corbeau-neuf-nuits-v1` dans `rpgCardArt.js` :
+
+- **Corbeau de givre** — un grand corbeau de nuit posé sur une pierre runique,
+  le bec et les plumes pris dans le givre, la neige épaisse, l'aurore en haut
+  du cadre. Le sujet se lit en vignette : l'oiseau occupe le tiers central.
+- **Veilleuse au corbeau noir** — une devineresse mûre sous la neige, le
+  corbeau au bras, un cordon de perles d'os dans la main. Le visage reste dans
+  le tiers supérieur, comme les portraits du casting.
+- **Berserk du crépuscule** — le dernier rouge du jour dans le dos d'un
+  berserker de givre ; la nuit violette monte derrière lui.
+- **Valkyrie des neuf nuits** — l'armure de fer sombre et le manteau de
+  plumes, la lance basse, les corbeaux en spirale, la glace au sol.
+- **Neige noire** — le champ de bataille figé sous une neige qui tombe à
+  l'envers, la balance de pierre vide au centre, l'éclipse ourlée de violet.
+- **LE MAÎTRE DES CORBEAUX** — la figure retournée du Père des corbeaux : le
+  même œil lumineux sous le chapeau, l'autre sous le bandeau, la neige noire
+  mêlée à la blanche, le trône de pierres et l'arbre mort peuplé de corbeaux.
+
+La direction reste celle de la collection — huile adulte, clair-obscur,
+matière de toile —, et la Neige comme les Ténèbres n'y dessinent jamais un
+badge : la lumière froide vient de la neige, la nuit du fond. Aucune image ne
+porte de texte, de cadre ni d'interface.
+
 ## État des sept magies reprises en plein art 4:5
 
 Sept sorts du catalogue portaient une illustration prêtée, ou un cadrage qui

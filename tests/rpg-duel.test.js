@@ -158,6 +158,10 @@ const PLEIN_ART_45 = [
   // La révision Neige : l’huile intacte du Loup et les nouveaux pleins arts
   // du Mur de boucliers, de l’Éclair du marteau et de la Brume du fjord.
   'loup-des-neiges', 'mur-de-boucliers', 'eclair-du-marteau', 'brume-du-fjord',
+  // Le Corbeau des neuf nuits : les six peintures du set hybride Neige +
+  // Ténèbres, livrées au format exact de la face.
+  'corbeau-de-givre', 'veilleuse-au-corbeau-noir', 'berserk-du-crepuscule',
+  'valkyrie-des-neuf-nuits', 'neige-noire', 'maitre-des-corbeaux',
   // Les héros repeints en nihonga sur feuille d’or : livrés eux aussi au
   // ratio exact de la face, désormais contrôlé comme le reste.
   'salem', 'yamina', 'feriel', 'tarek', 'boualem',
@@ -223,7 +227,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
 });
 
 test('le set de permanents existe : quatre-vingt-deux fiches façon TCG (dont deux Sites)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 82, 'Eirik rejoint les créatures du Serment des Neuf Hivers');
+  assert.equal(RPG_CREATURE_CARDS.length, 86,
+    'Eirik rejoint les créatures du Serment des Neuf Hivers, puis les quatre du Corbeau des neuf nuits');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -3589,7 +3594,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et magies rapides de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 44);
+  assert.equal(RPG_MAGIE_CARDS.length, 45, 'Neige noire rejoint les magies du catalogue');
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les cinq couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);

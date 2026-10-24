@@ -251,8 +251,8 @@ ainsi ≈ 12 journées de quêtes, crédits des étages compris.
 
 **Ce que la campagne entière rapporte** : 20 étages × 50 ◈ = **1 000 ◈**, plus
 le butin des cinq tours gravies (5 × 200 ◈) = **2 000 ◈**, soit quatorze
-paquets. Toute la galerie des Tours (8 tours, 32 étages) rapporte
-32 × 50 ◈ + 8 × 200 ◈ = **3 200 ◈**. Le butin ne se rejoue pas : une tour
+paquets. Toute la galerie des Tours (10 tours, 43 étages) rapporte
+43 × 50 ◈ + 10 × 200 ◈ = **4 150 ◈**. Le butin ne se rejoue pas : une tour
 terminée l'a versé une fois (`toursPayees` dans le portefeuille), les reprises
 d'étages ne paient que 10 ◈. Les Tours paient l'entrée au Souk, pas sa
 totalité — c'est la boucle quotidienne qui porte le reste, et c'est voulu.

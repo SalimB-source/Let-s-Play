@@ -2685,6 +2685,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-navire-pirate {
   background-color: #9b6c3e;
 }
+/* La clairière des neuf nuits : la neige bleuie par la nuit, sous les pierres
+   levées du Cercle des corbeaux. */
+.card-table--plateau-cercle-des-corbeaux {
+  background-color: #33405c;
+}
 
 /* ── La conquête : deux peintures, une frontière mobile ────────────────────
    La propriété typée anime ensemble la découpe nette du terrain adverse et le

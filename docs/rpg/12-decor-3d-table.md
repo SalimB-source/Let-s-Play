@@ -20,7 +20,7 @@ changent pas.
   braises, éclats de verre.
 - **Parallaxe** : la caméra respire et suit la souris (jamais le doigt).
 
-Les onze plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
+Les douze plateaux ont leur ambiance (`rpgTableSceneThemes.js`). Un identifiant
 inconnu retombe sur celle de la Table des Heures.
 
 Quatre plateaux ne posent aucun objet 3D et gardent leur peinture telle quelle :

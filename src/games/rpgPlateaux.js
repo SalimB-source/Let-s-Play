@@ -147,6 +147,16 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-navire-pirate.jpg',
     resume: 'Vue parfaitement verticale à 90° de dessus, serrée à bord du pont supérieur à ciel ouvert d’un navire pirate en plein soleil : le grand plancher de chêne blond patiné et sa rose des vents dorée incrustée à plat au centre occupent presque tout le cadre, entièrement nus et dégagés au milieu pour poser les cartes. Aux bords haut et bas, les bastingages de bois sombre armés de quatre canons cerclés de laiton laissent voir l’eau turquoise et l’écume blanche du large ; dans les quatre angles, quatre fanaux dorés allumés veillent près d’un coffre au trésor débordant de pièces d’or, d’une carte marine déroulée avec longue-vue, boussole et sabre d’abordage, de tonneaux et de cordages lovés.',
   },
+  // Le terrain de la Tour du Corbeau : la clairière des neuf nuits, dehors,
+  // sous la neige noire. Le cercle de pierres reste vide au centre — c'est
+  // là que les cartes se posent —, et les corbeaux attendent aux branches.
+  {
+    id: 'cercle-des-corbeaux',
+    nom: 'Le Cercle des corbeaux',
+    lieu: 'La clairière des neuf nuits, au-dessus du village du fjord',
+    fichier: 'plateau-cercle-des-corbeaux.jpg',
+    resume: 'Une clairière sous la neige, vue de dessus par une nuit sans lune : le sol de givre bleui et la neige fraîche, et, au centre, le grand cercle de pierres levées, vide, que borde une couronne de plumes noires. Tout autour, les bouleaux noirs chargés de givre et leurs branches nues, le corbeau perché sur la souche, les neuf pierres levées aux runes gravées, une lanterne de fer au verre cassé, la corde lovée et un brasero éteint. Le milieu de la clairière reste nu : c’est là que les cartes se posent.',
+  },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
   {
@@ -218,6 +228,13 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'momies-de-la-necropole': 'necropole-des-dalles',
   'chacals-du-seuil': 'necropole-des-dalles',
   'juges-de-la-necropole': 'palais-du-pharaon',
+  // La Tour du Corbeau : ses quatre étages se battent au Cercle des
+  // corbeaux, la clairière de la neige noire. Le Maître des corbeaux y reçoit
+  // comme chez lui — c'est son cercle.
+  'corbeaux-du-givre': 'cercle-des-corbeaux',
+  'serment-des-neuf-nuits': 'cercle-des-corbeaux',
+  'veille-du-corbeau': 'cercle-des-corbeaux',
+  'maitre-des-corbeaux': 'cercle-des-corbeaux',
   // La Tour du Sablier renversé : chaque étage « absolu » reçoit dans la
   // maison de son identité — sept étages, sept terrains différents. Le
   // Sablier tricolore du sommet tient la Table des Heures, la table
